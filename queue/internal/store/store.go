@@ -141,6 +141,19 @@ func (s *Store) Fail(id, workerID, reason string) error {
 	return nil
 }
 
+// Renew extends the lease for a running job owned by workerID.
+func (s *Store) Renew(id, workerID string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	job, err := s.runningJob(id, workerID)
+	if err != nil {
+		return err
+	}
+	job.LeaseUntil = time.Now().Add(s.lease)
+	return nil
+}
+
 // RequeueExpired moves running jobs whose lease has elapsed back to pending,
 // or permanently fails them if they exhausted their attempts. It returns the
 // number of jobs affected.

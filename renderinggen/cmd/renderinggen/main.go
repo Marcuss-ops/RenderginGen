@@ -100,7 +100,7 @@ func main() {
 			continue
 		}
 
-		if err := process(ctx, job, store, chrononClient); err != nil {
+		if err := processJob(ctx, job, queueClient, store, chrononClient); err != nil {
 			log.Printf("job %s failed: %v", job.ID, err)
 			if rerr := queueClient.Fail(ctx, job.ID, err.Error()); rerr != nil {
 				log.Printf("report fail: %v", rerr)
@@ -122,4 +122,41 @@ func process(ctx context.Context, job *queue.Job, store *storage.Client, chronon
 		}
 	}
 	return chrononClient.Render(ctx, string(job.OverlaySpec), "/var/lib/renderinggen/out")
+}
+
+// processJob processes a claimed job while renewing its lease in the
+// background. If the lease cannot be renewed (e.g. it expired and the job was
+// requeued to another worker), the job context is cancelled so the render
+// aborts instead of double-processing.
+func processJob(ctx context.Context, job *queue.Job, q *queue.Client, store *storage.Client, chrononClient *chronon.Client) error {
+	if job.Lease <= 0 {
+		return process(ctx, job, store, chrononClient)
+	}
+
+	jobCtx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	interval := job.Lease / 2
+	if interval <= 0 {
+		interval = time.Second
+	}
+
+	go func() {
+		ticker := time.NewTicker(interval)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-jobCtx.Done():
+				return
+			case <-ticker.C:
+				if err := q.Renew(jobCtx, job.ID); err != nil {
+					log.Printf("job %s: lease renew failed, aborting: %v", job.ID, err)
+					cancel()
+					return
+				}
+			}
+		}
+	}()
+
+	return process(jobCtx, job, store, chrononClient)
 }

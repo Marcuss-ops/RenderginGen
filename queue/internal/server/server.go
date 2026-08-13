@@ -6,6 +6,7 @@
 //	POST /jobs/claim            claim the next job (worker pulls)
 //	POST /jobs/{id}/complete    report completion
 //	POST /jobs/{id}/fail        report failure (requeue or fail permanently)
+//	POST /jobs/{id}/renew       extend the lease during a long render
 //	GET  /jobs/depth            queue depth/stats (autoscaling)
 //	GET  /health                health check
 package server
@@ -37,6 +38,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /jobs/claim", s.claim)
 	mux.HandleFunc("POST /jobs/{id}/complete", s.complete)
 	mux.HandleFunc("POST /jobs/{id}/fail", s.fail)
+	mux.HandleFunc("POST /jobs/{id}/renew", s.renew)
 	mux.HandleFunc("GET /jobs/depth", s.depth)
 	mux.HandleFunc("GET /health", s.health)
 	return mux
@@ -110,6 +112,20 @@ func (s *Server) fail(w http.ResponseWriter, r *http.Request) {
 	_ = json.NewDecoder(r.Body).Decode(&req)
 
 	if err := s.store.Fail(id, req.Worker, req.Data.Reason); err != nil {
+		http.Error(w, err.Error(), http.StatusConflict)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (s *Server) renew(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	var req struct {
+		Worker string `json:"worker"`
+	}
+	_ = json.NewDecoder(r.Body).Decode(&req)
+
+	if err := s.store.Renew(id, req.Worker); err != nil {
 		http.Error(w, err.Error(), http.StatusConflict)
 		return
 	}

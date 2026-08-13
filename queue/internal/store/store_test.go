@@ -113,3 +113,32 @@ func TestFailRequeuesUntilMaxAttempts(t *testing.T) {
 		t.Fatalf("want 1 failed, 0 pending; got %+v", stats)
 	}
 }
+
+func TestRenewExtendsLease(t *testing.T) {
+	s := New(100*time.Millisecond, 3)
+	submit(t, s, "job-1")
+	if _, _, err := s.Claim("w1"); err != nil {
+		t.Fatal(err)
+	}
+
+	time.Sleep(60 * time.Millisecond) // near the end of the original lease
+	if err := s.Renew("job-1", "w1"); err != nil {
+		t.Fatalf("renew: %v", err)
+	}
+	time.Sleep(60 * time.Millisecond) // past original lease, within renewed lease
+
+	if n := s.RequeueExpired(time.Now()); n != 0 {
+		t.Fatalf("job should still be running after renew, got %d requeued", n)
+	}
+}
+
+func TestRenewWrongWorkerFails(t *testing.T) {
+	s := New(30*time.Second, 3)
+	submit(t, s, "job-1")
+	if _, _, err := s.Claim("w1"); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.Renew("job-1", "w2"); err == nil {
+		t.Fatal("expected error renewing with wrong worker")
+	}
+}

@@ -87,6 +87,12 @@ func (c *Client) Fail(ctx context.Context, id, reason string) error {
 	return c.report(ctx, id, "fail", map[string]string{"reason": reason})
 }
 
+// Renew extends the lease on a running job, signalling liveness during a long
+// render. It fails if the job expired and was requeued to another worker.
+func (c *Client) Renew(ctx context.Context, id string) error {
+	return c.report(ctx, id, "renew", nil)
+}
+
 func (c *Client) report(ctx context.Context, id, state string, payload any) error {
 	body := map[string]any{
 		"worker": c.workerID,

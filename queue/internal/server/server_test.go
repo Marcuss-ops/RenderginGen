@@ -100,3 +100,24 @@ func TestHealth(t *testing.T) {
 		t.Fatalf("health: want 200, got %d", resp.StatusCode)
 	}
 }
+
+func TestRenewEndpoint(t *testing.T) {
+	ts := newServer(t)
+	post(t, ts.URL+"/jobs", `{"id":"job-1"}`)
+
+	resp := post(t, ts.URL+"/jobs/claim", `{"worker":"w1"}`)
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("claim: want 200, got %d", resp.StatusCode)
+	}
+
+	resp = post(t, ts.URL+"/jobs/job-1/renew", `{"worker":"w1"}`)
+	if resp.StatusCode != http.StatusNoContent {
+		t.Fatalf("renew: want 204, got %d", resp.StatusCode)
+	}
+
+	// Wrong worker can't renew.
+	resp = post(t, ts.URL+"/jobs/job-1/renew", `{"worker":"w2"}`)
+	if resp.StatusCode != http.StatusConflict {
+		t.Fatalf("wrong-worker renew: want 409, got %d", resp.StatusCode)
+	}
+}
