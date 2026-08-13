@@ -5,6 +5,7 @@
 renderinggen/renderinggen
 renderinggen/bin/
 queue/queued
+objectstore/objectstore
 
 # Build artifacts
 chronon/build/

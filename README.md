@@ -22,6 +22,7 @@ they are never pushed HTTP requests directly.
 - `renderinggen/` — Go worker (queue client, storage/cache, GPU detect, health)
 - `chronon/` — native Vulkan renderer (C++), versioned via `chronon/VERSION`
 - `queue/` — central pull-based job queue (claim + lease expiry)
+- `objectstore/` — central object storage (L3) used by the worker cache
 - `infra/docker/` — `chronon-gpu-runtime` base image + `renderinggen-worker`
 - `.github/workflows/` — CI: build, test, publish versioned images on `main`
 

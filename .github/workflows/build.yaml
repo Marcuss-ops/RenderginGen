@@ -40,10 +40,25 @@ jobs:
       - run: go vet ./...
       - run: go test ./...
 
+  objectstore:
+    name: Build & test objectstore
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: objectstore
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.25"
+      - run: go build ./...
+      - run: go vet ./...
+      - run: go test ./...
+
   chronon-runtime:
     name: chronon-gpu-runtime image
     runs-on: ubuntu-latest
-    needs: [go, queue]
+    needs: [go, queue, objectstore]
     permissions:
       contents: read
       packages: write

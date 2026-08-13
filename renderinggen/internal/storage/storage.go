@@ -1,65 +1,70 @@
-// Package storage implements the shared artifact store with local caching.
+// Package storage implements the shared artifact store with a three-level cache.
 //
-// Cache layers:
-//
-//	L1  VRAM cache  (handled by the Chronon/GPU layer)
-//	L2  local NVMe  (LocalCacheDir)
-//	L3  central object storage (Endpoint)
+//	L1  VRAM cache   (in-memory, worker lifetime)
+//	L2  local NVMe   (content-addressed on disk)
+//	L3  object store (central, shared, persistent)
 package storage
 
 import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
-	"fmt"
-	"os"
-	"path/filepath"
 )
 
-// Client resolves asset hashes against a central object store, keeping a
-// local L2 cache on disk.
+// Options configures the cache levels.
+type Options struct {
+	L1MaxBytes int64  // cap for the L1 in-memory (VRAM) cache; 0 = unbounded
+	L2Dir      string // on-disk (NVMe) cache directory
+	L2MaxBytes int64  // cap for the L2 on-disk cache; 0 = unbounded
+}
+
+// Client resolves asset hashes against L3, caching them in L2 and L1.
 type Client struct {
-	endpoint string
-	cacheDir string
+	backend Backend
+	l1      *memCache
+	l2      *diskCache
 }
 
-// New creates a storage client.
-func New(endpoint, cacheDir string) *Client {
-	return &Client{endpoint: endpoint, cacheDir: cacheDir}
-}
-
-// Get returns asset bytes for hash, using the L2 cache when possible.
-func (c *Client) Get(ctx context.Context, hash string) ([]byte, error) {
-	if path := c.cachePath(hash); fileExists(path) {
-		return os.ReadFile(path)
+// New creates a cache client over the given L3 backend.
+func New(backend Backend, opts Options) *Client {
+	return &Client{
+		backend: backend,
+		l1:      newMemCache(opts.L1MaxBytes),
+		l2:      newDiskCache(opts.L2Dir, opts.L2MaxBytes),
 	}
-	// TODO: download from c.endpoint using ctx, then persist to L2.
-	return nil, fmt.Errorf("asset %s not in cache and remote fetch not implemented", hash)
 }
 
-// Put stores asset bytes in the local L2 cache and (TODO) the central store.
-func (c *Client) Put(hash string, data []byte) error {
-	if err := os.MkdirAll(c.cacheDir, 0o755); err != nil {
+// Get returns asset bytes for hash, resolving L1 -> L2 -> L3 and promoting
+// on each miss so the next lookup is faster.
+func (c *Client) Get(ctx context.Context, hash string) ([]byte, error) {
+	if data, ok := c.l1.Get(hash); ok {
+		return data, nil
+	}
+	if data, ok := c.l2.Get(hash); ok {
+		c.l1.Put(hash, data)
+		return data, nil
+	}
+	data, err := c.backend.Fetch(ctx, hash)
+	if err != nil {
+		return nil, err
+	}
+	c.l2.Put(hash, data)
+	c.l1.Put(hash, data)
+	return data, nil
+}
+
+// Put stores asset bytes into L3 (source of truth) and warms L2 and L1.
+func (c *Client) Put(ctx context.Context, hash string, data []byte) error {
+	if err := c.backend.Store(ctx, hash, data); err != nil {
 		return err
 	}
-	return os.WriteFile(c.cachePath(hash), data, 0o644)
-}
-
-func (c *Client) cachePath(hash string) string {
-	prefix := hash
-	if len(prefix) > 2 {
-		prefix = prefix[:2]
-	}
-	return filepath.Join(c.cacheDir, "assets", prefix, hash)
+	c.l2.Put(hash, data)
+	c.l1.Put(hash, data)
+	return nil
 }
 
 // Hash returns the content hash used as the cache key.
 func Hash(data []byte) string {
 	sum := sha256.Sum256(data)
 	return hex.EncodeToString(sum[:])
-}
-
-func fileExists(path string) bool {
-	st, err := os.Stat(path)
-	return err == nil && !st.IsDir()
 }

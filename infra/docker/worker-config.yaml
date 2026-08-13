@@ -5,7 +5,7 @@ queue:
   endpoint: http://queue:8081
 
 artifact_store:
-  endpoint: http://storage:9000
+  endpoint: http://objectstore:9000
   local_cache_dir: /var/lib/renderinggen/cache
 
 chronon:

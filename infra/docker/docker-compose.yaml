@@ -6,6 +6,15 @@ services:
     ports:
       - "8081:8081"
 
+  objectstore:
+    build:
+      context: ../..
+      dockerfile: objectstore/Dockerfile
+    ports:
+      - "9000:9000"
+    volumes:
+      - objectstore-data:/var/lib/objectstore
+
   worker:
     build:
       context: ../..
@@ -20,6 +29,7 @@ services:
       - ./worker-config.yaml:/etc/renderinggen/config.yaml:ro
     depends_on:
       - queue
+      - objectstore
     # Vulkan GPU passthrough; adjust for your provider.
     # devices:
     #   - /dev/dri:/dev/dri
@@ -27,3 +37,4 @@ services:
 
 volumes:
   renderinggen-cache:
+  objectstore-data:

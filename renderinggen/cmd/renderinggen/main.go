@@ -51,7 +51,14 @@ func main() {
 
 	// 3. Connect queue + storage.
 	queueClient := queue.New(cfg.Queue.Endpoint, cfg.Worker.ID)
-	store := storage.New(cfg.ArtifactStore.Endpoint, cfg.ArtifactStore.LocalCacheDir)
+	store := storage.New(
+		storage.NewHTTP(cfg.ArtifactStore.Endpoint),
+		storage.Options{
+			L1MaxBytes: 256 << 20, // 256 MiB VRAM cache
+			L2Dir:      cfg.ArtifactStore.LocalCacheDir,
+			L2MaxBytes: 10 << 30, // 10 GiB NVMe cache
+		},
+	)
 
 	// 4. READY: expose health.
 	healthInfo := health.Info{
