@@ -166,3 +166,22 @@ func (c *countingBackend) Fetch(ctx context.Context, key string) ([]byte, error)
 func (c *countingBackend) Store(ctx context.Context, key string, data []byte) error {
 	return c.inner.Store(ctx, key, data)
 }
+
+func TestL2Eviction(t *testing.T) {
+	dir := t.TempDir()
+	d := newDiskCache(dir, 10) // 10-byte budget
+	d.Put("a", []byte("12345"))
+	d.Put("b", []byte("12345"))
+	d.Put("c", []byte("12345"))
+
+	// Three 5-byte files exceed the 10-byte budget; one must be evicted.
+	present := 0
+	for _, k := range []string{"a", "b", "c"} {
+		if _, ok := d.Get(k); ok {
+			present++
+		}
+	}
+	if present != 2 {
+		t.Fatalf("want 2 of 3 files retained (10-byte budget), got %d", present)
+	}
+}

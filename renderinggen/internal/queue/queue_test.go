@@ -2,6 +2,7 @@ package queue
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"sync/atomic"
@@ -48,5 +49,48 @@ func TestClientClaimRenewComplete(t *testing.T) {
 
 	if err := c.Complete(context.Background(), job.ID, Result{}); err != nil {
 		t.Fatalf("complete: %v", err)
+	}
+}
+
+func TestClientClaimEmpty(t *testing.T) {
+	mux := http.NewServeMux()
+	mux.HandleFunc("POST /jobs/claim", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNoContent)
+	})
+	ts := httptest.NewServer(mux)
+	defer ts.Close()
+
+	c := New(ts.URL, "w1")
+	job, err := c.Claim(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if job != nil {
+		t.Fatalf("want nil job on empty queue, got %+v", job)
+	}
+}
+
+func TestClientFail(t *testing.T) {
+	var gotReason string
+	mux := http.NewServeMux()
+	mux.HandleFunc("POST /jobs/job-1/fail", func(w http.ResponseWriter, r *http.Request) {
+		var body struct {
+			Data struct {
+				Reason string `json:"reason"`
+			} `json:"data"`
+		}
+		_ = json.NewDecoder(r.Body).Decode(&body)
+		gotReason = body.Data.Reason
+		w.WriteHeader(http.StatusNoContent)
+	})
+	ts := httptest.NewServer(mux)
+	defer ts.Close()
+
+	c := New(ts.URL, "w1")
+	if err := c.Fail(context.Background(), "job-1", "boom"); err != nil {
+		t.Fatal(err)
+	}
+	if gotReason != "boom" {
+		t.Fatalf("reason = %q", gotReason)
 	}
 }
