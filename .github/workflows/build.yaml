@@ -1,0 +1,82 @@
+name: build
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_BASE: ghcr.io/marcuss-ops
+
+jobs:
+  go:
+    name: Build & test Go
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: renderinggen
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.25"
+      - run: go build ./...
+      - run: go vet ./...
+      - run: go test ./...
+
+  chronon-runtime:
+    name: chronon-gpu-runtime image
+    runs-on: ubuntu-latest
+    needs: go
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Read versions
+        run: |
+          echo "CHRONON_VERSION=$(cat chronon/VERSION)" >> "$GITHUB_ENV"
+          echo "SHORT_SHA=${GITHUB_SHA::8}" >> "$GITHUB_ENV"
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: infra/docker/chronon-gpu-runtime.Dockerfile
+          push: true
+          tags: |
+            ${{ env.IMAGE_BASE }}/chronon-gpu-runtime:${{ env.CHONON_VERSION }}
+            ${{ env.IMAGE_BASE }}/chronon-gpu-runtime:${{ env.SHORT_SHA }}
+
+  worker:
+    name: renderinggen-worker image
+    runs-on: ubuntu-latest
+    needs: chronon-runtime
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Read versions
+        run: |
+          echo "CHRONON_VERSION=$(cat chronon/VERSION)" >> "$GITHUB_ENV"
+          echo "SHORT_SHA=${GITHUB_SHA::8}" >> "$GITHUB_ENV"
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: infra/docker/renderinggen-worker.Dockerfile
+          push: true
+          build-args: |
+            CHRONON_RUNTIME=${{ env.IMAGE_BASE }}/chronon-gpu-runtime:${{ env.CHRONON_VERSION }}
+            VERSION=${{ env.SHORT_SHA }}
+          tags: |
+            ${{ env.IMAGE_BASE }}/renderinggen-worker:${{ env.SHORT_SHA }}

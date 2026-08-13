@@ -1,0 +1,22 @@
+# Go
+*.exe
+*.test
+*.out
+renderinggen/renderinggen
+renderinggen/bin/
+
+# Build artifacts
+chronon/build/
+chronon/bin/*.so
+chronon/lib/*.so
+chronon/bin/chronon3d_cli
+
+# Editor / OS
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# Env / secrets
+.env
+*.local.yaml

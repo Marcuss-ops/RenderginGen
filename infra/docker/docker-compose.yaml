@@ -1,0 +1,19 @@
+services:
+  worker:
+    build:
+      context: ../..
+      dockerfile: infra/docker/renderinggen-worker.Dockerfile
+      args:
+        CHRONON_RUNTIME: chronon-gpu-runtime:0.9.4
+        VERSION: 0.1.0
+    environment:
+      CHRONON_HOME: /opt/chronon
+    volumes:
+      - renderinggen-cache:/var/lib/renderinggen/cache
+    # Vulkan GPU passthrough; adjust for your provider.
+    # devices:
+    #   - /dev/dri:/dev/dri
+    restart: unless-stopped
+
+volumes:
+  renderinggen-cache:

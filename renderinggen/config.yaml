@@ -1,0 +1,19 @@
+worker:
+  id: renderinggen-77
+
+queue:
+  endpoint: https://queue.pipelinegen.example
+
+artifact_store:
+  endpoint: https://storage.pipelinegen.example
+  local_cache_dir: /var/lib/renderinggen/cache
+
+chronon:
+  backend: vulkan
+  home: /opt/chronon
+
+gpu:
+  device: 0
+
+health:
+  addr: ":8080"
