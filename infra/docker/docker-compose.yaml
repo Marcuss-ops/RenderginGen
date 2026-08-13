@@ -1,4 +1,11 @@
 services:
+  queue:
+    build:
+      context: ../..
+      dockerfile: queue/Dockerfile
+    ports:
+      - "8081:8081"
+
   worker:
     build:
       context: ../..
@@ -10,6 +17,9 @@ services:
       CHRONON_HOME: /opt/chronon
     volumes:
       - renderinggen-cache:/var/lib/renderinggen/cache
+      - ./worker-config.yaml:/etc/renderinggen/config.yaml:ro
+    depends_on:
+      - queue
     # Vulkan GPU passthrough; adjust for your provider.
     # devices:
     #   - /dev/dri:/dev/dri

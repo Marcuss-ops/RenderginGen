@@ -4,6 +4,7 @@
 *.out
 renderinggen/renderinggen
 renderinggen/bin/
+queue/queued
 
 # Build artifacts
 chronon/build/

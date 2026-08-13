@@ -1,0 +1,19 @@
+worker:
+  id: renderinggen-local
+
+queue:
+  endpoint: http://queue:8081
+
+artifact_store:
+  endpoint: http://storage:9000
+  local_cache_dir: /var/lib/renderinggen/cache
+
+chronon:
+  backend: vulkan
+  home: /opt/chronon
+
+gpu:
+  device: 0
+
+health:
+  addr: ":8080"
