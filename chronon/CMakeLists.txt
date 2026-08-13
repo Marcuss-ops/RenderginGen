@@ -6,6 +6,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 find_package(Vulkan REQUIRED)
 
+set(CMAKE_INSTALL_RPATH "/opt/chronon/lib")
+
 add_library(chronon3d SHARED src/chronon3d.cpp)
 target_include_directories(chronon3d PUBLIC include)
 target_link_libraries(chronon3d PRIVATE Vulkan::Vulkan)
