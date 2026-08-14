@@ -97,7 +97,7 @@ func TestAttemptsAndEventsOnClaimComplete(t *testing.T) {
 		t.Fatalf("unexpected attempt: %+v", attempts[0])
 	}
 
-	if err := r.Complete("job-1", "w1"); err != nil {
+	if err := r.Complete("job-1", "w1", model.Artifact{}); err != nil {
 		t.Fatal(err)
 	}
 
@@ -132,7 +132,7 @@ func TestAttemptsPreservedAcrossFailures(t *testing.T) {
 	if _, _, err := r.Claim("w2"); err != nil {
 		t.Fatal(err)
 	}
-	if err := r.Complete("job-1", "w2"); err != nil {
+	if err := r.Complete("job-1", "w2", model.Artifact{}); err != nil {
 		t.Fatal(err)
 	}
 

@@ -75,7 +75,7 @@ func TestComplete(t *testing.T) {
 	if _, _, err := s.Claim("w1"); err != nil {
 		t.Fatal(err)
 	}
-	if err := s.Complete("job-1", "w1"); err != nil {
+	if err := s.Complete("job-1", "w1", model.Artifact{}); err != nil {
 		t.Fatalf("complete: %v", err)
 	}
 	if s.Stats().Completed != 1 {
@@ -89,7 +89,7 @@ func TestCompleteWrongWorkerFails(t *testing.T) {
 	if _, _, err := s.Claim("w1"); err != nil {
 		t.Fatal(err)
 	}
-	if err := s.Complete("job-1", "w2"); err == nil {
+	if err := s.Complete("job-1", "w2", model.Artifact{}); err == nil {
 		t.Fatal("expected error completing with wrong worker")
 	}
 }

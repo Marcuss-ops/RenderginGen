@@ -80,7 +80,7 @@ func TestSubmitClaimComplete(t *testing.T) {
 		t.Fatalf("assets not round-tripped: %+v", claimed.Assets)
 	}
 
-	if err := r.Complete("job-1", "w1"); err != nil {
+	if err := r.Complete("job-1", "w1", model.Artifact{}); err != nil {
 		t.Fatalf("complete: %v", err)
 	}
 	if s := r.Stats(); s.Completed != 1 {
@@ -152,7 +152,7 @@ func TestFailWrongWorkerFails(t *testing.T) {
 	if _, _, err := r.Claim("w1"); err != nil {
 		t.Fatal(err)
 	}
-	if err := r.Complete("job-1", "w2"); err == nil {
+	if err := r.Complete("job-1", "w2", model.Artifact{}); err == nil {
 		t.Fatal("expected error completing with wrong worker")
 	}
 }

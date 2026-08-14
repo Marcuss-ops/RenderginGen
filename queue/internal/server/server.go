@@ -91,11 +91,12 @@ func (s *Server) claim(w http.ResponseWriter, r *http.Request) {
 func (s *Server) complete(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 	var req struct {
-		Worker string `json:"worker"`
+		Worker string         `json:"worker"`
+		Data   model.Artifact `json:"data"`
 	}
 	_ = json.NewDecoder(r.Body).Decode(&req)
 
-	if err := s.svc.Complete(id, req.Worker); err != nil {
+	if err := s.svc.Complete(id, req.Worker, req.Data); err != nil {
 		http.Error(w, err.Error(), http.StatusConflict)
 		return
 	}

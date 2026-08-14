@@ -18,8 +18,9 @@ type JobRepository interface {
 	// job and its lease duration. It returns a nil job when the queue is empty.
 	Claim(workerID string) (*model.Job, time.Duration, error)
 
-	// Complete marks a running job as completed.
-	Complete(id, workerID string) error
+	// Complete marks a running job as completed and records the rendered
+	// artifact (which may be zero-valued when no artifact was produced).
+	Complete(id, workerID string, artifact model.Artifact) error
 
 	// Fail marks a running job failed. Jobs that have not exhausted their
 	// attempts are requeued; otherwise they are permanently failed.

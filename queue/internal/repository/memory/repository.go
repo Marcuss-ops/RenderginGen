@@ -20,6 +20,7 @@ import (
 type Repository struct {
 	mu          sync.Mutex
 	jobs        map[string]*model.Job
+	artifacts   map[string]model.Artifact
 	order       []string // FIFO order of pending job IDs
 	lease       time.Duration
 	maxAttempts int
@@ -32,6 +33,7 @@ var _ repository.JobRepository = (*Repository)(nil)
 func New(lease time.Duration, maxAttempts int) *Repository {
 	return &Repository{
 		jobs:        make(map[string]*model.Job),
+		artifacts:   make(map[string]model.Artifact),
 		lease:       lease,
 		maxAttempts: maxAttempts,
 	}
@@ -75,8 +77,8 @@ func (s *Repository) Claim(workerID string) (*model.Job, time.Duration, error) {
 	return nil, 0, nil
 }
 
-// Complete marks a running job as completed.
-func (s *Repository) Complete(id, workerID string) error {
+// Complete marks a running job as completed and records its artifact.
+func (s *Repository) Complete(id, workerID string, artifact model.Artifact) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -85,6 +87,7 @@ func (s *Repository) Complete(id, workerID string) error {
 		return err
 	}
 	job.State = model.StateCompleted
+	s.artifacts[id] = artifact
 	return nil
 }
 

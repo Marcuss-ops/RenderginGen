@@ -41,9 +41,9 @@ func (s *Service) Claim(workerID string) (*model.Job, time.Duration, error) {
 	return s.repo.Claim(workerID)
 }
 
-// Complete marks a running job as completed.
-func (s *Service) Complete(id, workerID string) error {
-	return s.repo.Complete(id, workerID)
+// Complete marks a running job as completed and records its artifact.
+func (s *Service) Complete(id, workerID string, artifact model.Artifact) error {
+	return s.repo.Complete(id, workerID, artifact)
 }
 
 // Fail marks a running job failed (requeue or permanent fail).

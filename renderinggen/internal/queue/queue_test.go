@@ -47,7 +47,7 @@ func TestClientClaimRenewComplete(t *testing.T) {
 		t.Fatalf("want 1 renew call, got %d", renewed)
 	}
 
-	if err := c.Complete(context.Background(), job.ID, Result{}); err != nil {
+	if err := c.Complete(context.Background(), job.ID, Artifact{}); err != nil {
 		t.Fatalf("complete: %v", err)
 	}
 }

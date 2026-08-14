@@ -151,8 +151,9 @@ func (r *Repository) Claim(workerID string) (*model.Job, time.Duration, error) {
 	return job, r.lease, nil
 }
 
-// Complete marks a running job as completed.
-func (r *Repository) Complete(id, workerID string) error {
+// Complete marks a running job as completed and, when an artifact is
+// provided, persists it and links it to the job.
+func (r *Repository) Complete(id, workerID string, artifact model.Artifact) error {
 	ctx := context.Background()
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -180,6 +181,12 @@ func (r *Repository) Complete(id, workerID string) error {
 	}
 	if err := recordEvent(ctx, tx, eventJobCompleted, id, attempt, workerID, nil); err != nil {
 		return err
+	}
+
+	if artifact.ID != "" && artifact.StorageKey != "" {
+		if err := insertArtifact(ctx, tx, id, artifact); err != nil {
+			return err
+		}
 	}
 	return tx.Commit()
 }

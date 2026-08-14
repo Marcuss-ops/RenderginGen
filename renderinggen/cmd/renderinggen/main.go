@@ -108,7 +108,7 @@ func main() {
 			continue
 		}
 
-		if err := queueClient.Complete(ctx, job.ID, queue.Result{}); err != nil {
+		if err := queueClient.Complete(ctx, job.ID, queue.Artifact{}); err != nil {
 			log.Printf("report complete: %v", err)
 		}
 	}

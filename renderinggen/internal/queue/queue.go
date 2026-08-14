@@ -27,9 +27,29 @@ type Job struct {
 	Lease       time.Duration   `json:"lease"`
 }
 
-// Result is the artifact produced for a completed job.
-type Result struct {
-	ArtifactURL string `json:"artifact_url"`
+// Artifact is the metadata of the artifact produced for a completed job,
+// including the copy-only certification VeloxEditing uses to assemble the
+// overlay without re-decoding or re-encoding it.
+type Artifact struct {
+	ID                 string `json:"id,omitempty"`
+	Kind               string `json:"kind,omitempty"`
+	StorageKey         string `json:"storage_key,omitempty"`
+	URL                string `json:"url,omitempty"`
+	SHA256             string `json:"sha256,omitempty"`
+	MimeType           string `json:"mime_type,omitempty"`
+	SizeBytes          int64  `json:"size_bytes,omitempty"`
+	Width              int    `json:"width,omitempty"`
+	Height             int    `json:"height,omitempty"`
+	FPSNum             int    `json:"fps_num,omitempty"`
+	FPSDen             int    `json:"fps_den,omitempty"`
+	FrameCount         int    `json:"frame_count,omitempty"`
+	DurationUS         int64  `json:"duration_us,omitempty"`
+	ProfileID          string `json:"profile_id,omitempty"`
+	CopyEligible       bool   `json:"copy_eligible,omitempty"`
+	Codec              string `json:"codec,omitempty"`
+	CodecProfile       string `json:"codec_profile,omitempty"`
+	ClosedGOP          bool   `json:"closed_gop,omitempty"`
+	FirstFrameKeyframe bool   `json:"first_frame_keyframe,omitempty"`
 }
 
 // Client claims and reports jobs against a central queue.
@@ -77,9 +97,9 @@ func (c *Client) Claim(ctx context.Context) (*Job, error) {
 	return &job, nil
 }
 
-// Complete reports a successfully rendered job.
-func (c *Client) Complete(ctx context.Context, id string, result Result) error {
-	return c.report(ctx, id, "complete", result)
+// Complete reports a successfully rendered job along with its artifact.
+func (c *Client) Complete(ctx context.Context, id string, artifact Artifact) error {
+	return c.report(ctx, id, "complete", artifact)
 }
 
 // Fail reports a job that could not be rendered.
