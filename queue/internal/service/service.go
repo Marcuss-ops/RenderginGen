@@ -20,6 +20,7 @@ type Service struct {
 	repo       repository.JobRepository
 	workerRepo repository.WorkerRepository
 	staleAfter time.Duration
+	retry      RetryConfig
 	metrics    *metrics.Metrics
 }
 
@@ -32,6 +33,12 @@ func New(repo repository.JobRepository) *Service {
 // is a no-op so tests and lightweight deployments can run without them.
 func (s *Service) SetMetrics(m *metrics.Metrics) {
 	s.metrics = m
+}
+
+// SetRequeueRetry configures retry-with-backoff for RequeueExpired. The zero
+// RetryConfig (the default) performs a single attempt with no retry.
+func (s *Service) SetRequeueRetry(cfg RetryConfig) {
+	s.retry = cfg
 }
 
 // SetWorkerRepository wires the worker registry and the heartbeat-staleness
@@ -109,9 +116,23 @@ func (s *Service) Renew(id, workerID string) error {
 }
 
 // RequeueExpired requeues (or permanently fails) jobs whose lease elapsed,
-// returning the number of jobs affected.
+// returning the number of jobs affected. Transient repository failures are
+// retried with exponential backoff and jitter (see SetRequeueRetry).
 func (s *Service) RequeueExpired(now time.Time) (int, error) {
-	n, err := s.repo.RequeueExpired(now)
+	maxAttempts := s.retry.MaxAttempts
+	if maxAttempts < 1 {
+		maxAttempts = 1
+	}
+
+	var n int
+	var err error
+	for attempt := 1; ; attempt++ {
+		n, err = s.repo.RequeueExpired(now)
+		if err == nil || attempt >= maxAttempts {
+			break
+		}
+		time.Sleep(backoffDelay(s.retry, attempt))
+	}
 	if err != nil {
 		return 0, err
 	}
