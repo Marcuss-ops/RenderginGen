@@ -4,11 +4,13 @@ import (
 	"encoding/json"
 	"testing"
 	"time"
+
+	"github.com/Marcuss-ops/RenderginGen/queue/internal/model"
 )
 
 func submit(t *testing.T, s *Store, id string) {
 	t.Helper()
-	job := Job{ID: id, OverlaySpec: json.RawMessage(`{"n":1}`)}
+	job := model.Job{ID: id, OverlaySpec: json.RawMessage(`{"n":1}`)}
 	if err := s.Submit(job); err != nil {
 		t.Fatalf("submit: %v", err)
 	}
@@ -50,7 +52,11 @@ func TestLeaseExpiryRequeues(t *testing.T) {
 	}
 
 	time.Sleep(20 * time.Millisecond)
-	if n := s.RequeueExpired(time.Now()); n != 1 {
+	n, err := s.RequeueExpired(time.Now())
+	if err != nil {
+		t.Fatalf("requeue: %v", err)
+	}
+	if n != 1 {
 		t.Fatalf("want 1 requeued, got %d", n)
 	}
 
@@ -127,7 +133,11 @@ func TestRenewExtendsLease(t *testing.T) {
 	}
 	time.Sleep(60 * time.Millisecond) // past original lease, within renewed lease
 
-	if n := s.RequeueExpired(time.Now()); n != 0 {
+	n, err := s.RequeueExpired(time.Now())
+	if err != nil {
+		t.Fatalf("requeue: %v", err)
+	}
+	if n != 0 {
 		t.Fatalf("job should still be running after renew, got %d requeued", n)
 	}
 }

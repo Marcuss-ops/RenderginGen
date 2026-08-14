@@ -1,4 +1,6 @@
-// Package store implements the in-memory central job queue.
+// Package store implements the in-memory job queue, used as the default
+// (non-persistent) backend for local development and tests. It implements
+// repository.JobRepository, so it can be swapped for the PostgreSQL backend.
 //
 // Jobs are pulled (claimed) by workers instead of being pushed. A claim
 // carries a lease: if the worker dies before completing, the lease expires
@@ -6,71 +8,37 @@
 package store
 
 import (
-	"encoding/json"
 	"fmt"
 	"sync"
 	"time"
+
+	"github.com/Marcuss-ops/RenderginGen/queue/internal/model"
+	"github.com/Marcuss-ops/RenderginGen/queue/internal/repository"
 )
-
-// State is the lifecycle state of a job.
-type State string
-
-const (
-	StatePending   State = "pending"
-	StateRunning   State = "running"
-	StateCompleted State = "completed"
-	StateFailed    State = "failed"
-)
-
-// AssetRef points at an asset in the central artifact store.
-type AssetRef struct {
-	Hash string `json:"hash"`
-	URL  string `json:"url"`
-}
-
-// Job is a unit of work in the queue.
-type Job struct {
-	ID          string          `json:"id"`
-	OverlaySpec json.RawMessage `json:"overlay_spec"`
-	Assets      []AssetRef      `json:"assets"`
-
-	State      State     `json:"state"`
-	Worker     string    `json:"worker,omitempty"`
-	Attempts   int       `json:"attempts"`
-	CreatedAt  time.Time `json:"created_at"`
-	LeaseUntil time.Time `json:"lease_until,omitempty"`
-	FailReason string    `json:"fail_reason,omitempty"`
-}
-
-// Stats is a snapshot of the queue, used for autoscaling and monitoring.
-type Stats struct {
-	Pending   int `json:"pending"`
-	Running   int `json:"running"`
-	Completed int `json:"completed"`
-	Failed    int `json:"failed"`
-	Depth     int `json:"depth"`
-}
 
 // Store is a thread-safe in-memory job queue with lease expiry.
 type Store struct {
 	mu          sync.Mutex
-	jobs        map[string]*Job
+	jobs        map[string]*model.Job
 	order       []string // FIFO order of pending job IDs
 	lease       time.Duration
 	maxAttempts int
 }
 
+// Compile-time check that Store satisfies the repository contract.
+var _ repository.JobRepository = (*Store)(nil)
+
 // New creates a queue with the given lease duration and max attempts per job.
 func New(lease time.Duration, maxAttempts int) *Store {
 	return &Store{
-		jobs:        make(map[string]*Job),
+		jobs:        make(map[string]*model.Job),
 		lease:       lease,
 		maxAttempts: maxAttempts,
 	}
 }
 
 // Submit enqueues a job. The ID is required and must be unique.
-func (s *Store) Submit(job Job) error {
+func (s *Store) Submit(job model.Job) error {
 	if job.ID == "" {
 		return fmt.Errorf("job id is required")
 	}
@@ -79,7 +47,7 @@ func (s *Store) Submit(job Job) error {
 	if _, exists := s.jobs[job.ID]; exists {
 		return fmt.Errorf("job %s already exists", job.ID)
 	}
-	job.State = StatePending
+	job.State = model.StatePending
 	job.CreatedAt = time.Now()
 	s.jobs[job.ID] = &job
 	s.order = append(s.order, job.ID)
@@ -88,17 +56,17 @@ func (s *Store) Submit(job Job) error {
 
 // Claim atomically claims the oldest pending job for a worker and returns it
 // with its lease duration. It returns nil when the queue is empty.
-func (s *Store) Claim(workerID string) (*Job, time.Duration, error) {
+func (s *Store) Claim(workerID string) (*model.Job, time.Duration, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	for i, id := range s.order {
 		job := s.jobs[id]
-		if job == nil || job.State != StatePending {
+		if job == nil || job.State != model.StatePending {
 			continue
 		}
 		s.order = append(s.order[:i], s.order[i+1:]...)
-		job.State = StateRunning
+		job.State = model.StateRunning
 		job.Worker = workerID
 		job.Attempts++
 		job.LeaseUntil = time.Now().Add(s.lease)
@@ -116,7 +84,7 @@ func (s *Store) Complete(id, workerID string) error {
 	if err != nil {
 		return err
 	}
-	job.State = StateCompleted
+	job.State = model.StateCompleted
 	return nil
 }
 
@@ -132,10 +100,10 @@ func (s *Store) Fail(id, workerID, reason string) error {
 	}
 	job.FailReason = reason
 	if s.maxAttempts > 0 && job.Attempts >= s.maxAttempts {
-		job.State = StateFailed
+		job.State = model.StateFailed
 		return nil
 	}
-	job.State = StatePending
+	job.State = model.StatePending
 	job.Worker = ""
 	s.order = append(s.order, id)
 	return nil
@@ -157,50 +125,43 @@ func (s *Store) Renew(id, workerID string) error {
 // RequeueExpired moves running jobs whose lease has elapsed back to pending,
 // or permanently fails them if they exhausted their attempts. It returns the
 // number of jobs affected.
-func (s *Store) RequeueExpired(now time.Time) int {
+func (s *Store) RequeueExpired(now time.Time) (int, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	n := 0
 	for _, job := range s.jobs {
-		if job.State != StateRunning || job.LeaseUntil.IsZero() || !now.After(job.LeaseUntil) {
+		if job.State != model.StateRunning || job.LeaseUntil.IsZero() || !now.After(job.LeaseUntil) {
 			continue
 		}
 		if s.maxAttempts > 0 && job.Attempts >= s.maxAttempts {
-			job.State = StateFailed
+			job.State = model.StateFailed
 			job.FailReason = "lease expired, max attempts reached"
 		} else {
-			job.State = StatePending
+			job.State = model.StatePending
 			job.Worker = ""
 			s.order = append(s.order, job.ID)
 		}
 		n++
 	}
-	return n
-}
-
-// Depth returns the number of pending jobs.
-func (s *Store) Depth() int {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	return len(s.order)
+	return n, nil
 }
 
 // Stats returns a snapshot of the queue state.
-func (s *Store) Stats() Stats {
+func (s *Store) Stats() model.Stats {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	stats := Stats{Depth: len(s.order)}
+	stats := model.Stats{Depth: len(s.order)}
 	for _, job := range s.jobs {
 		switch job.State {
-		case StatePending:
+		case model.StatePending:
 			stats.Pending++
-		case StateRunning:
+		case model.StateRunning:
 			stats.Running++
-		case StateCompleted:
+		case model.StateCompleted:
 			stats.Completed++
-		case StateFailed:
+		case model.StateFailed:
 			stats.Failed++
 		}
 	}
@@ -208,12 +169,12 @@ func (s *Store) Stats() Stats {
 }
 
 // runningJob returns the job if it is running and owned by workerID.
-func (s *Store) runningJob(id, workerID string) (*Job, error) {
+func (s *Store) runningJob(id, workerID string) (*model.Job, error) {
 	job := s.jobs[id]
 	if job == nil {
 		return nil, fmt.Errorf("job %s not found", id)
 	}
-	if job.State != StateRunning {
+	if job.State != model.StateRunning {
 		return nil, fmt.Errorf("job %s is not running", id)
 	}
 	if job.Worker != workerID {

@@ -11,6 +11,8 @@ import (
 	"time"
 
 	"github.com/Marcuss-ops/RenderginGen/queue/internal/migrate"
+	"github.com/Marcuss-ops/RenderginGen/queue/internal/postgres"
+	"github.com/Marcuss-ops/RenderginGen/queue/internal/repository"
 	"github.com/Marcuss-ops/RenderginGen/queue/internal/server"
 	"github.com/Marcuss-ops/RenderginGen/queue/internal/store"
 
@@ -22,30 +24,41 @@ func main() {
 	lease := flag.Duration("lease", 30*time.Second, "job lease duration")
 	maxAttempts := flag.Int("max-attempts", 3, "max attempts before a job is permanently failed")
 	expireInterval := flag.Duration("expire-interval", 5*time.Second, "lease expiry scan interval")
-	dbURL := flag.String("db-url", "", "PostgreSQL DSN; migrations run at startup when set (defaults to $DATABASE_URL)")
+	dbURL := flag.String("db-url", "", "PostgreSQL DSN; enables the postgres repository when set (defaults to $DATABASE_URL)")
 	flag.Parse()
 
+	repo := repository.JobRepository(store.New(*lease, *maxAttempts))
 	if dsn := databaseURL(*dbURL); dsn != "" {
-		if err := migrateDatabase(dsn); err != nil {
+		db, err := openDatabase(dsn)
+		if err != nil {
+			log.Fatalf("connect database: %v", err)
+		}
+		defer db.Close()
+
+		if err := migrate.Apply(context.Background(), db); err != nil {
 			log.Fatalf("migrate database: %v", err)
 		}
-		log.Printf("database migrations up to date")
+		repo = postgres.New(db, *lease, *maxAttempts)
+		log.Printf("using postgres job repository")
 	}
-
-	st := store.New(*lease, *maxAttempts)
 
 	// Background lease expiry: requeue jobs whose lease elapsed.
 	go func() {
 		ticker := time.NewTicker(*expireInterval)
 		defer ticker.Stop()
 		for range ticker.C {
-			if n := st.RequeueExpired(time.Now()); n > 0 {
+			n, err := repo.RequeueExpired(time.Now())
+			if err != nil {
+				log.Printf("requeue expired: %v", err)
+				continue
+			}
+			if n > 0 {
 				log.Printf("requeued %d jobs with expired lease", n)
 			}
 		}
 	}()
 
-	srv := server.New(st)
+	srv := server.New(repo)
 	log.Printf("job queue listening on %s (lease=%s, max-attempts=%d)", *addr, *lease, *maxAttempts)
 	if err := http.ListenAndServe(*addr, srv.Handler()); err != nil {
 		log.Fatal(err)
@@ -60,19 +73,19 @@ func databaseURL(flagValue string) string {
 	return os.Getenv("DATABASE_URL")
 }
 
-// migrateDatabase connects to PostgreSQL and applies pending migrations.
-func migrateDatabase(dsn string) error {
+// openDatabase opens and verifies a PostgreSQL connection.
+func openDatabase(dsn string) (*sql.DB, error) {
 	db, err := sql.Open("pgx", dsn)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	defer db.Close()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
 	if err := db.PingContext(ctx); err != nil {
-		return err
+		db.Close()
+		return nil, err
 	}
-	return migrate.Apply(ctx, db)
+	return db, nil
 }

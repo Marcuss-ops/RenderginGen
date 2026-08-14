@@ -18,17 +18,18 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/Marcuss-ops/RenderginGen/queue/internal/store"
+	"github.com/Marcuss-ops/RenderginGen/queue/internal/model"
+	"github.com/Marcuss-ops/RenderginGen/queue/internal/repository"
 )
 
-// Server wraps the store with HTTP handlers.
+// Server wraps the job repository with HTTP handlers.
 type Server struct {
-	store *store.Store
+	repo repository.JobRepository
 }
 
-// New creates a server backed by the given store.
-func New(s *store.Store) *Server {
-	return &Server{store: s}
+// New creates a server backed by the given job repository.
+func New(r repository.JobRepository) *Server {
+	return &Server{repo: r}
 }
 
 // Handler returns the HTTP handler with all routes registered.
@@ -45,7 +46,7 @@ func (s *Server) Handler() http.Handler {
 }
 
 func (s *Server) submit(w http.ResponseWriter, r *http.Request) {
-	var job store.Job
+	var job model.Job
 	if err := json.NewDecoder(r.Body).Decode(&job); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -53,7 +54,7 @@ func (s *Server) submit(w http.ResponseWriter, r *http.Request) {
 	if job.ID == "" {
 		job.ID = newID()
 	}
-	if err := s.store.Submit(job); err != nil {
+	if err := s.repo.Submit(job); err != nil {
 		http.Error(w, err.Error(), http.StatusConflict)
 		return
 	}
@@ -69,7 +70,7 @@ func (s *Server) claim(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	job, lease, err := s.store.Claim(req.Worker)
+	job, lease, err := s.repo.Claim(req.Worker)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -94,7 +95,7 @@ func (s *Server) complete(w http.ResponseWriter, r *http.Request) {
 	}
 	_ = json.NewDecoder(r.Body).Decode(&req)
 
-	if err := s.store.Complete(id, req.Worker); err != nil {
+	if err := s.repo.Complete(id, req.Worker); err != nil {
 		http.Error(w, err.Error(), http.StatusConflict)
 		return
 	}
@@ -111,7 +112,7 @@ func (s *Server) fail(w http.ResponseWriter, r *http.Request) {
 	}
 	_ = json.NewDecoder(r.Body).Decode(&req)
 
-	if err := s.store.Fail(id, req.Worker, req.Data.Reason); err != nil {
+	if err := s.repo.Fail(id, req.Worker, req.Data.Reason); err != nil {
 		http.Error(w, err.Error(), http.StatusConflict)
 		return
 	}
@@ -125,7 +126,7 @@ func (s *Server) renew(w http.ResponseWriter, r *http.Request) {
 	}
 	_ = json.NewDecoder(r.Body).Decode(&req)
 
-	if err := s.store.Renew(id, req.Worker); err != nil {
+	if err := s.repo.Renew(id, req.Worker); err != nil {
 		http.Error(w, err.Error(), http.StatusConflict)
 		return
 	}
@@ -133,7 +134,7 @@ func (s *Server) renew(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) depth(w http.ResponseWriter, _ *http.Request) {
-	writeJSON(w, http.StatusOK, s.store.Stats())
+	writeJSON(w, http.StatusOK, s.repo.Stats())
 }
 
 func (s *Server) health(w http.ResponseWriter, _ *http.Request) {
@@ -144,7 +145,7 @@ func (s *Server) health(w http.ResponseWriter, _ *http.Request) {
 type claimResponse struct {
 	ID          string           `json:"id"`
 	OverlaySpec json.RawMessage  `json:"overlay_spec"`
-	Assets      []store.AssetRef `json:"assets"`
+	Assets      []model.AssetRef `json:"assets"`
 	Lease       time.Duration    `json:"lease"`
 }
 
