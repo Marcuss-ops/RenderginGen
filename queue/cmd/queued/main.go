@@ -11,10 +11,11 @@ import (
 	"time"
 
 	"github.com/Marcuss-ops/RenderginGen/queue/internal/migrate"
-	"github.com/Marcuss-ops/RenderginGen/queue/internal/postgres"
 	"github.com/Marcuss-ops/RenderginGen/queue/internal/repository"
+	"github.com/Marcuss-ops/RenderginGen/queue/internal/repository/memory"
+	"github.com/Marcuss-ops/RenderginGen/queue/internal/repository/postgres"
 	"github.com/Marcuss-ops/RenderginGen/queue/internal/server"
-	"github.com/Marcuss-ops/RenderginGen/queue/internal/store"
+	"github.com/Marcuss-ops/RenderginGen/queue/internal/service"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
@@ -27,7 +28,8 @@ func main() {
 	dbURL := flag.String("db-url", "", "PostgreSQL DSN; enables the postgres repository when set (defaults to $DATABASE_URL)")
 	flag.Parse()
 
-	repo := repository.JobRepository(store.New(*lease, *maxAttempts))
+	// In-memory is the default backend; PostgreSQL is used when configured.
+	repo := repository.JobRepository(memory.New(*lease, *maxAttempts))
 	if dsn := databaseURL(*dbURL); dsn != "" {
 		db, err := openDatabase(dsn)
 		if err != nil {
@@ -42,12 +44,14 @@ func main() {
 		log.Printf("using postgres job repository")
 	}
 
+	svc := service.New(repo)
+
 	// Background lease expiry: requeue jobs whose lease elapsed.
 	go func() {
 		ticker := time.NewTicker(*expireInterval)
 		defer ticker.Stop()
 		for range ticker.C {
-			n, err := repo.RequeueExpired(time.Now())
+			n, err := svc.RequeueExpired(time.Now())
 			if err != nil {
 				log.Printf("requeue expired: %v", err)
 				continue
@@ -58,7 +62,7 @@ func main() {
 		}
 	}()
 
-	srv := server.New(repo)
+	srv := server.New(svc)
 	log.Printf("job queue listening on %s (lease=%s, max-attempts=%d)", *addr, *lease, *maxAttempts)
 	if err := http.ListenAndServe(*addr, srv.Handler()); err != nil {
 		log.Fatal(err)

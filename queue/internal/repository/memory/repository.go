@@ -1,11 +1,11 @@
-// Package store implements the in-memory job queue, used as the default
+// Package memory implements the in-memory job queue, used as the default
 // (non-persistent) backend for local development and tests. It implements
 // repository.JobRepository, so it can be swapped for the PostgreSQL backend.
 //
 // Jobs are pulled (claimed) by workers instead of being pushed. A claim
 // carries a lease: if the worker dies before completing, the lease expires
 // and the job is requeued for another worker.
-package store
+package memory
 
 import (
 	"fmt"
@@ -16,8 +16,8 @@ import (
 	"github.com/Marcuss-ops/RenderginGen/queue/internal/repository"
 )
 
-// Store is a thread-safe in-memory job queue with lease expiry.
-type Store struct {
+// Repository is a thread-safe in-memory job queue with lease expiry.
+type Repository struct {
 	mu          sync.Mutex
 	jobs        map[string]*model.Job
 	order       []string // FIFO order of pending job IDs
@@ -25,12 +25,12 @@ type Store struct {
 	maxAttempts int
 }
 
-// Compile-time check that Store satisfies the repository contract.
-var _ repository.JobRepository = (*Store)(nil)
+// Compile-time check that Repository satisfies the repository contract.
+var _ repository.JobRepository = (*Repository)(nil)
 
 // New creates a queue with the given lease duration and max attempts per job.
-func New(lease time.Duration, maxAttempts int) *Store {
-	return &Store{
+func New(lease time.Duration, maxAttempts int) *Repository {
+	return &Repository{
 		jobs:        make(map[string]*model.Job),
 		lease:       lease,
 		maxAttempts: maxAttempts,
@@ -38,7 +38,7 @@ func New(lease time.Duration, maxAttempts int) *Store {
 }
 
 // Submit enqueues a job. The ID is required and must be unique.
-func (s *Store) Submit(job model.Job) error {
+func (s *Repository) Submit(job model.Job) error {
 	if job.ID == "" {
 		return fmt.Errorf("job id is required")
 	}
@@ -56,7 +56,7 @@ func (s *Store) Submit(job model.Job) error {
 
 // Claim atomically claims the oldest pending job for a worker and returns it
 // with its lease duration. It returns nil when the queue is empty.
-func (s *Store) Claim(workerID string) (*model.Job, time.Duration, error) {
+func (s *Repository) Claim(workerID string) (*model.Job, time.Duration, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -76,7 +76,7 @@ func (s *Store) Claim(workerID string) (*model.Job, time.Duration, error) {
 }
 
 // Complete marks a running job as completed.
-func (s *Store) Complete(id, workerID string) error {
+func (s *Repository) Complete(id, workerID string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -90,7 +90,7 @@ func (s *Store) Complete(id, workerID string) error {
 
 // Fail marks a running job failed. Jobs that have not exhausted their attempts
 // are requeued; otherwise they are permanently failed.
-func (s *Store) Fail(id, workerID, reason string) error {
+func (s *Repository) Fail(id, workerID, reason string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -110,7 +110,7 @@ func (s *Store) Fail(id, workerID, reason string) error {
 }
 
 // Renew extends the lease for a running job owned by workerID.
-func (s *Store) Renew(id, workerID string) error {
+func (s *Repository) Renew(id, workerID string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -125,7 +125,7 @@ func (s *Store) Renew(id, workerID string) error {
 // RequeueExpired moves running jobs whose lease has elapsed back to pending,
 // or permanently fails them if they exhausted their attempts. It returns the
 // number of jobs affected.
-func (s *Store) RequeueExpired(now time.Time) (int, error) {
+func (s *Repository) RequeueExpired(now time.Time) (int, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -148,7 +148,7 @@ func (s *Store) RequeueExpired(now time.Time) (int, error) {
 }
 
 // Stats returns a snapshot of the queue state.
-func (s *Store) Stats() model.Stats {
+func (s *Repository) Stats() model.Stats {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -169,7 +169,7 @@ func (s *Store) Stats() model.Stats {
 }
 
 // runningJob returns the job if it is running and owned by workerID.
-func (s *Store) runningJob(id, workerID string) (*model.Job, error) {
+func (s *Repository) runningJob(id, workerID string) (*model.Job, error) {
 	job := s.jobs[id]
 	if job == nil {
 		return nil, fmt.Errorf("job %s not found", id)

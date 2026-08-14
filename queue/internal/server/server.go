@@ -19,17 +19,17 @@ import (
 	"time"
 
 	"github.com/Marcuss-ops/RenderginGen/queue/internal/model"
-	"github.com/Marcuss-ops/RenderginGen/queue/internal/repository"
+	"github.com/Marcuss-ops/RenderginGen/queue/internal/service"
 )
 
-// Server wraps the job repository with HTTP handlers.
+// Server wraps the job service with HTTP handlers.
 type Server struct {
-	repo repository.JobRepository
+	svc *service.Service
 }
 
-// New creates a server backed by the given job repository.
-func New(r repository.JobRepository) *Server {
-	return &Server{repo: r}
+// New creates a server backed by the given job service.
+func New(s *service.Service) *Server {
+	return &Server{svc: s}
 }
 
 // Handler returns the HTTP handler with all routes registered.
@@ -54,7 +54,7 @@ func (s *Server) submit(w http.ResponseWriter, r *http.Request) {
 	if job.ID == "" {
 		job.ID = newID()
 	}
-	if err := s.repo.Submit(job); err != nil {
+	if err := s.svc.Submit(job); err != nil {
 		http.Error(w, err.Error(), http.StatusConflict)
 		return
 	}
@@ -70,7 +70,7 @@ func (s *Server) claim(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	job, lease, err := s.repo.Claim(req.Worker)
+	job, lease, err := s.svc.Claim(req.Worker)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -95,7 +95,7 @@ func (s *Server) complete(w http.ResponseWriter, r *http.Request) {
 	}
 	_ = json.NewDecoder(r.Body).Decode(&req)
 
-	if err := s.repo.Complete(id, req.Worker); err != nil {
+	if err := s.svc.Complete(id, req.Worker); err != nil {
 		http.Error(w, err.Error(), http.StatusConflict)
 		return
 	}
@@ -112,7 +112,7 @@ func (s *Server) fail(w http.ResponseWriter, r *http.Request) {
 	}
 	_ = json.NewDecoder(r.Body).Decode(&req)
 
-	if err := s.repo.Fail(id, req.Worker, req.Data.Reason); err != nil {
+	if err := s.svc.Fail(id, req.Worker, req.Data.Reason); err != nil {
 		http.Error(w, err.Error(), http.StatusConflict)
 		return
 	}
@@ -126,7 +126,7 @@ func (s *Server) renew(w http.ResponseWriter, r *http.Request) {
 	}
 	_ = json.NewDecoder(r.Body).Decode(&req)
 
-	if err := s.repo.Renew(id, req.Worker); err != nil {
+	if err := s.svc.Renew(id, req.Worker); err != nil {
 		http.Error(w, err.Error(), http.StatusConflict)
 		return
 	}
@@ -134,7 +134,7 @@ func (s *Server) renew(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) depth(w http.ResponseWriter, _ *http.Request) {
-	writeJSON(w, http.StatusOK, s.repo.Stats())
+	writeJSON(w, http.StatusOK, s.svc.Stats())
 }
 
 func (s *Server) health(w http.ResponseWriter, _ *http.Request) {

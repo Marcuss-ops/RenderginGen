@@ -8,13 +8,15 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Marcuss-ops/RenderginGen/queue/internal/store"
+	"github.com/Marcuss-ops/RenderginGen/queue/internal/repository/memory"
+	"github.com/Marcuss-ops/RenderginGen/queue/internal/service"
 )
 
 func newServer(t *testing.T) *httptest.Server {
 	t.Helper()
-	st := store.New(30*time.Second, 3)
-	ts := httptest.NewServer(New(st).Handler())
+	repo := memory.New(30*time.Second, 3)
+	svc := service.New(repo)
+	ts := httptest.NewServer(New(svc).Handler())
 	t.Cleanup(ts.Close)
 	return ts
 }

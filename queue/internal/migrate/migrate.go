@@ -2,7 +2,9 @@
 //
 // Migrations are tracked in a schema_migrations table and applied
 // transactionally, one file at a time, in lexicographic order. Apply is
-// idempotent and safe to call on every startup.
+// idempotent and safe to call on every startup; a Postgres advisory lock
+// serializes concurrent migrators (multiple queue replicas, or parallel
+// integration tests sharing a database).
 package migrate
 
 import (
@@ -14,9 +16,40 @@ import (
 	"github.com/Marcuss-ops/RenderginGen/queue/migrations"
 )
 
+// migrationLockKey is the advisory lock used to serialize migrations.
+const migrationLockKey = 794237183 // arbitrary, unique to the RenderingGen queue
+
+// sqlDB is the subset of *sql.DB / *sql.Conn used by the migrator.
+type sqlDB interface {
+	ExecContext(ctx context.Context, query string, args ...any) (sql.Result, error)
+	QueryContext(ctx context.Context, query string, args ...any) (*sql.Rows, error)
+	QueryRowContext(ctx context.Context, query string, args ...any) *sql.Row
+	BeginTx(ctx context.Context, opts *sql.TxOptions) (*sql.Tx, error)
+}
+
 // Apply runs all pending migrations against db. A migration is considered
 // applied when its filename is recorded in schema_migrations.
 func Apply(ctx context.Context, db *sql.DB) error {
+	// Pin a single connection and hold a session-level advisory lock for the
+	// whole run so concurrent migrators cannot race on CREATE TABLE.
+	conn, err := db.Conn(ctx)
+	if err != nil {
+		return fmt.Errorf("acquire connection: %w", err)
+	}
+	defer conn.Close()
+
+	if _, err := conn.ExecContext(ctx, `SELECT pg_advisory_lock($1)`, migrationLockKey); err != nil {
+		return fmt.Errorf("acquire migration lock: %w", err)
+	}
+	defer func() {
+		_, _ = conn.ExecContext(context.Background(), `SELECT pg_advisory_unlock($1)`, migrationLockKey)
+	}()
+
+	return apply(ctx, conn)
+}
+
+// apply runs the migration steps against a single pinned connection.
+func apply(ctx context.Context, db sqlDB) error {
 	if err := ensureLedger(ctx, db); err != nil {
 		return err
 	}
@@ -43,7 +76,7 @@ func Apply(ctx context.Context, db *sql.DB) error {
 }
 
 // ensureLedger creates the migration ledger table if it does not exist.
-func ensureLedger(ctx context.Context, db *sql.DB) error {
+func ensureLedger(ctx context.Context, db sqlDB) error {
 	const ddl = `CREATE TABLE IF NOT EXISTS schema_migrations (
 		version    TEXT PRIMARY KEY,
 		applied_at TIMESTAMPTZ NOT NULL DEFAULT now()
@@ -55,7 +88,7 @@ func ensureLedger(ctx context.Context, db *sql.DB) error {
 }
 
 // appliedVersions returns the set of migration filenames already applied.
-func appliedVersions(ctx context.Context, db *sql.DB) (map[string]bool, error) {
+func appliedVersions(ctx context.Context, db sqlDB) (map[string]bool, error) {
 	rows, err := db.QueryContext(ctx, `SELECT version FROM schema_migrations`)
 	if err != nil {
 		return nil, fmt.Errorf("read schema_migrations: %w", err)
@@ -75,7 +108,7 @@ func appliedVersions(ctx context.Context, db *sql.DB) (map[string]bool, error) {
 
 // applyOne applies a single migration file inside a transaction and records it
 // in the ledger only after the DDL succeeds.
-func applyOne(ctx context.Context, db *sql.DB, name string) error {
+func applyOne(ctx context.Context, db sqlDB, name string) error {
 	script, err := migrations.FS.ReadFile(name)
 	if err != nil {
 		return fmt.Errorf("read migration %s: %w", name, err)

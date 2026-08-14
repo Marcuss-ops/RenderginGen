@@ -1,4 +1,4 @@
-package store
+package memory
 
 import (
 	"encoding/json"
@@ -8,7 +8,7 @@ import (
 	"github.com/Marcuss-ops/RenderginGen/queue/internal/model"
 )
 
-func submit(t *testing.T, s *Store, id string) {
+func submit(t *testing.T, s *Repository, id string) {
 	t.Helper()
 	job := model.Job{ID: id, OverlaySpec: json.RawMessage(`{"n":1}`)}
 	if err := s.Submit(job); err != nil {
