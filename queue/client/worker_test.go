@@ -1,0 +1,130 @@
+package client
+
+import (
+	"context"
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
+	"sync/atomic"
+	"testing"
+	"time"
+)
+
+func TestClaimDecodesJobAndLease(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/jobs/claim" || r.Method != http.MethodPost {
+			t.Errorf("unexpected request: %s %s", r.Method, r.URL.Path)
+		}
+		var body map[string]string
+		_ = json.NewDecoder(r.Body).Decode(&body)
+		if body["worker"] != "w1" {
+			t.Errorf("worker = %q", body["worker"])
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"id":"job-1","overlay_spec":{"o":1},"assets":[{"hash":"abc"}],"lease":60000000000}`))
+	}))
+	defer srv.Close()
+
+	c := New(srv.URL)
+	job, err := c.Claim(context.Background(), "w1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if job == nil || job.ID != "job-1" || job.Lease != 60*time.Second {
+		t.Fatalf("unexpected job: %+v", job)
+	}
+	if len(job.Assets) != 1 || job.Assets[0].Hash != "abc" {
+		t.Fatalf("assets: %+v", job.Assets)
+	}
+}
+
+func TestClaimEmptyReturnsNil(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusNoContent)
+	}))
+	defer srv.Close()
+
+	c := New(srv.URL)
+	job, err := c.Claim(context.Background(), "w1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if job != nil {
+		t.Fatalf("want nil job, got %+v", job)
+	}
+}
+
+func TestCompleteSendsWorkerAndArtifact(t *testing.T) {
+	var got struct {
+		Worker string   `json:"worker"`
+		Data   Artifact `json:"data"`
+	}
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/jobs/job-1/complete" || r.Method != http.MethodPost {
+			t.Errorf("unexpected request: %s %s", r.Method, r.URL.Path)
+		}
+		_ = json.NewDecoder(r.Body).Decode(&got)
+		w.WriteHeader(http.StatusNoContent)
+	}))
+	defer srv.Close()
+
+	c := New(srv.URL)
+	err := c.Complete(context.Background(), "job-1", "w1", Artifact{
+		ID: "art-1", ProfileID: "velox-h264-copy-v1", CopyEligible: true, ClosedGOP: true,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.Worker != "w1" || got.Data.ID != "art-1" || !got.Data.CopyEligible || !got.Data.ClosedGOP {
+		t.Fatalf("unexpected body: %+v", got)
+	}
+}
+
+func TestFailSendsReason(t *testing.T) {
+	var got struct {
+		Data struct {
+			Reason string `json:"reason"`
+		} `json:"data"`
+	}
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/jobs/job-1/fail" {
+			t.Errorf("unexpected path: %s", r.URL.Path)
+		}
+		_ = json.NewDecoder(r.Body).Decode(&got)
+		w.WriteHeader(http.StatusNoContent)
+	}))
+	defer srv.Close()
+
+	c := New(srv.URL)
+	if err := c.Fail(context.Background(), "job-1", "w1", "boom"); err != nil {
+		t.Fatal(err)
+	}
+	if got.Data.Reason != "boom" {
+		t.Fatalf("reason = %q", got.Data.Reason)
+	}
+}
+
+func TestRenewSendsWorker(t *testing.T) {
+	var calls int32
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/jobs/job-1/renew" || r.Method != http.MethodPost {
+			t.Errorf("unexpected request: %s %s", r.Method, r.URL.Path)
+		}
+		var body map[string]string
+		_ = json.NewDecoder(r.Body).Decode(&body)
+		if body["worker"] != "w1" {
+			t.Errorf("worker = %q", body["worker"])
+		}
+		atomic.AddInt32(&calls, 1)
+		w.WriteHeader(http.StatusNoContent)
+	}))
+	defer srv.Close()
+
+	c := New(srv.URL)
+	if err := c.Renew(context.Background(), "job-1", "w1"); err != nil {
+		t.Fatal(err)
+	}
+	if atomic.LoadInt32(&calls) != 1 {
+		t.Fatalf("want 1 renew call, got %d", calls)
+	}
+}
