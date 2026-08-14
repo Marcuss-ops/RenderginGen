@@ -22,18 +22,23 @@ type Repository struct {
 	jobs        map[string]*model.Job
 	artifacts   map[string]model.Artifact
 	order       []string // FIFO order of pending job IDs
+	workers     map[string]model.Worker
 	lease       time.Duration
 	maxAttempts int
 }
 
-// Compile-time check that Repository satisfies the repository contract.
-var _ repository.JobRepository = (*Repository)(nil)
+// Compile-time check that Repository satisfies the repository contracts.
+var (
+	_ repository.JobRepository    = (*Repository)(nil)
+	_ repository.WorkerRepository = (*Repository)(nil)
+)
 
 // New creates a queue with the given lease duration and max attempts per job.
 func New(lease time.Duration, maxAttempts int) *Repository {
 	return &Repository{
 		jobs:        make(map[string]*model.Job),
 		artifacts:   make(map[string]model.Artifact),
+		workers:     make(map[string]model.Worker),
 		lease:       lease,
 		maxAttempts: maxAttempts,
 	}

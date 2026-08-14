@@ -21,6 +21,8 @@ type Metrics struct {
 	RenderDuration prometheus.Histogram
 	QueueWait      prometheus.Histogram
 	LeaseExpired   prometheus.Counter
+	WorkersReady   prometheus.Gauge
+	WorkersOffline prometheus.Gauge
 }
 
 // New constructs a Metrics with its own registry and registers all collectors.
@@ -45,8 +47,16 @@ func New() *Metrics {
 			Name: "renderinggen_lease_expired_total",
 			Help: "Number of jobs whose lease expired and were requeued or failed.",
 		}),
+		WorkersReady: prometheus.NewGauge(prometheus.GaugeOpts{
+			Name: "renderinggen_workers_ready",
+			Help: "Number of rendering workers currently ready (fresh heartbeat).",
+		}),
+		WorkersOffline: prometheus.NewGauge(prometheus.GaugeOpts{
+			Name: "renderinggen_workers_offline",
+			Help: "Number of rendering workers whose heartbeat has gone stale.",
+		}),
 	}
-	m.registry.MustRegister(m.JobsPending, m.RenderDuration, m.QueueWait, m.LeaseExpired)
+	m.registry.MustRegister(m.JobsPending, m.RenderDuration, m.QueueWait, m.LeaseExpired, m.WorkersReady, m.WorkersOffline)
 	return m
 }
 

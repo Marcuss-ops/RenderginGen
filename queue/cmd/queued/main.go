@@ -26,11 +26,15 @@ func main() {
 	lease := flag.Duration("lease", 30*time.Second, "job lease duration")
 	maxAttempts := flag.Int("max-attempts", 3, "max attempts before a job is permanently failed")
 	expireInterval := flag.Duration("expire-interval", 5*time.Second, "lease expiry scan interval")
+	workerStale := flag.Duration("worker-stale-after", 90*time.Second, "worker heartbeat staleness threshold")
 	dbURL := flag.String("db-url", "", "PostgreSQL DSN; enables the postgres repository when set (defaults to $DATABASE_URL)")
 	flag.Parse()
 
 	// In-memory is the default backend; PostgreSQL is used when configured.
-	repo := repository.JobRepository(memory.New(*lease, *maxAttempts))
+	// Both backends implement the job and worker contracts.
+	memRepo := memory.New(*lease, *maxAttempts)
+	repo := repository.JobRepository(memRepo)
+	var workerRepo repository.WorkerRepository = memRepo
 	if dsn := databaseURL(*dbURL); dsn != "" {
 		db, err := openDatabase(dsn)
 		if err != nil {
@@ -41,11 +45,14 @@ func main() {
 		if err := migrate.Apply(context.Background(), db); err != nil {
 			log.Fatalf("migrate database: %v", err)
 		}
-		repo = postgres.New(db, *lease, *maxAttempts)
+		pgRepo := postgres.New(db, *lease, *maxAttempts)
+		repo = pgRepo
+		workerRepo = pgRepo
 		log.Printf("using postgres job repository")
 	}
 
 	svc := service.New(repo)
+	svc.SetWorkerRepository(workerRepo, *workerStale)
 	m := metrics.New()
 	svc.SetMetrics(m)
 
@@ -62,6 +69,9 @@ func main() {
 			if n > 0 {
 				log.Printf("requeued %d jobs with expired lease", n)
 			}
+			// Refresh worker liveness so ready/offline gauges decay as
+			// heartbeats age without requiring a new heartbeat.
+			svc.RefreshWorkerHealth()
 		}
 	}()
 

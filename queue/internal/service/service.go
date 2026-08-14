@@ -17,8 +17,10 @@ import (
 
 // Service is the job queue application service.
 type Service struct {
-	repo    repository.JobRepository
-	metrics *metrics.Metrics
+	repo       repository.JobRepository
+	workerRepo repository.WorkerRepository
+	staleAfter time.Duration
+	metrics    *metrics.Metrics
 }
 
 // New creates a service backed by the given repository.
@@ -30,6 +32,14 @@ func New(repo repository.JobRepository) *Service {
 // is a no-op so tests and lightweight deployments can run without them.
 func (s *Service) SetMetrics(m *metrics.Metrics) {
 	s.metrics = m
+}
+
+// SetWorkerRepository wires the worker registry and the heartbeat-staleness
+// window used to classify workers as offline. A nil repository disables the
+// worker surface and its metrics.
+func (s *Service) SetWorkerRepository(repo repository.WorkerRepository, staleAfter time.Duration) {
+	s.workerRepo = repo
+	s.staleAfter = staleAfter
 }
 
 // Submit enqueues a job. The ID is required and must be unique.

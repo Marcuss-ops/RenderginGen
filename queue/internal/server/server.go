@@ -52,6 +52,10 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /jobs/{id}", s.get)
 	mux.HandleFunc("GET /jobs/depth", s.depth)
 	mux.HandleFunc("GET /health", s.health)
+	mux.HandleFunc("POST /workers/register", s.registerWorker)
+	mux.HandleFunc("POST /workers/heartbeat", s.heartbeat)
+	mux.HandleFunc("GET /workers", s.listWorkers)
+	mux.HandleFunc("GET /workers/health", s.workerHealth)
 	if s.metricsHandler != nil {
 		mux.Handle("GET /metrics", s.metricsHandler)
 	}

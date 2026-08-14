@@ -44,6 +44,7 @@ func TestApplyAgainstPostgres(t *testing.T) {
 		"rendering_workers",
 		"render_events",
 		"processing_metrics",
+		"worker_heartbeats",
 	} {
 		var exists bool
 		err := db.QueryRowContext(ctx, `SELECT EXISTS (
@@ -62,7 +63,7 @@ func TestApplyAgainstPostgres(t *testing.T) {
 	if err := db.QueryRowContext(ctx, `SELECT count(*) FROM schema_migrations`).Scan(&count); err != nil {
 		t.Fatal(err)
 	}
-	if count != 7 {
-		t.Errorf("want 7 applied migrations, got %d", count)
+	if count != 8 {
+		t.Errorf("want 8 applied migrations, got %d", count)
 	}
 }
