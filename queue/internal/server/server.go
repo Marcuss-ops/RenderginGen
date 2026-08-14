@@ -26,12 +26,19 @@ import (
 
 // Server wraps the job service with HTTP handlers.
 type Server struct {
-	svc *service.Service
+	svc            *service.Service
+	metricsHandler http.Handler
 }
 
 // New creates a server backed by the given job service.
 func New(s *service.Service) *Server {
 	return &Server{svc: s}
+}
+
+// SetMetricsHandler attaches an optional Prometheus exposition handler served
+// at GET /metrics. It is a no-op when the handler is nil.
+func (s *Server) SetMetricsHandler(h http.Handler) {
+	s.metricsHandler = h
 }
 
 // Handler returns the HTTP handler with all routes registered.
@@ -45,6 +52,9 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /jobs/{id}", s.get)
 	mux.HandleFunc("GET /jobs/depth", s.depth)
 	mux.HandleFunc("GET /health", s.health)
+	if s.metricsHandler != nil {
+		mux.Handle("GET /metrics", s.metricsHandler)
+	}
 	return mux
 }
 

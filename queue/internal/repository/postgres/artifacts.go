@@ -46,12 +46,12 @@ func insertArtifact(ctx context.Context, tx *sql.Tx, jobID string, a model.Artif
 func getArtifact(ctx context.Context, db *sql.DB, id string) (*model.Artifact, error) {
 	var a model.Artifact
 	var (
-		storageKey, url, sha256, mimeType         sql.NullString
-		profileID, codec, codecProfile            sql.NullString
-		sizeBytes                                 sql.NullInt64
-		width, height, fpsNum, fpsDen             sql.NullInt64
-		frameCount, durationUS                    sql.NullInt64
-		copyEligible, closedGOP, firstFrameKey    sql.NullBool
+		storageKey, url, sha256, mimeType      sql.NullString
+		profileID, codec, codecProfile         sql.NullString
+		sizeBytes                              sql.NullInt64
+		width, height, fpsNum, fpsDen          sql.NullInt64
+		frameCount, durationUS                 sql.NullInt64
+		copyEligible, closedGOP, firstFrameKey sql.NullBool
 	)
 	err := db.QueryRowContext(ctx, `
 		SELECT id, kind, storage_key, artifact_url, sha256, mime_type, size_bytes,

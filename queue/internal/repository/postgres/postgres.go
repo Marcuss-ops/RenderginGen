@@ -100,14 +100,15 @@ func (r *Repository) Claim(workerID string) (*model.Job, time.Duration, error) {
 		overlay  []byte
 		manifest []byte
 		attempts int
+		queuedAt time.Time
 	)
 	err = tx.QueryRowContext(ctx, `
-		SELECT id, overlay_spec, input_manifest, attempt_count
+		SELECT id, overlay_spec, input_manifest, attempt_count, queued_at
 		FROM render_jobs
 		WHERE state = 'pending'
 		ORDER BY priority DESC, queued_at ASC
 		FOR UPDATE SKIP LOCKED
-		LIMIT 1`).Scan(&id, &overlay, &manifest, &attempts)
+		LIMIT 1`).Scan(&id, &overlay, &manifest, &attempts, &queuedAt)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, 0, nil
 	}
@@ -125,7 +126,7 @@ func (r *Repository) Claim(workerID string) (*model.Job, time.Duration, error) {
 		SET state = 'running',
 		    current_worker_id = $2,
 		    lease_until = $3,
-		    started_at = COALESCE(started_at, $4),
+		    started_at = $4,
 		    attempt_count = attempt_count + 1
 		WHERE id = $1`, id, workerID, leaseUntil, now); err != nil {
 		return nil, 0, err
@@ -146,6 +147,8 @@ func (r *Repository) Claim(workerID string) (*model.Job, time.Duration, error) {
 		State:       model.StateRunning,
 		Worker:      workerID,
 		Attempts:    attemptNumber,
+		QueuedAt:    queuedAt,
+		StartedAt:   now,
 		LeaseUntil:  leaseUntil,
 	}
 	return job, r.lease, nil
@@ -156,22 +159,27 @@ func (r *Repository) Get(id string) (*model.Job, error) {
 	ctx := context.Background()
 
 	var (
-		job        model.Job
-		state      string
-		overlay    []byte
-		manifest   []byte
-		worker     sql.NullString
-		leaseUntil sql.NullTime
-		errorMsg   sql.NullString
-		artifactID sql.NullString
+		job         model.Job
+		state       string
+		overlay     []byte
+		manifest    []byte
+		worker      sql.NullString
+		queuedAt    sql.NullTime
+		startedAt   sql.NullTime
+		completedAt sql.NullTime
+		leaseUntil  sql.NullTime
+		errorMsg    sql.NullString
+		artifactID  sql.NullString
 	)
 	err := r.db.QueryRowContext(ctx, `
 		SELECT id, state, overlay_spec, input_manifest, attempt_count,
-		       current_worker_id, lease_until, error_message, artifact_id
+		       current_worker_id, queued_at, started_at, completed_at,
+		       lease_until, error_message, artifact_id
 		FROM render_jobs
 		WHERE id = $1`, id).Scan(
 		&job.ID, &state, &overlay, &manifest, &job.Attempts,
-		&worker, &leaseUntil, &errorMsg, &artifactID)
+		&worker, &queuedAt, &startedAt, &completedAt,
+		&leaseUntil, &errorMsg, &artifactID)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, fmt.Errorf("job %s: %w", id, repository.ErrNotFound)
 	}
@@ -184,6 +192,15 @@ func (r *Repository) Get(id string) (*model.Job, error) {
 	job.Assets = decodeAssets(manifest)
 	if worker.Valid {
 		job.Worker = worker.String
+	}
+	if queuedAt.Valid {
+		job.QueuedAt = queuedAt.Time
+	}
+	if startedAt.Valid {
+		job.StartedAt = startedAt.Time
+	}
+	if completedAt.Valid {
+		job.CompletedAt = completedAt.Time
 	}
 	if leaseUntil.Valid {
 		job.LeaseUntil = leaseUntil.Time

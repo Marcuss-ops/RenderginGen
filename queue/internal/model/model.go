@@ -29,12 +29,15 @@ type Job struct {
 	OverlaySpec json.RawMessage `json:"overlay_spec"`
 	Assets      []AssetRef      `json:"assets"`
 
-	State      State     `json:"state"`
-	Worker     string    `json:"worker,omitempty"`
-	Attempts   int       `json:"attempts"`
-	CreatedAt  time.Time `json:"created_at"`
-	LeaseUntil time.Time `json:"lease_until,omitempty"`
-	FailReason string    `json:"fail_reason,omitempty"`
+	State       State     `json:"state"`
+	Worker      string    `json:"worker,omitempty"`
+	Attempts    int       `json:"attempts"`
+	CreatedAt   time.Time `json:"created_at"`
+	QueuedAt    time.Time `json:"queued_at,omitempty"`
+	StartedAt   time.Time `json:"started_at,omitempty"`
+	CompletedAt time.Time `json:"completed_at,omitempty"`
+	LeaseUntil  time.Time `json:"lease_until,omitempty"`
+	FailReason  string    `json:"fail_reason,omitempty"`
 
 	// Artifact is the rendered artifact, populated once the job completes.
 	Artifact *Artifact `json:"artifact,omitempty"`

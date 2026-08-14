@@ -49,8 +49,10 @@ func (s *Repository) Submit(job model.Job) error {
 	if _, exists := s.jobs[job.ID]; exists {
 		return fmt.Errorf("job %s already exists", job.ID)
 	}
+	now := time.Now()
 	job.State = model.StatePending
-	job.CreatedAt = time.Now()
+	job.CreatedAt = now
+	job.QueuedAt = now
 	s.jobs[job.ID] = &job
 	s.order = append(s.order, job.ID)
 	return nil
@@ -71,7 +73,8 @@ func (s *Repository) Claim(workerID string) (*model.Job, time.Duration, error) {
 		job.State = model.StateRunning
 		job.Worker = workerID
 		job.Attempts++
-		job.LeaseUntil = time.Now().Add(s.lease)
+		job.StartedAt = time.Now()
+		job.LeaseUntil = job.StartedAt.Add(s.lease)
 		return job, s.lease, nil
 	}
 	return nil, 0, nil
@@ -103,6 +106,7 @@ func (s *Repository) Complete(id, workerID string, artifact model.Artifact) erro
 		return err
 	}
 	job.State = model.StateCompleted
+	job.CompletedAt = time.Now()
 	s.artifacts[id] = artifact
 	return nil
 }
@@ -124,6 +128,7 @@ func (s *Repository) Fail(id, workerID, reason string) error {
 	}
 	job.State = model.StatePending
 	job.Worker = ""
+	job.QueuedAt = time.Now()
 	s.order = append(s.order, id)
 	return nil
 }
@@ -159,6 +164,7 @@ func (s *Repository) RequeueExpired(now time.Time) (int, error) {
 		} else {
 			job.State = model.StatePending
 			job.Worker = ""
+			job.QueuedAt = time.Now()
 			s.order = append(s.order, job.ID)
 		}
 		n++

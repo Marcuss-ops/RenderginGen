@@ -10,6 +10,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/Marcuss-ops/RenderginGen/queue/internal/metrics"
 	"github.com/Marcuss-ops/RenderginGen/queue/internal/migrate"
 	"github.com/Marcuss-ops/RenderginGen/queue/internal/repository"
 	"github.com/Marcuss-ops/RenderginGen/queue/internal/repository/memory"
@@ -45,6 +46,8 @@ func main() {
 	}
 
 	svc := service.New(repo)
+	m := metrics.New()
+	svc.SetMetrics(m)
 
 	// Background lease expiry: requeue jobs whose lease elapsed.
 	go func() {
@@ -63,6 +66,7 @@ func main() {
 	}()
 
 	srv := server.New(svc)
+	srv.SetMetricsHandler(m.Handler())
 	log.Printf("job queue listening on %s (lease=%s, max-attempts=%d)", *addr, *lease, *maxAttempts)
 	if err := http.ListenAndServe(*addr, srv.Handler()); err != nil {
 		log.Fatal(err)
