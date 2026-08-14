@@ -15,10 +15,11 @@ import (
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
-// newRepo opens a PostgreSQL connection, applies the schema and truncates the
-// queue tables for a deterministic test. It skips unless TEST_DATABASE_URL is
-// set (e.g. in unit CI without a service container).
-func newRepo(t *testing.T, lease time.Duration, maxAttempts int) *Repository {
+// setupRepo opens a PostgreSQL connection, applies the schema and truncates
+// the queue tables for a deterministic test. It skips unless TEST_DATABASE_URL
+// is set (e.g. in unit CI without a service container). It returns both the
+// repository and the *sql.DB so tests can inspect attempts/events.
+func setupRepo(t *testing.T, lease time.Duration, maxAttempts int) (*Repository, *sql.DB) {
 	t.Helper()
 	dsn := os.Getenv("TEST_DATABASE_URL")
 	if dsn == "" {
@@ -41,7 +42,13 @@ func newRepo(t *testing.T, lease time.Duration, maxAttempts int) *Repository {
 	if _, err := db.ExecContext(ctx, `TRUNCATE render_jobs CASCADE`); err != nil {
 		t.Fatal(err)
 	}
-	return New(db, lease, maxAttempts)
+	return New(db, lease, maxAttempts), db
+}
+
+// newRepo is a convenience wrapper for tests that only need the repository.
+func newRepo(t *testing.T, lease time.Duration, maxAttempts int) *Repository {
+	r, _ := setupRepo(t, lease, maxAttempts)
+	return r
 }
 
 func TestSubmitClaimComplete(t *testing.T) {

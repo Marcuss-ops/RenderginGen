@@ -2,6 +2,9 @@
 //
 // Claim uses SELECT ... FOR UPDATE SKIP LOCKED so any number of workers can
 // pull jobs concurrently without two of them ever receiving the same job.
+// Every claim also creates a render_attempt and every state transition appends
+// a render_event, so the full history of a job is preserved and never
+// overwritten.
 package postgres
 
 import (
@@ -53,7 +56,14 @@ func (r *Repository) Submit(job model.Job) error {
 		return fmt.Errorf("input_manifest: %w", err)
 	}
 
-	res, err := r.db.ExecContext(context.Background(), `
+	ctx := context.Background()
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	res, err := tx.ExecContext(ctx, `
 		INSERT INTO render_jobs (id, job_type, overlay_spec, input_manifest, max_attempts)
 		VALUES ($1, $2, $3, $4, $5)
 		ON CONFLICT (id) DO NOTHING`,
@@ -64,7 +74,11 @@ func (r *Repository) Submit(job model.Job) error {
 	if n, _ := res.RowsAffected(); n == 0 {
 		return fmt.Errorf("job %s already exists", job.ID)
 	}
-	return nil
+
+	if err := recordEvent(ctx, tx, eventJobCreated, job.ID, "", "", nil); err != nil {
+		return err
+	}
+	return tx.Commit()
 }
 
 // Claim atomically claims the highest-priority, longest-waiting pending job
@@ -101,6 +115,11 @@ func (r *Repository) Claim(workerID string) (*model.Job, time.Duration, error) {
 		return nil, 0, err
 	}
 
+	attemptNumber := attempts + 1
+	if err := createAttempt(ctx, tx, id, attemptNumber, workerID, now); err != nil {
+		return nil, 0, err
+	}
+
 	if _, err := tx.ExecContext(ctx, `
 		UPDATE render_jobs
 		SET state = 'running',
@@ -109,6 +128,10 @@ func (r *Repository) Claim(workerID string) (*model.Job, time.Duration, error) {
 		    started_at = COALESCE(started_at, $4),
 		    attempt_count = attempt_count + 1
 		WHERE id = $1`, id, workerID, leaseUntil, now); err != nil {
+		return nil, 0, err
+	}
+
+	if err := recordEvent(ctx, tx, eventJobClaimed, id, attemptID(id, attemptNumber), workerID, nil); err != nil {
 		return nil, 0, err
 	}
 
@@ -122,7 +145,7 @@ func (r *Repository) Claim(workerID string) (*model.Job, time.Duration, error) {
 		Assets:      decodeAssets(manifest),
 		State:       model.StateRunning,
 		Worker:      workerID,
-		Attempts:    attempts + 1,
+		Attempts:    attemptNumber,
 		LeaseUntil:  leaseUntil,
 	}
 	return job, r.lease, nil
@@ -130,10 +153,35 @@ func (r *Repository) Claim(workerID string) (*model.Job, time.Duration, error) {
 
 // Complete marks a running job as completed.
 func (r *Repository) Complete(id, workerID string) error {
-	return r.transition(id, workerID, `
+	ctx := context.Background()
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	res, err := tx.ExecContext(ctx, `
 		UPDATE render_jobs
 		SET state = 'completed', completed_at = now()
-		WHERE id = $1 AND state = 'running' AND current_worker_id = $2`)
+		WHERE id = $1 AND state = 'running' AND current_worker_id = $2`, id, workerID)
+	if err != nil {
+		return err
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return fmt.Errorf("job %s is not running or not owned by %s", id, workerID)
+	}
+
+	attempt, err := runningAttemptID(ctx, tx, id)
+	if err != nil {
+		return err
+	}
+	if err := finishAttempt(ctx, tx, attempt, attemptStatusCompleted, "", ""); err != nil {
+		return err
+	}
+	if err := recordEvent(ctx, tx, eventJobCompleted, id, attempt, workerID, nil); err != nil {
+		return err
+	}
+	return tx.Commit()
 }
 
 // Fail marks a running job failed. Jobs that have not exhausted their attempts
@@ -159,8 +207,18 @@ func (r *Repository) Fail(id, workerID, reason string) error {
 		return err
 	}
 
+	permanent := maxAttempts > 0 && attempts >= maxAttempts
+
+	attempt, err := runningAttemptID(ctx, tx, id)
+	if err != nil {
+		return err
+	}
+	if err := finishAttempt(ctx, tx, attempt, attemptStatusFailed, "", reason); err != nil {
+		return err
+	}
+
 	var update string
-	if maxAttempts > 0 && attempts >= maxAttempts {
+	if permanent {
 		update = `
 			UPDATE render_jobs
 			SET state = 'failed', failed_at = now(), error_message = $2,
@@ -176,20 +234,56 @@ func (r *Repository) Fail(id, workerID, reason string) error {
 	if _, err := tx.ExecContext(ctx, update, id, reason); err != nil {
 		return err
 	}
+
+	eventType := eventJobRequeued
+	if permanent {
+		eventType = eventJobFailed
+	}
+	if err := recordEvent(ctx, tx, eventType, id, attempt, workerID, map[string]any{"reason": reason}); err != nil {
+		return err
+	}
 	return tx.Commit()
 }
 
 // Renew extends the lease for a running job owned by workerID.
 func (r *Repository) Renew(id, workerID string) error {
-	return r.transition(id, workerID, `
+	ctx := context.Background()
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	res, err := tx.ExecContext(ctx, `
 		UPDATE render_jobs
 		SET lease_until = $3
 		WHERE id = $1 AND state = 'running' AND current_worker_id = $2`,
-		time.Now().Add(r.lease))
+		id, workerID, time.Now().Add(r.lease))
+	if err != nil {
+		return err
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return fmt.Errorf("job %s is not running or not owned by %s", id, workerID)
+	}
+
+	attempt, err := runningAttemptID(ctx, tx, id)
+	if err != nil {
+		return err
+	}
+	if _, err := tx.ExecContext(ctx, `
+		UPDATE render_attempts
+		SET last_renewed_at = now()
+		WHERE id = $1`, attempt); err != nil {
+		return err
+	}
+	if err := recordEvent(ctx, tx, eventLeaseRenewed, id, attempt, workerID, nil); err != nil {
+		return err
+	}
+	return tx.Commit()
 }
 
 // RequeueExpired permanently fails expired jobs that exhausted their attempts
-// and requeues the rest. It returns the number of jobs affected.
+// and requeues the rest, recording the attempt outcome and an event for each.
 func (r *Repository) RequeueExpired(now time.Time) (int, error) {
 	ctx := context.Background()
 	tx, err := r.db.BeginTx(ctx, nil)
@@ -198,29 +292,72 @@ func (r *Repository) RequeueExpired(now time.Time) (int, error) {
 	}
 	defer tx.Rollback()
 
-	failed, err := tx.ExecContext(ctx, `
-		UPDATE render_jobs
-		SET state = 'failed', failed_at = now(), current_worker_id = NULL,
-		    lease_until = NULL, error_message = 'lease expired, max attempts reached'
+	rows, err := tx.QueryContext(ctx, `
+		SELECT id, attempt_count, max_attempts
+		FROM render_jobs
 		WHERE state = 'running' AND lease_until IS NOT NULL AND lease_until < $1
-		  AND max_attempts > 0 AND attempt_count >= max_attempts`, now)
+		FOR UPDATE SKIP LOCKED`, now)
 	if err != nil {
-		return 0, err
-	}
-	requeued, err := tx.ExecContext(ctx, `
-		UPDATE render_jobs
-		SET state = 'pending', current_worker_id = NULL, lease_until = NULL, queued_at = now()
-		WHERE state = 'running' AND lease_until IS NOT NULL AND lease_until < $1`, now)
-	if err != nil {
-		return 0, err
-	}
-	if err := tx.Commit(); err != nil {
 		return 0, err
 	}
 
-	nFailed, _ := failed.RowsAffected()
-	nRequeued, _ := requeued.RowsAffected()
-	return int(nFailed + nRequeued), nil
+	type expiredJob struct {
+		id          string
+		attempts    int
+		maxAttempts int
+	}
+	var expired []expiredJob
+	for rows.Next() {
+		var e expiredJob
+		if err := rows.Scan(&e.id, &e.attempts, &e.maxAttempts); err != nil {
+			rows.Close()
+			return 0, err
+		}
+		expired = append(expired, e)
+	}
+	if err := rows.Err(); err != nil {
+		rows.Close()
+		return 0, err
+	}
+	rows.Close()
+
+	for _, e := range expired {
+		attempt, err := runningAttemptID(ctx, tx, e.id)
+		if err != nil {
+			return 0, err
+		}
+		if err := finishAttempt(ctx, tx, attempt, attemptStatusLeaseExpired, "", "lease expired"); err != nil {
+			return 0, err
+		}
+
+		if e.maxAttempts > 0 && e.attempts >= e.maxAttempts {
+			if _, err := tx.ExecContext(ctx, `
+				UPDATE render_jobs
+				SET state = 'failed', failed_at = now(), current_worker_id = NULL,
+				    lease_until = NULL, error_message = 'lease expired, max attempts reached'
+				WHERE id = $1`, e.id); err != nil {
+				return 0, err
+			}
+			if err := recordEvent(ctx, tx, eventJobFailed, e.id, attempt, "", map[string]any{"reason": "lease expired, max attempts reached"}); err != nil {
+				return 0, err
+			}
+		} else {
+			if _, err := tx.ExecContext(ctx, `
+				UPDATE render_jobs
+				SET state = 'pending', current_worker_id = NULL, lease_until = NULL, queued_at = now()
+				WHERE id = $1`, e.id); err != nil {
+				return 0, err
+			}
+			if err := recordEvent(ctx, tx, eventJobRequeued, e.id, attempt, "", map[string]any{"reason": "lease expired"}); err != nil {
+				return 0, err
+			}
+		}
+	}
+
+	if err := tx.Commit(); err != nil {
+		return 0, err
+	}
+	return len(expired), nil
 }
 
 // Stats returns a snapshot of the queue state.
@@ -238,20 +375,6 @@ func (r *Repository) Stats() model.Stats {
 	}
 	stats.Depth = stats.Pending
 	return stats
-}
-
-// transition runs a single-row UPDATE that must affect exactly one running job
-// owned by workerID, returning an error otherwise.
-func (r *Repository) transition(id, workerID, query string, extra ...any) error {
-	args := append([]any{id, workerID}, extra...)
-	res, err := r.db.ExecContext(context.Background(), query, args...)
-	if err != nil {
-		return err
-	}
-	if n, _ := res.RowsAffected(); n == 0 {
-		return fmt.Errorf("job %s is not running or not owned by %s", id, workerID)
-	}
-	return nil
 }
 
 // normalizeJSON returns the raw JSON, defaulting empty input to "{}".
@@ -275,4 +398,12 @@ func decodeAssets(raw []byte) []model.AssetRef {
 		return nil
 	}
 	return m.Assets
+}
+
+// nullIfEmpty converts an empty string to SQL NULL.
+func nullIfEmpty(s string) any {
+	if s == "" {
+		return nil
+	}
+	return s
 }
