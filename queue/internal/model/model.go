@@ -35,6 +35,9 @@ type Job struct {
 	CreatedAt  time.Time `json:"created_at"`
 	LeaseUntil time.Time `json:"lease_until,omitempty"`
 	FailReason string    `json:"fail_reason,omitempty"`
+
+	// Artifact is the rendered artifact, populated once the job completes.
+	Artifact *Artifact `json:"artifact,omitempty"`
 }
 
 // Stats is a snapshot of the queue, used for autoscaling and monitoring.

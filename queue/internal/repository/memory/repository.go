@@ -77,6 +77,22 @@ func (s *Repository) Claim(workerID string) (*model.Job, time.Duration, error) {
 	return nil, 0, nil
 }
 
+// Get returns the current state of a job, including its artifact when done.
+func (s *Repository) Get(id string) (*model.Job, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	job := s.jobs[id]
+	if job == nil {
+		return nil, fmt.Errorf("job %s: %w", id, repository.ErrNotFound)
+	}
+	copy := *job
+	if artifact, ok := s.artifacts[id]; ok {
+		copy.Artifact = &artifact
+	}
+	return &copy, nil
+}
+
 // Complete marks a running job as completed and records its artifact.
 func (s *Repository) Complete(id, workerID string, artifact model.Artifact) error {
 	s.mu.Lock()

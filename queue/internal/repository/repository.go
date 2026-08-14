@@ -4,10 +4,14 @@
 package repository
 
 import (
+	"errors"
 	"time"
 
 	"github.com/Marcuss-ops/RenderginGen/queue/internal/model"
 )
+
+// ErrNotFound is returned by Get when the job does not exist.
+var ErrNotFound = errors.New("job not found")
 
 // JobRepository is the storage contract for the central job queue.
 type JobRepository interface {
@@ -17,6 +21,10 @@ type JobRepository interface {
 	// Claim atomically claims the next pending job for a worker, returning the
 	// job and its lease duration. It returns a nil job when the queue is empty.
 	Claim(workerID string) (*model.Job, time.Duration, error)
+
+	// Get returns the current state of a job, including its artifact when
+	// completed. It returns ErrNotFound when the job does not exist.
+	Get(id string) (*model.Job, error)
 
 	// Complete marks a running job as completed and records the rendered
 	// artifact (which may be zero-valued when no artifact was produced).

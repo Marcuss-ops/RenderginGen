@@ -15,10 +15,12 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"time"
 
 	"github.com/Marcuss-ops/RenderginGen/queue/internal/model"
+	"github.com/Marcuss-ops/RenderginGen/queue/internal/repository"
 	"github.com/Marcuss-ops/RenderginGen/queue/internal/service"
 )
 
@@ -40,6 +42,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /jobs/{id}/complete", s.complete)
 	mux.HandleFunc("POST /jobs/{id}/fail", s.fail)
 	mux.HandleFunc("POST /jobs/{id}/renew", s.renew)
+	mux.HandleFunc("GET /jobs/{id}", s.get)
 	mux.HandleFunc("GET /jobs/depth", s.depth)
 	mux.HandleFunc("GET /health", s.health)
 	return mux
@@ -132,6 +135,20 @@ func (s *Server) renew(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
+}
+
+func (s *Server) get(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	job, err := s.svc.Get(id)
+	if err != nil {
+		if errors.Is(err, repository.ErrNotFound) {
+			http.Error(w, err.Error(), http.StatusNotFound)
+			return
+		}
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	writeJSON(w, http.StatusOK, job)
 }
 
 func (s *Server) depth(w http.ResponseWriter, _ *http.Request) {

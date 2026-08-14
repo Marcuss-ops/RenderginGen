@@ -32,6 +32,11 @@ func (s *Service) Submit(job model.Job) error {
 	return s.repo.Submit(job)
 }
 
+// Get returns the current state of a job, including its artifact when done.
+func (s *Service) Get(id string) (*model.Job, error) {
+	return s.repo.Get(id)
+}
+
 // Claim atomically claims the next pending job for a worker, returning the job
 // and its lease duration. It returns a nil job when the queue is empty.
 func (s *Service) Claim(workerID string) (*model.Job, time.Duration, error) {

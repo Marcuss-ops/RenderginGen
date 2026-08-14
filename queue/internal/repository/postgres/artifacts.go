@@ -41,3 +41,67 @@ func insertArtifact(ctx context.Context, tx *sql.Tx, jobID string, a model.Artif
 		WHERE id = $1`, jobID, a.ID)
 	return err
 }
+
+// getArtifact loads a single artifact by ID.
+func getArtifact(ctx context.Context, db *sql.DB, id string) (*model.Artifact, error) {
+	var a model.Artifact
+	var (
+		storageKey, url, sha256, mimeType         sql.NullString
+		profileID, codec, codecProfile            sql.NullString
+		sizeBytes                                 sql.NullInt64
+		width, height, fpsNum, fpsDen             sql.NullInt64
+		frameCount, durationUS                    sql.NullInt64
+		copyEligible, closedGOP, firstFrameKey    sql.NullBool
+	)
+	err := db.QueryRowContext(ctx, `
+		SELECT id, kind, storage_key, artifact_url, sha256, mime_type, size_bytes,
+		       width, height, fps_num, fps_den, frame_count, duration_us,
+		       profile_id, copy_eligible, codec, codec_profile, closed_gop, first_frame_keyframe
+		FROM render_artifacts
+		WHERE id = $1`, id).Scan(
+		&a.ID, &a.Kind, &storageKey, &url, &sha256, &mimeType, &sizeBytes,
+		&width, &height, &fpsNum, &fpsDen, &frameCount, &durationUS,
+		&profileID, &copyEligible, &codec, &codecProfile, &closedGOP, &firstFrameKey)
+	if err != nil {
+		return nil, err
+	}
+
+	a.StorageKey = storageKey.String
+	a.URL = url.String
+	a.SHA256 = sha256.String
+	a.MimeType = mimeType.String
+	a.ProfileID = profileID.String
+	a.Codec = codec.String
+	a.CodecProfile = codecProfile.String
+	if sizeBytes.Valid {
+		a.SizeBytes = sizeBytes.Int64
+	}
+	if width.Valid {
+		a.Width = int(width.Int64)
+	}
+	if height.Valid {
+		a.Height = int(height.Int64)
+	}
+	if fpsNum.Valid {
+		a.FPSNum = int(fpsNum.Int64)
+	}
+	if fpsDen.Valid {
+		a.FPSDen = int(fpsDen.Int64)
+	}
+	if frameCount.Valid {
+		a.FrameCount = int(frameCount.Int64)
+	}
+	if durationUS.Valid {
+		a.DurationUS = durationUS.Int64
+	}
+	if copyEligible.Valid {
+		a.CopyEligible = copyEligible.Bool
+	}
+	if closedGOP.Valid {
+		a.ClosedGOP = closedGOP.Bool
+	}
+	if firstFrameKey.Valid {
+		a.FirstFrameKeyframe = firstFrameKey.Bool
+	}
+	return &a, nil
+}

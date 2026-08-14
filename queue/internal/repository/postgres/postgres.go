@@ -151,6 +151,57 @@ func (r *Repository) Claim(workerID string) (*model.Job, time.Duration, error) {
 	return job, r.lease, nil
 }
 
+// Get returns the current state of a job, including its artifact when done.
+func (r *Repository) Get(id string) (*model.Job, error) {
+	ctx := context.Background()
+
+	var (
+		job        model.Job
+		state      string
+		overlay    []byte
+		manifest   []byte
+		worker     sql.NullString
+		leaseUntil sql.NullTime
+		errorMsg   sql.NullString
+		artifactID sql.NullString
+	)
+	err := r.db.QueryRowContext(ctx, `
+		SELECT id, state, overlay_spec, input_manifest, attempt_count,
+		       current_worker_id, lease_until, error_message, artifact_id
+		FROM render_jobs
+		WHERE id = $1`, id).Scan(
+		&job.ID, &state, &overlay, &manifest, &job.Attempts,
+		&worker, &leaseUntil, &errorMsg, &artifactID)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, fmt.Errorf("job %s: %w", id, repository.ErrNotFound)
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	job.State = model.State(state)
+	job.OverlaySpec = json.RawMessage(overlay)
+	job.Assets = decodeAssets(manifest)
+	if worker.Valid {
+		job.Worker = worker.String
+	}
+	if leaseUntil.Valid {
+		job.LeaseUntil = leaseUntil.Time
+	}
+	if errorMsg.Valid {
+		job.FailReason = errorMsg.String
+	}
+
+	if artifactID.Valid {
+		artifact, err := getArtifact(ctx, r.db, artifactID.String)
+		if err != nil {
+			return nil, err
+		}
+		job.Artifact = artifact
+	}
+	return &job, nil
+}
+
 // Complete marks a running job as completed and, when an artifact is
 // provided, persists it and links it to the job.
 func (r *Repository) Complete(id, workerID string, artifact model.Artifact) error {
