@@ -1,10 +1,33 @@
 services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: renderinggen
+      POSTGRES_USER: renderinggen
+      POSTGRES_PASSWORD: renderinggen
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U renderinggen -d renderinggen"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
   queue:
     build:
       context: ../..
       dockerfile: queue/Dockerfile
     ports:
       - "8081:8081"
+    environment:
+      DATABASE_URL: postgres://renderinggen:renderinggen@postgres:5432/renderinggen?sslmode=disable
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
 
   objectstore:
     build:
@@ -14,6 +37,7 @@ services:
       - "9000:9000"
     volumes:
       - objectstore-data:/var/lib/objectstore
+    restart: unless-stopped
 
   worker:
     build:
@@ -38,3 +62,4 @@ services:
 volumes:
   renderinggen-cache:
   objectstore-data:
+  postgres-data:

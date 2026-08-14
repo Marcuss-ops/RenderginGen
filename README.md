@@ -33,6 +33,17 @@ they are never pushed HTTP requests directly.
 
 Always use versioned tags, never `latest`.
 
+## Database
+
+The central queue persists jobs, attempts, artifacts, workers, events and
+metrics to PostgreSQL (the source of truth); binary artifacts stay in the
+object store. Schema migrations live in `queue/migrations/` and are applied
+automatically at startup when `DATABASE_URL` is set — the in-memory store
+remains the default for local/dev without a database.
+
+`infra/docker/docker-compose.yaml` runs PostgreSQL and wires `DATABASE_URL`
+for the queue service.
+
 ## Build & run
 
 ```sh
