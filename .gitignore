@@ -4,6 +4,8 @@
 *.out
 renderinggen/renderinggen
 renderinggen/bin/
+.tmp/
+renderinggen/.tmp/
 queue/queued
 objectstore/objectstore
 

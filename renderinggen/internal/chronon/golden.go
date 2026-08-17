@@ -4,15 +4,15 @@ package chronon
 // RenderingGen workload:
 //
 //	base/background (background.jpg, full 5s)
-//	+ IMPORTANT_PHRASE ("QUESTO CAMBIA TUTTO", title_centered, f20-60)
-//	+ IMPORTANT_WORD   ("APPLE", kinetic_word, f65-95)
+//	+ IMPORTANT_PHRASE ("QUESTO CAMBIA TUTTO", caption_card, f20-60)
+//	+ IMPORTANT_WORD   ("APPLE", active_word_pop, f65-95)
 //	+ IMAGE_OVERLAY    (apple.png, contain, right, f90-135)
 //
 // 5 seconds at 30 fps = 150 frames (f0-149) on a 1280x720 canvas. The assets
 // are deterministic fixtures under testdata/golden/ (see
 // infra/e2e/gen-golden-assets.py) with content-addressed hashes baked in;
-// the text layers declare the vendored DejaVuSans.ttf, so the job is fully
-// self-contained and renders identically everywhere:
+// the text layers carry no font: Chronon's VisualPresetRegistry resolves the
+// preset's canonical font asset, and the bytes travel as a queue asset:
 //
 //	background.jpg            52209ee36928dba960583179922a54acf045d52d44c3128c517425d4baaa4f78
 //	apple.png                 ed873745e76173b66999c63546770d9f1426a2189515149176c67637e99a62d6
@@ -46,8 +46,7 @@ const GoldenOverlayJobV1 = `{
         "id": "important_phrase",
         "type": "text",
         "text": "QUESTO CAMBIA TUTTO",
-        "font": "assets/fonts/DejaVuSans.ttf",
-        "preset": "title_centered",
+        "preset": "caption_card",
         "start_frame": 20,
         "duration_frames": 41
       },
@@ -55,8 +54,7 @@ const GoldenOverlayJobV1 = `{
         "id": "important_word",
         "type": "text",
         "text": "APPLE",
-        "font": "assets/fonts/DejaVuSans.ttf",
-        "preset": "kinetic_word",
+        "preset": "active_word_pop",
         "start_frame": 65,
         "duration_frames": 31
       },
@@ -64,6 +62,7 @@ const GoldenOverlayJobV1 = `{
         "id": "image_overlay",
         "type": "image",
         "asset": "assets/apple.png",
+        "preset": "image_focus_in",
         "box_width": 260,
         "box_height": 260,
         "fit": "contain",

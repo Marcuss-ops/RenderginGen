@@ -228,8 +228,10 @@ func (p *Processor) Render(ctx context.Context, job *queue.Job) (queue.Artifact,
 	outputPath := ws.OutputPath("result.mp4")
 	phaseStart = time.Now()
 	if err := p.renderer.Render(ctx, chronon.RenderRequest{
-		PlanPath:   ws.PlanPath(),
-		AssetsRoot: ws.AssetsRoot(),
+		PlanPath: ws.PlanPath(),
+		// Plans use the canonical assets/<file> namespace. The workspace
+		// root (not root/assets) is therefore Chronon's mounted root.
+		AssetsRoot: ws.Root(),
 		OutputPath: outputPath,
 		Backend:    p.backend,
 		Report:     p.report,

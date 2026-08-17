@@ -10,7 +10,6 @@ import (
 
 	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/chronon"
 	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/drive"
-	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/overlay"
 	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/queue"
 	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/storage"
 )
@@ -70,7 +69,7 @@ func TestProcessFullPipeline(t *testing.T) {
 		if err != nil {
 			return err
 		}
-		capturedAsset, err = os.ReadFile(filepath.Join(renderer.req.AssetsRoot, "videos", "base.mp4"))
+		capturedAsset, err = os.ReadFile(filepath.Join(renderer.req.AssetsRoot, "assets", "videos", "base.mp4"))
 		if err != nil {
 			return err
 		}
@@ -189,66 +188,19 @@ func TestPrepareAcceptsPipelineGenOverlayIntentWarmup(t *testing.T) {
 	}
 }
 
-func TestProcessCompilesSemanticOverlayPlanInRenderingGen(t *testing.T) {
-	proc, store, renderer := newProcessor(t)
-	if err := store.Put(context.Background(), "image-hash", []byte("image-bytes")); err != nil {
-		t.Fatalf("put image asset: %v", err)
-	}
-	// The semantic compiler projects the canonical font for text layers; the
-	// store must carry it so materialization resolves it.
-	if err := store.Put(context.Background(), overlay.CanonicalFontHash, []byte("font-bytes")); err != nil {
-		t.Fatalf("put font asset: %v", err)
-	}
+func TestProcessRejectsSemanticOverlayPlan(t *testing.T) {
+	proc, _, _ := newProcessor(t)
 	job := &queue.Job{
 		ID: "semantic-job", Schema: queue.JobSchemaV1, Version: queue.JobSchemaVersionV1,
 		RenderPlan: json.RawMessage(`{
           "schema_version":"renderinggen.overlay-plan.v1",
           "plan_id":"semantic-job","video_id":"video-1",
           "width":1280,"height":720,"fps":30,
-          "items":[{"id":"phrase-1","template_id":"IMPORTANT_PHRASE","text":"Hello world","start_ms":0,"end_ms":1000},
-                    {"id":"image-1","template_id":"IMAGE_OVERLAY","start_ms":1000,"end_ms":2000,
-                     "asset_refs":[{"asset_id":"image-1","url":"https://drive/image.png","sha256":"image-hash"}]}]
+          "items":[{"id":"phrase-1","template_id":"IMPORTANT_PHRASE","text":"Hello world","start_ms":0,"end_ms":1000}]
         }`),
 	}
-	var capturedPlan, capturedImage []byte
-	renderer.write = func(output string) error {
-		var err error
-		capturedPlan, err = os.ReadFile(renderer.req.PlanPath)
-		if err != nil {
-			return err
-		}
-		capturedImage, err = os.ReadFile(filepath.Join(renderer.req.AssetsRoot, "assets", "image.png"))
-		if err != nil {
-			return err
-		}
-		return os.WriteFile(output, []byte("output-bytes"), 0o644)
-	}
-	artifact, err := proc.Process(context.Background(), job)
-	if err != nil {
-		t.Fatalf("process semantic plan: %v", err)
-	}
-	if artifact.Width != 1280 || artifact.Height != 720 || artifact.FPSNum != 30 || artifact.FrameCount != 60 || artifact.DurationUS != 2_000_000 {
-		t.Fatalf("artifact render metadata = %+v", artifact)
-	}
-	for _, name := range []string{"materialize_ms", "plan_ms", "render_ms", "publish_ms", "total_ms"} {
-		if _, ok := artifact.Metrics[name]; !ok {
-			t.Fatalf("artifact metrics missing %q: %+v", name, artifact.Metrics)
-		}
-	}
-	var concrete struct {
-		Schema string `json:"schema"`
-		Layers []struct {
-			Asset string `json:"asset"`
-		} `json:"layers"`
-	}
-	if err := json.Unmarshal(capturedPlan, &concrete); err != nil {
-		t.Fatal(err)
-	}
-	if concrete.Schema != "chronon.render-plan" || len(concrete.Layers) != 2 || concrete.Layers[1].Asset != "assets/image.png" {
-		t.Fatalf("worker did not compile semantic plan: %s", capturedPlan)
-	}
-	if string(capturedImage) != "image-bytes" {
-		t.Fatalf("materialized semantic asset = %q", capturedImage)
+	if _, err := proc.Process(context.Background(), job); err == nil {
+		t.Fatal("semantic plan must be rejected: RenderingGen executes concrete plans, PipelineGen compiles them")
 	}
 }
 

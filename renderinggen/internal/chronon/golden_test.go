@@ -80,21 +80,21 @@ func TestGoldenOverlayJobV1Immutability(t *testing.T) {
 			t.Fatalf("layer %s: want type %s, got %s", layer.ID, wantType, layer.Type)
 		}
 	}
-	if plan.Layers[1].Preset != "title_centered" {
-		t.Fatalf("important_phrase preset = %q, want title_centered", plan.Layers[1].Preset)
+	if plan.Layers[1].Preset != "caption_card" {
+		t.Fatalf("important_phrase preset = %q, want caption_card", plan.Layers[1].Preset)
 	}
-	if plan.Layers[2].Preset != "kinetic_word" {
-		t.Fatalf("important_word preset = %q, want kinetic_word", plan.Layers[2].Preset)
+	if plan.Layers[2].Preset != "active_word_pop" {
+		t.Fatalf("important_word preset = %q, want active_word_pop", plan.Layers[2].Preset)
 	}
-	// The text layers must declare the vendored font; Chronon's default
-	// (Poppins-Bold.ttf) is not part of the job's assets and would fail the
-	// render with ASSET_NOT_FOUND. The font fixture must be in the payload's
-	// assets (checked below via the fixture-hash loop).
-	if plan.Layers[1].Font != "assets/fonts/DejaVuSans.ttf" {
-		t.Fatalf("important_phrase font = %q, want assets/fonts/DejaVuSans.ttf", plan.Layers[1].Font)
+	// Text layers carry no font: Chronon's VisualPresetRegistry resolves the
+	// preset's canonical font asset (assets/fonts/DejaVuSans.ttf) via
+	// StyleResolver. The font bytes must still be in the payload's assets
+	// (checked below via the fixture-hash loop).
+	if plan.Layers[1].Font != "" {
+		t.Fatalf("important_phrase font = %q, want empty (Chronon resolves it from the preset)", plan.Layers[1].Font)
 	}
-	if plan.Layers[2].Font != "assets/fonts/DejaVuSans.ttf" {
-		t.Fatalf("important_word font = %q, want assets/fonts/DejaVuSans.ttf", plan.Layers[2].Font)
+	if plan.Layers[2].Font != "" {
+		t.Fatalf("important_word font = %q, want empty (Chronon resolves it from the preset)", plan.Layers[2].Font)
 	}
 
 	// 3. The Go constant must be byte-identical to the canonical JSON file.

@@ -22,6 +22,7 @@
         "id": "image_overlay",
         "type": "image",
         "asset": "assets/overlay_globe.png",
+        "preset": "image_focus_in",
         "box_width": 300,
         "box_height": 300,
         "fit": "contain",
@@ -43,8 +44,7 @@
         "id": "important_word",
         "type": "text",
         "text": "-20%",
-        "font": "assets/fonts/DejaVuSans.ttf",
-        "preset": "kinetic_word",
+        "preset": "active_word_pop",
         "start_frame": 30,
         "duration_frames": 30
       },
@@ -52,8 +52,7 @@
         "id": "important_phrase",
         "type": "text",
         "text": "A MASSIVE DROP",
-        "font": "assets/fonts/DejaVuSans.ttf",
-        "preset": "title_centered",
+        "preset": "caption_card",
         "start_frame": 24,
         "duration_frames": 60
       }

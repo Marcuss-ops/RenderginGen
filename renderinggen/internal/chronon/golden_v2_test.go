@@ -92,8 +92,8 @@ func TestGoldenOverlayJobV2Immutability(t *testing.T) {
 			t.Fatalf("layer %s: want type %s, got %s", layer.ID, wantType, layer.Type)
 		}
 		if layer.Type == "text" {
-			if layer.Font != "assets/fonts/DejaVuSans.ttf" {
-				t.Fatalf("layer %s font = %q, want assets/fonts/DejaVuSans.ttf", layer.ID, layer.Font)
+			if layer.Font != "" {
+				t.Fatalf("layer %s font = %q, want empty (Chronon resolves it from the preset)", layer.ID, layer.Font)
 			}
 			if layer.Animation == nil || layer.Animation.Preset == "" {
 				t.Fatalf("text layer %s must carry an animation preset", layer.ID)
@@ -105,11 +105,11 @@ func TestGoldenOverlayJobV2Immutability(t *testing.T) {
 	if len(animationPresets) < 3 {
 		t.Fatalf("expected at least 3 distinct animation presets, got %v", animationPresets)
 	}
-	if plan.Layers[1].Preset != "title_centered" {
-		t.Fatalf("important_phrase_1 preset = %q, want title_centered", plan.Layers[1].Preset)
+	if plan.Layers[1].Preset != "caption_card" {
+		t.Fatalf("important_phrase_1 preset = %q, want caption_card", plan.Layers[1].Preset)
 	}
-	if plan.Layers[2].Preset != "kinetic_word" {
-		t.Fatalf("important_word_1 preset = %q, want kinetic_word", plan.Layers[2].Preset)
+	if plan.Layers[2].Preset != "active_word_pop" {
+		t.Fatalf("important_word_1 preset = %q, want active_word_pop", plan.Layers[2].Preset)
 	}
 	if plan.Layers[0].Source != "assets/background.mp4" {
 		t.Fatalf("background_video source = %q, want assets/background.mp4", plan.Layers[0].Source)
