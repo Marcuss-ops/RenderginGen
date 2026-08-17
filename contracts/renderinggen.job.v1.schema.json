@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://renderinggen.dev/schemas/renderinggen.job.v1.schema.json",
+  "title": "RenderingGen Job V1",
+  "description": "Envelope contract for a RenderingGen render job. One job corresponds to one video SEGMENT (never a single overlay): the render_plan contains every layer of the segment — base video, phrases, keywords, images and animations — so Chronon3d composes them in a single pass. RenderingGen is the orchestrator; the renderable content is a chronon.render-plan.v1 document produced upstream by PipelineGen, and RenderingGen forwards it unchanged (writing it to plan.json) together with a materialized asset root.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "schema", "version", "render_plan", "assets"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Job identifier, e.g. video-983 (one per segment)."
+    },
+    "schema": {
+      "const": "renderinggen.job",
+      "description": "Envelope schema name, following the same schema+version convention as the Chronon3d render-plan schema."
+    },
+    "version": {
+      "const": 1,
+      "description": "Envelope schema version."
+    },
+    "render_plan": {
+      "anyOf": [
+        { "$ref": "https://renderinggen.dev/schemas/overlay-plan.v1.schema.json" },
+        { "$ref": "https://chronon3d.dev/schemas/chronon.render-plan.v1.schema.json" }
+      ],
+      "description": "Either the semantic overlay-plan.v1 emitted by PipelineGen (compiled by RenderingGen) or the legacy/concrete chronon.render-plan.v1 document (passed through unchanged)."
+    },
+    "assets": {
+      "type": "array",
+      "description": "Assets referenced by the render_plan, addressed by content hash and the logical path they must be materialized at inside the job workspace.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["hash", "logical_path"],
+        "properties": {
+          "hash": {
+            "type": "string",
+            "minLength": 1,
+            "description": "SHA-256 of the asset bytes in the artifact store (used for L1/L2/L3 resolution)."
+          },
+          "logical_path": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Path relative to the job assets root where the asset must be materialized, e.g. videos/base.mp4 or images/apple.png. This is the path the render_plan layer sources/asset fields refer to."
+          }
+        }
+      }
+    }
+  }
+}

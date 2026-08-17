@@ -16,10 +16,20 @@ import (
 // a subset of Job plus the lease the worker must hold (and renew) while
 // rendering.
 type ClaimedJob struct {
-	ID          string          `json:"id"`
-	OverlaySpec json.RawMessage `json:"overlay_spec"`
-	Assets      []AssetRef      `json:"assets"`
-	Lease       time.Duration   `json:"lease"`
+	ID             string `json:"id"`
+	Schema         string `json:"schema,omitempty"`
+	Version        int    `json:"version,omitempty"`
+	IdempotencyKey string `json:"idempotency_key,omitempty"`
+	JobType        string `json:"job_type,omitempty"`
+
+	RenderPlan json.RawMessage `json:"render_plan"`
+	Assets     []AssetRef      `json:"assets"`
+	Lease      time.Duration   `json:"lease"`
+
+	// State and Artifact are populated when a rendered job is re-claimed, so
+	// the worker can skip rendering and only retry publication.
+	State    State     `json:"state,omitempty"`
+	Artifact *Artifact `json:"artifact,omitempty"`
 }
 
 // Claim atomically claims the next pending job for workerID. It returns a nil
@@ -64,6 +74,13 @@ func (c *Client) Complete(ctx context.Context, id, workerID string, artifact Art
 // Fail reports a job that could not be rendered.
 func (c *Client) Fail(ctx context.Context, id, workerID, reason string) error {
 	return c.report(ctx, id, workerID, "fail", map[string]string{"reason": reason})
+}
+
+// Rendered reports a job whose render completed and was durably stored, but
+// whose external publication (Drive) failed. The job stays claimable for a
+// publication-only retry.
+func (c *Client) Rendered(ctx context.Context, id, workerID, reason string, artifact Artifact) error {
+	return c.report(ctx, id, workerID, "rendered", map[string]any{"reason": reason, "artifact": artifact})
 }
 
 // Renew extends the lease on a running job owned by workerID. It fails if the

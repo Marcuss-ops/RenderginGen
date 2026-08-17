@@ -29,8 +29,9 @@ type Repository struct {
 
 // Compile-time check that Repository satisfies the repository contracts.
 var (
-	_ repository.JobRepository    = (*Repository)(nil)
-	_ repository.WorkerRepository = (*Repository)(nil)
+	_ repository.JobRepository         = (*Repository)(nil)
+	_ repository.WorkerRepository      = (*Repository)(nil)
+	_ repository.IdempotencyRepository = (*Repository)(nil)
 )
 
 // New creates a queue with the given lease duration and max attempts per job.
@@ -42,6 +43,29 @@ func New(lease time.Duration, maxAttempts int) *Repository {
 		lease:       lease,
 		maxAttempts: maxAttempts,
 	}
+}
+
+func (s *Repository) SubmitIdempotent(job model.Job) (*model.Job, bool, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if job.ID == "" {
+		return nil, false, fmt.Errorf("job id is required")
+	}
+	for _, existing := range s.jobs {
+		if job.IdempotencyKey != "" && existing.IdempotencyKey == job.IdempotencyKey {
+			copy := *existing
+			return &copy, false, nil
+		}
+	}
+	if _, exists := s.jobs[job.ID]; exists {
+		return nil, false, fmt.Errorf("job %s already exists", job.ID)
+	}
+	now := time.Now()
+	job.State, job.CreatedAt, job.QueuedAt = model.StatePending, now, now
+	s.jobs[job.ID] = &job
+	s.order = append(s.order, job.ID)
+	copy := job
+	return &copy, true, nil
 }
 
 // Submit enqueues a job. The ID is required and must be unique.
@@ -71,7 +95,7 @@ func (s *Repository) Claim(workerID string) (*model.Job, time.Duration, error) {
 
 	for i, id := range s.order {
 		job := s.jobs[id]
-		if job == nil || job.State != model.StatePending {
+		if job == nil || (job.State != model.StatePending && job.State != model.StateRendered) {
 			continue
 		}
 		s.order = append(s.order[:i], s.order[i+1:]...)
@@ -80,6 +104,10 @@ func (s *Repository) Claim(workerID string) (*model.Job, time.Duration, error) {
 		job.Attempts++
 		job.StartedAt = time.Now()
 		job.LeaseUntil = job.StartedAt.Add(s.lease)
+		if artifact, ok := s.artifacts[id]; ok {
+			copy := artifact
+			job.Artifact = &copy
+		}
 		return job, s.lease, nil
 	}
 	return nil, 0, nil
@@ -113,6 +141,26 @@ func (s *Repository) Complete(id, workerID string, artifact model.Artifact) erro
 	job.State = model.StateCompleted
 	job.CompletedAt = time.Now()
 	s.artifacts[id] = artifact
+	return nil
+}
+
+// Rendered marks a running job as rendered: its artifact is durably stored, but
+// external publication failed, so the job stays out of `completed` and is
+// re-claimable for a publication-only retry.
+func (s *Repository) Rendered(id, workerID string, artifact model.Artifact, reason string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	job, err := s.runningJob(id, workerID)
+	if err != nil {
+		return err
+	}
+	job.State = model.StateRendered
+	job.FailReason = reason
+	job.Worker = ""
+	job.QueuedAt = time.Now()
+	s.artifacts[id] = artifact
+	s.order = append(s.order, id)
 	return nil
 }
 

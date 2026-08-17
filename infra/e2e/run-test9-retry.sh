@@ -65,11 +65,12 @@ pg_init() {
 }
 pg_query() { [[ ${#PG_CMD[@]} -gt 0 ]] || return 2; "${PG_CMD[@]}" "$1"; }
 
-# ── Worker control (stop for the manual attempt 1, restart before attempt 2) ─
-worker_stop() { docker compose -f "${COMPOSE_FILE}" stop worker >/dev/null 2>&1; }
+# ── Worker control (stop both for the manual attempt 1, restart only the
+#    canonical worker before attempt 2 so the retry worker is deterministic) ──
+worker_stop() { docker compose -f "${COMPOSE_FILE}" stop worker worker-b >/dev/null 2>&1; }
 worker_start() { docker compose -f "${COMPOSE_FILE}" start worker >/dev/null 2>&1; }
-cleanup() { worker_start || true; rm -rf "${WORK_DIR}"; }
-trap cleanup EXIT   # always leave the worker running and drop the temp dir
+cleanup() { docker compose -f "${COMPOSE_FILE}" start worker worker-b >/dev/null 2>&1 || true; rm -rf "${WORK_DIR}"; }
+trap cleanup EXIT   # always leave the workers running and drop the temp dir
 
 echo "== Test 9: attempt history preserved across fail → retry =="
 
@@ -79,11 +80,18 @@ worker_stop
 sleep 1
 
 # ── 2. Generate the overlay image and compute its content hash. ───────────
-python3 - "${WORK_DIR}" <<'PY'
-import sys
+# The image is unique per run (a few seed-derived pixels) so its content hash
+# never collides with a leftover object from a previous run — the "missing
+# asset" premise must hold every time the script runs.
+python3 - "${WORK_DIR}" "${JOB_ID}" <<'PY'
+import sys, hashlib
 from PIL import Image
-out = sys.argv[1]
-Image.new("RGB", (300, 150), (255, 140, 0)).save(f"{out}/overlay.png")
+out, seed = sys.argv[1], sys.argv[2]
+im = Image.new("RGB", (300, 150), (255, 140, 0))
+digest = hashlib.sha256(seed.encode()).digest()
+for i, b in enumerate(digest[:16]):
+    im.putpixel((i, 0), (b, b, b))
+im.save(f"{out}/overlay.png")
 PY
 IMG_HASH="$(sha256sum "${WORK_DIR}/overlay.png" | cut -d' ' -f1)"
 echo "overlay image: ${WORK_DIR}/overlay.png (sha256=${IMG_HASH:0:12}... — NOT uploaded yet)"

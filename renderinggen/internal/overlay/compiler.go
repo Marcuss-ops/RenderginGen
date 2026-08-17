@@ -19,14 +19,15 @@ const SemanticSchema = "renderinggen.overlay-plan.v1"
 const CanonicalFontHash = "690243adfefe0ce154b547db6205794bd30ac4277275179517a90994f4980648"
 
 type semanticPlan struct {
-	SchemaVersion string         `json:"schema_version"`
-	PlanID        string         `json:"plan_id"`
-	VideoID       string         `json:"video_id"`
-	Width         int            `json:"width"`
-	Height        int            `json:"height"`
-	FPS           int            `json:"fps"`
-	Renderer      string         `json:"renderer_version,omitempty"`
-	Items         []semanticItem `json:"items"`
+	SchemaVersion   string         `json:"schema_version"`
+	PlanID          string         `json:"plan_id"`
+	VideoID         string         `json:"video_id"`
+	Width           int            `json:"width"`
+	Height          int            `json:"height"`
+	FPS             int            `json:"fps"`
+	OutputProfileID string         `json:"output_profile_id,omitempty"`
+	Renderer        string         `json:"renderer_version,omitempty"`
+	Items           []semanticItem `json:"items"`
 }
 
 type semanticItem struct {
@@ -77,6 +78,10 @@ type Layer struct {
 	BoxHeight      int       `json:"box_height,omitempty"`
 	Fit            string    `json:"fit,omitempty"`
 	Position       []float64 `json:"position,omitempty"`
+	Color          []float64 `json:"color,omitempty"`
+	Opacity        float64   `json:"opacity,omitempty"`
+	BlendMode      string    `json:"blend_mode,omitempty"`
+	Loop           bool      `json:"loop,omitempty"`
 	StartFrame     int64     `json:"start_frame"`
 	DurationFrames int64     `json:"duration_frames"`
 	// Animation is the motion preset applied to the layer, projected from
@@ -198,9 +203,10 @@ func layoutImages(layers []Layer, candidates []layoutCandidate) {
 }
 
 type Output struct {
-	Path   string `json:"path"`
-	Format string `json:"format"`
-	Codec  string `json:"codec"`
+	Path      string `json:"path"`
+	Format    string `json:"format"`
+	Codec     string `json:"codec"`
+	ProfileID string `json:"profile_id,omitempty"`
 }
 
 type Asset struct {
@@ -241,12 +247,13 @@ func CompileIfSemantic(raw []byte) ([]byte, []Asset, bool, error) {
 	plan := Plan{
 		Schema: "chronon.render-plan", Version: 1, JobID: src.PlanID,
 		Canvas: Canvas{Width: src.Width, Height: src.Height, FPS: src.FPS, DurationFrames: frameAt(maxEnd)},
-		Output: Output{Path: "result.mp4", Format: "mp4", Codec: "h264"},
+		Output: Output{Path: "result.mp4", Format: "mp4", Codec: "h264", ProfileID: src.OutputProfileID},
 	}
 	var assets []Asset
 	seenAssets := map[string]bool{}
 	var layoutCandidates []layoutCandidate
 	needsFont := false
+	contrastVeilAdded := false
 	for i, item := range src.Items {
 		layer, candidate, err := compileLayer(src, item, frameAt)
 		if err != nil {
@@ -260,6 +267,21 @@ func CompileIfSemantic(raw []byte) ([]byte, []Asset, bool, error) {
 			needsFont = true
 		}
 		plan.Layers = append(plan.Layers, layer)
+		// The render-plan facade's color primitive is canvas-sized in the
+		// Chronon runtime. Add one veil immediately after the background rather
+		// than pretending it is a rounded card; this keeps the output honest and
+		// makes white text readable on all six supplied light backgrounds.
+		if !contrastVeilAdded && (item.TemplateID == "BACKGROUND" || item.TemplateID == "VIDEO_BACKGROUND") {
+			contrastVeilAdded = true
+			plan.Layers = append(plan.Layers, Layer{
+				ID:             "contrast-veil",
+				Type:           "color",
+				Color:          []float64{0.01, 0.015, 0.03, 1},
+				Opacity:        0.70,
+				StartFrame:     0,
+				DurationFrames: frameAt(maxEnd),
+			})
+		}
 		for _, ref := range item.Assets {
 			if ref.SHA256 == "" || seenAssets[ref.SHA256] {
 				continue
@@ -334,23 +356,37 @@ func validate(p semanticPlan) error {
 // values mirror PipelineGen's template registry so both sides compile the
 // same document for the same plan.
 type templateShape struct {
-	Type      string
-	Preset    string
-	Fit       string
-	BoxWidth  int
-	BoxHeight int
-	Position  []float64
+	Type            string
+	Preset          string
+	AnimationPreset string
+	Fit             string
+	BoxWidth        int
+	BoxHeight       int
+	Position        []float64
+	Card            bool
+	CardWidth       int
+	CardHeight      int
+	CardPosition    []float64
+	CardColor       []float64
+	CardOpacity     float64
 }
 
 var semanticTemplateRegistry = map[string]templateShape{
-	"IMPORTANT_PHRASE": {Type: "text", Preset: "title_centered"},
-	"IMPORTANT_WORD":   {Type: "text", Preset: "kinetic_word"},
-	"NUMBER":           {Type: "text", Preset: "number"},
-	"QUOTE":            {Type: "text", Preset: "quote"},
-	"PERSON":           {Type: "text", Preset: "entity_card"},
-	"ORGANIZATION":     {Type: "text", Preset: "entity_card"},
-	"LOCATION":         {Type: "text", Preset: "entity_card"},
-	"CONCEPT":          {Type: "text", Preset: "entity_card"},
+	// These presets are part of Chronon's built-in content registry.  Keep the
+	// mapping here (rather than depending on Chronon source at runtime) so the
+	// wire contract remains stable while RenderingGen can use the richer
+	// showcase treatments: cards, contrast, and motion.
+	"IMPORTANT_PHRASE": {Type: "text", Preset: "caption_safe_area", AnimationPreset: "fade_in", Card: true, CardWidth: 1080, CardHeight: 180, CardPosition: []float64{0, 0}, CardColor: []float64{0.02, 0.03, 0.08, 1}, CardOpacity: 0.86},
+	"IMPORTANT_WORD":   {Type: "text", Preset: "kinetic_word", AnimationPreset: "soft_pop", Card: true, CardWidth: 520, CardHeight: 150, CardPosition: []float64{0, 0}, CardColor: []float64{0.02, 0.03, 0.08, 1}, CardOpacity: 0.90},
+	"NUMBER":           {Type: "text", Preset: "kinetic_word", AnimationPreset: "soft_pop"},
+	"QUOTE":            {Type: "text", Preset: "caption_safe_area", AnimationPreset: "fade_in", Card: true, CardWidth: 1080, CardHeight: 180, CardPosition: []float64{0, 0}, CardColor: []float64{0.02, 0.03, 0.08, 1}, CardOpacity: 0.86},
+	// The current runtime image does not expose lower-third placement through
+	// the generic plan facade reliably. Centered safe-area text is a deliberate
+	// fail-safe until that runtime contract grows a positional text anchor.
+	"PERSON":           {Type: "text", Preset: "title_centered", AnimationPreset: "fade_in", Card: true, CardWidth: 720, CardHeight: 130, CardPosition: []float64{0, -220}, CardColor: []float64{0.02, 0.03, 0.08, 1}, CardOpacity: 0.88},
+	"ORGANIZATION":     {Type: "text", Preset: "title_centered", AnimationPreset: "fade_in", Card: true, CardWidth: 720, CardHeight: 130, CardPosition: []float64{0, -220}, CardColor: []float64{0.02, 0.03, 0.08, 1}, CardOpacity: 0.88},
+	"LOCATION":         {Type: "text", Preset: "title_centered", AnimationPreset: "fade_in", Card: true, CardWidth: 720, CardHeight: 130, CardPosition: []float64{0, -220}, CardColor: []float64{0.02, 0.03, 0.08, 1}, CardOpacity: 0.88},
+	"CONCEPT":          {Type: "text", Preset: "caption_safe_area", AnimationPreset: "fade_in", Card: true, CardWidth: 900, CardHeight: 150, CardPosition: []float64{0, 0}, CardColor: []float64{0.02, 0.03, 0.08, 1}, CardOpacity: 0.86},
 	"IMAGE_OVERLAY":    {Type: "image", Fit: "contain", BoxWidth: 260, BoxHeight: 260, Position: []float64{380, 0}},
 	"PRODUCT":          {Type: "image", Fit: "contain", BoxWidth: 420, BoxHeight: 420, Position: []float64{380, 0}},
 	"LOGO":             {Type: "image", Fit: "contain", BoxWidth: 180, BoxHeight: 180, Position: []float64{1060, 500}},
@@ -412,6 +448,8 @@ func compileLayer(p semanticPlan, item semanticItem, frameAt func(int64) int64) 
 	}
 	if preset := paramAnimation(item.Params); preset != "" {
 		layer.Animation = &LayerAnimation{Preset: preset}
+	} else if shape.AnimationPreset != "" {
+		layer.Animation = &LayerAnimation{Preset: shape.AnimationPreset}
 	}
 	var candidate *layoutCandidate
 	if numPos, numeric := paramPosition(item.Params, "position"); numeric {

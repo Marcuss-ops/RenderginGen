@@ -15,6 +15,7 @@ const (
 	eventJobCompleted = "JOB_COMPLETED"
 	eventJobFailed    = "JOB_FAILED"
 	eventJobRequeued  = "JOB_REQUEUED"
+	eventJobRendered  = "JOB_RENDERED"
 )
 
 // recordEvent appends an event to render_events. Empty attempt/worker IDs are

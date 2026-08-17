@@ -9,6 +9,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"sync/atomic"
 )
 
 // Options configures the cache levels.
@@ -23,6 +24,30 @@ type Client struct {
 	backend Backend
 	l1      *memCache
 	l2      *diskCache
+
+	// Observability counters, incremented by Get/Put so benchmarks and the
+	// daemon comparison can report L3->L2->L1 promotion and cache hit rates.
+	l1Hits    atomic.Int64
+	l2Hits    atomic.Int64
+	l3Fetches atomic.Int64
+}
+
+// CacheStats is a point-in-time snapshot of the resolution counters.
+type CacheStats struct {
+	L1Hits    int64 // resolved from L1 (in-memory)
+	L2Hits    int64 // resolved from L2 (on-disk)
+	L3Fetches int64 // resolved from L3 (central object store)
+}
+
+// Stats returns the cumulative resolution counters since the client was
+// created. Used by the performance benchmark to prove cache promotion
+// (job 1: L3->L2->L1, jobs 2-10: L1 hit) and to report hits/misses.
+func (c *Client) Stats() CacheStats {
+	return CacheStats{
+		L1Hits:    c.l1Hits.Load(),
+		L2Hits:    c.l2Hits.Load(),
+		L3Fetches: c.l3Fetches.Load(),
+	}
 }
 
 // New creates a cache client over the given L3 backend.
@@ -38,9 +63,11 @@ func New(backend Backend, opts Options) *Client {
 // on each miss so the next lookup is faster.
 func (c *Client) Get(ctx context.Context, hash string) ([]byte, error) {
 	if data, ok := c.l1.Get(hash); ok {
+		c.l1Hits.Add(1)
 		return data, nil
 	}
 	if data, ok := c.l2.Get(hash); ok {
+		c.l2Hits.Add(1)
 		c.l1.Put(hash, data)
 		return data, nil
 	}
@@ -48,6 +75,7 @@ func (c *Client) Get(ctx context.Context, hash string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+	c.l3Fetches.Add(1)
 	c.l2.Put(hash, data)
 	c.l1.Put(hash, data)
 	return data, nil

@@ -10,7 +10,7 @@ import (
 
 func submit(t *testing.T, s *Repository, id string) {
 	t.Helper()
-	job := model.Job{ID: id, OverlaySpec: json.RawMessage(`{"n":1}`)}
+	job := model.Job{ID: id, RenderPlan: json.RawMessage(`{"n":1}`)}
 	if err := s.Submit(job); err != nil {
 		t.Fatalf("submit: %v", err)
 	}

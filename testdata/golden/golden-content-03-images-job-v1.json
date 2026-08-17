@@ -1,0 +1,75 @@
+{
+  "id": "golden-content-03-images",
+  "schema": "renderinggen.job",
+  "version": 1,
+  "render_plan": {
+    "schema": "chronon.render-plan",
+    "version": 1,
+    "job_id": "golden-content-03-images",
+    "canvas": { "width": 1280, "height": 720, "fps": 30, "duration_frames": 150 },
+    "layers": [
+      {
+        "id": "background",
+        "type": "image",
+        "asset": "assets/background.jpg",
+        "box_width": 1280,
+        "box_height": 720,
+        "fit": "cover",
+        "start_frame": 0,
+        "duration_frames": 150
+      },
+      {
+        "id": "image_overlay_1",
+        "type": "image",
+        "asset": "assets/overlay_globe.png",
+        "box_width": 300,
+        "box_height": 300,
+        "fit": "contain",
+        "position": [380, 0],
+        "start_frame": 24,
+        "duration_frames": 72
+      },
+      {
+        "id": "image_overlay_2",
+        "type": "image",
+        "asset": "assets/overlay_chart.png",
+        "box_width": 300,
+        "box_height": 300,
+        "fit": "contain",
+        "position": [840, 380],
+        "start_frame": 60,
+        "duration_frames": 72
+      },
+      {
+        "id": "image_overlay_3",
+        "type": "image",
+        "asset": "assets/apple.png",
+        "box_width": 260,
+        "box_height": 260,
+        "fit": "contain",
+        "position": [380, 0],
+        "start_frame": 102,
+        "duration_frames": 48
+      }
+    ],
+    "output": { "path": "result.mp4", "format": "mp4", "codec": "h264" }
+  },
+  "assets": [
+    {
+      "hash": "52209ee36928dba960583179922a54acf045d52d44c3128c517425d4baaa4f78",
+      "logical_path": "assets/background.jpg"
+    },
+    {
+      "hash": "b7219a0c2f3f0c45f12d3b387332bd2cf0502205a6bb3fa0beca542de6da1939",
+      "logical_path": "assets/overlay_globe.png"
+    },
+    {
+      "hash": "efb77ea94d50f178e970841f641be7f4efc59837d5628fec2f4bdb6e88a9f73a",
+      "logical_path": "assets/overlay_chart.png"
+    },
+    {
+      "hash": "ed873745e76173b66999c63546770d9f1426a2189515149176c67637e99a62d6",
+      "logical_path": "assets/apple.png"
+    }
+  ]
+}

@@ -44,8 +44,8 @@ func fakeQueue(t *testing.T) *httptest.Server {
 			Attempts: 2,
 			Artifact: &Artifact{
 				ID:           "art-1",
-				URL:          "https://store/overlay.mp4",
-				SHA256:       "abc",
+				ArtifactURL:  "https://store/overlay.mp4",
+				ArtifactHash: "abc",
 				ProfileID:    "velox-h264-copy-v1",
 				CopyEligible: true,
 				ClosedGOP:    true,
@@ -73,7 +73,7 @@ func TestSubmitSuccess(t *testing.T) {
 	defer srv.Close()
 
 	c := New(srv.URL)
-	if err := c.Submit(context.Background(), Job{ID: "job-1", OverlaySpec: []byte(`{"n":1}`)}); err != nil {
+	if err := c.Submit(context.Background(), Job{ID: "job-1", RenderPlan: []byte(`{"n":1}`)}); err != nil {
 		t.Fatalf("submit: %v", err)
 	}
 }

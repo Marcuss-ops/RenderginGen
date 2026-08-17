@@ -47,6 +47,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /jobs", s.submit)
 	mux.HandleFunc("POST /jobs/claim", s.claim)
 	mux.HandleFunc("POST /jobs/{id}/complete", s.complete)
+	mux.HandleFunc("POST /jobs/{id}/rendered", s.rendered)
 	mux.HandleFunc("POST /jobs/{id}/fail", s.fail)
 	mux.HandleFunc("POST /jobs/{id}/renew", s.renew)
 	mux.HandleFunc("GET /jobs/{id}", s.get)
@@ -71,11 +72,16 @@ func (s *Server) submit(w http.ResponseWriter, r *http.Request) {
 	if job.ID == "" {
 		job.ID = newID()
 	}
-	if err := s.svc.Submit(job); err != nil {
+	canonical, created, err := s.svc.SubmitIdempotent(job)
+	if err != nil {
 		http.Error(w, err.Error(), http.StatusConflict)
 		return
 	}
-	writeJSON(w, http.StatusCreated, map[string]string{"id": job.ID})
+	status := http.StatusCreated
+	if !created {
+		status = http.StatusOK
+	}
+	writeJSON(w, status, map[string]string{"id": canonical.ID})
 }
 
 func (s *Server) claim(w http.ResponseWriter, r *http.Request) {
@@ -98,10 +104,16 @@ func (s *Server) claim(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusOK, claimResponse{
-		ID:          job.ID,
-		OverlaySpec: job.OverlaySpec,
-		Assets:      job.Assets,
-		Lease:       lease,
+		ID:             job.ID,
+		Schema:         job.Schema,
+		Version:        job.Version,
+		IdempotencyKey: job.IdempotencyKey,
+		JobType:        job.JobType,
+		RenderPlan:     job.RenderPlan,
+		Assets:         job.Assets,
+		Lease:          lease,
+		State:          job.State,
+		Artifact:       job.Artifact,
 	})
 }
 
@@ -131,6 +143,24 @@ func (s *Server) fail(w http.ResponseWriter, r *http.Request) {
 	_ = json.NewDecoder(r.Body).Decode(&req)
 
 	if err := s.svc.Fail(id, req.Worker, req.Data.Reason); err != nil {
+		http.Error(w, err.Error(), http.StatusConflict)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (s *Server) rendered(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	var req struct {
+		Worker string `json:"worker"`
+		Data   struct {
+			Reason   string         `json:"reason"`
+			Artifact model.Artifact `json:"artifact"`
+		} `json:"data"`
+	}
+	_ = json.NewDecoder(r.Body).Decode(&req)
+
+	if err := s.svc.Rendered(id, req.Worker, req.Data.Artifact, req.Data.Reason); err != nil {
 		http.Error(w, err.Error(), http.StatusConflict)
 		return
 	}
@@ -175,10 +205,20 @@ func (s *Server) health(w http.ResponseWriter, _ *http.Request) {
 
 // claimResponse is the payload returned to a worker on claim.
 type claimResponse struct {
-	ID          string           `json:"id"`
-	OverlaySpec json.RawMessage  `json:"overlay_spec"`
-	Assets      []model.AssetRef `json:"assets"`
-	Lease       time.Duration    `json:"lease"`
+	ID             string `json:"id"`
+	Schema         string `json:"schema,omitempty"`
+	Version        int    `json:"version,omitempty"`
+	IdempotencyKey string `json:"idempotency_key,omitempty"`
+	JobType        string `json:"job_type,omitempty"`
+
+	RenderPlan json.RawMessage  `json:"render_plan"`
+	Assets     []model.AssetRef `json:"assets"`
+	Lease      time.Duration    `json:"lease"`
+
+	// State and Artifact are populated on claim so a worker re-claiming a
+	// rendered job can skip rendering and only retry publication.
+	State    model.State     `json:"state,omitempty"`
+	Artifact *model.Artifact `json:"artifact,omitempty"`
 }
 
 func writeJSON(w http.ResponseWriter, status int, v any) {

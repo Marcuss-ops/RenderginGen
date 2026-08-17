@@ -23,9 +23,9 @@ func TestArtifactPersistedOnComplete(t *testing.T) {
 		ID:                 "art-1",
 		Kind:               "overlay",
 		StorageKey:         "overlay/job-1/out.mp4",
-		URL:                "s3://bucket/out.mp4",
-		SHA256:             "abc123",
-		MimeType:           "video/mp4",
+		ArtifactURL:        "s3://bucket/out.mp4",
+		ArtifactHash:       "abc123",
+		ContentType:        "video/mp4",
 		SizeBytes:          12345,
 		Width:              1920,
 		Height:             1080,
@@ -83,7 +83,7 @@ func TestGetReturnsJobWithArtifact(t *testing.T) {
 		t.Fatal(err)
 	}
 	if err := r.Complete("job-1", "w1", model.Artifact{
-		ID: "art-1", StorageKey: "overlay/job-1/out.mp4", SHA256: "abc", ProfileID: "velox-copy-v1", CopyEligible: true,
+		ID: "art-1", StorageKey: "overlay/job-1/out.mp4", ArtifactHash: "abc", ProfileID: "velox-copy-v1", CopyEligible: true,
 	}); err != nil {
 		t.Fatal(err)
 	}
