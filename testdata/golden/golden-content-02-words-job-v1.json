@@ -22,8 +22,7 @@
         "id": "important_word_1",
         "type": "text",
         "text": "ELON MUSK",
-        "font": "assets/fonts/DejaVuSans.ttf",
-        "preset": "kinetic_word",
+        "preset": "active_word_pop",
         "start_frame": 15,
         "duration_frames": 30,
         "animation": { "preset": "scale_drop" }
@@ -32,8 +31,7 @@
         "id": "important_word_2",
         "type": "text",
         "text": "TESLA",
-        "font": "assets/fonts/DejaVuSans.ttf",
-        "preset": "kinetic_word",
+        "preset": "active_word_pop",
         "start_frame": 45,
         "duration_frames": 30,
         "animation": { "preset": "fade_in" }
@@ -42,8 +40,7 @@
         "id": "important_word_3",
         "type": "text",
         "text": "$10 BILLION",
-        "font": "assets/fonts/DejaVuSans.ttf",
-        "preset": "kinetic_word",
+        "preset": "active_word_pop",
         "start_frame": 75,
         "duration_frames": 30,
         "animation": { "preset": "fade_shift_vertical" }
@@ -52,8 +49,7 @@
         "id": "important_word_4",
         "type": "text",
         "text": "OPENAI",
-        "font": "assets/fonts/DejaVuSans.ttf",
-        "preset": "kinetic_word",
+        "preset": "active_word_pop",
         "start_frame": 105,
         "duration_frames": 30,
         "animation": { "preset": "scale_drop" }

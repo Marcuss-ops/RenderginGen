@@ -18,8 +18,8 @@ import (
 // GoldenOverlayJobV1 workload:
 //
 //	background.jpg (full 5s)
-//	+ "QUESTO CAMBIA TUTTO" (title_centered, f20-60)
-//	+ "APPLE"               (kinetic_word, f65-95)
+//	+ "QUESTO CAMBIA TUTTO" (caption_card, f20-60)
+//	+ "APPLE"               (active_word_pop, f65-95)
 //	+ apple.png             (contain, right, f90-135)
 //
 // The assets (background, apple overlay, vendored DejaVuSans font) are the

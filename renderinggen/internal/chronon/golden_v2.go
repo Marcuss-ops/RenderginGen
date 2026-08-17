@@ -5,8 +5,8 @@ package chronon
 // exercises the full semantic vocabulary and every canonical primitive:
 //
 //	video background (background.mp4, full 8s)      → Video primitive
-//	+ IMPORTANT_PHRASE ×2 (title_centered, animated)
-//	+ IMPORTANT_WORD ×2   (kinetic_word, animated)
+//	+ IMPORTANT_PHRASE ×2 (caption_card, animated)
+//	+ IMPORTANT_WORD ×2   (active_word_pop, animated)
 //	+ IMAGE_OVERLAY ×2    (contain, popup)          → Image primitive
 //	+ LOGO                (contain, corner)
 //	+ 4 layer animations  (fade_in / scale_in / slide_up / fade_in)
@@ -14,8 +14,8 @@ package chronon
 // 8 seconds at 30 fps = 240 frames (f0-239) on a 1280x720 canvas. The assets
 // are deterministic fixtures under testdata/golden/ (see
 // infra/e2e/gen-golden-v2-assets.py) with content-addressed hashes baked in;
-// the text layers declare the vendored DejaVuSans.ttf, so the job is fully
-// self-contained and renders identically everywhere:
+// the text layers carry no font: Chronon's VisualPresetRegistry resolves the
+// preset's canonical font asset, and the bytes travel as a queue asset:
 //
 //	background.mp4              11eeec4e47fb254dc6acc4b72405bf06f2ed7294cffa8b7a95ba76f1e8d9c70c
 //	overlay_globe.png           b7219a0c2f3f0c45f12d3b387332bd2cf0502205a6bb3fa0beca542de6da1939
@@ -52,8 +52,7 @@ const GoldenOverlayJobV2 = `{
         "id": "important_phrase_1",
         "type": "text",
         "text": "IL FUTURO È ADESSO",
-        "font": "assets/fonts/DejaVuSans.ttf",
-        "preset": "title_centered",
+        "preset": "caption_card",
         "start_frame": 24,
         "duration_frames": 84,
         "animation": { "preset": "fade_in" }
@@ -62,8 +61,7 @@ const GoldenOverlayJobV2 = `{
         "id": "important_word_1",
         "type": "text",
         "text": "VELOCITÀ",
-        "font": "assets/fonts/DejaVuSans.ttf",
-        "preset": "kinetic_word",
+        "preset": "active_word_pop",
         "start_frame": 24,
         "duration_frames": 84,
         "animation": { "preset": "scale_drop" }
@@ -72,6 +70,7 @@ const GoldenOverlayJobV2 = `{
         "id": "image_overlay_1",
         "type": "image",
         "asset": "assets/overlay_globe.png",
+        "preset": "image_focus_in",
         "box_width": 300,
         "box_height": 300,
         "fit": "contain",
@@ -83,8 +82,7 @@ const GoldenOverlayJobV2 = `{
         "id": "important_phrase_2",
         "type": "text",
         "text": "CAMBIARE IL MERCATO",
-        "font": "assets/fonts/DejaVuSans.ttf",
-        "preset": "title_centered",
+        "preset": "caption_card",
         "start_frame": 132,
         "duration_frames": 84,
         "animation": { "preset": "fade_shift_vertical" }
@@ -93,8 +91,7 @@ const GoldenOverlayJobV2 = `{
         "id": "important_word_2",
         "type": "text",
         "text": "POTENZA",
-        "font": "assets/fonts/DejaVuSans.ttf",
-        "preset": "kinetic_word",
+        "preset": "active_word_pop",
         "start_frame": 132,
         "duration_frames": 84,
         "animation": { "preset": "fade_in" }
@@ -103,6 +100,7 @@ const GoldenOverlayJobV2 = `{
         "id": "image_overlay_2",
         "type": "image",
         "asset": "assets/overlay_chart.png",
+        "preset": "image_focus_in",
         "box_width": 300,
         "box_height": 300,
         "fit": "contain",

@@ -110,6 +110,14 @@ func (w *Workspace) assetPath(logical string) (string, error) {
 	if filepath.IsAbs(clean) || clean == ".." || strings.HasPrefix(clean, ".."+string(filepath.Separator)) {
 		return "", fmt.Errorf("workspace: logical_path %q escapes the assets root", logical)
 	}
+	// Concrete Chronon plans use the canonical `assets/...` namespace and are
+	// rendered with the workspace root as Chronon's assets root. Legacy queue
+	// refs such as `videos/base.mp4` are still relative to the workspace's
+	// assets directory. Supporting both here keeps one materialization rule at
+	// the RenderingGen boundary.
+	if clean == "assets" || strings.HasPrefix(clean, "assets"+string(filepath.Separator)) {
+		return filepath.Join(w.root, clean), nil
+	}
 	return filepath.Join(w.assetsDir, clean), nil
 }
 

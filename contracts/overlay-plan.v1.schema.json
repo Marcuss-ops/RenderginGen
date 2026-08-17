@@ -15,6 +15,7 @@
     "height": { "type": "integer", "minimum": 1 },
     "fps": { "type": "integer", "minimum": 1 },
     "output_profile_id": { "type": "string", "minLength": 1 },
+    "style_profile": { "enum": ["discovery", "young", "crime"] },
     "renderer_version": { "type": "string" },
     "fingerprint": { "type": "string" },
     "items": {
