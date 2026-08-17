@@ -25,12 +25,16 @@ artifact_store:
   endpoint: http://store:9000
   local_cache_dir: /tmp/cache
 chronon:
-  backend: vulkan
-  home: /opt/chronon
+  backend: software
+  home: /opt/chronon3d
+  mode: ipc
+  socket_path: /tmp/chronon.sock
 gpu:
   device: 0
 health:
   addr: ":9090"
+workspace:
+  root: /tmp/jobs
 `)
 	cfg, err := Load(path)
 	if err != nil {
@@ -45,17 +49,26 @@ health:
 	if cfg.ArtifactStore.Endpoint != "http://store:9000" {
 		t.Fatalf("store endpoint = %q", cfg.ArtifactStore.Endpoint)
 	}
-	if cfg.Chronon.Backend != "vulkan" {
+	if cfg.Chronon.Backend != "software" {
 		t.Fatalf("chronon backend = %q", cfg.Chronon.Backend)
 	}
-	if cfg.Chronon.Home != "/opt/chronon" {
+	if cfg.Chronon.Home != "/opt/chronon3d" {
 		t.Fatalf("chronon home = %q", cfg.Chronon.Home)
+	}
+	if cfg.Chronon.Mode != "ipc" {
+		t.Fatalf("chronon mode = %q", cfg.Chronon.Mode)
+	}
+	if cfg.Chronon.SocketPath != "/tmp/chronon.sock" {
+		t.Fatalf("chronon socket path = %q", cfg.Chronon.SocketPath)
 	}
 	if cfg.Health.Addr != ":9090" {
 		t.Fatalf("health addr = %q", cfg.Health.Addr)
 	}
 	if cfg.GPU.Device != 0 {
 		t.Fatalf("gpu device = %d", cfg.GPU.Device)
+	}
+	if cfg.Workspace.Root != "/tmp/jobs" {
+		t.Fatalf("workspace root = %q", cfg.Workspace.Root)
 	}
 }
 
@@ -73,17 +86,26 @@ artifact_store:
 	if cfg.Worker.ID == "" {
 		t.Fatal("worker id should default to a hostname-based value")
 	}
-	if cfg.Chronon.Backend != "vulkan" {
+	if cfg.Chronon.Backend != "software" {
 		t.Fatalf("chronon backend default = %q", cfg.Chronon.Backend)
 	}
-	if cfg.Chronon.Home != "/opt/chronon" {
+	if cfg.Chronon.Home != "/opt/chronon3d" {
 		t.Fatalf("chronon home default = %q", cfg.Chronon.Home)
+	}
+	if cfg.Chronon.Mode != "cli" {
+		t.Fatalf("chronon mode default = %q", cfg.Chronon.Mode)
+	}
+	if cfg.Chronon.SocketPath != "/var/run/chronon3d/chronon.sock" {
+		t.Fatalf("chronon socket path default = %q", cfg.Chronon.SocketPath)
 	}
 	if cfg.ArtifactStore.LocalCacheDir != "/var/lib/renderinggen/cache" {
 		t.Fatalf("cache dir default = %q", cfg.ArtifactStore.LocalCacheDir)
 	}
 	if cfg.Health.Addr != ":8080" {
 		t.Fatalf("health addr default = %q", cfg.Health.Addr)
+	}
+	if cfg.Workspace.Root != "/var/lib/renderinggen/jobs" {
+		t.Fatalf("workspace root default = %q", cfg.Workspace.Root)
 	}
 }
 

@@ -40,23 +40,42 @@ services:
     restart: unless-stopped
 
   worker:
+    # CHRONON_RUNTIME is built from the real Chronon3d repo (not vendored
+    # here); see README "Build & run" for the two-step local build.
     build:
       context: ../..
       dockerfile: infra/docker/renderinggen-worker.Dockerfile
       args:
-        CHRONON_RUNTIME: chronon-gpu-runtime:0.9.4
+        CHRONON_RUNTIME: ghcr.io/marcuss-ops/chronon3d-runtime:0.1.0
         VERSION: 0.1.0
     environment:
-      CHRONON_HOME: /opt/chronon
+      CHRONON_HOME: /opt/chronon3d
     volumes:
       - renderinggen-cache:/var/lib/renderinggen/cache
-      - ./worker-config.yaml:/etc/renderinggen/config.yaml:ro
+      - ./worker-config-drive.yaml:/etc/renderinggen/config.yaml:ro
+      - ./credentials.json:/etc/renderinggen/credentials.json:ro
+      - ./token.json:/etc/renderinggen/token.json
     depends_on:
       - queue
       - objectstore
     # Vulkan GPU passthrough; adjust for your provider.
     # devices:
     #   - /dev/dri:/dev/dri
+    restart: unless-stopped
+
+  # Second worker with a distinct worker id. Used to exercise concurrent
+  # claim/render across two real workers (Test 11): the atomic claim
+  # (FOR UPDATE SKIP LOCKED) must never hand the same job to both.
+  worker-b:
+    image: docker-worker
+    environment:
+      CHRONON_HOME: /opt/chronon3d
+    volumes:
+      - renderinggen-cache:/var/lib/renderinggen/cache
+      - ./worker-config-b.yaml:/etc/renderinggen/config.yaml:ro
+    depends_on:
+      - queue
+      - objectstore
     restart: unless-stopped
 
 volumes:

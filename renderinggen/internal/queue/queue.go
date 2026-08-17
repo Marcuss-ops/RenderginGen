@@ -15,43 +15,87 @@ import (
 	queueclient "github.com/Marcuss-ops/RenderginGen/queue/client"
 )
 
-// AssetRef points at an asset in the central artifact store.
+// JobSchemaV1 identifies the renderinggen.job.v1 envelope.
+const JobSchemaV1 = "renderinggen.job"
+
+// JobSchemaVersionV1 is the version of the renderinggen.job.v1 envelope.
+const JobSchemaVersionV1 = 1
+
+const (
+	JobTypeRenderSegment  = "render_segment"
+	JobTypeOverlayPrepare = "overlay.prepare"
+	JobTypeOverlayRender  = "overlay.render"
+)
+
+// State is the lifecycle state of a job, as reported on claim.
+type State string
+
+const (
+	StatePending   State = "pending"
+	StateRunning   State = "running"
+	StateCompleted State = "completed"
+	StateFailed    State = "failed"
+	StateRendered  State = "rendered"
+)
+
+// AssetRef points at an asset in the central artifact store by content hash
+// and the logical path it must be materialized at in the job workspace.
 type AssetRef struct {
-	Hash string `json:"hash"`
-	URL  string `json:"url"`
+	Hash        string `json:"hash"`
+	LogicalPath string `json:"logical_path"`
 }
 
-// Job is a single overlay render request pulled from the queue.
+// Job is one render SEGMENT pulled from the queue. RenderPlan is either the
+// semantic renderinggen.overlay-plan.v1 emitted by PipelineGen (compiled by
+// the worker) or a concrete chronon.render-plan.v1 legacy payload.
 type Job struct {
-	ID          string          `json:"id"`
-	OverlaySpec json.RawMessage `json:"overlay_spec"`
-	Assets      []AssetRef      `json:"assets"`
-	Lease       time.Duration   `json:"lease"`
+	ID             string `json:"id"`
+	Schema         string `json:"schema,omitempty"`
+	Version        int    `json:"version,omitempty"`
+	IdempotencyKey string `json:"idempotency_key,omitempty"`
+	JobType        string `json:"job_type,omitempty"`
+
+	RenderPlan json.RawMessage `json:"render_plan"`
+	Assets     []AssetRef      `json:"assets"`
+	Lease      time.Duration   `json:"lease"`
+
+	// State and Artifact are populated on claim: a re-claimed rendered job
+	// carries its stored artifact so the worker can skip rendering.
+	State    State     `json:"state,omitempty"`
+	Artifact *Artifact `json:"artifact,omitempty"`
 }
 
 // Artifact is the metadata of the artifact produced for a completed job,
 // including the copy-only certification VeloxEditing uses to assemble the
 // overlay without re-decoding or re-encoding it.
 type Artifact struct {
-	ID                 string `json:"id,omitempty"`
-	Kind               string `json:"kind,omitempty"`
-	StorageKey         string `json:"storage_key,omitempty"`
-	URL                string `json:"url,omitempty"`
-	SHA256             string `json:"sha256,omitempty"`
-	MimeType           string `json:"mime_type,omitempty"`
-	SizeBytes          int64  `json:"size_bytes,omitempty"`
-	Width              int    `json:"width,omitempty"`
-	Height             int    `json:"height,omitempty"`
-	FPSNum             int    `json:"fps_num,omitempty"`
-	FPSDen             int    `json:"fps_den,omitempty"`
-	FrameCount         int    `json:"frame_count,omitempty"`
-	DurationUS         int64  `json:"duration_us,omitempty"`
-	ProfileID          string `json:"profile_id,omitempty"`
-	CopyEligible       bool   `json:"copy_eligible,omitempty"`
-	Codec              string `json:"codec,omitempty"`
-	CodecProfile       string `json:"codec_profile,omitempty"`
-	ClosedGOP          bool   `json:"closed_gop,omitempty"`
-	FirstFrameKeyframe bool   `json:"first_frame_keyframe,omitempty"`
+	ID                 string             `json:"id,omitempty"`
+	Kind               string             `json:"kind,omitempty"`
+	StorageKey         string             `json:"storage_key,omitempty"`
+	ArtifactURL        string             `json:"artifact_url,omitempty"`
+	ArtifactHash       string             `json:"artifact_hash,omitempty"`
+	ContentType        string             `json:"content_type,omitempty"`
+	SizeBytes          int64              `json:"size_bytes,omitempty"`
+	Width              int                `json:"width,omitempty"`
+	Height             int                `json:"height,omitempty"`
+	FPSNum             int                `json:"fps_num,omitempty"`
+	FPSDen             int                `json:"fps_den,omitempty"`
+	FrameCount         int                `json:"frame_count,omitempty"`
+	DurationUS         int64              `json:"duration_us,omitempty"`
+	ProfileID          string             `json:"profile_id,omitempty"`
+	CopyEligible       bool               `json:"copy_eligible,omitempty"`
+	Codec              string             `json:"codec,omitempty"`
+	CodecProfile       string             `json:"codec_profile,omitempty"`
+	ClosedGOP          bool               `json:"closed_gop,omitempty"`
+	FirstFrameKeyframe bool               `json:"first_frame_keyframe,omitempty"`
+	Backend            string             `json:"backend,omitempty"`
+	ChrononVersion     string             `json:"chronon_version,omitempty"`
+	Metrics            map[string]float64 `json:"metrics,omitempty"`
+	DriveFileID        string             `json:"drive_file_id,omitempty"`
+	DriveLink          string             `json:"drive_link,omitempty"`
+	Container          string             `json:"container,omitempty"`
+	PixelFormat        string             `json:"pixel_format,omitempty"`
+	AudioStreams       int                `json:"audio_streams,omitempty"`
 }
 
 // Client claims and reports jobs against a central queue, delegating the wire
@@ -79,10 +123,16 @@ func (c *Client) Claim(ctx context.Context) (*Job, error) {
 		return nil, nil
 	}
 	return &Job{
-		ID:          claimed.ID,
-		OverlaySpec: claimed.OverlaySpec,
-		Assets:      fromClientAssets(claimed.Assets),
-		Lease:       claimed.Lease,
+		ID:             claimed.ID,
+		Schema:         claimed.Schema,
+		Version:        claimed.Version,
+		IdempotencyKey: claimed.IdempotencyKey,
+		JobType:        claimed.JobType,
+		RenderPlan:     claimed.RenderPlan,
+		Assets:         fromClientAssets(claimed.Assets),
+		Lease:          claimed.Lease,
+		State:          State(claimed.State),
+		Artifact:       fromClientArtifact(claimed.Artifact),
 	}, nil
 }
 
@@ -94,6 +144,13 @@ func (c *Client) Complete(ctx context.Context, id string, artifact Artifact) err
 // Fail reports a job that could not be rendered.
 func (c *Client) Fail(ctx context.Context, id, reason string) error {
 	return c.q.Fail(ctx, id, c.workerID, reason)
+}
+
+// Rendered reports a job whose render completed and was durably stored, but
+// whose external publication (Drive) failed. The job stays claimable for a
+// publication-only retry.
+func (c *Client) Rendered(ctx context.Context, id, reason string, artifact Artifact) error {
+	return c.q.Rendered(ctx, id, c.workerID, reason, toClientArtifact(artifact))
 }
 
 // Renew extends the lease on a running job, signalling liveness during a long
@@ -108,7 +165,7 @@ func fromClientAssets(in []queueclient.AssetRef) []AssetRef {
 	}
 	out := make([]AssetRef, len(in))
 	for i, a := range in {
-		out[i] = AssetRef{Hash: a.Hash, URL: a.URL}
+		out[i] = AssetRef{Hash: a.Hash, LogicalPath: a.LogicalPath}
 	}
 	return out
 }
@@ -118,9 +175,9 @@ func toClientArtifact(in Artifact) queueclient.Artifact {
 		ID:                 in.ID,
 		Kind:               in.Kind,
 		StorageKey:         in.StorageKey,
-		URL:                in.URL,
-		SHA256:             in.SHA256,
-		MimeType:           in.MimeType,
+		ArtifactURL:        in.ArtifactURL,
+		ArtifactHash:       in.ArtifactHash,
+		ContentType:        in.ContentType,
 		SizeBytes:          in.SizeBytes,
 		Width:              in.Width,
 		Height:             in.Height,
@@ -134,5 +191,48 @@ func toClientArtifact(in Artifact) queueclient.Artifact {
 		CodecProfile:       in.CodecProfile,
 		ClosedGOP:          in.ClosedGOP,
 		FirstFrameKeyframe: in.FirstFrameKeyframe,
+		Backend:            in.Backend,
+		ChrononVersion:     in.ChrononVersion,
+		Metrics:            in.Metrics,
+		DriveFileID:        in.DriveFileID,
+		DriveLink:          in.DriveLink,
+		Container:          in.Container,
+		PixelFormat:        in.PixelFormat,
+		AudioStreams:       in.AudioStreams,
+	}
+}
+
+func fromClientArtifact(in *queueclient.Artifact) *Artifact {
+	if in == nil {
+		return nil
+	}
+	return &Artifact{
+		ID:                 in.ID,
+		Kind:               in.Kind,
+		StorageKey:         in.StorageKey,
+		ArtifactURL:        in.ArtifactURL,
+		ArtifactHash:       in.ArtifactHash,
+		ContentType:        in.ContentType,
+		SizeBytes:          in.SizeBytes,
+		Width:              in.Width,
+		Height:             in.Height,
+		FPSNum:             in.FPSNum,
+		FPSDen:             in.FPSDen,
+		FrameCount:         in.FrameCount,
+		DurationUS:         in.DurationUS,
+		ProfileID:          in.ProfileID,
+		CopyEligible:       in.CopyEligible,
+		Codec:              in.Codec,
+		CodecProfile:       in.CodecProfile,
+		ClosedGOP:          in.ClosedGOP,
+		FirstFrameKeyframe: in.FirstFrameKeyframe,
+		Backend:            in.Backend,
+		ChrononVersion:     in.ChrononVersion,
+		Metrics:            in.Metrics,
+		DriveFileID:        in.DriveFileID,
+		DriveLink:          in.DriveLink,
+		Container:          in.Container,
+		PixelFormat:        in.PixelFormat,
+		AudioStreams:       in.AudioStreams,
 	}
 }

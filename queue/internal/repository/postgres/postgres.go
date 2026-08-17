@@ -19,8 +19,16 @@ import (
 	"github.com/Marcuss-ops/RenderginGen/queue/internal/repository"
 )
 
-// defaultJobType is used until the Job model carries an explicit type.
-const defaultJobType = "overlay"
+// defaultJobType is the job type recorded for render jobs. A job is one
+// render SEGMENT (a full chronon.render-plan), not a single overlay.
+const defaultJobType = model.JobTypeRenderSegment
+
+func nonEmptyJobType(jobType string) string {
+	if jobType == "" {
+		return defaultJobType
+	}
+	return jobType
+}
 
 // Repository is the PostgreSQL backend for the central job queue.
 type Repository struct {
@@ -47,9 +55,17 @@ func (r *Repository) Submit(job model.Job) error {
 	if job.ID == "" {
 		return fmt.Errorf("job id is required")
 	}
-	overlay, err := normalizeJSON(job.OverlaySpec)
+	schema := job.Schema
+	if schema == "" {
+		schema = model.JobSchemaV1
+	}
+	version := job.Version
+	if version == 0 {
+		version = model.JobSchemaVersionV1
+	}
+	plan, err := normalizeJSON(job.RenderPlan)
 	if err != nil {
-		return fmt.Errorf("overlay_spec: %w", err)
+		return fmt.Errorf("render_plan: %w", err)
 	}
 	manifest, err := json.Marshal(inputManifest{Assets: job.Assets})
 	if err != nil {
@@ -64,10 +80,10 @@ func (r *Repository) Submit(job model.Job) error {
 	defer tx.Rollback()
 
 	res, err := tx.ExecContext(ctx, `
-		INSERT INTO render_jobs (id, job_type, overlay_spec, input_manifest, max_attempts)
-		VALUES ($1, $2, $3, $4, $5)
+		INSERT INTO render_jobs (id, job_type, job_schema, job_schema_version, render_plan, input_manifest, max_attempts, idempotency_key)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, NULLIF($8, ''))
 		ON CONFLICT (id) DO NOTHING`,
-		job.ID, defaultJobType, overlay, manifest, r.maxAttempts)
+		job.ID, nonEmptyJobType(job.JobType), schema, version, plan, manifest, r.maxAttempts, job.IdempotencyKey)
 	if err != nil {
 		return err
 	}
@@ -79,6 +95,37 @@ func (r *Repository) Submit(job model.Job) error {
 		return err
 	}
 	return tx.Commit()
+}
+
+// SubmitIdempotent uses the database uniqueness constraint as the race-safe
+// winner selection for concurrent retries of the same logical request.
+func (r *Repository) SubmitIdempotent(job model.Job) (*model.Job, bool, error) {
+	if job.IdempotencyKey == "" {
+		if err := r.Submit(job); err != nil {
+			return nil, false, err
+		}
+		canonical, err := r.Get(job.ID)
+		return canonical, true, err
+	}
+	var existingID string
+	err := r.db.QueryRow(`SELECT id FROM render_jobs WHERE idempotency_key = $1`, job.IdempotencyKey).Scan(&existingID)
+	if err == nil {
+		canonical, getErr := r.Get(existingID)
+		return canonical, false, getErr
+	}
+	if !errors.Is(err, sql.ErrNoRows) {
+		return nil, false, err
+	}
+	if err := r.Submit(job); err == nil {
+		canonical, getErr := r.Get(job.ID)
+		return canonical, true, getErr
+	}
+	// Another submitter may have won the unique-key race.
+	if err := r.db.QueryRow(`SELECT id FROM render_jobs WHERE idempotency_key = $1`, job.IdempotencyKey).Scan(&existingID); err != nil {
+		return nil, false, err
+	}
+	canonical, getErr := r.Get(existingID)
+	return canonical, false, getErr
 }
 
 // Claim atomically claims the highest-priority, longest-waiting pending job
@@ -96,19 +143,23 @@ func (r *Repository) Claim(workerID string) (*model.Job, time.Duration, error) {
 	leaseUntil := now.Add(r.lease)
 
 	var (
-		id       string
-		overlay  []byte
-		manifest []byte
-		attempts int
-		queuedAt time.Time
+		id         string
+		jobType    string
+		schema     string
+		version    sql.NullInt64
+		plan       []byte
+		manifest   []byte
+		attempts   int
+		queuedAt   time.Time
+		artifactID sql.NullString
 	)
 	err = tx.QueryRowContext(ctx, `
-		SELECT id, overlay_spec, input_manifest, attempt_count, queued_at
+		SELECT id, job_type, job_schema, job_schema_version, render_plan, input_manifest, attempt_count, queued_at, artifact_id
 		FROM render_jobs
-		WHERE state = 'pending'
+		WHERE state IN ('pending', 'rendered')
 		ORDER BY priority DESC, queued_at ASC
 		FOR UPDATE SKIP LOCKED
-		LIMIT 1`).Scan(&id, &overlay, &manifest, &attempts, &queuedAt)
+		LIMIT 1`).Scan(&id, &jobType, &schema, &version, &plan, &manifest, &attempts, &queuedAt, &artifactID)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, 0, nil
 	}
@@ -141,15 +192,25 @@ func (r *Repository) Claim(workerID string) (*model.Job, time.Duration, error) {
 	}
 
 	job := &model.Job{
-		ID:          id,
-		OverlaySpec: json.RawMessage(overlay),
-		Assets:      decodeAssets(manifest),
-		State:       model.StateRunning,
-		Worker:      workerID,
-		Attempts:    attemptNumber,
-		QueuedAt:    queuedAt,
-		StartedAt:   now,
-		LeaseUntil:  leaseUntil,
+		ID:         id,
+		JobType:    jobType,
+		Schema:     schema,
+		Version:    schemaVersion(version),
+		RenderPlan: json.RawMessage(plan),
+		Assets:     decodeAssets(manifest),
+		State:      model.StateRunning,
+		Worker:     workerID,
+		Attempts:   attemptNumber,
+		QueuedAt:   queuedAt,
+		StartedAt:  now,
+		LeaseUntil: leaseUntil,
+	}
+	// A job re-claimed from the rendered state carries its already-stored
+	// artifact so the worker can skip rendering and only retry publication.
+	if artifactID.Valid {
+		if artifact, err := getArtifact(ctx, r.db, artifactID.String); err == nil {
+			job.Artifact = artifact
+		}
 	}
 	return job, r.lease, nil
 }
@@ -159,27 +220,32 @@ func (r *Repository) Get(id string) (*model.Job, error) {
 	ctx := context.Background()
 
 	var (
-		job         model.Job
-		state       string
-		overlay     []byte
-		manifest    []byte
-		worker      sql.NullString
-		queuedAt    sql.NullTime
-		startedAt   sql.NullTime
-		completedAt sql.NullTime
-		leaseUntil  sql.NullTime
-		errorMsg    sql.NullString
-		artifactID  sql.NullString
+		job            model.Job
+		state          string
+		schema         string
+		version        sql.NullInt64
+		plan           []byte
+		manifest       []byte
+		worker         sql.NullString
+		queuedAt       sql.NullTime
+		startedAt      sql.NullTime
+		completedAt    sql.NullTime
+		leaseUntil     sql.NullTime
+		errorMsg       sql.NullString
+		artifactID     sql.NullString
+		idempotencyKey sql.NullString
 	)
 	err := r.db.QueryRowContext(ctx, `
-		SELECT id, state, overlay_spec, input_manifest, attempt_count,
+		SELECT id, state, job_type, job_schema, job_schema_version, render_plan,
+		       input_manifest, attempt_count,
 		       current_worker_id, queued_at, started_at, completed_at,
-		       lease_until, error_message, artifact_id
+		       lease_until, error_message, artifact_id, idempotency_key
 		FROM render_jobs
 		WHERE id = $1`, id).Scan(
-		&job.ID, &state, &overlay, &manifest, &job.Attempts,
+		&job.ID, &state, &job.JobType, &schema, &version, &plan,
+		&manifest, &job.Attempts,
 		&worker, &queuedAt, &startedAt, &completedAt,
-		&leaseUntil, &errorMsg, &artifactID)
+		&leaseUntil, &errorMsg, &artifactID, &idempotencyKey)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, fmt.Errorf("job %s: %w", id, repository.ErrNotFound)
 	}
@@ -188,7 +254,10 @@ func (r *Repository) Get(id string) (*model.Job, error) {
 	}
 
 	job.State = model.State(state)
-	job.OverlaySpec = json.RawMessage(overlay)
+	job.Schema = schema
+	job.Version = schemaVersion(version)
+	job.RenderPlan = json.RawMessage(plan)
+	job.IdempotencyKey = idempotencyKey.String
 	job.Assets = decodeAssets(manifest)
 	if worker.Valid {
 		job.Worker = worker.String
@@ -219,8 +288,8 @@ func (r *Repository) Get(id string) (*model.Job, error) {
 	return &job, nil
 }
 
-// Complete marks a running job as completed and, when an artifact is
-// provided, persists it and links it to the job.
+// Complete marks a running job as completed and, when the artifact has a
+// storage key, persists it and links it to the job.
 func (r *Repository) Complete(id, workerID string, artifact model.Artifact) error {
 	ctx := context.Background()
 	tx, err := r.db.BeginTx(ctx, nil)
@@ -251,10 +320,65 @@ func (r *Repository) Complete(id, workerID string, artifact model.Artifact) erro
 		return err
 	}
 
-	if artifact.ID != "" && artifact.StorageKey != "" {
+	if artifact.StorageKey != "" {
+		if artifact.ID == "" {
+			artifact.ID = id // one artifact per job
+		}
 		if err := insertArtifact(ctx, tx, id, artifact); err != nil {
 			return err
 		}
+	}
+	if err := insertProcessingMetrics(ctx, tx, id, attempt, artifact.Metrics); err != nil {
+		return err
+	}
+	return tx.Commit()
+}
+
+// Rendered marks a running job as rendered: its artifact is durably stored in
+// the object store but external publication (Google Drive) failed. The job is
+// kept out of `completed` and becomes claimable again for a publication-only
+// retry, so a flaky upload never wastes a GPU re-render.
+func (r *Repository) Rendered(id, workerID string, artifact model.Artifact, reason string) error {
+	ctx := context.Background()
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	res, err := tx.ExecContext(ctx, `
+		UPDATE render_jobs
+		SET state = 'rendered', error_message = $2, queued_at = now(),
+		    current_worker_id = NULL, lease_until = NULL
+		WHERE id = $1 AND state = 'running' AND current_worker_id = $3`, id, reason, workerID)
+	if err != nil {
+		return err
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return fmt.Errorf("job %s is not running or not owned by %s", id, workerID)
+	}
+
+	attempt, err := runningAttemptID(ctx, tx, id)
+	if err != nil {
+		return err
+	}
+	if err := finishAttempt(ctx, tx, attempt, attemptStatusRendered, "drive_upload_failed", reason); err != nil {
+		return err
+	}
+	if err := recordEvent(ctx, tx, eventJobRendered, id, attempt, workerID, map[string]any{"reason": reason}); err != nil {
+		return err
+	}
+
+	if artifact.StorageKey != "" {
+		if artifact.ID == "" {
+			artifact.ID = id // one artifact per job
+		}
+		if err := insertArtifact(ctx, tx, id, artifact); err != nil {
+			return err
+		}
+	}
+	if err := insertProcessingMetrics(ctx, tx, id, attempt, artifact.Metrics); err != nil {
+		return err
 	}
 	return tx.Commit()
 }
@@ -461,6 +585,15 @@ func normalizeJSON(raw json.RawMessage) ([]byte, error) {
 		return nil, fmt.Errorf("invalid json")
 	}
 	return raw, nil
+}
+
+// schemaVersion maps a nullable job_schema_version column to an int,
+// defaulting to the v1 envelope version when the column is NULL (legacy rows).
+func schemaVersion(v sql.NullInt64) int {
+	if !v.Valid {
+		return model.JobSchemaVersionV1
+	}
+	return int(v.Int64)
 }
 
 // decodeAssets extracts the asset references from an input_manifest JSONB.

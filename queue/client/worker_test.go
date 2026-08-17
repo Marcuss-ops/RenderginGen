@@ -21,7 +21,7 @@ func TestClaimDecodesJobAndLease(t *testing.T) {
 			t.Errorf("worker = %q", body["worker"])
 		}
 		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"id":"job-1","overlay_spec":{"o":1},"assets":[{"hash":"abc"}],"lease":60000000000}`))
+		_, _ = w.Write([]byte(`{"id":"job-1","schema":"renderinggen.job","version":1,"render_plan":{"o":1},"assets":[{"hash":"abc","logical_path":"videos/base.mp4"}],"lease":60000000000}`))
 	}))
 	defer srv.Close()
 
@@ -33,8 +33,11 @@ func TestClaimDecodesJobAndLease(t *testing.T) {
 	if job == nil || job.ID != "job-1" || job.Lease != 60*time.Second {
 		t.Fatalf("unexpected job: %+v", job)
 	}
-	if len(job.Assets) != 1 || job.Assets[0].Hash != "abc" {
+	if len(job.Assets) != 1 || job.Assets[0].Hash != "abc" || job.Assets[0].LogicalPath != "videos/base.mp4" {
 		t.Fatalf("assets: %+v", job.Assets)
+	}
+	if job.Schema != "renderinggen.job" || job.Version != 1 {
+		t.Fatalf("envelope: schema=%q version=%d", job.Schema, job.Version)
 	}
 }
 

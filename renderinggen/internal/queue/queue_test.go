@@ -15,7 +15,7 @@ func TestClientClaimRenewComplete(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("POST /jobs/claim", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"id":"job-1","overlay_spec":{"o":1},"lease":60000000000}`))
+		_, _ = w.Write([]byte(`{"id":"job-1","schema":"renderinggen.job","version":1,"render_plan":{"o":1},"lease":60000000000}`))
 	})
 	mux.HandleFunc("POST /jobs/job-1/renew", func(w http.ResponseWriter, r *http.Request) {
 		atomic.AddInt32(&renewed, 1)

@@ -15,19 +15,46 @@ const (
 	StateRunning   State = "running"
 	StateCompleted State = "completed"
 	StateFailed    State = "failed"
+
+	// StateRendered marks a job whose render is finished and durably stored in
+	// the artifact store, but whose external publication (e.g. Google Drive)
+	// failed. A worker re-claiming it must skip rendering and only retry the
+	// publication step.
+	StateRendered State = "rendered"
 )
 
-// AssetRef points at an asset in the central artifact store.
+const (
+	JobTypeRenderSegment  = "render_segment"
+	JobTypeOverlayPrepare = "overlay.prepare"
+	JobTypeOverlayRender  = "overlay.render"
+)
+
+// JobSchemaV1 identifies the renderinggen.job.v1 envelope.
+const JobSchemaV1 = "renderinggen.job"
+
+// JobSchemaVersionV1 is the version of the renderinggen.job.v1 envelope.
+const JobSchemaVersionV1 = 1
+
+// AssetRef points at an asset in the central artifact store by content hash
+// and the logical path it must be materialized at in the job workspace.
 type AssetRef struct {
-	Hash string `json:"hash"`
-	URL  string `json:"url"`
+	Hash        string `json:"hash"`
+	LogicalPath string `json:"logical_path"`
 }
 
-// Job is a unit of work in the queue.
+// Job is a unit of work in the queue: one render SEGMENT. The renderable
+// content is a chronon.render-plan.v1 document carried in RenderPlan; it
+// contains every layer of the segment (base video, phrases, keywords, images,
+// animations) so Chronon3d composes them in a single pass.
 type Job struct {
-	ID          string          `json:"id"`
-	OverlaySpec json.RawMessage `json:"overlay_spec"`
-	Assets      []AssetRef      `json:"assets"`
+	ID             string `json:"id"`
+	Schema         string `json:"schema,omitempty"`
+	Version        int    `json:"version,omitempty"`
+	IdempotencyKey string `json:"idempotency_key,omitempty"`
+	JobType        string `json:"job_type,omitempty"`
+
+	RenderPlan json.RawMessage `json:"render_plan"`
+	Assets     []AssetRef      `json:"assets"`
 
 	State       State     `json:"state"`
 	Worker      string    `json:"worker,omitempty"`

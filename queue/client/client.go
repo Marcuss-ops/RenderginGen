@@ -39,45 +39,67 @@ const (
 	StateRunning   State = "running"
 	StateCompleted State = "completed"
 	StateFailed    State = "failed"
+	StateRendered  State = "rendered"
 )
 
-// AssetRef points at an asset in the central artifact store.
+// JobSchemaV1 identifies the renderinggen.job.v1 envelope.
+const JobSchemaV1 = "renderinggen.job"
+
+// JobSchemaVersionV1 is the version of the renderinggen.job.v1 envelope.
+const JobSchemaVersionV1 = 1
+
+// AssetRef points at an asset in the central artifact store by content hash
+// and the logical path it must be materialized at in the job workspace.
 type AssetRef struct {
-	Hash string `json:"hash"`
-	URL  string `json:"url"`
+	Hash        string `json:"hash"`
+	LogicalPath string `json:"logical_path"`
 }
 
 // Artifact is the metadata of a rendered artifact, including the copy-only
 // certification (codec, profile, GOP/keyframe flags) VeloxEditing relies on.
 type Artifact struct {
-	ID                 string `json:"id,omitempty"`
-	Kind               string `json:"kind,omitempty"`
-	StorageKey         string `json:"storage_key,omitempty"`
-	URL                string `json:"url,omitempty"`
-	SHA256             string `json:"sha256,omitempty"`
-	MimeType           string `json:"mime_type,omitempty"`
-	SizeBytes          int64  `json:"size_bytes,omitempty"`
-	Width              int    `json:"width,omitempty"`
-	Height             int    `json:"height,omitempty"`
-	FPSNum             int    `json:"fps_num,omitempty"`
-	FPSDen             int    `json:"fps_den,omitempty"`
-	FrameCount         int    `json:"frame_count,omitempty"`
-	DurationUS         int64  `json:"duration_us,omitempty"`
-	ProfileID          string `json:"profile_id,omitempty"`
-	CopyEligible       bool   `json:"copy_eligible,omitempty"`
-	Codec              string `json:"codec,omitempty"`
-	CodecProfile       string `json:"codec_profile,omitempty"`
-	ClosedGOP          bool   `json:"closed_gop,omitempty"`
-	FirstFrameKeyframe bool   `json:"first_frame_keyframe,omitempty"`
+	ID                 string             `json:"id,omitempty"`
+	Kind               string             `json:"kind,omitempty"`
+	StorageKey         string             `json:"storage_key,omitempty"`
+	ArtifactURL        string             `json:"artifact_url,omitempty"`
+	ArtifactHash       string             `json:"artifact_hash,omitempty"`
+	ContentType        string             `json:"content_type,omitempty"`
+	SizeBytes          int64              `json:"size_bytes,omitempty"`
+	Width              int                `json:"width,omitempty"`
+	Height             int                `json:"height,omitempty"`
+	FPSNum             int                `json:"fps_num,omitempty"`
+	FPSDen             int                `json:"fps_den,omitempty"`
+	FrameCount         int                `json:"frame_count,omitempty"`
+	DurationUS         int64              `json:"duration_us,omitempty"`
+	ProfileID          string             `json:"profile_id,omitempty"`
+	CopyEligible       bool               `json:"copy_eligible,omitempty"`
+	Codec              string             `json:"codec,omitempty"`
+	CodecProfile       string             `json:"codec_profile,omitempty"`
+	ClosedGOP          bool               `json:"closed_gop,omitempty"`
+	FirstFrameKeyframe bool               `json:"first_frame_keyframe,omitempty"`
+	Backend            string             `json:"backend,omitempty"`
+	ChrononVersion     string             `json:"chronon_version,omitempty"`
+	Metrics            map[string]float64 `json:"metrics,omitempty"`
+	DriveFileID        string             `json:"drive_file_id,omitempty"`
+	DriveLink          string             `json:"drive_link,omitempty"`
+	Container          string             `json:"container,omitempty"`
+	PixelFormat        string             `json:"pixel_format,omitempty"`
+	AudioStreams       int                `json:"audio_streams,omitempty"`
 }
 
-// Job is the unit of work exchanged with the queue. On submit only ID,
-// OverlaySpec and Assets matter; on Get the server also fills in State, the
-// attempt count, timestamps and (once completed) the Artifact.
+// Job is the unit of work exchanged with the queue: one render SEGMENT. On
+// submit only ID, Schema, Version, RenderPlan and Assets matter; on Get the
+// server also fills in State, the attempt count, timestamps and (once
+// completed) the Artifact.
 type Job struct {
-	ID          string          `json:"id"`
-	OverlaySpec json.RawMessage `json:"overlay_spec"`
-	Assets      []AssetRef      `json:"assets"`
+	ID             string `json:"id"`
+	Schema         string `json:"schema,omitempty"`
+	Version        int    `json:"version,omitempty"`
+	IdempotencyKey string `json:"idempotency_key,omitempty"`
+	JobType        string `json:"job_type,omitempty"`
+
+	RenderPlan json.RawMessage `json:"render_plan"`
+	Assets     []AssetRef      `json:"assets"`
 
 	State       State     `json:"state"`
 	Worker      string    `json:"worker,omitempty"`

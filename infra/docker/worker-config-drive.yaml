@@ -1,0 +1,37 @@
+worker:
+  id: renderinggen-drive
+
+queue:
+  endpoint: http://queue:8081
+
+artifact_store:
+  endpoint: http://objectstore:9000
+  local_cache_dir: /var/lib/renderinggen/cache
+
+workspace:
+  root: /var/lib/renderinggen/jobs
+
+chronon:
+  backend: software
+  home: /opt/chronon3d
+  # Warm render shell: the worker renders through the persistent Chronon
+  # daemon started by worker-entrypoint.sh (caches alive across jobs).
+  mode: ipc
+  socket_path: /var/run/chronon3d/chronon.sock
+  native_output_profiles: false
+
+gpu:
+  device: 0
+
+health:
+  addr: ":8080"
+
+drive:
+  enabled: true
+  mode: oauth
+  # Google OAuth2 client + user token (copied from PipelineGen's repo; never
+  # committed). The token's account owns the target folder.
+  credentials_file: /etc/renderinggen/credentials.json
+  token_file: /etc/renderinggen/token.json
+  # Target Drive folder (the user's "renders" folder).
+  parent_folder_id: 1J_xUGo_bchzXDIGqSX04CU44c_Dm3SxS

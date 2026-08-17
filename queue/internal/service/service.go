@@ -8,6 +8,7 @@ package service
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/Marcuss-ops/RenderginGen/queue/internal/metrics"
@@ -51,14 +52,32 @@ func (s *Service) SetWorkerRepository(repo repository.WorkerRepository, staleAft
 
 // Submit enqueues a job. The ID is required and must be unique.
 func (s *Service) Submit(job model.Job) error {
+	_, _, err := s.SubmitIdempotent(job)
+	return err
+}
+
+// SubmitIdempotent returns the canonical job for an idempotency key. created
+// is false when the request is a retry of an existing logical job.
+func (s *Service) SubmitIdempotent(job model.Job) (*model.Job, bool, error) {
 	if job.ID == "" {
-		return fmt.Errorf("job id is required")
+		return nil, false, fmt.Errorf("job id is required")
+	}
+	if idem, ok := s.repo.(repository.IdempotencyRepository); ok {
+		canonical, created, err := idem.SubmitIdempotent(job)
+		if err != nil {
+			return nil, false, err
+		}
+		if created {
+			s.observePending()
+		}
+		return canonical, created, nil
 	}
 	if err := s.repo.Submit(job); err != nil {
-		return err
+		return nil, false, err
 	}
 	s.observePending()
-	return nil
+	canonical, err := s.repo.Get(job.ID)
+	return canonical, true, err
 }
 
 // Get returns the current state of a job, including its artifact when done.
@@ -85,6 +104,9 @@ func (s *Service) Claim(workerID string) (*model.Job, time.Duration, error) {
 
 // Complete marks a running job as completed and records its artifact.
 func (s *Service) Complete(id, workerID string, artifact model.Artifact) error {
+	if err := validateArtifact(artifact); err != nil {
+		return err
+	}
 	if err := s.repo.Complete(id, workerID, artifact); err != nil {
 		return err
 	}
@@ -96,6 +118,39 @@ func (s *Service) Complete(id, workerID string, artifact model.Artifact) error {
 			}
 			s.metrics.RenderDuration.Observe(d.Seconds())
 		}
+	}
+	s.observePending()
+	return nil
+}
+
+// validateArtifact is the queue-side completion gate. A worker may only move
+// a job to completed after it has published a verifiable artifact reference;
+// an empty payload would create a completed job with no durable output.
+func validateArtifact(artifact model.Artifact) error {
+	if strings.TrimSpace(artifact.StorageKey) == "" {
+		return fmt.Errorf("artifact storage_key is required")
+	}
+	if strings.TrimSpace(artifact.ArtifactHash) == "" {
+		return fmt.Errorf("artifact sha256 is required")
+	}
+	if artifact.SizeBytes <= 0 {
+		return fmt.Errorf("artifact size_bytes must be positive")
+	}
+	if strings.TrimSpace(artifact.ContentType) == "" {
+		return fmt.Errorf("artifact content_type is required")
+	}
+	return nil
+}
+
+// Rendered marks a running job as rendered: the artifact is durably stored but
+// external publication failed, so the job stays out of `completed` and is
+// re-claimable for a publication-only retry.
+func (s *Service) Rendered(id, workerID string, artifact model.Artifact, reason string) error {
+	if err := validateArtifact(artifact); err != nil {
+		return err
+	}
+	if err := s.repo.Rendered(id, workerID, artifact, reason); err != nil {
+		return err
 	}
 	s.observePending()
 	return nil

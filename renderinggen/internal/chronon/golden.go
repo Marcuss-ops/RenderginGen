@@ -1,0 +1,91 @@
+package chronon
+
+// GoldenOverlayJobV1 is the canonical, immutable golden job for the real
+// RenderingGen workload:
+//
+//	base/background (background.jpg, full 5s)
+//	+ IMPORTANT_PHRASE ("QUESTO CAMBIA TUTTO", title_centered, f20-60)
+//	+ IMPORTANT_WORD   ("APPLE", kinetic_word, f65-95)
+//	+ IMAGE_OVERLAY    (apple.png, contain, right, f90-135)
+//
+// 5 seconds at 30 fps = 150 frames (f0-149) on a 1280x720 canvas. The assets
+// are deterministic fixtures under testdata/golden/ (see
+// infra/e2e/gen-golden-assets.py) with content-addressed hashes baked in;
+// the text layers declare the vendored DejaVuSans.ttf, so the job is fully
+// self-contained and renders identically everywhere:
+//
+//	background.jpg            52209ee36928dba960583179922a54acf045d52d44c3128c517425d4baaa4f78
+//	apple.png                 ed873745e76173b66999c63546770d9f1426a2189515149176c67637e99a62d6
+//	assets/fonts/DejaVuSans.ttf  690243adfefe0ce154b547db6205794bd30ac4277275179517a90994f4980648
+//
+// This document must stay byte-identical to
+// RenderingGen/testdata/golden/golden-overlay-job-v1.json: it is the golden
+// reference used to compare CLI, daemon, CPU, Vulkan and visual regressions.
+// Do not edit it casually — regenerate deliberately and update BOTH copies.
+const GoldenOverlayJobV1 = `{
+  "id": "golden-overlay-v1",
+  "schema": "renderinggen.job",
+  "version": 1,
+  "render_plan": {
+    "schema": "chronon.render-plan",
+    "version": 1,
+    "job_id": "golden-overlay-v1",
+    "canvas": { "width": 1280, "height": 720, "fps": 30, "duration_frames": 150 },
+    "layers": [
+      {
+        "id": "background",
+        "type": "image",
+        "asset": "assets/background.jpg",
+        "box_width": 1280,
+        "box_height": 720,
+        "fit": "cover",
+        "start_frame": 0,
+        "duration_frames": 150
+      },
+      {
+        "id": "important_phrase",
+        "type": "text",
+        "text": "QUESTO CAMBIA TUTTO",
+        "font": "assets/fonts/DejaVuSans.ttf",
+        "preset": "title_centered",
+        "start_frame": 20,
+        "duration_frames": 41
+      },
+      {
+        "id": "important_word",
+        "type": "text",
+        "text": "APPLE",
+        "font": "assets/fonts/DejaVuSans.ttf",
+        "preset": "kinetic_word",
+        "start_frame": 65,
+        "duration_frames": 31
+      },
+      {
+        "id": "image_overlay",
+        "type": "image",
+        "asset": "assets/apple.png",
+        "box_width": 260,
+        "box_height": 260,
+        "fit": "contain",
+        "position": [380, 0],
+        "start_frame": 90,
+        "duration_frames": 46
+      }
+    ],
+    "output": { "path": "result.mp4", "format": "mp4", "codec": "h264" }
+  },
+  "assets": [
+    {
+      "hash": "52209ee36928dba960583179922a54acf045d52d44c3128c517425d4baaa4f78",
+      "logical_path": "assets/background.jpg"
+    },
+    {
+      "hash": "ed873745e76173b66999c63546770d9f1426a2189515149176c67637e99a62d6",
+      "logical_path": "assets/apple.png"
+    },
+    {
+      "hash": "690243adfefe0ce154b547db6205794bd30ac4277275179517a90994f4980648",
+      "logical_path": "assets/fonts/DejaVuSans.ttf"
+    }
+  ]
+}`

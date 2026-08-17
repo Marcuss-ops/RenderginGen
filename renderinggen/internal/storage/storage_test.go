@@ -66,6 +66,39 @@ func TestL2CacheServesAcrossClients(t *testing.T) {
 	}
 }
 
+func TestStatsCountersPromotion(t *testing.T) {
+	ctx := context.Background()
+	backend := NewMemory()
+	h := Hash([]byte("hello"))
+	if err := backend.Store(ctx, h, []byte("hello")); err != nil {
+		t.Fatal(err)
+	}
+
+	cb := &countingBackend{inner: backend}
+	c := New(cb, Options{L1MaxBytes: 1 << 20, L2Dir: t.TempDir()})
+
+	// First get: L3 miss -> L2+ promote, then L1.
+	if _, err := c.Get(ctx, h); err != nil {
+		t.Fatal(err)
+	}
+	s := c.Stats()
+	if s.L3Fetches != 1 || s.L1Hits != 0 {
+		t.Fatalf("after first get want L3Fetches=1 L1Hits=0, got %+v", s)
+	}
+
+	// Second get: served from L1.
+	if _, err := c.Get(ctx, h); err != nil {
+		t.Fatal(err)
+	}
+	s = c.Stats()
+	if s.L3Fetches != 1 || s.L1Hits != 1 {
+		t.Fatalf("after second get want L3Fetches=1 L1Hits=1, got %+v", s)
+	}
+	if cb.calls != 1 {
+		t.Fatalf("want 1 L3 call total, got %d", cb.calls)
+	}
+}
+
 func TestL1ServesRepeatedGets(t *testing.T) {
 	ctx := context.Background()
 	backend := NewMemory()

@@ -7,12 +7,6 @@ renderinggen/bin/
 queue/queued
 objectstore/objectstore
 
-# Build artifacts
-chronon/build/
-chronon/bin/*.so
-chronon/lib/*.so
-chronon/bin/chronon3d_cli
-
 # Editor / OS
 .DS_Store
 .idea/
@@ -22,3 +16,12 @@ chronon/bin/chronon3d_cli
 # Env / secrets
 .env
 *.local.yaml
+
+# Google service-account keys (never commit)
+*gcp-service-account*.json
+*service-account*.json
+*.credentials.json
+
+# Google Drive OAuth client + token (never commit)
+credentials.json
+token.json

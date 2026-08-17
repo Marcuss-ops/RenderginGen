@@ -55,9 +55,11 @@ func TestSubmitClaimComplete(t *testing.T) {
 	r := newRepo(t, 30*time.Second, 3)
 
 	job := model.Job{
-		ID:          "job-1",
-		OverlaySpec: []byte(`{"n":1}`),
-		Assets:      []model.AssetRef{{Hash: "abc", URL: "s3://a"}},
+		ID:         "job-1",
+		Schema:     "renderinggen.job",
+		Version:    1,
+		RenderPlan: []byte(`{"n":1}`),
+		Assets:     []model.AssetRef{{Hash: "abc", LogicalPath: "videos/base.mp4"}},
 	}
 	if err := r.Submit(job); err != nil {
 		t.Fatalf("submit: %v", err)
@@ -76,8 +78,11 @@ func TestSubmitClaimComplete(t *testing.T) {
 	if lease != 30*time.Second {
 		t.Fatalf("want 30s lease, got %s", lease)
 	}
-	if len(claimed.Assets) != 1 || claimed.Assets[0].Hash != "abc" {
+	if len(claimed.Assets) != 1 || claimed.Assets[0].Hash != "abc" || claimed.Assets[0].LogicalPath != "videos/base.mp4" {
 		t.Fatalf("assets not round-tripped: %+v", claimed.Assets)
+	}
+	if claimed.Schema != "renderinggen.job" || claimed.Version != 1 {
+		t.Fatalf("envelope not round-tripped: schema=%q version=%d", claimed.Schema, claimed.Version)
 	}
 
 	if err := r.Complete("job-1", "w1", model.Artifact{}); err != nil {
@@ -208,6 +213,88 @@ func TestRenewExtendsLease(t *testing.T) {
 	}
 	if n != 0 {
 		t.Fatalf("job should still be running after renew, got %d requeued", n)
+	}
+}
+
+func TestRenderedThenClaimPublishOnlyThenComplete(t *testing.T) {
+	r, db := setupRepo(t, 30*time.Second, 3)
+	if err := r.Submit(model.Job{ID: "job-rendered"}); err != nil {
+		t.Fatal(err)
+	}
+
+	// Attempt 1: render done, Drive publication fails -> rendered.
+	if _, _, err := r.Claim("w1"); err != nil {
+		t.Fatal(err)
+	}
+	stored := model.Artifact{
+		StorageKey:   "sha256-abc",
+		ArtifactHash: "sha256-abc",
+		ContentType:  "video/mp4",
+		SizeBytes:    123,
+		Width:        1280,
+		Height:       720,
+		DurationUS:   3_000_000,
+	}
+	if err := r.Rendered("job-rendered", "w1", stored, "drive: upload failed"); err != nil {
+		t.Fatalf("rendered: %v", err)
+	}
+
+	got, err := r.Get("job-rendered")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.State != model.StateRendered {
+		t.Fatalf("want rendered state, got %s", got.State)
+	}
+	if got.Artifact == nil || got.Artifact.StorageKey != "sha256-abc" {
+		t.Fatalf("rendered artifact not recorded: %+v", got.Artifact)
+	}
+
+	// Attempt 2: re-claim in the rendered state -> artifact returned for a
+	// publication-only retry (no re-render).
+	again, _, err := r.Claim("w2")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if again == nil || again.ID != "job-rendered" || again.Attempts != 2 {
+		t.Fatalf("re-claim: %+v", again)
+	}
+	if again.Artifact == nil || again.Artifact.StorageKey != "sha256-abc" {
+		t.Fatalf("claimed rendered job must carry its artifact: %+v", again.Artifact)
+	}
+
+	// Publication retry succeeds -> completed with Drive fields.
+	published := stored
+	published.DriveFileID = "drive-1"
+	published.DriveLink = "https://drive.example.com/file/d/drive-1"
+	if err := r.Complete("job-rendered", "w2", published); err != nil {
+		t.Fatalf("complete: %v", err)
+	}
+
+	done, err := r.Get("job-rendered")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if done.State != model.StateCompleted {
+		t.Fatalf("want completed state, got %s", done.State)
+	}
+	if done.Artifact == nil || done.Artifact.DriveFileID != "drive-1" || done.Artifact.DriveLink != "https://drive.example.com/file/d/drive-1" {
+		t.Fatalf("drive fields not persisted on completion: %+v", done.Artifact)
+	}
+
+	// Attempt history preserved: #1 rendered, #2 completed.
+	var status string
+	if err := db.QueryRow(`SELECT status FROM render_attempts WHERE job_id='job-rendered' AND attempt_number=1`).Scan(&status); err != nil {
+		t.Fatal(err)
+	}
+	if status != "rendered" {
+		t.Fatalf("attempt 1 status = %q, want rendered", status)
+	}
+	if err := db.QueryRow(`SELECT status FROM render_attempts WHERE job_id='job-rendered' AND attempt_number=2`).Scan(&status); err != nil {
+		t.Fatal(err)
+	}
+	if status != "completed" {
+		t.Fatalf("attempt 2 status = %q, want completed", status)
 	}
 }
 

@@ -1,0 +1,27 @@
+worker:
+  id: renderinggen-b
+
+queue:
+  endpoint: http://queue:8081
+
+artifact_store:
+  endpoint: http://objectstore:9000
+  local_cache_dir: /var/lib/renderinggen/cache
+
+workspace:
+  root: /var/lib/renderinggen/jobs
+
+chronon:
+  backend: software
+  home: /opt/chronon3d
+  # Warm render shell: the worker renders through the persistent Chronon
+  # daemon started by worker-entrypoint.sh (caches alive across jobs).
+  mode: ipc
+  socket_path: /var/run/chronon3d/chronon.sock
+  native_output_profiles: false
+
+gpu:
+  device: 0
+
+health:
+  addr: ":8080"

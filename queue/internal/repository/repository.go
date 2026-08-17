@@ -27,8 +27,14 @@ type JobRepository interface {
 	Get(id string) (*model.Job, error)
 
 	// Complete marks a running job as completed and records the rendered
-	// artifact (which may be zero-valued when no artifact was produced).
+	// artifact. The service layer rejects incomplete artifact metadata before
+	// this method is called.
 	Complete(id, workerID string, artifact model.Artifact) error
+
+	// Rendered marks a running job as rendered: its artifact is durably stored
+	// but external publication failed, so the job stays out of `completed` and
+	// is re-claimable for a publication-only retry.
+	Rendered(id, workerID string, artifact model.Artifact, reason string) error
 
 	// Fail marks a running job failed. Jobs that have not exhausted their
 	// attempts are requeued; otherwise they are permanently failed.
@@ -43,4 +49,10 @@ type JobRepository interface {
 
 	// Stats returns a snapshot of the queue state.
 	Stats() model.Stats
+}
+
+// IdempotencyRepository optionally provides atomic submit-or-return-existing
+// semantics for callers retrying the same logical render request.
+type IdempotencyRepository interface {
+	SubmitIdempotent(job model.Job) (*model.Job, bool, error)
 }

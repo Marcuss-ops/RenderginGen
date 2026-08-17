@@ -34,7 +34,7 @@ func post(t *testing.T, url, body string) *http.Response {
 func TestSubmitClaimCompleteFlow(t *testing.T) {
 	ts := newServer(t)
 
-	resp := post(t, ts.URL+"/jobs", `{"id":"job-1","overlay_spec":{"o":1},"assets":[{"hash":"abc","url":"s3://a"}]}`)
+	resp := post(t, ts.URL+"/jobs", `{"id":"job-1","schema":"renderinggen.job","version":1,"render_plan":{"o":1},"assets":[{"hash":"abc","logical_path":"videos/base.mp4"}]}`)
 	if resp.StatusCode != http.StatusCreated {
 		t.Fatalf("submit: want 201, got %d", resp.StatusCode)
 	}
@@ -64,9 +64,40 @@ func TestSubmitClaimCompleteFlow(t *testing.T) {
 	}
 
 	// Complete.
-	resp = post(t, ts.URL+"/jobs/job-1/complete", `{"worker":"w1"}`)
+	resp = post(t, ts.URL+"/jobs/job-1/complete", `{"worker":"w1","data":{"storage_key":"sha-job-1","artifact_hash":"sha-job-1","size_bytes":1,"content_type":"video/mp4"}}`)
 	if resp.StatusCode != http.StatusNoContent {
 		t.Fatalf("complete: want 204, got %d", resp.StatusCode)
+	}
+}
+
+func TestSubmitIdempotencyReturnsCanonicalJob(t *testing.T) {
+	ts := newServer(t)
+	body := `{"id":"job-first","idempotency_key":"pipeline-123:scene-04:overlay-v1","render_plan":{"schema":"chronon.render-plan","version":1}}`
+	first := post(t, ts.URL+"/jobs", body)
+	if first.StatusCode != http.StatusCreated {
+		t.Fatalf("first submit: got %d", first.StatusCode)
+	}
+	var firstResponse struct {
+		ID string `json:"id"`
+	}
+	if err := json.NewDecoder(first.Body).Decode(&firstResponse); err != nil {
+		t.Fatal(err)
+	}
+	first.Body.Close()
+
+	second := post(t, ts.URL+"/jobs", `{"id":"job-retry-generated","idempotency_key":"pipeline-123:scene-04:overlay-v1","render_plan":{"different":true}}`)
+	if second.StatusCode != http.StatusOK {
+		t.Fatalf("retry submit: got %d", second.StatusCode)
+	}
+	defer second.Body.Close()
+	var secondResponse struct {
+		ID string `json:"id"`
+	}
+	if err := json.NewDecoder(second.Body).Decode(&secondResponse); err != nil {
+		t.Fatal(err)
+	}
+	if secondResponse.ID != firstResponse.ID {
+		t.Fatalf("canonical id changed: first=%q retry=%q", firstResponse.ID, secondResponse.ID)
 	}
 }
 
@@ -121,5 +152,51 @@ func TestRenewEndpoint(t *testing.T) {
 	resp = post(t, ts.URL+"/jobs/job-1/renew", `{"worker":"w2"}`)
 	if resp.StatusCode != http.StatusConflict {
 		t.Fatalf("wrong-worker renew: want 409, got %d", resp.StatusCode)
+	}
+}
+
+func TestCompletePersistsArtifact(t *testing.T) {
+	ts := newServer(t)
+
+	post(t, ts.URL+"/jobs", `{"id":"job-1","schema":"renderinggen.job","version":1,"render_plan":{"n":1}}`)
+	post(t, ts.URL+"/jobs/claim", `{"worker":"w1"}`)
+
+	completeBody := `{"worker":"w1","data":{` +
+		`"kind":"segment","storage_key":"abc123","artifact_url":"https://store/objects/abc123",` +
+		`"artifact_hash":"abc123","content_type":"video/mp4","size_bytes":42,` +
+		`"backend":"software","chronon_version":"0.1.0"}}`
+	resp := post(t, ts.URL+"/jobs/job-1/complete", completeBody)
+	if resp.StatusCode != http.StatusNoContent {
+		t.Fatalf("complete: want 204, got %d", resp.StatusCode)
+	}
+
+	getResp, err := http.Get(ts.URL + "/jobs/job-1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer getResp.Body.Close()
+
+	var job struct {
+		State    string `json:"state"`
+		Artifact *struct {
+			ArtifactHash   string `json:"artifact_hash"`
+			ArtifactURL    string `json:"artifact_url"`
+			ContentType    string `json:"content_type"`
+			SizeBytes      int64  `json:"size_bytes"`
+			Backend        string `json:"backend"`
+			ChrononVersion string `json:"chronon_version"`
+		} `json:"artifact"`
+	}
+	if err := json.NewDecoder(getResp.Body).Decode(&job); err != nil {
+		t.Fatal(err)
+	}
+	if job.State != "completed" || job.Artifact == nil {
+		t.Fatalf("unexpected job: %+v", job)
+	}
+	a := job.Artifact
+	if a.ArtifactHash != "abc123" || a.ArtifactURL != "https://store/objects/abc123" ||
+		a.ContentType != "video/mp4" || a.SizeBytes != 42 ||
+		a.Backend != "software" || a.ChrononVersion != "0.1.0" {
+		t.Fatalf("artifact not persisted: %+v", a)
 	}
 }

@@ -31,13 +31,30 @@ never reimplement the HTTP format.
 
 #### `POST /jobs`
 
-Request (only `id`, `overlay_spec` and `assets` are used):
+A job is **one render segment**, not one overlay: `render_plan` carries every
+layer of the segment (base video, phrases, keywords, images, animations) as a
+`chronon.render-plan.v1` document, so Chronon3d composes them in a single pass.
+The envelope schema is `contracts/renderinggen.job.v1.schema.json`.
+
+Request (only `id`, `schema`, `version`, `render_plan` and `assets` are used):
 
 ```json
 {
-  "id": "job-123",
-  "overlay_spec": { "profile": "velox-h264-copy-v1", "scenes": [] },
-  "assets": [ { "hash": "<sha256>", "url": "s3://..." } ]
+  "id": "video-983",
+  "schema": "renderinggen.job",
+  "version": 1,
+  "render_plan": {
+    "schema": "chronon.render-plan",
+    "version": 1,
+    "job_id": "video-983",
+    "canvas": { "width": 1920, "height": 1080, "fps": 30, "duration_frames": 300 },
+    "layers": [
+      { "id": "video", "type": "video", "source": "videos/base.mp4", "start_frame": 0, "duration_frames": 300 },
+      { "id": "phrase-1", "type": "text", "text": "QUESTO CAMBIA TUTTO", "preset": "title_centered", "start_frame": 60, "duration_frames": 55 }
+    ],
+    "output": { "path": "result.mp4", "format": "mp4", "codec": "h264", "crf": 18 }
+  },
+  "assets": [ { "hash": "<sha256>", "logical_path": "videos/base.mp4" } ]
 }
 ```
 
@@ -76,9 +93,11 @@ Response `200 OK`:
 
 ```json
 {
-  "id": "job-123",
-  "overlay_spec": { "profile": "velox-h264-copy-v1" },
-  "assets": [ { "hash": "<sha256>", "url": "s3://..." } ],
+  "id": "video-983",
+  "schema": "renderinggen.job",
+  "version": 1,
+  "render_plan": { "schema": "chronon.render-plan", "version": 1, "canvas": {}, "layers": [], "output": { "path": "result.mp4" } },
+  "assets": [ { "hash": "<sha256>", "logical_path": "videos/base.mp4" } ],
   "lease": 30000000000
 }
 ```
@@ -149,9 +168,11 @@ Prometheus metrics: `renderinggen_jobs_pending` (gauge),
 
 ```json
 {
-  "id": "job-123",
-  "overlay_spec": {},
-  "assets": [ { "hash": "", "url": "" } ],
+  "id": "video-983",
+  "schema": "renderinggen.job",
+  "version": 1,
+  "render_plan": {},
+  "assets": [ { "hash": "", "logical_path": "" } ],
   "state": "running",
   "worker": "renderinggen-77",
   "attempts": 2,
@@ -177,11 +198,11 @@ re-encoding it:
 ```json
 {
   "id": "art-1",
-  "kind": "overlay",
+  "kind": "segment",
   "storage_key": "overlay/2026/08/job-123/overlay.mp4",
-  "url": "https://store/overlay.mp4",
-  "sha256": "<sha256>",
-  "mime_type": "video/mp4",
+  "artifact_url": "https://store/overlay.mp4",
+  "artifact_hash": "<sha256>",
+  "content_type": "video/mp4",
   "size_bytes": 28382193,
   "width": 1920,
   "height": 1080,
@@ -194,7 +215,9 @@ re-encoding it:
   "codec": "h264",
   "codec_profile": "high",
   "closed_gop": true,
-  "first_frame_keyframe": true
+  "first_frame_keyframe": true,
+  "backend": "software",
+  "chronon_version": "0.1.0"
 }
 ```
 

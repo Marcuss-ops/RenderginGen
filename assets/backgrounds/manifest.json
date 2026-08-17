@@ -1,0 +1,62 @@
+{
+  "version": 1,
+  "kind": "renderinggen.background-assets",
+  "contract": "video-background-v1",
+  "canvas": {
+    "width": 1920,
+    "height": 1080,
+    "fps": 30
+  },
+  "duration_seconds": 15,
+  "audio_streams": 0,
+  "assets": [
+    {
+      "id": "drive-background-01",
+      "file": "drive-background-01.mp4",
+      "sha256": "d4e9d76563c0f17589a0e98795574ceec22b3f3b961f51d44eb0544e95e1639b",
+      "source_drive_file_id": "16j67if3LUqMeVVSpOjPd5rD0cPwn9l0A",
+      "media_type": "video/mp4",
+      "role": "soft-light"
+    },
+    {
+      "id": "drive-background-02",
+      "file": "drive-background-02.mp4",
+      "sha256": "bbd836c7b78afff663c9eee3e4ee0da63483824cbaff84c014a6455f1533971b",
+      "source_drive_file_id": "1uMfjYjcmbbfv0fkYfvqSO9kIvNSK_XEX",
+      "media_type": "video/mp4",
+      "role": "soft-light"
+    },
+    {
+      "id": "drive-background-03",
+      "file": "drive-background-03.mp4",
+      "sha256": "9636b10ef18489986d09190ab35dd5b46267ce45d6e8de5a17558645174c32d8",
+      "source_drive_file_id": "1s_BK1pnUVwQrzJHRs9_WyuuuPxoJiZpJ",
+      "media_type": "video/mp4",
+      "role": "soft-light"
+    },
+    {
+      "id": "drive-background-04",
+      "file": "drive-background-04.mp4",
+      "sha256": "abdbeab67299efcb482cbc152e4503f1128109fd895c2e8aef87381a997f2201",
+      "source_drive_file_id": "1fyOTMeb7pP1MuWfAO8o2w1p6aQedt0lE",
+      "media_type": "video/mp4",
+      "role": "soft-light"
+    },
+    {
+      "id": "drive-background-05",
+      "file": "drive-background-05.mp4",
+      "sha256": "2428c535d3a430f72fe9dc084a961e219671f30807a87cefa898d4d59a6225bd",
+      "source_drive_file_id": "1_zY3WNxbkDfIUA0692ZPexpqRXq55oHG",
+      "media_type": "video/mp4",
+      "role": "soft-light"
+    },
+    {
+      "id": "drive-background-06",
+      "file": "drive-background-06.mp4",
+      "sha256": "768c962ceab221caf7f7d5f20bf3d98056998615817a1ebd7c6f7b12a0d12476",
+      "source_drive_file_id": "1bwq06sbP845PQB4t59pPoAJSZ3vs-ej2",
+      "media_type": "video/mp4",
+      "role": "soft-light"
+    }
+  ]
+}

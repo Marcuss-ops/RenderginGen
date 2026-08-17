@@ -14,6 +14,7 @@ const (
 	attemptStatusCompleted    = "completed"
 	attemptStatusFailed       = "failed"
 	attemptStatusLeaseExpired = "lease_expired"
+	attemptStatusRendered     = "rendered"
 )
 
 // attemptID builds the deterministic, readable ID for an attempt.
