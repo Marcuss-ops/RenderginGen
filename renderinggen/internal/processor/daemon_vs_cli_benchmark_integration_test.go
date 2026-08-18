@@ -41,6 +41,7 @@ type timingSummary struct {
 	FallbackEffect    *int64
 	FallbackBlur      *int64
 	FallbackDOF       *int64
+	EffectiveBackend  string
 	ConversionMS      float64
 	Frames            int
 }
@@ -67,6 +68,7 @@ type chrononTimingSidecar struct {
 			FallbackEffect    *int64   `json:"fallback_effect"`
 			FallbackBlur      *int64   `json:"fallback_blur"`
 			FallbackDOF       *int64   `json:"fallback_dof"`
+			EffectiveBackend  string   `json:"effective_backend"`
 		} `json:"gpu"`
 		ConversionMS float64 `json:"conversion_ms"`
 	} `json:"job"`
@@ -223,6 +225,9 @@ func optionalIntMetric(value *int64) string {
 }
 
 func effectiveBackend(t timingSummary) string {
+	if t.EffectiveBackend != "" {
+		return t.EffectiveBackend
+	}
 	if t.GPUNodes != nil && *t.GPUNodes > 0 {
 		if t.FallbackNodes != nil && *t.FallbackNodes > 0 {
 			return "hybrid"
@@ -262,6 +267,7 @@ func readChrononTiming(t *testing.T, output string) timingSummary {
 		FallbackEffect:    doc.Job.GPU.FallbackEffect,
 		FallbackBlur:      doc.Job.GPU.FallbackBlur,
 		FallbackDOF:       doc.Job.GPU.FallbackDOF,
+		EffectiveBackend:  doc.Job.GPU.EffectiveBackend,
 		ConversionMS:      doc.Job.ConversionMS,
 		Frames:            doc.FramesTotal,
 	}
