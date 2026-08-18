@@ -90,12 +90,17 @@ func (s *Repository) Submit(job model.Job) error {
 // Claim atomically claims the oldest pending job for a worker and returns it
 // with its lease duration. It returns nil when the queue is empty.
 func (s *Repository) Claim(workerID string) (*model.Job, time.Duration, error) {
+	return s.ClaimState(workerID, "")
+}
+
+func (s *Repository) ClaimState(workerID string, state model.State) (*model.Job, time.Duration, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	for i, id := range s.order {
 		job := s.jobs[id]
-		if job == nil || (job.State != model.StatePending && job.State != model.StateRendered) {
+		if job == nil || (state != "" && job.State != state) ||
+			(state == "" && job.State != model.StatePending && job.State != model.StateRendered) {
 			continue
 		}
 		s.order = append(s.order[:i], s.order[i+1:]...)

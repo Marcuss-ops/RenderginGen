@@ -1,0 +1,72 @@
+{
+  "id": "golden-content-01-phrases-five-animations",
+  "schema": "renderinggen.job",
+  "version": 1,
+  "render_plan": {
+    "schema": "chronon.render-plan",
+    "version": 1,
+    "job_id": "golden-content-01-phrases-five-animations",
+    "canvas": { "width": 1920, "height": 1080, "fps": 30, "duration_frames": 180 },
+    "layers": [
+      {
+        "id": "background",
+        "type": "color",
+        "color": [0, 0, 0, 1],
+        "start_frame": 0,
+        "duration_frames": 180
+      },
+      {
+        "id": "phrase_fade",
+        "type": "text",
+        "text": "A MAJOR CHANGE",
+        "preset": "caption_card",
+        "anchor": { "type": "center", "alignment": "center" },
+        "start_frame": 8,
+        "duration_frames": 34,
+        "animation": { "preset": "fade_in", "duration_frames": 10 }
+      },
+      {
+        "id": "phrase_soft_pop",
+        "type": "text",
+        "text": "THIS CHANGES EVERYTHING",
+        "preset": "caption_card",
+        "anchor": { "type": "center", "alignment": "center" },
+        "start_frame": 44,
+        "duration_frames": 34,
+        "animation": { "preset": "slide_in", "duration_frames": 18 }
+      },
+      {
+        "id": "phrase_scale_drop",
+        "type": "text",
+        "text": "THE NEXT BIG MOVE",
+        "preset": "caption_card",
+        "anchor": { "type": "center", "alignment": "center" },
+        "start_frame": 80,
+        "duration_frames": 34,
+        "animation": { "preset": "reveal_from_bottom", "duration_frames": 18 }
+      },
+      {
+        "id": "phrase_fade_in_slow",
+        "type": "text",
+        "text": "A NEW DIRECTION",
+        "preset": "caption_card",
+        "anchor": { "type": "center", "alignment": "center" },
+        "start_frame": 116,
+        "duration_frames": 34,
+        "animation": { "preset": "soft_pop", "duration_frames": 18 }
+      },
+      {
+        "id": "phrase_soft_pop_slow",
+        "type": "text",
+        "text": "NOW IT BEGINS",
+        "preset": "caption_card",
+        "anchor": { "type": "center", "alignment": "center" },
+        "start_frame": 152,
+        "duration_frames": 28,
+        "animation": { "preset": "focus_in", "duration_frames": 22 }
+      }
+    ],
+    "output": { "path": "result.mp4", "format": "mp4", "codec": "h264" }
+  },
+  "assets": []
+}

@@ -6,8 +6,10 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
+	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/artifactdb"
 	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/chronon"
 	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/drive"
 	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/queue"
@@ -188,19 +190,214 @@ func TestPrepareAcceptsPipelineGenOverlayIntentWarmup(t *testing.T) {
 	}
 }
 
-func TestProcessRejectsSemanticOverlayPlan(t *testing.T) {
-	proc, _, _ := newProcessor(t)
+// TestProcessExecutesSemanticOverlayPlan verifies the full semantic path in
+// one worker run: CompileIfSemantic lowers the PipelineGen overlay-plan.v1
+// into the concrete chronon.render-plan.v1, the content-addressed asset_refs
+// are materialized at their compiled logical paths, plan.json on disk is the
+// CONCRETE plan (never the semantic one), Chronon renders, and the MP4 is
+// published to the artifact store. One pipeline, no separate semantic
+// renderer.
+func TestProcessExecutesSemanticOverlayPlan(t *testing.T) {
+	proc, store, renderer := newProcessor(t)
+
+	// The semantic plan carries a content-addressed asset ref (sha256 of the
+	// fixture bytes) exactly as PipelineGen emits it.
+	assetBytes := []byte("apple-image-bytes")
+	assetHash := storage.Hash(assetBytes)
+	if err := store.Put(context.Background(), assetHash, assetBytes); err != nil {
+		t.Fatalf("put asset: %v", err)
+	}
+
 	job := &queue.Job{
 		ID: "semantic-job", Schema: queue.JobSchemaV1, Version: queue.JobSchemaVersionV1,
 		RenderPlan: json.RawMessage(`{
           "schema_version":"renderinggen.overlay-plan.v1",
           "plan_id":"semantic-job","video_id":"video-1",
           "width":1280,"height":720,"fps":30,
-          "items":[{"id":"phrase-1","template_id":"IMPORTANT_PHRASE","text":"Hello world","start_ms":0,"end_ms":1000}]
+          "items":[
+            {"id":"phrase-1","template_id":"IMPORTANT_PHRASE","text":"Hello world","start_ms":0,"end_ms":1000},
+            {"id":"img-1","template_id":"IMAGE_OVERLAY","start_ms":1000,"end_ms":2000,
+             "asset_refs":[{"asset_id":"apple","sha256":"` + assetHash + `","url":"https://store.example/objects/apple.png","media_type":"image/png"}]}
+          ]
         }`),
 	}
-	if _, err := proc.Process(context.Background(), job); err == nil {
-		t.Fatal("semantic plan must be rejected: RenderingGen executes concrete plans, PipelineGen compiles them")
+
+	var capturedPlan, capturedAsset []byte
+	renderer.write = func(path string) error {
+		var err error
+		capturedPlan, err = os.ReadFile(renderer.req.PlanPath)
+		if err != nil {
+			return err
+		}
+		capturedAsset, err = os.ReadFile(filepath.Join(renderer.req.AssetsRoot, "assets", "semantic", "apple.png"))
+		if err != nil {
+			return err
+		}
+		return os.WriteFile(path, []byte("output-bytes"), 0o644)
+	}
+
+	artifact, err := proc.Process(context.Background(), job)
+	if err != nil {
+		t.Fatalf("process semantic plan: %v", err)
+	}
+	if artifact.Kind != "segment" || artifact.ContentType != "video/mp4" || artifact.ArtifactHash == "" {
+		t.Fatalf("artifact: %+v", artifact)
+	}
+
+	// plan.json is the CONCRETE Chronon plan, never the semantic contract.
+	if string(capturedPlan) == "" || !strings.Contains(string(capturedPlan), `"schema":"chronon.render-plan"`) {
+		t.Fatalf("plan.json is not the compiled concrete plan: %s", capturedPlan)
+	}
+	if strings.Contains(string(capturedPlan), "renderinggen.overlay-plan.v1") {
+		t.Fatalf("plan.json still carries the semantic schema: %s", capturedPlan)
+	}
+	var concrete struct {
+		Layers []struct {
+			ID     string `json:"id"`
+			Preset string `json:"preset"`
+			Asset  string `json:"asset"`
+		} `json:"layers"`
+	}
+	if err := json.Unmarshal(capturedPlan, &concrete); err != nil {
+		t.Fatalf("decode compiled plan: %v", err)
+	}
+	if len(concrete.Layers) != 2 {
+		t.Fatalf("compiled layers = %d, want 2", len(concrete.Layers))
+	}
+	if concrete.Layers[0].Preset != "caption_card" {
+		t.Fatalf("phrase preset = %q, want caption_card", concrete.Layers[0].Preset)
+	}
+	if concrete.Layers[1].ID != "img-1_image" || concrete.Layers[1].Preset != "image_focus_in" {
+		t.Fatalf("image layer = %+v", concrete.Layers[1])
+	}
+
+	// The content-addressed asset was materialized at its compiled path.
+	if string(capturedAsset) != string(assetBytes) {
+		t.Fatalf("materialized asset = %q, want %q", capturedAsset, assetBytes)
+	}
+
+	// Output bytes were published to the artifact store.
+	stored, err := store.Get(context.Background(), artifact.StorageKey)
+	if err != nil {
+		t.Fatalf("get published artifact: %v", err)
+	}
+	if string(stored) != "output-bytes" {
+		t.Fatalf("stored artifact = %q", stored)
+	}
+}
+
+// TestProcessRecordsArtifactLedger verifies the DB artifact step: after the
+// object store accepts the bytes, one ArtifactRecord is written with the
+// content hash, the semantic counters from the compiled plan (entity/phrase/
+// word/image counts + preset_id), the per-phase microsecond metrics and the
+// input/output byte counts. The ledger hash must equal the object-store key
+// (local_sha == objectstore_sha == db_sha invariant).
+func TestProcessRecordsArtifactLedger(t *testing.T) {
+	proc, store, renderer := newProcessor(t)
+	ledger := artifactdb.NewMemory()
+	proc.SetArtifactRecorder(ledger)
+
+	assetBytes := []byte("apple-image-bytes")
+	assetHash := storage.Hash(assetBytes)
+	if err := store.Put(context.Background(), assetHash, assetBytes); err != nil {
+		t.Fatalf("put asset: %v", err)
+	}
+
+	job := &queue.Job{
+		ID: "ledger-job", Schema: queue.JobSchemaV1, Version: queue.JobSchemaVersionV1,
+		RenderPlan: json.RawMessage(`{
+          "schema_version":"renderinggen.overlay-plan.v1",
+          "plan_id":"ledger-job","video_id":"video-1",
+          "width":1280,"height":720,"fps":30,
+          "items":[
+            {"id":"phrase-1","template_id":"IMPORTANT_PHRASE","text":"Hello world","start_ms":0,"end_ms":1000},
+            {"id":"word-1","template_id":"IMPORTANT_WORD","text":"APPLE","start_ms":1000,"end_ms":2000},
+            {"id":"img-1","template_id":"IMAGE_OVERLAY","start_ms":2000,"end_ms":3000,"preset_id":"image_focus_in",
+             "asset_refs":[{"asset_id":"apple","sha256":"` + assetHash + `","url":"https://store.example/objects/apple.png","media_type":"image/png"}]}
+          ]
+        }`),
+	}
+	renderer.write = func(path string) error {
+		return os.WriteFile(path, []byte("output-bytes"), 0o644)
+	}
+
+	artifact, err := proc.Process(context.Background(), job)
+	if err != nil {
+		t.Fatalf("process: %v", err)
+	}
+
+	rec, ok := ledger.Get(job.ID)
+	if !ok {
+		t.Fatal("ledger has no record for the job")
+	}
+	if rec.ArtifactHash != artifact.ArtifactHash || rec.StorageKey != artifact.StorageKey {
+		t.Fatalf("ledger identity mismatch: record=%+v artifact=%+v", rec, artifact)
+	}
+	if rec.ArtifactHash != storage.Hash([]byte("output-bytes")) {
+		t.Fatalf("db_sha = %q, want sha256(output-bytes)", rec.ArtifactHash)
+	}
+	if rec.OutputBytes != int64(len("output-bytes")) {
+		t.Fatalf("output_bytes = %d", rec.OutputBytes)
+	}
+	// Semantic counters from the compiled plan (section "DB metrics").
+	if rec.EntityCount != 0 || rec.ImportantPhraseCnt != 1 || rec.ImportantWordCnt != 1 || rec.ImageCount != 1 {
+		t.Fatalf("semantic counters: %+v", rec)
+	}
+	if rec.PresetID != "image_focus_in" {
+		t.Fatalf("preset_id = %q, want image_focus_in", rec.PresetID)
+	}
+	// Input bytes: the content-addressed asset was materialized.
+	if rec.InputBytes != int64(len(assetBytes)) {
+		t.Fatalf("input_bytes = %d, want %d", rec.InputBytes, len(assetBytes))
+	}
+	// Per-phase metrics must be positive and consistent.
+	if rec.OverlayCompileUS <= 0 || rec.AssetMaterializeUS <= 0 || rec.ChrononRenderUS <= 0 {
+		t.Fatalf("phase metrics not recorded: %+v", rec)
+	}
+	if rec.SHA256US <= 0 || rec.ObjectStoreUploadUS <= 0 || rec.TotalUS <= 0 {
+		t.Fatalf("store metrics not recorded: %+v", rec)
+	}
+	if rec.TotalUS < rec.ChrononRenderUS {
+		t.Fatalf("total_us %d < chronon_render_us %d", rec.TotalUS, rec.ChrononRenderUS)
+	}
+}
+
+// TestPublishUpdatesLedgerDriveMetric verifies a publication retry updates
+// drive_upload_us in the ledger without re-rendering (RENDERED ->
+// PUBLISH_RETRY -> PUBLISHED, never a Chronon re-render).
+func TestPublishUpdatesLedgerDriveMetric(t *testing.T) {
+	proc, store, renderer := newProcessor(t)
+	ledger := artifactdb.NewMemory()
+	proc.SetArtifactRecorder(ledger)
+	if err := store.Put(context.Background(), "hash-video", []byte("video-bytes")); err != nil {
+		t.Fatalf("put asset: %v", err)
+	}
+	renderer.write = func(path string) error {
+		return os.WriteFile(path, []byte("output-bytes"), 0o644)
+	}
+
+	artifact, err := proc.Render(context.Background(), validJob())
+	if err != nil {
+		t.Fatalf("render: %v", err)
+	}
+	rec, _ := ledger.Get(validJob().ID)
+	if rec.DriveUploadUS != 0 {
+		t.Fatalf("drive_upload_us before publish = %d, want 0", rec.DriveUploadUS)
+	}
+
+	proc.SetPublisher(drive.NewMock(t.TempDir(), 0))
+	if _, err := proc.Publish(context.Background(), validJob().ID, artifact); err != nil {
+		t.Fatalf("publish: %v", err)
+	}
+	rec, _ = ledger.Get(validJob().ID)
+	if rec.DriveUploadUS <= 0 {
+		t.Fatalf("drive_upload_us after publish = %d, want > 0", rec.DriveUploadUS)
+	}
+	if rec.ArtifactHash != artifact.ArtifactHash {
+		t.Fatalf("drive update must not touch artifact identity: %+v", rec)
+	}
+	if renderer.calls != 1 {
+		t.Fatalf("renderer calls = %d, want 1 (no re-render on publish retry)", renderer.calls)
 	}
 }
 
@@ -285,6 +482,141 @@ func TestRenderThenPublishRetrySkipsRender(t *testing.T) {
 	}
 	if renderer.calls != 1 {
 		t.Fatalf("renderer re-ran on publish retry: calls = %d, want 1", renderer.calls)
+	}
+}
+
+// corruptBackend is an L3 object store that returns corrupted bytes for every
+// fetch, simulating a real corruption beneath the cache (the cache never
+// overwrites a content-addressed key, so a test must corrupt at the backend).
+type corruptBackend struct{}
+
+func (corruptBackend) Fetch(_ context.Context, key string) ([]byte, error) {
+	return []byte("corrupted-bytes"), nil
+}
+func (corruptBackend) Store(_ context.Context, key string, data []byte) error { return nil }
+
+// badHashPublisher reports a Drive SHA-256 that does not match the bytes it
+// received, so a test can prove the drive_sha == db_sha invariant is enforced
+// (a lying publisher fails the job instead of being trusted).
+type badHashPublisher struct{}
+
+func (badHashPublisher) Publish(_ context.Context, req drive.PublishRequest) (drive.Result, error) {
+	return drive.Result{
+		FileID:       "lying-file",
+		WebViewLink:  "https://drive.example.com/file/d/lying-file",
+		SizeBytes:    int64(len(req.Data)),
+		SHA256:       strings.Repeat("0", 64), // lies: does not match req.Data
+	}, nil
+}
+
+// TestPublishEnforcesStoreDBInvariant proves the store_sha == db_sha leg of
+// the chain: if the object store returns bytes that do not hash to the
+// artifact hash the worker recorded (corruption), Publish must fail BEFORE
+// anything is uploaded to Drive.
+func TestPublishEnforcesStoreDBInvariant(t *testing.T) {
+	// A backend that returns corrupted bytes for every fetch: the store cache
+	// never overwrites a content-addressed key, so the corruption must be
+	// simulated at the L3 backend where a real object store could drift. The
+	// artifact key is NOT in the L1/L2 cache (it was never Put through this
+	// client), so Get falls through to the corrupted backend.
+	store := storage.New(corruptBackend{}, storage.Options{})
+	proc := New(t.TempDir(), "software", "0.1.0", "http://store:9000", store, &fakeRenderer{})
+	proc.SetPublisher(drive.NewMock(t.TempDir(), 0))
+
+	// A claimed rendered job whose stored bytes no longer match the recorded
+	// hash (the object store drifted from what the worker hashed).
+	artifact := queue.Artifact{
+		Kind:    "segment",
+		StorageKey: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+		ArtifactHash: storage.Hash([]byte("expected-bytes")),
+		ContentType: "video/mp4",
+	}
+	if _, err := proc.Publish(context.Background(), "job-1", artifact); err == nil {
+		t.Fatal("publish must fail when store bytes do not match db_sha")
+	}
+}
+
+// TestPublishEnforcesDriveInvariant proves the drive_sha == db_sha leg of the
+// chain: a publisher that reports a SHA-256 different from the recorded hash
+// fails the job even though the upload itself succeeded.
+func TestPublishEnforcesDriveInvariant(t *testing.T) {
+	proc, store, renderer := newProcessor(t)
+	if err := store.Put(context.Background(), "hash-video", []byte("video-bytes")); err != nil {
+		t.Fatalf("put asset: %v", err)
+	}
+	renderer.write = func(path string) error {
+		return os.WriteFile(path, []byte("output-bytes"), 0o644)
+	}
+	proc.SetPublisher(badHashPublisher{})
+
+	artifact, err := proc.Render(context.Background(), validJob())
+	if err != nil {
+		t.Fatalf("render: %v", err)
+	}
+	if _, err := proc.Publish(context.Background(), validJob().ID, artifact); err == nil {
+		t.Fatal("publish must fail when drive_sha != db_sha")
+	}
+}
+
+// TestPublishSHAChainInvariant walks the whole chain end to end — render,
+// store, ledger and Drive — and proves local_sha == store_sha == db_sha ==
+// drive_sha: the hashes recorded in the artifact, the ledger, and the Drive
+// result are all the same, and the bytes Drive received are the bytes the
+// worker hashed.
+func TestPublishSHAChainInvariant(t *testing.T) {
+	proc, store, renderer := newProcessor(t)
+	if err := store.Put(context.Background(), "hash-video", []byte("video-bytes")); err != nil {
+		t.Fatalf("put asset: %v", err)
+	}
+	ledger := artifactdb.NewMemory()
+	proc.SetArtifactRecorder(ledger)
+	driveDir := t.TempDir()
+	publisher := drive.NewMock(driveDir, 0)
+	proc.SetPublisher(publisher)
+	renderer.write = func(path string) error {
+		return os.WriteFile(path, []byte("output-bytes"), 0o644)
+	}
+
+	artifact, err := proc.Render(context.Background(), validJob())
+	if err != nil {
+		t.Fatalf("render: %v", err)
+	}
+	published, err := proc.Publish(context.Background(), validJob().ID, artifact)
+	if err != nil {
+		t.Fatalf("publish: %v", err)
+	}
+
+	// local_sha == store_sha: the object store holds the hashed bytes.
+	localSHA := storage.Hash([]byte("output-bytes"))
+	stored, err := store.Get(context.Background(), artifact.StorageKey)
+	if err != nil {
+		t.Fatalf("get stored: %v", err)
+	}
+	if got := storage.Hash(stored); got != localSHA {
+		t.Fatalf("store_sha = %s, want %s", got, localSHA)
+	}
+	// db_sha: the ledger record carries the same hash.
+	rec, ok := ledger.Get(validJob().ID)
+	if !ok {
+		t.Fatal("ledger record missing")
+	}
+	if rec.ArtifactHash != localSHA || rec.StorageKey != artifact.StorageKey {
+		t.Fatalf("db_sha mismatch: rec=%+v", rec)
+	}
+	// drive_sha: the publisher reported the same hash and wrote the bytes.
+	if published.DriveFileID == "" {
+		t.Fatalf("drive fields missing: %+v", published)
+	}
+	driveFiles, err := filepath.Glob(filepath.Join(driveDir, artifact.ArtifactHash, "*.mp4"))
+	if err != nil || len(driveFiles) != 1 {
+		t.Fatalf("drive files = %v (err %v), want exactly one", driveFiles, err)
+	}
+	written, err := os.ReadFile(driveFiles[0])
+	if err != nil {
+		t.Fatalf("read drive file: %v", err)
+	}
+	if got := storage.Hash(written); got != localSHA {
+		t.Fatalf("drive file sha = %s, want %s", got, localSHA)
 	}
 }
 

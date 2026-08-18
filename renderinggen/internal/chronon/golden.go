@@ -83,8 +83,8 @@ const GoldenOverlayJobV1 = `{
       "logical_path": "assets/apple.png"
     },
     {
-      "hash": "690243adfefe0ce154b547db6205794bd30ac4277275179517a90994f4980648",
-      "logical_path": "assets/fonts/DejaVuSans.ttf"
+      "hash": "983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c",
+      "logical_path": "assets/fonts/Poppins-Bold.ttf"
     }
   ]
 }`

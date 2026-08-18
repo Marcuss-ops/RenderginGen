@@ -44,6 +44,9 @@ var _ Renderer = (*Client)(nil)
 
 // Binary returns the path to the Chronon CLI.
 func (c *Client) Binary() string {
+	if override := os.Getenv("CHRONON_BINARY"); override != "" {
+		return override
+	}
 	return filepath.Join(c.Home, "bin", "chronon3d_cli")
 }
 

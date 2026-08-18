@@ -1,0 +1,82 @@
+{
+  "id": "golden-semantic-overlay-v1",
+  "schema": "renderinggen.job",
+  "version": 1,
+  "job_type": "overlay.render",
+  "render_plan": {
+    "schema_version": "renderinggen.overlay-plan.v1",
+    "plan_id": "golden-semantic-overlay-v1",
+    "video_id": "golden-semantic-overlay-v1",
+    "width": 1280,
+    "height": 720,
+    "fps": 30,
+    "items": [
+      {
+        "id": "background",
+        "template_id": "IMAGE_OVERLAY",
+        "start_ms": 0,
+        "end_ms": 5000,
+        "params": {
+          "width": 1280,
+          "height": 720,
+          "fit": "cover"
+        },
+        "asset_refs": [
+          {
+            "asset_id": "background",
+            "sha256": "52209ee36928dba960583179922a54acf045d52d44c3128c517425d4baaa4f78",
+            "url": "https://store.example/objects/background.jpg",
+            "media_type": "image/jpeg"
+          }
+        ]
+      },
+      {
+        "id": "important_phrase",
+        "template_id": "IMPORTANT_PHRASE",
+        "text": "QUESTO CAMBIA TUTTO",
+        "start_ms": 667,
+        "end_ms": 2000
+      },
+      {
+        "id": "important_word",
+        "template_id": "IMPORTANT_WORD",
+        "text": "APPLE",
+        "start_ms": 2167,
+        "end_ms": 3167
+      },
+      {
+        "id": "image_overlay",
+        "template_id": "IMAGE_OVERLAY",
+        "start_ms": 3000,
+        "end_ms": 4500,
+        "params": {
+          "width": 260,
+          "height": 260,
+          "fit": "contain"
+        },
+        "asset_refs": [
+          {
+            "asset_id": "apple",
+            "sha256": "ed873745e76173b66999c63546770d9f1426a2189515149176c67637e99a62d6",
+            "url": "https://store.example/objects/apple.png",
+            "media_type": "image/png"
+          }
+        ]
+      }
+    ]
+  },
+  "assets": [
+    {
+      "hash": "52209ee36928dba960583179922a54acf045d52d44c3128c517425d4baaa4f78",
+      "logical_path": "assets/background.jpg"
+    },
+    {
+      "hash": "ed873745e76173b66999c63546770d9f1426a2189515149176c67637e99a62d6",
+      "logical_path": "assets/apple.png"
+    },
+    {
+      "hash": "690243adfefe0ce154b547db6205794bd30ac4277275179517a90994f4980648",
+      "logical_path": "assets/fonts/DejaVuSans.ttf"
+    }
+  ]
+}

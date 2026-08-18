@@ -87,7 +87,7 @@ func TestDaemonVsCLIBenchmarkGoldenOverlay(t *testing.T) {
 		start := time.Now()
 		if err := cli.Render(ctx, chronon.RenderRequest{
 			PlanPath:   ws.PlanPath(),
-			AssetsRoot: ws.AssetsRoot(),
+			AssetsRoot: ws.Root(),
 			OutputPath: output,
 			Backend:    "software",
 		}); err != nil {
@@ -98,7 +98,7 @@ func TestDaemonVsCLIBenchmarkGoldenOverlay(t *testing.T) {
 
 	// ── Daemon: start on a unix socket, cold + warm, then shutdown ───────
 	socketPath := filepath.Join(t.TempDir(), "chronon.sock")
-	daemon := startDaemon(t, cli.Binary(), socketPath, ws.AssetsRoot())
+	daemon := startDaemon(t, cli.Binary(), socketPath, ws.Root())
 	t.Cleanup(func() {
 		shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer shutdownCancel()
@@ -115,7 +115,7 @@ func TestDaemonVsCLIBenchmarkGoldenOverlay(t *testing.T) {
 		start := time.Now()
 		if err := client.Render(ctx, chronon.RenderRequest{
 			PlanPath:   ws.PlanPath(),
-			AssetsRoot: ws.AssetsRoot(),
+			AssetsRoot: ws.Root(),
 			OutputPath: output,
 			Backend:    "software",
 		}); err != nil {

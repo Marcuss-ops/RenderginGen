@@ -35,7 +35,21 @@ type ClaimedJob struct {
 // Claim atomically claims the next pending job for workerID. It returns a nil
 // job when the queue is empty.
 func (c *Client) Claim(ctx context.Context, workerID string) (*ClaimedJob, error) {
-	body, err := json.Marshal(map[string]string{"worker": workerID})
+	return c.claim(ctx, workerID, "")
+}
+
+// ClaimPending claims only jobs that still need rendering.
+func (c *Client) ClaimPending(ctx context.Context, workerID string) (*ClaimedJob, error) {
+	return c.claim(ctx, workerID, "pending")
+}
+
+// ClaimRendered claims only jobs awaiting external publication.
+func (c *Client) ClaimRendered(ctx context.Context, workerID string) (*ClaimedJob, error) {
+	return c.claim(ctx, workerID, "rendered")
+}
+
+func (c *Client) claim(ctx context.Context, workerID, state string) (*ClaimedJob, error) {
+	body, err := json.Marshal(map[string]string{"worker": workerID, "state": state})
 	if err != nil {
 		return nil, fmt.Errorf("queue claim marshal: %w", err)
 	}

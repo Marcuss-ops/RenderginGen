@@ -21,6 +21,7 @@ type JobRepository interface {
 	// Claim atomically claims the next pending job for a worker, returning the
 	// job and its lease duration. It returns a nil job when the queue is empty.
 	Claim(workerID string) (*model.Job, time.Duration, error)
+	ClaimState(workerID string, state model.State) (*model.Job, time.Duration, error)
 
 	// Get returns the current state of a job, including its artifact when
 	// completed. It returns ErrNotFound when the job does not exist.

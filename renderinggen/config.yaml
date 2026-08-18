@@ -8,6 +8,12 @@ artifact_store:
   endpoint: https://storage.pipelinegen.example
   local_cache_dir: /var/lib/renderinggen/cache
 
+# DB artifact ledger (optional): every rendered job writes one ArtifactRecord
+# (hash, probe facts, semantic counters, per-phase metrics) to a local SQLite
+# file after the object store accepts the bytes. Empty path disables it.
+# artifact_db:
+#   path: /var/lib/renderinggen/artifacts.db
+
 workspace:
   root: /var/lib/renderinggen/jobs
 

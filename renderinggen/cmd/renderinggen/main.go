@@ -8,11 +8,14 @@ package main
 import (
 	"context"
 	"flag"
+	"fmt"
 	"log"
 	"os/signal"
+	"sync"
 	"syscall"
 	"time"
 
+	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/artifactdb"
 	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/chronon"
 	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/config"
 	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/drive"
@@ -83,6 +86,18 @@ func main() {
 	)
 	proc.SetNativeOutputProfiles(cfg.Chronon.NativeOutputProfiles)
 
+	// 3a. Artifact ledger (the "DB artifact" step): SQLite, pure Go so the
+	// CGO_ENABLED=0 worker image keeps building. A failed ledger write fails
+	// the job — the ledger is the source of truth for what was produced.
+	if cfg.ArtifactDB.Path != "" {
+		recorder, err := artifactdb.NewSQLite(cfg.ArtifactDB.Path)
+		if err != nil {
+			log.Fatalf("artifact_db: %v", err)
+		}
+		proc.SetArtifactRecorder(recorder)
+		log.Printf("artifact_db: ledger enabled at %q", cfg.ArtifactDB.Path)
+	}
+
 	// 3b. Google Drive publication (decoupled from rendering).
 	if cfg.Drive.Enabled {
 		switch cfg.Drive.Mode {
@@ -125,45 +140,115 @@ func main() {
 	log.Printf("worker %s ready: renderinggen=%s chronon=%s schema=%d",
 		cfg.Worker.ID, version.RenderingGen, chrononVersion, version.OverlaySchema)
 
-	// 5. Claim loop.
+	// 5. Run independent render and publication stages. Rendering stops as soon
+	// as the artifact is durable in object storage; Drive publication no longer
+	// occupies the GPU worker's critical path.
+	var workers sync.WaitGroup
+	workers.Add(2)
+	go func() {
+		defer workers.Done()
+		runStageLoop(ctx, queueClient, proc, stageRender)
+	}()
+	go func() {
+		defer workers.Done()
+		runStageLoop(ctx, queueClient, proc, stagePublish)
+	}()
+	workers.Wait()
+	log.Println("shutting down")
+}
+
+type workerStage uint8
+
+const (
+	stageRender workerStage = iota
+	stagePublish
+)
+
+// runStageLoop owns one queue stage. Both stages use the same atomic claim API:
+// pending jobs enter the render stage, while rendered jobs enter publication.
+func runStageLoop(ctx context.Context, q *queue.Client, proc *processor.Processor, stage workerStage) {
 	for {
 		select {
 		case <-ctx.Done():
-			log.Println("shutting down")
 			return
 		default:
 		}
 
-		job, err := queueClient.Claim(ctx)
+		var job *queue.Job
+		var err error
+		if stage == stagePublish {
+			job, err = q.ClaimRendered(ctx)
+		} else {
+			job, err = q.ClaimPending(ctx)
+		}
 		if err != nil {
-			log.Printf("claim: %v", err)
-			time.Sleep(5 * time.Second)
+			log.Printf("%s claim: %v", stageName(stage), err)
+			select {
+			case <-ctx.Done():
+				return
+			case <-time.After(5 * time.Second):
+			}
 			continue
 		}
 		if job == nil {
-			// Queue empty: back off before polling again.
-			time.Sleep(2 * time.Second)
+			select {
+			case <-ctx.Done():
+				return
+			case <-time.After(2 * time.Second):
+			}
 			continue
 		}
 
-		artifact, renderErr, publishErr := processJob(ctx, job, queueClient, proc)
-		switch {
-		case renderErr != nil:
-			log.Printf("job %s failed to render: %v", job.ID, renderErr)
-			if rerr := queueClient.Fail(ctx, job.ID, renderErr.Error()); rerr != nil {
-				log.Printf("report fail: %v", rerr)
+		artifact, err := processStageJob(ctx, job, q, proc, stage)
+		if err != nil {
+			log.Printf("job %s %s failed: %v", job.ID, stageName(stage), err)
+			if stage == stagePublish && job.Artifact != nil {
+				if reportErr := q.Rendered(ctx, job.ID, err.Error(), *job.Artifact); reportErr != nil {
+					log.Printf("job %s report rendered: %v", job.ID, reportErr)
+				}
+			} else if reportErr := q.Fail(ctx, job.ID, err.Error()); reportErr != nil {
+				log.Printf("job %s report fail: %v", job.ID, reportErr)
 			}
-		case publishErr != nil:
-			log.Printf("job %s rendered but publication failed: %v", job.ID, publishErr)
-			if rerr := queueClient.Rendered(ctx, job.ID, publishErr.Error(), artifact); rerr != nil {
-				log.Printf("report rendered: %v", rerr)
+			continue
+		}
+
+		if stage == stageRender && job.JobType != queue.JobTypeOverlayPrepare {
+			if err := q.Rendered(ctx, job.ID, "render complete; awaiting publication", artifact); err != nil {
+				log.Printf("job %s report rendered: %v", job.ID, err)
 			}
-		default:
-			if err := queueClient.Complete(ctx, job.ID, artifact); err != nil {
-				log.Printf("report complete: %v", err)
-			}
+			continue
+		}
+		if err := q.Complete(ctx, job.ID, artifact); err != nil {
+			log.Printf("job %s report complete: %v", job.ID, err)
 		}
 	}
+}
+
+func stageName(stage workerStage) string {
+	if stage == stagePublish {
+		return "publish"
+	}
+	return "render"
+}
+
+func processStageJob(ctx context.Context, job *queue.Job, q *queue.Client, proc *processor.Processor, stage workerStage) (queue.Artifact, error) {
+	return withLease(ctx, job, q, func(jobCtx context.Context) (queue.Artifact, error) {
+		if stage == stagePublish {
+			if job.Artifact == nil {
+				return queue.Artifact{}, fmt.Errorf("rendered job has no artifact")
+			}
+			artifact := *job.Artifact
+			artifact.Metrics = nil
+			return proc.Publish(jobCtx, job.ID, artifact)
+		}
+		if job.JobType == queue.JobTypeOverlayPrepare {
+			return proc.Prepare(jobCtx, job)
+		}
+		if job.Artifact != nil {
+			return queue.Artifact{}, fmt.Errorf("render stage received already-rendered job")
+		}
+		return proc.Render(jobCtx, job)
+	})
 }
 
 // processJob processes a claimed job while renewing its lease in the
@@ -172,18 +257,36 @@ func main() {
 // aborts instead of double-processing. On success it returns the published
 // artifact, which the caller reports via Complete.
 func processJob(ctx context.Context, job *queue.Job, q *queue.Client, proc *processor.Processor) (queue.Artifact, error, error) {
-	if job.Lease <= 0 {
-		return runJob(ctx, job, proc)
+	var artifact queue.Artifact
+	var renderErr, publishErr error
+	artifact, err := withLease(ctx, job, q, func(jobCtx context.Context) (queue.Artifact, error) {
+		var a queue.Artifact
+		a, renderErr, publishErr = runJob(jobCtx, job, proc)
+		return a, firstError(renderErr, publishErr)
+	})
+	if err != nil && renderErr == nil && publishErr == nil {
+		renderErr = err
 	}
+	return artifact, renderErr, publishErr
+}
 
+func firstError(a, b error) error {
+	if a != nil {
+		return a
+	}
+	return b
+}
+
+func withLease(ctx context.Context, job *queue.Job, q *queue.Client, fn func(context.Context) (queue.Artifact, error)) (queue.Artifact, error) {
+	if job.Lease <= 0 {
+		return fn(ctx)
+	}
 	jobCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
-
 	interval := job.Lease / 2
 	if interval <= 0 {
 		interval = time.Second
 	}
-
 	go func() {
 		ticker := time.NewTicker(interval)
 		defer ticker.Stop()
@@ -200,8 +303,7 @@ func processJob(ctx context.Context, job *queue.Job, q *queue.Client, proc *proc
 			}
 		}
 	}()
-
-	return runJob(jobCtx, job, proc)
+	return fn(jobCtx)
 }
 
 // runJob runs the render + publication pipeline for a claimed job. It returns

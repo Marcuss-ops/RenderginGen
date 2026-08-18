@@ -18,6 +18,7 @@ type Config struct {
 	Health        HealthConfig    `yaml:"health"`
 	Workspace     WorkspaceConfig `yaml:"workspace"`
 	Drive         DriveConfig     `yaml:"drive"`
+	ArtifactDB    ArtifactDBConfig `yaml:"artifact_db"`
 }
 
 type WorkerConfig struct {
@@ -74,6 +75,16 @@ type DriveConfig struct {
 	// Mock publisher settings (Mode == "mock").
 	MockDir       string `yaml:"mock_dir"`        // write uploaded bytes here
 	MockFailFirst int    `yaml:"mock_fail_first"` // fail the first N uploads
+}
+
+// ArtifactDBConfig configures the artifact ledger (the "DB artifact" step).
+// When Path is set, every rendered job writes one ArtifactRecord to a local
+// SQLite ledger after the object store accepts the bytes; empty disables the
+// ledger (the default). The ledger is the source of truth for what the
+// pipeline produced: hash, probe facts, semantic counters and per-phase
+// metrics.
+type ArtifactDBConfig struct {
+	Path string `yaml:"path"` // SQLite ledger file; empty = ledger disabled
 }
 
 // Load reads the YAML config file at path, applies defaults and validates it.

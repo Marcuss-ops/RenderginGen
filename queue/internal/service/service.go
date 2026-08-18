@@ -88,10 +88,14 @@ func (s *Service) Get(id string) (*model.Job, error) {
 // Claim atomically claims the next pending job for a worker, returning the job
 // and its lease duration. It returns a nil job when the queue is empty.
 func (s *Service) Claim(workerID string) (*model.Job, time.Duration, error) {
+	return s.ClaimState(workerID, "")
+}
+
+func (s *Service) ClaimState(workerID string, state model.State) (*model.Job, time.Duration, error) {
 	if workerID == "" {
 		return nil, 0, fmt.Errorf("worker id is required")
 	}
-	job, lease, err := s.repo.Claim(workerID)
+	job, lease, err := s.repo.ClaimState(workerID, state)
 	if err != nil {
 		return nil, 0, err
 	}
