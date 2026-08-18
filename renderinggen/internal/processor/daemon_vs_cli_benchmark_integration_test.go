@@ -25,18 +25,24 @@ type benchRun struct {
 }
 
 type timingSummary struct {
-	RenderMS      float64
-	WallMS        float64
-	EncodeCloseMS float64
-	P50FrameMS    float64
-	P95FrameMS    float64
-	P99FrameMS    float64
-	GPUExecuteMS  *float64
-	GPUReadbackMS *float64
-	GPUNodes      *int64
-	FallbackNodes *int64
-	ConversionMS  float64
-	Frames        int
+	RenderMS          float64
+	WallMS            float64
+	EncodeCloseMS     float64
+	P50FrameMS        float64
+	P95FrameMS        float64
+	P99FrameMS        float64
+	GPUExecuteMS      *float64
+	GPUReadbackMS     *float64
+	GPUNodes          *int64
+	FallbackNodes     *int64
+	FallbackDrawNode  *int64
+	FallbackTextRun   *int64
+	FallbackComposite *int64
+	FallbackEffect    *int64
+	FallbackBlur      *int64
+	FallbackDOF       *int64
+	ConversionMS      float64
+	Frames            int
 }
 
 type chrononTimingSidecar struct {
@@ -51,10 +57,16 @@ type chrononTimingSidecar struct {
 	} `json:"summary"`
 	Job struct {
 		GPU struct {
-			Execute  *float64 `json:"gpu_execute_ms"`
-			Readback *float64 `json:"gpu_readback_ms"`
-			Nodes    *int64   `json:"gpu_nodes"`
-			Fallback *int64   `json:"software_fallback_nodes"`
+			Execute           *float64 `json:"gpu_execute_ms"`
+			Readback          *float64 `json:"gpu_readback_ms"`
+			Nodes             *int64   `json:"gpu_nodes"`
+			Fallback          *int64   `json:"software_fallback_nodes"`
+			FallbackDrawNode  *int64   `json:"fallback_draw_node"`
+			FallbackTextRun   *int64   `json:"fallback_text_run"`
+			FallbackComposite *int64   `json:"fallback_composite"`
+			FallbackEffect    *int64   `json:"fallback_effect"`
+			FallbackBlur      *int64   `json:"fallback_blur"`
+			FallbackDOF       *int64   `json:"fallback_dof"`
 		} `json:"gpu"`
 		ConversionMS float64 `json:"conversion_ms"`
 	} `json:"job"`
@@ -178,11 +190,12 @@ func TestDaemonVsCLIBenchmarkGoldenOverlay(t *testing.T) {
 	fmt.Printf("%-9s %-6s %10s %10s %10s %10s %10s %10s %10s %10s %10s %10s\n",
 		"backend", "phase", "total_ms", "render_ms", "p50_ms", "p95_ms", "p99_ms", "wall_ms", "gpu_ms", "readback_ms", "gpu_nodes", "fallbacks")
 	for _, r := range results {
-		fmt.Printf("%-9s %-6s %10.1f %10.1f %10.3f %10.3f %10.3f %10.1f %10s %10s %10s %10s\n",
+		fmt.Printf("%-9s %-6s %10.1f %10.1f %10.3f %10.3f %10.3f %10.1f %10s %10s %10s %10s %10s\n",
 			r.Backend, r.Phase, r.TotalMS, r.Timing.RenderMS, r.Timing.P50FrameMS,
 			r.Timing.P95FrameMS, r.Timing.P99FrameMS, r.Timing.WallMS,
 			optionalMetric(r.Timing.GPUExecuteMS), optionalMetric(r.Timing.GPUReadbackMS),
-			optionalIntMetric(r.Timing.GPUNodes), optionalIntMetric(r.Timing.FallbackNodes))
+			optionalIntMetric(r.Timing.GPUNodes), optionalIntMetric(r.Timing.FallbackNodes),
+			effectiveBackend(r.Timing))
 	}
 	cliWarm := by["cli-warm"]
 	daemonWarm := by["daemon-warm"]
@@ -209,6 +222,19 @@ func optionalIntMetric(value *int64) string {
 	return fmt.Sprintf("%d", *value)
 }
 
+func effectiveBackend(t timingSummary) string {
+	if t.GPUNodes != nil && *t.GPUNodes > 0 {
+		if t.FallbackNodes != nil && *t.FallbackNodes > 0 {
+			return "hybrid"
+		}
+		return "vulkan"
+	}
+	if t.FallbackNodes != nil && *t.FallbackNodes > 0 {
+		return "software-fallback"
+	}
+	return "unknown"
+}
+
 func readChrononTiming(t *testing.T, output string) timingSummary {
 	t.Helper()
 	data, err := os.ReadFile(output + ".timing.json")
@@ -220,18 +246,24 @@ func readChrononTiming(t *testing.T, output string) timingSummary {
 		t.Fatalf("decode Chronon timing sidecar: %v", err)
 	}
 	return timingSummary{
-		RenderMS:      doc.RenderMS,
-		WallMS:        doc.WallMS,
-		EncodeCloseMS: doc.EncodeClose,
-		P50FrameMS:    doc.Summary.P50,
-		P95FrameMS:    doc.Summary.P95,
-		P99FrameMS:    doc.Summary.P99,
-		GPUExecuteMS:  doc.Job.GPU.Execute,
-		GPUReadbackMS: doc.Job.GPU.Readback,
-		GPUNodes:      doc.Job.GPU.Nodes,
-		FallbackNodes: doc.Job.GPU.Fallback,
-		ConversionMS:  doc.Job.ConversionMS,
-		Frames:        doc.FramesTotal,
+		RenderMS:          doc.RenderMS,
+		WallMS:            doc.WallMS,
+		EncodeCloseMS:     doc.EncodeClose,
+		P50FrameMS:        doc.Summary.P50,
+		P95FrameMS:        doc.Summary.P95,
+		P99FrameMS:        doc.Summary.P99,
+		GPUExecuteMS:      doc.Job.GPU.Execute,
+		GPUReadbackMS:     doc.Job.GPU.Readback,
+		GPUNodes:          doc.Job.GPU.Nodes,
+		FallbackNodes:     doc.Job.GPU.Fallback,
+		FallbackDrawNode:  doc.Job.GPU.FallbackDrawNode,
+		FallbackTextRun:   doc.Job.GPU.FallbackTextRun,
+		FallbackComposite: doc.Job.GPU.FallbackComposite,
+		FallbackEffect:    doc.Job.GPU.FallbackEffect,
+		FallbackBlur:      doc.Job.GPU.FallbackBlur,
+		FallbackDOF:       doc.Job.GPU.FallbackDOF,
+		ConversionMS:      doc.Job.ConversionMS,
+		Frames:            doc.FramesTotal,
 	}
 }
 
