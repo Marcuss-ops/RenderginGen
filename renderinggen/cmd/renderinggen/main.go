@@ -85,6 +85,7 @@ func main() {
 		renderer,
 	)
 	proc.SetNativeOutputProfiles(cfg.Chronon.NativeOutputProfiles)
+	proc.SetStrictNativeBackend(cfg.Chronon.Profile == "gpu-vulkan-native")
 	proc.SetReport(cfg.Chronon.Report)
 	proc.SetHardwareEncoder(cfg.Chronon.HardwareEncoder)
 	log.Printf("chronon report telemetry: %t", cfg.Chronon.Report)
