@@ -14,6 +14,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/artifactdb"
 	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/chronon"
 	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/drive"
 	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/media"
@@ -35,6 +36,7 @@ type Processor struct {
 	store          *storage.Client
 	renderer       chronon.Renderer
 	drive          drive.Publisher // nil = external publication disabled
+	recorder       artifactdb.Recorder // nil = artifact ledger disabled
 
 	// phaseHook, when set, receives the wall-clock duration of each pipeline
 	// phase so benchmarks can report asset_fetch/prepare/render/publish ms
@@ -85,6 +87,15 @@ func (p *Processor) SetPublisher(pub drive.Publisher) {
 	p.drive = pub
 }
 
+// SetArtifactRecorder installs the artifact ledger. When set, every rendered
+// job writes one ArtifactRecord (hash, probe facts, semantic counters, per-
+// phase metrics) after the object store accepted the bytes; a failed Record
+// fails the job (the ledger is the source of truth). nil (default) disables
+// the ledger.
+func (p *Processor) SetArtifactRecorder(rec artifactdb.Recorder) {
+	p.recorder = rec
+}
+
 func (p *Processor) recordPhase(phase string, start time.Time) {
 	if p.phaseHook == nil {
 		return
@@ -124,7 +135,7 @@ func (p *Processor) Prepare(ctx context.Context, job *queue.Job) (queue.Artifact
 			return queue.Artifact{}, err
 		}
 		defer ws.Cleanup()
-		if err := ws.Materialize(ctx, p.store.Get, job.Assets); err != nil {
+		if err := ws.Materialize(ctx, p.resolveAsset, job.Assets); err != nil {
 			return queue.Artifact{}, err
 		}
 		hash := storage.Hash(job.RenderPlan)
@@ -141,16 +152,16 @@ func (p *Processor) Prepare(ctx context.Context, job *queue.Job) (queue.Artifact
 	if err != nil {
 		return queue.Artifact{}, err
 	}
-	assets := append([]queue.AssetRef(nil), job.Assets...)
-	for _, asset := range compiledAssets {
-		assets = append(assets, queue.AssetRef{Hash: asset.Hash, LogicalPath: asset.LogicalPath})
+	assets, err := mergeAssets(job.Assets, compiledAssets)
+	if err != nil {
+		return queue.Artifact{}, err
 	}
 	ws, err := workspace.New(p.jobsRoot, job.ID+"-prepare")
 	if err != nil {
 		return queue.Artifact{}, err
 	}
 	defer ws.Cleanup()
-	if err := ws.Materialize(ctx, p.store.Get, assets); err != nil {
+	if err := ws.Materialize(ctx, p.resolveAsset, assets); err != nil {
 		return queue.Artifact{}, err
 	}
 	if err := ws.WritePlan(plan); err != nil {
@@ -167,31 +178,80 @@ func (p *Processor) Prepare(ctx context.Context, job *queue.Job) (queue.Artifact
 	}, nil
 }
 
+// resolveAsset preserves the content-addressed invariant at the worker
+// boundary. Legacy development fixtures may use symbolic keys; production
+// SHA-256 keys (64 hexadecimal characters) are always checked against the
+// bytes returned by the object store before Chronon sees them.
+func (p *Processor) resolveAsset(ctx context.Context, hash string) ([]byte, error) {
+	data, err := p.store.Get(ctx, hash)
+	if err != nil {
+		return nil, err
+	}
+	if len(hash) == 64 {
+		if got := storage.Hash(data); !strings.EqualFold(got, hash) {
+			return nil, fmt.Errorf("asset hash mismatch: requested %s, got %s", hash, got)
+		}
+	}
+	return data, nil
+}
+
+func mergeAssets(jobAssets []queue.AssetRef, compiled []overlay.Asset) ([]queue.AssetRef, error) {
+	result := append([]queue.AssetRef(nil), jobAssets...)
+	byPath := make(map[string]string, len(result)+len(compiled))
+	for _, asset := range result {
+		if previous, ok := byPath[asset.LogicalPath]; ok && !strings.EqualFold(previous, asset.Hash) {
+			return nil, fmt.Errorf("processor: logical asset path %q has conflicting hashes", asset.LogicalPath)
+		}
+		byPath[asset.LogicalPath] = asset.Hash
+	}
+	for _, asset := range compiled {
+		if previous, ok := byPath[asset.LogicalPath]; ok {
+			if !strings.EqualFold(previous, asset.Hash) {
+				return nil, fmt.Errorf("processor: logical asset path %q has conflicting hashes", asset.LogicalPath)
+			}
+			continue
+		}
+		result = append(result, queue.AssetRef{Hash: asset.Hash, LogicalPath: asset.LogicalPath})
+		byPath[asset.LogicalPath] = asset.Hash
+	}
+	return result, nil
+}
+
 // Render runs the render pipeline — validate, compile, materialize, plan.json,
-// Chronon render, hash, and store to the object store — and returns the
-// artifact metadata (without external publication fields). The artifact bytes
-// are durably stored under artifact.StorageKey, so a publication retry can skip
-// rendering entirely.
+// Chronon render, hash, store to the object store and record the artifact
+// ledger — and returns the artifact metadata (without external publication
+// fields). The artifact bytes are durably stored under artifact.StorageKey, so
+// a publication retry can skip rendering entirely.
 func (p *Processor) Render(ctx context.Context, job *queue.Job) (queue.Artifact, error) {
 	totalStart := time.Now()
-	phaseMetrics := make(map[string]float64, 5)
+	phaseMetrics := make(map[string]float64, 6)
 	record := func(phase string, start time.Time) {
-		phaseMetrics[phase+"_ms"] = float64(time.Since(start).Microseconds()) / 1000
+		us := float64(time.Since(start).Microseconds())
+		phaseMetrics[phase+"_ms"] = us / 1000
+		phaseMetrics[phase+"_us"] = us
 		p.recordPhase(phase, start)
 	}
 	if err := validate(job); err != nil {
 		return queue.Artifact{}, err
 	}
+	// Semantic counters are persisted with the artifact ledger; legacy plans
+	// simply produce zero-valued counters.
+	stats, err := overlay.SemanticStats(job.RenderPlan)
+	if err != nil {
+		return queue.Artifact{}, fmt.Errorf("processor: semantic stats: %w", err)
+	}
 	// PipelineGen may submit the semantic overlay contract. RenderingGen is
 	// the boundary that resolves it into a concrete Chronon plan; legacy jobs
 	// already carrying chronon.render-plan.v1 pass through unchanged.
+	compileStart := time.Now()
 	plan, compiledAssets, _, err := overlay.CompileIfSemantic(job.RenderPlan)
 	if err != nil {
 		return queue.Artifact{}, err
 	}
-	assets := append([]queue.AssetRef(nil), job.Assets...)
-	for _, asset := range compiledAssets {
-		assets = append(assets, queue.AssetRef{Hash: asset.Hash, LogicalPath: asset.LogicalPath})
+	phaseMetrics["overlay_compile_us"] = float64(time.Since(compileStart).Microseconds())
+	assets, err := mergeAssets(job.Assets, compiledAssets)
+	if err != nil {
+		return queue.Artifact{}, err
 	}
 
 	ws, err := workspace.New(p.jobsRoot, job.ID)
@@ -205,9 +265,19 @@ func (p *Processor) Render(ctx context.Context, job *queue.Job) (queue.Artifact,
 	}()
 
 	// Resolve assets through L1/L2/L3 and materialize them to their logical
-	// paths inside the workspace, so the render_plan references resolve.
+	// paths inside the workspace, so the render_plan references resolve. The
+	// input byte count is the plan's input_bytes metric.
+	var inputBytes int64
+	resolve := func(ctx context.Context, hash string) ([]byte, error) {
+		data, err := p.resolveAsset(ctx, hash)
+		if err != nil {
+			return nil, err
+		}
+		inputBytes += int64(len(data))
+		return data, nil
+	}
 	phaseStart := time.Now()
-	if err := ws.Materialize(ctx, p.store.Get, assets); err != nil {
+	if err := ws.Materialize(ctx, resolve, assets); err != nil {
 		return queue.Artifact{}, err
 	}
 	record("materialize", phaseStart)
@@ -261,13 +331,23 @@ func (p *Processor) Render(ctx context.Context, job *queue.Job) (queue.Artifact,
 		probe = &probed
 	}
 
-	return p.storeArtifact(ctx, outputPath, plan, phaseMetrics, totalStart, probe)
+	return p.storeArtifact(ctx, job.ID, outputPath, plan, phaseMetrics, totalStart, probe, stats, inputBytes)
 }
 
 // Publish uploads an already-rendered artifact to Google Drive and returns the
 // artifact updated with its Drive file ID and link. It re-reads the rendered
 // bytes from the object store, so it never touches the renderer. When no
 // publisher is configured it returns the artifact unchanged.
+//
+// The SHA-256 chain invariant (plan section "Drive") is enforced here:
+//
+//	local_sha == objectstore_sha == db_sha == drive_sha
+//
+// The bytes re-read from the object store must hash to the artifact hash the
+// worker computed at render time and recorded in the ledger (store_sha ==
+// db_sha) BEFORE they are uploaded; the Drive result must then report the
+// same hash (drive_sha == db_sha). Any mismatch fails the publication, never
+// a re-render.
 func (p *Processor) Publish(ctx context.Context, jobID string, artifact queue.Artifact) (queue.Artifact, error) {
 	if p.drive == nil {
 		return artifact, nil
@@ -276,6 +356,13 @@ func (p *Processor) Publish(ctx context.Context, jobID string, artifact queue.Ar
 	data, err := p.store.Get(ctx, artifact.StorageKey)
 	if err != nil {
 		return artifact, fmt.Errorf("processor: fetch rendered artifact: %w", err)
+	}
+	// store_sha == db_sha: the object store must return the exact bytes the
+	// worker hashed and recorded. A corrupted/mismatched object fails the
+	// publication BEFORE anything is uploaded to Drive.
+	storeSHA := storage.Hash(data)
+	if !strings.EqualFold(storeSHA, artifact.ArtifactHash) {
+		return artifact, fmt.Errorf("processor: sha invariant store/db mismatch: store_sha=%s db_sha=%s (job %s fails, re-render required)", storeSHA, artifact.ArtifactHash, jobID)
 	}
 	res, err := p.drive.Publish(ctx, drive.PublishRequest{
 		Name:        jobID + ".mp4",
@@ -286,35 +373,53 @@ func (p *Processor) Publish(ctx context.Context, jobID string, artifact queue.Ar
 	if err != nil {
 		return artifact, fmt.Errorf("processor: drive publish: %w", err)
 	}
-	if res.FileID == "" || res.SizeBytes != int64(len(data)) || res.SHA256 != storage.Hash(data) {
-		return artifact, fmt.Errorf("processor: drive publication identity mismatch (file_id=%q size=%d hash=%q)", res.FileID, res.SizeBytes, res.SHA256)
+	// drive_sha == db_sha: the Drive result must report the exact same hash.
+	if res.FileID == "" || res.SizeBytes != int64(len(data)) || !strings.EqualFold(res.SHA256, artifact.ArtifactHash) {
+		return artifact, fmt.Errorf("processor: drive publication identity mismatch (file_id=%q size=%d sha=%q db_sha=%q)", res.FileID, res.SizeBytes, res.SHA256, artifact.ArtifactHash)
 	}
 	if artifact.Metrics == nil {
 		artifact.Metrics = map[string]float64{}
 	}
-	artifact.Metrics["drive_publish_ms"] = float64(time.Since(phaseStart).Microseconds()) / 1000
+	driveUS := float64(time.Since(phaseStart).Microseconds())
+	artifact.Metrics["drive_publish_ms"] = driveUS / 1000
+	artifact.Metrics["drive_upload_us"] = driveUS
 	artifact.DriveFileID = res.FileID
 	artifact.DriveLink = res.WebViewLink
+	// The ledger row already exists (written by Render); a publication retry
+	// only updates the drive metric — it never touches the artifact identity.
+	if updater, ok := p.recorder.(artifactdb.DriveUpdater); ok {
+		if err := updater.UpdateDrive(ctx, jobID, int64(driveUS)); err != nil {
+			return artifact, fmt.Errorf("processor: artifact ledger drive %s: %w", jobID, err)
+		}
+	}
 	return artifact, nil
 }
 
-// storeArtifact reads the rendered output, hashes it and stores it in the
-// artifact store (L3), returning the artifact metadata for queue completion.
-func (p *Processor) storeArtifact(ctx context.Context, outputPath string, plan []byte, phaseMetrics map[string]float64, totalStart time.Time, probe *media.ProbeResult) (queue.Artifact, error) {
+// storeArtifact reads the rendered output, hashes it (sha256), stores it in
+// the artifact store (L3), and records the artifact ledger row — the plan's
+// "DB artifact" step — returning the artifact metadata for queue completion.
+// The pipeline invariant local_sha == objectstore_sha == db_sha is enforced
+// here: the record is keyed by the same hash the object store accepted.
+func (p *Processor) storeArtifact(ctx context.Context, jobID, outputPath string, plan []byte, phaseMetrics map[string]float64, totalStart time.Time, probe *media.ProbeResult, stats overlay.Stats, inputBytes int64) (queue.Artifact, error) {
 	phaseStart := time.Now()
 	defer func() {
 		phaseMetrics["publish_ms"] = float64(time.Since(phaseStart).Microseconds()) / 1000
 		phaseMetrics["total_ms"] = float64(time.Since(totalStart).Microseconds()) / 1000
+		phaseMetrics["total_us"] = phaseMetrics["total_ms"] * 1000
 		p.recordPhase("publish", phaseStart)
 	}()
 	data, err := os.ReadFile(outputPath)
 	if err != nil {
 		return queue.Artifact{}, fmt.Errorf("processor: read output %s: %w", outputPath, err)
 	}
+	shaStart := time.Now()
 	hash := storage.Hash(data)
+	phaseMetrics["sha256_us"] = float64(time.Since(shaStart).Microseconds())
+	putStart := time.Now()
 	if err := p.store.Put(ctx, hash, data); err != nil {
 		return queue.Artifact{}, fmt.Errorf("processor: publish artifact: %w", err)
 	}
+	phaseMetrics["objectstore_upload_us"] = float64(time.Since(putStart).Microseconds())
 	metadata := renderMetadataFromPlan(plan)
 	artifact := queue.Artifact{
 		Kind:           "segment",
@@ -350,7 +455,82 @@ func (p *Processor) storeArtifact(ctx context.Context, outputPath string, plan [
 			artifact.CopyEligible = true
 		}
 	}
+	// Total time must be set before the ledger row is written (the deferred
+	// publish/total metrics above are for the artifact returned to the queue).
+	phaseMetrics["total_us"] = float64(time.Since(totalStart).Microseconds())
+	if err := p.recordArtifact(ctx, jobID, artifact, probe, stats, inputBytes); err != nil {
+		return queue.Artifact{}, err
+	}
 	return artifact, nil
+}
+
+// recordArtifact writes the artifact ledger row (the plan's "DB artifact"
+// step). The record carries the content hash, the probe facts, the semantic
+// counters from the compiled plan and the per-phase microsecond metrics. A
+// configured recorder failing fails the job: the ledger is the source of
+// truth for what the pipeline produced.
+func (p *Processor) recordArtifact(ctx context.Context, jobID string, artifact queue.Artifact, probe *media.ProbeResult, stats overlay.Stats, inputBytes int64) error {
+	if p.recorder == nil {
+		return nil
+	}
+	rec := artifactdb.ArtifactRecord{
+		JobID:            jobID,
+		ArtifactHash:     artifact.ArtifactHash,
+		StorageKey:       artifact.StorageKey,
+		SizeBytes:        artifact.SizeBytes,
+		ContentType:      artifact.ContentType,
+		Backend:          artifact.Backend,
+		ChrononVersion:   artifact.ChrononVersion,
+		ProfileID:        artifact.ProfileID,
+		EntityCount:      stats.EntityCount,
+		ImportantPhraseCnt: stats.ImportantPhraseCnt,
+		ImportantWordCnt: stats.ImportantWordCnt,
+		ImageCount:       stats.ImageCount,
+		LightLeakCount:   stats.LightLeakCount,
+		PresetID:         stats.PresetID,
+		InputBytes:       inputBytes,
+		OutputBytes:      artifact.SizeBytes,
+		CreatedAt:        time.Now().UTC(),
+	}
+	if probe != nil {
+		rec.Container = probe.Container
+		rec.Codec = probe.VideoCodec
+		rec.CodecProfile = probe.CodecProfile
+		rec.PixelFormat = probe.PixelFormat
+		rec.Width = probe.Width
+		rec.Height = probe.Height
+		rec.FPSNum = probe.FPSNum
+		rec.FPSDen = probe.FPSDen
+		rec.FrameCount = probe.FrameCount
+		rec.DurationUS = probe.DurationUS
+		rec.AudioStreams = probe.AudioStreams
+		rec.FirstFrameKeyframe = probe.FirstFrameKeyframe
+	}
+	if m, ok := artifact.Metrics["overlay_compile_us"]; ok {
+		rec.OverlayCompileUS = int64(m)
+	}
+	if m, ok := artifact.Metrics["materialize_us"]; ok {
+		rec.AssetMaterializeUS = int64(m)
+	}
+	if m, ok := artifact.Metrics["render_us"]; ok {
+		rec.ChrononRenderUS = int64(m)
+	}
+	if m, ok := artifact.Metrics["sha256_us"]; ok {
+		rec.SHA256US = int64(m)
+	}
+	if m, ok := artifact.Metrics["objectstore_upload_us"]; ok {
+		rec.ObjectStoreUploadUS = int64(m)
+	}
+	if m, ok := artifact.Metrics["drive_upload_us"]; ok {
+		rec.DriveUploadUS = int64(m)
+	}
+	if m, ok := artifact.Metrics["total_us"]; ok {
+		rec.TotalUS = int64(m)
+	}
+	if err := p.recorder.Record(ctx, rec); err != nil {
+		return fmt.Errorf("processor: artifact ledger %s: %w", jobID, err)
+	}
+	return nil
 }
 
 type renderMetadata struct {

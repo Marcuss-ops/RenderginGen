@@ -17,6 +17,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/queue"
 )
@@ -75,22 +76,52 @@ func (w *Workspace) WritePlan(plan []byte) error {
 // logical path under the assets root. Each logical path is validated to stay
 // inside the assets root (no traversal).
 func (w *Workspace) Materialize(ctx context.Context, resolve Resolver, assets []queue.AssetRef) error {
+	if len(assets) == 0 {
+		return nil
+	}
+	workCtx, cancel := context.WithCancel(ctx)
+	defer cancel()
+	jobs := make(chan queue.AssetRef)
+	var wg sync.WaitGroup
+	var firstErr error
+	var errOnce sync.Once
+	workerCount := 4
+	if len(assets) < workerCount {
+		workerCount = len(assets)
+	}
+	for i := 0; i < workerCount; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for a := range jobs {
+				if err := w.materializeOne(workCtx, resolve, a); err != nil {
+					errOnce.Do(func() { firstErr = err; cancel() })
+				}
+			}
+		}()
+	}
+
+send:
 	for _, a := range assets {
-		if err := w.materializeOne(ctx, resolve, a); err != nil {
-			return err
+		select {
+		case jobs <- a:
+		case <-workCtx.Done():
+			break send
 		}
 	}
-	return nil
+	close(jobs)
+	wg.Wait()
+	return firstErr
 }
 
 func (w *Workspace) materializeOne(ctx context.Context, resolve Resolver, a queue.AssetRef) error {
-	data, err := resolve(ctx, a.Hash)
-	if err != nil {
-		return fmt.Errorf("workspace: resolve %s: %w", a.Hash, err)
-	}
 	dst, err := w.assetPath(a.LogicalPath)
 	if err != nil {
 		return err
+	}
+	data, err := resolve(ctx, a.Hash)
+	if err != nil {
+		return fmt.Errorf("workspace: resolve %s: %w", a.Hash, err)
 	}
 	if err := os.MkdirAll(filepath.Dir(dst), 0o755); err != nil {
 		return fmt.Errorf("workspace: mkdir %s: %w", filepath.Dir(dst), err)

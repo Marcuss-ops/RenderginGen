@@ -132,6 +132,10 @@ func (r *Repository) SubmitIdempotent(job model.Job) (*model.Job, bool, error) {
 // for a worker, holding it under a lease. It returns nil when no job is
 // pending.
 func (r *Repository) Claim(workerID string) (*model.Job, time.Duration, error) {
+	return r.ClaimState(workerID, "")
+}
+
+func (r *Repository) ClaimState(workerID string, state model.State) (*model.Job, time.Duration, error) {
 	ctx := context.Background()
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -153,10 +157,17 @@ func (r *Repository) Claim(workerID string) (*model.Job, time.Duration, error) {
 		queuedAt   time.Time
 		artifactID sql.NullString
 	)
+	stateFilter := "state IN ('pending', 'rendered')"
+	if state != "" {
+		if state != model.StatePending && state != model.StateRendered {
+			return nil, 0, fmt.Errorf("unsupported claim state %q", state)
+		}
+		stateFilter = "state = '" + string(state) + "'"
+	}
 	err = tx.QueryRowContext(ctx, `
 		SELECT id, job_type, job_schema, job_schema_version, render_plan, input_manifest, attempt_count, queued_at, artifact_id
 		FROM render_jobs
-		WHERE state IN ('pending', 'rendered')
+		WHERE `+stateFilter+`
 		ORDER BY priority DESC, queued_at ASC
 		FOR UPDATE SKIP LOCKED
 		LIMIT 1`).Scan(&id, &jobType, &schema, &version, &plan, &manifest, &attempts, &queuedAt, &artifactID)

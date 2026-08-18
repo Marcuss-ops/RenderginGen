@@ -116,6 +116,22 @@ func New(endpoint, workerID string) *Client {
 // Claim atomically claims the next available job, or returns nil when empty.
 func (c *Client) Claim(ctx context.Context) (*Job, error) {
 	claimed, err := c.q.Claim(ctx, c.workerID)
+	return fromClaimed(claimed, err)
+}
+
+// ClaimPending claims only jobs that still need rendering.
+func (c *Client) ClaimPending(ctx context.Context) (*Job, error) {
+	claimed, err := c.q.ClaimPending(ctx, c.workerID)
+	return fromClaimed(claimed, err)
+}
+
+// ClaimRendered claims only jobs awaiting external publication.
+func (c *Client) ClaimRendered(ctx context.Context) (*Job, error) {
+	claimed, err := c.q.ClaimRendered(ctx, c.workerID)
+	return fromClaimed(claimed, err)
+}
+
+func fromClaimed(claimed *queueclient.ClaimedJob, err error) (*Job, error) {
 	if err != nil {
 		return nil, err
 	}

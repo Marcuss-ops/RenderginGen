@@ -87,13 +87,14 @@ func (s *Server) submit(w http.ResponseWriter, r *http.Request) {
 func (s *Server) claim(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		Worker string `json:"worker"`
+		State  string `json:"state,omitempty"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	job, lease, err := s.svc.Claim(req.Worker)
+	job, lease, err := s.svc.ClaimState(req.Worker, model.State(req.State))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

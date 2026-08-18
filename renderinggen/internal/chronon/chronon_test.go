@@ -52,6 +52,14 @@ func TestBinaryPath(t *testing.T) {
 	}
 }
 
+func TestBinaryPathOverride(t *testing.T) {
+	t.Setenv("CHRONON_BINARY", "/tmp/chronon3d_cli")
+	c := &Client{Home: "/opt/chronon3d"}
+	if got := c.Binary(); got != "/tmp/chronon3d_cli" {
+		t.Fatalf("Binary() with override = %q", got)
+	}
+}
+
 func TestClientImplementsRenderer(t *testing.T) {
 	var r Renderer = &Client{Home: "/opt/chronon3d"}
 	if r == nil {

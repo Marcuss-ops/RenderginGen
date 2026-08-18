@@ -109,6 +109,42 @@ artifact_store:
 	}
 }
 
+func TestLoadArtifactDBConfig(t *testing.T) {
+	path := writeConfig(t, `
+worker:
+  id: renderinggen-77
+queue:
+  endpoint: http://queue:8081
+artifact_store:
+  endpoint: http://store:9000
+artifact_db:
+  path: /var/lib/renderinggen/artifacts.db
+`)
+	cfg, err := Load(path)
+	if err != nil {
+		t.Fatalf("load: %v", err)
+	}
+	if cfg.ArtifactDB.Path != "/var/lib/renderinggen/artifacts.db" {
+		t.Fatalf("artifact_db.path = %q", cfg.ArtifactDB.Path)
+	}
+}
+
+func TestLoadArtifactDBDisabledByDefault(t *testing.T) {
+	path := writeConfig(t, `
+queue:
+  endpoint: http://queue:8081
+artifact_store:
+  endpoint: http://store:9000
+`)
+	cfg, err := Load(path)
+	if err != nil {
+		t.Fatalf("load: %v", err)
+	}
+	if cfg.ArtifactDB.Path != "" {
+		t.Fatalf("artifact_db.path default = %q, want empty (ledger disabled)", cfg.ArtifactDB.Path)
+	}
+}
+
 func TestLoadMissingQueueEndpoint(t *testing.T) {
 	path := writeConfig(t, `
 artifact_store:

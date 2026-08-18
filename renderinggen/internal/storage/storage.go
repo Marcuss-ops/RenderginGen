@@ -9,6 +9,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"sync"
 	"sync/atomic"
 )
 
@@ -27,9 +28,17 @@ type Client struct {
 
 	// Observability counters, incremented by Get/Put so benchmarks and the
 	// daemon comparison can report L3->L2->L1 promotion and cache hit rates.
-	l1Hits    atomic.Int64
-	l2Hits    atomic.Int64
-	l3Fetches atomic.Int64
+	l1Hits     atomic.Int64
+	l2Hits     atomic.Int64
+	l3Fetches  atomic.Int64
+	inflightMu sync.Mutex
+	inflight   map[string]*fetchCall
+}
+
+type fetchCall struct {
+	done chan struct{}
+	data []byte
+	err  error
 }
 
 // CacheStats is a point-in-time snapshot of the resolution counters.
@@ -53,9 +62,10 @@ func (c *Client) Stats() CacheStats {
 // New creates a cache client over the given L3 backend.
 func New(backend Backend, opts Options) *Client {
 	return &Client{
-		backend: backend,
-		l1:      newMemCache(opts.L1MaxBytes),
-		l2:      newDiskCache(opts.L2Dir, opts.L2MaxBytes),
+		backend:  backend,
+		l1:       newMemCache(opts.L1MaxBytes),
+		l2:       newDiskCache(opts.L2Dir, opts.L2MaxBytes),
+		inflight: make(map[string]*fetchCall),
 	}
 }
 
@@ -71,14 +81,48 @@ func (c *Client) Get(ctx context.Context, hash string) ([]byte, error) {
 		c.l1.Put(hash, data)
 		return data, nil
 	}
+	call, leader := c.startFetch(hash)
+	if !leader {
+		select {
+		case <-call.done:
+			if call.err != nil {
+				return nil, call.err
+			}
+			return append([]byte(nil), call.data...), nil
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		}
+	}
 	data, err := c.backend.Fetch(ctx, hash)
 	if err != nil {
+		c.finishFetch(hash, call, nil, err)
 		return nil, err
 	}
 	c.l3Fetches.Add(1)
 	c.l2.Put(hash, data)
 	c.l1.Put(hash, data)
+	c.finishFetch(hash, call, data, nil)
 	return data, nil
+}
+
+func (c *Client) startFetch(hash string) (*fetchCall, bool) {
+	c.inflightMu.Lock()
+	defer c.inflightMu.Unlock()
+	if call, ok := c.inflight[hash]; ok {
+		return call, false
+	}
+	call := &fetchCall{done: make(chan struct{})}
+	c.inflight[hash] = call
+	return call, true
+}
+
+func (c *Client) finishFetch(hash string, call *fetchCall, data []byte, err error) {
+	c.inflightMu.Lock()
+	call.data = append([]byte(nil), data...)
+	call.err = err
+	delete(c.inflight, hash)
+	close(call.done)
+	c.inflightMu.Unlock()
 }
 
 // Put stores asset bytes into L3 (source of truth) and warms L2 and L1.
