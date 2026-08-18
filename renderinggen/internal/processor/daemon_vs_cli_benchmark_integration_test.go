@@ -21,6 +21,39 @@ type benchRun struct {
 	Backend string // "cli" or "daemon"
 	Phase   string // "cold" or "warm"
 	TotalMS float64
+	Timing  timingSummary
+}
+
+type timingSummary struct {
+	RenderMS      float64
+	WallMS        float64
+	EncodeCloseMS float64
+	P50FrameMS    float64
+	P95FrameMS    float64
+	P99FrameMS    float64
+	GPUExecuteMS  *float64
+	GPUReadbackMS *float64
+	ConversionMS  float64
+	Frames        int
+}
+
+type chrononTimingSidecar struct {
+	FramesTotal int     `json:"frames_total"`
+	RenderMS    float64 `json:"render_ms"`
+	WallMS      float64 `json:"wall_time_ms"`
+	EncodeClose float64 `json:"encode_close_ms"`
+	Summary     struct {
+		P50 float64 `json:"p50_frame_ms"`
+		P95 float64 `json:"p95_frame_ms"`
+		P99 float64 `json:"p99_frame_ms"`
+	} `json:"summary"`
+	Job struct {
+		GPU struct {
+			Execute  *float64 `json:"gpu_execute_ms"`
+			Readback *float64 `json:"gpu_readback_ms"`
+		} `json:"gpu"`
+		ConversionMS float64 `json:"conversion_ms"`
+	} `json:"job"`
 }
 
 // TestDaemonVsCLIBenchmarkGoldenOverlay compares the two render backends on
@@ -94,10 +127,12 @@ func TestDaemonVsCLIBenchmarkGoldenOverlay(t *testing.T) {
 			AssetsRoot: ws.Root(),
 			OutputPath: output,
 			Backend:    backend,
+			Report:     true,
 		}); err != nil {
 			t.Fatalf("cli %s: %v", phase, err)
 		}
 		record("cli", phase, start)
+		results[len(results)-1].Timing = readChrononTiming(t, output)
 	}
 
 	// ── Daemon: start on a unix socket, cold + warm, then shutdown ───────
@@ -122,10 +157,12 @@ func TestDaemonVsCLIBenchmarkGoldenOverlay(t *testing.T) {
 			AssetsRoot: ws.Root(),
 			OutputPath: output,
 			Backend:    backend,
+			Report:     true,
 		}); err != nil {
 			t.Fatalf("daemon %s: %v", phase, err)
 		}
 		record("daemon", phase, start)
+		results[len(results)-1].Timing = readChrononTiming(t, output)
 	}
 
 	// ── Report + delta ───────────────────────────────────────────────────
@@ -134,9 +171,12 @@ func TestDaemonVsCLIBenchmarkGoldenOverlay(t *testing.T) {
 		by[r.Backend+"-"+r.Phase] = r.TotalMS
 	}
 	fmt.Printf("\n=== RenderingGen daemon vs CLI benchmark (GoldenOverlayJobV1) ===\n")
-	fmt.Printf("%-9s %-6s %10s\n", "backend", "phase", "total_ms")
+	fmt.Printf("%-9s %-6s %10s %10s %10s %10s %10s %10s\n",
+		"backend", "phase", "total_ms", "render_ms", "p50_ms", "p95_ms", "p99_ms", "wall_ms")
 	for _, r := range results {
-		fmt.Printf("%-9s %-6s %10.1f\n", r.Backend, r.Phase, r.TotalMS)
+		fmt.Printf("%-9s %-6s %10.1f %10.1f %10.3f %10.3f %10.3f %10.1f\n",
+			r.Backend, r.Phase, r.TotalMS, r.Timing.RenderMS, r.Timing.P50FrameMS,
+			r.Timing.P95FrameMS, r.Timing.P99FrameMS, r.Timing.WallMS)
 	}
 	cliWarm := by["cli-warm"]
 	daemonWarm := by["daemon-warm"]
@@ -147,6 +187,30 @@ func TestDaemonVsCLIBenchmarkGoldenOverlay(t *testing.T) {
 	fmt.Printf("Interpretation: the daemon keeps RenderEngine, font cache, image cache,\n")
 	fmt.Printf("framebuffer/surface pools, Vulkan device, pipelines and VRAM cache alive\n")
 	fmt.Printf("between jobs; the CLI subprocess re-spawns them for every render.\n")
+}
+
+func readChrononTiming(t *testing.T, output string) timingSummary {
+	t.Helper()
+	data, err := os.ReadFile(output + ".timing.json")
+	if err != nil {
+		t.Fatalf("read Chronon timing sidecar: %v", err)
+	}
+	var doc chrononTimingSidecar
+	if err := json.Unmarshal(data, &doc); err != nil {
+		t.Fatalf("decode Chronon timing sidecar: %v", err)
+	}
+	return timingSummary{
+		RenderMS:      doc.RenderMS,
+		WallMS:        doc.WallMS,
+		EncodeCloseMS: doc.EncodeClose,
+		P50FrameMS:    doc.Summary.P50,
+		P95FrameMS:    doc.Summary.P95,
+		P99FrameMS:    doc.Summary.P99,
+		GPUExecuteMS:  doc.Job.GPU.Execute,
+		GPUReadbackMS: doc.Job.GPU.Readback,
+		ConversionMS:  doc.Job.ConversionMS,
+		Frames:        doc.FramesTotal,
+	}
 }
 
 // startDaemon launches `chronon3d_cli daemon -s <socket> -a <assets>` with
