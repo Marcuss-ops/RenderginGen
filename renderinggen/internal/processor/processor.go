@@ -52,6 +52,7 @@ type Processor struct {
 	report               bool
 	hardwareEncoder      string
 	nativeOutputProfiles bool
+	strictNativeBackend  bool
 }
 
 // New creates a job processor.
@@ -90,6 +91,12 @@ func (p *Processor) SetHardwareEncoder(encoder string) {
 // this disabled for legacy runtimes that reject unknown output properties; the
 // worker still certifies the requested profile from the encoded MP4.
 func (p *Processor) SetNativeOutputProfiles(enabled bool) { p.nativeOutputProfiles = enabled }
+
+// SetStrictNativeBackend makes the gpu-vulkan-native profile fail closed when
+// Chronon reports a hybrid or software-fallback execution. The artifact is
+// rejected before object-store publication, so a receipt cannot certify the
+// wrong execution path.
+func (p *Processor) SetStrictNativeBackend(enabled bool) { p.strictNativeBackend = enabled }
 
 // SetPublisher installs the Google Drive publisher used by Publish. When nil
 // (the default) publication is disabled and Publish is a no-op.
@@ -325,6 +332,11 @@ func (p *Processor) Render(ctx context.Context, job *queue.Job) (queue.Artifact,
 		return queue.Artifact{}, fmt.Errorf("processor: render: %w", err)
 	}
 	record("render", phaseStart)
+	if p.strictNativeBackend {
+		if err := requireNativeVulkan(outputPath); err != nil {
+			return queue.Artifact{}, fmt.Errorf("processor: gpu-vulkan-native gate: %w", err)
+		}
+	}
 	var probe *media.ProbeResult
 	if job.JobType == queue.JobTypeOverlayRender || metadata.ProfileID != "" {
 		probed, err := media.ProbeFile(ctx, outputPath)
@@ -349,6 +361,34 @@ func (p *Processor) Render(ctx context.Context, job *queue.Job) (queue.Artifact,
 
 	return p.storeArtifact(ctx, job.ID, outputPath, plan, phaseMetrics, totalStart, probe, stats, inputBytes,
 		job.JobType == queue.JobTypeOverlayRender || metadata.ProfileID != "")
+}
+
+func requireNativeVulkan(outputPath string) error {
+	raw, err := chronon.ReadTimingSidecar(outputPath)
+	if err != nil {
+		return fmt.Errorf("missing Chronon timing receipt: %w", err)
+	}
+	var doc struct {
+		Job struct {
+			GPU struct {
+				EffectiveBackend string `json:"effective_backend"`
+				FallbackNodes    *int64 `json:"software_fallback_nodes"`
+			} `json:"gpu"`
+		} `json:"job"`
+	}
+	if err := json.Unmarshal(raw, &doc); err != nil {
+		return fmt.Errorf("decode Chronon timing receipt: %w", err)
+	}
+	if doc.Job.GPU.EffectiveBackend != "vulkan" {
+		return fmt.Errorf("effective_backend=%q, want vulkan", doc.Job.GPU.EffectiveBackend)
+	}
+	if doc.Job.GPU.FallbackNodes == nil || *doc.Job.GPU.FallbackNodes != 0 {
+		if doc.Job.GPU.FallbackNodes == nil {
+			return fmt.Errorf("software_fallback_nodes missing, want 0")
+		}
+		return fmt.Errorf("software_fallback_nodes=%d, want 0", *doc.Job.GPU.FallbackNodes)
+	}
+	return nil
 }
 
 // Publish uploads an already-rendered artifact to Google Drive and returns the
