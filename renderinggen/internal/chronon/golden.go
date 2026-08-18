@@ -44,7 +44,6 @@ const GoldenOverlayJobV1 = `{
       },
       {
         "id": "important_phrase",
-        "type": "text",
         "text": "QUESTO CAMBIA TUTTO",
         "preset": "caption_card",
         "start_frame": 20,
@@ -52,7 +51,6 @@ const GoldenOverlayJobV1 = `{
       },
       {
         "id": "important_word",
-        "type": "text",
         "text": "APPLE",
         "preset": "active_word_pop",
         "start_frame": 65,
@@ -60,13 +58,8 @@ const GoldenOverlayJobV1 = `{
       },
       {
         "id": "image_overlay",
-        "type": "image",
         "asset": "assets/apple.png",
         "preset": "image_focus_in",
-        "box_width": 260,
-        "box_height": 260,
-        "fit": "contain",
-        "position": [380, 0],
         "start_frame": 90,
         "duration_frames": 46
       }

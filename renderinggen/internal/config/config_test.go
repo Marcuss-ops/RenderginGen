@@ -109,6 +109,25 @@ artifact_store:
 	}
 }
 
+func TestLoadGPUVulkanNativeProfile(t *testing.T) {
+	path := writeConfig(t, `
+queue:
+  endpoint: http://queue:8081
+artifact_store:
+  endpoint: http://store:9000
+chronon:
+  profile: gpu-vulkan-native
+`)
+	cfg, err := Load(path)
+	if err != nil {
+		t.Fatalf("load: %v", err)
+	}
+	if cfg.Chronon.Backend != "vulkan" || cfg.Chronon.Mode != "ipc" ||
+		!cfg.Chronon.NativeOutputProfiles || !cfg.Chronon.Report {
+		t.Fatalf("profile not applied: %+v", cfg.Chronon)
+	}
+}
+
 func TestLoadArtifactDBConfig(t *testing.T) {
 	path := writeConfig(t, `
 worker:

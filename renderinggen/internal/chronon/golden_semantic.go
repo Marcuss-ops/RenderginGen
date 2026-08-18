@@ -44,6 +44,7 @@ const GoldenSemanticOverlayJobV1 = `{
       {
         "id": "background",
         "template_id": "IMAGE_OVERLAY",
+        "preset_id": "image_focus_in",
         "start_ms": 0,
         "end_ms": 5000,
         "params": {
@@ -63,6 +64,7 @@ const GoldenSemanticOverlayJobV1 = `{
       {
         "id": "important_phrase",
         "template_id": "IMPORTANT_PHRASE",
+        "preset_id": "caption_card",
         "text": "QUESTO CAMBIA TUTTO",
         "start_ms": 667,
         "end_ms": 2000
@@ -70,6 +72,7 @@ const GoldenSemanticOverlayJobV1 = `{
       {
         "id": "important_word",
         "template_id": "IMPORTANT_WORD",
+        "preset_id": "active_word_pop",
         "text": "APPLE",
         "start_ms": 2167,
         "end_ms": 3167
@@ -77,6 +80,7 @@ const GoldenSemanticOverlayJobV1 = `{
       {
         "id": "image_overlay",
         "template_id": "IMAGE_OVERLAY",
+        "preset_id": "image_focus_in",
         "start_ms": 3000,
         "end_ms": 4500,
         "params": {

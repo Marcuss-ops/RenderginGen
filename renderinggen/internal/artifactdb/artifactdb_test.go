@@ -2,6 +2,8 @@ package artifactdb
 
 import (
 	"context"
+	"database/sql"
+	"encoding/json"
 	"path/filepath"
 	"testing"
 	"time"
@@ -153,6 +155,95 @@ func TestSQLiteRecorderRoundTrip(t *testing.T) {
 	}
 	if created == "" {
 		t.Fatal("created_at empty")
+	}
+}
+
+func TestSQLiteRecorderChrononTelemetryRoundTrip(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "artifacts.db")
+	rec, err := NewSQLite(path)
+	if err != nil {
+		t.Fatalf("open: %v", err)
+	}
+	defer rec.Close()
+	ctx := context.Background()
+
+	r := sampleRecord("job-1")
+	r.ChrononTelemetry = json.RawMessage(`{"job":{"plan_compile_ms":4.1,"graph_compile_ms":2.2},"summary":{"p50_frame_ms":12.3}}`)
+	if err := rec.Record(ctx, r); err != nil {
+		t.Fatalf("record: %v", err)
+	}
+	var got string
+	if err := rec.db.QueryRowContext(ctx, `SELECT chronon_telemetry FROM artifact_records WHERE job_id='job-1'`).Scan(&got); err != nil {
+		t.Fatalf("select: %v", err)
+	}
+	if got != string(r.ChrononTelemetry) {
+		t.Fatalf("chronon_telemetry = %q, want %q", got, r.ChrononTelemetry)
+	}
+}
+
+func TestSQLiteRecorderMigratesExistingLedger(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "artifacts.db")
+	// Simulate a ledger created before chronon_telemetry existed: a table
+	// with the pre-migration columns only.
+	raw, err := sql.Open("sqlite", path)
+	if err != nil {
+		t.Fatalf("open raw: %v", err)
+	}
+	const oldSchema = `
+CREATE TABLE artifact_records (
+  job_id              TEXT PRIMARY KEY,
+  artifact_hash       TEXT NOT NULL,
+  storage_key         TEXT NOT NULL,
+  size_bytes          INTEGER NOT NULL,
+  content_type        TEXT NOT NULL DEFAULT '',
+  backend             TEXT NOT NULL DEFAULT '',
+  chronon_version     TEXT NOT NULL DEFAULT '',
+  profile_id          TEXT NOT NULL DEFAULT '',
+  container           TEXT NOT NULL DEFAULT '',
+  codec               TEXT NOT NULL DEFAULT '',
+  codec_profile       TEXT NOT NULL DEFAULT '',
+  pixel_format        TEXT NOT NULL DEFAULT '',
+  width               INTEGER NOT NULL DEFAULT 0,
+  height              INTEGER NOT NULL DEFAULT 0,
+  fps_num             INTEGER NOT NULL DEFAULT 0,
+  fps_den             INTEGER NOT NULL DEFAULT 0,
+  frame_count         INTEGER NOT NULL DEFAULT 0,
+  duration_us         INTEGER NOT NULL DEFAULT 0,
+  audio_streams       INTEGER NOT NULL DEFAULT 0,
+  first_frame_keyframe INTEGER NOT NULL DEFAULT 0,
+  entity_count        INTEGER NOT NULL DEFAULT 0,
+  important_phrase_count INTEGER NOT NULL DEFAULT 0,
+  important_word_count INTEGER NOT NULL DEFAULT 0,
+  image_count         INTEGER NOT NULL DEFAULT 0,
+  light_leak_count    INTEGER NOT NULL DEFAULT 0,
+  preset_id           TEXT NOT NULL DEFAULT '',
+  overlay_compile_us  INTEGER NOT NULL DEFAULT 0,
+  asset_materialize_us INTEGER NOT NULL DEFAULT 0,
+  chronon_render_us   INTEGER NOT NULL DEFAULT 0,
+  encode_us           INTEGER NOT NULL DEFAULT 0,
+  sha256_us           INTEGER NOT NULL DEFAULT 0,
+  objectstore_upload_us INTEGER NOT NULL DEFAULT 0,
+  drive_upload_us     INTEGER NOT NULL DEFAULT 0,
+  total_us            INTEGER NOT NULL DEFAULT 0,
+  input_bytes         INTEGER NOT NULL DEFAULT 0,
+  output_bytes        INTEGER NOT NULL DEFAULT 0,
+  created_at          TEXT NOT NULL
+);`
+	if _, err := raw.Exec(oldSchema); err != nil {
+		t.Fatalf("create old schema: %v", err)
+	}
+	if err := raw.Close(); err != nil {
+		t.Fatalf("close raw: %v", err)
+	}
+
+	// Reopen through NewSQLite: the migration must add the column in place.
+	rec, err := NewSQLite(path)
+	if err != nil {
+		t.Fatalf("open migrated: %v", err)
+	}
+	defer rec.Close()
+	if err := rec.Record(context.Background(), sampleRecord("job-1")); err != nil {
+		t.Fatalf("record on migrated ledger: %v", err)
 	}
 }
 

@@ -19,6 +19,13 @@ type Backend interface {
 	Store(ctx context.Context, key string, data []byte) error
 }
 
+// ReaderBackend is an optional streaming variant of Backend.Store. Backends
+// that implement it can accept large objects without requiring the caller to
+// first load the complete object into memory.
+type ReaderBackend interface {
+	StoreReader(ctx context.Context, key string, r io.Reader, size int64) error
+}
+
 // Memory is an in-memory Backend for tests and local development.
 type Memory struct {
 	mu      sync.Mutex
@@ -47,6 +54,17 @@ func (m *Memory) Store(_ context.Context, key string, data []byte) error {
 	defer m.mu.Unlock()
 	m.objects[key] = append([]byte(nil), data...)
 	return nil
+}
+
+func (m *Memory) StoreReader(ctx context.Context, key string, r io.Reader, _ int64) error {
+	data, err := io.ReadAll(r)
+	if err != nil {
+		return err
+	}
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	return m.Store(ctx, key, data)
 }
 
 // HTTP is a Backend backed by a simple object store over HTTP:
@@ -84,10 +102,18 @@ func (h *HTTP) Fetch(ctx context.Context, key string) ([]byte, error) {
 }
 
 func (h *HTTP) Store(ctx context.Context, key string, data []byte) error {
-	req, err := http.NewRequestWithContext(ctx, http.MethodPut, h.base+"/objects/"+key, bytes.NewReader(data))
+	return h.StoreReader(ctx, key, bytes.NewReader(data), int64(len(data)))
+}
+
+func (h *HTTP) StoreReader(ctx context.Context, key string, r io.Reader, size int64) error {
+	// http.Client.Do closes request bodies. Keep ownership with the caller:
+	// storeArtifact closes the source file after PutReader returns, and the
+	// transport must not make that close a double-close/error.
+	req, err := http.NewRequestWithContext(ctx, http.MethodPut, h.base+"/objects/"+key, io.NopCloser(r))
 	if err != nil {
 		return err
 	}
+	req.ContentLength = size
 	resp, err := h.client.Do(req)
 	if err != nil {
 		return err

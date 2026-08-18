@@ -10,14 +10,14 @@ import (
 
 // Config is the top-level worker configuration.
 type Config struct {
-	Worker        WorkerConfig    `yaml:"worker"`
-	Queue         QueueConfig     `yaml:"queue"`
-	ArtifactStore StorageConfig   `yaml:"artifact_store"`
-	Chronon       ChrononConfig   `yaml:"chronon"`
-	GPU           GPUConfig       `yaml:"gpu"`
-	Health        HealthConfig    `yaml:"health"`
-	Workspace     WorkspaceConfig `yaml:"workspace"`
-	Drive         DriveConfig     `yaml:"drive"`
+	Worker        WorkerConfig     `yaml:"worker"`
+	Queue         QueueConfig      `yaml:"queue"`
+	ArtifactStore StorageConfig    `yaml:"artifact_store"`
+	Chronon       ChrononConfig    `yaml:"chronon"`
+	GPU           GPUConfig        `yaml:"gpu"`
+	Health        HealthConfig     `yaml:"health"`
+	Workspace     WorkspaceConfig  `yaml:"workspace"`
+	Drive         DriveConfig      `yaml:"drive"`
 	ArtifactDB    ArtifactDBConfig `yaml:"artifact_db"`
 }
 
@@ -39,11 +39,14 @@ type WorkspaceConfig struct {
 }
 
 type ChrononConfig struct {
+	Profile              string `yaml:"profile"` // software-cli | gpu-vulkan-native
 	Backend              string `yaml:"backend"`
 	Home                 string `yaml:"home"`
 	Mode                 string `yaml:"mode"`        // "cli" (default) | "ipc"
 	SocketPath           string `yaml:"socket_path"` // unix socket when Mode == "ipc"
 	NativeOutputProfiles bool   `yaml:"native_output_profiles"`
+	Report               bool   `yaml:"report"`
+	HardwareEncoder      string `yaml:"hardware_encoder"`
 }
 
 type GPUConfig struct {
@@ -107,6 +110,16 @@ func Load(path string) (*Config, error) {
 }
 
 func applyDefaults(c *Config) {
+	switch c.Chronon.Profile {
+	case "gpu-vulkan-native":
+		c.Chronon.Backend = "vulkan"
+		c.Chronon.Mode = "ipc"
+		c.Chronon.NativeOutputProfiles = true
+		c.Chronon.Report = true
+	case "software-cli":
+		c.Chronon.Backend = "software"
+		c.Chronon.Mode = "cli"
+	}
 	if c.Worker.ID == "" {
 		c.Worker.ID = "renderinggen-" + hostname()
 	}
@@ -137,6 +150,9 @@ func applyDefaults(c *Config) {
 }
 
 func (c *Config) validate() error {
+	if c.Chronon.Profile != "" && c.Chronon.Profile != "gpu-vulkan-native" && c.Chronon.Profile != "software-cli" {
+		return fmt.Errorf("chronon.profile must be gpu-vulkan-native or software-cli")
+	}
 	if c.Queue.Endpoint == "" {
 		return fmt.Errorf("queue.endpoint is required")
 	}

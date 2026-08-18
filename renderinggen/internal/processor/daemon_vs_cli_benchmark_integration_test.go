@@ -53,6 +53,10 @@ func TestDaemonVsCLIBenchmarkGoldenOverlay(t *testing.T) {
 		t.Fatalf("decode golden: %v", err)
 	}
 	job.ID = "daemon-vs-cli-bench"
+	backend := os.Getenv("CHRONON_TEST_BACKEND")
+	if backend == "" {
+		backend = "software"
+	}
 
 	// Shared workspace with the two golden assets materialized once.
 	ws, err := workspace.New(t.TempDir(), job.ID)
@@ -89,7 +93,7 @@ func TestDaemonVsCLIBenchmarkGoldenOverlay(t *testing.T) {
 			PlanPath:   ws.PlanPath(),
 			AssetsRoot: ws.Root(),
 			OutputPath: output,
-			Backend:    "software",
+			Backend:    backend,
 		}); err != nil {
 			t.Fatalf("cli %s: %v", phase, err)
 		}
@@ -98,7 +102,7 @@ func TestDaemonVsCLIBenchmarkGoldenOverlay(t *testing.T) {
 
 	// ── Daemon: start on a unix socket, cold + warm, then shutdown ───────
 	socketPath := filepath.Join(t.TempDir(), "chronon.sock")
-	daemon := startDaemon(t, cli.Binary(), socketPath, ws.Root())
+	daemon := startDaemon(t, cli.Binary(), socketPath, ws.Root(), backend)
 	t.Cleanup(func() {
 		shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer shutdownCancel()
@@ -117,7 +121,7 @@ func TestDaemonVsCLIBenchmarkGoldenOverlay(t *testing.T) {
 			PlanPath:   ws.PlanPath(),
 			AssetsRoot: ws.Root(),
 			OutputPath: output,
-			Backend:    "software",
+			Backend:    backend,
 		}); err != nil {
 			t.Fatalf("daemon %s: %v", phase, err)
 		}
@@ -147,15 +151,12 @@ func TestDaemonVsCLIBenchmarkGoldenOverlay(t *testing.T) {
 
 // startDaemon launches `chronon3d_cli daemon -s <socket> -a <assets>` with
 // output redirected to a log file in the test dir.
-func startDaemon(t *testing.T, binary, socketPath, assetsRoot string) *exec.Cmd {
+func startDaemon(t *testing.T, binary, socketPath, assetsRoot, backend string) *exec.Cmd {
 	t.Helper()
-	logFile, err := os.Create(filepath.Join(t.TempDir(), "daemon.log"))
-	if err != nil {
-		t.Fatalf("daemon log: %v", err)
-	}
-	cmd := exec.Command(binary, "daemon", "-s", socketPath, "-a", assetsRoot)
-	cmd.Stdout = logFile
-	cmd.Stderr = logFile
+	cmd := exec.Command(binary, "daemon", "-s", socketPath, "-a", assetsRoot,
+		"--backend", backend)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
 	if err := cmd.Start(); err != nil {
 		t.Fatalf("start daemon: %v", err)
 	}

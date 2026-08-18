@@ -21,11 +21,12 @@ import (
 // are already materialized under AssetsRoot, and OutputPath is where the
 // rendered file must be written.
 type RenderRequest struct {
-	PlanPath   string // path to the chronon.render-plan.v1 document (plan.json)
-	AssetsRoot string // directory the plan's relative asset references resolve against
-	OutputPath string // destination of the rendered output (e.g. result.mp4)
-	Backend    string // render backend: software | vulkan | auto
-	Report     bool   // emit the execution report + telemetry JSONL (--report)
+	PlanPath        string // path to the chronon.render-plan.v1 document (plan.json)
+	AssetsRoot      string // directory the plan's relative asset references resolve against
+	OutputPath      string // destination of the rendered output (e.g. result.mp4)
+	Backend         string // render backend: software | vulkan | auto
+	Report          bool   // emit the execution report + telemetry JSONL (--report)
+	HardwareEncoder string // optional FFmpeg hardware encoder: nvenc
 }
 
 // Renderer renders a RenderRequest.
@@ -76,6 +77,10 @@ func (c *Client) Version() string {
 // output path. It implements Renderer.
 func (c *Client) Render(ctx context.Context, req RenderRequest) error {
 	cmd := exec.CommandContext(ctx, c.Binary(), renderArgs(req)...)
+	// Keep Chronon's execution report next to the plan. The worker invokes the
+	// CLI from its own process directory otherwise, which makes the report
+	// disappear with an ephemeral container and prevents E2E profiling.
+	cmd.Dir = filepath.Dir(req.PlanPath)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	return cmd.Run()
@@ -94,6 +99,9 @@ func renderArgs(req RenderRequest) []string {
 		// Emit the execution report and telemetry JSONL (render_ms, encode_ms,
 		// cache_hits/misses) used by the performance benchmark.
 		args = append(args, "--report")
+	}
+	if req.HardwareEncoder != "" && req.HardwareEncoder != "none" {
+		args = append(args, "--hardware", req.HardwareEncoder)
 	}
 	return args
 }

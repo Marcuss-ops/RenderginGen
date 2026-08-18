@@ -219,9 +219,11 @@ func (r *Repository) ClaimState(workerID string, state model.State) (*model.Job,
 	// A job re-claimed from the rendered state carries its already-stored
 	// artifact so the worker can skip rendering and only retry publication.
 	if artifactID.Valid {
-		if artifact, err := getArtifact(ctx, r.db, artifactID.String); err == nil {
-			job.Artifact = artifact
+		artifact, err := getArtifact(ctx, r.db, artifactID.String)
+		if err != nil {
+			return nil, 0, fmt.Errorf("job %s artifact %s: %w", id, artifactID.String, err)
 		}
+		job.Artifact = artifact
 	}
 	return job, r.lease, nil
 }

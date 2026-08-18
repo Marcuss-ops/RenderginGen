@@ -8,7 +8,10 @@
 // under the CGO_ENABLED=0 worker build.
 package artifactdb
 
-import "time"
+import (
+	"encoding/json"
+	"time"
+)
 
 // ArtifactRecord is the SSOT of one rendered artifact. Every field is written
 // by the worker from facts it observed (hash it computed, probe it ran, plan
@@ -57,6 +60,13 @@ type ArtifactRecord struct {
 	ObjectStoreUploadUS int64
 	DriveUploadUS       int64
 	TotalUS             int64
+
+	// ChrononTelemetry is the job-level telemetry document ingested from
+	// Chronon's timing sidecar. Chronon is the source of truth for
+	// plan/graph/GPU/encoder timing, so this is stored verbatim as JSON
+	// (Chronon owns the schema); the worker records only its distributive
+	// phases in the typed columns above. nil when the sidecar was missing.
+	ChrononTelemetry json.RawMessage
 
 	// Bytes in and out of the job.
 	InputBytes  int64
