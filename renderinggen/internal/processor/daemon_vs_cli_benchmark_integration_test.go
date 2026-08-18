@@ -198,6 +198,15 @@ func TestDaemonVsCLIBenchmarkGoldenOverlay(t *testing.T) {
 			optionalMetric(r.Timing.GPUExecuteMS), optionalMetric(r.Timing.GPUReadbackMS),
 			optionalIntMetric(r.Timing.GPUNodes), optionalIntMetric(r.Timing.FallbackNodes),
 			effectiveBackend(r.Timing))
+		if r.Timing.FallbackNodes != nil && *r.Timing.FallbackNodes > 0 {
+			fmt.Printf("  fallback categories: draw_node=%s text_run=%s composite=%s effect=%s blur=%s dof=%s\n",
+				optionalIntMetric(r.Timing.FallbackDrawNode),
+				optionalIntMetric(r.Timing.FallbackTextRun),
+				optionalIntMetric(r.Timing.FallbackComposite),
+				optionalIntMetric(r.Timing.FallbackEffect),
+				optionalIntMetric(r.Timing.FallbackBlur),
+				optionalIntMetric(r.Timing.FallbackDOF))
+		}
 	}
 	cliWarm := by["cli-warm"]
 	daemonWarm := by["daemon-warm"]
