@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"strings"
 	"time"
 
 	_ "modernc.org/sqlite"
@@ -28,6 +29,14 @@ func NewSQLite(path string) (*SQLiteRecorder, error) {
 		db.Close()
 		return nil, fmt.Errorf("artifactdb: create schema: %w", err)
 	}
+	// Ledgers created before chronon_telemetry existed are upgraded in place:
+	// CREATE TABLE IF NOT EXISTS leaves existing tables untouched, so the
+	// column is added idempotently here.
+	if _, err := db.Exec(`ALTER TABLE artifact_records ADD COLUMN chronon_telemetry TEXT NOT NULL DEFAULT ''`); err != nil &&
+		!strings.Contains(strings.ToLower(err.Error()), "duplicate column") {
+		db.Close()
+		return nil, fmt.Errorf("artifactdb: migrate schema: %w", err)
+	}
 	return &SQLiteRecorder{db: db}, nil
 }
 
@@ -51,6 +60,7 @@ func (s *SQLiteRecorder) Record(ctx context.Context, rec ArtifactRecord) error {
 		rec.OverlayCompileUS, rec.AssetMaterializeUS, rec.ChrononRenderUS,
 		rec.EncodeUS, rec.SHA256US, rec.ObjectStoreUploadUS, rec.DriveUploadUS,
 		rec.TotalUS, rec.InputBytes, rec.OutputBytes,
+		string(rec.ChrononTelemetry),
 		rec.CreatedAt.Format(time.RFC3339Nano),
 	)
 	if err != nil {
@@ -106,6 +116,7 @@ CREATE TABLE IF NOT EXISTS artifact_records (
   total_us            INTEGER NOT NULL DEFAULT 0,
   input_bytes         INTEGER NOT NULL DEFAULT 0,
   output_bytes        INTEGER NOT NULL DEFAULT 0,
+  chronon_telemetry   TEXT NOT NULL DEFAULT '',
   created_at          TEXT NOT NULL
 );`
 
@@ -120,8 +131,8 @@ INSERT INTO artifact_records (
   image_count, light_leak_count, preset_id,
   overlay_compile_us, asset_materialize_us, chronon_render_us,
   encode_us, sha256_us, objectstore_upload_us, drive_upload_us,
-  total_us, input_bytes, output_bytes, created_at
-) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+  total_us, input_bytes, output_bytes, chronon_telemetry, created_at
+) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
 ON CONFLICT(job_id) DO UPDATE SET
   artifact_hash=excluded.artifact_hash,
   storage_key=excluded.storage_key,
@@ -158,5 +169,6 @@ ON CONFLICT(job_id) DO UPDATE SET
   total_us=excluded.total_us,
   input_bytes=excluded.input_bytes,
   output_bytes=excluded.output_bytes,
+  chronon_telemetry=excluded.chronon_telemetry,
   created_at=excluded.created_at;`
 

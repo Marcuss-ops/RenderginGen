@@ -1,0 +1,91 @@
+{
+  "id": "style-preset-young",
+  "schema": "renderinggen.job",
+  "version": 1,
+  "job_type": "overlay.render",
+  "render_plan": {
+    "schema": "chronon.render-plan",
+    "version": 1,
+    "job_id": "style-preset-young",
+    "style_profile": "young",
+    "canvas": { "width": 1920, "height": 1080, "fps": 30, "duration_frames": 360 },
+    "layers": [
+      {
+        "id": "background_video",
+        "type": "video",
+        "source": "assets/backgrounds/drive-background-01.mp4",
+        "box_width": 1920,
+        "box_height": 1080,
+        "fit": "cover",
+        "start_frame": 0,
+        "duration_frames": 360
+      },
+      {
+        "id": "phrase",
+        "type": "text",
+        "text": "QUESTO CAMBIA TUTTO",
+        "preset": "caption_card",
+        "start_frame": 15,
+        "duration_frames": 75
+      },
+      {
+        "id": "word",
+        "type": "text",
+        "text": "VELOCITÀ",
+        "preset": "active_word_pop",
+        "start_frame": 90,
+        "duration_frames": 60
+      },
+      {
+        "id": "person",
+        "type": "text",
+        "text": "Tim Cook",
+        "preset": "lower_third_safe",
+        "start_frame": 150,
+        "duration_frames": 60
+      },
+      {
+        "id": "organization",
+        "type": "text",
+        "text": "Apple Inc.",
+        "preset": "organization_card",
+        "start_frame": 210,
+        "duration_frames": 60
+      },
+      {
+        "id": "location",
+        "type": "text",
+        "text": "Cupertino, California",
+        "preset": "location_card",
+        "start_frame": 270,
+        "duration_frames": 60
+      },
+      {
+        "id": "image",
+        "type": "image",
+        "asset": "assets/apple.png",
+        "preset": "image_focus_in",
+        "box_width": 260,
+        "box_height": 260,
+        "fit": "contain",
+        "start_frame": 315,
+        "duration_frames": 45
+      }
+    ],
+    "output": { "path": "result.mp4", "format": "mp4", "codec": "h264" }
+  },
+  "assets": [
+    {
+      "hash": "d4e9d76563c0f17589a0e98795574ceec22b3f3b961f51d44eb0544e95e1639b",
+      "logical_path": "assets/backgrounds/drive-background-01.mp4"
+    },
+    {
+      "hash": "983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c",
+      "logical_path": "assets/fonts/Poppins-Bold.ttf"
+    },
+    {
+      "hash": "ed873745e76173b66999c63546770d9f1426a2189515149176c67637e99a62d6",
+      "logical_path": "assets/apple.png"
+    }
+  ]
+}

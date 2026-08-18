@@ -14,6 +14,7 @@ set -eu
 SOCKET_PATH="${CHRONON_SOCKET_PATH:-/var/run/chronon3d/chronon.sock}"
 DAEMON_BIN="${CHRONON_DAEMON_BIN:-/opt/chronon3d/bin/chronon3d_cli}"
 ASSETS_ROOT="${CHRONON_DAEMON_ASSETS_ROOT:-/var/lib/renderinggen/jobs}"
+DAEMON_BACKEND="${CHRONON_DAEMON_BACKEND:-${CHRONON_BACKEND:-software}}"
 DAEMON_LOG="${CHRONON_DAEMON_LOG:-/tmp/chronon-daemon.log}"
 
 SOCKET_DIR="$(dirname "${SOCKET_PATH}")"
@@ -30,6 +31,7 @@ rm -f "${SOCKET_PATH}"
 # per-job assets root is passed per render request, so the fixed startup root
 # only preps the engine.
 "${DAEMON_BIN}" daemon -s "${SOCKET_PATH}" -a "${ASSETS_ROOT}" \
+  --backend "${DAEMON_BACKEND}" \
   > "${DAEMON_LOG}" 2>&1 &
 DAEMON_PID=$!
 

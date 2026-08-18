@@ -7,8 +7,11 @@ package processor
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"strings"
@@ -35,7 +38,7 @@ type Processor struct {
 	storeURL       string
 	store          *storage.Client
 	renderer       chronon.Renderer
-	drive          drive.Publisher // nil = external publication disabled
+	drive          drive.Publisher     // nil = external publication disabled
 	recorder       artifactdb.Recorder // nil = artifact ledger disabled
 
 	// phaseHook, when set, receives the wall-clock duration of each pipeline
@@ -47,6 +50,7 @@ type Processor struct {
 	// report + telemetry JSONL (render_ms/encode_ms/cache hits-misses) are
 	// emitted. Disabled by default; enabled by the performance benchmark.
 	report               bool
+	hardwareEncoder      string
 	nativeOutputProfiles bool
 }
 
@@ -74,6 +78,12 @@ func (p *Processor) SetPhaseHook(fn func(phase string, d time.Duration)) {
 // misses). Used by the performance benchmark; off by default.
 func (p *Processor) SetReport(enabled bool) {
 	p.report = enabled
+}
+
+// SetHardwareEncoder selects an explicit FFmpeg hardware encoder (for
+// example, nvenc). Empty/none preserves the software encoder path.
+func (p *Processor) SetHardwareEncoder(encoder string) {
+	p.hardwareEncoder = encoder
 }
 
 // SetNativeOutputProfiles enables passing output.profile_id to Chronon. Keep
@@ -258,11 +268,16 @@ func (p *Processor) Render(ctx context.Context, job *queue.Job) (queue.Artifact,
 	if err != nil {
 		return queue.Artifact{}, err
 	}
-	defer func() {
-		if err := ws.Cleanup(); err != nil {
-			log.Printf("job %s: workspace cleanup: %v", job.ID, err)
-		}
-	}()
+	// Profiling jobs may retain the workspace so Chronon's frame-timing
+	// sidecar can be collected after the artifact is committed. Production
+	// workers keep the historical cleanup behaviour unless explicitly opted in.
+	if os.Getenv("RENDERINGGEN_KEEP_WORKSPACE") != "1" {
+		defer func() {
+			if err := ws.Cleanup(); err != nil {
+				log.Printf("job %s: workspace cleanup: %v", job.ID, err)
+			}
+		}()
+	}
 
 	// Resolve assets through L1/L2/L3 and materialize them to their logical
 	// paths inside the workspace, so the render_plan references resolve. The
@@ -301,10 +316,11 @@ func (p *Processor) Render(ctx context.Context, job *queue.Job) (queue.Artifact,
 		PlanPath: ws.PlanPath(),
 		// Plans use the canonical assets/<file> namespace. The workspace
 		// root (not root/assets) is therefore Chronon's mounted root.
-		AssetsRoot: ws.Root(),
-		OutputPath: outputPath,
-		Backend:    p.backend,
-		Report:     p.report,
+		AssetsRoot:      ws.Root(),
+		OutputPath:      outputPath,
+		Backend:         p.backend,
+		Report:          p.report,
+		HardwareEncoder: p.hardwareEncoder,
 	}); err != nil {
 		return queue.Artifact{}, fmt.Errorf("processor: render: %w", err)
 	}
@@ -331,7 +347,8 @@ func (p *Processor) Render(ctx context.Context, job *queue.Job) (queue.Artifact,
 		probe = &probed
 	}
 
-	return p.storeArtifact(ctx, job.ID, outputPath, plan, phaseMetrics, totalStart, probe, stats, inputBytes)
+	return p.storeArtifact(ctx, job.ID, outputPath, plan, phaseMetrics, totalStart, probe, stats, inputBytes,
+		job.JobType == queue.JobTypeOverlayRender || metadata.ProfileID != "")
 }
 
 // Publish uploads an already-rendered artifact to Google Drive and returns the
@@ -400,7 +417,7 @@ func (p *Processor) Publish(ctx context.Context, jobID string, artifact queue.Ar
 // "DB artifact" step — returning the artifact metadata for queue completion.
 // The pipeline invariant local_sha == objectstore_sha == db_sha is enforced
 // here: the record is keyed by the same hash the object store accepted.
-func (p *Processor) storeArtifact(ctx context.Context, jobID, outputPath string, plan []byte, phaseMetrics map[string]float64, totalStart time.Time, probe *media.ProbeResult, stats overlay.Stats, inputBytes int64) (queue.Artifact, error) {
+func (p *Processor) storeArtifact(ctx context.Context, jobID, outputPath string, plan []byte, phaseMetrics map[string]float64, totalStart time.Time, probe *media.ProbeResult, stats overlay.Stats, inputBytes int64, copyEligible bool) (queue.Artifact, error) {
 	phaseStart := time.Now()
 	defer func() {
 		phaseMetrics["publish_ms"] = float64(time.Since(phaseStart).Microseconds()) / 1000
@@ -408,16 +425,36 @@ func (p *Processor) storeArtifact(ctx context.Context, jobID, outputPath string,
 		phaseMetrics["total_us"] = phaseMetrics["total_ms"] * 1000
 		p.recordPhase("publish", phaseStart)
 	}()
-	data, err := os.ReadFile(outputPath)
+	fileInfo, err := os.Stat(outputPath)
 	if err != nil {
-		return queue.Artifact{}, fmt.Errorf("processor: read output %s: %w", outputPath, err)
+		return queue.Artifact{}, fmt.Errorf("processor: stat output %s: %w", outputPath, err)
 	}
 	shaStart := time.Now()
-	hash := storage.Hash(data)
+	input, err := os.Open(outputPath)
+	if err != nil {
+		return queue.Artifact{}, fmt.Errorf("processor: open output for hashing %s: %w", outputPath, err)
+	}
+	digest := sha256.New()
+	if _, err := io.Copy(digest, input); err != nil {
+		input.Close()
+		return queue.Artifact{}, fmt.Errorf("processor: hash output %s: %w", outputPath, err)
+	}
+	if err := input.Close(); err != nil {
+		return queue.Artifact{}, fmt.Errorf("processor: close output after hashing %s: %w", outputPath, err)
+	}
+	hash := hex.EncodeToString(digest.Sum(nil))
 	phaseMetrics["sha256_us"] = float64(time.Since(shaStart).Microseconds())
 	putStart := time.Now()
-	if err := p.store.Put(ctx, hash, data); err != nil {
+	output, err := os.Open(outputPath)
+	if err != nil {
+		return queue.Artifact{}, fmt.Errorf("processor: open output for upload %s: %w", outputPath, err)
+	}
+	if err := p.store.PutReader(ctx, hash, output, fileInfo.Size()); err != nil {
+		output.Close()
 		return queue.Artifact{}, fmt.Errorf("processor: publish artifact: %w", err)
+	}
+	if err := output.Close(); err != nil {
+		return queue.Artifact{}, fmt.Errorf("processor: close output after upload %s: %w", outputPath, err)
 	}
 	phaseMetrics["objectstore_upload_us"] = float64(time.Since(putStart).Microseconds())
 	metadata := renderMetadataFromPlan(plan)
@@ -427,7 +464,7 @@ func (p *Processor) storeArtifact(ctx context.Context, jobID, outputPath string,
 		ArtifactURL:    p.artifactURL(hash),
 		ArtifactHash:   hash,
 		ContentType:    "video/mp4",
-		SizeBytes:      int64(len(data)),
+		SizeBytes:      fileInfo.Size(),
 		Width:          metadata.Width,
 		Height:         metadata.Height,
 		FPSNum:         metadata.FPS,
@@ -451,14 +488,21 @@ func (p *Processor) storeArtifact(ctx context.Context, jobID, outputPath string,
 		artifact.Width, artifact.Height = probe.Width, probe.Height
 		artifact.FPSNum, artifact.FPSDen = probe.FPSNum, probe.FPSDen
 		artifact.DurationUS = probe.DurationUS
-		if metadata.ProfileID != "" {
-			artifact.CopyEligible = true
-		}
+		artifact.CopyEligible = copyEligible
 	}
 	// Total time must be set before the ledger row is written (the deferred
 	// publish/total metrics above are for the artifact returned to the queue).
 	phaseMetrics["total_us"] = float64(time.Since(totalStart).Microseconds())
-	if err := p.recordArtifact(ctx, jobID, artifact, probe, stats, inputBytes); err != nil {
+	// Ingest Chronon's timing sidecar as the source of truth for plan/graph/
+	// GPU/encoder timing. A missing sidecar is non-fatal: the rendered bytes
+	// are still valid, only the telemetry blob is absent from the ledger.
+	var chrononTelemetry json.RawMessage
+	if raw, err := chronon.ReadTimingSidecar(outputPath); err != nil {
+		log.Printf("job %s: chronon timing sidecar unavailable: %v", jobID, err)
+	} else {
+		chrononTelemetry = raw
+	}
+	if err := p.recordArtifact(ctx, jobID, artifact, probe, stats, inputBytes, chrononTelemetry); err != nil {
 		return queue.Artifact{}, err
 	}
 	return artifact, nil
@@ -469,28 +513,29 @@ func (p *Processor) storeArtifact(ctx context.Context, jobID, outputPath string,
 // counters from the compiled plan and the per-phase microsecond metrics. A
 // configured recorder failing fails the job: the ledger is the source of
 // truth for what the pipeline produced.
-func (p *Processor) recordArtifact(ctx context.Context, jobID string, artifact queue.Artifact, probe *media.ProbeResult, stats overlay.Stats, inputBytes int64) error {
+func (p *Processor) recordArtifact(ctx context.Context, jobID string, artifact queue.Artifact, probe *media.ProbeResult, stats overlay.Stats, inputBytes int64, chrononTelemetry json.RawMessage) error {
 	if p.recorder == nil {
 		return nil
 	}
 	rec := artifactdb.ArtifactRecord{
-		JobID:            jobID,
-		ArtifactHash:     artifact.ArtifactHash,
-		StorageKey:       artifact.StorageKey,
-		SizeBytes:        artifact.SizeBytes,
-		ContentType:      artifact.ContentType,
-		Backend:          artifact.Backend,
-		ChrononVersion:   artifact.ChrononVersion,
-		ProfileID:        artifact.ProfileID,
-		EntityCount:      stats.EntityCount,
+		JobID:              jobID,
+		ArtifactHash:       artifact.ArtifactHash,
+		StorageKey:         artifact.StorageKey,
+		SizeBytes:          artifact.SizeBytes,
+		ContentType:        artifact.ContentType,
+		Backend:            artifact.Backend,
+		ChrononVersion:     artifact.ChrononVersion,
+		ProfileID:          artifact.ProfileID,
+		EntityCount:        stats.EntityCount,
 		ImportantPhraseCnt: stats.ImportantPhraseCnt,
-		ImportantWordCnt: stats.ImportantWordCnt,
-		ImageCount:       stats.ImageCount,
-		LightLeakCount:   stats.LightLeakCount,
-		PresetID:         stats.PresetID,
-		InputBytes:       inputBytes,
-		OutputBytes:      artifact.SizeBytes,
-		CreatedAt:        time.Now().UTC(),
+		ImportantWordCnt:   stats.ImportantWordCnt,
+		ImageCount:         stats.ImageCount,
+		LightLeakCount:     stats.LightLeakCount,
+		PresetID:           stats.PresetID,
+		InputBytes:         inputBytes,
+		OutputBytes:        artifact.SizeBytes,
+		ChrononTelemetry:   chrononTelemetry,
+		CreatedAt:          time.Now().UTC(),
 	}
 	if probe != nil {
 		rec.Container = probe.Container

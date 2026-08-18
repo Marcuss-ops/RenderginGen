@@ -153,9 +153,9 @@ type semanticEntityRef struct {
 	Type     string `json:"type"`
 	// Name is the new contract's canonical name spelling; CanonicalName is
 	// the legacy spelling. Both are accepted so old plans keep compiling.
-	Name           string `json:"name"`
-	CanonicalName  string `json:"canonical_name"`
-	SurfaceText    string `json:"surface_text,omitempty"`
+	Name          string `json:"name"`
+	CanonicalName string `json:"canonical_name"`
+	SurfaceText   string `json:"surface_text,omitempty"`
 }
 
 type semanticAssetRef struct {
@@ -308,10 +308,36 @@ func msFrames(start, end, fps int64) (int64, int64) {
 	return int64(math.Floor(float64(start) * float64(fps) / 1000)), int64(math.Ceil(float64(end) * float64(fps) / 1000))
 }
 
+// presetRequiredTemplates are the semantic templates PipelineGen resolves a
+// preset for (its SemanticOverlayResolver value space). RenderingGen must not
+// re-map these to a preset (ADR-029); it only requires that the plan already
+// carries the preset_id. Preset-less primitives (PRODUCT, LOGO, LIGHT_LEAK,
+// BACKGROUND, SHAPE, …) are intentionally absent and compile to a bare layer.
+var presetRequiredTemplates = map[string]bool{
+	"IMPORTANT_PHRASE": true,
+	"IMPORTANT_WORD":   true,
+	"NUMBER":           true,
+	"QUOTE":            true,
+	"CONCEPT":          true,
+	"MONEY":            true,
+	"PERCENT":          true,
+	"PERSON":           true,
+	"ORGANIZATION":     true,
+	"LOCATION":         true,
+	"IMAGE_OVERLAY":    true,
+}
+
 func presetFor(item semanticItem) (string, error) {
 	// The plan's preset_id contract slot is preferred; the params slot is the
 	// legacy spelling. Both resolve through the same validatePreset — the
 	// existing Chronon preset vocabulary, never an invented preset.
+	//
+	// ADR-029 forward-point (d): RenderingGen is an execution worker and must
+	// NOT re-map a template_id to a preset (e.g. it must not know that PERSON
+	// means lower_third_safe). The semantic_role → preset_id decision lives
+	// only in PipelineGen's SemanticOverlayResolver. A preset-driven template
+	// that does not carry a preset_id is rejected; preset-less primitives
+	// (PRODUCT, LOGO, LIGHT_LEAK, …) legitimately compile without one.
 	p := strings.TrimSpace(item.PresetID)
 	if p == "" {
 		if legacy, ok := item.Params["preset_id"].(string); ok {
@@ -321,22 +347,10 @@ func presetFor(item semanticItem) (string, error) {
 	if p != "" {
 		return validatePreset(p, item.ID)
 	}
-	switch strings.ToUpper(item.Template) {
-	case "IMPORTANT_PHRASE", "QUOTE", "CONCEPT":
-		return "caption_card", nil
-	case "IMPORTANT_WORD", "NUMBER", "MONEY", "PERCENT":
-		return "active_word_pop", nil
-	case "PERSON":
-		return "lower_third_safe", nil
-	case "ORGANIZATION":
-		return "organization_card", nil
-	case "LOCATION":
-		return "location_card", nil
-	case "IMAGE_OVERLAY", "PRODUCT", "LOGO", "LIGHT_LEAK":
-		return "image_focus_in", nil
-	default:
-		return "", fmt.Errorf("overlay: unsupported template_id %q for item %q", item.Template, item.ID)
+	if presetRequiredTemplates[strings.ToUpper(item.Template)] {
+		return "", fmt.Errorf("overlay: item %q requires preset_id (resolved by PipelineGen's SemanticOverlayResolver)", item.ID)
 	}
+	return "", nil
 }
 func validatePreset(p, id string) (string, error) {
 	switch p {
@@ -370,6 +384,7 @@ func presetForImage(item semanticItem) (string, error) {
 	}
 	return "image_focus_in", nil
 }
+
 // entityRefText returns the display text from the plan's entity_ref block:
 // surface_text first (the verbatim spoken mention), then the canonical name
 // (the new contract's `name`), then the legacy `canonical_name` spelling.

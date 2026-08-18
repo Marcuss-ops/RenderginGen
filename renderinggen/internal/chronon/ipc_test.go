@@ -85,6 +85,7 @@ func TestIPCClientRenderSuccess(t *testing.T) {
 		AssetsRoot: "/jobs/1/assets",
 		OutputPath: "/jobs/1/output/result.mp4",
 		Backend:    "software",
+		Report:     true,
 	})
 	if err != nil {
 		t.Fatalf("render: %v", err)
@@ -97,13 +98,16 @@ func TestIPCClientRenderSuccess(t *testing.T) {
 		PlanPath   string `json:"plan_path"`
 		AssetsRoot string `json:"assets_root"`
 		Output     string `json:"output"`
+		Backend    string `json:"backend"`
+		Report     bool   `json:"report"`
 	}
 	if err := json.Unmarshal([]byte(<-gotPayload), &payload); err != nil {
 		t.Fatalf("payload decode: %v", err)
 	}
 	if payload.PlanPath != "/jobs/1/plan.json" ||
 		payload.AssetsRoot != "/jobs/1/assets" ||
-		payload.Output != "/jobs/1/output/result.mp4" {
+		payload.Output != "/jobs/1/output/result.mp4" ||
+		payload.Backend != "software" || !payload.Report {
 		t.Fatalf("payload = %+v", payload)
 	}
 }

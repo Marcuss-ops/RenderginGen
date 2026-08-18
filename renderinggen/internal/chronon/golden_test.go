@@ -64,11 +64,14 @@ func TestGoldenOverlayJobV1Immutability(t *testing.T) {
 	if plan.Canvas.Width != 1280 || plan.Canvas.Height != 720 || plan.Canvas.FPS != 30 || plan.Canvas.DurationFrames != 150 {
 		t.Fatalf("unexpected canvas (want 1280x720@30, 150 frames): %+v", plan.Canvas)
 	}
+	// Preset-driven layers (phrase / word / image overlay) carry no `type`:
+	// Chronon derives it from the preset's supported_layer (ADR-029). Only the
+	// preset-less background primitive keeps its image type.
 	wantLayers := map[string]string{
 		"background":       "image",
-		"important_phrase": "text",
-		"important_word":   "text",
-		"image_overlay":    "image",
+		"important_phrase": "",
+		"important_word":   "",
+		"image_overlay":    "",
 	}
 	if len(plan.Layers) != len(wantLayers) {
 		t.Fatalf("expected %d layers, got %d", len(wantLayers), len(plan.Layers))

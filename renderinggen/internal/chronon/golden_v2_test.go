@@ -71,14 +71,17 @@ func TestGoldenOverlayJobV2Immutability(t *testing.T) {
 	if plan.Canvas.Width != 1280 || plan.Canvas.Height != 720 || plan.Canvas.FPS != 30 || plan.Canvas.DurationFrames != 240 {
 		t.Fatalf("unexpected canvas (want 1280x720@30, 240 frames): %+v", plan.Canvas)
 	}
+	// Preset-driven layers (phrases / words / image overlays) carry no `type`:
+	// Chronon derives it from the preset's supported_layer (ADR-029). Only the
+	// preset-less primitives (background video / logo) keep their type.
 	wantLayers := map[string]string{
-		"background_video":  "video",
-		"important_phrase_1": "text",
-		"important_word_1":   "text",
-		"image_overlay_1":    "image",
-		"important_phrase_2": "text",
-		"important_word_2":   "text",
-		"image_overlay_2":    "image",
+		"background_video":   "video",
+		"important_phrase_1": "",
+		"important_word_1":   "",
+		"image_overlay_1":    "",
+		"important_phrase_2": "",
+		"important_word_2":   "",
+		"image_overlay_2":    "",
 		"logo":               "image",
 	}
 	if len(plan.Layers) != len(wantLayers) {
@@ -91,7 +94,9 @@ func TestGoldenOverlayJobV2Immutability(t *testing.T) {
 		} else if layer.Type != wantType {
 			t.Fatalf("layer %s: want type %s, got %s", layer.ID, wantType, layer.Type)
 		}
-		if layer.Type == "text" {
+		// Preset-driven text layers carry no type; identify them by their
+		// caption/word preset for the font + animation assertions.
+		if layer.Preset == "caption_card" || layer.Preset == "active_word_pop" {
 			if layer.Font != "" {
 				t.Fatalf("layer %s font = %q, want empty (Chronon resolves it from the preset)", layer.ID, layer.Font)
 			}

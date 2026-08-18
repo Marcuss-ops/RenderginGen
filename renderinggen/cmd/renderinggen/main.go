@@ -85,6 +85,9 @@ func main() {
 		renderer,
 	)
 	proc.SetNativeOutputProfiles(cfg.Chronon.NativeOutputProfiles)
+	proc.SetReport(cfg.Chronon.Report)
+	proc.SetHardwareEncoder(cfg.Chronon.HardwareEncoder)
+	log.Printf("chronon report telemetry: %t", cfg.Chronon.Report)
 
 	// 3a. Artifact ledger (the "DB artifact" step): SQLite, pure Go so the
 	// CGO_ENABLED=0 worker image keeps building. A failed ledger write fails
@@ -212,7 +215,10 @@ func runStageLoop(ctx context.Context, q *queue.Client, proc *processor.Processo
 			continue
 		}
 
-		if stage == stageRender && job.JobType != queue.JobTypeOverlayPrepare {
+		if stage == stageRender && job.JobType != queue.JobTypeOverlayPrepare && job.Artifact == nil {
+			log.Printf("job %s render artifact: storage_key=%q sha256=%q size=%d copy_eligible=%t backend=%q frames=%d %dx%d",
+				job.ID, artifact.StorageKey, artifact.ArtifactHash, artifact.SizeBytes,
+				artifact.CopyEligible, artifact.Backend, artifact.FrameCount, artifact.Width, artifact.Height)
 			if err := q.Rendered(ctx, job.ID, "render complete; awaiting publication", artifact); err != nil {
 				log.Printf("job %s report rendered: %v", job.ID, err)
 			}
@@ -233,6 +239,15 @@ func stageName(stage workerStage) string {
 
 func processStageJob(ctx context.Context, job *queue.Job, q *queue.Client, proc *processor.Processor, stage workerStage) (queue.Artifact, error) {
 	return withLease(ctx, job, q, func(jobCtx context.Context) (queue.Artifact, error) {
+		// A rendered job can be observed by a render loop during a stage
+		// hand-off (or after a worker restart). Its artifact is already durable;
+		// never render it again. Continue with publication idempotently.
+		if stage == stageRender && job.Artifact != nil {
+			log.Printf("job %s render stage received durable artifact; switching to publication", job.ID)
+			artifact := *job.Artifact
+			artifact.Metrics = nil
+			return proc.Publish(jobCtx, job.ID, artifact)
+		}
 		if stage == stagePublish {
 			if job.Artifact == nil {
 				return queue.Artifact{}, fmt.Errorf("rendered job has no artifact")

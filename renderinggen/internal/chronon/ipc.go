@@ -11,17 +11,17 @@ import (
 
 // IPC wire constants — must match Chronon3d's chronon_ipc.hpp.
 const (
-	ipcMagic         uint32 = 0x43484e33 // "CHN3"
-	ipcHeaderBytes          = 12        // magic + command/status + payload-len
-	ipcMaxPayload           = 64 * 1024 * 1024
-	ipcCommandStatus        = 4
-	ipcCommandShutdown      = 5
-	ipcCommandRenderJob     = 6
-	ipcStatusOk             = 0
-	ipcStatusError          = 1
-	ipcStatusNotFound       = 2
-	ipcStatusBadRequest     = 3
-	ipcStatusShutdown       = 4
+	ipcMagic            uint32 = 0x43484e33 // "CHN3"
+	ipcHeaderBytes             = 12         // magic + command/status + payload-len
+	ipcMaxPayload              = 64 * 1024 * 1024
+	ipcCommandStatus           = 4
+	ipcCommandShutdown         = 5
+	ipcCommandRenderJob        = 6
+	ipcStatusOk                = 0
+	ipcStatusError             = 1
+	ipcStatusNotFound          = 2
+	ipcStatusBadRequest        = 3
+	ipcStatusShutdown          = 4
 )
 
 // IPCClient renders through the persistent Chronon3d render daemon over a
@@ -68,6 +68,8 @@ type renderJobPayload struct {
 	PlanPath   string `json:"plan_path"`
 	AssetsRoot string `json:"assets_root"`
 	Output     string `json:"output"`
+	Backend    string `json:"backend"`
+	Report     bool   `json:"report"`
 }
 
 // renderJobReply is the JSON reply returned by a successful RENDER_JOB.
@@ -82,6 +84,8 @@ func (c *IPCClient) Render(ctx context.Context, req RenderRequest) error {
 		PlanPath:   req.PlanPath,
 		AssetsRoot: req.AssetsRoot,
 		Output:     req.OutputPath,
+		Backend:    req.Backend,
+		Report:     req.Report,
 	})
 	if err != nil {
 		return fmt.Errorf("ipc render: marshal payload: %w", err)

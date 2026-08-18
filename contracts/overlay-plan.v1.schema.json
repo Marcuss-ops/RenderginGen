@@ -44,7 +44,7 @@
           "start_ms": { "type": "integer", "minimum": 0 },
           "end_ms": { "type": "integer", "exclusiveMinimum": 0 },
           "template_id": { "type": "string", "minLength": 1 },
-          "preset_id": { "type": "string", "minLength": 1, "description": "Semantic visual preset selected by PipelineGen (e.g. phrase_focus_v1, entity_card_v1). Opaque id resolved by the preset registry downstream; absent when no preset is selected." },
+          "preset_id": { "type": "string", "minLength": 1, "description": "Semantic visual preset resolved by PipelineGen's SemanticOverlayResolver (ADR-029). REQUIRED for preset-driven templates (text cards, IMAGE_OVERLAY); ABSENT for preset-less primitives (PRODUCT, LOGO, LIGHT_LEAK, BACKGROUND, SHAPE) which compile to a bare renderer-default layer." },
           "text": { "type": "string" },
           "params": { "type": "object" },
           "render_key": { "type": "string" },

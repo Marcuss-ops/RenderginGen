@@ -215,8 +215,8 @@ func TestProcessExecutesSemanticOverlayPlan(t *testing.T) {
           "plan_id":"semantic-job","video_id":"video-1",
           "width":1280,"height":720,"fps":30,
           "items":[
-            {"id":"phrase-1","template_id":"IMPORTANT_PHRASE","text":"Hello world","start_ms":0,"end_ms":1000},
-            {"id":"img-1","template_id":"IMAGE_OVERLAY","start_ms":1000,"end_ms":2000,
+            {"id":"phrase-1","template_id":"IMPORTANT_PHRASE","preset_id":"caption_card","text":"Hello world","start_ms":0,"end_ms":1000},
+            {"id":"img-1","template_id":"IMAGE_OVERLAY","preset_id":"image_focus_in","start_ms":1000,"end_ms":2000,
              "asset_refs":[{"asset_id":"apple","sha256":"` + assetHash + `","url":"https://store.example/objects/apple.png","media_type":"image/png"}]}
           ]
         }`),
@@ -310,8 +310,8 @@ func TestProcessRecordsArtifactLedger(t *testing.T) {
           "plan_id":"ledger-job","video_id":"video-1",
           "width":1280,"height":720,"fps":30,
           "items":[
-            {"id":"phrase-1","template_id":"IMPORTANT_PHRASE","text":"Hello world","start_ms":0,"end_ms":1000},
-            {"id":"word-1","template_id":"IMPORTANT_WORD","text":"APPLE","start_ms":1000,"end_ms":2000},
+            {"id":"phrase-1","template_id":"IMPORTANT_PHRASE","preset_id":"caption_card","text":"Hello world","start_ms":0,"end_ms":1000},
+            {"id":"word-1","template_id":"IMPORTANT_WORD","preset_id":"active_word_pop","text":"APPLE","start_ms":1000,"end_ms":2000},
             {"id":"img-1","template_id":"IMAGE_OVERLAY","start_ms":2000,"end_ms":3000,"preset_id":"image_focus_in",
              "asset_refs":[{"asset_id":"apple","sha256":"` + assetHash + `","url":"https://store.example/objects/apple.png","media_type":"image/png"}]}
           ]
@@ -343,8 +343,9 @@ func TestProcessRecordsArtifactLedger(t *testing.T) {
 	if rec.EntityCount != 0 || rec.ImportantPhraseCnt != 1 || rec.ImportantWordCnt != 1 || rec.ImageCount != 1 {
 		t.Fatalf("semantic counters: %+v", rec)
 	}
-	if rec.PresetID != "image_focus_in" {
-		t.Fatalf("preset_id = %q, want image_focus_in", rec.PresetID)
+	// PresetID records the first item's preset (phrase-1 = caption_card).
+	if rec.PresetID != "caption_card" {
+		t.Fatalf("preset_id = %q, want caption_card (first item's preset)", rec.PresetID)
 	}
 	// Input bytes: the content-addressed asset was materialized.
 	if rec.InputBytes != int64(len(assetBytes)) {
@@ -502,10 +503,10 @@ type badHashPublisher struct{}
 
 func (badHashPublisher) Publish(_ context.Context, req drive.PublishRequest) (drive.Result, error) {
 	return drive.Result{
-		FileID:       "lying-file",
-		WebViewLink:  "https://drive.example.com/file/d/lying-file",
-		SizeBytes:    int64(len(req.Data)),
-		SHA256:       strings.Repeat("0", 64), // lies: does not match req.Data
+		FileID:      "lying-file",
+		WebViewLink: "https://drive.example.com/file/d/lying-file",
+		SizeBytes:   int64(len(req.Data)),
+		SHA256:      strings.Repeat("0", 64), // lies: does not match req.Data
 	}, nil
 }
 
@@ -526,10 +527,10 @@ func TestPublishEnforcesStoreDBInvariant(t *testing.T) {
 	// A claimed rendered job whose stored bytes no longer match the recorded
 	// hash (the object store drifted from what the worker hashed).
 	artifact := queue.Artifact{
-		Kind:    "segment",
-		StorageKey: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+		Kind:         "segment",
+		StorageKey:   "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
 		ArtifactHash: storage.Hash([]byte("expected-bytes")),
-		ContentType: "video/mp4",
+		ContentType:  "video/mp4",
 	}
 	if _, err := proc.Publish(context.Background(), "job-1", artifact); err == nil {
 		t.Fatal("publish must fail when store bytes do not match db_sha")

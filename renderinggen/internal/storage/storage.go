@@ -9,6 +9,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"io"
 	"sync"
 	"sync/atomic"
 )
@@ -133,6 +134,20 @@ func (c *Client) Put(ctx context.Context, hash string, data []byte) error {
 	c.l2.Put(hash, data)
 	c.l1.Put(hash, data)
 	return nil
+}
+
+// PutReader stores a large object without buffering it in the client. The
+// optional ReaderBackend path is fully streaming; older backends retain
+// compatibility through the existing byte-slice API.
+func (c *Client) PutReader(ctx context.Context, hash string, r io.Reader, size int64) error {
+	if backend, ok := c.backend.(ReaderBackend); ok {
+		return backend.StoreReader(ctx, hash, r, size)
+	}
+	data, err := io.ReadAll(r)
+	if err != nil {
+		return err
+	}
+	return c.Put(ctx, hash, data)
 }
 
 // Hash returns the content hash used as the cache key.
