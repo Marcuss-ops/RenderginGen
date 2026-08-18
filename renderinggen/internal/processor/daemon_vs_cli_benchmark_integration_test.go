@@ -33,6 +33,8 @@ type timingSummary struct {
 	P99FrameMS    float64
 	GPUExecuteMS  *float64
 	GPUReadbackMS *float64
+	GPUNodes      *int64
+	FallbackNodes *int64
 	ConversionMS  float64
 	Frames        int
 }
@@ -51,6 +53,8 @@ type chrononTimingSidecar struct {
 		GPU struct {
 			Execute  *float64 `json:"gpu_execute_ms"`
 			Readback *float64 `json:"gpu_readback_ms"`
+			Nodes    *int64   `json:"gpu_nodes"`
+			Fallback *int64   `json:"software_fallback_nodes"`
 		} `json:"gpu"`
 		ConversionMS float64 `json:"conversion_ms"`
 	} `json:"job"`
@@ -171,12 +175,14 @@ func TestDaemonVsCLIBenchmarkGoldenOverlay(t *testing.T) {
 		by[r.Backend+"-"+r.Phase] = r.TotalMS
 	}
 	fmt.Printf("\n=== RenderingGen daemon vs CLI benchmark (GoldenOverlayJobV1) ===\n")
-	fmt.Printf("%-9s %-6s %10s %10s %10s %10s %10s %10s\n",
-		"backend", "phase", "total_ms", "render_ms", "p50_ms", "p95_ms", "p99_ms", "wall_ms")
+	fmt.Printf("%-9s %-6s %10s %10s %10s %10s %10s %10s %10s %10s %10s %10s\n",
+		"backend", "phase", "total_ms", "render_ms", "p50_ms", "p95_ms", "p99_ms", "wall_ms", "gpu_ms", "readback_ms", "gpu_nodes", "fallbacks")
 	for _, r := range results {
-		fmt.Printf("%-9s %-6s %10.1f %10.1f %10.3f %10.3f %10.3f %10.1f\n",
+		fmt.Printf("%-9s %-6s %10.1f %10.1f %10.3f %10.3f %10.3f %10.1f %10s %10s %10s %10s\n",
 			r.Backend, r.Phase, r.TotalMS, r.Timing.RenderMS, r.Timing.P50FrameMS,
-			r.Timing.P95FrameMS, r.Timing.P99FrameMS, r.Timing.WallMS)
+			r.Timing.P95FrameMS, r.Timing.P99FrameMS, r.Timing.WallMS,
+			optionalMetric(r.Timing.GPUExecuteMS), optionalMetric(r.Timing.GPUReadbackMS),
+			optionalIntMetric(r.Timing.GPUNodes), optionalIntMetric(r.Timing.FallbackNodes))
 	}
 	cliWarm := by["cli-warm"]
 	daemonWarm := by["daemon-warm"]
@@ -187,6 +193,20 @@ func TestDaemonVsCLIBenchmarkGoldenOverlay(t *testing.T) {
 	fmt.Printf("Interpretation: the daemon keeps RenderEngine, font cache, image cache,\n")
 	fmt.Printf("framebuffer/surface pools, Vulkan device, pipelines and VRAM cache alive\n")
 	fmt.Printf("between jobs; the CLI subprocess re-spawns them for every render.\n")
+}
+
+func optionalMetric(value *float64) string {
+	if value == nil {
+		return "null"
+	}
+	return fmt.Sprintf("%.3f", *value)
+}
+
+func optionalIntMetric(value *int64) string {
+	if value == nil {
+		return "null"
+	}
+	return fmt.Sprintf("%d", *value)
 }
 
 func readChrononTiming(t *testing.T, output string) timingSummary {
@@ -208,6 +228,8 @@ func readChrononTiming(t *testing.T, output string) timingSummary {
 		P99FrameMS:    doc.Summary.P99,
 		GPUExecuteMS:  doc.Job.GPU.Execute,
 		GPUReadbackMS: doc.Job.GPU.Readback,
+		GPUNodes:      doc.Job.GPU.Nodes,
+		FallbackNodes: doc.Job.GPU.Fallback,
 		ConversionMS:  doc.Job.ConversionMS,
 		Frames:        doc.FramesTotal,
 	}
