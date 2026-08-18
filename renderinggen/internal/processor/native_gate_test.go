@@ -22,6 +22,13 @@ func TestRequireNativeVulkan(t *testing.T) {
 			if err := os.WriteFile(path+".timing.json", []byte(tc.body), 0o600); err != nil {
 				t.Fatal(err)
 			}
+			receipt := `{"copy_eligible":true}`
+			if tc.name != "native" {
+				receipt = `{"copy_eligible":false}`
+			}
+			if err := os.WriteFile(path+".receipt.json", []byte(receipt), 0o600); err != nil {
+				t.Fatal(err)
+			}
 			got := requireNativeVulkan(path) == nil
 			if got != tc.want {
 				t.Fatalf("requireNativeVulkan() = %v, want %v", got, tc.want)
