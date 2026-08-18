@@ -388,6 +388,19 @@ func requireNativeVulkan(outputPath string) error {
 		}
 		return fmt.Errorf("software_fallback_nodes=%d, want 0", *doc.Job.GPU.FallbackNodes)
 	}
+	receiptRaw, err := os.ReadFile(outputPath + ".receipt.json")
+	if err != nil {
+		return fmt.Errorf("missing Chronon media receipt: %w", err)
+	}
+	var receipt struct {
+		CopyEligible *bool `json:"copy_eligible"`
+	}
+	if err := json.Unmarshal(receiptRaw, &receipt); err != nil {
+		return fmt.Errorf("decode Chronon media receipt: %w", err)
+	}
+	if receipt.CopyEligible == nil || !*receipt.CopyEligible {
+		return fmt.Errorf("copy_eligible=%v, want true", receipt.CopyEligible)
+	}
 	return nil
 }
 
