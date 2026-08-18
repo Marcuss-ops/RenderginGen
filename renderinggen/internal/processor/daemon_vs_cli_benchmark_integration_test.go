@@ -25,25 +25,29 @@ type benchRun struct {
 }
 
 type timingSummary struct {
-	RenderMS          float64
-	WallMS            float64
-	EncodeCloseMS     float64
-	P50FrameMS        float64
-	P95FrameMS        float64
-	P99FrameMS        float64
-	GPUExecuteMS      *float64
-	GPUReadbackMS     *float64
-	GPUNodes          *int64
-	FallbackNodes     *int64
-	FallbackDrawNode  *int64
-	FallbackTextRun   *int64
-	FallbackComposite *int64
-	FallbackEffect    *int64
-	FallbackBlur      *int64
-	FallbackDOF       *int64
-	EffectiveBackend  string
-	ConversionMS      float64
-	Frames            int
+	RenderMS                    float64
+	WallMS                      float64
+	EncodeCloseMS               float64
+	P50FrameMS                  float64
+	P95FrameMS                  float64
+	P99FrameMS                  float64
+	GPUExecuteMS                *float64
+	GPUReadbackMS               *float64
+	GPUNodes                    *int64
+	FallbackNodes               *int64
+	FallbackDrawNode            *int64
+	FallbackDrawImage           *int64
+	FallbackDrawOther           *int64
+	FallbackTextRun             *int64
+	FallbackComposite           *int64
+	FallbackCompositeDimensions *int64
+	FallbackCompositeMode       *int64
+	FallbackEffect              *int64
+	FallbackBlur                *int64
+	FallbackDOF                 *int64
+	EffectiveBackend            string
+	ConversionMS                float64
+	Frames                      int
 }
 
 type chrononTimingSidecar struct {
@@ -58,17 +62,21 @@ type chrononTimingSidecar struct {
 	} `json:"summary"`
 	Job struct {
 		GPU struct {
-			Execute           *float64 `json:"gpu_execute_ms"`
-			Readback          *float64 `json:"gpu_readback_ms"`
-			Nodes             *int64   `json:"gpu_nodes"`
-			Fallback          *int64   `json:"software_fallback_nodes"`
-			FallbackDrawNode  *int64   `json:"fallback_draw_node"`
-			FallbackTextRun   *int64   `json:"fallback_text_run"`
-			FallbackComposite *int64   `json:"fallback_composite"`
-			FallbackEffect    *int64   `json:"fallback_effect"`
-			FallbackBlur      *int64   `json:"fallback_blur"`
-			FallbackDOF       *int64   `json:"fallback_dof"`
-			EffectiveBackend  string   `json:"effective_backend"`
+			Execute                     *float64 `json:"gpu_execute_ms"`
+			Readback                    *float64 `json:"gpu_readback_ms"`
+			Nodes                       *int64   `json:"gpu_nodes"`
+			Fallback                    *int64   `json:"software_fallback_nodes"`
+			FallbackDrawNode            *int64   `json:"fallback_draw_node"`
+			FallbackDrawImage           *int64   `json:"fallback_draw_image"`
+			FallbackDrawOther           *int64   `json:"fallback_draw_other"`
+			FallbackTextRun             *int64   `json:"fallback_text_run"`
+			FallbackComposite           *int64   `json:"fallback_composite"`
+			FallbackCompositeDimensions *int64   `json:"fallback_composite_dimensions"`
+			FallbackCompositeMode       *int64   `json:"fallback_composite_mode"`
+			FallbackEffect              *int64   `json:"fallback_effect"`
+			FallbackBlur                *int64   `json:"fallback_blur"`
+			FallbackDOF                 *int64   `json:"fallback_dof"`
+			EffectiveBackend            string   `json:"effective_backend"`
 		} `json:"gpu"`
 		ConversionMS float64 `json:"conversion_ms"`
 	} `json:"job"`
@@ -206,6 +214,11 @@ func TestDaemonVsCLIBenchmarkGoldenOverlay(t *testing.T) {
 				optionalIntMetric(r.Timing.FallbackEffect),
 				optionalIntMetric(r.Timing.FallbackBlur),
 				optionalIntMetric(r.Timing.FallbackDOF))
+			fmt.Printf("  fallback detail: draw_image=%s draw_other=%s composite_dimensions=%s composite_mode=%s\n",
+				optionalIntMetric(r.Timing.FallbackDrawImage),
+				optionalIntMetric(r.Timing.FallbackDrawOther),
+				optionalIntMetric(r.Timing.FallbackCompositeDimensions),
+				optionalIntMetric(r.Timing.FallbackCompositeMode))
 		}
 	}
 	cliWarm := by["cli-warm"]
@@ -260,25 +273,29 @@ func readChrononTiming(t *testing.T, output string) timingSummary {
 		t.Fatalf("decode Chronon timing sidecar: %v", err)
 	}
 	return timingSummary{
-		RenderMS:          doc.RenderMS,
-		WallMS:            doc.WallMS,
-		EncodeCloseMS:     doc.EncodeClose,
-		P50FrameMS:        doc.Summary.P50,
-		P95FrameMS:        doc.Summary.P95,
-		P99FrameMS:        doc.Summary.P99,
-		GPUExecuteMS:      doc.Job.GPU.Execute,
-		GPUReadbackMS:     doc.Job.GPU.Readback,
-		GPUNodes:          doc.Job.GPU.Nodes,
-		FallbackNodes:     doc.Job.GPU.Fallback,
-		FallbackDrawNode:  doc.Job.GPU.FallbackDrawNode,
-		FallbackTextRun:   doc.Job.GPU.FallbackTextRun,
-		FallbackComposite: doc.Job.GPU.FallbackComposite,
-		FallbackEffect:    doc.Job.GPU.FallbackEffect,
-		FallbackBlur:      doc.Job.GPU.FallbackBlur,
-		FallbackDOF:       doc.Job.GPU.FallbackDOF,
-		EffectiveBackend:  doc.Job.GPU.EffectiveBackend,
-		ConversionMS:      doc.Job.ConversionMS,
-		Frames:            doc.FramesTotal,
+		RenderMS:                    doc.RenderMS,
+		WallMS:                      doc.WallMS,
+		EncodeCloseMS:               doc.EncodeClose,
+		P50FrameMS:                  doc.Summary.P50,
+		P95FrameMS:                  doc.Summary.P95,
+		P99FrameMS:                  doc.Summary.P99,
+		GPUExecuteMS:                doc.Job.GPU.Execute,
+		GPUReadbackMS:               doc.Job.GPU.Readback,
+		GPUNodes:                    doc.Job.GPU.Nodes,
+		FallbackNodes:               doc.Job.GPU.Fallback,
+		FallbackDrawNode:            doc.Job.GPU.FallbackDrawNode,
+		FallbackDrawImage:           doc.Job.GPU.FallbackDrawImage,
+		FallbackDrawOther:           doc.Job.GPU.FallbackDrawOther,
+		FallbackTextRun:             doc.Job.GPU.FallbackTextRun,
+		FallbackComposite:           doc.Job.GPU.FallbackComposite,
+		FallbackCompositeDimensions: doc.Job.GPU.FallbackCompositeDimensions,
+		FallbackCompositeMode:       doc.Job.GPU.FallbackCompositeMode,
+		FallbackEffect:              doc.Job.GPU.FallbackEffect,
+		FallbackBlur:                doc.Job.GPU.FallbackBlur,
+		FallbackDOF:                 doc.Job.GPU.FallbackDOF,
+		EffectiveBackend:            doc.Job.GPU.EffectiveBackend,
+		ConversionMS:                doc.Job.ConversionMS,
+		Frames:                      doc.FramesTotal,
 	}
 }
 
