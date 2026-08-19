@@ -174,10 +174,10 @@ func TestCompileIfSemanticLegacyCanonicalNameFallback(t *testing.T) {
 	}
 }
 
-// TestCompileIfSemanticRejectsUnknownPresetID pins the fail-closed preset
-// contract: an unknown preset_id is rejected — the value space is the
-// existing Chronon preset vocabulary, never an invented preset.
-func TestCompileIfSemanticRejectsUnknownPresetID(t *testing.T) {
+// TestCompileIfSemanticTransportsChrononPresetID ensures RenderingGen does
+// not mirror Chronon's preset registry. Chronon remains responsible for the
+// authoritative lookup during plan compilation.
+func TestCompileIfSemanticTransportsChrononPresetID(t *testing.T) {
 	raw := []byte(`{
       "schema_version":"renderinggen.overlay-plan.v1",
       "plan_id":"p","video_id":"v","width":1280,"height":720,"fps":30,
@@ -185,8 +185,8 @@ func TestCompileIfSemanticRejectsUnknownPresetID(t *testing.T) {
         {"id":"phrase","template_id":"IMPORTANT_PHRASE","preset_id":"phrase_focus_v1","text":"x","start_ms":0,"end_ms":1000}
       ]
     }`)
-	if _, _, _, err := CompileIfSemantic(raw); err == nil {
-		t.Fatal("unknown preset_id must be rejected (preset registry owns the value space)")
+	if _, _, _, err := CompileIfSemantic(raw); err != nil {
+		t.Fatalf("non-empty Chronon preset id must be transported: %v", err)
 	}
 }
 

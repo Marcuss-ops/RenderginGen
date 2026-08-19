@@ -329,8 +329,7 @@ var presetRequiredTemplates = map[string]bool{
 
 func presetFor(item semanticItem) (string, error) {
 	// The plan's preset_id contract slot is preferred; the params slot is the
-	// legacy spelling. Both resolve through the same validatePreset — the
-	// existing Chronon preset vocabulary, never an invented preset.
+	// legacy spelling. Chronon's registry remains the authoritative value space.
 	//
 	// ADR-029 forward-point (d): RenderingGen is an execution worker and must
 	// NOT re-map a template_id to a preset (e.g. it must not know that PERSON
@@ -353,12 +352,13 @@ func presetFor(item semanticItem) (string, error) {
 	return "", nil
 }
 func validatePreset(p, id string) (string, error) {
-	switch p {
-	case "caption_card", "active_word_pop", "lower_third_safe", "organization_card", "location_card", "image_focus_in":
-		return p, nil
-	default:
-		return "", fmt.Errorf("overlay: unknown preset_id %q for item %q", p, id)
+	// RenderingGen is an execution worker, not a second preset registry. It
+	// validates transport shape only; Chronon3d::VisualPresetRegistry performs
+	// the authoritative preset lookup during plan compilation.
+	if strings.TrimSpace(p) == "" {
+		return "", fmt.Errorf("overlay: empty preset_id for item %q", id)
 	}
+	return p, nil
 }
 func isImageTemplate(t string) bool {
 	switch strings.ToUpper(t) {
