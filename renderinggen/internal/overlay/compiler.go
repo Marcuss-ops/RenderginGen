@@ -114,15 +114,25 @@ func CompileIfSemantic(raw []byte) ([]byte, []Asset, bool, error) {
 }
 
 type semanticPlan struct {
-	SchemaVersion   string         `json:"schema_version"`
-	PlanID          string         `json:"plan_id"`
-	VideoID         string         `json:"video_id"`
-	Width           int            `json:"width"`
-	Height          int            `json:"height"`
-	FPS             int            `json:"fps"`
-	OutputProfileID string         `json:"output_profile_id"`
-	StyleProfile    string         `json:"style_profile"`
-	Items           []semanticItem `json:"items"`
+	SchemaVersion   string              `json:"schema_version"`
+	PlanID          string              `json:"plan_id"`
+	VideoID         string              `json:"video_id"`
+	Width           int                 `json:"width"`
+	Height          int                 `json:"height"`
+	FPS             int                 `json:"fps"`
+	OutputProfileID string              `json:"output_profile_id"`
+	StyleProfile    string              `json:"style_profile"`
+	Background      *semanticBackground `json:"background,omitempty"`
+	Items           []semanticItem      `json:"items"`
+}
+
+type semanticBackground struct {
+	Kind      string             `json:"kind"`
+	Color     []float64          `json:"color,omitempty"`
+	AssetRefs []semanticAssetRef `json:"asset_refs,omitempty"`
+	Fit       string             `json:"fit,omitempty"`
+	Opacity   *float64           `json:"opacity,omitempty"`
+	Loop      bool               `json:"loop,omitempty"`
 }
 
 type semanticItem struct {
@@ -191,6 +201,8 @@ type concreteLayer struct {
 	ID             string             `json:"id"`
 	Type           string             `json:"type"`
 	Asset          string             `json:"asset,omitempty"`
+	Source         string             `json:"source,omitempty"`
+	Color          []float64          `json:"color,omitempty"`
 	Text           string             `json:"text,omitempty"`
 	Preset         string             `json:"preset,omitempty"`
 	BoxWidth       int                `json:"box_width,omitempty"`
@@ -200,6 +212,8 @@ type concreteLayer struct {
 	StartFrame     int64              `json:"start_frame"`
 	DurationFrames int64              `json:"duration_frames"`
 	Animation      *concreteAnimation `json:"animation,omitempty"`
+	Opacity        float64            `json:"opacity,omitempty"`
+	Loop           bool               `json:"loop,omitempty"`
 }
 type concreteAnimation struct {
 	Preset string `json:"preset"`
@@ -233,6 +247,50 @@ func compileSemantic(raw []byte) ([]byte, []Asset, error) {
 		Output: concreteOutput{Path: "result.mp4", Format: "mp4", Codec: "h264", ProfileID: src.OutputProfileID}}
 	assetPaths := map[string]string{}
 	var assets []Asset
+	if bg := src.Background; bg != nil {
+		kind := strings.ToLower(strings.TrimSpace(bg.Kind))
+		if kind != "color" && kind != "image" && kind != "video" {
+			return nil, nil, fmt.Errorf("overlay: unsupported background kind %q", bg.Kind)
+		}
+		if kind == "color" {
+			if len(bg.Color) != 4 {
+				return nil, nil, fmt.Errorf("overlay: background color requires RGBA[4]")
+			}
+		} else if len(bg.AssetRefs) == 0 {
+			return nil, nil, fmt.Errorf("overlay: %s background requires asset_refs", kind)
+		}
+		for _, ref := range bg.AssetRefs {
+			if ref.ID == "" || len(ref.SHA256) != 64 || strings.Trim(ref.SHA256, "0123456789abcdefABCDEF") != "" {
+				return nil, nil, fmt.Errorf("overlay: background has invalid asset ref %q", ref.ID)
+			}
+			path := assetPaths[ref.ID]
+			if path == "" {
+				path = semanticAssetPath(ref)
+				assetPaths[ref.ID] = path
+				assets = append(assets, Asset{Hash: strings.ToLower(ref.SHA256), LogicalPath: path})
+			}
+		}
+		layer := concreteLayer{ID: "background", Type: kind, BoxWidth: src.Width, BoxHeight: src.Height,
+			Fit: bg.Fit, StartFrame: 0}
+		if kind != "color" && layer.Fit == "" {
+			layer.Fit = "cover"
+		}
+		if bg.Opacity != nil {
+			layer.Opacity = *bg.Opacity
+		}
+		if kind == "color" {
+			layer.Color = append([]float64(nil), bg.Color...)
+		} else {
+			ref := bg.AssetRefs[0]
+			if kind == "video" {
+				layer.Source = assetPaths[ref.ID]
+			} else {
+				layer.Asset = assetPaths[ref.ID]
+			}
+			layer.Loop = bg.Loop
+		}
+		plan.Layers = append(plan.Layers, layer)
+	}
 	for _, item := range src.Items {
 		for _, ref := range item.Assets {
 			if ref.ID == "" || len(ref.SHA256) != 64 || strings.Trim(ref.SHA256, "0123456789abcdefABCDEF") != "" {
@@ -291,6 +349,9 @@ func compileSemantic(raw []byte) ([]byte, []Asset, error) {
 		if end > plan.Canvas.DurationFrames {
 			plan.Canvas.DurationFrames = end
 		}
+	}
+	if len(plan.Layers) > 0 && plan.Layers[0].ID == "background" {
+		plan.Layers[0].DurationFrames = plan.Canvas.DurationFrames
 	}
 	if plan.Canvas.DurationFrames <= 0 {
 		return nil, nil, fmt.Errorf("overlay: semantic plan duration is zero")
