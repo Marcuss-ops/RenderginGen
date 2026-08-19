@@ -303,8 +303,12 @@ func readChrononTiming(t *testing.T, output string) timingSummary {
 // output redirected to a log file in the test dir.
 func startDaemon(t *testing.T, binary, socketPath, assetsRoot, backend string) *exec.Cmd {
 	t.Helper()
-	cmd := exec.Command(binary, "daemon", "-s", socketPath, "-a", assetsRoot,
-		"--backend", backend)
+	args := []string{"daemon", "-s", socketPath, "-a", assetsRoot,
+		"--backend", backend}
+	if level := os.Getenv("CHRONON_DAEMON_LOG_LEVEL"); level != "" {
+		args = append(args, "--log-level", level)
+	}
+	cmd := exec.Command(binary, args...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	if err := cmd.Start(); err != nil {
