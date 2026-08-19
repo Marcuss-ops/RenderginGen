@@ -25,6 +25,29 @@ func TestCompileIfSemanticPassthroughConcretePlan(t *testing.T) {
 	}
 }
 
+func TestCompileIfSemanticOptionalBackground(t *testing.T) {
+	raw := []byte(`{
+      "schema_version":"renderinggen.overlay-plan.v1",
+      "plan_id":"p","video_id":"v","width":1280,"height":720,"fps":30,
+      "background":{"kind":"color","color":[0,0,0,1]},
+      "items":[{"id":"phrase","template_id":"IMPORTANT_PHRASE","preset_id":"clean_slide_up","text":"hi","start_ms":0,"end_ms":1000}]
+    }`)
+	compiled, _, semantic, err := CompileIfSemantic(raw)
+	if err != nil || !semantic {
+		t.Fatalf("compile semantic background: semantic=%v err=%v", semantic, err)
+	}
+	var plan concretePlan
+	if err := json.Unmarshal(compiled, &plan); err != nil {
+		t.Fatalf("decode compiled plan: %v", err)
+	}
+	if len(plan.Layers) < 2 || plan.Layers[0].ID != "background" || plan.Layers[0].Type != "color" {
+		t.Fatalf("background was not emitted first: %+v", plan.Layers)
+	}
+	if plan.Layers[0].DurationFrames != plan.Canvas.DurationFrames {
+		t.Fatalf("background duration=%d, canvas duration=%d", plan.Layers[0].DurationFrames, plan.Canvas.DurationFrames)
+	}
+}
+
 // TestCompileIfSemanticRejectsMissingPresetID pins ADR-029 forward-point (d):
 // RenderingGen no longer re-maps a template_id to a preset (it must not know
 // that IMPORTANT_PHRASE means caption_card). A preset-driven template without
