@@ -49,9 +49,22 @@ func main() {
 	}
 
 	// 2. Select the renderer backend: CLI subprocess (default) or the
-	// persistent Chronon3d daemon over IPC.
+	// persistent Chronon3d daemon over IPC. The installed Chronon version
+	// must always be read from cfg.Chronon.Home/VERSION regardless of
+	// mode: previously the IPC branch kept chrononVersion at the literal
+	// "unknown" sentinel, so render_artifacts recorded chronon_version=
+	// 'unknown' for every job even when /opt/chronon3d/VERSION was present.
 	var renderer chronon.Renderer
 	chrononVersion := "unknown"
+	{
+		probe := &chronon.Client{Home: cfg.Chronon.Home}
+		// Verify only when we're about to invoke the CLI directly; the IPC
+		// branch validates the daemon via NewIPCClient below. Read VERSION
+		// unconditionally so the recorded version is never silently 'unknown'.
+		if v := probe.Version(); v != "unknown" {
+			chrononVersion = v
+		}
+	}
 	if cfg.Chronon.Mode == "ipc" {
 		renderer = chronon.NewIPCClient(cfg.Chronon.SocketPath)
 	} else {
@@ -60,7 +73,12 @@ func main() {
 			log.Fatalf("chronon: %v", err)
 		}
 		renderer = cli
-		chrononVersion = cli.Version()
+		if chrononVersion == "unknown" {
+			// CLI mode with no VERSION file: prefer the value the in-process
+			// client just read (covers the unlikely case where Home was empty
+			// at the probe call but got populated here).
+			chrononVersion = cli.Version()
+		}
 	}
 
 	// 3. Connect queue + storage.
