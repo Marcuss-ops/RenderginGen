@@ -14,8 +14,34 @@ set -eu
 SOCKET_PATH="${CHRONON_SOCKET_PATH:-/var/run/chronon3d/chronon.sock}"
 DAEMON_BIN="${CHRONON_DAEMON_BIN:-/opt/chronon3d/bin/chronon3d_cli}"
 ASSETS_ROOT="${CHRONON_DAEMON_ASSETS_ROOT:-/var/lib/renderinggen/jobs}"
-DAEMON_BACKEND="${CHRONON_DAEMON_BACKEND:-${CHRONON_BACKEND:-software}}"
+# Backend selection for the warm chronon daemon:
+#   1) CHRONON_DAEMON_BACKEND (explicit, wins)
+#   2) CHRONON_BACKEND (shared env var used by the worker config)
+#   3) Auto-detect: vulkan if /dev/nvidia0 is present, else software
+#   4) Default: vulkan (matches profile: gpu-vulkan-native in the worker config)
+# Previously the default was "software", which silently recorded
+# render_artifacts.backend='software' even when the worker's chronon.profile
+# was gpu-vulkan-native — i.e. the configured GPU profile never actually ran.
+DAEMON_BACKEND="${CHRONON_DAEMON_BACKEND:-${CHRONON_BACKEND:-}}"
+if [ -z "${DAEMON_BACKEND}" ]; then
+  if [ -e /dev/nvidia0 ]; then
+    DAEMON_BACKEND="vulkan"
+    DAEMON_BACKEND_SOURCE="auto-detect (/dev/nvidia0)"
+  else
+    DAEMON_BACKEND="software"
+    DAEMON_BACKEND_SOURCE="auto-detect (no /dev/nvidia0)"
+  fi
+else
+  DAEMON_BACKEND_SOURCE="env override (CHRONON_DAEMON_BACKEND or CHRONON_BACKEND)"
+fi
 DAEMON_LOG="${CHRONON_DAEMON_LOG:-/tmp/chronon-daemon.log}"
+
+# Log the resolved daemon backend so a misconfigured container surfaces the
+# problem in `docker logs` immediately instead of silently running the wrong
+# backend and recording it in render_artifacts after the fact. The earlier
+# silent default ("software") caused render_artifacts.backend='software' even
+# when the worker's profile was gpu-vulkan-native.
+echo "worker-entrypoint: chronon daemon backend = ${DAEMON_BACKEND} (source: ${DAEMON_BACKEND_SOURCE})"
 
 SOCKET_DIR="$(dirname "${SOCKET_PATH}")"
 mkdir -p "${SOCKET_DIR}"
