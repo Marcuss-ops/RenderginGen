@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"strings"
@@ -618,6 +620,84 @@ func TestPublishSHAChainInvariant(t *testing.T) {
 	}
 	if got := storage.Hash(written); got != localSHA {
 		t.Fatalf("drive file sha = %s, want %s", got, localSHA)
+	}
+}
+
+// TestPrepareSelfHealsMissingEntityImageFromURL certifies Gate 4's real gap:
+// PipelineGen materializes a catalog entity image to Drive and enqueues
+// overlay.prepare BEFORE the bytes are staged in the RenderingGen object
+// store. The worker must download the asset from its source URL, verify the
+// SHA-256, stage it into L3 and still complete the prepare job — never fail
+// with "object not found" on the first attempt.
+func TestPrepareSelfHealsMissingEntityImageFromURL(t *testing.T) {
+	proc, store, _ := newProcessor(t)
+
+	imageBytes := []byte("michael-jordan-catalog-image-jpeg")
+	imageHash := storage.Hash(imageBytes)
+
+	// A real HTTP source for the catalog image; nothing is staged in L3.
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write(imageBytes)
+	}))
+	defer srv.Close()
+
+	job := validJob()
+	job.ID = "overlay-prepare-self-heal"
+	job.JobType = queue.JobTypeOverlayPrepare
+	job.Assets = []queue.AssetRef{{Hash: imageHash, LogicalPath: srv.URL + "/michael-jordan.jpg"}}
+	job.RenderPlan = json.RawMessage(`{
+      "schema_version":"renderinggen.overlay-prepare.v1",
+      "plan_id":"run-1","video_id":"run-1",
+      "width":1280,"height":720,"fps":30,
+      "intents":[{"template_id":"person_default","timing_state":"PENDING"}]
+    }`)
+
+	artifact, err := proc.Prepare(context.Background(), job)
+	if err != nil {
+		t.Fatalf("prepare must self-heal the missing asset: %v", err)
+	}
+	if artifact.Kind != "overlay_prepare" {
+		t.Fatalf("prepare artifact = %+v", artifact)
+	}
+
+	// The downloaded bytes were verified and staged into L3 under their hash.
+	staged, err := store.Get(context.Background(), imageHash)
+	if err != nil {
+		t.Fatalf("self-healed asset was not staged into L3: %v", err)
+	}
+	if string(staged) != string(imageBytes) {
+		t.Fatalf("staged asset = %q, want %q", staged, imageBytes)
+	}
+}
+
+// TestPrepareSelfHealRejectsHashMismatch pins the fail-closed boundary: a URL
+// whose bytes do not hash to the declared asset hash must fail resolution, and
+// must never stage the wrong bytes into L3.
+func TestPrepareSelfHealRejectsHashMismatch(t *testing.T) {
+	proc, store, _ := newProcessor(t)
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte("wrong-bytes"))
+	}))
+	defer srv.Close()
+
+	wantHash := storage.Hash([]byte("the-real-bytes"))
+	job := validJob()
+	job.ID = "overlay-prepare-self-heal-mismatch"
+	job.JobType = queue.JobTypeOverlayPrepare
+	job.Assets = []queue.AssetRef{{Hash: wantHash, LogicalPath: srv.URL + "/wrong.jpg"}}
+	job.RenderPlan = json.RawMessage(`{
+      "schema_version":"renderinggen.overlay-prepare.v1",
+      "plan_id":"run-1","video_id":"run-1",
+      "width":1280,"height":720,"fps":30,
+      "intents":[{"template_id":"person_default","timing_state":"PENDING"}]
+    }`)
+
+	if _, err := proc.Prepare(context.Background(), job); err == nil {
+		t.Fatal("prepare must fail when the URL bytes do not match the declared hash")
+	}
+	if _, err := store.Get(context.Background(), wantHash); err == nil {
+		t.Fatal("wrong bytes must never be staged into L3")
 	}
 }
 

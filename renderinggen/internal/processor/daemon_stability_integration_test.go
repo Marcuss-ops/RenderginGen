@@ -69,7 +69,8 @@ func TestDaemonVulkanStabilityRecovery(t *testing.T) {
 	}
 	store := storage.New(storage.NewMemory(), storage.Options{})
 	seedGoldenAssets(t, store, job.Assets)
-	if err := ws.Materialize(context.Background(), store.Get, job.Assets); err != nil {
+	resolve := func(ctx context.Context, asset queue.AssetRef) ([]byte, error) { return store.Get(ctx, asset.Hash) }
+	if err := ws.Materialize(context.Background(), resolve, job.Assets); err != nil {
 		t.Fatalf("materialize: %v", err)
 	}
 	if err := ws.WritePlan(job.RenderPlan); err != nil {

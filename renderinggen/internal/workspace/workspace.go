@@ -22,8 +22,11 @@ import (
 	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/queue"
 )
 
-// Resolver returns the bytes for an asset hash (L1 -> L2 -> L3).
-type Resolver func(ctx context.Context, hash string) ([]byte, error)
+// Resolver returns the bytes for an asset reference (hash + logical path),
+// resolving L1 -> L2 -> L3. The logical path is passed so a resolver can fall
+// back to downloading a not-yet-staged asset from its source URL and verify
+// its content hash (the overlay.prepare self-heal path).
+type Resolver func(ctx context.Context, asset queue.AssetRef) ([]byte, error)
 
 // Workspace is a per-job directory tree prepared for a render.
 type Workspace struct {
@@ -119,7 +122,7 @@ func (w *Workspace) materializeOne(ctx context.Context, resolve Resolver, a queu
 	if err != nil {
 		return err
 	}
-	data, err := resolve(ctx, a.Hash)
+	data, err := resolve(ctx, a)
 	if err != nil {
 		return fmt.Errorf("workspace: resolve %s: %w", a.Hash, err)
 	}
