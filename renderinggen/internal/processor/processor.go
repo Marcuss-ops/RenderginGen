@@ -10,9 +10,11 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log"
+	"net/http"
 	"os"
 	"strings"
 	"time"
@@ -199,17 +201,58 @@ func (p *Processor) Prepare(ctx context.Context, job *queue.Job) (queue.Artifact
 // boundary. Legacy development fixtures may use symbolic keys; production
 // SHA-256 keys (64 hexadecimal characters) are always checked against the
 // bytes returned by the object store before Chronon sees them.
-func (p *Processor) resolveAsset(ctx context.Context, hash string) ([]byte, error) {
+//
+// When a production asset is absent from L3 but its logical path is a source
+// URL (the overlay.prepare case: PipelineGen materialized the entity image to
+// Drive and enqueues prepare before the bytes are staged in the central
+// object store), resolveAsset self-heals by downloading the bytes, verifying
+// the SHA-256 and staging them into L3. Render never silently proceeds with
+// the wrong asset: a hash mismatch fails the resolution.
+func (p *Processor) resolveAsset(ctx context.Context, asset queue.AssetRef) ([]byte, error) {
+	hash := asset.Hash
 	data, err := p.store.Get(ctx, hash)
+	if err == nil {
+		if len(hash) == 64 {
+			if got := storage.Hash(data); !strings.EqualFold(got, hash) {
+				return nil, fmt.Errorf("asset hash mismatch: requested %s, got %s", hash, got)
+			}
+		}
+		return data, nil
+	}
+	if !errors.Is(err, storage.ErrNotFound) || len(hash) != 64 || !isHTTPURL(asset.LogicalPath) {
+		return nil, err
+	}
+	downloaded, err := downloadAsset(ctx, asset.LogicalPath)
+	if err != nil {
+		return nil, fmt.Errorf("asset %s not in store and URL download failed: %w", hash, err)
+	}
+	if got := storage.Hash(downloaded); !strings.EqualFold(got, hash) {
+		return nil, fmt.Errorf("asset hash mismatch on URL download: requested %s, got %s", hash, got)
+	}
+	if err := p.store.Put(ctx, hash, downloaded); err != nil {
+		return nil, fmt.Errorf("stage self-healed asset %s: %w", hash, err)
+	}
+	return downloaded, nil
+}
+
+func isHTTPURL(s string) bool {
+	return strings.HasPrefix(s, "http://") || strings.HasPrefix(s, "https://")
+}
+
+func downloadAsset(ctx context.Context, rawURL string) ([]byte, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, rawURL, nil)
 	if err != nil {
 		return nil, err
 	}
-	if len(hash) == 64 {
-		if got := storage.Hash(data); !strings.EqualFold(got, hash) {
-			return nil, fmt.Errorf("asset hash mismatch: requested %s, got %s", hash, got)
-		}
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, err
 	}
-	return data, nil
+	defer resp.Body.Close()
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return nil, fmt.Errorf("download %s: HTTP %d", rawURL, resp.StatusCode)
+	}
+	return io.ReadAll(resp.Body)
 }
 
 func mergeAssets(jobAssets []queue.AssetRef, compiled []overlay.Asset) ([]queue.AssetRef, error) {
@@ -290,8 +333,8 @@ func (p *Processor) Render(ctx context.Context, job *queue.Job) (queue.Artifact,
 	// paths inside the workspace, so the render_plan references resolve. The
 	// input byte count is the plan's input_bytes metric.
 	var inputBytes int64
-	resolve := func(ctx context.Context, hash string) ([]byte, error) {
-		data, err := p.resolveAsset(ctx, hash)
+	resolve := func(ctx context.Context, asset queue.AssetRef) ([]byte, error) {
+		data, err := p.resolveAsset(ctx, asset)
 		if err != nil {
 			return nil, err
 		}

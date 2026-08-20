@@ -43,8 +43,8 @@ func TestNewRequiresJobID(t *testing.T) {
 func TestMaterializeWritesLogicalPaths(t *testing.T) {
 	w := newWorkspace(t)
 
-	resolve := func(_ context.Context, hash string) ([]byte, error) {
-		return []byte("bytes:" + hash), nil
+	resolve := func(_ context.Context, asset queue.AssetRef) ([]byte, error) {
+		return []byte("bytes:" + asset.Hash), nil
 	}
 
 	assets := []queue.AssetRef{
@@ -71,7 +71,7 @@ func TestMaterializeWritesLogicalPaths(t *testing.T) {
 func TestMaterializeResolveError(t *testing.T) {
 	w := newWorkspace(t)
 
-	resolve := func(_ context.Context, hash string) ([]byte, error) {
+	resolve := func(_ context.Context, asset queue.AssetRef) ([]byte, error) {
 		return nil, errors.New("boom")
 	}
 
@@ -86,7 +86,7 @@ func TestMaterializeResolveError(t *testing.T) {
 func TestMaterializeRejectsTraversal(t *testing.T) {
 	w := newWorkspace(t)
 
-	resolve := func(_ context.Context, hash string) ([]byte, error) {
+	resolve := func(_ context.Context, asset queue.AssetRef) ([]byte, error) {
 		return []byte("x"), nil
 	}
 
@@ -108,7 +108,7 @@ func TestMaterializeRejectsTraversal(t *testing.T) {
 func TestMaterializeRequiresLogicalPath(t *testing.T) {
 	w := newWorkspace(t)
 
-	resolve := func(_ context.Context, hash string) ([]byte, error) {
+	resolve := func(_ context.Context, asset queue.AssetRef) ([]byte, error) {
 		return []byte("x"), nil
 	}
 
