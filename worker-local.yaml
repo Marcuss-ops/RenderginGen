@@ -1,0 +1,24 @@
+worker:
+  id: renderinggen-host
+
+queue:
+  endpoint: http://localhost:8081
+
+artifact_store:
+  endpoint: http://localhost:9000
+  local_cache_dir: /tmp/renderinggen/cache
+
+workspace:
+  root: /tmp/renderinggen/jobs
+
+chronon:
+  home: /home/pierone/src/go-master/projects/Pyt/VeloxEditing/Chronon3d/build/chronon/linux-video-fast-dev
+  mode: cli
+  backend: software
+  report: true
+
+gpu:
+  device: 0
+
+health:
+  addr: ":8085"
