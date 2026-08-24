@@ -9,7 +9,7 @@ import (
 // boundary: a concrete chronon.render-plan.v1 document is passed through
 // byte-for-byte, with no assets synthesized and no layer re-derivation.
 func TestCompileIfSemanticPassthroughConcretePlan(t *testing.T) {
-	raw := []byte(`{"schema":"chronon.render-plan","version":1,"job_id":"j","canvas":{"width":1280,"height":720,"fps":30,"duration_frames":150},"layers":[{"id":"bg","type":"image","asset":"assets/background.jpg","start_frame":0,"duration_frames":150}],"output":{"path":"result.mp4","format":"mp4","codec":"h264"}}`)
+	raw := []byte(`{"schema":"chronon.render-plan","version":1,"job_id":"j","canvas":{"width":1280,"height":720,"fps_num":30,"fps_den":1,"duration_frames":150},"layers":[{"id":"bg","type":"image","asset":"assets/background.jpg","start_frame":0,"duration_frames":150}],"output":{"path":"result.mp4","format":"mp4","codec":"h264"}}`)
 	compiled, assets, semantic, err := CompileIfSemantic(raw)
 	if err != nil {
 		t.Fatalf("concrete plan must pass through: %v", err)
@@ -28,7 +28,7 @@ func TestCompileIfSemanticPassthroughConcretePlan(t *testing.T) {
 func TestCompileIfSemanticOptionalBackground(t *testing.T) {
 	raw := []byte(`{
       "schema_version":"renderinggen.overlay-plan.v1",
-      "plan_id":"p","video_id":"v","width":1280,"height":720,"fps":30,
+      "plan_id":"p","video_id":"v","width":1280,"height":720,"fps_num":30,"fps_den":1,
       "background":{"kind":"color","color":[0,0,0,1]},
       "items":[{"id":"phrase","template_id":"IMPORTANT_PHRASE","preset_id":"clean_slide_up","text":"hi","start_ms":0,"end_ms":1000}]
     }`)
@@ -56,7 +56,7 @@ func TestCompileIfSemanticOptionalBackground(t *testing.T) {
 func TestCompileIfSemanticRejectsMissingPresetID(t *testing.T) {
 	raw := []byte(`{
       "schema_version":"renderinggen.overlay-plan.v1",
-      "plan_id":"p","video_id":"v","width":1280,"height":720,"fps":30,
+      "plan_id":"p","video_id":"v","width":1280,"height":720,"fps_num":30,"fps_den":1,
       "items":[
         {"id":"phrase","template_id":"IMPORTANT_PHRASE","text":"hi","start_ms":0,"end_ms":1000},
         {"id":"word","template_id":"IMPORTANT_WORD","text":"APPLE","start_ms":1000,"end_ms":2000}
@@ -75,7 +75,7 @@ func TestCompileIfSemanticRejectsMissingPresetID(t *testing.T) {
 func TestCompileIfSemanticPresetLessPrimitiveCompilesBare(t *testing.T) {
 	raw := []byte(`{
       "schema_version":"renderinggen.overlay-plan.v1",
-      "plan_id":"p","video_id":"v","width":1280,"height":720,"fps":30,
+      "plan_id":"p","video_id":"v","width":1280,"height":720,"fps_num":30,"fps_den":1,
       "items":[
         {"id":"product","template_id":"PRODUCT","start_ms":0,"end_ms":1000,
          "asset_refs":[{"asset_id":"prod","sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","url":"https://store.example/objects/prod.png","media_type":"image/png"}]}
@@ -119,7 +119,7 @@ func TestCompileIfSemanticMalformedJSON(t *testing.T) {
 func TestCompileIfSemanticNewContractPresetIDAndEntityRef(t *testing.T) {
 	raw := []byte(`{
       "schema_version":"renderinggen.overlay-plan.v1",
-      "plan_id":"p","video_id":"v","width":1280,"height":720,"fps":30,
+      "plan_id":"p","video_id":"v","width":1280,"height":720,"fps_num":30,"fps_den":1,
       "items":[
         {"id":"phrase","template_id":"IMPORTANT_PHRASE","preset_id":"caption_card","text":"QUESTO CAMBIA TUTTO","start_ms":0,"end_ms":1000},
         {"id":"person","template_id":"PERSON","preset_id":"lower_third_safe","entity_ref":{"entity_id":"ent_tim_cook","type":"PERSON","name":"Tim Cook","surface_text":"Cook"},"start_ms":1000,"end_ms":2000}
@@ -155,7 +155,7 @@ func TestCompileIfSemanticNewContractPresetIDAndEntityRef(t *testing.T) {
 func TestCompileIfSemanticEntityRefNameFallback(t *testing.T) {
 	raw := []byte(`{
       "schema_version":"renderinggen.overlay-plan.v1",
-      "plan_id":"p","video_id":"v","width":1280,"height":720,"fps":30,
+      "plan_id":"p","video_id":"v","width":1280,"height":720,"fps_num":30,"fps_den":1,
       "items":[
         {"id":"person","template_id":"PERSON","preset_id":"lower_third_safe","entity_ref":{"entity_id":"ent_tim_cook","type":"PERSON","name":"Tim Cook"},"start_ms":0,"end_ms":1000}
       ]
@@ -179,7 +179,7 @@ func TestCompileIfSemanticEntityRefNameFallback(t *testing.T) {
 func TestCompileIfSemanticLegacyCanonicalNameFallback(t *testing.T) {
 	raw := []byte(`{
       "schema_version":"renderinggen.overlay-plan.v1",
-      "plan_id":"p","video_id":"v","width":1280,"height":720,"fps":30,
+      "plan_id":"p","video_id":"v","width":1280,"height":720,"fps_num":30,"fps_den":1,
       "items":[
         {"id":"person","template_id":"PERSON","preset_id":"lower_third_safe","entity_ref":{"entity_id":"ent_tim_cook","type":"PERSON","canonical_name":"Tim Cook"},"start_ms":0,"end_ms":1000}
       ]
@@ -203,7 +203,7 @@ func TestCompileIfSemanticLegacyCanonicalNameFallback(t *testing.T) {
 func TestCompileIfSemanticTransportsChrononPresetID(t *testing.T) {
 	raw := []byte(`{
       "schema_version":"renderinggen.overlay-plan.v1",
-      "plan_id":"p","video_id":"v","width":1280,"height":720,"fps":30,
+      "plan_id":"p","video_id":"v","width":1280,"height":720,"fps_num":30,"fps_den":1,
       "items":[
         {"id":"phrase","template_id":"IMPORTANT_PHRASE","preset_id":"phrase_focus_v1","text":"x","start_ms":0,"end_ms":1000}
       ]
@@ -217,7 +217,7 @@ func TestCompileIfSemanticTransportsChrononPresetID(t *testing.T) {
 // with the concrete render-plan shape the worker passes through, so a real
 // golden document always decodes without error.
 func TestCompileIfSemanticConcretePlanDecodes(t *testing.T) {
-	raw := []byte(`{"schema":"chronon.render-plan","version":1,"job_id":"j","canvas":{"width":1280,"height":720,"fps":30,"duration_frames":150},"layers":[{"id":"p","type":"text","text":"X","preset":"caption_card","start_frame":20,"duration_frames":41,"animation":{"preset":"fade_in"}}],"output":{"path":"result.mp4","format":"mp4","codec":"h264"}}`)
+	raw := []byte(`{"schema":"chronon.render-plan","version":1,"job_id":"j","canvas":{"width":1280,"height":720,"fps_num":30,"fps_den":1,"duration_frames":150},"layers":[{"id":"p","type":"text","text":"X","preset":"caption_card","start_frame":20,"duration_frames":41,"animation":{"preset":"fade_in"}}],"output":{"path":"result.mp4","format":"mp4","codec":"h264"}}`)
 	compiled, _, _, err := CompileIfSemantic(raw)
 	if err != nil {
 		t.Fatal(err)

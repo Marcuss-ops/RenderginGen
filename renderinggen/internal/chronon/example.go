@@ -10,7 +10,7 @@ const ExampleColorSmokePlan = `{
   "schema": "chronon.render-plan",
   "version": 1,
   "job_id": "color-smoke",
-  "canvas": { "width": 320, "height": 180, "fps": 1, "duration_frames": 1 },
+  "canvas": { "width": 320, "height": 180, "fps_num": 1, "fps_den": 1, "duration_frames": 1 },
   "layers": [
     { "id": "background", "type": "color", "color": [0.08, 0.12, 0.25, 1.0] }
   ],

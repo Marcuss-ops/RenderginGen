@@ -41,7 +41,8 @@ func TestGoldenSemanticOverlayJobV1Immutability(t *testing.T) {
 		SchemaVersion string `json:"schema_version"`
 		Width         int    `json:"width"`
 		Height        int    `json:"height"`
-		FPS           int    `json:"fps"`
+		FPSNum        int    `json:"fps_num"`
+		FPSDen        int    `json:"fps_den"`
 		Items         []struct {
 			ID       string `json:"id"`
 			Template string `json:"template_id"`
@@ -61,7 +62,7 @@ func TestGoldenSemanticOverlayJobV1Immutability(t *testing.T) {
 	if plan.SchemaVersion != "renderinggen.overlay-plan.v1" {
 		t.Fatalf("schema_version = %q, want renderinggen.overlay-plan.v1", plan.SchemaVersion)
 	}
-	if plan.Width != 1280 || plan.Height != 720 || plan.FPS != 30 {
+	if plan.Width != 1280 || plan.Height != 720 || plan.FPSNum != 30 || plan.FPSDen != 1 {
 		t.Fatalf("unexpected canvas (want 1280x720@30): %+v", plan)
 	}
 	wantItems := map[string]string{

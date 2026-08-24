@@ -173,7 +173,7 @@ func TestPrepareAcceptsPipelineGenOverlayIntentWarmup(t *testing.T) {
 	job.RenderPlan = json.RawMessage(`{
       "schema_version":"renderinggen.overlay-prepare.v1",
       "plan_id":"run-1","video_id":"run-1",
-      "width":1280,"height":720,"fps":30,
+      "width":1280,"height":720,"fps_num":30,"fps_den":1,
       "intents":[{"template_id":"person_default","timing_state":"PENDING"}]
     }`)
 
@@ -215,7 +215,7 @@ func TestProcessExecutesSemanticOverlayPlan(t *testing.T) {
 		RenderPlan: json.RawMessage(`{
           "schema_version":"renderinggen.overlay-plan.v1",
           "plan_id":"semantic-job","video_id":"video-1",
-          "width":1280,"height":720,"fps":30,
+          "width":1280,"height":720,"fps_num":30,"fps_den":1,
           "items":[
             {"id":"phrase-1","template_id":"IMPORTANT_PHRASE","preset_id":"caption_card","text":"Hello world","start_ms":0,"end_ms":1000},
             {"id":"img-1","template_id":"IMAGE_OVERLAY","preset_id":"image_focus_in","start_ms":1000,"end_ms":2000,
@@ -310,7 +310,7 @@ func TestProcessRecordsArtifactLedger(t *testing.T) {
 		RenderPlan: json.RawMessage(`{
           "schema_version":"renderinggen.overlay-plan.v1",
           "plan_id":"ledger-job","video_id":"video-1",
-          "width":1280,"height":720,"fps":30,
+          "width":1280,"height":720,"fps_num":30,"fps_den":1,
           "items":[
             {"id":"phrase-1","template_id":"IMPORTANT_PHRASE","preset_id":"caption_card","text":"Hello world","start_ms":0,"end_ms":1000},
             {"id":"word-1","template_id":"IMPORTANT_WORD","preset_id":"active_word_pop","text":"APPLE","start_ms":1000,"end_ms":2000},
@@ -648,7 +648,7 @@ func TestPrepareSelfHealsMissingEntityImageFromURL(t *testing.T) {
 	job.RenderPlan = json.RawMessage(`{
       "schema_version":"renderinggen.overlay-prepare.v1",
       "plan_id":"run-1","video_id":"run-1",
-      "width":1280,"height":720,"fps":30,
+      "width":1280,"height":720,"fps_num":30,"fps_den":1,
       "intents":[{"template_id":"person_default","timing_state":"PENDING"}]
     }`)
 
@@ -689,7 +689,7 @@ func TestPrepareSelfHealRejectsHashMismatch(t *testing.T) {
 	job.RenderPlan = json.RawMessage(`{
       "schema_version":"renderinggen.overlay-prepare.v1",
       "plan_id":"run-1","video_id":"run-1",
-      "width":1280,"height":720,"fps":30,
+      "width":1280,"height":720,"fps_num":30,"fps_den":1,
       "intents":[{"template_id":"person_default","timing_state":"PENDING"}]
     }`)
 
