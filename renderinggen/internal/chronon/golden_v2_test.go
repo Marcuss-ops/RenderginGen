@@ -46,7 +46,8 @@ func TestGoldenOverlayJobV2Immutability(t *testing.T) {
 		Canvas  struct {
 			Width          int `json:"width"`
 			Height         int `json:"height"`
-			FPS            int `json:"fps"`
+			FPSNum         int `json:"fps_num"`
+			FPSDen         int `json:"fps_den"`
 			DurationFrames int `json:"duration_frames"`
 		} `json:"canvas"`
 		Layers []struct {
@@ -68,7 +69,7 @@ func TestGoldenOverlayJobV2Immutability(t *testing.T) {
 	if plan.Schema != "chronon.render-plan" || plan.Version != 1 {
 		t.Fatalf("unexpected render plan envelope: %+v", plan)
 	}
-	if plan.Canvas.Width != 1280 || plan.Canvas.Height != 720 || plan.Canvas.FPS != 30 || plan.Canvas.DurationFrames != 240 {
+	if plan.Canvas.Width != 1280 || plan.Canvas.Height != 720 || plan.Canvas.FPSNum != 30 || plan.Canvas.FPSDen != 1 || plan.Canvas.DurationFrames != 240 {
 		t.Fatalf("unexpected canvas (want 1280x720@30, 240 frames): %+v", plan.Canvas)
 	}
 	// Preset-driven layers (phrases / words / image overlays) carry no `type`:

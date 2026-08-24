@@ -8,7 +8,7 @@ import (
 func TestSemanticStatsCountsSemanticPlan(t *testing.T) {
 	raw := []byte(`{
       "schema_version":"renderinggen.overlay-plan.v1",
-      "plan_id":"p1","video_id":"v1","width":1280,"height":720,"fps":30,
+      "plan_id":"p1","video_id":"v1","width":1280,"height":720,"fps_num":30,"fps_den":1,
       "items":[
         {"id":"a","template_id":"PERSON","start_ms":0,"end_ms":1000},
         {"id":"b","template_id":"ORGANIZATION","start_ms":1000,"end_ms":2000},
@@ -44,7 +44,7 @@ func TestSemanticStatsCountsSemanticPlan(t *testing.T) {
 }
 
 func TestSemanticStatsLegacyConcretePlanIsZero(t *testing.T) {
-	raw := []byte(`{"schema":"chronon.render-plan","version":1,"canvas":{"width":1280,"height":720,"fps":30}}`)
+	raw := []byte(`{"schema":"chronon.render-plan","version":1,"canvas":{"width":1280,"height":720,"fps_num":30,"fps_den":1}}`)
 	stats, err := SemanticStats(raw)
 	if err != nil {
 		t.Fatalf("stats: %v", err)

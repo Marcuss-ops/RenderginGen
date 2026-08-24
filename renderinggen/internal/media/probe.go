@@ -104,7 +104,7 @@ func ProbeFile(ctx context.Context, path string) (ProbeResult, error) {
 // ValidateOverlay enforces the overlay media contract. Overlays are video
 // artifacts with no audio; every other invariant is checked against the
 // requested canvas and a positive probed duration.
-func (p ProbeResult) ValidateOverlay(width, height, fps int) error {
+func (p ProbeResult) ValidateOverlay(width, height, fpsNum, fpsDen int) error {
 	if p.AudioStreams != 0 {
 		return fmt.Errorf("overlay media: audio_streams=%d, want 0", p.AudioStreams)
 	}
@@ -114,8 +114,8 @@ func (p ProbeResult) ValidateOverlay(width, height, fps int) error {
 	if width > 0 && (p.Width != width || p.Height != height) {
 		return fmt.Errorf("overlay media: resolution %dx%d, want %dx%d", p.Width, p.Height, width, height)
 	}
-	if fps > 0 && p.FPSNum > 0 && p.FPSDen > 0 && p.FPSNum != fps*p.FPSDen {
-		return fmt.Errorf("overlay media: fps %d/%d, want %d", p.FPSNum, p.FPSDen, fps)
+	if fpsNum > 0 && fpsDen > 0 && p.FPSNum > 0 && p.FPSDen > 0 && p.FPSNum*fpsDen != fpsNum*p.FPSDen {
+		return fmt.Errorf("overlay media: fps %d/%d, want %d/%d", p.FPSNum, p.FPSDen, fpsNum, fpsDen)
 	}
 	if p.VideoCodec == "" || p.Container == "" {
 		return fmt.Errorf("overlay media: missing container or video codec")

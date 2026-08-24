@@ -9,7 +9,7 @@
     "canvas": {
       "width": 1280,
       "height": 720,
-      "fps": 30,
+      "fps_num": 30, "fps_den": 1,
       "duration_frames": 150
     },
     "layers": [

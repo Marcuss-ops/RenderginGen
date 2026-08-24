@@ -395,7 +395,7 @@ func (p *Processor) Render(ctx context.Context, job *queue.Job) (queue.Artifact,
 				return queue.Artifact{}, fmt.Errorf("processor: output profile certification: %w", err)
 			}
 		} else if job.JobType == queue.JobTypeOverlayRender {
-			if err := probed.ValidateOverlay(metadata.Width, metadata.Height, metadata.FPS); err != nil {
+			if err := probed.ValidateOverlay(metadata.Width, metadata.Height, metadata.FPSNum, metadata.FPSDen); err != nil {
 				return queue.Artifact{}, fmt.Errorf("processor: overlay media contract: %w", err)
 			}
 		}
@@ -563,8 +563,8 @@ func (p *Processor) storeArtifact(ctx context.Context, jobID, outputPath string,
 		SizeBytes:      fileInfo.Size(),
 		Width:          metadata.Width,
 		Height:         metadata.Height,
-		FPSNum:         metadata.FPS,
-		FPSDen:         1,
+		FPSNum:         metadata.FPSNum,
+		FPSDen:         metadata.FPSDen,
 		FrameCount:     metadata.FrameCount,
 		DurationUS:     metadata.DurationUS,
 		Backend:        p.backend,
@@ -677,7 +677,8 @@ func (p *Processor) recordArtifact(ctx context.Context, jobID string, artifact q
 type renderMetadata struct {
 	Width      int
 	Height     int
-	FPS        int
+	FPSNum     int
+	FPSDen     int
 	FrameCount int
 	DurationUS int64
 	ProfileID  string
@@ -691,20 +692,22 @@ func renderMetadataFromPlan(raw []byte) renderMetadata {
 		Canvas struct {
 			Width          int   `json:"width"`
 			Height         int   `json:"height"`
-			FPS            int   `json:"fps"`
+			FPSNum         int   `json:"fps_num"`
+			FPSDen         int   `json:"fps_den"`
 			DurationFrames int64 `json:"duration_frames"`
 		} `json:"canvas"`
 		Output struct {
 			ProfileID string `json:"profile_id"`
 		} `json:"output"`
 	}
-	if err := json.Unmarshal(raw, &doc); err != nil || doc.Canvas.FPS <= 0 {
+	if err := json.Unmarshal(raw, &doc); err != nil || doc.Canvas.FPSNum <= 0 || doc.Canvas.FPSDen <= 0 {
 		return renderMetadata{}
 	}
 	return renderMetadata{
-		Width: doc.Canvas.Width, Height: doc.Canvas.Height, FPS: doc.Canvas.FPS,
+		Width: doc.Canvas.Width, Height: doc.Canvas.Height,
+		FPSNum: doc.Canvas.FPSNum, FPSDen: doc.Canvas.FPSDen,
 		FrameCount: int(doc.Canvas.DurationFrames),
-		DurationUS: doc.Canvas.DurationFrames * 1_000_000 / int64(doc.Canvas.FPS),
+		DurationUS: doc.Canvas.DurationFrames * 1_000_000 * int64(doc.Canvas.FPSDen) / int64(doc.Canvas.FPSNum),
 		ProfileID:  doc.Output.ProfileID,
 	}
 }

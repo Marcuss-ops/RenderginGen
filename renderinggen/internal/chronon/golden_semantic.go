@@ -39,7 +39,8 @@ const GoldenSemanticOverlayJobV1 = `{
     "video_id": "golden-semantic-overlay-v1",
     "width": 1280,
     "height": 720,
-    "fps": 30,
+    "fps_num": 30,
+    "fps_den": 1,
     "items": [
       {
         "id": "background",

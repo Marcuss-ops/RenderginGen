@@ -266,7 +266,8 @@ func TestProcessGoldenSemanticOverlayJobV1(t *testing.T) {
 		Canvas  struct {
 			Width          int   `json:"width"`
 			Height         int   `json:"height"`
-			FPS            int   `json:"fps"`
+			FPSNum         int   `json:"fps_num"`
+			FPSDen         int   `json:"fps_den"`
 			DurationFrames int64 `json:"duration_frames"`
 		} `json:"canvas"`
 		Layers []struct {
@@ -283,7 +284,7 @@ func TestProcessGoldenSemanticOverlayJobV1(t *testing.T) {
 	if concrete.Schema != "chronon.render-plan" || concrete.Version != 1 {
 		t.Fatalf("compiled plan is not chronon.render-plan.v1: %+v", concrete)
 	}
-	if concrete.Canvas.Width != 1280 || concrete.Canvas.Height != 720 || concrete.Canvas.FPS != 30 || concrete.Canvas.DurationFrames != 150 {
+	if concrete.Canvas.Width != 1280 || concrete.Canvas.Height != 720 || concrete.Canvas.FPSNum != 30 || concrete.Canvas.FPSDen != 1 || concrete.Canvas.DurationFrames != 150 {
 		t.Fatalf("compiled canvas (want 1280x720@30, 150 frames): %+v", concrete.Canvas)
 	}
 	presets := map[string]string{}

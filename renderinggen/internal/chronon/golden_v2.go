@@ -36,7 +36,7 @@ const GoldenOverlayJobV2 = `{
     "schema": "chronon.render-plan",
     "version": 1,
     "job_id": "golden-overlay-v2",
-    "canvas": { "width": 1280, "height": 720, "fps": 30, "duration_frames": 240 },
+    "canvas": { "width": 1280, "height": 720, "fps_num": 30, "fps_den": 1, "duration_frames": 240 },
     "layers": [
       {
         "id": "background_video",

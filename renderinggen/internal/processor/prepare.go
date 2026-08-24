@@ -13,7 +13,8 @@ type overlayPrepareEnvelope struct {
 	VideoID       string `json:"video_id"`
 	Width         int    `json:"width"`
 	Height        int    `json:"height"`
-	FPS           int    `json:"fps"`
+	FPSNum        int    `json:"fps_num"`
+	FPSDen        int    `json:"fps_den"`
 	Intents       []struct {
 		TemplateID  string `json:"template_id"`
 		TimingState string `json:"timing_state"`
@@ -38,7 +39,7 @@ func validateOverlayPrepare(raw []byte) error {
 	if p.SchemaVersion != overlayPrepareSchema || p.PlanID == "" || p.VideoID == "" {
 		return fmt.Errorf("processor: overlay.prepare identity/schema is required")
 	}
-	if p.Width <= 0 || p.Height <= 0 || p.FPS <= 0 || len(p.Intents) == 0 {
+	if p.Width <= 0 || p.Height <= 0 || p.FPSNum <= 0 || p.FPSDen <= 0 || len(p.Intents) == 0 {
 		return fmt.Errorf("processor: overlay.prepare canvas and intents are required")
 	}
 	for i, intent := range p.Intents {

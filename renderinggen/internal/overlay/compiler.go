@@ -38,7 +38,8 @@ type Plan struct {
 type Canvas struct {
 	Width          int   `json:"width"`
 	Height         int   `json:"height"`
-	FPS            int   `json:"fps"`
+	FPSNum         int   `json:"fps_num"`
+	FPSDen         int   `json:"fps_den"`
 	DurationFrames int64 `json:"duration_frames"`
 }
 
@@ -119,7 +120,8 @@ type semanticPlan struct {
 	VideoID         string              `json:"video_id"`
 	Width           int                 `json:"width"`
 	Height          int                 `json:"height"`
-	FPS             int                 `json:"fps"`
+	FPSNum          int                 `json:"fps_num"`
+	FPSDen          int                 `json:"fps_den"`
 	OutputProfileID string              `json:"output_profile_id"`
 	StyleProfile    string              `json:"style_profile"`
 	Background      *semanticBackground `json:"background,omitempty"`
@@ -188,7 +190,8 @@ type concretePlan struct {
 type concreteCanvas struct {
 	Width          int   `json:"width"`
 	Height         int   `json:"height"`
-	FPS            int   `json:"fps"`
+	FPSNum         int   `json:"fps_num"`
+	FPSDen         int   `json:"fps_den"`
 	DurationFrames int64 `json:"duration_frames"`
 }
 type concreteOutput struct {
@@ -229,7 +232,7 @@ func compileSemantic(raw []byte) ([]byte, []Asset, error) {
 	if err := json.Unmarshal(raw, &src); err != nil {
 		return nil, nil, fmt.Errorf("overlay: decode semantic plan: %w", err)
 	}
-	if src.PlanID == "" || src.VideoID == "" || src.Width <= 0 || src.Height <= 0 || src.FPS <= 0 {
+	if src.PlanID == "" || src.VideoID == "" || src.Width <= 0 || src.Height <= 0 || src.FPSNum <= 0 || src.FPSDen <= 0 {
 		return nil, nil, fmt.Errorf("overlay: semantic plan requires plan_id, video_id and positive canvas/fps")
 	}
 	if len(src.Items) == 0 {
@@ -243,7 +246,7 @@ func compileSemantic(raw []byte) ([]byte, []Asset, error) {
 	}
 
 	plan := concretePlan{Schema: "chronon.render-plan", Version: 1, JobID: src.PlanID, Style: src.StyleProfile,
-		Canvas: concreteCanvas{Width: src.Width, Height: src.Height, FPS: src.FPS},
+		Canvas: concreteCanvas{Width: src.Width, Height: src.Height, FPSNum: src.FPSNum, FPSDen: src.FPSDen},
 		Output: concreteOutput{Path: "result.mp4", Format: "mp4", Codec: "h264", ProfileID: src.OutputProfileID}}
 	assetPaths := map[string]string{}
 	var assets []Asset
@@ -311,7 +314,7 @@ func compileSemantic(raw []byte) ([]byte, []Asset, error) {
 		}
 	}
 	for _, item := range src.Items {
-		start, end := msFrames(item.StartMS, item.EndMS, int64(src.FPS))
+		start, end := msFrames(item.StartMS, item.EndMS, int64(src.FPSNum), int64(src.FPSDen))
 		if item.ID == "" || item.Template == "" || item.StartMS < 0 || item.EndMS <= item.StartMS {
 			return nil, nil, fmt.Errorf("overlay: invalid semantic item %q", item.ID)
 		}
@@ -365,8 +368,9 @@ func compileSemantic(raw []byte) ([]byte, []Asset, error) {
 	return compiled, assets, nil
 }
 
-func msFrames(start, end, fps int64) (int64, int64) {
-	return int64(math.Floor(float64(start) * float64(fps) / 1000)), int64(math.Ceil(float64(end) * float64(fps) / 1000))
+func msFrames(start, end, fpsNum, fpsDen int64) (int64, int64) {
+	return int64(math.Floor(float64(start) * float64(fpsNum) / float64(fpsDen) / 1000)),
+		int64(math.Ceil(float64(end) * float64(fpsNum) / float64(fpsDen) / 1000))
 }
 
 // presetRequiredTemplates are the semantic templates PipelineGen resolves a
