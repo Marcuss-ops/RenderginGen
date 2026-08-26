@@ -173,6 +173,51 @@ func TestCompileIfSemanticEntityRefNameFallback(t *testing.T) {
 	}
 }
 
+// TestCompileIfSemanticImportantPhraseAndNamedImage pins the two overlay
+// classes used by the first real Chronon canary together. IMPORTANT_PHRASE is
+// a readable emphasis card; PERSON + lower_third_safe is an image/name
+// composition where the name comes from entity_ref and the image remains a
+// content-addressed asset.
+func TestCompileIfSemanticImportantPhraseAndNamedImage(t *testing.T) {
+	raw := []byte(`{
+      "schema_version":"renderinggen.overlay-plan.v1",
+      "plan_id":"phrase-and-name","video_id":"phrase-and-name",
+      "width":1280,"height":720,"fps_num":30,"fps_den":1,
+      "items":[
+        {"id":"phrase-important","template_id":"IMPORTANT_PHRASE","preset_id":"caption_card",
+         "text":"THIS CHANGES EVERYTHING","start_ms":500,"end_ms":1800},
+        {"id":"person-image-name","template_id":"PERSON","preset_id":"lower_third_safe",
+         "entity_ref":{"entity_id":"ent_matt_damon","type":"PERSON","name":"Matt Damon"},
+         "start_ms":2200,"end_ms":4200,
+         "asset_refs":[{"asset_id":"matt-damon","sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                         "url":"https://store.example/objects/matt-damon.png","media_type":"image/png"}]}
+      ]
+    }`)
+	compiled, assets, semantic, err := CompileIfSemantic(raw)
+	if err != nil || !semantic {
+		t.Fatalf("semantic phrase/name plan: semantic=%v err=%v", semantic, err)
+	}
+	var plan Plan
+	if err := json.Unmarshal(compiled, &plan); err != nil {
+		t.Fatal(err)
+	}
+	if len(plan.Layers) != 3 {
+		t.Fatalf("compiled layers = %+v", plan.Layers)
+	}
+	if plan.Layers[0].Preset != "caption_card" || plan.Layers[0].Text != "THIS CHANGES EVERYTHING" {
+		t.Fatalf("important phrase layer = %+v", plan.Layers[0])
+	}
+	if plan.Layers[1].Type != "image" || plan.Layers[1].Preset != "image_focus_in" || plan.Layers[1].Asset != "assets/semantic/matt-damon.png" {
+		t.Fatalf("named image asset layer = %+v", plan.Layers[1])
+	}
+	if plan.Layers[2].Preset != "lower_third_safe" || plan.Layers[2].Text != "Matt Damon" {
+		t.Fatalf("named image label layer = %+v", plan.Layers[2])
+	}
+	if len(assets) != 1 || assets[0].LogicalPath != "assets/semantic/matt-damon.png" {
+		t.Fatalf("materialized assets = %+v", assets)
+	}
+}
+
 // TestCompileIfSemanticLegacyCanonicalNameFallback pins backward
 // compatibility: legacy plans whose entity_ref spells canonical_name keep
 // compiling through the same path.
