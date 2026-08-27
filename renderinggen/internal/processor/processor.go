@@ -308,7 +308,9 @@ func (p *Processor) Render(ctx context.Context, job *queue.Job) (queue.Artifact,
 	if err != nil {
 		return queue.Artifact{}, err
 	}
-	phaseMetrics["overlay_compile_us"] = float64(time.Since(compileStart).Microseconds())
+	compileUS := float64(time.Since(compileStart).Microseconds())
+	phaseMetrics["overlay_compile_us"] = compileUS
+	phaseMetrics["overlay_compile_ms"] = compileUS / 1000
 	assets, err := mergeAssets(job.Assets, compiledAssets)
 	if err != nil {
 		return queue.Artifact{}, err
@@ -382,6 +384,7 @@ func (p *Processor) Render(ctx context.Context, job *queue.Job) (queue.Artifact,
 	}
 	var probe *media.ProbeResult
 	if job.JobType == queue.JobTypeOverlayRender || metadata.ProfileID != "" {
+		probeStart := time.Now()
 		probed, err := media.ProbeFile(ctx, outputPath)
 		if err != nil {
 			return queue.Artifact{}, fmt.Errorf("processor: overlay ffprobe: %w", err)
@@ -400,6 +403,9 @@ func (p *Processor) Render(ctx context.Context, job *queue.Job) (queue.Artifact,
 			}
 		}
 		probe = &probed
+		probeUS := float64(time.Since(probeStart).Microseconds())
+		phaseMetrics["probe_us"] = probeUS
+		phaseMetrics["probe_ms"] = probeUS / 1000
 	}
 
 	return p.storeArtifact(ctx, job.ID, outputPath, plan, phaseMetrics, totalStart, probe, stats, inputBytes,
@@ -539,7 +545,9 @@ func (p *Processor) storeArtifact(ctx context.Context, jobID, outputPath string,
 		return queue.Artifact{}, fmt.Errorf("processor: close output after hashing %s: %w", outputPath, err)
 	}
 	hash := hex.EncodeToString(digest.Sum(nil))
-	phaseMetrics["sha256_us"] = float64(time.Since(shaStart).Microseconds())
+	shaUS := float64(time.Since(shaStart).Microseconds())
+	phaseMetrics["sha256_us"] = shaUS
+	phaseMetrics["sha256_ms"] = shaUS / 1000
 	putStart := time.Now()
 	output, err := os.Open(outputPath)
 	if err != nil {
@@ -552,7 +560,9 @@ func (p *Processor) storeArtifact(ctx context.Context, jobID, outputPath string,
 	if err := output.Close(); err != nil {
 		return queue.Artifact{}, fmt.Errorf("processor: close output after upload %s: %w", outputPath, err)
 	}
-	phaseMetrics["objectstore_upload_us"] = float64(time.Since(putStart).Microseconds())
+	putUS := float64(time.Since(putStart).Microseconds())
+	phaseMetrics["objectstore_upload_us"] = putUS
+	phaseMetrics["objectstore_upload_ms"] = putUS / 1000
 	metadata := renderMetadataFromPlan(plan)
 	artifact := queue.Artifact{
 		Kind:           "segment",
