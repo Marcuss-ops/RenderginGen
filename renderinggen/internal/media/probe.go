@@ -122,3 +122,37 @@ func (p ProbeResult) ValidateOverlay(width, height, fpsNum, fpsDen int) error {
 	}
 	return nil
 }
+
+// ValidateVisible checks one frame of the produced pixels. Codec/container
+// validation alone is not sufficient: a renderer can emit a perfectly valid
+// MP4 whose composited overlay is entirely black/transparent.
+func (p ProbeResult) ValidateVisible(ctx context.Context, path string) error {
+	if p.DurationUS <= 0 {
+		return fmt.Errorf("visibility: non-positive duration")
+	}
+	// Sample the middle of the clip; certification plans keep the visual on
+	// screen there. YMAX catches white text and images even when the canvas
+	// background itself is black.
+	cmd := exec.CommandContext(ctx, "ffmpeg", "-v", "error", "-ss",
+		fmt.Sprintf("%.3f", float64(p.DurationUS)/2_000_000), "-i", path,
+		"-frames:v", "1", "-vf",
+		"format=gray,signalstats,metadata=print:key=lavfi.signalstats.YMAX:file=-",
+		"-f", "null", "-")
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("visibility ffmpeg: %w", err)
+	}
+	for _, line := range strings.Split(string(out), "\n") {
+		if !strings.Contains(line, "lavfi.signalstats.YMAX=") {
+			continue
+		}
+		parts := strings.SplitN(line, "=", 2)
+		if len(parts) == 2 {
+			maxLuma, parseErr := strconv.ParseFloat(strings.TrimSpace(parts[1]), 64)
+			if parseErr == nil && maxLuma > 8 {
+				return nil
+			}
+		}
+	}
+	return fmt.Errorf("visibility: sampled frame has no visible pixels (YMAX <= 8)")
+}

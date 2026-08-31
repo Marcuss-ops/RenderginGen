@@ -4,8 +4,9 @@
 // It does not perform NER, entity linking or editorial ranking.
 //
 // PipelineGen owns the semantic decisions and emits overlay-plan.v1. The
-// worker performs the mechanical lowering through the existing Chronon preset
-// vocabulary, then continues through one asset/render/artifact pipeline.
+// worker performs the mechanical lowering through the RenderingGen-owned
+// official preset catalog, then continues through one asset/render/artifact
+// pipeline. Chronon is only the execution engine.
 package overlay
 
 import (
@@ -89,8 +90,8 @@ type Asset struct {
 }
 
 // CompileIfSemantic lowers the PipelineGen semantic contract to the concrete
-// Chronon plan consumed by the worker. It only resolves the existing Chronon
-// preset vocabulary; it does not perform NER, entity linking or editorial
+// Chronon plan consumed by the worker. It resolves RenderingGen's official
+// preset catalog; it does not perform NER, entity linking or editorial
 // ranking. Those decisions arrive in template_id/entity_id from PipelineGen.
 // Concrete Chronon plans remain a byte-for-byte pass-through path.
 func CompileIfSemantic(raw []byte) ([]byte, []Asset, bool, error) {
@@ -145,9 +146,7 @@ type semanticItem struct {
 	Kind      string             `json:"kind"`
 	Template  string             `json:"template_id"`
 	// PresetID is the semantic preset selected by PipelineGen (the plan's
-	// preset_id contract slot). It is preferred over the template mapping;
-	// the value space is the existing Chronon preset vocabulary — the preset
-	// registry owns the value space, never this compiler.
+	// preset_id contract slot). It is preferred over the template mapping.
 	PresetID string             `json:"preset_id"`
 	Text     string             `json:"text"`
 	StartMS  int64              `json:"start_ms"`
@@ -373,11 +372,9 @@ func msFrames(start, end, fpsNum, fpsDen int64) (int64, int64) {
 		int64(math.Ceil(float64(end) * float64(fpsNum) / float64(fpsDen) / 1000))
 }
 
-// presetRequiredTemplates are the semantic templates PipelineGen resolves a
-// preset for (its SemanticOverlayResolver value space). RenderingGen must not
-// re-map these to a preset (ADR-029); it only requires that the plan already
-// carries the preset_id. Preset-less primitives (PRODUCT, LOGO, LIGHT_LEAK,
-// BACKGROUND, SHAPE, …) are intentionally absent and compile to a bare layer.
+// presetRequiredTemplates are semantic templates that must carry an official
+// preset. RenderingGen validates the supplied opaque id, while PipelineGen
+// remains responsible for editorial selection.
 var presetRequiredTemplates = map[string]bool{
 	"IMPORTANT_PHRASE": true,
 	"IMPORTANT_WORD":   true,
@@ -394,7 +391,7 @@ var presetRequiredTemplates = map[string]bool{
 
 func presetFor(item semanticItem) (string, error) {
 	// The plan's preset_id contract slot is preferred; the params slot is the
-	// legacy spelling. Chronon's registry remains the authoritative value space.
+	// legacy spelling. RenderingGen's official catalog is authoritative.
 	//
 	// ADR-029 forward-point (d): RenderingGen is an execution worker and must
 	// NOT re-map a template_id to a preset (e.g. it must not know that PERSON
@@ -409,21 +406,22 @@ func presetFor(item semanticItem) (string, error) {
 		}
 	}
 	if p != "" {
-		return validatePreset(p, item.ID)
+		family := "text"
+		if isImageTemplate(item.Template) {
+			family = "image"
+		}
+		return validatePreset(p, item.ID, family)
 	}
 	if presetRequiredTemplates[strings.ToUpper(item.Template)] {
 		return "", fmt.Errorf("overlay: item %q requires preset_id (resolved by PipelineGen's SemanticOverlayResolver)", item.ID)
 	}
 	return "", nil
 }
-func validatePreset(p, id string) (string, error) {
-	// RenderingGen is an execution worker, not a second preset registry. It
-	// validates transport shape only; Chronon3d::VisualPresetRegistry performs
-	// the authoritative preset lookup during plan compilation.
+func validatePreset(p, id, kind string) (string, error) {
 	if strings.TrimSpace(p) == "" {
 		return "", fmt.Errorf("overlay: empty preset_id for item %q", id)
 	}
-	return p, nil
+	return resolveOfficialPreset(p, kind)
 }
 func isImageTemplate(t string) bool {
 	switch strings.ToUpper(t) {
@@ -441,7 +439,7 @@ func isEntityTemplate(t string) bool {
 }
 func presetForImage(item semanticItem) (string, error) {
 	if p, ok := item.Params["image_preset_id"].(string); ok && p != "" {
-		valid, err := validatePreset(p, item.ID)
+		valid, err := validatePreset(p, item.ID, "image")
 		if err != nil || valid != "image_focus_in" {
 			return "", fmt.Errorf("overlay: image preset %q is not image_focus_in", p)
 		}

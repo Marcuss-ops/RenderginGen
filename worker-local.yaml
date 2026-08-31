@@ -12,9 +12,11 @@ workspace:
   root: /tmp/renderinggen/jobs
 
 chronon:
+  profile: gpu-vulkan-native
   home: /home/pierone/src/go-master/projects/Pyt/VeloxEditing/Chronon3d/build/chronon/linux-video-fast-dev
-  mode: cli
-  backend: software
+  mode: ipc
+  socket_path: /var/run/chronon3d/chronon.sock
+  hardware_encoder: nvenc
   report: true
 
 gpu:

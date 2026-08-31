@@ -65,11 +65,14 @@ func (c *IPCClient) Shutdown(ctx context.Context) error {
 
 // renderJobPayload is the JSON payload for the RENDER_JOB IPC command.
 type renderJobPayload struct {
-	PlanPath   string `json:"plan_path"`
-	AssetsRoot string `json:"assets_root"`
-	Output     string `json:"output"`
-	Backend    string `json:"backend"`
-	Report     bool   `json:"report"`
+	PlanPath        string `json:"plan_path"`
+	AssetsRoot      string `json:"assets_root"`
+	Output          string `json:"output"`
+	Backend         string `json:"backend"`
+	Report          bool   `json:"report"`
+	HardwareEncoder string `json:"hardware_encoder,omitempty"`
+	EncoderBackend  string `json:"encoder_backend,omitempty"`
+	GPUHotPathMode  string `json:"gpu_hot_path_mode,omitempty"`
 }
 
 // renderJobReply is the JSON reply returned by a successful RENDER_JOB.
@@ -81,11 +84,26 @@ type renderJobReply struct {
 // Render sends a RENDER_JOB command to the daemon and waits for its reply.
 func (c *IPCClient) Render(ctx context.Context, req RenderRequest) error {
 	payload, err := json.Marshal(renderJobPayload{
-		PlanPath:   req.PlanPath,
-		AssetsRoot: req.AssetsRoot,
-		Output:     req.OutputPath,
-		Backend:    req.Backend,
-		Report:     req.Report,
+		PlanPath:        req.PlanPath,
+		AssetsRoot:      req.AssetsRoot,
+		Output:          req.OutputPath,
+		Backend:         req.Backend,
+		Report:          req.Report,
+		HardwareEncoder: req.HardwareEncoder,
+		// Keep the GPU contract intact across IPC. Previously these options were
+		// silently dropped, so the daemon rendered with its software defaults.
+		EncoderBackend: func() string {
+			if req.Backend == "vulkan" && req.HardwareEncoder != "" && req.HardwareEncoder != "none" {
+				return "native"
+			}
+			return "pipe"
+		}(),
+		GPUHotPathMode: func() string {
+			if req.Backend == "vulkan" {
+				return "require_gpu_native"
+			}
+			return "auto"
+		}(),
 	})
 	if err != nil {
 		return fmt.Errorf("ipc render: marshal payload: %w", err)

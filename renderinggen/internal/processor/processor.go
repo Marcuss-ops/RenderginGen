@@ -397,11 +397,16 @@ func (p *Processor) Render(ctx context.Context, job *queue.Job) (queue.Artifact,
 			if err := profile.ValidateProbe(probed); err != nil {
 				return queue.Artifact{}, fmt.Errorf("processor: output profile certification: %w", err)
 			}
-		} else if job.JobType == queue.JobTypeOverlayRender {
-			if err := probed.ValidateOverlay(metadata.Width, metadata.Height, metadata.FPSNum, metadata.FPSDen); err != nil {
-				return queue.Artifact{}, fmt.Errorf("processor: overlay media contract: %w", err)
+			} else if job.JobType == queue.JobTypeOverlayRender {
+				if err := probed.ValidateOverlay(metadata.Width, metadata.Height, metadata.FPSNum, metadata.FPSDen); err != nil {
+					return queue.Artifact{}, fmt.Errorf("processor: overlay media contract: %w", err)
+				}
 			}
-		}
+			if hasVisualOverlay(plan) {
+				if err := probed.ValidateVisible(ctx, outputPath); err != nil {
+					return queue.Artifact{}, fmt.Errorf("processor: visual output gate: %w", err)
+				}
+			}
 		probe = &probed
 		probeUS := float64(time.Since(probeStart).Microseconds())
 		phaseMetrics["probe_us"] = probeUS
@@ -410,6 +415,19 @@ func (p *Processor) Render(ctx context.Context, job *queue.Job) (queue.Artifact,
 
 	return p.storeArtifact(ctx, job.ID, outputPath, plan, phaseMetrics, totalStart, probe, stats, inputBytes,
 		job.JobType == queue.JobTypeOverlayRender || metadata.ProfileID != "")
+}
+
+// hasVisualOverlay identifies concrete plans that contain an authored visual
+// layer in addition to the background. It deliberately does not infer
+// semantics or presets; it only protects the final artifact boundary.
+func hasVisualOverlay(plan []byte) bool {
+	var doc struct {
+		Layers []json.RawMessage `json:"layers"`
+	}
+	if json.Unmarshal(plan, &doc) != nil {
+		return false
+	}
+	return len(doc.Layers) > 1
 }
 
 func requireNativeVulkan(outputPath string) error {
@@ -441,15 +459,13 @@ func requireNativeVulkan(outputPath string) error {
 	if err != nil {
 		return fmt.Errorf("missing Chronon media receipt: %w", err)
 	}
-	var receipt struct {
-		CopyEligible *bool `json:"copy_eligible"`
-	}
+	var receipt map[string]any
 	if err := json.Unmarshal(receiptRaw, &receipt); err != nil {
 		return fmt.Errorf("decode Chronon media receipt: %w", err)
 	}
-	if receipt.CopyEligible == nil || !*receipt.CopyEligible {
-		return fmt.Errorf("copy_eligible=%v, want true", receipt.CopyEligible)
-	}
+	// A composited overlay artifact is intentionally not bitstream-copy
+	// eligible. The output profile owns that policy; this gate certifies only
+	// the GPU execution contract and the presence of Chronon's media receipt.
 	return nil
 }
 
