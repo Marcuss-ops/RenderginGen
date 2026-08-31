@@ -364,15 +364,22 @@ func (p *Processor) Render(ctx context.Context, job *queue.Job) (queue.Artifact,
 
 	outputPath := ws.OutputPath("result.mp4")
 	phaseStart = time.Now()
+	gpuRequired := p.strictNativeBackend ||
+		(p.backend == "vulkan" && p.hardwareEncoder != "" && p.hardwareEncoder != "none")
 	if err := p.renderer.Render(ctx, chronon.RenderRequest{
 		PlanPath: ws.PlanPath(),
 		// Plans use the canonical assets/<file> namespace. The workspace
 		// root (not root/assets) is therefore Chronon's mounted root.
-		AssetsRoot:      ws.Root(),
-		OutputPath:      outputPath,
-		Backend:         p.backend,
-		Report:          p.report,
-		HardwareEncoder: p.hardwareEncoder,
+		AssetsRoot: ws.Root(),
+		OutputPath: outputPath,
+		Report:     p.report,
+		Requirements: chronon.ExecutionRequirements{
+			GPURequired:         gpuRequired,
+			CPUFallbackAllowed:  !p.strictNativeBackend,
+			CompositionRequired: true,
+			PacketCopyAllowed:   true,
+		},
+		Output: chronon.OutputSpec{Codec: "h264"},
 	}); err != nil {
 		return queue.Artifact{}, fmt.Errorf("processor: render: %w", err)
 	}
@@ -397,16 +404,16 @@ func (p *Processor) Render(ctx context.Context, job *queue.Job) (queue.Artifact,
 			if err := profile.ValidateProbe(probed); err != nil {
 				return queue.Artifact{}, fmt.Errorf("processor: output profile certification: %w", err)
 			}
-			} else if job.JobType == queue.JobTypeOverlayRender {
-				if err := probed.ValidateOverlay(metadata.Width, metadata.Height, metadata.FPSNum, metadata.FPSDen); err != nil {
-					return queue.Artifact{}, fmt.Errorf("processor: overlay media contract: %w", err)
-				}
+		} else if job.JobType == queue.JobTypeOverlayRender {
+			if err := probed.ValidateOverlay(metadata.Width, metadata.Height, metadata.FPSNum, metadata.FPSDen); err != nil {
+				return queue.Artifact{}, fmt.Errorf("processor: overlay media contract: %w", err)
 			}
-			if hasVisualOverlay(plan) {
-				if err := probed.ValidateVisible(ctx, outputPath); err != nil {
-					return queue.Artifact{}, fmt.Errorf("processor: visual output gate: %w", err)
-				}
+		}
+		if hasVisualOverlay(plan) {
+			if err := probed.ValidateVisible(ctx, outputPath); err != nil {
+				return queue.Artifact{}, fmt.Errorf("processor: visual output gate: %w", err)
 			}
+		}
 		probe = &probed
 		probeUS := float64(time.Since(probeStart).Microseconds())
 		phaseMetrics["probe_us"] = probeUS

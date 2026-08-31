@@ -153,7 +153,6 @@ func TestDaemonVsCLIBenchmarkGoldenOverlay(t *testing.T) {
 			PlanPath:   ws.PlanPath(),
 			AssetsRoot: ws.Root(),
 			OutputPath: output,
-			Backend:    backend,
 			Report:     true,
 		}); err != nil {
 			t.Fatalf("cli %s: %v", phase, err)
@@ -183,7 +182,6 @@ func TestDaemonVsCLIBenchmarkGoldenOverlay(t *testing.T) {
 			PlanPath:   ws.PlanPath(),
 			AssetsRoot: ws.Root(),
 			OutputPath: output,
-			Backend:    backend,
 			Report:     true,
 		}); err != nil {
 			t.Fatalf("daemon %s: %v", phase, err)

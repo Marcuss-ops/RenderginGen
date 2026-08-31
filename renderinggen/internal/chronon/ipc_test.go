@@ -84,7 +84,6 @@ func TestIPCClientRenderSuccess(t *testing.T) {
 		PlanPath:   "/jobs/1/plan.json",
 		AssetsRoot: "/jobs/1/assets",
 		OutputPath: "/jobs/1/output/result.mp4",
-		Backend:    "software",
 		Report:     true,
 	})
 	if err != nil {
@@ -98,7 +97,6 @@ func TestIPCClientRenderSuccess(t *testing.T) {
 		PlanPath   string `json:"plan_path"`
 		AssetsRoot string `json:"assets_root"`
 		Output     string `json:"output"`
-		Backend    string `json:"backend"`
 		Report     bool   `json:"report"`
 	}
 	if err := json.Unmarshal([]byte(<-gotPayload), &payload); err != nil {
@@ -107,8 +105,43 @@ func TestIPCClientRenderSuccess(t *testing.T) {
 	if payload.PlanPath != "/jobs/1/plan.json" ||
 		payload.AssetsRoot != "/jobs/1/assets" ||
 		payload.Output != "/jobs/1/output/result.mp4" ||
-		payload.Backend != "software" || !payload.Report {
+		!payload.Report {
 		t.Fatalf("payload = %+v", payload)
+	}
+}
+
+func TestIPCClientRenderUsesSemanticContract(t *testing.T) {
+	socketPath, _, gotPayload := startFakeDaemon(t, ipcStatusOk, `{"status":"ok"}`)
+
+	client := NewIPCClient(socketPath)
+	err := client.Render(context.Background(), RenderRequest{
+		PlanPath:   "/jobs/1/plan.json",
+		AssetsRoot: "/jobs/1/assets",
+		OutputPath: "/jobs/1/output/result.mp4",
+		Requirements: ExecutionRequirements{
+			GPURequired: true, CPUFallbackAllowed: false,
+			CompositionRequired: true, PacketCopyAllowed: true,
+		},
+		Output: OutputSpec{Codec: "h264", Width: 1920, Height: 1080, FPSNum: 30, FPSDen: 1},
+	})
+	if err != nil {
+		t.Fatalf("render: %v", err)
+	}
+
+	var payload map[string]any
+	if err := json.Unmarshal([]byte(<-gotPayload), &payload); err != nil {
+		t.Fatalf("payload decode: %v", err)
+	}
+	if _, ok := payload["execution_requirements"]; !ok {
+		t.Fatalf("semantic requirements missing: %v", payload)
+	}
+	if _, ok := payload["output_spec"]; !ok {
+		t.Fatalf("output spec missing: %v", payload)
+	}
+	for _, leaked := range []string{"hardware_encoder", "encoder_backend", "gpu_hot_path_mode"} {
+		if _, ok := payload[leaked]; ok {
+			t.Fatalf("backend detail leaked as %q: %v", leaked, payload)
+		}
 	}
 }
 

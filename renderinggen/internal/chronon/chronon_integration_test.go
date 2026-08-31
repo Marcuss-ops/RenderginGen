@@ -52,7 +52,6 @@ func TestRenderIntegrationCLI(t *testing.T) {
 		PlanPath:   planPath,
 		AssetsRoot: filepath.Join(dir, "assets"),
 		OutputPath: outputPath,
-		Backend:    "software",
 	}); err != nil {
 		t.Fatalf("render: %v", err)
 	}
