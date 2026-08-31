@@ -12,7 +12,7 @@ workspace:
   root: /var/lib/renderinggen/jobs
 
 chronon:
-  profile: gpu-vulkan-native
+  profile: software-cli
   home: /opt/chronon3d
   # Warm render shell: the worker renders through the persistent Chronon
   # daemon started by worker-entrypoint.sh (caches alive across jobs).
