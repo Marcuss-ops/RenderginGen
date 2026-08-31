@@ -93,7 +93,8 @@ func TestDaemonVulkanStabilityRecovery(t *testing.T) {
 	defer cancel()
 	request := chronon.RenderRequest{
 		PlanPath: ws.PlanPath(), AssetsRoot: ws.Root(),
-		Backend: "vulkan", Report: true,
+		Requirements: chronon.ExecutionRequirements{GPURequired: true, CPUFallbackAllowed: false,
+			CompositionRequired: true, PacketCopyAllowed: true}, Report: true,
 	}
 
 	// Recovery gate: a malformed plan must fail without poisoning the daemon.

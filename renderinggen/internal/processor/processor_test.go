@@ -104,8 +104,8 @@ func TestProcessFullPipeline(t *testing.T) {
 	}
 
 	// Renderer received the right contract.
-	if renderer.req.Backend != "software" {
-		t.Fatalf("backend = %q", renderer.req.Backend)
+	if renderer.req.Requirements.GPURequired {
+		t.Fatalf("unexpected GPU requirement for software test: %+v", renderer.req.Requirements)
 	}
 	if renderer.req.PlanPath == "" || renderer.req.AssetsRoot == "" || renderer.req.OutputPath == "" {
 		t.Fatalf("render request paths empty: %+v", renderer.req)

@@ -21,12 +21,29 @@ import (
 // are already materialized under AssetsRoot, and OutputPath is where the
 // rendered file must be written.
 type RenderRequest struct {
-	PlanPath        string // path to the chronon.render-plan.v1 document (plan.json)
-	AssetsRoot      string // directory the plan's relative asset references resolve against
-	OutputPath      string // destination of the rendered output (e.g. result.mp4)
-	Backend         string // render backend: software | vulkan | auto
-	Report          bool   // emit the execution report + telemetry JSONL (--report)
-	HardwareEncoder string // optional FFmpeg hardware encoder: nvenc
+	PlanPath   string // path to the chronon.render-plan.v1 document (plan.json)
+	AssetsRoot string // directory the plan's relative asset references resolve against
+	OutputPath string // destination of the rendered output (e.g. result.mp4)
+	Report     bool   // emit the execution report + telemetry JSONL (--report)
+	// Requirements are semantic and backend-neutral. Chronon resolves them
+	// against the capabilities of the selected device.
+	Requirements ExecutionRequirements
+	Output       OutputSpec
+}
+
+type ExecutionRequirements struct {
+	GPURequired         bool `json:"gpu_required"`
+	CPUFallbackAllowed  bool `json:"cpu_fallback_allowed"`
+	CompositionRequired bool `json:"composition_required"`
+	PacketCopyAllowed   bool `json:"packet_copy_allowed"`
+}
+
+type OutputSpec struct {
+	Codec  string `json:"codec,omitempty"`
+	Width  uint32 `json:"width,omitempty"`
+	Height uint32 `json:"height,omitempty"`
+	FPSNum uint32 `json:"fps_num,omitempty"`
+	FPSDen uint32 `json:"fps_den,omitempty"`
 }
 
 // Renderer renders a RenderRequest.
@@ -88,11 +105,18 @@ func (c *Client) Render(ctx context.Context, req RenderRequest) error {
 
 // renderArgs builds the chronon3d_cli arguments for the render subcommand.
 func renderArgs(req RenderRequest) []string {
+	// Backend selection is an implementation detail of the CLI adapter. The
+	// public request carries only semantic requirements; Chronon chooses the
+	// concrete backend at this boundary.
+	backend := "auto"
+	if req.Requirements.GPURequired {
+		backend = "vulkan"
+	}
 	args := []string{
 		"render",
 		"--plan", req.PlanPath,
 		"--assets-root", req.AssetsRoot,
-		"--backend", req.Backend,
+		"--backend", backend,
 		"-o", req.OutputPath,
 	}
 	if req.Report {
@@ -100,8 +124,8 @@ func renderArgs(req RenderRequest) []string {
 		// cache_hits/misses) used by the performance benchmark.
 		args = append(args, "--report")
 	}
-	if req.HardwareEncoder != "" && req.HardwareEncoder != "none" {
-		args = append(args, "--hardware", req.HardwareEncoder)
+	if req.Requirements.GPURequired {
+		args = append(args, "--hardware", "nvenc")
 	}
 	return args
 }
