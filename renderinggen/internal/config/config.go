@@ -116,6 +116,9 @@ func applyDefaults(c *Config) {
 		c.Chronon.Mode = "ipc"
 		c.Chronon.NativeOutputProfiles = true
 		c.Chronon.Report = true
+		if c.Chronon.HardwareEncoder == "" {
+			c.Chronon.HardwareEncoder = "nvenc"
+		}
 	case "software-cli":
 		c.Chronon.Backend = "software"
 		c.Chronon.Mode = "cli"
@@ -152,6 +155,17 @@ func applyDefaults(c *Config) {
 func (c *Config) validate() error {
 	if c.Chronon.Profile != "" && c.Chronon.Profile != "gpu-vulkan-native" && c.Chronon.Profile != "software-cli" {
 		return fmt.Errorf("chronon.profile must be gpu-vulkan-native or software-cli")
+	}
+	if c.Chronon.Profile == "gpu-vulkan-native" {
+		if c.Chronon.Backend != "vulkan" || c.Chronon.Mode != "ipc" {
+			return fmt.Errorf("gpu-vulkan-native requires chronon backend=vulkan and mode=ipc")
+		}
+		if c.Chronon.HardwareEncoder != "nvenc" {
+			return fmt.Errorf("gpu-vulkan-native requires chronon.hardware_encoder=nvenc")
+		}
+		if c.Chronon.SocketPath == "" {
+			return fmt.Errorf("gpu-vulkan-native requires chronon.socket_path")
+		}
 	}
 	if c.Queue.Endpoint == "" {
 		return fmt.Errorf("queue.endpoint is required")
