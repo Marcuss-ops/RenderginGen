@@ -1,19 +1,19 @@
 {
-  "id": "style-preset-crime",
+  "id": "style-preset-crime-pale-olive-sw2-20260831",
   "schema": "renderinggen.job",
   "version": 1,
   "job_type": "overlay.render",
   "render_plan": {
     "schema": "chronon.render-plan",
     "version": 1,
-    "job_id": "style-preset-crime",
+    "job_id": "style-preset-crime-pale-olive-sw2-20260831",
     "style_profile": "crime",
-    "canvas": { "width": 1920, "height": 1080, "fps": 30, "duration_frames": 360 },
+    "canvas": { "width": 1920, "height": 1080, "fps_num": 30, "fps_den": 1, "duration_frames": 360 },
     "layers": [
       {
         "id": "background_video",
         "type": "video",
-        "source": "assets/backgrounds/drive-background-01.mp4",
+        "source": "assets/backgrounds/drive-background-05.mp4",
         "box_width": 1920,
         "box_height": 1080,
         "fit": "cover",
@@ -76,8 +76,8 @@
   },
   "assets": [
     {
-      "hash": "d4e9d76563c0f17589a0e98795574ceec22b3f3b961f51d44eb0544e95e1639b",
-      "logical_path": "assets/backgrounds/drive-background-01.mp4"
+      "hash": "0dffb796fbb3137ba4949facfa01b6cb7bca1a7a375600df2da4eb1258df74c5",
+      "logical_path": "assets/backgrounds/drive-background-05.mp4"
     },
     {
       "hash": "983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c",

@@ -123,36 +123,56 @@ func (p ProbeResult) ValidateOverlay(width, height, fpsNum, fpsDen int) error {
 	return nil
 }
 
-// ValidateVisible checks one frame of the produced pixels. Codec/container
-// validation alone is not sufficient: a renderer can emit a perfectly valid
-// MP4 whose composited overlay is entirely black/transparent.
+// ValidateVisible checks the produced pixels across multiple timestamps.
+// Codec/container validation alone is not sufficient: a renderer can emit a
+// perfectly valid MP4 whose composited overlay is entirely black/transparent.
 func (p ProbeResult) ValidateVisible(ctx context.Context, path string) error {
 	if p.DurationUS <= 0 {
 		return fmt.Errorf("visibility: non-positive duration")
 	}
-	// Sample the middle of the clip; certification plans keep the visual on
-	// screen there. YMAX catches white text and images even when the canvas
-	// background itself is black.
-	cmd := exec.CommandContext(ctx, "ffmpeg", "-v", "error", "-ss",
-		fmt.Sprintf("%.3f", float64(p.DurationUS)/2_000_000), "-i", path,
-		"-frames:v", "1", "-vf",
-		"format=gray,signalstats,metadata=print:key=lavfi.signalstats.YMAX:file=-",
-		"-f", "null", "-")
-	out, err := cmd.CombinedOutput()
-	if err != nil {
-		return fmt.Errorf("visibility ffmpeg: %w", err)
-	}
-	for _, line := range strings.Split(string(out), "\n") {
-		if !strings.Contains(line, "lavfi.signalstats.YMAX=") {
-			continue
+	// Sample multiple positions across the clip duration to catch animations
+	// that fade in/out or move across the screen.
+	sampleRatios := []float64{0.25, 0.50, 0.75}
+	durationSec := float64(p.DurationUS) / 1_000_000.0
+
+	var maxObservedYMAX float64
+	var visibleSampleCount int
+
+	for _, ratio := range sampleRatios {
+		seekSec := durationSec * ratio
+		cmd := exec.CommandContext(ctx, "ffmpeg", "-v", "error", "-ss",
+			fmt.Sprintf("%.3f", seekSec), "-i", path,
+			"-frames:v", "1", "-vf",
+			"format=gray,signalstats,metadata=print:key=lavfi.signalstats.YMAX:file=-,metadata=print:key=lavfi.signalstats.YAVG:file=-",
+			"-f", "null", "-")
+		out, err := cmd.CombinedOutput()
+		if err != nil {
+			return fmt.Errorf("visibility ffmpeg (seek=%.2fs): %w", seekSec, err)
 		}
-		parts := strings.SplitN(line, "=", 2)
-		if len(parts) == 2 {
-			maxLuma, parseErr := strconv.ParseFloat(strings.TrimSpace(parts[1]), 64)
-			if parseErr == nil && maxLuma > 8 {
-				return nil
+		var sampleYMAX float64
+		for _, line := range strings.Split(string(out), "\n") {
+			line = strings.TrimSpace(line)
+			if strings.Contains(line, "lavfi.signalstats.YMAX=") {
+				parts := strings.SplitN(line, "=", 2)
+				if len(parts) == 2 {
+					val, _ := strconv.ParseFloat(strings.TrimSpace(parts[1]), 64)
+					if val > sampleYMAX {
+						sampleYMAX = val
+					}
+				}
 			}
 		}
+		if sampleYMAX > maxObservedYMAX {
+			maxObservedYMAX = sampleYMAX
+		}
+		if sampleYMAX > 16.0 {
+			visibleSampleCount++
+		}
 	}
-	return fmt.Errorf("visibility: sampled frame has no visible pixels (YMAX <= 8)")
+
+	if visibleSampleCount == 0 || maxObservedYMAX <= 16.0 {
+		return fmt.Errorf("visibility: output video has no visible pixels (max YMAX=%.1f <= 16.0 across %d samples)",
+			maxObservedYMAX, len(sampleRatios))
+	}
+	return nil
 }
