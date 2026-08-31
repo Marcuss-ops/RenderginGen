@@ -385,7 +385,7 @@ func (p *Processor) Render(ctx context.Context, job *queue.Job) (queue.Artifact,
 	}
 	record("render", phaseStart)
 	if p.strictNativeBackend {
-		if err := requireNativeVulkan(outputPath); err != nil {
+		if err := requireNativeVulkan(outputPath, metadata.FrameCount); err != nil {
 			return queue.Artifact{}, fmt.Errorf("processor: gpu-vulkan-native gate: %w", err)
 		}
 	}
@@ -437,16 +437,22 @@ func hasVisualOverlay(plan []byte) bool {
 	return len(doc.Layers) > 1
 }
 
-func requireNativeVulkan(outputPath string) error {
+func requireNativeVulkan(outputPath string, expectedFrames int) error {
 	raw, err := chronon.ReadTimingSidecar(outputPath)
 	if err != nil {
 		return fmt.Errorf("missing Chronon timing receipt: %w", err)
 	}
 	var doc struct {
 		Job struct {
-			GPU struct {
-				EffectiveBackend string `json:"effective_backend"`
-				FallbackNodes    *int64 `json:"software_fallback_nodes"`
+			SurfaceHandoffPath string `json:"surface_handoff_path"`
+			GPU                struct {
+				EffectiveBackend     string `json:"effective_backend"`
+				EncoderBackend       string `json:"encoder_backend"`
+				FallbackNodes        *int64 `json:"software_fallback_nodes"`
+				CPUReadbackFrames    *int64 `json:"cpu_readback_frames"`
+				SoftwareEncodeFrames *int64 `json:"software_encode_frames"`
+				NVENCFrames          *int64 `json:"nvenc_frames"`
+				VulkanFrames         *int64 `json:"vulkan_frames"`
 			} `json:"gpu"`
 		} `json:"job"`
 	}
@@ -461,6 +467,32 @@ func requireNativeVulkan(outputPath string) error {
 			return fmt.Errorf("software_fallback_nodes missing, want 0")
 		}
 		return fmt.Errorf("software_fallback_nodes=%d, want 0", *doc.Job.GPU.FallbackNodes)
+	}
+	if doc.Job.GPU.EncoderBackend != "nvenc" {
+		return fmt.Errorf("encoder_backend=%q, want nvenc", doc.Job.GPU.EncoderBackend)
+	}
+	if doc.Job.GPU.CPUReadbackFrames != nil && *doc.Job.GPU.CPUReadbackFrames > 0 {
+		return fmt.Errorf("cpu_readback_frames=%d, want 0", *doc.Job.GPU.CPUReadbackFrames)
+	}
+	if doc.Job.GPU.SoftwareEncodeFrames != nil && *doc.Job.GPU.SoftwareEncodeFrames > 0 {
+		return fmt.Errorf("software_encode_frames=%d, want 0", *doc.Job.GPU.SoftwareEncodeFrames)
+	}
+	if doc.Job.SurfaceHandoffPath != "vulkan_copy" && doc.Job.SurfaceHandoffPath != "direct" {
+		return fmt.Errorf("surface_handoff_path=%q, want vulkan_copy or direct", doc.Job.SurfaceHandoffPath)
+	}
+	if expectedFrames > 0 {
+		if doc.Job.GPU.NVENCFrames == nil || *doc.Job.GPU.NVENCFrames != int64(expectedFrames) {
+			if doc.Job.GPU.NVENCFrames == nil {
+				return fmt.Errorf("nvenc_frames missing, want %d", expectedFrames)
+			}
+			return fmt.Errorf("nvenc_frames=%d, want %d", *doc.Job.GPU.NVENCFrames, expectedFrames)
+		}
+		if doc.Job.GPU.VulkanFrames == nil || *doc.Job.GPU.VulkanFrames != int64(expectedFrames) {
+			if doc.Job.GPU.VulkanFrames == nil {
+				return fmt.Errorf("vulkan_frames missing, want %d", expectedFrames)
+			}
+			return fmt.Errorf("vulkan_frames=%d, want %d", *doc.Job.GPU.VulkanFrames, expectedFrames)
+		}
 	}
 	receiptRaw, err := os.ReadFile(outputPath + ".receipt.json")
 	if err != nil {
