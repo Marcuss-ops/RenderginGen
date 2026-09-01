@@ -206,6 +206,8 @@ type concreteLayer struct {
 	Source         string             `json:"source,omitempty"`
 	Color          []float64          `json:"color,omitempty"`
 	Text           string             `json:"text,omitempty"`
+	Font           string             `json:"font,omitempty"`
+	FontSize       float64            `json:"font_size,omitempty"`
 	Preset         string             `json:"preset,omitempty"`
 	BoxWidth       int                `json:"box_width,omitempty"`
 	BoxHeight      int                `json:"box_height,omitempty"`
@@ -214,8 +216,40 @@ type concreteLayer struct {
 	StartFrame     int64              `json:"start_frame"`
 	DurationFrames int64              `json:"duration_frames"`
 	Animation      *concreteAnimation `json:"animation,omitempty"`
+	Anchor         *concreteAnchor    `json:"anchor,omitempty"`
+	Style          *concreteStyle     `json:"style,omitempty"`
 	Opacity        float64            `json:"opacity,omitempty"`
 	Loop           bool               `json:"loop,omitempty"`
+}
+type concreteAnchor struct {
+	Type       string  `json:"type"`
+	SafeMargin float64 `json:"safe_margin,omitempty"`
+	Alignment  string  `json:"alignment,omitempty"`
+}
+type concreteStroke struct {
+	Color string  `json:"color,omitempty"`
+	Width float64 `json:"width,omitempty"`
+}
+type concreteShadow struct {
+	Color   string    `json:"color,omitempty"`
+	Opacity float64   `json:"opacity,omitempty"`
+	Blur    float64   `json:"blur,omitempty"`
+	Offset  []float64 `json:"offset,omitempty"`
+}
+type concreteBackground struct {
+	Color   string    `json:"color,omitempty"`
+	Opacity float64   `json:"opacity,omitempty"`
+	Radius  float64   `json:"radius,omitempty"`
+	Padding []float64 `json:"padding,omitempty"`
+}
+type concreteStyle struct {
+	FontFamily string              `json:"font_family,omitempty"`
+	FontWeight int                 `json:"font_weight,omitempty"`
+	FontSize   float64             `json:"font_size,omitempty"`
+	Fill       string              `json:"fill,omitempty"`
+	Stroke     *concreteStroke     `json:"stroke,omitempty"`
+	Shadow     *concreteShadow     `json:"shadow,omitempty"`
+	Background *concreteBackground `json:"background,omitempty"`
 }
 type concreteAnimation struct {
 	Preset string `json:"preset"`
@@ -321,6 +355,17 @@ func compileSemantic(raw []byte) ([]byte, []Asset, error) {
 		if err != nil {
 			return nil, nil, err
 		}
+		definition := OfficialPresetDefinition{}
+		if preset != "" {
+			family := string(PresetText)
+			if isImageTemplate(item.Template) {
+				family = string(PresetImage)
+			}
+			definition, err = resolveOfficialPreset(preset, family)
+			if err != nil {
+				return nil, nil, err
+			}
+		}
 		params := item.Params
 		if params == nil {
 			params = map[string]any{}
@@ -334,6 +379,9 @@ func compileSemantic(raw []byte) ([]byte, []Asset, error) {
 				return nil, nil, err
 			}
 			img := imageLayer(item, start, end, imagePreset, assetPaths[item.Assets[0].ID], params)
+			if imageDefinition, imageErr := resolveOfficialPreset(imagePreset, string(PresetImage)); imageErr == nil {
+				applyPresetDefinition(&img, imageDefinition)
+			}
 			plan.Layers = append(plan.Layers, img)
 		}
 		text := item.Text
@@ -344,8 +392,13 @@ func compileSemantic(raw []byte) ([]byte, []Asset, error) {
 		if isImageTemplate(item.Template) {
 			layer = imageLayer(item, start, end, preset, assetPaths[item.Assets[0].ID], params)
 		}
+		if preset != "" {
+			applyPresetDefinition(&layer, definition)
+		}
 		if anim := animationFor(params); anim != nil {
 			layer.Animation = anim
+		} else if preset != "" {
+			layer.Animation = animationForDefinition(definition)
 		}
 		plan.Layers = append(plan.Layers, layer)
 		if end > plan.Canvas.DurationFrames {
@@ -421,7 +474,11 @@ func validatePreset(p, id, kind string) (string, error) {
 	if strings.TrimSpace(p) == "" {
 		return "", fmt.Errorf("overlay: empty preset_id for item %q", id)
 	}
-	return resolveOfficialPreset(p, kind)
+	d, err := resolveOfficialPreset(p, kind)
+	if err != nil {
+		return "", err
+	}
+	return d.ID, nil
 }
 func isImageTemplate(t string) bool {
 	switch strings.ToUpper(t) {
@@ -439,11 +496,7 @@ func isEntityTemplate(t string) bool {
 }
 func presetForImage(item semanticItem) (string, error) {
 	if p, ok := item.Params["image_preset_id"].(string); ok && p != "" {
-		valid, err := validatePreset(p, item.ID, "image")
-		if err != nil || valid != "image_focus_in" {
-			return "", fmt.Errorf("overlay: image preset %q is not image_focus_in", p)
-		}
-		return valid, nil
+		return validatePreset(p, item.ID, "image")
 	}
 	return "image_focus_in", nil
 }
@@ -484,6 +537,36 @@ func semanticAssetPath(ref semanticAssetRef) string {
 }
 func imageLayer(item semanticItem, start, end int64, preset, asset string, params map[string]any) concreteLayer {
 	return concreteLayer{ID: item.ID + "_image", Type: "image", Asset: asset, Preset: preset, BoxWidth: intParam(params, "width", 320), BoxHeight: intParam(params, "height", 320), Fit: stringParam(params, "fit", "contain"), StartFrame: start, DurationFrames: end - start}
+}
+
+func applyPresetDefinition(layer *concreteLayer, d OfficialPresetDefinition) {
+	layer.Font = d.Font
+	layer.FontSize = d.FontSize
+	layer.Color = append([]float64(nil), d.Fill...)
+	layer.Anchor = &concreteAnchor{Type: d.Anchor, SafeMargin: 0.06, Alignment: d.Alignment}
+	if d.Family == PresetImage {
+		if layer.BoxWidth == 320 && d.BoxWidth > 0 {
+			layer.BoxWidth = d.BoxWidth
+		}
+		if layer.BoxHeight == 320 && d.BoxHeight > 0 {
+			layer.BoxHeight = d.BoxHeight
+		}
+		if layer.Fit == "contain" && d.Fit != "" {
+			layer.Fit = d.Fit
+		}
+		return
+	}
+	layer.Style = &concreteStyle{FontFamily: "Poppins", FontWeight: 700, FontSize: d.FontSize, Fill: "#FFFFFF"}
+	if d.Glow {
+		layer.Style.Shadow = &concreteShadow{Color: "#38BDF8", Opacity: 0.82, Blur: 14, Offset: []float64{0, 2}}
+	}
+}
+
+func animationForDefinition(d OfficialPresetDefinition) *concreteAnimation {
+	if d.Animation == "" {
+		return nil
+	}
+	return &concreteAnimation{Preset: d.Animation, Unit: d.Unit, Enter: d.Enter, Exit: d.Exit}
 }
 func animationFor(params map[string]any) *concreteAnimation {
 	p, _ := params["animation"].(string)
