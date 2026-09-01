@@ -137,16 +137,19 @@ func TestCompileIfSemanticNewContractPresetIDAndEntityRef(t *testing.T) {
 		t.Fatalf("compiled layers = %+v", plan.Layers)
 	}
 	// preset_id contract slot is used verbatim (no template re-mapping).
-	if plan.Layers[0].Preset != "caption_card" {
-		t.Fatalf("preset_id = %q, want caption_card", plan.Layers[0].Preset)
+	if plan.Layers[0].Preset != "" {
+		t.Fatalf("preset metadata must not be executable plan data: %q", plan.Layers[0].Preset)
 	}
 	// The PERSON item with no explicit text falls back to entity_ref:
 	// surface_text first, then name.
 	if plan.Layers[1].Text != "Cook" {
 		t.Fatalf("entity_ref surface_text = %q, want Cook", plan.Layers[1].Text)
 	}
-	if plan.Layers[1].Preset != "lower_third_safe" {
-		t.Fatalf("PERSON template preset = %q, want lower_third_safe", plan.Layers[1].Preset)
+	if plan.Layers[1].Preset != "" {
+		t.Fatalf("editorial preset must not be executable plan data: %q", plan.Layers[1].Preset)
+	}
+	if plan.Layers[1].Animation == nil || len(plan.Layers[1].Animation.Tracks) == 0 {
+		t.Fatalf("expected generic animation tracks, got %+v", plan.Layers[1].Animation)
 	}
 }
 
@@ -204,13 +207,13 @@ func TestCompileIfSemanticImportantPhraseAndNamedImage(t *testing.T) {
 	if len(plan.Layers) != 3 {
 		t.Fatalf("compiled layers = %+v", plan.Layers)
 	}
-	if plan.Layers[0].Preset != "caption_card" || plan.Layers[0].Text != "THIS CHANGES EVERYTHING" {
+	if plan.Layers[0].Preset != "" || plan.Layers[0].Text != "THIS CHANGES EVERYTHING" {
 		t.Fatalf("important phrase layer = %+v", plan.Layers[0])
 	}
-	if plan.Layers[1].Type != "image" || plan.Layers[1].Preset != "image_focus_in" || plan.Layers[1].Asset != "assets/semantic/matt-damon.png" {
+	if plan.Layers[1].Type != "image" || plan.Layers[1].Preset != "" || plan.Layers[1].Asset != "assets/semantic/matt-damon.png" {
 		t.Fatalf("named image asset layer = %+v", plan.Layers[1])
 	}
-	if plan.Layers[2].Preset != "lower_third_safe" || plan.Layers[2].Text != "Matt Damon" {
+	if plan.Layers[2].Preset != "" || plan.Layers[2].Text != "Matt Damon" {
 		t.Fatalf("named image label layer = %+v", plan.Layers[2])
 	}
 	if len(assets) != 1 || assets[0].LogicalPath != "assets/semantic/matt-damon.png" {

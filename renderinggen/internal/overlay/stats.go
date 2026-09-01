@@ -20,11 +20,11 @@ type PresetUsage struct {
 // kind the plan carried and which preset was selected. The worker only counts
 // what PipelineGen already decided — it never re-derives importance.
 type Stats struct {
-	EntityCount        int    `json:"entity_count"`
-	ImportantPhraseCnt int    `json:"important_phrase_count"`
-	ImportantWordCnt   int    `json:"important_word_count"`
-	ImageCount         int    `json:"image_count"`
-	LightLeakCount     int    `json:"light_leak_count"`
+	EntityCount        int `json:"entity_count"`
+	ImportantPhraseCnt int `json:"important_phrase_count"`
+	ImportantWordCnt   int `json:"important_word_count"`
+	ImageCount         int `json:"image_count"`
+	LightLeakCount     int `json:"light_leak_count"`
 	// PresetID is the first preset_id the plan carries (all items are
 	// expected to share one per job); empty when the plan is legacy.
 	PresetID string `json:"preset_id"`
