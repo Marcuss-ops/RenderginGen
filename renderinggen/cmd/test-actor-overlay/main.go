@@ -15,7 +15,7 @@ import (
 
 func main() {
 	fmt.Println("==================================================================")
-	fmt.Println("🚀 STARTING E2E INTEGRATION TEST: GO + RENDERINGGEN + CHRONON + DRIVE")
+	fmt.Println("🚀 RUNNING 24 FPS E2E TEST: GO + RENDERINGGEN + CHRONON (24 FPS)")
 	fmt.Println("==================================================================")
 
 	cwd, err := os.Getwd()
@@ -26,14 +26,17 @@ func main() {
 	bgVideo := "assets/Pale-Olive.mp4"
 	actorImage := "assets/actor_gerard.jpg"
 	fontPath := "assets/fonts/Poppins-Bold.ttf"
-	outputFile := filepath.Join(cwd, "actor_pale_olive_direct_yuv.mp4")
+	outputFile := filepath.Join(cwd, "actor_pale_olive_24fps_1080p.mp4")
 
-	// 1. Define Entity Overlays using the Fast Entity Overlay Contract
+	// 15 seconds @ 24 fps = 360 frames
+	totalDurationFrames := int64(360)
+
+	// 1. Define Entity Overlays using the 24 FPS Contract
 	overlays := []overlay.FastEntityOverlay{
 		{
 			Type:       "image",
 			StartFrame: 0,
-			EndFrame:   150,
+			EndFrame:   120, // 0s - 5s
 			Position:   "center",
 			Size:       480,
 			Asset:      actorImage,
@@ -44,7 +47,7 @@ func main() {
 		{
 			Type:       "text",
 			StartFrame: 0,
-			EndFrame:   150,
+			EndFrame:   120, // 0s - 5s
 			Text:       "Gerard Butler",
 			Font:       fontPath,
 			Size:       64,
@@ -55,8 +58,8 @@ func main() {
 		},
 		{
 			Type:       "text",
-			StartFrame: 150,
-			EndFrame:   300,
+			StartFrame: 120,
+			EndFrame:   240, // 5s - 10s
 			Text:       "International Film Star",
 			Font:       fontPath,
 			Size:       68,
@@ -67,8 +70,8 @@ func main() {
 		},
 		{
 			Type:       "image",
-			StartFrame: 300,
-			EndFrame:   420,
+			StartFrame: 240,
+			EndFrame:   336, // 10s - 14s
 			Position:   "image_left",
 			Size:       420,
 			Asset:      actorImage,
@@ -78,8 +81,8 @@ func main() {
 		},
 		{
 			Type:       "text",
-			StartFrame: 300,
-			EndFrame:   420,
+			StartFrame: 240,
+			EndFrame:   336, // 10s - 14s
 			Text:       "Leading New Blockbuster Production",
 			Font:       fontPath,
 			Size:       54,
@@ -91,12 +94,12 @@ func main() {
 		},
 	}
 
-	// 2. Build Plan via Contract
+	// 2. Build Plan via Contract (24 fps canonical contract)
 	plan, err := overlay.BuildPlanFromEntityOverlays(
-		"actor-pale-olive-e2e",
+		"actor-pale-olive-24fps-e2e",
 		1920, 1080,
-		30, 1,
-		450, // 15 seconds @ 30 fps
+		24, 1,
+		totalDurationFrames,
 		bgVideo,
 		overlays,
 	)
@@ -110,13 +113,13 @@ func main() {
 		panic(err)
 	}
 
-	planPath := filepath.Join(cwd, "actor_pale_olive_plan.json")
+	planPath := filepath.Join(cwd, "actor_pale_olive_24fps_plan.json")
 	if err := os.WriteFile(planPath, planBytes, 0644); err != nil {
 		panic(err)
 	}
-	fmt.Printf("✓ Generated Render Plan JSON: %s (%d layers)\n", planPath, len(plan.Layers))
+	fmt.Printf("✓ Generated 24 FPS Render Plan JSON: %s (%d layers, 24/1 fps)\n", planPath, len(plan.Layers))
 
-	// 3. Execute Chronon3d Direct YUV GPU Renderer
+	// 3. Execute Chronon3d Direct YUV GPU Renderer at 24 FPS
 	assetsRoot := "/home/pierone/src/go-master/projects/Pyt/VeloxEditing/RenderingGen/testdata/golden"
 	chrononBin := "/home/pierone/src/go-master/projects/Pyt/VeloxEditing/Chronon3d/build/chronon/linux-video-fast-dev/apps/chronon3d_cli/chronon3d_cli"
 
@@ -130,7 +133,7 @@ func main() {
 		"-o", outputFile,
 	}
 
-	fmt.Println("⚙️ Executing Chronon GPU Native Direct YUV Renderer...")
+	fmt.Println("⚙️ Executing Chronon GPU Native Direct YUV Renderer (24 FPS)...")
 	startTime := time.Now()
 	cmd := exec.Command(chrononBin, args...)
 	cmd.Stdout = os.Stdout
@@ -139,7 +142,7 @@ func main() {
 		panic(fmt.Errorf("Chronon execution failed: %w", err))
 	}
 	renderDuration := time.Since(startTime)
-	fmt.Printf("✓ Render completed in %v! (~%.1f FPS)\n", renderDuration, 450.0/renderDuration.Seconds())
+	fmt.Printf("✓ 24 FPS Render completed in %v! (~%.1f FPS)\n", renderDuration, float64(totalDurationFrames)/renderDuration.Seconds())
 
 	// 4. Publish directly to Google Drive
 	folderID := "1J_xUGo_bchzXDIGqSX04CU44c_Dm3SxS"
@@ -157,7 +160,7 @@ func main() {
 		panic(fmt.Errorf("Drive init failed: %w", err))
 	}
 
-	uploadName := "actor_gerard_butler_pale_olive_1080p.mp4"
+	uploadName := "actor_gerard_butler_pale_olive_24fps_1080p.mp4"
 	fmt.Printf("☁️ Uploading %s (%d bytes) to Drive folder %s...\n", uploadName, len(videoBytes), folderID)
 	res, err := publisher.Publish(ctx, drive.PublishRequest{
 		Name:         uploadName,
@@ -170,7 +173,7 @@ func main() {
 	}
 
 	fmt.Println("==================================================================")
-	fmt.Printf("🎉 E2E TEST SUCCESSFUL!\n")
+	fmt.Printf("🎉 24 FPS E2E TEST SUCCESSFUL!\n")
 	fmt.Printf("   File ID:    %s\n", res.FileID)
 	fmt.Printf("   Drive Link: %s\n", res.WebViewLink)
 	fmt.Printf("   SHA-256:    %s\n", res.SHA256)

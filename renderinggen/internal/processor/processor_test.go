@@ -266,10 +266,10 @@ func TestProcessExecutesSemanticOverlayPlan(t *testing.T) {
 	if len(concrete.Layers) != 2 {
 		t.Fatalf("compiled layers = %d, want 2", len(concrete.Layers))
 	}
-	if concrete.Layers[0].Preset != "caption_card" {
-		t.Fatalf("phrase preset = %q, want caption_card", concrete.Layers[0].Preset)
+	if concrete.Layers[0].Preset != "" {
+		t.Fatalf("phrase must not carry executable preset metadata: %q", concrete.Layers[0].Preset)
 	}
-	if concrete.Layers[1].ID != "img-1_image" || concrete.Layers[1].Preset != "image_focus_in" {
+	if concrete.Layers[1].ID != "img-1_image" || concrete.Layers[1].Preset != "" {
 		t.Fatalf("image layer = %+v", concrete.Layers[1])
 	}
 

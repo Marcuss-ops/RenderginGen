@@ -50,8 +50,10 @@ type Layer struct {
 	Asset string `json:"asset,omitempty"`
 	// Source is the video-source logical path for Video layers
 	// (VIDEO_BACKGROUND): Chronon video layers reference `source`.
-	Source         string    `json:"source,omitempty"`
-	Text           string    `json:"text,omitempty"`
+	Source string `json:"source,omitempty"`
+	Text   string `json:"text,omitempty"`
+	// Preset is authoring/debug metadata in the in-memory DTO only; concrete
+	// serialized plans omit it after full lowering.
 	Preset         string    `json:"preset,omitempty"`
 	Font           string    `json:"font,omitempty"`
 	FontSize       float64   `json:"font_size,omitempty"`
@@ -69,12 +71,27 @@ type Layer struct {
 	Animation *LayerAnimation `json:"animation,omitempty"`
 }
 
-// LayerAnimation mirrors the chronon.render-plan.v1 layer animation block.
+// AnimationTrack is the renderer-neutral motion contract produced by
+// RenderingGen after selector/stagger expansion.
+type AnimationTrack struct {
+	Property  string              `json:"property"`
+	Keyframes []AnimationKeyframe `json:"keyframes"`
+	Easing    string              `json:"easing,omitempty"`
+}
+
+type AnimationKeyframe struct {
+	Frame int64   `json:"frame"`
+	Value float64 `json:"value"`
+}
+
+// LayerAnimation contains only generic tracks. The optional preset label is
+// debug metadata and is not an executable renderer instruction.
 type LayerAnimation struct {
-	Preset              string `json:"preset"`
-	Unit                string `json:"unit,omitempty"`
-	EnterDurationFrames int    `json:"enter_duration_frames,omitempty"`
-	ExitDurationFrames  int    `json:"exit_duration_frames,omitempty"`
+	Preset              string           `json:"preset,omitempty"`
+	Unit                string           `json:"unit,omitempty"`
+	EnterDurationFrames int              `json:"enter_duration_frames,omitempty"`
+	ExitDurationFrames  int              `json:"exit_duration_frames,omitempty"`
+	Tracks              []AnimationTrack `json:"tracks,omitempty"`
 }
 
 type Output struct {
@@ -200,6 +217,9 @@ type concreteOutput struct {
 	ProfileID string `json:"profile_id,omitempty"`
 }
 type concreteLayer struct {
+	// Preset is retained only in the in-memory test/diagnostic DTO and is
+	// excluded from JSON serialization after full lowering.
+	Preset         string             `json:"-"`
 	ID             string             `json:"id"`
 	Type           string             `json:"type"`
 	Asset          string             `json:"asset,omitempty"`
@@ -208,7 +228,6 @@ type concreteLayer struct {
 	Text           string             `json:"text,omitempty"`
 	Font           string             `json:"font,omitempty"`
 	FontSize       float64            `json:"font_size,omitempty"`
-	Preset         string             `json:"preset,omitempty"`
 	BoxWidth       int                `json:"box_width,omitempty"`
 	BoxHeight      int                `json:"box_height,omitempty"`
 	Fit            string             `json:"fit,omitempty"`
@@ -252,10 +271,12 @@ type concreteStyle struct {
 	Background *concreteBackground `json:"background,omitempty"`
 }
 type concreteAnimation struct {
-	Preset string `json:"preset"`
-	Unit   string `json:"unit,omitempty"`
-	Enter  int    `json:"enter_duration_frames,omitempty"`
-	Exit   int    `json:"exit_duration_frames,omitempty"`
+	// Preset is debug metadata; Tracks are the executable renderer contract.
+	Preset string           `json:"preset,omitempty"`
+	Unit   string           `json:"unit,omitempty"`
+	Enter  int              `json:"enter_duration_frames,omitempty"`
+	Exit   int              `json:"exit_duration_frames,omitempty"`
+	Tracks []AnimationTrack `json:"tracks,omitempty"`
 }
 
 var safeAssetID = regexp.MustCompile(`[^A-Za-z0-9._-]+`)
@@ -388,7 +409,7 @@ func compileSemantic(raw []byte) ([]byte, []Asset, error) {
 		if text == "" {
 			text = entityRefText(item)
 		}
-		layer := concreteLayer{ID: item.ID, Type: "text", Text: text, Preset: preset, StartFrame: start, DurationFrames: end - start}
+		layer := concreteLayer{ID: item.ID, Type: "text", Text: text, StartFrame: start, DurationFrames: end - start}
 		if isImageTemplate(item.Template) {
 			layer = imageLayer(item, start, end, preset, assetPaths[item.Assets[0].ID], params)
 		}
@@ -536,7 +557,7 @@ func semanticAssetPath(ref semanticAssetRef) string {
 	return "assets/semantic/" + id + ext
 }
 func imageLayer(item semanticItem, start, end int64, preset, asset string, params map[string]any) concreteLayer {
-	return concreteLayer{ID: item.ID + "_image", Type: "image", Asset: asset, Preset: preset, BoxWidth: intParam(params, "width", 320), BoxHeight: intParam(params, "height", 320), Fit: stringParam(params, "fit", "contain"), StartFrame: start, DurationFrames: end - start}
+	return concreteLayer{ID: item.ID + "_image", Type: "image", Asset: asset, BoxWidth: intParam(params, "width", 320), BoxHeight: intParam(params, "height", 320), Fit: stringParam(params, "fit", "contain"), StartFrame: start, DurationFrames: end - start}
 }
 
 func applyPresetDefinition(layer *concreteLayer, d OfficialPresetDefinition) {
@@ -566,7 +587,7 @@ func animationForDefinition(d OfficialPresetDefinition) *concreteAnimation {
 	if d.Animation == "" {
 		return nil
 	}
-	return &concreteAnimation{Preset: d.Animation, Unit: d.Unit, Enter: d.Enter, Exit: d.Exit}
+	return &concreteAnimation{Preset: d.Animation, Unit: d.Unit, Enter: d.Enter, Exit: d.Exit, Tracks: tracksForAnimation(d.Animation, d.Unit, d.Enter)}
 }
 func animationFor(params map[string]any) *concreteAnimation {
 	p, _ := params["animation"].(string)
@@ -577,8 +598,31 @@ func animationFor(params map[string]any) *concreteAnimation {
 	a.Unit = stringParam(params, "unit", "layer")
 	a.Enter = intParam(params, "enter_duration_frames", 0)
 	a.Exit = intParam(params, "exit_duration_frames", 0)
+	a.Tracks = tracksForAnimation(p, a.Unit, a.Enter)
 	return a
 }
+
+func tracksForAnimation(animation, unit string, enter int) []AnimationTrack {
+	if animation == "" || animation == "static" || enter <= 0 {
+		return nil
+	}
+	property := "opacity"
+	start := 0.0
+	end := 1.0
+	switch animation {
+	case "scale_drop":
+		property, start = "scale", 0.85
+	case "reveal_from_bottom":
+		property, start = "position_y", 40
+	case "slide_in":
+		property, start = "position_x", -40
+	}
+	if property == "position_x" || property == "position_y" {
+		end = 0
+	}
+	return []AnimationTrack{{Property: property, Easing: "out_cubic", Keyframes: []AnimationKeyframe{{Frame: 0, Value: start}, {Frame: int64(enter), Value: end}}}}
+}
+
 func intParam(p map[string]any, key string, fallback int) int {
 	if n, ok := p[key].(float64); ok {
 		return int(n)

@@ -67,7 +67,7 @@ func TestEveryOfficialPresetCompilesAndMaterializes(t *testing.T) {
 		if err := json.Unmarshal(compiled, &plan); err != nil {
 			t.Fatalf("%s concrete decode: %v", id, err)
 		}
-		if len(plan.Layers) != 1 || plan.Layers[0].Preset != id || plan.Layers[0].Animation == nil || plan.Layers[0].Anchor == nil {
+		if len(plan.Layers) != 1 || plan.Layers[0].Preset != "" || plan.Layers[0].Animation == nil || len(plan.Layers[0].Animation.Tracks) == 0 || plan.Layers[0].Anchor == nil {
 			t.Fatalf("%s was not materially lowered: %+v", id, plan.Layers)
 		}
 	}

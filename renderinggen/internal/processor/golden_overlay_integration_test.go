@@ -123,9 +123,12 @@ func TestGoldenSemanticOverlayJobV1Compiles(t *testing.T) {
 			DurationFrames int64 `json:"duration_frames"`
 		} `json:"canvas"`
 		Layers []struct {
-			ID     string `json:"id"`
-			Type   string `json:"type"`
-			Preset string `json:"preset"`
+			ID        string `json:"id"`
+			Type      string `json:"type"`
+			Preset    string `json:"preset"`
+			Animation *struct {
+				Tracks []struct{} `json:"tracks"`
+			} `json:"animation"`
 		} `json:"layers"`
 	}
 	if err := json.Unmarshal(compiled, &concrete); err != nil {
@@ -141,14 +144,14 @@ func TestGoldenSemanticOverlayJobV1Compiles(t *testing.T) {
 	for _, layer := range concrete.Layers {
 		byID[layer.ID] = layer.Preset
 	}
-	if byID["important_phrase"] != "caption_card" {
-		t.Fatalf("important_phrase preset = %q, want caption_card", byID["important_phrase"])
+	if byID["important_phrase"] != "" {
+		t.Fatalf("important_phrase must not carry executable preset metadata: %q", byID["important_phrase"])
 	}
-	if byID["important_word"] != "active_word_pop" {
-		t.Fatalf("important_word preset = %q, want active_word_pop", byID["important_word"])
+	if byID["important_word"] != "" {
+		t.Fatalf("important_word must not carry executable preset metadata: %q", byID["important_word"])
 	}
-	if byID["image_overlay_image"] != "image_focus_in" {
-		t.Fatalf("image_overlay preset = %q, want image_focus_in", byID["image_overlay_image"])
+	if byID["image_overlay_image"] != "" {
+		t.Fatalf("image_overlay must not carry executable preset metadata: %q", byID["image_overlay_image"])
 	}
 }
 
@@ -271,11 +274,14 @@ func TestProcessGoldenSemanticOverlayJobV1(t *testing.T) {
 			DurationFrames int64 `json:"duration_frames"`
 		} `json:"canvas"`
 		Layers []struct {
-			ID     string `json:"id"`
-			Type   string `json:"type"`
-			Text   string `json:"text"`
-			Preset string `json:"preset"`
-			Asset  string `json:"asset"`
+			ID        string `json:"id"`
+			Type      string `json:"type"`
+			Text      string `json:"text"`
+			Preset    string `json:"preset"`
+			Animation *struct {
+				Tracks []struct{} `json:"tracks"`
+			} `json:"animation"`
+			Asset string `json:"asset"`
 		} `json:"layers"`
 	}
 	if err := json.Unmarshal(renderer.planJSON, &concrete); err != nil {

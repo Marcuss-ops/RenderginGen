@@ -9,23 +9,52 @@ import (
 // Supported types: "text" | "image"
 // Supported animations: "fade" | "slide" | "scale" | "static"
 type FastEntityOverlay struct {
-	Type       string    `json:"type"`                  // "text" | "image"
-	StartFrame int64     `json:"start_frame"`           // inclusive start frame
-	EndFrame   int64     `json:"end_frame"`             // exclusive end frame
-	Position   string    `json:"position,omitempty"`    // anchor / preset position ("lower_third", "center", "safe_area", "image_left", "image_right")
-	Size       float64   `json:"size,omitempty"`        // font size for text, or box size for image
-	Opacity    float64   `json:"opacity,omitempty"`     // alpha [0.0, 1.0] (default 1.0)
-	Animation  string    `json:"animation,omitempty"`   // "fade" | "slide" | "scale" | "static"
-	Asset      string    `json:"asset,omitempty"`       // image file path
-	Text       string    `json:"text,omitempty"`        // phrase string
-	Font       string    `json:"font,omitempty"`        // font path / font family
-	Color      []float64 `json:"color,omitempty"`       // RGBA [r, g, b, a] in [0, 1]
-	Translate  []float64 `json:"translate,omitempty"`   // [dx, dy] offset
-	Scale      float64   `json:"scale,omitempty"`       // scale multiplier (default 1.0)
+	Type       string    `json:"type"`                // "text" | "image"
+	StartFrame int64     `json:"start_frame"`         // inclusive start frame
+	EndFrame   int64     `json:"end_frame"`           // exclusive end frame
+	Position   string    `json:"position,omitempty"`  // anchor / preset position ("lower_third", "center", "safe_area", "image_left", "image_right")
+	Size       float64   `json:"size,omitempty"`      // font size for text, or box size for image
+	Opacity    float64   `json:"opacity,omitempty"`   // alpha [0.0, 1.0] (default 1.0)
+	Animation  string    `json:"animation,omitempty"` // "fade" | "slide" | "scale" | "static"
+	Asset      string    `json:"asset,omitempty"`     // image file path
+	Text       string    `json:"text,omitempty"`      // phrase string
+	Font       string    `json:"font,omitempty"`      // font path / font family
+	Color      []float64 `json:"color,omitempty"`     // RGBA [r, g, b, a] in [0, 1]
+	Translate  []float64 `json:"translate,omitempty"` // [dx, dy] offset
+	Scale      float64   `json:"scale,omitempty"`     // scale multiplier (default 1.0)
 }
 
+// Default video contract parameters matching refactored pipeline standards.
+const (
+	DefaultFPSNum = 24
+	DefaultFPSDen = 1
+	DefaultWidth  = 1920
+	DefaultHeight = 1080
+)
+
 // BuildPlanFromEntityOverlays constructs a concrete chronon.render-plan.v1 from a background video
-// and a sequence of fast entity overlays.
+// and a sequence of fast entity overlays. It emits only generic layer data and
+// tracks; animation names are retained solely as debug metadata.
+func genericAnimation(name string, duration int64) *LayerAnimation {
+	enter := int(duration)
+	if enter > 12 {
+		enter = 12
+	}
+	if enter < 1 {
+		enter = 1
+	}
+	track := AnimationTrack{Property: "opacity", Easing: "out_cubic", Keyframes: []AnimationKeyframe{{Frame: 0, Value: 0}, {Frame: int64(enter), Value: 1}}}
+	switch name {
+	case "slide", "slide_in", "slide_left", "slide_up":
+		track.Property = "position_y"
+		track.Keyframes[0].Value, track.Keyframes[1].Value = 40, 0
+	case "scale", "scale_in", "scale_drop", "pop":
+		track.Property = "scale"
+		track.Keyframes[0].Value = 0.85
+	}
+	return &LayerAnimation{Unit: "layer", EnterDurationFrames: enter, Tracks: []AnimationTrack{track}}
+}
+
 func BuildPlanFromEntityOverlays(
 	jobID string,
 	width, height int,
@@ -34,8 +63,17 @@ func BuildPlanFromEntityOverlays(
 	bgVideoPath string,
 	overlays []FastEntityOverlay,
 ) (*Plan, error) {
-	if width <= 0 || height <= 0 || fpsNum <= 0 || fpsDen <= 0 {
-		return nil, fmt.Errorf("entity_contract: invalid canvas dimensions or fps")
+	if width <= 0 {
+		width = DefaultWidth
+	}
+	if height <= 0 {
+		height = DefaultHeight
+	}
+	if fpsNum <= 0 {
+		fpsNum = DefaultFPSNum
+	}
+	if fpsDen <= 0 {
+		fpsDen = DefaultFPSDen
 	}
 	if totalDurationFrames <= 0 {
 		return nil, fmt.Errorf("entity_contract: total duration must be positive")
@@ -87,26 +125,13 @@ func BuildPlanFromEntityOverlays(
 			opacity = 1.0
 		}
 
-		// Resolve animation preset
-		animPreset := "static"
-		switch strings.ToLower(strings.TrimSpace(ov.Animation)) {
-		case "fade", "fade_in":
-			animPreset = "fade_in"
-		case "slide", "slide_in", "slide_left", "slide_up":
-			animPreset = "slide_in"
-		case "scale", "scale_in", "scale_drop", "pop":
-			animPreset = "scale_drop"
-		case "static", "none", "":
-			animPreset = "static"
-		default:
-			animPreset = ov.Animation
+		animationName := strings.ToLower(strings.TrimSpace(ov.Animation))
+		if animationName == "" || animationName == "none" {
+			animationName = "static"
 		}
-
 		var layerAnim *LayerAnimation
-		if animPreset != "static" {
-			layerAnim = &LayerAnimation{
-				Preset: animPreset,
-			}
+		if animationName != "static" {
+			layerAnim = genericAnimation(animationName, duration)
 		}
 
 		switch strings.ToLower(strings.TrimSpace(ov.Type)) {
@@ -122,32 +147,29 @@ func BuildPlanFromEntityOverlays(
 			if pos == "" {
 				pos = "center"
 			}
-			preset := "image_fade_in"
-			if animPreset == "scale_drop" {
-				preset = "image_scale_in"
-			} else if animPreset == "slide_in" {
-				preset = "image_slide_left"
-			}
 
-			// Position calculation
+			// Entity overlays expose only generic absolute geometry. Editorial
+			// anchor resolution belongs to the common RenderingGen compiler.
 			posX := float64(width-boxSize) / 2.0
 			posY := float64(height-boxSize) / 2.0
 			switch strings.ToLower(pos) {
 			case "image_left", "left":
-				posX = 140.0
+				posX = 0
 			case "image_right", "right":
-				posX = float64(width - boxSize - 140)
+				posX = float64(width - boxSize)
 			}
 			if len(ov.Translate) == 2 {
 				posX += ov.Translate[0]
 				posY += ov.Translate[1]
+			}
+			if ov.Scale > 0 {
+				boxSize = int(float64(boxSize) * ov.Scale)
 			}
 
 			imgLayer := Layer{
 				ID:             layerID,
 				Type:           "image",
 				Asset:          ov.Asset,
-				Preset:         preset,
 				BoxWidth:       boxSize,
 				BoxHeight:      boxSize,
 				Fit:            "contain",
@@ -176,15 +198,6 @@ func BuildPlanFromEntityOverlays(
 				color = []float64{1.0, 1.0, 1.0, 1.0}
 			}
 
-			preset := "phrase_fade_in"
-			if animPreset == "scale_drop" {
-				preset = "phrase_scale_in"
-			} else if animPreset == "slide_in" || animPreset == "reveal_from_bottom" {
-				preset = "phrase_slide_up"
-			} else if strings.EqualFold(ov.Position, "lower_third") {
-				preset = "lower_third_safe"
-			}
-
 			txtLayer := Layer{
 				ID:             layerID,
 				Type:           "text",
@@ -192,7 +205,6 @@ func BuildPlanFromEntityOverlays(
 				Font:           font,
 				FontSize:       fontSize,
 				Color:          color,
-				Preset:         preset,
 				StartFrame:     ov.StartFrame,
 				DurationFrames: duration,
 				Opacity:        opacity,
