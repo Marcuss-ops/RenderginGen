@@ -12,7 +12,7 @@ func TestRequireNativeVulkan(t *testing.T) {
 		body string
 		want bool
 	}{
-		{"native", `{"job":{"gpu":{"effective_backend":"vulkan","software_fallback_nodes":0}}}`, true},
+		{"native", `{"job":{"surface_handoff_path":"vulkan_copy","gpu":{"effective_backend":"vulkan","encoder_backend":"nvenc","software_fallback_nodes":0,"cpu_readback_frames":0,"software_encode_frames":0,"nvenc_frames":1,"vulkan_frames":1}}}`, true},
 		{"hybrid", `{"job":{"gpu":{"effective_backend":"hybrid","software_fallback_nodes":2}}}`, false},
 		{"missing receipt field", `{"job":{"gpu":{"software_fallback_nodes":0}}}`, false},
 	}
@@ -29,7 +29,7 @@ func TestRequireNativeVulkan(t *testing.T) {
 			if err := os.WriteFile(path+".receipt.json", []byte(receipt), 0o600); err != nil {
 				t.Fatal(err)
 			}
-			got := requireNativeVulkan(path) == nil
+			got := requireNativeVulkan(path, 1) == nil
 			if got != tc.want {
 				t.Fatalf("requireNativeVulkan() = %v, want %v", got, tc.want)
 			}
