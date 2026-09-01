@@ -22,7 +22,7 @@ To use one in a semantic plan, reference it as an asset and select the
     {
       "asset_id": "drive-background-01",
       "url": "assets/backgrounds/drive-background-01.mp4",
-      "sha256": "d4e9d76563c0f17589a0e98795574ceec22b3f3b961f51d44eb0544e95e1639b",
+      "sha256": "0dffb796fbb3137ba4949facfa01b6cb7bca1a7a375600df2da4eb1258df74c5",
       "media_type": "video/mp4"
     }
   ]
