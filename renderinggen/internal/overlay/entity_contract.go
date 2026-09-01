@@ -105,10 +105,7 @@ func BuildPlanFromEntityOverlays(
 		var layerAnim *LayerAnimation
 		if animPreset != "static" {
 			layerAnim = &LayerAnimation{
-				Preset:              animPreset,
-				Unit:                "layer",
-				EnterDurationFrames: 8,
-				ExitDurationFrames:  6,
+				Preset: animPreset,
 			}
 		}
 
@@ -132,6 +129,20 @@ func BuildPlanFromEntityOverlays(
 				preset = "image_slide_left"
 			}
 
+			// Position calculation
+			posX := float64(width-boxSize) / 2.0
+			posY := float64(height-boxSize) / 2.0
+			switch strings.ToLower(pos) {
+			case "image_left", "left":
+				posX = 140.0
+			case "image_right", "right":
+				posX = float64(width - boxSize - 140)
+			}
+			if len(ov.Translate) == 2 {
+				posX += ov.Translate[0]
+				posY += ov.Translate[1]
+			}
+
 			imgLayer := Layer{
 				ID:             layerID,
 				Type:           "image",
@@ -140,13 +151,11 @@ func BuildPlanFromEntityOverlays(
 				BoxWidth:       boxSize,
 				BoxHeight:      boxSize,
 				Fit:            "contain",
+				Position:       []float64{posX, posY},
 				StartFrame:     ov.StartFrame,
 				DurationFrames: duration,
 				Opacity:        opacity,
 				Animation:      layerAnim,
-			}
-			if len(ov.Translate) == 2 {
-				imgLayer.Position = []float64{ov.Translate[0], ov.Translate[1]}
 			}
 			plan.Layers = append(plan.Layers, imgLayer)
 
@@ -170,7 +179,7 @@ func BuildPlanFromEntityOverlays(
 			preset := "phrase_fade_in"
 			if animPreset == "scale_drop" {
 				preset = "phrase_scale_in"
-			} else if animPreset == "slide_in" {
+			} else if animPreset == "slide_in" || animPreset == "reveal_from_bottom" {
 				preset = "phrase_slide_up"
 			} else if strings.EqualFold(ov.Position, "lower_third") {
 				preset = "lower_third_safe"
