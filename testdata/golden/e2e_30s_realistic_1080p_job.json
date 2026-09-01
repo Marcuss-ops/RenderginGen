@@ -1,0 +1,135 @@
+{
+  "schema": "chronon.render-plan",
+  "version": 1,
+  "job_id": "e2e-30s-realistic-1080p-direct-cuda",
+  "canvas": {
+    "width": 1920,
+    "height": 1080,
+    "fps_num": 30,
+    "fps_den": 1,
+    "duration_frames": 900
+  },
+  "layers": [
+    {
+      "id": "bg_video",
+      "type": "video",
+      "source": "assets/bg_30s_1080p.mp4",
+      "box_width": 1920,
+      "box_height": 1080,
+      "fit": "cover",
+      "start_frame": 0,
+      "duration_frames": 900,
+      "opacity": 1.0
+    },
+    {
+      "id": "entity_1_text",
+      "type": "text",
+      "text": "Elon Musk",
+      "preset": "lower_third_safe",
+      "font": "assets/fonts/Poppins-Bold.ttf",
+      "font_size": 64.0,
+      "color": [0.1, 0.1, 0.15, 1.0],
+      "start_frame": 0,
+      "duration_frames": 120,
+      "opacity": 1.0,
+      "animation": {
+        "preset": "fade_in"
+      }
+    },
+    {
+      "id": "entity_2_image",
+      "type": "image",
+      "asset": "assets/apple.png",
+      "preset": "image_scale_in",
+      "box_width": 320,
+      "box_height": 320,
+      "fit": "contain",
+      "start_frame": 120,
+      "duration_frames": 120,
+      "opacity": 1.0,
+      "animation": {
+        "preset": "scale_drop"
+      }
+    },
+    {
+      "id": "entity_3_text",
+      "type": "text",
+      "text": "Tesla",
+      "preset": "phrase_slide_up",
+      "font": "assets/fonts/Poppins-Bold.ttf",
+      "font_size": 72.0,
+      "color": [0.1, 0.1, 0.15, 1.0],
+      "start_frame": 240,
+      "duration_frames": 120,
+      "opacity": 1.0,
+      "animation": {
+        "preset": "reveal_from_bottom"
+      }
+    },
+    {
+      "id": "entity_4_image",
+      "type": "image",
+      "asset": "assets/go_logo.png",
+      "preset": "image_scale_in",
+      "box_width": 360,
+      "box_height": 360,
+      "fit": "contain",
+      "start_frame": 360,
+      "duration_frames": 120,
+      "opacity": 1.0,
+      "animation": {
+        "preset": "scale_drop"
+      }
+    },
+    {
+      "id": "entity_5_text",
+      "type": "text",
+      "text": "United States",
+      "preset": "phrase_fade_in",
+      "font": "assets/fonts/Poppins-Bold.ttf",
+      "font_size": 64.0,
+      "color": [0.1, 0.1, 0.15, 1.0],
+      "start_frame": 480,
+      "duration_frames": 120,
+      "opacity": 1.0,
+      "animation": {
+        "preset": "fade_in"
+      }
+    },
+    {
+      "id": "entity_6_image",
+      "type": "image",
+      "asset": "assets/overlay_globe.png",
+      "preset": "image_slide_left",
+      "box_width": 320,
+      "box_height": 320,
+      "fit": "contain",
+      "start_frame": 600,
+      "duration_frames": 120,
+      "opacity": 1.0,
+      "animation": {
+        "preset": "slide_in"
+      }
+    },
+    {
+      "id": "entity_7_text",
+      "type": "text",
+      "text": "Tesla announced a new manufacturing facility",
+      "preset": "caption_card",
+      "font": "assets/fonts/Poppins-Bold.ttf",
+      "font_size": 52.0,
+      "color": [0.1, 0.1, 0.15, 1.0],
+      "start_frame": 720,
+      "duration_frames": 120,
+      "opacity": 1.0,
+      "animation": {
+        "preset": "fade_in"
+      }
+    }
+  ],
+  "output": {
+    "path": "test_30s_e2e_1080p_output.mp4",
+    "format": "mp4",
+    "codec": "h264"
+  }
+}
