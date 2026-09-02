@@ -91,6 +91,10 @@ func makePreset(id string, s presetSpec) OfficialPresetDefinition {
 // officialPresets is the only production catalog. Do not add parallel maps
 // for families, animation or geometry.
 var officialPresets = map[string]OfficialPresetDefinition{
+	// Static text is intentionally part of the small smoke/E2E catalog: it
+	// proves text/subtitle pixels without requiring an animation window longer
+	// than a short canary composition.
+	"static_text_smoke":    makePreset("static_text_smoke", textSpec("safe_area", "center", "", "line", 0, 0, nil)),
 	"caption_card":         makePreset("caption_card", textSpec("center", "center", "fade_in", "line", 10, 8, nil)),
 	"lower_third_safe":     makePreset("lower_third_safe", textSpec("lower_third", "left", "focus_in", "line", 8, 6, nil)),
 	"phrase_focus_v1":      makePreset("phrase_focus_v1", textSpec("safe_area", "center", "focus_in", "line", 8, 6, nil)),

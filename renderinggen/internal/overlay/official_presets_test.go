@@ -9,8 +9,8 @@ import (
 )
 
 func TestOfficialPresetCatalog(t *testing.T) {
-	if got := len(officialPresets); got != 30 {
-		t.Fatalf("official preset count = %d, want 30", got)
+	if got := len(officialPresets); got != 31 {
+		t.Fatalf("official preset count = %d, want 31", got)
 	}
 	for id, d := range officialPresets {
 		if id == "" || d.ID != id {
@@ -19,7 +19,8 @@ func TestOfficialPresetCatalog(t *testing.T) {
 		if d.Family != PresetText && d.Family != PresetImage {
 			t.Errorf("%s has invalid family %q", id, d.Family)
 		}
-		if d.Layout.Anchor == "" || d.Motion.Name == "" || d.Motion.Unit == "" || d.Motion.Enter <= 0 || d.Motion.Exit <= 0 {
+		staticSmoke := id == "static_text_smoke"
+		if d.Layout.Anchor == "" || (!staticSmoke && (d.Motion.Name == "" || d.Motion.Unit == "" || d.Motion.Enter <= 0 || d.Motion.Exit <= 0)) {
 			t.Errorf("%s has incomplete materialization: %+v", id, d)
 		}
 		if d.Family == PresetText && (d.Style.FontFamily == "" || d.Style.FontSize <= 0 || len(d.Style.Fill) != 4) {
@@ -55,7 +56,8 @@ func TestEveryOfficialPresetCompilesAndMaterializes(t *testing.T) {
 		if err != nil {
 			t.Fatalf("%s resolve: %v", id, err)
 		}
-		if resolved.ID != id || resolved.Motion.Name == "" {
+		staticSmoke := id == "static_text_smoke"
+		if resolved.ID != id || (!staticSmoke && resolved.Motion.Name == "") {
 			t.Fatalf("%s resolved empty: %+v", id, resolved)
 		}
 		raw := []byte(`{"schema_version":"renderinggen.overlay-plan.v1","plan_id":"canary-` + id + `","video_id":"v","width":1280,"height":720,"fps_num":30,"fps_den":1,"items":[` + item + `]}`)
@@ -67,7 +69,7 @@ func TestEveryOfficialPresetCompilesAndMaterializes(t *testing.T) {
 		if err := json.Unmarshal(compiled, &plan); err != nil {
 			t.Fatalf("%s concrete decode: %v", id, err)
 		}
-		if len(plan.Layers) != 1 || plan.Layers[0].Animation == nil || len(plan.Layers[0].Animation.Tracks) == 0 {
+		if len(plan.Layers) != 1 || (!staticSmoke && (plan.Layers[0].Animation == nil || len(plan.Layers[0].Animation.Tracks) == 0)) {
 			t.Fatalf("%s was not materially lowered: %+v", id, plan.Layers)
 		}
 	}

@@ -11,6 +11,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"sync"
 	"syscall"
 	"time"
@@ -55,6 +56,7 @@ func main() {
 	// "unknown" sentinel, so render_artifacts recorded chronon_version=
 	// 'unknown' for every job even when /opt/chronon3d/VERSION was present.
 	var renderer chronon.Renderer
+	var assembler chronon.Assembler
 	chrononVersion := "unknown"
 	{
 		probe := &chronon.Client{Home: cfg.Chronon.Home}
@@ -66,7 +68,9 @@ func main() {
 		}
 	}
 	if cfg.Chronon.Mode == "ipc" {
-		renderer = chronon.NewIPCClient(cfg.Chronon.SocketPath)
+		ipc := chronon.NewIPCClient(cfg.Chronon.SocketPath)
+		renderer = ipc
+		assembler = ipc
 	} else {
 		cli := &chronon.Client{Home: cfg.Chronon.Home}
 		if err := cli.Verify(); err != nil {
@@ -124,26 +128,39 @@ func main() {
 	}
 
 	// 3b. Google Drive publication (decoupled from rendering).
+	var publisher drive.Publisher
 	if cfg.Drive.Enabled {
 		switch cfg.Drive.Mode {
 		case "mock":
-			proc.SetPublisher(drive.NewMock(cfg.Drive.MockDir, cfg.Drive.MockFailFirst))
+			publisher = drive.NewMock(cfg.Drive.MockDir, cfg.Drive.MockFailFirst)
 			log.Printf("drive: mock publisher (fail_first=%d, dir=%q)", cfg.Drive.MockFailFirst, cfg.Drive.MockDir)
 		case "oauth":
 			pub, err := drive.NewGoogleOAuth(ctx, cfg.Drive.CredentialsFile, cfg.Drive.TokenFile, cfg.Drive.ParentFolderID)
 			if err != nil {
 				log.Fatalf("drive: %v", err)
 			}
-			proc.SetPublisher(pub)
+			publisher = pub
 			log.Printf("drive: oauth publisher (folder=%q)", cfg.Drive.ParentFolderID)
 		default:
 			pub, err := drive.NewGoogle(ctx, cfg.Drive.CredentialsFile, cfg.Drive.ParentFolderID)
 			if err != nil {
 				log.Fatalf("drive: %v", err)
 			}
-			proc.SetPublisher(pub)
+			publisher = pub
 			log.Printf("drive: google publisher (folder=%q)", cfg.Drive.ParentFolderID)
 		}
+	}
+	if publisher != nil {
+		proc.SetPublisher(publisher)
+	}
+
+	var parentFinalizer *processor.ParentFinalizer
+	if assembler != nil {
+		parentFinalizer = processor.NewParentFinalizer(
+			queueClient, store, assembler, publisher, cfg.Worker.ID,
+			filepath.Join(cfg.Workspace.Root, "parents"),
+		)
+		log.Printf("parent finalizer: enabled (Chronon assembler, output=%q)", filepath.Join(cfg.Workspace.Root, "parents"))
 	}
 
 	// 4. READY: expose health.
@@ -185,14 +202,14 @@ func main() {
 	workers.Add(1)
 	go func() {
 		defer workers.Done()
-		runGPULane(ctx, proc, prepCh, doneCh)
+		runGPULane(ctx, queueClient, proc, prepCh, doneCh)
 	}()
 	// Post pool: finalize (probe/hash/store) + Drive publication (CPU/IO).
 	for i := 0; i < 2; i++ {
 		workers.Add(1)
 		go func() {
 			defer workers.Done()
-			runPostPool(ctx, queueClient, proc, doneCh)
+			runPostPool(ctx, queueClient, proc, parentFinalizer, doneCh)
 		}()
 	}
 	workers.Wait()
@@ -294,13 +311,18 @@ func runPrepPool(ctx context.Context, q *queue.Client, proc *processor.Processor
 // time so the GPU never runs concurrent encoder sessions. While Chronon works
 // here, the prep pool prepares the next job and the post pool finalizes the
 // previous one.
-func runGPULane(ctx context.Context, proc *processor.Processor, prepCh <-chan *preppedJob, doneCh chan<- renderOutcome) {
+func runGPULane(ctx context.Context, q *queue.Client, proc *processor.Processor, prepCh <-chan *preppedJob, doneCh chan<- renderOutcome) {
 	for {
 		select {
 		case <-ctx.Done():
 			return
 		case p := <-prepCh:
-			gpuErr := proc.RunGPU(ctx, p.prepared)
+			// Chronon is the long-running stage. Keep the queue lease alive
+			// while it renders; renewing only during prepare/post would let a
+			// normal software render expire and be claimed a second time.
+			gpuErr := withLeaseVoid(ctx, p.job, q, func(jobCtx context.Context) error {
+				return proc.RunGPU(jobCtx, p.prepared)
+			})
 			select {
 			case doneCh <- renderOutcome{job: p.job, prepared: p.prepared, err: gpuErr}:
 			case <-ctx.Done():
@@ -312,7 +334,7 @@ func runGPULane(ctx context.Context, proc *processor.Processor, prepCh <-chan *p
 
 // runPostPool finalizes GPU-completed jobs (probe, hash, store, ledger) and
 // publishes them. Workspace cleanup always runs here: it is the last owner.
-func runPostPool(ctx context.Context, q *queue.Client, proc *processor.Processor, doneCh <-chan renderOutcome) {
+func runPostPool(ctx context.Context, q *queue.Client, proc *processor.Processor, parentFinalizer *processor.ParentFinalizer, doneCh <-chan renderOutcome) {
 	for {
 		select {
 		case <-ctx.Done():
@@ -351,7 +373,38 @@ func runPostPool(ctx context.Context, q *queue.Client, proc *processor.Processor
 				job.ID, artifact.StorageKey, artifact.ArtifactHash, artifact.SizeBytes,
 				artifact.CopyEligible, artifact.Backend, artifact.FrameCount, artifact.Width, artifact.Height)
 			reportComplete(ctx, q, job.ID, artifact)
+			if parentFinalizer != nil && job.ParentJobID != "" {
+				tryFinalizeParent(ctx, q, parentFinalizer, job.ParentJobID)
+			}
 		}
+	}
+}
+
+// tryFinalizeParent is intentionally best-effort: a child completion can be
+// observed before its siblings, so an incomplete parent is normal. The
+// finalizer itself performs the second children read and atomic claim, which
+// makes concurrent attempts and worker restarts safe.
+func tryFinalizeParent(ctx context.Context, q *queue.Client, finalizer *processor.ParentFinalizer, parentID string) {
+	children, err := q.Children(ctx, parentID)
+	if err != nil || len(children) == 0 {
+		if err != nil {
+			log.Printf("parent %s inspect children: %v", parentID, err)
+		}
+		return
+	}
+	first, last := children[0], children[len(children)-1]
+	if first == nil || last == nil || first.FrameRange == nil || last.FrameRange == nil {
+		return
+	}
+	finalized, artifact, err := finalizer.Finalize(ctx, parentID, int64(len(children)), first.FrameRange.Start, last.FrameRange.End)
+	if err != nil {
+		// Incomplete children and a competing finalizer are expected during the
+		// normal fan-in; the queue remains the source of truth for retry.
+		log.Printf("parent %s not finalized yet: %v", parentID, err)
+		return
+	}
+	if finalized {
+		log.Printf("parent %s finalized: storage_key=%q sha256=%q size=%d", parentID, artifact.StorageKey, artifact.ArtifactHash, artifact.SizeBytes)
 	}
 }
 

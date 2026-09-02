@@ -195,6 +195,7 @@ func (s *Repository) ClaimFinalization(parentJobID, workerID string) (*model.Job
 	}
 	job.State = model.StateFinalizing
 	job.Worker = workerID
+	job.LeaseUntil = time.Now().Add(s.lease)
 	copy := *job
 	return &copy, true, nil
 }
@@ -278,7 +279,7 @@ func (s *Repository) RequeueExpired(now time.Time) (int, error) {
 
 	n := 0
 	for _, job := range s.jobs {
-		if job.State != model.StateRunning || job.LeaseUntil.IsZero() || !now.After(job.LeaseUntil) {
+		if (job.State != model.StateRunning && job.State != model.StateFinalizing) || job.LeaseUntil.IsZero() || !now.After(job.LeaseUntil) {
 			continue
 		}
 		if s.maxAttempts > 0 && job.Attempts >= s.maxAttempts {
