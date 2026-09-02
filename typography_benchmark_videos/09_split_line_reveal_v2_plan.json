@@ -1,0 +1,96 @@
+{
+  "schema": "chronon.render-plan.v2",
+  "version": 2,
+  "job_id": "typography-09_split_line_reveal",
+  "canvas": {
+    "width": 1920,
+    "height": 1080,
+    "fps_num": 24,
+    "fps_den": 1,
+    "duration_frames": 120
+  },
+  "layers": [
+    {
+      "id": "line_a",
+      "type": "text",
+      "text": "Create without limits.",
+      "size": [
+        1920,
+        120
+      ],
+      "position": [
+        0,
+        64.8
+      ],
+      "style": {
+        "font": "assets/fonts/Poppins-Bold.ttf",
+        "font_size": 58,
+        "fill": "#FFFFFF"
+      },
+      "start_frame": 0,
+      "duration_frames": 120,
+      "animation": {
+        "tracks": [
+          {
+            "property": "position_x",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": -40
+              },
+              {
+                "frame": 8,
+                "value": 0
+              }
+            ],
+            "easing": "out_cubic"
+          }
+        ]
+      }
+    },
+    {
+      "id": "line_b",
+      "type": "text",
+      "text": "Beyond boundaries.",
+      "size": [
+        1920,
+        120
+      ],
+      "position": [
+        0,
+        64.8
+      ],
+      "style": {
+        "font": "assets/fonts/Poppins-Bold.ttf",
+        "font_size": 58,
+        "fill": "#FFFFFF"
+      },
+      "start_frame": 0,
+      "duration_frames": 120,
+      "animation": {
+        "tracks": [
+          {
+            "property": "position_x",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 40
+              },
+              {
+                "frame": 8,
+                "value": 0
+              }
+            ],
+            "easing": "out_cubic"
+          }
+        ]
+      }
+    }
+  ],
+  "output": {
+    "path": "result.mp4",
+    "format": "mp4",
+    "codec": "h264",
+    "profile_id": "preview"
+  }
+}

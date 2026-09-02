@@ -50,10 +50,14 @@ services:
         VERSION: 0.1.0
     environment:
       CHRONON_HOME: /opt/chronon3d
+      CHRONON_EXTERNAL_DAEMON: "1"
     tmpfs:
       - /dev/shm:size=4g,mode=1777
+    shm_size: 4g
     volumes:
       - renderinggen-cache:/var/lib/renderinggen/cache
+      - /run/chronon3d/chronon.sock:/var/run/chronon3d/chronon.sock
+      - /tmp/renderinggen/jobs:/tmp/renderinggen/jobs
       - ./worker-config-drive.yaml:/etc/renderinggen/config.yaml:ro
       - ./credentials.json:/etc/renderinggen/credentials.json:ro
       - ./token.json:/etc/renderinggen/token.json
@@ -72,10 +76,14 @@ services:
     image: docker-worker
     environment:
       CHRONON_HOME: /opt/chronon3d
+      CHRONON_EXTERNAL_DAEMON: "1"
     tmpfs:
       - /dev/shm:size=4g,mode=1777
+    shm_size: 4g
     volumes:
       - renderinggen-cache:/var/lib/renderinggen/cache
+      - /run/chronon3d/chronon.sock:/var/run/chronon3d/chronon.sock
+      - /tmp/renderinggen/jobs:/tmp/renderinggen/jobs
       - ./worker-config-b.yaml:/etc/renderinggen/config.yaml:ro
     depends_on:
       - queue

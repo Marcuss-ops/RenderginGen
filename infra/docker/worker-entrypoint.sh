@@ -46,6 +46,23 @@ echo "worker-entrypoint: chronon daemon backend = ${DAEMON_BACKEND} (source: ${D
 SOCKET_DIR="$(dirname "${SOCKET_PATH}")"
 mkdir -p "${SOCKET_DIR}"
 
+# On dedicated GPU nodes Chronon is a host systemd service. RenderingGen keeps
+# container isolation but connects to the already-warm host daemon over IPC.
+if [ "${CHRONON_EXTERNAL_DAEMON:-0}" = "1" ]; then
+  echo "worker-entrypoint: using external host Chronon daemon at ${SOCKET_PATH}"
+  i=0
+  while [ ! -S "${SOCKET_PATH}" ]; do
+    i=$((i + 1))
+    if [ "${i}" -ge 100 ]; then
+      echo "worker-entrypoint: external Chronon socket ${SOCKET_PATH} did not appear" >&2
+      exit 1
+    fi
+    sleep 0.2
+  done
+  echo "worker-entrypoint: external Chronon daemon ready"
+  exec /usr/local/bin/renderinggen --config /etc/renderinggen/config.yaml
+fi
+
 # Remove any stale socket left by a previous daemon (e.g. after a
 # `docker compose stop/start`).  The readiness check below keys off the socket
 # file's existence, so a leftover socket would make the worker start before

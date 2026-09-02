@@ -65,10 +65,17 @@ func fromTextMotionDefinitions(src []motion.TextAnimatorDefinition, duration int
 			selector.Order = "forward"
 		}
 		// A selector sweep is the renderer-neutral form of stagger: Chronon
-		// evaluates the animated end range per glyph/word every frame.
+		// evaluates the animated range per glyph/word every frame.
+		// For reveals (word_reveal, character_cascade), animating start from 0 -> 100
+		// with property values (opacity: 0, position_y: offset) makes glyphs start hidden/offset
+		// and progressively drop to their baseline as start sweeps past them.
 		if definition.Selector.Stagger > 0 {
-			selector.End = &AnimationTrack{Property: "end", Easing: "out_cubic", Keyframes: []AnimationKeyframe{
-				{Frame: 0, Value: 0.0}, {Frame: duration, Value: 100.0},
+			sweepDuration := duration
+			if sweepDuration > 72 {
+				sweepDuration = 72
+			}
+			selector.Start = &AnimationTrack{Property: "start", Easing: "out_cubic", Keyframes: []AnimationKeyframe{
+				{Frame: 0, Value: 0.0}, {Frame: sweepDuration, Value: 100.0},
 			}}
 		}
 		animator := concreteTextAnimator{ID: definition.ID, Selectors: []concreteTextSelector{selector}, Properties: fromTrackDefinitions(definition.Properties)}

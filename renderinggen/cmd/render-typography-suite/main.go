@@ -161,6 +161,12 @@ func item(id, motion, text string) semanticTypographyItem {
 	return semanticTypographyItem{ID: id, Template: "IMPORTANT_PHRASE", PresetID: "phrase_focus_v1", MotionID: motion, Text: text, EndMS: 5000}
 }
 
+func itemPos(id, motion, text string, posX, posY float64) semanticTypographyItem {
+	it := item(id, motion, text)
+	it.MotionArgs = map[string]any{"position_x": posX, "position_y": posY}
+	return it
+}
+
 func suiteSpecs() []benchmarkSpec {
 	t := "Designed for speed."
 	return []benchmarkSpec{
@@ -173,7 +179,8 @@ func suiteSpecs() []benchmarkSpec {
 		{ID: "07_soft_scale_reveal", Status: "supported", Items: []semanticTypographyItem{item("title", "soft_scale_reveal", t)}},
 		{ID: "08_precision_spring_up", Status: "supported", Items: []semanticTypographyItem{item("title", "precision_spring_up", t)}},
 		{ID: "09_split_line_reveal", Status: "supported", Items: []semanticTypographyItem{
-			item("line_a", "slide_left", "Create without limits."), item("line_b", "slide_right", "Beyond boundaries."),
+			itemPos("line_a", "slide_left", "Create without limits.", 0, 420.0),
+			itemPos("line_b", "slide_right", "Beyond boundaries.", 0, 560.0),
 		}},
 		{ID: "10_center_expansion", Status: "supported", Items: []semanticTypographyItem{item("title", "center_expansion", "PURE")}},
 		{ID: "11_rolling_words", Status: "blocked", Reason: "clip/group viewport primitive is not exposed by render-plan.v2"},
@@ -181,8 +188,10 @@ func suiteSpecs() []benchmarkSpec {
 		{ID: "13_scale_wave", Status: "supported", Items: []semanticTypographyItem{item("title", "scale_wave", t)}},
 		{ID: "14_char_wave", Status: "supported", Items: []semanticTypographyItem{item("title", "char_wave", t)}},
 		{ID: "15_hero_typography", Status: "supported", Items: []semanticTypographyItem{
-			item("tag", "fade_in", "INTRODUCING"), item("headline", "character_cascade", "The Next Dimension"),
-			item("subtitle", "tracking_expansion", "Engineered for speed."), item("keyword", "soft_scale_reveal", "Pure performance."),
+			itemPos("tag", "fade_in", "INTRODUCING", 0, 300.0),
+			itemPos("headline", "character_cascade", "The Next Dimension", 0, 420.0),
+			itemPos("subtitle", "tracking_expansion", "Engineered for speed.", 0, 560.0),
+			itemPos("keyword", "soft_scale_reveal", "Pure performance.", 0, 680.0),
 		}},
 	}
 }
