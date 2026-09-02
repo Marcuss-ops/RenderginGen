@@ -83,19 +83,32 @@ func ProbeFile(ctx context.Context, path string) (ProbeResult, error) {
 			result.FPSDen, _ = strconv.Atoi(parts[1])
 		}
 	}
-	// A packet-copy segment must begin with an IDR/key frame. Chronon emits
-	// closed GOP segments; this is verified here from the encoded stream rather
-	// than inferred from the render plan.
+
+	// A packet-copy segment must begin with an IDR/key frame. Only inspect the
+	// first decoded frame. The previous implementation used -show_frames with
+	// no interval, which walked and serialized every frame merely to read index
+	// zero and could become a sizeable post-render tax on long clips.
 	var frames struct {
 		Frames []struct {
 			Key int `json:"key_frame"`
 		} `json:"frames"`
 	}
-	frameCmd := exec.CommandContext(ctx, "ffprobe", "-v", "error", "-select_streams", "v:0", "-show_frames", "-show_entries", "frame=key_frame", "-of", "json", path)
+	frameCmd := exec.CommandContext(ctx, "ffprobe", "-v", "error", "-select_streams", "v:0",
+		"-read_intervals", "%+#1", "-show_frames", "-show_entries", "frame=key_frame", "-of", "json", path)
 	if frameOut, err := frameCmd.Output(); err == nil && json.Unmarshal(frameOut, &frames) == nil && len(frames.Frames) > 0 {
 		result.FirstFrameKeyframe = frames.Frames[0].Key == 1
-		if result.FrameCount == 0 {
-			result.FrameCount = len(frames.Frames)
+	}
+
+	// MP4 normally exposes nb_frames in the stream metadata above. Keep an
+	// exact fallback for containers that do not, but pay the full frame-count
+	// scan only in that exceptional case instead of on every render.
+	if result.FrameCount == 0 {
+		countCmd := exec.CommandContext(ctx, "ffprobe", "-v", "error", "-count_frames", "-select_streams", "v:0",
+			"-show_entries", "stream=nb_read_frames", "-of", "default=nokey=1:noprint_wrappers=1", path)
+		if countOut, err := countCmd.Output(); err == nil {
+			if n, err := strconv.Atoi(strings.TrimSpace(string(countOut))); err == nil {
+				result.FrameCount = n
+			}
 		}
 	}
 	return result, nil
