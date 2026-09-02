@@ -133,6 +133,13 @@ func (c *Client) ClaimPending(ctx context.Context) (*Job, error) {
 	return fromClaimed(claimed, err)
 }
 
+// ClaimPendingWait waits server-side for pending work instead of sleeping and
+// issuing a new HTTP claim on a fixed polling cadence.
+func (c *Client) ClaimPendingWait(ctx context.Context, wait time.Duration) (*Job, error) {
+	claimed, err := c.q.ClaimPendingWait(ctx, c.workerID, wait)
+	return fromClaimed(claimed, err)
+}
+
 // ClaimRendered claims only jobs awaiting external publication.
 func (c *Client) ClaimFinalization(ctx context.Context, parentID string) (*Job, bool, error) {
 	claimed, ok, err := c.q.ClaimFinalization(ctx, parentID, c.workerID)
@@ -159,6 +166,13 @@ func (c *Client) Children(ctx context.Context, parentID string) ([]*Job, error) 
 
 func (c *Client) ClaimRendered(ctx context.Context) (*Job, error) {
 	claimed, err := c.q.ClaimRendered(ctx, c.workerID)
+	return fromClaimed(claimed, err)
+}
+
+// ClaimRenderedWait waits server-side for the publication stage to become
+// claimable, avoiding a second independent polling ticker.
+func (c *Client) ClaimRenderedWait(ctx context.Context, wait time.Duration) (*Job, error) {
+	claimed, err := c.q.ClaimRenderedWait(ctx, c.workerID, wait)
 	return fromClaimed(claimed, err)
 }
 
