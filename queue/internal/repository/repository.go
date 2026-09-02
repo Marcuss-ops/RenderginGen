@@ -27,6 +27,12 @@ type JobRepository interface {
 	// completed. It returns ErrNotFound when the job does not exist.
 	Get(id string) (*model.Job, error)
 
+	// Children returns child chunks ordered by chunk index.
+	Children(parentJobID string) ([]*model.Job, error)
+
+	// ClaimFinalization atomically claims a parent whose children are ready.
+	ClaimFinalization(parentJobID, workerID string) (*model.Job, bool, error)
+
 	// Complete marks a running job as completed and records the rendered
 	// artifact. The service layer rejects incomplete artifact metadata before
 	// this method is called.

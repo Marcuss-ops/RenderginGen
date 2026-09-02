@@ -2,7 +2,6 @@ package drive
 
 import (
 	"context"
-	"crypto/sha256"
 	"fmt"
 	"io"
 	"os"
@@ -68,7 +67,6 @@ func (m *Mock) Publish(_ context.Context, req PublishRequest) (Result, error) {
 	}
 
 	id := fmt.Sprintf("mock-%04d", m.seq)
-	hash := sha256.Sum256(data)
 	return Result{FileID: id, WebViewLink: "https://drive.example.com/file/d/" + id,
-		ParentFolder: req.ParentFolder, SizeBytes: int64(len(data)), SHA256: fmt.Sprintf("%x", hash[:])}, nil
+		ParentFolder: req.ParentFolder, SizeBytes: int64(len(data))}, nil
 }

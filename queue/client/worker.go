@@ -15,6 +15,36 @@ import (
 // ClaimedJob is the payload returned to a worker on a successful claim. It is
 // a subset of Job plus the lease the worker must hold (and renew) while
 // rendering.
+// ClaimFinalization atomically claims a parent for finalization.
+func (c *Client) ClaimFinalization(ctx context.Context, parentID, workerID string) (*ClaimedJob, bool, error) {
+	body, err := json.Marshal(map[string]string{"worker": workerID})
+	if err != nil {
+		return nil, false, err
+	}
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.baseURL+"/jobs/"+url.PathEscape(parentID)+"/finalize/claim", bytes.NewReader(body))
+	if err != nil {
+		return nil, false, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := c.http.Do(req)
+	if err != nil {
+		return nil, false, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode == http.StatusNoContent {
+		return nil, false, nil
+	}
+	if resp.StatusCode != http.StatusOK {
+		raw, _ := io.ReadAll(resp.Body)
+		return nil, false, fmt.Errorf("queue finalize claim: HTTP %d: %s", resp.StatusCode, strings.TrimSpace(string(raw)))
+	}
+	var job ClaimedJob
+	if err := json.NewDecoder(resp.Body).Decode(&job); err != nil {
+		return nil, false, err
+	}
+	return &job, true, nil
+}
+
 type ClaimedJob struct {
 	ID             string      `json:"id"`
 	Schema         string      `json:"schema,omitempty"`

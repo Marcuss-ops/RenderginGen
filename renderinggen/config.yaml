@@ -17,7 +17,7 @@ artifact_store:
 # Prefer tmpfs on GPU workers; the worker falls back to persistent storage
 # when /dev/shm is unavailable.
 workspace:
-  root: /dev/shm/renderinggen/jobs
+  root: ""
 
 chronon:
   profile: gpu-vulkan-native

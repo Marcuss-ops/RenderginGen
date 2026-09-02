@@ -80,6 +80,13 @@ func (s *Service) SubmitIdempotent(job model.Job) (*model.Job, bool, error) {
 	return canonical, true, err
 }
 
+func (s *Service) ClaimFinalization(parentID, workerID string) (*model.Job, bool, error) {
+	job, claimed, err := s.repo.ClaimFinalization(parentID, workerID)
+	return job, claimed, err
+}
+
+func (s *Service) Children(parentID string) ([]*model.Job, error) { return s.repo.Children(parentID) }
+
 // Get returns the current state of a job, including its artifact when done.
 func (s *Service) Get(id string) (*model.Job, error) {
 	return s.repo.Get(id)
@@ -200,6 +207,34 @@ func (s *Service) RequeueExpired(now time.Time) (int, error) {
 	}
 	s.observePending()
 	return n, nil
+}
+
+// ValidateChildren enforces the parent chunk contract: exact expected count,
+// indices 0..N-1, contiguous half-open frame ranges, and completed artifacts.
+func ValidateChildren(children []*model.Job, expected int64, start, end int64) error {
+	if expected <= 0 || end <= start {
+		return fmt.Errorf("invalid parent chunk contract")
+	}
+	if int64(len(children)) != expected {
+		return fmt.Errorf("chunk count %d, want %d", len(children), expected)
+	}
+	cursor := start
+	for i, child := range children {
+		if child == nil || child.ChunkIndex != i {
+			return fmt.Errorf("chunk index at position %d is invalid", i)
+		}
+		if child.State != model.StateCompleted || child.Artifact == nil || child.Artifact.StorageKey == "" {
+			return fmt.Errorf("chunk %d is not completed with an artifact", i)
+		}
+		if child.FrameRange == nil || child.FrameRange.Start != cursor || child.FrameRange.End <= child.FrameRange.Start {
+			return fmt.Errorf("chunk %d has gap, overlap, or invalid frame range", i)
+		}
+		cursor = child.FrameRange.End
+	}
+	if cursor != end {
+		return fmt.Errorf("chunk ranges end at %d, want %d", cursor, end)
+	}
+	return nil
 }
 
 // Stats returns a snapshot of the queue state.

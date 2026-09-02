@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://renderinggen.dev/schemas/renderinggen.job.v1.schema.json",
   "title": "RenderingGen Job V1",
-  "description": "Envelope contract for a RenderingGen render job. One job corresponds to one video SEGMENT (never a single overlay): the render_plan contains every layer of the segment — base video, phrases, keywords, images and animations — so Chronon3d composes them in a single pass. RenderingGen is the orchestrator; the renderable content is a chronon.render-plan.v1 document produced upstream by PipelineGen, and RenderingGen forwards it unchanged (writing it to plan.json) together with a materialized asset root.",
+  "description": "Envelope contract for a RenderingGen render job. One job corresponds to one video SEGMENT (never a single overlay): the render_plan contains every layer of the segment — base video, phrases, keywords, images and animations — so Chronon3d composes them in a single pass. RenderingGen is the orchestrator; the renderable content is a semantic renderinggen.overlay-plan.v1 input is compiled by RenderingGen exclusively into chronon.render-plan.v2 before execution.",
   "type": "object",
   "additionalProperties": false,
   "required": ["id", "schema", "version", "render_plan", "assets"],
@@ -23,9 +23,9 @@
     "render_plan": {
       "anyOf": [
         { "$ref": "https://renderinggen.dev/schemas/overlay-plan.v1.schema.json" },
-        { "$ref": "https://chronon3d.dev/schemas/chronon.render-plan.v1.schema.json" }
+        { "$ref": "https://chronon3d.dev/schemas/chronon.render-plan.v2.schema.json" }
       ],
-      "description": "Either the semantic overlay-plan.v1 emitted by PipelineGen (compiled by RenderingGen) or the legacy/concrete chronon.render-plan.v1 document (passed through unchanged)."
+      "description": "The semantic overlay-plan.v1 emitted by PipelineGen; RenderingGen compiles it exclusively to chronon.render-plan.v2."
     },
     "assets": {
       "type": "array",

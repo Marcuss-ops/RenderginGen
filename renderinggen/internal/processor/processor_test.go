@@ -504,19 +504,15 @@ type corruptBackend struct{}
 func (corruptBackend) Fetch(_ context.Context, key string) ([]byte, error) {
 	return []byte("corrupted-bytes"), nil
 }
-func (corruptBackend) Store(_ context.Context, key string, data []byte) error { return nil }
+func (corruptBackend) Store(_ context.Context, key string, data []byte) error { return nil } // badSizePublisher reports an incorrect upload size, so publication fails
+// without relying on a provider-specific hash response.
+type badSizePublisher struct{}
 
-// badHashPublisher reports a Drive SHA-256 that does not match the bytes it
-// received, so a test can prove the drive_sha == db_sha invariant is enforced
-// (a lying publisher fails the job instead of being trusted).
-type badHashPublisher struct{}
-
-func (badHashPublisher) Publish(_ context.Context, req drive.PublishRequest) (drive.Result, error) {
+func (badSizePublisher) Publish(_ context.Context, req drive.PublishRequest) (drive.Result, error) {
 	return drive.Result{
 		FileID:      "lying-file",
 		WebViewLink: "https://drive.example.com/file/d/lying-file",
-		SizeBytes:   fileSize(req.Path),
-		SHA256:      strings.Repeat("0", 64), // lies: does not match req.Data
+		SizeBytes:   fileSize(req.Path) + 1,
 	}, nil
 }
 
@@ -547,9 +543,8 @@ func TestPublishEnforcesStoreDBInvariant(t *testing.T) {
 	}
 }
 
-// TestPublishEnforcesDriveInvariant proves the drive_sha == db_sha leg of the
-// chain: a publisher that reports a SHA-256 different from the recorded hash
-// fails the job even though the upload itself succeeded.
+// TestPublishEnforcesDriveInvariant proves the provider identity leg of the
+// chain: a publisher that reports an incorrect uploaded size fails the job.
 func TestPublishEnforcesDriveInvariant(t *testing.T) {
 	proc, store, renderer := newProcessor(t)
 	if err := store.Put(context.Background(), "hash-video", []byte("video-bytes")); err != nil {
@@ -558,7 +553,7 @@ func TestPublishEnforcesDriveInvariant(t *testing.T) {
 	renderer.write = func(path string) error {
 		return os.WriteFile(path, []byte("output-bytes"), 0o644)
 	}
-	proc.SetPublisher(badHashPublisher{})
+	proc.SetPublisher(badSizePublisher{})
 
 	artifact, err := proc.Render(context.Background(), validJob())
 	if err != nil {

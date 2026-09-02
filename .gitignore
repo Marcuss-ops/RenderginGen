@@ -27,3 +27,14 @@ objectstore/objectstore
 # Google Drive OAuth client + token (never commit)
 credentials.json
 token.json
+
+# Generated render/benchmark artifacts
+/renderinggen/*.mp4
+/renderinggen/*.mp4.timing.json
+/renderinggen/*.mp4.receipt.json
+/renderinggen/concurrent_test_videos/
+/renderinggen/modern_preset_videos/
+/renderinggen/phrase_preset_videos/
+/renderinggen/preset_videos/
+/renderinggen/typography_benchmark_videos/
+/renderinggen/warm_videos/

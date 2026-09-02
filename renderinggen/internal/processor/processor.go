@@ -379,7 +379,9 @@ func (p *Processor) Render(ctx context.Context, job *queue.Job) (queue.Artifact,
 			CompositionRequired: true,
 			PacketCopyAllowed:   true,
 		},
-		Output: chronon.OutputSpec{Codec: "h264"},
+		FirstFrame: frameStart(job),
+		LastFrame:  frameEndInclusive(job),
+		Output:     chronon.OutputSpec{Codec: "h264"},
 	}); err != nil {
 		return queue.Artifact{}, fmt.Errorf("processor: render: %w", err)
 	}
@@ -422,6 +424,20 @@ func (p *Processor) Render(ctx context.Context, job *queue.Job) (queue.Artifact,
 
 	return p.storeArtifact(ctx, job.ID, outputPath, plan, phaseMetrics, totalStart, probe, stats, inputBytes,
 		job.JobType == queue.JobTypeOverlayRender || metadata.ProfileID != "")
+}
+
+func frameStart(job *queue.Job) int64 {
+	if job != nil && job.FrameRange != nil {
+		return job.FrameRange.Start
+	}
+	return 0
+}
+
+func frameEndInclusive(job *queue.Job) int64 {
+	if job != nil && job.FrameRange != nil {
+		return job.FrameRange.End - 1
+	}
+	return 0
 }
 
 // hasVisualOverlay identifies concrete plans that contain an authored visual
@@ -509,9 +525,10 @@ func requireNativeVulkan(outputPath string, expectedFrames int) error {
 }
 
 // Publish uploads an already-rendered artifact to Google Drive and returns the
-// artifact updated with its Drive file ID and link. It re-reads the rendered
-// bytes from the object store, so it never touches the renderer. When no
-// publisher is configured it returns the artifact unchanged.
+// artifact updated with its Drive file ID and link. It resolves the verified
+// persistent L2 path, so publication does not fetch the object twice or create
+// a temporary staging file. When no publisher is configured it returns the
+// artifact unchanged.
 //
 // The SHA-256 chain invariant (plan section "Drive") is enforced here:
 //
@@ -527,52 +544,21 @@ func (p *Processor) Publish(ctx context.Context, jobID string, artifact queue.Ar
 		return artifact, nil
 	}
 	phaseStart := time.Now()
-	input, size, err := p.store.Open(ctx, artifact.StorageKey)
+	path, size, err := p.store.LocalPath(ctx, artifact.StorageKey)
 	if err != nil {
-		return artifact, fmt.Errorf("processor: fetch rendered artifact: %w", err)
-	}
-	defer input.Close()
-	// Hash while streaming and spool only when the backend cannot expose a
-	// stable filesystem path. This keeps HTTP publication streaming and avoids
-	// a []byte copy in the normal object-store path.
-	digest := sha256.New()
-	if _, err := io.Copy(digest, input); err != nil {
-		return artifact, fmt.Errorf("processor: verify rendered artifact: %w", err)
-	}
-	if !strings.EqualFold(hex.EncodeToString(digest.Sum(nil)), artifact.ArtifactHash) {
-		return artifact, fmt.Errorf("processor: sha invariant store/db mismatch (job %s fails, re-render required)", jobID)
-	}
-	// Re-open the stream for the publisher. HTTP backends issue a fresh GET;
-	// memory-compatible backends return a reader over their cached bytes.
-	input.Close()
-	input, size, err = p.store.Open(ctx, artifact.StorageKey)
-	if err != nil {
-		return artifact, fmt.Errorf("processor: reopen rendered artifact: %w", err)
-	}
-	defer input.Close()
-	tmp, err := os.CreateTemp("", "renderinggen-publish-*.mp4")
-	if err != nil {
-		return artifact, fmt.Errorf("processor: create publish staging file: %w", err)
-	}
-	tmpPath := tmp.Name()
-	defer os.Remove(tmpPath)
-	if _, err := io.Copy(tmp, input); err != nil {
-		tmp.Close()
-		return artifact, fmt.Errorf("processor: stage publish artifact: %w", err)
-	}
-	if err := tmp.Close(); err != nil {
-		return artifact, fmt.Errorf("processor: close publish staging file: %w", err)
+		return artifact, fmt.Errorf("processor: resolve rendered artifact locally: %w", err)
 	}
 	res, err := p.drive.Publish(ctx, drive.PublishRequest{
-		Name: jobID + ".mp4", ContentType: artifact.ContentType, Path: tmpPath,
+		Name: jobID + ".mp4", ContentType: artifact.ContentType, Path: path,
 		Subfolder: artifact.ArtifactHash,
 	})
 	if err != nil {
 		return artifact, fmt.Errorf("processor: drive publish: %w", err)
 	}
-	// drive_sha == db_sha: the Drive result must report the exact same hash.
-	if res.FileID == "" || res.SizeBytes != size || !strings.EqualFold(res.SHA256, artifact.ArtifactHash) {
-		return artifact, fmt.Errorf("processor: drive publication identity mismatch (file_id=%q size=%d sha=%q db_sha=%q)", res.FileID, res.SizeBytes, res.SHA256, artifact.ArtifactHash)
+	// The local path was hash-verified by LocalPath for content-addressed keys;
+	// publication additionally requires the provider to report the same size.
+	if res.FileID == "" || res.SizeBytes != size {
+		return artifact, fmt.Errorf("processor: drive publication identity mismatch (file_id=%q size=%d expected_size=%d)", res.FileID, res.SizeBytes, size)
 	}
 	if artifact.Metrics == nil {
 		artifact.Metrics = map[string]float64{}

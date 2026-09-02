@@ -51,6 +51,39 @@ func newRepo(t *testing.T, lease time.Duration, maxAttempts int) *Repository {
 	return r
 }
 
+func TestChunkMetadataRoundTripsThroughGetAndClaim(t *testing.T) {
+	r := newRepo(t, 30*time.Second, 3)
+	job := model.Job{ID: "parent-001-chunk-2", ParentJobID: "parent-001", ChunkIndex: 2, FrameRange: &model.FrameRange{Start: 240, End: 360}, RenderPlan: []byte(`{"schema":"chronon.render-plan"}`)}
+	if err := r.Submit(job); err != nil {
+		t.Fatal(err)
+	}
+	got, err := r.Get(job.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	assertChunkMetadata(t, got)
+	claimed, _, err := r.Claim("worker-1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	assertChunkMetadata(t, claimed)
+	if err := r.Fail(job.ID, "worker-1", "retry"); err != nil {
+		t.Fatal(err)
+	}
+	again, _, err := r.Claim("worker-2")
+	if err != nil {
+		t.Fatal(err)
+	}
+	assertChunkMetadata(t, again)
+}
+
+func assertChunkMetadata(t *testing.T, job *model.Job) {
+	t.Helper()
+	if job == nil || job.ParentJobID != "parent-001" || job.ChunkIndex != 2 || job.FrameRange == nil || job.FrameRange.Start != 240 || job.FrameRange.End != 360 {
+		t.Fatalf("chunk metadata = %+v", job)
+	}
+}
+
 func TestSubmitClaimComplete(t *testing.T) {
 	r := newRepo(t, 30*time.Second, 3)
 

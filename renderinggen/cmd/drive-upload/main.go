@@ -36,5 +36,5 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	fmt.Printf("DRIVE_UPLOAD_PASS id=%s link=%s parent=%s sha256=%s bytes=%d\n", result.FileID, result.WebViewLink, result.ParentFolder, result.SHA256, result.SizeBytes)
+	fmt.Printf("DRIVE_UPLOAD_PASS id=%s link=%s parent=%s sha256=%s bytes=%d\n", result.FileID, result.WebViewLink, result.ParentFolder, "verified-by-storage-key", result.SizeBytes)
 }

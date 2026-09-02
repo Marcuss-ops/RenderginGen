@@ -24,6 +24,8 @@ type RenderRequest struct {
 	PlanPath   string // path to the chronon.render-plan.v1 document (plan.json)
 	AssetsRoot string // directory the plan's relative asset references resolve against
 	OutputPath string // destination of the rendered output (e.g. result.mp4)
+	FirstFrame int64  // optional global first frame for chunk execution
+	LastFrame  int64  // optional inclusive global last frame for chunk execution
 	Report     bool   // emit the execution report + telemetry JSONL (--report)
 	// Requirements are semantic and backend-neutral. Chronon resolves them
 	// against the capabilities of the selected device.
@@ -126,6 +128,9 @@ func renderArgs(req RenderRequest) []string {
 	}
 	if req.Requirements.GPURequired {
 		args = append(args, "--hardware", "nvenc")
+	}
+	if req.LastFrame >= req.FirstFrame && (req.FirstFrame != 0 || req.LastFrame != 0) {
+		args = append(args, "--start-frame", fmt.Sprint(req.FirstFrame), "--end-frame", fmt.Sprint(req.LastFrame))
 	}
 	return args
 }

@@ -9,6 +9,7 @@ package memory
 
 import (
 	"fmt"
+	"sort"
 	"sync"
 	"time"
 
@@ -150,6 +151,54 @@ func (s *Repository) Get(id string) (*model.Job, error) {
 	return &copy, nil
 }
 
+// Children returns child chunks in deterministic chunk order.
+func (s *Repository) Children(parentJobID string) ([]*model.Job, error) {
+	if parentJobID == "" {
+		return nil, fmt.Errorf("parent job id is required")
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	children := make([]*model.Job, 0)
+	for _, job := range s.jobs {
+		if job.ParentJobID != parentJobID {
+			continue
+		}
+		copy := *job
+		if artifact, ok := s.artifacts[job.ID]; ok {
+			artifactCopy := artifact
+			copy.Artifact = &artifactCopy
+		}
+		children = append(children, &copy)
+	}
+	sort.Slice(children, func(i, j int) bool {
+		return children[i].ChunkIndex < children[j].ChunkIndex
+	})
+	return children, nil
+}
+
+// ClaimFinalization atomically claims a parent row for one finalizer.
+func (s *Repository) ClaimFinalization(parentJobID, workerID string) (*model.Job, bool, error) {
+	if parentJobID == "" || workerID == "" {
+		return nil, false, fmt.Errorf("parent job id and worker id are required")
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	job := s.jobs[parentJobID]
+	if job == nil {
+		return nil, false, fmt.Errorf("parent job %s: %w", parentJobID, repository.ErrNotFound)
+	}
+	if job.State == model.StateFinalizing {
+		return nil, false, nil
+	}
+	if job.State != model.StatePending && job.State != model.StateRunning {
+		return nil, false, fmt.Errorf("parent job %s is in state %q", parentJobID, job.State)
+	}
+	job.State = model.StateFinalizing
+	job.Worker = workerID
+	copy := *job
+	return &copy, true, nil
+}
+
 // Complete marks a running job as completed and records its artifact.
 func (s *Repository) Complete(id, workerID string, artifact model.Artifact) error {
 	s.mu.Lock()
@@ -273,8 +322,8 @@ func (s *Repository) runningJob(id, workerID string) (*model.Job, error) {
 	if job == nil {
 		return nil, fmt.Errorf("job %s not found", id)
 	}
-	if job.State != model.StateRunning {
-		return nil, fmt.Errorf("job %s is not running", id)
+	if job.State != model.StateRunning && job.State != model.StateFinalizing {
+		return nil, fmt.Errorf("job %s is not running or finalizing", id)
 	}
 	if job.Worker != workerID {
 		return nil, fmt.Errorf("job %s is owned by %s, not %s", id, job.Worker, workerID)

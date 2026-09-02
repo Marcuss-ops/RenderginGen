@@ -195,10 +195,23 @@ func (c *Config) validate() error {
 
 func defaultWorkspaceRoot() string {
 	const shmRoot = "/dev/shm"
-	if info, err := os.Stat(shmRoot); err == nil && info.IsDir() {
+	if info, err := os.Stat(shmRoot); err == nil && info.IsDir() && isWritableDirectory(shmRoot) {
 		return filepath.Join(shmRoot, "renderinggen", "jobs")
 	}
 	return "/var/lib/renderinggen/jobs"
+}
+
+func isWritableDirectory(path string) bool {
+	probe, err := os.CreateTemp(path, ".renderinggen-write-test-*")
+	if err != nil {
+		return false
+	}
+	name := probe.Name()
+	if err := probe.Close(); err != nil {
+		_ = os.Remove(name)
+		return false
+	}
+	return os.Remove(name) == nil
 }
 
 func hostname() string {

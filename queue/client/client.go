@@ -175,6 +175,28 @@ func (c *Client) Submit(ctx context.Context, job Job) error {
 	}
 }
 
+// Children returns a parent's child chunks in chunk order.
+func (c *Client) Children(ctx context.Context, parentID string) ([]Job, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.baseURL+"/jobs/"+url.PathEscape(parentID)+"/children", nil)
+	if err != nil {
+		return nil, err
+	}
+	resp, err := c.http.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		raw, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("queue children: HTTP %d: %s", resp.StatusCode, strings.TrimSpace(string(raw)))
+	}
+	var jobs []Job
+	if err := json.NewDecoder(resp.Body).Decode(&jobs); err != nil {
+		return nil, err
+	}
+	return jobs, nil
+}
+
 // Get returns the current state of a job, including its artifact once done.
 func (c *Client) Get(ctx context.Context, id string) (Job, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.baseURL+"/jobs/"+url.PathEscape(id), nil)

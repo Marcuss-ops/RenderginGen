@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/queue"
 )
@@ -130,6 +131,36 @@ func TestWritePlan(t *testing.T) {
 	}
 	if string(data) != `{"schema":"chronon.render-plan"}` {
 		t.Fatalf("plan content = %q", data)
+	}
+}
+
+func TestCleanupStaleRemovesExpiredAndKeepsActiveLease(t *testing.T) {
+	root := t.TempDir()
+	old := filepath.Join(root, "old")
+	active := filepath.Join(root, "active")
+	if err := os.MkdirAll(old, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(active, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	past := time.Now().Add(-2 * time.Hour)
+	for _, p := range []string{old, active} {
+		if err := os.Chtimes(p, past, past); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := os.WriteFile(filepath.Join(active, ".lease_until"), []byte(time.Now().Add(time.Hour).Format(time.RFC3339Nano)), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := CleanupStale(root, time.Hour); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(old); !os.IsNotExist(err) {
+		t.Fatalf("old workspace remains: %v", err)
+	}
+	if _, err := os.Stat(active); err != nil {
+		t.Fatalf("active workspace removed: %v", err)
 	}
 }
 
