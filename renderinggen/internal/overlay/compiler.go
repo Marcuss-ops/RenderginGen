@@ -491,7 +491,12 @@ func validateTextMotion(animators []concreteTextAnimator, id string) error {
 				break
 			}
 		}
-		if !nonOpacity && animator.Selectors[0].Unit != "layer" {
+		selector := animator.Selectors[0]
+		// An opacity-only animator is valid when it has a real per-element
+		// selector sweep (for example opacity_wave). A layer selector without
+		// that sweep is the legacy whole-layer fade we reject.
+		perElementSweep := selector.Unit != "layer" && selector.End != nil
+		if !nonOpacity && !perElementSweep {
 			return fmt.Errorf("overlay: motion %q collapsed to layer fade", id)
 		}
 	}
