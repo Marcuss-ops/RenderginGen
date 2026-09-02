@@ -69,11 +69,17 @@ services:
     #   - /dev/dri:/dev/dri
     restart: unless-stopped
 
-  # Second worker with a distinct worker id. Used to exercise concurrent
-  # claim/render across two real workers (Test 11): the atomic claim
-  # (FOR UPDATE SKIP LOCKED) must never hand the same job to both.
+  # Second worker with a distinct worker id. Build the exact same worker image
+  # from this repository instead of relying on an undeclared local-only image
+  # name ("docker-worker"). This keeps CI and fresh hosts reproducible while
+  # worker-config-b.yaml still supplies the distinct identity used by Test 11.
   worker-b:
-    image: docker-worker
+    build:
+      context: ../..
+      dockerfile: infra/docker/renderinggen-worker.Dockerfile
+      args:
+        CHRONON_RUNTIME: ghcr.io/marcuss-ops/chronon3d-runtime:0.1.0
+        VERSION: 0.1.0
     environment:
       CHRONON_HOME: /opt/chronon3d
       CHRONON_EXTERNAL_DAEMON: "1"
