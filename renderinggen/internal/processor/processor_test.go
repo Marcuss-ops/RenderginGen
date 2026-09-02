@@ -247,7 +247,7 @@ func TestProcessExecutesSemanticOverlayPlan(t *testing.T) {
 	}
 
 	// plan.json is the CONCRETE Chronon plan, never the semantic contract.
-	if string(capturedPlan) == "" || !strings.Contains(string(capturedPlan), `"schema":"chronon.render-plan"`) {
+	if string(capturedPlan) == "" || !strings.Contains(string(capturedPlan), `"schema":"chronon.render-plan.v2"`) {
 		t.Fatalf("plan.json is not the compiled concrete plan: %s", capturedPlan)
 	}
 	if strings.Contains(string(capturedPlan), "renderinggen.overlay-plan.v1") {
@@ -488,6 +488,14 @@ func TestRenderThenPublishRetrySkipsRender(t *testing.T) {
 	}
 }
 
+func fileSize(path string) int64 {
+	info, err := os.Stat(path)
+	if err != nil {
+		return 0
+	}
+	return info.Size()
+}
+
 // corruptBackend is an L3 object store that returns corrupted bytes for every
 // fetch, simulating a real corruption beneath the cache (the cache never
 // overwrites a content-addressed key, so a test must corrupt at the backend).
@@ -507,7 +515,7 @@ func (badHashPublisher) Publish(_ context.Context, req drive.PublishRequest) (dr
 	return drive.Result{
 		FileID:      "lying-file",
 		WebViewLink: "https://drive.example.com/file/d/lying-file",
-		SizeBytes:   int64(len(req.Data)),
+		SizeBytes:   fileSize(req.Path),
 		SHA256:      strings.Repeat("0", 64), // lies: does not match req.Data
 	}, nil
 }

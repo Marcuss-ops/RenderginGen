@@ -24,6 +24,13 @@ func (p DeclarativePlugin) Compile(ctx MotionContext, params MotionParams) ([]An
 	return tracks, nil
 }
 
+func (p DeclarativePlugin) CompileText(ctx MotionContext, params MotionParams) ([]TextAnimatorDefinition, error) {
+	if err := p.Validate(params); err != nil {
+		return nil, err
+	}
+	return append([]TextAnimatorDefinition(nil), p.Definition.TextAnimators...), nil
+}
+
 // CompileDefinition is useful to callers that load catalog definitions from JSON.
 func CompileDefinition(d MotionDefinition, ctx MotionContext, params MotionParams) ([]AnimationTrack, error) {
 	return DeclarativePlugin{Definition: d}.Compile(ctx, params)

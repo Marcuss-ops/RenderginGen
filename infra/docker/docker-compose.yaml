@@ -50,6 +50,8 @@ services:
         VERSION: 0.1.0
     environment:
       CHRONON_HOME: /opt/chronon3d
+    tmpfs:
+      - /dev/shm:size=4g,mode=1777
     volumes:
       - renderinggen-cache:/var/lib/renderinggen/cache
       - ./worker-config-drive.yaml:/etc/renderinggen/config.yaml:ro
@@ -70,6 +72,8 @@ services:
     image: docker-worker
     environment:
       CHRONON_HOME: /opt/chronon3d
+    tmpfs:
+      - /dev/shm:size=4g,mode=1777
     volumes:
       - renderinggen-cache:/var/lib/renderinggen/cache
       - ./worker-config-b.yaml:/etc/renderinggen/config.yaml:ro

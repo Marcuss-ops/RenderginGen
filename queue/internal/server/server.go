@@ -110,6 +110,9 @@ func (s *Server) claim(w http.ResponseWriter, r *http.Request) {
 		Version:        job.Version,
 		IdempotencyKey: job.IdempotencyKey,
 		JobType:        job.JobType,
+		ParentJobID:    job.ParentJobID,
+		ChunkIndex:     job.ChunkIndex,
+		FrameRange:     job.FrameRange,
 		RenderPlan:     job.RenderPlan,
 		Assets:         job.Assets,
 		Lease:          lease,
@@ -206,11 +209,14 @@ func (s *Server) health(w http.ResponseWriter, _ *http.Request) {
 
 // claimResponse is the payload returned to a worker on claim.
 type claimResponse struct {
-	ID             string `json:"id"`
-	Schema         string `json:"schema,omitempty"`
-	Version        int    `json:"version,omitempty"`
-	IdempotencyKey string `json:"idempotency_key,omitempty"`
-	JobType        string `json:"job_type,omitempty"`
+	ID             string            `json:"id"`
+	Schema         string            `json:"schema,omitempty"`
+	Version        int               `json:"version,omitempty"`
+	IdempotencyKey string            `json:"idempotency_key,omitempty"`
+	JobType        string            `json:"job_type,omitempty"`
+	ParentJobID    string            `json:"parent_job_id,omitempty"`
+	ChunkIndex     int               `json:"chunk_index,omitempty"`
+	FrameRange     *model.FrameRange `json:"frame_range,omitempty"`
 
 	RenderPlan json.RawMessage  `json:"render_plan"`
 	Assets     []model.AssetRef `json:"assets"`

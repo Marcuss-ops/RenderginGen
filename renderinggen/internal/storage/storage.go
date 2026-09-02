@@ -6,6 +6,7 @@
 package storage
 
 import (
+	"bytes"
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
@@ -72,6 +73,17 @@ func New(backend Backend, opts Options) *Client {
 
 // Get returns asset bytes for hash, resolving L1 -> L2 -> L3 and promoting
 // on each miss so the next lookup is faster.
+func (c *Client) Open(ctx context.Context, hash string) (io.ReadCloser, int64, error) {
+	if backend, ok := c.backend.(ReaderBackend); ok {
+		return backend.FetchReader(ctx, hash)
+	}
+	data, err := c.Get(ctx, hash)
+	if err != nil {
+		return nil, 0, err
+	}
+	return io.NopCloser(bytes.NewReader(data)), int64(len(data)), nil
+}
+
 func (c *Client) Get(ctx context.Context, hash string) ([]byte, error) {
 	if data, ok := c.l1.Get(hash); ok {
 		c.l1Hits.Add(1)
@@ -140,7 +152,7 @@ func (c *Client) Put(ctx context.Context, hash string, data []byte) error {
 // optional ReaderBackend path is fully streaming; older backends retain
 // compatibility through the existing byte-slice API.
 func (c *Client) PutReader(ctx context.Context, hash string, r io.Reader, size int64) error {
-	if backend, ok := c.backend.(ReaderBackend); ok {
+	if backend, ok := c.backend.(WriterBackend); ok {
 		return backend.StoreReader(ctx, hash, r, size)
 	}
 	data, err := io.ReadAll(r)

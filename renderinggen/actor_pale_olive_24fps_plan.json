@@ -1,0 +1,132 @@
+{
+  "schema": "chronon.render-plan",
+  "version": 1,
+  "job_id": "actor-pale-olive-24fps-e2e",
+  "canvas": {
+    "width": 1920,
+    "height": 1080,
+    "fps_num": 24,
+    "fps_den": 1,
+    "duration_frames": 360
+  },
+  "layers": [
+    {
+      "id": "bg_video",
+      "type": "video",
+      "source": "assets/Pale-Olive.mp4",
+      "box_width": 1920,
+      "box_height": 1080,
+      "fit": "cover",
+      "opacity": 1,
+      "start_frame": 0,
+      "duration_frames": 360
+    },
+    {
+      "id": "entity_1_image",
+      "type": "image",
+      "asset": "assets/actor_gerard.jpg",
+      "preset": "image_scale_in",
+      "box_width": 480,
+      "box_height": 480,
+      "fit": "contain",
+      "position": [
+        720,
+        220
+      ],
+      "opacity": 1,
+      "start_frame": 0,
+      "duration_frames": 120,
+      "animation": {
+        "preset": "scale_drop"
+      }
+    },
+    {
+      "id": "entity_2_text",
+      "type": "text",
+      "text": "Gerard Butler",
+      "preset": "lower_third_safe",
+      "font": "assets/fonts/Poppins-Bold.ttf",
+      "font_size": 64,
+      "color": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "opacity": 1,
+      "start_frame": 0,
+      "duration_frames": 120,
+      "animation": {
+        "preset": "fade_in"
+      }
+    },
+    {
+      "id": "entity_3_text",
+      "type": "text",
+      "text": "International Film Star",
+      "preset": "phrase_slide_up",
+      "font": "assets/fonts/Poppins-Bold.ttf",
+      "font_size": 68,
+      "color": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "opacity": 1,
+      "start_frame": 120,
+      "duration_frames": 120,
+      "animation": {
+        "preset": "reveal_from_bottom"
+      }
+    },
+    {
+      "id": "entity_4_image",
+      "type": "image",
+      "asset": "assets/actor_gerard.jpg",
+      "preset": "image_scale_in",
+      "box_width": 420,
+      "box_height": 420,
+      "fit": "contain",
+      "position": [
+        200,
+        330
+      ],
+      "opacity": 1,
+      "start_frame": 240,
+      "duration_frames": 96,
+      "animation": {
+        "preset": "scale_drop"
+      }
+    },
+    {
+      "id": "entity_5_text",
+      "type": "text",
+      "text": "Leading New Blockbuster Production",
+      "preset": "phrase_fade_in",
+      "font": "assets/fonts/Poppins-Bold.ttf",
+      "font_size": 54,
+      "position": [
+        280,
+        0
+      ],
+      "color": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "opacity": 1,
+      "start_frame": 240,
+      "duration_frames": 96,
+      "animation": {
+        "preset": "fade_in"
+      }
+    }
+  ],
+  "output": {
+    "path": "/home/pierone/src/go-master/projects/Pyt/VeloxEditing/RenderingGen/renderinggen/actor_pale_olive_24fps_1080p.mp4",
+    "format": "mp4",
+    "codec": "h264"
+  }
+}

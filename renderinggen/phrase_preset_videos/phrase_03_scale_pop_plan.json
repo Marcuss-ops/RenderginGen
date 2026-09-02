@@ -1,0 +1,50 @@
+{
+  "schema": "chronon.render-plan",
+  "version": 1,
+  "job_id": "phrase_03_scale_pop",
+  "canvas": {
+    "width": 1920,
+    "height": 1080,
+    "fps_num": 24,
+    "fps_den": 1,
+    "duration_frames": 120
+  },
+  "layers": [
+    {
+      "id": "bg_video",
+      "type": "video",
+      "source": "assets/Pale-Olive.mp4",
+      "box_width": 1920,
+      "box_height": 1080,
+      "fit": "cover",
+      "opacity": 1,
+      "start_frame": 0,
+      "duration_frames": 120
+    },
+    {
+      "id": "entity_1_text",
+      "type": "text",
+      "text": "BREAKING NEWS",
+      "preset": "phrase_scale_in",
+      "font": "assets/fonts/Inter-Bold.ttf",
+      "font_size": 76,
+      "color": [
+        0.08,
+        0.08,
+        0.12,
+        1
+      ],
+      "opacity": 1,
+      "start_frame": 0,
+      "duration_frames": 120,
+      "animation": {
+        "preset": "scale_drop"
+      }
+    }
+  ],
+  "output": {
+    "path": "/home/pierone/src/go-master/projects/Pyt/VeloxEditing/RenderingGen/renderinggen/phrase_preset_videos/phrase_03_scale_pop_24fps_1080p.mp4",
+    "format": "mp4",
+    "codec": "h264"
+  }
+}

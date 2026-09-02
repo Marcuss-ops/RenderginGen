@@ -8,8 +8,10 @@ artifact_store:
   endpoint: http://objectstore:9000
   local_cache_dir: /var/lib/renderinggen/cache
 
+# Prefer tmpfs on GPU workers; the worker falls back to persistent storage
+# when /dev/shm is unavailable.
 workspace:
-  root: /var/lib/renderinggen/jobs
+  root: /dev/shm/renderinggen/jobs
 
 chronon:
   profile: gpu-vulkan-native

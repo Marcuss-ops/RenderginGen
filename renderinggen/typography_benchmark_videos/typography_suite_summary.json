@@ -1,0 +1,137 @@
+[
+  {
+    "id": "typo_01_masked_slide_up",
+    "title": "01. Masked Slide Up",
+    "description": "La frase sale dal basso all'interno di una maschera virtuale fino alla posizione finale",
+    "text": "Designed for speed.",
+    "file_id": "1JFF1nx4K5w0xvFWY3bM380WwVsH1SiuT",
+    "drive_url": "https://drive.google.com/file/d/1JFF1nx4K5w0xvFWY3bM380WwVsH1SiuT/view?usp=drivesdk",
+    "sec": 3.067230604
+  },
+  {
+    "id": "typo_02_word_by_word",
+    "title": "02. Word-by-Word Reveal",
+    "description": "Ogni parola entra in sequenza dal basso con delay progressivo di 6 frame (250ms) e fade morbido",
+    "text": "Built to perform.",
+    "file_id": "1ksfhM66ZUsuCkod7Yk_mMAr2m1ZRtL-m",
+    "drive_url": "https://drive.google.com/file/d/1ksfhM66ZUsuCkod7Yk_mMAr2m1ZRtL-m/view?usp=drivesdk",
+    "sec": 2.037090156
+  },
+  {
+    "id": "typo_03_character_cascade",
+    "title": "03. Character Cascade (Per-Glyph)",
+    "description": "Cascata reale per-singola-lettera: ogni glifo sale da sotto con delay progressivo di 2 frame",
+    "text": "Powerfully simple.",
+    "file_id": "1Q00UtoskrHkVdXDJwqOoQjTVbTjfyzaz",
+    "drive_url": "https://drive.google.com/file/d/1Q00UtoskrHkVdXDJwqOoQjTVbTjfyzaz/view?usp=drivesdk",
+    "sec": 4.06466661
+  },
+  {
+    "id": "typo_04_tracking_collapse",
+    "title": "04. Tracking Collapse",
+    "description": "Le parole partono distanziate e convergono dolcemente al centro fino al kerning naturale",
+    "text": "The future is here.",
+    "file_id": "1WI_i0l1bxLdNauXd0_J0KKUaMbB-Z-AN",
+    "drive_url": "https://drive.google.com/file/d/1WI_i0l1bxLdNauXd0_J0KKUaMbB-Z-AN/view?usp=drivesdk",
+    "sec": 2.036792483
+  },
+  {
+    "id": "typo_05_tracking_expansion",
+    "title": "05. Tracking Expansion",
+    "description": "Testo compatto che si apre elegantemente in orizzontale durante il fade-in",
+    "text": "Performance without compromise.",
+    "file_id": "1WJ6QRRUplyr7KC75rfcnjwkR-FSbtFzt",
+    "drive_url": "https://drive.google.com/file/d/1WJ6QRRUplyr7KC75rfcnjwkR-FSbtFzt/view?usp=drivesdk",
+    "sec": 3.030068649
+  },
+  {
+    "id": "typo_06_blur_focus_in",
+    "title": "06. Blur Focus In",
+    "description": "Passaggio da sfocato a nitido con micro scale 1.04 -\u003e 1.00",
+    "text": "Faster. Smarter. Better.",
+    "file_id": "13rsWUYhnp50XJxIf2qwAP1Jtdzf4NyKh",
+    "drive_url": "https://drive.google.com/file/d/13rsWUYhnp50XJxIf2qwAP1Jtdzf4NyKh/view?usp=drivesdk",
+    "sec": 2.031745302
+  },
+  {
+    "id": "typo_07_soft_scale_reveal",
+    "title": "07. Soft Scale Reveal",
+    "description": "Scale 0.94 -\u003e 1.0 con curva OutCubic morbida e zero bounce",
+    "text": "Every detail matters.",
+    "file_id": "1WFyveze0lpj1sVz_9E9oAwvVnJSLpZJF",
+    "drive_url": "https://drive.google.com/file/d/1WFyveze0lpj1sVz_9E9oAwvVnJSLpZJF/view?usp=drivesdk",
+    "sec": 2.030594134
+  },
+  {
+    "id": "typo_08_precision_spring_up",
+    "title": "08. Precision Spring Up",
+    "description": "Risalita rapida con micro-overshoot millimetrico ed elastico",
+    "text": "Engineered for precision.",
+    "file_id": "1Q2bpEtrje737yWGBZPE8HvcNWR-3NH1P",
+    "drive_url": "https://drive.google.com/file/d/1Q2bpEtrje737yWGBZPE8HvcNWR-3NH1P/view?usp=drivesdk",
+    "sec": 2.030686726
+  },
+  {
+    "id": "typo_09_split_line_reveal",
+    "title": "09. Split Line Reveal",
+    "description": "Riga 1 entra da sinistra, Riga 2 risale dal basso, allineandosi perfettamente",
+    "text": "Create without limits.\nBeyond boundaries.",
+    "file_id": "1ToQjAhZWWD2cmfeBbu3-segykIwUf8Uy",
+    "drive_url": "https://drive.google.com/file/d/1ToQjAhZWWD2cmfeBbu3-segykIwUf8Uy/view?usp=drivesdk",
+    "sec": 3.040013359
+  },
+  {
+    "id": "typo_10_center_expansion",
+    "title": "10. Center Expansion",
+    "description": "Espansione orizzontale dal baricentro centrale verso destra e sinistra",
+    "text": "Pure performance.",
+    "file_id": "1B9OAVnx9NbPb2qxAQunbZ8V56UnNp6Ye",
+    "drive_url": "https://drive.google.com/file/d/1B9OAVnx9NbPb2qxAQunbZ8V56UnNp6Ye/view?usp=drivesdk",
+    "sec": 2.036392197
+  },
+  {
+    "id": "typo_11_rolling_words",
+    "title": "11. Rolling Words",
+    "description": "Transizione a rullo verticale: 'Fast.' -\u003e 'Powerful.' -\u003e 'Effortless.'",
+    "text": "Fast -\u003e Powerful -\u003e Effortless",
+    "file_id": "1oV-H0yzA_sBKjbv9x2YVHcRP9lb-py_B",
+    "drive_url": "https://drive.google.com/file/d/1oV-H0yzA_sBKjbv9x2YVHcRP9lb-py_B/view?usp=drivesdk",
+    "sec": 3.032330216
+  },
+  {
+    "id": "typo_12_opacity_wave",
+    "title": "12. Opacity Wave",
+    "description": "Onda luminosa di opacità che scorre progressivamente parola per parola",
+    "text": "Designed for speed.",
+    "file_id": "1Vdjw6TWX6JpqQOPB_VbtV6Q_fyXimCe3",
+    "drive_url": "https://drive.google.com/file/d/1Vdjw6TWX6JpqQOPB_VbtV6Q_fyXimCe3/view?usp=drivesdk",
+    "sec": 2.043893583
+  },
+  {
+    "id": "typo_13_scale_wave",
+    "title": "13. Scale Wave",
+    "description": "Micro-onda tipografica per-word: ogni parola pulsa in sequenza",
+    "text": "Built to perform.",
+    "file_id": "13IM4rZnKf6_WalGS58smx0aNW-L5dq9L",
+    "drive_url": "https://drive.google.com/file/d/13IM4rZnKf6_WalGS58smx0aNW-L5dq9L/view?usp=drivesdk",
+    "sec": 2.040883108
+  },
+  {
+    "id": "typo_14_char_wave",
+    "title": "14. Vertical Character Wave",
+    "description": "Onda verticale per-lettera con sollevamento e riposizionamento sequenziale",
+    "text": "Powerfully simple.",
+    "file_id": "1I23OgHHQEANqJf4Va1r2HAtVO1etT7yT",
+    "drive_url": "https://drive.google.com/file/d/1I23OgHHQEANqJf4Va1r2HAtVO1etT7yT/view?usp=drivesdk",
+    "sec": 4.060751365
+  },
+  {
+    "id": "typo_15_hero_typography",
+    "title": "15. Hero Typography Sequence",
+    "description": "Master Benchmark: tag fade -\u003e headline masked -\u003e subline word reveal -\u003e punch scale",
+    "text": "INTRODUCING / The Next Dimension / Engineered for speed. / Pure performance.",
+    "file_id": "1eKf9loF-Dr8y3MncTnnURg-iq52qNEds",
+    "drive_url": "https://drive.google.com/file/d/1eKf9loF-Dr8y3MncTnnURg-iq52qNEds/view?usp=drivesdk",
+    "sec": 3.031552147
+  }
+]

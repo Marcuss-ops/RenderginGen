@@ -4,6 +4,7 @@ package config
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"gopkg.in/yaml.v3"
 )
@@ -142,7 +143,7 @@ func applyDefaults(c *Config) {
 		c.ArtifactStore.LocalCacheDir = "/var/lib/renderinggen/cache"
 	}
 	if c.Workspace.Root == "" {
-		c.Workspace.Root = "/var/lib/renderinggen/jobs"
+		c.Workspace.Root = defaultWorkspaceRoot()
 	}
 	if c.Health.Addr == "" {
 		c.Health.Addr = ":8080"
@@ -190,6 +191,14 @@ func (c *Config) validate() error {
 		}
 	}
 	return nil
+}
+
+func defaultWorkspaceRoot() string {
+	const shmRoot = "/dev/shm"
+	if info, err := os.Stat(shmRoot); err == nil && info.IsDir() {
+		return filepath.Join(shmRoot, "renderinggen", "jobs")
+	}
+	return "/var/lib/renderinggen/jobs"
 }
 
 func hostname() string {

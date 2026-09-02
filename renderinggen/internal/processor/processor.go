@@ -527,28 +527,51 @@ func (p *Processor) Publish(ctx context.Context, jobID string, artifact queue.Ar
 		return artifact, nil
 	}
 	phaseStart := time.Now()
-	data, err := p.store.Get(ctx, artifact.StorageKey)
+	input, size, err := p.store.Open(ctx, artifact.StorageKey)
 	if err != nil {
 		return artifact, fmt.Errorf("processor: fetch rendered artifact: %w", err)
 	}
-	// store_sha == db_sha: the object store must return the exact bytes the
-	// worker hashed and recorded. A corrupted/mismatched object fails the
-	// publication BEFORE anything is uploaded to Drive.
-	storeSHA := storage.Hash(data)
-	if !strings.EqualFold(storeSHA, artifact.ArtifactHash) {
-		return artifact, fmt.Errorf("processor: sha invariant store/db mismatch: store_sha=%s db_sha=%s (job %s fails, re-render required)", storeSHA, artifact.ArtifactHash, jobID)
+	defer input.Close()
+	// Hash while streaming and spool only when the backend cannot expose a
+	// stable filesystem path. This keeps HTTP publication streaming and avoids
+	// a []byte copy in the normal object-store path.
+	digest := sha256.New()
+	if _, err := io.Copy(digest, input); err != nil {
+		return artifact, fmt.Errorf("processor: verify rendered artifact: %w", err)
+	}
+	if !strings.EqualFold(hex.EncodeToString(digest.Sum(nil)), artifact.ArtifactHash) {
+		return artifact, fmt.Errorf("processor: sha invariant store/db mismatch (job %s fails, re-render required)", jobID)
+	}
+	// Re-open the stream for the publisher. HTTP backends issue a fresh GET;
+	// memory-compatible backends return a reader over their cached bytes.
+	input.Close()
+	input, size, err = p.store.Open(ctx, artifact.StorageKey)
+	if err != nil {
+		return artifact, fmt.Errorf("processor: reopen rendered artifact: %w", err)
+	}
+	defer input.Close()
+	tmp, err := os.CreateTemp("", "renderinggen-publish-*.mp4")
+	if err != nil {
+		return artifact, fmt.Errorf("processor: create publish staging file: %w", err)
+	}
+	tmpPath := tmp.Name()
+	defer os.Remove(tmpPath)
+	if _, err := io.Copy(tmp, input); err != nil {
+		tmp.Close()
+		return artifact, fmt.Errorf("processor: stage publish artifact: %w", err)
+	}
+	if err := tmp.Close(); err != nil {
+		return artifact, fmt.Errorf("processor: close publish staging file: %w", err)
 	}
 	res, err := p.drive.Publish(ctx, drive.PublishRequest{
-		Name:        jobID + ".mp4",
-		ContentType: artifact.ContentType,
-		Data:        data,
-		Subfolder:   artifact.ArtifactHash,
+		Name: jobID + ".mp4", ContentType: artifact.ContentType, Path: tmpPath,
+		Subfolder: artifact.ArtifactHash,
 	})
 	if err != nil {
 		return artifact, fmt.Errorf("processor: drive publish: %w", err)
 	}
 	// drive_sha == db_sha: the Drive result must report the exact same hash.
-	if res.FileID == "" || res.SizeBytes != int64(len(data)) || !strings.EqualFold(res.SHA256, artifact.ArtifactHash) {
+	if res.FileID == "" || res.SizeBytes != size || !strings.EqualFold(res.SHA256, artifact.ArtifactHash) {
 		return artifact, fmt.Errorf("processor: drive publication identity mismatch (file_id=%q size=%d sha=%q db_sha=%q)", res.FileID, res.SizeBytes, res.SHA256, artifact.ArtifactHash)
 	}
 	if artifact.Metrics == nil {

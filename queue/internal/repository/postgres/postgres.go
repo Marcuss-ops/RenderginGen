@@ -55,6 +55,12 @@ func (r *Repository) Submit(job model.Job) error {
 	if job.ID == "" {
 		return fmt.Errorf("job id is required")
 	}
+	if job.FrameRange != nil && (job.FrameRange.Start < 0 || job.FrameRange.End <= job.FrameRange.Start) {
+		return fmt.Errorf("invalid frame_range for job %s", job.ID)
+	}
+	if job.ChunkIndex < 0 {
+		return fmt.Errorf("invalid chunk_index for job %s", job.ID)
+	}
 	schema := job.Schema
 	if schema == "" {
 		schema = model.JobSchemaV1
@@ -80,10 +86,10 @@ func (r *Repository) Submit(job model.Job) error {
 	defer tx.Rollback()
 
 	res, err := tx.ExecContext(ctx, `
-		INSERT INTO render_jobs (id, job_type, job_schema, job_schema_version, render_plan, input_manifest, max_attempts, idempotency_key)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, NULLIF($8, ''))
+		INSERT INTO render_jobs (id, job_type, job_schema, job_schema_version, render_plan, input_manifest, max_attempts, idempotency_key, parent_job_id, chunk_index, frame_range)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, NULLIF($8, ''), NULLIF($9, ''), $10, $11)
 		ON CONFLICT (id) DO NOTHING`,
-		job.ID, nonEmptyJobType(job.JobType), schema, version, plan, manifest, r.maxAttempts, job.IdempotencyKey)
+		job.ID, nonEmptyJobType(job.JobType), schema, version, plan, manifest, r.maxAttempts, job.IdempotencyKey, job.ParentJobID, job.ChunkIndex, job.FrameRange)
 	if err != nil {
 		return err
 	}
@@ -147,15 +153,18 @@ func (r *Repository) ClaimState(workerID string, state model.State) (*model.Job,
 	leaseUntil := now.Add(r.lease)
 
 	var (
-		id         string
-		jobType    string
-		schema     string
-		version    sql.NullInt64
-		plan       []byte
-		manifest   []byte
-		attempts   int
-		queuedAt   time.Time
-		artifactID sql.NullString
+		id          string
+		jobType     string
+		schema      string
+		version     sql.NullInt64
+		plan        []byte
+		manifest    []byte
+		attempts    int
+		queuedAt    time.Time
+		artifactID  sql.NullString
+		parentJobID sql.NullString
+		chunkIndex  int
+		frameRange  []byte
 	)
 	stateFilter := "state IN ('pending', 'rendered')"
 	if state != "" {
@@ -165,12 +174,12 @@ func (r *Repository) ClaimState(workerID string, state model.State) (*model.Job,
 		stateFilter = "state = '" + string(state) + "'"
 	}
 	err = tx.QueryRowContext(ctx, `
-		SELECT id, job_type, job_schema, job_schema_version, render_plan, input_manifest, attempt_count, queued_at, artifact_id
+		SELECT id, job_type, job_schema, job_schema_version, render_plan, input_manifest, attempt_count, queued_at, artifact_id, parent_job_id, chunk_index, frame_range
 		FROM render_jobs
 		WHERE `+stateFilter+`
 		ORDER BY priority DESC, queued_at ASC
 		FOR UPDATE SKIP LOCKED
-		LIMIT 1`).Scan(&id, &jobType, &schema, &version, &plan, &manifest, &attempts, &queuedAt, &artifactID)
+		LIMIT 1`).Scan(&id, &jobType, &schema, &version, &plan, &manifest, &attempts, &queuedAt, &artifactID, &parentJobID, &chunkIndex, &frameRange)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, 0, nil
 	}
@@ -202,19 +211,21 @@ func (r *Repository) ClaimState(workerID string, state model.State) (*model.Job,
 		return nil, 0, err
 	}
 
-	job := &model.Job{
-		ID:         id,
-		JobType:    jobType,
-		Schema:     schema,
-		Version:    schemaVersion(version),
-		RenderPlan: json.RawMessage(plan),
-		Assets:     decodeAssets(manifest),
-		State:      model.StateRunning,
-		Worker:     workerID,
-		Attempts:   attemptNumber,
-		QueuedAt:   queuedAt,
-		StartedAt:  now,
-		LeaseUntil: leaseUntil,
+	job := &model.Job{ID: id,
+		ParentJobID: parentJobID.String,
+		ChunkIndex:  chunkIndex,
+		FrameRange:  decodeFrameRange(frameRange),
+		JobType:     jobType,
+		Schema:      schema,
+		Version:     schemaVersion(version),
+		RenderPlan:  json.RawMessage(plan),
+		Assets:      decodeAssets(manifest),
+		State:       model.StateRunning,
+		Worker:      workerID,
+		Attempts:    attemptNumber,
+		QueuedAt:    queuedAt,
+		StartedAt:   now,
+		LeaseUntil:  leaseUntil,
 	}
 	// A job re-claimed from the rendered state carries its already-stored
 	// artifact so the worker can skip rendering and only retry publication.
@@ -610,6 +621,17 @@ func schemaVersion(v sql.NullInt64) int {
 }
 
 // decodeAssets extracts the asset references from an input_manifest JSONB.
+func decodeFrameRange(raw []byte) *model.FrameRange {
+	if len(raw) == 0 {
+		return nil
+	}
+	var result model.FrameRange
+	if json.Unmarshal(raw, &result) != nil {
+		return nil
+	}
+	return &result
+}
+
 func decodeAssets(raw []byte) []model.AssetRef {
 	if len(raw) == 0 {
 		return nil

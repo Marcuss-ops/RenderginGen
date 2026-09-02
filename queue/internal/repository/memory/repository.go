@@ -61,6 +61,9 @@ func (s *Repository) SubmitIdempotent(job model.Job) (*model.Job, bool, error) {
 		return nil, false, fmt.Errorf("job %s already exists", job.ID)
 	}
 	now := time.Now()
+	if err := validateChunkMetadata(job); err != nil {
+		return nil, false, err
+	}
 	job.State, job.CreatedAt, job.QueuedAt = model.StatePending, now, now
 	s.jobs[job.ID] = &job
 	s.order = append(s.order, job.ID)
@@ -79,11 +82,24 @@ func (s *Repository) Submit(job model.Job) error {
 		return fmt.Errorf("job %s already exists", job.ID)
 	}
 	now := time.Now()
+	if err := validateChunkMetadata(job); err != nil {
+		return err
+	}
 	job.State = model.StatePending
 	job.CreatedAt = now
 	job.QueuedAt = now
 	s.jobs[job.ID] = &job
 	s.order = append(s.order, job.ID)
+	return nil
+}
+
+func validateChunkMetadata(job model.Job) error {
+	if job.FrameRange != nil && (job.FrameRange.Start < 0 || job.FrameRange.End <= job.FrameRange.Start) {
+		return fmt.Errorf("invalid frame_range for job %s", job.ID)
+	}
+	if job.ChunkIndex < 0 {
+		return fmt.Errorf("invalid chunk_index for job %s", job.ID)
+	}
 	return nil
 }
 

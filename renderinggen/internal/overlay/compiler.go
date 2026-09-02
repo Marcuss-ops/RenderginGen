@@ -228,22 +228,49 @@ type concreteOutput struct {
 	ProfileID string `json:"profile_id,omitempty"`
 }
 type concreteLayer struct {
-	ID             string             `json:"id"`
-	Type           string             `json:"type"`
-	Asset          string             `json:"asset,omitempty"`
-	Source         string             `json:"source,omitempty"`
-	Color          []float64          `json:"color,omitempty"`
-	Text           string             `json:"text,omitempty"`
-	BoxWidth       int                `json:"box_width,omitempty"`
-	BoxHeight      int                `json:"box_height,omitempty"`
-	Fit            string             `json:"fit,omitempty"`
-	Position       []float64          `json:"position,omitempty"`
-	Style          *LayerStyle        `json:"style,omitempty"`
-	StartFrame     int64              `json:"start_frame"`
-	DurationFrames int64              `json:"duration_frames"`
-	Animation      *concreteAnimation `json:"animation,omitempty"`
-	Opacity        float64            `json:"opacity,omitempty"`
-	Loop           bool               `json:"loop,omitempty"`
+	ID             string                 `json:"id"`
+	Type           string                 `json:"type"`
+	Asset          string                 `json:"asset,omitempty"`
+	Source         string                 `json:"source,omitempty"`
+	Color          []float64              `json:"color,omitempty"`
+	Text           string                 `json:"text,omitempty"`
+	BoxWidth       int                    `json:"-"`
+	BoxHeight      int                    `json:"-"`
+	Size           []float64              `json:"size,omitempty"`
+	Fit            string                 `json:"fit,omitempty"`
+	Position       []float64              `json:"position,omitempty"`
+	Style          *concreteStyle         `json:"style,omitempty"`
+	StartFrame     int64                  `json:"start_frame"`
+	DurationFrames int64                  `json:"duration_frames"`
+	Animation      *concreteAnimation     `json:"animation,omitempty"`
+	TextAnimators  []concreteTextAnimator `json:"text_animators,omitempty"`
+	Opacity        float64                `json:"opacity,omitempty"`
+	Loop           bool                   `json:"loop,omitempty"`
+}
+type concreteStyle struct {
+	Font     string          `json:"font,omitempty"`
+	FontSize float64         `json:"font_size,omitempty"`
+	Fill     string          `json:"fill,omitempty"`
+	Shadow   *concreteShadow `json:"shadow,omitempty"`
+}
+type concreteTextSelector struct {
+	ID             string          `json:"id,omitempty"`
+	Unit           string          `json:"unit,omitempty"`
+	Shape          string          `json:"shape,omitempty"`
+	Order          string          `json:"order,omitempty"`
+	Combine        string          `json:"combine,omitempty"`
+	Start          *AnimationTrack `json:"start,omitempty"`
+	End            *AnimationTrack `json:"end,omitempty"`
+	Offset         *AnimationTrack `json:"offset,omitempty"`
+	Amount         *AnimationTrack `json:"amount,omitempty"`
+	ExcludeSpaces  bool            `json:"exclude_spaces,omitempty"`
+	RandomizeOrder bool            `json:"randomize_order,omitempty"`
+	RandomSeed     uint64          `json:"random_seed,omitempty"`
+}
+type concreteTextAnimator struct {
+	ID         string                 `json:"id,omitempty"`
+	Selectors  []concreteTextSelector `json:"selectors"`
+	Properties []AnimationTrack       `json:"properties"`
 }
 type concreteStroke struct {
 	Color string  `json:"color,omitempty"`
@@ -262,7 +289,8 @@ type concreteBackground struct {
 	Padding []float64 `json:"padding,omitempty"`
 }
 type concreteAnimation struct {
-	Tracks []AnimationTrack `json:"tracks,omitempty"`
+	Tracks        []AnimationTrack       `json:"tracks,omitempty"`
+	TextAnimators []concreteTextAnimator `json:"-"`
 }
 
 var safeAssetID = regexp.MustCompile(`[^A-Za-z0-9._-]+`)
@@ -278,7 +306,7 @@ func compileSemantic(raw []byte) ([]byte, []Asset, error) {
 	if len(src.Items) == 0 {
 		return nil, nil, fmt.Errorf("overlay: semantic plan has no items")
 	}
-	plan := concretePlan{Schema: "chronon.render-plan", Version: 1, JobID: src.PlanID,
+	plan := concretePlan{Schema: "chronon.render-plan.v2", Version: 2, JobID: src.PlanID,
 		Canvas: concreteCanvas{Width: src.Width, Height: src.Height, FPSNum: src.FPSNum, FPSDen: src.FPSDen},
 		Output: concreteOutput{Path: "result.mp4", Format: "mp4", Codec: "h264", ProfileID: src.OutputProfileID}}
 	assetPaths := map[string]string{}
@@ -307,7 +335,8 @@ func compileSemantic(raw []byte) ([]byte, []Asset, error) {
 			}
 		}
 		layer := concreteLayer{ID: "background", Type: kind, BoxWidth: src.Width, BoxHeight: src.Height,
-			Fit: bg.Fit, StartFrame: 0}
+			Size: []float64{float64(src.Width), float64(src.Height)},
+			Fit:  bg.Fit, StartFrame: 0}
 		if kind != "color" && layer.Fit == "" {
 			layer.Fit = "cover"
 		}
@@ -393,7 +422,10 @@ func compileSemantic(raw []byte) ([]byte, []Asset, error) {
 			if err != nil {
 				return nil, nil, err
 			}
-			layer.Animation = animation
+			if len(animation.Tracks) > 0 {
+				layer.Animation = animation
+			}
+			layer.TextAnimators = animation.TextAnimators
 		} else if preset != "" {
 			layer.Animation = animationForDefinition(definition)
 		}
@@ -429,7 +461,39 @@ func animationForMotion(id string, params map[string]any, textValue string, dura
 	if err != nil {
 		return nil, fmt.Errorf("overlay: compile motion %q: %w", id, err)
 	}
-	return &concreteAnimation{Tracks: fromMotionTracks(tracks)}, nil
+	animation := &concreteAnimation{Tracks: fromMotionTracks(tracks)}
+	if textPlugin, ok := plugin.(motion.TextMotionPlugin); ok {
+		textDefinitions, err := textPlugin.CompileText(
+			motion.MotionContext{Text: textValue, DurationFrames: duration},
+			motion.MotionParams(params))
+		if err != nil {
+			return nil, fmt.Errorf("compile text motion %q: %w", id, err)
+		}
+		animation.TextAnimators = fromTextMotionDefinitions(textDefinitions, duration)
+		if err := validateTextMotion(animation.TextAnimators, id); err != nil {
+			return nil, err
+		}
+	}
+	return animation, nil
+}
+
+func validateTextMotion(animators []concreteTextAnimator, id string) error {
+	for _, animator := range animators {
+		if len(animator.Selectors) == 0 || len(animator.Properties) == 0 {
+			return fmt.Errorf("overlay: motion %q collapsed to an empty text animator", id)
+		}
+		nonOpacity := false
+		for _, track := range animator.Properties {
+			if track.Property != "opacity" {
+				nonOpacity = true
+				break
+			}
+		}
+		if !nonOpacity && animator.Selectors[0].Unit != "layer" {
+			return fmt.Errorf("overlay: motion %q collapsed to layer fade", id)
+		}
+	}
+	return nil
 }
 
 func msFrames(start, end, fpsNum, fpsDen int64) (int64, int64) {
@@ -536,7 +600,8 @@ func semanticAssetPath(ref semanticAssetRef) string {
 	return "assets/semantic/" + id + ext
 }
 func imageLayer(item semanticItem, start, end int64, asset string, params map[string]any) concreteLayer {
-	return concreteLayer{ID: item.ID + "_image", Type: "image", Asset: asset, BoxWidth: intParam(params, "width", 320), BoxHeight: intParam(params, "height", 320), Fit: stringParam(params, "fit", "contain"), StartFrame: start, DurationFrames: end - start}
+	w, h := intParam(params, "width", 320), intParam(params, "height", 320)
+	return concreteLayer{ID: item.ID + "_image", Type: "image", Asset: asset, BoxWidth: w, BoxHeight: h, Size: []float64{float64(w), float64(h)}, Fit: stringParam(params, "fit", "contain"), StartFrame: start, DurationFrames: end - start}
 }
 
 func applyPresetDefinition(layer *concreteLayer, d OfficialPresetDefinition) {
@@ -552,10 +617,10 @@ func applyPresetDefinition(layer *concreteLayer, d OfficialPresetDefinition) {
 		}
 		return
 	}
-	layer.Style = &LayerStyle{FontFamily: d.Style.FontFamily, FontWeight: 700, FontSize: d.Style.FontSize, Fill: rgbaHex(d.Style.Fill)}
+	layer.Style = &concreteStyle{Font: d.Style.FontFamily, FontSize: d.Style.FontSize, Fill: rgbaHex(d.Style.Fill)}
 	if d.Style.Shadow != nil {
 		s := d.Style.Shadow
-		layer.Style.Shadow = &LayerShadow{Color: s.Color, Opacity: s.Opacity, Blur: s.Blur, Offset: append([]float64(nil), s.Offset...)}
+		layer.Style.Shadow = &concreteShadow{Color: s.Color, Opacity: s.Opacity, Blur: s.Blur, Offset: append([]float64(nil), s.Offset...)}
 	}
 }
 
@@ -570,7 +635,9 @@ func rgbaHex(v []float64) string {
 	if len(v) != 4 {
 		return ""
 	}
-	return fmt.Sprintf("#%02X%02X%02X%02X", int(v[0]*255), int(v[1]*255), int(v[2]*255), int(v[3]*255))
+	// Chronon render-plan.v2 uses opaque six-digit CSS colors. Alpha is
+	// carried by layer/style opacity fields, never embedded in the color.
+	return fmt.Sprintf("#%02X%02X%02X", int(v[0]*255), int(v[1]*255), int(v[2]*255))
 }
 
 func intParam(p map[string]any, key string, fallback int) int {

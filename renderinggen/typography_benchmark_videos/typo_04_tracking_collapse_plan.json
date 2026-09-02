@@ -1,0 +1,126 @@
+{
+  "schema": "chronon.render-plan",
+  "version": 1,
+  "job_id": "typo_04_tracking_collapse",
+  "canvas": {
+    "width": 1920,
+    "height": 1080,
+    "fps_num": 24,
+    "fps_den": 1,
+    "duration_frames": 120
+  },
+  "layers": [
+    {
+      "id": "bg_video",
+      "type": "video",
+      "source": "assets/Pale-Olive.mp4",
+      "box_width": 1920,
+      "box_height": 1080,
+      "fit": "cover",
+      "opacity": 1,
+      "start_frame": 0,
+      "duration_frames": 120
+    },
+    {
+      "id": "track_col_word_0",
+      "type": "text",
+      "text": "The",
+      "preset": "phrase_slide_up",
+      "font": "assets/fonts/Inter-Bold.ttf",
+      "font_size": 72,
+      "position": [
+        710.16,
+        0
+      ],
+      "color": [
+        0.08,
+        0.08,
+        0.12,
+        1
+      ],
+      "opacity": 1,
+      "start_frame": 0,
+      "duration_frames": 120,
+      "animation": {
+        "preset": "reveal_from_bottom"
+      }
+    },
+    {
+      "id": "track_col_word_1",
+      "type": "text",
+      "text": "future",
+      "preset": "phrase_slide_up",
+      "font": "assets/fonts/Inter-Bold.ttf",
+      "font_size": 72,
+      "position": [
+        898.0799999999999,
+        0
+      ],
+      "color": [
+        0.08,
+        0.08,
+        0.12,
+        1
+      ],
+      "opacity": 1,
+      "start_frame": 4,
+      "duration_frames": 116,
+      "animation": {
+        "preset": "reveal_from_bottom"
+      }
+    },
+    {
+      "id": "track_col_word_2",
+      "type": "text",
+      "text": "is",
+      "preset": "phrase_slide_up",
+      "font": "assets/fonts/Inter-Bold.ttf",
+      "font_size": 72,
+      "position": [
+        1050.72,
+        0
+      ],
+      "color": [
+        0.08,
+        0.08,
+        0.12,
+        1
+      ],
+      "opacity": 1,
+      "start_frame": 8,
+      "duration_frames": 112,
+      "animation": {
+        "preset": "reveal_from_bottom"
+      }
+    },
+    {
+      "id": "track_col_word_3",
+      "type": "text",
+      "text": "here.",
+      "preset": "phrase_slide_up",
+      "font": "assets/fonts/Inter-Bold.ttf",
+      "font_size": 72,
+      "position": [
+        1186.8,
+        0
+      ],
+      "color": [
+        0.08,
+        0.08,
+        0.12,
+        1
+      ],
+      "opacity": 1,
+      "start_frame": 12,
+      "duration_frames": 108,
+      "animation": {
+        "preset": "reveal_from_bottom"
+      }
+    }
+  ],
+  "output": {
+    "path": "/home/pierone/src/go-master/projects/Pyt/VeloxEditing/RenderingGen/renderinggen/typography_benchmark_videos/typo_04_tracking_collapse_24fps_1080p.mp4",
+    "format": "mp4",
+    "codec": "h264"
+  }
+}

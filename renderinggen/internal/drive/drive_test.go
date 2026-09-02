@@ -5,6 +5,8 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -32,10 +34,14 @@ func TestGooglePublishUsesConfiguredParentFolder(t *testing.T) {
 	}
 
 	g := &Google{service: svc, parentFolder: "folder-123"}
+	path := filepath.Join(t.TempDir(), "x.mp4")
+	if err := os.WriteFile(path, []byte("abc"), 0o600); err != nil {
+		t.Fatal(err)
+	}
 	res, err := g.Publish(context.Background(), PublishRequest{
 		Name:        "x.mp4",
 		ContentType: "video/mp4",
-		Data:        []byte("abc"),
+		Path:        path,
 	})
 	if err != nil {
 		t.Fatalf("publish: %v", err)
@@ -68,9 +74,13 @@ func TestGooglePublishRequestParentOverridesConfigured(t *testing.T) {
 	}
 
 	g := &Google{service: svc, parentFolder: "configured-folder"}
+	path := filepath.Join(t.TempDir(), "x.mp4")
+	if err := os.WriteFile(path, []byte("abc"), 0o600); err != nil {
+		t.Fatal(err)
+	}
 	res, err := g.Publish(context.Background(), PublishRequest{
 		Name:         "x.mp4",
-		Data:         []byte("abc"),
+		Path:         path,
 		ParentFolder: "override-folder",
 	})
 	if err != nil {

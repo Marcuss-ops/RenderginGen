@@ -1,0 +1,49 @@
+{
+  "schema": "chronon.render-plan",
+  "version": 1,
+  "job_id": "warm_04_image_focus_in",
+  "canvas": {
+    "width": 1920,
+    "height": 1080,
+    "fps_num": 24,
+    "fps_den": 1,
+    "duration_frames": 120
+  },
+  "layers": [
+    {
+      "id": "bg_video",
+      "type": "video",
+      "source": "assets/Pale-Olive.mp4",
+      "box_width": 1920,
+      "box_height": 1080,
+      "fit": "cover",
+      "opacity": 1,
+      "start_frame": 0,
+      "duration_frames": 120
+    },
+    {
+      "id": "entity_1_image",
+      "type": "image",
+      "asset": "assets/overlay_globe.png",
+      "preset": "image_fade_in",
+      "box_width": 420,
+      "box_height": 420,
+      "fit": "contain",
+      "position": [
+        750,
+        330
+      ],
+      "opacity": 1,
+      "start_frame": 0,
+      "duration_frames": 120,
+      "animation": {
+        "preset": "focus_in"
+      }
+    }
+  ],
+  "output": {
+    "path": "/home/pierone/src/go-master/projects/Pyt/VeloxEditing/RenderingGen/renderinggen/warm_videos/warm_04_image_focus_in_warm.mp4",
+    "format": "mp4",
+    "codec": "h264"
+  }
+}
