@@ -102,6 +102,10 @@ const GoldenSemanticOverlayJobV1 = `{
   },
   "assets": [
     {
+      "hash": "983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c",
+      "logical_path": "assets/fonts/Poppins-Bold.ttf"
+    },
+    {
       "hash": "52209ee36928dba960583179922a54acf045d52d44c3128c517425d4baaa4f78",
       "logical_path": "assets/background.jpg"
     },

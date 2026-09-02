@@ -24,3 +24,10 @@ gpu:
 
 health:
   addr: ":8085"
+
+drive:
+  enabled: true
+  mode: oauth
+  credentials_file: /home/pierone/src/go-master/projects/Pyt/VeloxEditing/RenderingGen/infra/docker/credentials.json
+  token_file: /home/pierone/src/go-master/projects/Pyt/VeloxEditing/RenderingGen/infra/docker/token.json
+  parent_folder_id: 1J_xUGo_bchzXDIGqSX04CU44c_Dm3SxS

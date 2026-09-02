@@ -1,0 +1,85 @@
+{
+  "schema": "chronon.render-plan.v2",
+  "version": 2,
+  "job_id": "typography-04_tracking_collapse",
+  "canvas": {
+    "width": 1920,
+    "height": 1080,
+    "fps_num": 24,
+    "fps_den": 1,
+    "duration_frames": 120
+  },
+  "layers": [
+    {
+      "id": "title",
+      "type": "text",
+      "text": "Designed for speed.",
+      "size": [
+        1920,
+        120
+      ],
+      "position": [
+        0,
+        64.8
+      ],
+      "style": {
+        "font": "assets/fonts/Poppins-Bold.ttf",
+        "font_size": 58,
+        "fill": "#FFFFFF"
+      },
+      "start_frame": 0,
+      "duration_frames": 120,
+      "text_animators": [
+        {
+          "id": "tracking_collapse_text",
+          "selectors": [
+            {
+              "id": "tracking_collapse_text_selector",
+              "unit": "word",
+              "shape": "smooth",
+              "order": "forward",
+              "combine": "replace",
+              "exclude_spaces": true
+            }
+          ],
+          "properties": [
+            {
+              "property": "tracking",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 32
+                },
+                {
+                  "frame": 30,
+                  "value": 0
+                }
+              ],
+              "easing": "out_expo"
+            },
+            {
+              "property": "opacity",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0
+                },
+                {
+                  "frame": 10,
+                  "value": 1
+                }
+              ],
+              "easing": "out_cubic"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "output": {
+    "path": "result.mp4",
+    "format": "mp4",
+    "codec": "h264",
+    "profile_id": "preview"
+  }
+}

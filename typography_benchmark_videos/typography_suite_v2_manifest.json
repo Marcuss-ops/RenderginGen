@@ -1,0 +1,81 @@
+{
+  "schema": "renderinggen.typography-certification.v1",
+  "version": 1,
+  "entries": [
+    {
+      "id": "01_masked_slide_up",
+      "status": "blocked",
+      "reason": "mask/clip primitive is not exposed by render-plan.v2"
+    },
+    {
+      "id": "02_word_by_word",
+      "status": "supported",
+      "plan_path": "/home/pierone/src/go-master/projects/Pyt/VeloxEditing/RenderingGen/typography_benchmark_videos/02_word_by_word_v2_plan.json"
+    },
+    {
+      "id": "03_character_cascade",
+      "status": "supported",
+      "plan_path": "/home/pierone/src/go-master/projects/Pyt/VeloxEditing/RenderingGen/typography_benchmark_videos/03_character_cascade_v2_plan.json"
+    },
+    {
+      "id": "04_tracking_collapse",
+      "status": "supported",
+      "plan_path": "/home/pierone/src/go-master/projects/Pyt/VeloxEditing/RenderingGen/typography_benchmark_videos/04_tracking_collapse_v2_plan.json"
+    },
+    {
+      "id": "05_tracking_expansion",
+      "status": "supported",
+      "plan_path": "/home/pierone/src/go-master/projects/Pyt/VeloxEditing/RenderingGen/typography_benchmark_videos/05_tracking_expansion_v2_plan.json"
+    },
+    {
+      "id": "06_blur_focus_in",
+      "status": "supported",
+      "plan_path": "/home/pierone/src/go-master/projects/Pyt/VeloxEditing/RenderingGen/typography_benchmark_videos/06_blur_focus_in_v2_plan.json"
+    },
+    {
+      "id": "07_soft_scale_reveal",
+      "status": "supported",
+      "plan_path": "/home/pierone/src/go-master/projects/Pyt/VeloxEditing/RenderingGen/typography_benchmark_videos/07_soft_scale_reveal_v2_plan.json"
+    },
+    {
+      "id": "08_precision_spring_up",
+      "status": "supported",
+      "plan_path": "/home/pierone/src/go-master/projects/Pyt/VeloxEditing/RenderingGen/typography_benchmark_videos/08_precision_spring_up_v2_plan.json"
+    },
+    {
+      "id": "09_split_line_reveal",
+      "status": "supported",
+      "plan_path": "/home/pierone/src/go-master/projects/Pyt/VeloxEditing/RenderingGen/typography_benchmark_videos/09_split_line_reveal_v2_plan.json"
+    },
+    {
+      "id": "10_center_expansion",
+      "status": "supported",
+      "plan_path": "/home/pierone/src/go-master/projects/Pyt/VeloxEditing/RenderingGen/typography_benchmark_videos/10_center_expansion_v2_plan.json"
+    },
+    {
+      "id": "11_rolling_words",
+      "status": "blocked",
+      "reason": "clip/group viewport primitive is not exposed by render-plan.v2"
+    },
+    {
+      "id": "12_opacity_wave",
+      "status": "supported",
+      "plan_path": "/home/pierone/src/go-master/projects/Pyt/VeloxEditing/RenderingGen/typography_benchmark_videos/12_opacity_wave_v2_plan.json"
+    },
+    {
+      "id": "13_scale_wave",
+      "status": "supported",
+      "plan_path": "/home/pierone/src/go-master/projects/Pyt/VeloxEditing/RenderingGen/typography_benchmark_videos/13_scale_wave_v2_plan.json"
+    },
+    {
+      "id": "14_char_wave",
+      "status": "supported",
+      "plan_path": "/home/pierone/src/go-master/projects/Pyt/VeloxEditing/RenderingGen/typography_benchmark_videos/14_char_wave_v2_plan.json"
+    },
+    {
+      "id": "15_hero_typography",
+      "status": "supported",
+      "plan_path": "/home/pierone/src/go-master/projects/Pyt/VeloxEditing/RenderingGen/typography_benchmark_videos/15_hero_typography_v2_plan.json"
+    }
+  ]
+}

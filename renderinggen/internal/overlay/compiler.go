@@ -568,6 +568,9 @@ func compileSemantic(raw []byte) ([]byte, []Asset, error) {
 		if params == nil {
 			params = map[string]any{}
 		}
+		for k, v := range item.MotionParams {
+			params[k] = v
+		}
 		if isImageTemplate(item.Template) && len(item.Assets) == 0 {
 			return nil, nil, fmt.Errorf("overlay: image template %q item %q requires asset_refs", item.Template, item.ID)
 		}
@@ -614,7 +617,19 @@ func compileSemantic(raw []byte) ([]byte, []Asset, error) {
 			layer.Animation = animationForDefinition(definition)
 		}
 		if layer.Style != nil && layer.Position == nil {
-			layer.Position = resolveLayout(definition.Layout, layer.BoxWidth, layer.BoxHeight, src.Width, src.Height)
+			posX, hasPosX := params["position_x"].(float64)
+			posY, hasPosY := params["position_y"].(float64)
+			if hasPosX && hasPosY {
+				layer.Position = []float64{posX, posY}
+			} else {
+				layer.Position = resolveLayout(definition.Layout, layer.BoxWidth, layer.BoxHeight, src.Width, src.Height)
+				if hasPosX {
+					layer.Position[0] = posX
+				}
+				if hasPosY {
+					layer.Position[1] = posY
+				}
+			}
 		}
 		plan.Layers = append(plan.Layers, layer)
 		if end > plan.Canvas.DurationFrames {
@@ -717,7 +732,7 @@ func validateTextMotion(animators []concreteTextAnimator, id string) error {
 		// An opacity-only animator is valid when it has a real per-element
 		// selector sweep (for example opacity_wave). A layer selector without
 		// that sweep is the legacy whole-layer fade we reject.
-		perElementSweep := selector.Unit != "layer" && selector.End != nil
+		perElementSweep := selector.Unit != "layer" && (selector.Start != nil || selector.End != nil)
 		if !nonOpacity && !perElementSweep {
 			return fmt.Errorf("overlay: motion %q collapsed to layer fade", id)
 		}
