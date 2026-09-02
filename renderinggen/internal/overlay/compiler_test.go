@@ -72,6 +72,64 @@ func TestCompileIfSemanticTextMotionProducesAnimatorContract(t *testing.T) {
 	}
 }
 
+func TestCompileSemanticTextUsesExplicitCanvasLocalBox(t *testing.T) {
+	raw := []byte(`{
+      "schema_version":"renderinggen.overlay-plan.v1",
+      "plan_id":"placement-fixture","video_id":"v","width":1920,"height":1080,"fps_num":24,"fps_den":1,
+      "items":[{"id":"title","template_id":"IMPORTANT_PHRASE","preset_id":"phrase_focus_v1",
+        "motion_id":"character_cascade","text":"ABC","start_ms":0,"end_ms":5000}]
+    }`)
+	compiled, _, _, err := CompileIfSemantic(raw)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var plan concretePlan
+	if err := json.Unmarshal(compiled, &plan); err != nil {
+		t.Fatal(err)
+	}
+	if len(plan.Layers) != 1 {
+		t.Fatalf("expected one text layer, got %d", len(plan.Layers))
+	}
+	layer := plan.Layers[0]
+	if len(layer.Size) != 2 || layer.Size[0] != 1920 || layer.Size[1] != 120 {
+		t.Fatalf("text local box = %#v, want [1920 120]", layer.Size)
+	}
+	if len(layer.Position) != 2 || layer.Position[0] != 0 {
+		t.Fatalf("centered text position = %#v, want x=0", layer.Position)
+	}
+	if len(layer.TextAnimators) != 1 || layer.TextAnimators[0].Selectors[0].Unit != "glyph" {
+		t.Fatalf("ABC selector fixture was not transported: %#v", layer.TextAnimators)
+	}
+}
+
+func TestCompileSemanticTextMotionsDoNotCollapseToSameContract(t *testing.T) {
+	motions := []string{"word_reveal", "character_cascade", "opacity_wave", "scale_wave", "char_wave"}
+	contracts := make(map[string]string, len(motions))
+	for _, motionID := range motions {
+		raw := []byte(`{"schema_version":"renderinggen.overlay-plan.v1","plan_id":"` + motionID + `","video_id":"v","width":1920,"height":1080,"fps_num":24,"fps_den":1,"items":[{"id":"title","template_id":"IMPORTANT_PHRASE","preset_id":"phrase_focus_v1","motion_id":"` + motionID + `","text":"ABC","start_ms":0,"end_ms":5000}]}`)
+		compiled, _, _, err := CompileIfSemantic(raw)
+		if err != nil {
+			t.Fatalf("%s: %v", motionID, err)
+		}
+		var plan concretePlan
+		if err := json.Unmarshal(compiled, &plan); err != nil {
+			t.Fatal(err)
+		}
+		if len(plan.Layers) != 1 || len(plan.Layers[0].TextAnimators) != 1 {
+			t.Fatalf("%s: missing text animator", motionID)
+		}
+		data, err := json.Marshal(plan.Layers[0].TextAnimators[0])
+		if err != nil {
+			t.Fatal(err)
+		}
+		contract := string(data)
+		if previous, exists := contracts[contract]; exists {
+			t.Fatalf("%s collapsed to the same text animator contract as %s", motionID, previous)
+		}
+		contracts[contract] = motionID
+	}
+}
+
 // TestCompileIfSemanticRejectsMissingPresetID pins ADR-029 forward-point (d):
 // RenderingGen no longer re-maps a template_id to a preset (it must not know
 // that IMPORTANT_PHRASE means caption_card). A preset-driven template without

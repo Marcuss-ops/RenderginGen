@@ -151,6 +151,8 @@ type semanticPlan struct {
 	SchemaVersion   string              `json:"schema_version"`
 	PlanID          string              `json:"plan_id"`
 	VideoID         string              `json:"video_id"`
+	Source          *semanticSource     `json:"source,omitempty"`
+	ForegroundScale int                 `json:"foreground_scale_percent,omitempty"`
 	Width           int                 `json:"width"`
 	Height          int                 `json:"height"`
 	FPSNum          int                 `json:"fps_num"`
@@ -158,7 +160,38 @@ type semanticPlan struct {
 	OutputProfileID string              `json:"output_profile_id"`
 	StyleProfile    string              `json:"style_profile"`
 	Background      *semanticBackground `json:"background,omitempty"`
+	Subtitles       *semanticSubtitles  `json:"subtitles,omitempty"`
+	Watermark       *semanticWatermark  `json:"watermark,omitempty"`
+	Audio           *semanticAudio      `json:"audio,omitempty"`
 	Items           []semanticItem      `json:"items"`
+}
+
+type semanticSource struct {
+	AssetID string `json:"asset_id"`
+	Path    string `json:"path,omitempty"`
+	SHA256  string `json:"sha256"`
+}
+
+type semanticSubtitles struct {
+	AssetRefs []semanticAssetRef `json:"asset_refs,omitempty"`
+	StyleID   string             `json:"style_id,omitempty"`
+	Mode      string             `json:"mode,omitempty"`
+	Style     map[string]any     `json:"style,omitempty"`
+}
+
+type semanticWatermark struct {
+	Text      string             `json:"text,omitempty"`
+	AssetRefs []semanticAssetRef `json:"asset_refs,omitempty"`
+	Position  string             `json:"position,omitempty"`
+	Opacity   *float64           `json:"opacity,omitempty"`
+	Style     map[string]any     `json:"style,omitempty"`
+}
+
+type semanticAudio struct {
+	Mode       string `json:"mode,omitempty"`
+	Codec      string `json:"codec,omitempty"`
+	SampleRate int    `json:"sample_rate,omitempty"`
+	Channels   int    `json:"channels,omitempty"`
 }
 
 type semanticBackground struct {
@@ -377,6 +410,12 @@ func compileSemantic(raw []byte) ([]byte, []Asset, error) {
 			}
 		}
 	}
+	// Source is a first-class semantic primitive and lowers into the same
+	// concrete layer graph as every other clip element.
+	if src.Source != nil && src.Source.AssetID != "" {
+		path := semanticAssetPath(semanticAssetRef{ID: src.Source.AssetID, SHA256: src.Source.SHA256})
+		plan.Layers = append(plan.Layers, concreteLayer{ID: "source", Type: "video", Source: path, StartFrame: 0})
+	}
 	for _, item := range src.Items {
 		start, end := msFrames(item.StartMS, item.EndMS, int64(src.FPSNum), int64(src.FPSDen))
 		if item.ID == "" || item.Template == "" || item.StartMS < 0 || item.EndMS <= item.StartMS {
@@ -418,6 +457,21 @@ func compileSemantic(raw []byte) ([]byte, []Asset, error) {
 		}
 		if preset != "" {
 			applyPresetDefinition(&layer, definition)
+		}
+		// Text placement is expressed as a layer top-left plus a local text
+		// box.  Keep that contract explicit in v2: materialize_text uses the
+		// serialized box size, while the layer position is applied exactly
+		// once by Chronon.  The old v1 suite omitted this field, causing
+		// Chronon to use a canvas-sized local frame and add the layout offset
+		// a second time (centered text landed around x=1469 on a 1920 canvas).
+		if layer.Type == "text" {
+			if layer.BoxWidth <= 0 {
+				layer.BoxWidth = src.Width
+			}
+			if layer.BoxHeight <= 0 {
+				layer.BoxHeight = 120
+			}
+			layer.Size = []float64{float64(layer.BoxWidth), float64(layer.BoxHeight)}
 		}
 		if item.MotionID != "" {
 			animation, err := animationForMotion(item.MotionID, item.MotionParams, item.Text, end-start)

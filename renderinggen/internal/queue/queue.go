@@ -51,8 +51,8 @@ type AssetRef struct {
 }
 
 // Job is one render SEGMENT pulled from the queue. RenderPlan is either the
-// semantic renderinggen.overlay-plan.v1 emitted by PipelineGen (compiled by
-// the worker) or a concrete chronon.render-plan.v1 legacy payload.
+// semantic renderinggen.overlay-plan.v1 emitted by PipelineGen; the worker
+// compiles it exclusively to chronon.render-plan.v2.
 type Job struct {
 	ID             string      `json:"id"`
 	Schema         string      `json:"schema,omitempty"`
@@ -134,6 +134,29 @@ func (c *Client) ClaimPending(ctx context.Context) (*Job, error) {
 }
 
 // ClaimRendered claims only jobs awaiting external publication.
+func (c *Client) ClaimFinalization(ctx context.Context, parentID string) (*Job, bool, error) {
+	claimed, ok, err := c.q.ClaimFinalization(ctx, parentID, c.workerID)
+	if err != nil || !ok || claimed == nil {
+		job, convErr := fromClaimed(claimed, err)
+		return job, false, convErr
+	}
+	job, err := fromClaimed(claimed, nil)
+	return job, true, err
+}
+
+func (c *Client) Children(ctx context.Context, parentID string) ([]*Job, error) {
+	children, err := c.q.Children(ctx, parentID)
+	if err != nil {
+		return nil, err
+	}
+	result := make([]*Job, len(children))
+	for i := range children {
+		child := children[i]
+		result[i] = &Job{ID: child.ID, ParentJobID: child.ParentJobID, ChunkIndex: child.ChunkIndex, FrameRange: fromClientFrameRange(child.FrameRange), State: State(child.State), Artifact: fromClientArtifact(child.Artifact)}
+	}
+	return result, nil
+}
+
 func (c *Client) ClaimRendered(ctx context.Context) (*Job, error) {
 	claimed, err := c.q.ClaimRendered(ctx, c.workerID)
 	return fromClaimed(claimed, err)

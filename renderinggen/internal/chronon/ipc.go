@@ -11,17 +11,18 @@ import (
 
 // IPC wire constants — must match Chronon3d's chronon_ipc.hpp.
 const (
-	ipcMagic            uint32 = 0x43484e33 // "CHN3"
-	ipcHeaderBytes             = 12         // magic + command/status + payload-len
-	ipcMaxPayload              = 64 * 1024 * 1024
-	ipcCommandStatus           = 4
-	ipcCommandShutdown         = 5
-	ipcCommandRenderJob        = 6
-	ipcStatusOk                = 0
-	ipcStatusError             = 1
-	ipcStatusNotFound          = 2
-	ipcStatusBadRequest        = 3
-	ipcStatusShutdown          = 4
+	ipcMagic                   uint32 = 0x43484e33 // "CHN3"
+	ipcHeaderBytes                    = 12         // magic + command/status + payload-len
+	ipcMaxPayload                     = 64 * 1024 * 1024
+	ipcCommandStatus                  = 4
+	ipcCommandShutdown                = 5
+	ipcCommandRenderJob               = 6
+	ipcCommandAssembleSegments        = 7
+	ipcStatusOk                       = 0
+	ipcStatusError                    = 1
+	ipcStatusNotFound                 = 2
+	ipcStatusBadRequest               = 3
+	ipcStatusShutdown                 = 4
 )
 
 // IPCClient renders through the persistent Chronon3d render daemon over a
@@ -68,23 +69,52 @@ type renderJobPayload struct {
 	PlanPath              string                `json:"plan_path"`
 	AssetsRoot            string                `json:"assets_root"`
 	Output                string                `json:"output"`
+	FirstFrame            int64                 `json:"first_frame,omitempty"`
+	LastFrame             int64                 `json:"last_frame,omitempty"`
 	Report                bool                  `json:"report"`
 	ExecutionRequirements ExecutionRequirements `json:"execution_requirements"`
 	OutputSpec            OutputSpec            `json:"output_spec"`
 }
 
-// renderJobReply is the JSON reply returned by a successful RENDER_JOB.
+// AssembleRequest is the generic Chronon segment assembly request.
+type AssembleRequest struct {
+	Inputs []string `json:"input_paths"`
+	Output string   `json:"output_path"`
+}
+
+type Assembler interface {
+	Assemble(context.Context, AssembleRequest) error
+}
+
 type renderJobReply struct {
 	Status string `json:"status"`
 	Output string `json:"output"`
 }
 
+// Assemble sends an ASSEMBLE_SEGMENTS command to the daemon.
+
+func (c *IPCClient) Assemble(ctx context.Context, req AssembleRequest) error {
+	payload, err := json.Marshal(req)
+	if err != nil {
+		return fmt.Errorf("ipc assemble: marshal payload: %w", err)
+	}
+	status, message, err := c.request(ctx, ipcCommandAssembleSegments, payload)
+	if err != nil {
+		return err
+	}
+	if status != ipcStatusOk {
+		return fmt.Errorf("ipc assemble: daemon status %d: %s", status, message)
+	}
+	return nil
+}
+
 // Render sends a RENDER_JOB command to the daemon and waits for its reply.
 func (c *IPCClient) Render(ctx context.Context, req RenderRequest) error {
 	payload, err := json.Marshal(renderJobPayload{
-		PlanPath:              req.PlanPath,
-		AssetsRoot:            req.AssetsRoot,
-		Output:                req.OutputPath,
+		PlanPath:   req.PlanPath,
+		AssetsRoot: req.AssetsRoot, Output: req.OutputPath,
+		FirstFrame:            req.FirstFrame,
+		LastFrame:             req.LastFrame,
 		Report:                req.Report,
 		ExecutionRequirements: req.Requirements,
 		OutputSpec:            req.Output,

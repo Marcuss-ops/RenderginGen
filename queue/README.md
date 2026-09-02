@@ -33,7 +33,7 @@ never reimplement the HTTP format.
 
 A job is **one render segment**, not one overlay: `render_plan` carries every
 layer of the segment (base video, phrases, keywords, images, animations) as a
-`chronon.render-plan.v1` document, so Chronon3d composes them in a single pass.
+`chronon.render-plan.v2` document, so Chronon3d composes them in a single pass.
 The envelope schema is `contracts/renderinggen.job.v1.schema.json`.
 
 Request (only `id`, `schema`, `version`, `render_plan` and `assets` are used):

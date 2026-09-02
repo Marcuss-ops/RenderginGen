@@ -35,7 +35,6 @@ type Result struct {
 	WebViewLink  string
 	ParentFolder string
 	SizeBytes    int64
-	SHA256       string
 }
 
 // Publisher uploads a rendered artifact to Google Drive. It is an interface so

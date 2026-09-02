@@ -50,6 +50,8 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /jobs/{id}/rendered", s.rendered)
 	mux.HandleFunc("POST /jobs/{id}/fail", s.fail)
 	mux.HandleFunc("POST /jobs/{id}/renew", s.renew)
+	mux.HandleFunc("POST /jobs/{id}/finalize/claim", s.claimFinalization)
+	mux.HandleFunc("GET /jobs/{id}/children", s.children)
 	mux.HandleFunc("GET /jobs/{id}", s.get)
 	mux.HandleFunc("GET /jobs/depth", s.depth)
 	mux.HandleFunc("GET /health", s.health)
@@ -183,6 +185,35 @@ func (s *Server) renew(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
+}
+
+func (s *Server) claimFinalization(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		Worker string `json:"worker"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	job, claimed, err := s.svc.ClaimFinalization(r.PathValue("id"), req.Worker)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusConflict)
+		return
+	}
+	if !claimed {
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+	writeJSON(w, http.StatusOK, job)
+}
+
+func (s *Server) children(w http.ResponseWriter, r *http.Request) {
+	jobs, err := s.svc.Children(r.PathValue("id"))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	writeJSON(w, http.StatusOK, jobs)
 }
 
 func (s *Server) get(w http.ResponseWriter, r *http.Request) {

@@ -18,6 +18,7 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/queue"
 )
@@ -153,6 +154,42 @@ func (w *Workspace) assetPath(logical string) (string, error) {
 		return filepath.Join(w.root, clean), nil
 	}
 	return filepath.Join(w.assetsDir, clean), nil
+}
+
+// CleanupStale removes old workspace directories. A workspace is considered
+// active when it contains a lease marker whose timestamp is still valid.
+func CleanupStale(root string, olderThan time.Duration) error {
+	entries, err := os.ReadDir(root)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil
+		}
+		return err
+	}
+	cutoff := time.Now().Add(-olderThan)
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			continue
+		}
+		path := filepath.Join(root, entry.Name())
+		info, err := entry.Info()
+		if err != nil {
+			return err
+		}
+		if info.ModTime().After(cutoff) {
+			continue
+		}
+		leasePath := filepath.Join(path, ".lease_until")
+		if raw, readErr := os.ReadFile(leasePath); readErr == nil {
+			if lease, parseErr := time.Parse(time.RFC3339Nano, strings.TrimSpace(string(raw))); parseErr == nil && lease.After(time.Now()) {
+				continue
+			}
+		}
+		if err := os.RemoveAll(path); err != nil {
+			return fmt.Errorf("workspace: remove stale %s: %w", path, err)
+		}
+	}
+	return nil
 }
 
 // Cleanup removes the workspace directory tree.

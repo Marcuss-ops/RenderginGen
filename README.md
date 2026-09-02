@@ -30,9 +30,8 @@ they are never pushed HTTP requests directly.
 
 PipelineGen emits the semantic `renderinggen.overlay-plan.v1` contract. The
 RenderingGen worker validates and compiles that plan locally into Chronon's
-`chronon.render-plan.v1`, materializes its content-addressed assets, and only
-then invokes Chronon3d. Existing concrete Chronon plans remain supported as a
-pass-through compatibility path.
+`chronon.render-plan.v2`, materializes its content-addressed assets, and only
+then invokes Chronon3d. Concrete Chronon plans are not accepted on the production semantic job path; RenderingGen owns the only lowering chain.
 
 ## Curated background library
 

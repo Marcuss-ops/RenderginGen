@@ -33,8 +33,8 @@ const GoldenOverlayJobV2 = `{
   "schema": "renderinggen.job",
   "version": 1,
   "render_plan": {
-    "schema": "chronon.render-plan",
-    "version": 1,
+    "schema": "chronon.render-plan.v2",
+    "version": 2,
     "job_id": "golden-overlay-v2",
     "canvas": { "width": 1280, "height": 720, "fps_num": 30, "fps_den": 1, "duration_frames": 240 },
     "layers": [

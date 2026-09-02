@@ -258,18 +258,23 @@ func (r *Repository) Get(id string) (*model.Job, error) {
 		errorMsg       sql.NullString
 		artifactID     sql.NullString
 		idempotencyKey sql.NullString
+		parentJobID    sql.NullString
+		chunkIndex     int
+		frameRange     []byte
 	)
 	err := r.db.QueryRowContext(ctx, `
 		SELECT id, state, job_type, job_schema, job_schema_version, render_plan,
 		       input_manifest, attempt_count,
 		       current_worker_id, queued_at, started_at, completed_at,
-		       lease_until, error_message, artifact_id, idempotency_key
+		       lease_until, error_message, artifact_id, idempotency_key,
+		       parent_job_id, chunk_index, frame_range
 		FROM render_jobs
 		WHERE id = $1`, id).Scan(
 		&job.ID, &state, &job.JobType, &schema, &version, &plan,
 		&manifest, &job.Attempts,
 		&worker, &queuedAt, &startedAt, &completedAt,
-		&leaseUntil, &errorMsg, &artifactID, &idempotencyKey)
+		&leaseUntil, &errorMsg, &artifactID, &idempotencyKey,
+		&parentJobID, &chunkIndex, &frameRange)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, fmt.Errorf("job %s: %w", id, repository.ErrNotFound)
 	}
@@ -282,6 +287,9 @@ func (r *Repository) Get(id string) (*model.Job, error) {
 	job.Version = schemaVersion(version)
 	job.RenderPlan = json.RawMessage(plan)
 	job.IdempotencyKey = idempotencyKey.String
+	job.ParentJobID = parentJobID.String
+	job.ChunkIndex = chunkIndex
+	job.FrameRange = decodeFrameRange(frameRange)
 	job.Assets = decodeAssets(manifest)
 	if worker.Valid {
 		job.Worker = worker.String
@@ -312,6 +320,32 @@ func (r *Repository) Get(id string) (*model.Job, error) {
 	return &job, nil
 }
 
+// ClaimFinalization atomically claims a parent row for one finalizer.
+func (r *Repository) ClaimFinalization(parentJobID, workerID string) (*model.Job, bool, error) {
+	if parentJobID == "" || workerID == "" {
+		return nil, false, fmt.Errorf("parent job id and worker id are required")
+	}
+	res, err := r.db.ExecContext(context.Background(), `
+		UPDATE render_jobs SET state = 'finalizing', current_worker_id = $2, started_at = now()
+		WHERE id = $1 AND state IN ('pending', 'running')`, parentJobID, workerID)
+	if err != nil {
+		return nil, false, err
+	}
+	n, _ := res.RowsAffected()
+	if n == 0 {
+		job, getErr := r.Get(parentJobID)
+		if getErr != nil {
+			return nil, false, getErr
+		}
+		if job.State == model.StateFinalizing || job.State == model.StateCompleted {
+			return job, false, nil
+		}
+		return job, false, fmt.Errorf("parent job %s is in state %q", parentJobID, job.State)
+	}
+	job, err := r.Get(parentJobID)
+	return job, true, err
+}
+
 // Complete marks a running job as completed and, when the artifact has a
 // storage key, persists it and links it to the job.
 func (r *Repository) Complete(id, workerID string, artifact model.Artifact) error {
@@ -325,7 +359,7 @@ func (r *Repository) Complete(id, workerID string, artifact model.Artifact) erro
 	res, err := tx.ExecContext(ctx, `
 		UPDATE render_jobs
 		SET state = 'completed', completed_at = now()
-		WHERE id = $1 AND state = 'running' AND current_worker_id = $2`, id, workerID)
+		WHERE id = $1 AND state IN ('running', 'finalizing') AND current_worker_id = $2`, id, workerID)
 	if err != nil {
 		return err
 	}
@@ -641,6 +675,38 @@ func decodeAssets(raw []byte) []model.AssetRef {
 		return nil
 	}
 	return m.Assets
+}
+
+// Children returns child chunks in deterministic chunk order.
+func (r *Repository) Children(parentJobID string) ([]*model.Job, error) {
+	if parentJobID == "" {
+		return nil, fmt.Errorf("parent job id is required")
+	}
+	rows, err := r.db.QueryContext(context.Background(), `
+		SELECT id
+		FROM render_jobs
+		WHERE parent_job_id = $1
+		ORDER BY chunk_index ASC`, parentJobID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var children []*model.Job
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		job, err := r.Get(id)
+		if err != nil {
+			return nil, err
+		}
+		children = append(children, job)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return children, nil
 }
 
 // nullIfEmpty converts an empty string to SQL NULL.

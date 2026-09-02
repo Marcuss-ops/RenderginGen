@@ -37,7 +37,7 @@ func TestGoldenOverlayJobV2Immutability(t *testing.T) {
 		t.Fatalf("expected 5 assets (background video, globe, chart, logo, font), got %d", len(env.Assets))
 	}
 
-	// 2. The render plan must be a well-formed chronon.render-plan.v1 with
+	// 2. The render plan must be a well-formed chronon.render-plan.v2 with
 	//    the full benchmark layer set: video background, 2 phrases, 2 words,
 	//    2 image overlays, 1 logo, and 4 animations.
 	var plan struct {
@@ -66,7 +66,7 @@ func TestGoldenOverlayJobV2Immutability(t *testing.T) {
 	if err := json.Unmarshal(env.RenderPlan, &plan); err != nil {
 		t.Fatalf("render plan does not decode: %v", err)
 	}
-	if plan.Schema != "chronon.render-plan" || plan.Version != 1 {
+	if plan.Schema != "chronon.render-plan.v2" || plan.Version != 2 {
 		t.Fatalf("unexpected render plan envelope: %+v", plan)
 	}
 	if plan.Canvas.Width != 1280 || plan.Canvas.Height != 720 || plan.Canvas.FPSNum != 30 || plan.Canvas.FPSDen != 1 || plan.Canvas.DurationFrames != 240 {

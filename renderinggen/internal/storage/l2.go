@@ -1,6 +1,11 @@
 package storage
 
 import (
+	"context"
+	"crypto/sha256"
+	"encoding/hex"
+	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"sort"
@@ -24,6 +29,157 @@ func (d *diskCache) Get(key string) ([]byte, bool) {
 		return nil, false
 	}
 	return data, true
+}
+
+func (d *diskCache) Path(key string) (string, bool) {
+	p := d.path(key)
+	info, err := os.Stat(p)
+	if err != nil || !info.Mode().IsRegular() {
+		return "", false
+	}
+	return p, true
+}
+
+func (d *diskCache) PutBytes(key string, data []byte) (string, int64, error) {
+	if d.dir == "" {
+		return "", 0, fmt.Errorf("L2 cache directory is empty")
+	}
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	p := d.path(key)
+	if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
+		return "", 0, err
+	}
+	tmp, err := os.CreateTemp(filepath.Dir(p), ".install-*")
+	if err != nil {
+		return "", 0, err
+	}
+	tmpPath := tmp.Name()
+	defer os.Remove(tmpPath)
+	if _, err := tmp.Write(data); err != nil {
+		tmp.Close()
+		return "", 0, err
+	}
+	if err := tmp.Close(); err != nil {
+		return "", 0, err
+	}
+	if err := os.Rename(tmpPath, p); err != nil {
+		return "", 0, err
+	}
+	if d.max > 0 {
+		d.enforceBudget()
+	}
+	return p, int64(len(data)), nil
+}
+
+func (d *diskCache) PutFile(key, source string) (string, int64, error) {
+	if d.dir == "" {
+		return "", 0, fmt.Errorf("L2 cache directory is empty")
+	}
+	info, err := os.Stat(source)
+	if err != nil {
+		return "", 0, err
+	}
+	if !info.Mode().IsRegular() {
+		return "", 0, fmt.Errorf("source %s is not a regular file", source)
+	}
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	p := d.path(key)
+	if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
+		return "", 0, err
+	}
+	tmp, err := os.CreateTemp(filepath.Dir(p), ".install-*")
+	if err != nil {
+		return "", 0, err
+	}
+	tmpPath := tmp.Name()
+	defer os.Remove(tmpPath)
+	input, err := os.Open(source)
+	if err != nil {
+		tmp.Close()
+		return "", 0, err
+	}
+	_, copyErr := io.Copy(tmp, input)
+	closeInputErr := input.Close()
+	if copyErr == nil {
+		copyErr = closeInputErr
+	}
+	if copyErr == nil {
+		copyErr = tmp.Close()
+	} else {
+		_ = tmp.Close()
+	}
+	if copyErr != nil {
+		return "", 0, copyErr
+	}
+	if err := os.Rename(tmpPath, p); err != nil {
+		return "", 0, err
+	}
+	if d.max > 0 {
+		d.enforceBudget()
+	}
+	return p, info.Size(), nil
+}
+
+func (d *diskCache) InstallReader(key string, r io.Reader, size int64) (string, int64, error) {
+	if d.dir == "" {
+		return "", 0, fmt.Errorf("L2 cache directory is empty")
+	}
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	p := d.path(key)
+	if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
+		return "", 0, err
+	}
+	tmp, err := os.CreateTemp(filepath.Dir(p), ".fetch-*")
+	if err != nil {
+		return "", 0, err
+	}
+	tmpPath := tmp.Name()
+	defer os.Remove(tmpPath)
+	digest := sha256.New()
+	written, err := io.Copy(io.MultiWriter(tmp, digest), r)
+	if err == nil {
+		err = tmp.Close()
+	} else {
+		_ = tmp.Close()
+	}
+	if err != nil {
+		return "", 0, err
+	}
+	if size >= 0 && written != size {
+		return "", 0, fmt.Errorf("L3 size %d does not match expected %d", written, size)
+	}
+	if got := hex.EncodeToString(digest.Sum(nil)); len(key) == 64 && got != key {
+		return "", 0, fmt.Errorf("L3 hash %s does not match key %s", got, key)
+	}
+	if err := os.Rename(tmpPath, p); err != nil {
+		return "", 0, err
+	}
+	if d.max > 0 {
+		d.enforceBudget()
+	}
+	return p, written, nil
+}
+
+func (d *diskCache) Remove(key string) { _ = os.Remove(d.path(key)) }
+
+func (d *diskCache) ContextPath(ctx context.Context, key string) (string, int64, error) {
+	select {
+	case <-ctx.Done():
+		return "", 0, ctx.Err()
+	default:
+	}
+	p, ok := d.Path(key)
+	if !ok {
+		return "", 0, ErrNotFound
+	}
+	info, err := os.Stat(p)
+	if err != nil {
+		return "", 0, err
+	}
+	return p, info.Size(), nil
 }
 
 func (d *diskCache) Put(key string, data []byte) {

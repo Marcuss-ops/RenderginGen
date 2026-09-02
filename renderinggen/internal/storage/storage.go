@@ -10,7 +10,9 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"fmt"
 	"io"
+	"os"
 	"sync"
 	"sync/atomic"
 )
@@ -74,6 +76,13 @@ func New(backend Backend, opts Options) *Client {
 // Get returns asset bytes for hash, resolving L1 -> L2 -> L3 and promoting
 // on each miss so the next lookup is faster.
 func (c *Client) Open(ctx context.Context, hash string) (io.ReadCloser, int64, error) {
+	if path, size, err := c.LocalPath(ctx, hash); err == nil {
+		file, openErr := os.Open(path)
+		if openErr != nil {
+			return nil, 0, openErr
+		}
+		return file, size, nil
+	}
 	if backend, ok := c.backend.(ReaderBackend); ok {
 		return backend.FetchReader(ctx, hash)
 	}
@@ -153,13 +162,103 @@ func (c *Client) Put(ctx context.Context, hash string, data []byte) error {
 // compatibility through the existing byte-slice API.
 func (c *Client) PutReader(ctx context.Context, hash string, r io.Reader, size int64) error {
 	if backend, ok := c.backend.(WriterBackend); ok {
-		return backend.StoreReader(ctx, hash, r, size)
+		data, err := io.ReadAll(r)
+		if err != nil {
+			return err
+		}
+		if err := backend.StoreReader(ctx, hash, bytes.NewReader(data), size); err != nil {
+			return err
+		}
+		if c.l2.dir != "" {
+			_, _, err = c.l2.PutBytes(hash, data)
+			if err != nil {
+				return err
+			}
+		}
+		return nil
 	}
+
 	data, err := io.ReadAll(r)
 	if err != nil {
 		return err
 	}
 	return c.Put(ctx, hash, data)
+}
+
+// LocalPath returns a verified local L2 path, fetching and atomically installing
+// the object into L2 when necessary.
+func (c *Client) LocalPath(ctx context.Context, hash string) (string, int64, error) {
+	if c.l2.dir == "" {
+		data, err := c.backend.Fetch(ctx, hash)
+		if err == nil && len(hash) == 64 && Hash(data) != hash {
+			return "", 0, fmt.Errorf("object hash mismatch: key %s", hash)
+		}
+		if err != nil {
+			return "", 0, err
+		}
+		file, err := os.CreateTemp("", "renderinggen-local-path-*")
+		if err != nil {
+			return "", 0, err
+		}
+		path := file.Name()
+		if _, err := file.Write(data); err != nil {
+			file.Close()
+			os.Remove(path)
+			return "", 0, err
+		}
+		if err := file.Close(); err != nil {
+			os.Remove(path)
+			return "", 0, err
+		}
+		return path, int64(len(data)), nil
+	}
+	if path, size, err := c.l2.ContextPath(ctx, hash); err == nil {
+		return path, size, nil
+	}
+	if backend, ok := c.backend.(ReaderBackend); ok {
+		reader, size, err := backend.FetchReader(ctx, hash)
+		if err != nil {
+			return "", 0, err
+		}
+		defer reader.Close()
+		path, actual, err := c.l2.InstallReader(hash, reader, size)
+		if err != nil {
+			return "", 0, err
+		}
+		c.l3Fetches.Add(1)
+		return path, actual, nil
+	}
+	data, err := c.Get(ctx, hash)
+	if err != nil {
+		return "", 0, err
+	}
+	path, actual, err := c.l2.PutBytes(hash, data)
+	if err != nil {
+		return "", 0, err
+	}
+	return path, actual, nil
+}
+
+// PutFile stores a local file in L3 and installs the same bytes in L2.
+func (c *Client) PutFile(ctx context.Context, hash, source string) error {
+	input, err := os.Open(source)
+	if err != nil {
+		return err
+	}
+	info, err := input.Stat()
+	if err != nil {
+		input.Close()
+		return err
+	}
+	if err := c.PutReader(ctx, hash, input, info.Size()); err != nil {
+		input.Close()
+		return err
+	}
+	if err := input.Close(); err != nil {
+		return err
+	}
+	_, _, err = c.l2.PutFile(hash, source)
+	return err
 }
 
 // Hash returns the content hash used as the cache key.

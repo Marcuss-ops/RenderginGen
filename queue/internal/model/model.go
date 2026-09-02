@@ -20,7 +20,8 @@ const (
 	// the artifact store, but whose external publication (e.g. Google Drive)
 	// failed. A worker re-claiming it must skip rendering and only retry the
 	// publication step.
-	StateRendered State = "rendered"
+	StateRendered   State = "rendered"
+	StateFinalizing State = "finalizing"
 )
 
 const (

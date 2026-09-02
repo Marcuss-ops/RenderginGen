@@ -76,6 +76,31 @@ func startFakeDaemon(t *testing.T, replyStatus uint32, replyMsg string) (socketP
 	return socketPath, gotCmd, gotPayload
 }
 
+func TestIPCClientAssemble(t *testing.T) {
+	socketPath, gotCmd, gotPayload := startFakeDaemon(t, ipcStatusOk, `{"status":"ok"}`)
+	client := NewIPCClient(socketPath)
+	if err := client.Assemble(context.Background(), AssembleRequest{Inputs: []string{"a.mp4", "b.mp4"}, Output: "final.mp4"}); err != nil {
+		t.Fatal(err)
+	}
+	if cmd := <-gotCmd; cmd != ipcCommandAssembleSegments {
+		t.Fatalf("command = %d", cmd)
+	}
+	var payload AssembleRequest
+	if err := json.Unmarshal([]byte(<-gotPayload), &payload); err != nil {
+		t.Fatal(err)
+	}
+	if len(payload.Inputs) != 2 || payload.Inputs[0] != "a.mp4" || payload.Output != "final.mp4" {
+		t.Fatalf("payload = %+v", payload)
+	}
+}
+
+func TestIPCClientAssembleError(t *testing.T) {
+	socketPath, _, _ := startFakeDaemon(t, ipcStatusError, "incompatible")
+	if err := NewIPCClient(socketPath).Assemble(context.Background(), AssembleRequest{Inputs: []string{"a.mp4"}, Output: "final.mp4"}); err == nil {
+		t.Fatal("expected assemble error")
+	}
+}
+
 func TestIPCClientRenderSuccess(t *testing.T) {
 	socketPath, gotCmd, gotPayload := startFakeDaemon(t, ipcStatusOk, `{"status":"ok","output":"/jobs/1/output/result.mp4"}`)
 
@@ -84,6 +109,8 @@ func TestIPCClientRenderSuccess(t *testing.T) {
 		PlanPath:   "/jobs/1/plan.json",
 		AssetsRoot: "/jobs/1/assets",
 		OutputPath: "/jobs/1/output/result.mp4",
+		FirstFrame: 240,
+		LastFrame:  359,
 		Report:     true,
 	})
 	if err != nil {
@@ -97,6 +124,8 @@ func TestIPCClientRenderSuccess(t *testing.T) {
 		PlanPath   string `json:"plan_path"`
 		AssetsRoot string `json:"assets_root"`
 		Output     string `json:"output"`
+		FirstFrame int64  `json:"first_frame"`
+		LastFrame  int64  `json:"last_frame"`
 		Report     bool   `json:"report"`
 	}
 	if err := json.Unmarshal([]byte(<-gotPayload), &payload); err != nil {
@@ -105,7 +134,7 @@ func TestIPCClientRenderSuccess(t *testing.T) {
 	if payload.PlanPath != "/jobs/1/plan.json" ||
 		payload.AssetsRoot != "/jobs/1/assets" ||
 		payload.Output != "/jobs/1/output/result.mp4" ||
-		!payload.Report {
+		!payload.Report || payload.FirstFrame != 240 || payload.LastFrame != 359 {
 		t.Fatalf("payload = %+v", payload)
 	}
 }

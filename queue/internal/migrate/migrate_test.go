@@ -44,6 +44,8 @@ func TestMigrationsOrdered(t *testing.T) {
 		"011_idempotency_index.sql",
 		"012_render_rendered_state.sql",
 		"013_artifact_media_contract.sql",
+		"014_chunk_parent_index.sql",
+		"015_parent_finalizing_state.sql",
 	}
 	if len(names) != len(want) {
 		t.Fatalf("want %d migrations, got %d: %v", len(want), len(names), names)

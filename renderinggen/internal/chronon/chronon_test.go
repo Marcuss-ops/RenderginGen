@@ -23,6 +23,13 @@ func TestRenderArgs(t *testing.T) {
 	}
 }
 
+func TestRenderArgsChunkRange(t *testing.T) {
+	got := renderArgs(RenderRequest{PlanPath: "/jobs/1/plan.json", AssetsRoot: "/jobs/1", OutputPath: "/jobs/1/output.mp4", FirstFrame: 240, LastFrame: 359})
+	if !reflect.DeepEqual(got[len(got)-4:], []string{"--start-frame", "240", "--end-frame", "359"}) {
+		t.Fatalf("chunk args = %#v", got)
+	}
+}
+
 func TestRenderArgsReport(t *testing.T) {
 	got := renderArgs(RenderRequest{
 		PlanPath:   "/jobs/1/plan.json",
