@@ -7,7 +7,9 @@ renderinggen/bin/
 .tmp/
 renderinggen/.tmp/
 queue/queued
+queue/bin/
 objectstore/objectstore
+objectstore/bin/
 
 # Editor / OS
 .DS_Store
@@ -32,9 +34,29 @@ token.json
 /renderinggen/*.mp4
 /renderinggen/*.mp4.timing.json
 /renderinggen/*.mp4.receipt.json
+/renderinggen/*_plan.json
 /renderinggen/concurrent_test_videos/
 /renderinggen/modern_preset_videos/
 /renderinggen/phrase_preset_videos/
 /renderinggen/preset_videos/
 /renderinggen/typography_benchmark_videos/
 /renderinggen/warm_videos/
+/typography_benchmark_videos/
+
+# Keep testdata/golden intentionally tiny: only canonical CI/regression fixtures.
+/testdata/golden/*
+!/testdata/golden/DejaVuSans.ttf
+!/testdata/golden/Poppins-Bold.ttf
+!/testdata/golden/apple.png
+!/testdata/golden/background.jpg
+!/testdata/golden/background.mp4
+!/testdata/golden/golden-overlay-job-v1.json
+!/testdata/golden/golden-overlay-job-v2.json
+!/testdata/golden/golden-semantic-overlay-job-v1.json
+!/testdata/golden/logo_pulse.png
+!/testdata/golden/overlay_chart.png
+!/testdata/golden/overlay_globe.png
+!/testdata/golden/fonts/
+/testdata/golden/fonts/*
+!/testdata/golden/fonts/DejaVuSans.ttf
+!/testdata/golden/fonts/Poppins-Bold.ttf
