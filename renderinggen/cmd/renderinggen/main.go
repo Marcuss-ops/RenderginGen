@@ -80,13 +80,16 @@ func main() {
 			chrononVersion = cli.Version()
 		}
 	}
+	// CPU/I/O stages may execute concurrently, but the renderer is wrapped in
+	// one context-aware lane so only one Chronon job can occupy the GPU at once.
+	renderer = chronon.Serialize(renderer)
 
 	// 3. Connect queue + storage.
 	queueClient := queue.New(cfg.Queue.Endpoint, cfg.Worker.ID)
 	store := storage.New(
 		storage.NewHTTP(cfg.ArtifactStore.Endpoint),
 		storage.Options{
-			L1MaxBytes: 256 << 20, // 256 MiB VRAM cache
+			L1MaxBytes: 256 << 20, // 256 MiB small-object RAM cache
 			L2Dir:      cfg.ArtifactStore.LocalCacheDir,
 			L2MaxBytes: 10 << 30, // 10 GiB NVMe cache
 		},
@@ -159,18 +162,22 @@ func main() {
 		}
 	}()
 
-	log.Printf("worker %s ready: renderinggen=%s chronon=%s schema=%d",
-		cfg.Worker.ID, version.RenderingGen, chrononVersion, version.OverlaySchema)
+	log.Printf("worker %s ready: renderinggen=%s chronon=%s schema=%d pipeline_workers=%d gpu_lanes=1",
+		cfg.Worker.ID, version.RenderingGen, chrononVersion, version.OverlaySchema, cfg.Worker.PipelineWorkers)
 
-	// 5. Run independent render and publication stages. Rendering stops as soon
-	// as the artifact is durable in object storage; Drive publication no longer
-	// occupies the GPU worker's critical path.
+	// 5. Run overlapping render pipelines plus the independent publication
+	// stage. Each render pipeline can validate/materialize/probe/hash/store in
+	// parallel with its neighbours; chronon.Serialize keeps the actual GPU
+	// render at exactly one concurrent job. This forms a practical
+	// prepare(N+1) -> GPU(N) -> post(N-1) conveyor without duplicating GPU work.
 	var workers sync.WaitGroup
-	workers.Add(2)
-	go func() {
-		defer workers.Done()
-		runStageLoop(ctx, queueClient, proc, stageRender)
-	}()
+	workers.Add(cfg.Worker.PipelineWorkers + 1)
+	for i := 0; i < cfg.Worker.PipelineWorkers; i++ {
+		go func() {
+			defer workers.Done()
+			runStageLoop(ctx, queueClient, proc, stageRender)
+		}()
+	}
 	go func() {
 		defer workers.Done()
 		runStageLoop(ctx, queueClient, proc, stagePublish)
