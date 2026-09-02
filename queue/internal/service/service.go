@@ -7,6 +7,7 @@
 package service
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"time"
@@ -23,11 +24,12 @@ type Service struct {
 	staleAfter time.Duration
 	retry      RetryConfig
 	metrics    *metrics.Metrics
+	notify     *Notifier
 }
 
 // New creates a service backed by the given repository.
 func New(repo repository.JobRepository) *Service {
-	return &Service{repo: repo}
+	return &Service{repo: repo, notify: NewNotifier()}
 }
 
 // SetMetrics attaches optional Prometheus metrics. When nil, metric emission
@@ -69,6 +71,7 @@ func (s *Service) SubmitIdempotent(job model.Job) (*model.Job, bool, error) {
 		}
 		if created {
 			s.observePending()
+			s.notify.Notify()
 		}
 		return canonical, created, nil
 	}
@@ -76,12 +79,21 @@ func (s *Service) SubmitIdempotent(job model.Job) (*model.Job, bool, error) {
 		return nil, false, err
 	}
 	s.observePending()
+	s.notify.Notify()
 	canonical, err := s.repo.Get(job.ID)
 	return canonical, true, err
 }
 
+// Notify returns the service's wake-up channel stream. The server uses it to
+// long-poll claims: the signal carries no data and never assigns work, it only
+// wakes a waiting claim to re-run the atomic claim against the store.
+func (s *Service) Notify() *Notifier { return s.notify }
+
 func (s *Service) ClaimFinalization(parentID, workerID string) (*model.Job, bool, error) {
 	job, claimed, err := s.repo.ClaimFinalization(parentID, workerID)
+	if claimed {
+		s.notify.Notify()
+	}
 	return job, claimed, err
 }
 
@@ -113,7 +125,49 @@ func (s *Service) ClaimState(workerID string, state model.State) (*model.Job, ti
 	return job, lease, nil
 }
 
-// Complete marks a running job as completed and records its artifact.
+// WaitAndClaim long-polls for a claimable job. It re-runs the atomic claim
+// immediately on every wake-up and falls back to a bounded tick so spurious
+// signal loss (or a repository without notifications) cannot stall a worker.
+// The wait never assigns work: every successful claim goes through ClaimState
+// and the store remains the single source of truth.
+func (s *Service) WaitAndClaim(ctx context.Context, workerID string, state model.State, maxWait time.Duration) (*model.Job, time.Duration, error) {
+	if workerID == "" {
+		return nil, 0, fmt.Errorf("worker id is required")
+	}
+	if maxWait <= 0 {
+		maxWait = 25 * time.Second
+	}
+	job, lease, err := s.ClaimState(workerID, state)
+	if err != nil || job != nil {
+		return job, lease, err
+	}
+	deadline := time.NewTimer(maxWait)
+	defer deadline.Stop()
+	wake := s.notify.Done()
+	for {
+		select {
+		case <-ctx.Done():
+			return nil, 0, ctx.Err()
+		case <-deadline.C:
+			return nil, 0, nil
+		case <-wake:
+			job, lease, err := s.ClaimState(workerID, state)
+			if err != nil || job != nil {
+				return job, lease, err
+			}
+			// Signal consumed by a competing worker; keep waiting.
+			wake = s.notify.Done()
+		case <-time.After(time.Second):
+			// Bounded fallback re-poll so a missed wake-up cannot stall a
+			// worker until the deadline.
+			job, lease, err := s.ClaimState(workerID, state)
+			if err != nil || job != nil {
+				return job, lease, err
+			}
+		}
+	}
+}
+
 func (s *Service) Complete(id, workerID string, artifact model.Artifact) error {
 	if err := validateArtifact(artifact); err != nil {
 		return err
@@ -164,6 +218,7 @@ func (s *Service) Rendered(id, workerID string, artifact model.Artifact, reason 
 		return err
 	}
 	s.observePending()
+	s.notify.Notify()
 	return nil
 }
 
@@ -173,6 +228,7 @@ func (s *Service) Fail(id, workerID, reason string) error {
 		return err
 	}
 	s.observePending()
+	s.notify.Notify()
 	return nil
 }
 
@@ -204,6 +260,9 @@ func (s *Service) RequeueExpired(now time.Time) (int, error) {
 	}
 	if n > 0 && s.metrics != nil {
 		s.metrics.LeaseExpired.Add(float64(n))
+	}
+	if n > 0 {
+		s.notify.Notify()
 	}
 	s.observePending()
 	return n, nil

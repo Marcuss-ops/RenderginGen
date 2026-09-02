@@ -12,6 +12,7 @@
 package server
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
@@ -81,6 +82,7 @@ func (s *Server) Handler() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("POST /jobs", s.submit)
 	mux.HandleFunc("POST /jobs/claim", s.claim)
+	mux.HandleFunc("POST /jobs/claim/wait", s.claimWait)
 	mux.HandleFunc("POST /jobs/{id}/complete", s.complete)
 	mux.HandleFunc("POST /jobs/{id}/rendered", s.rendered)
 	mux.HandleFunc("POST /jobs/{id}/fail", s.fail)
@@ -135,8 +137,7 @@ func (s *Server) claim(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	state := model.State(req.State)
-	job, lease, err := s.svc.ClaimState(req.Worker, state)
+	job, lease, err := s.svc.ClaimState(req.Worker, model.State(req.State))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -148,15 +149,13 @@ func (s *Server) claim(w http.ResponseWriter, r *http.Request) {
 		}
 		timer := time.NewTimer(wait)
 		defer timer.Stop()
-
 		select {
 		case <-r.Context().Done():
 			return
 		case <-timer.C:
-		case <-s.wakeChannel(state):
+		case <-s.wakeChannel(model.State(req.State)):
 		}
-
-		job, lease, err = s.svc.ClaimState(req.Worker, state)
+		job, lease, err = s.svc.ClaimState(req.Worker, model.State(req.State))
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -202,6 +201,49 @@ func (s *Server) wakeChannel(state model.State) <-chan struct{} {
 	return s.pendingWake.channel()
 }
 
+func (s *Server) claimWait(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		Worker    string `json:"worker"`
+		State     string `json:"state,omitempty"`
+		MaxWaitMs int64  `json:"max_wait_ms,omitempty"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	maxWait := time.Duration(req.MaxWaitMs) * time.Millisecond
+	ctx, cancel := context.WithTimeout(r.Context(), maxWait+5*time.Second)
+	defer cancel()
+	job, lease, err := s.svc.WaitAndClaim(ctx, req.Worker, model.State(req.State), maxWait)
+	if err != nil {
+		if errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled) {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if job == nil {
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+	writeJSON(w, http.StatusOK, claimResponse{
+		ID:             job.ID,
+		Schema:         job.Schema,
+		Version:        job.Version,
+		IdempotencyKey: job.IdempotencyKey,
+		JobType:        job.JobType,
+		ParentJobID:    job.ParentJobID,
+		ChunkIndex:     job.ChunkIndex,
+		FrameRange:     job.FrameRange,
+		RenderPlan:     job.RenderPlan,
+		Assets:         job.Assets,
+		Lease:          lease,
+		State:          job.State,
+		Artifact:       job.Artifact,
+	})
+}
+
 func (s *Server) complete(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 	var req struct {
@@ -231,10 +273,6 @@ func (s *Server) fail(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusConflict)
 		return
 	}
-	// Fail can requeue a retryable job. A spurious wake when the job reached
-	// terminal failed state is harmless because the subsequent atomic claim
-	// simply returns empty.
-	s.signal(model.StatePending)
 	w.WriteHeader(http.StatusNoContent)
 }
 
@@ -253,7 +291,6 @@ func (s *Server) rendered(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusConflict)
 		return
 	}
-	s.signal(model.StateRendered)
 	w.WriteHeader(http.StatusNoContent)
 }
 
