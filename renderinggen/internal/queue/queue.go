@@ -27,6 +27,8 @@ const (
 	JobTypeOverlayRender  = "overlay.render"
 )
 
+const workerClaimWait = 20 * time.Second
+
 // State is the lifecycle state of a job, as reported on claim.
 type State string
 
@@ -127,14 +129,26 @@ func (c *Client) Claim(ctx context.Context) (*Job, error) {
 	return fromClaimed(claimed, err)
 }
 
-// ClaimPending claims only jobs that still need rendering.
+// ClaimPending blocks efficiently until render work is available or ctx is
+// cancelled. The queue server wakes this long poll on submit/requeue, so the
+// worker no longer pays a fixed idle ticker before starting the next render.
 func (c *Client) ClaimPending(ctx context.Context) (*Job, error) {
-	claimed, err := c.q.ClaimPending(ctx, c.workerID)
-	return fromClaimed(claimed, err)
+	for {
+		claimed, err := c.q.ClaimPendingWait(ctx, c.workerID, workerClaimWait)
+		if err != nil {
+			return fromClaimed(claimed, err)
+		}
+		if claimed != nil {
+			return fromClaimed(claimed, nil)
+		}
+		if ctx.Err() != nil {
+			return nil, nil
+		}
+	}
 }
 
-// ClaimPendingWait waits server-side for pending work instead of sleeping and
-// issuing a new HTTP claim on a fixed polling cadence.
+// ClaimPendingWait performs one bounded long-poll claim. It is exposed for
+// tests and callers that need explicit wait control.
 func (c *Client) ClaimPendingWait(ctx context.Context, wait time.Duration) (*Job, error) {
 	claimed, err := c.q.ClaimPendingWait(ctx, c.workerID, wait)
 	return fromClaimed(claimed, err)
@@ -165,12 +179,21 @@ func (c *Client) Children(ctx context.Context, parentID string) ([]*Job, error) 
 }
 
 func (c *Client) ClaimRendered(ctx context.Context) (*Job, error) {
-	claimed, err := c.q.ClaimRendered(ctx, c.workerID)
-	return fromClaimed(claimed, err)
+	for {
+		claimed, err := c.q.ClaimRenderedWait(ctx, c.workerID, workerClaimWait)
+		if err != nil {
+			return fromClaimed(claimed, err)
+		}
+		if claimed != nil {
+			return fromClaimed(claimed, nil)
+		}
+		if ctx.Err() != nil {
+			return nil, nil
+		}
+	}
 }
 
-// ClaimRenderedWait waits server-side for the publication stage to become
-// claimable, avoiding a second independent polling ticker.
+// ClaimRenderedWait performs one bounded long-poll publication claim.
 func (c *Client) ClaimRenderedWait(ctx context.Context, wait time.Duration) (*Job, error) {
 	claimed, err := c.q.ClaimRenderedWait(ctx, c.workerID, wait)
 	return fromClaimed(claimed, err)
