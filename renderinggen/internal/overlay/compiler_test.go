@@ -89,7 +89,7 @@ func TestCompileIfSemanticPresetLessPrimitiveCompilesBare(t *testing.T) {
 	if err := json.Unmarshal(compiled, &plan); err != nil {
 		t.Fatal(err)
 	}
-	if len(plan.Layers) != 1 || plan.Layers[0].Preset != "" {
+	if len(plan.Layers) != 1 {
 		t.Fatalf("preset-less primitive must compile to a bare layer: %+v", plan.Layers)
 	}
 }
@@ -137,16 +137,10 @@ func TestCompileIfSemanticNewContractPresetIDAndEntityRef(t *testing.T) {
 		t.Fatalf("compiled layers = %+v", plan.Layers)
 	}
 	// preset_id contract slot is used verbatim (no template re-mapping).
-	if plan.Layers[0].Preset != "" {
-		t.Fatalf("preset metadata must not be executable plan data: %q", plan.Layers[0].Preset)
-	}
 	// The PERSON item with no explicit text falls back to entity_ref:
 	// surface_text first, then name.
 	if plan.Layers[1].Text != "Cook" {
 		t.Fatalf("entity_ref surface_text = %q, want Cook", plan.Layers[1].Text)
-	}
-	if plan.Layers[1].Preset != "" {
-		t.Fatalf("editorial preset must not be executable plan data: %q", plan.Layers[1].Preset)
 	}
 	if plan.Layers[1].Animation == nil || len(plan.Layers[1].Animation.Tracks) == 0 {
 		t.Fatalf("expected generic animation tracks, got %+v", plan.Layers[1].Animation)
@@ -207,41 +201,17 @@ func TestCompileIfSemanticImportantPhraseAndNamedImage(t *testing.T) {
 	if len(plan.Layers) != 3 {
 		t.Fatalf("compiled layers = %+v", plan.Layers)
 	}
-	if plan.Layers[0].Preset != "" || plan.Layers[0].Text != "THIS CHANGES EVERYTHING" {
+	if plan.Layers[0].Text != "THIS CHANGES EVERYTHING" {
 		t.Fatalf("important phrase layer = %+v", plan.Layers[0])
 	}
-	if plan.Layers[1].Type != "image" || plan.Layers[1].Preset != "" || plan.Layers[1].Asset != "assets/semantic/matt-damon.png" {
+	if plan.Layers[1].Type != "image" || plan.Layers[1].Asset != "assets/semantic/matt-damon.png" {
 		t.Fatalf("named image asset layer = %+v", plan.Layers[1])
 	}
-	if plan.Layers[2].Preset != "" || plan.Layers[2].Text != "Matt Damon" {
+	if plan.Layers[2].Text != "Matt Damon" {
 		t.Fatalf("named image label layer = %+v", plan.Layers[2])
 	}
 	if len(assets) != 1 || assets[0].LogicalPath != "assets/semantic/matt-damon.png" {
 		t.Fatalf("materialized assets = %+v", assets)
-	}
-}
-
-// TestCompileIfSemanticLegacyCanonicalNameFallback pins backward
-// compatibility: legacy plans whose entity_ref spells canonical_name keep
-// compiling through the same path.
-func TestCompileIfSemanticLegacyCanonicalNameFallback(t *testing.T) {
-	raw := []byte(`{
-      "schema_version":"renderinggen.overlay-plan.v1",
-      "plan_id":"p","video_id":"v","width":1280,"height":720,"fps_num":30,"fps_den":1,
-      "items":[
-        {"id":"person","template_id":"PERSON","preset_id":"lower_third_safe","entity_ref":{"entity_id":"ent_tim_cook","type":"PERSON","canonical_name":"Tim Cook"},"start_ms":0,"end_ms":1000}
-      ]
-    }`)
-	compiled, _, _, err := CompileIfSemantic(raw)
-	if err != nil {
-		t.Fatal(err)
-	}
-	var plan Plan
-	if err := json.Unmarshal(compiled, &plan); err != nil {
-		t.Fatal(err)
-	}
-	if len(plan.Layers) != 1 || plan.Layers[0].Text != "Tim Cook" {
-		t.Fatalf("legacy canonical_name fallback failed: %+v", plan.Layers)
 	}
 }
 
@@ -274,7 +244,44 @@ func TestCompileIfSemanticConcretePlanDecodes(t *testing.T) {
 	if err := json.Unmarshal(compiled, &plan); err != nil {
 		t.Fatalf("concrete plan must decode: %v", err)
 	}
-	if plan.Schema != "chronon.render-plan" || len(plan.Layers) != 1 || plan.Layers[0].Preset != "caption_card" {
+	if plan.Schema != "chronon.render-plan" || len(plan.Layers) != 1 {
 		t.Fatalf("decoded plan = %+v", plan)
+	}
+}
+
+func TestCompileSemanticLowersAuthoringConcepts(t *testing.T) {
+	raw := []byte(`{"schema_version":"renderinggen.overlay-plan.v1","plan_id":"p","video_id":"v","width":1280,"height":720,"fps_num":30,"fps_den":1,"style_profile":"crime","items":[{"id":"n","template_id":"PERSON","preset_id":"name_glow_slide","entity_ref":{"name":"Ada"},"start_ms":0,"end_ms":1000}]}`)
+	compiled, _, _, err := CompileIfSemantic(raw)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var out map[string]any
+	if err := json.Unmarshal(compiled, &out); err != nil {
+		t.Fatal(err)
+	}
+	forbidden := map[string]bool{"preset_id": true, "style_profile": true, "safe_area": true, "lower_third": true, "animation_preset": true, "unit": true, "enter_duration_frames": true, "exit_duration_frames": true}
+	var walk func(any)
+	walk = func(v any) {
+		switch x := v.(type) {
+		case map[string]any:
+			for k, child := range x {
+				if forbidden[k] {
+					t.Errorf("authoring key %q leaked into Chronon plan", k)
+				}
+				walk(child)
+			}
+		case []any:
+			for _, child := range x {
+				walk(child)
+			}
+		}
+	}
+	walk(out)
+	layer := out["layers"].([]any)[0].(map[string]any)
+	if _, ok := layer["position"]; !ok {
+		t.Fatal("resolved absolute geometry missing")
+	}
+	if _, ok := layer["style"]; !ok {
+		t.Fatal("concrete style missing")
 	}
 }

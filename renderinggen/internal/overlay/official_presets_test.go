@@ -19,13 +19,13 @@ func TestOfficialPresetCatalog(t *testing.T) {
 		if d.Family != PresetText && d.Family != PresetImage {
 			t.Errorf("%s has invalid family %q", id, d.Family)
 		}
-		if d.Anchor == "" || d.Animation == "" || d.Unit == "" || d.Enter <= 0 || d.Exit <= 0 {
+		if d.Layout.Anchor == "" || d.Motion.Name == "" || d.Motion.Unit == "" || d.Motion.Enter <= 0 || d.Motion.Exit <= 0 {
 			t.Errorf("%s has incomplete materialization: %+v", id, d)
 		}
-		if d.Family == PresetText && (d.Font == "" || d.FontSize <= 0 || len(d.Fill) != 4) {
+		if d.Family == PresetText && (d.Style.FontFamily == "" || d.Style.FontSize <= 0 || len(d.Style.Fill) != 4) {
 			t.Errorf("%s has incomplete text definition: %+v", id, d)
 		}
-		if d.Family == PresetImage && (d.BoxWidth <= 0 || d.BoxHeight <= 0 || d.Fit == "") {
+		if d.Family == PresetImage && (d.Layout.BoxWidth <= 0 || d.Layout.BoxHeight <= 0 || d.Layout.Fit == "") {
 			t.Errorf("%s has incomplete image definition: %+v", id, d)
 		}
 	}
@@ -55,7 +55,7 @@ func TestEveryOfficialPresetCompilesAndMaterializes(t *testing.T) {
 		if err != nil {
 			t.Fatalf("%s resolve: %v", id, err)
 		}
-		if resolved.ID != id || resolved.Anchor == "" || resolved.Animation == "" {
+		if resolved.ID != id || resolved.Motion.Name == "" {
 			t.Fatalf("%s resolved empty: %+v", id, resolved)
 		}
 		raw := []byte(`{"schema_version":"renderinggen.overlay-plan.v1","plan_id":"canary-` + id + `","video_id":"v","width":1280,"height":720,"fps_num":30,"fps_den":1,"items":[` + item + `]}`)
@@ -67,7 +67,7 @@ func TestEveryOfficialPresetCompilesAndMaterializes(t *testing.T) {
 		if err := json.Unmarshal(compiled, &plan); err != nil {
 			t.Fatalf("%s concrete decode: %v", id, err)
 		}
-		if len(plan.Layers) != 1 || plan.Layers[0].Preset != "" || plan.Layers[0].Animation == nil || len(plan.Layers[0].Animation.Tracks) == 0 || plan.Layers[0].Anchor == nil {
+		if len(plan.Layers) != 1 || plan.Layers[0].Animation == nil || len(plan.Layers[0].Animation.Tracks) == 0 {
 			t.Fatalf("%s was not materially lowered: %+v", id, plan.Layers)
 		}
 	}

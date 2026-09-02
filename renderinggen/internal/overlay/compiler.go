@@ -17,6 +17,8 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+
+	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/motion"
 )
 
 // SemanticSchema is PipelineGen's semantic overlay contract. RenderingGen
@@ -27,13 +29,12 @@ const SemanticSchema = "renderinggen.overlay-plan.v1"
 // It is carried here so callers/tests can decode a submitted plan; the worker
 // itself treats it as an opaque blob passed straight to Chronon.
 type Plan struct {
-	Schema       string  `json:"schema"`
-	Version      int     `json:"version"`
-	JobID        string  `json:"job_id"`
-	StyleProfile string  `json:"style_profile,omitempty"`
-	Canvas       Canvas  `json:"canvas"`
-	Layers       []Layer `json:"layers"`
-	Output       Output  `json:"output"`
+	Schema  string  `json:"schema"`
+	Version int     `json:"version"`
+	JobID   string  `json:"job_id"`
+	Canvas  Canvas  `json:"canvas"`
+	Layers  []Layer `json:"layers"`
+	Output  Output  `json:"output"`
 }
 
 type Canvas struct {
@@ -50,25 +51,36 @@ type Layer struct {
 	Asset string `json:"asset,omitempty"`
 	// Source is the video-source logical path for Video layers
 	// (VIDEO_BACKGROUND): Chronon video layers reference `source`.
-	Source string `json:"source,omitempty"`
-	Text   string `json:"text,omitempty"`
-	// Preset is authoring/debug metadata in the in-memory DTO only; concrete
-	// serialized plans omit it after full lowering.
-	Preset         string    `json:"preset,omitempty"`
-	Font           string    `json:"font,omitempty"`
-	FontSize       float64   `json:"font_size,omitempty"`
-	BoxWidth       int       `json:"box_width,omitempty"`
-	BoxHeight      int       `json:"box_height,omitempty"`
-	Fit            string    `json:"fit,omitempty"`
-	Position       []float64 `json:"position,omitempty"`
-	Color          []float64 `json:"color,omitempty"`
-	Opacity        float64   `json:"opacity,omitempty"`
-	BlendMode      string    `json:"blend_mode,omitempty"`
-	Loop           bool      `json:"loop,omitempty"`
-	StartFrame     int64     `json:"start_frame"`
-	DurationFrames int64     `json:"duration_frames"`
+	Source         string      `json:"source,omitempty"`
+	Text           string      `json:"text,omitempty"`
+	BoxWidth       int         `json:"box_width,omitempty"`
+	BoxHeight      int         `json:"box_height,omitempty"`
+	Fit            string      `json:"fit,omitempty"`
+	Position       []float64   `json:"position,omitempty"`
+	Style          *LayerStyle `json:"style,omitempty"`
+	Opacity        float64     `json:"opacity,omitempty"`
+	BlendMode      string      `json:"blend_mode,omitempty"`
+	Loop           bool        `json:"loop,omitempty"`
+	StartFrame     int64       `json:"start_frame"`
+	DurationFrames int64       `json:"duration_frames"`
 	// Animation is the motion preset applied to the layer.
 	Animation *LayerAnimation `json:"animation,omitempty"`
+}
+
+// LayerStyle is the single concrete visual representation sent to Chronon.
+type LayerStyle struct {
+	FontFamily string       `json:"font_family,omitempty"`
+	FontWeight int          `json:"font_weight,omitempty"`
+	FontSize   float64      `json:"font_size,omitempty"`
+	Fill       string       `json:"fill,omitempty"`
+	Shadow     *LayerShadow `json:"shadow,omitempty"`
+}
+
+type LayerShadow struct {
+	Color   string    `json:"color,omitempty"`
+	Opacity float64   `json:"opacity,omitempty"`
+	Blur    float64   `json:"blur,omitempty"`
+	Offset  []float64 `json:"offset,omitempty"`
 }
 
 // AnimationTrack is the renderer-neutral motion contract produced by
@@ -80,18 +92,13 @@ type AnimationTrack struct {
 }
 
 type AnimationKeyframe struct {
-	Frame int64   `json:"frame"`
-	Value float64 `json:"value"`
+	Frame int64 `json:"frame"`
+	Value any   `json:"value"`
 }
 
-// LayerAnimation contains only generic tracks. The optional preset label is
-// debug metadata and is not an executable renderer instruction.
+// LayerAnimation contains only generic tracks.
 type LayerAnimation struct {
-	Preset              string           `json:"preset,omitempty"`
-	Unit                string           `json:"unit,omitempty"`
-	EnterDurationFrames int              `json:"enter_duration_frames,omitempty"`
-	ExitDurationFrames  int              `json:"exit_duration_frames,omitempty"`
-	Tracks              []AnimationTrack `json:"tracks,omitempty"`
+	Tracks []AnimationTrack `json:"tracks,omitempty"`
 }
 
 type Output struct {
@@ -104,6 +111,12 @@ type Output struct {
 type Asset struct {
 	Hash        string `json:"hash"`
 	LogicalPath string `json:"logical_path"`
+}
+
+func newPlan(jobID string, width, height, fpsNum, fpsDen int, duration int64) *Plan {
+	return &Plan{Schema: "chronon.render-plan", Version: 1, JobID: jobID,
+		Canvas: Canvas{Width: width, Height: height, FPSNum: fpsNum, FPSDen: fpsDen, DurationFrames: duration},
+		Output: Output{Path: "result.mp4", Format: "mp4", Codec: "h264"}}
 }
 
 // CompileIfSemantic lowers the PipelineGen semantic contract to the concrete
@@ -164,12 +177,14 @@ type semanticItem struct {
 	Template  string             `json:"template_id"`
 	// PresetID is the semantic preset selected by PipelineGen (the plan's
 	// preset_id contract slot). It is preferred over the template mapping.
-	PresetID string             `json:"preset_id"`
-	Text     string             `json:"text"`
-	StartMS  int64              `json:"start_ms"`
-	EndMS    int64              `json:"end_ms"`
-	Params   map[string]any     `json:"params"`
-	Assets   []semanticAssetRef `json:"asset_refs"`
+	PresetID     string             `json:"preset_id"`
+	MotionID     string             `json:"motion_id"`
+	MotionParams map[string]any     `json:"motion_params"`
+	Text         string             `json:"text"`
+	StartMS      int64              `json:"start_ms"`
+	EndMS        int64              `json:"end_ms"`
+	Params       map[string]any     `json:"params"`
+	Assets       []semanticAssetRef `json:"asset_refs"`
 }
 
 // semanticEntityRef is the plan's entity_ref block: the content-addressed
@@ -177,13 +192,10 @@ type semanticItem struct {
 // display text when the item carries no explicit text — it never performs
 // entity linking or ranking.
 type semanticEntityRef struct {
-	EntityID string `json:"entity_id"`
-	Type     string `json:"type"`
-	// Name is the new contract's canonical name spelling; CanonicalName is
-	// the legacy spelling. Both are accepted so old plans keep compiling.
-	Name          string `json:"name"`
-	CanonicalName string `json:"canonical_name"`
-	SurfaceText   string `json:"surface_text,omitempty"`
+	EntityID    string `json:"entity_id"`
+	Type        string `json:"type"`
+	Name        string `json:"name"`
+	SurfaceText string `json:"surface_text,omitempty"`
 }
 
 type semanticAssetRef struct {
@@ -197,7 +209,6 @@ type concretePlan struct {
 	Schema  string          `json:"schema"`
 	Version int             `json:"version"`
 	JobID   string          `json:"job_id"`
-	Style   string          `json:"style_profile,omitempty"`
 	Canvas  concreteCanvas  `json:"canvas"`
 	Layers  []concreteLayer `json:"layers"`
 	Output  concreteOutput  `json:"output"`
@@ -217,33 +228,22 @@ type concreteOutput struct {
 	ProfileID string `json:"profile_id,omitempty"`
 }
 type concreteLayer struct {
-	// Preset is retained only in the in-memory test/diagnostic DTO and is
-	// excluded from JSON serialization after full lowering.
-	Preset         string             `json:"-"`
 	ID             string             `json:"id"`
 	Type           string             `json:"type"`
 	Asset          string             `json:"asset,omitempty"`
 	Source         string             `json:"source,omitempty"`
 	Color          []float64          `json:"color,omitempty"`
 	Text           string             `json:"text,omitempty"`
-	Font           string             `json:"font,omitempty"`
-	FontSize       float64            `json:"font_size,omitempty"`
 	BoxWidth       int                `json:"box_width,omitempty"`
 	BoxHeight      int                `json:"box_height,omitempty"`
 	Fit            string             `json:"fit,omitempty"`
 	Position       []float64          `json:"position,omitempty"`
+	Style          *LayerStyle        `json:"style,omitempty"`
 	StartFrame     int64              `json:"start_frame"`
 	DurationFrames int64              `json:"duration_frames"`
 	Animation      *concreteAnimation `json:"animation,omitempty"`
-	Anchor         *concreteAnchor    `json:"anchor,omitempty"`
-	Style          *concreteStyle     `json:"style,omitempty"`
 	Opacity        float64            `json:"opacity,omitempty"`
 	Loop           bool               `json:"loop,omitempty"`
-}
-type concreteAnchor struct {
-	Type       string  `json:"type"`
-	SafeMargin float64 `json:"safe_margin,omitempty"`
-	Alignment  string  `json:"alignment,omitempty"`
 }
 type concreteStroke struct {
 	Color string  `json:"color,omitempty"`
@@ -261,21 +261,7 @@ type concreteBackground struct {
 	Radius  float64   `json:"radius,omitempty"`
 	Padding []float64 `json:"padding,omitempty"`
 }
-type concreteStyle struct {
-	FontFamily string              `json:"font_family,omitempty"`
-	FontWeight int                 `json:"font_weight,omitempty"`
-	FontSize   float64             `json:"font_size,omitempty"`
-	Fill       string              `json:"fill,omitempty"`
-	Stroke     *concreteStroke     `json:"stroke,omitempty"`
-	Shadow     *concreteShadow     `json:"shadow,omitempty"`
-	Background *concreteBackground `json:"background,omitempty"`
-}
 type concreteAnimation struct {
-	// Preset is debug metadata; Tracks are the executable renderer contract.
-	Preset string           `json:"preset,omitempty"`
-	Unit   string           `json:"unit,omitempty"`
-	Enter  int              `json:"enter_duration_frames,omitempty"`
-	Exit   int              `json:"exit_duration_frames,omitempty"`
 	Tracks []AnimationTrack `json:"tracks,omitempty"`
 }
 
@@ -292,14 +278,7 @@ func compileSemantic(raw []byte) ([]byte, []Asset, error) {
 	if len(src.Items) == 0 {
 		return nil, nil, fmt.Errorf("overlay: semantic plan has no items")
 	}
-	if src.StyleProfile == "" {
-		src.StyleProfile = "discovery"
-	}
-	if src.StyleProfile != "discovery" && src.StyleProfile != "young" && src.StyleProfile != "crime" {
-		return nil, nil, fmt.Errorf("overlay: unsupported style_profile %q", src.StyleProfile)
-	}
-
-	plan := concretePlan{Schema: "chronon.render-plan", Version: 1, JobID: src.PlanID, Style: src.StyleProfile,
+	plan := concretePlan{Schema: "chronon.render-plan", Version: 1, JobID: src.PlanID,
 		Canvas: concreteCanvas{Width: src.Width, Height: src.Height, FPSNum: src.FPSNum, FPSDen: src.FPSDen},
 		Output: concreteOutput{Path: "result.mp4", Format: "mp4", Codec: "h264", ProfileID: src.OutputProfileID}}
 	assetPaths := map[string]string{}
@@ -395,14 +374,7 @@ func compileSemantic(raw []byte) ([]byte, []Asset, error) {
 			return nil, nil, fmt.Errorf("overlay: image template %q item %q requires asset_refs", item.Template, item.ID)
 		}
 		if isEntityTemplate(item.Template) && len(item.Assets) > 0 {
-			imagePreset, err := presetForImage(item)
-			if err != nil {
-				return nil, nil, err
-			}
-			img := imageLayer(item, start, end, imagePreset, assetPaths[item.Assets[0].ID], params)
-			if imageDefinition, imageErr := resolveOfficialPreset(imagePreset, string(PresetImage)); imageErr == nil {
-				applyPresetDefinition(&img, imageDefinition)
-			}
+			img := imageLayer(item, start, end, assetPaths[item.Assets[0].ID], params)
 			plan.Layers = append(plan.Layers, img)
 		}
 		text := item.Text
@@ -411,15 +383,22 @@ func compileSemantic(raw []byte) ([]byte, []Asset, error) {
 		}
 		layer := concreteLayer{ID: item.ID, Type: "text", Text: text, StartFrame: start, DurationFrames: end - start}
 		if isImageTemplate(item.Template) {
-			layer = imageLayer(item, start, end, preset, assetPaths[item.Assets[0].ID], params)
+			layer = imageLayer(item, start, end, assetPaths[item.Assets[0].ID], params)
 		}
 		if preset != "" {
 			applyPresetDefinition(&layer, definition)
 		}
-		if anim := animationFor(params); anim != nil {
-			layer.Animation = anim
+		if item.MotionID != "" {
+			animation, err := animationForMotion(item.MotionID, item.MotionParams, item.Text, end-start)
+			if err != nil {
+				return nil, nil, err
+			}
+			layer.Animation = animation
 		} else if preset != "" {
 			layer.Animation = animationForDefinition(definition)
+		}
+		if layer.Style != nil && layer.Position == nil {
+			layer.Position = resolveLayout(definition.Layout, layer.BoxWidth, layer.BoxHeight, src.Width, src.Height)
 		}
 		plan.Layers = append(plan.Layers, layer)
 		if end > plan.Canvas.DurationFrames {
@@ -439,6 +418,18 @@ func compileSemantic(raw []byte) ([]byte, []Asset, error) {
 		return nil, nil, fmt.Errorf("overlay: encode Chronon plan: %w", err)
 	}
 	return compiled, assets, nil
+}
+
+func animationForMotion(id string, params map[string]any, textValue string, duration int64) (*concreteAnimation, error) {
+	plugin, err := motion.Registry.Resolve(id)
+	if err != nil {
+		return nil, fmt.Errorf("overlay: %w", err)
+	}
+	tracks, err := plugin.Compile(motion.MotionContext{Text: textValue, DurationFrames: duration}, motion.MotionParams(params))
+	if err != nil {
+		return nil, fmt.Errorf("overlay: compile motion %q: %w", id, err)
+	}
+	return &concreteAnimation{Tracks: fromMotionTracks(tracks)}, nil
 }
 
 func msFrames(start, end, fpsNum, fpsDen int64) (int64, int64) {
@@ -464,8 +455,8 @@ var presetRequiredTemplates = map[string]bool{
 }
 
 func presetFor(item semanticItem) (string, error) {
-	// The plan's preset_id contract slot is preferred; the params slot is the
-	// legacy spelling. RenderingGen's official catalog is authoritative.
+	// The plan's preset_id contract slot is the only spelling. RenderingGen's
+	// official catalog is authoritative.
 	//
 	// ADR-029 forward-point (d): RenderingGen is an execution worker and must
 	// NOT re-map a template_id to a preset (e.g. it must not know that PERSON
@@ -474,11 +465,6 @@ func presetFor(item semanticItem) (string, error) {
 	// that does not carry a preset_id is rejected; preset-less primitives
 	// (PRODUCT, LOGO, LIGHT_LEAK, …) legitimately compile without one.
 	p := strings.TrimSpace(item.PresetID)
-	if p == "" {
-		if legacy, ok := item.Params["preset_id"].(string); ok {
-			p = strings.TrimSpace(legacy)
-		}
-	}
 	if p != "" {
 		family := "text"
 		if isImageTemplate(item.Template) {
@@ -515,16 +501,9 @@ func isEntityTemplate(t string) bool {
 	}
 	return false
 }
-func presetForImage(item semanticItem) (string, error) {
-	if p, ok := item.Params["image_preset_id"].(string); ok && p != "" {
-		return validatePreset(p, item.ID, "image")
-	}
-	return "image_focus_in", nil
-}
 
 // entityRefText returns the display text from the plan's entity_ref block:
-// surface_text first (the verbatim spoken mention), then the canonical name
-// (the new contract's `name`), then the legacy `canonical_name` spelling.
+// surface_text first, then the canonical name.
 // The compiler never invents a name — an empty ref yields empty text.
 func entityRefText(item semanticItem) string {
 	if item.EntityRef == nil {
@@ -536,7 +515,7 @@ func entityRefText(item semanticItem) string {
 	if strings.TrimSpace(item.EntityRef.Name) != "" {
 		return item.EntityRef.Name
 	}
-	return item.EntityRef.CanonicalName
+	return ""
 }
 
 func semanticAssetPath(ref semanticAssetRef) string {
@@ -556,71 +535,42 @@ func semanticAssetPath(ref semanticAssetRef) string {
 	}
 	return "assets/semantic/" + id + ext
 }
-func imageLayer(item semanticItem, start, end int64, preset, asset string, params map[string]any) concreteLayer {
+func imageLayer(item semanticItem, start, end int64, asset string, params map[string]any) concreteLayer {
 	return concreteLayer{ID: item.ID + "_image", Type: "image", Asset: asset, BoxWidth: intParam(params, "width", 320), BoxHeight: intParam(params, "height", 320), Fit: stringParam(params, "fit", "contain"), StartFrame: start, DurationFrames: end - start}
 }
 
 func applyPresetDefinition(layer *concreteLayer, d OfficialPresetDefinition) {
-	layer.Font = d.Font
-	layer.FontSize = d.FontSize
-	layer.Color = append([]float64(nil), d.Fill...)
-	layer.Anchor = &concreteAnchor{Type: d.Anchor, SafeMargin: 0.06, Alignment: d.Alignment}
 	if d.Family == PresetImage {
-		if layer.BoxWidth == 320 && d.BoxWidth > 0 {
-			layer.BoxWidth = d.BoxWidth
+		if layer.BoxWidth == 320 && d.Layout.BoxWidth > 0 {
+			layer.BoxWidth = d.Layout.BoxWidth
 		}
-		if layer.BoxHeight == 320 && d.BoxHeight > 0 {
-			layer.BoxHeight = d.BoxHeight
+		if layer.BoxHeight == 320 && d.Layout.BoxHeight > 0 {
+			layer.BoxHeight = d.Layout.BoxHeight
 		}
-		if layer.Fit == "contain" && d.Fit != "" {
-			layer.Fit = d.Fit
+		if layer.Fit == "contain" && d.Layout.Fit != "" {
+			layer.Fit = d.Layout.Fit
 		}
 		return
 	}
-	layer.Style = &concreteStyle{FontFamily: "Poppins", FontWeight: 700, FontSize: d.FontSize, Fill: "#FFFFFF"}
-	if d.Glow {
-		layer.Style.Shadow = &concreteShadow{Color: "#38BDF8", Opacity: 0.82, Blur: 14, Offset: []float64{0, 2}}
+	layer.Style = &LayerStyle{FontFamily: d.Style.FontFamily, FontWeight: 700, FontSize: d.Style.FontSize, Fill: rgbaHex(d.Style.Fill)}
+	if d.Style.Shadow != nil {
+		s := d.Style.Shadow
+		layer.Style.Shadow = &LayerShadow{Color: s.Color, Opacity: s.Opacity, Blur: s.Blur, Offset: append([]float64(nil), s.Offset...)}
 	}
 }
 
 func animationForDefinition(d OfficialPresetDefinition) *concreteAnimation {
-	if d.Animation == "" {
+	if d.Motion.Name == "" {
 		return nil
 	}
-	return &concreteAnimation{Preset: d.Animation, Unit: d.Unit, Enter: d.Enter, Exit: d.Exit, Tracks: tracksForAnimation(d.Animation, d.Unit, d.Enter)}
-}
-func animationFor(params map[string]any) *concreteAnimation {
-	p, _ := params["animation"].(string)
-	if p == "" {
-		return nil
-	}
-	a := &concreteAnimation{Preset: p}
-	a.Unit = stringParam(params, "unit", "layer")
-	a.Enter = intParam(params, "enter_duration_frames", 0)
-	a.Exit = intParam(params, "exit_duration_frames", 0)
-	a.Tracks = tracksForAnimation(p, a.Unit, a.Enter)
-	return a
+	return &concreteAnimation{Tracks: tracksForMotion(d.Motion)}
 }
 
-func tracksForAnimation(animation, unit string, enter int) []AnimationTrack {
-	if animation == "" || animation == "static" || enter <= 0 {
-		return nil
+func rgbaHex(v []float64) string {
+	if len(v) != 4 {
+		return ""
 	}
-	property := "opacity"
-	start := 0.0
-	end := 1.0
-	switch animation {
-	case "scale_drop":
-		property, start = "scale", 0.85
-	case "reveal_from_bottom":
-		property, start = "position_y", 40
-	case "slide_in":
-		property, start = "position_x", -40
-	}
-	if property == "position_x" || property == "position_y" {
-		end = 0
-	}
-	return []AnimationTrack{{Property: property, Easing: "out_cubic", Keyframes: []AnimationKeyframe{{Frame: 0, Value: start}, {Frame: int64(enter), Value: end}}}}
+	return fmt.Sprintf("#%02X%02X%02X%02X", int(v[0]*255), int(v[1]*255), int(v[2]*255), int(v[3]*255))
 }
 
 func intParam(p map[string]any, key string, fallback int) int {
