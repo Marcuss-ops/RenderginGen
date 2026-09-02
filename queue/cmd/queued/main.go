@@ -12,11 +12,13 @@ import (
 
 	"github.com/Marcuss-ops/RenderginGen/queue/internal/metrics"
 	"github.com/Marcuss-ops/RenderginGen/queue/internal/migrate"
+	"github.com/Marcuss-ops/RenderginGen/queue/internal/model"
 	"github.com/Marcuss-ops/RenderginGen/queue/internal/repository"
 	"github.com/Marcuss-ops/RenderginGen/queue/internal/repository/memory"
 	"github.com/Marcuss-ops/RenderginGen/queue/internal/repository/postgres"
 	"github.com/Marcuss-ops/RenderginGen/queue/internal/server"
 	"github.com/Marcuss-ops/RenderginGen/queue/internal/service"
+	"github.com/jackc/pgx/v5"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
@@ -35,6 +37,7 @@ func main() {
 	memRepo := memory.New(*lease, *maxAttempts)
 	repo := repository.JobRepository(memRepo)
 	var workerRepo repository.WorkerRepository = memRepo
+	var postgresDSN string
 	if dsn := databaseURL(*dbURL); dsn != "" {
 		db, err := openDatabase(dsn)
 		if err != nil {
@@ -48,6 +51,7 @@ func main() {
 		pgRepo := postgres.New(db, *lease, *maxAttempts)
 		repo = pgRepo
 		workerRepo = pgRepo
+		postgresDSN = dsn
 		log.Printf("using postgres job repository")
 	}
 
@@ -77,9 +81,66 @@ func main() {
 
 	srv := server.New(svc)
 	srv.SetMetricsHandler(m.Handler())
+	if postgresDSN != "" {
+		// Every queue replica owns a dedicated LISTEN connection. Migration 016
+		// emits rendering_jobs notifications whenever a row becomes claimable;
+		// the notification only wakes local long-poll requests. The subsequent
+		// repository claim remains the source of truth and uses SKIP LOCKED.
+		go listenForJobNotifications(context.Background(), postgresDSN, srv)
+	}
 	log.Printf("job queue listening on %s (lease=%s, max-attempts=%d)", *addr, *lease, *maxAttempts)
 	if err := http.ListenAndServe(*addr, srv.Handler()); err != nil {
 		log.Fatal(err)
+	}
+}
+
+// listenForJobNotifications keeps one lightweight PostgreSQL LISTEN session
+// per queue replica and reconnects after transient database/network failures.
+func listenForJobNotifications(ctx context.Context, dsn string, srv *server.Server) {
+	const retryDelay = 2 * time.Second
+	for ctx.Err() == nil {
+		conn, err := pgx.Connect(ctx, dsn)
+		if err != nil {
+			log.Printf("queue notify connect: %v", err)
+			if !sleepContext(ctx, retryDelay) {
+				return
+			}
+			continue
+		}
+
+		if _, err := conn.Exec(ctx, "LISTEN rendering_jobs"); err != nil {
+			log.Printf("queue notify LISTEN: %v", err)
+			_ = conn.Close(context.Background())
+			if !sleepContext(ctx, retryDelay) {
+				return
+			}
+			continue
+		}
+		log.Printf("queue notifications listening on rendering_jobs")
+
+		for ctx.Err() == nil {
+			notification, err := conn.WaitForNotification(ctx)
+			if err != nil {
+				log.Printf("queue notify wait: %v", err)
+				break
+			}
+			srv.NotifyState(model.State(notification.Payload))
+		}
+		_ = conn.Close(context.Background())
+		if !sleepContext(ctx, retryDelay) {
+			return
+		}
+	}
+}
+
+func sleepContext(ctx context.Context, d time.Duration) bool {
+	timer := time.NewTimer(d)
+	defer timer.Stop()
+	select {
+	case <-ctx.Done():
+		return false
+	case <-timer.C:
+		return true
 	}
 }
 
