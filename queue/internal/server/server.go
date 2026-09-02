@@ -24,15 +24,23 @@ import (
 	"github.com/Marcuss-ops/RenderginGen/queue/internal/service"
 )
 
+const maxClaimWait = 25 * time.Second
+
 // Server wraps the job service with HTTP handlers.
 type Server struct {
 	svc            *service.Service
 	metricsHandler http.Handler
+	pendingWake    chan struct{}
+	renderedWake   chan struct{}
 }
 
 // New creates a server backed by the given job service.
 func New(s *service.Service) *Server {
-	return &Server{svc: s}
+	return &Server{
+		svc:          s,
+		pendingWake:  make(chan struct{}, 1),
+		renderedWake: make(chan struct{}, 1),
+	}
 }
 
 // SetMetricsHandler attaches an optional Prometheus exposition handler served
@@ -79,6 +87,9 @@ func (s *Server) submit(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusConflict)
 		return
 	}
+	if created {
+		s.signal(model.StatePending)
+	}
 	status := http.StatusCreated
 	if !created {
 		status = http.StatusOK
@@ -90,16 +101,39 @@ func (s *Server) claim(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		Worker string `json:"worker"`
 		State  string `json:"state,omitempty"`
+		WaitMS int64  `json:"wait_ms,omitempty"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	job, lease, err := s.svc.ClaimState(req.Worker, model.State(req.State))
+	state := model.State(req.State)
+	job, lease, err := s.svc.ClaimState(req.Worker, state)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
+	}
+	if job == nil && req.WaitMS > 0 {
+		wait := time.Duration(req.WaitMS) * time.Millisecond
+		if wait > maxClaimWait {
+			wait = maxClaimWait
+		}
+		timer := time.NewTimer(wait)
+		defer timer.Stop()
+
+		select {
+		case <-r.Context().Done():
+			return
+		case <-timer.C:
+		case <-s.wakeChannel(state):
+		}
+
+		job, lease, err = s.svc.ClaimState(req.Worker, state)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 	}
 	if job == nil {
 		w.WriteHeader(http.StatusNoContent)
@@ -121,6 +155,26 @@ func (s *Server) claim(w http.ResponseWriter, r *http.Request) {
 		State:          job.State,
 		Artifact:       job.Artifact,
 	})
+}
+
+// signal wakes at most one waiter for a queue state. The job table remains the
+// source of truth: the signal only removes idle latency, and claims still use
+// the repository's atomic SKIP LOCKED path. A buffered edge is enough because
+// an awakened worker drains all immediately claimable work before waiting
+// again.
+func (s *Server) signal(state model.State) {
+	ch := s.wakeChannel(state)
+	select {
+	case ch <- struct{}{}:
+	default:
+	}
+}
+
+func (s *Server) wakeChannel(state model.State) <-chan struct{} {
+	if state == model.StateRendered {
+		return s.renderedWake
+	}
+	return s.pendingWake
 }
 
 func (s *Server) complete(w http.ResponseWriter, r *http.Request) {
@@ -152,6 +206,10 @@ func (s *Server) fail(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusConflict)
 		return
 	}
+	// Fail can requeue a retryable job. A spurious wake when the job reached
+	// terminal failed state is harmless because the subsequent atomic claim
+	// simply returns empty.
+	s.signal(model.StatePending)
 	w.WriteHeader(http.StatusNoContent)
 }
 
@@ -170,6 +228,7 @@ func (s *Server) rendered(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusConflict)
 		return
 	}
+	s.signal(model.StateRendered)
 	w.WriteHeader(http.StatusNoContent)
 }
 
