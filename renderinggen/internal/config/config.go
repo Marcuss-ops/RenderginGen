@@ -23,7 +23,8 @@ type Config struct {
 }
 
 type WorkerConfig struct {
-	ID string `yaml:"id"`
+	ID              string `yaml:"id"`
+	PipelineWorkers int    `yaml:"pipeline_workers"`
 }
 
 type QueueConfig struct {
@@ -127,6 +128,11 @@ func applyDefaults(c *Config) {
 	if c.Worker.ID == "" {
 		c.Worker.ID = "renderinggen-" + hostname()
 	}
+	// Multiple pipeline workers overlap CPU/I/O preparation and post-processing.
+	// Chronon itself remains serialized by Processor's single GPU lane.
+	if c.Worker.PipelineWorkers <= 0 {
+		c.Worker.PipelineWorkers = 3
+	}
 	if c.Chronon.Backend == "" {
 		c.Chronon.Backend = "software"
 	}
@@ -154,6 +160,9 @@ func applyDefaults(c *Config) {
 }
 
 func (c *Config) validate() error {
+	if c.Worker.PipelineWorkers < 1 || c.Worker.PipelineWorkers > 16 {
+		return fmt.Errorf("worker.pipeline_workers must be between 1 and 16")
+	}
 	if c.Chronon.Profile != "" && c.Chronon.Profile != "gpu-vulkan-native" && c.Chronon.Profile != "software-cli" {
 		return fmt.Errorf("chronon.profile must be gpu-vulkan-native or software-cli")
 	}
