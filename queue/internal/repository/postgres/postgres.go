@@ -326,8 +326,10 @@ func (r *Repository) ClaimFinalization(parentJobID, workerID string) (*model.Job
 		return nil, false, fmt.Errorf("parent job id and worker id are required")
 	}
 	res, err := r.db.ExecContext(context.Background(), `
-		UPDATE render_jobs SET state = 'finalizing', current_worker_id = $2, started_at = now()
-		WHERE id = $1 AND state IN ('pending', 'running')`, parentJobID, workerID)
+		UPDATE render_jobs
+		SET state = 'finalizing', current_worker_id = $2, started_at = now(),
+		    lease_until = now() + make_interval(secs => $3)
+		WHERE id = $1 AND state IN ('pending', 'running')`, parentJobID, workerID, r.lease.Seconds())
 	if err != nil {
 		return nil, false, err
 	}
@@ -514,7 +516,7 @@ func (r *Repository) Renew(id, workerID string) error {
 	res, err := tx.ExecContext(ctx, `
 		UPDATE render_jobs
 		SET lease_until = $3
-		WHERE id = $1 AND state = 'running' AND current_worker_id = $2`,
+		WHERE id = $1 AND state IN ('running', 'finalizing') AND current_worker_id = $2`,
 		id, workerID, time.Now().Add(r.lease))
 	if err != nil {
 		return err
@@ -552,7 +554,7 @@ func (r *Repository) RequeueExpired(now time.Time) (int, error) {
 	rows, err := tx.QueryContext(ctx, `
 		SELECT id, attempt_count, max_attempts
 		FROM render_jobs
-		WHERE state = 'running' AND lease_until IS NOT NULL AND lease_until < $1
+		WHERE state IN ('running', 'finalizing') AND lease_until IS NOT NULL AND lease_until < $1
 		FOR UPDATE SKIP LOCKED`, now)
 	if err != nil {
 		return 0, err

@@ -152,3 +152,28 @@ func TestRenewWrongWorkerFails(t *testing.T) {
 		t.Fatal("expected error renewing with wrong worker")
 	}
 }
+
+func TestFinalizationLeaseRecoversAfterWorkerLoss(t *testing.T) {
+	s := New(10*time.Millisecond, 3)
+	submit(t, s, "parent-1")
+
+	claimed, ok, err := s.ClaimFinalization("parent-1", "w1")
+	if err != nil || !ok || claimed == nil {
+		t.Fatalf("claim finalization: job=%+v ok=%t err=%v", claimed, ok, err)
+	}
+	if claimed.LeaseUntil.IsZero() {
+		t.Fatal("finalizing parent must have a lease")
+	}
+
+	time.Sleep(20 * time.Millisecond)
+	n, err := s.RequeueExpired(time.Now())
+	if err != nil {
+		t.Fatalf("requeue: %v", err)
+	}
+	if n != 1 {
+		t.Fatalf("want one finalizing parent recovered, got %d", n)
+	}
+	if _, ok, err := s.ClaimFinalization("parent-1", "w2"); err != nil || !ok {
+		t.Fatalf("reclaimed parent: ok=%t err=%v", ok, err)
+	}
+}
