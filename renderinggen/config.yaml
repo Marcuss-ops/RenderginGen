@@ -1,5 +1,8 @@
 worker:
   id: renderinggen-77
+  # CPU/I/O pipelines overlap preparation and post-processing; Chronon itself
+  # stays serialized to one GPU render lane.
+  pipeline_workers: 3
 
 queue:
   endpoint: https://queue.pipelinegen.example
