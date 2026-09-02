@@ -52,11 +52,17 @@ func fromTextMotionDefinitions(src []motion.TextAnimatorDefinition, duration int
 	for _, definition := range src {
 		selector := concreteTextSelector{
 			ID: definition.ID + "_selector", Unit: definition.Selector.Kind,
-			Shape: "smooth", Order: "forward", Combine: "replace",
+			Shape: definition.Selector.Shape, Order: definition.Selector.Order, Combine: "replace",
 			ExcludeSpaces: true,
 		}
 		if definition.Selector.Kind == "" {
 			selector.Unit = "glyph"
+		}
+		if selector.Shape == "" {
+			selector.Shape = "smooth"
+		}
+		if selector.Order == "" {
+			selector.Order = "forward"
 		}
 		// A selector sweep is the renderer-neutral form of stagger: Chronon
 		// evaluates the animated end range per glyph/word every frame.

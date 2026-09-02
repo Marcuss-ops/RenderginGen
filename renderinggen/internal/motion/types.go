@@ -35,7 +35,9 @@ type TrackDefinition struct {
 }
 
 type SelectorDefinition struct {
-	Kind    string `json:"kind,omitempty"` // layer, line, word, glyph
+	Kind    string `json:"kind,omitempty"`  // layer, line, word, glyph
+	Shape   string `json:"shape,omitempty"` // square, ramp, triangle, smooth
+	Order   string `json:"order,omitempty"` // forward, reverse, from_center, random
 	Stagger int64  `json:"stagger,omitempty"`
 }
 

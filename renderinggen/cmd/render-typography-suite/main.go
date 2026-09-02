@@ -33,63 +33,156 @@ type semanticTypographyItem struct {
 	EndMS      int64          `json:"end_ms"`
 }
 
+type benchmarkSpec struct {
+	ID     string
+	Status string
+	Reason string
+	Items  []semanticTypographyItem
+}
+
+type manifestEntry struct {
+	ID       string `json:"id"`
+	Status   string `json:"status"`
+	PlanPath string `json:"plan_path,omitempty"`
+	Reason   string `json:"reason,omitempty"`
+}
+
 func main() {
 	motionID := flag.String("motion", "character_cascade", "MotionRegistry ID to compile")
 	out := flag.String("out", "typography_benchmark_videos/typography_suite_plan.json", "output plan path")
+	all := flag.Bool("all", false, "generate the fresh v2 suite and manifest")
 	flag.Parse()
 
+	if *all {
+		if err := generateSuite(*out); err != nil {
+			panic(err)
+		}
+		return
+	}
+	item := semanticTypographyItem{
+		ID: "typography_title", Template: "IMPORTANT_PHRASE", PresetID: "phrase_focus_v1",
+		MotionID: *motionID, Text: "Designed for speed.", StartMS: 0, EndMS: 5000,
+	}
+	path, err := writeV2Plan(*out, "typography-suite", []semanticTypographyItem{item})
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("wrote v2 typography plan via MotionRegistry: %s (motion=%s)\n", path, *motionID)
+}
+
+func generateSuite(out string) error {
+	dir := out
+	if filepath.Ext(dir) != "" {
+		dir = filepath.Dir(dir)
+	}
+	if !filepath.IsAbs(dir) {
+		cwd, err := os.Getwd()
+		if err != nil {
+			return err
+		}
+		dir = filepath.Join(cwd, dir)
+	}
+	specs := suiteSpecs()
+	manifest := make([]manifestEntry, 0, len(specs))
+	for _, spec := range specs {
+		entry := manifestEntry{ID: spec.ID, Status: spec.Status, Reason: spec.Reason}
+		if spec.Status == "supported" {
+			written, err := writeV2Plan(filepath.Join(dir, spec.ID+"_v2_plan.json"), "typography-"+spec.ID, spec.Items)
+			if err != nil {
+				return fmt.Errorf("%s: %w", spec.ID, err)
+			}
+			entry.PlanPath = written
+		}
+		manifest = append(manifest, entry)
+	}
+	data, err := json.MarshalIndent(struct {
+		Schema  string          `json:"schema"`
+		Version int             `json:"version"`
+		Entries []manifestEntry `json:"entries"`
+	}{"renderinggen.typography-certification.v1", 1, manifest}, "", "  ")
+	if err != nil {
+		return err
+	}
+	manifestPath := filepath.Join(dir, "typography_suite_v2_manifest.json")
+	if err := os.WriteFile(manifestPath, append(data, '\n'), 0644); err != nil {
+		return err
+	}
+	fmt.Printf("wrote v2 typography suite manifest: %s\n", manifestPath)
+	return nil
+}
+
+func writeV2Plan(path, planID string, items []semanticTypographyItem) (string, error) {
 	semantic := semanticTypographyPlan{
-		SchemaVersion: "renderinggen.overlay-plan.v1",
-		PlanID:        "typography-suite",
-		VideoID:       "typography-suite",
-		Width:         1920,
-		Height:        1080,
-		FPSNum:        24,
-		FPSDen:        1,
-		OutputProfile: "preview",
-		Items: []semanticTypographyItem{{
-			ID: "typography_title", Template: "IMPORTANT_PHRASE", PresetID: "phrase_focus_v1",
-			MotionID: *motionID, Text: "Designed for speed.", StartMS: 0, EndMS: 5000,
-		}},
+		SchemaVersion: "renderinggen.overlay-plan.v1", PlanID: planID, VideoID: planID,
+		Width: 1920, Height: 1080, FPSNum: 24, FPSDen: 1, OutputProfile: "preview", Items: items,
 	}
 	raw, err := json.Marshal(semantic)
 	if err != nil {
-		panic(err)
+		return "", err
 	}
-	data, _, semanticCompiled, err := overlay.CompileIfSemantic(raw)
+	data, _, compiled, err := overlay.CompileIfSemantic(raw)
 	if err != nil {
-		panic(err)
+		return "", err
 	}
-	if !semanticCompiled {
-		panic("typography runner: semantic plan did not compile through RenderingGen")
+	if !compiled {
+		return "", fmt.Errorf("semantic input did not pass through RenderingGen")
 	}
 	var document struct {
 		Schema  string `json:"schema"`
 		Version int    `json:"version"`
 	}
 	if err := json.Unmarshal(data, &document); err != nil {
-		panic(err)
+		return "", err
 	}
 	if document.Schema != "chronon.render-plan.v2" || document.Version != 2 {
-		panic(fmt.Sprintf("typography runner: compiler emitted %s v%d, want chronon.render-plan.v2", document.Schema, document.Version))
+		return "", fmt.Errorf("compiler emitted %s v%d, want chronon.render-plan.v2", document.Schema, document.Version)
 	}
 	data, err = json.MarshalIndent(json.RawMessage(data), "", "  ")
 	if err != nil {
-		panic(err)
+		return "", err
 	}
-	cwd, err := os.Getwd()
-	if err != nil {
-		panic(err)
-	}
-	path := *out
 	if !filepath.IsAbs(path) {
+		cwd, err := os.Getwd()
+		if err != nil {
+			return "", err
+		}
 		path = filepath.Join(cwd, path)
 	}
 	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
-		panic(err)
+		return "", err
 	}
-	if err := os.WriteFile(path, data, 0644); err != nil {
-		panic(err)
+	if err := os.WriteFile(path, append(data, '\n'), 0644); err != nil {
+		return "", err
 	}
-	fmt.Printf("wrote v2 typography plan via MotionRegistry: %s (motion=%s)\n", path, *motionID)
+	return path, nil
+}
+
+func item(id, motion, text string) semanticTypographyItem {
+	return semanticTypographyItem{ID: id, Template: "IMPORTANT_PHRASE", PresetID: "phrase_focus_v1", MotionID: motion, Text: text, EndMS: 5000}
+}
+
+func suiteSpecs() []benchmarkSpec {
+	t := "Designed for speed."
+	return []benchmarkSpec{
+		{ID: "01_masked_slide_up", Status: "blocked", Reason: "mask/clip primitive is not exposed by render-plan.v2"},
+		{ID: "02_word_by_word", Status: "supported", Items: []semanticTypographyItem{item("title", "word_reveal", t)}},
+		{ID: "03_character_cascade", Status: "supported", Items: []semanticTypographyItem{item("title", "character_cascade", t)}},
+		{ID: "04_tracking_collapse", Status: "supported", Items: []semanticTypographyItem{item("title", "tracking_collapse", t)}},
+		{ID: "05_tracking_expansion", Status: "supported", Items: []semanticTypographyItem{item("title", "tracking_expansion", t)}},
+		{ID: "06_blur_focus_in", Status: "supported", Items: []semanticTypographyItem{item("title", "blur_focus_in", t)}},
+		{ID: "07_soft_scale_reveal", Status: "supported", Items: []semanticTypographyItem{item("title", "soft_scale_reveal", t)}},
+		{ID: "08_precision_spring_up", Status: "supported", Items: []semanticTypographyItem{item("title", "precision_spring_up", t)}},
+		{ID: "09_split_line_reveal", Status: "supported", Items: []semanticTypographyItem{
+			item("line_a", "slide_left", "Create without limits."), item("line_b", "slide_right", "Beyond boundaries."),
+		}},
+		{ID: "10_center_expansion", Status: "supported", Items: []semanticTypographyItem{item("title", "center_expansion", "PURE")}},
+		{ID: "11_rolling_words", Status: "blocked", Reason: "clip/group viewport primitive is not exposed by render-plan.v2"},
+		{ID: "12_opacity_wave", Status: "supported", Items: []semanticTypographyItem{item("title", "opacity_wave", t)}},
+		{ID: "13_scale_wave", Status: "supported", Items: []semanticTypographyItem{item("title", "scale_wave", t)}},
+		{ID: "14_char_wave", Status: "supported", Items: []semanticTypographyItem{item("title", "char_wave", t)}},
+		{ID: "15_hero_typography", Status: "supported", Items: []semanticTypographyItem{
+			item("tag", "fade_in", "INTRODUCING"), item("headline", "character_cascade", "The Next Dimension"),
+			item("subtitle", "tracking_expansion", "Engineered for speed."), item("keyword", "soft_scale_reveal", "Pure performance."),
+		}},
+	}
 }
