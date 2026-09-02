@@ -13,10 +13,16 @@ import (
 )
 
 // diskCache is the L2 NVMe cache: content-addressed files on disk.
+// Usage is indexed in-memory after one lazy census. Normal writes therefore
+// avoid a full filesystem walk; an ordered eviction scan only runs when the
+// configured budget is actually exceeded.
 type diskCache struct {
 	dir string
 	max int64
 	mu  sync.Mutex
+
+	usageReady bool
+	current    int64
 }
 
 func newDiskCache(dir string, max int64) *diskCache {
@@ -46,7 +52,13 @@ func (d *diskCache) PutBytes(key string, data []byte) (string, int64, error) {
 	}
 	d.mu.Lock()
 	defer d.mu.Unlock()
+	if err := d.ensureUsageLocked(); err != nil {
+		return "", 0, err
+	}
 	p := d.path(key)
+	if info, err := os.Stat(p); err == nil && info.Mode().IsRegular() {
+		return p, info.Size(), nil
+	}
 	if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
 		return "", 0, err
 	}
@@ -66,8 +78,9 @@ func (d *diskCache) PutBytes(key string, data []byte) (string, int64, error) {
 	if err := os.Rename(tmpPath, p); err != nil {
 		return "", 0, err
 	}
-	if d.max > 0 {
-		d.enforceBudget()
+	d.current += int64(len(data))
+	if err := d.enforceBudgetLocked(); err != nil {
+		return "", 0, err
 	}
 	return p, int64(len(data)), nil
 }
@@ -85,10 +98,29 @@ func (d *diskCache) PutFile(key, source string) (string, int64, error) {
 	}
 	d.mu.Lock()
 	defer d.mu.Unlock()
+	if err := d.ensureUsageLocked(); err != nil {
+		return "", 0, err
+	}
 	p := d.path(key)
+	if existing, err := os.Stat(p); err == nil && existing.Mode().IsRegular() {
+		return p, existing.Size(), nil
+	}
 	if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
 		return "", 0, err
 	}
+
+	// Same-filesystem CAS installs are metadata-only. This is the common
+	// worker path when workspace and L2 live on the same NVMe volume.
+	if err := os.Link(source, p); err == nil {
+		d.current += info.Size()
+		if err := d.enforceBudgetLocked(); err != nil {
+			return "", 0, err
+		}
+		return p, info.Size(), nil
+	}
+
+	// Cross-device or unsupported hardlinks fall back to a single streaming
+	// copy. No whole-file []byte allocation is used.
 	tmp, err := os.CreateTemp(filepath.Dir(p), ".install-*")
 	if err != nil {
 		return "", 0, err
@@ -116,8 +148,9 @@ func (d *diskCache) PutFile(key, source string) (string, int64, error) {
 	if err := os.Rename(tmpPath, p); err != nil {
 		return "", 0, err
 	}
-	if d.max > 0 {
-		d.enforceBudget()
+	d.current += info.Size()
+	if err := d.enforceBudgetLocked(); err != nil {
+		return "", 0, err
 	}
 	return p, info.Size(), nil
 }
@@ -128,7 +161,13 @@ func (d *diskCache) InstallReader(key string, r io.Reader, size int64) (string, 
 	}
 	d.mu.Lock()
 	defer d.mu.Unlock()
+	if err := d.ensureUsageLocked(); err != nil {
+		return "", 0, err
+	}
 	p := d.path(key)
+	if info, err := os.Stat(p); err == nil && info.Mode().IsRegular() {
+		return p, info.Size(), nil
+	}
 	if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
 		return "", 0, err
 	}
@@ -157,13 +196,26 @@ func (d *diskCache) InstallReader(key string, r io.Reader, size int64) (string, 
 	if err := os.Rename(tmpPath, p); err != nil {
 		return "", 0, err
 	}
-	if d.max > 0 {
-		d.enforceBudget()
+	d.current += written
+	if err := d.enforceBudgetLocked(); err != nil {
+		return "", 0, err
 	}
 	return p, written, nil
 }
 
-func (d *diskCache) Remove(key string) { _ = os.Remove(d.path(key)) }
+func (d *diskCache) Remove(key string) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	p := d.path(key)
+	if info, err := os.Stat(p); err == nil && info.Mode().IsRegular() {
+		if os.Remove(p) == nil && d.usageReady {
+			d.current -= info.Size()
+			if d.current < 0 {
+				d.current = 0
+			}
+		}
+	}
+}
 
 func (d *diskCache) ContextPath(ctx context.Context, key string) (string, int64, error) {
 	select {
@@ -186,19 +238,7 @@ func (d *diskCache) Put(key string, data []byte) {
 	if d.dir == "" {
 		return
 	}
-	d.mu.Lock()
-	defer d.mu.Unlock()
-
-	p := d.path(key)
-	if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
-		return
-	}
-	if err := os.WriteFile(p, data, 0o644); err != nil {
-		return
-	}
-	if d.max > 0 {
-		d.enforceBudget()
-	}
+	_, _, _ = d.PutBytes(key, data)
 }
 
 func (d *diskCache) path(key string) string {
@@ -209,30 +249,60 @@ func (d *diskCache) path(key string) string {
 	return filepath.Join(d.dir, "assets", prefix, key)
 }
 
-// enforceBudget removes oldest files until total size is within d.max.
-// Callers must hold d.mu.
-func (d *diskCache) enforceBudget() {
+// ensureUsageLocked performs the only unconditional filesystem census in the
+// cache lifetime. Subsequent writes update d.current incrementally.
+func (d *diskCache) ensureUsageLocked() error {
+	if d.usageReady || d.dir == "" {
+		return nil
+	}
+	var total int64
+	err := filepath.Walk(d.dir, func(_ string, info os.FileInfo, err error) error {
+		if err != nil || info == nil || info.IsDir() {
+			return nil
+		}
+		total += info.Size()
+		return nil
+	})
+	if err != nil && !os.IsNotExist(err) {
+		return err
+	}
+	d.current = total
+	d.usageReady = true
+	return nil
+}
+
+// enforceBudgetLocked performs the expensive ordered scan only after the
+// incremental counter says the cache is over budget. Callers must hold d.mu.
+func (d *diskCache) enforceBudgetLocked() error {
+	if d.max <= 0 || d.current <= d.max {
+		return nil
+	}
 	type fi struct {
 		path string
 		size int64
 		mod  int64
 	}
 	var files []fi
-	var total int64
-	_ = filepath.Walk(d.dir, func(path string, info os.FileInfo, err error) error {
-		if err != nil || info.IsDir() {
+	if err := filepath.Walk(d.dir, func(path string, info os.FileInfo, err error) error {
+		if err != nil || info == nil || info.IsDir() {
 			return nil
 		}
 		files = append(files, fi{path: path, size: info.Size(), mod: info.ModTime().UnixNano()})
-		total += info.Size()
 		return nil
-	})
+	}); err != nil && !os.IsNotExist(err) {
+		return err
+	}
 	sort.Slice(files, func(i, j int) bool { return files[i].mod < files[j].mod })
 	for _, f := range files {
-		if total <= d.max {
+		if d.current <= d.max {
 			break
 		}
-		_ = os.Remove(f.path)
-		total -= f.size
+		if err := os.Remove(f.path); err == nil {
+			d.current -= f.size
+		}
 	}
+	if d.current < 0 {
+		d.current = 0
+	}
+	return nil
 }

@@ -10,6 +10,7 @@ package server
 import (
 	"io"
 	"net/http"
+	"strconv"
 
 	"github.com/Marcuss-ops/RenderginGen/objectstore/internal/store"
 )
@@ -35,12 +36,8 @@ func (s *Server) Handler() http.Handler {
 
 func (s *Server) put(w http.ResponseWriter, r *http.Request) {
 	key := r.PathValue("key")
-	body, err := io.ReadAll(r.Body)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-	if err := s.store.Put(key, body); err != nil {
+	defer r.Body.Close()
+	if err := s.store.PutReader(key, r.Body); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -49,7 +46,7 @@ func (s *Server) put(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) get(w http.ResponseWriter, r *http.Request) {
 	key := r.PathValue("key")
-	data, err := s.store.Get(key)
+	file, size, err := s.store.Open(key)
 	if err == store.ErrNotFound {
 		http.NotFound(w, r)
 		return
@@ -58,8 +55,12 @@ func (s *Server) get(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	defer file.Close()
+
 	w.Header().Set("Content-Type", "application/octet-stream")
-	_, _ = w.Write(data)
+	w.Header().Set("Content-Length", strconv.FormatInt(size, 10))
+	w.WriteHeader(http.StatusOK)
+	_, _ = io.Copy(w, file)
 }
 
 func (s *Server) health(w http.ResponseWriter, _ *http.Request) {
