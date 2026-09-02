@@ -40,6 +40,11 @@ const (
 
 // AssetRef points at an asset in the central artifact store by content hash
 // and the logical path it must be materialized at in the job workspace.
+type FrameRange struct {
+	Start int64 `json:"start"`
+	End   int64 `json:"end"`
+}
+
 type AssetRef struct {
 	Hash        string `json:"hash"`
 	LogicalPath string `json:"logical_path"`
@@ -49,11 +54,14 @@ type AssetRef struct {
 // semantic renderinggen.overlay-plan.v1 emitted by PipelineGen (compiled by
 // the worker) or a concrete chronon.render-plan.v1 legacy payload.
 type Job struct {
-	ID             string `json:"id"`
-	Schema         string `json:"schema,omitempty"`
-	Version        int    `json:"version,omitempty"`
-	IdempotencyKey string `json:"idempotency_key,omitempty"`
-	JobType        string `json:"job_type,omitempty"`
+	ID             string      `json:"id"`
+	Schema         string      `json:"schema,omitempty"`
+	Version        int         `json:"version,omitempty"`
+	IdempotencyKey string      `json:"idempotency_key,omitempty"`
+	JobType        string      `json:"job_type,omitempty"`
+	ParentJobID    string      `json:"parent_job_id,omitempty"`
+	ChunkIndex     int         `json:"chunk_index,omitempty"`
+	FrameRange     *FrameRange `json:"frame_range,omitempty"`
 
 	RenderPlan json.RawMessage `json:"render_plan"`
 	Assets     []AssetRef      `json:"assets"`
@@ -144,12 +152,26 @@ func fromClaimed(claimed *queueclient.ClaimedJob, err error) (*Job, error) {
 		Version:        claimed.Version,
 		IdempotencyKey: claimed.IdempotencyKey,
 		JobType:        claimed.JobType,
+		ParentJobID:    claimed.ParentJobID,
+		ChunkIndex:     claimed.ChunkIndex,
+		FrameRange:     fromClientFrameRange(claimed.FrameRange),
 		RenderPlan:     claimed.RenderPlan,
 		Assets:         fromClientAssets(claimed.Assets),
 		Lease:          claimed.Lease,
 		State:          State(claimed.State),
 		Artifact:       fromClientArtifact(claimed.Artifact),
 	}, nil
+}
+
+// Submit enqueues a job through the shared public queue contract.
+func (c *Client) Submit(ctx context.Context, job Job) error {
+	return c.q.Submit(ctx, queueclient.Job{
+		ID: job.ID, Schema: job.Schema, Version: job.Version,
+		IdempotencyKey: job.IdempotencyKey, JobType: job.JobType,
+		ParentJobID: job.ParentJobID, ChunkIndex: job.ChunkIndex,
+		FrameRange: toClientFrameRange(job.FrameRange),
+		RenderPlan: job.RenderPlan, Assets: toClientAssets(job.Assets),
+	})
 }
 
 // Complete reports a successfully rendered job along with its artifact.
@@ -173,6 +195,31 @@ func (c *Client) Rendered(ctx context.Context, id, reason string, artifact Artif
 // render. It fails if the job expired and was requeued to another worker.
 func (c *Client) Renew(ctx context.Context, id string) error {
 	return c.q.Renew(ctx, id, c.workerID)
+}
+
+func toClientFrameRange(in *FrameRange) *queueclient.FrameRange {
+	if in == nil {
+		return nil
+	}
+	return &queueclient.FrameRange{Start: in.Start, End: in.End}
+}
+
+func toClientAssets(in []AssetRef) []queueclient.AssetRef {
+	if in == nil {
+		return nil
+	}
+	out := make([]queueclient.AssetRef, len(in))
+	for i, a := range in {
+		out[i] = queueclient.AssetRef{Hash: a.Hash, LogicalPath: a.LogicalPath}
+	}
+	return out
+}
+
+func fromClientFrameRange(in *queueclient.FrameRange) *FrameRange {
+	if in == nil {
+		return nil
+	}
+	return &FrameRange{Start: in.Start, End: in.End}
 }
 
 func fromClientAssets(in []queueclient.AssetRef) []AssetRef {

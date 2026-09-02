@@ -1,0 +1,438 @@
+{
+  "schema": "chronon.render-plan",
+  "version": 1,
+  "job_id": "typo_03_character_cascade",
+  "canvas": {
+    "width": 1920,
+    "height": 1080,
+    "fps_num": 24,
+    "fps_den": 1,
+    "duration_frames": 120
+  },
+  "layers": [
+    {
+      "id": "bg_video",
+      "type": "video",
+      "source": "assets/Pale-Olive.mp4",
+      "box_width": 1920,
+      "box_height": 1080,
+      "fit": "cover",
+      "opacity": 1,
+      "start_frame": 0,
+      "duration_frames": 120
+    },
+    {
+      "id": "char_casc_char_P_a",
+      "type": "text",
+      "text": "P",
+      "preset": "phrase_slide_up",
+      "font": "assets/fonts/Inter-Bold.ttf",
+      "font_size": 74,
+      "position": [
+        657.3399999999999,
+        0
+      ],
+      "color": [
+        0.08,
+        0.08,
+        0.12,
+        1
+      ],
+      "opacity": 1,
+      "start_frame": 0,
+      "duration_frames": 120,
+      "animation": {
+        "preset": "reveal_from_bottom"
+      }
+    },
+    {
+      "id": "char_casc_char_o_b",
+      "type": "text",
+      "text": "o",
+      "preset": "phrase_slide_up",
+      "font": "assets/fonts/Inter-Bold.ttf",
+      "font_size": 74,
+      "position": [
+        704.7,
+        0
+      ],
+      "color": [
+        0.08,
+        0.08,
+        0.12,
+        1
+      ],
+      "opacity": 1,
+      "start_frame": 2,
+      "duration_frames": 118,
+      "animation": {
+        "preset": "reveal_from_bottom"
+      }
+    },
+    {
+      "id": "char_casc_char_w_c",
+      "type": "text",
+      "text": "w",
+      "preset": "phrase_slide_up",
+      "font": "assets/fonts/Inter-Bold.ttf",
+      "font_size": 74,
+      "position": [
+        757.24,
+        0
+      ],
+      "color": [
+        0.08,
+        0.08,
+        0.12,
+        1
+      ],
+      "opacity": 1,
+      "start_frame": 4,
+      "duration_frames": 116,
+      "animation": {
+        "preset": "reveal_from_bottom"
+      }
+    },
+    {
+      "id": "char_casc_char_e_d",
+      "type": "text",
+      "text": "e",
+      "preset": "phrase_slide_up",
+      "font": "assets/fonts/Inter-Bold.ttf",
+      "font_size": 74,
+      "position": [
+        808.3,
+        0
+      ],
+      "color": [
+        0.08,
+        0.08,
+        0.12,
+        1
+      ],
+      "opacity": 1,
+      "start_frame": 6,
+      "duration_frames": 114,
+      "animation": {
+        "preset": "reveal_from_bottom"
+      }
+    },
+    {
+      "id": "char_casc_char_r_e",
+      "type": "text",
+      "text": "r",
+      "preset": "phrase_slide_up",
+      "font": "assets/fonts/Inter-Bold.ttf",
+      "font_size": 74,
+      "position": [
+        843.8199999999999,
+        0
+      ],
+      "color": [
+        0.08,
+        0.08,
+        0.12,
+        1
+      ],
+      "opacity": 1,
+      "start_frame": 8,
+      "duration_frames": 112,
+      "animation": {
+        "preset": "reveal_from_bottom"
+      }
+    },
+    {
+      "id": "char_casc_char_f_f",
+      "type": "text",
+      "text": "f",
+      "preset": "phrase_slide_up",
+      "font": "assets/fonts/Inter-Bold.ttf",
+      "font_size": 74,
+      "position": [
+        871.1999999999999,
+        0
+      ],
+      "color": [
+        0.08,
+        0.08,
+        0.12,
+        1
+      ],
+      "opacity": 1,
+      "start_frame": 10,
+      "duration_frames": 110,
+      "animation": {
+        "preset": "reveal_from_bottom"
+      }
+    },
+    {
+      "id": "char_casc_char_u_g",
+      "type": "text",
+      "text": "u",
+      "preset": "phrase_slide_up",
+      "font": "assets/fonts/Inter-Bold.ttf",
+      "font_size": 74,
+      "position": [
+        906.72,
+        0
+      ],
+      "color": [
+        0.08,
+        0.08,
+        0.12,
+        1
+      ],
+      "opacity": 1,
+      "start_frame": 12,
+      "duration_frames": 108,
+      "animation": {
+        "preset": "reveal_from_bottom"
+      }
+    },
+    {
+      "id": "char_casc_char_l_h",
+      "type": "text",
+      "text": "l",
+      "preset": "phrase_slide_up",
+      "font": "assets/fonts/Inter-Bold.ttf",
+      "font_size": 74,
+      "position": [
+        939.28,
+        0
+      ],
+      "color": [
+        0.08,
+        0.08,
+        0.12,
+        1
+      ],
+      "opacity": 1,
+      "start_frame": 14,
+      "duration_frames": 106,
+      "animation": {
+        "preset": "reveal_from_bottom"
+      }
+    },
+    {
+      "id": "char_casc_char_l_i",
+      "type": "text",
+      "text": "l",
+      "preset": "phrase_slide_up",
+      "font": "assets/fonts/Inter-Bold.ttf",
+      "font_size": 74,
+      "position": [
+        960,
+        0
+      ],
+      "color": [
+        0.08,
+        0.08,
+        0.12,
+        1
+      ],
+      "opacity": 1,
+      "start_frame": 16,
+      "duration_frames": 104,
+      "animation": {
+        "preset": "reveal_from_bottom"
+      }
+    },
+    {
+      "id": "char_casc_char_y_j",
+      "type": "text",
+      "text": "y",
+      "preset": "phrase_slide_up",
+      "font": "assets/fonts/Inter-Bold.ttf",
+      "font_size": 74,
+      "position": [
+        990.3399999999999,
+        0
+      ],
+      "color": [
+        0.08,
+        0.08,
+        0.12,
+        1
+      ],
+      "opacity": 1,
+      "start_frame": 18,
+      "duration_frames": 102,
+      "animation": {
+        "preset": "reveal_from_bottom"
+      }
+    },
+    {
+      "id": "char_casc_char_s_l",
+      "type": "text",
+      "text": "s",
+      "preset": "phrase_slide_up",
+      "font": "assets/fonts/Inter-Bold.ttf",
+      "font_size": 74,
+      "position": [
+        1050.28,
+        0
+      ],
+      "color": [
+        0.08,
+        0.08,
+        0.12,
+        1
+      ],
+      "opacity": 1,
+      "start_frame": 22,
+      "duration_frames": 98,
+      "animation": {
+        "preset": "reveal_from_bottom"
+      }
+    },
+    {
+      "id": "char_casc_char_i_m",
+      "type": "text",
+      "text": "i",
+      "preset": "phrase_slide_up",
+      "font": "assets/fonts/Inter-Bold.ttf",
+      "font_size": 74,
+      "position": [
+        1079.8799999999999,
+        0
+      ],
+      "color": [
+        0.08,
+        0.08,
+        0.12,
+        1
+      ],
+      "opacity": 1,
+      "start_frame": 24,
+      "duration_frames": 96,
+      "animation": {
+        "preset": "reveal_from_bottom"
+      }
+    },
+    {
+      "id": "char_casc_char_m_n",
+      "type": "text",
+      "text": "m",
+      "preset": "phrase_slide_up",
+      "font": "assets/fonts/Inter-Bold.ttf",
+      "font_size": 74,
+      "position": [
+        1123.54,
+        0
+      ],
+      "color": [
+        0.08,
+        0.08,
+        0.12,
+        1
+      ],
+      "opacity": 1,
+      "start_frame": 26,
+      "duration_frames": 94,
+      "animation": {
+        "preset": "reveal_from_bottom"
+      }
+    },
+    {
+      "id": "char_casc_char_p_o",
+      "type": "text",
+      "text": "p",
+      "preset": "phrase_slide_up",
+      "font": "assets/fonts/Inter-Bold.ttf",
+      "font_size": 74,
+      "position": [
+        1179.78,
+        0
+      ],
+      "color": [
+        0.08,
+        0.08,
+        0.12,
+        1
+      ],
+      "opacity": 1,
+      "start_frame": 28,
+      "duration_frames": 92,
+      "animation": {
+        "preset": "reveal_from_bottom"
+      }
+    },
+    {
+      "id": "char_casc_char_l_p",
+      "type": "text",
+      "text": "l",
+      "preset": "phrase_slide_up",
+      "font": "assets/fonts/Inter-Bold.ttf",
+      "font_size": 74,
+      "position": [
+        1213.08,
+        0
+      ],
+      "color": [
+        0.08,
+        0.08,
+        0.12,
+        1
+      ],
+      "opacity": 1,
+      "start_frame": 30,
+      "duration_frames": 90,
+      "animation": {
+        "preset": "reveal_from_bottom"
+      }
+    },
+    {
+      "id": "char_casc_char_e_q",
+      "type": "text",
+      "text": "e",
+      "preset": "phrase_slide_up",
+      "font": "assets/fonts/Inter-Bold.ttf",
+      "font_size": 74,
+      "position": [
+        1244.9,
+        0
+      ],
+      "color": [
+        0.08,
+        0.08,
+        0.12,
+        1
+      ],
+      "opacity": 1,
+      "start_frame": 32,
+      "duration_frames": 88,
+      "animation": {
+        "preset": "reveal_from_bottom"
+      }
+    },
+    {
+      "id": "char_casc_char_._r",
+      "type": "text",
+      "text": ".",
+      "preset": "phrase_slide_up",
+      "font": "assets/fonts/Inter-Bold.ttf",
+      "font_size": 74,
+      "position": [
+        1276.72,
+        0
+      ],
+      "color": [
+        0.08,
+        0.08,
+        0.12,
+        1
+      ],
+      "opacity": 1,
+      "start_frame": 34,
+      "duration_frames": 86,
+      "animation": {
+        "preset": "reveal_from_bottom"
+      }
+    }
+  ],
+  "output": {
+    "path": "/home/pierone/src/go-master/projects/Pyt/VeloxEditing/RenderingGen/renderinggen/typography_benchmark_videos/typo_03_character_cascade_24fps_1080p.mp4",
+    "format": "mp4",
+    "codec": "h264"
+  }
+}

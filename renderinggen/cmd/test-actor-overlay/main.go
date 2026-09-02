@@ -149,11 +149,6 @@ func main() {
 	credsFile := "/home/pierone/src/go-master/projects/Pyt/VeloxEditing/refactored/credentials.json"
 	tokenFile := "/home/pierone/src/go-master/projects/Pyt/VeloxEditing/refactored/token.json"
 
-	videoBytes, err := os.ReadFile(outputFile)
-	if err != nil {
-		panic(err)
-	}
-
 	ctx := context.Background()
 	publisher, err := drive.NewGoogleOAuth(ctx, credsFile, tokenFile, folderID)
 	if err != nil {
@@ -161,11 +156,11 @@ func main() {
 	}
 
 	uploadName := "actor_gerard_butler_pale_olive_24fps_1080p.mp4"
-	fmt.Printf("☁️ Uploading %s (%d bytes) to Drive folder %s...\n", uploadName, len(videoBytes), folderID)
+	fmt.Printf("☁️ Uploading %s to Drive folder %s...\n", uploadName, folderID)
 	res, err := publisher.Publish(ctx, drive.PublishRequest{
 		Name:         uploadName,
 		ContentType:  "video/mp4",
-		Data:         videoBytes,
+		Path:         outputFile,
 		ParentFolder: folderID,
 	})
 	if err != nil {

@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"sync"
@@ -40,6 +41,18 @@ func (m *Mock) Publish(_ context.Context, req PublishRequest) (Result, error) {
 		return Result{}, fmt.Errorf("drive: simulated upload failure %d/%d", m.failures, m.failFirst)
 	}
 
+	if req.Path == "" {
+		return Result{}, fmt.Errorf("drive: mock publish has empty path")
+	}
+	input, err := os.Open(req.Path)
+	if err != nil {
+		return Result{}, fmt.Errorf("drive: mock open: %w", err)
+	}
+	defer input.Close()
+	data, err := io.ReadAll(input)
+	if err != nil {
+		return Result{}, fmt.Errorf("drive: mock read: %w", err)
+	}
 	if m.dir != "" {
 		dir := m.dir
 		if req.Subfolder != "" {
@@ -49,13 +62,13 @@ func (m *Mock) Publish(_ context.Context, req PublishRequest) (Result, error) {
 			return Result{}, fmt.Errorf("drive: mock mkdir: %w", err)
 		}
 		name := fmt.Sprintf("%04d-%s", m.seq, filepath.Base(req.Name))
-		if err := os.WriteFile(filepath.Join(dir, name), req.Data, 0o644); err != nil {
+		if err := os.WriteFile(filepath.Join(dir, name), data, 0o644); err != nil {
 			return Result{}, fmt.Errorf("drive: mock write: %w", err)
 		}
 	}
 
 	id := fmt.Sprintf("mock-%04d", m.seq)
-	hash := sha256.Sum256(req.Data)
+	hash := sha256.Sum256(data)
 	return Result{FileID: id, WebViewLink: "https://drive.example.com/file/d/" + id,
-		ParentFolder: req.ParentFolder, SizeBytes: int64(len(req.Data)), SHA256: fmt.Sprintf("%x", hash[:])}, nil
+		ParentFolder: req.ParentFolder, SizeBytes: int64(len(data)), SHA256: fmt.Sprintf("%x", hash[:])}, nil
 }

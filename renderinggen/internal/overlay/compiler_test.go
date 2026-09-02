@@ -48,6 +48,30 @@ func TestCompileIfSemanticOptionalBackground(t *testing.T) {
 	}
 }
 
+func TestCompileIfSemanticTextMotionProducesAnimatorContract(t *testing.T) {
+	raw := []byte(`{
+      "schema_version":"renderinggen.overlay-plan.v1",
+      "plan_id":"p","video_id":"v","width":1920,"height":1080,"fps_num":24,"fps_den":1,
+      "items":[{"id":"title","template_id":"IMPORTANT_PHRASE","preset_id":"phrase_fade_in","motion_id":"character_cascade",
+        "text":"Powerfully simple.","start_ms":0,"end_ms":2000}]
+    }`)
+	compiled, _, _, err := CompileIfSemantic(raw)
+	if err != nil {
+		t.Fatalf("compile text motion: %v", err)
+	}
+	var plan concretePlan
+	if err := json.Unmarshal(compiled, &plan); err != nil {
+		t.Fatal(err)
+	}
+	if len(plan.Layers) != 1 || len(plan.Layers[0].TextAnimators) != 1 {
+		t.Fatalf("expected one text animator, got %+v", plan.Layers)
+	}
+	a := plan.Layers[0].TextAnimators[0]
+	if a.Selectors[0].Unit != "glyph" || len(a.Properties) != 2 {
+		t.Fatalf("unexpected character cascade contract: %+v", a)
+	}
+}
+
 // TestCompileIfSemanticRejectsMissingPresetID pins ADR-029 forward-point (d):
 // RenderingGen no longer re-maps a template_id to a preset (it must not know
 // that IMPORTANT_PHRASE means caption_card). A preset-driven template without

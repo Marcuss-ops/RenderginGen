@@ -1,0 +1,48 @@
+{
+  "copy_eligible": false,
+  "identity": {
+    "asset_manifest_digest": "3d3d066583df52f489e97c80f608eb1a1cf31541be052409d5da5d3203ab3cb8",
+    "chronon_abi": 2,
+    "chronon_version": "0.1.0",
+    "content_digest": "3aa7d86b7b1c79cb717cae8143531dc26bd8cd59dc5aa595f13cf4e39348bfb0",
+    "git_sha": "9406609e",
+    "job_id": "warm_01_image_scale_in",
+    "render_plan_schema": "chronon.render-plan.v1",
+    "request_digest": "075282099bf8d1a83a5e79e07c1500caf65a22ca29b033eed2b166c0f7148c8b"
+  },
+  "media": {
+    "codec": "h264",
+    "container": "mov,mp4,m4a,3gp,3g2,mj2",
+    "duration_ms": 4959.0,
+    "fps_den": 119,
+    "fps_num": 2880,
+    "frame_count": 120,
+    "has_audio": false,
+    "height": 1080,
+    "pixel_format": "yuv420p",
+    "width": 1920
+  },
+  "output": {
+    "bytes": 598885,
+    "sha256": "287f73ad931f4db52dad9763eb4958e91c48973b025c36391fe2a0592d9f9703"
+  },
+  "render": {
+    "backend": "vulkan",
+    "fps_den": 1,
+    "fps_num": 24,
+    "frames": 120,
+    "height": 1080,
+    "width": 1920
+  },
+  "schema": "chronon3d.render-receipt.v1",
+  "verification": {
+    "audio": "skip",
+    "codec": "pass",
+    "decode": "pass",
+    "ffprobe": "pass",
+    "fps": "fail",
+    "frame_count": "pass",
+    "pixel_format": "pass",
+    "resolution": "pass"
+  }
+}

@@ -37,6 +37,11 @@ const JobSchemaVersionV1 = 1
 
 // AssetRef points at an asset in the central artifact store by content hash
 // and the logical path it must be materialized at in the job workspace.
+type FrameRange struct {
+	Start int64 `json:"start"`
+	End   int64 `json:"end"`
+}
+
 type AssetRef struct {
 	Hash        string `json:"hash"`
 	LogicalPath string `json:"logical_path"`
@@ -47,11 +52,14 @@ type AssetRef struct {
 // contains every layer of the segment (base video, phrases, keywords, images,
 // animations) so Chronon3d composes them in a single pass.
 type Job struct {
-	ID             string `json:"id"`
-	Schema         string `json:"schema,omitempty"`
-	Version        int    `json:"version,omitempty"`
-	IdempotencyKey string `json:"idempotency_key,omitempty"`
-	JobType        string `json:"job_type,omitempty"`
+	ID             string      `json:"id"`
+	Schema         string      `json:"schema,omitempty"`
+	Version        int         `json:"version,omitempty"`
+	IdempotencyKey string      `json:"idempotency_key,omitempty"`
+	JobType        string      `json:"job_type,omitempty"`
+	ParentJobID    string      `json:"parent_job_id,omitempty"`
+	ChunkIndex     int         `json:"chunk_index,omitempty"`
+	FrameRange     *FrameRange `json:"frame_range,omitempty"`
 
 	RenderPlan json.RawMessage `json:"render_plan"`
 	Assets     []AssetRef      `json:"assets"`

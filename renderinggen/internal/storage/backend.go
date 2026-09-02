@@ -19,10 +19,15 @@ type Backend interface {
 	Store(ctx context.Context, key string, data []byte) error
 }
 
-// ReaderBackend is an optional streaming variant of Backend.Store. Backends
+// ReaderBackend optionally supports streaming reads from L3.
+type ReaderBackend interface {
+	FetchReader(ctx context.Context, key string) (io.ReadCloser, int64, error)
+}
+
+// WriterBackend is an optional streaming variant of Backend.Store. Backends
 // that implement it can accept large objects without requiring the caller to
 // first load the complete object into memory.
-type ReaderBackend interface {
+type WriterBackend interface {
 	StoreReader(ctx context.Context, key string, r io.Reader, size int64) error
 }
 
@@ -79,6 +84,26 @@ type HTTP struct {
 // NewHTTP creates an HTTP backend pointing at an object store base URL.
 func NewHTTP(base string) *HTTP {
 	return &HTTP{base: base, client: &http.Client{Timeout: 60 * time.Second}}
+}
+
+func (h *HTTP) FetchReader(ctx context.Context, key string) (io.ReadCloser, int64, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, h.base+"/objects/"+key, nil)
+	if err != nil {
+		return nil, 0, err
+	}
+	resp, err := h.client.Do(req)
+	if err != nil {
+		return nil, 0, err
+	}
+	if resp.StatusCode == http.StatusNotFound {
+		resp.Body.Close()
+		return nil, 0, ErrNotFound
+	}
+	if resp.StatusCode != http.StatusOK {
+		resp.Body.Close()
+		return nil, 0, fmt.Errorf("fetch %s: unexpected status %d", key, resp.StatusCode)
+	}
+	return resp.Body, resp.ContentLength, nil
 }
 
 func (h *HTTP) Fetch(ctx context.Context, key string) ([]byte, error) {

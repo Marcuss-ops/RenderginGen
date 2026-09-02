@@ -104,8 +104,8 @@ artifact_store:
 	if cfg.Health.Addr != ":8080" {
 		t.Fatalf("health addr default = %q", cfg.Health.Addr)
 	}
-	if cfg.Workspace.Root != "/var/lib/renderinggen/jobs" {
-		t.Fatalf("workspace root default = %q", cfg.Workspace.Root)
+	if cfg.Workspace.Root != defaultWorkspaceRoot() {
+		t.Fatalf("workspace root default = %q, want %q", cfg.Workspace.Root, defaultWorkspaceRoot())
 	}
 }
 

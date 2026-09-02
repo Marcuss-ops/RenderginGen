@@ -8,3 +8,8 @@ ALTER TABLE render_jobs RENAME COLUMN overlay_schema_version TO job_schema_versi
 
 ALTER TABLE render_jobs
     ADD COLUMN job_schema TEXT NOT NULL DEFAULT 'renderinggen.job';
+
+ALTER TABLE render_jobs
+    ADD COLUMN parent_job_id TEXT,
+    ADD COLUMN chunk_index INTEGER NOT NULL DEFAULT 0,
+    ADD COLUMN frame_range JSONB;

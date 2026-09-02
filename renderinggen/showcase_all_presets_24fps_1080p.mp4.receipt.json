@@ -1,0 +1,48 @@
+{
+  "copy_eligible": false,
+  "identity": {
+    "asset_manifest_digest": "c4c02d6a5637eb20389f70827a169c6e6516154fee1d9eb3668b305280d68ba8",
+    "chronon_abi": 2,
+    "chronon_version": "0.1.0",
+    "content_digest": "c9bd181a5fa68f9858ed85c1ed30816aaaf6da0f18b3410ae63a58faab118197",
+    "git_sha": "9406609e",
+    "job_id": "showcase-all-presets-24fps",
+    "render_plan_schema": "chronon.render-plan.v1",
+    "request_digest": "e1d2cdecdcf96dd4f9ef0506e969823bdd37ef68d40c3ce07e53ea4c790563f2"
+  },
+  "media": {
+    "codec": "h264",
+    "container": "mov,mp4,m4a,3gp,3g2,mj2",
+    "duration_ms": 29959.0,
+    "fps_den": 719,
+    "fps_num": 17280,
+    "frame_count": 720,
+    "has_audio": false,
+    "height": 1080,
+    "pixel_format": "yuv420p",
+    "width": 1920
+  },
+  "output": {
+    "bytes": 3482965,
+    "sha256": "dffcc96e5253dcd8ba30c1bdb5e9f12f7713df748ac3e09e3b917bed32cfdb2c"
+  },
+  "render": {
+    "backend": "auto",
+    "fps_den": 1,
+    "fps_num": 24,
+    "frames": 720,
+    "height": 1080,
+    "width": 1920
+  },
+  "schema": "chronon3d.render-receipt.v1",
+  "verification": {
+    "audio": "skip",
+    "codec": "pass",
+    "decode": "pass",
+    "ffprobe": "pass",
+    "fps": "fail",
+    "frame_count": "pass",
+    "pixel_format": "pass",
+    "resolution": "pass"
+  }
+}

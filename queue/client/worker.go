@@ -16,11 +16,14 @@ import (
 // a subset of Job plus the lease the worker must hold (and renew) while
 // rendering.
 type ClaimedJob struct {
-	ID             string `json:"id"`
-	Schema         string `json:"schema,omitempty"`
-	Version        int    `json:"version,omitempty"`
-	IdempotencyKey string `json:"idempotency_key,omitempty"`
-	JobType        string `json:"job_type,omitempty"`
+	ID             string      `json:"id"`
+	Schema         string      `json:"schema,omitempty"`
+	Version        int         `json:"version,omitempty"`
+	IdempotencyKey string      `json:"idempotency_key,omitempty"`
+	JobType        string      `json:"job_type,omitempty"`
+	ParentJobID    string      `json:"parent_job_id,omitempty"`
+	ChunkIndex     int         `json:"chunk_index,omitempty"`
+	FrameRange     *FrameRange `json:"frame_range,omitempty"`
 
 	RenderPlan json.RawMessage `json:"render_plan"`
 	Assets     []AssetRef      `json:"assets"`

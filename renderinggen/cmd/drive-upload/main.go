@@ -4,7 +4,6 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"os"
 	"path/filepath"
 
 	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/drive"
@@ -21,17 +20,21 @@ func main() {
 	if *credentials == "" || *token == "" || *folder == "" || *file == "" {
 		panic("credentials, token, folder and file are required")
 	}
-	b, err := os.ReadFile(*file)
-	if err != nil { panic(err) }
 	ctx := context.Background()
 	publisher, err := drive.NewGoogleOAuth(ctx, *credentials, *token, *folder)
-	if err != nil { panic(err) }
+	if err != nil {
+		panic(err)
+	}
 	fileName := *name
-	if fileName == "" { fileName = filepath.Base(*file) }
+	if fileName == "" {
+		fileName = filepath.Base(*file)
+	}
 	result, err := publisher.Publish(ctx, drive.PublishRequest{
-		Name: fileName, ContentType: "video/mp4", Data: b,
+		Name: fileName, ContentType: "video/mp4", Path: *file,
 		ParentFolder: *folder, Subfolder: *subfolder,
 	})
-	if err != nil { panic(err) }
+	if err != nil {
+		panic(err)
+	}
 	fmt.Printf("DRIVE_UPLOAD_PASS id=%s link=%s parent=%s sha256=%s bytes=%d\n", result.FileID, result.WebViewLink, result.ParentFolder, result.SHA256, result.SizeBytes)
 }

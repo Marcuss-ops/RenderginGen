@@ -20,9 +20,35 @@ func init() {
 		LegacyDefinition("bounce_in", "layer", 15, 8),
 		LegacyDefinition("pulse", "layer", 8, 8),
 		LegacyDefinition("shake", "layer", 8, 8),
-		LegacyDefinition("word_reveal", "word", 10, 6),
-		LegacyDefinition("character_cascade", "glyph", 10, 6),
+		textDefinition("word_reveal", "word", 6, 30),
+		textDefinition("character_cascade", "glyph", 2, 34),
+		textDefinition("tracking_collapse", "word", 0, 0),
+		textDefinition("tracking_expansion", "word", 0, 0),
+		textDefinition("blur_focus_in", "glyph", 0, 0),
 	} {
 		_ = Register(d.ID, DeclarativePlugin{Definition: d})
 	}
+}
+
+func textDefinition(id, unit string, stagger, offset float64) MotionDefinition {
+	if id == "tracking_collapse" || id == "tracking_expansion" {
+		from, to := 32.0, 0.0
+		if id == "tracking_expansion" {
+			from, to = -3.0, 16.0
+		}
+		return MotionDefinition{ID: id, Unit: unit, Enter: 30, TextAnimators: []TextAnimatorDefinition{{
+			ID: id + "_text", Selector: SelectorDefinition{Kind: unit, Stagger: int64(stagger)},
+			Properties: []TrackDefinition{{Property: "tracking", Easing: "out_expo", Keyframes: []AnimationKeyframe{{Frame: 0, Value: from}, {Frame: 30, Value: to}}}, {Property: "opacity", Easing: "out_cubic", Keyframes: []AnimationKeyframe{{Frame: 0, Value: 0.0}, {Frame: 10, Value: 1.0}}}},
+		}}}
+	}
+	if id == "blur_focus_in" {
+		return MotionDefinition{ID: id, Unit: unit, Enter: 30, TextAnimators: []TextAnimatorDefinition{{
+			ID: id + "_text", Selector: SelectorDefinition{Kind: unit},
+			Properties: []TrackDefinition{{Property: "blur", Easing: "out_cubic", Keyframes: []AnimationKeyframe{{Frame: 0, Value: 18.0}, {Frame: 30, Value: 0.0}}}, {Property: "scale", Easing: "out_cubic", Keyframes: []AnimationKeyframe{{Frame: 0, Value: 1.04}, {Frame: 30, Value: 1.0}}}, {Property: "opacity", Easing: "out_cubic", Keyframes: []AnimationKeyframe{{Frame: 0, Value: 0.0}, {Frame: 10, Value: 1.0}}}},
+		}}}
+	}
+	return MotionDefinition{ID: id, Unit: unit, Enter: 30, TextAnimators: []TextAnimatorDefinition{{
+		ID: id + "_text", Selector: SelectorDefinition{Kind: unit, Stagger: int64(stagger)},
+		Properties: []TrackDefinition{{Property: "position_y", Easing: "out_cubic", Keyframes: []AnimationKeyframe{{Frame: 0, Value: offset}, {Frame: 30, Value: 0.0}}}, {Property: "opacity", Easing: "out_cubic", Keyframes: []AnimationKeyframe{{Frame: 0, Value: 0.0}, {Frame: 18, Value: 1.0}}}},
+	}}}
 }

@@ -7,9 +7,7 @@
 package drive
 
 import (
-	"bytes"
 	"context"
-	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -26,7 +24,7 @@ import (
 type PublishRequest struct {
 	Name         string // file name on Drive
 	ContentType  string
-	Data         []byte
+	Path         string
 	ParentFolder string // Drive folder ID to place the file into (optional)
 	Subfolder    string // deterministic child folder name under ParentFolder (optional)
 }
@@ -174,8 +172,20 @@ func (g *Google) Publish(ctx context.Context, req PublishRequest) (Result, error
 		}
 		file.Parents = []string{parent}
 	}
+	if req.Path == "" {
+		return Result{}, fmt.Errorf("drive: publish %s has empty path", req.Name)
+	}
+	input, err := os.Open(req.Path)
+	if err != nil {
+		return Result{}, fmt.Errorf("drive: open %s: %w", req.Path, err)
+	}
+	defer input.Close()
+	info, err := input.Stat()
+	if err != nil {
+		return Result{}, fmt.Errorf("drive: stat %s: %w", req.Path, err)
+	}
 	res, err := g.service.Files.Create(file).
-		Media(bytes.NewReader(req.Data)).
+		Media(input).
 		Fields("id", "webViewLink", "parents", "size", "mimeType").
 		Context(ctx).
 		Do()
@@ -191,9 +201,8 @@ func (g *Google) Publish(ctx context.Context, req PublishRequest) (Result, error
 	if len(res.Parents) > 0 && parent != "" && res.Parents[0] != parent {
 		return Result{}, fmt.Errorf("drive: uploaded file parent %q, want %q", res.Parents[0], parent)
 	}
-	hash := sha256.Sum256(req.Data)
 	return Result{FileID: res.Id, WebViewLink: link, ParentFolder: parent,
-		SizeBytes: int64(len(req.Data)), SHA256: fmt.Sprintf("%x", hash[:])}, nil
+		SizeBytes: info.Size()}, nil
 }
 
 func (g *Google) ensureFolder(ctx context.Context, parent, name string) (string, error) {

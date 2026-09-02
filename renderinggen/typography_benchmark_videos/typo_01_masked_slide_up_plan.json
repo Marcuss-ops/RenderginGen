@@ -1,0 +1,54 @@
+{
+  "schema": "chronon.render-plan",
+  "version": 1,
+  "job_id": "typo_01_masked_slide_up",
+  "canvas": {
+    "width": 1920,
+    "height": 1080,
+    "fps_num": 24,
+    "fps_den": 1,
+    "duration_frames": 120
+  },
+  "layers": [
+    {
+      "id": "bg_video",
+      "type": "video",
+      "source": "assets/Pale-Olive.mp4",
+      "box_width": 1920,
+      "box_height": 1080,
+      "fit": "cover",
+      "opacity": 1,
+      "start_frame": 0,
+      "duration_frames": 120
+    },
+    {
+      "id": "txt_01",
+      "type": "text",
+      "text": "Designed for speed.",
+      "preset": "phrase_slide_up",
+      "font": "assets/fonts/Inter-Bold.ttf",
+      "font_size": 76,
+      "position": [
+        960,
+        0
+      ],
+      "color": [
+        0.08,
+        0.08,
+        0.12,
+        1
+      ],
+      "opacity": 1,
+      "start_frame": 6,
+      "duration_frames": 114,
+      "animation": {
+        "preset": "reveal_from_bottom"
+      }
+    }
+  ],
+  "output": {
+    "path": "/home/pierone/src/go-master/projects/Pyt/VeloxEditing/RenderingGen/renderinggen/typography_benchmark_videos/typo_01_masked_slide_up_24fps_1080p.mp4",
+    "format": "mp4",
+    "codec": "h264"
+  }
+}

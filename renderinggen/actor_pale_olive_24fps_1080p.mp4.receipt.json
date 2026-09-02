@@ -1,0 +1,48 @@
+{
+  "copy_eligible": false,
+  "identity": {
+    "asset_manifest_digest": "b6f04d9153ea7f1a5744f3ac84ebc98c8deeaa2e076bf8798a2395f4bbf95886",
+    "chronon_abi": 2,
+    "chronon_version": "0.1.0",
+    "content_digest": "136521f985067fa497a99be7c63e6aafddd2bfeda39594128f23b9773da8d090",
+    "git_sha": "9406609e",
+    "job_id": "actor-pale-olive-24fps-e2e",
+    "render_plan_schema": "chronon.render-plan.v1",
+    "request_digest": "ae17b95a8f08dec3f1397ae37fe6056f43a14b9e1a8e771c168a90fd16b70731"
+  },
+  "media": {
+    "codec": "h264",
+    "container": "mov,mp4,m4a,3gp,3g2,mj2",
+    "duration_ms": 14959.0,
+    "fps_den": 359,
+    "fps_num": 8640,
+    "frame_count": 360,
+    "has_audio": false,
+    "height": 1080,
+    "pixel_format": "yuv420p",
+    "width": 1920
+  },
+  "output": {
+    "bytes": 1819696,
+    "sha256": "3badd7cc451443c31bd865a4a4b1c22b53687fac6e914e40bdb9432ebf38fa1d"
+  },
+  "render": {
+    "backend": "auto",
+    "fps_den": 1,
+    "fps_num": 24,
+    "frames": 360,
+    "height": 1080,
+    "width": 1920
+  },
+  "schema": "chronon3d.render-receipt.v1",
+  "verification": {
+    "audio": "skip",
+    "codec": "pass",
+    "decode": "pass",
+    "ffprobe": "pass",
+    "fps": "fail",
+    "frame_count": "pass",
+    "pixel_format": "pass",
+    "resolution": "pass"
+  }
+}

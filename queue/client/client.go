@@ -91,12 +91,20 @@ type Artifact struct {
 // submit only ID, Schema, Version, RenderPlan and Assets matter; on Get the
 // server also fills in State, the attempt count, timestamps and (once
 // completed) the Artifact.
+type FrameRange struct {
+	Start int64 `json:"start"`
+	End   int64 `json:"end"`
+}
+
 type Job struct {
-	ID             string `json:"id"`
-	Schema         string `json:"schema,omitempty"`
-	Version        int    `json:"version,omitempty"`
-	IdempotencyKey string `json:"idempotency_key,omitempty"`
-	JobType        string `json:"job_type,omitempty"`
+	ID             string      `json:"id"`
+	Schema         string      `json:"schema,omitempty"`
+	Version        int         `json:"version,omitempty"`
+	IdempotencyKey string      `json:"idempotency_key,omitempty"`
+	JobType        string      `json:"job_type,omitempty"`
+	ParentJobID    string      `json:"parent_job_id,omitempty"`
+	ChunkIndex     int         `json:"chunk_index,omitempty"`
+	FrameRange     *FrameRange `json:"frame_range,omitempty"`
 
 	RenderPlan json.RawMessage `json:"render_plan"`
 	Assets     []AssetRef      `json:"assets"`

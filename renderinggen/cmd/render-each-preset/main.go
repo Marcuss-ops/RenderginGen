@@ -341,17 +341,11 @@ func main() {
 		fmt.Printf("✓ Render completato in %.2fs (~%.1f FPS)\n", renderSec, float64(durationFrames)/renderSec)
 
 		// 3. Upload to Google Drive
-		videoBytes, err := os.ReadFile(videoPath)
-		if err != nil {
-			fmt.Printf("❌ Failed to read video file: %v\n", err)
-			continue
-		}
-
 		fmt.Printf("☁️ Uploading %s to Drive folder %s...\n", videoFileName, folderID)
 		res, err := publisher.Publish(ctx, drive.PublishRequest{
 			Name:         videoFileName,
 			ContentType:  "video/mp4",
-			Data:         videoBytes,
+			Path:         videoPath,
 			ParentFolder: folderID,
 		})
 		if err != nil {
