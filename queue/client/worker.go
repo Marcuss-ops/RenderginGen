@@ -68,21 +68,41 @@ type ClaimedJob struct {
 // Claim atomically claims the next pending job for workerID. It returns a nil
 // job when the queue is empty.
 func (c *Client) Claim(ctx context.Context, workerID string) (*ClaimedJob, error) {
-	return c.claim(ctx, workerID, "")
+	return c.claim(ctx, workerID, "", 0)
 }
 
 // ClaimPending claims only jobs that still need rendering.
 func (c *Client) ClaimPending(ctx context.Context, workerID string) (*ClaimedJob, error) {
-	return c.claim(ctx, workerID, "pending")
+	return c.claim(ctx, workerID, "pending", 0)
 }
 
 // ClaimRendered claims only jobs awaiting external publication.
 func (c *Client) ClaimRendered(ctx context.Context, workerID string) (*ClaimedJob, error) {
-	return c.claim(ctx, workerID, "rendered")
+	return c.claim(ctx, workerID, "rendered", 0)
 }
 
-func (c *Client) claim(ctx context.Context, workerID, state string) (*ClaimedJob, error) {
-	body, err := json.Marshal(map[string]string{"worker": workerID, "state": state})
+// ClaimPendingWait long-polls for pending render work for at most wait. The
+// server still performs the same atomic claim; waiting only replaces idle
+// client polling and does not reserve or assign a job ahead of time.
+func (c *Client) ClaimPendingWait(ctx context.Context, workerID string, wait time.Duration) (*ClaimedJob, error) {
+	return c.claim(ctx, workerID, "pending", wait)
+}
+
+// ClaimRenderedWait long-polls for artifacts awaiting external publication.
+func (c *Client) ClaimRenderedWait(ctx context.Context, workerID string, wait time.Duration) (*ClaimedJob, error) {
+	return c.claim(ctx, workerID, "rendered", wait)
+}
+
+func (c *Client) claim(ctx context.Context, workerID, state string, wait time.Duration) (*ClaimedJob, error) {
+	waitMS := wait.Milliseconds()
+	if waitMS < 0 {
+		waitMS = 0
+	}
+	body, err := json.Marshal(struct {
+		Worker string `json:"worker"`
+		State  string `json:"state,omitempty"`
+		WaitMS int64  `json:"wait_ms,omitempty"`
+	}{Worker: workerID, State: state, WaitMS: waitMS})
 	if err != nil {
 		return nil, fmt.Errorf("queue claim marshal: %w", err)
 	}
@@ -99,7 +119,7 @@ func (c *Client) claim(ctx context.Context, workerID, state string) (*ClaimedJob
 	defer resp.Body.Close()
 
 	if resp.StatusCode == http.StatusNoContent {
-		return nil, nil // queue empty
+		return nil, nil // queue empty after optional wait
 	}
 	if resp.StatusCode != http.StatusOK {
 		raw, _ := io.ReadAll(resp.Body)
