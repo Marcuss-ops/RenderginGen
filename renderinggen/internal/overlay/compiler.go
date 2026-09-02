@@ -148,15 +148,15 @@ func CompileIfSemantic(raw []byte) ([]byte, []Asset, bool, error) {
 }
 
 type semanticPlan struct {
-	SchemaVersion   string              `json:"schema_version"`
-	PlanID          string              `json:"plan_id"`
-	VideoID         string              `json:"video_id"`
-	Source          *semanticSource     `json:"source,omitempty"`
-	ForegroundScale int                 `json:"foreground_scale_percent,omitempty"`
-	Width           int                 `json:"width"`
-	Height          int                 `json:"height"`
-	FPSNum          int                 `json:"fps_num"`
-	FPSDen          int                 `json:"fps_den"`
+	SchemaVersion   string          `json:"schema_version"`
+	PlanID          string          `json:"plan_id"`
+	VideoID         string          `json:"video_id"`
+	Source          *semanticSource `json:"source,omitempty"`
+	ForegroundScale int             `json:"foreground_scale_percent,omitempty"`
+	Width           int             `json:"width"`
+	Height          int             `json:"height"`
+	FPSNum          int             `json:"fps_num"`
+	FPSDen          int             `json:"fps_den"`
 	// DurationMS is the explicit clip duration. When provided it seeds the
 	// canvas duration before items are processed; items can only extend it.
 	// Required when items is empty (clip render without entity overlays).
@@ -186,6 +186,7 @@ type semanticSubtitles struct {
 type semanticWatermark struct {
 	Text      string             `json:"text,omitempty"`
 	AssetRefs []semanticAssetRef `json:"asset_refs,omitempty"`
+	FontRef   *semanticAssetRef  `json:"font_ref,omitempty"`
 	Position  string             `json:"position,omitempty"`
 	Opacity   *float64           `json:"opacity,omitempty"`
 	Style     map[string]any     `json:"style,omitempty"`
@@ -261,11 +262,12 @@ type concreteCanvas struct {
 	DurationFrames int64 `json:"duration_frames"`
 }
 type concreteOutput struct {
-	Path      string         `json:"path"`
-	Format    string         `json:"format"`
-	Codec     string         `json:"codec"`
-	ProfileID string         `json:"profile_id,omitempty"`
-	Audio     *concreteAudio `json:"audio,omitempty"`
+	Path      string `json:"path"`
+	Format    string `json:"format"`
+	Codec     string `json:"codec"`
+	ProfileID string `json:"profile_id,omitempty"`
+	// Retained for typed semantic metadata; omitted from Chronon's v2 JSON.
+	Audio *concreteAudio `json:"-"`
 }
 
 // concreteAudio carries the audio policy in the Chronon render plan so the
@@ -372,18 +374,13 @@ func compileSemantic(raw []byte) ([]byte, []Asset, error) {
 		plan.Canvas.DurationFrames = endFrame
 	}
 
-	// Audio policy lowering. The semantic audio block carries the policy
-	// exactly as PipelineGen resolved it; the compiler forwards it verbatim.
+	assetPaths := map[string]string{}
 	if src.Audio != nil {
 		plan.Output.Audio = &concreteAudio{
-			Mode:       src.Audio.Mode,
-			Codec:      src.Audio.Codec,
-			SampleRate: src.Audio.SampleRate,
-			Channels:   src.Audio.Channels,
+			Mode: src.Audio.Mode, Codec: src.Audio.Codec,
+			SampleRate: src.Audio.SampleRate, Channels: src.Audio.Channels,
 		}
 	}
-
-	assetPaths := map[string]string{}
 	var assets []Asset
 	if bg := src.Background; bg != nil {
 		kind := strings.ToLower(strings.TrimSpace(bg.Kind))
@@ -460,7 +457,10 @@ func compileSemantic(raw []byte) ([]byte, []Asset, error) {
 	// is set the source is scaled and centered on the canvas.
 	var sourceLayerIndex = -1
 	if src.Source != nil && src.Source.AssetID != "" {
-		path := semanticAssetPath(semanticAssetRef{ID: src.Source.AssetID, SHA256: src.Source.SHA256})
+		path := src.Source.Path
+		if path == "" {
+			path = semanticAssetPath(semanticAssetRef{ID: src.Source.AssetID, SHA256: src.Source.SHA256})
+		}
 		if _, ok := assetPaths[src.Source.AssetID]; !ok {
 			assetPaths[src.Source.AssetID] = path
 			assets = append(assets, Asset{Hash: strings.ToLower(src.Source.SHA256), LogicalPath: path})
@@ -480,7 +480,8 @@ func compileSemantic(raw []byte) ([]byte, []Asset, error) {
 		plan.Layers = append(plan.Layers, srcLayer)
 	}
 
-	// Subtitles — lowers to a subtitle layer referencing the ASS asset.
+	// Sidecar subtitles remain a published companion asset. Chronon's current
+	// render-plan schema has no `subtitle` layer type, so do not emit one.
 	if sub := src.Subtitles; sub != nil {
 		if len(sub.AssetRefs) == 0 {
 			return nil, nil, fmt.Errorf("overlay: subtitles require at least one asset_ref")
@@ -495,23 +496,28 @@ func compileSemantic(raw []byte) ([]byte, []Asset, error) {
 			assetPaths[ref.ID] = path
 			assets = append(assets, Asset{Hash: strings.ToLower(ref.SHA256), LogicalPath: path})
 		}
-		mode := sub.Mode
-		if mode == "" {
-			mode = "burn"
-		}
-		plan.Layers = append(plan.Layers, concreteLayer{
-			ID: "subtitles", Type: "subtitle", Asset: path,
-			// StyleID is carried in the Fit field as a convention so
-			// Chronon's subtitle renderer can select the correct style sheet.
-			Fit: sub.StyleID, StartFrame: 0,
-			// DurationFrames is resolved after the full canvas duration is
-			// computed; it is patched below.
-		})
+		_ = path // retained in the asset manifest for publication
 	}
 
 	// Watermark — lowers to a text or image layer at the requested position.
 	if wm := src.Watermark; wm != nil {
-		wmLayer := concreteLayer{ID: "watermark", StartFrame: 0}
+		font := ""
+		if wm.FontRef != nil {
+			if wm.FontRef.ID == "" || len(wm.FontRef.SHA256) != 64 || strings.Trim(wm.FontRef.SHA256, "0123456789abcdefABCDEF") != "" {
+				return nil, nil, fmt.Errorf("overlay: watermark font has invalid asset ref %q", wm.FontRef.ID)
+			}
+			font = assetPaths[wm.FontRef.ID]
+			if font == "" {
+				font = semanticAssetPath(*wm.FontRef)
+				assetPaths[wm.FontRef.ID] = font
+				assets = append(assets, Asset{Hash: strings.ToLower(wm.FontRef.SHA256), LogicalPath: font})
+			}
+		}
+		if font == "" {
+			return nil, nil, fmt.Errorf("overlay: text watermark requires font_ref")
+		}
+		wmLayer := concreteLayer{ID: "watermark", StartFrame: 0,
+			Style: &concreteStyle{Font: font, FontSize: 42, Fill: "#FFFFFF"}}
 		if wm.Opacity != nil {
 			wmLayer.Opacity = *wm.Opacity
 		}
@@ -690,7 +696,6 @@ func resolveWatermarkPosition(position string, canvasW, canvasH int) []float64 {
 	}
 }
 
-
 func animationForMotion(id string, params map[string]any, textValue string, duration int64) (*concreteAnimation, error) {
 	plugin, err := motion.Registry.Resolve(id)
 	if err != nil {
@@ -827,6 +832,9 @@ func entityRefText(item semanticItem) string {
 }
 
 func semanticAssetPath(ref semanticAssetRef) string {
+	if strings.HasPrefix(ref.URL, "assets/") {
+		return filepath.ToSlash(ref.URL)
+	}
 	id := safeAssetID.ReplaceAllString(ref.ID, "_")
 	ext := filepath.Ext(ref.URL)
 	if ext == "" {

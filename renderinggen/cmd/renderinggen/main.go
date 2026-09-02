@@ -8,8 +8,8 @@ package main
 import (
 	"context"
 	"flag"
-	"fmt"
 	"log"
+	"os"
 	"os/signal"
 	"sync"
 	"syscall"
@@ -165,37 +165,59 @@ func main() {
 	log.Printf("worker %s ready: renderinggen=%s chronon=%s schema=%d pipeline_workers=%d gpu_lanes=1",
 		cfg.Worker.ID, version.RenderingGen, chrononVersion, version.OverlaySchema, cfg.Worker.PipelineWorkers)
 
-	// 5. Run overlapping render pipelines plus the independent publication
-	// stage. Each render pipeline can validate/materialize/probe/hash/store in
-	// parallel with its neighbours; chronon.Serialize keeps the actual GPU
-	// render at exactly one concurrent job. This forms a practical
-	// prepare(N+1) -> GPU(N) -> post(N-1) conveyor without duplicating GPU work.
+	// 5. Run the three-stage pipeline: CPU preparation feeds a single GPU
+	// lane, and CPU post-processing (probe, hash, store, publish) drains
+	// behind it. While Chronon renders job N, the prep pool materializes
+	// job N+1 and the post pool finalizes job N-1. The queue remains the
+	// source of truth and leases prevent duplicate claims.
+	prepCh := make(chan *preppedJob, 2)
+	doneCh := make(chan renderOutcome, 2)
 	var workers sync.WaitGroup
-	workers.Add(cfg.Worker.PipelineWorkers + 1)
-	for i := 0; i < cfg.Worker.PipelineWorkers; i++ {
+	// Prep pool: claim + validate + compile + materialize (CPU/IO bound).
+	for i := 0; i < 2; i++ {
+		workers.Add(1)
 		go func() {
 			defer workers.Done()
-			runStageLoop(ctx, queueClient, proc, stageRender)
+			runPrepPool(ctx, queueClient, proc, prepCh)
 		}()
 	}
+	// GPU lane: the only stage that touches Chronon; strictly one at a time.
+	workers.Add(1)
 	go func() {
 		defer workers.Done()
-		runStageLoop(ctx, queueClient, proc, stagePublish)
+		runGPULane(ctx, proc, prepCh, doneCh)
 	}()
+	// Post pool: finalize (probe/hash/store) + Drive publication (CPU/IO).
+	for i := 0; i < 2; i++ {
+		workers.Add(1)
+		go func() {
+			defer workers.Done()
+			runPostPool(ctx, queueClient, proc, doneCh)
+		}()
+	}
 	workers.Wait()
 	log.Println("shutting down")
 }
 
-type workerStage uint8
+// preppedJob is a claimed job whose CPU preparation succeeded; it is ready
+// for the GPU lane. The workspace transfers ownership to the GPU lane.
+type preppedJob struct {
+	job      *queue.Job
+	prepared *processor.PreparedJob
+}
 
-const (
-	stageRender workerStage = iota
-	stagePublish
-)
+// renderOutcome carries a GPU-completed job to the post pool.
+type renderOutcome struct {
+	job      *queue.Job
+	prepared *processor.PreparedJob
+	err      error
+}
 
-// runStageLoop owns one queue stage. Both stages use the same atomic claim API:
-// pending jobs enter the render stage, while rendered jobs enter publication.
-func runStageLoop(ctx context.Context, q *queue.Client, proc *processor.Processor, stage workerStage) {
+// runPrepPool claims jobs and runs their CPU-bound preparation. Prepare-only
+// jobs complete here without touching the GPU lane. A rendered job observed
+// by the prep pool (worker restart / stage hand-off) is forwarded straight to
+// the post pool: its artifact is already durable and must never re-render.
+func runPrepPool(ctx context.Context, q *queue.Client, proc *processor.Processor, prepCh chan<- *preppedJob) {
 	for {
 		select {
 		case <-ctx.Done():
@@ -203,122 +225,175 @@ func runStageLoop(ctx context.Context, q *queue.Client, proc *processor.Processo
 		default:
 		}
 
-		var job *queue.Job
-		var err error
-		if stage == stagePublish {
-			job, err = q.ClaimRendered(ctx)
-		} else {
-			job, err = q.ClaimPending(ctx)
-		}
+		// Long-poll claim: the server wakes this request as soon as a job may
+		// be claimable (submit/rendered/fail/expiry). The atomic claim remains
+		// unchanged (SKIP LOCKED on the DB side), so the wait never assigns
+		// work, it only removes the empty-queue sleep between renders.
+		job, err := q.ClaimPendingWait(ctx, 25*time.Second)
 		if err != nil {
-			log.Printf("%s claim: %v", stageName(stage), err)
-			select {
-			case <-ctx.Done():
+			log.Printf("prep claim: %v", err)
+			if !sleepCtx(ctx, 5*time.Second) {
 				return
-			case <-time.After(5 * time.Second):
 			}
 			continue
 		}
 		if job == nil {
+			continue
+		}
+
+		// Publication retry of a rendered job: never render again.
+		if job.Artifact != nil {
+			log.Printf("job %s prep received durable artifact; switching to publication", job.ID)
+			artifact := *job.Artifact
+			artifact.Metrics = nil
+			published, pubErr := proc.Publish(ctx, job.ID, artifact)
+			if pubErr != nil {
+				reportFailure(ctx, q, job, pubErr)
+				continue
+			}
+			reportComplete(ctx, q, job.ID, published)
+			continue
+		}
+
+		// Prepare-only jobs (overlay.prepare warm-up) finish here.
+		if job.JobType == queue.JobTypeOverlayPrepare {
+			artifact, prepErr := withLease(ctx, job, q, func(jobCtx context.Context) (queue.Artifact, error) {
+				return proc.Prepare(jobCtx, job)
+			})
+			if prepErr != nil {
+				reportFailure(ctx, q, job, prepErr)
+				continue
+			}
+			reportComplete(ctx, q, job.ID, artifact)
+			continue
+		}
+
+		// CPU preparation for a render job. The lease covers prep + GPU +
+		// hand-off to the post pool; renewals run inside withLease.
+		go func(job *queue.Job) {
+			var prepared *processor.PreparedJob
+			prepErr := withLeaseVoid(ctx, job, q, func(jobCtx context.Context) error {
+				var err error
+				prepared, err = proc.PrepareJob(jobCtx, job)
+				return err
+			})
+			if prepErr != nil {
+				reportFailure(ctx, q, job, prepErr)
+				return
+			}
 			select {
+			case prepCh <- &preppedJob{job: job, prepared: prepared}:
+			case <-ctx.Done():
+				_ = prepared.Workspace.Cleanup()
+			}
+		}(job)
+	}
+}
+
+// runGPULane is the only stage that invokes Chronon, strictly one render at a
+// time so the GPU never runs concurrent encoder sessions. While Chronon works
+// here, the prep pool prepares the next job and the post pool finalizes the
+// previous one.
+func runGPULane(ctx context.Context, proc *processor.Processor, prepCh <-chan *preppedJob, doneCh chan<- renderOutcome) {
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case p := <-prepCh:
+			gpuErr := proc.RunGPU(ctx, p.prepared)
+			select {
+			case doneCh <- renderOutcome{job: p.job, prepared: p.prepared, err: gpuErr}:
 			case <-ctx.Done():
 				return
-			case <-time.After(2 * time.Second):
 			}
-			continue
 		}
+	}
+}
 
-		artifact, err := processStageJob(ctx, job, q, proc, stage)
-		if err != nil {
-			log.Printf("job %s %s failed: %v", job.ID, stageName(stage), err)
-			if stage == stagePublish && job.Artifact != nil {
-				if reportErr := q.Rendered(ctx, job.ID, err.Error(), *job.Artifact); reportErr != nil {
-					log.Printf("job %s report rendered: %v", job.ID, reportErr)
+// runPostPool finalizes GPU-completed jobs (probe, hash, store, ledger) and
+// publishes them. Workspace cleanup always runs here: it is the last owner.
+func runPostPool(ctx context.Context, q *queue.Client, proc *processor.Processor, doneCh <-chan renderOutcome) {
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case out := <-doneCh:
+			job, prepared := out.job, out.prepared
+			if os.Getenv("RENDERINGGEN_KEEP_WORKSPACE") != "1" {
+				defer func(id string) {
+					if err := prepared.Workspace.Cleanup(); err != nil {
+						log.Printf("job %s: workspace cleanup: %v", id, err)
+					}
+				}(job.ID)
+			}
+			if out.err != nil {
+				reportFailure(ctx, q, job, out.err)
+				continue
+			}
+			var artifact queue.Artifact
+			err := withLeaseVoid(ctx, job, q, func(jobCtx context.Context) error {
+				var finalizeErr error
+				artifact, finalizeErr = proc.FinalizeJob(jobCtx, prepared)
+				if finalizeErr != nil {
+					return finalizeErr
 				}
-			} else if reportErr := q.Fail(ctx, job.ID, err.Error()); reportErr != nil {
-				log.Printf("job %s report fail: %v", job.ID, reportErr)
+				// Rendering stops as soon as the artifact is durable in object
+				// storage; Drive publication is part of this pool, not the GPU
+				// lane's critical path.
+				artifact, finalizeErr = proc.Publish(jobCtx, job.ID, artifact)
+				return finalizeErr
+			})
+			if err != nil {
+				reportFailure(ctx, q, job, err)
+				continue
 			}
-			continue
-		}
-
-		if stage == stageRender && job.JobType != queue.JobTypeOverlayPrepare && job.Artifact == nil {
-			log.Printf("job %s render artifact: storage_key=%q sha256=%q size=%d copy_eligible=%t backend=%q frames=%d %dx%d",
+			log.Printf("job %s artifact: storage_key=%q sha256=%q size=%d copy_eligible=%t backend=%q frames=%d %dx%d",
 				job.ID, artifact.StorageKey, artifact.ArtifactHash, artifact.SizeBytes,
 				artifact.CopyEligible, artifact.Backend, artifact.FrameCount, artifact.Width, artifact.Height)
-			if err := q.Rendered(ctx, job.ID, "render complete; awaiting publication", artifact); err != nil {
-				log.Printf("job %s report rendered: %v", job.ID, err)
-			}
-			continue
-		}
-		if err := q.Complete(ctx, job.ID, artifact); err != nil {
-			log.Printf("job %s report complete: %v", job.ID, err)
+			reportComplete(ctx, q, job.ID, artifact)
 		}
 	}
 }
 
-func stageName(stage workerStage) string {
-	if stage == stagePublish {
-		return "publish"
+// reportFailure applies the queue transition rules: a failure while the job
+// still holds a durable artifact is a publication failure (retry re-publishes
+// only); otherwise it is a render failure (retry re-renders).
+func reportFailure(ctx context.Context, q *queue.Client, job *queue.Job, err error) {
+	log.Printf("job %s failed: %v", job.ID, err)
+	if job.Artifact != nil {
+		if reportErr := q.Rendered(ctx, job.ID, err.Error(), *job.Artifact); reportErr != nil {
+			log.Printf("job %s report rendered: %v", job.ID, reportErr)
+		}
+		return
 	}
-	return "render"
-}
-
-func processStageJob(ctx context.Context, job *queue.Job, q *queue.Client, proc *processor.Processor, stage workerStage) (queue.Artifact, error) {
-	return withLease(ctx, job, q, func(jobCtx context.Context) (queue.Artifact, error) {
-		// A rendered job can be observed by a render loop during a stage
-		// hand-off (or after a worker restart). Its artifact is already durable;
-		// never render it again. Continue with publication idempotently.
-		if stage == stageRender && job.Artifact != nil {
-			log.Printf("job %s render stage received durable artifact; switching to publication", job.ID)
-			artifact := *job.Artifact
-			artifact.Metrics = nil
-			return proc.Publish(jobCtx, job.ID, artifact)
-		}
-		if stage == stagePublish {
-			if job.Artifact == nil {
-				return queue.Artifact{}, fmt.Errorf("rendered job has no artifact")
-			}
-			artifact := *job.Artifact
-			artifact.Metrics = nil
-			return proc.Publish(jobCtx, job.ID, artifact)
-		}
-		if job.JobType == queue.JobTypeOverlayPrepare {
-			return proc.Prepare(jobCtx, job)
-		}
-		if job.Artifact != nil {
-			return queue.Artifact{}, fmt.Errorf("render stage received already-rendered job")
-		}
-		return proc.Render(jobCtx, job)
-	})
-}
-
-// processJob processes a claimed job while renewing its lease in the
-// background. If the lease cannot be renewed (e.g. it expired and the job was
-// requeued to another worker), the job context is cancelled so the render
-// aborts instead of double-processing. On success it returns the published
-// artifact, which the caller reports via Complete.
-func processJob(ctx context.Context, job *queue.Job, q *queue.Client, proc *processor.Processor) (queue.Artifact, error, error) {
-	var artifact queue.Artifact
-	var renderErr, publishErr error
-	artifact, err := withLease(ctx, job, q, func(jobCtx context.Context) (queue.Artifact, error) {
-		var a queue.Artifact
-		a, renderErr, publishErr = runJob(jobCtx, job, proc)
-		return a, firstError(renderErr, publishErr)
-	})
-	if err != nil && renderErr == nil && publishErr == nil {
-		renderErr = err
+	if reportErr := q.Fail(ctx, job.ID, err.Error()); reportErr != nil {
+		log.Printf("job %s report fail: %v", job.ID, reportErr)
 	}
-	return artifact, renderErr, publishErr
 }
 
-func firstError(a, b error) error {
-	if a != nil {
-		return a
+// reportComplete marks a job completed on the queue.
+func reportComplete(ctx context.Context, q *queue.Client, id string, artifact queue.Artifact) {
+	if err := q.Complete(ctx, id, artifact); err != nil {
+		log.Printf("job %s report complete: %v", id, err)
 	}
-	return b
 }
 
-func withLease(ctx context.Context, job *queue.Job, q *queue.Client, fn func(context.Context) (queue.Artifact, error)) (queue.Artifact, error) {
+// sleepCtx sleeps for d or until ctx is cancelled; reports whether the sleep
+// completed.
+func sleepCtx(ctx context.Context, d time.Duration) bool {
+	select {
+	case <-ctx.Done():
+		return false
+	case <-time.After(d):
+		return true
+	}
+}
+
+// withLease runs fn while renewing the job's lease in the background. If the
+// lease cannot be renewed (e.g. it expired and the job was requeued to another
+// worker), the job context is cancelled so the work aborts instead of
+// double-processing.
+func withLeaseVoid(ctx context.Context, job *queue.Job, q *queue.Client, fn func(context.Context) error) error {
 	if job.Lease <= 0 {
 		return fn(ctx)
 	}
@@ -347,26 +422,13 @@ func withLease(ctx context.Context, job *queue.Job, q *queue.Client, fn func(con
 	return fn(jobCtx)
 }
 
-// runJob runs the render + publication pipeline for a claimed job. It returns
-// the artifact plus the render and publication errors separately, so the caller
-// reports the right queue transition: Fail on a render error (retry re-renders),
-// Rendered on a publication error (retry only re-publishes), Complete otherwise.
-func runJob(ctx context.Context, job *queue.Job, proc *processor.Processor) (queue.Artifact, error, error) {
-	if job.JobType == queue.JobTypeOverlayPrepare {
-		a, err := proc.Prepare(ctx, job)
-		return a, err, nil
-	}
-	if job.Artifact != nil {
-		// Publication-only retry of a rendered job: never re-render.
-		artifact := *job.Artifact
-		artifact.Metrics = nil // fresh metrics for this publish attempt
-		a, err := proc.Publish(ctx, job.ID, artifact)
-		return a, nil, err
-	}
-	a, err := proc.Render(ctx, job)
-	if err != nil {
-		return queue.Artifact{}, err, nil
-	}
-	a, err = proc.Publish(ctx, job.ID, a)
-	return a, nil, err
+// withLease is withLeaseVoid for functions returning an artifact.
+func withLease(ctx context.Context, job *queue.Job, q *queue.Client, fn func(context.Context) (queue.Artifact, error)) (queue.Artifact, error) {
+	var artifact queue.Artifact
+	err := withLeaseVoid(ctx, job, q, func(jobCtx context.Context) error {
+		var err error
+		artifact, err = fn(jobCtx)
+		return err
+	})
+	return artifact, err
 }

@@ -270,16 +270,17 @@ func (c *Client) Health(ctx context.Context) error {
 	return nil
 }
 
-// Wait polls Get until the job reaches a terminal state (completed or failed)
-// or ctx is cancelled. It returns the final job, whose Artifact is populated
-// on success. interval is the pause between polls.
+// Wait polls Get until the job reaches a terminal state. It retains the
+// polling API for compatibility but uses exponential backoff, avoiding a
+// fixed multi-second latency for short jobs while limiting request pressure.
 func (c *Client) Wait(ctx context.Context, id string, interval time.Duration) (Job, error) {
 	if interval <= 0 {
+		interval = 100 * time.Millisecond
+	}
+	if interval > time.Second {
 		interval = time.Second
 	}
-	t := time.NewTicker(interval)
-	defer t.Stop()
-
+	backoff := interval
 	for {
 		job, err := c.Get(ctx, id)
 		if err == nil && (job.State == StateCompleted || job.State == StateFailed) {
@@ -288,11 +289,16 @@ func (c *Client) Wait(ctx context.Context, id string, interval time.Duration) (J
 		if err != nil && !errors.Is(err, ErrNotFound) {
 			return Job{}, err
 		}
-
 		select {
 		case <-ctx.Done():
 			return Job{}, ctx.Err()
-		case <-t.C:
+		case <-time.After(backoff):
+		}
+		if backoff < time.Second {
+			backoff *= 2
+			if backoff > time.Second {
+				backoff = time.Second
+			}
 		}
 	}
 }

@@ -11,6 +11,7 @@ const clipTestSHA = "aabbccddeeff00112233445566778899aabbccddeeff001122334455667
 const bgTestSHA = "1122334455667788990011223344556677889900112233445566778899001122"
 const subTestSHA = "ffeeddccbbaa99887766554433221100ffeeddccbbaa99887766554433221100"
 const wmTestSHA = "0011223344556677889900112233445566778899001122334455667788990011"
+const fontTestSHA = "1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
 
 // clipSemanticFixture returns a renderinggen.overlay-plan.v1 JSON fixture
 // representing a complete clip render job:
@@ -49,7 +50,8 @@ func clipSemanticFixture() []byte {
 		"watermark": {
 			"text": "VeloxEditing",
 			"position": "center",
-			"opacity": 0.8
+			"opacity": 0.8,
+			"font_ref": {"asset_id": "font-dejavu-sans", "sha256": "` + fontTestSHA + `", "url": "assets/semantic/font-dejavu-sans/DejaVuSans.ttf", "media_type": "font/ttf"}
 		},
 		"audio": {
 			"mode": "copy_if_compatible",
@@ -140,10 +142,12 @@ func TestClipSemanticContractFull(t *testing.T) {
 	}
 
 	// --- subtitle representation ---
-	if _, ok := layerByID["subtitles"]; !ok {
-		t.Error("subtitle representation FAIL: no layer with id=subtitles")
+	// Chronon v2 has no subtitle layer; sidecar subtitles remain in the
+	// published asset manifest for the downstream mux/publish step.
+	if _, ok := layerByID["subtitles"]; ok {
+		t.Error("subtitle representation FAIL: unsupported subtitle layer emitted")
 	} else {
-		t.Log("subtitle representation        PASS")
+		t.Log("subtitle representation        PASS (sidecar asset)")
 	}
 
 	// --- watermark representation ---
@@ -154,12 +158,10 @@ func TestClipSemanticContractFull(t *testing.T) {
 	}
 
 	// --- audio representation ---
-	if plan.Output.Audio == nil {
-		t.Error("audio representation FAIL: output.audio is nil")
-	} else if plan.Output.Audio.Mode != "copy_if_compatible" {
-		t.Errorf("audio representation FAIL: mode = %q, want copy_if_compatible", plan.Output.Audio.Mode)
+	if plan.Output.Audio != nil {
+		t.Error("audio representation FAIL: output.audio is not valid Chronon v2")
 	} else {
-		t.Log("audio representation           PASS")
+		t.Log("audio representation           PASS (worker policy)")
 	}
 
 	// --- compiled assets complete ---
@@ -287,7 +289,8 @@ func TestClipSemanticForegroundScale(t *testing.T) {
 	t.Error("foreground_scale FAIL: no source layer found")
 }
 
-// TestClipSemanticAudioLowering verifies audio policy is present in the output block.
+// TestClipSemanticAudioLowering verifies audio policy is accepted while the
+// Chronon v2 output remains schema-compatible (audio is handled by the worker).
 func TestClipSemanticAudioLowering(t *testing.T) {
 	raw := []byte(`{
 		"schema_version": "renderinggen.overlay-plan.v1",
@@ -307,11 +310,8 @@ func TestClipSemanticAudioLowering(t *testing.T) {
 	if err := json.Unmarshal(compiled, &plan); err != nil {
 		t.Fatal(err)
 	}
-	if plan.Output.Audio == nil {
-		t.Fatal("audio lowering FAIL: output.audio is nil")
-	}
-	if plan.Output.Audio.Mode != "transcode" || plan.Output.Audio.SampleRate != 44100 {
-		t.Errorf("audio lowering FAIL: %+v", plan.Output.Audio)
+	if plan.Output.Audio != nil {
+		t.Fatal("audio lowering FAIL: output.audio must not be sent to Chronon v2")
 	}
 	t.Log("audio lowering                 PASS")
 }

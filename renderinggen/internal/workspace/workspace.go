@@ -5,10 +5,10 @@
 //	├── assets/<logical>    (assets materialized by content hash)
 //	└── output/result.mp4   (render output)
 //
-// Materialization is path-first for large media: callers can resolve a local
-// CAS path and this package hardlinks it into the workspace when possible,
-// falling back to a streaming copy across filesystems. The byte resolver is
-// retained for compatibility and small fixtures.
+// Materialize is the single asset resolver/materializer: it pulls each asset
+// through the L1/L2/L3 cache (via a resolver func) and writes it to the
+// logical path declared by the job, so the render_plan's source/asset
+// references resolve inside the assets root.
 package workspace
 
 import (
@@ -24,16 +24,18 @@ import (
 	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/queue"
 )
 
-// Resolver returns bytes for a compatibility asset path.
+// Resolver returns the bytes for an asset reference. It remains available for
+// small in-memory fixtures and backends that do not expose a local path.
 type Resolver func(ctx context.Context, asset queue.AssetRef) ([]byte, error)
 
-// ResolvedAsset is the canonical file-backed asset resolution result.
+// ResolvedAsset describes an asset already present on local storage. The
+// workspace can link it directly instead of reading it into a Go byte slice.
 type ResolvedAsset struct {
 	LocalPath string
-	Size      int64
+	SizeBytes int64
 }
 
-// PathResolver resolves an asset to an already-local content-addressed file.
+// PathResolver is the zero-copy asset resolution surface used by production.
 type PathResolver func(ctx context.Context, asset queue.AssetRef) (ResolvedAsset, error)
 
 // Workspace is a per-job directory tree prepared for a render.
@@ -59,35 +61,38 @@ func New(jobsRoot, jobID string) (*Workspace, error) {
 			return nil, fmt.Errorf("workspace: create %s: %w", dir, err)
 		}
 	}
+	// RenderingGen may run as root while the native Chronon daemon runs as
+	// pierone. Only this per-job output directory needs cross-user write access.
+	if err := os.Chmod(w.outputDir, 0o777); err != nil {
+		return nil, fmt.Errorf("workspace: chmod output %s: %w", w.outputDir, err)
+	}
 	return w, nil
 }
 
-func (w *Workspace) Root() string       { return w.root }
+// Root returns the workspace root directory.
+func (w *Workspace) Root() string { return w.root }
+
+// AssetsRoot returns the directory assets are materialized into.
 func (w *Workspace) AssetsRoot() string { return w.assetsDir }
+
+// OutputPath returns the path for a rendered output file.
 func (w *Workspace) OutputPath(name string) string {
 	return filepath.Join(w.outputDir, name)
 }
-func (w *Workspace) PlanPath() string { return filepath.Join(w.root, "plan.json") }
+
+// PlanPath returns the path of the render plan written for Chronon.
+func (w *Workspace) PlanPath() string {
+	return filepath.Join(w.root, "plan.json")
+}
+
+// WritePlan writes the render plan document to plan.json.
 func (w *Workspace) WritePlan(plan []byte) error {
 	return os.WriteFile(w.PlanPath(), plan, 0o644)
 }
 
-// Materialize resolves every asset through the compatibility byte resolver.
+// Materialize resolves every asset through the byte resolver. Production code
+// should prefer MaterializePaths so large media stays on disk.
 func (w *Workspace) Materialize(ctx context.Context, resolve Resolver, assets []queue.AssetRef) error {
-	return w.runMaterializers(ctx, assets, func(ctx context.Context, a queue.AssetRef) error {
-		return w.materializeOne(ctx, resolve, a)
-	})
-}
-
-// MaterializePaths resolves every asset to a local path and installs it into
-// the job workspace without loading the media into the Go heap.
-func (w *Workspace) MaterializePaths(ctx context.Context, resolve PathResolver, assets []queue.AssetRef) error {
-	return w.runMaterializers(ctx, assets, func(ctx context.Context, a queue.AssetRef) error {
-		return w.materializeOnePath(ctx, resolve, a)
-	})
-}
-
-func (w *Workspace) runMaterializers(ctx context.Context, assets []queue.AssetRef, materialize func(context.Context, queue.AssetRef) error) error {
 	if len(assets) == 0 {
 		return nil
 	}
@@ -106,7 +111,7 @@ func (w *Workspace) runMaterializers(ctx context.Context, assets []queue.AssetRe
 		go func() {
 			defer wg.Done()
 			for a := range jobs {
-				if err := materialize(workCtx, a); err != nil {
+				if err := w.materializeOne(workCtx, resolve, a); err != nil {
 					errOnce.Do(func() { firstErr = err; cancel() })
 				}
 			}
@@ -124,6 +129,120 @@ send:
 	close(jobs)
 	wg.Wait()
 	return firstErr
+}
+
+// MaterializePaths resolves every asset to a local file and hard-links it into
+// the workspace. A streaming copy is used only when the cache and workspace
+// are on different filesystems.
+func (w *Workspace) MaterializePaths(ctx context.Context, resolve PathResolver, assets []queue.AssetRef) error {
+	if len(assets) == 0 {
+		return nil
+	}
+	workCtx, cancel := context.WithCancel(ctx)
+	defer cancel()
+	jobs := make(chan queue.AssetRef)
+	var wg sync.WaitGroup
+	var firstErr error
+	var errOnce sync.Once
+	workerCount := 4
+	if len(assets) < workerCount {
+		workerCount = len(assets)
+	}
+	for i := 0; i < workerCount; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for a := range jobs {
+				if err := w.materializePathOne(workCtx, resolve, a); err != nil {
+					errOnce.Do(func() { firstErr = err; cancel() })
+				}
+			}
+		}()
+	}
+send:
+	for _, a := range assets {
+		select {
+		case jobs <- a:
+		case <-workCtx.Done():
+			break send
+		}
+	}
+	close(jobs)
+	wg.Wait()
+	return firstErr
+}
+
+func (w *Workspace) materializePathOne(ctx context.Context, resolve PathResolver, a queue.AssetRef) error {
+	dst, err := w.assetPath(a.LogicalPath)
+	if err != nil {
+		return err
+	}
+	resolved, err := resolve(ctx, a)
+	if err != nil {
+		return fmt.Errorf("workspace: resolve %s: %w", a.Hash, err)
+	}
+	if resolved.LocalPath == "" {
+		return fmt.Errorf("workspace: resolver returned an empty local path for %s", a.Hash)
+	}
+	if err := os.MkdirAll(filepath.Dir(dst), 0o755); err != nil {
+		return fmt.Errorf("workspace: mkdir %s: %w", filepath.Dir(dst), err)
+	}
+	if resolved.LocalPath != dst {
+		if err := os.Link(resolved.LocalPath, dst); err != nil {
+			if !os.IsExist(err) && !isCrossDevice(err) {
+				return fmt.Errorf("workspace: link %s: %w", dst, err)
+			}
+			if os.IsExist(err) {
+				_ = os.Remove(dst)
+			} else if err := copyFile(ctx, resolved.LocalPath, dst); err != nil {
+				return err
+			}
+		}
+	}
+	// The worker and the native Chronon daemon may run as different users.
+	// Temp/cache files are commonly created as 0600; make the immutable
+	// materialized view readable by the daemon without making it writable.
+	if err := os.Chmod(dst, 0o644); err != nil {
+		return fmt.Errorf("workspace: chmod %s: %w", dst, err)
+	}
+	return nil
+}
+
+func isCrossDevice(err error) bool {
+	return strings.Contains(strings.ToLower(err.Error()), "cross-device") || strings.Contains(strings.ToLower(err.Error()), "invalid cross-device link")
+}
+
+func copyFile(ctx context.Context, source, dst string) error {
+	input, err := os.Open(source)
+	if err != nil {
+		return fmt.Errorf("workspace: open %s: %w", source, err)
+	}
+	defer input.Close()
+	tmp, err := os.CreateTemp(filepath.Dir(dst), ".materialize-*")
+	if err != nil {
+		return err
+	}
+	tmpPath := tmp.Name()
+	defer os.Remove(tmpPath)
+	if _, err := io.Copy(tmp, input); err != nil {
+		_ = tmp.Close()
+		return err
+	}
+	if err := tmp.Close(); err != nil {
+		return err
+	}
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	default:
+	}
+	if err := os.Rename(tmpPath, dst); err != nil {
+		return fmt.Errorf("workspace: install %s: %w", dst, err)
+	}
+	if err := os.Chmod(dst, 0o644); err != nil {
+		return fmt.Errorf("workspace: chmod %s: %w", dst, err)
+	}
+	return nil
 }
 
 func (w *Workspace) materializeOne(ctx context.Context, resolve Resolver, a queue.AssetRef) error {
@@ -144,76 +263,6 @@ func (w *Workspace) materializeOne(ctx context.Context, resolve Resolver, a queu
 	return nil
 }
 
-func (w *Workspace) materializeOnePath(ctx context.Context, resolve PathResolver, a queue.AssetRef) error {
-	dst, err := w.assetPath(a.LogicalPath)
-	if err != nil {
-		return err
-	}
-	resolved, err := resolve(ctx, a)
-	if err != nil {
-		return fmt.Errorf("workspace: resolve path %s: %w", a.Hash, err)
-	}
-	if resolved.LocalPath == "" {
-		return fmt.Errorf("workspace: resolved asset %s has empty local path", a.Hash)
-	}
-	sourceInfo, err := os.Stat(resolved.LocalPath)
-	if err != nil {
-		return fmt.Errorf("workspace: stat resolved asset %s: %w", a.Hash, err)
-	}
-	if !sourceInfo.Mode().IsRegular() {
-		return fmt.Errorf("workspace: resolved asset %s is not a regular file", a.Hash)
-	}
-	if resolved.Size >= 0 && resolved.Size != sourceInfo.Size() {
-		return fmt.Errorf("workspace: resolved asset %s size %d != expected %d", a.Hash, sourceInfo.Size(), resolved.Size)
-	}
-	if err := os.MkdirAll(filepath.Dir(dst), 0o755); err != nil {
-		return fmt.Errorf("workspace: mkdir %s: %w", filepath.Dir(dst), err)
-	}
-	if same, err := sameFilePath(resolved.LocalPath, dst); err == nil && same {
-		return nil
-	}
-	_ = os.Remove(dst)
-	if err := os.Link(resolved.LocalPath, dst); err == nil {
-		return nil
-	}
-
-	// Cross-device fallback: stream source -> temp -> atomic rename.
-	input, err := os.Open(resolved.LocalPath)
-	if err != nil {
-		return fmt.Errorf("workspace: open resolved asset %s: %w", a.Hash, err)
-	}
-	defer input.Close()
-	tmp, err := os.CreateTemp(filepath.Dir(dst), ".materialize-*")
-	if err != nil {
-		return fmt.Errorf("workspace: create temp for %s: %w", dst, err)
-	}
-	tmpPath := tmp.Name()
-	defer os.Remove(tmpPath)
-	if _, err := io.Copy(tmp, input); err != nil {
-		tmp.Close()
-		return fmt.Errorf("workspace: copy %s: %w", dst, err)
-	}
-	if err := tmp.Close(); err != nil {
-		return fmt.Errorf("workspace: close temp %s: %w", dst, err)
-	}
-	if err := os.Rename(tmpPath, dst); err != nil {
-		return fmt.Errorf("workspace: install %s: %w", dst, err)
-	}
-	return nil
-}
-
-func sameFilePath(source, dest string) (bool, error) {
-	srcInfo, err := os.Stat(source)
-	if err != nil {
-		return false, err
-	}
-	dstInfo, err := os.Stat(dest)
-	if err != nil {
-		return false, err
-	}
-	return os.SameFile(srcInfo, dstInfo), nil
-}
-
 // assetPath validates a logical path and joins it under the assets root.
 func (w *Workspace) assetPath(logical string) (string, error) {
 	if logical == "" {
@@ -223,12 +272,19 @@ func (w *Workspace) assetPath(logical string) (string, error) {
 	if filepath.IsAbs(clean) || clean == ".." || strings.HasPrefix(clean, ".."+string(filepath.Separator)) {
 		return "", fmt.Errorf("workspace: logical_path %q escapes the assets root", logical)
 	}
+	// Concrete Chronon plans use the canonical `assets/...` namespace and are
+	// rendered with the workspace root as Chronon's assets root. Legacy queue
+	// refs such as `videos/base.mp4` are still relative to the workspace's
+	// assets directory. Supporting both here keeps one materialization rule at
+	// the RenderingGen boundary.
 	if clean == "assets" || strings.HasPrefix(clean, "assets"+string(filepath.Separator)) {
 		return filepath.Join(w.root, clean), nil
 	}
 	return filepath.Join(w.assetsDir, clean), nil
 }
 
+// CleanupStale removes old workspace directories. A workspace is considered
+// active when it contains a lease marker whose timestamp is still valid.
 func CleanupStale(root string, olderThan time.Duration) error {
 	entries, err := os.ReadDir(root)
 	if err != nil {
@@ -263,6 +319,7 @@ func CleanupStale(root string, olderThan time.Duration) error {
 	return nil
 }
 
+// Cleanup removes the workspace directory tree.
 func (w *Workspace) Cleanup() error {
 	if err := os.RemoveAll(w.root); err != nil {
 		return fmt.Errorf("workspace: cleanup %s: %w", w.root, err)

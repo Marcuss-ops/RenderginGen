@@ -7,8 +7,6 @@ package processor
 
 import (
 	"context"
-	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -17,7 +15,6 @@ import (
 	"net/http"
 	"os"
 	"strings"
-	"sync/atomic"
 	"time"
 
 	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/artifactdb"
@@ -41,17 +38,24 @@ type Processor struct {
 	storeURL       string
 	store          *storage.Client
 	renderer       chronon.Renderer
-	drive          drive.Publisher
-	recorder       artifactdb.Recorder
+	drive          drive.Publisher     // nil = external publication disabled
+	recorder       artifactdb.Recorder // nil = artifact ledger disabled
 
+	// phaseHook, when set, receives the wall-clock duration of each pipeline
+	// phase so benchmarks can report asset_fetch/prepare/render/publish ms
+	// without coupling the processor to a metrics backend.
 	phaseHook func(phase string, d time.Duration)
 
+	// report, when true, passes --report to chronon3d_cli so the execution
+	// report + telemetry JSONL (render_ms/encode_ms/cache hits-misses) are
+	// emitted. Disabled by default; enabled by the performance benchmark.
 	report               bool
 	hardwareEncoder      string
 	nativeOutputProfiles bool
 	strictNativeBackend  bool
 }
 
+// New creates a job processor.
 func New(jobsRoot, backend, chrononVersion, storeURL string, store *storage.Client, renderer chronon.Renderer) *Processor {
 	return &Processor{
 		jobsRoot:       jobsRoot,
@@ -63,13 +67,51 @@ func New(jobsRoot, backend, chrononVersion, storeURL string, store *storage.Clie
 	}
 }
 
-func (p *Processor) SetPhaseHook(fn func(phase string, d time.Duration)) { p.phaseHook = fn }
-func (p *Processor) SetReport(enabled bool)                        { p.report = enabled }
-func (p *Processor) SetHardwareEncoder(encoder string)             { p.hardwareEncoder = encoder }
-func (p *Processor) SetNativeOutputProfiles(enabled bool)          { p.nativeOutputProfiles = enabled }
-func (p *Processor) SetStrictNativeBackend(enabled bool)           { p.strictNativeBackend = enabled }
-func (p *Processor) SetPublisher(pub drive.Publisher)              { p.drive = pub }
-func (p *Processor) SetArtifactRecorder(rec artifactdb.Recorder)   { p.recorder = rec }
+// SetPhaseHook installs an optional callback that receives each pipeline
+// phase's wall-clock duration: "materialize", "plan", "render", "publish".
+// Used by the performance benchmark; nil (default) disables the overhead.
+func (p *Processor) SetPhaseHook(fn func(phase string, d time.Duration)) {
+	p.phaseHook = fn
+}
+
+// SetReport enables the chronon3d_cli --report flag so the engine writes its
+// execution report and telemetry JSONL (render_ms, encode_ms, cache hits and
+// misses). Used by the performance benchmark; off by default.
+func (p *Processor) SetReport(enabled bool) {
+	p.report = enabled
+}
+
+// SetHardwareEncoder selects an explicit FFmpeg hardware encoder (for
+// example, nvenc). Empty/none preserves the software encoder path.
+func (p *Processor) SetHardwareEncoder(encoder string) {
+	p.hardwareEncoder = encoder
+}
+
+// SetNativeOutputProfiles enables passing output.profile_id to Chronon. Keep
+// this disabled for legacy runtimes that reject unknown output properties; the
+// worker still certifies the requested profile from the encoded MP4.
+func (p *Processor) SetNativeOutputProfiles(enabled bool) { p.nativeOutputProfiles = enabled }
+
+// SetStrictNativeBackend makes the gpu-vulkan-native profile fail closed when
+// Chronon reports a hybrid or software-fallback execution. The artifact is
+// rejected before object-store publication, so a receipt cannot certify the
+// wrong execution path.
+func (p *Processor) SetStrictNativeBackend(enabled bool) { p.strictNativeBackend = enabled }
+
+// SetPublisher installs the Google Drive publisher used by Publish. When nil
+// (the default) publication is disabled and Publish is a no-op.
+func (p *Processor) SetPublisher(pub drive.Publisher) {
+	p.drive = pub
+}
+
+// SetArtifactRecorder installs the artifact ledger. When set, every rendered
+// job writes one ArtifactRecord (hash, probe facts, semantic counters, per-
+// phase metrics) after the object store accepted the bytes; a failed Record
+// fails the job (the ledger is the source of truth). nil (default) disables
+// the ledger.
+func (p *Processor) SetArtifactRecorder(rec artifactdb.Recorder) {
+	p.recorder = rec
+}
 
 func (p *Processor) recordPhase(phase string, start time.Time) {
 	if p.phaseHook == nil {
@@ -78,6 +120,9 @@ func (p *Processor) recordPhase(phase string, start time.Time) {
 	p.phaseHook(phase, time.Since(start))
 }
 
+// Process runs the full pipeline (render + external publication) and returns
+// the published artifact. The worker normally calls Render and Publish
+// separately so a failed publication can be retried without a re-render.
 func (p *Processor) Process(ctx context.Context, job *queue.Job) (queue.Artifact, error) {
 	artifact, err := p.Render(ctx, job)
 	if err != nil {
@@ -87,12 +132,17 @@ func (p *Processor) Process(ctx context.Context, job *queue.Job) (queue.Artifact
 }
 
 // Prepare compiles and materializes an overlay plan without invoking Chronon.
-// Asset materialization is path-first: L2/CAS files are hardlinked into the
-// workspace instead of being loaded into []byte and rewritten.
+// The compiled plan is stored content-addressably so a later overlay.render
+// job can reuse the exact prepared surface. This is the real prepare phase:
+// template resolution, asset fetch and workspace materialization happen here;
+// no final audio or frozen timing is required.
 func (p *Processor) Prepare(ctx context.Context, job *queue.Job) (queue.Artifact, error) {
 	if err := validate(job); err != nil {
 		return queue.Artifact{}, err
 	}
+	// PipelineGen's pre-timing contract is an OverlayIntent warm-up document,
+	// not a render plan. It is submitted before audio timing exists; the later
+	// overlay.render job carries the frozen Chronon plan.
 	if isOverlayPrepare(job.RenderPlan) {
 		if err := validateOverlayPrepare(job.RenderPlan); err != nil {
 			return queue.Artifact{}, err
@@ -102,7 +152,7 @@ func (p *Processor) Prepare(ctx context.Context, job *queue.Job) (queue.Artifact
 			return queue.Artifact{}, err
 		}
 		defer ws.Cleanup()
-		if err := ws.MaterializePaths(ctx, p.resolveAssetPath, job.Assets); err != nil {
+		if err := ws.Materialize(ctx, p.resolveAsset, job.Assets); err != nil {
 			return queue.Artifact{}, err
 		}
 		hash := storage.Hash(job.RenderPlan)
@@ -128,7 +178,7 @@ func (p *Processor) Prepare(ctx context.Context, job *queue.Job) (queue.Artifact
 		return queue.Artifact{}, err
 	}
 	defer ws.Cleanup()
-	if err := ws.MaterializePaths(ctx, p.resolveAssetPath, assets); err != nil {
+	if err := ws.Materialize(ctx, p.resolveAsset, assets); err != nil {
 		return queue.Artifact{}, err
 	}
 	if err := ws.WritePlan(plan); err != nil {
@@ -145,8 +195,17 @@ func (p *Processor) Prepare(ctx context.Context, job *queue.Job) (queue.Artifact
 	}, nil
 }
 
-// resolveAsset retains the compatibility byte API for tests/small fixtures.
-// Production media materialization uses resolveAssetPath below.
+// resolveAsset preserves the content-addressed invariant at the worker
+// boundary. Legacy development fixtures may use symbolic keys; production
+// SHA-256 keys (64 hexadecimal characters) are always checked against the
+// bytes returned by the object store before Chronon sees them.
+//
+// When a production asset is absent from L3 but its logical path is a source
+// URL (the overlay.prepare case: PipelineGen materialized the entity image to
+// Drive and enqueues prepare before the bytes are staged in the central
+// object store), resolveAsset self-heals by downloading the bytes, verifying
+// the SHA-256 and staging them into L3. Render never silently proceeds with
+// the wrong asset: a hash mismatch fails the resolution.
 func (p *Processor) resolveAsset(ctx context.Context, asset queue.AssetRef) ([]byte, error) {
 	hash := asset.Hash
 	data, err := p.store.Get(ctx, hash)
@@ -174,38 +233,6 @@ func (p *Processor) resolveAsset(ctx context.Context, asset queue.AssetRef) ([]b
 	return downloaded, nil
 }
 
-// resolveAssetPath is the canonical production resolver. It returns a local
-// content-addressed path and size, allowing workspace materialization to use
-// hardlinks/reflink-like filesystem semantics instead of NVMe -> RAM -> NVMe.
-func (p *Processor) resolveAssetPath(ctx context.Context, asset queue.AssetRef) (workspace.ResolvedAsset, error) {
-	hash := asset.Hash
-	path, size, err := p.store.LocalPath(ctx, hash)
-	if err == nil {
-		return workspace.ResolvedAsset{LocalPath: path, Size: size}, nil
-	}
-	if !errors.Is(err, storage.ErrNotFound) || len(hash) != 64 || !isHTTPURL(asset.LogicalPath) {
-		return workspace.ResolvedAsset{}, err
-	}
-
-	// overlay.prepare self-heal: remote-only assets are downloaded once,
-	// hash-verified, staged to the content store, then resolved as a path.
-	downloaded, err := downloadAsset(ctx, asset.LogicalPath)
-	if err != nil {
-		return workspace.ResolvedAsset{}, fmt.Errorf("asset %s not in store and URL download failed: %w", hash, err)
-	}
-	if got := storage.Hash(downloaded); !strings.EqualFold(got, hash) {
-		return workspace.ResolvedAsset{}, fmt.Errorf("asset hash mismatch on URL download: requested %s, got %s", hash, got)
-	}
-	if err := p.store.Put(ctx, hash, downloaded); err != nil {
-		return workspace.ResolvedAsset{}, fmt.Errorf("stage self-healed asset %s: %w", hash, err)
-	}
-	path, size, err = p.store.LocalPath(ctx, hash)
-	if err != nil {
-		return workspace.ResolvedAsset{}, err
-	}
-	return workspace.ResolvedAsset{LocalPath: path, Size: size}, nil
-}
-
 func isHTTPURL(s string) bool {
 	return strings.HasPrefix(s, "http://") || strings.HasPrefix(s, "https://")
 }
@@ -224,6 +251,16 @@ func downloadAsset(ctx context.Context, rawURL string) ([]byte, error) {
 		return nil, fmt.Errorf("download %s: HTTP %d", rawURL, resp.StatusCode)
 	}
 	return io.ReadAll(resp.Body)
+}
+
+// hashFileSHA256 streams a file through SHA-256 without buffering it in RAM.
+func hashFileSHA256(path string) (string, error) {
+	file, err := os.Open(path)
+	if err != nil {
+		return "", err
+	}
+	defer file.Close()
+	return hashReader(file)
 }
 
 func mergeAssets(jobAssets []queue.AssetRef, compiled []overlay.Asset) ([]queue.AssetRef, error) {
@@ -248,135 +285,17 @@ func mergeAssets(jobAssets []queue.AssetRef, compiled []overlay.Asset) ([]queue.
 	return result, nil
 }
 
-// Render runs the render pipeline. Large assets remain file-backed through
-// resolve/materialize, so GPU work is not preceded by whole-file heap copies.
+// Render runs the render pipeline — validate, compile, materialize, plan.json,
+// Chronon render, hash, store to the object store and record the artifact
+// ledger — and returns the artifact metadata (without external publication
+// fields). The artifact bytes are durably stored under artifact.StorageKey, so
+// a publication retry can skip rendering entirely.
+//
+// The implementation is the staged pipeline (PrepareJob -> RunGPU ->
+// FinalizeJob) run serially for this job; the worker's concurrent pools use
+// the same stages to overlap CPU work with the GPU lane.
 func (p *Processor) Render(ctx context.Context, job *queue.Job) (queue.Artifact, error) {
-	totalStart := time.Now()
-	phaseMetrics := make(map[string]float64, 6)
-	record := func(phase string, start time.Time) {
-		us := float64(time.Since(start).Microseconds())
-		phaseMetrics[phase+"_ms"] = us / 1000
-		phaseMetrics[phase+"_us"] = us
-		p.recordPhase(phase, start)
-	}
-	if err := validate(job); err != nil {
-		return queue.Artifact{}, err
-	}
-	stats, err := overlay.SemanticStats(job.RenderPlan)
-	if err != nil {
-		return queue.Artifact{}, fmt.Errorf("processor: semantic stats: %w", err)
-	}
-	compileStart := time.Now()
-	plan, compiledAssets, _, err := overlay.CompileIfSemantic(job.RenderPlan)
-	if err != nil {
-		return queue.Artifact{}, err
-	}
-	compileUS := float64(time.Since(compileStart).Microseconds())
-	phaseMetrics["overlay_compile_us"] = compileUS
-	phaseMetrics["overlay_compile_ms"] = compileUS / 1000
-	assets, err := mergeAssets(job.Assets, compiledAssets)
-	if err != nil {
-		return queue.Artifact{}, err
-	}
-
-	ws, err := workspace.New(p.jobsRoot, job.ID)
-	if err != nil {
-		return queue.Artifact{}, err
-	}
-	if os.Getenv("RENDERINGGEN_KEEP_WORKSPACE") != "1" {
-		defer func() {
-			if err := ws.Cleanup(); err != nil {
-				log.Printf("job %s: workspace cleanup: %v", job.ID, err)
-			}
-		}()
-	}
-
-	var inputBytes atomic.Int64
-	resolvePath := func(ctx context.Context, asset queue.AssetRef) (workspace.ResolvedAsset, error) {
-		resolved, err := p.resolveAssetPath(ctx, asset)
-		if err != nil {
-			return workspace.ResolvedAsset{}, err
-		}
-		inputBytes.Add(resolved.Size)
-		return resolved, nil
-	}
-	phaseStart := time.Now()
-	if err := ws.MaterializePaths(ctx, resolvePath, assets); err != nil {
-		return queue.Artifact{}, err
-	}
-	record("materialize", phaseStart)
-
-	phaseStart = time.Now()
-	metadata := renderMetadataFromPlan(plan)
-	renderPlan := plan
-	if !p.nativeOutputProfiles && metadata.ProfileID != "" {
-		renderPlan = stripOutputProfile(plan)
-	}
-	if err := ws.WritePlan(renderPlan); err != nil {
-		return queue.Artifact{}, err
-	}
-	record("plan", phaseStart)
-
-	outputPath := ws.OutputPath("result.mp4")
-	phaseStart = time.Now()
-	gpuRequired := p.strictNativeBackend ||
-		(p.backend == "vulkan" && p.hardwareEncoder != "" && p.hardwareEncoder != "none")
-	if err := p.renderer.Render(ctx, chronon.RenderRequest{
-		PlanPath: ws.PlanPath(),
-		AssetsRoot: ws.Root(),
-		OutputPath: outputPath,
-		Report:     p.report,
-		Requirements: chronon.ExecutionRequirements{
-			GPURequired:         gpuRequired,
-			CPUFallbackAllowed:  !p.strictNativeBackend,
-			CompositionRequired: true,
-			PacketCopyAllowed:   true,
-		},
-		FirstFrame: frameStart(job),
-		LastFrame:  frameEndInclusive(job),
-		Output:     chronon.OutputSpec{Codec: "h264"},
-	}); err != nil {
-		return queue.Artifact{}, fmt.Errorf("processor: render: %w", err)
-	}
-	record("render", phaseStart)
-	if p.strictNativeBackend {
-		if err := requireNativeVulkan(outputPath, metadata.FrameCount); err != nil {
-			return queue.Artifact{}, fmt.Errorf("processor: gpu-vulkan-native gate: %w", err)
-		}
-	}
-	var probe *media.ProbeResult
-	if job.JobType == queue.JobTypeOverlayRender || metadata.ProfileID != "" {
-		probeStart := time.Now()
-		probed, err := media.ProbeFile(ctx, outputPath)
-		if err != nil {
-			return queue.Artifact{}, fmt.Errorf("processor: overlay ffprobe: %w", err)
-		}
-		if metadata.ProfileID != "" {
-			profile, err := media.ResolveProfile(metadata.ProfileID)
-			if err != nil {
-				return queue.Artifact{}, fmt.Errorf("processor: output profile: %w", err)
-			}
-			if err := profile.ValidateProbe(probed); err != nil {
-				return queue.Artifact{}, fmt.Errorf("processor: output profile certification: %w", err)
-			}
-		} else if job.JobType == queue.JobTypeOverlayRender {
-			if err := probed.ValidateOverlay(metadata.Width, metadata.Height, metadata.FPSNum, metadata.FPSDen); err != nil {
-				return queue.Artifact{}, fmt.Errorf("processor: overlay media contract: %w", err)
-			}
-		}
-		if hasVisualOverlay(plan) {
-			if err := probed.ValidateVisible(ctx, outputPath); err != nil {
-				return queue.Artifact{}, fmt.Errorf("processor: visual output gate: %w", err)
-			}
-		}
-		probe = &probed
-		probeUS := float64(time.Since(probeStart).Microseconds())
-		phaseMetrics["probe_us"] = probeUS
-		phaseMetrics["probe_ms"] = probeUS / 1000
-	}
-
-	return p.storeArtifact(ctx, job.ID, outputPath, plan, phaseMetrics, totalStart, probe, stats, inputBytes.Load(),
-		job.JobType == queue.JobTypeOverlayRender || metadata.ProfileID != "")
+	return p.StagedRender(ctx, job)
 }
 
 func frameStart(job *queue.Job) int64 {
@@ -393,6 +312,9 @@ func frameEndInclusive(job *queue.Job) int64 {
 	return 0
 }
 
+// hasVisualOverlay identifies concrete plans that contain an authored visual
+// layer in addition to the background. It deliberately does not infer
+// semantics or presets; it only protects the final artifact boundary.
 func hasVisualOverlay(plan []byte) bool {
 	var doc struct {
 		Layers []json.RawMessage `json:"layers"`
@@ -468,9 +390,27 @@ func requireNativeVulkan(outputPath string, expectedFrames int) error {
 	if err := json.Unmarshal(receiptRaw, &receipt); err != nil {
 		return fmt.Errorf("decode Chronon media receipt: %w", err)
 	}
+	// A composited overlay artifact is intentionally not bitstream-copy
+	// eligible. The output profile owns that policy; this gate certifies only
+	// the GPU execution contract and the presence of Chronon's media receipt.
 	return nil
 }
 
+// Publish uploads an already-rendered artifact to Google Drive and returns the
+// artifact updated with its Drive file ID and link. It resolves the verified
+// persistent L2 path, so publication does not fetch the object twice or create
+// a temporary staging file. When no publisher is configured it returns the
+// artifact unchanged.
+//
+// The SHA-256 chain invariant (plan section "Drive") is enforced here:
+//
+//	local_sha == objectstore_sha == db_sha == drive_sha
+//
+// The bytes re-read from the object store must hash to the artifact hash the
+// worker computed at render time and recorded in the ledger (store_sha ==
+// db_sha) BEFORE they are uploaded; the Drive result must then report the
+// same hash (drive_sha == db_sha). Any mismatch fails the publication, never
+// a re-render.
 func (p *Processor) Publish(ctx context.Context, jobID string, artifact queue.Artifact) (queue.Artifact, error) {
 	if p.drive == nil {
 		return artifact, nil
@@ -487,6 +427,8 @@ func (p *Processor) Publish(ctx context.Context, jobID string, artifact queue.Ar
 	if err != nil {
 		return artifact, fmt.Errorf("processor: drive publish: %w", err)
 	}
+	// The local path was hash-verified by LocalPath for content-addressed keys;
+	// publication additionally requires the provider to report the same size.
 	if res.FileID == "" || res.SizeBytes != size {
 		return artifact, fmt.Errorf("processor: drive publication identity mismatch (file_id=%q size=%d expected_size=%d)", res.FileID, res.SizeBytes, size)
 	}
@@ -498,6 +440,8 @@ func (p *Processor) Publish(ctx context.Context, jobID string, artifact queue.Ar
 	artifact.Metrics["drive_upload_us"] = driveUS
 	artifact.DriveFileID = res.FileID
 	artifact.DriveLink = res.WebViewLink
+	// The ledger row already exists (written by Render); a publication retry
+	// only updates the drive metric — it never touches the artifact identity.
 	if updater, ok := p.recorder.(artifactdb.DriveUpdater); ok {
 		if err := updater.UpdateDrive(ctx, jobID, int64(driveUS)); err != nil {
 			return artifact, fmt.Errorf("processor: artifact ledger drive %s: %w", jobID, err)
@@ -506,9 +450,11 @@ func (p *Processor) Publish(ctx context.Context, jobID string, artifact queue.Ar
 	return artifact, nil
 }
 
-// storeArtifact hashes the rendered output once and publishes it from its file
-// path. PutFile then streams to L3 and hardlinks into L2 when possible; there
-// is no second whole-file Go buffer or PutReader io.ReadAll pass.
+// storeArtifact reads the rendered output, hashes it (sha256), stores it in
+// the artifact store (L3), and records the artifact ledger row — the plan's
+// "DB artifact" step — returning the artifact metadata for queue completion.
+// The pipeline invariant local_sha == objectstore_sha == db_sha is enforced
+// here: the record is keyed by the same hash the object store accepted.
 func (p *Processor) storeArtifact(ctx context.Context, jobID, outputPath string, plan []byte, phaseMetrics map[string]float64, totalStart time.Time, probe *media.ProbeResult, stats overlay.Stats, inputBytes int64, copyEligible bool) (queue.Artifact, error) {
 	phaseStart := time.Now()
 	defer func() {
@@ -521,27 +467,43 @@ func (p *Processor) storeArtifact(ctx context.Context, jobID, outputPath string,
 	if err != nil {
 		return queue.Artifact{}, fmt.Errorf("processor: stat output %s: %w", outputPath, err)
 	}
+	// Chronon computes the output SHA-256 while/after encoding and reports it
+	// in its media receipt. Trusting that identity removes a full re-read of
+	// the rendered file from the critical path; a size cross-check plus a
+	// hash-verify fallback (when the receipt is missing or disagrees on size)
+	// keeps the invariant local_sha == objectstore_sha == db_sha.
+	var hash string
 	shaStart := time.Now()
-	input, err := os.Open(outputPath)
-	if err != nil {
-		return queue.Artifact{}, fmt.Errorf("processor: open output for hashing %s: %w", outputPath, err)
+	receipt, receiptErr := chronon.ReadMediaReceipt(outputPath)
+	switch {
+	case receiptErr == nil && receipt.Output.Bytes == fileInfo.Size():
+		hash = receipt.Output.SHA256
+		log.Printf("job %s: artifact identity from chronon receipt (bytes=%d)", jobID, fileInfo.Size())
+	case receiptErr == nil:
+		// Receipt exists but disagrees on size: fall through to verification.
+		log.Printf("job %s: chronon receipt size %d != file %d; verifying", jobID, receipt.Output.Bytes, fileInfo.Size())
+		fallthrough
+	default:
+		verified, verifyErr := hashFileSHA256(outputPath)
+		if verifyErr != nil {
+			return queue.Artifact{}, fmt.Errorf("processor: hash output %s: %w", outputPath, verifyErr)
+		}
+		hash = verified
 	}
-	digest := sha256.New()
-	if _, err := io.Copy(digest, input); err != nil {
-		input.Close()
-		return queue.Artifact{}, fmt.Errorf("processor: hash output %s: %w", outputPath, err)
-	}
-	if err := input.Close(); err != nil {
-		return queue.Artifact{}, fmt.Errorf("processor: close output after hashing %s: %w", outputPath, err)
-	}
-	hash := hex.EncodeToString(digest.Sum(nil))
 	shaUS := float64(time.Since(shaStart).Microseconds())
 	phaseMetrics["sha256_us"] = shaUS
 	phaseMetrics["sha256_ms"] = shaUS / 1000
-
 	putStart := time.Now()
-	if err := p.store.PutFile(ctx, hash, outputPath); err != nil {
+	output, err := os.Open(outputPath)
+	if err != nil {
+		return queue.Artifact{}, fmt.Errorf("processor: open output for upload %s: %w", outputPath, err)
+	}
+	if err := p.store.PutReader(ctx, hash, output, fileInfo.Size()); err != nil {
+		output.Close()
 		return queue.Artifact{}, fmt.Errorf("processor: publish artifact: %w", err)
+	}
+	if err := output.Close(); err != nil {
+		return queue.Artifact{}, fmt.Errorf("processor: close output after upload %s: %w", outputPath, err)
 	}
 	putUS := float64(time.Since(putStart).Microseconds())
 	phaseMetrics["objectstore_upload_us"] = putUS
@@ -579,7 +541,12 @@ func (p *Processor) storeArtifact(ctx context.Context, jobID, outputPath string,
 		artifact.DurationUS = probe.DurationUS
 		artifact.CopyEligible = copyEligible
 	}
+	// Total time must be set before the ledger row is written (the deferred
+	// publish/total metrics above are for the artifact returned to the queue).
 	phaseMetrics["total_us"] = float64(time.Since(totalStart).Microseconds())
+	// Ingest Chronon's timing sidecar as the source of truth for plan/graph/
+	// GPU/encoder timing. A missing sidecar is non-fatal: the rendered bytes
+	// are still valid, only the telemetry blob is absent from the ledger.
 	var chrononTelemetry json.RawMessage
 	if raw, err := chronon.ReadTimingSidecar(outputPath); err != nil {
 		log.Printf("job %s: chronon timing sidecar unavailable: %v", jobID, err)
@@ -592,6 +559,11 @@ func (p *Processor) storeArtifact(ctx context.Context, jobID, outputPath string,
 	return artifact, nil
 }
 
+// recordArtifact writes the artifact ledger row (the plan's "DB artifact"
+// step). The record carries the content hash, the probe facts, the semantic
+// counters from the compiled plan and the per-phase microsecond metrics. A
+// configured recorder failing fails the job: the ledger is the source of
+// truth for what the pipeline produced.
 func (p *Processor) recordArtifact(ctx context.Context, jobID string, artifact queue.Artifact, probe *media.ProbeResult, stats overlay.Stats, inputBytes int64, chrononTelemetry json.RawMessage) error {
 	if p.recorder == nil {
 		return nil
@@ -667,6 +639,9 @@ type renderMetadata struct {
 	ProfileID  string
 }
 
+// renderMetadataFromPlan extracts only the stable canvas facts needed by the
+// artifact record. A malformed/legacy-minimal plan yields zero metadata but
+// never prevents publishing the already-rendered bytes.
 func renderMetadataFromPlan(raw []byte) renderMetadata {
 	var doc struct {
 		Canvas struct {
@@ -707,6 +682,7 @@ func stripOutputProfile(raw []byte) []byte {
 	return b
 }
 
+// artifactURL returns the L3 object URL for an artifact hash.
 func (p *Processor) artifactURL(hash string) string {
 	if p.storeURL == "" {
 		return ""

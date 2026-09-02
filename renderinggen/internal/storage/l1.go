@@ -2,21 +2,34 @@ package storage
 
 import "sync"
 
-const defaultL1MaxObjectBytes int64 = 4 << 20 // 4 MiB: metadata, fonts and small images only
+// DefaultL1MaxObjectBytes is the default per-object admission cap for the L1
+// in-memory cache. Fonts, small images, LUTs and plan JSON belong in RAM;
+// hundreds-of-MB video assets do not — for them the OS page cache over the L2
+// NVMe file is the effective cache, and keeping their bytes on the Go heap
+// only adds GC pressure. A true VRAM cache would hold decoded surfaces /
+// texture handles, not []byte.
+const DefaultL1MaxObjectBytes = 8 << 20 // 8 MiB
 
-// memCache is a bounded small-object RAM cache. Large media stays file-backed
-// in L2/NVMe and relies on the OS page cache; []byte here is not GPU/VRAM
-// residency and must not be used as a video cache.
+// memCache is the L1 cache: a bounded in-memory cache. Despite the
+// historical "VRAM" name it lives on the Go heap; the admission policy below
+// keeps it to small, high-reuse objects.
 type memCache struct {
 	mu    sync.Mutex
 	items map[string][]byte
 	order []string // FIFO order for eviction
 	size  int64
 	max   int64
+	// maxObject is the per-object admission cap. Objects larger than this
+	// are never stored in RAM (0 = no cap).
+	maxObject int64
 }
 
 func newMemCache(max int64) *memCache {
-	return &memCache{items: make(map[string][]byte), max: max}
+	return newMemCacheWithObjectCap(max, DefaultL1MaxObjectBytes)
+}
+
+func newMemCacheWithObjectCap(max, maxObject int64) *memCache {
+	return &memCache{items: make(map[string][]byte), max: max, maxObject: maxObject}
 }
 
 func (m *memCache) Get(key string) ([]byte, bool) {
@@ -33,10 +46,13 @@ func (m *memCache) Get(key string) ([]byte, bool) {
 
 func (m *memCache) Put(key string, data []byte) {
 	dataLen := int64(len(data))
-	if dataLen > defaultL1MaxObjectBytes || (m.max > 0 && dataLen > m.max) {
+	if m.maxObject > 0 && int64(len(data)) > m.maxObject {
+		// Large media stays on L2 NVMe (page cache); never on the Go heap.
 		return
 	}
-
+	if m.max > 0 && dataLen > m.max {
+		return
+	}
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	if _, exists := m.items[key]; exists {

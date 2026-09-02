@@ -81,16 +81,63 @@ func (c *Client) ClaimRendered(ctx context.Context, workerID string) (*ClaimedJo
 	return c.claim(ctx, workerID, "rendered", 0)
 }
 
-// ClaimPendingWait long-polls for pending render work for at most wait. The
-// server still performs the same atomic claim; waiting only replaces idle
-// client polling and does not reserve or assign a job ahead of time.
-func (c *Client) ClaimPendingWait(ctx context.Context, workerID string, wait time.Duration) (*ClaimedJob, error) {
-	return c.claim(ctx, workerID, "pending", wait)
+// ClaimWait long-polls the queue for up to maxWait, returning as soon as a
+// job can be claimed. The wake-up signal is event-driven; the atomic claim
+// itself is unchanged (SKIP LOCKED / memory store), so no job is ever handed
+// to two workers by the wait path. It returns a nil job on timeout.
+func (c *Client) ClaimWait(ctx context.Context, workerID string, maxWait time.Duration) (*ClaimedJob, error) {
+	return c.claimWait(ctx, workerID, "", maxWait)
 }
 
-// ClaimRenderedWait long-polls for artifacts awaiting external publication.
-func (c *Client) ClaimRenderedWait(ctx context.Context, workerID string, wait time.Duration) (*ClaimedJob, error) {
-	return c.claim(ctx, workerID, "rendered", wait)
+// ClaimPendingWait is ClaimWait restricted to jobs that still need rendering.
+func (c *Client) ClaimPendingWait(ctx context.Context, workerID string, maxWait time.Duration) (*ClaimedJob, error) {
+	return c.claimWait(ctx, workerID, "pending", maxWait)
+}
+
+// ClaimRenderedWait is ClaimWait restricted to jobs awaiting publication.
+func (c *Client) ClaimRenderedWait(ctx context.Context, workerID string, maxWait time.Duration) (*ClaimedJob, error) {
+	return c.claimWait(ctx, workerID, "rendered", maxWait)
+}
+
+func (c *Client) claimWait(ctx context.Context, workerID, state string, maxWait time.Duration) (*ClaimedJob, error) {
+	if maxWait <= 0 {
+		maxWait = 25 * time.Second
+	}
+	body, err := json.Marshal(map[string]any{
+		"worker":      workerID,
+		"state":       state,
+		"max_wait_ms": maxWait.Milliseconds(),
+	})
+	if err != nil {
+		return nil, fmt.Errorf("queue claim wait marshal: %w", err)
+	}
+	// The request outlives the long-poll window so the server can respond
+	// after its own wait elapses instead of tripping the client timeout.
+	reqCtx, cancel := context.WithTimeout(ctx, maxWait+10*time.Second)
+	defer cancel()
+	req, err := http.NewRequestWithContext(reqCtx, http.MethodPost, c.baseURL+"/jobs/claim/wait", bytes.NewReader(body))
+	if err != nil {
+		return nil, fmt.Errorf("queue claim wait request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := c.http.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("queue claim wait do: %w", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode == http.StatusNoContent {
+		return nil, nil
+	}
+	if resp.StatusCode != http.StatusOK {
+		raw, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("queue claim wait: HTTP %d: %s", resp.StatusCode, strings.TrimSpace(string(raw)))
+	}
+	var job ClaimedJob
+	if err := json.NewDecoder(resp.Body).Decode(&job); err != nil {
+		return nil, fmt.Errorf("queue claim wait decode: %w", err)
+	}
+	return &job, nil
 }
 
 func (c *Client) claim(ctx context.Context, workerID, state string, wait time.Duration) (*ClaimedJob, error) {
