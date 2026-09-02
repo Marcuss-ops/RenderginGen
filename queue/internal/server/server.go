@@ -17,6 +17,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/Marcuss-ops/RenderginGen/queue/internal/model"
@@ -26,20 +27,46 @@ import (
 
 const maxClaimWait = 25 * time.Second
 
+type wakeSignal struct {
+	mu sync.Mutex
+	ch chan struct{}
+}
+
+func newWakeSignal() *wakeSignal {
+	return &wakeSignal{ch: make(chan struct{})}
+}
+
+// signal broadcasts an edge to every current waiter. Replacing the closed
+// channel immediately also means callers that arrive after the edge simply do
+// an atomic claim first and only wait if the database is actually empty.
+func (w *wakeSignal) signal() {
+	w.mu.Lock()
+	close(w.ch)
+	w.ch = make(chan struct{})
+	w.mu.Unlock()
+}
+
+func (w *wakeSignal) channel() <-chan struct{} {
+	w.mu.Lock()
+	ch := w.ch
+	w.mu.Unlock()
+	return ch
+}
+
 // Server wraps the job service with HTTP handlers.
 type Server struct {
 	svc            *service.Service
 	metricsHandler http.Handler
-	pendingWake    chan struct{}
-	renderedWake   chan struct{}
+	pendingWake    *wakeSignal
+	renderedWake   *wakeSignal
 }
 
 // New creates a server backed by the given job service.
 func New(s *service.Service) *Server {
 	return &Server{
 		svc:          s,
-		pendingWake:  make(chan struct{}, 1),
-		renderedWake: make(chan struct{}, 1),
+		pendingWake:  newWakeSignal(),
+		renderedWake: newWakeSignal(),
 	}
 }
 
@@ -157,24 +184,22 @@ func (s *Server) claim(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// signal wakes at most one waiter for a queue state. The job table remains the
-// source of truth: the signal only removes idle latency, and claims still use
-// the repository's atomic SKIP LOCKED path. A buffered edge is enough because
-// an awakened worker drains all immediately claimable work before waiting
-// again.
+// signal only wakes workers; the job table remains the source of truth and
+// every awakened worker still competes through the repository's atomic
+// SELECT ... FOR UPDATE SKIP LOCKED claim.
 func (s *Server) signal(state model.State) {
-	ch := s.wakeChannel(state)
-	select {
-	case ch <- struct{}{}:
-	default:
+	if state == model.StateRendered {
+		s.renderedWake.signal()
+		return
 	}
+	s.pendingWake.signal()
 }
 
 func (s *Server) wakeChannel(state model.State) <-chan struct{} {
 	if state == model.StateRendered {
-		return s.renderedWake
+		return s.renderedWake.channel()
 	}
-	return s.pendingWake
+	return s.pendingWake.channel()
 }
 
 func (s *Server) complete(w http.ResponseWriter, r *http.Request) {
