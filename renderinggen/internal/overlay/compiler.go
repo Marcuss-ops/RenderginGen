@@ -25,7 +25,7 @@ import (
 // compiles it mechanically; PipelineGen remains the owner of its decisions.
 const SemanticSchema = "renderinggen.overlay-plan.v1"
 
-// Plan is the concrete chronon.render-plan.v1 document the worker executes.
+// Plan is the concrete chronon.render-plan.v2 document the worker executes.
 // It is carried here so callers/tests can decode a submitted plan; the worker
 // itself treats it as an opaque blob passed straight to Chronon.
 type Plan struct {
@@ -114,7 +114,7 @@ type Asset struct {
 }
 
 func newPlan(jobID string, width, height, fpsNum, fpsDen int, duration int64) *Plan {
-	return &Plan{Schema: "chronon.render-plan", Version: 1, JobID: jobID,
+	return &Plan{Schema: "chronon.render-plan.v2", Version: 2, JobID: jobID,
 		Canvas: Canvas{Width: width, Height: height, FPSNum: fpsNum, FPSDen: fpsDen, DurationFrames: duration},
 		Output: Output{Path: "result.mp4", Format: "mp4", Codec: "h264"}}
 }
@@ -132,7 +132,9 @@ func CompileIfSemantic(raw []byte) ([]byte, []Asset, bool, error) {
 		return nil, nil, false, fmt.Errorf("overlay: decode plan: %w", err)
 	}
 	if probe.SchemaVersion == "" {
-		// Concrete chronon.render-plan.v1 → pass through untouched.
+		// Concrete Chronon plans remain a byte-for-byte compatibility path.
+		// New authoring/typography callers must use the semantic contract above;
+		// this branch only preserves existing worker jobs and test fixtures.
 		return raw, nil, false, nil
 	}
 	if probe.SchemaVersion == SemanticSchema {
