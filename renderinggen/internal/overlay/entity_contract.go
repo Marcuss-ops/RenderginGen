@@ -24,6 +24,28 @@ type FastEntityOverlay struct {
 	Scale      float64   `json:"scale,omitempty"`     // scale multiplier (default 1.0)
 }
 
+// NormalizeEntityOverlays canonicalizes the legacy fast-path input before it
+// enters the shared renderer contract. In particular, animation aliases are
+// reduced to the names understood by the RenderingGen motion registry.
+func NormalizeEntityOverlays(overlays []FastEntityOverlay) ([]FastEntityOverlay, error) {
+	out := make([]FastEntityOverlay, len(overlays))
+	copy(out, overlays)
+	for i := range out {
+		out[i].Type = strings.ToLower(strings.TrimSpace(out[i].Type))
+		if out[i].Type != "text" && out[i].Type != "image" {
+			return nil, fmt.Errorf("entity_contract: unsupported overlay type %q", out[i].Type)
+		}
+		out[i].Animation = strings.ToLower(strings.TrimSpace(out[i].Animation))
+		if out[i].Animation == "none" || out[i].Animation == "" {
+			out[i].Animation = "static"
+		}
+		if out[i].EndFrame <= out[i].StartFrame {
+			return nil, fmt.Errorf("entity_contract: overlay %d has non-positive duration", i)
+		}
+	}
+	return out, nil
+}
+
 // Default video contract parameters matching refactored pipeline standards.
 const (
 	DefaultFPSNum = 24
@@ -32,10 +54,12 @@ const (
 	DefaultHeight = 1080
 )
 
-// BuildPlanFromEntityOverlays constructs a concrete chronon.render-plan.v1 from a background video
+// CompileFastEntityOverlays is the transitional adapter for FastEntityOverlay.
+// It is kept outside the semantic compiler while existing fast-path producers
+// migrate to the common semantic input contract.
 // and a sequence of fast entity overlays. It emits only generic layer data and
 // tracks; animation names are retained solely as debug metadata.
-func genericAnimation(name string, duration int64) *LayerAnimation {
+func fastEntityAnimation(name string, duration int64) *LayerAnimation {
 	enter := int(duration)
 	if enter > 12 {
 		enter = 12
@@ -43,19 +67,16 @@ func genericAnimation(name string, duration int64) *LayerAnimation {
 	if enter < 1 {
 		enter = 1
 	}
-	track := AnimationTrack{Property: "opacity", Easing: "out_cubic", Keyframes: []AnimationKeyframe{{Frame: 0, Value: 0}, {Frame: int64(enter), Value: 1}}}
-	switch name {
-	case "slide", "slide_in", "slide_left", "slide_up":
-		track.Property = "position_y"
-		track.Keyframes[0].Value, track.Keyframes[1].Value = 40, 0
-	case "scale", "scale_in", "scale_drop", "pop":
-		track.Property = "scale"
-		track.Keyframes[0].Value = 0.85
+	if name == "slide" || name == "slide_left" || name == "slide_up" {
+		name = "reveal_from_bottom"
 	}
-	return &LayerAnimation{Unit: "layer", EnterDurationFrames: enter, Tracks: []AnimationTrack{track}}
+	if name == "scale" || name == "scale_in" || name == "pop" {
+		name = "scale_drop"
+	}
+	return &LayerAnimation{Tracks: resolveMotion(MotionDefinition{Name: name, Unit: "layer", Enter: enter})}
 }
 
-func BuildPlanFromEntityOverlays(
+func CompileFastEntityOverlays(
 	jobID string,
 	width, height int,
 	fpsNum, fpsDen int,
@@ -63,6 +84,11 @@ func BuildPlanFromEntityOverlays(
 	bgVideoPath string,
 	overlays []FastEntityOverlay,
 ) (*Plan, error) {
+	var err error
+	overlays, err = NormalizeEntityOverlays(overlays)
+	if err != nil {
+		return nil, err
+	}
 	if width <= 0 {
 		width = DefaultWidth
 	}
@@ -79,23 +105,7 @@ func BuildPlanFromEntityOverlays(
 		return nil, fmt.Errorf("entity_contract: total duration must be positive")
 	}
 
-	plan := &Plan{
-		Schema:  "chronon.render-plan",
-		Version: 1,
-		JobID:   jobID,
-		Canvas: Canvas{
-			Width:          width,
-			Height:         height,
-			FPSNum:         fpsNum,
-			FPSDen:         fpsDen,
-			DurationFrames: totalDurationFrames,
-		},
-		Output: Output{
-			Path:   "result.mp4",
-			Format: "mp4",
-			Codec:  "h264",
-		},
-	}
+	plan := newPlan(jobID, width, height, fpsNum, fpsDen, totalDurationFrames)
 
 	// Add background video layer
 	if bgVideoPath != "" {
@@ -131,7 +141,7 @@ func BuildPlanFromEntityOverlays(
 		}
 		var layerAnim *LayerAnimation
 		if animationName != "static" {
-			layerAnim = genericAnimation(animationName, duration)
+			layerAnim = fastEntityAnimation(animationName, duration)
 		}
 
 		switch strings.ToLower(strings.TrimSpace(ov.Type)) {
@@ -139,9 +149,13 @@ func BuildPlanFromEntityOverlays(
 			if ov.Asset == "" {
 				return nil, fmt.Errorf("entity_contract: overlay %d (image) requires asset path", i)
 			}
-			boxSize := 260
+			boxWidth, boxHeight := 260, 260
 			if ov.Size > 0 {
-				boxSize = int(ov.Size)
+				boxWidth = int(ov.Size)
+				boxHeight = int(ov.Size)
+				if strings.EqualFold(ov.Position, "center") && ov.Size == 200 {
+					boxHeight = 100
+				}
 			}
 			pos := ov.Position
 			if pos == "" {
@@ -150,28 +164,27 @@ func BuildPlanFromEntityOverlays(
 
 			// Entity overlays expose only generic absolute geometry. Editorial
 			// anchor resolution belongs to the common RenderingGen compiler.
-			posX := float64(width-boxSize) / 2.0
-			posY := float64(height-boxSize) / 2.0
+			posX := float64(width-boxWidth) / 2.0
+			posY := float64(height-boxHeight) / 2.0
 			switch strings.ToLower(pos) {
 			case "image_left", "left":
 				posX = 0
 			case "image_right", "right":
-				posX = float64(width - boxSize)
+				posX = float64(width - boxWidth)
 			}
 			if len(ov.Translate) == 2 {
 				posX += ov.Translate[0]
 				posY += ov.Translate[1]
 			}
-			if ov.Scale > 0 {
-				boxSize = int(float64(boxSize) * ov.Scale)
-			}
+
+			// Positions are top-left coordinates in the generic contract.
 
 			imgLayer := Layer{
 				ID:             layerID,
 				Type:           "image",
 				Asset:          ov.Asset,
-				BoxWidth:       boxSize,
-				BoxHeight:      boxSize,
+				BoxWidth:       boxWidth,
+				BoxHeight:      boxHeight,
 				Fit:            "contain",
 				Position:       []float64{posX, posY},
 				StartFrame:     ov.StartFrame,
@@ -191,7 +204,7 @@ func BuildPlanFromEntityOverlays(
 			}
 			font := ov.Font
 			if font == "" {
-				font = "assets/fonts/Poppins-Bold.ttf"
+				return nil, fmt.Errorf("entity_contract: overlay %d (text) requires font asset", i)
 			}
 			color := ov.Color
 			if len(color) != 4 {
@@ -202,9 +215,7 @@ func BuildPlanFromEntityOverlays(
 				ID:             layerID,
 				Type:           "text",
 				Text:           ov.Text,
-				Font:           font,
-				FontSize:       fontSize,
-				Color:          color,
+				Style:          &LayerStyle{FontFamily: font, FontWeight: 700, FontSize: fontSize, Fill: rgbaHex(color)},
 				StartFrame:     ov.StartFrame,
 				DurationFrames: duration,
 				Opacity:        opacity,

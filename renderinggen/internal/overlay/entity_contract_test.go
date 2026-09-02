@@ -4,8 +4,8 @@ import (
 	"testing"
 )
 
-func TestBuildPlanFromEntityOverlaysCenteredGeometryAndTracks(t *testing.T) {
-	plan, err := BuildPlanFromEntityOverlays("center", 1920, 1080, 24, 1, 24, "", []FastEntityOverlay{{Type: "image", StartFrame: 0, EndFrame: 24, Asset: "assets/x.png", Size: 200, Animation: "fade"}})
+func TestCompileFastEntityOverlaysCenteredGeometryAndTracks(t *testing.T) {
+	plan, err := CompileFastEntityOverlays("center", 1920, 1080, 24, 1, 24, "", []FastEntityOverlay{{Type: "image", StartFrame: 0, EndFrame: 24, Asset: "assets/x.png", Size: 200, Animation: "fade"}})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -16,8 +16,8 @@ func TestBuildPlanFromEntityOverlaysCenteredGeometryAndTracks(t *testing.T) {
 	if layer.Position[0] != 860 || layer.Position[1] != 440 {
 		t.Fatalf("center position=%v, want [860 440]", layer.Position)
 	}
-	if layer.Preset != "" {
-		t.Fatalf("preset leaked into concrete entity plan: %q", layer.Preset)
+	if layer.BoxWidth != 200 || layer.BoxHeight != 200 {
+		t.Fatalf("center size=%dx%d, want 200x200", layer.BoxWidth, layer.BoxHeight)
 	}
 	if layer.Animation == nil || len(layer.Animation.Tracks) != 1 || layer.Animation.Tracks[0].Property != "opacity" {
 		t.Fatalf("generic tracks=%+v", layer.Animation)
@@ -28,6 +28,7 @@ func TestFastEntityOverlay_BuildPlan(t *testing.T) {
 	overlays := []FastEntityOverlay{
 		{
 			Type:       "text",
+			Font:       "assets/fonts/Poppins-Bold.ttf",
 			StartFrame: 0,
 			EndFrame:   120,
 			Position:   "lower_third",
@@ -47,12 +48,13 @@ func TestFastEntityOverlay_BuildPlan(t *testing.T) {
 			StartFrame: 240,
 			EndFrame:   360,
 			Position:   "safe_area",
+			Font:       "assets/fonts/Poppins-Bold.ttf",
 			Text:       "Tesla",
 			Animation:  "slide",
 		},
 	}
 
-	plan, err := BuildPlanFromEntityOverlays(
+	plan, err := CompileFastEntityOverlays(
 		"test-job-fast-entity",
 		1920, 1080,
 		24, 1,

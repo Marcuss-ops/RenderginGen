@@ -95,7 +95,7 @@ func main() {
 	}
 
 	// 2. Build Plan via Contract (24 fps canonical contract)
-	plan, err := overlay.BuildPlanFromEntityOverlays(
+	plan, err := overlay.CompileFastEntityOverlays(
 		"actor-pale-olive-24fps-e2e",
 		1920, 1080,
 		24, 1,
