@@ -157,6 +157,10 @@ type semanticPlan struct {
 	Height          int                 `json:"height"`
 	FPSNum          int                 `json:"fps_num"`
 	FPSDen          int                 `json:"fps_den"`
+	// DurationMS is the explicit clip duration. When provided it seeds the
+	// canvas duration before items are processed; items can only extend it.
+	// Required when items is empty (clip render without entity overlays).
+	DurationMS      int64               `json:"duration_ms,omitempty"`
 	OutputProfileID string              `json:"output_profile_id"`
 	StyleProfile    string              `json:"style_profile"`
 	Background      *semanticBackground `json:"background,omitempty"`
@@ -257,10 +261,20 @@ type concreteCanvas struct {
 	DurationFrames int64 `json:"duration_frames"`
 }
 type concreteOutput struct {
-	Path      string `json:"path"`
-	Format    string `json:"format"`
-	Codec     string `json:"codec"`
-	ProfileID string `json:"profile_id,omitempty"`
+	Path      string         `json:"path"`
+	Format    string         `json:"format"`
+	Codec     string         `json:"codec"`
+	ProfileID string         `json:"profile_id,omitempty"`
+	Audio     *concreteAudio `json:"audio,omitempty"`
+}
+
+// concreteAudio carries the audio policy in the Chronon render plan so the
+// renderer knows whether to copy or transcode the source audio stream.
+type concreteAudio struct {
+	Mode       string `json:"mode,omitempty"`
+	Codec      string `json:"codec,omitempty"`
+	SampleRate int    `json:"sample_rate,omitempty"`
+	Channels   int    `json:"channels,omitempty"`
 }
 type concreteLayer struct {
 	ID             string                 `json:"id"`
@@ -338,20 +352,51 @@ func compileSemantic(raw []byte) ([]byte, []Asset, error) {
 	if src.PlanID == "" || src.VideoID == "" || src.Width <= 0 || src.Height <= 0 || src.FPSNum <= 0 || src.FPSDen <= 0 {
 		return nil, nil, fmt.Errorf("overlay: semantic plan requires plan_id, video_id and positive canvas/fps")
 	}
-	if len(src.Items) == 0 {
-		return nil, nil, fmt.Errorf("overlay: semantic plan has no items")
+	// A plan must have at least one renderable primitive: a source clip, a
+	// background, or an overlay item. An empty plan with nothing to render is
+	// always rejected fail-closed.
+	if src.Source == nil && src.Background == nil && len(src.Items) == 0 {
+		return nil, nil, fmt.Errorf("overlay: semantic plan has no renderable primitives (source, background or items required)")
 	}
 	plan := concretePlan{Schema: "chronon.render-plan.v2", Version: 2, JobID: src.PlanID,
 		Canvas: concreteCanvas{Width: src.Width, Height: src.Height, FPSNum: src.FPSNum, FPSDen: src.FPSDen},
 		Output: concreteOutput{Path: "result.mp4", Format: "mp4", Codec: "h264", ProfileID: src.OutputProfileID}}
+
+	// Seed canvas duration from the explicit duration_ms when provided. Items
+	// can extend it but cannot shrink it. For clip renders with items:[] this
+	// is the only source of duration; the compiler rejects zero duration at the
+	// end of the function.
+	if src.DurationMS > 0 {
+		startFrame, endFrame := msFrames(0, src.DurationMS, int64(src.FPSNum), int64(src.FPSDen))
+		_ = startFrame
+		plan.Canvas.DurationFrames = endFrame
+	}
+
+	// Audio policy lowering. The semantic audio block carries the policy
+	// exactly as PipelineGen resolved it; the compiler forwards it verbatim.
+	if src.Audio != nil {
+		plan.Output.Audio = &concreteAudio{
+			Mode:       src.Audio.Mode,
+			Codec:      src.Audio.Codec,
+			SampleRate: src.Audio.SampleRate,
+			Channels:   src.Audio.Channels,
+		}
+	}
+
 	assetPaths := map[string]string{}
 	var assets []Asset
 	if bg := src.Background; bg != nil {
 		kind := strings.ToLower(strings.TrimSpace(bg.Kind))
-		if kind != "color" && kind != "image" && kind != "video" {
+		// blur_cover is a clip-render-specific fit hint; store it as "video"
+		// type in the layer with the fit preserved.
+		layerKind := kind
+		if kind == "blur_cover" {
+			layerKind = "video"
+		}
+		if layerKind != "color" && layerKind != "image" && layerKind != "video" {
 			return nil, nil, fmt.Errorf("overlay: unsupported background kind %q", bg.Kind)
 		}
-		if kind == "color" {
+		if layerKind == "color" {
 			if len(bg.Color) != 4 {
 				return nil, nil, fmt.Errorf("overlay: background color requires RGBA[4]")
 			}
@@ -369,20 +414,20 @@ func compileSemantic(raw []byte) ([]byte, []Asset, error) {
 				assets = append(assets, Asset{Hash: strings.ToLower(ref.SHA256), LogicalPath: path})
 			}
 		}
-		layer := concreteLayer{ID: "background", Type: kind, BoxWidth: src.Width, BoxHeight: src.Height,
+		layer := concreteLayer{ID: "background", Type: layerKind, BoxWidth: src.Width, BoxHeight: src.Height,
 			Size: []float64{float64(src.Width), float64(src.Height)},
 			Fit:  bg.Fit, StartFrame: 0}
-		if kind != "color" && layer.Fit == "" {
+		if layerKind != "color" && layer.Fit == "" {
 			layer.Fit = "cover"
 		}
 		if bg.Opacity != nil {
 			layer.Opacity = *bg.Opacity
 		}
-		if kind == "color" {
+		if layerKind == "color" {
 			layer.Color = append([]float64(nil), bg.Color...)
 		} else {
 			ref := bg.AssetRefs[0]
-			if kind == "video" {
+			if layerKind == "video" {
 				layer.Source = assetPaths[ref.ID]
 			} else {
 				layer.Asset = assetPaths[ref.ID]
@@ -410,12 +455,95 @@ func compileSemantic(raw []byte) ([]byte, []Asset, error) {
 			}
 		}
 	}
-	// Source is a first-class semantic primitive and lowers into the same
-	// concrete layer graph as every other clip element.
+
+	// Source clip — lowers to a full-canvas video layer. When foreground_scale
+	// is set the source is scaled and centered on the canvas.
+	var sourceLayerIndex = -1
 	if src.Source != nil && src.Source.AssetID != "" {
 		path := semanticAssetPath(semanticAssetRef{ID: src.Source.AssetID, SHA256: src.Source.SHA256})
-		plan.Layers = append(plan.Layers, concreteLayer{ID: "source", Type: "video", Source: path, StartFrame: 0})
+		if _, ok := assetPaths[src.Source.AssetID]; !ok {
+			assetPaths[src.Source.AssetID] = path
+			assets = append(assets, Asset{Hash: strings.ToLower(src.Source.SHA256), LogicalPath: path})
+		}
+		srcLayer := concreteLayer{ID: "source", Type: "video", Source: path, StartFrame: 0}
+		// Foreground scale: compute scaled geometry and center on canvas.
+		// ForegroundScale == 0 or 100 means full-canvas (no scaling).
+		if src.ForegroundScale > 0 && src.ForegroundScale < 100 {
+			scaledW := int(math.Round(float64(src.Width) * float64(src.ForegroundScale) / 100))
+			scaledH := int(math.Round(float64(src.Height) * float64(src.ForegroundScale) / 100))
+			offsetX := float64(src.Width-scaledW) / 2
+			offsetY := float64(src.Height-scaledH) / 2
+			srcLayer.Size = []float64{float64(scaledW), float64(scaledH)}
+			srcLayer.Position = []float64{offsetX, offsetY}
+		}
+		sourceLayerIndex = len(plan.Layers)
+		plan.Layers = append(plan.Layers, srcLayer)
 	}
+
+	// Subtitles — lowers to a subtitle layer referencing the ASS asset.
+	if sub := src.Subtitles; sub != nil {
+		if len(sub.AssetRefs) == 0 {
+			return nil, nil, fmt.Errorf("overlay: subtitles require at least one asset_ref")
+		}
+		ref := sub.AssetRefs[0]
+		if ref.ID == "" || len(ref.SHA256) != 64 || strings.Trim(ref.SHA256, "0123456789abcdefABCDEF") != "" {
+			return nil, nil, fmt.Errorf("overlay: subtitle has invalid asset ref %q", ref.ID)
+		}
+		path := assetPaths[ref.ID]
+		if path == "" {
+			path = semanticAssetPath(ref)
+			assetPaths[ref.ID] = path
+			assets = append(assets, Asset{Hash: strings.ToLower(ref.SHA256), LogicalPath: path})
+		}
+		mode := sub.Mode
+		if mode == "" {
+			mode = "burn"
+		}
+		plan.Layers = append(plan.Layers, concreteLayer{
+			ID: "subtitles", Type: "subtitle", Asset: path,
+			// StyleID is carried in the Fit field as a convention so
+			// Chronon's subtitle renderer can select the correct style sheet.
+			Fit: sub.StyleID, StartFrame: 0,
+			// DurationFrames is resolved after the full canvas duration is
+			// computed; it is patched below.
+		})
+	}
+
+	// Watermark — lowers to a text or image layer at the requested position.
+	if wm := src.Watermark; wm != nil {
+		wmLayer := concreteLayer{ID: "watermark", StartFrame: 0}
+		if wm.Opacity != nil {
+			wmLayer.Opacity = *wm.Opacity
+		}
+		// Resolve position → concrete [x, y] pixel coordinate.
+		wmLayer.Position = resolveWatermarkPosition(wm.Position, src.Width, src.Height)
+		if wm.Text != "" && len(wm.AssetRefs) == 0 {
+			// Text-only watermark.
+			wmLayer.Type = "text"
+			wmLayer.Text = wm.Text
+		} else if len(wm.AssetRefs) > 0 {
+			ref := wm.AssetRefs[0]
+			if ref.ID == "" || len(ref.SHA256) != 64 || strings.Trim(ref.SHA256, "0123456789abcdefABCDEF") != "" {
+				return nil, nil, fmt.Errorf("overlay: watermark has invalid asset ref %q", ref.ID)
+			}
+			path := assetPaths[ref.ID]
+			if path == "" {
+				path = semanticAssetPath(ref)
+				assetPaths[ref.ID] = path
+				assets = append(assets, Asset{Hash: strings.ToLower(ref.SHA256), LogicalPath: path})
+			}
+			wmLayer.Type = "image"
+			wmLayer.Asset = path
+			if wm.Text != "" {
+				wmLayer.Text = wm.Text
+			}
+		} else {
+			return nil, nil, fmt.Errorf("overlay: watermark requires text or asset_refs")
+		}
+		plan.Layers = append(plan.Layers, wmLayer)
+	}
+
+	// Item overlay layers.
 	for _, item := range src.Items {
 		start, end := msFrames(item.StartMS, item.EndMS, int64(src.FPSNum), int64(src.FPSDen))
 		if item.ID == "" || item.Template == "" || item.StartMS < 0 || item.EndMS <= item.StartMS {
@@ -493,11 +621,27 @@ func compileSemantic(raw []byte) ([]byte, []Asset, error) {
 			plan.Canvas.DurationFrames = end
 		}
 	}
+
+	// Patch background duration to match the final canvas duration.
 	if len(plan.Layers) > 0 && plan.Layers[0].ID == "background" {
 		plan.Layers[0].DurationFrames = plan.Canvas.DurationFrames
 	}
+	// Patch source layer duration — it spans the full clip.
+	if sourceLayerIndex >= 0 {
+		plan.Layers[sourceLayerIndex].DurationFrames = plan.Canvas.DurationFrames
+	}
+	// Patch subtitle and watermark layers — they span the full clip.
+	for i := range plan.Layers {
+		if plan.Layers[i].DurationFrames == 0 {
+			switch plan.Layers[i].ID {
+			case "subtitles", "watermark":
+				plan.Layers[i].DurationFrames = plan.Canvas.DurationFrames
+			}
+		}
+	}
+
 	if plan.Canvas.DurationFrames <= 0 {
-		return nil, nil, fmt.Errorf("overlay: semantic plan duration is zero")
+		return nil, nil, fmt.Errorf("overlay: semantic plan duration is zero — provide duration_ms or at least one item with end_ms > 0")
 	}
 	// Stable asset order makes prepared-plan fingerprints reproducible.
 	sort.Slice(assets, func(i, j int) bool { return assets[i].LogicalPath < assets[j].LogicalPath })
@@ -507,6 +651,30 @@ func compileSemantic(raw []byte) ([]byte, []Asset, error) {
 	}
 	return compiled, assets, nil
 }
+
+// resolveWatermarkPosition converts a semantic position name to a concrete
+// [x, y] pixel coordinate on the canvas. The coordinate is the top-left
+// corner of a nominal 200×80 watermark box; callers with different sizes
+// should override via the layer's Size field.
+func resolveWatermarkPosition(position string, canvasW, canvasH int) []float64 {
+	const wmW, wmH, margin = 200, 80, 24
+	switch strings.ToLower(strings.TrimSpace(position)) {
+	case "top_left":
+		return []float64{margin, margin}
+	case "top_right":
+		return []float64{float64(canvasW - wmW - margin), margin}
+	case "center":
+		return []float64{float64(canvasW-wmW) / 2, float64(canvasH-wmH) / 2}
+	case "bottom_left":
+		return []float64{margin, float64(canvasH - wmH - margin)}
+	case "bottom_right":
+		return []float64{float64(canvasW - wmW - margin), float64(canvasH - wmH - margin)}
+	default:
+		// Unknown position: center as safe fallback.
+		return []float64{float64(canvasW-wmW) / 2, float64(canvasH-wmH) / 2}
+	}
+}
+
 
 func animationForMotion(id string, params map[string]any, textValue string, duration int64) (*concreteAnimation, error) {
 	plugin, err := motion.Registry.Resolve(id)
