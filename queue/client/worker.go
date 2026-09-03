@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -11,6 +12,12 @@ import (
 	"strings"
 	"time"
 )
+
+// ErrLeaseConflict wraps queue report errors that returned 409: the job is no
+// longer owned by the reporting worker (lease expired and requeued, completed,
+// or claimed elsewhere). It is a permanent condition — no retry can recover a
+// lease held by someone else.
+var ErrLeaseConflict = errors.New("queue: lease conflict")
 
 // ClaimedJob is the payload returned to a worker on a successful claim. It is
 // a subset of Job plus the lease the worker must hold (and renew) while
@@ -203,6 +210,20 @@ func (c *Client) Renew(ctx context.Context, id, workerID string) error {
 	return c.report(ctx, id, workerID, "renew", nil)
 }
 
+// Progress is the per-job render progress a worker reports while rendering.
+type Progress struct {
+	FramesDone  int `json:"frames_done"`
+	TotalFrames int `json:"frames_total,omitempty"`
+}
+
+// ReportProgress records render progress for a running job owned by workerID.
+// The queue stores it so GET /jobs/{id} exposes frames_done/last_frame_at
+// without asking the worker; a report from a worker that no longer owns the
+// lease is rejected (409), never applied.
+func (c *Client) ReportProgress(ctx context.Context, id, workerID string, p Progress) error {
+	return c.report(ctx, id, workerID, "progress", p)
+}
+
 // WorkerStatus represents the lifecycle state of a registered worker.
 type WorkerStatus string
 
@@ -373,7 +394,18 @@ func (c *Client) report(ctx context.Context, id, workerID, action string, payloa
 
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusNoContent {
 		raw, _ := io.ReadAll(resp.Body)
-		return fmt.Errorf("queue %s: HTTP %d: %s", action, resp.StatusCode, strings.TrimSpace(string(raw)))
+		err := fmt.Errorf("queue %s: HTTP %d: %s", action, resp.StatusCode, strings.TrimSpace(string(raw)))
+		// A 409 on renew means the lease is definitively gone (expired and
+		// requeued, completed, or owned by another worker). Callers use the
+		// sentinel to abort immediately instead of retrying a lost lease.
+		if resp.StatusCode == http.StatusConflict {
+			return fmt.Errorf("%w: %v", ErrLeaseConflict, err)
+		}
+		return err
 	}
 	return nil
 }
+
+// ErrLeaseConflict wraps queue report errors that returned 409: the job is no
+// longer owned by the reporting worker. errors.Is(err, ErrLeaseConflict) is a
+// permanent condition — no retry can recover a lease held by someone else.

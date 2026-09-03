@@ -20,11 +20,24 @@ type SQLiteRecorder struct {
 }
 
 // NewSQLite opens (or creates) the artifact ledger at path.
+//
+// Production concurrency notes: the worker's post pool records artifacts from
+// several goroutines at once. The ledger is therefore opened with WAL
+// journaling and a busy_timeout so concurrent writers wait instead of failing
+// with "database is locked" (modernc.org/sqlite defaults to busy_timeout=0,
+// which fails immediately), and the pool is capped at one connection so all
+// writes serialize on a single session — a failed ledger write fails the job,
+// so a spurious lock error must never be possible.
 func NewSQLite(path string) (*SQLiteRecorder, error) {
-	db, err := sql.Open("sqlite", path)
+	dsn := "file:" + path + "?_pragma=busy_timeout(10000)&_pragma=journal_mode(WAL)&_pragma=synchronous(NORMAL)&_pragma=foreign_keys(ON)"
+	db, err := sql.Open("sqlite", dsn)
 	if err != nil {
 		return nil, fmt.Errorf("artifactdb: open %s: %w", path, err)
 	}
+	// One connection serializes every statement; busy_timeout then covers the
+	// (rare) contention against an external reader of the same file.
+	db.SetMaxOpenConns(1)
+	db.SetMaxIdleConns(1)
 	if _, err := db.Exec(schema); err != nil {
 		db.Close()
 		return nil, fmt.Errorf("artifactdb: create schema: %w", err)
@@ -43,7 +56,8 @@ func NewSQLite(path string) (*SQLiteRecorder, error) {
 // Close releases the ledger.
 func (s *SQLiteRecorder) Close() error { return s.db.Close() }
 
-// Record upserts one artifact row, keyed by job ID.
+// Record upserts one artifact row, keyed by job ID. Concurrent calls are
+// serialized by the single connection opened in NewSQLite.
 func (s *SQLiteRecorder) Record(ctx context.Context, rec ArtifactRecord) error {
 	if rec.CreatedAt.IsZero() {
 		rec.CreatedAt = time.Now().UTC()

@@ -278,6 +278,13 @@ func (s *Service) Retry(id string) error {
 	return nil
 }
 
+// SetProgress records the worker's render progress for a running job. The
+// queue is the source of truth: progress survives worker restarts and is
+// visible through GET /jobs/{id} without asking the worker directly.
+func (s *Service) SetProgress(id, workerID string, p model.Progress) error {
+	return s.repo.SetProgress(id, workerID, p)
+}
+
 // ValidateChildren enforces the parent chunk contract: exact expected count,
 // indices 0..N-1, contiguous half-open frame ranges, and completed artifacts.
 func ValidateChildren(children []*model.Job, expected int64, start, end int64) error {

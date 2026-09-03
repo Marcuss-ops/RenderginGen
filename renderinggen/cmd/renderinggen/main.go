@@ -7,6 +7,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"fmt"
 	"log"
@@ -24,9 +25,10 @@ import (
 	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/gpu"
 	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/health"
 	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/processor"
+	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/progresspush"
 	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/queue"
 	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/storage"
-	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/version"
+	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/workspace"
 )
 
 func main() {
@@ -40,6 +42,26 @@ func main() {
 	if err != nil {
 		log.Fatalf("config: %v", err)
 	}
+
+	// Reap workspaces left behind by a crashed worker run: without this the
+	// jobs root (often /dev/shm, i.e. RAM) grows unboundedly. Active
+	// workspaces carry a lease marker and are skipped; anything older than
+	// one hour is removed. Parent artifacts have their own cleanup (see
+	// ParentFinalizer.Finalize).
+	go func() {
+		ticker := time.NewTicker(10 * time.Minute)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				if err := workspace.CleanupStale(cfg.Workspace.Root, time.Hour); err != nil {
+					log.Printf("workspace stale cleanup: %v", err)
+				}
+			}
+		}
+	}()
 
 	// 1. Detect GPU.
 	gpuInfo := gpu.Detect(cfg.GPU.Device)
@@ -174,6 +196,16 @@ func main() {
 		Status:        "ready",
 	}
 	healthServer := health.NewServer(cfg.Health.Addr, healthInfo)
+	// Live render progress: the tracker receives every frame milestone the
+	// renderer prints; /progress exposes it locally and the pusher relays a
+	// throttled snapshot to the queue so GET /jobs/{id} shows real position
+	// instead of an opaque RUNNING/0% for the whole render.
+	progressTracker := chronon.NewProgressTracker()
+	proc.SetProgressTracker(progressTracker)
+	healthServer.SetProgressFunc(progressTracker.Current)
+	go func() {
+		progresspush.New(queueClient, progressTracker, progresspush.DefaultInterval).Run(ctx)
+	}()
 	go func() {
 		if err := healthServer.Run(ctx); err != nil {
 			log.Fatalf("health: %v", err)
@@ -357,9 +389,14 @@ func runGPULane(ctx context.Context, q *queue.Client, proc *processor.Processor,
 			// Chronon is the long-running stage. Keep the queue lease alive
 			// while it renders; renewing only during prepare/post would let a
 			// normal software render expire and be claimed a second time.
+			renderStart := time.Now()
 			gpuErr := withLeaseVoid(ctx, p.job, q, func(jobCtx context.Context) error {
 				return proc.RunGPU(jobCtx, p.prepared)
 			})
+			// Duty-cycle telemetry: record this render's end so the next job's
+			// gpu_gap_us metric measures the true dead time between renders.
+			processor.PutGPURenderEnd(time.Now())
+			_ = renderStart
 			select {
 			case doneCh <- renderOutcome{job: p.job, prepared: p.prepared, err: gpuErr}:
 			case <-ctx.Done():
@@ -479,10 +516,15 @@ func sleepCtx(ctx context.Context, d time.Duration) bool {
 	}
 }
 
-// withLease runs fn while renewing the job's lease in the background. If the
-// lease cannot be renewed (e.g. it expired and the job was requeued to another
-// worker), the job context is cancelled so the work aborts instead of
+// withLease runs fn while renewing the job's lease in the background.
+// If the lease cannot be renewed (e.g. it expired and the job was requeued to
+// another worker), the job context is cancelled so the work aborts instead of
 // double-processing.
+//
+// A transient renewal failure (network blip, queue restart) must not abort a
+// render that took minutes: each renewal attempt is retried with backoff, and
+// the job only aborts when the queue definitively reports the lease as lost
+// (a 409-class conflict from the queue) or every retry has been exhausted.
 func withLeaseVoid(ctx context.Context, job *queue.Job, q *queue.Client, fn func(context.Context) error) error {
 	if job.Lease <= 0 {
 		return fn(ctx)
@@ -501,15 +543,51 @@ func withLeaseVoid(ctx context.Context, job *queue.Job, q *queue.Client, fn func
 			case <-jobCtx.Done():
 				return
 			case <-ticker.C:
-				if err := q.Renew(jobCtx, job.ID); err != nil {
-					log.Printf("job %s: lease renew failed, aborting: %v", job.ID, err)
-					cancel()
-					return
+				if renewWithRetry(jobCtx, job.ID, q, interval) {
+					continue
 				}
+				log.Printf("job %s: lease renew failed permanently, aborting", job.ID)
+				cancel()
+				return
 			}
 		}
 	}()
 	return fn(jobCtx)
+}
+
+// renewWithRetry attempts one lease renewal with bounded backoff retries.
+// It reports whether the lease is still held: true after a successful renew,
+// false when the queue reports the job is no longer owned by this worker
+// (permanent — the job was requeued elsewhere) or the retry budget is spent.
+// Cancellation of ctx always reports false immediately.
+func renewWithRetry(ctx context.Context, jobID string, q *queue.Client, interval time.Duration) bool {
+	const maxAttempts = 3
+	backoff := 2 * time.Second
+	for attempt := 1; ; attempt++ {
+		err := q.Renew(ctx, jobID)
+		if err == nil {
+			return true
+		}
+		// A conflict means the lease is definitively gone (expired and
+		// requeued, completed, or owned by another worker): no retry helps.
+		var conflict queue.RenewConflictError
+		if errors.As(err, &conflict) {
+			return false
+		}
+		if attempt >= maxAttempts || ctx.Err() != nil {
+			return false
+		}
+		log.Printf("job %s: lease renew attempt %d/%d failed, retrying: %v", jobID, attempt, maxAttempts, err)
+		select {
+		case <-ctx.Done():
+			return false
+		case <-time.After(backoff):
+		}
+		backoff *= 2
+		if backoff >= interval {
+			backoff = interval
+		}
+	}
 }
 
 // withLease is withLeaseVoid for functions returning an artifact.

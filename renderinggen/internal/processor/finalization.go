@@ -76,6 +76,11 @@ func (f *ParentFinalizer) Finalize(ctx context.Context, parentID string, expecte
 		inputs = append(inputs, path)
 	}
 	output := filepath.Join(f.outputDir, parentID+".mp4")
+	// The assembled parent is a temporary staging file: it is uploaded to L3
+	// (and optionally Drive) below and must never accumulate on the worker.
+	// The workspace root is frequently /dev/shm — i.e. RAM — so leaving the
+	// assembled parent behind is a memory leak, not just a disk one.
+	defer os.Remove(output)
 	if err := f.assembler.Assemble(ctx, chronon.AssembleRequest{Inputs: inputs, Output: output}); err != nil {
 		return false, queue.Artifact{}, err
 	}

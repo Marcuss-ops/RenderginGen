@@ -7,6 +7,7 @@
 //	POST /jobs/{id}/complete    report completion
 //	POST /jobs/{id}/fail        report failure (requeue or fail permanently)
 //	POST /jobs/{id}/renew       extend the lease during a long render
+//	POST /jobs/{id}/progress    report render progress (frames done/total)
 //	GET  /jobs/depth            queue depth/stats (autoscaling)
 //	GET  /health                health check
 package server
@@ -93,6 +94,8 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /jobs/{parent}/{lang}/retry", s.retry)
 	mux.HandleFunc("POST /jobs/{id}/renew", s.renew)
 	mux.HandleFunc("POST /jobs/{parent}/{lang}/renew", s.renew)
+	mux.HandleFunc("POST /jobs/{id}/progress", s.progress)
+	mux.HandleFunc("POST /jobs/{parent}/{lang}/progress", s.progress)
 	mux.HandleFunc("POST /jobs/{id}/finalize/claim", s.claimFinalization)
 	mux.HandleFunc("POST /jobs/{parent}/{lang}/finalize/claim", s.claimFinalization)
 	mux.HandleFunc("GET /jobs/{id}/children", s.children)
@@ -320,6 +323,34 @@ func (s *Server) rendered(w http.ResponseWriter, r *http.Request) {
 	_ = json.NewDecoder(r.Body).Decode(&req)
 
 	if err := s.svc.Rendered(id, req.Worker, req.Data.Artifact, req.Data.Reason); err != nil {
+		http.Error(w, err.Error(), http.StatusConflict)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
+// progress records render progress reported by the lease-owning worker. It
+// mirrors renew's conflict semantics: a stale worker's report is a 409, not a
+// corruption vector.
+func (s *Server) progress(w http.ResponseWriter, r *http.Request) {
+	id := parseJobID(r)
+	var req struct {
+		Worker string         `json:"worker"`
+		Data   model.Progress `json:"data"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	if req.Worker == "" {
+		http.Error(w, "worker is required", http.StatusBadRequest)
+		return
+	}
+	if err := s.svc.SetProgress(id, req.Worker, req.Data); err != nil {
+		if errors.Is(err, repository.ErrNotFound) {
+			http.Error(w, err.Error(), http.StatusNotFound)
+			return
+		}
 		http.Error(w, err.Error(), http.StatusConflict)
 		return
 	}

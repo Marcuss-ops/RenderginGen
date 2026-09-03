@@ -91,6 +91,29 @@ The two projects are versioned independently:
 
 Always use versioned tags, never `latest`.
 
+## Render progress observability
+
+A running render is never an opaque `RUNNING/0%`: the worker parses the
+frame-position lines Chronon prints (`[video] N/M frames`, both pipe-export
+and direct-YUV/NVENC paths) and exposes live position through three channels:
+
+```
+Chronon stdout/stderr
+      │  '[video] 485/1800 frames'
+      ▼
+chronon.ProgressTracker (per-job snapshot: frames_done/total, %, fps,
+      │                 last_frame_at; strictly one GPU lane at a time)
+      ├── GET :8080/progress          worker-local live JSON
+      ├── queue POST /jobs/{id}/progress (throttled 10s, lease-owner checked;
+      │                                 visible in GET /jobs/{id} on the queue)
+      └── artifact ledger metrics      render_frames_done / render_frames_total
+                                       / render_fps (after completion)
+```
+
+A job whose `frames_done` stays flat while `last_frame_at` ages is a stalled
+render; the renderer's own stall watchdog aborts it. GPU memory growth alone
+is never treated as progress evidence.
+
 ## Database
 
 The central queue persists jobs, attempts, artifacts, workers, events and
