@@ -76,7 +76,11 @@ func (c *Client) Binary() string {
 	if override := os.Getenv("CHRONON_BINARY"); override != "" {
 		return override
 	}
-	return filepath.Join(c.Home, "bin", "chronon3d_cli")
+	p := filepath.Join(c.Home, "bin", "chronon3d_cli")
+	if _, err := os.Stat(p); err == nil {
+		return p
+	}
+	return filepath.Join(c.Home, "apps", "chronon3d_cli", "chronon3d_cli")
 }
 
 // Verify checks that the Chronon binary is present and executable.
