@@ -1,7 +1,8 @@
 # RenderingGen
 
-GPU overlay rendering worker, containerized so a worker can run anywhere
-(local GPU, Runpod, Lambda GPU, bare metal) **without changing PipelineGen**.
+GPU overlay rendering worker. On the local GPU host the Queue, worker and
+Chronon run natively; Docker is reserved for PostgreSQL and the object store.
+The image remains available for CI and distributed production workers.
 
 ## Architecture
 
@@ -9,6 +10,13 @@ GPU overlay rendering worker, containerized so a worker can run anywhere
 PipelineGen -> Central Queue -> RenderingGen workers (same image)
                                    -> Artifact Storage (L3)
                                       + local cache (L2 NVMe) + VRAM (L1)
+
+Local runtime:
+
+```
+systemd: PipelineGen + Queue + RenderingGen + Chronon3d -> localhost services
+Docker:  PostgreSQL:5432 + objectstore:9000
+```
 ```
 
 RenderingGen never knows about the provider (Runpod, local, ...). It only
@@ -23,7 +31,9 @@ they are never pushed HTTP requests directly.
 - `queue/` — central pull-based job queue (claim + lease expiry); HTTP contract documented in [`queue/README.md`](queue/README.md)
 - `contracts/` — JSON Schemas for the cross-service wire contracts (`renderinggen.job.v1`)
 - `objectstore/` — central object storage (L3) used by the worker cache
-- `infra/docker/` — `renderinggen-worker` image
+- `infra/docker/` — infrastructure Compose and CI/production worker image
+- `infra/native/` — host-native configs and environment template
+- `infra/systemd/` — host-native Queue and worker units
 - `.github/workflows/` — CI: build, test, publish versioned images on `main`
 
 ## Overlay contract and renderer
@@ -89,16 +99,30 @@ object store. Schema migrations live in `queue/migrations/` and are applied
 automatically at startup when `DATABASE_URL` is set — the in-memory store
 remains the default for local/dev without a database.
 
-`infra/docker/docker-compose.yaml` runs PostgreSQL and wires `DATABASE_URL`
-for the queue service.
+`infra/docker/docker-compose.yaml` runs only PostgreSQL and the object store.
+The native Queue receives `DATABASE_URL` from `/etc/renderinggen/queue.env`.
 
 ## Build & run
 
 ```sh
-# worker (local)
-cd renderinggen
-go build ./cmd/renderinggen
+# Build the native application binaries
+go build -o /usr/local/bin/renderinggen-queue ./queue/cmd/queued
+go build -o /usr/local/bin/renderinggen ./renderinggen/cmd/renderinggen
 ```
+
+Install the checked-in units/configs during host provisioning, then enable:
+
+```sh
+sudo install -D -m 0644 infra/systemd/*.service /etc/systemd/system/
+sudo install -D -m 0644 infra/native/renderinggen-native.yaml /etc/renderinggen/renderinggen.yaml
+sudo install -D -m 0644 infra/native/renderinggen-b.yaml /etc/renderinggen/renderinggen-b.yaml
+sudo systemctl daemon-reload
+sudo systemctl enable --now renderinggen-queue.service renderinggen-worker.service
+```
+
+Start infrastructure separately with `docker compose -f infra/docker/docker-compose.yaml up -d`.
+Changes to Queue or the worker now require only a native rebuild and
+`systemctl restart`, not a container image rebuild.
 
 Images are built in two independent steps — first the renderer runtime from the
 real Chronon3d repo, then the worker on top of it:

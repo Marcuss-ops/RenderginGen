@@ -128,6 +128,7 @@ func (p *Processor) PrepareJob(ctx context.Context, job *queue.Job) (*PreparedJo
 func (p *Processor) RunGPU(ctx context.Context, prepared *PreparedJob) error {
 	phaseStart := time.Now()
 	job := prepared.Job
+	metadata := renderMetadataFromPlan(prepared.Plan)
 	gpuRequired := p.strictNativeBackend ||
 		(p.backend == "vulkan" && p.hardwareEncoder != "" && p.hardwareEncoder != "none")
 	if err := p.renderer.Render(ctx, chronon.RenderRequest{
@@ -143,9 +144,15 @@ func (p *Processor) RunGPU(ctx context.Context, prepared *PreparedJob) error {
 			CompositionRequired: true,
 			PacketCopyAllowed:   true,
 		},
-		FirstFrame: frameStart(job),
-		LastFrame:  frameEndInclusive(job),
-		Output:     chronon.OutputSpec{Codec: "h264"},
+		FirstFrame:  frameStart(job),
+		LastFrame:   frameEndInclusive(job),
+		Output:      chronon.OutputSpec{Codec: "h264"},
+		TotalFrames: int64(metadata.FrameCount),
+		Progress: func(progress chronon.RenderProgress) {
+			log.Printf("job %s progress: stage=chronon_render frames_done=%d frames_total=%d fps=%.2f last_frame_at=%s backend=%s encoder=%s",
+				job.ID, progress.FramesDone, progress.FramesTotal, progress.FPS,
+				progress.At.Format(time.RFC3339Nano), p.backend, p.hardwareEncoder)
+		},
 	}); err != nil {
 		return fmt.Errorf("processor: render: %w", err)
 	}

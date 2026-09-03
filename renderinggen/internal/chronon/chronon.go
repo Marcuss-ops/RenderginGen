@@ -16,6 +16,8 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
+	"strconv"
 	"strings"
 	"sync/atomic"
 	"time"
@@ -40,6 +42,18 @@ type RenderRequest struct {
 	// against the capabilities of the selected device.
 	Requirements ExecutionRequirements
 	Output       OutputSpec
+	TotalFrames  int64
+	Progress     func(RenderProgress)
+}
+
+// RenderProgress is emitted when Chronon reports a frame milestone. It is
+// intentionally transport-neutral; CLI can parse it from process output and
+// IPC implementations can provide it from daemon status messages.
+type RenderProgress struct {
+	FramesDone  int64
+	FramesTotal int64
+	FPS         float64
+	At          time.Time
 }
 
 type ExecutionRequirements struct {
@@ -141,6 +155,11 @@ func (c *Client) Render(ctx context.Context, req RenderRequest) error {
 			line := scanner.Text()
 			lastActivity.Store(time.Now().UnixNano())
 			log.Printf("[chronon %s] %s", prefix, line)
+			if req.Progress != nil {
+				if progress, ok := parseProgressLine(line, req.TotalFrames); ok {
+					req.Progress(progress)
+				}
+			}
 		}
 	}
 
@@ -187,6 +206,25 @@ func (c *Client) Render(ctx context.Context, req RenderRequest) error {
 	}
 	log.Printf("[chronon] render finished successfully in %v", duration.Round(time.Millisecond))
 	return nil
+}
+
+var progressFrameRE = regexp.MustCompile(`(?i)\b(?:frames?_rendered|frames?_done|frame)\s*[:=]\s*(\d+)`)
+var progressFPSRE = regexp.MustCompile(`(?i)\bfps\s*[:=]\s*([0-9]+(?:\.[0-9]+)?)`)
+
+func parseProgressLine(line string, total int64) (RenderProgress, bool) {
+	match := progressFrameRE.FindStringSubmatch(line)
+	if len(match) != 2 {
+		return RenderProgress{}, false
+	}
+	frames, err := strconv.ParseInt(match[1], 10, 64)
+	if err != nil {
+		return RenderProgress{}, false
+	}
+	progress := RenderProgress{FramesDone: frames, FramesTotal: total, At: time.Now().UTC()}
+	if fps := progressFPSRE.FindStringSubmatch(line); len(fps) == 2 {
+		progress.FPS, _ = strconv.ParseFloat(fps[1], 64)
+	}
+	return progress, true
 }
 
 // renderArgs builds the chronon3d_cli arguments for the render subcommand.

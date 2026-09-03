@@ -1,0 +1,17 @@
+[Unit]
+Description=RenderingGen native GPU worker
+After=network-online.target docker.service chronon3d.service renderinggen-queue.service
+Wants=network-online.target
+Requires=docker.service renderinggen-queue.service chronon3d.service
+
+[Service]
+Type=simple
+User=pierone
+WorkingDirectory=/home/pierone/src/go-master/projects/Pyt/VeloxEditing/RenderingGen
+ExecStart=/usr/local/bin/renderinggen --config /etc/renderinggen/renderinggen.yaml
+Restart=on-failure
+RestartSec=2
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target

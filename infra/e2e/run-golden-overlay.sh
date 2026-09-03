@@ -39,8 +39,8 @@
 # remote queue/objectstore endpoints.
 #
 # Usage:
-#   1. Start the stack:   make golden-e2e-runtime
-#                         (cd infra/docker && docker compose up -d --build)
+#   1. Start infrastructure: (cd infra/docker && docker compose up -d postgres objectstore)
+#      Enable the native Queue, RenderingGen and Chronon systemd services.
 #   2. Run:               infra/e2e/run-golden-overlay.sh
 #
 # Requires curl, python3, ffprobe, sha256sum.

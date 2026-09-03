@@ -1,6 +1,8 @@
 package chronon
 
 import (
+	"os"
+	"path/filepath"
 	"reflect"
 	"testing"
 )
@@ -74,8 +76,16 @@ func TestRenderArgsResolvesGPURequirementAtAdapterBoundary(t *testing.T) {
 }
 
 func TestBinaryPath(t *testing.T) {
-	c := &Client{Home: "/opt/chronon3d"}
-	if got := c.Binary(); got != "/opt/chronon3d/bin/chronon3d_cli" {
+	home := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(home, "bin"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(home, "bin", "chronon3d_cli")
+	if err := os.WriteFile(path, []byte("test"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	c := &Client{Home: home}
+	if got := c.Binary(); got != path {
 		t.Fatalf("Binary() = %q", got)
 	}
 }

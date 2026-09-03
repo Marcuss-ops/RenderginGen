@@ -16,22 +16,6 @@ services:
       retries: 10
     restart: unless-stopped
 
-  queue:
-    build:
-      context: ../..
-      dockerfile: queue/Dockerfile
-    # 1080p Chronon GPU renders can legitimately exceed the 30s default
-    # lease; the worker renews this lease while the GPU lane is active.
-    command: ["--lease", "10m", "--worker-stale-after", "3m"]
-    ports:
-      - "8081:8081"
-    environment:
-      DATABASE_URL: postgres://renderinggen:renderinggen@postgres:5432/renderinggen?sslmode=disable
-    depends_on:
-      postgres:
-        condition: service_healthy
-    restart: unless-stopped
-
   objectstore:
     build:
       context: ../..
@@ -42,64 +26,6 @@ services:
       - objectstore-data:/var/lib/objectstore
     restart: unless-stopped
 
-  worker:
-    # CHRONON_RUNTIME is built from the real Chronon3d repo (not vendored
-    # here); see README "Build & run" for the two-step local build.
-    build:
-      context: ../..
-      dockerfile: infra/docker/renderinggen-worker.Dockerfile
-      args:
-        CHRONON_RUNTIME: ghcr.io/marcuss-ops/chronon3d-runtime:0.1.0
-        VERSION: 0.1.0
-    environment:
-      CHRONON_HOME: /opt/chronon3d
-      CHRONON_EXTERNAL_DAEMON: "1"
-    tmpfs:
-      - /dev/shm:size=4g,mode=1777
-    shm_size: 4g
-    volumes:
-      - renderinggen-cache:/var/lib/renderinggen/cache
-      - /run/chronon3d/chronon.sock:/var/run/chronon3d/chronon.sock
-      - /tmp/renderinggen/jobs:/tmp/renderinggen/jobs
-      - ./worker-config-drive.yaml:/etc/renderinggen/config.yaml:ro
-      - ./credentials.json:/etc/renderinggen/credentials.json:ro
-      - ./token.json:/etc/renderinggen/token.json
-    depends_on:
-      - queue
-      - objectstore
-    # Vulkan GPU passthrough; adjust for your provider.
-    # devices:
-    #   - /dev/dri:/dev/dri
-    restart: unless-stopped
-
-  # Second worker with a distinct worker id. Build the exact same worker image
-  # from this repository instead of relying on an undeclared local-only image
-  # name ("docker-worker"). This keeps CI and fresh hosts reproducible while
-  # worker-config-b.yaml still supplies the distinct identity used by Test 11.
-  worker-b:
-    build:
-      context: ../..
-      dockerfile: infra/docker/renderinggen-worker.Dockerfile
-      args:
-        CHRONON_RUNTIME: ghcr.io/marcuss-ops/chronon3d-runtime:0.1.0
-        VERSION: 0.1.0
-    environment:
-      CHRONON_HOME: /opt/chronon3d
-      CHRONON_EXTERNAL_DAEMON: "1"
-    tmpfs:
-      - /dev/shm:size=4g,mode=1777
-    shm_size: 4g
-    volumes:
-      - renderinggen-cache:/var/lib/renderinggen/cache
-      - /run/chronon3d/chronon.sock:/var/run/chronon3d/chronon.sock
-      - /tmp/renderinggen/jobs:/tmp/renderinggen/jobs
-      - ./worker-config-b.yaml:/etc/renderinggen/config.yaml:ro
-    depends_on:
-      - queue
-      - objectstore
-    restart: unless-stopped
-
 volumes:
-  renderinggen-cache:
   objectstore-data:
   postgres-data:

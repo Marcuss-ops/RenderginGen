@@ -13,7 +13,11 @@
 
 CHRONON_RUNTIME ?= ghcr.io/marcuss-ops/chronon3d-runtime:0.1.0
 
-.PHONY: golden-e2e golden-e2e-runtime golden-e2e-reset golden-e2e-down
+.PHONY: native-build golden-e2e golden-e2e-runtime golden-e2e-reset golden-e2e-down
+
+native-build:
+	go build -o /usr/local/bin/renderinggen-queue ./queue/cmd/queued
+	go build -o /usr/local/bin/renderinggen ./renderinggen/cmd/renderinggen
 
 # Build the chronon3d-runtime image from the real Chronon3d source when it is
 # not already present locally. RenderingGen never vendors Chronon; the runtime
@@ -26,13 +30,13 @@ golden-e2e-runtime:
 	  docker build -f ../Chronon3d/docker/chronon-runtime/Dockerfile -t $(CHRONON_RUNTIME) ../Chronon3d; \
 	}
 
-# Boot the canonical stack (postgres + queue + objectstore + worker) and run
-# the golden canary end-to-end. The stack is torn down afterwards, keeping
-# volumes so the next run starts warm (worker cache, object store, PG rows).
-golden-e2e: golden-e2e-runtime
+# Boot only the infrastructure containers and run the golden canary against
+# the native systemd Queue/worker/Chronon services. Application services must
+# already be enabled (see README); Docker is not part of their runtime path.
+golden-e2e:
 	@set -e; cd infra/docker; \
-	  echo "=== booting stack ==="; \
-	  docker compose up -d --build; \
+	  echo "=== booting infrastructure ==="; \
+	  docker compose up -d postgres objectstore; \
 	  trap 'docker compose down' EXIT; \
 	  ../../infra/e2e/run-golden-overlay.sh
 
