@@ -1,0 +1,17 @@
+[Unit]
+Description=RenderingGen central job queue
+After=network-online.target docker.service
+Wants=network-online.target
+Requires=docker.service
+
+[Service]
+Type=simple
+User=pierone
+WorkingDirectory=/home/pierone/src/go-master/projects/Pyt/VeloxEditing/RenderingGen
+EnvironmentFile=-/etc/renderinggen/queue.env
+ExecStart=/usr/local/bin/renderinggen-queue --addr 127.0.0.1:8081 --lease 10m --worker-stale-after 3m
+Restart=on-failure
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target

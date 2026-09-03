@@ -1,0 +1,19 @@
+worker:
+  id: renderinggen-b
+  pipeline_workers: 3
+queue:
+  endpoint: http://127.0.0.1:8081
+artifact_store:
+  endpoint: http://127.0.0.1:9000
+  local_cache_dir: /var/lib/renderinggen/cache-b
+workspace:
+  root: /dev/shm/renderinggen/jobs-b
+chronon:
+  profile: gpu-vulkan-native
+  home: /opt/chronon3d
+  mode: cli
+  strict_native_backend: true
+gpu:
+  device: 0
+health:
+  addr: 127.0.0.1:8082

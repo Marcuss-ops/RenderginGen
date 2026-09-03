@@ -10,7 +10,8 @@
 # backend) -> object store loop.
 #
 # Usage:
-#   1. Start the stack:   (cd infra/docker && docker compose up --build -d)
+#   1. Start infrastructure: (cd infra/docker && docker compose up -d postgres objectstore)
+#      Enable the native Queue, RenderingGen and Chronon systemd services.
 #   2. Run:               infra/e2e/run-e2e.sh
 #
 # Requires curl. python3 is used for JSON parsing (jq is not required).
