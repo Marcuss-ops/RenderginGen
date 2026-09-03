@@ -28,6 +28,7 @@ import (
 	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/progresspush"
 	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/queue"
 	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/storage"
+	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/version"
 	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/workspace"
 )
 
@@ -389,14 +390,12 @@ func runGPULane(ctx context.Context, q *queue.Client, proc *processor.Processor,
 			// Chronon is the long-running stage. Keep the queue lease alive
 			// while it renders; renewing only during prepare/post would let a
 			// normal software render expire and be claimed a second time.
-			renderStart := time.Now()
 			gpuErr := withLeaseVoid(ctx, p.job, q, func(jobCtx context.Context) error {
 				return proc.RunGPU(jobCtx, p.prepared)
 			})
 			// Duty-cycle telemetry: record this render's end so the next job's
 			// gpu_gap_us metric measures the true dead time between renders.
 			processor.PutGPURenderEnd(time.Now())
-			_ = renderStart
 			select {
 			case doneCh <- renderOutcome{job: p.job, prepared: p.prepared, err: gpuErr}:
 			case <-ctx.Done():
@@ -570,8 +569,7 @@ func renewWithRetry(ctx context.Context, jobID string, q *queue.Client, interval
 		}
 		// A conflict means the lease is definitively gone (expired and
 		// requeued, completed, or owned by another worker): no retry helps.
-		var conflict queue.RenewConflictError
-		if errors.As(err, &conflict) {
+		if errors.Is(err, queue.RenewConflictError) {
 			return false
 		}
 		if attempt >= maxAttempts || ctx.Err() != nil {

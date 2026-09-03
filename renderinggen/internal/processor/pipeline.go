@@ -271,12 +271,17 @@ func takeGPUGap(renderStart time.Time) float64 {
 	return gapUS
 }
 
-// putGPURenderEnd stores the completion time of the most recent render.
-func putGPURenderEnd(renderEnd time.Time) {
+// PutGPURenderEnd stores the completion time of the most recent render.
+// Exported so the concurrent GPU lane in the worker main can record render
+// ends exactly like the serial StagedRender path does.
+func PutGPURenderEnd(renderEnd time.Time) {
 	gpuGap.mu.Lock()
 	gpuGap.lastRenderEnd = renderEnd
 	gpuGap.mu.Unlock()
 }
+
+// putGPURenderEnd is the internal alias used by StagedRender.
+func putGPURenderEnd(renderEnd time.Time) { PutGPURenderEnd(renderEnd) }
 
 // StagedRender runs the three stages serially for one job; used when a caller
 // wants the staged pipeline semantics without the concurrent worker pools

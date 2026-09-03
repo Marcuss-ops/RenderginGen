@@ -8,7 +8,9 @@
 package server
 
 import (
+	"io"
 	"net/http"
+	"strconv"
 
 	"github.com/Marcuss-ops/RenderginGen/objectstore/internal/store"
 )
@@ -43,7 +45,9 @@ func (s *Server) put(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) get(w http.ResponseWriter, r *http.Request) {
 	key := r.PathValue("key")
-	data, err := s.store.Get(key)
+	// Stream from disk: buffering a multi-GB rendered artifact in RAM per
+	// request would make every download a worker memory spike.
+	f, size, err := s.store.Open(key)
 	if err == store.ErrNotFound {
 		http.NotFound(w, r)
 		return
@@ -52,8 +56,12 @@ func (s *Server) get(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	defer f.Close()
 	w.Header().Set("Content-Type", "application/octet-stream")
-	_, _ = w.Write(data)
+	if size >= 0 {
+		w.Header().Set("Content-Length", strconv.FormatInt(size, 10))
+	}
+	_, _ = io.Copy(w, f)
 }
 
 func (s *Server) health(w http.ResponseWriter, _ *http.Request) {
