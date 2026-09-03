@@ -287,7 +287,26 @@ func (s *Repository) Retry(id string) error {
 	job.FailReason = ""
 	job.QueuedAt = time.Now()
 	job.LeaseUntil = time.Time{}
+	job.Progress = nil
 	s.order = append(s.order, id)
+	return nil
+}
+
+// SetProgress stores the latest render progress from the lease-owning worker.
+// It rejects reports for jobs that are not running or whose lease moved to
+// another worker, mirroring the PostgreSQL backend.
+func (s *Repository) SetProgress(id, workerID string, p model.Progress) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	job, err := s.runningJob(id, workerID)
+	if err != nil {
+		return err
+	}
+	copy := p
+	copy.Worker = workerID
+	copy.LastFrameAt = time.Now()
+	job.Progress = &copy
 	return nil
 }
 

@@ -77,6 +77,22 @@ type Job struct {
 
 	// Artifact is the rendered artifact, populated once the job completes.
 	Artifact *Artifact `json:"artifact,omitempty"`
+
+	// Progress is the last render progress reported by the owning worker
+	// (nil until the first report arrives). Exposed by GET /jobs/{id}.
+	Progress *Progress `json:"progress,omitempty"`
+}
+
+// Progress is the per-job render progress reported by the worker that owns
+// the job's lease. FramesDone is the last frame position the renderer
+// reported (absolute, already offset for chunked execution). TotalFrames is
+// the segment length when known (0 = unknown). LastFrameAt is the wall-clock
+// time of the last frame report and doubles as a render liveness signal.
+type Progress struct {
+	FramesDone  int       `json:"frames_done"`
+	TotalFrames int       `json:"frames_total,omitempty"`
+	LastFrameAt time.Time `json:"last_frame_at"`
+	Worker      string    `json:"worker,omitempty"`
 }
 
 // Stats is a snapshot of the queue, used for autoscaling and monitoring.
