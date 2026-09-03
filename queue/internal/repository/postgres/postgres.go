@@ -187,7 +187,14 @@ func (r *Repository) ClaimState(workerID string, state model.State) (*model.Job,
 		return nil, 0, err
 	}
 
+	var maxRecordedAttempt int
+	if err := tx.QueryRowContext(ctx, `SELECT COALESCE(MAX(attempt_number), 0) FROM render_attempts WHERE job_id = $1`, id).Scan(&maxRecordedAttempt); err != nil {
+		return nil, 0, err
+	}
 	attemptNumber := attempts + 1
+	if maxRecordedAttempt >= attemptNumber {
+		attemptNumber = maxRecordedAttempt + 1
+	}
 	if err := createAttempt(ctx, tx, id, attemptNumber, workerID, now); err != nil {
 		return nil, 0, err
 	}
@@ -198,8 +205,8 @@ func (r *Repository) ClaimState(workerID string, state model.State) (*model.Job,
 		    current_worker_id = $2,
 		    lease_until = $3,
 		    started_at = $4,
-		    attempt_count = attempt_count + 1
-		WHERE id = $1`, id, workerID, leaseUntil, now); err != nil {
+		    attempt_count = $5
+		WHERE id = $1`, id, workerID, leaseUntil, now, attemptNumber); err != nil {
 		return nil, 0, err
 	}
 
@@ -536,6 +543,42 @@ func (r *Repository) Renew(id, workerID string) error {
 		return err
 	}
 	if err := recordEvent(ctx, tx, eventLeaseRenewed, id, attempt, workerID, nil); err != nil {
+		return err
+	}
+	return tx.Commit()
+}
+
+// Retry resets a failed job back to pending state for re-execution.
+func (r *Repository) Retry(id string) error {
+	ctx := context.Background()
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	var state string
+	err = tx.QueryRowContext(ctx, `SELECT state FROM render_jobs WHERE id = $1 FOR UPDATE`, id).Scan(&state)
+	if errors.Is(err, sql.ErrNoRows) {
+		return fmt.Errorf("job %s: %w", id, repository.ErrNotFound)
+	}
+	if err != nil {
+		return err
+	}
+	if state != string(model.StateFailed) {
+		return fmt.Errorf("job %s is in state %q, cannot retry non-failed job", id, state)
+	}
+
+	_, err = tx.ExecContext(ctx, `
+		UPDATE render_jobs
+		SET state = 'pending', error_message = NULL, queued_at = now(),
+		    current_worker_id = NULL, lease_until = NULL
+		WHERE id = $1`, id)
+	if err != nil {
+		return err
+	}
+
+	if err := recordEvent(ctx, tx, eventJobRequeued, id, "", "", map[string]any{"action": "retry"}); err != nil {
 		return err
 	}
 	return tx.Commit()

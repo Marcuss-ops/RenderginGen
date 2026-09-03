@@ -20,6 +20,9 @@ services:
     build:
       context: ../..
       dockerfile: queue/Dockerfile
+    # 1080p Chronon GPU renders can legitimately exceed the 30s default
+    # lease; the worker renews this lease while the GPU lane is active.
+    command: ["--lease", "10m", "--worker-stale-after", "3m"]
     ports:
       - "8081:8081"
     environment:

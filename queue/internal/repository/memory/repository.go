@@ -270,6 +270,27 @@ func (s *Repository) Renew(id, workerID string) error {
 	return nil
 }
 
+// Retry resets a failed job back to pending state for re-execution.
+func (s *Repository) Retry(id string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	job, exists := s.jobs[id]
+	if !exists {
+		return fmt.Errorf("job %s: %w", id, repository.ErrNotFound)
+	}
+	if job.State != model.StateFailed {
+		return fmt.Errorf("job %s is in state %q, cannot retry non-failed job", id, job.State)
+	}
+	job.State = model.StatePending
+	job.Worker = ""
+	job.FailReason = ""
+	job.QueuedAt = time.Now()
+	job.LeaseUntil = time.Time{}
+	s.order = append(s.order, id)
+	return nil
+}
+
 // RequeueExpired moves running jobs whose lease has elapsed back to pending,
 // or permanently fails them if they exhausted their attempts. It returns the
 // number of jobs affected.

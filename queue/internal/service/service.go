@@ -268,6 +268,16 @@ func (s *Service) RequeueExpired(now time.Time) (int, error) {
 	return n, nil
 }
 
+// Retry resets a failed job back to pending state.
+func (s *Service) Retry(id string) error {
+	if err := s.repo.Retry(id); err != nil {
+		return err
+	}
+	s.notify.Notify()
+	s.observePending()
+	return nil
+}
+
 // ValidateChildren enforces the parent chunk contract: exact expected count,
 // indices 0..N-1, contiguous half-open frame ranges, and completed artifacts.
 func ValidateChildren(children []*model.Job, expected int64, start, end int64) error {

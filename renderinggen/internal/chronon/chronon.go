@@ -8,13 +8,22 @@
 package chronon
 
 import (
+	"bufio"
 	"context"
 	"fmt"
+	"io"
+	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"sync/atomic"
+	"time"
 )
+
+// DefaultStallTimeout is the maximum duration Chronon CLI can produce zero
+// output or progress before being considered stalled.
+const DefaultStallTimeout = 3 * time.Minute
 
 // RenderRequest is the renderable contract between RenderingGen and a
 // Chronon3d backend. The render plan is already on disk (plan.json), assets
@@ -93,16 +102,87 @@ func (c *Client) Version() string {
 }
 
 // Render invokes the CLI render subcommand with the plan file, assets root and
-// output path. It implements Renderer.
+// output path. It streams output lines with timestamps, tracks progress, and
+// runs a stall watchdog to abort hung render processes.
 func (c *Client) Render(ctx context.Context, req RenderRequest) error {
-	cmd := exec.CommandContext(ctx, c.Binary(), renderArgs(req)...)
-	// Keep Chronon's execution report next to the plan. The worker invokes the
-	// CLI from its own process directory otherwise, which makes the report
-	// disappear with an ephemeral container and prevents E2E profiling.
+	stallTimeout := DefaultStallTimeout
+	if env := os.Getenv("CHRONON_STALL_TIMEOUT"); env != "" {
+		if d, err := time.ParseDuration(env); err == nil && d > 0 {
+			stallTimeout = d
+		}
+	}
+
+	renderCtx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	args := renderArgs(req)
+	cmd := exec.CommandContext(renderCtx, c.Binary(), args...)
 	cmd.Dir = filepath.Dir(req.PlanPath)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	return cmd.Run()
+
+	stdoutPipe, err := cmd.StdoutPipe()
+	if err != nil {
+		return fmt.Errorf("chronon stdout pipe: %w", err)
+	}
+	stderrPipe, err := cmd.StderrPipe()
+	if err != nil {
+		return fmt.Errorf("chronon stderr pipe: %w", err)
+	}
+
+	var lastActivity atomic.Int64
+	lastActivity.Store(time.Now().UnixNano())
+
+	streamLines := func(r io.Reader, prefix string) {
+		scanner := bufio.NewScanner(r)
+		for scanner.Scan() {
+			line := scanner.Text()
+			lastActivity.Store(time.Now().UnixNano())
+			log.Printf("[chronon %s] %s", prefix, line)
+		}
+	}
+
+	renderStart := time.Now()
+	log.Printf("[chronon] launching render: %s %s", c.Binary(), strings.Join(args, " "))
+
+	if err := cmd.Start(); err != nil {
+		return fmt.Errorf("chronon start: %w", err)
+	}
+
+	go streamLines(stdoutPipe, "stdout")
+	go streamLines(stderrPipe, "stderr")
+
+	// Stall watchdog goroutine
+	watchdogDone := make(chan struct{})
+	defer close(watchdogDone)
+	go func() {
+		ticker := time.NewTicker(5 * time.Second)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-watchdogDone:
+				return
+			case <-renderCtx.Done():
+				return
+			case <-ticker.C:
+				last := time.Unix(0, lastActivity.Load())
+				if time.Since(last) > stallTimeout {
+					log.Printf("[chronon WARN] stall detected: no output for %v; aborting render", time.Since(last).Round(time.Second))
+					cancel()
+					return
+				}
+			}
+		}
+	}()
+
+	err = cmd.Wait()
+	duration := time.Since(renderStart)
+	if err != nil {
+		if renderCtx.Err() == context.Canceled && ctx.Err() == nil {
+			return fmt.Errorf("chronon render stalled: no output for %v (aborted after %v)", stallTimeout, duration)
+		}
+		return fmt.Errorf("chronon execution failed after %v: %w", duration, err)
+	}
+	log.Printf("[chronon] render finished successfully in %v", duration.Round(time.Millisecond))
+	return nil
 }
 
 // renderArgs builds the chronon3d_cli arguments for the render subcommand.

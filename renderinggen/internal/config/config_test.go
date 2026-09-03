@@ -122,8 +122,8 @@ chronon:
 	if err != nil {
 		t.Fatalf("load: %v", err)
 	}
-	if cfg.Chronon.Backend != "vulkan" || cfg.Chronon.Mode != "ipc" ||
-		!cfg.Chronon.NativeOutputProfiles || !cfg.Chronon.Report {
+	if cfg.Chronon.Backend != "vulkan" || cfg.Chronon.HardwareEncoder != "nvenc" ||
+		!cfg.Chronon.StrictNativeBackend || !cfg.Chronon.NativeOutputProfiles || !cfg.Chronon.Report {
 		t.Fatalf("profile not applied: %+v", cfg.Chronon)
 	}
 }

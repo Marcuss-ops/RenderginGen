@@ -203,6 +203,148 @@ func (c *Client) Renew(ctx context.Context, id, workerID string) error {
 	return c.report(ctx, id, workerID, "renew", nil)
 }
 
+// WorkerStatus represents the lifecycle state of a registered worker.
+type WorkerStatus string
+
+const (
+	WorkerStatusUnknown  WorkerStatus = "unknown"
+	WorkerStatusReady    WorkerStatus = "ready"
+	WorkerStatusBusy     WorkerStatus = "busy"
+	WorkerStatusDraining WorkerStatus = "draining"
+	WorkerStatusOffline  WorkerStatus = "offline"
+)
+
+// Worker represents a worker registration payload / health status.
+type Worker struct {
+	ID                   string       `json:"id"`
+	Hostname             string       `json:"hostname,omitempty"`
+	Status               WorkerStatus `json:"status"`
+	RenderingGenVersion  string       `json:"renderinggen_version,omitempty"`
+	ChrononVersion       string       `json:"chronon_version,omitempty"`
+	OverlaySchemaVersion int          `json:"overlay_schema_version,omitempty"`
+	GPUBackend           string       `json:"gpu_backend,omitempty"`
+	GPUDevice            string       `json:"gpu_device,omitempty"`
+	GPUDriver            string       `json:"gpu_driver,omitempty"`
+	StartedAt            time.Time    `json:"started_at,omitempty"`
+	LastHeartbeatAt      time.Time    `json:"last_heartbeat_at,omitempty"`
+}
+
+// WorkerHealth is the aggregate worker health.
+type WorkerHealth struct {
+	Ready   int `json:"ready"`
+	Busy    int `json:"busy"`
+	Offline int `json:"offline"`
+	Total   int `json:"total"`
+}
+
+// RegisterWorker registers the worker with the central queue.
+func (c *Client) RegisterWorker(ctx context.Context, w Worker) error {
+	buf, err := json.Marshal(w)
+	if err != nil {
+		return fmt.Errorf("queue register worker marshal: %w", err)
+	}
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.baseURL+"/workers/register", bytes.NewReader(buf))
+	if err != nil {
+		return fmt.Errorf("queue register worker request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := c.http.Do(req)
+	if err != nil {
+		return fmt.Errorf("queue register worker do: %w", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		raw, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("queue register worker: HTTP %d: %s", resp.StatusCode, strings.TrimSpace(string(raw)))
+	}
+	return nil
+}
+
+// HeartbeatWorker sends a liveness heartbeat for workerID.
+func (c *Client) HeartbeatWorker(ctx context.Context, workerID string) error {
+	buf, err := json.Marshal(map[string]string{"worker": workerID})
+	if err != nil {
+		return fmt.Errorf("queue heartbeat marshal: %w", err)
+	}
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.baseURL+"/workers/heartbeat", bytes.NewReader(buf))
+	if err != nil {
+		return fmt.Errorf("queue heartbeat request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := c.http.Do(req)
+	if err != nil {
+		return fmt.Errorf("queue heartbeat do: %w", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		raw, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("queue heartbeat: HTTP %d: %s", resp.StatusCode, strings.TrimSpace(string(raw)))
+	}
+	return nil
+}
+
+// ListWorkers returns all currently registered workers.
+func (c *Client) ListWorkers(ctx context.Context) ([]Worker, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.baseURL+"/workers", nil)
+	if err != nil {
+		return nil, fmt.Errorf("queue list workers request: %w", err)
+	}
+	resp, err := c.http.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("queue list workers do: %w", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		raw, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("queue list workers: HTTP %d: %s", resp.StatusCode, strings.TrimSpace(string(raw)))
+	}
+	var workers []Worker
+	if err := json.NewDecoder(resp.Body).Decode(&workers); err != nil {
+		return nil, fmt.Errorf("queue list workers decode: %w", err)
+	}
+	return workers, nil
+}
+
+// WorkerHealth queries the worker health stats.
+func (c *Client) WorkerHealth(ctx context.Context) (WorkerHealth, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.baseURL+"/workers/health", nil)
+	if err != nil {
+		return WorkerHealth{}, fmt.Errorf("queue worker health request: %w", err)
+	}
+	resp, err := c.http.Do(req)
+	if err != nil {
+		return WorkerHealth{}, fmt.Errorf("queue worker health do: %w", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		raw, _ := io.ReadAll(resp.Body)
+		return WorkerHealth{}, fmt.Errorf("queue worker health: HTTP %d: %s", resp.StatusCode, strings.TrimSpace(string(raw)))
+	}
+	var health WorkerHealth
+	if err := json.NewDecoder(resp.Body).Decode(&health); err != nil {
+		return WorkerHealth{}, fmt.Errorf("queue worker health decode: %w", err)
+	}
+	return health, nil
+}
+
+// Retry resets a failed job back to pending state so it can be re-claimed.
+func (c *Client) Retry(ctx context.Context, id string) error {
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.baseURL+"/jobs/"+url.PathEscape(id)+"/retry", nil)
+	if err != nil {
+		return fmt.Errorf("queue retry request: %w", err)
+	}
+	resp, err := c.http.Do(req)
+	if err != nil {
+		return fmt.Errorf("queue retry do: %w", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		raw, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("queue retry: HTTP %d: %s", resp.StatusCode, strings.TrimSpace(string(raw)))
+	}
+	return nil
+}
+
 // report POSTs a worker action (complete/fail/renew) to the job endpoint. The
 // wire body carries the worker identity plus an optional data payload, matching
 // the queue server's handlers.

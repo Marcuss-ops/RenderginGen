@@ -8,6 +8,7 @@ package main
 import (
 	"context"
 	"flag"
+	"fmt"
 	"log"
 	"os"
 	"os/signal"
@@ -110,10 +111,10 @@ func main() {
 		renderer,
 	)
 	proc.SetNativeOutputProfiles(cfg.Chronon.NativeOutputProfiles)
-	proc.SetStrictNativeBackend(cfg.Chronon.Profile == "gpu-vulkan-native")
+	proc.SetStrictNativeBackend(cfg.Chronon.StrictNativeBackend || cfg.Chronon.Profile == "gpu-vulkan-native")
 	proc.SetReport(cfg.Chronon.Report)
 	proc.SetHardwareEncoder(cfg.Chronon.HardwareEncoder)
-	log.Printf("chronon report telemetry: %t", cfg.Chronon.Report)
+	log.Printf("chronon report telemetry: %t, strict_native_backend: %t", cfg.Chronon.Report, cfg.Chronon.StrictNativeBackend || cfg.Chronon.Profile == "gpu-vulkan-native")
 
 	// 3a. Artifact ledger (the "DB artifact" step): SQLite, pure Go so the
 	// CGO_ENABLED=0 worker image keeps building. A failed ledger write fails
@@ -179,19 +180,56 @@ func main() {
 		}
 	}()
 
+	// 4b. Register worker in queue liveness registry now that all dependencies
+	// and health checks are up and verified.
+	hostname, _ := os.Hostname()
+	if err := queueClient.Register(ctx, queue.Worker{
+		ID:                   cfg.Worker.ID,
+		Hostname:             hostname,
+		Status:               queue.WorkerStatusReady,
+		RenderingGenVersion:  version.RenderingGen,
+		ChrononVersion:       chrononVersion,
+		OverlaySchemaVersion: version.OverlaySchema,
+		GPUBackend:           gpuInfo.Backend,
+		GPUDevice:            fmt.Sprintf("%d", gpuInfo.Device),
+		GPUDriver:            gpuInfo.Driver,
+		StartedAt:            time.Now().UTC(),
+	}); err != nil {
+		log.Fatalf("queue worker registration: %v", err)
+	}
+	go func() {
+		ticker := time.NewTicker(20 * time.Second)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				if err := queueClient.Heartbeat(ctx); err != nil {
+					log.Printf("queue worker heartbeat: %v", err)
+				}
+			}
+		}
+	}()
+
+	numWorkers := cfg.Worker.PipelineWorkers
+	if numWorkers < 1 {
+		numWorkers = 1
+	}
+
 	log.Printf("worker %s ready: renderinggen=%s chronon=%s schema=%d pipeline_workers=%d gpu_lanes=1",
-		cfg.Worker.ID, version.RenderingGen, chrononVersion, version.OverlaySchema, cfg.Worker.PipelineWorkers)
+		cfg.Worker.ID, version.RenderingGen, chrononVersion, version.OverlaySchema, numWorkers)
 
 	// 5. Run the three-stage pipeline: CPU preparation feeds a single GPU
 	// lane, and CPU post-processing (probe, hash, store, publish) drains
 	// behind it. While Chronon renders job N, the prep pool materializes
 	// job N+1 and the post pool finalizes job N-1. The queue remains the
 	// source of truth and leases prevent duplicate claims.
-	prepCh := make(chan *preppedJob, 2)
-	doneCh := make(chan renderOutcome, 2)
+	prepCh := make(chan *preppedJob, numWorkers)
+	doneCh := make(chan renderOutcome, numWorkers)
 	var workers sync.WaitGroup
 	// Prep pool: claim + validate + compile + materialize (CPU/IO bound).
-	for i := 0; i < 2; i++ {
+	for i := 0; i < numWorkers; i++ {
 		workers.Add(1)
 		go func() {
 			defer workers.Done()
@@ -205,7 +243,7 @@ func main() {
 		runGPULane(ctx, queueClient, proc, prepCh, doneCh)
 	}()
 	// Post pool: finalize (probe/hash/store) + Drive publication (CPU/IO).
-	for i := 0; i < 2; i++ {
+	for i := 0; i < numWorkers; i++ {
 		workers.Add(1)
 		go func() {
 			defer workers.Done()
@@ -287,23 +325,22 @@ func runPrepPool(ctx context.Context, q *queue.Client, proc *processor.Processor
 
 		// CPU preparation for a render job. The lease covers prep + GPU +
 		// hand-off to the post pool; renewals run inside withLease.
-		go func(job *queue.Job) {
-			var prepared *processor.PreparedJob
-			prepErr := withLeaseVoid(ctx, job, q, func(jobCtx context.Context) error {
-				var err error
-				prepared, err = proc.PrepareJob(jobCtx, job)
-				return err
-			})
-			if prepErr != nil {
-				reportFailure(ctx, q, job, prepErr)
-				return
-			}
-			select {
-			case prepCh <- &preppedJob{job: job, prepared: prepared}:
-			case <-ctx.Done():
-				_ = prepared.Workspace.Cleanup()
-			}
-		}(job)
+		var prepared *processor.PreparedJob
+		prepErr := withLeaseVoid(ctx, job, q, func(jobCtx context.Context) error {
+			var err error
+			prepared, err = proc.PrepareJob(jobCtx, job)
+			return err
+		})
+		if prepErr != nil {
+			reportFailure(ctx, q, job, prepErr)
+			continue
+		}
+		select {
+		case prepCh <- &preppedJob{job: job, prepared: prepared}:
+		case <-ctx.Done():
+			_ = prepared.Workspace.Cleanup()
+			return
+		}
 	}
 }
 
