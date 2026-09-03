@@ -394,11 +394,13 @@ func BurnASSIntoPlan(planBytes, assBytes []byte, fontPath string) ([]byte, int, 
 			// address the layer centre. Convert the absolute safe-area box.
 			Position: []float64{
 				60 + float64(plan.Canvas.Width-120)*0.5 - float64(plan.Canvas.Width)*0.5,
-				float64(plan.Canvas.Height)*0.76 + 140*0.5 - float64(plan.Canvas.Height)*0.5,
+				// Keep captions in the lower safe area; the previous 0.76
+				// placement made them visibly too high on 9:16 clips.
+				float64(plan.Canvas.Height)*0.80 + 140*0.5 - float64(plan.Canvas.Height)*0.5,
 			},
 			Style: &concreteStyle{
 				Font: fontPath, FontSize: 52, Fill: "#FFFFFF",
-				Shadow: &concreteShadow{Color: "#000000", Opacity: 0.92, Blur: 4, Offset: []float64{0, 3}},
+				Shadow: &concreteShadow{Color: "#000000", Opacity: 0.95, Blur: 8, Offset: []float64{0, 5}},
 			},
 			StartFrame: cue.StartFrame, DurationFrames: cue.EndFrame - cue.StartFrame,
 		})
@@ -660,8 +662,9 @@ func compileSemantic(raw []byte) ([]byte, []Asset, error) {
 		if font == "" {
 			return nil, nil, fmt.Errorf("overlay: text watermark requires font_ref")
 		}
-		wmLayer := concreteLayer{ID: "watermark", StartFrame: 0,
-			Style: &concreteStyle{Font: font, FontSize: 42, Fill: "#FFFFFF"}}
+		wmLayer := concreteLayer{ID: "watermark", StartFrame: 0, DurationFrames: plan.Canvas.DurationFrames,
+			Style: &concreteStyle{Font: font, FontSize: 42, Fill: "#FFFFFF",
+				Shadow: &concreteShadow{Color: "#000000", Opacity: 0.95, Blur: 8, Offset: []float64{0, 4}}}}
 		if wm.Opacity != nil {
 			wmLayer.Opacity = *wm.Opacity
 		}
@@ -818,25 +821,30 @@ func compileSemantic(raw []byte) ([]byte, []Asset, error) {
 }
 
 // resolveWatermarkPosition converts a semantic position name to a concrete
-// [x, y] pixel coordinate on the canvas. The coordinate is the top-left
-// corner of a nominal 200×80 watermark box; callers with different sizes
-// should override via the layer's Size field.
+// [x, y] centre offset relative to the canvas centre. Chronon text layers use
+// centre offsets, so absolute top-left pixels would place the watermark
+// outside the visible canvas.
 func resolveWatermarkPosition(position string, canvasW, canvasH int) []float64 {
-	const wmW, wmH, margin = 200, 80, 24
+	// Reserve enough horizontal space for the full Montserrat watermark text;
+	// the previous nominal box was too narrow and pushed the text off-canvas.
+	const wmW, wmH, margin = 360, 80, 40
+	toCenterOffset := func(x, y float64) []float64 {
+		return []float64{x + float64(wmW)/2 - float64(canvasW)/2, y + float64(wmH)/2 - float64(canvasH)/2}
+	}
 	switch strings.ToLower(strings.TrimSpace(position)) {
 	case "top_left":
-		return []float64{margin, margin}
+		return toCenterOffset(margin, margin)
 	case "top_right":
-		return []float64{float64(canvasW - wmW - margin), margin}
+		return toCenterOffset(float64(canvasW-wmW-margin), margin)
 	case "center":
-		return []float64{float64(canvasW-wmW) / 2, float64(canvasH-wmH) / 2}
+		return toCenterOffset(float64(canvasW-wmW)/2, float64(canvasH-wmH)/2)
 	case "bottom_left":
-		return []float64{margin, float64(canvasH - wmH - margin)}
+		return toCenterOffset(margin, float64(canvasH-wmH-margin))
 	case "bottom_right":
-		return []float64{float64(canvasW - wmW - margin), float64(canvasH - wmH - margin)}
+		return toCenterOffset(float64(canvasW-wmW-margin), float64(canvasH-wmH-margin))
 	default:
 		// Unknown position: center as safe fallback.
-		return []float64{float64(canvasW-wmW) / 2, float64(canvasH-wmH) / 2}
+		return toCenterOffset(float64(canvasW-wmW)/2, float64(canvasH-wmH)/2)
 	}
 }
 
