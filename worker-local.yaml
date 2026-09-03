@@ -13,7 +13,7 @@ workspace:
 
 chronon:
   profile: gpu-vulkan-native
-  home: /home/pierone/src/go-master/projects/Pyt/VeloxEditing/Chronon3d/build/chronon/linux-video-fast-dev
+  home: /home/pierone/src/go-master/projects/Pyt/VeloxEditing/Chronon3d/build/chronon/linux-video-cutover-check
   mode: ipc
   socket_path: /var/run/chronon3d/chronon.sock
   hardware_encoder: nvenc
