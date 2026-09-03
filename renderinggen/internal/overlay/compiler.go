@@ -390,7 +390,12 @@ func BurnASSIntoPlan(planBytes, assBytes []byte, fontPath string) ([]byte, int, 
 		plan.Layers = append(plan.Layers, concreteLayer{
 			ID: "subtitle_cue_" + strconv.Itoa(i), Type: "text", Text: cue.Text,
 			Size:     []float64{float64(plan.Canvas.Width - 120), 140},
-			Position: []float64{60, float64(plan.Canvas.Height) * 0.76},
+			// Chronon layer positions are offsets from the canvas centre and
+			// address the layer centre. Convert the absolute safe-area box.
+			Position: []float64{
+				60 + float64(plan.Canvas.Width-120)*0.5 - float64(plan.Canvas.Width)*0.5,
+				float64(plan.Canvas.Height)*0.76 + 140*0.5 - float64(plan.Canvas.Height)*0.5,
+			},
 			Style: &concreteStyle{
 				Font: fontPath, FontSize: 52, Fill: "#FFFFFF",
 				Shadow: &concreteShadow{Color: "#000000", Opacity: 0.92, Blur: 4, Offset: []float64{0, 3}},
