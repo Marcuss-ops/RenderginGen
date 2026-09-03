@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
@@ -99,6 +101,50 @@ func (p *Processor) PrepareJob(ctx context.Context, job *queue.Job) (*PreparedJo
 	}
 	record("materialize", phaseStart)
 
+	// Burn verified ASS subtitles into Chronon text layers before the plan is
+	// written. This keeps subtitles in the Vulkan composition and avoids a
+	// second full-file ffmpeg encode after NVENC has finished.
+	if subtitleHash, burn, ok, subtitleErr := overlay.SubtitleAsset(job.RenderPlan); subtitleErr != nil {
+		_ = ws.Cleanup()
+		return nil, subtitleErr
+	} else if ok && burn {
+		var subtitlePath, fontPath string
+		for _, asset := range assets {
+			if strings.EqualFold(asset.Hash, subtitleHash) {
+				subtitlePath = filepath.Join(ws.Root(), asset.LogicalPath)
+			}
+			if ext := strings.ToLower(filepath.Ext(asset.LogicalPath)); ext == ".ttf" || ext == ".otf" {
+				if fontPath == "" {
+					fontPath = asset.LogicalPath
+				}
+			}
+		}
+		if subtitlePath == "" {
+			_ = ws.Cleanup()
+			return nil, fmt.Errorf("processor: burn subtitles asset %s was not materialized", subtitleHash)
+		}
+		if fontPath == "" {
+			_ = ws.Cleanup()
+			return nil, fmt.Errorf("processor: burn subtitles requires a materialized .ttf or .otf font")
+		}
+		burnStart := time.Now()
+		subtitleCount := 0
+		subtitleBytes, readErr := os.ReadFile(subtitlePath)
+		if readErr != nil {
+			_ = ws.Cleanup()
+			return nil, fmt.Errorf("processor: read subtitles %s: %w", subtitlePath, readErr)
+		}
+		plan, subtitleCount, err = overlay.BurnASSIntoPlan(plan, subtitleBytes, fontPath)
+		if err != nil {
+			_ = ws.Cleanup()
+			return nil, err
+		}
+		metrics["subtitle_burn_us"] = float64(time.Since(burnStart).Microseconds())
+		metrics["subtitle_burn_ms"] = metrics["subtitle_burn_us"] / 1000
+		metrics["subtitle_layers"] = float64(subtitleCount)
+		log.Printf("job %s: lowered %d ASS cues into Chronon GPU text layers", job.ID, subtitleCount)
+	}
+
 	phaseStart = time.Now()
 	metadata := renderMetadataFromPlan(plan)
 	renderPlan := plan
@@ -146,8 +192,8 @@ func (p *Processor) RunGPU(ctx context.Context, prepared *PreparedJob) error {
 		OutputPath: prepared.OutputPath,
 		Report:     p.report,
 		Requirements: chronon.ExecutionRequirements{
-			GPURequired:         gpuRequired,
-			CPUFallbackAllowed:  !p.strictNativeBackend,
+			GPURequired:        gpuRequired,
+			CPUFallbackAllowed: !p.strictNativeBackend,
 			// A plain source clip can use Chronon's direct-YUV NVDEC→NVENC
 			// path. Only plans with an authored visual layer require the full
 			// Vulkan graph/native-surface handoff; treating every source clip as

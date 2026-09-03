@@ -10,12 +10,14 @@
 package overlay
 
 import (
+	"bufio"
 	"encoding/json"
 	"fmt"
 	"math"
 	"path/filepath"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/motion"
@@ -245,6 +247,21 @@ type semanticAssetRef struct {
 	MediaType string `json:"media_type"`
 }
 
+// SubtitleAsset returns the content hash and burn policy declared by a
+// semantic overlay plan. It is used after materialization, when the worker can
+// safely read the verified subtitle bytes and lower them into Chronon layers.
+func SubtitleAsset(raw []byte) (hash string, burn bool, ok bool, err error) {
+	var src semanticPlan
+	if err := json.Unmarshal(raw, &src); err != nil {
+		return "", false, false, fmt.Errorf("overlay: decode subtitle contract: %w", err)
+	}
+	if src.Subtitles == nil || len(src.Subtitles.AssetRefs) == 0 {
+		return "", false, false, nil
+	}
+	ref := src.Subtitles.AssetRefs[0]
+	return strings.ToLower(ref.SHA256), strings.EqualFold(strings.TrimSpace(src.Subtitles.Mode), "burn"), true, nil
+}
+
 type concretePlan struct {
 	Schema  string          `json:"schema"`
 	Version int             `json:"version"`
@@ -342,6 +359,128 @@ type concreteBackground struct {
 type concreteAnimation struct {
 	Tracks        []AnimationTrack       `json:"tracks,omitempty"`
 	TextAnimators []concreteTextAnimator `json:"-"`
+}
+
+// BurnASSIntoPlan lowers an ASS subtitle track into ordinary Chronon text
+// layers. Chronon then rasterizes each cue once, uploads the texture to GPU,
+// and composites it before NVENC; no post-render ffmpeg subtitle pass is
+// needed. The input plan must already be concrete render-plan.v2 and the
+// fontPath must be a prepared workspace-relative font asset.
+func BurnASSIntoPlan(planBytes, assBytes []byte, fontPath string) ([]byte, int, error) {
+	if strings.TrimSpace(fontPath) == "" {
+		return nil, 0, fmt.Errorf("overlay: burn subtitles requires a prepared font")
+	}
+	var plan concretePlan
+	if err := json.Unmarshal(planBytes, &plan); err != nil {
+		return nil, 0, fmt.Errorf("overlay: decode concrete plan for subtitles: %w", err)
+	}
+	cues, err := parseASSCues(assBytes, plan.Canvas.FPSNum, plan.Canvas.FPSDen)
+	if err != nil {
+		return nil, 0, err
+	}
+	for _, layer := range plan.Layers {
+		if strings.HasPrefix(layer.ID, "subtitle_cue_") {
+			return planBytes, 0, nil
+		}
+	}
+	for i, cue := range cues {
+		if cue.Text == "" || cue.EndFrame <= cue.StartFrame {
+			continue
+		}
+		plan.Layers = append(plan.Layers, concreteLayer{
+			ID: "subtitle_cue_" + strconv.Itoa(i), Type: "text", Text: cue.Text,
+			Size:     []float64{float64(plan.Canvas.Width - 120), 140},
+			Position: []float64{60, float64(plan.Canvas.Height) * 0.76},
+			Style: &concreteStyle{
+				Font: fontPath, FontSize: 52, Fill: "#FFFFFF",
+				Shadow: &concreteShadow{Color: "#000000", Opacity: 0.92, Blur: 4, Offset: []float64{0, 3}},
+			},
+			StartFrame: cue.StartFrame, DurationFrames: cue.EndFrame - cue.StartFrame,
+		})
+	}
+	if len(cues) == 0 {
+		return planBytes, 0, nil
+	}
+	out, err := json.Marshal(plan)
+	if err != nil {
+		return nil, 0, fmt.Errorf("overlay: encode subtitle layers: %w", err)
+	}
+	count := 0
+	for _, layer := range plan.Layers {
+		if strings.HasPrefix(layer.ID, "subtitle_cue_") {
+			count++
+		}
+	}
+	return out, count, nil
+}
+
+type assCue struct {
+	StartFrame int64
+	EndFrame   int64
+	Text       string
+}
+
+func parseASSCues(raw []byte, fpsNum, fpsDen int) ([]assCue, error) {
+	if fpsNum <= 0 || fpsDen <= 0 {
+		return nil, fmt.Errorf("overlay: invalid subtitle fps")
+	}
+	var cues []assCue
+	scanner := bufio.NewScanner(strings.NewReader(string(raw)))
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		if !strings.HasPrefix(strings.ToLower(line), "dialogue:") {
+			continue
+		}
+		fields := strings.SplitN(strings.TrimSpace(line[len("Dialogue:"):]), ",", 10)
+		if len(fields) < 10 {
+			continue
+		}
+		start, err := assTimeFrame(strings.TrimSpace(fields[1]), fpsNum, fpsDen)
+		if err != nil {
+			return nil, err
+		}
+		end, err := assTimeFrame(strings.TrimSpace(fields[2]), fpsNum, fpsDen)
+		if err != nil {
+			return nil, err
+		}
+		text := strings.TrimSpace(fields[9])
+		text = regexp.MustCompile(`\{[^}]*\}`).ReplaceAllString(text, "")
+		text = strings.ReplaceAll(strings.ReplaceAll(text, `\N`, "\n"), `\n`, "\n")
+		cues = append(cues, assCue{StartFrame: start, EndFrame: end, Text: text})
+	}
+	if err := scanner.Err(); err != nil {
+		return nil, fmt.Errorf("overlay: read subtitles: %w", err)
+	}
+	return cues, nil
+}
+
+func assTimeFrame(raw string, fpsNum, fpsDen int) (int64, error) {
+	parts := strings.Split(raw, ":")
+	if len(parts) != 3 {
+		return 0, fmt.Errorf("overlay: invalid ASS timestamp %q", raw)
+	}
+	seconds, err := strconv.Atoi(parts[0])
+	if err != nil {
+		return 0, err
+	}
+	minutes, err := strconv.Atoi(parts[1])
+	if err != nil {
+		return 0, err
+	}
+	secParts := strings.SplitN(parts[2], ".", 2)
+	whole, err := strconv.Atoi(secParts[0])
+	if err != nil {
+		return 0, err
+	}
+	centis := 0
+	if len(secParts) == 2 {
+		centis, err = strconv.Atoi(secParts[1])
+		if err != nil {
+			return 0, err
+		}
+	}
+	ms := int64(seconds*3600000 + minutes*60000 + whole*1000 + centis*10)
+	return (ms*int64(fpsNum) + 1000*int64(fpsDen) - 1) / (1000 * int64(fpsDen)), nil
 }
 
 var safeAssetID = regexp.MustCompile(`[^A-Za-z0-9._-]+`)
