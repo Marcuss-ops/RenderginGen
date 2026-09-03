@@ -627,11 +627,42 @@ func (p *Processor) storeArtifact(ctx context.Context, jobID, outputPath string,
 		log.Printf("job %s: chronon timing sidecar unavailable: %v", jobID, err)
 	} else {
 		chrononTelemetry = raw
+		mergeChrononNumericMetrics(phaseMetrics, raw)
 	}
 	if err := p.recordArtifact(ctx, jobID, artifact, probe, stats, inputBytes, chrononTelemetry); err != nil {
 		return queue.Artifact{}, err
 	}
 	return artifact, nil
+}
+
+// mergeChrononNumericMetrics exposes the numeric fields already emitted by
+// Chronon's timing sidecar on the queue artifact as well. The complete JSON is
+// retained in the artifact ledger; this compact projection is what callers
+// such as PipelineGen receive from GET /jobs/{id}.
+func mergeChrononNumericMetrics(dst map[string]float64, raw json.RawMessage) {
+	if dst == nil || len(raw) == 0 {
+		return
+	}
+	var value any
+	if json.Unmarshal(raw, &value) != nil {
+		return
+	}
+	var walk func(string, any)
+	walk = func(prefix string, v any) {
+		switch x := v.(type) {
+		case map[string]any:
+			for key, child := range x {
+				if prefix == "" {
+					walk(key, child)
+				} else {
+					walk(prefix+"_"+key, child)
+				}
+			}
+		case float64:
+			dst["chronon_"+prefix] = x
+		}
+	}
+	walk("", value)
 }
 
 // recordArtifact writes the artifact ledger row (the plan's "DB artifact"
