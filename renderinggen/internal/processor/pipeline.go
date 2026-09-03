@@ -32,14 +32,15 @@ import (
 // is intentionally NOT cleaned up by PrepareJob: ownership transfers to
 // RunGPU, whose caller must call Cleanup after FinalizeJob.
 type PreparedJob struct {
-	Job        *queue.Job
-	Workspace  *workspace.Workspace
-	Plan       []byte             // concrete Chronon plan (post-compile)
-	Stats      overlay.Stats      // semantic counters for the ledger
-	InputBytes int64              // materialized input size for the ledger
-	Metrics    map[string]float64 // phase metrics accumulated so far
-	OutputPath string
-	totalStart time.Time
+	Job             *queue.Job
+	Workspace       *workspace.Workspace
+	Plan            []byte             // concrete Chronon plan (post-compile)
+	Stats           overlay.Stats      // semantic counters for the ledger
+	InputBytes      int64              // materialized input size for the ledger
+	Metrics         map[string]float64 // phase metrics accumulated so far
+	OutputPath      string
+	AudioSourcePath string
+	totalStart      time.Time
 }
 
 // PrepareJob runs the CPU-bound preparation half of the render pipeline:
@@ -158,14 +159,15 @@ func (p *Processor) PrepareJob(ctx context.Context, job *queue.Job) (*PreparedJo
 	record("plan", phaseStart)
 	_ = metadata
 	return &PreparedJob{
-		Job:        job,
-		Workspace:  ws,
-		Plan:       plan,
-		Stats:      stats,
-		InputBytes: inputBytes,
-		Metrics:    metrics,
-		OutputPath: ws.OutputPath("result.mp4"),
-		totalStart: totalStart,
+		Job:             job,
+		Workspace:       ws,
+		Plan:            plan,
+		Stats:           stats,
+		InputBytes:      inputBytes,
+		Metrics:         metrics,
+		OutputPath:      ws.OutputPath("result.mp4"),
+		AudioSourcePath: audioSourcePathFromSemantic(job.RenderPlan, ws.Root()),
+		totalStart:      totalStart,
 	}, nil
 }
 
@@ -188,9 +190,10 @@ func (p *Processor) RunGPU(ctx context.Context, prepared *PreparedJob) error {
 		PlanPath: prepared.Workspace.PlanPath(),
 		// Plans use the canonical assets/<file> namespace. The workspace
 		// root (not root/assets) is therefore Chronon's mounted root.
-		AssetsRoot: prepared.Workspace.Root(),
-		OutputPath: prepared.OutputPath,
-		Report:     p.report,
+		AssetsRoot:      prepared.Workspace.Root(),
+		OutputPath:      prepared.OutputPath,
+		AudioSourcePath: prepared.AudioSourcePath,
+		Report:          p.report,
 		Requirements: chronon.ExecutionRequirements{
 			GPURequired:        gpuRequired,
 			CPUFallbackAllowed: !p.strictNativeBackend,

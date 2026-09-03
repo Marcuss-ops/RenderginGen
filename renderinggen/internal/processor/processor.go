@@ -14,6 +14,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 	"sync/atomic"
 	"time"
@@ -355,6 +356,30 @@ func hasVisualOverlay(plan []byte) bool {
 		return false
 	}
 	return len(doc.Layers) > 1
+}
+
+// audioSourcePathFromSemantic resolves the declared master audio source to
+// the worker workspace. Audio is semantic metadata and is intentionally not
+// serialized into Chronon's visual render-plan.v2; the native encoder still
+// needs the materialized source path to mux the audio stream.
+func audioSourcePathFromSemantic(raw []byte, workspaceRoot string) string {
+	var doc struct {
+		Audio *struct {
+			Mode string `json:"mode"`
+		} `json:"audio"`
+		Source *struct {
+			AssetID string `json:"asset_id"`
+			Path    string `json:"path"`
+		} `json:"source"`
+	}
+	if json.Unmarshal(raw, &doc) != nil || doc.Audio == nil || doc.Source == nil || doc.Source.AssetID == "" {
+		return ""
+	}
+	path := doc.Source.Path
+	if path == "" {
+		path = filepath.ToSlash(filepath.Join("assets", "semantic", doc.Source.AssetID+".mp4"))
+	}
+	return filepath.Join(workspaceRoot, filepath.FromSlash(path))
 }
 
 func requireNativeVulkan(outputPath string, expectedFrames int) error {

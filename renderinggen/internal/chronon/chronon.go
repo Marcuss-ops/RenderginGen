@@ -35,9 +35,14 @@ type RenderRequest struct {
 	PlanPath   string // path to the chronon.render-plan.v1 document (plan.json)
 	AssetsRoot string // directory the plan's relative asset references resolve against
 	OutputPath string // destination of the rendered output (e.g. result.mp4)
-	FirstFrame int64  // optional global first frame for chunk execution
-	LastFrame  int64  // optional inclusive global last frame for chunk execution
-	Report     bool   // emit the execution report + telemetry JSONL (--report)
+	// AudioSourcePath is an optional source media file whose audio stream is
+	// muxed into the native video output. It is deliberately separate from
+	// the visual render plan: Chronon renders video, while the native encoder
+	// copies/transcodes the declared master audio stream.
+	AudioSourcePath string
+	FirstFrame      int64 // optional global first frame for chunk execution
+	LastFrame       int64 // optional inclusive global last frame for chunk execution
+	Report          bool  // emit the execution report + telemetry JSONL (--report)
 	// Progress, when non-nil, receives a milestone snapshot every time the
 	// renderer reports a frame position. It is invoked from the output
 	// streaming goroutines and must be cheap and concurrency-safe.
@@ -279,11 +284,18 @@ func renderArgs(req RenderRequest) []string {
 		// has already declared the semantic requirement, so make that contract
 		// explicit at the CLI boundary.
 		args = append(args, "--hardware", "nvenc", "--encoder-backend", "native")
-		hotPath := "require_direct_yuv"
-		if req.Requirements.CompositionRequired {
-			hotPath = "require_gpu_native"
-		}
-		args = append(args, "--gpu-hot-path-mode", hotPath)
+		// DirectYUV is now the canonical native path for authored 2D overlays
+		// as well as plain video: NVDEC surfaces stay on the GPU, CUDA
+		// composites text/images/video layers, and NVENC writes the result.
+		// CompositionRequired describes the plan semantics; it must not force
+		// the old full-graph/native-surface path.
+		args = append(args, "--gpu-hot-path-mode", "require_direct_yuv")
+	}
+	if req.AudioSourcePath != "" {
+		// Chronon's native A/V mux path uses --gop-source for the source audio
+		// stream. The worker passes an absolute workspace path, so the CLI can
+		// open it after materialization.
+		args = append(args, "--gop-source", req.AudioSourcePath)
 	}
 	if req.LastFrame >= req.FirstFrame && (req.FirstFrame != 0 || req.LastFrame != 0) {
 		args = append(args, "--start-frame", fmt.Sprint(req.FirstFrame), "--end-frame", fmt.Sprint(req.LastFrame))
