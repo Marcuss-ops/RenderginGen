@@ -2,6 +2,7 @@ package overlay
 
 import (
 	"encoding/json"
+	"math"
 	"testing"
 )
 
@@ -37,5 +38,8 @@ Dialogue: 0,0:00:03.00,0:00:04.00,Default,,0,0,0,,Dopo
 	}
 	if decoded.Layers[1].Text != "Prima\nseconda" {
 		t.Fatalf("ASS line break was not lowered: %q", decoded.Layers[1].Text)
+	}
+	if len(decoded.Layers[1].Position) != 2 || decoded.Layers[1].Position[0] != 0 || math.Abs(decoded.Layers[1].Position[1]-350.8) > 1e-6 {
+		t.Fatalf("subtitle position = %#v, want centered Chronon offset [0 350.8]", decoded.Layers[1].Position)
 	}
 }
