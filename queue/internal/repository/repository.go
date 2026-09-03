@@ -50,6 +50,9 @@ type JobRepository interface {
 	// Renew extends the lease for a running job owned by workerID.
 	Renew(id, workerID string) error
 
+	// Retry resets a failed job back to pending state for re-execution.
+	Retry(id string) error
+
 	// RequeueExpired requeues (or permanently fails) jobs whose lease elapsed,
 	// returning the number of jobs affected.
 	RequeueExpired(now time.Time) (int, error)

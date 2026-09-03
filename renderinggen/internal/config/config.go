@@ -49,6 +49,7 @@ type ChrononConfig struct {
 	NativeOutputProfiles bool   `yaml:"native_output_profiles"`
 	Report               bool   `yaml:"report"`
 	HardwareEncoder      string `yaml:"hardware_encoder"`
+	StrictNativeBackend  bool   `yaml:"strict_native_backend"`
 }
 
 type GPUConfig struct {
@@ -114,16 +115,22 @@ func Load(path string) (*Config, error) {
 func applyDefaults(c *Config) {
 	switch c.Chronon.Profile {
 	case "gpu-vulkan-native":
-		c.Chronon.Backend = "vulkan"
-		c.Chronon.Mode = "ipc"
+		if c.Chronon.Backend == "" {
+			c.Chronon.Backend = "vulkan"
+		}
 		c.Chronon.NativeOutputProfiles = true
 		c.Chronon.Report = true
 		if c.Chronon.HardwareEncoder == "" {
 			c.Chronon.HardwareEncoder = "nvenc"
 		}
+		c.Chronon.StrictNativeBackend = true
 	case "software-cli":
-		c.Chronon.Backend = "software"
-		c.Chronon.Mode = "cli"
+		if c.Chronon.Backend == "" {
+			c.Chronon.Backend = "software"
+		}
+		if c.Chronon.Mode == "" {
+			c.Chronon.Mode = "cli"
+		}
 	}
 	if c.Worker.ID == "" {
 		c.Worker.ID = "renderinggen-" + hostname()
@@ -167,15 +174,15 @@ func (c *Config) validate() error {
 		return fmt.Errorf("chronon.profile must be gpu-vulkan-native or software-cli")
 	}
 	if c.Chronon.Profile == "gpu-vulkan-native" {
-		if c.Chronon.Backend != "vulkan" || c.Chronon.Mode != "ipc" {
-			return fmt.Errorf("gpu-vulkan-native requires chronon backend=vulkan and mode=ipc")
+		if c.Chronon.Backend != "vulkan" {
+			return fmt.Errorf("gpu-vulkan-native requires chronon backend=vulkan")
 		}
 		if c.Chronon.HardwareEncoder != "nvenc" {
 			return fmt.Errorf("gpu-vulkan-native requires chronon.hardware_encoder=nvenc")
 		}
-		if c.Chronon.SocketPath == "" {
-			return fmt.Errorf("gpu-vulkan-native requires chronon.socket_path")
-		}
+	}
+	if c.Chronon.Mode == "ipc" && c.Chronon.SocketPath == "" {
+		return fmt.Errorf("chronon mode=ipc requires chronon.socket_path")
 	}
 	if c.Queue.Endpoint == "" {
 		return fmt.Errorf("queue.endpoint is required")

@@ -108,6 +108,18 @@ type Artifact struct {
 	AudioStreams       int                `json:"audio_streams,omitempty"`
 }
 
+// Worker is the worker registration payload.
+type Worker = queueclient.Worker
+type WorkerStatus = queueclient.WorkerStatus
+
+const (
+	WorkerStatusUnknown  = queueclient.WorkerStatusUnknown
+	WorkerStatusReady    = queueclient.WorkerStatusReady
+	WorkerStatusBusy     = queueclient.WorkerStatusBusy
+	WorkerStatusDraining = queueclient.WorkerStatusDraining
+	WorkerStatusOffline  = queueclient.WorkerStatusOffline
+)
+
 // Client claims and reports jobs against a central queue, delegating the wire
 // contract to the queue's public client.
 type Client struct {
@@ -121,6 +133,21 @@ func New(endpoint, workerID string) *Client {
 		workerID: workerID,
 		q:        queueclient.New(endpoint),
 	}
+}
+
+// Register announces this worker to the queue's liveness registry.
+func (c *Client) Register(ctx context.Context, w Worker) error {
+	return c.q.RegisterWorker(ctx, w)
+}
+
+// Heartbeat keeps the worker visible to queue health and autoscaling.
+func (c *Client) Heartbeat(ctx context.Context) error {
+	return c.q.HeartbeatWorker(ctx, c.workerID)
+}
+
+// Retry requests a retry for a failed job on the queue.
+func (c *Client) Retry(ctx context.Context, id string) error {
+	return c.q.Retry(ctx, id)
 }
 
 // Claim atomically claims the next available job, or returns nil when empty.

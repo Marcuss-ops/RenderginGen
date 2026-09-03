@@ -86,6 +86,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /jobs/{id}/complete", s.complete)
 	mux.HandleFunc("POST /jobs/{id}/rendered", s.rendered)
 	mux.HandleFunc("POST /jobs/{id}/fail", s.fail)
+	mux.HandleFunc("POST /jobs/{id}/retry", s.retry)
 	mux.HandleFunc("POST /jobs/{id}/renew", s.renew)
 	mux.HandleFunc("POST /jobs/{id}/finalize/claim", s.claimFinalization)
 	mux.HandleFunc("GET /jobs/{id}/children", s.children)
@@ -273,6 +274,20 @@ func (s *Server) fail(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusConflict)
 		return
 	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (s *Server) retry(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	if err := s.svc.Retry(id); err != nil {
+		if errors.Is(err, repository.ErrNotFound) {
+			http.Error(w, err.Error(), http.StatusNotFound)
+			return
+		}
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	s.signal(model.StatePending)
 	w.WriteHeader(http.StatusNoContent)
 }
 

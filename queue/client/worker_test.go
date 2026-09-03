@@ -131,3 +131,81 @@ func TestRenewSendsWorker(t *testing.T) {
 		t.Fatalf("want 1 renew call, got %d", calls)
 	}
 }
+
+func TestWorkerRegistrationAndHeartbeat(t *testing.T) {
+	var registered Worker
+	var heartbeatWorker string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/workers/register":
+			if r.Method != http.MethodPost {
+				t.Errorf("register method = %s", r.Method)
+			}
+			_ = json.NewDecoder(r.Body).Decode(&registered)
+			w.WriteHeader(http.StatusNoContent)
+		case "/workers/heartbeat":
+			if r.Method != http.MethodPost {
+				t.Errorf("heartbeat method = %s", r.Method)
+			}
+			var body map[string]string
+			_ = json.NewDecoder(r.Body).Decode(&body)
+			heartbeatWorker = body["worker"]
+			w.WriteHeader(http.StatusNoContent)
+		case "/workers":
+			w.Header().Set("Content-Type", "application/json")
+			_ = json.NewEncoder(w).Encode([]Worker{registered})
+		case "/workers/health":
+			w.Header().Set("Content-Type", "application/json")
+			_ = json.NewEncoder(w).Encode(WorkerHealth{Ready: 1, Total: 1})
+		case "/jobs/job-1/retry":
+			if r.Method != http.MethodPost {
+				t.Errorf("retry method = %s", r.Method)
+			}
+			w.WriteHeader(http.StatusNoContent)
+		default:
+			t.Errorf("unexpected path: %s", r.URL.Path)
+		}
+	}))
+	defer srv.Close()
+
+	c := New(srv.URL)
+	ctx := context.Background()
+	err := c.RegisterWorker(ctx, Worker{
+		ID:         "w-gpu-1",
+		Status:     WorkerStatusReady,
+		GPUBackend: "vulkan",
+	})
+	if err != nil {
+		t.Fatalf("RegisterWorker: %v", err)
+	}
+	if registered.ID != "w-gpu-1" || registered.GPUBackend != "vulkan" {
+		t.Fatalf("unexpected registered worker: %+v", registered)
+	}
+
+	if err := c.HeartbeatWorker(ctx, "w-gpu-1"); err != nil {
+		t.Fatalf("HeartbeatWorker: %v", err)
+	}
+	if heartbeatWorker != "w-gpu-1" {
+		t.Fatalf("unexpected heartbeat worker: %s", heartbeatWorker)
+	}
+
+	workers, err := c.ListWorkers(ctx)
+	if err != nil {
+		t.Fatalf("ListWorkers: %v", err)
+	}
+	if len(workers) != 1 || workers[0].ID != "w-gpu-1" {
+		t.Fatalf("unexpected workers list: %+v", workers)
+	}
+
+	health, err := c.WorkerHealth(ctx)
+	if err != nil {
+		t.Fatalf("WorkerHealth: %v", err)
+	}
+	if health.Ready != 1 || health.Total != 1 {
+		t.Fatalf("unexpected health: %+v", health)
+	}
+
+	if err := c.Retry(ctx, "job-1"); err != nil {
+		t.Fatalf("Retry: %v", err)
+	}
+}

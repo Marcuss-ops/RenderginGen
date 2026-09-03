@@ -12,12 +12,12 @@ workspace:
   root: /tmp/renderinggen/jobs
 
 chronon:
-  profile: gpu-vulkan-native
-  home: /home/pierone/src/go-master/projects/Pyt/VeloxEditing/Chronon3d/build/chronon/linux-video-cutover-check
-  mode: ipc
-  socket_path: /var/run/chronon3d/chronon.sock
+  backend: vulkan
+  mode: cli
   hardware_encoder: nvenc
+  strict_native_backend: true
   report: true
+  home: /home/pierone/src/go-master/projects/Pyt/VeloxEditing/Chronon3d/build/chronon/linux-video-cutover-check
 
 gpu:
   device: 0
