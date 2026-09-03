@@ -168,6 +168,29 @@ worker workflow just pins `CHRONON_RUNTIME` to the published tag
 
 ## End-to-end (CLI)
 
+### Ricreazione di clip con Chronon
+
+Per generare un job dalla clip sorgente, mantenendo framerate razionale,
+dimensioni, numero di frame e audio dichiarato:
+
+```sh
+infra/e2e/recreate-clip-with-chronon.sh /percorso/clip.mp4 /tmp/clip-job.json
+```
+
+Per eseguire la catena queue → worker → Chronon3d → artifact store e
+scaricare/verificare il risultato:
+
+```sh
+SUBMIT=1 QUEUE_URL=http://localhost:8081 STORE_URL=http://localhost:9000 \
+  infra/e2e/recreate-clip-with-chronon.sh /percorso/clip.mp4
+```
+
+Lo script non usa FFmpeg come renderer: il worker passa una clip senza overlay
+al fast path direct-YUV di Chronon quando le capability lo consentono, oppure
+al percorso Vulkan per composizioni. Il controllo finale richiede anche la
+provenienza `chronon_version` sull’artifact e rifiuta drift di fps, frame count
+o durata.
+
 The full CLI path — queue → worker → materialize → `plan.json` → real
 `chronon3d_cli` (software backend) → `result.mp4` → artifact store →
 completed — is covered by two integration tests that run against the real
