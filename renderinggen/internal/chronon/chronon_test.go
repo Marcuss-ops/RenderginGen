@@ -70,7 +70,7 @@ func TestRenderArgsResolvesGPURequirementAtAdapterBoundary(t *testing.T) {
 		"-o", "/jobs/1/output/result.mp4",
 		"--hardware", "nvenc",
 		"--encoder-backend", "native",
-		"--gpu-hot-path-mode", "require_gpu_native",
+		"--gpu-hot-path-mode", "require_direct_yuv",
 	}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("renderArgs (GPU) = %#v, want %#v", got, want)
