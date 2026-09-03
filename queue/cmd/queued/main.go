@@ -24,8 +24,8 @@ import (
 )
 
 func main() {
-	addr := flag.String("addr", ":8081", "listen address")
-	lease := flag.Duration("lease", 30*time.Second, "job lease duration")
+	addr := flag.String("addr", "127.0.0.1:8081", "listen address")
+	lease := flag.Duration("lease", 10*time.Minute, "job lease duration")
 	maxAttempts := flag.Int("max-attempts", 3, "max attempts before a job is permanently failed")
 	expireInterval := flag.Duration("expire-interval", 5*time.Second, "lease expiry scan interval")
 	workerStale := flag.Duration("worker-stale-after", 90*time.Second, "worker heartbeat staleness threshold")
@@ -43,6 +43,14 @@ func main() {
 		if err != nil {
 			log.Fatalf("connect database: %v", err)
 		}
+		// Bound the pool: unbounded, one connection per concurrent long-poll
+		// claim would let connection count scale with worker count instead of
+		// load. Postgres claim transactions are short (SKIP LOCKED single-row)
+		// so a modest pool is enough; the LISTEN session is separate.
+		db.SetMaxOpenConns(25)
+		db.SetMaxIdleConns(10)
+		db.SetConnMaxIdleTime(5 * time.Minute)
+		db.SetConnMaxLifetime(time.Hour)
 		defer db.Close()
 
 		if err := migrate.Apply(context.Background(), db); err != nil {
@@ -89,7 +97,15 @@ func main() {
 		go listenForJobNotifications(context.Background(), postgresDSN, srv)
 	}
 	log.Printf("job queue listening on %s (lease=%s, max-attempts=%d)", *addr, *lease, *maxAttempts)
-	if err := http.ListenAndServe(*addr, srv.Handler()); err != nil {
+	server := &http.Server{
+		Addr:              *addr,
+		Handler:           srv.Handler(),
+		ReadHeaderTimeout: 10 * time.Second,
+		ReadTimeout:       60 * time.Second,
+		WriteTimeout:      120 * time.Second,
+		IdleTimeout:       120 * time.Second,
+	}
+	if err := server.ListenAndServe(); err != nil {
 		log.Fatal(err)
 	}
 }

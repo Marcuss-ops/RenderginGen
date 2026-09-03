@@ -10,6 +10,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/Marcuss-ops/RenderginGen/queue/internal/metrics"
@@ -25,7 +26,19 @@ type Service struct {
 	retry      RetryConfig
 	metrics    *metrics.Metrics
 	notify     *Notifier
+
+	// pendingGaugeMu guards observePending's throttle clock. The pending
+	// gauge reads the whole render_jobs table (count(*) FILTER ...) on every
+	// call; throttling it to once per interval keeps submit/claim/complete
+	// off the full-scan path on large tables. State-changing paths still
+	// notify claim waiters through s.notify, which is what latency depends
+	// on — the gauge is observability, not correctness.
+	pendingGaugeMu   sync.Mutex
+	pendingGaugeLast time.Time
 }
+
+// pendingGaugeInterval is the minimum spacing between full-table gauge reads.
+const pendingGaugeInterval = 10 * time.Second
 
 // New creates a service backed by the given repository.
 func New(repo repository.JobRepository) *Service {
@@ -318,10 +331,34 @@ func (s *Service) Stats() model.Stats {
 	return s.repo.Stats()
 }
 
-// observePending refreshes the pending gauge from the repository snapshot.
+// observePending refreshes the pending gauge from the repository snapshot,
+// throttled to pendingGaugeInterval so high-frequency transitions (claim,
+// complete, requeue across many workers) cannot turn the gauge into a
+// full-table scan per request. State-changing paths still notify claim
+// waiters through s.notify, which is what latency depends on — the gauge is
+// observability, not correctness.
 func (s *Service) observePending() {
+	s.observePendingThrottled(false)
+}
+
+// observePendingThrottled is the shared implementation; force bypasses the
+// throttle clock.
+func (s *Service) observePendingThrottled(force bool) {
 	if s.metrics == nil {
 		return
 	}
+	s.pendingGaugeMu.Lock()
+	defer s.pendingGaugeMu.Unlock()
+	if !force && !s.pendingGaugeLast.IsZero() && time.Since(s.pendingGaugeLast) < pendingGaugeInterval {
+		return
+	}
+	s.pendingGaugeLast = time.Now()
 	s.metrics.JobsPending.Set(float64(s.repo.Stats().Pending))
+}
+
+// RefreshPendingGauge forces an immediate, unthrottled pending-gauge refresh.
+// Tests and administrative endpoints use this to read a synchronous snapshot
+// without waiting out pendingGaugeInterval.
+func (s *Service) RefreshPendingGauge() {
+	s.observePendingThrottled(true)
 }

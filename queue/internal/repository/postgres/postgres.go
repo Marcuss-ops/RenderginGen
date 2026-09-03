@@ -13,6 +13,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/Marcuss-ops/RenderginGen/queue/internal/model"
@@ -732,7 +733,9 @@ func (r *Repository) RequeueExpired(now time.Time) (int, error) {
 	return len(expired), nil
 }
 
-// Stats returns a snapshot of the queue state.
+// Stats returns a snapshot of the queue state. A database error is logged and
+// reported through the Ok flag: silently returning zeros would make dashboards
+// and autoscalers read an empty queue during an outage.
 func (r *Repository) Stats() model.Stats {
 	var stats model.Stats
 	err := r.db.QueryRowContext(context.Background(), `
@@ -743,8 +746,11 @@ func (r *Repository) Stats() model.Stats {
 			COALESCE(count(*) FILTER (WHERE state = 'failed'), 0)
 		FROM render_jobs`).Scan(&stats.Pending, &stats.Running, &stats.Completed, &stats.Failed)
 	if err != nil {
-		return model.Stats{}
+		log.Printf("queue stats query failed: %v", err)
+		stats.Ok = false
+		return stats
 	}
+	stats.Ok = true
 	stats.Depth = stats.Pending
 	return stats
 }
@@ -824,14 +830,8 @@ func (r *Repository) Children(parentJobID string) ([]*model.Job, error) {
 			id, state     string
 			chunkIndex    int
 			frameRange    []byte
-			artifactID    sql.NullString
-			artifact      model.Artifact
-			hasArtifact   bool
-			nullCols      = make([]any, 0, 8)
-		)
-		// Scan artifact columns into nullable mirrors so a NULL join row
-		// (child without an artifact yet) stays a nil job.Artifact.
-		var (
+			// Nullable mirrors so a NULL join row (child without an artifact
+			// yet) stays a nil job.Artifact.
 			nArtifactID, nStorageKey, nArtifactURL, nSHA256, nMimeType          sql.NullString
 			nSizeBytes, nWidth, nHeight, nFPSNum, nFPSDen                       sql.NullInt64
 			nFrameCount, nDurationUS, nAudioStreams                             sql.NullInt64
@@ -886,9 +886,6 @@ func (r *Repository) Children(parentJobID string) ([]*model.Job, error) {
 				AudioStreams:       int(nAudioStreams.Int64),
 			}
 		}
-		_ = artifact
-		_ = nullCols
-		_ = hasArtifact
 		children = append(children, job)
 	}
 	if err := rows.Err(); err != nil {

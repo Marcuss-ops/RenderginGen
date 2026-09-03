@@ -96,10 +96,14 @@ type Progress struct {
 }
 
 // Stats is a snapshot of the queue, used for autoscaling and monitoring.
+// Ok reports whether the snapshot came from a successful store query: a
+// failed snapshot is all-zeros with Ok=false, so consumers can distinguish
+// "queue is empty" from "store unavailable".
 type Stats struct {
-	Pending   int `json:"pending"`
-	Running   int `json:"running"`
-	Completed int `json:"completed"`
-	Failed    int `json:"failed"`
-	Depth     int `json:"depth"`
+	Pending   int  `json:"pending"`
+	Running   int  `json:"running"`
+	Completed int  `json:"completed"`
+	Failed    int  `json:"failed"`
+	Depth     int  `json:"depth"`
+	Ok        bool `json:"ok"`
 }

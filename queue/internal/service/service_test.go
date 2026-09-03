@@ -21,6 +21,9 @@ func TestServiceRecordsQueueMetrics(t *testing.T) {
 	if err := svc.Submit(model.Job{ID: "job-2"}); err != nil {
 		t.Fatal(err)
 	}
+	func() {
+		svc.RefreshPendingGauge()
+	}()
 	if got := testutil.ToFloat64(m.JobsPending); got != 2 {
 		t.Fatalf("pending: want 2, got %v", got)
 	}
@@ -28,6 +31,7 @@ func TestServiceRecordsQueueMetrics(t *testing.T) {
 	if _, _, err := svc.Claim("w1"); err != nil {
 		t.Fatal(err)
 	}
+	svc.RefreshPendingGauge()
 	if got := testutil.ToFloat64(m.JobsPending); got != 1 {
 		t.Fatalf("pending after claim: want 1, got %v", got)
 	}
@@ -35,6 +39,7 @@ func TestServiceRecordsQueueMetrics(t *testing.T) {
 	if err := svc.Complete("job-1", "w1", model.Artifact{StorageKey: "sha", ArtifactHash: "sha", SizeBytes: 1, ContentType: "video/mp4"}); err != nil {
 		t.Fatal(err)
 	}
+	svc.RefreshPendingGauge()
 	if got := testutil.ToFloat64(m.JobsPending); got != 1 {
 		t.Fatalf("pending after complete: want 1 (job-2 still queued), got %v", got)
 	}
@@ -44,6 +49,31 @@ func TestServiceRecordsQueueMetrics(t *testing.T) {
 	}
 	if n := histogramSamples(t, m, "renderinggen_render_duration_seconds"); n != 1 {
 		t.Fatalf("render_duration samples: want 1, got %d", n)
+	}
+}
+
+func TestPendingGaugeThrottleSkipsFullScans(t *testing.T) {
+	svc := New(memory.New(30*time.Second, 3))
+	m := metrics.New()
+	svc.SetMetrics(m)
+
+	if err := svc.Submit(model.Job{ID: "job-1"}); err != nil {
+		t.Fatal(err)
+	}
+	svc.RefreshPendingGauge() // establishes the throttle clock
+	// Within the throttle window the gauge must NOT be re-read from the
+	// repository: this claim moves the job to running, so an unthrottled
+	// observePending would drop the gauge to 0.
+	if _, _, err := svc.Claim("w1"); err != nil {
+		t.Fatal(err)
+	}
+	if got := testutil.ToFloat64(m.JobsPending); got != 1 {
+		t.Fatalf("throttled gauge changed within window: want 1 (stale), got %v", got)
+	}
+	// Forcing the refresh picks up the new state.
+	svc.RefreshPendingGauge()
+	if got := testutil.ToFloat64(m.JobsPending); got != 0 {
+		t.Fatalf("forced refresh: want 0, got %v", got)
 	}
 }
 

@@ -64,6 +64,26 @@ func (s *Store) Get(key string) ([]byte, error) {
 	return data, nil
 }
 
+// Open returns a streaming reader for the object plus its size (-1 when
+// unknown). Callers must Close the reader. Used by the HTTP server so large
+// artifacts are streamed from disk instead of buffered in RAM.
+func (s *Store) Open(key string) (*os.File, int64, error) {
+	p := s.path(key)
+	f, err := os.Open(p)
+	if errors.Is(err, os.ErrNotExist) {
+		return nil, 0, ErrNotFound
+	}
+	if err != nil {
+		return nil, 0, err
+	}
+	info, err := f.Stat()
+	if err != nil {
+		f.Close()
+		return nil, 0, err
+	}
+	return f, info.Size(), nil
+}
+
 func (s *Store) path(key string) string {
 	prefix := key
 	if len(prefix) > 2 {
