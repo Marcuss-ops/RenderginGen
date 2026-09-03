@@ -11,14 +11,18 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 	"sync"
 
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 	gdrive "google.golang.org/api/drive/v3"
+	"google.golang.org/api/googleapi"
 	"google.golang.org/api/option"
 )
+
+const defaultResumableChunkBytes = 8 * 1024 * 1024
 
 // PublishRequest is a single artifact publication to Google Drive.
 type PublishRequest struct {
@@ -27,6 +31,9 @@ type PublishRequest struct {
 	Path         string
 	ParentFolder string // Drive folder ID to place the file into (optional)
 	Subfolder    string // deterministic child folder name under ParentFolder (optional)
+	// UploadProgress is called after each resumable chunk. It must be cheap;
+	// the callback runs on the Drive upload path and must not block rendering.
+	UploadProgress func(uploaded, total int64)
 }
 
 // Result is the outcome of a Drive publication.
@@ -49,6 +56,8 @@ type Publisher interface {
 type Google struct {
 	service      *gdrive.Service
 	parentFolder string
+	resumable    bool
+	chunkBytes   int
 }
 
 // NewGoogle builds a Drive publisher from a service-account JSON credentials
@@ -67,7 +76,8 @@ func NewGoogle(ctx context.Context, credentialsFile, parentFolder string) (*Goog
 	if err != nil {
 		return nil, fmt.Errorf("drive: create service: %w", err)
 	}
-	return &Google{service: svc, parentFolder: parentFolder}, nil
+	return &Google{service: svc, parentFolder: parentFolder, resumable: true,
+		chunkBytes: configuredChunkBytes()}, nil
 }
 
 // NewGoogleOAuth builds a Drive publisher from a Google OAuth2 client
@@ -94,7 +104,17 @@ func NewGoogleOAuth(ctx context.Context, credentialsFile, tokenFile, parentFolde
 	if err != nil {
 		return nil, fmt.Errorf("drive: create service: %w", err)
 	}
-	return &Google{service: svc, parentFolder: parentFolder}, nil
+	return &Google{service: svc, parentFolder: parentFolder, resumable: true,
+		chunkBytes: configuredChunkBytes()}, nil
+}
+
+func configuredChunkBytes() int {
+	if raw := os.Getenv("RENDERINGGEN_DRIVE_CHUNK_BYTES"); raw != "" {
+		if n, err := strconv.Atoi(raw); err == nil && n >= googleapi.MinUploadChunkSize {
+			return n
+		}
+	}
+	return defaultResumableChunkBytes
 }
 
 // loadOAuthToken reads an oauth2 token file, tolerating the "token" and
@@ -183,11 +203,26 @@ func (g *Google) Publish(ctx context.Context, req PublishRequest) (Result, error
 	if err != nil {
 		return Result{}, fmt.Errorf("drive: stat %s: %w", req.Path, err)
 	}
-	res, err := g.service.Files.Create(file).
-		Media(input).
-		Fields("id", "webViewLink", "parents", "size", "mimeType").
-		Context(ctx).
-		Do()
+	create := g.service.Files.Create(file).
+		Fields("id", "webViewLink", "parents", "size", "mimeType")
+	var call *gdrive.FilesCreateCall
+	if g.resumable {
+		chunkBytes := g.chunkBytes
+		if chunkBytes < googleapi.MinUploadChunkSize {
+			chunkBytes = defaultResumableChunkBytes
+		}
+		call = create.Media(input,
+			googleapi.ContentType(req.ContentType),
+			googleapi.ChunkSize(chunkBytes),
+		).ProgressUpdater(func(uploaded, total int64) {
+			if req.UploadProgress != nil {
+				req.UploadProgress(uploaded, total)
+			}
+		}).Context(ctx)
+	} else {
+		call = create.Media(input, googleapi.ContentType(req.ContentType)).Context(ctx)
+	}
+	res, err := call.Do()
 	if err != nil {
 		return Result{}, fmt.Errorf("drive: upload %s: %w", req.Name, err)
 	}

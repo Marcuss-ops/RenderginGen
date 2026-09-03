@@ -15,6 +15,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/artifactdb"
@@ -461,9 +462,15 @@ func (p *Processor) Publish(ctx context.Context, jobID string, artifact queue.Ar
 	if err != nil {
 		return artifact, fmt.Errorf("processor: resolve rendered artifact locally: %w", err)
 	}
+	var uploadChunks atomic.Int64
+	var uploadedBytes atomic.Int64
 	res, err := p.drive.Publish(ctx, drive.PublishRequest{
 		Name: jobID + ".mp4", ContentType: artifact.ContentType, Path: path,
 		Subfolder: artifact.ArtifactHash,
+		UploadProgress: func(uploaded, _ int64) {
+			uploadChunks.Add(1)
+			uploadedBytes.Store(uploaded)
+		},
 	})
 	if err != nil {
 		return artifact, fmt.Errorf("processor: drive publish: %w", err)
@@ -479,6 +486,8 @@ func (p *Processor) Publish(ctx context.Context, jobID string, artifact queue.Ar
 	driveUS := float64(time.Since(phaseStart).Microseconds())
 	artifact.Metrics["drive_publish_ms"] = driveUS / 1000
 	artifact.Metrics["drive_upload_us"] = driveUS
+	artifact.Metrics["drive_upload_chunks"] = float64(uploadChunks.Load())
+	artifact.Metrics["drive_upload_bytes"] = float64(uploadedBytes.Load())
 	artifact.DriveFileID = res.FileID
 	artifact.DriveLink = res.WebViewLink
 	// The ledger row already exists (written by Render); a publication retry
