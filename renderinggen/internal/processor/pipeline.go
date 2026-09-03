@@ -131,6 +131,13 @@ func (p *Processor) RunGPU(ctx context.Context, prepared *PreparedJob) error {
 	metadata := renderMetadataFromPlan(prepared.Plan)
 	gpuRequired := p.strictNativeBackend ||
 		(p.backend == "vulkan" && p.hardwareEncoder != "" && p.hardwareEncoder != "none")
+	// Render progress: every '[video] N/M frames' milestone the renderer
+	// prints is logged (where did the 12 minutes go) and, when a shared
+	// tracker is installed, fed into it so health and the queue pusher can
+	// report live position. The last milestone also lands in the ledger
+	// metrics as render_frames_done/total + render_fps.
+	var lastProgress chronon.RenderProgress
+	sawProgress := false
 	if err := p.renderer.Render(ctx, chronon.RenderRequest{
 		PlanPath: prepared.Workspace.PlanPath(),
 		// Plans use the canonical assets/<file> namespace. The workspace
@@ -153,9 +160,14 @@ func (p *Processor) RunGPU(ctx context.Context, prepared *PreparedJob) error {
 		Output:      chronon.OutputSpec{Codec: "h264"},
 		TotalFrames: int64(metadata.FrameCount),
 		Progress: func(progress chronon.RenderProgress) {
+			sawProgress = true
+			lastProgress = progress
 			log.Printf("job %s progress: stage=chronon_render frames_done=%d frames_total=%d fps=%.2f last_frame_at=%s backend=%s encoder=%s",
 				job.ID, progress.FramesDone, progress.FramesTotal, progress.FPS,
 				progress.At.Format(time.RFC3339Nano), p.backend, p.hardwareEncoder)
+			if p.progressTracker != nil {
+				p.progressTracker.Observe(job.ID, progress.FramesDone, progress.FramesTotal)
+			}
 		},
 	}); err != nil {
 		return fmt.Errorf("processor: render: %w", err)
@@ -167,6 +179,25 @@ func (p *Processor) RunGPU(ctx context.Context, prepared *PreparedJob) error {
 	// Duty-cycle telemetry: the gap this render waited since the previous
 	// render ended on this worker. First job reports 0.
 	prepared.Metrics["gpu_gap_us"] = takeGPUGap(phaseStart)
+	// Frame-level observability: the final frame position the renderer
+	// reported plus its average fps (0 when the renderer printed no frame
+	// milestones — never silently confused with real progress).
+	if sawProgress && lastProgress.FramesDone > 0 {
+		prepared.Metrics["render_frames_done"] = float64(lastProgress.FramesDone)
+		prepared.Metrics["render_frames_total"] = float64(lastProgress.FramesTotal)
+		fps := lastProgress.FPS
+		if fps <= 0 {
+			if elapsed := time.Since(phaseStart).Seconds(); elapsed > 0 {
+				fps = float64(lastProgress.FramesDone) / elapsed
+			}
+		}
+		if fps > 0 {
+			prepared.Metrics["render_fps"] = fps
+		}
+	}
+	if p.progressTracker != nil {
+		p.progressTracker.Forget(job.ID)
+	}
 	if p.strictNativeBackend {
 		metadata := renderMetadataFromPlan(prepared.Plan)
 		if err := requireNativeVulkan(prepared.OutputPath, metadata.FrameCount); err != nil {

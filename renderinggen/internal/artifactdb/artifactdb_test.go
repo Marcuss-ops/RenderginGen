@@ -4,7 +4,9 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"path/filepath"
+	"sync"
 	"testing"
 	"time"
 )
@@ -244,6 +246,42 @@ CREATE TABLE artifact_records (
 	defer rec.Close()
 	if err := rec.Record(context.Background(), sampleRecord("job-1")); err != nil {
 		t.Fatalf("record on migrated ledger: %v", err)
+	}
+}
+
+func TestSQLiteRecorderConcurrentRecords(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "artifacts.db")
+	rec, err := NewSQLite(path)
+	if err != nil {
+		t.Fatalf("open: %v", err)
+	}
+	defer rec.Close()
+	// The production post pool records from several goroutines at once; a
+	// lock error here would fail otherwise-healthy jobs.
+	const n = 32
+	var wg sync.WaitGroup
+	errs := make(chan error, n)
+	for i := 0; i < n; i++ {
+		wg.Add(1)
+		go func(i int) {
+			defer wg.Done()
+			err := rec.Record(context.Background(), sampleRecord(fmt.Sprintf("job-%02d", i)))
+			if err != nil {
+				errs <- err
+			}
+		}(i)
+	}
+	wg.Wait()
+	close(errs)
+	for err := range errs {
+		t.Fatalf("concurrent record: %v", err)
+	}
+	var count int
+	if err := rec.db.QueryRowContext(context.Background(), `SELECT COUNT(*) FROM artifact_records`).Scan(&count); err != nil {
+		t.Fatalf("count: %v", err)
+	}
+	if count != n {
+		t.Fatalf("rows = %d, want %d", count, n)
 	}
 }
 

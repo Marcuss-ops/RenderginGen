@@ -166,12 +166,47 @@ func (r *Repository) ClaimState(workerID string, state model.State) (*model.Job,
 		chunkIndex  int
 		frameRange  []byte
 	)
+	// claimStateFilters maps a claimable state to its SQL predicate. The map is
+// compile-time fixed: no user input ever reaches the query text (the accepted
+// states are whitelisted below and rendered through this table, not string
+// concatenation of the caller's value).
+var claimStateFilters = map[model.State]string{
+	model.StatePending:  "state = 'pending'",
+	model.StateRendered: "state = 'rendered'",
+}
+
+func (r *Repository) ClaimState(workerID string, state model.State) (*model.Job, time.Duration, error) {
+	ctx := context.Background()
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer tx.Rollback()
+
+	now := time.Now()
+	leaseUntil := now.Add(r.lease)
+
+	var (
+		id          string
+		jobType     string
+		schema      string
+		version     sql.NullInt64
+		plan        []byte
+		manifest    []byte
+		attempts    int
+		queuedAt    time.Time
+		artifactID  sql.NullString
+		parentJobID sql.NullString
+		chunkIndex  int
+		frameRange  []byte
+	)
 	stateFilter := "state IN ('pending', 'rendered')"
 	if state != "" {
-		if state != model.StatePending && state != model.StateRendered {
+		filter, ok := claimStateFilters[state]
+		if !ok {
 			return nil, 0, fmt.Errorf("unsupported claim state %q", state)
 		}
-		stateFilter = "state = '" + string(state) + "'"
+		stateFilter = filter
 	}
 	err = tx.QueryRowContext(ctx, `
 		SELECT id, job_type, job_schema, job_schema_version, render_plan, input_manifest, attempt_count, queued_at, artifact_id, parent_job_id, chunk_index, frame_range
@@ -268,20 +303,26 @@ func (r *Repository) Get(id string) (*model.Job, error) {
 		parentJobID    sql.NullString
 		chunkIndex     int
 		frameRange     []byte
+		pFramesDone    sql.NullInt64
+		pTotalFrames   sql.NullInt64
+		pLastFrameAt   sql.NullTime
+		pWorker        sql.NullString
 	)
 	err := r.db.QueryRowContext(ctx, `
 		SELECT id, state, job_type, job_schema, job_schema_version, render_plan,
 		       input_manifest, attempt_count,
 		       current_worker_id, queued_at, started_at, completed_at,
 		       lease_until, error_message, artifact_id, idempotency_key,
-		       parent_job_id, chunk_index, frame_range
+		       parent_job_id, chunk_index, frame_range,
+		       progress_frames_done, progress_total_frames, progress_last_frame_at, progress_worker
 		FROM render_jobs
 		WHERE id = $1`, id).Scan(
 		&job.ID, &state, &job.JobType, &schema, &version, &plan,
 		&manifest, &job.Attempts,
 		&worker, &queuedAt, &startedAt, &completedAt,
 		&leaseUntil, &errorMsg, &artifactID, &idempotencyKey,
-		&parentJobID, &chunkIndex, &frameRange)
+		&parentJobID, &chunkIndex, &frameRange,
+		&pFramesDone, &pTotalFrames, &pLastFrameAt, &pWorker)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, fmt.Errorf("job %s: %w", id, repository.ErrNotFound)
 	}
@@ -315,6 +356,15 @@ func (r *Repository) Get(id string) (*model.Job, error) {
 	}
 	if errorMsg.Valid {
 		job.FailReason = errorMsg.String
+	}
+
+	if pLastFrameAt.Valid {
+		job.Progress = &model.Progress{
+			FramesDone:  int(pFramesDone.Int64),
+			TotalFrames: int(pTotalFrames.Int64),
+			LastFrameAt: pLastFrameAt.Time,
+			Worker:      pWorker.String,
+		}
 	}
 
 	if artifactID.Valid {
@@ -572,7 +622,9 @@ func (r *Repository) Retry(id string) error {
 	_, err = tx.ExecContext(ctx, `
 		UPDATE render_jobs
 		SET state = 'pending', error_message = NULL, queued_at = now(),
-		    current_worker_id = NULL, lease_until = NULL
+		    current_worker_id = NULL, lease_until = NULL,
+		    progress_frames_done = 0, progress_total_frames = 0,
+		    progress_last_frame_at = NULL, progress_worker = ''
 		WHERE id = $1`, id)
 	if err != nil {
 		return err
@@ -582,6 +634,49 @@ func (r *Repository) Retry(id string) error {
 		return err
 	}
 	return tx.Commit()
+}
+
+// SetProgress stores the latest render progress from the lease-owning worker.
+// The conditional UPDATE (state='running' AND current_worker_id=workerID)
+// makes a stale worker's report a no-op instead of a corruption vector: the
+// report either lands on the current owner's row or affects zero rows.
+func (r *Repository) SetProgress(id, workerID string, p model.Progress) error {
+	if id == "" || workerID == "" {
+		return fmt.Errorf("job id and worker id are required")
+	}
+	if p.FramesDone < 0 || p.TotalFrames < 0 {
+		return fmt.Errorf("job %s: negative progress values are invalid", id)
+	}
+	if p.TotalFrames > 0 && p.FramesDone > p.TotalFrames {
+		return fmt.Errorf("job %s: frames_done %d exceeds frames_total %d", id, p.FramesDone, p.TotalFrames)
+	}
+	res, err := r.db.ExecContext(context.Background(), `
+		UPDATE render_jobs
+		SET progress_frames_done = $2,
+		    progress_total_frames = $3,
+		    progress_last_frame_at = now(),
+		    progress_worker = $4
+		WHERE id = $1 AND state = 'running' AND current_worker_id = $4`,
+		id, p.FramesDone, p.TotalFrames, workerID)
+	if err != nil {
+		return err
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		// Distinguish "unknown job" from "not the lease owner" for callers.
+		var state string
+		err := r.db.QueryRowContext(context.Background(), `SELECT state FROM render_jobs WHERE id = $1`, id).Scan(&state)
+		if errors.Is(err, sql.ErrNoRows) {
+			return fmt.Errorf("job %s: %w", id, repository.ErrNotFound)
+		}
+		if err != nil {
+			return err
+		}
+		if state != string(model.StateRunning) {
+			return fmt.Errorf("job %s is in state %q, cannot report progress for non-running job", id, state)
+		}
+		return fmt.Errorf("job %s is owned by another worker", id)
+	}
+	return nil
 }
 
 // RequeueExpired permanently fails expired jobs that exhausted their attempts

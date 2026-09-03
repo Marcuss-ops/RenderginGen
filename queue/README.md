@@ -84,6 +84,7 @@ Response `200 OK`:
 | `POST` | `/jobs/{id}/complete` | Report successful render + artifact |
 | `POST` | `/jobs/{id}/fail` | Report failure (requeue or fail permanently) |
 | `POST` | `/jobs/{id}/renew` | Extend the lease during a long render |
+| `POST` | `/jobs/{id}/progress` | Report render progress (frames done/total) |
 
 #### `POST /jobs/claim`
 
@@ -123,6 +124,15 @@ requeued; otherwise they fail permanently.
 
 Request: `{"worker":"renderinggen-77"}`. Response `204 No Content`, or
 `409 Conflict` if the lease already expired and the job was requeued.
+
+#### `POST /jobs/{id}/progress`
+
+Request: `{"worker":"renderinggen-77","data":{"frames_done":485,"frames_total":1800}}`.
+Response `204 No Content`, `409 Conflict` when the job is not running or is
+owned by another worker, `404 Not Found` for unknown jobs. The queue stores
+the snapshot (plus its own `last_frame_at` timestamp) so `GET /jobs/{id}`
+exposes live render position without asking the worker; a report from a
+worker that no longer owns the lease is rejected, never applied.
 
 ### Worker registry
 
@@ -179,12 +189,22 @@ Prometheus metrics: `renderinggen_jobs_pending` (gauge),
   "created_at": "2026-08-14T10:00:00Z",
   "queued_at": "2026-08-14T10:00:00Z",
   "started_at": "2026-08-14T10:00:05Z",
-  "completed_at": "0001-01-01T00:00:00Z",
-  "lease_until": "2026-08-14T10:00:35Z",
-  "fail_reason": "",
-  "artifact": { }
+  "completed_at": "0001-01-01T00:00:00Z",	"lease_until": "2026-08-14T10:00:35Z",
+	"fail_reason": "",
+	"artifact": { },
+	"progress": {
+		"frames_done": 485,
+		"frames_total": 1800,
+		"last_frame_at": "2026-08-14T10:00:30.123456789Z",
+		"worker": "renderinggen-77"
+	}
 }
 ```
+
+`progress` is the last render progress the lease-owning worker reported via
+`POST /jobs/{id}/progress` (absent until the first report). `frames_done` is
+the last absolute frame position the renderer reported — use `last_frame_at`
+age as the render liveness signal, not GPU memory.
 
 `state` is one of `pending`, `running`, `completed`, `failed`. The `artifact`
 field is populated only once the job completes.

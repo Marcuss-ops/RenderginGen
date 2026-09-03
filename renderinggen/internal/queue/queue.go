@@ -29,6 +29,11 @@ const (
 
 const workerClaimWait = 20 * time.Second
 
+// RenewConflictError identifies a permanent lease loss reported by the queue
+// (HTTP 409 on renew): the job is no longer owned by this worker. Callers use
+// errors.As with this type to abort immediately instead of retrying.
+var RenewConflictError = queueclient.ErrLeaseConflict
+
 // State is the lifecycle state of a job, as reported on claim.
 type State string
 
@@ -282,6 +287,16 @@ func (c *Client) Rendered(ctx context.Context, id, reason string, artifact Artif
 // render. It fails if the job expired and was requeued to another worker.
 func (c *Client) Renew(ctx context.Context, id string) error {
 	return c.q.Renew(ctx, id, c.workerID)
+}
+
+// ReportProgress records live render progress (last frame position) for a
+// running job owned by this worker. The wire contract lives in the public
+// queue client; this adapter only fills in the worker identity.
+func (c *Client) ReportProgress(ctx context.Context, id string, framesDone, framesTotal int64) error {
+	return c.q.ReportProgress(ctx, id, c.workerID, queueclient.Progress{
+		FramesDone:  int(framesDone),
+		TotalFrames: int(framesTotal),
+	})
 }
 
 func toClientFrameRange(in *FrameRange) *queueclient.FrameRange {

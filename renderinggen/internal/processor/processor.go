@@ -53,6 +53,11 @@ type Processor struct {
 	hardwareEncoder      string
 	nativeOutputProfiles bool
 	strictNativeBackend  bool
+
+	// progressTracker, when set, receives per-frame progress observations
+	// during RunGPU so health and the queue pusher can report live render
+	// position instead of an opaque RUNNING/0% for minutes.
+	progressTracker *chronon.ProgressTracker
 }
 
 // New creates a job processor.
@@ -111,6 +116,13 @@ func (p *Processor) SetPublisher(pub drive.Publisher) {
 // the ledger.
 func (p *Processor) SetArtifactRecorder(rec artifactdb.Recorder) {
 	p.recorder = rec
+}
+
+// SetProgressTracker installs the shared render progress tracker. When set,
+// RunGPU feeds every renderer frame-milestone into it and records the final
+// frame position + average fps into the job's ledger metrics.
+func (p *Processor) SetProgressTracker(tracker *chronon.ProgressTracker) {
+	p.progressTracker = tracker
 }
 
 func (p *Processor) recordPhase(phase string, start time.Time) {
@@ -237,12 +249,24 @@ func isHTTPURL(s string) bool {
 	return strings.HasPrefix(s, "http://") || strings.HasPrefix(s, "https://")
 }
 
+// assetDownloadClient bounds every self-heal download: without a timeout a
+// hanging URL would pin a prep-pool goroutine (and, through lease renewal,
+// the job) forever, and without a size cap an oversized response can OOM the
+// worker. Only http/https URLs reach this path (see isHTTPURL).
+var assetDownloadClient = &http.Client{
+	Timeout: 5 * time.Minute,
+}
+
+// maxAssetDownloadBytes caps a self-healed asset download (1 GiB: a rendered
+// background video is far below this; anything larger is a bug or an attack).
+const maxAssetDownloadBytes = 1 << 30
+
 func downloadAsset(ctx context.Context, rawURL string) ([]byte, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, rawURL, nil)
 	if err != nil {
 		return nil, err
 	}
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := assetDownloadClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -250,7 +274,14 @@ func downloadAsset(ctx context.Context, rawURL string) ([]byte, error) {
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		return nil, fmt.Errorf("download %s: HTTP %d", rawURL, resp.StatusCode)
 	}
-	return io.ReadAll(resp.Body)
+	data, err := io.ReadAll(io.LimitReader(resp.Body, maxAssetDownloadBytes+1))
+	if err != nil {
+		return nil, err
+	}
+	if int64(len(data)) > maxAssetDownloadBytes {
+		return nil, fmt.Errorf("download %s exceeds %d bytes cap", rawURL, maxAssetDownloadBytes)
+	}
+	return data, nil
 }
 
 // hashFileSHA256 streams a file through SHA-256 without buffering it in RAM.
@@ -332,6 +363,7 @@ func requireNativeVulkan(outputPath string, expectedFrames int) error {
 	}
 	var doc struct {
 		Job struct {
+			ExecutionPath      string `json:"execution_path"`
 			SurfaceHandoffPath string `json:"surface_handoff_path"`
 			GPU                struct {
 				EffectiveBackend     string `json:"effective_backend"`
@@ -341,13 +373,15 @@ func requireNativeVulkan(outputPath string, expectedFrames int) error {
 				SoftwareEncodeFrames *int64 `json:"software_encode_frames"`
 				NVENCFrames          *int64 `json:"nvenc_frames"`
 				VulkanFrames         *int64 `json:"vulkan_frames"`
+				NativeSurfaceFrames  *int64 `json:"gpu_native_surface_frames"`
 			} `json:"gpu"`
 		} `json:"job"`
 	}
 	if err := json.Unmarshal(raw, &doc); err != nil {
 		return fmt.Errorf("decode Chronon timing receipt: %w", err)
 	}
-	if doc.Job.GPU.EffectiveBackend != "vulkan" {
+	directYUV := doc.Job.ExecutionPath == "direct_yuv"
+	if !directYUV && doc.Job.GPU.EffectiveBackend != "vulkan" {
 		return fmt.Errorf("effective_backend=%q, want vulkan", doc.Job.GPU.EffectiveBackend)
 	}
 	if doc.Job.GPU.FallbackNodes == nil || *doc.Job.GPU.FallbackNodes != 0 {
@@ -375,7 +409,14 @@ func requireNativeVulkan(outputPath string, expectedFrames int) error {
 			}
 			return fmt.Errorf("nvenc_frames=%d, want %d", *doc.Job.GPU.NVENCFrames, expectedFrames)
 		}
-		if doc.Job.GPU.VulkanFrames == nil || *doc.Job.GPU.VulkanFrames != int64(expectedFrames) {
+		if directYUV {
+			if doc.Job.GPU.NativeSurfaceFrames == nil || *doc.Job.GPU.NativeSurfaceFrames != int64(expectedFrames) {
+				if doc.Job.GPU.NativeSurfaceFrames == nil {
+					return fmt.Errorf("gpu_native_surface_frames missing, want %d", expectedFrames)
+				}
+				return fmt.Errorf("gpu_native_surface_frames=%d, want %d", *doc.Job.GPU.NativeSurfaceFrames, expectedFrames)
+			}
+		} else if doc.Job.GPU.VulkanFrames == nil || *doc.Job.GPU.VulkanFrames != int64(expectedFrames) {
 			if doc.Job.GPU.VulkanFrames == nil {
 				return fmt.Errorf("vulkan_frames missing, want %d", expectedFrames)
 			}
@@ -522,7 +563,7 @@ func (p *Processor) storeArtifact(ctx context.Context, jobID, outputPath string,
 		FPSDen:         metadata.FPSDen,
 		FrameCount:     metadata.FrameCount,
 		DurationUS:     metadata.DurationUS,
-		Backend:        p.backend,
+		Backend:        publishedRenderBackend(p.backend, p.strictNativeBackend),
 		ChrononVersion: p.chrononVersion,
 		Metrics:        phaseMetrics,
 		ProfileID:      metadata.ProfileID,
@@ -627,6 +668,17 @@ func (p *Processor) recordArtifact(ctx context.Context, jobID string, artifact q
 		return fmt.Errorf("processor: artifact ledger %s: %w", jobID, err)
 	}
 	return nil
+}
+
+// publishedRenderBackend is the cross-service backend identity. RenderingGen
+// uses "vulkan" internally for configuration, while PipelineGen's clip.render
+// contract names the certified Chronon path "chronon_vulkan". Only a render
+// that passed the strict native gate may receive that published identity.
+func publishedRenderBackend(backend string, strictNative bool) string {
+	if backend == "vulkan" && strictNative {
+		return "chronon_vulkan"
+	}
+	return backend
 }
 
 type renderMetadata struct {

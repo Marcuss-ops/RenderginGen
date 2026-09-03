@@ -19,13 +19,15 @@ type OutputProfile struct {
 }
 
 const (
-	ProfileVeloxH2641080p30V1 = "velox-h264-1080p30-v1"
-	ProfileVeloxH264720p30V1  = "velox-h264-720p30-v1"
+	ProfileVeloxAssemblyReadyV1 = "VELOX_ASSEMBLY_READY_V1"
+	ProfileVeloxH2641080p30V1   = "velox-h264-1080p30-v1"
+	ProfileVeloxH264720p30V1    = "velox-h264-720p30-v1"
 )
 
 var profiles = map[string]OutputProfile{
-	ProfileVeloxH2641080p30V1: {ID: ProfileVeloxH2641080p30V1, Width: 1920, Height: 1080, FPSNum: 30, FPSDen: 1, Codec: "h264", CodecProfile: "High", PixelFormat: "yuv420p", Container: "mp4", RequireNoAudio: true, RequireKeyframe: true},
-	ProfileVeloxH264720p30V1:  {ID: ProfileVeloxH264720p30V1, Width: 1280, Height: 720, FPSNum: 30, FPSDen: 1, Codec: "h264", CodecProfile: "High", PixelFormat: "yuv420p", Container: "mp4", RequireNoAudio: true, RequireKeyframe: true},
+	ProfileVeloxAssemblyReadyV1: {ID: ProfileVeloxAssemblyReadyV1, Width: 1920, Height: 1080, FPSNum: 24, FPSDen: 1, Codec: "h264", CodecProfile: "Main", PixelFormat: "yuv420p", Container: "mp4", RequireNoAudio: false, RequireKeyframe: true},
+	ProfileVeloxH2641080p30V1:   {ID: ProfileVeloxH2641080p30V1, Width: 1920, Height: 1080, FPSNum: 30, FPSDen: 1, Codec: "h264", CodecProfile: "High", PixelFormat: "yuv420p", Container: "mp4", RequireNoAudio: true, RequireKeyframe: true},
+	ProfileVeloxH264720p30V1:    {ID: ProfileVeloxH264720p30V1, Width: 1280, Height: 720, FPSNum: 30, FPSDen: 1, Codec: "h264", CodecProfile: "High", PixelFormat: "yuv420p", Container: "mp4", RequireNoAudio: true, RequireKeyframe: true},
 }
 
 func ResolveProfile(id string) (OutputProfile, error) {
