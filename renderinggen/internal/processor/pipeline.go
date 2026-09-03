@@ -141,7 +141,11 @@ func (p *Processor) RunGPU(ctx context.Context, prepared *PreparedJob) error {
 		Requirements: chronon.ExecutionRequirements{
 			GPURequired:         gpuRequired,
 			CPUFallbackAllowed:  !p.strictNativeBackend,
-			CompositionRequired: true,
+			// A plain source clip can use Chronon's direct-YUV NVDEC→NVENC
+			// path. Only plans with an authored visual layer require the full
+			// Vulkan graph/native-surface handoff; treating every source clip as
+			// a composition makes Chronon reject otherwise valid decoder frames.
+			CompositionRequired: hasVisualOverlay(prepared.Plan),
 			PacketCopyAllowed:   true,
 		},
 		FirstFrame:  frameStart(job),

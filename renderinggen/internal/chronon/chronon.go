@@ -249,7 +249,17 @@ func renderArgs(req RenderRequest) []string {
 		args = append(args, "--report")
 	}
 	if req.Requirements.GPURequired {
-		args = append(args, "--hardware", "nvenc")
+		// GPU requirements must select the complete native handoff. Passing
+		// only --hardware leaves Chronon in its auto/direct-yuv resolver, which
+		// can feed a decoded host surface to the native encoder. RenderingGen
+		// has already declared the semantic requirement, so make that contract
+		// explicit at the CLI boundary.
+		args = append(args, "--hardware", "nvenc", "--encoder-backend", "native")
+		hotPath := "require_direct_yuv"
+		if req.Requirements.CompositionRequired {
+			hotPath = "require_gpu_native"
+		}
+		args = append(args, "--gpu-hot-path-mode", hotPath)
 	}
 	if req.LastFrame >= req.FirstFrame && (req.FirstFrame != 0 || req.LastFrame != 0) {
 		args = append(args, "--start-frame", fmt.Sprint(req.FirstFrame), "--end-frame", fmt.Sprint(req.LastFrame))

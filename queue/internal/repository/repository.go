@@ -53,6 +53,12 @@ type JobRepository interface {
 	// Retry resets a failed job back to pending state for re-execution.
 	Retry(id string) error
 
+	// SetProgress stores the latest render progress reported by the worker
+	// that owns the job's lease. It fails if the job is not running or the
+	// reporting worker does not match the lease owner, so a stale worker
+	// cannot overwrite the progress of the current owner.
+	SetProgress(id, workerID string, p model.Progress) error
+
 	// RequeueExpired requeues (or permanently fails) jobs whose lease elapsed,
 	// returning the number of jobs affected.
 	RequeueExpired(now time.Time) (int, error)
