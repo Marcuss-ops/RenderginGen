@@ -84,13 +84,21 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /jobs/claim", s.claim)
 	mux.HandleFunc("POST /jobs/claim/wait", s.claimWait)
 	mux.HandleFunc("POST /jobs/{id}/complete", s.complete)
+	mux.HandleFunc("POST /jobs/{parent}/{lang}/complete", s.complete)
 	mux.HandleFunc("POST /jobs/{id}/rendered", s.rendered)
+	mux.HandleFunc("POST /jobs/{parent}/{lang}/rendered", s.rendered)
 	mux.HandleFunc("POST /jobs/{id}/fail", s.fail)
+	mux.HandleFunc("POST /jobs/{parent}/{lang}/fail", s.fail)
 	mux.HandleFunc("POST /jobs/{id}/retry", s.retry)
+	mux.HandleFunc("POST /jobs/{parent}/{lang}/retry", s.retry)
 	mux.HandleFunc("POST /jobs/{id}/renew", s.renew)
+	mux.HandleFunc("POST /jobs/{parent}/{lang}/renew", s.renew)
 	mux.HandleFunc("POST /jobs/{id}/finalize/claim", s.claimFinalization)
+	mux.HandleFunc("POST /jobs/{parent}/{lang}/finalize/claim", s.claimFinalization)
 	mux.HandleFunc("GET /jobs/{id}/children", s.children)
+	mux.HandleFunc("GET /jobs/{parent}/{lang}/children", s.children)
 	mux.HandleFunc("GET /jobs/{id}", s.get)
+	mux.HandleFunc("GET /jobs/{parent}/{lang}", s.get)
 	mux.HandleFunc("GET /jobs/depth", s.depth)
 	mux.HandleFunc("GET /health", s.health)
 	mux.HandleFunc("POST /workers/register", s.registerWorker)
@@ -101,6 +109,15 @@ func (s *Server) Handler() http.Handler {
 		mux.Handle("GET /metrics", s.metricsHandler)
 	}
 	return mux
+}
+
+func parseJobID(r *http.Request) string {
+	if parent := r.PathValue("parent"); parent != "" {
+		if lang := r.PathValue("lang"); lang != "" {
+			return parent + "/" + lang
+		}
+	}
+	return r.PathValue("id")
 }
 
 func (s *Server) submit(w http.ResponseWriter, r *http.Request) {
@@ -246,7 +263,7 @@ func (s *Server) claimWait(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) complete(w http.ResponseWriter, r *http.Request) {
-	id := r.PathValue("id")
+	id := parseJobID(r)
 	var req struct {
 		Worker string         `json:"worker"`
 		Data   model.Artifact `json:"data"`
@@ -261,7 +278,7 @@ func (s *Server) complete(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) fail(w http.ResponseWriter, r *http.Request) {
-	id := r.PathValue("id")
+	id := parseJobID(r)
 	var req struct {
 		Worker string `json:"worker"`
 		Data   struct {
@@ -278,7 +295,7 @@ func (s *Server) fail(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) retry(w http.ResponseWriter, r *http.Request) {
-	id := r.PathValue("id")
+	id := parseJobID(r)
 	if err := s.svc.Retry(id); err != nil {
 		if errors.Is(err, repository.ErrNotFound) {
 			http.Error(w, err.Error(), http.StatusNotFound)
@@ -292,7 +309,7 @@ func (s *Server) retry(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) rendered(w http.ResponseWriter, r *http.Request) {
-	id := r.PathValue("id")
+	id := parseJobID(r)
 	var req struct {
 		Worker string `json:"worker"`
 		Data   struct {
@@ -310,7 +327,7 @@ func (s *Server) rendered(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) renew(w http.ResponseWriter, r *http.Request) {
-	id := r.PathValue("id")
+	id := parseJobID(r)
 	var req struct {
 		Worker string `json:"worker"`
 	}
@@ -331,7 +348,7 @@ func (s *Server) claimFinalization(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	job, claimed, err := s.svc.ClaimFinalization(r.PathValue("id"), req.Worker)
+	job, claimed, err := s.svc.ClaimFinalization(parseJobID(r), req.Worker)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusConflict)
 		return
@@ -344,7 +361,7 @@ func (s *Server) claimFinalization(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) children(w http.ResponseWriter, r *http.Request) {
-	jobs, err := s.svc.Children(r.PathValue("id"))
+	jobs, err := s.svc.Children(parseJobID(r))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -353,7 +370,7 @@ func (s *Server) children(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) get(w http.ResponseWriter, r *http.Request) {
-	id := r.PathValue("id")
+	id := parseJobID(r)
 	job, err := s.svc.Get(id)
 	if err != nil {
 		if errors.Is(err, repository.ErrNotFound) {
