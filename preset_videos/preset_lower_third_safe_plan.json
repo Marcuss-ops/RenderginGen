@@ -1,0 +1,63 @@
+{
+  "schema": "chronon.render-plan.v2",
+  "version": 2,
+  "job_id": "preset_lower_third_safe",
+  "canvas": {
+    "width": 1920,
+    "height": 1080,
+    "fps_num": 24,
+    "fps_den": 1,
+    "duration_frames": 120
+  },
+  "layers": [
+    {
+      "id": "bg_video",
+      "type": "video",
+      "source": "background.mp4",
+      "fit": "cover",
+      "opacity": 1,
+      "start_frame": 0,
+      "duration_frames": 120
+    },
+    {
+      "id": "entity_1_text",
+      "type": "text",
+      "text": "Gerard Butler",
+      "size": [
+        1920,
+        120
+      ],
+      "style": {
+        "font": "fonts/Poppins-Bold.ttf",
+        "font_size": 72,
+        "fill": "#FFFFFF"
+      },
+      "opacity": 1,
+      "start_frame": 0,
+      "duration_frames": 120,
+      "animation": {
+        "tracks": [
+          {
+            "property": "opacity",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 0
+              },
+              {
+                "frame": 12,
+                "value": 1
+              }
+            ],
+            "easing": "out_cubic"
+          }
+        ]
+      }
+    }
+  ],
+  "output": {
+    "path": "/home/pierone/src/go-master/projects/Pyt/VeloxEditing/RenderingGen/preset_videos/preset_lower_third_safe_24fps_1080p.mp4",
+    "format": "mp4",
+    "codec": "h264"
+  }
+}

@@ -25,6 +25,18 @@ type fakeRenderer struct {
 	calls int
 }
 
+func TestHasVisualOverlayDistinguishesVideoOnlyFromAuthoredComposition(t *testing.T) {
+	if hasVisualOverlay([]byte(`{"layers":[{"type":"video"}]}`)) {
+		t.Fatal("video-only plan must use direct-yuv")
+	}
+	if !hasVisualOverlay([]byte(`{"layers":[{"type":"text"}]}`)) {
+		t.Fatal("text-only plan must use native composition")
+	}
+	if !hasVisualOverlay([]byte(`{"layers":[{"type":"image"}]}`)) {
+		t.Fatal("image-only plan must use native composition")
+	}
+}
+
 func (f *fakeRenderer) Render(_ context.Context, req chronon.RenderRequest) error {
 	f.calls++
 	f.req = req
@@ -47,10 +59,17 @@ func newProcessor(t *testing.T) (*Processor, *storage.Client, *fakeRenderer) {
 
 func validJob() *queue.Job {
 	return &queue.Job{
-		ID:         "video-983",
-		Schema:     queue.JobSchemaV1,
-		Version:    queue.JobSchemaVersionV1,
-		RenderPlan: json.RawMessage(`{"schema":"chronon.render-plan","version":1}`),
+		ID:      "video-983",
+		Schema:  queue.JobSchemaV1,
+		Version: queue.JobSchemaVersionV1,
+		// The worker only executes the semantic overlay-plan contract lowered
+		// by the compiler; the historical concrete-plan pass-through is gone.
+		RenderPlan: json.RawMessage(`{
+		  "schema_version":"renderinggen.overlay-plan.v1",
+		  "plan_id":"video-983","video_id":"video-983",
+		  "width":1280,"height":720,"fps_num":30,"fps_den":1,"duration_ms":1000,
+		  "source":{"asset_id":"video-983","sha256":"hash-video"}
+		}`),
 		Assets: []queue.AssetRef{
 			{Hash: "hash-video", LogicalPath: "videos/base.mp4"},
 		},
@@ -111,9 +130,16 @@ func TestProcessFullPipeline(t *testing.T) {
 		t.Fatalf("render request paths empty: %+v", renderer.req)
 	}
 
-	// plan.json was written to disk.
-	if string(capturedPlan) != `{"schema":"chronon.render-plan","version":1}` {
-		t.Fatalf("plan.json = %q", capturedPlan)
+	// plan.json is the compiled concrete Chronon plan, never the semantic
+	// contract the job submitted.
+	var submitted struct {
+		Schema string `json:"schema"`
+	}
+	if err := json.Unmarshal(capturedPlan, &submitted); err != nil {
+		t.Fatalf("plan.json is not valid JSON: %v", err)
+	}
+	if submitted.Schema != "chronon.render-plan.v2" {
+		t.Fatalf("plan.json schema = %q, want chronon.render-plan.v2", submitted.Schema)
 	}
 
 	// Assets were materialized at their logical path.
@@ -138,9 +164,11 @@ func TestProcessFullPipeline(t *testing.T) {
 
 func TestPrepareCompilesAndStoresPlanWithoutInvokingChronon(t *testing.T) {
 	proc, store, renderer := newProcessor(t)
+	if err := store.Put(context.Background(), "hash-video", []byte("video-bytes")); err != nil {
+		t.Fatalf("put asset: %v", err)
+	}
 	job := validJob()
 	job.ID = "overlay-prepare-1"
-	job.Assets = nil
 
 	artifact, err := proc.Prepare(context.Background(), job)
 	if err != nil {

@@ -1,0 +1,63 @@
+{
+  "schema": "chronon.render-plan.v2",
+  "version": 2,
+  "job_id": "preset_bottom_card_rise",
+  "canvas": {
+    "width": 1920,
+    "height": 1080,
+    "fps_num": 24,
+    "fps_den": 1,
+    "duration_frames": 120
+  },
+  "layers": [
+    {
+      "id": "bg_video",
+      "type": "video",
+      "source": "background.mp4",
+      "fit": "cover",
+      "opacity": 1,
+      "start_frame": 0,
+      "duration_frames": 120
+    },
+    {
+      "id": "entity_1_image",
+      "type": "image",
+      "asset": "overlay_chart.png",
+      "size": [
+        420,
+        420
+      ],
+      "fit": "contain",
+      "position": [
+        750,
+        330
+      ],
+      "opacity": 1,
+      "start_frame": 0,
+      "duration_frames": 120,
+      "animation": {
+        "tracks": [
+          {
+            "property": "position_y",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 40
+              },
+              {
+                "frame": 12,
+                "value": 0
+              }
+            ],
+            "easing": "out_cubic"
+          }
+        ]
+      }
+    }
+  ],
+  "output": {
+    "path": "/home/pierone/src/go-master/projects/Pyt/VeloxEditing/RenderingGen/preset_videos/preset_bottom_card_rise_24fps_1080p.mp4",
+    "format": "mp4",
+    "codec": "h264"
+  }
+}

@@ -96,7 +96,16 @@ func main() {
 		renderer = ipc
 		assembler = ipc
 	} else {
-		cli := &chronon.Client{Home: cfg.Chronon.Home}
+		// The Client carries the semantic knobs its Verify() handshake
+		// validates against: a worker configured for the native GPU hot path
+		// must refuse a Chronon binary compiled without that path (fail-fast
+		// before READY — never after accepting jobs).
+		cli := &chronon.Client{
+			Home:                cfg.Chronon.Home,
+			Backend:             cfg.Chronon.Backend,
+			StrictNativeBackend: cfg.Chronon.StrictNativeBackend || cfg.Chronon.Profile == "gpu-vulkan-native",
+			HardwareEncoder:     cfg.Chronon.HardwareEncoder,
+		}
 		if err := cli.Verify(); err != nil {
 			log.Fatalf("chronon: %v", err)
 		}
@@ -108,9 +117,10 @@ func main() {
 			chrononVersion = cli.Version()
 		}
 	}
-	// CPU/I/O stages may execute concurrently, but the renderer is wrapped in
-	// one context-aware lane so only one Chronon job can occupy the GPU at once.
-	renderer = chronon.Serialize(renderer)
+	// CPU/I/O stages execute concurrently, and the renderer is allowed up to 2
+	// concurrent GPU sessions on RTX A4000 (NVENC multi-session enabled).
+	gpuLanes := 2
+	renderer = chronon.LimitConcurrency(renderer, gpuLanes)
 
 	// 3. Connect queue + storage.
 	queueClient := queue.New(cfg.Queue.Endpoint, cfg.Worker.ID)
@@ -250,16 +260,13 @@ func main() {
 		numWorkers = 1
 	}
 
-	log.Printf("worker %s ready: renderinggen=%s chronon=%s schema=%d pipeline_workers=%d gpu_lanes=1",
-		cfg.Worker.ID, version.RenderingGen, chrononVersion, version.OverlaySchema, numWorkers)
+	log.Printf("worker %s ready: renderinggen=%s chronon=%s schema=%d pipeline_workers=%d gpu_lanes=%d",
+		cfg.Worker.ID, version.RenderingGen, chrononVersion, version.OverlaySchema, numWorkers, gpuLanes)
 
-	// 5. Run the three-stage pipeline: CPU preparation feeds a single GPU
-	// lane, and CPU post-processing (probe, hash, store, publish) drains
-	// behind it. While Chronon renders job N, the prep pool materializes
-	// job N+1 and the post pool finalizes job N-1. The queue remains the
-	// source of truth and leases prevent duplicate claims.
-	prepCh := make(chan *preppedJob, numWorkers)
-	doneCh := make(chan renderOutcome, numWorkers)
+	// 5. Run the three-stage pipeline: CPU preparation feeds GPU lanes,
+	// and CPU post-processing (probe, hash, store, publish) drains behind them.
+	prepCh := make(chan *preppedJob, numWorkers*2)
+	doneCh := make(chan renderOutcome, numWorkers*2)
 	var workers sync.WaitGroup
 	// Prep pool: claim + validate + compile + materialize (CPU/IO bound).
 	for i := 0; i < numWorkers; i++ {
@@ -269,12 +276,14 @@ func main() {
 			runPrepPool(ctx, queueClient, proc, prepCh)
 		}()
 	}
-	// GPU lane: the only stage that touches Chronon; strictly one at a time.
-	workers.Add(1)
-	go func() {
-		defer workers.Done()
-		runGPULane(ctx, queueClient, proc, prepCh, doneCh)
-	}()
+	// GPU lanes: parallel Chronon render sessions.
+	for i := 0; i < gpuLanes; i++ {
+		workers.Add(1)
+		go func() {
+			defer workers.Done()
+			runGPULane(ctx, queueClient, proc, prepCh, doneCh)
+		}()
+	}
 	// Post pool: finalize (probe/hash/store) + Drive publication (CPU/IO).
 	for i := 0; i < numWorkers; i++ {
 		workers.Add(1)

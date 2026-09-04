@@ -18,7 +18,25 @@ func resolveMotion(m MotionDefinition) []AnimationTrack {
 	if err != nil {
 		return nil
 	}
-	return fromMotionTracks(tracks)
+	return clampMotionTracks(fromMotionTracks(tracks), int64(m.Enter))
+}
+
+// clampMotionTracks keeps preset-authored keyframes inside the concrete
+// layer duration. A semantic overlay can be shorter than the catalog's
+// default enter duration (for example a brief spoken entity); Chronon rejects
+// any keyframe beyond that layer/composition boundary.
+func clampMotionTracks(tracks []AnimationTrack, duration int64) []AnimationTrack {
+	if duration <= 0 {
+		return tracks
+	}
+	for i := range tracks {
+		for j := range tracks[i].Keyframes {
+			if tracks[i].Keyframes[j].Frame > duration {
+				tracks[i].Keyframes[j].Frame = duration
+			}
+		}
+	}
+	return tracks
 }
 
 func tracksForMotion(m MotionDefinition) []AnimationTrack {

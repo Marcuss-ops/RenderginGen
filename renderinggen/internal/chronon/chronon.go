@@ -68,6 +68,7 @@ type ExecutionRequirements struct {
 	GPURequired         bool `json:"gpu_required"`
 	CPUFallbackAllowed  bool `json:"cpu_fallback_allowed"`
 	CompositionRequired bool `json:"composition_required"`
+	VideoSourceRequired bool `json:"video_source_required"`
 	PacketCopyAllowed   bool `json:"packet_copy_allowed"`
 }
 
@@ -87,7 +88,10 @@ type Renderer interface {
 // Client renders through the Chronon3d CLI binary installed in the worker
 // image. It implements Renderer.
 type Client struct {
-	Home string
+	Home                string
+	Backend             string
+	StrictNativeBackend bool
+	HardwareEncoder     string
 }
 
 // Compile-time check that Client satisfies Renderer.
@@ -105,7 +109,10 @@ func (c *Client) Binary() string {
 	return filepath.Join(c.Home, "apps", "chronon3d_cli", "chronon3d_cli")
 }
 
-// Verify checks that the Chronon binary is present and executable.
+// Verify checks that the Chronon binary is present, executable, and reports
+// the capabilities this worker's configuration requires. Capability parsing
+// lives once in capabilities.go — this method is a thin config-specific
+// wrapper over Capabilities(ctx), never a second decoder.
 func (c *Client) Verify() error {
 	p := c.Binary()
 	st, err := os.Stat(p)
@@ -115,16 +122,51 @@ func (c *Client) Verify() error {
 	if st.IsDir() {
 		return fmt.Errorf("chronon binary %s is a directory", p)
 	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), doctorTimeout)
+	defer cancel()
+
+	caps, err := c.Capabilities(ctx)
+	if err != nil {
+		return fmt.Errorf("chronon capability verification failed: %w", err)
+	}
+
+	// Requirement derivation mirrors Processor.RunGPU's gpuRequired and
+	// renderArgs' GPU branch: whenever the worker would force the native GPU
+	// hot path (--backend vulkan --hardware nvenc --encoder-backend native
+	// --gpu-hot-path-mode require_direct_yuv), the whole chain must be
+	// declared and reachable up front. Anything less and the first job would
+	// fail mid-queue instead of the worker refusing to start.
+	gpuRequired := c.StrictNativeBackend ||
+		(c.Backend == "vulkan" && c.HardwareEncoder != "" && c.HardwareEncoder != "none")
+	req := Requirements{}
+	if c.Backend == "vulkan" {
+		req.Vulkan = true
+	}
+	if gpuRequired {
+		req = GPUHotPathRequirements()
+	}
+	if err := caps.Validate(req); err != nil {
+		return fmt.Errorf("chronon binary at %s: %w", p, err)
+	}
 	return nil
 }
 
-// Version returns the installed Chronon version from the VERSION file.
+// Version returns the installed Chronon version. Source-tree installs ship
+// a VERSION file; build-tree runtimes (cmake --preset linux-video-release)
+// ship sdk_version.txt instead. Both are honored so the recorded version is
+// never the silent "unknown" sentinel.
 func (c *Client) Version() string {
-	data, err := os.ReadFile(filepath.Join(c.Home, "VERSION"))
-	if err != nil {
-		return "unknown"
+	for _, name := range []string{"VERSION", "sdk_version.txt"} {
+		data, err := os.ReadFile(filepath.Join(c.Home, name))
+		if err != nil {
+			continue
+		}
+		if v := strings.TrimSpace(string(data)); v != "" {
+			return v
+		}
 	}
-	return strings.TrimSpace(string(data))
+	return "unknown"
 }
 
 // Render invokes the CLI render subcommand with the plan file, assets root and
@@ -262,7 +304,7 @@ func renderArgs(req RenderRequest) []string {
 	// public request carries only semantic requirements; Chronon chooses the
 	// concrete backend at this boundary.
 	backend := "auto"
-	if req.Requirements.GPURequired {
+	if req.Requirements.GPURequired || req.Requirements.CompositionRequired {
 		backend = "vulkan"
 	}
 	args := []string{
@@ -283,13 +325,25 @@ func renderArgs(req RenderRequest) []string {
 		// can feed a decoded host surface to the native encoder. RenderingGen
 		// has already declared the semantic requirement, so make that contract
 		// explicit at the CLI boundary.
-		args = append(args, "--hardware", "nvenc", "--encoder-backend", "native")
-		// DirectYUV is now the canonical native path for authored 2D overlays
-		// as well as plain video: NVDEC surfaces stay on the GPU, CUDA
-		// composites text/images/video layers, and NVENC writes the result.
-		// CompositionRequired describes the plan semantics; it must not force
-		// the old full-graph/native-surface path.
-		args = append(args, "--gpu-hot-path-mode", "require_direct_yuv")
+		args = append(args, "--hardware", "nvenc")
+		// DirectYUV is the native fast path for plans with a video source.
+		// Image/text-only compositions have no decoder surface to feed it, so
+		// they must use Chronon's native composition graph instead.
+		hotPath := "require_direct_yuv"
+		if req.Requirements.CompositionRequired && !req.Requirements.VideoSourceRequired {
+			// Image/text-only plans have no native decoder surface. Use the
+			// Vulkan compositor and the supported FFmpeg pipe encoder.
+			args = append(args, "--encoder-backend", "pipe")
+			hotPath = "auto"
+		} else {
+			args = append(args, "--encoder-backend", "native")
+		}
+		args = append(args, "--gpu-hot-path-mode", hotPath)
+	} else if req.Requirements.CompositionRequired {
+		// Authored image/text-only compositions use Vulkan for rasterization and
+		// the CLI's supported pipe encoder; no source-video NVENC contract is
+		// applicable here.
+		args = append(args, "--encoder-backend", "pipe", "--gpu-hot-path-mode", "auto")
 	}
 	if req.AudioSourcePath != "" {
 		// Chronon's native A/V mux path uses --gop-source for the source audio

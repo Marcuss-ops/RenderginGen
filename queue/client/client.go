@@ -53,6 +53,9 @@ const JobSchemaVersionV1 = 1
 type AssetRef struct {
 	Hash        string `json:"hash"`
 	LogicalPath string `json:"logical_path"`
+	// SourceURL is an optional durable download location. LogicalPath remains
+	// the local workspace destination and must never be overloaded with a URL.
+	SourceURL string `json:"source_url,omitempty"`
 }
 
 // Artifact is the metadata of a rendered artifact, including the copy-only

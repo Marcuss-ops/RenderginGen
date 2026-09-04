@@ -53,10 +53,13 @@ type Layer struct {
 	Asset string `json:"asset,omitempty"`
 	// Source is the video-source logical path for Video layers
 	// (VIDEO_BACKGROUND): Chronon video layers reference `source`.
-	Source         string      `json:"source,omitempty"`
-	Text           string      `json:"text,omitempty"`
-	BoxWidth       int         `json:"box_width,omitempty"`
-	BoxHeight      int         `json:"box_height,omitempty"`
+	Source string `json:"source,omitempty"`
+	Text   string `json:"text,omitempty"`
+	// Box dimensions are adapter-internal. Chronon v2 receives concrete
+	// geometry through `size`.
+	BoxWidth       int         `json:"-"`
+	BoxHeight      int         `json:"-"`
+	Size           []float64   `json:"size,omitempty"`
 	Fit            string      `json:"fit,omitempty"`
 	Position       []float64   `json:"position,omitempty"`
 	Style          *LayerStyle `json:"style,omitempty"`
@@ -71,8 +74,8 @@ type Layer struct {
 
 // LayerStyle is the single concrete visual representation sent to Chronon.
 type LayerStyle struct {
-	FontFamily string       `json:"font_family,omitempty"`
-	FontWeight int          `json:"font_weight,omitempty"`
+	FontFamily string       `json:"font,omitempty"`
+	FontWeight int          `json:"-"`
 	FontSize   float64      `json:"font_size,omitempty"`
 	Fill       string       `json:"fill,omitempty"`
 	Shadow     *LayerShadow `json:"shadow,omitempty"`
@@ -125,19 +128,17 @@ func newPlan(jobID string, width, height, fpsNum, fpsDen int, duration int64) *P
 // Chronon plan consumed by the worker. It resolves RenderingGen's official
 // preset catalog; it does not perform NER, entity linking or editorial
 // ranking. Those decisions arrive in template_id/entity_id from PipelineGen.
-// Concrete Chronon plans remain a byte-for-byte pass-through path.
+//
+// Fail-closed: the compiler is the single owner of the semantic→concrete
+// lowering. Byte-for-byte pass-through of an untyped document bypasses
+// validation and style resolution, so anything that is not the semantic
+// overlay-plan contract is rejected instead of executed.
 func CompileIfSemantic(raw []byte) ([]byte, []Asset, bool, error) {
 	var probe struct {
 		SchemaVersion string `json:"schema_version"`
 	}
 	if err := json.Unmarshal(raw, &probe); err != nil {
 		return nil, nil, false, fmt.Errorf("overlay: decode plan: %w", err)
-	}
-	if probe.SchemaVersion == "" {
-		// Concrete Chronon plans remain a byte-for-byte compatibility path.
-		// New authoring/typography callers must use the semantic contract above;
-		// this branch only preserves existing worker jobs and test fixtures.
-		return raw, nil, false, nil
 	}
 	if probe.SchemaVersion == SemanticSchema {
 		compiled, assets, err := compileSemantic(raw)
@@ -146,7 +147,7 @@ func CompileIfSemantic(raw []byte) ([]byte, []Asset, bool, error) {
 		}
 		return compiled, assets, true, nil
 	}
-	return nil, nil, false, fmt.Errorf("overlay: unsupported plan schema %q", probe.SchemaVersion)
+	return nil, nil, false, fmt.Errorf("overlay: unsupported plan schema %q (semantic %q is the only accepted contract)", probe.SchemaVersion, SemanticSchema)
 }
 
 type semanticPlan struct {
@@ -182,7 +183,9 @@ type semanticSubtitles struct {
 	AssetRefs []semanticAssetRef `json:"asset_refs,omitempty"`
 	StyleID   string             `json:"style_id,omitempty"`
 	Mode      string             `json:"mode,omitempty"`
-	Style     map[string]any     `json:"style,omitempty"`
+	// Style is the caller's typed visual override. It is REQUIRED for burn
+	// mode: the worker never invents subtitle geometry/color/shadow.
+	Style map[string]any `json:"style,omitempty"`
 }
 
 type semanticWatermark struct {
@@ -191,7 +194,10 @@ type semanticWatermark struct {
 	FontRef   *semanticAssetRef  `json:"font_ref,omitempty"`
 	Position  string             `json:"position,omitempty"`
 	Opacity   *float64           `json:"opacity,omitempty"`
-	Style     map[string]any     `json:"style,omitempty"`
+	// MarginPX is the requested distance from the canvas edge. Required for
+	// text watermarks: the worker never guesses layout.
+	MarginPX *int           `json:"margin_px,omitempty"`
+	Style    map[string]any `json:"style,omitempty"`
 }
 
 type semanticAudio struct {
@@ -260,6 +266,60 @@ func SubtitleAsset(raw []byte) (hash string, burn bool, ok bool, err error) {
 	}
 	ref := src.Subtitles.AssetRefs[0]
 	return strings.ToLower(ref.SHA256), strings.EqualFold(strings.TrimSpace(src.Subtitles.Mode), "burn"), true, nil
+}
+
+// SubtitleStyleAsset resolves the plan's typed subtitle style into the
+// concrete Chronon style + safe-area box used by BurnASSIntoPlan. The plan is
+// the single style owner; resolution goes through the canonical visual style
+// resolver (parseStyleBlock + subtitleLayerStyle), so a burn-mode plan
+// without a fully declared style is rejected fail-closed — the compiler
+// never substitutes its own typography.
+func SubtitleStyleAsset(raw []byte) (*concreteStyle, SubtitleStyleBox, error) {
+	var doc struct {
+		Canvas struct {
+			Width  int `json:"width"`
+			Height int `json:"height"`
+		} `json:"canvas"`
+	}
+	if err := json.Unmarshal(raw, &doc); err != nil {
+		return nil, SubtitleStyleBox{}, fmt.Errorf("overlay: decode subtitle style contract: %w", err)
+	}
+	var src semanticPlan
+	if err := json.Unmarshal(raw, &src); err != nil {
+		return nil, SubtitleStyleBox{}, fmt.Errorf("overlay: decode subtitle style contract: %w", err)
+	}
+	if src.Subtitles == nil || src.Subtitles.Style == nil {
+		return nil, SubtitleStyleBox{}, nil
+	}
+	block, err := parseStyleBlock(src.Subtitles.Style)
+	if err != nil {
+		return nil, SubtitleStyleBox{}, err
+	}
+	style, err := subtitleLayerStyle(block, "")
+	if err != nil {
+		return nil, SubtitleStyleBox{}, err
+	}
+	if block.Position == "" {
+		return nil, SubtitleStyleBox{}, fmt.Errorf("overlay: subtitle style must declare position (placement is owned by PipelineGen)")
+	}
+	width, height := src.Width, src.Height
+	if width <= 0 || height <= 0 {
+		width, height = doc.Canvas.Width, doc.Canvas.Height
+	}
+	if width <= 0 || height <= 0 {
+		return nil, SubtitleStyleBox{}, fmt.Errorf("overlay: subtitle burn requires a canvas")
+	}
+	position, size, err := subtitleCueGeometry(block, width, height, 1)
+	if err != nil {
+		return nil, SubtitleStyleBox{}, err
+	}
+	box := SubtitleStyleBox{
+		Width:  int(size[0]),
+		Height: int(size[1]),
+		X:      int(position[0] + float64(width)/2 - size[0]/2),
+		Y:      int(position[1] + float64(height)/2 - size[1]/2),
+	}
+	return style, box, nil
 }
 
 type concretePlan struct {
@@ -361,14 +421,31 @@ type concreteAnimation struct {
 	TextAnimators []concreteTextAnimator `json:"-"`
 }
 
+// SubtitleStyleBox is the caller-owned subtitle safe-area box resolved from
+// the plan's typed style block.
+type SubtitleStyleBox struct {
+	Width  int
+	Height int
+	X      int
+	Y      int
+}
+
 // BurnASSIntoPlan lowers an ASS subtitle track into ordinary Chronon text
 // layers. Chronon then rasterizes each cue once, uploads the texture to GPU,
 // and composites it before NVENC; no post-render ffmpeg subtitle pass is
-// needed. The input plan must already be concrete render-plan.v2 and the
-// fontPath must be a prepared workspace-relative font asset.
-func BurnASSIntoPlan(planBytes, assBytes []byte, fontPath string) ([]byte, int, error) {
+// needed. The input plan must already be concrete render-plan.v2, the
+// fontPath must be a prepared workspace-relative font asset, and the style
+// must be fully typed by the caller (PipelineGen's plan) — this function
+// invents no typography or geometry.
+func BurnASSIntoPlan(planBytes, assBytes []byte, fontPath string, style *concreteStyle, box SubtitleStyleBox) ([]byte, int, error) {
 	if strings.TrimSpace(fontPath) == "" {
 		return nil, 0, fmt.Errorf("overlay: burn subtitles requires a prepared font")
+	}
+	if style == nil || style.FontSize == 0 {
+		return nil, 0, fmt.Errorf("overlay: burn subtitles requires a typed style with font_size (no compiler defaults)")
+	}
+	if box.Width <= 0 || box.Height <= 0 {
+		return nil, 0, fmt.Errorf("overlay: burn subtitles requires a positive subtitle box")
 	}
 	var plan concretePlan
 	if err := json.Unmarshal(planBytes, &plan); err != nil {
@@ -387,21 +464,18 @@ func BurnASSIntoPlan(planBytes, assBytes []byte, fontPath string) ([]byte, int, 
 		if cue.Text == "" || cue.EndFrame <= cue.StartFrame {
 			continue
 		}
+		cueStyle := *style
+		cueStyle.Font = fontPath
 		plan.Layers = append(plan.Layers, concreteLayer{
 			ID: "subtitle_cue_" + strconv.Itoa(i), Type: "text", Text: cue.Text,
-			Size:     []float64{float64(plan.Canvas.Width - 120), 140},
+			Size: []float64{float64(box.Width), float64(box.Height)},
 			// Chronon layer positions are offsets from the canvas centre and
 			// address the layer centre. Convert the absolute safe-area box.
 			Position: []float64{
-				60 + float64(plan.Canvas.Width-120)*0.5 - float64(plan.Canvas.Width)*0.5,
-				// Keep captions in the lower safe area; the previous 0.76
-				// placement made them visibly too high on 9:16 clips.
-				float64(plan.Canvas.Height)*0.80 + 140*0.5 - float64(plan.Canvas.Height)*0.5,
+				float64(box.X) + float64(box.Width)*0.5 - float64(plan.Canvas.Width)*0.5,
+				float64(box.Y) + float64(box.Height)*0.5 - float64(plan.Canvas.Height)*0.5,
 			},
-			Style: &concreteStyle{
-				Font: fontPath, FontSize: 52, Fill: "#FFFFFF",
-				Shadow: &concreteShadow{Color: "#000000", Opacity: 0.95, Blur: 8, Offset: []float64{0, 5}},
-			},
+			Style:      &cueStyle,
 			StartFrame: cue.StartFrame, DurationFrames: cue.EndFrame - cue.StartFrame,
 		})
 	}
@@ -646,6 +720,9 @@ func compileSemantic(raw []byte) ([]byte, []Asset, error) {
 	}
 
 	// Watermark — lowers to a text or image layer at the requested position.
+	// Geometry and style come ONLY from the plan's typed blocks: font size,
+	// color, shadow (style), position + margin_px (layout). Unknown or missing
+	// values are compile errors, never silent fallbacks.
 	if wm := src.Watermark; wm != nil {
 		font := ""
 		if wm.FontRef != nil {
@@ -662,14 +739,27 @@ func compileSemantic(raw []byte) ([]byte, []Asset, error) {
 		if font == "" {
 			return nil, nil, fmt.Errorf("overlay: text watermark requires font_ref")
 		}
+		wmStyle, err := parseStyleBlock(wm.Style)
+		if err != nil {
+			return nil, nil, err
+		}
+		style, err := watermarkLayerStyle(wmStyle, font)
+		if err != nil {
+			return nil, nil, err
+		}
+		margin, err := watermarkMargin(wm.MarginPX)
+		if err != nil {
+			return nil, nil, err
+		}
+		position, err := resolveWatermarkPosition(wm.Position, src.Width, src.Height, margin, wmStyle)
+		if err != nil {
+			return nil, nil, err
+		}
 		wmLayer := concreteLayer{ID: "watermark", StartFrame: 0, DurationFrames: plan.Canvas.DurationFrames,
-			Style: &concreteStyle{Font: font, FontSize: 42, Fill: "#FFFFFF",
-				Shadow: &concreteShadow{Color: "#000000", Opacity: 0.95, Blur: 8, Offset: []float64{0, 4}}}}
+			Style: style, Position: position}
 		if wm.Opacity != nil {
 			wmLayer.Opacity = *wm.Opacity
 		}
-		// Resolve position → concrete [x, y] pixel coordinate.
-		wmLayer.Position = resolveWatermarkPosition(wm.Position, src.Width, src.Height)
 		if wm.Text != "" && len(wm.AssetRefs) == 0 {
 			// Text-only watermark.
 			wmLayer.Type = "text"
@@ -728,7 +818,12 @@ func compileSemantic(raw []byte) ([]byte, []Asset, error) {
 			return nil, nil, fmt.Errorf("overlay: image template %q item %q requires asset_refs", item.Template, item.ID)
 		}
 		if isEntityTemplate(item.Template) && len(item.Assets) > 0 {
-			img := imageLayer(item, start, end, assetPaths[item.Assets[0].ID], params)
+			// Entity cards are a two-layer composition. Give the image its own
+			// stable layer ID; reusing the card ID would make Chronon treat the
+			// later text layer as the same layer and silently hide the image.
+			imageItem := item
+			imageItem.ID = item.ID + "-image"
+			img := imageLayer(imageItem, start, end, assetPaths[item.Assets[0].ID], params)
 			plan.Layers = append(plan.Layers, img)
 		}
 		text := item.Text
@@ -820,33 +915,8 @@ func compileSemantic(raw []byte) ([]byte, []Asset, error) {
 	return compiled, assets, nil
 }
 
-// resolveWatermarkPosition converts a semantic position name to a concrete
-// [x, y] centre offset relative to the canvas centre. Chronon text layers use
-// centre offsets, so absolute top-left pixels would place the watermark
-// outside the visible canvas.
-func resolveWatermarkPosition(position string, canvasW, canvasH int) []float64 {
-	// Reserve enough horizontal space for the full Montserrat watermark text;
-	// the previous nominal box was too narrow and pushed the text off-canvas.
-	const wmW, wmH, margin = 360, 80, 40
-	toCenterOffset := func(x, y float64) []float64 {
-		return []float64{x + float64(wmW)/2 - float64(canvasW)/2, y + float64(wmH)/2 - float64(canvasH)/2}
-	}
-	switch strings.ToLower(strings.TrimSpace(position)) {
-	case "top_left":
-		return toCenterOffset(margin, margin)
-	case "top_right":
-		return toCenterOffset(float64(canvasW-wmW-margin), margin)
-	case "center":
-		return toCenterOffset(float64(canvasW-wmW)/2, float64(canvasH-wmH)/2)
-	case "bottom_left":
-		return toCenterOffset(margin, float64(canvasH-wmH-margin))
-	case "bottom_right":
-		return toCenterOffset(float64(canvasW-wmW-margin), float64(canvasH-wmH-margin))
-	default:
-		// Unknown position: center as safe fallback.
-		return toCenterOffset(float64(canvasW-wmW)/2, float64(canvasH-wmH)/2)
-	}
-}
+// resolveWatermarkPosition was moved to visual_style_resolver.go — the single
+// owner of watermark/subtitle geometry resolution.
 
 func animationForMotion(id string, params map[string]any, textValue string, duration int64) (*concreteAnimation, error) {
 	plugin, err := motion.Registry.Resolve(id)
@@ -961,7 +1031,7 @@ func isImageTemplate(t string) bool {
 }
 func isEntityTemplate(t string) bool {
 	switch strings.ToUpper(t) {
-	case "PERSON", "ORGANIZATION", "LOCATION":
+	case "PERSON", "PERSON_DEFAULT", "ORGANIZATION", "ORGANIZATION_DEFAULT", "LOCATION", "LOCATION_DEFAULT", "GPE_DEFAULT":
 		return true
 	}
 	return false

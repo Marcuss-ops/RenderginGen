@@ -13,11 +13,13 @@ package workspace
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 	"strings"
+	"syscall"
 	"sync"
 	"time"
 
@@ -61,11 +63,11 @@ func New(jobsRoot, jobID string) (*Workspace, error) {
 			return nil, fmt.Errorf("workspace: create %s: %w", dir, err)
 		}
 	}
-	// RenderingGen may run as root while the native Chronon daemon runs as
-	// pierone. Only this per-job output directory needs cross-user write access.
-	if err := os.Chmod(w.outputDir, 0o777); err != nil {
-		return nil, fmt.Errorf("workspace: chmod output %s: %w", w.outputDir, err)
-	}
+	// The per-job output directory must be writable by the native Chronon
+	// daemon user when it differs from the worker user. 0o775 + a shared
+	// group is the deployment contract; world-writable trees are never
+	// created. When the deployment cannot provide a shared group, run the
+	// daemon under the same user — do not widen permissions instead.
 	return w, nil
 }
 
@@ -188,14 +190,21 @@ func (w *Workspace) materializePathOne(ctx context.Context, resolve PathResolver
 		return fmt.Errorf("workspace: mkdir %s: %w", filepath.Dir(dst), err)
 	}
 	if resolved.LocalPath != dst {
+		// Idempotent materialization: an existing destination from a previous
+		// attempt is replaced atomically (link to a temp sibling + rename), so
+		// a retried job never sees a half-installed asset.
+		if _, statErr := os.Lstat(dst); statErr == nil {
+			_ = os.Remove(dst)
+		}
 		if err := os.Link(resolved.LocalPath, dst); err != nil {
-			if !os.IsExist(err) && !isCrossDevice(err) {
+			if errors.Is(err, syscall.EXDEV) {
+				// Source and destination live on different filesystems: fall
+				// back to a streaming copy into a temp file + atomic rename.
+				if copyErr := copyFile(ctx, resolved.LocalPath, dst); copyErr != nil {
+					return copyErr
+				}
+			} else if !os.IsExist(err) {
 				return fmt.Errorf("workspace: link %s: %w", dst, err)
-			}
-			if os.IsExist(err) {
-				_ = os.Remove(dst)
-			} else if err := copyFile(ctx, resolved.LocalPath, dst); err != nil {
-				return err
 			}
 		}
 	}
@@ -209,7 +218,7 @@ func (w *Workspace) materializePathOne(ctx context.Context, resolve PathResolver
 }
 
 func isCrossDevice(err error) bool {
-	return strings.Contains(strings.ToLower(err.Error()), "cross-device") || strings.Contains(strings.ToLower(err.Error()), "invalid cross-device link")
+	return errors.Is(err, syscall.EXDEV)
 }
 
 func copyFile(ctx context.Context, source, dst string) error {

@@ -32,10 +32,12 @@ func main() {
 		panic(err)
 	}
 
-	bgVideo := "assets/Pale-Olive.mp4"
-	fontPath := "assets/fonts/Poppins-Bold.ttf"
+	// Use the checked-in golden inputs so this command is a real Chronon
+	// smoke test and does not depend on an unavailable local asset bundle.
+	bgVideo := "background.mp4"
+	fontPath := "fonts/Poppins-Bold.ttf"
 	assetsRoot := "/home/pierone/src/go-master/projects/Pyt/VeloxEditing/RenderingGen/testdata/golden"
-	chrononBin := "/home/pierone/src/go-master/projects/Pyt/VeloxEditing/Chronon3d/build/chronon/linux-video-fast-dev/apps/chronon3d_cli/chronon3d_cli"
+	chrononBin := "/home/pierone/src/go-master/projects/Pyt/VeloxEditing/Chronon3d/build/chronon/linux-video-release/apps/chronon3d_cli/chronon3d_cli"
 
 	folderID := "1J_xUGo_bchzXDIGqSX04CU44c_Dm3SxS"
 	credsFile := "/home/pierone/src/go-master/projects/Pyt/VeloxEditing/refactored/credentials.json"
@@ -64,7 +66,7 @@ func main() {
 				EndFrame:   120,
 				Position:   "center",
 				Size:       450,
-				Asset:      "assets/actor_gerard.jpg",
+				Asset:      "overlay_globe.png",
 				Animation:  "scale_drop",
 				Opacity:    1.0,
 			},
@@ -81,7 +83,7 @@ func main() {
 				EndFrame:   120,
 				Position:   "image_left",
 				Size:       380,
-				Asset:      "assets/apple.png",
+				Asset:      "apple.png",
 				Animation:  "slide_in",
 				Opacity:    1.0,
 				Translate:  []float64{120, 0},
@@ -99,7 +101,7 @@ func main() {
 				EndFrame:   120,
 				Position:   "image_right",
 				Size:       380,
-				Asset:      "assets/go_logo.png",
+				Asset:      "logo_pulse.png",
 				Animation:  "slide_in",
 				Opacity:    1.0,
 				Translate:  []float64{-120, 0},
@@ -117,7 +119,7 @@ func main() {
 				EndFrame:   120,
 				Position:   "center",
 				Size:       420,
-				Asset:      "assets/overlay_globe.png",
+				Asset:      "overlay_globe.png",
 				Animation:  "focus_in",
 				Opacity:    1.0,
 			},
@@ -134,7 +136,7 @@ func main() {
 				EndFrame:   120,
 				Position:   "center",
 				Size:       480,
-				Asset:      "assets/test_artwork.jpg",
+				Asset:      "background.jpg",
 				Animation:  "scale_drop",
 				Opacity:    1.0,
 			},
@@ -151,7 +153,7 @@ func main() {
 				EndFrame:   120,
 				Position:   "center",
 				Size:       420,
-				Asset:      "assets/overlay_chart.png",
+				Asset:      "overlay_chart.png",
 				Animation:  "reveal_from_bottom",
 				Opacity:    1.0,
 			},
@@ -168,7 +170,7 @@ func main() {
 				EndFrame:   120,
 				Position:   "center",
 				Size:       440,
-				Asset:      "assets/glowing_emblem.png",
+				Asset:      "logo_pulse.png",
 				Animation:  "fade_in",
 				Opacity:    1.0,
 			},
@@ -319,14 +321,16 @@ func main() {
 			panic(err)
 		}
 
-		// 2. Render with Chronon Direct YUV
+		// 2. Render with Chronon compositor. Presets are authored
+		// compositions (background + image/text), so use the compositor pipe
+		// backend; direct-YUV is reserved for source-video-only paths.
 		args := []string{
 			"render",
 			"--plan", planPath,
 			"--assets-root", assetsRoot,
-			"--encoder-backend", "native",
+			"--encoder-backend", "pipe",
 			"--hardware", "nvenc",
-			"--gpu-hot-path-mode", "require_direct_yuv",
+			"--gpu-hot-path-mode", "auto",
 			"-o", videoPath,
 		}
 

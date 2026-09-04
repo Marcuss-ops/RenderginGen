@@ -59,7 +59,7 @@ func TestRenderArgsResolvesGPURequirementAtAdapterBoundary(t *testing.T) {
 		OutputPath: "/jobs/1/output/result.mp4",
 		Requirements: ExecutionRequirements{
 			GPURequired: true, CPUFallbackAllowed: false,
-			CompositionRequired: true, PacketCopyAllowed: true,
+			CompositionRequired: true, VideoSourceRequired: false, PacketCopyAllowed: true,
 		},
 	})
 	want := []string{
@@ -69,8 +69,8 @@ func TestRenderArgsResolvesGPURequirementAtAdapterBoundary(t *testing.T) {
 		"--backend", "vulkan",
 		"-o", "/jobs/1/output/result.mp4",
 		"--hardware", "nvenc",
-		"--encoder-backend", "native",
-		"--gpu-hot-path-mode", "require_direct_yuv",
+		"--encoder-backend", "pipe",
+		"--gpu-hot-path-mode", "auto",
 	}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("renderArgs (GPU) = %#v, want %#v", got, want)

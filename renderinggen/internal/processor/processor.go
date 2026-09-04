@@ -7,6 +7,8 @@ package processor
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -234,27 +236,123 @@ func (p *Processor) resolveAsset(ctx context.Context, asset queue.AssetRef) ([]b
 	if !errors.Is(err, storage.ErrNotFound) || len(hash) != 64 || !isHTTPURL(asset.LogicalPath) {
 		return nil, err
 	}
-	downloaded, err := downloadAsset(ctx, asset.LogicalPath)
-	if err != nil {
-		return nil, fmt.Errorf("asset %s not in store and URL download failed: %w", hash, err)
+	// Streaming self-heal: download straight into a temp file, hash while
+	// streaming, then stage from the file. The historical io.ReadAll path
+	// buffered up to 1 GiB per asset in RAM — with a 4-goroutine materialize
+	// pool that is a worker-wide OOM waiting for one large background video.
+	// (The zero-copy hot path is resolveAssetStreaming; this byte-based
+	// variant exists for the legacy Materialize byte path, where the bytes
+	// are already destined for RAM anyway.)
+	path, dlErr := downloadAssetToFile(ctx, asset.LogicalPath, hash)
+	if dlErr != nil {
+		return nil, fmt.Errorf("asset %s not in store and URL download failed: %w", hash, dlErr)
 	}
-	if got := storage.Hash(downloaded); !strings.EqualFold(got, hash) {
-		return nil, fmt.Errorf("asset hash mismatch on URL download: requested %s, got %s", hash, got)
+	defer os.Remove(path)
+	data, readErr := os.ReadFile(path)
+	if readErr != nil {
+		return nil, readErr
 	}
-	if err := p.store.Put(ctx, hash, downloaded); err != nil {
+	if err := p.store.Put(ctx, hash, data); err != nil {
 		return nil, fmt.Errorf("stage self-healed asset %s: %w", hash, err)
 	}
-	return downloaded, nil
+	return data, nil
+}
+
+// resolveAssetStreaming is the zero-copy variant used by MaterializePaths:
+// a cache-miss self-heal downloads straight to a bounded temp file (constant
+// memory, never the whole object in RAM), verifies the SHA-256 while
+// streaming, stages it into L3 via PutReader and hands the local path to the
+// workspace for a hard link. A hash mismatch deletes the temp file and fails
+// the resolution — the wrong bytes never reach Chronon.
+func (p *Processor) resolveAssetStreaming(ctx context.Context, asset queue.AssetRef) (workspace.ResolvedAsset, error) {
+	hash := asset.Hash
+	if path, size, err := p.store.LocalPath(ctx, hash); err == nil {
+		return workspace.ResolvedAsset{LocalPath: path, SizeBytes: size}, nil
+	} else if !errors.Is(err, storage.ErrNotFound) || len(hash) != 64 || !isHTTPURL(assetSourceURL(asset)) {
+		log.Printf("asset resolve cache miss not self-healed: hash=%s logical_path=%q err=%v", hash, asset.LogicalPath, err)
+		return workspace.ResolvedAsset{}, err
+	}
+	sourceURL := assetSourceURL(asset)
+	log.Printf("asset resolve self-heal: hash=%s logical_path=%q source_url=%q", hash, asset.LogicalPath, sourceURL)
+
+	tmp, err := os.CreateTemp("", ".selfheal-*")
+	if err != nil {
+		return workspace.ResolvedAsset{}, err
+	}
+	tmpPath := tmp.Name()
+	defer func() {
+		tmp.Close()
+		os.Remove(tmpPath)
+	}()
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, sourceURL, nil)
+	if err != nil {
+		return workspace.ResolvedAsset{}, err
+	}
+	resp, err := assetDownloadClient.Do(req)
+	if err != nil {
+		log.Printf("asset self-heal download failed: hash=%s source_url=%q err=%v", hash, sourceURL, err)
+		return workspace.ResolvedAsset{}, fmt.Errorf("download %s: %w", sourceURL, err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return workspace.ResolvedAsset{}, fmt.Errorf("download %s: HTTP %d", sourceURL, resp.StatusCode)
+	}
+
+	// Stream to disk + hash in one pass, capped at maxAssetDownloadBytes.
+	digest, size, err := streamHashAndCopy(io.LimitReader(resp.Body, maxAssetDownloadBytes+1), tmp)
+	if err != nil {
+		return workspace.ResolvedAsset{}, fmt.Errorf("download %s: %w", sourceURL, err)
+	}
+	if size > maxAssetDownloadBytes {
+		return workspace.ResolvedAsset{}, fmt.Errorf("download %s exceeds %d bytes cap", asset.LogicalPath, maxAssetDownloadBytes)
+	}
+	if !strings.EqualFold(digest, hash) {
+		log.Printf("asset self-heal hash mismatch: requested=%s got=%s source_url=%q", hash, digest, sourceURL)
+		return workspace.ResolvedAsset{}, fmt.Errorf("asset hash mismatch on URL download: requested %s, got %s", hash, digest)
+	}
+	if reader, openErr := os.Open(tmpPath); openErr != nil {
+		return workspace.ResolvedAsset{}, openErr
+	} else if err := p.store.PutReader(ctx, hash, reader, size); err != nil {
+		reader.Close()
+		return workspace.ResolvedAsset{}, fmt.Errorf("stage self-healed asset %s: %w", hash, err)
+	} else {
+		reader.Close()
+	}
+	// The asset now lives in L3/L2 under its content address; resolve the
+	// durable local path and let the deferred cleanup remove the temp file.
+	path, _, err := p.store.LocalPath(ctx, hash)
+	if err != nil {
+		return workspace.ResolvedAsset{}, err
+	}
+	return workspace.ResolvedAsset{LocalPath: path, SizeBytes: size}, nil
+}
+
+// streamHashAndCopy copies r into w while computing the SHA-256 of the
+// copied bytes and the total byte count (constant memory).
+func streamHashAndCopy(r io.Reader, w io.Writer) (string, int64, error) {
+	hasher := sha256.New()
+	size, err := io.Copy(io.MultiWriter(w, hasher), r)
+	if err != nil {
+		return "", size, err
+	}
+	return hex.EncodeToString(hasher.Sum(nil)), size, nil
 }
 
 func isHTTPURL(s string) bool {
 	return strings.HasPrefix(s, "http://") || strings.HasPrefix(s, "https://")
 }
 
+func assetSourceURL(asset queue.AssetRef) string {
+	if asset.SourceURL != "" {
+		return asset.SourceURL
+	}
+	return asset.LogicalPath
+}
+
 // assetDownloadClient bounds every self-heal download: without a timeout a
 // hanging URL would pin a prep-pool goroutine (and, through lease renewal,
-// the job) forever, and without a size cap an oversized response can OOM the
-// worker. Only http/https URLs reach this path (see isHTTPURL).
+// the job) forever. Only http/https URLs reach this path (see isHTTPURL).
 var assetDownloadClient = &http.Client{
 	Timeout: 5 * time.Minute,
 }
@@ -263,27 +361,48 @@ var assetDownloadClient = &http.Client{
 // background video is far below this; anything larger is a bug or an attack).
 const maxAssetDownloadBytes = 1 << 30
 
-func downloadAsset(ctx context.Context, rawURL string) ([]byte, error) {
+// downloadAssetToFile streams the URL into a temp file, hashing the bytes on
+// the way through. The complete object never sits in RAM. Returns the temp
+// file path; the caller owns removal. The declared hash is verified while
+// streaming — a mismatch aborts before the file is staged anywhere.
+func downloadAssetToFile(ctx context.Context, rawURL, wantHash string) (string, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, rawURL, nil)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 	resp, err := assetDownloadClient.Do(req)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return nil, fmt.Errorf("download %s: HTTP %d", rawURL, resp.StatusCode)
+		return "", fmt.Errorf("download %s: HTTP %d", rawURL, resp.StatusCode)
 	}
-	data, err := io.ReadAll(io.LimitReader(resp.Body, maxAssetDownloadBytes+1))
+	tmp, err := os.CreateTemp("", "renderinggen-selfheal-*")
 	if err != nil {
-		return nil, err
+		return "", err
 	}
-	if int64(len(data)) > maxAssetDownloadBytes {
-		return nil, fmt.Errorf("download %s exceeds %d bytes cap", rawURL, maxAssetDownloadBytes)
+	path := tmp.Name()
+	hasher := sha256.New()
+	copied, copyErr := io.Copy(io.MultiWriter(tmp, hasher), io.LimitReader(resp.Body, maxAssetDownloadBytes+1))
+	closeErr := tmp.Close()
+	if copyErr != nil {
+		os.Remove(path)
+		return "", copyErr
 	}
-	return data, nil
+	if closeErr != nil {
+		os.Remove(path)
+		return "", closeErr
+	}
+	if copied > maxAssetDownloadBytes {
+		os.Remove(path)
+		return "", fmt.Errorf("download %s exceeds %d bytes cap", rawURL, maxAssetDownloadBytes)
+	}
+	if got := hex.EncodeToString(hasher.Sum(nil)); !strings.EqualFold(got, wantHash) {
+		os.Remove(path)
+		return "", fmt.Errorf("asset hash mismatch on URL download: requested %s, got %s", wantHash, got)
+	}
+	return path, nil
 }
 
 // hashFileSHA256 streams a file through SHA-256 without buffering it in RAM.
@@ -297,15 +416,44 @@ func hashFileSHA256(path string) (string, error) {
 }
 
 func mergeAssets(jobAssets []queue.AssetRef, compiled []overlay.Asset) ([]queue.AssetRef, error) {
-	result := append([]queue.AssetRef(nil), jobAssets...)
+	result := make([]queue.AssetRef, 0, len(jobAssets)+len(compiled))
 	byPath := make(map[string]string, len(result)+len(compiled))
-	for _, asset := range result {
+	byHash := make(map[string]int, len(jobAssets)+len(compiled))
+	for _, asset := range jobAssets {
 		if previous, ok := byPath[asset.LogicalPath]; ok && !strings.EqualFold(previous, asset.Hash) {
 			return nil, fmt.Errorf("processor: logical asset path %q has conflicting hashes", asset.LogicalPath)
 		}
 		byPath[asset.LogicalPath] = asset.Hash
+		result = append(result, asset)
+		key := strings.ToLower(asset.Hash)
+		if _, exists := byHash[key]; !exists {
+			byHash[key] = len(result) - 1
+		}
 	}
+	// Job manifests may carry a durable URL as the logical path for a
+	// semantic asset. Once compilation gives that asset its canonical local
+	// path, merge by content hash and retain the URL as SourceURL.
 	for _, asset := range compiled {
+		if idx, ok := byHash[strings.ToLower(asset.Hash)]; ok {
+			merged := result[idx]
+			// A URL-backed manifest entry is the self-healing case: move it to
+			// the compiler's canonical local path while retaining its source.
+			// Legacy/local refs already name the workspace path and must remain
+			// untouched for backwards compatibility.
+			if !isHTTPURL(merged.LogicalPath) && merged.SourceURL == "" {
+				continue
+			}
+			if merged.SourceURL == "" && isHTTPURL(merged.LogicalPath) {
+				merged.SourceURL = merged.LogicalPath
+			}
+			merged.LogicalPath = asset.LogicalPath
+			if !strings.EqualFold(merged.Hash, asset.Hash) {
+				return nil, fmt.Errorf("processor: asset hash conflict")
+			}
+			result[idx] = merged
+			byPath[asset.LogicalPath] = asset.Hash
+			continue
+		}
 		if previous, ok := byPath[asset.LogicalPath]; ok {
 			if !strings.EqualFold(previous, asset.Hash) {
 				return nil, fmt.Errorf("processor: logical asset path %q has conflicting hashes", asset.LogicalPath)
@@ -314,6 +462,7 @@ func mergeAssets(jobAssets []queue.AssetRef, compiled []overlay.Asset) ([]queue.
 		}
 		result = append(result, queue.AssetRef{Hash: asset.Hash, LogicalPath: asset.LogicalPath})
 		byPath[asset.LogicalPath] = asset.Hash
+		byHash[strings.ToLower(asset.Hash)] = len(result) - 1
 	}
 	return result, nil
 }
@@ -345,17 +494,41 @@ func frameEndInclusive(job *queue.Job) int64 {
 	return 0
 }
 
-// hasVisualOverlay identifies concrete plans that contain an authored visual
-// layer in addition to the background. It deliberately does not infer
-// semantics or presets; it only protects the final artifact boundary.
+// hasVisualOverlay identifies concrete plans that require Chronon's authored
+// composition graph. A video-only plan can use DirectYUV; an image/text/color
+// plan must use native composition even when it has no separate background.
 func hasVisualOverlay(plan []byte) bool {
 	var doc struct {
-		Layers []json.RawMessage `json:"layers"`
+		Layers []struct {
+			Type string `json:"type"`
+		} `json:"layers"`
 	}
 	if json.Unmarshal(plan, &doc) != nil {
 		return false
 	}
-	return len(doc.Layers) > 1
+	for _, layer := range doc.Layers {
+		if layer.Type != "" && layer.Type != "video" {
+			return true
+		}
+	}
+	return false
+}
+
+func hasVideoSource(plan []byte) bool {
+	var doc struct {
+		Layers []struct {
+			Type string `json:"type"`
+		} `json:"layers"`
+	}
+	if json.Unmarshal(plan, &doc) != nil {
+		return false
+	}
+	for _, layer := range doc.Layers {
+		if layer.Type == "video" {
+			return true
+		}
+	}
+	return false
 }
 
 // audioSourcePathFromSemantic resolves the declared master audio source to

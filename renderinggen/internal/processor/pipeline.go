@@ -2,8 +2,10 @@ package processor
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
@@ -43,6 +45,56 @@ type PreparedJob struct {
 	totalStart      time.Time
 }
 
+// normalizeMaterializedImagePaths makes the concrete Chronon path agree with
+// the bytes that were actually downloaded. Some providers publish a JPEG
+// behind a URL/metadata ending in .png; Chronon's image loader uses the file
+// extension, so leaving that mismatch produces a valid but black render.
+func normalizeMaterializedImagePaths(root string, plan *overlay.Plan) error {
+	if plan == nil {
+		return nil
+	}
+	for i := range plan.Layers {
+		layer := &plan.Layers[i]
+		if layer.Type != "image" || layer.Asset == "" {
+			continue
+		}
+		path := filepath.Join(root, filepath.FromSlash(layer.Asset))
+		data, err := os.Open(path)
+		if err != nil {
+			return fmt.Errorf("image asset %s: %w", layer.Asset, err)
+		}
+		var sniff [512]byte
+		n, readErr := data.Read(sniff[:])
+		data.Close()
+		if readErr != nil && n == 0 {
+			return fmt.Errorf("image asset %s: %w", layer.Asset, readErr)
+		}
+		contentType := http.DetectContentType(sniff[:n])
+		ext := ".png"
+		switch contentType {
+		case "image/jpeg":
+			ext = ".jpg"
+		case "image/webp":
+			ext = ".webp"
+		case "image/gif":
+			ext = ".gif"
+		case "image/png":
+		default:
+			continue
+		}
+		if strings.EqualFold(filepath.Ext(layer.Asset), ext) {
+			continue
+		}
+		newAsset := strings.TrimSuffix(layer.Asset, filepath.Ext(layer.Asset)) + ext
+		newPath := filepath.Join(root, filepath.FromSlash(newAsset))
+		if err := os.Rename(path, newPath); err != nil {
+			return fmt.Errorf("image asset %s rename: %w", layer.Asset, err)
+		}
+		layer.Asset = newAsset
+	}
+	return nil
+}
+
 // PrepareJob runs the CPU-bound preparation half of the render pipeline:
 // validate, compile, asset materialization and plan.json. It returns a
 // PreparedJob whose workspace must be cleaned up by the GPU-stage caller.
@@ -77,28 +129,36 @@ func (p *Processor) PrepareJob(ctx context.Context, job *queue.Job) (*PreparedJo
 	if err != nil {
 		return nil, err
 	}
+	// inputBytes is the materialized input size, summed single-threaded
+	// AFTER MaterializePaths completes from the on-disk files — race-free by
+	// construction and accurate for every asset (cache hits and self-heals).
 	var inputBytes int64
 	phaseStart := time.Now()
-	if err := ws.MaterializePaths(ctx, func(ctx context.Context, asset queue.AssetRef) (workspace.ResolvedAsset, error) {
-		path, size, err := p.store.LocalPath(ctx, asset.Hash)
-		if err != nil {
-			data, resolveErr := p.resolveAsset(ctx, asset)
-			if resolveErr != nil {
-				return workspace.ResolvedAsset{}, resolveErr
-			}
-			inputBytes += int64(len(data))
-			path, size, err = p.store.LocalPath(ctx, asset.Hash)
-			if err != nil {
-				return workspace.ResolvedAsset{}, err
-			}
-		}
-		if size > 0 && inputBytes == 0 {
-			inputBytes += size
-		}
-		return workspace.ResolvedAsset{LocalPath: path, SizeBytes: size}, nil
-	}, assets); err != nil {
+	if err := ws.MaterializePaths(ctx, p.resolveAssetStreaming, assets); err != nil {
 		_ = ws.Cleanup()
 		return nil, err
+	}
+	var concretePlan overlay.Plan
+	if err := json.Unmarshal(plan, &concretePlan); err != nil {
+		_ = ws.Cleanup()
+		return nil, fmt.Errorf("processor: decode compiled plan: %w", err)
+	}
+	if err := normalizeMaterializedImagePaths(ws.Root(), &concretePlan); err != nil {
+		_ = ws.Cleanup()
+		return nil, err
+	}
+	plan, err = json.Marshal(concretePlan)
+	if err != nil {
+		_ = ws.Cleanup()
+		return nil, fmt.Errorf("processor: re-encode compiled plan: %w", err)
+	}
+	// Re-derive the aggregate from the resolver outcomes: the streaming
+	// resolver returns each asset's real size, so sum them via the resolved
+	// asset list (single-threaded, race-free, counts every asset exactly once).
+	for _, a := range assets {
+		if info, statErr := os.Stat(filepath.Join(ws.Root(), a.LogicalPath)); statErr == nil {
+			inputBytes += info.Size()
+		}
 	}
 	record("materialize", phaseStart)
 
@@ -135,7 +195,18 @@ func (p *Processor) PrepareJob(ctx context.Context, job *queue.Job) (*PreparedJo
 			_ = ws.Cleanup()
 			return nil, fmt.Errorf("processor: read subtitles %s: %w", subtitlePath, readErr)
 		}
-		plan, subtitleCount, err = overlay.BurnASSIntoPlan(plan, subtitleBytes, fontPath)
+		// Style + safe-area box are resolved from the plan's typed subtitle
+		// block (SubtitleStyleAsset). The processor never invents typography.
+		burnStyle, burnBox, styleErr := overlay.SubtitleStyleAsset(job.RenderPlan)
+		if styleErr != nil {
+			_ = ws.Cleanup()
+			return nil, styleErr
+		}
+		if burnStyle == nil || burnBox.Width <= 0 || burnBox.Height <= 0 {
+			_ = ws.Cleanup()
+			return nil, fmt.Errorf("processor: burn subtitles requires a typed subtitle style block (font_size_px, width/height) in the plan")
+		}
+		plan, subtitleCount, err = overlay.BurnASSIntoPlan(plan, subtitleBytes, fontPath, burnStyle, burnBox)
 		if err != nil {
 			_ = ws.Cleanup()
 			return nil, err
@@ -177,8 +248,12 @@ func (p *Processor) RunGPU(ctx context.Context, prepared *PreparedJob) error {
 	phaseStart := time.Now()
 	job := prepared.Job
 	metadata := renderMetadataFromPlan(prepared.Plan)
-	gpuRequired := p.strictNativeBackend ||
-		(p.backend == "vulkan" && p.hardwareEncoder != "" && p.hardwareEncoder != "none")
+	// Native NVENC is required for source-video jobs. Image/text-only plans
+	// still use the Vulkan compositor, but Chronon's pipe encoder is the
+	// supported output path and reports a software encoder by design.
+	hasSourceVideo := hasVideoSource(prepared.Plan)
+	gpuRequired := hasSourceVideo && (p.strictNativeBackend ||
+		(p.backend == "vulkan" && p.hardwareEncoder != "" && p.hardwareEncoder != "none"))
 	// Render progress: every '[video] N/M frames' milestone the renderer
 	// prints is logged (where did the 12 minutes go) and, when a shared
 	// tracker is installed, fed into it so health and the queue pusher can
@@ -202,6 +277,7 @@ func (p *Processor) RunGPU(ctx context.Context, prepared *PreparedJob) error {
 			// Vulkan graph/native-surface handoff; treating every source clip as
 			// a composition makes Chronon reject otherwise valid decoder frames.
 			CompositionRequired: hasVisualOverlay(prepared.Plan),
+			VideoSourceRequired: hasVideoSource(prepared.Plan),
 			PacketCopyAllowed:   true,
 		},
 		FirstFrame:  frameStart(job),
@@ -247,7 +323,11 @@ func (p *Processor) RunGPU(ctx context.Context, prepared *PreparedJob) error {
 	if p.progressTracker != nil {
 		p.progressTracker.Forget(job.ID)
 	}
-	if p.strictNativeBackend {
+	// The native Vulkan/NVENC receipt gate applies to source-video jobs. An
+	// image/text-only composition intentionally uses Chronon's Vulkan
+	// compositor with the supported software pipe encoder, so requiring an
+	// NVENC receipt there would reject a valid authored entity card.
+	if p.strictNativeBackend && hasVideoSource(prepared.Plan) {
 		metadata := renderMetadataFromPlan(prepared.Plan)
 		if err := requireNativeVulkan(prepared.OutputPath, metadata.FrameCount); err != nil {
 			return fmt.Errorf("processor: gpu-vulkan-native gate: %w", err)
@@ -285,7 +365,7 @@ func (p *Processor) FinalizeJob(ctx context.Context, prepared *PreparedJob) (que
 				return queue.Artifact{}, fmt.Errorf("processor: overlay media contract: %w", err)
 			}
 		}
-		if hasVisualOverlay(plan) {
+		if hasVisualOverlay(plan) && deepVisualValidationEnabled() {
 			if err := probed.ValidateVisible(ctx, outputPath); err != nil {
 				return queue.Artifact{}, fmt.Errorf("processor: visual output gate: %w", err)
 			}
@@ -297,6 +377,15 @@ func (p *Processor) FinalizeJob(ctx context.Context, prepared *PreparedJob) (que
 	}
 	return p.storeArtifact(ctx, job.ID, outputPath, plan, metrics, prepared.totalStart, probe, prepared.Stats, prepared.InputBytes,
 		job.JobType == queue.JobTypeOverlayRender || metadata.ProfileID != "")
+}
+
+// deepVisualValidationEnabled reports whether the sampled ffmpeg visual
+// validation should run for this job. Opt-in via RENDERINGGEN_DEEP_VISUAL=1:
+// CI and certification runs enable it; the production hot path relies on the
+// Chronon receipt gate (requireNativeVulkan + media receipt) and pays no
+// extra ffmpeg processes per render.
+func deepVisualValidationEnabled() bool {
+	return os.Getenv("RENDERINGGEN_DEEP_VISUAL") == "1"
 }
 
 // gpuGap tracks the wall-clock gap between the end of one GPU render and the

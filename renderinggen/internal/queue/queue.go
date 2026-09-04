@@ -55,6 +55,7 @@ type FrameRange struct {
 type AssetRef struct {
 	Hash        string `json:"hash"`
 	LogicalPath string `json:"logical_path"`
+	SourceURL   string `json:"source_url,omitempty"`
 }
 
 // Job is one render SEGMENT pulled from the queue. RenderPlan is either the
@@ -312,7 +313,7 @@ func toClientAssets(in []AssetRef) []queueclient.AssetRef {
 	}
 	out := make([]queueclient.AssetRef, len(in))
 	for i, a := range in {
-		out[i] = queueclient.AssetRef{Hash: a.Hash, LogicalPath: a.LogicalPath}
+		out[i] = queueclient.AssetRef{Hash: a.Hash, LogicalPath: a.LogicalPath, SourceURL: a.SourceURL}
 	}
 	return out
 }
@@ -330,7 +331,7 @@ func fromClientAssets(in []queueclient.AssetRef) []AssetRef {
 	}
 	out := make([]AssetRef, len(in))
 	for i, a := range in {
-		out[i] = AssetRef{Hash: a.Hash, LogicalPath: a.LogicalPath}
+		out[i] = AssetRef{Hash: a.Hash, LogicalPath: a.LogicalPath, SourceURL: a.SourceURL}
 	}
 	return out
 }
