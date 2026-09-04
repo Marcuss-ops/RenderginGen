@@ -97,7 +97,7 @@ func BuildWordLayers(prefix, text, font string, fontSize float64, color []float6
 		if duration <= 0 {
 			duration = 1
 		}
-		layers = append(layers, overlay.Layer{ID: prefix + "_word_" + string(rune('0'+i)), Type: "text", Text: w, Style: &overlay.LayerStyle{FontFamily: font, FontWeight: 700, FontSize: fontSize, Fill: typographyColor(color)}, Position: []float64{currentX + wWidth/2.0, centerY}, StartFrame: startFrame, DurationFrames: duration, Opacity: 1.0, Animation: typographyAnimation(animation, duration)})
+		layers = append(layers, overlay.Layer{ID: prefix + "_word_" + string(rune('0'+i)), Type: "text", Text: w, Style: &overlay.LayerStyle{Font: font, FontSize: fontSize, Fill: typographyColor(color)}, Position: []float64{currentX + wWidth/2.0, centerY}, StartFrame: startFrame, DurationFrames: duration, Opacity: 1.0, Animation: typographyAnimation(animation, duration)})
 		currentX += wWidth + spaceWidth
 	}
 	return layers
@@ -128,7 +128,7 @@ func BuildGlyphLayers(prefix, text, font string, fontSize float64, color []float
 			if duration <= 0 {
 				duration = 1
 			}
-			layers = append(layers, overlay.Layer{ID: prefix + "_char_" + string(r) + "_" + string(rune('a'+i%26)), Type: "text", Text: string(r), Style: &overlay.LayerStyle{FontFamily: font, FontWeight: 700, FontSize: fontSize, Fill: typographyColor(color)}, Position: []float64{currentX + cWidth/2.0, centerY}, StartFrame: startFrame, DurationFrames: duration, Opacity: 1.0, Animation: typographyAnimation(animation, duration)})
+			layers = append(layers, overlay.Layer{ID: prefix + "_char_" + string(r) + "_" + string(rune('a'+i%26)), Type: "text", Text: string(r), Style: &overlay.LayerStyle{Font: font, FontSize: fontSize, Fill: typographyColor(color)}, Position: []float64{currentX + cWidth/2.0, centerY}, StartFrame: startFrame, DurationFrames: duration, Opacity: 1.0, Animation: typographyAnimation(animation, duration)})
 		}
 		currentX += cWidth
 	}

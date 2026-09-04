@@ -34,7 +34,7 @@ type styleBlock struct {
 	HeightPX     int              `json:"height_px,omitempty"`
 	ScalePercent float64          `json:"scale_percent,omitempty"`
 	Shadow       *shadowBlock     `json:"shadow,omitempty"`
-	TransitionIn *transitionBlock `json:"transition_in,omitempty"`
+	TransitionIn *transitionBlock `json:"transition_in,omitempty"` // parsed only to reject fail-closed
 }
 
 type shadowBlock struct {
@@ -64,6 +64,9 @@ func parseStyleBlock(raw map[string]any) (*styleBlock, error) {
 	var out styleBlock
 	if err := json.Unmarshal(blob, &out); err != nil {
 		return nil, fmt.Errorf("overlay: decode style block: %w", err)
+	}
+	if out.TransitionIn != nil {
+		return nil, fmt.Errorf("overlay: style.transition_in is not supported by the Chronon lowering; render transitions via PipelineGen keyframes instead")
 	}
 	return &out, nil
 }
@@ -102,7 +105,7 @@ func effectiveFontSize(s *styleBlock) (float64, error) {
 
 // subtitleLayerStyle converts the plan's subtitle style into a concrete
 // Chronon text style. Fails closed when the plan carries no usable style.
-func subtitleLayerStyle(s *styleBlock, fontPath string) (*concreteStyle, error) {
+func subtitleLayerStyle(s *styleBlock, fontPath string) (*LayerStyle, error) {
 	size, err := effectiveFontSize(s)
 	if err != nil {
 		return nil, fmt.Errorf("overlay: subtitle %w", err)
@@ -111,9 +114,9 @@ func subtitleLayerStyle(s *styleBlock, fontPath string) (*concreteStyle, error) 
 	if fill == "" {
 		return nil, fmt.Errorf("overlay: subtitle style carries no color — PipelineGen must resolve the fill (the worker never invents one)")
 	}
-	style := &concreteStyle{Font: fontPath, FontSize: size, Fill: fill}
+	style := &LayerStyle{Font: fontPath, FontSize: size, Fill: fill}
 	if s.Shadow != nil {
-		style.Shadow = &concreteShadow{
+		style.Shadow = &LayerShadow{
 			Color:   s.Shadow.Color,
 			Opacity: s.Shadow.Opacity,
 			Blur:    s.Shadow.BlurPX,
@@ -125,7 +128,7 @@ func subtitleLayerStyle(s *styleBlock, fontPath string) (*concreteStyle, error) 
 
 // watermarkLayerStyle converts the plan's watermark style into a concrete
 // Chronon text style. Fails closed when the plan carries no usable style.
-func watermarkLayerStyle(s *styleBlock, fontPath string) (*concreteStyle, error) {
+func watermarkLayerStyle(s *styleBlock, fontPath string) (*LayerStyle, error) {
 	size, err := effectiveFontSize(s)
 	if err != nil {
 		return nil, fmt.Errorf("overlay: watermark %w", err)
@@ -134,9 +137,9 @@ func watermarkLayerStyle(s *styleBlock, fontPath string) (*concreteStyle, error)
 	if fill == "" {
 		return nil, fmt.Errorf("overlay: watermark style carries no color — PipelineGen must resolve the fill (the worker never invents one)")
 	}
-	style := &concreteStyle{Font: fontPath, FontSize: size, Fill: fill}
+	style := &LayerStyle{Font: fontPath, FontSize: size, Fill: fill}
 	if s.Shadow != nil {
-		style.Shadow = &concreteShadow{
+		style.Shadow = &LayerShadow{
 			Color:   s.Shadow.Color,
 			Opacity: s.Shadow.Opacity,
 			Blur:    s.Shadow.BlurPX,

@@ -16,8 +16,8 @@ Dialogue: 0,0:00:00.50,0:00:02.00,Default,,0,0,0,,Prima\Nseconda
 Dialogue: 0,0:00:03.00,0:00:04.00,Default,,0,0,0,,Dopo
 `)
 
-	style := &concreteStyle{FontSize: 52, Fill: "#FFFFFF",
-		Shadow: &concreteShadow{Color: "#000000", Opacity: 0.95, Blur: 8, Offset: []float64{0, 5}}}
+	style := &LayerStyle{FontSize: 52, Fill: "#FFFFFF",
+		Shadow: &LayerShadow{Color: "#000000", Opacity: 0.95, Blur: 8, Offset: []float64{0, 5}}}
 	box := SubtitleStyleBox{Width: 1800, Height: 140, X: 60, Y: 758}
 	out, count, err := BurnASSIntoPlan(plan, ass, "assets/fonts/Poppins-Bold.ttf", style, box)
 	if err != nil {
@@ -26,7 +26,7 @@ Dialogue: 0,0:00:03.00,0:00:04.00,Default,,0,0,0,,Dopo
 	if count != 2 {
 		t.Fatalf("subtitle layers = %d, want 2", count)
 	}
-	var decoded concretePlan
+	var decoded Plan
 	if err := json.Unmarshal(out, &decoded); err != nil {
 		t.Fatal(err)
 	}

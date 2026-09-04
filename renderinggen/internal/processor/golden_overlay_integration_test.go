@@ -132,7 +132,11 @@ func TestGoldenSemanticOverlayJobV1Compiles(t *testing.T) {
 			} `json:"animation"`
 		} `json:"layers"`
 	}
-	if err := json.Unmarshal(compiled, &concrete); err != nil {
+	compiledBytes, err := compiled.Marshal()
+	if err != nil {
+		t.Fatalf("encode compiled plan: %v", err)
+	}
+	if err := json.Unmarshal(compiledBytes, &concrete); err != nil {
 		t.Fatalf("decode compiled plan: %v", err)
 	}
 	if concrete.Schema != "chronon.render-plan.v2" || concrete.Version != 2 {

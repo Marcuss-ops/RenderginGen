@@ -14,7 +14,7 @@ func TestCompileIfSemanticRejectsUntypedConcretePlan(t *testing.T) {
 	raw := []byte(`{"schema":"chronon.render-plan","version":1,"job_id":"j","canvas":{"width":1280,"height":720,"fps_num":30,"fps_den":1,"duration_frames":150},"layers":[{"id":"bg","type":"image","asset":"assets/background.jpg","start_frame":0,"duration_frames":150}],"output":{"path":"result.mp4","format":"mp4","codec":"h264"}}`)
 	compiled, assets, semantic, err := CompileIfSemantic(raw)
 	if err == nil {
-		t.Fatalf("untyped concrete plan must be rejected, got compiled=%d bytes semantic=%v", len(compiled), semantic)
+		t.Fatalf("untyped concrete plan must be rejected, got compiled=%+v semantic=%v", compiled, semantic)
 	}
 	if len(assets) != 0 {
 		t.Fatalf("rejected plan must synthesize no assets, got %+v", assets)
@@ -35,15 +35,11 @@ func TestCompileIfSemanticOptionalBackground(t *testing.T) {
 	if err != nil || !semantic {
 		t.Fatalf("compile semantic background: semantic=%v err=%v", semantic, err)
 	}
-	var plan concretePlan
-	if err := json.Unmarshal(compiled, &plan); err != nil {
-		t.Fatalf("decode compiled plan: %v", err)
+	if len(compiled.Layers) < 2 || compiled.Layers[0].ID != "background" || compiled.Layers[0].Type != "color" {
+		t.Fatalf("background was not emitted first: %+v", compiled.Layers)
 	}
-	if len(plan.Layers) < 2 || plan.Layers[0].ID != "background" || plan.Layers[0].Type != "color" {
-		t.Fatalf("background was not emitted first: %+v", plan.Layers)
-	}
-	if plan.Layers[0].DurationFrames != plan.Canvas.DurationFrames {
-		t.Fatalf("background duration=%d, canvas duration=%d", plan.Layers[0].DurationFrames, plan.Canvas.DurationFrames)
+	if compiled.Layers[0].DurationFrames != compiled.Canvas.DurationFrames {
+		t.Fatalf("background duration=%d, canvas duration=%d", compiled.Layers[0].DurationFrames, compiled.Canvas.DurationFrames)
 	}
 }
 
@@ -58,14 +54,10 @@ func TestCompileIfSemanticTextMotionProducesAnimatorContract(t *testing.T) {
 	if err != nil {
 		t.Fatalf("compile text motion: %v", err)
 	}
-	var plan concretePlan
-	if err := json.Unmarshal(compiled, &plan); err != nil {
-		t.Fatal(err)
+	if len(compiled.Layers) != 1 || len(compiled.Layers[0].TextAnimators) != 1 {
+		t.Fatalf("expected one text animator, got %+v", compiled.Layers)
 	}
-	if len(plan.Layers) != 1 || len(plan.Layers[0].TextAnimators) != 1 {
-		t.Fatalf("expected one text animator, got %+v", plan.Layers)
-	}
-	a := plan.Layers[0].TextAnimators[0]
+	a := compiled.Layers[0].TextAnimators[0]
 	if a.Selectors[0].Unit != "glyph" || len(a.Properties) != 2 {
 		t.Fatalf("unexpected character cascade contract: %+v", a)
 	}
@@ -82,14 +74,10 @@ func TestCompileSemanticTextUsesExplicitCanvasLocalBox(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	var plan concretePlan
-	if err := json.Unmarshal(compiled, &plan); err != nil {
-		t.Fatal(err)
+	if len(compiled.Layers) != 1 {
+		t.Fatalf("expected one text layer, got %d", len(compiled.Layers))
 	}
-	if len(plan.Layers) != 1 {
-		t.Fatalf("expected one text layer, got %d", len(plan.Layers))
-	}
-	layer := plan.Layers[0]
+	layer := compiled.Layers[0]
 	if len(layer.Size) != 2 || layer.Size[0] != 1920 || layer.Size[1] != 120 {
 		t.Fatalf("text local box = %#v, want [1920 120]", layer.Size)
 	}
@@ -110,14 +98,10 @@ func TestCompileSemanticTextMotionsDoNotCollapseToSameContract(t *testing.T) {
 		if err != nil {
 			t.Fatalf("%s: %v", motionID, err)
 		}
-		var plan concretePlan
-		if err := json.Unmarshal(compiled, &plan); err != nil {
-			t.Fatal(err)
-		}
-		if len(plan.Layers) != 1 || len(plan.Layers[0].TextAnimators) != 1 {
+		if len(compiled.Layers) != 1 || len(compiled.Layers[0].TextAnimators) != 1 {
 			t.Fatalf("%s: missing text animator", motionID)
 		}
-		data, err := json.Marshal(plan.Layers[0].TextAnimators[0])
+		data, err := json.Marshal(compiled.Layers[0].TextAnimators[0])
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -166,12 +150,8 @@ func TestCompileIfSemanticPresetLessPrimitiveCompilesBare(t *testing.T) {
 	if err != nil || !semantic {
 		t.Fatalf("preset-less primitive must compile: semantic=%v err=%v", semantic, err)
 	}
-	var plan Plan
-	if err := json.Unmarshal(compiled, &plan); err != nil {
-		t.Fatal(err)
-	}
-	if len(plan.Layers) != 1 {
-		t.Fatalf("preset-less primitive must compile to a bare layer: %+v", plan.Layers)
+	if len(compiled.Layers) != 1 {
+		t.Fatalf("preset-less primitive must compile to a bare layer: %+v", compiled.Layers)
 	}
 }
 
@@ -210,21 +190,17 @@ func TestCompileIfSemanticNewContractPresetIDAndEntityRef(t *testing.T) {
 	if err != nil || !semantic {
 		t.Fatalf("semantic plan must compile: semantic=%v err=%v", semantic, err)
 	}
-	var plan Plan
-	if err := json.Unmarshal(compiled, &plan); err != nil {
-		t.Fatal(err)
-	}
-	if len(plan.Layers) != 2 {
-		t.Fatalf("compiled layers = %+v", plan.Layers)
+	if len(compiled.Layers) != 2 {
+		t.Fatalf("compiled layers = %+v", compiled.Layers)
 	}
 	// preset_id contract slot is used verbatim (no template re-mapping).
 	// The PERSON item with no explicit text falls back to entity_ref:
 	// surface_text first, then name.
-	if plan.Layers[1].Text != "Cook" {
-		t.Fatalf("entity_ref surface_text = %q, want Cook", plan.Layers[1].Text)
+	if compiled.Layers[1].Text != "Cook" {
+		t.Fatalf("entity_ref surface_text = %q, want Cook", compiled.Layers[1].Text)
 	}
-	if plan.Layers[1].Animation == nil || len(plan.Layers[1].Animation.Tracks) == 0 {
-		t.Fatalf("expected generic animation tracks, got %+v", plan.Layers[1].Animation)
+	if compiled.Layers[1].Animation == nil || len(compiled.Layers[1].Animation.Tracks) == 0 {
+		t.Fatalf("expected generic animation tracks, got %+v", compiled.Layers[1].Animation)
 	}
 }
 
@@ -242,12 +218,8 @@ func TestCompileIfSemanticEntityRefNameFallback(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	var plan Plan
-	if err := json.Unmarshal(compiled, &plan); err != nil {
-		t.Fatal(err)
-	}
-	if len(plan.Layers) != 1 || plan.Layers[0].Text != "Tim Cook" {
-		t.Fatalf("entity_ref name fallback failed: %+v", plan.Layers)
+	if len(compiled.Layers) != 1 || compiled.Layers[0].Text != "Tim Cook" {
+		t.Fatalf("entity_ref name fallback failed: %+v", compiled.Layers)
 	}
 }
 
@@ -275,27 +247,23 @@ func TestCompileIfSemanticImportantPhraseAndNamedImage(t *testing.T) {
 	if err != nil || !semantic {
 		t.Fatalf("semantic phrase/name plan: semantic=%v err=%v", semantic, err)
 	}
-	var plan Plan
-	if err := json.Unmarshal(compiled, &plan); err != nil {
-		t.Fatal(err)
+	if len(compiled.Layers) != 3 {
+		t.Fatalf("compiled layers = %+v", compiled.Layers)
 	}
-	if len(plan.Layers) != 3 {
-		t.Fatalf("compiled layers = %+v", plan.Layers)
+	if compiled.Layers[0].Text != "THIS CHANGES EVERYTHING" {
+		t.Fatalf("important phrase layer = %+v", compiled.Layers[0])
 	}
-	if plan.Layers[0].Text != "THIS CHANGES EVERYTHING" {
-		t.Fatalf("important phrase layer = %+v", plan.Layers[0])
+	if compiled.Layers[1].Type != "image" || compiled.Layers[1].Asset != "assets/semantic/matt-damon.png" {
+		t.Fatalf("named image asset layer = %+v", compiled.Layers[1])
 	}
-	if plan.Layers[1].Type != "image" || plan.Layers[1].Asset != "assets/semantic/matt-damon.png" {
-		t.Fatalf("named image asset layer = %+v", plan.Layers[1])
+	if compiled.Layers[1].Animation == nil || len(compiled.Layers[1].Animation.Tracks) == 0 {
+		t.Fatalf("entity image must carry image preset animation = %+v", compiled.Layers[1].Animation)
 	}
-	if plan.Layers[1].Animation == nil || len(plan.Layers[1].Animation.Tracks) == 0 {
-		t.Fatalf("entity image must carry image preset animation = %+v", plan.Layers[1].Animation)
+	if len(compiled.Layers[1].Position) != 2 || compiled.Layers[1].Position[0] != 0 {
+		t.Fatalf("entity image must use image preset layout = %+v", compiled.Layers[1].Position)
 	}
-	if len(plan.Layers[1].Position) != 2 || plan.Layers[1].Position[0] != 0 {
-		t.Fatalf("entity image must use image preset layout = %+v", plan.Layers[1].Position)
-	}
-	if plan.Layers[2].Text != "Matt Damon" {
-		t.Fatalf("named image label layer = %+v", plan.Layers[2])
+	if compiled.Layers[2].Text != "Matt Damon" {
+		t.Fatalf("named image label layer = %+v", compiled.Layers[2])
 	}
 	if len(assets) != 1 || assets[0].LogicalPath != "assets/semantic/matt-damon.png" {
 		t.Fatalf("materialized assets = %+v", assets)
@@ -342,8 +310,12 @@ func TestCompileSemanticLowersAuthoringConcepts(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	outBytes, err := compiled.Marshal()
+	if err != nil {
+		t.Fatal(err)
+	}
 	var out map[string]any
-	if err := json.Unmarshal(compiled, &out); err != nil {
+	if err := json.Unmarshal(outBytes, &out); err != nil {
 		t.Fatal(err)
 	}
 	forbidden := map[string]bool{"preset_id": true, "style_profile": true, "safe_area": true, "lower_third": true, "animation_preset": true, "unit": true, "enter_duration_frames": true, "exit_duration_frames": true}

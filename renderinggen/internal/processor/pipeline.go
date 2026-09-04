@@ -2,7 +2,6 @@ package processor
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -36,7 +35,7 @@ import (
 type PreparedJob struct {
 	Job             *queue.Job
 	Workspace       *workspace.Workspace
-	Plan            []byte             // concrete Chronon plan (post-compile)
+	Plan            *overlay.Plan      // typed concrete Chronon plan (post-compile, marshaled once at WritePlan)
 	Stats           overlay.Stats      // semantic counters for the ledger
 	InputBytes      int64              // materialized input size for the ledger
 	Metrics         map[string]float64 // phase metrics accumulated so far
@@ -138,19 +137,11 @@ func (p *Processor) PrepareJob(ctx context.Context, job *queue.Job) (*PreparedJo
 		_ = ws.Cleanup()
 		return nil, err
 	}
-	var concretePlan overlay.Plan
-	if err := json.Unmarshal(plan, &concretePlan); err != nil {
-		_ = ws.Cleanup()
-		return nil, fmt.Errorf("processor: decode compiled plan: %w", err)
-	}
-	if err := normalizeMaterializedImagePaths(ws.Root(), &concretePlan); err != nil {
+	// normalizeMaterializedImagePaths mutates the ONE typed plan in place —
+	// no JSON round-trip.
+	if err := normalizeMaterializedImagePaths(ws.Root(), plan); err != nil {
 		_ = ws.Cleanup()
 		return nil, err
-	}
-	plan, err = json.Marshal(concretePlan)
-	if err != nil {
-		_ = ws.Cleanup()
-		return nil, fmt.Errorf("processor: re-encode compiled plan: %w", err)
 	}
 	// Re-derive the aggregate from the resolver outcomes: the streaming
 	// resolver returns each asset's real size, so sum them via the resolved
@@ -206,8 +197,7 @@ func (p *Processor) PrepareJob(ctx context.Context, job *queue.Job) (*PreparedJo
 			_ = ws.Cleanup()
 			return nil, fmt.Errorf("processor: burn subtitles requires a typed subtitle style block (font_size_px, width/height) in the plan")
 		}
-		plan, subtitleCount, err = overlay.BurnASSIntoPlan(plan, subtitleBytes, fontPath, burnStyle, burnBox)
-		if err != nil {
+		if err := overlay.BurnASSIntoPlanTyped(plan, subtitleBytes, fontPath, burnStyle, burnBox); err != nil {
 			_ = ws.Cleanup()
 			return nil, err
 		}
@@ -218,17 +208,20 @@ func (p *Processor) PrepareJob(ctx context.Context, job *queue.Job) (*PreparedJo
 	}
 
 	phaseStart = time.Now()
-	metadata := renderMetadataFromPlan(plan)
-	renderPlan := plan
+	metadata := planMetadataOf(plan)
 	if !p.nativeOutputProfiles && metadata.ProfileID != "" {
-		renderPlan = stripOutputProfile(plan)
+		plan.Output.ProfileID = ""
+	}
+	renderPlan, marshalErr := plan.Marshal()
+	if marshalErr != nil {
+		_ = ws.Cleanup()
+		return nil, fmt.Errorf("processor: encode render plan: %w", marshalErr)
 	}
 	if err := ws.WritePlan(renderPlan); err != nil {
 		_ = ws.Cleanup()
 		return nil, err
 	}
 	record("plan", phaseStart)
-	_ = metadata
 	return &PreparedJob{
 		Job:             job,
 		Workspace:       ws,
@@ -247,11 +240,11 @@ func (p *Processor) PrepareJob(ctx context.Context, job *queue.Job) (*PreparedJo
 func (p *Processor) RunGPU(ctx context.Context, prepared *PreparedJob) error {
 	phaseStart := time.Now()
 	job := prepared.Job
-	metadata := renderMetadataFromPlan(prepared.Plan)
+	metadata := planMetadataOf(prepared.Plan)
 	// Native NVENC is required for source-video jobs. Image/text-only plans
 	// still use the Vulkan compositor, but Chronon's pipe encoder is the
 	// supported output path and reports a software encoder by design.
-	hasSourceVideo := hasVideoSource(prepared.Plan)
+	hasSourceVideo := planHasVideoSource(prepared.Plan)
 	gpuRequired := hasSourceVideo && (p.strictNativeBackend ||
 		(p.backend == "vulkan" && p.hardwareEncoder != "" && p.hardwareEncoder != "none"))
 	// Render progress: every '[video] N/M frames' milestone the renderer
@@ -276,8 +269,8 @@ func (p *Processor) RunGPU(ctx context.Context, prepared *PreparedJob) error {
 			// path. Only plans with an authored visual layer require the full
 			// Vulkan graph/native-surface handoff; treating every source clip as
 			// a composition makes Chronon reject otherwise valid decoder frames.
-			CompositionRequired: hasVisualOverlay(prepared.Plan),
-			VideoSourceRequired: hasVideoSource(prepared.Plan),
+			CompositionRequired: planHasVisualOverlay(prepared.Plan),
+			VideoSourceRequired: planHasVideoSource(prepared.Plan),
 			PacketCopyAllowed:   true,
 		},
 		FirstFrame:  frameStart(job),
@@ -327,8 +320,8 @@ func (p *Processor) RunGPU(ctx context.Context, prepared *PreparedJob) error {
 	// image/text-only composition intentionally uses Chronon's Vulkan
 	// compositor with the supported software pipe encoder, so requiring an
 	// NVENC receipt there would reject a valid authored entity card.
-	if p.strictNativeBackend && hasVideoSource(prepared.Plan) {
-		metadata := renderMetadataFromPlan(prepared.Plan)
+	if p.strictNativeBackend && planHasVideoSource(prepared.Plan) {
+		metadata := planMetadataOf(prepared.Plan)
 		if err := requireNativeVulkan(prepared.OutputPath, metadata.FrameCount); err != nil {
 			return fmt.Errorf("processor: gpu-vulkan-native gate: %w", err)
 		}
@@ -344,7 +337,7 @@ func (p *Processor) FinalizeJob(ctx context.Context, prepared *PreparedJob) (que
 	metrics := prepared.Metrics
 	outputPath := prepared.OutputPath
 	plan := prepared.Plan
-	metadata := renderMetadataFromPlan(plan)
+	metadata := planMetadataOf(plan)
 	var probe *media.ProbeResult
 	if job.JobType == queue.JobTypeOverlayRender || metadata.ProfileID != "" {
 		probeStart := time.Now()
@@ -365,7 +358,7 @@ func (p *Processor) FinalizeJob(ctx context.Context, prepared *PreparedJob) (que
 				return queue.Artifact{}, fmt.Errorf("processor: overlay media contract: %w", err)
 			}
 		}
-		if hasVisualOverlay(plan) && deepVisualValidationEnabled() {
+		if planHasVisualOverlay(plan) && deepVisualValidationEnabled() {
 			if err := probed.ValidateVisible(ctx, outputPath); err != nil {
 				return queue.Artifact{}, fmt.Errorf("processor: visual output gate: %w", err)
 			}

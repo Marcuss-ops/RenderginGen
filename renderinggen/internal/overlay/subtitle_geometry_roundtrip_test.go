@@ -10,7 +10,7 @@ import (
 // the full burn chain for every supported subtitle position:
 //
 //	style.position → subtitleCueGeometry → SubtitleStyleBox
-//	                 → BurnASSIntoPlan → concreteLayer.Position
+//	                 → BurnASSIntoPlan → Layer.Position
 //
 // The historical bug converted X to Chronon's centre-offset space but left Y
 // absolute, so SubtitleStyleAsset (which assumes both axes are offsets) pushed
@@ -60,7 +60,7 @@ func TestSubtitleGeometryRoundTripEndToEnd(t *testing.T) {
 			if err != nil || count != 1 {
 				t.Fatalf("BurnASSIntoPlan: count=%d err=%v", count, err)
 			}
-			var decoded concretePlan
+			var decoded Plan
 			if err := json.Unmarshal(out, &decoded); err != nil {
 				t.Fatal(err)
 			}
@@ -107,7 +107,7 @@ func TestSubtitleBottomCenterOnCanvas(t *testing.T) {
 	if err != nil || count != 1 {
 		t.Fatalf("BurnASSIntoPlan: count=%d err=%v", count, err)
 	}
-	var decoded concretePlan
+	var decoded Plan
 	if err := json.Unmarshal(out, &decoded); err != nil {
 		t.Fatal(err)
 	}

@@ -65,12 +65,8 @@ func TestEveryOfficialPresetCompilesAndMaterializes(t *testing.T) {
 		if err != nil || !semantic {
 			t.Fatalf("%s compile: semantic=%v err=%v", id, semantic, err)
 		}
-		var plan concretePlan
-		if err := json.Unmarshal(compiled, &plan); err != nil {
-			t.Fatalf("%s concrete decode: %v", id, err)
-		}
-		if len(plan.Layers) != 1 || (!staticSmoke && (plan.Layers[0].Animation == nil || len(plan.Layers[0].Animation.Tracks) == 0)) {
-			t.Fatalf("%s was not materially lowered: %+v", id, plan.Layers)
+		if len(compiled.Layers) != 1 || (!staticSmoke && (compiled.Layers[0].Animation == nil || len(compiled.Layers[0].Animation.Tracks) == 0)) {
+			t.Fatalf("%s was not materially lowered: %+v", id, compiled.Layers)
 		}
 	}
 }
