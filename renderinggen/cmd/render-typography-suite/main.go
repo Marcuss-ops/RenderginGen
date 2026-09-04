@@ -127,20 +127,14 @@ func writeV2Plan(path, planID string, items []semanticTypographyItem) (string, e
 	if !compiled {
 		return "", fmt.Errorf("semantic input did not pass through RenderingGen")
 	}
-	var document struct {
-		Schema  string `json:"schema"`
-		Version int    `json:"version"`
+	if data.Schema != "chronon.render-plan.v2" || data.Version != 2 {
+		return "", fmt.Errorf("compiler emitted %s v%d, want chronon.render-plan.v2", data.Schema, data.Version)
 	}
-	if err := json.Unmarshal(data, &document); err != nil {
-		return "", err
-	}
-	if document.Schema != "chronon.render-plan.v2" || document.Version != 2 {
-		return "", fmt.Errorf("compiler emitted %s v%d, want chronon.render-plan.v2", document.Schema, document.Version)
-	}
-	data, err = json.MarshalIndent(json.RawMessage(data), "", "  ")
+	dataBytes, err := json.MarshalIndent(data, "", "  ")
 	if err != nil {
 		return "", err
 	}
+	_ = dataBytes
 	if !filepath.IsAbs(path) {
 		cwd, err := os.Getwd()
 		if err != nil {
@@ -151,7 +145,7 @@ func writeV2Plan(path, planID string, items []semanticTypographyItem) (string, e
 	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
 		return "", err
 	}
-	if err := os.WriteFile(path, append(data, '\n'), 0644); err != nil {
+	if err := os.WriteFile(path, append(dataBytes, '\n'), 0644); err != nil {
 		return "", err
 	}
 	return path, nil

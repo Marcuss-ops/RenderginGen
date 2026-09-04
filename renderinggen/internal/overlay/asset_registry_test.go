@@ -1,7 +1,6 @@
 package overlay
 
 import (
-	"encoding/json"
 	"strings"
 	"testing"
 )
@@ -140,21 +139,13 @@ func TestCompileSemanticQueryURLAssetCleanPath(t *testing.T) {
 	if assets[0].LogicalPath != "assets/semantic/photo.png" {
 		t.Fatalf("logical path = %q, want assets/semantic/photo.png", assets[0].LogicalPath)
 	}
-	var probe struct {
-		Layers []struct {
-			Asset string `json:"asset"`
-		} `json:"layers"`
-	}
-	// Decode from a fresh compile to also verify the layer reference.
+	// Verify the layer reference from a fresh compile.
 	compiled, _, _, err := CompileIfSemantic(raw)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := json.Unmarshal(compiled, &probe); err != nil {
-		t.Fatal(err)
-	}
-	if probe.Layers[0].Asset != "assets/semantic/photo.png" {
-		t.Fatalf("layer asset = %q, want clean path", probe.Layers[0].Asset)
+	if compiled.Layers[0].Asset != "assets/semantic/photo.png" {
+		t.Fatalf("layer asset = %q, want clean path", compiled.Layers[0].Asset)
 	}
 }
 

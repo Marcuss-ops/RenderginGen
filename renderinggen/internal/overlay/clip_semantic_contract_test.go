@@ -1,8 +1,8 @@
 package overlay
 
 import (
-	"encoding/json"
 	"math"
+	"strings"
 	"testing"
 )
 
@@ -89,10 +89,7 @@ func TestClipSemanticContractFull(t *testing.T) {
 	t.Log("semantic input                 PASS")
 
 	// Decode compiled Chronon plan.
-	var plan concretePlan
-	if err := json.Unmarshal(compiled, &plan); err != nil {
-		t.Fatalf("Chronon schema v2 FAIL: cannot decode compiled plan: %v", err)
-	}
+	plan := compiled
 	if plan.Schema != "chronon.render-plan.v2" {
 		t.Errorf("Chronon schema v2 FAIL: schema = %q, want chronon.render-plan.v2", plan.Schema)
 	}
@@ -102,7 +99,7 @@ func TestClipSemanticContractFull(t *testing.T) {
 	t.Log("Chronon schema v2              PASS")
 
 	// Verify layers by ID.
-	layerByID := map[string]concreteLayer{}
+	layerByID := map[string]Layer{}
 	for _, l := range plan.Layers {
 		layerByID[l.ID] = l
 	}
@@ -168,10 +165,12 @@ func TestClipSemanticContractFull(t *testing.T) {
 	}
 
 	// --- audio representation ---
+	// The audio policy is typed metadata on the plan (json:"-"), never
+	// serialized into Chronon's v2 output document.
 	if plan.Output.Audio != nil {
-		t.Error("audio representation FAIL: output.audio is not valid Chronon v2")
+		t.Logf("audio representation           PASS (typed worker policy: mode=%s codec=%s)", plan.Output.Audio.Mode, plan.Output.Audio.Codec)
 	} else {
-		t.Log("audio representation           PASS (worker policy)")
+		t.Log("audio representation           PASS (no semantic audio declared)")
 	}
 
 	// --- compiled assets complete ---
@@ -247,15 +246,12 @@ func TestClipSemanticDurationFromMS(t *testing.T) {
 	if err != nil || !semantic {
 		t.Fatalf("duration_ms FAIL: %v", err)
 	}
-	var plan concretePlan
-	if err := json.Unmarshal(compiled, &plan); err != nil {
-		t.Fatal(err)
-	}
+	plan := compiled
 	// msFrames(0, 10000, 30, 1) = ceil(10000*30/1000) = 300
-	if plan.Canvas.DurationFrames != 300 {
+	if compiled.Canvas.DurationFrames != 300 {
 		t.Errorf("duration_ms FAIL: canvas.duration_frames = %d, want 300", plan.Canvas.DurationFrames)
 	} else {
-		t.Logf("duration_ms → canvas           PASS (%d frames)", plan.Canvas.DurationFrames)
+		t.Logf("duration_ms → canvas           PASS (%d frames)", compiled.Canvas.DurationFrames)
 	}
 }
 
@@ -275,11 +271,7 @@ func TestClipSemanticForegroundScale(t *testing.T) {
 	if err != nil {
 		t.Fatalf("foreground_scale FAIL: %v", err)
 	}
-	var plan concretePlan
-	if err := json.Unmarshal(compiled, &plan); err != nil {
-		t.Fatal(err)
-	}
-	for _, l := range plan.Layers {
+	for _, l := range compiled.Layers {
 		if l.ID != "source" {
 			continue
 		}
@@ -316,12 +308,19 @@ func TestClipSemanticAudioLowering(t *testing.T) {
 	if err != nil {
 		t.Fatalf("audio lowering FAIL: %v", err)
 	}
-	var plan concretePlan
-	if err := json.Unmarshal(compiled, &plan); err != nil {
+	if compiled.Output.Audio == nil {
+		t.Fatal("audio lowering FAIL: semantic audio must populate the typed Output.Audio policy")
+	}
+	if compiled.Output.Audio.Mode != "transcode" || compiled.Output.Audio.Codec != "aac" || compiled.Output.Audio.SampleRate != 44100 || compiled.Output.Audio.Channels != 1 {
+		t.Fatalf("audio lowering FAIL: policy = %+v", compiled.Output.Audio)
+	}
+	// The policy must NOT reach the Chronon v2 JSON document.
+	encoded, err := compiled.Marshal()
+	if err != nil {
 		t.Fatal(err)
 	}
-	if plan.Output.Audio != nil {
-		t.Fatal("audio lowering FAIL: output.audio must not be sent to Chronon v2")
+	if strings.Contains(string(encoded), "\"audio\"") {
+		t.Fatal("audio lowering FAIL: output.audio leaked into the Chronon v2 JSON document")
 	}
-	t.Log("audio lowering                 PASS")
+	t.Log("audio lowering                 PASS (typed policy, json:\"-\")")
 }

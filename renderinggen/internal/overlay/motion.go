@@ -96,10 +96,10 @@ func fromTrackDefinitions(src []motion.TrackDefinition) []AnimationTrack {
 	return result
 }
 
-func fromTextMotionDefinitions(src []motion.TextAnimatorDefinition, duration int64) []concreteTextAnimator {
-	result := make([]concreteTextAnimator, 0, len(src))
+func fromTextMotionDefinitions(src []motion.TextAnimatorDefinition, duration int64) []TextAnimator {
+	result := make([]TextAnimator, 0, len(src))
 	for _, definition := range src {
-		selector := concreteTextSelector{
+		selector := TextSelector{
 			ID: definition.ID + "_selector", Unit: definition.Selector.Kind,
 			Shape: definition.Selector.Shape, Order: definition.Selector.Order, Combine: "replace",
 			ExcludeSpaces: true,
@@ -127,7 +127,7 @@ func fromTextMotionDefinitions(src []motion.TextAnimatorDefinition, duration int
 				{Frame: 0, Value: 0.0}, {Frame: sweepDuration, Value: 100.0},
 			}}
 		}
-		animator := concreteTextAnimator{ID: definition.ID, Selectors: []concreteTextSelector{selector}, Properties: fromTrackDefinitions(definition.Properties)}
+		animator := TextAnimator{ID: definition.ID, Selectors: []TextSelector{selector}, Properties: fromTrackDefinitions(definition.Properties)}
 		result = append(result, animator)
 	}
 	return result

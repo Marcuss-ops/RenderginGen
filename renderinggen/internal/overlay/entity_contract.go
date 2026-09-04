@@ -245,7 +245,7 @@ func CompileFastEntityOverlays(
 				Type:           "text",
 				Text:           ov.Text,
 				Size:           []float64{float64(width), 120},
-				Style:          &LayerStyle{FontFamily: font, FontWeight: 700, FontSize: fontSize, Fill: rgbaHex(color)},
+				Style:          &LayerStyle{Font: font, FontSize: fontSize, Fill: rgbaHex(color)},
 				StartFrame:     ov.StartFrame,
 				DurationFrames: duration,
 				Opacity:        opacity,

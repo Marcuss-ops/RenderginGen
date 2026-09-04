@@ -197,16 +197,20 @@ func (p *Processor) Prepare(ctx context.Context, job *queue.Job) (queue.Artifact
 	if err := ws.Materialize(ctx, p.resolveAsset, assets); err != nil {
 		return queue.Artifact{}, err
 	}
-	if err := ws.WritePlan(plan); err != nil {
+	planBytes, err := plan.Marshal()
+	if err != nil {
+		return queue.Artifact{}, fmt.Errorf("processor: encode render plan: %w", err)
+	}
+	if err := ws.WritePlan(planBytes); err != nil {
 		return queue.Artifact{}, err
 	}
-	hash := storage.Hash(plan)
-	if err := p.store.Put(ctx, hash, plan); err != nil {
+	hash := storage.Hash(planBytes)
+	if err := p.store.Put(ctx, hash, planBytes); err != nil {
 		return queue.Artifact{}, fmt.Errorf("processor: store prepared plan: %w", err)
 	}
 	return queue.Artifact{
 		Kind: "overlay_prepare", StorageKey: hash, ArtifactURL: p.artifactURL(hash),
-		ArtifactHash: hash, ContentType: "application/json", SizeBytes: int64(len(plan)),
+		ArtifactHash: hash, ContentType: "application/json", SizeBytes: int64(len(planBytes)),
 		Backend: p.backend, ChrononVersion: p.chrononVersion,
 	}, nil
 }
@@ -494,6 +498,34 @@ func frameEndInclusive(job *queue.Job) int64 {
 	return 0
 }
 
+// planHasVisualOverlay identifies concrete plans that require Chronon's
+// authored composition graph. A video-only plan can use DirectYUV; an
+// image/text/color plan must use native composition even when it has no
+// separate background.
+func planHasVisualOverlay(plan *overlay.Plan) bool {
+	if plan == nil {
+		return false
+	}
+	for _, layer := range plan.Layers {
+		if layer.Type != "" && layer.Type != "video" {
+			return true
+		}
+	}
+	return false
+}
+
+func planHasVideoSource(plan *overlay.Plan) bool {
+	if plan == nil {
+		return false
+	}
+	for _, layer := range plan.Layers {
+		if layer.Type == "video" {
+			return true
+		}
+	}
+	return false
+}
+
 // hasVisualOverlay identifies concrete plans that require Chronon's authored
 // composition graph. A video-only plan can use DirectYUV; an image/text/color
 // plan must use native composition even when it has no separate background.
@@ -703,7 +735,7 @@ func (p *Processor) Publish(ctx context.Context, jobID string, artifact queue.Ar
 // "DB artifact" step — returning the artifact metadata for queue completion.
 // The pipeline invariant local_sha == objectstore_sha == db_sha is enforced
 // here: the record is keyed by the same hash the object store accepted.
-func (p *Processor) storeArtifact(ctx context.Context, jobID, outputPath string, plan []byte, phaseMetrics map[string]float64, totalStart time.Time, probe *media.ProbeResult, stats overlay.Stats, inputBytes int64, copyEligible bool) (queue.Artifact, error) {
+func (p *Processor) storeArtifact(ctx context.Context, jobID, outputPath string, plan *overlay.Plan, phaseMetrics map[string]float64, totalStart time.Time, probe *media.ProbeResult, stats overlay.Stats, inputBytes int64, copyEligible bool) (queue.Artifact, error) {
 	phaseStart := time.Now()
 	defer func() {
 		phaseMetrics["publish_ms"] = float64(time.Since(phaseStart).Microseconds()) / 1000
@@ -756,7 +788,7 @@ func (p *Processor) storeArtifact(ctx context.Context, jobID, outputPath string,
 	putUS := float64(time.Since(putStart).Microseconds())
 	phaseMetrics["objectstore_upload_us"] = putUS
 	phaseMetrics["objectstore_upload_ms"] = putUS / 1000
-	metadata := renderMetadataFromPlan(plan)
+	metadata := planMetadataOf(plan)
 	artifact := queue.Artifact{
 		Kind:           "segment",
 		StorageKey:     hash,
@@ -919,7 +951,7 @@ func publishedRenderBackend(backend string, strictNative bool) string {
 	return backend
 }
 
-type renderMetadata struct {
+type planMetadata struct {
 	Width      int
 	Height     int
 	FPSNum     int
@@ -929,47 +961,19 @@ type renderMetadata struct {
 	ProfileID  string
 }
 
-// renderMetadataFromPlan extracts only the stable canvas facts needed by the
-// artifact record. A malformed/legacy-minimal plan yields zero metadata but
-// never prevents publishing the already-rendered bytes.
-func renderMetadataFromPlan(raw []byte) renderMetadata {
-	var doc struct {
-		Canvas struct {
-			Width          int   `json:"width"`
-			Height         int   `json:"height"`
-			FPSNum         int   `json:"fps_num"`
-			FPSDen         int   `json:"fps_den"`
-			DurationFrames int64 `json:"duration_frames"`
-		} `json:"canvas"`
-		Output struct {
-			ProfileID string `json:"profile_id"`
-		} `json:"output"`
+// renderMetadata extracts only the stable canvas facts needed by the
+// artifact record, from the ONE typed plan (no JSON re-parsing).
+func planMetadataOf(plan *overlay.Plan) planMetadata {
+	if plan == nil || plan.Canvas.FPSNum <= 0 || plan.Canvas.FPSDen <= 0 {
+		return planMetadata{}
 	}
-	if err := json.Unmarshal(raw, &doc); err != nil || doc.Canvas.FPSNum <= 0 || doc.Canvas.FPSDen <= 0 {
-		return renderMetadata{}
+	return planMetadata{
+		Width: plan.Canvas.Width, Height: plan.Canvas.Height,
+		FPSNum: plan.Canvas.FPSNum, FPSDen: plan.Canvas.FPSDen,
+		FrameCount: int(plan.Canvas.DurationFrames),
+		DurationUS: plan.Canvas.DurationFrames * 1_000_000 * int64(plan.Canvas.FPSDen) / int64(plan.Canvas.FPSNum),
+		ProfileID:  plan.Output.ProfileID,
 	}
-	return renderMetadata{
-		Width: doc.Canvas.Width, Height: doc.Canvas.Height,
-		FPSNum: doc.Canvas.FPSNum, FPSDen: doc.Canvas.FPSDen,
-		FrameCount: int(doc.Canvas.DurationFrames),
-		DurationUS: doc.Canvas.DurationFrames * 1_000_000 * int64(doc.Canvas.FPSDen) / int64(doc.Canvas.FPSNum),
-		ProfileID:  doc.Output.ProfileID,
-	}
-}
-
-func stripOutputProfile(raw []byte) []byte {
-	var doc map[string]any
-	if json.Unmarshal(raw, &doc) != nil {
-		return raw
-	}
-	if output, ok := doc["output"].(map[string]any); ok {
-		delete(output, "profile_id")
-	}
-	b, err := json.Marshal(doc)
-	if err != nil {
-		return raw
-	}
-	return b
 }
 
 // artifactURL returns the L3 object URL for an artifact hash.

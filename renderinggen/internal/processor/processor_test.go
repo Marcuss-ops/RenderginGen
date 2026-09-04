@@ -18,9 +18,10 @@ import (
 	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/storage"
 )
 
-// videoHash is a valid 64-hex SHA-256 fixture: the semantic compiler now
-// validates the source ref's hash format fail-closed (asset registry).
-const videoHash = "9a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f9"
+// videoHash is the real SHA-256 of "video-bytes": the semantic compiler
+// validates the source ref's hash format fail-closed (asset registry), and
+// materialization verifies object bytes against it.
+const videoHash = "79fd615a866fe7f9eb4da8d9c41ab57e3bd48056df42fd2c13e4d461a87afbe3"
 
 type fakeRenderer struct {
 	req   chronon.RenderRequest
