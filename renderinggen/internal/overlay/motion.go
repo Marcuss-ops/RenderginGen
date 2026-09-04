@@ -1,24 +1,54 @@
 package overlay
 
-import "github.com/Marcuss-ops/RenderginGen/renderinggen/internal/motion"
+import (
+	"fmt"
+
+	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/motion"
+)
 
 // The motion registry is the only authoring-motion → renderer-track lowering
 // point. Chronon receives properties and keyframes, never motion names/units.
-func resolveMotion(m MotionDefinition) []AnimationTrack {
-	plugin, err := motion.Registry.Resolve(m.ID)
-	if err != nil || plugin == nil {
+// Fail-closed: a registry miss or a compile error is returned to the caller
+// and rejects the job — the historical swallow-and-return-nil turned a broken
+// motion into a silently static overlay that passed the pipeline as healthy.
+func resolveMotion(m MotionDefinition) ([]AnimationTrack, error) {
+	id := m.ID
+	if id == "" {
 		// Preset definitions from older callers have Name but no ID.
-		m.ID = m.Name
+		id = m.Name
 	}
-	plugin, err = motion.Registry.Resolve(m.ID)
+	plugin, err := motion.Registry.Resolve(id)
 	if err != nil || plugin == nil {
-		return nil
+		return nil, fmt.Errorf("overlay: resolve motion %q: %w", id, err)
 	}
 	tracks, err := plugin.Compile(motion.MotionContext{DurationFrames: int64(m.Enter)}, nil)
 	if err != nil {
-		return nil
+		return nil, fmt.Errorf("overlay: compile motion %q: %w", id, err)
 	}
-	return clampMotionTracks(fromMotionTracks(tracks), int64(m.Enter))
+	return retimeMotionTracks(fromMotionTracks(tracks), int64(m.Enter)), nil
+}
+
+func retimeMotionTracks(tracks []AnimationTrack, duration int64) []AnimationTrack {
+	if duration <= 0 {
+		return tracks
+	}
+	var sourceDuration int64
+	for _, track := range tracks {
+		for _, keyframe := range track.Keyframes {
+			if keyframe.Frame > sourceDuration {
+				sourceDuration = keyframe.Frame
+			}
+		}
+	}
+	if sourceDuration <= 0 || sourceDuration == duration {
+		return clampMotionTracks(tracks, duration)
+	}
+	for i := range tracks {
+		for j := range tracks[i].Keyframes {
+			tracks[i].Keyframes[j].Frame = tracks[i].Keyframes[j].Frame * duration / sourceDuration
+		}
+	}
+	return clampMotionTracks(tracks, duration)
 }
 
 // clampMotionTracks keeps preset-authored keyframes inside the concrete
@@ -29,17 +59,18 @@ func clampMotionTracks(tracks []AnimationTrack, duration int64) []AnimationTrack
 	if duration <= 0 {
 		return tracks
 	}
+	lastFrame := duration - 1
 	for i := range tracks {
 		for j := range tracks[i].Keyframes {
-			if tracks[i].Keyframes[j].Frame > duration {
-				tracks[i].Keyframes[j].Frame = duration
+			if tracks[i].Keyframes[j].Frame > lastFrame {
+				tracks[i].Keyframes[j].Frame = lastFrame
 			}
 		}
 	}
 	return tracks
 }
 
-func tracksForMotion(m MotionDefinition) []AnimationTrack {
+func tracksForMotion(m MotionDefinition) ([]AnimationTrack, error) {
 	return resolveMotion(m)
 }
 

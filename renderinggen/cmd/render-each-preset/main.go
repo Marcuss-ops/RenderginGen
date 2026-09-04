@@ -7,6 +7,8 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/drive"
@@ -22,6 +24,52 @@ type PresetItem struct {
 	Overlay     overlay.FastEntityOverlay
 }
 
+func validateMP4(path string, minDuration float64, width, height int, minFrames int64) error {
+	info, err := os.Stat(path)
+	if err != nil {
+		return fmt.Errorf("output missing: %w", err)
+	}
+	if info.Size() <= 0 {
+		return fmt.Errorf("output is empty")
+	}
+	probe := exec.Command("ffprobe", "-v", "error", "-select_streams", "v:0",
+		"-show_entries", "stream=width,height,nb_frames",
+		"-show_entries", "format=duration", "-of", "json", path)
+	out, err := probe.Output()
+	if err != nil {
+		return fmt.Errorf("ffprobe: %w", err)
+	}
+	var result struct {
+		Streams []struct {
+			Width    int    `json:"width"`
+			Height   int    `json:"height"`
+			NBFrames string `json:"nb_frames"`
+		} `json:"streams"`
+		Format struct {
+			Duration string `json:"duration"`
+		} `json:"format"`
+	}
+	if err := json.Unmarshal(out, &result); err != nil {
+		return fmt.Errorf("ffprobe JSON: %w", err)
+	}
+	if len(result.Streams) != 1 {
+		return fmt.Errorf("expected one video stream, got %d", len(result.Streams))
+	}
+	stream := result.Streams[0]
+	if stream.Width != width || stream.Height != height {
+		return fmt.Errorf("resolution %dx%d, expected %dx%d", stream.Width, stream.Height, width, height)
+	}
+	frames, err := strconv.ParseInt(stream.NBFrames, 10, 64)
+	if err != nil || frames < minFrames {
+		return fmt.Errorf("frame count %q, expected at least %d", stream.NBFrames, minFrames)
+	}
+	duration, err := strconv.ParseFloat(strings.TrimSpace(result.Format.Duration), 64)
+	if err != nil || duration < minDuration {
+		return fmt.Errorf("duration %q, expected at least %.3fs", result.Format.Duration, minDuration)
+	}
+	return nil
+}
+
 func main() {
 	fmt.Println("==================================================================")
 	fmt.Println("🎬 RENDERING SEPARATO PER OGNI SINGOLO PRESET (24 FPS)")
@@ -32,9 +80,10 @@ func main() {
 		panic(err)
 	}
 
-	// Use the checked-in golden inputs so this command is a real Chronon
-	// smoke test and does not depend on an unavailable local asset bundle.
-	bgVideo := "background.mp4"
+	// Use the real Pale Olive Classic motion background and a real celebrity
+	// photograph. The preset canary must exercise the same image class used by
+	// the runtime entity path; synthetic PNG fixtures are not representative.
+	bgVideo := "color:#EEF1E7" // Pale Olive Classic; concrete Chronon color layer
 	fontPath := "fonts/Poppins-Bold.ttf"
 	assetsRoot := "/home/pierone/src/go-master/projects/Pyt/VeloxEditing/RenderingGen/testdata/golden"
 	chrononBin := "/home/pierone/src/go-master/projects/Pyt/VeloxEditing/Chronon3d/build/chronon/linux-video-release/apps/chronon3d_cli/chronon3d_cli"
@@ -49,8 +98,8 @@ func main() {
 		panic(fmt.Errorf("Drive init failed: %w", err))
 	}
 
-	// 5 seconds @ 24 fps = 120 frames per video
-	durationFrames := int64(120)
+	// 5 seconds minimum @ 24 fps; 125 frames keeps encoded duration above 5s.
+	durationFrames := int64(125)
 
 	presets := []PresetItem{
 		// ── PRESET IMMAGINI ──
@@ -63,10 +112,10 @@ func main() {
 			Overlay: overlay.FastEntityOverlay{
 				Type:       "image",
 				StartFrame: 0,
-				EndFrame:   120,
+				EndFrame:   125,
 				Position:   "center",
 				Size:       450,
-				Asset:      "overlay_globe.png",
+				Asset:      "gerard_butler.jpg",
 				Animation:  "scale_drop",
 				Opacity:    1.0,
 			},
@@ -80,10 +129,10 @@ func main() {
 			Overlay: overlay.FastEntityOverlay{
 				Type:       "image",
 				StartFrame: 0,
-				EndFrame:   120,
+				EndFrame:   125,
 				Position:   "image_left",
 				Size:       380,
-				Asset:      "apple.png",
+				Asset:      "gerard_butler.jpg",
 				Animation:  "slide_in",
 				Opacity:    1.0,
 				Translate:  []float64{120, 0},
@@ -98,10 +147,10 @@ func main() {
 			Overlay: overlay.FastEntityOverlay{
 				Type:       "image",
 				StartFrame: 0,
-				EndFrame:   120,
+				EndFrame:   125,
 				Position:   "image_right",
 				Size:       380,
-				Asset:      "logo_pulse.png",
+				Asset:      "gerard_butler.jpg",
 				Animation:  "slide_in",
 				Opacity:    1.0,
 				Translate:  []float64{-120, 0},
@@ -116,10 +165,10 @@ func main() {
 			Overlay: overlay.FastEntityOverlay{
 				Type:       "image",
 				StartFrame: 0,
-				EndFrame:   120,
+				EndFrame:   125,
 				Position:   "center",
 				Size:       420,
-				Asset:      "overlay_globe.png",
+				Asset:      "gerard_butler.jpg",
 				Animation:  "focus_in",
 				Opacity:    1.0,
 			},
@@ -133,10 +182,10 @@ func main() {
 			Overlay: overlay.FastEntityOverlay{
 				Type:       "image",
 				StartFrame: 0,
-				EndFrame:   120,
+				EndFrame:   125,
 				Position:   "center",
 				Size:       480,
-				Asset:      "background.jpg",
+				Asset:      "gerard_butler.jpg",
 				Animation:  "scale_drop",
 				Opacity:    1.0,
 			},
@@ -150,10 +199,10 @@ func main() {
 			Overlay: overlay.FastEntityOverlay{
 				Type:       "image",
 				StartFrame: 0,
-				EndFrame:   120,
+				EndFrame:   125,
 				Position:   "center",
 				Size:       420,
-				Asset:      "overlay_chart.png",
+				Asset:      "gerard_butler.jpg",
 				Animation:  "reveal_from_bottom",
 				Opacity:    1.0,
 			},
@@ -167,10 +216,10 @@ func main() {
 			Overlay: overlay.FastEntityOverlay{
 				Type:       "image",
 				StartFrame: 0,
-				EndFrame:   120,
+				EndFrame:   125,
 				Position:   "center",
 				Size:       440,
-				Asset:      "logo_pulse.png",
+				Asset:      "gerard_butler.jpg",
 				Animation:  "fade_in",
 				Opacity:    1.0,
 			},
@@ -186,7 +235,7 @@ func main() {
 			Overlay: overlay.FastEntityOverlay{
 				Type:       "text",
 				StartFrame: 0,
-				EndFrame:   120,
+				EndFrame:   125,
 				Text:       "Gerard Butler",
 				Font:       fontPath,
 				Size:       72,
@@ -205,7 +254,7 @@ func main() {
 			Overlay: overlay.FastEntityOverlay{
 				Type:       "text",
 				StartFrame: 0,
-				EndFrame:   120,
+				EndFrame:   125,
 				Text:       "Hollywood Lead Actor & Producer",
 				Font:       fontPath,
 				Size:       54,
@@ -224,7 +273,7 @@ func main() {
 			Overlay: overlay.FastEntityOverlay{
 				Type:       "text",
 				StartFrame: 0,
-				EndFrame:   120,
+				EndFrame:   125,
 				Text:       "Global Technology Infrastructure",
 				Font:       fontPath,
 				Size:       58,
@@ -243,7 +292,7 @@ func main() {
 			Overlay: overlay.FastEntityOverlay{
 				Type:       "text",
 				StartFrame: 0,
-				EndFrame:   120,
+				EndFrame:   125,
 				Text:       "+450% GPU Rendering Speed",
 				Font:       fontPath,
 				Size:       64,
@@ -262,7 +311,7 @@ func main() {
 			Overlay: overlay.FastEntityOverlay{
 				Type:       "text",
 				StartFrame: 0,
-				EndFrame:   120,
+				EndFrame:   125,
 				Text:       "Fast Entity Overlay Pipeline — Active",
 				Font:       fontPath,
 				Size:       52,
@@ -272,6 +321,15 @@ func main() {
 				Opacity:    1.0,
 			},
 		},
+	}
+	if os.Getenv("RENDERINGGEN_IMAGE_PRESETS_ONLY") == "1" {
+		imagePresets := presets[:0]
+		for _, preset := range presets {
+			if preset.Kind == "image" {
+				imagePresets = append(imagePresets, preset)
+			}
+		}
+		presets = imagePresets
 	}
 
 	outDir := filepath.Join(cwd, "preset_videos")
@@ -328,8 +386,9 @@ func main() {
 			"render",
 			"--plan", planPath,
 			"--assets-root", assetsRoot,
+			"--backend", "software",
 			"--encoder-backend", "pipe",
-			"--hardware", "nvenc",
+			"--hardware", "none",
 			"--gpu-hot-path-mode", "auto",
 			"-o", videoPath,
 		}
@@ -342,7 +401,17 @@ func main() {
 			fmt.Printf("❌ Chronon render failed for %s: %v\n%s\n", item.ID, err, string(out))
 			continue
 		}
+		if err := validateMP4(videoPath, 5.0, 1920, 1080, durationFrames); err != nil {
+			fmt.Printf("❌ Invalid MP4 for %s: %v\n", item.ID, err)
+			continue
+		}
 		fmt.Printf("✓ Render completato in %.2fs (~%.1f FPS)\n", renderSec, float64(durationFrames)/renderSec)
+
+		if os.Getenv("RENDERINGGEN_SKIP_UPLOAD") != "" {
+			fmt.Println("⏭️ Upload saltato (RENDERINGGEN_SKIP_UPLOAD=1)")
+			results = append(results, ResultSummary{ID: item.ID, PresetName: item.PresetName, Title: item.Title, RenderSec: renderSec})
+			continue
+		}
 
 		// 3. Upload to Google Drive
 		fmt.Printf("☁️ Uploading %s to Drive folder %s...\n", videoFileName, folderID)

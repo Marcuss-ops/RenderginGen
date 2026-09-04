@@ -18,6 +18,10 @@ import (
 	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/storage"
 )
 
+// videoHash is a valid 64-hex SHA-256 fixture: the semantic compiler now
+// validates the source ref's hash format fail-closed (asset registry).
+const videoHash = "9a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f9"
+
 type fakeRenderer struct {
 	req   chronon.RenderRequest
 	err   error
@@ -68,17 +72,17 @@ func validJob() *queue.Job {
 		  "schema_version":"renderinggen.overlay-plan.v1",
 		  "plan_id":"video-983","video_id":"video-983",
 		  "width":1280,"height":720,"fps_num":30,"fps_den":1,"duration_ms":1000,
-		  "source":{"asset_id":"video-983","sha256":"hash-video"}
+		  "source":{"asset_id":"video-983","sha256":"` + videoHash + `"}
 		}`),
 		Assets: []queue.AssetRef{
-			{Hash: "hash-video", LogicalPath: "videos/base.mp4"},
+			{Hash: videoHash, LogicalPath: "videos/base.mp4"},
 		},
 	}
 }
 
 func TestProcessFullPipeline(t *testing.T) {
 	proc, store, renderer := newProcessor(t)
-	if err := store.Put(context.Background(), "hash-video", []byte("video-bytes")); err != nil {
+	if err := store.Put(context.Background(), videoHash, []byte("video-bytes")); err != nil {
 		t.Fatalf("put asset: %v", err)
 	}
 
@@ -164,7 +168,7 @@ func TestProcessFullPipeline(t *testing.T) {
 
 func TestPrepareCompilesAndStoresPlanWithoutInvokingChronon(t *testing.T) {
 	proc, store, renderer := newProcessor(t)
-	if err := store.Put(context.Background(), "hash-video", []byte("video-bytes")); err != nil {
+	if err := store.Put(context.Background(), videoHash, []byte("video-bytes")); err != nil {
 		t.Fatalf("put asset: %v", err)
 	}
 	job := validJob()
@@ -400,7 +404,7 @@ func TestPublishUpdatesLedgerDriveMetric(t *testing.T) {
 	proc, store, renderer := newProcessor(t)
 	ledger := artifactdb.NewMemory()
 	proc.SetArtifactRecorder(ledger)
-	if err := store.Put(context.Background(), "hash-video", []byte("video-bytes")); err != nil {
+	if err := store.Put(context.Background(), videoHash, []byte("video-bytes")); err != nil {
 		t.Fatalf("put asset: %v", err)
 	}
 	renderer.write = func(path string) error {
@@ -463,7 +467,7 @@ func TestProcessValidation(t *testing.T) {
 
 func TestProcessRenderError(t *testing.T) {
 	proc, store, renderer := newProcessor(t)
-	if err := store.Put(context.Background(), "hash-video", []byte("video-bytes")); err != nil {
+	if err := store.Put(context.Background(), videoHash, []byte("video-bytes")); err != nil {
 		t.Fatalf("put asset: %v", err)
 	}
 	renderer.err = errors.New("render failed")
@@ -478,7 +482,7 @@ func TestProcessRenderError(t *testing.T) {
 
 func TestRenderThenPublishRetrySkipsRender(t *testing.T) {
 	proc, store, renderer := newProcessor(t)
-	if err := store.Put(context.Background(), "hash-video", []byte("video-bytes")); err != nil {
+	if err := store.Put(context.Background(), videoHash, []byte("video-bytes")); err != nil {
 		t.Fatalf("put asset: %v", err)
 	}
 	renderer.write = func(path string) error {
@@ -575,7 +579,7 @@ func TestPublishEnforcesStoreDBInvariant(t *testing.T) {
 // chain: a publisher that reports an incorrect uploaded size fails the job.
 func TestPublishEnforcesDriveInvariant(t *testing.T) {
 	proc, store, renderer := newProcessor(t)
-	if err := store.Put(context.Background(), "hash-video", []byte("video-bytes")); err != nil {
+	if err := store.Put(context.Background(), videoHash, []byte("video-bytes")); err != nil {
 		t.Fatalf("put asset: %v", err)
 	}
 	renderer.write = func(path string) error {
@@ -599,7 +603,7 @@ func TestPublishEnforcesDriveInvariant(t *testing.T) {
 // worker hashed.
 func TestPublishSHAChainInvariant(t *testing.T) {
 	proc, store, renderer := newProcessor(t)
-	if err := store.Put(context.Background(), "hash-video", []byte("video-bytes")); err != nil {
+	if err := store.Put(context.Background(), videoHash, []byte("video-bytes")); err != nil {
 		t.Fatalf("put asset: %v", err)
 	}
 	ledger := artifactdb.NewMemory()
@@ -734,7 +738,7 @@ func TestPrepareSelfHealRejectsHashMismatch(t *testing.T) {
 
 func TestProcessMissingOutput(t *testing.T) {
 	proc, store, _ := newProcessor(t)
-	if err := store.Put(context.Background(), "hash-video", []byte("video-bytes")); err != nil {
+	if err := store.Put(context.Background(), videoHash, []byte("video-bytes")); err != nil {
 		t.Fatalf("put asset: %v", err)
 	}
 

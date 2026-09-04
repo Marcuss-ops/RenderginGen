@@ -7,22 +7,30 @@
     "height": 1080,
     "fps_num": 24,
     "fps_den": 1,
-    "duration_frames": 120
+    "duration_frames": 125
   },
   "layers": [
     {
-      "id": "bg_video",
-      "type": "video",
-      "source": "background.mp4",
-      "fit": "cover",
+      "id": "bg_color",
+      "type": "color",
+      "color": [
+        0.9333333333333333,
+        0.9450980392156862,
+        0.9058823529411765,
+        1
+      ],
+      "size": [
+        1920,
+        1080
+      ],
       "opacity": 1,
       "start_frame": 0,
-      "duration_frames": 120
+      "duration_frames": 125
     },
     {
       "id": "entity_1_image",
       "type": "image",
-      "asset": "background.jpg",
+      "asset": "gerard_butler.jpg",
       "size": [
         480,
         480
@@ -34,7 +42,7 @@
       ],
       "opacity": 1,
       "start_frame": 0,
-      "duration_frames": 120,
+      "duration_frames": 125,
       "animation": {
         "tracks": [
           {
@@ -45,7 +53,7 @@
                 "value": 0.85
               },
               {
-                "frame": 12,
+                "frame": 124,
                 "value": 1
               }
             ],
