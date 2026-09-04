@@ -122,7 +122,9 @@ func resolveLayout(l PresetLayout, boxWidth, boxHeight, canvasWidth, canvasHeigh
 	case "bottom_right":
 		x, y = float64(canvasWidth-boxWidth), float64(canvasHeight-boxHeight)
 	}
-	if l.Alignment == "center" {
+	// Image anchors describe the placement of the whole image card. Do not
+	// let generic text alignment override an image anchor.
+	if l.Alignment == "center" && l.Anchor != "image_left" && l.Anchor != "image_right" && l.Anchor != "bottom_right" {
 		x = (float64(canvasWidth) - float64(boxWidth)) / 2
 	}
 	return []float64{x, y}
