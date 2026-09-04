@@ -1,8 +1,11 @@
 [Unit]
 Description=RenderingGen native GPU worker
-After=network-online.target docker.service chronon3d.service renderinggen-queue.service
+# Docker is deliberately NOT a dependency: the worker is host-native and
+# must start (and restart) even while containers are down or being upgraded.
+# Only PostgreSQL remains containerized, and only the queue talks to it.
+After=network-online.target chronon3d.service renderinggen-queue.service
 Wants=network-online.target
-Requires=docker.service renderinggen-queue.service chronon3d.service
+Requires=renderinggen-queue.service chronon3d.service
 
 [Service]
 Type=simple

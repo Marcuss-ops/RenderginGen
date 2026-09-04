@@ -1,0 +1,66 @@
+[
+  {
+    "id": "preset_image_scale_in",
+    "preset_name": "image_scale_in",
+    "title": "Image Scale In (Pop)",
+    "file_id": "1tNudOHPtpu1-O2pmEq8UQxR_nU3FqLmC",
+    "drive_url": "https://drive.google.com/file/d/1tNudOHPtpu1-O2pmEq8UQxR_nU3FqLmC/view?usp=drivesdk",
+    "render_sec": 5.204437579
+  },
+  {
+    "id": "preset_image_slide_left",
+    "preset_name": "image_slide_left",
+    "title": "Image Slide Left",
+    "file_id": "1JB5c2uDc-kPCrV9tOV-Ws4GTklEHY-Zc",
+    "drive_url": "https://drive.google.com/file/d/1JB5c2uDc-kPCrV9tOV-Ws4GTklEHY-Zc/view?usp=drivesdk",
+    "render_sec": 5.185213269
+  },
+  {
+    "id": "preset_image_slide_right",
+    "preset_name": "image_slide_right",
+    "title": "Image Slide Right",
+    "file_id": "1vb9Saag_rMCi1dGXBLWwqbdNTozaM_Eq",
+    "drive_url": "https://drive.google.com/file/d/1vb9Saag_rMCi1dGXBLWwqbdNTozaM_Eq/view?usp=drivesdk",
+    "render_sec": 5.166301128
+  },
+  {
+    "id": "preset_image_focus_in",
+    "preset_name": "image_focus_in",
+    "title": "Image Focus In (Zoom)",
+    "file_id": "1plUpFoxQwgXJfvZTtu09aOj2mGPjuVjn",
+    "drive_url": "https://drive.google.com/file/d/1plUpFoxQwgXJfvZTtu09aOj2mGPjuVjn/view?usp=drivesdk",
+    "render_sec": 5.160767848
+  },
+  {
+    "id": "preset_modern_rounded_pop",
+    "preset_name": "modern_rounded_pop",
+    "title": "Modern Rounded Pop (SDF)",
+    "file_id": "1NrQyK-jrBwRwEYqehaH-08UDT4o8e7_o",
+    "drive_url": "https://drive.google.com/file/d/1NrQyK-jrBwRwEYqehaH-08UDT4o8e7_o/view?usp=drivesdk",
+    "render_sec": 5.202997253
+  },
+  {
+    "id": "preset_bottom_card_rise",
+    "preset_name": "bottom_card_rise",
+    "title": "Bottom Card Rise",
+    "file_id": "1pRaCrwQqGAgeg5g9v1nvTM65azoLBafB",
+    "drive_url": "https://drive.google.com/file/d/1pRaCrwQqGAgeg5g9v1nvTM65azoLBafB/view?usp=drivesdk",
+    "render_sec": 5.162902618
+  },
+  {
+    "id": "preset_clean_slide_up",
+    "preset_name": "clean_slide_up",
+    "title": "Clean Slide Up (Headline)",
+    "file_id": "1NOz2-z_pm4eD1J6JP3XTMW8gYoPH3hxc",
+    "drive_url": "https://drive.google.com/file/d/1NOz2-z_pm4eD1J6JP3XTMW8gYoPH3hxc/view?usp=drivesdk",
+    "render_sec": 4.161056123
+  },
+  {
+    "id": "preset_phrase_scale_in",
+    "preset_name": "phrase_scale_in",
+    "title": "Phrase Scale In / Snap Scale",
+    "file_id": "1N9BzUb1y9W9zuITpwf1_iR1V3uYkKrLp",
+    "drive_url": "https://drive.google.com/file/d/1N9BzUb1y9W9zuITpwf1_iR1V3uYkKrLp/view?usp=drivesdk",
+    "render_sec": 5.181823282
+  }
+]

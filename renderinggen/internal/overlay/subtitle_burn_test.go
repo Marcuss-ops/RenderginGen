@@ -16,7 +16,10 @@ Dialogue: 0,0:00:00.50,0:00:02.00,Default,,0,0,0,,Prima\Nseconda
 Dialogue: 0,0:00:03.00,0:00:04.00,Default,,0,0,0,,Dopo
 `)
 
-	out, count, err := BurnASSIntoPlan(plan, ass, "assets/fonts/Poppins-Bold.ttf")
+	style := &concreteStyle{FontSize: 52, Fill: "#FFFFFF",
+		Shadow: &concreteShadow{Color: "#000000", Opacity: 0.95, Blur: 8, Offset: []float64{0, 5}}}
+	box := SubtitleStyleBox{Width: 1800, Height: 140, X: 60, Y: 758}
+	out, count, err := BurnASSIntoPlan(plan, ass, "assets/fonts/Poppins-Bold.ttf", style, box)
 	if err != nil {
 		t.Fatalf("BurnASSIntoPlan: %v", err)
 	}
@@ -39,7 +42,11 @@ Dialogue: 0,0:00:03.00,0:00:04.00,Default,,0,0,0,,Dopo
 	if decoded.Layers[1].Text != "Prima\nseconda" {
 		t.Fatalf("ASS line break was not lowered: %q", decoded.Layers[1].Text)
 	}
-	if len(decoded.Layers[1].Position) != 2 || decoded.Layers[1].Position[0] != 0 || math.Abs(decoded.Layers[1].Position[1]-394) > 1e-6 {
-		t.Fatalf("subtitle position = %#v, want lower-safe-area Chronon offset [0 394]", decoded.Layers[1].Position)
+	// The safe-area box (X=60, Y=758, 1800x140 on 1920x1080) converts to a
+	// Chronon centre offset of [0, 288]: x = 60+900-960 = 0,
+	// y = 758+70-540 = 288. The position comes from the caller's typed box —
+	// the compiler invents no geometry.
+	if len(decoded.Layers[1].Position) != 2 || decoded.Layers[1].Position[0] != 0 || math.Abs(decoded.Layers[1].Position[1]-288) > 1e-6 {
+		t.Fatalf("subtitle position = %#v, want caller-box Chronon centre offset [0 288]", decoded.Layers[1].Position)
 	}
 }

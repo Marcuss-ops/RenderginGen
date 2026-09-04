@@ -45,12 +45,22 @@ func clipSemanticFixture() []byte {
 		"subtitles": {
 			"mode": "burn",
 			"style_id": "montserrat_default",
+			"style": {
+				"font": "Montserrat", "font_size_px": 54, "color": "#FFFFFF",
+				"position": "bottom_center", "width_px": 1800, "height_px": 140,
+				"shadow": {"color": "#000000", "opacity": 0.7, "blur_px": 10, "offset": [0, 5]}
+			},
 			"asset_refs": [{"asset_id": "` + subTestSHA + `", "sha256": "` + subTestSHA + `"}]
 		},
 		"watermark": {
 			"text": "VeloxEditing",
 			"position": "center",
 			"opacity": 0.8,
+			"margin_px": 40,
+			"style": {
+				"font_size_px": 42, "color": "#FFFFFF", "width_px": 360, "height_px": 80,
+				"shadow": {"color": "#000000", "opacity": 0.9, "blur_px": 8, "offset": [0, 4]}
+			},
 			"font_ref": {"asset_id": "font-dejavu-sans", "sha256": "` + fontTestSHA + `", "url": "assets/semantic/font-dejavu-sans/DejaVuSans.ttf", "media_type": "font/ttf"}
 		},
 		"audio": {

@@ -4,6 +4,7 @@
 *.out
 renderinggen/renderinggen
 renderinggen/bin/
+/bin/
 .tmp/
 renderinggen/.tmp/
 queue/queued

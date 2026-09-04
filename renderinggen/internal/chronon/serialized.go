@@ -14,10 +14,17 @@ type SerializedRenderer struct {
 }
 
 func Serialize(inner Renderer) Renderer {
+	return LimitConcurrency(inner, 1)
+}
+
+func LimitConcurrency(inner Renderer, maxConcurrency int) Renderer {
 	if inner == nil {
 		return nil
 	}
-	return &SerializedRenderer{inner: inner, lane: make(chan struct{}, 1)}
+	if maxConcurrency < 1 {
+		maxConcurrency = 1
+	}
+	return &SerializedRenderer{inner: inner, lane: make(chan struct{}, maxConcurrency)}
 }
 
 func (r *SerializedRenderer) Render(ctx context.Context, req RenderRequest) error {

@@ -97,7 +97,10 @@ done
 
 python3 - "$BODY" "$STORE_URL" "$OUTPUT" "$PROBE" <<'PY'
 import json, subprocess, sys
-body, store, output, source_probe = map(json.loads, sys.argv[1:5])
+body = json.loads(sys.argv[1])
+store = sys.argv[2]
+output = sys.argv[3]
+source_probe = json.loads(sys.argv[4])
 artifact = body.get("artifact") or {}
 if not artifact.get("chronon_version"):
     raise SystemExit("ERROR: completed artifact has no Chronon provenance")
@@ -108,7 +111,7 @@ got = json.loads(subprocess.check_output([
     "ffprobe", "-v", "error", "-select_streams", "v:0",
     "-show_entries", "stream=width,height,r_frame_rate,nb_frames",
     "-show_entries", "format=duration", "-of", "json", output]))
-want = json.loads(source_probe)
+want = source_probe
 ws, gs = want["streams"][0], got["streams"][0]
 for key in ("width", "height", "r_frame_rate", "nb_frames"):
     if str(ws.get(key)) != str(gs.get(key)):

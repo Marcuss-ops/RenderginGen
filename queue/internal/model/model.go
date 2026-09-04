@@ -46,6 +46,7 @@ type FrameRange struct {
 type AssetRef struct {
 	Hash        string `json:"hash"`
 	LogicalPath string `json:"logical_path"`
+	SourceURL   string `json:"source_url,omitempty"`
 }
 
 // Job is a unit of work in the queue: one render SEGMENT. The renderable

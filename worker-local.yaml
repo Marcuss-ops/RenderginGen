@@ -17,7 +17,7 @@ chronon:
   hardware_encoder: nvenc
   strict_native_backend: true
   report: true
-  home: /home/pierone/src/go-master/projects/Pyt/VeloxEditing/Chronon3d/build/chronon/linux-video-cutover-check
+  home: /home/pierone/src/go-master/projects/Pyt/VeloxEditing/Chronon3d/build/chronon/linux-video-release
 
 gpu:
   device: 0

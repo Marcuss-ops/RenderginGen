@@ -2,26 +2,25 @@ package overlay
 
 import (
 	"encoding/json"
+	"strings"
 	"testing"
 )
 
-// TestCompileIfSemanticPassthroughConcretePlan pins the execution-worker
-// boundary: a concrete chronon.render-plan.v1 document is passed through
-// byte-for-byte, with no assets synthesized and no layer re-derivation.
-func TestCompileIfSemanticPassthroughConcretePlan(t *testing.T) {
+// TestCompileIfSemanticRejectsUntypedConcretePlan pins the fail-closed
+// execution-worker boundary: a document without schema_version is rejected.
+// The historical byte-for-byte pass-through let concrete plans bypass the
+// compiler entirely — that bypass is the bug this test guards against.
+func TestCompileIfSemanticRejectsUntypedConcretePlan(t *testing.T) {
 	raw := []byte(`{"schema":"chronon.render-plan","version":1,"job_id":"j","canvas":{"width":1280,"height":720,"fps_num":30,"fps_den":1,"duration_frames":150},"layers":[{"id":"bg","type":"image","asset":"assets/background.jpg","start_frame":0,"duration_frames":150}],"output":{"path":"result.mp4","format":"mp4","codec":"h264"}}`)
 	compiled, assets, semantic, err := CompileIfSemantic(raw)
-	if err != nil {
-		t.Fatalf("concrete plan must pass through: %v", err)
-	}
-	if semantic {
-		t.Fatalf("concrete plan must not be flagged semantic")
+	if err == nil {
+		t.Fatalf("untyped concrete plan must be rejected, got compiled=%d bytes semantic=%v", len(compiled), semantic)
 	}
 	if len(assets) != 0 {
-		t.Fatalf("concrete plan must synthesize no assets, got %+v", assets)
+		t.Fatalf("rejected plan must synthesize no assets, got %+v", assets)
 	}
-	if string(compiled) != string(raw) {
-		t.Fatalf("concrete plan was mutated:\n got %s\nwant %s", compiled, raw)
+	if !strings.Contains(err.Error(), "only accepted contract") {
+		t.Fatalf("error must name the accepted contract, got: %v", err)
 	}
 }
 
@@ -313,17 +312,17 @@ func TestCompileIfSemanticTransportsChrononPresetID(t *testing.T) {
 	}
 }
 
-// TestCompileIfSemanticConcretePlanDecodes keeps the Plan struct in lockstep
-// with the concrete render-plan shape the worker passes through, so a real
-// golden document always decodes without error.
-func TestCompileIfSemanticConcretePlanDecodes(t *testing.T) {
+// TestCompileIfSemanticUntypedConcretePlanIsRejected keeps the Plan struct in
+// lockstep with the concrete render-plan shape, so a real golden document
+// always decodes without error. The untyped document itself is rejected by
+// CompileIfSemantic (fail-closed); decoding is exercised directly here.
+func TestCompileIfSemanticUntypedConcretePlanIsRejected(t *testing.T) {
 	raw := []byte(`{"schema":"chronon.render-plan","version":1,"job_id":"j","canvas":{"width":1280,"height":720,"fps_num":30,"fps_den":1,"duration_frames":150},"layers":[{"id":"p","type":"text","text":"X","preset":"caption_card","start_frame":20,"duration_frames":41,"animation":{"preset":"fade_in"}}],"output":{"path":"result.mp4","format":"mp4","codec":"h264"}}`)
-	compiled, _, _, err := CompileIfSemantic(raw)
-	if err != nil {
-		t.Fatal(err)
+	if _, _, _, err := CompileIfSemantic(raw); err == nil {
+		t.Fatal("untyped concrete plan must be rejected by CompileIfSemantic")
 	}
 	var plan Plan
-	if err := json.Unmarshal(compiled, &plan); err != nil {
+	if err := json.Unmarshal(raw, &plan); err != nil {
 		t.Fatalf("concrete plan must decode: %v", err)
 	}
 	if plan.Schema != "chronon.render-plan" || len(plan.Layers) != 1 {
