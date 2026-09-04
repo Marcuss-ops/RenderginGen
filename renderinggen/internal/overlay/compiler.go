@@ -14,9 +14,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math"
-	"path/filepath"
 	"regexp"
-	"sort"
 	"strconv"
 	"strings"
 
@@ -53,8 +51,9 @@ type Layer struct {
 	Asset string `json:"asset,omitempty"`
 	// Source is the video-source logical path for Video layers
 	// (VIDEO_BACKGROUND): Chronon video layers reference `source`.
-	Source string `json:"source,omitempty"`
-	Text   string `json:"text,omitempty"`
+	Source string    `json:"source,omitempty"`
+	Color  []float64 `json:"color,omitempty"`
+	Text   string    `json:"text,omitempty"`
 	// Box dimensions are adapter-internal. Chronon v2 receives concrete
 	// geometry through `size`.
 	BoxWidth       int         `json:"-"`
@@ -565,8 +564,6 @@ func assTimeFrame(raw string, fpsNum, fpsDen int) (int64, error) {
 	return (ms*int64(fpsNum) + 1000*int64(fpsDen) - 1) / (1000 * int64(fpsDen)), nil
 }
 
-var safeAssetID = regexp.MustCompile(`[^A-Za-z0-9._-]+`)
-
 func compileSemantic(raw []byte) ([]byte, []Asset, error) {
 	var src semanticPlan
 	if err := json.Unmarshal(raw, &src); err != nil {
@@ -595,14 +592,13 @@ func compileSemantic(raw []byte) ([]byte, []Asset, error) {
 		plan.Canvas.DurationFrames = endFrame
 	}
 
-	assetPaths := map[string]string{}
+	registry := newAssetRegistry()
 	if src.Audio != nil {
 		plan.Output.Audio = &concreteAudio{
 			Mode: src.Audio.Mode, Codec: src.Audio.Codec,
 			SampleRate: src.Audio.SampleRate, Channels: src.Audio.Channels,
 		}
 	}
-	var assets []Asset
 	if bg := src.Background; bg != nil {
 		kind := strings.ToLower(strings.TrimSpace(bg.Kind))
 		// blur_cover is a clip-render-specific fit hint; store it as "video"
@@ -622,14 +618,8 @@ func compileSemantic(raw []byte) ([]byte, []Asset, error) {
 			return nil, nil, fmt.Errorf("overlay: %s background requires asset_refs", kind)
 		}
 		for _, ref := range bg.AssetRefs {
-			if ref.ID == "" || len(ref.SHA256) != 64 || strings.Trim(ref.SHA256, "0123456789abcdefABCDEF") != "" {
-				return nil, nil, fmt.Errorf("overlay: background has invalid asset ref %q", ref.ID)
-			}
-			path := assetPaths[ref.ID]
-			if path == "" {
-				path = semanticAssetPath(ref)
-				assetPaths[ref.ID] = path
-				assets = append(assets, Asset{Hash: strings.ToLower(ref.SHA256), LogicalPath: path})
+			if _, err := registry.Register(ref); err != nil {
+				return nil, nil, fmt.Errorf("overlay: background asset: %w", err)
 			}
 		}
 		layer := concreteLayer{ID: "background", Type: layerKind, BoxWidth: src.Width, BoxHeight: src.Height,
@@ -646,30 +636,20 @@ func compileSemantic(raw []byte) ([]byte, []Asset, error) {
 		} else {
 			ref := bg.AssetRefs[0]
 			if layerKind == "video" {
-				layer.Source = assetPaths[ref.ID]
+				layer.Source = registry.Path(ref.ID)
 			} else {
-				layer.Asset = assetPaths[ref.ID]
+				layer.Asset = registry.Path(ref.ID)
 			}
 			layer.Loop = bg.Loop
 		}
 		plan.Layers = append(plan.Layers, layer)
 	}
+	// Pre-register every item asset so collisions fail before any layer is
+	// emitted (the registry is the single owner of the id → path mapping).
 	for _, item := range src.Items {
 		for _, ref := range item.Assets {
-			if ref.ID == "" || len(ref.SHA256) != 64 || strings.Trim(ref.SHA256, "0123456789abcdefABCDEF") != "" {
-				return nil, nil, fmt.Errorf("overlay: item %q has invalid asset ref %q", item.ID, ref.ID)
-			}
-			path := assetPaths[ref.ID]
-			if path != "" {
-				for _, existing := range assets {
-					if existing.LogicalPath == path && !strings.EqualFold(existing.Hash, ref.SHA256) {
-						return nil, nil, fmt.Errorf("overlay: asset_id %q is associated with multiple SHA-256 values", ref.ID)
-					}
-				}
-			} else {
-				path = semanticAssetPath(ref)
-				assetPaths[ref.ID] = path
-				assets = append(assets, Asset{Hash: strings.ToLower(ref.SHA256), LogicalPath: path})
+			if _, err := registry.Register(ref); err != nil {
+				return nil, nil, fmt.Errorf("overlay: item %q asset: %w", item.ID, err)
 			}
 		}
 	}
@@ -680,11 +660,11 @@ func compileSemantic(raw []byte) ([]byte, []Asset, error) {
 	if src.Source != nil && src.Source.AssetID != "" {
 		path := src.Source.Path
 		if path == "" {
-			path = semanticAssetPath(semanticAssetRef{ID: src.Source.AssetID, SHA256: src.Source.SHA256})
-		}
-		if _, ok := assetPaths[src.Source.AssetID]; !ok {
-			assetPaths[src.Source.AssetID] = path
-			assets = append(assets, Asset{Hash: strings.ToLower(src.Source.SHA256), LogicalPath: path})
+			registered, err := registry.Register(semanticAssetRef{ID: src.Source.AssetID, SHA256: src.Source.SHA256})
+			if err != nil {
+				return nil, nil, fmt.Errorf("overlay: source asset: %w", err)
+			}
+			path = registered
 		}
 		srcLayer := concreteLayer{ID: "source", Type: "video", Source: path, StartFrame: 0}
 		// Foreground scale: compute scaled geometry and center on canvas.
@@ -707,17 +687,11 @@ func compileSemantic(raw []byte) ([]byte, []Asset, error) {
 		if len(sub.AssetRefs) == 0 {
 			return nil, nil, fmt.Errorf("overlay: subtitles require at least one asset_ref")
 		}
-		ref := sub.AssetRefs[0]
-		if ref.ID == "" || len(ref.SHA256) != 64 || strings.Trim(ref.SHA256, "0123456789abcdefABCDEF") != "" {
-			return nil, nil, fmt.Errorf("overlay: subtitle has invalid asset ref %q", ref.ID)
+		if _, err := registry.Register(sub.AssetRefs[0]); err != nil {
+			return nil, nil, fmt.Errorf("overlay: subtitle asset: %w", err)
 		}
-		path := assetPaths[ref.ID]
-		if path == "" {
-			path = semanticAssetPath(ref)
-			assetPaths[ref.ID] = path
-			assets = append(assets, Asset{Hash: strings.ToLower(ref.SHA256), LogicalPath: path})
-		}
-		_ = path // retained in the asset manifest for publication
+		// Sidecar subtitles remain a published companion asset: the manifest
+		// entry (above) is what gets published; Chronon has no subtitle layer.
 	}
 
 	// Watermark — lowers to a text or image layer at the requested position.
@@ -727,15 +701,11 @@ func compileSemantic(raw []byte) ([]byte, []Asset, error) {
 	if wm := src.Watermark; wm != nil {
 		font := ""
 		if wm.FontRef != nil {
-			if wm.FontRef.ID == "" || len(wm.FontRef.SHA256) != 64 || strings.Trim(wm.FontRef.SHA256, "0123456789abcdefABCDEF") != "" {
-				return nil, nil, fmt.Errorf("overlay: watermark font has invalid asset ref %q", wm.FontRef.ID)
+			registered, err := registry.Register(*wm.FontRef)
+			if err != nil {
+				return nil, nil, fmt.Errorf("overlay: watermark font asset: %w", err)
 			}
-			font = assetPaths[wm.FontRef.ID]
-			if font == "" {
-				font = semanticAssetPath(*wm.FontRef)
-				assetPaths[wm.FontRef.ID] = font
-				assets = append(assets, Asset{Hash: strings.ToLower(wm.FontRef.SHA256), LogicalPath: font})
-			}
+			font = registered
 		}
 		if font == "" {
 			return nil, nil, fmt.Errorf("overlay: text watermark requires font_ref")
@@ -766,18 +736,12 @@ func compileSemantic(raw []byte) ([]byte, []Asset, error) {
 			wmLayer.Type = "text"
 			wmLayer.Text = wm.Text
 		} else if len(wm.AssetRefs) > 0 {
-			ref := wm.AssetRefs[0]
-			if ref.ID == "" || len(ref.SHA256) != 64 || strings.Trim(ref.SHA256, "0123456789abcdefABCDEF") != "" {
-				return nil, nil, fmt.Errorf("overlay: watermark has invalid asset ref %q", ref.ID)
-			}
-			path := assetPaths[ref.ID]
-			if path == "" {
-				path = semanticAssetPath(ref)
-				assetPaths[ref.ID] = path
-				assets = append(assets, Asset{Hash: strings.ToLower(ref.SHA256), LogicalPath: path})
+			registered, err := registry.Register(wm.AssetRefs[0])
+			if err != nil {
+				return nil, nil, fmt.Errorf("overlay: watermark asset: %w", err)
 			}
 			wmLayer.Type = "image"
-			wmLayer.Asset = path
+			wmLayer.Asset = registered
 			if wm.Text != "" {
 				wmLayer.Text = wm.Text
 			}
@@ -824,14 +788,18 @@ func compileSemantic(raw []byte) ([]byte, []Asset, error) {
 			// later text layer as the same layer and silently hide the image.
 			imageItem := item
 			imageItem.ID = item.ID + "-image"
-			img := imageLayer(imageItem, start, end, assetPaths[item.Assets[0].ID], params)
+			img := imageLayer(imageItem, start, end, registry.Path(item.Assets[0].ID), params)
 			if item.ImagePresetID != "" {
 				imageDefinition, imageErr := resolveOfficialPreset(item.ImagePresetID, string(PresetImage))
 				if imageErr != nil {
 					return nil, nil, imageErr
 				}
 				applyPresetDefinition(&img, imageDefinition)
-				img.Animation = animationForDefinition(imageDefinition)
+				imgAnimation, imgAnimErr := animationForDefinition(imageDefinition)
+				if imgAnimErr != nil {
+					return nil, nil, imgAnimErr
+				}
+				img.Animation = imgAnimation
 				img.Position = resolveLayout(imageDefinition.Layout, img.BoxWidth, img.BoxHeight, src.Width, src.Height)
 			}
 			plan.Layers = append(plan.Layers, img)
@@ -842,7 +810,7 @@ func compileSemantic(raw []byte) ([]byte, []Asset, error) {
 		}
 		layer := concreteLayer{ID: item.ID, Type: "text", Text: text, StartFrame: start, DurationFrames: end - start}
 		if isImageTemplate(item.Template) {
-			layer = imageLayer(item, start, end, assetPaths[item.Assets[0].ID], params)
+			layer = imageLayer(item, start, end, registry.Path(item.Assets[0].ID), params)
 		}
 		if preset != "" {
 			applyPresetDefinition(&layer, definition)
@@ -872,7 +840,11 @@ func compileSemantic(raw []byte) ([]byte, []Asset, error) {
 			}
 			layer.TextAnimators = animation.TextAnimators
 		} else if preset != "" {
-			layer.Animation = animationForDefinition(definition)
+			presetAnimation, presetAnimErr := animationForDefinition(definition)
+			if presetAnimErr != nil {
+				return nil, nil, presetAnimErr
+			}
+			layer.Animation = presetAnimation
 		}
 		if layer.Style != nil && layer.Position == nil {
 			posX, hasPosX := params["position_x"].(float64)
@@ -919,13 +891,13 @@ func compileSemantic(raw []byte) ([]byte, []Asset, error) {
 	if plan.Canvas.DurationFrames <= 0 {
 		return nil, nil, fmt.Errorf("overlay: semantic plan duration is zero — provide duration_ms or at least one item with end_ms > 0")
 	}
-	// Stable asset order makes prepared-plan fingerprints reproducible.
-	sort.Slice(assets, func(i, j int) bool { return assets[i].LogicalPath < assets[j].LogicalPath })
+	// Stable asset order (the registry sorts) keeps prepared-plan
+	// fingerprints reproducible.
 	compiled, err := json.Marshal(plan)
 	if err != nil {
 		return nil, nil, fmt.Errorf("overlay: encode Chronon plan: %w", err)
 	}
-	return compiled, assets, nil
+	return compiled, registry.Assets(), nil
 }
 
 // resolveWatermarkPosition was moved to visual_style_resolver.go — the single
@@ -1066,26 +1038,6 @@ func entityRefText(item semanticItem) string {
 	return ""
 }
 
-func semanticAssetPath(ref semanticAssetRef) string {
-	if strings.HasPrefix(ref.URL, "assets/") {
-		return filepath.ToSlash(ref.URL)
-	}
-	id := safeAssetID.ReplaceAllString(ref.ID, "_")
-	ext := filepath.Ext(ref.URL)
-	if ext == "" {
-		switch strings.ToLower(ref.MediaType) {
-		case "image/png":
-			ext = ".png"
-		case "image/jpeg":
-			ext = ".jpg"
-		case "video/mp4":
-			ext = ".mp4"
-		case "font/ttf":
-			ext = ".ttf"
-		}
-	}
-	return "assets/semantic/" + id + ext
-}
 func imageLayer(item semanticItem, start, end int64, asset string, params map[string]any) concreteLayer {
 	w, h := intParam(params, "width", 320), intParam(params, "height", 320)
 	return concreteLayer{ID: item.ID + "_image", Type: "image", Asset: asset, BoxWidth: w, BoxHeight: h, Size: []float64{float64(w), float64(h)}, Fit: stringParam(params, "fit", "contain"), StartFrame: start, DurationFrames: end - start}
@@ -1111,11 +1063,15 @@ func applyPresetDefinition(layer *concreteLayer, d OfficialPresetDefinition) {
 	}
 }
 
-func animationForDefinition(d OfficialPresetDefinition) *concreteAnimation {
-	if d.Motion.Name == "" {
-		return nil
+func animationForDefinition(d OfficialPresetDefinition) (*concreteAnimation, error) {
+	if d.Motion.Name == "" && d.Motion.ID == "" {
+		return nil, nil
 	}
-	return &concreteAnimation{Tracks: tracksForMotion(d.Motion)}
+	tracks, err := tracksForMotion(d.Motion)
+	if err != nil {
+		return nil, err
+	}
+	return &concreteAnimation{Tracks: tracks}, nil
 }
 
 func rgbaHex(v []float64) string {

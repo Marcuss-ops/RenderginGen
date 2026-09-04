@@ -233,8 +233,14 @@ func subtitleCueGeometry(s *styleBlock, canvasW, canvasH, cueLayerCount int) (po
 		return nil, nil, fmt.Errorf("overlay: unsupported subtitle position %q (supported: bottom_center, top_center, middle_center)", pos)
 	}
 	// Chronon layer positions are offsets from the canvas centre and address
-	// the layer centre: convert the absolute top-left anchor once, here.
-	position = []float64{anchorX + boxW/2 - float64(canvasW)/2, anchorY}
+	// the layer centre: convert the absolute top-left anchor once, here —
+	// symmetrically on both axes. (The historical version converted only X,
+	// leaving Y absolute, so SubtitleStyleAsset/BurnASSIntoPlan — which treat
+	// both coordinates as centre offsets — pushed bottom cues off-canvas.)
+	position = []float64{
+		anchorX + boxW/2 - float64(canvasW)/2,
+		anchorY + boxH/2 - float64(canvasH)/2,
+	}
 	size = []float64{boxW, boxH}
 	return position, size, nil
 }

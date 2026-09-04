@@ -1,7 +1,7 @@
 {
   "schema": "chronon.render-plan.v2",
   "version": 2,
-  "job_id": "preset_image_focus_in",
+  "job_id": "phrase_03_scale_pop",
   "canvas": {
     "width": 1920,
     "height": 1080,
@@ -11,38 +11,30 @@
   },
   "layers": [
     {
-      "id": "bg_color",
-      "type": "color",
-      "color": [
-        0.9333333333333333,
-        0.9450980392156862,
-        0.9058823529411765,
-        1
-      ],
-      "size": [
-        1920,
-        1080
-      ],
+      "id": "bg_video",
+      "type": "video",
+      "source": "Pale-Olive.mp4",
+      "fit": "cover",
       "opacity": 1,
       "start_frame": 0,
       "duration_frames": 125
     },
     {
-      "id": "entity_1_image",
-      "type": "image",
-      "asset": "gerard_butler.jpg",
+      "id": "entity_1_text",
+      "type": "text",
+      "text": "BREAKING NEWS",
       "size": [
-        420,
-        420
+        1920,
+        120
       ],
-      "fit": "contain",
-      "position": [
-        750,
-        330
-      ],
+      "style": {
+        "font": "fonts/Inter-Bold.ttf",
+        "font_size": 76,
+        "fill": "#14141E"
+      },
       "opacity": 1,
       "start_frame": 0,
-      "duration_frames": 125,
+      "duration_frames": 120,
       "animation": {
         "tracks": [
           {
@@ -50,10 +42,10 @@
             "keyframes": [
               {
                 "frame": 0,
-                "value": 1.08
+                "value": 0.85
               },
               {
-                "frame": 124,
+                "frame": 12,
                 "value": 1
               }
             ],
@@ -64,7 +56,7 @@
     }
   ],
   "output": {
-    "path": "/home/pierone/src/go-master/projects/Pyt/VeloxEditing/RenderingGen/preset_videos/preset_image_focus_in_24fps_1080p.mp4",
+    "path": "/home/pierone/src/go-master/projects/Pyt/VeloxEditing/RenderingGen/phrase_preset_videos/phrase_03_scale_pop_24fps_1080p.mp4",
     "format": "mp4",
     "codec": "h264"
   }

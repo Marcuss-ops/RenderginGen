@@ -32,12 +32,14 @@ func main() {
 		panic(err)
 	}
 
-	bgVideo := "assets/Pale-Olive.mp4"
-	fontInterBold := "assets/fonts/Inter-Bold.ttf"
-	fontDMBold := "assets/fonts/DMSans-Bold.ttf"
+	// The phrase canary uses the real Pale Olive Classic background and the
+	// checked-in Inter font. Keep all paths relative to the Chronon asset root.
+	bgVideo := "Pale-Olive.mp4"
+	fontInterBold := "fonts/Inter-Bold.ttf"
+	fontDMBold := "fonts/Inter-Bold.ttf"
 
 	assetsRoot := "/home/pierone/src/go-master/projects/Pyt/VeloxEditing/RenderingGen/testdata/golden"
-	chrononBin := "/home/pierone/src/go-master/projects/Pyt/VeloxEditing/Chronon3d/build/chronon/linux-video-fast-dev/apps/chronon3d_cli/chronon3d_cli"
+	chrononBin := "/home/pierone/src/go-master/projects/Pyt/VeloxEditing/Chronon3d/build/chronon/linux-video-release/apps/chronon3d_cli/chronon3d_cli"
 
 	folderID := "1J_xUGo_bchzXDIGqSX04CU44c_Dm3SxS"
 	credsFile := "/home/pierone/src/go-master/projects/Pyt/VeloxEditing/refactored/credentials.json"
@@ -74,7 +76,7 @@ func main() {
 	}
 	client := chronon.NewIPCClient(socketPath)
 
-	durationFrames := int64(120) // 5 secondi @ 24 fps
+	durationFrames := int64(125) // almeno 5 secondi @ 24 fps (5.20s)
 
 	darkColor := []float64{0.08, 0.08, 0.12, 1.0}
 
@@ -87,7 +89,7 @@ func main() {
 			Overlay: overlay.FastEntityOverlay{
 				Type:       "text",
 				StartFrame: 0,
-				EndFrame:   120,
+				EndFrame:   125,
 				Text:       "Christopher Nolan — Director",
 				Font:       fontInterBold,
 				Size:       64,
@@ -106,7 +108,7 @@ func main() {
 			Overlay: overlay.FastEntityOverlay{
 				Type:       "text",
 				StartFrame: 0,
-				EndFrame:   120,
+				EndFrame:   125,
 				Text:       "The Future of High-Speed Video",
 				Font:       fontInterBold,
 				Size:       68,
@@ -125,7 +127,7 @@ func main() {
 			Overlay: overlay.FastEntityOverlay{
 				Type:       "text",
 				StartFrame: 0,
-				EndFrame:   120,
+				EndFrame:   125,
 				Text:       "BREAKING NEWS",
 				Font:       fontInterBold,
 				Size:       76,
@@ -136,15 +138,15 @@ func main() {
 			},
 		},
 
-		// 4. Elegant DM Sans Fade In (Citazione elegante e minimale)
+		// 4. Elegant Inter Fade In (Citazione elegante e minimale)
 		{
 			ID:          "phrase_04_dm_sans_fade",
-			Title:       "Frase 4 — Elegant Fade In (DM Sans)",
-			Description: "Typography raffinata DM Sans con dissolvenza progressiva a tutto schermo",
+			Title:       "Frase 4 — Elegant Fade In (Inter)",
+			Description: "Typography raffinata Inter con dissolvenza progressiva a tutto schermo",
 			Overlay: overlay.FastEntityOverlay{
 				Type:       "text",
 				StartFrame: 0,
-				EndFrame:   120,
+				EndFrame:   125,
 				Text:       "Simplicity is the ultimate sophistication.",
 				Font:       fontDMBold,
 				Size:       60,
@@ -163,7 +165,7 @@ func main() {
 			Overlay: overlay.FastEntityOverlay{
 				Type:       "text",
 				StartFrame: 0,
-				EndFrame:   120,
+				EndFrame:   125,
 				Text:       "Artificial Intelligence Infrastructure",
 				Font:       fontInterBold,
 				Size:       62,
@@ -236,6 +238,10 @@ func main() {
 		renderSec := time.Since(t0).Seconds()
 		fmt.Printf("✓ Render completato in %.2fs (~%.1f FPS)\n", renderSec, float64(durationFrames)/renderSec)
 
+		if os.Getenv("RENDERINGGEN_SKIP_UPLOAD") == "1" {
+			fmt.Printf("⏭️ Upload saltato (RENDERINGGEN_SKIP_UPLOAD=1)\n")
+			continue
+		}
 		fmt.Printf("☁️ Caricamento su Google Drive...\n")
 		res, err := publisher.Publish(ctx, drive.PublishRequest{
 			Name:         videoFileName,

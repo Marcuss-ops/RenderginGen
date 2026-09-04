@@ -2,6 +2,7 @@ package overlay
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 )
 
@@ -59,11 +60,8 @@ const (
 // migrate to the common semantic input contract.
 // and a sequence of fast entity overlays. It emits only generic layer data and
 // tracks; animation names are retained solely as debug metadata.
-func fastEntityAnimation(name string, duration int64) *LayerAnimation {
+func fastEntityAnimation(name string, duration int64) (*LayerAnimation, error) {
 	enter := int(duration)
-	if enter > 12 {
-		enter = 12
-	}
 	if enter < 1 {
 		enter = 1
 	}
@@ -73,7 +71,23 @@ func fastEntityAnimation(name string, duration int64) *LayerAnimation {
 	if name == "scale" || name == "scale_in" || name == "pop" {
 		name = "scale_drop"
 	}
-	return &LayerAnimation{Tracks: resolveMotion(MotionDefinition{Name: name, Unit: "layer", Enter: enter})}
+	tracks, err := resolveMotion(MotionDefinition{Name: name, Unit: "layer", Enter: enter})
+	if err != nil {
+		return nil, err
+	}
+	return &LayerAnimation{Tracks: tracks}, nil
+}
+
+func parseBackgroundColor(spec string) []float64 {
+	raw := strings.TrimSpace(strings.TrimPrefix(strings.TrimPrefix(spec, "color:"), "COLOR:"))
+	raw = strings.TrimPrefix(raw, "#")
+	if len(raw) == 6 {
+		if value, err := strconv.ParseUint(raw, 16, 32); err == nil {
+			return []float64{float64((value>>16)&0xff) / 255, float64((value>>8)&0xff) / 255, float64(value&0xff) / 255, 1}
+		}
+	}
+	// Pale Olive Classic, also the safe default for malformed color specs.
+	return []float64{238.0 / 255, 241.0 / 255, 231.0 / 255, 1}
 }
 
 func CompileFastEntityOverlays(
@@ -107,19 +121,29 @@ func CompileFastEntityOverlays(
 
 	plan := newPlan(jobID, width, height, fpsNum, fpsDen, totalDurationFrames)
 
-	// Add background video layer
+	// A color: background is rendered as a real Chronon color layer. This is
+	// used by the preset canaries so a compositor backend cannot silently turn
+	// a branded background video into black pixels.
 	if bgVideoPath != "" {
-		plan.Layers = append(plan.Layers, Layer{
-			ID:             "bg_video",
-			Type:           "video",
-			Source:         bgVideoPath,
-			BoxWidth:       width,
-			BoxHeight:      height,
-			Fit:            "cover",
-			StartFrame:     0,
-			DurationFrames: totalDurationFrames,
-			Opacity:        1.0,
-		})
+		if strings.HasPrefix(strings.ToLower(bgVideoPath), "color:") {
+			plan.Layers = append(plan.Layers, Layer{
+				ID: "bg_color", Type: "color", Color: parseBackgroundColor(bgVideoPath),
+				BoxWidth: width, BoxHeight: height, Size: []float64{float64(width), float64(height)},
+				StartFrame: 0, DurationFrames: totalDurationFrames, Opacity: 1.0,
+			})
+		} else {
+			plan.Layers = append(plan.Layers, Layer{
+				ID:             "bg_video",
+				Type:           "video",
+				Source:         bgVideoPath,
+				BoxWidth:       width,
+				BoxHeight:      height,
+				Fit:            "cover",
+				StartFrame:     0,
+				DurationFrames: totalDurationFrames,
+				Opacity:        1.0,
+			})
+		}
 	}
 
 	// Add entity overlays
@@ -141,7 +165,11 @@ func CompileFastEntityOverlays(
 		}
 		var layerAnim *LayerAnimation
 		if animationName != "static" {
-			layerAnim = fastEntityAnimation(animationName, duration)
+			anim, animErr := fastEntityAnimation(animationName, duration)
+			if animErr != nil {
+				return nil, animErr
+			}
+			layerAnim = anim
 		}
 
 		switch strings.ToLower(strings.TrimSpace(ov.Type)) {
