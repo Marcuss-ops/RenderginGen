@@ -264,7 +264,7 @@ func TestCompileIfSemanticImportantPhraseAndNamedImage(t *testing.T) {
       "items":[
         {"id":"phrase-important","template_id":"IMPORTANT_PHRASE","preset_id":"caption_card",
          "text":"THIS CHANGES EVERYTHING","start_ms":500,"end_ms":1800},
-        {"id":"person-image-name","template_id":"PERSON","preset_id":"lower_third_safe",
+        {"id":"person-image-name","template_id":"PERSON","preset_id":"lower_third_safe","image_preset_id":"image_slide_left",
          "entity_ref":{"entity_id":"ent_matt_damon","type":"PERSON","name":"Matt Damon"},
          "start_ms":2200,"end_ms":4200,
          "asset_refs":[{"asset_id":"matt-damon","sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
@@ -287,6 +287,12 @@ func TestCompileIfSemanticImportantPhraseAndNamedImage(t *testing.T) {
 	}
 	if plan.Layers[1].Type != "image" || plan.Layers[1].Asset != "assets/semantic/matt-damon.png" {
 		t.Fatalf("named image asset layer = %+v", plan.Layers[1])
+	}
+	if plan.Layers[1].Animation == nil || len(plan.Layers[1].Animation.Tracks) == 0 {
+		t.Fatalf("entity image must carry image preset animation = %+v", plan.Layers[1].Animation)
+	}
+	if len(plan.Layers[1].Position) != 2 || plan.Layers[1].Position[0] != 0 {
+		t.Fatalf("entity image must use image preset layout = %+v", plan.Layers[1].Position)
 	}
 	if plan.Layers[2].Text != "Matt Damon" {
 		t.Fatalf("named image label layer = %+v", plan.Layers[2])

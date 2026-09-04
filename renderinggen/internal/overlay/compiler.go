@@ -225,14 +225,15 @@ type semanticItem struct {
 	Template  string             `json:"template_id"`
 	// PresetID is the semantic preset selected by PipelineGen (the plan's
 	// preset_id contract slot). It is preferred over the template mapping.
-	PresetID     string             `json:"preset_id"`
-	MotionID     string             `json:"motion_id"`
-	MotionParams map[string]any     `json:"motion_params"`
-	Text         string             `json:"text"`
-	StartMS      int64              `json:"start_ms"`
-	EndMS        int64              `json:"end_ms"`
-	Params       map[string]any     `json:"params"`
-	Assets       []semanticAssetRef `json:"asset_refs"`
+	PresetID      string             `json:"preset_id"`
+	ImagePresetID string             `json:"image_preset_id"`
+	MotionID      string             `json:"motion_id"`
+	MotionParams  map[string]any     `json:"motion_params"`
+	Text          string             `json:"text"`
+	StartMS       int64              `json:"start_ms"`
+	EndMS         int64              `json:"end_ms"`
+	Params        map[string]any     `json:"params"`
+	Assets        []semanticAssetRef `json:"asset_refs"`
 }
 
 // semanticEntityRef is the plan's entity_ref block: the content-addressed
@@ -824,6 +825,15 @@ func compileSemantic(raw []byte) ([]byte, []Asset, error) {
 			imageItem := item
 			imageItem.ID = item.ID + "-image"
 			img := imageLayer(imageItem, start, end, assetPaths[item.Assets[0].ID], params)
+			if item.ImagePresetID != "" {
+				imageDefinition, imageErr := resolveOfficialPreset(item.ImagePresetID, string(PresetImage))
+				if imageErr != nil {
+					return nil, nil, imageErr
+				}
+				applyPresetDefinition(&img, imageDefinition)
+				img.Animation = animationForDefinition(imageDefinition)
+				img.Position = resolveLayout(imageDefinition.Layout, img.BoxWidth, img.BoxHeight, src.Width, src.Height)
+			}
 			plan.Layers = append(plan.Layers, img)
 		}
 		text := item.Text
@@ -878,6 +888,9 @@ func compileSemantic(raw []byte) ([]byte, []Asset, error) {
 					layer.Position[1] = posY
 				}
 			}
+		}
+		if layer.Type == "image" && layer.Position == nil && preset != "" {
+			layer.Position = resolveLayout(definition.Layout, layer.BoxWidth, layer.BoxHeight, src.Width, src.Height)
 		}
 		plan.Layers = append(plan.Layers, layer)
 		if end > plan.Canvas.DurationFrames {
