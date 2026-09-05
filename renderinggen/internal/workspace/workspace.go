@@ -19,8 +19,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"syscall"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/queue"
@@ -293,7 +293,10 @@ func (w *Workspace) assetPath(logical string) (string, error) {
 }
 
 // CleanupStale removes old workspace directories. A workspace is considered
-// active when it contains a lease marker whose timestamp is still valid.
+// active when it contains a lease marker whose timestamp is still valid (see
+// WriteLease); any other directory older than olderThan is swept. Workers
+// write/refresh the marker for the whole lifetime of a claimed job, so a
+// long render that writes nothing to its workspace can never be swept.
 func CleanupStale(root string, olderThan time.Duration) error {
 	entries, err := os.ReadDir(root)
 	if err != nil {
@@ -315,7 +318,7 @@ func CleanupStale(root string, olderThan time.Duration) error {
 		if info.ModTime().After(cutoff) {
 			continue
 		}
-		leasePath := filepath.Join(path, ".lease_until")
+		leasePath := filepath.Join(path, leaseMarkerName)
 		if raw, readErr := os.ReadFile(leasePath); readErr == nil {
 			if lease, parseErr := time.Parse(time.RFC3339Nano, strings.TrimSpace(string(raw))); parseErr == nil && lease.After(time.Now()) {
 				continue
@@ -332,6 +335,25 @@ func CleanupStale(root string, olderThan time.Duration) error {
 func (w *Workspace) Cleanup() error {
 	if err := os.RemoveAll(w.root); err != nil {
 		return fmt.Errorf("workspace: cleanup %s: %w", w.root, err)
+	}
+	return nil
+}
+
+// leaseMarkerName is the per-workspace liveness marker CleanupStale reads.
+// A workspace whose marker is still valid is never swept, regardless of how
+// old its directory mtime is. The worker writes it when a job is prepared
+// and refreshes it while the render runs (a running render may legitimately
+// write nothing to the workspace for more than an hour).
+const leaseMarkerName = ".lease_until"
+
+// WriteLease writes/updates the workspace liveness marker with the given
+// expiry. Until that instant, CleanupStale must never remove this workspace.
+func (w *Workspace) WriteLease(until time.Time) error {
+	if w == nil {
+		return nil
+	}
+	if err := os.WriteFile(filepath.Join(w.root, leaseMarkerName), []byte(until.UTC().Format(time.RFC3339Nano)), 0o644); err != nil {
+		return fmt.Errorf("workspace: write lease marker %s: %w", w.root, err)
 	}
 	return nil
 }

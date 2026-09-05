@@ -82,9 +82,9 @@ func (t *ProgressTracker) Snapshot(jobID string) *Progress {
 }
 
 // Current returns the snapshot of the most recently observed job, or nil
-// when no render is in flight. The GPU lane runs strictly one render at a
-// time and Forget cleans up on completion, so this is the job currently
-// occupying the renderer — used by health and the queue progress pusher.
+// when no render is in flight. Each GPU lane renders one job at a time, and
+// Forget cleans up on completion, so the most recently observed job is the
+// live render a caller (health, the queue progress pusher) should report.
 func (t *ProgressTracker) Current() *Progress {
 	t.mu.Lock()
 	defer t.mu.Unlock()

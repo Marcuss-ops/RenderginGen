@@ -46,9 +46,10 @@ func main() {
 
 	// Reap workspaces left behind by a crashed worker run: without this the
 	// jobs root (often /dev/shm, i.e. RAM) grows unboundedly. Active
-	// workspaces carry a lease marker and are skipped; anything older than
-	// one hour is removed. Parent artifacts have their own cleanup (see
-	// ParentFinalizer.Finalize).
+	// workspaces carry a lease marker (written at PrepareJob, refreshed by
+	// the GPU lane while rendering) and are skipped; anything older than one
+	// hour without a valid marker is removed. Parent artifacts have their
+	// own cleanup (see ParentFinalizer.Finalize).
 	go func() {
 		ticker := time.NewTicker(10 * time.Minute)
 		defer ticker.Stop()
@@ -148,11 +149,14 @@ func main() {
 	proc.SetStrictNativeBackend(cfg.Chronon.StrictNativeBackend || cfg.Chronon.Profile == "gpu-vulkan-native")
 	proc.SetReport(cfg.Chronon.Report)
 	proc.SetHardwareEncoder(cfg.Chronon.HardwareEncoder)
-	log.Printf("chronon report telemetry: %t, strict_native_backend: %t", cfg.Chronon.Report, cfg.Chronon.StrictNativeBackend || cfg.Chronon.Profile == "gpu-vulkan-native")
+	proc.SetEncodePreset(cfg.Chronon.EncodePreset)
+	log.Printf("chronon report telemetry: %t, strict_native_backend: %t, encode_preset: %q", cfg.Chronon.Report, cfg.Chronon.StrictNativeBackend || cfg.Chronon.Profile == "gpu-vulkan-native", cfg.Chronon.EncodePreset)
 
-	// 3a. Artifact ledger (the "DB artifact" step): SQLite, pure Go so the
-	// CGO_ENABLED=0 worker image keeps building. A failed ledger write fails
-	// the job — the ledger is the source of truth for what was produced.
+	// 3a. Worker-local artifact ledger mirror (the "DB artifact" step): SQLite,
+	// pure Go so the CGO_ENABLED=0 worker image keeps building. The mirror is
+	// diagnostic: a failed write is logged and flagged on the artifact's
+	// metrics (mirror_failure=1), never fatal — the central queue PostgreSQL
+	// row is authoritative for the artifact.
 	if cfg.ArtifactDB.Path != "" {
 		recorder, err := artifactdb.NewSQLite(cfg.ArtifactDB.Path)
 		if err != nil {
@@ -387,10 +391,12 @@ func runPrepPool(ctx context.Context, q *queue.Client, proc *processor.Processor
 	}
 }
 
-// runGPULane is the only stage that invokes Chronon, strictly one render at a
-// time so the GPU never runs concurrent encoder sessions. While Chronon works
-// here, the prep pool prepares the next job and the post pool finalizes the
-// previous one.
+// runGPULane is the only stage that invokes Chronon. One goroutine runs per
+// configured GPU lane (cfg.Worker.GPULanes); the renderer itself is wrapped in
+// chronon.LimitConcurrency(renderer, gpuLanes), so up to gpuLanes Chronon
+// sessions — and therefore encoder sessions — run concurrently, matching the
+// NVENC multi-session baseline. While Chronon works here, the prep pool
+// prepares the next job and the post pool finalizes the previous one.
 func runGPULane(ctx context.Context, q *queue.Client, proc *processor.Processor, prepCh <-chan *preppedJob, doneCh chan<- renderOutcome) {
 	for {
 		select {
@@ -400,9 +406,30 @@ func runGPULane(ctx context.Context, q *queue.Client, proc *processor.Processor,
 			// Chronon is the long-running stage. Keep the queue lease alive
 			// while it renders; renewing only during prepare/post would let a
 			// normal software render expire and be claimed a second time.
+			//
+			// A running render may write nothing to its workspace for longer
+			// than the stale-sweeper horizon (1h), so the workspace liveness
+			// marker is refreshed here for the whole GPU stage: without it the
+			// sweeper could RemoveAll a live render's directory.
+			renderDone := make(chan struct{})
+			go func() {
+				ticker := time.NewTicker(10 * time.Minute)
+				defer ticker.Stop()
+				for {
+					select {
+					case <-renderDone:
+						return
+					case <-ticker.C:
+						if err := p.prepared.Workspace.WriteLease(time.Now().Add(2 * time.Hour)); err != nil {
+							log.Printf("job %s: refresh workspace lease marker: %v", p.job.ID, err)
+						}
+					}
+				}
+			}()
 			gpuErr := withLeaseVoid(ctx, p.job, q, func(jobCtx context.Context) error {
 				return proc.RunGPU(jobCtx, p.prepared)
 			})
+			close(renderDone)
 			// Duty-cycle telemetry: record this render's end so the next job's
 			// gpu_gap_us metric measures the true dead time between renders.
 			processor.PutGPURenderEnd(time.Now())
@@ -418,21 +445,29 @@ func runGPULane(ctx context.Context, q *queue.Client, proc *processor.Processor,
 // runPostPool finalizes GPU-completed jobs (probe, hash, store, ledger) and
 // publishes them. Workspace cleanup always runs here: it is the last owner.
 func runPostPool(ctx context.Context, q *queue.Client, proc *processor.Processor, parentFinalizer *processor.ParentFinalizer, doneCh <-chan renderOutcome) {
+	keepWorkspaces := os.Getenv("RENDERINGGEN_KEEP_WORKSPACE") == "1"
 	for {
 		select {
 		case <-ctx.Done():
 			return
 		case out := <-doneCh:
 			job, prepared := out.job, out.prepared
-			if os.Getenv("RENDERINGGEN_KEEP_WORKSPACE") != "1" {
-				defer func(id string) {
-					if err := prepared.Workspace.Cleanup(); err != nil {
-						log.Printf("job %s: workspace cleanup: %v", id, err)
-					}
-				}(job.ID)
+			// The post pool is the last owner of the workspace, so cleanup runs
+			// at the end of THIS iteration — never as a deferred call inside
+			// the loop, which would postpone it until pool shutdown and let
+			// every finished job's workspace accumulate (jobs root is often
+			// /dev/shm, i.e. RAM).
+			cleanup := func() {
+				if keepWorkspaces {
+					return
+				}
+				if err := prepared.Workspace.Cleanup(); err != nil {
+					log.Printf("job %s: workspace cleanup: %v", job.ID, err)
+				}
 			}
 			if out.err != nil {
 				reportFailure(ctx, q, job, out.err)
+				cleanup()
 				continue
 			}
 			var artifact queue.Artifact
@@ -450,6 +485,7 @@ func runPostPool(ctx context.Context, q *queue.Client, proc *processor.Processor
 			})
 			if err != nil {
 				reportFailure(ctx, q, job, err)
+				cleanup()
 				continue
 			}
 			log.Printf("job %s artifact: storage_key=%q sha256=%q size=%d copy_eligible=%t backend=%q frames=%d %dx%d",
@@ -459,6 +495,11 @@ func runPostPool(ctx context.Context, q *queue.Client, proc *processor.Processor
 			if parentFinalizer != nil && job.ParentJobID != "" {
 				tryFinalizeParent(ctx, q, parentFinalizer, job.ParentJobID)
 			}
+			// Cleanup is intentionally after Complete/parent-finalize: the
+			// queue is the durable record and parent assembly reads the
+			// children's artifacts from the object store/L2, never from the
+			// child workspace.
+			cleanup()
 		}
 	}
 }

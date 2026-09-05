@@ -164,6 +164,43 @@ func TestCleanupStaleRemovesExpiredAndKeepsActiveLease(t *testing.T) {
 	}
 }
 
+func TestWriteLeaseProtectsFromCleanupStale(t *testing.T) {
+	root := t.TempDir()
+	active, err := New(root, "active")
+	if err != nil {
+		t.Fatalf("New(active): %v", err)
+	}
+	expired, err := New(root, "expired")
+	if err != nil {
+		t.Fatalf("New(expired): %v", err)
+	}
+	if err := active.WriteLease(time.Now().Add(time.Hour)); err != nil {
+		t.Fatalf("WriteLease(active): %v", err)
+	}
+	if err := expired.WriteLease(time.Now().Add(-time.Minute)); err != nil {
+		t.Fatalf("WriteLease(expired): %v", err)
+	}
+	// Simulate a long render: the workspace directories have not been touched
+	// for hours (a running render writes nothing new to the directory tree;
+	// only the lease marker keeps it alive). Set the old mtime AFTER writing
+	// the markers, because creating the marker bumps the directory mtime.
+	past := time.Now().Add(-2 * time.Hour)
+	for _, w := range []*Workspace{active, expired} {
+		if err := os.Chtimes(w.Root(), past, past); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := CleanupStale(root, time.Hour); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(active.Root()); err != nil {
+		t.Fatalf("workspace with a valid lease marker was removed: %v", err)
+	}
+	if _, err := os.Stat(expired.Root()); !os.IsNotExist(err) {
+		t.Fatalf("workspace with an expired lease marker was kept: %v", err)
+	}
+}
+
 func TestCleanupRemovesTree(t *testing.T) {
 	root := t.TempDir()
 	w, err := New(root, "job-1")

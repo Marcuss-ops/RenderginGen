@@ -55,6 +55,7 @@ type Processor struct {
 	// emitted. Disabled by default; enabled by the performance benchmark.
 	report               bool
 	hardwareEncoder      string
+	encodePreset         string
 	nativeOutputProfiles bool
 	strictNativeBackend  bool
 
@@ -96,6 +97,13 @@ func (p *Processor) SetHardwareEncoder(encoder string) {
 	p.hardwareEncoder = encoder
 }
 
+// SetEncodePreset selects an explicit FFmpeg NVENC preset (for example, "p2"
+// for the throughput tier). Empty preserves the engine default; the worker
+// never invents a preset when none is configured.
+func (p *Processor) SetEncodePreset(preset string) {
+	p.encodePreset = preset
+}
+
 // SetNativeOutputProfiles enables passing output.profile_id to Chronon. Keep
 // this disabled for legacy runtimes that reject unknown output properties; the
 // worker still certifies the requested profile from the encoded MP4.
@@ -113,11 +121,13 @@ func (p *Processor) SetPublisher(pub drive.Publisher) {
 	p.drive = pub
 }
 
-// SetArtifactRecorder installs the artifact ledger. When set, every rendered
-// job writes one ArtifactRecord (hash, probe facts, semantic counters, per-
-// phase metrics) after the object store accepted the bytes; a failed Record
-// fails the job (the ledger is the source of truth). nil (default) disables
-// the ledger.
+// SetArtifactRecorder installs the worker-local artifact mirror. When set,
+// every rendered job writes one ArtifactRecord (hash, probe facts, semantic
+// counters, per-phase metrics) after the object store accepted the bytes. The
+// mirror is diagnostic: a failed Record is logged and flagged on the artifact
+// metrics (mirror_failure=1), it never fails the render — the central queue
+// PostgreSQL row remains authoritative for the artifact. nil (default)
+// disables the mirror.
 func (p *Processor) SetArtifactRecorder(rec artifactdb.Recorder) {
 	p.recorder = rec
 }
@@ -526,43 +536,6 @@ func planHasVideoSource(plan *overlay.Plan) bool {
 	return false
 }
 
-// hasVisualOverlay identifies concrete plans that require Chronon's authored
-// composition graph. A video-only plan can use DirectYUV; an image/text/color
-// plan must use native composition even when it has no separate background.
-func hasVisualOverlay(plan []byte) bool {
-	var doc struct {
-		Layers []struct {
-			Type string `json:"type"`
-		} `json:"layers"`
-	}
-	if json.Unmarshal(plan, &doc) != nil {
-		return false
-	}
-	for _, layer := range doc.Layers {
-		if layer.Type != "" && layer.Type != "video" {
-			return true
-		}
-	}
-	return false
-}
-
-func hasVideoSource(plan []byte) bool {
-	var doc struct {
-		Layers []struct {
-			Type string `json:"type"`
-		} `json:"layers"`
-	}
-	if json.Unmarshal(plan, &doc) != nil {
-		return false
-	}
-	for _, layer := range doc.Layers {
-		if layer.Type == "video" {
-			return true
-		}
-	}
-	return false
-}
-
 // audioSourcePathFromSemantic resolves the declared master audio source to
 // the worker workspace. Audio is semantic metadata and is intentionally not
 // serialized into Chronon's visual render-plan.v2; the native encoder still
@@ -835,7 +808,7 @@ func (p *Processor) storeArtifact(ctx context.Context, jobID, outputPath string,
 		artifact.ChrononTelemetry = raw
 		mergeChrononNumericMetrics(phaseMetrics, raw)
 	}
-	if err := p.recordArtifact(ctx, jobID, artifact, probe, stats, inputBytes, chrononTelemetry); err != nil {
+	if artifact, err = p.recordArtifact(ctx, jobID, artifact, probe, stats, inputBytes, chrononTelemetry); err != nil {
 		return queue.Artifact{}, err
 	}
 	return artifact, nil
@@ -872,10 +845,12 @@ func mergeChrononNumericMetrics(dst map[string]float64, raw json.RawMessage) {
 }
 
 // recordArtifact writes an optional worker-local diagnostic mirror. PostgreSQL
-// queue completion remains authoritative, so mirror failures are non-fatal.
-func (p *Processor) recordArtifact(ctx context.Context, jobID string, artifact queue.Artifact, probe *media.ProbeResult, stats overlay.Stats, inputBytes int64, chrononTelemetry json.RawMessage) error {
+// queue completion remains authoritative, so mirror failures are non-fatal:
+// the rendered artifact is returned unchanged except for the mirror_failure
+// metric, which carries the observability signal to the completed job.
+func (p *Processor) recordArtifact(ctx context.Context, jobID string, artifact queue.Artifact, probe *media.ProbeResult, stats overlay.Stats, inputBytes int64, chrononTelemetry json.RawMessage) (queue.Artifact, error) {
 	if p.recorder == nil {
-		return nil
+		return artifact, nil
 	}
 	rec := artifactdb.ArtifactRecord{
 		JobID:              jobID,
@@ -933,9 +908,17 @@ func (p *Processor) recordArtifact(ctx context.Context, jobID string, artifact q
 		rec.TotalUS = int64(m)
 	}
 	if err := p.recorder.Record(ctx, rec); err != nil {
+		// The mirror must never fail the render: PostgreSQL queue completion is
+		// authoritative. Surface the divergence on the artifact itself so the
+		// completed job's metrics (visible on GET /jobs/{id} and benchmark
+		// reports) carry an observable signal instead of a silent gap.
 		log.Printf("processor: artifact diagnostic mirror %s unavailable: %v", jobID, err)
+		if artifact.Metrics == nil {
+			artifact.Metrics = map[string]float64{}
+		}
+		artifact.Metrics["mirror_failure"] = 1
 	}
-	return nil
+	return artifact, nil
 }
 
 // publishedRenderBackend is the cross-service backend identity. RenderingGen
