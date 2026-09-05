@@ -263,6 +263,7 @@ func (p *Processor) RunGPU(ctx context.Context, prepared *PreparedJob) error {
 		AudioSourcePath: prepared.AudioSourcePath,
 		Report:          p.report,
 		Requirements: chronon.ExecutionRequirements{
+			Backend:            p.backend,
 			GPURequired:        gpuRequired,
 			CPUFallbackAllowed: !p.strictNativeBackend,
 			// A plain source clip can use Chronon's direct-YUV NVDEC→NVENC
@@ -344,6 +345,9 @@ func (p *Processor) FinalizeJob(ctx context.Context, prepared *PreparedJob) (que
 		probed, err := media.ProbeFile(ctx, outputPath)
 		if err != nil {
 			return queue.Artifact{}, fmt.Errorf("processor: overlay ffprobe: %w", err)
+		}
+		if err := media.ValidateDecoded(ctx, outputPath); err != nil {
+			return queue.Artifact{}, fmt.Errorf("processor: full decode gate: %w", err)
 		}
 		if metadata.ProfileID != "" {
 			profile, err := media.ResolveProfile(metadata.ProfileID)

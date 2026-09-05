@@ -307,6 +307,7 @@ type Layer struct {
 	Size           []float64       `json:"size,omitempty"`
 	Fit            string          `json:"fit,omitempty"`
 	Position       []float64       `json:"position,omitempty"`
+	Scale          []float64       `json:"scale,omitempty"`
 	Style          *LayerStyle     `json:"style,omitempty"`
 	StartFrame     int64           `json:"start_frame"`
 	DurationFrames int64           `json:"duration_frames"`
@@ -629,6 +630,7 @@ func compileSemantic(raw []byte) (*Plan, []Asset, error) {
 			offsetY := float64(src.Height-scaledH) / 2
 			srcLayer.Size = []float64{float64(scaledW), float64(scaledH)}
 			srcLayer.Position = []float64{offsetX, offsetY}
+			srcLayer.Scale = []float64{float64(src.ForegroundScale) / 100, float64(src.ForegroundScale) / 100}
 		}
 		sourceLayerIndex = len(plan.Layers)
 		plan.Layers = append(plan.Layers, srcLayer)

@@ -83,6 +83,7 @@ type Artifact struct {
 	Backend            string             `json:"backend,omitempty"`
 	ChrononVersion     string             `json:"chronon_version,omitempty"`
 	Metrics            map[string]float64 `json:"metrics,omitempty"`
+	ChrononTelemetry   json.RawMessage    `json:"chronon_telemetry,omitempty"`
 	DriveFileID        string             `json:"drive_file_id,omitempty"`
 	DriveLink          string             `json:"drive_link,omitempty"`
 	Container          string             `json:"container,omitempty"`

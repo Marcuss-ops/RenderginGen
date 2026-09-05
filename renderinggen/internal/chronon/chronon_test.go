@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -74,6 +75,20 @@ func TestRenderArgsResolvesGPURequirementAtAdapterBoundary(t *testing.T) {
 	}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("renderArgs (GPU) = %#v, want %#v", got, want)
+	}
+}
+
+func TestRenderArgsHonorsSoftwareBackendForComposition(t *testing.T) {
+	args := renderArgs(RenderRequest{
+		PlanPath: "/jobs/1/plan.json", AssetsRoot: "/jobs/1/assets", OutputPath: "/jobs/1/output/result.mp4",
+		Requirements: ExecutionRequirements{Backend: "software", CompositionRequired: true},
+	})
+	joined := strings.Join(args, " ")
+	if !strings.Contains(joined, "--backend software") {
+		t.Fatalf("args=%v, expected software backend", args)
+	}
+	if strings.Contains(joined, "--backend vulkan") {
+		t.Fatalf("args=%v, software composition was forced to Vulkan", args)
 	}
 }
 

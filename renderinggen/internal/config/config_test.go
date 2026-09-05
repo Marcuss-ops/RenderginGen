@@ -104,6 +104,12 @@ artifact_store:
 	if cfg.Health.Addr != ":8080" {
 		t.Fatalf("health addr default = %q", cfg.Health.Addr)
 	}
+	if cfg.Worker.PipelineWorkers != 3 {
+		t.Fatalf("pipeline workers default = %d", cfg.Worker.PipelineWorkers)
+	}
+	if cfg.Worker.GPULanes != 2 {
+		t.Fatalf("gpu lanes default = %d", cfg.Worker.GPULanes)
+	}
 	if cfg.Workspace.Root != defaultWorkspaceRoot() {
 		t.Fatalf("workspace root default = %q, want %q", cfg.Workspace.Root, defaultWorkspaceRoot())
 	}

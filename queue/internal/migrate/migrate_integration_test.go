@@ -44,6 +44,7 @@ func TestApplyAgainstPostgres(t *testing.T) {
 		"rendering_workers",
 		"render_events",
 		"processing_metrics",
+		"render_telemetry",
 		"worker_heartbeats",
 	} {
 		var exists bool

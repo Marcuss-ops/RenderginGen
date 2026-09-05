@@ -424,6 +424,9 @@ func (r *Repository) Complete(id, workerID string, artifact model.Artifact) erro
 	if err := insertProcessingMetrics(ctx, tx, id, attempt, artifact.Metrics); err != nil {
 		return err
 	}
+	if err := insertRenderTelemetry(ctx, tx, id, attempt, artifact.ChrononTelemetry); err != nil {
+		return err
+	}
 	return tx.Commit()
 }
 
@@ -471,6 +474,9 @@ func (r *Repository) Rendered(id, workerID string, artifact model.Artifact, reas
 		}
 	}
 	if err := insertProcessingMetrics(ctx, tx, id, attempt, artifact.Metrics); err != nil {
+		return err
+	}
+	if err := insertRenderTelemetry(ctx, tx, id, attempt, artifact.ChrononTelemetry); err != nil {
 		return err
 	}
 	return tx.Commit()
@@ -827,17 +833,17 @@ func (r *Repository) Children(parentJobID string) ([]*model.Job, error) {
 	var children []*model.Job
 	for rows.Next() {
 		var (
-			id, state     string
-			chunkIndex    int
-			frameRange    []byte
+			id, state  string
+			chunkIndex int
+			frameRange []byte
 			// Nullable mirrors so a NULL join row (child without an artifact
 			// yet) stays a nil job.Artifact.
-			nArtifactID, nStorageKey, nArtifactURL, nSHA256, nMimeType          sql.NullString
-			nSizeBytes, nWidth, nHeight, nFPSNum, nFPSDen                       sql.NullInt64
-			nFrameCount, nDurationUS, nAudioStreams                             sql.NullInt64
-			nProfileID, nCodec, nCodecProfile, nBackend, nChrononVersion        sql.NullString
-			nDriveFileID, nDriveLink, nContainer, nPixelFormat                  sql.NullString
-			nCopyEligible, nClosedGOP, nFirstFrameKeyframe                      sql.NullBool
+			nArtifactID, nStorageKey, nArtifactURL, nSHA256, nMimeType   sql.NullString
+			nSizeBytes, nWidth, nHeight, nFPSNum, nFPSDen                sql.NullInt64
+			nFrameCount, nDurationUS, nAudioStreams                      sql.NullInt64
+			nProfileID, nCodec, nCodecProfile, nBackend, nChrononVersion sql.NullString
+			nDriveFileID, nDriveLink, nContainer, nPixelFormat           sql.NullString
+			nCopyEligible, nClosedGOP, nFirstFrameKeyframe               sql.NullBool
 		)
 		if err := rows.Scan(
 			&id, &state, &chunkIndex, &frameRange,
@@ -850,11 +856,11 @@ func (r *Repository) Children(parentJobID string) ([]*model.Job, error) {
 			return nil, err
 		}
 		job := &model.Job{
-			ID:         id,
-			State:      model.State(state),
+			ID:          id,
+			State:       model.State(state),
 			ParentJobID: parentJobID,
-			ChunkIndex: chunkIndex,
-			FrameRange: decodeFrameRange(frameRange),
+			ChunkIndex:  chunkIndex,
+			FrameRange:  decodeFrameRange(frameRange),
 		}
 		if nArtifactID.Valid {
 			job.Artifact = &model.Artifact{

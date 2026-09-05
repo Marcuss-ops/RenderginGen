@@ -1,5 +1,7 @@
 package model
 
+import "encoding/json"
+
 // Artifact is the metadata of a rendered artifact, produced by a worker on job
 // completion and persisted to render_artifacts. It carries the copy-only
 // certification (codec, profile, GOP/keyframe flags) that VeloxEditing relies
@@ -27,6 +29,9 @@ type Artifact struct {
 	Backend            string             `json:"backend,omitempty"`
 	ChrononVersion     string             `json:"chronon_version,omitempty"`
 	Metrics            map[string]float64 `json:"metrics,omitempty"`
+	// ChrononTelemetry is the raw job-level timing document. PostgreSQL stores
+	// it as JSONB; Metrics remains the bounded numeric projection for clients.
+	ChrononTelemetry json.RawMessage `json:"chronon_telemetry,omitempty"`
 
 	// DriveFileID and DriveLink record the external Google Drive publication
 	// of the artifact. They are populated only after the Drive upload succeeds;

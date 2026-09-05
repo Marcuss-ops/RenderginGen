@@ -112,6 +112,7 @@ type Artifact struct {
 	Container          string             `json:"container,omitempty"`
 	PixelFormat        string             `json:"pixel_format,omitempty"`
 	AudioStreams       int                `json:"audio_streams,omitempty"`
+	ChrononTelemetry   json.RawMessage    `json:"chronon_telemetry,omitempty"`
 }
 
 // Worker is the worker registration payload.
@@ -365,6 +366,7 @@ func toClientArtifact(in Artifact) queueclient.Artifact {
 		Container:          in.Container,
 		PixelFormat:        in.PixelFormat,
 		AudioStreams:       in.AudioStreams,
+		ChrononTelemetry:   in.ChrononTelemetry,
 	}
 }
 
@@ -400,5 +402,6 @@ func fromClientArtifact(in *queueclient.Artifact) *Artifact {
 		Container:          in.Container,
 		PixelFormat:        in.PixelFormat,
 		AudioStreams:       in.AudioStreams,
+		ChrononTelemetry:   in.ChrononTelemetry,
 	}
 }

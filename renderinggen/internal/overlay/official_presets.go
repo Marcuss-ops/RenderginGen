@@ -140,6 +140,41 @@ func officialPresetIDs() []string {
 // callers cannot mutate the production registry through it.
 func OfficialPresetIDs() []string { return officialPresetIDs() }
 
+// OfficialPresetRegistry is the read-only view used by certification tools.
+// The production catalog remains private, so callers cannot create a second
+// mutable source of truth.
+type OfficialPresetRegistry struct{}
+
+// OfficialPresets is the canonical registry handle.
+var OfficialPresets OfficialPresetRegistry
+
+// All returns a deterministic snapshot of every official definition.
+func (OfficialPresetRegistry) All() []OfficialPresetDefinition {
+	ids := officialPresetIDs()
+	out := make([]OfficialPresetDefinition, 0, len(ids))
+	for _, id := range ids {
+		out = append(out, officialPresets[id])
+	}
+	return out
+}
+
+// Resolve resolves through the same production catalog used by the compiler.
+func (OfficialPresetRegistry) Resolve(id string) (OfficialPresetDefinition, error) {
+	return ResolveOfficialPreset(id)
+}
+
+// ResolveOfficialPreset returns the official definition for id, without a
+// kind check. Certification tools use it to build fixtures from the same
+// registry entry the runtime resolves.
+func ResolveOfficialPreset(id string) (OfficialPresetDefinition, error) {
+	id = strings.TrimSpace(id)
+	d, ok := officialPresets[id]
+	if !ok {
+		return OfficialPresetDefinition{}, fmt.Errorf("overlay: unsupported RenderingGen official preset %q", id)
+	}
+	return d, nil
+}
+
 func resolveOfficialPreset(id, kind string) (OfficialPresetDefinition, error) {
 	id = strings.TrimSpace(id)
 	if id == "" {

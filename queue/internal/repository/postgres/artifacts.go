@@ -3,7 +3,9 @@ package postgres
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/Marcuss-ops/RenderginGen/queue/internal/model"
 )
@@ -48,24 +50,70 @@ func insertArtifact(ctx context.Context, tx *sql.Tx, jobID string, a model.Artif
 	return err
 }
 
+func insertRenderTelemetry(ctx context.Context, tx *sql.Tx, jobID, attemptID string, raw []byte) error {
+	if len(raw) == 0 {
+		return nil
+	}
+	var doc struct {
+		Schema string `json:"schema"`
+	}
+	if err := json.Unmarshal(raw, &doc); err != nil {
+		return fmt.Errorf("decode chronon telemetry: %w", err)
+	}
+	if doc.Schema == "" {
+		return fmt.Errorf("chronon telemetry schema is missing")
+	}
+	_, err := tx.ExecContext(ctx, `
+		INSERT INTO render_telemetry (job_id, attempt_id, schema, telemetry)
+		VALUES ($1, $2, $3, $4::jsonb)
+		ON CONFLICT (job_id, attempt_id) DO UPDATE SET schema=EXCLUDED.schema, telemetry=EXCLUDED.telemetry`,
+		jobID, nullIfEmpty(attemptID), doc.Schema, raw)
+	return err
+}
+
 func insertProcessingMetrics(ctx context.Context, tx *sql.Tx, jobID, attemptID string, values map[string]float64) error {
 	for name, value := range values {
 		if name == "" {
 			continue
 		}
+		unit := metricUnit(name)
 		if _, err := tx.ExecContext(ctx, `
 			INSERT INTO processing_metrics (job_id, attempt_id, metric_name, metric_value, unit)
-			VALUES ($1, $2, $3, $4, 'ms')`, jobID, nullIfEmpty(attemptID), name, value); err != nil {
+			VALUES ($1, $2, $3, $4, $5)`, jobID, nullIfEmpty(attemptID), name, value, unit); err != nil {
 			return fmt.Errorf("insert processing metric %q: %w", name, err)
 		}
 	}
 	return nil
 }
 
+// metricUnit preserves the unit encoded by the canonical metric name. Names
+// without a suffix are counts by default; this keeps legacy map payloads
+// compatible while preventing bytes/frames/ratios from being labelled ms.
+func metricUnit(name string) string {
+	n := strings.ToLower(name)
+	switch {
+	case strings.HasSuffix(n, "_us"):
+		return "us"
+	case strings.HasSuffix(n, "_ms"):
+		return "ms"
+	case strings.Contains(n, "bytes"):
+		return "bytes"
+	case strings.HasSuffix(n, "_mb"):
+		return "mb"
+	case strings.Contains(n, "fps"):
+		return "fps"
+	case strings.Contains(n, "ratio"), strings.HasSuffix(n, "_percent"):
+		return "ratio"
+	default:
+		return "count"
+	}
+}
+
 // getArtifact loads a single artifact by ID.
 func getArtifact(ctx context.Context, db *sql.DB, id string) (*model.Artifact, error) {
 	var a model.Artifact
 	var (
+		jobID                                          string
 		storageKey, url, sha256, mimeType              sql.NullString
 		profileID, codec, codecProfile                 sql.NullString
 		backend, chrononVersion                        sql.NullString
@@ -77,13 +125,13 @@ func getArtifact(ctx context.Context, db *sql.DB, id string) (*model.Artifact, e
 		copyEligible, closedGOP, firstFrameKey         sql.NullBool
 	)
 	err := db.QueryRowContext(ctx, `
-		SELECT id, kind, storage_key, artifact_url, sha256, mime_type, size_bytes,
+		SELECT id, job_id, kind, storage_key, artifact_url, sha256, mime_type, size_bytes,
 		       width, height, fps_num, fps_den, frame_count, duration_us,
 		       profile_id, copy_eligible, codec, codec_profile, closed_gop, first_frame_keyframe,
 		       backend, chronon_version, drive_file_id, drive_link, container, pixel_format, audio_streams
 		FROM render_artifacts
 		WHERE id = $1`, id).Scan(
-		&a.ID, &a.Kind, &storageKey, &url, &sha256, &mimeType, &sizeBytes,
+		&a.ID, &jobID, &a.Kind, &storageKey, &url, &sha256, &mimeType, &sizeBytes,
 		&width, &height, &fpsNum, &fpsDen, &frameCount, &durationUS,
 		&profileID, &copyEligible, &codec, &codecProfile, &closedGOP, &firstFrameKey,
 		&backend, &chrononVersion, &driveFileID, &driveLink, &container, &pixelFormat, &audioStreams)
@@ -136,6 +184,38 @@ func getArtifact(ctx context.Context, db *sql.DB, id string) (*model.Artifact, e
 	}
 	if firstFrameKey.Valid {
 		a.FirstFrameKeyframe = firstFrameKey.Bool
+	}
+	// processing_metrics is the durable numeric projection of Chronon's
+	// timing sidecar. It must be read back with the artifact; otherwise the
+	// queue API exposes only media facts (for example frame_count) and silently
+	// drops FPS, render phases and GPU counters before PipelineGen can project
+	// them into localized_renders.metrics.
+	rows, err := db.QueryContext(ctx, `
+		SELECT metric_name, metric_value
+		FROM processing_metrics
+		WHERE job_id = $1
+		ORDER BY created_at ASC, id ASC`, jobID)
+	if err != nil {
+		return nil, fmt.Errorf("load processing metrics for artifact %s: %w", id, err)
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var name string
+		var value float64
+		if err := rows.Scan(&name, &value); err != nil {
+			return nil, fmt.Errorf("scan processing metric for artifact %s: %w", id, err)
+		}
+		if name != "" {
+			if a.Metrics == nil {
+				a.Metrics = make(map[string]float64)
+			}
+			// Later rows win, which is correct for a retried job where the
+			// newest attempt is appended after the previous attempt.
+			a.Metrics[name] = value
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate processing metrics for artifact %s: %w", id, err)
 	}
 	return &a, nil
 }
