@@ -54,7 +54,11 @@ type ChrononConfig struct {
 	NativeOutputProfiles bool   `yaml:"native_output_profiles"`
 	Report               bool   `yaml:"report"`
 	HardwareEncoder      string `yaml:"hardware_encoder"`
-	StrictNativeBackend  bool   `yaml:"strict_native_backend"`
+	// EncodePreset is the explicit FFmpeg NVENC preset passed to Chronon for
+	// native GPU jobs (e.g. "p2" for the throughput tier). Empty preserves the
+	// engine default; the worker never invents a preset when none is set.
+	EncodePreset        string `yaml:"encode_preset"`
+	StrictNativeBackend bool   `yaml:"strict_native_backend"`
 }
 
 type GPUConfig struct {

@@ -24,6 +24,46 @@ func TestCompileFastEntityOverlaysCenteredGeometryAndTracks(t *testing.T) {
 	}
 }
 
+func TestCompileOfficialPresetPreservesTextAnimatorAndLayout(t *testing.T) {
+	def, err := ResolveOfficialPreset("active_word_pop")
+	if err != nil {
+		t.Fatal(err)
+	}
+	plan, err := CompileFastEntityOverlays("word", 1920, 1080, 24, 1, 125, "color:#EEF1E7", []FastEntityOverlay{{
+		Type: "text", PresetID: def.ID, Text: "Una due tre", Font: "fonts/Poppins-Bold.ttf",
+		StartFrame: 0, EndFrame: 125,
+	}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	layer := plan.Layers[1]
+	if len(layer.TextAnimators) != 1 {
+		t.Fatalf("word preset lost text animator: animation=%+v animators=%d", layer.Animation, len(layer.TextAnimators))
+	}
+	if got := layer.TextAnimators[0].Selectors[0].Unit; got != "word" {
+		t.Fatalf("selector unit=%q, want word", got)
+	}
+	if layer.Position[1] <= 0 || layer.Style == nil || layer.Style.Font == "" {
+		t.Fatalf("preset layout/style not applied: position=%v style=%+v", layer.Position, layer.Style)
+	}
+}
+
+func TestCompileImagePresetUsesCatalogGeometryAndDirection(t *testing.T) {
+	plan, err := CompileFastEntityOverlays("image", 1920, 1080, 24, 1, 125, "color:#EEF1E7", []FastEntityOverlay{{
+		Type: "image", PresetID: "image_slide_right", Asset: "gerard_butler.jpg", StartFrame: 0, EndFrame: 125,
+	}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	layer := plan.Layers[1]
+	if layer.Asset != "gerard_butler.jpg" || layer.Position[0] != 830 || layer.BoxWidth != 260 {
+		t.Fatalf("image preset geometry=%+v position=%v", layer, layer.Position)
+	}
+	if layer.Animation != nil && len(layer.Animation.Tracks) != 0 {
+		t.Fatalf("image preset must avoid Chronon image primitive tracks: %+v", layer.Animation)
+	}
+}
+
 func TestFastEntityOverlay_BuildPlan(t *testing.T) {
 	overlays := []FastEntityOverlay{
 		{
