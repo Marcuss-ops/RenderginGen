@@ -128,6 +128,16 @@ func (p *Processor) PrepareJob(ctx context.Context, job *queue.Job) (*PreparedJo
 	if err != nil {
 		return nil, err
 	}
+	// Liveness marker for the stale-workspace sweeper: a prepared workspace
+	// can sit idle until a GPU lane picks it up, and materialization or a
+	// long render may write nothing new to the workspace directory tree for
+	// more than the sweeper horizon. The marker is written at creation (not
+	// after materialize) so even a >1h asset download is never swept, and
+	// refreshed by the GPU lane for the whole RunGPU stage. Without a valid
+	// marker, CleanupStale would RemoveAll a live job's directory.
+	if err := ws.WriteLease(time.Now().Add(2 * time.Hour)); err != nil {
+		log.Printf("job %s: write workspace lease marker: %v", job.ID, err)
+	}
 	// inputBytes is the materialized input size, summed single-threaded
 	// AFTER MaterializePaths completes from the on-disk files — race-free by
 	// construction and accurate for every asset (cache hits and self-heals).
@@ -262,6 +272,7 @@ func (p *Processor) RunGPU(ctx context.Context, prepared *PreparedJob) error {
 		OutputPath:      prepared.OutputPath,
 		AudioSourcePath: prepared.AudioSourcePath,
 		Report:          p.report,
+		EncodePreset:    p.encodePreset,
 		Requirements: chronon.ExecutionRequirements{
 			Backend:            p.backend,
 			GPURequired:        gpuRequired,

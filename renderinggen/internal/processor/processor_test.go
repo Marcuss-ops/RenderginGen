@@ -14,6 +14,7 @@ import (
 	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/artifactdb"
 	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/chronon"
 	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/drive"
+	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/overlay"
 	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/queue"
 	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/storage"
 )
@@ -31,13 +32,13 @@ type fakeRenderer struct {
 }
 
 func TestHasVisualOverlayDistinguishesVideoOnlyFromAuthoredComposition(t *testing.T) {
-	if hasVisualOverlay([]byte(`{"layers":[{"type":"video"}]}`)) {
+	if planHasVisualOverlay(&overlay.Plan{Layers: []overlay.Layer{{Type: "video"}}}) {
 		t.Fatal("video-only plan must use direct-yuv")
 	}
-	if !hasVisualOverlay([]byte(`{"layers":[{"type":"text"}]}`)) {
+	if !planHasVisualOverlay(&overlay.Plan{Layers: []overlay.Layer{{Type: "text"}}}) {
 		t.Fatal("text-only plan must use native composition")
 	}
-	if !hasVisualOverlay([]byte(`{"layers":[{"type":"image"}]}`)) {
+	if !planHasVisualOverlay(&overlay.Plan{Layers: []overlay.Layer{{Type: "image"}}}) {
 		t.Fatal("image-only plan must use native composition")
 	}
 }
@@ -395,6 +396,45 @@ func TestProcessRecordsArtifactLedger(t *testing.T) {
 	}
 	if rec.TotalUS < rec.ChrononRenderUS {
 		t.Fatalf("total_us %d < chronon_render_us %d", rec.TotalUS, rec.ChrononRenderUS)
+	}
+}
+
+// failingRecorder simulates an artifact mirror that is down: PostgreSQL queue
+// completion stays authoritative, so a Record failure must never fail the
+// render (see TestProcessMirrorFailureKeepsRenderCompleted).
+type failingRecorder struct{}
+
+func (failingRecorder) Record(context.Context, artifactdb.ArtifactRecord) error {
+	return errors.New("artifact mirror unavailable")
+}
+
+// TestProcessMirrorFailureKeepsRenderCompleted pins the diagnostic-mirror
+// contract: when the worker-local SQLite mirror fails to Record, the render
+// stays completed (Process returns a certified artifact and no error), the
+// artifact bytes are still in the object store, and the completed artifact's
+// metrics carry mirror_failure=1 so the divergence is observable.
+func TestProcessMirrorFailureKeepsRenderCompleted(t *testing.T) {
+	proc, store, renderer := newProcessor(t)
+	proc.SetArtifactRecorder(failingRecorder{})
+	if err := store.Put(context.Background(), videoHash, []byte("video-bytes")); err != nil {
+		t.Fatalf("put asset: %v", err)
+	}
+	renderer.write = func(path string) error {
+		return os.WriteFile(path, []byte("output-bytes"), 0o644)
+	}
+
+	artifact, err := proc.Process(context.Background(), validJob())
+	if err != nil {
+		t.Fatalf("mirror failure must not fail the render: %v", err)
+	}
+	if artifact.ArtifactHash == "" || artifact.StorageKey == "" {
+		t.Fatalf("artifact must still be certified when the mirror fails: %+v", artifact)
+	}
+	if artifact.Metrics == nil || artifact.Metrics["mirror_failure"] != 1 {
+		t.Fatalf("mirror_failure metric = %v, want 1 (artifact %+v)", artifact.Metrics["mirror_failure"], artifact)
+	}
+	if _, err := store.Get(context.Background(), artifact.StorageKey); err != nil {
+		t.Fatalf("artifact bytes must be stored even when the mirror fails: %v", err)
 	}
 }
 
