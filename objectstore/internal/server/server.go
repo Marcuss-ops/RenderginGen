@@ -2,9 +2,10 @@
 //
 // Contract (matches the RenderingGen worker's HTTP L3 backend):
 //
-//	PUT /objects/{key} -> 201
-//	GET /objects/{key} -> 200 body | 404
-//	GET /health        -> 200
+//	PUT  /objects/{key} -> 201
+//	GET  /objects/{key} -> 200 body | 404
+//	HEAD /objects/{key} -> 200 | 404
+//	GET  /health        -> 200
 package server
 
 import (
@@ -30,8 +31,30 @@ func (s *Server) Handler() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("PUT /objects/{key}", s.put)
 	mux.HandleFunc("GET /objects/{key}", s.get)
+	// HEAD is the cheap existence probe used by uploaders (PipelineGen's
+	// clip-executor prefetch) to skip re-uploading an object that is already
+	// staged under its content address.
+	mux.HandleFunc("HEAD /objects/{key}", s.head)
 	mux.HandleFunc("GET /health", s.health)
 	return mux
+}
+
+func (s *Server) head(w http.ResponseWriter, r *http.Request) {
+	key := r.PathValue("key")
+	f, size, err := s.store.Open(key)
+	if err == store.ErrNotFound {
+		http.NotFound(w, r)
+		return
+	}
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	f.Close()
+	if size >= 0 {
+		w.Header().Set("Content-Length", strconv.FormatInt(size, 10))
+	}
+	w.WriteHeader(http.StatusOK)
 }
 
 func (s *Server) put(w http.ResponseWriter, r *http.Request) {
