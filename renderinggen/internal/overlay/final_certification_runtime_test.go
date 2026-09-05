@@ -55,13 +55,12 @@ func certificationAssetsRoot(t *testing.T) string {
 	return root
 }
 
-// renderCertificationPlan compiles the fixture for one preset, writes the
-// plan, renders it with Chronon software backend, and returns the MP4 path.
-// outName is the output base name so the same preset can be rendered several
-// times within one run.
-func renderCertificationPlan(t *testing.T, bin, assetsRoot, outDir, presetID, outName string) string {
+// certificationPlan compiles the registry fixture for one preset into the
+// exact chronon.render-plan.v2 the runtime certification renders. It is
+// deterministic, so pixel tests can read the entity's declared geometry from
+// the same plan that produced the MP4 instead of hard-coding sample points.
+func certificationPlan(t *testing.T, presetID string) *Plan {
 	t.Helper()
-
 	def, err := ResolveOfficialPreset(presetID)
 	if err != nil {
 		t.Fatalf("resolve registry preset: %v", err)
@@ -71,6 +70,16 @@ func renderCertificationPlan(t *testing.T, bin, assetsRoot, outDir, presetID, ou
 	if err != nil {
 		t.Fatalf("compile: %v", err)
 	}
+	return plan
+}
+
+// renderCertificationPlan compiles the fixture for one preset, writes the
+// plan, renders it with Chronon software backend, and returns the MP4 path.
+// outName is the output base name so the same preset can be rendered several
+// times within one run.
+func renderCertificationPlan(t *testing.T, bin, assetsRoot, outDir, presetID, outName string) string {
+	t.Helper()
+	plan := certificationPlan(t, presetID)
 	videoPath := filepath.Join(outDir, outName+"_24fps_1080p.mp4")
 	plan.Output.Path = videoPath
 	planPath := filepath.Join(outDir, outName+"_plan.json")
@@ -104,18 +113,17 @@ func renderCertificationPlan(t *testing.T, bin, assetsRoot, outDir, presetID, ou
 func probeMP4Structural(t *testing.T, path string) {
 	t.Helper()
 	out, err := exec.Command("ffprobe", "-v", "error", "-select_streams", "v:0",
-		"-show_entries", "stream=width,height,nb_frames,avg_frame_rate",
+		"-show_entries", "stream=width,height,nb_frames,r_frame_rate",
 		"-show_entries", "format=duration", "-of", "json", path).Output()
 	if err != nil {
 		t.Fatalf("ffprobe: %v", err)
 	}
 	var probe struct {
 		Streams []struct {
-			Width        int    `json:"width"`
-			Height       int    `json:"height"`
-			NBFrames     string `json:"nb_frames"`
-			AvgFrameRate string `json:"avg_frame_rate"`
-			RFrameRate   string `json:"r_frame_rate"`
+			Width      int    `json:"width"`
+			Height     int    `json:"height"`
+			NBFrames   string `json:"nb_frames"`
+			RFrameRate string `json:"r_frame_rate"`
 		} `json:"streams"`
 		Format struct {
 			Duration string `json:"duration"`
@@ -177,9 +185,9 @@ func extractFramePNG(t *testing.T, path string, frame int) []byte {
 // sampleLuma returns the luma (YAVG 0-255) of one pixel of one frame.
 func sampleLuma(t *testing.T, path string, frame, x, y int) float64 {
 	t.Helper()
-	out, err := exec.Command("ffmpeg", "-v", "quiet",
+	out, err := exec.Command("ffmpeg", "-v", "info",
 		"-i", path,
-		"-vf", fmt.Sprintf("select=eq(n\\,%d),crop=1:1:%d:%d,signalstats,metadata=print:key=lavfi.signalstats.YAVG", frame, x, y),
+		"-vf", fmt.Sprintf("select=eq(n\\,%d),crop=2:2:%d:%d,signalstats,metadata=print:key=lavfi.signalstats.YAVG", frame, x, y),
 		"-frames:v", "1", "-f", "null", "-").CombinedOutput()
 	if err != nil {
 		t.Fatalf("sample pixel frame %d (%d,%d): %v\n%s", frame, x, y, err, tailBytes(out))
@@ -197,19 +205,62 @@ func sampleLuma(t *testing.T, path string, frame, x, y int) float64 {
 	return 0
 }
 
-// assertBackgroundPreserved checks the four corners of every sampled frame:
-// outside the entity bbox the Pale Olive background must survive untouched.
-// A dark corner is the black-background regression signature.
-func assertBackgroundPreserved(t *testing.T, path string, frames []int) {
+// entityCoverage returns the canvas region the compiled entity layer occupies
+// at its resting placement, so background sampling never reads a pixel that
+// belongs to the entity itself. Conventions match the engine (verified at
+// runtime): image frames are centred at canvas_centre + position, text frames
+// at position (canvas coordinates). The background color layer is ignored.
+func entityCoverage(plan *Plan) [4]float64 {
+	for _, layer := range plan.Layers {
+		if (layer.Type != "image" && layer.Type != "text") || len(layer.Position) < 2 || len(layer.Size) < 2 {
+			continue
+		}
+		cx, cy := layer.Position[0], layer.Position[1]
+		if layer.Type == "image" {
+			cx += float64(plan.Canvas.Width) / 2
+			cy += float64(plan.Canvas.Height) / 2
+		}
+		return [4]float64{cx - layer.Size[0]/2, cy - layer.Size[1]/2, cx + layer.Size[0]/2, cy + layer.Size[1]/2}
+	}
+	return [4]float64{}
+}
+
+// cornerInsideEntity reports whether the 2x2 crop sampled at corner c is fully
+// inside the entity's coverage region. A flush bottom/right card legitimately
+// owns its corner of the canvas, so those corners must be excluded from the
+// background-preservation check (the black regression is caught by the
+// corners the entity does NOT cover).
+func cornerInsideEntity(c [2]int, region [4]float64) bool {
+	if region[2] <= region[0] || region[3] <= region[1] {
+		return false
+	}
+	return float64(c[0]) >= region[0] && float64(c[0])+1 <= region[2] &&
+		float64(c[1]) >= region[1] && float64(c[1])+1 <= region[3]
+}
+
+// assertBackgroundPreserved checks the corners of every sampled frame that
+// fall outside the entity's declared coverage: the Pale Olive background must
+// survive untouched there. A dark corner is the black-background regression
+// signature.
+func assertBackgroundPreserved(t *testing.T, plan *Plan, path string, frames []int) {
 	t.Helper()
 	corners := [][2]int{{50, 50}, {1869, 50}, {50, 1029}, {1869, 1029}}
+	coverage := entityCoverage(plan)
 	for _, frame := range frames {
+		checked := 0
 		for _, c := range corners {
+			if cornerInsideEntity(c, coverage) {
+				continue
+			}
+			checked++
 			luma := sampleLuma(t, path, frame, c[0], c[1])
 			if luma < 180 {
 				t.Errorf("frame %d corner (%d,%d) luma=%.1f: background replaced (black-frame regression?)",
 					frame, c[0], c[1], luma)
 			}
+		}
+		if checked == 0 {
+			t.Errorf("frame %d: every corner is inside the entity coverage; background preservation is unverifiable", frame)
 		}
 	}
 }
@@ -225,6 +276,7 @@ func TestFinal_AllOfficialPresetsRender(t *testing.T) {
 
 	for _, id := range OfficialPresetIDs() {
 		t.Run(id, func(t *testing.T) {
+			plan := certificationPlan(t, id)
 			videoPath := renderCertificationPlan(t, bin, assetsRoot, outDir, id, id)
 
 			// A. structural
@@ -233,7 +285,7 @@ func TestFinal_AllOfficialPresetsRender(t *testing.T) {
 			decodeFully(t, videoPath)
 			// C. pixel: first, middle and last frames must keep the
 			// background and never come back black.
-			assertBackgroundPreserved(t, videoPath, []int{0, int(certificationDurationFrames) / 2, int(certificationDurationFrames) - 1})
+			assertBackgroundPreserved(t, plan, videoPath, []int{0, int(certificationDurationFrames) / 2, int(certificationDurationFrames) - 1})
 		})
 	}
 }
@@ -241,19 +293,27 @@ func TestFinal_AllOfficialPresetsRender(t *testing.T) {
 // TestFinal_EntityCenterDiffersFromBackground proves the entity really drew:
 // the pixel at the entity's center must differ from the untouched Pale Olive
 // background in a mid-animation frame. This is the assertion that catches a
-// silently-missing layer even when every structural check is green.
+// silently-missing layer even when every structural check is green. The
+// sample point is derived from the compiled plan (image frames are centred at
+// canvas_centre + position), never hard-coded.
 func TestFinal_EntityCenterDiffersFromBackground(t *testing.T) {
 	bin := chrononBinFor(t)
 	assetsRoot := certificationAssetsRoot(t)
 	outDir := t.TempDir()
 
+	plan := certificationPlan(t, "image_scale_in")
 	videoPath := renderCertificationPlan(t, bin, assetsRoot, outDir, "image_scale_in", "image_scale_in")
+	coverage := entityCoverage(plan)
+	if coverage[2] <= coverage[0] || coverage[3] <= coverage[1] {
+		t.Fatal("entity coverage missing: cannot derive the sample point")
+	}
+	cx := int((coverage[0] + coverage[2]) / 2)
+	cy := int((coverage[1] + coverage[3]) / 2)
 	mid := int(certificationDurationFrames) / 2
-	// image_scale_in anchors image_right at 260px box: center ≈ (1655, 540).
-	centerLuma := sampleLuma(t, videoPath, mid, 1655, 540)
+	centerLuma := sampleLuma(t, videoPath, mid, cx, cy)
 	cornerLuma := sampleLuma(t, videoPath, mid, 50, 50)
 	if diff := centerLuma - cornerLuma; diff > -20 && diff < 20 {
-		t.Errorf("entity center luma=%.1f vs background %.1f: entity layer is not visibly drawn", centerLuma, cornerLuma)
+		t.Errorf("entity center (%d,%d) luma=%.1f vs background %.1f: entity layer is not visibly drawn", cx, cy, centerLuma, cornerLuma)
 	}
 }
 

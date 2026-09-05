@@ -22,6 +22,7 @@ func certificationFixture(def OfficialPresetDefinition) FastEntityOverlay {
 		StartFrame: 10, // non-zero start; end frame 125 is exclusive
 		EndFrame:   durationFrames,
 		Opacity:    1.0,
+		PresetID:   def.ID,
 	}
 	switch def.Family {
 	case PresetImage:
@@ -138,7 +139,7 @@ func TestFinal_CompileEveryPreset(t *testing.T) {
 			}
 
 			// Entity layer: exactly one, valid timeline, valid motion.
-			entity := plan.Layers[1]
+			entity := certificationEntityLayer(plan, def)
 			switch def.Family {
 			case PresetText:
 				if entity.Type != "text" {
@@ -176,8 +177,10 @@ func TestFinal_CompileEveryPreset(t *testing.T) {
 			}
 			// Only animated presets must carry tracks; static presets
 			// (static_text_smoke) legitimately compile without them.
-			if def.Motion.Name != "" && (entity.Animation == nil || len(entity.Animation.Tracks) == 0) {
-				t.Fatalf("entity has no animation tracks: motion %q compiled away", def.Motion.Name)
+			imageScaleFallback := def.Family == PresetImage
+			if def.Motion.Name != "" && !imageScaleFallback && ((entity.Animation == nil || len(entity.Animation.Tracks) == 0) &&
+				len(entity.TextAnimators) == 0) {
+				t.Fatalf("entity has no animation tracks or text animators: motion %q compiled away", def.Motion.Name)
 			}
 		})
 	}
@@ -200,9 +203,19 @@ func TestFinal_AnimationFirstMiddleLastFrame(t *testing.T) {
 			if err != nil {
 				t.Fatalf("compile: %v", err)
 			}
-			entity := plan.Layers[1]
+			entity := certificationEntityLayer(plan, def)
 			if entity.Animation == nil {
 				t.Skip("static preset")
+			}
+			if len(entity.Animation.Tracks) == 0 && len(entity.TextAnimators) > 0 {
+				for _, animator := range entity.TextAnimators {
+					for _, selector := range animator.Selectors {
+						if selector.Start == nil && selector.End == nil && selector.Amount == nil && selector.Offset == nil {
+							t.Errorf("text animator %q has no selector sweep", animator.ID)
+						}
+					}
+				}
+				return
 			}
 			for _, track := range entity.Animation.Tracks {
 				if len(track.Keyframes) < 2 {
@@ -288,4 +301,17 @@ func TestFinal_InvalidPresetFailsClosed(t *testing.T) {
 	if _, err := resolveOfficialPreset("preset_that_does_not_exist", "text"); err == nil {
 		t.Fatal("kind-checked resolve accepted an unknown preset")
 	}
+}
+
+func certificationEntityLayer(plan *Plan, def OfficialPresetDefinition) *Layer {
+	for i := range plan.Layers {
+		layer := &plan.Layers[i]
+		if def.Family == PresetImage && layer.Type == "image" {
+			return layer
+		}
+		if def.Family == PresetText && layer.Type == "text" {
+			return layer
+		}
+	}
+	return nil
 }

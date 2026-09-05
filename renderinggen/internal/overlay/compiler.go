@@ -755,7 +755,7 @@ func compileSemantic(raw []byte) (*Plan, []Asset, error) {
 					return nil, nil, imgAnimErr
 				}
 				img.Animation = imgAnimation
-				img.Position = resolveLayout(imageDefinition.Layout, img.BoxWidth, img.BoxHeight, src.Width, src.Height)
+				img.Position = resolveImageLayout(imageDefinition.Layout, img.BoxWidth, img.BoxHeight, src.Width, src.Height)
 			}
 			plan.Layers = append(plan.Layers, img)
 		}
@@ -795,11 +795,32 @@ func compileSemantic(raw []byte) (*Plan, []Asset, error) {
 			}
 			layer.TextAnimators = animation.TextAnimators
 		} else if preset != "" {
-			presetAnimation, presetAnimErr := animationForDefinition(definition)
-			if presetAnimErr != nil {
-				return nil, nil, presetAnimErr
+			if layer.Type == "text" {
+				// Official text presets lower their motion through the shared
+				// animationForPreset path so word/glyph selectors
+				// (word_reveal, character_cascade, ...) are transported as
+				// text animators instead of being silently compiled away to an
+				// empty layer animation. Chronon requires animation objects to
+				// carry tracks, so an animator-only motion keeps the animation
+				// field absent and rides the layer's text_animators contract.
+				presetAnimation, presetAnimErr := animationForPreset(definition, text, end-start)
+				if presetAnimErr != nil {
+					return nil, nil, presetAnimErr
+				}
+				if presetAnimation != nil {
+					if len(presetAnimation.Tracks) == 0 {
+						layer.TextAnimators = presetAnimation.TextAnimators
+					} else {
+						layer.Animation = presetAnimation
+					}
+				}
+			} else {
+				presetAnimation, presetAnimErr := animationForDefinition(definition)
+				if presetAnimErr != nil {
+					return nil, nil, presetAnimErr
+				}
+				layer.Animation = presetAnimation
 			}
-			layer.Animation = presetAnimation
 		}
 		if layer.Style != nil && layer.Position == nil {
 			posX, hasPosX := params["position_x"].(float64)
@@ -807,7 +828,7 @@ func compileSemantic(raw []byte) (*Plan, []Asset, error) {
 			if hasPosX && hasPosY {
 				layer.Position = []float64{posX, posY}
 			} else {
-				layer.Position = resolveLayout(definition.Layout, layer.BoxWidth, layer.BoxHeight, src.Width, src.Height)
+				layer.Position = resolveTextLayout(definition.Layout, layer.BoxWidth, layer.BoxHeight, src.Width, src.Height)
 				if hasPosX {
 					layer.Position[0] = posX
 				}
@@ -817,7 +838,7 @@ func compileSemantic(raw []byte) (*Plan, []Asset, error) {
 			}
 		}
 		if layer.Type == "image" && layer.Position == nil && preset != "" {
-			layer.Position = resolveLayout(definition.Layout, layer.BoxWidth, layer.BoxHeight, src.Width, src.Height)
+			layer.Position = resolveImageLayout(definition.Layout, layer.BoxWidth, layer.BoxHeight, src.Width, src.Height)
 		}
 		plan.Layers = append(plan.Layers, layer)
 		if end > plan.Canvas.DurationFrames {
@@ -1008,7 +1029,14 @@ func applyPresetDefinition(layer *Layer, d OfficialPresetDefinition) {
 		}
 		return
 	}
-	layer.Style = &LayerStyle{Font: d.Style.FontFamily, FontSize: d.Style.FontSize, Fill: rgbaHex(d.Style.Fill)}
+	font := d.Style.FontFamily
+	if layer.Style != nil && layer.Style.Font != "" {
+		// Prepared fixtures may use a workspace-relative alias (for example
+		// fonts/Poppins-Bold.ttf). Preserve it while still applying the
+		// catalog-owned visual properties.
+		font = layer.Style.Font
+	}
+	layer.Style = &LayerStyle{Font: font, FontSize: d.Style.FontSize, Fill: rgbaHex(d.Style.Fill)}
 	if d.Style.Shadow != nil {
 		s := d.Style.Shadow
 		layer.Style.Shadow = &LayerShadow{Color: s.Color, Opacity: s.Opacity, Blur: s.Blur, Offset: append([]float64(nil), s.Offset...)}

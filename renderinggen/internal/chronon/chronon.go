@@ -32,7 +32,7 @@ const DefaultStallTimeout = 3 * time.Minute
 // are already materialized under AssetsRoot, and OutputPath is where the
 // rendered file must be written.
 type RenderRequest struct {
-	PlanPath   string // path to the chronon.render-plan.v1 document (plan.json)
+	PlanPath   string // path to the render-plan document the worker wrote (plan.json)
 	AssetsRoot string // directory the plan's relative asset references resolve against
 	OutputPath string // destination of the rendered output (e.g. result.mp4)
 	// AudioSourcePath is an optional source media file whose audio stream is
@@ -43,6 +43,10 @@ type RenderRequest struct {
 	FirstFrame      int64 // optional global first frame for chunk execution
 	LastFrame       int64 // optional inclusive global last frame for chunk execution
 	Report          bool  // emit the execution report + telemetry JSONL (--report)
+	// EncodePreset is an explicit FFmpeg NVENC preset (e.g. "p2") forwarded
+	// to the chronon CLI for native GPU jobs. Empty preserves the engine
+	// default.
+	EncodePreset string
 	// Progress, when non-nil, receives a milestone snapshot every time the
 	// renderer reports a frame position. It is invoked from the output
 	// streaming goroutines and must be cheap and concurrency-safe.
@@ -343,6 +347,13 @@ func renderArgs(req RenderRequest) []string {
 			hotPath = "auto"
 		} else {
 			args = append(args, "--encoder-backend", "native")
+			if req.EncodePreset != "" {
+				// Explicit NVENC preset (e.g. "p2"): the throughput tier the
+				// worker is configured with. The native branch is the only
+				// path where the preset targets h264_nvenc; the pipe branch
+				// uses x264 vocabulary and must never receive pN presets.
+				args = append(args, "--encode-preset", req.EncodePreset)
+			}
 		}
 		args = append(args, "--gpu-hot-path-mode", hotPath)
 	} else if req.Requirements.CompositionRequired {

@@ -65,8 +65,19 @@ func TestEveryOfficialPresetCompilesAndMaterializes(t *testing.T) {
 		if err != nil || !semantic {
 			t.Fatalf("%s compile: semantic=%v err=%v", id, semantic, err)
 		}
-		if len(compiled.Layers) != 1 || (!staticSmoke && (compiled.Layers[0].Animation == nil || len(compiled.Layers[0].Animation.Tracks) == 0)) {
+		if len(compiled.Layers) != 1 {
 			t.Fatalf("%s was not materially lowered: %+v", id, compiled.Layers)
+		}
+		// Motion is materialized either as layer tracks (fades, slides,
+		// scales) or as text animators (word_reveal/character_cascade carry
+		// their per-glyph/word sweep there) — an animated preset that ships
+		// neither is the "silently static" regression.
+		if !staticSmoke {
+			layer := compiled.Layers[0]
+			hasTracks := layer.Animation != nil && len(layer.Animation.Tracks) > 0
+			if !hasTracks && len(layer.TextAnimators) == 0 {
+				t.Fatalf("%s was not materially lowered: %+v", id, layer)
+			}
 		}
 	}
 }

@@ -50,9 +50,11 @@ type AssetRef struct {
 }
 
 // Job is a unit of work in the queue: one render SEGMENT. The renderable
-// content is a chronon.render-plan.v1 document carried in RenderPlan; it
-// contains every layer of the segment (base video, phrases, keywords, images,
-// animations) so Chronon3d composes them in a single pass.
+// content carried in RenderPlan is the semantic OverlaySpec
+// (renderinggen.overlay-plan.v1, accepted by the worker's
+// overlay.CompileIfSemantic) for prepared jobs, or the concrete Chronon
+// render-plan document on precompiled paths. The worker writes plan.json and
+// Chronon3d composes every layer of the segment in a single pass.
 type Job struct {
 	ID             string      `json:"id"`
 	Schema         string      `json:"schema,omitempty"`

@@ -81,8 +81,11 @@ func TestCompileSemanticTextUsesExplicitCanvasLocalBox(t *testing.T) {
 	if len(layer.Size) != 2 || layer.Size[0] != 1920 || layer.Size[1] != 120 {
 		t.Fatalf("text local box = %#v, want [1920 120]", layer.Size)
 	}
-	if len(layer.Position) != 2 || layer.Position[0] != 0 {
-		t.Fatalf("centered text position = %#v, want x=0", layer.Position)
+	// Chronon places the text-frame centre in canvas coordinates: a
+	// full-canvas centred safe-area text frame is centred at the canvas
+	// centre (960, 540) — not an offset from it (see resolveTextLayout).
+	if len(layer.Position) != 2 || layer.Position[0] != 960 || layer.Position[1] != 540 {
+		t.Fatalf("centered text position = %#v, want [960 540]", layer.Position)
 	}
 	if len(layer.TextAnimators) != 1 || layer.TextAnimators[0].Selectors[0].Unit != "glyph" {
 		t.Fatalf("ABC selector fixture was not transported: %#v", layer.TextAnimators)
@@ -259,7 +262,11 @@ func TestCompileIfSemanticImportantPhraseAndNamedImage(t *testing.T) {
 	if compiled.Layers[1].Animation == nil || len(compiled.Layers[1].Animation.Tracks) == 0 {
 		t.Fatalf("entity image must carry image preset animation = %+v", compiled.Layers[1].Animation)
 	}
-	if len(compiled.Layers[1].Position) != 2 || compiled.Layers[1].Position[0] != 0 {
+	// Chronon places image frames by centre offset from the canvas centre
+	// (see resolveImageLayout): the 260px image_left card is flush with the
+	// left edge, so its centre sits at -(canvasW-boxW)/2 = -510 on a 1280
+	// canvas. A zero offset would mean the image is centred.
+	if len(compiled.Layers[1].Position) != 2 || compiled.Layers[1].Position[0] != -510 {
 		t.Fatalf("entity image must use image preset layout = %+v", compiled.Layers[1].Position)
 	}
 	if compiled.Layers[2].Text != "Matt Damon" {

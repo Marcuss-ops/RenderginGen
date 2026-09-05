@@ -10,12 +10,13 @@ import (
 // Supported types: "text" | "image"
 // Supported animations: "fade" | "slide" | "scale" | "static"
 type FastEntityOverlay struct {
-	Type       string  `json:"type"`               // "text" | "image"
-	StartFrame int64   `json:"start_frame"`        // inclusive start frame
-	EndFrame   int64   `json:"end_frame"`          // exclusive end frame
-	Position   string  `json:"position,omitempty"` // anchor / preset position ("lower_third", "center", "safe_area", "image_left", "image_right")
-	Size       float64 `json:"size,omitempty"`     // font size for text, or box size for image
-	Opacity    float64 `json:"opacity,omitempty"`  // alpha [0.0, 1.0] (default 1.0)
+	Type       string  `json:"type"`                // "text" | "image"
+	PresetID   string  `json:"preset_id,omitempty"` // official catalog preset; used by certification/fast adapters
+	StartFrame int64   `json:"start_frame"`         // inclusive start frame
+	EndFrame   int64   `json:"end_frame"`           // exclusive end frame
+	Position   string  `json:"position,omitempty"`  // anchor / preset position ("lower_third", "center", "safe_area", "image_left", "image_right")
+	Size       float64 `json:"size,omitempty"`      // font size for text, or box size for image
+	Opacity    float64 `json:"opacity,omitempty"`   // alpha [0.0, 1.0] (default 1.0)
 	// OpacityExplicit distinguishes an intentional zero from the legacy
 	// zero-value meaning "use the default". It is not serialized into plans.
 	OpacityExplicit *float64  `json:"-"`
@@ -173,12 +174,39 @@ func CompileFastEntityOverlays(
 			animationName = "static"
 		}
 		var layerAnim *LayerAnimation
+		var presetTextAnimators []TextAnimator
 		if animationName != "static" {
 			anim, animErr := fastEntityAnimation(animationName, duration)
 			if animErr != nil {
 				return nil, animErr
 			}
 			layerAnim = anim
+		}
+		var preset OfficialPresetDefinition
+		if strings.TrimSpace(ov.PresetID) != "" {
+			family := strings.ToLower(strings.TrimSpace(ov.Type))
+			preset, err = resolveOfficialPreset(ov.PresetID, family)
+			if err != nil {
+				return nil, err
+			}
+			layerAnim, err = animationForPreset(preset, ov.Text, duration)
+			if err != nil {
+				return nil, err
+			}
+			if layerAnim != nil && len(layerAnim.Tracks) == 0 {
+				// Chronon's schema requires a non-empty `tracks` array when the
+				// layer animation object is present. Text-only motion is carried
+				// by the layer-level text_animators field instead.
+				presetTextAnimators = layerAnim.TextAnimators
+				layerAnim = nil
+			}
+			if preset.Family == PresetImage && layerAnim != nil {
+				// Chronon's current image primitive composites an opaque black
+				// surface whenever a primitive animation track is attached. Keep
+				// the asset/placement valid and static until that engine path is
+				// fixed; a clean image is preferable to a corrupted card.
+				layerAnim = nil
+			}
 		}
 
 		switch strings.ToLower(strings.TrimSpace(ov.Type)) {
@@ -187,6 +215,14 @@ func CompileFastEntityOverlays(
 				return nil, fmt.Errorf("entity_contract: overlay %d (image) requires asset path", i)
 			}
 			boxWidth, boxHeight := 260, 260
+			if preset.Family == PresetImage {
+				if preset.Layout.BoxWidth > 0 {
+					boxWidth = preset.Layout.BoxWidth
+				}
+				if preset.Layout.BoxHeight > 0 {
+					boxHeight = preset.Layout.BoxHeight
+				}
+			}
 			if ov.Size > 0 {
 				boxWidth = int(ov.Size)
 				boxHeight = int(ov.Size)
@@ -195,6 +231,24 @@ func CompileFastEntityOverlays(
 				}
 			}
 			pos := ov.Position
+			if preset.Family == PresetImage {
+				resolved := resolveImageLayout(preset.Layout, boxWidth, boxHeight, width, height)
+				posX, posY := resolved[0], resolved[1]
+				if len(ov.Translate) == 2 {
+					posX += ov.Translate[0]
+					posY += ov.Translate[1]
+				}
+				imgLayer := Layer{ID: layerID, Type: "image", Asset: ov.Asset,
+					BoxWidth: boxWidth, BoxHeight: boxHeight,
+					Size: []float64{float64(boxWidth), float64(boxHeight)}, Fit: preset.Layout.Fit,
+					Position: []float64{posX, posY}, StartFrame: ov.StartFrame,
+					DurationFrames: duration, Opacity: opacity, Animation: layerAnim}
+				if imgLayer.Fit == "" {
+					imgLayer.Fit = "contain"
+				}
+				plan.Layers = append(plan.Layers, imgLayer)
+				continue
+			}
 			if pos == "" {
 				pos = "center"
 			}
@@ -259,6 +313,12 @@ func CompileFastEntityOverlays(
 				DurationFrames: duration,
 				Opacity:        opacity,
 				Animation:      layerAnim,
+			}
+			if preset.Family == PresetText {
+				applyPresetDefinition(&txtLayer, preset)
+				txtLayer.Size = []float64{float64(width), 120}
+				txtLayer.Position = resolveTextLayout(preset.Layout, width, 120, width, height)
+				txtLayer.TextAnimators = presetTextAnimators
 			}
 			if len(ov.Translate) == 2 {
 				txtLayer.Position = []float64{ov.Translate[0], ov.Translate[1]}

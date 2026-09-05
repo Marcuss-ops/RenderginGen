@@ -74,6 +74,39 @@ func tracksForMotion(m MotionDefinition) ([]AnimationTrack, error) {
 	return resolveMotion(m)
 }
 
+// animationForPreset is the shared lowering path for the official catalog.
+// The legacy fast adapter used to copy only the layer tracks, which silently
+// discarded word/glyph selectors and made several distinct presets render as
+// the same fade. Keep the preset's layer tracks and text animators together.
+func animationForPreset(d OfficialPresetDefinition, text string, duration int64) (*LayerAnimation, error) {
+	if d.Motion.ID == "" && d.Motion.Name == "" {
+		return nil, nil
+	}
+	animation, err := animationForDefinition(d)
+	if err != nil {
+		return nil, err
+	}
+	if animation == nil {
+		animation = &LayerAnimation{}
+	}
+	pluginID := d.Motion.ID
+	if pluginID == "" {
+		pluginID = d.Motion.Name
+	}
+	plugin, err := motion.Registry.Resolve(pluginID)
+	if err != nil {
+		return nil, fmt.Errorf("overlay: resolve preset motion %q: %w", pluginID, err)
+	}
+	if textPlugin, ok := plugin.(motion.TextMotionPlugin); ok {
+		definitions, err := textPlugin.CompileText(motion.MotionContext{Text: text, DurationFrames: duration}, nil)
+		if err != nil {
+			return nil, fmt.Errorf("overlay: compile preset text motion %q: %w", pluginID, err)
+		}
+		animation.TextAnimators = fromTextMotionDefinitions(definitions, duration)
+	}
+	return animation, nil
+}
+
 func fromMotionTracks(src []motion.AnimationTrack) []AnimationTrack {
 	tracks := make([]AnimationTrack, len(src))
 	for i, t := range src {
@@ -157,6 +190,34 @@ func resolveLayout(l PresetLayout, boxWidth, boxHeight, canvasWidth, canvasHeigh
 	// let generic text alignment override an image anchor.
 	if l.Alignment == "center" && l.Anchor != "image_left" && l.Anchor != "image_right" && l.Anchor != "bottom_right" {
 		x = (float64(canvasWidth) - float64(boxWidth)) / 2
+	}
+	return []float64{x, y}
+}
+
+// Chronon positions image layers around the composition center, while the
+// preset/layout contract uses top-left canvas coordinates. Keep text on the
+// existing top-left contract and translate only image cards here.
+func resolveImageLayout(l PresetLayout, boxWidth, boxHeight, canvasWidth, canvasHeight int) []float64 {
+	pos := resolveLayout(l, boxWidth, boxHeight, canvasWidth, canvasHeight)
+	return []float64{
+		pos[0] + float64(boxWidth)/2 - float64(canvasWidth)/2,
+		pos[1] + float64(boxHeight)/2 - float64(canvasHeight)/2,
+	}
+}
+
+// Chronon's text-run layer position is the center of the text frame in
+// canvas coordinates. The old lowering passed top-left layout coordinates,
+// which clipped text against the left/top edges. Keep text placement explicit
+// and independent from image-card placement.
+func resolveTextLayout(l PresetLayout, boxWidth, boxHeight, canvasWidth, canvasHeight int) []float64 {
+	x, y := float64(canvasWidth)/2, float64(canvasHeight)/2
+	switch l.Anchor {
+	case "lower_third":
+		x, y = 0.24*float64(canvasWidth), 0.78*float64(canvasHeight)
+	case "safe_area":
+		x, y = float64(canvasWidth)/2, 0.50*float64(canvasHeight)
+	case "center":
+		x, y = float64(canvasWidth)/2, float64(canvasHeight)/2
 	}
 	return []float64{x, y}
 }

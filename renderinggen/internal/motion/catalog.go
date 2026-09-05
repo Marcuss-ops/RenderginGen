@@ -6,6 +6,7 @@ func init() {
 		LegacyDefinition("fade_in", "layer", 48, 8),
 		LegacyDefinition("reveal_from_bottom", "layer", 48, 6),
 		LegacyDefinition("slide_in", "layer", 48, 6),
+		LegacyDefinition("slide_from_right", "layer", 48, 6),
 		LegacyDefinition("scale_drop", "layer", 48, 6),
 		LegacyDefinition("soft_pop", "layer", 48, 6),
 		LegacyDefinition("focus_in", "layer", 48, 6),

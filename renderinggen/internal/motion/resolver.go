@@ -48,6 +48,8 @@ func LegacyDefinition(name, unit string, enter, exit int) MotionDefinition {
 		property, start, end = "position_y", 40.0, 0.0
 	case "slide_in", "slide_left":
 		property, start, end = "position_x", -40.0, 0.0
+	case "slide_from_right":
+		property, start, end = "position_x", 40.0, 0.0
 	case "slide_down":
 		property, start, end = "position_y", -40.0, 0.0
 	case "slide_right":

@@ -78,6 +78,49 @@ func TestRenderArgsResolvesGPURequirementAtAdapterBoundary(t *testing.T) {
 	}
 }
 
+func TestRenderArgsForwardsEncodePresetOnNativeVideoPath(t *testing.T) {
+	got := renderArgs(RenderRequest{
+		PlanPath:     "/jobs/1/plan.json",
+		AssetsRoot:   "/jobs/1/assets",
+		OutputPath:   "/jobs/1/output/result.mp4",
+		EncodePreset: "p2",
+		Requirements: ExecutionRequirements{
+			GPURequired: true, CPUFallbackAllowed: false,
+			CompositionRequired: true, VideoSourceRequired: true, PacketCopyAllowed: true,
+		},
+	})
+	joined := strings.Join(got, " ")
+	for _, want := range []string{
+		"--hardware nvenc",
+		"--encoder-backend native",
+		"--gpu-hot-path-mode require_direct_yuv",
+		"--encode-preset p2",
+	} {
+		if !strings.Contains(joined, want) {
+			t.Fatalf("renderArgs=%q, want to contain %q", joined, want)
+		}
+	}
+}
+
+func TestRenderArgsOmitsEncodePresetOnPipePath(t *testing.T) {
+	// The pipe branch targets x264 vocabulary; a pN NVENC preset must never
+	// be forwarded there.
+	got := renderArgs(RenderRequest{
+		PlanPath:     "/jobs/1/plan.json",
+		AssetsRoot:   "/jobs/1/assets",
+		OutputPath:   "/jobs/1/output/result.mp4",
+		EncodePreset: "p2",
+		Requirements: ExecutionRequirements{
+			GPURequired: true, CPUFallbackAllowed: false,
+			CompositionRequired: true, VideoSourceRequired: false, PacketCopyAllowed: true,
+		},
+	})
+	joined := strings.Join(got, " ")
+	if strings.Contains(joined, "--encode-preset") {
+		t.Fatalf("renderArgs=%q must not forward encode preset on the pipe path", joined)
+	}
+}
+
 func TestRenderArgsHonorsSoftwareBackendForComposition(t *testing.T) {
 	args := renderArgs(RenderRequest{
 		PlanPath: "/jobs/1/plan.json", AssetsRoot: "/jobs/1/assets", OutputPath: "/jobs/1/output/result.mp4",
