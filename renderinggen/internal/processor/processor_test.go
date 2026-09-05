@@ -17,6 +17,7 @@ import (
 	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/overlay"
 	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/queue"
 	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/storage"
+	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/workspace"
 )
 
 // videoHash is the real SHA-256 of "video-bytes": the semantic compiler
@@ -165,6 +166,53 @@ func TestProcessFullPipeline(t *testing.T) {
 	// Workspace was cleaned up.
 	if _, err := os.Stat(renderer.req.AssetsRoot); !os.IsNotExist(err) {
 		t.Fatalf("workspace not cleaned up, stat err = %v", err)
+	}
+}
+
+// TestPrepareJobFailsClosedWhenLeaseCannotBeEstablished pins the workspace
+// liveness invariant: the initial .lease_until marker is what keeps
+// CleanupStale from sweeping an active workspace. If WriteLease fails at
+// prepare time the job must fail closed (and clean its workspace) instead of
+// proceeding without the marker — the previous behavior only logged the
+// error and rendered anyway, leaving the live workspace sweepable.
+func TestPrepareJobFailsClosedWhenLeaseCannotBeEstablished(t *testing.T) {
+	if os.Geteuid() == 0 {
+		t.Skip("permission-based test; root bypasses file mode checks")
+	}
+	proc, store, _ := newProcessor(t)
+	// Make the whole temp jobs tree readable so the chmod below only needs to
+	// tighten the specific job directory.
+	if err := os.Chmod(proc.jobsRoot, 0o755); err != nil {
+		t.Fatalf("chmod jobs root: %v", err)
+	}
+	if err := store.Put(context.Background(), videoHash, []byte("video-bytes")); err != nil {
+		t.Fatalf("put asset: %v", err)
+	}
+	job := validJob()
+
+	// Make WriteLease fail deterministically: pre-create the job workspace and
+	// place a non-empty DIRECTORY at .lease_until, so the marker write hits
+	// ENOTDIR/EISDIR no matter the process umask or uid. The workspace tree
+	// stays writable, so the fail-closed Cleanup() can still remove it.
+	jobDir := filepath.Join(proc.jobsRoot, job.ID)
+	if _, err := workspace.New(proc.jobsRoot, job.ID); err != nil {
+		t.Fatalf("seed workspace: %v", err)
+	}
+	if err := os.MkdirAll(filepath.Join(jobDir, ".lease_until", "occupied"), 0o755); err != nil {
+		t.Fatalf("plant blocking .lease_until dir: %v", err)
+	}
+
+	prepared, err := proc.PrepareJob(context.Background(), job)
+	if err == nil {
+		prepared.Workspace.Cleanup()
+		t.Fatal("PrepareJob must fail when the workspace lease cannot be established")
+	}
+	if !strings.Contains(err.Error(), "establish workspace lease") {
+		t.Fatalf("error = %v, want a workspace-lease failure", err)
+	}
+	// The job failed closed: its workspace must not linger under jobsRoot.
+	if _, statErr := os.Stat(jobDir); !os.IsNotExist(statErr) {
+		t.Fatalf("workspace not cleaned up after lease failure, stat err = %v", statErr)
 	}
 }
 

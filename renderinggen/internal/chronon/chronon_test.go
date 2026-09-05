@@ -78,6 +78,26 @@ func TestRenderArgsResolvesGPURequirementAtAdapterBoundary(t *testing.T) {
 	}
 }
 
+func TestValidateEncodePresetAcceptance(t *testing.T) {
+	// Empty preserves the engine default; every NVENC tier preset is valid.
+	valid := append([]string{""}, ValidEncodePresets...)
+	for _, preset := range valid {
+		if err := ValidateEncodePreset(preset); err != nil {
+			t.Fatalf("ValidateEncodePreset(%q) = %v, want nil", preset, err)
+		}
+	}
+}
+
+func TestValidateEncodePresetRejectsUnknownVocabulary(t *testing.T) {
+	// The worker exposes only the p1..p7 NVENC tier; x264 names, legacy NVENC
+	// aliases and typos must fail closed at config load.
+	for _, preset := range []string{"banana", "fast", "slow", "medium", "hq", "llhq", "p0", "p8", "P2", "p2 ", " default"} {
+		if err := ValidateEncodePreset(preset); err == nil {
+			t.Fatalf("ValidateEncodePreset(%q) = nil, want error", preset)
+		}
+	}
+}
+
 func TestRenderArgsForwardsEncodePresetOnNativeVideoPath(t *testing.T) {
 	got := renderArgs(RenderRequest{
 		PlanPath:     "/jobs/1/plan.json",
