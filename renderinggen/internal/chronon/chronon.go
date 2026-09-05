@@ -27,6 +27,31 @@ import (
 // output or progress before being considered stalled.
 const DefaultStallTimeout = 3 * time.Minute
 
+// NVENC presets accepted by RenderingGen's encode_preset configuration.
+// These are the worker's curated throughput/quality tier for h264_nvenc
+// (Chronon's native encoder backend). The engine itself additionally accepts
+// FFmpeg-style aliases such as "slow"/"medium"/"fast" and legacy NVENC
+// names ("hq", "llhq", ...), but the worker contract deliberately exposes
+// only the p1..p7 tier so a typo fails at config load, not on the first job.
+var ValidEncodePresets = []string{"p1", "p2", "p3", "p4", "p5", "p6", "p7"}
+
+// ValidateEncodePreset checks an encode_preset value against the worker's
+// NVENC whitelist. Empty is valid (preserve the engine default). The check
+// lives once in the chronon package — the same place that forwards the value
+// to the CLI — so config validation and any future callers share one
+// vocabulary instead of maintaining parallel switch statements.
+func ValidateEncodePreset(preset string) error {
+	if preset == "" {
+		return nil
+	}
+	for _, candidate := range ValidEncodePresets {
+		if preset == candidate {
+			return nil
+		}
+	}
+	return fmt.Errorf("chronon.encode_preset must be one of %v or empty (engine default), got %q", ValidEncodePresets, preset)
+}
+
 // RenderRequest is the renderable contract between RenderingGen and a
 // Chronon3d backend. The render plan is already on disk (plan.json), assets
 // are already materialized under AssetsRoot, and OutputPath is where the

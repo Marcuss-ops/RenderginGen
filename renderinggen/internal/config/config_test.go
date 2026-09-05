@@ -192,6 +192,42 @@ artifact_store:
 	}
 }
 
+func TestLoadAcceptsValidEncodePreset(t *testing.T) {
+	for _, preset := range []string{"p1", "p2", "p3", "p4", "p5", "p6", "p7"} {
+		path := writeConfig(t, `
+queue:
+  endpoint: http://queue:8081
+artifact_store:
+  endpoint: http://store:9000
+chronon:
+  encode_preset: `+preset+`
+`)
+		cfg, err := Load(path)
+		if err != nil {
+			t.Fatalf("encode_preset=%q: load: %v", preset, err)
+		}
+		if cfg.Chronon.EncodePreset != preset {
+			t.Fatalf("encode_preset = %q, want %q", cfg.Chronon.EncodePreset, preset)
+		}
+	}
+}
+
+func TestLoadRejectsInvalidEncodePreset(t *testing.T) {
+	for _, preset := range []string{"banana", "fast", "slow", "hq", "p0", "p8"} {
+		path := writeConfig(t, `
+queue:
+  endpoint: http://queue:8081
+artifact_store:
+  endpoint: http://store:9000
+chronon:
+  encode_preset: `+preset+`
+`)
+		if _, err := Load(path); err == nil {
+			t.Fatalf("encode_preset=%q: expected validation error, got nil", preset)
+		}
+	}
+}
+
 func TestLoadMissingQueueEndpoint(t *testing.T) {
 	path := writeConfig(t, `
 artifact_store:

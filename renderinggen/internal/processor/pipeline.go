@@ -136,7 +136,14 @@ func (p *Processor) PrepareJob(ctx context.Context, job *queue.Job) (*PreparedJo
 	// refreshed by the GPU lane for the whole RunGPU stage. Without a valid
 	// marker, CleanupStale would RemoveAll a live job's directory.
 	if err := ws.WriteLease(time.Now().Add(2 * time.Hour)); err != nil {
-		log.Printf("job %s: write workspace lease marker: %v", job.ID, err)
+		// Fail closed: without the initial marker CleanupStale would treat an
+		// active workspace as sweepable (its mtime can predate the sweeper
+		// horizon while materialization or the GPU lane is still running), so
+		// the liveness invariant must hold from the moment the workspace
+		// exists. Occasional refresh failures during RunGPU stay tolerable
+		// (the 2h TTL covers them); the missing first marker is not.
+		_ = ws.Cleanup()
+		return nil, fmt.Errorf("processor: establish workspace lease for %s: %w", job.ID, err)
 	}
 	// inputBytes is the materialized input size, summed single-threaded
 	// AFTER MaterializePaths completes from the on-disk files — race-free by

@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/chronon"
 	"gopkg.in/yaml.v3"
 )
 
@@ -198,6 +199,12 @@ func (c *Config) validate() error {
 	}
 	if c.Chronon.Mode == "ipc" && c.Chronon.SocketPath == "" {
 		return fmt.Errorf("chronon mode=ipc requires chronon.socket_path")
+	}
+	// encode_preset reaches the native NVENC encoder as --encode-preset, so a
+	// mistyped preset must fail at config load instead of on the first GPU
+	// job. Empty is valid and preserves the engine default.
+	if err := chronon.ValidateEncodePreset(c.Chronon.EncodePreset); err != nil {
+		return err
 	}
 	if c.Queue.Endpoint == "" {
 		return fmt.Errorf("queue.endpoint is required")
