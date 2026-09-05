@@ -10,10 +10,10 @@ import (
 	_ "modernc.org/sqlite"
 )
 
-// SQLiteRecorder persists ArtifactRecords in a local SQLite ledger. It uses
+// SQLiteRecorder persists ArtifactRecords in a local diagnostic mirror. It uses
 // the pure-Go modernc.org/sqlite driver so the worker keeps building with
 // CGO_ENABLED=0 (see infra/docker/renderinggen-worker.Dockerfile). The schema
-// mirrors the ArtifactRecord SSOT; records are upserted by job ID so a
+// mirrors central artifact metadata; records are upserted by job ID so a
 // publication retry never duplicates a render's ledger entry.
 type SQLiteRecorder struct {
 	db *sql.DB
@@ -26,8 +26,7 @@ type SQLiteRecorder struct {
 // journaling and a busy_timeout so concurrent writers wait instead of failing
 // with "database is locked" (modernc.org/sqlite defaults to busy_timeout=0,
 // which fails immediately), and the pool is capped at one connection so all
-// writes serialize on a single session — a failed ledger write fails the job,
-// so a spurious lock error must never be possible.
+// writes serialize on a single session.
 func NewSQLite(path string) (*SQLiteRecorder, error) {
 	dsn := "file:" + path + "?_pragma=busy_timeout(10000)&_pragma=journal_mode(WAL)&_pragma=synchronous(NORMAL)&_pragma=foreign_keys(ON)"
 	db, err := sql.Open("sqlite", dsn)
@@ -185,4 +184,3 @@ ON CONFLICT(job_id) DO UPDATE SET
   output_bytes=excluded.output_bytes,
   chronon_telemetry=excluded.chronon_telemetry,
   created_at=excluded.created_at;`
-

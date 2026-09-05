@@ -25,6 +25,11 @@ type Config struct {
 type WorkerConfig struct {
 	ID              string `yaml:"id"`
 	PipelineWorkers int    `yaml:"pipeline_workers"`
+	// GPULanes bounds how many Chronon render sessions the worker may run
+	// concurrently (each lane renders one queue job at a time). The Chronon
+	// daemon IPC must accept concurrent RENDER_JOB sessions for lanes > 1 to
+	// add throughput; the default matches the NVENC multi-session baseline.
+	GPULanes int `yaml:"gpu_lanes"`
 }
 
 type QueueConfig struct {
@@ -83,14 +88,13 @@ type DriveConfig struct {
 	MockFailFirst int    `yaml:"mock_fail_first"` // fail the first N uploads
 }
 
-// ArtifactDBConfig configures the artifact ledger (the "DB artifact" step).
+// ArtifactDBConfig configures the optional worker-local artifact mirror.
 // When Path is set, every rendered job writes one ArtifactRecord to a local
-// SQLite ledger after the object store accepts the bytes; empty disables the
-// ledger (the default). The ledger is the source of truth for what the
-// pipeline produced: hash, probe facts, semantic counters and per-phase
-// metrics.
+// SQLite mirror after the object store accepts the bytes; empty disables the
+// mirror (the default). Central queue PostgreSQL is authoritative for the
+// artifact, hash, probe facts and metrics.
 type ArtifactDBConfig struct {
-	Path string `yaml:"path"` // SQLite ledger file; empty = ledger disabled
+	Path string `yaml:"path"` // SQLite mirror file; empty = mirror disabled
 }
 
 // Load reads the YAML config file at path, applies defaults and validates it.
@@ -136,9 +140,13 @@ func applyDefaults(c *Config) {
 		c.Worker.ID = "renderinggen-" + hostname()
 	}
 	// Multiple pipeline workers overlap CPU/I/O preparation and post-processing.
-	// Chronon itself remains serialized by Processor's single GPU lane.
 	if c.Worker.PipelineWorkers <= 0 {
 		c.Worker.PipelineWorkers = 3
+	}
+	// Two GPU lanes match the NVENC multi-session baseline on RTX A4000-class
+	// hosts; the pipeline pools keep CPU work behind both lanes.
+	if c.Worker.GPULanes <= 0 {
+		c.Worker.GPULanes = 2
 	}
 	if c.Chronon.Backend == "" {
 		c.Chronon.Backend = "software"
@@ -169,6 +177,9 @@ func applyDefaults(c *Config) {
 func (c *Config) validate() error {
 	if c.Worker.PipelineWorkers < 1 || c.Worker.PipelineWorkers > 16 {
 		return fmt.Errorf("worker.pipeline_workers must be between 1 and 16")
+	}
+	if c.Worker.GPULanes < 1 || c.Worker.GPULanes > 8 {
+		return fmt.Errorf("worker.gpu_lanes must be between 1 and 8")
 	}
 	if c.Chronon.Profile != "" && c.Chronon.Profile != "gpu-vulkan-native" && c.Chronon.Profile != "software-cli" {
 		return fmt.Errorf("chronon.profile must be gpu-vulkan-native or software-cli")

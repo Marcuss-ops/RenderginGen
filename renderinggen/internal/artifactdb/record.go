@@ -1,6 +1,5 @@
-// Package artifactdb is the worker's artifact ledger: after Chronon renders
-// and the object store holds the bytes, one ArtifactRecord is written here so
-// the system can answer "what did job X produce?" without probing storage.
+// Package artifactdb is an optional worker-local artifact mirror. Central
+// PostgreSQL is the production source of truth; this database is diagnostic.
 // The record carries the render provenance, the probed media facts and the
 // plan section "DB metrics" (overlay counts, preset, per-phase microseconds,
 // input/output bytes). The recorder is an interface so the worker stays
@@ -13,21 +12,19 @@ import (
 	"time"
 )
 
-// ArtifactRecord is the SSOT of one rendered artifact. Every field is written
-// by the worker from facts it observed (hash it computed, probe it ran, plan
-// it compiled); nothing is inferred by the reader.
+// ArtifactRecord is a local diagnostic snapshot of one rendered artifact.
 type ArtifactRecord struct {
 	JobID string
 	// ArtifactHash is the SHA-256 of the rendered bytes; StorageKey is the
 	// object-store key they were published under. The pipeline invariant is
 	// local_sha == objectstore_sha == db_sha (plan section "Drive").
-	ArtifactHash string
-	StorageKey   string
-	SizeBytes    int64 // output bytes, == len(rendered mp4)
-	ContentType  string
-	Backend      string
+	ArtifactHash   string
+	StorageKey     string
+	SizeBytes      int64 // output bytes, == len(rendered mp4)
+	ContentType    string
+	Backend        string
 	ChrononVersion string
-	ProfileID    string
+	ProfileID      string
 
 	// Probe facts (from ffprobe, never from the plan).
 	Container          string
@@ -80,25 +77,25 @@ type ArtifactRecord struct {
 // record layout.
 func (r ArtifactRecord) Metrics() map[string]float64 {
 	return map[string]float64{
-		"entity_count":         float64(r.EntityCount),
+		"entity_count":           float64(r.EntityCount),
 		"important_phrase_count": float64(r.ImportantPhraseCnt),
-		"important_word_count": float64(r.ImportantWordCnt),
-		"image_count":          float64(r.ImageCount),
-		"light_leak_count":     float64(r.LightLeakCount),
-		"overlay_compile_us":   float64(r.OverlayCompileUS),
-		"asset_materialize_us": float64(r.AssetMaterializeUS),
-		"chronon_render_us":    float64(r.ChrononRenderUS),
-		"encode_us":            float64(r.EncodeUS),
-		"sha256_us":            float64(r.SHA256US),
-		"objectstore_upload_us": float64(r.ObjectStoreUploadUS),
-		"drive_upload_us":      float64(r.DriveUploadUS),
-		"total_us":             float64(r.TotalUS),
-		"input_bytes":          float64(r.InputBytes),
-		"output_bytes":         float64(r.OutputBytes),
-		"frame_count":          float64(r.FrameCount),
-		"duration_us":          float64(r.DurationUS),
-		"width":                float64(r.Width),
-		"height":               float64(r.Height),
-		"fps":                  float64(r.FPSNum) / float64(r.FPSDen),
+		"important_word_count":   float64(r.ImportantWordCnt),
+		"image_count":            float64(r.ImageCount),
+		"light_leak_count":       float64(r.LightLeakCount),
+		"overlay_compile_us":     float64(r.OverlayCompileUS),
+		"asset_materialize_us":   float64(r.AssetMaterializeUS),
+		"chronon_render_us":      float64(r.ChrononRenderUS),
+		"encode_us":              float64(r.EncodeUS),
+		"sha256_us":              float64(r.SHA256US),
+		"objectstore_upload_us":  float64(r.ObjectStoreUploadUS),
+		"drive_upload_us":        float64(r.DriveUploadUS),
+		"total_us":               float64(r.TotalUS),
+		"input_bytes":            float64(r.InputBytes),
+		"output_bytes":           float64(r.OutputBytes),
+		"frame_count":            float64(r.FrameCount),
+		"duration_us":            float64(r.DurationUS),
+		"width":                  float64(r.Width),
+		"height":                 float64(r.Height),
+		"fps":                    float64(r.FPSNum) / float64(r.FPSDen),
 	}
 }

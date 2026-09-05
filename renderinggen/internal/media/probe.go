@@ -114,6 +114,21 @@ func ProbeFile(ctx context.Context, path string) (ProbeResult, error) {
 	return result, nil
 }
 
+// ValidateDecoded performs a complete decode pass. ffprobe validates container
+// metadata, but it can still accept an MP4 whose H.264 packets are truncated
+// or malformed. A render is not publishable until FFmpeg consumes every frame.
+func ValidateDecoded(ctx context.Context, path string) error {
+	cmd := exec.CommandContext(ctx, "ffmpeg", "-v", "error", "-i", path, "-map", "0:v:0", "-f", "null", "-")
+	if out, err := cmd.CombinedOutput(); err != nil {
+		message := strings.TrimSpace(string(out))
+		if message == "" {
+			return fmt.Errorf("full decode %s: %w", path, err)
+		}
+		return fmt.Errorf("full decode %s: %w: %s", path, err, message)
+	}
+	return nil
+}
+
 // ValidateOverlay enforces the overlay media contract. Overlays are video
 // artifacts with no audio; every other invariant is checked against the
 // requested canvas and a positive probed duration.

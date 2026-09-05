@@ -10,6 +10,19 @@ import (
 	"github.com/Marcuss-ops/RenderginGen/queue/internal/repository"
 )
 
+func TestMetricUnitUsesMetricSemantics(t *testing.T) {
+	cases := map[string]string{
+		"sha256_us": "us", "render_ms": "ms", "output_bytes": "bytes",
+		"chronon_gpu_vram_peak_mb": "mb", "fps": "fps", "cache_hit_ratio": "ratio",
+		"frame_count": "count",
+	}
+	for name, want := range cases {
+		if got := metricUnit(name); got != want {
+			t.Errorf("metricUnit(%q)=%q, want %q", name, got, want)
+		}
+	}
+}
+
 func TestArtifactPersistedOnComplete(t *testing.T) {
 	r, db := setupRepo(t, 30*time.Second, 3)
 	if err := r.Submit(model.Job{ID: "job-1"}); err != nil {

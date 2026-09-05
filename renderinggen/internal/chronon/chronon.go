@@ -65,11 +65,14 @@ type RenderProgress struct {
 }
 
 type ExecutionRequirements struct {
-	GPURequired         bool `json:"gpu_required"`
-	CPUFallbackAllowed  bool `json:"cpu_fallback_allowed"`
-	CompositionRequired bool `json:"composition_required"`
-	VideoSourceRequired bool `json:"video_source_required"`
-	PacketCopyAllowed   bool `json:"packet_copy_allowed"`
+	// Backend is the configured Chronon implementation. Empty preserves the
+	// historical auto-selection behavior for callers that do not choose one.
+	Backend             string `json:"backend,omitempty"`
+	GPURequired         bool   `json:"gpu_required"`
+	CPUFallbackAllowed  bool   `json:"cpu_fallback_allowed"`
+	CompositionRequired bool   `json:"composition_required"`
+	VideoSourceRequired bool   `json:"video_source_required"`
+	PacketCopyAllowed   bool   `json:"packet_copy_allowed"`
 }
 
 type OutputSpec struct {
@@ -303,8 +306,11 @@ func renderArgs(req RenderRequest) []string {
 	// Backend selection is an implementation detail of the CLI adapter. The
 	// public request carries only semantic requirements; Chronon chooses the
 	// concrete backend at this boundary.
-	backend := "auto"
-	if req.Requirements.GPURequired || req.Requirements.CompositionRequired {
+	backend := req.Requirements.Backend
+	if backend == "" {
+		backend = "auto"
+	}
+	if backend == "auto" && (req.Requirements.GPURequired || req.Requirements.CompositionRequired) {
 		backend = "vulkan"
 	}
 	args := []string{

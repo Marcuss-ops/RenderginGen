@@ -832,6 +832,7 @@ func (p *Processor) storeArtifact(ctx context.Context, jobID, outputPath string,
 		log.Printf("job %s: chronon timing sidecar unavailable: %v", jobID, err)
 	} else {
 		chrononTelemetry = raw
+		artifact.ChrononTelemetry = raw
 		mergeChrononNumericMetrics(phaseMetrics, raw)
 	}
 	if err := p.recordArtifact(ctx, jobID, artifact, probe, stats, inputBytes, chrononTelemetry); err != nil {
@@ -870,11 +871,8 @@ func mergeChrononNumericMetrics(dst map[string]float64, raw json.RawMessage) {
 	walk("", value)
 }
 
-// recordArtifact writes the artifact ledger row (the plan's "DB artifact"
-// step). The record carries the content hash, the probe facts, the semantic
-// counters from the compiled plan and the per-phase microsecond metrics. A
-// configured recorder failing fails the job: the ledger is the source of
-// truth for what the pipeline produced.
+// recordArtifact writes an optional worker-local diagnostic mirror. PostgreSQL
+// queue completion remains authoritative, so mirror failures are non-fatal.
 func (p *Processor) recordArtifact(ctx context.Context, jobID string, artifact queue.Artifact, probe *media.ProbeResult, stats overlay.Stats, inputBytes int64, chrononTelemetry json.RawMessage) error {
 	if p.recorder == nil {
 		return nil
@@ -935,7 +933,7 @@ func (p *Processor) recordArtifact(ctx context.Context, jobID string, artifact q
 		rec.TotalUS = int64(m)
 	}
 	if err := p.recorder.Record(ctx, rec); err != nil {
-		return fmt.Errorf("processor: artifact ledger %s: %w", jobID, err)
+		log.Printf("processor: artifact diagnostic mirror %s unavailable: %v", jobID, err)
 	}
 	return nil
 }

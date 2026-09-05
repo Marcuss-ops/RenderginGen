@@ -117,9 +117,10 @@ func main() {
 			chrononVersion = cli.Version()
 		}
 	}
-	// CPU/I/O stages execute concurrently, and the renderer is allowed up to 2
-	// concurrent GPU sessions on RTX A4000 (NVENC multi-session enabled).
-	gpuLanes := 2
+	// CPU/I/O stages execute concurrently, and the renderer is allowed up to
+	// cfg.Worker.GPULanes concurrent GPU sessions (the config default of 2
+	// matches the NVENC multi-session baseline on RTX A4000-class hosts).
+	gpuLanes := cfg.Worker.GPULanes
 	renderer = chronon.LimitConcurrency(renderer, gpuLanes)
 
 	// 3. Connect queue + storage.

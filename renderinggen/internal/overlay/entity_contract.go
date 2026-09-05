@@ -10,19 +10,22 @@ import (
 // Supported types: "text" | "image"
 // Supported animations: "fade" | "slide" | "scale" | "static"
 type FastEntityOverlay struct {
-	Type       string    `json:"type"`                // "text" | "image"
-	StartFrame int64     `json:"start_frame"`         // inclusive start frame
-	EndFrame   int64     `json:"end_frame"`           // exclusive end frame
-	Position   string    `json:"position,omitempty"`  // anchor / preset position ("lower_third", "center", "safe_area", "image_left", "image_right")
-	Size       float64   `json:"size,omitempty"`      // font size for text, or box size for image
-	Opacity    float64   `json:"opacity,omitempty"`   // alpha [0.0, 1.0] (default 1.0)
-	Animation  string    `json:"animation,omitempty"` // "fade" | "slide" | "scale" | "static"
-	Asset      string    `json:"asset,omitempty"`     // image file path
-	Text       string    `json:"text,omitempty"`      // phrase string
-	Font       string    `json:"font,omitempty"`      // font path / font family
-	Color      []float64 `json:"color,omitempty"`     // RGBA [r, g, b, a] in [0, 1]
-	Translate  []float64 `json:"translate,omitempty"` // [dx, dy] offset
-	Scale      float64   `json:"scale,omitempty"`     // scale multiplier (default 1.0)
+	Type       string  `json:"type"`               // "text" | "image"
+	StartFrame int64   `json:"start_frame"`        // inclusive start frame
+	EndFrame   int64   `json:"end_frame"`          // exclusive end frame
+	Position   string  `json:"position,omitempty"` // anchor / preset position ("lower_third", "center", "safe_area", "image_left", "image_right")
+	Size       float64 `json:"size,omitempty"`     // font size for text, or box size for image
+	Opacity    float64 `json:"opacity,omitempty"`  // alpha [0.0, 1.0] (default 1.0)
+	// OpacityExplicit distinguishes an intentional zero from the legacy
+	// zero-value meaning "use the default". It is not serialized into plans.
+	OpacityExplicit *float64  `json:"-"`
+	Animation       string    `json:"animation,omitempty"` // "fade" | "slide" | "scale" | "static"
+	Asset           string    `json:"asset,omitempty"`     // image file path
+	Text            string    `json:"text,omitempty"`      // phrase string
+	Font            string    `json:"font,omitempty"`      // font path / font family
+	Color           []float64 `json:"color,omitempty"`     // RGBA [r, g, b, a] in [0, 1]
+	Translate       []float64 `json:"translate,omitempty"` // [dx, dy] offset
+	Scale           float64   `json:"scale,omitempty"`     // scale multiplier (default 1.0)
 }
 
 // NormalizeEntityOverlays canonicalizes the legacy fast-path input before it
@@ -155,7 +158,13 @@ func CompileFastEntityOverlays(
 		}
 
 		opacity := ov.Opacity
-		if opacity <= 0.0 {
+		if ov.OpacityExplicit != nil {
+			opacity = *ov.OpacityExplicit
+		}
+		if opacity < 0.0 || opacity > 1.0 {
+			return nil, fmt.Errorf("entity_contract: overlay %d opacity %.3f outside [0,1]", i, opacity)
+		}
+		if opacity == 0.0 && ov.OpacityExplicit == nil {
 			opacity = 1.0
 		}
 
