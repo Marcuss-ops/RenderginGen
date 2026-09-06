@@ -84,7 +84,10 @@ func main() {
 	// photograph. The preset canary must exercise the same image class used by
 	// the runtime entity path; synthetic PNG fixtures are not representative.
 	bgVideo := "color:#EEF1E7" // Pale Olive Classic; concrete Chronon color layer
-	fontPath := "fonts/Poppins-Bold.ttf"
+	// The direct CLI canary mounts testdata/golden as the asset root; the
+	// checked-in font therefore lives at its root (the worker's semantic path
+	// is assets/fonts/Poppins-Bold.ttf after workspace materialisation).
+	fontPath := "Poppins-Bold.ttf"
 	assetsRoot := "/home/pierone/src/go-master/projects/Pyt/VeloxEditing/RenderingGen/testdata/golden"
 	chrononBin := "/home/pierone/src/go-master/projects/Pyt/VeloxEditing/Chronon3d/build/chronon/linux-video-release/apps/chronon3d_cli/chronon3d_cli"
 
@@ -355,6 +358,9 @@ func main() {
 		videoFileName := fmt.Sprintf("%s_24fps_1080p.mp4", item.ID)
 		videoPath := filepath.Join(outDir, videoFileName)
 		planPath := filepath.Join(outDir, fmt.Sprintf("%s_plan.json", item.ID))
+		// Route every canary through the official preset catalog so text layout
+		// and image placement are resolved by the same authority as production.
+		item.Overlay.PresetID = item.PresetName
 
 		// 1. Build Plan
 		plan, err := overlay.CompileFastEntityOverlays(
