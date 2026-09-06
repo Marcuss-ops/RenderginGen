@@ -35,7 +35,9 @@ func certificationFixture(def OfficialPresetDefinition) FastEntityOverlay {
 	default:
 		fx.Type = "text"
 		fx.Text = "Pipeline Certificata — 450% più veloce, fino a 125 frame"
-		fx.Font = "fonts/Poppins-Bold.ttf"
+		// The runtime certification mounts testdata/golden directly as the
+		// Chronon asset root; the checked-in fixture font is at that root.
+		fx.Font = "Poppins-Bold.ttf"
 		fx.Position = def.Layout.Anchor
 		fx.Size = def.Style.FontSize
 		fx.Color = def.Style.Fill
