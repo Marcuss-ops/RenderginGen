@@ -23,24 +23,23 @@
         1920,
         1080
       ],
-      "opacity": 1,
       "start_frame": 0,
-      "duration_frames": 125
+      "duration_frames": 125,
+      "opacity": 1
     },
     {
       "id": "entity_1_image",
       "type": "image",
       "asset": "gerard_butler.jpg",
       "size": [
-        380,
-        380
+        600,
+        600
       ],
       "fit": "contain",
       "position": [
-        120,
-        350
+        0,
+        0
       ],
-      "opacity": 1,
       "start_frame": 0,
       "duration_frames": 125,
       "animation": {
@@ -53,14 +52,15 @@
                 "value": -40
               },
               {
-                "frame": 124,
+                "frame": 7,
                 "value": 0
               }
             ],
             "easing": "out_cubic"
           }
         ]
-      }
+      },
+      "opacity": 1
     }
   ],
   "output": {
