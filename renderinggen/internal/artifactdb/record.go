@@ -48,11 +48,13 @@ type ArtifactRecord struct {
 	LightLeakCount     int
 	PresetID           string
 
-	// Per-phase wall-clock microseconds (plan section "DB metrics").
+	// Per-phase wall-clock microseconds (plan section "DB metrics"). The
+	// encoder runs inside Chronon's render phase (chronon_render_us), so
+	// there is no separately measured encode phase on the worker and no
+	// always-zero encode_us column is projected.
 	OverlayCompileUS    int64
 	AssetMaterializeUS  int64
 	ChrononRenderUS     int64
-	EncodeUS            int64
 	SHA256US            int64
 	ObjectStoreUploadUS int64
 	DriveUploadUS       int64
@@ -85,7 +87,6 @@ func (r ArtifactRecord) Metrics() map[string]float64 {
 		"overlay_compile_us":     float64(r.OverlayCompileUS),
 		"asset_materialize_us":   float64(r.AssetMaterializeUS),
 		"chronon_render_us":      float64(r.ChrononRenderUS),
-		"encode_us":              float64(r.EncodeUS),
 		"sha256_us":              float64(r.SHA256US),
 		"objectstore_upload_us":  float64(r.ObjectStoreUploadUS),
 		"drive_upload_us":        float64(r.DriveUploadUS),

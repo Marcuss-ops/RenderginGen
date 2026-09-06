@@ -5,10 +5,12 @@
 //	├── assets/<logical>    (assets materialized by content hash)
 //	└── output/result.mp4   (render output)
 //
-// Materialize is the single asset resolver/materializer: it pulls each asset
-// through the L1/L2/L3 cache (via a resolver func) and writes it to the
-// logical path declared by the job, so the render_plan's source/asset
-// references resolve inside the assets root.
+// MaterializePaths is the single asset resolver/materializer: it pulls each
+// asset through the L1/L2/L3 cache (via a path resolver func) and links it to
+// the logical path declared by the job, so the render_plan's source/asset
+// references resolve inside the assets root. Media never round-trips through
+// a Go byte slice; the resolver hands back a local file the workspace can
+// hard-link (or stream-copy across filesystems).
 package workspace
 
 import (
@@ -25,10 +27,6 @@ import (
 
 	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/queue"
 )
-
-// Resolver returns the bytes for an asset reference. It remains available for
-// small in-memory fixtures and backends that do not expose a local path.
-type Resolver func(ctx context.Context, asset queue.AssetRef) ([]byte, error)
 
 // ResolvedAsset describes an asset already present on local storage. The
 // workspace can link it directly instead of reading it into a Go byte slice.
@@ -92,9 +90,10 @@ func (w *Workspace) WritePlan(plan []byte) error {
 	return os.WriteFile(w.PlanPath(), plan, 0o644)
 }
 
-// Materialize resolves every asset through the byte resolver. Production code
-// should prefer MaterializePaths so large media stays on disk.
-func (w *Workspace) Materialize(ctx context.Context, resolve Resolver, assets []queue.AssetRef) error {
+// MaterializePaths resolves every asset to a local file and hard-links it into
+// the workspace. A streaming copy is used only when the cache and workspace
+// are on different filesystems.
+func (w *Workspace) MaterializePaths(ctx context.Context, resolve PathResolver, assets []queue.AssetRef) error {
 	if len(assets) == 0 {
 		return nil
 	}
@@ -119,7 +118,6 @@ func (w *Workspace) Materialize(ctx context.Context, resolve Resolver, assets []
 			}
 		}()
 	}
-
 send:
 	for _, a := range assets {
 		select {
@@ -133,48 +131,7 @@ send:
 	return firstErr
 }
 
-// MaterializePaths resolves every asset to a local file and hard-links it into
-// the workspace. A streaming copy is used only when the cache and workspace
-// are on different filesystems.
-func (w *Workspace) MaterializePaths(ctx context.Context, resolve PathResolver, assets []queue.AssetRef) error {
-	if len(assets) == 0 {
-		return nil
-	}
-	workCtx, cancel := context.WithCancel(ctx)
-	defer cancel()
-	jobs := make(chan queue.AssetRef)
-	var wg sync.WaitGroup
-	var firstErr error
-	var errOnce sync.Once
-	workerCount := 4
-	if len(assets) < workerCount {
-		workerCount = len(assets)
-	}
-	for i := 0; i < workerCount; i++ {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			for a := range jobs {
-				if err := w.materializePathOne(workCtx, resolve, a); err != nil {
-					errOnce.Do(func() { firstErr = err; cancel() })
-				}
-			}
-		}()
-	}
-send:
-	for _, a := range assets {
-		select {
-		case jobs <- a:
-		case <-workCtx.Done():
-			break send
-		}
-	}
-	close(jobs)
-	wg.Wait()
-	return firstErr
-}
-
-func (w *Workspace) materializePathOne(ctx context.Context, resolve PathResolver, a queue.AssetRef) error {
+func (w *Workspace) materializeOne(ctx context.Context, resolve PathResolver, a queue.AssetRef) error {
 	dst, err := w.assetPath(a.LogicalPath)
 	if err != nil {
 		return err
@@ -197,7 +154,7 @@ func (w *Workspace) materializePathOne(ctx context.Context, resolve PathResolver
 			_ = os.Remove(dst)
 		}
 		if err := os.Link(resolved.LocalPath, dst); err != nil {
-			if errors.Is(err, syscall.EXDEV) {
+			if isCrossDevice(err) {
 				// Source and destination live on different filesystems: fall
 				// back to a streaming copy into a temp file + atomic rename.
 				if copyErr := copyFile(ctx, resolved.LocalPath, dst); copyErr != nil {
@@ -217,6 +174,10 @@ func (w *Workspace) materializePathOne(ctx context.Context, resolve PathResolver
 	return nil
 }
 
+// isCrossDevice is the single expression of the cross-filesystem decision
+// (link fails with EXDEV when the cache and the workspace live on different
+// mounts). Every materialization path funnels through it so a future change
+// to the fallback policy is made in exactly one place.
 func isCrossDevice(err error) bool {
 	return errors.Is(err, syscall.EXDEV)
 }
@@ -250,24 +211,6 @@ func copyFile(ctx context.Context, source, dst string) error {
 	}
 	if err := os.Chmod(dst, 0o644); err != nil {
 		return fmt.Errorf("workspace: chmod %s: %w", dst, err)
-	}
-	return nil
-}
-
-func (w *Workspace) materializeOne(ctx context.Context, resolve Resolver, a queue.AssetRef) error {
-	dst, err := w.assetPath(a.LogicalPath)
-	if err != nil {
-		return err
-	}
-	data, err := resolve(ctx, a)
-	if err != nil {
-		return fmt.Errorf("workspace: resolve %s: %w", a.Hash, err)
-	}
-	if err := os.MkdirAll(filepath.Dir(dst), 0o755); err != nil {
-		return fmt.Errorf("workspace: mkdir %s: %w", filepath.Dir(dst), err)
-	}
-	if err := os.WriteFile(dst, data, 0o644); err != nil {
-		return fmt.Errorf("workspace: write %s: %w", dst, err)
 	}
 	return nil
 }

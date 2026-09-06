@@ -117,16 +117,25 @@ func TestDaemonVsCLIBenchmarkGoldenOverlay(t *testing.T) {
 		backend = "software"
 	}
 
-	// Shared workspace with the two golden assets materialized once.
-	ws, err := workspace.New(t.TempDir(), job.ID)
+	// Shared workspace with the two golden assets materialized once. The L2
+	// cache lives inside the workspace so hard links stay on one filesystem;
+	// the path resolver mirrors the production pipeline's zero-copy surface.
+	wsDir := t.TempDir()
+	ws, err := workspace.New(wsDir, job.ID)
 	if err != nil {
 		t.Fatalf("workspace: %v", err)
 	}
 	defer ws.Cleanup()
-	store := storage.New(storage.NewMemory(), storage.Options{})
+	store := storage.New(storage.NewMemory(), storage.Options{L2Dir: filepath.Join(wsDir, ".l2")})
 	seedGoldenAssets(t, store, job.Assets)
-	resolve := func(ctx context.Context, asset queue.AssetRef) ([]byte, error) { return store.Get(ctx, asset.Hash) }
-	if err := ws.Materialize(context.Background(), resolve, job.Assets); err != nil {
+	resolve := func(ctx context.Context, asset queue.AssetRef) (workspace.ResolvedAsset, error) {
+		path, size, err := store.LocalPath(ctx, asset.Hash)
+		if err != nil {
+			return workspace.ResolvedAsset{}, err
+		}
+		return workspace.ResolvedAsset{LocalPath: path, SizeBytes: size}, nil
+	}
+	if err := ws.MaterializePaths(context.Background(), resolve, job.Assets); err != nil {
 		t.Fatalf("materialize: %v", err)
 	}
 	if err := ws.WritePlan(job.RenderPlan); err != nil {

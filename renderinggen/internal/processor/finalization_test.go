@@ -72,7 +72,7 @@ func TestParentFinalizerStoresPublishesAndCompletes(t *testing.T) {
 	q := &finalizerQueue{children: children}
 	driveDir := t.TempDir()
 	f := NewParentFinalizer(q, store, finalizerAssembler{}, drive.NewMock(driveDir, 0), "worker", t.TempDir())
-	finalized, artifact, err := f.Finalize(ctx, "parent", 2, 0, 20)
+	finalized, artifact, err := f.Finalize(ctx, "parent", 0, 20)
 	if err != nil {
 		t.Fatal(err)
 	}

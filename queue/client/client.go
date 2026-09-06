@@ -18,6 +18,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"net/url"
 	"strings"
@@ -145,8 +146,31 @@ type Client struct {
 func New(baseURL string) *Client {
 	return &Client{
 		baseURL: strings.TrimRight(strings.TrimSpace(baseURL), "/"),
-		http:    &http.Client{Timeout: 30 * time.Second},
+		// No blanket per-request deadline: the claim-wait long poll must be
+		// allowed to outlive any fixed timeout (the client-side request context
+		// already budgets maxWait+10s, and the server caps waits at 25 s). A
+		// historical 30 s client timeout silently capped that budget at
+		// min(30s, maxWait+10s). Connect/TLS/response-header phases stay
+		// individually bounded so a hung server fails fast.
+		http: newQueueHTTPClient(),
 	}
+}
+
+func newQueueHTTPClient() *http.Client {
+	return &http.Client{Transport: &http.Transport{
+		Proxy: http.ProxyFromEnvironment,
+		DialContext: (&net.Dialer{
+			Timeout:   10 * time.Second,
+			KeepAlive: 30 * time.Second,
+		}).DialContext,
+		ForceAttemptHTTP2:     true,
+		MaxIdleConns:          100,
+		MaxIdleConnsPerHost:   8,
+		IdleConnTimeout:       90 * time.Second,
+		TLSHandshakeTimeout:   10 * time.Second,
+		ExpectContinueTimeout: 1 * time.Second,
+		ResponseHeaderTimeout: 30 * time.Second,
+	}}
 }
 
 // Submit enqueues a job. A 409 (job already exists) is translated to

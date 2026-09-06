@@ -489,9 +489,53 @@ func TestProcessMirrorFailureKeepsRenderCompleted(t *testing.T) {
 	}
 }
 
-// TestPublishUpdatesLedgerDriveMetric verifies a publication retry updates
-// drive_upload_us in the ledger without re-rendering (RENDERED ->
-// PUBLISH_RETRY -> PUBLISHED, never a Chronon re-render).
+// TestPublishSkipsDriveForQueueJobs verifies the canonical publication policy:
+// a queue-served render job resolves to object-store-only (its submitter —
+// PipelineGen master — owns Drive delivery of clips), so even when the worker
+// holds a Drive publisher capability it never uploads the segment a second
+// time. The skip is recorded on the artifact so a run can never confuse "no
+// Drive phase" with a fast upload.
+func TestPublishSkipsDriveForQueueJobs(t *testing.T) {
+	proc, store, renderer := newProcessor(t)
+	ledger := artifactdb.NewMemory()
+	proc.SetArtifactRecorder(ledger)
+	if err := store.Put(context.Background(), videoHash, []byte("video-bytes")); err != nil {
+		t.Fatalf("put asset: %v", err)
+	}
+	renderer.write = func(path string) error {
+		return os.WriteFile(path, []byte("output-bytes"), 0o644)
+	}
+	proc.SetPublisher(drive.NewMock(t.TempDir(), 0))
+
+	artifact, err := proc.Render(context.Background(), validJob())
+	if err != nil {
+		t.Fatalf("render: %v", err)
+	}
+	for _, jobType := range []string{queue.JobTypeRenderSegment, queue.JobTypeOverlayRender, queue.JobTypeOverlayPrepare} {
+		published, err := proc.Publish(context.Background(), validJob().ID, jobType, artifact)
+		if err != nil {
+			t.Fatalf("publish (%s): %v", jobType, err)
+		}
+		if published.DriveFileID != "" || published.DriveLink != "" {
+			t.Fatalf("queue job %s must not reach Drive: %+v", jobType, published)
+		}
+		if published.Metrics["publication_drive_skipped_by_policy"] != 1 {
+			t.Fatalf("queue job %s must record the policy skip: %v", jobType, published.Metrics)
+		}
+	}
+	if rec, _ := ledger.Get(validJob().ID); rec.DriveUploadUS != 0 {
+		t.Fatalf("queue job publish must not touch the drive ledger: %+v", rec)
+	}
+	if renderer.calls != 1 {
+		t.Fatalf("renderer calls = %d, want 1", renderer.calls)
+	}
+}
+
+// TestPublishUpdatesLedgerDriveMetric verifies the Drive implementation seam
+// (publishToDrive, reached only after the resolver returned
+// object_store_and_drive) updates drive_upload_us in the ledger without
+// re-rendering (RENDERED -> PUBLISH_RETRY -> PUBLISHED, never a Chronon
+// re-render).
 func TestPublishUpdatesLedgerDriveMetric(t *testing.T) {
 	proc, store, renderer := newProcessor(t)
 	ledger := artifactdb.NewMemory()
@@ -513,7 +557,7 @@ func TestPublishUpdatesLedgerDriveMetric(t *testing.T) {
 	}
 
 	proc.SetPublisher(drive.NewMock(t.TempDir(), 0))
-	if _, err := proc.Publish(context.Background(), validJob().ID, artifact); err != nil {
+	if _, err := proc.publishToDrive(context.Background(), validJob().ID, artifact); err != nil {
 		t.Fatalf("publish: %v", err)
 	}
 	rec, _ = ledger.Get(validJob().ID)
@@ -543,7 +587,9 @@ func TestProcessValidation(t *testing.T) {
 	}{
 		{"nil", nil},
 		{"missing id", mutate(func(j *queue.Job) { j.ID = "" })},
+		{"missing schema", mutate(func(j *queue.Job) { j.Schema = "" })},
 		{"bad schema", mutate(func(j *queue.Job) { j.Schema = "other" })},
+		{"missing version", mutate(func(j *queue.Job) { j.Version = 0 })},
 		{"bad version", mutate(func(j *queue.Job) { j.Version = 2 })},
 		{"empty render plan", mutate(func(j *queue.Job) { j.RenderPlan = nil })},
 		{"invalid render plan", mutate(func(j *queue.Job) { j.RenderPlan = json.RawMessage("{") })},
@@ -594,13 +640,15 @@ func TestRenderThenPublishRetrySkipsRender(t *testing.T) {
 		t.Fatalf("renderer calls = %d, want 1", renderer.calls)
 	}
 
-	// First publication fails (simulated Drive failure).
-	if _, err := proc.Publish(context.Background(), validJob().ID, artifact); err == nil {
+	// First publication fails (simulated Drive failure) on the Drive
+	// implementation seam (the worker's publishToDrive, reachable only for
+	// object_store_and_drive jobs).
+	if _, err := proc.publishToDrive(context.Background(), validJob().ID, artifact); err == nil {
 		t.Fatal("expected publish error on first upload")
 	}
 
 	// The publication retry succeeds and never touches the renderer.
-	published, err := proc.Publish(context.Background(), validJob().ID, artifact)
+	published, err := proc.publishToDrive(context.Background(), validJob().ID, artifact)
 	if err != nil {
 		t.Fatalf("publish retry: %v", err)
 	}
@@ -662,7 +710,7 @@ func TestPublishEnforcesStoreDBInvariant(t *testing.T) {
 		ArtifactHash: storage.Hash([]byte("expected-bytes")),
 		ContentType:  "video/mp4",
 	}
-	if _, err := proc.Publish(context.Background(), "job-1", artifact); err == nil {
+	if _, err := proc.publishToDrive(context.Background(), "job-1", artifact); err == nil {
 		t.Fatal("publish must fail when store bytes do not match db_sha")
 	}
 }
@@ -683,7 +731,7 @@ func TestPublishEnforcesDriveInvariant(t *testing.T) {
 	if err != nil {
 		t.Fatalf("render: %v", err)
 	}
-	if _, err := proc.Publish(context.Background(), validJob().ID, artifact); err == nil {
+	if _, err := proc.publishToDrive(context.Background(), validJob().ID, artifact); err == nil {
 		t.Fatal("publish must fail when drive_sha != db_sha")
 	}
 }
@@ -711,7 +759,7 @@ func TestPublishSHAChainInvariant(t *testing.T) {
 	if err != nil {
 		t.Fatalf("render: %v", err)
 	}
-	published, err := proc.Publish(context.Background(), validJob().ID, artifact)
+	published, err := proc.publishToDrive(context.Background(), validJob().ID, artifact)
 	if err != nil {
 		t.Fatalf("publish: %v", err)
 	}

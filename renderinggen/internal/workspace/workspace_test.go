@@ -41,19 +41,43 @@ func TestNewRequiresJobID(t *testing.T) {
 	}
 }
 
-func TestMaterializeWritesLogicalPaths(t *testing.T) {
-	w := newWorkspace(t)
-
-	resolve := func(_ context.Context, asset queue.AssetRef) ([]byte, error) {
-		return []byte("bytes:" + asset.Hash), nil
+// pathResolverFor writes each asset's fixture bytes into a source directory on
+// the same filesystem as the workspace so MaterializePaths can hard-link them.
+// It is the path-resolver counterpart of the old byte-resolver fixtures: the
+// workspace API deliberately never sees []byte, so fixtures stage files.
+func pathResolverFor(t *testing.T, sourceDir string) PathResolver {
+	t.Helper()
+	return func(_ context.Context, asset queue.AssetRef) (ResolvedAsset, error) {
+		p := filepath.Join(sourceDir, asset.Hash)
+		data := []byte("bytes:" + asset.Hash)
+		if err := os.WriteFile(p, data, 0o644); err != nil {
+			return ResolvedAsset{}, err
+		}
+		return ResolvedAsset{LocalPath: p, SizeBytes: int64(len(data))}, nil
 	}
+}
+
+func TestMaterializeWritesLogicalPaths(t *testing.T) {
+	// The source directory and the workspace share one temp root so the hard
+	// link never crosses a filesystem boundary (which would fall back to a
+	// streaming copy instead of exercising the link path).
+	root := t.TempDir()
+	sources := filepath.Join(root, "sources")
+	if err := os.MkdirAll(sources, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	w, err := New(root, "job-1")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	t.Cleanup(func() { _ = w.Cleanup() })
 
 	assets := []queue.AssetRef{
 		{Hash: "h-video", LogicalPath: "videos/base.mp4"},
 		{Hash: "h-image", LogicalPath: "images/apple.png"},
 		{Hash: "h-font", LogicalPath: "fonts/Inter-Bold.ttf"},
 	}
-	if err := w.Materialize(context.Background(), resolve, assets); err != nil {
+	if err := w.MaterializePaths(context.Background(), pathResolverFor(t, sources), assets); err != nil {
 		t.Fatalf("materialize: %v", err)
 	}
 
@@ -72,11 +96,11 @@ func TestMaterializeWritesLogicalPaths(t *testing.T) {
 func TestMaterializeResolveError(t *testing.T) {
 	w := newWorkspace(t)
 
-	resolve := func(_ context.Context, asset queue.AssetRef) ([]byte, error) {
-		return nil, errors.New("boom")
+	resolve := func(_ context.Context, _ queue.AssetRef) (ResolvedAsset, error) {
+		return ResolvedAsset{}, errors.New("boom")
 	}
 
-	err := w.Materialize(context.Background(), resolve, []queue.AssetRef{
+	err := w.MaterializePaths(context.Background(), resolve, []queue.AssetRef{
 		{Hash: "h", LogicalPath: "videos/base.mp4"},
 	})
 	if err == nil || !strings.Contains(err.Error(), "boom") {
@@ -87,8 +111,8 @@ func TestMaterializeResolveError(t *testing.T) {
 func TestMaterializeRejectsTraversal(t *testing.T) {
 	w := newWorkspace(t)
 
-	resolve := func(_ context.Context, asset queue.AssetRef) ([]byte, error) {
-		return []byte("x"), nil
+	resolve := func(_ context.Context, _ queue.AssetRef) (ResolvedAsset, error) {
+		return ResolvedAsset{LocalPath: "/does/not/matter"}, nil
 	}
 
 	cases := []string{
@@ -97,7 +121,7 @@ func TestMaterializeRejectsTraversal(t *testing.T) {
 		"/absolute/path",
 	}
 	for _, logical := range cases {
-		err := w.Materialize(context.Background(), resolve, []queue.AssetRef{
+		err := w.MaterializePaths(context.Background(), resolve, []queue.AssetRef{
 			{Hash: "h", LogicalPath: logical},
 		})
 		if err == nil {
@@ -109,11 +133,11 @@ func TestMaterializeRejectsTraversal(t *testing.T) {
 func TestMaterializeRequiresLogicalPath(t *testing.T) {
 	w := newWorkspace(t)
 
-	resolve := func(_ context.Context, asset queue.AssetRef) ([]byte, error) {
-		return []byte("x"), nil
+	resolve := func(_ context.Context, _ queue.AssetRef) (ResolvedAsset, error) {
+		return ResolvedAsset{LocalPath: "/does/not/matter"}, nil
 	}
 
-	err := w.Materialize(context.Background(), resolve, []queue.AssetRef{{Hash: "h"}})
+	err := w.MaterializePaths(context.Background(), resolve, []queue.AssetRef{{Hash: "h"}})
 	if err == nil {
 		t.Fatal("expected error for missing logical_path")
 	}

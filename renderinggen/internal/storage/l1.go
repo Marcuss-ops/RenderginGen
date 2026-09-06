@@ -32,6 +32,11 @@ func newMemCacheWithObjectCap(max, maxObject int64) *memCache {
 	return &memCache{items: make(map[string][]byte), max: max, maxObject: maxObject}
 }
 
+// Get returns the cached entry WITHOUT copying it: the cache owns the bytes
+// (Put already stored a private copy), so callers must treat the returned
+// slice as read-only. Copy-on-put-only halves the allocations on the hot read
+// path — every L1 hit for a plan/font/thumbnail on the materialize workers
+// previously paid a full copy per hit for bytes the callers only ever read.
 func (m *memCache) Get(key string) ([]byte, bool) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -39,9 +44,7 @@ func (m *memCache) Get(key string) ([]byte, bool) {
 	if !ok {
 		return nil, false
 	}
-	out := make([]byte, len(data))
-	copy(out, data)
-	return out, true
+	return data, true
 }
 
 func (m *memCache) Put(key string, data []byte) {
@@ -64,9 +67,23 @@ func (m *memCache) Put(key string, data []byte) {
 		m.size -= int64(len(m.items[oldest]))
 		delete(m.items, oldest)
 	}
-	// Own the cached bytes so callers cannot mutate an entry after Put.
+	m.trimOrder()
+	// Own the cached bytes (copy-on-put) so callers cannot mutate an entry
+	// after Put; Get then hands back this private slice read-only.
 	cached := append([]byte(nil), data...)
 	m.items[key] = cached
 	m.order = append(m.order, key)
 	m.size += dataLen
+}
+
+// trimOrder releases the dead front of the FIFO order slice. m.order = m.order[1:]
+// keeps the whole backing array alive while eviction consumes the front, so a
+// long-lived high-churn cache would pin its peak capacity forever and re-grow
+// it on the next append. When more than half the backing array is retired front
+// entries, the live window is copied into a fresh array and the old one is
+// released to the GC.
+func (m *memCache) trimOrder() {
+	if cap(m.order) > 64 && len(m.order) <= cap(m.order)/2 {
+		m.order = append([]string(nil), m.order...)
+	}
 }

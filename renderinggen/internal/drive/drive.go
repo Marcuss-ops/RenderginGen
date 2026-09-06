@@ -10,6 +10,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"os"
 	"strconv"
 	"strings"
@@ -164,8 +165,14 @@ func (r *refreshingTokenSource) Token() (*oauth2.Token, error) {
 		return nil, err
 	}
 	if r.tokenFile != "" {
-		if b, err := json.Marshal(tok); err == nil {
-			_ = os.WriteFile(r.tokenFile, b, 0o600)
+		b, err := json.Marshal(tok)
+		if err != nil {
+			log.Printf("drive: persist refreshed token to %s: marshal: %v", r.tokenFile, err)
+		} else if err := os.WriteFile(r.tokenFile, b, 0o600); err != nil {
+			// A read-only mount or perms break means every restart does a fresh
+			// auth dance; the in-process refresh still works, so this is a
+			// durable-observability warning, not a failure.
+			log.Printf("drive: persist refreshed token to %s: %v", r.tokenFile, err)
 		}
 	}
 	return tok, nil

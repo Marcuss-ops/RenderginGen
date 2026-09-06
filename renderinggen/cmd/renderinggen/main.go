@@ -193,6 +193,11 @@ func main() {
 	if publisher != nil {
 		proc.SetPublisher(publisher)
 	}
+	// Canonical publication authority: queue-served render segments resolve
+	// to object-store-only (the submitter owns Drive delivery), so a Drive
+	// capability here is never a silent second upload of master-routed clips.
+	log.Printf("publication: queue render jobs resolve to %s (drive capability=%t); parent assembly and declared jobs keep the configured publisher",
+		processor.ResolvePublicationPolicy("", queue.JobTypeRenderSegment), cfg.Drive.Enabled)
 
 	var parentFinalizer *processor.ParentFinalizer
 	if assembler != nil {
@@ -374,7 +379,7 @@ func runPrepPool(ctx context.Context, q *queue.Client, proc *processor.Processor
 			artifact := *job.Artifact
 			artifact.Metrics = nil
 			pubErr := withLeaseVoid(ctx, job, q, func(jobCtx context.Context) error {
-				published, publishErr := proc.Publish(jobCtx, job.ID, artifact)
+				published, publishErr := proc.Publish(jobCtx, job.ID, job.JobType, artifact)
 				if publishErr != nil {
 					return publishErr
 				}
@@ -399,7 +404,7 @@ func runPrepPool(ctx context.Context, q *queue.Client, proc *processor.Processor
 				reportFailure(ctx, q, job, prepErr)
 				continue
 			}
-			reportComplete(ctx, q, job.ID, artifact)
+			reportComplete(ctx, q, job.ID, artifact, false)
 			continue
 		}
 
@@ -465,7 +470,7 @@ func runGPULane(ctx context.Context, q *queue.Client, proc *processor.Processor,
 			close(renderDone)
 			// Duty-cycle telemetry: record this render's end so the next job's
 			// gpu_gap_us metric measures the true dead time between renders.
-			processor.PutGPURenderEnd(time.Now())
+			proc.PutGPURenderEnd(time.Now())
 			select {
 			case doneCh <- renderOutcome{job: p.job, prepared: p.prepared, err: gpuErr}:
 			case <-ctx.Done():
@@ -513,7 +518,7 @@ func runPostPool(ctx context.Context, q *queue.Client, proc *processor.Processor
 				// Rendering stops as soon as the artifact is durable in object
 				// storage; Drive publication is part of this pool, not the GPU
 				// lane's critical path.
-				artifact, finalizeErr = proc.Publish(jobCtx, job.ID, artifact)
+				artifact, finalizeErr = proc.Publish(jobCtx, job.ID, job.JobType, artifact)
 				return finalizeErr
 			})
 			if err != nil {
@@ -535,7 +540,7 @@ func runPostPool(ctx context.Context, q *queue.Client, proc *processor.Processor
 			log.Printf("job %s artifact: storage_key=%q sha256=%q size=%d copy_eligible=%t backend=%q frames=%d %dx%d",
 				job.ID, artifact.StorageKey, artifact.ArtifactHash, artifact.SizeBytes,
 				artifact.CopyEligible, artifact.Backend, artifact.FrameCount, artifact.Width, artifact.Height)
-			reportComplete(ctx, q, job.ID, artifact)
+			reportComplete(ctx, q, job.ID, artifact, true)
 			if parentFinalizer != nil && job.ParentJobID != "" {
 				tryFinalizeParent(ctx, q, parentFinalizer, job.ParentJobID)
 			}
@@ -564,7 +569,7 @@ func tryFinalizeParent(ctx context.Context, q *queue.Client, finalizer *processo
 	if first == nil || last == nil || first.FrameRange == nil || last.FrameRange == nil {
 		return
 	}
-	finalized, artifact, err := finalizer.Finalize(ctx, parentID, int64(len(children)), first.FrameRange.Start, last.FrameRange.End)
+	finalized, artifact, err := finalizer.Finalize(ctx, parentID, first.FrameRange.Start, last.FrameRange.End)
 	if err != nil {
 		// Incomplete children and a competing finalizer are expected during the
 		// normal fan-in; the queue remains the source of truth for retry.
@@ -593,9 +598,24 @@ func reportFailure(ctx context.Context, q *queue.Client, job *queue.Job, err err
 }
 
 // reportComplete marks a job completed on the queue.
-func reportComplete(ctx context.Context, q *queue.Client, id string, artifact queue.Artifact) {
+//
+// When durable is true and the artifact is already persisted in the object
+// store (render finished, only the terminal report failed), a Complete failure
+// falls back to Rendered: the job then stays claimable for a publication-only
+// retry with its artifact attached, instead of expiring back to pending and
+// being re-rendered on the next claim. A failed lease-expiry race is thereby
+// downgraded from a full GPU re-render to an upload retry.
+func reportComplete(ctx context.Context, q *queue.Client, id string, artifact queue.Artifact, durable bool) {
 	if err := q.Complete(ctx, id, artifact); err != nil {
 		log.Printf("job %s report complete: %v", id, err)
+		if durable && artifact.StorageKey != "" {
+			// The bytes are durable in L3; never let a lost report trigger a
+			// GPU re-render. Record rendered so a publication-only retry re-claims
+			// the artifact (see reportFailure's artifact branch).
+			if reportErr := q.Rendered(ctx, id, err.Error(), artifact); reportErr != nil {
+				log.Printf("job %s report rendered: %v", id, reportErr)
+			}
+		}
 	}
 }
 

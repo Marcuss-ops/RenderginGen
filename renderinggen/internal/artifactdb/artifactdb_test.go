@@ -41,7 +41,6 @@ func sampleRecord(jobID string) ArtifactRecord {
 		OverlayCompileUS:    1000,
 		AssetMaterializeUS:  2000,
 		ChrononRenderUS:     30_000,
-		EncodeUS:            0,
 		SHA256US:            500,
 		ObjectStoreUploadUS: 700,
 		DriveUploadUS:       4000,
@@ -109,8 +108,8 @@ func TestMetricsProjection(t *testing.T) {
 		"entity_count": 2, "important_phrase_count": 1, "important_word_count": 1,
 		"image_count": 1, "light_leak_count": 1,
 		"overlay_compile_us": 1000, "asset_materialize_us": 2000,
-		"chronon_render_us": 30000, "encode_us": 0,
-		"sha256_us": 500, "objectstore_upload_us": 700, "drive_upload_us": 4000,
+		"chronon_render_us": 30000,
+		"sha256_us":         500, "objectstore_upload_us": 700, "drive_upload_us": 4000,
 		"total_us": 40000, "input_bytes": 2048, "output_bytes": 1024,
 		"frame_count": 150, "duration_us": 5000000, "width": 1920, "height": 1080, "fps": 30,
 	}

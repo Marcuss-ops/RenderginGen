@@ -78,32 +78,12 @@ func (c *Client) Claim(ctx context.Context, workerID string) (*ClaimedJob, error
 	return c.claim(ctx, workerID, "", 0)
 }
 
-// ClaimPending claims only jobs that still need rendering.
-func (c *Client) ClaimPending(ctx context.Context, workerID string) (*ClaimedJob, error) {
-	return c.claim(ctx, workerID, "pending", 0)
-}
-
-// ClaimRendered claims only jobs awaiting external publication.
-func (c *Client) ClaimRendered(ctx context.Context, workerID string) (*ClaimedJob, error) {
-	return c.claim(ctx, workerID, "rendered", 0)
-}
-
 // ClaimWait long-polls the queue for up to maxWait, returning as soon as a
 // job can be claimed. The wake-up signal is event-driven; the atomic claim
 // itself is unchanged (SKIP LOCKED / memory store), so no job is ever handed
 // to two workers by the wait path. It returns a nil job on timeout.
 func (c *Client) ClaimWait(ctx context.Context, workerID string, maxWait time.Duration) (*ClaimedJob, error) {
 	return c.claimWait(ctx, workerID, "", maxWait)
-}
-
-// ClaimPendingWait is ClaimWait restricted to jobs that still need rendering.
-func (c *Client) ClaimPendingWait(ctx context.Context, workerID string, maxWait time.Duration) (*ClaimedJob, error) {
-	return c.claimWait(ctx, workerID, "pending", maxWait)
-}
-
-// ClaimRenderedWait is ClaimWait restricted to jobs awaiting publication.
-func (c *Client) ClaimRenderedWait(ctx context.Context, workerID string, maxWait time.Duration) (*ClaimedJob, error) {
-	return c.claimWait(ctx, workerID, "rendered", maxWait)
 }
 
 func (c *Client) claimWait(ctx context.Context, workerID, state string, maxWait time.Duration) (*ClaimedJob, error) {
@@ -405,7 +385,3 @@ func (c *Client) report(ctx context.Context, id, workerID, action string, payloa
 	}
 	return nil
 }
-
-// ErrLeaseConflict wraps queue report errors that returned 409: the job is no
-// longer owned by the reporting worker. errors.Is(err, ErrLeaseConflict) is a
-// permanent condition — no retry can recover a lease held by someone else.

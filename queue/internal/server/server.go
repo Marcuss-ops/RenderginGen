@@ -18,6 +18,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -232,7 +233,17 @@ func (s *Server) complete(w http.ResponseWriter, r *http.Request) {
 		Worker string         `json:"worker"`
 		Data   model.Artifact `json:"data"`
 	}
-	_ = json.NewDecoder(r.Body).Decode(&req)
+	// Strict decode + explicit worker check: a malformed body or a missing
+	// worker must surface as a 400 with the real cause, never as a misleading
+	// 409 ("job X is not running or not owned by ''").
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, fmt.Sprintf("invalid request body: %v", err), http.StatusBadRequest)
+		return
+	}
+	if req.Worker == "" {
+		http.Error(w, "worker is required", http.StatusBadRequest)
+		return
+	}
 
 	if err := s.svc.Complete(id, req.Worker, req.Data); err != nil {
 		http.Error(w, err.Error(), http.StatusConflict)
@@ -249,7 +260,14 @@ func (s *Server) fail(w http.ResponseWriter, r *http.Request) {
 			Reason string `json:"reason"`
 		} `json:"data"`
 	}
-	_ = json.NewDecoder(r.Body).Decode(&req)
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, fmt.Sprintf("invalid request body: %v", err), http.StatusBadRequest)
+		return
+	}
+	if req.Worker == "" {
+		http.Error(w, "worker is required", http.StatusBadRequest)
+		return
+	}
 
 	if err := s.svc.Fail(id, req.Worker, req.Data.Reason); err != nil {
 		http.Error(w, err.Error(), http.StatusConflict)
@@ -281,7 +299,14 @@ func (s *Server) rendered(w http.ResponseWriter, r *http.Request) {
 			Artifact model.Artifact `json:"artifact"`
 		} `json:"data"`
 	}
-	_ = json.NewDecoder(r.Body).Decode(&req)
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, fmt.Sprintf("invalid request body: %v", err), http.StatusBadRequest)
+		return
+	}
+	if req.Worker == "" {
+		http.Error(w, "worker is required", http.StatusBadRequest)
+		return
+	}
 
 	if err := s.svc.Rendered(id, req.Worker, req.Data.Artifact, req.Data.Reason); err != nil {
 		http.Error(w, err.Error(), http.StatusConflict)
@@ -323,7 +348,14 @@ func (s *Server) renew(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		Worker string `json:"worker"`
 	}
-	_ = json.NewDecoder(r.Body).Decode(&req)
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, fmt.Sprintf("invalid request body: %v", err), http.StatusBadRequest)
+		return
+	}
+	if req.Worker == "" {
+		http.Error(w, "worker is required", http.StatusBadRequest)
+		return
+	}
 
 	if err := s.svc.Renew(id, req.Worker); err != nil {
 		http.Error(w, err.Error(), http.StatusConflict)

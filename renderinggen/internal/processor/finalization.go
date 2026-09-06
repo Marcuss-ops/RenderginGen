@@ -40,12 +40,19 @@ func NewParentFinalizer(q ParentQueue, store *storage.Client, assembler chronon.
 
 // Finalize attempts one parent finalization. It returns finalized=false when
 // children are incomplete or another worker owns finalization.
-func (f *ParentFinalizer) Finalize(ctx context.Context, parentID string, expected int64, start, end int64) (bool, queue.Artifact, error) {
+//
+// The validation happens twice — once against the pre-claim read, once against
+// a fresh read after the atomic claim — so a child family that changes between
+// the optimistic check and the ownership hand-off is re-checked before any
+// assembly work. ValidateChildren needs no expected-count parameter: dense
+// chunk indices plus exact half-open frame coverage of [start, end) are the
+// verifiable completeness contract (see queue.ValidateChildren).
+func (f *ParentFinalizer) Finalize(ctx context.Context, parentID string, start, end int64) (bool, queue.Artifact, error) {
 	children, err := f.queue.Children(ctx, parentID)
 	if err != nil {
 		return false, queue.Artifact{}, err
 	}
-	if err := queue.ValidateChildren(children, expected, start, end); err != nil {
+	if err := queue.ValidateChildren(children, start, end); err != nil {
 		return false, queue.Artifact{}, err
 	}
 	_, claimed, err := f.queue.ClaimFinalization(ctx, parentID)
@@ -56,7 +63,7 @@ func (f *ParentFinalizer) Finalize(ctx context.Context, parentID string, expecte
 	if err != nil {
 		return false, queue.Artifact{}, err
 	}
-	if err := queue.ValidateChildren(children, expected, start, end); err != nil {
+	if err := queue.ValidateChildren(children, start, end); err != nil {
 		return false, queue.Artifact{}, err
 	}
 	if f.assembler == nil {

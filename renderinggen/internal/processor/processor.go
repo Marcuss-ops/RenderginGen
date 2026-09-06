@@ -18,6 +18,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -63,6 +64,13 @@ type Processor struct {
 	// during RunGPU so health and the queue pusher can report live render
 	// position instead of an opaque RUNNING/0% for minutes.
 	progressTracker *chronon.ProgressTracker
+
+	// gpuGapMu/gpuGapLastRenderEnd track the wall-clock gap between the end of
+	// one GPU render and the start of the next on THIS processor (the duty-cycle
+	// KPI behind the per-job gpu_gap_us metric). They are processor-scoped so
+	// tests and unrelated processors never cross-contaminate the measurement.
+	gpuGapMu            sync.Mutex
+	gpuGapLastRenderEnd time.Time
 }
 
 // New creates a job processor.
@@ -154,7 +162,7 @@ func (p *Processor) Process(ctx context.Context, job *queue.Job) (queue.Artifact
 	if err != nil {
 		return queue.Artifact{}, err
 	}
-	return p.Publish(ctx, job.ID, artifact)
+	return p.Publish(ctx, job.ID, job.JobType, artifact)
 }
 
 // Prepare compiles and materializes an overlay plan without invoking Chronon.
@@ -178,7 +186,10 @@ func (p *Processor) Prepare(ctx context.Context, job *queue.Job) (queue.Artifact
 			return queue.Artifact{}, err
 		}
 		defer ws.Cleanup()
-		if err := ws.Materialize(ctx, p.resolveAsset, job.Assets); err != nil {
+		// Prepare materializes through the same zero-copy path resolver as the
+		// render pipeline (self-heal, hash verification, L3 staging): there is
+		// exactly one asset-resolution implementation on the worker.
+		if err := ws.MaterializePaths(ctx, p.resolveAssetStreaming, job.Assets); err != nil {
 			return queue.Artifact{}, err
 		}
 		hash := storage.Hash(job.RenderPlan)
@@ -204,7 +215,7 @@ func (p *Processor) Prepare(ctx context.Context, job *queue.Job) (queue.Artifact
 		return queue.Artifact{}, err
 	}
 	defer ws.Cleanup()
-	if err := ws.Materialize(ctx, p.resolveAsset, assets); err != nil {
+	if err := ws.MaterializePaths(ctx, p.resolveAssetStreaming, assets); err != nil {
 		return queue.Artifact{}, err
 	}
 	planBytes, err := plan.Marshal()
@@ -225,59 +236,16 @@ func (p *Processor) Prepare(ctx context.Context, job *queue.Job) (queue.Artifact
 	}, nil
 }
 
-// resolveAsset preserves the content-addressed invariant at the worker
-// boundary. Legacy development fixtures may use symbolic keys; production
-// SHA-256 keys (64 hexadecimal characters) are always checked against the
-// bytes returned by the object store before Chronon sees them.
-//
-// When a production asset is absent from L3 but its logical path is a source
-// URL (the overlay.prepare case: PipelineGen materialized the entity image to
-// Drive and enqueues prepare before the bytes are staged in the central
-// object store), resolveAsset self-heals by downloading the bytes, verifying
-// the SHA-256 and staging them into L3. Render never silently proceeds with
-// the wrong asset: a hash mismatch fails the resolution.
-func (p *Processor) resolveAsset(ctx context.Context, asset queue.AssetRef) ([]byte, error) {
-	hash := asset.Hash
-	data, err := p.store.Get(ctx, hash)
-	if err == nil {
-		if len(hash) == 64 {
-			if got := storage.Hash(data); !strings.EqualFold(got, hash) {
-				return nil, fmt.Errorf("asset hash mismatch: requested %s, got %s", hash, got)
-			}
-		}
-		return data, nil
-	}
-	if !errors.Is(err, storage.ErrNotFound) || len(hash) != 64 || !isHTTPURL(asset.LogicalPath) {
-		return nil, err
-	}
-	// Streaming self-heal: download straight into a temp file, hash while
-	// streaming, then stage from the file. The historical io.ReadAll path
-	// buffered up to 1 GiB per asset in RAM — with a 4-goroutine materialize
-	// pool that is a worker-wide OOM waiting for one large background video.
-	// (The zero-copy hot path is resolveAssetStreaming; this byte-based
-	// variant exists for the legacy Materialize byte path, where the bytes
-	// are already destined for RAM anyway.)
-	path, dlErr := downloadAssetToFile(ctx, asset.LogicalPath, hash)
-	if dlErr != nil {
-		return nil, fmt.Errorf("asset %s not in store and URL download failed: %w", hash, dlErr)
-	}
-	defer os.Remove(path)
-	data, readErr := os.ReadFile(path)
-	if readErr != nil {
-		return nil, readErr
-	}
-	if err := p.store.Put(ctx, hash, data); err != nil {
-		return nil, fmt.Errorf("stage self-healed asset %s: %w", hash, err)
-	}
-	return data, nil
-}
-
-// resolveAssetStreaming is the zero-copy variant used by MaterializePaths:
-// a cache-miss self-heal downloads straight to a bounded temp file (constant
+// resolveAssetStreaming is the single asset resolver on the worker. It
+// preserves the content-addressed invariant at the worker boundary: a cached
+// local path (L2/L1) is returned directly for the workspace to hard-link; a
+// cache-miss self-heal downloads straight to a bounded temp file (constant
 // memory, never the whole object in RAM), verifies the SHA-256 while
 // streaming, stages it into L3 via PutReader and hands the local path to the
 // workspace for a hard link. A hash mismatch deletes the temp file and fails
-// the resolution — the wrong bytes never reach Chronon.
+// the resolution — the wrong bytes never reach Chronon. Legacy development
+// fixtures may carry symbolic keys; production SHA-256 keys (64 hexadecimal
+// characters) are always verified against the bytes before Chronon sees them.
 func (p *Processor) resolveAssetStreaming(ctx context.Context, asset queue.AssetRef) (workspace.ResolvedAsset, error) {
 	hash := asset.Hash
 	if path, size, err := p.store.LocalPath(ctx, hash); err == nil {
@@ -375,50 +343,6 @@ var assetDownloadClient = &http.Client{
 // background video is far below this; anything larger is a bug or an attack).
 const maxAssetDownloadBytes = 1 << 30
 
-// downloadAssetToFile streams the URL into a temp file, hashing the bytes on
-// the way through. The complete object never sits in RAM. Returns the temp
-// file path; the caller owns removal. The declared hash is verified while
-// streaming — a mismatch aborts before the file is staged anywhere.
-func downloadAssetToFile(ctx context.Context, rawURL, wantHash string) (string, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, rawURL, nil)
-	if err != nil {
-		return "", err
-	}
-	resp, err := assetDownloadClient.Do(req)
-	if err != nil {
-		return "", err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return "", fmt.Errorf("download %s: HTTP %d", rawURL, resp.StatusCode)
-	}
-	tmp, err := os.CreateTemp("", "renderinggen-selfheal-*")
-	if err != nil {
-		return "", err
-	}
-	path := tmp.Name()
-	hasher := sha256.New()
-	copied, copyErr := io.Copy(io.MultiWriter(tmp, hasher), io.LimitReader(resp.Body, maxAssetDownloadBytes+1))
-	closeErr := tmp.Close()
-	if copyErr != nil {
-		os.Remove(path)
-		return "", copyErr
-	}
-	if closeErr != nil {
-		os.Remove(path)
-		return "", closeErr
-	}
-	if copied > maxAssetDownloadBytes {
-		os.Remove(path)
-		return "", fmt.Errorf("download %s exceeds %d bytes cap", rawURL, maxAssetDownloadBytes)
-	}
-	if got := hex.EncodeToString(hasher.Sum(nil)); !strings.EqualFold(got, wantHash) {
-		os.Remove(path)
-		return "", fmt.Errorf("asset hash mismatch on URL download: requested %s, got %s", wantHash, got)
-	}
-	return path, nil
-}
-
 // hashFileSHA256 streams a file through SHA-256 without buffering it in RAM.
 func hashFileSHA256(path string) (string, error) {
 	file, err := os.Open(path)
@@ -494,18 +418,16 @@ func (p *Processor) Render(ctx context.Context, job *queue.Job) (queue.Artifact,
 	return p.StagedRender(ctx, job)
 }
 
-func frameStart(job *queue.Job) int64 {
+// jobFrameRange maps a job's half-open chunk contract [Start, End) onto
+// Chronon's inclusive last-frame coordinate. ok is false when the job has no
+// frame range (render the whole plan). The boolean is load-bearing: a chunk
+// covering exactly frame 0 (Start=0, End=1) yields first=0, last=0, which is
+// indistinguishable from "no range" without the explicit presence signal.
+func jobFrameRange(job *queue.Job) (first, last int64, ok bool) {
 	if job != nil && job.FrameRange != nil {
-		return job.FrameRange.Start
+		return job.FrameRange.Start, job.FrameRange.End - 1, true
 	}
-	return 0
-}
-
-func frameEndInclusive(job *queue.Job) int64 {
-	if job != nil && job.FrameRange != nil {
-		return job.FrameRange.End - 1
-	}
-	return 0
+	return 0, 0, false
 }
 
 // planHasVisualOverlay identifies concrete plans that require Chronon's
@@ -646,11 +568,44 @@ func requireNativeVulkan(outputPath string, expectedFrames int) error {
 	return nil
 }
 
-// Publish uploads an already-rendered artifact to Google Drive and returns the
-// artifact updated with its Drive file ID and link. It resolves the verified
-// persistent L2 path, so publication does not fetch the object twice or create
-// a temporary staging file. When no publisher is configured it returns the
-// artifact unchanged.
+// Publish is the single publisher seam for a queue-served job. It consults
+// ONLY the canonical PublicationPolicyResolver: a resolved object-store-only
+// job (every queue render segment today; the submitter owns Drive delivery)
+// is returned unchanged — even when a Drive publisher is configured — so a
+// config re-enable of drive.enabled can never recreate the master/worker
+// double upload. A job whose submitter declared object_store_and_drive is
+// uploaded through publishToDrive, which carries the SHA-256 chain
+// invariants. When no Drive publisher is configured (the capability is
+// absent) the artifact is returned unchanged regardless of the resolved
+// policy.
+func (p *Processor) Publish(ctx context.Context, jobID, jobType string, artifact queue.Artifact) (queue.Artifact, error) {
+	policy := ResolvePublicationPolicy("", jobType)
+	if artifact.Metrics == nil {
+		artifact.Metrics = map[string]float64{}
+	}
+	if p.drive == nil {
+		// Capability absent: even a declared object_store_and_drive job is
+		// served store-only. The publisher state is authoritative for what
+		// the worker CAN do; the resolver is authoritative for what it SHOULD
+		// do. No fabricated metric: nothing was attempted.
+		return artifact, nil
+	}
+	if policy != PublicationObjectStoreAndDrive {
+		// Canonical policy: the submitter delivers this segment (master
+		// publishes clips to their destination folders). Skip the Drive
+		// upload and say so, so runs never confuse "no Drive phase" with a
+		// fast upload.
+		artifact.Metrics["publication_drive_skipped_by_policy"] = 1
+		log.Printf("job %s: drive publication skipped (resolved policy %s; submitter owns delivery)", jobID, policy)
+		return artifact, nil
+	}
+	return p.publishToDrive(ctx, jobID, artifact)
+}
+
+// publishToDrive uploads an already-rendered artifact to Google Drive and
+// returns the artifact updated with its Drive file ID and link. It resolves
+// the verified persistent L2 path, so publication does not fetch the object
+// twice or create a temporary staging file.
 //
 // The SHA-256 chain invariant (plan section "Drive") is enforced here:
 //
@@ -660,8 +615,9 @@ func requireNativeVulkan(outputPath string, expectedFrames int) error {
 // worker computed at render time and recorded in the ledger (store_sha ==
 // db_sha) BEFORE they are uploaded; the Drive result must then report the
 // same hash (drive_sha == db_sha). Any mismatch fails the publication, never
-// a re-render.
-func (p *Processor) Publish(ctx context.Context, jobID string, artifact queue.Artifact) (queue.Artifact, error) {
+// a re-render. Callers reach this only after the resolver returned
+// object_store_and_drive (see Publish).
+func (p *Processor) publishToDrive(ctx context.Context, jobID string, artifact queue.Artifact) (queue.Artifact, error) {
 	if p.drive == nil {
 		return artifact, nil
 	}
@@ -752,12 +708,18 @@ func (p *Processor) storeArtifact(ctx context.Context, jobID, outputPath string,
 	phaseMetrics["sha256_us"] = shaUS
 	phaseMetrics["sha256_ms"] = shaUS / 1000
 	// Surface Chronon's own receipt-verification phases (probe / optional
-	// decode / sha256 / total, policy-controlled by CHRONON_RECEIPT_VERIFY)
-	// on the artifact so per-clip reports can attribute the post-render
-	// receipt cost separately from the render wall. Best-effort: a receipt
-	// that carried no timing block simply adds nothing.
+	// decode / count_frames / sha256 / total, policy-controlled by the
+	// resolved verification policy) on the artifact so per-clip reports can
+	// attribute the post-render receipt cost separately from the render wall.
+	// The resolved policy + aggregate status ride the same metrics namespace
+	// so reports can label every run fast/normal/certify instead of inferring
+	// the policy from whether receipt_decode_ms exists. Best-effort: a receipt
+	// that carried no timing/verification block simply adds nothing.
 	if receiptErr == nil {
 		for key, value := range receipt.ReceiptTimingMetrics() {
+			phaseMetrics[key] = value
+		}
+		for key, value := range receipt.VerificationMetrics() {
 			phaseMetrics[key] = value
 		}
 	}

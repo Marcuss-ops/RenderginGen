@@ -71,7 +71,7 @@ func (s *SQLiteRecorder) Record(ctx context.Context, rec ArtifactRecord) error {
 		rec.EntityCount, rec.ImportantPhraseCnt, rec.ImportantWordCnt,
 		rec.ImageCount, rec.LightLeakCount, rec.PresetID,
 		rec.OverlayCompileUS, rec.AssetMaterializeUS, rec.ChrononRenderUS,
-		rec.EncodeUS, rec.SHA256US, rec.ObjectStoreUploadUS, rec.DriveUploadUS,
+		rec.SHA256US, rec.ObjectStoreUploadUS, rec.DriveUploadUS,
 		rec.TotalUS, rec.InputBytes, rec.OutputBytes,
 		string(rec.ChrononTelemetry),
 		rec.CreatedAt.Format(time.RFC3339Nano),
@@ -122,7 +122,6 @@ CREATE TABLE IF NOT EXISTS artifact_records (
   overlay_compile_us  INTEGER NOT NULL DEFAULT 0,
   asset_materialize_us INTEGER NOT NULL DEFAULT 0,
   chronon_render_us   INTEGER NOT NULL DEFAULT 0,
-  encode_us           INTEGER NOT NULL DEFAULT 0,
   sha256_us           INTEGER NOT NULL DEFAULT 0,
   objectstore_upload_us INTEGER NOT NULL DEFAULT 0,
   drive_upload_us     INTEGER NOT NULL DEFAULT 0,
@@ -143,9 +142,9 @@ INSERT INTO artifact_records (
   entity_count, important_phrase_count, important_word_count,
   image_count, light_leak_count, preset_id,
   overlay_compile_us, asset_materialize_us, chronon_render_us,
-  encode_us, sha256_us, objectstore_upload_us, drive_upload_us,
+  sha256_us, objectstore_upload_us, drive_upload_us,
   total_us, input_bytes, output_bytes, chronon_telemetry, created_at
-) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
 ON CONFLICT(job_id) DO UPDATE SET
   artifact_hash=excluded.artifact_hash,
   storage_key=excluded.storage_key,
@@ -175,7 +174,6 @@ ON CONFLICT(job_id) DO UPDATE SET
   overlay_compile_us=excluded.overlay_compile_us,
   asset_materialize_us=excluded.asset_materialize_us,
   chronon_render_us=excluded.chronon_render_us,
-  encode_us=excluded.encode_us,
   sha256_us=excluded.sha256_us,
   objectstore_upload_us=excluded.objectstore_upload_us,
   drive_upload_us=excluded.drive_upload_us,

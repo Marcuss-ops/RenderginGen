@@ -27,9 +27,30 @@ func TestRenderArgs(t *testing.T) {
 }
 
 func TestRenderArgsChunkRange(t *testing.T) {
-	got := renderArgs(RenderRequest{PlanPath: "/jobs/1/plan.json", AssetsRoot: "/jobs/1", OutputPath: "/jobs/1/output.mp4", FirstFrame: 240, LastFrame: 359})
+	got := renderArgs(RenderRequest{PlanPath: "/jobs/1/plan.json", AssetsRoot: "/jobs/1", OutputPath: "/jobs/1/output.mp4", RangeEnabled: true, FirstFrame: 240, LastFrame: 359})
 	if !reflect.DeepEqual(got[len(got)-4:], []string{"--start-frame", "240", "--end-frame", "359"}) {
 		t.Fatalf("chunk args = %#v", got)
+	}
+}
+
+// TestRenderArgsFrameZeroRange pins the sentinel-collision fix: a chunk
+// covering exactly frame 0 (Start=0, End=1 -> inclusive last frame 0) must
+// reach the CLI as an explicit --start-frame 0 --end-frame 0 range — never be
+// dropped and silently render the whole plan, and never be treated as a range
+// when RangeEnabled is false (whole-plan renders stay default).
+func TestRenderArgsFrameZeroRange(t *testing.T) {
+	got := renderArgs(RenderRequest{PlanPath: "/jobs/1/plan.json", AssetsRoot: "/jobs/1", OutputPath: "/jobs/1/output.mp4", RangeEnabled: true, FirstFrame: 0, LastFrame: 0})
+	if !reflect.DeepEqual(got[len(got)-4:], []string{"--start-frame", "0", "--end-frame", "0"}) {
+		t.Fatalf("frame-zero chunk args = %#v", got)
+	}
+	// RangeEnabled=false with the same coordinates must omit the range
+	// entirely (whole-plan render), so default-constructed requests never
+	// accidentally render a single frame.
+	whole := renderArgs(RenderRequest{PlanPath: "/jobs/1/plan.json", AssetsRoot: "/jobs/1", OutputPath: "/jobs/1/output.mp4"})
+	for _, arg := range whole {
+		if arg == "--start-frame" {
+			t.Fatalf("whole-plan render must not emit a frame range: %#v", whole)
+		}
 	}
 }
 
