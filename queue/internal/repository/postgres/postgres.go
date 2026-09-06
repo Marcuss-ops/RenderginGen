@@ -95,7 +95,7 @@ func (r *Repository) Submit(job model.Job) error {
 		return err
 	}
 	if n, _ := res.RowsAffected(); n == 0 {
-		return fmt.Errorf("job %s already exists", job.ID)
+		return fmt.Errorf("%w: job %s", repository.ErrJobExists, job.ID)
 	}
 
 	if err := recordEvent(ctx, tx, eventJobCreated, job.ID, "", "", nil); err != nil {
@@ -135,9 +135,8 @@ func (r *Repository) SubmitIdempotent(job model.Job) (*model.Job, bool, error) {
 	return canonical, false, getErr
 }
 
-// Claim atomically claims the highest-priority, longest-waiting pending job
-// for a worker, holding it under a lease. It returns nil when no job is
-// pending.
+// Claim atomically claims the longest-waiting pending job for a worker,
+// holding it under a lease. It returns nil when no job is pending.
 func (r *Repository) Claim(workerID string) (*model.Job, time.Duration, error) {
 	return r.ClaimState(workerID, "")
 }
@@ -188,7 +187,7 @@ func (r *Repository) ClaimState(workerID string, state model.State) (*model.Job,
 		SELECT id, job_type, job_schema, job_schema_version, render_plan, input_manifest, attempt_count, queued_at, artifact_id, parent_job_id, chunk_index, frame_range
 		FROM render_jobs
 		WHERE `+stateFilter+`
-		ORDER BY priority DESC, queued_at ASC
+		ORDER BY queued_at ASC
 		FOR UPDATE SKIP LOCKED
 		LIMIT 1`).Scan(&id, &jobType, &schema, &version, &plan, &manifest, &attempts, &queuedAt, &artifactID, &parentJobID, &chunkIndex, &frameRange)
 	if errors.Is(err, sql.ErrNoRows) {
@@ -787,7 +786,11 @@ func decodeFrameRange(raw []byte) *model.FrameRange {
 		return nil
 	}
 	var result model.FrameRange
-	if json.Unmarshal(raw, &result) != nil {
+	if err := json.Unmarshal(raw, &result); err != nil {
+		// Corrupted JSONB must never degrade silently into "no frame range":
+		// a nil range changes render semantics (full clip instead of the
+		// declared chunk). Surface the corruption on every read.
+		log.Printf("postgres: corrupt frame_range jsonb (%d bytes), treating as no range: %v", len(raw), err)
 		return nil
 	}
 	return &result
@@ -799,6 +802,9 @@ func decodeAssets(raw []byte) []model.AssetRef {
 	}
 	var m inputManifest
 	if err := json.Unmarshal(raw, &m); err != nil {
+		// Corrupted JSONB would silently drop every declared asset (and thus
+		// their SHA-256 verification at the worker boundary). Surface it.
+		log.Printf("postgres: corrupt input_manifest jsonb (%d bytes), treating as no assets: %v", len(raw), err)
 		return nil
 	}
 	return m.Assets

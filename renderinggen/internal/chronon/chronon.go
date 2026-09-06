@@ -27,6 +27,14 @@ import (
 // output or progress before being considered stalled.
 const DefaultStallTimeout = 3 * time.Minute
 
+// maxRenderOutputLine caps the length of a single output line forwarded for
+// progress/log processing. Chronon lines are short (frame milestones, log
+// records); the cap is a guard against a pathological single line (a debug
+// dump) freezing progress tracking and the stall heartbeat. Exceeding it
+// aborts the render loudly instead of letting it stall into a misleading
+// watchdog kill.
+const maxRenderOutputLine = 8 << 20 // 8 MiB
+
 // NVENC presets accepted by RenderingGen's encode_preset configuration.
 // These are the worker's curated throughput/quality tier for h264_nvenc
 // (Chronon's native encoder backend). The engine itself additionally accepts
@@ -231,10 +239,9 @@ func (c *Client) Render(ctx context.Context, req RenderRequest) error {
 	var lastActivity atomic.Int64
 	lastActivity.Store(time.Now().UnixNano())
 
+	var streamFailed atomic.Bool
 	streamLines := func(r io.Reader, prefix string) {
-		scanner := bufio.NewScanner(r)
-		for scanner.Scan() {
-			line := scanner.Text()
+		if err := scanRenderOutput(r, func(line string) {
 			lastActivity.Store(time.Now().UnixNano())
 			log.Printf("[chronon %s] %s", prefix, line)
 			if req.Progress != nil {
@@ -242,6 +249,14 @@ func (c *Client) Render(ctx context.Context, req RenderRequest) error {
 					req.Progress(progress)
 				}
 			}
+		}); err != nil {
+			// An output-stream error (a single line beyond the cap, or a pipe
+			// failure) must abort loudly. Silently stopping the scanner would
+			// freeze progress and the stall heartbeat and end in a misleading
+			// watchdog kill of a healthy render.
+			streamFailed.Store(true)
+			log.Printf("[chronon WARN] output stream %s failed: %v; aborting render", prefix, err)
+			cancel()
 		}
 	}
 
@@ -282,12 +297,29 @@ func (c *Client) Render(ctx context.Context, req RenderRequest) error {
 	duration := time.Since(renderStart)
 	if err != nil {
 		if renderCtx.Err() == context.Canceled && ctx.Err() == nil {
+			if streamFailed.Load() {
+				return fmt.Errorf("chronon render aborted: output stream failure (aborted after %v): %w", duration, err)
+			}
 			return fmt.Errorf("chronon render stalled: no output for %v (aborted after %v)", stallTimeout, duration)
 		}
 		return fmt.Errorf("chronon execution failed after %v: %w", duration, err)
 	}
 	log.Printf("[chronon] render finished successfully in %v", duration.Round(time.Millisecond))
 	return nil
+}
+
+// scanRenderOutput forwards each complete output line to onLine and returns
+// the terminal scanner error (nil on EOF). The scanner buffer starts at 64
+// KiB and grows up to maxRenderOutputLine, so ordinary multi-KiB log lines are
+// forwarded intact instead of silently stopping the stream at the historical
+// 64 KiB default.
+func scanRenderOutput(r io.Reader, onLine func(string)) error {
+	scanner := bufio.NewScanner(r)
+	scanner.Buffer(make([]byte, 64*1024), maxRenderOutputLine)
+	for scanner.Scan() {
+		onLine(scanner.Text())
+	}
+	return scanner.Err()
 }
 
 // progressFrameRE matches the frame-position progress lines Chronon emits on

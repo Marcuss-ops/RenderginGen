@@ -4,6 +4,7 @@ package store
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -27,7 +28,12 @@ func (s *Store) Put(key string, data []byte) error {
 	return s.PutReader(key, bytes.NewReader(data), int64(len(data)))
 }
 
-// PutReader streams an object into a temporary file and atomically installs it.
+// PutReader streams an object into a temporary file, syncs it to stable
+// storage and atomically installs it. The HTTP 201 acknowledgement is only
+// sent after the rename, and the rename is only made after the file contents
+// (and the directory entry) are durable: without the fsyncs a power loss right
+// after an acknowledged PUT could silently lose an artifact the worker already
+// treated as persisted in L3.
 func (s *Store) PutReader(key string, r io.Reader, size int64) error {
 	p := s.path(key)
 	if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
@@ -49,7 +55,38 @@ func (s *Store) PutReader(key string, r io.Reader, size int64) error {
 	if err != nil {
 		return err
 	}
-	return os.Rename(tmpPath, p)
+	if err := syncFile(tmpPath); err != nil {
+		return err
+	}
+	if err := os.Rename(tmpPath, p); err != nil {
+		return err
+	}
+	// Persist the rename itself so the acknowledged object survives a crash.
+	dir, err := os.Open(filepath.Dir(p))
+	if err != nil {
+		return fmt.Errorf("open object directory for sync: %w", err)
+	}
+	dirErr := dir.Sync()
+	dir.Close()
+	if dirErr != nil {
+		return fmt.Errorf("sync object directory: %w", dirErr)
+	}
+	return nil
+}
+
+// syncFile flushes a file's contents to stable storage before it is exposed
+// under its content address.
+func syncFile(path string) error {
+	f, err := os.Open(path)
+	if err != nil {
+		return err
+	}
+	syncErr := f.Sync()
+	closeErr := f.Close()
+	if syncErr != nil {
+		return syncErr
+	}
+	return closeErr
 }
 
 // Get reads object data for key.

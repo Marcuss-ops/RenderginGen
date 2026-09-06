@@ -2,6 +2,7 @@
 package config
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -109,8 +110,14 @@ func Load(path string) (*Config, error) {
 		return nil, fmt.Errorf("read config: %w", err)
 	}
 
+	// KnownFields(true) turns a typo like `gpu_lane:` or a renamed key into a
+	// hard parse error instead of a silent fallback to the default (which can
+	// silently downgrade the worker from NVENC to software encoding or change
+	// the lane count). Fail-fast at load, never on the first job.
 	var cfg Config
-	if err := yaml.Unmarshal(data, &cfg); err != nil {
+	decoder := yaml.NewDecoder(bytes.NewReader(data))
+	decoder.KnownFields(true)
+	if err := decoder.Decode(&cfg); err != nil {
 		return nil, fmt.Errorf("parse config: %w", err)
 	}
 

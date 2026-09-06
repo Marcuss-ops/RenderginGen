@@ -788,7 +788,11 @@ func (p *Processor) storeArtifact(ctx context.Context, jobID, outputPath string,
 		artifact.CodecProfile = probe.CodecProfile
 		artifact.FrameCount = probe.FrameCount
 		artifact.FirstFrameKeyframe = probe.FirstFrameKeyframe
-		artifact.ClosedGOP = probe.FirstFrameKeyframe
+		// closed_gop is certified from the full keyframe cadence (see
+		// media.ProbeResult.ClosedGOP) — it must never be a copy of
+		// first_frame_keyframe: that conflates "starts cleanly" with "every
+		// GOP boundary is closed and regular".
+		artifact.ClosedGOP = probe.ClosedGOP
 		artifact.Width, artifact.Height = probe.Width, probe.Height
 		artifact.FPSNum, artifact.FPSDen = probe.FPSNum, probe.FPSDen
 		artifact.DurationUS = probe.DurationUS

@@ -30,6 +30,9 @@ type Server struct {
 	srv  *http.Server
 	// progress, when set, exposes GET /progress (live render position).
 	progress ProgressFunc
+	// queueStatus, when set, overrides Info.Status on every /health response
+	// (e.g. "ready" -> "degraded" while the queue is unreachable).
+	queueStatus func() string
 }
 
 // NewServer creates a health server for the given metadata.
@@ -44,9 +47,20 @@ func NewServer(addr string, info Info) *Server {
 // SetProgressFunc installs the live render progress source for GET /progress.
 func (s *Server) SetProgressFunc(fn ProgressFunc) { s.progress = fn }
 
+// SetQueueStatus installs a live queue-connectivity reporter. When set, the
+// string it returns replaces the static Status field on every /health
+// response; return "" to fall back to the static value.
+func (s *Server) SetQueueStatus(fn func() string) { s.queueStatus = fn }
+
 func (s *Server) handle(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	_ = json.NewEncoder(w).Encode(s.info)
+	info := s.info
+	if s.queueStatus != nil {
+		if st := s.queueStatus(); st != "" {
+			info.Status = st
+		}
+	}
+	_ = json.NewEncoder(w).Encode(info)
 }
 
 // handleProgress serves the current render progress. When no render is in
@@ -63,14 +77,14 @@ func (s *Server) handleProgress(w http.ResponseWriter, _ *http.Request) {
 		return
 	}
 	_ = json.NewEncoder(w).Encode(map[string]any{
-		"status":         "rendering",
-		"job_id":         p.JobID,
-		"stage":          "chronon_render",
-		"frames_done":    p.FramesDone,
-		"frames_total":   p.FramesTotal,
-		"progress":       p.Percent,
-		"fps":            p.FPS,
-		"last_frame_at":  p.LastFrameAt.UTC().Format(time.RFC3339Nano),
+		"status":        "rendering",
+		"job_id":        p.JobID,
+		"stage":         "chronon_render",
+		"frames_done":   p.FramesDone,
+		"frames_total":  p.FramesTotal,
+		"progress":      p.Percent,
+		"fps":           p.FPS,
+		"last_frame_at": p.LastFrameAt.UTC().Format(time.RFC3339Nano),
 	})
 }
 

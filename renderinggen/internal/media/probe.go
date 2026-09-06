@@ -22,10 +22,16 @@ type ProbeResult struct {
 	PixelFormat        string
 	VideoCodec         string
 	CodecProfile       string
-	Encoder            string
 	FrameCount         int
 	FirstFrameKeyframe bool
-	AudioStreams       int
+	// ClosedGOP certifies a uniform closed-GOP structure from the container's
+	// sync-sample table (see closedGOPCadence): the stream starts with a
+	// keyframe and every GOP boundary occurs at a strictly regular interval.
+	// It is a conservative proxy for closed-GOP encoding — it is never derived
+	// from FirstFrameKeyframe alone and fails closed (false) when the cadence
+	// cannot be proven.
+	ClosedGOP    bool
+	AudioStreams int
 }
 
 type ffprobeDocument struct {
@@ -42,9 +48,6 @@ type ffprobeDocument struct {
 	Format struct {
 		FormatName string `json:"format_name"`
 		Duration   string `json:"duration"`
-		Tags       struct {
-			Encoder string `json:"encoder"`
-		} `json:"tags"`
 	} `json:"format"`
 }
 
@@ -58,7 +61,7 @@ func ProbeFile(ctx context.Context, path string) (ProbeResult, error) {
 	if err := json.Unmarshal(out, &doc); err != nil {
 		return ProbeResult{}, fmt.Errorf("ffprobe decode %s: %w", path, err)
 	}
-	result := ProbeResult{Container: doc.Format.FormatName, Encoder: doc.Format.Tags.Encoder}
+	result := ProbeResult{Container: doc.Format.FormatName}
 	if duration, err := strconv.ParseFloat(doc.Format.Duration, 64); err == nil && duration > 0 {
 		result.DurationUS = int64(duration * 1_000_000)
 	}
@@ -111,7 +114,69 @@ func ProbeFile(ctx context.Context, path string) (ProbeResult, error) {
 			}
 		}
 	}
+
+	// Closed-GOP certification: reads only the container packet table (no
+	// decode), so the cadence check is cheap even on long clips.
+	result.ClosedGOP = probeClosedGOP(ctx, path)
 	return result, nil
+}
+
+// probeClosedGOP inspects the video stream's sync-sample (keyframe) table and
+// certifies a uniform closed-GOP structure. It fails closed: any probe or
+// container error yields false, never a guess.
+func probeClosedGOP(ctx context.Context, path string) bool {
+	cmd := exec.CommandContext(ctx, "ffprobe", "-v", "error", "-select_streams", "v:0",
+		"-show_packets", "-show_entries", "packet=flags", "-of", "json", path)
+	out, err := cmd.Output()
+	if err != nil {
+		return false
+	}
+	var doc struct {
+		Packets []struct {
+			Flags string `json:"flags"`
+		} `json:"packets"`
+	}
+	if err := json.Unmarshal(out, &doc); err != nil || len(doc.Packets) == 0 {
+		return false
+	}
+	keyframes := make([]bool, len(doc.Packets))
+	for i, p := range doc.Packets {
+		keyframes[i] = strings.Contains(p.Flags, "K")
+	}
+	return closedGOPCadence(keyframes)
+}
+
+// closedGOPCadence reports whether keyframes occur at strictly uniform packet
+// intervals starting at the first packet: positions 0, L, 2L, ... Uniform
+// IDR boundaries are the observable signature of closed-GOP encoding (each
+// GOP starts an independent IDR at a fixed cadence), while scene-cut or open
+// GOP structures break the cadence. Fewer than two keyframes cannot prove a
+// cadence, so the function returns false.
+func closedGOPCadence(keyframes []bool) bool {
+	if len(keyframes) == 0 || !keyframes[0] {
+		return false
+	}
+	positions := make([]int, 0, 8)
+	for i, kf := range keyframes {
+		if kf {
+			positions = append(positions, i)
+		}
+	}
+	// Two keyframes (one interval) cannot prove a cadence — any single
+	// interval is trivially "uniform". Require at least two full intervals.
+	if len(positions) < 3 {
+		return false
+	}
+	expected := positions[1] - positions[0]
+	if expected <= 0 {
+		return false
+	}
+	for i := 2; i < len(positions); i++ {
+		if positions[i]-positions[i-1] != expected {
+			return false
+		}
+	}
+	return true
 }
 
 // ValidateDecoded performs a complete decode pass. ffprobe validates container

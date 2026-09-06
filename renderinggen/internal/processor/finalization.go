@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"path/filepath"
 
@@ -79,8 +80,13 @@ func (f *ParentFinalizer) Finalize(ctx context.Context, parentID string, expecte
 	// The assembled parent is a temporary staging file: it is uploaded to L3
 	// (and optionally Drive) below and must never accumulate on the worker.
 	// The workspace root is frequently /dev/shm — i.e. RAM — so leaving the
-	// assembled parent behind is a memory leak, not just a disk one.
-	defer os.Remove(output)
+	// assembled parent behind is a memory leak, not just a disk one. A failed
+	// removal is logged: it is a leak that must be visible, never silent.
+	defer func() {
+		if err := os.Remove(output); err != nil && !os.IsNotExist(err) {
+			log.Printf("parent %s: remove staging output %s: %v", parentID, output, err)
+		}
+	}()
 	if err := f.assembler.Assemble(ctx, chronon.AssembleRequest{Inputs: inputs, Output: output}); err != nil {
 		return false, queue.Artifact{}, err
 	}

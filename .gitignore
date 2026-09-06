@@ -57,7 +57,3 @@ token.json
 !/testdata/golden/logo_pulse.png
 !/testdata/golden/overlay_chart.png
 !/testdata/golden/overlay_globe.png
-!/testdata/golden/fonts/
-/testdata/golden/fonts/*
-!/testdata/golden/fonts/DejaVuSans.ttf
-!/testdata/golden/fonts/Poppins-Bold.ttf

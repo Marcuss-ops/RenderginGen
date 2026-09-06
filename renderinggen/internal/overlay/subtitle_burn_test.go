@@ -6,6 +6,39 @@ import (
 	"testing"
 )
 
+func TestBurnASSIntoPlanTypedReportsCueCount(t *testing.T) {
+	plan := &Plan{Schema: "chronon.render-plan.v2", Version: 2, JobID: "j",
+		Canvas: Canvas{Width: 1920, Height: 1080, FPSNum: 30, FPSDen: 1, DurationFrames: 150},
+		Layers: []Layer{{ID: "source", Type: "video", Source: "assets/source.mp4", DurationFrames: 150}},
+		Output: Output{Path: "result.mp4", Format: "mp4", Codec: "h264"}}
+	ass := []byte(`[Events]
+Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
+Dialogue: 0,0:00:00.50,0:00:02.00,Default,,0,0,0,,Prima
+Dialogue: 0,0:00:03.00,0:00:04.00,Default,,0,0,0,,Dopo
+`)
+	style := &LayerStyle{FontSize: 52, Fill: "#FFFFFF"}
+	box := SubtitleStyleBox{Width: 1800, Height: 140, X: 60, Y: 758}
+
+	// The processor relies on this count for the subtitle_layers metric and
+	// the "lowered N ASS cues" log line: it must never silently be 0.
+	count, err := BurnASSIntoPlanTyped(plan, ass, "assets/fonts/Poppins-Bold.ttf", style, box)
+	if err != nil {
+		t.Fatalf("BurnASSIntoPlanTyped: %v", err)
+	}
+	if count != 2 {
+		t.Fatalf("cue count = %d, want 2", count)
+	}
+	layers := 0
+	for _, l := range plan.Layers {
+		if len(l.ID) >= len("subtitle_cue_") && l.ID[:len("subtitle_cue_")] == "subtitle_cue_" {
+			layers++
+		}
+	}
+	if layers != count {
+		t.Fatalf("plan holds %d subtitle_cue_ layers but count is %d", layers, count)
+	}
+}
+
 func TestBurnASSIntoPlanCreatesTimedGPUTextLayers(t *testing.T) {
 	plan := []byte(`{"schema":"chronon.render-plan.v2","version":2,"job_id":"j","canvas":{"width":1920,"height":1080,"fps_num":30,"fps_den":1,"duration_frames":150},"layers":[{"id":"source","type":"video","source":"assets/source.mp4","duration_frames":150}],"output":{"path":"result.mp4","format":"mp4","codec":"h264"}}`)
 	ass := []byte(`[Script Info]

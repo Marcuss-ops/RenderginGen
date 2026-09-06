@@ -188,7 +188,16 @@ func (c *Client) ClaimPendingWait(ctx context.Context, wait time.Duration) (*Job
 	return fromClaimed(claimed, err)
 }
 
-// ClaimRendered claims only jobs awaiting external publication.
+// ClaimWait performs one bounded long-poll claim for any claimable state
+// (pending AND rendered). Rendered jobs carry their durable artifact on claim
+// so the worker skips rendering and retries only the external publication.
+func (c *Client) ClaimWait(ctx context.Context, wait time.Duration) (*Job, error) {
+	claimed, err := c.q.ClaimWait(ctx, c.workerID, wait)
+	return fromClaimed(claimed, err)
+}
+
+// ClaimFinalization atomically claims a completed parent row so this worker
+// can assemble the chunked artifact (see processor.ParentFinalizer).
 func (c *Client) ClaimFinalization(ctx context.Context, parentID string) (*Job, bool, error) {
 	claimed, ok, err := c.q.ClaimFinalization(ctx, parentID, c.workerID)
 	if err != nil || !ok || claimed == nil {
@@ -212,6 +221,9 @@ func (c *Client) Children(ctx context.Context, parentID string) ([]*Job, error) 
 	return result, nil
 }
 
+// ClaimRendered claims only jobs awaiting external publication. The staged
+// worker claims both states via ClaimWait and does not call this; it remains
+// for tests and any dedicated publication-retry consumer.
 func (c *Client) ClaimRendered(ctx context.Context) (*Job, error) {
 	for {
 		claimed, err := c.q.ClaimRenderedWait(ctx, c.workerID, workerClaimWait)
