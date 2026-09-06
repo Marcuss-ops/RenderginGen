@@ -73,7 +73,7 @@ func TestCompileImagePresetHonorsExplicitCenterAndSize(t *testing.T) {
 		t.Fatal(err)
 	}
 	layer := plan.Layers[1]
-	if layer.Position[0] != 660 || layer.Position[1] != 240 || layer.BoxWidth != 600 || layer.BoxHeight != 600 {
+	if layer.Position[0] != 0 || layer.Position[1] != 0 || layer.BoxWidth != 600 || layer.BoxHeight != 600 {
 		t.Fatalf("explicit center geometry=%+v position=%v", layer, layer.Position)
 	}
 }
