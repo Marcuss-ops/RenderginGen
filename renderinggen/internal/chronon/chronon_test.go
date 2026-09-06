@@ -113,7 +113,7 @@ func TestRenderArgsForwardsEncodePresetOnNativeVideoPath(t *testing.T) {
 	for _, want := range []string{
 		"--hardware nvenc",
 		"--encoder-backend native",
-		"--gpu-hot-path-mode require_direct_yuv",
+		"--gpu-hot-path-mode require_gpu_native",
 		"--encode-preset p2",
 	} {
 		if !strings.Contains(joined, want) {

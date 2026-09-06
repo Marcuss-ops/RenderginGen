@@ -1,8 +1,9 @@
 worker:
   id: renderinggen-77
-  # CPU/I/O pipelines overlap preparation and post-processing; Chronon itself
-  # stays serialized to one GPU render lane.
+  # Keep CPU/I/O stages ahead of and behind the GPU lanes. Two lanes are the
+  # measured safe throughput point for an RTX A4000-class 16 GiB GPU.
   pipeline_workers: 3
+  gpu_lanes: 2
 
 queue:
   endpoint: https://queue.pipelinegen.example
