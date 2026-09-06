@@ -287,11 +287,14 @@ func (p *Processor) RunGPU(ctx context.Context, prepared *PreparedJob) error {
 			Backend:            p.backend,
 			GPURequired:        gpuRequired,
 			CPUFallbackAllowed: !p.strictNativeBackend,
-			// A plain source clip can use Chronon's direct-YUV NVDEC→NVENC
-			// path. Only plans with an authored visual layer require the full
-			// Vulkan graph/native-surface handoff; treating every source clip as
-			// a composition makes Chronon reject otherwise valid decoder frames.
-			CompositionRequired: planHasVisualOverlay(prepared.Plan),
+			// Clip renders always need a foreground/background composition. The
+			// direct-YUV path is reserved for a genuinely video-only render; it
+			// cannot preserve the foreground when the background is supplied as
+			// a second media input outside the concrete layer list.
+			// DirectYUV owns the video composition path, including multiple
+			// video layers plus the supported text/image overlays. Keep the
+			// general graph for authored compositions without a video source.
+			CompositionRequired: !hasSourceVideo && planHasVisualOverlay(prepared.Plan),
 			VideoSourceRequired: planHasVideoSource(prepared.Plan),
 			PacketCopyAllowed:   true,
 		},

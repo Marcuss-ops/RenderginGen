@@ -393,15 +393,23 @@ func renderArgs(req RenderRequest) []string {
 		// has already declared the semantic requirement, so make that contract
 		// explicit at the CLI boundary.
 		args = append(args, "--hardware", "nvenc")
-		// DirectYUV is the native fast path for plans with a video source.
-		// Image/text-only compositions have no decoder surface to feed it, so
-		// they must use Chronon's native composition graph instead.
+		// DirectYUV is valid only for a genuinely video-only plan. Any
+		// composition, including video background + foreground, must use the
+		// complete Vulkan graph so every visual input is preserved.
 		hotPath := "require_direct_yuv"
-		if req.Requirements.CompositionRequired && !req.Requirements.VideoSourceRequired {
-			// Image/text-only plans have no native decoder surface. Use the
-			// Vulkan compositor and the supported FFmpeg pipe encoder.
-			args = append(args, "--encoder-backend", "pipe")
-			hotPath = "auto"
+		if req.Requirements.CompositionRequired {
+			// Keep NVENC for video compositions; image/text-only plans have no
+			// decoder surface and use the supported FFmpeg pipe encoder.
+			if !req.Requirements.VideoSourceRequired {
+				args = append(args, "--encoder-backend", "pipe")
+				hotPath = "auto"
+			} else {
+				args = append(args, "--encoder-backend", "native")
+				if req.EncodePreset != "" {
+					args = append(args, "--encode-preset", req.EncodePreset)
+				}
+				hotPath = "require_gpu_native"
+			}
 		} else {
 			args = append(args, "--encoder-backend", "native")
 			if req.EncodePreset != "" {

@@ -36,6 +36,9 @@ func TestHasVisualOverlayDistinguishesVideoOnlyFromAuthoredComposition(t *testin
 	if planHasVisualOverlay(&overlay.Plan{Layers: []overlay.Layer{{Type: "video"}}}) {
 		t.Fatal("video-only plan must use direct-yuv")
 	}
+	if planHasVisualOverlay(&overlay.Plan{Layers: []overlay.Layer{{Type: "video"}, {Type: "video"}}}) {
+		t.Fatal("multi-video plan must use direct video composition")
+	}
 	if !planHasVisualOverlay(&overlay.Plan{Layers: []overlay.Layer{{Type: "text"}}}) {
 		t.Fatal("text-only plan must use native composition")
 	}

@@ -517,10 +517,15 @@ func planHasVisualOverlay(plan *overlay.Plan) bool {
 		return false
 	}
 	for _, layer := range plan.Layers {
+		if layer.Type == "video" {
+			continue
+		}
 		if layer.Type != "" && layer.Type != "video" {
 			return true
 		}
 	}
+	// DirectYUV supports the authored multi-video base/overlay path. Keep that
+	// fast path eligible; only non-video authored layers require the graph.
 	return false
 }
 
