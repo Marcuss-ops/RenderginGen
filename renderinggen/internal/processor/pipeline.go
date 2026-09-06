@@ -8,7 +8,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/chronon"
@@ -230,7 +229,15 @@ func (p *Processor) PrepareJob(ctx context.Context, job *queue.Job) (*PreparedJo
 	phaseStart = time.Now()
 	metadata := planMetadataOf(plan)
 	if !p.nativeOutputProfiles && metadata.ProfileID != "" {
+		// The executed plan diverges from the accepted job's plan by design
+		// (legacy runtimes reject unknown output properties), but the
+		// divergence must never be silent: downstream consumers need to
+		// distinguish "no profile requested" from "profile stripped by this
+		// worker's config", and an operator needs to see that the strip
+		// happened on every job it affects.
 		plan.Output.ProfileID = ""
+		metrics["profile_stripped_by_config"] = 1
+		log.Printf("job %s: output profile %q stripped (native_output_profiles=false); published artifact carries no profile_id", job.ID, metadata.ProfileID)
 	}
 	renderPlan, marshalErr := plan.Marshal()
 	if marshalErr != nil {
@@ -261,6 +268,12 @@ func (p *Processor) RunGPU(ctx context.Context, prepared *PreparedJob) error {
 	phaseStart := time.Now()
 	job := prepared.Job
 	metadata := planMetadataOf(prepared.Plan)
+	// The chunk contract is half-open [Start, End); Chronon consumes an
+	// inclusive last frame. The range is carried EXPLICITLY (RangeEnabled)
+	// because a chunk covering exactly frame 0 (Start=0, End=1 -> last=0) is
+	// otherwise indistinguishable from "render the whole plan", which would
+	// silently over-render a single-frame chunk.
+	firstFrame, lastFrame, hasFrameRange := jobFrameRange(job)
 	// Native NVENC is required for source-video jobs. Image/text-only plans
 	// still use the Vulkan compositor, but Chronon's pipe encoder is the
 	// supported output path and reports a software encoder by design.
@@ -283,6 +296,11 @@ func (p *Processor) RunGPU(ctx context.Context, prepared *PreparedJob) error {
 		AudioSourcePath: prepared.AudioSourcePath,
 		Report:          p.report,
 		EncodePreset:    p.encodePreset,
+		// Canonical verification: the worker resolves the policy (single
+		// authority, RENDERINGGEN_RECEIPT_VERIFY) and requests it explicitly
+		// from Chronon; Chronon verifies and records what actually ran in the
+		// receipt, which FinalizeJob enforces.
+		ReceiptVerify: string(renderVerificationLevel()),
 		Requirements: chronon.ExecutionRequirements{
 			Backend:            p.backend,
 			GPURequired:        gpuRequired,
@@ -298,10 +316,11 @@ func (p *Processor) RunGPU(ctx context.Context, prepared *PreparedJob) error {
 			VideoSourceRequired: planHasVideoSource(prepared.Plan),
 			PacketCopyAllowed:   true,
 		},
-		FirstFrame:  frameStart(job),
-		LastFrame:   frameEndInclusive(job),
-		Output:      chronon.OutputSpec{Codec: "h264"},
-		TotalFrames: int64(metadata.FrameCount),
+		FirstFrame:   firstFrame,
+		LastFrame:    lastFrame,
+		RangeEnabled: hasFrameRange,
+		Output:       chronon.OutputSpec{Codec: "h264"},
+		TotalFrames:  int64(metadata.FrameCount),
 		Progress: func(progress chronon.RenderProgress) {
 			sawProgress = true
 			lastProgress = progress
@@ -321,7 +340,7 @@ func (p *Processor) RunGPU(ctx context.Context, prepared *PreparedJob) error {
 	p.recordPhase("render", phaseStart)
 	// Duty-cycle telemetry: the gap this render waited since the previous
 	// render ended on this worker. First job reports 0.
-	prepared.Metrics["gpu_gap_us"] = takeGPUGap(phaseStart)
+	prepared.Metrics["gpu_gap_us"] = p.recordGPUGap(phaseStart)
 	// Frame-level observability: the final frame position the renderer
 	// reported plus its average fps (0 when the renderer printed no frame
 	// milestones — never silently confused with real progress).
@@ -374,19 +393,6 @@ func (p *Processor) FinalizeJob(ctx context.Context, prepared *PreparedJob) (que
 		metrics["probe_us"] = probeUS
 		metrics["probe_ms"] = probeUS / 1000
 
-		// The encoder/muxer has already consumed every rendered frame. A second
-		// full decode belongs to certification, not to the production render
-		// path. Keep the policy explicit so benchmark runs can compare fast,
-		// normal and certify without changing code.
-		if renderVerificationLevel() != renderVerifyFast {
-			decodeStart := time.Now()
-			if err := media.ValidateDecoded(ctx, outputPath); err != nil {
-				return queue.Artifact{}, fmt.Errorf("processor: full decode gate: %w", err)
-			}
-			decodeUS := float64(time.Since(decodeStart).Microseconds())
-			metrics["decode_us"] = decodeUS
-			metrics["decode_ms"] = decodeUS / 1000
-		}
 		if metadata.ProfileID != "" {
 			profile, err := media.ResolveProfile(metadata.ProfileID)
 			if err != nil {
@@ -407,6 +413,15 @@ func (p *Processor) FinalizeJob(ctx context.Context, prepared *PreparedJob) (que
 		}
 		probe = &probed
 	}
+	// Media decodability is verified by Chronon — the canonical verifier of
+	// the artifact Chronon itself produced — inside its receipt
+	// (normal/certify run the full decode passes there; fast skips re-decode
+	// by design). RenderingGen requests the policy and enforces the receipt
+	// result; it never re-decodes the output a second time. This runs for
+	// every finalized job, independent of overlay/profile probing.
+	if err := p.enforceReceiptVerification(outputPath); err != nil {
+		return queue.Artifact{}, err
+	}
 	return p.storeArtifact(ctx, job.ID, outputPath, plan, metrics, prepared.totalStart, probe, prepared.Stats, prepared.InputBytes,
 		job.JobType == queue.JobTypeOverlayRender || metadata.ProfileID != "")
 }
@@ -419,17 +434,17 @@ const (
 	renderVerifyCertify renderVerifyLevel = "certify"
 )
 
-// renderVerificationLevel is intentionally independent from visual sampling:
-// fast is the production default, normal performs one complete decode, and
-// certify is the explicit correctness mode used by CI/golden benchmarks.
-// CHRONON_RECEIPT_VERIFY is accepted as an alias so a worker and its Chronon
-// subprocess cannot accidentally run with different policies.
+// renderVerificationLevel is the SINGLE verification-policy authority on the
+// worker. fast (the production default) verifies container/stream metadata
+// without re-decoding the freshly muxed output; normal performs one complete
+// decode; certify is the explicit correctness mode used by CI/golden
+// benchmarks. Only RENDERINGGEN_RECEIPT_VERIFY is read here — the historical
+// CHRONON_RECEIPT_VERIFY alias is deliberately NOT consulted, so the worker
+// and its Chronon subprocess cannot run different policies. The resolved
+// level is forwarded explicitly to the CLI (chronon.RenderRequest.
+// ReceiptVerify -> CHRONON_RECEIPT_VERIFY on the subprocess env) by RunGPU.
 func renderVerificationLevel() renderVerifyLevel {
-	raw := os.Getenv("RENDERINGGEN_RECEIPT_VERIFY")
-	if raw == "" {
-		raw = os.Getenv("CHRONON_RECEIPT_VERIFY")
-	}
-	switch renderVerifyLevel(raw) {
+	switch renderVerifyLevel(os.Getenv("RENDERINGGEN_RECEIPT_VERIFY")) {
 	case renderVerifyNormal:
 		return renderVerifyNormal
 	case renderVerifyCertify:
@@ -437,6 +452,33 @@ func renderVerificationLevel() renderVerifyLevel {
 	default:
 		return renderVerifyFast
 	}
+}
+
+// enforceReceiptVerification makes the worker enforce — never duplicate —
+// Chronon's canonical output verification. Under normal/certify the receipt
+// is mandatory evidence: Chronon promised a full decode there, and a missing
+// receipt means the canonical verifier did not run, so the artifact is
+// rejected (fail closed) rather than silently accepted on the worker's own
+// probe. Under fast a missing receipt is tolerated: the gate is the
+// encoder/muxer success plus the profile/overlay probe validation below. When
+// the receipt is present the aggregate verification status must be pass at
+// every policy — Chronon's media checks (container, codec, pixel format,
+// resolution, fps, audio, optional decode) are the verdict.
+func (p *Processor) enforceReceiptVerification(outputPath string) error {
+	receipt, err := chronon.ReadMediaReceipt(outputPath)
+	policy := renderVerificationLevel()
+	if err != nil {
+		if policy == renderVerifyFast {
+			// Fast never promises a decode; the output is certified by the
+			// in-process encoder/muxer success and the probe validation below.
+			return nil
+		}
+		return fmt.Errorf("processor: canonical verification did not run (policy=%s): %w", policy, err)
+	}
+	if !receipt.VerificationPassed() {
+		return fmt.Errorf("processor: Chronon receipt verification failed (policy=%s status=%q)", policy, receipt.Verification.Status)
+	}
+	return nil
 }
 
 // deepVisualValidationEnabled reports whether the sampled ffmpeg visual
@@ -448,38 +490,33 @@ func deepVisualValidationEnabled() bool {
 	return os.Getenv("RENDERINGGEN_DEEP_VISUAL") == "1"
 }
 
-// gpuGap tracks the wall-clock gap between the end of one GPU render and the
-// start of the next on this worker. It is the primary duty-cycle KPI: the
-// true enemy is not render duration but the dead time between renders. The
-// gap is recorded as a per-job metric (gpu_gap_us) on the following job.
-var gpuGap struct {
-	mu            sync.Mutex
-	lastRenderEnd time.Time
-}
+// The GPU duty-cycle KPI (gpu_gap_us) is scoped to the Processor instance, not
+// to package-level state. The worker's GPU lanes and the serial StagedRender
+// path share one Processor, so "the gap between one render's end and the next
+// render's start on this worker" is measured per processor — never polluted by
+// other Processors (e.g. tests running in the same process), and never
+// misattributed across workers.
 
-// takeGPUGap closes the gap since the previous render end (0 on first use)
-// and records this render's end for the next job.
-func takeGPUGap(renderStart time.Time) float64 {
-	gpuGap.mu.Lock()
-	defer gpuGap.mu.Unlock()
+// recordGPUGap closes the gap since the previous render end recorded on this
+// processor (0 on first use). RunGPU calls it with this render's start.
+func (p *Processor) recordGPUGap(renderStart time.Time) float64 {
+	p.gpuGapMu.Lock()
+	defer p.gpuGapMu.Unlock()
 	var gapUS float64
-	if !gpuGap.lastRenderEnd.IsZero() && renderStart.After(gpuGap.lastRenderEnd) {
-		gapUS = float64(renderStart.Sub(gpuGap.lastRenderEnd).Microseconds())
+	if !p.gpuGapLastRenderEnd.IsZero() && renderStart.After(p.gpuGapLastRenderEnd) {
+		gapUS = float64(renderStart.Sub(p.gpuGapLastRenderEnd).Microseconds())
 	}
 	return gapUS
 }
 
-// PutGPURenderEnd stores the completion time of the most recent render.
-// Exported so the concurrent GPU lane in the worker main can record render
-// ends exactly like the serial StagedRender path does.
-func PutGPURenderEnd(renderEnd time.Time) {
-	gpuGap.mu.Lock()
-	gpuGap.lastRenderEnd = renderEnd
-	gpuGap.mu.Unlock()
+// PutGPURenderEnd stores the completion time of the most recent render on this
+// processor. Exported so the concurrent GPU lane in the worker main can record
+// render ends exactly like the serial StagedRender path does.
+func (p *Processor) PutGPURenderEnd(renderEnd time.Time) {
+	p.gpuGapMu.Lock()
+	p.gpuGapLastRenderEnd = renderEnd
+	p.gpuGapMu.Unlock()
 }
-
-// putGPURenderEnd is the internal alias used by StagedRender.
-func putGPURenderEnd(renderEnd time.Time) { PutGPURenderEnd(renderEnd) }
 
 // StagedRender runs the three stages serially for one job; used when a caller
 // wants the staged pipeline semantics without the concurrent worker pools
@@ -499,6 +536,6 @@ func (p *Processor) StagedRender(ctx context.Context, job *queue.Job) (queue.Art
 	if err := p.RunGPU(ctx, prepared); err != nil {
 		return queue.Artifact{}, err
 	}
-	putGPURenderEnd(time.Now())
+	p.PutGPURenderEnd(time.Now())
 	return p.FinalizeJob(ctx, prepared)
 }

@@ -65,6 +65,13 @@ func (c *IPCClient) Shutdown(ctx context.Context) error {
 }
 
 // renderJobPayload is the JSON payload for the RENDER_JOB IPC command.
+//
+// Wire note: first_frame/last_frame use omitempty, so a range ending exactly
+// at frame 0 (first=0, last=0) is not expressible to the daemon and is sent as
+// "absent" (daemon default = whole plan). That corner (a single-frame chunk
+// starting at frame 0) is representable on the CLI subprocess path
+// (renderArgs emits --start-frame 0 --end-frame 0); the daemon contract would
+// need to drop omitempty on both fields to close it on the IPC path.
 type renderJobPayload struct {
 	PlanPath              string                `json:"plan_path"`
 	AssetsRoot            string                `json:"assets_root"`

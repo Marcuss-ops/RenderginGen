@@ -157,6 +157,12 @@ func (s *Service) WaitAndClaim(ctx context.Context, workerID string, state model
 	deadline := time.NewTimer(maxWait)
 	defer deadline.Stop()
 	wake := s.notify.Done()
+	// Fallback re-poll delay grows after every empty poll so an idle fleet of
+	// waiting claims does not pound render_jobs with a fixed 1 Hz atomic-claim
+	// baseline each; a wake-up signal (or a successful claim) resets it so the
+	// worker stays responsive the moment work actually appears.
+	pollDelay := time.Second
+	const maxPollDelay = 10 * time.Second
 	for {
 		select {
 		case <-ctx.Done():
@@ -168,14 +174,21 @@ func (s *Service) WaitAndClaim(ctx context.Context, workerID string, state model
 			if err != nil || job != nil {
 				return job, lease, err
 			}
-			// Signal consumed by a competing worker; keep waiting.
+			// Signal consumed by a competing worker; stay responsive and keep
+			// waiting at the fresh backoff.
 			wake = s.notify.Done()
-		case <-time.After(time.Second):
+			pollDelay = time.Second
+		case <-time.After(pollDelay):
 			// Bounded fallback re-poll so a missed wake-up cannot stall a
-			// worker until the deadline.
+			// worker until the deadline. Back off after every empty poll;
+			// the deadline timer bounds the total wait regardless.
 			job, lease, err := s.ClaimState(workerID, state)
 			if err != nil || job != nil {
 				return job, lease, err
+			}
+			pollDelay *= 2
+			if pollDelay > maxPollDelay {
+				pollDelay = maxPollDelay
 			}
 		}
 	}
@@ -298,34 +311,6 @@ func (s *Service) SetProgress(id, workerID string, p model.Progress) error {
 	return s.repo.SetProgress(id, workerID, p)
 }
 
-// ValidateChildren enforces the parent chunk contract: exact expected count,
-// indices 0..N-1, contiguous half-open frame ranges, and completed artifacts.
-func ValidateChildren(children []*model.Job, expected int64, start, end int64) error {
-	if expected <= 0 || end <= start {
-		return fmt.Errorf("invalid parent chunk contract")
-	}
-	if int64(len(children)) != expected {
-		return fmt.Errorf("chunk count %d, want %d", len(children), expected)
-	}
-	cursor := start
-	for i, child := range children {
-		if child == nil || child.ChunkIndex != i {
-			return fmt.Errorf("chunk index at position %d is invalid", i)
-		}
-		if child.State != model.StateCompleted || child.Artifact == nil || child.Artifact.StorageKey == "" {
-			return fmt.Errorf("chunk %d is not completed with an artifact", i)
-		}
-		if child.FrameRange == nil || child.FrameRange.Start != cursor || child.FrameRange.End <= child.FrameRange.Start {
-			return fmt.Errorf("chunk %d has gap, overlap, or invalid frame range", i)
-		}
-		cursor = child.FrameRange.End
-	}
-	if cursor != end {
-		return fmt.Errorf("chunk ranges end at %d, want %d", cursor, end)
-	}
-	return nil
-}
-
 // Stats returns a snapshot of the queue state.
 func (s *Service) Stats() model.Stats {
 	return s.repo.Stats()
@@ -347,12 +332,22 @@ func (s *Service) observePendingThrottled(force bool) {
 	if s.metrics == nil {
 		return
 	}
+	// Read/advance the throttle clock under the lock, then fetch the stats
+	// OUTSIDE it: repo.Stats() is a full-table COUNT(*) FILTER scan on
+	// PostgreSQL, and every state-changing path (Claim, Complete, Fail,
+	// Rendered, RequeueExpired) funnels through here. Holding the service-wide
+	// mutex across that scan would serialize the whole queue hot path behind
+	// observability on a large render_jobs table. A concurrent caller may now
+	// pass the throttle and double-issue one scan; that is bounded, benign
+	// contention, not a correctness hazard — the gauge is observability.
 	s.pendingGaugeMu.Lock()
-	defer s.pendingGaugeMu.Unlock()
 	if !force && !s.pendingGaugeLast.IsZero() && time.Since(s.pendingGaugeLast) < pendingGaugeInterval {
+		s.pendingGaugeMu.Unlock()
 		return
 	}
 	s.pendingGaugeLast = time.Now()
+	s.pendingGaugeMu.Unlock()
+
 	s.metrics.JobsPending.Set(float64(s.repo.Stats().Pending))
 }
 

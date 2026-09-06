@@ -84,36 +84,15 @@ type Job struct {
 // Artifact is the metadata of the artifact produced for a completed job,
 // including the copy-only certification VeloxEditing uses to assemble the
 // overlay without re-decoding or re-encoding it.
-type Artifact struct {
-	ID                 string             `json:"id,omitempty"`
-	Kind               string             `json:"kind,omitempty"`
-	StorageKey         string             `json:"storage_key,omitempty"`
-	ArtifactURL        string             `json:"artifact_url,omitempty"`
-	ArtifactHash       string             `json:"artifact_hash,omitempty"`
-	ContentType        string             `json:"content_type,omitempty"`
-	SizeBytes          int64              `json:"size_bytes,omitempty"`
-	Width              int                `json:"width,omitempty"`
-	Height             int                `json:"height,omitempty"`
-	FPSNum             int                `json:"fps_num,omitempty"`
-	FPSDen             int                `json:"fps_den,omitempty"`
-	FrameCount         int                `json:"frame_count,omitempty"`
-	DurationUS         int64              `json:"duration_us,omitempty"`
-	ProfileID          string             `json:"profile_id,omitempty"`
-	CopyEligible       bool               `json:"copy_eligible,omitempty"`
-	Codec              string             `json:"codec,omitempty"`
-	CodecProfile       string             `json:"codec_profile,omitempty"`
-	ClosedGOP          bool               `json:"closed_gop,omitempty"`
-	FirstFrameKeyframe bool               `json:"first_frame_keyframe,omitempty"`
-	Backend            string             `json:"backend,omitempty"`
-	ChrononVersion     string             `json:"chronon_version,omitempty"`
-	Metrics            map[string]float64 `json:"metrics,omitempty"`
-	DriveFileID        string             `json:"drive_file_id,omitempty"`
-	DriveLink          string             `json:"drive_link,omitempty"`
-	Container          string             `json:"container,omitempty"`
-	PixelFormat        string             `json:"pixel_format,omitempty"`
-	AudioStreams       int                `json:"audio_streams,omitempty"`
-	ChrononTelemetry   json.RawMessage    `json:"chronon_telemetry,omitempty"`
-}
+//
+// It is an ALIAS of the queue module's public client type (the same pattern as
+// Worker below): the worker and the queue speak one artifact contract, and the
+// historical toClientArtifact/fromClientArtifact mappers — six hand-written
+// field lists that drifted (e.g. ClosedGOP reached queue.Artifact before the
+// queue module's model) — no longer exist because there is only one type to
+// edit. A new artifact field is added once, in queue/client, and every layer
+// compiles against it.
+type Artifact = queueclient.Artifact
 
 // Worker is the worker registration payload.
 type Worker = queueclient.Worker
@@ -163,31 +142,6 @@ func (c *Client) Claim(ctx context.Context) (*Job, error) {
 	return fromClaimed(claimed, err)
 }
 
-// ClaimPending blocks efficiently until render work is available or ctx is
-// cancelled. The queue server wakes this long poll on submit/requeue, so the
-// worker no longer pays a fixed idle ticker before starting the next render.
-func (c *Client) ClaimPending(ctx context.Context) (*Job, error) {
-	for {
-		claimed, err := c.q.ClaimPendingWait(ctx, c.workerID, workerClaimWait)
-		if err != nil {
-			return fromClaimed(claimed, err)
-		}
-		if claimed != nil {
-			return fromClaimed(claimed, nil)
-		}
-		if ctx.Err() != nil {
-			return nil, nil
-		}
-	}
-}
-
-// ClaimPendingWait performs one bounded long-poll claim. It is exposed for
-// tests and callers that need explicit wait control.
-func (c *Client) ClaimPendingWait(ctx context.Context, wait time.Duration) (*Job, error) {
-	claimed, err := c.q.ClaimPendingWait(ctx, c.workerID, wait)
-	return fromClaimed(claimed, err)
-}
-
 // ClaimWait performs one bounded long-poll claim for any claimable state
 // (pending AND rendered). Rendered jobs carry their durable artifact on claim
 // so the worker skips rendering and retries only the external publication.
@@ -216,33 +170,9 @@ func (c *Client) Children(ctx context.Context, parentID string) ([]*Job, error) 
 	result := make([]*Job, len(children))
 	for i := range children {
 		child := children[i]
-		result[i] = &Job{ID: child.ID, ParentJobID: child.ParentJobID, ChunkIndex: child.ChunkIndex, FrameRange: fromClientFrameRange(child.FrameRange), State: State(child.State), Artifact: fromClientArtifact(child.Artifact)}
+		result[i] = &Job{ID: child.ID, ParentJobID: child.ParentJobID, ChunkIndex: child.ChunkIndex, FrameRange: fromClientFrameRange(child.FrameRange), State: State(child.State), Artifact: child.Artifact}
 	}
 	return result, nil
-}
-
-// ClaimRendered claims only jobs awaiting external publication. The staged
-// worker claims both states via ClaimWait and does not call this; it remains
-// for tests and any dedicated publication-retry consumer.
-func (c *Client) ClaimRendered(ctx context.Context) (*Job, error) {
-	for {
-		claimed, err := c.q.ClaimRenderedWait(ctx, c.workerID, workerClaimWait)
-		if err != nil {
-			return fromClaimed(claimed, err)
-		}
-		if claimed != nil {
-			return fromClaimed(claimed, nil)
-		}
-		if ctx.Err() != nil {
-			return nil, nil
-		}
-	}
-}
-
-// ClaimRenderedWait performs one bounded long-poll publication claim.
-func (c *Client) ClaimRenderedWait(ctx context.Context, wait time.Duration) (*Job, error) {
-	claimed, err := c.q.ClaimRenderedWait(ctx, c.workerID, wait)
-	return fromClaimed(claimed, err)
 }
 
 func fromClaimed(claimed *queueclient.ClaimedJob, err error) (*Job, error) {
@@ -265,7 +195,7 @@ func fromClaimed(claimed *queueclient.ClaimedJob, err error) (*Job, error) {
 		Assets:         fromClientAssets(claimed.Assets),
 		Lease:          claimed.Lease,
 		State:          State(claimed.State),
-		Artifact:       fromClientArtifact(claimed.Artifact),
+		Artifact:       claimed.Artifact,
 	}, nil
 }
 
@@ -282,7 +212,7 @@ func (c *Client) Submit(ctx context.Context, job Job) error {
 
 // Complete reports a successfully rendered job along with its artifact.
 func (c *Client) Complete(ctx context.Context, id string, artifact Artifact) error {
-	return c.q.Complete(ctx, id, c.workerID, toClientArtifact(artifact))
+	return c.q.Complete(ctx, id, c.workerID, artifact)
 }
 
 // Fail reports a job that could not be rendered.
@@ -294,7 +224,7 @@ func (c *Client) Fail(ctx context.Context, id, reason string) error {
 // whose external publication (Drive) failed. The job stays claimable for a
 // publication-only retry.
 func (c *Client) Rendered(ctx context.Context, id, reason string, artifact Artifact) error {
-	return c.q.Rendered(ctx, id, c.workerID, reason, toClientArtifact(artifact))
+	return c.q.Rendered(ctx, id, c.workerID, reason, artifact)
 }
 
 // Renew extends the lease on a running job, signalling liveness during a long
@@ -347,73 +277,4 @@ func fromClientAssets(in []queueclient.AssetRef) []AssetRef {
 		out[i] = AssetRef{Hash: a.Hash, LogicalPath: a.LogicalPath, SourceURL: a.SourceURL}
 	}
 	return out
-}
-
-func toClientArtifact(in Artifact) queueclient.Artifact {
-	return queueclient.Artifact{
-		ID:                 in.ID,
-		Kind:               in.Kind,
-		StorageKey:         in.StorageKey,
-		ArtifactURL:        in.ArtifactURL,
-		ArtifactHash:       in.ArtifactHash,
-		ContentType:        in.ContentType,
-		SizeBytes:          in.SizeBytes,
-		Width:              in.Width,
-		Height:             in.Height,
-		FPSNum:             in.FPSNum,
-		FPSDen:             in.FPSDen,
-		FrameCount:         in.FrameCount,
-		DurationUS:         in.DurationUS,
-		ProfileID:          in.ProfileID,
-		CopyEligible:       in.CopyEligible,
-		Codec:              in.Codec,
-		CodecProfile:       in.CodecProfile,
-		ClosedGOP:          in.ClosedGOP,
-		FirstFrameKeyframe: in.FirstFrameKeyframe,
-		Backend:            in.Backend,
-		ChrononVersion:     in.ChrononVersion,
-		Metrics:            in.Metrics,
-		DriveFileID:        in.DriveFileID,
-		DriveLink:          in.DriveLink,
-		Container:          in.Container,
-		PixelFormat:        in.PixelFormat,
-		AudioStreams:       in.AudioStreams,
-		ChrononTelemetry:   in.ChrononTelemetry,
-	}
-}
-
-func fromClientArtifact(in *queueclient.Artifact) *Artifact {
-	if in == nil {
-		return nil
-	}
-	return &Artifact{
-		ID:                 in.ID,
-		Kind:               in.Kind,
-		StorageKey:         in.StorageKey,
-		ArtifactURL:        in.ArtifactURL,
-		ArtifactHash:       in.ArtifactHash,
-		ContentType:        in.ContentType,
-		SizeBytes:          in.SizeBytes,
-		Width:              in.Width,
-		Height:             in.Height,
-		FPSNum:             in.FPSNum,
-		FPSDen:             in.FPSDen,
-		FrameCount:         in.FrameCount,
-		DurationUS:         in.DurationUS,
-		ProfileID:          in.ProfileID,
-		CopyEligible:       in.CopyEligible,
-		Codec:              in.Codec,
-		CodecProfile:       in.CodecProfile,
-		ClosedGOP:          in.ClosedGOP,
-		FirstFrameKeyframe: in.FirstFrameKeyframe,
-		Backend:            in.Backend,
-		ChrononVersion:     in.ChrononVersion,
-		Metrics:            in.Metrics,
-		DriveFileID:        in.DriveFileID,
-		DriveLink:          in.DriveLink,
-		Container:          in.Container,
-		PixelFormat:        in.PixelFormat,
-		AudioStreams:       in.AudioStreams,
-		ChrononTelemetry:   in.ChrononTelemetry,
-	}
 }

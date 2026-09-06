@@ -71,7 +71,14 @@ type HealthConfig struct {
 	Addr string `yaml:"addr"`
 }
 
-// DriveConfig configures Google Drive publication of rendered artifacts.
+// DriveConfig configures the worker's Google Drive publication CAPABILITY.
+// enabled is a capability/configuration constraint only — it declares that
+// the worker holds Drive credentials — and never decides a job's intent.
+// Intent (who delivers a rendered segment to Drive) is resolved canonically
+// by processor.ResolvePublicationPolicy: queue-served render segments are
+// object-store-only because the submitter (PipelineGen master) publishes
+// clips; the worker's Drive capability serves the parent assembler and any
+// job whose submitter explicitly declared object_store_and_drive.
 // Publication is decoupled from rendering so a failed upload never forces a
 // GPU re-render; see the "rendered" job state.
 type DriveConfig struct {

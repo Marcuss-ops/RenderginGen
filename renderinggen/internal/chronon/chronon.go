@@ -27,6 +27,13 @@ import (
 // output or progress before being considered stalled.
 const DefaultStallTimeout = 3 * time.Minute
 
+// EnvReceiptVerify is the single environment variable through which
+// RenderingGen tells Chronon which output-verification policy to run
+// (fast | normal | certify). It is set explicitly on the CLI subprocess by
+// Client.Render; the worker never relies on ambient inheritance, so the two
+// cannot drift.
+const EnvReceiptVerify = "CHRONON_RECEIPT_VERIFY"
+
 // maxRenderOutputLine caps the length of a single output line forwarded for
 // progress/log processing. Chronon lines are short (frame milestones, log
 // records); the cap is a guard against a pathological single line (a debug
@@ -73,13 +80,27 @@ type RenderRequest struct {
 	// the visual render plan: Chronon renders video, while the native encoder
 	// copies/transcodes the declared master audio stream.
 	AudioSourcePath string
-	FirstFrame      int64 // optional global first frame for chunk execution
-	LastFrame       int64 // optional inclusive global last frame for chunk execution
-	Report          bool  // emit the execution report + telemetry JSONL (--report)
+	// RangeEnabled marks FirstFrame/LastFrame as an explicit chunk range.
+	// It exists because a chunk covering exactly frame 0 (FirstFrame=0,
+	// LastFrame=0) is otherwise indistinguishable from "no range" — and a
+	// missing range must render the WHOLE plan, never a single frame. When
+	// RangeEnabled is false, FirstFrame/LastFrame are ignored.
+	RangeEnabled bool
+	FirstFrame   int64 // first frame to render (only when RangeEnabled)
+	LastFrame    int64 // inclusive last frame to render (only when RangeEnabled)
+	Report       bool  // emit the execution report + telemetry JSONL (--report)
 	// EncodePreset is an explicit FFmpeg NVENC preset (e.g. "p2") forwarded
 	// to the chronon CLI for native GPU jobs. Empty preserves the engine
 	// default.
 	EncodePreset string
+	// ReceiptVerify is the explicit output-verification policy
+	// ("fast" | "normal" | "certify") RenderingGen requests for this render.
+	// The worker is the single policy authority: it forwards the resolved
+	// policy as CHRONON_RECEIPT_VERIFY on the subprocess environment so the
+	// CLI can never silently drift from the worker (no reliance on ambient
+	// env inheritance). Empty leaves the CLI's own default in place for
+	// callers outside the worker pipeline.
+	ReceiptVerify string
 	// Progress, when non-nil, receives a milestone snapshot every time the
 	// renderer reports a frame position. It is invoked from the output
 	// streaming goroutines and must be cheap and concurrency-safe.
@@ -226,6 +247,16 @@ func (c *Client) Render(ctx context.Context, req RenderRequest) error {
 	args := renderArgs(req)
 	cmd := exec.CommandContext(renderCtx, c.Binary(), args...)
 	cmd.Dir = filepath.Dir(req.PlanPath)
+	if req.ReceiptVerify != "" {
+		// Canonical verification boundary: RenderingGen requests the policy,
+		// Chronon verifies. Passing the resolved policy explicitly (rather
+		// than inheriting whatever CHRONON_RECEIPT_VERIFY the ambient
+		// environment holds) makes a worker/CLI policy split impossible. The
+		// IPC daemon path is unaffected: the daemon reads the same policy
+		// from the worker env at startup, and the production hot path is CLI
+		// mode.
+		cmd.Env = append(os.Environ(), EnvReceiptVerify+"="+req.ReceiptVerify)
+	}
 
 	stdoutPipe, err := cmd.StdoutPipe()
 	if err != nil {
@@ -433,7 +464,11 @@ func renderArgs(req RenderRequest) []string {
 		// open it after materialization.
 		args = append(args, "--gop-source", req.AudioSourcePath)
 	}
-	if req.LastFrame >= req.FirstFrame && (req.FirstFrame != 0 || req.LastFrame != 0) {
+	if req.RangeEnabled && req.LastFrame >= req.FirstFrame {
+		// Only an explicit range is emitted. Without RangeEnabled the plan
+		// renders in full — even when both coordinates happen to be zero (a
+		// single-frame chunk starting at frame 0 must reach Chronon as
+		// --start-frame 0 --end-frame 0, never as "whole plan").
 		args = append(args, "--start-frame", fmt.Sprint(req.FirstFrame), "--end-frame", fmt.Sprint(req.LastFrame))
 	}
 	return args

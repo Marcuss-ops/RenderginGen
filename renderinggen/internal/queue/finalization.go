@@ -2,14 +2,20 @@ package queue
 
 import "fmt"
 
-// ValidateChildren enforces exact count, indices, completed artifacts, and
-// contiguous half-open frame ranges for a parent assembly.
-func ValidateChildren(children []*Job, expected, start, end int64) error {
-	if expected <= 0 || end <= start {
+// ValidateChildren enforces the parent assembly contract for one chunk family:
+// children arrive in deterministic chunk order (index 0..N-1), every child is
+// completed with a durable artifact, and their half-open frame ranges tile
+// [start, end) contiguously — no holes, gaps or overlaps.
+//
+// There is intentionally no "expected count" parameter: the worker cannot know
+// a parent's planned chunk count independently of the children the queue
+// returns (rows are insert-only and Children returns the whole family), so an
+// expected-count check at the production call site could never fire — a lying
+// contract. Dense indices plus exact frame coverage of [start, end) are the
+// strongest verifiable completeness signal.
+func ValidateChildren(children []*Job, start, end int64) error {
+	if end <= start {
 		return fmt.Errorf("invalid parent chunk contract")
-	}
-	if int64(len(children)) != expected {
-		return fmt.Errorf("chunk count %d, want %d", len(children), expected)
 	}
 	cursor := start
 	for i, child := range children {

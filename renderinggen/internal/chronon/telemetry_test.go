@@ -88,11 +88,13 @@ func TestReadMediaReceiptTiming(t *testing.T) {
 		t.Errorf("decode_ms present (%v), want omitted for the fast-policy -1 sentinel", metrics["chronon_receipt_decode_ms"])
 	}
 
-	// Certify/normal policy measured a real decode: the phase is projected.
+	// Certify/normal policy measured a real decode + count-frames pass: both
+	// phases are projected, and the verification block labels the run.
 	write(".receipt.json", `{
 	  "schema": "chronon3d.render-receipt.v1",
 	  "output": {"bytes": 12345, "sha256": "abc123"},
-	  "timing_ms": {"sha256_ms": 9.5, "probe_ms": 240.0, "decode_ms": 3100.75, "total_ms": 3360.0}
+	  "verification": {"requested_policy": "certify", "resolved_policy": "certify", "status": "pass"},
+	  "timing_ms": {"sha256_ms": 9.5, "probe_ms": 240.0, "count_frames_ms": 780.5, "decode_ms": 3100.75, "total_ms": 4140.0}
 	}`)
 	receipt, err = ReadMediaReceipt(output)
 	if err != nil {
@@ -101,5 +103,74 @@ func TestReadMediaReceiptTiming(t *testing.T) {
 	metrics = receipt.ReceiptTimingMetrics()
 	if got := metrics["chronon_receipt_decode_ms"]; got != 3100.75 {
 		t.Errorf("decode_ms = %v, want 3100.75", got)
+	}
+	if got := metrics["chronon_receipt_count_frames_ms"]; got != 780.5 {
+		t.Errorf("count_frames_ms = %v, want 780.5", got)
+	}
+	vmetrics := receipt.VerificationMetrics()
+	if got := vmetrics["chronon_receipt_verification_policy"]; got != 3 {
+		t.Errorf("verification_policy = %v, want 3 (certify)", got)
+	}
+	if got := vmetrics["chronon_receipt_verification_status"]; got != 1 {
+		t.Errorf("verification_status = %v, want 1 (pass)", got)
+	}
+}
+
+// TestReadMediaReceiptFastLabelsPolicy verifies the fast policy (the
+// production default) is recorded on the receipt so reports can label the run
+// without inferring the policy from the absence of decode timings.
+func TestReadMediaReceiptFastLabelsPolicy(t *testing.T) {
+	dir := t.TempDir()
+	output := filepath.Join(dir, "out.mp4")
+	fixture := `{
+	  "schema": "chronon3d.render-receipt.v1",
+	  "output": {"bytes": 12345, "sha256": "abc123"},
+	  "verification": {"requested_policy": "", "resolved_policy": "fast", "status": "pass"},
+	  "timing_ms": {"sha256_ms": 9.5, "probe_ms": 41.25, "count_frames_ms": -1.0, "decode_ms": -1.0, "total_ms": 52.0}
+	}`
+	if err := os.WriteFile(output+".receipt.json", []byte(fixture), 0o600); err != nil {
+		t.Fatalf("write fixture: %v", err)
+	}
+	receipt, err := ReadMediaReceipt(output)
+	if err != nil {
+		t.Fatalf("ReadMediaReceipt: %v", err)
+	}
+	vmetrics := receipt.VerificationMetrics()
+	if got := vmetrics["chronon_receipt_verification_policy"]; got != 1 {
+		t.Errorf("verification_policy = %v, want 1 (fast)", got)
+	}
+	// Decode/count-frames never ran under fast: the -1 sentinels are omitted.
+	metrics := receipt.ReceiptTimingMetrics()
+	for _, absent := range []string{"chronon_receipt_decode_ms", "chronon_receipt_count_frames_ms"} {
+		if _, present := metrics[absent]; present {
+			t.Errorf("%s present (%v), want omitted under fast", absent, metrics[absent])
+		}
+	}
+}
+
+// TestReadMediaReceiptLegacyCountFramesAbsent pins the schema-upgrade
+// boundary: a receipt written before count_frames_ms existed has no such key;
+// it must decode to the -1 "did not run" sentinel (never a fabricated 0 ms
+// measurement) and therefore project nothing.
+func TestReadMediaReceiptLegacyCountFramesAbsent(t *testing.T) {
+	dir := t.TempDir()
+	output := filepath.Join(dir, "out.mp4")
+	fixture := `{
+	  "schema": "chronon3d.render-receipt.v1",
+	  "output": {"bytes": 12345, "sha256": "abc123"},
+	  "timing_ms": {"sha256_ms": 9.5, "probe_ms": 41.25, "decode_ms": -1.0, "total_ms": 52.0}
+	}`
+	if err := os.WriteFile(output+".receipt.json", []byte(fixture), 0o600); err != nil {
+		t.Fatalf("write fixture: %v", err)
+	}
+	receipt, err := ReadMediaReceipt(output)
+	if err != nil {
+		t.Fatalf("ReadMediaReceipt: %v", err)
+	}
+	if receipt.Timing.CountFramesMS != -1 {
+		t.Errorf("CountFramesMS = %v, want -1 for a pre-schema receipt", receipt.Timing.CountFramesMS)
+	}
+	if _, present := receipt.ReceiptTimingMetrics()["chronon_receipt_count_frames_ms"]; present {
+		t.Errorf("count_frames_ms projected from a legacy receipt without the key")
 	}
 }

@@ -67,10 +67,19 @@ func TestDaemonVulkanStabilityRecovery(t *testing.T) {
 	if os.Getenv("CHRONON_STABILITY_KEEP") != "1" {
 		defer ws.Cleanup()
 	}
-	store := storage.New(storage.NewMemory(), storage.Options{})
+	// The L2 cache lives inside the workspace root so the workspace can
+	// hard-link the resolved files (same filesystem); the path resolver is the
+	// same zero-copy surface the production pipeline uses.
+	store := storage.New(storage.NewMemory(), storage.Options{L2Dir: filepath.Join(workspaceRoot, ".l2")})
 	seedGoldenAssets(t, store, job.Assets)
-	resolve := func(ctx context.Context, asset queue.AssetRef) ([]byte, error) { return store.Get(ctx, asset.Hash) }
-	if err := ws.Materialize(context.Background(), resolve, job.Assets); err != nil {
+	resolve := func(ctx context.Context, asset queue.AssetRef) (workspace.ResolvedAsset, error) {
+		path, size, err := store.LocalPath(ctx, asset.Hash)
+		if err != nil {
+			return workspace.ResolvedAsset{}, err
+		}
+		return workspace.ResolvedAsset{LocalPath: path, SizeBytes: size}, nil
+	}
+	if err := ws.MaterializePaths(context.Background(), resolve, job.Assets); err != nil {
 		t.Fatalf("materialize: %v", err)
 	}
 	if err := ws.WritePlan(job.RenderPlan); err != nil {

@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
+	"log"
 	"os/exec"
 	"strconv"
 	"strings"
@@ -32,6 +34,11 @@ type ProbeResult struct {
 	// cannot be proven.
 	ClosedGOP    bool
 	AudioStreams int
+	// FPSUncertifiable is true when the video stream's r_frame_rate could not
+	// be parsed into positive integers (for example "0/0"). Certification
+	// contracts that REQUIRE an fps (ValidateOverlay with a declared rate)
+	// treat this as an error; it is never silently treated as \"fps matches\".
+	FPSUncertifiable bool
 }
 
 type ffprobeDocument struct {
@@ -82,8 +89,22 @@ func ProbeFile(ctx context.Context, path string) (ProbeResult, error) {
 		result.PixelFormat = stream.PixFmt
 		parts := strings.SplitN(stream.Rate, "/", 2)
 		if len(parts) == 2 {
-			result.FPSNum, _ = strconv.Atoi(parts[0])
-			result.FPSDen, _ = strconv.Atoi(parts[1])
+			num, numErr := strconv.Atoi(parts[0])
+			den, denErr := strconv.Atoi(parts[1])
+			// A parseable rate must be positive on both sides: \"0/0\" (or a
+			// malformed string) means the fps contract cannot be certified, and
+			// the artifact must fail a declared fps check — never silently
+			// exempt it (the gate must not depend on data the same function
+			// just failed to parse).
+			if numErr != nil || denErr != nil || num <= 0 || den <= 0 {
+				result.FPSUncertifiable = true
+				log.Printf("media: ffprobe %s: unparseable r_frame_rate %q; fps contract cannot be certified", path, stream.Rate)
+			} else {
+				result.FPSNum, result.FPSDen = num, den
+			}
+		} else {
+			result.FPSUncertifiable = true
+			log.Printf("media: ffprobe %s: malformed r_frame_rate %q; fps contract cannot be certified", path, stream.Rate)
 		}
 	}
 
@@ -100,6 +121,12 @@ func ProbeFile(ctx context.Context, path string) (ProbeResult, error) {
 		"-read_intervals", "%+#1", "-show_frames", "-show_entries", "frame=key_frame", "-of", "json", path)
 	if frameOut, err := frameCmd.Output(); err == nil && json.Unmarshal(frameOut, &frames) == nil && len(frames.Frames) > 0 {
 		result.FirstFrameKeyframe = frames.Frames[0].Key == 1
+	} else if err != nil {
+		// Fail closed (first_frame_keyframe stays false) but never silently:
+		// a systematically broken keyframe probe would otherwise produce
+		// first_frame_keyframe=false forever with no signal pointing at
+		// ffprobe, silently disabling the copy-eligible fast path.
+		log.Printf("media: ffprobe %s: first-frame keyframe probe unavailable: %v (first_frame_keyframe=false)", path, err)
 	}
 
 	// MP4 normally exposes nb_frames in the stream metadata above. Keep an
@@ -112,6 +139,8 @@ func ProbeFile(ctx context.Context, path string) (ProbeResult, error) {
 			if n, err := strconv.Atoi(strings.TrimSpace(string(countOut))); err == nil {
 				result.FrameCount = n
 			}
+		} else {
+			log.Printf("media: ffprobe %s: frame-count fallback unavailable: %v (frame_count=0)", path, err)
 		}
 	}
 
@@ -124,26 +153,142 @@ func ProbeFile(ctx context.Context, path string) (ProbeResult, error) {
 // probeClosedGOP inspects the video stream's sync-sample (keyframe) table and
 // certifies a uniform closed-GOP structure. It fails closed: any probe or
 // container error yields false, never a guess.
+//
+// The ffprobe packet table is stream-decoded with json.Decoder instead of
+// cmd.Output(): -show_packets emits one JSON record per packet for the WHOLE
+// clip, and buffering that document in RAM scaled with clip length (MBs of
+// JSON for long-form content on every finalize). The decoder keeps memory
+// constant while ffprobe streams, and a broken cadence aborts the probe (and
+// the ffprobe process) as soon as it is provable.
 func probeClosedGOP(ctx context.Context, path string) bool {
-	cmd := exec.CommandContext(ctx, "ffprobe", "-v", "error", "-select_streams", "v:0",
+	probeCtx, cancel := context.WithCancel(ctx)
+	defer cancel()
+	cmd := exec.CommandContext(probeCtx, "ffprobe", "-v", "error", "-select_streams", "v:0",
 		"-show_packets", "-show_entries", "packet=flags", "-of", "json", path)
-	out, err := cmd.Output()
+	stdout, err := cmd.StdoutPipe()
 	if err != nil {
+		log.Printf("media: ffprobe %s: closed-GOP probe pipe: %v (closed_gop=false)", path, err)
 		return false
 	}
-	var doc struct {
-		Packets []struct {
-			Flags string `json:"flags"`
-		} `json:"packets"`
-	}
-	if err := json.Unmarshal(out, &doc); err != nil || len(doc.Packets) == 0 {
+	if err := cmd.Start(); err != nil {
+		log.Printf("media: ffprobe %s: closed-GOP probe start: %v (closed_gop=false)", path, err)
 		return false
 	}
-	keyframes := make([]bool, len(doc.Packets))
-	for i, p := range doc.Packets {
-		keyframes[i] = strings.Contains(p.Flags, "K")
+	waitDone := make(chan error, 1)
+	go func() { waitDone <- cmd.Wait() }()
+
+	positions := make([]int, 0, 16)
+	step := 0 // keyframe spacing once two keyframes are known (0 until proven)
+	packetIndex := 0
+
+	// Stream-decode the packet table with json.Decoder tokens (never
+	// cmd.Output, which buffers the whole clip's packet JSON in RAM). The
+	// invocation pins each element's shape to {"flags":"..."}, so the token
+	// walk is deterministic: object open, key, value, object close.
+	dec := json.NewDecoder(stdout)
+	// Expected top level: { "packets": [ ...
+	if err := expectJSONDelim(dec, '{'); err != nil {
+		return failProbe(cancel, waitDone, path, err)
 	}
-	return closedGOPCadence(keyframes)
+	key, err := dec.Token()
+	if err != nil {
+		return failProbe(cancel, waitDone, path, err)
+	}
+	if k, ok := key.(string); !ok || k != "packets" {
+		return failProbe(cancel, waitDone, path, fmt.Errorf("unexpected top-level key %v", key))
+	}
+	if err := expectJSONDelim(dec, '['); err != nil {
+		return failProbe(cancel, waitDone, path, err)
+	}
+
+	for {
+		tok, err := dec.Token()
+		if err != nil {
+			if err == io.EOF {
+				err = fmt.Errorf("unterminated packets array")
+			}
+			return failProbe(cancel, waitDone, path, err)
+		}
+		d, isDelim := tok.(json.Delim)
+		if isDelim && d == ']' {
+			break // end of the packet table
+		}
+		if !isDelim || d != '{' {
+			return failProbe(cancel, waitDone, path, fmt.Errorf("unexpected packet-table token %v", tok))
+		}
+		// One packet object: { "flags" : "..." }
+		keyTok, err := dec.Token()
+		if err != nil {
+			return failProbe(cancel, waitDone, path, err)
+		}
+		valueTok, err := dec.Token()
+		if err != nil {
+			return failProbe(cancel, waitDone, path, err)
+		}
+		closeTok, err := dec.Token()
+		if err != nil {
+			return failProbe(cancel, waitDone, path, err)
+		}
+		if k, ok := keyTok.(string); !ok || k != "flags" {
+			return failProbe(cancel, waitDone, path, fmt.Errorf("unexpected packet key %v", keyTok))
+		}
+		flags, ok := valueTok.(string)
+		if !ok {
+			return failProbe(cancel, waitDone, path, fmt.Errorf("packet flags value is not a string: %v", valueTok))
+		}
+		if cd, ok := closeTok.(json.Delim); !ok || cd != '}' {
+			return failProbe(cancel, waitDone, path, fmt.Errorf("unexpected packet close %v", closeTok))
+		}
+		if strings.Contains(flags, "K") {
+			positions = append(positions, packetIndex)
+			// Early refusal: three keyframes already prove the cadence broken,
+			// so the probe (and the ffprobe process) can stop early.
+			if len(positions) >= 3 {
+				if positions[len(positions)-1]-positions[len(positions)-2] != step {
+					cancel() // reap the child; we already have the verdict
+					<-waitDone
+					return false
+				}
+			} else if len(positions) == 2 {
+				step = positions[1] - positions[0]
+				if step <= 0 {
+					cancel()
+					<-waitDone
+					return false
+				}
+			}
+		}
+		packetIndex++
+	}
+	if err := <-waitDone; err != nil {
+		// A non-cancel wait error means ffprobe itself failed (bad file,
+		// unsupported flag): fail closed and say so.
+		log.Printf("media: ffprobe %s: closed-GOP probe failed: %v (closed_gop=false)", path, err)
+		return false
+	}
+	return closedGOPPositionsCadence(positions)
+}
+
+// expectJSONDelim asserts the next decoder token is the given delimiter.
+func expectJSONDelim(dec *json.Decoder, want json.Delim) error {
+	tok, err := dec.Token()
+	if err != nil {
+		return err
+	}
+	if d, ok := tok.(json.Delim); ok && d == want {
+		return nil
+	}
+	return fmt.Errorf("expected %q, got %v", want, tok)
+}
+
+// failProbe cancels the ffprobe child, drains its exit status and logs the
+// failed closed-GOP probe so the degradation is never silent. It always
+// reports false (fail closed).
+func failProbe(cancel context.CancelFunc, waitDone <-chan error, path string, cause error) bool {
+	cancel()
+	<-waitDone
+	log.Printf("media: ffprobe %s: closed-GOP probe decode failed: %v (closed_gop=false)", path, cause)
+	return false
 }
 
 // closedGOPCadence reports whether keyframes occur at strictly uniform packet
@@ -153,17 +298,24 @@ func probeClosedGOP(ctx context.Context, path string) bool {
 // GOP structures break the cadence. Fewer than two keyframes cannot prove a
 // cadence, so the function returns false.
 func closedGOPCadence(keyframes []bool) bool {
-	if len(keyframes) == 0 || !keyframes[0] {
-		return false
-	}
 	positions := make([]int, 0, 8)
 	for i, kf := range keyframes {
 		if kf {
 			positions = append(positions, i)
 		}
 	}
+	return closedGOPPositionsCadence(positions)
+}
+
+// closedGOPPositionsCadence is the shared cadence decision over keyframe
+// packet indices (0-based). Streaming probes collect positions directly and
+// never materialize a per-packet flag array.
+func closedGOPPositionsCadence(positions []int) bool {
+	if len(positions) == 0 || positions[0] != 0 {
+		return false
+	}
 	// Two keyframes (one interval) cannot prove a cadence — any single
-	// interval is trivially "uniform". Require at least two full intervals.
+	// interval is trivially \"uniform\". Require at least two full intervals.
 	if len(positions) < 3 {
 		return false
 	}
@@ -207,8 +359,17 @@ func (p ProbeResult) ValidateOverlay(width, height, fpsNum, fpsDen int) error {
 	if width > 0 && (p.Width != width || p.Height != height) {
 		return fmt.Errorf("overlay media: resolution %dx%d, want %dx%d", p.Width, p.Height, width, height)
 	}
-	if fpsNum > 0 && fpsDen > 0 && p.FPSNum > 0 && p.FPSDen > 0 && p.FPSNum*fpsDen != fpsNum*p.FPSDen {
-		return fmt.Errorf("overlay media: fps %d/%d, want %d/%d", p.FPSNum, p.FPSDen, fpsNum, fpsDen)
+	if fpsNum > 0 && fpsDen > 0 {
+		// A declared fps contract must be certified by a parseable probed
+		// rate. A failed/absent rate parse (0/0, garbage) is a contract
+		// ERROR, never an exemption: the previous conditional gate silently
+		// skipped the fps check exactly when the probe could not certify it.
+		if p.FPSUncertifiable || p.FPSNum <= 0 || p.FPSDen <= 0 {
+			return fmt.Errorf("overlay media: fps contract uncertifiable (probed rate %d/%d)", p.FPSNum, p.FPSDen)
+		}
+		if p.FPSNum*fpsDen != fpsNum*p.FPSDen {
+			return fmt.Errorf("overlay media: fps %d/%d, want %d/%d", p.FPSNum, p.FPSDen, fpsNum, fpsDen)
+		}
 	}
 	if p.VideoCodec == "" || p.Container == "" {
 		return fmt.Errorf("overlay media: missing container or video codec")

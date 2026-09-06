@@ -6,9 +6,9 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"path/filepath"
-	"sort"
 	"sync"
 	"time"
 )
@@ -204,34 +204,54 @@ func (d *diskCache) path(key string) string {
 	return filepath.Join(d.dir, "assets", prefix, key)
 }
 
+// evictionBatch bounds the work of a single budget-enforcement pass. The
+// historical implementation snapshotted the whole index and sorted it O(n log n)
+// under d.mu on every over-budget install — with ~100k small entries one pass
+// became a multi-millisecond stall of every concurrent cache user plus a full
+// candidate-slice allocation in the path that is supposed to be cheap. Each
+// pass now removes at most evictionBatch of the oldest entries via an
+// allocation-free scan, so worst-case per-install stall is bounded. When one
+// install overflows the budget by more than a batch can reclaim, subsequent
+// installs finish the eviction (amortized); accounting stays exact.
+const evictionBatch = 64
+
 // enforceBudget evicts the oldest indexed entries. It intentionally does not
 // census the filesystem on every write; startup files are lazily indexed when
 // accessed and stale entries are harmlessly skipped. The caller holds d.mu;
 // only metadata operations (unlink) happen here.
 func (d *diskCache) enforceBudget() {
-	type candidate struct {
-		key   string
-		entry cacheEntry
-	}
-	candidates := make([]candidate, 0, len(d.entries))
-	for key, entry := range d.entries {
-		candidates = append(candidates, candidate{key, entry})
-	}
-	sort.Slice(candidates, func(i, j int) bool { return candidates[i].entry.accessed.Before(candidates[j].entry.accessed) })
-	for _, c := range candidates {
-		if d.total <= d.max {
-			break
+	for evicted := 0; d.total > d.max && evicted < evictionBatch; evicted++ {
+		// Allocation-free single-oldest scan: a full map snapshot + global sort
+		// per pass would defeat the bounded-batch purpose.
+		var oldestKey string
+		var oldestAccessed time.Time
+		found := false
+		for key, entry := range d.entries {
+			if !found || entry.accessed.Before(oldestAccessed) {
+				oldestKey, oldestAccessed, found = key, entry.accessed, true
+			}
 		}
-		// Only account a successful removal: a failed delete (foreign holder,
-		// read-only directory) must not desynchronize the byte budget.
-		if err := os.Remove(d.path(c.key)); err == nil {
-			d.total -= c.entry.size
-			delete(d.entries, c.key)
-		} else if !os.IsNotExist(err) {
-			// Unremovable file: forget the index entry so the next eviction
-			// pass can make progress on other candidates instead of stalling.
-			delete(d.entries, c.key)
-			d.total -= c.entry.size
+		if !found {
+			return
+		}
+		entry := d.entries[oldestKey]
+		err := os.Remove(d.path(oldestKey))
+		switch {
+		case err == nil || os.IsNotExist(err):
+			// The bytes are gone from the cache either way: account them. A
+			// vanished file (external cleanup) must not leave a stale index
+			// entry that every future pass re-scans forever.
+			delete(d.entries, oldestKey)
+			d.total -= entry.size
+		default:
+			// Unremovable file (held open by a renderer, read-only directory):
+			// forget the index entry so the pass can make progress on other
+			// candidates instead of stalling. The bytes stay on disk but are no
+			// longer accounted — say so instead of silently growing the gap
+			// between d.total and the real disk usage.
+			delete(d.entries, oldestKey)
+			d.total -= entry.size
+			log.Printf("storage: L2 eviction could not remove %s: %v (index entry forgotten; cache budget may under-report disk usage)", d.path(oldestKey), err)
 		}
 	}
 }
