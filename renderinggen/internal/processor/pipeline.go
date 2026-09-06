@@ -476,6 +476,15 @@ func (p *Processor) enforceReceiptVerification(outputPath string) error {
 		return fmt.Errorf("processor: canonical verification did not run (policy=%s): %w", policy, err)
 	}
 	if !receipt.VerificationPassed() {
+		// A failing aggregate without a granular explanation is the worst
+		// failure mode to debug ("render finished, receipt failed, why?").
+		// The receipt JSON carries per-check verdicts; surface every failing
+		// check in the job error so a re-render is never needed just to learn
+		// which contract check rejected the output.
+		if failures := receipt.VerificationFailures(); len(failures) > 0 {
+			return fmt.Errorf("processor: Chronon receipt verification failed (policy=%s status=%q failing_checks=%s)",
+				policy, receipt.Verification.Status, strings.Join(failures, ","))
+		}
 		return fmt.Errorf("processor: Chronon receipt verification failed (policy=%s status=%q)", policy, receipt.Verification.Status)
 	}
 	return nil

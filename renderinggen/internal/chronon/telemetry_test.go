@@ -174,3 +174,54 @@ func TestReadMediaReceiptLegacyCountFramesAbsent(t *testing.T) {
 		t.Errorf("count_frames_ms projected from a legacy receipt without the key")
 	}
 }
+
+// TestReadMediaReceiptGranularFailures pins the granular-verdict parsing:
+// the worker surfaces WHICH check rejected a rendered output (here the fps
+// contract) so a failed job never needs a re-render just to learn why.
+func TestReadMediaReceiptGranularFailures(t *testing.T) {
+	dir := t.TempDir()
+	output := filepath.Join(dir, "out.mp4")
+	fixture := `{
+	  "schema": "chronon3d.render-receipt.v1",
+	  "output": {"bytes": 12345, "sha256": "abc123"},
+	  "verification": {
+	    "requested_policy": "certify", "resolved_policy": "certify", "status": "fail",
+	    "ffprobe": "pass", "decode": "pass", "frame_count": "pass", "codec": "pass",
+	    "pixel_format": "pass", "resolution": "pass", "fps": "fail", "audio": "skip"
+	  }
+	}`
+	if err := os.WriteFile(output+".receipt.json", []byte(fixture), 0o600); err != nil {
+		t.Fatalf("write fixture: %v", err)
+	}
+	receipt, err := ReadMediaReceipt(output)
+	if err != nil {
+		t.Fatalf("ReadMediaReceipt: %v", err)
+	}
+	if receipt.VerificationPassed() {
+		t.Fatal("aggregate status fail must not report VerificationPassed")
+	}
+	failures := receipt.VerificationFailures()
+	if len(failures) != 1 || failures[0] != "fps" {
+		t.Fatalf("VerificationFailures = %v, want [fps]", failures)
+	}
+
+	// A passing receipt reports no failing checks.
+	writePass := `{
+	  "schema": "chronon3d.render-receipt.v1",
+	  "output": {"bytes": 12345, "sha256": "abc123"},
+	  "verification": {"status": "pass", "fps": "pass"}
+	}`
+	if err := os.WriteFile(output+".receipt.json", []byte(writePass), 0o600); err != nil {
+		t.Fatalf("write pass fixture: %v", err)
+	}
+	receipt, err = ReadMediaReceipt(output)
+	if err != nil {
+		t.Fatalf("ReadMediaReceipt (pass): %v", err)
+	}
+	if !receipt.VerificationPassed() {
+		t.Fatal("aggregate status pass must report VerificationPassed")
+	}
+	if failures := receipt.VerificationFailures(); len(failures) != 0 {
+		t.Fatalf("VerificationFailures = %v, want empty on pass", failures)
+	}
+}
