@@ -197,7 +197,6 @@ func (p *Processor) PrepareJob(ctx context.Context, job *queue.Job) (*PreparedJo
 			return nil, fmt.Errorf("processor: burn subtitles requires a materialized .ttf or .otf font")
 		}
 		burnStart := time.Now()
-		subtitleCount := 0
 		subtitleBytes, readErr := os.ReadFile(subtitlePath)
 		if readErr != nil {
 			_ = ws.Cleanup()
@@ -214,12 +213,16 @@ func (p *Processor) PrepareJob(ctx context.Context, job *queue.Job) (*PreparedJo
 			_ = ws.Cleanup()
 			return nil, fmt.Errorf("processor: burn subtitles requires a typed subtitle style block (font_size_px, width/height) in the plan")
 		}
-		if err := overlay.BurnASSIntoPlanTyped(plan, subtitleBytes, fontPath, burnStyle, burnBox); err != nil {
+		subtitleCount, burnErr := overlay.BurnASSIntoPlanTyped(plan, subtitleBytes, fontPath, burnStyle, burnBox)
+		if burnErr != nil {
 			_ = ws.Cleanup()
-			return nil, err
+			return nil, burnErr
 		}
 		metrics["subtitle_burn_us"] = float64(time.Since(burnStart).Microseconds())
 		metrics["subtitle_burn_ms"] = metrics["subtitle_burn_us"] / 1000
+		// The cue count is the number of subtitle_cue_ layers actually present
+		// in the plan after lowering (0 is possible when every cue was skipped
+		// as empty or degenerate).
 		metrics["subtitle_layers"] = float64(subtitleCount)
 		log.Printf("job %s: lowered %d ASS cues into Chronon GPU text layers", job.ID, subtitleCount)
 	}

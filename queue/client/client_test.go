@@ -25,6 +25,8 @@ func fakeQueue(t *testing.T) *httptest.Server {
 			http.Error(w, "already exists", http.StatusConflict)
 		case "boom":
 			http.Error(w, "bad input", http.StatusBadRequest)
+		case "internal":
+			http.Error(w, "storage unavailable", http.StatusInternalServerError)
 		default:
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusCreated)
@@ -96,6 +98,25 @@ func TestSubmitError(t *testing.T) {
 	c := New(srv.URL)
 	if err := c.Submit(context.Background(), Job{ID: "boom"}); err == nil {
 		t.Fatal("expected error on 400")
+	}
+}
+
+func TestSubmitServerErrorIsNotJobExists(t *testing.T) {
+	srv := fakeQueue(t)
+	defer srv.Close()
+
+	c := New(srv.URL)
+	err := c.Submit(context.Background(), Job{ID: "internal"})
+	if err == nil {
+		t.Fatal("expected error on 500")
+	}
+	// A storage failure must never masquerade as an idempotent duplicate:
+	// producers treat ErrJobExists as success and would silently drop the job.
+	if errors.Is(err, ErrJobExists) {
+		t.Fatalf("500 must not map to ErrJobExists, got %v", err)
+	}
+	if !strings.Contains(err.Error(), "500") {
+		t.Fatalf("want HTTP status in error, got %v", err)
 	}
 }
 

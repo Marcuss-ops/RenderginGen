@@ -15,6 +15,7 @@ import (
 	"os/signal"
 	"path/filepath"
 	"sync"
+	"sync/atomic"
 	"syscall"
 	"time"
 
@@ -245,6 +246,17 @@ func main() {
 	}); err != nil {
 		log.Fatalf("queue worker registration: %v", err)
 	}
+	// Surface sustained queue disconnect on /health and in the logs instead of
+	// logging-and-forgetting: a worker whose heartbeat cannot reach the queue
+	// is not fully ready even while it may still be processing a claim.
+	var heartbeatFailures atomic.Int64
+	const degradedHeartbeatThreshold int64 = 3
+	healthServer.SetQueueStatus(func() string {
+		if heartbeatFailures.Load() >= degradedHeartbeatThreshold {
+			return "degraded"
+		}
+		return "ready"
+	})
 	go func() {
 		ticker := time.NewTicker(20 * time.Second)
 		defer ticker.Stop()
@@ -254,7 +266,15 @@ func main() {
 				return
 			case <-ticker.C:
 				if err := queueClient.Heartbeat(ctx); err != nil {
-					log.Printf("queue worker heartbeat: %v", err)
+					failures := heartbeatFailures.Add(1)
+					log.Printf("queue worker heartbeat: %v (consecutive failures=%d)", err, failures)
+					if failures == degradedHeartbeatThreshold {
+						log.Printf("queue worker heartbeat degraded: %d consecutive failures; /health reports degraded until heartbeat recovers", failures)
+					}
+					continue
+				}
+				if prev := heartbeatFailures.Swap(0); prev >= degradedHeartbeatThreshold {
+					log.Printf("queue worker heartbeat recovered after %d consecutive failures", prev)
 				}
 			}
 		}
@@ -328,10 +348,13 @@ func runPrepPool(ctx context.Context, q *queue.Client, proc *processor.Processor
 		}
 
 		// Long-poll claim: the server wakes this request as soon as a job may
-		// be claimable (submit/rendered/fail/expiry). The atomic claim remains
-		// unchanged (SKIP LOCKED on the DB side), so the wait never assigns
-		// work, it only removes the empty-queue sleep between renders.
-		job, err := q.ClaimPendingWait(ctx, 25*time.Second)
+		// be claimable (submit/rendered/fail/expiry). The claim accepts any
+		// claimable state: pending render jobs AND rendered jobs awaiting a
+		// publication-only retry (their durable artifact rides on the claim,
+		// see job.Artifact below). The atomic claim remains unchanged (SKIP
+		// LOCKED on the DB side), so the wait never assigns work, it only
+		// removes the empty-queue sleep between renders.
+		job, err := q.ClaimWait(ctx, 25*time.Second)
 		if err != nil {
 			log.Printf("prep claim: %v", err)
 			if !sleepCtx(ctx, 5*time.Second) {
@@ -343,17 +366,27 @@ func runPrepPool(ctx context.Context, q *queue.Client, proc *processor.Processor
 			continue
 		}
 
-		// Publication retry of a rendered job: never render again.
+		// Publication retry of a rendered job: never render again. The lease
+		// is renewed for the whole upload so a multi-minute Drive publish can
+		// never expire mid-transfer and be re-claimed by another worker.
 		if job.Artifact != nil {
 			log.Printf("job %s prep received durable artifact; switching to publication", job.ID)
 			artifact := *job.Artifact
 			artifact.Metrics = nil
-			published, pubErr := proc.Publish(ctx, job.ID, artifact)
+			pubErr := withLeaseVoid(ctx, job, q, func(jobCtx context.Context) error {
+				published, publishErr := proc.Publish(jobCtx, job.ID, artifact)
+				if publishErr != nil {
+					return publishErr
+				}
+				// Complete while the lease is still held: a completion after
+				// lease expiry would 409 and strand a finished artifact.
+				return q.Complete(jobCtx, job.ID, published)
+			})
 			if pubErr != nil {
 				reportFailure(ctx, q, job, pubErr)
 				continue
 			}
-			reportComplete(ctx, q, job.ID, published)
+			log.Printf("job %s publication retry completed (artifact %q)", job.ID, job.Artifact.StorageKey)
 			continue
 		}
 
@@ -484,7 +517,18 @@ func runPostPool(ctx context.Context, q *queue.Client, proc *processor.Processor
 				return finalizeErr
 			})
 			if err != nil {
-				reportFailure(ctx, q, job, err)
+				if artifact.StorageKey != "" {
+					// The render finished and the bytes are durable in the object
+					// store; only external publication failed. Record the job as
+					// rendered (artifact persisted, out of `completed`) so the
+					// publication-only retry path re-claims it — never a GPU
+					// re-render and never a permanently stuck job.
+					if reportErr := q.Rendered(ctx, job.ID, err.Error(), artifact); reportErr != nil {
+						log.Printf("job %s report rendered: %v", job.ID, reportErr)
+					}
+				} else {
+					reportFailure(ctx, q, job, err)
+				}
 				cleanup()
 				continue
 			}

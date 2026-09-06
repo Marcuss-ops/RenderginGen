@@ -1,12 +1,15 @@
 package storage
 
 import (
+	"bytes"
 	"context"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"sync"
+	"sync/atomic"
 	"testing"
 )
 
@@ -198,6 +201,100 @@ func (c *countingBackend) Fetch(ctx context.Context, key string) ([]byte, error)
 
 func (c *countingBackend) Store(ctx context.Context, key string, data []byte) error {
 	return c.inner.Store(ctx, key, data)
+}
+
+func TestConcurrentInstallSameKey(t *testing.T) {
+	payload := []byte("concurrent-install-payload-12345")
+	h := Hash(payload)
+	d := newDiskCache(t.TempDir(), 0)
+
+	var wg sync.WaitGroup
+	for i := 0; i < 16; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			path, size, err := d.PutBytes(h, payload)
+			if err != nil {
+				t.Errorf("install: %v", err)
+				return
+			}
+			if path == "" || size != int64(len(payload)) {
+				t.Errorf("install returned path=%q size=%d", path, size)
+			}
+		}()
+	}
+	wg.Wait()
+
+	data, ok := d.Get(h)
+	if !ok {
+		t.Fatal("object missing after concurrent installs")
+	}
+	if string(data) != string(payload) {
+		t.Fatalf("corrupted payload after concurrent installs: %q", data)
+	}
+}
+
+// readerCountingBackend counts streaming L3 fetches (FetchReader), which is
+// the path LocalPath uses on a miss.
+type readerCountingBackend struct {
+	inner Backend
+	calls atomic.Int64
+}
+
+func (b *readerCountingBackend) FetchReader(ctx context.Context, key string) (io.ReadCloser, int64, error) {
+	b.calls.Add(1)
+	data, err := b.inner.Fetch(ctx, key)
+	if err != nil {
+		return nil, 0, err
+	}
+	return io.NopCloser(bytes.NewReader(data)), int64(len(data)), nil
+}
+
+func (b *readerCountingBackend) Fetch(ctx context.Context, key string) ([]byte, error) {
+	return b.inner.Fetch(ctx, key)
+}
+
+func (b *readerCountingBackend) Store(ctx context.Context, key string, data []byte) error {
+	return b.inner.Store(ctx, key, data)
+}
+
+func TestLocalPathConcurrentMissDownloadsOnce(t *testing.T) {
+	ctx := context.Background()
+	payload := bytes.Repeat([]byte("x"), 1<<20) // 1 MiB: not L1-admissible, forces the reader path
+	backend := &readerCountingBackend{inner: NewMemory()}
+	h := Hash(payload)
+	if err := backend.Store(ctx, h, payload); err != nil {
+		t.Fatal(err)
+	}
+
+	const workers = 8
+	c := New(backend, Options{L1MaxBytes: 1 << 20, L2Dir: t.TempDir(), L2MaxBytes: 64 << 20})
+	paths := make([]string, workers)
+	errs := make([]error, workers)
+	var wg sync.WaitGroup
+	for i := 0; i < workers; i++ {
+		wg.Add(1)
+		go func(i int) {
+			defer wg.Done()
+			paths[i], _, errs[i] = c.LocalPath(ctx, h)
+		}(i)
+	}
+	wg.Wait()
+
+	for i := 0; i < workers; i++ {
+		if errs[i] != nil {
+			t.Fatalf("worker %d: %v", i, errs[i])
+		}
+		if paths[i] != paths[0] {
+			t.Fatalf("workers resolved different paths: %q vs %q", paths[i], paths[0])
+		}
+	}
+	if got := backend.calls.Load(); got != 1 {
+		t.Fatalf("concurrent cold LocalPath: want 1 L3 fetch, got %d", got)
+	}
+	if got := c.Stats().L3Fetches; got != 1 {
+		t.Fatalf("L3Fetches counter: want 1, got %d", got)
+	}
 }
 
 func TestL2Eviction(t *testing.T) {

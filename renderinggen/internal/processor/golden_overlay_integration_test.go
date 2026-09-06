@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 	"time"
 
@@ -328,19 +327,17 @@ func TestProcessGoldenSemanticOverlayJobV1(t *testing.T) {
 func seedGoldenAssets(t *testing.T, store *storage.Client, assets []queue.AssetRef) {
 	t.Helper()
 	for _, a := range assets {
-		// logical_path is assets/<file>; preserve the subdirectory in the
-		// fixture tree (notably assets/fonts/Poppins-Bold.ttf). Using only
-		// filepath.Base would silently look for fonts at the wrong level and
-		// make the real Chronon render fail with a missing logical asset.
-		logical := filepath.Clean(a.LogicalPath)
-		logical = strings.TrimPrefix(logical, "assets"+string(filepath.Separator))
-		path := filepath.Join("..", "..", "..", "testdata", "golden", logical)
+		// Golden fixtures live flat in testdata/golden/, keyed by filename:
+		// the logical assets/<subdir>/<file> namespace in the payload maps to
+		// the same byte-identical vendored fixture regardless of its declared
+		// subdirectory (fonts and images all live in the single golden tree).
+		path := filepath.Join("..", "..", "..", "testdata", "golden", filepath.Base(a.LogicalPath))
 		data, err := os.ReadFile(path)
 		if err != nil {
 			t.Fatalf("read golden fixture %s: %v", path, err)
 		}
 		if got := storage.Hash(data); got != a.Hash {
-			t.Fatalf("golden immutability violated: %s sha256=%s but payload hash=%s (re-run infra/e2e/gen-golden-assets.py and update both copies)", path, got, a.Hash)
+			t.Fatalf("golden immutability violated: %s sha256=%s but payload hash=%s (re-run infra/e2e/gen-golden-assets.py)", path, got, a.Hash)
 		}
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		if err := store.Put(ctx, a.Hash, data); err != nil {

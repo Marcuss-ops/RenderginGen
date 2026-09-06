@@ -8,9 +8,8 @@ import "sync"
 // atomic claim path. This is the same semantic split as Postgres
 // LISTEN/NOTIFY — the signal only wakes listeners, it never assigns work.
 type Notifier struct {
-	mu   sync.Mutex
-	ch   chan struct{}
-	once sync.Once
+	mu sync.Mutex
+	ch chan struct{}
 }
 
 // NewNotifier creates a ready notifier.

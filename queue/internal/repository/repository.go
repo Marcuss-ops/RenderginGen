@@ -13,6 +13,13 @@ import (
 // ErrNotFound is returned by Get when the job does not exist.
 var ErrNotFound = errors.New("job not found")
 
+// ErrJobExists is returned by Submit/SubmitIdempotent when a job with the
+// same ID is already present. It is the ONLY condition the HTTP server maps
+// to 409 Conflict on submit: transient storage failures must stay
+// distinguishable from duplicates so producers do not treat an outage as an
+// idempotent success.
+var ErrJobExists = errors.New("job already exists")
+
 // JobRepository is the storage contract for the central job queue.
 type JobRepository interface {
 	// Submit enqueues a job. The ID is required and must be unique.

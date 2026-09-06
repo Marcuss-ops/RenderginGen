@@ -14,6 +14,13 @@ import (
 )
 
 // diskCache is the L2 NVMe cache: content-addressed files on disk.
+//
+// The mutex guards only the in-memory index (entries/total) and the short
+// commit phase (existence check + rename + eviction bookkeeping). All large
+// I/O — streaming a fetched object to disk, hashing it, copying a file — runs
+// WITHOUT the lock, so concurrent installs of different assets proceed in
+// parallel instead of serializing behind whichever goroutine is copying the
+// biggest file.
 type diskCache struct {
 	dir     string
 	max     int64
@@ -51,12 +58,17 @@ func (d *diskCache) Path(key string) (string, bool) {
 	return p, true
 }
 
-func (d *diskCache) PutBytes(key string, data []byte) (string, int64, error) {
+// install writes an object into the cache through a temp file and commits it
+// atomically. write receives the open temp file and must return the number of
+// bytes written; it runs WITHOUT the lock (it may stream arbitrarily large
+// objects). The commit phase (rename + index + eviction) is short and runs
+// under the lock. A concurrent install of the same content address simply
+// bumps the access time of the existing entry and discards the redundant temp
+// file.
+func (d *diskCache) install(key string, write func(*os.File) (int64, error)) (string, int64, error) {
 	if d.dir == "" {
 		return "", 0, fmt.Errorf("L2 cache directory is empty")
 	}
-	d.mu.Lock()
-	defer d.mu.Unlock()
 	p := d.path(key)
 	if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
 		return "", 0, err
@@ -66,26 +78,46 @@ func (d *diskCache) PutBytes(key string, data []byte) (string, int64, error) {
 		return "", 0, err
 	}
 	tmpPath := tmp.Name()
-	defer os.Remove(tmpPath)
-	if _, err := tmp.Write(data); err != nil {
-		tmp.Close()
+	committed := false
+	defer func() {
+		if !committed {
+			tmp.Close()
+			os.Remove(tmpPath)
+		}
+	}()
+	size, err := write(tmp)
+	if err != nil {
 		return "", 0, err
 	}
 	if err := tmp.Close(); err != nil {
 		return "", 0, err
 	}
+
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	if prev, ok := d.entries[key]; ok {
+		// A concurrent install won the race for the same content address; the
+		// bytes are identical by construction (the key is the content hash).
+		d.entries[key] = cacheEntry{size: prev.size, accessed: time.Now()}
+		return p, prev.size, nil
+	}
 	if err := os.Rename(tmpPath, p); err != nil {
 		return "", 0, err
 	}
-	if previous, ok := d.entries[key]; ok {
-		d.total -= previous.size
-	}
-	d.entries[key] = cacheEntry{size: int64(len(data)), accessed: time.Now()}
-	d.total += int64(len(data))
+	committed = true
+	d.entries[key] = cacheEntry{size: size, accessed: time.Now()}
+	d.total += size
 	if d.max > 0 {
 		d.enforceBudget()
 	}
-	return p, int64(len(data)), nil
+	return p, size, nil
+}
+
+func (d *diskCache) PutBytes(key string, data []byte) (string, int64, error) {
+	return d.install(key, func(tmp *os.File) (int64, error) {
+		n, err := tmp.Write(data)
+		return int64(n), err
+	})
 }
 
 func (d *diskCache) PutFile(key, source string) (string, int64, error) {
@@ -99,94 +131,38 @@ func (d *diskCache) PutFile(key, source string) (string, int64, error) {
 	if !info.Mode().IsRegular() {
 		return "", 0, fmt.Errorf("source %s is not a regular file", source)
 	}
-	d.mu.Lock()
-	defer d.mu.Unlock()
-	p := d.path(key)
-	if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
-		return "", 0, err
-	}
-	tmp, err := os.CreateTemp(filepath.Dir(p), ".install-*")
-	if err != nil {
-		return "", 0, err
-	}
-	tmpPath := tmp.Name()
-	defer os.Remove(tmpPath)
-	input, err := os.Open(source)
-	if err != nil {
-		tmp.Close()
-		return "", 0, err
-	}
-	_, copyErr := io.Copy(tmp, input)
-	closeInputErr := input.Close()
-	if copyErr == nil {
-		copyErr = closeInputErr
-	}
-	if copyErr == nil {
-		copyErr = tmp.Close()
-	} else {
-		_ = tmp.Close()
-	}
-	if copyErr != nil {
-		return "", 0, copyErr
-	}
-	if err := os.Rename(tmpPath, p); err != nil {
-		return "", 0, err
-	}
-	if previous, ok := d.entries[key]; ok {
-		d.total -= previous.size
-	}
-	d.entries[key] = cacheEntry{size: info.Size(), accessed: time.Now()}
-	d.total += info.Size()
-	if d.max > 0 {
-		d.enforceBudget()
-	}
-	return p, info.Size(), nil
+	return d.install(key, func(tmp *os.File) (int64, error) {
+		input, err := os.Open(source)
+		if err != nil {
+			return 0, err
+		}
+		n, copyErr := io.Copy(tmp, input)
+		closeErr := input.Close()
+		if copyErr != nil {
+			return 0, copyErr
+		}
+		if closeErr != nil {
+			return 0, closeErr
+		}
+		return n, nil
+	})
 }
 
 func (d *diskCache) InstallReader(key string, r io.Reader, size int64) (string, int64, error) {
-	if d.dir == "" {
-		return "", 0, fmt.Errorf("L2 cache directory is empty")
-	}
-	d.mu.Lock()
-	defer d.mu.Unlock()
-	p := d.path(key)
-	if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
-		return "", 0, err
-	}
-	tmp, err := os.CreateTemp(filepath.Dir(p), ".fetch-*")
-	if err != nil {
-		return "", 0, err
-	}
-	tmpPath := tmp.Name()
-	defer os.Remove(tmpPath)
 	digest := sha256.New()
-	written, err := io.Copy(io.MultiWriter(tmp, digest), r)
-	if err == nil {
-		err = tmp.Close()
-	} else {
-		_ = tmp.Close()
-	}
-	if err != nil {
-		return "", 0, err
-	}
-	if size >= 0 && written != size {
-		return "", 0, fmt.Errorf("L3 size %d does not match expected %d", written, size)
-	}
-	if got := hex.EncodeToString(digest.Sum(nil)); len(key) == 64 && got != key {
-		return "", 0, fmt.Errorf("L3 hash %s does not match key %s", got, key)
-	}
-	if err := os.Rename(tmpPath, p); err != nil {
-		return "", 0, err
-	}
-	if previous, ok := d.entries[key]; ok {
-		d.total -= previous.size
-	}
-	d.entries[key] = cacheEntry{size: written, accessed: time.Now()}
-	d.total += written
-	if d.max > 0 {
-		d.enforceBudget()
-	}
-	return p, written, nil
+	return d.install(key, func(tmp *os.File) (int64, error) {
+		written, err := io.Copy(io.MultiWriter(tmp, digest), r)
+		if err != nil {
+			return 0, err
+		}
+		if size >= 0 && written != size {
+			return 0, fmt.Errorf("L3 size %d does not match expected %d", written, size)
+		}
+		if got := hex.EncodeToString(digest.Sum(nil)); len(key) == 64 && got != key {
+			return 0, fmt.Errorf("L3 hash %s does not match key %s", got, key)
+		}
+		return written, nil
+	})
 }
 
 func (d *diskCache) Remove(key string) { _ = os.Remove(d.path(key)) }
@@ -208,27 +184,16 @@ func (d *diskCache) ContextPath(ctx context.Context, key string) (string, int64,
 	return p, info.Size(), nil
 }
 
-func (d *diskCache) Put(key string, data []byte) {
+// Put stores object bytes in the cache (byte-slice API). An empty cache
+// directory means the cache level is disabled, so the call is a no-op — the
+// caller's L3 write already succeeded. Any real write error is returned so
+// the cache cannot degrade silently.
+func (d *diskCache) Put(key string, data []byte) error {
 	if d.dir == "" {
-		return
+		return nil
 	}
-	d.mu.Lock()
-	defer d.mu.Unlock()
-	p := d.path(key)
-	if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
-		return
-	}
-	if err := os.WriteFile(p, data, 0o644); err != nil {
-		return
-	}
-	if previous, ok := d.entries[key]; ok {
-		d.total -= previous.size
-	}
-	d.entries[key] = cacheEntry{size: int64(len(data)), accessed: time.Now()}
-	d.total += int64(len(data))
-	if d.max > 0 {
-		d.enforceBudget()
-	}
+	_, _, err := d.PutBytes(key, data)
+	return err
 }
 
 func (d *diskCache) path(key string) string {
@@ -241,7 +206,8 @@ func (d *diskCache) path(key string) string {
 
 // enforceBudget evicts the oldest indexed entries. It intentionally does not
 // census the filesystem on every write; startup files are lazily indexed when
-// accessed and stale entries are harmlessly skipped.
+// accessed and stale entries are harmlessly skipped. The caller holds d.mu;
+// only metadata operations (unlink) happen here.
 func (d *diskCache) enforceBudget() {
 	type candidate struct {
 		key   string

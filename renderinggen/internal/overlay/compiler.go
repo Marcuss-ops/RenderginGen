@@ -388,11 +388,11 @@ func BurnASSIntoPlan(planBytes, assBytes []byte, fontPath string, style *LayerSt
 }
 
 // BurnASSIntoPlanTyped mutates the typed plan in place with the lowered
-// subtitle cue layers. The processor path uses this to avoid a JSON
-// round-trip; the plan is marshaled exactly once at the Chronon boundary.
-func BurnASSIntoPlanTyped(plan *Plan, assBytes []byte, fontPath string, style *LayerStyle, box SubtitleStyleBox) error {
-	_, err := appendSubtitleLayers(plan, assBytes, fontPath, style, box)
-	return err
+// subtitle cue layers and returns the number of cue layers present afterwards.
+// The processor path uses this to avoid a JSON round-trip; the plan is
+// marshaled exactly once at the Chronon boundary.
+func BurnASSIntoPlanTyped(plan *Plan, assBytes []byte, fontPath string, style *LayerStyle, box SubtitleStyleBox) (int, error) {
+	return appendSubtitleLayers(plan, assBytes, fontPath, style, box)
 }
 
 // appendSubtitleLayers is the shared lowering core: validate inputs, parse

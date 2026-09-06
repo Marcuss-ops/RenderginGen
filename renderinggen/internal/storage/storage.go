@@ -12,6 +12,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"sync"
 	"sync/atomic"
@@ -32,11 +33,14 @@ type Client struct {
 
 	// Observability counters, incremented by Get/Put so benchmarks and the
 	// daemon comparison can report L3->L2->L1 promotion and cache hit rates.
-	l1Hits     atomic.Int64
-	l2Hits     atomic.Int64
-	l3Fetches  atomic.Int64
-	inflightMu sync.Mutex
-	inflight   map[string]*fetchCall
+	l1Hits         atomic.Int64
+	l2Hits         atomic.Int64
+	l3Fetches      atomic.Int64
+	l2PutErrors    atomic.Int64 // L2 warm writes that failed (cache degraded)
+	inflightMu     sync.Mutex
+	inflight       map[string]*fetchCall // byte-path single-flight (Get)
+	pathInflightMu sync.Mutex
+	pathInflight   map[string]*pathFetchCall // streaming single-flight (LocalPath)
 }
 
 type fetchCall struct {
@@ -45,11 +49,19 @@ type fetchCall struct {
 	err  error
 }
 
+type pathFetchCall struct {
+	done chan struct{}
+	path string
+	size int64
+	err  error
+}
+
 // CacheStats is a point-in-time snapshot of the resolution counters.
 type CacheStats struct {
-	L1Hits    int64 // resolved from L1 (in-memory)
-	L2Hits    int64 // resolved from L2 (on-disk)
-	L3Fetches int64 // resolved from L3 (central object store)
+	L1Hits      int64 // resolved from L1 (in-memory)
+	L2Hits      int64 // resolved from L2 (on-disk)
+	L3Fetches   int64 // resolved from L3 (central object store)
+	L2PutErrors int64 // failed L2 warm writes (cache silently degraded if > 0)
 }
 
 // Stats returns the cumulative resolution counters since the client was
@@ -57,19 +69,21 @@ type CacheStats struct {
 // (job 1: L3->L2->L1, jobs 2-10: L1 hit) and to report hits/misses.
 func (c *Client) Stats() CacheStats {
 	return CacheStats{
-		L1Hits:    c.l1Hits.Load(),
-		L2Hits:    c.l2Hits.Load(),
-		L3Fetches: c.l3Fetches.Load(),
+		L1Hits:      c.l1Hits.Load(),
+		L2Hits:      c.l2Hits.Load(),
+		L3Fetches:   c.l3Fetches.Load(),
+		L2PutErrors: c.l2PutErrors.Load(),
 	}
 }
 
 // New creates a cache client over the given L3 backend.
 func New(backend Backend, opts Options) *Client {
 	return &Client{
-		backend:  backend,
-		l1:       newMemCache(opts.L1MaxBytes),
-		l2:       newDiskCache(opts.L2Dir, opts.L2MaxBytes),
-		inflight: make(map[string]*fetchCall),
+		backend:      backend,
+		l1:           newMemCache(opts.L1MaxBytes),
+		l2:           newDiskCache(opts.L2Dir, opts.L2MaxBytes),
+		inflight:     make(map[string]*fetchCall),
+		pathInflight: make(map[string]*pathFetchCall),
 	}
 }
 
@@ -121,10 +135,66 @@ func (c *Client) Get(ctx context.Context, hash string) ([]byte, error) {
 		return nil, err
 	}
 	c.l3Fetches.Add(1)
-	c.l2.Put(hash, data)
+	c.warmL2(hash, data)
 	c.l1.Put(hash, data)
 	c.finishFetch(hash, call, data, nil)
 	return data, nil
+}
+
+// localPathFetch resolves an L3 miss for LocalPath with single-flight
+// semantics: several prep workers materializing jobs that share the same cold
+// asset (a common background video) must issue ONE L3 download, not one per
+// worker. The leader streams the object into L2; followers wait for the
+// install and return the same durable path.
+func (c *Client) localPathFetch(ctx context.Context, hash string, backend ReaderBackend) (string, int64, error) {
+	call, leader := c.startPathFetch(hash)
+	if !leader {
+		select {
+		case <-call.done:
+			if call.err != nil {
+				return "", 0, call.err
+			}
+			return call.path, call.size, nil
+		case <-ctx.Done():
+			return "", 0, ctx.Err()
+		}
+	}
+
+	reader, size, err := backend.FetchReader(ctx, hash)
+	if err != nil {
+		c.finishPathFetch(hash, call, "", 0, err)
+		return "", 0, err
+	}
+	path, actual, installErr := c.l2.InstallReader(hash, reader, size)
+	reader.Close()
+	if installErr != nil {
+		c.finishPathFetch(hash, call, "", 0, installErr)
+		return "", 0, installErr
+	}
+	c.l3Fetches.Add(1)
+	c.finishPathFetch(hash, call, path, actual, nil)
+	return path, actual, nil
+}
+
+func (c *Client) startPathFetch(hash string) (*pathFetchCall, bool) {
+	c.pathInflightMu.Lock()
+	defer c.pathInflightMu.Unlock()
+	if call, ok := c.pathInflight[hash]; ok {
+		return call, false
+	}
+	call := &pathFetchCall{done: make(chan struct{})}
+	c.pathInflight[hash] = call
+	return call, true
+}
+
+func (c *Client) finishPathFetch(hash string, call *pathFetchCall, path string, size int64, err error) {
+	c.pathInflightMu.Lock()
+	call.path = path
+	call.size = size
+	call.err = err
+	delete(c.pathInflight, hash)
+	close(call.done)
+	c.pathInflightMu.Unlock()
 }
 
 func (c *Client) startFetch(hash string) (*fetchCall, bool) {
@@ -152,9 +222,20 @@ func (c *Client) Put(ctx context.Context, hash string, data []byte) error {
 	if err := c.backend.Store(ctx, hash, data); err != nil {
 		return err
 	}
-	c.l2.Put(hash, data)
+	c.warmL2(hash, data)
 	c.l1.Put(hash, data)
 	return nil
+}
+
+// warmL2 installs bytes into the L2 disk cache. L3 is already the source of
+// truth, so a failed cache write degrades performance but not correctness —
+// still, it is counted and logged so a dead/full L2 disk cannot silently turn
+// every job into an L3 fetch.
+func (c *Client) warmL2(hash string, data []byte) {
+	if err := c.l2.Put(hash, data); err != nil {
+		c.l2PutErrors.Add(1)
+		log.Printf("storage: L2 cache write failed for %s: %v", hash, err)
+	}
 }
 
 // PutReader stores a large object without buffering it in the client. The
@@ -201,17 +282,7 @@ func (c *Client) LocalPath(ctx context.Context, hash string) (string, int64, err
 		return path, size, nil
 	}
 	if backend, ok := c.backend.(ReaderBackend); ok {
-		reader, size, err := backend.FetchReader(ctx, hash)
-		if err != nil {
-			return "", 0, err
-		}
-		defer reader.Close()
-		path, actual, err := c.l2.InstallReader(hash, reader, size)
-		if err != nil {
-			return "", 0, err
-		}
-		c.l3Fetches.Add(1)
-		return path, actual, nil
+		return c.localPathFetch(ctx, hash, backend)
 	}
 	data, err := c.Get(ctx, hash)
 	if err != nil {

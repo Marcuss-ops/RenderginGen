@@ -19,7 +19,6 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
-	"sync"
 	"time"
 
 	"github.com/Marcuss-ops/RenderginGen/queue/internal/model"
@@ -29,47 +28,18 @@ import (
 
 const maxClaimWait = 25 * time.Second
 
-type wakeSignal struct {
-	mu sync.Mutex
-	ch chan struct{}
-}
-
-func newWakeSignal() *wakeSignal {
-	return &wakeSignal{ch: make(chan struct{})}
-}
-
-// signal broadcasts an edge to every current waiter. Replacing the closed
-// channel immediately also means callers that arrive after the edge simply do
-// an atomic claim first and only wait if the database is actually empty.
-func (w *wakeSignal) signal() {
-	w.mu.Lock()
-	close(w.ch)
-	w.ch = make(chan struct{})
-	w.mu.Unlock()
-}
-
-func (w *wakeSignal) channel() <-chan struct{} {
-	w.mu.Lock()
-	ch := w.ch
-	w.mu.Unlock()
-	return ch
-}
-
-// Server wraps the job service with HTTP handlers.
+// Server wraps the job service with HTTP handlers. Wake-up signaling for
+// long-poll claims lives in one place — the service's Notifier — so the
+// submit/claim/complete transitions and both claim endpoints share a single
+// broadcast primitive (see WaitAndClaim).
 type Server struct {
 	svc            *service.Service
 	metricsHandler http.Handler
-	pendingWake    *wakeSignal
-	renderedWake   *wakeSignal
 }
 
 // New creates a server backed by the given job service.
 func New(s *service.Service) *Server {
-	return &Server{
-		svc:          s,
-		pendingWake:  newWakeSignal(),
-		renderedWake: newWakeSignal(),
-	}
+	return &Server{svc: s}
 }
 
 // SetMetricsHandler attaches an optional Prometheus exposition handler served
@@ -134,12 +104,18 @@ func (s *Server) submit(w http.ResponseWriter, r *http.Request) {
 	}
 	canonical, created, err := s.svc.SubmitIdempotent(job)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusConflict)
+		// 409 is reserved for the duplicate-ID condition. Producers treat 409
+		// as idempotent success (queue/client maps it to ErrJobExists), so a
+		// transient storage failure must never be reported as 409: that would
+		// silently drop the job. Everything else is a server error.
+		if errors.Is(err, repository.ErrJobExists) {
+			http.Error(w, err.Error(), http.StatusConflict)
+			return
+		}
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	if created {
-		s.signal(model.StatePending)
-	}
+	// SubmitIdempotent already notified claim waiters on creation.
 	status := http.StatusCreated
 	if !created {
 		status = http.StatusOK
@@ -168,16 +144,19 @@ func (s *Server) claim(w http.ResponseWriter, r *http.Request) {
 		if wait > maxClaimWait {
 			wait = maxClaimWait
 		}
-		timer := time.NewTimer(wait)
-		defer timer.Stop()
-		select {
-		case <-r.Context().Done():
-			return
-		case <-timer.C:
-		case <-s.wakeChannel(model.State(req.State)):
-		}
-		job, lease, err = s.svc.ClaimState(req.Worker, model.State(req.State))
+		// Delegate the wait to the service: it re-runs the atomic claim on
+		// every wake-up and bounded re-poll, on the single shared Notifier.
+		waitCtx, cancel := context.WithTimeout(r.Context(), wait+5*time.Second)
+		defer cancel()
+		job, lease, err = s.svc.WaitAndClaim(waitCtx, req.Worker, model.State(req.State), wait)
 		if err != nil {
+			if r.Context().Err() != nil {
+				return // client disconnected; nothing to write
+			}
+			if errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled) {
+				w.WriteHeader(http.StatusNoContent)
+				return
+			}
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -202,24 +181,6 @@ func (s *Server) claim(w http.ResponseWriter, r *http.Request) {
 		State:          job.State,
 		Artifact:       job.Artifact,
 	})
-}
-
-// signal only wakes workers; the job table remains the source of truth and
-// every awakened worker still competes through the repository's atomic
-// SELECT ... FOR UPDATE SKIP LOCKED claim.
-func (s *Server) signal(state model.State) {
-	if state == model.StateRendered {
-		s.renderedWake.signal()
-		return
-	}
-	s.pendingWake.signal()
-}
-
-func (s *Server) wakeChannel(state model.State) <-chan struct{} {
-	if state == model.StateRendered {
-		return s.renderedWake.channel()
-	}
-	return s.pendingWake.channel()
 }
 
 func (s *Server) claimWait(w http.ResponseWriter, r *http.Request) {
@@ -307,7 +268,7 @@ func (s *Server) retry(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	s.signal(model.StatePending)
+	// service.Retry already notified claim waiters.
 	w.WriteHeader(http.StatusNoContent)
 }
 

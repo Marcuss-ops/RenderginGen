@@ -22,7 +22,8 @@ type Repository struct {
 	mu          sync.Mutex
 	jobs        map[string]*model.Job
 	artifacts   map[string]model.Artifact
-	order       []string // FIFO order of pending job IDs
+	order       []string          // FIFO order of pending job IDs
+	idem        map[string]string // idempotency key -> job ID (mirrors the postgres unique index)
 	workers     map[string]model.Worker
 	lease       time.Duration
 	maxAttempts int
@@ -40,6 +41,7 @@ func New(lease time.Duration, maxAttempts int) *Repository {
 	return &Repository{
 		jobs:        make(map[string]*model.Job),
 		artifacts:   make(map[string]model.Artifact),
+		idem:        make(map[string]string),
 		workers:     make(map[string]model.Worker),
 		lease:       lease,
 		maxAttempts: maxAttempts,
@@ -52,14 +54,18 @@ func (s *Repository) SubmitIdempotent(job model.Job) (*model.Job, bool, error) {
 	if job.ID == "" {
 		return nil, false, fmt.Errorf("job id is required")
 	}
-	for _, existing := range s.jobs {
-		if job.IdempotencyKey != "" && existing.IdempotencyKey == job.IdempotencyKey {
-			copy := *existing
-			return &copy, false, nil
+	// O(1) idempotency lookup through a dedicated index instead of scanning
+	// the whole job map per submit (mirrors the postgres unique index).
+	if job.IdempotencyKey != "" {
+		if id, ok := s.idem[job.IdempotencyKey]; ok {
+			if existing, exists := s.jobs[id]; exists {
+				copy := *existing
+				return &copy, false, nil
+			}
 		}
 	}
 	if _, exists := s.jobs[job.ID]; exists {
-		return nil, false, fmt.Errorf("job %s already exists", job.ID)
+		return nil, false, fmt.Errorf("%w: job %s", repository.ErrJobExists, job.ID)
 	}
 	now := time.Now()
 	if err := validateChunkMetadata(job); err != nil {
@@ -68,6 +74,9 @@ func (s *Repository) SubmitIdempotent(job model.Job) (*model.Job, bool, error) {
 	job.State, job.CreatedAt, job.QueuedAt = model.StatePending, now, now
 	s.jobs[job.ID] = &job
 	s.order = append(s.order, job.ID)
+	if job.IdempotencyKey != "" {
+		s.idem[job.IdempotencyKey] = job.ID
+	}
 	copy := job
 	return &copy, true, nil
 }
@@ -80,7 +89,7 @@ func (s *Repository) Submit(job model.Job) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if _, exists := s.jobs[job.ID]; exists {
-		return fmt.Errorf("job %s already exists", job.ID)
+		return fmt.Errorf("%w: job %s", repository.ErrJobExists, job.ID)
 	}
 	now := time.Now()
 	if err := validateChunkMetadata(job); err != nil {
@@ -230,6 +239,9 @@ func (s *Repository) Rendered(id, workerID string, artifact model.Artifact, reas
 	job.FailReason = reason
 	job.Worker = ""
 	job.QueuedAt = time.Now()
+	// Mirror PostgreSQL: a rendered job holds no lease — it is only claimable
+	// again through an explicit (re)claim, never through lease expiry.
+	job.LeaseUntil = time.Time{}
 	s.artifacts[id] = artifact
 	s.order = append(s.order, id)
 	return nil
@@ -253,6 +265,8 @@ func (s *Repository) Fail(id, workerID, reason string) error {
 	job.State = model.StatePending
 	job.Worker = ""
 	job.QueuedAt = time.Now()
+	// Mirror PostgreSQL: requeued jobs hold no lease until the next claim.
+	job.LeaseUntil = time.Time{}
 	s.order = append(s.order, id)
 	return nil
 }
@@ -341,7 +355,7 @@ func (s *Repository) Stats() model.Stats {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	stats := model.Stats{Depth: len(s.order)}
+	stats := model.Stats{}
 	for _, job := range s.jobs {
 		switch job.State {
 		case model.StatePending:
@@ -354,6 +368,11 @@ func (s *Repository) Stats() model.Stats {
 			stats.Failed++
 		}
 	}
+	// Depth counts claimable render work only, matching PostgreSQL (where the
+	// gauge reads state='pending'). Rendered-state jobs are claimable too but
+	// are not render work; the gauge exists for autoscaling render capacity.
+	stats.Ok = true
+	stats.Depth = stats.Pending
 	return stats
 }
 

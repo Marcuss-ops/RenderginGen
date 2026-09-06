@@ -13,9 +13,10 @@ import (
 	"testing"
 )
 
-// certificationFixture mirrors cmd/render-final-certification: one real
-// semantic entity per registry preset, rendered against the Pale Olive color
-// background. Keep it in sync with the binary's fixtureFor().
+// certificationFixture builds one real semantic entity per registry preset,
+// rendered against the Pale Olive color background. It is the in-repo,
+// compile-level successor of the removed render-final-certification CLI: the
+// registry gate these tests enforce now runs in CI via go test ./...
 func certificationFixture(def OfficialPresetDefinition) FastEntityOverlay {
 	const durationFrames = int64(125)
 	fx := FastEntityOverlay{

@@ -44,6 +44,51 @@ func TestHealthEndpointReturnsInfo(t *testing.T) {
 	}
 }
 
+func TestHealthEndpointQueueStatusOverride(t *testing.T) {
+	hs := NewServer(":0", Info{Worker: "w1", Status: "ready"})
+	hs.SetQueueStatus(func() string { return "degraded" })
+	ts := httptest.NewServer(hs.srv.Handler)
+	defer ts.Close()
+
+	resp, err := http.Get(ts.URL + "/health")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.Body.Close()
+
+	var got Info
+	if err := json.NewDecoder(resp.Body).Decode(&got); err != nil {
+		t.Fatal(err)
+	}
+	if got.Status != "degraded" {
+		t.Fatalf("status = %q, want degraded", got.Status)
+	}
+	if got.Worker != "w1" {
+		t.Fatalf("worker = %q, want w1 (static fields must be preserved)", got.Worker)
+	}
+}
+
+func TestHealthEndpointQueueStatusEmptyFallsBack(t *testing.T) {
+	hs := NewServer(":0", Info{Worker: "w1", Status: "ready"})
+	hs.SetQueueStatus(func() string { return "" })
+	ts := httptest.NewServer(hs.srv.Handler)
+	defer ts.Close()
+
+	resp, err := http.Get(ts.URL + "/health")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.Body.Close()
+
+	var got Info
+	if err := json.NewDecoder(resp.Body).Decode(&got); err != nil {
+		t.Fatal(err)
+	}
+	if got.Status != "ready" {
+		t.Fatalf("status = %q, want static fallback ready", got.Status)
+	}
+}
+
 func TestProgressEndpointReportsRender(t *testing.T) {
 	hs := NewServer(":0", Info{Worker: "w1"})
 	hs.SetProgressFunc(func() *chronon.Progress {

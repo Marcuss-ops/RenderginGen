@@ -248,6 +248,33 @@ queue:
 	}
 }
 
+func TestLoadRejectsUnknownKey(t *testing.T) {
+	path := writeConfig(t, `
+queue:
+  endpoint: http://queue:8081
+artifact_store:
+  endpoint: http://store:9000
+chronon:
+  hardware_encder: nvenc
+`)
+	if _, err := Load(path); err == nil {
+		t.Fatal("expected error for unknown/misspelled config key")
+	}
+}
+
+func TestLoadRejectsUnknownTopLevelKey(t *testing.T) {
+	path := writeConfig(t, `
+queue:
+  endpoint: http://queue:8081
+artifact_store:
+  endpoint: http://store:9000
+gpu_lanes: 8
+`)
+	if _, err := Load(path); err == nil {
+		t.Fatal("expected error for unknown top-level key")
+	}
+}
+
 func TestLoadNonexistentFile(t *testing.T) {
 	if _, err := Load(filepath.Join(t.TempDir(), "nope.yaml")); err == nil {
 		t.Fatal("expected error for missing file")

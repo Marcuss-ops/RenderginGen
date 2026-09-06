@@ -3,11 +3,13 @@ package server
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
 
+	"github.com/Marcuss-ops/RenderginGen/queue/internal/model"
 	"github.com/Marcuss-ops/RenderginGen/queue/internal/repository/memory"
 	"github.com/Marcuss-ops/RenderginGen/queue/internal/service"
 )
@@ -67,6 +69,44 @@ func TestSubmitClaimCompleteFlow(t *testing.T) {
 	resp = post(t, ts.URL+"/jobs/job-1/complete", `{"worker":"w1","data":{"storage_key":"sha-job-1","artifact_hash":"sha-job-1","size_bytes":1,"content_type":"video/mp4"}}`)
 	if resp.StatusCode != http.StatusNoContent {
 		t.Fatalf("complete: want 204, got %d", resp.StatusCode)
+	}
+}
+
+func TestSubmitDuplicateIDIsConflict(t *testing.T) {
+	ts := newServer(t)
+	body := `{"id":"job-dup","render_plan":{"n":1}}`
+	first := post(t, ts.URL+"/jobs", body)
+	if first.StatusCode != http.StatusCreated {
+		t.Fatalf("first submit: got %d", first.StatusCode)
+	}
+	first.Body.Close()
+
+	resp := post(t, ts.URL+"/jobs", body)
+	if resp.StatusCode != http.StatusConflict {
+		t.Fatalf("duplicate submit: want 409, got %d", resp.StatusCode)
+	}
+}
+
+// failingRepo forces a non-duplicate storage failure on submit so the server
+// can be proven NOT to collapse internal errors into 409 (which the client
+// would treat as idempotent success and silently drop the job).
+type failingRepo struct {
+	*memory.Repository
+}
+
+func (failingRepo) SubmitIdempotent(model.Job) (*model.Job, bool, error) {
+	return nil, false, errors.New("storage unavailable")
+}
+
+func TestSubmitStorageFailureIsNotConflict(t *testing.T) {
+	repo := failingRepo{memory.New(30*time.Second, 3)}
+	svc := service.New(repo)
+	ts := httptest.NewServer(New(svc).Handler())
+	t.Cleanup(ts.Close)
+
+	resp := post(t, ts.URL+"/jobs", `{"id":"job-1","render_plan":{"n":1}}`)
+	if resp.StatusCode != http.StatusInternalServerError {
+		t.Fatalf("storage failure on submit: want 500, got %d", resp.StatusCode)
 	}
 }
 
