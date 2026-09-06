@@ -62,12 +62,60 @@ func fakeQueue(t *testing.T) *httptest.Server {
 		_ = json.NewEncoder(w).Encode(Stats{Pending: 3, Running: 1, Completed: 5, Depth: 4})
 	})
 
+	mux.HandleFunc("POST /jobs/{id}/cancel", func(w http.ResponseWriter, r *http.Request) {
+		id := r.PathValue("id")
+		switch id {
+		case "missing":
+			http.Error(w, "not found", http.StatusNotFound)
+		case "done":
+			http.Error(w, "job is in state \"completed\", cannot cancel terminal job", http.StatusConflict)
+		default:
+			w.WriteHeader(http.StatusNoContent)
+		}
+	})
+
 	mux.HandleFunc("GET /health", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
 	})
 
 	return httptest.NewServer(mux)
+}
+
+func TestCancelSuccessAndIdempotency(t *testing.T) {
+	srv := fakeQueue(t)
+	defer srv.Close()
+
+	c := New(srv.URL)
+	if err := c.Cancel(context.Background(), "job-1"); err != nil {
+		t.Fatalf("cancel: %v", err)
+	}
+	// The queue treats a repeated cancel as a no-op (204), which must surface
+	// as nil so producers can retry cancels idempotently.
+	if err := c.Cancel(context.Background(), "job-1"); err != nil {
+		t.Fatalf("second cancel: %v", err)
+	}
+}
+
+func TestCancelNotFound(t *testing.T) {
+	srv := fakeQueue(t)
+	defer srv.Close()
+
+	c := New(srv.URL)
+	err := c.Cancel(context.Background(), "missing")
+	if err == nil || !errors.Is(err, ErrNotFound) {
+		t.Fatalf("want ErrNotFound, got %v", err)
+	}
+}
+
+func TestCancelTerminalConflict(t *testing.T) {
+	srv := fakeQueue(t)
+	defer srv.Close()
+
+	c := New(srv.URL)
+	if err := c.Cancel(context.Background(), "done"); err == nil {
+		t.Fatal("expected conflict on completed job")
+	}
 }
 
 func TestSubmitSuccess(t *testing.T) {

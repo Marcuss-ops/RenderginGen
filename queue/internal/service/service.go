@@ -304,6 +304,22 @@ func (s *Service) Retry(id string) error {
 	return nil
 }
 
+// Cancel moves a job that has not reached a terminal state to cancelled.
+// Cancelled is terminal: claim never selects it and lease expiry never
+// requeues it, so the job can never be re-rendered across lease/claim cycles.
+// Cancelling an already-cancelled job is a no-op.
+func (s *Service) Cancel(id string) error {
+	if err := s.repo.Cancel(id); err != nil {
+		return err
+	}
+	// Wake claim waiters: a cancelled pending job is no longer claimable, so a
+	// blocked claim must re-check the store instead of sleeping on a job that
+	// will never arrive.
+	s.notify.Notify()
+	s.observePending()
+	return nil
+}
+
 // SetProgress records the worker's render progress for a running job. The
 // queue is the source of truth: progress survives worker restarts and is
 // visible through GET /jobs/{id} without asking the worker directly.

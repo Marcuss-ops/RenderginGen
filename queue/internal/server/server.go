@@ -10,6 +10,10 @@
 //	POST /jobs/{id}/progress    report render progress (frames done/total)
 //	GET  /jobs/depth            queue depth/stats (autoscaling)
 //	GET  /health                health check
+//
+// File layout: server.go owns routing + submit/claim, transition_routes.go the
+// job-transition handlers, read_routes.go the read-only handlers and
+// workers.go the worker registry endpoints.
 package server
 
 import (
@@ -18,7 +22,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"net/http"
 	"time"
 
@@ -63,6 +66,8 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /jobs/{parent}/{lang}/fail", s.fail)
 	mux.HandleFunc("POST /jobs/{id}/retry", s.retry)
 	mux.HandleFunc("POST /jobs/{parent}/{lang}/retry", s.retry)
+	mux.HandleFunc("POST /jobs/{id}/cancel", s.cancel)
+	mux.HandleFunc("POST /jobs/{parent}/{lang}/cancel", s.cancel)
 	mux.HandleFunc("POST /jobs/{id}/renew", s.renew)
 	mux.HandleFunc("POST /jobs/{parent}/{lang}/renew", s.renew)
 	mux.HandleFunc("POST /jobs/{id}/progress", s.progress)
@@ -225,194 +230,6 @@ func (s *Server) claimWait(w http.ResponseWriter, r *http.Request) {
 		State:          job.State,
 		Artifact:       job.Artifact,
 	})
-}
-
-func (s *Server) complete(w http.ResponseWriter, r *http.Request) {
-	id := parseJobID(r)
-	var req struct {
-		Worker string         `json:"worker"`
-		Data   model.Artifact `json:"data"`
-	}
-	// Strict decode + explicit worker check: a malformed body or a missing
-	// worker must surface as a 400 with the real cause, never as a misleading
-	// 409 ("job X is not running or not owned by ''").
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, fmt.Sprintf("invalid request body: %v", err), http.StatusBadRequest)
-		return
-	}
-	if req.Worker == "" {
-		http.Error(w, "worker is required", http.StatusBadRequest)
-		return
-	}
-
-	if err := s.svc.Complete(id, req.Worker, req.Data); err != nil {
-		http.Error(w, err.Error(), http.StatusConflict)
-		return
-	}
-	w.WriteHeader(http.StatusNoContent)
-}
-
-func (s *Server) fail(w http.ResponseWriter, r *http.Request) {
-	id := parseJobID(r)
-	var req struct {
-		Worker string `json:"worker"`
-		Data   struct {
-			Reason string `json:"reason"`
-		} `json:"data"`
-	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, fmt.Sprintf("invalid request body: %v", err), http.StatusBadRequest)
-		return
-	}
-	if req.Worker == "" {
-		http.Error(w, "worker is required", http.StatusBadRequest)
-		return
-	}
-
-	if err := s.svc.Fail(id, req.Worker, req.Data.Reason); err != nil {
-		http.Error(w, err.Error(), http.StatusConflict)
-		return
-	}
-	w.WriteHeader(http.StatusNoContent)
-}
-
-func (s *Server) retry(w http.ResponseWriter, r *http.Request) {
-	id := parseJobID(r)
-	if err := s.svc.Retry(id); err != nil {
-		if errors.Is(err, repository.ErrNotFound) {
-			http.Error(w, err.Error(), http.StatusNotFound)
-			return
-		}
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-	// service.Retry already notified claim waiters.
-	w.WriteHeader(http.StatusNoContent)
-}
-
-func (s *Server) rendered(w http.ResponseWriter, r *http.Request) {
-	id := parseJobID(r)
-	var req struct {
-		Worker string `json:"worker"`
-		Data   struct {
-			Reason   string         `json:"reason"`
-			Artifact model.Artifact `json:"artifact"`
-		} `json:"data"`
-	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, fmt.Sprintf("invalid request body: %v", err), http.StatusBadRequest)
-		return
-	}
-	if req.Worker == "" {
-		http.Error(w, "worker is required", http.StatusBadRequest)
-		return
-	}
-
-	if err := s.svc.Rendered(id, req.Worker, req.Data.Artifact, req.Data.Reason); err != nil {
-		http.Error(w, err.Error(), http.StatusConflict)
-		return
-	}
-	w.WriteHeader(http.StatusNoContent)
-}
-
-// progress records render progress reported by the lease-owning worker. It
-// mirrors renew's conflict semantics: a stale worker's report is a 409, not a
-// corruption vector.
-func (s *Server) progress(w http.ResponseWriter, r *http.Request) {
-	id := parseJobID(r)
-	var req struct {
-		Worker string         `json:"worker"`
-		Data   model.Progress `json:"data"`
-	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-	if req.Worker == "" {
-		http.Error(w, "worker is required", http.StatusBadRequest)
-		return
-	}
-	if err := s.svc.SetProgress(id, req.Worker, req.Data); err != nil {
-		if errors.Is(err, repository.ErrNotFound) {
-			http.Error(w, err.Error(), http.StatusNotFound)
-			return
-		}
-		http.Error(w, err.Error(), http.StatusConflict)
-		return
-	}
-	w.WriteHeader(http.StatusNoContent)
-}
-
-func (s *Server) renew(w http.ResponseWriter, r *http.Request) {
-	id := parseJobID(r)
-	var req struct {
-		Worker string `json:"worker"`
-	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, fmt.Sprintf("invalid request body: %v", err), http.StatusBadRequest)
-		return
-	}
-	if req.Worker == "" {
-		http.Error(w, "worker is required", http.StatusBadRequest)
-		return
-	}
-
-	if err := s.svc.Renew(id, req.Worker); err != nil {
-		http.Error(w, err.Error(), http.StatusConflict)
-		return
-	}
-	w.WriteHeader(http.StatusNoContent)
-}
-
-func (s *Server) claimFinalization(w http.ResponseWriter, r *http.Request) {
-	var req struct {
-		Worker string `json:"worker"`
-	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-	job, claimed, err := s.svc.ClaimFinalization(parseJobID(r), req.Worker)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusConflict)
-		return
-	}
-	if !claimed {
-		w.WriteHeader(http.StatusNoContent)
-		return
-	}
-	writeJSON(w, http.StatusOK, job)
-}
-
-func (s *Server) children(w http.ResponseWriter, r *http.Request) {
-	jobs, err := s.svc.Children(parseJobID(r))
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	writeJSON(w, http.StatusOK, jobs)
-}
-
-func (s *Server) get(w http.ResponseWriter, r *http.Request) {
-	id := parseJobID(r)
-	job, err := s.svc.Get(id)
-	if err != nil {
-		if errors.Is(err, repository.ErrNotFound) {
-			http.Error(w, err.Error(), http.StatusNotFound)
-			return
-		}
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	writeJSON(w, http.StatusOK, job)
-}
-
-func (s *Server) depth(w http.ResponseWriter, _ *http.Request) {
-	writeJSON(w, http.StatusOK, s.svc.Stats())
-}
-
-func (s *Server) health(w http.ResponseWriter, _ *http.Request) {
-	writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 }
 
 // claimResponse is the payload returned to a worker on claim.

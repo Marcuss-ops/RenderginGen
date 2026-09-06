@@ -41,6 +41,7 @@ const (
 	StateCompleted State = "completed"
 	StateFailed    State = "failed"
 	StateRendered  State = "rendered"
+	StateCancelled State = "cancelled"
 )
 
 // JobSchemaV1 identifies the renderinggen.job.v1 envelope.
@@ -200,6 +201,34 @@ func (c *Client) Submit(ctx context.Context, job Job) error {
 	default:
 		raw, _ := io.ReadAll(resp.Body)
 		return fmt.Errorf("queue submit: HTTP %d: %s", resp.StatusCode, strings.TrimSpace(string(raw)))
+	}
+}
+
+// Cancel asks the queue to move a job that has not reached a terminal state
+// to cancelled. Cancelled is terminal: the job is never claimable again and
+// lease expiry never requeues it, so cancelling a job guarantees it can never
+// trigger a new Chronon render across lease/claim cycles. Cancelling an
+// already-cancelled job is a no-op (nil); a 404 surfaces as ErrNotFound and a
+// completed/failed job cannot be cancelled (error).
+func (c *Client) Cancel(ctx context.Context, id string) error {
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.baseURL+"/jobs/"+url.PathEscape(id)+"/cancel", nil)
+	if err != nil {
+		return fmt.Errorf("queue cancel request: %w", err)
+	}
+	resp, err := c.http.Do(req)
+	if err != nil {
+		return fmt.Errorf("queue cancel do: %w", err)
+	}
+	defer resp.Body.Close()
+
+	switch resp.StatusCode {
+	case http.StatusNoContent:
+		return nil
+	case http.StatusNotFound:
+		return fmt.Errorf("%w: job %s", ErrNotFound, id)
+	default:
+		raw, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("queue cancel: HTTP %d: %s", resp.StatusCode, strings.TrimSpace(string(raw)))
 	}
 }
 

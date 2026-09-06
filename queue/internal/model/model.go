@@ -15,6 +15,14 @@ const (
 	StateRunning   State = "running"
 	StateCompleted State = "completed"
 	StateFailed    State = "failed"
+	// StateCancelled marks a job a producer cancelled before it reached a
+	// terminal state. Cancelled is terminal: the job is never claimable again
+	// and lease expiry never requeues it, so a cancelled job can never trigger
+	// a new Chronon render across lease/claim cycles. An in-flight render that
+	// was already claimed when the cancel landed finishes its GPU invocation
+	// (it cannot be preempted), but its complete/fail reports are rejected and
+	// no further invocation ever starts.
+	StateCancelled State = "cancelled"
 
 	// StateRendered marks a job whose render is finished and durably stored in
 	// the artifact store, but whose external publication (e.g. Google Drive)
