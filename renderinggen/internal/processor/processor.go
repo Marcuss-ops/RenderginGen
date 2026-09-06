@@ -7,8 +7,6 @@ package processor
 
 import (
 	"context"
-	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -25,6 +23,7 @@ import (
 	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/artifactdb"
 	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/chronon"
 	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/drive"
+	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/hashio"
 	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/media"
 	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/overlay"
 	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/queue"
@@ -281,8 +280,10 @@ func (p *Processor) resolveAssetStreaming(ctx context.Context, asset queue.Asset
 		return workspace.ResolvedAsset{}, fmt.Errorf("download %s: HTTP %d", sourceURL, resp.StatusCode)
 	}
 
-	// Stream to disk + hash in one pass, capped at maxAssetDownloadBytes.
-	digest, size, err := streamHashAndCopy(io.LimitReader(resp.Body, maxAssetDownloadBytes+1), tmp)
+	// Stream to disk + hash in one pass via the shared hashio primitive,
+	// capped at maxAssetDownloadBytes (the single size-cap policy for network
+	// downloads; see hashio's package doc).
+	digest, size, err := hashio.Copy(io.LimitReader(resp.Body, maxAssetDownloadBytes+1), tmp)
 	if err != nil {
 		return workspace.ResolvedAsset{}, fmt.Errorf("download %s: %w", sourceURL, err)
 	}
@@ -310,17 +311,6 @@ func (p *Processor) resolveAssetStreaming(ctx context.Context, asset queue.Asset
 	return workspace.ResolvedAsset{LocalPath: path, SizeBytes: size}, nil
 }
 
-// streamHashAndCopy copies r into w while computing the SHA-256 of the
-// copied bytes and the total byte count (constant memory).
-func streamHashAndCopy(r io.Reader, w io.Writer) (string, int64, error) {
-	hasher := sha256.New()
-	size, err := io.Copy(io.MultiWriter(w, hasher), r)
-	if err != nil {
-		return "", size, err
-	}
-	return hex.EncodeToString(hasher.Sum(nil)), size, nil
-}
-
 func isHTTPURL(s string) bool {
 	return strings.HasPrefix(s, "http://") || strings.HasPrefix(s, "https://")
 }
@@ -342,16 +332,6 @@ var assetDownloadClient = &http.Client{
 // maxAssetDownloadBytes caps a self-healed asset download (1 GiB: a rendered
 // background video is far below this; anything larger is a bug or an attack).
 const maxAssetDownloadBytes = 1 << 30
-
-// hashFileSHA256 streams a file through SHA-256 without buffering it in RAM.
-func hashFileSHA256(path string) (string, error) {
-	file, err := os.Open(path)
-	if err != nil {
-		return "", err
-	}
-	defer file.Close()
-	return hashReader(file)
-}
 
 func mergeAssets(jobAssets []queue.AssetRef, compiled []overlay.Asset) ([]queue.AssetRef, error) {
 	result := make([]queue.AssetRef, 0, len(jobAssets)+len(compiled))
@@ -698,11 +678,11 @@ func (p *Processor) storeArtifact(ctx context.Context, jobID, outputPath string,
 		log.Printf("job %s: chronon receipt size %d != file %d; verifying", jobID, receipt.Output.Bytes, fileInfo.Size())
 		fallthrough
 	default:
-		verified, verifyErr := hashFileSHA256(outputPath)
+		digest, _, verifyErr := hashio.File(outputPath)
 		if verifyErr != nil {
 			return queue.Artifact{}, fmt.Errorf("processor: hash output %s: %w", outputPath, verifyErr)
 		}
-		hash = verified
+		hash = digest
 	}
 	shaUS := float64(time.Since(shaStart).Microseconds())
 	phaseMetrics["sha256_us"] = shaUS
