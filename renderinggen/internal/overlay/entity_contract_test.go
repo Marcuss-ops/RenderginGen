@@ -64,6 +64,20 @@ func TestCompileImagePresetUsesCatalogGeometryAndDirection(t *testing.T) {
 	}
 }
 
+func TestCompileImagePresetHonorsExplicitCenterAndSize(t *testing.T) {
+	plan, err := CompileFastEntityOverlays("image-center", 1920, 1080, 24, 1, 125, "color:#EEF1E7", []FastEntityOverlay{{
+		Type: "image", PresetID: "image_scale_in", Asset: "gerard_butler.jpg", StartFrame: 0, EndFrame: 125,
+		Position: "center", Size: 600,
+	}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	layer := plan.Layers[1]
+	if layer.Position[0] != 660 || layer.Position[1] != 240 || layer.BoxWidth != 600 || layer.BoxHeight != 600 {
+		t.Fatalf("explicit center geometry=%+v position=%v", layer, layer.Position)
+	}
+}
+
 func TestFastEntityOverlay_BuildPlan(t *testing.T) {
 	overlays := []FastEntityOverlay{
 		{
