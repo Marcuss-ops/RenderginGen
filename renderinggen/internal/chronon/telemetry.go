@@ -39,16 +39,46 @@ func ReadTimingSidecarFile(path string) (json.RawMessage, error) {
 	return out, nil
 }
 
-// MediaReceipt is the identity section of Chronon's render-receipt sidecar
-// (`<output>.receipt.json`, schema chronon3d.render-receipt.v1). Chronon
-// computes the output SHA-256 itself, so the worker can verify identity
-// without re-reading the rendered file.
+// MediaReceipt is the identity + verification-timing section of Chronon's
+// render-receipt sidecar (`<output>.receipt.json`, schema
+// chronon3d.render-receipt.v1). Chronon computes the output SHA-256 itself,
+// so the worker can verify identity without re-reading the rendered file.
+// The timing_ms block carries the measured post-render verification phases
+// (policy-controlled: under the default "fast" policy decode_ms is -1 and no
+// full re-decode of the freshly muxed output happens).
 type MediaReceipt struct {
 	Schema string `json:"schema"`
 	Output struct {
 		Bytes  int64  `json:"bytes"`
 		SHA256 string `json:"sha256"`
 	} `json:"output"`
+	Timing struct {
+		SHA256MS float64 `json:"sha256_ms"`
+		ProbeMS  float64 `json:"probe_ms"`
+		DecodeMS float64 `json:"decode_ms"`
+		TotalMS  float64 `json:"total_ms"`
+	} `json:"timing_ms"`
+}
+
+// ReceiptTimingMetrics projects the receipt's measured verification phases
+// onto the artifact metrics namespace with the chronon_receipt_ prefix, so
+// PipelineGen's per-clip reports can attribute the post-render receipt cost
+// (probe, optional decode, SHA-256, total) instead of hiding it inside the
+// render wall. Chronon uses -1.0 as the sentinel for a phase that did not
+// run (e.g. decode_ms under the default fast policy); a sentinel phase is
+// omitted, never reported as a fabricated measurement.
+func (r MediaReceipt) ReceiptTimingMetrics() map[string]float64 {
+	out := make(map[string]float64, 4)
+	put := func(key string, ms float64) {
+		if ms >= 0 {
+			out[key] = ms
+		}
+	}
+	put("chronon_receipt_sha256_ms", r.Timing.SHA256MS)
+	put("chronon_receipt_probe_ms", r.Timing.ProbeMS)
+	put("chronon_receipt_decode_ms", r.Timing.DecodeMS)
+	put("chronon_receipt_total_ms", r.Timing.TotalMS)
+	return out
 }
 
 // ReadMediaReceipt reads Chronon's media receipt next to the rendered output.

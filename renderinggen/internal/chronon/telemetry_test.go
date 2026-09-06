@@ -49,3 +49,57 @@ func TestReadTimingSidecarMissingFile(t *testing.T) {
 		t.Fatal("expected an error for a missing sidecar")
 	}
 }
+
+// TestReadMediaReceiptTiming verifies the worker parses Chronon's receipt
+// timing_ms (the policy-controlled verification phases) and projects the
+// measured phases onto the chronon_receipt_* metric namespace, omitting the
+// decode phase that Chronon skips under the default fast policy (-1 sentinel)
+// so reports never see a fabricated decode measurement.
+func TestReadMediaReceiptTiming(t *testing.T) {
+	dir := t.TempDir()
+	output := filepath.Join(dir, "out.mp4")
+	write := func(name, body string) {
+		t.Helper()
+		if err := os.WriteFile(output+name, []byte(body), 0o600); err != nil {
+			t.Fatalf("write %s: %v", name, err)
+		}
+	}
+	write(".receipt.json", `{
+	  "schema": "chronon3d.render-receipt.v1",
+	  "output": {"bytes": 12345, "sha256": "abc123"},
+	  "timing_ms": {"sha256_ms": 9.5, "probe_ms": 41.25, "decode_ms": -1.0, "total_ms": 52.0}
+	}`)
+
+	receipt, err := ReadMediaReceipt(output)
+	if err != nil {
+		t.Fatalf("ReadMediaReceipt: %v", err)
+	}
+	metrics := receipt.ReceiptTimingMetrics()
+	if got := metrics["chronon_receipt_sha256_ms"]; got != 9.5 {
+		t.Errorf("sha256_ms = %v, want 9.5", got)
+	}
+	if got := metrics["chronon_receipt_probe_ms"]; got != 41.25 {
+		t.Errorf("probe_ms = %v, want 41.25", got)
+	}
+	if got := metrics["chronon_receipt_total_ms"]; got != 52.0 {
+		t.Errorf("total_ms = %v, want 52.0", got)
+	}
+	if _, present := metrics["chronon_receipt_decode_ms"]; present {
+		t.Errorf("decode_ms present (%v), want omitted for the fast-policy -1 sentinel", metrics["chronon_receipt_decode_ms"])
+	}
+
+	// Certify/normal policy measured a real decode: the phase is projected.
+	write(".receipt.json", `{
+	  "schema": "chronon3d.render-receipt.v1",
+	  "output": {"bytes": 12345, "sha256": "abc123"},
+	  "timing_ms": {"sha256_ms": 9.5, "probe_ms": 240.0, "decode_ms": 3100.75, "total_ms": 3360.0}
+	}`)
+	receipt, err = ReadMediaReceipt(output)
+	if err != nil {
+		t.Fatalf("ReadMediaReceipt (certify): %v", err)
+	}
+	metrics = receipt.ReceiptTimingMetrics()
+	if got := metrics["chronon_receipt_decode_ms"]; got != 3100.75 {
+		t.Errorf("decode_ms = %v, want 3100.75", got)
+	}
+}
