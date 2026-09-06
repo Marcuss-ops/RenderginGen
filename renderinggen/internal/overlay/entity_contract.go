@@ -235,27 +235,27 @@ func CompileFastEntityOverlays(
 				resolved := resolveImageLayout(preset.Layout, boxWidth, boxHeight, width, height)
 				posX, posY := resolved[0], resolved[1]
 				// A caller-supplied anchor is authoritative. The catalog supplies
-				// the default only when the job leaves placement unspecified.
+				// the default only when the job leaves placement unspecified. Image
+				// positions are offsets from the canvas center in Chronon's plan.
 				if strings.TrimSpace(pos) != "" {
 					switch strings.ToLower(strings.TrimSpace(pos)) {
 					case "center":
-						posX = float64(width-boxWidth) / 2.0
-						posY = float64(height-boxHeight) / 2.0
+						posX, posY = 0, 0
 					case "image_left", "left":
-						posX = 0
-						posY = float64(height-boxHeight) / 2.0
+						posX = -float64(width-boxWidth) / 2.0
+						posY = 0
 					case "image_right", "right":
-						posX = float64(width - boxWidth)
-						posY = float64(height-boxHeight) / 2.0
-					case "bottom_left":
-						posX = 0
-						posY = float64(height - boxHeight)
-					case "bottom_center":
 						posX = float64(width-boxWidth) / 2.0
-						posY = float64(height - boxHeight)
+						posY = 0
+					case "bottom_left":
+						posX = -float64(width-boxWidth) / 2.0
+						posY = float64(height-boxHeight) / 2.0
+					case "bottom_center":
+						posX = 0
+						posY = float64(height-boxHeight) / 2.0
 					case "bottom_right":
-						posX = float64(width - boxWidth)
-						posY = float64(height - boxHeight)
+						posX = float64(width-boxWidth) / 2.0
+						posY = float64(height-boxHeight) / 2.0
 					}
 				}
 				if len(ov.Translate) == 2 {
