@@ -200,13 +200,6 @@ func CompileFastEntityOverlays(
 				presetTextAnimators = layerAnim.TextAnimators
 				layerAnim = nil
 			}
-			if preset.Family == PresetImage && layerAnim != nil {
-				// Chronon's current image primitive composites an opaque black
-				// surface whenever a primitive animation track is attached. Keep
-				// the asset/placement valid and static until that engine path is
-				// fixed; a clean image is preferable to a corrupted card.
-				layerAnim = nil
-			}
 		}
 
 		switch strings.ToLower(strings.TrimSpace(ov.Type)) {

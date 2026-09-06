@@ -59,8 +59,8 @@ func TestCompileImagePresetUsesCatalogGeometryAndDirection(t *testing.T) {
 	if layer.Asset != "gerard_butler.jpg" || layer.Position[0] != 830 || layer.BoxWidth != 260 {
 		t.Fatalf("image preset geometry=%+v position=%v", layer, layer.Position)
 	}
-	if layer.Animation != nil && len(layer.Animation.Tracks) != 0 {
-		t.Fatalf("image preset must avoid Chronon image primitive tracks: %+v", layer.Animation)
+	if layer.Animation == nil || len(layer.Animation.Tracks) == 0 {
+		t.Fatalf("image preset must preserve Chronon image primitive tracks: %+v", layer.Animation)
 	}
 }
 
