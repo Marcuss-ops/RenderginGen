@@ -370,8 +370,22 @@ func (p *Processor) FinalizeJob(ctx context.Context, prepared *PreparedJob) (que
 		if err != nil {
 			return queue.Artifact{}, fmt.Errorf("processor: overlay ffprobe: %w", err)
 		}
-		if err := media.ValidateDecoded(ctx, outputPath); err != nil {
-			return queue.Artifact{}, fmt.Errorf("processor: full decode gate: %w", err)
+		probeUS := float64(time.Since(probeStart).Microseconds())
+		metrics["probe_us"] = probeUS
+		metrics["probe_ms"] = probeUS / 1000
+
+		// The encoder/muxer has already consumed every rendered frame. A second
+		// full decode belongs to certification, not to the production render
+		// path. Keep the policy explicit so benchmark runs can compare fast,
+		// normal and certify without changing code.
+		if renderVerificationLevel() != renderVerifyFast {
+			decodeStart := time.Now()
+			if err := media.ValidateDecoded(ctx, outputPath); err != nil {
+				return queue.Artifact{}, fmt.Errorf("processor: full decode gate: %w", err)
+			}
+			decodeUS := float64(time.Since(decodeStart).Microseconds())
+			metrics["decode_us"] = decodeUS
+			metrics["decode_ms"] = decodeUS / 1000
 		}
 		if metadata.ProfileID != "" {
 			profile, err := media.ResolveProfile(metadata.ProfileID)
@@ -392,12 +406,37 @@ func (p *Processor) FinalizeJob(ctx context.Context, prepared *PreparedJob) (que
 			}
 		}
 		probe = &probed
-		probeUS := float64(time.Since(probeStart).Microseconds())
-		metrics["probe_us"] = probeUS
-		metrics["probe_ms"] = probeUS / 1000
 	}
 	return p.storeArtifact(ctx, job.ID, outputPath, plan, metrics, prepared.totalStart, probe, prepared.Stats, prepared.InputBytes,
 		job.JobType == queue.JobTypeOverlayRender || metadata.ProfileID != "")
+}
+
+type renderVerifyLevel string
+
+const (
+	renderVerifyFast    renderVerifyLevel = "fast"
+	renderVerifyNormal  renderVerifyLevel = "normal"
+	renderVerifyCertify renderVerifyLevel = "certify"
+)
+
+// renderVerificationLevel is intentionally independent from visual sampling:
+// fast is the production default, normal performs one complete decode, and
+// certify is the explicit correctness mode used by CI/golden benchmarks.
+// CHRONON_RECEIPT_VERIFY is accepted as an alias so a worker and its Chronon
+// subprocess cannot accidentally run with different policies.
+func renderVerificationLevel() renderVerifyLevel {
+	raw := os.Getenv("RENDERINGGEN_RECEIPT_VERIFY")
+	if raw == "" {
+		raw = os.Getenv("CHRONON_RECEIPT_VERIFY")
+	}
+	switch renderVerifyLevel(raw) {
+	case renderVerifyNormal:
+		return renderVerifyNormal
+	case renderVerifyCertify:
+		return renderVerifyCertify
+	default:
+		return renderVerifyFast
+	}
 }
 
 // deepVisualValidationEnabled reports whether the sampled ffmpeg visual

@@ -751,6 +751,16 @@ func (p *Processor) storeArtifact(ctx context.Context, jobID, outputPath string,
 	shaUS := float64(time.Since(shaStart).Microseconds())
 	phaseMetrics["sha256_us"] = shaUS
 	phaseMetrics["sha256_ms"] = shaUS / 1000
+	// Surface Chronon's own receipt-verification phases (probe / optional
+	// decode / sha256 / total, policy-controlled by CHRONON_RECEIPT_VERIFY)
+	// on the artifact so per-clip reports can attribute the post-render
+	// receipt cost separately from the render wall. Best-effort: a receipt
+	// that carried no timing block simply adds nothing.
+	if receiptErr == nil {
+		for key, value := range receipt.ReceiptTimingMetrics() {
+			phaseMetrics[key] = value
+		}
+	}
 	putStart := time.Now()
 	output, err := os.Open(outputPath)
 	if err != nil {
