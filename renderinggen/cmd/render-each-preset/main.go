@@ -341,12 +341,41 @@ func main() {
 	}
 
 	type ResultSummary struct {
-		ID         string  `json:"id"`
-		PresetName string  `json:"preset_name"`
-		Title      string  `json:"title"`
-		FileID     string  `json:"file_id"`
-		DriveURL   string  `json:"drive_url"`
-		RenderSec  float64 `json:"render_sec"`
+		ID                   string  `json:"id"`
+		PresetName           string  `json:"preset_name"`
+		Title                string  `json:"title"`
+		FileID               string  `json:"file_id"`
+		DriveURL             string  `json:"drive_url"`
+		RenderSec            float64 `json:"render_sec"`
+		ReceiptRenderMS      float64 `json:"receipt_render_ms"`
+		ReceiptWallTimeMS    float64 `json:"receipt_wall_time_ms"`
+		ReceiptAvgFrameMS    float64 `json:"receipt_avg_frame_ms"`
+		ReceiptEndToEndFPS   float64 `json:"receipt_end_to_end_fps"`
+		ReceiptFramesTotal   int     `json:"receipt_frames_total"`
+		ReceiptFramesOverrun int     `json:"receipt_frames_over_budget"`
+		FastPathReusedFrames int     `json:"fast_path_reused_frames"`
+	}
+	type receiptTiming struct {
+		RenderMS    float64 `json:"render_ms"`
+		WallTimeMS  float64 `json:"wall_time_ms"`
+		FramesTotal int     `json:"frames_total"`
+		Summary     struct {
+			AvgFrameMS           float64 `json:"avg_frame_ms"`
+			EndToEndFPS          float64 `json:"end_to_end_fps"`
+			FramesOverBudget     int     `json:"frames_over_budget"`
+			FastPathReusedFrames int     `json:"fast_path_reused_frames"`
+		} `json:"summary"`
+	}
+	readTiming := func(videoPath string) (receiptTiming, error) {
+		var timing receiptTiming
+		data, err := os.ReadFile(videoPath + ".timing.json")
+		if err != nil {
+			return timing, fmt.Errorf("timing receipt: %w", err)
+		}
+		if err := json.Unmarshal(data, &timing); err != nil {
+			return timing, fmt.Errorf("timing receipt JSON: %w", err)
+		}
+		return timing, nil
 	}
 	var results []ResultSummary
 
@@ -411,11 +440,27 @@ func main() {
 			fmt.Printf("❌ Invalid MP4 for %s: %v\n", item.ID, err)
 			continue
 		}
-		fmt.Printf("✓ Render completato in %.2fs (~%.1f FPS)\n", renderSec, float64(durationFrames)/renderSec)
+		timing, timingErr := readTiming(videoPath)
+		if timingErr != nil {
+			fmt.Printf("❌ Missing/invalid timing receipt for %s: %v\n", item.ID, timingErr)
+			continue
+		}
+		fmt.Printf("✓ Render completato in %.2fs (~%.1f FPS) | receipt render %.1fms, e2e %.1f FPS, frame %.2fms, over-budget %d/%d\n",
+			renderSec, float64(durationFrames)/renderSec, timing.RenderMS,
+			timing.Summary.EndToEndFPS, timing.Summary.AvgFrameMS,
+			timing.Summary.FramesOverBudget, timing.FramesTotal)
+		result := ResultSummary{
+			ID: item.ID, PresetName: item.PresetName, Title: item.Title,
+			RenderSec: renderSec, ReceiptRenderMS: timing.RenderMS,
+			ReceiptWallTimeMS: timing.WallTimeMS, ReceiptAvgFrameMS: timing.Summary.AvgFrameMS,
+			ReceiptEndToEndFPS: timing.Summary.EndToEndFPS, ReceiptFramesTotal: timing.FramesTotal,
+			ReceiptFramesOverrun: timing.Summary.FramesOverBudget,
+			FastPathReusedFrames: timing.Summary.FastPathReusedFrames,
+		}
 
 		if os.Getenv("RENDERINGGEN_SKIP_UPLOAD") != "" {
 			fmt.Println("⏭️ Upload saltato (RENDERINGGEN_SKIP_UPLOAD=1)")
-			results = append(results, ResultSummary{ID: item.ID, PresetName: item.PresetName, Title: item.Title, RenderSec: renderSec})
+			results = append(results, result)
 			continue
 		}
 
@@ -433,20 +478,18 @@ func main() {
 		}
 
 		fmt.Printf("🎉 UPLOAD SUCCESS: %s\n", res.WebViewLink)
-		results = append(results, ResultSummary{
-			ID:         item.ID,
-			PresetName: item.PresetName,
-			Title:      item.Title,
-			FileID:     res.FileID,
-			DriveURL:   res.WebViewLink,
-			RenderSec:  renderSec,
-		})
+		result.FileID, result.DriveURL = res.FileID, res.WebViewLink
+		results = append(results, result)
 	}
 
 	summaryBytes, _ := json.MarshalIndent(results, "", "  ")
 	_ = os.WriteFile(filepath.Join(outDir, "all_presets_upload_summary.json"), summaryBytes, 0644)
 
 	fmt.Println("\n==================================================================")
-	fmt.Printf("🏁 TUTTI I %d PRESET SONO STATI RENDERIZZATI E CARICATI SINGOLARMENTE!\n", len(results))
+	fmt.Printf("🏁 PRESET COMPLETATI: %d/%d\n", len(results), len(presets))
 	fmt.Println("==================================================================")
+	if len(results) != len(presets) {
+		fmt.Fprintf(os.Stderr, "benchmark failed: %d preset non hanno prodotto output + timing receipt validi\n", len(presets)-len(results))
+		os.Exit(1)
+	}
 }
