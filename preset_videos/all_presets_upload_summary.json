@@ -5,7 +5,14 @@
     "title": "Image Scale In (Pop)",
     "file_id": "",
     "drive_url": "",
-    "render_sec": 9.593525479
+    "render_sec": 6.630626751,
+    "receipt_render_ms": 3071.670245,
+    "receipt_wall_time_ms": 4942.92252,
+    "receipt_avg_frame_ms": 5.965482927999999,
+    "receipt_end_to_end_fps": 25.28868285801089,
+    "receipt_frames_total": 125,
+    "receipt_frames_over_budget": 7,
+    "fast_path_reused_frames": 118
   },
   {
     "id": "preset_image_slide_left",
@@ -13,7 +20,14 @@
     "title": "Image Slide Left",
     "file_id": "",
     "drive_url": "",
-    "render_sec": 9.607828354
+    "render_sec": 5.578962475,
+    "receipt_render_ms": 3014.597301,
+    "receipt_wall_time_ms": 4758.255468,
+    "receipt_avg_frame_ms": 5.596472887999999,
+    "receipt_end_to_end_fps": 26.27013216096618,
+    "receipt_frames_total": 125,
+    "receipt_frames_over_budget": 7,
+    "fast_path_reused_frames": 118
   },
   {
     "id": "preset_image_slide_right",
@@ -21,7 +35,14 @@
     "title": "Image Slide Right",
     "file_id": "",
     "drive_url": "",
-    "render_sec": 9.572196951
+    "render_sec": 5.64746411,
+    "receipt_render_ms": 3028.609739,
+    "receipt_wall_time_ms": 4825.806141,
+    "receipt_avg_frame_ms": 5.12154452,
+    "receipt_end_to_end_fps": 25.902408084320104,
+    "receipt_frames_total": 125,
+    "receipt_frames_over_budget": 7,
+    "fast_path_reused_frames": 118
   },
   {
     "id": "preset_image_focus_in",
@@ -29,7 +50,14 @@
     "title": "Image Focus In (Zoom)",
     "file_id": "",
     "drive_url": "",
-    "render_sec": 9.606955134
+    "render_sec": 5.5748284550000005,
+    "receipt_render_ms": 3073.553388,
+    "receipt_wall_time_ms": 4820.255588,
+    "receipt_avg_frame_ms": 5.823383047999999,
+    "receipt_end_to_end_fps": 25.93223486140171,
+    "receipt_frames_total": 125,
+    "receipt_frames_over_budget": 7,
+    "fast_path_reused_frames": 118
   },
   {
     "id": "preset_modern_rounded_pop",
@@ -37,7 +65,14 @@
     "title": "Modern Rounded Pop (SDF)",
     "file_id": "",
     "drive_url": "",
-    "render_sec": 9.590394837
+    "render_sec": 5.634273443,
+    "receipt_render_ms": 2891.623326,
+    "receipt_wall_time_ms": 4791.380362,
+    "receipt_avg_frame_ms": 4.738868088,
+    "receipt_end_to_end_fps": 26.088515324594887,
+    "receipt_frames_total": 125,
+    "receipt_frames_over_budget": 7,
+    "fast_path_reused_frames": 118
   },
   {
     "id": "preset_bottom_card_rise",
@@ -45,7 +80,14 @@
     "title": "Bottom Card Rise",
     "file_id": "",
     "drive_url": "",
-    "render_sec": 9.575800823
+    "render_sec": 6.619990396,
+    "receipt_render_ms": 3110.541064,
+    "receipt_wall_time_ms": 5221.232746,
+    "receipt_avg_frame_ms": 5.950770304,
+    "receipt_end_to_end_fps": 23.94070635823749,
+    "receipt_frames_total": 125,
+    "receipt_frames_over_budget": 7,
+    "fast_path_reused_frames": 118
   },
   {
     "id": "preset_image_fade_in",
@@ -53,6 +95,13 @@
     "title": "Image Fade In",
     "file_id": "",
     "drive_url": "",
-    "render_sec": 19.596193213
+    "render_sec": 6.580421079,
+    "receipt_render_ms": 3158.91719,
+    "receipt_wall_time_ms": 4959.592291,
+    "receipt_avg_frame_ms": 6.314117984,
+    "receipt_end_to_end_fps": 25.203684630858298,
+    "receipt_frames_total": 125,
+    "receipt_frames_over_budget": 7,
+    "fast_path_reused_frames": 118
   }
 ]
