@@ -234,6 +234,30 @@ func CompileFastEntityOverlays(
 			if preset.Family == PresetImage {
 				resolved := resolveImageLayout(preset.Layout, boxWidth, boxHeight, width, height)
 				posX, posY := resolved[0], resolved[1]
+				// A caller-supplied anchor is authoritative. The catalog supplies
+				// the default only when the job leaves placement unspecified.
+				if strings.TrimSpace(pos) != "" {
+					switch strings.ToLower(strings.TrimSpace(pos)) {
+					case "center":
+						posX = float64(width-boxWidth) / 2.0
+						posY = float64(height-boxHeight) / 2.0
+					case "image_left", "left":
+						posX = 0
+						posY = float64(height-boxHeight) / 2.0
+					case "image_right", "right":
+						posX = float64(width - boxWidth)
+						posY = float64(height-boxHeight) / 2.0
+					case "bottom_left":
+						posX = 0
+						posY = float64(height - boxHeight)
+					case "bottom_center":
+						posX = float64(width-boxWidth) / 2.0
+						posY = float64(height - boxHeight)
+					case "bottom_right":
+						posX = float64(width - boxWidth)
+						posY = float64(height - boxHeight)
+					}
+				}
 				if len(ov.Translate) == 2 {
 					posX += ov.Translate[0]
 					posY += ov.Translate[1]
