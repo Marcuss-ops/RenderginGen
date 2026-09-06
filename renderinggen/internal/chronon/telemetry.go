@@ -60,6 +60,17 @@ type MediaReceipt struct {
 		RequestedPolicy string `json:"requested_policy"`
 		ResolvedPolicy  string `json:"resolved_policy"`
 		Status          string `json:"status"`
+		// Granular per-check verdicts ("pass" | "fail" | "skip"). Parsed so
+		// the worker can report WHICH contract check rejected a rendered
+		// output instead of only the aggregate status.
+		FFprobe     string `json:"ffprobe"`
+		Decode      string `json:"decode"`
+		FrameCount  string `json:"frame_count"`
+		Codec       string `json:"codec"`
+		PixelFormat string `json:"pixel_format"`
+		Resolution  string `json:"resolution"`
+		FPS         string `json:"fps"`
+		Audio       string `json:"audio"`
 	} `json:"verification"`
 	Timing struct {
 		SHA256MS      float64 `json:"sha256_ms"`
@@ -82,6 +93,34 @@ func (r MediaReceipt) ResolvedVerificationPolicy() string {
 // (callers decide how to treat unknown).
 func (r MediaReceipt) VerificationPassed() bool {
 	return r.Verification.Status == "pass"
+}
+
+// VerificationFailures lists the granular checks whose verdict is "fail", in
+// stable order. A receipt with a failing aggregate but no granular verdicts
+// (or only "skip"/"pass" checks) is a schema mismatch the caller must decide
+// how to treat; VerificationFailures returns nil there and the caller falls
+// back to the aggregate status.
+func (r MediaReceipt) VerificationFailures() []string {
+	var checks = []struct {
+		name string
+		verdict string
+	}{
+		{"ffprobe", r.Verification.FFprobe},
+		{"decode", r.Verification.Decode},
+		{"frame_count", r.Verification.FrameCount},
+		{"codec", r.Verification.Codec},
+		{"pixel_format", r.Verification.PixelFormat},
+		{"resolution", r.Verification.Resolution},
+		{"fps", r.Verification.FPS},
+		{"audio", r.Verification.Audio},
+	}
+	var out []string
+	for _, check := range checks {
+		if check.verdict == "fail" {
+			out = append(out, check.name)
+		}
+	}
+	return out
 }
 
 // ReceiptTimingMetrics projects the receipt's measured verification phases
