@@ -2,8 +2,6 @@ package storage
 
 import (
 	"context"
-	"crypto/sha256"
-	"encoding/hex"
 	"fmt"
 	"io"
 	"log"
@@ -11,6 +9,8 @@ import (
 	"path/filepath"
 	"sync"
 	"time"
+
+	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/hashio"
 )
 
 // diskCache is the L2 NVMe cache: content-addressed files on disk.
@@ -149,17 +149,16 @@ func (d *diskCache) PutFile(key, source string) (string, int64, error) {
 }
 
 func (d *diskCache) InstallReader(key string, r io.Reader, size int64) (string, int64, error) {
-	digest := sha256.New()
 	return d.install(key, func(tmp *os.File) (int64, error) {
-		written, err := io.Copy(io.MultiWriter(tmp, digest), r)
+		digest, written, err := hashio.Copy(r, tmp)
 		if err != nil {
 			return 0, err
 		}
 		if size >= 0 && written != size {
 			return 0, fmt.Errorf("L3 size %d does not match expected %d", written, size)
 		}
-		if got := hex.EncodeToString(digest.Sum(nil)); len(key) == 64 && got != key {
-			return 0, fmt.Errorf("L3 hash %s does not match key %s", got, key)
+		if len(key) == 64 && digest != key {
+			return 0, fmt.Errorf("L3 hash %s does not match key %s", digest, key)
 		}
 		return written, nil
 	})

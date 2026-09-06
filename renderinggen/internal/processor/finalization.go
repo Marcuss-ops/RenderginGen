@@ -2,16 +2,14 @@ package processor
 
 import (
 	"context"
-	"crypto/sha256"
-	"encoding/hex"
 	"fmt"
-	"io"
 	"log"
 	"os"
 	"path/filepath"
 
 	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/chronon"
 	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/drive"
+	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/hashio"
 	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/queue"
 	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/storage"
 )
@@ -123,14 +121,6 @@ func (f *ParentFinalizer) Finalize(ctx context.Context, parentID string, start, 
 	return true, artifact, nil
 }
 
-func hashReader(r io.Reader) (string, error) {
-	h := sha256.New()
-	if _, err := io.Copy(h, r); err != nil {
-		return "", err
-	}
-	return hex.EncodeToString(h.Sum(nil)), nil
-}
-
 func artifactFromFile(path string) (queue.Artifact, error) {
 	file, err := os.Open(path)
 	if err != nil {
@@ -141,7 +131,7 @@ func artifactFromFile(path string) (queue.Artifact, error) {
 	if err != nil {
 		return queue.Artifact{}, err
 	}
-	hash, err := hashReader(file)
+	hash, _, err := hashio.Reader(file)
 	if err != nil {
 		return queue.Artifact{}, err
 	}

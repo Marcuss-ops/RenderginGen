@@ -388,7 +388,7 @@ func runPrepPool(ctx context.Context, q *queue.Client, proc *processor.Processor
 				return q.Complete(jobCtx, job.ID, published)
 			})
 			if pubErr != nil {
-				reportFailure(ctx, q, job, pubErr)
+				processor.ReportFailure(ctx, q, job, pubErr)
 				continue
 			}
 			log.Printf("job %s publication retry completed (artifact %q)", job.ID, job.Artifact.StorageKey)
@@ -401,10 +401,10 @@ func runPrepPool(ctx context.Context, q *queue.Client, proc *processor.Processor
 				return proc.Prepare(jobCtx, job)
 			})
 			if prepErr != nil {
-				reportFailure(ctx, q, job, prepErr)
+				processor.ReportFailure(ctx, q, job, prepErr)
 				continue
 			}
-			reportComplete(ctx, q, job.ID, artifact, false)
+			processor.ReportComplete(ctx, q, job.ID, artifact, false)
 			continue
 		}
 
@@ -417,7 +417,7 @@ func runPrepPool(ctx context.Context, q *queue.Client, proc *processor.Processor
 			return err
 		})
 		if prepErr != nil {
-			reportFailure(ctx, q, job, prepErr)
+			processor.ReportFailure(ctx, q, job, prepErr)
 			continue
 		}
 		select {
@@ -504,7 +504,7 @@ func runPostPool(ctx context.Context, q *queue.Client, proc *processor.Processor
 				}
 			}
 			if out.err != nil {
-				reportFailure(ctx, q, job, out.err)
+				processor.ReportFailure(ctx, q, job, out.err)
 				cleanup()
 				continue
 			}
@@ -522,25 +522,19 @@ func runPostPool(ctx context.Context, q *queue.Client, proc *processor.Processor
 				return finalizeErr
 			})
 			if err != nil {
-				if artifact.StorageKey != "" {
-					// The render finished and the bytes are durable in the object
-					// store; only external publication failed. Record the job as
-					// rendered (artifact persisted, out of `completed`) so the
-					// publication-only retry path re-claims it — never a GPU
-					// re-render and never a permanently stuck job.
-					if reportErr := q.Rendered(ctx, job.ID, err.Error(), artifact); reportErr != nil {
-						log.Printf("job %s report rendered: %v", job.ID, reportErr)
-					}
-				} else {
-					reportFailure(ctx, q, job, err)
-				}
+				// The render may have finished with the bytes durable in the
+				// object store before a later stage (external publication)
+				// failed. hasDurableArtifact decides the transition: Rendered
+				// keeps such a job claimable for a publication-only retry;
+				// anything else is a render failure.
+				processor.ReportFailureWithArtifact(ctx, q, job.ID, artifact, err)
 				cleanup()
 				continue
 			}
 			log.Printf("job %s artifact: storage_key=%q sha256=%q size=%d copy_eligible=%t backend=%q frames=%d %dx%d",
 				job.ID, artifact.StorageKey, artifact.ArtifactHash, artifact.SizeBytes,
 				artifact.CopyEligible, artifact.Backend, artifact.FrameCount, artifact.Width, artifact.Height)
-			reportComplete(ctx, q, job.ID, artifact, true)
+			processor.ReportComplete(ctx, q, job.ID, artifact, true)
 			if parentFinalizer != nil && job.ParentJobID != "" {
 				tryFinalizeParent(ctx, q, parentFinalizer, job.ParentJobID)
 			}
@@ -578,44 +572,6 @@ func tryFinalizeParent(ctx context.Context, q *queue.Client, finalizer *processo
 	}
 	if finalized {
 		log.Printf("parent %s finalized: storage_key=%q sha256=%q size=%d", parentID, artifact.StorageKey, artifact.ArtifactHash, artifact.SizeBytes)
-	}
-}
-
-// reportFailure applies the queue transition rules: a failure while the job
-// still holds a durable artifact is a publication failure (retry re-publishes
-// only); otherwise it is a render failure (retry re-renders).
-func reportFailure(ctx context.Context, q *queue.Client, job *queue.Job, err error) {
-	log.Printf("job %s failed: %v", job.ID, err)
-	if job.Artifact != nil {
-		if reportErr := q.Rendered(ctx, job.ID, err.Error(), *job.Artifact); reportErr != nil {
-			log.Printf("job %s report rendered: %v", job.ID, reportErr)
-		}
-		return
-	}
-	if reportErr := q.Fail(ctx, job.ID, err.Error()); reportErr != nil {
-		log.Printf("job %s report fail: %v", job.ID, reportErr)
-	}
-}
-
-// reportComplete marks a job completed on the queue.
-//
-// When durable is true and the artifact is already persisted in the object
-// store (render finished, only the terminal report failed), a Complete failure
-// falls back to Rendered: the job then stays claimable for a publication-only
-// retry with its artifact attached, instead of expiring back to pending and
-// being re-rendered on the next claim. A failed lease-expiry race is thereby
-// downgraded from a full GPU re-render to an upload retry.
-func reportComplete(ctx context.Context, q *queue.Client, id string, artifact queue.Artifact, durable bool) {
-	if err := q.Complete(ctx, id, artifact); err != nil {
-		log.Printf("job %s report complete: %v", id, err)
-		if durable && artifact.StorageKey != "" {
-			// The bytes are durable in L3; never let a lost report trigger a
-			// GPU re-render. Record rendered so a publication-only retry re-claims
-			// the artifact (see reportFailure's artifact branch).
-			if reportErr := q.Rendered(ctx, id, err.Error(), artifact); reportErr != nil {
-				log.Printf("job %s report rendered: %v", id, reportErr)
-			}
-		}
 	}
 }
 
