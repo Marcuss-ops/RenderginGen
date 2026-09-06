@@ -60,6 +60,12 @@ type JobRepository interface {
 	// Retry resets a failed job back to pending state for re-execution.
 	Retry(id string) error
 
+	// Cancel moves a job that has not reached a terminal state to the
+	// cancelled state. Cancelled is terminal: the job is never claimable again
+	// and lease expiry never requeues it. Cancelling an already-cancelled job
+	// is a no-op; cancelling a completed/failed job is an error.
+	Cancel(id string) error
+
 	// SetProgress stores the latest render progress reported by the worker
 	// that owns the job's lease. It fails if the job is not running or the
 	// reporting worker does not match the lease owner, so a stale worker

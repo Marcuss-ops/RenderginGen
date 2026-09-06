@@ -306,6 +306,36 @@ func (s *Repository) Retry(id string) error {
 	return nil
 }
 
+// Cancel moves a job that has not reached a terminal state to cancelled.
+// Cancelled is terminal: ClaimState skips it (it is no longer pending or
+// rendered) and RequeueExpired only touches running/finalizing jobs, so a
+// cancelled job is never claimed again and never requeued after its lease
+// elapses. Cancelling an already-cancelled job is a no-op; cancelling a
+// completed/failed job is an error. Attempts are deliberately NOT incremented:
+// every claim that would have invoked Chronon already happened.
+func (s *Repository) Cancel(id string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	job, exists := s.jobs[id]
+	if !exists {
+		return fmt.Errorf("job %s: %w", id, repository.ErrNotFound)
+	}
+	switch job.State {
+	case model.StatePending, model.StateRunning, model.StateRendered, model.StateFinalizing:
+		job.State = model.StateCancelled
+		job.Worker = ""
+		job.LeaseUntil = time.Time{}
+		job.Progress = nil
+		return nil
+	case model.StateCancelled:
+		// Idempotent: the producer already cancelled this job.
+		return nil
+	default:
+		return fmt.Errorf("job %s is in state %q, cannot cancel terminal job", id, job.State)
+	}
+}
+
 // SetProgress stores the latest render progress from the lease-owning worker.
 // It rejects reports for jobs that are not running or whose lease moved to
 // another worker, mirroring the PostgreSQL backend.

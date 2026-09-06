@@ -28,6 +28,7 @@ never reimplement the HTTP format.
 | `POST` | `/jobs` | Submit a render job |
 | `GET` | `/jobs/{id}` | Current state + certified artifact |
 | `GET` | `/jobs/depth` | Queue depth snapshot (autoscaling) |
+| `POST` | `/jobs/{id}/cancel` | Producer cancellation (terminal; never re-claimed) |
 
 #### `POST /jobs`
 
@@ -62,6 +63,19 @@ Request (only `id`, `schema`, `version`, `render_plan` and `assets` are used):
 - Response `201 Created`: `{"id":"job-123"}`.
 - Response `409 Conflict`: a job with that `id` already exists. Producers treat
   this as idempotent success and poll the existing job.
+
+#### `POST /jobs/{id}/cancel`
+
+Request body is ignored. Response `204 No Content`. Cancelling an
+already-cancelled job is a no-op (idempotent, `204`); cancelling a
+`completed`/`failed` job returns `409 Conflict`; an unknown job returns
+`404`. Cancellation is **terminal**: a cancelled job is never claimable again
+and lease expiry never requeues it, so a cancelled job can never trigger a new
+Chronon render across lease/claim cycles. An in-flight attempt (already
+claimed when the cancel landed) is closed as `cancelled` in the attempt
+history — its later `complete`/`fail` reports are rejected because the job is
+no longer running. Cancellation never increments `attempts`: every claim that
+would have invoked Chronon already happened before the cancel.
 
 #### `GET /jobs/{id}`
 
@@ -206,8 +220,8 @@ Prometheus metrics: `renderinggen_jobs_pending` (gauge),
 the last absolute frame position the renderer reported — use `last_frame_at`
 age as the render liveness signal, not GPU memory.
 
-`state` is one of `pending`, `running`, `completed`, `failed`. The `artifact`
-field is populated only once the job completes.
+`state` is one of `pending`, `running`, `completed`, `failed`, `rendered`,
+`cancelled`. The `artifact` field is populated only once the job completes.
 
 ### Artifact (copy-only certification)
 
@@ -272,7 +286,13 @@ pending ──claim──▶ running ──complete──▶ completed
    │                 ├──fail (attempts < max)──▶ pending (retry)
    │                 └──fail (attempts >= max)─▶ failed
    └──lease expiry── running (RequeueExpired)
+
+pending | running | rendered ──cancel──▶ cancelled (TERMINAL)
 ```
+
+A **cancelled** job is never claimable and never requeued by `RequeueExpired`;
+cancellation therefore cannot produce a second Chronon invocation even when the
+cancel lands while the job is leased/running and the lease later elapses.
 
 - A claim opens a lease (`lease` field) and records a new `render_attempt`; the
   attempt history is append-only, never overwritten.
