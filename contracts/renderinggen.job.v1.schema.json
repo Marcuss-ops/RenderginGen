@@ -44,6 +44,11 @@
             "type": "string",
             "minLength": 1,
             "description": "Path relative to the job assets root where the asset must be materialized, e.g. videos/base.mp4 or images/apple.png. This is the path the render_plan layer sources/asset fields refer to."
+          },
+          "source_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "Optional durable HTTP(S) location used by RenderingGen to self-heal a cache miss. It is never used as the workspace logical path."
           }
         }
       }
