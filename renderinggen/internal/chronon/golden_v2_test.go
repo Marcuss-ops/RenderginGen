@@ -54,12 +54,11 @@ func TestGoldenOverlayJobV2Immutability(t *testing.T) {
 			ID        string `json:"id"`
 			Type      string `json:"type"`
 			Text      string `json:"text"`
-			Font      string `json:"font"`
-			Preset    string `json:"preset"`
+			Style     *struct { Font string `json:"font"` } `json:"style"`
 			Asset     string `json:"asset"`
 			Source    string `json:"source"`
 			Animation *struct {
-				Preset string `json:"preset"`
+				Tracks []struct { Property string `json:"property"` } `json:"tracks"`
 			} `json:"animation"`
 		} `json:"layers"`
 	}
@@ -72,50 +71,39 @@ func TestGoldenOverlayJobV2Immutability(t *testing.T) {
 	if plan.Canvas.Width != 1280 || plan.Canvas.Height != 720 || plan.Canvas.FPSNum != 30 || plan.Canvas.FPSDen != 1 || plan.Canvas.DurationFrames != 240 {
 		t.Fatalf("unexpected canvas (want 1280x720@30, 240 frames): %+v", plan.Canvas)
 	}
-	// Preset-driven layers (phrases / words / image overlays) carry no `type`:
-	// Chronon derives it from the preset's supported_layer (ADR-029). Only the
-	// preset-less primitives (background video / logo) keep their type.
+	// V2 is a lowered primitive contract: every layer has an explicit type and
+	// geometry/style; editorial presets are resolved before this boundary.
 	wantLayers := map[string]string{
 		"background_video":   "video",
-		"important_phrase_1": "",
-		"important_word_1":   "",
-		"image_overlay_1":    "",
-		"important_phrase_2": "",
-		"important_word_2":   "",
-		"image_overlay_2":    "",
+		"important_phrase_1": "text",
+		"important_word_1":   "text",
+		"image_overlay_1":    "image",
+		"important_phrase_2": "text",
+		"important_word_2":   "text",
+		"image_overlay_2":    "image",
 		"logo":               "image",
 	}
 	if len(plan.Layers) != len(wantLayers) {
 		t.Fatalf("expected %d layers, got %d", len(wantLayers), len(plan.Layers))
 	}
-	animationPresets := map[string]bool{}
+	animationProperties := map[string]bool{}
 	for _, layer := range plan.Layers {
 		if wantType, ok := wantLayers[layer.ID]; !ok {
 			t.Fatalf("unexpected layer id %q", layer.ID)
 		} else if layer.Type != wantType {
 			t.Fatalf("layer %s: want type %s, got %s", layer.ID, wantType, layer.Type)
 		}
-		// Preset-driven text layers carry no type; identify them by their
-		// caption/word preset for the font + animation assertions.
-		if layer.Preset == "caption_card" || layer.Preset == "active_word_pop" {
-			if layer.Font != "" {
-				t.Fatalf("layer %s font = %q, want empty (Chronon resolves it from the preset)", layer.ID, layer.Font)
+		if layer.Type == "text" && (layer.Style == nil || layer.Style.Font == "") {
+			t.Fatalf("text layer %s must carry an explicit font style", layer.ID)
+		}
+		if layer.Animation != nil {
+			for _, track := range layer.Animation.Tracks {
+				animationProperties[track.Property] = true
 			}
-			if layer.Animation == nil || layer.Animation.Preset == "" {
-				t.Fatalf("text layer %s must carry an animation preset", layer.ID)
-			}
-			animationPresets[layer.Animation.Preset] = true
 		}
 	}
-	// The benchmark spec: 3-4 animations across the job.
-	if len(animationPresets) < 3 {
-		t.Fatalf("expected at least 3 distinct animation presets, got %v", animationPresets)
-	}
-	if plan.Layers[1].Preset != "caption_card" {
-		t.Fatalf("important_phrase_1 preset = %q, want caption_card", plan.Layers[1].Preset)
-	}
-	if plan.Layers[2].Preset != "active_word_pop" {
-		t.Fatalf("important_word_1 preset = %q, want active_word_pop", plan.Layers[2].Preset)
+	if len(animationProperties) < 3 {
+		t.Fatalf("expected at least 3 distinct animation properties, got %v", animationProperties)
 	}
 	if plan.Layers[0].Source != "assets/background.mp4" {
 		t.Fatalf("background_video source = %q, want assets/background.mp4", plan.Layers[0].Source)

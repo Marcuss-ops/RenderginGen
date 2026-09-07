@@ -36,6 +36,7 @@
         600
       ],
       "fit": "contain",
+      "radius": 96,
       "position": [
         0,
         0

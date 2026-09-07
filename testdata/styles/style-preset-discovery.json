@@ -24,7 +24,7 @@
         "id": "phrase",
         "type": "text",
         "text": "QUESTO CAMBIA TUTTO",
-        "preset": "caption_card",
+        "preset": "phrase_fade_in",
         "start_frame": 15,
         "duration_frames": 75
       },
@@ -32,7 +32,7 @@
         "id": "word",
         "type": "text",
         "text": "VELOCITÀ",
-        "preset": "active_word_pop",
+        "preset": "phrase_word_reveal",
         "start_frame": 90,
         "duration_frames": 60
       },
@@ -64,7 +64,7 @@
         "id": "image",
         "type": "image",
         "asset": "assets/apple.png",
-        "preset": "image_focus_in",
+        "preset": "image_slide_right",
         "box_width": 260,
         "box_height": 260,
         "fit": "contain",

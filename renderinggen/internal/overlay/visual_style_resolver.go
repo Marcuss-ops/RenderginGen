@@ -33,6 +33,7 @@ type styleBlock struct {
 	WidthPX      int              `json:"width_px,omitempty"`
 	HeightPX     int              `json:"height_px,omitempty"`
 	ScalePercent float64          `json:"scale_percent,omitempty"`
+	Stroke       *strokeBlock     `json:"stroke,omitempty"`
 	Shadow       *shadowBlock     `json:"shadow,omitempty"`
 	TransitionIn *transitionBlock `json:"transition_in,omitempty"` // parsed only to reject fail-closed
 }
@@ -43,6 +44,35 @@ type shadowBlock struct {
 	BlurPX  float64 `json:"blur_px,omitempty"`
 	OffsetX float64 `json:"offset_x,omitempty"`
 	OffsetY float64 `json:"offset_y,omitempty"`
+}
+
+type strokeBlock struct {
+	Color string  `json:"color,omitempty"`
+	Width float64 `json:"width,omitempty"`
+}
+
+// UnmarshalJSON accepts both spellings emitted by the two public style
+// contracts. PipelineGen normally emits offset_x/offset_y; older semantic
+// fixtures and clients may still send offset:[x,y]. Keeping the conversion at
+// the wire boundary makes every subtitle and watermark use the same concrete
+// LayerShadow without inventing visual defaults.
+func (s *shadowBlock) UnmarshalJSON(data []byte) error {
+	type shadowAlias shadowBlock
+	var raw struct {
+		*shadowAlias
+		Offset []float64 `json:"offset"`
+	}
+	raw.shadowAlias = (*shadowAlias)(s)
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return err
+	}
+	if len(raw.Offset) > 0 {
+		if len(raw.Offset) != 2 {
+			return fmt.Errorf("overlay: shadow.offset must contain exactly [x,y]")
+		}
+		s.OffsetX, s.OffsetY = raw.Offset[0], raw.Offset[1]
+	}
+	return nil
 }
 
 type transitionBlock struct {
@@ -115,6 +145,9 @@ func subtitleLayerStyle(s *styleBlock, fontPath string) (*LayerStyle, error) {
 		return nil, fmt.Errorf("overlay: subtitle style carries no color — PipelineGen must resolve the fill (the worker never invents one)")
 	}
 	style := &LayerStyle{Font: fontPath, FontSize: size, Fill: fill}
+	if s.Stroke != nil {
+		style.Stroke = &LayerStroke{Color: s.Stroke.Color, Width: s.Stroke.Width}
+	}
 	if s.Shadow != nil {
 		style.Shadow = &LayerShadow{
 			Color:   s.Shadow.Color,
@@ -138,6 +171,9 @@ func watermarkLayerStyle(s *styleBlock, fontPath string) (*LayerStyle, error) {
 		return nil, fmt.Errorf("overlay: watermark style carries no color — PipelineGen must resolve the fill (the worker never invents one)")
 	}
 	style := &LayerStyle{Font: fontPath, FontSize: size, Fill: fill}
+	if s.Stroke != nil {
+		style.Stroke = &LayerStroke{Color: s.Stroke.Color, Width: s.Stroke.Width}
+	}
 	if s.Shadow != nil {
 		style.Shadow = &LayerShadow{
 			Color:   s.Shadow.Color,

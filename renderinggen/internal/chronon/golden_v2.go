@@ -42,60 +42,61 @@ const GoldenOverlayJobV2 = `{
         "id": "background_video",
         "type": "video",
         "source": "assets/background.mp4",
-        "box_width": 1280,
-        "box_height": 720,
+        "size": [1280, 720],
         "fit": "cover",
         "start_frame": 0,
         "duration_frames": 240
       },
       {
         "id": "important_phrase_1",
+        "type": "text",
         "text": "IL FUTURO È ADESSO",
-        "preset": "caption_card",
+        "style": { "font": "assets/fonts/DejaVuSans.ttf", "font_size": 54, "fill": "#FFFFFF" },
         "start_frame": 24,
         "duration_frames": 84,
-        "animation": { "preset": "fade_in" }
+        "animation": { "tracks": [{ "property": "opacity", "keyframes": [{ "frame": 24, "value": 0 }, { "frame": 48, "value": 1 }] }] }
       },
       {
         "id": "important_word_1",
+        "type": "text",
         "text": "VELOCITÀ",
-        "preset": "active_word_pop",
+        "style": { "font": "assets/fonts/DejaVuSans.ttf", "font_size": 64, "fill": "#FFFFFF" },
         "start_frame": 24,
         "duration_frames": 84,
-        "animation": { "preset": "scale_drop" }
+        "animation": { "tracks": [{ "property": "scale", "keyframes": [{ "frame": 24, "value": 0.8 }, { "frame": 48, "value": 1 }] }] }
       },
       {
         "id": "image_overlay_1",
         "asset": "assets/overlay_globe.png",
-        "preset": "image_focus_in",
-        "box_width": 300,
-        "box_height": 300,
+        "type": "image",
+        "size": [300, 300],
         "position": [380, 0],
         "start_frame": 24,
         "duration_frames": 132
       },
       {
         "id": "important_phrase_2",
+        "type": "text",
         "text": "CAMBIARE IL MERCATO",
-        "preset": "caption_card",
+        "style": { "font": "assets/fonts/DejaVuSans.ttf", "font_size": 54, "fill": "#FFFFFF" },
         "start_frame": 132,
         "duration_frames": 84,
-        "animation": { "preset": "fade_shift_vertical" }
+        "animation": { "tracks": [{ "property": "position_y", "keyframes": [{ "frame": 132, "value": 40 }, { "frame": 156, "value": 0 }] }] }
       },
       {
         "id": "important_word_2",
+        "type": "text",
         "text": "POTENZA",
-        "preset": "active_word_pop",
+        "style": { "font": "assets/fonts/DejaVuSans.ttf", "font_size": 64, "fill": "#FFFFFF" },
         "start_frame": 132,
         "duration_frames": 84,
-        "animation": { "preset": "fade_in" }
+        "animation": { "tracks": [{ "property": "opacity", "keyframes": [{ "frame": 132, "value": 0 }, { "frame": 156, "value": 1 }] }] }
       },
       {
         "id": "image_overlay_2",
         "asset": "assets/overlay_chart.png",
-        "preset": "image_focus_in",
-        "box_width": 300,
-        "box_height": 300,
+        "type": "image",
+        "size": [300, 300],
         "position": [840, 380],
         "start_frame": 120,
         "duration_frames": 108
@@ -104,8 +105,7 @@ const GoldenOverlayJobV2 = `{
         "id": "logo",
         "type": "image",
         "asset": "assets/logo_pulse.png",
-        "box_width": 160,
-        "box_height": 160,
+        "size": [160, 160],
         "fit": "contain",
         "position": [1060, 40],
         "start_frame": 0,

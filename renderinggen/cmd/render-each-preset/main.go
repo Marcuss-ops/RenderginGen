@@ -1,3 +1,7 @@
+// Command render-each-preset renders and uploads one video per official
+// preset through the real chronon3d_cli, validating every output with ffprobe
+// and persisting the per-preset timing receipts. The preset catalog lives in
+// presets.go; this file owns the render/upload loop.
 package main
 
 import (
@@ -14,15 +18,6 @@ import (
 	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/drive"
 	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/overlay"
 )
-
-type PresetItem struct {
-	ID          string
-	Kind        string // "image" or "text"
-	PresetName  string
-	Title       string
-	Description string
-	Overlay     overlay.FastEntityOverlay
-}
 
 func validateMP4(path string, minDuration float64, width, height int, minFrames int64) error {
 	info, err := os.Stat(path)
@@ -89,7 +84,10 @@ func main() {
 	// is assets/fonts/Poppins-Bold.ttf after workspace materialisation).
 	fontPath := "Poppins-Bold.ttf"
 	assetsRoot := "/home/pierone/src/go-master/projects/Pyt/VeloxEditing/RenderingGen/testdata/golden"
-	chrononBin := "/home/pierone/src/go-master/projects/Pyt/VeloxEditing/Chronon3d/build/chronon/linux-video-release/apps/chronon3d_cli/chronon3d_cli"
+	chrononBin := os.Getenv("CHRONON_BINARY")
+	if chrononBin == "" {
+		chrononBin = "/home/pierone/src/go-master/projects/Pyt/VeloxEditing/Chronon3d/build/chronon/linux-video-fast-dev/apps/chronon3d_cli/chronon3d_cli"
+	}
 
 	folderID := "1J_xUGo_bchzXDIGqSX04CU44c_Dm3SxS"
 	credsFile := "/home/pierone/src/go-master/projects/Pyt/VeloxEditing/refactored/credentials.json"
@@ -104,227 +102,7 @@ func main() {
 	// 5 seconds minimum @ 24 fps; 125 frames keeps encoded duration above 5s.
 	durationFrames := int64(125)
 
-	presets := []PresetItem{
-		// ── PRESET IMMAGINI ──
-		{
-			ID:          "preset_image_scale_in",
-			Kind:        "image",
-			PresetName:  "image_scale_in",
-			Title:       "Image Scale In (Pop)",
-			Description: "Entrata con scala dinamica morbida da 0.85x a 1.0x",
-			Overlay: overlay.FastEntityOverlay{
-				Type:       "image",
-				StartFrame: 0,
-				EndFrame:   125,
-				Position:   "center",
-				Size:       600,
-				Asset:      "gerard_butler.jpg",
-				Animation:  "scale_drop",
-				Opacity:    1.0,
-			},
-		},
-		{
-			ID:          "preset_image_slide_left",
-			Kind:        "image",
-			PresetName:  "image_slide_left",
-			Title:       "Image Slide Left",
-			Description: "Entrata laterale fluida da sinistra verso il centro",
-			Overlay: overlay.FastEntityOverlay{
-				Type:       "image",
-				StartFrame: 0,
-				EndFrame:   125,
-				Position:   "center",
-				Size:       600,
-				Asset:      "gerard_butler.jpg",
-				Animation:  "slide_in",
-				Opacity:    1.0,
-				Translate:  []float64{0, 0},
-			},
-		},
-		{
-			ID:          "preset_image_slide_right",
-			Kind:        "image",
-			PresetName:  "image_slide_right",
-			Title:       "Image Slide Right",
-			Description: "Entrata laterale da destra verso il centro",
-			Overlay: overlay.FastEntityOverlay{
-				Type:       "image",
-				StartFrame: 0,
-				EndFrame:   125,
-				Position:   "center",
-				Size:       600,
-				Asset:      "gerard_butler.jpg",
-				Animation:  "slide_in",
-				Opacity:    1.0,
-				Translate:  []float64{0, 0},
-			},
-		},
-		{
-			ID:          "preset_image_focus_in",
-			Kind:        "image",
-			PresetName:  "image_focus_in",
-			Title:       "Image Focus In (Zoom)",
-			Description: "Zoom progressivo morbido al centro dell'attenzione",
-			Overlay: overlay.FastEntityOverlay{
-				Type:       "image",
-				StartFrame: 0,
-				EndFrame:   125,
-				Position:   "center",
-				Size:       600,
-				Asset:      "gerard_butler.jpg",
-				Animation:  "focus_in",
-				Opacity:    1.0,
-			},
-		},
-		{
-			ID:          "preset_modern_rounded_pop",
-			Kind:        "image",
-			PresetName:  "modern_rounded_pop",
-			Title:       "Modern Rounded Pop (SDF)",
-			Description: "Card con angoli arrotondati calcolati in tempo reale via SDF CUDA",
-			Overlay: overlay.FastEntityOverlay{
-				Type:       "image",
-				StartFrame: 0,
-				EndFrame:   125,
-				Position:   "center",
-				Size:       600,
-				Asset:      "gerard_butler.jpg",
-				Animation:  "scale_drop",
-				Opacity:    1.0,
-			},
-		},
-		{
-			ID:          "preset_bottom_card_rise",
-			Kind:        "image",
-			PresetName:  "bottom_card_rise",
-			Title:       "Bottom Card Rise",
-			Description: "Risalita dal bordo inferiore dello schermo (ottimale per grafici/card)",
-			Overlay: overlay.FastEntityOverlay{
-				Type:       "image",
-				StartFrame: 0,
-				EndFrame:   125,
-				Position:   "center",
-				Size:       600,
-				Asset:      "gerard_butler.jpg",
-				Animation:  "reveal_from_bottom",
-				Opacity:    1.0,
-			},
-		},
-		{
-			ID:          "preset_image_fade_in",
-			Kind:        "image",
-			PresetName:  "image_fade_in",
-			Title:       "Image Fade In",
-			Description: "Dissolvenza classica pulita a centro schermo",
-			Overlay: overlay.FastEntityOverlay{
-				Type:       "image",
-				StartFrame: 0,
-				EndFrame:   125,
-				Position:   "center",
-				Size:       600,
-				Asset:      "gerard_butler.jpg",
-				Animation:  "fade_in",
-				Opacity:    1.0,
-			},
-		},
-
-		// ── PRESET FRASI / TESTO ──
-		{
-			ID:          "preset_lower_third_safe",
-			Kind:        "text",
-			PresetName:  "lower_third_safe",
-			Title:       "Lower Third Safe (Nome Entità)",
-			Description: "Didascalia nome/ruolo posizionata nella safe-area inferiore",
-			Overlay: overlay.FastEntityOverlay{
-				Type:       "text",
-				StartFrame: 0,
-				EndFrame:   125,
-				Text:       "Gerard Butler",
-				Font:       fontPath,
-				Size:       72,
-				Color:      []float64{1.0, 1.0, 1.0, 1.0},
-				Position:   "lower_third",
-				Animation:  "fade_in",
-				Opacity:    1.0,
-			},
-		},
-		{
-			ID:          "preset_caption_card",
-			Kind:        "text",
-			PresetName:  "caption_card",
-			Title:       "Caption Card (Citazione / Didascalia)",
-			Description: "Testo informativo a centro schermo con dissolvenza morbida",
-			Overlay: overlay.FastEntityOverlay{
-				Type:       "text",
-				StartFrame: 0,
-				EndFrame:   125,
-				Text:       "Hollywood Lead Actor & Producer",
-				Font:       fontPath,
-				Size:       54,
-				Color:      []float64{0.95, 0.95, 1.0, 1.0},
-				Position:   "center",
-				Animation:  "fade_in",
-				Opacity:    1.0,
-			},
-		},
-		{
-			ID:          "preset_clean_slide_up",
-			Kind:        "text",
-			PresetName:  "clean_slide_up",
-			Title:       "Clean Slide Up (Headline)",
-			Description: "Frase a comparsa dal basso fluida per titoli e sezioni",
-			Overlay: overlay.FastEntityOverlay{
-				Type:       "text",
-				StartFrame: 0,
-				EndFrame:   125,
-				Text:       "Global Technology Infrastructure",
-				Font:       fontPath,
-				Size:       58,
-				Color:      []float64{1.0, 1.0, 1.0, 1.0},
-				Position:   "center",
-				Animation:  "reveal_from_bottom",
-				Opacity:    1.0,
-			},
-		},
-		{
-			ID:          "preset_phrase_scale_in",
-			Kind:        "text",
-			PresetName:  "phrase_scale_in",
-			Title:       "Phrase Scale In / Snap Scale",
-			Description: "Ingresso a scala pop dinamico per dati numerici e callout",
-			Overlay: overlay.FastEntityOverlay{
-				Type:       "text",
-				StartFrame: 0,
-				EndFrame:   125,
-				Text:       "+450% GPU Rendering Speed",
-				Font:       fontPath,
-				Size:       64,
-				Color:      []float64{1.0, 1.0, 1.0, 1.0},
-				Position:   "center",
-				Animation:  "scale_drop",
-				Opacity:    1.0,
-			},
-		},
-		{
-			ID:          "preset_phrase_fade_in",
-			Kind:        "text",
-			PresetName:  "phrase_fade_in",
-			Title:       "Phrase Fade In",
-			Description: "Dissolvenza testo pulita per frasi di chiusura o narrazione",
-			Overlay: overlay.FastEntityOverlay{
-				Type:       "text",
-				StartFrame: 0,
-				EndFrame:   125,
-				Text:       "Fast Entity Overlay Pipeline — Active",
-				Font:       fontPath,
-				Size:       52,
-				Color:      []float64{1.0, 1.0, 1.0, 1.0},
-				Position:   "center",
-				Animation:  "fade_in",
-				Opacity:    1.0,
-			},
-		},
-	}
+	presets := defaultPresets(fontPath)
 	if os.Getenv("RENDERINGGEN_IMAGE_PRESETS_ONLY") == "1" {
 		imagePresets := presets[:0]
 		for _, preset := range presets {
@@ -354,6 +132,14 @@ func main() {
 		ReceiptFramesTotal   int     `json:"receipt_frames_total"`
 		ReceiptFramesOverrun int     `json:"receipt_frames_over_budget"`
 		FastPathReusedFrames int     `json:"fast_path_reused_frames"`
+		StartupMS            float64 `json:"startup_ms"`
+		PrepareMS            float64 `json:"prepare_ms"`
+		EncoderFinalizeMS    float64 `json:"encoder_finalize_ms"`
+		ImageDecodeMS        float64 `json:"image_decode_ms"`
+		ImageConvertMS       float64 `json:"image_convert_ms"`
+		ImageDrawMS          float64 `json:"image_draw_ms"`
+		StartupUnaccountedMS float64 `json:"startup_unaccounted_ms"`
+		WallUnaccountedMS    float64 `json:"wall_unaccounted_ms"`
 	}
 	type receiptTiming struct {
 		RenderMS    float64 `json:"render_ms"`
@@ -365,6 +151,22 @@ func main() {
 			FramesOverBudget     int     `json:"frames_over_budget"`
 			FastPathReusedFrames int     `json:"fast_path_reused_frames"`
 		} `json:"summary"`
+		Job struct {
+			PrepareMS         float64 `json:"prepare_ms"`
+			EncoderFinalizeMS float64 `json:"encoder_finalize_ms"`
+			Image             struct {
+				DecodeMS  float64 `json:"decode_ms"`
+				ConvertMS float64 `json:"convert_ms"`
+				DrawMS    float64 `json:"draw_ms"`
+			} `json:"image"`
+		} `json:"job"`
+		StartupBreakdown struct {
+			TotalMS       float64 `json:"total_startup_ms"`
+			UnaccountedMS float64 `json:"unaccounted_ms"`
+		} `json:"startup_breakdown"`
+		Exclusive struct {
+			UnaccountedMS float64 `json:"unaccounted_ms"`
+		} `json:"exclusive_wall_timeline"`
 	}
 	readTiming := func(videoPath string) (receiptTiming, error) {
 		var timing receiptTiming
@@ -445,9 +247,10 @@ func main() {
 			fmt.Printf("❌ Missing/invalid timing receipt for %s: %v\n", item.ID, timingErr)
 			continue
 		}
-		fmt.Printf("✓ Render completato in %.2fs (~%.1f FPS) | receipt render %.1fms, e2e %.1f FPS, frame %.2fms, over-budget %d/%d\n",
+		fmt.Printf("✓ Render completato in %.2fs (~%.1f FPS) | render %.1fms, e2e %.1f FPS, prepare %.1fms, image decode/convert/draw %.1f/%.1f/%.1fms, over-budget %d/%d\n",
 			renderSec, float64(durationFrames)/renderSec, timing.RenderMS,
-			timing.Summary.EndToEndFPS, timing.Summary.AvgFrameMS,
+			timing.Summary.EndToEndFPS, timing.Job.PrepareMS,
+			timing.Job.Image.DecodeMS, timing.Job.Image.ConvertMS, timing.Job.Image.DrawMS,
 			timing.Summary.FramesOverBudget, timing.FramesTotal)
 		result := ResultSummary{
 			ID: item.ID, PresetName: item.PresetName, Title: item.Title,
@@ -456,15 +259,17 @@ func main() {
 			ReceiptEndToEndFPS: timing.Summary.EndToEndFPS, ReceiptFramesTotal: timing.FramesTotal,
 			ReceiptFramesOverrun: timing.Summary.FramesOverBudget,
 			FastPathReusedFrames: timing.Summary.FastPathReusedFrames,
+			StartupMS:            timing.StartupBreakdown.TotalMS,
+			PrepareMS:            timing.Job.PrepareMS,
+			EncoderFinalizeMS:    timing.Job.EncoderFinalizeMS,
+			ImageDecodeMS:        timing.Job.Image.DecodeMS,
+			ImageConvertMS:       timing.Job.Image.ConvertMS,
+			ImageDrawMS:          timing.Job.Image.DrawMS,
+			StartupUnaccountedMS: timing.StartupBreakdown.UnaccountedMS,
+			WallUnaccountedMS:    timing.Exclusive.UnaccountedMS,
 		}
-
-		if os.Getenv("RENDERINGGEN_SKIP_UPLOAD") != "" {
-			fmt.Println("⏭️ Upload saltato (RENDERINGGEN_SKIP_UPLOAD=1)")
-			results = append(results, result)
-			continue
-		}
-
-		// 3. Upload to Google Drive
+		// Upload only the final MP4 to the canonical Drive folder. Plans,
+		// receipts and the local summary remain local diagnostics.
 		fmt.Printf("☁️ Uploading %s to Drive folder %s...\n", videoFileName, folderID)
 		res, err := publisher.Publish(ctx, drive.PublishRequest{
 			Name:         videoFileName,
@@ -483,8 +288,8 @@ func main() {
 	}
 
 	summaryBytes, _ := json.MarshalIndent(results, "", "  ")
-	_ = os.WriteFile(filepath.Join(outDir, "all_presets_upload_summary.json"), summaryBytes, 0644)
-
+	summaryPath := filepath.Join(outDir, "all_presets_upload_summary.json")
+	_ = os.WriteFile(summaryPath, summaryBytes, 0644)
 	fmt.Println("\n==================================================================")
 	fmt.Printf("🏁 PRESET COMPLETATI: %d/%d\n", len(results), len(presets))
 	fmt.Println("==================================================================")

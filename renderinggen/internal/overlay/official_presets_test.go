@@ -5,12 +5,13 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"testing"
 )
 
 func TestOfficialPresetCatalog(t *testing.T) {
-	if got := len(officialPresets); got != 31 {
-		t.Fatalf("official preset count = %d, want 31", got)
+	if got := len(officialPresets); got != 46 {
+		t.Fatalf("official preset count = %d, want 46", got)
 	}
 	for id, d := range officialPresets {
 		if id == "" || d.ID != id {
@@ -117,5 +118,66 @@ func TestNoFixtureReferencesUnknownOfficialPreset(t *testing.T) {
 				}
 			}
 		}
+	}
+}
+
+func TestAppleStyleFixturesAreDistinctAndComplete(t *testing.T) {
+	_, source, _, ok := runtime.Caller(0)
+	if !ok {
+		t.Fatal("cannot locate test source")
+	}
+	stylesDir := filepath.Join(filepath.Dir(source), "../../../testdata/styles")
+	entries, err := os.ReadDir(stylesDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	profiles := map[string]string{}
+	for _, entry := range entries {
+		if entry.IsDir() || filepath.Ext(entry.Name()) != ".json" {
+			continue
+		}
+		data, err := os.ReadFile(filepath.Join(stylesDir, entry.Name()))
+		if err != nil {
+			t.Fatal(err)
+		}
+		var job struct {
+			RenderPlan struct {
+				StyleProfile string `json:"style_profile"`
+				Layers       []struct {
+					Type   string `json:"type"`
+					Asset  string `json:"asset"`
+					Preset string `json:"preset"`
+				} `json:"layers"`
+			} `json:"render_plan"`
+			Assets []struct {
+				LogicalPath string `json:"logical_path"`
+			} `json:"assets"`
+		}
+		if err := json.Unmarshal(data, &job); err != nil {
+			t.Fatalf("%s: %v", entry.Name(), err)
+		}
+		if job.RenderPlan.StyleProfile == "" {
+			t.Errorf("%s: missing style_profile", entry.Name())
+		}
+		var signature strings.Builder
+		for _, layer := range job.RenderPlan.Layers {
+			if layer.Type == "text" || layer.Type == "image" {
+				signature.WriteString(layer.Type + ":" + layer.Asset + ":" + layer.Preset + "|")
+			}
+		}
+		if signature.Len() == 0 {
+			t.Errorf("%s: no visual layers", entry.Name())
+		}
+		profiles[job.RenderPlan.StyleProfile] = signature.String()
+	}
+	if len(profiles) < 3 {
+		t.Fatalf("expected three Apple style profiles, got %d", len(profiles))
+	}
+	seen := map[string]string{}
+	for profile, signature := range profiles {
+		if previous, exists := seen[signature]; exists {
+			t.Fatalf("Apple style profiles %q and %q are visually identical", previous, profile)
+		}
+		seen[signature] = profile
 	}
 }
