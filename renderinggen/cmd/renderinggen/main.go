@@ -32,7 +32,6 @@ import (
 	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/queue"
 	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/storage"
 	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/version"
-	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/workspace"
 )
 
 func main() {
@@ -53,20 +52,9 @@ func main() {
 	// the GPU lane while rendering) and are skipped; anything older than one
 	// hour without a valid marker is removed. Parent artifacts have their
 	// own cleanup (see ParentFinalizer.Finalize).
-	go func() {
-		ticker := time.NewTicker(10 * time.Minute)
-		defer ticker.Stop()
-		for {
-			select {
-			case <-ctx.Done():
-				return
-			case <-ticker.C:
-				if err := workspace.CleanupStale(cfg.Workspace.Root, time.Hour); err != nil {
-					log.Printf("workspace stale cleanup: %v", err)
-				}
-			}
-		}
-	}()
+	// Reap workspaces left behind by a crashed worker run (see
+	// startWorkspaceCleanup for the full rationale).
+	go startWorkspaceCleanup(ctx, cfg.Workspace.Root)
 
 	// 1. Detect GPU.
 	gpuInfo := gpu.Detect(cfg.GPU.Device)
@@ -257,35 +245,13 @@ func main() {
 	// logging-and-forgetting: a worker whose heartbeat cannot reach the queue
 	// is not fully ready even while it may still be processing a claim.
 	var heartbeatFailures atomic.Int64
-	const degradedHeartbeatThreshold int64 = 3
 	healthServer.SetQueueStatus(func() string {
 		if heartbeatFailures.Load() >= degradedHeartbeatThreshold {
 			return "degraded"
 		}
 		return "ready"
 	})
-	go func() {
-		ticker := time.NewTicker(20 * time.Second)
-		defer ticker.Stop()
-		for {
-			select {
-			case <-ctx.Done():
-				return
-			case <-ticker.C:
-				if err := queueClient.Heartbeat(ctx); err != nil {
-					failures := heartbeatFailures.Add(1)
-					log.Printf("queue worker heartbeat: %v (consecutive failures=%d)", err, failures)
-					if failures == degradedHeartbeatThreshold {
-						log.Printf("queue worker heartbeat degraded: %d consecutive failures; /health reports degraded until heartbeat recovers", failures)
-					}
-					continue
-				}
-				if prev := heartbeatFailures.Swap(0); prev >= degradedHeartbeatThreshold {
-					log.Printf("queue worker heartbeat recovered after %d consecutive failures", prev)
-				}
-			}
-		}
-	}()
+	go runHeartbeatLoop(ctx, queueClient, &heartbeatFailures)
 
 	numWorkers := cfg.Worker.PipelineWorkers
 	if numWorkers < 1 {
