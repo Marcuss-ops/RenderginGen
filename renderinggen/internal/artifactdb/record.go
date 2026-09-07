@@ -67,6 +67,16 @@ type ArtifactRecord struct {
 	// phases in the typed columns above. nil when the sidecar was missing.
 	ChrononTelemetry json.RawMessage
 
+	// ChrononTiming* mirror the raw deep-profile sidecar reference on the
+	// queue artifact: the content-addressed object-store key/url/sha of the
+	// verbatim `<output>.timing.json` (including frame_times_ms), kept
+	// available for post-mortem. Empty when the sidecar was not preserved.
+	ChrononTimingStorageKey  string
+	ChrononTimingURL         string
+	ChrononTimingSHA256      string
+	ChrononTimingSizeBytes   int64
+	ChrononTimingContentType string
+
 	// Bytes in and out of the job.
 	InputBytes  int64
 	OutputBytes int64

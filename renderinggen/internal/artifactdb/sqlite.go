@@ -41,13 +41,22 @@ func NewSQLite(path string) (*SQLiteRecorder, error) {
 		db.Close()
 		return nil, fmt.Errorf("artifactdb: create schema: %w", err)
 	}
-	// Ledgers created before chronon_telemetry existed are upgraded in place:
-	// CREATE TABLE IF NOT EXISTS leaves existing tables untouched, so the
-	// column is added idempotently here.
-	if _, err := db.Exec(`ALTER TABLE artifact_records ADD COLUMN chronon_telemetry TEXT NOT NULL DEFAULT ''`); err != nil &&
-		!strings.Contains(strings.ToLower(err.Error()), "duplicate column") {
-		db.Close()
-		return nil, fmt.Errorf("artifactdb: migrate schema: %w", err)
+	// Ledgers created before chronon_telemetry / chronon_timing_* existed are
+	// upgraded in place: CREATE TABLE IF NOT EXISTS leaves existing tables
+	// untouched, so the columns are added idempotently here.
+	for _, column := range []string{
+		`ALTER TABLE artifact_records ADD COLUMN chronon_telemetry TEXT NOT NULL DEFAULT ''`,
+		`ALTER TABLE artifact_records ADD COLUMN chronon_timing_storage_key TEXT NOT NULL DEFAULT ''`,
+		`ALTER TABLE artifact_records ADD COLUMN chronon_timing_url TEXT NOT NULL DEFAULT ''`,
+		`ALTER TABLE artifact_records ADD COLUMN chronon_timing_sha256 TEXT NOT NULL DEFAULT ''`,
+		`ALTER TABLE artifact_records ADD COLUMN chronon_timing_size_bytes INTEGER NOT NULL DEFAULT 0`,
+		`ALTER TABLE artifact_records ADD COLUMN chronon_timing_content_type TEXT NOT NULL DEFAULT ''`,
+	} {
+		if _, err := db.Exec(column); err != nil &&
+			!strings.Contains(strings.ToLower(err.Error()), "duplicate column") {
+			db.Close()
+			return nil, fmt.Errorf("artifactdb: migrate schema: %w", err)
+		}
 	}
 	return &SQLiteRecorder{db: db}, nil
 }
@@ -74,6 +83,8 @@ func (s *SQLiteRecorder) Record(ctx context.Context, rec ArtifactRecord) error {
 		rec.SHA256US, rec.ObjectStoreUploadUS, rec.DriveUploadUS,
 		rec.TotalUS, rec.InputBytes, rec.OutputBytes,
 		string(rec.ChrononTelemetry),
+		rec.ChrononTimingStorageKey, rec.ChrononTimingURL, rec.ChrononTimingSHA256,
+		rec.ChrononTimingSizeBytes, rec.ChrononTimingContentType,
 		rec.CreatedAt.Format(time.RFC3339Nano),
 	)
 	if err != nil {
@@ -129,6 +140,11 @@ CREATE TABLE IF NOT EXISTS artifact_records (
   input_bytes         INTEGER NOT NULL DEFAULT 0,
   output_bytes        INTEGER NOT NULL DEFAULT 0,
   chronon_telemetry   TEXT NOT NULL DEFAULT '',
+  chronon_timing_storage_key TEXT NOT NULL DEFAULT '',
+  chronon_timing_url         TEXT NOT NULL DEFAULT '',
+  chronon_timing_sha256      TEXT NOT NULL DEFAULT '',
+  chronon_timing_size_bytes  INTEGER NOT NULL DEFAULT 0,
+  chronon_timing_content_type TEXT NOT NULL DEFAULT '',
   created_at          TEXT NOT NULL
 );`
 
@@ -143,8 +159,10 @@ INSERT INTO artifact_records (
   image_count, light_leak_count, preset_id,
   overlay_compile_us, asset_materialize_us, chronon_render_us,
   sha256_us, objectstore_upload_us, drive_upload_us,
-  total_us, input_bytes, output_bytes, chronon_telemetry, created_at
-) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+  total_us, input_bytes, output_bytes, chronon_telemetry,
+  chronon_timing_storage_key, chronon_timing_url, chronon_timing_sha256,
+  chronon_timing_size_bytes, chronon_timing_content_type, created_at
+) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
 ON CONFLICT(job_id) DO UPDATE SET
   artifact_hash=excluded.artifact_hash,
   storage_key=excluded.storage_key,
@@ -181,4 +199,9 @@ ON CONFLICT(job_id) DO UPDATE SET
   input_bytes=excluded.input_bytes,
   output_bytes=excluded.output_bytes,
   chronon_telemetry=excluded.chronon_telemetry,
+  chronon_timing_storage_key=excluded.chronon_timing_storage_key,
+  chronon_timing_url=excluded.chronon_timing_url,
+  chronon_timing_sha256=excluded.chronon_timing_sha256,
+  chronon_timing_size_bytes=excluded.chronon_timing_size_bytes,
+  chronon_timing_content_type=excluded.chronon_timing_content_type,
   created_at=excluded.created_at;`

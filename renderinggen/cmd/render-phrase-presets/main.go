@@ -39,7 +39,10 @@ func main() {
 	fontDMBold := "fonts/Inter-Bold.ttf"
 
 	assetsRoot := "/home/pierone/src/go-master/projects/Pyt/VeloxEditing/RenderingGen/testdata/golden"
-	chrononBin := "/home/pierone/src/go-master/projects/Pyt/VeloxEditing/Chronon3d/build/chronon/linux-video-release/apps/chronon3d_cli/chronon3d_cli"
+	chrononBin := os.Getenv("CHRONON_BINARY")
+	if chrononBin == "" {
+		chrononBin = "/home/pierone/src/go-master/projects/Pyt/VeloxEditing/Chronon3d/build/chronon/linux-video-fast-dev/apps/chronon3d_cli/chronon3d_cli"
+	}
 
 	folderID := "1J_xUGo_bchzXDIGqSX04CU44c_Dm3SxS"
 	credsFile := "/home/pierone/src/go-master/projects/Pyt/VeloxEditing/refactored/credentials.json"

@@ -11,7 +11,8 @@ workspace:
 chronon:
   profile: gpu-vulkan-native
   home: /opt/chronon3d
-  mode: cli
+  mode: ipc
+  socket_path: /run/chronon3d/chronon.sock
   strict_native_backend: true
 gpu:
   device: 0

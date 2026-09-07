@@ -1,3 +1,18 @@
+// The staged pipeline splits the serial render path so CPU/IO work overlaps
+// the GPU instead of serializing behind it:
+//
+//	PrepareJob  (CPU: validate, compile, materialize assets, write plan.json)
+//	RunGPU      (GPU: the single Chronon invocation)
+//	FinalizeJob (CPU: receipt gate, probe, hash, object store, ledger)
+//
+// The GPU lane runs RunGPU for job N while the prep pool runs PrepareJob for
+// job N+1 and the post pool runs FinalizeJob for job N-1. Phase timings are
+// identical to the monolithic Render path, so ledger metrics stay comparable.
+//
+// File layout: pipeline.go owns the prepare half, gpu_run.go the GPU half,
+// finalize_job.go + store_artifact.go + record_artifact.go the post half,
+// receipt_verify.go the verification policy, native_gate.go the strict native
+// receipt gate and staged_render.go the serial driver.
 package processor
 
 import (
@@ -10,23 +25,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/chronon"
-	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/media"
 	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/overlay"
 	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/queue"
 	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/workspace"
 )
-
-// The staged pipeline splits the serial render path so CPU/IO work overlaps
-// the GPU instead of serializing behind it:
-//
-//	PrepareJob  (CPU: validate, compile, materialize assets, write plan.json)
-//	RunGPU      (GPU: the single Chronon invocation)
-//	FinalizeJob (CPU: receipt gate, probe, hash, object store, ledger)
-//
-// The GPU lane runs RunGPU for job N while the prep pool runs PrepareJob for
-// job N+1 and the post pool runs FinalizeJob for job N-1. Phase timings are
-// identical to the monolithic Render path, so ledger metrics stay comparable.
 
 // PreparedJob carries the state between PrepareJob and RunGPU. The workspace
 // is intentionally NOT cleaned up by PrepareJob: ownership transfers to
@@ -260,291 +262,4 @@ func (p *Processor) PrepareJob(ctx context.Context, job *queue.Job) (*PreparedJo
 		AudioSourcePath: audioSourcePathFromSemantic(job.RenderPlan, ws.Root()),
 		totalStart:      totalStart,
 	}, nil
-}
-
-// RunGPU performs the single Chronon invocation for a prepared job plus the
-// strict-backend receipt gate. This is the only stage that touches the GPU.
-func (p *Processor) RunGPU(ctx context.Context, prepared *PreparedJob) error {
-	phaseStart := time.Now()
-	job := prepared.Job
-	metadata := planMetadataOf(prepared.Plan)
-	// The chunk contract is half-open [Start, End); Chronon consumes an
-	// inclusive last frame. The range is carried EXPLICITLY (RangeEnabled)
-	// because a chunk covering exactly frame 0 (Start=0, End=1 -> last=0) is
-	// otherwise indistinguishable from "render the whole plan", which would
-	// silently over-render a single-frame chunk.
-	firstFrame, lastFrame, hasFrameRange := jobFrameRange(job)
-	// Native NVENC is required for source-video jobs. Image/text-only plans
-	// still use the Vulkan compositor, but Chronon's pipe encoder is the
-	// supported output path and reports a software encoder by design.
-	hasSourceVideo := planHasVideoSource(prepared.Plan)
-	gpuRequired := hasSourceVideo && (p.strictNativeBackend ||
-		(p.backend == "vulkan" && p.hardwareEncoder != "" && p.hardwareEncoder != "none"))
-	// Render progress: every '[video] N/M frames' milestone the renderer
-	// prints is logged (where did the 12 minutes go) and, when a shared
-	// tracker is installed, fed into it so health and the queue pusher can
-	// report live position. The last milestone also lands in the ledger
-	// metrics as render_frames_done/total + render_fps.
-	var lastProgress chronon.RenderProgress
-	sawProgress := false
-	if err := p.renderer.Render(ctx, chronon.RenderRequest{
-		PlanPath: prepared.Workspace.PlanPath(),
-		// Plans use the canonical assets/<file> namespace. The workspace
-		// root (not root/assets) is therefore Chronon's mounted root.
-		AssetsRoot:      prepared.Workspace.Root(),
-		OutputPath:      prepared.OutputPath,
-		AudioSourcePath: prepared.AudioSourcePath,
-		Report:          p.report,
-		EncodePreset:    p.encodePreset,
-		// Canonical verification: the worker resolves the policy (single
-		// authority, RENDERINGGEN_RECEIPT_VERIFY) and requests it explicitly
-		// from Chronon; Chronon verifies and records what actually ran in the
-		// receipt, which FinalizeJob enforces.
-		ReceiptVerify: string(renderVerificationLevel()),
-		Requirements: chronon.ExecutionRequirements{
-			Backend:            p.backend,
-			GPURequired:        gpuRequired,
-			CPUFallbackAllowed: !p.strictNativeBackend,
-			// Clip renders always need a foreground/background composition. The
-			// direct-YUV path is reserved for a genuinely video-only render; it
-			// cannot preserve the foreground when the background is supplied as
-			// a second media input outside the concrete layer list.
-			// DirectYUV owns the video composition path, including multiple
-			// video layers plus the supported text/image overlays. Keep the
-			// general graph for authored compositions without a video source.
-			CompositionRequired: !hasSourceVideo && planHasVisualOverlay(prepared.Plan),
-			VideoSourceRequired: planHasVideoSource(prepared.Plan),
-			PacketCopyAllowed:   true,
-		},
-		FirstFrame:   firstFrame,
-		LastFrame:    lastFrame,
-		RangeEnabled: hasFrameRange,
-		Output:       chronon.OutputSpec{Codec: "h264"},
-		TotalFrames:  int64(metadata.FrameCount),
-		Progress: func(progress chronon.RenderProgress) {
-			sawProgress = true
-			lastProgress = progress
-			log.Printf("job %s progress: stage=chronon_render frames_done=%d frames_total=%d fps=%.2f last_frame_at=%s backend=%s encoder=%s",
-				job.ID, progress.FramesDone, progress.FramesTotal, progress.FPS,
-				progress.At.Format(time.RFC3339Nano), p.backend, p.hardwareEncoder)
-			if p.progressTracker != nil {
-				p.progressTracker.Observe(job.ID, progress.FramesDone, progress.FramesTotal)
-			}
-		},
-	}); err != nil {
-		return fmt.Errorf("processor: render: %w", err)
-	}
-	us := float64(time.Since(phaseStart).Microseconds())
-	prepared.Metrics["render_ms"] = us / 1000
-	prepared.Metrics["render_us"] = us
-	p.recordPhase("render", phaseStart)
-	// Duty-cycle telemetry: the gap this render waited since the previous
-	// render ended on this worker. First job reports 0.
-	prepared.Metrics["gpu_gap_us"] = p.recordGPUGap(phaseStart)
-	// Frame-level observability: the final frame position the renderer
-	// reported plus its average fps (0 when the renderer printed no frame
-	// milestones — never silently confused with real progress).
-	if sawProgress && lastProgress.FramesDone > 0 {
-		prepared.Metrics["render_frames_done"] = float64(lastProgress.FramesDone)
-		prepared.Metrics["render_frames_total"] = float64(lastProgress.FramesTotal)
-		fps := lastProgress.FPS
-		if fps <= 0 {
-			if elapsed := time.Since(phaseStart).Seconds(); elapsed > 0 {
-				fps = float64(lastProgress.FramesDone) / elapsed
-			}
-		}
-		if fps > 0 {
-			prepared.Metrics["render_fps"] = fps
-		}
-	}
-	if p.progressTracker != nil {
-		p.progressTracker.Forget(job.ID)
-	}
-	// The native Vulkan/NVENC receipt gate applies to source-video jobs. An
-	// image/text-only composition intentionally uses Chronon's Vulkan
-	// compositor with the supported software pipe encoder, so requiring an
-	// NVENC receipt there would reject a valid authored entity card.
-	if p.strictNativeBackend && planHasVideoSource(prepared.Plan) {
-		metadata := planMetadataOf(prepared.Plan)
-		if err := requireNativeVulkan(prepared.OutputPath, metadata.FrameCount); err != nil {
-			return fmt.Errorf("processor: gpu-vulkan-native gate: %w", err)
-		}
-	}
-	return nil
-}
-
-// FinalizeJob runs the CPU-bound post half of the render pipeline: validation
-// probes, output hashing (Chronon receipt first), object-store upload and the
-// artifact ledger row.
-func (p *Processor) FinalizeJob(ctx context.Context, prepared *PreparedJob) (queue.Artifact, error) {
-	job := prepared.Job
-	metrics := prepared.Metrics
-	outputPath := prepared.OutputPath
-	plan := prepared.Plan
-	metadata := planMetadataOf(plan)
-	var probe *media.ProbeResult
-	if job.JobType == queue.JobTypeOverlayRender || metadata.ProfileID != "" {
-		probeStart := time.Now()
-		probed, err := media.ProbeFile(ctx, outputPath)
-		if err != nil {
-			return queue.Artifact{}, fmt.Errorf("processor: overlay ffprobe: %w", err)
-		}
-		probeUS := float64(time.Since(probeStart).Microseconds())
-		metrics["probe_us"] = probeUS
-		metrics["probe_ms"] = probeUS / 1000
-
-		if metadata.ProfileID != "" {
-			profile, err := media.ResolveProfile(metadata.ProfileID)
-			if err != nil {
-				return queue.Artifact{}, fmt.Errorf("processor: output profile: %w", err)
-			}
-			if err := profile.ValidateProbe(probed); err != nil {
-				return queue.Artifact{}, fmt.Errorf("processor: output profile certification: %w", err)
-			}
-		} else if job.JobType == queue.JobTypeOverlayRender {
-			if err := probed.ValidateOverlay(metadata.Width, metadata.Height, metadata.FPSNum, metadata.FPSDen); err != nil {
-				return queue.Artifact{}, fmt.Errorf("processor: overlay media contract: %w", err)
-			}
-		}
-		if planHasVisualOverlay(plan) && deepVisualValidationEnabled() {
-			if err := probed.ValidateVisible(ctx, outputPath); err != nil {
-				return queue.Artifact{}, fmt.Errorf("processor: visual output gate: %w", err)
-			}
-		}
-		probe = &probed
-	}
-	// Media decodability is verified by Chronon — the canonical verifier of
-	// the artifact Chronon itself produced — inside its receipt
-	// (normal/certify run the full decode passes there; fast skips re-decode
-	// by design). RenderingGen requests the policy and enforces the receipt
-	// result; it never re-decodes the output a second time. This runs for
-	// every finalized job, independent of overlay/profile probing.
-	if err := p.enforceReceiptVerification(outputPath); err != nil {
-		return queue.Artifact{}, err
-	}
-	return p.storeArtifact(ctx, job.ID, outputPath, plan, metrics, prepared.totalStart, probe, prepared.Stats, prepared.InputBytes,
-		job.JobType == queue.JobTypeOverlayRender || metadata.ProfileID != "")
-}
-
-type renderVerifyLevel string
-
-const (
-	renderVerifyFast    renderVerifyLevel = "fast"
-	renderVerifyNormal  renderVerifyLevel = "normal"
-	renderVerifyCertify renderVerifyLevel = "certify"
-)
-
-// renderVerificationLevel is the SINGLE verification-policy authority on the
-// worker. fast (the production default) verifies container/stream metadata
-// without re-decoding the freshly muxed output; normal performs one complete
-// decode; certify is the explicit correctness mode used by CI/golden
-// benchmarks. Only RENDERINGGEN_RECEIPT_VERIFY is read here — the historical
-// CHRONON_RECEIPT_VERIFY alias is deliberately NOT consulted, so the worker
-// and its Chronon subprocess cannot run different policies. The resolved
-// level is forwarded explicitly to the CLI (chronon.RenderRequest.
-// ReceiptVerify -> CHRONON_RECEIPT_VERIFY on the subprocess env) by RunGPU.
-func renderVerificationLevel() renderVerifyLevel {
-	switch renderVerifyLevel(os.Getenv("RENDERINGGEN_RECEIPT_VERIFY")) {
-	case renderVerifyNormal:
-		return renderVerifyNormal
-	case renderVerifyCertify:
-		return renderVerifyCertify
-	default:
-		return renderVerifyFast
-	}
-}
-
-// enforceReceiptVerification makes the worker enforce — never duplicate —
-// Chronon's canonical output verification. Under normal/certify the receipt
-// is mandatory evidence: Chronon promised a full decode there, and a missing
-// receipt means the canonical verifier did not run, so the artifact is
-// rejected (fail closed) rather than silently accepted on the worker's own
-// probe. Under fast a missing receipt is tolerated: the gate is the
-// encoder/muxer success plus the profile/overlay probe validation below. When
-// the receipt is present the aggregate verification status must be pass at
-// every policy — Chronon's media checks (container, codec, pixel format,
-// resolution, fps, audio, optional decode) are the verdict.
-func (p *Processor) enforceReceiptVerification(outputPath string) error {
-	receipt, err := chronon.ReadMediaReceipt(outputPath)
-	policy := renderVerificationLevel()
-	if err != nil {
-		if policy == renderVerifyFast {
-			// Fast never promises a decode; the output is certified by the
-			// in-process encoder/muxer success and the probe validation below.
-			return nil
-		}
-		return fmt.Errorf("processor: canonical verification did not run (policy=%s): %w", policy, err)
-	}
-	if !receipt.VerificationPassed() {
-		// A failing aggregate without a granular explanation is the worst
-		// failure mode to debug ("render finished, receipt failed, why?").
-		// The receipt JSON carries per-check verdicts; surface every failing
-		// check in the job error so a re-render is never needed just to learn
-		// which contract check rejected the output.
-		if failures := receipt.VerificationFailures(); len(failures) > 0 {
-			return fmt.Errorf("processor: Chronon receipt verification failed (policy=%s status=%q failing_checks=%s)",
-				policy, receipt.Verification.Status, strings.Join(failures, ","))
-		}
-		return fmt.Errorf("processor: Chronon receipt verification failed (policy=%s status=%q)", policy, receipt.Verification.Status)
-	}
-	return nil
-}
-
-// deepVisualValidationEnabled reports whether the sampled ffmpeg visual
-// validation should run for this job. Opt-in via RENDERINGGEN_DEEP_VISUAL=1:
-// CI and certification runs enable it; the production hot path relies on the
-// Chronon receipt gate (requireNativeVulkan + media receipt) and pays no
-// extra ffmpeg processes per render.
-func deepVisualValidationEnabled() bool {
-	return os.Getenv("RENDERINGGEN_DEEP_VISUAL") == "1"
-}
-
-// The GPU duty-cycle KPI (gpu_gap_us) is scoped to the Processor instance, not
-// to package-level state. The worker's GPU lanes and the serial StagedRender
-// path share one Processor, so "the gap between one render's end and the next
-// render's start on this worker" is measured per processor — never polluted by
-// other Processors (e.g. tests running in the same process), and never
-// misattributed across workers.
-
-// recordGPUGap closes the gap since the previous render end recorded on this
-// processor (0 on first use). RunGPU calls it with this render's start.
-func (p *Processor) recordGPUGap(renderStart time.Time) float64 {
-	p.gpuGapMu.Lock()
-	defer p.gpuGapMu.Unlock()
-	var gapUS float64
-	if !p.gpuGapLastRenderEnd.IsZero() && renderStart.After(p.gpuGapLastRenderEnd) {
-		gapUS = float64(renderStart.Sub(p.gpuGapLastRenderEnd).Microseconds())
-	}
-	return gapUS
-}
-
-// PutGPURenderEnd stores the completion time of the most recent render on this
-// processor. Exported so the concurrent GPU lane in the worker main can record
-// render ends exactly like the serial StagedRender path does.
-func (p *Processor) PutGPURenderEnd(renderEnd time.Time) {
-	p.gpuGapMu.Lock()
-	p.gpuGapLastRenderEnd = renderEnd
-	p.gpuGapMu.Unlock()
-}
-
-// StagedRender runs the three stages serially for one job; used when a caller
-// wants the staged pipeline semantics without the concurrent worker pools
-// (single-job mode, tests). Metrics and behavior match Render.
-func (p *Processor) StagedRender(ctx context.Context, job *queue.Job) (queue.Artifact, error) {
-	prepared, err := p.PrepareJob(ctx, job)
-	if err != nil {
-		return queue.Artifact{}, err
-	}
-	if os.Getenv("RENDERINGGEN_KEEP_WORKSPACE") != "1" {
-		defer func() {
-			if err := prepared.Workspace.Cleanup(); err != nil {
-				log.Printf("job %s: workspace cleanup: %v", job.ID, err)
-			}
-		}()
-	}
-	if err := p.RunGPU(ctx, prepared); err != nil {
-		return queue.Artifact{}, err
-	}
-	p.PutGPURenderEnd(time.Now())
-	return p.FinalizeJob(ctx, prepared)
 }

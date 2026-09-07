@@ -78,6 +78,19 @@ func TestCompileImagePresetHonorsExplicitCenterAndSize(t *testing.T) {
 	}
 }
 
+func TestCompileModernRoundedPopEmitsRadius(t *testing.T) {
+	plan, err := CompileFastEntityOverlays("rounded", 1920, 1080, 24, 1, 125, "color:#EEF1E7", []FastEntityOverlay{{
+		Type: "image", PresetID: "modern_rounded_pop", Asset: "gerard_butler.jpg", StartFrame: 0, EndFrame: 125,
+		Position: "center", Size: 600,
+	}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := plan.Layers[1].Radius; got != 96 {
+		t.Fatalf("modern rounded radius=%v, want 96", got)
+	}
+}
+
 func TestFastEntityOverlay_BuildPlan(t *testing.T) {
 	overlays := []FastEntityOverlay{
 		{

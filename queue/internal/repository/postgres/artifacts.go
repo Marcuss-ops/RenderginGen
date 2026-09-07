@@ -27,9 +27,11 @@ func insertArtifact(ctx context.Context, tx *sql.Tx, jobID string, a model.Artif
 		    (id, job_id, kind, storage_key, artifact_url, sha256, mime_type, size_bytes,
 		     width, height, fps_num, fps_den, frame_count, duration_us,
 		     profile_id, copy_eligible, codec, codec_profile, closed_gop, first_frame_keyframe,
-		     backend, chronon_version, drive_file_id, drive_link, container, pixel_format, audio_streams)
+		     backend, chronon_version, drive_file_id, drive_link, container, pixel_format, audio_streams,
+		     chronon_timing_storage_key, chronon_timing_url, chronon_timing_sha256,
+		     chronon_timing_size_bytes, chronon_timing_content_type)
 		VALUES
-		    ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27)
+		    ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32)
 		ON CONFLICT (id) DO UPDATE SET
 		    drive_file_id = EXCLUDED.drive_file_id,
 		    drive_link    = EXCLUDED.drive_link`,
@@ -38,7 +40,9 @@ func insertArtifact(ctx context.Context, tx *sql.Tx, jobID string, a model.Artif
 		a.FrameCount, a.DurationUS, nullIfEmpty(a.ProfileID), a.CopyEligible,
 		nullIfEmpty(a.Codec), nullIfEmpty(a.CodecProfile), a.ClosedGOP, a.FirstFrameKeyframe,
 		nullIfEmpty(a.Backend), nullIfEmpty(a.ChrononVersion), nullIfEmpty(a.DriveFileID), nullIfEmpty(a.DriveLink),
-		nullIfEmpty(a.Container), nullIfEmpty(a.PixelFormat), a.AudioStreams)
+		nullIfEmpty(a.Container), nullIfEmpty(a.PixelFormat), a.AudioStreams,
+		nullIfEmpty(a.ChrononTimingStorageKey), nullIfEmpty(a.ChrononTimingURL), nullIfEmpty(a.ChrononTimingSHA256),
+		a.ChrononTimingSizeBytes, nullIfEmpty(a.ChrononTimingContentType))
 	if err != nil {
 		return err
 	}
@@ -118,8 +122,10 @@ func getArtifact(ctx context.Context, db *sql.DB, id string) (*model.Artifact, e
 		profileID, codec, codecProfile                 sql.NullString
 		backend, chrononVersion                        sql.NullString
 		driveFileID, driveLink, container, pixelFormat sql.NullString
+		chrononTimingKey, chrononTimingURL             sql.NullString
+		chrononTimingSHA, chrononTimingContentType     sql.NullString
 		audioStreams                                   sql.NullInt64
-		sizeBytes                                      sql.NullInt64
+		sizeBytes, chrononTimingSize                   sql.NullInt64
 		width, height, fpsNum, fpsDen                  sql.NullInt64
 		frameCount, durationUS                         sql.NullInt64
 		copyEligible, closedGOP, firstFrameKey         sql.NullBool
@@ -128,13 +134,17 @@ func getArtifact(ctx context.Context, db *sql.DB, id string) (*model.Artifact, e
 		SELECT id, job_id, kind, storage_key, artifact_url, sha256, mime_type, size_bytes,
 		       width, height, fps_num, fps_den, frame_count, duration_us,
 		       profile_id, copy_eligible, codec, codec_profile, closed_gop, first_frame_keyframe,
-		       backend, chronon_version, drive_file_id, drive_link, container, pixel_format, audio_streams
+		       backend, chronon_version, drive_file_id, drive_link, container, pixel_format, audio_streams,
+		       chronon_timing_storage_key, chronon_timing_url, chronon_timing_sha256,
+		       chronon_timing_size_bytes, chronon_timing_content_type
 		FROM render_artifacts
 		WHERE id = $1`, id).Scan(
 		&a.ID, &jobID, &a.Kind, &storageKey, &url, &sha256, &mimeType, &sizeBytes,
 		&width, &height, &fpsNum, &fpsDen, &frameCount, &durationUS,
 		&profileID, &copyEligible, &codec, &codecProfile, &closedGOP, &firstFrameKey,
-		&backend, &chrononVersion, &driveFileID, &driveLink, &container, &pixelFormat, &audioStreams)
+		&backend, &chrononVersion, &driveFileID, &driveLink, &container, &pixelFormat, &audioStreams,
+		&chrononTimingKey, &chrononTimingURL, &chrononTimingSHA,
+		&chrononTimingSize, &chrononTimingContentType)
 	if err != nil {
 		return nil, err
 	}
@@ -152,6 +162,13 @@ func getArtifact(ctx context.Context, db *sql.DB, id string) (*model.Artifact, e
 	a.DriveLink = driveLink.String
 	a.Container = container.String
 	a.PixelFormat = pixelFormat.String
+	a.ChrononTimingStorageKey = chrononTimingKey.String
+	a.ChrononTimingURL = chrononTimingURL.String
+	a.ChrononTimingSHA256 = chrononTimingSHA.String
+	a.ChrononTimingContentType = chrononTimingContentType.String
+	if chrononTimingSize.Valid {
+		a.ChrononTimingSizeBytes = chrononTimingSize.Int64
+	}
 	if audioStreams.Valid {
 		a.AudioStreams = int(audioStreams.Int64)
 	}

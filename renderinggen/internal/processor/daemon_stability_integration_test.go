@@ -47,7 +47,7 @@ func TestDaemonVulkanStabilityRecovery(t *testing.T) {
 	}
 
 	var job queue.Job
-	if err := json.Unmarshal([]byte(chronon.GoldenOverlayJobV1), &job); err != nil {
+	if err := json.Unmarshal([]byte(chronon.GoldenOverlayJobV2), &job); err != nil {
 		t.Fatalf("decode golden job: %v", err)
 	}
 

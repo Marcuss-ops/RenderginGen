@@ -75,6 +75,9 @@ Dialogue: 0,0:00:03.00,0:00:04.00,Default,,0,0,0,,Dopo
 	if decoded.Layers[1].Text != "Prima\nseconda" {
 		t.Fatalf("ASS line break was not lowered: %q", decoded.Layers[1].Text)
 	}
+	if shadow := decoded.Layers[1].Style.Shadow; shadow == nil || shadow.Color != "#000000" || shadow.Opacity != 0.95 || shadow.Blur != 8 || len(shadow.Offset) != 2 || shadow.Offset[0] != 0 || shadow.Offset[1] != 5 {
+		t.Fatalf("subtitle shadow was not lowered exactly: %+v", shadow)
+	}
 	// The safe-area box (X=60, Y=758, 1800x140 on 1920x1080) converts to a
 	// Chronon centre offset of [0, 288]: x = 60+900-960 = 0,
 	// y = 758+70-540 = 288. The position comes from the caller's typed box —

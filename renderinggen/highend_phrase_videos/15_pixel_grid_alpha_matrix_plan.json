@@ -1,0 +1,103 @@
+{
+  "schema": "chronon.render-plan.v2",
+  "version": 2,
+  "job_id": "highend_phrase_15_pixel_grid_alpha_matrix",
+  "canvas": {
+    "width": 1920,
+    "height": 1080,
+    "fps_num": 24,
+    "fps_den": 1,
+    "duration_frames": 120
+  },
+  "layers": [
+    {
+      "id": "bg_video",
+      "type": "video",
+      "source": "Pale-Olive.mp4",
+      "fit": "cover",
+      "start_frame": 0,
+      "duration_frames": 120,
+      "opacity": 1
+    },
+    {
+      "id": "entity_1_text",
+      "type": "text",
+      "text": "MATRIX ASSEMBLY",
+      "size": [
+        1920,
+        120
+      ],
+      "style": {
+        "font": "fonts/Inter-Bold.ttf",
+        "font_size": 58,
+        "fill": "#14141E"
+      },
+      "start_frame": 0,
+      "duration_frames": 120,
+      "animation": {
+        "tracks": [
+          {
+            "property": "scale",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 0.34
+              },
+              {
+                "frame": 24,
+                "value": 1.18
+              },
+              {
+                "frame": 71,
+                "value": 1
+              }
+            ],
+            "easing": "out_cubic"
+          },
+          {
+            "property": "position_y",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 34
+              },
+              {
+                "frame": 24,
+                "value": -4
+              },
+              {
+                "frame": 71,
+                "value": 0
+              }
+            ],
+            "easing": "out_cubic"
+          },
+          {
+            "property": "opacity",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 0
+              },
+              {
+                "frame": 24,
+                "value": 0.55
+              },
+              {
+                "frame": 71,
+                "value": 1
+              }
+            ],
+            "easing": "out_cubic"
+          }
+        ]
+      },
+      "opacity": 1
+    }
+  ],
+  "output": {
+    "path": "/home/pierone/src/go-master/projects/Pyt/VeloxEditing/RenderingGen/renderinggen/highend_phrase_videos/15_pixel_grid_alpha_matrix_1920x1080_24fps_5s.mp4",
+    "format": "mp4",
+    "codec": "h264"
+  }
+}

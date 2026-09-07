@@ -1,0 +1,103 @@
+{
+  "schema": "chronon.render-plan.v2",
+  "version": 2,
+  "job_id": "highend_phrase_08_isometric_3d_fold",
+  "canvas": {
+    "width": 1920,
+    "height": 1080,
+    "fps_num": 24,
+    "fps_den": 1,
+    "duration_frames": 120
+  },
+  "layers": [
+    {
+      "id": "bg_video",
+      "type": "video",
+      "source": "Pale-Olive.mp4",
+      "fit": "cover",
+      "start_frame": 0,
+      "duration_frames": 120,
+      "opacity": 1
+    },
+    {
+      "id": "entity_1_text",
+      "type": "text",
+      "text": "SPATIAL COMPUTING",
+      "size": [
+        1920,
+        120
+      ],
+      "style": {
+        "font": "fonts/Inter-Bold.ttf",
+        "font_size": 58,
+        "fill": "#14141E"
+      },
+      "start_frame": 0,
+      "duration_frames": 120,
+      "animation": {
+        "tracks": [
+          {
+            "property": "rotation_z",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": -28
+              },
+              {
+                "frame": 24,
+                "value": 8
+              },
+              {
+                "frame": 71,
+                "value": 0
+              }
+            ],
+            "easing": "out_cubic"
+          },
+          {
+            "property": "position_y",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 180
+              },
+              {
+                "frame": 24,
+                "value": -18
+              },
+              {
+                "frame": 71,
+                "value": 0
+              }
+            ],
+            "easing": "out_cubic"
+          },
+          {
+            "property": "scale",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 0.82
+              },
+              {
+                "frame": 24,
+                "value": 1.03
+              },
+              {
+                "frame": 71,
+                "value": 1
+              }
+            ],
+            "easing": "out_cubic"
+          }
+        ]
+      },
+      "opacity": 1
+    }
+  ],
+  "output": {
+    "path": "/home/pierone/src/go-master/projects/Pyt/VeloxEditing/RenderingGen/renderinggen/highend_phrase_videos/08_isometric_3d_fold_1920x1080_24fps_5s.mp4",
+    "format": "mp4",
+    "codec": "h264"
+  }
+}
