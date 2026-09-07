@@ -64,21 +64,34 @@ func (c *IPCClient) Shutdown(ctx context.Context) error {
 	return nil
 }
 
-// renderJobPayload is the JSON payload for the RENDER_JOB IPC command.
+// renderJobPayload is the JSON payload for the RENDER_JOB IPC command.  It is
+// the daemon-side mirror of the full RenderRequest semantic contract:
+//   plan_path / assets_root / output / report
+//   range_enabled + first_frame + last_frame  (explicit chunk range; a
+//     single-frame chunk at frame 0 is first=0, last=0 WITH range_enabled
+//     true — never an "absent range" that silently re-expands to the whole
+//     plan)
+//   audio_source_path (muxed source audio, daemon-side --gop-source)
+//   encode_preset (native NVENC tier)
+//   receipt_verify (per-job verification policy; the daemon reads the same
+//     policy the CLI subprocess receives through CHRONON_RECEIPT_VERIFY)
+//   execution_requirements / output_spec (semantic, backend-neutral)
 //
-// Wire note: first_frame/last_frame use omitempty, so a range ending exactly
-// at frame 0 (first=0, last=0) is not expressible to the daemon and is sent as
-// "absent" (daemon default = whole plan). That corner (a single-frame chunk
-// starting at frame 0) is representable on the CLI subprocess path
-// (renderArgs emits --start-frame 0 --end-frame 0); the daemon contract would
-// need to drop omitempty on both fields to close it on the IPC path.
+// first_frame/last_frame are marshaled unconditionally (no omitempty) so 0
+// coordinates are expressible; the daemon honors them only when range_enabled
+// is true.  Older daemons ignore the extra keys and keep rendering the whole
+// plan.
 type renderJobPayload struct {
 	PlanPath              string                `json:"plan_path"`
 	AssetsRoot            string                `json:"assets_root"`
 	Output                string                `json:"output"`
-	FirstFrame            int64                 `json:"first_frame,omitempty"`
-	LastFrame             int64                 `json:"last_frame,omitempty"`
+	RangeEnabled          bool                  `json:"range_enabled"`
+	FirstFrame            int64                 `json:"first_frame"`
+	LastFrame             int64                 `json:"last_frame"`
 	Report                bool                  `json:"report"`
+	AudioSourcePath       string                `json:"audio_source_path,omitempty"`
+	EncodePreset          string                `json:"encode_preset,omitempty"`
+	ReceiptVerify         string                `json:"receipt_verify,omitempty"`
 	ExecutionRequirements ExecutionRequirements `json:"execution_requirements"`
 	OutputSpec            OutputSpec            `json:"output_spec"`
 }
@@ -120,9 +133,16 @@ func (c *IPCClient) Render(ctx context.Context, req RenderRequest) error {
 	payload, err := json.Marshal(renderJobPayload{
 		PlanPath:   req.PlanPath,
 		AssetsRoot: req.AssetsRoot, Output: req.OutputPath,
+		// Range parity: coordinates are always marshaled (0 is meaningful)
+		// and range_enabled marks them as an explicit chunk. A whole-plan
+		// render is range_enabled=false even when the coordinates are 0.
+		RangeEnabled:          req.RangeEnabled,
 		FirstFrame:            req.FirstFrame,
 		LastFrame:             req.LastFrame,
 		Report:                req.Report,
+		AudioSourcePath:       req.AudioSourcePath,
+		EncodePreset:          req.EncodePreset,
+		ReceiptVerify:         req.ReceiptVerify,
 		ExecutionRequirements: req.Requirements,
 		OutputSpec:            req.Output,
 	})

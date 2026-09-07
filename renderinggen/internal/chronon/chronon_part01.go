@@ -20,11 +20,13 @@ import (
 // output or progress before being considered stalled.
 const DefaultStallTimeout = 3 * time.Minute
 
-// EnvReceiptVerify is the single environment variable through which
-// RenderingGen tells Chronon which output-verification policy to run
-// (fast | normal | certify). It is set explicitly on the CLI subprocess by
-// Client.Render; the worker never relies on ambient inheritance, so the two
-// cannot drift.
+// EnvReceiptVerify is the environment variable through which RenderingGen
+// tells Chronon which output-verification policy to run (fast | normal |
+// certify). It is set explicitly on the CLI subprocess by Client.Render; the
+// worker never relies on ambient inheritance, so the two cannot drift. The
+// daemon IPC path forwards the same policy per job (RenderRequest.ReceiptVerify
+// → receipt_verify JSON field), so the CLI and daemon boundaries stay
+// policy-identical.
 const EnvReceiptVerify = "CHRONON_RECEIPT_VERIFY"
 
 // maxRenderOutputLine caps the length of a single output line forwarded for
