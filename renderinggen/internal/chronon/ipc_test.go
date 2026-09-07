@@ -174,6 +174,124 @@ func TestIPCClientRenderUsesSemanticContract(t *testing.T) {
 	}
 }
 
+// TestIPCClientRenderFrameZeroRange pins the wave-1B daemon-parity corner: a
+// single-frame chunk at frame 0 (RangeEnabled with first=0, last=0) must
+// reach the wire as range_enabled=true with first_frame=0/last_frame=0
+// PRESENT — never as an absent range that the daemon would re-expand into a
+// whole-plan render.
+func TestIPCClientRenderFrameZeroRange(t *testing.T) {
+	socketPath, _, gotPayload := startFakeDaemon(t, ipcStatusOk, `{"status":"ok"}`)
+
+	client := NewIPCClient(socketPath)
+	err := client.Render(context.Background(), RenderRequest{
+		PlanPath:     "/jobs/1/plan.json",
+		AssetsRoot:   "/jobs/1/assets",
+		OutputPath:   "/jobs/1/output/result.mp4",
+		RangeEnabled: true,
+	})
+	if err != nil {
+		t.Fatalf("render: %v", err)
+	}
+
+	var payload map[string]any
+	if err := json.Unmarshal([]byte(<-gotPayload), &payload); err != nil {
+		t.Fatalf("payload decode: %v", err)
+	}
+	enabled, _ := payload["range_enabled"].(bool)
+	if !enabled {
+		t.Fatalf("range_enabled must be true: %v", payload)
+	}
+	for _, key := range []string{"first_frame", "last_frame"} {
+		if _, present := payload[key]; !present {
+			t.Fatalf("%s must be present for an explicit range: %v", key, payload)
+		}
+	}
+	if v, _ := payload["first_frame"].(float64); v != 0 {
+		t.Fatalf("first_frame = %v, want 0", payload["first_frame"])
+	}
+	if v, _ := payload["last_frame"].(float64); v != 0 {
+		t.Fatalf("last_frame = %v, want 0", payload["last_frame"])
+	}
+}
+
+// TestIPCClientRenderWholePlanStaysWhole pins the mirror corner: a
+// whole-plan render (RangeEnabled=false) must not carry range semantics even
+// when coordinates happen to be 0 — the daemon must render the whole plan.
+func TestIPCClientRenderWholePlanStaysWhole(t *testing.T) {
+	socketPath, _, gotPayload := startFakeDaemon(t, ipcStatusOk, `{"status":"ok"}`)
+
+	client := NewIPCClient(socketPath)
+	if err := client.Render(context.Background(), RenderRequest{
+		PlanPath:   "/jobs/1/plan.json",
+		AssetsRoot: "/jobs/1/assets",
+		OutputPath: "/jobs/1/output/result.mp4",
+	}); err != nil {
+		t.Fatalf("render: %v", err)
+	}
+
+	var payload map[string]any
+	if err := json.Unmarshal([]byte(<-gotPayload), &payload); err != nil {
+		t.Fatalf("payload decode: %v", err)
+	}
+	if enabled, _ := payload["range_enabled"].(bool); enabled {
+		t.Fatalf("whole-plan render must carry range_enabled=false: %v", payload)
+	}
+}
+
+// TestIPCClientRenderForwardsFullSemanticContract asserts the daemon payload
+// carries every RenderRequest semantic the CLI subprocess path already
+// forwards (audio source, encode preset, receipt policy, requirements,
+// output spec) so CLI-vs-daemon parity cannot silently drift.
+func TestIPCClientRenderForwardsFullSemanticContract(t *testing.T) {
+	socketPath, _, gotPayload := startFakeDaemon(t, ipcStatusOk, `{"status":"ok"}`)
+
+	client := NewIPCClient(socketPath)
+	err := client.Render(context.Background(), RenderRequest{
+		PlanPath:        "/jobs/1/plan.json",
+		AssetsRoot:      "/jobs/1/assets",
+		OutputPath:      "/jobs/1/output/result.mp4",
+		AudioSourcePath: "/jobs/1/assets/source.mp4",
+		EncodePreset:    "p2",
+		ReceiptVerify:   "normal",
+		RangeEnabled:    true,
+		FirstFrame:      240,
+		LastFrame:       359,
+		Requirements: ExecutionRequirements{
+			GPURequired: true, CPUFallbackAllowed: false,
+			CompositionRequired: true, VideoSourceRequired: true,
+			PacketCopyAllowed: false,
+		},
+		Output: OutputSpec{Codec: "h264"},
+	})
+	if err != nil {
+		t.Fatalf("render: %v", err)
+	}
+
+	var payload map[string]any
+	if err := json.Unmarshal([]byte(<-gotPayload), &payload); err != nil {
+		t.Fatalf("payload decode: %v", err)
+	}
+	if v, _ := payload["audio_source_path"].(string); v != "/jobs/1/assets/source.mp4" {
+		t.Fatalf("audio_source_path = %v", payload["audio_source_path"])
+	}
+	if v, _ := payload["encode_preset"].(string); v != "p2" {
+		t.Fatalf("encode_preset = %v", payload["encode_preset"])
+	}
+	if v, _ := payload["receipt_verify"].(string); v != "normal" {
+		t.Fatalf("receipt_verify = %v", payload["receipt_verify"])
+	}
+	reqs, _ := payload["execution_requirements"].(map[string]any)
+	if reqs == nil {
+		t.Fatalf("execution_requirements missing: %v", payload)
+	}
+	if v, _ := reqs["cpu_fallback_allowed"].(bool); v {
+		t.Fatalf("cpu_fallback_allowed must be false on the wire: %v", reqs)
+	}
+	if v, _ := reqs["packet_copy_allowed"].(bool); v {
+		t.Fatalf("packet_copy_allowed must be false on the wire: %v", reqs)
+	}
+}
+
 func TestIPCClientStatus(t *testing.T) {
 	socketPath, gotCmd, _ := startFakeDaemon(t, ipcStatusOk, "frames_rendered=2 total_ms=123.4")
 
