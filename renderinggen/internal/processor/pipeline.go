@@ -95,6 +95,40 @@ func normalizeMaterializedImagePaths(root string, plan *overlay.Plan) error {
 	return nil
 }
 
+// validateMaterializedPlanAssets is the fail-closed boundary immediately
+// before Chronon. MaterializePaths validates the queue manifest, but the
+// compiler and image-extension normalization can change the concrete paths
+// referenced by the typed plan. Check the plan itself so Chronon can never be
+// the first component to report a missing asset.
+func validateMaterializedPlanAssets(root string, plan *overlay.Plan) error {
+	if plan == nil {
+		return fmt.Errorf("processor: render plan is nil before Chronon")
+	}
+	seen := make(map[string]struct{})
+	for _, layer := range plan.Layers {
+		asset := strings.TrimSpace(layer.Asset)
+		if asset == "" {
+			continue
+		}
+		if _, ok := seen[asset]; ok {
+			continue
+		}
+		seen[asset] = struct{}{}
+		if filepath.IsAbs(asset) || filepath.Clean(asset) != asset || strings.HasPrefix(asset, "../") || asset == ".." {
+			return fmt.Errorf("processor: Chronon asset path %q is not workspace-relative", asset)
+		}
+		path := filepath.Join(root, filepath.FromSlash(asset))
+		info, err := os.Stat(path)
+		if err != nil {
+			return fmt.Errorf("processor: asset %q missing before Chronon: %w", asset, err)
+		}
+		if !info.Mode().IsRegular() {
+			return fmt.Errorf("processor: asset %q is not a regular file before Chronon", asset)
+		}
+	}
+	return nil
+}
+
 // PrepareJob runs the CPU-bound preparation half of the render pipeline:
 // validate, compile, asset materialization and plan.json. It returns a
 // PreparedJob whose workspace must be cleaned up by the GPU-stage caller.
@@ -158,6 +192,10 @@ func (p *Processor) PrepareJob(ctx context.Context, job *queue.Job) (*PreparedJo
 	// normalizeMaterializedImagePaths mutates the ONE typed plan in place —
 	// no JSON round-trip.
 	if err := normalizeMaterializedImagePaths(ws.Root(), plan); err != nil {
+		_ = ws.Cleanup()
+		return nil, err
+	}
+	if err := validateMaterializedPlanAssets(ws.Root(), plan); err != nil {
 		_ = ws.Cleanup()
 		return nil, err
 	}
