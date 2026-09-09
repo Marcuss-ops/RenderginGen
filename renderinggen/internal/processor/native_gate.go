@@ -1,6 +1,10 @@
 // native_gate.go owns the gpu-vulkan-native receipt gate: a render certified
-// as native Vulkan must prove it in Chronon's timing + media receipts before
-// the artifact may be published under the strict native identity.
+// as native Vulkan must prove it in Chronon's BOUNDED telemetry summary
+// (`<output>.telemetry-summary.json`, chronon3d.render-telemetry-summary.v1)
+// + media receipt before the artifact may be published under the strict
+// native identity. The gate never reads Chronon's raw deep-profile timing
+// sidecar (opaque artifact), so it cannot drift from the stable summary
+// contract (observability ownership, Phase 10).
 package processor
 
 import (
@@ -12,29 +16,21 @@ import (
 )
 
 func requireNativeVulkan(outputPath string, expectedFrames int) error {
-	raw, err := chronon.ReadTimingSidecar(outputPath)
+	// Observability ownership (Phase 10): the gate certifies from Chronon's
+	// BOUNDED telemetry summary (`<output>.telemetry-summary.json`), never
+	// from the raw deep-profile timing sidecar. ReadTelemetrySummary +
+	// DecodeNativeTelemetry reject a missing file and any document that is
+	// not the versioned summary schema, so the gate fails closed by
+	// construction.
+	raw, err := chronon.ReadTelemetrySummary(outputPath)
 	if err != nil {
-		return fmt.Errorf("missing Chronon timing receipt: %w", err)
+		return fmt.Errorf("missing Chronon telemetry summary: %w", err)
 	}
-	var doc struct {
-		Job struct {
-			ExecutionPath      string `json:"execution_path"`
-			SurfaceHandoffPath string `json:"surface_handoff_path"`
-			GPU                struct {
-				EffectiveBackend     string `json:"effective_backend"`
-				EncoderBackend       string `json:"encoder_backend"`
-				FallbackNodes        *int64 `json:"software_fallback_nodes"`
-				CPUReadbackFrames    *int64 `json:"cpu_readback_frames"`
-				SoftwareEncodeFrames *int64 `json:"software_encode_frames"`
-				NVENCFrames          *int64 `json:"nvenc_frames"`
-				VulkanFrames         *int64 `json:"vulkan_frames"`
-				NativeSurfaceFrames  *int64 `json:"gpu_native_surface_frames"`
-			} `json:"gpu"`
-		} `json:"job"`
+	telemetry, err := chronon.DecodeNativeTelemetry(raw)
+	if err != nil {
+		return fmt.Errorf("decode Chronon telemetry summary: %w", err)
 	}
-	if err := json.Unmarshal(raw, &doc); err != nil {
-		return fmt.Errorf("decode Chronon timing receipt: %w", err)
-	}
+	doc := telemetry
 	directYUV := doc.Job.ExecutionPath == "direct_yuv"
 	if !directYUV && doc.Job.GPU.EffectiveBackend != "vulkan" {
 		return fmt.Errorf("effective_backend=%q, want vulkan", doc.Job.GPU.EffectiveBackend)

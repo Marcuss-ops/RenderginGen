@@ -33,16 +33,20 @@ type Artifact struct {
 	Backend            string             `json:"backend,omitempty"`
 	ChrononVersion     string             `json:"chronon_version,omitempty"`
 	Metrics            map[string]float64 `json:"metrics,omitempty"`
-	// ChrononTelemetry is the raw job-level timing document. PostgreSQL stores
-	// it as JSONB; Metrics remains the bounded numeric projection for clients.
+	// ChrononTelemetry is the BOUNDED telemetry summary document
+	// (`<output>.telemetry-summary.json`, schema
+	// chronon3d.render-telemetry-summary.v1) — the only Chronon telemetry
+	// surface the worker ingests (observability ownership, Phase 10).
+	// PostgreSQL stores it as JSONB; Metrics remains the documented numeric
+	// projection for clients. It never contains per-frame arrays.
 	ChrononTelemetry json.RawMessage `json:"chronon_telemetry,omitempty"`
-	// ChrononTiming* reference the RAW deep-profile timing sidecar
-	// (`<output>.timing.json`, including the unbounded per-frame
-	// frame_times_ms array) preserved verbatim in the object store under its
-	// content address. The bounded ChrononTelemetry JSONB is the ledger copy;
-	// these references keep the full per-frame profile fetchable for
-	// post-mortem without ever inlining the array. Absent when the sidecar
-	// file did not exist or could not be preserved (fail-open).
+	// ChrononTiming* are the RawTimingArtifactRef: the RAW deep-profile
+	// timing sidecar (`<output>.timing.json`, including the unbounded
+	// per-frame frame_times_ms array) is preserved as an OPAQUE artifact in
+	// the object store under its content address — bytes → hash → store →
+	// reference. The worker never parses or mutates it; these fields keep it
+	// fetchable for post-mortem without ever inlining the array. Absent when
+	// the sidecar file did not exist or could not be preserved (fail-open).
 	ChrononTimingStorageKey  string `json:"chronon_timing_storage_key,omitempty"`
 	ChrononTimingURL         string `json:"chronon_timing_url,omitempty"`
 	ChrononTimingSHA256      string `json:"chronon_timing_sha256,omitempty"`

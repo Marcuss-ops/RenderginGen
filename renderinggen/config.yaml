@@ -26,6 +26,7 @@ workspace:
 chronon:
   profile: gpu-vulkan-native
   home: /opt/chronon3d
+  binary: /opt/chronon3d/bin/chronon3d_cli
   # Warm render shell: render through the persistent Chronon daemon started
   # by worker-entrypoint.sh (caches alive across jobs).
   mode: ipc

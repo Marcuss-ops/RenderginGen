@@ -80,6 +80,15 @@ Chronon3d's `docker-runtime.yml` workflow builds its own
 at `/opt/chronon3d/bin/chronon3d_cli`. RenderingGen consumes that image via the
 `CHRONON_RUNTIME` build arg — it never builds Chronon itself.
 
+For a native host, RenderingGen needs the executable path, the matching Chronon
+runtime libraries, FFmpeg, writable workspace/cache directories, and either a
+running Chronon daemon socket (`mode: ipc`) or direct CLI execution
+(`mode: cli`). The checked-in native profiles point to
+`/usr/local/bin/chronon3d_cli`; the container profile points to
+`/opt/chronon3d/bin/chronon3d_cli`. Every render also needs the job's
+content-addressed assets available in the artifact store so the worker can
+materialize them below the workspace before invoking Chronon.
+
 The two projects are versioned independently:
 
 - `RenderingGen` — worker orchestration (queue, storage, workspace)

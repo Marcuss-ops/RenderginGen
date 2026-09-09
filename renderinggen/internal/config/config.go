@@ -51,6 +51,7 @@ type ChrononConfig struct {
 	Profile              string `yaml:"profile"` // software-cli | gpu-vulkan-native
 	Backend              string `yaml:"backend"`
 	Home                 string `yaml:"home"`
+	Binary               string `yaml:"binary"`      // explicit chronon3d_cli path
 	Mode                 string `yaml:"mode"`        // "cli" (default) | "ipc"
 	SocketPath           string `yaml:"socket_path"` // unix socket when Mode == "ipc"
 	NativeOutputProfiles bool   `yaml:"native_output_profiles"`

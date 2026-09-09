@@ -199,6 +199,16 @@ func TestBinaryPathOverride(t *testing.T) {
 	}
 }
 
+func TestBinaryPathExplicit(t *testing.T) {
+	c := &Client{
+		Home:       "/opt/chronon3d",
+		BinaryPath: "/usr/local/bin/chronon3d_cli",
+	}
+	if got := c.Binary(); got != c.BinaryPath {
+		t.Fatalf("Binary() with explicit path = %q, want %q", got, c.BinaryPath)
+	}
+}
+
 func TestClientImplementsRenderer(t *testing.T) {
 	var r Renderer = &Client{Home: "/opt/chronon3d"}
 	if r == nil {

@@ -216,6 +216,19 @@ func mergeAssets(jobAssets []queue.AssetRef, compiled []overlay.Asset) ([]queue.
 			// Legacy/local refs already name the workspace path and must remain
 			// untouched for backwards compatibility.
 			if !isHTTPURL(merged.LogicalPath) && merged.SourceURL == "" {
+				// A legacy job manifest may name the same bytes with a path
+				// different from the compiler's canonical semantic path. Keep
+				// the legacy alias for callers, and add the canonical path too:
+				// the concrete Chronon plan must always resolve to a materialized
+				// file under its own assets/... reference.
+				if previous, exists := byPath[asset.LogicalPath]; exists {
+					if !strings.EqualFold(previous, asset.Hash) {
+						return nil, fmt.Errorf("processor: logical asset path %q has conflicting hashes", asset.LogicalPath)
+					}
+					continue
+				}
+				result = append(result, queue.AssetRef{Hash: asset.Hash, LogicalPath: asset.LogicalPath})
+				byPath[asset.LogicalPath] = asset.Hash
 				continue
 			}
 			if merged.SourceURL == "" && isHTTPURL(merged.LogicalPath) {

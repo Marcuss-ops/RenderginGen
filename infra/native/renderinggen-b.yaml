@@ -11,6 +11,7 @@ workspace:
 chronon:
   profile: gpu-vulkan-native
   home: /opt/chronon3d
+  binary: /usr/local/bin/chronon3d_cli
   mode: cli
   strict_native_backend: true
 gpu:

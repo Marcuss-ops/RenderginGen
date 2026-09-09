@@ -10,7 +10,8 @@ workspace:
   root: /dev/shm/renderinggen/jobs
 chronon:
   profile: gpu-vulkan-native
-  home: /opt/chronon3d
+  home: /usr/local
+  binary: /usr/local/bin/chronon3d_cli
   mode: ipc
   socket_path: /run/chronon3d/chronon.sock
   strict_native_backend: true

@@ -86,13 +86,15 @@ type Artifact struct {
 	ChrononVersion     string             `json:"chronon_version,omitempty"`
 	Metrics            map[string]float64 `json:"metrics,omitempty"`
 	ChrononTelemetry   json.RawMessage    `json:"chronon_telemetry,omitempty"`
-	// ChrononTiming* reference the RAW deep-profile timing sidecar
-	// (`<output>.timing.json`, including the unbounded per-frame frame_times_ms
-	// array) preserved verbatim in the object store under its content address.
-	// The bounded ChrononTelemetry JSONB remains the ledger copy; these
-	// references keep the full per-frame profile fetchable for post-mortem
-	// without ever inlining the array into the queue document. Absent when the
-	// sidecar file did not exist or could not be preserved (fail-open).
+	// ChrononTiming* are the RawTimingArtifactRef: the RAW deep-profile timing
+	// sidecar (`<output>.timing.json`, including the unbounded per-frame
+	// frame_times_ms array) is preserved as an OPAQUE artifact in the object
+	// store under its content address — bytes → hash → store → reference. The
+	// bounded ChrononTelemetry (schema chronon3d.render-telemetry-summary.v1)
+	// is the ledger telemetry; these references keep the full per-frame
+	// profile fetchable for post-mortem without ever inlining the array into
+	// the queue document. Absent when the sidecar file did not exist or could
+	// not be preserved (fail-open).
 	ChrononTimingStorageKey  string `json:"chronon_timing_storage_key,omitempty"`
 	ChrononTimingURL         string `json:"chronon_timing_url,omitempty"`
 	ChrononTimingSHA256      string `json:"chronon_timing_sha256,omitempty"`

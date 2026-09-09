@@ -15,8 +15,9 @@ import (
 func fakeCLI(t *testing.T, doctorOutput string) *Client {
 	t.Helper()
 	if doctorOutput == "" {
-		// A binary whose doctor invocation fails (not executable).
-		return &Client{Home: t.TempDir()}
+		// An explicit missing path prevents the PATH fallback from selecting a
+		// real chronon3d_cli installed on the test host.
+		return &Client{Home: t.TempDir(), BinaryPath: filepath.Join(t.TempDir(), "missing-cli")}
 	}
 	dir := t.TempDir()
 	script := filepath.Join(dir, "fake-cli")

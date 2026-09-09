@@ -60,17 +60,19 @@ type ArtifactRecord struct {
 	DriveUploadUS       int64
 	TotalUS             int64
 
-	// ChrononTelemetry is the job-level telemetry document ingested from
-	// Chronon's timing sidecar. Chronon is the source of truth for
-	// plan/graph/GPU/encoder timing, so this is stored verbatim as JSON
-	// (Chronon owns the schema); the worker records only its distributive
-	// phases in the typed columns above. nil when the sidecar was missing.
+	// ChrononTelemetry is the BOUNDED telemetry summary ingested from Chronon's
+	// `<output>.telemetry-summary.json` (schema
+	// chronon3d.render-telemetry-summary.v1) — the only Chronon telemetry
+	// surface the worker consumes (observability ownership, Phase 10). It is
+	// stored verbatim as JSON (Chronon owns the schema); the worker records
+	// only its distributive phases in the typed columns above. nil when the
+	// summary was missing.
 	ChrononTelemetry json.RawMessage
 
-	// ChrononTiming* mirror the raw deep-profile sidecar reference on the
-	// queue artifact: the content-addressed object-store key/url/sha of the
-	// verbatim `<output>.timing.json` (including frame_times_ms), kept
-	// available for post-mortem. Empty when the sidecar was not preserved.
+	// ChrononTiming* mirror the RawTimingArtifactRef on the queue artifact:
+	// the content-addressed object-store key/url/sha of the verbatim
+	// `<output>.timing.json` RAW deep profile (including frame_times_ms),
+	// preserved opaquely for post-mortem. Empty when not preserved.
 	ChrononTimingStorageKey  string
 	ChrononTimingURL         string
 	ChrononTimingSHA256      string
