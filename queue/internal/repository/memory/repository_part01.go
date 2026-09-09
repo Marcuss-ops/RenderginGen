@@ -67,7 +67,7 @@ func (s *Repository) SubmitIdempotent(job model.Job) (*model.Job, bool, error) {
 		return nil, false, fmt.Errorf("%w: job %s", repository.ErrJobExists, job.ID)
 	}
 	now := time.Now()
-	if err := validateChunkMetadata(job); err != nil {
+	if err := model.ValidateChunk(job); err != nil {
 		return nil, false, err
 	}
 	job.State, job.CreatedAt, job.QueuedAt = model.StatePending, now, now
@@ -91,7 +91,7 @@ func (s *Repository) Submit(job model.Job) error {
 		return fmt.Errorf("%w: job %s", repository.ErrJobExists, job.ID)
 	}
 	now := time.Now()
-	if err := validateChunkMetadata(job); err != nil {
+	if err := model.ValidateChunk(job); err != nil {
 		return err
 	}
 	job.State = model.StatePending
@@ -102,15 +102,8 @@ func (s *Repository) Submit(job model.Job) error {
 	return nil
 }
 
-func validateChunkMetadata(job model.Job) error {
-	if job.FrameRange != nil && (job.FrameRange.Start < 0 || job.FrameRange.End <= job.FrameRange.Start) {
-		return fmt.Errorf("invalid frame_range for job %s", job.ID)
-	}
-	if job.ChunkIndex < 0 {
-		return fmt.Errorf("invalid chunk_index for job %s", job.ID)
-	}
-	return nil
-}
+// validateChunkMetadata is deprecated: use model.ValidateChunk (U6 single authority).
+func validateChunkMetadata(job model.Job) error { return model.ValidateChunk(job) }
 
 // Claim atomically claims the oldest pending job for a worker and returns it
 // with its lease duration. It returns nil when the queue is empty.

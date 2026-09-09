@@ -35,7 +35,12 @@ func (p *Processor) Publish(ctx context.Context, jobID, jobType string, artifact
 		// Capability absent: even a declared object_store_and_drive job is
 		// served store-only. The publisher state is authoritative for what
 		// the worker CAN do; the resolver is authoritative for what it SHOULD
-		// do. No fabricated metric: nothing was attempted.
+		// do. Make the skip observable so declared intent degradation is
+		// visible in metrics.
+		if policy == PublicationObjectStoreAndDrive {
+			artifact.Metrics["publication_drive_skipped_no_capability"] = 1
+			log.Printf("job %s: drive publication skipped (policy %s but no drive capability)", jobID, policy)
+		}
 		return artifact, nil
 	}
 	if policy != PublicationObjectStoreAndDrive {

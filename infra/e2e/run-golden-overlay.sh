@@ -3,20 +3,19 @@
 # GoldenSemanticOverlayJobV1 — end-to-end golden canary over the real chain:
 #
 #   submit queue -> claim RenderingGen -> materialize background.jpg
-#   -> materialize apple.png -> plan.json -> chronon3d_cli render
+#   -> plan.json -> chronon3d_cli render
 #   -> result.mp4 -> artifact store -> completed -> download + verify
 #   -> PostgreSQL certification -> idempotent replay (no new render)
 #
 # The job is the real RenderingGen semantic workload (not a color smoke):
 #
 #   background.jpg        full 5s      (f0-149)
-#   "QUESTO CAMBIA TUTTO" title_centered (f20-60)
-#   "APPLE"               kinetic_word   (f65-95)
-#   apple.png             contain, right (f90-135)
+#   "DONALD TRUMP"        caption_card   (f20-60)
+#   "TRUMP"               kinetic_word   (f65-95)
 #
 # The payload is the canonical, immutable
 # testdata/golden/golden-semantic-overlay-job-v1.json; the assets (background,
-# apple overlay, vendored DejaVuSans font) are the deterministic fixtures in
+# vendored DejaVuSans font) are the deterministic fixtures in
 # the same directory (hashes baked into the payload, so a regenerate of the
 # fixtures without updating the payload fails loudly at the PUT hash check).
 #

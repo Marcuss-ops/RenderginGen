@@ -90,6 +90,10 @@ func syncFile(path string) error {
 }
 
 // Get reads object data for key.
+//
+// Deprecated: test-only byte path. Production uses Open (streaming) and
+// LocalPath — buffering a multi-GB artifact into a byte slice would spike
+// worker memory. Kept exported only for store_test (D3); do not use in prod.
 func (s *Store) Get(key string) ([]byte, error) {
 	data, err := os.ReadFile(s.path(key))
 	if errors.Is(err, os.ErrNotExist) {

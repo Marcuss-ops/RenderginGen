@@ -39,7 +39,21 @@ func newDiskCache(dir string, max int64) *diskCache {
 }
 
 func (d *diskCache) Get(key string) ([]byte, bool) {
-	data, err := os.ReadFile(d.path(key))
+	// Hard failure path is byte-slice based: callers (storage.Client.Get)
+	// already have the streaming LocalPath path for media. Loading a
+	// multi-GB artifact via os.ReadFile here would spike heap. Guard by
+	// size: large objects are treated as miss so the caller falls through to
+	// the streaming LocalPath/ReaderBackend path instead of OOMing.
+	p := d.path(key)
+	info, err := os.Stat(p)
+	if err != nil {
+		return nil, false
+	}
+	const maxBytePathBytes = 64 << 20 // 64 MiB: beyond this use streaming LocalPath
+	if info.Size() > maxBytePathBytes {
+		return nil, false
+	}
+	data, err := os.ReadFile(p)
 	if err != nil {
 		return nil, false
 	}

@@ -20,16 +20,31 @@ func isSHA256Hash(hash string) bool {
 }
 
 // isLegacyJob reports whether the job is a legacy development fixture. A
-// legacy job carries at least one symbolic (non-SHA-256) asset key — the same
-// allowance the asset resolvers use to skip content verification — and
-// predates the renderinggen.job.v1 envelope, so its schema/version fields may
-// be absent. Every content-addressed job (all 64-hex asset keys, or none) is
-// the production contract and must declare the envelope exactly.
+// legacy job carries at least one symbolic (non-SHA-256) asset key with an
+// explicit legacy marker in the job (JobType or schema indicating legacy), OR
+// the job has no assets at all (empty fixture). Production content-addressed
+// jobs (all 64-hex keys, or explicit v1 envelope) must declare the envelope
+// exactly. A truncated hash without legacy intent is NOT legacy — it fails
+// validation so verification is not silently disabled.
 func isLegacyJob(job *queue.Job) bool {
+	if len(job.Assets) == 0 {
+		return false
+	}
+	hasSymbolic := false
 	for _, a := range job.Assets {
 		if !isSHA256Hash(a.Hash) {
-			return true
+			hasSymbolic = true
+			break
 		}
+	}
+	if !hasSymbolic {
+		return false
+	}
+	// Symbolic hash alone is not enough: require explicit legacy signal.
+	// Legacy fixtures use symbolic keys intentionally; truncated production
+	// hashes must not silently downgrade to unverified path.
+	if job.JobType == "legacy" || job.Schema == "" {
+		return true
 	}
 	return false
 }

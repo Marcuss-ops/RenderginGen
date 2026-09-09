@@ -55,6 +55,7 @@ func (r *Repository) Register(worker model.Worker) error {
 
 // Heartbeat records a heartbeat for a registered worker: it updates the
 // current liveness and appends to the heartbeat ledger in one transaction.
+// The ledger is pruned to a 7-day TTL to bound unbounded growth.
 func (r *Repository) Heartbeat(workerID string) error {
 	ctx := context.Background()
 	tx, err := r.db.BeginTx(ctx, nil)
@@ -77,7 +78,21 @@ func (r *Repository) Heartbeat(workerID string) error {
 		INSERT INTO worker_heartbeats (worker_id) VALUES ($1)`, workerID); err != nil {
 		return err
 	}
+	// Best-effort TTL prune: ignore errors (old rows are not correctness-critical).
+	_, _ = tx.ExecContext(ctx, `DELETE FROM worker_heartbeats WHERE heartbeat_at < now() - interval '7 days'`)
 	return tx.Commit()
+}
+
+// PruneWorkerHeartbeats removes heartbeat rows older than olderThan. Called
+// periodically by a background job or on heartbeat to bound table growth.
+func (r *Repository) PruneWorkerHeartbeats(olderThan time.Duration) (int64, error) {
+	ctx := context.Background()
+	res, err := r.db.ExecContext(ctx, `DELETE FROM worker_heartbeats WHERE heartbeat_at < now() - $1::interval`, fmt.Sprintf("%d seconds", int(olderThan.Seconds())))
+	if err != nil {
+		return 0, err
+	}
+	n, _ := res.RowsAffected()
+	return n, nil
 }
 
 // List returns all registered workers sorted by ID.

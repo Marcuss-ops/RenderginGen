@@ -4,7 +4,9 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"mime"
 	"path/filepath"
+	"strings"
 
 	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/drive"
 )
@@ -29,8 +31,12 @@ func main() {
 	if fileName == "" {
 		fileName = filepath.Base(*file)
 	}
+	contentType := mime.TypeByExtension(strings.ToLower(filepath.Ext(fileName)))
+	if contentType == "" {
+		contentType = "application/octet-stream"
+	}
 	result, err := publisher.Publish(ctx, drive.PublishRequest{
-		Name: fileName, ContentType: "video/mp4", Path: *file,
+		Name: fileName, ContentType: contentType, Path: *file,
 		ParentFolder: *folder, Subfolder: *subfolder,
 	})
 	if err != nil {

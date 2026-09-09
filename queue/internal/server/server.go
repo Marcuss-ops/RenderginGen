@@ -32,6 +32,8 @@ import (
 
 const maxClaimWait = 25 * time.Second
 
+const maxSubmitBytes = 10 << 20 // 10 MiB: large semantic plans + asset refs; unbounded is a hardening gap
+
 // Server wraps the job service with HTTP handlers. Wake-up signaling for
 // long-poll claims lives in one place — the service's Notifier — so the
 // submit/claim/complete transitions and both claim endpoints share a single
@@ -100,6 +102,7 @@ func parseJobID(r *http.Request) string {
 }
 
 func (s *Server) submit(w http.ResponseWriter, r *http.Request) {
+	r.Body = http.MaxBytesReader(w, r.Body, maxSubmitBytes)
 	var job model.Job
 	if err := json.NewDecoder(r.Body).Decode(&job); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -129,6 +132,10 @@ func (s *Server) submit(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, status, map[string]string{"id": canonical.ID})
 }
 
+// claim is the thin polling endpoint. With wait_ms==0 it is a single atomic
+// ClaimState; with wait_ms>0 it delegates to the single Notifier-backed
+// WaitAndClaim so both claim endpoints share one wake-up path. The wait never
+// assigns work — every wake just re-runs the atomic claim (SKIP LOCKED).
 func (s *Server) claim(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		Worker string `json:"worker"`
@@ -172,7 +179,11 @@ func (s *Server) claim(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeJSON(w, http.StatusOK, claimResponse{
+	writeJSON(w, http.StatusOK, buildClaimResponse(job, lease))
+}
+
+func buildClaimResponse(job *model.Job, lease time.Duration) claimResponse {
+	return claimResponse{
 		ID:             job.ID,
 		Schema:         job.Schema,
 		Version:        job.Version,
@@ -186,9 +197,13 @@ func (s *Server) claim(w http.ResponseWriter, r *http.Request) {
 		Lease:          lease,
 		State:          job.State,
 		Artifact:       job.Artifact,
-	})
+	}
 }
 
+// claimWait is the dedicated long-poll endpoint. It is a thin wrapper over
+// the same service WaitAndClaim as claim's wait_ms path — both share the
+// single Notifier broadcast (submit/complete/fail/requeue all Notify). The
+// only difference is wire naming (max_wait_ms vs wait_ms) and default wait.
 func (s *Server) claimWait(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		Worker    string `json:"worker"`
@@ -215,21 +230,7 @@ func (s *Server) claimWait(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNoContent)
 		return
 	}
-	writeJSON(w, http.StatusOK, claimResponse{
-		ID:             job.ID,
-		Schema:         job.Schema,
-		Version:        job.Version,
-		IdempotencyKey: job.IdempotencyKey,
-		JobType:        job.JobType,
-		ParentJobID:    job.ParentJobID,
-		ChunkIndex:     job.ChunkIndex,
-		FrameRange:     job.FrameRange,
-		RenderPlan:     job.RenderPlan,
-		Assets:         job.Assets,
-		Lease:          lease,
-		State:          job.State,
-		Artifact:       job.Artifact,
-	})
+	writeJSON(w, http.StatusOK, buildClaimResponse(job, lease))
 }
 
 // claimResponse is the payload returned to a worker on claim.

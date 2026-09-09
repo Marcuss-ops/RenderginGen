@@ -5,6 +5,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"log"
 	"os"
 	"time"
@@ -95,23 +96,47 @@ func runPrepPool(ctx context.Context, q *queue.Client, proc *processor.Processor
 			continue
 		}
 
-		// CPU preparation for a render job. The lease covers prep + GPU +
-		// hand-off to the post pool; renewals run inside withLease.
+		// CPU preparation for a render job. The lease renewal must be
+		// continuous from PrepareJob through hand-off to the GPU lane:
+		// prepCh dwell with a buffered channel and a lease scoped only to
+		// PrepareJob would let renewal stop while the job waits for a GPU
+		// lane — under backlog >10 min the lease expires, the job is
+		// requeued and double-rendered. Wrap PrepareJob + rendezvous send
+		// in one withLeaseVoid so renewal never stops in channel dwell.
 		var prepared *processor.PreparedJob
-		prepErr := withLeaseVoid(ctx, job, q, func(jobCtx context.Context) error {
+		handoffErr := withLeaseVoid(ctx, job, q, func(jobCtx context.Context) error {
 			var err error
 			prepared, err = proc.PrepareJob(jobCtx, job)
-			return err
+			if err != nil {
+				return err
+			}
+			select {
+			case prepCh <- &preppedJob{job: job, prepared: prepared}:
+				return nil
+			case <-jobCtx.Done():
+				_ = prepared.Workspace.Cleanup()
+				return jobCtx.Err()
+			case <-ctx.Done():
+				_ = prepared.Workspace.Cleanup()
+				return ctx.Err()
+			}
 		})
-		if prepErr != nil {
-			processor.ReportFailure(ctx, q, job, prepErr)
+		if handoffErr != nil {
+			if ctx.Err() != nil {
+				if prepared != nil {
+					_ = prepared.Workspace.Cleanup()
+				}
+				return
+			}
+			if errors.Is(handoffErr, context.Canceled) {
+				// Lease permanently lost while waiting for GPU lane: the queue
+				// has requeued the job elsewhere — do not ReportFailure (would
+				// 409) and do not double-render. Workspace already cleaned on
+				// jobCtx cancellation.
+				continue
+			}
+			processor.ReportFailure(ctx, q, job, handoffErr)
 			continue
-		}
-		select {
-		case prepCh <- &preppedJob{job: job, prepared: prepared}:
-		case <-ctx.Done():
-			_ = prepared.Workspace.Cleanup()
-			return
 		}
 	}
 }

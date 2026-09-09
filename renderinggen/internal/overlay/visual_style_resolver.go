@@ -81,24 +81,188 @@ type transitionBlock struct {
 }
 
 // parseStyleBlock decodes the semantic plan's free-form style map into the
-// typed block. RenderingGen validates mechanically; it never re-derives a
-// caller decision, so an unparsable style is a compile error, not a default.
+// typed block without a map→JSON→struct round-trip (U7). The historical
+// implementation did json.Marshal(raw) + json.Unmarshal per style block per
+// item — O(items) extra allocs and JSON codec work on the hot compile path.
+// Decode directly from the map via type assertions.
 func parseStyleBlock(raw map[string]any) (*styleBlock, error) {
 	if raw == nil {
 		return nil, nil
 	}
-	blob, err := json.Marshal(raw)
-	if err != nil {
-		return nil, fmt.Errorf("overlay: encode style block: %w", err)
+	out := &styleBlock{}
+	if v, ok := raw["font"]; ok {
+		s, ok := v.(string)
+		if !ok {
+			return nil, fmt.Errorf("overlay: style.font must be a string")
+		}
+		out.Font = s
 	}
-	var out styleBlock
-	if err := json.Unmarshal(blob, &out); err != nil {
-		return nil, fmt.Errorf("overlay: decode style block: %w", err)
+	if v, ok := raw["position"]; ok {
+		s, ok := v.(string)
+		if !ok {
+			return nil, fmt.Errorf("overlay: style.position must be a string")
+		}
+		out.Position = s
 	}
-	if out.TransitionIn != nil {
+	if v, ok := raw["size"]; ok {
+		f, err := toFloat(v)
+		if err != nil {
+			return nil, fmt.Errorf("overlay: style.size: %w", err)
+		}
+		out.Size = f
+	}
+	if v, ok := raw["color"]; ok {
+		s, ok := v.(string)
+		if !ok {
+			return nil, fmt.Errorf("overlay: style.color must be a string")
+		}
+		out.Color = s
+	}
+	if v, ok := raw["font_size_px"]; ok {
+		f, err := toFloat(v)
+		if err != nil {
+			return nil, fmt.Errorf("overlay: style.font_size_px: %w", err)
+		}
+		out.FontSizePX = f
+	}
+	if v, ok := raw["width_px"]; ok {
+		n, err := toInt(v)
+		if err != nil {
+			return nil, fmt.Errorf("overlay: style.width_px: %w", err)
+		}
+		out.WidthPX = n
+	}
+	if v, ok := raw["height_px"]; ok {
+		n, err := toInt(v)
+		if err != nil {
+			return nil, fmt.Errorf("overlay: style.height_px: %w", err)
+		}
+		out.HeightPX = n
+	}
+	if v, ok := raw["scale_percent"]; ok {
+		f, err := toFloat(v)
+		if err != nil {
+			return nil, fmt.Errorf("overlay: style.scale_percent: %w", err)
+		}
+		out.ScalePercent = f
+	}
+	if v, ok := raw["stroke"]; ok {
+		if v != nil {
+			m, ok := v.(map[string]any)
+			if !ok {
+				return nil, fmt.Errorf("overlay: style.stroke must be an object")
+			}
+			sb := &strokeBlock{}
+			if c, ok := m["color"]; ok {
+				s, ok := c.(string)
+				if !ok {
+					return nil, fmt.Errorf("overlay: style.stroke.color must be a string")
+				}
+				sb.Color = s
+			}
+			if w, ok := m["width"]; ok {
+				f, err := toFloat(w)
+				if err != nil {
+					return nil, fmt.Errorf("overlay: style.stroke.width: %w", err)
+				}
+				sb.Width = f
+			}
+			out.Stroke = sb
+		}
+	}
+	if v, ok := raw["shadow"]; ok {
+		if v != nil {
+			m, ok := v.(map[string]any)
+			if !ok {
+				return nil, fmt.Errorf("overlay: style.shadow must be an object")
+			}
+			sb := &shadowBlock{}
+			if c, ok := m["color"]; ok {
+				s, ok := c.(string)
+				if !ok {
+					return nil, fmt.Errorf("overlay: style.shadow.color must be a string")
+				}
+				sb.Color = s
+			}
+			if o, ok := m["opacity"]; ok {
+				f, err := toFloat(o)
+				if err != nil {
+					return nil, fmt.Errorf("overlay: style.shadow.opacity: %w", err)
+				}
+				sb.Opacity = f
+			}
+			if b, ok := m["blur_px"]; ok {
+				f, err := toFloat(b)
+				if err != nil {
+					return nil, fmt.Errorf("overlay: style.shadow.blur_px: %w", err)
+				}
+				sb.BlurPX = f
+			}
+			if ox, ok := m["offset_x"]; ok {
+				f, err := toFloat(ox)
+				if err != nil {
+					return nil, fmt.Errorf("overlay: style.shadow.offset_x: %w", err)
+				}
+				sb.OffsetX = f
+			}
+			if oy, ok := m["offset_y"]; ok {
+				f, err := toFloat(oy)
+				if err != nil {
+					return nil, fmt.Errorf("overlay: style.shadow.offset_y: %w", err)
+				}
+				sb.OffsetY = f
+			}
+			if off, ok := m["offset"]; ok {
+				arr, ok := off.([]any)
+				if !ok {
+					return nil, fmt.Errorf("overlay: style.shadow.offset must be [x,y]")
+				}
+				if len(arr) != 2 {
+					return nil, fmt.Errorf("overlay: shadow.offset must contain exactly [x,y]")
+				}
+				x, err := toFloat(arr[0])
+				if err != nil {
+					return nil, fmt.Errorf("overlay: style.shadow.offset[0]: %w", err)
+				}
+				y, err := toFloat(arr[1])
+				if err != nil {
+					return nil, fmt.Errorf("overlay: style.shadow.offset[1]: %w", err)
+				}
+				sb.OffsetX, sb.OffsetY = x, y
+			}
+			out.Shadow = sb
+		}
+	}
+	if _, ok := raw["transition_in"]; ok {
 		return nil, fmt.Errorf("overlay: style.transition_in is not supported by the Chronon lowering; render transitions via PipelineGen keyframes instead")
 	}
-	return &out, nil
+	return out, nil
+}
+
+func toFloat(v any) (float64, error) {
+	switch n := v.(type) {
+	case float64:
+		return n, nil
+	case float32:
+		return float64(n), nil
+	case int:
+		return float64(n), nil
+	case int64:
+		return float64(n), nil
+	case json.Number:
+		f, err := n.Float64()
+		return f, err
+	default:
+		return 0, fmt.Errorf("must be a number, got %T", v)
+	}
+}
+
+func toInt(v any) (int, error) {
+	f, err := toFloat(v)
+	if err != nil {
+		return 0, err
+	}
+	return int(f), nil
 }
 
 // numField reads a numeric style field from a decoded style map. JSON

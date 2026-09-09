@@ -40,9 +40,16 @@ token.json
 /renderinggen/modern_preset_videos/
 /renderinggen/phrase_preset_videos/
 /renderinggen/preset_videos/
+/renderinggen/highend_phrase_videos/
 /renderinggen/typography_benchmark_videos/
 /renderinggen/warm_videos/
 /typography_benchmark_videos/
+# Top-level preset/demo renders (were tracked as 37 MB bloat, D5): keep on
+# disk but never in git — same artifact class as /renderinggen/* variants.
+# .gitignore only covered /renderinggen/*.mp4 + 5 subdirs, not these roots.
+/preset_videos/
+/phrase_preset_videos/
+assets/backgrounds/*.mp4
 
 # Keep testdata/golden intentionally tiny: only canonical CI/regression fixtures.
 /testdata/golden/*

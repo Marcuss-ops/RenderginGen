@@ -56,10 +56,11 @@ func planHasVideoSource(plan *overlay.Plan) bool {
 	return false
 }
 
-// audioSourcePathFromSemantic resolves the declared master audio source to
-// the worker workspace. Audio is semantic metadata and is intentionally not
-// serialized into Chronon's visual render-plan.v2; the native encoder still
-// needs the materialized source path to mux the audio stream.
+// audioSourcePathFromSemantic is the legacy raw-JSON path. It is retained for
+// non-semantic fallback but new code must use audioSourcePathFromPlan which
+// reads the single typed authority Plan.Output.Audio (written once in
+// semantic_compile.go). The raw second Unmarshal is the historical dual
+// authority that dropped sample_rate/channels/codec silently.
 func audioSourcePathFromSemantic(raw []byte, workspaceRoot string) string {
 	var doc struct {
 		Audio *struct {
@@ -78,4 +79,35 @@ func audioSourcePathFromSemantic(raw []byte, workspaceRoot string) string {
 		path = filepath.ToSlash(filepath.Join("assets", "semantic", doc.Source.AssetID+".mp4"))
 	}
 	return filepath.Join(workspaceRoot, filepath.FromSlash(path))
+}
+
+// audioSourcePathFromPlan is the single typed authority for master audio.
+// It reads Plan.Output.Audio (mode) and the semantic source asset from the
+// raw JSON's source block, so there is exactly one place where audio policy
+// is interpreted. sample_rate/channels/codec are surfaced as inert
+// warnings via the returned warning flag so the caller can metric/log them.
+func audioSourcePathFromPlan(plan *overlay.Plan, raw []byte, workspaceRoot string) (string, bool) {
+	if plan == nil || plan.Output.Audio == nil || plan.Output.Audio.Mode == "" {
+		return "", false
+	}
+	// Inert audio transcode params: Chronon's current mux copies the source
+	// stream; sample_rate/channels/codec never affect rendering but callers
+	// set them expecting a transcode. Surface as warning/metric.
+	audio := plan.Output.Audio
+	warnInert := audio.Codec != "" || audio.SampleRate != 0 || audio.Channels != 0
+	var doc struct {
+		Source *struct {
+			AssetID string `json:"asset_id"`
+			Path    string `json:"path"`
+		} `json:"source"`
+	}
+	_ = json.Unmarshal(raw, &doc)
+	if doc.Source == nil || doc.Source.AssetID == "" {
+		return "", warnInert
+	}
+	path := doc.Source.Path
+	if path == "" {
+		path = filepath.ToSlash(filepath.Join("assets", "semantic", doc.Source.AssetID+".mp4"))
+	}
+	return filepath.Join(workspaceRoot, filepath.FromSlash(path)), warnInert
 }

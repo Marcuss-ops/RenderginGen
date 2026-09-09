@@ -68,8 +68,18 @@ func (p *Processor) RunGPU(ctx context.Context, prepared *PreparedJob) error {
 		FirstFrame:   firstFrame,
 		LastFrame:    lastFrame,
 		RangeEnabled: hasFrameRange,
-		Output:       chronon.OutputSpec{Codec: "h264"},
-		TotalFrames:  int64(metadata.FrameCount),
+		// Forward the complete immutable canvas contract to Chronon. The daemon
+		// uses these fields both for encoder configuration and for the canonical
+		// render receipt; sending only the codec leaves the receipt without an
+		// expected frame rate and makes a valid render fail closed at finalize.
+		Output: chronon.OutputSpec{
+			Codec:  "h264",
+			Width:  uint32(metadata.Width),
+			Height: uint32(metadata.Height),
+			FPSNum: uint32(metadata.FPSNum),
+			FPSDen: uint32(metadata.FPSDen),
+		},
+		TotalFrames: int64(metadata.FrameCount),
 		Progress: func(progress chronon.RenderProgress) {
 			sawProgress = true
 			lastProgress = progress

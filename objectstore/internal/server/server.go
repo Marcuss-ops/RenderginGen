@@ -10,6 +10,7 @@ package server
 
 import (
 	"io"
+	"log"
 	"net/http"
 	"strconv"
 
@@ -59,6 +60,12 @@ func (s *Server) head(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) put(w http.ResponseWriter, r *http.Request) {
 	key := r.PathValue("key")
+	// Cap PUT body: object store is trusted-network but unbounded streaming
+	// after full write before Content-Length mismatch is detected is a
+	// hardening gap. 5 GiB covers any rendered segment; anything larger is
+	// a bug/attack. LimitReader ensures we fail fast instead of filling disk.
+	const maxObjectBytes = 5 << 30
+	r.Body = http.MaxBytesReader(w, r.Body, maxObjectBytes)
 	if err := s.store.PutReader(key, r.Body, r.ContentLength); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -85,9 +92,7 @@ func (s *Server) get(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Length", strconv.FormatInt(size, 10))
 	}
 	if _, err := io.Copy(w, f); err != nil {
-		// Client may have disconnected mid-stream; log for observability.
-		// io.Copy errors on ResponseWriter are not actionable beyond logging.
-		_ = err
+		log.Printf("objectstore: GET %s io.Copy: %v", key, err)
 	}
 }
 
