@@ -6,7 +6,6 @@
 package storage
 
 import (
-	"bytes"
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
@@ -85,26 +84,6 @@ func New(backend Backend, opts Options) *Client {
 		inflight:     make(map[string]*fetchCall),
 		pathInflight: make(map[string]*pathFetchCall),
 	}
-}
-
-// Get returns asset bytes for hash, resolving L1 -> L2 -> L3 and promoting
-// on each miss so the next lookup is faster.
-func (c *Client) Open(ctx context.Context, hash string) (io.ReadCloser, int64, error) {
-	if path, size, err := c.LocalPath(ctx, hash); err == nil {
-		file, openErr := os.Open(path)
-		if openErr != nil {
-			return nil, 0, openErr
-		}
-		return file, size, nil
-	}
-	if backend, ok := c.backend.(ReaderBackend); ok {
-		return backend.FetchReader(ctx, hash)
-	}
-	data, err := c.Get(ctx, hash)
-	if err != nil {
-		return nil, 0, err
-	}
-	return io.NopCloser(bytes.NewReader(data)), int64(len(data)), nil
 }
 
 func (c *Client) Get(ctx context.Context, hash string) ([]byte, error) {

@@ -27,8 +27,6 @@ const (
 	JobTypeOverlayRender  = "overlay.render"
 )
 
-const workerClaimWait = 20 * time.Second
-
 // RenewConflictError identifies a permanent lease loss reported by the queue
 // (HTTP 409 on renew): the job is no longer owned by this worker. Callers use
 // errors.As with this type to abort immediately instead of retrying.

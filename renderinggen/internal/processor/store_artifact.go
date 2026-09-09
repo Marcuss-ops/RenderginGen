@@ -5,10 +5,7 @@
 package processor
 
 import (
-	"bytes"
 	"context"
-	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -176,19 +173,22 @@ func (p *Processor) preserveRawTimingSidecar(ctx context.Context, artifact *queu
 		return
 	}
 	timingPath := outputPath + ".timing.json"
-	data, err := os.ReadFile(timingPath)
+	hash, size, err := hashio.File(timingPath)
 	if err != nil {
 		log.Printf("job %s: raw timing sidecar unavailable for preservation: %v", jobID, err)
 		return
 	}
-	if len(data) == 0 {
+	if size == 0 {
 		log.Printf("job %s: raw timing sidecar empty; skipping preservation", jobID)
 		return
 	}
-	sum := sha256.Sum256(data)
-	hash := hex.EncodeToString(sum[:])
-	size := int64(len(data))
-	if err := p.store.PutReader(ctx, hash, bytes.NewReader(data), size); err != nil {
+	f, err := os.Open(timingPath)
+	if err != nil {
+		log.Printf("job %s: preserve raw timing sidecar open: %v", jobID, err)
+		return
+	}
+	defer f.Close()
+	if err := p.store.PutReader(ctx, hash, f, size); err != nil {
 		log.Printf("job %s: preserve raw timing sidecar: %v", jobID, err)
 		return
 	}

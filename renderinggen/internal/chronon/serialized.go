@@ -13,10 +13,6 @@ type SerializedRenderer struct {
 	lane  chan struct{}
 }
 
-func Serialize(inner Renderer) Renderer {
-	return LimitConcurrency(inner, 1)
-}
-
 func LimitConcurrency(inner Renderer, maxConcurrency int) Renderer {
 	if inner == nil {
 		return nil

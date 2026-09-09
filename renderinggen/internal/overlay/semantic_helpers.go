@@ -163,8 +163,8 @@ func applyPresetDefinition(layer *Layer, d OfficialPresetDefinition) {
 		if layer.Fit == "contain" && d.Layout.Fit != "" {
 			layer.Fit = d.Layout.Fit
 		}
-		if d.ID == "modern_rounded_pop" && layer.Radius <= 0 {
-			layer.Radius = float64(min(layer.BoxWidth, layer.BoxHeight)) * 0.16
+		if layer.Radius <= 0 {
+			layer.Radius = ImagePresetRadius(d.ID, layer.BoxWidth, layer.BoxHeight)
 		}
 		return
 	}

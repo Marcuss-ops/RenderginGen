@@ -2,6 +2,7 @@ package service
 
 import (
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/Marcuss-ops/RenderginGen/queue/internal/model"
@@ -62,6 +63,7 @@ func (s *Service) observeWorkerHealth() {
 	}
 	h, err := s.workerRepo.Health(time.Now(), s.staleAfter)
 	if err != nil {
+		log.Printf("worker health query failed: %v", err)
 		return
 	}
 	s.metrics.WorkersReady.Set(float64(h.Ready))
