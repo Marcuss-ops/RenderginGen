@@ -169,7 +169,7 @@ func CompileFastEntityOverlays(
 				imgLayer := Layer{ID: layerID, Type: "image", Asset: ov.Asset,
 					BoxWidth: boxWidth, BoxHeight: boxHeight,
 					Size: []float64{float64(boxWidth), float64(boxHeight)}, Fit: preset.Layout.Fit,
-					Radius:   imagePresetRadius(preset.ID, boxWidth, boxHeight),
+					Radius:   ImagePresetRadius(preset.ID, boxWidth, boxHeight),
 					Position: []float64{posX, posY}, StartFrame: ov.StartFrame,
 					DurationFrames: duration, Opacity: opacity, Animation: layerAnim}
 				if imgLayer.Fit == "" {
@@ -268,12 +268,9 @@ func CompileFastEntityOverlays(
 	return plan, nil
 }
 
+// imagePresetRadius is an alias for ImagePresetRadius retained for readability
+// within the transitional fast-path adapter; the canonical rule lives in
+// official_presets.go so a future visual change is made once.
 func imagePresetRadius(presetID string, width, height int) float64 {
-	if presetID != "modern_rounded_pop" {
-		return 0
-	}
-	if width > height {
-		width = height
-	}
-	return float64(width) * 0.16
+	return ImagePresetRadius(presetID, width, height)
 }

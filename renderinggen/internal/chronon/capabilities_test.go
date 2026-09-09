@@ -115,7 +115,7 @@ func TestValidateNVENCRequiresRuntimeProbe(t *testing.T) {
 		t.Fatalf("expected nvenc runtime-probe failure, got %v", err)
 	}
 	// The same declaration satisfies a requirement set that does not need NVENC.
-	if err := caps.Validate(VulkanOnlyRequirements()); err != nil {
+	if err := caps.Validate(Requirements{Vulkan: true}); err != nil {
 		t.Fatalf("vulkan-only requirements should ignore the nvenc probe: %v", err)
 	}
 }

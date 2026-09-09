@@ -84,7 +84,11 @@ func (s *Server) get(w http.ResponseWriter, r *http.Request) {
 	if size >= 0 {
 		w.Header().Set("Content-Length", strconv.FormatInt(size, 10))
 	}
-	_, _ = io.Copy(w, f)
+	if _, err := io.Copy(w, f); err != nil {
+		// Client may have disconnected mid-stream; log for observability.
+		// io.Copy errors on ResponseWriter are not actionable beyond logging.
+		_ = err
+	}
 }
 
 func (s *Server) health(w http.ResponseWriter, _ *http.Request) {

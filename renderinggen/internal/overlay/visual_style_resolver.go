@@ -133,16 +133,14 @@ func effectiveFontSize(s *styleBlock) (float64, error) {
 	return size, nil
 }
 
-// subtitleLayerStyle converts the plan's subtitle style into a concrete
-// Chronon text style. Fails closed when the plan carries no usable style.
-func subtitleLayerStyle(s *styleBlock, fontPath string) (*LayerStyle, error) {
+func layerStyleFromBlock(s *styleBlock, fontPath string, role string) (*LayerStyle, error) {
 	size, err := effectiveFontSize(s)
 	if err != nil {
-		return nil, fmt.Errorf("overlay: subtitle %w", err)
+		return nil, fmt.Errorf("overlay: %s %w", role, err)
 	}
 	fill := strings.TrimSpace(s.Color)
 	if fill == "" {
-		return nil, fmt.Errorf("overlay: subtitle style carries no color — PipelineGen must resolve the fill (the worker never invents one)")
+		return nil, fmt.Errorf("overlay: %s style carries no color — PipelineGen must resolve the fill (the worker never invents one)", role)
 	}
 	style := &LayerStyle{Font: fontPath, FontSize: size, Fill: fill}
 	if s.Stroke != nil {
@@ -159,30 +157,16 @@ func subtitleLayerStyle(s *styleBlock, fontPath string) (*LayerStyle, error) {
 	return style, nil
 }
 
+// subtitleLayerStyle converts the plan's subtitle style into a concrete
+// Chronon text style. Fails closed when the plan carries no usable style.
+func subtitleLayerStyle(s *styleBlock, fontPath string) (*LayerStyle, error) {
+	return layerStyleFromBlock(s, fontPath, "subtitle")
+}
+
 // watermarkLayerStyle converts the plan's watermark style into a concrete
 // Chronon text style. Fails closed when the plan carries no usable style.
 func watermarkLayerStyle(s *styleBlock, fontPath string) (*LayerStyle, error) {
-	size, err := effectiveFontSize(s)
-	if err != nil {
-		return nil, fmt.Errorf("overlay: watermark %w", err)
-	}
-	fill := strings.TrimSpace(s.Color)
-	if fill == "" {
-		return nil, fmt.Errorf("overlay: watermark style carries no color — PipelineGen must resolve the fill (the worker never invents one)")
-	}
-	style := &LayerStyle{Font: fontPath, FontSize: size, Fill: fill}
-	if s.Stroke != nil {
-		style.Stroke = &LayerStroke{Color: s.Stroke.Color, Width: s.Stroke.Width}
-	}
-	if s.Shadow != nil {
-		style.Shadow = &LayerShadow{
-			Color:   s.Shadow.Color,
-			Opacity: s.Shadow.Opacity,
-			Blur:    s.Shadow.BlurPX,
-			Offset:  []float64{s.Shadow.OffsetX, s.Shadow.OffsetY},
-		}
-	}
-	return style, nil
+	return layerStyleFromBlock(s, fontPath, "watermark")
 }
 
 // watermarkMargin resolves the requested distance from the canvas edge.

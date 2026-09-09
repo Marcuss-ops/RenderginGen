@@ -114,12 +114,6 @@ func GPUHotPathRequirements() Requirements {
 	}
 }
 
-// VulkanOnlyRequirements returns the requirement set for a Vulkan render
-// backend without the native encode path.
-func VulkanOnlyRequirements() Requirements {
-	return Requirements{Vulkan: true}
-}
-
 // Validate reports every declared capability that fails to satisfy req, plus
 // a doctor overall verdict failure. An empty error means the worker may
 // accept work; a non-empty error lists all unsatisfied requirements at once

@@ -164,8 +164,6 @@ func (d *diskCache) InstallReader(key string, r io.Reader, size int64) (string, 
 	})
 }
 
-func (d *diskCache) Remove(key string) { _ = os.Remove(d.path(key)) }
-
 func (d *diskCache) ContextPath(ctx context.Context, key string) (string, int64, error) {
 	select {
 	case <-ctx.Done():

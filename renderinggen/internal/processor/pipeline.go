@@ -177,7 +177,9 @@ func (p *Processor) PrepareJob(ctx context.Context, job *queue.Job) (*PreparedJo
 		// the liveness invariant must hold from the moment the workspace
 		// exists. Occasional refresh failures during RunGPU stay tolerable
 		// (the 2h TTL covers them); the missing first marker is not.
-		_ = ws.Cleanup()
+		if cerr := ws.Cleanup(); cerr != nil {
+			log.Printf("job %s: workspace cleanup after lease marker failure: %v", job.ID, cerr)
+		}
 		return nil, fmt.Errorf("processor: establish workspace lease for %s: %w", job.ID, err)
 	}
 	// inputBytes is the materialized input size, summed single-threaded
@@ -186,17 +188,23 @@ func (p *Processor) PrepareJob(ctx context.Context, job *queue.Job) (*PreparedJo
 	var inputBytes int64
 	phaseStart := time.Now()
 	if err := ws.MaterializePaths(ctx, p.resolveAssetStreaming, assets); err != nil {
-		_ = ws.Cleanup()
+		if cerr := ws.Cleanup(); cerr != nil {
+			log.Printf("job %s: workspace cleanup after materialize failure: %v", job.ID, cerr)
+		}
 		return nil, err
 	}
 	// normalizeMaterializedImagePaths mutates the ONE typed plan in place —
 	// no JSON round-trip.
 	if err := normalizeMaterializedImagePaths(ws.Root(), plan); err != nil {
-		_ = ws.Cleanup()
+		if cerr := ws.Cleanup(); cerr != nil {
+			log.Printf("job %s: workspace cleanup after image normalize failure: %v", job.ID, cerr)
+		}
 		return nil, err
 	}
 	if err := validateMaterializedPlanAssets(ws.Root(), plan); err != nil {
-		_ = ws.Cleanup()
+		if cerr := ws.Cleanup(); cerr != nil {
+			log.Printf("job %s: workspace cleanup after asset validation failure: %v", job.ID, cerr)
+		}
 		return nil, err
 	}
 	// Re-derive the aggregate from the resolver outcomes: the streaming
@@ -213,7 +221,9 @@ func (p *Processor) PrepareJob(ctx context.Context, job *queue.Job) (*PreparedJo
 	// written. This keeps subtitles in the Vulkan composition and avoids a
 	// second full-file ffmpeg encode after NVENC has finished.
 	if subtitleHash, burn, ok, subtitleErr := overlay.SubtitleAsset(job.RenderPlan); subtitleErr != nil {
-		_ = ws.Cleanup()
+		if cerr := ws.Cleanup(); cerr != nil {
+			log.Printf("job %s: workspace cleanup after subtitle asset check failure: %v", job.ID, cerr)
+		}
 		return nil, subtitleErr
 	} else if ok && burn {
 		var subtitlePath, fontPath string
@@ -228,33 +238,45 @@ func (p *Processor) PrepareJob(ctx context.Context, job *queue.Job) (*PreparedJo
 			}
 		}
 		if subtitlePath == "" {
-			_ = ws.Cleanup()
+			if cerr := ws.Cleanup(); cerr != nil {
+				log.Printf("job %s: workspace cleanup after missing subtitle path: %v", job.ID, cerr)
+			}
 			return nil, fmt.Errorf("processor: burn subtitles asset %s was not materialized", subtitleHash)
 		}
 		if fontPath == "" {
-			_ = ws.Cleanup()
+			if cerr := ws.Cleanup(); cerr != nil {
+				log.Printf("job %s: workspace cleanup after missing font: %v", job.ID, cerr)
+			}
 			return nil, fmt.Errorf("processor: burn subtitles requires a materialized .ttf or .otf font")
 		}
 		burnStart := time.Now()
 		subtitleBytes, readErr := os.ReadFile(subtitlePath)
 		if readErr != nil {
-			_ = ws.Cleanup()
+			if cerr := ws.Cleanup(); cerr != nil {
+				log.Printf("job %s: workspace cleanup after subtitle read failure: %v", job.ID, cerr)
+			}
 			return nil, fmt.Errorf("processor: read subtitles %s: %w", subtitlePath, readErr)
 		}
 		// Style + safe-area box are resolved from the plan's typed subtitle
 		// block (SubtitleStyleAsset). The processor never invents typography.
 		burnStyle, burnBox, styleErr := overlay.SubtitleStyleAsset(job.RenderPlan)
 		if styleErr != nil {
-			_ = ws.Cleanup()
+			if cerr := ws.Cleanup(); cerr != nil {
+				log.Printf("job %s: workspace cleanup after subtitle style failure: %v", job.ID, cerr)
+			}
 			return nil, styleErr
 		}
 		if burnStyle == nil || burnBox.Width <= 0 || burnBox.Height <= 0 {
-			_ = ws.Cleanup()
+			if cerr := ws.Cleanup(); cerr != nil {
+				log.Printf("job %s: workspace cleanup after subtitle style validation: %v", job.ID, cerr)
+			}
 			return nil, fmt.Errorf("processor: burn subtitles requires a typed subtitle style block (font_size_px, width/height) in the plan")
 		}
 		subtitleCount, burnErr := overlay.BurnASSIntoPlanTyped(plan, subtitleBytes, fontPath, burnStyle, burnBox)
 		if burnErr != nil {
-			_ = ws.Cleanup()
+			if cerr := ws.Cleanup(); cerr != nil {
+				log.Printf("job %s: workspace cleanup after subtitle burn failure: %v", job.ID, cerr)
+			}
 			return nil, burnErr
 		}
 		metrics["subtitle_burn_us"] = float64(time.Since(burnStart).Microseconds())
@@ -281,11 +303,15 @@ func (p *Processor) PrepareJob(ctx context.Context, job *queue.Job) (*PreparedJo
 	}
 	renderPlan, marshalErr := plan.Marshal()
 	if marshalErr != nil {
-		_ = ws.Cleanup()
+		if cerr := ws.Cleanup(); cerr != nil {
+			log.Printf("job %s: workspace cleanup after plan marshal failure: %v", job.ID, cerr)
+		}
 		return nil, fmt.Errorf("processor: encode render plan: %w", marshalErr)
 	}
 	if err := ws.WritePlan(renderPlan); err != nil {
-		_ = ws.Cleanup()
+		if cerr := ws.Cleanup(); cerr != nil {
+			log.Printf("job %s: workspace cleanup after write plan failure: %v", job.ID, cerr)
+		}
 		return nil, err
 	}
 	record("plan", phaseStart)

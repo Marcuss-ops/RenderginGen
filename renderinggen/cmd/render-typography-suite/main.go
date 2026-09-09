@@ -134,7 +134,6 @@ func writeV2Plan(path, planID string, items []semanticTypographyItem) (string, e
 	if err != nil {
 		return "", err
 	}
-	_ = dataBytes
 	if !filepath.IsAbs(path) {
 		cwd, err := os.Getwd()
 		if err != nil {

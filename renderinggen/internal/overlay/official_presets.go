@@ -196,6 +196,21 @@ func ResolveOfficialPreset(id string) (OfficialPresetDefinition, error) {
 	return d, nil
 }
 
+// ImagePresetRadius is the single authority for the modern_rounded_pop corner
+// radius: 16% of the shorter side. Every path that needs the radius — the
+// semantic compiler's applyPresetDefinition and the transitional
+// CompileFastEntityOverlays — delegates here so a future rule change is made
+// in exactly one place.
+func ImagePresetRadius(presetID string, width, height int) float64 {
+	if presetID != "modern_rounded_pop" {
+		return 0
+	}
+	if width > height {
+		width = height
+	}
+	return float64(width) * 0.16
+}
+
 func resolveOfficialPreset(id, kind string) (OfficialPresetDefinition, error) {
 	id = strings.TrimSpace(id)
 	if id == "" {

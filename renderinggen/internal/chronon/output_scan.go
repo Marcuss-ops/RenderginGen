@@ -8,6 +8,7 @@ import (
 	"io"
 	"regexp"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -39,6 +40,10 @@ var progressFrameRE = regexp.MustCompile(`(?i)(?:\[\s*video\s*]\s*)?(\d+)\s*/\s*
 var progressFPSRE = regexp.MustCompile(`(?i)\bfps\s*[:=]\s*([0-9]+(?:\.[0-9]+)?)`)
 
 func parseProgressLine(line string, total int64) (RenderProgress, bool) {
+	// Fast-path: skip regex on lines that cannot be progress.
+	if !strings.Contains(line, "frame") && !strings.Contains(line, "Frame") && !strings.Contains(line, "FRAME") && !strings.Contains(line, "video") && !strings.Contains(line, "Video") && !strings.Contains(line, "VIDEO") {
+		return RenderProgress{}, false
+	}
 	match := progressFrameRE.FindStringSubmatch(line)
 	if len(match) != 4 {
 		return RenderProgress{}, false
