@@ -331,7 +331,25 @@ func compileSemantic(raw []byte) (*Plan, []Asset, error) {
 			}
 		}
 		if layer.Type == "image" && layer.Position == nil && preset != "" {
-			layer.Position = resolveImageLayout(definition.Layout, layer.BoxWidth, layer.BoxHeight, src.Width, src.Height)
+			// A semantic image may request the same explicit center/anchor used
+			// by the FastEntityOverlay preset canaries. Keep the preset as the
+			// owner of fit and motion, while honoring this layout intent.
+			if position, ok := params["position"].(string); ok {
+				switch strings.ToLower(strings.TrimSpace(position)) {
+				case "center":
+					layer.Position = []float64{0, 0}
+				case "image_left", "left":
+					layer.Position = []float64{-float64(src.Width-layer.BoxWidth) / 2, 0}
+				case "image_right", "right":
+					layer.Position = []float64{float64(src.Width-layer.BoxWidth) / 2, 0}
+				case "bottom_right":
+					layer.Position = []float64{float64(src.Width-layer.BoxWidth) / 2, float64(src.Height-layer.BoxHeight) / 2}
+				default:
+					layer.Position = resolveImageLayout(definition.Layout, layer.BoxWidth, layer.BoxHeight, src.Width, src.Height)
+				}
+			} else {
+				layer.Position = resolveImageLayout(definition.Layout, layer.BoxWidth, layer.BoxHeight, src.Width, src.Height)
+			}
 		}
 		plan.Layers = append(plan.Layers, layer)
 		if end > plan.Canvas.DurationFrames {
