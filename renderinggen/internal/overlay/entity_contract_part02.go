@@ -5,6 +5,21 @@ import (
 	"strings"
 )
 
+// CompileFastEntityOverlays is a TRANSITIONAL adapter (U5) duplicating the
+// semantic compiler for fast benchmark/preset CLIs. 9 cmd/* still consume it
+// (benchmark-concurrent, benchmark-warm-daemon, render-phrase-presets,
+// render-modern-presets, render-highend-phrase-presets, showcase-all-presets,
+// test-actor-overlay, render-each-preset). New code MUST use the semantic
+// contract overlay.CompileIfSemantic with overlay-plan.v1 (the single
+// typed authority) — this adapter will be removed once those 9 CLIs are
+// migrated to emit semantic plans and compile via the shared path.
+//
+// Migration: replace CompileFastEntityOverlays(id, w,h, fps, frames, bg, overlays)
+// with construction of a semanticPlan {PlanID, Width, Height, FPSNum/FPSDen,
+// DurationMS, Background, Items} + CompileIfSemantic. See semantic_compile.go
+// and docs/migration-fast-entity.md (to be added). Do not add new callers.
+//
+// Deprecated: use CompileIfSemantic.
 func CompileFastEntityOverlays(
 	jobID string,
 	width, height int,

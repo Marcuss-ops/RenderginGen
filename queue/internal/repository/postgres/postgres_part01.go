@@ -59,11 +59,8 @@ func (r *Repository) Submit(job model.Job) error {
 	if job.ID == "" {
 		return fmt.Errorf("job id is required")
 	}
-	if job.FrameRange != nil && (job.FrameRange.Start < 0 || job.FrameRange.End <= job.FrameRange.Start) {
-		return fmt.Errorf("invalid frame_range for job %s", job.ID)
-	}
-	if job.ChunkIndex < 0 {
-		return fmt.Errorf("invalid chunk_index for job %s", job.ID)
+	if err := model.ValidateChunk(job); err != nil {
+		return err
 	}
 	schema := job.Schema
 	if schema == "" {
@@ -200,6 +197,23 @@ func (r *Repository) ClaimState(workerID string, state model.State) (*model.Job,
 		return nil, 0, err
 	}
 
+	// Fail-closed JSONB: corrupt frame_range or input_manifest must poison the
+	// job (failed) rather than silently rendering full-plan with dropped SHA256.
+	// Decode BEFORE creating an attempt so a corrupt row never gets a running
+	// attempt or a lease — it is directly failed.
+	frameRangeVal, err := decodeFrameRange(frameRange)
+	if err != nil {
+		poisonCorruptJob(ctx, tx, id, err.Error())
+		_ = tx.Commit()
+		return nil, 0, err
+	}
+	assetsVal, err := decodeAssets(manifest)
+	if err != nil {
+		poisonCorruptJob(ctx, tx, id, err.Error())
+		_ = tx.Commit()
+		return nil, 0, err
+	}
+
 	var maxRecordedAttempt int
 	if err := tx.QueryRowContext(ctx, `SELECT COALESCE(MAX(attempt_number), 0) FROM render_attempts WHERE job_id = $1`, id).Scan(&maxRecordedAttempt); err != nil {
 		return nil, 0, err
@@ -234,12 +248,12 @@ func (r *Repository) ClaimState(workerID string, state model.State) (*model.Job,
 	job := &model.Job{ID: id,
 		ParentJobID: parentJobID.String,
 		ChunkIndex:  chunkIndex,
-		FrameRange:  decodeFrameRange(frameRange),
+		FrameRange:  frameRangeVal,
 		JobType:     jobType,
 		Schema:      schema,
 		Version:     schemaVersion(version),
 		RenderPlan:  json.RawMessage(plan),
-		Assets:      decodeAssets(manifest),
+		Assets:      assetsVal,
 		State:       model.StateRunning,
 		Worker:      workerID,
 		Attempts:    attemptNumber,

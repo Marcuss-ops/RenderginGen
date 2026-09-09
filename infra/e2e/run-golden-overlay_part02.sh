@@ -183,3 +183,46 @@ echo
 echo "OK: GoldenSemanticOverlayJobV1 passed"
 echo "    artifact: ${OUT_FILE}, ${DOWNLOAD_SIZE} bytes, ${P_WIDTH}x${P_HEIGHT}, ${P_FRAMES} frames, sha256=${FIRST_HASH}"
 echo "    chain:    queue -> RenderingGen -> Chronon (${BACKEND} ${CHRONON_VER}) -> artifact -> PostgreSQL -> replay (idempotent, no new render)"
+
+# 8. Optional external evidence publication. The render canary above is
+# intentionally object-store-only; when DRIVE_UPLOAD=1 is requested, publish
+# the encoded MP4 plus representative decoded PNG frames to the configured
+# Drive folder. The PNGs are generated from the actual MP4, never from the
+# source fixture, so they prove what Chronon rendered.
+if [[ "${DRIVE_UPLOAD:-0}" == "1" ]]; then
+  DRIVE_FOLDER_ID="${DRIVE_FOLDER_ID:-1J_xUGo_bchzXDIGqSX04CU44c_Dm3SxS}"
+  DRIVE_CREDENTIALS="${DRIVE_CREDENTIALS:-${REPO_ROOT}/../refactored/credentials.json}"
+  DRIVE_TOKEN="${DRIVE_TOKEN:-${REPO_ROOT}/../refactored/token.json}"
+  DRIVE_UPLOADER="${DRIVE_UPLOADER:-${WORK_DIR}/drive-upload}"
+
+  if [[ ! -f "${DRIVE_CREDENTIALS}" || ! -f "${DRIVE_TOKEN}" ]]; then
+    echo "ERROR: Drive upload requested but credentials/token are missing" >&2
+    exit 1
+  fi
+  echo "=== Drive evidence publication ==="
+  (cd "${REPO_ROOT}" && go build -o "${DRIVE_UPLOADER}" ./renderinggen/cmd/drive-upload)
+
+  upload_drive() {
+    local path="$1" name="$2"
+    echo "  uploading ${name} -> Drive folder ${DRIVE_FOLDER_ID}"
+    "${DRIVE_UPLOADER}" \
+      -credentials "${DRIVE_CREDENTIALS}" \
+      -token "${DRIVE_TOKEN}" \
+      -folder "${DRIVE_FOLDER_ID}" \
+      -file "${path}" \
+      -name "${name}"
+  }
+
+  upload_drive "${OUT_FILE}" "${JOB_ID}.mp4"
+  for frame in 0 30 60 90 120; do
+    FRAME_PATH="${WORK_DIR}/${JOB_ID}_frame_$(printf '%04d' "${frame}").png"
+    ffmpeg -v error -i "${OUT_FILE}" \
+      -vf "select=eq(n\\,${frame})" -frames:v 1 -y "${FRAME_PATH}"
+    if [[ ! -s "${FRAME_PATH}" ]]; then
+      echo "ERROR: generated frame ${frame} is empty" >&2
+      exit 1
+    fi
+    upload_drive "${FRAME_PATH}" "${JOB_ID}_frame_$(printf '%04d' "${frame}").png"
+  done
+  echo "Drive evidence publication complete"
+fi

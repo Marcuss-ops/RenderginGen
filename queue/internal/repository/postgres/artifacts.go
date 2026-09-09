@@ -76,16 +76,58 @@ func insertRenderTelemetry(ctx context.Context, tx *sql.Tx, jobID, attemptID str
 }
 
 func insertProcessingMetrics(ctx context.Context, tx *sql.Tx, jobID, attemptID string, values map[string]float64) error {
+	if len(values) == 0 {
+		return nil
+	}
+	// Filter empty names once; keep value+unit paired.
+	type row struct {
+		name  string
+		value float64
+		unit  string
+	}
+	rows := make([]row, 0, len(values))
 	for name, value := range values {
 		if name == "" {
 			continue
 		}
-		unit := metricUnit(name)
-		if _, err := tx.ExecContext(ctx, `
-			INSERT INTO processing_metrics (job_id, attempt_id, metric_name, metric_value, unit)
-			VALUES ($1, $2, $3, $4, $5)`, jobID, nullIfEmpty(attemptID), name, value, unit); err != nil {
-			return fmt.Errorf("insert processing metric %q: %w", name, err)
+		rows = append(rows, row{name: name, value: value, unit: metricUnit(name)})
+	}
+	if len(rows) == 0 {
+		return nil
+	}
+	// Build a single INSERT with N value tuples — one round-trip instead of N.
+	// Use ON CONFLICT on the unique (job_id, attempt_id, metric_name) added
+	// in migration 022 so retries update rather than duplicate.
+	query := "INSERT INTO processing_metrics (job_id, attempt_id, metric_name, metric_value, unit) VALUES "
+	args := make([]any, 0, len(rows)*5)
+	for i, r := range rows {
+		if i > 0 {
+			query += ", "
 		}
+		base := i*5 + 1
+		query += fmt.Sprintf("($%d, $%d, $%d, $%d, $%d)", base, base+1, base+2, base+3, base+4)
+		args = append(args, jobID, nullIfEmpty(attemptID), r.name, r.value, r.unit)
+	}
+	query += " ON CONFLICT (job_id, attempt_id, metric_name) DO UPDATE SET metric_value = EXCLUDED.metric_value, unit = EXCLUDED.unit"
+	if _, err := tx.ExecContext(ctx, query, args...); err != nil {
+		// Fallback when the unique constraint hasn't been migrated yet:
+		// plain multi-VALUES insert without ON CONFLICT still batches but
+		// may duplicate on retry — acceptable until migration lands.
+		if strings.Contains(err.Error(), "no unique or exclusion constraint") || strings.Contains(err.Error(), "ON CONFLICT") {
+			query2 := "INSERT INTO processing_metrics (job_id, attempt_id, metric_name, metric_value, unit) VALUES "
+			for i := range rows {
+				if i > 0 {
+					query2 += ", "
+				}
+				base := i*5 + 1
+				query2 += fmt.Sprintf("($%d, $%d, $%d, $%d, $%d)", base, base+1, base+2, base+3, base+4)
+			}
+			if _, err2 := tx.ExecContext(ctx, query2, args...); err2 != nil {
+				return fmt.Errorf("insert processing metrics batch: %w", err2)
+			}
+			return nil
+		}
+		return fmt.Errorf("insert processing metrics batch: %w", err)
 	}
 	return nil
 }

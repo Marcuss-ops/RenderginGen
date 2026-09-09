@@ -3,6 +3,7 @@
 package postgres
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"fmt"
@@ -31,34 +32,68 @@ func schemaVersion(v sql.NullInt64) int {
 	return int(v.Int64)
 }
 
-// decodeAssets extracts the asset references from an input_manifest JSONB.
-func decodeFrameRange(raw []byte) *model.FrameRange {
+// decodeFrameRange extracts the frame range from a frame_range JSONB.
+// Corrupt JSONB is fail-closed: the caller must surface the error so the job
+// is poisoned rather than silently rendered as a full clip.
+func decodeFrameRange(raw []byte) (*model.FrameRange, error) {
 	if len(raw) == 0 {
-		return nil
+		return nil, nil
 	}
 	var result model.FrameRange
 	if err := json.Unmarshal(raw, &result); err != nil {
-		// Corrupted JSONB must never degrade silently into "no frame range":
-		// a nil range changes render semantics (full clip instead of the
-		// declared chunk). Surface the corruption on every read.
-		log.Printf("postgres: corrupt frame_range jsonb (%d bytes), treating as no range: %v", len(raw), err)
-		return nil
+		return nil, fmt.Errorf("postgres: corrupt frame_range jsonb (%d bytes): %w", len(raw), err)
 	}
-	return &result
+	return &result, nil
 }
 
-func decodeAssets(raw []byte) []model.AssetRef {
+func decodeAssets(raw []byte) ([]model.AssetRef, error) {
 	if len(raw) == 0 {
-		return nil
+		return nil, nil
 	}
 	var m inputManifest
 	if err := json.Unmarshal(raw, &m); err != nil {
-		// Corrupted JSONB would silently drop every declared asset (and thus
-		// their SHA-256 verification at the worker boundary). Surface it.
-		log.Printf("postgres: corrupt input_manifest jsonb (%d bytes), treating as no assets: %v", len(raw), err)
-		return nil
+		return nil, fmt.Errorf("postgres: corrupt input_manifest jsonb (%d bytes): %w", len(raw), err)
 	}
-	return m.Assets
+	return m.Assets, nil
+}
+
+// decodeFrameRangeLogged and decodeAssetsLogged are deprecated wrappers kept
+// for transitional callers that have not yet migrated to the fail-closed path.
+// They log corruption and return nil/empty so the job renders full-plan without
+// SHA256 verification — exactly the silent degradation C1 eliminates. New code
+// must call decodeFrameRange/decodeAssets and poison the job on error.
+func decodeFrameRangeLogged(raw []byte) *model.FrameRange {
+	r, err := decodeFrameRange(raw)
+	if err != nil {
+		log.Printf("%v, treating as no range", err)
+	}
+	return r
+}
+
+func decodeAssetsLogged(raw []byte) []model.AssetRef {
+	assets, err := decodeAssets(raw)
+	if err != nil {
+		log.Printf("%v, treating as no assets", err)
+	}
+	return assets
+}
+
+// poisonCorruptJob marks a job failed due to corrupt JSONB so it never
+// renders as full-plan and never drops SHA256 verification. It is called
+// inside the Claim/Get transaction while the row is still locked.
+func poisonCorruptJob(ctx context.Context, tx *sql.Tx, jobID string, reason string) {
+	_, _ = tx.ExecContext(ctx, `
+		UPDATE render_jobs
+		SET state = 'failed', failed_at = now(), error_message = $2,
+		    current_worker_id = NULL, lease_until = NULL
+		WHERE id = $1`, jobID, reason)
+	// Best-effort attempt/event — poison must not fail because attempt bookkeeping failed.
+	if attempt, err := runningAttemptID(ctx, tx, jobID); err == nil && attempt != "" {
+		_ = finishAttempt(ctx, tx, attempt, attemptStatusFailed, "", reason)
+		_ = recordEvent(ctx, tx, eventJobFailed, jobID, attempt, "", map[string]any{"reason": reason})
+	} else {
+		_ = recordEvent(ctx, tx, eventJobFailed, jobID, "", "", map[string]any{"reason": reason})
+	}
 }
 
 // nullIfEmpty converts an empty string to SQL NULL.

@@ -66,8 +66,15 @@ func (r *Repository) Get(id string) (*model.Job, error) {
 	job.IdempotencyKey = idempotencyKey.String
 	job.ParentJobID = parentJobID.String
 	job.ChunkIndex = chunkIndex
-	job.FrameRange = decodeFrameRange(frameRange)
-	job.Assets = decodeAssets(manifest)
+	var decErr error
+	if job.FrameRange, decErr = decodeFrameRange(frameRange); decErr != nil {
+		_, _ = r.db.ExecContext(ctx, `UPDATE render_jobs SET state='failed', failed_at=now(), error_message=$2, current_worker_id=NULL, lease_until=NULL WHERE id=$1`, id, decErr.Error())
+		return nil, decErr
+	}
+	if job.Assets, decErr = decodeAssets(manifest); decErr != nil {
+		_, _ = r.db.ExecContext(ctx, `UPDATE render_jobs SET state='failed', failed_at=now(), error_message=$2, current_worker_id=NULL, lease_until=NULL WHERE id=$1`, id, decErr.Error())
+		return nil, decErr
+	}
 	if worker.Valid {
 		job.Worker = worker.String
 	}

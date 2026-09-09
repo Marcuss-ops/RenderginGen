@@ -62,12 +62,16 @@ func (r *Repository) Children(parentJobID string) ([]*model.Job, error) {
 		); err != nil {
 			return nil, err
 		}
+		fr, err := decodeFrameRange(frameRange)
+		if err != nil {
+			return nil, fmt.Errorf("child %s: %w", id, err)
+		}
 		job := &model.Job{
 			ID:          id,
 			State:       model.State(state),
 			ParentJobID: parentJobID,
 			ChunkIndex:  chunkIndex,
-			FrameRange:  decodeFrameRange(frameRange),
+			FrameRange:  fr,
 		}
 		if nArtifactID.Valid {
 			job.Artifact = &model.Artifact{

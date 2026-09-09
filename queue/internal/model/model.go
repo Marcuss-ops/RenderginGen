@@ -4,6 +4,7 @@ package model
 
 import (
 	"encoding/json"
+	"fmt"
 	"time"
 )
 
@@ -49,6 +50,19 @@ const JobSchemaVersionV1 = 1
 type FrameRange struct {
 	Start int64 `json:"start"`
 	End   int64 `json:"end"`
+}
+
+// ValidateChunk validates chunk metadata for a job. It is the single authority
+// for frame_range/chunk_index invariants (U6): both memory and postgres
+// repositories must call this instead of duplicating inline checks.
+func ValidateChunk(job Job) error {
+	if job.FrameRange != nil && (job.FrameRange.Start < 0 || job.FrameRange.End <= job.FrameRange.Start) {
+		return fmt.Errorf("invalid frame_range for job %s", job.ID)
+	}
+	if job.ChunkIndex < 0 {
+		return fmt.Errorf("invalid chunk_index for job %s", job.ID)
+	}
+	return nil
 }
 
 type AssetRef struct {

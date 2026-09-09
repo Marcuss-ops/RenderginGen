@@ -64,6 +64,14 @@ func (s *Service) observeWorkerHealth() {
 	h, err := s.workerRepo.Health(time.Now(), s.staleAfter)
 	if err != nil {
 		log.Printf("worker health query failed: %v", err)
+		// Do not freeze gauges at stale values: on query failure the last
+		// ready/offline snapshot is no longer trustworthy for autoscaling.
+		// Reset to 0 so dashboards do not show phantom ready workers while
+		// the DB is unreachable.
+		if s.metrics != nil {
+			s.metrics.WorkersReady.Set(0)
+			s.metrics.WorkersOffline.Set(0)
+		}
 		return
 	}
 	s.metrics.WorkersReady.Set(float64(h.Ready))

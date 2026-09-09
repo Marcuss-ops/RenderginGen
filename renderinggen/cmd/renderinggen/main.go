@@ -264,7 +264,12 @@ func main() {
 
 	// 5. Run the three-stage pipeline: CPU preparation feeds GPU lanes,
 	// and CPU post-processing (probe, hash, store, publish) drains behind them.
-	prepCh := make(chan *preppedJob, numWorkers*2)
+	// prepCh is rendezvous (unbuffered) so a prepared job never dwells in a
+	// buffer without a lease renewer: the prep pool's withLease covers the
+	// blocking send, guaranteeing continuous renewal until the GPU lane takes
+	// ownership. A buffered channel would let renewal stop in dwell and expire
+	// under backlog >10 min → requeue + double-render.
+	prepCh := make(chan *preppedJob)
 	doneCh := make(chan renderOutcome, numWorkers*2)
 	var workers sync.WaitGroup
 	// Prep pool: claim + validate + compile + materialize (CPU/IO bound).

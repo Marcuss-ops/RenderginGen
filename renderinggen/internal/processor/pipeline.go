@@ -182,16 +182,28 @@ func (p *Processor) PrepareJob(ctx context.Context, job *queue.Job) (*PreparedJo
 		}
 		return nil, fmt.Errorf("processor: establish workspace lease for %s: %w", job.ID, err)
 	}
-	// inputBytes is the materialized input size, summed single-threaded
-	// AFTER MaterializePaths completes from the on-disk files — race-free by
-	// construction and accurate for every asset (cache hits and self-heals).
 	var inputBytes int64
 	phaseStart := time.Now()
-	if err := ws.MaterializePaths(ctx, p.resolveAssetStreaming, assets); err != nil {
+	// Capture resolver sizes directly from the streaming resolver instead of
+	// re-statting every materialized file after MaterializePaths. The resolver
+	// already returns ResolvedAsset.SizeBytes (from L2/ContextPath or L3 header)
+	// so a second os.Stat loop is pure duplicate I/O.
+	resolvedSizes := make(map[string]int64, len(assets))
+	wrappedResolve := func(rCtx context.Context, a queue.AssetRef) (workspace.ResolvedAsset, error) {
+		res, rErr := p.resolveAssetStreaming(rCtx, a)
+		if rErr == nil {
+			resolvedSizes[a.LogicalPath] = res.SizeBytes
+		}
+		return res, rErr
+	}
+	if err := ws.MaterializePaths(ctx, wrappedResolve, assets); err != nil {
 		if cerr := ws.Cleanup(); cerr != nil {
 			log.Printf("job %s: workspace cleanup after materialize failure: %v", job.ID, cerr)
 		}
 		return nil, err
+	}
+	for _, a := range assets {
+		inputBytes += resolvedSizes[a.LogicalPath]
 	}
 	// normalizeMaterializedImagePaths mutates the ONE typed plan in place —
 	// no JSON round-trip.
@@ -206,14 +218,6 @@ func (p *Processor) PrepareJob(ctx context.Context, job *queue.Job) (*PreparedJo
 			log.Printf("job %s: workspace cleanup after asset validation failure: %v", job.ID, cerr)
 		}
 		return nil, err
-	}
-	// Re-derive the aggregate from the resolver outcomes: the streaming
-	// resolver returns each asset's real size, so sum them via the resolved
-	// asset list (single-threaded, race-free, counts every asset exactly once).
-	for _, a := range assets {
-		if info, statErr := os.Stat(filepath.Join(ws.Root(), a.LogicalPath)); statErr == nil {
-			inputBytes += info.Size()
-		}
 	}
 	record("materialize", phaseStart)
 
@@ -315,6 +319,12 @@ func (p *Processor) PrepareJob(ctx context.Context, job *queue.Job) (*PreparedJo
 		return nil, err
 	}
 	record("plan", phaseStart)
+	audioPath, warnInert := audioSourcePathFromPlan(plan, job.RenderPlan, ws.Root())
+	if warnInert {
+		metrics["audio_inert_params"] = 1
+		log.Printf("job %s: audio codec/sample_rate/channels are inert (Chronon copies source audio, no transcode); mode=%q codec=%q sr=%d ch=%d",
+			job.ID, plan.Output.Audio.Mode, plan.Output.Audio.Codec, plan.Output.Audio.SampleRate, plan.Output.Audio.Channels)
+	}
 	return &PreparedJob{
 		Job:             job,
 		Workspace:       ws,
@@ -323,7 +333,7 @@ func (p *Processor) PrepareJob(ctx context.Context, job *queue.Job) (*PreparedJo
 		InputBytes:      inputBytes,
 		Metrics:         metrics,
 		OutputPath:      ws.OutputPath("result.mp4"),
-		AudioSourcePath: audioSourcePathFromSemantic(job.RenderPlan, ws.Root()),
+		AudioSourcePath: audioPath,
 		totalStart:      totalStart,
 	}, nil
 }
