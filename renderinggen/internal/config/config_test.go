@@ -27,6 +27,7 @@ artifact_store:
 chronon:
   backend: software
   home: /opt/chronon3d
+  binary: /usr/local/bin/chronon3d_cli
   mode: ipc
   socket_path: /tmp/chronon.sock
 gpu:
@@ -54,6 +55,9 @@ workspace:
 	}
 	if cfg.Chronon.Home != "/opt/chronon3d" {
 		t.Fatalf("chronon home = %q", cfg.Chronon.Home)
+	}
+	if cfg.Chronon.Binary != "/usr/local/bin/chronon3d_cli" {
+		t.Fatalf("chronon binary = %q", cfg.Chronon.Binary)
 	}
 	if cfg.Chronon.Mode != "ipc" {
 		t.Fatalf("chronon mode = %q", cfg.Chronon.Mode)

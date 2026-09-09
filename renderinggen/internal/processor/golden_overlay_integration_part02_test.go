@@ -126,7 +126,7 @@ func TestProcessGoldenSemanticOverlayJobV1(t *testing.T) {
 	if err := json.Unmarshal(renderer.planJSON, &concrete); err != nil {
 		t.Fatalf("compiled plan.json does not decode: %v", err)
 	}
-	if concrete.Schema != "chronon.render-plan" || concrete.Version != 2 {
+	if concrete.Schema != "chronon.render-plan.v2" || concrete.Version != 2 {
 		t.Fatalf("compiled plan is not chronon.render-plan.v2: %+v", concrete)
 	}
 	if concrete.Canvas.Width != 1280 || concrete.Canvas.Height != 720 || concrete.Canvas.FPSNum != 30 || concrete.Canvas.FPSDen != 1 || concrete.Canvas.DurationFrames != 150 {
@@ -136,14 +136,14 @@ func TestProcessGoldenSemanticOverlayJobV1(t *testing.T) {
 	for _, layer := range concrete.Layers {
 		presets[layer.ID] = layer.Preset
 	}
-	if presets["important_phrase"] != "caption_card" {
-		t.Fatalf("important_phrase preset = %q, want caption_card", presets["important_phrase"])
+	if presets["important_phrase"] != "" {
+		t.Fatalf("important_phrase must not carry executable preset metadata: %q", presets["important_phrase"])
 	}
-	if presets["important_word"] != "active_word_pop" {
-		t.Fatalf("important_word preset = %q, want active_word_pop", presets["important_word"])
+	if presets["important_word"] != "" {
+		t.Fatalf("important_word must not carry executable preset metadata: %q", presets["important_word"])
 	}
-	if presets["image_overlay_image"] != "image_focus_in" {
-		t.Fatalf("image_overlay preset = %q, want image_focus_in", presets["image_overlay_image"])
+	if presets["image_overlay_image"] != "" {
+		t.Fatalf("image_overlay must not carry executable preset metadata: %q", presets["image_overlay_image"])
 	}
 
 	// The rendered MP4 was published to the artifact store.

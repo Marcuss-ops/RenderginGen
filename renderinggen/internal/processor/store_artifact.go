@@ -136,23 +136,26 @@ func (p *Processor) storeArtifact(ctx context.Context, jobID, outputPath string,
 	// Total time must be set before the ledger row is written (the deferred
 	// publish/total metrics above are for the artifact returned to the queue).
 	phaseMetrics["total_us"] = float64(time.Since(totalStart).Microseconds())
-	// Ingest Chronon's timing sidecar as the source of truth for plan/graph/
-	// GPU/encoder timing. A missing sidecar is non-fatal: the rendered bytes
-	// are still valid, only the telemetry blob is absent from the ledger.
+	// Ingest Chronon's BOUNDED telemetry summary (observability ownership,
+	// Phase 10): `<output>.telemetry-summary.json` is the only Chronon
+	// telemetry surface the worker reads. It is recorded verbatim (Chronon
+	// owns the schema) and only its documented numeric subset is projected.
+	// A missing summary is non-fatal: the rendered bytes are still valid,
+	// only the bounded telemetry blob is absent from the ledger.
 	var chrononTelemetry json.RawMessage
-	if raw, err := chronon.ReadTimingSidecar(outputPath); err != nil {
-		log.Printf("job %s: chronon timing sidecar unavailable: %v", jobID, err)
+	if raw, err := chronon.ReadTelemetrySummary(outputPath); err != nil {
+		log.Printf("job %s: chronon telemetry summary unavailable: %v", jobID, err)
 	} else {
 		chrononTelemetry = raw
 		artifact.ChrononTelemetry = raw
-		mergeChrononNumericMetrics(phaseMetrics, raw)
+		mergeTelemetrySummaryMetrics(phaseMetrics, raw)
 	}
 	// Preserve the RAW deep-profile sidecar verbatim (including the unbounded
-	// per-frame frame_times_ms array) as a content-addressed debug artifact.
-	// The bounded ChrononTelemetry above is the ledger copy; this object keeps
-	// the full per-frame profile fetchable for post-mortem, and the queue
-	// artifact carries only a small storage-key/url/sha reference — never the
-	// array itself. Fail-open: a missing or unreadable sidecar only logs.
+	// per-frame frame_times_ms array) as an OPAQUE content-addressed artifact:
+	// bytes → hash → object store → small reference. The worker never parses
+	// or mutates its contents (it is Chronon-owned); the bounded summary above
+	// is the ledger telemetry. Fail-open: a missing or unreadable sidecar only
+	// logs.
 	p.preserveRawTimingSidecar(ctx, &artifact, outputPath, jobID)
 	if artifact, err = p.recordArtifact(ctx, jobID, artifact, probe, stats, inputBytes, chrononTelemetry); err != nil {
 		return queue.Artifact{}, err
@@ -193,7 +196,7 @@ func (p *Processor) preserveRawTimingSidecar(ctx context.Context, artifact *queu
 	artifact.ChrononTimingURL = p.artifactURL(hash)
 	artifact.ChrononTimingSHA256 = hash
 	artifact.ChrononTimingSizeBytes = size
-	artifact.ChrononTimingContentType = "application/json"
+	artifact.ChrononTimingContentType = chronon.RawTimingSidecarContentType
 	if artifact.Metrics == nil {
 		artifact.Metrics = map[string]float64{}
 	}
@@ -202,32 +205,16 @@ func (p *Processor) preserveRawTimingSidecar(ctx context.Context, artifact *queu
 	log.Printf("job %s: raw timing sidecar preserved (sha256=%s bytes=%d)", jobID, hash, size)
 }
 
-// mergeChrononNumericMetrics exposes the numeric fields already emitted by
-// Chronon's timing sidecar on the queue artifact as well. The complete JSON is
-// retained in the artifact ledger; this compact projection is what callers
+// mergeTelemetrySummaryMetrics merges the DOCUMENTED numeric subset of
+// Chronon's bounded telemetry summary onto the queue artifact metrics. The
+// complete summary JSON is retained in the artifact ledger; this explicit
+// projection (never a generic scrape of every numeric leaf) is what callers
 // such as PipelineGen receive from GET /jobs/{id}.
-func mergeChrononNumericMetrics(dst map[string]float64, raw json.RawMessage) {
+func mergeTelemetrySummaryMetrics(dst map[string]float64, raw json.RawMessage) {
 	if dst == nil || len(raw) == 0 {
 		return
 	}
-	var value any
-	if json.Unmarshal(raw, &value) != nil {
-		return
+	for key, value := range chronon.TelemetryMetrics(raw) {
+		dst[key] = value
 	}
-	var walk func(string, any)
-	walk = func(prefix string, v any) {
-		switch x := v.(type) {
-		case map[string]any:
-			for key, child := range x {
-				if prefix == "" {
-					walk(key, child)
-				} else {
-					walk(prefix+"_"+key, child)
-				}
-			}
-		case float64:
-			dst["chronon_"+prefix] = x
-		}
-	}
-	walk("", value)
 }

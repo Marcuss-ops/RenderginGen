@@ -1,52 +1,58 @@
 package chronon
 
 import (
-	"encoding/json"
 	"os"
 	"path/filepath"
 	"testing"
 )
 
-func TestReadTimingSidecarDropsPerFrameArray(t *testing.T) {
+func TestReadTelemetrySummaryVerbatim(t *testing.T) {
 	dir := t.TempDir()
 	output := filepath.Join(dir, "result.mp4")
-	sidecar := output + ".timing.json"
-	// A minimal sidecar mirroring the chronon3d.frame-timing.v1 shape: the
-	// per-frame array is deep-profiling detail, the job/summary sections are
-	// the source of truth the worker ingests.
+	// The bounded telemetry summary (chronon3d.render-telemetry-summary.v1)
+	// never contains per-frame arrays; the worker records it verbatim.
 	fixture := `{
-  "schema": "chronon3d.frame-timing.v1",
-  "wall_time_ms": 5123.0,
-  "frames_total": 150,
-  "frame_times_ms": [{"frame": 0}, {"frame": 1}],
+  "schema": "` + TelemetrySummarySchema + `",
+  "version": 1,
   "summary": {"p50_frame_ms": 12.3, "end_to_end_fps": 29.2},
-  "job": {"plan_compile_ms": 4.1, "graph_compile_ms": 2.2}
+  "job": {"process_wall_ms": 5123.0, "gpu": {"nvenc_frames": 150}},
+  "outcome": {"status": "ok"}
 }`
-	if err := os.WriteFile(sidecar, []byte(fixture), 0o644); err != nil {
+	if err := os.WriteFile(output+TelemetrySummarySuffix, []byte(fixture), 0o644); err != nil {
 		t.Fatalf("write fixture: %v", err)
 	}
 
-	got, err := ReadTimingSidecar(output)
+	got, err := ReadTelemetrySummary(output)
 	if err != nil {
-		t.Fatalf("ReadTimingSidecar: %v", err)
+		t.Fatalf("ReadTelemetrySummary: %v", err)
 	}
-	var doc map[string]json.RawMessage
-	if err := json.Unmarshal(got, &doc); err != nil {
-		t.Fatalf("result is not valid JSON: %v", err)
-	}
-	if _, ok := doc["frame_times_ms"]; ok {
-		t.Fatalf("frame_times_ms must be dropped from the ingested document")
-	}
-	for _, key := range []string{"schema", "wall_time_ms", "frames_total", "summary", "job"} {
-		if _, ok := doc[key]; !ok {
-			t.Fatalf("ingested document lost key %q: %s", key, got)
-		}
+	if string(got) != fixture {
+		t.Fatalf("summary must be ingested VERBATIM (no parse/mutate/re-encode):\n got %s\nwant %s", got, fixture)
 	}
 }
 
-func TestReadTimingSidecarMissingFile(t *testing.T) {
-	if _, err := ReadTimingSidecar(filepath.Join(t.TempDir(), "result.mp4")); err == nil {
-		t.Fatal("expected an error for a missing sidecar")
+func TestReadTelemetrySummaryRejectsRawDeepProfile(t *testing.T) {
+	dir := t.TempDir()
+	output := filepath.Join(dir, "result.mp4")
+	// The RAW deep-profile timing sidecar must never be accepted as the
+	// bounded summary: it carries no summary schema (and may inline the
+	// unbounded per-frame array).
+	rawTiming := `{
+  "schema": "chronon3d.frame-timing.v1",
+  "frame_times_ms": [{"frame": 0}, {"frame": 1}],
+  "job": {"process_wall_ms": 5123.0}
+}`
+	if err := os.WriteFile(output+TelemetrySummarySuffix, []byte(rawTiming), 0o644); err != nil {
+		t.Fatalf("write fixture: %v", err)
+	}
+	if _, err := ReadTelemetrySummary(output); err == nil {
+		t.Fatal("expected a schema error when the summary file carries the raw schema")
+	}
+}
+
+func TestReadTelemetrySummaryMissingFile(t *testing.T) {
+	if _, err := ReadTelemetrySummary(filepath.Join(t.TempDir(), "result.mp4")); err == nil {
+		t.Fatal("expected an error for a missing summary sidecar")
 	}
 }
 

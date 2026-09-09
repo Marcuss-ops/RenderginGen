@@ -121,11 +121,24 @@ func TestProcessPreservesRawTimingSidecarReference(t *testing.T) {
 	  "exclusive_wall_timeline":{"startup_ms":565.0,"prepare_ms":1120.0,"render_loop_ms":2932.0,"process_wall_ms":5304.0},
 	  "frame_times_ms":[{"frame":0,"wall_duration_ms":0.59},{"frame":1,"wall_duration_ms":0.62}]
 	}`
+	// The bounded telemetry summary sidecar (observability ownership, Phase
+	// 10) is the ONLY document the worker ingests: schema-typed, bounded, no
+	// per-frame arrays.
+	const boundedSummary = `{
+	  "schema": "chronon3d.render-telemetry-summary.v1",
+	  "version": 1,
+	  "summary": {"render_loop_fps": 60.0},
+	  "job": {"process_wall_ms": 5304.0, "gpu": {"nvenc_frames": 150}},
+	  "outcome": {"status": "ok"}
+	}`
 	renderer.write = func(path string) error {
 		if err := os.WriteFile(path, []byte("output-bytes"), 0o644); err != nil {
 			return err
 		}
-		return os.WriteFile(path+".timing.json", []byte(rawTiming), 0o644)
+		if err := os.WriteFile(path+".timing.json", []byte(rawTiming), 0o644); err != nil {
+			return err
+		}
+		return os.WriteFile(path+".telemetry-summary.json", []byte(boundedSummary), 0o644)
 	}
 
 	artifact, err := proc.Process(context.Background(), validJob())
@@ -139,7 +152,7 @@ func TestProcessPreservesRawTimingSidecarReference(t *testing.T) {
 	if artifact.ChrononTimingStorageKey != wantTimingHash || artifact.ChrononTimingSHA256 != wantTimingHash {
 		t.Fatalf("timing storage key/sha = %q/%q, want %q", artifact.ChrononTimingStorageKey, artifact.ChrononTimingSHA256, wantTimingHash)
 	}
-	if artifact.ChrononTimingSizeBytes != int64(len(rawTiming)) || artifact.ChrononTimingContentType != "application/json" {
+	if artifact.ChrononTimingSizeBytes != int64(len(rawTiming)) || artifact.ChrononTimingContentType != "application/vnd.chronon.timing+json" {
 		t.Fatalf("timing size/type = %d/%q", artifact.ChrononTimingSizeBytes, artifact.ChrononTimingContentType)
 	}
 	if artifact.ChrononTimingURL != "http://store:9000/objects/"+wantTimingHash {
@@ -148,8 +161,16 @@ func TestProcessPreservesRawTimingSidecarReference(t *testing.T) {
 	if artifact.Metrics["chronon_timing_preserved"] != 1 || artifact.Metrics["chronon_timing_bytes"] != float64(len(rawTiming)) {
 		t.Fatalf("timing preservation metrics missing: %+v", artifact.Metrics)
 	}
+	// The ledger telemetry is the BOUNDED summary document verbatim — never
+	// the raw per-frame profile and never a mutated copy of it.
+	if string(artifact.ChrononTelemetry) != boundedSummary {
+		t.Fatalf("bounded ledger telemetry = %s, want the summary document verbatim", artifact.ChrononTelemetry)
+	}
 	if strings.Contains(string(artifact.ChrononTelemetry), "frame_times_ms") {
 		t.Fatalf("bounded ledger telemetry must never inline the per-frame array: %s", artifact.ChrononTelemetry)
+	}
+	if artifact.Metrics["chronon_summary_render_loop_fps"] != 60.0 {
+		t.Fatalf("documented summary metric missing: %+v", artifact.Metrics)
 	}
 
 	// The raw bytes (WITH the per-frame array) are fetchable from the store by

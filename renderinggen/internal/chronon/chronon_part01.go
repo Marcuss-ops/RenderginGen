@@ -144,7 +144,12 @@ type Renderer interface {
 // Client renders through the Chronon3d CLI binary installed in the worker
 // image. It implements Renderer.
 type Client struct {
-	Home                string
+	Home string
+	// BinaryPath is the explicit chronon3d_cli path for this deployment. It
+	// is intentionally separate from Home: native hosts commonly install the
+	// executable in /usr/local/bin while container runtimes use /opt/chronon3d.
+	// CHRONON_BINARY remains the highest-priority emergency/test override.
+	BinaryPath          string
 	Backend             string
 	StrictNativeBackend bool
 	HardwareEncoder     string
@@ -158,11 +163,20 @@ func (c *Client) Binary() string {
 	if override := os.Getenv("CHRONON_BINARY"); override != "" {
 		return override
 	}
+	if c.BinaryPath != "" {
+		return c.BinaryPath
+	}
 	p := filepath.Join(c.Home, "bin", "chronon3d_cli")
 	if _, err := os.Stat(p); err == nil {
 		return p
 	}
-	return filepath.Join(c.Home, "apps", "chronon3d_cli", "chronon3d_cli")
+	p = filepath.Join(c.Home, "apps", "chronon3d_cli", "chronon3d_cli")
+	if _, err := os.Stat(p); err == nil {
+		return p
+	}
+	// Keep the conventional Home/bin path as the diagnostic fallback when no
+	// candidate exists, so the startup error still names the configured prefix.
+	return filepath.Join(c.Home, "bin", "chronon3d_cli")
 }
 
 // Verify checks that the Chronon binary is present, executable, and reports
@@ -177,6 +191,9 @@ func (c *Client) Verify() error {
 	}
 	if st.IsDir() {
 		return fmt.Errorf("chronon binary %s is a directory", p)
+	}
+	if st.Mode()&0o111 == 0 {
+		return fmt.Errorf("chronon binary %s is not executable", p)
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), doctorTimeout)

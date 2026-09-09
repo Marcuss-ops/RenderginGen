@@ -75,7 +75,7 @@ func main() {
 	var assembler chronon.Assembler
 	chrononVersion := "unknown"
 	{
-		probe := &chronon.Client{Home: cfg.Chronon.Home}
+		probe := &chronon.Client{Home: cfg.Chronon.Home, BinaryPath: cfg.Chronon.Binary}
 		// Verify only when we're about to invoke the CLI directly; the IPC
 		// branch validates the daemon via NewIPCClient below. Read VERSION
 		// unconditionally so the recorded version is never silently 'unknown'.
@@ -94,6 +94,7 @@ func main() {
 		// before READY — never after accepting jobs).
 		cli := &chronon.Client{
 			Home:                cfg.Chronon.Home,
+			BinaryPath:          cfg.Chronon.Binary,
 			Backend:             cfg.Chronon.Backend,
 			StrictNativeBackend: cfg.Chronon.StrictNativeBackend || cfg.Chronon.Profile == "gpu-vulkan-native",
 			HardwareEncoder:     cfg.Chronon.HardwareEncoder,

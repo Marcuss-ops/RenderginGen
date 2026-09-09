@@ -6,37 +6,174 @@ import (
 	"os"
 )
 
-// ReadTimingSidecar reads the frame-timing sidecar Chronon writes next to the
-// rendered output (`<output>.timing.json`, emitted by the video pipe exporter
-// without requiring --report) and returns it as a JSON document for the
-// worker's artifact ledger.
+// ═══════════════════════════════════════════════════════════════════════════
+// Observability ownership (Phase 10): Chronon owns telemetry. Chronon emits
+// TWO documents per render:
 //
-// Chronon is the source of truth for plan/graph/GPU/encoder timing, so the
-// worker ingests the document verbatim (Chronon owns the schema) and only
-// records its own distributive phases (materialize, sha256, uploads, total)
-// separately. The unbounded per-frame `frame_times_ms` array is dropped here:
-// it is deep-profiling detail that stays in the sidecar file itself, keeping
-// the ledger row bounded regardless of frame count.
-func ReadTimingSidecar(outputPath string) (json.RawMessage, error) {
-	return ReadTimingSidecarFile(outputPath + ".timing.json")
+//   * `<output>.telemetry-summary.json` — the BOUNDED, schema-typed summary
+//     (chronon3d.render-telemetry-summary.v1). This is the ONLY Chronon
+//     telemetry surface this worker ingests. It never contains per-frame
+//     arrays; the worker records it verbatim (Chronon owns the schema) and
+//     projects only its documented numeric subset onto metrics.
+//   * `<output>.timing.json` — the RAW deep-profile sidecar. The worker
+//     treats it exactly like an MP4: bytes → SHA-256 → object store → small
+//     reference. It NEVER parses, mutates or re-transports its internals
+//     (preserveRawTimingSidecar in the processor does the opaque handling).
+//
+// RenderingGen therefore never has to know Chronon's raw profile schema, and
+// Chronon may evolve its deep profiler without breaking the worker.
+// ═══════════════════════════════════════════════════════════════════════════
+
+// TelemetrySummarySchema is the stable schema of Chronon's bounded telemetry
+// summary sidecar (`<output>.telemetry-summary.json`).
+const TelemetrySummarySchema = "chronon3d.render-telemetry-summary.v1"
+
+// TelemetrySummarySuffix is the file suffix of the bounded summary sidecar.
+const TelemetrySummarySuffix = ".telemetry-summary.json"
+
+// RawTimingSidecarContentType is the content type under which the RAW
+// deep-profile timing sidecar (`<output>.timing.json`) is preserved. It is an
+// opaque, Chronon-owned artifact: consumers store it and carry the reference;
+// they never interpret the body.
+const RawTimingSidecarContentType = "application/vnd.chronon.timing+json"
+
+// ReadTelemetrySummary reads the bounded telemetry summary sidecar Chronon
+// writes next to the rendered output and returns the document VERBATIM (no
+// parse/mutate/re-encode) after validating its schema header. The summary is
+// the single bounded telemetry surface a host may ingest; the raw deep-profile
+// sidecar is handled opaquely elsewhere (bytes → hash → object store → ref).
+func ReadTelemetrySummary(outputPath string) (json.RawMessage, error) {
+	return ReadTelemetrySummaryFile(outputPath + TelemetrySummarySuffix)
 }
 
-// ReadTimingSidecarFile reads a timing sidecar from an explicit path.
-func ReadTimingSidecarFile(path string) (json.RawMessage, error) {
+// ReadTelemetrySummaryFile reads a bounded telemetry summary from an explicit
+// path and validates the schema header.
+func ReadTelemetrySummaryFile(path string) (json.RawMessage, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
-		return nil, fmt.Errorf("chronon timing sidecar: %w", err)
+		return nil, fmt.Errorf("chronon telemetry summary: %w", err)
 	}
-	var doc map[string]json.RawMessage
-	if err := json.Unmarshal(data, &doc); err != nil {
-		return nil, fmt.Errorf("chronon timing sidecar: decode: %w", err)
+	var header struct {
+		Schema string `json:"schema"`
 	}
-	delete(doc, "frame_times_ms")
-	out, err := json.Marshal(doc)
-	if err != nil {
-		return nil, fmt.Errorf("chronon timing sidecar: re-encode: %w", err)
+	if err := json.Unmarshal(data, &header); err != nil {
+		return nil, fmt.Errorf("chronon telemetry summary: decode: %w", err)
 	}
-	return out, nil
+	if header.Schema != TelemetrySummarySchema {
+		return nil, fmt.Errorf("chronon telemetry summary: schema %q, want %q",
+			header.Schema, TelemetrySummarySchema)
+	}
+	return data, nil
+}
+
+// NativeTelemetry is the bounded summary slice the gpu-vulkan-native receipt
+// gate certifies: execution identity (path/backends/surface handoff) plus the
+// strict counters that must prove zero fallback, zero readback and a full
+// native NVENC pass. Pointer fields are used so a MISSING counter is
+// distinguishable from a measured zero — the gate fails closed on absence.
+type NativeTelemetry struct {
+	Schema string `json:"schema"`
+	Job    struct {
+		ExecutionPath      string `json:"execution_path"`
+		SurfaceHandoffPath string `json:"surface_handoff_path"`
+		GPU                struct {
+			EffectiveBackend     string `json:"effective_backend"`
+			EncoderBackend       string `json:"encoder_backend"`
+			FallbackNodes        *int64 `json:"software_fallback_nodes"`
+			CPUReadbackFrames    *int64 `json:"cpu_readback_frames"`
+			SoftwareEncodeFrames *int64 `json:"software_encode_frames"`
+			NVENCFrames          *int64 `json:"nvenc_frames"`
+			VulkanFrames         *int64 `json:"vulkan_frames"`
+			NativeSurfaceFrames  *int64 `json:"gpu_native_surface_frames"`
+		} `json:"gpu"`
+	} `json:"job"`
+}
+
+// DecodeNativeTelemetry decodes a bounded telemetry summary for the native
+// gate. It rejects documents that are not the bounded summary schema, so the
+// gate can never accidentally certify from the raw deep-profile sidecar (or
+// from any future unversioned shape).
+func DecodeNativeTelemetry(raw json.RawMessage) (NativeTelemetry, error) {
+	var telemetry NativeTelemetry
+	if len(raw) == 0 {
+		return telemetry, fmt.Errorf("chronon telemetry summary: empty document")
+	}
+	if err := json.Unmarshal(raw, &telemetry); err != nil {
+		return telemetry, fmt.Errorf("chronon telemetry summary: decode: %w", err)
+	}
+	if telemetry.Schema != TelemetrySummarySchema {
+		return telemetry, fmt.Errorf("chronon telemetry summary: schema %q, want %q",
+			telemetry.Schema, TelemetrySummarySchema)
+	}
+	return telemetry, nil
+}
+
+// TelemetryMetrics projects the DOCUMENTED numeric subset of the bounded
+// telemetry summary onto the artifact metrics namespace (chronon_ prefix,
+// flattened path). This is the explicit, stable projection — never a generic
+// walk that scrapes every numeric leaf: consumers get exactly the fields this
+// list names, and Chronon may add/remove internal fields without changing the
+// projection contract.
+func TelemetryMetrics(raw json.RawMessage) map[string]float64 {
+	out := make(map[string]float64)
+	if len(raw) == 0 {
+		return out
+	}
+	var doc map[string]any
+	if json.Unmarshal(raw, &doc) != nil {
+		return out
+	}
+	project := func(name string, path ...string) {
+		var current any = doc
+		for _, segment := range path {
+			obj, ok := current.(map[string]any)
+			if !ok {
+				return
+			}
+			current, ok = obj[segment]
+			if !ok {
+				return
+			}
+		}
+		value, ok := current.(float64)
+		if !ok {
+			return
+		}
+		out[name] = value
+	}
+
+	// summary statistics.
+	for _, key := range []string{"mean_frame_ms", "p50_frame_ms", "p90_frame_ms",
+		"p95_frame_ms", "p99_frame_ms", "steady_avg_ms", "render_only_fps",
+		"render_loop_fps", "end_to_end_fps", "measured_fps", "realtime_factor",
+		"frame_budget_ms", "frames_over_budget", "over_budget_ratio", "target_fps"} {
+		project("chronon_summary_"+key, "summary", key)
+	}
+	// job walls (ms).
+	for _, key := range []string{"process_wall_ms", "job_wall_ms", "engine_init_ms",
+		"backend_init_ms", "plan_compile_ms", "graph_compile_ms", "prepare_ms",
+		"render_loop_wall_ms", "encoder_finalize_ms", "mux_finalize_ms",
+		"output_finalize_ms", "validation_ms", "ffprobe_ms", "sha256_ms",
+		"sidecar_report_ms"} {
+		project("chronon_job_"+key, "job", key)
+	}
+	// GPU counters / waits (zero-copy + native gates consume these names).
+	for _, key := range []string{"software_fallback_nodes", "cpu_readback_frames",
+		"software_encode_frames", "nvenc_frames", "vulkan_frames",
+		"gpu_native_surface_frames", "gpu_native_encode_frames",
+		"bitstream_copy_frames", "video_pipe_fallback_frames",
+		"video_native_fallback_frames", "video_decode_native_surface_frames",
+		"video_decode_software_frames", "cpu_pixel_readback_frames",
+		"cpu_pixel_readback_bytes", "gpu_readback_bytes", "gpu_upload_bytes",
+		"cuda_host_upload_bytes", "nv12_to_rgba_frames", "rgba_to_nv12_frames",
+		"gpu_surface_copy_frames", "native_surface_reuse_count",
+		"video_composite_ms", "decode_wait_ms", "frame_slot_wait_ms"} {
+		project("chronon_job_gpu_"+key, "job", "gpu", key)
+	}
+	// encoder backpressure (native path).
+	project("chronon_job_encoder_backpressure_wait_ms", "job", "encoder",
+		"backpressure_wait_ms")
+	return out
 }
 
 // MediaReceipt is the identity + verification section of Chronon's
