@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 #
-# GoldenOverlayJobV1 — end-to-end golden canary over the real chain:
+# GoldenSemanticOverlayJobV1 — end-to-end golden canary over the real chain:
 #
 #   submit queue -> claim RenderingGen -> materialize background.jpg
 #   -> materialize apple.png -> plan.json -> chronon3d_cli render
 #   -> result.mp4 -> artifact store -> completed -> download + verify
 #   -> PostgreSQL certification -> idempotent replay (no new render)
 #
-# The job is the real RenderingGen workload (not a color smoke):
+# The job is the real RenderingGen semantic workload (not a color smoke):
 #
 #   background.jpg        full 5s      (f0-149)
 #   "QUESTO CAMBIA TUTTO" title_centered (f20-60)
@@ -15,7 +15,7 @@
 #   apple.png             contain, right (f90-135)
 #
 # The payload is the canonical, immutable
-# testdata/golden/golden-overlay-job-v1.json; the assets (background,
+# testdata/golden/golden-semantic-overlay-job-v1.json; the assets (background,
 # apple overlay, vendored DejaVuSans font) are the deterministic fixtures in
 # the same directory (hashes baked into the payload, so a regenerate of the
 # fixtures without updating the payload fails loudly at the PUT hash check).
@@ -49,7 +49,7 @@ set -euo pipefail
 QUEUE_URL="${QUEUE_URL:-http://localhost:8081}"
 STORE_URL="${STORE_URL:-http://localhost:9000}"
 OUT_FILE="${OUT_FILE:-/tmp/renderinggen-golden-overlay-result.mp4}"
-# Expected render geometry; defaults match GoldenOverlayJobV1 (5s @ 30fps =
+# Expected render geometry; defaults match GoldenSemanticOverlayJobV1 (5s @ 30fps =
 # 150 frames). GoldenOverlayJobV2 (the universal benchmark) overrides these
 # to 8s / 240 frames.
 EXPECTED_DURATION="${EXPECTED_DURATION:-5}"
@@ -58,9 +58,9 @@ EXPECTED_FRAMES="${EXPECTED_FRAMES:-150}"
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${HERE}/../.." && pwd)"
 GOLDEN_DIR="${REPO_ROOT}/testdata/golden"
-JOB_FILE="${JOB_FILE:-${GOLDEN_DIR}/golden-overlay-job-v1.json}"
+JOB_FILE="${JOB_FILE:-${GOLDEN_DIR}/golden-semantic-overlay-job-v1.json}"
 
-JOB_ID="${JOB_ID:-golden-overlay-v1}"
+JOB_ID="${JOB_ID:-golden-semantic-overlay-v1}"
 
 WORK_DIR="$(mktemp -d /tmp/golden-overlay.XXXXXX)"
 trap 'rm -rf "$WORK_DIR"' EXIT
@@ -78,7 +78,7 @@ print(d)
 ' "$2"
 }
 
-# Build the submit payload once (id + render_plan.job_id injected), reuse it
+# Build the submit payload once (id + plan identity injected), reuse it
 # for the first submission AND the idempotent replay so both carry the
 # byte-identical body.
 python3 - "${JOB_FILE}" "${JOB_ID}" "${WORK_DIR}/payload.json" <<'PY'
@@ -88,7 +88,12 @@ import sys
 with open(sys.argv[1], encoding="utf-8") as f:
     payload = json.load(f)
 payload["id"] = sys.argv[2]
-payload["render_plan"]["job_id"] = sys.argv[2]
+plan = payload["render_plan"]
+if plan.get("schema_version") == "renderinggen.overlay-plan.v1":
+    plan["plan_id"] = sys.argv[2]
+    plan["video_id"] = sys.argv[2]
+else:
+    plan["job_id"] = sys.argv[2]
 with open(sys.argv[3], "w", encoding="utf-8") as f:
     json.dump(payload, f)
 PY

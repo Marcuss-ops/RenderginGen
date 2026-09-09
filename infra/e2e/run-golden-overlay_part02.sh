@@ -1,4 +1,4 @@
-echo "=== GoldenOverlayJobV1 (golden canary) ==="
+echo "=== GoldenSemanticOverlayJobV1 (golden canary) ==="
 echo "payload: ${JOB_FILE}"
 
 # 1. Upload the deterministic assets to the artifact store (L3), keyed by
@@ -180,6 +180,6 @@ if [[ ${#GOLDEN_PG_CMD[@]} -gt 0 ]]; then
 fi
 
 echo
-echo "OK: GoldenOverlayJobV1 passed"
+echo "OK: GoldenSemanticOverlayJobV1 passed"
 echo "    artifact: ${OUT_FILE}, ${DOWNLOAD_SIZE} bytes, ${P_WIDTH}x${P_HEIGHT}, ${P_FRAMES} frames, sha256=${FIRST_HASH}"
 echo "    chain:    queue -> RenderingGen -> Chronon (${BACKEND} ${CHRONON_VER}) -> artifact -> PostgreSQL -> replay (idempotent, no new render)"
