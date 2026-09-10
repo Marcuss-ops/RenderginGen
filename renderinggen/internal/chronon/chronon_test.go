@@ -91,8 +91,8 @@ func TestRenderArgsResolvesGPURequirementAtAdapterBoundary(t *testing.T) {
 		"--backend", "vulkan",
 		"-o", "/jobs/1/output/result.mp4",
 		"--hardware", "nvenc",
-		"--encoder-backend", "pipe",
-		"--gpu-hot-path-mode", "auto",
+		"--encoder-backend", "native",
+		"--gpu-hot-path-mode", "require_gpu_native",
 	}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("renderArgs (GPU) = %#v, want %#v", got, want)
@@ -143,9 +143,7 @@ func TestRenderArgsForwardsEncodePresetOnNativeVideoPath(t *testing.T) {
 	}
 }
 
-func TestRenderArgsOmitsEncodePresetOnPipePath(t *testing.T) {
-	// The pipe branch targets x264 vocabulary; a pN NVENC preset must never
-	// be forwarded there.
+func TestRenderArgsForwardsEncodePresetOnNativeImageComposition(t *testing.T) {
 	got := renderArgs(RenderRequest{
 		PlanPath:     "/jobs/1/plan.json",
 		AssetsRoot:   "/jobs/1/assets",
@@ -157,8 +155,14 @@ func TestRenderArgsOmitsEncodePresetOnPipePath(t *testing.T) {
 		},
 	})
 	joined := strings.Join(got, " ")
-	if strings.Contains(joined, "--encode-preset") {
-		t.Fatalf("renderArgs=%q must not forward encode preset on the pipe path", joined)
+	for _, want := range []string{
+		"--encoder-backend native",
+		"--gpu-hot-path-mode require_gpu_native",
+		"--encode-preset p2",
+	} {
+		if !strings.Contains(joined, want) {
+			t.Fatalf("renderArgs=%q, want to contain %q", joined, want)
+		}
 	}
 }
 

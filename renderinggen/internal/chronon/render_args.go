@@ -37,22 +37,16 @@ func renderArgs(req RenderRequest) []string {
 		// explicit at the CLI boundary.
 		args = append(args, "--hardware", "nvenc")
 		// DirectYUV is valid only for a genuinely video-only plan. Any
-		// composition, including video background + foreground, must use the
-		// complete Vulkan graph so every visual input is preserved.
+		// composition, including image/text-only or video background +
+		// foreground, must use the complete Vulkan graph so every visual input
+		// is preserved and the final surface can reach NVENC natively.
 		hotPath := "require_direct_yuv"
 		if req.Requirements.CompositionRequired {
-			// Keep NVENC for video compositions; image/text-only plans have no
-			// decoder surface and use the supported FFmpeg pipe encoder.
-			if !req.Requirements.VideoSourceRequired {
-				args = append(args, "--encoder-backend", "pipe")
-				hotPath = "auto"
-			} else {
-				args = append(args, "--encoder-backend", "native")
-				if req.EncodePreset != "" {
-					args = append(args, "--encode-preset", req.EncodePreset)
-				}
-				hotPath = "require_gpu_native"
+			args = append(args, "--encoder-backend", "native")
+			if req.EncodePreset != "" {
+				args = append(args, "--encode-preset", req.EncodePreset)
 			}
+			hotPath = "require_gpu_native"
 		} else {
 			args = append(args, "--encoder-backend", "native")
 			if req.EncodePreset != "" {
@@ -65,10 +59,9 @@ func renderArgs(req RenderRequest) []string {
 		}
 		args = append(args, "--gpu-hot-path-mode", hotPath)
 	} else if req.Requirements.CompositionRequired {
-		// Authored image/text-only compositions use Vulkan for rasterization and
-		// the CLI's supported pipe encoder; no source-video NVENC contract is
-		// applicable here.
-		args = append(args, "--encoder-backend", "pipe", "--gpu-hot-path-mode", "auto")
+		// Non-strict Vulkan composition: keep the same FullGraph shape and let
+		// Chronon select the configured fallback encoder.
+		args = append(args, "--encoder-backend", "native", "--gpu-hot-path-mode", "require_gpu_native")
 	}
 	if req.AudioSourcePath != "" {
 		// Chronon's native A/V mux path uses --gop-source for the source audio

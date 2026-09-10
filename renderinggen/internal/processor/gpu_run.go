@@ -23,11 +23,12 @@ func (p *Processor) RunGPU(ctx context.Context, prepared *PreparedJob) error {
 	// otherwise indistinguishable from "render the whole plan", which would
 	// silently over-render a single-frame chunk.
 	firstFrame, lastFrame, hasFrameRange := jobFrameRange(job)
-	// Native NVENC is required for source-video jobs. Image/text-only plans
-	// still use the Vulkan compositor, but Chronon's pipe encoder is the
-	// supported output path and reports a software encoder by design.
+	// Native NVENC is required for every visual job on the strict Vulkan
+	// profile. DirectYUV is reserved for a video-only plan; an image/text
+	// composition must use the native FullGraph surface path as well.
 	hasSourceVideo := planHasVideoSource(prepared.Plan)
-	gpuRequired := hasSourceVideo && (p.strictNativeBackend ||
+	compositionRequired := planHasVisualOverlay(prepared.Plan)
+	gpuRequired := (hasSourceVideo || compositionRequired) && (p.strictNativeBackend ||
 		(p.backend == "vulkan" && p.hardwareEncoder != "" && p.hardwareEncoder != "none"))
 	// Render progress: every '[video] N/M frames' milestone the renderer
 	// prints is logged (where did the 12 minutes go) and, when a shared
@@ -54,14 +55,10 @@ func (p *Processor) RunGPU(ctx context.Context, prepared *PreparedJob) error {
 			Backend:            p.backend,
 			GPURequired:        gpuRequired,
 			CPUFallbackAllowed: !p.strictNativeBackend,
-			// Clip renders always need a foreground/background composition. The
-			// direct-YUV path is reserved for a genuinely video-only render; it
-			// cannot preserve the foreground when the background is supplied as
-			// a second media input outside the concrete layer list.
-			// DirectYUV owns the video composition path, including multiple
-			// video layers plus the supported text/image overlays. Keep the
-			// general graph for authored compositions without a video source.
-			CompositionRequired: !hasSourceVideo && planHasVisualOverlay(prepared.Plan),
+			// DirectYUV is only for a genuinely video-only render. Any authored
+			// image/text/color layer requires the FullGraph so it can finish on a
+			// native Vulkan surface and feed NVENC without CPU readback.
+			CompositionRequired: compositionRequired,
 			VideoSourceRequired: planHasVideoSource(prepared.Plan),
 			PacketCopyAllowed:   true,
 		},
@@ -119,11 +116,11 @@ func (p *Processor) RunGPU(ctx context.Context, prepared *PreparedJob) error {
 	if p.progressTracker != nil {
 		p.progressTracker.Forget(job.ID)
 	}
-	// The native Vulkan/NVENC receipt gate applies to source-video jobs. An
-	// image/text-only composition intentionally uses Chronon's Vulkan
-	// compositor with the supported software pipe encoder, so requiring an
-	// NVENC receipt there would reject a valid authored entity card.
-	if p.strictNativeBackend && planHasVideoSource(prepared.Plan) {
+	// The native Vulkan/NVENC receipt gate applies to both source-video jobs
+	// and authored image/text compositions. A successful Vulkan label alone is
+	// insufficient: the bounded telemetry must prove Vulkan frames, NVENC
+	// frames, and zero software/readback fallback.
+	if p.strictNativeBackend && (hasSourceVideo || compositionRequired) {
 		metadata := planMetadataOf(prepared.Plan)
 		if err := requireNativeVulkan(prepared.OutputPath, metadata.FrameCount); err != nil {
 			return fmt.Errorf("processor: gpu-vulkan-native gate: %w", err)
