@@ -30,6 +30,11 @@ func TestSemanticAssetPathStripsQuery(t *testing.T) {
 			"assets/semantic/img2.png",
 		},
 		{
+			"drive view generic video type",
+			semanticAssetRef{ID: "classic1", SHA256: hash64("video"), URL: "https://drive.google.com/file/d/id/view", MediaType: "video"},
+			"assets/semantic/classic1.mp4",
+		},
+		{
 			"assets/ prefix passes through",
 			semanticAssetRef{ID: "bg", SHA256: hash64("d"), URL: "assets/backgrounds/night.mp4"},
 			"assets/backgrounds/night.mp4",

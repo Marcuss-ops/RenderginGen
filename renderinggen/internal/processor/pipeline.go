@@ -23,6 +23,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/overlay"
@@ -189,10 +190,13 @@ func (p *Processor) PrepareJob(ctx context.Context, job *queue.Job) (*PreparedJo
 	// already returns ResolvedAsset.SizeBytes (from L2/ContextPath or L3 header)
 	// so a second os.Stat loop is pure duplicate I/O.
 	resolvedSizes := make(map[string]int64, len(assets))
+	var resolvedSizesMu sync.Mutex
 	wrappedResolve := func(rCtx context.Context, a queue.AssetRef) (workspace.ResolvedAsset, error) {
 		res, rErr := p.resolveAssetStreaming(rCtx, a)
 		if rErr == nil {
+			resolvedSizesMu.Lock()
 			resolvedSizes[a.LogicalPath] = res.SizeBytes
+			resolvedSizesMu.Unlock()
 		}
 		return res, rErr
 	}
@@ -219,6 +223,7 @@ func (p *Processor) PrepareJob(ctx context.Context, job *queue.Job) (*PreparedJo
 		}
 		return nil, err
 	}
+	p.prefetchWarmAssets(ctx, ws.Root(), assets)
 	record("materialize", phaseStart)
 
 	// Burn verified ASS subtitles into Chronon text layers before the plan is
@@ -336,4 +341,45 @@ func (p *Processor) PrepareJob(ctx context.Context, job *queue.Job) (*PreparedJo
 		AudioSourcePath: audioPath,
 		totalStart:      totalStart,
 	}, nil
+}
+
+// prefetchWarmAssets primes Chronon's persistent image/video cache from the
+// already verified workspace. The background and at most three image assets
+// are selected deterministically, preserving every asset in the plan while
+// bounding warm-up work on high-cardinality scenes. A warm-up failure is
+// diagnostic only: the materialized files remain authoritative for Render.
+func (p *Processor) prefetchWarmAssets(ctx context.Context, root string, assets []queue.AssetRef) {
+	if p == nil || p.assetPrefetcher == nil {
+		return
+	}
+	selected := make([]string, 0, 4)
+	seen := make(map[string]struct{}, 4)
+	images := 0
+	for _, asset := range assets {
+		ext := strings.ToLower(filepath.Ext(asset.LogicalPath))
+		isVideo := ext == ".mp4" || ext == ".mov" || ext == ".webm"
+		isImage := ext == ".png" || ext == ".jpg" || ext == ".jpeg" || ext == ".webp" || ext == ".gif"
+		if !isVideo && !isImage {
+			continue
+		}
+		if isImage {
+			if images >= 3 {
+				continue
+			}
+			images++
+		}
+		path := filepath.Join(root, filepath.FromSlash(asset.LogicalPath))
+		if _, ok := seen[path]; ok {
+			continue
+		}
+		seen[path] = struct{}{}
+		selected = append(selected, path)
+	}
+	for _, path := range selected {
+		if err := p.assetPrefetcher.PrefetchAsset(ctx, path); err != nil {
+			log.Printf("chronon asset warm-up skipped: path=%s err=%v", path, err)
+			continue
+		}
+		log.Printf("chronon asset warm-up complete: path=%s", path)
+	}
 }

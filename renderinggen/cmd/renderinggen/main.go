@@ -73,6 +73,7 @@ func main() {
 	// 'unknown' for every job even when /opt/chronon3d/VERSION was present.
 	var renderer chronon.Renderer
 	var assembler chronon.Assembler
+	var assetPrefetcher chronon.AssetPrefetcher
 	chrononVersion := "unknown"
 	{
 		probe := &chronon.Client{Home: cfg.Chronon.Home, BinaryPath: cfg.Chronon.Binary}
@@ -87,6 +88,7 @@ func main() {
 		ipc := chronon.NewIPCClient(cfg.Chronon.SocketPath)
 		renderer = ipc
 		assembler = ipc
+		assetPrefetcher = ipc
 	} else {
 		// The Client carries the semantic knobs its Verify() handshake
 		// validates against: a worker configured for the native GPU hot path
@@ -137,6 +139,7 @@ func main() {
 		store,
 		renderer,
 	)
+	proc.SetAssetPrefetcher(assetPrefetcher)
 	proc.SetNativeOutputProfiles(cfg.Chronon.NativeOutputProfiles)
 	proc.SetStrictNativeBackend(cfg.Chronon.StrictNativeBackend || cfg.Chronon.Profile == "gpu-vulkan-native")
 	proc.SetReport(cfg.Chronon.Report)

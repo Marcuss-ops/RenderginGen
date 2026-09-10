@@ -101,14 +101,22 @@ func semanticAssetPath(ref semanticAssetRef) (string, error) {
 	}
 	ext := filepath.Ext(assetPath)
 	if ext == "" {
-		switch strings.ToLower(ref.MediaType) {
-		case "image/png":
+		// Provider URLs (notably Drive `file/.../view` and `uc?...`) often
+		// have no media suffix. Normalize the declared type before choosing a
+		// stable workspace suffix; generic provider types are valid too.
+		mediaType := strings.ToLower(strings.TrimSpace(strings.SplitN(ref.MediaType, ";", 2)[0]))
+		switch mediaType {
+		case "image/png", "image":
 			ext = ".png"
-		case "image/jpeg":
+		case "image/jpeg", "image/jpg":
 			ext = ".jpg"
-		case "video/mp4":
+		case "video/mp4", "video/quicktime", "video":
 			ext = ".mp4"
-		case "font/ttf":
+		case "audio/mpeg":
+			ext = ".mp3"
+		case "audio/wav", "audio/x-wav", "audio":
+			ext = ".wav"
+		case "font/ttf", "font":
 			ext = ".ttf"
 		}
 	}

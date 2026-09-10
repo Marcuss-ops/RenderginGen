@@ -1,6 +1,7 @@
 worker:
   id: renderinggen-local
   pipeline_workers: 3
+  gpu_lanes: 6
 queue:
   endpoint: http://127.0.0.1:8081
 artifact_store:
@@ -15,6 +16,7 @@ chronon:
   mode: ipc
   socket_path: /run/chronon3d/chronon.sock
   strict_native_backend: true
+  encode_preset: p1
 gpu:
   device: 0
 health:

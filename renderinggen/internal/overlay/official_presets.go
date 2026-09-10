@@ -94,6 +94,16 @@ func makePhrasePreset(id, anim, unit string) OfficialPresetDefinition {
 	return d
 }
 
+func makeTypewriterPreset(id, anim string, fontSize float64, fill []float64, shadow *StyleShadow) OfficialPresetDefinition {
+	return OfficialPresetDefinition{
+		ID:     id,
+		Family: PresetText,
+		Style:  PresetStyle{FontFamily: "fonts/Inter-Bold.ttf", FontSize: fontSize, Fill: fill, Shadow: shadow},
+		Layout: PresetLayout{Anchor: "center", Alignment: "center", BoxWidth: 1920, BoxHeight: 160, Fit: "contain"},
+		Motion: MotionDefinition{Name: anim, ID: anim, Unit: "glyph", Enter: 72, Exit: 6},
+	}
+}
+
 // officialPresets is the only production catalog. Do not add parallel maps
 // for families, animation or geometry.
 var officialPresets = map[string]OfficialPresetDefinition{
@@ -146,6 +156,11 @@ var officialPresets = map[string]OfficialPresetDefinition{
 	"image_fast_fade":                   makePreset("image_fast_fade", imageSpec("image_right", "fade_in")),
 	"modern_rounded_pop":                makePreset("modern_rounded_pop", imageSpec("image_right", "scale_drop")),
 	"bottom_card_rise":                  makePreset("bottom_card_rise", imageSpec("bottom_right", "reveal_from_bottom")),
+	"phrase_typewriter_clean":           makeTypewriterPreset("phrase_typewriter_clean", "typewriter_clean", 72, []float64{0.08, 0.08, 0.12, 1.0}, nil),
+	"phrase_typewriter_pop":             makeTypewriterPreset("phrase_typewriter_pop", "typewriter_pop", 74, []float64{0.06, 0.08, 0.14, 1.0}, &StyleShadow{Color: "#000000", Opacity: 0.35, Blur: 8, Offset: []float64{0, 4}}),
+	"phrase_typewriter_neon":            makeTypewriterPreset("phrase_typewriter_neon", "typewriter_neon", 70, []float64{0.01, 0.45, 0.65, 1.0}, &StyleShadow{Color: "#38BDF8", Opacity: 0.90, Blur: 22, Offset: []float64{0, 0}}),
+	"phrase_typewriter_tracking":        makeTypewriterPreset("phrase_typewriter_tracking", "typewriter_tracking", 66, []float64{0.18, 0.22, 0.28, 1.0}, &StyleShadow{Color: "#000000", Opacity: 0.25, Blur: 10, Offset: []float64{0, 4}}),
+	"phrase_typewriter_glitch":          makeTypewriterPreset("phrase_typewriter_glitch", "typewriter_glitch", 76, []float64{0.75, 0.12, 0.12, 1.0}, &StyleShadow{Color: "#EF4444", Opacity: 0.75, Blur: 16, Offset: []float64{0, 0}}),
 }
 
 func officialPresetIDs() []string {

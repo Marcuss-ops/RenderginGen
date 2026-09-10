@@ -47,11 +47,32 @@ func init() {
 		phraseAdvancedDefinition("vertical_rolling_counter", "glyph", "position_y", []AnimationKeyframe{{0, 80.0}, {48, -8.0}, {72, 0.0}}, 1),
 		phraseAdvancedDefinition("glassmorphism_card_tilt", "glyph", "scale", []AnimationKeyframe{{0, 0.92}, {24, 1.02}, {72, 1.0}}, 1),
 		phraseAdvancedDefinition("pixel_grid_alpha_matrix", "glyph", "blur", []AnimationKeyframe{{0, 18.0}, {28, 3.0}, {72, 0.0}}, 1),
+		typewriterDefinition("typewriter_clean", "square", []TrackDefinition{
+			{Property: "opacity", Easing: "linear", Keyframes: []AnimationKeyframe{{Frame: 0, Value: 0.0}, {Frame: 72, Value: 0.0}}},
+		}),
+		typewriterDefinition("typewriter_pop", "square", []TrackDefinition{
+			{Property: "opacity", Easing: "linear", Keyframes: []AnimationKeyframe{{Frame: 0, Value: 0.0}, {Frame: 72, Value: 0.0}}},
+			{Property: "position_y", Easing: "out_back", Keyframes: []AnimationKeyframe{{Frame: 0, Value: -24.0}, {Frame: 72, Value: -24.0}}},
+			{Property: "scale", Easing: "out_back", Keyframes: []AnimationKeyframe{{Frame: 0, Value: 1.35}, {Frame: 72, Value: 1.35}}},
+		}),
+		typewriterDefinition("typewriter_neon", "smooth", []TrackDefinition{
+			{Property: "opacity", Easing: "out_cubic", Keyframes: []AnimationKeyframe{{Frame: 0, Value: 0.0}, {Frame: 72, Value: 0.0}}},
+			{Property: "blur", Easing: "out_cubic", Keyframes: []AnimationKeyframe{{Frame: 0, Value: 16.0}, {Frame: 72, Value: 16.0}}},
+		}),
+		typewriterDefinition("typewriter_tracking", "smooth", []TrackDefinition{
+			{Property: "opacity", Easing: "out_cubic", Keyframes: []AnimationKeyframe{{Frame: 0, Value: 0.0}, {Frame: 72, Value: 0.0}}},
+			{Property: "tracking", Easing: "out_expo", Keyframes: []AnimationKeyframe{{Frame: 0, Value: 16.0}, {Frame: 72, Value: 16.0}}},
+			{Property: "position_x", Easing: "out_cubic", Keyframes: []AnimationKeyframe{{Frame: 0, Value: -12.0}, {Frame: 72, Value: -12.0}}},
+		}),
+		typewriterDefinition("typewriter_glitch", "square", []TrackDefinition{
+			{Property: "opacity", Easing: "linear", Keyframes: []AnimationKeyframe{{Frame: 0, Value: 0.0}, {Frame: 72, Value: 0.0}}},
+			{Property: "position_x", Easing: "out_cubic", Keyframes: []AnimationKeyframe{{Frame: 0, Value: 20.0}, {Frame: 72, Value: 20.0}}},
+			{Property: "scale_x", Easing: "out_cubic", Keyframes: []AnimationKeyframe{{Frame: 0, Value: 1.4}, {Frame: 72, Value: 1.4}}},
+		}),
 	} {
 		_ = Register(d.ID, DeclarativePlugin{Definition: d})
 	}
 }
-
 // phraseAdvancedDefinition is the renderer-neutral phrase preset primitive.
 // The names describe the editorial effect; the implementation intentionally
 // stays inside Chronon's supported per-glyph property set so renders remain
@@ -176,4 +197,17 @@ func textDefinition(id, unit string, stagger, offset float64) MotionDefinition {
 			{Property: "opacity", Easing: "linear", Keyframes: []AnimationKeyframe{{Frame: 0, Value: 0.0}, {Frame: 72, Value: 0.0}}},
 		},
 	}}}
+}
+
+func typewriterDefinition(id, shape string, properties []TrackDefinition) MotionDefinition {
+	return MotionDefinition{
+		ID:    id,
+		Unit:  "glyph",
+		Enter: 72,
+		TextAnimators: []TextAnimatorDefinition{{
+			ID:         id + "_text",
+			Selector:   SelectorDefinition{Kind: "glyph", Shape: shape, Stagger: 1},
+			Properties: properties,
+		}},
+	}
 }
