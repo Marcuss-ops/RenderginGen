@@ -10,8 +10,8 @@ import (
 )
 
 func TestOfficialPresetCatalog(t *testing.T) {
-	if got := len(officialPresets); got != 46 {
-		t.Fatalf("official preset count = %d, want 46", got)
+	if got := len(officialPresets); got != 51 {
+		t.Fatalf("official preset count = %d, want 51", got)
 	}
 	for id, d := range officialPresets {
 		if id == "" || d.ID != id {

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"strings"
 )
 
 // IPC wire constants — must match Chronon3d's chronon_ipc.hpp.
@@ -14,6 +15,7 @@ const (
 	ipcMagic                   uint32 = 0x43484e33 // "CHN3"
 	ipcHeaderBytes                    = 12         // magic + command/status + payload-len
 	ipcMaxPayload                     = 64 * 1024 * 1024
+	ipcCommandPrefetchAsset           = 1
 	ipcCommandStatus                  = 4
 	ipcCommandShutdown                = 5
 	ipcCommandRenderJob               = 6
@@ -52,6 +54,23 @@ func (c *IPCClient) Status(ctx context.Context) (string, error) {
 	return message, nil
 }
 
+// PrefetchAsset asks the persistent daemon to import one already-materialized
+// asset into Chronon's process-local image/video cache. It is an optimization
+// only: a warm-up failure must never discard a valid render.
+func (c *IPCClient) PrefetchAsset(ctx context.Context, path string) error {
+	if strings.TrimSpace(path) == "" {
+		return fmt.Errorf("ipc prefetch asset: path is empty")
+	}
+	status, message, err := c.request(ctx, ipcCommandPrefetchAsset, []byte(path))
+	if err != nil {
+		return err
+	}
+	if status != ipcStatusOk {
+		return fmt.Errorf("ipc prefetch asset: daemon status %d: %s", status, message)
+	}
+	return nil
+}
+
 // Shutdown asks the daemon to stop serving and exit.
 func (c *IPCClient) Shutdown(ctx context.Context) error {
 	status, message, err := c.request(ctx, ipcCommandShutdown, nil)
@@ -66,16 +85,17 @@ func (c *IPCClient) Shutdown(ctx context.Context) error {
 
 // renderJobPayload is the JSON payload for the RENDER_JOB IPC command.  It is
 // the daemon-side mirror of the full RenderRequest semantic contract:
-//   plan_path / assets_root / output / report
-//   range_enabled + first_frame + last_frame  (explicit chunk range; a
-//     single-frame chunk at frame 0 is first=0, last=0 WITH range_enabled
-//     true — never an "absent range" that silently re-expands to the whole
-//     plan)
-//   audio_source_path (muxed source audio, daemon-side --gop-source)
-//   encode_preset (native NVENC tier)
-//   receipt_verify (per-job verification policy; the daemon reads the same
-//     policy the CLI subprocess receives through CHRONON_RECEIPT_VERIFY)
-//   execution_requirements / output_spec (semantic, backend-neutral)
+//
+//	plan_path / assets_root / output / report
+//	range_enabled + first_frame + last_frame  (explicit chunk range; a
+//	  single-frame chunk at frame 0 is first=0, last=0 WITH range_enabled
+//	  true — never an "absent range" that silently re-expands to the whole
+//	  plan)
+//	audio_source_path (muxed source audio, daemon-side --gop-source)
+//	encode_preset (native NVENC tier)
+//	receipt_verify (per-job verification policy; the daemon reads the same
+//	  policy the CLI subprocess receives through CHRONON_RECEIPT_VERIFY)
+//	execution_requirements / output_spec (semantic, backend-neutral)
 //
 // first_frame/last_frame are marshaled unconditionally (no omitempty) so 0
 // coordinates are expressible; the daemon honors them only when range_enabled

@@ -1,5 +1,7 @@
 worker:
   id: renderinggen-local
+  pipeline_workers: 3
+  gpu_lanes: 6
 
 queue:
   endpoint: http://queue:8081
@@ -20,6 +22,7 @@ chronon:
   # daemon started by worker-entrypoint.sh (caches alive across jobs).
   mode: ipc
   socket_path: /var/run/chronon3d/chronon.sock
+  encode_preset: p1
 
 gpu:
   device: 0

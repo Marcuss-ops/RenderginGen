@@ -261,13 +261,7 @@ func CompileFastEntityOverlays(
 			if preset.Family == PresetText {
 				applyPresetDefinition(&txtLayer, preset)
 				txtLayer.Size = []float64{float64(width), 120}
-				// Chronon centers a canvas-sized text frame when position is
-				// omitted. Keep center-anchored phrase presets on that canonical
-				// path; explicit positions are reserved for lower-third/safe-area
-				// layouts whose anchor is intentionally not centered.
-				if preset.Layout.Anchor != "center" {
-					txtLayer.Position = resolveTextLayout(preset.Layout, width, 120, width, height)
-				}
+				txtLayer.Position = resolveTextLayout(preset.Layout, width, 120, width, height)
 				txtLayer.TextAnimators = presetTextAnimators
 			}
 			if len(ov.Translate) == 2 {

@@ -29,14 +29,15 @@ import (
 //	validate -> workspace -> resolve/materialize -> plan.json -> render
 //	-> hash -> storage.Put -> (caller completes) -> cleanup
 type Processor struct {
-	jobsRoot       string
-	backend        string
-	chrononVersion string
-	storeURL       string
-	store          *storage.Client
-	renderer       chronon.Renderer
-	drive          drive.Publisher     // nil = external publication disabled
-	recorder       artifactdb.Recorder // nil = artifact ledger disabled
+	jobsRoot        string
+	backend         string
+	chrononVersion  string
+	storeURL        string
+	store           *storage.Client
+	renderer        chronon.Renderer
+	assetPrefetcher chronon.AssetPrefetcher
+	drive           drive.Publisher     // nil = external publication disabled
+	recorder        artifactdb.Recorder // nil = artifact ledger disabled
 
 	// phaseHook, when set, receives the wall-clock duration of each pipeline
 	// phase so benchmarks can report asset_fetch/prepare/render/publish ms
@@ -137,6 +138,14 @@ func (p *Processor) SetArtifactRecorder(rec artifactdb.Recorder) {
 // frame position + average fps into the job's ledger metrics.
 func (p *Processor) SetProgressTracker(tracker *chronon.ProgressTracker) {
 	p.progressTracker = tracker
+}
+
+// SetAssetPrefetcher installs the optional Chronon daemon warm-up bridge.
+// Warm-up is best-effort and never changes the semantic plan or render gate.
+func (p *Processor) SetAssetPrefetcher(prefetcher chronon.AssetPrefetcher) {
+	if p != nil {
+		p.assetPrefetcher = prefetcher
+	}
 }
 
 func (p *Processor) recordPhase(phase string, start time.Time) {

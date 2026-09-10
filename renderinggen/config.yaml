@@ -1,9 +1,9 @@
 worker:
   id: renderinggen-77
-  # Keep CPU/I/O stages ahead of and behind the GPU lanes. Two lanes are the
-  # measured safe throughput point for an RTX A4000-class 16 GiB GPU.
+  # 6 lanes saturate NVENC >90% once the B2 deep ring (Vulkan kSlotCount=6)
+  # removes the per-batch drain stall; CPU/I/O stages stay ahead/behind.
   pipeline_workers: 3
-  gpu_lanes: 2
+  gpu_lanes: 6
 
 queue:
   endpoint: https://queue.pipelinegen.example
@@ -31,6 +31,7 @@ chronon:
   # by worker-entrypoint.sh (caches alive across jobs).
   mode: ipc
   socket_path: /var/run/chronon3d/chronon.sock
+  encode_preset: p1
 
 gpu:
   device: 0

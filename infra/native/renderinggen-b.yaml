@@ -1,6 +1,7 @@
 worker:
   id: renderinggen-b
   pipeline_workers: 3
+  gpu_lanes: 6
 queue:
   endpoint: http://127.0.0.1:8081
 artifact_store:
@@ -12,8 +13,10 @@ chronon:
   profile: gpu-vulkan-native
   home: /opt/chronon3d
   binary: /usr/local/bin/chronon3d_cli
-  mode: cli
+  mode: ipc
+  socket_path: /var/run/chronon3d/chronon.sock
   strict_native_backend: true
+  encode_preset: p1
 gpu:
   device: 0
 health:

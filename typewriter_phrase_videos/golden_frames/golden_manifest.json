@@ -1,0 +1,122 @@
+{
+  "01_typewriter_clean_f000.png": {
+    "sha256": "4c6d2c8d8bbb3756757eacd65f2e662ac9a6f56594ea0e34760218bc21f02037",
+    "bytes": 6154
+  },
+  "01_typewriter_clean_f024.png": {
+    "sha256": "5b8dae257fb1f7faaffdfac35854efc8010fd6476869abbe69814dcca3074ad5",
+    "bytes": 92529
+  },
+  "01_typewriter_clean_f048.png": {
+    "sha256": "2d5a807a973fd2ccf4a7e6b1538cbf1b00d4589d98aaafe19d8186d4cdbd7e8c",
+    "bytes": 104772
+  },
+  "01_typewriter_clean_f072.png": {
+    "sha256": "b8ab2adf5b866c6a81942fef25da84746bc77cfcce886577877a830e95b5563a",
+    "bytes": 98598
+  },
+  "01_typewriter_clean_f096.png": {
+    "sha256": "c7dd5d23e7f6d878183f7b212b62c8563bf246c6756b60a6b316563edce8bd66",
+    "bytes": 104324
+  },
+  "01_typewriter_clean_f119.png": {
+    "sha256": "be341898a67c12df4db876d97cb6479defdfe198311e86534c8e1f850762ed53",
+    "bytes": 96382
+  },
+  "02_typewriter_pop_f000.png": {
+    "sha256": "4c6d2c8d8bbb3756757eacd65f2e662ac9a6f56594ea0e34760218bc21f02037",
+    "bytes": 6154
+  },
+  "02_typewriter_pop_f024.png": {
+    "sha256": "fa5f8b3a1ed5139e6797a678aa57ca5ee8bd12635684b53007af699bdfc1f3fe",
+    "bytes": 99381
+  },
+  "02_typewriter_pop_f048.png": {
+    "sha256": "981ea86a8e28bd171247a6295a8408a087341431fe38ba0552d4028a0bdd87d7",
+    "bytes": 111584
+  },
+  "02_typewriter_pop_f072.png": {
+    "sha256": "d94bc86ad9f237d66ee6de393e7da64decf0f40ae6238e082b0f2a531749bfed",
+    "bytes": 104218
+  },
+  "02_typewriter_pop_f096.png": {
+    "sha256": "eca1cddd1acbc4a7a5ce213c92257c2db15f2868187c4614caad63c2fa0ffc0d",
+    "bytes": 109986
+  },
+  "02_typewriter_pop_f119.png": {
+    "sha256": "35cd0a56eccb6c0c1c45dd1dd47bda1004e628ded7b06d513c9841de3e40a8e1",
+    "bytes": 101934
+  },
+  "03_typewriter_neon_f000.png": {
+    "sha256": "5f9e3cd0cf9bf48d7e070cbe946dfc6510b2f34a3045caf1fc193125d5409aae",
+    "bytes": 72513
+  },
+  "03_typewriter_neon_f024.png": {
+    "sha256": "466c11e3f98f13121f52e4fbae868c9f22eaf74f6ae94249494bc510c1fb5797",
+    "bytes": 115603
+  },
+  "03_typewriter_neon_f048.png": {
+    "sha256": "e9e8bc0cc66fabe06ff54a01452f1049d3907f7abfb27b1c3d17af8a62ccd0be",
+    "bytes": 122427
+  },
+  "03_typewriter_neon_f072.png": {
+    "sha256": "b06949fea77676af6f3006ce019d11410dd486b6e7ae1e8007a835621b2c2798",
+    "bytes": 114140
+  },
+  "03_typewriter_neon_f096.png": {
+    "sha256": "78919abd340bcdfaeb896d052e34628bc0d948f4ed713e58d36e6823f37b1b7b",
+    "bytes": 119369
+  },
+  "03_typewriter_neon_f119.png": {
+    "sha256": "430e458035c61939df17ca79c153f53cad1be1770a5aabe80e1c71be3c01702f",
+    "bytes": 111737
+  },
+  "04_typewriter_tracking_f000.png": {
+    "sha256": "95e67cefeb59ca81b5f995c31cff27a5e60f9aaf5f28dcb6dfb76dd583f90a61",
+    "bytes": 28754
+  },
+  "04_typewriter_tracking_f024.png": {
+    "sha256": "68d9258649238803ae052c58398ebfbba0fd0bffc2ba173349bf090d69b73425",
+    "bytes": 100352
+  },
+  "04_typewriter_tracking_f048.png": {
+    "sha256": "af59bb7750409cf3b6d6092c8555343c9ff55cbc157b7f2b192c545eee2a6fbf",
+    "bytes": 108440
+  },
+  "04_typewriter_tracking_f072.png": {
+    "sha256": "6e06bbe04d8d6b8dc782c00f4635aa5119dfa15b0e689264c6190e1389a54914",
+    "bytes": 100673
+  },
+  "04_typewriter_tracking_f096.png": {
+    "sha256": "bfca270f7e5ee68ed880b3ddf347dd2f855a5001335204f58e3d771cac7d1803",
+    "bytes": 106641
+  },
+  "04_typewriter_tracking_f119.png": {
+    "sha256": "c78ed07daac786c9fb59a39a755868c35bb6b6b38475c54220e0f210befe61fb",
+    "bytes": 98772
+  },
+  "05_typewriter_glitch_f000.png": {
+    "sha256": "4c6d2c8d8bbb3756757eacd65f2e662ac9a6f56594ea0e34760218bc21f02037",
+    "bytes": 6154
+  },
+  "05_typewriter_glitch_f024.png": {
+    "sha256": "bfe10d31cedebf49ad0708c8f4dc8a90c82ac4f7420b81c0430abbebfd61a26a",
+    "bytes": 113186
+  },
+  "05_typewriter_glitch_f048.png": {
+    "sha256": "5a39494c1ae37954030af56c6695cdec307c3bcb39c5c743816cf981d135c641",
+    "bytes": 134638
+  },
+  "05_typewriter_glitch_f072.png": {
+    "sha256": "ce3d7832a560102f96294bdc575edc7db1237e07b175451bc3e1ecacfb53a411",
+    "bytes": 127400
+  },
+  "05_typewriter_glitch_f096.png": {
+    "sha256": "edbb4d387445e6b4d1e0984f5eccb2bb1e5176467be1d85fb9c23a79330da796",
+    "bytes": 133590
+  },
+  "05_typewriter_glitch_f119.png": {
+    "sha256": "daa4889bbd2eb4bee172ae5ce6404c92e481d9487f9474b5bd939e069a2dfba6",
+    "bytes": 125839
+  }
+}

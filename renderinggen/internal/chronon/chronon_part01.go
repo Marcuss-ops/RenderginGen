@@ -141,6 +141,13 @@ type Renderer interface {
 	Render(context.Context, RenderRequest) error
 }
 
+// AssetPrefetcher imports a materialized asset into a persistent renderer's
+// process-local cache. It is deliberately separate from Renderer so CLI
+// renderers and test doubles do not need a warm-up implementation.
+type AssetPrefetcher interface {
+	PrefetchAsset(context.Context, string) error
+}
+
 // Client renders through the Chronon3d CLI binary installed in the worker
 // image. It implements Renderer.
 type Client struct {
