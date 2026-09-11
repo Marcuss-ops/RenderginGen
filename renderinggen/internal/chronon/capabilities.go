@@ -99,10 +99,10 @@ type Requirements struct {
 }
 
 // GPUHotPathRequirements returns the requirement set for the native GPU hot
-// path (NVDEC decode → CUDA composite → NVENC encode). It must be kept in
+// path (NVDEC decode → GPU composite → NVENC encode). It must be kept in
 // sync with Processor.RunGPU's gpuRequired derivation: both express "the
-// strict native backend / vulkan+hardware-encoder configuration", and RunGPU
-// enforces the path with --gpu-hot-path-mode require_direct_yuv.
+// strict native backend / vulkan+hardware-encoder configuration". The
+// compiled Chronon plan then selects DirectYUV or FullGraph.
 func GPUHotPathRequirements() Requirements {
 	return Requirements{
 		Vulkan:       true,

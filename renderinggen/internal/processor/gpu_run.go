@@ -24,8 +24,8 @@ func (p *Processor) RunGPU(ctx context.Context, prepared *PreparedJob) error {
 	// silently over-render a single-frame chunk.
 	firstFrame, lastFrame, hasFrameRange := jobFrameRange(job)
 	// Native NVENC is required for every visual job on the strict Vulkan
-	// profile. DirectYUV is reserved for a video-only plan; an image/text
-	// composition must use the native FullGraph surface path as well.
+	// profile. The worker reports semantic source/overlay facts; Chronon owns
+	// the compiled-program choice between DirectYUV and FullGraph.
 	hasSourceVideo := planHasVideoSource(prepared.Plan)
 	compositionRequired := planHasVisualOverlay(prepared.Plan)
 	gpuRequired := (hasSourceVideo || compositionRequired) && (p.strictNativeBackend ||
@@ -46,6 +46,10 @@ func (p *Processor) RunGPU(ctx context.Context, prepared *PreparedJob) error {
 		AudioSourcePath: prepared.AudioSourcePath,
 		Report:          p.report,
 		EncodePreset:    p.encodePreset,
+		// Forward the configured encoder instead of letting the adapter guess:
+		// the config value is validated at load, so whatever reaches here is
+		// what the CLI is asked to run with.
+		HardwareEncoder: p.hardwareEncoder,
 		// Canonical verification: the worker resolves the policy (single
 		// authority, RENDERINGGEN_RECEIPT_VERIFY) and requests it explicitly
 		// from Chronon; Chronon verifies and records what actually ran in the
@@ -55,9 +59,9 @@ func (p *Processor) RunGPU(ctx context.Context, prepared *PreparedJob) error {
 			Backend:            p.backend,
 			GPURequired:        gpuRequired,
 			CPUFallbackAllowed: !p.strictNativeBackend,
-			// DirectYUV is only for a genuinely video-only render. Any authored
-			// image/text/color layer requires the FullGraph so it can finish on a
-			// native Vulkan surface and feed NVENC without CPU readback.
+			// This is a semantic composition requirement, not a backend/path
+			// selection. Chronon classifies the compiled program after this
+			// request crosses the boundary.
 			CompositionRequired: compositionRequired,
 			VideoSourceRequired: planHasVideoSource(prepared.Plan),
 			PacketCopyAllowed:   true,

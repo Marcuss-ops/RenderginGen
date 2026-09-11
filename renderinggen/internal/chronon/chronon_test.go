@@ -92,7 +92,7 @@ func TestRenderArgsResolvesGPURequirementAtAdapterBoundary(t *testing.T) {
 		"-o", "/jobs/1/output/result.mp4",
 		"--hardware", "nvenc",
 		"--encoder-backend", "native",
-		"--gpu-hot-path-mode", "require_gpu_native",
+		"--gpu-hot-path-mode", "auto",
 	}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("renderArgs (GPU) = %#v, want %#v", got, want)
@@ -134,12 +134,42 @@ func TestRenderArgsForwardsEncodePresetOnNativeVideoPath(t *testing.T) {
 	for _, want := range []string{
 		"--hardware nvenc",
 		"--encoder-backend native",
-		"--gpu-hot-path-mode require_gpu_native",
+		"--gpu-hot-path-mode auto",
 		"--encode-preset p2",
 	} {
 		if !strings.Contains(joined, want) {
 			t.Fatalf("renderArgs=%q, want to contain %q", joined, want)
 		}
+	}
+}
+
+// TestRenderArgsForwardsConfiguredHardwareEncoder pins the boundary fix: the
+// encoder selected by the worker configuration is what the CLI is asked to
+// run with. It used to be hardcoded to nvenc, which made chronon.
+// hardware_encoder a config value with no effect. An empty value must still
+// resolve to the native default so the GPU contract is unchanged for workers
+// that do not select one.
+func TestRenderArgsForwardsConfiguredHardwareEncoder(t *testing.T) {
+	gpu := ExecutionRequirements{
+		GPURequired: true, CPUFallbackAllowed: false,
+		CompositionRequired: true, VideoSourceRequired: true, PacketCopyAllowed: true,
+	}
+
+	configured := renderArgs(RenderRequest{
+		PlanPath: "/jobs/1/plan.json", AssetsRoot: "/jobs/1/assets",
+		OutputPath: "/jobs/1/output/result.mp4",
+		HardwareEncoder: "nvenc_custom", Requirements: gpu,
+	})
+	if joined := strings.Join(configured, " "); !strings.Contains(joined, "--hardware nvenc_custom") {
+		t.Fatalf("renderArgs=%q, want the configured encoder forwarded", joined)
+	}
+
+	defaulted := renderArgs(RenderRequest{
+		PlanPath: "/jobs/1/plan.json", AssetsRoot: "/jobs/1/assets",
+		OutputPath: "/jobs/1/output/result.mp4", Requirements: gpu,
+	})
+	if joined := strings.Join(defaulted, " "); !strings.Contains(joined, "--hardware nvenc") {
+		t.Fatalf("renderArgs=%q, want the native default when no encoder is configured", joined)
 	}
 }
 
@@ -157,7 +187,7 @@ func TestRenderArgsForwardsEncodePresetOnNativeImageComposition(t *testing.T) {
 	joined := strings.Join(got, " ")
 	for _, want := range []string{
 		"--encoder-backend native",
-		"--gpu-hot-path-mode require_gpu_native",
+		"--gpu-hot-path-mode auto",
 		"--encode-preset p2",
 	} {
 		if !strings.Contains(joined, want) {
