@@ -15,22 +15,20 @@ import (
 	queueclient "github.com/Marcuss-ops/RenderingGen/queue/client"
 )
 
-// JobSchemaV1 identifies the renderinggen.job.v1 envelope.
-const JobSchemaV1 = "renderinggen.job"
-
-// JobSchemaVersionV1 is the version of the renderinggen.job.v1 envelope.
-const JobSchemaVersionV1 = 1
+// The envelope identity and job-type vocabulary are ALIASES of the public
+// wire contract (queue/client), which owns them. Declaring them again here —
+// which the worker used to do — let a value change in one module without the
+// other, and a "renderinggen.job" rename would have needed three synchronized
+// edits and no test.
+const (
+	JobSchemaV1        = queueclient.JobSchemaV1
+	JobSchemaVersionV1 = queueclient.JobSchemaVersionV1
+)
 
 const (
-	JobTypeRenderSegment  = "render_segment"
-	JobTypeOverlayPrepare = "overlay.prepare"
-	JobTypeOverlayRender  = "overlay.render"
-	// JobTypeLegacy is the EXPLICIT marker that opts a development fixture out
-	// of the v1 envelope requirements and of content-hash verification. It is
-	// the single auditable signal: nothing else (a missing schema, a short
-	// hash) may imply legacy, because those are what a producer bug looks
-	// like.
-	JobTypeLegacy = "legacy"
+	JobTypeRenderSegment  = queueclient.JobTypeRenderSegment
+	JobTypeOverlayPrepare = queueclient.JobTypeOverlayPrepare
+	JobTypeOverlayRender  = queueclient.JobTypeOverlayRender
 )
 
 // RenewConflictError identifies a permanent lease loss reported by the queue
@@ -38,15 +36,21 @@ const (
 // errors.As with this type to abort immediately instead of retrying.
 var RenewConflictError = queueclient.ErrLeaseConflict
 
-// State is the lifecycle state of a job, as reported on claim.
-type State string
+// State is the lifecycle state of a job, as reported on claim. It is an
+// ALIAS of the canonical wire type: the worker, the queue service and every
+// producer share one State definition, so the worker can represent every
+// state the queue can assign it (including finalizing and cancelled, which a
+// locally-declared subset silently could not).
+type State = queueclient.State
 
 const (
-	StatePending   State = "pending"
-	StateRunning   State = "running"
-	StateCompleted State = "completed"
-	StateFailed    State = "failed"
-	StateRendered  State = "rendered"
+	StatePending    = queueclient.StatePending
+	StateRunning    = queueclient.StateRunning
+	StateFinalizing = queueclient.StateFinalizing
+	StateCompleted  = queueclient.StateCompleted
+	StateFailed     = queueclient.StateFailed
+	StateCancelled  = queueclient.StateCancelled
+	StateRendered   = queueclient.StateRendered
 )
 
 // AssetRef points at an asset in the central artifact store by content hash

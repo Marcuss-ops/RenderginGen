@@ -10,7 +10,8 @@ Requires=renderinggen-queue.service chronon3d.service
 [Service]
 Type=simple
 User=pierone
-WorkingDirectory=/home/pierone/src/go-master/projects/Pyt/VeloxEditing/RenderingGen
+# No WorkingDirectory: the worker resolves every asset/plan path from its own
+# config, so the unit carries no machine-specific source checkout path.
 ExecStart=/usr/local/bin/renderinggen --config /etc/renderinggen/renderinggen.yaml
 Restart=on-failure
 RestartSec=2

@@ -6,16 +6,21 @@ import (
 	"errors"
 	"fmt"
 	"time"
+
+	"github.com/Marcuss-ops/RenderingGen/queue/internal/model"
 )
 
-// Attempt statuses recorded in render_attempts.
+// Attempt statuses recorded in render_attempts. The vocabulary lives once in
+// model.AttemptStatuses() (pinned to the SQL CHECK constraint by
+// queue/internal/model/state_schema_test.go); these names are only the local
+// spelling used by the statements below.
 const (
-	attemptStatusRunning      = "running"
-	attemptStatusCompleted    = "completed"
-	attemptStatusFailed       = "failed"
-	attemptStatusLeaseExpired = "lease_expired"
-	attemptStatusRendered     = "rendered"
-	attemptStatusCancelled    = "cancelled"
+	attemptStatusRunning      = string(model.AttemptRunning)
+	attemptStatusCompleted    = string(model.AttemptCompleted)
+	attemptStatusFailed       = string(model.AttemptFailed)
+	attemptStatusLeaseExpired = string(model.AttemptLeaseExpired)
+	attemptStatusRendered     = string(model.AttemptRendered)
+	attemptStatusCancelled    = string(model.AttemptCancelled)
 )
 
 // attemptID builds the deterministic, readable ID for an attempt.
@@ -38,9 +43,9 @@ func runningAttemptID(ctx context.Context, tx *sql.Tx, jobID string) (string, er
 	var id string
 	err := tx.QueryRowContext(ctx, `
 		SELECT id FROM render_attempts
-		WHERE job_id = $1 AND status = 'running'
+		WHERE job_id = $1 AND status = $2
 		ORDER BY attempt_number DESC
-		LIMIT 1`, jobID).Scan(&id)
+		LIMIT 1`, jobID, attemptStatusRunning).Scan(&id)
 	if errors.Is(err, sql.ErrNoRows) {
 		return "", nil
 	}

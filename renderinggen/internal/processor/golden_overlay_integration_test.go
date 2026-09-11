@@ -14,82 +14,9 @@ import (
 	"time"
 )
 
-// TestProcessGoldenOverlayJobV1 runs the whole pipeline against the real
-// chronon3d_cli binary (skipped when it is not installed) with the canonical
-// GoldenOverlayJobV1 workload:
-//
-//	background.jpg (full 5s)
-//	+ "QUESTO CAMBIA TUTTO" (caption_card, f20-60)
-//	+ "APPLE"               (active_word_pop, f65-95)
-//	+ apple.png             (contain, right, f90-135)
-//
-// The assets (background, apple overlay, vendored Poppins-Bold font) are the
-// deterministic fixtures under ../../../testdata/golden and are pre-seeded
-// into the artifact store by their content hashes, exactly as the object
-// store would hold them for a real queue job. The test asserts the golden's
-// immutability (fixture hashes must match the payload) and the full chain:
-// validate -> materialize -> plan.json -> render -> publish.
-func TestProcessGoldenOverlayJobV1(t *testing.T) {
-	home := os.Getenv("CHRONON_HOME")
-	if home == "" {
-		home = "/opt/chronon3d"
-	}
-	cli := &chronon.Client{Home: home}
-	if err := cli.Verify(); err != nil {
-		t.Skipf("chronon3d_cli not available: %v", err)
-	}
-
-	store := storage.New(storage.NewMemory(), storage.Options{})
-	proc := New(t.TempDir(), "software", cli.Version(), "http://store:9000", store, cli)
-
-	// Decode the canonical golden job and re-seed its assets by hash, as the
-	// object store would hold them for a real queue submission.
-	var job queue.Job
-	if err := json.Unmarshal([]byte(chronon.GoldenOverlayJobV1), &job); err != nil {
-		t.Fatalf("decode GoldenOverlayJobV1: %v", err)
-	}
-	if job.ID != "golden-overlay-v1" || job.Schema != queue.JobSchemaV1 {
-		t.Fatalf("unexpected golden job envelope: %+v", job)
-	}
-	seedGoldenAssets(t, store, job.Assets)
-
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
-	defer cancel()
-
-	artifact, err := proc.Process(ctx, &job)
-	if err != nil {
-		t.Fatalf("process: %v", err)
-	}
-
-	if artifact.Kind != "segment" || artifact.ContentType != "video/mp4" {
-		t.Fatalf("artifact type: kind=%q content_type=%q", artifact.Kind, artifact.ContentType)
-	}
-	if artifact.ArtifactHash == "" || artifact.StorageKey != artifact.ArtifactHash {
-		t.Fatalf("artifact hash: %+v", artifact)
-	}
-	if artifact.SizeBytes <= 0 {
-		t.Fatalf("artifact size = %d", artifact.SizeBytes)
-	}
-	if artifact.Backend != "software" {
-		t.Fatalf("artifact backend = %q", artifact.Backend)
-	}
-
-	// The rendered 5s mp4 was published to the artifact store.
-	stored, err := store.Get(ctx, artifact.StorageKey)
-	if err != nil {
-		t.Fatalf("get published artifact: %v", err)
-	}
-	if len(stored) == 0 {
-		t.Fatalf("published artifact is empty")
-	}
-	if int64(len(stored)) != artifact.SizeBytes {
-		t.Fatalf("published size %d != artifact size %d", len(stored), artifact.SizeBytes)
-	}
-}
-
 // TestGoldenSemanticOverlayJobV1Compiles verifies the semantic golden lowers
 // into the concrete Chronon plan WITHOUT the CLI: the golden must always
-// compile (CompileIfSemantic) into the expected layer set with the existing
+// compile (CompileSemantic) into the expected layer set with the existing
 // preset vocabulary. This guards the golden in environments where
 // chronon3d_cli is not installed; TestProcessGoldenSemanticOverlayJobV1 runs
 // the full render when it is.
@@ -99,12 +26,15 @@ func TestGoldenSemanticOverlayJobV1Compiles(t *testing.T) {
 		t.Fatalf("decode GoldenSemanticOverlayJobV1: %v", err)
 	}
 
-	compiled, assets, semantic, err := overlay.CompileIfSemantic(job.RenderPlan)
+	// One compile entry point: a successful return proves the golden went
+	// through the semantic lowering.
+	result, err := overlay.CompileSemantic(job.RenderPlan)
 	if err != nil {
 		t.Fatalf("compile semantic golden: %v", err)
 	}
-	if !semantic {
-		t.Fatal("golden must be recognized as a semantic plan")
+	compiled, assets := result.Plan, result.Assets
+	if compiled == nil || compiled.Schema != "chronon.render-plan.v2" {
+		t.Fatalf("golden must lower to a concrete v2 plan, got %+v", compiled)
 	}
 	if len(assets) != 1 {
 		t.Fatalf("compiled assets = %d, want 1 (background)", len(assets))
@@ -158,7 +88,7 @@ func TestGoldenSemanticOverlayJobV1Compiles(t *testing.T) {
 
 // capturingRenderer wraps the real Chronon client so the test can inspect the
 // compiled plan.json the worker wrote before delegating to chronon3d_cli. It
-// proves the semantic golden really goes through CompileIfSemantic: the plan
+// proves the semantic golden really goes through CompileSemantic: the plan
 // handed to the renderer must be the concrete chronon.render-plan.v2, never
 // the PipelineGen overlay-plan.v1.
 type capturingRenderer struct {
@@ -178,14 +108,14 @@ func (c *capturingRenderer) Render(ctx context.Context, req chronon.RenderReques
 // TestProcessGoldenSemanticOverlayJobV1 runs the whole pipeline against the
 // real chronon3d_cli binary (skipped when it is not installed) with the
 // canonical GoldenSemanticOverlayJobV1 workload — the SAME golden content as
-// TestProcessGoldenOverlayJobV1 but expressed in PipelineGen's semantic
+// the retired v1 golden workload but expressed in PipelineGen's semantic
 // renderinggen.overlay-plan.v1 contract:
 //
 //	background.jpg (IMAGE_OVERLAY, full 5s, cover)
 //	+ "QUESTO CAMBIA TUTTO" (IMPORTANT_PHRASE, caption_card, f20-60)
 //	+ "APPLE"               (IMPORTANT_WORD,   active_word_pop, f65-95)
 //
-// The worker must lower the semantic plan (CompileIfSemantic), materialize the
+// The worker must lower the semantic plan (CompileSemantic), materialize the
 // content-addressed asset_refs, write the concrete plan.json, render with the
 // real CLI and publish the MP4 — one pipeline, no separate renderer.
 func TestProcessGoldenSemanticOverlayJobV1(t *testing.T) {
@@ -259,7 +189,7 @@ func TestProcessGoldenSemanticOverlayJobV1(t *testing.T) {
 	}
 
 	// The plan the renderer received must be the CONCRETE Chronon plan: the
-	// semantic golden proves the full CompileIfSemantic -> plan.json path.
+	// semantic golden proves the full CompileSemantic -> plan.json path.
 	if len(renderer.planJSON) == 0 {
 		t.Fatal("renderer never received a plan.json")
 	}

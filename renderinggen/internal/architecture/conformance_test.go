@@ -34,7 +34,7 @@ func TestArchitectureConformance(t *testing.T) {
 		return
 	}
 
-	newViolations, stale := base.Split(vs, PathExists)
+	newViolations, stale := base.Split(vs, AbsentSibling)
 
 	if len(newViolations) > 0 {
 		var sb strings.Builder
@@ -101,23 +101,140 @@ func TestRulesDetectEveryMarker(t *testing.T) {
 	}
 }
 
-// TestPartnnFilenameRule proves the filename rule fires without reading bytes.
+// TestPartnnFilenameRule proves the filename rule fires without reading bytes,
+// for EVERY scanned carrier. The rule used to be scoped to .go, which let a
+// live `run-golden-overlay_part02.sh` in the E2E gate pass untouched while the
+// documentation claimed the rule covered the whole workspace.
 func TestPartnnFilenameRule(t *testing.T) {
-	dir := t.TempDir()
-	full := filepath.Join(dir, "client_part01.go")
-	if err := os.WriteFile(full, []byte("package client\n"), 0o644); err != nil {
-		t.Fatal(err)
-	}
-	got, err := ScanTargets([]Target{{Dir: dir}})
-	if err != nil {
-		t.Fatal(err)
-	}
-	for _, v := range got {
-		if v.Rule == "partnn_filename" && v.File == "client_part01.go" {
-			return
+	for _, name := range []string{"client_part01.go", "run-golden-overlay_part02.sh"} {
+		dir := t.TempDir()
+		full := filepath.Join(dir, name)
+		body := "package client\n"
+		if strings.HasSuffix(name, ".sh") {
+			body = "#!/usr/bin/env bash\n"
+		}
+		if err := os.WriteFile(full, []byte(body), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		got, err := ScanTargets([]Target{{Dir: dir}})
+		if err != nil {
+			t.Fatal(err)
+		}
+		found := false
+		for _, v := range got {
+			if v.Rule == "partnn_filename" && v.File == name {
+				found = true
+				break
+			}
+		}
+		if !found {
+			t.Errorf("partnn_filename did not fire for %s: %+v", name, got)
 		}
 	}
-	t.Fatalf("partnn_filename did not fire: %+v", got)
+}
+
+// TestRulesCatchEscapedCarriers is the regression for the evasion that made
+// the gate lie: a shell script embedding a JSON document escapes its quotes,
+// so a rule matching `"chronon.render-plan"` saw `\"chronon.render-plan\"`
+// and stayed silent while the live smoke test submitted the forbidden
+// unversioned schema. Rules now match the unescaped projection of each line.
+func TestRulesCatchEscapedCarriers(t *testing.T) {
+	cases := []struct {
+		name string
+		file string
+		line string
+	}{
+		{"escaped quotes in a shell script", "x/run.sh", `  -d '{"id":"j","render_plan":{"schema": "chronon.render-plan", "version":1}}'`},
+		{"escaped v1 in yaml", "x/cfg.yaml", `plan: "chronon.render-plan.v1"`},
+		{"home path in yaml", "x/cfg.yaml", `home: /home/pierone/src/Chronon3d/build`},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			dir := t.TempDir()
+			full := filepath.Join(dir, filepath.FromSlash(tc.file))
+			if err := os.MkdirAll(filepath.Dir(full), 0o755); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.WriteFile(full, []byte(tc.line+"\n"), 0o644); err != nil {
+				t.Fatal(err)
+			}
+			got, err := ScanTargets([]Target{{Dir: dir}})
+			if err != nil {
+				t.Fatal(err)
+			}
+			if len(got) == 0 {
+				t.Fatalf("no rule fired for %q", tc.line)
+			}
+		})
+	}
+}
+
+// TestConformanceDocListsEveryRule turns the rule table in CONFORMANCE.md from
+// an independent copy of the rule vocabulary into a checked projection: the
+// gate's rule ids and the documented ids must be the same set, in both
+// directions. A renamed or deleted rule that leaves the doc behind (or a
+// documented rule that no longer exists) fails here instead of misleading the
+// next reader.
+func TestConformanceDocListsEveryRule(t *testing.T) {
+	docPath := filepath.Join(RepoRoot(), "CONFORMANCE.md")
+	raw, err := os.ReadFile(docPath)
+	if err != nil {
+		t.Fatalf("read CONFORMANCE.md: %v", err)
+	}
+	documented := map[string]bool{}
+	for _, line := range strings.Split(string(raw), "\n") {
+		trimmed := strings.TrimSpace(line)
+		if !strings.HasPrefix(trimmed, "| `") {
+			continue
+		}
+		rest := trimmed[len("| `"):]
+		end := strings.Index(rest, "`")
+		if end <= 0 {
+			continue
+		}
+		documented[rest[:end]] = true
+	}
+
+	known := map[string]bool{}
+	for _, r := range Rules() {
+		known[r.id] = true
+		if !documented[r.id] {
+			t.Errorf("rule %q is implemented but not listed in CONFORMANCE.md", r.id)
+		}
+	}
+	for id := range documented {
+		if !known[id] {
+			t.Errorf("CONFORMANCE.md documents rule %q, which no longer exists", id)
+		}
+	}
+}
+
+// TestBaselineRulesAreKnown pins the ledger to the rule set: a baseline entry
+// whose rule was renamed or deleted can never match a violation again, so it
+// would sit in the ledger forever without this check.
+func TestBaselineRulesAreKnown(t *testing.T) {
+	raw, err := os.ReadFile(baselinePath())
+	if err != nil {
+		t.Fatalf("read baseline: %v", err)
+	}
+	known := map[string]bool{}
+	for _, r := range Rules() {
+		known[r.id] = true
+	}
+	for i, line := range strings.Split(string(raw), "\n") {
+		trimmed := strings.TrimSpace(line)
+		if trimmed == "" || strings.HasPrefix(trimmed, "#") {
+			continue
+		}
+		rule, _, ok := strings.Cut(trimmed, "|")
+		if !ok {
+			t.Errorf("baseline:%d: entry must be rule|file", i+1)
+			continue
+		}
+		if !known[rule] {
+			t.Errorf("baseline:%d: rule %q is not implemented (immortal ledger line)", i+1, rule)
+		}
+	}
 }
 
 // TestRepoRootContainsModule pins the root discovery used by ScanAll.

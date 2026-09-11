@@ -6,7 +6,7 @@
 // registry automatically enters this suite and fails CI until it really
 // compiles. No hardcoded preset lists, ever.
 //
-// Every fixture goes through the REAL production path — CompileIfSemantic on
+// Every fixture goes through the REAL production path — CompileSemantic on
 // a renderinggen.overlay-plan.v1 document — so the suite certifies the single
 // lowering chain that PipelineGen submits to, not a test-only compiler.
 package overlay
@@ -89,14 +89,14 @@ func certificationPlan(t *testing.T, presetID string) *Plan {
 	if err != nil {
 		t.Fatalf("build certification plan: %v", err)
 	}
-	plan, _, semantic, err := CompileIfSemantic([]byte(raw))
+	// CompileSemantic is the single compile entry point: a successful return
+	// IS the proof that the plan went through the semantic lowering (there is
+	// no "compiled but not semantic" outcome any more).
+	result, err := CompileSemantic([]byte(raw))
 	if err != nil {
 		t.Fatalf("compile certification plan %s: %v", presetID, err)
 	}
-	if !semantic {
-		t.Fatalf("certification plan %s did not go through the semantic compiler", presetID)
-	}
-	return plan
+	return result.Plan
 }
 
 // TestFinal_AllOfficialPresetsCovered is the completeness gate: the registry
@@ -320,7 +320,7 @@ func TestFinal_MotionCompileFailureFailsClosed(t *testing.T) {
 			`"items":[{"id":"img","template_id":"IMAGE_OVERLAY","preset_id":"image_scale_in","motion_id":"totally_unknown_motion","start_ms":0,"end_ms":1000,`+
 			`"asset_refs":[{"asset_id":%q,"sha256":%q,"url":"https://store.example/x.jpg","media_type":"image/jpeg"}]}]}`,
 		certificationAssetID, certificationAssetSHA)
-	_, _, _, err := CompileIfSemantic([]byte(raw))
+	_, err := CompileSemantic([]byte(raw))
 	if err == nil {
 		t.Fatal("unknown motion compiled silently: layer would render static instead of failing")
 	}

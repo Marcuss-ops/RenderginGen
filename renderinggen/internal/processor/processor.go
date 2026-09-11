@@ -172,6 +172,10 @@ func (p *Processor) Process(ctx context.Context, job *queue.Job) (queue.Artifact
 // fields). The artifact bytes are durably stored under artifact.StorageKey, so
 // a publication retry can skip rendering entirely.
 //
+// Render is the serial counterpart of the worker pools' FinalizeJob stage: it
+// stops before Publish on purpose. Use Process for the full serial pipeline
+// (Render + Publish), which resolves the same publication policy as the pools.
+//
 // The implementation is the staged pipeline (PrepareJob -> RunGPU ->
 // FinalizeJob) run serially for this job; the worker's concurrent pools use
 // the same stages to overlap CPU work with the GPU lane.

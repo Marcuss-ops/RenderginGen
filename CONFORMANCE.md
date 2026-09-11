@@ -34,13 +34,20 @@ siblings. Each rule maps to one deleted contract:
 | `render_plan_v1_schema` | `chronon.render-plan.v1` |
 | `render_plan_unversioned_schema` | the unversioned `"chronon.render-plan"` literal |
 | `module_path_typo` | the `RenderginGen` module-path typo |
-| `hardcoded_home_path` | a hardcoded developer home path in Go test/source |
+| `hardcoded_home_path` | a hardcoded developer home path in any source or configuration carrier (not only Go) |
 | `template_alias_org_default` | the dead `ORG_DEFAULT` alias (canonical: `ORGANIZATION_DEFAULT`) |
 | `template_alias_gpe_default` | the dead `GPE_DEFAULT` alias (canonical: `LOCATION_DEFAULT`) |
 | `entity_template_inference` | classifying entity/phrase/word from `template_id` instead of `kind` |
 | `semantic_stats_second_pass` | a second stats interpretation outside the compile pass |
-| `partnn_filename` | `*_partNN.go` manual-splitting files |
+| `partnn_filename` | `*_partNN.*` manual-splitting files (any scanned carrier, including shell) |
 | `legacy_layer_preset_field` | a bare `json:"preset"` slot on the render-plan layer |
+
+This table is a checked projection of `Rules()`, not an independent copy:
+`TestConformanceDocListsEveryRule` fails if the two rule-id sets differ in
+either direction. Rules match the *unescaped* projection of each line, because
+a shell script embedding a JSON document (`\"chronon.render-plan\"`) otherwise
+hides the marker behind its backslash — `TestRulesCatchEscapedCarriers` is the
+regression for exactly that evasion.
 
 ## Run it
 
@@ -86,14 +93,19 @@ Never run it to hide a new violation.
 
 ## Current baseline
 
-The remaining ledger entries are pre-existing, tracked work:
+The ledger file is the only source of truth for what is still baselined; this
+section describes it rather than enumerating it, so it cannot drift away from
+the file. `TestBaselineRulesAreKnown` fails on a ledger line whose rule no
+longer exists (an immortal entry), and a repo-local entry whose file was
+deleted is reported stale (previously only an absent sibling repository was
+ignored).
 
-- `partnn_filename` — `*_partNN.go` files across the three repositories, to be
-  renamed by responsibility.
-- `render_plan_v1_schema` / `render_plan_unversioned_schema` — the legacy
-  PipelineGen v1 compiler (`refactored/internal/capabilities/overlays/chronon.go`)
-  and its golden matrix, plus the Chronon3d SDK-consumer fixtures.
-- `legacy_layer_preset_field` — the same legacy v1 layer model.
+**The ledger is currently empty.** Every rule above is enforced with zero
+exemptions: the legacy unversioned `chronon.render-plan` producers, the legacy
+v1 layer model, the machine-specific paths and the manual-splitting files have
+all been removed from the tree, so their ledger lines were ratcheted away.
+The rules stay in the gate so the deleted shapes cannot come back.
 
-These are the targets of the legacy-contract demolition; the gate guarantees
-they cannot grow while that work proceeds.
+A rule with no ledger line and no violation is a *live* rule; a rule with no
+ledger line but a surviving occurrence fails the gate as a NEW violation. There
+is no third state.

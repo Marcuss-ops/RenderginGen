@@ -163,25 +163,16 @@ func failProbe(cancel context.CancelFunc, waitDone <-chan error, path string, ca
 	return false, true
 }
 
-// closedGOPCadence reports whether keyframes occur at strictly uniform packet
-// intervals starting at the first packet: positions 0, L, 2L, ... Uniform
-// IDR boundaries are the observable signature of closed-GOP encoding (each
-// GOP starts an independent IDR at a fixed cadence), while scene-cut or open
-// GOP structures break the cadence. Fewer than two keyframes cannot prove a
+// closedGOPPositionsCadence is the single cadence decision over keyframe
+// packet indices (0-based): keyframes must occur at strictly uniform packet
+// intervals starting at the first packet (positions 0, L, 2L, ...). Uniform IDR
+// boundaries are the observable signature of closed-GOP encoding (each GOP
+// starts an independent IDR at a fixed cadence), while scene-cut or open GOP
+// structures break the cadence. Fewer than two full intervals cannot prove a
 // cadence, so the function returns false.
-func closedGOPCadence(keyframes []bool) bool {
-	positions := make([]int, 0, 8)
-	for i, kf := range keyframes {
-		if kf {
-			positions = append(positions, i)
-		}
-	}
-	return closedGOPPositionsCadence(positions)
-}
-
-// closedGOPPositionsCadence is the shared cadence decision over keyframe
-// packet indices (0-based). Streaming probes collect positions directly and
-// never materialize a per-packet flag array.
+//
+// The streaming probe collects positions directly and never materializes a
+// per-packet flag array, so there is exactly one implementation of this rule.
 func closedGOPPositionsCadence(positions []int) bool {
 	if len(positions) == 0 || positions[0] != 0 {
 		return false

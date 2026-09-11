@@ -29,7 +29,7 @@ type ProbeResult struct {
 	FrameCount         int
 	FirstFrameKeyframe bool
 	// ClosedGOP certifies a uniform closed-GOP structure from the container's
-	// sync-sample table (see closedGOPCadence): the stream starts with a
+	// sync-sample table (see closedGOPPositionsCadence): the stream starts with a
 	// keyframe and every GOP boundary occurs at a strictly regular interval.
 	// It is a conservative proxy for closed-GOP encoding — it is never derived
 	// from FirstFrameKeyframe alone and fails closed (false) when the cadence

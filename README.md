@@ -229,7 +229,7 @@ cd infra/docker && docker compose up --build -d
 
 ### Golden canary (permanent regression gate)
 
-`GoldenOverlayJobV1` (`testdata/golden/golden-overlay-job-v1.json`) is the
+`GoldenOverlayJobV2` (`testdata/golden/golden-overlay-job-v2.json`) is the
 **frozen golden job** for the real workload — 1280×720 @ 30fps, 5 seconds
 (150 frames), with a background image, an important phrase
 (`title_centered`), an important word (`kinetic_word`) and an image overlay.
@@ -271,7 +271,7 @@ with `make golden-e2e-reset`. The canary also runs in CI on every push to
   "worker": "renderinggen-77",
   "renderinggen": "0.1.0",
   "chronon": "0.9.4",
-  "overlay_schema": 3,
+  "overlay_schema": 1,
   "backend": "software",
   "status": "ready"
 }

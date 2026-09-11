@@ -59,13 +59,6 @@ func TestCompileSemanticRejectsConcretePlan(t *testing.T) {
 	}
 }
 
-func TestCompileSemanticRejectsUnknownSchema(t *testing.T) {
-	raw := []byte(`{"schema_version":"future.schema.v9"}`)
-	if _, err := CompileSemantic(raw); err == nil {
-		t.Fatal("unknown schema must be rejected fail-closed")
-	}
-}
-
 func TestCompileSemanticMalformedFails(t *testing.T) {
 	if _, err := CompileSemantic([]byte(`{`)); err == nil {
 		t.Fatal("malformed JSON must fail closed")

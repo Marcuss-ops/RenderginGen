@@ -14,7 +14,9 @@ workspace:
   root: /dev/shm/renderinggen/jobs-canary-6
 chronon:
   profile: gpu-vulkan-native
-  home: /home/pierone/src/go-master/projects/Pyt/VeloxEditing/Chronon3d/build/chronon/linux-video-release
+  # Canonical install prefix (see README); override on a host that keeps the
+  # runtime elsewhere instead of committing a machine-specific build path.
+  home: /opt/chronon3d
   mode: ipc
   socket_path: /run/chronon3d/chronon.sock
   hardware_encoder: nvenc

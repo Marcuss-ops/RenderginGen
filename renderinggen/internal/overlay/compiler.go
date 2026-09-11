@@ -22,6 +22,14 @@ import (
 // compiles it mechanically; PipelineGen remains the owner of its decisions.
 const SemanticSchema = "renderinggen.overlay-plan.v1"
 
+// SemanticSchemaVersion is the integer form of the same contract version. It
+// is the SINGLE source for the version the worker advertises (`overlay_schema`
+// on /health and in the worker registry): advertising a bare integer that no
+// consumer could map back to a document schema was an ambiguous identity fact.
+// The advertised value is pinned to SemanticSchema by
+// schema_version_test.go.
+const SemanticSchemaVersion = 1
+
 // Plan is the single concrete chronon.render-plan.v2 model. The compiler
 // builds it, the processor mutates it mechanically (asset-path normalization,
 // subtitle burn-in) and it is marshaled exactly once at the Chronon boundary.
@@ -45,10 +53,14 @@ func newPlan(jobID string, width, height, fpsNum, fpsDen int, duration int64) *P
 		Output: Output{Path: "result.mp4", Format: "mp4", Codec: "h264"}}
 }
 
-// CompileIfSemantic lowers the PipelineGen semantic contract to the concrete
-// Chronon plan consumed by the worker. It resolves RenderingGen's official
-// preset catalog; it does not perform NER, entity linking or editorial
-// ranking. Those decisions arrive in template_id/entity_id from PipelineGen.
+// CompileSemantic lowers the PipelineGen semantic contract to the concrete
+// Chronon plan consumed by the worker. It returns the plan, its materialized
+// assets and the ledger counters produced by the SAME compile pass, so the
+// ledger can never drift from the layers actually emitted.
+//
+// It resolves RenderingGen's official preset catalog; it does not perform NER,
+// entity linking or editorial ranking — those decisions arrive in
+// kind/template_id/preset_id/text from PipelineGen.
 //
 // It returns the typed plan so downstream stages (asset-path normalization,
 // subtitle burn, metadata extraction, backend gating) mutate ONE in-memory
@@ -59,19 +71,6 @@ func newPlan(jobID string, width, height, fpsNum, fpsDen int, duration int64) *P
 // lowering. Byte-for-byte pass-through of an untyped document bypasses
 // validation and style resolution, so anything that is not the semantic
 // overlay-plan contract is rejected instead of executed.
-func CompileIfSemantic(raw []byte) (*Plan, []Asset, bool, error) {
-	result, err := CompileSemantic(raw)
-	if err != nil {
-		return nil, nil, false, err
-	}
-	return result.Plan, result.Assets, true, nil
-}
-
-// CompileSemantic lowers the PipelineGen semantic contract and returns the
-// plan, its materialized assets and the ledger counters produced by the SAME
-// compile pass. It is the preferred entry point: callers never re-read the raw
-// document to count overlays, so the ledger can never drift from the layers
-// that were actually emitted.
 func CompileSemantic(raw []byte) (CompileResult, error) {
 	var probe struct {
 		SchemaVersion string `json:"schema_version"`

@@ -14,7 +14,7 @@ import (
 // contract (with content-addressed asset_refs), stay byte-identical to the
 // canonical JSON file the canary submits, and reference fixtures whose sha256
 // matches the payload. The golden covers the PipelineGen semantic path
-// through the whole worker chain: CompileIfSemantic -> materialize ->
+// through the whole worker chain: CompileSemantic -> materialize ->
 // plan.json -> chronon3d_cli -> mp4.
 //
 // The canonical copy is testdata/golden/golden-semantic-overlay-job-v1.json

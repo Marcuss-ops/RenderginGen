@@ -45,8 +45,8 @@ func TestClosedGOPCadence(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			if got := closedGOPCadence(tc.keyframes); got != tc.want {
-				t.Fatalf("closedGOPCadence = %v, want %v", got, tc.want)
+			if got := closedGOPPositionsCadence(positionsOf(tc.keyframes)); got != tc.want {
+				t.Fatalf("closedGOPPositionsCadence = %v, want %v", got, tc.want)
 			}
 		})
 	}
@@ -62,4 +62,17 @@ func flagsAt(n int, positions ...int) []bool {
 		}
 	}
 	return flags
+}
+
+// positionsOf projects a packet-flag slice onto keyframe indices. It lives in
+// the test because the streaming probe (the only production caller) collects
+// positions directly and never builds a flag slice.
+func positionsOf(flags []bool) []int {
+	positions := make([]int, 0, 8)
+	for i, kf := range flags {
+		if kf {
+			positions = append(positions, i)
+		}
+	}
+	return positions
 }

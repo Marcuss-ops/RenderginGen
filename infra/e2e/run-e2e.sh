@@ -5,9 +5,12 @@
 #   submit job -> worker claims -> plan.json -> real chronon3d_cli render
 #   -> result.mp4 -> artifact store -> queue completed -> download artifact
 #
-# The job uses a self-contained, asset-free color render plan, so no sample
-# media is needed. It proves the whole queue -> worker -> Chronon3d (software
-# backend) -> object store loop.
+# The job uses a self-contained, asset-free SEMANTIC overlay plan (a background
+# color), so no sample media is needed. The worker compiles it to
+# chronon.render-plan.v2 — this smoke test used to submit a concrete Chronon
+# plan directly, which is not a supported input on any worker path. It proves
+# the whole queue -> worker -> compiler -> Chronon3d (software backend) ->
+# object store loop.
 #
 # Usage:
 #   1. Start infrastructure: (cd infra/docker && docker compose up -d postgres objectstore)
@@ -31,14 +34,15 @@ curl -fsS -X POST "${QUEUE_URL}/jobs" \
     \"schema\": \"renderinggen.job\",
     \"version\": 1,
     \"render_plan\": {
-      \"schema\": \"chronon.render-plan\",
-      \"version\": 1,
-      \"job_id\": \"${JOB_ID}\",
-      \"canvas\": { \"width\": 320, \"height\": 180, \"fps\": 1, \"duration_frames\": 1 },
-      \"layers\": [
-        { \"id\": \"background\", \"type\": \"color\", \"color\": [0.08, 0.12, 0.25, 1.0] }
-      ],
-      \"output\": { \"path\": \"result.mp4\", \"format\": \"mp4\", \"codec\": \"h264\" }
+      \"schema_version\": \"renderinggen.overlay-plan.v1\",
+      \"plan_id\": \"${JOB_ID}\",
+      \"video_id\": \"${JOB_ID}\",
+      \"width\": 320,
+      \"height\": 180,
+      \"fps_num\": 1,
+      \"fps_den\": 1,
+      \"duration_ms\": 1000,
+      \"background\": { \"kind\": \"color\", \"color\": [0.08, 0.12, 0.25, 1.0] }
     },
     \"assets\": []
   }"

@@ -197,7 +197,7 @@ func TestProcessPreservesRawTimingSidecarReference(t *testing.T) {
 }
 
 // TestProcessExecutesSemanticOverlayPlan verifies the full semantic path in
-// one worker run: CompileIfSemantic lowers the PipelineGen overlay-plan.v1
+// one worker run: CompileSemantic lowers the PipelineGen overlay-plan.v1
 // into the concrete chronon render-plan, the content-addressed asset_refs
 // are materialized at their compiled logical paths, plan.json on disk is the
 // CONCRETE plan (never the semantic one), Chronon renders, and the MP4 is

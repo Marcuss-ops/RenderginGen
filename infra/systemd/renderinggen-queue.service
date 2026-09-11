@@ -7,7 +7,9 @@ Requires=docker.service
 [Service]
 Type=simple
 User=pierone
-WorkingDirectory=/home/pierone/src/go-master/projects/Pyt/VeloxEditing/RenderingGen
+# No WorkingDirectory: every path below is absolute, so the unit carries no
+# machine-specific source checkout path. Provision binaries in /usr/local/bin
+# and config in /etc/renderinggen (see README).
 EnvironmentFile=-/etc/renderinggen/queue.env
 ExecStart=/usr/local/bin/renderinggen-queue --addr 127.0.0.1:8081 --lease 10m --worker-stale-after 3m
 Restart=on-failure

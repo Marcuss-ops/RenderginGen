@@ -6,35 +6,36 @@ import (
 	"testing"
 )
 
-// TestCompileIfSemanticRejectsUntypedConcretePlan pins the fail-closed
+// TestCompileSemanticRejectsUntypedConcretePlan pins the fail-closed
 // execution-worker boundary: a document without schema_version is rejected.
 // The historical byte-for-byte pass-through let concrete plans bypass the
 // compiler entirely — that bypass is the bug this test guards against.
-func TestCompileIfSemanticRejectsUntypedConcretePlan(t *testing.T) {
+func TestCompileSemanticRejectsUntypedConcretePlan(t *testing.T) {
 	raw := []byte(`{"schema":"chronon.render-plan.v2","version":2,"job_id":"j","canvas":{"width":1280,"height":720,"fps_num":30,"fps_den":1,"duration_frames":150},"layers":[{"id":"bg","type":"image","asset":"assets/background.jpg","start_frame":0,"duration_frames":150}],"output":{"path":"result.mp4","format":"mp4","codec":"h264"}}`)
-	compiled, assets, semantic, err := CompileIfSemantic(raw)
+	result, err := CompileSemantic(raw)
 	if err == nil {
-		t.Fatalf("untyped concrete plan must be rejected, got compiled=%+v semantic=%v", compiled, semantic)
+		t.Fatalf("untyped concrete plan must be rejected, got compiled=%+v", result.Plan)
 	}
-	if len(assets) != 0 {
-		t.Fatalf("rejected plan must synthesize no assets, got %+v", assets)
+	if len(result.Assets) != 0 {
+		t.Fatalf("rejected plan must synthesize no assets, got %+v", result.Assets)
 	}
 	if !strings.Contains(err.Error(), "only accepted contract") {
 		t.Fatalf("error must name the accepted contract, got: %v", err)
 	}
 }
 
-func TestCompileIfSemanticOptionalBackground(t *testing.T) {
+func TestCompileSemanticOptionalBackground(t *testing.T) {
 	raw := []byte(`{
       "schema_version":"renderinggen.overlay-plan.v1",
       "plan_id":"p","video_id":"v","width":1280,"height":720,"fps_num":30,"fps_den":1,
       "background":{"kind":"color","color":[0,0,0,1]},
       "items":[{"id":"phrase","template_id":"IMPORTANT_PHRASE","preset_id":"clean_slide_up","text":"hi","start_ms":0,"end_ms":1000}]
     }`)
-	compiled, _, semantic, err := CompileIfSemantic(raw)
-	if err != nil || !semantic {
-		t.Fatalf("compile semantic background: semantic=%v err=%v", semantic, err)
+	result, err := CompileSemantic(raw)
+	if err != nil {
+		t.Fatalf("compile semantic background: %v", err)
 	}
+	compiled := result.Plan
 	if len(compiled.Layers) < 2 || compiled.Layers[0].ID != "background" || compiled.Layers[0].Type != "color" {
 		t.Fatalf("background was not emitted first: %+v", compiled.Layers)
 	}
@@ -43,17 +44,18 @@ func TestCompileIfSemanticOptionalBackground(t *testing.T) {
 	}
 }
 
-func TestCompileIfSemanticTextMotionProducesAnimatorContract(t *testing.T) {
+func TestCompileSemanticTextMotionProducesAnimatorContract(t *testing.T) {
 	raw := []byte(`{
       "schema_version":"renderinggen.overlay-plan.v1",
       "plan_id":"p","video_id":"v","width":1920,"height":1080,"fps_num":24,"fps_den":1,
       "items":[{"id":"title","template_id":"IMPORTANT_PHRASE","preset_id":"phrase_fade_in","motion_id":"character_cascade",
         "text":"Powerfully simple.","start_ms":0,"end_ms":2000}]
     }`)
-	compiled, _, _, err := CompileIfSemantic(raw)
+	result, err := CompileSemantic(raw)
 	if err != nil {
 		t.Fatalf("compile text motion: %v", err)
 	}
+	compiled := result.Plan
 	if len(compiled.Layers) != 1 || len(compiled.Layers[0].TextAnimators) != 1 {
 		t.Fatalf("expected one text animator, got %+v", compiled.Layers)
 	}
@@ -70,10 +72,11 @@ func TestCompileSemanticTextUsesExplicitCanvasLocalBox(t *testing.T) {
       "items":[{"id":"title","template_id":"IMPORTANT_PHRASE","preset_id":"phrase_focus_v1",
         "motion_id":"character_cascade","text":"ABC","start_ms":0,"end_ms":5000}]
     }`)
-	compiled, _, _, err := CompileIfSemantic(raw)
+	result, err := CompileSemantic(raw)
 	if err != nil {
 		t.Fatal(err)
 	}
+	compiled := result.Plan
 	if len(compiled.Layers) != 1 {
 		t.Fatalf("expected one text layer, got %d", len(compiled.Layers))
 	}
@@ -97,10 +100,11 @@ func TestCompileSemanticTextMotionsDoNotCollapseToSameContract(t *testing.T) {
 	contracts := make(map[string]string, len(motions))
 	for _, motionID := range motions {
 		raw := []byte(`{"schema_version":"renderinggen.overlay-plan.v1","plan_id":"` + motionID + `","video_id":"v","width":1920,"height":1080,"fps_num":24,"fps_den":1,"items":[{"id":"title","template_id":"IMPORTANT_PHRASE","preset_id":"phrase_focus_v1","motion_id":"` + motionID + `","text":"ABC","start_ms":0,"end_ms":5000}]}`)
-		compiled, _, _, err := CompileIfSemantic(raw)
+		result, err := CompileSemantic(raw)
 		if err != nil {
 			t.Fatalf("%s: %v", motionID, err)
 		}
+		compiled := result.Plan
 		if len(compiled.Layers) != 1 || len(compiled.Layers[0].TextAnimators) != 1 {
 			t.Fatalf("%s: missing text animator", motionID)
 		}
@@ -116,12 +120,12 @@ func TestCompileSemanticTextMotionsDoNotCollapseToSameContract(t *testing.T) {
 	}
 }
 
-// TestCompileIfSemanticRejectsMissingPresetID pins ADR-029 forward-point (d):
+// TestCompileSemanticRejectsMissingPresetID pins ADR-029 forward-point (d):
 // RenderingGen no longer re-maps a template_id to a preset (it must not know
 // that IMPORTANT_PHRASE means caption_card). A preset-driven template without
 // a preset_id is rejected — the semantic_role → preset decision lives only in
 // PipelineGen's SemanticOverlayResolver.
-func TestCompileIfSemanticRejectsMissingPresetID(t *testing.T) {
+func TestCompileSemanticRejectsMissingPresetID(t *testing.T) {
 	raw := []byte(`{
       "schema_version":"renderinggen.overlay-plan.v1",
       "plan_id":"p","video_id":"v","width":1280,"height":720,"fps_num":30,"fps_den":1,
@@ -130,17 +134,17 @@ func TestCompileIfSemanticRejectsMissingPresetID(t *testing.T) {
         {"id":"word","template_id":"IMPORTANT_WORD","text":"APPLE","start_ms":1000,"end_ms":2000}
       ]
     }`)
-	if _, _, _, err := CompileIfSemantic(raw); err == nil {
+	if _, err := CompileSemantic(raw); err == nil {
 		t.Fatal("preset-driven template without preset_id must be rejected (no template→preset mirror)")
 	}
 }
 
-// TestCompileIfSemanticPresetLessPrimitiveCompilesBare pins that preset-less
+// TestCompileSemanticPresetLessPrimitiveCompilesBare pins that preset-less
 // primitives (PRODUCT / LOGO) do NOT require a preset_id: they compile to a
 // bare layer whose appearance is the renderer's default. This is the other
 // half of ADR-029 (d) — RenderingGen only enforces the preset for preset-driven
 // templates, never invents one for a primitive.
-func TestCompileIfSemanticPresetLessPrimitiveCompilesBare(t *testing.T) {
+func TestCompileSemanticPresetLessPrimitiveCompilesBare(t *testing.T) {
 	raw := []byte(`{
       "schema_version":"renderinggen.overlay-plan.v1",
       "plan_id":"p","video_id":"v","width":1280,"height":720,"fps_num":30,"fps_den":1,
@@ -149,37 +153,36 @@ func TestCompileIfSemanticPresetLessPrimitiveCompilesBare(t *testing.T) {
          "asset_refs":[{"asset_id":"prod","sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","url":"https://store.example/objects/prod.png","media_type":"image/png"}]}
       ]
     }`)
-	compiled, _, semantic, err := CompileIfSemantic(raw)
-	if err != nil || !semantic {
-		t.Fatalf("preset-less primitive must compile: semantic=%v err=%v", semantic, err)
+	result, err := CompileSemantic(raw)
+	if err != nil {
+		t.Fatalf("preset-less primitive must compile: %v", err)
 	}
-	if len(compiled.Layers) != 1 {
-		t.Fatalf("preset-less primitive must compile to a bare layer: %+v", compiled.Layers)
+	if len(result.Plan.Layers) != 1 {
+		t.Fatalf("preset-less primitive must compile to a bare layer: %+v", result.Plan.Layers)
 	}
 }
 
-// TestCompileIfSemanticRejectsUnknownSchema pins the fail-closed path for a
+// TestCompileSemanticRejectsUnknownSchema pins the fail-closed path for a
 // plan that is neither concrete nor the known semantic contract.
-func TestCompileIfSemanticRejectsUnknownSchema(t *testing.T) {
+func TestCompileSemanticRejectsUnknownSchema(t *testing.T) {
 	raw := []byte(`{"schema_version":"something.else.v9","plan_id":"p"}`)
-	_, _, _, err := CompileIfSemantic(raw)
-	if err == nil {
+	if _, err := CompileSemantic(raw); err == nil {
 		t.Fatal("unknown plan schema must be rejected")
 	}
 }
 
-// TestCompileIfSemanticMalformedJSON pins graceful decoding failure.
-func TestCompileIfSemanticMalformedJSON(t *testing.T) {
-	if _, _, _, err := CompileIfSemantic([]byte(`{not-json`)); err == nil {
+// TestCompileSemanticMalformedJSON pins graceful decoding failure.
+func TestCompileSemanticMalformedJSON(t *testing.T) {
+	if _, err := CompileSemantic([]byte(`{not-json`)); err == nil {
 		t.Fatal("malformed JSON must be rejected")
 	}
 }
 
-// TestCompileIfSemanticKindAndExplicitText pins the kind-SSOT contract: the
+// TestCompileSemanticKindAndExplicitText pins the kind-SSOT contract: the
 // plan's preset_id slot is compiled through the SAME single compileSemantic
 // path (no new renderer), and the display text comes ONLY from the item's
 // explicit `text` — RenderingGen has no entity_ref fallback.
-func TestCompileIfSemanticKindAndExplicitText(t *testing.T) {
+func TestCompileSemanticKindAndExplicitText(t *testing.T) {
 	raw := []byte(`{
       "schema_version":"renderinggen.overlay-plan.v1",
       "plan_id":"p","video_id":"v","width":1280,"height":720,"fps_num":30,"fps_den":1,
@@ -188,10 +191,11 @@ func TestCompileIfSemanticKindAndExplicitText(t *testing.T) {
         {"id":"person","kind":"entity_card","template_id":"PERSON","preset_id":"lower_third_safe","text":"Cook","start_ms":1000,"end_ms":2000}
       ]
     }`)
-	compiled, _, semantic, err := CompileIfSemantic(raw)
-	if err != nil || !semantic {
-		t.Fatalf("semantic plan must compile: semantic=%v err=%v", semantic, err)
+	result, err := CompileSemantic(raw)
+	if err != nil {
+		t.Fatalf("semantic plan must compile: %v", err)
 	}
+	compiled := result.Plan
 	if len(compiled.Layers) != 2 {
 		t.Fatalf("compiled layers = %+v", compiled.Layers)
 	}
@@ -205,10 +209,10 @@ func TestCompileIfSemanticKindAndExplicitText(t *testing.T) {
 	}
 }
 
-// TestCompileIfSemanticTextIsMandatory pins that a text kind without explicit
+// TestCompileSemanticTextIsMandatory pins that a text kind without explicit
 // text is rejected: RenderingGen never reconstructs a display name from
 // entity_ref or any other fallback — PipelineGen owns the displayed text.
-func TestCompileIfSemanticTextIsMandatory(t *testing.T) {
+func TestCompileSemanticTextIsMandatory(t *testing.T) {
 	raw := []byte(`{
       "schema_version":"renderinggen.overlay-plan.v1",
       "plan_id":"p","video_id":"v","width":1280,"height":720,"fps_num":30,"fps_den":1,
@@ -216,17 +220,17 @@ func TestCompileIfSemanticTextIsMandatory(t *testing.T) {
         {"id":"person","kind":"entity_card","template_id":"PERSON","preset_id":"lower_third_safe","start_ms":0,"end_ms":1000}
       ]
     }`)
-	if _, _, _, err := CompileIfSemantic(raw); err == nil {
+	if _, err := CompileSemantic(raw); err == nil {
 		t.Fatal("text kind without text must be rejected (no entity_ref fallback)")
 	}
 }
 
-// TestCompileIfSemanticImportantPhraseAndNamedImage pins the two overlay
+// TestCompileSemanticImportantPhraseAndNamedImage pins the two overlay
 // classes used by the first real Chronon canary together. IMPORTANT_PHRASE is
 // a readable emphasis card; PERSON + lower_third_safe is an image/name
 // composition where the name is the item's explicit text and the image remains
 // a content-addressed asset.
-func TestCompileIfSemanticImportantPhraseAndNamedImage(t *testing.T) {
+func TestCompileSemanticImportantPhraseAndNamedImage(t *testing.T) {
 	raw := []byte(`{
       "schema_version":"renderinggen.overlay-plan.v1",
       "plan_id":"phrase-and-name","video_id":"phrase-and-name",
@@ -241,10 +245,11 @@ func TestCompileIfSemanticImportantPhraseAndNamedImage(t *testing.T) {
                          "url":"https://store.example/objects/matt-damon.png","media_type":"image/png"}]}
       ]
     }`)
-	compiled, assets, semantic, err := CompileIfSemantic(raw)
-	if err != nil || !semantic {
-		t.Fatalf("semantic phrase/name plan: semantic=%v err=%v", semantic, err)
+	result, err := CompileSemantic(raw)
+	if err != nil {
+		t.Fatalf("semantic phrase/name plan: %v", err)
 	}
+	compiled, assets := result.Plan, result.Assets
 	if len(compiled.Layers) != 3 {
 		t.Fatalf("compiled layers = %+v", compiled.Layers)
 	}
@@ -272,10 +277,10 @@ func TestCompileIfSemanticImportantPhraseAndNamedImage(t *testing.T) {
 	}
 }
 
-// TestCompileIfSemanticTransportsChrononPresetID ensures RenderingGen does
+// TestCompileSemanticTransportsChrononPresetID ensures RenderingGen does
 // not mirror Chronon's preset registry. Chronon remains responsible for the
 // authoritative lookup during plan compilation.
-func TestCompileIfSemanticTransportsChrononPresetID(t *testing.T) {
+func TestCompileSemanticTransportsChrononPresetID(t *testing.T) {
 	raw := []byte(`{
       "schema_version":"renderinggen.overlay-plan.v1",
       "plan_id":"p","video_id":"v","width":1280,"height":720,"fps_num":30,"fps_den":1,
@@ -283,7 +288,7 @@ func TestCompileIfSemanticTransportsChrononPresetID(t *testing.T) {
         {"id":"phrase","template_id":"IMPORTANT_PHRASE","preset_id":"phrase_focus_v1","text":"x","start_ms":0,"end_ms":1000}
       ]
     }`)
-	if _, _, _, err := CompileIfSemantic(raw); err != nil {
+	if _, err := CompileSemantic(raw); err != nil {
 		t.Fatalf("non-empty Chronon preset id must be transported: %v", err)
 	}
 }

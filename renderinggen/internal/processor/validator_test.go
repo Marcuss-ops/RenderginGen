@@ -83,35 +83,31 @@ func TestValidateFrameRangeEnforcedAgainstPlanDuration(t *testing.T) {
 	}
 }
 
-// TestValidateAllowsLegacyEnvelopeForSymbolicKeys pins the legacy allowance:
-// a fixture that EXPLICITLY declares job_type "legacy" and carries a symbolic
-// (non-SHA-256) asset key predates the v1 envelope and may omit schema/version
-// — the same allowance the asset resolvers use to waive content verification.
-func TestValidateAllowsLegacyEnvelopeForSymbolicKeys(t *testing.T) {
-	job := &queue.Job{
+// TestValidateRejectsEveryJobWithoutTheV1Envelope pins that there is NO
+// legacy opt-out left. The historical "job_type: legacy" allowance skipped the
+// envelope check but could never render — PrepareJob still compiles through
+// the semantic compiler, which accepts only renderinggen.overlay-plan.v1 — so
+// it only relocated the failure. A symbolic (non-SHA-256) asset key is not a
+// reason to accept an unvalidated envelope: the v1 schema/version are required
+// on every path.
+func TestValidateRejectsEveryJobWithoutTheV1Envelope(t *testing.T) {
+	base := &queue.Job{
 		ID:         "legacy-fixture",
-		JobType:    queue.JobTypeLegacy,
+		JobType:    "legacy",
 		RenderPlan: json.RawMessage(`{"schema":"chronon.render-plan.v2","canvas":{"width":1280,"height":720}}`),
 		Assets:     []queue.AssetRef{{Hash: "abc", LogicalPath: "videos/base.mp4"}},
 	}
-	if err := validate(job); err != nil {
-		t.Fatalf("legacy fixture with symbolic key and no envelope rejected: %v", err)
+	if err := validate(base); err == nil {
+		t.Fatal("a job without the v1 envelope must be rejected even when it is marked legacy")
 	}
 
-	// The explicit marker is the ONLY legacy signal. The byte-identical job
-	// without it must fail here: a dropped schema plus a shortened asset hash
-	// used to disable the whole envelope check and the content verification
-	// that keys off it, letting an unvalidated payload reach Chronon.
-	unmarked := *job
-	unmarked.JobType = ""
-	if err := validate(&unmarked); err == nil {
-		t.Fatal("symbolic asset key without the explicit legacy marker must be rejected")
-	}
-
-	// A legacy fixture with a declared envelope still validates.
-	job.Schema = queue.JobSchemaV1
-	job.Version = queue.JobSchemaVersionV1
-	if err := validate(job); err != nil {
-		t.Fatalf("legacy fixture with envelope rejected: %v", err)
+	// A symbolic key is equally rejected: content-addressed verification is a
+	// requirement of the production path, not of the job-author's assertion.
+	withEnvelope := *base
+	withEnvelope.Schema = queue.JobSchemaV1
+	withEnvelope.Version = queue.JobSchemaVersionV1
+	withEnvelope.JobType = ""
+	if err := validate(&withEnvelope); err != nil {
+		t.Fatalf("job with the declared v1 envelope rejected: %v", err)
 	}
 }

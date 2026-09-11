@@ -1,6 +1,6 @@
 # RenderingGen — golden canary gate.
 #
-# GoldenOverlayJobV1 (testdata/golden/golden-overlay-job-v1.json) is the
+# GoldenOverlayJobV2 (testdata/golden/golden-overlay-job-v2.json) is the
 # permanent end-to-end regression test: the real chain
 #
 #   queue -> RenderingGen -> Chronon3d -> artifact -> PostgreSQL

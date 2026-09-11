@@ -29,7 +29,7 @@ func (p *Processor) RunGPU(ctx context.Context, prepared *PreparedJob) error {
 	hasSourceVideo := planHasVideoSource(prepared.Plan)
 	compositionRequired := planHasVisualOverlay(prepared.Plan)
 	gpuRequired := (hasSourceVideo || compositionRequired) && (p.strictNativeBackend ||
-		(p.backend == "vulkan" && p.hardwareEncoder != "" && p.hardwareEncoder != "none"))
+		chronon.StrictNativeRequired(p.backend, p.hardwareEncoder))
 	// Render progress: every '[video] N/M frames' milestone the renderer
 	// prints is logged (where did the 12 minutes go) and, when a shared
 	// tracker is installed, fed into it so health and the queue pusher can

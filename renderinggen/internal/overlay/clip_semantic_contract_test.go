@@ -77,13 +77,11 @@ func clipSemanticFixture() []byte {
 func TestClipSemanticContractFull(t *testing.T) {
 	raw := clipSemanticFixture()
 
-	compiled, assets, semantic, err := CompileIfSemantic(raw)
+	result, err := CompileSemantic(raw)
 	if err != nil {
-		t.Fatalf("semantic input FAIL: CompileIfSemantic returned error: %v", err)
+		t.Fatalf("semantic input FAIL: CompileSemantic returned error: %v", err)
 	}
-	if !semantic {
-		t.Fatal("semantic input FAIL: plan was not recognised as semantic (schema_version missing or wrong)")
-	}
+	compiled, assets := result.Plan, result.Assets
 	t.Log("semantic input                 PASS")
 
 	// Decode compiled Chronon plan.
@@ -209,7 +207,7 @@ func TestClipSemanticItemsEmptyAccepted(t *testing.T) {
 		"source": {"asset_id": "src-001", "sha256": "` + clipTestSHA + `"},
 		"items": []
 	}`)
-	_, _, _, err := CompileIfSemantic(raw)
+	_, err := CompileSemantic(raw)
 	if err != nil {
 		t.Fatalf("items:[] with source FAIL: should be accepted, got: %v", err)
 	}
@@ -226,7 +224,7 @@ func TestClipSemanticNoPrimitiveRejected(t *testing.T) {
 		"width": 1920, "height": 1080, "fps_num": 30, "fps_den": 1,
 		"items": []
 	}`)
-	_, _, _, err := CompileIfSemantic(raw)
+	_, err := CompileSemantic(raw)
 	if err == nil {
 		t.Fatal("no-primitive plan FAIL: expected rejection, got nil error")
 	}
@@ -246,10 +244,11 @@ func TestClipSemanticDurationFromMS(t *testing.T) {
 		"source": {"asset_id": "src", "sha256": "` + clipTestSHA + `"},
 		"items": []
 	}`)
-	compiled, _, semantic, err := CompileIfSemantic(raw)
-	if err != nil || !semantic {
+	result, err := CompileSemantic(raw)
+	if err != nil {
 		t.Fatalf("duration_ms FAIL: %v", err)
 	}
+	compiled := result.Plan
 	plan := compiled
 	// msFrames(0, 10000, 30, 1) = ceil(10000*30/1000) = 300
 	if compiled.Canvas.DurationFrames != 300 {
@@ -271,10 +270,11 @@ func TestClipSemanticForegroundScale(t *testing.T) {
 		"foreground_scale_percent": 80,
 		"items": []
 	}`)
-	compiled, _, _, err := CompileIfSemantic(raw)
+	result, err := CompileSemantic(raw)
 	if err != nil {
 		t.Fatalf("foreground_scale FAIL: %v", err)
 	}
+	compiled := result.Plan
 	for _, l := range compiled.Layers {
 		if l.ID != "source" {
 			continue

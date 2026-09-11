@@ -67,7 +67,7 @@ func (p *Processor) recordArtifact(ctx context.Context, jobID string, artifact q
 	if m, ok := artifact.Metrics["overlay_compile_us"]; ok {
 		rec.OverlayCompileUS = int64(m)
 	}
-	if m, ok := artifact.Metrics["materialize_us"]; ok {
+	if m, ok := artifact.Metrics["asset_materialize_us"]; ok {
 		rec.AssetMaterializeUS = int64(m)
 	}
 	if m, ok := artifact.Metrics["render_us"]; ok {
