@@ -5,6 +5,11 @@ package chronon
 
 import "fmt"
 
+// defaultHardwareEncoder is the native encoder the GPU-required path uses when
+// the worker config does not select one. It is the only value the native
+// hot-path contract currently certifies (see config.validate).
+const defaultHardwareEncoder = "nvenc"
+
 // renderArgs builds the chronon3d_cli arguments for the render subcommand.
 func renderArgs(req RenderRequest) []string {
 	// Backend selection is an implementation detail of the CLI adapter. The
@@ -30,38 +35,33 @@ func renderArgs(req RenderRequest) []string {
 		args = append(args, "--report")
 	}
 	if req.Requirements.GPURequired {
-		// GPU requirements must select the complete native handoff. Passing
-		// only --hardware leaves Chronon in its auto/direct-yuv resolver, which
-		// can feed a decoded host surface to the native encoder. RenderingGen
-		// has already declared the semantic requirement, so make that contract
-		// explicit at the CLI boundary.
-		args = append(args, "--hardware", "nvenc")
-		// DirectYUV is valid only for a genuinely video-only plan. Any
-		// composition, including image/text-only or video background +
-		// foreground, must use the complete Vulkan graph so every visual input
-		// is preserved and the final surface can reach NVENC natively.
-		hotPath := "require_direct_yuv"
-		if req.Requirements.CompositionRequired {
-			args = append(args, "--encoder-backend", "native")
-			if req.EncodePreset != "" {
-				args = append(args, "--encode-preset", req.EncodePreset)
-			}
-			hotPath = "require_gpu_native"
-		} else {
-			args = append(args, "--encoder-backend", "native")
-			if req.EncodePreset != "" {
-				// Explicit NVENC preset (e.g. "p2"): the throughput tier the
-				// worker is configured with. The native branch is the only
-				// path where the preset targets h264_nvenc; the pipe branch
-				// uses x264 vocabulary and must never receive pN presets.
-				args = append(args, "--encode-preset", req.EncodePreset)
-			}
+		// GPU requirements select the native encoder capability. RenderingGen
+		// declares that semantic requirement; Chronon owns the compiled-scene
+		// decision between DirectYUV and FullGraph.
+		//
+		// The encoder is the CONFIGURED one (defaulted to nvenc) rather than a
+		// hardcoded literal: accepting hardware_encoder at config load and then
+		// always passing nvenc made the setting decorative.
+		hardware := req.HardwareEncoder
+		if hardware == "" {
+			hardware = defaultHardwareEncoder
 		}
-		args = append(args, "--gpu-hot-path-mode", hotPath)
+		args = append(args, "--hardware", hardware)
+		args = append(args, "--encoder-backend", "native")
+		if req.EncodePreset != "" {
+			// Explicit NVENC preset (e.g. "p2"): the throughput tier the
+			// worker is configured with. The native branch is the only
+			// path where the preset targets h264_nvenc; the pipe branch
+			// uses x264 vocabulary and must never receive pN presets.
+			args = append(args, "--encode-preset", req.EncodePreset)
+		}
+		// GPURequired is a semantic capability request. Chronon classifies
+		// the compiled program and chooses DirectYUV or FullGraph.
+		args = append(args, "--gpu-hot-path-mode", "auto")
 	} else if req.Requirements.CompositionRequired {
-		// Non-strict Vulkan composition: keep the same FullGraph shape and let
-		// Chronon select the configured fallback encoder.
-		args = append(args, "--encoder-backend", "native", "--gpu-hot-path-mode", "require_gpu_native")
+		// Non-strict composition still declares semantics only. Chronon owns
+		// the DirectYUV/FullGraph decision after it has compiled the program.
+		args = append(args, "--encoder-backend", "native", "--gpu-hot-path-mode", "auto")
 	}
 	if req.AudioSourcePath != "" {
 		// Chronon's native A/V mux path uses --gop-source for the source audio

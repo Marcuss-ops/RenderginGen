@@ -1,11 +1,12 @@
-// render_selection.go classifies a job/plan onto a render path: chunk frame
-// ranges, DirectYUV eligibility (video-only) versus authored composition, and
-// the workspace path of the declared master audio source.
+// render_selection.go derives transport-neutral job facts: chunk frame ranges,
+// authored visual-layer presence, and the workspace path of the declared
+// master audio source. Chronon owns the physical execution-path decision.
 package processor
 
 import (
 	"encoding/json"
 	"path/filepath"
+	"strings"
 
 	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/overlay"
 	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/queue"
@@ -23,10 +24,9 @@ func jobFrameRange(job *queue.Job) (first, last int64, ok bool) {
 	return 0, 0, false
 }
 
-// planHasVisualOverlay identifies concrete plans that require Chronon's
-// authored composition graph. A video-only plan can use DirectYUV; an
-// image/text/color plan must use native composition even when it has no
-// separate background.
+// planHasVisualOverlay identifies whether the semantic plan contains an
+// authored visual layer in addition to source video. This is a requirement
+// fact sent to Chronon; it is deliberately not a DirectYUV/FullGraph choice.
 func planHasVisualOverlay(plan *overlay.Plan) bool {
 	if plan == nil {
 		return false
@@ -39,8 +39,8 @@ func planHasVisualOverlay(plan *overlay.Plan) bool {
 			return true
 		}
 	}
-	// DirectYUV supports the authored multi-video base/overlay path. Keep that
-	// fast path eligible; only non-video authored layers require the graph.
+	// A plan containing only video layers has no non-video overlay requirement.
+	// Chronon may still classify multiple video layers independently.
 	return false
 }
 
@@ -81,20 +81,46 @@ func audioSourcePathFromSemantic(raw []byte, workspaceRoot string) string {
 	return filepath.Join(workspaceRoot, filepath.FromSlash(path))
 }
 
+// audioModeCopyOnly reports whether an audio mode is one the worker's mux can
+// actually honour. The native A/V path copies the source stream
+// (`--gop-source`) and never transcodes, so a mode that promises a transcode
+// is a request the worker cannot fulfil; it must degrade loudly, never
+// silently render audio the caller did not ask for.
+//
+// The accepted set is deliberately the copy family only. It is exported
+// through the returned warning flag so the caller records a metric: the
+// semantic contract legitimately carries modes such as "transcode"
+// (PipelineGen clip plans do), and rejecting them at compile time would break
+// the accepted contract — silently ignoring them would be worse.
+func audioModeCopyOnly(mode string) bool {
+	switch strings.ToLower(strings.TrimSpace(mode)) {
+	case "", "copy", "copy_if_compatible", "passthrough", "mux":
+		return true
+	default:
+		return false
+	}
+}
+
 // audioSourcePathFromPlan is the single typed authority for master audio.
 // It reads Plan.Output.Audio (mode) and the semantic source asset from the
 // raw JSON's source block, so there is exactly one place where audio policy
 // is interpreted. sample_rate/channels/codec are surfaced as inert
 // warnings via the returned warning flag so the caller can metric/log them.
 func audioSourcePathFromPlan(plan *overlay.Plan, raw []byte, workspaceRoot string) (string, bool) {
-	if plan == nil || plan.Output.Audio == nil || plan.Output.Audio.Mode == "" {
+	if plan == nil || plan.Output.Audio == nil {
 		return "", false
 	}
 	// Inert audio transcode params: Chronon's current mux copies the source
 	// stream; sample_rate/channels/codec never affect rendering but callers
-	// set them expecting a transcode. Surface as warning/metric.
+	// set them expecting a transcode. Surface as warning/metric. The MODE is
+	// part of the same degradation: a plan whose only audio directive is
+	// {"mode":"transcode"} used to produce no warning at all, so the worker
+	// silently copied where the caller asked for a transcode.
 	audio := plan.Output.Audio
-	warnInert := audio.Codec != "" || audio.SampleRate != 0 || audio.Channels != 0
+	warnInert := !audioModeCopyOnly(audio.Mode) || audio.Codec != "" || audio.SampleRate != 0 || audio.Channels != 0
+	if audio.Mode == "" {
+		return "", warnInert
+	}
 	var doc struct {
 		Source *struct {
 			AssetID string `json:"asset_id"`

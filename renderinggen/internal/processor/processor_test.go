@@ -33,16 +33,16 @@ type fakeRenderer struct {
 
 func TestHasVisualOverlayDistinguishesVideoOnlyFromAuthoredComposition(t *testing.T) {
 	if planHasVisualOverlay(&overlay.Plan{Layers: []overlay.Layer{{Type: "video"}}}) {
-		t.Fatal("video-only plan must use direct-yuv")
+		t.Fatal("video-only plan must not report an authored overlay")
 	}
 	if planHasVisualOverlay(&overlay.Plan{Layers: []overlay.Layer{{Type: "video"}, {Type: "video"}}}) {
-		t.Fatal("multi-video plan must use direct video composition")
+		t.Fatal("multi-video source plan must not report an authored overlay")
 	}
 	if !planHasVisualOverlay(&overlay.Plan{Layers: []overlay.Layer{{Type: "text"}}}) {
-		t.Fatal("text-only plan must use native composition")
+		t.Fatal("text-only plan must report an authored overlay")
 	}
 	if !planHasVisualOverlay(&overlay.Plan{Layers: []overlay.Layer{{Type: "image"}}}) {
-		t.Fatal("image-only plan must use native composition")
+		t.Fatal("image-only plan must report an authored overlay")
 	}
 }
 

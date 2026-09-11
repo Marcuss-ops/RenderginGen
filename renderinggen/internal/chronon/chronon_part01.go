@@ -88,6 +88,13 @@ type RenderRequest struct {
 	// to the chronon CLI for native GPU jobs. Empty preserves the engine
 	// default.
 	EncodePreset string
+	// HardwareEncoder is the FFmpeg hardware encoder the configured worker
+	// selected (e.g. "nvenc"). Empty preserves the native default for the
+	// GPU-required path; "none" disables the GPU handoff entirely (the
+	// requirements then never carry GPURequired). It exists so the configured
+	// value is actually forwarded to the CLI instead of being accepted by the
+	// config and silently ignored at the render boundary.
+	HardwareEncoder string
 	// ReceiptVerify is the explicit output-verification policy
 	// ("fast" | "normal" | "certify") RenderingGen requests for this render.
 	// The worker is the single policy authority: it forwards the resolved
@@ -212,11 +219,10 @@ func (c *Client) Verify() error {
 	}
 
 	// Requirement derivation mirrors Processor.RunGPU's gpuRequired and
-	// renderArgs' GPU branch: whenever the worker would force the native GPU
-	// hot path (--backend vulkan --hardware nvenc --encoder-backend native
-	// --gpu-hot-path-mode require_direct_yuv), the whole chain must be
-	// declared and reachable up front. Anything less and the first job would
-	// fail mid-queue instead of the worker refusing to start.
+	// renderArgs' GPU branch: whenever the worker requests the native GPU
+	// capability (--backend vulkan --hardware nvenc --encoder-backend native
+	// --gpu-hot-path-mode auto), the whole chain must be declared and reachable
+	// up front. Chronon still chooses DirectYUV vs FullGraph per compiled job.
 	gpuRequired := c.StrictNativeBackend ||
 		(c.Backend == "vulkan" && c.HardwareEncoder != "" && c.HardwareEncoder != "none")
 	req := Requirements{}
