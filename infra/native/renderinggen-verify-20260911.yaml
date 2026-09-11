@@ -1,0 +1,29 @@
+# Verification worker for the corrected clip-render geometry/compositor path.
+# It shares the live queue and Chronon IPC but has an independent worker ID.
+worker:
+  id: renderinggen-verify-20260911
+  pipeline_workers: 3
+  gpu_lanes: 2
+queue:
+  endpoint: http://127.0.0.1:8081
+artifact_store:
+  endpoint: http://127.0.0.1:9000
+  local_cache_dir: /dev/shm/renderinggen/cache-verify-20260911
+workspace:
+  root: /dev/shm/renderinggen/jobs-verify-20260911
+chronon:
+  profile: gpu-vulkan-native
+  # Canonical install prefix (see README).
+  home: /opt/chronon3d
+  mode: ipc
+  socket_path: /run/chronon3d/chronon.sock
+  hardware_encoder: nvenc
+  strict_native_backend: true
+  encode_preset: p1
+  report: true
+gpu:
+  device: 0
+health:
+  addr: 127.0.0.1:8087
+drive:
+  enabled: false

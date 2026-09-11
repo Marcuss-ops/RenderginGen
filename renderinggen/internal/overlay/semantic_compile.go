@@ -209,20 +209,14 @@ func compileSemantic(raw []byte) (*Plan, []Asset, Stats, error) {
 		if err != nil {
 			return nil, nil, Stats{}, err
 		}
-		position, err := resolveWatermarkPosition(wm.Position, src.Width, src.Height, margin, wmStyle)
+		// Position AND size come back from the one geometry resolver: the box
+		// the position was computed against is the box the layer declares.
+		position, size, err := resolveWatermarkGeometry(wm.Position, src.Width, src.Height, margin, wmStyle)
 		if err != nil {
 			return nil, nil, Stats{}, err
 		}
-		boxW := float64(src.Width) / 6
-		boxH := 80.0
-		if wmStyle.WidthPX > 0 {
-			boxW = float64(wmStyle.WidthPX)
-		}
-		if wmStyle.HeightPX > 0 {
-			boxH = float64(wmStyle.HeightPX)
-		}
 		wmLayer := Layer{ID: "watermark", StartFrame: 0, DurationFrames: plan.Canvas.DurationFrames,
-			Style: style, Position: position, Size: []float64{boxW, boxH}}
+			Style: style, Position: position, Size: size}
 		if wm.Opacity != nil {
 			wmLayer.Opacity = *wm.Opacity
 		}
@@ -521,5 +515,5 @@ func compileTextLayer(ri resolvedItem, src *semanticPlan, layerID string) (Layer
 	return layer, nil
 }
 
-// resolveWatermarkPosition lives in visual_style_resolver.go — the single
-// owner of watermark/subtitle geometry resolution.
+// resolveWatermarkGeometry lives in visual_style_resolver.go — the single
+// owner of watermark/subtitle geometry resolution (position AND size).

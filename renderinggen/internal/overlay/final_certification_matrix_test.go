@@ -28,10 +28,11 @@ func TestFinal_ImageAndTextTogether(t *testing.T) {
 		certificationBackgroundRGBA,
 		certificationImageItem("img", "image_scale_in", "matrix-image"),
 		certificationTextItem("phrase", "phrase_fade_in", "Frase importante"))
-	plan, _, semantic, err := CompileIfSemantic([]byte(raw))
-	if err != nil || !semantic {
-		t.Fatalf("semantic=%v err=%v", semantic, err)
+	result, err := CompileSemantic([]byte(raw))
+	if err != nil {
+		t.Fatalf("err=%v", err)
 	}
+	plan := result.Plan
 	if len(plan.Layers) != 3 {
 		t.Fatalf("layers=%d, want background + image + text", len(plan.Layers))
 	}
@@ -48,10 +49,11 @@ func TestFinal_BackgroundOpacity(t *testing.T) {
 					`"background":{"kind":"color","color":%s,"opacity":%v},"items":[%s]}`,
 				certificationBackgroundRGBA, want,
 				certificationTextItem("word", "active_word_pop", "opacity"))
-			plan, _, semantic, err := CompileIfSemantic([]byte(raw))
-			if err != nil || !semantic {
-				t.Fatalf("semantic=%v err=%v", semantic, err)
+			result, err := CompileSemantic([]byte(raw))
+			if err != nil {
+				t.Fatalf("err=%v", err)
 			}
+			plan := result.Plan
 			if got := plan.Layers[0].Opacity; got != want {
 				t.Errorf("opacity %.2f compiled as %.2f", want, got)
 			}
@@ -71,10 +73,11 @@ func TestFinal_AssetMatrix(t *testing.T) {
 		certificationImageItem("img-2", "modern_rounded_pop", "matrix-b"),
 		certificationTextItem("text-1", "lower_third_safe", "Nome breve"),
 		certificationTextItem("text-2", "phrase_fade_in", "Frase lunga — àéìòù ✓"))
-	plan, _, semantic, err := CompileIfSemantic([]byte(raw))
-	if err != nil || !semantic {
-		t.Fatalf("semantic=%v err=%v", semantic, err)
+	result, err := CompileSemantic([]byte(raw))
+	if err != nil {
+		t.Fatalf("err=%v", err)
 	}
+	plan := result.Plan
 	if len(plan.Layers) != 5 {
 		t.Fatalf("layers=%d, want background + 4 overlays", len(plan.Layers))
 	}

@@ -17,7 +17,9 @@ chronon:
   hardware_encoder: nvenc
   strict_native_backend: true
   report: true
-  home: /home/pierone/src/go-master/projects/Pyt/VeloxEditing/Chronon3d/build/chronon/linux-video-release
+  # Canonical install prefix (see README); override per host instead of
+  # committing a developer-specific build directory.
+  home: /opt/chronon3d
 
 gpu:
   device: 0
@@ -28,6 +30,7 @@ health:
 drive:
   enabled: true
   mode: oauth
-  credentials_file: /home/pierone/src/go-master/projects/Pyt/VeloxEditing/RenderingGen/infra/docker/credentials.json
-  token_file: /home/pierone/src/go-master/projects/Pyt/VeloxEditing/RenderingGen/infra/docker/token.json
+  # Repo-relative so the local profile carries no machine-specific path.
+  credentials_file: infra/docker/credentials.json
+  token_file: infra/docker/token.json
   parent_folder_id: 1ST6FxPuRaxwBOIz39MAN8Jj4gDv509-K

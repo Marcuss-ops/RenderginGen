@@ -58,10 +58,11 @@ func (p *Processor) Prepare(ctx context.Context, job *queue.Job) (queue.Artifact
 			Backend: p.backend, ChrononVersion: p.chrononVersion,
 		}, nil
 	}
-	plan, compiledAssets, _, err := overlay.CompileIfSemantic(job.RenderPlan)
+	result, err := overlay.CompileSemantic(job.RenderPlan)
 	if err != nil {
 		return queue.Artifact{}, err
 	}
+	plan, compiledAssets := result.Plan, result.Assets
 	// One chunk contract, both entry points: the prepare path enforces the
 	// same plan-vs-frame-range bound as PrepareJob.
 	if err := validateFrameRange(job, plan); err != nil {

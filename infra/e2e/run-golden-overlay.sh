@@ -163,6 +163,7 @@ wait_completed() {
 }
 
 
-# Remaining steps live in run-golden-overlay_part02.sh (sourced below) so this
-# canary stays under the per-file LOC budget.
-source "$(dirname "${BASH_SOURCE[0]}")/run-golden-overlay_part02.sh"
+# The certification half (PostgreSQL ledger assertions, idempotent replay)
+# lives in golden-overlay-verify.sh, sourced here so the entry point stays
+# readable. Files are named for responsibility, never "_partNN".
+source "$(dirname "${BASH_SOURCE[0]}")/golden-overlay-verify.sh"

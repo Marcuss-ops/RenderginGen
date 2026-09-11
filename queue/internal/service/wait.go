@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/Marcuss-ops/RenderingGen/queue/client"
 	"github.com/Marcuss-ops/RenderingGen/queue/internal/model"
 )
 
@@ -13,13 +14,13 @@ import (
 // is durable but external publication is still pending, and the job remains
 // re-claimable for a publication-only retry, so a producer that stopped
 // waiting on it could observe an artifact that is never published.
+//
+// The terminal SET lives once, on the canonical wire type: this is a thin
+// adapter that keeps the service-local spelling while delegating the decision
+// to client.IsTerminalState, so the queue and the producers can never disagree
+// about which states end a wait.
 func IsTerminalState(state model.State) bool {
-	switch state {
-	case model.StateCompleted, model.StateFailed, model.StateCancelled:
-		return true
-	default:
-		return false
-	}
+	return client.IsTerminalState(state)
 }
 
 // waitPollFloor/waitPollCeiling bound the multi-replica fallback re-poll of

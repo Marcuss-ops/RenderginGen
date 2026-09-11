@@ -1,7 +1,6 @@
 package queue
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 )
@@ -27,14 +26,4 @@ func PlanChunks(parentJobID string, plan json.RawMessage, assets []AssetRef, sta
 		})
 	}
 	return jobs, nil
-}
-
-// SubmitChunks submits planned chunks through the existing queue client.
-func SubmitChunks(ctx context.Context, client *Client, jobs []Job) error {
-	for _, job := range jobs {
-		if err := client.Submit(ctx, job); err != nil {
-			return fmt.Errorf("submit chunk %s: %w", job.ID, err)
-		}
-	}
-	return nil
 }

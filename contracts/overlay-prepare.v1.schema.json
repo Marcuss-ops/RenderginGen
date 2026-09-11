@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://renderinggen.dev/schemas/overlay-prepare.v1.schema.json",
+  "title": "RenderingGen Overlay Prepare V1",
+  "description": "PipelineGen's pre-timing warm-up document, submitted as an overlay.prepare job before audio timing exists. RenderingGen materializes the declared assets through the single asset resolver and stores the document content-addressably; it does NOT render. The later overlay.render job carries the frozen semantic renderinggen.overlay-plan.v1 plan. This contract has no Chronon counterpart by construction.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "plan_id", "video_id", "width", "height", "fps_num", "fps_den", "intents"],
+  "properties": {
+    "schema_version": { "const": "renderinggen.overlay-prepare.v1" },
+    "plan_id": { "type": "string", "minLength": 1 },
+    "video_id": { "type": "string", "minLength": 1 },
+    "width": { "type": "integer", "minimum": 1 },
+    "height": { "type": "integer", "minimum": 1 },
+    "fps_num": { "type": "integer", "minimum": 1 },
+    "fps_den": { "type": "integer", "minimum": 1 },
+    "intents": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["template_id", "timing_state"],
+        "properties": {
+          "template_id": { "type": "string", "minLength": 1 },
+          "timing_state": {
+            "const": "PENDING",
+            "description": "Warm-up work is only valid while timing is unresolved. A resolved intent belongs on the overlay.render job's semantic plan."
+          }
+        }
+      }
+    }
+  }
+}

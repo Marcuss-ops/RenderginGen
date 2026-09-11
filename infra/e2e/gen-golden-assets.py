@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate the deterministic assets for GoldenOverlayJobV1.
+"""Generate the deterministic assets for the golden overlay jobs.
 
 Writes:
   testdata/golden/background.jpg  (1280x720 solid gradient + shapes)
@@ -10,7 +10,7 @@ Verifies:
 
 The generator is fully deterministic (no randomness, fixed seed where a
 random-looking pattern is needed), so the SHA-256 content hashes baked into
-testdata/golden/golden-overlay-job-v1.json stay stable across machines and
+testdata/golden/golden-overlay-job-v2.json stay stable across machines and
 regenerations. Do not change the drawing code without regenerating the job
 file and updating the hashes — that would break the golden's immutability.
 

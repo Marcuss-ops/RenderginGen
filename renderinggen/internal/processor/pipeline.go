@@ -264,7 +264,10 @@ func (p *Processor) PrepareJob(ctx context.Context, job *queue.Job) (*PreparedJo
 		return nil, err
 	}
 	p.prefetchWarmAssets(ctx, ws.Root(), assets)
-	record("materialize", phaseStart)
+	// The phase name is the metric-name stem; "asset_materialize" matches the
+	// artifact ledger's column and projection (asset_materialize_us), so one
+	// phase has ONE name across the wire, the mirror and PostgreSQL.
+	record("asset_materialize", phaseStart)
 
 	// Burn verified ASS subtitles into Chronon text layers before the plan is
 	// written. This keeps subtitles in the Vulkan composition and avoids a

@@ -102,9 +102,6 @@ func (s *Repository) Submit(job model.Job) error {
 	return nil
 }
 
-// validateChunkMetadata is deprecated: use model.ValidateChunk (U6 single authority).
-func validateChunkMetadata(job model.Job) error { return model.ValidateChunk(job) }
-
 // Claim atomically claims the oldest pending job for a worker and returns it
 // with its lease duration. It returns nil when the queue is empty.
 func (s *Repository) Claim(workerID string) (*model.Job, time.Duration, error) {

@@ -16,7 +16,7 @@ import (
 )
 
 // words is the 10-text corpus for the cache benchmark: every job renders the
-// same GoldenOverlayJobV1 workload (background.jpg + apple.png + phrase) with
+// same GoldenOverlayJobV2 workload with
 // a different kinetic word, so only the text layer differs between jobs.
 var words = []string{"APPLE", "TESLA", "NVIDIA", "AMD", "INTEL", "SAMSUNG", "GOOGLE", "META", "AMAZON", "MICROSOFT"}
 
@@ -46,12 +46,12 @@ type telemetryLine struct {
 	CacheMisses int64   `json:"cache_misses"`
 }
 
-// goldenJobWithWord decodes the canonical GoldenOverlayJobV1 and rewrites the
-// important_word text layer, keeping everything else identical.
+// goldenJobWithWord decodes the canonical GoldenOverlayJobV2 and rewrites the
+// first important-word text layer, keeping everything else identical.
 func goldenJobWithWord(t *testing.T, word string) *queue.Job {
 	t.Helper()
 	var job queue.Job
-	if err := json.Unmarshal([]byte(chronon.GoldenOverlayJobV1), &job); err != nil {
+	if err := json.Unmarshal([]byte(chronon.GoldenOverlayJobV2), &job); err != nil {
 		t.Fatalf("decode golden: %v", err)
 	}
 	var plan map[string]any
@@ -68,13 +68,13 @@ func goldenJobWithWord(t *testing.T, word string) *queue.Job {
 		if !ok {
 			continue
 		}
-		if layer["id"] == "important_word" {
+		if layer["id"] == "important_word_1" {
 			layer["text"] = word
 			found = true
 		}
 	}
 	if !found {
-		t.Fatal("important_word layer not found in golden plan")
+		t.Fatal("important_word_1 layer not found in golden plan")
 	}
 	rewritten, err := json.Marshal(plan)
 	if err != nil {
@@ -222,7 +222,7 @@ func TestBenchmarkCachePromotion10Jobs(t *testing.T) {
 func mustGoldenAssets(t *testing.T) []queue.AssetRef {
 	t.Helper()
 	var job queue.Job
-	if err := json.Unmarshal([]byte(chronon.GoldenOverlayJobV1), &job); err != nil {
+	if err := json.Unmarshal([]byte(chronon.GoldenOverlayJobV2), &job); err != nil {
 		t.Fatalf("decode golden: %v", err)
 	}
 	return job.Assets

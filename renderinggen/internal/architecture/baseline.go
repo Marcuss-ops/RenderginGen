@@ -49,11 +49,13 @@ func LoadBaseline(path string) (*Baseline, error) {
 // Split partitions violations into new (must fail) and suppressed (baselined),
 // and reports which baseline entries were not matched (stale → must fail).
 //
-// exists resolves a baseline path to disk; an entry whose file does not exist
-// (for example a sibling repository that is not checked out) is ignored rather
-// than reported stale, so the ratchet is correct in a standalone RenderingGen
-// checkout and stricter in the full workspace.
-func (b *Baseline) Split(vs []Violation, exists func(string) bool) (newViolations []Violation, stale []string) {
+// absentSibling resolves a baseline path and reports whether it belongs to a
+// sibling repository that is not checked out. Only those entries are ignored:
+// a repo-local entry whose file is gone IS stale, because the violation was
+// deleted without ratcheting the ledger down. Treating every missing file as
+// ignorable (the historical shape) made deleted files leave immortal ledger
+// lines and the ratchet could only ever grow.
+func (b *Baseline) Split(vs []Violation, absentSibling func(string) bool) (newViolations []Violation, stale []string) {
 	used := map[string]bool{}
 	for _, v := range vs {
 		k := v.Key()
@@ -71,7 +73,7 @@ func (b *Baseline) Split(vs []Violation, exists func(string) bool) (newViolation
 		if i := strings.Index(k, "|"); i >= 0 {
 			file = k[i+1:]
 		}
-		if exists != nil && !exists(file) {
+		if absentSibling != nil && absentSibling(file) {
 			continue
 		}
 		stale = append(stale, k)

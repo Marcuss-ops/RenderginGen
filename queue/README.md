@@ -241,8 +241,10 @@ Prometheus metrics: `renderinggen_jobs_pending` (gauge),
 the last absolute frame position the renderer reported — use `last_frame_at`
 age as the render liveness signal, not GPU memory.
 
-`state` is one of `pending`, `running`, `completed`, `failed`, `rendered`,
-`cancelled`. The `artifact` field is populated only once the job completes.
+`state` is one of `pending`, `running`, `finalizing`, `completed`, `failed`,
+`rendered`, `cancelled` — the canonical vocabulary is `client.AllStates()`
+(the internal `model.State` aliases that type). The `artifact` field is
+populated only once the job completes.
 
 ### Artifact (copy-only certification)
 
@@ -288,7 +290,7 @@ guarantees: Velox never has to guess whether a stream-copy is safe.
   "status": "ready",
   "renderinggen_version": "0.1.0",
   "chronon_version": "0.9.4",
-  "overlay_schema_version": 3,
+  "overlay_schema_version": 1,
   "gpu_backend": "vulkan",
   "gpu_device": "NVIDIA RTX 4090",
   "gpu_driver": "550.54",
@@ -299,6 +301,11 @@ guarantees: Velox never has to guess whether a stream-copy is safe.
 
 `status` is one of `unknown`, `ready`, `busy`, `draining`, `offline`.
 
+`overlay_schema_version` is the semantic overlay contract version the worker
+accepts. It is derived (`renderinggen/internal/version.OverlaySchema`), not an
+independent counter, so it always equals the enforced
+`renderinggen.overlay-plan.v1` version (`overlay.SemanticSchemaVersion`).
+
 ## Lifecycle and lease semantics
 
 ```
@@ -308,7 +315,10 @@ pending ──claim──▶ running ──complete──▶ completed
    │                 └──fail (attempts >= max)─▶ failed
    └──lease expiry── running (RequeueExpired)
 
-pending | running | rendered ──cancel──▶ cancelled (TERMINAL)
+running ──render stored, publication pending──▶ rendered
+running | finalizing ──parent finalization──▶ finalizing ──▶ completed
+
+pending | running | finalizing | rendered ──cancel──▶ cancelled (TERMINAL)
 ```
 
 A **cancelled** job is never claimable and never requeued by `RequeueExpired`;

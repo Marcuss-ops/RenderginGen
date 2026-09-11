@@ -62,10 +62,11 @@ func TestEveryOfficialPresetCompilesAndMaterializes(t *testing.T) {
 			t.Fatalf("%s resolved empty: %+v", id, resolved)
 		}
 		raw := []byte(`{"schema_version":"renderinggen.overlay-plan.v1","plan_id":"canary-` + id + `","video_id":"v","width":1280,"height":720,"fps_num":30,"fps_den":1,"items":[` + item + `]}`)
-		compiled, _, semantic, err := CompileIfSemantic(raw)
-		if err != nil || !semantic {
-			t.Fatalf("%s compile: semantic=%v err=%v", id, semantic, err)
+		result, err := CompileSemantic(raw)
+		if err != nil {
+			t.Fatalf("%s compile: %v", id, err)
 		}
+		compiled := result.Plan
 		if len(compiled.Layers) != 1 {
 			t.Fatalf("%s was not materially lowered: %+v", id, compiled.Layers)
 		}
@@ -103,18 +104,18 @@ func TestNoFixtureReferencesUnknownOfficialPreset(t *testing.T) {
 		}
 		var job struct {
 			RenderPlan struct {
-				Layers []struct {
-					Preset string `json:"preset"`
-				} `json:"layers"`
+				Items []struct {
+					PresetID string `json:"preset_id"`
+				} `json:"items"`
 			} `json:"render_plan"`
 		}
 		if err := json.Unmarshal(data, &job); err != nil {
 			t.Fatalf("%s: %v", entry.Name(), err)
 		}
-		for _, layer := range job.RenderPlan.Layers {
-			if layer.Preset != "" {
-				if _, ok := officialPresets[layer.Preset]; !ok {
-					t.Errorf("%s references unknown official preset %q", entry.Name(), layer.Preset)
+		for _, item := range job.RenderPlan.Items {
+			if item.PresetID != "" {
+				if _, ok := officialPresets[item.PresetID]; !ok {
+					t.Errorf("%s references unknown official preset %q", entry.Name(), item.PresetID)
 				}
 			}
 		}
@@ -142,12 +143,13 @@ func TestAppleStyleFixturesAreDistinctAndComplete(t *testing.T) {
 		}
 		var job struct {
 			RenderPlan struct {
-				StyleProfile string `json:"style_profile"`
-				Layers       []struct {
-					Type   string `json:"type"`
-					Asset  string `json:"asset"`
-					Preset string `json:"preset"`
-				} `json:"layers"`
+				SchemaVersion string `json:"schema_version"`
+				StyleProfile  string `json:"style_profile"`
+				Items         []struct {
+					Kind     string `json:"kind"`
+					Template string `json:"template_id"`
+					PresetID string `json:"preset_id"`
+				} `json:"items"`
 			} `json:"render_plan"`
 			Assets []struct {
 				LogicalPath string `json:"logical_path"`
@@ -156,13 +158,16 @@ func TestAppleStyleFixturesAreDistinctAndComplete(t *testing.T) {
 		if err := json.Unmarshal(data, &job); err != nil {
 			t.Fatalf("%s: %v", entry.Name(), err)
 		}
+		if job.RenderPlan.SchemaVersion != "renderinggen.overlay-plan.v1" {
+			t.Errorf("%s: render_plan must be the semantic overlay-plan.v1 contract, got %q", entry.Name(), job.RenderPlan.SchemaVersion)
+		}
 		if job.RenderPlan.StyleProfile == "" {
 			t.Errorf("%s: missing style_profile", entry.Name())
 		}
 		var signature strings.Builder
-		for _, layer := range job.RenderPlan.Layers {
-			if layer.Type == "text" || layer.Type == "image" {
-				signature.WriteString(layer.Type + ":" + layer.Asset + ":" + layer.Preset + "|")
+		for _, item := range job.RenderPlan.Items {
+			if item.PresetID != "" {
+				signature.WriteString(item.Kind + ":" + item.Template + ":" + item.PresetID + "|")
 			}
 		}
 		if signature.Len() == 0 {

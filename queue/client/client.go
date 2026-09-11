@@ -33,16 +33,39 @@ var ErrJobExists = errors.New("job already exists")
 // ErrNotFound is returned by Get when the job does not exist.
 var ErrNotFound = errors.New("job not found")
 
-// State is the lifecycle state of a job.
+// State is the lifecycle state of a job. It is the canonical definition: the
+// queue service (queue/internal/model), the worker and every producer ALIAS
+// this type instead of re-declaring the vocabulary, so a state can never mean
+// two different things on the two sides of the wire. The SQL CHECK constraint
+// is pinned to AllStates() by queue/internal/model/state_schema_test.go.
 type State string
 
 const (
-	StatePending   State = "pending"
-	StateRunning   State = "running"
-	StateCompleted State = "completed"
-	StateFailed    State = "failed"
-	StateRendered  State = "rendered"
-	StateCancelled State = "cancelled"
+	StatePending    State = "pending"
+	StateRunning    State = "running"
+	StateCompleted  State = "completed"
+	StateFailed     State = "failed"
+	StateRendered   State = "rendered"
+	StateCancelled  State = "cancelled"
+	StateFinalizing State = "finalizing"
+)
+
+// AllStates returns the complete canonical state vocabulary in lifecycle
+// order (not terminal-order). It is the single list the queue's SQL CHECK
+// constraint and every label/validation helper must agree with.
+func AllStates() []State {
+	return []State{
+		StatePending, StateRunning, StateFinalizing,
+		StateCompleted, StateFailed, StateCancelled, StateRendered,
+	}
+}
+
+// JobType constants are the canonical job-type vocabulary carried in the
+// renderinggen.job.v1 envelope.
+const (
+	JobTypeRenderSegment  = "render_segment"
+	JobTypeOverlayPrepare = "overlay.prepare"
+	JobTypeOverlayRender  = "overlay.render"
 )
 
 // JobSchemaV1 identifies the renderinggen.job.v1 envelope.
@@ -150,6 +173,12 @@ type Stats struct {
 	Completed int `json:"completed"`
 	Failed    int `json:"failed"`
 	Depth     int `json:"depth"`
+	// Ok reports whether the snapshot came from a successful store query. A
+	// failed snapshot is all-zeros with Ok=false, so a consumer can tell
+	// "queue is empty" from "store unavailable". The server has always emitted
+	// it; the client used to drop it, which made an outage look like an idle
+	// queue to every autoscaler that read Depth.
+	Ok bool `json:"ok"`
 }
 
 // Client speaks the central queue's HTTP API.

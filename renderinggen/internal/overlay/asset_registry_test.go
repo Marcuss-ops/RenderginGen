@@ -116,7 +116,7 @@ func TestCompileSemanticCollidingItemAssetIDsRejected(t *testing.T) {
 			 "asset_refs":[{"asset_id":"img/1","sha256":"` + hash64("b") + `","url":"https://cdn.example/second.png","media_type":"image/png"}]}
 		]
 	}`)
-	if _, _, _, err := CompileIfSemantic(raw); err == nil {
+	if _, err := CompileSemantic(raw); err == nil {
 		t.Fatal("semantic plan with colliding sanitized asset ids must be rejected")
 	} else if !strings.Contains(err.Error(), "collision") {
 		t.Fatalf("error must name the collision, got: %v", err)
@@ -134,10 +134,11 @@ func TestCompileSemanticQueryURLAssetCleanPath(t *testing.T) {
 			 "asset_refs":[{"asset_id":"photo","sha256":"` + hash64("a") + `","url":"https://cdn.example/photo.png?sig=zzz","media_type":"image/png"}]}
 		]
 	}`)
-	_, assets, _, err := CompileIfSemantic(raw)
+	res, err := CompileSemantic(raw)
 	if err != nil {
 		t.Fatal(err)
 	}
+	assets := res.Assets
 	if len(assets) != 1 {
 		t.Fatalf("assets = %+v, want 1", assets)
 	}
@@ -145,10 +146,11 @@ func TestCompileSemanticQueryURLAssetCleanPath(t *testing.T) {
 		t.Fatalf("logical path = %q, want assets/semantic/photo.png", assets[0].LogicalPath)
 	}
 	// Verify the layer reference from a fresh compile.
-	compiled, _, _, err := CompileIfSemantic(raw)
+	compiledRes, err := CompileSemantic(raw)
 	if err != nil {
 		t.Fatal(err)
 	}
+	compiled := compiledRes.Plan
 	if compiled.Layers[0].Asset != "assets/semantic/photo.png" {
 		t.Fatalf("layer asset = %q, want clean path", compiled.Layers[0].Asset)
 	}

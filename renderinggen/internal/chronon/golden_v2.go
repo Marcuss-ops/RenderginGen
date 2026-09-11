@@ -1,7 +1,7 @@
 package chronon
 
 // GoldenOverlayJobV2 is the canonical, immutable universal benchmark job for
-// the REAL RenderingGen workload — the successor of GoldenOverlayJobV1 that
+// the REAL RenderingGen workload — the successor of the retired v1 golden that
 // exercises the full semantic vocabulary and every canonical primitive:
 //
 //	video background (background.mp4, full 8s)      → Video primitive

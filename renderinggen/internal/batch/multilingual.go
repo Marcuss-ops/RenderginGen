@@ -20,11 +20,6 @@ import (
 // source under this logical path.
 const SourceBindLogicalPath = "videos/bound_base.mp4"
 
-// OverlayJobID returns the derived queue job ID for a language overlay pass.
-func OverlayJobID(b BatchID, baseLogicalID, language string) string {
-	return jobID(b, baseLogicalID+".overlay."+language)
-}
-
 // overlayPlanSourcePatch rewrites the language overlay plan's source to point
 // at the bound base artifact. The semantic plan's source block declares the
 // asset_id/sha256 of the video the overlay pass composites over; the binder

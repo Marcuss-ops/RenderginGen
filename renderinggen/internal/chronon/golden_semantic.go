@@ -1,9 +1,9 @@
 package chronon
 
 // GoldenSemanticOverlayJobV1 is the canonical, immutable SEMANTIC golden job:
-// the same workload as GoldenOverlayJobV1 (background + phrase + word) but
+// the same workload as GoldenOverlayJobV2 (background + phrase + word) but
 // expressed in PipelineGen's renderinggen.overlay-plan.v1 contract. The
-// worker's CompileIfSemantic lowers it into a concrete chronon.render-plan.v2
+// worker's CompileSemantic lowers it into a concrete chronon.render-plan.v2
 // and runs the exact same materialize -> plan.json -> chronon3d_cli ->
 // artifact chain as the concrete golden.
 //
@@ -12,7 +12,7 @@ package chronon
 //	+ "TRUMP"        (IMPORTANT_WORD,   active_word_pop, f65-95)
 //
 // 5 seconds at 30 fps = 150 frames on a 1280x720 canvas. The assets are the
-// same deterministic fixtures as GoldenOverlayJobV1 under testdata/golden/
+// same deterministic fixtures as GoldenOverlayJobV2 under testdata/golden/
 // with content-addressed sha256 baked into asset_refs; the job envelope also
 // carries them by hash so the object store can seed them (real submissions
 // resolve the refs the same way).

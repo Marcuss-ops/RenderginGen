@@ -1,4 +1,8 @@
-package client
+// Package client_test wires the real HTTP server, service and repository to
+// the public client. It is an EXTERNAL test package on purpose: the queue's
+// internal model imports the public client (the client owns the canonical wire
+// types), so an in-package test could not import it without an import cycle.
+package client_test
 
 import (
 	"context"
@@ -6,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/Marcuss-ops/RenderingGen/queue/client"
 	"github.com/Marcuss-ops/RenderingGen/queue/internal/model"
 	"github.com/Marcuss-ops/RenderingGen/queue/internal/repository/memory"
 	"github.com/Marcuss-ops/RenderingGen/queue/internal/server"
@@ -28,8 +33,8 @@ func TestWaitTerminalEndToEndWithRealQueue(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	c := New(ts.URL)
-	done := make(chan Job, 1)
+	c := client.New(ts.URL)
+	done := make(chan client.Job, 1)
 	errCh := make(chan error, 1)
 	go func() {
 		job, err := c.WaitTerminal(context.Background(), "job-1")
@@ -51,7 +56,7 @@ func TestWaitTerminalEndToEndWithRealQueue(t *testing.T) {
 
 	select {
 	case job := <-done:
-		if job.State != StateCompleted {
+		if job.State != client.StateCompleted {
 			t.Fatalf("state = %q, want completed", job.State)
 		}
 		if elapsed := time.Since(start); elapsed > time.Second {

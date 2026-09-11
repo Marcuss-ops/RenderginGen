@@ -332,13 +332,20 @@ func watermarkMargin(marginPX *int) (int, error) {
 	return *marginPX, nil
 }
 
-// resolveWatermarkPosition converts the requested position name and the
-// plan's typed geometry (width/height, margin) into a concrete [x, y] centre
-// offset relative to the canvas centre. Unknown positions are a compile
-// failure, never a silent "center" fallback.
-func resolveWatermarkPosition(position string, canvasW, canvasH, margin int, s *styleBlock) ([]float64, error) {
+// resolveWatermarkGeometry converts the requested position name and the plan's
+// typed geometry (width/height, margin) into BOTH concrete outputs a watermark
+// layer needs: the [x, y] centre offset relative to the canvas centre, and the
+// layer size. Unknown or missing inputs are a compile failure, never a silent
+// "center" fallback.
+//
+// The size is returned from here — not recomputed by the caller — because the
+// box dimensions are an input to the position math itself. When the compiler
+// derived the size a second time, the layer's declared size and the box the
+// position was computed against were two independent copies of one rule and
+// could drift; this function is the single owner of both.
+func resolveWatermarkGeometry(position string, canvasW, canvasH, margin int, s *styleBlock) (pos, size []float64, err error) {
 	if strings.TrimSpace(position) == "" {
-		return nil, fmt.Errorf("overlay: watermark position is required (layout is owned by PipelineGen)")
+		return nil, nil, fmt.Errorf("overlay: watermark position is required (layout is owned by PipelineGen)")
 	}
 	// Box: the plan's explicit geometry when provided, otherwise derived
 	// from canvas size (geometry implied by the request, not a visual style).
@@ -353,19 +360,20 @@ func resolveWatermarkPosition(position string, canvasW, canvasH, margin int, s *
 	toCenterOffset := func(x, y float64) []float64 {
 		return []float64{x + boxW/2 - float64(canvasW)/2, y + boxH/2 - float64(canvasH)/2}
 	}
+	size = []float64{boxW, boxH}
 	switch strings.ToLower(strings.TrimSpace(position)) {
 	case "top_left":
-		return toCenterOffset(m, m), nil
+		return toCenterOffset(m, m), size, nil
 	case "top_right":
-		return toCenterOffset(float64(canvasW)-boxW-m, m), nil
+		return toCenterOffset(float64(canvasW)-boxW-m, m), size, nil
 	case "center":
-		return toCenterOffset((float64(canvasW)-boxW)/2, (float64(canvasH)-boxH)/2), nil
+		return toCenterOffset((float64(canvasW)-boxW)/2, (float64(canvasH)-boxH)/2), size, nil
 	case "bottom_left":
-		return toCenterOffset(m, float64(canvasH)-boxH-m), nil
+		return toCenterOffset(m, float64(canvasH)-boxH-m), size, nil
 	case "bottom_right":
-		return toCenterOffset(float64(canvasW)-boxW-m, float64(canvasH)-boxH-m), nil
+		return toCenterOffset(float64(canvasW)-boxW-m, float64(canvasH)-boxH-m), size, nil
 	default:
-		return nil, fmt.Errorf("overlay: unsupported watermark position %q (supported: top_left, top_right, center, bottom_left, bottom_right)", position)
+		return nil, nil, fmt.Errorf("overlay: unsupported watermark position %q (supported: top_left, top_right, center, bottom_left, bottom_right)", position)
 	}
 }
 

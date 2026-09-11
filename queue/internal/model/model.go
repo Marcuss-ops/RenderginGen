@@ -6,44 +6,82 @@ import (
 	"encoding/json"
 	"fmt"
 	"time"
+
+	"github.com/Marcuss-ops/RenderingGen/queue/client"
 )
 
 // State is the lifecycle state of a job.
-type State string
+//
+// It is an ALIAS of the public wire contract type (queue/client), not a second
+// definition: the queue service, the worker and every producer share exactly
+// one State type, so the vocabulary cannot drift across the wire. The internal
+// names below stay for readability at the storage layer.
+//
+// StateCancelled marks a job a producer cancelled before it reached a
+// terminal state. Cancelled is terminal: the job is never claimable again and
+// lease expiry never requeues it, so a cancelled job can never trigger a new
+// Chronon render across lease/claim cycles. An in-flight render that was
+// already claimed when the cancel landed finishes its GPU invocation (it
+// cannot be preempted), but its complete/fail reports are rejected and no
+// further invocation ever starts.
+//
+// StateRendered marks a job whose render is finished and durably stored in the
+// artifact store, but whose external publication (e.g. Google Drive) failed. A
+// worker re-claiming it must skip rendering and only retry the publication
+// step.
+type State = client.State
 
 const (
-	StatePending   State = "pending"
-	StateRunning   State = "running"
-	StateCompleted State = "completed"
-	StateFailed    State = "failed"
-	// StateCancelled marks a job a producer cancelled before it reached a
-	// terminal state. Cancelled is terminal: the job is never claimable again
-	// and lease expiry never requeues it, so a cancelled job can never trigger
-	// a new Chronon render across lease/claim cycles. An in-flight render that
-	// was already claimed when the cancel landed finishes its GPU invocation
-	// (it cannot be preempted), but its complete/fail reports are rejected and
-	// no further invocation ever starts.
-	StateCancelled State = "cancelled"
-
-	// StateRendered marks a job whose render is finished and durably stored in
-	// the artifact store, but whose external publication (e.g. Google Drive)
-	// failed. A worker re-claiming it must skip rendering and only retry the
-	// publication step.
-	StateRendered   State = "rendered"
-	StateFinalizing State = "finalizing"
+	StatePending    = client.StatePending
+	StateRunning    = client.StateRunning
+	StateCompleted  = client.StateCompleted
+	StateFailed     = client.StateFailed
+	StateRendered   = client.StateRendered
+	StateCancelled  = client.StateCancelled
+	StateFinalizing = client.StateFinalizing
 )
+
+// States returns the canonical job-state vocabulary. It is the list the
+// render_jobs_state_check SQL constraint must match.
+func States() []State { return client.AllStates() }
+
+// AttemptStatus is the lifecycle status of one render attempt
+// (render_attempts.status). Its vocabulary mirrors the job states plus
+// lease_expired, which has no job-state counterpart: an attempt that ended
+// because its lease elapsed is recorded as lease_expired, while the job row
+// returns to pending (or fails permanently).
+type AttemptStatus string
 
 const (
-	JobTypeRenderSegment  = "render_segment"
-	JobTypeOverlayPrepare = "overlay.prepare"
-	JobTypeOverlayRender  = "overlay.render"
+	AttemptRunning      AttemptStatus = "running"
+	AttemptCompleted    AttemptStatus = "completed"
+	AttemptFailed       AttemptStatus = "failed"
+	AttemptLeaseExpired AttemptStatus = "lease_expired"
+	AttemptRendered     AttemptStatus = "rendered"
+	AttemptCancelled    AttemptStatus = "cancelled"
 )
 
-// JobSchemaV1 identifies the renderinggen.job.v1 envelope.
-const JobSchemaV1 = "renderinggen.job"
+// AttemptStatuses returns the canonical attempt-status vocabulary. It is the
+// list the render_attempts_status_check SQL constraint must match.
+func AttemptStatuses() []AttemptStatus {
+	return []AttemptStatus{
+		AttemptRunning, AttemptCompleted, AttemptFailed,
+		AttemptLeaseExpired, AttemptRendered, AttemptCancelled,
+	}
+}
 
-// JobSchemaVersionV1 is the version of the renderinggen.job.v1 envelope.
-const JobSchemaVersionV1 = 1
+const (
+	JobTypeRenderSegment  = client.JobTypeRenderSegment
+	JobTypeOverlayPrepare = client.JobTypeOverlayPrepare
+	JobTypeOverlayRender  = client.JobTypeOverlayRender
+)
+
+// JobSchemaV1 identifies the renderinggen.job.v1 envelope. It is an alias of
+// the public wire contract so the value exists once, in queue/client.
+const (
+	JobSchemaV1        = client.JobSchemaV1
+	JobSchemaVersionV1 = client.JobSchemaVersionV1
+)
 
 // AssetRef points at an asset in the central artifact store by content hash
 // and the logical path it must be materialized at in the job workspace.
@@ -74,7 +112,7 @@ type AssetRef struct {
 // Job is a unit of work in the queue: one render SEGMENT. The renderable
 // content carried in RenderPlan is the semantic OverlaySpec
 // (renderinggen.overlay-plan.v1, accepted by the worker's
-// overlay.CompileIfSemantic) for prepared jobs, or the concrete Chronon
+// overlay.CompileSemantic) for prepared jobs, or the concrete Chronon
 // render-plan document on precompiled paths. The worker writes plan.json and
 // Chronon3d composes every layer of the segment in a single pass.
 type Job struct {

@@ -98,11 +98,22 @@ type Requirements struct {
 	NVENC        bool
 }
 
+// StrictNativeRequired reports whether a (backend, hardware encoder)
+// configuration demands the native GPU hot path. It is the SINGLE definition
+// of that rule: the startup capability handshake, the render dispatch and the
+// plan builder all consult it instead of each re-deriving "vulkan + a real
+// hardware encoder" and silently drifting apart (the historical shape of this
+// predicate existed in three files with a comment asking future editors to
+// keep them in sync by hand).
+func StrictNativeRequired(backend, hardwareEncoder string) bool {
+	return backend == "vulkan" && hardwareEncoder != "" && hardwareEncoder != "none"
+}
+
 // GPUHotPathRequirements returns the requirement set for the native GPU hot
-// path (NVDEC decode → GPU composite → NVENC encode). It must be kept in
-// sync with Processor.RunGPU's gpuRequired derivation: both express "the
-// strict native backend / vulkan+hardware-encoder configuration". The
-// compiled Chronon plan then selects DirectYUV or FullGraph.
+// path (NVDEC decode → GPU composite → NVENC encode). Callers derive WHETHER
+// the hot path is required from StrictNativeRequired; this function only
+// declares WHAT it then needs. The compiled Chronon plan selects DirectYUV or
+// FullGraph.
 func GPUHotPathRequirements() Requirements {
 	return Requirements{
 		Vulkan:       true,

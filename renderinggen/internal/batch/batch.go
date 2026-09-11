@@ -127,7 +127,7 @@ func idempotencyKey(b BatchID, logical string, plan json.RawMessage, assets []qu
 
 // validatePlanShape fails closed on plans that cannot possibly render:
 // the payload must at least be a JSON object. Deep validation is the
-// worker's job (overlay.CompileIfSemantic); the batch layer only refuses
+// worker's job (overlay.CompileSemantic); the batch layer only refuses
 // structurally impossible submissions.
 func validatePlanShape(logical string, plan json.RawMessage) error {
 	if len(plan) == 0 {

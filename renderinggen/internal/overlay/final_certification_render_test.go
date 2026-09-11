@@ -140,10 +140,11 @@ func TestFinal_MissingAssetFailsClosed(t *testing.T) {
 			`"items":[{"id":"img","template_id":"IMAGE_OVERLAY","preset_id":"image_scale_in","start_ms":0,"end_ms":5208,`+
 			`"asset_refs":[{"asset_id":"missing-asset","sha256":%q,"url":"https://store.example/does_not_exist.jpg","media_type":"image/jpeg"}]}]}`,
 		certificationAssetSHA)
-	plan, _, semantic, err := CompileIfSemantic([]byte(raw))
-	if err != nil || !semantic {
-		t.Fatalf("compile: semantic=%v err=%v", semantic, err)
+	result, err := CompileSemantic([]byte(raw))
+	if err != nil {
+		t.Fatalf("compile: %v", err)
 	}
+	plan := result.Plan
 	videoPath := filepath.Join(outDir, "missing.mp4")
 	plan.Output.Path = videoPath
 	planPath := filepath.Join(outDir, "plan.json")

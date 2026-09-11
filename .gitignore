@@ -64,3 +64,9 @@ assets/backgrounds/*.mp4
 !/testdata/golden/logo_pulse.png
 !/testdata/golden/overlay_chart.png
 !/testdata/golden/overlay_globe.png
+
+# Debug scratch (plan dumps used while diagnosing the render graph) and
+# Python bytecode are never committed.
+/testdata/debug/
+__pycache__/
+*.pyc

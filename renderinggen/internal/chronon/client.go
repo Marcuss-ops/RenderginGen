@@ -222,13 +222,13 @@ func (c *Client) Verify() error {
 		return fmt.Errorf("chronon capability verification failed: %w", err)
 	}
 
-	// Requirement derivation mirrors Processor.RunGPU's gpuRequired and
-	// renderArgs' GPU branch: whenever the worker requests the native GPU
-	// capability (--backend vulkan --hardware nvenc --encoder-backend native
-	// --gpu-hot-path-mode auto), the whole chain must be declared and reachable
-	// up front. Chronon still chooses DirectYUV vs FullGraph per compiled job.
+	// Whenever the worker requests the native GPU capability (--backend
+	// vulkan --hardware nvenc --encoder-backend native --gpu-hot-path-mode
+	// auto), the whole chain must be declared and reachable up front. The rule
+	// itself lives in StrictNativeRequired, shared with Processor.RunGPU and
+	// renderArgs. Chronon still chooses DirectYUV vs FullGraph per compiled job.
 	gpuRequired := c.StrictNativeBackend ||
-		(c.Backend == "vulkan" && c.HardwareEncoder != "" && c.HardwareEncoder != "none")
+		StrictNativeRequired(c.Backend, c.HardwareEncoder)
 	req := Requirements{}
 	if c.Backend == "vulkan" {
 		req.Vulkan = true

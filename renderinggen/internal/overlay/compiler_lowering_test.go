@@ -5,14 +5,14 @@ import (
 	"testing"
 )
 
-// TestCompileIfSemanticUntypedConcretePlanIsRejected keeps the Plan struct in
+// TestCompileSemanticUntypedConcretePlanIsRejected keeps the Plan struct in
 // lockstep with the concrete render-plan shape, so a real golden document
 // always decodes without error. The untyped document itself is rejected by
-// CompileIfSemantic (fail-closed); decoding is exercised directly here.
-func TestCompileIfSemanticUntypedConcretePlanIsRejected(t *testing.T) {
+// CompileSemantic (fail-closed); decoding is exercised directly here.
+func TestCompileSemanticUntypedConcretePlanIsRejected(t *testing.T) {
 	raw := []byte(`{"schema":"chronon.render-plan.v2","version":2,"job_id":"j","canvas":{"width":1280,"height":720,"fps_num":30,"fps_den":1,"duration_frames":150},"layers":[{"id":"p","type":"text","text":"X","preset":"caption_card","start_frame":20,"duration_frames":41,"animation":{"preset":"fade_in"}}],"output":{"path":"result.mp4","format":"mp4","codec":"h264"}}`)
-	if _, _, _, err := CompileIfSemantic(raw); err == nil {
-		t.Fatal("untyped concrete plan must be rejected by CompileIfSemantic")
+	if _, err := CompileSemantic(raw); err == nil {
+		t.Fatal("untyped concrete plan must be rejected by CompileSemantic")
 	}
 	var plan Plan
 	if err := json.Unmarshal(raw, &plan); err != nil {
@@ -25,10 +25,11 @@ func TestCompileIfSemanticUntypedConcretePlanIsRejected(t *testing.T) {
 
 func TestCompileSemanticLowersAuthoringConcepts(t *testing.T) {
 	raw := []byte(`{"schema_version":"renderinggen.overlay-plan.v1","plan_id":"p","video_id":"v","width":1280,"height":720,"fps_num":30,"fps_den":1,"style_profile":"crime","items":[{"id":"n","kind":"entity_card","template_id":"PERSON","preset_id":"name_glow_slide","text":"Ada","start_ms":0,"end_ms":1000}]}`)
-	compiled, _, _, err := CompileIfSemantic(raw)
+	result, err := CompileSemantic(raw)
 	if err != nil {
 		t.Fatal(err)
 	}
+	compiled := result.Plan
 	outBytes, err := compiled.Marshal()
 	if err != nil {
 		t.Fatal(err)

@@ -18,10 +18,11 @@ func TestClipSemanticAudioLowering(t *testing.T) {
 		"audio": {"mode": "transcode", "codec": "aac", "sample_rate": 44100, "channels": 1},
 		"items": []
 	}`)
-	compiled, _, _, err := CompileIfSemantic(raw)
+	result, err := CompileSemantic(raw)
 	if err != nil {
 		t.Fatalf("audio lowering FAIL: %v", err)
 	}
+	compiled := result.Plan
 	if compiled.Output.Audio == nil {
 		t.Fatal("audio lowering FAIL: semantic audio must populate the typed Output.Audio policy")
 	}

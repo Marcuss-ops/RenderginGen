@@ -120,13 +120,11 @@ func writeV2Plan(path, planID string, items []semanticTypographyItem) (string, e
 	if err != nil {
 		return "", err
 	}
-	data, _, compiled, err := overlay.CompileIfSemantic(raw)
+	result, err := overlay.CompileSemantic(raw)
 	if err != nil {
 		return "", err
 	}
-	if !compiled {
-		return "", fmt.Errorf("semantic input did not pass through RenderingGen")
-	}
+	data := result.Plan
 	if data.Schema != "chronon.render-plan.v2" || data.Version != 2 {
 		return "", fmt.Errorf("compiler emitted %s v%d, want chronon.render-plan.v2", data.Schema, data.Version)
 	}

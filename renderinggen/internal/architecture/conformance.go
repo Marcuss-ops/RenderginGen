@@ -44,6 +44,13 @@ type rule struct {
 	note  string
 	exts  []string // applicable extensions; nil = every scanned file
 	nodes []string // if set, the relative path must contain one of these
+	// rootOnly scopes a rule to the RenderingGen repository. It is for
+	// repo-hygiene rules ("this repository contains no machine-specific
+	// path / no manual-splitting file") that are NOT part of the cross-repo
+	// contract: a sibling repository's own hygiene is that repository's gate,
+	// and flagging it here would force baselining another project's
+	// pre-existing state into this ledger.
+	rootOnly bool
 	// filenameRe matches the file basename (line-less violations).
 	filenameRe *regexp.Regexp
 	// textRe matches a single source line.
@@ -80,6 +87,17 @@ var skipDirs = map[string]bool{
 	"results": true, ".codex": true,
 }
 
+// skipDir reports whether a directory basename is never descended into. Besides
+// the exact names above it skips every build-* variant (build-local,
+// build-debug, …) a native build emits: those trees are generated output, not
+// source, and their CMake logs quote developer home paths.
+func skipDir(name string) bool {
+	if skipDirs[name] {
+		return true
+	}
+	return strings.HasPrefix(name, "build-")
+}
+
 // maxFileBytes caps the size of a file the gate will read (generated timing
 // sidecars and media metadata far exceed source size).
 const maxFileBytes = 512 * 1024
@@ -113,9 +131,16 @@ func Rules() []rule {
 			textRe: mustRe("Rendergin" + "Gen"),
 		},
 		{
-			id:     "hardcoded_home_path",
-			note:   "tests resolve binaries/assets from env or a test helper, never a hardcoded developer home path",
-			exts:   []string{".go"},
+			id:       "hardcoded_home_path",
+			rootOnly: true,
+			note:     "code, configuration and docs resolve binaries/assets/install prefixes from env or a documented prefix, never a hardcoded developer home path (every source and config carrier, not only Go)",
+			// Scope: source, configuration and documentation carriers — the files
+			// a contributor copies from. Generated render artifacts (*_plan.json,
+			// *.timing.json under the *_videos/ and testdata/debug/ trees) are DATA
+			// produced by a render, not configuration, and their provenance (an
+			// absolute machine path recorded by the renderer) is governed by the
+			// tracking policy in .gitignore rather than by this rule.
+			exts:   []string{".go", ".yaml", ".yml", ".sh", ".service", ".conf", ".md", ".py", ".cmake", ".proto", ".dockerfile"},
 			textRe: mustRe(`/home/` + `pierone/`),
 		},
 		{
@@ -140,8 +165,8 @@ func Rules() []rule {
 		},
 		{
 			id:         "partnn_filename",
-			note:       "files are named for responsibility; *_partNN.go is a manual-splitting artifact",
-			exts:       []string{".go"},
+			rootOnly:   true,
+			note:       "files are named for responsibility; *_partNN.* is a manual-splitting artifact (applies to every scanned file, not only Go)",
 			filenameRe: mustRe(`_part[0-9][0-9]`),
 		},
 		{
@@ -154,6 +179,24 @@ func Rules() []rule {
 }
 
 func mustRe(p string) *regexp.Regexp { return regexp.MustCompile(p) }
+
+// escapedQuotes is the escaping that hides a marker from a textual rule.
+// A shell script or YAML that embeds a JSON document escapes its quotes
+// (\"chronon.render-plan\"), and a regex looking for "chronon.render-plan"
+// cannot see it through the backslash. A live e2e script reintroduced the
+// forbidden unversioned schema and passed the gate exactly this way, so the
+// rules match the UNESCAPED projection of every line.
+var escapedQuotes = strings.NewReplacer(`\"`, `"`, `\'`, `'`)
+
+// normalizeForMatch returns the projection of a source line the rules match
+// against. The unmatched, raw line is still what gets reported as a snippet,
+// so a finding always points at the real file content.
+func normalizeForMatch(line string) string {
+	if !strings.Contains(line, `\`) {
+		return line
+	}
+	return escapedQuotes.Replace(line)
+}
 
 // scannedFile reports whether path is a file the gate reads.
 func scannedFile(name string) bool {
@@ -216,8 +259,30 @@ func Targets() []Target {
 	return targets
 }
 
-// PathExists resolves a baseline path (with its target prefix) to disk. It is
-// used so a baseline entry whose file is absent is ignored, not reported stale.
+// AbsentSibling reports whether a baseline entry belongs to a sibling
+// repository (refactored/, Chronon3d/) that is NOT checked out here. Such an
+// entry is unverifiable in this checkout and must be ignored rather than
+// reported stale — the standalone-CI correctness rule.
+//
+// The converse is equally load-bearing: a REPO-LOCAL entry whose file no
+// longer exists is stale, because someone deleted the violation without
+// ratcheting the ledger down. Treating "file not found" as ignorable
+// everywhere (the historical behavior) meant a deleted file made its ledger
+// line immortal and the ratchet could never contract.
+func AbsentSibling(rel string) bool {
+	relSlash := filepath.ToSlash(rel)
+	for _, name := range siblingRepos {
+		if !strings.HasPrefix(relSlash, name+"/") {
+			continue
+		}
+		dir := filepath.Join(filepath.Dir(RepoRoot()), name)
+		st, err := os.Stat(dir)
+		return err != nil || !st.IsDir()
+	}
+	return false
+}
+
+// PathExists resolves a baseline path (with its target prefix) to disk.
 func PathExists(rel string) bool {
 	relSlash := filepath.ToSlash(rel)
 	for _, t := range Targets() {
@@ -295,7 +360,7 @@ func scanTarget(t Target) ([]Violation, error) {
 			if relSlash == "." {
 				return nil
 			}
-			if skipDirs[d.Name()] {
+			if skipDir(d.Name()) {
 				return filepath.SkipDir
 			}
 			if t.Prefix == "" && relSlash == selfPkgRel {
@@ -339,8 +404,9 @@ func scanTarget(t Target) ([]Violation, error) {
 			return nil
 		}
 		for i, line := range strings.Split(string(data), "\n") {
+			matchLine := normalizeForMatch(line)
 			for _, ru := range textRules {
-				if ru.textRe.MatchString(line) {
+				if ru.textRe.MatchString(matchLine) {
 					out = append(out, Violation{
 						Rule:    ru.id,
 						File:    fileRel,
@@ -359,6 +425,9 @@ func scanTarget(t Target) ([]Violation, error) {
 }
 
 func (r rule) applies(relSlash string) bool {
+	if r.rootOnly && (strings.HasPrefix(relSlash, "refactored/") || strings.HasPrefix(relSlash, "Chronon3d/")) {
+		return false
+	}
 	if len(r.nodes) > 0 {
 		ok := false
 		for _, n := range r.nodes {
