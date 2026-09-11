@@ -10,8 +10,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/queue"
-	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/workspace"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/queue"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/workspace"
 )
 
 // degradedHeartbeatThreshold is the number of consecutive queue heartbeat

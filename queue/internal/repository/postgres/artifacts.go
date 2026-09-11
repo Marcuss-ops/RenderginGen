@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/Marcuss-ops/RenderginGen/queue/internal/model"
+	"github.com/Marcuss-ops/RenderingGen/queue/internal/model"
 )
 
 // defaultArtifactKind is used when the artifact does not declare a kind.

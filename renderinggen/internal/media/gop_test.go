@@ -1,6 +1,27 @@
 package media
 
-import "testing"
+import (
+	"context"
+	"testing"
+)
+
+// TestClosedGOPProbeUncertifiableOnUnreadableInput locks the provenance
+// contract: when the probe cannot observe a packet table at all (missing file,
+// absent ffprobe, undecodable stream) it must report uncertifiable=true, so a
+// deployment without a working probe is never indistinguishable from a
+// renderer producing genuinely open GOPs. Both branches (ffprobe absent and
+// ffprobe failing on an unreadable path) converge on the same verdict, so this
+// assertion is environment-independent.
+func TestClosedGOPProbeUncertifiableOnUnreadableInput(t *testing.T) {
+	path := t.TempDir() + "/does-not-exist.mp4"
+	closed, uncertifiable := probeClosedGOP(context.Background(), path)
+	if closed {
+		t.Fatalf("closedGOP = true for an unreadable input")
+	}
+	if !uncertifiable {
+		t.Fatalf("uncertifiable = false: an unobserved packet table must never be reported as a certified open-GOP verdict")
+	}
+}
 
 func TestClosedGOPCadence(t *testing.T) {
 	cases := []struct {

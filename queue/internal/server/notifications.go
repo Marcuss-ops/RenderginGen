@@ -1,6 +1,6 @@
 package server
 
-import "github.com/Marcuss-ops/RenderginGen/queue/internal/model"
+import "github.com/Marcuss-ops/RenderingGen/queue/internal/model"
 
 // NotifyState wakes long-poll claimers after an external queue notification
 // (for example PostgreSQL LISTEN/NOTIFY). It never assigns a job: claimers

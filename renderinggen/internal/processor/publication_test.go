@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/queue"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/queue"
 )
 
 // TestResolvePublicationPolicy pins the canonical resolver table: a declared

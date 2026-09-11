@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Marcuss-ops/RenderginGen/objectstore/internal/store"
+	"github.com/Marcuss-ops/RenderingGen/objectstore/internal/store"
 )
 
 func newServer(t *testing.T) *httptest.Server {

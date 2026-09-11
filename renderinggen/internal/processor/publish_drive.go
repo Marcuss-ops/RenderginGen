@@ -11,9 +11,9 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/artifactdb"
-	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/drive"
-	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/queue"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/artifactdb"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/drive"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/queue"
 )
 
 // Publish is the single publisher seam for a queue-served job. It consults

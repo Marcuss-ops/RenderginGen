@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Marcuss-ops/RenderginGen/queue/internal/model"
+	"github.com/Marcuss-ops/RenderingGen/queue/internal/model"
 )
 
 func submit(t *testing.T, s *Repository, id string) {

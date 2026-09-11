@@ -9,7 +9,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/queue"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/queue"
 )
 
 // sleepCtx sleeps for d or until ctx is cancelled; reports whether the sleep

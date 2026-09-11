@@ -1,0 +1,16 @@
+# Architecture conformance baseline (ratchet — may only shrink).
+# Format: <rule>|<workspace-relative-file>. Regenerate explicitly with
+# UPDATE_CONFORMANCE_BASELINE=1 go test ./internal/architecture/...
+legacy_layer_preset_field|refactored/internal/app/wiring/chronon/chronon_plan_projector.go
+legacy_layer_preset_field|refactored/internal/capabilities/overlays/chronon.go
+legacy_layer_preset_field|renderinggen/internal/chronon/golden_test.go
+render_plan_unversioned_schema|refactored/internal/capabilities/overlays/chronon.go
+render_plan_unversioned_schema|refactored/internal/capabilities/overlays/chronon_test.go
+render_plan_unversioned_schema|refactored/internal/capabilities/overlays/golden_content_test.go
+render_plan_unversioned_schema|refactored/internal/capabilities/overlays/golden_v2_test.go
+render_plan_unversioned_schema|renderinggen/internal/chronon/golden.go
+render_plan_unversioned_schema|renderinggen/internal/chronon/golden_test.go
+render_plan_unversioned_schema|testdata/golden/golden-overlay-job-v1.json
+render_plan_unversioned_schema|testdata/styles/style-preset-crime.json
+render_plan_unversioned_schema|testdata/styles/style-preset-discovery.json
+render_plan_unversioned_schema|testdata/styles/style-preset-young.json

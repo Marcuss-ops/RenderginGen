@@ -1,0 +1,29 @@
+# Local canary for the live host. It keeps the production queue and Chronon
+# IPC, but uses six bounded GPU lanes and RAM-backed workspace/cache so the
+# throughput experiment is isolated from the checked-in production template.
+worker:
+  id: renderinggen-canary-6
+  pipeline_workers: 3
+  gpu_lanes: 6
+queue:
+  endpoint: http://127.0.0.1:8081
+artifact_store:
+  endpoint: http://127.0.0.1:9000
+  local_cache_dir: /dev/shm/renderinggen/cache-canary-6
+workspace:
+  root: /dev/shm/renderinggen/jobs-canary-6
+chronon:
+  profile: gpu-vulkan-native
+  home: /home/pierone/src/go-master/projects/Pyt/VeloxEditing/Chronon3d/build/chronon/linux-video-release
+  mode: ipc
+  socket_path: /run/chronon3d/chronon.sock
+  hardware_encoder: nvenc
+  strict_native_backend: true
+  encode_preset: p1
+  report: true
+gpu:
+  device: 0
+health:
+  addr: 127.0.0.1:8086
+drive:
+  enabled: false

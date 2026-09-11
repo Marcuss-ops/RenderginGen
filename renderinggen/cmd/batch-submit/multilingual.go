@@ -7,9 +7,9 @@ import (
 	"fmt"
 	"time"
 
-	queue "github.com/Marcuss-ops/RenderginGen/queue/client"
+	queue "github.com/Marcuss-ops/RenderingGen/queue/client"
 
-	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/batch"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/batch"
 )
 
 // multilingualSummary is the CLI's JSON report for a Strategy-A run.

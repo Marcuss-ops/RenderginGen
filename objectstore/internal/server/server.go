@@ -14,7 +14,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/Marcuss-ops/RenderginGen/objectstore/internal/store"
+	"github.com/Marcuss-ops/RenderingGen/objectstore/internal/store"
 )
 
 // Server wraps the store with HTTP handlers.

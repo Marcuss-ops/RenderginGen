@@ -7,11 +7,11 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/chronon"
-	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/drive"
-	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/hashio"
-	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/queue"
-	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/storage"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/chronon"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/drive"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/hashio"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/queue"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/storage"
 )
 
 // ParentFinalizer is the minimal orchestration boundary for assembling a

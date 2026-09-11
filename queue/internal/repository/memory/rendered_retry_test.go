@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Marcuss-ops/RenderginGen/queue/internal/model"
+	"github.com/Marcuss-ops/RenderingGen/queue/internal/model"
 )
 
 // The staged worker claims ANY claimable state (pending + rendered): a

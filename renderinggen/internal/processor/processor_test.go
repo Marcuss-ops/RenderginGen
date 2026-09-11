@@ -11,12 +11,12 @@ import (
 	"os"
 	"testing"
 
-	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/artifactdb"
-	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/chronon"
-	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/drive"
-	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/overlay"
-	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/queue"
-	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/storage"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/artifactdb"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/chronon"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/drive"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/overlay"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/queue"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/storage"
 )
 
 // videoHash is the real SHA-256 of "video-bytes": the semantic compiler
@@ -35,8 +35,8 @@ func TestHasVisualOverlayDistinguishesVideoOnlyFromAuthoredComposition(t *testin
 	if planHasVisualOverlay(&overlay.Plan{Layers: []overlay.Layer{{Type: "video"}}}) {
 		t.Fatal("video-only plan must not report an authored overlay")
 	}
-	if planHasVisualOverlay(&overlay.Plan{Layers: []overlay.Layer{{Type: "video"}, {Type: "video"}}}) {
-		t.Fatal("multi-video source plan must not report an authored overlay")
+	if !planHasVisualOverlay(&overlay.Plan{Layers: []overlay.Layer{{Type: "video"}, {Type: "video"}}}) {
+		t.Fatal("multi-video composition must report a visual overlay requirement")
 	}
 	if !planHasVisualOverlay(&overlay.Plan{Layers: []overlay.Layer{{Type: "text"}}}) {
 		t.Fatal("text-only plan must report an authored overlay")

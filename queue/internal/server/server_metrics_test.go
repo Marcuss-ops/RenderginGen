@@ -8,9 +8,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Marcuss-ops/RenderginGen/queue/internal/metrics"
-	"github.com/Marcuss-ops/RenderginGen/queue/internal/repository/memory"
-	"github.com/Marcuss-ops/RenderginGen/queue/internal/service"
+	"github.com/Marcuss-ops/RenderingGen/queue/internal/metrics"
+	"github.com/Marcuss-ops/RenderingGen/queue/internal/repository/memory"
+	"github.com/Marcuss-ops/RenderingGen/queue/internal/service"
 )
 
 func TestMetricsEndpoint(t *testing.T) {

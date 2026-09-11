@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/chronon"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/chronon"
 )
 
 // recordingQueue captures ReportProgress calls for assertions.

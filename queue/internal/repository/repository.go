@@ -7,7 +7,7 @@ import (
 	"errors"
 	"time"
 
-	"github.com/Marcuss-ops/RenderginGen/queue/internal/model"
+	"github.com/Marcuss-ops/RenderingGen/queue/internal/model"
 )
 
 // ErrNotFound is returned by Get when the job does not exist.

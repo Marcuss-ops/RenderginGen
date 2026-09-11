@@ -6,7 +6,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/chronon"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/chronon"
 )
 
 func TestHealthEndpointReturnsInfo(t *testing.T) {

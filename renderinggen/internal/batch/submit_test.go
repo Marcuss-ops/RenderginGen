@@ -12,7 +12,7 @@ import (
 	"sync"
 	"testing"
 
-	queue "github.com/Marcuss-ops/RenderginGen/queue/client"
+	queue "github.com/Marcuss-ops/RenderingGen/queue/client"
 )
 
 // fakeQueue records submissions; -existing marks which job IDs answer 409.

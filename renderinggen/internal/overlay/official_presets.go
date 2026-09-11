@@ -5,10 +5,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/motion"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/motion"
 )
-
-const OfficialPresetVersion = "renderinggen-official-presets.v2"
 
 type PresetFamily string
 
@@ -52,10 +50,6 @@ type PresetLayout struct {
 
 type MotionDefinition = motion.MotionDefinition
 
-// Kept as an internal compatibility alias while callers move to the grouped
-// contract. It does not create a second registry or serialized schema.
-type OfficialPresetDefinition = PresetDefinition
-
 type presetSpec struct {
 	family                    PresetFamily
 	anchor, align, anim, unit string
@@ -77,8 +71,8 @@ func imageSpec(anchor, anim string) presetSpec {
 	return presetSpec{family: PresetImage, anchor: anchor, align: "center", anim: anim, unit: "layer", enter: 8, exit: 6, boxW: 260, boxH: 260, fit: "contain"}
 }
 
-func makePreset(id string, s presetSpec) OfficialPresetDefinition {
-	d := OfficialPresetDefinition{ID: id, Family: s.family,
+func makePreset(id string, s presetSpec) PresetDefinition {
+	d := PresetDefinition{ID: id, Family: s.family,
 		Style:  PresetStyle{FontFamily: "assets/fonts/Poppins-Bold.ttf", FontSize: 58, Fill: []float64{1, 1, 1, 1}, Shadow: s.shadow},
 		Layout: PresetLayout{Anchor: s.anchor, Alignment: s.align, BoxWidth: s.boxW, BoxHeight: s.boxH, Fit: s.fit},
 		Motion: MotionDefinition{Name: s.anim, Unit: s.unit, Enter: s.enter, Exit: s.exit}}
@@ -88,14 +82,14 @@ func makePreset(id string, s presetSpec) OfficialPresetDefinition {
 	return d
 }
 
-func makePhrasePreset(id, anim, unit string) OfficialPresetDefinition {
+func makePhrasePreset(id, anim, unit string) PresetDefinition {
 	d := makePreset(id, textSpec("center", "center", anim, unit, 72, 6, nil))
 	d.Style.Fill = []float64{0.08, 0.08, 0.12, 1.0}
 	return d
 }
 
-func makeTypewriterPreset(id, anim string, fontSize float64, fill []float64, shadow *StyleShadow) OfficialPresetDefinition {
-	return OfficialPresetDefinition{
+func makeTypewriterPreset(id, anim string, fontSize float64, fill []float64, shadow *StyleShadow) PresetDefinition {
+	return PresetDefinition{
 		ID:     id,
 		Family: PresetText,
 		Style:  PresetStyle{FontFamily: "fonts/Inter-Bold.ttf", FontSize: fontSize, Fill: fill, Shadow: shadow},
@@ -106,7 +100,7 @@ func makeTypewriterPreset(id, anim string, fontSize float64, fill []float64, sha
 
 // officialPresets is the only production catalog. Do not add parallel maps
 // for families, animation or geometry.
-var officialPresets = map[string]OfficialPresetDefinition{
+var officialPresets = map[string]PresetDefinition{
 	// Static text is intentionally part of the small smoke/E2E catalog: it
 	// proves text/subtitle pixels without requiring an animation window longer
 	// than a short canary composition.
@@ -176,46 +170,22 @@ func officialPresetIDs() []string {
 // callers cannot mutate the production registry through it.
 func OfficialPresetIDs() []string { return officialPresetIDs() }
 
-// OfficialPresetRegistry is the read-only view used by certification tools.
-// The production catalog remains private, so callers cannot create a second
-// mutable source of truth.
-type OfficialPresetRegistry struct{}
-
-// OfficialPresets is the canonical registry handle.
-var OfficialPresets OfficialPresetRegistry
-
-// All returns a deterministic snapshot of every official definition.
-func (OfficialPresetRegistry) All() []OfficialPresetDefinition {
-	ids := officialPresetIDs()
-	out := make([]OfficialPresetDefinition, 0, len(ids))
-	for _, id := range ids {
-		out = append(out, officialPresets[id])
-	}
-	return out
-}
-
-// Resolve resolves through the same production catalog used by the compiler.
-func (OfficialPresetRegistry) Resolve(id string) (OfficialPresetDefinition, error) {
-	return ResolveOfficialPreset(id)
-}
-
 // ResolveOfficialPreset returns the official definition for id, without a
 // kind check. Certification tools use it to build fixtures from the same
 // registry entry the runtime resolves.
-func ResolveOfficialPreset(id string) (OfficialPresetDefinition, error) {
+func ResolveOfficialPreset(id string) (PresetDefinition, error) {
 	id = strings.TrimSpace(id)
 	d, ok := officialPresets[id]
 	if !ok {
-		return OfficialPresetDefinition{}, fmt.Errorf("overlay: unsupported RenderingGen official preset %q", id)
+		return PresetDefinition{}, fmt.Errorf("overlay: unsupported RenderingGen official preset %q", id)
 	}
 	return d, nil
 }
 
 // ImagePresetRadius is the single authority for the modern_rounded_pop corner
 // radius: 16% of the shorter side. Every path that needs the radius — the
-// semantic compiler's applyPresetDefinition and the transitional
-// CompileFastEntityOverlays — delegates here so a future rule change is made
-// in exactly one place.
+// semantic compiler's applyPresetDefinition — delegates here so a future rule
+// change is made in exactly one place.
 func ImagePresetRadius(presetID string, width, height int) float64 {
 	if presetID != "modern_rounded_pop" {
 		return 0
@@ -226,18 +196,18 @@ func ImagePresetRadius(presetID string, width, height int) float64 {
 	return float64(width) * 0.16
 }
 
-func resolveOfficialPreset(id, kind string) (OfficialPresetDefinition, error) {
+func resolveOfficialPreset(id, kind string) (PresetDefinition, error) {
 	id = strings.TrimSpace(id)
 	if id == "" {
-		return OfficialPresetDefinition{}, nil
+		return PresetDefinition{}, nil
 	}
 	d, ok := officialPresets[id]
 	if !ok {
-		return OfficialPresetDefinition{}, fmt.Errorf("overlay: unsupported RenderingGen official preset %q", id)
+		return PresetDefinition{}, fmt.Errorf("overlay: unsupported RenderingGen official preset %q", id)
 	}
 	kind = strings.ToLower(strings.TrimSpace(kind))
 	if kind != string(d.Family) {
-		return OfficialPresetDefinition{}, fmt.Errorf("overlay: preset %q is %s, not %s", id, d.Family, kind)
+		return PresetDefinition{}, fmt.Errorf("overlay: preset %q is %s, not %s", id, d.Family, kind)
 	}
 	return d, nil
 }

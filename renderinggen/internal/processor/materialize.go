@@ -14,11 +14,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/hashio"
-	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/overlay"
-	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/queue"
-	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/storage"
-	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/workspace"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/hashio"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/overlay"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/queue"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/storage"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/workspace"
 )
 
 // Prepare compiles and materializes an overlay plan without invoking Chronon.
@@ -60,6 +60,11 @@ func (p *Processor) Prepare(ctx context.Context, job *queue.Job) (queue.Artifact
 	}
 	plan, compiledAssets, _, err := overlay.CompileIfSemantic(job.RenderPlan)
 	if err != nil {
+		return queue.Artifact{}, err
+	}
+	// One chunk contract, both entry points: the prepare path enforces the
+	// same plan-vs-frame-range bound as PrepareJob.
+	if err := validateFrameRange(job, plan); err != nil {
 		return queue.Artifact{}, err
 	}
 	assets, err := mergeAssets(job.Assets, compiledAssets)

@@ -8,7 +8,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/chronon"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/chronon"
 )
 
 // RunGPU performs the single Chronon invocation for a prepared job plus the

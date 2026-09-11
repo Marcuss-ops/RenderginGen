@@ -73,6 +73,7 @@ func init() {
 		_ = Register(d.ID, DeclarativePlugin{Definition: d})
 	}
 }
+
 // phraseAdvancedDefinition is the renderer-neutral phrase preset primitive.
 // The names describe the editorial effect; the implementation intentionally
 // stays inside Chronon's supported per-glyph property set so renders remain

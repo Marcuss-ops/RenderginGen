@@ -5,6 +5,7 @@
 package processor
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -12,11 +13,12 @@ import (
 	"os"
 	"time"
 
-	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/chronon"
-	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/hashio"
-	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/media"
-	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/overlay"
-	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/queue"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/chronon"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/hashio"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/media"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/overlay"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/queue"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/storage"
 )
 
 // storeArtifact reads the rendered output, hashes it (sha256), stores it in
@@ -125,6 +127,13 @@ func (p *Processor) storeArtifact(ctx context.Context, jobID, outputPath string,
 		// first_frame_keyframe: that conflates "starts cleanly" with "every
 		// GOP boundary is closed and regular".
 		artifact.ClosedGOP = probe.ClosedGOP
+		if probe.ClosedGOPUncertifiable {
+			// The probe never observed the sync-sample table (ffprobe missing
+			// or unable to decode it): closed_gop=false here means "not
+			// proven", not "open GOP". Surface it on the artifact metrics so a
+			// broken probe cannot masquerade as a renderer defect forever.
+			phaseMetrics["closed_gop_uncertifiable"] = 1
+		}
 		artifact.Width, artifact.Height = probe.Width, probe.Height
 		artifact.FPSNum, artifact.FPSDen = probe.FPSNum, probe.FPSDen
 		artifact.DurationUS = probe.DurationUS
@@ -172,24 +181,13 @@ func (p *Processor) preserveRawTimingSidecar(ctx context.Context, artifact *queu
 	if p == nil || artifact == nil {
 		return
 	}
-	timingPath := outputPath + ".timing.json"
-	hash, size, err := hashio.File(timingPath)
+	hash, size, err := p.putTimingSidecar(ctx, outputPath+".timing.json")
 	if err != nil {
 		log.Printf("job %s: raw timing sidecar unavailable for preservation: %v", jobID, err)
 		return
 	}
 	if size == 0 {
 		log.Printf("job %s: raw timing sidecar empty; skipping preservation", jobID)
-		return
-	}
-	f, err := os.Open(timingPath)
-	if err != nil {
-		log.Printf("job %s: preserve raw timing sidecar open: %v", jobID, err)
-		return
-	}
-	defer f.Close()
-	if err := p.store.PutReader(ctx, hash, f, size); err != nil {
-		log.Printf("job %s: preserve raw timing sidecar: %v", jobID, err)
 		return
 	}
 	artifact.ChrononTimingStorageKey = hash
@@ -203,6 +201,64 @@ func (p *Processor) preserveRawTimingSidecar(ctx context.Context, artifact *queu
 	artifact.Metrics["chronon_timing_preserved"] = 1
 	artifact.Metrics["chronon_timing_bytes"] = float64(size)
 	log.Printf("job %s: raw timing sidecar preserved (sha256=%s bytes=%d)", jobID, hash, size)
+}
+
+// timingSidecarInlineMaxBytes bounds the one-read fast path in
+// putTimingSidecar. The raw sidecar carries an unbounded per-frame array, so a
+// document larger than this keeps the historical constant-memory streaming path
+// instead of becoming an unbounded worker allocation. Real sidecars are a few
+// hundred KiB.
+const timingSidecarInlineMaxBytes = 4 << 20
+
+// putTimingSidecar stores the raw sidecar under its content address and returns
+// (sha256, size); a zero size means there was nothing to store.
+//
+// PutReader needs the address before it can stream the body, so the historical
+// shape was hash-then-reopen: two full reads of the same file for a single
+// upload. A sidecar is a JSON document the renderer just wrote, so up to
+// timingSidecarInlineMaxBytes the bytes are read ONCE and both the content
+// address and the uploaded body come from that single read. Above the cap the
+// constant-memory streaming path is kept unchanged, so an outsized document
+// cannot turn a fixed-cost optimization into unbounded worker memory.
+func (p *Processor) putTimingSidecar(ctx context.Context, path string) (string, int64, error) {
+	info, err := os.Stat(path)
+	if err != nil {
+		return "", 0, fmt.Errorf("stat: %w", err)
+	}
+	if info.Size() == 0 {
+		return "", 0, nil
+	}
+	if info.Size() <= timingSidecarInlineMaxBytes {
+		data, err := os.ReadFile(path)
+		if err != nil {
+			return "", 0, fmt.Errorf("read: %w", err)
+		}
+		// len(data) rather than info.Size(): the bytes actually uploaded are the
+		// authority for both the address and the recorded size, so the two can
+		// never desync on a concurrent rewrite.
+		size := int64(len(data))
+		if size == 0 {
+			return "", 0, nil
+		}
+		hash := storage.Hash(data)
+		if err := p.store.PutReader(ctx, hash, bytes.NewReader(data), size); err != nil {
+			return "", 0, fmt.Errorf("store: %w", err)
+		}
+		return hash, size, nil
+	}
+	hash, size, err := hashio.File(path)
+	if err != nil {
+		return "", 0, fmt.Errorf("hash: %w", err)
+	}
+	f, err := os.Open(path)
+	if err != nil {
+		return "", 0, fmt.Errorf("open: %w", err)
+	}
+	defer f.Close()
+	if err := p.store.PutReader(ctx, hash, f, size); err != nil {
+		return "", 0, fmt.Errorf("store: %w", err)
+	}
+	return hash, size, nil
 }
 
 // mergeTelemetrySummaryMetrics merges the DOCUMENTED numeric subset of

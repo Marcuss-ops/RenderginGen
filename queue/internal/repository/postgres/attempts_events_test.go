@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Marcuss-ops/RenderginGen/queue/internal/model"
+	"github.com/Marcuss-ops/RenderingGen/queue/internal/model"
 )
 
 // attemptRow is the subset of render_attempts the tests assert on.

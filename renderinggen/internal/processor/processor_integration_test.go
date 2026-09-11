@@ -9,9 +9,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/chronon"
-	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/queue"
-	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/storage"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/chronon"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/queue"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/storage"
 )
 
 // TestProcessEndToEndCLI runs the full pipeline against the real chronon3d_cli

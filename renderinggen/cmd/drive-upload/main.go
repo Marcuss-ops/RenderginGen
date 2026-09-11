@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/drive"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/drive"
 )
 
 func main() {

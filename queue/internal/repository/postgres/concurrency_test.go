@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Marcuss-ops/RenderginGen/queue/internal/migrate"
-	"github.com/Marcuss-ops/RenderginGen/queue/internal/model"
+	"github.com/Marcuss-ops/RenderingGen/queue/internal/migrate"
+	"github.com/Marcuss-ops/RenderingGen/queue/internal/model"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
 )

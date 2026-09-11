@@ -5,8 +5,8 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/Marcuss-ops/RenderginGen/queue/client"
-	"github.com/Marcuss-ops/RenderginGen/queue/internal/model"
+	"github.com/Marcuss-ops/RenderingGen/queue/client"
+	"github.com/Marcuss-ops/RenderingGen/queue/internal/model"
 )
 
 // fullWireArtifact builds a client.Artifact with every field populated so no

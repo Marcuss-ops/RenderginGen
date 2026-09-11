@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/queue"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/queue"
 )
 
 func newWorkspace(t *testing.T) *Workspace {
@@ -146,14 +146,14 @@ func TestMaterializeRequiresLogicalPath(t *testing.T) {
 func TestWritePlan(t *testing.T) {
 	w := newWorkspace(t)
 
-	if err := w.WritePlan([]byte(`{"schema":"chronon.render-plan"}`)); err != nil {
+	if err := w.WritePlan([]byte(`{"schema":"chronon.render-plan.v2"}`)); err != nil {
 		t.Fatalf("write plan: %v", err)
 	}
 	data, err := os.ReadFile(w.PlanPath())
 	if err != nil {
 		t.Fatalf("read plan: %v", err)
 	}
-	if string(data) != `{"schema":"chronon.render-plan"}` {
+	if string(data) != `{"schema":"chronon.render-plan.v2"}` {
 		t.Fatalf("plan content = %q", data)
 	}
 }

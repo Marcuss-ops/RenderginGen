@@ -10,7 +10,7 @@ import (
 	"fmt"
 	"log"
 
-	queue "github.com/Marcuss-ops/RenderginGen/queue/client"
+	queue "github.com/Marcuss-ops/RenderingGen/queue/client"
 )
 
 // Submitter submits expanded jobs to the central queue. Submit expects the

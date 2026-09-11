@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -289,5 +290,46 @@ func TestLoadInvalidYAML(t *testing.T) {
 	path := writeConfig(t, "[1, 2, 3")
 	if _, err := Load(path); err == nil {
 		t.Fatal("expected error for invalid yaml")
+	}
+}
+
+// TestLoadRejectsUnforwardableHardwareEncoder pins the config boundary: the
+// worker can only forward nvenc / none / empty as --hardware, so any other
+// value must fail at load instead of being silently swapped for the native
+// default on the first GPU job.
+func TestLoadRejectsUnforwardableHardwareEncoder(t *testing.T) {
+	base := `
+queue:
+  endpoint: http://queue:8081
+artifact_store:
+  endpoint: http://store:9000
+chronon:
+  backend: software
+  hardware_encoder: "%s"
+`
+	cases := []struct {
+		encoder string
+		wantErr bool
+	}{
+		{encoder: "", wantErr: false},
+		{encoder: "nvenc", wantErr: false},
+		{encoder: "none", wantErr: false},
+		{encoder: "vaapi", wantErr: true},
+		{encoder: "qsv", wantErr: true},
+		{encoder: "nvenc ", wantErr: true},
+	}
+	for _, tc := range cases {
+		t.Run(tc.encoder, func(t *testing.T) {
+			cfg, err := Load(writeConfig(t, fmt.Sprintf(base, tc.encoder)))
+			if tc.wantErr {
+				if err == nil {
+					t.Fatalf("hardware_encoder %q accepted (cfg=%+v), want a load error", tc.encoder, cfg.Chronon.HardwareEncoder)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("hardware_encoder %q rejected: %v", tc.encoder, err)
+			}
+		})
 	}
 }

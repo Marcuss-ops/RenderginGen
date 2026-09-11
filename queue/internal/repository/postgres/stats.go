@@ -5,7 +5,7 @@ import (
 	"context"
 	"log"
 
-	"github.com/Marcuss-ops/RenderginGen/queue/internal/model"
+	"github.com/Marcuss-ops/RenderingGen/queue/internal/model"
 )
 
 // Stats returns a snapshot of the queue state. A database error is logged and

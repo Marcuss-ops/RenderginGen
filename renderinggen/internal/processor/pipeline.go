@@ -26,9 +26,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/overlay"
-	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/queue"
-	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/workspace"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/overlay"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/queue"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/workspace"
 )
 
 // PreparedJob carries the state between PrepareJob and RunGPU. The workspace
@@ -50,10 +50,16 @@ type PreparedJob struct {
 // the bytes that were actually downloaded. Some providers publish a JPEG
 // behind a URL/metadata ending in .png; Chronon's image loader uses the file
 // extension, so leaving that mismatch produces a valid but black render.
-func normalizeMaterializedImagePaths(root string, plan *overlay.Plan) error {
+//
+// It returns the workspace-relative paths it created (the rename targets), the
+// plan paths that are proven to exist once it returns nil. PrepareJob folds
+// them into the set of paths this stage materialized so
+// validateMaterializedPlanAssets does not stat a file that was just written.
+func normalizeMaterializedImagePaths(root string, plan *overlay.Plan) (map[string]struct{}, error) {
 	if plan == nil {
-		return nil
+		return nil, nil
 	}
+	var renamed map[string]struct{}
 	for i := range plan.Layers {
 		layer := &plan.Layers[i]
 		if layer.Type != "image" || layer.Asset == "" {
@@ -62,13 +68,13 @@ func normalizeMaterializedImagePaths(root string, plan *overlay.Plan) error {
 		path := filepath.Join(root, filepath.FromSlash(layer.Asset))
 		data, err := os.Open(path)
 		if err != nil {
-			return fmt.Errorf("image asset %s: %w", layer.Asset, err)
+			return nil, fmt.Errorf("image asset %s: %w", layer.Asset, err)
 		}
 		var sniff [512]byte
 		n, readErr := data.Read(sniff[:])
 		data.Close()
 		if readErr != nil && n == 0 {
-			return fmt.Errorf("image asset %s: %w", layer.Asset, readErr)
+			return nil, fmt.Errorf("image asset %s: %w", layer.Asset, readErr)
 		}
 		contentType := http.DetectContentType(sniff[:n])
 		ext := ".png"
@@ -89,11 +95,15 @@ func normalizeMaterializedImagePaths(root string, plan *overlay.Plan) error {
 		newAsset := strings.TrimSuffix(layer.Asset, filepath.Ext(layer.Asset)) + ext
 		newPath := filepath.Join(root, filepath.FromSlash(newAsset))
 		if err := os.Rename(path, newPath); err != nil {
-			return fmt.Errorf("image asset %s rename: %w", layer.Asset, err)
+			return nil, fmt.Errorf("image asset %s rename: %w", layer.Asset, err)
 		}
+		if renamed == nil {
+			renamed = make(map[string]struct{})
+		}
+		renamed[newAsset] = struct{}{}
 		layer.Asset = newAsset
 	}
-	return nil
+	return renamed, nil
 }
 
 // validateMaterializedPlanAssets is the fail-closed boundary immediately
@@ -101,7 +111,16 @@ func normalizeMaterializedImagePaths(root string, plan *overlay.Plan) error {
 // compiler and image-extension normalization can change the concrete paths
 // referenced by the typed plan. Check the plan itself so Chronon can never be
 // the first component to report a missing asset.
-func validateMaterializedPlanAssets(root string, plan *overlay.Plan) error {
+//
+// materialized is the set of workspace-relative paths this prepare stage itself
+// created (every resolved manifest asset plus every normalize rename target).
+// MaterializePaths returns nil only when all of them landed and the renames
+// succeeded, so a plan path in that set existed moments ago and re-statting it
+// is one syscall per unique asset of pure duplicate I/O. A plan path NOT in the
+// set was not produced here, so it is still verified on the filesystem: the
+// guarantee that Chronon is never the first to see a missing asset is
+// unchanged for exactly the cases that can actually be missing.
+func validateMaterializedPlanAssets(root string, plan *overlay.Plan, materialized map[string]struct{}) error {
 	if plan == nil {
 		return fmt.Errorf("processor: render plan is nil before Chronon")
 	}
@@ -117,6 +136,9 @@ func validateMaterializedPlanAssets(root string, plan *overlay.Plan) error {
 		seen[asset] = struct{}{}
 		if filepath.IsAbs(asset) || filepath.Clean(asset) != asset || strings.HasPrefix(asset, "../") || asset == ".." {
 			return fmt.Errorf("processor: Chronon asset path %q is not workspace-relative", asset)
+		}
+		if _, proven := materialized[asset]; proven {
+			continue
 		}
 		path := filepath.Join(root, filepath.FromSlash(asset))
 		info, err := os.Stat(path)
@@ -145,12 +167,17 @@ func (p *Processor) PrepareJob(ctx context.Context, job *queue.Job) (*PreparedJo
 	if err := validate(job); err != nil {
 		return nil, err
 	}
-	stats, err := overlay.SemanticStats(job.RenderPlan)
+	// One compile pass produces the plan AND the ledger counters, so the
+	// artifact metrics can never drift from the layers that were emitted.
+	result, err := overlay.CompileSemantic(job.RenderPlan)
 	if err != nil {
-		return nil, fmt.Errorf("processor: semantic stats: %w", err)
+		return nil, err
 	}
-	plan, compiledAssets, _, err := overlay.CompileIfSemantic(job.RenderPlan)
-	if err != nil {
+	stats, plan, compiledAssets := result.Stats, result.Plan, result.Assets
+	// The chunk contract is validated against the plan that will actually be
+	// rendered, before any asset is downloaded: an out-of-range chunk is a
+	// producer bug that must not burn a GPU lane and a lease to surface.
+	if err := validateFrameRange(job, plan); err != nil {
 		return nil, err
 	}
 	compileUS := float64(time.Since(totalStart).Microseconds())
@@ -211,13 +238,26 @@ func (p *Processor) PrepareJob(ctx context.Context, job *queue.Job) (*PreparedJo
 	}
 	// normalizeMaterializedImagePaths mutates the ONE typed plan in place —
 	// no JSON round-trip.
-	if err := normalizeMaterializedImagePaths(ws.Root(), plan); err != nil {
+	renamed, err := normalizeMaterializedImagePaths(ws.Root(), plan)
+	if err != nil {
 		if cerr := ws.Cleanup(); cerr != nil {
 			log.Printf("job %s: workspace cleanup after image normalize failure: %v", job.ID, cerr)
 		}
 		return nil, err
 	}
-	if err := validateMaterializedPlanAssets(ws.Root(), plan); err != nil {
+	// Every path this stage created: each manifest asset MaterializePaths
+	// resolved (it returns nil only when all of them landed) plus each rename
+	// target normalization just wrote. The gate below still stats anything the
+	// plan references that is NOT in here, so an asset the producer referenced
+	// but never materialized is still caught before Chronon.
+	proven := make(map[string]struct{}, len(assets)+len(renamed))
+	for _, a := range assets {
+		proven[a.LogicalPath] = struct{}{}
+	}
+	for name := range renamed {
+		proven[name] = struct{}{}
+	}
+	if err := validateMaterializedPlanAssets(ws.Root(), plan, proven); err != nil {
 		if cerr := ws.Cleanup(); cerr != nil {
 			log.Printf("job %s: workspace cleanup after asset validation failure: %v", job.ID, cerr)
 		}
@@ -327,6 +367,16 @@ func (p *Processor) PrepareJob(ctx context.Context, job *queue.Job) (*PreparedJo
 	audioPath, warnInert := audioSourcePathFromPlan(plan, job.RenderPlan, ws.Root())
 	if warnInert {
 		metrics["audio_inert_params"] = 1
+		if plan.Output.Audio != nil && !audioModeCopyOnly(plan.Output.Audio.Mode) {
+			// The caller asked for an audio policy the worker cannot execute
+			// (the native mux copies the source stream). Name it separately:
+			// "parameters ignored" and "the requested audio mode was not
+			// applied" are different operational facts, and only the second
+			// one changes what the published artifact sounds like.
+			metrics["audio_mode_unsupported"] = 1
+			log.Printf("job %s: requested audio mode %q is NOT applied (native mux copies the source stream); the artifact carries the source audio unchanged",
+				job.ID, plan.Output.Audio.Mode)
+		}
 		log.Printf("job %s: audio codec/sample_rate/channels are inert (Chronon copies source audio, no transcode); mode=%q codec=%q sr=%d ch=%d",
 			job.ID, plan.Output.Audio.Mode, plan.Output.Audio.Codec, plan.Output.Audio.SampleRate, plan.Output.Audio.Channels)
 	}

@@ -297,6 +297,114 @@ func TestLocalPathConcurrentMissDownloadsOnce(t *testing.T) {
 	}
 }
 
+// TestLocalPathReinstallsFromL1WhenL2Evicted pins the fix that makes the L1
+// tier participate in the streaming resolution path: materialization used to
+// consult only L2, so an object whose on-disk copy was evicted was fetched
+// from L3 again even though its bytes were still resident in RAM.
+func TestLocalPathReinstallsFromL1WhenL2Evicted(t *testing.T) {
+	ctx := context.Background()
+	payload := []byte("l1-resident-payload")
+	h := Hash(payload)
+	backend := &countingBackend{inner: NewMemory()}
+	dir := t.TempDir()
+	c := New(backend, Options{L1MaxBytes: 1 << 20, L2Dir: dir, L2MaxBytes: 1 << 20})
+
+	// Put: L3 + L2 + L1 are all warm for this content address.
+	if err := c.Put(ctx, h, payload); err != nil {
+		t.Fatal(err)
+	}
+	l2Path := filepath.Join(dir, "assets", h[:2], h)
+	if err := os.Remove(l2Path); err != nil {
+		t.Fatalf("simulate L2 eviction: %v", err)
+	}
+
+	path, size, err := c.LocalPath(ctx, h)
+	if err != nil {
+		t.Fatalf("LocalPath after L2 eviction: %v", err)
+	}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read resolved path: %v", err)
+	}
+	if !bytes.Equal(data, payload) || size != int64(len(payload)) {
+		t.Fatalf("resolved bytes mismatch: size=%d data=%q", size, data)
+	}
+	stats := c.Stats()
+	if stats.L1Hits != 1 {
+		t.Fatalf("L1Hits = %d, want 1 (the install must be attributed to L1)", stats.L1Hits)
+	}
+	if backend.calls != 0 {
+		t.Fatalf("L3 Fetch calls = %d, want 0 (L1 must satisfy an L2 miss)", backend.calls)
+	}
+}
+
+// TestL2ReadErrorsAreCountedNotSwallowed pins the other half of the cache
+// degradation contract: an L2 lookup that fails for a reason other than
+// "absent" (here a symlink loop, which fails with ELOOP on every platform)
+// must be counted instead of silently looking like an ordinary miss. The log
+// line is rate-limited, the counter is not.
+func TestL2ReadErrorsAreCountedNotSwallowed(t *testing.T) {
+	payload := []byte("l2-read-error")
+	h := Hash(payload)
+	dir := t.TempDir()
+	d := newDiskCache(dir, 0)
+	if _, _, err := d.PutBytes(h, payload); err != nil {
+		t.Fatalf("install: %v", err)
+	}
+	p := d.path(h)
+	if err := os.Remove(p); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(p, p); err != nil {
+		t.Skipf("cannot create a symlink loop in this environment: %v", err)
+	}
+
+	if _, ok := d.Get(h); ok {
+		t.Fatal("Get succeeded on an unreadable L2 entry")
+	}
+	if got := d.readErrors.Load(); got != 1 {
+		t.Fatalf("readErrors = %d after one unreadable Get, want 1", got)
+	}
+	if _, ok := d.Path(h); ok {
+		t.Fatal("Path succeeded on an unreadable L2 entry")
+	}
+	if got := d.readErrors.Load(); got != 2 {
+		t.Fatalf("readErrors = %d after an unreadable Path, want 2", got)
+	}
+}
+
+// TestClientReportsL2ReadErrors proves the counter reaches the operator-facing
+// snapshot: a caller that only watches the hit rates cannot tell a broken cache
+// directory from a cold one, so the degradation must be lifted out of the
+// cache in CacheStats.
+func TestClientReportsL2ReadErrors(t *testing.T) {
+	ctx := context.Background()
+	payload := []byte("degraded-l2")
+	h := Hash(payload)
+	dir := t.TempDir()
+	c := New(&countingBackend{inner: NewMemory()}, Options{L1MaxBytes: 1 << 20, L2Dir: dir})
+	if err := c.Put(ctx, h, payload); err != nil {
+		t.Fatal(err)
+	}
+
+	p := filepath.Join(dir, "assets", h[:2], h)
+	if err := os.Remove(p); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(p, p); err != nil {
+		t.Skipf("cannot create a symlink loop in this environment: %v", err)
+	}
+
+	// The streaming path must still succeed (L3 is the source of truth) while
+	// reporting that the cache level itself is broken.
+	if _, _, err := c.LocalPath(ctx, h); err != nil {
+		t.Fatalf("LocalPath must degrade to L3, got: %v", err)
+	}
+	if got := c.Stats().L2ReadErrors; got == 0 {
+		t.Fatal("CacheStats.L2ReadErrors = 0, want the L2 degradation reported")
+	}
+}
+
 func TestL2Eviction(t *testing.T) {
 	dir := t.TempDir()
 	d := newDiskCache(dir, 10) // 10-byte budget

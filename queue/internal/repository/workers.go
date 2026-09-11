@@ -3,7 +3,7 @@ package repository
 import (
 	"time"
 
-	"github.com/Marcuss-ops/RenderginGen/queue/internal/model"
+	"github.com/Marcuss-ops/RenderingGen/queue/internal/model"
 )
 
 // WorkerRepository is the storage contract for the rendering-worker registry

@@ -9,7 +9,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/chronon"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/chronon"
 )
 
 type renderVerifyLevel string

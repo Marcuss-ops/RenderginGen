@@ -10,14 +10,14 @@ import (
 	"os"
 	"time"
 
-	"github.com/Marcuss-ops/RenderginGen/queue/internal/metrics"
-	"github.com/Marcuss-ops/RenderginGen/queue/internal/migrate"
-	"github.com/Marcuss-ops/RenderginGen/queue/internal/model"
-	"github.com/Marcuss-ops/RenderginGen/queue/internal/repository"
-	"github.com/Marcuss-ops/RenderginGen/queue/internal/repository/memory"
-	"github.com/Marcuss-ops/RenderginGen/queue/internal/repository/postgres"
-	"github.com/Marcuss-ops/RenderginGen/queue/internal/server"
-	"github.com/Marcuss-ops/RenderginGen/queue/internal/service"
+	"github.com/Marcuss-ops/RenderingGen/queue/internal/metrics"
+	"github.com/Marcuss-ops/RenderingGen/queue/internal/migrate"
+	"github.com/Marcuss-ops/RenderingGen/queue/internal/model"
+	"github.com/Marcuss-ops/RenderingGen/queue/internal/repository"
+	"github.com/Marcuss-ops/RenderingGen/queue/internal/repository/memory"
+	"github.com/Marcuss-ops/RenderingGen/queue/internal/repository/postgres"
+	"github.com/Marcuss-ops/RenderingGen/queue/internal/server"
+	"github.com/Marcuss-ops/RenderingGen/queue/internal/service"
 	"github.com/jackc/pgx/v5"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
@@ -90,10 +90,13 @@ func main() {
 	srv := server.New(svc)
 	srv.SetMetricsHandler(m.Handler())
 	if postgresDSN != "" {
-		// Every queue replica owns a dedicated LISTEN connection. Migration 016
-		// emits rendering_jobs notifications whenever a row becomes claimable;
-		// the notification only wakes local long-poll requests. The subsequent
-		// repository claim remains the source of truth and uses SKIP LOCKED.
+		// Every queue replica owns a dedicated LISTEN connection. Migrations 016
+		// and 024 emit rendering_jobs notifications when a row becomes claimable
+		// (pending/rendered) and when it reaches a terminal state
+		// (completed/failed/cancelled); in both cases the notification only wakes
+		// local long-poll requests (claim waiters and producer GET /jobs/{id}/wait
+		// waiters). The repository remains the source of truth: every woken
+		// waiter re-reads the row, and claims still use SKIP LOCKED.
 		go listenForJobNotifications(context.Background(), postgresDSN, srv)
 	}
 	log.Printf("job queue listening on %s (lease=%s, max-attempts=%d)", *addr, *lease, *maxAttempts)

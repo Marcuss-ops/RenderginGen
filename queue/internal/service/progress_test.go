@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Marcuss-ops/RenderginGen/queue/internal/model"
-	"github.com/Marcuss-ops/RenderginGen/queue/internal/repository/memory"
+	"github.com/Marcuss-ops/RenderingGen/queue/internal/model"
+	"github.com/Marcuss-ops/RenderingGen/queue/internal/repository/memory"
 )
 
 // TestServiceProgressRoundTrip submits, claims, and reports progress; the

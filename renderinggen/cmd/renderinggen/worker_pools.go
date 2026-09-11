@@ -10,8 +10,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/processor"
-	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/queue"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/processor"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/queue"
 )
 
 // preppedJob is a claimed job whose CPU preparation succeeded; it is ready

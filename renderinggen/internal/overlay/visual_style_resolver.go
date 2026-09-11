@@ -265,20 +265,6 @@ func toInt(v any) (int, error) {
 	return int(f), nil
 }
 
-// numField reads a numeric style field from a decoded style map. JSON
-// numbers decode as float64; any other shape reports not-ok so callers can
-// distinguish "declared" from "missing" instead of treating 0 as a value.
-func numField(m map[string]any, key string) (float64, bool) {
-	if m == nil {
-		return 0, false
-	}
-	v, ok := m[key].(float64)
-	if !ok {
-		return 0, false
-	}
-	return v, true
-}
-
 // effectiveFontSize resolves the requested font size. PipelineGen owns the
 // size; the resolver only normalises the two payload spellings (Size alias /
 // FontSizePX). A missing size is a compile failure — the worker has no

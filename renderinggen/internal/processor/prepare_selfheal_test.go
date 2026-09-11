@@ -13,9 +13,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/queue"
-	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/storage"
-	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/workspace"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/queue"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/storage"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/workspace"
 )
 
 // TestPrepareJobFailsClosedWhenLeaseCannotBeEstablished pins the workspace

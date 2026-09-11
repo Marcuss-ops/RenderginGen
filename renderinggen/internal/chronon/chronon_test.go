@@ -157,7 +157,7 @@ func TestRenderArgsForwardsConfiguredHardwareEncoder(t *testing.T) {
 
 	configured := renderArgs(RenderRequest{
 		PlanPath: "/jobs/1/plan.json", AssetsRoot: "/jobs/1/assets",
-		OutputPath: "/jobs/1/output/result.mp4",
+		OutputPath:      "/jobs/1/output/result.mp4",
 		HardwareEncoder: "nvenc_custom", Requirements: gpu,
 	})
 	if joined := strings.Join(configured, " "); !strings.Contains(joined, "--hardware nvenc_custom") {

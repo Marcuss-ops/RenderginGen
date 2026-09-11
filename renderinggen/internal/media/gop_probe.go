@@ -17,25 +17,33 @@ import (
 // certifies a uniform closed-GOP structure. It fails closed: any probe or
 // container error yields false, never a guess.
 //
+// It returns the verdict plus an "uncertifiable" flag that separates the two
+// reasons a verdict can be false: the cadence was actually read and is not
+// uniform ("invalid"), or the probe never produced a packet table at all
+// (ffprobe missing, unreadable file, unsupported flags). Without that flag a
+// deployment without ffprobe reports closed_gop=false forever and is
+// indistinguishable from a renderer emitting open GOPs — silently disabling
+// the copy-only fast path.
+//
 // The ffprobe packet table is stream-decoded with json.Decoder instead of
 // cmd.Output(): -show_packets emits one JSON record per packet for the WHOLE
 // clip, and buffering that document in RAM scaled with clip length (MBs of
 // JSON for long-form content on every finalize). The decoder keeps memory
 // constant while ffprobe streams, and a broken cadence aborts the probe (and
 // the ffprobe process) as soon as it is provable.
-func probeClosedGOP(ctx context.Context, path string) bool {
+func probeClosedGOP(ctx context.Context, path string) (closedGOP bool, uncertifiable bool) {
 	probeCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
 	cmd := exec.CommandContext(probeCtx, "ffprobe", "-v", "error", "-select_streams", "v:0",
 		"-show_packets", "-show_entries", "packet=flags", "-of", "json", path)
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
-		log.Printf("media: ffprobe %s: closed-GOP probe pipe: %v (closed_gop=false)", path, err)
-		return false
+		log.Printf("media: ffprobe %s: closed-GOP probe pipe: %v (closed_gop=false, uncertifiable)", path, err)
+		return false, true
 	}
 	if err := cmd.Start(); err != nil {
-		log.Printf("media: ffprobe %s: closed-GOP probe start: %v (closed_gop=false)", path, err)
-		return false
+		log.Printf("media: ffprobe %s: closed-GOP probe start: %v (closed_gop=false, uncertifiable)", path, err)
+		return false, true
 	}
 	waitDone := make(chan error, 1)
 	go func() { waitDone <- cmd.Wait() }()
@@ -110,14 +118,14 @@ func probeClosedGOP(ctx context.Context, path string) bool {
 				if positions[len(positions)-1]-positions[len(positions)-2] != step {
 					cancel() // reap the child; we already have the verdict
 					<-waitDone
-					return false
+					return false, false // read successfully: the cadence is invalid
 				}
 			} else if len(positions) == 2 {
 				step = positions[1] - positions[0]
 				if step <= 0 {
 					cancel()
 					<-waitDone
-					return false
+					return false, false
 				}
 			}
 		}
@@ -126,10 +134,10 @@ func probeClosedGOP(ctx context.Context, path string) bool {
 	if err := <-waitDone; err != nil {
 		// A non-cancel wait error means ffprobe itself failed (bad file,
 		// unsupported flag): fail closed and say so.
-		log.Printf("media: ffprobe %s: closed-GOP probe failed: %v (closed_gop=false)", path, err)
-		return false
+		log.Printf("media: ffprobe %s: closed-GOP probe failed: %v (closed_gop=false, uncertifiable)", path, err)
+		return false, true
 	}
-	return closedGOPPositionsCadence(positions)
+	return closedGOPPositionsCadence(positions), false
 }
 
 // expectJSONDelim asserts the next decoder token is the given delimiter.
@@ -146,12 +154,13 @@ func expectJSONDelim(dec *json.Decoder, want json.Delim) error {
 
 // failProbe cancels the ffprobe child, drains its exit status and logs the
 // failed closed-GOP probe so the degradation is never silent. It always
-// reports false (fail closed).
-func failProbe(cancel context.CancelFunc, waitDone <-chan error, path string, cause error) bool {
+// reports false + uncertifiable: no packet table was decoded, so the cadence
+// was never observed (distinct from a decoded but non-uniform cadence).
+func failProbe(cancel context.CancelFunc, waitDone <-chan error, path string, cause error) (bool, bool) {
 	cancel()
 	<-waitDone
-	log.Printf("media: ffprobe %s: closed-GOP probe decode failed: %v (closed_gop=false)", path, cause)
-	return false
+	log.Printf("media: ffprobe %s: closed-GOP probe decode failed: %v (closed_gop=false, uncertifiable)", path, cause)
+	return false, true
 }
 
 // closedGOPCadence reports whether keyframes occur at strictly uniform packet

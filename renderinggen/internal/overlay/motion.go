@@ -3,7 +3,7 @@ package overlay
 import (
 	"fmt"
 
-	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/motion"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/motion"
 )
 
 // The motion registry is the only authoring-motion → renderer-track lowering
@@ -78,7 +78,7 @@ func tracksForMotion(m MotionDefinition) ([]AnimationTrack, error) {
 // The legacy fast adapter used to copy only the layer tracks, which silently
 // discarded word/glyph selectors and made several distinct presets render as
 // the same fade. Keep the preset's layer tracks and text animators together.
-func animationForPreset(d OfficialPresetDefinition, text string, duration int64) (*LayerAnimation, error) {
+func animationForPreset(d PresetDefinition, text string, duration int64) (*LayerAnimation, error) {
 	if d.Motion.ID == "" && d.Motion.Name == "" {
 		return nil, nil
 	}

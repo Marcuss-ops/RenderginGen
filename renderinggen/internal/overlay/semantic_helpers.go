@@ -9,7 +9,7 @@ import (
 	"math"
 	"strings"
 
-	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/motion"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/motion"
 )
 
 func animationForMotion(id string, params map[string]any, textValue string, duration int64) (*LayerAnimation, error) {
@@ -66,26 +66,10 @@ func msFrames(start, end, fpsNum, fpsDen int64) (int64, int64) {
 		int64(math.Ceil(float64(end) * float64(fpsNum) / float64(fpsDen) / 1000))
 }
 
-// presetRequiredTemplates are semantic templates that must carry an official
-// preset. RenderingGen validates the supplied opaque id, while PipelineGen
-// remains responsible for editorial selection.
-var presetRequiredTemplates = map[string]bool{
-	"IMPORTANT_PHRASE": true,
-	"IMPORTANT_WORD":   true,
-	"NUMBER":           true,
-	"QUOTE":            true,
-	"CONCEPT":          true,
-	"MONEY":            true,
-	"PERCENT":          true,
-	"PERSON":           true,
-	"ORGANIZATION":     true,
-	"LOCATION":         true,
-	"IMAGE_OVERLAY":    true,
-}
-
-func presetFor(item semanticItem) (string, error) {
+func presetFor(item semanticItem, spec TemplateSpec) (string, error) {
 	// The plan's preset_id contract slot is the only spelling. RenderingGen's
-	// official catalog is authoritative.
+	// official catalog is authoritative, and the template's preset requirement
+	// and family come from the single registry (registry.go).
 	//
 	// ADR-029 forward-point (d): RenderingGen is an execution worker and must
 	// NOT re-map a template_id to a preset (e.g. it must not know that PERSON
@@ -95,13 +79,13 @@ func presetFor(item semanticItem) (string, error) {
 	// (PRODUCT, LOGO, LIGHT_LEAK, …) legitimately compile without one.
 	p := strings.TrimSpace(item.PresetID)
 	if p != "" {
-		family := "text"
-		if isImageTemplate(item.Template) {
-			family = "image"
+		family := string(spec.Family)
+		if family == "" {
+			family = string(PresetText)
 		}
 		return validatePreset(p, item.ID, family)
 	}
-	if presetRequiredTemplates[strings.ToUpper(item.Template)] {
+	if spec.RequiresPreset {
 		return "", fmt.Errorf("overlay: item %q requires preset_id (resolved by PipelineGen's SemanticOverlayResolver)", item.ID)
 	}
 	return "", nil
@@ -116,49 +100,36 @@ func validatePreset(p, id, kind string) (string, error) {
 	}
 	return d.ID, nil
 }
-func isImageTemplate(t string) bool {
-	switch strings.ToUpper(t) {
-	case "IMAGE_OVERLAY", "PRODUCT", "LOGO", "LIGHT_LEAK":
-		return true
-	}
-	return false
-}
-func isEntityTemplate(t string) bool {
-	switch strings.ToUpper(t) {
-	case "PERSON", "PERSON_DEFAULT", "ORGANIZATION", "ORGANIZATION_DEFAULT", "LOCATION", "LOCATION_DEFAULT", "GPE_DEFAULT":
-		return true
-	}
-	return false
+
+// imageLayer is the single owner of an image layer's identity and geometry. It
+// derives the layer id from the item id ("<id>:image") so a two-layer entity
+// card's text layer ("<id>:text") can never collide with — and silently hide —
+// its image card.
+func imageLayer(ri resolvedItem, asset string) Layer {
+	w, h := intParam(ri.Params, "width", 320), intParam(ri.Params, "height", 320)
+	return Layer{ID: imageLayerID(ri.Item.ID), Type: "image", Asset: asset, BoxWidth: w, BoxHeight: h, Size: []float64{float64(w), float64(h)}, Fit: stringParam(ri.Params, "fit", "contain"), Radius: float64(intParam(ri.Params, "radius", 0)), StartFrame: ri.Start, DurationFrames: ri.End - ri.Start}
 }
 
-// entityRefText returns the display text from the plan's entity_ref block:
-// surface_text first, then the canonical name.
-// The compiler never invents a name — an empty ref yields empty text.
-func entityRefText(item semanticItem) string {
-	if item.EntityRef == nil {
-		return ""
-	}
-	if strings.TrimSpace(item.EntityRef.SurfaceText) != "" {
-		return item.EntityRef.SurfaceText
-	}
-	if strings.TrimSpace(item.EntityRef.Name) != "" {
-		return item.EntityRef.Name
-	}
-	return ""
-}
+// imageLayerID / textLayerID are the only spellings of an item's layer ids.
+func imageLayerID(itemID string) string { return itemID + ":image" }
+func textLayerID(itemID string) string  { return itemID + ":text" }
 
-func imageLayer(item semanticItem, start, end int64, asset string, params map[string]any) Layer {
-	w, h := intParam(params, "width", 320), intParam(params, "height", 320)
-	return Layer{ID: item.ID + "_image", Type: "image", Asset: asset, BoxWidth: w, BoxHeight: h, Size: []float64{float64(w), float64(h)}, Fit: stringParam(params, "fit", "contain"), Radius: float64(intParam(params, "radius", 0)), StartFrame: start, DurationFrames: end - start}
-}
-
-func applyPresetDefinition(layer *Layer, d OfficialPresetDefinition) {
+func applyPresetDefinition(layer *Layer, d PresetDefinition) {
 	if d.Family == PresetImage {
 		if layer.BoxWidth == 320 && d.Layout.BoxWidth > 0 {
 			layer.BoxWidth = d.Layout.BoxWidth
 		}
 		if layer.BoxHeight == 320 && d.Layout.BoxHeight > 0 {
 			layer.BoxHeight = d.Layout.BoxHeight
+		}
+		// BoxWidth/BoxHeight are compiler-only layout inputs, while Size is
+		// the serialized Chronon geometry. Keep them synchronized when an
+		// official image preset supplies its dimensions; otherwise Chronon
+		// receives the stale 320x320 fallback and the image card geometry can
+		// diverge from the resolved layout.
+		if len(layer.Size) >= 2 {
+			layer.Size[0] = float64(layer.BoxWidth)
+			layer.Size[1] = float64(layer.BoxHeight)
 		}
 		if layer.Fit == "contain" && d.Layout.Fit != "" {
 			layer.Fit = d.Layout.Fit
@@ -182,7 +153,7 @@ func applyPresetDefinition(layer *Layer, d OfficialPresetDefinition) {
 	}
 }
 
-func animationForDefinition(d OfficialPresetDefinition) (*LayerAnimation, error) {
+func animationForDefinition(d PresetDefinition) (*LayerAnimation, error) {
 	if d.Motion.Name == "" && d.Motion.ID == "" {
 		return nil, nil
 	}

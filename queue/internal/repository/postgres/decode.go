@@ -9,7 +9,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/Marcuss-ops/RenderginGen/queue/internal/model"
+	"github.com/Marcuss-ops/RenderingGen/queue/internal/model"
 )
 
 // normalizeJSON returns the raw JSON, defaulting empty input to "{}".

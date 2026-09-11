@@ -11,9 +11,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/artifactdb"
-	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/queue"
-	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/storage"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/artifactdb"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/queue"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/storage"
 )
 
 func TestProcessFullPipeline(t *testing.T) {
@@ -198,7 +198,7 @@ func TestProcessPreservesRawTimingSidecarReference(t *testing.T) {
 
 // TestProcessExecutesSemanticOverlayPlan verifies the full semantic path in
 // one worker run: CompileIfSemantic lowers the PipelineGen overlay-plan.v1
-// into the concrete chronon.render-plan.v1, the content-addressed asset_refs
+// into the concrete chronon render-plan, the content-addressed asset_refs
 // are materialized at their compiled logical paths, plan.json on disk is the
 // CONCRETE plan (never the semantic one), Chronon renders, and the MP4 is
 // published to the artifact store. One pipeline, no separate semantic
@@ -273,7 +273,7 @@ func TestProcessExecutesSemanticOverlayPlan(t *testing.T) {
 	if concrete.Layers[0].Preset != "" {
 		t.Fatalf("phrase must not carry executable preset metadata: %q", concrete.Layers[0].Preset)
 	}
-	if concrete.Layers[1].ID != "img-1_image" || concrete.Layers[1].Preset != "" {
+	if concrete.Layers[1].ID != "img-1:image" || concrete.Layers[1].Preset != "" {
 		t.Fatalf("image layer = %+v", concrete.Layers[1])
 	}
 

@@ -12,7 +12,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/chronon"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/chronon"
 )
 
 func requireNativeVulkan(outputPath string, expectedFrames int) error {

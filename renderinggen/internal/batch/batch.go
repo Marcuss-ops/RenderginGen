@@ -22,7 +22,7 @@ import (
 	"sort"
 	"strings"
 
-	queue "github.com/Marcuss-ops/RenderginGen/queue/client"
+	queue "github.com/Marcuss-ops/RenderingGen/queue/client"
 )
 
 // SchemaBatchManifestV1 identifies the batch manifest envelope.

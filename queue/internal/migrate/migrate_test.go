@@ -3,7 +3,7 @@ package migrate
 import (
 	"testing"
 
-	"github.com/Marcuss-ops/RenderginGen/queue/migrations"
+	"github.com/Marcuss-ops/RenderingGen/queue/migrations"
 )
 
 func TestSplitStatements(t *testing.T) {
@@ -54,6 +54,7 @@ func TestMigrationsOrdered(t *testing.T) {
 		"021_chronon_timing_artifact.sql",
 		"022_processing_metrics_unique.sql",
 		"023_drop_retry_wait_state.sql",
+		"024_terminal_state_notifications.sql",
 	}
 	if len(names) != len(want) {
 		t.Fatalf("want %d migrations, got %d: %v", len(want), len(names), names)

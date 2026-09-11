@@ -60,20 +60,33 @@ func newPlan(jobID string, width, height, fpsNum, fpsDen int, duration int64) *P
 // validation and style resolution, so anything that is not the semantic
 // overlay-plan contract is rejected instead of executed.
 func CompileIfSemantic(raw []byte) (*Plan, []Asset, bool, error) {
+	result, err := CompileSemantic(raw)
+	if err != nil {
+		return nil, nil, false, err
+	}
+	return result.Plan, result.Assets, true, nil
+}
+
+// CompileSemantic lowers the PipelineGen semantic contract and returns the
+// plan, its materialized assets and the ledger counters produced by the SAME
+// compile pass. It is the preferred entry point: callers never re-read the raw
+// document to count overlays, so the ledger can never drift from the layers
+// that were actually emitted.
+func CompileSemantic(raw []byte) (CompileResult, error) {
 	var probe struct {
 		SchemaVersion string `json:"schema_version"`
 	}
 	if err := json.Unmarshal(raw, &probe); err != nil {
-		return nil, nil, false, fmt.Errorf("overlay: decode plan: %w", err)
+		return CompileResult{}, fmt.Errorf("overlay: decode plan: %w", err)
 	}
-	if probe.SchemaVersion == SemanticSchema {
-		compiled, assets, err := compileSemantic(raw)
-		if err != nil {
-			return nil, nil, false, err
-		}
-		return compiled, assets, true, nil
+	if probe.SchemaVersion != SemanticSchema {
+		return CompileResult{}, fmt.Errorf("overlay: unsupported plan schema %q (semantic %q is the only accepted contract)", probe.SchemaVersion, SemanticSchema)
 	}
-	return nil, nil, false, fmt.Errorf("overlay: unsupported plan schema %q (semantic %q is the only accepted contract)", probe.SchemaVersion, SemanticSchema)
+	plan, assets, stats, err := compileSemantic(raw)
+	if err != nil {
+		return CompileResult{}, err
+	}
+	return CompileResult{Plan: plan, Assets: assets, Stats: stats}, nil
 }
 
 // Marshal serializes the typed plan once at the Chronon boundary.
@@ -148,12 +161,13 @@ type semanticBackground struct {
 }
 
 type semanticItem struct {
-	ID        string             `json:"id"`
-	SceneID   string             `json:"scene_id"`
-	EntityID  string             `json:"entity_id"`
-	EntityRef *semanticEntityRef `json:"entity_ref"`
-	Kind      string             `json:"kind"`
-	Template  string             `json:"template_id"`
+	ID string `json:"id"`
+	// Kind is the semantic SSOT of the item. It is authoritative when
+	// PipelineGen sends it; when it is absent the template registry supplies
+	// it. A kind that contradicts the template's kind is rejected fail-closed
+	// (see TemplateSpec.resolveKind).
+	Kind     string `json:"kind"`
+	Template string `json:"template_id"`
 	// PresetID is the semantic preset selected by PipelineGen (the plan's
 	// preset_id contract slot). It is preferred over the template mapping.
 	PresetID      string             `json:"preset_id"`
@@ -165,17 +179,6 @@ type semanticItem struct {
 	EndMS         int64              `json:"end_ms"`
 	Params        map[string]any     `json:"params"`
 	Assets        []semanticAssetRef `json:"asset_refs"`
-}
-
-// semanticEntityRef is the plan's entity_ref block: the content-addressed
-// entity identity of the item. The compiler only uses it to fall back to a
-// display text when the item carries no explicit text — it never performs
-// entity linking or ranking.
-type semanticEntityRef struct {
-	EntityID    string `json:"entity_id"`
-	Type        string `json:"type"`
-	Name        string `json:"name"`
-	SurfaceText string `json:"surface_text,omitempty"`
 }
 
 type semanticAssetRef struct {
