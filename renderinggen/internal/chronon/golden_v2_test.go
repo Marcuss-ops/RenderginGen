@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/storage"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/storage"
 )
 
 // TestGoldenOverlayJobV2Immutability locks the universal benchmark golden in
@@ -51,14 +51,18 @@ func TestGoldenOverlayJobV2Immutability(t *testing.T) {
 			DurationFrames int `json:"duration_frames"`
 		} `json:"canvas"`
 		Layers []struct {
-			ID        string `json:"id"`
-			Type      string `json:"type"`
-			Text      string `json:"text"`
-			Style     *struct { Font string `json:"font"` } `json:"style"`
+			ID    string `json:"id"`
+			Type  string `json:"type"`
+			Text  string `json:"text"`
+			Style *struct {
+				Font string `json:"font"`
+			} `json:"style"`
 			Asset     string `json:"asset"`
 			Source    string `json:"source"`
 			Animation *struct {
-				Tracks []struct { Property string `json:"property"` } `json:"tracks"`
+				Tracks []struct {
+					Property string `json:"property"`
+				} `json:"tracks"`
 			} `json:"animation"`
 		} `json:"layers"`
 	}

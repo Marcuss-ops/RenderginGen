@@ -7,7 +7,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/chronon"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/chronon"
 	"gopkg.in/yaml.v3"
 )
 
@@ -211,6 +211,17 @@ func (c *Config) validate() error {
 		if c.Chronon.HardwareEncoder != "nvenc" {
 			return fmt.Errorf("gpu-vulkan-native requires chronon.hardware_encoder=nvenc")
 		}
+	}
+	// hardware_encoder reaches the CLI as --hardware on every GPU-required
+	// path. An unsupported value (vaapi, qsv, ...) used to be accepted here and
+	// then silently replaced by the native default at the render boundary, so
+	// the worker rendered with a different encoder than the config declared.
+	// Fail at load instead: the vocabulary is exactly what the worker can
+	// forward.
+	switch c.Chronon.HardwareEncoder {
+	case "", "nvenc", "none":
+	default:
+		return fmt.Errorf("chronon.hardware_encoder must be \"nvenc\", \"none\" or empty (engine default), got %q", c.Chronon.HardwareEncoder)
 	}
 	if c.Chronon.Mode == "ipc" && c.Chronon.SocketPath == "" {
 		return fmt.Errorf("chronon mode=ipc requires chronon.socket_path")

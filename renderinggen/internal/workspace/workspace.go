@@ -25,7 +25,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/queue"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/queue"
 )
 
 // ResolvedAsset describes an asset already present on local storage. The

@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	queue "github.com/Marcuss-ops/RenderginGen/queue/client"
+	queue "github.com/Marcuss-ops/RenderingGen/queue/client"
 )
 
 func TestBindOverlayJobsPatchesPlanAndAssets(t *testing.T) {

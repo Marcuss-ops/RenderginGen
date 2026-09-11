@@ -7,7 +7,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/Marcuss-ops/RenderginGen/queue/internal/model"
+	"github.com/Marcuss-ops/RenderingGen/queue/internal/model"
 )
 
 // ClaimFinalization atomically claims a parent row for one finalizer.

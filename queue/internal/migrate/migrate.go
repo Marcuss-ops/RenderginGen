@@ -13,7 +13,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/Marcuss-ops/RenderginGen/queue/migrations"
+	"github.com/Marcuss-ops/RenderingGen/queue/migrations"
 )
 
 // migrationLockKey is the advisory lock used to serialize migrations.

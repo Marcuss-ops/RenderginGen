@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Marcuss-ops/RenderginGen/queue/internal/model"
-	"github.com/Marcuss-ops/RenderginGen/queue/internal/repository"
+	"github.com/Marcuss-ops/RenderingGen/queue/internal/model"
+	"github.com/Marcuss-ops/RenderingGen/queue/internal/repository"
 )
 
 func TestMetricUnitUsesMetricSemantics(t *testing.T) {

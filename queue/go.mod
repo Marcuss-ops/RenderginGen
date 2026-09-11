@@ -1,4 +1,4 @@
-module github.com/Marcuss-ops/RenderginGen/queue
+module github.com/Marcuss-ops/RenderingGen/queue
 
 go 1.25.0
 

@@ -13,7 +13,24 @@
 
 CHRONON_RUNTIME ?= ghcr.io/marcuss-ops/chronon3d-runtime:0.1.0
 
-.PHONY: native-build golden-e2e golden-e2e-runtime golden-e2e-reset golden-e2e-down
+.PHONY: native-build golden-e2e golden-e2e-runtime golden-e2e-reset golden-e2e-down test-architecture
+
+# test-architecture — the cross-repo boundary conformance gate.
+#
+# Fails on any NEW occurrence of a forbidden marker (legacy v1/unversioned
+# render plan, module-path typo, hardcoded developer home, template aliases,
+# template-based kind inference, a second stats pass, *_partNN.go files) and on
+# any STALE ratchet-baseline entry. See CONFORMANCE.md.
+#
+# `go test ./...` already runs it via the internal/architecture package; this
+# target is the explicit local entry point.
+test-architecture:
+	cd renderinggen && go test ./internal/architecture/... -count=1
+
+# refresh-conformance-baseline — explicit ratchet-down after fixing violations.
+# Never run this to silence a NEW violation; remove the violation instead.
+refresh-conformance-baseline:
+	cd renderinggen && UPDATE_CONFORMANCE_BASELINE=1 go test ./internal/architecture/... -count=1
 
 native-build:
 	go build -o /usr/local/bin/renderinggen-queue ./queue/cmd/queued

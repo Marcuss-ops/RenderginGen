@@ -8,8 +8,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/overlay"
-	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/queue"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/overlay"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/queue"
 )
 
 // jobFrameRange maps a job's half-open chunk contract [Start, End) onto
@@ -31,17 +31,21 @@ func planHasVisualOverlay(plan *overlay.Plan) bool {
 	if plan == nil {
 		return false
 	}
+	videoLayers := 0
 	for _, layer := range plan.Layers {
 		if layer.Type == "video" {
+			videoLayers++
 			continue
 		}
 		if layer.Type != "" && layer.Type != "video" {
 			return true
 		}
 	}
-	// A plan containing only video layers has no non-video overlay requirement.
-	// Chronon may still classify multiple video layers independently.
-	return false
+	// DirectYUV can feed one decoded source straight to NVENC. Two video
+	// layers require a compositor (for example clip-render's background plus
+	// foreground); otherwise Chronon may select DirectYUV and reject the
+	// second source at frame zero.
+	return videoLayers > 1
 }
 
 func planHasVideoSource(plan *overlay.Plan) bool {
@@ -54,31 +58,6 @@ func planHasVideoSource(plan *overlay.Plan) bool {
 		}
 	}
 	return false
-}
-
-// audioSourcePathFromSemantic is the legacy raw-JSON path. It is retained for
-// non-semantic fallback but new code must use audioSourcePathFromPlan which
-// reads the single typed authority Plan.Output.Audio (written once in
-// semantic_compile.go). The raw second Unmarshal is the historical dual
-// authority that dropped sample_rate/channels/codec silently.
-func audioSourcePathFromSemantic(raw []byte, workspaceRoot string) string {
-	var doc struct {
-		Audio *struct {
-			Mode string `json:"mode"`
-		} `json:"audio"`
-		Source *struct {
-			AssetID string `json:"asset_id"`
-			Path    string `json:"path"`
-		} `json:"source"`
-	}
-	if json.Unmarshal(raw, &doc) != nil || doc.Audio == nil || doc.Source == nil || doc.Source.AssetID == "" {
-		return ""
-	}
-	path := doc.Source.Path
-	if path == "" {
-		path = filepath.ToSlash(filepath.Join("assets", "semantic", doc.Source.AssetID+".mp4"))
-	}
-	return filepath.Join(workspaceRoot, filepath.FromSlash(path))
 }
 
 // audioModeCopyOnly reports whether an audio mode is one the worker's mux can

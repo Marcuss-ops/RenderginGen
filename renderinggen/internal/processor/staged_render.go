@@ -9,7 +9,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/queue"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/queue"
 )
 
 // StagedRender runs the three stages serially for one job; used when a caller

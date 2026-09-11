@@ -13,7 +13,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/chronon"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/chronon"
 )
 
 // DefaultInterval is how often progress is pushed to the queue while a

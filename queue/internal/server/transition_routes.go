@@ -10,8 +10,8 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/Marcuss-ops/RenderginGen/queue/internal/model"
-	"github.com/Marcuss-ops/RenderginGen/queue/internal/repository"
+	"github.com/Marcuss-ops/RenderingGen/queue/internal/model"
+	"github.com/Marcuss-ops/RenderingGen/queue/internal/repository"
 )
 
 func (s *Server) complete(w http.ResponseWriter, r *http.Request) {

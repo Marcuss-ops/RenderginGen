@@ -239,7 +239,7 @@ func (r MediaReceipt) VerificationPassed() bool {
 // back to the aggregate status.
 func (r MediaReceipt) VerificationFailures() []string {
 	var checks = []struct {
-		name string
+		name    string
 		verdict string
 	}{
 		{"ffprobe", r.Verification.FFprobe},

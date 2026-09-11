@@ -1,14 +1,9 @@
 package overlay
 
-import (
-	"encoding/json"
-	"strings"
-)
+import "strings"
 
 // PresetUsage is one row of the plan's render_preset_usage tracking: how many
-// layers a (template_id, preset_id) pair produced in a job, and how long the
-// render of that job took (render_us is the job-wide Chronon render time —
-// Chronon does not yet report per-preset timing).
+// layers a (template_id, preset_id) pair produced in a job.
 type PresetUsage struct {
 	TemplateID string `json:"template_id"`
 	PresetID   string `json:"preset_id"`
@@ -33,64 +28,45 @@ type Stats struct {
 	PresetUsage []PresetUsage `json:"preset_usage"`
 }
 
-// SemanticStats inspects a render plan and counts the overlay kinds it
-// declares. Concrete chronon.render-plan.v1 documents yield the zero Stats —
-// the semantic counters only exist in PipelineGen's overlay-plan.v1.
-func SemanticStats(raw []byte) (Stats, error) {
-	var probe struct {
-		SchemaVersion string `json:"schema_version"`
-	}
-	if err := json.Unmarshal(raw, &probe); err != nil {
-		return Stats{}, err
-	}
-	if probe.SchemaVersion == "" {
-		return Stats{}, nil // concrete plan: no semantic counters
-	}
-	if probe.SchemaVersion != SemanticSchema {
-		return Stats{}, nil // unknown schema: never fail the artifact on stats
-	}
-	var src semanticPlan
-	if err := json.Unmarshal(raw, &src); err != nil {
-		return Stats{}, err
-	}
-	var stats Stats
-	for _, item := range src.Items {
-		if stats.PresetID == "" && strings.TrimSpace(item.PresetID) != "" {
-			stats.PresetID = strings.TrimSpace(item.PresetID)
-		}
-		template := strings.ToUpper(item.Template)
-		switch template {
-		case "PERSON", "ORGANIZATION", "LOCATION":
-			stats.EntityCount++
-		case "IMPORTANT_PHRASE", "QUOTE", "CONCEPT":
-			stats.ImportantPhraseCnt++
-		case "IMPORTANT_WORD", "NUMBER", "MONEY", "PERCENT":
-			stats.ImportantWordCnt++
-		case "IMAGE_OVERLAY", "PRODUCT", "LOGO":
-			stats.ImageCount++
-		case "LIGHT_LEAK":
-			stats.LightLeakCount++
-		}
-		stats.addPresetUsage(template, item)
-	}
-	return stats, nil
+// CompileResult is the single output of the semantic compiler: the concrete
+// Chronon plan, its materialized assets and the ledger counters for the SAME
+// pass. The counters are produced while compiling, so they can never drift
+// from the layers that were actually emitted.
+type CompileResult struct {
+	Plan   *Plan
+	Assets []Asset
+	Stats  Stats
 }
 
-// addPresetUsage records one layer per (template, preset) pair, mirroring the
-// layers the compiler will actually emit: an entity template that carries an
-// asset produces BOTH its text layer and an image_focus_in layer, exactly as
-// compileSemantic does. The preset is resolved through the same presetFor the
-// compiler uses, so the tracking can never drift from the compiled plan. A
-// preset the compiler would reject is skipped — such a plan fails to compile
-// anyway and never produces an artifact.
-func (s *Stats) addPresetUsage(template string, item semanticItem) {
-	preset, err := presetFor(item)
-	if err != nil {
-		return
+// addResolved books one item of a compile pass: the counters' only entry point
+// from the compiler. It reads the SAME resolvedItem the compiler lowered, so
+// the ledger can never re-derive a kind, preset or preset family that the
+// compiler decided differently.
+func (s *Stats) addResolved(ri resolvedItem) {
+	if s.PresetID == "" {
+		s.PresetID = strings.TrimSpace(ri.PresetID)
 	}
-	s.incPreset(template, preset)
-	if isEntityTemplate(item.Template) && len(item.Assets) > 0 {
-		s.incPreset(template, "image_focus_in")
+	switch ri.Spec.Stat {
+	case overlayStatEntity:
+		s.EntityCount++
+	case overlayStatPhrase:
+		s.ImportantPhraseCnt++
+	case overlayStatWord:
+		s.ImportantWordCnt++
+	case overlayStatImage:
+		s.ImageCount++
+	case overlayStatLightLeak:
+		s.LightLeakCount++
+	}
+	template := strings.ToUpper(strings.TrimSpace(ri.Item.Template))
+	if ri.PresetID != "" {
+		s.incPreset(template, ri.PresetID)
+	}
+	// An entity card that carries an asset emits BOTH its text layer and its
+	// image layer; both presets were already resolved by the compiler, so the
+	// tracking can never drift from the compiled plan.
+	if isEntityKind(ri.Kind) && len(ri.Item.Assets) > 0 && ri.ImagePreset.ID != "" {
+		s.incPreset(template, ri.ImagePreset.ID)
 	}
 }
 

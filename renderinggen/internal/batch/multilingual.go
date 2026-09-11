@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	queue "github.com/Marcuss-ops/RenderginGen/queue/client"
+	queue "github.com/Marcuss-ops/RenderingGen/queue/client"
 )
 
 // SourceBindLogicalPath is the workspace path where the base artifact is

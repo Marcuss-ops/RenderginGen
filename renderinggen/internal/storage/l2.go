@@ -8,9 +8,10 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
+	"sync/atomic"
 	"time"
 
-	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/hashio"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/hashio"
 )
 
 // diskCache is the L2 NVMe cache: content-addressed files on disk.
@@ -27,6 +28,14 @@ type diskCache struct {
 	mu      sync.Mutex
 	entries map[string]cacheEntry
 	total   int64
+
+	// readErrors counts L2 lookups that failed for a reason OTHER than
+	// "absent". A cache miss is normal; an EACCES/EIO/unmounted directory is a
+	// degradation that used to be indistinguishable from a miss (no counter,
+	// no log), so a broken L2 could silently turn every job into an L3 fetch
+	// while the hit-rate dashboards just showed misses.
+	readErrors atomic.Int64
+	lastErrLog atomic.Int64 // unix nanos of the last degradation log (rate limit)
 }
 
 type cacheEntry struct {
@@ -38,6 +47,18 @@ func newDiskCache(dir string, max int64) *diskCache {
 	return &diskCache{dir: dir, max: max, entries: make(map[string]cacheEntry)}
 }
 
+// reportReadError counts a non-"absent" L2 failure and logs it at most once
+// per second: a broken cache directory must be visible in the logs and in the
+// counters without turning every asset resolution into a log storm.
+func (d *diskCache) reportReadError(op, key string, err error) {
+	d.readErrors.Add(1)
+	now := time.Now().UnixNano()
+	last := d.lastErrLog.Load()
+	if now-last >= int64(time.Second) && d.lastErrLog.CompareAndSwap(last, now) {
+		log.Printf("storage: L2 %s %s: %v (treated as a cache miss; L3 remains the source of truth)", op, d.path(key), err)
+	}
+}
+
 func (d *diskCache) Get(key string) ([]byte, bool) {
 	// Hard failure path is byte-slice based: callers (storage.Client.Get)
 	// already have the streaming LocalPath path for media. Loading a
@@ -47,6 +68,9 @@ func (d *diskCache) Get(key string) ([]byte, bool) {
 	p := d.path(key)
 	info, err := os.Stat(p)
 	if err != nil {
+		if !os.IsNotExist(err) {
+			d.reportReadError("stat", key, err)
+		}
 		return nil, false
 	}
 	const maxBytePathBytes = 64 << 20 // 64 MiB: beyond this use streaming LocalPath
@@ -55,6 +79,9 @@ func (d *diskCache) Get(key string) ([]byte, bool) {
 	}
 	data, err := os.ReadFile(p)
 	if err != nil {
+		if !os.IsNotExist(err) {
+			d.reportReadError("read", key, err)
+		}
 		return nil, false
 	}
 	d.mu.Lock()
@@ -66,7 +93,13 @@ func (d *diskCache) Get(key string) ([]byte, bool) {
 func (d *diskCache) Path(key string) (string, bool) {
 	p := d.path(key)
 	info, err := os.Stat(p)
-	if err != nil || !info.Mode().IsRegular() {
+	if err != nil {
+		if !os.IsNotExist(err) {
+			d.reportReadError("stat", key, err)
+		}
+		return "", false
+	}
+	if !info.Mode().IsRegular() {
 		return "", false
 	}
 	return p, true
@@ -110,10 +143,20 @@ func (d *diskCache) install(key string, write func(*os.File) (int64, error)) (st
 	d.mu.Lock()
 	defer d.mu.Unlock()
 	if prev, ok := d.entries[key]; ok {
-		// A concurrent install won the race for the same content address; the
-		// bytes are identical by construction (the key is the content hash).
-		d.entries[key] = cacheEntry{size: prev.size, accessed: time.Now()}
-		return p, prev.size, nil
+		// The index is a cache OF THE FILESYSTEM, not an authority: the file can
+		// vanish while the process keeps running (external cleanup, a tmpfs
+		// reclaim, an operator deleting the cache). Trusting the entry blindly
+		// returned a path with no bytes behind it, which the workspace then
+		// tried to hard-link — a job failure that repeats for that content
+		// address until the worker restarts. Verify before short-circuiting.
+		if _, statErr := os.Stat(p); statErr == nil {
+			// A concurrent install won the race for the same content address;
+			// the bytes are identical by construction (the key is the hash).
+			d.entries[key] = cacheEntry{size: prev.size, accessed: time.Now()}
+			return p, prev.size, nil
+		}
+		delete(d.entries, key)
+		d.total -= prev.size
 	}
 	if err := os.Rename(tmpPath, p); err != nil {
 		return "", 0, err
@@ -230,29 +273,56 @@ const evictionBatch = 64
 // census the filesystem on every write; startup files are lazily indexed when
 // accessed and stale entries are harmlessly skipped. The caller holds d.mu;
 // only metadata operations (unlink) happen here.
+//
+// The selection is ONE pass over the index that keeps the evictionBatch oldest
+// entries in a bounded, sorted window, instead of re-scanning the whole index
+// once per victim. The historical shape was O(evictionBatch x entries) map
+// iterations under d.mu (up to 64 full scans per over-budget install, which
+// serialized every concurrent L2 writer); this is O(entries + batch log batch)
+// with identical eviction order and identical accounting.
 func (d *diskCache) enforceBudget() {
-	for evicted := 0; d.total > d.max && evicted < evictionBatch; evicted++ {
-		// Allocation-free single-oldest scan: a full map snapshot + global sort
-		// per pass would defeat the bounded-batch purpose.
-		var oldestKey string
-		var oldestAccessed time.Time
-		found := false
-		for key, entry := range d.entries {
-			if !found || entry.accessed.Before(oldestAccessed) {
-				oldestKey, oldestAccessed, found = key, entry.accessed, true
-			}
+	if d.total <= d.max {
+		return
+	}
+	// Bounded oldest-first window (insertion-sorted, allocation-free).
+	type candidate struct {
+		key      string
+		accessed time.Time
+	}
+	oldest := make([]candidate, 0, evictionBatch)
+	for key, entry := range d.entries {
+		if len(oldest) == evictionBatch && !entry.accessed.Before(oldest[len(oldest)-1].accessed) {
+			continue // not older than the current window's newest member
 		}
-		if !found {
+		var slot int
+		if len(oldest) == evictionBatch {
+			slot = len(oldest) - 1
+		} else {
+			oldest = append(oldest, candidate{})
+			slot = len(oldest) - 1
+		}
+		for slot > 0 && oldest[slot-1].accessed.After(entry.accessed) {
+			oldest[slot] = oldest[slot-1]
+			slot--
+		}
+		oldest[slot] = candidate{key: key, accessed: entry.accessed}
+	}
+
+	for _, victim := range oldest {
+		if d.total <= d.max {
 			return
 		}
-		entry := d.entries[oldestKey]
-		err := os.Remove(d.path(oldestKey))
+		entry, ok := d.entries[victim.key]
+		if !ok {
+			continue // already removed earlier in this pass
+		}
+		err := os.Remove(d.path(victim.key))
 		switch {
 		case err == nil || os.IsNotExist(err):
 			// The bytes are gone from the cache either way: account them. A
 			// vanished file (external cleanup) must not leave a stale index
 			// entry that every future pass re-scans forever.
-			delete(d.entries, oldestKey)
+			delete(d.entries, victim.key)
 			d.total -= entry.size
 		default:
 			// Unremovable file (held open by a renderer, read-only directory):
@@ -260,9 +330,9 @@ func (d *diskCache) enforceBudget() {
 			// candidates instead of stalling. The bytes stay on disk but are no
 			// longer accounted — say so instead of silently growing the gap
 			// between d.total and the real disk usage.
-			delete(d.entries, oldestKey)
+			delete(d.entries, victim.key)
 			d.total -= entry.size
-			log.Printf("storage: L2 eviction could not remove %s: %v (index entry forgotten; cache budget may under-report disk usage)", d.path(oldestKey), err)
+			log.Printf("storage: L2 eviction could not remove %s: %v (index entry forgotten; cache budget may under-report disk usage)", d.path(victim.key), err)
 		}
 	}
 }

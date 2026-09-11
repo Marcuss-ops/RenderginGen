@@ -4,7 +4,7 @@ import (
 	"context"
 	"log"
 
-	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/queue"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/queue"
 )
 
 // ReportQueue is the queue surface the worker's terminal-report helpers need.

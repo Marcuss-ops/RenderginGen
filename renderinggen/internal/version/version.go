@@ -2,7 +2,7 @@
 package version
 
 // These values are overridden at build time via
-// -ldflags "-X github.com/Marcuss-ops/RenderginGen/renderinggen/internal/version.RenderingGen=...".
+// -ldflags "-X github.com/Marcuss-ops/RenderingGen/renderinggen/internal/version.RenderingGen=...".
 var (
 	RenderingGen  = "0.1.0"
 	OverlaySchema = 3

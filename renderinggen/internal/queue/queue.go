@@ -3,7 +3,7 @@
 // Workers never receive push requests from the orchestrator: they claim
 // available jobs, hold a lease while rendering, and complete or fail them.
 // The HTTP wire contract lives in the queue's public client
-// (github.com/Marcuss-ops/RenderginGen/queue/client); this package only keeps
+// (github.com/Marcuss-ops/RenderingGen/queue/client); this package only keeps
 // the worker's domain types and adapts them, so the contract cannot drift.
 package queue
 
@@ -12,7 +12,7 @@ import (
 	"encoding/json"
 	"time"
 
-	queueclient "github.com/Marcuss-ops/RenderginGen/queue/client"
+	queueclient "github.com/Marcuss-ops/RenderingGen/queue/client"
 )
 
 // JobSchemaV1 identifies the renderinggen.job.v1 envelope.
@@ -25,6 +25,12 @@ const (
 	JobTypeRenderSegment  = "render_segment"
 	JobTypeOverlayPrepare = "overlay.prepare"
 	JobTypeOverlayRender  = "overlay.render"
+	// JobTypeLegacy is the EXPLICIT marker that opts a development fixture out
+	// of the v1 envelope requirements and of content-hash verification. It is
+	// the single auditable signal: nothing else (a missing schema, a short
+	// hash) may imply legacy, because those are what a producer bug looks
+	// like.
+	JobTypeLegacy = "legacy"
 )
 
 // RenewConflictError identifies a permanent lease loss reported by the queue

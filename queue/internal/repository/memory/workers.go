@@ -5,7 +5,7 @@ import (
 	"sort"
 	"time"
 
-	"github.com/Marcuss-ops/RenderginGen/queue/internal/model"
+	"github.com/Marcuss-ops/RenderingGen/queue/internal/model"
 )
 
 // Register upserts a worker's identity and records its initial heartbeat.

@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/media"
-	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/queue"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/media"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/queue"
 )
 
 // FinalizeJob runs the CPU-bound post half of the render pipeline: validation

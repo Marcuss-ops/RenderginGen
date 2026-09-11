@@ -24,7 +24,7 @@ RUN go mod download
 COPY renderinggen/ ./
 ARG VERSION=0.1.0
 RUN CGO_ENABLED=0 go build \
-      -ldflags "-s -w -X github.com/Marcuss-ops/RenderginGen/renderinggen/internal/version.RenderingGen=${VERSION}" \
+      -ldflags "-s -w -X github.com/Marcuss-ops/RenderingGen/renderinggen/internal/version.RenderingGen=${VERSION}" \
       -o /out/renderinggen ./cmd/renderinggen
 
 # --- final image ---

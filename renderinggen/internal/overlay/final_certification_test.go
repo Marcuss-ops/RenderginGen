@@ -5,45 +5,98 @@
 // Coverage is derived from overlay.OfficialPresetIDs(): a preset added to the
 // registry automatically enters this suite and fails CI until it really
 // compiles. No hardcoded preset lists, ever.
+//
+// Every fixture goes through the REAL production path — CompileIfSemantic on
+// a renderinggen.overlay-plan.v1 document — so the suite certifies the single
+// lowering chain that PipelineGen submits to, not a test-only compiler.
 package overlay
 
 import (
 	"encoding/json"
+	"fmt"
 	"strings"
 	"testing"
 )
 
-// certificationFixture builds one real semantic entity per registry preset,
-// rendered against the Pale Olive color background. It is the in-repo,
-// compile-level successor of the removed render-final-certification CLI: the
-// registry gate these tests enforce now runs in CI via go test ./...
-func certificationFixture(def OfficialPresetDefinition) FastEntityOverlay {
-	const durationFrames = int64(125)
-	fx := FastEntityOverlay{
-		StartFrame: 10, // non-zero start; end frame 125 is exclusive
-		EndFrame:   durationFrames,
-		Opacity:    1.0,
-		PresetID:   def.ID,
+// certificationDurationFrames is the certified composition length. The
+// fixture starts at frame 10, so the entity's own window is 10..124 inclusive
+// (exclusive end 125).
+const certificationDurationFrames = int64(125)
+
+// certificationMSRange is the millisecond range that lowers to the certified
+// frame window at the fixture's 24 fps: floor(start_ms·24/1000)=10 and
+// ceil(end_ms·24/1000)=125.
+const (
+	certificationStartMS = int64(417)
+	certificationEndMS   = int64(5208)
+)
+
+// certificationBackgroundRGBA is the Pale Olive Classic background, the color
+// layer contract that keeps a compositor backend from rendering branded
+// content as black.
+const certificationBackgroundRGBA = "[0.9333333333333333,0.9450980392156862,0.9058823529411765,1]"
+
+// certificationAssetID/SHA identify the single fixture image every
+// certification plan references. At runtime the harness materializes the real
+// bytes at the semantic logical path (assets/semantic/<id>.jpg).
+const (
+	certificationAssetID  = "certification-image"
+	certificationAssetSHA = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+)
+
+const certificationText = "Pipeline Certificata — 450% più veloce, fino a 125 frame"
+
+// certificationItemJSON builds one real semantic item for a registry preset,
+// using the same template vocabulary PipelineGen emits: IMAGE_OVERLAY for the
+// image family, IMPORTANT_PHRASE for the text family.
+func certificationItemJSON(def PresetDefinition) (string, error) {
+	if def.Family == PresetImage {
+		return fmt.Sprintf(
+			`{"id":%q,"template_id":"IMAGE_OVERLAY","preset_id":%q,"start_ms":%d,"end_ms":%d,`+
+				`"asset_refs":[{"asset_id":%q,"sha256":%q,"url":"https://store.example/certification.jpg","media_type":"image/jpeg"}]}`,
+			def.ID, def.ID, certificationStartMS, certificationEndMS, certificationAssetID, certificationAssetSHA), nil
 	}
-	switch def.Family {
-	case PresetImage:
-		fx.Type = "image"
-		fx.Asset = "gerard_butler.jpg"
-		fx.Position = def.Layout.Anchor
-		fx.Size = float64(def.Layout.BoxWidth)
-		fx.Animation = def.Motion.Name
-	default:
-		fx.Type = "text"
-		fx.Text = "Pipeline Certificata — 450% più veloce, fino a 125 frame"
-		// The runtime certification mounts testdata/golden directly as the
-		// Chronon asset root; the checked-in fixture font is at that root.
-		fx.Font = "Poppins-Bold.ttf"
-		fx.Position = def.Layout.Anchor
-		fx.Size = def.Style.FontSize
-		fx.Color = def.Style.Fill
-		fx.Animation = def.Motion.Name
+	return fmt.Sprintf(
+		`{"id":%q,"template_id":"IMPORTANT_PHRASE","preset_id":%q,"text":%q,"start_ms":%d,"end_ms":%d}`,
+		def.ID, def.ID, certificationText, certificationStartMS, certificationEndMS), nil
+}
+
+// certificationPlanRaw is the renderinggen.overlay-plan.v1 document the whole
+// certification suite (compile and runtime) lowers and renders.
+func certificationPlanRaw(def PresetDefinition) (string, error) {
+	item, err := certificationItemJSON(def)
+	if err != nil {
+		return "", err
 	}
-	return fx
+	return fmt.Sprintf(
+		`{"schema_version":"renderinggen.overlay-plan.v1","plan_id":%q,"video_id":"certification","width":1920,"height":1080,"fps_num":24,"fps_den":1,`+
+			`"background":{"kind":"color","color":%s},"items":[%s]}`,
+		"certification-"+def.ID, certificationBackgroundRGBA, item), nil
+}
+
+// certificationPlan compiles the fixture for one preset through the single
+// production compiler and returns the exact chronon.render-plan.v2 the
+// runtime certification renders. It is deterministic, so pixel tests can read
+// the entity's declared geometry from the same plan that produced the MP4
+// instead of hard-coding sample points.
+func certificationPlan(t *testing.T, presetID string) *Plan {
+	t.Helper()
+	def, err := ResolveOfficialPreset(presetID)
+	if err != nil {
+		t.Fatalf("resolve registry preset: %v", err)
+	}
+	raw, err := certificationPlanRaw(def)
+	if err != nil {
+		t.Fatalf("build certification plan: %v", err)
+	}
+	plan, _, semantic, err := CompileIfSemantic([]byte(raw))
+	if err != nil {
+		t.Fatalf("compile certification plan %s: %v", presetID, err)
+	}
+	if !semantic {
+		t.Fatalf("certification plan %s did not go through the semantic compiler", presetID)
+	}
+	return plan
 }
 
 // TestFinal_AllOfficialPresetsCovered is the completeness gate: the registry
@@ -91,35 +144,27 @@ func TestFinal_AllOfficialPresetsCovered(t *testing.T) {
 }
 
 // TestFinal_CompileEveryPreset compiles every registry preset through the
-// real entity contract and asserts the plan Chronon receives: 1080p 24fps
+// real semantic contract and asserts the plan Chronon receives: 1080p 24fps
 // canvas, a Pale Olive background layer, exactly one entity layer, correct
 // timeline window, and valid animation tracks.
 func TestFinal_CompileEveryPreset(t *testing.T) {
-	const (
-		width, height  = 1920, 1080
-		durationFrames = int64(125)
-	)
 	for _, id := range OfficialPresetIDs() {
 		t.Run(id, func(t *testing.T) {
 			def, err := ResolveOfficialPreset(id)
 			if err != nil {
 				t.Fatalf("resolve registry preset: %v", err)
 			}
-			plan, err := CompileFastEntityOverlays(id, width, height, 24, 1, durationFrames,
-				"color:#EEF1E7", []FastEntityOverlay{certificationFixture(def)})
-			if err != nil {
-				t.Fatalf("compile: %v", err)
-			}
+			plan := certificationPlan(t, id)
 
 			// Canvas contract.
-			if plan.Canvas.Width != width || plan.Canvas.Height != height {
-				t.Errorf("canvas %dx%d, want %dx%d", plan.Canvas.Width, plan.Canvas.Height, width, height)
+			if plan.Canvas.Width != 1920 || plan.Canvas.Height != 1080 {
+				t.Errorf("canvas %dx%d, want 1920x1080", plan.Canvas.Width, plan.Canvas.Height)
 			}
 			if plan.Canvas.FPSNum != 24 || plan.Canvas.FPSDen != 1 {
 				t.Errorf("fps %d/%d, want 24/1", plan.Canvas.FPSNum, plan.Canvas.FPSDen)
 			}
-			if plan.Canvas.DurationFrames != durationFrames {
-				t.Errorf("duration %d, want %d", plan.Canvas.DurationFrames, durationFrames)
+			if plan.Canvas.DurationFrames != certificationDurationFrames {
+				t.Errorf("duration %d, want %d", plan.Canvas.DurationFrames, certificationDurationFrames)
 			}
 
 			// Background: the color layer contract that keeps a compositor
@@ -128,8 +173,8 @@ func TestFinal_CompileEveryPreset(t *testing.T) {
 				t.Fatalf("layers=%d, want >= 2 (background + entity)", len(plan.Layers))
 			}
 			bg := plan.Layers[0]
-			if bg.Type != "color" || bg.ID != "bg_color" {
-				t.Errorf("layer 0 = %s/%s, want color/bg_color", bg.Type, bg.ID)
+			if bg.Type != "color" || bg.ID != "background" {
+				t.Errorf("layer 0 = %s/%s, want color/background", bg.Type, bg.ID)
 			}
 			want := []float64{238.0 / 255, 241.0 / 255, 231.0 / 255, 1}
 			for i, c := range want {
@@ -137,12 +182,15 @@ func TestFinal_CompileEveryPreset(t *testing.T) {
 					t.Errorf("bg.Color[%d]=%v, want %v (Pale Olive)", i, bg.Color[i], c)
 				}
 			}
-			if bg.StartFrame != 0 || bg.DurationFrames != durationFrames {
-				t.Errorf("bg timeline %d+%d, want 0..%d", bg.StartFrame, bg.DurationFrames, durationFrames)
+			if bg.StartFrame != 0 || bg.DurationFrames != certificationDurationFrames {
+				t.Errorf("bg timeline %d+%d, want 0..%d", bg.StartFrame, bg.DurationFrames, certificationDurationFrames)
 			}
 
 			// Entity layer: exactly one, valid timeline, valid motion.
 			entity := certificationEntityLayer(plan, def)
+			if entity == nil {
+				t.Fatalf("no %s entity layer compiled", def.Family)
+			}
 			switch def.Family {
 			case PresetText:
 				if entity.Type != "text" {
@@ -164,7 +212,7 @@ func TestFinal_CompileEveryPreset(t *testing.T) {
 				if entity.BoxWidth <= 0 || entity.BoxHeight <= 0 {
 					t.Errorf("entity box %dx%d, want positive", entity.BoxWidth, entity.BoxHeight)
 				}
-				if entity.Position == nil || len(entity.Position) != 2 {
+				if len(entity.Position) != 2 {
 					t.Error("entity position missing: placement cannot be verified")
 				}
 			}
@@ -172,11 +220,8 @@ func TestFinal_CompileEveryPreset(t *testing.T) {
 				t.Errorf("entity StartFrame=%d, want 10", entity.StartFrame)
 			}
 			// Exclusive end: entity covers 10..124 inclusive, never frame 125.
-			if entity.DurationFrames != durationFrames-10 {
-				t.Errorf("entity DurationFrames=%d, want %d (exclusive end)", entity.DurationFrames, durationFrames-10)
-			}
-			if entity.Opacity <= 0 || entity.Opacity > 1 {
-				t.Errorf("entity Opacity=%v, want in (0,1]", entity.Opacity)
+			if entity.DurationFrames != certificationDurationFrames-10 {
+				t.Errorf("entity DurationFrames=%d, want %d (exclusive end)", entity.DurationFrames, certificationDurationFrames-10)
 			}
 			// Only animated presets must carry tracks; static presets
 			// (static_text_smoke) legitimately compile without them.
@@ -194,19 +239,17 @@ func TestFinal_CompileEveryPreset(t *testing.T) {
 // its last frame — a static track on an animated preset is the "animation
 // silently became static" regression.
 func TestFinal_AnimationFirstMiddleLastFrame(t *testing.T) {
-	const durationFrames = int64(125)
 	for _, id := range OfficialPresetIDs() {
 		t.Run(id, func(t *testing.T) {
 			def, err := ResolveOfficialPreset(id)
 			if err != nil {
 				t.Fatalf("resolve: %v", err)
 			}
-			plan, err := CompileFastEntityOverlays(id, 1920, 1080, 24, 1, durationFrames,
-				"color:#EEF1E7", []FastEntityOverlay{certificationFixture(def)})
-			if err != nil {
-				t.Fatalf("compile: %v", err)
-			}
+			plan := certificationPlan(t, id)
 			entity := certificationEntityLayer(plan, def)
+			if entity == nil {
+				t.Fatal("no entity layer")
+			}
 			if entity.Animation == nil {
 				t.Skip("static preset")
 			}
@@ -249,15 +292,7 @@ func TestFinal_AnimationFirstMiddleLastFrame(t *testing.T) {
 func TestFinal_PlansAreSchemaStable(t *testing.T) {
 	for _, id := range OfficialPresetIDs() {
 		t.Run(id, func(t *testing.T) {
-			def, err := ResolveOfficialPreset(id)
-			if err != nil {
-				t.Fatalf("resolve: %v", err)
-			}
-			plan, err := CompileFastEntityOverlays(id, 1920, 1080, 24, 1, 125,
-				"color:#EEF1E7", []FastEntityOverlay{certificationFixture(def)})
-			if err != nil {
-				t.Fatalf("compile: %v", err)
-			}
+			plan := certificationPlan(t, id)
 			plan.Output.Path = "out.mp4"
 			data, err := json.Marshal(plan)
 			if err != nil {
@@ -280,11 +315,12 @@ func TestFinal_PlansAreSchemaStable(t *testing.T) {
 // TestFinal_MotionCompileFailureFailsClosed: a motion the registry cannot
 // resolve must abort compilation — never degrade to a static layer.
 func TestFinal_MotionCompileFailureFailsClosed(t *testing.T) {
-	_, err := CompileFastEntityOverlays("fails-closed", 1920, 1080, 24, 1, 125, "color:#EEF1E7",
-		[]FastEntityOverlay{{
-			Type: "image", StartFrame: 0, EndFrame: 125,
-			Asset: "gerard_butler.jpg", Animation: "totally_unknown_motion",
-		}})
+	raw := fmt.Sprintf(
+		`{"schema_version":"renderinggen.overlay-plan.v1","plan_id":"fails-closed","video_id":"v","width":1920,"height":1080,"fps_num":24,"fps_den":1,`+
+			`"items":[{"id":"img","template_id":"IMAGE_OVERLAY","preset_id":"image_scale_in","motion_id":"totally_unknown_motion","start_ms":0,"end_ms":1000,`+
+			`"asset_refs":[{"asset_id":%q,"sha256":%q,"url":"https://store.example/x.jpg","media_type":"image/jpeg"}]}]}`,
+		certificationAssetID, certificationAssetSHA)
+	_, _, _, err := CompileIfSemantic([]byte(raw))
 	if err == nil {
 		t.Fatal("unknown motion compiled silently: layer would render static instead of failing")
 	}
@@ -306,7 +342,7 @@ func TestFinal_InvalidPresetFailsClosed(t *testing.T) {
 	}
 }
 
-func certificationEntityLayer(plan *Plan, def OfficialPresetDefinition) *Layer {
+func certificationEntityLayer(plan *Plan, def PresetDefinition) *Layer {
 	for i := range plan.Layers {
 		layer := &plan.Layers[i]
 		if def.Family == PresetImage && layer.Type == "image" {

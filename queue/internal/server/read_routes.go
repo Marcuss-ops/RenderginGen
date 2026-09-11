@@ -6,7 +6,7 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/Marcuss-ops/RenderginGen/queue/internal/repository"
+	"github.com/Marcuss-ops/RenderingGen/queue/internal/repository"
 )
 
 func (s *Server) children(w http.ResponseWriter, r *http.Request) {

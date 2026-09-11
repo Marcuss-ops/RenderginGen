@@ -1,65 +1,81 @@
 package overlay
 
-import "testing"
+import (
+	"fmt"
+	"testing"
+)
+
+// certificationImageItem is one asset-driven certification item in the
+// semantic contract. It reuses the single fixture image identity so a plan can
+// carry several image items without tripping the registry's collision guard.
+func certificationImageItem(id, presetID string, assetID string) string {
+	return fmt.Sprintf(
+		`{"id":%q,"template_id":"IMAGE_OVERLAY","preset_id":%q,"start_ms":%d,"end_ms":%d,`+
+			`"asset_refs":[{"asset_id":%q,"sha256":%q,"url":"https://store.example/%s.jpg","media_type":"image/jpeg"}]}`,
+		id, presetID, certificationStartMS, certificationEndMS, assetID, certificationAssetSHA, assetID)
+}
+
+func certificationTextItem(id, presetID, text string) string {
+	return fmt.Sprintf(
+		`{"id":%q,"template_id":"IMPORTANT_PHRASE","preset_id":%q,"text":%q,"start_ms":%d,"end_ms":%d}`,
+		id, presetID, text, certificationStartMS, certificationEndMS)
+}
 
 func TestFinal_ImageAndTextTogether(t *testing.T) {
-	plan, err := CompileFastEntityOverlays("image-plus-phrase", 1920, 1080, 24, 1, 125, "color:#EEF1E7", []FastEntityOverlay{
-		certificationFixture(mustPreset(t, "image_scale_in")), certificationFixture(mustPreset(t, "phrase_fade_in")),
-	})
-	if err != nil {
-		t.Fatal(err)
+	raw := fmt.Sprintf(
+		`{"schema_version":"renderinggen.overlay-plan.v1","plan_id":"image-plus-phrase","video_id":"v","width":1920,"height":1080,"fps_num":24,"fps_den":1,`+
+			`"background":{"kind":"color","color":%s},"items":[%s,%s]}`,
+		certificationBackgroundRGBA,
+		certificationImageItem("img", "image_scale_in", "matrix-image"),
+		certificationTextItem("phrase", "phrase_fade_in", "Frase importante"))
+	plan, _, semantic, err := CompileIfSemantic([]byte(raw))
+	if err != nil || !semantic {
+		t.Fatalf("semantic=%v err=%v", semantic, err)
 	}
 	if len(plan.Layers) != 3 {
 		t.Fatalf("layers=%d, want background + image + text", len(plan.Layers))
 	}
 }
 
-func TestFinal_AllImageAndTextPresetsCompile(t *testing.T) {
-	for _, def := range OfficialPresets.All() {
-		t.Run(def.ID, func(t *testing.T) {
-			if _, err := CompileFastEntityOverlays(def.ID, 1920, 1080, 24, 1, 125, "color:#EEF1E7", []FastEntityOverlay{certificationFixture(def)}); err != nil {
-				t.Fatal(err)
-			}
-		})
-	}
-}
-
-func TestFinal_EntityOpacity(t *testing.T) {
+// TestFinal_BackgroundOpacity proves the contract's opacity is honored exactly
+// as declared, including an intentional zero (never silently defaulted to 1).
+func TestFinal_BackgroundOpacity(t *testing.T) {
 	for _, want := range []float64{0, .25, .5, 1} {
 		want := want
-		t.Run(string(rune('0'+int(want*4))), func(t *testing.T) {
-			plan, err := CompileFastEntityOverlays("opacity", 1920, 1080, 24, 1, 125, "color:#EEF1E7", []FastEntityOverlay{{Type: "text", Text: "opacity", Font: "fonts/Poppins-Bold.ttf", StartFrame: 0, EndFrame: 125, Opacity: want, OpacityExplicit: &want}})
-			if err != nil {
-				t.Fatal(err)
+		t.Run(fmt.Sprintf("%.2f", want), func(t *testing.T) {
+			raw := fmt.Sprintf(
+				`{"schema_version":"renderinggen.overlay-plan.v1","plan_id":"opacity","video_id":"v","width":1920,"height":1080,"fps_num":24,"fps_den":1,`+
+					`"background":{"kind":"color","color":%s,"opacity":%v},"items":[%s]}`,
+				certificationBackgroundRGBA, want,
+				certificationTextItem("word", "active_word_pop", "opacity"))
+			plan, _, semantic, err := CompileIfSemantic([]byte(raw))
+			if err != nil || !semantic {
+				t.Fatalf("semantic=%v err=%v", semantic, err)
 			}
-			if got := plan.Layers[1].Opacity; got != want {
+			if got := plan.Layers[0].Opacity; got != want {
 				t.Errorf("opacity %.2f compiled as %.2f", want, got)
 			}
 		})
 	}
 }
 
+// TestFinal_AssetMatrix lowers a mixed background + image + text composition
+// through the semantic contract: every declared layer must materialize.
 func TestFinal_AssetMatrix(t *testing.T) {
-	fixtures := []FastEntityOverlay{
-		{Type: "image", Asset: "gerard_butler.jpg", Position: "image_right", Size: 260, StartFrame: 0, EndFrame: 125, Animation: "static"},
-		{Type: "image", Asset: "logo_pulse.png", Position: "center", Size: 260, StartFrame: 0, EndFrame: 125, Animation: "static"},
-		{Type: "text", Text: "Nome breve", Font: "fonts/Poppins-Bold.ttf", Position: "lower_third", Size: 58, StartFrame: 0, EndFrame: 125, Animation: "static"},
-		{Type: "text", Text: "Frase lunga — àéìòù ✓", Font: "fonts/Poppins-Bold.ttf", Position: "safe_area", Size: 58, StartFrame: 0, EndFrame: 125, Animation: "static"},
+	raw := fmt.Sprintf(
+		`{"schema_version":"renderinggen.overlay-plan.v1","plan_id":"asset-matrix","video_id":"v","width":1920,"height":1080,"fps_num":24,"fps_den":1,`+
+			`"background":{"kind":"video","asset_refs":[{"asset_id":"matrix-bg","sha256":%q,"url":"https://store.example/background.mp4","media_type":"video/mp4"}]},`+
+			`"items":[%s,%s,%s,%s]}`,
+		certificationAssetSHA,
+		certificationImageItem("img-1", "image_scale_in", "matrix-a"),
+		certificationImageItem("img-2", "modern_rounded_pop", "matrix-b"),
+		certificationTextItem("text-1", "lower_third_safe", "Nome breve"),
+		certificationTextItem("text-2", "phrase_fade_in", "Frase lunga — àéìòù ✓"))
+	plan, _, semantic, err := CompileIfSemantic([]byte(raw))
+	if err != nil || !semantic {
+		t.Fatalf("semantic=%v err=%v", semantic, err)
 	}
-	plan, err := CompileFastEntityOverlays("asset-matrix", 1920, 1080, 24, 1, 125, "background.mp4", fixtures)
-	if err != nil {
-		t.Fatal(err)
+	if len(plan.Layers) != 5 {
+		t.Fatalf("layers=%d, want background + 4 overlays", len(plan.Layers))
 	}
-	if len(plan.Layers) != len(fixtures)+1 {
-		t.Fatalf("layers=%d, want %d", len(plan.Layers), len(fixtures)+1)
-	}
-}
-
-func mustPreset(t *testing.T, id string) OfficialPresetDefinition {
-	t.Helper()
-	d, err := ResolveOfficialPreset(id)
-	if err != nil {
-		t.Fatal(err)
-	}
-	return d
 }

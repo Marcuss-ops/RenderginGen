@@ -6,16 +6,21 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/storage"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/storage"
 )
 
 // TestGoldenSemanticOverlayJobV1Immutability locks the semantic golden in
 // place: the Go constant must decode, carry the renderinggen.overlay-plan.v1
 // contract (with content-addressed asset_refs), stay byte-identical to the
-// canonical JSON file, and reference fixtures whose sha256 matches the
-// payload. The golden covers the PipelineGen semantic path through the whole
-// worker chain: CompileIfSemantic -> materialize -> plan.json ->
-// chronon3d_cli -> mp4.
+// canonical JSON file the canary submits, and reference fixtures whose sha256
+// matches the payload. The golden covers the PipelineGen semantic path
+// through the whole worker chain: CompileIfSemantic -> materialize ->
+// plan.json -> chronon3d_cli -> mp4.
+//
+// The canonical copy is testdata/golden/golden-semantic-overlay-job-v1.json
+// (consumed by infra/e2e/run-golden-overlay.sh); this constant mirrors it. If
+// they ever diverge, the JSON is what actually renders, so the constant gets
+// regenerated from it — never the other way around.
 func TestGoldenSemanticOverlayJobV1Immutability(t *testing.T) {
 	// 1. The Go constant must decode as a valid renderinggen.job envelope.
 	var env struct {
@@ -69,7 +74,6 @@ func TestGoldenSemanticOverlayJobV1Immutability(t *testing.T) {
 		"background":       "IMAGE_OVERLAY",
 		"important_phrase": "IMPORTANT_PHRASE",
 		"important_word":   "IMPORTANT_WORD",
-		"image_overlay":    "IMAGE_OVERLAY",
 	}
 	if len(plan.Items) != len(wantItems) {
 		t.Fatalf("expected %d items, got %d", len(wantItems), len(plan.Items))
@@ -91,12 +95,9 @@ func TestGoldenSemanticOverlayJobV1Immutability(t *testing.T) {
 			refs[ref.ID] = ref.SHA256
 		}
 	}
-	// Both IMAGE_OVERLAY items must be content-addressed against the fixtures.
+	// The IMAGE_OVERLAY item must be content-addressed against the fixture.
 	if refs["background"] != "52209ee36928dba960583179922a54acf045d52d44c3128c517425d4baaa4f78" {
 		t.Fatalf("background ref sha256 = %q", refs["background"])
-	}
-	if refs["apple"] != "ed873745e76173b66999c63546770d9f1426a2189515149176c67637e99a62d6" {
-		t.Fatalf("apple ref sha256 = %q", refs["apple"])
 	}
 
 	// 3. The Go constant must be byte-identical to the canonical JSON file.

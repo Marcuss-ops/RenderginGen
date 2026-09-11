@@ -6,12 +6,16 @@ import "sync"
 //
 // Both HTTP endpoints — POST /jobs/claim (wait_ms) and POST /jobs/claim/wait
 // (max_wait_ms) — are thin wrappers over Service.WaitAndClaim, which is the
-// sole long-poll loop. WaitAndClaim coalesces wakes via Notifier and falls
+// claim-side long-poll loop. WaitAndClaim coalesces wakes via Notifier and
+// falls
 // back to bounded re-poll so signal loss cannot stall a worker. The signal
 // carries no data: the database (or memory store) remains the single source
 // of truth, and every woken waiter re-runs the atomic ClaimState (SKIP
 // LOCKED). Submit, ClaimState, Complete, Rendered, Fail, RequeueExpired and
-// external NotifyState all call Notify(); WaitAndClaim is the only consumer.
+// external NotifyState all call Notify(); WaitAndClaim (claim side) and
+// WaitState (producer terminal-state side) are the only consumers, and each
+// keeps its own bounded re-poll, so the two share this single broadcast
+// primitive instead of introducing a competing timer.
 // The service re-poll loop (pollDelay 1s→10s exponential) is the third
 // mechanism folded into this one Notifier so there are no competing timers.
 //

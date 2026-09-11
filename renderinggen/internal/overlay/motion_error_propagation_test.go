@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/motion"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/motion"
 )
 
 // TestResolveMotionPropagatesRegistryError pins the fail-closed motion fix:
@@ -23,7 +23,7 @@ func TestResolveMotionPropagatesRegistryError(t *testing.T) {
 // TestAnimationForDefinitionPropagatesError wires the same guarantee into the
 // preset path used by compileSemantic for official preset animations.
 func TestAnimationForDefinitionPropagatesError(t *testing.T) {
-	anim, err := animationForDefinition(OfficialPresetDefinition{
+	anim, err := animationForDefinition(PresetDefinition{
 		Motion: MotionDefinition{ID: "definitely_missing_motion", Name: "definitely_missing_motion", Enter: 24},
 	})
 	if err == nil {
@@ -37,7 +37,7 @@ func TestAnimationForDefinitionPropagatesError(t *testing.T) {
 // TestAnimationForDefinitionEmptyMotionIsNil keeps the legitimate no-motion
 // preset case working (preset without an animation definition).
 func TestAnimationForDefinitionEmptyMotionIsNil(t *testing.T) {
-	anim, err := animationForDefinition(OfficialPresetDefinition{})
+	anim, err := animationForDefinition(PresetDefinition{})
 	if err != nil {
 		t.Fatalf("empty motion must not error: %v", err)
 	}

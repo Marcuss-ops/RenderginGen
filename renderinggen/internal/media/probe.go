@@ -34,8 +34,16 @@ type ProbeResult struct {
 	// It is a conservative proxy for closed-GOP encoding — it is never derived
 	// from FirstFrameKeyframe alone and fails closed (false) when the cadence
 	// cannot be proven.
-	ClosedGOP    bool
-	AudioStreams int
+	ClosedGOP bool
+	// ClosedGOPUncertifiable is true when the closed-GOP probe could not
+	// observe the sync-sample table at all (ffprobe missing, unreadable file,
+	// undecodable packet table). ClosedGOP is then false because nothing was
+	// proven, NOT because the cadence was measured and found non-uniform.
+	// Consumers must distinguish the two: an uncertifiable probe means the
+	// certification input is unavailable (environment problem), a certified
+	// false means the artifact really carries an irregular GOP structure.
+	ClosedGOPUncertifiable bool
+	AudioStreams           int
 	// FPSUncertifiable is true when the video stream's r_frame_rate could not
 	// be parsed into positive integers (for example "0/0"). Certification
 	// contracts that REQUIRE an fps (ValidateOverlay with a declared rate)
@@ -147,7 +155,10 @@ func ProbeFile(ctx context.Context, path string) (ProbeResult, error) {
 	}
 
 	// Closed-GOP certification: reads only the container packet table (no
-	// decode), so the cadence check is cheap even on long clips.
-	result.ClosedGOP = probeClosedGOP(ctx, path)
+	// decode), so the cadence check is cheap even on long clips. The probe
+	// reports whether the verdict was actually observed (see
+	// ClosedGOPUncertifiable) so "no ffprobe" is never confused with "open
+	// GOP".
+	result.ClosedGOP, result.ClosedGOPUncertifiable = probeClosedGOP(ctx, path)
 	return result, nil
 }

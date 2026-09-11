@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/Marcuss-ops/RenderginGen/queue/internal/model"
-	"github.com/Marcuss-ops/RenderginGen/queue/internal/repository"
+	"github.com/Marcuss-ops/RenderingGen/queue/internal/model"
+	"github.com/Marcuss-ops/RenderingGen/queue/internal/repository"
 )
 
 // Compile-time check that the postgres repository satisfies the worker

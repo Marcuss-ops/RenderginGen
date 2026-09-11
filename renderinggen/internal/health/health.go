@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/chronon"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/chronon"
 )
 
 // Info is the payload returned by /health.

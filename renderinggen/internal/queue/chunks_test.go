@@ -6,7 +6,7 @@ import (
 )
 
 func TestPlanChunks(t *testing.T) {
-	jobs, err := PlanChunks("parent", json.RawMessage(`{"schema":"chronon.render-plan"}`), nil, 0, 10, 4)
+	jobs, err := PlanChunks("parent", json.RawMessage(`{"schema":"chronon.render-plan.v2"}`), nil, 0, 10, 4)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -9,10 +9,10 @@ import (
 	"log"
 	"time"
 
-	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/artifactdb"
-	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/media"
-	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/overlay"
-	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/queue"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/artifactdb"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/media"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/overlay"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/queue"
 )
 
 // recordArtifact writes an optional worker-local diagnostic mirror. PostgreSQL

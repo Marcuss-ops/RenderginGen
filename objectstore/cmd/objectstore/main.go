@@ -10,8 +10,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Marcuss-ops/RenderginGen/objectstore/internal/server"
-	"github.com/Marcuss-ops/RenderginGen/objectstore/internal/store"
+	"github.com/Marcuss-ops/RenderingGen/objectstore/internal/server"
+	"github.com/Marcuss-ops/RenderingGen/objectstore/internal/store"
 )
 
 // authMiddleware enforces a shared bearer token when one is configured. The

@@ -8,6 +8,7 @@
 //	POST /jobs/{id}/fail        report failure (requeue or fail permanently)
 //	POST /jobs/{id}/renew       extend the lease during a long render
 //	POST /jobs/{id}/progress    report render progress (frames done/total)
+//	GET  /jobs/{id}/wait        long-poll until the job is terminal (producer)
 //	GET  /jobs/depth            queue depth/stats (autoscaling)
 //	GET  /health                health check
 //
@@ -25,9 +26,9 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/Marcuss-ops/RenderginGen/queue/internal/model"
-	"github.com/Marcuss-ops/RenderginGen/queue/internal/repository"
-	"github.com/Marcuss-ops/RenderginGen/queue/internal/service"
+	"github.com/Marcuss-ops/RenderingGen/queue/internal/model"
+	"github.com/Marcuss-ops/RenderingGen/queue/internal/repository"
+	"github.com/Marcuss-ops/RenderingGen/queue/internal/service"
 )
 
 const maxClaimWait = 25 * time.Second
@@ -78,6 +79,8 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /jobs/{parent}/{lang}/finalize/claim", s.claimFinalization)
 	mux.HandleFunc("GET /jobs/{id}/children", s.children)
 	mux.HandleFunc("GET /jobs/{parent}/{lang}/children", s.children)
+	mux.HandleFunc("GET /jobs/{id}/wait", s.waitJob)
+	mux.HandleFunc("GET /jobs/{parent}/{lang}/wait", s.waitJob)
 	mux.HandleFunc("GET /jobs/{id}", s.get)
 	mux.HandleFunc("GET /jobs/{parent}/{lang}", s.get)
 	mux.HandleFunc("GET /jobs/depth", s.depth)

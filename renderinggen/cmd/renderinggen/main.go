@@ -21,17 +21,17 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/artifactdb"
-	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/chronon"
-	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/config"
-	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/drive"
-	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/gpu"
-	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/health"
-	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/processor"
-	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/progresspush"
-	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/queue"
-	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/storage"
-	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/version"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/artifactdb"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/chronon"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/config"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/drive"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/gpu"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/health"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/processor"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/progresspush"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/queue"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/storage"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/version"
 )
 
 func main() {

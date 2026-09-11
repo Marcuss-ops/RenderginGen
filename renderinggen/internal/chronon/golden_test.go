@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/Marcuss-ops/RenderginGen/renderinggen/internal/storage"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/storage"
 )
 
 // TestGoldenOverlayJobV1Immutability locks the golden in place so the payload
@@ -35,7 +35,7 @@ func TestGoldenOverlayJobV1Immutability(t *testing.T) {
 		t.Fatalf("expected 3 assets (background, apple, font), got %d", len(env.Assets))
 	}
 
-	// 2. The render plan must be a well-formed chronon.render-plan.v1 with the
+	// 2. The render plan must be a well-formed chronon render-plan with the
 	//    four real-workload layers.
 	var plan struct {
 		Schema  string `json:"schema"`

@@ -27,6 +27,7 @@ never reimplement the HTTP format.
 |---|---|---|
 | `POST` | `/jobs` | Submit a render job |
 | `GET` | `/jobs/{id}` | Current state + certified artifact |
+| `GET` | `/jobs/{id}/wait` | Long-poll until the job is terminal (producer) |
 | `GET` | `/jobs/depth` | Queue depth snapshot (autoscaling) |
 | `POST` | `/jobs/{id}/cancel` | Producer cancellation (terminal; never re-claimed) |
 
@@ -45,13 +46,13 @@ Request (only `id`, `schema`, `version`, `render_plan` and `assets` are used):
   "schema": "renderinggen.job",
   "version": 1,
   "render_plan": {
-    "schema": "chronon.render-plan",
-    "version": 1,
+    "schema": "chronon.render-plan.v2",
+    "version": 2,
     "job_id": "video-983",
-    "canvas": { "width": 1920, "height": 1080, "fps": 30, "duration_frames": 300 },
+    "canvas": { "width": 1920, "height": 1080, "fps_num": 30, "fps_den": 1, "duration_frames": 300 },
     "layers": [
-      { "id": "video", "type": "video", "source": "videos/base.mp4", "start_frame": 0, "duration_frames": 300 },
-      { "id": "phrase-1", "type": "text", "text": "QUESTO CAMBIA TUTTO", "preset": "title_centered", "start_frame": 60, "duration_frames": 55 }
+      { "id": "video", "type": "video", "source": "videos/base.mp4", "size": [1920, 1080], "fit": "cover", "start_frame": 0, "duration_frames": 300 },
+      { "id": "phrase-1", "type": "text", "text": "QUESTO CAMBIA TUTTO", "style": { "font": "assets/fonts/DejaVuSans.ttf", "font_size": 54, "fill": "#FFFFFF" }, "start_frame": 60, "duration_frames": 55 }
     ],
     "output": { "path": "result.mp4", "format": "mp4", "codec": "h264", "crf": 18 }
   },
@@ -82,6 +83,26 @@ would have invoked Chronon already happened before the cancel.
 Response `200 OK` — the full job, including `state`, `attempts`, timestamps and
 (once completed) the `artifact`. Response `404 Not Found` when unknown.
 
+#### `GET /jobs/{id}/wait?max_wait_ms=N`
+
+Event-driven completion: identical body to `GET /jobs/{id}`, but the request
+parks until the job reaches a terminal state (`completed`, `failed`,
+`cancelled`) or the bounded wait elapses, whichever comes first. `max_wait_ms`
+defaults to 25s and is clamped to the same 25s ceiling. Response `404 Not Found`
+when the job is unknown.
+
+The handler is a pure read — it never mutates state and never assigns work —
+and it blocks on the service's single wake-up primitive: `Submit`, `Complete`,
+`Fail`, `Rendered`, `Cancel`, `Retry`, `RequeueExpired` and the PostgreSQL
+`LISTEN` bridge all broadcast, and every waiter re-reads `render_jobs` after
+waking. On another replica (whose local broadcast is not shared) the service's
+bounded 250ms→2s re-poll bounds the observed latency, so signal loss can never
+stall a producer.
+
+`rendered` is deliberately NOT terminal: the artifact is durable but external
+publication is still pending and the job remains re-claimable for a
+publication-only retry.
+
 #### `GET /jobs/depth`
 
 Response `200 OK`:
@@ -111,7 +132,7 @@ Response `200 OK`:
   "id": "video-983",
   "schema": "renderinggen.job",
   "version": 1,
-  "render_plan": { "schema": "chronon.render-plan", "version": 1, "canvas": {}, "layers": [], "output": { "path": "result.mp4" } },
+  "render_plan": { "schema": "chronon.render-plan.v2", "version": 2, "canvas": {}, "layers": [], "output": { "path": "result.mp4" } },
   "assets": [ { "hash": "<sha256>", "logical_path": "videos/base.mp4" } ],
   "lease": 30000000000
 }
@@ -313,9 +334,12 @@ cancel lands while the job is leased/running and the lease later elapses.
 ## Client packages
 
 - `client/` — the public Go client (import
-  `github.com/Marcuss-ops/RenderginGen/queue/client`). Producer side:
-  `Submit`, `Get`, `Depth`, `Health`, `Wait`. Worker side: `Claim`,
-  `Complete`, `Fail`, `Renew`.
+  `github.com/Marcuss-ops/RenderingGen/queue/client`). Producer side:
+  `Submit`, `Get`, `Depth`, `Health`, `Wait`, `WaitTerminal`. `WaitTerminal`
+  is the event-driven completion call: it long-polls `/jobs/{id}/wait` and
+  degrades on its own to the polling `Wait` loop when the route is absent (an
+  older queue server). Worker side: `Claim`, `ClaimWait`, `Complete`, `Fail`,
+  `Renew`.
 - `renderinggen/internal/queue` — the worker's adapter over `client/`.
 - PipelineGen uses `client/` via an adapter in
   `internal/platform/renderinggen`.

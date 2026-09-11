@@ -1,8 +1,20 @@
 // Package storage implements the shared artifact store with a three-level cache.
 //
-//	L1  VRAM cache   (in-memory, worker lifetime)
-//	L2  local NVMe   (content-addressed on disk)
-//	L3  object store (central, shared, persistent)
+//	L1  in-memory bytes (Go heap, worker lifetime, small objects only)
+//	L2  local NVMe      (content-addressed on disk, page-cache backed)
+//	L3  object store    (central, shared, persistent)
+//
+// Which tier serves a request depends on the entry point:
+//
+//	Get/Put        byte API: L1 first, then L2, then L3. Used by the small
+//	               plan/intent uploads and by backends without streaming.
+//	LocalPath      streaming API used by asset materialization: L2 (a path,
+//	               zero-copy into the workspace), then L1 if the L2 file was
+//	               evicted, then a streaming L3 fetch installed into L2.
+//
+// L2 is deliberately the primary cache for the streaming path: it hands back a
+// path the workspace hard-links, while media on the Go heap would only add GC
+// pressure. L1 therefore caches small, high-reuse objects and never media.
 package storage
 
 import (
@@ -61,6 +73,11 @@ type CacheStats struct {
 	L2Hits      int64 // resolved from L2 (on-disk)
 	L3Fetches   int64 // resolved from L3 (central object store)
 	L2PutErrors int64 // failed L2 warm writes (cache silently degraded if > 0)
+	// L2ReadErrors counts L2 lookups that failed for a reason other than
+	// "absent" (permissions, I/O, unmounted directory). The lookup degrades to
+	// an L3 fetch, so a non-zero value here means the on-disk cache is not
+	// doing its job even though the hit counters look like ordinary misses.
+	L2ReadErrors int64
 }
 
 // Stats returns the cumulative resolution counters since the client was
@@ -68,10 +85,11 @@ type CacheStats struct {
 // (job 1: L3->L2->L1, jobs 2-10: L1 hit) and to report hits/misses.
 func (c *Client) Stats() CacheStats {
 	return CacheStats{
-		L1Hits:      c.l1Hits.Load(),
-		L2Hits:      c.l2Hits.Load(),
-		L3Fetches:   c.l3Fetches.Load(),
-		L2PutErrors: c.l2PutErrors.Load(),
+		L1Hits:       c.l1Hits.Load(),
+		L2Hits:       c.l2Hits.Load(),
+		L3Fetches:    c.l3Fetches.Load(),
+		L2PutErrors:  c.l2PutErrors.Load(),
+		L2ReadErrors: c.l2.readErrors.Load(),
 	}
 }
 
@@ -188,8 +206,15 @@ func (c *Client) startFetch(hash string) (*fetchCall, bool) {
 }
 
 func (c *Client) finishFetch(hash string, call *fetchCall, data []byte, err error) {
+	// Own the follower copy OUTSIDE the critical section: the copy cost is
+	// proportional to the object size, and holding inflightMu across it made
+	// every other hash's startFetch wait for the largest object in flight.
+	var stored []byte
+	if err == nil {
+		stored = append([]byte(nil), data...)
+	}
 	c.inflightMu.Lock()
-	call.data = append([]byte(nil), data...)
+	call.data = stored
 	call.err = err
 	delete(c.inflight, hash)
 	close(call.done)
@@ -259,6 +284,22 @@ func (c *Client) LocalPath(ctx context.Context, hash string) (string, int64, err
 	}
 	if path, size, err := c.l2.ContextPath(ctx, hash); err == nil {
 		return path, size, nil
+	}
+	// L2 miss, L1 hit: the streaming materialize path used to bypass L1
+	// entirely, so an object whose L2 file was evicted (or installed by the
+	// byte API) was re-downloaded from L3 even though its bytes were still in
+	// RAM. Installing them into L2 here is one write for one avoided L3 round
+	// trip, and it makes the L1 hit counter describe the materialize path
+	// too. This runs only after a confirmed L2 miss: the common case (L2 hit)
+	// pays nothing.
+	if data, ok := c.l1.Get(hash); ok {
+		c.l1Hits.Add(1)
+		path, size, err := c.l2.PutBytes(hash, data)
+		if err == nil {
+			return path, size, nil
+		}
+		c.l2PutErrors.Add(1)
+		log.Printf("storage: L2 reinstall from L1 failed for %s: %v (falling back to L3)", hash, err)
 	}
 	if backend, ok := c.backend.(ReaderBackend); ok {
 		return c.localPathFetch(ctx, hash, backend)

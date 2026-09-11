@@ -11,8 +11,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/Marcuss-ops/RenderginGen/queue/internal/model"
-	"github.com/Marcuss-ops/RenderginGen/queue/internal/repository"
+	"github.com/Marcuss-ops/RenderingGen/queue/internal/model"
+	"github.com/Marcuss-ops/RenderingGen/queue/internal/repository"
 )
 
 // Fail marks a running job failed. Jobs that have not exhausted their attempts
