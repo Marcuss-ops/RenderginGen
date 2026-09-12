@@ -16,6 +16,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"time"
 )
@@ -146,6 +147,22 @@ type OutputSpec struct {
 	FPSNum     uint32 `json:"fps_num,omitempty"`
 	FPSDen     uint32 `json:"fps_den,omitempty"`
 	PipePixFmt string `json:"pipe_pixfmt,omitempty"`
+	// HardwareEncoder / EncoderBackend / GpuHotPathMode carry the native
+	// encoder selection across the IPC transport.
+	//
+	// They live in output_spec on purpose: the Chronon daemon resolves them
+	// with spec_or_root(request, ...), i.e. it reads the output_spec sub-object
+	// and falls back to the payload root. Sending them as TOP-LEVEL payload keys
+	// is a contract violation (see TestIPCClientRenderPayloadContract), and
+	// sending them NOWHERE — which is what this adapter used to do — left the
+	// daemon with no encoder request at all, so it silently resolved the
+	// software FFmpeg pipe lane and then handed the NVENC-only --encode-preset
+	// ("p2") to libx264, which rejects it outright. They are derived from the
+	// same authority as the CLI arguments (resolveNativeEncodeSelection) so the
+	// CLI and IPC transports cannot drift.
+	HardwareEncoder string `json:"hardware_encoder,omitempty"`
+	EncoderBackend  string `json:"encoder_backend,omitempty"`
+	GpuHotPathMode  string `json:"gpu_hot_path_mode,omitempty"`
 }
 
 // Renderer renders a RenderRequest.
@@ -264,10 +281,18 @@ func (c *Client) Version() string {
 // output path. It streams output lines with timestamps, tracks progress, and
 // runs a stall watchdog to abort hung render processes.
 func (c *Client) Render(ctx context.Context, req RenderRequest) error {
+	if err := validateRenderRequest(req); err != nil {
+		return err
+	}
 	stallTimeout := DefaultStallTimeout
 	if env := os.Getenv("CHRONON_STALL_TIMEOUT"); env != "" {
 		if d, err := time.ParseDuration(env); err == nil && d > 0 {
 			stallTimeout = d
+		} else {
+			// Never silently ignore a misconfiguration: an operator who set a
+			// bogus value must learn the default was applied instead of
+			// assuming their timeout took effect.
+			log.Printf("[chronon WARN] ignoring invalid CHRONON_STALL_TIMEOUT=%q: %v; using default %v", env, err, DefaultStallTimeout)
 		}
 	}
 
@@ -328,8 +353,20 @@ func (c *Client) Render(ctx context.Context, req RenderRequest) error {
 		return fmt.Errorf("chronon start: %w", err)
 	}
 
-	go streamLines(stdoutPipe, "stdout")
-	go streamLines(stderrPipe, "stderr")
+	// Render must not return while a scanner is still running: the Progress
+	// callback is invoked from these goroutines, so returning early lets the
+	// caller read its final observation (gpu_run's lastProgress / ledger
+	// metrics) while a goroutine is still writing it — a data race that also
+	// silently drops the last milestone near exit. The scanners must also
+	// finish BEFORE cmd.Wait(): Wait closes the pipe read ends once the child
+	// exits, discarding any lines the child had already written but the
+	// scanner had not yet consumed. A scanner reaches EOF on its own when the
+	// child exit closes the write ends, so draining first is both lossless and
+	// deadlock-free (the stall watchdog still kills a silent child).
+	var streamWG sync.WaitGroup
+	streamWG.Add(2)
+	go func() { defer streamWG.Done(); streamLines(stdoutPipe, "stdout") }()
+	go func() { defer streamWG.Done(); streamLines(stderrPipe, "stderr") }()
 
 	// Stall watchdog goroutine
 	watchdogDone := make(chan struct{})
@@ -354,6 +391,7 @@ func (c *Client) Render(ctx context.Context, req RenderRequest) error {
 		}
 	}()
 
+	streamWG.Wait()
 	err = cmd.Wait()
 	duration := time.Since(renderStart)
 	if err != nil {

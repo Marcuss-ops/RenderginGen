@@ -60,7 +60,13 @@ func discoverBuiltChrononBinary() string {
 	}
 	dir := filepath.Dir(source)
 	for i := 0; i < 8; i++ {
-		matches, _ := filepath.Glob(filepath.Join(dir, "Chronon3d", "build", "*", "apps", "chronon3d_cli", "chronon3d_cli"))
+		matches, _ := filepath.Glob(filepath.Join(dir, "Chronon3d", "build", "chronon", "linux-video-release", "apps", "chronon3d_cli", "chronon3d_cli"))
+		if len(matches) == 0 {
+			matches, _ = filepath.Glob(filepath.Join(dir, "Chronon3d", "build", "chronon", "*", "apps", "chronon3d_cli", "chronon3d_cli"))
+		}
+		if len(matches) == 0 {
+			matches, _ = filepath.Glob(filepath.Join(dir, "Chronon3d", "build", "*", "apps", "chronon3d_cli", "chronon3d_cli"))
+		}
 		if len(matches) > 0 {
 			return matches[0]
 		}
@@ -147,7 +153,9 @@ func renderCertificationPlan(t *testing.T, bin, assetsRoot, outDir, presetID, ou
 		"render", "--plan", planPath, "--assets-root", assetsRoot,
 		"--backend", "software", "--encoder-backend", "pipe",
 		"--hardware", "none", "--gpu-hot-path-mode", "auto",
+		"--encode-preset", "ultrafast",
 		"-o", videoPath)
+	cmd.Dir = assetsRoot
 	if out, err := cmd.CombinedOutput(); err != nil {
 		// Chronon must never "succeed" into a missing file, and a render
 		// failure must reach the test as a failure, not a skip.

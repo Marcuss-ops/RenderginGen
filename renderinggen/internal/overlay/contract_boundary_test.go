@@ -115,6 +115,17 @@ func contractFixture(templateID string, spec TemplateSpec) []byte {
 			"media_type": "image/png",
 		}}
 	}
+	// Video overlays lower to a timed video layer and require the rendered
+	// segment as an asset_ref (they are preset-less: the segment carries its
+	// own pixels and the producer owns the window).
+	if isVideoKind(spec.Kind) {
+		item["asset_refs"] = []map[string]any{{
+			"asset_id":   "asset-1",
+			"sha256":     strings.Repeat("a", 64),
+			"url":        "https://store.example/asset.mp4",
+			"media_type": "video/mp4",
+		}}
+	}
 	doc := map[string]any{
 		"schema_version": SemanticSchema,
 		"plan_id":        "contract-plan",

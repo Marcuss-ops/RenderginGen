@@ -178,6 +178,91 @@ func TestIPCClientRenderUsesSemanticContract(t *testing.T) {
 	}
 }
 
+// TestIPCClientRenderCarriesStrictNativeSelectionInOutputSpec pins the fix for
+// the strict-native IPC black hole. The daemon resolves
+// hardware_encoder/encoder_backend/gpu_hot_path_mode from output_spec via
+// spec_or_root, so an IPC request that sent them NOWHERE could not express the
+// strict contract at all: the daemon selected the software FFmpeg pipe lane and
+// libx264 then rejected the NVENC-only --encode-preset ("p2"), failing every
+// image/text-only render (GoldenSemanticOverlayJobV1).
+func TestIPCClientRenderCarriesStrictNativeSelectionInOutputSpec(t *testing.T) {
+	socketPath, _, gotPayload := startFakeDaemon(t, ipcStatusOk, `{"status":"ok"}`)
+
+	client := NewIPCClient(socketPath)
+	err := client.Render(context.Background(), RenderRequest{
+		PlanPath:     "/jobs/1/plan.json",
+		AssetsRoot:   "/jobs/1/assets",
+		OutputPath:   "/jobs/1/output/result.mp4",
+		EncodePreset: "p2",
+		Requirements: ExecutionRequirements{
+			Backend: "vulkan", GPURequired: true, CPUFallbackAllowed: false,
+			CompositionRequired: true, VideoSourceRequired: false, PacketCopyAllowed: true,
+		},
+		Output: OutputSpec{Codec: "h264", Width: 1280, Height: 720, FPSNum: 30, FPSDen: 1, PipePixFmt: "yuv420p"},
+	})
+	if err != nil {
+		t.Fatalf("render: %v", err)
+	}
+
+	var payload map[string]any
+	if err := json.Unmarshal([]byte(<-gotPayload), &payload); err != nil {
+		t.Fatalf("payload decode: %v", err)
+	}
+	outputSpec, ok := payload["output_spec"].(map[string]any)
+	if !ok {
+		t.Fatalf("output_spec missing or not an object: %v", payload["output_spec"])
+	}
+	for key, want := range map[string]string{
+		"hardware_encoder":  "nvenc",
+		"encoder_backend":   "native",
+		"gpu_hot_path_mode": "require_gpu_native",
+	} {
+		if got := outputSpec[key]; got != want {
+			t.Fatalf("output_spec[%q] = %v, want %q (payload=%v)", key, got, want, payload)
+		}
+	}
+	// The backend detail stays confined to output_spec: the top-level payload
+	// contract above is unchanged.
+	for _, leaked := range []string{"hardware_encoder", "encoder_backend", "gpu_hot_path_mode"} {
+		if _, ok := payload[leaked]; ok {
+			t.Fatalf("backend detail leaked as top-level %q: %v", leaked, payload)
+		}
+	}
+}
+
+// TestIPCClientRenderOmitsSelectionWithoutGPURecord proves the selection is not
+// stamped unconditionally: a request with no GPU/composition requirement keeps
+// the historical payload (no encoder keys at all), so Chronon's own default
+// applies unchanged.
+func TestIPCClientRenderOmitsSelectionWithoutGPURecord(t *testing.T) {
+	socketPath, _, gotPayload := startFakeDaemon(t, ipcStatusOk, `{"status":"ok"}`)
+
+	client := NewIPCClient(socketPath)
+	err := client.Render(context.Background(), RenderRequest{
+		PlanPath:   "/jobs/1/plan.json",
+		AssetsRoot: "/jobs/1/assets",
+		OutputPath: "/jobs/1/output/result.mp4",
+		Output:     OutputSpec{Codec: "h264", Width: 320, Height: 180, FPSNum: 30, FPSDen: 1},
+	})
+	if err != nil {
+		t.Fatalf("render: %v", err)
+	}
+
+	var payload map[string]any
+	if err := json.Unmarshal([]byte(<-gotPayload), &payload); err != nil {
+		t.Fatalf("payload decode: %v", err)
+	}
+	outputSpec, ok := payload["output_spec"].(map[string]any)
+	if !ok {
+		t.Fatalf("output_spec missing or not an object: %v", payload["output_spec"])
+	}
+	for _, key := range []string{"hardware_encoder", "encoder_backend", "gpu_hot_path_mode"} {
+		if _, present := outputSpec[key]; present {
+			t.Fatalf("output_spec[%q] must be absent for a non-GPU request: %v", key, outputSpec)
+		}
+	}
+}
+
 // TestIPCClientRenderFrameZeroRange pins the wave-1B daemon-parity corner: a
 // single-frame chunk at frame 0 (RangeEnabled with first=0, last=0) must
 // reach the wire as range_enabled=true with first_frame=0/last_frame=0

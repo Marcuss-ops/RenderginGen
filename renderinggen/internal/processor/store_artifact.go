@@ -56,6 +56,13 @@ func (p *Processor) storeArtifact(ctx context.Context, jobID, outputPath string,
 		log.Printf("job %s: chronon receipt size %d != file %d; verifying", jobID, receipt.Output.Bytes, fileInfo.Size())
 		fallthrough
 	default:
+		// No receipt (or an unreadable one): identity must be proven by
+		// re-reading the output. This costs a full SHA-256 pass on the
+		// critical path, so it is recorded — otherwise the spike is visible
+		// only as an unexplained sha256_ms and the degradation stays
+		// unattributable.
+		phaseMetrics[metricnames.ChrononReceiptMissing] = 1
+		log.Printf("job %s: chronon receipt unavailable (%v); hashing output directly", jobID, receiptErr)
 		digest, _, verifyErr := hashio.File(outputPath)
 		if verifyErr != nil {
 			return queue.Artifact{}, fmt.Errorf("processor: hash output %s: %w", outputPath, verifyErr)

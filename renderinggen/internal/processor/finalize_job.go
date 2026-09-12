@@ -57,7 +57,7 @@ func (p *Processor) FinalizeJob(ctx context.Context, prepared *PreparedJob) (que
 	// by design). RenderingGen requests the policy and enforces the receipt
 	// result; it never re-decodes the output a second time. This runs for
 	// every finalized job, independent of overlay/profile probing.
-	if err := p.enforceReceiptVerification(outputPath); err != nil {
+	if err := p.enforceReceiptVerification(outputPath, metrics); err != nil {
 		return queue.Artifact{}, err
 	}
 	return p.storeArtifact(ctx, job.ID, outputPath, plan, metrics, prepared.totalStart, probe, prepared.Stats, prepared.InputBytes,

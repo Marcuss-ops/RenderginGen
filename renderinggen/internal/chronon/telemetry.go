@@ -176,6 +176,13 @@ func TelemetryMetrics(raw json.RawMessage) map[string]float64 {
 	return out
 }
 
+// MediaReceiptSuffix is the file suffix of Chronon's media-receipt sidecar
+// (`<output>.receipt.json`). It is the SINGLE definition of the receipt path
+// contract: ReadMediaReceipt and ReadReceiptPresence both build their path
+// from it, so no caller re-derives the suffix and the two cannot disagree about
+// where the receipt lives.
+const MediaReceiptSuffix = ".receipt.json"
+
 // MediaReceipt is the identity + verification section of Chronon's
 // render-receipt sidecar (`<output>.receipt.json`, schema
 // chronon3d.render-receipt.v1). Chronon computes the output SHA-256 itself,
@@ -316,10 +323,28 @@ func (r MediaReceipt) VerificationMetrics() map[string]float64 {
 	return out
 }
 
+// ReadReceiptPresence verifies that Chronon emitted its media receipt next to
+// the rendered output and that it is a JSON object, WITHOUT decoding or
+// trusting its identity fields. Gates whose contract is only "Chronon wrote its
+// receipt" (e.g. the native-Vulkan certification) use this instead of
+// re-implementing "read <output>.receipt.json and json-unmarshal it" a second
+// time; callers that need the output size/SHA-256 must use ReadMediaReceipt.
+func ReadReceiptPresence(outputPath string) error {
+	data, err := os.ReadFile(outputPath + MediaReceiptSuffix)
+	if err != nil {
+		return fmt.Errorf("chronon media receipt: %w", err)
+	}
+	var doc map[string]any
+	if err := json.Unmarshal(data, &doc); err != nil {
+		return fmt.Errorf("chronon media receipt: decode: %w", err)
+	}
+	return nil
+}
+
 // ReadMediaReceipt reads Chronon's media receipt next to the rendered output.
 func ReadMediaReceipt(outputPath string) (MediaReceipt, error) {
 	var receipt MediaReceipt
-	data, err := os.ReadFile(outputPath + ".receipt.json")
+	data, err := os.ReadFile(outputPath + MediaReceiptSuffix)
 	if err != nil {
 		return receipt, fmt.Errorf("chronon media receipt: %w", err)
 	}

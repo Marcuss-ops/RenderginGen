@@ -18,6 +18,7 @@ chronon:
   socket_path: /var/run/chronon3d/chronon.sock
   strict_native_backend: true
   encode_preset: p1
+  pipe_pixfmt: nv12
 gpu:
   device: 0
 health:

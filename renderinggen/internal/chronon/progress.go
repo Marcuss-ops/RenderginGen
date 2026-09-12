@@ -53,15 +53,11 @@ func (t *ProgressTracker) Forget(jobID string) {
 	delete(t.jobs, jobID)
 }
 
-// Snapshot returns the current progress for jobID, or nil when nothing has
-// been observed (e.g. a renderer whose output format carried no frame lines).
-func (t *ProgressTracker) Snapshot(jobID string) *Progress {
-	t.mu.Lock()
-	defer t.mu.Unlock()
-	st := t.jobs[jobID]
-	if st == nil {
-		return nil
-	}
+// snapshotFor builds the immutable Progress for one tracker entry. Both
+// Snapshot and Current derive their public snapshot through it, so the
+// percent/fps rules exist once instead of as a hand-copied duplicate that
+// would silently diverge the first time a field is added.
+func snapshotFor(jobID string, st *progressState) *Progress {
 	p := &Progress{
 		JobID:       jobID,
 		FramesDone:  st.done,
@@ -81,6 +77,18 @@ func (t *ProgressTracker) Snapshot(jobID string) *Progress {
 	return p
 }
 
+// Snapshot returns the current progress for jobID, or nil when nothing has
+// been observed (e.g. a renderer whose output format carried no frame lines).
+func (t *ProgressTracker) Snapshot(jobID string) *Progress {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	st := t.jobs[jobID]
+	if st == nil {
+		return nil
+	}
+	return snapshotFor(jobID, st)
+}
+
 // Current returns the snapshot of the most recently observed job, or nil
 // when no render is in flight. Each GPU lane renders one job at a time, and
 // Forget cleans up on completion, so the most recently observed job is the
@@ -98,21 +106,7 @@ func (t *ProgressTracker) Current() *Progress {
 	if best == nil {
 		return nil
 	}
-	p := &Progress{
-		JobID:       bestID,
-		FramesDone:  best.done,
-		FramesTotal: best.total,
-		LastFrameAt: best.lastFrameAt,
-		StartedAt:   best.startAt,
-	}
-	if best.total > 0 {
-		p.Percent = 100 * float64(best.done) / float64(best.total)
-	}
-	done := best.done - best.firstDone
-	if elapsed := time.Since(best.startAt); elapsed > 0 && done > 0 {
-		p.FPS = float64(done) / elapsed.Seconds()
-	}
-	return p
+	return snapshotFor(bestID, best)
 }
 
 // Progress is an immutable progress snapshot for one job.

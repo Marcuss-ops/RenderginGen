@@ -68,7 +68,7 @@ type ChrononConfig struct {
 	// EncodePreset is the explicit FFmpeg NVENC preset passed to Chronon for
 	// native GPU jobs (e.g. "p2" for the throughput tier). Empty preserves the
 	// engine default; the worker never invents a preset when none is set.
-	EncodePreset        string `yaml:"encode_preset"`
+	EncodePreset string `yaml:"encode_preset"`
 	// PipePixFmt selects the host-frame pipe format used by GPU compositions.
 	// NV12 avoids an unnecessary RGBA conversion on the normal 8-bit path;
 	// P010 is available for 10-bit workflows.

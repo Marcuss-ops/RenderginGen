@@ -8,9 +8,7 @@
 package processor
 
 import (
-	"encoding/json"
 	"fmt"
-	"os"
 
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/chronon"
 )
@@ -74,13 +72,13 @@ func requireNativeVulkan(outputPath string, expectedFrames int) error {
 			return fmt.Errorf("vulkan_frames=%d, want %d", *doc.Job.GPU.VulkanFrames, expectedFrames)
 		}
 	}
-	receiptRaw, err := os.ReadFile(outputPath + ".receipt.json")
-	if err != nil {
+	// Presence of Chronon's media receipt is owned by chronon.ReadReceiptPresence
+	// (the single definition of the `<output>.receipt.json` path + validity
+	// rule), so this gate never re-derives the suffix or re-decodes the
+	// document. Only presence is certified here: the receipt's identity and
+	// verification verdicts are consumed by the dedicated receipt gate.
+	if err := chronon.ReadReceiptPresence(outputPath); err != nil {
 		return fmt.Errorf("missing Chronon media receipt: %w", err)
-	}
-	var receipt map[string]any
-	if err := json.Unmarshal(receiptRaw, &receipt); err != nil {
-		return fmt.Errorf("decode Chronon media receipt: %w", err)
 	}
 	// A composited overlay artifact is intentionally not bitstream-copy
 	// eligible. The output profile owns that policy; this gate certifies only

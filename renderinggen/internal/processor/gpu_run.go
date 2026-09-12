@@ -133,7 +133,8 @@ func (p *Processor) RunGPU(ctx context.Context, prepared *PreparedJob) error {
 	// composition plus host-frame pipe handoff, with no native video surface to
 	// certify. Do not demand NVENC surface counters from that plan.
 	if p.strictNativeBackend && hasSourceVideo {
-		metadata := planMetadataOf(prepared.Plan)
+		// metadata was computed once at the top of RunGPU from this same plan;
+		// do not re-derive (and shadow) it here.
 		if err := requireNativeVulkan(prepared.OutputPath, metadata.FrameCount); err != nil {
 			return fmt.Errorf("processor: gpu-vulkan-native gate: %w", err)
 		}

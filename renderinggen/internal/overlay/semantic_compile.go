@@ -354,6 +354,9 @@ func resolveSemanticItems(src *semanticPlan) ([]resolvedItem, error) {
 		if isImageKind(kind) && len(item.Assets) == 0 {
 			return nil, fmt.Errorf("overlay: image template %q item %q requires asset_refs", item.Template, item.ID)
 		}
+		if isVideoKind(kind) && len(item.Assets) == 0 {
+			return nil, fmt.Errorf("overlay: video overlay template %q item %q requires asset_refs", item.Template, item.ID)
+		}
 		preset, err := presetFor(item, spec)
 		if err != nil {
 			return nil, err
@@ -394,6 +397,12 @@ func compileItem(ri resolvedItem, src *semanticPlan, registry *assetRegistry) ([
 			return []Layer{layer}, nil
 		}
 		return compileEntityCard(ri, src, registry)
+	case isVideoKind(ri.Kind):
+		layer, err := compileVideoOverlayLayer(ri, src, registry)
+		if err != nil {
+			return nil, err
+		}
+		return []Layer{layer}, nil
 	case isImageKind(ri.Kind):
 		layer, err := compileImageLayer(ri, src, registry)
 		if err != nil {
@@ -429,6 +438,50 @@ func compileEntityCard(ri resolvedItem, src *semanticPlan, registry *assetRegist
 		return nil, err
 	}
 	return []Layer{img, text}, nil
+}
+
+// compileVideoOverlayLayer lowers a rendered video overlay to a TIMED video
+// layer inside the same render pass. It is the single-pass replacement for
+// compositing a pre-rendered segment with a post-render transcoder:
+//
+//   - Source is the overlay segment's content-addressed path (video layers
+//     carry `source`, exactly like the source clip and the background);
+//   - StartFrame/DurationFrames come from the item's start_ms/end_ms, and
+//     Chronon's VideoNode samples the segment at (frame - layer_start), so
+//     the segment's first frame lands on the declared start frame and the
+//     layer is composited only inside its window;
+//   - the layer is appended AFTER the source layer, so its z-order places the
+//     overlay over the clip.
+//
+// Geometry is full-canvas "cover" by default (the producer renders the
+// segment at the output contract), overridable via params.fit. Fail-closed:
+// a video overlay without an asset is rejected during resolution.
+func compileVideoOverlayLayer(ri resolvedItem, src *semanticPlan, registry *assetRegistry) (Layer, error) {
+	if len(ri.Item.Assets) == 0 {
+		return Layer{}, fmt.Errorf("overlay: video overlay template %q item %q requires asset_refs", ri.Item.Template, ri.Item.ID)
+	}
+	fit := stringParam(ri.Params, "fit", "cover")
+	switch fit {
+	case "cover", "contain", "stretch", "none":
+	default:
+		return Layer{}, fmt.Errorf("overlay: video overlay item %q has unsupported fit %q", ri.Item.ID, fit)
+	}
+	layer := Layer{
+		ID:             overlayLayerID(ri.Item.ID),
+		Type:           "video",
+		Source:         registry.Path(ri.Item.Assets[0].ID),
+		Size:           []float64{float64(src.Width), float64(src.Height)},
+		Fit:            fit,
+		StartFrame:     ri.Start,
+		DurationFrames: ri.End - ri.Start,
+	}
+	if opacity, ok := ri.Params["opacity"].(float64); ok {
+		if opacity < 0 || opacity > 1 {
+			return Layer{}, fmt.Errorf("overlay: video overlay item %q has opacity %v outside [0,1]", ri.Item.ID, opacity)
+		}
+		layer.Opacity = opacity
+	}
+	return layer, nil
 }
 
 // compileImageLayer lowers an image kind (IMAGE_OVERLAY/PRODUCT/LOGO/…) to a

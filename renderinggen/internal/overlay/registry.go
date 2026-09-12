@@ -42,6 +42,12 @@ const (
 	KindImportantPhrase ItemKind = "important_phrase"
 	KindImportantWord   ItemKind = "important_word"
 	KindLightLeak       ItemKind = "light_leak"
+	// KindVideoOverlay is a pre-rendered video segment composited onto the
+	// timeline inside the SAME Chronon render pass (clip.render entity
+	// overlays). It lowers to a timed video layer, exactly like the source and
+	// background video layers, so a clip carrying an overlay is encoded once
+	// instead of being re-encoded by a post-render compositor pass.
+	KindVideoOverlay ItemKind = "video_overlay"
 	// KindPrimitive is the kind of a template RenderingGen does not know: a
 	// preset-less text primitive whose behaviour follows the generic text
 	// lowering. The producer's kind (when present) is authoritative for it.
@@ -119,6 +125,14 @@ var templateRegistry = map[string]TemplateSpec{
 	"PRODUCT":       {Kind: KindProduct, Family: PresetImage, Stat: overlayStatImage},
 	"LOGO":          {Kind: KindLogo, Family: PresetImage, Stat: overlayStatImage},
 	"LIGHT_LEAK":    {Kind: KindLightLeak, Family: PresetImage, Stat: overlayStatLightLeak},
+
+	// Rendered video overlays — a pre-rendered segment (clip.render's
+	// overlay.render artifact) composited onto the timeline in the same pass.
+	// Deliberately preset-less and family-less: the segment carries its own
+	// pixels and the producer owns the window, so there is nothing for a
+	// visual preset to decide.
+	"VIDEO_OVERLAY":    {Kind: KindVideoOverlay, Stat: overlayStatImage},
+	"RENDERED_OVERLAY": {Kind: KindVideoOverlay, Stat: overlayStatImage},
 }
 
 // legacyTemplateAliases resolve the migrated organization/place spellings ONCE
@@ -163,6 +177,7 @@ const (
 	behaviorText kindBehavior = iota
 	behaviorEntity
 	behaviorImage
+	behaviorVideo
 )
 
 // behaviorOf maps every accepted kind (including PipelineGen synonyms such as
@@ -173,6 +188,8 @@ func behaviorOf(kind ItemKind) kindBehavior {
 		return behaviorEntity
 	case KindEntityImage, KindImagePopup, KindProduct, KindLogo, KindLightLeak, ItemKind("image"):
 		return behaviorImage
+	case KindVideoOverlay, ItemKind("video"), ItemKind("rendered_overlay"):
+		return behaviorVideo
 	default:
 		return behaviorText
 	}
@@ -208,3 +225,7 @@ func isEntityKind(kind ItemKind) bool { return behaviorOf(kind) == behaviorEntit
 // isImageKind reports whether a kind lowers to a single image layer and
 // therefore requires an asset ref.
 func isImageKind(kind ItemKind) bool { return behaviorOf(kind) == behaviorImage }
+
+// isVideoKind reports whether a kind lowers to a timed video layer (a
+// pre-rendered overlay segment) and therefore requires an asset ref.
+func isVideoKind(kind ItemKind) bool { return behaviorOf(kind) == behaviorVideo }

@@ -25,6 +25,7 @@ chronon:
   socket_path: /var/run/chronon3d/chronon.sock
   native_output_profiles: false
   encode_preset: p1
+  pipe_pixfmt: nv12
 
 gpu:
   device: 0
