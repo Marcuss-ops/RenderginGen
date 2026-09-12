@@ -1,9 +1,9 @@
 worker:
   id: renderinggen-77
-  # 6 lanes saturate NVENC >90% once the B2 deep ring (Vulkan kSlotCount=6)
-  # removes the per-batch drain stall; CPU/I/O stages stay ahead/behind.
+  # Keep the GPU semaphore at the measured RTX A4000-class baseline: two
+  # concurrent NVENC/Vulkan sessions maximize throughput without lane contention.
   pipeline_workers: 3
-  gpu_lanes: 6
+  gpu_lanes: 2
 
 queue:
   endpoint: https://queue.pipelinegen.example
