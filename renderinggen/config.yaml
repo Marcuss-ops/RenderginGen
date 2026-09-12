@@ -33,6 +33,7 @@ chronon:
   mode: ipc
   socket_path: /var/run/chronon3d/chronon.sock
   encode_preset: p1
+  pipe_pixfmt: nv12
 
 gpu:
   device: 0

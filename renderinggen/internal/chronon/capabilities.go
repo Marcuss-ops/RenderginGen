@@ -30,6 +30,11 @@ type Capabilities struct {
 	// RENDER_OVERLAY | RENDER_JOB | ASSEMBLE_SEGMENTS | STATUS | SHUTDOWN)
 	// is compiled into every chronon3d_cli, so mode=ipc workers must not
 	// require this flag.
+	//
+	// BuildSHA is informational build provenance (the Chronon revision this
+	// binary reports). No validation consumes it today; it is decoded for
+	// diagnostics — do not start gating on it without adding it to
+	// Requirements, or it becomes a field nothing enforces.
 	IPC      bool   `json:"ipc"`
 	BuildSHA string `json:"build_sha"`
 

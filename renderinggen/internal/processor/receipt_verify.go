@@ -6,10 +6,12 @@ package processor
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"strings"
 
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/chronon"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/metricnames"
 )
 
 type renderVerifyLevel string
@@ -50,13 +52,22 @@ func renderVerificationLevel() renderVerifyLevel {
 // the receipt is present the aggregate verification status must be pass at
 // every policy — Chronon's media checks (container, codec, pixel format,
 // resolution, fps, audio, optional decode) are the verdict.
-func (p *Processor) enforceReceiptVerification(outputPath string) error {
+func (p *Processor) enforceReceiptVerification(outputPath string, metrics map[string]float64) error {
 	receipt, err := chronon.ReadMediaReceipt(outputPath)
 	policy := renderVerificationLevel()
 	if err != nil {
 		if policy == renderVerifyFast {
 			// Fast never promises a decode; the output is certified by the
 			// in-process encoder/muxer success and the probe validation below.
+			// The tolerance is deliberate (fail-open by policy), but it must
+			// not be invisible: a Chronon that silently stopped writing
+			// receipts would otherwise leave zero trace. Record the absence on
+			// the artifact metrics so "receipt verified" and "receipt absent"
+			// are distinguishable in the ledger.
+			if metrics != nil {
+				metrics[metricnames.ChrononReceiptMissing] = 1
+			}
+			log.Printf("[processor WARN] policy=%s but Chronon media receipt is unavailable (tolerated, hash identity falls back to re-read): %v", policy, err)
 			return nil
 		}
 		return fmt.Errorf("processor: canonical verification did not run (policy=%s): %w", policy, err)

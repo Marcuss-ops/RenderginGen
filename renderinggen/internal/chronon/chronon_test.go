@@ -84,6 +84,11 @@ func TestRenderArgsResolvesGPURequirementAtAdapterBoundary(t *testing.T) {
 			CompositionRequired: true, VideoSourceRequired: false, PacketCopyAllowed: true,
 		},
 	})
+	// CPUFallbackAllowed=false is the strict-native contract. It must produce
+	// require_gpu_native, not "auto": with "auto" an image/text-only
+	// composition (no source video) resolves to the host-frame FFmpeg pipe lane
+	// and encodes with libx264, silently degrading the strict profile (and then
+	// failing on the NVENC-only --encode-preset).
 	want := []string{
 		"render",
 		"--plan", "/jobs/1/plan.json",
@@ -92,10 +97,30 @@ func TestRenderArgsResolvesGPURequirementAtAdapterBoundary(t *testing.T) {
 		"-o", "/jobs/1/output/result.mp4",
 		"--hardware", "nvenc",
 		"--encoder-backend", "native",
-		"--gpu-hot-path-mode", "auto",
+		"--gpu-hot-path-mode", "require_gpu_native",
 	}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("renderArgs (GPU) = %#v, want %#v", got, want)
+	}
+}
+
+// TestRenderArgsKeepsAutoWhenCPUFallbackIsAllowed pins the other half of the
+// contract: a caller that PERMITS CPU fallback keeps Chronon's own "auto"
+// classification, so the strict requirement is opt-in via the semantic
+// requirement and never hardcoded onto every GPU request.
+func TestRenderArgsKeepsAutoWhenCPUFallbackIsAllowed(t *testing.T) {
+	got := renderArgs(RenderRequest{
+		PlanPath:   "/jobs/1/plan.json",
+		AssetsRoot: "/jobs/1/assets",
+		OutputPath: "/jobs/1/output/result.mp4",
+		Requirements: ExecutionRequirements{
+			GPURequired: true, CPUFallbackAllowed: true,
+			CompositionRequired: true, PacketCopyAllowed: true,
+		},
+	})
+	joined := strings.Join(got, " ")
+	if !strings.Contains(joined, "--gpu-hot-path-mode auto") {
+		t.Fatalf("renderArgs=%q, want --gpu-hot-path-mode auto when CPU fallback is allowed", joined)
 	}
 }
 
@@ -134,7 +159,7 @@ func TestRenderArgsForwardsEncodePresetOnNativeVideoPath(t *testing.T) {
 	for _, want := range []string{
 		"--hardware nvenc",
 		"--encoder-backend native",
-		"--gpu-hot-path-mode auto",
+		"--gpu-hot-path-mode require_gpu_native",
 		"--encode-preset p2",
 	} {
 		if !strings.Contains(joined, want) {
@@ -173,6 +198,18 @@ func TestRenderArgsForwardsConfiguredHardwareEncoder(t *testing.T) {
 	}
 }
 
+func TestRenderArgsForwardsPipePixelFormat(t *testing.T) {
+	args := renderArgs(RenderRequest{
+		PlanPath: "/jobs/1/plan.json", AssetsRoot: "/jobs/1", OutputPath: "/jobs/1/output.mp4",
+		Output:       OutputSpec{PipePixFmt: "p010"},
+		Requirements: ExecutionRequirements{CompositionRequired: true},
+	})
+	joined := strings.Join(args, " ")
+	if !strings.Contains(joined, "--pipe-pixfmt p010") {
+		t.Fatalf("renderArgs=%q, want explicit pipe format", joined)
+	}
+}
+
 func TestRenderArgsForwardsEncodePresetOnNativeImageComposition(t *testing.T) {
 	got := renderArgs(RenderRequest{
 		PlanPath:     "/jobs/1/plan.json",
@@ -184,10 +221,17 @@ func TestRenderArgsForwardsEncodePresetOnNativeImageComposition(t *testing.T) {
 			CompositionRequired: true, VideoSourceRequired: false, PacketCopyAllowed: true,
 		},
 	})
+	// This is the exact GoldenSemanticOverlayJobV1 shape: image + text, no
+	// source video, strict native. It previously expected "auto", which let
+	// Chronon resolve the host-frame FFmpeg pipe lane and hand the NVENC-only
+	// preset to libx264 ("preset p2 is not valid for the software (libx264)
+	// encoder"), failing the render. Strict-native must ask for the native lane
+	// explicitly.
 	joined := strings.Join(got, " ")
 	for _, want := range []string{
+		"--hardware nvenc",
 		"--encoder-backend native",
-		"--gpu-hot-path-mode auto",
+		"--gpu-hot-path-mode require_gpu_native",
 		"--encode-preset p2",
 	} {
 		if !strings.Contains(joined, want) {

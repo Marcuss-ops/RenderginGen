@@ -106,6 +106,14 @@ const (
 	WorkspaceCleanupFailures    = "workspace_cleanup_failures"
 	ChrononTelemetryMissing     = "chronon_telemetry_missing"
 	ChrononTimingSidecarMissing = "chronon_timing_sidecar_missing"
+
+	// ChrononReceiptMissing counts a finalized artifact whose Chronon media
+	// receipt was absent. Under normal/certify that is a hard failure, but
+	// under the default fast policy the receipt is tolerated — which would
+	// otherwise make "receipt verified" and "receipt never written"
+	// indistinguishable. It is also set when the store phase has to fall back
+	// to re-hashing the output because the receipt carried no usable identity.
+	ChrononReceiptMissing = "chronon_receipt_missing"
 )
 
 // Ledger facts mirrored into the local artifact database (counts, bytes and
@@ -164,7 +172,7 @@ var vocab = map[string]string{
 	ClosedGOPUncertifiable:        UnitCount,
 	PublicationDriveSkippedPolicy: UnitCount, PublicationDriveSkippedCapability: UnitCount,
 	WorkspaceCleanupFailures: UnitCount, ChrononTelemetryMissing: UnitCount,
-	ChrononTimingSidecarMissing: UnitCount,
+	ChrononTimingSidecarMissing: UnitCount, ChrononReceiptMissing: UnitCount,
 
 	EntityCount: UnitCount, ImportantPhraseCount: UnitCount, ImportantWordCount: UnitCount,
 	ImageCount: UnitCount, LightLeakCount: UnitCount, InputBytes: UnitBytes,

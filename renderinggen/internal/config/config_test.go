@@ -259,11 +259,40 @@ chronon:
 	if cfg.Chronon.HardwareEncoder != chronon.DefaultHardwareEncoder {
 		t.Fatalf("profile default encoder = %q, want the chronon contract value %q", cfg.Chronon.HardwareEncoder, chronon.DefaultHardwareEncoder)
 	}
+	if cfg.Chronon.PipePixFmt != "nv12" {
+		t.Fatalf("profile default pipe pixel format = %q, want nv12", cfg.Chronon.PipePixFmt)
+	}
 	if chronon.StrictNativeRequired("vulkan", chronon.HardwareEncoderNone) {
 		t.Fatal("`none` must disable the native hot path requirement")
 	}
 	if !chronon.StrictNativeRequired("vulkan", chronon.DefaultHardwareEncoder) {
 		t.Fatalf("vulkan + %s must require the native hot path", chronon.DefaultHardwareEncoder)
+	}
+}
+
+func TestLoadAcceptsPipePixelFormats(t *testing.T) {
+	base := `
+queue:
+  endpoint: http://q
+artifact_store:
+  endpoint: http://s
+chronon:
+  backend: software
+  pipe_pixfmt: "%s"
+`
+	for _, format := range []string{"nv12", "p010"} {
+		t.Run(format, func(t *testing.T) {
+			cfg, err := Load(writeConfig(t, fmt.Sprintf(base, format)))
+			if err != nil {
+				t.Fatalf("load %s: %v", format, err)
+			}
+			if cfg.Chronon.PipePixFmt != format {
+				t.Fatalf("pipe_pixfmt = %q, want %q", cfg.Chronon.PipePixFmt, format)
+			}
+		})
+	}
+	if _, err := Load(writeConfig(t, fmt.Sprintf(base, "rgba"))); err == nil {
+		t.Fatal("rgba must be rejected by the worker config contract")
 	}
 }
 

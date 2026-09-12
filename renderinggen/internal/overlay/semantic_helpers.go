@@ -110,9 +110,12 @@ func imageLayer(ri resolvedItem, asset string) Layer {
 	return Layer{ID: imageLayerID(ri.Item.ID), Type: "image", Asset: asset, BoxWidth: w, BoxHeight: h, Size: []float64{float64(w), float64(h)}, Fit: stringParam(ri.Params, "fit", "contain"), Radius: float64(intParam(ri.Params, "radius", 0)), StartFrame: ri.Start, DurationFrames: ri.End - ri.Start}
 }
 
-// imageLayerID / textLayerID are the only spellings of an item's layer ids.
-func imageLayerID(itemID string) string { return itemID + ":image" }
-func textLayerID(itemID string) string  { return itemID + ":text" }
+// imageLayerID / textLayerID / overlayLayerID are the only spellings of an
+// item's layer ids. Distinct suffixes keep a video overlay from colliding
+// with an image/text layer of the same item id.
+func imageLayerID(itemID string) string   { return itemID + ":image" }
+func textLayerID(itemID string) string    { return itemID + ":text" }
+func overlayLayerID(itemID string) string { return itemID + ":overlay" }
 
 func applyPresetDefinition(layer *Layer, d PresetDefinition) {
 	if d.Family == PresetImage {

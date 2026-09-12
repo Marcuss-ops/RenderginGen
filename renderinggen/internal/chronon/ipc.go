@@ -6,11 +6,21 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net"
 	"strings"
+	"time"
 )
 
 // IPC wire constants — must match Chronon3d's chronon_ipc.hpp.
+//
+// The command and status enums are mirrored COMPLETE from the header, even
+// where this client does not yet compare against a value (ipcStatusNotFound,
+// ipcStatusBadRequest). They are the wire contract, not locals: a partial
+// enum would silently misnumber the values after the first omission, and a
+// future caller (or a daemon that starts returning "not found" for a
+// missing-asset prefetch) needs the constant to exist. Contract surface, not
+// dead code — do not trim it to the currently-referenced subset.
 const (
 	ipcMagic                   uint32 = 0x43484e33 // "CHN3"
 	ipcHeaderBytes                    = 12         // magic + command/status + payload-len
@@ -27,11 +37,23 @@ const (
 	ipcStatusShutdown                 = 4
 )
 
+// defaultIPCServiceTimeout bounds the daemon operations that are NOT the
+// per-job render (Status, PrefetchAsset, Shutdown). Those are commonly invoked
+// with context.Background(), so without a bound a hung daemon blocks the caller
+// forever. The per-job Render/Assemble calls carry the caller's own (usually
+// lane-derived) context and deliberately keep no default, because a legitimate
+// render may outlive any service timeout. The bound exists to fail, not to be
+// tight.
+const defaultIPCServiceTimeout = 90 * time.Second
+
 // IPCClient renders through the persistent Chronon3d render daemon over a
 // UNIX-domain socket. It implements Renderer, so it is a drop-in replacement
 // for the CLI subprocess Client.
 type IPCClient struct {
 	socketPath string
+	// serviceTimeout bounds Status/PrefetchAsset/Shutdown. Zero uses
+	// defaultIPCServiceTimeout; tests shorten it.
+	serviceTimeout time.Duration
 }
 
 // NewIPCClient creates a Renderer that talks to a Chronon3d daemon listening
@@ -44,6 +66,8 @@ func NewIPCClient(socketPath string) *IPCClient {
 // render ms, prepared composition). It is how the daemon benchmark proves the
 // engine stays warm between jobs.
 func (c *IPCClient) Status(ctx context.Context) (string, error) {
+	ctx, cancel := c.serviceContext(ctx)
+	defer cancel()
 	status, message, err := c.request(ctx, ipcCommandStatus, nil)
 	if err != nil {
 		return "", err
@@ -61,6 +85,8 @@ func (c *IPCClient) PrefetchAsset(ctx context.Context, path string) error {
 	if strings.TrimSpace(path) == "" {
 		return fmt.Errorf("ipc prefetch asset: path is empty")
 	}
+	ctx, cancel := c.serviceContext(ctx)
+	defer cancel()
 	status, message, err := c.request(ctx, ipcCommandPrefetchAsset, []byte(path))
 	if err != nil {
 		return err
@@ -73,6 +99,8 @@ func (c *IPCClient) PrefetchAsset(ctx context.Context, path string) error {
 
 // Shutdown asks the daemon to stop serving and exit.
 func (c *IPCClient) Shutdown(ctx context.Context) error {
+	ctx, cancel := c.serviceContext(ctx)
+	defer cancel()
 	status, message, err := c.request(ctx, ipcCommandShutdown, nil)
 	if err != nil {
 		return err
@@ -148,8 +176,36 @@ func (c *IPCClient) Assemble(ctx context.Context, req AssembleRequest) error {
 	return nil
 }
 
+// outputSpecForTransport stamps the resolved native-encoder selection onto the
+// wire output_spec.
+//
+// The daemon resolves hardware_encoder/encoder_backend/gpu_hot_path_mode with
+// spec_or_root(request, ...), i.e. it reads the output_spec sub-object. A
+// request that omits them cannot express "strict native": the daemon selects
+// the software FFmpeg pipe encoder, and the NVENC-only --encode-preset ("p2")
+// then reaches libx264, which rejects it. The selection comes from the SAME
+// authority as the CLI arguments (resolveNativeEncodeSelection), so the CLI and
+// IPC transports cannot drift. It is stamped here rather than by the caller so
+// no call site can forget it, and it never mutates the caller's struct.
+func outputSpecForTransport(req RenderRequest) OutputSpec {
+	spec := req.Output
+	selection, ok := resolveNativeEncodeSelection(req)
+	if !ok {
+		return spec
+	}
+	if selection.HardwareEncoder != "" {
+		spec.HardwareEncoder = selection.HardwareEncoder
+	}
+	spec.EncoderBackend = selection.EncoderBackend
+	spec.GpuHotPathMode = selection.GpuHotPathMode
+	return spec
+}
+
 // Render sends a RENDER_JOB command to the daemon and waits for its reply.
 func (c *IPCClient) Render(ctx context.Context, req RenderRequest) error {
+	if err := validateRenderRequest(req); err != nil {
+		return err
+	}
 	payload, err := json.Marshal(renderJobPayload{
 		PlanPath:   req.PlanPath,
 		AssetsRoot: req.AssetsRoot, Output: req.OutputPath,
@@ -164,7 +220,7 @@ func (c *IPCClient) Render(ctx context.Context, req RenderRequest) error {
 		EncodePreset:          req.EncodePreset,
 		ReceiptVerify:         req.ReceiptVerify,
 		ExecutionRequirements: req.Requirements,
-		OutputSpec:            req.Output,
+		OutputSpec:            outputSpecForTransport(req),
 	})
 	if err != nil {
 		return fmt.Errorf("ipc render: marshal payload: %w", err)
@@ -180,13 +236,27 @@ func (c *IPCClient) Render(ctx context.Context, req RenderRequest) error {
 
 	var reply renderJobReply
 	if err := json.Unmarshal([]byte(message), &reply); err != nil {
-		// Non-JSON Ok replies are tolerated (backward compatibility).
+		// Non-JSON Ok replies are tolerated (backward compatibility with
+		// older/other daemons), but never silently: a daemon that starts
+		// answering corrupt payloads must leave a trace instead of passing
+		// unobserved.
+		log.Printf("[chronon ipc WARN] render reply status=ok but body is not JSON (tolerated): %v", err)
 		return nil
 	}
 	if reply.Status != "" && reply.Status != "ok" {
 		return fmt.Errorf("ipc render: %s", reply.Status)
 	}
 	return nil
+}
+
+// serviceContext bounds a service operation. An existing context deadline is
+// preserved (context.WithTimeout keeps the earlier of the two).
+func (c *IPCClient) serviceContext(ctx context.Context) (context.Context, context.CancelFunc) {
+	timeout := c.serviceTimeout
+	if timeout <= 0 {
+		timeout = defaultIPCServiceTimeout
+	}
+	return context.WithTimeout(ctx, timeout)
 }
 
 // request dials the daemon, sends one framed command and reads the reply.
