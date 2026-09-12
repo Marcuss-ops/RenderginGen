@@ -38,8 +38,11 @@ func main() {
 		tokenPath   = flag.String("token", "", "Path to token.json")
 		chrononBin  = flag.String("chronon-bin", "", "Path to chronon3d_cli")
 		assetsRoot  = flag.String("assets-root", "", "Path to golden assets root")
-		uploadBin   = flag.String("drive-upload-bin", "", "Path to drive-upload binary")
-		onlyPreset  = flag.String("only", "", "Render only specific preset ID")
+		uploadBin    = flag.String("drive-upload-bin", "", "Path to drive-upload binary")
+		onlyPreset   = flag.String("only", "", "Render only specific preset ID")
+		backend      = flag.String("backend", "vulkan", "Render backend (vulkan, software)")
+		hardware     = flag.String("hardware", "nvenc", "Hardware encoder (nvenc, none)")
+		encodePreset = flag.String("encode-preset", "p1", "Encode preset (p1, ultrafast)")
 	)
 	flag.Parse()
 
@@ -341,14 +344,18 @@ func main() {
 				// 4. Render with chronon3d_cli
 				renderStart := time.Now()
 				ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
-				cmd := exec.CommandContext(ctx, *chrononBin,
+				renderArgs := []string{
 					"render", "--plan", planPath,
 					"--assets-root", *assetsRoot,
-					"--backend", "software",
-					"--encoder-backend", "pipe",
-					"--hardware", "none",
-					"--encode-preset", "ultrafast",
-					"-o", videoPath)
+					"--backend", *backend,
+					"--hardware", *hardware,
+					"--encode-preset", *encodePreset,
+				}
+				if *backend == "software" {
+					renderArgs = append(renderArgs, "--encoder-backend", "pipe", "--pipe-pixfmt", "rgba")
+				}
+				renderArgs = append(renderArgs, "-o", videoPath)
+				cmd := exec.CommandContext(ctx, *chrononBin, renderArgs...)
 				cmd.Dir = *assetsRoot
 
 				out, err := cmd.CombinedOutput()
