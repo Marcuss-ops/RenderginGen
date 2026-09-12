@@ -1,7 +1,7 @@
 worker:
   id: renderinggen-b
   pipeline_workers: 3
-  gpu_lanes: 6
+  gpu_lanes: 2
 
 queue:
   endpoint: http://queue:8081
