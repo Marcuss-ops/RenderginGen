@@ -34,7 +34,7 @@ func main() {
 		dryRun       = flag.Bool("dry-run", false, "Compile plans only, do not render")
 		doUpload     = flag.Bool("upload", true, "Upload rendered videos to Google Drive")
 		concurrency  = flag.Int("concurrency", 3, "Number of concurrent renders")
-		folderID     = flag.String("folder", "1J_xUGo_bchzXDIGqSX04CU44c_Dm3SxS", "Drive folder ID")
+		folderID     = flag.String("folder", "1eRYRBDBWxGdqC4u7fHwp5hX_kRoTkZ8E", "Drive folder ID")
 		credPath     = flag.String("credentials", "", "Path to credentials.json")
 		tokenPath    = flag.String("token", "", "Path to token.json")
 		chrononBin   = flag.String("chronon-bin", "", "Path to chronon3d_cli")
