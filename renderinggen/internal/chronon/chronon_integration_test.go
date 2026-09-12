@@ -8,6 +8,24 @@ import (
 	"time"
 )
 
+// colorSmokePlan is a minimal, asset-free chronon.render-plan.v2 document: two
+// solid-color frames at 320x180@30fps. Because it references no external
+// assets it exercises the whole render path (plan -> compile -> software
+// rasterize -> h264 encode) with no asset root required. It lives next to the
+// integration test that uses it (the production package carried it as an
+// exported constant for a while, which put a test fixture on the package's
+// public surface).
+const colorSmokePlan = `{
+  "schema": "chronon.render-plan.v2",
+  "version": 2,
+  "job_id": "color-smoke",
+  "canvas": { "width": 320, "height": 180, "fps_num": 30, "fps_den": 1, "duration_frames": 2 },
+  "layers": [
+    { "id": "background", "type": "color", "color": [0.08, 0.12, 0.25, 1.0] }
+  ],
+  "output": { "path": "result.mp4", "format": "mp4", "codec": "h264" }
+}`
+
 // cliAvailable returns a Client wired to the real chronon3d_cli binary, or
 // skips the test when it is not installed. Set CHRONON_HOME to point at an
 // alternate install prefix (default /opt/chronon3d, matching the runtime
@@ -41,7 +59,7 @@ func TestRenderIntegrationCLI(t *testing.T) {
 	if err := os.MkdirAll(filepath.Dir(outputPath), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(planPath, []byte(ExampleColorSmokePlan), 0o644); err != nil {
+	if err := os.WriteFile(planPath, []byte(colorSmokePlan), 0o644); err != nil {
 		t.Fatal(err)
 	}
 

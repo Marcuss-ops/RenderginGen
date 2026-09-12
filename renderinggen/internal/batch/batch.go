@@ -70,6 +70,15 @@ type LanguageJob struct {
 	// Assets are the language-specific assets (localized ASS tracks, fonts,
 	// audio) on top of whatever the base entry already carries.
 	Assets []queue.AssetRef `json:"assets,omitempty"`
+	// AudioSourceAsset is the localized voiceover muxed onto the base video
+	// during the overlay pass. The field is part of the published contract
+	// (contracts/renderinggen.batch-multilingual.v1.schema.json), so dropping it
+	// silently meant a manifest that validated against the schema lost its
+	// localized audio with no error anywhere: the asset was neither submitted
+	// nor materialized, and the language job rendered with the base audio. It is
+	// therefore folded into the job's Assets (the plan binds to it by hash) and
+	// validated like every other asset.
+	AudioSourceAsset *queue.AssetRef `json:"audio_source_asset,omitempty"`
 }
 
 // MultilingualManifest is Strategy A's batch master: one base video rendered
@@ -244,7 +253,8 @@ func ExpandMultilingual(m MultilingualManifest) ([]queue.Job, error) {
 		if err := validatePlanShape(logical, l.RenderPlan); err != nil {
 			return nil, err
 		}
-		if err := validateAssets(logical, l.Assets); err != nil {
+		assets, err := languageAssets(logical, l)
+		if err != nil {
 			return nil, err
 		}
 		jobs = append(jobs, queue.Job{
@@ -253,12 +263,46 @@ func ExpandMultilingual(m MultilingualManifest) ([]queue.Job, error) {
 			Version:        queue.JobSchemaVersionV1,
 			JobType:        "overlay.render",
 			ParentJobID:    baseQueueID,
-			IdempotencyKey: idempotencyKey(m.BatchID, logical, l.RenderPlan, l.Assets),
+			IdempotencyKey: idempotencyKey(m.BatchID, logical, l.RenderPlan, assets),
 			RenderPlan:     l.RenderPlan,
-			Assets:         l.Assets,
+			Assets:         assets,
 		})
 	}
 	return jobs, nil
+}
+
+// languageAssets is the single place that builds a language job's asset list:
+// the declared language assets plus the localized voiceover, de-duplicated by
+// logical path. The voiceover is validated with the same rules as every other
+// asset (non-empty hash/logical_path, no duplicate path), so an unimplementable
+// declaration fails closed instead of being dropped.
+func languageAssets(logical string, l LanguageJob) ([]queue.AssetRef, error) {
+	assets := make([]queue.AssetRef, 0, len(l.Assets)+1)
+	assets = append(assets, l.Assets...)
+	if voice := l.AudioSourceAsset; voice != nil {
+		if strings.TrimSpace(voice.Hash) == "" || strings.TrimSpace(voice.LogicalPath) == "" {
+			return nil, fmt.Errorf("batch: job %q audio_source_asset requires hash and logical_path", logical)
+		}
+		replaced := false
+		for i, a := range assets {
+			if a.LogicalPath != voice.LogicalPath {
+				continue
+			}
+			if a.Hash != voice.Hash {
+				return nil, fmt.Errorf("batch: job %q declares logical_path %q twice with different hashes", logical, voice.LogicalPath)
+			}
+			assets[i] = *voice
+			replaced = true
+			break
+		}
+		if !replaced {
+			assets = append(assets, *voice)
+		}
+	}
+	if err := validateAssets(logical, assets); err != nil {
+		return nil, err
+	}
+	return assets, nil
 }
 
 // Decode detects the manifest shape (flat vs multilingual) from its schema

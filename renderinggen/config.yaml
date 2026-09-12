@@ -3,7 +3,8 @@ worker:
   # 6 lanes saturate NVENC >90% once the B2 deep ring (Vulkan kSlotCount=6)
   # removes the per-batch drain stall; CPU/I/O stages stay ahead/behind.
   pipeline_workers: 3
-  gpu_lanes: 6
+  # See infra/native/renderinggen-native.yaml: 2 lanes is the measured ceiling.
+  gpu_lanes: 2
 
 queue:
   endpoint: https://queue.pipelinegen.example

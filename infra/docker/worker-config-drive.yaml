@@ -1,7 +1,8 @@
 worker:
   id: renderinggen-drive
   pipeline_workers: 3
-  gpu_lanes: 6
+  # See worker-config.yaml: >2 lanes do not increase throughput.
+  gpu_lanes: 2
 
 queue:
   endpoint: http://queue:8081

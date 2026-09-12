@@ -5,6 +5,8 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/chronon"
 )
 
 func writeConfig(t *testing.T, content string) string {
@@ -158,6 +160,110 @@ chronon:
 	}
 	if !cfg.Chronon.StrictNativeBackend {
 		t.Fatal("gpu profile must enable strict native backend")
+	}
+}
+
+// TestStrictNativeIsDerivedOnceFromProfile pins the single derivation of the
+// "this worker demands the native GPU hot path" rule. The wiring used to
+// re-compare the raw profile string with `|| cfg.Chronon.Profile ==
+// "gpu-vulkan-native"` in three places (twice for the processor, once for the
+// Chronon client), which is exactly the shape that drifts when a third profile
+// is added.
+func TestStrictNativeIsDerivedOnceFromProfile(t *testing.T) {
+	cases := []struct {
+		name     string
+		yaml     string
+		want     bool
+		whyCheck string
+	}{
+		{
+			name: "gpu profile",
+			yaml: `
+queue:
+  endpoint: http://q
+artifact_store:
+  endpoint: http://s
+chronon:
+  profile: gpu-vulkan-native
+`,
+			want: true,
+		},
+		{
+			name: "software profile",
+			yaml: `
+queue:
+  endpoint: http://q
+artifact_store:
+  endpoint: http://s
+chronon:
+  profile: software-cli
+`,
+			want: false,
+		},
+		{
+			name: "no profile",
+			yaml: `
+queue:
+  endpoint: http://q
+artifact_store:
+  endpoint: http://s
+`,
+			want: false,
+		},
+		{
+			name: "explicit strict flag without profile",
+			yaml: `
+queue:
+  endpoint: http://q
+artifact_store:
+  endpoint: http://s
+chronon:
+  strict_native_backend: true
+`,
+			want: true,
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			cfg, err := Load(writeConfig(t, tc.yaml))
+			if err != nil {
+				t.Fatalf("load: %v", err)
+			}
+			if got := cfg.Chronon.StrictNative(); got != tc.want {
+				t.Fatalf("StrictNative() = %v, want %v (chronon=%+v)", got, tc.want, cfg.Chronon)
+			}
+			// The plain field must agree with the derived predicate, otherwise
+			// the wiring and the configuration would hold two answers.
+			if got, want := cfg.Chronon.StrictNative(), cfg.Chronon.StrictNativeBackend || cfg.Chronon.Profile == ProfileGPUVulkanNative; got != want {
+				t.Fatalf("StrictNative() = %v, want %v", got, want)
+			}
+		})
+	}
+}
+
+// TestHardwareEncoderDefaultIsTheChrononContract pins the encoder default to
+// the single constant the render-args boundary forwards. The value used to be
+// a literal in this package and another literal in chronon/render_args.go.
+func TestHardwareEncoderDefaultIsTheChrononContract(t *testing.T) {
+	cfg, err := Load(writeConfig(t, `
+queue:
+  endpoint: http://q
+artifact_store:
+  endpoint: http://s
+chronon:
+  profile: gpu-vulkan-native
+`))
+	if err != nil {
+		t.Fatalf("load: %v", err)
+	}
+	if cfg.Chronon.HardwareEncoder != chronon.DefaultHardwareEncoder {
+		t.Fatalf("profile default encoder = %q, want the chronon contract value %q", cfg.Chronon.HardwareEncoder, chronon.DefaultHardwareEncoder)
+	}
+	if chronon.StrictNativeRequired("vulkan", chronon.HardwareEncoderNone) {
+		t.Fatal("`none` must disable the native hot path requirement")
+	}
+	if !chronon.StrictNativeRequired("vulkan", chronon.DefaultHardwareEncoder) {
+		t.Fatalf("vulkan + %s must require the native hot path", chronon.DefaultHardwareEncoder)
 	}
 }
 

@@ -39,8 +39,65 @@ func TestHealthEndpointReturnsInfo(t *testing.T) {
 	if err := json.NewDecoder(resp.Body).Decode(&got); err != nil {
 		t.Fatal(err)
 	}
-	if got != info {
+	// Compared field by field: Info carries a Degradations map, which makes a
+	// whole-struct comparison illegal and would also defeat the point of
+	// asserting each reported fact.
+	if got.Worker != info.Worker || got.RenderingGen != info.RenderingGen ||
+		got.Chronon != info.Chronon || got.OverlaySchema != info.OverlaySchema ||
+		got.Backend != info.Backend || got.Status != info.Status {
 		t.Fatalf("got %+v, want %+v", got, info)
+	}
+	if got.Degradations != nil {
+		t.Fatalf("a healthy worker must omit degradations, got %v", got.Degradations)
+	}
+}
+
+// TestHealthEndpointReportsDegradations locks the visibility contract for
+// fail-open phases: a worker that keeps serving while leaking workspaces must
+// not report an unqualified "ready" with no trace of the degradation.
+func TestHealthEndpointReportsDegradations(t *testing.T) {
+	hs := NewServer(":0", Info{Worker: "w1", Status: "ready"})
+	hs.SetDegradationFunc(func() map[string]int64 {
+		return map[string]int64{"workspace_cleanup_failures": 3}
+	})
+	ts := httptest.NewServer(hs.srv.Handler)
+	defer ts.Close()
+
+	resp, err := http.Get(ts.URL + "/health")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.Body.Close()
+
+	var got Info
+	if err := json.NewDecoder(resp.Body).Decode(&got); err != nil {
+		t.Fatal(err)
+	}
+	if got.Degradations["workspace_cleanup_failures"] != 3 {
+		t.Fatalf("degradations = %v, want workspace_cleanup_failures=3", got.Degradations)
+	}
+}
+
+// TestHealthEndpointOmitsEmptyDegradations is the complement: a reporter that
+// finds nothing must not add an empty object to the payload.
+func TestHealthEndpointOmitsEmptyDegradations(t *testing.T) {
+	hs := NewServer(":0", Info{Worker: "w1", Status: "ready"})
+	hs.SetDegradationFunc(func() map[string]int64 { return nil })
+	ts := httptest.NewServer(hs.srv.Handler)
+	defer ts.Close()
+
+	resp, err := http.Get(ts.URL + "/health")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.Body.Close()
+
+	var raw map[string]json.RawMessage
+	if err := json.NewDecoder(resp.Body).Decode(&raw); err != nil {
+		t.Fatal(err)
+	}
+	if _, present := raw["degradations"]; present {
+		t.Fatal("an empty degradation report must be omitted from the payload")
 	}
 }
 

@@ -47,6 +47,14 @@ type WorkspaceConfig struct {
 	Root string `yaml:"root"`
 }
 
+// The two supported Chronon profiles. They are named constants because the
+// wiring used to re-compare the raw `profile` string in three places (main.go)
+// in addition to the two switch arms here.
+const (
+	ProfileSoftwareCLI     = "software-cli"
+	ProfileGPUVulkanNative = "gpu-vulkan-native"
+)
+
 type ChrononConfig struct {
 	Profile              string `yaml:"profile"` // software-cli | gpu-vulkan-native
 	Backend              string `yaml:"backend"`
@@ -61,6 +69,10 @@ type ChrononConfig struct {
 	// native GPU jobs (e.g. "p2" for the throughput tier). Empty preserves the
 	// engine default; the worker never invents a preset when none is set.
 	EncodePreset        string `yaml:"encode_preset"`
+	// PipePixFmt selects the host-frame pipe format used by GPU compositions.
+	// NV12 avoids an unnecessary RGBA conversion on the normal 8-bit path;
+	// P010 is available for 10-bit workflows.
+	PipePixFmt          string `yaml:"pipe_pixfmt"`
 	StrictNativeBackend bool   `yaml:"strict_native_backend"`
 }
 
@@ -136,19 +148,31 @@ func Load(path string) (*Config, error) {
 	return &cfg, nil
 }
 
+// StrictNative reports whether this configuration demands the native GPU hot
+// path. It is the SINGLE derivation of that rule on the configuration side:
+// applyDefaults already folds the profile into StrictNativeBackend, and the
+// wiring (main.go) asks this method instead of re-comparing the profile string
+// with `|| cfg.Chronon.Profile == "gpu-vulkan-native"` in three places.
+func (c ChrononConfig) StrictNative() bool {
+	return c.StrictNativeBackend || c.Profile == ProfileGPUVulkanNative
+}
+
 func applyDefaults(c *Config) {
 	switch c.Chronon.Profile {
-	case "gpu-vulkan-native":
+	case ProfileGPUVulkanNative:
 		if c.Chronon.Backend == "" {
 			c.Chronon.Backend = "vulkan"
 		}
 		c.Chronon.NativeOutputProfiles = true
 		c.Chronon.Report = true
 		if c.Chronon.HardwareEncoder == "" {
-			c.Chronon.HardwareEncoder = "nvenc"
+			c.Chronon.HardwareEncoder = chronon.DefaultHardwareEncoder
+		}
+		if c.Chronon.PipePixFmt == "" {
+			c.Chronon.PipePixFmt = "nv12"
 		}
 		c.Chronon.StrictNativeBackend = true
-	case "software-cli":
+	case ProfileSoftwareCLI:
 		if c.Chronon.Backend == "" {
 			c.Chronon.Backend = "software"
 		}
@@ -201,15 +225,15 @@ func (c *Config) validate() error {
 	if c.Worker.GPULanes < 1 || c.Worker.GPULanes > 8 {
 		return fmt.Errorf("worker.gpu_lanes must be between 1 and 8")
 	}
-	if c.Chronon.Profile != "" && c.Chronon.Profile != "gpu-vulkan-native" && c.Chronon.Profile != "software-cli" {
-		return fmt.Errorf("chronon.profile must be gpu-vulkan-native or software-cli")
+	if c.Chronon.Profile != "" && c.Chronon.Profile != ProfileGPUVulkanNative && c.Chronon.Profile != ProfileSoftwareCLI {
+		return fmt.Errorf("chronon.profile must be %s or %s", ProfileGPUVulkanNative, ProfileSoftwareCLI)
 	}
-	if c.Chronon.Profile == "gpu-vulkan-native" {
+	if c.Chronon.Profile == ProfileGPUVulkanNative {
 		if c.Chronon.Backend != "vulkan" {
-			return fmt.Errorf("gpu-vulkan-native requires chronon backend=vulkan")
+			return fmt.Errorf("%s requires chronon backend=vulkan", ProfileGPUVulkanNative)
 		}
-		if c.Chronon.HardwareEncoder != "nvenc" {
-			return fmt.Errorf("gpu-vulkan-native requires chronon.hardware_encoder=nvenc")
+		if c.Chronon.HardwareEncoder != chronon.DefaultHardwareEncoder {
+			return fmt.Errorf("%s requires chronon.hardware_encoder=%s", ProfileGPUVulkanNative, chronon.DefaultHardwareEncoder)
 		}
 	}
 	// hardware_encoder reaches the CLI as --hardware on every GPU-required
@@ -219,9 +243,10 @@ func (c *Config) validate() error {
 	// Fail at load instead: the vocabulary is exactly what the worker can
 	// forward.
 	switch c.Chronon.HardwareEncoder {
-	case "", "nvenc", "none":
+	case "", chronon.DefaultHardwareEncoder, chronon.HardwareEncoderNone:
 	default:
-		return fmt.Errorf("chronon.hardware_encoder must be \"nvenc\", \"none\" or empty (engine default), got %q", c.Chronon.HardwareEncoder)
+		return fmt.Errorf("chronon.hardware_encoder must be %q, %q or empty (engine default), got %q",
+			chronon.DefaultHardwareEncoder, chronon.HardwareEncoderNone, c.Chronon.HardwareEncoder)
 	}
 	if c.Chronon.Mode == "ipc" && c.Chronon.SocketPath == "" {
 		return fmt.Errorf("chronon mode=ipc requires chronon.socket_path")
@@ -231,6 +256,11 @@ func (c *Config) validate() error {
 	// job. Empty is valid and preserves the engine default.
 	if err := chronon.ValidateEncodePreset(c.Chronon.EncodePreset); err != nil {
 		return err
+	}
+	switch c.Chronon.PipePixFmt {
+	case "", "nv12", "p010":
+	default:
+		return fmt.Errorf("chronon.pipe_pixfmt must be empty, %q or %q, got %q", "nv12", "p010", c.Chronon.PipePixFmt)
 	}
 	if c.Queue.Endpoint == "" {
 		return fmt.Errorf("queue.endpoint is required")

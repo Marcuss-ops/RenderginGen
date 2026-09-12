@@ -81,11 +81,11 @@ func CompileSemantic(raw []byte) (CompileResult, error) {
 	if probe.SchemaVersion != SemanticSchema {
 		return CompileResult{}, fmt.Errorf("overlay: unsupported plan schema %q (semantic %q is the only accepted contract)", probe.SchemaVersion, SemanticSchema)
 	}
-	plan, assets, stats, err := compileSemantic(raw)
+	plan, assets, stats, unknown, err := compileSemantic(raw)
 	if err != nil {
 		return CompileResult{}, err
 	}
-	return CompileResult{Plan: plan, Assets: assets, Stats: stats}, nil
+	return CompileResult{Plan: plan, Assets: assets, Stats: stats, UnknownTemplates: unknown}, nil
 }
 
 // Marshal serializes the typed plan once at the Chronon boundary.
@@ -93,10 +93,22 @@ func (p *Plan) Marshal() ([]byte, error) {
 	return json.Marshal(p)
 }
 
+// The struct fields below are the compiler's projection of
+// contracts/overlay-plan.v1.schema.json. The two declarations must describe
+// EXACTLY the same property set in both directions —
+// TestContractSchemaMatchesCompilerStructs fails on any drift — so a producer
+// cannot send a field the worker silently drops, and the worker cannot accept
+// a field the published contract does not declare (which is what made
+// motion_id/motion_params unusable for a schema-validating producer before).
+// Fields marked "producer metadata" are accepted for contract completeness and
+// intentionally play no part in the lowering.
 type semanticPlan struct {
 	SchemaVersion   string          `json:"schema_version"`
 	PlanID          string          `json:"plan_id"`
 	VideoID         string          `json:"video_id"`
+	ProjectID       string          `json:"project_id,omitempty"`       // producer metadata
+	RendererVersion string          `json:"renderer_version,omitempty"` // producer metadata
+	Fingerprint     string          `json:"fingerprint,omitempty"`      // producer metadata
 	Source          *semanticSource `json:"source,omitempty"`
 	ForegroundScale int             `json:"foreground_scale_percent,omitempty"`
 	Width           int             `json:"width"`
@@ -161,6 +173,12 @@ type semanticBackground struct {
 
 type semanticItem struct {
 	ID string `json:"id"`
+	// SceneID/EntityID/RenderKey are producer correlation metadata: they are
+	// part of the published contract, are accepted, and never influence the
+	// lowering.
+	SceneID   string `json:"scene_id,omitempty"`
+	EntityID  string `json:"entity_id,omitempty"`
+	RenderKey string `json:"render_key,omitempty"`
 	// Kind is the semantic SSOT of the item. It is authoritative when
 	// PipelineGen sends it; when it is absent the template registry supplies
 	// it. A kind that contradicts the template's kind is rejected fail-closed
@@ -170,7 +188,7 @@ type semanticItem struct {
 	// PresetID is the semantic preset selected by PipelineGen (the plan's
 	// preset_id contract slot). It is preferred over the template mapping.
 	PresetID      string             `json:"preset_id"`
-	ImagePresetID string             `json:"image_preset_id"`
+	ImagePresetID string             `json:"image_preset_id,omitempty"`
 	MotionID      string             `json:"motion_id"`
 	MotionParams  map[string]any     `json:"motion_params"`
 	Text          string             `json:"text"`

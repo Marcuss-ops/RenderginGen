@@ -18,7 +18,17 @@ type Info struct {
 	OverlaySchema int    `json:"overlay_schema"`
 	Backend       string `json:"backend"`
 	Status        string `json:"status"`
+	// Degradations carries process-cumulative fail-open degradations (for
+	// example workspaces that could not be removed). Those phases never fail a
+	// render by design, so without this map the worker would report "ready"
+	// while leaking its tmpfs scratch space. Omitted when there is nothing to
+	// report, so a healthy worker's payload is unchanged.
+	Degradations map[string]int64 `json:"degradations,omitempty"`
 }
+
+// DegradationFunc reports the current fail-open degradation counters. Called
+// per request so /health is always live. A nil map means "no degradation".
+type DegradationFunc func() map[string]int64
 
 // ProgressFunc returns the current render progress snapshot, or nil when no
 // render is in flight. Called per request so /progress is always live.
@@ -33,6 +43,8 @@ type Server struct {
 	// queueStatus, when set, overrides Info.Status on every /health response
 	// (e.g. "ready" -> "degraded" while the queue is unreachable).
 	queueStatus func() string
+	// degradations, when set, is attached to every /health response.
+	degradations DegradationFunc
 }
 
 // NewServer creates a health server for the given metadata.
@@ -52,6 +64,10 @@ func (s *Server) SetProgressFunc(fn ProgressFunc) { s.progress = fn }
 // response; return "" to fall back to the static value.
 func (s *Server) SetQueueStatus(fn func() string) { s.queueStatus = fn }
 
+// SetDegradationFunc installs the fail-open degradation reporter. When set,
+// its non-empty result is attached to every /health response.
+func (s *Server) SetDegradationFunc(fn DegradationFunc) { s.degradations = fn }
+
 func (s *Server) handle(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	info := s.info
@@ -59,6 +75,9 @@ func (s *Server) handle(w http.ResponseWriter, _ *http.Request) {
 		if st := s.queueStatus(); st != "" {
 			info.Status = st
 		}
+	}
+	if s.degradations != nil {
+		info.Degradations = s.degradations()
 	}
 	_ = json.NewEncoder(w).Encode(info)
 }

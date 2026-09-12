@@ -52,13 +52,13 @@ func (r *Repository) Fail(id, workerID, reason string) error {
 	if permanent {
 		update = `
 			UPDATE render_jobs
-			SET state = `+stateLiteral(model.StateFailed)+`, failed_at = now(), error_message = $2,
+			SET state = ` + stateLiteral(model.StateFailed) + `, failed_at = now(), error_message = $2,
 			    current_worker_id = NULL, lease_until = NULL
 			WHERE id = $1`
 	} else {
 		update = `
 			UPDATE render_jobs
-			SET state = `+stateLiteral(model.StatePending)+`, error_message = $2, queued_at = now(),
+			SET state = ` + stateLiteral(model.StatePending) + `, error_message = $2, queued_at = now(),
 			    current_worker_id = NULL, lease_until = NULL
 			WHERE id = $1`
 	}

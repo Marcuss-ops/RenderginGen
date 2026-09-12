@@ -13,7 +13,9 @@ import (
 
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/artifactdb"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/drive"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/metricnames"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/queue"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/storage"
 )
 
 // Publish is the single publisher seam for a queue-served job. It consults
@@ -55,58 +57,87 @@ func (p *Processor) Publish(ctx context.Context, jobID, jobType string, artifact
 	return p.publishToDrive(ctx, jobID, artifact)
 }
 
-// publishToDrive uploads an already-rendered artifact to Google Drive and
-// returns the artifact updated with its Drive file ID and link. It resolves
-// the verified persistent L2 path, so publication does not fetch the object
-// twice or create a temporary staging file.
-//
-// The SHA-256 chain invariant (plan section "Drive") is enforced here:
+// drivePublication is the outcome of one verified external publication.
+type drivePublication struct {
+	FileID      string
+	WebViewLink string
+	US          int64
+	Chunks      int64
+	Bytes       int64
+}
+
+// publishAndVerify is the SINGLE Drive publication path, shared by the
+// segment artifact (publishToDrive) and the assembled parent
+// (ParentFinalizer.Finalize). It resolves the verified persistent L2 path — so
+// publication never fetches the object twice nor stages a temporary copy — and
+// enforces the SHA-256 chain invariant (plan section "Drive"):
 //
 //	local_sha == objectstore_sha == db_sha == drive_sha
 //
 // The bytes re-read from the object store must hash to the artifact hash the
 // worker computed at render time and recorded in the ledger (store_sha ==
-// db_sha) BEFORE they are uploaded; the Drive result must then report the
-// same hash (drive_sha == db_sha). Any mismatch fails the publication, never
-// a re-render. Callers reach this only after the resolver returned
-// object_store_and_drive (see Publish).
+// db_sha) BEFORE they are uploaded (LocalPath verifies a content-addressed
+// key); the provider must then report that same size (drive_sha == db_sha). Any
+// mismatch fails the publication, never a re-render.
+//
+// The parent path used to call drive.Publisher.Publish directly, so the parent
+// artifact was the one publication in the worker with NO identity check
+// (audit P0-3).
+func publishAndVerify(ctx context.Context, store *storage.Client, publisher drive.Publisher, name string, artifact queue.Artifact) (drivePublication, error) {
+	if store == nil || publisher == nil {
+		return drivePublication{}, nil
+	}
+	path, size, err := store.LocalPath(ctx, artifact.StorageKey)
+	if err != nil {
+		return drivePublication{}, fmt.Errorf("processor: resolve rendered artifact locally: %w", err)
+	}
+	var chunks atomic.Int64
+	var uploaded atomic.Int64
+	start := time.Now()
+	res, err := publisher.Publish(ctx, drive.PublishRequest{
+		Name: name, ContentType: artifact.ContentType, Path: path,
+		Subfolder: artifact.ArtifactHash,
+		UploadProgress: func(uploadedBytes, _ int64) {
+			chunks.Add(1)
+			uploaded.Store(uploadedBytes)
+		},
+	})
+	if err != nil {
+		return drivePublication{}, fmt.Errorf("processor: drive publish: %w", err)
+	}
+	if res.FileID == "" || res.SizeBytes != size {
+		return drivePublication{}, fmt.Errorf("processor: drive publication identity mismatch (file_id=%q size=%d expected_size=%d)", res.FileID, res.SizeBytes, size)
+	}
+	return drivePublication{
+		FileID: res.FileID, WebViewLink: res.WebViewLink,
+		US: time.Since(start).Microseconds(), Chunks: chunks.Load(), Bytes: uploaded.Load(),
+	}, nil
+}
+
+// publishToDrive uploads an already-rendered artifact to Google Drive and
+// returns the artifact updated with its Drive file ID and link. Callers reach
+// this only after the resolver returned object_store_and_drive (see Publish).
 func (p *Processor) publishToDrive(ctx context.Context, jobID string, artifact queue.Artifact) (queue.Artifact, error) {
 	if p.drive == nil {
 		return artifact, nil
 	}
-	phaseStart := time.Now()
-	path, size, err := p.store.LocalPath(ctx, artifact.StorageKey)
+	published, err := publishAndVerify(ctx, p.store, p.drive, jobID+".mp4", artifact)
 	if err != nil {
-		return artifact, fmt.Errorf("processor: resolve rendered artifact locally: %w", err)
+		return artifact, err
 	}
-	var uploadChunks atomic.Int64
-	var uploadedBytes atomic.Int64
-	res, err := p.drive.Publish(ctx, drive.PublishRequest{
-		Name: jobID + ".mp4", ContentType: artifact.ContentType, Path: path,
-		Subfolder: artifact.ArtifactHash,
-		UploadProgress: func(uploaded, _ int64) {
-			uploadChunks.Add(1)
-			uploadedBytes.Store(uploaded)
-		},
-	})
-	if err != nil {
-		return artifact, fmt.Errorf("processor: drive publish: %w", err)
-	}
-	// The local path was hash-verified by LocalPath for content-addressed keys;
-	// publication additionally requires the provider to report the same size.
-	if res.FileID == "" || res.SizeBytes != size {
-		return artifact, fmt.Errorf("processor: drive publication identity mismatch (file_id=%q size=%d expected_size=%d)", res.FileID, res.SizeBytes, size)
+	if published.FileID == "" {
+		return artifact, nil
 	}
 	if artifact.Metrics == nil {
 		artifact.Metrics = map[string]float64{}
 	}
-	driveUS := float64(time.Since(phaseStart).Microseconds())
-	artifact.Metrics["drive_publish_ms"] = driveUS / 1000
-	artifact.Metrics["drive_upload_us"] = driveUS
-	artifact.Metrics["drive_upload_chunks"] = float64(uploadChunks.Load())
-	artifact.Metrics["drive_upload_bytes"] = float64(uploadedBytes.Load())
-	artifact.DriveFileID = res.FileID
-	artifact.DriveLink = res.WebViewLink
+	driveUS := float64(published.US)
+	artifact.Metrics[metricnames.DrivePublishMS] = driveUS / 1000
+	artifact.Metrics[metricnames.DriveUploadUS] = driveUS
+	artifact.Metrics[metricnames.DriveUploadChunks] = float64(published.Chunks)
+	artifact.Metrics[metricnames.DriveUploadBytes] = float64(published.Bytes)
+	artifact.DriveFileID = published.FileID
+	artifact.DriveLink = published.WebViewLink
 	// The ledger row already exists (written by Render); a publication retry
 	// only updates the drive metric — it never touches the artifact identity.
 	if updater, ok := p.recorder.(artifactdb.DriveUpdater); ok {

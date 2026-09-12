@@ -98,7 +98,7 @@ func main() {
 			Home:                cfg.Chronon.Home,
 			BinaryPath:          cfg.Chronon.Binary,
 			Backend:             cfg.Chronon.Backend,
-			StrictNativeBackend: cfg.Chronon.StrictNativeBackend || cfg.Chronon.Profile == "gpu-vulkan-native",
+			StrictNativeBackend: cfg.Chronon.StrictNative(),
 			HardwareEncoder:     cfg.Chronon.HardwareEncoder,
 		}
 		if err := cli.Verify(); err != nil {
@@ -141,11 +141,12 @@ func main() {
 	)
 	proc.SetAssetPrefetcher(assetPrefetcher)
 	proc.SetNativeOutputProfiles(cfg.Chronon.NativeOutputProfiles)
-	proc.SetStrictNativeBackend(cfg.Chronon.StrictNativeBackend || cfg.Chronon.Profile == "gpu-vulkan-native")
+	proc.SetStrictNativeBackend(cfg.Chronon.StrictNative())
 	proc.SetReport(cfg.Chronon.Report)
 	proc.SetHardwareEncoder(cfg.Chronon.HardwareEncoder)
 	proc.SetEncodePreset(cfg.Chronon.EncodePreset)
-	log.Printf("chronon report telemetry: %t, strict_native_backend: %t, encode_preset: %q", cfg.Chronon.Report, cfg.Chronon.StrictNativeBackend || cfg.Chronon.Profile == "gpu-vulkan-native", cfg.Chronon.EncodePreset)
+	proc.SetPipePixFmt(cfg.Chronon.PipePixFmt)
+	log.Printf("chronon report telemetry: %t, strict_native_backend: %t, encode_preset: %q, pipe_pixfmt: %q", cfg.Chronon.Report, cfg.Chronon.StrictNative(), cfg.Chronon.EncodePreset, cfg.Chronon.PipePixFmt)
 
 	// 3a. Worker-local artifact ledger mirror (the "DB artifact" step): SQLite,
 	// pure Go so the CGO_ENABLED=0 worker image keeps building. The mirror is
@@ -219,6 +220,9 @@ func main() {
 	progressTracker := chronon.NewProgressTracker()
 	proc.SetProgressTracker(progressTracker)
 	healthServer.SetProgressFunc(progressTracker.Current)
+	// Fail-open degradations (workspace cleanup failures today) must be visible
+	// on the worker's own surface, not only in the log stream.
+	healthServer.SetDegradationFunc(proc.Degradations)
 	go func() {
 		progresspush.New(queueClient, progressTracker, progresspush.DefaultInterval).Run(ctx)
 	}()

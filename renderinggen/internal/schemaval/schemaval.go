@@ -1,14 +1,23 @@
 // Package schemaval is a small, dependency-free JSON-Schema (draft 2020-12
 // subset) validator. It exists so the boundary contract tests can validate an
 // emitted document against the CANONICAL on-disk schema instead of a
-// hand-maintained copy of it. Supported keywords: $ref (local JSON pointers),
-// type, const, enum, required, properties, additionalProperties (bool),
-// items, minItems, maxItems, minimum, maximum, minLength, allOf, anyOf, oneOf,
-// if/then/else.
+// hand-maintained copy of it.
 //
-// It is deliberately not a general-purpose validator: unsupported keywords are
-// ignored rather than guessed, and the contract tests assert the specific
-// invariants the boundary depends on.
+// Implemented validation keywords: $ref (local JSON pointers), type, const,
+// enum, required, properties, additionalProperties, items, minItems, maxItems,
+// minimum, maximum, exclusiveMinimum, exclusiveMaximum, minLength, maxLength,
+// pattern, allOf, anyOf, oneOf, if/then/else. Annotation-only keywords ($schema,
+// $id, title, description, $comment, default, examples, deprecated, readOnly,
+// writeOnly, format) are accepted and, per draft 2020-12, do not constrain the
+// instance.
+//
+// FAIL-CLOSED on everything else: ValidateFile rejects a schema that uses any
+// keyword this package does not implement (recursively, in every subschema
+// position). The historical behavior ignored unknown keywords, so a contract
+// written with `pattern`/`maxLength`/`uniqueItems` validated LESS than it
+// claimed and the boundary tests passed anyway — a false guarantee. A schema
+// author now gets a loud, explicit failure instead, and the fix is either to
+// implement the keyword or to remove it from the contract.
 package schemaval
 
 import (
@@ -17,8 +26,112 @@ import (
 	"fmt"
 	"math"
 	"os"
+	"regexp"
+	"sort"
 	"strings"
 )
+
+// valueKeywords are leaf validation keywords: they constrain the instance and
+// contain no subschemas to recurse into.
+var valueKeywords = map[string]bool{
+	"$ref": true, "type": true, "const": true, "enum": true,
+	"required": true, "minItems": true, "maxItems": true,
+	"minimum": true, "maximum": true, "exclusiveMinimum": true, "exclusiveMaximum": true,
+	"minLength": true, "maxLength": true, "pattern": true,
+}
+
+// annotationKeywords cannot change validation (draft 2020-12 says so for
+// `format`, which is annotation-only by default).
+var annotationKeywords = map[string]bool{
+	"$schema": true, "$id": true, "$anchor": true, "$comment": true,
+	"title": true, "description": true, "default": true, "examples": true,
+	"deprecated": true, "readOnly": true, "writeOnly": true, "format": true,
+}
+
+// singleSubschema keywords hold one subschema (or a boolean schema).
+var singleSubschema = map[string]bool{
+	"additionalProperties": true, "items": true, "if": true, "then": true, "else": true,
+}
+
+// subschemaArray keywords hold an array of subschemas.
+var subschemaArray = map[string]bool{"allOf": true, "anyOf": true, "oneOf": true}
+
+// subschemaMap keywords hold a map of subschemas.
+var subschemaMap = map[string]bool{
+	"properties": true, "$defs": true, "definitions": true,
+}
+
+// checkSupported walks the schema and returns an error naming every keyword
+// this package does not implement, so an unsupported constraint is never
+// silently ignored.
+func checkSupported(node map[string]any, path string) error {
+	var unsupported []string
+	var walk func(map[string]any, string)
+	walk = func(m map[string]any, at string) {
+		keys := make([]string, 0, len(m))
+		for key := range m {
+			keys = append(keys, key)
+		}
+		sort.Strings(keys)
+		for _, key := range keys {
+			value := m[key]
+			switch {
+			case key == "$ref" || valueKeywords[key] || annotationKeywords[key]:
+			case singleSubschema[key]:
+				if sub, ok := value.(map[string]any); ok {
+					walk(sub, at+"."+key)
+				} else if _, isBool := value.(bool); !isBool {
+					unsupported = append(unsupported, at+"."+key+" (not an object or boolean schema)")
+				}
+			case subschemaArray[key]:
+				arr, ok := value.([]any)
+				if !ok {
+					unsupported = append(unsupported, at+"."+key+" (not an array of schemas)")
+					continue
+				}
+				for i, item := range arr {
+					if sub, ok := item.(map[string]any); ok {
+						walk(sub, fmt.Sprintf("%s.%s[%d]", at, key, i))
+					}
+				}
+			case subschemaMap[key]:
+				m, ok := value.(map[string]any)
+				if !ok {
+					unsupported = append(unsupported, at+"."+key+" (not a map of schemas)")
+					continue
+				}
+				names := make([]string, 0, len(m))
+				for name := range m {
+					names = append(names, name)
+				}
+				sort.Strings(names)
+				for _, name := range names {
+					if sub, ok := m[name].(map[string]any); ok {
+						walk(sub, at+"."+key+"."+name)
+					}
+				}
+			default:
+				unsupported = append(unsupported, at+"."+key)
+			}
+		}
+	}
+	walk(node, path)
+	if len(unsupported) > 0 {
+		return fmt.Errorf("unsupported JSON-Schema keyword(s) — the validator would silently ignore them: %s", strings.Join(unsupported, ", "))
+	}
+	return nil
+}
+
+// CheckSupported reports whether a schema uses only keywords this validator
+// implements. It lets a contract-owning test fail on an unimplemented
+// constraint instead of discovering it as a boundary that validated nothing.
+func CheckSupported(raw []byte) error {
+	var schema map[string]any
+	if err := json.Unmarshal(raw, &schema); err != nil {
+		return fmt.Errorf("decode schema: %w", err)
+	}
+	return checkSupported(schema, "#")
+}
 
 // ValidateFile validates the JSON document in doc against the schema at
 // schemaPath.
@@ -30,6 +143,9 @@ func ValidateFile(doc []byte, schemaPath string) error {
 	var schema map[string]any
 	if err := json.Unmarshal(raw, &schema); err != nil {
 		return fmt.Errorf("decode schema %s: %w", schemaPath, err)
+	}
+	if err := checkSupported(schema, "#"); err != nil {
+		return fmt.Errorf("schema %s: %w", schemaPath, err)
 	}
 	var d any
 	if err := json.Unmarshal(doc, &d); err != nil {
@@ -178,12 +294,30 @@ func validate(doc any, schema, root map[string]any, path string) error {
 		if min, ok := num(schema["minLength"]); ok && float64(len(d)) < min {
 			return fmt.Errorf("%s: string length %d, want >= %v", path, len(d), min)
 		}
+		if max, ok := num(schema["maxLength"]); ok && float64(len(d)) > max {
+			return fmt.Errorf("%s: string length %d, want <= %v", path, len(d), max)
+		}
+		if pattern, ok := schema["pattern"].(string); ok {
+			re, err := regexp.Compile(pattern)
+			if err != nil {
+				return fmt.Errorf("%s: schema pattern %q does not compile: %w", path, pattern, err)
+			}
+			if !re.MatchString(d) {
+				return fmt.Errorf("%s: value %q does not match pattern %q", path, d, pattern)
+			}
+		}
 	case float64:
 		if min, ok := num(schema["minimum"]); ok && d < min {
 			return fmt.Errorf("%s: %v < minimum %v", path, d, min)
 		}
 		if max, ok := num(schema["maximum"]); ok && d > max {
 			return fmt.Errorf("%s: %v > maximum %v", path, d, max)
+		}
+		if min, ok := num(schema["exclusiveMinimum"]); ok && d <= min {
+			return fmt.Errorf("%s: %v <= exclusiveMinimum %v", path, d, min)
+		}
+		if max, ok := num(schema["exclusiveMaximum"]); ok && d >= max {
+			return fmt.Errorf("%s: %v >= exclusiveMaximum %v", path, d, max)
 		}
 	}
 	return nil

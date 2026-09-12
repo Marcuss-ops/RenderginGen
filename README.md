@@ -206,7 +206,7 @@ completed — is covered by two integration tests that run against the real
 binary and skip when it is absent:
 
 - `renderinggen/internal/chronon/chronon_integration_test.go` — renders the
-  asset-free `ExampleColorSmokePlan` through the real CLI.
+  asset-free color smoke plan (`colorSmokePlan`) through the real CLI.
 - `renderinggen/internal/processor/processor_integration_test.go` — runs the
   whole processor pipeline against the real CLI and verifies the published
   artifact.

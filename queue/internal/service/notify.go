@@ -32,6 +32,19 @@ func NewNotifier() *Notifier {
 }
 
 // Notify wakes every current waiter and arms a fresh generation.
+//
+// The broadcast is deliberate and load-bearing, not an oversight: a wake-up
+// carries no routing information, so waking ONE waiter would let a competing
+// claimant consume the job while the others keep sleeping — they would then
+// wait out their bounded re-poll (1s → 10s) and the queue would look stalled
+// under exactly the contention it was built to absorb. Waking all waiters keeps
+// every parked claim live, and TestWaitAndClaimConcurrentSubmitWakeDeliversOnce
+// pins the resulting "N waiters, M submits, exactly M claims" invariant.
+// Bounded cost: one atomic re-claim per parked waiter per state change, where
+// the waiter count is the worker's configured lane/claim concurrency, and the
+// claim itself is a single SKIP LOCKED statement. A burst of state changes
+// coalesces into one wake generation, because the channel is re-armed only
+// after the waiters have been released.
 func (n *Notifier) Notify() {
 	n.mu.Lock()
 	defer n.mu.Unlock()

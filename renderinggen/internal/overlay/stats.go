@@ -36,6 +36,13 @@ type CompileResult struct {
 	Plan   *Plan
 	Assets []Asset
 	Stats  Stats
+	// UnknownTemplates lists the item template_ids that resolved to no registry
+	// row, sorted and de-duplicated. They still compile (as preset-less text
+	// primitives) so historical documents keep rendering, but the fall-through
+	// is reported instead of silent: a renamed producer template or a dropped
+	// compatibility alias shows up here rather than as an invisible visual
+	// downgrade. Empty for a fully registered plan.
+	UnknownTemplates []string
 }
 
 // addResolved books one item of a compile pass: the counters' only entry point

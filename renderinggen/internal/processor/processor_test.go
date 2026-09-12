@@ -14,9 +14,11 @@ import (
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/artifactdb"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/chronon"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/drive"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/metricnames"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/overlay"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/queue"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/storage"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/workspace"
 )
 
 // videoHash is the real SHA-256 of "video-bytes": the semantic compiler
@@ -43,6 +45,42 @@ func TestHasVisualOverlayDistinguishesVideoOnlyFromAuthoredComposition(t *testin
 	}
 	if !planHasVisualOverlay(&overlay.Plan{Layers: []overlay.Layer{{Type: "image"}}}) {
 		t.Fatal("image-only plan must report an authored overlay")
+	}
+}
+
+func TestRunGPUImageTextCompositionUsesChrononGPUPipeContract(t *testing.T) {
+	proc, _, renderer := newProcessor(t)
+	proc.backend = "vulkan"
+	proc.SetStrictNativeBackend(true)
+	ws, err := workspace.New(proc.jobsRoot, "image-text-only")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer ws.Cleanup()
+	prepared := &PreparedJob{
+		Job:       &queue.Job{ID: "image-text-only"},
+		Workspace: ws,
+		Plan: &overlay.Plan{
+			Canvas: overlay.Canvas{Width: 1280, Height: 720, FPSNum: 30, FPSDen: 1, DurationFrames: 30},
+			Layers: []overlay.Layer{{ID: "caption", Type: "text", Text: "Preset phrase"}},
+		},
+		Metrics: map[string]float64{},
+	}
+
+	if err := proc.RunGPU(context.Background(), prepared); err != nil {
+		t.Fatalf("RunGPU() = %v, want GPU composition pipe to be accepted", err)
+	}
+	if prepared.NativeCertified {
+		t.Fatal("image/text-only composition must not receive native-surface certification")
+	}
+	if got := prepared.Metrics[metricnames.ChrononGPUCompositionPipe]; got != 1 {
+		t.Fatalf("chronon_gpu_composition_pipe = %v, want 1", got)
+	}
+	if !renderer.req.Requirements.GPURequired || !renderer.req.Requirements.CompositionRequired {
+		t.Fatalf("requirements = %+v, want GPU composition required", renderer.req.Requirements)
+	}
+	if renderer.req.Requirements.VideoSourceRequired {
+		t.Fatal("image/text-only composition must not require a video source")
 	}
 }
 

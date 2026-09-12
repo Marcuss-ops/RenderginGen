@@ -1,7 +1,11 @@
 worker:
   id: renderinggen-local
   pipeline_workers: 3
-  gpu_lanes: 6
+  # 2 lanes matches the measured NVENC multi-session baseline. Four concurrent
+  # jobs triple the total wall time without increasing the render loop rate
+  # (refactored/ops/benchmarks/clip-render-final-20260911.md), so extra lanes
+  # only add queue wait, VRAM pressure and text-path lock contention.
+  gpu_lanes: 2
 queue:
   endpoint: http://127.0.0.1:8081
 artifact_store:

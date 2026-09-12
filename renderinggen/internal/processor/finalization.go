@@ -105,11 +105,13 @@ func (f *ParentFinalizer) Finalize(ctx context.Context, parentID string, start, 
 		}
 	}
 	if f.publisher != nil {
-		path, _, err := f.store.LocalPath(ctx, artifact.StorageKey)
-		if err != nil {
-			return false, queue.Artifact{}, err
-		}
-		published, err := f.publisher.Publish(ctx, drive.PublishRequest{Name: parentID + ".mp4", ContentType: "video/mp4", Path: path, Subfolder: artifact.ArtifactHash})
+		// The parent is published through the SAME verified path as a segment
+		// artifact (publishAndVerify): resolving the content-addressed L2 file
+		// verifies store_sha == db_sha and the provider must report the same
+		// size. The historical direct drive.Publisher.Publish call here was the
+		// only publication in the worker without that invariant and without a
+		// resolvable policy (audit P0-3).
+		published, err := publishAndVerify(ctx, f.store, f.publisher, parentID+".mp4", artifact)
 		if err != nil {
 			return false, queue.Artifact{}, err
 		}

@@ -82,36 +82,18 @@ func SubtitleStyleAsset(raw []byte) (*LayerStyle, SubtitleStyleBox, error) {
 	return style, box, nil
 }
 
-// BurnASSIntoPlan lowers an ASS subtitle track into ordinary Chronon text
-// layers. Chronon then rasterizes each cue once, uploads the texture to GPU,
-// and composites it before NVENC; no post-render ffmpeg subtitle pass is
-// needed. The input plan must already be concrete render-plan.v2, the
-// fontPath must be a prepared workspace-relative font asset, and the style
-// must be fully typed by the caller (PipelineGen's plan) — this function
-// invents no typography or geometry.
+// BurnASSIntoPlanTyped lowers an ASS subtitle track into ordinary Chronon text
+// layers by mutating the typed plan in place. Chronon then rasterizes each cue
+// once, uploads the texture to GPU, and composites it before NVENC; no
+// post-render ffmpeg subtitle pass is needed. The input plan must already be
+// concrete render-plan.v2, the fontPath must be a prepared workspace-relative
+// font asset, and the style must be fully typed by the caller (PipelineGen's
+// plan) — this function invents no typography or geometry.
 //
-// BurnASSIntoPlanTyped is the typed-plan variant used by the processor: it
-// mutates the in-memory plan instead of re-encoding JSON.
-func BurnASSIntoPlan(planBytes, assBytes []byte, fontPath string, style *LayerStyle, box SubtitleStyleBox) ([]byte, int, error) {
-	var plan Plan
-	if err := json.Unmarshal(planBytes, &plan); err != nil {
-		return nil, 0, fmt.Errorf("overlay: decode concrete plan for subtitles: %w", err)
-	}
-	count, err := appendSubtitleLayers(&plan, assBytes, fontPath, style, box)
-	if err != nil {
-		return nil, 0, err
-	}
-	out, err := plan.Marshal()
-	if err != nil {
-		return nil, 0, fmt.Errorf("overlay: encode subtitle layers: %w", err)
-	}
-	return out, count, nil
-}
-
-// BurnASSIntoPlanTyped mutates the typed plan in place with the lowered
-// subtitle cue layers and returns the number of cue layers present afterwards.
-// The processor path uses this to avoid a JSON round-trip; the plan is
-// marshaled exactly once at the Chronon boundary.
+// It is the single subtitle-lowering entry point: the processor hands it the
+// in-memory typed plan and the plan is marshaled exactly once at the Chronon
+// boundary. There is deliberately no untyped []byte overload — a second decode
+// path would let the lowering drift from the contract the compiler validated.
 func BurnASSIntoPlanTyped(plan *Plan, assBytes []byte, fontPath string, style *LayerStyle, box SubtitleStyleBox) (int, error) {
 	return appendSubtitleLayers(plan, assBytes, fontPath, style, box)
 }

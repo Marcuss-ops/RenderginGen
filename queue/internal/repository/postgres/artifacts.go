@@ -135,6 +135,13 @@ func insertProcessingMetrics(ctx context.Context, tx *sql.Tx, jobID, attemptID s
 // metricUnit preserves the unit encoded by the canonical metric name. Names
 // without a suffix are counts by default; this keeps legacy map payloads
 // compatible while preventing bytes/frames/ratios from being labelled ms.
+//
+// The vocabulary itself is OWNED by the worker
+// (renderinggen/internal/metricnames): this is the queue's fallback for names
+// that arrive without an explicit unit. The queue module cannot import the
+// worker (the dependency runs worker→queue), so the projection is pinned by
+// metric_unit_projection_test.go, which reads the worker's vocabulary and
+// asserts this function derives exactly the declared unit for every name.
 func metricUnit(name string) string {
 	n := strings.ToLower(name)
 	switch {

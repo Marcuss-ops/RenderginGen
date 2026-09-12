@@ -140,11 +140,12 @@ type ExecutionRequirements struct {
 }
 
 type OutputSpec struct {
-	Codec  string `json:"codec,omitempty"`
-	Width  uint32 `json:"width,omitempty"`
-	Height uint32 `json:"height,omitempty"`
-	FPSNum uint32 `json:"fps_num,omitempty"`
-	FPSDen uint32 `json:"fps_den,omitempty"`
+	Codec      string `json:"codec,omitempty"`
+	Width      uint32 `json:"width,omitempty"`
+	Height     uint32 `json:"height,omitempty"`
+	FPSNum     uint32 `json:"fps_num,omitempty"`
+	FPSDen     uint32 `json:"fps_den,omitempty"`
+	PipePixFmt string `json:"pipe_pixfmt,omitempty"`
 }
 
 // Renderer renders a RenderRequest.

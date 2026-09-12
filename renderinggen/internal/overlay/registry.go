@@ -67,6 +67,15 @@ const (
 type TemplateSpec struct {
 	// ID is the template_id verbatim (registry keys are normalized upper).
 	ID string
+	// Registered reports whether the template_id resolved to a registry row
+	// (true) or fell through to the unknown primitive (false). An unknown
+	// template still compiles — the historical documents and the alias path
+	// must keep working — but the fall-through is no longer silent: the compile
+	// pass reports it (CompileResult.UnknownTemplates) and the worker records it
+	// as a metric. Without that, a producer rename (or the deletion of a
+	// compatibility alias) degraded every affected entity to a bare text
+	// primitive with no error anywhere.
+	Registered bool
 	// Kind is the semantic behaviour this template lowers through.
 	Kind ItemKind
 	// RequiresPreset is true when PipelineGen must supply a preset_id.
@@ -139,6 +148,7 @@ func canonicalTemplateID(templateID string) string {
 func templateSpecFor(templateID string) TemplateSpec {
 	if spec, ok := templateRegistry[canonicalTemplateID(templateID)]; ok {
 		spec.ID = templateID
+		spec.Registered = true
 		return spec
 	}
 	return TemplateSpec{ID: templateID, Kind: KindPrimitive, Family: PresetText}

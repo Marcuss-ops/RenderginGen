@@ -59,7 +59,6 @@ func (c *Client) ClaimFinalization(ctx context.Context, parentID, workerID strin
 	return &job, true, nil
 }
 
-
 // Claim atomically claims the next pending job for workerID. It returns a nil
 // job when the queue is empty.
 func (c *Client) Claim(ctx context.Context, workerID string) (*ClaimedJob, error) {
@@ -210,6 +209,19 @@ const (
 	WorkerStatusDraining WorkerStatus = "draining"
 	WorkerStatusOffline  WorkerStatus = "offline"
 )
+
+// AllWorkerStatuses returns the canonical worker-status vocabulary. It is the
+// single list the `rendering_workers_status_check` SQL constraint must agree
+// with (pinned by queue/internal/model/state_schema_test.go). The vocabulary
+// has the same standing as the job-state and attempt-status sets: without the
+// pin, adding a status here and forgetting the migration (or vice versa) only
+// fails when a worker tries to register.
+func AllWorkerStatuses() []WorkerStatus {
+	return []WorkerStatus{
+		WorkerStatusUnknown, WorkerStatusReady, WorkerStatusBusy,
+		WorkerStatusDraining, WorkerStatusOffline,
+	}
+}
 
 // Worker represents a worker registration payload / health status.
 type Worker struct {

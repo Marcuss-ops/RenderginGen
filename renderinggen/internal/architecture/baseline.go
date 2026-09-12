@@ -98,7 +98,11 @@ func (b *Baseline) Write(vs []Violation) error {
 	var sb strings.Builder
 	sb.WriteString("# Architecture conformance baseline (ratchet — may only shrink).\n")
 	sb.WriteString("# Format: <rule>|<workspace-relative-file>. Regenerate explicitly with\n")
-	sb.WriteString("# UPDATE_CONFORMANCE_BASELINE=1 go test ./internal/architecture/...\n")
+	// The single documented regeneration form is the Make target (see
+	// CONFORMANCE.md); the environment variable is its implementation. Naming
+	// both in two files made "how do I refresh the ledger?" a two-answer
+	// question.
+	sb.WriteString("#   make refresh-conformance-baseline\n")
 	for _, k := range ordered {
 		sb.WriteString(k)
 		sb.WriteByte('\n')
