@@ -70,7 +70,12 @@ func (s *SQLiteRecorder) Record(ctx context.Context, rec ArtifactRecord) error {
 	if rec.CreatedAt.IsZero() {
 		rec.CreatedAt = time.Now().UTC()
 	}
-	_, err := s.db.ExecContext(ctx, upsert,
+	// The column list, the placeholder list and the argument list are three
+	// hand-maintained parallel sequences. The driver would report a count
+	// mismatch as a generic bind error, but it cannot tell which of the three
+	// drifted (a swapped pair binds the wrong value silently). This guard turns
+	// that class of edit into a named, immediate error.
+	args := []any{
 		rec.JobID,
 		rec.ArtifactHash, rec.StorageKey, rec.SizeBytes, rec.ContentType,
 		rec.Backend, rec.ChrononVersion, rec.ProfileID,
@@ -86,7 +91,11 @@ func (s *SQLiteRecorder) Record(ctx context.Context, rec ArtifactRecord) error {
 		rec.ChrononTimingStorageKey, rec.ChrononTimingURL, rec.ChrononTimingSHA256,
 		rec.ChrononTimingSizeBytes, rec.ChrononTimingContentType,
 		rec.CreatedAt.Format(time.RFC3339Nano),
-	)
+	}
+	if want := strings.Count(upsert, "?"); len(args) != want {
+		return fmt.Errorf("artifactdb: record %s: upsert arity drift: %d args, %d placeholders", rec.JobID, len(args), want)
+	}
+	_, err := s.db.ExecContext(ctx, upsert, args...)
 	if err != nil {
 		return fmt.Errorf("artifactdb: record %s: %w", rec.JobID, err)
 	}

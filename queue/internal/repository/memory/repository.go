@@ -115,7 +115,7 @@ func (s *Repository) ClaimState(workerID string, state model.State) (*model.Job,
 	for i, id := range s.order {
 		job := s.jobs[id]
 		if job == nil || (state != "" && job.State != state) ||
-			(state == "" && job.State != model.StatePending && job.State != model.StateRendered) {
+			(state == "" && !model.IsClaimable(job.State)) {
 			continue
 		}
 		s.order = append(s.order[:i], s.order[i+1:]...)
@@ -247,7 +247,7 @@ func (s *Repository) Fail(id, workerID, reason string) error {
 		return err
 	}
 	job.FailReason = reason
-	if s.maxAttempts > 0 && job.Attempts >= s.maxAttempts {
+	if model.ShouldFailPermanently(job.Attempts, s.maxAttempts) {
 		job.State = model.StateFailed
 		return nil
 	}
@@ -310,19 +310,18 @@ func (s *Repository) Cancel(id string) error {
 	if !exists {
 		return fmt.Errorf("job %s: %w", id, repository.ErrNotFound)
 	}
-	switch job.State {
-	case model.StatePending, model.StateRunning, model.StateRendered, model.StateFinalizing:
-		job.State = model.StateCancelled
-		job.Worker = ""
-		job.LeaseUntil = time.Time{}
-		job.Progress = nil
-		return nil
-	case model.StateCancelled:
+	if job.State == model.StateCancelled {
 		// Idempotent: the producer already cancelled this job.
 		return nil
-	default:
+	}
+	if !model.IsCancelable(job.State) {
 		return fmt.Errorf("job %s is in state %q, cannot cancel terminal job", id, job.State)
 	}
+	job.State = model.StateCancelled
+	job.Worker = ""
+	job.LeaseUntil = time.Time{}
+	job.Progress = nil
+	return nil
 }
 
 // SetProgress stores the latest render progress from the lease-owning worker.
@@ -355,7 +354,7 @@ func (s *Repository) RequeueExpired(now time.Time) (int, error) {
 		if (job.State != model.StateRunning && job.State != model.StateFinalizing) || job.LeaseUntil.IsZero() || !now.After(job.LeaseUntil) {
 			continue
 		}
-		if s.maxAttempts > 0 && job.Attempts >= s.maxAttempts {
+		if model.ShouldFailPermanently(job.Attempts, s.maxAttempts) {
 			job.State = model.StateFailed
 			job.FailReason = "lease expired, max attempts reached"
 		} else {

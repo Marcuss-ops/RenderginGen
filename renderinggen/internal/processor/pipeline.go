@@ -367,7 +367,7 @@ func (p *Processor) PrepareJob(ctx context.Context, job *queue.Job) (*PreparedJo
 		return nil, err
 	}
 	record("plan", phaseStart)
-	audioPath, warnInert := audioSourcePathFromPlan(plan, job.RenderPlan, ws.Root())
+	audioPath, warnInert := audioSourcePathFromPlan(plan, ws.Root())
 	if warnInert {
 		metrics["audio_inert_params"] = 1
 		if plan.Output.Audio != nil && !audioModeCopyOnly(plan.Output.Audio.Mode) {

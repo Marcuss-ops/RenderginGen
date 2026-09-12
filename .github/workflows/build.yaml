@@ -148,7 +148,8 @@ jobs:
   # Golden canary — permanent end-to-end gate.
   #
   # Boots the real stack (postgres + queue + objectstore + worker) and runs
-  # GoldenOverlayJobV1 through the full chain: queue -> RenderingGen -> real
+  # the semantic golden (GoldenSemanticOverlayJobV1) through the full chain:
+  # queue -> RenderingGen -> real
   # chronon3d_cli (software backend) -> artifact store -> PostgreSQL, then
   # verifies the idempotent replay returns the same artifact with no new
   # render (attempts/events unchanged). Any drift in the renderer, the

@@ -182,25 +182,11 @@ func (s *Server) claim(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeJSON(w, http.StatusOK, buildClaimResponse(job, lease))
-}
-
-func buildClaimResponse(job *model.Job, lease time.Duration) claimResponse {
-	return claimResponse{
-		ID:             job.ID,
-		Schema:         job.Schema,
-		Version:        job.Version,
-		IdempotencyKey: job.IdempotencyKey,
-		JobType:        job.JobType,
-		ParentJobID:    job.ParentJobID,
-		ChunkIndex:     job.ChunkIndex,
-		FrameRange:     job.FrameRange,
-		RenderPlan:     job.RenderPlan,
-		Assets:         job.Assets,
-		Lease:          lease,
-		State:          job.State,
-		Artifact:       job.Artifact,
-	}
+	// The claim response is the canonical Job envelope plus the lease the
+	// worker must renew. There is no separate claim-response type: the wire
+	// contract exists once, in queue/client, and every layer aliases it.
+	job.Lease = lease
+	writeJSON(w, http.StatusOK, job)
 }
 
 // claimWait is the dedicated long-poll endpoint. It is a thin wrapper over
@@ -233,28 +219,11 @@ func (s *Server) claimWait(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNoContent)
 		return
 	}
-	writeJSON(w, http.StatusOK, buildClaimResponse(job, lease))
-}
-
-// claimResponse is the payload returned to a worker on claim.
-type claimResponse struct {
-	ID             string            `json:"id"`
-	Schema         string            `json:"schema,omitempty"`
-	Version        int               `json:"version,omitempty"`
-	IdempotencyKey string            `json:"idempotency_key,omitempty"`
-	JobType        string            `json:"job_type,omitempty"`
-	ParentJobID    string            `json:"parent_job_id,omitempty"`
-	ChunkIndex     int               `json:"chunk_index,omitempty"`
-	FrameRange     *model.FrameRange `json:"frame_range,omitempty"`
-
-	RenderPlan json.RawMessage  `json:"render_plan"`
-	Assets     []model.AssetRef `json:"assets"`
-	Lease      time.Duration    `json:"lease"`
-
-	// State and Artifact are populated on claim so a worker re-claiming a
-	// rendered job can skip rendering and only retry publication.
-	State    model.State     `json:"state,omitempty"`
-	Artifact *model.Artifact `json:"artifact,omitempty"`
+	// The claim response is the canonical Job envelope plus the lease the
+	// worker must renew. There is no separate claim-response type: the wire
+	// contract exists once, in queue/client, and every layer aliases it.
+	job.Lease = lease
+	writeJSON(w, http.StatusOK, job)
 }
 
 func writeJSON(w http.ResponseWriter, status int, v any) {

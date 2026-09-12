@@ -13,10 +13,6 @@ import (
 // motion into a silently static overlay that passed the pipeline as healthy.
 func resolveMotion(m MotionDefinition) ([]AnimationTrack, error) {
 	id := m.ID
-	if id == "" {
-		// Preset definitions from older callers have Name but no ID.
-		id = m.Name
-	}
 	plugin, err := motion.Registry.Resolve(id)
 	if err != nil || plugin == nil {
 		return nil, fmt.Errorf("overlay: resolve motion %q: %w", id, err)
@@ -79,7 +75,7 @@ func tracksForMotion(m MotionDefinition) ([]AnimationTrack, error) {
 // discarded word/glyph selectors and made several distinct presets render as
 // the same fade. Keep the preset's layer tracks and text animators together.
 func animationForPreset(d PresetDefinition, text string, duration int64) (*LayerAnimation, error) {
-	if d.Motion.ID == "" && d.Motion.Name == "" {
+	if d.Motion.ID == "" {
 		return nil, nil
 	}
 	animation, err := animationForDefinition(d)
@@ -90,9 +86,6 @@ func animationForPreset(d PresetDefinition, text string, duration int64) (*Layer
 		animation = &LayerAnimation{}
 	}
 	pluginID := d.Motion.ID
-	if pluginID == "" {
-		pluginID = d.Motion.Name
-	}
 	plugin, err := motion.Registry.Resolve(pluginID)
 	if err != nil {
 		return nil, fmt.Errorf("overlay: resolve preset motion %q: %w", pluginID, err)

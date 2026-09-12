@@ -34,8 +34,11 @@ never reimplement the HTTP format.
 #### `POST /jobs`
 
 A job is **one render segment**, not one overlay: `render_plan` carries every
-layer of the segment (base video, phrases, keywords, images, animations) as a
-`chronon.render-plan.v2` document, so Chronon3d composes them in a single pass.
+element of the segment (base video, background, phrases, keywords, images,
+animations) as the **semantic `renderinggen.overlay-plan.v1` document** emitted
+by PipelineGen. RenderingGen compiles it exclusively into
+`chronon.render-plan.v2` before execution, so Chronon3d composes the segment in
+a single pass. A concrete Chronon plan is **not** accepted on this boundary.
 The envelope schema is `contracts/renderinggen.job.v1.schema.json`.
 
 Request (only `id`, `schema`, `version`, `render_plan` and `assets` are used):
@@ -46,17 +49,19 @@ Request (only `id`, `schema`, `version`, `render_plan` and `assets` are used):
   "schema": "renderinggen.job",
   "version": 1,
   "render_plan": {
-    "schema": "chronon.render-plan.v2",
-    "version": 2,
-    "job_id": "video-983",
-    "canvas": { "width": 1920, "height": 1080, "fps_num": 30, "fps_den": 1, "duration_frames": 300 },
-    "layers": [
-      { "id": "video", "type": "video", "source": "videos/base.mp4", "size": [1920, 1080], "fit": "cover", "start_frame": 0, "duration_frames": 300 },
-      { "id": "phrase-1", "type": "text", "text": "QUESTO CAMBIA TUTTO", "style": { "font": "assets/fonts/DejaVuSans.ttf", "font_size": 54, "fill": "#FFFFFF" }, "start_frame": 60, "duration_frames": 55 }
-    ],
-    "output": { "path": "result.mp4", "format": "mp4", "codec": "h264", "crf": 18 }
+    "schema_version": "renderinggen.overlay-plan.v1",
+    "plan_id": "video-983",
+    "video_id": "video-983",
+    "width": 1920,
+    "height": 1080,
+    "fps_num": 30,
+    "fps_den": 1,
+    "source": { "asset_id": "base", "sha256": "<sha256>" },
+    "items": [
+      { "id": "phrase-1", "kind": "important_phrase", "template_id": "IMPORTANT_PHRASE", "preset_id": "caption_card", "text": "QUESTO CAMBIA TUTTO", "start_ms": 2000, "end_ms": 3833 }
+    ]
   },
-  "assets": [ { "hash": "<sha256>", "logical_path": "videos/base.mp4" } ]
+  "assets": [ { "hash": "<sha256>", "logical_path": "assets/semantic/base.mp4" } ]
 }
 ```
 
@@ -132,7 +137,7 @@ Response `200 OK`:
   "id": "video-983",
   "schema": "renderinggen.job",
   "version": 1,
-  "render_plan": { "schema": "chronon.render-plan.v2", "version": 2, "canvas": {}, "layers": [], "output": { "path": "result.mp4" } },
+  "render_plan": { "schema_version": "renderinggen.overlay-plan.v1", "plan_id": "video-983", "video_id": "video-983", "width": 1920, "height": 1080, "fps_num": 30, "fps_den": 1, "source": { "asset_id": "base", "sha256": "<sha256>" } },
   "assets": [ { "hash": "<sha256>", "logical_path": "videos/base.mp4" } ],
   "lease": 30000000000
 }
@@ -267,7 +272,7 @@ re-encoding it:
   "fps_den": 1,
   "frame_count": 546,
   "duration_us": 18200000,
-  "profile_id": "velox-h264-copy-v1",
+  "profile_id": "velox-h264-1080p30-v1",
   "copy_eligible": true,
   "codec": "h264",
   "codec_profile": "high",

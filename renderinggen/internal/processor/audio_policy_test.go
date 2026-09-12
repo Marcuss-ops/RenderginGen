@@ -30,8 +30,6 @@ func TestAudioModeCopyOnlyVocabulary(t *testing.T) {
 // caller asked for a transcode. The warning flag now covers the mode, and a
 // copy-family mode with only inert transcode parameters is still surfaced.
 func TestAudioPolicyDegradationIsReported(t *testing.T) {
-	rawPlan := []byte(`{"source":{"asset_id":"src","path":"assets/semantic/src.mp4"}}`)
-
 	cases := []struct {
 		name     string
 		audio    *overlay.Audio
@@ -45,8 +43,13 @@ func TestAudioPolicyDegradationIsReported(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			plan := &overlay.Plan{Output: overlay.Output{Audio: tc.audio}}
-			path, warn := audioSourcePathFromPlan(plan, rawPlan, "/ws")
+			// The compiled plan owns the source layer and its registry-resolved
+			// logical path; the audio resolver reads it instead of rebuilding it.
+			plan := &overlay.Plan{
+				Output: overlay.Output{Audio: tc.audio},
+				Layers: []overlay.Layer{{ID: "source", Type: "video", Source: "assets/semantic/src.mp4"}},
+			}
+			path, warn := audioSourcePathFromPlan(plan, "/ws")
 			if warn != tc.wantWarn {
 				t.Fatalf("warn = %v, want %v", warn, tc.wantWarn)
 			}

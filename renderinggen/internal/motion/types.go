@@ -51,9 +51,13 @@ type StaggerDefinition struct {
 	Frames int64 `json:"frames,omitempty"`
 }
 
+// MotionDefinition is the declarative motion contract. ID is the ONLY
+// identity: the historical `Name` alias (read as a fallback by the registry,
+// the overlay resolver and the preset catalog) has been removed, because two
+// fields that can each name the same motion let one producer set only the
+// other and silently fail to resolve at render time.
 type MotionDefinition struct {
 	ID            string                   `json:"id"`
-	Name          string                   `json:"name,omitempty"` // legacy alias
 	Category      string                   `json:"category,omitempty"`
 	Targets       []string                 `json:"targets,omitempty"`
 	Unit          string                   `json:"unit,omitempty"`
@@ -79,7 +83,7 @@ type TextMotionPlugin interface {
 }
 
 func ValidateDefinition(d MotionDefinition) error {
-	if d.ID == "" && d.Name == "" {
+	if d.ID == "" {
 		return fmt.Errorf("motion: definition has no id")
 	}
 	for _, t := range d.Tracks {

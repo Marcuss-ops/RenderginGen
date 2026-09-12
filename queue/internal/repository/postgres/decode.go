@@ -7,7 +7,6 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"log"
 
 	"github.com/Marcuss-ops/RenderingGen/queue/internal/model"
 )
@@ -57,34 +56,13 @@ func decodeAssets(raw []byte) ([]model.AssetRef, error) {
 	return m.Assets, nil
 }
 
-// decodeFrameRangeLogged and decodeAssetsLogged are deprecated wrappers kept
-// for transitional callers that have not yet migrated to the fail-closed path.
-// They log corruption and return nil/empty so the job renders full-plan without
-// SHA256 verification — exactly the silent degradation C1 eliminates. New code
-// must call decodeFrameRange/decodeAssets and poison the job on error.
-func decodeFrameRangeLogged(raw []byte) *model.FrameRange {
-	r, err := decodeFrameRange(raw)
-	if err != nil {
-		log.Printf("%v, treating as no range", err)
-	}
-	return r
-}
-
-func decodeAssetsLogged(raw []byte) []model.AssetRef {
-	assets, err := decodeAssets(raw)
-	if err != nil {
-		log.Printf("%v, treating as no assets", err)
-	}
-	return assets
-}
-
 // poisonCorruptJob marks a job failed due to corrupt JSONB so it never
 // renders as full-plan and never drops SHA256 verification. It is called
 // inside the Claim/Get transaction while the row is still locked.
 func poisonCorruptJob(ctx context.Context, tx *sql.Tx, jobID string, reason string) {
 	_, _ = tx.ExecContext(ctx, `
 		UPDATE render_jobs
-		SET state = 'failed', failed_at = now(), error_message = $2,
+		SET state = `+stateLiteral(model.StateFailed)+`, failed_at = now(), error_message = $2,
 		    current_worker_id = NULL, lease_until = NULL
 		WHERE id = $1`, jobID, reason)
 	// Best-effort attempt/event — poison must not fail because attempt bookkeeping failed.

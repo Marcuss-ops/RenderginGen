@@ -6,6 +6,8 @@ package postgres
 import (
 	"context"
 	"time"
+
+	"github.com/Marcuss-ops/RenderingGen/queue/internal/model"
 )
 
 // RequeueExpired permanently fails expired jobs that exhausted their attempts
@@ -21,7 +23,7 @@ func (r *Repository) RequeueExpired(now time.Time) (int, error) {
 	rows, err := tx.QueryContext(ctx, `
 		SELECT id, attempt_count, max_attempts
 		FROM render_jobs
-		WHERE state IN ('running', 'finalizing') AND lease_until IS NOT NULL AND lease_until < $1
+		WHERE state IN `+stateIn(model.StateRunning, model.StateFinalizing)+` AND lease_until IS NOT NULL AND lease_until < $1
 		FOR UPDATE SKIP LOCKED`, now)
 	if err != nil {
 		return 0, err
@@ -56,10 +58,10 @@ func (r *Repository) RequeueExpired(now time.Time) (int, error) {
 			return 0, err
 		}
 
-		if e.maxAttempts > 0 && e.attempts >= e.maxAttempts {
+		if model.ShouldFailPermanently(e.attempts, e.maxAttempts) {
 			if _, err := tx.ExecContext(ctx, `
 				UPDATE render_jobs
-				SET state = 'failed', failed_at = now(), current_worker_id = NULL,
+				SET state = `+stateLiteral(model.StateFailed)+`, failed_at = now(), current_worker_id = NULL,
 				    lease_until = NULL, error_message = 'lease expired, max attempts reached'
 				WHERE id = $1`, e.id); err != nil {
 				return 0, err
@@ -70,7 +72,7 @@ func (r *Repository) RequeueExpired(now time.Time) (int, error) {
 		} else {
 			if _, err := tx.ExecContext(ctx, `
 				UPDATE render_jobs
-				SET state = 'pending', current_worker_id = NULL, lease_until = NULL, queued_at = now()
+				SET state = `+stateLiteral(model.StatePending)+`, current_worker_id = NULL, lease_until = NULL, queued_at = now()
 				WHERE id = $1`, e.id); err != nil {
 				return 0, err
 			}

@@ -24,7 +24,7 @@ func TestResolveMotionPropagatesRegistryError(t *testing.T) {
 // preset path used by compileSemantic for official preset animations.
 func TestAnimationForDefinitionPropagatesError(t *testing.T) {
 	anim, err := animationForDefinition(PresetDefinition{
-		Motion: MotionDefinition{ID: "definitely_missing_motion", Name: "definitely_missing_motion", Enter: 24},
+		Motion: MotionDefinition{ID: "definitely_missing_motion", Enter: 24},
 	})
 	if err == nil {
 		t.Fatalf("preset motion resolution error must propagate, got animation=%+v", anim)

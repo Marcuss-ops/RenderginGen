@@ -12,24 +12,65 @@ import (
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/schemaval"
 )
 
-// workspaceRoot walks up from this test's source file until it finds the
-// go.work that joins PipelineGen, RenderingGen and Chronon3d.
+// findWorkspaceRoot walks up from start until it finds the go.work that joins
+// PipelineGen, RenderingGen and Chronon3d. It reports ok=false when no go.work
+// exists anywhere above start, so callers can SKIP rather than fail.
+func findWorkspaceRoot(start string) (string, bool) {
+	dir := start
+	for {
+		if _, err := os.Stat(filepath.Join(dir, "go.work")); err == nil {
+			return dir, true
+		}
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			return "", false
+		}
+		dir = parent
+	}
+}
+
+// workspaceRoot returns the go.work workspace root, or SKIPS the test when it
+// is absent. The cross-repo boundary contract needs the sibling Chronon3d/
+// (and PipelineGen) schemas; a standalone RenderingGen checkout — including
+// this repository's own CI — cannot supply them. Skipping (never failing)
+// keeps the CI signal honest: the contract is verified in the workspace that
+// has the siblings, and its absence is visible as a skip, not a false pass or
+// a false failure. TestFindWorkspaceRootAbsent pins this behavior.
 func workspaceRoot(t *testing.T) string {
 	t.Helper()
 	_, source, _, ok := runtime.Caller(0)
 	if !ok {
-		t.Fatal("cannot locate test source")
+		t.Skip("cannot locate test source; skipping cross-repo boundary contract")
 	}
-	dir := filepath.Dir(source)
-	for {
-		if _, err := os.Stat(filepath.Join(dir, "go.work")); err == nil {
-			return dir
-		}
-		parent := filepath.Dir(dir)
-		if parent == dir {
-			t.Fatalf("go.work not found above %s", filepath.Dir(source))
-		}
-		dir = parent
+	root, found := findWorkspaceRoot(filepath.Dir(source))
+	if !found {
+		t.Skip("go.work / sibling repositories not checked out; skipping cross-repo boundary contract (standalone RenderingGen checkout)")
+	}
+	return root
+}
+
+// TestFindWorkspaceRootAbsent pins the skip policy: a tree with no go.work
+// must report absent so the boundary contract skips instead of failing on a
+// filesystem root it cannot see.
+func TestFindWorkspaceRootAbsent(t *testing.T) {
+	if _, found := findWorkspaceRoot(t.TempDir()); found {
+		t.Fatal("a directory tree without go.work must report no workspace")
+	}
+}
+
+// TestFindWorkspaceRootPresent pins the positive walk (find from a nested dir).
+func TestFindWorkspaceRootPresent(t *testing.T) {
+	root := t.TempDir()
+	if err := os.WriteFile(filepath.Join(root, "go.work"), []byte("go 1.25.0\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	nested := filepath.Join(root, "a", "b")
+	if err := os.MkdirAll(nested, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	got, found := findWorkspaceRoot(nested)
+	if !found || got != root {
+		t.Fatalf("findWorkspaceRoot(%q) = (%q, %v), want (%q, true)", nested, got, found, root)
 	}
 }
 

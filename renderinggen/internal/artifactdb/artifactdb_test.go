@@ -6,9 +6,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"path/filepath"
+	"strings"
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/media"
 )
 
 func sampleRecord(jobID string) ArtifactRecord {
@@ -20,7 +23,7 @@ func sampleRecord(jobID string) ArtifactRecord {
 		ContentType:         "video/mp4",
 		Backend:             "software",
 		ChrononVersion:      "0.1.0",
-		ProfileID:           "velox-h264-1080p30-v1",
+		ProfileID:           media.ProfileVeloxH2641080p30V1,
 		Container:           "mp4",
 		Codec:               "h264",
 		CodecProfile:        "High",
@@ -281,6 +284,44 @@ func TestSQLiteRecorderConcurrentRecords(t *testing.T) {
 	}
 	if count != n {
 		t.Fatalf("rows = %d, want %d", count, n)
+	}
+}
+
+// TestUpsertColumnArity pins the three hand-maintained sequences in the
+// artifact upsert — the INSERT column list, the `?` placeholder list and the
+// Record argument slice — to the same length. A column added to only one of
+// them binds shifted values (or errors at runtime) instead of failing in CI.
+func TestUpsertColumnArity(t *testing.T) {
+	insert, rest, ok := strings.Cut(upsert, ") VALUES")
+	if !ok {
+		t.Fatal("upsert has no column list")
+	}
+	_, columns, ok := strings.Cut(insert, "(")
+	if !ok {
+		t.Fatal("upsert has no opening parenthesis")
+	}
+	insertCols := map[string]bool{}
+	for _, col := range strings.Split(columns, ",") {
+		name := strings.TrimSpace(col)
+		insertCols[name] = true
+		if !strings.Contains(schema, "\n  "+name+" ") {
+			t.Errorf("insert column %q has no column in the schema", name)
+		}
+	}
+	if placeholderCount := strings.Count(rest, "?"); placeholderCount != len(insertCols) {
+		t.Fatalf("upsert has %d columns but %d placeholders", len(insertCols), placeholderCount)
+	}
+	// Every conflict-updated column must be an inserted one; otherwise a
+	// publication retry could read a column the insert never wrote.
+	if _, set, ok := strings.Cut(rest, "DO UPDATE SET"); ok {
+		set = strings.TrimSuffix(strings.TrimSpace(set), ";")
+		for _, assignment := range strings.Split(set, ",") {
+			lhs, _, _ := strings.Cut(assignment, "=")
+			name := strings.TrimSpace(lhs)
+			if !insertCols[name] {
+				t.Errorf("conflict update sets %q which is not an insert column", name)
+			}
+		}
 	}
 }
 

@@ -134,6 +134,11 @@ func Rules() []rule {
 			id:       "hardcoded_home_path",
 			rootOnly: true,
 			note:     "code, configuration and docs resolve binaries/assets/install prefixes from env or a documented prefix, never a hardcoded developer home path (every source and config carrier, not only Go)",
+			// The rule matches the SHAPE of a POSIX absolute home directory —
+			// /home/<user>/ (Linux) or /Users/<user>/ (macOS) — not one
+			// developer's login name. Encoding a machine fact (the login name)
+			// in the gate made the rule a second source of truth that went stale
+			// on any other machine and could be defeated by renaming the user.
 			// Scope: source, configuration and documentation carriers — the files
 			// a contributor copies from. Generated render artifacts (*_plan.json,
 			// *.timing.json under the *_videos/ and testdata/debug/ trees) are DATA
@@ -141,7 +146,7 @@ func Rules() []rule {
 			// absolute machine path recorded by the renderer) is governed by the
 			// tracking policy in .gitignore rather than by this rule.
 			exts:   []string{".go", ".yaml", ".yml", ".sh", ".service", ".conf", ".md", ".py", ".cmake", ".proto", ".dockerfile"},
-			textRe: mustRe(`/home/` + `pierone/`),
+			textRe: mustRe(`(?:/home/|/Users/)[A-Za-z0-9._-]+/`),
 		},
 		{
 			id:     "template_alias_org_default",

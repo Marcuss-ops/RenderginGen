@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	queueclient "github.com/Marcuss-ops/RenderingGen/queue/client"
 	"github.com/Marcuss-ops/RenderingGen/queue/internal/model"
 	"github.com/Marcuss-ops/RenderingGen/queue/internal/repository"
 )
@@ -46,7 +47,7 @@ func TestArtifactPersistedOnComplete(t *testing.T) {
 		FPSDen:             1,
 		FrameCount:         546,
 		DurationUS:         18200000,
-		ProfileID:          "velox-h264-copy-v1",
+		ProfileID:          queueclient.CertifiedProfileVeloxH2641080p30V1,
 		CopyEligible:       true,
 		Codec:              "h264",
 		CodecProfile:       "high",
@@ -96,7 +97,7 @@ func TestGetReturnsJobWithArtifact(t *testing.T) {
 		t.Fatal(err)
 	}
 	if err := r.Complete("job-1", "w1", model.Artifact{
-		ID: "art-1", StorageKey: "overlay/job-1/out.mp4", ArtifactHash: "abc", ProfileID: "velox-copy-v1", CopyEligible: true,
+		ID: "art-1", StorageKey: "overlay/job-1/out.mp4", ArtifactHash: "abc", ProfileID: queueclient.CertifiedProfileVeloxH2641080p30V1, CopyEligible: true,
 	}); err != nil {
 		t.Fatal(err)
 	}

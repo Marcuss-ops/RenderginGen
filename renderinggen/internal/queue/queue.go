@@ -9,7 +9,6 @@ package queue
 
 import (
 	"context"
-	"encoding/json"
 	"time"
 
 	queueclient "github.com/Marcuss-ops/RenderingGen/queue/client"
@@ -53,41 +52,22 @@ const (
 	StateRendered   = queueclient.StateRendered
 )
 
-// AssetRef points at an asset in the central artifact store by content hash
-// and the logical path it must be materialized at in the job workspace.
-type FrameRange struct {
-	Start int64 `json:"start"`
-	End   int64 `json:"end"`
-}
+// FrameRange and AssetRef are ALIASES of the public wire contract, like State,
+// Artifact, Worker and Job below. The historical local declarations plus the
+// toClient*/fromClient* mappers restated the same fields by hand; there is one
+// declaration, so a new field can never be silently dropped by a copy.
+type FrameRange = queueclient.FrameRange
 
-type AssetRef struct {
-	Hash        string `json:"hash"`
-	LogicalPath string `json:"logical_path"`
-	SourceURL   string `json:"source_url,omitempty"`
-}
+type AssetRef = queueclient.AssetRef
 
-// Job is one render SEGMENT pulled from the queue. RenderPlan is either the
-// semantic renderinggen.overlay-plan.v1 emitted by PipelineGen; the worker
-// compiles it exclusively to chronon.render-plan.v2.
-type Job struct {
-	ID             string      `json:"id"`
-	Schema         string      `json:"schema,omitempty"`
-	Version        int         `json:"version,omitempty"`
-	IdempotencyKey string      `json:"idempotency_key,omitempty"`
-	JobType        string      `json:"job_type,omitempty"`
-	ParentJobID    string      `json:"parent_job_id,omitempty"`
-	ChunkIndex     int         `json:"chunk_index,omitempty"`
-	FrameRange     *FrameRange `json:"frame_range,omitempty"`
-
-	RenderPlan json.RawMessage `json:"render_plan"`
-	Assets     []AssetRef      `json:"assets"`
-	Lease      time.Duration   `json:"lease"`
-
-	// State and Artifact are populated on claim: a re-claimed rendered job
-	// carries its stored artifact so the worker can skip rendering.
-	State    State     `json:"state,omitempty"`
-	Artifact *Artifact `json:"artifact,omitempty"`
-}
+// Job is one render SEGMENT pulled from the queue. RenderPlan is the semantic
+// renderinggen.overlay-plan.v1 emitted by PipelineGen; the worker compiles it
+// exclusively to chronon.render-plan.v2. Lease is populated on a claim.
+//
+// It is an ALIAS of the public wire type (the same pattern as Artifact and
+// Worker): the worker, the queue service and every producer share one Job
+// declaration — including State, Artifact, Progress and Lease.
+type Job = queueclient.Job
 
 // Artifact is the metadata of the artifact produced for a completed job,
 // including the copy-only certification VeloxEditing uses to assemble the
@@ -146,28 +126,20 @@ func (c *Client) Retry(ctx context.Context, id string) error {
 
 // Claim atomically claims the next available job, or returns nil when empty.
 func (c *Client) Claim(ctx context.Context) (*Job, error) {
-	claimed, err := c.q.Claim(ctx, c.workerID)
-	return fromClaimed(claimed, err)
+	return c.q.Claim(ctx, c.workerID)
 }
 
 // ClaimWait performs one bounded long-poll claim for any claimable state
 // (pending AND rendered). Rendered jobs carry their durable artifact on claim
 // so the worker skips rendering and retries only the external publication.
 func (c *Client) ClaimWait(ctx context.Context, wait time.Duration) (*Job, error) {
-	claimed, err := c.q.ClaimWait(ctx, c.workerID, wait)
-	return fromClaimed(claimed, err)
+	return c.q.ClaimWait(ctx, c.workerID, wait)
 }
 
 // ClaimFinalization atomically claims a completed parent row so this worker
 // can assemble the chunked artifact (see processor.ParentFinalizer).
 func (c *Client) ClaimFinalization(ctx context.Context, parentID string) (*Job, bool, error) {
-	claimed, ok, err := c.q.ClaimFinalization(ctx, parentID, c.workerID)
-	if err != nil || !ok || claimed == nil {
-		job, convErr := fromClaimed(claimed, err)
-		return job, false, convErr
-	}
-	job, err := fromClaimed(claimed, nil)
-	return job, true, err
+	return c.q.ClaimFinalization(ctx, parentID, c.workerID)
 }
 
 func (c *Client) Children(ctx context.Context, parentID string) ([]*Job, error) {
@@ -177,45 +149,14 @@ func (c *Client) Children(ctx context.Context, parentID string) ([]*Job, error) 
 	}
 	result := make([]*Job, len(children))
 	for i := range children {
-		child := children[i]
-		result[i] = &Job{ID: child.ID, ParentJobID: child.ParentJobID, ChunkIndex: child.ChunkIndex, FrameRange: fromClientFrameRange(child.FrameRange), State: State(child.State), Artifact: child.Artifact}
+		result[i] = &children[i]
 	}
 	return result, nil
 }
 
-func fromClaimed(claimed *queueclient.ClaimedJob, err error) (*Job, error) {
-	if err != nil {
-		return nil, err
-	}
-	if claimed == nil {
-		return nil, nil
-	}
-	return &Job{
-		ID:             claimed.ID,
-		Schema:         claimed.Schema,
-		Version:        claimed.Version,
-		IdempotencyKey: claimed.IdempotencyKey,
-		JobType:        claimed.JobType,
-		ParentJobID:    claimed.ParentJobID,
-		ChunkIndex:     claimed.ChunkIndex,
-		FrameRange:     fromClientFrameRange(claimed.FrameRange),
-		RenderPlan:     claimed.RenderPlan,
-		Assets:         fromClientAssets(claimed.Assets),
-		Lease:          claimed.Lease,
-		State:          State(claimed.State),
-		Artifact:       claimed.Artifact,
-	}, nil
-}
-
 // Submit enqueues a job through the shared public queue contract.
 func (c *Client) Submit(ctx context.Context, job Job) error {
-	return c.q.Submit(ctx, queueclient.Job{
-		ID: job.ID, Schema: job.Schema, Version: job.Version,
-		IdempotencyKey: job.IdempotencyKey, JobType: job.JobType,
-		ParentJobID: job.ParentJobID, ChunkIndex: job.ChunkIndex,
-		FrameRange: toClientFrameRange(job.FrameRange),
-		RenderPlan: job.RenderPlan, Assets: toClientAssets(job.Assets),
-	})
+	return c.q.Submit(ctx, job)
 }
 
 // Complete reports a successfully rendered job along with its artifact.
@@ -249,40 +190,4 @@ func (c *Client) ReportProgress(ctx context.Context, id string, framesDone, fram
 		FramesDone:  int(framesDone),
 		TotalFrames: int(framesTotal),
 	})
-}
-
-func toClientFrameRange(in *FrameRange) *queueclient.FrameRange {
-	if in == nil {
-		return nil
-	}
-	return &queueclient.FrameRange{Start: in.Start, End: in.End}
-}
-
-func toClientAssets(in []AssetRef) []queueclient.AssetRef {
-	if in == nil {
-		return nil
-	}
-	out := make([]queueclient.AssetRef, len(in))
-	for i, a := range in {
-		out[i] = queueclient.AssetRef{Hash: a.Hash, LogicalPath: a.LogicalPath, SourceURL: a.SourceURL}
-	}
-	return out
-}
-
-func fromClientFrameRange(in *queueclient.FrameRange) *FrameRange {
-	if in == nil {
-		return nil
-	}
-	return &FrameRange{Start: in.Start, End: in.End}
-}
-
-func fromClientAssets(in []queueclient.AssetRef) []AssetRef {
-	if in == nil {
-		return nil
-	}
-	out := make([]AssetRef, len(in))
-	for i, a := range in {
-		out[i] = AssetRef{Hash: a.Hash, LogicalPath: a.LogicalPath, SourceURL: a.SourceURL}
-	}
-	return out
 }

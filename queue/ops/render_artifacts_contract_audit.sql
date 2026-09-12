@@ -10,11 +10,18 @@
 -- transform_assemble.rs REMOVAL GATE (the skip of the contract_id check for
 -- contract-less certifications). The Rust gate accepts a certification when
 -- contract_id == 'VELOX_ASSEMBLY_READY_V1' OR stream_signature_sha256 is
--- present; on this store those identities surface through
--- profile_id = 'velox-h264-copy-v1' + complete stream facts, because the Go
--- bundle that feeds the wire DROPS explicit contract_id /
--- stream_signature_sha256 (queued via RenderingGen pipeline.go; the
--- metadata-decoder in Rust never receives those keys).
+-- present; on this store those identities surface through a canonical output
+-- profile id PLUS complete stream facts, because the Go bundle that feeds the
+-- wire DROPS explicit contract_id / stream_signature_sha256 (queued via
+-- RenderingGen pipeline.go; the metadata-decoder in Rust never receives those
+-- keys).
+--
+-- The profile id itself is owned by the wire contract (queue/client,
+-- CertifiedProfileVeloxH2641080p30V1; the worker's media registry aliases it)
+-- and is deliberately NOT restated here: a hardcoded id in this audit could
+-- never match the constant once it is renamed, and would turn the gate into a
+-- silent false pass. Section 3 asserts the SHAPE (exactly one distinct profile
+-- id) + completeness, never a literal value.
 --
 -- Criterion: every copy_eligible = TRUE row must carry a COMPLETE identity —
 -- profile_id plus non-NULL codec/codec_profile/closed_gop/
@@ -66,9 +73,11 @@ SELECT
     COUNT(*) FILTER (WHERE a.copy_eligible = TRUE AND (a.fps_num IS NULL OR a.fps_den IS NULL)) AS contractless_fps
 FROM render_artifacts AS a;
 
--- ── 3. Profile distribution: confirm the single canonical profile id ─────
--- A second profile_id here means a second certified shape exists; before any
--- gate removal each distinct profile needs its own contract mapping.
+-- ── 3. Profile distribution: confirm exactly ONE certified profile shape ──
+-- A second distinct profile_id here means a second certified shape exists;
+-- before any gate removal each distinct profile needs its own contract
+-- mapping. Assert cardinality, not a literal id: the canonical id lives in
+-- queue/client (CertifiedProfileVeloxH2641080p30V1, the wire owner).
 SELECT a.profile_id,
        COUNT(*)            AS artifacts,
        COUNT(*) FILTER (WHERE a.copy_eligible) AS copy_eligible

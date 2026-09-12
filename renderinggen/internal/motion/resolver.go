@@ -3,10 +3,7 @@ package motion
 type DeclarativePlugin struct{ Definition MotionDefinition }
 
 func (p DeclarativePlugin) ID() string {
-	if p.Definition.ID != "" {
-		return p.Definition.ID
-	}
-	return p.Definition.Name
+	return p.Definition.ID
 }
 func (p DeclarativePlugin) Validate(params MotionParams) error {
 	return ValidateDefinition(p.Definition)
@@ -33,7 +30,7 @@ func (p DeclarativePlugin) CompileText(ctx MotionContext, params MotionParams) (
 
 func LegacyDefinition(name, unit string, enter, exit int) MotionDefinition {
 	if name == "" || name == "static" || enter <= 0 {
-		return MotionDefinition{ID: name, Name: name, Unit: unit, Enter: enter, Exit: exit}
+		return MotionDefinition{ID: name, Unit: unit, Enter: enter, Exit: exit}
 	}
 	property, start, end := "opacity", any(0.0), any(1.0)
 	switch name {
@@ -58,14 +55,14 @@ func LegacyDefinition(name, unit string, enter, exit int) MotionDefinition {
 	case "scale_out":
 		property, start, end = "scale", 1.0, 0.0
 	case "elastic_pop":
-		return MotionDefinition{ID: name, Name: name, Unit: unit, Enter: enter, Exit: exit, Tracks: []TrackDefinition{
+		return MotionDefinition{ID: name, Unit: unit, Enter: enter, Exit: exit, Tracks: []TrackDefinition{
 			{Property: "scale", Easing: "out_back", Keyframes: []AnimationKeyframe{{Frame: 0, Value: 0.5}, {Frame: int64(enter / 2), Value: 1.12}, {Frame: int64(enter * 3 / 4), Value: 0.96}, {Frame: int64(enter), Value: 1.0}}},
 			{Property: "opacity", Easing: "out_cubic", Keyframes: []AnimationKeyframe{{Frame: 0, Value: 0.0}, {Frame: int64(enter / 3), Value: 1.0}}},
 		}}
 	case "bounce_in":
-		return MotionDefinition{ID: name, Name: name, Unit: unit, Enter: enter, Exit: exit, Tracks: []TrackDefinition{{Property: "scale", Easing: "out_back", Keyframes: []AnimationKeyframe{{Frame: 0, Value: 0.4}, {Frame: 7, Value: 1.15}, {Frame: 11, Value: 0.94}, {Frame: int64(enter), Value: 1.0}}}, {Property: "opacity", Easing: "out_cubic", Keyframes: []AnimationKeyframe{{Frame: 0, Value: 0.0}, {Frame: 5, Value: 1.0}}}}}
+		return MotionDefinition{ID: name, Unit: unit, Enter: enter, Exit: exit, Tracks: []TrackDefinition{{Property: "scale", Easing: "out_back", Keyframes: []AnimationKeyframe{{Frame: 0, Value: 0.4}, {Frame: 7, Value: 1.15}, {Frame: 11, Value: 0.94}, {Frame: int64(enter), Value: 1.0}}}, {Property: "opacity", Easing: "out_cubic", Keyframes: []AnimationKeyframe{{Frame: 0, Value: 0.0}, {Frame: 5, Value: 1.0}}}}}
 	}
-	return MotionDefinition{ID: name, Name: name, Unit: unit, Enter: enter, Exit: exit, Tracks: []TrackDefinition{{Property: property, Easing: "out_cubic", Keyframes: []AnimationKeyframe{{Frame: 0, Value: start}, {Frame: int64(enter), Value: end}}}}}
+	return MotionDefinition{ID: name, Unit: unit, Enter: enter, Exit: exit, Tracks: []TrackDefinition{{Property: property, Easing: "out_cubic", Keyframes: []AnimationKeyframe{{Frame: 0, Value: start}, {Frame: int64(enter), Value: end}}}}}
 }
 
 var _ MotionPlugin = DeclarativePlugin{}

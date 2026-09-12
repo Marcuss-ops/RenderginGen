@@ -49,6 +49,9 @@ token.json
 # .gitignore only covered /renderinggen/*.mp4 + 5 subdirs, not these roots.
 /preset_videos/
 /phrase_preset_videos/
+# typewriter_phrase_videos was the last tracked top-level demo root (52 files,
+# ~7 MB of mp4/timing/plan). Same class as the two above: on disk, never in git.
+/typewriter_phrase_videos/
 assets/backgrounds/*.mp4
 
 # Keep testdata/golden intentionally tiny: only canonical CI/regression fixtures.

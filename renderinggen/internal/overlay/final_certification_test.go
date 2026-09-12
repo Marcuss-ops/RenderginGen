@@ -122,10 +122,10 @@ func TestFinal_AllOfficialPresetsCovered(t *testing.T) {
 			t.Errorf("preset %q has unknown family %q", id, def.Family)
 		}
 		// Static presets (no motion) are legal — static_text_smoke is one
-		// by design — but they must say so: the motion name is the contract
+		// by design — but they must say so: the motion ID is the contract
 		// the compiler and certification fixture both read.
-		if def.Motion.Name == "" && def.Family != PresetText {
-			t.Errorf("preset %q has no motion name", id)
+		if def.Motion.ID == "" && def.Family != PresetText {
+			t.Errorf("preset %q has no motion id", id)
 		}
 		switch def.Family {
 		case PresetText:
@@ -226,9 +226,9 @@ func TestFinal_CompileEveryPreset(t *testing.T) {
 			// Only animated presets must carry tracks; static presets
 			// (static_text_smoke) legitimately compile without them.
 			imageScaleFallback := def.Family == PresetImage
-			if def.Motion.Name != "" && !imageScaleFallback && ((entity.Animation == nil || len(entity.Animation.Tracks) == 0) &&
+			if def.Motion.ID != "" && !imageScaleFallback && ((entity.Animation == nil || len(entity.Animation.Tracks) == 0) &&
 				len(entity.TextAnimators) == 0) {
-				t.Fatalf("entity has no animation tracks or text animators: motion %q compiled away", def.Motion.Name)
+				t.Fatalf("entity has no animation tracks or text animators: motion %q compiled away", def.Motion.ID)
 			}
 		})
 	}

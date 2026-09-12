@@ -19,9 +19,16 @@ import (
 // lease held by someone else.
 var ErrLeaseConflict = errors.New("queue: lease conflict")
 
-// ClaimedJob is the payload returned to a worker on a successful claim. It is
-// a subset of Job plus the lease the worker must hold (and renew) while
+// ClaimedJob is the payload returned to a worker on a successful claim: the
+// Job envelope plus the Lease the worker must hold (and renew) while
 // rendering.
+//
+// It is an ALIAS of Job — there is ONE job declaration shared by the queue
+// service, the server, the worker adapter and every producer, so the claim
+// response can never drift from the submit/GET bodies. Lease is the only field
+// a claim adds, and it is omitted everywhere else.
+type ClaimedJob = Job
+
 // ClaimFinalization atomically claims a parent for finalization.
 func (c *Client) ClaimFinalization(ctx context.Context, parentID, workerID string) (*ClaimedJob, bool, error) {
 	body, err := json.Marshal(map[string]string{"worker": workerID})
@@ -52,25 +59,6 @@ func (c *Client) ClaimFinalization(ctx context.Context, parentID, workerID strin
 	return &job, true, nil
 }
 
-type ClaimedJob struct {
-	ID             string      `json:"id"`
-	Schema         string      `json:"schema,omitempty"`
-	Version        int         `json:"version,omitempty"`
-	IdempotencyKey string      `json:"idempotency_key,omitempty"`
-	JobType        string      `json:"job_type,omitempty"`
-	ParentJobID    string      `json:"parent_job_id,omitempty"`
-	ChunkIndex     int         `json:"chunk_index,omitempty"`
-	FrameRange     *FrameRange `json:"frame_range,omitempty"`
-
-	RenderPlan json.RawMessage `json:"render_plan"`
-	Assets     []AssetRef      `json:"assets"`
-	Lease      time.Duration   `json:"lease"`
-
-	// State and Artifact are populated when a rendered job is re-claimed, so
-	// the worker can skip rendering and only retry publication.
-	State    State     `json:"state,omitempty"`
-	Artifact *Artifact `json:"artifact,omitempty"`
-}
 
 // Claim atomically claims the next pending job for workerID. It returns a nil
 // job when the queue is empty.
@@ -190,10 +178,18 @@ func (c *Client) Renew(ctx context.Context, id, workerID string) error {
 	return c.report(ctx, id, workerID, "renew", nil)
 }
 
-// Progress is the per-job render progress a worker reports while rendering.
+// Progress is the per-job render progress.
+//
+// On a worker report only FramesDone/TotalFrames are meaningful; LastFrameAt
+// and Worker are filled in by the queue when it stores the snapshot and are
+// exposed on GET /jobs/{id} so a stalled render is observable without asking
+// the worker. It is the SINGLE progress type: the report payload and the
+// persisted/read projection are the same declaration.
 type Progress struct {
-	FramesDone  int `json:"frames_done"`
-	TotalFrames int `json:"frames_total,omitempty"`
+	FramesDone  int       `json:"frames_done"`
+	TotalFrames int       `json:"frames_total,omitempty"`
+	LastFrameAt time.Time `json:"last_frame_at,omitzero"`
+	Worker      string    `json:"worker,omitempty"`
 }
 
 // ReportProgress records render progress for a running job owned by workerID.

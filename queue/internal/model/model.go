@@ -3,9 +3,7 @@
 package model
 
 import (
-	"encoding/json"
 	"fmt"
-	"time"
 
 	"github.com/Marcuss-ops/RenderingGen/queue/client"
 )
@@ -83,12 +81,12 @@ const (
 	JobSchemaVersionV1 = client.JobSchemaVersionV1
 )
 
-// AssetRef points at an asset in the central artifact store by content hash
-// and the logical path it must be materialized at in the job workspace.
-type FrameRange struct {
-	Start int64 `json:"start"`
-	End   int64 `json:"end"`
-}
+// FrameRange is the half-open [Start, End) chunk contract. It is an ALIAS of
+// the public wire type: the queue service, the worker and every producer share
+// one declaration, so a chunk range can never mean two different things on the
+// two sides of the wire (the same rule that already applies to State and
+// Artifact).
+type FrameRange = client.FrameRange
 
 // ValidateChunk validates chunk metadata for a job. It is the single authority
 // for frame_range/chunk_index invariants (U6): both memory and postgres
@@ -103,70 +101,39 @@ func ValidateChunk(job Job) error {
 	return nil
 }
 
-type AssetRef struct {
-	Hash        string `json:"hash"`
-	LogicalPath string `json:"logical_path"`
-	SourceURL   string `json:"source_url,omitempty"`
-}
+// AssetRef points at an asset in the central artifact store by content hash
+// and the logical path it must be materialized at in the job workspace. It is
+// an ALIAS of the public wire type, not a second declaration.
+type AssetRef = client.AssetRef
 
 // Job is a unit of work in the queue: one render SEGMENT. The renderable
 // content carried in RenderPlan is the semantic OverlaySpec
 // (renderinggen.overlay-plan.v1, accepted by the worker's
-// overlay.CompileSemantic) for prepared jobs, or the concrete Chronon
-// render-plan document on precompiled paths. The worker writes plan.json and
+// overlay.CompileSemantic) for prepared jobs. The worker writes plan.json and
 // Chronon3d composes every layer of the segment in a single pass.
-type Job struct {
-	ID             string      `json:"id"`
-	Schema         string      `json:"schema,omitempty"`
-	Version        int         `json:"version,omitempty"`
-	IdempotencyKey string      `json:"idempotency_key,omitempty"`
-	JobType        string      `json:"job_type,omitempty"`
-	ParentJobID    string      `json:"parent_job_id,omitempty"`
-	ChunkIndex     int         `json:"chunk_index,omitempty"`
-	FrameRange     *FrameRange `json:"frame_range,omitempty"`
-
-	RenderPlan json.RawMessage `json:"render_plan"`
-	Assets     []AssetRef      `json:"assets"`
-
-	State       State     `json:"state"`
-	Worker      string    `json:"worker,omitempty"`
-	Attempts    int       `json:"attempts"`
-	CreatedAt   time.Time `json:"created_at"`
-	QueuedAt    time.Time `json:"queued_at,omitempty"`
-	StartedAt   time.Time `json:"started_at,omitempty"`
-	CompletedAt time.Time `json:"completed_at,omitempty"`
-	LeaseUntil  time.Time `json:"lease_until,omitempty"`
-	FailReason  string    `json:"fail_reason,omitempty"`
-
-	// Artifact is the rendered artifact, populated once the job completes.
-	Artifact *Artifact `json:"artifact,omitempty"`
-
-	// Progress is the last render progress reported by the owning worker
-	// (nil until the first report arrives). Exposed by GET /jobs/{id}.
-	Progress *Progress `json:"progress,omitempty"`
-}
+//
+// It is an ALIAS of the public wire contract type (queue/client), exactly like
+// State, Artifact, Progress, Stats, Worker, AssetRef and FrameRange: there is
+// ONE job declaration for the submit body, the claim response and the GET
+// projection, so a field added to the wire can never be dropped (or invented)
+// by a second struct that happens to agree today. The historical internal
+// re-declaration — kept in step only by hand-maintained field copies in the
+// server and the worker adapter — is gone.
+type Job = client.Job
 
 // Progress is the per-job render progress reported by the worker that owns
 // the job's lease. FramesDone is the last frame position the renderer
 // reported (absolute, already offset for chunked execution). TotalFrames is
 // the segment length when known (0 = unknown). LastFrameAt is the wall-clock
-// time of the last frame report and doubles as a render liveness signal.
-type Progress struct {
-	FramesDone  int       `json:"frames_done"`
-	TotalFrames int       `json:"frames_total,omitempty"`
-	LastFrameAt time.Time `json:"last_frame_at"`
-	Worker      string    `json:"worker,omitempty"`
-}
+// time of the last frame report and doubles as a render liveness signal. It is
+// an ALIAS of the public wire type — one declaration for the report payload
+// and the GET projection.
+type Progress = client.Progress
 
 // Stats is a snapshot of the queue, used for autoscaling and monitoring.
 // Ok reports whether the snapshot came from a successful store query: a
 // failed snapshot is all-zeros with Ok=false, so consumers can distinguish
-// "queue is empty" from "store unavailable".
-type Stats struct {
-	Pending   int  `json:"pending"`
-	Running   int  `json:"running"`
-	Completed int  `json:"completed"`
-	Failed    int  `json:"failed"`
-	Depth     int  `json:"depth"`
-	Ok        bool `json:"ok"`
-}
+// "queue is empty" from "store unavailable". It is an ALIAS of the public wire
+// type (the client used to drop Ok, which made an outage look like an idle
+// queue).
+type Stats = client.Stats
