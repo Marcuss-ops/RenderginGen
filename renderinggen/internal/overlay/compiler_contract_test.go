@@ -188,7 +188,7 @@ func TestCompileSemanticKindAndExplicitText(t *testing.T) {
       "plan_id":"p","video_id":"v","width":1280,"height":720,"fps_num":30,"fps_den":1,
       "items":[
         {"id":"phrase","kind":"important_phrase","template_id":"IMPORTANT_PHRASE","preset_id":"caption_card","text":"QUESTO CAMBIA TUTTO","start_ms":0,"end_ms":1000},
-        {"id":"person","kind":"entity_card","template_id":"PERSON","preset_id":"lower_third_safe","text":"Cook","start_ms":1000,"end_ms":2000}
+        {"id":"person","entity_id":"person:cook","kind":"entity_card","template_id":"PERSON","preset_id":"lower_third_safe","text":"Cook","start_ms":1000,"end_ms":2000,"duration_ms":1000}
       ]
     }`)
 	result, err := CompileSemantic(raw)
@@ -217,7 +217,7 @@ func TestCompileSemanticTextIsMandatory(t *testing.T) {
       "schema_version":"renderinggen.overlay-plan.v1",
       "plan_id":"p","video_id":"v","width":1280,"height":720,"fps_num":30,"fps_den":1,
       "items":[
-        {"id":"person","kind":"entity_card","template_id":"PERSON","preset_id":"lower_third_safe","start_ms":0,"end_ms":1000}
+        {"id":"person","entity_id":"person:missing-text","kind":"entity_card","template_id":"PERSON","preset_id":"lower_third_safe","start_ms":0,"end_ms":1000,"duration_ms":1000}
       ]
     }`)
 	if _, err := CompileSemantic(raw); err == nil {
@@ -238,9 +238,9 @@ func TestCompileSemanticImportantPhraseAndNamedImage(t *testing.T) {
       "items":[
         {"id":"phrase-important","kind":"important_phrase","template_id":"IMPORTANT_PHRASE","preset_id":"caption_card",
          "text":"THIS CHANGES EVERYTHING","start_ms":500,"end_ms":1800},
-        {"id":"person-image-name","kind":"entity_card","template_id":"PERSON","preset_id":"lower_third_safe","image_preset_id":"image_slide_left",
+        {"id":"person-image-name","entity_id":"person:matt-damon","kind":"entity_card","template_id":"PERSON","preset_id":"lower_third_safe","image_preset_id":"image_slide_left",
          "text":"Matt Damon",
-         "start_ms":2200,"end_ms":4200,
+         "start_ms":2200,"end_ms":4200,"duration_ms":2000,
          "asset_refs":[{"asset_id":"matt-damon","sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
                          "url":"https://store.example/objects/matt-damon.png","media_type":"image/png"}]}
       ]
