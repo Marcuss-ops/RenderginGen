@@ -32,6 +32,12 @@ credentials.json
 token.json
 
 # Generated render/benchmark artifacts
+# Per-frame telemetry sidecars are pure diagnostics: a render regenerates them
+# on demand, each one is ~1.2 MB of per-frame JSON, and they are the bulk of
+# the artifact bloat here. They are never committed in any directory, not just
+# the roots enumerated below.
+*.mp4.timing.json
+*.mp4.telemetry-summary.json
 /renderinggen/*.mp4
 /renderinggen/*.mp4.timing.json
 /renderinggen/*.mp4.receipt.json
@@ -52,6 +58,9 @@ token.json
 # typewriter_phrase_videos was the last tracked top-level demo root (52 files,
 # ~7 MB of mp4/timing/plan). Same class as the two above: on disk, never in git.
 /typewriter_phrase_videos/
+# apple_style_final_videos is the same artifact class again: rendered clips plus
+# their sidecars, reproducible from the crime/discovery/young style presets.
+/apple_style_final_videos/
 assets/backgrounds/*.mp4
 
 # Keep testdata/golden intentionally tiny: only canonical CI/regression fixtures.
