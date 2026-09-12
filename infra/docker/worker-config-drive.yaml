@@ -41,4 +41,4 @@ drive:
   credentials_file: /etc/renderinggen/credentials.json
   token_file: /etc/renderinggen/token.json
   # Target Drive folder (the user's "renders" folder).
-  parent_folder_id: 1J_xUGo_bchzXDIGqSX04CU44c_Dm3SxS
+  parent_folder_id: 1eRYRBDBWxGdqC4u7fHwp5hX_kRoTkZ8E

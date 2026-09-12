@@ -190,7 +190,7 @@ echo "    chain:    queue -> RenderingGen -> Chronon (${BACKEND} ${CHRONON_VER})
 # Drive folder. The PNGs are generated from the actual MP4, never from the
 # source fixture, so they prove what Chronon rendered.
 if [[ "${DRIVE_UPLOAD:-0}" == "1" ]]; then
-  DRIVE_FOLDER_ID="${DRIVE_FOLDER_ID:-1J_xUGo_bchzXDIGqSX04CU44c_Dm3SxS}"
+  DRIVE_FOLDER_ID="${DRIVE_FOLDER_ID:-1eRYRBDBWxGdqC4u7fHwp5hX_kRoTkZ8E}"
   DRIVE_CREDENTIALS="${DRIVE_CREDENTIALS:-${REPO_ROOT}/../refactored/credentials.json}"
   DRIVE_TOKEN="${DRIVE_TOKEN:-${REPO_ROOT}/../refactored/token.json}"
   DRIVE_UPLOADER="${DRIVE_UPLOADER:-${WORK_DIR}/drive-upload}"
