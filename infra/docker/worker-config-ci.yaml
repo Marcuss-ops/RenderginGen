@@ -1,0 +1,28 @@
+worker:
+  id: renderinggen-ci
+  pipeline_workers: 1
+  gpu_lanes: 1
+
+queue:
+  endpoint: http://queue:8081
+
+artifact_store:
+  endpoint: http://objectstore:9000
+  local_cache_dir: /var/lib/renderinggen/cache
+
+workspace:
+  root: /dev/shm/renderinggen/jobs
+
+chronon:
+  # GitHub-hosted runners do not expose the production NVIDIA device. Keep
+  # the same warm IPC boundary while selecting Chronon's software backend.
+  profile: software-cli
+  home: /opt/chronon3d
+  binary: /opt/chronon3d/bin/chronon3d_cli
+  mode: ipc
+  socket_path: /var/run/chronon3d/chronon.sock
+  native_output_profiles: false
+  hardware_encoder: none
+
+health:
+  addr: ":8080"
