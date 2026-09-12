@@ -1,0 +1,36 @@
+services:
+  queue:
+    build:
+      context: ../..
+      dockerfile: queue/Dockerfile
+    command: ["--lease", "10m", "--worker-stale-after", "3m"]
+    ports:
+      - "127.0.0.1:8081:8081"
+    environment:
+      DATABASE_URL: postgres://renderinggen:renderinggen@postgres:5432/renderinggen?sslmode=disable
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  worker:
+    build:
+      context: ../..
+      dockerfile: infra/docker/renderinggen-worker.Dockerfile
+      args:
+        CHRONON_RUNTIME: ghcr.io/marcuss-ops/chronon3d-runtime:0.1.0
+        VERSION: 0.1.0
+    environment:
+      CHRONON_HOME: /opt/chronon3d
+      CHRONON_DAEMON_BACKEND: software
+    tmpfs:
+      - /dev/shm:size=2g,mode=1777
+    shm_size: 2g
+    volumes:
+      - renderinggen-ci-cache:/var/lib/renderinggen/cache
+      - ./worker-config-ci.yaml:/etc/renderinggen/config.yaml:ro
+    depends_on:
+      - queue
+      - objectstore
+
+volumes:
+  renderinggen-ci-cache:

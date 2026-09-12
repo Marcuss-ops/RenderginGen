@@ -10,8 +10,8 @@ func TestStatsComeFromTheSingleCompilePass(t *testing.T) {
       "schema_version":"renderinggen.overlay-plan.v1",
       "plan_id":"p1","video_id":"v1","width":1280,"height":720,"fps_num":30,"fps_den":1,
       "items":[
-        {"id":"a","kind":"entity_card","template_id":"PERSON","preset_id":"lower_third_safe","text":"Ada","start_ms":0,"end_ms":1000},
-        {"id":"b","kind":"organization","template_id":"ORGANIZATION","preset_id":"lower_third_safe","text":"ACME","start_ms":1000,"end_ms":2000},
+        {"id":"a","entity_id":"person:ada","kind":"entity_card","template_id":"PERSON","preset_id":"lower_third_safe","text":"Ada","start_ms":0,"end_ms":1000,"duration_ms":1000},
+        {"id":"b","entity_id":"org:acme","kind":"organization","template_id":"ORGANIZATION","preset_id":"lower_third_safe","text":"ACME","start_ms":1000,"end_ms":2000,"duration_ms":1000},
         {"id":"c","kind":"important_phrase","template_id":"IMPORTANT_PHRASE","preset_id":"caption_card","text":"hi","start_ms":0,"end_ms":1000},
         {"id":"d","kind":"important_word","template_id":"IMPORTANT_WORD","preset_id":"active_word_pop","text":"WOW","start_ms":0,"end_ms":1000},
         {"id":"e","kind":"number","template_id":"NUMBER","preset_id":"active_word_pop","text":"42","start_ms":0,"end_ms":1000},

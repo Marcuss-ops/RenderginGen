@@ -153,18 +153,10 @@ jobs:
   # ═══════════════════════════════════════════════════════════════════════
   # Golden canary — permanent end-to-end gate.
   #
-  # Boots the real stack (postgres + queue + objectstore + worker) and runs
-  # the semantic golden (GoldenSemanticOverlayJobV1) through the full chain:
-  # queue -> RenderingGen -> real
-  # chronon3d_cli (software backend) -> artifact store -> PostgreSQL, then
-  # verifies the idempotent replay returns the same artifact with no new
-  # render (attempts/events unchanged). Any drift in the renderer, the
-  # contracts or the queue semantics fails this job.
-  #
-  # The worker image is built FROM the chronon3d-runtime image. Use the
-  # published ghcr image when reachable; otherwise build the runtime from
-  # the real Chronon3d source (its own Dockerfile) so the gate is fully
-  # self-contained and never vendors Chronon.
+  # Boots postgres + objectstore from the production infra compose and adds
+  # Queue + RenderingGen through the CI-only compose overlay. The worker keeps
+  # the real Chronon IPC daemon warm but selects the software backend because
+  # GitHub-hosted runners expose no production NVIDIA device.
   golden-e2e:
     name: Golden canary E2E
     runs-on: ubuntu-latest
@@ -184,8 +176,10 @@ jobs:
               -t "$RUNTIME" /tmp/chronon3d
           fi
 
-      - name: Boot the stack (postgres + queue + objectstore + worker)
-        run: cd infra/docker && docker compose up -d --build
+      - name: Boot the E2E stack
+        run: |
+          cd infra/docker
+          docker compose -f docker-compose.yaml -f docker-compose.ci.yaml up -d --build
 
       - name: Wait for queue readiness
         run: |
@@ -204,4 +198,6 @@ jobs:
 
       - name: Tear down
         if: always()
-        run: cd infra/docker && docker compose down -v
+        run: |
+          cd infra/docker
+          docker compose -f docker-compose.yaml -f docker-compose.ci.yaml down -v
