@@ -61,6 +61,8 @@
         "asset_refs": { "type": "array", "items": { "$ref": "#/properties/items/items/properties/asset_refs/items" } },
         "position": { "type": "string" },
         "opacity": { "type": "number", "minimum": 0, "maximum": 1 },
+        "margin_px": { "type": "integer", "minimum": 0, "description": "Requested distance from the canvas edge. Required for text watermarks: the worker never guesses layout." },
+        "font_ref": { "$ref": "#/properties/items/items/properties/asset_refs/items", "description": "Font asset of a text watermark. Required when text is set: the worker never invents typography." },
         "style": { "type": "object" }
       }
     },
@@ -89,6 +91,9 @@
           "end_ms": { "type": "integer", "exclusiveMinimum": 0 },
           "template_id": { "type": "string", "minLength": 1 },
           "preset_id": { "type": "string", "minLength": 1, "description": "Semantic visual preset resolved by PipelineGen's SemanticOverlayResolver (ADR-029). REQUIRED for preset-driven templates (text cards, IMAGE_OVERLAY); ABSENT for preset-less primitives (PRODUCT, LOGO, LIGHT_LEAK, BACKGROUND, SHAPE) which compile to a bare renderer-default layer." },
+          "image_preset_id": { "type": "string", "minLength": 1, "description": "Image-layer preset for an entity card that carries an asset (the text preset stays in preset_id). Validated against the same official catalog." },
+          "motion_id": { "type": "string", "minLength": 1, "description": "Per-item motion override resolved through the RenderingGen motion registry. When present it replaces the preset's motion." },
+          "motion_params": { "type": "object", "description": "Motion parameters passed to the motion plugin for this item." },
           "text": { "type": "string" },
           "params": { "type": "object" },
           "render_key": { "type": "string" },

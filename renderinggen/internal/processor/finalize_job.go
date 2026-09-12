@@ -61,5 +61,5 @@ func (p *Processor) FinalizeJob(ctx context.Context, prepared *PreparedJob) (que
 		return queue.Artifact{}, err
 	}
 	return p.storeArtifact(ctx, job.ID, outputPath, plan, metrics, prepared.totalStart, probe, prepared.Stats, prepared.InputBytes,
-		job.JobType == queue.JobTypeOverlayRender || metadata.ProfileID != "")
+		job.JobType == queue.JobTypeOverlayRender || metadata.ProfileID != "", prepared.NativeCertified)
 }

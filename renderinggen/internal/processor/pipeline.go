@@ -26,6 +26,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/metricnames"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/overlay"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/queue"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/workspace"
@@ -43,6 +44,11 @@ type PreparedJob struct {
 	Metrics         map[string]float64 // phase metrics accumulated so far
 	OutputPath      string
 	AudioSourcePath string
+	// NativeCertified is true only when Chronon's native Vulkan/NVENC receipt
+	// gate certified a source-video execution. Image/text-only compositions
+	// may use the GPU compositor, but their host-frame pipe handoff is not the
+	// native-surface contract.
+	NativeCertified bool
 	totalStart      time.Time
 }
 
@@ -163,6 +169,8 @@ func (p *Processor) PrepareJob(ctx context.Context, job *queue.Job) (*PreparedJo
 		metrics[phase+"_ms"] = us / 1000
 		metrics[phase+"_us"] = us
 		p.recordPhase(phase, start)
+		// The two spellings are the declared phase pair; the vocabulary test
+		// walks every recordPhase stem and fails on one that is not declared.
 	}
 	if err := validate(job); err != nil {
 		return nil, err
@@ -174,6 +182,17 @@ func (p *Processor) PrepareJob(ctx context.Context, job *queue.Job) (*PreparedJo
 		return nil, err
 	}
 	stats, plan, compiledAssets := result.Stats, result.Plan, result.Assets
+	// A template_id that resolved to no registry row is NOT an error (historical
+	// documents and the compatibility aliases must keep rendering), but it must
+	// never be invisible either: it is exactly the shape of a producer rename or
+	// a dropped alias, both of which degrade the overlay to a preset-less text
+	// primitive. The compile pass already classified it — this is the worker's
+	// single observable projection of that fact.
+	if len(result.UnknownTemplates) > 0 {
+		metrics[metricnames.UnknownTemplates] = float64(len(result.UnknownTemplates))
+		log.Printf("job %s: %d item template_id(s) resolved to no registry row and were compiled as preset-less primitives: %s",
+			job.ID, len(result.UnknownTemplates), strings.Join(result.UnknownTemplates, ", "))
+	}
 	// The chunk contract is validated against the plan that will actually be
 	// rendered, before any asset is downloaded: an out-of-range chunk is a
 	// producer bug that must not burn a GPU lane and a lease to surface.
@@ -181,8 +200,8 @@ func (p *Processor) PrepareJob(ctx context.Context, job *queue.Job) (*PreparedJo
 		return nil, err
 	}
 	compileUS := float64(time.Since(totalStart).Microseconds())
-	metrics["overlay_compile_us"] = compileUS
-	metrics["overlay_compile_ms"] = compileUS / 1000
+	metrics[metricnames.OverlayCompileUS] = compileUS
+	metrics[metricnames.OverlayCompileMS] = compileUS / 1000
 	assets, err := mergeAssets(job.Assets, compiledAssets)
 	if err != nil {
 		return nil, err
@@ -205,9 +224,7 @@ func (p *Processor) PrepareJob(ctx context.Context, job *queue.Job) (*PreparedJo
 		// the liveness invariant must hold from the moment the workspace
 		// exists. Occasional refresh failures during RunGPU stay tolerable
 		// (the 2h TTL covers them); the missing first marker is not.
-		if cerr := ws.Cleanup(); cerr != nil {
-			log.Printf("job %s: workspace cleanup after lease marker failure: %v", job.ID, cerr)
-		}
+		p.cleanupWorkspace(ws, job.ID)
 		return nil, fmt.Errorf("processor: establish workspace lease for %s: %w", job.ID, err)
 	}
 	var inputBytes int64
@@ -228,9 +245,7 @@ func (p *Processor) PrepareJob(ctx context.Context, job *queue.Job) (*PreparedJo
 		return res, rErr
 	}
 	if err := ws.MaterializePaths(ctx, wrappedResolve, assets); err != nil {
-		if cerr := ws.Cleanup(); cerr != nil {
-			log.Printf("job %s: workspace cleanup after materialize failure: %v", job.ID, cerr)
-		}
+		p.cleanupWorkspace(ws, job.ID)
 		return nil, err
 	}
 	for _, a := range assets {
@@ -240,9 +255,7 @@ func (p *Processor) PrepareJob(ctx context.Context, job *queue.Job) (*PreparedJo
 	// no JSON round-trip.
 	renamed, err := normalizeMaterializedImagePaths(ws.Root(), plan)
 	if err != nil {
-		if cerr := ws.Cleanup(); cerr != nil {
-			log.Printf("job %s: workspace cleanup after image normalize failure: %v", job.ID, cerr)
-		}
+		p.cleanupWorkspace(ws, job.ID)
 		return nil, err
 	}
 	// Every path this stage created: each manifest asset MaterializePaths
@@ -258,24 +271,20 @@ func (p *Processor) PrepareJob(ctx context.Context, job *queue.Job) (*PreparedJo
 		proven[name] = struct{}{}
 	}
 	if err := validateMaterializedPlanAssets(ws.Root(), plan, proven); err != nil {
-		if cerr := ws.Cleanup(); cerr != nil {
-			log.Printf("job %s: workspace cleanup after asset validation failure: %v", job.ID, cerr)
-		}
+		p.cleanupWorkspace(ws, job.ID)
 		return nil, err
 	}
 	p.prefetchWarmAssets(ctx, ws.Root(), assets)
 	// The phase name is the metric-name stem; "asset_materialize" matches the
 	// artifact ledger's column and projection (asset_materialize_us), so one
 	// phase has ONE name across the wire, the mirror and PostgreSQL.
-	record("asset_materialize", phaseStart)
+	record(metricnames.AssetMaterializeStem, phaseStart)
 
 	// Burn verified ASS subtitles into Chronon text layers before the plan is
 	// written. This keeps subtitles in the Vulkan composition and avoids a
 	// second full-file ffmpeg encode after NVENC has finished.
 	if subtitleHash, burn, ok, subtitleErr := overlay.SubtitleAsset(job.RenderPlan); subtitleErr != nil {
-		if cerr := ws.Cleanup(); cerr != nil {
-			log.Printf("job %s: workspace cleanup after subtitle asset check failure: %v", job.ID, cerr)
-		}
+		p.cleanupWorkspace(ws, job.ID)
 		return nil, subtitleErr
 	} else if ok && burn {
 		var subtitlePath, fontPath string
@@ -290,53 +299,41 @@ func (p *Processor) PrepareJob(ctx context.Context, job *queue.Job) (*PreparedJo
 			}
 		}
 		if subtitlePath == "" {
-			if cerr := ws.Cleanup(); cerr != nil {
-				log.Printf("job %s: workspace cleanup after missing subtitle path: %v", job.ID, cerr)
-			}
+			p.cleanupWorkspace(ws, job.ID)
 			return nil, fmt.Errorf("processor: burn subtitles asset %s was not materialized", subtitleHash)
 		}
 		if fontPath == "" {
-			if cerr := ws.Cleanup(); cerr != nil {
-				log.Printf("job %s: workspace cleanup after missing font: %v", job.ID, cerr)
-			}
+			p.cleanupWorkspace(ws, job.ID)
 			return nil, fmt.Errorf("processor: burn subtitles requires a materialized .ttf or .otf font")
 		}
 		burnStart := time.Now()
 		subtitleBytes, readErr := os.ReadFile(subtitlePath)
 		if readErr != nil {
-			if cerr := ws.Cleanup(); cerr != nil {
-				log.Printf("job %s: workspace cleanup after subtitle read failure: %v", job.ID, cerr)
-			}
+			p.cleanupWorkspace(ws, job.ID)
 			return nil, fmt.Errorf("processor: read subtitles %s: %w", subtitlePath, readErr)
 		}
 		// Style + safe-area box are resolved from the plan's typed subtitle
 		// block (SubtitleStyleAsset). The processor never invents typography.
 		burnStyle, burnBox, styleErr := overlay.SubtitleStyleAsset(job.RenderPlan)
 		if styleErr != nil {
-			if cerr := ws.Cleanup(); cerr != nil {
-				log.Printf("job %s: workspace cleanup after subtitle style failure: %v", job.ID, cerr)
-			}
+			p.cleanupWorkspace(ws, job.ID)
 			return nil, styleErr
 		}
 		if burnStyle == nil || burnBox.Width <= 0 || burnBox.Height <= 0 {
-			if cerr := ws.Cleanup(); cerr != nil {
-				log.Printf("job %s: workspace cleanup after subtitle style validation: %v", job.ID, cerr)
-			}
+			p.cleanupWorkspace(ws, job.ID)
 			return nil, fmt.Errorf("processor: burn subtitles requires a typed subtitle style block (font_size_px, width/height) in the plan")
 		}
 		subtitleCount, burnErr := overlay.BurnASSIntoPlanTyped(plan, subtitleBytes, fontPath, burnStyle, burnBox)
 		if burnErr != nil {
-			if cerr := ws.Cleanup(); cerr != nil {
-				log.Printf("job %s: workspace cleanup after subtitle burn failure: %v", job.ID, cerr)
-			}
+			p.cleanupWorkspace(ws, job.ID)
 			return nil, burnErr
 		}
-		metrics["subtitle_burn_us"] = float64(time.Since(burnStart).Microseconds())
-		metrics["subtitle_burn_ms"] = metrics["subtitle_burn_us"] / 1000
+		metrics[metricnames.SubtitleBurnUS] = float64(time.Since(burnStart).Microseconds())
+		metrics[metricnames.SubtitleBurnMS] = metrics[metricnames.SubtitleBurnUS] / 1000
 		// The cue count is the number of subtitle_cue_ layers actually present
 		// in the plan after lowering (0 is possible when every cue was skipped
 		// as empty or degenerate).
-		metrics["subtitle_layers"] = float64(subtitleCount)
+		metrics[metricnames.SubtitleLayers] = float64(subtitleCount)
 		log.Printf("job %s: lowered %d ASS cues into Chronon GPU text layers", job.ID, subtitleCount)
 	}
 
@@ -350,33 +347,29 @@ func (p *Processor) PrepareJob(ctx context.Context, job *queue.Job) (*PreparedJo
 		// worker's config", and an operator needs to see that the strip
 		// happened on every job it affects.
 		plan.Output.ProfileID = ""
-		metrics["profile_stripped_by_config"] = 1
+		metrics[metricnames.ProfileStrippedByConfig] = 1
 		log.Printf("job %s: output profile %q stripped (native_output_profiles=false); published artifact carries no profile_id", job.ID, metadata.ProfileID)
 	}
 	renderPlan, marshalErr := plan.Marshal()
 	if marshalErr != nil {
-		if cerr := ws.Cleanup(); cerr != nil {
-			log.Printf("job %s: workspace cleanup after plan marshal failure: %v", job.ID, cerr)
-		}
+		p.cleanupWorkspace(ws, job.ID)
 		return nil, fmt.Errorf("processor: encode render plan: %w", marshalErr)
 	}
 	if err := ws.WritePlan(renderPlan); err != nil {
-		if cerr := ws.Cleanup(); cerr != nil {
-			log.Printf("job %s: workspace cleanup after write plan failure: %v", job.ID, cerr)
-		}
+		p.cleanupWorkspace(ws, job.ID)
 		return nil, err
 	}
-	record("plan", phaseStart)
+	record(metricnames.PlanStem, phaseStart)
 	audioPath, warnInert := audioSourcePathFromPlan(plan, ws.Root())
 	if warnInert {
-		metrics["audio_inert_params"] = 1
+		metrics[metricnames.AudioInertParams] = 1
 		if plan.Output.Audio != nil && !audioModeCopyOnly(plan.Output.Audio.Mode) {
 			// The caller asked for an audio policy the worker cannot execute
 			// (the native mux copies the source stream). Name it separately:
 			// "parameters ignored" and "the requested audio mode was not
 			// applied" are different operational facts, and only the second
 			// one changes what the published artifact sounds like.
-			metrics["audio_mode_unsupported"] = 1
+			metrics[metricnames.AudioModeUnsupported] = 1
 			log.Printf("job %s: requested audio mode %q is NOT applied (native mux copies the source stream); the artifact carries the source audio unchanged",
 				job.ID, plan.Output.Audio.Mode)
 		}

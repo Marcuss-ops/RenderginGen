@@ -151,7 +151,7 @@ func TestIPCClientRenderUsesSemanticContract(t *testing.T) {
 			GPURequired: true, CPUFallbackAllowed: false,
 			CompositionRequired: true, PacketCopyAllowed: true,
 		},
-		Output: OutputSpec{Codec: "h264", Width: 1920, Height: 1080, FPSNum: 30, FPSDen: 1},
+		Output: OutputSpec{Codec: "h264", Width: 1920, Height: 1080, FPSNum: 30, FPSDen: 1, PipePixFmt: "nv12"},
 	})
 	if err != nil {
 		t.Fatalf("render: %v", err)
@@ -166,6 +166,10 @@ func TestIPCClientRenderUsesSemanticContract(t *testing.T) {
 	}
 	if _, ok := payload["output_spec"]; !ok {
 		t.Fatalf("output spec missing: %v", payload)
+	}
+	outputSpec, ok := payload["output_spec"].(map[string]any)
+	if !ok || outputSpec["pipe_pixfmt"] != "nv12" {
+		t.Fatalf("pipe pixel format missing from output_spec: %v", payload["output_spec"])
 	}
 	for _, leaked := range []string{"hardware_encoder", "encoder_backend", "gpu_hot_path_mode"} {
 		if _, ok := payload[leaked]; ok {

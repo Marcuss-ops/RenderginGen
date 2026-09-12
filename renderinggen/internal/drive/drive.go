@@ -8,8 +8,11 @@ package drive
 
 import (
 	"context"
+	"crypto/md5"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"strconv"
@@ -42,7 +45,15 @@ type Result struct {
 	FileID       string
 	WebViewLink  string
 	ParentFolder string
-	SizeBytes    int64
+	// SizeBytes is the provider-reported size when Drive returns one, else the
+	// local file size. Preferring the provider's value makes the caller's
+	// size check a real end-to-end assertion instead of a local restatement.
+	SizeBytes int64
+	// MD5Checksum is Drive's server-side content checksum, when returned. It is
+	// the only provider-computed content digest the Drive API exposes; callers
+	// can compare it against the local bytes to prove the upload is complete
+	// and uncorrupted.
+	MD5Checksum string
 }
 
 // Publisher uploads a rendered artifact to Google Drive. It is an interface so
@@ -210,8 +221,16 @@ func (g *Google) Publish(ctx context.Context, req PublishRequest) (Result, error
 	if err != nil {
 		return Result{}, fmt.Errorf("drive: stat %s: %w", req.Path, err)
 	}
+	// Hash the bytes before handing the handle to the uploader. Drive reports
+	// size + md5Checksum for the stored object, so this local digest makes the
+	// provider's answer falsifiable: a truncated or corrupted upload is caught
+	// here instead of being silently recorded as a successful publication.
+	localMD5, err := fileMD5(input)
+	if err != nil {
+		return Result{}, fmt.Errorf("drive: md5 %s: %w", req.Path, err)
+	}
 	create := g.service.Files.Create(file).
-		Fields("id", "webViewLink", "parents", "size", "mimeType")
+		Fields("id", "webViewLink", "parents", "size", "mimeType", "md5Checksum")
 	var call *gdrive.FilesCreateCall
 	if g.resumable {
 		chunkBytes := g.chunkBytes
@@ -242,8 +261,35 @@ func (g *Google) Publish(ctx context.Context, req PublishRequest) (Result, error
 	if len(res.Parents) > 0 && parent != "" && res.Parents[0] != parent {
 		return Result{}, fmt.Errorf("drive: uploaded file parent %q, want %q", res.Parents[0], parent)
 	}
+	// The provider's view of the uploaded object must agree with the bytes we
+	// sent. Both fields are optional in the response (folders/shortcuts have no
+	// size, and some backends omit the checksum); a value that is present but
+	// disagrees is always a hard failure.
+	size := info.Size()
+	if res.Size != 0 {
+		if res.Size != info.Size() {
+			return Result{}, fmt.Errorf("drive: uploaded %s is %d bytes, local file is %d", req.Name, res.Size, info.Size())
+		}
+		size = res.Size
+	}
+	if res.Md5Checksum != "" && !strings.EqualFold(res.Md5Checksum, localMD5) {
+		return Result{}, fmt.Errorf("drive: uploaded %s md5 %s, local md5 %s", req.Name, res.Md5Checksum, localMD5)
+	}
 	return Result{FileID: res.Id, WebViewLink: link, ParentFolder: parent,
-		SizeBytes: info.Size()}, nil
+		SizeBytes: size, MD5Checksum: res.Md5Checksum}, nil
+}
+
+// fileMD5 streams an open file through MD5 and rewinds it, so the uploader can
+// consume the very same handle afterwards.
+func fileMD5(f *os.File) (string, error) {
+	hasher := md5.New()
+	if _, err := io.Copy(hasher, f); err != nil {
+		return "", err
+	}
+	if _, err := f.Seek(0, io.SeekStart); err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(hasher.Sum(nil)), nil
 }
 
 func (g *Google) ensureFolder(ctx context.Context, parent, name string) (string, error) {

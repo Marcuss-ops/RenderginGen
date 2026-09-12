@@ -13,7 +13,7 @@
 
 CHRONON_RUNTIME ?= ghcr.io/marcuss-ops/chronon3d-runtime:0.1.0
 
-.PHONY: native-build golden-e2e golden-e2e-runtime golden-e2e-reset golden-e2e-down test-architecture
+.PHONY: native-build golden-e2e golden-e2e-runtime golden-e2e-reset golden-e2e-down test-architecture test-gofmt
 
 # test-architecture — the cross-repo boundary conformance gate.
 #
@@ -31,6 +31,21 @@ test-architecture:
 # Never run this to silence a NEW violation; remove the violation instead.
 refresh-conformance-baseline:
 	cd renderinggen && UPDATE_CONFORMANCE_BASELINE=1 go test ./internal/architecture/... -count=1
+
+# test-gofmt — formatting gate over every Go module in this repository.
+#
+# gofmt ships with the Go toolchain, so this is a zero-dependency gate, and CI
+# runs the same check in each module job. A formatting drift is not cosmetic
+# here: it marks a file that was edited outside the toolchain (or a hand-merged
+# patch), which is exactly where an unreviewed semantic change hides in a
+# whitespace-only diff.
+test-gofmt:
+	@fail=0; for m in renderinggen queue objectstore; do \
+	  out=$$(cd $$m && gofmt -l .); \
+	  if [ -n "$$out" ]; then echo "gofmt would rewrite:"; echo "$$out"; fail=1; fi; \
+	done; \
+	if [ $$fail -ne 0 ]; then echo "run 'gofmt -w' on the files above"; exit 1; fi; \
+	echo "gofmt: clean"
 
 native-build:
 	go build -o /usr/local/bin/renderinggen-queue ./queue/cmd/queued

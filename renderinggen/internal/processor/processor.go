@@ -13,15 +13,19 @@ package processor
 
 import (
 	"context"
+	"log"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/artifactdb"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/chronon"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/drive"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/metricnames"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/queue"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/storage"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/workspace"
 )
 
 // Processor orchestrates a single render job:
@@ -50,6 +54,7 @@ type Processor struct {
 	report               bool
 	hardwareEncoder      string
 	encodePreset         string
+	pipePixFmt           string
 	nativeOutputProfiles bool
 	strictNativeBackend  bool
 
@@ -64,6 +69,15 @@ type Processor struct {
 	// tests and unrelated processors never cross-contaminate the measurement.
 	gpuGapMu            sync.Mutex
 	gpuGapLastRenderEnd time.Time
+
+	// cleanupFailures counts workspaces that could not be removed. Workspace
+	// cleanup is fail-open by design (a render must never fail because its
+	// scratch directory survived), but the jobs root is frequently tmpfs, so a
+	// systematically failing Cleanup leaks RAM. The counter plus a rate-limited
+	// ERROR log keep that degradation observable instead of silently degrading:
+	// it is reported on /health through Degradations().
+	cleanupFailures atomic.Int64
+	cleanupLogLast  atomic.Int64 // unix nanos of the last degradation log (rate limit)
 }
 
 // New creates a job processor.
@@ -103,6 +117,12 @@ func (p *Processor) SetHardwareEncoder(encoder string) {
 // never invents a preset when none is configured.
 func (p *Processor) SetEncodePreset(preset string) {
 	p.encodePreset = preset
+}
+
+// SetPipePixFmt selects the explicit host-frame pipe format forwarded to
+// Chronon for GPU composition jobs. Empty preserves Chronon's default.
+func (p *Processor) SetPipePixFmt(format string) {
+	p.pipePixFmt = format
 }
 
 // SetNativeOutputProfiles enables passing output.profile_id to Chronon. Keep
@@ -153,6 +173,42 @@ func (p *Processor) recordPhase(phase string, start time.Time) {
 		return
 	}
 	p.phaseHook(phase, time.Since(start))
+}
+
+// cleanupWorkspace removes a job's workspace and reports the outcome. The
+// caller treats a failure as non-fatal, but it is never invisible: the failure
+// increments the process counter, logs at ERROR at a rate limited to one per
+// second (a broken jobs root must not become a log storm), and is therefore
+// visible on /health as a degradation.
+func (p *Processor) cleanupWorkspace(ws *workspace.Workspace, jobID string) {
+	if ws == nil {
+		return
+	}
+	err := ws.Cleanup()
+	if err == nil {
+		return
+	}
+	total := p.cleanupFailures.Add(1)
+	now := time.Now().UnixNano()
+	last := p.cleanupLogLast.Load()
+	if now-last >= int64(time.Second) && p.cleanupLogLast.CompareAndSwap(last, now) {
+		log.Printf("ERROR processor: workspace cleanup failed for job %s (total failures=%d): %v — the scratch directory is still on disk",
+			jobID, total, err)
+	}
+}
+
+// Degradations reports the process-cumulative fail-open degradations. A
+// non-zero value means the worker is still serving but is degrading silently
+// unless an operator looks at this map; /health exposes it.
+func (p *Processor) Degradations() map[string]int64 {
+	if p == nil {
+		return nil
+	}
+	total := p.cleanupFailures.Load()
+	if total == 0 {
+		return nil
+	}
+	return map[string]int64{metricnames.WorkspaceCleanupFailures: total}
 }
 
 // Process runs the full pipeline (render + external publication) and returns

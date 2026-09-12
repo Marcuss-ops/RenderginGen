@@ -44,6 +44,11 @@ type rule struct {
 	note  string
 	exts  []string // applicable extensions; nil = every scanned file
 	nodes []string // if set, the relative path must contain one of these
+	// exclude lists path substrings where the marker is the CANONICAL owner's
+	// declaration site rather than a violation (e.g. the alias table itself).
+	// It is deliberately narrow: an exclusion is a statement about ownership,
+	// not a carve-out, and every use names the file that owns the vocabulary.
+	exclude []string
 	// rootOnly scopes a rule to the RenderingGen repository. It is for
 	// repo-hygiene rules ("this repository contains no machine-specific
 	// path / no manual-splitting file") that are NOT part of the cross-repo
@@ -57,21 +62,30 @@ type rule struct {
 	textRe *regexp.Regexp
 }
 
-// selfPkgRel is the repo-relative path of this package. Its source contains the
-// marker literals as data, so it is skipped to keep the gate
-// zero-violations-by-construction for its own declaration site.
-const selfPkgRel = "renderinggen/internal/architecture"
+// selfSkip are the files that legitimately CONTAIN the marker literals as
+// data (the gate's rule table and its exemplar tests). The skip is per file,
+// not per package: the historical directory-wide skip meant a marker hidden in
+// any future architecture/*.go file was invisible to the gate.
+var selfSkip = map[string]bool{
+	"renderinggen/internal/architecture/conformance.go":      true,
+	"renderinggen/internal/architecture/conformance_test.go": true,
+}
 
 // siblingRepos are the other repositories the gate knows about when they are
 // checked out beside RenderingGen.
 var siblingRepos = []string{"refactored", "Chronon3d"}
 
-// scannedExts are the file kinds the gate reads.
+// scannedExts are the file kinds the gate reads. Every extension named by a
+// rule MUST appear here — TestRuleExtensionsAreScanned pins that — because a
+// rule extension the scanner never reads is a selector that can never fire
+// (the historical `.dockerfile` entry, while every *.Dockerfile went
+// unread).
 var scannedExts = map[string]bool{
 	".go": true, ".cpp": true, ".cc": true, ".c": true, ".hpp": true, ".h": true,
 	".inc": true, ".md": true, ".json": true, ".yaml": true, ".yml": true,
 	".sh": true, ".py": true, ".cmake": true, ".txt": true, ".service": true,
 	".conf": true, ".schema": true, ".jsonc": true, ".proto": true,
+	".dockerfile": true,
 }
 
 // scannedNames are extension-less files the gate reads.
@@ -79,23 +93,42 @@ var scannedNames = map[string]bool{
 	"Makefile": true, "go.mod": true, "go.work": true, "Dockerfile": true,
 }
 
-// skipDirs are directory basenames never descended into.
-var skipDirs = map[string]bool{
+// skipDirsAnyDepth are generated-cache/bin directory names that never name a
+// source package, so they are skipped wherever they appear.
+var skipDirsAnyDepth = map[string]bool{
 	".git": true, "node_modules": true, "vendor": true, "build": true,
-	".tmp": true, "tmp": true, "out": true, "artifacts": true, ".cache": true,
-	".venv-whisper": true, ".venv-argos": true, "secrets": true,
-	"results": true, ".codex": true,
+	".tmp": true, ".cache": true, ".venv-whisper": true, ".venv-argos": true,
+	".codex": true,
 }
 
-// skipDir reports whether a directory basename is never descended into. Besides
-// the exact names above it skips every build-* variant (build-local,
-// build-debug, …) a native build emits: those trees are generated output, not
-// source, and their CMake logs quote developer home paths.
-func skipDir(name string) bool {
-	if skipDirs[name] {
+// skipDirsRootOnly are generated-output names that ALSO occur as ordinary
+// directory names inside source trees. PipelineGen ships live packages at
+// internal/capabilities/assets/artifacts/ and internal/platform/sqlite/artifacts/;
+// matching those basenames at ANY depth silently un-scanned two source
+// packages (a false sense of enforcement the audit flagged). They are now
+// skipped only at a target root, which is where the generated output actually
+// lives (refactored/artifacts, refactored/out, refactored/results, …).
+//
+// A nested directory with one of these names is scanned; if a genuinely
+// generated tree is ever nested under a source tree, add an explicit relative
+// pattern for it instead of widening this list back to any depth.
+var skipDirsRootOnly = map[string]bool{
+	"tmp": true, "out": true, "artifacts": true, "results": true, "secrets": true,
+}
+
+// skipDir reports whether a directory (given its target-relative slash path and
+// basename) is never descended into. Besides the names above it skips every
+// build-* variant (build-local, build-debug, …) at any depth: those trees are
+// generated output, not source, and their CMake logs quote developer home
+// paths.
+func skipDir(relSlash, name string) bool {
+	if skipDirsAnyDepth[name] {
 		return true
 	}
-	return strings.HasPrefix(name, "build-")
+	if strings.HasPrefix(name, "build-") {
+		return true
+	}
+	return skipDirsRootOnly[name] && !strings.Contains(relSlash, "/")
 }
 
 // maxFileBytes caps the size of a file the gate will read (generated timing
@@ -105,7 +138,7 @@ const maxFileBytes = 512 * 1024
 // docExemptions are repository-root documentation files that legitimately NAME
 // the forbidden markers (the published rules catalogue). They are skipped so
 // the catalogue can describe what the gate bans. Operational code is never
-// exempt: the gate's own package is skipped by selfPkgRel instead.
+// exempt: the gate's own marker carriers are skipped per file by selfSkip.
 var docExemptions = map[string]bool{
 	"CONFORMANCE.md": true,
 }
@@ -159,14 +192,44 @@ func Rules() []rule {
 			textRe: mustRe("GPE_" + "DEFAULT"),
 		},
 		{
-			id:     "entity_template_inference",
-			note:   "kind is the authoritative discriminator; template_id must not classify entity/phrase/word",
-			textRe: mustRe("isEntity" + "Template"),
+			id: "entity_template_inference",
+			note: "kind is the authoritative discriminator; a template_id must never be compared with a NAMED literal to classify an item " +
+				"(use the template registry / behaviorOf). Comparing against \"\" (required-field validation) stays legal",
+			// The rule previously matched the identifier `isEntityTemplate`, a
+			// symbol that exists nowhere in any repository of this workspace: it
+			// could never fire, so the invariant it named was unprotected. The
+			// live invariant lives at exactly one boundary — the overlay lowering
+			// must classify by kind through the template registry, never by
+			// comparing a template_id with a named literal — so the rule is
+			// scoped to the overlay package and ignores test assertions (which
+			// legitimately compare ids against expected values).
+			nodes:   []string{"renderinggen/internal/overlay"},
+			exclude: []string{"_test.go"},
+			textRe:  mustRe(`(?:Template|templateID|TemplateID|template_id)\s*(?:==|!=)\s*"[^"]+"`),
 		},
 		{
-			id:     "semantic_stats_second_pass",
-			note:   "stats are produced by the single compile pass; downstream must reuse CompileResult.Stats",
-			textRe: mustRe("SemanticStats" + `\(`),
+			id: "semantic_stats_second_pass",
+			note: "stats are produced by the single compile pass; overlay.Stats is constructed only in semantic_compile.go " +
+				"and every consumer reuses CompileResult.Stats",
+			// Same defect as above: the rule matched `SemanticStats(`, a deleted
+			// function name. The live invariant is structural — only the compile
+			// pass may CONSTRUCT the counters — so the rule now forbids the
+			// Stats{} literal everywhere in the overlay package except the two
+			// files that own it (the counters' type and the compile pass).
+			nodes:   []string{"renderinggen/internal/overlay"},
+			exclude: []string{"overlay/stats.go", "overlay/semantic_compile.go"},
+			textRe:  mustRe(`\bStats\s*\{`),
+		},
+		{
+			id:       "template_alias_lowercase",
+			rootOnly: true,
+			note: "the lowercase org_default/gpe_default spellings are the LIVE legacy aliases, owned solely by " +
+				"overlay/registry.go's legacyTemplateAliases (the uppercase ORG_DEFAULT/GPE_DEFAULT spellings are dead); " +
+				"no other file in this repository may introduce the alias spelling — producers emit ORGANIZATION_DEFAULT/LOCATION_DEFAULT",
+			// exclude names the two files that OWN the alias vocabulary: the
+			// resolution table and the tests that pin it.
+			exclude: []string{"overlay/registry.go", "overlay/registry_test.go"},
+			textRe:  mustRe(`"(?:org|gpe)_default"`),
 		},
 		{
 			id:         "partnn_filename",
@@ -365,16 +428,13 @@ func scanTarget(t Target) ([]Violation, error) {
 			if relSlash == "." {
 				return nil
 			}
-			if skipDir(d.Name()) {
-				return filepath.SkipDir
-			}
-			if t.Prefix == "" && relSlash == selfPkgRel {
+			if skipDir(relSlash, d.Name()) {
 				return filepath.SkipDir
 			}
 			return nil
 		}
 		fileRel := t.Prefix + relSlash
-		if t.Prefix == "" && strings.HasPrefix(relSlash, selfPkgRel+"/") {
+		if t.Prefix == "" && selfSkip[relSlash] {
 			return nil
 		}
 		if t.Prefix == "" && docExemptions[relSlash] {
@@ -432,6 +492,11 @@ func scanTarget(t Target) ([]Violation, error) {
 func (r rule) applies(relSlash string) bool {
 	if r.rootOnly && (strings.HasPrefix(relSlash, "refactored/") || strings.HasPrefix(relSlash, "Chronon3d/")) {
 		return false
+	}
+	for _, ex := range r.exclude {
+		if strings.Contains(relSlash, ex) {
+			return false
+		}
 	}
 	if len(r.nodes) > 0 {
 		ok := false

@@ -16,6 +16,7 @@ import (
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/chronon"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/hashio"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/media"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/metricnames"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/overlay"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/queue"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/storage"
@@ -26,13 +27,13 @@ import (
 // "DB artifact" step — returning the artifact metadata for queue completion.
 // The pipeline invariant local_sha == objectstore_sha == db_sha is enforced
 // here: the record is keyed by the same hash the object store accepted.
-func (p *Processor) storeArtifact(ctx context.Context, jobID, outputPath string, plan *overlay.Plan, phaseMetrics map[string]float64, totalStart time.Time, probe *media.ProbeResult, stats overlay.Stats, inputBytes int64, copyEligible bool) (queue.Artifact, error) {
+func (p *Processor) storeArtifact(ctx context.Context, jobID, outputPath string, plan *overlay.Plan, phaseMetrics map[string]float64, totalStart time.Time, probe *media.ProbeResult, stats overlay.Stats, inputBytes int64, copyEligible bool, nativeCertified bool) (queue.Artifact, error) {
 	phaseStart := time.Now()
 	defer func() {
 		phaseMetrics["publish_ms"] = float64(time.Since(phaseStart).Microseconds()) / 1000
 		phaseMetrics["total_ms"] = float64(time.Since(totalStart).Microseconds()) / 1000
-		phaseMetrics["total_us"] = phaseMetrics["total_ms"] * 1000
-		p.recordPhase("publish", phaseStart)
+		phaseMetrics[metricnames.TotalUS] = phaseMetrics[metricnames.TotalMS] * 1000
+		p.recordPhase(metricnames.PublishStem, phaseStart)
 	}()
 	fileInfo, err := os.Stat(outputPath)
 	if err != nil {
@@ -62,7 +63,7 @@ func (p *Processor) storeArtifact(ctx context.Context, jobID, outputPath string,
 		hash = digest
 	}
 	shaUS := float64(time.Since(shaStart).Microseconds())
-	phaseMetrics["sha256_us"] = shaUS
+	phaseMetrics[metricnames.SHA256US] = shaUS
 	phaseMetrics["sha256_ms"] = shaUS / 1000
 	// Surface Chronon's own receipt-verification phases (probe / optional
 	// decode / count_frames / sha256 / total, policy-controlled by the
@@ -93,7 +94,7 @@ func (p *Processor) storeArtifact(ctx context.Context, jobID, outputPath string,
 		return queue.Artifact{}, fmt.Errorf("processor: close output after upload %s: %w", outputPath, err)
 	}
 	putUS := float64(time.Since(putStart).Microseconds())
-	phaseMetrics["objectstore_upload_us"] = putUS
+	phaseMetrics[metricnames.ObjectStoreUploadUS] = putUS
 	phaseMetrics["objectstore_upload_ms"] = putUS / 1000
 	metadata := planMetadataOf(plan)
 	artifact := queue.Artifact{
@@ -109,7 +110,7 @@ func (p *Processor) storeArtifact(ctx context.Context, jobID, outputPath string,
 		FPSDen:         metadata.FPSDen,
 		FrameCount:     metadata.FrameCount,
 		DurationUS:     metadata.DurationUS,
-		Backend:        publishedRenderBackend(p.backend, p.strictNativeBackend),
+		Backend:        publishedRenderBackend(p.backend, nativeCertified),
 		ChrononVersion: p.chrononVersion,
 		Metrics:        phaseMetrics,
 		ProfileID:      metadata.ProfileID,
@@ -141,7 +142,7 @@ func (p *Processor) storeArtifact(ctx context.Context, jobID, outputPath string,
 	}
 	// Total time must be set before the ledger row is written (the deferred
 	// publish/total metrics above are for the artifact returned to the queue).
-	phaseMetrics["total_us"] = float64(time.Since(totalStart).Microseconds())
+	phaseMetrics[metricnames.TotalUS] = float64(time.Since(totalStart).Microseconds())
 	// Ingest Chronon's BOUNDED telemetry summary (observability ownership,
 	// Phase 10): `<output>.telemetry-summary.json` is the only Chronon
 	// telemetry surface the worker reads. It is recorded verbatim (Chronon
@@ -150,6 +151,10 @@ func (p *Processor) storeArtifact(ctx context.Context, jobID, outputPath string,
 	// only the bounded telemetry blob is absent from the ledger.
 	var chrononTelemetry json.RawMessage
 	if raw, err := chronon.ReadTelemetrySummary(outputPath); err != nil {
+		// Fail-open, but not invisible: the absence is a per-artifact metric so
+		// a renderer that silently stops emitting its summary is visible in the
+		// ledger and on GET /jobs/{id} instead of only in a log line.
+		phaseMetrics[metricnames.ChrononTelemetryMissing] = 1
 		log.Printf("job %s: chronon telemetry summary unavailable: %v", jobID, err)
 	} else {
 		chrononTelemetry = raw
@@ -183,10 +188,12 @@ func (p *Processor) preserveRawTimingSidecar(ctx context.Context, artifact *queu
 	}
 	hash, size, err := p.putTimingSidecar(ctx, outputPath+".timing.json")
 	if err != nil {
+		noteTimingSidecarMissing(artifact)
 		log.Printf("job %s: raw timing sidecar unavailable for preservation: %v", jobID, err)
 		return
 	}
 	if size == 0 {
+		noteTimingSidecarMissing(artifact)
 		log.Printf("job %s: raw timing sidecar empty; skipping preservation", jobID)
 		return
 	}
@@ -201,6 +208,20 @@ func (p *Processor) preserveRawTimingSidecar(ctx context.Context, artifact *queu
 	artifact.Metrics["chronon_timing_preserved"] = 1
 	artifact.Metrics["chronon_timing_bytes"] = float64(size)
 	log.Printf("job %s: raw timing sidecar preserved (sha256=%s bytes=%d)", jobID, hash, size)
+}
+
+// noteTimingSidecarMissing records the fail-open absence of the raw timing
+// sidecar on the artifact metrics. The bytes are already published at this
+// point, so the render cannot fail; the counter is what turns "the sidecar
+// silently stopped being produced" into an alertable fact.
+func noteTimingSidecarMissing(artifact *queue.Artifact) {
+	if artifact == nil {
+		return
+	}
+	if artifact.Metrics == nil {
+		artifact.Metrics = map[string]float64{}
+	}
+	artifact.Metrics[metricnames.ChrononTimingSidecarMissing] = 1
 }
 
 // timingSidecarInlineMaxBytes bounds the one-read fast path in

@@ -106,7 +106,7 @@ type Requirements struct {
 // predicate existed in three files with a comment asking future editors to
 // keep them in sync by hand).
 func StrictNativeRequired(backend, hardwareEncoder string) bool {
-	return backend == "vulkan" && hardwareEncoder != "" && hardwareEncoder != "none"
+	return backend == "vulkan" && hardwareEncoder != "" && hardwareEncoder != HardwareEncoderNone
 }
 
 // GPUHotPathRequirements returns the requirement set for the native GPU hot

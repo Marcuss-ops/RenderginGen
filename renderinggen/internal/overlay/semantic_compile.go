@@ -14,8 +14,10 @@
 package overlay
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"sort"
 	"strings"
 )
 
@@ -36,19 +38,27 @@ type resolvedItem struct {
 	ImagePreset PresetDefinition
 }
 
-func compileSemantic(raw []byte) (*Plan, []Asset, Stats, error) {
+func compileSemantic(raw []byte) (*Plan, []Asset, Stats, []string, error) {
 	var src semanticPlan
-	if err := json.Unmarshal(raw, &src); err != nil {
-		return nil, nil, Stats{}, fmt.Errorf("overlay: decode semantic plan: %w", err)
+	// Strict decode: the published contract declares additionalProperties:false
+	// at every level, and the field set is pinned to the schema by
+	// contract_schema_parity_test.go. A key outside that set is a producer bug
+	// (usually a rename) that must fail loudly here instead of being dropped —
+	// the historical permissive decode silently discarded project_id,
+	// renderer_version and fingerprint on every job.
+	decoder := json.NewDecoder(bytes.NewReader(raw))
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(&src); err != nil {
+		return nil, nil, Stats{}, nil, fmt.Errorf("overlay: decode semantic plan: %w", err)
 	}
 	if src.PlanID == "" || src.VideoID == "" || src.Width <= 0 || src.Height <= 0 || src.FPSNum <= 0 || src.FPSDen <= 0 {
-		return nil, nil, Stats{}, fmt.Errorf("overlay: semantic plan requires plan_id, video_id and positive canvas/fps")
+		return nil, nil, Stats{}, nil, fmt.Errorf("overlay: semantic plan requires plan_id, video_id and positive canvas/fps")
 	}
 	// A plan must have at least one renderable primitive: a source clip, a
 	// background, or an overlay item. An empty plan with nothing to render is
 	// always rejected fail-closed.
 	if src.Source == nil && src.Background == nil && len(src.Items) == 0 {
-		return nil, nil, Stats{}, fmt.Errorf("overlay: semantic plan has no renderable primitives (source, background or items required)")
+		return nil, nil, Stats{}, nil, fmt.Errorf("overlay: semantic plan has no renderable primitives (source, background or items required)")
 	}
 	// The Plan constructor is the single owner of the schema/version and the
 	// output defaults, so the compiler cannot drift from it.
@@ -80,18 +90,18 @@ func compileSemantic(raw []byte) (*Plan, []Asset, Stats, error) {
 			layerKind = "video"
 		}
 		if layerKind != "color" && layerKind != "image" && layerKind != "video" {
-			return nil, nil, Stats{}, fmt.Errorf("overlay: unsupported background kind %q", bg.Kind)
+			return nil, nil, Stats{}, nil, fmt.Errorf("overlay: unsupported background kind %q", bg.Kind)
 		}
 		if layerKind == "color" {
 			if len(bg.Color) != 4 {
-				return nil, nil, Stats{}, fmt.Errorf("overlay: background color requires RGBA[4]")
+				return nil, nil, Stats{}, nil, fmt.Errorf("overlay: background color requires RGBA[4]")
 			}
 		} else if len(bg.AssetRefs) == 0 {
-			return nil, nil, Stats{}, fmt.Errorf("overlay: %s background requires asset_refs", kind)
+			return nil, nil, Stats{}, nil, fmt.Errorf("overlay: %s background requires asset_refs", kind)
 		}
 		for _, ref := range bg.AssetRefs {
 			if _, err := registry.Register(ref); err != nil {
-				return nil, nil, Stats{}, fmt.Errorf("overlay: background asset: %w", err)
+				return nil, nil, Stats{}, nil, fmt.Errorf("overlay: background asset: %w", err)
 			}
 		}
 		layer := Layer{ID: "background", Type: layerKind, BoxWidth: src.Width, BoxHeight: src.Height,
@@ -121,7 +131,7 @@ func compileSemantic(raw []byte) (*Plan, []Asset, Stats, error) {
 	for _, item := range src.Items {
 		for _, ref := range item.Assets {
 			if _, err := registry.Register(ref); err != nil {
-				return nil, nil, Stats{}, fmt.Errorf("overlay: item %q asset: %w", item.ID, err)
+				return nil, nil, Stats{}, nil, fmt.Errorf("overlay: item %q asset: %w", item.ID, err)
 			}
 		}
 	}
@@ -131,8 +141,12 @@ func compileSemantic(raw []byte) (*Plan, []Asset, Stats, error) {
 	// read this resolution, so they can never disagree.
 	resolved, err := resolveSemanticItems(&src)
 	if err != nil {
-		return nil, nil, Stats{}, err
+		return nil, nil, Stats{}, nil, err
 	}
+	// Templates that resolved to no registry row are reported, not swallowed:
+	// they still compile as preset-less primitives, but the caller can see the
+	// fall-through (see CompileResult.UnknownTemplates).
+	unknown := unknownTemplates(resolved)
 
 	// Source clip — lowers to a full-canvas video layer. When foreground_scale
 	// is set the source is scaled and centered on the canvas.
@@ -142,7 +156,7 @@ func compileSemantic(raw []byte) (*Plan, []Asset, Stats, error) {
 		if path == "" {
 			registered, err := registry.Register(semanticAssetRef{ID: src.Source.AssetID, SHA256: src.Source.SHA256})
 			if err != nil {
-				return nil, nil, Stats{}, fmt.Errorf("overlay: source asset: %w", err)
+				return nil, nil, Stats{}, nil, fmt.Errorf("overlay: source asset: %w", err)
 			}
 			path = registered
 		}
@@ -172,10 +186,10 @@ func compileSemantic(raw []byte) (*Plan, []Asset, Stats, error) {
 	// render-plan schema has no `subtitle` layer type, so do not emit one.
 	if sub := src.Subtitles; sub != nil {
 		if len(sub.AssetRefs) == 0 {
-			return nil, nil, Stats{}, fmt.Errorf("overlay: subtitles require at least one asset_ref")
+			return nil, nil, Stats{}, nil, fmt.Errorf("overlay: subtitles require at least one asset_ref")
 		}
 		if _, err := registry.Register(sub.AssetRefs[0]); err != nil {
-			return nil, nil, Stats{}, fmt.Errorf("overlay: subtitle asset: %w", err)
+			return nil, nil, Stats{}, nil, fmt.Errorf("overlay: subtitle asset: %w", err)
 		}
 		// Sidecar subtitles remain a published companion asset: the manifest
 		// entry (above) is what gets published; Chronon has no subtitle layer.
@@ -190,30 +204,30 @@ func compileSemantic(raw []byte) (*Plan, []Asset, Stats, error) {
 		if wm.FontRef != nil {
 			registered, err := registry.Register(*wm.FontRef)
 			if err != nil {
-				return nil, nil, Stats{}, fmt.Errorf("overlay: watermark font asset: %w", err)
+				return nil, nil, Stats{}, nil, fmt.Errorf("overlay: watermark font asset: %w", err)
 			}
 			font = registered
 		}
 		if font == "" && wm.Text != "" {
-			return nil, nil, Stats{}, fmt.Errorf("overlay: text watermark requires font_ref")
+			return nil, nil, Stats{}, nil, fmt.Errorf("overlay: text watermark requires font_ref")
 		}
 		wmStyle, err := parseStyleBlock(wm.Style)
 		if err != nil {
-			return nil, nil, Stats{}, err
+			return nil, nil, Stats{}, nil, err
 		}
 		style, err := watermarkLayerStyle(wmStyle, font)
 		if err != nil {
-			return nil, nil, Stats{}, err
+			return nil, nil, Stats{}, nil, err
 		}
 		margin, err := watermarkMargin(wm.MarginPX)
 		if err != nil {
-			return nil, nil, Stats{}, err
+			return nil, nil, Stats{}, nil, err
 		}
 		// Position AND size come back from the one geometry resolver: the box
 		// the position was computed against is the box the layer declares.
 		position, size, err := resolveWatermarkGeometry(wm.Position, src.Width, src.Height, margin, wmStyle)
 		if err != nil {
-			return nil, nil, Stats{}, err
+			return nil, nil, Stats{}, nil, err
 		}
 		wmLayer := Layer{ID: "watermark", StartFrame: 0, DurationFrames: plan.Canvas.DurationFrames,
 			Style: style, Position: position, Size: size}
@@ -227,7 +241,7 @@ func compileSemantic(raw []byte) (*Plan, []Asset, Stats, error) {
 		} else if len(wm.AssetRefs) > 0 {
 			registered, err := registry.Register(wm.AssetRefs[0])
 			if err != nil {
-				return nil, nil, Stats{}, fmt.Errorf("overlay: watermark asset: %w", err)
+				return nil, nil, Stats{}, nil, fmt.Errorf("overlay: watermark asset: %w", err)
 			}
 			wmLayer.Type = "image"
 			wmLayer.Asset = registered
@@ -236,7 +250,7 @@ func compileSemantic(raw []byte) (*Plan, []Asset, Stats, error) {
 				wmLayer.Text = wm.Text
 			}
 		} else {
-			return nil, nil, Stats{}, fmt.Errorf("overlay: watermark requires text or asset_refs")
+			return nil, nil, Stats{}, nil, fmt.Errorf("overlay: watermark requires text or asset_refs")
 		}
 		plan.Layers = append(plan.Layers, wmLayer)
 	}
@@ -247,7 +261,7 @@ func compileSemantic(raw []byte) (*Plan, []Asset, Stats, error) {
 	for _, ri := range resolved {
 		layers, err := compileItem(ri, &src, registry)
 		if err != nil {
-			return nil, nil, Stats{}, err
+			return nil, nil, Stats{}, nil, err
 		}
 		plan.Layers = append(plan.Layers, layers...)
 		stats.addResolved(ri)
@@ -275,12 +289,34 @@ func compileSemantic(raw []byte) (*Plan, []Asset, Stats, error) {
 	}
 
 	if plan.Canvas.DurationFrames <= 0 {
-		return nil, nil, Stats{}, fmt.Errorf("overlay: semantic plan duration is zero — provide duration_ms or at least one item with end_ms > 0")
+		return nil, nil, Stats{}, nil, fmt.Errorf("overlay: semantic plan duration is zero — provide duration_ms or at least one item with end_ms > 0")
 	}
 	// Stable asset order (the registry sorts) keeps prepared-plan
 	// fingerprints reproducible. The plan stays typed; the caller marshals it
 	// exactly once at the Chronon boundary.
-	return &plan, registry.Assets(), stats, nil
+	return &plan, registry.Assets(), stats, unknown, nil
+}
+
+// unknownTemplates returns the sorted, de-duplicated template_ids of the items
+// that found no registry row. It is the only place the fall-through is
+// classified, and it reads the SAME resolved spec the compiler lowered, so it
+// can never disagree with what was actually emitted.
+func unknownTemplates(items []resolvedItem) []string {
+	seen := make(map[string]bool)
+	var out []string
+	for _, ri := range items {
+		if ri.Spec.Registered {
+			continue
+		}
+		id := strings.TrimSpace(ri.Item.Template)
+		if id == "" || seen[id] {
+			continue
+		}
+		seen[id] = true
+		out = append(out, id)
+	}
+	sort.Strings(out)
+	return out
 }
 
 // resolveSemanticItems validates the plan's items once and lowers each to its

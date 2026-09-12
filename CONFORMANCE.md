@@ -35,19 +35,77 @@ siblings. Each rule maps to one deleted contract:
 | `render_plan_unversioned_schema` | the unversioned `"chronon.render-plan"` literal |
 | `module_path_typo` | the `RenderginGen` module-path typo |
 | `hardcoded_home_path` | a hardcoded developer home path in any source or configuration carrier (not only Go) |
-| `template_alias_org_default` | the dead `ORG_DEFAULT` alias (canonical: `ORGANIZATION_DEFAULT`) |
-| `template_alias_gpe_default` | the dead `GPE_DEFAULT` alias (canonical: `LOCATION_DEFAULT`) |
-| `entity_template_inference` | classifying entity/phrase/word from `template_id` instead of `kind` |
-| `semantic_stats_second_pass` | a second stats interpretation outside the compile pass |
+| `template_alias_org_default` | the dead uppercase `ORG_DEFAULT` alias (canonical: `ORGANIZATION_DEFAULT`) |
+| `template_alias_gpe_default` | the dead uppercase `GPE_DEFAULT` alias (canonical: `LOCATION_DEFAULT`) |
+| `entity_template_inference` | classifying an overlay item by comparing its `template_id` with a named literal (in `overlay/`, non-test sources) instead of going through `kind` and the template registry |
+| `semantic_stats_second_pass` | constructing `overlay.Stats` outside the single compile pass (only `overlay/stats.go` and `overlay/semantic_compile.go` may) |
+| `template_alias_lowercase` | the lowercase `org_default`/`gpe_default` spellings rendered anywhere but `overlay/registry.go`'s alias table and its tests |
 | `partnn_filename` | `*_partNN.*` manual-splitting files (any scanned carrier, including shell) |
 | `legacy_layer_preset_field` | a bare `json:"preset"` slot on the render-plan layer |
 
 This table is a checked projection of `Rules()`, not an independent copy:
 `TestConformanceDocListsEveryRule` fails if the two rule-id sets differ in
-either direction. Rules match the *unescaped* projection of each line, because
+either direction. The scanner's file-kind list and the rules' selectors are
+pinned together too (`TestRuleExtensionsAreScanned`), because a rule extension
+the scanner never reads is a selector that can never fire — a `*.Dockerfile`
+carrier went unread exactly that way.
+
+### Rules that match live code, not deleted names
+
+Two rules used to name symbols that exist nowhere in the workspace
+(`isEntityTemplate`, `SemanticStats(`), so they could not fire while the
+invariant they described stayed unprotected. They now match the live shape of
+the mistake and are scoped to where the mistake can be made:
+
+- `entity_template_inference` fires only in `renderinggen/internal/overlay`
+  non-test sources, on a `template_id` compared with a **named** literal (the
+  emptiness check stays legal);
+- `semantic_stats_second_pass` forbids the `Stats{}` literal everywhere in the
+  overlay package except the two files that own the counters
+  (`stats.go`, `semantic_compile.go`).
+
+### The live legacy aliases
+
+The uppercase spellings `ORG_DEFAULT`/`GPE_DEFAULT` are dead and banned. The
+**lowercase** spellings (`org_default`, `gpe_default`) are a different story:
+they are the live aliases PipelineGen still emits, resolved exactly once by
+`overlay/registry.go`'s `legacyTemplateAliases`. They must not be re-declared
+anywhere else, which is what `template_alias_lowercase` enforces (the alias
+table and its test are the only two excluded files, and an unknown template is
+reported on `CompileResult.UnknownTemplates` instead of degrading silently). Rules match the *unescaped* projection of each line, because
 a shell script embedding a JSON document (`\"chronon.render-plan\"`) otherwise
 hides the marker behind its backslash — `TestRulesCatchEscapedCarriers` is the
 regression for exactly that evasion.
+
+### Exemptions are path-precise, liveness-checked, and proven to work
+
+The gate carries four exemption mechanisms — `selfSkip` (the gate's own marker
+carriers), `docExemptions` (the published rules catalogue), per-rule `exclude`
+ownership carve-outs, and `skipDirs` (generated/vendor trees) — and each one is
+covered by a test rather than a comment:
+
+- `TestExemptionAllowlistsAreLive` resolves every `selfSkip`/`docExemptions`
+  path on disk and requires every `exclude` substring to match a scanned file,
+  so a moved carrier or a renamed owner cannot leave a **ghost exemption** that
+  protects nothing. Zero-carrier `scannedExts` entries are reported, not failed:
+  that list is a selector (it widens what the gate reads), never an exemption.
+- `TestExemptionsActuallySuppress` proves each mechanism still suppresses the
+  right thing and nothing else (a marker in `CONFORMANCE.md`, in
+  `node_modules/`, in a `build-*` tree or in the declared owner stays silent; the
+  same marker one directory over still fires).
+- `TestSkipDirsDoNotShadowSourcePackages` pins the scope rule below.
+
+`skipDirs` is split by scope. Unambiguous generated names (`node_modules`,
+`vendor`, `build`, `.tmp`, `.cache`, `.venv-*`, …) and every `build-*` variant
+are skipped at any depth. Ambiguous names (`tmp`, `out`, `artifacts`,
+`results`, `secrets`) are skipped **only at a target root**, because they also
+name ordinary directories inside source trees: PipelineGen ships live packages
+at `internal/capabilities/assets/artifacts/` and
+`internal/platform/sqlite/artifacts/`, and a basename match at any depth
+silently un-scanned both — a false sense of enforcement. A nested directory
+with one of those names is now scanned; if a genuinely generated tree is ever
+nested under a source tree, add an explicit relative pattern for it instead of
+widening the list back to any depth.
 
 ## Run it
 
@@ -105,6 +163,10 @@ the file. `TestBaselineRulesAreKnown` fails on a ledger line whose rule no
 longer exists (an immortal entry), and a repo-local entry whose file was
 deleted is reported stale (previously only an absent sibling repository was
 ignored).
+
+Regenerate it with one documented command — `make refresh-conformance-baseline`
+(the `UPDATE_CONFORMANCE_BASELINE=1` environment variable is that target's
+implementation, not a second procedure).
 
 **The ledger is currently empty.** Every rule above is enforced with zero
 exemptions: the legacy unversioned `chronon.render-plan` producers, the legacy

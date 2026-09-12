@@ -70,6 +70,22 @@ func TestJobStateVocabularyMatchesSQLConstraint(t *testing.T) {
 	}
 }
 
+// TestWorkerStatusVocabularyMatchesSQLConstraint pins the worker-status
+// vocabulary the same way the job states and the attempt statuses are pinned.
+// It was the one lifecycle vocabulary without a cross-layer check: adding a
+// status to Go and forgetting migration 004 (or vice versa) only failed when a
+// worker tried to register.
+func TestWorkerStatusVocabularyMatchesSQLConstraint(t *testing.T) {
+	want := make([]string, 0, 8)
+	for _, s := range client.AllWorkerStatuses() {
+		want = append(want, string(s))
+	}
+	got := latestCheck(t, "rendering_workers_status_check")
+	if strings.Join(sortedStrings(got), ",") != strings.Join(sortedStrings(want), ",") {
+		t.Fatalf("rendering_workers_status_check %v != client.AllWorkerStatuses() %v", sortedStrings(got), sortedStrings(want))
+	}
+}
+
 // TestAttemptStatusVocabularyMatchesSQLConstraint does the same for the
 // render_attempts status vocabulary.
 func TestAttemptStatusVocabularyMatchesSQLConstraint(t *testing.T) {

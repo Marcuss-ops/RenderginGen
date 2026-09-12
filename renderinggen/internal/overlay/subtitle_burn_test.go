@@ -40,7 +40,10 @@ Dialogue: 0,0:00:03.00,0:00:04.00,Default,,0,0,0,,Dopo
 }
 
 func TestBurnASSIntoPlanCreatesTimedGPUTextLayers(t *testing.T) {
-	plan := []byte(`{"schema":"chronon.render-plan.v2","version":2,"job_id":"j","canvas":{"width":1920,"height":1080,"fps_num":30,"fps_den":1,"duration_frames":150},"layers":[{"id":"source","type":"video","source":"assets/source.mp4","duration_frames":150}],"output":{"path":"result.mp4","format":"mp4","codec":"h264"}}`)
+	plan := &Plan{Schema: "chronon.render-plan.v2", Version: 2, JobID: "j",
+		Canvas: Canvas{Width: 1920, Height: 1080, FPSNum: 30, FPSDen: 1, DurationFrames: 150},
+		Layers: []Layer{{ID: "source", Type: "video", Source: "assets/source.mp4", DurationFrames: 150}},
+		Output: Output{Path: "result.mp4", Format: "mp4", Codec: "h264"}}
 	ass := []byte(`[Script Info]
 ScriptType: v4.00+
 [Events]
@@ -52,12 +55,18 @@ Dialogue: 0,0:00:03.00,0:00:04.00,Default,,0,0,0,,Dopo
 	style := &LayerStyle{FontSize: 52, Fill: "#FFFFFF",
 		Shadow: &LayerShadow{Color: "#000000", Opacity: 0.95, Blur: 8, Offset: []float64{0, 5}}}
 	box := SubtitleStyleBox{Width: 1800, Height: 140, X: 60, Y: 758}
-	out, count, err := BurnASSIntoPlan(plan, ass, "assets/fonts/Poppins-Bold.ttf", style, box)
+	count, err := BurnASSIntoPlanTyped(plan, ass, "assets/fonts/Poppins-Bold.ttf", style, box)
 	if err != nil {
-		t.Fatalf("BurnASSIntoPlan: %v", err)
+		t.Fatalf("BurnASSIntoPlanTyped: %v", err)
 	}
 	if count != 2 {
 		t.Fatalf("subtitle layers = %d, want 2", count)
+	}
+	// The plan is marshaled exactly once at the Chronon boundary: assert the
+	// lowered layers survive that single serialization.
+	out, err := plan.Marshal()
+	if err != nil {
+		t.Fatal(err)
 	}
 	var decoded Plan
 	if err := json.Unmarshal(out, &decoded); err != nil {

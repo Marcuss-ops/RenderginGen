@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/chronon"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/metricnames"
 )
 
 // RunGPU performs the single Chronon invocation for a prepared job plus the
@@ -28,6 +29,12 @@ func (p *Processor) RunGPU(ctx context.Context, prepared *PreparedJob) error {
 	// the compiled-program choice between DirectYUV and FullGraph.
 	hasSourceVideo := planHasVideoSource(prepared.Plan)
 	compositionRequired := planHasVisualOverlay(prepared.Plan)
+	if compositionRequired && !hasSourceVideo {
+		// Chronon owns this physical choice: Vulkan composition followed by a
+		// host-frame pipe handoff. It is intentionally distinct from the
+		// native source-video/NVENC surface lane.
+		prepared.Metrics[metricnames.ChrononGPUCompositionPipe] = 1
+	}
 	gpuRequired := (hasSourceVideo || compositionRequired) && (p.strictNativeBackend ||
 		chronon.StrictNativeRequired(p.backend, p.hardwareEncoder))
 	// Render progress: every '[video] N/M frames' milestone the renderer
@@ -74,11 +81,12 @@ func (p *Processor) RunGPU(ctx context.Context, prepared *PreparedJob) error {
 		// render receipt; sending only the codec leaves the receipt without an
 		// expected frame rate and makes a valid render fail closed at finalize.
 		Output: chronon.OutputSpec{
-			Codec:  "h264",
-			Width:  uint32(metadata.Width),
-			Height: uint32(metadata.Height),
-			FPSNum: uint32(metadata.FPSNum),
-			FPSDen: uint32(metadata.FPSDen),
+			Codec:      "h264",
+			Width:      uint32(metadata.Width),
+			Height:     uint32(metadata.Height),
+			FPSNum:     uint32(metadata.FPSNum),
+			FPSDen:     uint32(metadata.FPSDen),
+			PipePixFmt: p.pipePixFmt,
 		},
 		TotalFrames: int64(metadata.FrameCount),
 		Progress: func(progress chronon.RenderProgress) {
@@ -97,7 +105,7 @@ func (p *Processor) RunGPU(ctx context.Context, prepared *PreparedJob) error {
 	us := float64(time.Since(phaseStart).Microseconds())
 	prepared.Metrics["render_ms"] = us / 1000
 	prepared.Metrics["render_us"] = us
-	p.recordPhase("render", phaseStart)
+	p.recordPhase(metricnames.RenderStem, phaseStart)
 	// Duty-cycle telemetry: the gap this render waited since the previous
 	// render ended on this worker. First job reports 0.
 	prepared.Metrics["gpu_gap_us"] = p.recordGPUGap(phaseStart)
@@ -105,8 +113,8 @@ func (p *Processor) RunGPU(ctx context.Context, prepared *PreparedJob) error {
 	// reported plus its average fps (0 when the renderer printed no frame
 	// milestones — never silently confused with real progress).
 	if sawProgress && lastProgress.FramesDone > 0 {
-		prepared.Metrics["render_frames_done"] = float64(lastProgress.FramesDone)
-		prepared.Metrics["render_frames_total"] = float64(lastProgress.FramesTotal)
+		prepared.Metrics[metricnames.RenderFramesDone] = float64(lastProgress.FramesDone)
+		prepared.Metrics[metricnames.RenderFramesTotal] = float64(lastProgress.FramesTotal)
 		fps := lastProgress.FPS
 		if fps <= 0 {
 			if elapsed := time.Since(phaseStart).Seconds(); elapsed > 0 {
@@ -120,15 +128,16 @@ func (p *Processor) RunGPU(ctx context.Context, prepared *PreparedJob) error {
 	if p.progressTracker != nil {
 		p.progressTracker.Forget(job.ID)
 	}
-	// The native Vulkan/NVENC receipt gate applies to both source-video jobs
-	// and authored image/text compositions. A successful Vulkan label alone is
-	// insufficient: the bounded telemetry must prove Vulkan frames, NVENC
-	// frames, and zero software/readback fallback.
-	if p.strictNativeBackend && (hasSourceVideo || compositionRequired) {
+	// The native Vulkan/NVENC receipt gate applies to source-video jobs. An
+	// image/text-only composition is a different valid Chronon plan: GPU
+	// composition plus host-frame pipe handoff, with no native video surface to
+	// certify. Do not demand NVENC surface counters from that plan.
+	if p.strictNativeBackend && hasSourceVideo {
 		metadata := planMetadataOf(prepared.Plan)
 		if err := requireNativeVulkan(prepared.OutputPath, metadata.FrameCount); err != nil {
 			return fmt.Errorf("processor: gpu-vulkan-native gate: %w", err)
 		}
+		prepared.NativeCertified = true
 	}
 	return nil
 }

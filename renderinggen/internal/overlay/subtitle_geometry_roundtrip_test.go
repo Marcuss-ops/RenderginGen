@@ -50,18 +50,25 @@ func TestSubtitleGeometryRoundTripEndToEnd(t *testing.T) {
 					box.X, box.Y, tc.wantAnchorX, tc.wantAnchorY)
 			}
 
-			plan := []byte(`{"schema":"chronon.render-plan.v2","version":2,"job_id":"j","canvas":{"width":1920,"height":1080,"fps_num":30,"fps_den":1,"duration_frames":150},"layers":[{"id":"source","type":"video","source":"assets/source.mp4","duration_frames":150}],"output":{"path":"result.mp4","format":"mp4","codec":"h264"}}`)
+			plan := &Plan{Schema: "chronon.render-plan.v2", Version: 2, JobID: "j",
+				Canvas: Canvas{Width: 1920, Height: 1080, FPSNum: 30, FPSDen: 1, DurationFrames: 150},
+				Layers: []Layer{{ID: "source", Type: "video", Source: "assets/source.mp4", DurationFrames: 150}},
+				Output: Output{Path: "result.mp4", Format: "mp4", Codec: "h264"}}
 			ass := []byte("Dialogue: 0,0:00:00.00,0:00:01.00,Default,,0,0,0,,Cue\n")
 			style2, box2, err := SubtitleStyleAsset(raw)
 			if err != nil {
 				t.Fatal(err)
 			}
-			out, count, err := BurnASSIntoPlan(plan, ass, "assets/fonts/F.ttf", style2, box2)
+			count, err := BurnASSIntoPlanTyped(plan, ass, "assets/fonts/F.ttf", style2, box2)
 			if err != nil || count != 1 {
-				t.Fatalf("BurnASSIntoPlan: count=%d err=%v", count, err)
+				t.Fatalf("BurnASSIntoPlanTyped: count=%d err=%v", count, err)
+			}
+			delivered, err := plan.Marshal()
+			if err != nil {
+				t.Fatal(err)
 			}
 			var decoded Plan
-			if err := json.Unmarshal(out, &decoded); err != nil {
+			if err := json.Unmarshal(delivered, &decoded); err != nil {
 				t.Fatal(err)
 			}
 			layer := decoded.Layers[1]
@@ -101,14 +108,21 @@ func TestSubtitleBottomCenterOnCanvas(t *testing.T) {
 	if err != nil || style == nil {
 		t.Fatalf("SubtitleStyleAsset: style=%+v err=%v", style, err)
 	}
-	plan := []byte(`{"schema":"chronon.render-plan.v2","version":2,"job_id":"j","canvas":{"width":1920,"height":1080,"fps_num":30,"fps_den":1,"duration_frames":150},"layers":[],"output":{"path":"result.mp4","format":"mp4","codec":"h264"}}`)
+	plan := &Plan{Schema: "chronon.render-plan.v2", Version: 2, JobID: "j",
+		Canvas: Canvas{Width: 1920, Height: 1080, FPSNum: 30, FPSDen: 1, DurationFrames: 150},
+		Layers: []Layer{},
+		Output: Output{Path: "result.mp4", Format: "mp4", Codec: "h264"}}
 	ass := []byte("Dialogue: 0,0:00:00.00,0:00:01.00,Default,,0,0,0,,Cue\n")
-	out, count, err := BurnASSIntoPlan(plan, ass, "assets/fonts/F.ttf", style, box)
+	count, err := BurnASSIntoPlanTyped(plan, ass, "assets/fonts/F.ttf", style, box)
 	if err != nil || count != 1 {
-		t.Fatalf("BurnASSIntoPlan: count=%d err=%v", count, err)
+		t.Fatalf("BurnASSIntoPlanTyped: count=%d err=%v", count, err)
+	}
+	delivered, err := plan.Marshal()
+	if err != nil {
+		t.Fatal(err)
 	}
 	var decoded Plan
-	if err := json.Unmarshal(out, &decoded); err != nil {
+	if err := json.Unmarshal(delivered, &decoded); err != nil {
 		t.Fatal(err)
 	}
 	y := decoded.Layers[0].Position[1]

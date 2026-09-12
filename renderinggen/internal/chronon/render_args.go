@@ -5,10 +5,17 @@ package chronon
 
 import "fmt"
 
-// defaultHardwareEncoder is the native encoder the GPU-required path uses when
-// the worker config does not select one. It is the only value the native
-// hot-path contract currently certifies (see config.validate).
-const defaultHardwareEncoder = "nvenc"
+// DefaultHardwareEncoder is the native encoder the GPU-required path uses when
+// the worker config does not select one. It is exported because it is the
+// SINGLE default: config's profile defaults and validate() read it too, so the
+// "which encoder when nothing is configured" rule cannot exist twice (it used
+// to be a literal in both packages). It is the only value the native hot-path
+// contract currently certifies.
+const DefaultHardwareEncoder = "nvenc"
+
+// HardwareEncoderNone disables the GPU handoff: a worker configured with it
+// never sets GPURequired, so no native encoder argument reaches Chronon.
+const HardwareEncoderNone = "none"
 
 // renderArgs builds the chronon3d_cli arguments for the render subcommand.
 func renderArgs(req RenderRequest) []string {
@@ -44,7 +51,7 @@ func renderArgs(req RenderRequest) []string {
 		// always passing nvenc made the setting decorative.
 		hardware := req.HardwareEncoder
 		if hardware == "" {
-			hardware = defaultHardwareEncoder
+			hardware = DefaultHardwareEncoder
 		}
 		args = append(args, "--hardware", hardware)
 		args = append(args, "--encoder-backend", "native")
@@ -62,6 +69,9 @@ func renderArgs(req RenderRequest) []string {
 		// Non-strict composition still declares semantics only. Chronon owns
 		// the DirectYUV/FullGraph decision after it has compiled the program.
 		args = append(args, "--encoder-backend", "native", "--gpu-hot-path-mode", "auto")
+	}
+	if req.Output.PipePixFmt != "" {
+		args = append(args, "--pipe-pixfmt", req.Output.PipePixFmt)
 	}
 	if req.AudioSourcePath != "" {
 		// Chronon's native A/V mux path uses --gop-source for the source audio

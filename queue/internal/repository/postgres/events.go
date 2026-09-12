@@ -4,19 +4,24 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+
+	"github.com/Marcuss-ops/RenderingGen/queue/client"
 )
 
-// Event types recorded in render_events. render_jobs.state describes how a job
-// is *now*; these events reconstruct what actually happened.
+// Event types recorded in render_events. They are ALIASES of the canonical
+// wire vocabulary (queue/client), not a second declaration: the ledger, the
+// HTTP projections, the worker and the end-to-end verification scripts must
+// all name the same events, and the historical private copy here forced every
+// other carrier to re-type the strings.
 const (
-	eventJobCreated   = "JOB_CREATED"
-	eventJobClaimed   = "JOB_CLAIMED"
-	eventLeaseRenewed = "LEASE_RENEWED"
-	eventJobCompleted = "JOB_COMPLETED"
-	eventJobFailed    = "JOB_FAILED"
-	eventJobRequeued  = "JOB_REQUEUED"
-	eventJobRendered  = "JOB_RENDERED"
-	eventJobCancelled = "JOB_CANCELLED"
+	eventJobCreated   = client.EventJobCreated
+	eventJobClaimed   = client.EventJobClaimed
+	eventLeaseRenewed = client.EventLeaseRenewed
+	eventJobCompleted = client.EventJobCompleted
+	eventJobFailed    = client.EventJobFailed
+	eventJobRequeued  = client.EventJobRequeued
+	eventJobRendered  = client.EventJobRendered
+	eventJobCancelled = client.EventJobCancelled
 )
 
 // recordEvent appends an event to render_events. Empty attempt/worker IDs are

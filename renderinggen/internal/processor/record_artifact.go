@@ -11,6 +11,7 @@ import (
 
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/artifactdb"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/media"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/metricnames"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/overlay"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/queue"
 )
@@ -64,25 +65,29 @@ func (p *Processor) recordArtifact(ctx context.Context, jobID string, artifact q
 		rec.AudioStreams = probe.AudioStreams
 		rec.FirstFrameKeyframe = probe.FirstFrameKeyframe
 	}
-	if m, ok := artifact.Metrics["overlay_compile_us"]; ok {
+	// The metric names are the vocabulary constants (internal/metricnames),
+	// not literals: the same names are emitted by the pipeline, projected by
+	// the local mirror and persisted in the queue's processing_metrics, and the
+	// vocabulary test proves no emitter can invent a name.
+	if m, ok := artifact.Metrics[metricnames.OverlayCompileUS]; ok {
 		rec.OverlayCompileUS = int64(m)
 	}
-	if m, ok := artifact.Metrics["asset_materialize_us"]; ok {
+	if m, ok := artifact.Metrics[metricnames.AssetMaterializeUS]; ok {
 		rec.AssetMaterializeUS = int64(m)
 	}
-	if m, ok := artifact.Metrics["render_us"]; ok {
+	if m, ok := artifact.Metrics[metricnames.RenderUS]; ok {
 		rec.ChrononRenderUS = int64(m)
 	}
-	if m, ok := artifact.Metrics["sha256_us"]; ok {
+	if m, ok := artifact.Metrics[metricnames.SHA256US]; ok {
 		rec.SHA256US = int64(m)
 	}
-	if m, ok := artifact.Metrics["objectstore_upload_us"]; ok {
+	if m, ok := artifact.Metrics[metricnames.ObjectStoreUploadUS]; ok {
 		rec.ObjectStoreUploadUS = int64(m)
 	}
-	if m, ok := artifact.Metrics["drive_upload_us"]; ok {
+	if m, ok := artifact.Metrics[metricnames.DriveUploadUS]; ok {
 		rec.DriveUploadUS = int64(m)
 	}
-	if m, ok := artifact.Metrics["total_us"]; ok {
+	if m, ok := artifact.Metrics[metricnames.TotalUS]; ok {
 		rec.TotalUS = int64(m)
 	}
 	if err := p.recorder.Record(ctx, rec); err != nil {
@@ -94,18 +99,32 @@ func (p *Processor) recordArtifact(ctx context.Context, jobID string, artifact q
 		if artifact.Metrics == nil {
 			artifact.Metrics = map[string]float64{}
 		}
-		artifact.Metrics["mirror_failure"] = 1
+		artifact.Metrics[metricnames.MirrorFailure] = 1
 	}
 	return artifact, nil
 }
 
+// PublishedBackendChrononVulkan is the published identity of the certified
+// Chronon GPU path. It is a PROJECTION of a PipelineGen contract value, not a
+// second definition: the owner is the clip.render backend vocabulary
+// (refactored/internal/capabilities/cliprender/backend.go,
+// BackendChrononVulkan).
+//
+// It is declared here because the worker must EMAIL the value on the artifact
+// boundary and the queue module cannot import PipelineGen; the literal is
+// pinned back to its owner by published_backend_contract_test.go, which fails
+// if the two ever disagree (and skips, visibly, when the sibling is absent).
+const PublishedBackendChrononVulkan = "chronon_vulkan"
+
 // publishedRenderBackend is the cross-service backend identity. RenderingGen
 // uses "vulkan" internally for configuration, while PipelineGen's clip.render
 // contract names the certified Chronon path "chronon_vulkan". Only a render
-// that passed the strict native gate may receive that published identity.
-func publishedRenderBackend(backend string, strictNative bool) string {
-	if backend == "vulkan" && strictNative {
-		return "chronon_vulkan"
+// that passed the strict native receipt gate may receive that identity.
+// GPU-composited host-frame pipe renders remain Vulkan internally, but are not
+// native-surface certifications.
+func publishedRenderBackend(backend string, nativeCertified bool) string {
+	if backend == "vulkan" && nativeCertified {
+		return PublishedBackendChrononVulkan
 	}
 	return backend
 }

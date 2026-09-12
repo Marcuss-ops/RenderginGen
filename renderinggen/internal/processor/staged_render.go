@@ -12,7 +12,6 @@ package processor
 
 import (
 	"context"
-	"log"
 	"os"
 	"time"
 
@@ -29,11 +28,7 @@ func (p *Processor) StagedRender(ctx context.Context, job *queue.Job) (queue.Art
 		return queue.Artifact{}, err
 	}
 	if os.Getenv("RENDERINGGEN_KEEP_WORKSPACE") != "1" {
-		defer func() {
-			if err := prepared.Workspace.Cleanup(); err != nil {
-				log.Printf("job %s: workspace cleanup: %v", job.ID, err)
-			}
-		}()
+		defer p.cleanupWorkspace(prepared.Workspace, job.ID)
 	}
 	if err := p.RunGPU(ctx, prepared); err != nil {
 		return queue.Artifact{}, err

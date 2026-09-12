@@ -41,7 +41,7 @@ func (p *Processor) Prepare(ctx context.Context, job *queue.Job) (queue.Artifact
 		if err != nil {
 			return queue.Artifact{}, err
 		}
-		defer ws.Cleanup()
+		defer p.cleanupWorkspace(ws, job.ID)
 		// Prepare materializes through the same zero-copy path resolver as the
 		// render pipeline (self-heal, hash verification, L3 staging): there is
 		// exactly one asset-resolution implementation on the worker.
@@ -76,7 +76,7 @@ func (p *Processor) Prepare(ctx context.Context, job *queue.Job) (queue.Artifact
 	if err != nil {
 		return queue.Artifact{}, err
 	}
-	defer ws.Cleanup()
+	defer p.cleanupWorkspace(ws, job.ID)
 	if err := ws.MaterializePaths(ctx, p.resolveAssetStreaming, assets); err != nil {
 		return queue.Artifact{}, err
 	}
