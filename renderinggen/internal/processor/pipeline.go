@@ -392,8 +392,10 @@ func (p *Processor) PrepareJob(ctx context.Context, job *queue.Job) (*PreparedJo
 // prefetchWarmAssets primes Chronon's persistent image/video cache from the
 // already verified workspace. The background and at most three image assets
 // are selected deterministically, preserving every asset in the plan while
-// bounding warm-up work on high-cardinality scenes. A warm-up failure is
-// diagnostic only: the materialized files remain authoritative for Render.
+// bounding warm-up work on high-cardinality scenes. The selected IPC prefetch
+// requests run concurrently: they are independent content-addressed assets and
+// serial round-trips only extend the prepare→GPU handoff gap. A warm-up failure
+// is diagnostic only: the materialized files remain authoritative for Render.
 func (p *Processor) prefetchWarmAssets(ctx context.Context, root string, assets []queue.AssetRef) {
 	if p == nil || p.assetPrefetcher == nil {
 		return
@@ -421,11 +423,18 @@ func (p *Processor) prefetchWarmAssets(ctx context.Context, root string, assets 
 		seen[path] = struct{}{}
 		selected = append(selected, path)
 	}
+	var wg sync.WaitGroup
+	wg.Add(len(selected))
 	for _, path := range selected {
-		if err := p.assetPrefetcher.PrefetchAsset(ctx, path); err != nil {
-			log.Printf("chronon asset warm-up skipped: path=%s err=%v", path, err)
-			continue
-		}
-		log.Printf("chronon asset warm-up complete: path=%s", path)
+		path := path
+		go func() {
+			defer wg.Done()
+			if err := p.assetPrefetcher.PrefetchAsset(ctx, path); err != nil {
+				log.Printf("chronon asset warm-up skipped: path=%s err=%v", path, err)
+				return
+			}
+			log.Printf("chronon asset warm-up complete: path=%s", path)
+		}()
 	}
+	wg.Wait()
 }
