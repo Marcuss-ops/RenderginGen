@@ -154,7 +154,7 @@ func applyPresetDefinition(layer *Layer, d PresetDefinition) {
 }
 
 func animationForDefinition(d PresetDefinition) (*LayerAnimation, error) {
-	if d.Motion.Name == "" && d.Motion.ID == "" {
+	if d.Motion.ID == "" {
 		return nil, nil
 	}
 	tracks, err := tracksForMotion(d.Motion)

@@ -50,6 +50,13 @@ type PresetLayout struct {
 
 type MotionDefinition = motion.MotionDefinition
 
+// officialFontPath is the single font asset every official preset references.
+// The typewriter presets historically pointed at "fonts/Inter-Bold.ttf", a
+// logical path no asset in the repository provides; the certification runtime
+// masked the stale spelling by substituting Poppins-Bold.ttf for it. Declaring
+// the path once removes the second spelling and the substitution shim with it.
+const officialFontPath = "assets/fonts/Poppins-Bold.ttf"
+
 type presetSpec struct {
 	family                    PresetFamily
 	anchor, align, anim, unit string
@@ -73,9 +80,9 @@ func imageSpec(anchor, anim string) presetSpec {
 
 func makePreset(id string, s presetSpec) PresetDefinition {
 	d := PresetDefinition{ID: id, Family: s.family,
-		Style:  PresetStyle{FontFamily: "assets/fonts/Poppins-Bold.ttf", FontSize: 58, Fill: []float64{1, 1, 1, 1}, Shadow: s.shadow},
+		Style:  PresetStyle{FontFamily: officialFontPath, FontSize: 58, Fill: []float64{1, 1, 1, 1}, Shadow: s.shadow},
 		Layout: PresetLayout{Anchor: s.anchor, Alignment: s.align, BoxWidth: s.boxW, BoxHeight: s.boxH, Fit: s.fit},
-		Motion: MotionDefinition{Name: s.anim, Unit: s.unit, Enter: s.enter, Exit: s.exit}}
+		Motion: MotionDefinition{ID: s.anim, Unit: s.unit, Enter: s.enter, Exit: s.exit}}
 	if s.family == PresetImage {
 		d.Style.FontFamily, d.Style.FontSize, d.Style.Fill = "", 0, nil
 	}
@@ -92,9 +99,9 @@ func makeTypewriterPreset(id, anim string, fontSize float64, fill []float64, sha
 	return PresetDefinition{
 		ID:     id,
 		Family: PresetText,
-		Style:  PresetStyle{FontFamily: "fonts/Inter-Bold.ttf", FontSize: fontSize, Fill: fill, Shadow: shadow},
+		Style:  PresetStyle{FontFamily: officialFontPath, FontSize: fontSize, Fill: fill, Shadow: shadow},
 		Layout: PresetLayout{Anchor: "center", Alignment: "center", BoxWidth: 1920, BoxHeight: 160, Fit: "contain"},
-		Motion: MotionDefinition{Name: anim, ID: anim, Unit: "glyph", Enter: 72, Exit: 6},
+		Motion: MotionDefinition{ID: anim, Unit: "glyph", Enter: 72, Exit: 6},
 	}
 }
 

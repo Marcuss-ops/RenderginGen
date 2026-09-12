@@ -29,7 +29,7 @@ func (r *Repository) Fail(id, workerID, reason string) error {
 	err = tx.QueryRowContext(ctx, `
 		SELECT attempt_count, max_attempts
 		FROM render_jobs
-		WHERE id = $1 AND state = 'running' AND current_worker_id = $2
+		WHERE id = $1 AND state = `+stateLiteral(model.StateRunning)+` AND current_worker_id = $2
 		FOR UPDATE`, id, workerID).Scan(&attempts, &maxAttempts)
 	if errors.Is(err, sql.ErrNoRows) {
 		return fmt.Errorf("job %s is not running or not owned by %s", id, workerID)
@@ -38,7 +38,7 @@ func (r *Repository) Fail(id, workerID, reason string) error {
 		return err
 	}
 
-	permanent := maxAttempts > 0 && attempts >= maxAttempts
+	permanent := model.ShouldFailPermanently(attempts, maxAttempts)
 
 	attempt, err := runningAttemptID(ctx, tx, id)
 	if err != nil {
@@ -52,13 +52,13 @@ func (r *Repository) Fail(id, workerID, reason string) error {
 	if permanent {
 		update = `
 			UPDATE render_jobs
-			SET state = 'failed', failed_at = now(), error_message = $2,
+			SET state = `+stateLiteral(model.StateFailed)+`, failed_at = now(), error_message = $2,
 			    current_worker_id = NULL, lease_until = NULL
 			WHERE id = $1`
 	} else {
 		update = `
 			UPDATE render_jobs
-			SET state = 'pending', error_message = $2, queued_at = now(),
+			SET state = `+stateLiteral(model.StatePending)+`, error_message = $2, queued_at = now(),
 			    current_worker_id = NULL, lease_until = NULL
 			WHERE id = $1`
 	}
@@ -88,7 +88,7 @@ func (r *Repository) Renew(id, workerID string) error {
 	res, err := tx.ExecContext(ctx, `
 		UPDATE render_jobs
 		SET lease_until = $3
-		WHERE id = $1 AND state IN ('running', 'finalizing') AND current_worker_id = $2`,
+		WHERE id = $1 AND state IN `+stateIn(model.StateRunning, model.StateFinalizing)+` AND current_worker_id = $2`,
 		id, workerID, time.Now().Add(r.lease))
 	if err != nil {
 		return err
@@ -136,7 +136,7 @@ func (r *Repository) Retry(id string) error {
 
 	_, err = tx.ExecContext(ctx, `
 		UPDATE render_jobs
-		SET state = 'pending', error_message = NULL, queued_at = now(),
+		SET state = `+stateLiteral(model.StatePending)+`, error_message = NULL, queued_at = now(),
 		    current_worker_id = NULL, lease_until = NULL,
 		    progress_frames_done = 0, progress_total_frames = 0,
 		    progress_last_frame_at = NULL, progress_worker = ''
@@ -176,11 +176,11 @@ func (r *Repository) Cancel(id string) error {
 	if err != nil {
 		return err
 	}
-	switch state {
-	case string(model.StateCancelled):
+	if state == string(model.StateCancelled) {
 		// Idempotent: the producer already cancelled this job.
 		return tx.Commit()
-	case string(model.StateCompleted), string(model.StateFailed):
+	}
+	if model.IsTerminalState(model.State(state)) {
 		return fmt.Errorf("job %s is in state %q, cannot cancel terminal job", id, state)
 	}
 
@@ -198,7 +198,7 @@ func (r *Repository) Cancel(id string) error {
 
 	if _, err := tx.ExecContext(ctx, `
 		UPDATE render_jobs
-		SET state = 'cancelled', current_worker_id = NULL, lease_until = NULL,
+		SET state = `+stateLiteral(model.StateCancelled)+`, current_worker_id = NULL, lease_until = NULL,
 		    error_message = NULL,
 		    progress_frames_done = 0, progress_total_frames = 0,
 		    progress_last_frame_at = NULL, progress_worker = ''
@@ -213,7 +213,7 @@ func (r *Repository) Cancel(id string) error {
 }
 
 // SetProgress stores the latest render progress from the lease-owning worker.
-// The conditional UPDATE (state='running' AND current_worker_id=workerID)
+// The conditional UPDATE (state = StateRunning AND current_worker_id=workerID)
 // makes a stale worker's report a no-op instead of a corruption vector: the
 // report either lands on the current owner's row or affects zero rows.
 func (r *Repository) SetProgress(id, workerID string, p model.Progress) error {
@@ -232,7 +232,7 @@ func (r *Repository) SetProgress(id, workerID string, p model.Progress) error {
 		    progress_total_frames = $3,
 		    progress_last_frame_at = now(),
 		    progress_worker = $4
-		WHERE id = $1 AND state = 'running' AND current_worker_id = $4`,
+		WHERE id = $1 AND state = `+stateLiteral(model.StateRunning)+` AND current_worker_id = $4`,
 		id, p.FramesDone, p.TotalFrames, workerID)
 	if err != nil {
 		return err

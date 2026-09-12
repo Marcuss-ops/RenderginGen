@@ -67,7 +67,7 @@ func TestRulesDetectEveryMarker(t *testing.T) {
 		{"render_plan_v1_schema", "x/foo.go", `schema := "chronon.render-plan.v1"`},
 		{"render_plan_unversioned_schema", "x/foo.go", `const s = "chronon.render-plan"`},
 		{"module_path_typo", "x/go.mod", "module github.com/Marcuss-ops/RenderginGen/queue"},
-		{"hardcoded_home_path", "x/foo_test.go", `bin := "/home/pierone/bin/chronon"`},
+		{"hardcoded_home_path", "x/foo_test.go", `bin := "/home/dev/bin/chronon"`},
 		{"template_alias_org_default", "x/foo.go", `case "ORG_DEFAULT":`},
 		{"template_alias_gpe_default", "x/foo.go", `case "GPE_DEFAULT":`},
 		{"entity_template_inference", "x/foo.go", `if isEntityTemplate(t) {`},
@@ -146,7 +146,8 @@ func TestRulesCatchEscapedCarriers(t *testing.T) {
 	}{
 		{"escaped quotes in a shell script", "x/run.sh", `  -d '{"id":"j","render_plan":{"schema": "chronon.render-plan", "version":1}}'`},
 		{"escaped v1 in yaml", "x/cfg.yaml", `plan: "chronon.render-plan.v1"`},
-		{"home path in yaml", "x/cfg.yaml", `home: /home/pierone/src/Chronon3d/build`},
+		{"home path in yaml", "x/cfg.yaml", `home: /home/ci/src/Chronon3d/build`},
+		{"macOS home path in yaml", "x/cfg.yaml", `home: /Users/dev/src/Chronon3d/build`},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {

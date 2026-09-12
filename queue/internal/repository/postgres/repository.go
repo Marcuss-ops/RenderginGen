@@ -18,9 +18,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"time"
+
 	"github.com/Marcuss-ops/RenderingGen/queue/internal/model"
 	"github.com/Marcuss-ops/RenderingGen/queue/internal/repository"
-	"time"
 )
 
 // defaultJobType is the job type recorded for render jobs. A job is one
@@ -141,15 +142,6 @@ func (r *Repository) Claim(workerID string) (*model.Job, time.Duration, error) {
 	return r.ClaimState(workerID, "")
 }
 
-// claimStateFilters maps a claimable state to its SQL predicate. The map is
-// compile-time fixed: no caller input ever reaches the query text — the
-// accepted states are whitelisted and rendered through this table, never via
-// string concatenation of the caller's value.
-var claimStateFilters = map[model.State]string{
-	model.StatePending:  "state = 'pending'",
-	model.StateRendered: "state = 'rendered'",
-}
-
 func (r *Repository) ClaimState(workerID string, state model.State) (*model.Job, time.Duration, error) {
 	ctx := context.Background()
 	tx, err := r.db.BeginTx(ctx, nil)
@@ -175,13 +167,16 @@ func (r *Repository) ClaimState(workerID string, state model.State) (*model.Job,
 		chunkIndex  int
 		frameRange  []byte
 	)
-	stateFilter := "state IN ('pending', 'rendered')"
+	// The claimable vocabulary is owned by model.ClaimableStates(), so adding
+	// a claimable state updates this query instead of leaving a hand-typed
+	// literal behind. A requested state is validated against the same
+	// vocabulary before it reaches the query text.
+	stateFilter := "state IN " + stateIn(model.ClaimableStates()...)
 	if state != "" {
-		filter, ok := claimStateFilters[state]
-		if !ok {
+		if !model.IsClaimable(state) {
 			return nil, 0, fmt.Errorf("unsupported claim state %q", state)
 		}
-		stateFilter = filter
+		stateFilter = "state = " + stateLiteral(state)
 	}
 	err = tx.QueryRowContext(ctx, `
 		SELECT id, job_type, job_schema, job_schema_version, render_plan, input_manifest, attempt_count, queued_at, artifact_id, parent_job_id, chunk_index, frame_range
@@ -228,7 +223,7 @@ func (r *Repository) ClaimState(workerID string, state model.State) (*model.Job,
 
 	if _, err := tx.ExecContext(ctx, `
 		UPDATE render_jobs
-		SET state = 'running',
+		SET state = `+stateLiteral(model.StateRunning)+`,
 		    current_worker_id = $2,
 		    lease_until = $3,
 		    started_at = $4,
@@ -331,11 +326,11 @@ func (r *Repository) Get(id string) (*model.Job, error) {
 	job.ChunkIndex = chunkIndex
 	var decErr error
 	if job.FrameRange, decErr = decodeFrameRange(frameRange); decErr != nil {
-		_, _ = r.db.ExecContext(ctx, `UPDATE render_jobs SET state='failed', failed_at=now(), error_message=$2, current_worker_id=NULL, lease_until=NULL WHERE id=$1`, id, decErr.Error())
+		_, _ = r.db.ExecContext(ctx, `UPDATE render_jobs SET state=`+stateLiteral(model.StateFailed)+`, failed_at=now(), error_message=$2, current_worker_id=NULL, lease_until=NULL WHERE id=$1`, id, decErr.Error())
 		return nil, decErr
 	}
 	if job.Assets, decErr = decodeAssets(manifest); decErr != nil {
-		_, _ = r.db.ExecContext(ctx, `UPDATE render_jobs SET state='failed', failed_at=now(), error_message=$2, current_worker_id=NULL, lease_until=NULL WHERE id=$1`, id, decErr.Error())
+		_, _ = r.db.ExecContext(ctx, `UPDATE render_jobs SET state=`+stateLiteral(model.StateFailed)+`, failed_at=now(), error_message=$2, current_worker_id=NULL, lease_until=NULL WHERE id=$1`, id, decErr.Error())
 		return nil, decErr
 	}
 	if worker.Valid {

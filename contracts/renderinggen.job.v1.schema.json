@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://renderinggen.dev/schemas/renderinggen.job.v1.schema.json",
   "title": "RenderingGen Job V1",
-  "description": "Envelope contract for a RenderingGen render job. One job corresponds to one video SEGMENT (never a single overlay): the render_plan contains every layer of the segment — base video, phrases, keywords, images and animations — so Chronon3d composes them in a single pass. RenderingGen is the orchestrator; the renderable content is a semantic renderinggen.overlay-plan.v1 input is compiled by RenderingGen exclusively into chronon.render-plan.v2 before execution.",
+  "description": "Envelope contract for a RenderingGen render job. One job corresponds to one video SEGMENT (never a single overlay): the render_plan contains every element of the segment — base video, background, phrases, keywords, images and animations — as the semantic renderinggen.overlay-plan.v1 document, which RenderingGen compiles exclusively into chronon.render-plan.v2 before execution. A concrete chronon render plan is NOT a valid render_plan on this boundary.",
   "type": "object",
   "additionalProperties": false,
   "required": ["id", "schema", "version", "render_plan", "assets"],
@@ -21,11 +21,8 @@
       "description": "Envelope schema version."
     },
     "render_plan": {
-      "anyOf": [
-        { "$ref": "https://renderinggen.dev/schemas/overlay-plan.v1.schema.json" },
-        { "$ref": "https://chronon3d.dev/schemas/chronon.render-plan.v2.schema.json" }
-      ],
-      "description": "The semantic overlay-plan.v1 emitted by PipelineGen; RenderingGen compiles it exclusively to chronon.render-plan.v2."
+      "$ref": "https://renderinggen.dev/schemas/overlay-plan.v1.schema.json",
+      "description": "The semantic renderinggen.overlay-plan.v1 emitted by PipelineGen. It is the ONLY accepted render_plan; RenderingGen compiles it exclusively to chronon.render-plan.v2. A concrete Chronon plan is rejected fail-closed (see CONFORMANCE.md)."
     },
     "assets": {
       "type": "array",

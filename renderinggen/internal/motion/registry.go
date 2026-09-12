@@ -44,7 +44,3 @@ func (r *RegistryType) List() []string {
 	sort.Strings(ids)
 	return ids
 }
-
-func Register(id string, plugin MotionPlugin) error { return Registry.Register(id, plugin) }
-func Resolve(id string) (MotionPlugin, error)       { return Registry.Resolve(id) }
-func List() []string                                { return Registry.List() }

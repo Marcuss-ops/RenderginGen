@@ -73,7 +73,7 @@ func TestCompleteSendsWorkerAndArtifact(t *testing.T) {
 
 	c := New(srv.URL)
 	err := c.Complete(context.Background(), "job-1", "w1", Artifact{
-		ID: "art-1", ProfileID: "velox-h264-copy-v1", CopyEligible: true, ClosedGOP: true,
+		ID: "art-1", ProfileID: CertifiedProfileVeloxH2641080p30V1, CopyEligible: true, ClosedGOP: true,
 	})
 	if err != nil {
 		t.Fatal(err)

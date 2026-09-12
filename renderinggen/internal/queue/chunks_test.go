@@ -13,7 +13,7 @@ func TestPlanChunks(t *testing.T) {
 	if len(jobs) != 3 {
 		t.Fatalf("got %d chunks", len(jobs))
 	}
-	want := []FrameRange{{0, 4}, {4, 8}, {8, 10}}
+	want := []FrameRange{{Start: 0, End: 4}, {Start: 4, End: 8}, {Start: 8, End: 10}}
 	for i, job := range jobs {
 		if job.ParentJobID != "parent" || job.ChunkIndex != i || *job.FrameRange != want[i] {
 			t.Fatalf("chunk %d = %+v", i, job)

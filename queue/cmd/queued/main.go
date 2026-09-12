@@ -26,7 +26,7 @@ import (
 func main() {
 	addr := flag.String("addr", "127.0.0.1:8081", "listen address")
 	lease := flag.Duration("lease", 10*time.Minute, "job lease duration")
-	maxAttempts := flag.Int("max-attempts", 3, "max attempts before a job is permanently failed")
+	maxAttempts := flag.Int("max-attempts", model.DefaultMaxAttempts, "max attempts before a job is permanently failed")
 	expireInterval := flag.Duration("expire-interval", 5*time.Second, "lease expiry scan interval")
 	workerStale := flag.Duration("worker-stale-after", 90*time.Second, "worker heartbeat staleness threshold")
 	dbURL := flag.String("db-url", "", "PostgreSQL DSN; enables the postgres repository when set (defaults to $DATABASE_URL)")

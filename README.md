@@ -229,14 +229,19 @@ cd infra/docker && docker compose up --build -d
 
 ### Golden canary (permanent regression gate)
 
-`GoldenOverlayJobV2` (`testdata/golden/golden-overlay-job-v2.json`) is the
-**frozen golden job** for the real workload — 1280×720 @ 30fps, 5 seconds
-(150 frames), with a background image, an important phrase
-(`title_centered`), an important word (`kinetic_word`) and an image overlay.
-The fixtures are deterministic (`infra/e2e/gen-golden-assets.py`) and their
-SHA-256 hashes are baked into the payload; `golden_test.go` locks the payload,
-the fixtures and the Go constant together, so any drift fails at unit-test
-time.
+The canary fixture is `testdata/golden/golden-semantic-overlay-job-v1.json`
+(Go twin `GoldenSemanticOverlayJobV1`) — 1280×720 @ 30fps, 5 seconds
+(150 frames), with a `background.jpg` image overlay, an `IMPORTANT_PHRASE`
+(`caption_card`) and an `IMPORTANT_WORD` (`active_word_pop`). Its fixtures are
+deterministic (`infra/e2e/gen-golden-assets.py`) and their SHA-256 hashes are
+baked into the payload; `golden_semantic_test.go` locks the payload, the
+fixtures and the Go constant together, so any drift fails at unit-test time.
+
+`testdata/golden/golden-overlay-job-v2.json` (Go twin `GoldenOverlayJobV2`) is
+the **universal benchmark golden** — 1280×720 @ 30fps, 8 seconds (240 frames)
+with a background video, two phrases, two words, two image overlays and a logo
+— used by the benchmark/cache integration tests and pinned the same way by
+`golden_v2_test.go`.
 
 The canary (`infra/e2e/run-golden-overlay.sh`) certifies the **whole real
 chain**: queue submit → worker claim → asset materialization → `plan.json` →

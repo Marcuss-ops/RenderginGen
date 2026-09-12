@@ -21,7 +21,7 @@ func TestOfficialPresetCatalog(t *testing.T) {
 			t.Errorf("%s has invalid family %q", id, d.Family)
 		}
 		staticSmoke := id == "static_text_smoke"
-		if d.Layout.Anchor == "" || (!staticSmoke && (d.Motion.Name == "" || d.Motion.Unit == "" || d.Motion.Enter <= 0 || d.Motion.Exit <= 0)) {
+		if d.Layout.Anchor == "" || (!staticSmoke && (d.Motion.ID == "" || d.Motion.Unit == "" || d.Motion.Enter <= 0 || d.Motion.Exit <= 0)) {
 			t.Errorf("%s has incomplete materialization: %+v", id, d)
 		}
 		if d.Family == PresetText && (d.Style.FontFamily == "" || d.Style.FontSize <= 0 || len(d.Style.Fill) != 4) {
@@ -58,7 +58,7 @@ func TestEveryOfficialPresetCompilesAndMaterializes(t *testing.T) {
 			t.Fatalf("%s resolve: %v", id, err)
 		}
 		staticSmoke := id == "static_text_smoke"
-		if resolved.ID != id || (!staticSmoke && resolved.Motion.Name == "") {
+		if resolved.ID != id || (!staticSmoke && resolved.Motion.ID == "") {
 			t.Fatalf("%s resolved empty: %+v", id, resolved)
 		}
 		raw := []byte(`{"schema_version":"renderinggen.overlay-plan.v1","plan_id":"canary-` + id + `","video_id":"v","width":1280,"height":720,"fps_num":30,"fps_den":1,"items":[` + item + `]}`)

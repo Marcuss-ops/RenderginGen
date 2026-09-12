@@ -74,6 +74,16 @@ const JobSchemaV1 = "renderinggen.job"
 // JobSchemaVersionV1 is the version of the renderinggen.job.v1 envelope.
 const JobSchemaVersionV1 = 1
 
+// CertifiedProfileVeloxH2641080p30V1 is the profile_id of the ONE certified
+// copy-ready overlay artifact downstream assemblers select on (see
+// queue/ops/render_artifacts_contract_audit.sql, section 3). It is owned by
+// the wire contract rather than the worker's media registry because the value
+// travels on the artifact boundary: queue-readable code and every consumer
+// must agree on it, and the queue module cannot import the worker. The worker's
+// media.ProfileVeloxH2641080p30V1 aliases this constant instead of restating
+// the literal, and the queue tests reference it instead of re-typing it.
+const CertifiedProfileVeloxH2641080p30V1 = "velox-h264-1080p30-v1"
+
 // AssetRef points at an asset in the central artifact store by content hash
 // and the logical path it must be materialized at in the job workspace.
 type AssetRef struct {
@@ -134,7 +144,12 @@ type Artifact struct {
 // Job is the unit of work exchanged with the queue: one render SEGMENT. On
 // submit only ID, Schema, Version, RenderPlan and Assets matter; on Get the
 // server also fills in State, the attempt count, timestamps and (once
-// completed) the Artifact.
+// completed) the Artifact; on claim the server adds the Lease duration.
+//
+// It is the SINGLE job envelope for every direction and every layer (the
+// queue service, the server, the worker adapter and the producers all alias
+// it); there is no second claim-response or persistence declaration of the
+// same fields.
 type FrameRange struct {
 	Start int64 `json:"start"`
 	End   int64 `json:"end"`
@@ -164,6 +179,16 @@ type Job struct {
 	FailReason  string    `json:"fail_reason,omitempty"`
 
 	Artifact *Artifact `json:"artifact,omitempty"`
+
+	// Progress is the last render progress reported by the owning worker
+	// (nil until the first report). It is part of the GET /jobs/{id} body so a
+	// stalled render is observable without asking the worker.
+	Progress *Progress `json:"progress,omitempty"`
+
+	// Lease is the claim lease duration, serialized as integer nanoseconds. It
+	// is populated only on a claim response and is always absent from submit
+	// and GET bodies (omitted when zero).
+	Lease time.Duration `json:"lease,omitempty"`
 }
 
 // Stats is a snapshot of the queue, used for autoscaling and monitoring.

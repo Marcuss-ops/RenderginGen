@@ -71,6 +71,12 @@ against `contracts/overlay-plan.v1.schema.json`, compiles it through the single
 compiler, and validates the output against
 `Chronon3d/schemas/json/chronon.render-plan.v2.schema.json`.
 
+It needs the sibling `Chronon3d/` schema, which lives outside this repository,
+so the test **skips** (never fails) in a standalone RenderingGen checkout where
+`go.work` and the siblings are absent. The contract is verified where the
+workspace exists; in the standalone case the absence stays visible as a skip
+instead of a false pass or a false failure.
+
 ## Ratchet baseline
 
 Pre-existing violations are recorded in

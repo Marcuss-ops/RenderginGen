@@ -17,9 +17,9 @@ func (r *Repository) ClaimFinalization(parentJobID, workerID string) (*model.Job
 	}
 	res, err := r.db.ExecContext(context.Background(), `
 		UPDATE render_jobs
-		SET state = 'finalizing', current_worker_id = $2, started_at = now(),
+		SET state = `+stateLiteral(model.StateFinalizing)+`, current_worker_id = $2, started_at = now(),
 		    lease_until = now() + make_interval(secs => $3)
-		WHERE id = $1 AND state IN ('pending', 'running')`, parentJobID, workerID, r.lease.Seconds())
+		WHERE id = $1 AND state IN `+stateIn(model.StatePending, model.StateRunning), parentJobID, workerID, r.lease.Seconds())
 	if err != nil {
 		return nil, false, err
 	}
@@ -50,8 +50,8 @@ func (r *Repository) Complete(id, workerID string, artifact model.Artifact) erro
 
 	res, err := tx.ExecContext(ctx, `
 		UPDATE render_jobs
-		SET state = 'completed', completed_at = now()
-		WHERE id = $1 AND state IN ('running', 'finalizing') AND current_worker_id = $2`, id, workerID)
+		SET state = `+stateLiteral(model.StateCompleted)+`, completed_at = now()
+		WHERE id = $1 AND state IN `+stateIn(model.StateRunning, model.StateFinalizing)+` AND current_worker_id = $2`, id, workerID)
 	if err != nil {
 		return err
 	}
@@ -101,9 +101,9 @@ func (r *Repository) Rendered(id, workerID string, artifact model.Artifact, reas
 
 	res, err := tx.ExecContext(ctx, `
 		UPDATE render_jobs
-		SET state = 'rendered', error_message = $2, queued_at = now(),
+		SET state = `+stateLiteral(model.StateRendered)+`, error_message = $2, queued_at = now(),
 		    current_worker_id = NULL, lease_until = NULL
-		WHERE id = $1 AND state = 'running' AND current_worker_id = $3`, id, reason, workerID)
+		WHERE id = $1 AND state = `+stateLiteral(model.StateRunning)+` AND current_worker_id = $3`, id, reason, workerID)
 	if err != nil {
 		return err
 	}

@@ -15,10 +15,10 @@ func (r *Repository) Stats() model.Stats {
 	var stats model.Stats
 	err := r.db.QueryRowContext(context.Background(), `
 		SELECT
-			COALESCE(count(*) FILTER (WHERE state = 'pending'), 0),
-			COALESCE(count(*) FILTER (WHERE state = 'running'), 0),
-			COALESCE(count(*) FILTER (WHERE state = 'completed'), 0),
-			COALESCE(count(*) FILTER (WHERE state = 'failed'), 0)
+			COALESCE(count(*) FILTER (WHERE state = `+stateLiteral(model.StatePending)+`), 0),
+			COALESCE(count(*) FILTER (WHERE state = `+stateLiteral(model.StateRunning)+`), 0),
+			COALESCE(count(*) FILTER (WHERE state = `+stateLiteral(model.StateCompleted)+`), 0),
+			COALESCE(count(*) FILTER (WHERE state = `+stateLiteral(model.StateFailed)+`), 0)
 		FROM render_jobs`).Scan(&stats.Pending, &stats.Running, &stats.Completed, &stats.Failed)
 	if err != nil {
 		log.Printf("queue stats query failed: %v", err)

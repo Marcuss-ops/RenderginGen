@@ -1,6 +1,10 @@
 package media
 
-import "fmt"
+import (
+	"fmt"
+
+	queueclient "github.com/Marcuss-ops/RenderingGen/queue/client"
+)
 
 // OutputProfile is the stable media contract selected by a render plan.
 // Encoder implementation details are intentionally not part of the ID.
@@ -20,8 +24,12 @@ type OutputProfile struct {
 
 const (
 	ProfileVeloxAssemblyReadyV1 = "VELOX_ASSEMBLY_READY_V1"
-	ProfileVeloxH2641080p30V1   = "velox-h264-1080p30-v1"
-	ProfileVeloxH264720p30V1    = "velox-h264-720p30-v1"
+	// ProfileVeloxH2641080p30V1 is the certified copy-ready profile id. It is
+	// owned by the wire contract (queue/client) because the artifact's
+	// profile_id is what downstream assemblers select on; this registry aliases
+	// it so the worker and the queue can never disagree about the value.
+	ProfileVeloxH2641080p30V1 = queueclient.CertifiedProfileVeloxH2641080p30V1
+	ProfileVeloxH264720p30V1  = "velox-h264-720p30-v1"
 )
 
 var profiles = map[string]OutputProfile{

@@ -4,7 +4,6 @@
 package processor
 
 import (
-	"encoding/json"
 	"path/filepath"
 	"strings"
 
@@ -81,11 +80,17 @@ func audioModeCopyOnly(mode string) bool {
 }
 
 // audioSourcePathFromPlan is the single typed authority for master audio.
-// It reads Plan.Output.Audio (mode) and the semantic source asset from the
-// raw JSON's source block, so there is exactly one place where audio policy
-// is interpreted. sample_rate/channels/codec are surfaced as inert
-// warnings via the returned warning flag so the caller can metric/log them.
-func audioSourcePathFromPlan(plan *overlay.Plan, raw []byte, workspaceRoot string) (string, bool) {
+// It reads Plan.Output.Audio (mode) and the source layer's ALREADY-RESOLVED
+// logical path from the compiled plan, so there is exactly one place where
+// audio policy is interpreted and one owner of the asset path (the compiler's
+// asset registry). sample_rate/channels/codec are surfaced as inert warnings
+// via the returned warning flag so the caller can metric/log them.
+//
+// The source path is deliberately NOT rebuilt locally as
+// assets/semantic/<asset_id>.mp4: that shortcut skipped the registry's id
+// sanitization and media-type extension rules, so an asset id containing a
+// space or slash produced a path the registry never wrote.
+func audioSourcePathFromPlan(plan *overlay.Plan, workspaceRoot string) (string, bool) {
 	if plan == nil || plan.Output.Audio == nil {
 		return "", false
 	}
@@ -100,19 +105,12 @@ func audioSourcePathFromPlan(plan *overlay.Plan, raw []byte, workspaceRoot strin
 	if audio.Mode == "" {
 		return "", warnInert
 	}
-	var doc struct {
-		Source *struct {
-			AssetID string `json:"asset_id"`
-			Path    string `json:"path"`
-		} `json:"source"`
+	// The compiler emits the source clip as the layer with id "source"; its
+	// Source field is the registry-resolved logical path.
+	for _, layer := range plan.Layers {
+		if layer.ID == "source" && layer.Source != "" {
+			return filepath.Join(workspaceRoot, filepath.FromSlash(layer.Source)), warnInert
+		}
 	}
-	_ = json.Unmarshal(raw, &doc)
-	if doc.Source == nil || doc.Source.AssetID == "" {
-		return "", warnInert
-	}
-	path := doc.Source.Path
-	if path == "" {
-		path = filepath.ToSlash(filepath.Join("assets", "semantic", doc.Source.AssetID+".mp4"))
-	}
-	return filepath.Join(workspaceRoot, filepath.FromSlash(path)), warnInert
+	return "", warnInert
 }

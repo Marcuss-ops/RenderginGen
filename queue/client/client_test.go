@@ -48,7 +48,7 @@ func fakeQueue(t *testing.T) *httptest.Server {
 				ID:           "art-1",
 				ArtifactURL:  "https://store/overlay.mp4",
 				ArtifactHash: "abc",
-				ProfileID:    "velox-h264-copy-v1",
+				ProfileID:    CertifiedProfileVeloxH2641080p30V1,
 				CopyEligible: true,
 				ClosedGOP:    true,
 			},
@@ -180,7 +180,7 @@ func TestGetArtifact(t *testing.T) {
 	if job.State != StateCompleted || job.Artifact == nil {
 		t.Fatalf("unexpected job: %+v", job)
 	}
-	if !job.Artifact.CopyEligible || !job.Artifact.ClosedGOP || job.Artifact.ProfileID != "velox-h264-copy-v1" {
+	if !job.Artifact.CopyEligible || !job.Artifact.ClosedGOP || job.Artifact.ProfileID != CertifiedProfileVeloxH2641080p30V1 {
 		t.Fatalf("artifact certification not round-tripped: %+v", job.Artifact)
 	}
 }
