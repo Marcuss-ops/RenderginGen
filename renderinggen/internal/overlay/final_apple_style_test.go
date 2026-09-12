@@ -52,8 +52,8 @@ func TestFinal_AppleStyleSemanticLowering(t *testing.T) {
 			if plan.Canvas.Width != 1920 || plan.Canvas.Height != 1080 {
 				t.Errorf("canvas dimensions %dx%d, want 1920x1080", plan.Canvas.Width, plan.Canvas.Height)
 			}
-			if len(plan.Layers) != 6 {
-				t.Fatalf("expected 6 compiled layers, got %d", len(plan.Layers))
+			if len(plan.Layers) != 7 {
+				t.Fatalf("expected 7 compiled layers, got %d", len(plan.Layers))
 			}
 		})
 	}
@@ -74,7 +74,8 @@ func appleAssetsRoot(t *testing.T) string {
 	root := t.TempDir()
 
 	fixtures := map[string]string{
-		"assets/apple.png":             "apple.png",
+		"assets/apple.png":              "apple.png",
+		"assets/background.jpg":         "background.jpg",
 		"assets/fonts/Poppins-Bold.ttf": "Poppins-Bold.ttf",
 		"fonts/Poppins-Bold.ttf":        "Poppins-Bold.ttf",
 		"Poppins-Bold.ttf":              "Poppins-Bold.ttf",
@@ -177,7 +178,11 @@ func TestRenderingGen2ChrononAppleStyleFinal(t *testing.T) {
 
 	// 3. Compare visual distinction between profiles
 	if len(renderedVideos) == 3 {
-		// Sample frame 40 (inside IMPORTANT_PHRASE) and frame 340 (inside IMAGE_OVERLAY)
+		// Sample frames across the phrase, word/entity and image windows. A
+		// pair may legitimately share pixels at one sample (for example, both
+		// image motions are at rest), so require each pair to differ somewhere
+		// across the sampled timeline rather than at every individual frame.
+		distinct := map[string]bool{}
 		for _, frame := range []int{40, 100, 340} {
 			frameBytes := make(map[string][]byte)
 			for _, profile := range profiles {
@@ -186,7 +191,17 @@ func TestRenderingGen2ChrononAppleStyleFinal(t *testing.T) {
 			for i := 0; i < len(profiles); i++ {
 				for j := i + 1; j < len(profiles); j++ {
 					p1, p2 := profiles[i], profiles[j]
-					assertPixelDifference(t, frameBytes[p1], frameBytes[p2], 50)
+					if pixelDifference(t, frameBytes[p1], frameBytes[p2]) >= 50 {
+						distinct[p1+"/"+p2] = true
+					}
+				}
+			}
+		}
+		for i := 0; i < len(profiles); i++ {
+			for j := i + 1; j < len(profiles); j++ {
+				key := profiles[i] + "/" + profiles[j]
+				if !distinct[key] {
+					t.Errorf("Apple style pair %s never differs by at least 50 pixels across sampled frames", key)
 				}
 			}
 		}

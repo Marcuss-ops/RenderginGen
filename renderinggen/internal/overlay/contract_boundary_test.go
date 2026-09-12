@@ -107,6 +107,13 @@ func contractFixture(templateID string, spec TemplateSpec) []byte {
 	if spec.RequiresPreset || spec.Family != "" {
 		item["preset_id"] = contractPresetID(spec.Family)
 	}
+	if isEntityKind(spec.Kind) {
+		// Entity cards are producer-owned semantic decisions: the boundary
+		// requires the resolver identity and an explicit duration, even in
+		// this minimal all-template contract fixture.
+		item["entity_id"] = "entity:sample-name"
+		item["duration_ms"] = int64(1000)
+	}
 	if isImageKind(spec.Kind) {
 		item["asset_refs"] = []map[string]any{{
 			"asset_id":   "asset-1",

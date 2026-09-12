@@ -242,6 +242,14 @@ func extractFramePNG(t *testing.T, path string, frame int) []byte {
 
 func assertPixelDifference(t *testing.T, first, second []byte, minDifferent int) {
 	t.Helper()
+	different := pixelDifference(t, first, second)
+	if different < minDifferent {
+		t.Errorf("Apple style frames differ in only %d pixels, want at least %d", different, minDifferent)
+	}
+}
+
+func pixelDifference(t *testing.T, first, second []byte) int {
+	t.Helper()
 	a, err := png.Decode(bytes.NewReader(first))
 	if err != nil {
 		t.Fatalf("decode first certification frame: %v", err)
@@ -261,9 +269,7 @@ func assertPixelDifference(t *testing.T, first, second []byte, minDifferent int)
 			}
 		}
 	}
-	if different < minDifferent {
-		t.Errorf("Apple style frames differ in only %d pixels, want at least %d", different, minDifferent)
-	}
+	return different
 }
 
 // TestFinal_AppleStylesPixelByPixel certifies the three checked-in Apple
