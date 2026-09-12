@@ -107,6 +107,8 @@ type semanticPlan struct {
 	PlanID          string          `json:"plan_id"`
 	VideoID         string          `json:"video_id"`
 	ProjectID       string          `json:"project_id,omitempty"`       // producer metadata
+	ScriptName      string          `json:"script_name,omitempty"`      // producer delivery metadata
+	Language        string          `json:"language,omitempty"`         // producer delivery metadata
 	RendererVersion string          `json:"renderer_version,omitempty"` // producer metadata
 	Fingerprint     string          `json:"fingerprint,omitempty"`      // producer metadata
 	Source          *semanticSource `json:"source,omitempty"`
@@ -121,6 +123,7 @@ type semanticPlan struct {
 	DurationMS      int64               `json:"duration_ms,omitempty"`
 	OutputProfileID string              `json:"output_profile_id"`
 	StyleProfile    string              `json:"style_profile"`
+	MediaContract   string              `json:"media_contract,omitempty"` // producer media metadata
 	Background      *semanticBackground `json:"background,omitempty"`
 	Subtitles       *semanticSubtitles  `json:"subtitles,omitempty"`
 	Watermark       *semanticWatermark  `json:"watermark,omitempty"`
@@ -187,15 +190,18 @@ type semanticItem struct {
 	Template string `json:"template_id"`
 	// PresetID is the semantic preset selected by PipelineGen (the plan's
 	// preset_id contract slot). It is preferred over the template mapping.
-	PresetID      string             `json:"preset_id"`
-	ImagePresetID string             `json:"image_preset_id,omitempty"`
-	MotionID      string             `json:"motion_id"`
-	MotionParams  map[string]any     `json:"motion_params"`
-	Text          string             `json:"text"`
-	StartMS       int64              `json:"start_ms"`
-	EndMS         int64              `json:"end_ms"`
-	Params        map[string]any     `json:"params"`
-	Assets        []semanticAssetRef `json:"asset_refs"`
+	PresetID      string         `json:"preset_id"`
+	ImagePresetID string         `json:"image_preset_id,omitempty"`
+	MotionID      string         `json:"motion_id"`
+	MotionParams  map[string]any `json:"motion_params"`
+	Text          string         `json:"text"`
+	StartMS       int64          `json:"start_ms"`
+	EndMS         int64          `json:"end_ms"`
+	// DurationMS is producer-owned timing metadata. It is validated against
+	// end_ms-start_ms at the semantic boundary and is not emitted to Chronon.
+	DurationMS *int64             `json:"duration_ms,omitempty"`
+	Params     map[string]any     `json:"params"`
+	Assets     []semanticAssetRef `json:"asset_refs"`
 }
 
 type semanticAssetRef struct {

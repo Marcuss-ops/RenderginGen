@@ -17,22 +17,14 @@ func (i *semanticItem) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
-	var wire struct {
-		EntityID   string `json:"entity_id"`
-		DurationMS *int64 `json:"duration_ms"`
-	}
-	if err := json.Unmarshal(data, &wire); err != nil {
-		return err
-	}
-
 	*i = semanticItem(decoded)
 
-	if wire.DurationMS != nil {
-		if *wire.DurationMS <= 0 {
+	if i.DurationMS != nil {
+		if *i.DurationMS <= 0 {
 			return fmt.Errorf("overlay: item %q duration_ms must be positive", i.ID)
 		}
-		if want := i.EndMS - i.StartMS; *wire.DurationMS != want {
-			return fmt.Errorf("overlay: item %q duration_ms %d does not match end_ms-start_ms %d", i.ID, *wire.DurationMS, want)
+		if want := i.EndMS - i.StartMS; *i.DurationMS != want {
+			return fmt.Errorf("overlay: item %q duration_ms %d does not match end_ms-start_ms %d", i.ID, *i.DurationMS, want)
 		}
 	}
 
@@ -45,7 +37,7 @@ func (i *semanticItem) UnmarshalJSON(data []byte) error {
 		return nil
 	}
 
-	if strings.TrimSpace(wire.EntityID) == "" {
+	if strings.TrimSpace(i.EntityID) == "" {
 		return fmt.Errorf("overlay: entity item %q requires entity_id from PipelineGen", i.ID)
 	}
 	if strings.TrimSpace(i.Kind) == "" {
@@ -57,7 +49,7 @@ func (i *semanticItem) UnmarshalJSON(data []byte) error {
 	if strings.TrimSpace(i.Text) == "" {
 		return fmt.Errorf("overlay: entity item %q requires text from PipelineGen", i.ID)
 	}
-	if wire.DurationMS == nil {
+	if i.DurationMS == nil {
 		return fmt.Errorf("overlay: entity item %q requires duration_ms from PipelineGen", i.ID)
 	}
 	if len(i.Assets) > 0 && strings.TrimSpace(i.ImagePresetID) == "" {
