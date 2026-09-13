@@ -69,9 +69,8 @@ func (s *Stats) addResolved(ri resolvedItem) {
 	if ri.PresetID != "" {
 		s.incPreset(template, ri.PresetID)
 	}
-	// An entity card that carries an asset emits BOTH its text layer and its
-	// image layer; both presets were already resolved by the compiler, so the
-	// tracking can never drift from the compiled plan.
+	// Legacy entity cards may still carry a separate image preset. The compiler
+	// uses that preset for the sole image layer; it does not render the name.
 	if isEntityKind(ri.Kind) && len(ri.Item.Assets) > 0 && ri.ImagePreset.ID != "" {
 		s.incPreset(template, ri.ImagePreset.ID)
 	}

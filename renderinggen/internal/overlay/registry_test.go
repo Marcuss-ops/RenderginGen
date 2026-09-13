@@ -158,10 +158,9 @@ func TestCompileSemanticReturnsStatsFromSamePass(t *testing.T) {
 	}
 }
 
-// TestEntityCardLayerIDsAreDistinct pins the centralized layer-id rule: an
-// entity card that emits image + text derives both ids from the item id, so
-// Chronon can never collapse them into one layer.
-func TestEntityCardLayerIDsAreDistinct(t *testing.T) {
+// TestEntityCardWithImageLowersToOneImageLayer pins the image-only entity
+// contract: a portrait must not compile a second text layer.
+func TestEntityCardWithImageLowersToOneImageLayer(t *testing.T) {
 	raw := []byte(`{"schema_version":"renderinggen.overlay-plan.v1","plan_id":"p","video_id":"v","width":1280,"height":720,"fps_num":30,"fps_den":1,
       "items":[{"id":"jordan-42","entity_id":"person:michael-jordan","kind":"entity_card","template_id":"PERSON","preset_id":"lower_third_safe","image_preset_id":"image_focus_in","text":"Michael Jordan","start_ms":0,"end_ms":1000,"duration_ms":1000,
         "asset_refs":[{"asset_id":"jordan","sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","url":"https://store.example/j.jpg","media_type":"image/jpeg"}]}]}`)
@@ -169,10 +168,10 @@ func TestEntityCardLayerIDsAreDistinct(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(result.Plan.Layers) != 2 {
+	if len(result.Plan.Layers) != 1 {
 		t.Fatalf("layers = %+v", result.Plan.Layers)
 	}
-	if result.Plan.Layers[0].ID != "jordan-42:image" || result.Plan.Layers[1].ID != "jordan-42:text" {
-		t.Fatalf("layer ids = %q, %q", result.Plan.Layers[0].ID, result.Plan.Layers[1].ID)
+	if result.Plan.Layers[0].ID != "jordan-42:image" || result.Plan.Layers[0].Text != "" {
+		t.Fatalf("entity image layer = %+v", result.Plan.Layers[0])
 	}
 }

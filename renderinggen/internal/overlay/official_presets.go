@@ -75,7 +75,10 @@ func glowStyle() *StyleShadow {
 }
 
 func imageSpec(anchor, anim string) presetSpec {
-	return presetSpec{family: PresetImage, anchor: anchor, align: "center", anim: anim, unit: "layer", enter: 8, exit: 6, boxW: 260, boxH: 260, fit: "contain"}
+	// Entity portraits and standalone image overlays are primary visual
+	// elements, not thumbnail labels. Keep the image preset geometry large
+	// enough to read on the 16:9 assembly canvas.
+	return presetSpec{family: PresetImage, anchor: anchor, align: "center", anim: anim, unit: "layer", enter: 8, exit: 6, boxW: 480, boxH: 480, fit: "contain"}
 }
 
 func makePreset(id string, s presetSpec) PresetDefinition {
