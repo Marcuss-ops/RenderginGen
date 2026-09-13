@@ -14,7 +14,10 @@ import (
 // assertion is environment-independent.
 func TestClosedGOPProbeUncertifiableOnUnreadableInput(t *testing.T) {
 	path := t.TempDir() + "/does-not-exist.mp4"
-	closed, uncertifiable := probeClosedGOP(context.Background(), path)
+	closed, uncertifiable, interval := probeClosedGOP(context.Background(), path)
+	if interval != 0 {
+		t.Fatalf("keyframeInterval = %d for an unreadable input; want 0 (never a guessed interval)", interval)
+	}
 	if closed {
 		t.Fatalf("closedGOP = true for an unreadable input")
 	}

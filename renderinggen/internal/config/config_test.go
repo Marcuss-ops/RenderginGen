@@ -139,6 +139,13 @@ chronon:
 		!cfg.Chronon.StrictNativeBackend || !cfg.Chronon.NativeOutputProfiles || !cfg.Chronon.Report {
 		t.Fatalf("profile not applied: %+v", cfg.Chronon)
 	}
+	// The GPU profile IS the native hot path, so it must not silently fall
+	// back to the global `cli` default: the CLI transport re-initializes the
+	// whole Chronon engine on every render (~0.5 s of backend init measured per
+	// render), which is exactly the regression this default prevents.
+	if cfg.Chronon.Mode != "ipc" {
+		t.Fatalf("gpu profile transport default = %q, want the warm daemon \"ipc\"", cfg.Chronon.Mode)
+	}
 }
 
 func TestGPUVulkanNativeProfilePreservesExplicitCLITransport(t *testing.T) {

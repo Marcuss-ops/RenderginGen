@@ -29,9 +29,9 @@ func insertArtifact(ctx context.Context, tx *sql.Tx, jobID string, a model.Artif
 		     profile_id, copy_eligible, codec, codec_profile, closed_gop, first_frame_keyframe,
 		     backend, chronon_version, drive_file_id, drive_link, container, pixel_format, audio_streams,
 		     chronon_timing_storage_key, chronon_timing_url, chronon_timing_sha256,
-		     chronon_timing_size_bytes, chronon_timing_content_type)
+		     chronon_timing_size_bytes, chronon_timing_content_type, output_facts)
 		VALUES
-		    ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32)
+		    ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32,$33::jsonb)
 		ON CONFLICT (id) DO UPDATE SET
 		    drive_file_id = EXCLUDED.drive_file_id,
 		    drive_link    = EXCLUDED.drive_link`,
@@ -42,7 +42,7 @@ func insertArtifact(ctx context.Context, tx *sql.Tx, jobID string, a model.Artif
 		nullIfEmpty(a.Backend), nullIfEmpty(a.ChrononVersion), nullIfEmpty(a.DriveFileID), nullIfEmpty(a.DriveLink),
 		nullIfEmpty(a.Container), nullIfEmpty(a.PixelFormat), a.AudioStreams,
 		nullIfEmpty(a.ChrononTimingStorageKey), nullIfEmpty(a.ChrononTimingURL), nullIfEmpty(a.ChrononTimingSHA256),
-		a.ChrononTimingSizeBytes, nullIfEmpty(a.ChrononTimingContentType))
+		a.ChrononTimingSizeBytes, nullIfEmpty(a.ChrononTimingContentType), jsonFacts(a.OutputFacts))
 	if err != nil {
 		return err
 	}
@@ -52,6 +52,20 @@ func insertArtifact(ctx context.Context, tx *sql.Tx, jobID string, a model.Artif
 		SET artifact_id = $2
 		WHERE id = $1`, jobID, a.ID)
 	return err
+}
+
+// jsonFacts serializes the complete structural certification for the JSONB
+// column. nil stays NULL (a legacy worker that did not certify the fact set),
+// never an empty object.
+func jsonFacts(facts *model.OutputFacts) any {
+	if facts == nil {
+		return nil
+	}
+	raw, err := json.Marshal(facts)
+	if err != nil {
+		return nil
+	}
+	return string(raw)
 }
 
 func insertRenderTelemetry(ctx context.Context, tx *sql.Tx, jobID, attemptID string, raw []byte) error {
@@ -174,6 +188,7 @@ func getArtifact(ctx context.Context, db *sql.DB, id string) (*model.Artifact, e
 		chrononTimingKey, chrononTimingURL             sql.NullString
 		chrononTimingSHA, chrononTimingContentType     sql.NullString
 		audioStreams                                   sql.NullInt64
+		outputFacts                                    []byte
 		sizeBytes, chrononTimingSize                   sql.NullInt64
 		width, height, fpsNum, fpsDen                  sql.NullInt64
 		frameCount, durationUS                         sql.NullInt64
@@ -185,7 +200,7 @@ func getArtifact(ctx context.Context, db *sql.DB, id string) (*model.Artifact, e
 		       profile_id, copy_eligible, codec, codec_profile, closed_gop, first_frame_keyframe,
 		       backend, chronon_version, drive_file_id, drive_link, container, pixel_format, audio_streams,
 		       chronon_timing_storage_key, chronon_timing_url, chronon_timing_sha256,
-		       chronon_timing_size_bytes, chronon_timing_content_type
+		       chronon_timing_size_bytes, chronon_timing_content_type, output_facts
 		FROM render_artifacts
 		WHERE id = $1`, id).Scan(
 		&a.ID, &jobID, &a.Kind, &storageKey, &url, &sha256, &mimeType, &sizeBytes,
@@ -193,7 +208,7 @@ func getArtifact(ctx context.Context, db *sql.DB, id string) (*model.Artifact, e
 		&profileID, &copyEligible, &codec, &codecProfile, &closedGOP, &firstFrameKey,
 		&backend, &chrononVersion, &driveFileID, &driveLink, &container, &pixelFormat, &audioStreams,
 		&chrononTimingKey, &chrononTimingURL, &chrononTimingSHA,
-		&chrononTimingSize, &chrononTimingContentType)
+		&chrononTimingSize, &chrononTimingContentType, &outputFacts)
 	if err != nil {
 		return nil, err
 	}
@@ -211,6 +226,12 @@ func getArtifact(ctx context.Context, db *sql.DB, id string) (*model.Artifact, e
 	a.DriveLink = driveLink.String
 	a.Container = container.String
 	a.PixelFormat = pixelFormat.String
+	if len(outputFacts) > 0 {
+		var facts model.OutputFacts
+		if err := json.Unmarshal(outputFacts, &facts); err == nil {
+			a.OutputFacts = &facts
+		}
+	}
 	a.ChrononTimingStorageKey = chrononTimingKey.String
 	a.ChrononTimingURL = chrononTimingURL.String
 	a.ChrononTimingSHA256 = chrononTimingSHA.String

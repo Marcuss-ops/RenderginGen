@@ -128,6 +128,11 @@ func (p *Processor) storeArtifact(ctx context.Context, jobID, outputPath string,
 		artifact.AudioStreams = probe.AudioStreams
 		artifact.Codec = probe.VideoCodec
 		artifact.CodecProfile = probe.CodecProfile
+		// Complete structural certification: the full ffprobe fact set the
+		// downstream output contract validates, including the dimensions the
+		// consumer cannot observe itself (timebase, SAR, colour, GOP, the full
+		// audio block).
+		artifact.OutputFacts = outputFactsFromProbe(probe)
 		artifact.FrameCount = probe.FrameCount
 		artifact.FirstFrameKeyframe = probe.FirstFrameKeyframe
 		// closed_gop is certified from the full keyframe cadence (see

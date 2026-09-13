@@ -94,6 +94,52 @@ type AssetRef struct {
 	SourceURL string `json:"source_url,omitempty"`
 }
 
+// OutputFacts is the COMPLETE structural certification of the rendered
+// artifact: the ffprobe facts every consumer's output contract validates.
+//
+// It is the certification of record. A consumer that cannot observe a
+// dimension itself (PipelineGen's Rust probe reports no video timebase, SAR,
+// colour, GOP interval, channel layout or codec profile) consumes the
+// certified value instead of silently skipping the check. It is nested as ONE
+// JSON object so the fact set can grow without a database column per fact.
+//
+// Nil means the boundary did not certify the full fact set (a legacy worker);
+// consumers must then fall back to whatever they can observe themselves.
+type OutputFacts struct {
+	Container        string `json:"container,omitempty"`
+	HasVideo         bool   `json:"has_video,omitempty"`
+	VideoStreams     int    `json:"video_streams,omitempty"`
+	VideoCodec       string `json:"video_codec,omitempty"`
+	VideoProfile     string `json:"video_profile,omitempty"`
+	VideoLevel       string `json:"video_level,omitempty"`
+	PixelFormat      string `json:"pixel_format,omitempty"`
+	Width            int    `json:"width,omitempty"`
+	Height           int    `json:"height,omitempty"`
+	FPSNum           int    `json:"fps_num,omitempty"`
+	FPSDen           int    `json:"fps_den,omitempty"`
+	VideoTimeBaseNum int    `json:"video_timebase_num,omitempty"`
+	VideoTimeBaseDen int    `json:"video_timebase_den,omitempty"`
+	AudioTimeBaseNum int    `json:"audio_timebase_num,omitempty"`
+	AudioTimeBaseDen int    `json:"audio_timebase_den,omitempty"`
+	SARNum           int    `json:"sar_num,omitempty"`
+	SARDen           int    `json:"sar_den,omitempty"`
+	ColorRange       string `json:"color_range,omitempty"`
+	ColorSpace       string `json:"color_space,omitempty"`
+	ColorTransfer    string `json:"color_transfer,omitempty"`
+	ColorPrimaries   string `json:"color_primaries,omitempty"`
+	FieldOrder       string `json:"field_order,omitempty"`
+	KeyframeInterval int    `json:"keyframe_interval,omitempty"`
+	StartPTS         int64  `json:"start_pts,omitempty"`
+	HasAudio         bool   `json:"has_audio,omitempty"`
+	AudioStreams     int    `json:"audio_streams,omitempty"`
+	AudioCodec       string `json:"audio_codec,omitempty"`
+	AudioProfile     string `json:"audio_profile,omitempty"`
+	SampleRate       int    `json:"sample_rate,omitempty"`
+	Channels         int    `json:"channels,omitempty"`
+	ChannelLayout    string `json:"channel_layout,omitempty"`
+	AudioBitrate     string `json:"audio_bitrate,omitempty"`
+}
+
 // Artifact is the metadata of a rendered artifact, including the copy-only
 // certification (codec, profile, GOP/keyframe flags) VeloxEditing relies on.
 type Artifact struct {
@@ -139,6 +185,9 @@ type Artifact struct {
 	Container                string `json:"container,omitempty"`
 	PixelFormat              string `json:"pixel_format,omitempty"`
 	AudioStreams             int    `json:"audio_streams,omitempty"`
+	// OutputFacts is the complete structural certification (see OutputFacts).
+	// Nil when the boundary did not certify the full fact set.
+	OutputFacts *OutputFacts `json:"output_facts,omitempty"`
 }
 
 // Job is the unit of work exchanged with the queue: one render SEGMENT. On
