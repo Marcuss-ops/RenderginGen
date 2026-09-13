@@ -252,6 +252,12 @@ func TestRenderArgsHonorsSoftwareBackendForComposition(t *testing.T) {
 	if strings.Contains(joined, "--backend vulkan") {
 		t.Fatalf("args=%v, software composition was forced to Vulkan", args)
 	}
+	if !strings.Contains(joined, "--encoder-backend pipe") {
+		t.Fatalf("args=%v, software composition must use the pipe encoder", args)
+	}
+	if strings.Contains(joined, "--hardware ") || strings.Contains(joined, "--encode-preset") {
+		t.Fatalf("args=%v, software composition must not request a hardware encoder", args)
+	}
 }
 
 func TestBinaryPath(t *testing.T) {

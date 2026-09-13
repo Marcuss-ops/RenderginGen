@@ -82,6 +82,11 @@ type Job = queueclient.Job
 // compiles against it.
 type Artifact = queueclient.Artifact
 
+// OutputFacts is the complete structural certification carried on the
+// artifact (see queueclient.OutputFacts): one definition, so the worker and
+// the queue wire can never diverge on the fact set.
+type OutputFacts = queueclient.OutputFacts
+
 // Worker is the worker registration payload.
 type Worker = queueclient.Worker
 type WorkerStatus = queueclient.WorkerStatus

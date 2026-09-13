@@ -19,7 +19,8 @@ const HardwareEncoderNone = "none"
 
 // nativeEncodeSelection is the resolved encoder selection Chronon must honour
 // for a render request: the hardware encoder, the encoder backend and the
-// GPU hot-path mode.
+// GPU hot-path mode. The name is historical: software composition also uses
+// this selection boundary to force the reliable external pipe encoder.
 type nativeEncodeSelection struct {
 	HardwareEncoder string
 	EncoderBackend  string
@@ -38,6 +39,13 @@ type nativeEncodeSelection struct {
 // applies unchanged.
 func resolveNativeEncodeSelection(req RenderRequest) (nativeEncodeSelection, bool) {
 	reqs := req.Requirements
+	if reqs.Backend == "software" && (reqs.CompositionRequired || reqs.VideoSourceRequired) {
+		// Software rendering produces host frames. Pair it with the external
+		// pipe encoder instead of the in-process native muxer: the latter can
+		// report fewer encoded frames for software-composed output, causing the
+		// receipt frame-count gate to reject an otherwise complete render.
+		return nativeEncodeSelection{EncoderBackend: "pipe", GpuHotPathMode: "auto"}, true
+	}
 	if reqs.GPURequired {
 		// GPU requirements select the native encoder capability. RenderingGen
 		// declares that semantic requirement; Chronon owns the compiled-scene

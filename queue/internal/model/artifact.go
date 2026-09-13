@@ -14,3 +14,8 @@ import "github.com/Marcuss-ops/RenderingGen/queue/client"
 // re-declaration here — kept in step only by a hand-maintained reflection
 // parity test — is gone.
 type Artifact = client.Artifact
+
+// OutputFacts is an alias of the wire contract's complete structural
+// certification (see client.OutputFacts): one definition, so the persisted
+// JSON and the emitted JSON can never diverge.
+type OutputFacts = client.OutputFacts

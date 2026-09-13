@@ -15,7 +15,9 @@ import (
 
 // probeClosedGOP inspects the video stream's sync-sample (keyframe) table and
 // certifies a uniform closed-GOP structure. It fails closed: any probe or
-// container error yields false, never a guess.
+// container error yields false, never a guess. The same scan reports the
+// measured GOP length in frames (packet-index spacing between uniform
+// keyframes); 0 means the cadence was never proven, never a guessed interval.
 //
 // It returns the verdict plus an "uncertifiable" flag that separates the two
 // reasons a verdict can be false: the cadence was actually read and is not
@@ -31,7 +33,7 @@ import (
 // JSON for long-form content on every finalize). The decoder keeps memory
 // constant while ffprobe streams, and a broken cadence aborts the probe (and
 // the ffprobe process) as soon as it is provable.
-func probeClosedGOP(ctx context.Context, path string) (closedGOP bool, uncertifiable bool) {
+func probeClosedGOP(ctx context.Context, path string) (closedGOP bool, uncertifiable bool, keyframeInterval int) {
 	probeCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
 	cmd := exec.CommandContext(probeCtx, "ffprobe", "-v", "error", "-select_streams", "v:0",
@@ -39,11 +41,11 @@ func probeClosedGOP(ctx context.Context, path string) (closedGOP bool, uncertifi
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
 		log.Printf("media: ffprobe %s: closed-GOP probe pipe: %v (closed_gop=false, uncertifiable)", path, err)
-		return false, true
+		return false, true, 0
 	}
 	if err := cmd.Start(); err != nil {
 		log.Printf("media: ffprobe %s: closed-GOP probe start: %v (closed_gop=false, uncertifiable)", path, err)
-		return false, true
+		return false, true, 0
 	}
 	waitDone := make(chan error, 1)
 	go func() { waitDone <- cmd.Wait() }()
@@ -118,14 +120,14 @@ func probeClosedGOP(ctx context.Context, path string) (closedGOP bool, uncertifi
 				if positions[len(positions)-1]-positions[len(positions)-2] != step {
 					cancel() // reap the child; we already have the verdict
 					<-waitDone
-					return false, false // read successfully: the cadence is invalid
+					return false, false, 0 // read successfully: the cadence is invalid
 				}
 			} else if len(positions) == 2 {
 				step = positions[1] - positions[0]
 				if step <= 0 {
 					cancel()
 					<-waitDone
-					return false, false
+					return false, false, 0
 				}
 			}
 		}
@@ -135,9 +137,19 @@ func probeClosedGOP(ctx context.Context, path string) (closedGOP bool, uncertifi
 		// A non-cancel wait error means ffprobe itself failed (bad file,
 		// unsupported flag): fail closed and say so.
 		log.Printf("media: ffprobe %s: closed-GOP probe failed: %v (closed_gop=false, uncertifiable)", path, err)
-		return false, true
+		return false, true, 0
 	}
-	return closedGOPPositionsCadence(positions), false
+	closed := closedGOPPositionsCadence(positions)
+	if !closed {
+		return false, false, 0
+	}
+	// A proven-uniform cadence has one interval: the spacing between the first
+	// two keyframes. Report it as the measured GOP length in frames.
+	interval := 0
+	if len(positions) >= 2 {
+		interval = positions[1] - positions[0]
+	}
+	return true, false, interval
 }
 
 // expectJSONDelim asserts the next decoder token is the given delimiter.
@@ -156,11 +168,11 @@ func expectJSONDelim(dec *json.Decoder, want json.Delim) error {
 // failed closed-GOP probe so the degradation is never silent. It always
 // reports false + uncertifiable: no packet table was decoded, so the cadence
 // was never observed (distinct from a decoded but non-uniform cadence).
-func failProbe(cancel context.CancelFunc, waitDone <-chan error, path string, cause error) (bool, bool) {
+func failProbe(cancel context.CancelFunc, waitDone <-chan error, path string, cause error) (bool, bool, int) {
 	cancel()
 	<-waitDone
 	log.Printf("media: ffprobe %s: closed-GOP probe decode failed: %v (closed_gop=false, uncertifiable)", path, cause)
-	return false, true
+	return false, true, 0
 }
 
 // closedGOPPositionsCadence is the single cadence decision over keyframe

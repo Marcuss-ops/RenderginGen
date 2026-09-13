@@ -171,6 +171,20 @@ func applyDefaults(c *Config) {
 		if c.Chronon.PipePixFmt == "" {
 			c.Chronon.PipePixFmt = "nv12"
 		}
+		// The warm daemon is the GPU profile's default transport, because this
+		// profile IS the native hot path: every shipped GPU config (config.yaml,
+		// infra/native/*, infra/docker/worker-config*) declares mode: ipc, and
+		// the CLI transport re-initializes the whole engine per job. Measured on
+		// the RTX A4000 host (2026-09-13): chronon_job_backend_init_ms 488-570 ms
+		// on EVERY render, i.e. ~2 s over a 4-clip batch (~7% of the render-plane
+		// wall) purely to re-open device/pipeline/glyph-atlas state. Leaving the
+		// transport to the global "cli" default silently dropped the daemon for
+		// any GPU-profile config that omitted the key. A deployment that really
+		// wants a cold spawn still opts out with an explicit `mode: cli`
+		// (pinned by TestGPUVulkanNativeProfilePreservesExplicitCLITransport).
+		if c.Chronon.Mode == "" {
+			c.Chronon.Mode = "ipc"
+		}
 		c.Chronon.StrictNativeBackend = true
 	case ProfileSoftwareCLI:
 		if c.Chronon.Backend == "" {
