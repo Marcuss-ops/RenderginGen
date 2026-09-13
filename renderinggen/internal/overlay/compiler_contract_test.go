@@ -225,12 +225,12 @@ func TestCompileSemanticTextIsMandatory(t *testing.T) {
 	}
 }
 
-// TestCompileSemanticImportantPhraseAndNamedImage pins the two overlay
+// TestCompileSemanticImportantPhraseAndEntityImage pins the two overlay
 // classes used by the first real Chronon canary together. IMPORTANT_PHRASE is
-// a readable emphasis card; PERSON + lower_third_safe is an image/name
-// composition where the name is the item's explicit text and the image remains
-// a content-addressed asset.
-func TestCompileSemanticImportantPhraseAndNamedImage(t *testing.T) {
+// a readable emphasis card; PERSON + image_preset is an image-only entity
+// composition where the name remains producer metadata and the image is the
+// sole rendered layer.
+func TestCompileSemanticImportantPhraseAndEntityImage(t *testing.T) {
 	raw := []byte(`{
       "schema_version":"renderinggen.overlay-plan.v1",
       "plan_id":"phrase-and-name","video_id":"phrase-and-name",
@@ -250,7 +250,7 @@ func TestCompileSemanticImportantPhraseAndNamedImage(t *testing.T) {
 		t.Fatalf("semantic phrase/name plan: %v", err)
 	}
 	compiled, assets := result.Plan, result.Assets
-	if len(compiled.Layers) != 3 {
+	if len(compiled.Layers) != 2 {
 		t.Fatalf("compiled layers = %+v", compiled.Layers)
 	}
 	if compiled.Layers[0].Text != "THIS CHANGES EVERYTHING" {
@@ -263,14 +263,14 @@ func TestCompileSemanticImportantPhraseAndNamedImage(t *testing.T) {
 		t.Fatalf("entity image must carry image preset animation = %+v", compiled.Layers[1].Animation)
 	}
 	// Chronon places image frames by centre offset from the canvas centre
-	// (see resolveImageLayout): the 260px image_left card is flush with the
-	// left edge, so its centre sits at -(canvasW-boxW)/2 = -510 on a 1280
+	// (see resolveImageLayout): the 480px image_left card is flush with the
+	// left edge, so its centre sits at -(canvasW-boxW)/2 = -400 on a 1280
 	// canvas. A zero offset would mean the image is centred.
-	if len(compiled.Layers[1].Position) != 2 || compiled.Layers[1].Position[0] != -510 {
+	if len(compiled.Layers[1].Position) != 2 || compiled.Layers[1].Position[0] != -400 {
 		t.Fatalf("entity image must use image preset layout = %+v", compiled.Layers[1].Position)
 	}
-	if compiled.Layers[2].Text != "Matt Damon" {
-		t.Fatalf("named image label layer = %+v", compiled.Layers[2])
+	if compiled.Layers[1].Text != "" {
+		t.Fatalf("entity image must not compile a name layer = %+v", compiled.Layers[1])
 	}
 	if len(assets) != 1 || assets[0].LogicalPath != "assets/semantic/matt-damon.png" {
 		t.Fatalf("materialized assets = %+v", assets)

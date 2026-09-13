@@ -168,15 +168,13 @@ func compileSemantic(raw []byte) (*Plan, []Asset, Stats, []string, error) {
 			Size: []float64{float64(src.Width), float64(src.Height)}, Fit: "cover", StartFrame: 0}
 		// Foreground scale: keep the sampled video surface at canvas size and
 		// express the centred transform in Chronon's modular coordinate space.
-		// ForegroundScale == 0 or 100 means full-canvas (no scaling).
 		if src.ForegroundScale > 0 && src.ForegroundScale < 100 {
-			// The modular resolver adds the canvas half-size to unpinned 2D
-			// layers. Cancelling that implicit shift here leaves the transform
-			// centred in TransformNode's pixel-space contract. Position [0,0]
-			// would apply the implicit centre a second time and place the video
-			// in the lower-right quadrant.
-			srcLayer.Position = []float64{-float64(src.Width) * 0.5, -float64(src.Height) * 0.5}
-			srcLayer.Scale = []float64{float64(src.ForegroundScale) / 100, float64(src.ForegroundScale) / 100}
+			scale := float64(src.ForegroundScale) / 100.0
+			dispW := float64(src.Width) * scale
+			dispH := float64(src.Height) * scale
+			srcLayer.Size = []float64{dispW, dispH}
+			srcLayer.Position = []float64{(float64(src.Width) - dispW) * 0.5, (float64(src.Height) - dispH) * 0.5}
+			srcLayer.Scale = []float64{scale, scale}
 		}
 		sourceLayerIndex = len(plan.Layers)
 		plan.Layers = append(plan.Layers, srcLayer)
@@ -385,7 +383,8 @@ func resolveSemanticItems(src *semanticPlan) ([]resolvedItem, error) {
 
 // compileItem dispatches one resolved item to its per-kind compiler. The kind
 // is the only discriminator; there is exactly one compiler per kind class and
-// exactly one place that decides an entity card becomes image + text.
+// one compatibility path for legacy entity_card items that still carry an
+// image asset.
 func compileItem(ri resolvedItem, src *semanticPlan, registry *assetRegistry) ([]Layer, error) {
 	switch {
 	case isEntityKind(ri.Kind):
@@ -418,10 +417,10 @@ func compileItem(ri resolvedItem, src *semanticPlan, registry *assetRegistry) ([
 	}
 }
 
-// compileEntityCard is the single owner of the "entity card + asset = image +
-// text" rule. The image and text layers carry distinct ids derived from the
-// item id, so Chronon can never collapse the two into one layer and hide the
-// image.
+// compileEntityCard is the compatibility path for legacy entity_card payloads
+// that still carry an asset. Portrait entities are image-only: the image preset
+// owns the geometry and motion, while the name stays provenance metadata and
+// is not rendered as a second lower-third layer.
 func compileEntityCard(ri resolvedItem, src *semanticPlan, registry *assetRegistry) ([]Layer, error) {
 	img := imageLayer(ri, registry.Path(ri.Item.Assets[0].ID))
 	if ri.ImagePreset.ID != "" {
@@ -433,11 +432,7 @@ func compileEntityCard(ri resolvedItem, src *semanticPlan, registry *assetRegist
 		img.Animation = imgAnimation
 		img.Position = resolveImageLayout(ri.ImagePreset.Layout, img.BoxWidth, img.BoxHeight, src.Width, src.Height)
 	}
-	text, err := compileTextLayer(ri, src, textLayerID(ri.Item.ID))
-	if err != nil {
-		return nil, err
-	}
-	return []Layer{img, text}, nil
+	return []Layer{img}, nil
 }
 
 // compileVideoOverlayLayer lowers a rendered video overlay to a TIMED video

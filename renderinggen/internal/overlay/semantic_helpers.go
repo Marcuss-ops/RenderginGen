@@ -102,9 +102,8 @@ func validatePreset(p, id, kind string) (string, error) {
 }
 
 // imageLayer is the single owner of an image layer's identity and geometry. It
-// derives the layer id from the item id ("<id>:image") so a two-layer entity
-// card's text layer ("<id>:text") can never collide with — and silently hide —
-// its image card.
+// derives the layer id from the item id ("<id>:image"), including for the
+// image-only entity path.
 func imageLayer(ri resolvedItem, asset string) Layer {
 	w, h := intParam(ri.Params, "width", 320), intParam(ri.Params, "height", 320)
 	return Layer{ID: imageLayerID(ri.Item.ID), Type: "image", Asset: asset, BoxWidth: w, BoxHeight: h, Size: []float64{float64(w), float64(h)}, Fit: stringParam(ri.Params, "fit", "contain"), Radius: float64(intParam(ri.Params, "radius", 0)), StartFrame: ri.Start, DurationFrames: ri.End - ri.Start}

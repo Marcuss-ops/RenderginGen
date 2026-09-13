@@ -218,8 +218,9 @@ func (spec TemplateSpec) resolveKind(itemKind, itemID string) (ItemKind, error) 
 	return kind, nil
 }
 
-// isEntityKind reports whether a kind lowers to the entity-card composition:
-// an image card plus its display-text card when an asset is present.
+// isEntityKind reports whether a kind lowers through the entity-card
+// compatibility path. Asset-bearing entity cards are lowered image-only;
+// asset-less entity cards remain text-only.
 func isEntityKind(kind ItemKind) bool { return behaviorOf(kind) == behaviorEntity }
 
 // isImageKind reports whether a kind lowers to a single image layer and
