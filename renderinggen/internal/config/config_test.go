@@ -148,7 +148,7 @@ chronon:
 	}
 }
 
-func TestGPUVulkanNativeProfilePreservesExplicitCLITransport(t *testing.T) {
+func TestGPUVulkanNativeProfileRejectsCLITransport(t *testing.T) {
 	path := writeConfig(t, `
 queue:
   endpoint: http://queue:8081
@@ -158,15 +158,8 @@ chronon:
   profile: gpu-vulkan-native
   mode: cli
 `)
-	cfg, err := Load(path)
-	if err != nil {
-		t.Fatalf("load: %v", err)
-	}
-	if cfg.Chronon.Mode != "cli" {
-		t.Fatalf("gpu profile changed explicit transport to %q", cfg.Chronon.Mode)
-	}
-	if !cfg.Chronon.StrictNativeBackend {
-		t.Fatal("gpu profile must enable strict native backend")
+	if _, err := Load(path); err == nil {
+		t.Fatal("gpu-vulkan-native profile must reject mode: cli")
 	}
 }
 

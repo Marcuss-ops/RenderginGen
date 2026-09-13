@@ -168,13 +168,15 @@ func compileSemantic(raw []byte) (*Plan, []Asset, Stats, []string, error) {
 			Size: []float64{float64(src.Width), float64(src.Height)}, Fit: "cover", StartFrame: 0}
 		// Foreground scale: keep the sampled video surface at canvas size and
 		// express the centred transform in Chronon's modular coordinate space.
+		// ForegroundScale == 0 or 100 means full-canvas (no scaling).
 		if src.ForegroundScale > 0 && src.ForegroundScale < 100 {
-			scale := float64(src.ForegroundScale) / 100.0
-			dispW := float64(src.Width) * scale
-			dispH := float64(src.Height) * scale
-			srcLayer.Size = []float64{dispW, dispH}
-			srcLayer.Position = []float64{(float64(src.Width) - dispW) * 0.5, (float64(src.Height) - dispH) * 0.5}
-			srcLayer.Scale = []float64{scale, scale}
+			// The modular resolver adds the canvas half-size to unpinned 2D
+			// layers. Cancelling that implicit shift here leaves the transform
+			// centred in TransformNode's pixel-space contract. Position [0,0]
+			// would apply the implicit centre a second time and place the video
+			// in the lower-right quadrant.
+			srcLayer.Position = []float64{-float64(src.Width) * 0.5, -float64(src.Height) * 0.5}
+			srcLayer.Scale = []float64{float64(src.ForegroundScale) / 100, float64(src.ForegroundScale) / 100}
 		}
 		sourceLayerIndex = len(plan.Layers)
 		plan.Layers = append(plan.Layers, srcLayer)
