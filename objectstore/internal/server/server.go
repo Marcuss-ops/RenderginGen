@@ -9,8 +9,6 @@
 package server
 
 import (
-	"io"
-	"log"
 	"net/http"
 	"strconv"
 
@@ -77,7 +75,7 @@ func (s *Server) get(w http.ResponseWriter, r *http.Request) {
 	key := r.PathValue("key")
 	// Stream from disk: buffering a multi-GB rendered artifact in RAM per
 	// request would make every download a worker memory spike.
-	f, size, err := s.store.Open(key)
+	f, _, err := s.store.Open(key)
 	if err == store.ErrNotFound {
 		http.NotFound(w, r)
 		return
@@ -87,13 +85,13 @@ func (s *Server) get(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer f.Close()
+	info, err := f.Stat()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 	w.Header().Set("Content-Type", "application/octet-stream")
-	if size >= 0 {
-		w.Header().Set("Content-Length", strconv.FormatInt(size, 10))
-	}
-	if _, err := io.Copy(w, f); err != nil {
-		log.Printf("objectstore: GET %s io.Copy: %v", key, err)
-	}
+	http.ServeContent(w, r, key, info.ModTime(), f)
 }
 
 func (s *Server) health(w http.ResponseWriter, _ *http.Request) {

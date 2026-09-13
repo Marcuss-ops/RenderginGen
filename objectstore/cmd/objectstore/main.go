@@ -32,7 +32,11 @@ func authMiddleware(token string, next http.Handler) http.Handler {
 }
 
 func main() {
-	addr := flag.String("addr", "127.0.0.1:9000", "listen address")
+	defaultAddr := os.Getenv("OBJECTSTORE_ADDR")
+	if defaultAddr == "" {
+		defaultAddr = ":9000"
+	}
+	addr := flag.String("addr", defaultAddr, "listen address")
 	dataDir := flag.String("data-dir", "/var/lib/objectstore", "data directory")
 	flag.Parse()
 

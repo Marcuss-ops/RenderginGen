@@ -249,6 +249,9 @@ func (c *Config) validate() error {
 		if c.Chronon.HardwareEncoder != chronon.DefaultHardwareEncoder {
 			return fmt.Errorf("%s requires chronon.hardware_encoder=%s", ProfileGPUVulkanNative, chronon.DefaultHardwareEncoder)
 		}
+		if c.Chronon.Mode != "ipc" {
+			return fmt.Errorf("%s requires chronon.mode=ipc (CLI mode disallowed for production GPU profile)", ProfileGPUVulkanNative)
+		}
 	}
 	// hardware_encoder reaches the CLI as --hardware on every GPU-required
 	// path. An unsupported value (vaapi, qsv, ...) used to be accepted here and
