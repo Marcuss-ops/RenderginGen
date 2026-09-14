@@ -330,6 +330,10 @@ func goal3RenderOnce(t *testing.T, bin, assetsRoot, outDir, name, raw string) (s
 		"--hardware", "nvenc", "--encoder-backend", "native",
 		"--gpu-hot-path-mode", "require_gpu_native",
 		"--encode-preset", "p1",
+		// NVENC's driver-default rate control is explicitly not reproducible.
+		// Goal3 compares pixels across processes, so pin the encoder contract
+		// instead of letting the driver choose a session-dependent mode.
+		"--rate-control", "qp", "--qp", "23",
 		// The source audio is muxed by the native A/V path (the production
 		// worker passes exactly this flag), so A/V sync is real, not implied.
 		"--gop-source", audioSource,
@@ -425,6 +429,9 @@ func goal3RenderSoftware(t *testing.T, bin, assetsRoot, outDir, name string, pla
 		"render", "--plan", planPath, "--assets-root", assetsRoot,
 		"--backend", "software", "--encoder-backend", "pipe", "--hardware", "none",
 		"--gpu-hot-path-mode", "auto",
+		// The software pipe resolver does not support constant-QP; pin its
+		// supported quality mode explicitly so its reference is reproducible.
+		"--rate-control", "crf", "--crf", "18",
 		"--gop-source", audioSource,
 		"--report", "-o", reference.Output.Path,
 	}

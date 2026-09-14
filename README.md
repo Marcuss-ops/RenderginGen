@@ -229,6 +229,34 @@ usare il target che rende esplicita la distinzione:
 make test-unit   # tutti i moduli, senza la certificazione runtime (gate veloce)
 ```
 
+### Runtime certification in CI — manual, self-hosted GPU
+
+The certification suite has exactly one owner: the `runtime-certification` job
+in `.github/workflows/build.yaml`. It is **manual** and runs on a self-hosted
+runner labelled `gpu`. It deliberately does **not** set
+`RENDERINGGEN_SKIP_GPU_E2E`, so it renders for real or fails loudly — it can
+never report a green run in which every certification test skipped.
+
+Two prerequisites live on the runner side and cannot be created from this
+checkout, so the job stays dormant until they exist:
+
+| Requirement | Where it lives | Why |
+|---|---|---|
+| `CHRONON_BIN` | Repository **variable** (Settings → Secrets and variables → Actions → Variables) | Absolute path to a built `chronon3d_cli` on that runner. The job exits non-zero when it is unset or not executable. |
+| `gpu` label | A self-hosted runner registered with the `gpu` label | Gives the job a device; GitHub-hosted runners expose none, which is why the unit jobs cannot run the suite. |
+
+Dispatch it once both exist:
+
+```sh
+gh workflow run build -f certification=true
+```
+
+`TestCIRuntimeCertificationHasAnOwner` (`internal/architecture`) parses the
+workflow and fails if the job loses any of the five properties above (overlay
+target, no skip variable, `CHRONON_BIN`, manual trigger, GPU runner). If no GPU
+runner is ever provisioned, delete the job **and this section together**: a
+documented "local only" is honest, an owner that can never run is not.
+
 To exercise the loop over the real services, start the stack and run the
 smoke script (submits a self-contained color job, polls for completion,
 downloads the artifact):
