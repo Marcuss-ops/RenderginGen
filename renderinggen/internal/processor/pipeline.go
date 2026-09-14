@@ -17,6 +17,7 @@ package processor
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -38,10 +39,11 @@ import (
 type PreparedJob struct {
 	Job             *queue.Job
 	Workspace       *workspace.Workspace
-	Plan            *overlay.Plan      // typed concrete Chronon plan (post-compile, marshaled once at WritePlan)
-	Stats           overlay.Stats      // semantic counters for the ledger
-	InputBytes      int64              // materialized input size for the ledger
-	Metrics         map[string]float64 // phase metrics accumulated so far
+	Plan            *overlay.Plan           // typed concrete Chronon plan (post-compile, marshaled once at WritePlan)
+	Prepared        overlay.PreparedPackage // immutable text/image preparation for the staged GPU handoff
+	Stats           overlay.Stats           // semantic counters for the ledger
+	InputBytes      int64                   // materialized input size for the ledger
+	Metrics         map[string]float64      // phase metrics accumulated so far
 	OutputPath      string
 	AudioSourcePath string
 	// NativeCertified is true only when Chronon's native Vulkan/NVENC receipt
@@ -183,7 +185,7 @@ func (p *Processor) PrepareJob(ctx context.Context, job *queue.Job) (*PreparedJo
 		return nil, err
 	}
 	record(metricnames.PrepareSceneCompileStem, compileStart)
-	stats, plan, compiledAssets := result.Stats, result.Plan, result.Assets
+	stats, plan, compiledAssets, preparedPackage := result.Stats, result.Plan, result.Assets, result.Prepared
 	// A template_id that resolved to no registry row is NOT an error (historical
 	// documents and the compatibility aliases must keep rendering), but it must
 	// never be invisible either: it is exactly the shape of a producer rename or
@@ -372,6 +374,15 @@ func (p *Processor) PrepareJob(ctx context.Context, job *queue.Job) (*PreparedJo
 		p.cleanupWorkspace(ws, job.ID)
 		return nil, err
 	}
+	preparedBytes, preparedErr := json.Marshal(preparedPackage)
+	if preparedErr != nil {
+		p.cleanupWorkspace(ws, job.ID)
+		return nil, fmt.Errorf("processor: encode prepared overlay package: %w", preparedErr)
+	}
+	if err := ws.WritePreparedPackage(preparedBytes); err != nil {
+		p.cleanupWorkspace(ws, job.ID)
+		return nil, fmt.Errorf("processor: write prepared overlay package: %w", err)
+	}
 	record(metricnames.PrepareMarshalStem, marshalStart)
 	record(metricnames.PlanStem, phaseStart)
 	audioPath, warnInert := audioSourcePathFromPlan(plan, ws.Root())
@@ -395,6 +406,7 @@ func (p *Processor) PrepareJob(ctx context.Context, job *queue.Job) (*PreparedJo
 		Job:             job,
 		Workspace:       ws,
 		Plan:            plan,
+		Prepared:        preparedPackage,
 		Stats:           stats,
 		InputBytes:      inputBytes,
 		Metrics:         metrics,

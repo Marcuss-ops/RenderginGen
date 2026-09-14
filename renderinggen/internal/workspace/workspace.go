@@ -2,6 +2,7 @@
 //
 //	/var/lib/renderinggen/jobs/<jobID>/
 //	├── plan.json           (render_plan written by the caller)
+//	├── prepared.json       (immutable overlay package prepared once)
 //	├── assets/<logical>    (assets materialized by content hash)
 //	└── output/result.mp4   (render output)
 //
@@ -90,9 +91,21 @@ func (w *Workspace) PlanPath() string {
 	return filepath.Join(w.root, "plan.json")
 }
 
+// PreparedPackagePath is the sidecar consumed by prepare/upload integrations.
+// Chronon still receives the canonical plan.json; the sidecar keeps the
+// content-addressed overlay preparation available without rebuilding it.
+func (w *Workspace) PreparedPackagePath() string {
+	return filepath.Join(w.root, "prepared.json")
+}
+
 // WritePlan writes the render plan document to plan.json.
 func (w *Workspace) WritePlan(plan []byte) error {
 	return os.WriteFile(w.PlanPath(), plan, 0o644)
+}
+
+// WritePreparedPackage writes the immutable overlay preparation sidecar.
+func (w *Workspace) WritePreparedPackage(pkg []byte) error {
+	return os.WriteFile(w.PreparedPackagePath(), pkg, 0o644)
 }
 
 // MaterializePaths resolves every asset to a local file and hard-links it into
