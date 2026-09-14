@@ -33,6 +33,12 @@ const (
 	DriveUploadUS       = "drive_upload_us"
 	TotalUS             = "total_us"
 	GPUGapUS            = "gpu_gap_us"
+	// GPULaneWaitUS is the prep→GPU rendezvous wait: how long a fully
+	// prepared job blocked waiting for a free GPU lane. It is the dominant
+	// unmeasured cost of a backlogged batch (the lane is the serialization
+	// point), and the reason a bigger pipeline_workers count does not raise
+	// throughput on its own.
+	GPULaneWaitUS = "gpu_lane_wait_us"
 )
 
 // The same phases in milliseconds. The pipeline records both spellings for the
@@ -49,6 +55,7 @@ const (
 	PublishMS           = "publish_ms"
 	DrivePublishMS      = "drive_publish_ms"
 	TotalMS             = "total_ms"
+	GPULaneWaitMS       = "gpu_lane_wait_ms"
 )
 
 // Phase STEMS. The staged pipeline records both spellings of a phase from a
@@ -65,6 +72,7 @@ const (
 	SubtitleBurnStem      = "subtitle_burn"
 	SHA256Stem            = "sha256"
 	ObjectStoreUploadStem = "objectstore_upload"
+	GPULaneWaitStem       = "gpu_lane_wait"
 )
 
 // StemHasPair reports whether both `<stem>_us` and `<stem>_ms` are declared.
@@ -157,11 +165,12 @@ var vocab = map[string]string{
 	SubtitleBurnUS: UnitUS, ChrononRenderUS: UnitUS, RenderUS: UnitUS,
 	ProbeUS: UnitUS, SHA256US: UnitUS, ObjectStoreUploadUS: UnitUS,
 	PublishUS: UnitUS, DriveUploadUS: UnitUS, TotalUS: UnitUS, GPUGapUS: UnitUS,
+	GPULaneWaitUS: UnitUS,
 
 	OverlayCompileMS: UnitMS, AssetMaterializeMS: UnitMS, PlanMS: UnitMS,
 	SubtitleBurnMS: UnitMS, RenderMS: UnitMS, ProbeMS: UnitMS, SHA256MS: UnitMS,
 	ObjectStoreUploadMS: UnitMS, PublishMS: UnitMS, DrivePublishMS: UnitMS,
-	TotalMS: UnitMS,
+	TotalMS: UnitMS, GPULaneWaitMS: UnitMS,
 
 	SubtitleLayers: UnitCount, RenderFramesDone: UnitCount, RenderFramesTotal: UnitCount,
 	RenderFPS: "fps", ProfileStrippedByConfig: UnitCount, AudioInertParams: UnitCount,
