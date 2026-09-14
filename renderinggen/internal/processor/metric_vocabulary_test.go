@@ -95,6 +95,13 @@ func TestPhaseStemsHaveBothUnits(t *testing.T) {
 		"SubtitleBurnStem":      metricnames.SubtitleBurnStem,
 		"SHA256Stem":            metricnames.SHA256Stem,
 		"ObjectStoreUploadStem": metricnames.ObjectStoreUploadStem,
+		"PrepareTotalStem":        metricnames.PrepareTotalStem,
+		"PrepareMaterializeStem":  metricnames.PrepareMaterializeStem,
+		"PrepareSceneCompileStem": metricnames.PrepareSceneCompileStem,
+		"PrepareAssetResolveStem": metricnames.PrepareAssetResolveStem,
+		"PrepareBurnStem":         metricnames.PrepareBurnStem,
+		"PrepareMarshalStem":      metricnames.PrepareMarshalStem,
+		"PreparePrefetchStem":     metricnames.PreparePrefetchStem,
 	}
 	checked := 0
 	for name, source := range productionSources(t) {

@@ -39,6 +39,15 @@ const (
 	// point), and the reason a bigger pipeline_workers count does not raise
 	// throughput on its own.
 	GPULaneWaitUS = "gpu_lane_wait_us"
+
+	// Detailed sub-phase timings inside PrepareJob.
+	PrepareTotalUS        = "prepare_total_us"
+	PrepareMaterializeUS  = "prepare_materialize_us"
+	PrepareSceneCompileUS = "prepare_scene_compile_us"
+	PrepareAssetResolveUS = "prepare_asset_resolve_us"
+	PrepareBurnUS         = "prepare_burn_us"
+	PrepareMarshalUS      = "prepare_marshal_us"
+	PreparePrefetchUS     = "prepare_prefetch_us"
 )
 
 // The same phases in milliseconds. The pipeline records both spellings for the
@@ -56,6 +65,14 @@ const (
 	DrivePublishMS      = "drive_publish_ms"
 	TotalMS             = "total_ms"
 	GPULaneWaitMS       = "gpu_lane_wait_ms"
+
+	PrepareTotalMS        = "prepare_total_ms"
+	PrepareMaterializeMS  = "prepare_materialize_ms"
+	PrepareSceneCompileMS = "prepare_scene_compile_ms"
+	PrepareAssetResolveMS = "prepare_asset_resolve_ms"
+	PrepareBurnMS         = "prepare_burn_ms"
+	PrepareMarshalMS      = "prepare_marshal_ms"
+	PreparePrefetchMS     = "prepare_prefetch_ms"
 )
 
 // Phase STEMS. The staged pipeline records both spellings of a phase from a
@@ -73,6 +90,14 @@ const (
 	SHA256Stem            = "sha256"
 	ObjectStoreUploadStem = "objectstore_upload"
 	GPULaneWaitStem       = "gpu_lane_wait"
+
+	PrepareTotalStem        = "prepare_total"
+	PrepareMaterializeStem  = "prepare_materialize"
+	PrepareSceneCompileStem = "prepare_scene_compile"
+	PrepareAssetResolveStem = "prepare_asset_resolve"
+	PrepareBurnStem         = "prepare_burn"
+	PrepareMarshalStem      = "prepare_marshal"
+	PreparePrefetchStem     = "prepare_prefetch"
 )
 
 // StemHasPair reports whether both `<stem>_us` and `<stem>_ms` are declared.
@@ -166,11 +191,17 @@ var vocab = map[string]string{
 	ProbeUS: UnitUS, SHA256US: UnitUS, ObjectStoreUploadUS: UnitUS,
 	PublishUS: UnitUS, DriveUploadUS: UnitUS, TotalUS: UnitUS, GPUGapUS: UnitUS,
 	GPULaneWaitUS: UnitUS,
+	PrepareTotalUS: UnitUS, PrepareMaterializeUS: UnitUS, PrepareSceneCompileUS: UnitUS,
+	PrepareAssetResolveUS: UnitUS, PrepareBurnUS: UnitUS, PrepareMarshalUS: UnitUS,
+	PreparePrefetchUS: UnitUS,
 
 	OverlayCompileMS: UnitMS, AssetMaterializeMS: UnitMS, PlanMS: UnitMS,
 	SubtitleBurnMS: UnitMS, RenderMS: UnitMS, ProbeMS: UnitMS, SHA256MS: UnitMS,
 	ObjectStoreUploadMS: UnitMS, PublishMS: UnitMS, DrivePublishMS: UnitMS,
 	TotalMS: UnitMS, GPULaneWaitMS: UnitMS,
+	PrepareTotalMS: UnitMS, PrepareMaterializeMS: UnitMS, PrepareSceneCompileMS: UnitMS,
+	PrepareAssetResolveMS: UnitMS, PrepareBurnMS: UnitMS, PrepareMarshalMS: UnitMS,
+	PreparePrefetchMS: UnitMS,
 
 	SubtitleLayers: UnitCount, RenderFramesDone: UnitCount, RenderFramesTotal: UnitCount,
 	RenderFPS: "fps", ProfileStrippedByConfig: UnitCount, AudioInertParams: UnitCount,

@@ -32,6 +32,8 @@ func init() {
 		textWaveDefinition("scale_wave", "glyph", "scale", []AnimationKeyframe{{0, 0.75}, {36, 1.25}, {72, 1.0}}, 1),
 		textWaveDefinition("char_wave", "glyph", "position_y", []AnimationKeyframe{{0, 0.0}, {24, -30.0}, {48, 15.0}, {72, 0.0}}, 1),
 		textCenterDefinition(),
+		phraseAdvancedDefinition("apple_phrase_v2", "glyph", "position_y", []AnimationKeyframe{{0, 34.0}, {24, -4.0}, {72, 0.0}}, 1,
+			[]TrackDefinition{phraseLayer("position_y", 72.0, -8.0, 0.0), phraseLayer("scale", 0.94, 1.03, 1.0)}),
 		phraseAdvancedDefinition("kinetic_split_word", "word", "position_y", []AnimationKeyframe{{0, 22.0}, {28, -5.0}, {72, 0.0}}, 1,
 			[]TrackDefinition{phraseLayer("position_y", 80.0, -12.0, 0.0), phraseLayer("rotation_z", -7.0, 2.0, 0.0)}),
 		phraseAdvancedDefinition("dynamic_island_expansion", "line", "scale", []AnimationKeyframe{{0, 0.82}, {28, 1.04}, {72, 1.0}}, 0,
@@ -107,7 +109,7 @@ func phraseAdvancedDefinition(id, unit, property string, keyframes []AnimationKe
 			Keyframes: []AnimationKeyframe{{Frame: 0, Value: 0.0}, {Frame: 18, Value: 1.0}},
 		})
 	}
-	return MotionDefinition{ID: id, Unit: unit, Enter: 72, Tracks: layerTracks, TextAnimators: []TextAnimatorDefinition{{
+	return MotionDefinition{ID: id, Category: "apple_v2", Targets: []string{"text", "phrase"}, Unit: unit, Enter: 72, Tracks: layerTracks, TextAnimators: []TextAnimatorDefinition{{
 		ID: id + "_text", Selector: SelectorDefinition{Kind: unit, Stagger: stagger}, Properties: properties,
 	}}}
 }

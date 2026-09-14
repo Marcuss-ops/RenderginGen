@@ -223,6 +223,53 @@ type MediaReceipt struct {
 		DecodeMS      float64 `json:"decode_ms"`
 		TotalMS       float64 `json:"total_ms"`
 	} `json:"timing_ms"`
+	Media struct {
+		Container          string  `json:"container"`
+		Codec              string  `json:"codec"`
+		VideoCodec         string  `json:"video_codec"`
+		CodecProfile       string  `json:"codec_profile"`
+		VideoLevel         string  `json:"video_level"`
+		PixelFormat        string  `json:"pixel_format"`
+		Width              int     `json:"width"`
+		Height             int     `json:"height"`
+		FPSNum             int     `json:"fps_num"`
+		FPSDen             int     `json:"fps_den"`
+		RFPSNum            int     `json:"r_fps_num"`
+		RFPSDen            int     `json:"r_fps_den"`
+		FrameCount         int64   `json:"frame_count"`
+		DurationMS         float64 `json:"duration_ms"`
+		DurationUS         int64   `json:"duration_us"`
+		HasAudio           bool    `json:"has_audio"`
+		HasVideo           bool    `json:"has_video"`
+		VideoStreams       int     `json:"video_streams"`
+		VideoTimeBaseNum   int     `json:"video_time_base_num"`
+		VideoTimeBaseDen   int     `json:"video_time_base_den"`
+		SARNum             int     `json:"sar_num"`
+		SARDen             int     `json:"sar_den"`
+		ColorRange         string  `json:"color_range"`
+		ColorSpace         string  `json:"color_space"`
+		ColorTransfer      string  `json:"color_transfer"`
+		ColorPrimaries     string  `json:"color_primaries"`
+		FieldOrder         string  `json:"field_order"`
+		StartPTS           int64   `json:"start_pts"`
+		FirstFrameKeyframe bool    `json:"first_frame_keyframe"`
+		ClosedGOP          bool    `json:"closed_gop"`
+		KeyframeInterval   int     `json:"keyframe_interval"`
+		AudioStreams       int     `json:"audio_streams"`
+		AudioCodec         string  `json:"audio_codec"`
+		AudioProfile       string  `json:"audio_profile"`
+		SampleRate         int     `json:"sample_rate"`
+		Channels           int     `json:"channels"`
+		ChannelLayout      string  `json:"channel_layout"`
+		AudioBitrate       string  `json:"audio_bitrate"`
+		AudioTimeBaseNum   int     `json:"audio_time_base_num"`
+		AudioTimeBaseDen   int     `json:"audio_time_base_den"`
+	} `json:"media"`
+}
+
+// HasCanonicalMedia reports whether the receipt carries authoritative structural media facts.
+func (r MediaReceipt) HasCanonicalMedia() bool {
+	return r.Media.Container != "" && r.Media.Width > 0 && r.Media.Height > 0
 }
 
 // ResolvedVerificationPolicy is the verification level the receipt records as

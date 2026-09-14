@@ -34,7 +34,7 @@
       {
         "id": "important_phrase",
         "template_id": "IMPORTANT_PHRASE",
-        "preset_id": "caption_card",
+        "preset_id": "apple_v2",
         "text": "DONALD TRUMP",
         "start_ms": 667,
         "end_ms": 2000
@@ -42,7 +42,7 @@
       {
         "id": "important_word",
         "template_id": "IMPORTANT_WORD",
-        "preset_id": "active_word_pop",
+        "preset_id": "apple_v2",
         "text": "TRUMP",
         "start_ms": 2167,
         "end_ms": 3167

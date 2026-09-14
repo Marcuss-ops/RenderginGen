@@ -72,8 +72,7 @@ func presetFor(item semanticItem, spec TemplateSpec) (string, error) {
 	// and family come from the single registry (registry.go).
 	//
 	// ADR-029 forward-point (d): RenderingGen is an execution worker and must
-	// NOT re-map a template_id to a preset (e.g. it must not know that PERSON
-	// means lower_third_safe). The semantic_role → preset_id decision lives
+	// NOT re-map a template_id to a preset. The semantic_role → preset_id decision lives
 	// only in PipelineGen's SemanticOverlayResolver. A preset-driven template
 	// that does not carry a preset_id is rejected; preset-less primitives
 	// (PRODUCT, LOGO, LIGHT_LEAK, …) legitimately compile without one.
@@ -149,6 +148,10 @@ func applyPresetDefinition(layer *Layer, d PresetDefinition) {
 		font = layer.Style.Font
 	}
 	layer.Style = &LayerStyle{Font: font, FontSize: d.Style.FontSize, Fill: rgbaHex(d.Style.Fill)}
+	if d.Style.Stroke != nil {
+		stroke := d.Style.Stroke
+		layer.Style.Stroke = &LayerStroke{Color: stroke.Color, Width: stroke.Width}
+	}
 	if d.Style.Shadow != nil {
 		s := d.Style.Shadow
 		layer.Style.Shadow = &LayerShadow{Color: s.Color, Opacity: s.Opacity, Blur: s.Blur, Offset: append([]float64(nil), s.Offset...)}

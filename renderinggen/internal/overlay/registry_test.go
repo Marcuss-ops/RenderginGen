@@ -128,7 +128,7 @@ func TestCompileSemanticAcceptsPlannerVocabulary(t *testing.T) {
 
 func TestCompileSemanticRejectsKindTemplateMismatch(t *testing.T) {
 	raw := []byte(`{"schema_version":"renderinggen.overlay-plan.v1","plan_id":"p","video_id":"v","width":1280,"height":720,"fps_num":30,"fps_den":1,
-      "items":[{"id":"x","kind":"important_phrase","template_id":"PERSON","preset_id":"lower_third_safe","text":"Ada","start_ms":0,"end_ms":1000}]}`)
+      "items":[{"id":"x","kind":"important_phrase","template_id":"PERSON","preset_id":"apple_v2","text":"Ada","start_ms":0,"end_ms":1000}]}`)
 	if _, err := CompileSemantic(raw); err == nil {
 		t.Fatal("kind/template mismatch must be rejected")
 	}
@@ -139,9 +139,9 @@ func TestCompileSemanticRejectsKindTemplateMismatch(t *testing.T) {
 func TestCompileSemanticReturnsStatsFromSamePass(t *testing.T) {
 	raw := []byte(`{"schema_version":"renderinggen.overlay-plan.v1","plan_id":"p","video_id":"v","width":1280,"height":720,"fps_num":30,"fps_den":1,
       "items":[
-        {"id":"e","entity_id":"entity:ada","kind":"entity_card","template_id":"PERSON","preset_id":"lower_third_safe","text":"Ada","start_ms":0,"end_ms":1000,"duration_ms":1000},
-        {"id":"p","kind":"important_phrase","template_id":"IMPORTANT_PHRASE","preset_id":"caption_card","text":"hi","start_ms":1000,"end_ms":2000},
-        {"id":"w","kind":"important_word","template_id":"IMPORTANT_WORD","preset_id":"active_word_pop","text":"WOW","start_ms":2000,"end_ms":3000},
+        {"id":"e","entity_id":"entity:ada","kind":"entity_card","template_id":"PERSON","preset_id":"apple_v2","text":"Ada","start_ms":0,"end_ms":1000,"duration_ms":1000},
+        {"id":"p","kind":"important_phrase","template_id":"IMPORTANT_PHRASE","preset_id":"apple_v2","text":"hi","start_ms":1000,"end_ms":2000},
+        {"id":"w","kind":"important_word","template_id":"IMPORTANT_WORD","preset_id":"apple_v2","text":"WOW","start_ms":2000,"end_ms":3000},
         {"id":"i","kind":"entity_image","template_id":"IMAGE_OVERLAY","preset_id":"image_scale_in","start_ms":3000,"end_ms":4000,
          "asset_refs":[{"asset_id":"a","sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","url":"https://store.example/a.png","media_type":"image/png"}]}
       ]}`)
@@ -162,7 +162,7 @@ func TestCompileSemanticReturnsStatsFromSamePass(t *testing.T) {
 // contract: a portrait must not compile a second text layer.
 func TestEntityCardWithImageLowersToOneImageLayer(t *testing.T) {
 	raw := []byte(`{"schema_version":"renderinggen.overlay-plan.v1","plan_id":"p","video_id":"v","width":1280,"height":720,"fps_num":30,"fps_den":1,
-      "items":[{"id":"jordan-42","entity_id":"person:michael-jordan","kind":"entity_card","template_id":"PERSON","preset_id":"lower_third_safe","image_preset_id":"image_focus_in","text":"Michael Jordan","start_ms":0,"end_ms":1000,"duration_ms":1000,
+      "items":[{"id":"jordan-42","entity_id":"person:michael-jordan","kind":"entity_card","template_id":"PERSON","preset_id":"apple_v2","image_preset_id":"image_focus_in","text":"Michael Jordan","start_ms":0,"end_ms":1000,"duration_ms":1000,
         "asset_refs":[{"asset_id":"jordan","sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","url":"https://store.example/j.jpg","media_type":"image/jpeg"}]}]}`)
 	result, err := CompileSemantic(raw)
 	if err != nil {

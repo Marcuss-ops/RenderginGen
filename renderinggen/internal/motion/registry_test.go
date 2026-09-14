@@ -37,3 +37,31 @@ func TestDeclarativePluginCompilesGenericTracks(t *testing.T) {
 		t.Fatalf("tracks=%+v err=%v", tracks, err)
 	}
 }
+
+func TestAppleV2MotionsAreComplete(t *testing.T) {
+	ids := Registry.AppleV2MotionIDs()
+	if len(ids) != 16 {
+		t.Fatalf("Apple V2 motion count = %d, want 16", len(ids))
+	}
+	for _, id := range ids {
+		plugin, err := Registry.Resolve(id)
+		if err != nil {
+			t.Fatalf("resolve %s: %v", id, err)
+		}
+		tracks, err := plugin.Compile(MotionContext{DurationFrames: 120}, nil)
+		if err != nil {
+			t.Fatalf("compile %s: %v", id, err)
+		}
+		textPlugin, ok := plugin.(TextMotionPlugin)
+		if !ok {
+			t.Fatalf("%s is not a text motion", id)
+		}
+		animators, err := textPlugin.CompileText(MotionContext{DurationFrames: 120}, nil)
+		if err != nil || len(animators) == 0 {
+			t.Fatalf("%s has no text animation: animators=%+v err=%v", id, animators, err)
+		}
+		if len(tracks) == 0 && len(animators[0].Properties) == 0 {
+			t.Fatalf("%s is empty", id)
+		}
+	}
+}

@@ -10,8 +10,8 @@ import (
 )
 
 func TestOfficialPresetCatalog(t *testing.T) {
-	if got := len(officialPresets); got != 51 {
-		t.Fatalf("official preset count = %d, want 51", got)
+	if got := len(officialPresets); got != 10 {
+		t.Fatalf("official preset count = %d, want 10", got)
 	}
 	for id, d := range officialPresets {
 		if id == "" || d.ID != id {
@@ -27,6 +27,9 @@ func TestOfficialPresetCatalog(t *testing.T) {
 		if d.Family == PresetText && (d.Style.FontFamily == "" || d.Style.FontSize <= 0 || len(d.Style.Fill) != 4) {
 			t.Errorf("%s has incomplete text definition: %+v", id, d)
 		}
+		if d.Family == PresetText && !staticSmoke && (d.Style.Stroke == nil || d.Style.Shadow == nil) {
+			t.Errorf("%s must carry both stroke and shadow: %+v", id, d.Style)
+		}
 		if d.Family == PresetImage && (d.Layout.BoxWidth <= 0 || d.Layout.BoxHeight <= 0 || d.Layout.Fit == "") {
 			t.Errorf("%s has incomplete image definition: %+v", id, d)
 		}
@@ -34,7 +37,7 @@ func TestOfficialPresetCatalog(t *testing.T) {
 }
 
 func TestOfficialPresetFamilyValidation(t *testing.T) {
-	if _, err := resolveOfficialPreset("caption_card", "image"); err == nil {
+	if _, err := resolveOfficialPreset(CanonicalTextPresetID, "image"); err == nil {
 		t.Fatal("text preset accepted as image")
 	}
 	if _, err := resolveOfficialPreset("image_focus_in", "text"); err == nil {
@@ -42,6 +45,38 @@ func TestOfficialPresetFamilyValidation(t *testing.T) {
 	}
 	if _, err := resolveOfficialPreset("does_not_exist", "text"); err == nil {
 		t.Fatal("unknown preset accepted")
+	}
+	if _, err := resolveOfficialPreset("caption_card", "text"); err == nil {
+		t.Fatal("retired duplicate text preset accepted")
+	}
+}
+
+func TestCanonicalAppleTextPresetCarriesStrokeShadowAndAnimation(t *testing.T) {
+	d, err := ResolveOfficialPreset(CanonicalTextPresetID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if d.Style.Stroke == nil || d.Style.Stroke.Width <= 0 || d.Style.Stroke.Color == "" {
+		t.Fatalf("canonical text preset has no usable stroke: %+v", d.Style.Stroke)
+	}
+	if d.Style.Shadow == nil || d.Style.Shadow.Opacity <= 0 || d.Style.Shadow.Blur <= 0 {
+		t.Fatalf("canonical text preset has no usable shadow: %+v", d.Style.Shadow)
+	}
+	if d.Motion.ID == "" {
+		t.Fatal("canonical text preset has no default animation")
+	}
+
+	raw := []byte(`{"schema_version":"renderinggen.overlay-plan.v1","plan_id":"apple-style","video_id":"v","width":1920,"height":1080,"fps_num":30,"fps_den":1,"items":[{"id":"phrase","kind":"important_phrase","template_id":"IMPORTANT_PHRASE","preset_id":"apple_v2","text":"IMPORTANT","start_ms":0,"end_ms":3000}]}`)
+	result, err := CompileSemantic(raw)
+	if err != nil {
+		t.Fatal(err)
+	}
+	layer := result.Plan.Layers[0]
+	if layer.Style == nil || layer.Style.Stroke == nil || layer.Style.Shadow == nil {
+		t.Fatalf("stroke/shadow not lowered: %+v", layer.Style)
+	}
+	if layer.Animation == nil && len(layer.TextAnimators) == 0 {
+		t.Fatal("canonical phrase lost its animation during lowering")
 	}
 }
 
@@ -149,6 +184,7 @@ func TestAppleStyleFixturesAreDistinctAndComplete(t *testing.T) {
 					Kind     string `json:"kind"`
 					Template string `json:"template_id"`
 					PresetID string `json:"preset_id"`
+					MotionID string `json:"motion_id"`
 				} `json:"items"`
 			} `json:"render_plan"`
 			Assets []struct {
@@ -167,7 +203,7 @@ func TestAppleStyleFixturesAreDistinctAndComplete(t *testing.T) {
 		var signature strings.Builder
 		for _, item := range job.RenderPlan.Items {
 			if item.PresetID != "" {
-				signature.WriteString(item.Kind + ":" + item.Template + ":" + item.PresetID + "|")
+				signature.WriteString(item.Kind + ":" + item.Template + ":" + item.PresetID + ":" + item.MotionID + "|")
 			}
 		}
 		if signature.Len() == 0 {

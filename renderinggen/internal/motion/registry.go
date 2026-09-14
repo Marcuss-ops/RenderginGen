@@ -44,3 +44,21 @@ func (r *RegistryType) List() []string {
 	sort.Strings(ids)
 	return ids
 }
+
+// AppleV2MotionIDs returns the registered Apple V2 motion IDs in stable order.
+// Styles are intentionally not part of this list: callers select one visual
+// preset and choose one of these motions independently through motion_id.
+func (r *RegistryType) AppleV2MotionIDs() []string {
+	ids := make([]string, 0)
+	for _, id := range r.List() {
+		plugin, err := r.Resolve(id)
+		if err != nil {
+			continue
+		}
+		declarative, ok := plugin.(DeclarativePlugin)
+		if ok && declarative.Definition.Category == "apple_v2" {
+			ids = append(ids, id)
+		}
+	}
+	return ids
+}

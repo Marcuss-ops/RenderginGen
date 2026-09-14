@@ -54,6 +54,10 @@ func renderVerificationLevel() renderVerifyLevel {
 // resolution, fps, audio, optional decode) are the verdict.
 func (p *Processor) enforceReceiptVerification(outputPath string, metrics map[string]float64) error {
 	receipt, err := chronon.ReadMediaReceipt(outputPath)
+	return p.enforceReceiptVerificationDirect(receipt, err, metrics)
+}
+
+func (p *Processor) enforceReceiptVerificationDirect(receipt chronon.MediaReceipt, err error, metrics map[string]float64) error {
 	policy := renderVerificationLevel()
 	if err != nil {
 		if policy == renderVerifyFast {

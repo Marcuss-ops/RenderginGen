@@ -29,7 +29,7 @@ func TestCompileSemanticOptionalBackground(t *testing.T) {
       "schema_version":"renderinggen.overlay-plan.v1",
       "plan_id":"p","video_id":"v","width":1280,"height":720,"fps_num":30,"fps_den":1,
       "background":{"kind":"color","color":[0,0,0,1]},
-      "items":[{"id":"phrase","template_id":"IMPORTANT_PHRASE","preset_id":"clean_slide_up","text":"hi","start_ms":0,"end_ms":1000}]
+      "items":[{"id":"phrase","template_id":"IMPORTANT_PHRASE","preset_id":"apple_v2","text":"hi","start_ms":0,"end_ms":1000}]
     }`)
 	result, err := CompileSemantic(raw)
 	if err != nil {
@@ -48,7 +48,7 @@ func TestCompileSemanticTextMotionProducesAnimatorContract(t *testing.T) {
 	raw := []byte(`{
       "schema_version":"renderinggen.overlay-plan.v1",
       "plan_id":"p","video_id":"v","width":1920,"height":1080,"fps_num":24,"fps_den":1,
-      "items":[{"id":"title","template_id":"IMPORTANT_PHRASE","preset_id":"phrase_fade_in","motion_id":"character_cascade",
+      "items":[{"id":"title","template_id":"IMPORTANT_PHRASE","preset_id":"apple_v2","motion_id":"character_cascade",
         "text":"Powerfully simple.","start_ms":0,"end_ms":2000}]
     }`)
 	result, err := CompileSemantic(raw)
@@ -69,7 +69,7 @@ func TestCompileSemanticTextUsesExplicitCanvasLocalBox(t *testing.T) {
 	raw := []byte(`{
       "schema_version":"renderinggen.overlay-plan.v1",
       "plan_id":"placement-fixture","video_id":"v","width":1920,"height":1080,"fps_num":24,"fps_den":1,
-      "items":[{"id":"title","template_id":"IMPORTANT_PHRASE","preset_id":"phrase_focus_v1",
+      "items":[{"id":"title","template_id":"IMPORTANT_PHRASE","preset_id":"apple_v2",
         "motion_id":"character_cascade","text":"ABC","start_ms":0,"end_ms":5000}]
     }`)
 	result, err := CompileSemantic(raw)
@@ -99,7 +99,7 @@ func TestCompileSemanticTextMotionsDoNotCollapseToSameContract(t *testing.T) {
 	motions := []string{"word_reveal", "character_cascade", "opacity_wave", "scale_wave", "char_wave"}
 	contracts := make(map[string]string, len(motions))
 	for _, motionID := range motions {
-		raw := []byte(`{"schema_version":"renderinggen.overlay-plan.v1","plan_id":"` + motionID + `","video_id":"v","width":1920,"height":1080,"fps_num":24,"fps_den":1,"items":[{"id":"title","template_id":"IMPORTANT_PHRASE","preset_id":"phrase_focus_v1","motion_id":"` + motionID + `","text":"ABC","start_ms":0,"end_ms":5000}]}`)
+		raw := []byte(`{"schema_version":"renderinggen.overlay-plan.v1","plan_id":"` + motionID + `","video_id":"v","width":1920,"height":1080,"fps_num":24,"fps_den":1,"items":[{"id":"title","template_id":"IMPORTANT_PHRASE","preset_id":"apple_v2","motion_id":"` + motionID + `","text":"ABC","start_ms":0,"end_ms":5000}]}`)
 		result, err := CompileSemantic(raw)
 		if err != nil {
 			t.Fatalf("%s: %v", motionID, err)
@@ -122,7 +122,7 @@ func TestCompileSemanticTextMotionsDoNotCollapseToSameContract(t *testing.T) {
 
 // TestCompileSemanticRejectsMissingPresetID pins ADR-029 forward-point (d):
 // RenderingGen no longer re-maps a template_id to a preset (it must not know
-// that IMPORTANT_PHRASE means caption_card). A preset-driven template without
+// that IMPORTANT_PHRASE means a particular visual preset). A preset-driven template without
 // a preset_id is rejected — the semantic_role → preset decision lives only in
 // PipelineGen's SemanticOverlayResolver.
 func TestCompileSemanticRejectsMissingPresetID(t *testing.T) {
@@ -187,8 +187,8 @@ func TestCompileSemanticKindAndExplicitText(t *testing.T) {
       "schema_version":"renderinggen.overlay-plan.v1",
       "plan_id":"p","video_id":"v","width":1280,"height":720,"fps_num":30,"fps_den":1,
       "items":[
-        {"id":"phrase","kind":"important_phrase","template_id":"IMPORTANT_PHRASE","preset_id":"caption_card","text":"QUESTO CAMBIA TUTTO","start_ms":0,"end_ms":1000},
-        {"id":"person","entity_id":"person:cook","kind":"entity_card","template_id":"PERSON","preset_id":"lower_third_safe","text":"Cook","start_ms":1000,"end_ms":2000,"duration_ms":1000}
+        {"id":"phrase","kind":"important_phrase","template_id":"IMPORTANT_PHRASE","preset_id":"apple_v2","text":"QUESTO CAMBIA TUTTO","start_ms":0,"end_ms":1000},
+        {"id":"person","entity_id":"person:cook","kind":"entity_card","template_id":"PERSON","preset_id":"apple_v2","text":"Cook","start_ms":1000,"end_ms":2000,"duration_ms":1000}
       ]
     }`)
 	result, err := CompileSemantic(raw)
@@ -217,7 +217,7 @@ func TestCompileSemanticTextIsMandatory(t *testing.T) {
       "schema_version":"renderinggen.overlay-plan.v1",
       "plan_id":"p","video_id":"v","width":1280,"height":720,"fps_num":30,"fps_den":1,
       "items":[
-        {"id":"person","entity_id":"person:missing-text","kind":"entity_card","template_id":"PERSON","preset_id":"lower_third_safe","start_ms":0,"end_ms":1000,"duration_ms":1000}
+        {"id":"person","entity_id":"person:missing-text","kind":"entity_card","template_id":"PERSON","preset_id":"apple_v2","start_ms":0,"end_ms":1000,"duration_ms":1000}
       ]
     }`)
 	if _, err := CompileSemantic(raw); err == nil {
@@ -236,9 +236,9 @@ func TestCompileSemanticImportantPhraseAndEntityImage(t *testing.T) {
       "plan_id":"phrase-and-name","video_id":"phrase-and-name",
       "width":1280,"height":720,"fps_num":30,"fps_den":1,
       "items":[
-        {"id":"phrase-important","kind":"important_phrase","template_id":"IMPORTANT_PHRASE","preset_id":"caption_card",
+        {"id":"phrase-important","kind":"important_phrase","template_id":"IMPORTANT_PHRASE","preset_id":"apple_v2",
          "text":"THIS CHANGES EVERYTHING","start_ms":500,"end_ms":1800},
-        {"id":"person-image-name","entity_id":"person:matt-damon","kind":"entity_card","template_id":"PERSON","preset_id":"lower_third_safe","image_preset_id":"image_slide_left",
+        {"id":"person-image-name","entity_id":"person:matt-damon","kind":"entity_card","template_id":"PERSON","preset_id":"apple_v2","image_preset_id":"image_slide_left",
          "text":"Matt Damon",
          "start_ms":2200,"end_ms":4200,"duration_ms":2000,
          "asset_refs":[{"asset_id":"matt-damon","sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
@@ -262,18 +262,60 @@ func TestCompileSemanticImportantPhraseAndEntityImage(t *testing.T) {
 	if compiled.Layers[1].Animation == nil || len(compiled.Layers[1].Animation.Tracks) == 0 {
 		t.Fatalf("entity image must carry image preset animation = %+v", compiled.Layers[1].Animation)
 	}
-	// Chronon places image frames by centre offset from the canvas centre
-	// (see resolveImageLayout): the 480px image_left card is flush with the
-	// left edge, so its centre sits at -(canvasW-boxW)/2 = -400 on a 1280
-	// canvas. A zero offset would mean the image is centred.
-	if len(compiled.Layers[1].Position) != 2 || compiled.Layers[1].Position[0] != -400 {
-		t.Fatalf("entity image must use image preset layout = %+v", compiled.Layers[1].Position)
+	// Entity portraits remain at the preset's resolved 480px size, but the
+	// subject itself is centered in the composition and fully contained.
+	if len(compiled.Layers[1].Position) != 2 || compiled.Layers[1].Position[0] != 0 || compiled.Layers[1].Position[1] != 0 {
+		t.Fatalf("entity image must be centered = %+v", compiled.Layers[1].Position)
+	}
+	if compiled.Layers[1].BoxWidth != 480 || compiled.Layers[1].BoxHeight != 480 {
+		t.Fatalf("entity image size changed = %dx%d", compiled.Layers[1].BoxWidth, compiled.Layers[1].BoxHeight)
+	}
+	if compiled.Layers[1].Fit != "contain" {
+		t.Fatalf("entity image must not crop = %q", compiled.Layers[1].Fit)
 	}
 	if compiled.Layers[1].Text != "" {
 		t.Fatalf("entity image must not compile a name layer = %+v", compiled.Layers[1])
 	}
 	if len(assets) != 1 || assets[0].LogicalPath != "assets/semantic/matt-damon.png" {
 		t.Fatalf("materialized assets = %+v", assets)
+	}
+}
+
+// TestCompileSemanticEntityImagePopupKeepsPresetMotionAndCenters verifies the
+// production path emitted by PipelineGen after a verified entity image is
+// attached. It must keep the official preset animation while centering the
+// image-only layer; the legacy entity_card adapter above is not this path.
+func TestCompileSemanticEntityImagePopupKeepsPresetMotionAndCenters(t *testing.T) {
+	raw := []byte(`{
+      "schema_version":"renderinggen.overlay-plan.v1",
+      "plan_id":"entity-image-popup","video_id":"entity-image-popup",
+      "width":1920,"height":1080,"fps_num":24,"fps_den":1,
+      "items":[
+        {"id":"jordan-image","entity_id":"person:michael-jordan","kind":"entity_image","template_id":"image_popup","preset_id":"image_slide_right",
+         "start_ms":0,"end_ms":5000,
+         "asset_refs":[{"asset_id":"jordan","sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                         "url":"https://store.example/objects/jordan.jpg","media_type":"image/jpeg"}]}
+      ]
+    }`)
+	result, err := CompileSemantic(raw)
+	if err != nil {
+		t.Fatalf("entity image popup plan: %v", err)
+	}
+	if len(result.Plan.Layers) != 1 {
+		t.Fatalf("compiled layers = %+v", result.Plan.Layers)
+	}
+	layer := result.Plan.Layers[0]
+	if layer.Type != "image" || layer.Asset != "assets/semantic/jordan.jpg" {
+		t.Fatalf("entity image popup layer = %+v", layer)
+	}
+	if layer.Animation == nil || len(layer.Animation.Tracks) == 0 {
+		t.Fatalf("official image preset animation was dropped = %+v", layer.Animation)
+	}
+	if len(layer.Position) != 2 || layer.Position[0] != 0 || layer.Position[1] != 0 {
+		t.Fatalf("entity image popup must be centered = %+v", layer.Position)
+	}
+	if layer.BoxWidth != 480 || layer.BoxHeight != 480 || layer.Fit != "contain" {
+		t.Fatalf("entity image popup geometry changed = %dx%d fit=%q", layer.BoxWidth, layer.BoxHeight, layer.Fit)
 	}
 }
 
@@ -285,7 +327,7 @@ func TestCompileSemanticTransportsChrononPresetID(t *testing.T) {
       "schema_version":"renderinggen.overlay-plan.v1",
       "plan_id":"p","video_id":"v","width":1280,"height":720,"fps_num":30,"fps_den":1,
       "items":[
-        {"id":"phrase","template_id":"IMPORTANT_PHRASE","preset_id":"phrase_focus_v1","text":"x","start_ms":0,"end_ms":1000}
+        {"id":"phrase","template_id":"IMPORTANT_PHRASE","preset_id":"apple_v2","text":"x","start_ms":0,"end_ms":1000}
       ]
     }`)
 	if _, err := CompileSemantic(raw); err != nil {
