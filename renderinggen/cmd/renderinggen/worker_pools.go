@@ -110,8 +110,15 @@ func runPrepPool(ctx context.Context, q *queue.Client, proc *processor.Processor
 			if err != nil {
 				return err
 			}
+			// prepCh is a rendezvous, so the send below completes only when a
+			// GPU lane is free: the interval around it IS this job's admission
+			// wait on the GPU. Recorded because it is the dominant cost of a
+			// backlogged batch and would otherwise be buried in total_ms with
+			// no phase to explain it (see processor.RecordGPULaneWait).
+			laneWaitStart := time.Now()
 			select {
 			case prepCh <- &preppedJob{job: job, prepared: prepared}:
+				processor.RecordGPULaneWait(prepared, time.Since(laneWaitStart))
 				return nil
 			case <-jobCtx.Done():
 				_ = prepared.Workspace.Cleanup()
