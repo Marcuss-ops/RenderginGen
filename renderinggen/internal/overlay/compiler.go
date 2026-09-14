@@ -85,7 +85,17 @@ func CompileSemantic(raw []byte) (CompileResult, error) {
 	if err != nil {
 		return CompileResult{}, err
 	}
-	return CompileResult{Plan: plan, Assets: assets, Stats: stats, UnknownTemplates: unknown}, nil
+	var metadata struct {
+		Language string `json:"language"`
+	}
+	if err := json.Unmarshal(raw, &metadata); err != nil {
+		return CompileResult{}, fmt.Errorf("overlay: decode plan metadata: %w", err)
+	}
+	prepared, err := buildPreparedPackage(plan, metadata.Language, assets)
+	if err != nil {
+		return CompileResult{}, err
+	}
+	return CompileResult{Plan: plan, Assets: assets, Stats: stats, Prepared: prepared, UnknownTemplates: unknown}, nil
 }
 
 // Marshal serializes the typed plan once at the Chronon boundary.
