@@ -28,6 +28,15 @@ func main() {
 	lease := flag.Duration("lease", 10*time.Minute, "job lease duration")
 	maxAttempts := flag.Int("max-attempts", model.DefaultMaxAttempts, "max attempts before a job is permanently failed")
 	expireInterval := flag.Duration("expire-interval", 5*time.Second, "lease expiry scan interval")
+	// Requeue retry policy. The default (0) is the zero RetryConfig: one attempt
+	// per sweep, exactly the behavior before the flags existed. Set
+	// -requeue-retry-attempts > 1 to retry a transient lease-expiry failure with
+	// exponential backoff (see service.RetryConfig). Before this wiring the
+	// policy was configurable only from tests, so no deployment could turn
+	// retries on.
+	requeueRetryAttempts := flag.Int("requeue-retry-attempts", 0, "attempts per lease-expiry requeue when it fails transiently; values <= 1 disable retries")
+	requeueRetryBaseDelay := flag.Duration("requeue-retry-base-delay", 0, "base delay before the first requeue retry (defaults to 100ms when retries are enabled)")
+	requeueRetryJitter := flag.Float64("requeue-retry-jitter", 0, "fraction of the requeue retry delay to randomize, clamped to [0,1]")
 	workerStale := flag.Duration("worker-stale-after", 90*time.Second, "worker heartbeat staleness threshold")
 	dbURL := flag.String("db-url", "", "PostgreSQL DSN; enables the postgres repository when set (defaults to $DATABASE_URL)")
 	flag.Parse()
@@ -65,6 +74,11 @@ func main() {
 
 	svc := service.New(repo)
 	svc.SetWorkerRepository(workerRepo, *workerStale)
+	svc.SetRequeueRetry(service.RetryConfig{
+		MaxAttempts: *requeueRetryAttempts,
+		BaseDelay:   *requeueRetryBaseDelay,
+		Jitter:      *requeueRetryJitter,
+	})
 	m := metrics.New()
 	svc.SetMetrics(m)
 
@@ -99,7 +113,7 @@ func main() {
 		// waiter re-reads the row, and claims still use SKIP LOCKED.
 		go listenForJobNotifications(context.Background(), postgresDSN, srv)
 	}
-	log.Printf("job queue listening on %s (lease=%s, max-attempts=%d)", *addr, *lease, *maxAttempts)
+	log.Printf("job queue listening on %s (lease=%s, max-attempts=%d, requeue-retry-attempts=%d)", *addr, *lease, *maxAttempts, *requeueRetryAttempts)
 	server := &http.Server{
 		Addr:              *addr,
 		Handler:           srv.Handler(),

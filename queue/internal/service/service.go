@@ -377,8 +377,12 @@ func (s *Service) observePendingThrottled(force bool) {
 }
 
 // RefreshPendingGauge forces an immediate, unthrottled pending-gauge refresh.
-// Tests and administrative endpoints use this to read a synchronous snapshot
-// without waiting out pendingGaugeInterval.
+//
+// It exists for TESTS: production refreshes the gauge through the throttled
+// path, and a test that waited out pendingGaugeInterval to observe one update
+// would be slow and flaky. There is deliberately no admin endpoint calling it —
+// an on-demand scrape of the gauge is a metrics concern, not a queue API — so
+// do not describe it as production-wired.
 func (s *Service) RefreshPendingGauge() {
 	s.observePendingThrottled(true)
 }

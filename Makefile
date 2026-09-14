@@ -13,7 +13,7 @@
 
 CHRONON_RUNTIME ?= ghcr.io/marcuss-ops/chronon3d-runtime:0.1.0
 
-.PHONY: native-build golden-e2e golden-e2e-runtime golden-e2e-reset golden-e2e-down test-architecture test-gofmt
+.PHONY: native-build golden-e2e golden-e2e-runtime golden-e2e-reset golden-e2e-down test-architecture test-gofmt test-unit
 
 # test-architecture — the cross-repo boundary conformance gate.
 #
@@ -46,6 +46,32 @@ test-gofmt:
 	done; \
 	if [ $$fail -ne 0 ]; then echo "run 'gofmt -w' on the files above"; exit 1; fi; \
 	echo "gofmt: clean"
+
+# test-unit — every module's tests WITHOUT the real-engine runtime
+# certification suite (sub-second gate, no GPU, no ffmpeg, no Chronon).
+#
+# The split exists because the certification suite (real chronon3d_cli renders,
+# decoded and pixel-compared) is discovered automatically when a Chronon
+# checkout sits beside this repository. On such a machine a bare
+# `go test ./...` is minutes of GPU work, not a unit gate — and it is the
+# developer machine where that is least expected. The opt-out
+# (RENDERINGGEN_SKIP_GPU_E2E, owned by
+# renderinggen/internal/overlay/final_certification_runtime_test.go and pinned
+# by TestRuntimeCertificationOptOut) makes the distinction explicit instead of
+# relying on the binary happening to be absent:
+#
+#   make test-unit     fast gate, runs everywhere, must always be green
+#   go test ./...      also runs the runtime certification when the engine is
+#                      present (opt in with CHRONON_BIN to force it)
+#
+# This target does not duplicate the CI command: CI owns the -race scope
+# (pinned by TestCIRunsRaceEnabledModuleTests), this owns the fast local gate.
+test-unit:
+	@fail=0; for m in renderinggen queue objectstore; do \
+	  echo "=== test-unit: $$m ==="; \
+	  (cd $$m && RENDERINGGEN_SKIP_GPU_E2E=1 go test -count=1 ./...) || fail=1; \
+	done; \
+	exit $$fail
 
 native-build:
 	go build -o /usr/local/bin/renderinggen-queue ./queue/cmd/queued

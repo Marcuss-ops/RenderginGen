@@ -99,6 +99,56 @@ func repoRootAt(t *testing.T) string {
 }
 
 // goal3OutDir is the stable output directory the rendered clips land in.
+// goal3AssetsRoot is the fixture root. It is a per-run temporary directory by
+// default; GOAL3_ASSETS_DIR pins it so the CLI can be re-run by hand against
+// the exact assets a recorded plan references (post-hoc graph diagnosis).
+func goal3AssetsRoot(t *testing.T) string {
+	t.Helper()
+	if dir := strings.TrimSpace(os.Getenv("GOAL3_ASSETS_DIR")); dir != "" {
+		if err := os.MkdirAll(dir, 0o755); err != nil {
+			t.Fatalf("create assets directory %s: %v", dir, err)
+		}
+		return dir
+	}
+	return t.TempDir()
+}
+
+// goal3DiagnosticsArgs appends the engine's diagnostic switches when GOAL3_DIAG
+// is set: the per-node trace plus the graph preflight report. Together they are
+// the only way to see WHICH surface an encoded frame actually published, and
+// they need no rebuild to turn on.
+func goal3DiagnosticsArgs(args []string) []string {
+	if strings.TrimSpace(os.Getenv("GOAL3_DIAG")) == "" {
+		return args
+	}
+	return append(args, "--diagnostic", "--diagnostic-plan")
+}
+
+// goal3CLIEnv is the environment for a render invocation. With GOAL3_DIAG set
+// it also enables the engine's native-surface promotion trace (composite
+// handles, terminal handoff, residency decisions), which is env-gated inside
+// the engine.
+func goal3CLIEnv() []string {
+	env := os.Environ()
+	if strings.TrimSpace(os.Getenv("GOAL3_DIAG")) != "" {
+		env = append(env, "CHRONON3D_NATIVE_SURFACE_PROMOTION_DIAG=1")
+	}
+	return env
+}
+
+// goal3WriteCLILog keeps the full CLI output next to the artefacts. Diagnosis
+// of a wrong frame must not depend on the process that produced it being alive:
+// the trace travels with the render.
+func goal3WriteCLILog(t *testing.T, outDir, name string, out []byte) {
+	t.Helper()
+	if len(out) == 0 {
+		return
+	}
+	if err := os.WriteFile(filepath.Join(outDir, name+".log"), out, 0o644); err != nil {
+		t.Logf("write CLI log for %s: %v", name, err)
+	}
+}
+
 func goal3OutDir(t *testing.T) string {
 	t.Helper()
 	dir := strings.TrimSpace(os.Getenv("GOAL3_RENDER_OUT_DIR"))
@@ -288,11 +338,13 @@ func goal3RenderOnce(t *testing.T, bin, assetsRoot, outDir, name, raw string) (s
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
-	cmd := exec.CommandContext(ctx, bin, args...)
+	cmd := exec.CommandContext(ctx, bin, goal3DiagnosticsArgs(args)...)
 	cmd.Dir = assetsRoot
+	cmd.Env = goal3CLIEnv()
 	started := time.Now()
 	out, err := cmd.CombinedOutput()
 	wall := time.Since(started)
+	goal3WriteCLILog(t, outDir, name, out)
 	t.Logf("%s: wall=%s err=%v -> %s", name, wall.Round(time.Millisecond), err, videoPath)
 	return videoPath, plan, out, err
 }
@@ -378,9 +430,11 @@ func goal3RenderSoftware(t *testing.T, bin, assetsRoot, outDir, name string, pla
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
-	cmd := exec.CommandContext(ctx, bin, args...)
+	cmd := exec.CommandContext(ctx, bin, goal3DiagnosticsArgs(args)...)
 	cmd.Dir = assetsRoot
+	cmd.Env = goal3CLIEnv()
 	out, err := cmd.CombinedOutput()
+	goal3WriteCLILog(t, outDir, name+"_software", out)
 	if err != nil {
 		t.Fatalf("%s: reference render (software): %v\n%s", name, err, tailBytes(out))
 	}
@@ -533,7 +587,7 @@ func goal3MeanAbsDiff(t *testing.T, first, second image.Image) (float64, float64
 func TestGoal3_FinalClipBackgroundWatermark(t *testing.T) {
 	bin := chrononBinFor(t)
 	outDir := goal3OutDir(t)
-	assetsRoot := t.TempDir()
+	assetsRoot := goal3AssetsRoot(t)
 	fixtures := goal3Fixtures(t, assetsRoot)
 	t.Logf("outputs: %s", outDir)
 

@@ -13,6 +13,14 @@
 // certification (final_certification_test.go) always runs, this one needs a
 // GPU-capable build environment. Point CHRONON_BIN at the chronon3d_cli
 // binary to enable it.
+//
+// It is also opt-OUT: setting RENDERINGGEN_SKIP_GPU_E2E to any non-empty value
+// skips every test that would drive the real engine. Discovery alone is not an
+// adequate switch — a developer with a Chronon checkout beside this repository
+// has the binary present, so `go test ./...` would silently start real renders
+// (minutes of GPU work + pixel comparison) instead of the sub-second unit
+// suite. The opt-out makes the split explicit, which is what `make test-unit`
+// uses to give a fast, deterministic gate everywhere. See TestRuntimeCertificationOptOut.
 package overlay
 
 import (
@@ -31,12 +39,24 @@ import (
 	"time"
 )
 
+// skipRuntimeCertificationEnv is the documented opt-out for the real-engine
+// certification suite (named in the package comment above). Any non-empty
+// value disables it; the value is not interpreted, so a stale "0" cannot
+// silently re-enable GPU work in a context that asked not to do any.
+const skipRuntimeCertificationEnv = "RENDERINGGEN_SKIP_GPU_E2E"
+
 // chrononBinFor returns the real binary or skips the calling test. The binary
 // is never pinned to an absolute machine-specific path: the caller supplies
 // CHRONON_BIN, otherwise a checked-out build artifact under the workspace is
 // discovered, otherwise the test skips.
+//
+// The opt-out is checked FIRST: `make test-unit` sets it so the fast gate stays
+// fast on a machine where the binary would otherwise be discovered.
 func chrononBinFor(t *testing.T) string {
 	t.Helper()
+	if strings.TrimSpace(os.Getenv(skipRuntimeCertificationEnv)) != "" {
+		t.Skipf("%s is set: the real-engine runtime certification suite is disabled for this run", skipRuntimeCertificationEnv)
+	}
 	if bin := strings.TrimSpace(os.Getenv("CHRONON_BIN")); bin != "" {
 		if _, err := os.Stat(bin); err != nil {
 			t.Skipf("CHRONON_BIN=%s not available: %v", bin, err)

@@ -14,6 +14,7 @@ package overlay
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 	"strings"
 	"testing"
 )
@@ -340,6 +341,48 @@ func TestFinal_InvalidPresetFailsClosed(t *testing.T) {
 	if _, err := resolveOfficialPreset("preset_that_does_not_exist", "text"); err == nil {
 		t.Fatal("kind-checked resolve accepted an unknown preset")
 	}
+}
+
+// TestRuntimeCertificationOptOut pins the switch that makes `make test-unit`
+// fast and deterministic on a machine where the engine IS available. The
+// runtime suite discovers a built chronon3d_cli automatically, so without an
+// explicit opt-out `go test ./...` silently turns into minutes of real GPU
+// renders plus pixel comparison.
+//
+// The switch is asserted, not described. A skipped subtest never reaches the
+// statement after the guard, so the marker stays false — which is exactly what
+// "it skipped" means. The second case pins the other direction: an EMPTY value
+// must not disable the suite (a stray empty variable cannot silently drop the
+// certification), which is why the guard tests for non-empty instead of mere
+// presence.
+func TestRuntimeCertificationOptOut(t *testing.T) {
+	t.Run("a non-empty value skips the suite", func(t *testing.T) {
+		t.Setenv(skipRuntimeCertificationEnv, "1")
+		proceeded := false
+		t.Run("guarded test", func(t *testing.T) {
+			chrononBinFor(t)
+			proceeded = true
+		})
+		if proceeded {
+			t.Fatalf("%s=1 did not skip a test that asks for the real engine", skipRuntimeCertificationEnv)
+		}
+	})
+
+	t.Run("an empty value leaves the suite enabled", func(t *testing.T) {
+		exe, err := os.Executable()
+		if err != nil {
+			t.Skipf("cannot resolve the test binary path: %v", err)
+		}
+		t.Setenv(skipRuntimeCertificationEnv, "")
+		t.Setenv("CHRONON_BIN", exe)
+		returned := ""
+		t.Run("guarded test", func(t *testing.T) {
+			returned = chrononBinFor(t)
+		})
+		if returned != exe {
+			t.Fatalf("an empty %s disabled the suite: chrononBinFor returned %q, want the CHRONON_BIN path %q", skipRuntimeCertificationEnv, returned, exe)
+		}
+	})
 }
 
 func certificationEntityLayer(plan *Plan, def PresetDefinition) *Layer {
