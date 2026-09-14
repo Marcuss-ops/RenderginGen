@@ -14,6 +14,16 @@
 // this package, resolves each exported *Repository method to the deadline it
 // derives (directly, or through a delegation chain like Claim -> ClaimState),
 // and requires every contract method to be bound that way.
+//
+// On the deferred context migration: threading `ctx` through
+// JobRepository -> service -> server was measured at 20 interface methods x 3
+// implementations, ~125 production and ~281 test call sites. It is deliberately
+// NOT done as a drive-by — a half-finished pass leaves an availability-critical
+// module unbuildable, and it must not share a branch with other work. What makes
+// deferring it safe is this file: the bound it would provide is already enforced
+// here, structurally, over every contract and every *Repository method, with
+// delegation resolved and ghost exceptions rejected. Do the migration as its own
+// change, one package per step; until then a new unbound method cannot land.
 package postgres
 
 import (

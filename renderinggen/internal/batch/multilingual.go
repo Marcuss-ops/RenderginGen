@@ -55,12 +55,6 @@ func overlayPlanSourcePatch(plan []byte, baseHash string) (json.RawMessage, erro
 	return json.RawMessage(out), nil
 }
 
-// OverlayBinding is one language's post-base submission unit.
-type OverlayBinding struct {
-	Language string
-	Job      queue.Job
-}
-
 // BaseOutcome carries what the submitter needs from the completed base job.
 type BaseOutcome struct {
 	JobID string
