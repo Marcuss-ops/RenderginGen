@@ -15,14 +15,8 @@
     "duration_ms": 12000,
     "style_profile": "crime",
     "background": {
-      "kind": "image",
-      "fit": "cover",
-      "asset_refs": [{
-        "asset_id": "background",
-        "sha256": "52209ee36928dba960583179922a54acf045d52d44c3128c517425d4baaa4f78",
-        "url": "assets/background.jpg",
-        "media_type": "image/jpeg"
-      }]
+      "kind": "color",
+      "color": [0.9333333333333333, 0.9450980392156862, 0.9058823529411765, 1.0]
     },
     "items": [
       {

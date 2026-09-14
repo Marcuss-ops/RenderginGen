@@ -52,6 +52,18 @@ func TestFinal_AppleStyleSemanticLowering(t *testing.T) {
 			if plan.Canvas.Width != 1920 || plan.Canvas.Height != 1080 {
 				t.Errorf("canvas dimensions %dx%d, want 1920x1080", plan.Canvas.Width, plan.Canvas.Height)
 			}
+			if len(plan.Layers) == 0 || plan.Layers[0].Type != "color" {
+				t.Fatalf("background type = %q, want pale-olive color", plan.Layers[0].Type)
+			}
+			wantBackground := []float64{0.9333333333333333, 0.9450980392156862, 0.9058823529411765, 1}
+			if len(plan.Layers[0].Color) != len(wantBackground) {
+				t.Fatalf("background color = %#v, want pale olive RGBA", plan.Layers[0].Color)
+			}
+			for i, want := range wantBackground {
+				if plan.Layers[0].Color[i] != want {
+					t.Errorf("background color[%d] = %v, want %v", i, plan.Layers[0].Color[i], want)
+				}
+			}
 			if len(plan.Layers) != 7 {
 				t.Fatalf("expected 7 compiled layers, got %d", len(plan.Layers))
 			}

@@ -2,6 +2,8 @@ package overlay
 
 import (
 	"encoding/json"
+	"fmt"
+	"reflect"
 	"strings"
 	"testing"
 )
@@ -84,11 +86,10 @@ func TestCompileSemanticTextUsesExplicitCanvasLocalBox(t *testing.T) {
 	if len(layer.Size) != 2 || layer.Size[0] != 1920 || layer.Size[1] != 120 {
 		t.Fatalf("text local box = %#v, want [1920 120]", layer.Size)
 	}
-	// Chronon places the text-frame centre in canvas coordinates: a
-	// full-canvas centred safe-area text frame is centred at the canvas
-	// centre (960, 540) — not an offset from it (see resolveTextLayout).
-	if len(layer.Position) != 2 || layer.Position[0] != 960 || layer.Position[1] != 540 {
-		t.Fatalf("centered text position = %#v, want [960 540]", layer.Position)
+	// Chronon centers the text frame internally; the layer position is an
+	// offset from the canvas center, so the canonical centered value is [0,0].
+	if len(layer.Position) != 2 || layer.Position[0] != 0 || layer.Position[1] != 0 {
+		t.Fatalf("centered text position = %#v, want [0 0]", layer.Position)
 	}
 	if len(layer.TextAnimators) != 1 || layer.TextAnimators[0].Selectors[0].Unit != "glyph" {
 		t.Fatalf("ABC selector fixture was not transported: %#v", layer.TextAnimators)
@@ -316,6 +317,77 @@ func TestCompileSemanticEntityImagePopupKeepsPresetMotionAndCenters(t *testing.T
 	}
 	if layer.BoxWidth != 480 || layer.BoxHeight != 480 || layer.Fit != "contain" {
 		t.Fatalf("entity image popup geometry changed = %dx%d fit=%q", layer.BoxWidth, layer.BoxHeight, layer.Fit)
+	}
+}
+
+// TestCompileSemanticEntityImageKeepsEveryGeneratedPresetMotion pins the whole
+// preset set that can reach a generated entity image. PipelineGen's
+// imagePresetCandidates (internal/capabilities/overlays/preset_selection.go) is
+// the only selector for the generated overlay path, so every candidate it can
+// emit must lower to a CENTERED image layer that keeps that preset's own
+// official motion. RenderingGen never invents a preset, a layer or a track: the
+// lowered animation must be exactly animationForDefinition(preset).
+func TestCompileSemanticEntityImageKeepsEveryGeneratedPresetMotion(t *testing.T) {
+	// Keep in lockstep with PipelineGen's imagePresetCandidates.
+	generated := []string{"image_fast_fade", "image_slide_left", "image_slide_right", "bottom_card_rise"}
+	for _, presetID := range generated {
+		t.Run(presetID, func(t *testing.T) {
+			raw := []byte(fmt.Sprintf(`{
+              "schema_version":"renderinggen.overlay-plan.v1",
+              "plan_id":"entity-image-%[1]s","video_id":"entity-image-%[1]s",
+              "width":1920,"height":1080,"fps_num":24,"fps_den":1,
+              "items":[
+                {"id":"jordan-%[1]s","entity_id":"person:michael-jordan","kind":"entity_image","template_id":"image_popup","preset_id":"%[1]s",
+                 "start_ms":0,"end_ms":5000,
+                 "asset_refs":[{"asset_id":"jordan","sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                                 "url":"https://store.example/objects/jordan.jpg","media_type":"image/jpeg"}]}
+              ]
+            }`, presetID))
+			result, err := CompileSemantic(raw)
+			if err != nil {
+				t.Fatalf("entity image plan with %s: %v", presetID, err)
+			}
+			if len(result.Plan.Layers) != 1 {
+				t.Fatalf("compiled layers = %+v", result.Plan.Layers)
+			}
+			layer := result.Plan.Layers[0]
+			if layer.Type != "image" || layer.Asset != "assets/semantic/jordan.jpg" {
+				t.Fatalf("entity image layer = %+v", layer)
+			}
+			// The portrait is the sole rendered layer: the entity name stays
+			// producer metadata.
+			if layer.Text != "" {
+				t.Fatalf("entity image must not compile a name layer = %q", layer.Text)
+			}
+			// Geometry is the official image preset's own 480x480 contain box,
+			// untouched by the centering rule.
+			if layer.BoxWidth != 480 || layer.BoxHeight != 480 || layer.Fit != "contain" {
+				t.Fatalf("entity image geometry changed = %dx%d fit=%q", layer.BoxWidth, layer.BoxHeight, layer.Fit)
+			}
+			// Image anchors (image_right / image_left / bottom_right) must never
+			// push the portrait off-canvas: the base position is the center.
+			if len(layer.Position) != 2 || layer.Position[0] != 0 || layer.Position[1] != 0 {
+				t.Fatalf("entity image must be centered = %+v", layer.Position)
+			}
+			// The motion must be the official preset's own lowering, not an
+			// invented opacity/scale track.
+			def, err := ResolveOfficialPreset(presetID)
+			if err != nil {
+				t.Fatalf("resolve official preset %s: %v", presetID, err)
+			}
+			want, err := animationForDefinition(def)
+			if err != nil {
+				t.Fatalf("lower official preset %s motion: %v", presetID, err)
+			}
+			if want == nil || len(want.Tracks) == 0 {
+				t.Fatalf("official preset %s must own a motion", presetID)
+			}
+			if !reflect.DeepEqual(layer.Animation, want) {
+				t.Fatalf("entity image animation is not the official %s motion\n got: %+v\nwant: %+v", presetID, layer.Animation, want)
+			}
+			t.Logf("preset=%s anchor=%s motion=%s box=%dx%d position=%v tracks=%+v",
+				presetID, def.Layout.Anchor, def.Motion.ID, layer.BoxWidth, layer.BoxHeight, layer.Position, layer.Animation.Tracks)
+		})
 	}
 }
 
