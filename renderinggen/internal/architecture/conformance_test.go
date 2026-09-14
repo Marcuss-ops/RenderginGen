@@ -760,6 +760,11 @@ func TestCrossRepoRulesAreSiblingScoped(t *testing.T) {
 // costs minutes on its regexp pass. It is excluded from the race run and
 // executed un-instrumented in its own step — the assertion below demands BOTH
 // halves, so dropping the gate or silently widening the exclusion fails here.
+//
+// Both module jobs must also disable the real-engine runtime certification
+// suite (RENDERINGGEN_SKIP_GPU_E2E=1). A unit job must never depend on a binary
+// happening to be absent: the day someone adds a Chronon checkout to the
+// workspace, `go test ./...` would start rendering real MP4s on the runner.
 func TestCIRunsRaceEnabledModuleTests(t *testing.T) {
 	path := filepath.Join(RepoRoot(), ".github", "workflows", "build.yaml")
 	raw, err := os.ReadFile(path)
@@ -772,34 +777,8 @@ func TestCIRunsRaceEnabledModuleTests(t *testing.T) {
 		"test-queue":        "queue",
 		"test-objectstore":  "objectstore",
 	}
-	// jobBlock slices one CI job out of the workflow by indentation. A job
-	// header is a line indented exactly two spaces ending in ':'; its body is
-	// everything up to the next line at the same indent depth (or a top-level
-	// key). Slicing on the raw text instead matched the first "\n  " of the
-	// four-space body indent and returned an empty block.
-	jobBlock := func(job string) string {
-		var sb strings.Builder
-		in := false
-		for _, line := range strings.Split(workflow, "\n") {
-			trimmed := strings.TrimSpace(line)
-			if trimmed == line && trimmed != "" {
-				in = false // top-level key ends any job body
-				continue
-			}
-			if strings.HasPrefix(line, "  ") && !strings.HasPrefix(line, "   ") {
-				in = trimmed == job+":"
-				continue
-			}
-			if in {
-				sb.WriteString(line)
-				sb.WriteString("\n")
-			}
-		}
-		return sb.String()
-	}
-
 	for job, dir := range jobs {
-		block := jobBlock(job)
+		block := ciJobBlock(t, workflow, job)
 		if strings.TrimSpace(block) == "" {
 			t.Errorf("CI job %q is gone; the module it gates is untested", job)
 			continue
@@ -816,12 +795,84 @@ func TestCIRunsRaceEnabledModuleTests(t *testing.T) {
 			if !strings.Contains(block, "go test -count=1 ./internal/architecture/...") {
 				t.Errorf("CI job %q excludes internal/architecture from -race, so it must still run the gate in its own step", job)
 			}
+			if !strings.Contains(block, "RENDERINGGEN_SKIP_GPU_E2E=1") {
+				t.Errorf("CI job %q must disable the real-engine runtime certification suite explicitly, so the unit job cannot start real renders", job)
+			}
 			continue
 		}
 		if !strings.Contains(block, "go test -race -count=1 ./...") {
 			t.Errorf("CI job %q must run `go test -race -count=1 ./...`", job)
 		}
 	}
+}
+
+// TestCIRuntimeCertificationHasAnOwner pins the third leg of the test-tier
+// decision. The unit jobs disable the real-engine certification suite
+// (RENDERINGGEN_SKIP_GPU_E2E=1), which is correct — but it also means that
+// without this job the suite that actually renders frames would have no owner
+// anywhere: it would run only where a developer happened to have an engine, and
+// nothing would say so. The job must do three things, all asserted here:
+//
+//  1. invoke the certification tests;
+//  2. NOT set the skip variable (a job that sets it and "runs" the suite is the
+//     false green this test exists to prevent);
+//  3. be manual (workflow_dispatch) on a GPU runner, because the hosted runner
+//     has no device and an unguarded job would fail on every push.
+func TestCIRuntimeCertificationHasAnOwner(t *testing.T) {
+	path := filepath.Join(RepoRoot(), ".github", "workflows", "build.yaml")
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read %s: %v", path, err)
+	}
+	workflow := string(raw)
+
+	job := "runtime-certification"
+	if !strings.Contains(workflow, "\n  "+job+":") {
+		t.Fatalf("CI no longer declares the %q job: the unit jobs disable the runtime certification, so nothing would run it", job)
+	}
+	block := ciJobBlock(t, workflow, job)
+	if !strings.Contains(block, "./internal/overlay/") {
+		t.Errorf("CI job %q must run the certification suite under ./internal/overlay/", job)
+	}
+	if strings.Contains(block, "RENDERINGGEN_SKIP_GPU_E2E") {
+		t.Errorf("CI job %q sets RENDERINGGEN_SKIP_GPU_E2E, so it would report a green run in which every certification test skipped", job)
+	}
+	if !strings.Contains(block, "CHRONON_BIN") {
+		t.Errorf("CI job %q must point CHRONON_BIN at the engine it certifies", job)
+	}
+	if !strings.Contains(block, "workflow_dispatch") {
+		t.Errorf("CI job %q must be manual: the hosted runners have no GPU", job)
+	}
+	if !strings.Contains(block, "self-hosted") {
+		t.Errorf("CI job %q must select a GPU runner", job)
+	}
+}
+
+// ciJobBlock slices one CI job out of a workflow by indentation. A job header is
+// a line indented exactly two spaces ending in ':'; its body is everything up to
+// the next line at the same indent depth (or a top-level key). Slicing on the raw
+// text instead matched the first "\n  " of the four-space body indent and
+// returned an empty block.
+func ciJobBlock(t *testing.T, workflow, job string) string {
+	t.Helper()
+	var sb strings.Builder
+	in := false
+	for _, line := range strings.Split(workflow, "\n") {
+		trimmed := strings.TrimSpace(line)
+		if trimmed == line && trimmed != "" {
+			in = false // top-level key ends any job body
+			continue
+		}
+		if strings.HasPrefix(line, "  ") && !strings.HasPrefix(line, "   ") {
+			in = trimmed == job+":"
+			continue
+		}
+		if in {
+			sb.WriteString(line)
+			sb.WriteString("\n")
+		}
+	}
+	return sb.String()
 }
 
 // TestCIChecksOutNoSiblingRepository pins the other half of the scope table in

@@ -218,6 +218,17 @@ Point them at an install prefix with `CHRONON_HOME` (default
 CHRONON_HOME=/opt/chronon3d go test ./internal/chronon ./internal/processor -run 'Integration|EndToEnd' -v
 ```
 
+La suite di certificazione **runtime** (render reali con `chronon3d_cli`,
+confronto pixel e decodifica) è opt-in e opt-out: si attiva con `CHRONON_BIN` o
+con un build di `chronon3d_cli` presente nel workspace, e si disattiva con
+`RENDERINGGEN_SKIP_GPU_E2E=1`. Su una macchina dove il binario c'è, quindi,
+`go test ./...` esegue i render reali; per la verifica veloce e deterministica
+usare il target che rende esplicita la distinzione:
+
+```sh
+make test-unit   # tutti i moduli, senza la certificazione runtime (gate veloce)
+```
+
 To exercise the loop over the real services, start the stack and run the
 smoke script (submits a self-contained color job, polls for completion,
 downloads the artifact):

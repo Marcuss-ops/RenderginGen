@@ -94,21 +94,12 @@ func (r *Repository) Heartbeat(workerID string) error {
 	return tx.Commit()
 }
 
-// PruneWorkerHeartbeats removes heartbeat rows older than olderThan. Called
-// periodically by a background job or on heartbeat to bound table growth.
-func (r *Repository) PruneWorkerHeartbeats(olderThan time.Duration) (int64, error) {
-	ctx, cancel := r.opContext()
-	defer cancel()
-	res, err := r.db.ExecContext(ctx, `DELETE FROM worker_heartbeats WHERE heartbeat_at < now() - $1::interval`, fmt.Sprintf("%d seconds", int(olderThan.Seconds())))
-	if err != nil {
-		return 0, err
-	}
-	n, err := rowsAffected(res)
-	if err != nil {
-		return 0, err
-	}
-	return n, nil
-}
+// The heartbeat ledger is bounded by Heartbeat itself (a 7-day TTL prune in the
+// same transaction), so there is deliberately no separate PruneWorkerHeartbeats
+// entry point: a second way to bound the table would be a second source of truth
+// for its retention, and the one that had no caller could not be the live one.
+// TestEveryRepositoryOperationIsBounded fails if a bounded method appears here
+// without a contract that declares it.
 
 // List returns all registered workers sorted by ID.
 func (r *Repository) List() ([]model.Worker, error) {
