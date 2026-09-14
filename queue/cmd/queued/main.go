@@ -73,7 +73,7 @@ func main() {
 		ticker := time.NewTicker(*expireInterval)
 		defer ticker.Stop()
 		for range ticker.C {
-			n, err := svc.RequeueExpired(time.Now())
+			n, err := svc.RequeueExpired(context.Background(), time.Now())
 			if err != nil {
 				log.Printf("requeue expired: %v", err)
 				continue

@@ -187,6 +187,18 @@ func isCrossDevice(err error) bool {
 	return errors.Is(err, syscall.EXDEV)
 }
 
+// copyBufPool recycles the copy buffer of the cross-filesystem fallback. That
+// path runs once per asset that lives on a different mount from the workspace,
+// so a per-call buffer allocation is pure steady-state garbage; the pool keeps
+// it at zero after the first asset. The buffer is larger than io.Copy's
+// built-in 32 KiB because these are video-sized assets.
+var copyBufPool = sync.Pool{
+	New: func() any {
+		buf := make([]byte, 256*1024)
+		return &buf
+	},
+}
+
 func copyFile(ctx context.Context, source, dst string) error {
 	input, err := os.Open(source)
 	if err != nil {
@@ -199,9 +211,12 @@ func copyFile(ctx context.Context, source, dst string) error {
 	}
 	tmpPath := tmp.Name()
 	defer os.Remove(tmpPath)
-	if _, err := io.Copy(tmp, input); err != nil {
+	buf := copyBufPool.Get().(*[]byte)
+	_, copyErr := io.CopyBuffer(tmp, input, *buf)
+	copyBufPool.Put(buf)
+	if copyErr != nil {
 		_ = tmp.Close()
-		return err
+		return copyErr
 	}
 	if err := tmp.Close(); err != nil {
 		return err

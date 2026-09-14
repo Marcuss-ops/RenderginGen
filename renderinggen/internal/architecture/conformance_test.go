@@ -560,3 +560,301 @@ func TestStandaloneRepoIgnoresSiblingBaseline(t *testing.T) {
 		}
 	}
 }
+
+// TestResolvedScanScopeIsExplicit pins WHAT the gate actually covers, because
+// that coverage is a function of the checkout and therefore differs between the
+// full workspace and CI. The scope was previously implicit: the package comment
+// described the sibling case, nothing asserted it, and CI (which checks out this
+// repository alone) reported green while every cross-repo rule was a no-op.
+//
+// The assertions are:
+//
+//  1. target 0 is this repository, prefix-less — the scope always includes the
+//     tree the gate ships in;
+//  2. every other target carries `<sibling>/` as its prefix, names a declared
+//     sibling repo, and exists on disk — so a rule can rely on the prefix;
+//  3. when a sibling IS present, every cross-repo rule has a real carrier
+//     inside it. A sibling scan that finds no applicable file is vacuous: the
+//     rule exists but can never fire. When no sibling is present
+//     the same fact is logged instead of failed, because the standalone
+//     checkout is a legitimate configuration (see CONFORMANCE.md, "Enforcement
+//     scope").
+func TestResolvedScanScopeIsExplicit(t *testing.T) {
+	t.Setenv("CONFORMANCE_ROOT", "") // exercise the real Targets() resolution
+	targets := Targets()
+	if len(targets) == 0 {
+		t.Fatal("Targets() returned nothing; the gate has no scan scope")
+	}
+	if targets[0].Dir != RepoRoot() || targets[0].Prefix != "" {
+		t.Fatalf("targets[0] = %+v, want the repository root %q with no prefix", targets[0], RepoRoot())
+	}
+
+	siblings := targets[1:]
+	if len(siblings) > len(siblingRepos) {
+		t.Fatalf("expected at most %d sibling targets, got %d", len(siblingRepos), len(siblings))
+	}
+	for _, target := range siblings {
+		name := strings.TrimSuffix(target.Prefix, "/")
+		if target.Prefix != name+"/" {
+			t.Errorf("sibling target %+v must carry a <name>/ prefix", target)
+		}
+		declared := false
+		for _, known := range siblingRepos {
+			if name == known {
+				declared = true
+			}
+		}
+		if !declared {
+			t.Errorf("target prefix %q is not in siblingRepos %v; a rule could not name it deliberately", target.Prefix, siblingRepos)
+		}
+		if st, err := os.Stat(target.Dir); err != nil || !st.IsDir() {
+			t.Errorf("sibling target %q is not a directory: %v", target.Dir, err)
+		}
+	}
+
+	// Cross-repo rules are the ones the sibling scan is FOR. Count real carriers
+	// per rule across the sibling trees. Repo-hygiene (rootOnly) and
+	// package-scoped (nodes) rules are deliberately excluded: they describe this
+	// repository's own layout and cannot apply to a sibling.
+	crossRepoCarriers := map[string]int{}
+	rules := Rules() // hoisted: Rules() recompiles every regex
+	for _, target := range siblings {
+		_ = filepath.WalkDir(target.Dir, func(path string, d os.DirEntry, err error) error {
+			if err != nil {
+				return nil
+			}
+			rel, relErr := filepath.Rel(target.Dir, path)
+			if relErr != nil {
+				return nil
+			}
+			relSlash := filepath.ToSlash(rel)
+			if d.IsDir() {
+				if relSlash == "." {
+					return nil
+				}
+				if skipDir(relSlash, d.Name()) {
+					return filepath.SkipDir
+				}
+				return nil
+			}
+			info, statErr := d.Info()
+			if statErr != nil || info.Size() > maxFileBytes || !scannedFile(d.Name()) {
+				return nil
+			}
+			prefixed := target.Prefix + relSlash
+			for _, r := range rules {
+				if !crossRepo(r) || !r.applies(prefixed) {
+					continue
+				}
+				crossRepoCarriers[r.id]++
+			}
+			return nil
+		})
+	}
+
+	if len(siblings) == 0 {
+		t.Logf("standalone scope: no sibling repository checked out, so every cross-repo rule is UNEXERCISED here (this is the CI configuration; see CONFORMANCE.md \"Enforcement scope\")")
+		return
+	}
+
+	unenforced := make([]string, 0, len(rules))
+	for _, r := range rules {
+		if !crossRepo(r) {
+			continue
+		}
+		if crossRepoCarriers[r.id] == 0 {
+			unenforced = append(unenforced, r.id)
+		}
+	}
+	if len(unenforced) == 0 {
+		t.Logf("full-workspace scope: every cross-repo rule has carriers in %d sibling target(s)", len(siblings))
+	}
+	if len(unenforced) > 0 {
+		t.Errorf("sibling trees are checked out but these cross-repo rules have no carrier file there, so they can never fire in the full workspace: %v", unenforced)
+	}
+}
+
+// crossRepo reports whether a rule can fire on a sibling-repository path, which
+// is the only reason the gate scans the siblings at all. A `rootOnly` rule is
+// this repository's own hygiene (a sibling's hygiene belongs to the sibling's
+// gate), and a rule with `nodes` carries its own path selector instead of
+// targeting the sibling prefix. Everything else must be able to fire on a
+// `refactored/`/`Chronon3d/` carrier.
+func crossRepo(r rule) bool {
+	return !r.rootOnly && len(r.nodes) == 0 && r.textRe != nil
+}
+
+// TestCrossRepoRulesAreSiblingScoped pins the scope of every rule against the
+// table CONFORMANCE.md publishes, in both directions: a rule that silently
+// narrows itself to this repository (or one that forgets the sibling scope)
+// fails here, and so does a rule whose scope moved without the doc following.
+// It is the reason "Enforcement scope" is a checked statement, not a claim.
+func TestCrossRepoRulesAreSiblingScoped(t *testing.T) {
+	// wantScope is the audited classification of every rule id.
+	wantScope := map[string]string{
+		// This repository's own hygiene: never applied to a sibling tree.
+		"hardcoded_home_path":      "rootOnly",
+		"template_alias_lowercase": "rootOnly",
+		"partnn_filename":          "rootOnly",
+		// Scoped to a RenderingGen package by `nodes`.
+		"entity_template_inference":  "packageLocal",
+		"semantic_stats_second_pass": "packageLocal",
+		"legacy_layer_preset_field":  "packageLocal",
+		// The boundary violations this repository's CI cannot see on its own.
+		"render_plan_v1_schema":          "crossRepo",
+		"render_plan_unversioned_schema": "crossRepo",
+		"module_path_typo":               "crossRepo",
+		"template_alias_org_default":     "crossRepo",
+		"template_alias_gpe_default":     "crossRepo",
+	}
+	for _, r := range Rules() {
+		want, known := wantScope[r.id]
+		if !known {
+			t.Errorf("rule %q is not classified in the scope table; decide whether it is rootOnly, packageLocal or crossRepo and document it", r.id)
+			continue
+		}
+		switch want {
+		case "rootOnly":
+			if !r.rootOnly {
+				t.Errorf("rule %q is documented as rootOnly but is not configured that way", r.id)
+			}
+		case "packageLocal":
+			if r.rootOnly || len(r.nodes) == 0 {
+				t.Errorf("rule %q is documented as packageLocal but has rootOnly=%v nodes=%v", r.id, r.rootOnly, r.nodes)
+			}
+		case "crossRepo":
+			if !crossRepo(r) {
+				t.Errorf("rule %q is documented as crossRepo but is scoped away from sibling trees (rootOnly=%v nodes=%v)", r.id, r.rootOnly, r.nodes)
+				continue
+			}
+			for _, carrier := range []string{"refactored/internal/x.go", "Chronon3d/src/x.cpp"} {
+				if !r.applies(carrier) {
+					t.Errorf("cross-repo rule %q does not apply to %s; the sibling scan cannot enforce it", r.id, carrier)
+				}
+			}
+		}
+	}
+	for id := range wantScope {
+		found := false
+		for _, r := range Rules() {
+			if r.id == id {
+				found = true
+			}
+		}
+		if !found {
+			t.Errorf("the scope table classifies %q, which no longer exists; delete the line", id)
+		}
+	}
+}
+
+// TestCIRunsRaceEnabledModuleTests pins the CI half of the concurrency story:
+// every module job must run its tests with `-race -count=1`. The renderer's
+// Progress callback is invoked from two output-streaming goroutines and the
+// worker records that observation on the job, so an unsynchronised write is a
+// shipped data race that a plain `go test` cannot see; a cached PASS is what
+// `-count=1` removes. Both flags were added to catch exactly that, and nothing
+// but this test keeps them from being dropped again.
+//
+// The one deliberate exception is internal/architecture in the renderinggen
+// job: it is a pure file scanner, so instrumentation has nothing to observe and
+// costs minutes on its regexp pass. It is excluded from the race run and
+// executed un-instrumented in its own step — the assertion below demands BOTH
+// halves, so dropping the gate or silently widening the exclusion fails here.
+func TestCIRunsRaceEnabledModuleTests(t *testing.T) {
+	path := filepath.Join(RepoRoot(), ".github", "workflows", "build.yaml")
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read %s: %v", path, err)
+	}
+	workflow := string(raw)
+	jobs := map[string]string{ // job name -> expected working directory
+		"test-renderinggen": "renderinggen",
+		"test-queue":        "queue",
+		"test-objectstore":  "objectstore",
+	}
+	// jobBlock slices one CI job out of the workflow by indentation. A job
+	// header is a line indented exactly two spaces ending in ':'; its body is
+	// everything up to the next line at the same indent depth (or a top-level
+	// key). Slicing on the raw text instead matched the first "\n  " of the
+	// four-space body indent and returned an empty block.
+	jobBlock := func(job string) string {
+		var sb strings.Builder
+		in := false
+		for _, line := range strings.Split(workflow, "\n") {
+			trimmed := strings.TrimSpace(line)
+			if trimmed == line && trimmed != "" {
+				in = false // top-level key ends any job body
+				continue
+			}
+			if strings.HasPrefix(line, "  ") && !strings.HasPrefix(line, "   ") {
+				in = trimmed == job+":"
+				continue
+			}
+			if in {
+				sb.WriteString(line)
+				sb.WriteString("\n")
+			}
+		}
+		return sb.String()
+	}
+
+	for job, dir := range jobs {
+		block := jobBlock(job)
+		if strings.TrimSpace(block) == "" {
+			t.Errorf("CI job %q is gone; the module it gates is untested", job)
+			continue
+		}
+		if !strings.Contains(block, "working-directory: "+dir) {
+			t.Errorf("CI job %q no longer runs in %s/", job, dir)
+		}
+		if job == "test-renderinggen" {
+			// The scanner is excluded from the instrumented run and must be run
+			// separately, un-instrumented.
+			if !strings.Contains(block, "go test -race -count=1 $(go list ./... | grep -v '/internal/architecture$')") {
+				t.Errorf("CI job %q must run the concurrency-bearing packages under `-race -count=1`, excluding only internal/architecture", job)
+			}
+			if !strings.Contains(block, "go test -count=1 ./internal/architecture/...") {
+				t.Errorf("CI job %q excludes internal/architecture from -race, so it must still run the gate in its own step", job)
+			}
+			continue
+		}
+		if !strings.Contains(block, "go test -race -count=1 ./...") {
+			t.Errorf("CI job %q must run `go test -race -count=1 ./...`", job)
+		}
+	}
+}
+
+// TestCIChecksOutNoSiblingRepository pins the other half of the scope table in
+// CONFORMANCE.md: the workflow checks out THIS repository only, so cross-repo
+// rules are not exercised in CI. The golden canary legitimately clones
+// Chronon3d for the runtime image, but into a temporary directory — Targets()
+// only looks beside the checkout, so that clone must never land in the
+// workspace. If a sibling checkout is ever added here, the scope table and this
+// test must change together, which is the point: the limitation is recorded,
+// not discovered.
+func TestCIChecksOutNoSiblingRepository(t *testing.T) {
+	path := filepath.Join(RepoRoot(), ".github", "workflows", "build.yaml")
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read %s: %v", path, err)
+	}
+	for i, line := range strings.Split(string(raw), "\n") {
+		if strings.Contains(line, "repository:") {
+			t.Errorf("build.yaml:%d adds a `repository:` input (%s); a sibling checkout changes the gate's enforced scope and CONFORMANCE.md", i+1, strings.TrimSpace(line))
+		}
+		if !strings.Contains(line, "clone") {
+			continue
+		}
+		fields := strings.Fields(line)
+		if len(fields) == 0 {
+			continue
+		}
+		dest := fields[len(fields)-1]
+		if strings.HasPrefix(dest, "/tmp/") || strings.Contains(dest, "runner.temp") {
+			continue
+		}
+		if strings.Contains(strings.ToLower(dest), "chronon") || strings.Contains(strings.ToLower(dest), "refactored") {
+			t.Errorf("build.yaml:%d clones a sibling into %q, which Targets() would scan: cross-repo enforcement is no longer local-only", i+1, dest)
+		}
+	}
+}

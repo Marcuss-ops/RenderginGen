@@ -265,7 +265,13 @@ func (s *Service) Renew(id, workerID string) error {
 // RequeueExpired requeues (or permanently fails) jobs whose lease elapsed,
 // returning the number of jobs affected. Transient repository failures are
 // retried with exponential backoff and jitter (see SetRequeueRetry).
-func (s *Service) RequeueExpired(now time.Time) (int, error) {
+//
+// ctx bounds the retry loop: the backoff between attempts waits on ctx as well
+// as on the timer, so a shutdown (or a caller-imposed deadline) interrupts a
+// sweep instead of parking the goroutine for the whole retry budget. A
+// cancelled wait reports the context error — the sweep did NOT complete, and a
+// caller must not read "0 jobs" from it.
+func (s *Service) RequeueExpired(ctx context.Context, now time.Time) (int, error) {
 	maxAttempts := s.retry.MaxAttempts
 	if maxAttempts < 1 {
 		maxAttempts = 1
@@ -278,7 +284,11 @@ func (s *Service) RequeueExpired(now time.Time) (int, error) {
 		if err == nil || attempt >= maxAttempts {
 			break
 		}
-		time.Sleep(backoffDelay(s.retry, attempt))
+		select {
+		case <-ctx.Done():
+			return 0, ctx.Err()
+		case <-time.After(backoffDelay(s.retry, attempt)):
+		}
 	}
 	if err != nil {
 		return 0, err

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
 )
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -336,14 +337,46 @@ func (r MediaReceipt) ReceiptTimingMetrics() map[string]float64 {
 	return out
 }
 
+// Verification policies RenderingGen can request from Chronon. They are the
+// wire vocabulary shared by every carrier of the policy:
+//
+//	RenderRequest.ReceiptVerify / CHRONON_RECEIPT_VERIFY  (worker -> Chronon)
+//	<output>.receipt.json verification.requested_policy   (Chronon -> worker)
+//	<output>.receipt.json verification.resolved_policy    (Chronon -> worker)
+//
+// They are declared HERE, next to the numeric encoding, because chronon is the
+// module both sides of that boundary already import: the processor's policy
+// authority aliases them instead of restating the literals, so a new policy or
+// a rename cannot leave the worker and the daemon vocabulary disagreeing.
+const (
+	ReceiptVerifyFast    = "fast"
+	ReceiptVerifyNormal  = "normal"
+	ReceiptVerifyCertify = "certify"
+)
+
+// RequiresStructuredReply reports whether a verification policy promises proof
+// of the render and therefore requires a parsable render reply from the daemon.
+// fast is the compatibility tier (a foreign/older daemon may answer with a
+// plain "ok" body) and tolerates an unparsable reply; normal and certify claim
+// a full decode, so a daemon that cannot describe the result of the render it
+// was asked to prove cannot be credited with having rendered it.
+func RequiresStructuredReply(policy string) bool {
+	switch strings.ToLower(strings.TrimSpace(policy)) {
+	case ReceiptVerifyNormal, ReceiptVerifyCertify:
+		return true
+	default:
+		return false
+	}
+}
+
 // verificationPolicyCodes is the canonical numeric encoding of the receipt's
 // resolved verification policy for the worker's float64 metric map (the
 // queue/report channel carries numbers only; the readable label lives in the
 // receipt JSON itself). fast=1, normal=2, certify=3.
 var verificationPolicyCodes = map[string]float64{
-	"fast":    1,
-	"normal":  2,
-	"certify": 3,
+	ReceiptVerifyFast:    1,
+	ReceiptVerifyNormal:  2,
+	ReceiptVerifyCertify: 3,
 }
 
 // VerificationMetrics projects the receipt's verification policy + status

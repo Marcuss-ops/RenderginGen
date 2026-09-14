@@ -9,6 +9,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -24,6 +25,76 @@ func scanRenderOutput(r io.Reader, onLine func(string)) error {
 		onLine(scanner.Text())
 	}
 	return scanner.Err()
+}
+
+// renderOutputLogInterval bounds how often a repeated frame milestone from one
+// Chronon output stream is copied to the worker log. The render itself still
+// sees every line (progress parsing and the stall heartbeat are untouched); the
+// bound exists because a 24-60fps render prints tens of thousands of milestones
+// and every one of them would otherwise pay a formatted log write on the
+// standard logger's mutex, which every GPU lane shares.
+//
+// It is deliberately a compile-time constant, not an environment knob. The only
+// setting that matters is "log every line", which is precisely the behaviour
+// this bound exists to remove, so there is nothing an operator should tune per
+// host — and making it configurable would put that regression one typo away in
+// production. The window stays a constructor parameter (newRenderOutputSampler
+// takes it), so tests pin it exactly without sleeping.
+const renderOutputLogInterval = 5 * time.Second
+
+// renderOutputSampler throttles the raw renderer output written to the log and
+// remembers the last suppressed milestone so the stream can still report where
+// the render stopped. The clock is a field so tests can pin the window without
+// sleeping.
+type renderOutputSampler struct {
+	interval time.Duration
+	now      func() time.Time
+
+	mu      sync.Mutex
+	last    map[string]time.Time
+	pending map[string]string
+}
+
+func newRenderOutputSampler(interval time.Duration) *renderOutputSampler {
+	return &renderOutputSampler{
+		interval: interval,
+		now:      time.Now,
+		last:     make(map[string]time.Time),
+		pending:  make(map[string]string),
+	}
+}
+
+// allowProgress reports whether a frame-milestone line is logged now. A
+// suppressed line must be handed to remember so the stream can flush the final
+// position when it ends.
+func (s *renderOutputSampler) allowProgress(stream string) bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	now := s.now()
+	if last, ok := s.last[stream]; ok && now.Sub(last) < s.interval {
+		return false
+	}
+	s.last[stream] = now
+	delete(s.pending, stream)
+	return true
+}
+
+// remember buffers the most recent throttled milestone of a stream.
+func (s *renderOutputSampler) remember(stream, line string) {
+	s.mu.Lock()
+	s.pending[stream] = line
+	s.mu.Unlock()
+}
+
+// flush returns the last throttled milestone of a stream and clears it, so the
+// end of the stream reports the final frame position instead of dropping it
+// with the throttle window.
+func (s *renderOutputSampler) flush(stream string) (string, bool) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	line, ok := s.pending[stream]
+	delete(s.pending, stream)
+	return line, ok
 }
 
 // progressFrameRE matches the frame-position progress lines Chronon emits on

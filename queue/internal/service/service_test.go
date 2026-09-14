@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -110,7 +111,7 @@ func TestServiceLeaseExpiredMetric(t *testing.T) {
 	}
 
 	time.Sleep(30 * time.Millisecond)
-	n, err := svc.RequeueExpired(time.Now())
+	n, err := svc.RequeueExpired(context.Background(), time.Now())
 	if err != nil || n != 1 {
 		t.Fatalf("requeue expired: n=%d err=%v", n, err)
 	}

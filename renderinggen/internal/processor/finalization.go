@@ -36,7 +36,8 @@ func NewParentFinalizer(q ParentQueue, store *storage.Client, assembler chronon.
 	return &ParentFinalizer{queue: q, store: store, assembler: assembler, publisher: publisher, workerID: workerID, outputDir: outputDir}
 }
 
-// Finalize attempts one parent finalization. It returns finalized=false when
+// Finalize attempts one parent finalization for a caller that already knows the
+// frame range the child family must cover. It returns finalized=false when
 // children are incomplete or another worker owns finalization.
 //
 // The validation happens twice — once against the pre-claim read, once against
@@ -50,6 +51,47 @@ func (f *ParentFinalizer) Finalize(ctx context.Context, parentID string, start, 
 	if err != nil {
 		return false, queue.Artifact{}, err
 	}
+	return f.finalize(ctx, parentID, start, end, children)
+}
+
+// FinalizeFromChildren is the worker's completion-path entry point. The
+// expected frame range is a property of the child family, so learning it meant
+// reading the family and then handing the finalizer bounds it immediately
+// re-read anyway — one duplicate Children() round-trip per completed chunk on
+// the post-processing path. Deriving the range here, from the same read that is
+// validated, removes that round-trip without changing the contract: the range
+// the pre-claim read validates against is still the range the observed family
+// spans.
+func (f *ParentFinalizer) FinalizeFromChildren(ctx context.Context, parentID string) (bool, queue.Artifact, error) {
+	children, err := f.queue.Children(ctx, parentID)
+	if err != nil {
+		return false, queue.Artifact{}, err
+	}
+	start, end, ok := childFrameRange(children)
+	if !ok {
+		return false, queue.Artifact{}, fmt.Errorf("parent finalizer: child family of %s has no frame range to assemble", parentID)
+	}
+	return f.finalize(ctx, parentID, start, end, children)
+}
+
+// childFrameRange returns the half-open [start, end) frame range a child family
+// spans, or false when the family is empty or a boundary child carries no frame
+// range. It deliberately takes the family as an argument: the range is only
+// meaningful relative to the read it came from.
+func childFrameRange(children []*queue.Job) (int64, int64, bool) {
+	if len(children) == 0 {
+		return 0, 0, false
+	}
+	first, last := children[0], children[len(children)-1]
+	if first == nil || last == nil || first.FrameRange == nil || last.FrameRange == nil {
+		return 0, 0, false
+	}
+	return first.FrameRange.Start, last.FrameRange.End, true
+}
+
+// finalize runs the finalization protocol against an already-read pre-claim
+// child family, so the caller never pays for the same read twice.
+func (f *ParentFinalizer) finalize(ctx context.Context, parentID string, start, end int64, children []*queue.Job) (bool, queue.Artifact, error) {
 	if err := queue.ValidateChildren(children, start, end); err != nil {
 		return false, queue.Artifact{}, err
 	}

@@ -268,8 +268,14 @@ type Layer struct {
 	DurationFrames int64           `json:"duration_frames"`
 	Animation      *LayerAnimation `json:"animation,omitempty"`
 	TextAnimators  []TextAnimator  `json:"text_animators,omitempty"`
-	Opacity        float64         `json:"opacity,omitempty"`
-	Loop           bool            `json:"loop,omitempty"`
+	// Opacity is a POINTER so an explicit 0 survives the wire. With a plain
+	// float64 + omitempty the contract's "opacity 0 = invisible" collapsed
+	// into "key absent", and the renderer's decoder then treated the layer as
+	// fully opaque: the one value the contract documents as special was the
+	// one value that could not be expressed. Nil means "not declared" (the
+	// renderer default applies).
+	Opacity *float64 `json:"opacity,omitempty"`
+	Loop    bool     `json:"loop,omitempty"`
 }
 type LayerStyle struct {
 	Font     string       `json:"font,omitempty"`

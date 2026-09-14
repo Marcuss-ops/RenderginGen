@@ -30,7 +30,18 @@ jobs:
         run: test -z "$(gofmt -l .)" || { gofmt -l .; echo "run gofmt -w on the files above"; exit 1; }
       - run: go build ./...
       - run: go vet ./...
-      - run: go test ./...
+      # -race is not optional here: the renderer's Progress callback is invoked
+      # from BOTH of its output-streaming goroutines and the worker records that
+      # observation on the job, so an unsynchronised write is a shipped data
+      # race that a plain `go test` cannot see. -count=1 keeps a cached PASS
+      # from hiding it.
+      #
+      # The architecture gate is excluded on purpose (and runs in the next
+      # step): it is a pure file scanner, so race instrumentation buys nothing
+      # there and only slows its regexp pass down by minutes. Every package that
+      # actually executes concurrent code is still instrumented.
+      - run: go test -race -count=1 $(go list ./... | grep -v '/internal/architecture$')
+      - run: go test -count=1 ./internal/architecture/...
 
   test-queue:
     name: Build & test queue
@@ -47,7 +58,9 @@ jobs:
         run: test -z "$(gofmt -l .)" || { gofmt -l .; echo "run gofmt -w on the files above"; exit 1; }
       - run: go build ./...
       - run: go vet ./...
-      - run: go test ./...
+      # The claim/lease paths are the queue's concurrency surface: a race here
+      # means two workers can own one job.
+      - run: go test -race -count=1 ./...
 
   test-objectstore:
     name: Build & test objectstore
@@ -64,7 +77,7 @@ jobs:
         run: test -z "$(gofmt -l .)" || { gofmt -l .; echo "run gofmt -w on the files above"; exit 1; }
       - run: go build ./...
       - run: go vet ./...
-      - run: go test ./...
+      - run: go test -race -count=1 ./...
 
   publish-worker:
     name: Publish renderinggen-worker

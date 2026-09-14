@@ -5,7 +5,6 @@
 package postgres
 
 import (
-	"context"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -18,7 +17,8 @@ import (
 // Fail marks a running job failed. Jobs that have not exhausted their attempts
 // are requeued; otherwise they are permanently failed.
 func (r *Repository) Fail(id, workerID, reason string) error {
-	ctx := context.Background()
+	ctx, cancel := r.opContext()
+	defer cancel()
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
@@ -78,7 +78,8 @@ func (r *Repository) Fail(id, workerID, reason string) error {
 
 // Renew extends the lease for a running job owned by workerID.
 func (r *Repository) Renew(id, workerID string) error {
-	ctx := context.Background()
+	ctx, cancel := r.opContext()
+	defer cancel()
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
@@ -93,7 +94,11 @@ func (r *Repository) Renew(id, workerID string) error {
 	if err != nil {
 		return err
 	}
-	if n, _ := res.RowsAffected(); n == 0 {
+	n, err := rowsAffected(res)
+	if err != nil {
+		return err
+	}
+	if n == 0 {
 		return fmt.Errorf("job %s is not running or not owned by %s", id, workerID)
 	}
 
@@ -115,7 +120,8 @@ func (r *Repository) Renew(id, workerID string) error {
 
 // Retry resets a failed job back to pending state for re-execution.
 func (r *Repository) Retry(id string) error {
-	ctx := context.Background()
+	ctx, cancel := r.opContext()
+	defer cancel()
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
@@ -161,7 +167,8 @@ func (r *Repository) Retry(id string) error {
 // ended without a re-render. Attempts are deliberately NOT incremented: every
 // claim that would have invoked Chronon already happened.
 func (r *Repository) Cancel(id string) error {
-	ctx := context.Background()
+	ctx, cancel := r.opContext()
+	defer cancel()
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
@@ -226,7 +233,9 @@ func (r *Repository) SetProgress(id, workerID string, p model.Progress) error {
 	if p.TotalFrames > 0 && p.FramesDone > p.TotalFrames {
 		return fmt.Errorf("job %s: frames_done %d exceeds frames_total %d", id, p.FramesDone, p.TotalFrames)
 	}
-	res, err := r.db.ExecContext(context.Background(), `
+	ctx, cancel := r.opContext()
+	defer cancel()
+	res, err := r.db.ExecContext(ctx, `
 		UPDATE render_jobs
 		SET progress_frames_done = $2,
 		    progress_total_frames = $3,
@@ -237,10 +246,14 @@ func (r *Repository) SetProgress(id, workerID string, p model.Progress) error {
 	if err != nil {
 		return err
 	}
-	if n, _ := res.RowsAffected(); n == 0 {
+	n, err := rowsAffected(res)
+	if err != nil {
+		return err
+	}
+	if n == 0 {
 		// Distinguish "unknown job" from "not the lease owner" for callers.
 		var state string
-		err := r.db.QueryRowContext(context.Background(), `SELECT state FROM render_jobs WHERE id = $1`, id).Scan(&state)
+		err := r.db.QueryRowContext(ctx, `SELECT state FROM render_jobs WHERE id = $1`, id).Scan(&state)
 		if errors.Is(err, sql.ErrNoRows) {
 			return fmt.Errorf("job %s: %w", id, repository.ErrNotFound)
 		}

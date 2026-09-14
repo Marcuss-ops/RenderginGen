@@ -9,6 +9,7 @@ import (
 
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/chronon"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/media"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/metricnames"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/queue"
 )
 
@@ -99,8 +100,8 @@ func (p *Processor) FinalizeJob(ctx context.Context, prepared *PreparedJob) (que
 			}
 		}
 		probeUS := float64(time.Since(probeStart).Microseconds())
-		metrics["probe_us"] = probeUS
-		metrics["probe_ms"] = probeUS / 1000
+		metrics[metricnames.ProbeUS] = probeUS
+		metrics[metricnames.ProbeMS] = probeUS / 1000
 
 		if metadata.ProfileID != "" {
 			profile, err := media.ResolveProfile(metadata.ProfileID)

@@ -107,6 +107,44 @@ with one of those names is now scanned; if a genuinely generated tree is ever
 nested under a source tree, add an explicit relative pattern for it instead of
 widening the list back to any depth.
 
+## Enforcement scope
+
+What the gate covers depends on **what is checked out beside this repository**,
+and CI and a developer workspace are not the same environment. The difference is
+recorded here so a green CI run is never mistaken for "every rule was
+enforced".
+
+| | `test-renderinggen` CI job | `make test-architecture` in the workspace |
+|---|---|---|
+| scan targets | this repository only (`Targets()` finds no siblings) | this repository + `refactored/` + `Chronon3d/` |
+| repo-hygiene rules (`rootOnly`) | enforced | enforced |
+| package-scoped rules (`nodes`) | enforced | enforced |
+| cross-repo rules | **not exercised** | enforced |
+| sibling ledger entries | ignored (`AbsentSibling`) | verified, and staleness-checked |
+| boundary contract test (overlay → `chronon.render-plan.v2`) | skips (sibling schema absent) | runs |
+
+The consequence is explicit: **a violation introduced inside a sibling
+repository is not caught by this repository's CI.** It is caught by
+`make test-architecture` in the full workspace and, ultimately, by the sibling
+repository's own gate. The cross-repo rules exist to reject a violation of *this*
+boundary wherever its carrier lives; this repository's CI is not a substitute for
+the sibling's enforcement.
+
+Three tests keep this table from drifting into a claim:
+
+- `TestResolvedScanScopeIsExplicit` asserts the resolved targets (root first,
+  prefix-less; every sibling carrying a `<name>/` prefix that names a declared
+  sibling and resolves on disk) and, in the full workspace, that every cross-repo
+  rule has a real carrier file in a sibling tree. A sibling scan that finds no
+  applicable file is vacuous — the rule exists but can never fire.
+- `TestCrossRepoRulesAreSiblingScoped` classifies every rule id as `rootOnly`,
+  package-scoped or cross-repo, in both directions, and proves each cross-repo
+  rule applies to a `refactored/`/`Chronon3d/` carrier.
+- `TestCIChecksOutNoSiblingRepository` pins the CI half: the workflow checks out
+  this repository alone, and the golden canary's `Chronon3d` clone lands in a
+  temporary directory, never beside the checkout. Adding a sibling checkout is a
+  deliberate change that must update this section in the same commit.
+
 ## Run it
 
 ```bash
@@ -117,6 +155,13 @@ make test-architecture
 
 CI runs it automatically: the `test-renderinggen` job executes
 `go test ./...` inside `renderinggen`, which includes the gate.
+
+Each module job runs its tests with `-race -count=1`
+(`TestCIRunsRaceEnabledModuleTests` pins this). `-race` is not decoration here:
+the renderer invokes its `Progress` callback from **both** output-streaming
+goroutines and the worker records that observation on the job, so an
+unsynchronised write is a shipped data race a plain `go test` cannot see; and
+`-count=1` stops a cached `PASS` from standing in for a fresh run.
 
 The gate also validates the production path end to end:
 

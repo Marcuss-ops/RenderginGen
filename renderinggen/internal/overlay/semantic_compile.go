@@ -107,11 +107,21 @@ func compileSemantic(raw []byte) (*Plan, []Asset, Stats, []string, error) {
 		layer := Layer{ID: "background", Type: layerKind, BoxWidth: src.Width, BoxHeight: src.Height,
 			Size: []float64{float64(src.Width), float64(src.Height)},
 			Fit:  bg.Fit, StartFrame: 0}
-		if layerKind != "color" && layer.Fit == "" {
-			layer.Fit = "cover"
+		if layerKind != "color" {
+			// One gate for the background fit: validated against the closed set
+			// the render contract honours, defaulted to the deterministic
+			// crop-to-fill, never silently downgraded.
+			fit, err := resolveBackgroundFit(bg.Fit)
+			if err != nil {
+				return nil, nil, Stats{}, nil, err
+			}
+			layer.Fit = fit
 		}
 		if bg.Opacity != nil {
-			layer.Opacity = *bg.Opacity
+			// Declared opacity (including an explicit 0) is carried verbatim as
+			// a pointer so the wire cannot lose the "invisible" contract.
+			opacity := *bg.Opacity
+			layer.Opacity = &opacity
 		}
 		if layerKind == "color" {
 			layer.Color = append([]float64(nil), bg.Color...)
@@ -232,7 +242,10 @@ func compileSemantic(raw []byte) (*Plan, []Asset, Stats, []string, error) {
 		wmLayer := Layer{ID: "watermark", StartFrame: 0, DurationFrames: plan.Canvas.DurationFrames,
 			Style: style, Position: position, Size: size}
 		if wm.Opacity != nil {
-			wmLayer.Opacity = *wm.Opacity
+			// Same contract as the background: opacity 0 is a declared value,
+			// not an absent key.
+			opacity := *wm.Opacity
+			wmLayer.Opacity = &opacity
 		}
 		if wm.Text != "" && len(wm.AssetRefs) == 0 {
 			// Text-only watermark.
@@ -295,6 +308,32 @@ func compileSemantic(raw []byte) (*Plan, []Asset, Stats, []string, error) {
 	// fingerprints reproducible. The plan stays typed; the caller marshals it
 	// exactly once at the Chronon boundary.
 	return &plan, registry.Assets(), stats, unknown, nil
+}
+
+// backgroundFits is the closed set of fits the render contract honours. It is
+// the same vocabulary the plan decoder understands (cover|contain|stretch|
+// none); every other spelling was previously accepted here and silently
+// downgraded to cover by the decoder, so a producer could ask for a treatment
+// that never happened and see no error anywhere — the historical "blur_cover"
+// background hint did exactly that. Naming the set once, at the compiler,
+// makes an unsupported fit a compile failure instead of a silent visual
+// substitution.
+var backgroundFits = map[string]struct{}{
+	"cover": {}, "contain": {}, "stretch": {}, "none": {},
+}
+
+// resolveBackgroundFit validates the requested background fit. Empty means the
+// deterministic crop-to-fill default ("cover"), which fills the canvas at any
+// source aspect ratio.
+func resolveBackgroundFit(requested string) (string, error) {
+	fit := strings.ToLower(strings.TrimSpace(requested))
+	if fit == "" {
+		return "cover", nil
+	}
+	if _, ok := backgroundFits[fit]; !ok {
+		return "", fmt.Errorf("overlay: unsupported background fit %q (supported: cover, contain, stretch, none)", requested)
+	}
+	return fit, nil
 }
 
 // unknownTemplates returns the sorted, de-duplicated template_ids of the items
@@ -482,7 +521,7 @@ func compileVideoOverlayLayer(ri resolvedItem, src *semanticPlan, registry *asse
 		if opacity < 0 || opacity > 1 {
 			return Layer{}, fmt.Errorf("overlay: video overlay item %q has opacity %v outside [0,1]", ri.Item.ID, opacity)
 		}
-		layer.Opacity = opacity
+		layer.Opacity = &opacity
 	}
 	return layer, nil
 }

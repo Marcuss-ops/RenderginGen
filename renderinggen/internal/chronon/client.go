@@ -326,15 +326,28 @@ func (c *Client) Render(ctx context.Context, req RenderRequest) error {
 	lastActivity.Store(time.Now().UnixNano())
 
 	var streamFailed atomic.Bool
+	// Output sampling: every line still feeds progress parsing and the stall
+	// heartbeat, but only diagnostics and a bounded sample of frame milestones
+	// pay a formatted write on the standard logger's mutex (shared by every GPU
+	// lane). See renderOutputSampler.
+	outputLog := newRenderOutputSampler(renderOutputLogInterval)
 	streamLines := func(r io.Reader, prefix string) {
 		if err := scanRenderOutput(r, func(line string) {
 			lastActivity.Store(time.Now().UnixNano())
-			log.Printf("[chronon %s] %s", prefix, line)
-			if req.Progress != nil {
-				if progress, ok := parseProgressLine(line, req.TotalFrames); ok {
+			if progress, ok := parseProgressLine(line, req.TotalFrames); ok {
+				if outputLog.allowProgress(prefix) {
+					log.Printf("[chronon %s] %s", prefix, line)
+				} else {
+					outputLog.remember(prefix, line)
+				}
+				if req.Progress != nil {
 					req.Progress(progress)
 				}
+				return
 			}
+			// Anything that is not a frame milestone is a diagnostic (engine
+			// log, warning, error) and is always forwarded.
+			log.Printf("[chronon %s] %s", prefix, line)
 		}); err != nil {
 			// An output-stream error (a single line beyond the cap, or a pipe
 			// failure) must abort loudly. Silently stopping the scanner would
@@ -343,6 +356,12 @@ func (c *Client) Render(ctx context.Context, req RenderRequest) error {
 			streamFailed.Store(true)
 			log.Printf("[chronon WARN] output stream %s failed: %v; aborting render", prefix, err)
 			cancel()
+		}
+		// The stream ended: report the last milestone the throttle suppressed,
+		// otherwise the log would show a render stopping seconds before its real
+		// final frame.
+		if line, ok := outputLog.flush(prefix); ok {
+			log.Printf("[chronon %s] %s (final)", prefix, line)
 		}
 	}
 

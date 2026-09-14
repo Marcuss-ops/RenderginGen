@@ -69,3 +69,65 @@ func TestTrackerForget(t *testing.T) {
 		t.Fatalf("want nil snapshot after Forget, got %+v", p)
 	}
 }
+
+func TestTrackerCurrentReportsMostRecentlyObservedJob(t *testing.T) {
+	tr := NewProgressTracker()
+	if p := tr.Current(); p != nil {
+		t.Fatalf("want nil current for an idle tracker, got %+v", p)
+	}
+	tr.Observe("job-1", 10, 100)
+	tr.Observe("job-2", 20, 100)
+	tr.Observe("job-1", 30, 100)
+	p := tr.Current()
+	if p == nil {
+		t.Fatal("want current snapshot, got nil")
+	}
+	if p.JobID != "job-1" || p.FramesDone != 30 {
+		t.Fatalf("current = %s/%d, want the most recently observed job-1/30", p.JobID, p.FramesDone)
+	}
+}
+
+// TestTrackerCurrentFallsBackWhenLatestJobIsForgotten pins the lane hand-off:
+// the finished job must not keep answering readers, and the render still in
+// flight must be reported instead of nothing.
+func TestTrackerCurrentFallsBackWhenLatestJobIsForgotten(t *testing.T) {
+	tr := NewProgressTracker()
+	tr.Observe("job-1", 10, 100)
+	tr.Observe("job-2", 40, 100)
+	tr.Forget("job-2")
+
+	p := tr.Current()
+	if p == nil {
+		t.Fatal("want the remaining live render, got nil")
+	}
+	if p.JobID != "job-1" {
+		t.Fatalf("current = %q, want job-1 (job-2 was forgotten)", p.JobID)
+	}
+
+	tr.Forget("job-1")
+	if p := tr.Current(); p != nil {
+		t.Fatalf("want nil current when every lane is idle, got %+v", p)
+	}
+}
+
+// TestTrackerConcurrentLanesDoNotShareState exercises the per-entry locking
+// under the race detector: concurrent observations of different jobs (the GPU
+// lanes) alongside concurrent readers (health + pusher).
+func TestTrackerConcurrentLanesDoNotShareState(t *testing.T) {
+	tr := NewProgressTracker()
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		for i := int64(1); i <= 500; i++ {
+			tr.Observe("lane-a", i, 500)
+			tr.Observe("lane-b", i, 500)
+		}
+	}()
+	for i := 0; i < 500; i++ {
+		tr.Snapshot("lane-a")
+		tr.Current()
+	}
+	<-done
+	tr.Forget("lane-a")
+	tr.Forget("lane-b")
+}

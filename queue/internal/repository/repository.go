@@ -7,6 +7,7 @@ import (
 	"errors"
 	"time"
 
+	"github.com/Marcuss-ops/RenderingGen/queue/client"
 	"github.com/Marcuss-ops/RenderingGen/queue/internal/model"
 )
 
@@ -18,9 +19,32 @@ var ErrNotFound = errors.New("job not found")
 // to 409 Conflict on submit: transient storage failures must stay
 // distinguishable from duplicates so producers do not treat an outage as an
 // idempotent success.
-var ErrJobExists = errors.New("job already exists")
+//
+// It ALIASES client.ErrJobExists rather than declaring a second sentinel with
+// the same message. Two values for one fact made errors.Is depend on which
+// package's copy a layer happened to return: the server matches the repository
+// sentinel while the producer client matches its own, so a future path that
+// returned the other copy would stop being recognized as "already exists" and
+// a replay would be reported as a failure (or, worse, an outage as a
+// duplicate). The public wire contract owns the value; the repository re-exports
+// it.
+var ErrJobExists = client.ErrJobExists
 
 // JobRepository is the storage contract for the central job queue.
+//
+// It deliberately carries NO context parameter. Caller cancellation therefore
+// cannot be propagated through this interface, which makes the BOUND of every
+// operation the implementation's own responsibility: a backend must bound the
+// work it performs (the PostgreSQL backend derives a per-operation deadline —
+// see its opContext) so a stalled connection, a lock wait or a mid-failover
+// server can never pin the calling HTTP handler or worker goroutine forever.
+// An implementation that issues an unbounded statement is an availability bug,
+// not a style choice.
+//
+// Propagating the request context through this interface (and the service
+// layer above it) remains the correct long-term shape; it is a repo-wide
+// signature change that has not been made yet, and until it is, the deadline is
+// enforced here.
 type JobRepository interface {
 	// Submit enqueues a job. The ID is required and must be unique.
 	Submit(job model.Job) error

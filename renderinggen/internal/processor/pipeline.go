@@ -407,10 +407,16 @@ func (p *Processor) PrepareJob(ctx context.Context, job *queue.Job) (*PreparedJo
 // prefetchWarmAssets primes Chronon's persistent image/video cache from the
 // already verified workspace. The background and at most three image assets
 // are selected deterministically, preserving every asset in the plan while
-// bounding warm-up work on high-cardinality scenes. The selected IPC prefetch
-// requests run concurrently: they are independent content-addressed assets and
-// serial round-trips only extend the prepare→GPU handoff gap. A warm-up failure
-// is diagnostic only: the materialized files remain authoritative for Render.
+// bounding warm-up work on high-cardinality scenes.
+//
+// The requests are issued CONCURRENTLY and NOT awaited. A warm-up failure is
+// diagnostic only (the materialized files remain authoritative for Render), yet
+// the previous shape blocked the prepare stage on up to four IPC round-trips:
+// an optional cache warm-up was charged to the prepare→GPU handoff — the very
+// interval RecordGPULaneWait exists to measure — and it delayed the lane from
+// starting on a job whose render did not depend on it. Each request is bounded
+// by the IPC client's own service timeout, so the detached goroutines cannot
+// accumulate.
 func (p *Processor) prefetchWarmAssets(ctx context.Context, root string, assets []queue.AssetRef) {
 	if p == nil || p.assetPrefetcher == nil {
 		return
@@ -438,18 +444,19 @@ func (p *Processor) prefetchWarmAssets(ctx context.Context, root string, assets 
 		seen[path] = struct{}{}
 		selected = append(selected, path)
 	}
-	var wg sync.WaitGroup
-	wg.Add(len(selected))
+	// context.WithoutCancel detaches the warm-up from the prepare deadline so a
+	// cancelled prepare (lost lease, shutdown) does not abort a cache write into
+	// Chronon's own process while still keeping the request bounded by the IPC
+	// client's service timeout.
+	warmCtx := context.WithoutCancel(ctx)
 	for _, path := range selected {
 		path := path
 		go func() {
-			defer wg.Done()
-			if err := p.assetPrefetcher.PrefetchAsset(ctx, path); err != nil {
+			if err := p.assetPrefetcher.PrefetchAsset(warmCtx, path); err != nil {
 				log.Printf("chronon asset warm-up skipped: path=%s err=%v", path, err)
 				return
 			}
 			log.Printf("chronon asset warm-up complete: path=%s", path)
 		}()
 	}
-	wg.Wait()
 }
