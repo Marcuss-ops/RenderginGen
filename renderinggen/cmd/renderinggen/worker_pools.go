@@ -255,7 +255,7 @@ func runPostPool(ctx context.Context, q *queue.Client, proc *processor.Processor
 				artifact.CopyEligible, artifact.Backend, artifact.FrameCount, artifact.Width, artifact.Height)
 			processor.ReportComplete(ctx, q, job.ID, artifact, true)
 			if parentFinalizer != nil && job.ParentJobID != "" {
-				tryFinalizeParent(ctx, q, parentFinalizer, job.ParentJobID)
+				tryFinalizeParent(ctx, parentFinalizer, job.ParentJobID)
 			}
 			// Cleanup is intentionally after Complete/parent-finalize: the
 			// queue is the durable record and parent assembly reads the
@@ -270,19 +270,17 @@ func runPostPool(ctx context.Context, q *queue.Client, proc *processor.Processor
 // observed before its siblings, so an incomplete parent is normal. The
 // finalizer itself performs the second children read and atomic claim, which
 // makes concurrent attempts and worker restarts safe.
-func tryFinalizeParent(ctx context.Context, q *queue.Client, finalizer *processor.ParentFinalizer, parentID string) {
-	children, err := q.Children(ctx, parentID)
-	if err != nil || len(children) == 0 {
-		if err != nil {
-			log.Printf("parent %s inspect children: %v", parentID, err)
-		}
-		return
-	}
-	first, last := children[0], children[len(children)-1]
-	if first == nil || last == nil || first.FrameRange == nil || last.FrameRange == nil {
-		return
-	}
-	finalized, artifact, err := finalizer.Finalize(ctx, parentID, first.FrameRange.Start, last.FrameRange.End)
+//
+// It stays SYNCHRONOUS on the post pool, deliberately. A child completion is the
+// only trigger for parent finalization in this worker — there is no periodic
+// sweep that would adopt a detached attempt — so detaching it would let one
+// failed attempt strand the parent until an unrelated event re-triggered it.
+// What it does NOT do is pay for the child family twice: the finalizer derives
+// the expected frame range from the same read it validates
+// (ParentFinalizer.FinalizeFromChildren), so a completed chunk no longer issues
+// a Children() round-trip only to learn the range it spans.
+func tryFinalizeParent(ctx context.Context, finalizer *processor.ParentFinalizer, parentID string) {
+	finalized, artifact, err := finalizer.FinalizeFromChildren(ctx, parentID)
 	if err != nil {
 		// Incomplete children and a competing finalizer are expected during the
 		// normal fan-in; the queue remains the source of truth for retry.

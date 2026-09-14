@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"fmt"
 	"sync"
 	"testing"
@@ -100,7 +101,7 @@ func TestServiceConcurrentRenewSingleOwner(t *testing.T) {
 	if s := svc.Stats(); s.Running != 1 {
 		t.Fatalf("job should still be running, got %+v", s)
 	}
-	if n, err := svc.RequeueExpired(time.Now()); err != nil || n != 0 {
+	if n, err := svc.RequeueExpired(context.Background(), time.Now()); err != nil || n != 0 {
 		t.Fatalf("job should hold a fresh lease: requeued=%d err=%v", n, err)
 	}
 }
@@ -130,7 +131,7 @@ func TestServiceConcurrentRequeueThenClaim(t *testing.T) {
 	time.Sleep(2 * lease) // let all leases expire
 
 	// Requeue the expired leases, then re-claim concurrently.
-	if n, err := svc.RequeueExpired(time.Now()); err != nil || n != jobs {
+	if n, err := svc.RequeueExpired(context.Background(), time.Now()); err != nil || n != jobs {
 		t.Fatalf("requeue expired: want %d, got %d err=%v", jobs, n, err)
 	}
 

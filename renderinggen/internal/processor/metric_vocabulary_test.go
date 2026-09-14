@@ -1,11 +1,16 @@
 package processor
 
 import (
+	"go/ast"
+	"go/parser"
+	"go/token"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"regexp"
 	"runtime"
 	"sort"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -22,28 +27,118 @@ func processorDir(t *testing.T) string {
 	return filepath.Dir(source)
 }
 
-// productionSources returns the package's non-test Go files.
+// moduleRoot resolves the renderinggen module root from this package's source
+// directory (<module>/internal/processor -> <module>).
+func moduleRoot(t *testing.T) string {
+	t.Helper()
+	return filepath.Join(processorDir(t), "..", "..")
+}
+
+// productionSources returns every non-test Go source of the MODULE, keyed by
+// module-relative slash path.
+//
+// The scan is module-wide on purpose. It used to read only this package, which
+// left the same class of typo unguarded one directory away: the artifact ledger
+// mirror (internal/artifactdb) projects metric names into its own SQLite
+// columns, and the CLI tools under cmd/ build metric maps for reports. A name
+// written there with a typo is persisted just as permanently as one written
+// here.
 func productionSources(t *testing.T) map[string]string {
 	t.Helper()
-	dir := processorDir(t)
-	entries, err := os.ReadDir(dir)
+	root := moduleRoot(t)
+	out := map[string]string{}
+	err := filepath.WalkDir(root, func(path string, entry fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if entry.IsDir() {
+			name := entry.Name()
+			if path != root && (strings.HasPrefix(name, ".") || name == "testdata" || name == "node_modules") {
+				return filepath.SkipDir
+			}
+			return nil
+		}
+		name := entry.Name()
+		if !strings.HasSuffix(name, ".go") || strings.HasSuffix(name, "_test.go") {
+			return nil
+		}
+		raw, readErr := os.ReadFile(path)
+		if readErr != nil {
+			return readErr
+		}
+		rel, relErr := filepath.Rel(root, path)
+		if relErr != nil {
+			return relErr
+		}
+		out[filepath.ToSlash(rel)] = string(raw)
+		return nil
+	})
 	if err != nil {
 		t.Fatal(err)
 	}
+	if len(out) == 0 {
+		t.Fatal("no production sources found; the vocabulary check would be vacuous")
+	}
+	if len(out) < 40 {
+		t.Fatalf("only %d production sources found under %s; the module-wide walk is no longer covering the module", len(out), root)
+	}
+	return out
+}
+
+// metricConstValues parses internal/metricnames' own source and returns every
+// string constant it declares, name -> value. The test needs the VALUES of the
+// constants the pipeline references (metrics[metricnames.ProbeUS] carries no
+// name of its own), and reading them from source keeps the vocabulary single-
+// sourced: nothing in this test restates a metric name.
+//
+// It is also the only check that can catch the drift the vocabulary package
+// exists to prevent: a constant declared but never registered in the package's
+// `vocab` map compiles fine, yet Unit() then reports it as undeclared and the
+// queue silently falls back to deriving the unit from the name suffix.
+func metricConstValues(t *testing.T) map[string]string {
+	t.Helper()
+	dir := filepath.Join(filepath.Dir(processorDir(t)), "metricnames")
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		t.Fatalf("read metricnames sources: %v", err)
+	}
+	fset := token.NewFileSet()
 	out := map[string]string{}
 	for _, entry := range entries {
 		name := entry.Name()
 		if entry.IsDir() || !strings.HasSuffix(name, ".go") || strings.HasSuffix(name, "_test.go") {
 			continue
 		}
-		raw, err := os.ReadFile(filepath.Join(dir, name))
+		file, err := parser.ParseFile(fset, filepath.Join(dir, name), nil, 0)
 		if err != nil {
-			t.Fatal(err)
+			t.Fatalf("parse %s: %v", name, err)
 		}
-		out[name] = string(raw)
+		for _, decl := range file.Decls {
+			gen, ok := decl.(*ast.GenDecl)
+			if !ok || gen.Tok != token.CONST {
+				continue
+			}
+			for _, spec := range gen.Specs {
+				value, ok := spec.(*ast.ValueSpec)
+				if !ok || len(value.Values) != len(value.Names) {
+					continue
+				}
+				for i, ident := range value.Names {
+					lit, ok := value.Values[i].(*ast.BasicLit)
+					if !ok || lit.Kind != token.STRING {
+						continue
+					}
+					unquoted, err := strconv.Unquote(lit.Value)
+					if err != nil {
+						continue
+					}
+					out[ident.Name] = unquoted
+				}
+			}
+		}
 	}
 	if len(out) == 0 {
-		t.Fatal("no production sources found; the vocabulary check would be vacuous")
+		t.Fatal("no string constants found in internal/metricnames; the vocabulary check would be vacuous")
 	}
 	return out
 }
@@ -55,15 +150,37 @@ func productionSources(t *testing.T) map[string]string {
 // ledger, the SQLite mirror and the queue's processing_metrics rows — and the
 // queue persists whatever it is given, deriving the unit from the suffix, so a
 // typo became a permanently mislabelled row instead of a failure.
+//
+// Both spellings are checked:
+//
+//	metrics["literal"]              the literal must be declared;
+//	metrics[metricnames.SomeName]   the constant's VALUE must be declared,
+//	                               which is what catches a constant that was
+//	                               added to the package but not to its vocab.
 func TestEveryEmittedMetricIsDeclared(t *testing.T) {
-	literal := regexp.MustCompile(`(?:metrics|Metrics|phaseMetrics)\["([a-z0-9_]+)"\]`)
+	literalRe := regexp.MustCompile(`(?:metrics|Metrics|phaseMetrics)\["([a-z0-9_]+)"\]`)
+	constRe := regexp.MustCompile(`(?:metrics|Metrics|phaseMetrics)\[metricnames\.([A-Za-z0-9_]+)\]`)
+	consts := metricConstValues(t)
+
 	var undeclared []string
-	checked := 0
+	checked, refs := 0, 0
 	for name, source := range productionSources(t) {
-		for _, match := range literal.FindAllStringSubmatch(source, -1) {
+		for _, match := range literalRe.FindAllStringSubmatch(source, -1) {
 			checked++
 			if !metricnames.Declared(match[1]) {
 				undeclared = append(undeclared, name+": "+match[1])
+			}
+		}
+		for _, match := range constRe.FindAllStringSubmatch(source, -1) {
+			checked++
+			value, ok := consts[match[1]]
+			if !ok {
+				t.Errorf("%s: metrics[metricnames.%s] does not name a string constant declared by internal/metricnames", name, match[1])
+				continue
+			}
+			refs++
+			if !metricnames.Declared(value) {
+				undeclared = append(undeclared, name+": metricnames."+match[1]+" ("+value+")")
 			}
 		}
 	}
@@ -71,10 +188,13 @@ func TestEveryEmittedMetricIsDeclared(t *testing.T) {
 		sort.Strings(undeclared)
 		t.Fatalf("undeclared metric names emitted by the processor (add them to internal/metricnames):\n  %s", strings.Join(undeclared, "\n  "))
 	}
-	// A regex that silently stops matching would turn this check into a
-	// no-op; the emitters are numerous, so a small floor keeps it honest.
+	// A regex (or a parser) that silently stops matching would turn this check
+	// into a no-op; the emitters are numerous, so a small floor keeps it honest.
 	if checked < 10 {
 		t.Fatalf("only %d metric-map assignments matched; the vocabulary check has gone vacuous", checked)
+	}
+	if refs == 0 {
+		t.Fatal("no metricnames.<Constant> reference was resolved against the declared constants; the constant half of the check is vacuous")
 	}
 }
 
@@ -86,15 +206,15 @@ func TestEveryEmittedMetricIsDeclared(t *testing.T) {
 func TestPhaseStemsHaveBothUnits(t *testing.T) {
 	stemCall := regexp.MustCompile(`record(?:Phase)?\((?:"([a-z0-9_]+)"|metricnames\.([A-Za-z0-9]+))\s*,`)
 	byConstant := map[string]string{
-		"AssetMaterializeStem":  metricnames.AssetMaterializeStem,
-		"PlanStem":              metricnames.PlanStem,
-		"RenderStem":            metricnames.RenderStem,
-		"PublishStem":           metricnames.PublishStem,
-		"ProbeStem":             metricnames.ProbeStem,
-		"OverlayCompileStem":    metricnames.OverlayCompileStem,
-		"SubtitleBurnStem":      metricnames.SubtitleBurnStem,
-		"SHA256Stem":            metricnames.SHA256Stem,
-		"ObjectStoreUploadStem": metricnames.ObjectStoreUploadStem,
+		"AssetMaterializeStem":    metricnames.AssetMaterializeStem,
+		"PlanStem":                metricnames.PlanStem,
+		"RenderStem":              metricnames.RenderStem,
+		"PublishStem":             metricnames.PublishStem,
+		"ProbeStem":               metricnames.ProbeStem,
+		"OverlayCompileStem":      metricnames.OverlayCompileStem,
+		"SubtitleBurnStem":        metricnames.SubtitleBurnStem,
+		"SHA256Stem":              metricnames.SHA256Stem,
+		"ObjectStoreUploadStem":   metricnames.ObjectStoreUploadStem,
 		"PrepareTotalStem":        metricnames.PrepareTotalStem,
 		"PrepareMaterializeStem":  metricnames.PrepareMaterializeStem,
 		"PrepareSceneCompileStem": metricnames.PrepareSceneCompileStem,

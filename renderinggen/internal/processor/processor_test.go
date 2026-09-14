@@ -10,6 +10,7 @@ import (
 	"errors"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/artifactdb"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/chronon"
@@ -204,6 +205,54 @@ func (badSizePublisher) Publish(_ context.Context, req drive.PublishRequest) (dr
 		WebViewLink: "https://drive.example.com/file/d/lying-file",
 		SizeBytes:   fileSize(req.Path) + 1,
 	}, nil
+}
+
+// blockingPrefetcher records the assets it was asked to warm up and blocks
+// until it is released, so a test can observe whether the caller waited.
+type blockingPrefetcher struct {
+	started chan string
+	release chan struct{}
+}
+
+func (b *blockingPrefetcher) PrefetchAsset(_ context.Context, path string) error {
+	select {
+	case b.started <- path:
+	default:
+	}
+	<-b.release
+	return nil
+}
+
+// TestPrefetchWarmAssetsDoesNotBlockPrepare pins the fire-and-forget contract of
+// the cache warm-up: it is best-effort by design (a failed prefetch must never
+// affect a render), so it must not hold the prepare stage — and therefore the
+// prepare→GPU handoff that RecordGPULaneWait measures — while the daemon walks
+// its cache. The request still has to be issued.
+func TestPrefetchWarmAssetsDoesNotBlockPrepare(t *testing.T) {
+	prefetcher := &blockingPrefetcher{started: make(chan string, 4), release: make(chan struct{})}
+	proc := &Processor{}
+	proc.SetAssetPrefetcher(prefetcher)
+
+	returned := make(chan struct{})
+	go func() {
+		defer close(returned)
+		proc.prefetchWarmAssets(context.Background(), t.TempDir(), []queue.AssetRef{
+			{LogicalPath: "assets/scene.png"},
+			{LogicalPath: "assets/source.mp4"},
+		})
+	}()
+
+	select {
+	case <-returned:
+	case <-time.After(5 * time.Second):
+		t.Fatal("prefetchWarmAssets blocked on the prefetcher; the warm-up must not sit on the prepare→GPU handoff")
+	}
+	select {
+	case <-prefetcher.started:
+	case <-time.After(5 * time.Second):
+		t.Fatal("the warm-up request was never issued")
+	}
+	close(prefetcher.release)
 }
 
 func TestProcessMissingOutput(t *testing.T) {

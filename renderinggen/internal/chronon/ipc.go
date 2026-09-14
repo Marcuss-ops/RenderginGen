@@ -49,6 +49,35 @@ const defaultIPCServiceTimeout = 90 * time.Second
 // IPCClient renders through the persistent Chronon3d render daemon over a
 // UNIX-domain socket. It implements Renderer, so it is a drop-in replacement
 // for the CLI subprocess Client.
+//
+// One connection per command — deliberate, not an oversight.
+//
+// The daemon DOES accept many frames per connection: chronon_ipc.hpp
+// serve_once() loops until EOF, and daemon_service_ipc.cpp serves via
+// serve_concurrent() (one thread per connection). So a persistent pooled
+// connection is expressible, and the audit flagged the per-command dial as
+// the largest remaining per-job syscall on this path. It is kept anyway, and
+// the reasoning is deliberate:
+//
+//  1. Payoff is negligible where it was claimed. A unix-domain
+//     socket()/connect() is a few microseconds against a render that takes
+//     seconds; there is no measured job-level effect to recover.
+//  2. A pool changes failure semantics on the critical path. Today a daemon
+//     restart between jobs is transparent — the next command simply dials the
+//     new listener. A pooled connection made stale by a restart turns the
+//     FIRST render after the restart into a job failure.
+//  3. The usual mitigation is unavailable. Retrying a stale write is safe for
+//     Status, but RENDER_JOB is not idempotent: a write that reached the
+//     daemon before the transport broke may already be rendering, so an
+//     automatic retry could double-render. Fail-closed is the correct policy
+//     for this command, and fail-closed is what a fresh dial gives for free.
+//  4. This client is shared by concurrent GPU lanes (see LimitConcurrency),
+//     so a pool needs exclusive borrow plus cap management — state and failure
+//     modes that buy nothing today.
+//
+// Revisit only with a measurement showing per-job dials are visible in the
+// job profile, and only with a stale-connection probe that cannot retry a
+// non-idempotent command.
 type IPCClient struct {
 	socketPath string
 	// serviceTimeout bounds Status/PrefetchAsset/Shutdown. Zero uses
@@ -236,11 +265,17 @@ func (c *IPCClient) Render(ctx context.Context, req RenderRequest) error {
 
 	var reply renderJobReply
 	if err := json.Unmarshal([]byte(message), &reply); err != nil {
-		// Non-JSON Ok replies are tolerated (backward compatibility with
-		// older/other daemons), but never silently: a daemon that starts
-		// answering corrupt payloads must leave a trace instead of passing
-		// unobserved.
-		log.Printf("[chronon ipc WARN] render reply status=ok but body is not JSON (tolerated): %v", err)
+		// An unparsable reply under an "ok" status is only tolerable as the
+		// fast-tier compatibility behavior (an older/other daemon answering a
+		// plain "ok"). Under normal/certify the policy claims proof of the
+		// render, so a daemon whose reply cannot be parsed cannot be credited
+		// with having rendered: fail closed. Fast keeps the tolerance but never
+		// silently — a daemon that starts answering corrupt payloads must leave
+		// a trace instead of passing unobserved.
+		if RequiresStructuredReply(req.ReceiptVerify) {
+			return fmt.Errorf("ipc render: daemon replied ok with an unparsable body under verification policy %q: %w", req.ReceiptVerify, err)
+		}
+		log.Printf("[chronon ipc WARN] render reply status=ok but body is not JSON (tolerated under the fast tier): %v", err)
 		return nil
 	}
 	if reply.Status != "" && reply.Status != "ok" {
@@ -268,7 +303,14 @@ func (c *IPCClient) request(ctx context.Context, command uint32, payload []byte)
 	}
 	defer conn.Close()
 	if deadline, ok := ctx.Deadline(); ok {
-		_ = conn.SetDeadline(deadline)
+		// The deadline IS the bound of this transport (see
+		// defaultIPCServiceTimeout): a connection whose deadline could not be
+		// installed can block the caller past every timeout this client
+		// promises, so the failure must surface here rather than later as a
+		// hang.
+		if err := conn.SetDeadline(deadline); err != nil {
+			return 0, "", fmt.Errorf("ipc set deadline on %s: %w", c.socketPath, err)
+		}
 	}
 
 	frame := encodeIPCRequest(command, payload)

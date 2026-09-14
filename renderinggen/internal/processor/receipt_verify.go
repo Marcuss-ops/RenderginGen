@@ -16,10 +16,14 @@ import (
 
 type renderVerifyLevel string
 
+// The policy strings are aliases of chronon's wire vocabulary, which is also
+// the spelling Chronon writes into the receipt and the spelling any consumer
+// (queue, reports, an operator's config) sees. Declaring them once there keeps
+// the worker's policy authority and the daemon boundary from drifting apart.
 const (
-	renderVerifyFast    renderVerifyLevel = "fast"
-	renderVerifyNormal  renderVerifyLevel = "normal"
-	renderVerifyCertify renderVerifyLevel = "certify"
+	renderVerifyFast    renderVerifyLevel = chronon.ReceiptVerifyFast
+	renderVerifyNormal  renderVerifyLevel = chronon.ReceiptVerifyNormal
+	renderVerifyCertify renderVerifyLevel = chronon.ReceiptVerifyCertify
 )
 
 // renderVerificationLevel is the SINGLE verification-policy authority on the

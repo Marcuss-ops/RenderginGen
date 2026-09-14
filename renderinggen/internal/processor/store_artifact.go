@@ -30,8 +30,8 @@ import (
 func (p *Processor) storeArtifact(ctx context.Context, jobID, outputPath string, plan *overlay.Plan, phaseMetrics map[string]float64, totalStart time.Time, probe *media.ProbeResult, stats overlay.Stats, inputBytes int64, copyEligible bool, nativeCertified bool) (queue.Artifact, error) {
 	phaseStart := time.Now()
 	defer func() {
-		phaseMetrics["publish_ms"] = float64(time.Since(phaseStart).Microseconds()) / 1000
-		phaseMetrics["total_ms"] = float64(time.Since(totalStart).Microseconds()) / 1000
+		phaseMetrics[metricnames.PublishMS] = float64(time.Since(phaseStart).Microseconds()) / 1000
+		phaseMetrics[metricnames.TotalMS] = float64(time.Since(totalStart).Microseconds()) / 1000
 		phaseMetrics[metricnames.TotalUS] = phaseMetrics[metricnames.TotalMS] * 1000
 		p.recordPhase(metricnames.PublishStem, phaseStart)
 	}()

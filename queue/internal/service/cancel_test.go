@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"strings"
 	"testing"
 	"time"
@@ -37,7 +38,7 @@ func TestCancelPendingJobIsNeverClaimed(t *testing.T) {
 	if claimed, _, err := svc.Claim("worker-1"); err != nil || claimed != nil {
 		t.Fatalf("claim after cancel = %v/%v, want nil job", claimed, err)
 	}
-	if n, err := svc.RequeueExpired(time.Now().Add(time.Hour)); err != nil || n != 0 {
+	if n, err := svc.RequeueExpired(context.Background(), time.Now().Add(time.Hour)); err != nil || n != 0 {
 		t.Fatalf("RequeueExpired after cancel = %d/%v, want 0", n, err)
 	}
 	if claimed, _, err := svc.Claim("worker-2"); err != nil || claimed != nil {
@@ -81,7 +82,7 @@ func TestCancelRunningJobSurvivesLeaseClaimCycleWithoutNewChrononInvocation(t *t
 	// the Chronon invocation count (attempts) stays at exactly 1.
 	for cycle := 0; cycle < 3; cycle++ {
 		time.Sleep(15 * time.Millisecond) // let the lease elapse
-		if n, err := svc.RequeueExpired(time.Now()); err != nil || n != 0 {
+		if n, err := svc.RequeueExpired(context.Background(), time.Now()); err != nil || n != 0 {
 			t.Fatalf("cycle %d: RequeueExpired = %d/%v, want 0 affected (cancelled is terminal)", cycle, n, err)
 		}
 		if claimed, _, err := svc.Claim("worker-2"); err != nil || claimed != nil {

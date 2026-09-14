@@ -35,11 +35,53 @@ func nonEmptyJobType(jobType string) string {
 	return jobType
 }
 
+// defaultOpTimeout bounds EVERY statement/transaction the repository issues.
+//
+// The bound is load-bearing, not cosmetic: the repository contract takes no
+// context (see the repository.JobRepository doc), so without it a stalled
+// connection, a lock wait or a mid-failover backend would pin the calling
+// HTTP handler / worker goroutine for as long as the driver is willing to
+// wait — which is forever. It is deliberately generous: it exists to fail a
+// stuck operation, not to be a performance budget.
+const defaultOpTimeout = 15 * time.Second
+
 // Repository is the PostgreSQL backend for the central job queue.
 type Repository struct {
 	db          *sql.DB
 	lease       time.Duration
 	maxAttempts int
+
+	// opTimeout bounds one repository operation (defaultOpTimeout when the
+	// repository was built by New).
+	opTimeout time.Duration
+}
+
+// opContext returns the context of one repository operation, bounded by
+// opTimeout so no call can outlive it.
+func (r *Repository) opContext() (context.Context, context.CancelFunc) {
+	timeout := r.opTimeout
+	if timeout <= 0 {
+		timeout = defaultOpTimeout
+	}
+	return context.WithTimeout(context.Background(), timeout)
+}
+
+// SetOpTimeout overrides the per-operation deadline (values <= 0 restore
+// defaultOpTimeout).
+func (r *Repository) SetOpTimeout(d time.Duration) { r.opTimeout = d }
+
+// rowsAffected reads an affected-row count, surfacing the driver error that
+// would otherwise be indistinguishable from "zero rows". Every caller
+// interprets zero as a semantic outcome (not owned by this worker, already
+// claimed, duplicate id), so treating a failed count as zero silently mislabels
+// a storage failure as a normal race — and for Submit it would report a
+// dropped job as an idempotent duplicate.
+func rowsAffected(res sql.Result) (int64, error) {
+	n, err := res.RowsAffected()
+	if err != nil {
+		return 0, fmt.Errorf("postgres: rows affected: %w", err)
+	}
+	return n, nil
 }
 
 // Compile-time check that Repository satisfies the repository contract.
@@ -47,7 +89,7 @@ var _ repository.JobRepository = (*Repository)(nil)
 
 // New creates a PostgreSQL-backed job repository.
 func New(db *sql.DB, lease time.Duration, maxAttempts int) *Repository {
-	return &Repository{db: db, lease: lease, maxAttempts: maxAttempts}
+	return &Repository{db: db, lease: lease, maxAttempts: maxAttempts, opTimeout: defaultOpTimeout}
 }
 
 // inputManifest is the JSONB shape stored in render_jobs.input_manifest.
@@ -80,7 +122,8 @@ func (r *Repository) Submit(job model.Job) error {
 		return fmt.Errorf("input_manifest: %w", err)
 	}
 
-	ctx := context.Background()
+	ctx, cancel := r.opContext()
+	defer cancel()
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
@@ -95,7 +138,11 @@ func (r *Repository) Submit(job model.Job) error {
 	if err != nil {
 		return err
 	}
-	if n, _ := res.RowsAffected(); n == 0 {
+	n, err := rowsAffected(res)
+	if err != nil {
+		return err
+	}
+	if n == 0 {
 		return fmt.Errorf("%w: job %s", repository.ErrJobExists, job.ID)
 	}
 
@@ -115,8 +162,10 @@ func (r *Repository) SubmitIdempotent(job model.Job) (*model.Job, bool, error) {
 		canonical, err := r.Get(job.ID)
 		return canonical, true, err
 	}
+	ctx, cancel := r.opContext()
+	defer cancel()
 	var existingID string
-	err := r.db.QueryRow(`SELECT id FROM render_jobs WHERE idempotency_key = $1`, job.IdempotencyKey).Scan(&existingID)
+	err := r.db.QueryRowContext(ctx, `SELECT id FROM render_jobs WHERE idempotency_key = $1`, job.IdempotencyKey).Scan(&existingID)
 	if err == nil {
 		canonical, getErr := r.Get(existingID)
 		return canonical, false, getErr
@@ -129,7 +178,7 @@ func (r *Repository) SubmitIdempotent(job model.Job) (*model.Job, bool, error) {
 		return canonical, true, getErr
 	}
 	// Another submitter may have won the unique-key race.
-	if err := r.db.QueryRow(`SELECT id FROM render_jobs WHERE idempotency_key = $1`, job.IdempotencyKey).Scan(&existingID); err != nil {
+	if err := r.db.QueryRowContext(ctx, `SELECT id FROM render_jobs WHERE idempotency_key = $1`, job.IdempotencyKey).Scan(&existingID); err != nil {
 		return nil, false, err
 	}
 	canonical, getErr := r.Get(existingID)
@@ -143,7 +192,8 @@ func (r *Repository) Claim(workerID string) (*model.Job, time.Duration, error) {
 }
 
 func (r *Repository) ClaimState(workerID string, state model.State) (*model.Job, time.Duration, error) {
-	ctx := context.Background()
+	ctx, cancel := r.opContext()
+	defer cancel()
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, 0, err
@@ -198,15 +248,11 @@ func (r *Repository) ClaimState(workerID string, state model.State) (*model.Job,
 	// attempt or a lease — it is directly failed.
 	frameRangeVal, err := decodeFrameRange(frameRange)
 	if err != nil {
-		poisonCorruptJob(ctx, tx, id, err.Error())
-		_ = tx.Commit()
-		return nil, 0, err
+		return nil, 0, poisonCorruptClaim(ctx, tx, id, err)
 	}
 	assetsVal, err := decodeAssets(manifest)
 	if err != nil {
-		poisonCorruptJob(ctx, tx, id, err.Error())
-		_ = tx.Commit()
-		return nil, 0, err
+		return nil, 0, poisonCorruptClaim(ctx, tx, id, err)
 	}
 
 	var maxRecordedAttempt int
@@ -270,7 +316,8 @@ func (r *Repository) ClaimState(workerID string, state model.State) (*model.Job,
 
 // Get returns the current state of a job, including its artifact when done.
 func (r *Repository) Get(id string) (*model.Job, error) {
-	ctx := context.Background()
+	ctx, cancel := r.opContext()
+	defer cancel()
 
 	var (
 		job            model.Job
@@ -326,12 +373,10 @@ func (r *Repository) Get(id string) (*model.Job, error) {
 	job.ChunkIndex = chunkIndex
 	var decErr error
 	if job.FrameRange, decErr = decodeFrameRange(frameRange); decErr != nil {
-		_, _ = r.db.ExecContext(ctx, `UPDATE render_jobs SET state=`+stateLiteral(model.StateFailed)+`, failed_at=now(), error_message=$2, current_worker_id=NULL, lease_until=NULL WHERE id=$1`, id, decErr.Error())
-		return nil, decErr
+		return nil, r.poisonCorruptRead(ctx, id, decErr)
 	}
 	if job.Assets, decErr = decodeAssets(manifest); decErr != nil {
-		_, _ = r.db.ExecContext(ctx, `UPDATE render_jobs SET state=`+stateLiteral(model.StateFailed)+`, failed_at=now(), error_message=$2, current_worker_id=NULL, lease_until=NULL WHERE id=$1`, id, decErr.Error())
-		return nil, decErr
+		return nil, r.poisonCorruptRead(ctx, id, decErr)
 	}
 	if worker.Valid {
 		job.Worker = worker.String

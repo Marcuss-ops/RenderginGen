@@ -2,7 +2,6 @@
 package postgres
 
 import (
-	"context"
 	"log"
 
 	"github.com/Marcuss-ops/RenderingGen/queue/internal/model"
@@ -13,7 +12,9 @@ import (
 // and autoscalers read an empty queue during an outage.
 func (r *Repository) Stats() model.Stats {
 	var stats model.Stats
-	err := r.db.QueryRowContext(context.Background(), `
+	ctx, cancel := r.opContext()
+	defer cancel()
+	err := r.db.QueryRowContext(ctx, `
 		SELECT
 			COALESCE(count(*) FILTER (WHERE state = `+stateLiteral(model.StatePending)+`), 0),
 			COALESCE(count(*) FILTER (WHERE state = `+stateLiteral(model.StateRunning)+`), 0),

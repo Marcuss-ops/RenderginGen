@@ -125,10 +125,45 @@ type ffprobeDocument struct {
 		FormatName string `json:"format_name"`
 		Duration   string `json:"duration"`
 	} `json:"format"`
+	// Frames carries the first-frame keyframe check (see the merged ffprobe
+	// invocation in ProbeFile): -read_intervals limits the read window to the
+	// first frame of each stream, so this list stays tiny even on long clips.
+	Frames []probeFrame `json:"frames"`
+}
+
+// probeFrame is one entry of ffprobe's frames section, requested as
+// `-show_entries frame=key_frame,stream_index`. StreamIndex is a pointer so a
+// frame that does not carry one is distinguishable from "stream 0".
+type probeFrame struct {
+	StreamIndex *int `json:"stream_index"`
+	Key         int  `json:"key_frame"`
+}
+
+// firstFrameOfStream returns the first reported frame belonging to the given
+// stream index. streamIndex < 0 means the video stream was never identified, in
+// which case the first reported frame is the only evidence available; a frame
+// without an explicit stream_index (an ffprobe that does not emit it) is
+// likewise attributed to the requested stream.
+func firstFrameOfStream(frames []probeFrame, streamIndex int) (probeFrame, bool) {
+	for _, frame := range frames {
+		if streamIndex < 0 || frame.StreamIndex == nil || *frame.StreamIndex == streamIndex {
+			return frame, true
+		}
+	}
+	return probeFrame{}, false
 }
 
 func ProbeFile(ctx context.Context, path string) (ProbeResult, error) {
-	cmd := exec.CommandContext(ctx, "ffprobe", "-v", "error", "-show_streams", "-show_format", "-of", "json", path)
+	// ONE ffprobe invocation certifies both halves of the probe: the
+	// stream/format facts AND the first-frame keyframe check. The keyframe check
+	// used to be a second process doing its own open and read of the same file;
+	// `-read_intervals %+#1` keeps the added section to the first frame of each
+	// stream, so merging removes a whole process from the post-render path
+	// instead of adding work to it.
+	cmd := exec.CommandContext(ctx, "ffprobe", "-v", "error",
+		"-show_streams", "-show_format",
+		"-read_intervals", "%+#1", "-show_entries", "frame=key_frame,stream_index",
+		"-of", "json", path)
 	out, err := cmd.Output()
 	if err != nil {
 		return ProbeResult{}, fmt.Errorf("ffprobe %s: %w", path, err)
@@ -142,6 +177,7 @@ func ProbeFile(ctx context.Context, path string) (ProbeResult, error) {
 		result.DurationUS = int64(duration * 1_000_000)
 	}
 	videoSeen, audioSeen := false, false
+	videoStreamIndex := -1
 	for _, stream := range doc.Streams {
 		if stream.CodecType == "audio" {
 			result.AudioStreams++
@@ -167,6 +203,7 @@ func ProbeFile(ctx context.Context, path string) (ProbeResult, error) {
 			continue
 		}
 		videoSeen = true
+		videoStreamIndex = stream.Index
 		result.HasVideo = true
 		result.VideoCodec = stream.CodecName
 		result.CodecProfile = stream.Profile
@@ -208,25 +245,16 @@ func ProbeFile(ctx context.Context, path string) (ProbeResult, error) {
 	}
 	result.HasAudio = result.AudioStreams > 0
 
-	// A packet-copy segment must begin with an IDR/key frame. Only inspect the
-	// first decoded frame. The previous implementation used -show_frames with
-	// no interval, which walked and serialized every frame merely to read index
-	// zero and could become a sizeable post-render tax on long clips.
-	var frames struct {
-		Frames []struct {
-			Key int `json:"key_frame"`
-		} `json:"frames"`
-	}
-	frameCmd := exec.CommandContext(ctx, "ffprobe", "-v", "error", "-select_streams", "v:0",
-		"-read_intervals", "%+#1", "-show_frames", "-show_entries", "frame=key_frame", "-of", "json", path)
-	if frameOut, err := frameCmd.Output(); err == nil && json.Unmarshal(frameOut, &frames) == nil && len(frames.Frames) > 0 {
-		result.FirstFrameKeyframe = frames.Frames[0].Key == 1
-	} else if err != nil {
-		// Fail closed (first_frame_keyframe stays false) but never silently:
-		// a systematically broken keyframe probe would otherwise produce
-		// first_frame_keyframe=false forever with no signal pointing at
-		// ffprobe, silently disabling the copy-eligible fast path.
-		log.Printf("media: ffprobe %s: first-frame keyframe probe unavailable: %v (first_frame_keyframe=false)", path, err)
+	// A packet-copy segment must begin with an IDR/key frame, so the first
+	// frame of the video stream is read from the SAME probe document. A missing
+	// frames section fails closed (first_frame_keyframe=false) but never
+	// silently: a systematically broken keyframe probe would otherwise produce
+	// first_frame_keyframe=false forever with no signal pointing at ffprobe,
+	// silently disabling the copy-eligible fast path.
+	if frame, ok := firstFrameOfStream(doc.Frames, videoStreamIndex); ok {
+		result.FirstFrameKeyframe = frame.Key == 1
+	} else {
+		log.Printf("media: ffprobe %s: first-frame keyframe probe returned no frame (first_frame_keyframe=false)", path)
 	}
 
 	// MP4 normally exposes nb_frames in the stream metadata above. Keep an

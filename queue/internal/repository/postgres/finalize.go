@@ -4,7 +4,6 @@
 package postgres
 
 import (
-	"context"
 	"fmt"
 
 	"github.com/Marcuss-ops/RenderingGen/queue/internal/model"
@@ -15,7 +14,9 @@ func (r *Repository) ClaimFinalization(parentJobID, workerID string) (*model.Job
 	if parentJobID == "" || workerID == "" {
 		return nil, false, fmt.Errorf("parent job id and worker id are required")
 	}
-	res, err := r.db.ExecContext(context.Background(), `
+	ctx, cancel := r.opContext()
+	defer cancel()
+	res, err := r.db.ExecContext(ctx, `
 		UPDATE render_jobs
 		SET state = `+stateLiteral(model.StateFinalizing)+`, current_worker_id = $2, started_at = now(),
 		    lease_until = now() + make_interval(secs => $3)
@@ -23,7 +24,10 @@ func (r *Repository) ClaimFinalization(parentJobID, workerID string) (*model.Job
 	if err != nil {
 		return nil, false, err
 	}
-	n, _ := res.RowsAffected()
+	n, err := rowsAffected(res)
+	if err != nil {
+		return nil, false, err
+	}
 	if n == 0 {
 		job, getErr := r.Get(parentJobID)
 		if getErr != nil {
@@ -41,7 +45,8 @@ func (r *Repository) ClaimFinalization(parentJobID, workerID string) (*model.Job
 // Complete marks a running job as completed and, when the artifact has a
 // storage key, persists it and links it to the job.
 func (r *Repository) Complete(id, workerID string, artifact model.Artifact) error {
-	ctx := context.Background()
+	ctx, cancel := r.opContext()
+	defer cancel()
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
@@ -55,7 +60,11 @@ func (r *Repository) Complete(id, workerID string, artifact model.Artifact) erro
 	if err != nil {
 		return err
 	}
-	if n, _ := res.RowsAffected(); n == 0 {
+	n, err := rowsAffected(res)
+	if err != nil {
+		return err
+	}
+	if n == 0 {
 		return fmt.Errorf("job %s is not running or not owned by %s", id, workerID)
 	}
 
@@ -92,7 +101,8 @@ func (r *Repository) Complete(id, workerID string, artifact model.Artifact) erro
 // kept out of `completed` and becomes claimable again for a publication-only
 // retry, so a flaky upload never wastes a GPU re-render.
 func (r *Repository) Rendered(id, workerID string, artifact model.Artifact, reason string) error {
-	ctx := context.Background()
+	ctx, cancel := r.opContext()
+	defer cancel()
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
@@ -107,7 +117,11 @@ func (r *Repository) Rendered(id, workerID string, artifact model.Artifact, reas
 	if err != nil {
 		return err
 	}
-	if n, _ := res.RowsAffected(); n == 0 {
+	n, err := rowsAffected(res)
+	if err != nil {
+		return err
+	}
+	if n == 0 {
 		return fmt.Errorf("job %s is not running or not owned by %s", id, workerID)
 	}
 

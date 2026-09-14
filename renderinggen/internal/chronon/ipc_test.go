@@ -426,3 +426,54 @@ func TestIPCClientDialFailure(t *testing.T) {
 		t.Fatal("expected dial error for missing socket")
 	}
 }
+
+// TestIPCClientRenderToleratesUnparsableReplyOnFastTier pins the compatibility
+// tier: a foreign/older daemon answering a plain "ok" body must keep working.
+func TestIPCClientRenderToleratesUnparsableReplyOnFastTier(t *testing.T) {
+	socketPath, _, _ := startFakeDaemon(t, ipcStatusOk, "ok")
+
+	client := NewIPCClient(socketPath)
+	err := client.Render(context.Background(), RenderRequest{
+		PlanPath:      "/jobs/1/plan.json",
+		ReceiptVerify: ReceiptVerifyFast,
+	})
+	if err != nil {
+		t.Fatalf("fast tier must tolerate a non-JSON ok reply: %v", err)
+	}
+}
+
+// TestIPCClientRenderRejectsUnparsableReplyUnderProofPolicy pins the fail-closed
+// side: normal/certify claim proof of the render, so a daemon whose reply cannot
+// be parsed must not be credited with having rendered.
+func TestIPCClientRenderRejectsUnparsableReplyUnderProofPolicy(t *testing.T) {
+	for _, policy := range []string{ReceiptVerifyNormal, ReceiptVerifyCertify} {
+		t.Run(policy, func(t *testing.T) {
+			socketPath, _, _ := startFakeDaemon(t, ipcStatusOk, "ok")
+
+			client := NewIPCClient(socketPath)
+			err := client.Render(context.Background(), RenderRequest{
+				PlanPath:      "/jobs/1/plan.json",
+				ReceiptVerify: policy,
+			})
+			if err == nil {
+				t.Fatalf("policy %q must reject an unparsable ok reply", policy)
+			}
+		})
+	}
+}
+
+func TestRequiresStructuredReply(t *testing.T) {
+	cases := map[string]bool{
+		"":                   false,
+		ReceiptVerifyFast:    false,
+		"FAST":               false,
+		ReceiptVerifyNormal:  true,
+		ReceiptVerifyCertify: true,
+		" certify ":          true,
+	}
+	for policy, want := range cases {
+		if got := RequiresStructuredReply(policy); got != want {
+			t.Errorf("RequiresStructuredReply(%q) = %v, want %v", policy, got, want)
+		}
+	}
+}

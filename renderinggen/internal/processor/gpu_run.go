@@ -6,11 +6,19 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"sync"
 	"time"
 
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/chronon"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/metricnames"
 )
+
+// progressLogInterval bounds how often a render's frame milestones reach the
+// log. Every milestone still updates the progress tracker and the stall
+// heartbeat; only the log line is sampled, because the standard logger's mutex
+// is shared by every GPU lane and a 24-60fps render emits tens of thousands of
+// milestone lines. The first and the final milestone are always logged.
+const progressLogInterval = 10 * time.Second
 
 // RunGPU performs the single Chronon invocation for a prepared job plus the
 // strict-backend receipt gate. This is the only stage that touches the GPU.
@@ -38,12 +46,19 @@ func (p *Processor) RunGPU(ctx context.Context, prepared *PreparedJob) error {
 	gpuRequired := (hasSourceVideo || compositionRequired) && (p.strictNativeBackend ||
 		chronon.StrictNativeRequired(p.backend, p.hardwareEncoder))
 	// Render progress: every '[video] N/M frames' milestone the renderer
-	// prints is logged (where did the 12 minutes go) and, when a shared
-	// tracker is installed, fed into it so health and the queue pusher can
-	// report live position. The last milestone also lands in the ledger
+	// prints is sampled into the log (where did the 12 minutes go) and, when a
+	// shared tracker is installed, fed into it so health and the queue pusher
+	// can report live position. The last milestone also lands in the ledger
 	// metrics as render_frames_done/total + render_fps.
+	//
+	// The observation is mutex-guarded because the renderer invokes Progress
+	// from BOTH its stdout and stderr streaming goroutines: unsynchronised
+	// writes to sawProgress/lastProgress were a data race, and the final
+	// milestone could be dropped or read torn.
+	var progressMu sync.Mutex
 	var lastProgress chronon.RenderProgress
 	sawProgress := false
+	var lastProgressLogAt time.Time
 	if err := p.renderer.Render(ctx, chronon.RenderRequest{
 		PlanPath: prepared.Workspace.PlanPath(),
 		// Plans use the canonical assets/<file> namespace. The workspace
@@ -90,11 +105,20 @@ func (p *Processor) RunGPU(ctx context.Context, prepared *PreparedJob) error {
 		},
 		TotalFrames: int64(metadata.FrameCount),
 		Progress: func(progress chronon.RenderProgress) {
+			progressMu.Lock()
 			sawProgress = true
 			lastProgress = progress
-			log.Printf("job %s progress: stage=chronon_render frames_done=%d frames_total=%d fps=%.2f last_frame_at=%s backend=%s encoder=%s",
-				job.ID, progress.FramesDone, progress.FramesTotal, progress.FPS,
-				progress.At.Format(time.RFC3339Nano), p.backend, p.hardwareEncoder)
+			final := progress.FramesTotal > 0 && progress.FramesDone >= progress.FramesTotal
+			logNow := final || lastProgressLogAt.IsZero() || time.Since(lastProgressLogAt) >= progressLogInterval
+			if logNow {
+				lastProgressLogAt = time.Now()
+			}
+			progressMu.Unlock()
+			if logNow {
+				log.Printf("job %s progress: stage=chronon_render frames_done=%d frames_total=%d fps=%.2f last_frame_at=%s backend=%s encoder=%s",
+					job.ID, progress.FramesDone, progress.FramesTotal, progress.FPS,
+					progress.At.Format(time.RFC3339Nano), p.backend, p.hardwareEncoder)
+			}
 			if p.progressTracker != nil {
 				p.progressTracker.Observe(job.ID, progress.FramesDone, progress.FramesTotal)
 			}
@@ -103,26 +127,30 @@ func (p *Processor) RunGPU(ctx context.Context, prepared *PreparedJob) error {
 		return fmt.Errorf("processor: render: %w", err)
 	}
 	us := float64(time.Since(phaseStart).Microseconds())
-	prepared.Metrics["render_ms"] = us / 1000
-	prepared.Metrics["render_us"] = us
+	prepared.Metrics[metricnames.RenderMS] = us / 1000
+	prepared.Metrics[metricnames.RenderUS] = us
 	p.recordPhase(metricnames.RenderStem, phaseStart)
 	// Duty-cycle telemetry: the gap this render waited since the previous
 	// render ended on this worker. First job reports 0.
-	prepared.Metrics["gpu_gap_us"] = p.recordGPUGap(phaseStart)
+	prepared.Metrics[metricnames.GPUGapUS] = p.recordGPUGap(phaseStart)
+	progressMu.Lock()
+	observedProgress := sawProgress
+	finalProgress := lastProgress
+	progressMu.Unlock()
 	// Frame-level observability: the final frame position the renderer
 	// reported plus its average fps (0 when the renderer printed no frame
 	// milestones — never silently confused with real progress).
-	if sawProgress && lastProgress.FramesDone > 0 {
-		prepared.Metrics[metricnames.RenderFramesDone] = float64(lastProgress.FramesDone)
-		prepared.Metrics[metricnames.RenderFramesTotal] = float64(lastProgress.FramesTotal)
-		fps := lastProgress.FPS
+	if observedProgress && finalProgress.FramesDone > 0 {
+		prepared.Metrics[metricnames.RenderFramesDone] = float64(finalProgress.FramesDone)
+		prepared.Metrics[metricnames.RenderFramesTotal] = float64(finalProgress.FramesTotal)
+		fps := finalProgress.FPS
 		if fps <= 0 {
 			if elapsed := time.Since(phaseStart).Seconds(); elapsed > 0 {
-				fps = float64(lastProgress.FramesDone) / elapsed
+				fps = float64(finalProgress.FramesDone) / elapsed
 			}
 		}
 		if fps > 0 {
-			prepared.Metrics["render_fps"] = fps
+			prepared.Metrics[metricnames.RenderFPS] = fps
 		}
 	}
 	if p.progressTracker != nil {

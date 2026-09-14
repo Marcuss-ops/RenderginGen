@@ -1,10 +1,10 @@
 package postgres
 
 import (
-	"context"
 	"database/sql"
 	"errors"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/Marcuss-ops/RenderingGen/queue/internal/model"
@@ -25,7 +25,8 @@ func (r *Repository) Register(worker model.Worker) error {
 		status = string(model.WorkerStatusReady)
 	}
 
-	ctx := context.Background()
+	ctx, cancel := r.opContext()
+	defer cancel()
 	_, err := r.db.ExecContext(ctx, `
 		INSERT INTO rendering_workers
 		    (id, hostname, status, renderinggen_version, chronon_version,
@@ -57,7 +58,8 @@ func (r *Repository) Register(worker model.Worker) error {
 // current liveness and appends to the heartbeat ledger in one transaction.
 // The ledger is pruned to a 7-day TTL to bound unbounded growth.
 func (r *Repository) Heartbeat(workerID string) error {
-	ctx := context.Background()
+	ctx, cancel := r.opContext()
+	defer cancel()
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
@@ -71,33 +73,47 @@ func (r *Repository) Heartbeat(workerID string) error {
 	if err != nil {
 		return err
 	}
-	if n, _ := res.RowsAffected(); n == 0 {
+	n, err := rowsAffected(res)
+	if err != nil {
+		return err
+	}
+	if n == 0 {
 		return fmt.Errorf("worker %s is not registered", workerID)
 	}
 	if _, err := tx.ExecContext(ctx, `
 		INSERT INTO worker_heartbeats (worker_id) VALUES ($1)`, workerID); err != nil {
 		return err
 	}
-	// Best-effort TTL prune: ignore errors (old rows are not correctness-critical).
-	_, _ = tx.ExecContext(ctx, `DELETE FROM worker_heartbeats WHERE heartbeat_at < now() - interval '7 days'`)
+	// Best-effort TTL prune: old rows are not correctness-critical, so a failure
+	// must not fail the heartbeat — but it must not be invisible either, because
+	// a prune that can never succeed turns worker_heartbeats into an unbounded
+	// table that nothing else bounds.
+	if _, pruneErr := tx.ExecContext(ctx, `DELETE FROM worker_heartbeats WHERE heartbeat_at < now() - interval '7 days'`); pruneErr != nil {
+		log.Printf("WARN postgres: worker heartbeat prune failed: %v", pruneErr)
+	}
 	return tx.Commit()
 }
 
 // PruneWorkerHeartbeats removes heartbeat rows older than olderThan. Called
 // periodically by a background job or on heartbeat to bound table growth.
 func (r *Repository) PruneWorkerHeartbeats(olderThan time.Duration) (int64, error) {
-	ctx := context.Background()
+	ctx, cancel := r.opContext()
+	defer cancel()
 	res, err := r.db.ExecContext(ctx, `DELETE FROM worker_heartbeats WHERE heartbeat_at < now() - $1::interval`, fmt.Sprintf("%d seconds", int(olderThan.Seconds())))
 	if err != nil {
 		return 0, err
 	}
-	n, _ := res.RowsAffected()
+	n, err := rowsAffected(res)
+	if err != nil {
+		return 0, err
+	}
 	return n, nil
 }
 
 // List returns all registered workers sorted by ID.
 func (r *Repository) List() ([]model.Worker, error) {
-	ctx := context.Background()
+	ctx, cancel := r.opContext()
+	defer cancel()
 	rows, err := r.db.QueryContext(ctx, `
 		SELECT id, hostname, status, renderinggen_version, chronon_version,
 		       overlay_schema_version, gpu_backend, gpu_device, gpu_driver,
@@ -125,7 +141,9 @@ func (r *Repository) List() ([]model.Worker, error) {
 func (r *Repository) Health(now time.Time, staleAfter time.Duration) (model.WorkerHealth, error) {
 	threshold := now.Add(-staleAfter)
 	var h model.WorkerHealth
-	err := r.db.QueryRowContext(context.Background(), `
+	ctx, cancel := r.opContext()
+	defer cancel()
+	err := r.db.QueryRowContext(ctx, `
 		SELECT
 			COALESCE(count(*) FILTER (WHERE status = 'ready' AND last_heartbeat_at >= $1), 0),
 			COALESCE(count(*) FILTER (WHERE status = 'busy' AND last_heartbeat_at >= $1), 0),

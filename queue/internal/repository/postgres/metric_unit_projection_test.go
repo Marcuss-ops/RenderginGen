@@ -104,3 +104,38 @@ func TestMetricUnitProjectsWorkerVocabulary(t *testing.T) {
 		}
 	}
 }
+
+// TestMetricUnitFallbackTableForUndeclaredNames pins the SECOND half of
+// metricUnit: names that are not in the worker's declared vocabulary (a
+// payload from a producer that predates it, or a key added before it is
+// registered). Those rows would otherwise all be persisted as "count", so the
+// suffix table is a real contract about what a stored row claims — and it was
+// previously unreachable from the vocabulary projection test, which only walks
+// declared names.
+func TestMetricUnitFallbackTableForUndeclaredNames(t *testing.T) {
+	cases := []struct {
+		name string
+		want string
+		why  string
+	}{
+		{"legacy_upload_us", "us", "microsecond suffix"},
+		{"legacy_encode_ms", "ms", "millisecond suffix"},
+		{"artifact_bytes", "bytes", "byte count"},
+		{"legacy_payload_mb", "mb", "megabyte count"},
+		{"steady_avg_fps", "fps", "frame rate"},
+		{"compression_ratio", "ratio", "dimensionless ratio"},
+		{"cache_hit_percent", "ratio", "percentage"},
+		{"ENTITY_COUNT", "count", "case-insensitive, no unit suffix"},
+		{"", "count", "empty name is a count by default"},
+	}
+	for _, tc := range cases {
+		if got := metricUnit(tc.name); got != tc.want {
+			t.Errorf("metricUnit(%q) = %q, want %q (%s)", tc.name, got, tc.want, tc.why)
+		}
+	}
+	// The suffix rules must win over the content rules: a name that carries
+	// BOTH ("_ms" and "bytes") is a duration, not a byte count.
+	if got := metricUnit("legacy_bytes_ms"); got != "ms" {
+		t.Errorf("metricUnit(\"legacy_bytes_ms\") = %q, want \"ms\" (the suffix rule owns the unit)", got)
+	}
+}

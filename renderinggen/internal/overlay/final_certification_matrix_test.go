@@ -1,6 +1,7 @@
 package overlay
 
 import (
+	"encoding/json"
 	"fmt"
 	"testing"
 )
@@ -54,8 +55,34 @@ func TestFinal_BackgroundOpacity(t *testing.T) {
 				t.Fatalf("err=%v", err)
 			}
 			plan := result.Plan
-			if got := plan.Layers[0].Opacity; got != want {
+			if plan.Layers[0].Opacity == nil {
+				t.Fatalf("opacity %.2f was dropped from the compiled layer (nil)", want)
+			}
+			if got := *plan.Layers[0].Opacity; got != want {
 				t.Errorf("opacity %.2f compiled as %.2f", want, got)
+			}
+			// The value must survive the WIRE, not only the in-memory struct: as
+			// a float64 with omitempty an explicit 0 marshalled as an ABSENT key
+			// and the renderer defaulted the layer back to fully opaque — the one
+			// documented meaning of 0 ("invisible") was the one unrepresentable
+			// value.
+			wire, err := plan.Marshal()
+			if err != nil {
+				t.Fatalf("marshal: %v", err)
+			}
+			var decoded struct {
+				Layers []struct {
+					Opacity *float64 `json:"opacity"`
+				} `json:"layers"`
+			}
+			if err := json.Unmarshal(wire, &decoded); err != nil {
+				t.Fatalf("decode marshalled plan: %v", err)
+			}
+			if len(decoded.Layers) == 0 || decoded.Layers[0].Opacity == nil {
+				t.Fatalf("opacity key %.2f missing from the marshalled layer: %s", want, wire)
+			}
+			if got := *decoded.Layers[0].Opacity; got != want {
+				t.Errorf("wire opacity %.2f, want %.2f", got, want)
 			}
 		})
 	}

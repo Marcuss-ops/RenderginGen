@@ -1,6 +1,75 @@
 package media
 
-import "testing"
+import (
+	"context"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"testing"
+)
+
+// goldenFixture resolves a repository fixture next to the module root and skips
+// when it is not checked out.
+func goldenFixture(t *testing.T, name string) string {
+	t.Helper()
+	path := filepath.Join("..", "..", "..", "testdata", "golden", name)
+	if _, err := os.Stat(path); err != nil {
+		t.Skipf("fixture %s unavailable: %v", name, err)
+	}
+	return path
+}
+
+// TestProbeFileCertifiesFirstFrameKeyframeFromOneInvocation pins the merged
+// probe: ONE ffprobe run certifies the structural facts AND the first-frame
+// keyframe check of the video stream. The keyframe verdict must therefore be
+// present (the fixture's first video frame is an IDR) without a second process
+// reading the same file, which is what this test would fail on if the frames
+// section were dropped from the merged command.
+func TestProbeFileCertifiesFirstFrameKeyframeFromOneInvocation(t *testing.T) {
+	if _, err := exec.LookPath("ffprobe"); err != nil {
+		t.Skipf("ffprobe not installed: %v", err)
+	}
+	path := goldenFixture(t, "background.mp4")
+
+	result, err := ProbeFile(context.Background(), path)
+	if err != nil {
+		t.Fatalf("probe: %v", err)
+	}
+	if !result.HasVideo || result.VideoStreams != 1 {
+		t.Fatalf("video presence = %t / streams = %d, want one video stream", result.HasVideo, result.VideoStreams)
+	}
+	if result.Width != 1280 || result.Height != 720 {
+		t.Fatalf("canvas = %dx%d, want 1280x720", result.Width, result.Height)
+	}
+	if result.VideoCodec == "" || result.FrameCount <= 0 || result.VideoTimeBaseDen <= 0 {
+		t.Fatalf("structural facts incomplete: codec=%q frames=%d timebase=%d/%d", result.VideoCodec, result.FrameCount, result.VideoTimeBaseNum, result.VideoTimeBaseDen)
+	}
+	if !result.FirstFrameKeyframe {
+		t.Fatal("the fixture's first video frame is an IDR; FirstFrameKeyframe=false means the merged probe no longer reports the frames section")
+	}
+}
+
+// TestProbeFileKeyframeSurvivesASecondStream pins the stream attribution: an
+// audio-bearing artifact must still certify the VIDEO stream's first frame, so
+// the frames window cannot be attributed to whichever stream ffprobe happens to
+// report first.
+func TestProbeFileKeyframeSurvivesASecondStream(t *testing.T) {
+	if _, err := exec.LookPath("ffprobe"); err != nil {
+		t.Skipf("ffprobe not installed: %v", err)
+	}
+	path := goldenFixture(t, "Pale-Olive.mp4")
+
+	result, err := ProbeFile(context.Background(), path)
+	if err != nil {
+		t.Fatalf("probe: %v", err)
+	}
+	if result.AudioStreams != 1 || !result.HasAudio {
+		t.Fatalf("audio facts = %d streams / has=%t, want one audio stream", result.AudioStreams, result.HasAudio)
+	}
+	if !result.FirstFrameKeyframe {
+		t.Fatal("a second (audio) stream must not change the video stream's first-frame verdict")
+	}
+}
 
 func validProbe() ProbeResult {
 	return ProbeResult{

@@ -10,6 +10,8 @@ package artifactdb
 import (
 	"encoding/json"
 	"time"
+
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/metricnames"
 )
 
 // ArtifactRecord is a local diagnostic snapshot of one rendered artifact.
@@ -88,27 +90,29 @@ type ArtifactRecord struct {
 
 // Metrics returns the plan's "DB metrics" projection as a stable map, used by
 // reports and tests to assert the recorded numbers without coupling to the
-// record layout.
+// record layout. The names are the worker's declared vocabulary
+// (internal/metricnames), not local literals: the ledger row and the artifact
+// metrics map must agree on every name, and a rename has one owner.
 func (r ArtifactRecord) Metrics() map[string]float64 {
 	return map[string]float64{
-		"entity_count":           float64(r.EntityCount),
-		"important_phrase_count": float64(r.ImportantPhraseCnt),
-		"important_word_count":   float64(r.ImportantWordCnt),
-		"image_count":            float64(r.ImageCount),
-		"light_leak_count":       float64(r.LightLeakCount),
-		"overlay_compile_us":     float64(r.OverlayCompileUS),
-		"asset_materialize_us":   float64(r.AssetMaterializeUS),
-		"chronon_render_us":      float64(r.ChrononRenderUS),
-		"sha256_us":              float64(r.SHA256US),
-		"objectstore_upload_us":  float64(r.ObjectStoreUploadUS),
-		"drive_upload_us":        float64(r.DriveUploadUS),
-		"total_us":               float64(r.TotalUS),
-		"input_bytes":            float64(r.InputBytes),
-		"output_bytes":           float64(r.OutputBytes),
-		"frame_count":            float64(r.FrameCount),
-		"duration_us":            float64(r.DurationUS),
-		"width":                  float64(r.Width),
-		"height":                 float64(r.Height),
-		"fps":                    float64(r.FPSNum) / float64(r.FPSDen),
+		metricnames.EntityCount:          float64(r.EntityCount),
+		metricnames.ImportantPhraseCount: float64(r.ImportantPhraseCnt),
+		metricnames.ImportantWordCount:   float64(r.ImportantWordCnt),
+		metricnames.ImageCount:           float64(r.ImageCount),
+		metricnames.LightLeakCount:       float64(r.LightLeakCount),
+		metricnames.OverlayCompileUS:     float64(r.OverlayCompileUS),
+		metricnames.AssetMaterializeUS:   float64(r.AssetMaterializeUS),
+		metricnames.ChrononRenderUS:      float64(r.ChrononRenderUS),
+		metricnames.SHA256US:             float64(r.SHA256US),
+		metricnames.ObjectStoreUploadUS:  float64(r.ObjectStoreUploadUS),
+		metricnames.DriveUploadUS:        float64(r.DriveUploadUS),
+		metricnames.TotalUS:              float64(r.TotalUS),
+		metricnames.InputBytes:           float64(r.InputBytes),
+		metricnames.OutputBytes:          float64(r.OutputBytes),
+		metricnames.FrameCount:           float64(r.FrameCount),
+		metricnames.DurationUS:           float64(r.DurationUS),
+		metricnames.Width:                float64(r.Width),
+		metricnames.Height:               float64(r.Height),
+		metricnames.FPS:                  float64(r.FPSNum) / float64(r.FPSDen),
 	}
 }

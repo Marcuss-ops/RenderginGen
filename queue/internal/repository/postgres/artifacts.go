@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"log"
 	"strings"
 
 	"github.com/Marcuss-ops/RenderingGen/queue/internal/model"
@@ -112,31 +113,37 @@ func insertProcessingMetrics(ctx context.Context, tx *sql.Tx, jobID, attemptID s
 	// Build a single INSERT with N value tuples — one round-trip instead of N.
 	// Use ON CONFLICT on the unique (job_id, attempt_id, metric_name) added
 	// in migration 022 so retries update rather than duplicate.
-	query := "INSERT INTO processing_metrics (job_id, attempt_id, metric_name, metric_value, unit) VALUES "
+	//
+	// The tuple list is built ONCE and reused by the fallback below. It used to
+	// be rendered by two hand-copied loops, so the fallback had to stay
+	// character-for-character in sync with the primary statement (a drifted copy
+	// binds the wrong number of placeholders and fails at the driver, not at
+	// review). strings.Builder also keeps the per-metric cost flat: the previous
+	// `query += ...` reallocated the whole statement once per metric.
+	const insertPrefix = "INSERT INTO processing_metrics (job_id, attempt_id, metric_name, metric_value, unit) VALUES "
+	tuples := &strings.Builder{}
+	tuples.Grow(len(rows) * 26)
 	args := make([]any, 0, len(rows)*5)
 	for i, r := range rows {
 		if i > 0 {
-			query += ", "
+			tuples.WriteString(", ")
 		}
 		base := i*5 + 1
-		query += fmt.Sprintf("($%d, $%d, $%d, $%d, $%d)", base, base+1, base+2, base+3, base+4)
+		fmt.Fprintf(tuples, "($%d, $%d, $%d, $%d, $%d)", base, base+1, base+2, base+3, base+4)
 		args = append(args, jobID, nullIfEmpty(attemptID), r.name, r.value, r.unit)
 	}
-	query += " ON CONFLICT (job_id, attempt_id, metric_name) DO UPDATE SET metric_value = EXCLUDED.metric_value, unit = EXCLUDED.unit"
+	query := insertPrefix + tuples.String() +
+		" ON CONFLICT (job_id, attempt_id, metric_name) DO UPDATE SET metric_value = EXCLUDED.metric_value, unit = EXCLUDED.unit"
 	if _, err := tx.ExecContext(ctx, query, args...); err != nil {
 		// Fallback when the unique constraint hasn't been migrated yet:
 		// plain multi-VALUES insert without ON CONFLICT still batches but
-		// may duplicate on retry — acceptable until migration lands.
+		// may duplicate on retry — acceptable until migration lands. The
+		// duplicates are the same (job_id, attempt_id, metric_name) rows the
+		// primary statement would upsert, so the fallback stays visible in
+		// the log instead of passing as a clean success.
 		if strings.Contains(err.Error(), "no unique or exclusion constraint") || strings.Contains(err.Error(), "ON CONFLICT") {
-			query2 := "INSERT INTO processing_metrics (job_id, attempt_id, metric_name, metric_value, unit) VALUES "
-			for i := range rows {
-				if i > 0 {
-					query2 += ", "
-				}
-				base := i*5 + 1
-				query2 += fmt.Sprintf("($%d, $%d, $%d, $%d, $%d)", base, base+1, base+2, base+3, base+4)
-			}
-			if _, err2 := tx.ExecContext(ctx, query2, args...); err2 != nil {
+			log.Printf("WARN postgres: processing_metrics upsert unavailable (%v); falling back to a plain batch insert (duplicate metrics are possible until migration 022 lands)", err)
+			if _, err2 := tx.ExecContext(ctx, insertPrefix+tuples.String(), args...); err2 != nil {
 				return fmt.Errorf("insert processing metrics batch: %w", err2)
 			}
 			return nil
@@ -146,16 +153,26 @@ func insertProcessingMetrics(ctx context.Context, tx *sql.Tx, jobID, attemptID s
 	return nil
 }
 
-// metricUnit preserves the unit encoded by the canonical metric name. Names
-// without a suffix are counts by default; this keeps legacy map payloads
-// compatible while preventing bytes/frames/ratios from being labelled ms.
+// metricUnit preserves the unit encoded by the canonical metric name.
 //
-// The vocabulary itself is OWNED by the worker
-// (renderinggen/internal/metricnames): this is the queue's fallback for names
-// that arrive without an explicit unit. The queue module cannot import the
-// worker (the dependency runs worker→queue), so the projection is pinned by
-// metric_unit_projection_test.go, which reads the worker's vocabulary and
-// asserts this function derives exactly the declared unit for every name.
+// It has exactly two jobs, and both are pinned by tests:
+//
+//  1. DECLARED names (renderinggen/internal/metricnames) — the worker OWNS the
+//     vocabulary, and every declared name must project to its declared unit.
+//     The queue module cannot import the worker (the dependency runs
+//     worker→queue), so this cross-module projection is pinned by
+//     metric_unit_projection_test.go, which reads the worker's declaration and
+//     asserts the derivation here agrees with it name by name.
+//  2. UNDECLARED names — a payload from a producer that predates the
+//     vocabulary, or a projection key the worker adds before registering it.
+//     Those names carry no declared unit, so the queue derives one from the
+//     documented suffix table below rather than labelling every one of them
+//     "count". The table is a real contract (it decides what a persisted row
+//     claims), not speculation, and is exercised by
+//     TestMetricUnitFallbackTableForUndeclaredNames.
+//
+// The rules are ordered: suffix rules first (us, ms), then content rules
+// (bytes, mb, fps, ratio/percent), then the count default.
 func metricUnit(name string) string {
 	n := strings.ToLower(name)
 	switch {

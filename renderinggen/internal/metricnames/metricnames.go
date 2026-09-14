@@ -190,7 +190,7 @@ var vocab = map[string]string{
 	SubtitleBurnUS: UnitUS, ChrononRenderUS: UnitUS, RenderUS: UnitUS,
 	ProbeUS: UnitUS, SHA256US: UnitUS, ObjectStoreUploadUS: UnitUS,
 	PublishUS: UnitUS, DriveUploadUS: UnitUS, TotalUS: UnitUS, GPUGapUS: UnitUS,
-	GPULaneWaitUS: UnitUS,
+	GPULaneWaitUS:  UnitUS,
 	PrepareTotalUS: UnitUS, PrepareMaterializeUS: UnitUS, PrepareSceneCompileUS: UnitUS,
 	PrepareAssetResolveUS: UnitUS, PrepareBurnUS: UnitUS, PrepareMarshalUS: UnitUS,
 	PreparePrefetchUS: UnitUS,

@@ -85,6 +85,48 @@ func TestOutputFactsFromProbeCertifiesEveryDimension(t *testing.T) {
 	}
 }
 
+// TestOutputFactsFromProbeFillsEveryDeclaredField is the omission detector the
+// dimension table above cannot be. That test asserts the fields it NAMES
+// survive; this one asserts every field `queue.OutputFacts` DECLARES is filled
+// from the probe, so a certified fact added to the wire contract without a
+// matching projection fails here instead of shipping as a silently uncertified
+// dimension. The two are complementary: the table catches a WRONG value, this
+// catches a MISSING one.
+//
+// The probe is populated by reflection rather than by hand so a field added to
+// media.ProbeResult is exercised automatically; a field kind this fixture does
+// not know how to fill fails loudly instead of being silently skipped.
+func TestOutputFactsFromProbeFillsEveryDeclaredField(t *testing.T) {
+	var probe media.ProbeResult
+	pv := reflect.ValueOf(&probe).Elem()
+	pt := pv.Type()
+	for i := 0; i < pt.NumField(); i++ {
+		field := pv.Field(i)
+		switch field.Kind() {
+		case reflect.String:
+			field.SetString("set")
+		case reflect.Int, reflect.Int64:
+			field.SetInt(7)
+		case reflect.Bool:
+			field.SetBool(true)
+		default:
+			t.Fatalf("ProbeResult.%s has kind %s; extend this fixture so the field is exercised", pt.Field(i).Name, field.Kind())
+		}
+	}
+
+	facts := outputFactsFromProbe(&probe)
+	if facts == nil {
+		t.Fatal("a fully populated probe must certify a fact set")
+	}
+	fv := reflect.ValueOf(*facts)
+	ft := fv.Type()
+	for i := 0; i < ft.NumField(); i++ {
+		if fv.Field(i).IsZero() {
+			t.Errorf("queue.OutputFacts.%s is never filled by outputFactsFromProbe: the probe certifies it and the projection drops it", ft.Field(i).Name)
+		}
+	}
+}
+
 // TestOutputFactsFromProbeNilCertifiesNothing: a nil probe must produce a nil
 // fact set, never an empty object that a consumer could mistake for a
 // certification.

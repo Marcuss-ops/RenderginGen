@@ -4,7 +4,6 @@
 package postgres
 
 import (
-	"context"
 	"database/sql"
 	"fmt"
 
@@ -22,7 +21,9 @@ func (r *Repository) Children(parentJobID string) ([]*model.Job, error) {
 	if parentJobID == "" {
 		return nil, fmt.Errorf("parent job id is required")
 	}
-	rows, err := r.db.QueryContext(context.Background(), `
+	ctx, cancel := r.opContext()
+	defer cancel()
+	rows, err := r.db.QueryContext(ctx, `
 		SELECT j.id, j.state, j.chunk_index, j.frame_range,
 		       a.id, a.storage_key, a.artifact_url, a.sha256, a.mime_type, a.size_bytes,
 		       a.width, a.height, a.fps_num, a.fps_den, a.frame_count, a.duration_us,
