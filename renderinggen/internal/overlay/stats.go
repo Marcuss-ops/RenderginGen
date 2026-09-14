@@ -36,6 +36,10 @@ type CompileResult struct {
 	Plan   *Plan
 	Assets []Asset
 	Stats  Stats
+	// Prepared is the immutable, deduplicated asset/text package derived from
+	// the same compile pass. It is the worker's handoff to prepare/upload code;
+	// it must not be rebuilt in the frame loop.
+	Prepared PreparedPackage
 	// UnknownTemplates lists the item template_ids that resolved to no registry
 	// row, sorted and de-duplicated. They still compile (as preset-less text
 	// primitives) so historical documents keep rendering, but the fall-through
