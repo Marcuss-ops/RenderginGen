@@ -33,6 +33,9 @@ func TestNewCreatesDirs(t *testing.T) {
 	if w.PlanPath() != filepath.Join(w.Root(), "plan.json") {
 		t.Fatalf("plan path = %q", w.PlanPath())
 	}
+	if w.PreparedPackagePath() != filepath.Join(w.Root(), "prepared.json") {
+		t.Fatalf("prepared package path = %q", w.PreparedPackagePath())
+	}
 }
 
 func TestNewRequiresJobID(t *testing.T) {
@@ -155,6 +158,21 @@ func TestWritePlan(t *testing.T) {
 	}
 	if string(data) != `{"schema":"chronon.render-plan.v2"}` {
 		t.Fatalf("plan content = %q", data)
+	}
+}
+
+func TestWritePreparedPackage(t *testing.T) {
+	w := newWorkspace(t)
+	const payload = `{"content_hash":"abc"}`
+	if err := w.WritePreparedPackage([]byte(payload)); err != nil {
+		t.Fatalf("write prepared package: %v", err)
+	}
+	data, err := os.ReadFile(w.PreparedPackagePath())
+	if err != nil {
+		t.Fatalf("read prepared package: %v", err)
+	}
+	if string(data) != payload {
+		t.Fatalf("prepared package = %q, want %q", data, payload)
 	}
 }
 
