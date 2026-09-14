@@ -198,19 +198,14 @@ func resolveImageLayout(l PresetLayout, boxWidth, boxHeight, canvasWidth, canvas
 	}
 }
 
-// Chronon's text-run layer position is the center of the text frame in
-// canvas coordinates. The old lowering passed top-left layout coordinates,
-// which clipped text against the left/top edges. Keep text placement explicit
-// and independent from image-card placement.
+// Chronon centers the text frame itself and treats the layer position as an
+// offset from the canvas center. Keep the canonical text layer at [0,0]; any
+// producer-supplied position_x/position_y values remain explicit offsets.
 func resolveTextLayout(l PresetLayout, boxWidth, boxHeight, canvasWidth, canvasHeight int) []float64 {
-	x, y := float64(canvasWidth)/2, float64(canvasHeight)/2
-	switch l.Anchor {
-	case "lower_third":
-		x, y = 0.24*float64(canvasWidth), 0.78*float64(canvasHeight)
-	case "safe_area":
-		x, y = float64(canvasWidth)/2, 0.50*float64(canvasHeight)
-	case "center":
-		x, y = float64(canvasWidth)/2, float64(canvasHeight)/2
-	}
-	return []float64{x, y}
+	_ = l
+	_ = boxWidth
+	_ = boxHeight
+	_ = canvasWidth
+	_ = canvasHeight
+	return []float64{0, 0}
 }

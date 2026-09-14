@@ -1,9 +1,15 @@
 worker:
   id: renderinggen-77
-  # 6 lanes saturate NVENC >90% once the B2 deep ring (Vulkan kSlotCount=6)
-  # removes the per-batch drain stall; CPU/I/O stages stay ahead/behind.
+  # Pipeline (CPU/I/O) workers stay ahead of the GPU stages; the Vulkan B2 deep
+  # ring (Chronon kSubmissionRingDepth=6) removed the per-batch drain stall.
   pipeline_workers: 3
-  # See infra/native/renderinggen-native.yaml: 2 lanes is the measured ceiling.
+  # 2 lanes is the measured ceiling, NOT the deep ring: see
+  # infra/native/renderinggen-native.yaml (extra lanes add queue wait, VRAM
+  # pressure and text-path lock contention without raising the render-loop
+  # rate) and the daemon's serialized execution domain
+  # (Chronon3d/apps/chronon3d_cli/daemon/daemon_render_concurrency.hpp).
+  # Keep PipelineGen's RENDERINGGEN_GPU_SLOTS equal to this value — the shipped
+  # systemd drop-in is scripts/systemd/pipelinegen.service.d/gpu-slots.conf.
   gpu_lanes: 2
 
 queue:
