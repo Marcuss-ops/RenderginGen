@@ -11,10 +11,11 @@ func TestBatchRender_InspectCompiledPlans(t *testing.T) {
 	cases := []struct {
 		id       string
 		presetID string
+		motionID string
 		text     string
 	}{
-		{"01_kinetic_split_word", "kinetic_split_word", "KINETIC PERFORMANCE"},
-		{"01_typewriter_clean", "phrase_typewriter_clean", "EVERY PIXEL MATTERS"},
+		{"01_kinetic_split_word", "apple_v2", "kinetic_split_word", "KINETIC PERFORMANCE"},
+		{"01_typewriter_clean", "apple_v2", "typewriter_clean", "EVERY PIXEL MATTERS"},
 	}
 
 	for _, tc := range cases {
@@ -36,12 +37,13 @@ func TestBatchRender_InspectCompiledPlans(t *testing.T) {
 					"id": "item_1",
 					"template_id": "IMPORTANT_PHRASE",
 					"preset_id": %q,
+					"motion_id": %q,
 					"text": %q,
 					"start_ms": 0,
 					"end_ms": 5000
 				}
 			]
-		}`, tc.id, tc.id, tc.presetID, tc.text)
+		}`, tc.id, tc.id, tc.presetID, tc.motionID, tc.text)
 
 		result, err := CompileSemantic([]byte(raw))
 		if err != nil {

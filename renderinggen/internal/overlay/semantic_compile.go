@@ -432,7 +432,13 @@ func compileEntityCard(ri resolvedItem, src *semanticPlan, registry *assetRegist
 			return nil, err
 		}
 		img.Animation = imgAnimation
-		img.Position = resolveImageLayout(ri.ImagePreset.Layout, img.BoxWidth, img.BoxHeight, src.Width, src.Height)
+		// Entity portraits are centered visual subjects.  The image presets
+		// still own the box size and the entrance motion, but their legacy
+		// left/right/bottom anchors must not move the portrait off-canvas.
+		// Keep the resolved size untouched and use contain so the source is
+		// fully visible inside that box without cropping.
+		img.Position = []float64{0, 0}
+		img.Fit = "contain"
 	}
 	return []Layer{img}, nil
 }
@@ -508,24 +514,33 @@ func compileImageLayer(ri resolvedItem, src *semanticPlan, registry *assetRegist
 		layer.Animation = presetAnimation
 	}
 	if layer.Position == nil && ri.Preset.ID != "" {
-		// A semantic image may request the same explicit center/anchor the
-		// official image presets express. Keep the preset as the owner of fit
-		// and motion, while honoring this layout intent.
-		if position, ok := ri.Params["position"].(string); ok {
-			switch strings.ToLower(strings.TrimSpace(position)) {
-			case "center":
-				layer.Position = []float64{0, 0}
-			case "image_left", "left":
-				layer.Position = []float64{-float64(src.Width-layer.BoxWidth) / 2, 0}
-			case "image_right", "right":
-				layer.Position = []float64{float64(src.Width-layer.BoxWidth) / 2, 0}
-			case "bottom_right":
-				layer.Position = []float64{float64(src.Width-layer.BoxWidth) / 2, float64(src.Height-layer.BoxHeight) / 2}
-			default:
+		if ri.Kind == KindEntityImage {
+			// Entity portraits are centered visual subjects. Keep the official
+			// preset's box and animation, but do not apply the image_popup
+			// anchor: its slide/fade motion must start from the center without
+			// pushing the portrait off-canvas or cropping it.
+			layer.Position = []float64{0, 0}
+			layer.Fit = "contain"
+		} else {
+			// A semantic image may request the same explicit center/anchor the
+			// official image presets express. Keep the preset as the owner of fit
+			// and motion, while honoring this layout intent.
+			if position, ok := ri.Params["position"].(string); ok {
+				switch strings.ToLower(strings.TrimSpace(position)) {
+				case "center":
+					layer.Position = []float64{0, 0}
+				case "image_left", "left":
+					layer.Position = []float64{-float64(src.Width-layer.BoxWidth) / 2, 0}
+				case "image_right", "right":
+					layer.Position = []float64{float64(src.Width-layer.BoxWidth) / 2, 0}
+				case "bottom_right":
+					layer.Position = []float64{float64(src.Width-layer.BoxWidth) / 2, float64(src.Height-layer.BoxHeight) / 2}
+				default:
+					layer.Position = resolveImageLayout(ri.Preset.Layout, layer.BoxWidth, layer.BoxHeight, src.Width, src.Height)
+				}
+			} else {
 				layer.Position = resolveImageLayout(ri.Preset.Layout, layer.BoxWidth, layer.BoxHeight, src.Width, src.Height)
 			}
-		} else {
-			layer.Position = resolveImageLayout(ri.Preset.Layout, layer.BoxWidth, layer.BoxHeight, src.Width, src.Height)
 		}
 	}
 	return layer, nil

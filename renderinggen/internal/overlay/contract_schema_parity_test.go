@@ -152,7 +152,7 @@ func TestContractSchemaRejectsUnknownCompilerFields(t *testing.T) {
 
 	itemRaw := []byte(`{"schema_version":"renderinggen.overlay-plan.v1","plan_id":"p","video_id":"v",` +
 		`"width":1280,"height":720,"fps_num":30,"fps_den":1,` +
-		`"items":[{"id":"i","template_id":"PERSON","preset_id":"name_glow_slide","text":"Ada",` +
+		`"items":[{"id":"i","template_id":"PERSON","preset_id":"apple_v2","text":"Ada",` +
 		`"start_ms":0,"end_ms":1000,"unknown_item_field":1}]}`)
 	if _, err := CompileSemantic(itemRaw); err == nil {
 		t.Fatal("an unknown item field must fail the compile pass, not be silently dropped")

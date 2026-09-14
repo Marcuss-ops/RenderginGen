@@ -4,6 +4,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/chronon"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/media"
 )
 
@@ -90,5 +91,50 @@ func TestOutputFactsFromProbeCertifiesEveryDimension(t *testing.T) {
 func TestOutputFactsFromProbeNilCertifiesNothing(t *testing.T) {
 	if got := outputFactsFromProbe(nil); got != nil {
 		t.Fatalf("outputFactsFromProbe(nil) = %+v, want nil", got)
+	}
+}
+
+func TestProbeResultFromReceipt(t *testing.T) {
+	var r chronon.MediaReceipt
+	r.Media.Container = "mov,mp4,m4a,3gp,3g2,mj2"
+	r.Media.Width = 1920
+	r.Media.Height = 1080
+	r.Media.FPSNum = 9792
+	r.Media.FPSDen = 407
+	r.Media.RFPSNum = 24
+	r.Media.RFPSDen = 1
+	r.Media.DurationMS = 2000.0
+	r.Media.DurationUS = 2000000
+	r.Media.VideoCodec = "h264"
+	r.Media.CodecProfile = "High"
+	r.Media.VideoLevel = "4.1"
+	r.Media.PixelFormat = "yuv420p"
+	r.Media.VideoStreams = 1
+	r.Media.FrameCount = 48
+	r.Media.FirstFrameKeyframe = true
+	r.Media.ClosedGOP = true
+	r.Media.KeyframeInterval = 48
+
+	if !r.HasCanonicalMedia() {
+		t.Fatal("expected HasCanonicalMedia to be true")
+	}
+
+	probed := probeResultFromReceipt(r)
+	if probed.Width != 1920 || probed.Height != 1080 {
+		t.Errorf("got %dx%d, want 1920x1080", probed.Width, probed.Height)
+	}
+	if probed.VideoCodec != "h264" || probed.CodecProfile != "High" {
+		t.Errorf("got %s %s, want h264 High", probed.VideoCodec, probed.CodecProfile)
+	}
+	if probed.FPSNum != 24 || probed.FPSDen != 1 {
+		t.Errorf("got %d/%d fps, want 24/1", probed.FPSNum, probed.FPSDen)
+	}
+	if !probed.FirstFrameKeyframe || !probed.ClosedGOP || probed.KeyframeInterval != 48 {
+		t.Errorf("keyframe facts mismatch: first=%v closed=%v interval=%d",
+			probed.FirstFrameKeyframe, probed.ClosedGOP, probed.KeyframeInterval)
+	}
+	facts := outputFactsFromProbe(&probed)
+	if facts == nil || facts.Width != 1920 || facts.KeyframeInterval != 48 {
+		t.Fatalf("outputFactsFromProbe failed from canonical receipt probe: %+v", facts)
 	}
 }

@@ -177,10 +177,12 @@ func (p *Processor) PrepareJob(ctx context.Context, job *queue.Job) (*PreparedJo
 	}
 	// One compile pass produces the plan AND the ledger counters, so the
 	// artifact metrics can never drift from the layers that were emitted.
+	compileStart := time.Now()
 	result, err := overlay.CompileSemantic(job.RenderPlan)
 	if err != nil {
 		return nil, err
 	}
+	record(metricnames.PrepareSceneCompileStem, compileStart)
 	stats, plan, compiledAssets := result.Stats, result.Plan, result.Assets
 	// A template_id that resolved to no registry row is NOT an error (historical
 	// documents and the compatibility aliases must keep rendering), but it must
@@ -229,17 +231,22 @@ func (p *Processor) PrepareJob(ctx context.Context, job *queue.Job) (*PreparedJo
 	}
 	var inputBytes int64
 	phaseStart := time.Now()
+	matStart := time.Now()
 	// Capture resolver sizes directly from the streaming resolver instead of
 	// re-statting every materialized file after MaterializePaths. The resolver
 	// already returns ResolvedAsset.SizeBytes (from L2/ContextPath or L3 header)
 	// so a second os.Stat loop is pure duplicate I/O.
 	resolvedSizes := make(map[string]int64, len(assets))
 	var resolvedSizesMu sync.Mutex
+	var totalResolveDur time.Duration
 	wrappedResolve := func(rCtx context.Context, a queue.AssetRef) (workspace.ResolvedAsset, error) {
+		rStart := time.Now()
 		res, rErr := p.resolveAssetStreaming(rCtx, a)
+		rDur := time.Since(rStart)
 		if rErr == nil {
 			resolvedSizesMu.Lock()
 			resolvedSizes[a.LogicalPath] = res.SizeBytes
+			totalResolveDur += rDur
 			resolvedSizesMu.Unlock()
 		}
 		return res, rErr
@@ -248,6 +255,7 @@ func (p *Processor) PrepareJob(ctx context.Context, job *queue.Job) (*PreparedJo
 		p.cleanupWorkspace(ws, job.ID)
 		return nil, err
 	}
+	record(metricnames.PrepareAssetResolveStem, time.Now().Add(-totalResolveDur))
 	for _, a := range assets {
 		inputBytes += resolvedSizes[a.LogicalPath]
 	}
@@ -274,7 +282,10 @@ func (p *Processor) PrepareJob(ctx context.Context, job *queue.Job) (*PreparedJo
 		p.cleanupWorkspace(ws, job.ID)
 		return nil, err
 	}
+	record(metricnames.PrepareMaterializeStem, matStart)
+	prefetchStart := time.Now()
 	p.prefetchWarmAssets(ctx, ws.Root(), assets)
+	record(metricnames.PreparePrefetchStem, prefetchStart)
 	// The phase name is the metric-name stem; "asset_materialize" matches the
 	// artifact ledger's column and projection (asset_materialize_us), so one
 	// phase has ONE name across the wire, the mirror and PostgreSQL.
@@ -328,6 +339,7 @@ func (p *Processor) PrepareJob(ctx context.Context, job *queue.Job) (*PreparedJo
 			p.cleanupWorkspace(ws, job.ID)
 			return nil, burnErr
 		}
+		record(metricnames.PrepareBurnStem, burnStart)
 		metrics[metricnames.SubtitleBurnUS] = float64(time.Since(burnStart).Microseconds())
 		metrics[metricnames.SubtitleBurnMS] = metrics[metricnames.SubtitleBurnUS] / 1000
 		// The cue count is the number of subtitle_cue_ layers actually present
@@ -338,6 +350,7 @@ func (p *Processor) PrepareJob(ctx context.Context, job *queue.Job) (*PreparedJo
 	}
 
 	phaseStart = time.Now()
+	marshalStart := time.Now()
 	metadata := planMetadataOf(plan)
 	if !p.nativeOutputProfiles && metadata.ProfileID != "" {
 		// The executed plan diverges from the accepted job's plan by design
@@ -359,6 +372,7 @@ func (p *Processor) PrepareJob(ctx context.Context, job *queue.Job) (*PreparedJo
 		p.cleanupWorkspace(ws, job.ID)
 		return nil, err
 	}
+	record(metricnames.PrepareMarshalStem, marshalStart)
 	record(metricnames.PlanStem, phaseStart)
 	audioPath, warnInert := audioSourcePathFromPlan(plan, ws.Root())
 	if warnInert {
@@ -376,6 +390,7 @@ func (p *Processor) PrepareJob(ctx context.Context, job *queue.Job) (*PreparedJo
 		log.Printf("job %s: audio codec/sample_rate/channels are inert (Chronon copies source audio, no transcode); mode=%q codec=%q sr=%d ch=%d",
 			job.ID, plan.Output.Audio.Mode, plan.Output.Audio.Codec, plan.Output.Audio.SampleRate, plan.Output.Audio.Channels)
 	}
+	record(metricnames.PrepareTotalStem, totalStart)
 	return &PreparedJob{
 		Job:             job,
 		Workspace:       ws,

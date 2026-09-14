@@ -112,8 +112,8 @@ func (c *capturingRenderer) Render(ctx context.Context, req chronon.RenderReques
 // renderinggen.overlay-plan.v1 contract:
 //
 //	background.jpg (IMAGE_OVERLAY, full 5s, cover)
-//	+ "QUESTO CAMBIA TUTTO" (IMPORTANT_PHRASE, caption_card, f20-60)
-//	+ "APPLE"               (IMPORTANT_WORD,   active_word_pop, f65-95)
+//	+ "QUESTO CAMBIA TUTTO" (IMPORTANT_PHRASE, apple_v2, f20-60)
+//	+ "APPLE"               (IMPORTANT_WORD,   apple_v2, f65-95)
 //
 // The worker must lower the semantic plan (CompileSemantic), materialize the
 // content-addressed asset_refs, write the concrete plan.json, render with the

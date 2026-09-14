@@ -25,6 +25,7 @@ type PresetJob struct {
 	Filename     string
 	PlanFilename string
 	PresetID     string
+	MotionID     string
 	Text         string
 	OutDir       string
 }
@@ -50,6 +51,11 @@ func main() {
 		daemonLanes  = flag.Int("daemon-lanes", 1, "Concurrent RENDER_JOBs per daemon; its device scheduler rejects more than two and degrades latency once they overlap")
 	)
 	flag.Parse()
+	// NVENC uses p1 by default, while the software pipe encoder only accepts
+	// libx264 presets. Keep the CLI default convenient for both render lanes.
+	if *hardware == chronon.HardwareEncoderNone && *encodePreset == "p1" {
+		*encodePreset = "ultrafast"
+	}
 
 	baseDir, err := os.Getwd()
 	if err != nil {
@@ -97,7 +103,8 @@ func main() {
 			ID:           "highend_phrase_01_kinetic_split_word",
 			Filename:     "01_kinetic_split_word_1920x1080_24fps_5s.mp4",
 			PlanFilename: "01_kinetic_split_word_plan.json",
-			PresetID:     "kinetic_split_word",
+			PresetID:     "apple_v2",
+			MotionID:     "kinetic_split_word",
 			Text:         "KINETIC PERFORMANCE",
 			OutDir:       phraseDir,
 		},
@@ -105,7 +112,8 @@ func main() {
 			ID:           "highend_phrase_02_dynamic_island_expansion",
 			Filename:     "02_dynamic_island_expansion_1920x1080_24fps_5s.mp4",
 			PlanFilename: "02_dynamic_island_expansion_plan.json",
-			PresetID:     "dynamic_island_expansion",
+			PresetID:     "apple_v2",
+			MotionID:     "dynamic_island_expansion",
 			Text:         "NOW PLAYING",
 			OutDir:       phraseDir,
 		},
@@ -113,7 +121,8 @@ func main() {
 			ID:           "highend_phrase_03_masked_upward_reveal",
 			Filename:     "03_masked_upward_reveal_1920x1080_24fps_5s.mp4",
 			PlanFilename: "03_masked_upward_reveal_plan.json",
-			PresetID:     "masked_upward_reveal",
+			PresetID:     "apple_v2",
+			MotionID:     "masked_upward_reveal",
 			Text:         "BUILT FOR SPEED",
 			OutDir:       phraseDir,
 		},
@@ -121,7 +130,8 @@ func main() {
 			ID:           "highend_phrase_04_staggered_char_float",
 			Filename:     "04_staggered_char_float_1920x1080_24fps_5s.mp4",
 			PlanFilename: "04_staggered_char_float_plan.json",
-			PresetID:     "staggered_char_float",
+			PresetID:     "apple_v2",
+			MotionID:     "staggered_char_float",
 			Text:         "EVERY FRAME MATTERS",
 			OutDir:       phraseDir,
 		},
@@ -129,7 +139,8 @@ func main() {
 			ID:           "highend_phrase_05_high_specular_light_sweep",
 			Filename:     "05_high_specular_light_sweep_1920x1080_24fps_5s.mp4",
 			PlanFilename: "05_high_specular_light_sweep_plan.json",
-			PresetID:     "high_specular_light_sweep",
+			PresetID:     "apple_v2",
+			MotionID:     "high_specular_light_sweep",
 			Text:         "TITANIUM ENGINE",
 			OutDir:       phraseDir,
 		},
@@ -137,7 +148,8 @@ func main() {
 			ID:           "highend_phrase_06_depth_of_field_rack_focus",
 			Filename:     "06_depth_of_field_rack_focus_1920x1080_24fps_5s.mp4",
 			PlanFilename: "06_depth_of_field_rack_focus_plan.json",
-			PresetID:     "depth_of_field_rack_focus",
+			PresetID:     "apple_v2",
+			MotionID:     "depth_of_field_rack_focus",
 			Text:         "FOCUS ON THE SIGNAL",
 			OutDir:       phraseDir,
 		},
@@ -145,7 +157,8 @@ func main() {
 			ID:           "highend_phrase_07_micro_tracker_kerning_compression",
 			Filename:     "07_micro_tracker_kerning_compression_1920x1080_24fps_5s.mp4",
 			PlanFilename: "07_micro_tracker_kerning_compression_plan.json",
-			PresetID:     "micro_tracker_kerning_compression",
+			PresetID:     "apple_v2",
+			MotionID:     "micro_tracker_kerning_compression",
 			Text:         "PRECISION TYPOGRAPHY",
 			OutDir:       phraseDir,
 		},
@@ -153,7 +166,8 @@ func main() {
 			ID:           "highend_phrase_08_isometric_3d_fold",
 			Filename:     "08_isometric_3d_fold_1920x1080_24fps_5s.mp4",
 			PlanFilename: "08_isometric_3d_fold_plan.json",
-			PresetID:     "isometric_3d_fold",
+			PresetID:     "apple_v2",
+			MotionID:     "isometric_3d_fold",
 			Text:         "SPATIAL COMPUTING",
 			OutDir:       phraseDir,
 		},
@@ -161,7 +175,8 @@ func main() {
 			ID:           "highend_phrase_09_soft_edge_spotlight_dissolve",
 			Filename:     "09_soft_edge_spotlight_dissolve_1920x1080_24fps_5s.mp4",
 			PlanFilename: "09_soft_edge_spotlight_dissolve_plan.json",
-			PresetID:     "soft_edge_spotlight_dissolve",
+			PresetID:     "apple_v2",
+			MotionID:     "soft_edge_spotlight_dissolve",
 			Text:         "A SOFT REVEAL",
 			OutDir:       phraseDir,
 		},
@@ -169,7 +184,8 @@ func main() {
 			ID:           "highend_phrase_10_chromatic_aberration_pop",
 			Filename:     "10_chromatic_aberration_pop_1920x1080_24fps_5s.mp4",
 			PlanFilename: "10_chromatic_aberration_pop_plan.json",
-			PresetID:     "chromatic_aberration_pop",
+			PresetID:     "apple_v2",
+			MotionID:     "chromatic_aberration_pop",
 			Text:         "IMPACT",
 			OutDir:       phraseDir,
 		},
@@ -177,7 +193,8 @@ func main() {
 			ID:           "highend_phrase_11_fluid_gradient_text_flow",
 			Filename:     "11_fluid_gradient_text_flow_1920x1080_24fps_5s.mp4",
 			PlanFilename: "11_fluid_gradient_text_flow_plan.json",
-			PresetID:     "fluid_gradient_text_flow",
+			PresetID:     "apple_v2",
+			MotionID:     "fluid_gradient_text_flow",
 			Text:         "FLUID MOTION",
 			OutDir:       phraseDir,
 		},
@@ -185,7 +202,8 @@ func main() {
 			ID:           "highend_phrase_12_velocity_inertia_snap",
 			Filename:     "12_velocity_inertia_snap_1920x1080_24fps_5s.mp4",
 			PlanFilename: "12_velocity_inertia_snap_plan.json",
-			PresetID:     "velocity_inertia_snap",
+			PresetID:     "apple_v2",
+			MotionID:     "velocity_inertia_snap",
 			Text:         "FAST. THEN EXACT.",
 			OutDir:       phraseDir,
 		},
@@ -193,7 +211,8 @@ func main() {
 			ID:           "highend_phrase_13_vertical_rolling_counter",
 			Filename:     "13_vertical_rolling_counter_1920x1080_24fps_5s.mp4",
 			PlanFilename: "13_vertical_rolling_counter_plan.json",
-			PresetID:     "vertical_rolling_counter",
+			PresetID:     "apple_v2",
+			MotionID:     "vertical_rolling_counter",
 			Text:         "327% GROWTH",
 			OutDir:       phraseDir,
 		},
@@ -201,7 +220,8 @@ func main() {
 			ID:           "highend_phrase_14_glassmorphism_card_tilt",
 			Filename:     "14_glassmorphism_card_tilt_1920x1080_24fps_5s.mp4",
 			PlanFilename: "14_glassmorphism_card_tilt_plan.json",
-			PresetID:     "glassmorphism_card_tilt",
+			PresetID:     "apple_v2",
+			MotionID:     "glassmorphism_card_tilt",
 			Text:         "GLASS / LIGHT / DEPTH",
 			OutDir:       phraseDir,
 		},
@@ -209,7 +229,8 @@ func main() {
 			ID:           "highend_phrase_15_pixel_grid_alpha_matrix",
 			Filename:     "15_pixel_grid_alpha_matrix_1920x1080_24fps_5s.mp4",
 			PlanFilename: "15_pixel_grid_alpha_matrix_plan.json",
-			PresetID:     "pixel_grid_alpha_matrix",
+			PresetID:     "apple_v2",
+			MotionID:     "pixel_grid_alpha_matrix",
 			Text:         "MATRIX ASSEMBLY",
 			OutDir:       phraseDir,
 		},
@@ -219,7 +240,8 @@ func main() {
 			ID:           "typewriter_01_clean",
 			Filename:     "01_typewriter_clean_1920x1080_24fps_5s.mp4",
 			PlanFilename: "01_typewriter_clean_plan.json",
-			PresetID:     "phrase_typewriter_clean",
+			PresetID:     "apple_v2",
+			MotionID:     "typewriter_clean",
 			Text:         "EVERY PIXEL MATTERS",
 			OutDir:       typewriterDir,
 		},
@@ -227,7 +249,8 @@ func main() {
 			ID:           "typewriter_02_pop",
 			Filename:     "02_typewriter_pop_1920x1080_24fps_5s.mp4",
 			PlanFilename: "02_typewriter_pop_plan.json",
-			PresetID:     "phrase_typewriter_pop",
+			PresetID:     "apple_v2",
+			MotionID:     "typewriter_pop",
 			Text:         "CREATIVE REVOLUTION",
 			OutDir:       typewriterDir,
 		},
@@ -235,7 +258,8 @@ func main() {
 			ID:           "typewriter_03_neon",
 			Filename:     "03_typewriter_neon_1920x1080_24fps_5s.mp4",
 			PlanFilename: "03_typewriter_neon_plan.json",
-			PresetID:     "phrase_typewriter_neon",
+			PresetID:     "apple_v2",
+			MotionID:     "typewriter_neon",
 			Text:         "FUTURE OF MOTION",
 			OutDir:       typewriterDir,
 		},
@@ -243,7 +267,8 @@ func main() {
 			ID:           "typewriter_04_tracking",
 			Filename:     "04_typewriter_tracking_1920x1080_24fps_5s.mp4",
 			PlanFilename: "04_typewriter_tracking_plan.json",
-			PresetID:     "phrase_typewriter_tracking",
+			PresetID:     "apple_v2",
+			MotionID:     "typewriter_tracking",
 			Text:         "TIMELESS TYPOGRAPHY",
 			OutDir:       typewriterDir,
 		},
@@ -251,7 +276,8 @@ func main() {
 			ID:           "typewriter_05_glitch",
 			Filename:     "05_typewriter_glitch_1920x1080_24fps_5s.mp4",
 			PlanFilename: "05_typewriter_glitch_plan.json",
-			PresetID:     "phrase_typewriter_glitch",
+			PresetID:     "apple_v2",
+			MotionID:     "typewriter_glitch",
 			Text:         "MAXIMUM PERFORMANCE",
 			OutDir:       typewriterDir,
 		},
@@ -260,7 +286,7 @@ func main() {
 	var jobs []PresetJob
 	for i, j := range allJobs {
 		j.Index = i + 1
-		if *onlyPreset != "" && j.PresetID != *onlyPreset && j.Filename != *onlyPreset {
+		if *onlyPreset != "" && j.PresetID != *onlyPreset && j.MotionID != *onlyPreset && j.Filename != *onlyPreset {
 			continue
 		}
 		jobs = append(jobs, j)
@@ -391,13 +417,14 @@ func main() {
 						{
 							"id": "item_1",
 							"template_id": "IMPORTANT_PHRASE",
-							"preset_id": %q,
+					"preset_id": %q,
+					"motion_id": %q,
 							"text": %q,
 							"start_ms": 0,
 							"end_ms": 5000
 						}
 					]
-				}`, job.ID, job.ID, job.PresetID, job.Text)
+				}`, job.ID, job.ID, job.PresetID, job.MotionID, job.Text)
 
 				// 2. Compile semantic to chronon plan
 				compileResult, err := overlay.CompileSemantic([]byte(rawSemantic))
