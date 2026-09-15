@@ -72,6 +72,61 @@ type PreparedOverlay struct {
 	Dynamic  DynamicOverlayState `json:"dynamic"`
 }
 
+// Validate checks the immutable package at the boundary where it is handed
+// to the staged worker. This keeps a corrupt or stale sidecar from becoming a
+// renderer-specific failure and makes the content hash an actual contract,
+// not just an informational field.
+func (p PreparedPackage) Validate() error {
+	if p.PlanID == "" {
+		return fmt.Errorf("overlay: prepared package has no plan id")
+	}
+	if p.ContentHash == "" {
+		return fmt.Errorf("overlay: prepared package has no content hash")
+	}
+	textKeys := make(map[string]struct{}, len(p.TextRuns))
+	for _, run := range p.TextRuns {
+		if run.Key == "" || run.Text == "" {
+			return fmt.Errorf("overlay: prepared text run is missing key or complete text")
+		}
+		if _, exists := textKeys[run.Key]; exists {
+			return fmt.Errorf("overlay: duplicate prepared text key %q", run.Key)
+		}
+		textKeys[run.Key] = struct{}{}
+	}
+	assetKeys := make(map[string]struct{}, len(p.Assets))
+	for _, asset := range p.Assets {
+		if asset.Key == "" || asset.ContentHash == "" || asset.LogicalPath == "" {
+			return fmt.Errorf("overlay: prepared asset %q is missing identity or path", asset.Key)
+		}
+		if _, exists := assetKeys[asset.Key]; exists {
+			return fmt.Errorf("overlay: duplicate prepared asset key %q", asset.Key)
+		}
+		assetKeys[asset.Key] = struct{}{}
+	}
+	for _, overlay := range p.Overlays {
+		switch overlay.Kind {
+		case "text":
+			if _, exists := textKeys[overlay.TextKey]; !exists {
+				return fmt.Errorf("overlay: %q references unknown text key %q", overlay.ID, overlay.TextKey)
+			}
+		case "image", "video":
+			if _, exists := assetKeys[overlay.AssetKey]; !exists {
+				return fmt.Errorf("overlay: %q references unknown asset key %q", overlay.ID, overlay.AssetKey)
+			}
+		}
+	}
+	canonical := p
+	canonical.ContentHash = ""
+	digest, err := stableDigest(canonical)
+	if err != nil {
+		return fmt.Errorf("overlay: validate content identity: %w", err)
+	}
+	if digest != p.ContentHash {
+		return fmt.Errorf("overlay: content hash mismatch: got %s want %s", p.ContentHash, digest)
+	}
+	return nil
+}
+
 type textPreparationIdentity struct {
 	Text  string      `json:"text"`
 	Style *LayerStyle `json:"style,omitempty"`
@@ -80,7 +135,7 @@ type textPreparationIdentity struct {
 
 type assetPreparationIdentity struct {
 	ContentHash string    `json:"content_hash"`
-	LogicalPath string    `json:"logical_path"`
+	Kind        string    `json:"kind"`
 	Size        []float64 `json:"size,omitempty"`
 	Fit         string    `json:"fit,omitempty"`
 }
@@ -96,7 +151,7 @@ func buildPreparedPackage(plan *Plan, language string, assets []Asset) (Prepared
 
 	pkg := PreparedPackage{PlanID: plan.JobID, Language: language}
 	textByKey := make(map[string]struct{})
-	assetByKey := make(map[string]struct{})
+	assetByKey := make(map[string]int)
 	for _, layer := range plan.Layers {
 		prepared := PreparedOverlay{
 			ID:   layer.ID,
@@ -138,7 +193,7 @@ func buildPreparedPackage(plan *Plan, language string, assets []Asset) (Prepared
 			if logicalPath == "" {
 				continue
 			}
-			identity := assetPreparationIdentity{ContentHash: assetHashes[logicalPath], LogicalPath: logicalPath, Size: cloneFloats(layer.Size), Fit: layer.Fit}
+			identity := assetPreparationIdentity{ContentHash: assetHashes[logicalPath], Kind: layer.Type, Size: cloneFloats(layer.Size), Fit: layer.Fit}
 			key, err := stableDigest(identity)
 			if err != nil {
 				return PreparedPackage{}, fmt.Errorf("overlay: asset preparation identity %q: %w", layer.ID, err)
@@ -146,7 +201,12 @@ func buildPreparedPackage(plan *Plan, language string, assets []Asset) (Prepared
 			prepared.AssetKey = key
 			if _, exists := assetByKey[key]; !exists {
 				pkg.Assets = append(pkg.Assets, PreparedAsset{Key: key, Kind: layer.Type, ContentHash: identity.ContentHash, LogicalPath: logicalPath, Size: cloneFloats(layer.Size), Fit: layer.Fit})
-				assetByKey[key] = struct{}{}
+				assetByKey[key] = len(pkg.Assets) - 1
+			} else if index := assetByKey[key]; logicalPath < pkg.Assets[index].LogicalPath {
+				// The upload/cache identity is content-based; retain one
+				// deterministic representative path for diagnostics and any
+				// consumer that still needs to locate the bytes.
+				pkg.Assets[index].LogicalPath = logicalPath
 			}
 		}
 		pkg.Overlays = append(pkg.Overlays, prepared)
@@ -161,6 +221,9 @@ func buildPreparedPackage(plan *Plan, language string, assets []Asset) (Prepared
 		return PreparedPackage{}, fmt.Errorf("overlay: package content identity: %w", err)
 	}
 	pkg.ContentHash = digest
+	if err := pkg.Validate(); err != nil {
+		return PreparedPackage{}, err
+	}
 	return pkg, nil
 }
 

@@ -61,4 +61,49 @@ func TestPreparedPackageIdentityIsDeterministic(t *testing.T) {
 	if a.Prepared.ContentHash != b.Prepared.ContentHash {
 		t.Fatalf("prepared hash changed across identical compiles: %s != %s", a.Prepared.ContentHash, b.Prepared.ContentHash)
 	}
+	if err := a.Prepared.Validate(); err != nil {
+		t.Fatalf("prepared package validation failed: %v", err)
+	}
+}
+
+func TestPreparedPackageAssetIdentityIgnoresLogicalPath(t *testing.T) {
+	const hash = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+	plan := &Plan{
+		JobID: "asset-identity",
+		Layers: []Layer{
+			{ID: "image-a", Type: "image", Asset: "assets/a.png", Size: []float64{640, 360}, Fit: "cover"},
+			{ID: "image-b", Type: "image", Asset: "assets/b.png", Size: []float64{640, 360}, Fit: "cover"},
+		},
+	}
+	pkg, err := buildPreparedPackage(plan, "en", []Asset{
+		{Hash: hash, LogicalPath: "assets/a.png"},
+		{Hash: hash, LogicalPath: "assets/b.png"},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(pkg.Assets) != 1 {
+		t.Fatalf("assets = %d, want one content-identity entry", len(pkg.Assets))
+	}
+	if pkg.Overlays[0].AssetKey != pkg.Overlays[1].AssetKey {
+		t.Fatalf("same content with different paths did not share key: %q != %q", pkg.Overlays[0].AssetKey, pkg.Overlays[1].AssetKey)
+	}
+	if pkg.Assets[0].LogicalPath != "assets/a.png" {
+		t.Fatalf("representative path = %q, want deterministic lexical representative", pkg.Assets[0].LogicalPath)
+	}
+	if err := pkg.Validate(); err != nil {
+		t.Fatalf("prepared package validation failed: %v", err)
+	}
+}
+
+func TestPreparedPackageValidationRejectsTampering(t *testing.T) {
+	const raw = `{"schema_version":"renderinggen.overlay-plan.v1","plan_id":"p","video_id":"v","language":"en","width":1280,"height":720,"fps_num":24,"fps_den":1,"items":[{"id":"t","kind":"important_phrase","template_id":"IMPORTANT_PHRASE","preset_id":"static_text_smoke","text":"READY","start_ms":0,"end_ms":1000}]}`
+	result, err := CompileSemantic([]byte(raw))
+	if err != nil {
+		t.Fatal(err)
+	}
+	result.Prepared.TextRuns[0].Text = "TAMPERED"
+	if err := result.Prepared.Validate(); err == nil {
+		t.Fatal("tampered prepared package validated successfully")
+	}
 }
