@@ -163,6 +163,12 @@ func main() {
 	proc.SetEncodePreset(cfg.Chronon.EncodePreset)
 	proc.SetPipePixFmt(cfg.Chronon.PipePixFmt)
 	proc.SetWorkspaceLeaseTTL(timings.WorkspaceLeaseTTL)
+	// Verification policy, deep visual validation and workspace retention come
+	// from configuration, so the post pool (the workspace's last owner) and the
+	// processor cannot be told different things.
+	proc.SetReceiptVerify(cfg.Pipeline.ReceiptVerify)
+	proc.SetDeepVisualValidation(cfg.Pipeline.DeepVisualValidation)
+	proc.SetKeepWorkspace(cfg.Pipeline.KeepWorkspace)
 	log.Printf("chronon report telemetry: %t, strict_native_backend: %t, encode_preset: %q, pipe_pixfmt: %q", cfg.Chronon.Report, cfg.Chronon.StrictNative(), cfg.Chronon.EncodePreset, cfg.Chronon.PipePixFmt)
 
 	// 3a. Worker-local artifact ledger mirror (the "DB artifact" step): SQLite,
@@ -187,19 +193,21 @@ func main() {
 			publisher = drive.NewMock(cfg.Drive.MockDir, cfg.Drive.MockFailFirst)
 			log.Printf("drive: mock publisher (fail_first=%d, dir=%q)", cfg.Drive.MockFailFirst, cfg.Drive.MockDir)
 		case "oauth":
-			pub, err := drive.NewGoogleOAuth(ctx, cfg.Drive.CredentialsFile, cfg.Drive.TokenFile, cfg.Drive.ParentFolderID)
+			pub, err := drive.NewGoogleOAuthWithOptions(ctx, cfg.Drive.CredentialsFile, cfg.Drive.TokenFile, cfg.Drive.ParentFolderID,
+				drive.Options{ChunkBytes: cfg.Drive.ChunkBytes})
 			if err != nil {
 				log.Fatalf("drive: %v", err)
 			}
 			publisher = pub
-			log.Printf("drive: oauth publisher (folder=%q)", cfg.Drive.ParentFolderID)
+			log.Printf("drive: oauth publisher (folder=%q, chunk_bytes=%d)", cfg.Drive.ParentFolderID, cfg.Drive.ChunkBytes)
 		default:
-			pub, err := drive.NewGoogle(ctx, cfg.Drive.CredentialsFile, cfg.Drive.ParentFolderID)
+			pub, err := drive.NewGoogleWithOptions(ctx, cfg.Drive.CredentialsFile, cfg.Drive.ParentFolderID,
+				drive.Options{ChunkBytes: cfg.Drive.ChunkBytes})
 			if err != nil {
 				log.Fatalf("drive: %v", err)
 			}
 			publisher = pub
-			log.Printf("drive: google publisher (folder=%q)", cfg.Drive.ParentFolderID)
+			log.Printf("drive: google publisher (folder=%q, chunk_bytes=%d)", cfg.Drive.ParentFolderID, cfg.Drive.ChunkBytes)
 		}
 	}
 	if publisher != nil {

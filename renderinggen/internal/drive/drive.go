@@ -15,7 +15,6 @@ import (
 	"io"
 	"log"
 	"os"
-	"strconv"
 	"strings"
 	"sync"
 
@@ -72,10 +71,40 @@ type Google struct {
 	chunkBytes   int
 }
 
+// Options carries the publisher settings that are deployment choices rather
+// than credentials. It is a struct so adding a setting does not change the
+// constructors' arity again.
+type Options struct {
+	// ChunkBytes is the resumable-upload chunk size. Zero (or anything below
+	// googleapi.MinUploadChunkSize, which the API rejects) uses
+	// defaultResumableChunkBytes. It arrives from configuration
+	// (drive.chunk_bytes) rather than being read from the environment inside
+	// this package: the operator could previously set
+	// RENDERINGGEN_DRIVE_CHUNK_BYTES with no way to see, from the worker's
+	// configuration, what it had been set to.
+	ChunkBytes int64
+}
+
+// chunkBytesFor applies the publisher's chunk-size policy to a configured
+// value: an unusable size falls back to the default rather than producing a
+// publisher whose every resumable request the API rejects.
+func chunkBytesFor(configured int64) int {
+	if configured < googleapi.MinUploadChunkSize {
+		return defaultResumableChunkBytes
+	}
+	return int(configured)
+}
+
 // NewGoogle builds a Drive publisher from a service-account JSON credentials
 // file. The file is created at the artifact's parent folder unless parentFolder
-// is empty.
+// is empty. Upload chunking uses the publisher default; use
+// NewGoogleWithOptions to configure it.
 func NewGoogle(ctx context.Context, credentialsFile, parentFolder string) (*Google, error) {
+	return NewGoogleWithOptions(ctx, credentialsFile, parentFolder, Options{})
+}
+
+// NewGoogleWithOptions is NewGoogle with explicit publisher settings.
+func NewGoogleWithOptions(ctx context.Context, credentialsFile, parentFolder string, opts Options) (*Google, error) {
 	b, err := os.ReadFile(credentialsFile)
 	if err != nil {
 		return nil, fmt.Errorf("drive: read credentials %s: %w", credentialsFile, err)
@@ -89,7 +118,7 @@ func NewGoogle(ctx context.Context, credentialsFile, parentFolder string) (*Goog
 		return nil, fmt.Errorf("drive: create service: %w", err)
 	}
 	return &Google{service: svc, parentFolder: parentFolder, resumable: true,
-		chunkBytes: configuredChunkBytes()}, nil
+		chunkBytes: chunkBytesFor(opts.ChunkBytes)}, nil
 }
 
 // NewGoogleOAuth builds a Drive publisher from a Google OAuth2 client
@@ -97,8 +126,14 @@ func NewGoogle(ctx context.Context, credentialsFile, parentFolder string) (*Goog
 // (token.json — the shape PipelineGen's generate_drive_token.py writes:
 // access_token / token_type / refresh_token / expiry). The token is refreshed
 // and persisted back to tokenFile when it expires. The user account owning
-// the token must have write access to the parent folder.
+// the token must have write access to the parent folder. Upload chunking uses
+// the publisher default; use NewGoogleOAuthWithOptions to configure it.
 func NewGoogleOAuth(ctx context.Context, credentialsFile, tokenFile, parentFolder string) (*Google, error) {
+	return NewGoogleOAuthWithOptions(ctx, credentialsFile, tokenFile, parentFolder, Options{})
+}
+
+// NewGoogleOAuthWithOptions is NewGoogleOAuth with explicit publisher settings.
+func NewGoogleOAuthWithOptions(ctx context.Context, credentialsFile, tokenFile, parentFolder string, opts Options) (*Google, error) {
 	b, err := os.ReadFile(credentialsFile)
 	if err != nil {
 		return nil, fmt.Errorf("drive: read credentials %s: %w", credentialsFile, err)
@@ -117,16 +152,7 @@ func NewGoogleOAuth(ctx context.Context, credentialsFile, tokenFile, parentFolde
 		return nil, fmt.Errorf("drive: create service: %w", err)
 	}
 	return &Google{service: svc, parentFolder: parentFolder, resumable: true,
-		chunkBytes: configuredChunkBytes()}, nil
-}
-
-func configuredChunkBytes() int {
-	if raw := os.Getenv("RENDERINGGEN_DRIVE_CHUNK_BYTES"); raw != "" {
-		if n, err := strconv.Atoi(raw); err == nil && n >= googleapi.MinUploadChunkSize {
-			return n
-		}
-	}
-	return defaultResumableChunkBytes
+		chunkBytes: chunkBytesFor(opts.ChunkBytes)}, nil
 }
 
 // loadOAuthToken reads an oauth2 token file, tolerating the "token" and

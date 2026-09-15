@@ -7,7 +7,10 @@ the checked-in versions are video-only (`-an`) so they are safe for Chronon's
 
 Every file is 1920×1080, H.264, 30 fps, 15 seconds, and has zero audio streams.
 `manifest.json` is the source-of-truth for the original Drive file ID and the
-content hash of the normalized asset.
+content hash of the normalized asset *within this module*. The canonical owner
+of the plate identities is PipelineGen's editorial media registry
+(`internal/capabilities/mediaregistry/editorial_backgrounds.go`); this manifest
+is a projection of it, and the two are checked for drift.
 
 To use one in a semantic plan, reference it as an asset and select the
 `VIDEO_BACKGROUND` template:

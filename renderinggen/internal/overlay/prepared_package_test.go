@@ -107,3 +107,32 @@ func TestPreparedPackageValidationRejectsTampering(t *testing.T) {
 		t.Fatal("tampered prepared package validated successfully")
 	}
 }
+
+func TestPreparePackageRebuildsBindingsForLayersAddedAfterCompile(t *testing.T) {
+	const raw = `{"schema_version":"renderinggen.overlay-plan.v1","plan_id":"p","video_id":"v","language":"it","width":1280,"height":720,"fps_num":24,"fps_den":1,"items":[{"id":"t","kind":"important_phrase","template_id":"IMPORTANT_PHRASE","preset_id":"static_text_smoke","text":"READY","start_ms":0,"end_ms":1000}]}`
+	result, err := CompileSemantic([]byte(raw))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Subtitle burn-in is a later processor mutation of the concrete plan.
+	result.Plan.Layers = append(result.Plan.Layers, Layer{
+		ID: "subtitle_cue_0", Type: "text", Text: "SOTTOTITOLO",
+		Size: []float64{1000, 70}, StartFrame: 0, DurationFrames: 24,
+		Style: &LayerStyle{Font: "assets/fonts/Poppins-Bold.ttf", FontSize: 42, Fill: "#FFFFFF"},
+	})
+
+	rebuilt, err := PreparePackage(result.Plan, result.Prepared.Language, result.Assets)
+	if err != nil {
+		t.Fatalf("rebuild prepared package: %v", err)
+	}
+	if len(rebuilt.Overlays) != len(result.Plan.Layers) {
+		t.Fatalf("rebuilt overlays = %d, want one binding per layer (%d)", len(rebuilt.Overlays), len(result.Plan.Layers))
+	}
+	if rebuilt.Overlays[len(rebuilt.Overlays)-1].ID != "subtitle_cue_0" {
+		t.Fatalf("rebuilt package lost appended subtitle layer: %+v", rebuilt.Overlays)
+	}
+	if err := rebuilt.Validate(); err != nil {
+		t.Fatalf("rebuilt package validation failed: %v", err)
+	}
+}

@@ -12,7 +12,6 @@ package processor
 
 import (
 	"context"
-	"os"
 	"time"
 
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/queue"
@@ -27,7 +26,7 @@ func (p *Processor) StagedRender(ctx context.Context, job *queue.Job) (queue.Art
 	if err != nil {
 		return queue.Artifact{}, err
 	}
-	if os.Getenv("RENDERINGGEN_KEEP_WORKSPACE") != "1" {
+	if !p.keepWorkspace {
 		defer p.cleanupWorkspace(prepared.Workspace, job.ID)
 	}
 	if err := p.RunGPU(ctx, prepared); err != nil {

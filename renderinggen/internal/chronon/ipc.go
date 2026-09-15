@@ -15,17 +15,26 @@ import (
 // IPC wire constants — must match Chronon3d's chronon_ipc.hpp.
 //
 // The command and status enums are mirrored COMPLETE from the header, even
-// where this client does not yet compare against a value (ipcStatusNotFound,
+// where this client never sends a value (ipcCommandPreparePlan,
+// ipcCommandRenderOverlay) or never compares against one (ipcStatusNotFound,
 // ipcStatusBadRequest). They are the wire contract, not locals: a partial
 // enum would silently misnumber the values after the first omission, and a
 // future caller (or a daemon that starts returning "not found" for a
 // missing-asset prefetch) needs the constant to exist. Contract surface, not
 // dead code — do not trim it to the currently-referenced subset.
+//
+// "Mirrored by hand" is the real hazard, so the mirror is no longer only a
+// comment: ipc_contract_test.go reads chronon_ipc.hpp from the sibling
+// Chronon3d checkout, when one is present, and asserts every constant below
+// against it. A value that shifts in the header fails that test instead of
+// silently renumbering a command the daemon will interpret as another.
 const (
 	ipcMagic                   uint32 = 0x43484e33 // "CHN3"
 	ipcHeaderBytes                    = 12         // magic + command/status + payload-len
 	ipcMaxPayload                     = 64 * 1024 * 1024
 	ipcCommandPrefetchAsset           = 1
+	ipcCommandPreparePlan             = 2
+	ipcCommandRenderOverlay           = 3
 	ipcCommandStatus                  = 4
 	ipcCommandShutdown                = 5
 	ipcCommandRenderJob               = 6
@@ -36,6 +45,69 @@ const (
 	ipcStatusBadRequest               = 3
 	ipcStatusShutdown                 = 4
 )
+
+// ipcProtocolVersion mirrors the header's kProtocolVersion.
+//
+// It is NOT transmitted: the 12-byte header is magic | command-or-status |
+// payload-len, so neither side can detect a version skew on the wire. That
+// makes the version a declaration about THIS file — "these constants were
+// mirrored from protocol revision 1" — which is exactly what the contract test
+// verifies against the header. It is named here so a revision bump has one
+// place to land and one test to fail, rather than being an invisible fact
+// about a hand-copied enum.
+const ipcProtocolVersion uint32 = 1
+
+// ipcCommandNames is the command enum by value. It is the mirror the contract
+// test compares against the header, and the source of the name in any error a
+// caller has to read.
+var ipcCommandNames = map[uint32]string{
+	ipcCommandPrefetchAsset:    "PrefetchAsset",
+	ipcCommandPreparePlan:      "PreparePlan",
+	ipcCommandRenderOverlay:    "RenderOverlay",
+	ipcCommandStatus:           "Status",
+	ipcCommandShutdown:         "Shutdown",
+	ipcCommandRenderJob:        "RenderJob",
+	ipcCommandAssembleSegments: "AssembleSegments",
+}
+
+// ipcStatusNames is the reply-status enum by value.
+//
+// Unlike the command enum, this one must be COMPLETE: every reply carries a
+// status, so a value this map does not know is a status the client cannot
+// interpret. describeIPCStatus turns exactly that case into a named "unknown
+// status" failure instead of a bare number that reads like an ordinary daemon
+// error (see ipcReplyError).
+var ipcStatusNames = map[uint32]string{
+	ipcStatusOk:         "Ok",
+	ipcStatusError:      "Error",
+	ipcStatusNotFound:   "NotFound",
+	ipcStatusBadRequest: "BadRequest",
+	ipcStatusShutdown:   "Shutdown",
+}
+
+// describeIPCStatus renders a reply status for an error message and reports
+// whether the value is one this client's mirror knows. known=false means
+// protocol drift: the daemon spoke a status from a revision this client was not
+// built against, so the numeric code alone must not be trusted to mean
+// "failure".
+func describeIPCStatus(status uint32) (string, bool) {
+	if name, ok := ipcStatusNames[status]; ok {
+		return name, true
+	}
+	return "", false
+}
+
+// ipcReplyError is the single formatter for a non-ok reply status, so every
+// IPC call site reports a daemon refusal the same way and an unrecognized code
+// is reported as drift rather than as just another error. (The name avoids
+// ipcStatusError, which is the wire constant for the Error status itself.)
+func ipcReplyError(op string, status uint32, message string) error {
+	if name, known := describeIPCStatus(status); known {
+		return fmt.Errorf("ipc %s: daemon status %s (%d): %s", op, name, status, message)
+	}
+	return fmt.Errorf("ipc %s: daemon status %d is not in this client's protocol v%d mirror; the daemon may be speaking a newer revision: %s",
+		op, status, ipcProtocolVersion, message)
+}
 
 // defaultIPCServiceTimeout bounds the daemon operations that are NOT the
 // per-job render (Status, PrefetchAsset, Shutdown). Those are commonly invoked
@@ -102,7 +174,7 @@ func (c *IPCClient) Status(ctx context.Context) (string, error) {
 		return "", err
 	}
 	if status != ipcStatusOk {
-		return "", fmt.Errorf("ipc status: daemon status %d: %s", status, message)
+		return "", ipcReplyError("status", status, message)
 	}
 	return message, nil
 }
@@ -121,7 +193,7 @@ func (c *IPCClient) PrefetchAsset(ctx context.Context, path string) error {
 		return err
 	}
 	if status != ipcStatusOk {
-		return fmt.Errorf("ipc prefetch asset: daemon status %d: %s", status, message)
+		return ipcReplyError("prefetch asset", status, message)
 	}
 	return nil
 }
@@ -135,7 +207,7 @@ func (c *IPCClient) Shutdown(ctx context.Context) error {
 		return err
 	}
 	if status != ipcStatusShutdown && status != ipcStatusOk {
-		return fmt.Errorf("ipc shutdown: daemon status %d: %s", status, message)
+		return ipcReplyError("shutdown", status, message)
 	}
 	return nil
 }
@@ -201,7 +273,7 @@ func (c *IPCClient) Assemble(ctx context.Context, req AssembleRequest) error {
 		return err
 	}
 	if status != ipcStatusOk {
-		return fmt.Errorf("ipc assemble: daemon status %d: %s", status, message)
+		return ipcReplyError("assemble", status, message)
 	}
 	return nil
 }
@@ -262,7 +334,7 @@ func (c *IPCClient) Render(ctx context.Context, req RenderRequest) error {
 		return err
 	}
 	if status != ipcStatusOk {
-		return fmt.Errorf("ipc render: daemon status %d: %s", status, message)
+		return ipcReplyError("render", status, message)
 	}
 
 	var reply renderJobReply

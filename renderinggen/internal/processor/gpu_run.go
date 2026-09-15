@@ -75,10 +75,10 @@ func (p *Processor) RunGPU(ctx context.Context, prepared *PreparedJob) error {
 		// what the CLI is asked to run with.
 		HardwareEncoder: p.hardwareEncoder,
 		// Canonical verification: the worker resolves the policy (single
-		// authority, RENDERINGGEN_RECEIPT_VERIFY) and requests it explicitly
-		// from Chronon; Chronon verifies and records what actually ran in the
+		// authority, pipeline.receipt_verify) and requests it explicitly from
+		// Chronon; Chronon verifies and records what actually ran in the
 		// receipt, which FinalizeJob enforces.
-		ReceiptVerify: string(renderVerificationLevel()),
+		ReceiptVerify: string(p.receiptVerifyLevel()),
 		Requirements: chronon.ExecutionRequirements{
 			Backend:            p.backend,
 			GPURequired:        gpuRequired,

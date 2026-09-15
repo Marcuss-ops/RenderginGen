@@ -22,11 +22,15 @@ const (
 )
 
 // backgroundManifest mirrors assets/backgrounds/manifest.json. It is declared
-// here rather than in production code on purpose: no Go path consumes this
-// catalog yet, so inventing a loadable registry would be a second owner for a
-// decision that has not been made. What the test DOES enforce is that the
-// three places which already describe these assets — the manifest, the README
-// example, and the bytes on disk — cannot drift apart silently.
+// here rather than in production code on purpose: the canonical owner of these
+// identities is PipelineGen's editorial media registry
+// (internal/capabilities/mediaregistry/editorial_backgrounds.go), and this
+// module has no runtime registry that loads the catalog, so inventing a second
+// Go owner here would split the identity decision. What the test DOES enforce
+// is that the three places which already describe these assets — the manifest,
+// the README example, and the bytes on disk — cannot drift apart silently. The
+// cross-repo drift gate against the PipelineGen registry lives in that
+// package's editorial_projection_test.go.
 type backgroundManifest struct {
 	Version  int    `json:"version"`
 	Kind     string `json:"kind"`

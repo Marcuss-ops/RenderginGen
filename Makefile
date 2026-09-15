@@ -13,7 +13,7 @@
 
 CHRONON_RUNTIME ?= ghcr.io/marcuss-ops/chronon3d-runtime:0.1.0
 
-.PHONY: native-build golden-e2e golden-e2e-runtime golden-e2e-reset golden-e2e-down test-architecture test-gofmt test-unit
+.PHONY: native-build golden-e2e golden-e2e-runtime golden-e2e-reset golden-e2e-down test-architecture conformance test-gofmt test-unit test-module-standalone
 
 # test-architecture — the cross-repo boundary conformance gate.
 #
@@ -26,6 +26,17 @@ CHRONON_RUNTIME ?= ghcr.io/marcuss-ops/chronon3d-runtime:0.1.0
 # target is the explicit local entry point.
 test-architecture:
 	cd renderinggen && go test ./internal/architecture/... -count=1
+
+# conformance — the same scan, without the Go test framing.
+#
+# test-architecture runs the whole architecture suite (rule self-tests, ratchet
+# baseline, CI-shape checks); this runs only the scan, so a pre-commit hook, a
+# review step or a human asking "does this tree still violate a boundary rule?"
+# gets a direct answer with a normal exit code. It shares the scan code with the
+# gate, so the two can never disagree about what counts as a violation; it does
+# NOT own the baseline (see cmd/conformance).
+conformance:
+	cd renderinggen && go run ./cmd/conformance
 
 # refresh-conformance-baseline — explicit ratchet-down after fixing violations.
 # Never run this to silence a NEW violation; remove the violation instead.
@@ -46,6 +57,31 @@ test-gofmt:
 	done; \
 	if [ $$fail -ne 0 ]; then echo "run 'gofmt -w' on the files above"; exit 1; fi; \
 	echo "gofmt: clean"
+
+# test-module-standalone — every module builds with the Go workspace DISABLED.
+#
+# This repository is three modules in one tree, joined by a go.work in the
+# WORKSPACE (one level up, shared with the sibling repositories) and by a
+# `replace` in renderinggen/go.mod. That combination has a failure mode nothing
+# else here catches: a dependency added to one module's go.mod but only ever
+# resolved through the workspace builds for everyone who has go.work and fails
+# for everyone who does not — a CI job that checks out one module, a consumer
+# that vendors it, or `go install` of a single command.
+#
+# GOWORK=off makes the resolution use each module's own go.mod exactly as an
+# outside consumer would, and GOFLAGS= clears any inherited -mod setting so the
+# build is not silently rescued by an environment override. It is a BUILD gate,
+# not a test gate: the tests legitimately need the workspace (the cross-repo
+# contract tests), and duplicating test-unit's minutes here would buy nothing.
+test-module-standalone:
+	@fail=0; for m in renderinggen queue objectstore; do \
+	  echo "=== standalone build: $$m ==="; \
+	  (cd $$m && GOWORK=off GOFLAGS= go build ./...) || { \
+	    echo "$$m does not build without the go.work; fix its go.mod (missing dependency or replace)"; fail=1; \
+	  }; \
+	done; \
+	if [ $$fail -ne 0 ]; then exit 1; fi; \
+	echo "standalone builds: ok"
 
 # test-unit — every module's tests WITHOUT the real-engine runtime
 # certification suite (sub-second gate, no GPU, no ffmpeg, no Chronon).

@@ -116,7 +116,7 @@ func (p *Processor) FinalizeJob(ctx context.Context, prepared *PreparedJob) (que
 				return queue.Artifact{}, fmt.Errorf("processor: overlay media contract: %w", err)
 			}
 		}
-		if planHasVisualOverlay(plan) && deepVisualValidationEnabled() {
+		if planHasVisualOverlay(plan) && p.deepVisualValidationEnabled() {
 			if err := probed.ValidateVisible(ctx, outputPath); err != nil {
 				return queue.Artifact{}, fmt.Errorf("processor: visual output gate: %w", err)
 			}
@@ -129,9 +129,15 @@ func (p *Processor) FinalizeJob(ctx context.Context, prepared *PreparedJob) (que
 	// by design). RenderingGen requests the policy and enforces the receipt
 	// result; it never re-decodes the output a second time. This runs for
 	// every finalized job, independent of overlay/profile probing.
-	if err := p.enforceReceiptVerificationDirect(receipt, receiptErr, metrics); err != nil {
+	// One gate, two verdicts: the receipt policy AND the artifact's byte
+	// identity. The store phase below consumes both rather than repeating the
+	// identity decision, so a hash that does not match the bytes is rejected at
+	// every policy that promises proof instead of becoming the artifact's
+	// permanent content address.
+	outcome, err := p.verifyArtifactReceipt(outputPath, receipt, receiptErr, metrics)
+	if err != nil {
 		return queue.Artifact{}, err
 	}
-	return p.storeArtifact(ctx, job.ID, outputPath, plan, metrics, prepared.totalStart, probe, prepared.Stats, prepared.InputBytes,
+	return p.storeArtifact(ctx, job.ID, outputPath, outcome, plan, metrics, prepared.totalStart, probe, prepared.Stats, prepared.InputBytes,
 		job.JobType == queue.JobTypeOverlayRender || metadata.ProfileID != "", prepared.NativeCertified)
 }

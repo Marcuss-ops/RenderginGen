@@ -343,14 +343,30 @@ func TestEverySettingHasAnEnvName(t *testing.T) {
 			t.Errorf("setting %s is declared but the overlay never asks for it", name)
 		}
 	}
-	// Legacy alias names are probed as fallbacks and intentionally do not name a
-	// declared setting, so only canonical keys are checked in this direction.
+	// A legacy alias is probed as a fallback and deliberately does NOT name a
+	// declared setting, so a name the alias table owns is skipped here. That
+	// skip is why this could not simply test every RENDERINGGEN_* name the
+	// overlay asked for: aliases now live in the same namespace as the
+	// canonical keys (RENDERINGGEN_RECEIPT_VERIFY ->
+	// RENDERINGGEN_PIPELINE_RECEIPT_VERIFY), so the namespace prefix is no
+	// longer what distinguishes them.
 	for name := range requested {
 		if !strings.HasPrefix(name, EnvPrefix) {
 			continue
 		}
+		if _, isAlias := envAliases[name]; isAlias {
+			continue
+		}
 		if !declared[name] {
 			t.Errorf("the overlay asks for %s, which no longer names a declared scalar setting", name)
+		}
+	}
+	// The other half of the same guard: every alias must point at a setting that
+	// exists. An alias whose target was renamed is a compatibility promise that
+	// silently stopped working, which is worse than not having promised it.
+	for legacy, canonical := range envAliases {
+		if !declared[canonical] {
+			t.Errorf("legacy alias %s points at %s, which is not a declared scalar setting", legacy, canonical)
 		}
 	}
 	if len(declared) == 0 {

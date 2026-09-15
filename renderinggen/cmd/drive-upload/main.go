@@ -5,6 +5,18 @@
 // provider accounted for the whole file. The previous revision printed a
 // hardcoded "verified-by-storage-key" in the sha256 field, which made the pass
 // line unfalsifiable.
+//
+// Why it is not folded into the worker. The worker's publication path is the
+// job pipeline, which needs a claimed job, a workspace and a render; a
+// late-arriving artifact, a re-publish after a queue incident, or a check on a
+// credential rotation all need to push ONE file with no job involved. Both paths
+// share the publisher (internal/drive), the content-address rule and the byte
+// accounting, so this command is an operator entry point onto the same
+// invariants rather than a second implementation of them — which is what the
+// earlier subprocess-based upload was, and why the worker no longer calls it.
+//
+// It never invents credentials: -credentials, -token and -folder are required,
+// with no defaults pointing at a checked-in file.
 package main
 
 import (
@@ -12,6 +24,7 @@ import (
 	"flag"
 	"fmt"
 	"mime"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -56,12 +69,18 @@ func main() {
 	expectedSHA := flag.String("sha256", "", "expected SHA-256 of the local file (content address); optional")
 	flag.Parse()
 	if *credentials == "" || *token == "" || *folder == "" || *file == "" {
-		panic("credentials, token, folder and file are required")
+		// Fail with the usage on stderr and a non-zero status. A panic here
+		// would print a stack trace for a plain missing flag, which buries the
+		// one line an operator needs.
+		fmt.Fprintln(os.Stderr, "drive-upload: -credentials, -token, -folder and -file are required")
+		flag.PrintDefaults()
+		os.Exit(2)
 	}
 	ctx := context.Background()
 	publisher, err := drive.NewGoogleOAuth(ctx, *credentials, *token, *folder)
 	if err != nil {
-		panic(err)
+		fmt.Fprintf(os.Stderr, "drive-upload: %v\n", err)
+		os.Exit(1)
 	}
 	fileName := *name
 	if fileName == "" {
@@ -76,7 +95,11 @@ func main() {
 		ParentFolder: *folder, Subfolder: *subfolder,
 	}, *expectedSHA)
 	if err != nil {
-		panic(err)
+		// Abuse the same exit code for a refused upload as for a failed one:
+		// the caller's decision (retry, surface, give up) does not depend on
+		// which of the two it was, and the message says which.
+		fmt.Fprintf(os.Stderr, "drive-upload: %v\n", err)
+		os.Exit(1)
 	}
 	fmt.Printf("DRIVE_UPLOAD_PASS id=%s link=%s parent=%s sha256=%s bytes=%d\n",
 		uploaded.Result.FileID, uploaded.Result.WebViewLink, uploaded.Result.ParentFolder,

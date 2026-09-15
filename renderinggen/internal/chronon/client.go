@@ -340,8 +340,9 @@ func (c *Client) Render(ctx context.Context, req RenderRequest) error {
 		return fmt.Errorf("chronon stderr pipe: %w", err)
 	}
 
-	var lastActivity atomic.Int64
-	lastActivity.Store(time.Now().UnixNano())
+	// activity is the stall watchdog's clock: every output line touches it,
+	// regardless of whether the line is a progress milestone.
+	activity := newStallActivity(time.Now())
 
 	var streamFailed atomic.Bool
 	// Output sampling: every line still feeds progress parsing and the stall
@@ -351,7 +352,7 @@ func (c *Client) Render(ctx context.Context, req RenderRequest) error {
 	outputLog := newRenderOutputSampler(renderOutputLogInterval)
 	streamLines := func(r io.Reader, prefix string) {
 		if err := scanRenderOutput(r, func(line string) {
-			lastActivity.Store(time.Now().UnixNano())
+			activity.touch(time.Now())
 			if progress, ok := parseProgressLine(line, req.TotalFrames); ok {
 				if outputLog.allowProgress(prefix) {
 					log.Printf("[chronon %s] %s", prefix, line)
@@ -405,28 +406,23 @@ func (c *Client) Render(ctx context.Context, req RenderRequest) error {
 	go func() { defer streamWG.Done(); streamLines(stdoutPipe, "stdout") }()
 	go func() { defer streamWG.Done(); streamLines(stderrPipe, "stderr") }()
 
-	// Stall watchdog goroutine
+	// Stall watchdog: aborts the render when output stops for longer than the
+	// configured timeout. The sampler itself lives in stall_watch.go so its
+	// behaviour is unit-tested rather than only reachable through a hanging
+	// child process.
 	watchdogDone := make(chan struct{})
 	defer close(watchdogDone)
-	go func() {
-		ticker := time.NewTicker(5 * time.Second)
-		defer ticker.Stop()
-		for {
-			select {
-			case <-watchdogDone:
-				return
-			case <-renderCtx.Done():
-				return
-			case <-ticker.C:
-				last := time.Unix(0, lastActivity.Load())
-				if time.Since(last) > stallTimeout {
-					log.Printf("[chronon WARN] stall detected: no output for %v; aborting render", time.Since(last).Round(time.Second))
-					cancel()
-					return
-				}
-			}
-		}
-	}()
+	watchTicker := time.NewTicker(stallWatchInterval)
+	defer watchTicker.Stop()
+	watch := stallWatch{
+		timeout:  stallTimeout,
+		activity: activity,
+		onStall: func(idle time.Duration) {
+			log.Printf("[chronon WARN] stall detected: no output for %v; aborting render", idle.Round(time.Second))
+			cancel()
+		},
+	}
+	go func() { watch.run(watchdogDone, watchTicker.C) }()
 
 	streamWG.Wait()
 	err = cmd.Wait()
