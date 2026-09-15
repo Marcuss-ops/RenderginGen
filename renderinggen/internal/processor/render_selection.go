@@ -79,6 +79,23 @@ func audioModeCopyOnly(mode string) bool {
 	}
 }
 
+// audioTargetSampleRateFromPlan is the single typed authority for the OUTPUT
+// audio sample rate the sealed plan declares.
+//
+// It returns 0 when the plan declares no rate, which preserves the legacy
+// copy semantics (the muxed artifact inherits the source rate). A positive
+// value is forwarded to Chronon's mux, which builds a resample chain ONLY when
+// the source rate actually differs — so a plan declaring 48 kHz over a 48 kHz
+// source stays on the byte-identical copy path, and a 44.1 kHz source is
+// resampled to the contract rate instead of producing an artifact the
+// fail-closed contract gate must reject.
+func audioTargetSampleRateFromPlan(plan *overlay.Plan) int {
+	if plan == nil || plan.Output.Audio == nil || plan.Output.Audio.SampleRate <= 0 {
+		return 0
+	}
+	return plan.Output.Audio.SampleRate
+}
+
 // audioSourcePathFromPlan is the single typed authority for master audio.
 // It reads Plan.Output.Audio (mode) and the source layer's ALREADY-RESOLVED
 // logical path from the compiled plan, so there is exactly one place where

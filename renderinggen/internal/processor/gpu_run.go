@@ -64,11 +64,12 @@ func (p *Processor) RunGPU(ctx context.Context, prepared *PreparedJob) error {
 		PreparedPackagePath: prepared.Workspace.PreparedPackagePath(),
 		// Plans use the canonical assets/<file> namespace. The workspace
 		// root (not root/assets) is therefore Chronon's mounted root.
-		AssetsRoot:      prepared.Workspace.Root(),
-		OutputPath:      prepared.OutputPath,
-		AudioSourcePath: prepared.AudioSourcePath,
-		Report:          p.report,
-		EncodePreset:    p.encodePreset,
+		AssetsRoot:            prepared.Workspace.Root(),
+		OutputPath:            prepared.OutputPath,
+		AudioSourcePath:       prepared.AudioSourcePath,
+		AudioTargetSampleRate: prepared.AudioTargetSampleRate,
+		Report:                p.report,
+		EncodePreset:          p.encodePreset,
 		// Forward the configured encoder instead of letting the adapter guess:
 		// the config value is validated at load, so whatever reaches here is
 		// what the CLI is asked to run with.

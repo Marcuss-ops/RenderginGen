@@ -36,7 +36,7 @@ import (
 func probeClosedGOP(ctx context.Context, path string) (closedGOP bool, uncertifiable bool, keyframeInterval int) {
 	probeCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
-	cmd := exec.CommandContext(probeCtx, "ffprobe", "-v", "error", "-select_streams", "v:0",
+	cmd := exec.CommandContext(probeCtx, ffprobeBinary(), "-v", "error", "-select_streams", "v:0",
 		"-show_packets", "-show_entries", "packet=flags", "-of", "json", path)
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {

@@ -160,7 +160,7 @@ func ProbeFile(ctx context.Context, path string) (ProbeResult, error) {
 	// `-read_intervals %+#1` keeps the added section to the first frame of each
 	// stream, so merging removes a whole process from the post-render path
 	// instead of adding work to it.
-	cmd := exec.CommandContext(ctx, "ffprobe", "-v", "error",
+	cmd := exec.CommandContext(ctx, ffprobeBinary(), "-v", "error",
 		"-show_streams", "-show_format",
 		"-read_intervals", "%+#1", "-show_entries", "frame=key_frame,stream_index",
 		"-of", "json", path)
@@ -261,7 +261,7 @@ func ProbeFile(ctx context.Context, path string) (ProbeResult, error) {
 	// exact fallback for containers that do not, but pay the full frame-count
 	// scan only in that exceptional case instead of on every render.
 	if result.FrameCount == 0 {
-		countCmd := exec.CommandContext(ctx, "ffprobe", "-v", "error", "-count_frames", "-select_streams", "v:0",
+		countCmd := exec.CommandContext(ctx, ffprobeBinary(), "-v", "error", "-count_frames", "-select_streams", "v:0",
 			"-show_entries", "stream=nb_read_frames", "-of", "default=nokey=1:noprint_wrappers=1", path)
 		if countOut, err := countCmd.Output(); err == nil {
 			if n, err := strconv.Atoi(strings.TrimSpace(string(countOut))); err == nil {

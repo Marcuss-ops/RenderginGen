@@ -167,6 +167,7 @@ type renderJobPayload struct {
 	LastFrame             int64                 `json:"last_frame"`
 	Report                bool                  `json:"report"`
 	AudioSourcePath       string                `json:"audio_source_path,omitempty"`
+	AudioTargetSampleRate int                   `json:"audio_target_sample_rate,omitempty"`
 	EncodePreset          string                `json:"encode_preset,omitempty"`
 	ReceiptVerify         string                `json:"receipt_verify,omitempty"`
 	ExecutionRequirements ExecutionRequirements `json:"execution_requirements"`
@@ -246,6 +247,7 @@ func (c *IPCClient) Render(ctx context.Context, req RenderRequest) error {
 		LastFrame:             req.LastFrame,
 		Report:                req.Report,
 		AudioSourcePath:       req.AudioSourcePath,
+		AudioTargetSampleRate: req.AudioTargetSampleRate,
 		EncodePreset:          req.EncodePreset,
 		ReceiptVerify:         req.ReceiptVerify,
 		ExecutionRequirements: req.Requirements,

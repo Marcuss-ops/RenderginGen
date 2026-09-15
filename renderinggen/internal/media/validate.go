@@ -58,7 +58,7 @@ func (p ProbeResult) ValidateVisible(ctx context.Context, path string) error {
 
 	for _, ratio := range sampleRatios {
 		seekSec := durationSec * ratio
-		cmd := exec.CommandContext(ctx, "ffmpeg", "-v", "error", "-ss",
+		cmd := exec.CommandContext(ctx, ffmpegBinary(), "-v", "error", "-ss",
 			fmt.Sprintf("%.3f", seekSec), "-i", path,
 			"-frames:v", "1", "-vf",
 			"format=gray,signalstats,metadata=print:key=lavfi.signalstats.YMAX:file=-,metadata=print:key=lavfi.signalstats.YAVG:file=-",
