@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/chronon"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/metricnames"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/queue"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/storage"
 )
@@ -24,9 +25,12 @@ var words = []string{"APPLE", "TESLA", "NVIDIA", "AMD", "INTEL", "SAMSUNG", "GOO
 type jobResult struct {
 	Word            string
 	TotalMS         float64
+	GenerationMS    float64 // semantic compile/package preparation (T1)
+	PrepareMS       float64 // asset materialization + plan/package write (T2)
 	MaterializeMS   float64 // asset fetch
 	PlanMS          float64 // plan.json write
 	RenderMS        float64 // chronon3d_cli subprocess
+	FinishMS        float64 // receipt/probe/hash/store finalization (T3 finish)
 	PublishMS       float64
 	RenderEngineMS  float64 // from telemetry JSONL (--report)
 	EncodeMS        float64 // from telemetry JSONL (--report)
@@ -170,9 +174,12 @@ func TestBenchmarkCachePromotion10Jobs(t *testing.T) {
 		results = append(results, jobResult{
 			Word:            word,
 			TotalMS:         total,
+			GenerationMS:    metricMS(artifact.Metrics, metricnames.OverlayCompileMS),
+			PrepareMS:       metricMS(artifact.Metrics, metricnames.PrepareTotalMS),
 			MaterializeMS:   phases["materialize"],
 			PlanMS:          phases["plan"],
 			RenderMS:        phases["render"],
+			FinishMS:        metricMS(artifact.Metrics, metricnames.PublishMS),
 			PublishMS:       phases["publish"],
 			RenderEngineMS:  tel.RenderMS,
 			EncodeMS:        tel.EncodeMS,
@@ -206,16 +213,23 @@ func TestBenchmarkCachePromotion10Jobs(t *testing.T) {
 
 	// ── Report ────────────────────────────────────────────────────────────
 	fmt.Printf("\n=== RenderingGen cache benchmark: 10 jobs, same assets, different texts ===\n")
-	fmt.Printf("%-10s %9s %10s %8s %10s %9s %9s %9s %6s %7s %8s %7s %7s\n",
-		"word", "total_ms", "mat_ms", "plan_ms", "render_ms", "pub_ms", "eng_r_ms", "enc_ms", "eng_h", "eng_m", "L1_hit", "L2_hit", "L3_fetch")
+	fmt.Printf("%-10s %9s %9s %9s %9s %9s %8s %10s %9s %9s %9s %6s %7s %8s %7s %7s\n",
+		"word", "total_ms", "gen_ms", "prep_ms", "render_ms", "finish_ms", "mat_ms", "plan_ms", "pub_ms", "eng_r_ms", "enc_ms", "eng_h", "eng_m", "L1_hit", "L2_hit", "L3_fetch")
 	for i, r := range results {
 		label := fmt.Sprintf("%02d:%s", i+1, r.Word)
-		fmt.Printf("%-10s %9.1f %10.2f %8.2f %10.1f %9.2f %9.1f %9.1f %6d %7d %8d %7d %7d\n",
-			label, r.TotalMS, r.MaterializeMS, r.PlanMS, r.RenderMS, r.PublishMS,
-			r.RenderEngineMS, r.EncodeMS, r.EngineCacheHits, r.EngineCacheMiss,
-			r.L1Hits, r.L2Hits, r.L3Fetches)
+		fmt.Printf("%-10s %9.1f %9.2f %9.2f %9.1f %9.2f %8.2f %10.2f %9.2f %9.1f %9.1f %6d %7d %8d %7d %7d\n",
+			label, r.TotalMS, r.GenerationMS, r.PrepareMS, r.RenderMS, r.FinishMS,
+			r.MaterializeMS, r.PlanMS, r.PublishMS, r.RenderEngineMS, r.EncodeMS,
+			r.EngineCacheHits, r.EngineCacheMiss, r.L1Hits, r.L2Hits, r.L3Fetches)
 	}
-	fmt.Println("(eng_r_ms/enc_ms/eng_h/eng_m come dalla telemetria del motore; L1/L2/L3 sono la cache asset del worker)")
+	fmt.Println("(gen=T1 compile/package, prep=T2 PrepareJob, render=T3 Chronon, finish=artifact finalization; eng_* dalla telemetria; L1/L2/L3 cache asset)")
+}
+
+func metricMS(metrics map[string]float64, key string) float64 {
+	if metrics == nil {
+		return 0
+	}
+	return metrics[key]
 }
 
 // mustGoldenAssets decodes the canonical payload to extract the asset refs.
