@@ -163,8 +163,15 @@ func compileSemantic(raw []byte) (*Plan, []Asset, Stats, []string, error) {
 	var sourceLayerIndex = -1
 	if src.Source != nil && src.Source.AssetID != "" {
 		path := src.Source.Path
+		ref := semanticAssetRef{ID: src.Source.AssetID, SHA256: src.Source.SHA256}
 		if path == "" {
-			registered, err := registry.Register(semanticAssetRef{ID: src.Source.AssetID, SHA256: src.Source.SHA256})
+			registered, err := registry.Register(ref)
+			if err != nil {
+				return nil, nil, Stats{}, nil, fmt.Errorf("overlay: source asset: %w", err)
+			}
+			path = registered
+		} else {
+			registered, err := registry.RegisterAtPath(ref, path)
 			if err != nil {
 				return nil, nil, Stats{}, nil, fmt.Errorf("overlay: source asset: %w", err)
 			}

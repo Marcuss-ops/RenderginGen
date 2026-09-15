@@ -45,6 +45,26 @@ func newAssetRegistry() *assetRegistry {
 // conflicting identity — same id with a different hash, or a different id
 // collapsing onto the same logical path — fails closed.
 func (r *assetRegistry) Register(ref semanticAssetRef) (string, error) {
+	path, err := semanticAssetPath(ref)
+	if err != nil {
+		return "", err
+	}
+	return r.registerResolved(ref, path)
+}
+
+// RegisterAtPath registers an asset whose producer already owns the logical
+// path (the source clip is the canonical example). It keeps that path in the
+// same manifest as background/item assets, so prepared-package identities can
+// use the real content hash instead of falling back to a path-only guess.
+func (r *assetRegistry) RegisterAtPath(ref semanticAssetRef, path string) (string, error) {
+	path = filepath.ToSlash(strings.TrimSpace(path))
+	if path == "" || filepath.IsAbs(path) || filepath.Clean(path) != filepath.FromSlash(path) || strings.HasPrefix(path, "../") || path == ".." {
+		return "", fmt.Errorf("overlay: invalid explicit asset path %q", path)
+	}
+	return r.registerResolved(ref, path)
+}
+
+func (r *assetRegistry) registerResolved(ref semanticAssetRef, path string) (string, error) {
 	if strings.TrimSpace(ref.ID) == "" || len(ref.SHA256) != 64 || strings.Trim(ref.SHA256, "0123456789abcdefABCDEF") != "" {
 		return "", fmt.Errorf("overlay: invalid asset ref %q (asset_id required, sha256 must be 64 hex chars)", ref.ID)
 	}
@@ -54,10 +74,6 @@ func (r *assetRegistry) Register(ref semanticAssetRef) (string, error) {
 			return "", fmt.Errorf("overlay: asset_id %q is associated with multiple SHA-256 values", ref.ID)
 		}
 		return existing.logicalPath, nil
-	}
-	path, err := semanticAssetPath(ref)
-	if err != nil {
-		return "", err
 	}
 	if existing, ok := r.byPath[path]; ok {
 		return "", fmt.Errorf("overlay: asset_id %q resolves to logical path %s already owned by asset_id %q (sanitized-id collision — rename one of the assets)", ref.ID, path, existing.id)
