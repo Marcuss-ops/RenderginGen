@@ -125,6 +125,9 @@ func renderArgs(req RenderRequest) []string {
 		"--backend", backend,
 		"-o", req.OutputPath,
 	}
+	if req.PreparedPackagePath != "" {
+		args = append(args, "--prepared-package", req.PreparedPackagePath)
+	}
 	if req.Report {
 		// Emit the execution report and telemetry JSONL (render_ms, encode_ms,
 		// cache_hits/misses) used by the performance benchmark.
