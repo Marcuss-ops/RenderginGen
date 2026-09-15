@@ -349,7 +349,7 @@ func resolveWatermarkGeometry(position string, canvasW, canvasH, margin int, s *
 	}
 	// Box: the plan's explicit geometry when provided, otherwise derived
 	// from canvas size (geometry implied by the request, not a visual style).
-	boxW, boxH := float64(canvasW)/6, 80.0
+	boxW, boxH := float64(canvasW)/WatermarkBoxWidthDivisor, DefaultWatermarkBoxHeight
 	if s != nil && s.WidthPX > 0 {
 		boxW = float64(s.WidthPX)
 	}
@@ -387,11 +387,11 @@ func subtitleCueGeometry(s *styleBlock, canvasW, canvasH, cueLayerCount int) (po
 	}
 	// Box width: the requested width, or the canvas minus a symmetric safe
 	// margin derived from the canvas itself (geometry, not style).
-	boxW := float64(canvasW) - 120
+	boxW := float64(canvasW) - SubtitleSideMarginPX
 	if s.WidthPX > 0 {
 		boxW = float64(s.WidthPX)
 	}
-	const lineH = 70.0
+	const lineH = SubtitleLineHeightPX
 	boxH := lineH
 	if s.HeightPX > 0 {
 		boxH = float64(s.HeightPX)
@@ -403,10 +403,10 @@ func subtitleCueGeometry(s *styleBlock, canvasW, canvasH, cueLayerCount int) (po
 	switch pos {
 	case "bottom_center":
 		anchorX = (float64(canvasW) - boxW) / 2
-		anchorY = float64(canvasH)*0.80 - boxH/2
+		anchorY = float64(canvasH)*SubtitleBottomCenterYFraction - boxH/2
 	case "top_center":
 		anchorX = (float64(canvasW) - boxW) / 2
-		anchorY = float64(canvasH) * 0.10
+		anchorY = float64(canvasH) * SubtitleTopCenterYFraction
 	case "middle_center":
 		anchorX = (float64(canvasW) - boxW) / 2
 		anchorY = (float64(canvasH) - boxH) / 2

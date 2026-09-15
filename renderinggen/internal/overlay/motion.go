@@ -146,8 +146,8 @@ func fromTextMotionDefinitions(src []motion.TextAnimatorDefinition, duration int
 		// and progressively drop to their baseline as start sweeps past them.
 		if definition.Selector.Stagger > 0 {
 			sweepDuration := duration
-			if sweepDuration > 72 {
-				sweepDuration = 72
+			if sweepDuration > MaxStaggerSweepFrames {
+				sweepDuration = MaxStaggerSweepFrames
 			}
 			selector.Start = &AnimationTrack{Property: "start", Easing: "out_cubic", Keyframes: []AnimationKeyframe{
 				{Frame: 0, Value: 0.0}, {Frame: sweepDuration, Value: 100.0},
@@ -161,17 +161,17 @@ func fromTextMotionDefinitions(src []motion.TextAnimatorDefinition, duration int
 
 func resolveLayout(l PresetLayout, boxWidth, boxHeight, canvasWidth, canvasHeight int) []float64 {
 	if boxWidth <= 0 {
-		boxWidth = 320
+		boxWidth = DefaultTextBoxWidth
 	}
 	if boxHeight <= 0 {
-		boxHeight = 120
+		boxHeight = DefaultTextBoxHeight
 	}
 	x, y := float64(canvasWidth-boxWidth)/2, float64(canvasHeight-boxHeight)/2
 	switch l.Anchor {
 	case "lower_third":
-		x, y = 0.06*float64(canvasWidth), 0.76*float64(canvasHeight)
+		x, y = AnchorSafeAreaFraction*float64(canvasWidth), AnchorLowerThirdYFraction*float64(canvasHeight)
 	case "safe_area":
-		x, y = 0.06*float64(canvasWidth), 0.06*float64(canvasHeight)
+		x, y = AnchorSafeAreaFraction*float64(canvasWidth), AnchorSafeAreaFraction*float64(canvasHeight)
 	case "image_left":
 		x = 0
 	case "image_right":

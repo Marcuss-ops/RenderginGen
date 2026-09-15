@@ -70,10 +70,12 @@ func main() {
 	// 1. Detect GPU.
 	gpuInfo := gpu.Detect(cfg.GPU.Device)
 	if !gpuInfo.Present {
-		log.Println("WARN: no GPU detected; rendering will fail")
+		// Name the reason: "no GPU" and "device index 2 does not exist" are
+		// different operator problems, and the probe reports which one it is.
+		log.Printf("WARN: no GPU detected at device %d (%s); rendering will fail", cfg.GPU.Device, gpuInfo.Reason)
 	} else {
-		log.Printf("GPU detected: backend=%s driver=%s device=%d",
-			gpuInfo.Backend, gpuInfo.Driver, gpuInfo.Device)
+		log.Printf("GPU detected: backend=%s driver=%s device=%d name=%q vram_mib=%d",
+			gpuInfo.Backend, gpuInfo.Driver, gpuInfo.Device, gpuInfo.Name, gpuInfo.MemoryMiB)
 	}
 
 	// 2. Select the renderer backend: CLI subprocess (default) or the
