@@ -182,7 +182,7 @@ func compileSemantic(raw []byte) (*Plan, []Asset, Stats, []string, error) {
 		// omission until an overlay/background selected the compositor: Chronon
 		// then rendered the overlay over a black canvas instead of the source.
 		srcLayer := Layer{ID: "source", Type: "video", Source: path,
-			Size: []float64{float64(src.Width), float64(src.Height)}, Fit: "cover", StartFrame: 0}
+			Size: []float64{float64(src.Width), float64(src.Height)}, Fit: FitCover, StartFrame: 0}
 		// Foreground scale: keep the sampled video surface at canvas size and
 		// express the centred transform in Chronon's modular coordinate space.
 		// ForegroundScale == 0 or 100 means full-canvas (no scaling).
@@ -265,7 +265,7 @@ func compileSemantic(raw []byte) (*Plan, []Asset, Stats, []string, error) {
 			}
 			wmLayer.Type = "image"
 			wmLayer.Asset = registered
-			wmLayer.Fit = "contain"
+			wmLayer.Fit = FitContain
 			if wm.Text != "" {
 				wmLayer.Text = wm.Text
 			}
@@ -317,28 +317,21 @@ func compileSemantic(raw []byte) (*Plan, []Asset, Stats, []string, error) {
 	return &plan, registry.Assets(), stats, unknown, nil
 }
 
-// backgroundFits is the closed set of fits the render contract honours. It is
-// the same vocabulary the plan decoder understands (cover|contain|stretch|
-// none); every other spelling was previously accepted here and silently
-// downgraded to cover by the decoder, so a producer could ask for a treatment
-// that never happened and see no error anywhere — the historical "blur_cover"
-// background hint did exactly that. Naming the set once, at the compiler,
-// makes an unsupported fit a compile failure instead of a silent visual
-// substitution.
-var backgroundFits = map[string]struct{}{
-	"cover": {}, "contain": {}, "stretch": {}, "none": {},
-}
-
-// resolveBackgroundFit validates the requested background fit. Empty means the
-// deterministic crop-to-fill default ("cover"), which fills the canvas at any
-// source aspect ratio.
+// resolveBackgroundFit validates the requested background fit.
+//
+// The vocabulary itself lives once in design_tokens.go (fitVocabulary), so the
+// background and the item/video lowering cannot accept different spellings: a
+// producer could previously ask for a treatment that one site accepted and the
+// other silently rewrote — the historical "blur_cover" background hint did
+// exactly that. Empty means the deterministic crop-to-fill default ("cover"),
+// which fills the canvas at any source aspect ratio.
 func resolveBackgroundFit(requested string) (string, error) {
 	fit := strings.ToLower(strings.TrimSpace(requested))
 	if fit == "" {
-		return "cover", nil
+		return FitCover, nil
 	}
-	if _, ok := backgroundFits[fit]; !ok {
-		return "", fmt.Errorf("overlay: unsupported background fit %q (supported: cover, contain, stretch, none)", requested)
+	if !isSupportedFit(fit) {
+		return "", fmt.Errorf("overlay: unsupported background fit %q (supported: %s)", requested, supportedFits)
 	}
 	return fit, nil
 }
@@ -484,7 +477,7 @@ func compileEntityCard(ri resolvedItem, src *semanticPlan, registry *assetRegist
 		// Keep the resolved size untouched and use contain so the source is
 		// fully visible inside that box without cropping.
 		img.Position = []float64{0, 0}
-		img.Fit = "contain"
+		img.Fit = FitContain
 	}
 	return []Layer{img}, nil
 }
@@ -509,11 +502,11 @@ func compileVideoOverlayLayer(ri resolvedItem, src *semanticPlan, registry *asse
 	if len(ri.Item.Assets) == 0 {
 		return Layer{}, fmt.Errorf("overlay: video overlay template %q item %q requires asset_refs", ri.Item.Template, ri.Item.ID)
 	}
-	fit := stringParam(ri.Params, "fit", "cover")
-	switch fit {
-	case "cover", "contain", "stretch", "none":
-	default:
-		return Layer{}, fmt.Errorf("overlay: video overlay item %q has unsupported fit %q", ri.Item.ID, fit)
+	fit := stringParam(ri.Params, "fit", FitCover)
+	if !isSupportedFit(fit) {
+		// The same closed vocabulary as the background; only the message names
+		// the item, because this is the only place a per-item fit is validated.
+		return Layer{}, fmt.Errorf("overlay: video overlay item %q has unsupported fit %q (supported: %s)", ri.Item.ID, fit, supportedFits)
 	}
 	layer := Layer{
 		ID:             overlayLayerID(ri.Item.ID),
@@ -566,7 +559,7 @@ func compileImageLayer(ri resolvedItem, src *semanticPlan, registry *assetRegist
 			// anchor: its slide/fade motion must start from the center without
 			// pushing the portrait off-canvas or cropping it.
 			layer.Position = []float64{0, 0}
-			layer.Fit = "contain"
+			layer.Fit = FitContain
 		} else {
 			// A semantic image may request the same explicit center/anchor the
 			// official image presets express. Keep the preset as the owner of fit
@@ -611,7 +604,7 @@ func compileTextLayer(ri resolvedItem, src *semanticPlan, layerID string) (Layer
 		layer.BoxWidth = src.Width
 	}
 	if layer.BoxHeight <= 0 {
-		layer.BoxHeight = 120
+		layer.BoxHeight = DefaultTextBoxHeight
 	}
 	layer.Size = []float64{float64(layer.BoxWidth), float64(layer.BoxHeight)}
 
