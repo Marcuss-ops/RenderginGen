@@ -62,11 +62,10 @@ const (
 	CanonicalTextPresetID = "apple_v2"
 )
 
-// officialFontPath is the single font asset every official text preset
-// references. Keeping this path in one place prevents visual presets from
-// silently drifting to unavailable font aliases.
-const officialFontPath = "assets/fonts/Poppins-Bold.ttf"
-
+// presetSpec is the family-agnostic authoring row the per-family builders
+// (official_presets_text.go / official_presets_image.go) fill in. It exists so
+// a family can state its geometry and timing without the shared spine below
+// growing a knob per family.
 type presetSpec struct {
 	family                    PresetFamily
 	anchor, align, anim, unit string
@@ -76,17 +75,10 @@ type presetSpec struct {
 	fit                       string
 }
 
-func textSpec(anchor, align, anim, unit string, enter, exit int, shadow *StyleShadow) presetSpec {
-	return presetSpec{family: PresetText, anchor: anchor, align: align, anim: anim, unit: unit, enter: enter, exit: exit, shadow: shadow}
-}
-
-func imageSpec(anchor, anim string) presetSpec {
-	// Entity portraits and standalone image overlays are primary visual
-	// elements, not thumbnail labels. Keep the image preset geometry large
-	// enough to read on the 16:9 assembly canvas.
-	return presetSpec{family: PresetImage, anchor: anchor, align: "center", anim: anim, unit: "layer", enter: 8, exit: 6, boxW: 480, boxH: 480, fit: "contain"}
-}
-
+// makePreset is the shared lowering from an authoring row to a
+// PresetDefinition: family defaults first, then the family-specific rules that
+// make a text preset legible (stroke + shadow) or an image preset invisible as
+// type (no font, no fill).
 func makePreset(id string, s presetSpec) PresetDefinition {
 	d := PresetDefinition{ID: id, Family: s.family,
 		Style:  PresetStyle{FontFamily: officialFontPath, FontSize: 58, Fill: []float64{1, 1, 1, 1}, Shadow: s.shadow},
@@ -94,7 +86,7 @@ func makePreset(id string, s presetSpec) PresetDefinition {
 		Motion: MotionDefinition{ID: s.anim, Unit: s.unit, Enter: s.enter, Exit: s.exit}}
 	if s.family == PresetImage {
 		d.Style.FontFamily, d.Style.FontSize, d.Style.Fill = "", 0, nil
-	} else if id != "static_text_smoke" {
+	} else if id != StaticTextSmokePresetID {
 		if d.Style.Shadow == nil {
 			d.Style.Shadow = &StyleShadow{Color: "#000000", Opacity: 0.72, Blur: 12, Offset: []float64{0, 4}}
 		}
@@ -103,34 +95,25 @@ func makePreset(id string, s presetSpec) PresetDefinition {
 	return d
 }
 
-func canonicalTextPreset() PresetDefinition {
-	d := makePreset(CanonicalTextPresetID, textSpec("safe_area", "center", "apple_phrase_v2", "glyph", 72, 6, &StyleShadow{
-		Color: "#000000", Opacity: 0.72, Blur: 12, Offset: []float64{0, 4},
-	}))
-	d.Layout.BoxWidth = 1920
-	d.Layout.BoxHeight = 220
-	d.Style.FontSize = 64
-	d.Style.Fill = []float64{1, 1, 1, 1}
-	d.Style.Stroke = &StyleStroke{Color: "#111827", Width: 3.5}
-	return d
-}
-
 // officialPresets is the only production catalog. Do not add parallel maps
-// for families, animation or geometry.
+// for families, animation or geometry: the text and image entries are authored
+// in their own files but merged into THIS single map, so a lookup can never
+// depend on which family file happened to be consulted.
 var officialPresets = map[string]PresetDefinition{
 	// Static text is intentionally part of the small smoke/E2E catalog: it
 	// proves text/subtitle pixels without requiring an animation window longer
 	// than a short canary composition.
-	"static_text_smoke":   makePreset("static_text_smoke", textSpec("safe_area", "center", "", "line", 0, 0, nil)),
-	CanonicalTextPresetID: canonicalTextPreset(),
-	"image_focus_in":      makePreset("image_focus_in", imageSpec("image_right", "focus_in")),
-	"image_fade_in":       makePreset("image_fade_in", imageSpec("image_right", "fade_in")),
-	"image_scale_in":      makePreset("image_scale_in", imageSpec("image_right", "scale_drop")),
-	"image_slide_left":    makePreset("image_slide_left", imageSpec("image_left", "slide_in")),
-	"image_slide_right":   makePreset("image_slide_right", imageSpec("image_right", "slide_from_right")),
-	"image_fast_fade":     makePreset("image_fast_fade", imageSpec("image_right", "fade_in")),
-	"modern_rounded_pop":  makePreset("modern_rounded_pop", imageSpec("image_right", "scale_drop")),
-	"bottom_card_rise":    makePreset("bottom_card_rise", imageSpec("bottom_right", "reveal_from_bottom")),
+	StaticTextSmokePresetID: makePreset(StaticTextSmokePresetID, staticTextSmokeSpec()),
+	CanonicalTextPresetID:   canonicalTextPreset(),
+
+	"image_focus_in":     makePreset("image_focus_in", imageSpec("image_right", "focus_in")),
+	"image_fade_in":      makePreset("image_fade_in", imageSpec("image_right", "fade_in")),
+	"image_scale_in":     makePreset("image_scale_in", imageSpec("image_right", "scale_drop")),
+	"image_slide_left":   makePreset("image_slide_left", imageSpec("image_left", "slide_in")),
+	"image_slide_right":  makePreset("image_slide_right", imageSpec("image_right", "slide_from_right")),
+	"image_fast_fade":    makePreset("image_fast_fade", imageSpec("image_right", "fade_in")),
+	"modern_rounded_pop": makePreset("modern_rounded_pop", imageSpec("image_right", "scale_drop")),
+	"bottom_card_rise":   makePreset("bottom_card_rise", imageSpec("bottom_right", "reveal_from_bottom")),
 }
 
 func officialPresetIDs() []string {

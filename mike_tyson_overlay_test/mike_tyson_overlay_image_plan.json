@@ -1,0 +1,70 @@
+{
+  "schema": "chronon.render-plan.v2",
+  "version": 2,
+  "job_id": "mike_tyson_overlay_smoke",
+  "canvas": {
+    "width": 1920,
+    "height": 1080,
+    "fps_num": 24,
+    "fps_den": 1,
+    "duration_frames": 120
+  },
+  "layers": [
+    {
+      "id": "background_color",
+      "type": "color",
+      "color": [
+        0.035,
+        0.045,
+        0.065,
+        1
+      ],
+      "size": [
+        1920,
+        1080
+      ],
+      "start_frame": 0,
+      "duration_frames": 120
+    },
+    {
+      "id": "person:mike-tyson",
+      "type": "image",
+      "asset": "assets/mike_tyson_entity_crop.png",
+      "size": [
+        600,
+        600
+      ],
+      "fit": "stretch",
+      "position": [
+        0,
+        0
+      ],
+      "start_frame": 0,
+      "duration_frames": 120,
+      "animation": {
+        "tracks": [
+          {
+            "property": "position_y",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 70
+              },
+              {
+                "frame": 12,
+                "value": 0
+              }
+            ],
+            "easing": "out_cubic"
+          }
+        ]
+      },
+      "opacity": 1
+    }
+  ],
+  "output": {
+    "path": "/home/pierone/src/go-master/projects/Pyt/VeloxEditing/RenderingGen/mike_tyson_overlay_test/mike_tyson_overlay_image_plan.mp4",
+    "format": "mp4",
+    "codec": "h264"
+  }
+}

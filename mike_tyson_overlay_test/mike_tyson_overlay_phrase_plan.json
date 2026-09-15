@@ -1,0 +1,141 @@
+{
+  "schema": "chronon.render-plan.v2",
+  "version": 2,
+  "job_id": "mike_tyson_overlay_smoke",
+  "canvas": {
+    "width": 1920,
+    "height": 1080,
+    "fps_num": 24,
+    "fps_den": 1,
+    "duration_frames": 120
+  },
+  "layers": [
+    {
+      "id": "background_color",
+      "type": "color",
+      "color": [
+        0.035,
+        0.045,
+        0.065,
+        1
+      ],
+      "size": [
+        1920,
+        1080
+      ],
+      "start_frame": 0,
+      "duration_frames": 120
+    },
+    {
+      "id": "phrase:power-discipline",
+      "type": "text",
+      "text": "LA POTENZA NASCE DALLA DISCIPLINA",
+      "size": [
+        1700,
+        150
+      ],
+      "position": [
+        0,
+        -390
+      ],
+      "style": {
+        "font": "assets/fonts/Poppins-Bold.ttf",
+        "font_size": 58,
+        "fill": "#FFFFFF",
+        "stroke": {
+          "color": "#111827",
+          "width": 3.5
+        },
+        "shadow": {
+          "color": "#000000",
+          "opacity": 0.58,
+          "blur": 12.0,
+          "offset": [
+            0,
+            6
+          ]
+        }
+      },
+      "start_frame": 18,
+      "duration_frames": 102,
+      "text_animators": [
+        {
+          "id": "typewriter_tracking_0_text",
+          "selectors": [
+            {
+              "id": "typewriter_tracking_0_selector",
+              "unit": "glyph",
+              "shape": "smooth",
+              "order": "forward",
+              "combine": "replace",
+              "start": {
+                "property": "start",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0
+                  },
+                  {
+                    "frame": 72,
+                    "value": 100
+                  }
+                ],
+                "easing": "out_expo"
+              },
+              "exclude_spaces": true
+            }
+          ],
+          "properties": [
+            {
+              "property": "opacity",
+              "easing": "out_cubic",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0
+                },
+                {
+                  "frame": 72,
+                  "value": 0
+                }
+              ]
+            },
+            {
+              "property": "tracking",
+              "easing": "out_expo",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 16
+                },
+                {
+                  "frame": 72,
+                  "value": 16
+                }
+              ]
+            },
+            {
+              "property": "position_x",
+              "easing": "out_cubic",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": -12
+                },
+                {
+                  "frame": 72,
+                  "value": -12
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "output": {
+    "path": "/home/pierone/src/go-master/projects/Pyt/VeloxEditing/RenderingGen/mike_tyson_overlay_test/mike_tyson_overlay_phrase_plan.mp4",
+    "format": "mp4",
+    "codec": "h264"
+  }
+}

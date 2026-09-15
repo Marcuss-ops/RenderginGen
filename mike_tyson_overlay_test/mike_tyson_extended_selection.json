@@ -1,0 +1,94 @@
+{
+  "script": "Mike Tyson \u2014 velocit\u00e0, pressione e disciplina (3+3)",
+  "entity": null,
+  "phrase": null,
+  "entities": [
+    "person:mike-tyson",
+    "person:mike-tyson-training",
+    "person:mike-tyson-ring"
+  ],
+  "phrases": [
+    "LA VELOCIT\u00c0 APRE LA DISTANZA",
+    "LA PRESSIONE MANTIENE IL CONTROLLO",
+    "LA DISCIPLINA TRASFORMA LA POTENZA"
+  ],
+  "typewriter": "tracking",
+  "typewriters_by_phrase": {
+    "LA VELOCIT\u00c0 APRE LA DISTANZA": "clean",
+    "LA PRESSIONE MANTIENE IL CONTROLLO": "pop",
+    "LA DISCIPLINA TRASFORMA LA POTENZA": "tracking"
+  },
+  "image_motion": "scale_in",
+  "allowed_typewriters": [
+    "clean",
+    "glitch",
+    "pop",
+    "tracking"
+  ],
+  "excluded_typewriters": [
+    "neon"
+  ],
+  "timing_rules": {
+    "image_max_duration_seconds": 5,
+    "phrase_end_padding_seconds": 2,
+    "image_count": 3,
+    "phrase_count": 3
+  },
+  "computed_timing": {
+    "fps": 24.0,
+    "images": [
+      {
+        "start_frame": 0,
+        "end_frame": 48,
+        "duration_frames": 48,
+        "duration_seconds": 2.0,
+        "end_padding_frames": 0
+      },
+      {
+        "start_frame": 48,
+        "end_frame": 96,
+        "duration_frames": 48,
+        "duration_seconds": 2.0,
+        "end_padding_frames": 0
+      },
+      {
+        "start_frame": 96,
+        "end_frame": 144,
+        "duration_frames": 48,
+        "duration_seconds": 2.0,
+        "end_padding_frames": 0
+      }
+    ],
+    "phrases": [
+      {
+        "start_frame": 18,
+        "end_frame": 54,
+        "duration_frames": 36,
+        "duration_seconds": 1.5,
+        "end_padding_frames": 12,
+        "declared_end_frame": 42,
+        "end_padding_seconds": 0.5
+      },
+      {
+        "start_frame": 66,
+        "end_frame": 102,
+        "duration_frames": 36,
+        "duration_seconds": 1.5,
+        "end_padding_frames": 12,
+        "declared_end_frame": 90,
+        "end_padding_seconds": 0.5
+      },
+      {
+        "start_frame": 114,
+        "end_frame": 150,
+        "duration_frames": 36,
+        "duration_seconds": 1.5,
+        "end_padding_frames": 12,
+        "declared_end_frame": 138,
+        "end_padding_seconds": 0.5
+      }
+    ]
+  },
+  "seed": 17,
+  "mode": "both"
+}

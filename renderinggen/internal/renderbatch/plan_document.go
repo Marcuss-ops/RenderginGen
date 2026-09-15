@@ -21,6 +21,15 @@ import (
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/overlay"
 )
 
+// Chronon plan contract the renderer consumes. It is the ONE concrete schema a
+// compiled plan may declare, so a compiler that starts emitting a different
+// version fails at prepare time instead of producing a file the renderer
+// silently rejects.
+const (
+	ChrononPlanSchema  = "chronon.render-plan.v2"
+	ChrononPlanVersion = 2
+)
+
 // PlanSpec is a caller-supplied semantic plan to build and compile.
 type PlanSpec struct {
 	PlanID          string
@@ -102,6 +111,35 @@ func BuildPlan(spec PlanSpec) ([]byte, error) {
 		return nil, err
 	}
 	return raw, nil
+}
+
+// CompileRenderPlan lowers a built semantic plan into the CONCRETE
+// chronon.render-plan.v2 document the renderer consumes.
+//
+// BuildPlan deliberately returns the semantic document (RenderingGen owns the
+// lowering), but `chronon3d_cli render --plan` reads the concrete one: handing it
+// a semantic plan fails its schema with "required property 'layers' not found".
+// The batch therefore keeps both artifacts side by side — the semantic plan as
+// the input of record, the compiled plan as what is actually rendered — instead
+// of leaving the renderer to reject a document this package already knows how to
+// lower.
+func CompileRenderPlan(raw []byte) ([]byte, error) {
+	result, err := overlay.CompileSemantic(raw)
+	if err != nil {
+		return nil, err
+	}
+	if result.Plan == nil {
+		return nil, fmt.Errorf("renderbatch: compiler returned no plan")
+	}
+	if result.Plan.Schema != ChrononPlanSchema || result.Plan.Version != ChrononPlanVersion {
+		return nil, fmt.Errorf("renderbatch: compiler emitted %s v%d, want %s v%d",
+			result.Plan.Schema, result.Plan.Version, ChrononPlanSchema, ChrononPlanVersion)
+	}
+	data, err := json.MarshalIndent(result.Plan, "", "  ")
+	if err != nil {
+		return nil, fmt.Errorf("renderbatch: encode render plan: %w", err)
+	}
+	return append(data, '\n'), nil
 }
 
 // semanticPlanDocument is a renderinggen.overlay-plan.v1 document.
