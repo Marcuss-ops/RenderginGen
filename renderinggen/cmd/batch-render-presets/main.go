@@ -163,8 +163,8 @@ func run(ctx context.Context, opts options) error {
 		if err := writePlan(p); err != nil {
 			return err
 		}
-		log.Printf("plan %s: job=%s preset=%s motion=%s digest=%s frames=%d",
-			p.PlanPath, p.Job.ID, p.Job.PresetID, p.Job.MotionID, p.PlanDigest[:12], p.Expect.Frames)
+		log.Printf("plan %s (semantic) + %s (chronon.render-plan.v2): job=%s preset=%s motion=%s digest=%s frames=%d",
+			p.PlanPath, p.RenderPlanPath, p.Job.ID, p.Job.PresetID, p.Job.MotionID, p.PlanDigest[:12], p.Expect.Frames)
 	}
 	if opts.dryRun {
 		log.Printf("[dry-run] %d plan(s) compiled and written; nothing rendered", len(prepared))
@@ -186,13 +186,18 @@ func run(ctx context.Context, opts options) error {
 	return report(outcomes)
 }
 
-// writePlan materializes one prepared plan beside its output.
+// writePlan materializes one prepared job's plan PAIR beside its output: the
+// semantic document (the input of record) and the compiled
+// chronon.render-plan.v2 (what is actually rendered).
 func writePlan(p renderbatch.PreparedJob) error {
 	if err := os.MkdirAll(filepath.Dir(p.PlanPath), 0o755); err != nil {
 		return fmt.Errorf("create plan directory for %s: %w", p.Job.ID, err)
 	}
 	if err := os.WriteFile(p.PlanPath, p.Plan, 0o644); err != nil {
 		return fmt.Errorf("write plan for %s: %w", p.Job.ID, err)
+	}
+	if err := os.WriteFile(p.RenderPlanPath, p.RenderPlan, 0o644); err != nil {
+		return fmt.Errorf("write render plan for %s: %w", p.Job.ID, err)
 	}
 	return nil
 }
@@ -332,7 +337,7 @@ func renderOne(ctx context.Context, opts options, p renderbatch.PreparedJob, ass
 	gpuRequired := opts.hardware != "" && opts.hardware != chronon.HardwareEncoderNone
 
 	req := chronon.RenderRequest{
-		PlanPath:        p.PlanPath,
+		PlanPath:        p.RenderPlanPath,
 		AssetsRoot:      assetsRoot,
 		OutputPath:      p.OutputPath,
 		EncodePreset:    opts.encodePreset,
@@ -422,6 +427,9 @@ func publish(ctx context.Context, publisher drive.Publisher, p renderbatch.Prepa
 		ContentType:  contentType,
 		Path:         p.OutputPath,
 		ParentFolder: parent,
+		// The job's family subfolder comes from the manifest, so one batch can
+		// organise its output by family without a per-file flag.
+		Subfolder: p.Job.DriveSubfolder,
 	})
 	if err != nil {
 		return "", err

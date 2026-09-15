@@ -2,6 +2,105 @@ package motion
 
 import "testing"
 
+// The renderer's closed vocabularies, mirrored from
+// chronon.render-plan.v2 ($defs/text_selector and layers[].animation.tracks[]).
+// A definition written outside one of these sets compiles fine here and is then
+// rejected by Chronon at render time, after the batch has already been paid for.
+var (
+	selectorUnits   = map[string]bool{"glyph": true, "grapheme": true, "character": true, "word": true, "line": true}
+	selectorShapes  = map[string]bool{"square": true, "ramp_up": true, "ramp_down": true, "triangle": true, "round": true, "smooth": true}
+	selectorOrders  = map[string]bool{"forward": true, "reverse": true, "from_center": true, "to_center": true, "random": true}
+	layerProperties = map[string]bool{
+		"position": true, "position_x": true, "position_y": true, "position_z": true,
+		"scale": true, "scale_x": true, "scale_y": true, "scale_z": true,
+		"rotation": true, "rotation_x": true, "rotation_y": true, "rotation_z": true,
+		"opacity": true,
+	}
+	// The text animator vocabulary is wider: it adds blur and tracking, which a
+	// layer track may not carry.
+	animatorProperties = map[string]bool{
+		"position": true, "position_x": true, "position_y": true,
+		"scale": true, "scale_x": true, "scale_y": true,
+		"opacity": true, "blur": true, "tracking": true,
+	}
+)
+
+// TestCatalogStaysInsideTheRendererVocabulary pins that every registered motion
+// lowers to a document Chronon's schema accepts. The layer/animator property
+// split is the interesting half: blur and tracking are animator-only, so a
+// phrase that wants one of them must put it on its text animator.
+func TestCatalogStaysInsideTheRendererVocabulary(t *testing.T) {
+	for _, id := range Registry.List() {
+		plugin, err := Registry.Resolve(id)
+		if err != nil {
+			t.Fatalf("resolve %s: %v", id, err)
+		}
+		declarative, ok := plugin.(DeclarativePlugin)
+		if !ok {
+			continue
+		}
+		for _, track := range declarative.Definition.Tracks {
+			if !layerProperties[track.Property] {
+				t.Errorf("motion %s: layer track %q is not a layer property (blur/tracking are animator-only)", id, track.Property)
+			}
+		}
+		for _, animator := range declarative.Definition.TextAnimators {
+			selector := animator.Selector
+			if selector.Kind != "" && !selectorUnits[selector.Kind] {
+				t.Errorf("motion %s: selector unit %q is not in the renderer vocabulary", id, selector.Kind)
+			}
+			if selector.Shape != "" && !selectorShapes[selector.Shape] {
+				t.Errorf("motion %s: selector shape %q is not in the renderer vocabulary", id, selector.Shape)
+			}
+			if selector.Order != "" && !selectorOrders[selector.Order] {
+				t.Errorf("motion %s: selector order %q is not in the renderer vocabulary", id, selector.Order)
+			}
+			for _, property := range animator.Properties {
+				if !animatorProperties[property.Property] {
+					t.Errorf("motion %s: animator property %q is not in the renderer vocabulary", id, property.Property)
+				}
+			}
+		}
+	}
+}
+
+// TestModernPhraseBatchKeepsTheFamilyContract pins the invariants the modern v3
+// batch shares with the classic phrase library, so a new row cannot be added
+// half-formed (no layer tracks, or no per-unit animator).
+func TestModernPhraseBatchKeepsTheFamilyContract(t *testing.T) {
+	modern := modernPhraseMotions()
+	if len(modern) < 20 {
+		t.Fatalf("modern phrase batch = %d definitions, want at least 20", len(modern))
+	}
+	for _, d := range modern {
+		if d.Category != "apple_v2" {
+			t.Errorf("%s: category = %q, want apple_v2", d.ID, d.Category)
+		}
+		if d.Enter != 72 {
+			t.Errorf("%s: enter = %d, want the family's 72-frame window", d.ID, d.Enter)
+		}
+		if len(d.Tracks) == 0 {
+			t.Errorf("%s: no composition-level tracks", d.ID)
+		}
+		if len(d.TextAnimators) == 0 || len(d.TextAnimators[0].Properties) == 0 {
+			t.Errorf("%s: no per-unit text animator", d.ID)
+		}
+		if d.TextAnimators[0].Selector.Kind != d.Unit {
+			t.Errorf("%s: selector kind %q must match the declared unit %q", d.ID, d.TextAnimators[0].Selector.Kind, d.Unit)
+		}
+		if _, err := Registry.Resolve(d.ID); err != nil {
+			t.Errorf("%s is defined but not registered: %v", d.ID, err)
+		}
+		for _, track := range d.Tracks {
+			for _, kf := range track.Keyframes {
+				if kf.Frame < 0 || kf.Frame > int64(d.Enter) {
+					t.Errorf("%s/%s: keyframe %v falls outside the %d-frame enter window", d.ID, track.Property, kf.Frame, d.Enter)
+				}
+			}
+		}
+	}
+}
+
 type testPlugin struct{}
 
 func (testPlugin) ID() string            { return "test_plugin" }
@@ -39,9 +138,20 @@ func TestDeclarativePluginCompilesGenericTracks(t *testing.T) {
 }
 
 func TestAppleV2MotionsAreComplete(t *testing.T) {
+	// The count is pinned so a definition that is added to a family file but
+	// never reaches the registry (a missing familyMotions() entry in the init)
+	// fails here instead of silently shrinking the published catalog.
+	// 16 classic apple_v2 motions + 26 modern v3 phrase motions.
 	ids := Registry.AppleV2MotionIDs()
-	if len(ids) != 16 {
-		t.Fatalf("Apple V2 motion count = %d, want 16", len(ids))
+	if len(ids) != 42 {
+		t.Fatalf("Apple V2 motion count = %d, want 42", len(ids))
+	}
+	seen := make(map[string]bool, len(ids))
+	for _, id := range ids {
+		if seen[id] {
+			t.Fatalf("duplicate Apple V2 motion id %q", id)
+		}
+		seen[id] = true
 	}
 	for _, id := range ids {
 		plugin, err := Registry.Resolve(id)

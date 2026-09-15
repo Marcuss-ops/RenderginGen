@@ -61,6 +61,10 @@ token.json
 # apple_style_final_videos is the same artifact class again: rendered clips plus
 # their sidecars, reproducible from the crime/discovery/young style presets.
 /apple_style_final_videos/
+# phrase_overlay_v3 is the modern v3 phrase matrix: reproducible from
+# cmd/batch-render-presets/phrase-overlay-v3-manifest.json, so the rendered mp4s
+# and their plan pairs stay on disk and out of git.
+/phrase_overlay_v3/
 # mike_tyson_overlay_test is a manual smoke scenario: its request/plan/script
 # JSON and input media are worth keeping, but output/ holds the rendered mp4s
 # that a re-run regenerates on demand — the same artifact class as above.

@@ -1,0 +1,430 @@
+{
+  "schema": "chronon.render-plan.v2",
+  "version": 2,
+  "job_id": "mike_tyson_overlay_smoke",
+  "canvas": {
+    "width": 1920,
+    "height": 1080,
+    "fps_num": 24,
+    "fps_den": 1,
+    "duration_frames": 192
+  },
+  "layers": [
+    {
+      "id": "background_color",
+      "type": "color",
+      "color": [
+        0.035,
+        0.045,
+        0.065,
+        1
+      ],
+      "size": [
+        1920,
+        1080
+      ],
+      "start_frame": 0,
+      "duration_frames": 192
+    },
+    {
+      "id": "person:mike-tyson",
+      "type": "image",
+      "asset": "assets/mike_tyson_entity_crop.png",
+      "size": [
+        420,
+        420
+      ],
+      "fit": "stretch",
+      "position": [
+        -420,
+        0
+      ],
+      "start_frame": 0,
+      "duration_frames": 48,
+      "animation": {
+        "tracks": [
+          {
+            "property": "scale",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 0.84
+              },
+              {
+                "frame": 12,
+                "value": 1.0
+              }
+            ],
+            "easing": "out_back"
+          }
+        ]
+      },
+      "opacity": 1
+    },
+    {
+      "id": "person:mike-tyson-training",
+      "type": "image",
+      "asset": "assets/mike_tyson_entity.png",
+      "size": [
+        420,
+        420
+      ],
+      "fit": "stretch",
+      "position": [
+        0,
+        0
+      ],
+      "start_frame": 48,
+      "duration_frames": 48,
+      "animation": {
+        "tracks": [
+          {
+            "property": "scale",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 0.84
+              },
+              {
+                "frame": 12,
+                "value": 1.0
+              }
+            ],
+            "easing": "out_back"
+          }
+        ]
+      },
+      "opacity": 1
+    },
+    {
+      "id": "person:mike-tyson-ring",
+      "type": "image",
+      "asset": "assets/mike_tyson_entity.jpg",
+      "size": [
+        420,
+        420
+      ],
+      "fit": "stretch",
+      "position": [
+        420,
+        0
+      ],
+      "start_frame": 96,
+      "duration_frames": 48,
+      "animation": {
+        "tracks": [
+          {
+            "property": "scale",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 0.84
+              },
+              {
+                "frame": 12,
+                "value": 1.0
+              }
+            ],
+            "easing": "out_back"
+          }
+        ]
+      },
+      "opacity": 1
+    },
+    {
+      "id": "phrase:speed-opens-distance",
+      "type": "text",
+      "text": "LA VELOCIT\u00c0 APRE LA DISTANZA",
+      "size": [
+        1700,
+        150
+      ],
+      "position": [
+        0,
+        -390
+      ],
+      "style": {
+        "font": "assets/fonts/Poppins-Bold.ttf",
+        "font_size": 52,
+        "fill": "#FFFFFF",
+        "stroke": {
+          "color": "#111827",
+          "width": 1.5
+        },
+        "shadow": {
+          "color": "#000000",
+          "opacity": 0.3,
+          "blur": 2.0,
+          "offset": [
+            1,
+            2
+          ]
+        }
+      },
+      "start_frame": 18,
+      "duration_frames": 36,
+      "text_animators": [
+        {
+          "id": "typewriter_clean_0_text",
+          "selectors": [
+            {
+              "id": "typewriter_clean_0_selector",
+              "unit": "glyph",
+              "shape": "square",
+              "order": "forward",
+              "combine": "replace",
+              "start": {
+                "property": "start",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0
+                  },
+                  {
+                    "frame": 72,
+                    "value": 100
+                  }
+                ],
+                "easing": "out_cubic"
+              },
+              "exclude_spaces": true
+            }
+          ],
+          "properties": [
+            {
+              "property": "opacity",
+              "easing": "linear",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0
+                },
+                {
+                  "frame": 72,
+                  "value": 0
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "phrase:pressure-keeps-control",
+      "type": "text",
+      "text": "LA PRESSIONE MANTIENE IL CONTROLLO",
+      "size": [
+        1700,
+        150
+      ],
+      "position": [
+        0,
+        -390
+      ],
+      "style": {
+        "font": "assets/fonts/Poppins-Bold.ttf",
+        "font_size": 52,
+        "fill": "#FFFFFF",
+        "stroke": {
+          "color": "#111827",
+          "width": 2.5
+        },
+        "shadow": {
+          "color": "#000000",
+          "opacity": 0.45,
+          "blur": 8.0,
+          "offset": [
+            0,
+            4
+          ]
+        }
+      },
+      "start_frame": 66,
+      "duration_frames": 36,
+      "text_animators": [
+        {
+          "id": "typewriter_pop_1_text",
+          "selectors": [
+            {
+              "id": "typewriter_pop_1_selector",
+              "unit": "glyph",
+              "shape": "square",
+              "order": "forward",
+              "combine": "replace",
+              "start": {
+                "property": "start",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0
+                  },
+                  {
+                    "frame": 72,
+                    "value": 100
+                  }
+                ],
+                "easing": "out_back"
+              },
+              "exclude_spaces": true
+            }
+          ],
+          "properties": [
+            {
+              "property": "opacity",
+              "easing": "linear",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0
+                },
+                {
+                  "frame": 72,
+                  "value": 0
+                }
+              ]
+            },
+            {
+              "property": "position_y",
+              "easing": "out_back",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": -24
+                },
+                {
+                  "frame": 72,
+                  "value": -24
+                }
+              ]
+            },
+            {
+              "property": "scale",
+              "easing": "out_back",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 1.35
+                },
+                {
+                  "frame": 72,
+                  "value": 1.35
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "phrase:discipline-makes-method",
+      "type": "text",
+      "text": "LA DISCIPLINA TRASFORMA LA POTENZA",
+      "size": [
+        1700,
+        150
+      ],
+      "position": [
+        0,
+        -390
+      ],
+      "style": {
+        "font": "assets/fonts/Poppins-Bold.ttf",
+        "font_size": 52,
+        "fill": "#FFFFFF",
+        "stroke": {
+          "color": "#111827",
+          "width": 3.5
+        },
+        "shadow": {
+          "color": "#000000",
+          "opacity": 0.58,
+          "blur": 12.0,
+          "offset": [
+            0,
+            6
+          ]
+        }
+      },
+      "start_frame": 114,
+      "duration_frames": 36,
+      "text_animators": [
+        {
+          "id": "typewriter_tracking_2_text",
+          "selectors": [
+            {
+              "id": "typewriter_tracking_2_selector",
+              "unit": "glyph",
+              "shape": "smooth",
+              "order": "forward",
+              "combine": "replace",
+              "start": {
+                "property": "start",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0
+                  },
+                  {
+                    "frame": 72,
+                    "value": 100
+                  }
+                ],
+                "easing": "out_expo"
+              },
+              "exclude_spaces": true
+            }
+          ],
+          "properties": [
+            {
+              "property": "opacity",
+              "easing": "out_cubic",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0
+                },
+                {
+                  "frame": 72,
+                  "value": 0
+                }
+              ]
+            },
+            {
+              "property": "tracking",
+              "easing": "out_expo",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 16
+                },
+                {
+                  "frame": 72,
+                  "value": 16
+                }
+              ]
+            },
+            {
+              "property": "position_x",
+              "easing": "out_cubic",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": -12
+                },
+                {
+                  "frame": 72,
+                  "value": -12
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "output": {
+    "path": "/home/pierone/src/go-master/projects/Pyt/VeloxEditing/RenderingGen/mike_tyson_overlay_test/mike_tyson_overlay_extended_plan.mp4",
+    "format": "mp4",
+    "codec": "h264"
+  }
+}

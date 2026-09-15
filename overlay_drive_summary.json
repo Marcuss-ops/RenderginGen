@@ -1,0 +1,422 @@
+{
+  "schema": "renderinggen.overlay-drive-inventory.v1",
+  "drive_folder_id": "1J_xUGo_bchzXDIGqSX04CU44c_Dm3SxS",
+  "folder_url": "https://drive.google.com/drive/folders/1J_xUGo_bchzXDIGqSX04CU44c_Dm3SxS",
+  "subfolders": {
+    "Apple Style": {
+      "folder_id": "1ExpBVRXdyHgCzWn1nLj_Zov3vLgeSEd-",
+      "count": 6,
+      "files": [
+        {
+          "name": "apple_style_crime_30fps_1080p.mp4",
+          "size_bytes": 370081,
+          "md5": "1423cc303b25f982158bb1ddfb0e78aa",
+          "link": "https://drive.google.com/file/d/1N4jBPLUXESUHFMgNmGf0-iEvAN8XTGQT/view?usp=drivesdk"
+        },
+        {
+          "name": "apple_style_crime_entities_1920x1080_30fps_5s.mp4",
+          "size_bytes": 200355,
+          "md5": "63868264ee00f9ec57f69558f6c64aaa",
+          "link": "https://drive.google.com/file/d/1i66LzTxmbyE9eIUFNkIqKj1FfKEmXiDO/view?usp=drivesdk"
+        },
+        {
+          "name": "apple_style_discovery_30fps_1080p.mp4",
+          "size_bytes": 390602,
+          "md5": "3200a4b910976288eaea14beee7b3ba5",
+          "link": "https://drive.google.com/file/d/1iKI_0zyYli9-o24MwU1Qu0C2duoaj-gY/view?usp=drivesdk"
+        },
+        {
+          "name": "apple_style_discovery_entities_1920x1080_30fps_5s.mp4",
+          "size_bytes": 337573,
+          "md5": "0c73b97599677ce046bd4db660d0fa08",
+          "link": "https://drive.google.com/file/d/1suqPfVpoiDiZtDl7RiPSBhlXOE1-4A2i/view?usp=drivesdk"
+        },
+        {
+          "name": "apple_style_young_30fps_1080p.mp4",
+          "size_bytes": 407810,
+          "md5": "e90f450f3e8498bc08a994d5a4aee0de",
+          "link": "https://drive.google.com/file/d/1YBnQ9GyrllovqYAeNCyr_QGXra1uOJGj/view?usp=drivesdk"
+        },
+        {
+          "name": "apple_style_young_entities_1920x1080_30fps_5s.mp4",
+          "size_bytes": 502134,
+          "md5": "6a3adfcd1031bb2e88df53b0a3828abb",
+          "link": "https://drive.google.com/file/d/1TSNstaI83SAesfgSFxjFEn5GrrE1Ppl0/view?usp=drivesdk"
+        }
+      ]
+    },
+    "Images": {
+      "folder_id": "1-BkNhyY0Fs726AqlD9JqdXsgDmEurqPS",
+      "count": 8,
+      "files": [
+        {
+          "name": "preset_bottom_card_rise_24fps_1080p.mp4",
+          "size_bytes": 619409,
+          "md5": "398b62485a5f9426faa9078cc5b40792",
+          "link": "https://drive.google.com/file/d/1kEe8P6Uv9SL9SV_8GE16KyZF1RxWsipb/view?usp=drivesdk"
+        },
+        {
+          "name": "preset_image_fade_in_24fps_1080p.mp4",
+          "size_bytes": 634402,
+          "md5": "71eda7c978f875dd0a34f2edf36cb341",
+          "link": "https://drive.google.com/file/d/1o5tBcdwiF-T3AHCXIHHFYkaVuB68uCaB/view?usp=drivesdk"
+        },
+        {
+          "name": "preset_image_fast_fade_24fps_1080p.mp4",
+          "size_bytes": 634402,
+          "md5": "71eda7c978f875dd0a34f2edf36cb341",
+          "link": "https://drive.google.com/file/d/1dblDeAMQwVIWkxR_RWFzoUrO9eQh1f1t/view?usp=drivesdk"
+        },
+        {
+          "name": "preset_image_focus_in_24fps_1080p.mp4",
+          "size_bytes": 665141,
+          "md5": "7aba80e92d9cf5c05573b1834a1c796d",
+          "link": "https://drive.google.com/file/d/1Lyw9H2BD0ZOLrQSiGGkDlvwGU0rBhm26/view?usp=drivesdk"
+        },
+        {
+          "name": "preset_image_scale_in_24fps_1080p.mp4",
+          "size_bytes": 664139,
+          "md5": "9dbb4c802a27df3e0990d3b33d9e681a",
+          "link": "https://drive.google.com/file/d/1fdE_5z7JWTJMUEpXeRwBn0hYLHPwFvS_/view?usp=drivesdk"
+        },
+        {
+          "name": "preset_image_slide_left_24fps_1080p.mp4",
+          "size_bytes": 605840,
+          "md5": "86968469c874f43a9a11547d535f9394",
+          "link": "https://drive.google.com/file/d/1PdskwZ65930wOVO9dYxI4fvHmvcbjeGI/view?usp=drivesdk"
+        },
+        {
+          "name": "preset_image_slide_right_24fps_1080p.mp4",
+          "size_bytes": 605799,
+          "md5": "37d1fcb115034deaacbd29fa444235b6",
+          "link": "https://drive.google.com/file/d/1d3pzhApQ6awx68WBZxFyyER-skkcoC_B/view?usp=drivesdk"
+        },
+        {
+          "name": "preset_modern_rounded_pop_24fps_1080p.mp4",
+          "size_bytes": 639972,
+          "md5": "a88987447db434eb9e3f74f94d2eac25",
+          "link": "https://drive.google.com/file/d/1RAW772t_hyHrKUwfsMtjKX39n3UqR9Uj/view?usp=drivesdk"
+        }
+      ]
+    },
+    "Phrases Classic": {
+      "folder_id": "10dF3FqFPAsB7DXOUJLJFTo7idNrsSY0H",
+      "count": 10,
+      "files": [
+        {
+          "name": "phrase_01_lower_third_safe_24fps_1080p.mp4",
+          "size_bytes": 835498,
+          "md5": "2aa712448043f89a97b6454d8297dea1",
+          "link": "https://drive.google.com/file/d/1FhC_J3vzGd9unkodiH5Dg297ocLq59am/view?usp=drivesdk"
+        },
+        {
+          "name": "phrase_02_clean_slide_up_24fps_1080p.mp4",
+          "size_bytes": 835194,
+          "md5": "d24cad5301012f506b0e7a108cc86877",
+          "link": "https://drive.google.com/file/d/1p9OHcuCCx3fBxiMCmTs3Ip3JOlf14vxj/view?usp=drivesdk"
+        },
+        {
+          "name": "phrase_03_scale_pop_24fps_1080p.mp4",
+          "size_bytes": 815396,
+          "md5": "bf0088a19f473f8a71bcee0779220c44",
+          "link": "https://drive.google.com/file/d/1lylvb8MVt9_GjngceSUEDA2G4TRA81xa/view?usp=drivesdk"
+        },
+        {
+          "name": "phrase_04_dm_sans_fade_24fps_1080p.mp4",
+          "size_bytes": 867438,
+          "md5": "4bd96d67b92441ec39431708bce468f0",
+          "link": "https://drive.google.com/file/d/1M7vT4ayeMNnojYZVs4tVv8RTT56UZ3Os/view?usp=drivesdk"
+        },
+        {
+          "name": "phrase_05_slide_left_punch_24fps_1080p.mp4",
+          "size_bytes": 864801,
+          "md5": "978564587383aa9ca13c05902f9b66a4",
+          "link": "https://drive.google.com/file/d/1_xhl0MO9c-WfjP4U0gxuYn2519HEV4st/view?usp=drivesdk"
+        },
+        {
+          "name": "preset_caption_card_24fps_1080p.mp4",
+          "size_bytes": 53282,
+          "md5": "d3a13bcaf58d03acfc217910f8fa7c1a",
+          "link": "https://drive.google.com/file/d/1LNlqVEIw5bwUCXFw4o3oZaoEeI684kTi/view?usp=drivesdk"
+        },
+        {
+          "name": "preset_clean_slide_up_24fps_1080p.mp4",
+          "size_bytes": 52365,
+          "md5": "f726ed80cd508ee5a621660e397d0b8f",
+          "link": "https://drive.google.com/file/d/11XkO-vXMYfTS4J3d5QTPzbFZEVqLuHfq/view?usp=drivesdk"
+        },
+        {
+          "name": "preset_lower_third_safe_24fps_1080p.mp4",
+          "size_bytes": 34194,
+          "md5": "254fef4faec550217575f07d72284473",
+          "link": "https://drive.google.com/file/d/1rZdEQMWt_IR5q-VzejYhgIehFQT3SdpF/view?usp=drivesdk"
+        },
+        {
+          "name": "preset_phrase_fade_in_24fps_1080p.mp4",
+          "size_bytes": 54499,
+          "md5": "e3a30c6823d930734b0edf36c141abf4",
+          "link": "https://drive.google.com/file/d/1rlSUIuwJPDs-CDD7MsGCbRNqJMTAvlz-/view?usp=drivesdk"
+        },
+        {
+          "name": "preset_phrase_scale_in_24fps_1080p.mp4",
+          "size_bytes": 59152,
+          "md5": "b95f3e8b3f78fc5e0fab0471c418d3e5",
+          "link": "https://drive.google.com/file/d/1pzheOzjnLTyCwXDbAjIn4jsHaEqPMW8l/view?usp=drivesdk"
+        }
+      ]
+    },
+    "Phrases Modern v3": {
+      "folder_id": "1PsumXopCVAx2e498L8U1wJJrtN5S5TCS",
+      "count": 26,
+      "files": [
+        {
+          "name": "01_liquid_glass_ripple_1920x1080_24fps_5s.mp4",
+          "size_bytes": 67894,
+          "md5": "f7569ee627e2df4d5834b37a151ddabd",
+          "link": "https://drive.google.com/file/d/1BSZmLaxCB6gnhogUZjASCQ2P1eZKEWvG/view?usp=drivesdk"
+        },
+        {
+          "name": "02_kinetic_stamp_impact_1920x1080_24fps_5s.mp4",
+          "size_bytes": 102265,
+          "md5": "fb96a3e5fb8d7841200d439da25acf04",
+          "link": "https://drive.google.com/file/d/10vntZW55tmPPo5LbFrePsjKMB7Jst_Eu/view?usp=drivesdk"
+        },
+        {
+          "name": "03_editorial_push_in_1920x1080_24fps_5s.mp4",
+          "size_bytes": 104468,
+          "md5": "fca88aeacfd78356d144849d4516dd3d",
+          "link": "https://drive.google.com/file/d/1ZvHJS2ILmQPY4fMEu4Z95TSiiJfMK4BG/view?usp=drivesdk"
+        },
+        {
+          "name": "04_neon_flicker_ignite_1920x1080_24fps_5s.mp4",
+          "size_bytes": 72928,
+          "md5": "3948afa54fd8df8928e7d696349c2e2f",
+          "link": "https://drive.google.com/file/d/1itwD7B-5wBEjNrRO4K7vflZipqk07K_w/view?usp=drivesdk"
+        },
+        {
+          "name": "05_counter_scroll_reveal_1920x1080_24fps_5s.mp4",
+          "size_bytes": 125746,
+          "md5": "342a194b49f24e3e8ef336a162163505",
+          "link": "https://drive.google.com/file/d/1eDDdOqkdot_lmvvDdT9UicOhWcQdefvW/view?usp=drivesdk"
+        },
+        {
+          "name": "06_hologram_scanline_build_1920x1080_24fps_5s.mp4",
+          "size_bytes": 90756,
+          "md5": "66cd8de5e79480675805acbf67e3a432",
+          "link": "https://drive.google.com/file/d/11AdWNNR2h1voKPJm6q6wUIT5cSP565k1/view?usp=drivesdk"
+        },
+        {
+          "name": "07_soft_clay_press_1920x1080_24fps_5s.mp4",
+          "size_bytes": 85407,
+          "md5": "52a1bc9ef30f9345840096365b605a81",
+          "link": "https://drive.google.com/file/d/1Z1URp3AH5yRTn2VEEVbcZ8xo8505LutQ/view?usp=drivesdk"
+        },
+        {
+          "name": "08_underline_swipe_bold_1920x1080_24fps_5s.mp4",
+          "size_bytes": 82667,
+          "md5": "73c65181591d6f31cb1b22f5f81ede9e",
+          "link": "https://drive.google.com/file/d/1cjc2UfshAyMxz-QBnnnlBIqVqqCBnVQI/view?usp=drivesdk"
+        },
+        {
+          "name": "09_magnetic_letters_converge_1920x1080_24fps_5s.mp4",
+          "size_bytes": 88209,
+          "md5": "38967416b87f963f80d86300d29877b1",
+          "link": "https://drive.google.com/file/d/1vTrKcFoef9PkfB38jIYl9gxGaDEFiXQj/view?usp=drivesdk"
+        },
+        {
+          "name": "10_spectrum_shimmer_wave_1920x1080_24fps_5s.mp4",
+          "size_bytes": 93174,
+          "md5": "7650aa38315099bf031fae82a7c6f4a2",
+          "link": "https://drive.google.com/file/d/1JWom0I_QbU1nsSL49qbgF1jeR8coTsDA/view?usp=drivesdk"
+        },
+        {
+          "name": "11_letterbox_wipe_1920x1080_24fps_5s.mp4",
+          "size_bytes": 33550,
+          "md5": "2b17a55333c1b035ebee9cee3a9e9e39",
+          "link": "https://drive.google.com/file/d/1CbSc_v-kKU7q2Dni1GWmODWSQ_qaAwo3/view?usp=drivesdk"
+        },
+        {
+          "name": "12_focus_pull_macro_1920x1080_24fps_5s.mp4",
+          "size_bytes": 57925,
+          "md5": "0fdac4f287a8593f06e15026d72e78af",
+          "link": "https://drive.google.com/file/d/1t9yVhV4IUfjQ6uoE8Izir_-DzTJU6-o7/view?usp=drivesdk"
+        },
+        {
+          "name": "13_risograph_offset_print_1920x1080_24fps_5s.mp4",
+          "size_bytes": 91715,
+          "md5": "e43e554b905365f332ac2bf00b8ace7c",
+          "link": "https://drive.google.com/file/d/1-Wed4V52ehxLVG7wq97Wdo3ILfSo4Sev/view?usp=drivesdk"
+        },
+        {
+          "name": "14_spotlight_iris_open_1920x1080_24fps_5s.mp4",
+          "size_bytes": 55229,
+          "md5": "7c92d5b1f92048c9a17db6c5ef907315",
+          "link": "https://drive.google.com/file/d/1OIJgL9sPlhPzpG9tZyoqXwmTS4EdfMqg/view?usp=drivesdk"
+        },
+        {
+          "name": "15_air_rise_type_on_1920x1080_24fps_5s.mp4",
+          "size_bytes": 31843,
+          "md5": "3b307d375555009bf0b6f754d75daea6",
+          "link": "https://drive.google.com/file/d/1Z01NOvMMBLQBrOKCv-2PTBYSvTposvF_/view?usp=drivesdk"
+        },
+        {
+          "name": "16_glitch_slice_band_1920x1080_24fps_5s.mp4",
+          "size_bytes": 68594,
+          "md5": "32a8de4f880e97154fa4a72557a6fe6a",
+          "link": "https://drive.google.com/file/d/1imHbHDKlTchKaVI0crozqVqz6jUWMDsZ/view?usp=drivesdk"
+        },
+        {
+          "name": "17_parallax_depth_stack_1920x1080_24fps_5s.mp4",
+          "size_bytes": 108022,
+          "md5": "a80059446cf300233f8fecc9158038bf",
+          "link": "https://drive.google.com/file/d/14ZpbHicTmVeBhZUUFWceJcqDjVIqpjPD/view?usp=drivesdk"
+        },
+        {
+          "name": "18_cinematic_credits_drift_1920x1080_24fps_5s.mp4",
+          "size_bytes": 71763,
+          "md5": "d50d10d88e393e1caff9bd1ea33de711",
+          "link": "https://drive.google.com/file/d/10XHWy4goEcx7SVmKNXLZP2AiNEbJAB9c/view?usp=drivesdk"
+        },
+        {
+          "name": "19_ink_bleed_spread_1920x1080_24fps_5s.mp4",
+          "size_bytes": 54072,
+          "md5": "64f560893adda7be214bf86a120fd57c",
+          "link": "https://drive.google.com/file/d/1zTsTPekFyAEv1zQn0ZxWOqX7ll1hYJFA/view?usp=drivesdk"
+        },
+        {
+          "name": "20_pulse_emphasis_beat_1920x1080_24fps_5s.mp4",
+          "size_bytes": 45324,
+          "md5": "1c4cd904815c497944102c034e8a0536",
+          "link": "https://drive.google.com/file/d/1CZzSHmOK2fu-uQX39jcGOjPA04vOxa9L/view?usp=drivesdk"
+        },
+        {
+          "name": "21_aurora_gradient_sweep_1920x1080_24fps_5s.mp4",
+          "size_bytes": 141353,
+          "md5": "309404e62f9fd3dd3da5fef27d0ae392",
+          "link": "https://drive.google.com/file/d/1ZPhIDgoCWEOSDZ7mf3lQ7uzvSFejqjAN/view?usp=drivesdk"
+        },
+        {
+          "name": "22_vertical_reel_snap_1920x1080_24fps_5s.mp4",
+          "size_bytes": 73777,
+          "md5": "2bacb64a226cc972a95051f0afa0f196",
+          "link": "https://drive.google.com/file/d/1UZ9WYKfJlcdbB0sXBlaXAVfWPzrS0P_X/view?usp=drivesdk"
+        },
+        {
+          "name": "23_weightless_float_settle_1920x1080_24fps_5s.mp4",
+          "size_bytes": 29605,
+          "md5": "1ee72208ba7cf883359ece17ff9f4446",
+          "link": "https://drive.google.com/file/d/1fzJDWZ_djpr6BvCRWkFa1iJD5tlVNtfo/view?usp=drivesdk"
+        },
+        {
+          "name": "24_crisp_mask_center_open_1920x1080_24fps_5s.mp4",
+          "size_bytes": 76789,
+          "md5": "f64ec84a93ca8b172262a4f229f3819a",
+          "link": "https://drive.google.com/file/d/1l89rrFeGo5L9uANwVv3R-C5vfPmc6rCC/view?usp=drivesdk"
+        },
+        {
+          "name": "25_duotone_block_rise_1920x1080_24fps_5s.mp4",
+          "size_bytes": 75264,
+          "md5": "2ca53fa81f4e262552e469d47ae324f1",
+          "link": "https://drive.google.com/file/d/1exqmEJQjAcYGZLg4iZRMVawlXdeHVkSw/view?usp=drivesdk"
+        },
+        {
+          "name": "26_shutter_blade_reveal_1920x1080_24fps_5s.mp4",
+          "size_bytes": 64677,
+          "md5": "bf8212e248ee9fe148853ee1c08af658",
+          "link": "https://drive.google.com/file/d/1aALIT_q1cqsVDzIoHsG5-Pafh8-s-QR0/view?usp=drivesdk"
+        }
+      ]
+    },
+    "Typewriter": {
+      "folder_id": "1GiOO7aK6NvkQhbcj1TyAOv_uLre3FmyD",
+      "count": 14,
+      "files": [
+        {
+          "name": "01_typewriter_clean_1920x1080_24fps_5s.mp4",
+          "size_bytes": 146010,
+          "md5": "ce307ccdf6910dae6ff0f9bf2317598f",
+          "link": "https://drive.google.com/file/d/1R2vq7vklaVs6yGaACCYxI4i4IC0dliQy/view?usp=drivesdk"
+        },
+        {
+          "name": "01_typewriter_clean_v2_crisp_1920x1080_24fps_5s.mp4",
+          "size_bytes": 109760,
+          "md5": "051db0c3443cdeb7f9059912db89c5ee",
+          "link": "https://drive.google.com/file/d/1PSL_NsdO9p5nmiZFhh-xVAe30Tc6HSEw/view?usp=drivesdk"
+        },
+        {
+          "name": "02_typewriter_pop_1920x1080_24fps_5s.mp4",
+          "size_bytes": 134945,
+          "md5": "ad682b4a9771b6f9d73a401ae6978957",
+          "link": "https://drive.google.com/file/d/1Mqzz2ffTtdUD725h4Ao2Fq5l67XTXbCA/view?usp=drivesdk"
+        },
+        {
+          "name": "02_typewriter_pop_v2_soft_1920x1080_24fps_5s.mp4",
+          "size_bytes": 141852,
+          "md5": "ac37340e3eb1cd4821f4d3cf60bc3e5f",
+          "link": "https://drive.google.com/file/d/1Sq3Cun2bbqphSXHgE0reAz_UUgs9sqS5/view?usp=drivesdk"
+        },
+        {
+          "name": "03_typewriter_neon_1920x1080_24fps_5s.mp4",
+          "size_bytes": 245190,
+          "md5": "212607b120c480926348b4aae5ac7fca",
+          "link": "https://drive.google.com/file/d/1CE1wB1-A84sLHohEMWQ1ouAE-UvUHbiD/view?usp=drivesdk"
+        },
+        {
+          "name": "03_typewriter_neon_v2_neon_1920x1080_24fps_5s.mp4",
+          "size_bytes": 131058,
+          "md5": "49c47892d26c1cce6ff13df965c7fff9",
+          "link": "https://drive.google.com/file/d/15orrU1gtklHmZUZwjXYWsqLdZN5gpWWe/view?usp=drivesdk"
+        },
+        {
+          "name": "04_typewriter_tracking_1920x1080_24fps_5s.mp4",
+          "size_bytes": 313819,
+          "md5": "153e4e51e2b075a5edece35662a5f9eb",
+          "link": "https://drive.google.com/file/d/1AvX5JKBsNAgZ830yPgGHYNkjRM6Y9XZm/view?usp=drivesdk"
+        },
+        {
+          "name": "04_typewriter_tracking_v2_medium_1920x1080_24fps_5s.mp4",
+          "size_bytes": 153242,
+          "md5": "374ffc2e3d7d65e32f11bff988c67ffe",
+          "link": "https://drive.google.com/file/d/1xuG4BcbLDHEswn7RGb54aziuZY6Yt1ST/view?usp=drivesdk"
+        },
+        {
+          "name": "05_typewriter_glitch_1920x1080_24fps_5s.mp4",
+          "size_bytes": 149121,
+          "md5": "9b99d61d626d4522afa6eab3fb32b8be",
+          "link": "https://drive.google.com/file/d/1PUjArotyf8Ld-F7Y4XJdjORLqQWPf9Sz/view?usp=drivesdk"
+        },
+        {
+          "name": "05_typewriter_glitch_v2_heavy_1920x1080_24fps_5s.mp4",
+          "size_bytes": 179617,
+          "md5": "b61a7db4f2342cd2bff00163bafb9479",
+          "link": "https://drive.google.com/file/d/1WujINwWc8wz33pfrMDnKalkBQt9f0MSp/view?usp=drivesdk"
+        },
+        {
+          "name": "shadow_stroke_crisp_1920x1080_24fps_5s.mp4",
+          "size_bytes": 210542,
+          "md5": "61683a422d33648a250787b1a3144d75",
+          "link": "https://drive.google.com/file/d/1hCNA3wE2EuBqHfTbJtPN-KI1hAV5U-Ft/view?usp=drivesdk"
+        },
+        {
+          "name": "shadow_stroke_heavy_1920x1080_24fps_5s.mp4",
+          "size_bytes": 253614,
+          "md5": "1d8038b5483478fef1fb41a28b363a81",
+          "link": "https://drive.google.com/file/d/1p504fRDVXqhoDVIv1zZmagPWu8CD25Ok/view?usp=drivesdk"
+        },
+        {
+          "name": "shadow_stroke_neon_1920x1080_24fps_5s.mp4",
+          "size_bytes": 249814,
+          "md5": "bddbaf1cfa6690889790b549dfca22e2",
+          "link": "https://drive.google.com/file/d/1Z63axqxa5KM-gMlR9SD-wr48ZmrLzlQ2/view?usp=drivesdk"
+        },
+        {
+          "name": "shadow_stroke_soft_1920x1080_24fps_5s.mp4",
+          "size_bytes": 234547,
+          "md5": "07d55692a37a1964af7cac72ea68094b",
+          "link": "https://drive.google.com/file/d/19vBDrQ1J52oIE9it2rZlLIwR-QpPPGaB/view?usp=drivesdk"
+        }
+      ]
+    }
+  },
+  "total_files": 64
+}

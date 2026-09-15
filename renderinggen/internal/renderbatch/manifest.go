@@ -80,6 +80,11 @@ type Job struct {
 	DurationMS int64 `json:"duration_ms,omitempty"`
 	// Output is the rendered file, relative to the effective output root.
 	Output string `json:"output"`
+	// DriveSubfolder places the published artifact in a deterministic child
+	// folder of the publication root. It is how a batch is organised BY FAMILY
+	// on Drive (phrases, typewriter, images) without the folder name having to
+	// be repeated on the command line per file. Empty publishes into the root.
+	DriveSubfolder string `json:"drive_subfolder,omitempty"`
 }
 
 // Expect is the media contract a rendered job is verified against. Every field
@@ -115,10 +120,16 @@ type PreparedJob struct {
 	Expect     Expect
 	PlanPath   string
 	OutputPath string
-	// Plan is the exact document written to PlanPath.
+	// Plan is the exact SEMANTIC document written to PlanPath. It is the input
+	// of record: it names the preset and motion that were lowered.
 	Plan []byte
-	// PlanDigest is the plan's content address, so two runs that differ only in
-	// the plan can be told apart in the log.
+	// RenderPlanPath is where the compiled chronon.render-plan.v2 document is
+	// written, and RenderPlan are its bytes. This is the artifact the renderer
+	// consumes; the semantic plan beside it is not readable by Chronon.
+	RenderPlanPath string
+	RenderPlan     []byte
+	// PlanDigest is the semantic plan's content address, so two runs that differ
+	// only in the plan can be told apart in the log.
 	PlanDigest string
 }
 
@@ -240,17 +251,31 @@ func (m *Manifest) Prepare(outputRoot string) ([]PreparedJob, error) {
 		if outputRoot != "" {
 			outputPath = filepath.Join(outputRoot, filepath.FromSlash(outputRel))
 		}
+		// Lower the semantic plan to the concrete document Chronon reads. Doing
+		// it here (not in the render goroutine) keeps the fail-fast contract:
+		// a job whose plan cannot be lowered is reported by id before anything
+		// renders, with the rest of the matrix.
+		renderPlan, err := CompileRenderPlan(plan)
+		if err != nil {
+			problems = append(problems, fmt.Sprintf("job %q: %v", job.ID, err))
+			continue
+		}
 		// plan_path is not a manifest field: deriving it beside the output keeps
-		// exactly one place that decides where a render's artefacts live.
-		planPath := strings.TrimSuffix(outputPath, filepath.Ext(outputPath)) + "_plan.json"
-		digest := sha256.Sum256(plan)
+		// exactly one place that decides where a render's artefacts live. The
+		// semantic and the compiled plan share that stem so a render directory
+		// always holds the pair.
+		stem := strings.TrimSuffix(outputPath, filepath.Ext(outputPath))
+		planPath := stem + "_plan.json"
+		planDigest := sha256.Sum256(plan)
 		prepared = append(prepared, PreparedJob{
-			Job:        job,
-			Expect:     job.Expectation(m.Canvas),
-			PlanPath:   planPath,
-			OutputPath: outputPath,
-			Plan:       plan,
-			PlanDigest: hex.EncodeToString(digest[:]),
+			Job:            job,
+			Expect:         job.Expectation(m.Canvas),
+			PlanPath:       planPath,
+			OutputPath:     outputPath,
+			Plan:           plan,
+			RenderPlanPath: stem + "_render_plan.json",
+			RenderPlan:     renderPlan,
+			PlanDigest:     hex.EncodeToString(planDigest[:]),
 		})
 	}
 	if len(problems) > 0 {
