@@ -72,9 +72,13 @@ func ValidateEncodePreset(preset string) error {
 // are already materialized under AssetsRoot, and OutputPath is where the
 // rendered file must be written.
 type RenderRequest struct {
-	PlanPath   string // path to the render-plan document the worker wrote (plan.json)
-	AssetsRoot string // directory the plan's relative asset references resolve against
-	OutputPath string // destination of the rendered output (e.g. result.mp4)
+	PlanPath string // path to the render-plan document the worker wrote (plan.json)
+	// PreparedPackagePath is the immutable overlay preparation sidecar written
+	// beside PlanPath. Empty keeps compatibility for callers that only submit a
+	// canonical render plan.
+	PreparedPackagePath string
+	AssetsRoot          string // directory the plan's relative asset references resolve against
+	OutputPath          string // destination of the rendered output (e.g. result.mp4)
 	// AudioSourcePath is an optional source media file whose audio stream is
 	// muxed into the native video output. It is deliberately separate from
 	// the visual render plan: Chronon renders video, while the native encoder

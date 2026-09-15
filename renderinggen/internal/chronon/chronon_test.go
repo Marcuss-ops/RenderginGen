@@ -26,6 +26,24 @@ func TestRenderArgs(t *testing.T) {
 	}
 }
 
+func TestRenderArgsForwardsPreparedPackage(t *testing.T) {
+	got := renderArgs(RenderRequest{
+		PlanPath:            "/jobs/1/plan.json",
+		PreparedPackagePath: "/jobs/1/prepared.json",
+		AssetsRoot:          "/jobs/1",
+		OutputPath:          "/jobs/1/output.mp4",
+	})
+	want := []string{
+		"render", "--plan", "/jobs/1/plan.json",
+		"--assets-root", "/jobs/1", "--backend", "auto",
+		"-o", "/jobs/1/output.mp4",
+		"--prepared-package", "/jobs/1/prepared.json",
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("renderArgs with prepared package = %#v, want %#v", got, want)
+	}
+}
+
 func TestRenderArgsChunkRange(t *testing.T) {
 	got := renderArgs(RenderRequest{PlanPath: "/jobs/1/plan.json", AssetsRoot: "/jobs/1", OutputPath: "/jobs/1/output.mp4", RangeEnabled: true, FirstFrame: 240, LastFrame: 359})
 	if !reflect.DeepEqual(got[len(got)-4:], []string{"--start-frame", "240", "--end-frame", "359"}) {

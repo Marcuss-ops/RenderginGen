@@ -60,7 +60,8 @@ func (p *Processor) RunGPU(ctx context.Context, prepared *PreparedJob) error {
 	sawProgress := false
 	var lastProgressLogAt time.Time
 	if err := p.renderer.Render(ctx, chronon.RenderRequest{
-		PlanPath: prepared.Workspace.PlanPath(),
+		PlanPath:            prepared.Workspace.PlanPath(),
+		PreparedPackagePath: prepared.Workspace.PreparedPackagePath(),
 		// Plans use the canonical assets/<file> namespace. The workspace
 		// root (not root/assets) is therefore Chronon's mounted root.
 		AssetsRoot:      prepared.Workspace.Root(),
