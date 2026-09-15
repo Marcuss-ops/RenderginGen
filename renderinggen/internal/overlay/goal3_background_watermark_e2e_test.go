@@ -322,10 +322,19 @@ func goal3RenderOnce(t *testing.T, bin, assetsRoot, outDir, name, raw string) (s
 	if err := os.WriteFile(planPath, planBytes, 0o644); err != nil {
 		t.Fatalf("%s: write plan: %v", name, err)
 	}
+	preparedPath := filepath.Join(outDir, name+"_prepared.json")
+	preparedBytes, err := json.MarshalIndent(result.Prepared, "", "  ")
+	if err != nil {
+		t.Fatalf("%s: marshal prepared package: %v", name, err)
+	}
+	if err := os.WriteFile(preparedPath, preparedBytes, 0o644); err != nil {
+		t.Fatalf("%s: write prepared package: %v", name, err)
+	}
 
 	audioSource := filepath.Join(assetsRoot, filepath.FromSlash("assets/semantic/goal3-foreground/source.mp4"))
 	args := []string{
 		"render", "--plan", planPath, "--assets-root", assetsRoot,
+		"--prepared-package", preparedPath,
 		"--backend", "vulkan",
 		"--hardware", "nvenc", "--encoder-backend", "native",
 		"--gpu-hot-path-mode", "require_gpu_native",
