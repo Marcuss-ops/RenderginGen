@@ -1,7 +1,7 @@
 {
   "version": 2,
   "preset": "custom",
-  "correlation_id": "mike-tyson-overlay-v2-render-20260915",
+  "correlation_id": "mike-tyson-overlay-v2-phrase-20260915",
   "force_refresh": true,
   "items": [
     {
@@ -10,7 +10,7 @@
       "title": "Mike Tyson — potenza e disciplina",
       "language": "it",
       "tone": "documentario sportivo intenso",
-      "style": "Scrivi uno script breve e concreto in italiano su Mike Tyson. Metti in evidenza velocità, pressione, potenza e disciplina senza inventare date, avversari, statistiche o citazioni. Restituisci frasi complete e una sola scena coerente. Mantieni identica e chiaramente riconoscibile questa frase importante per l'overlay: La potenza nasce dalla disciplina.",
+      "style": "Scrivi uno script breve e concreto in italiano su Mike Tyson. Metti in evidenza velocità, pressione, potenza e disciplina senza inventare date, avversari, statistiche o citazioni. Restituisci frasi complete e una sola scena coerente. Inserisci identica questa frase breve e importante per l'overlay: Potenza e disciplina.",
       "model": "gemma4:e4b",
       "source": {
         "type": "text",
@@ -20,7 +20,7 @@
       },
       "script_params": {
         "target_words": 45,
-        "min_words": 30,
+        "min_words": 20,
         "segment_words": 45,
         "single_scene": true,
         "duration": 5,
@@ -30,7 +30,7 @@
             "id": "mike-tyson",
             "kind": "stock",
             "topic": "Mike Tyson: velocità, pressione, potenza e disciplina",
-            "source_text": "Mike Tyson trasforma pochi secondi sul ring in una dichiarazione di potenza. La sua presenza combina velocità, pressione e disciplina. La potenza nasce dalla disciplina, e il contrasto tra forza esteriore e controllo rende questa frase il punto chiave della scena.",
+        "source_text": "Mike Tyson trasforma pochi secondi sul ring in una dichiarazione di potenza. La sua presenza combina velocità e pressione. Potenza e disciplina.",
             "target_words": 45
           }
         ]
@@ -75,10 +75,11 @@
         },
         "extraction": {
           "enabled": true,
-          "include": ["entities", "special_names", "important_phrases"],
-          "max_entities_per_segment": 1,
-          "max_important_phrases_per_segment": 1,
-          "max_image_queries_per_segment": 1,
+        "include": ["entities", "special_names", "important_phrases"],
+        "max_entities_per_segment": 1,
+        "max_important_phrases_per_segment": 1,
+        "important_phrases": ["Potenza e disciplina"],
+        "max_image_queries_per_segment": 1,
           "entity_images": {
             "enabled": true,
             "entity_types": ["PERSON"],
