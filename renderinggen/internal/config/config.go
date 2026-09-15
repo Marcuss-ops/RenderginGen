@@ -90,6 +90,28 @@ type PipelineConfig struct {
 	// LeaseRenewBackoff is the first retry delay; it doubles per attempt up to
 	// half the lease interval.
 	LeaseRenewBackoff time.Duration `yaml:"lease_renew_backoff"`
+
+	// ReceiptVerify is the output-verification POLICY the worker requests from
+	// Chronon and enforces from its receipt: "" (fast), "fast", "normal" or
+	// "certify". It is a setting because it decides whether the worker demands
+	// proof of the render, and because the value has to reach the engine
+	// explicitly — the historical arrangement read RENDERINGGEN_RECEIPT_VERIFY
+	// inside the processor, so "what policy did this worker run under" was
+	// answerable only by inspecting the process environment. The accepted
+	// spelling is chronon's wire vocabulary (internal/chronon owns it); config
+	// validates it here so a typo fails at load rather than degrading to fast.
+	ReceiptVerify string `yaml:"receipt_verify"`
+
+	// DeepVisualValidation enables the sampled ffmpeg visual gate for jobs
+	// whose plan carries an authored overlay. Off by default: it costs an extra
+	// decode of the finished output. It is a setting for the same reason as
+	// ReceiptVerify — it was an undiscoverable RENDERINGGEN_DEEP_VISUAL read.
+	DeepVisualValidation bool `yaml:"deep_visual_validation"`
+
+	// KeepWorkspace leaves a finished job's workspace on disk for inspection.
+	// Off by default; a debugging aid that must be turned on deliberately,
+	// because the jobs root is often tmpfs (RAM).
+	KeepWorkspace bool `yaml:"keep_workspace"`
 }
 
 type WorkerConfig struct {
@@ -194,6 +216,14 @@ type DriveConfig struct {
 	// Mock publisher settings (Mode == "mock").
 	MockDir       string `yaml:"mock_dir"`        // write uploaded bytes here
 	MockFailFirst int    `yaml:"mock_fail_first"` // fail the first N uploads
+
+	// ChunkBytes is the resumable-upload chunk size. Zero uses the publisher's
+	// default (large enough to cover a rendered segment in one request). It is
+	// a setting because upload throughput against a quota-limited account is a
+	// deployment property, and the historical
+	// RENDERINGGEN_DRIVE_CHUNK_BYTES read lived inside the publisher where no
+	// operator could see what it was set to.
+	ChunkBytes int64 `yaml:"chunk_bytes"`
 }
 
 // ArtifactDBConfig configures the optional worker-local artifact mirror.
@@ -502,6 +532,16 @@ func (p PipelineConfig) validate() error {
 	// render that owns it.
 	if p.WorkspaceLeaseTTL <= p.WorkspaceLeaseRefresh {
 		return fmt.Errorf("pipeline.workspace_lease_ttl (%v) must exceed pipeline.workspace_lease_refresh (%v)", p.WorkspaceLeaseTTL, p.WorkspaceLeaseRefresh)
+	}
+	// The accepted set is chronon's receipt-verify vocabulary. Declaring it here
+	// as literals (rather than importing the engine client) keeps config free of
+	// a dependency on the renderer while still failing a typo at load: silently
+	// degrading an unknown value to fast would mean an operator who asked for
+	// proof ran without it.
+	switch p.ReceiptVerify {
+	case "", "fast", "normal", "certify":
+	default:
+		return fmt.Errorf("pipeline.receipt_verify %q must be one of \"\" (fast), fast, normal, certify", p.ReceiptVerify)
 	}
 	return nil
 }

@@ -7,7 +7,6 @@ import (
 	"context"
 	"errors"
 	"log"
-	"os"
 	"time"
 
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/config"
@@ -203,7 +202,10 @@ func runGPULane(ctx context.Context, q *queue.Client, proc *processor.Processor,
 // runPostPool finalizes GPU-completed jobs (probe, hash, store, ledger) and
 // publishes them. Workspace cleanup always runs here: it is the last owner.
 func runPostPool(ctx context.Context, q *queue.Client, proc *processor.Processor, parentFinalizer *processor.ParentFinalizer, doneCh <-chan renderOutcome, timings config.PipelineConfig) {
-	keepWorkspaces := os.Getenv("RENDERINGGEN_KEEP_WORKSPACE") == "1"
+	// Read once, from configuration: this pool and StagedRender (the other
+	// workspace owner) must agree, and a second environment read is exactly how
+	// they could diverge.
+	keepWorkspaces := timings.KeepWorkspace
 	for {
 		select {
 		case <-ctx.Done():

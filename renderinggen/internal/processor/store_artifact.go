@@ -27,7 +27,7 @@ import (
 // "DB artifact" step — returning the artifact metadata for queue completion.
 // The pipeline invariant local_sha == objectstore_sha == db_sha is enforced
 // here: the record is keyed by the same hash the object store accepted.
-func (p *Processor) storeArtifact(ctx context.Context, jobID, outputPath string, plan *overlay.Plan, phaseMetrics map[string]float64, totalStart time.Time, probe *media.ProbeResult, stats overlay.Stats, inputBytes int64, copyEligible bool, nativeCertified bool) (queue.Artifact, error) {
+func (p *Processor) storeArtifact(ctx context.Context, jobID, outputPath string, outcome receiptOutcome, plan *overlay.Plan, phaseMetrics map[string]float64, totalStart time.Time, probe *media.ProbeResult, stats overlay.Stats, inputBytes int64, copyEligible bool, nativeCertified bool) (queue.Artifact, error) {
 	phaseStart := time.Now()
 	defer func() {
 		phaseMetrics[metricnames.PublishMS] = float64(time.Since(phaseStart).Microseconds()) / 1000
@@ -39,30 +39,31 @@ func (p *Processor) storeArtifact(ctx context.Context, jobID, outputPath string,
 	if err != nil {
 		return queue.Artifact{}, fmt.Errorf("processor: stat output %s: %w", outputPath, err)
 	}
-	// Chronon computes the output SHA-256 while/after encoding and reports it
-	// in its media receipt. Trusting that identity removes a full re-read of
-	// the rendered file from the critical path; a size cross-check plus a
-	// hash-verify fallback (when the receipt is missing or disagrees on size)
-	// keeps the invariant local_sha == objectstore_sha == db_sha.
+	// The artifact's content address comes from the verification GATE, which
+	// resolved it for this job's policy (see receipt_identity.go). The store
+	// phase used to make this decision itself, from a size match against the
+	// receipt, which meant a wrong-but-right-length hash became the artifact's
+	// permanent address without any policy being consulted. Two cases arrive
+	// here:
+	//
+	//	identity.SHA256 set    — use the gate's address (proven, or accepted on a
+	//	                        size match under fast, which the gate recorded)
+	//	identity.SHA256 empty  — no usable claim, so read the bytes here
+	//
+	// Either way the invariant local_sha == objectstore_sha == db_sha holds, and
+	// the ledger says which case it was.
 	var hash string
 	shaStart := time.Now()
-	receipt, receiptErr := chronon.ReadMediaReceipt(outputPath)
-	switch {
-	case receiptErr == nil && receipt.Output.Bytes == fileInfo.Size():
-		hash = receipt.Output.SHA256
-		log.Printf("job %s: artifact identity from chronon receipt (bytes=%d)", jobID, fileInfo.Size())
-	case receiptErr == nil:
-		// Receipt exists but disagrees on size: fall through to verification.
-		log.Printf("job %s: chronon receipt size %d != file %d; verifying", jobID, receipt.Output.Bytes, fileInfo.Size())
-		fallthrough
-	default:
-		// No receipt (or an unreadable one): identity must be proven by
-		// re-reading the output. This costs a full SHA-256 pass on the
-		// critical path, so it is recorded — otherwise the spike is visible
-		// only as an unexplained sha256_ms and the degradation stays
-		// unattributable.
-		phaseMetrics[metricnames.ChrononReceiptMissing] = 1
-		log.Printf("job %s: chronon receipt unavailable (%v); hashing output directly", jobID, receiptErr)
+	if outcome.Identity.SHA256 != "" {
+		hash = outcome.Identity.SHA256
+		log.Printf("job %s: artifact identity %s (proven=%t, bytes=%d)", jobID, outcome.Identity.Source, outcome.Identity.Proven, fileInfo.Size())
+	} else {
+		// No receipt (or an unreadable/unusable one): identity must be proven by
+		// re-reading the output. This costs a full SHA-256 pass on the critical
+		// path, so it is recorded — otherwise the spike is visible only as an
+		// unexplained sha256_ms and the degradation stays unattributable. The
+		// gate has already recorded WHY it could not resolve the address.
+		log.Printf("job %s: hashing output directly (%s)", jobID, outcome.Identity.Source)
 		digest, _, verifyErr := hashio.File(outputPath)
 		if verifyErr != nil {
 			return queue.Artifact{}, fmt.Errorf("processor: hash output %s: %w", outputPath, verifyErr)
@@ -80,11 +81,11 @@ func (p *Processor) storeArtifact(ctx context.Context, jobID, outputPath string,
 	// so reports can label every run fast/normal/certify instead of inferring
 	// the policy from whether receipt_decode_ms exists. Best-effort: a receipt
 	// that carried no timing/verification block simply adds nothing.
-	if receiptErr == nil {
-		for key, value := range receipt.ReceiptTimingMetrics() {
+	if outcome.Err == nil {
+		for key, value := range outcome.Receipt.ReceiptTimingMetrics() {
 			phaseMetrics[key] = value
 		}
-		for key, value := range receipt.VerificationMetrics() {
+		for key, value := range outcome.Receipt.VerificationMetrics() {
 			phaseMetrics[key] = value
 		}
 	}
@@ -172,6 +173,14 @@ func (p *Processor) storeArtifact(ctx context.Context, jobID, outputPath string,
 		chrononTelemetry = raw
 		artifact.ChrononTelemetry = raw
 		mergeTelemetrySummaryMetrics(phaseMetrics, raw)
+		// Cross-check the composition requirement the worker derived from the
+		// plan against the execution path the engine reports. This runs where
+		// the summary is ALREADY in hand, so the verification costs no extra
+		// read; a divergence fails the artifact only for the direction that can
+		// produce a wrong picture (see composition_check.go).
+		if err := verifyCompositionPrediction(plan, raw, phaseMetrics, p.receiptVerifyLevel(), jobID); err != nil {
+			return queue.Artifact{}, err
+		}
 	}
 	// Preserve the RAW deep-profile sidecar verbatim (including the unbounded
 	// per-frame frame_times_ms array) as an OPAQUE content-addressed artifact:

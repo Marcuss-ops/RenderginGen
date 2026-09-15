@@ -1,657 +1,481 @@
+// Command batch-render-presets renders a matrix of overlay presets described by
+// a JSON manifest.
+//
+// The matrix used to be twenty Go literals in this file, the semantic plan was
+// assembled with fmt.Sprintf over a JSON template, paths were resolved by walking
+// parent directories until a folder named "RenderingGen" turned up, and the
+// render/verify/upload steps were hand-rolled around `chronon3d_cli` and a
+// `drive-upload` subprocess. This command is now the wiring only:
+//
+//	manifest (data)  -> renderbatch.Prepare (typed plans, compiled up front)
+//	                 -> chronon renderer (CLI client or warm daemon pool)
+//	                 -> internal/media verification
+//	                 -> internal/drive publication
+//
+// Everything it needs is a flag or a manifest field. Failures are collected per
+// job and reported at the end; nothing calls log.Fatalf from a worker goroutine,
+// because exiting there would abandon the warm daemons (and their GPU device)
+// that the pool owns.
 package main
 
 import (
 	"context"
-	"encoding/json"
 	"flag"
 	"fmt"
 	"log"
+	"mime"
 	"os"
-	"os/exec"
+	"os/signal"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"sync"
-	"sync/atomic"
+	"syscall"
 	"time"
 
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/chronon"
-	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/overlay"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/drive"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/media"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/renderbatch"
 )
 
-type PresetJob struct {
-	Index        int
-	ID           string
-	Filename     string
-	PlanFilename string
-	PresetID     string
-	MotionID     string
-	Text         string
-	OutDir       string
+// options is the command's resolved configuration.
+type options struct {
+	manifestPath  string
+	outDir        string
+	dryRun        bool
+	concurrency   int
+	chrononBinary string
+	chrononHome   string
+	assetsRoot    string
+	backend       string
+	hardware      string
+	encodePreset  string
+	socketBase    string
+	gpuDevice     uint
+	daemons       int
+	daemonLanes   int
+	upload        bool
+	publisher     string
+	folder        string
+	credentials   string
+	token         string
+	mockDir       string
+	timeout       time.Duration
 }
 
 func main() {
-	var (
-		dryRun       = flag.Bool("dry-run", false, "Compile plans only, do not render")
-		doUpload     = flag.Bool("upload", true, "Upload rendered videos to Google Drive")
-		concurrency  = flag.Int("concurrency", 3, "Number of concurrent renders")
-		folderID     = flag.String("folder", "1eRYRBDBWxGdqC4u7fHwp5hX_kRoTkZ8E", "Drive folder ID")
-		credPath     = flag.String("credentials", "", "Path to credentials.json")
-		tokenPath    = flag.String("token", "", "Path to token.json")
-		chrononBin   = flag.String("chronon-bin", "", "Path to chronon3d_cli")
-		assetsRoot   = flag.String("assets-root", "", "Path to golden assets root")
-		uploadBin    = flag.String("drive-upload-bin", "", "Path to drive-upload binary")
-		onlyPreset   = flag.String("only", "", "Render only specific preset ID")
-		backend      = flag.String("backend", "vulkan", "Render backend (vulkan, software)")
-		hardware     = flag.String("hardware", "nvenc", "Hardware encoder (nvenc, none)")
-		encodePreset = flag.String("encode-preset", "p1", "Encode preset (p1, ultrafast)")
-		socketPath   = flag.String("socket", "", "Render through warm Chronon3d daemons on this UNIX socket base; empty spawns one CLI process per video")
-		gpuDevice    = flag.Uint("gpu-device", 0, "Vulkan device index for the daemons started by -socket")
-		daemonCount  = flag.Int("daemons", 3, "Warm daemons to spread jobs across, one socket each")
-		daemonLanes  = flag.Int("daemon-lanes", 1, "Concurrent RENDER_JOBs per daemon; its device scheduler rejects more than two and degrades latency once they overlap")
-	)
+	opts := parseFlags()
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer stop()
+	if err := run(ctx, opts); err != nil {
+		log.Fatalf("batch-render-presets: %v", err)
+	}
+}
+
+func parseFlags() options {
+	var opts options
+	flag.StringVar(&opts.manifestPath, "manifest", "", "path to the preset-render manifest JSON (required)")
+	flag.StringVar(&opts.outDir, "out-dir", "", "override the manifest's output root; empty uses it, then the working directory")
+	flag.BoolVar(&opts.dryRun, "dry-run", false, "compile every plan, write the plan files and stop")
+	flag.IntVar(&opts.concurrency, "concurrency", 3, "concurrent renders")
+	// The CLI path comes from the setting, then CHRONON_BINARY, then the
+	// chronon-home prefix. No developer-machine path is baked in.
+	flag.StringVar(&opts.chrononBinary, "chronon-bin", "", "chronon3d_cli path (falls back to CHRONON_BINARY, then -chronon-home)")
+	flag.StringVar(&opts.chrononHome, "chronon-home", "", "Chronon install prefix used to locate the CLI when -chronon-bin is empty")
+	flag.StringVar(&opts.assetsRoot, "assets-root", "", "asset root passed to the renderer; empty uses the manifest's")
+	flag.StringVar(&opts.backend, "backend", "vulkan", "render backend: vulkan | software")
+	flag.StringVar(&opts.hardware, "hardware", chronon.DefaultHardwareEncoder, "hardware encoder: nvenc | none")
+	flag.StringVar(&opts.encodePreset, "encode-preset", "p1", "encode preset (native: p1..p7; software: an x264 preset such as ultrafast)")
+	flag.StringVar(&opts.socketBase, "socket", "", "render through warm Chronon3d daemons on this UNIX socket base; empty runs one CLI process per job")
+	flag.UintVar(&opts.gpuDevice, "gpu-device", 0, "Vulkan device index for the daemons started by -socket")
+	flag.IntVar(&opts.daemons, "daemons", 3, "warm daemons to spread jobs across, one socket each")
+	flag.IntVar(&opts.daemonLanes, "daemon-lanes", 1, "concurrent RENDER_JOBs per daemon")
+	flag.BoolVar(&opts.upload, "upload", false, "upload the rendered videos")
+	flag.StringVar(&opts.publisher, "publisher", "oauth", "upload publisher: oauth | service-account | mock")
+	flag.StringVar(&opts.folder, "folder", "", "Drive parent folder id (required to upload)")
+	flag.StringVar(&opts.credentials, "credentials", "", "Drive credentials JSON (required for oauth/service-account)")
+	flag.StringVar(&opts.token, "token", "", "Drive OAuth token JSON (required for oauth)")
+	flag.StringVar(&opts.mockDir, "mock-dir", "", "destination directory for the mock publisher")
+	flag.DurationVar(&opts.timeout, "timeout", 10*time.Minute, "per-render budget")
 	flag.Parse()
-	// NVENC uses p1 by default, while the software pipe encoder only accepts
-	// libx264 presets. Keep the CLI default convenient for both render lanes.
-	if *hardware == chronon.HardwareEncoderNone && *encodePreset == "p1" {
-		*encodePreset = "ultrafast"
+
+	// The software lane only accepts libx264 presets; the native lane's default
+	// is an NVENC tier. Keep the default convenient for both without letting a
+	// caller's explicit preset be rewritten.
+	if opts.hardware == chronon.HardwareEncoderNone && opts.encodePreset == "p1" {
+		opts.encodePreset = "ultrafast"
 	}
-
-	baseDir, err := os.Getwd()
-	if err != nil {
-		log.Fatalf("getwd: %v", err)
-	}
-
-	repoRoot := baseDir
-	for {
-		if _, err := os.Stat(filepath.Join(repoRoot, "RenderingGen")); err == nil {
-			break
-		}
-		parent := filepath.Dir(repoRoot)
-		if parent == repoRoot {
-			repoRoot = baseDir
-			break
-		}
-		repoRoot = parent
-	}
-
-	renderingGenDir := filepath.Join(repoRoot, "RenderingGen")
-	if *chrononBin == "" {
-		*chrononBin = filepath.Join(repoRoot, "Chronon3d/build/chronon/linux-video-release/apps/chronon3d_cli/chronon3d_cli")
-	}
-	if *assetsRoot == "" {
-		*assetsRoot = filepath.Join(renderingGenDir, "testdata/golden")
-	}
-	if *uploadBin == "" {
-		*uploadBin = filepath.Join(renderingGenDir, "bin/drive-upload")
-	}
-	if *credPath == "" {
-		*credPath = filepath.Join(renderingGenDir, "infra/docker/credentials.json")
-	}
-	if *tokenPath == "" {
-		*tokenPath = filepath.Join(renderingGenDir, "infra/docker/token.json")
-	}
-
-	phraseDir := filepath.Join(renderingGenDir, "renderinggen/highend_phrase_videos")
-	typewriterDir := filepath.Join(renderingGenDir, "typewriter_phrase_videos")
-	_ = os.MkdirAll(phraseDir, 0o755)
-	_ = os.MkdirAll(typewriterDir, 0o755)
-
-	allJobs := []PresetJob{
-		// 15 High-End Animated Phrases
-		{
-			ID:           "highend_phrase_01_kinetic_split_word",
-			Filename:     "01_kinetic_split_word_1920x1080_24fps_5s.mp4",
-			PlanFilename: "01_kinetic_split_word_plan.json",
-			PresetID:     "apple_v2",
-			MotionID:     "kinetic_split_word",
-			Text:         "KINETIC PERFORMANCE",
-			OutDir:       phraseDir,
-		},
-		{
-			ID:           "highend_phrase_02_dynamic_island_expansion",
-			Filename:     "02_dynamic_island_expansion_1920x1080_24fps_5s.mp4",
-			PlanFilename: "02_dynamic_island_expansion_plan.json",
-			PresetID:     "apple_v2",
-			MotionID:     "dynamic_island_expansion",
-			Text:         "NOW PLAYING",
-			OutDir:       phraseDir,
-		},
-		{
-			ID:           "highend_phrase_03_masked_upward_reveal",
-			Filename:     "03_masked_upward_reveal_1920x1080_24fps_5s.mp4",
-			PlanFilename: "03_masked_upward_reveal_plan.json",
-			PresetID:     "apple_v2",
-			MotionID:     "masked_upward_reveal",
-			Text:         "BUILT FOR SPEED",
-			OutDir:       phraseDir,
-		},
-		{
-			ID:           "highend_phrase_04_staggered_char_float",
-			Filename:     "04_staggered_char_float_1920x1080_24fps_5s.mp4",
-			PlanFilename: "04_staggered_char_float_plan.json",
-			PresetID:     "apple_v2",
-			MotionID:     "staggered_char_float",
-			Text:         "EVERY FRAME MATTERS",
-			OutDir:       phraseDir,
-		},
-		{
-			ID:           "highend_phrase_05_high_specular_light_sweep",
-			Filename:     "05_high_specular_light_sweep_1920x1080_24fps_5s.mp4",
-			PlanFilename: "05_high_specular_light_sweep_plan.json",
-			PresetID:     "apple_v2",
-			MotionID:     "high_specular_light_sweep",
-			Text:         "TITANIUM ENGINE",
-			OutDir:       phraseDir,
-		},
-		{
-			ID:           "highend_phrase_06_depth_of_field_rack_focus",
-			Filename:     "06_depth_of_field_rack_focus_1920x1080_24fps_5s.mp4",
-			PlanFilename: "06_depth_of_field_rack_focus_plan.json",
-			PresetID:     "apple_v2",
-			MotionID:     "depth_of_field_rack_focus",
-			Text:         "FOCUS ON THE SIGNAL",
-			OutDir:       phraseDir,
-		},
-		{
-			ID:           "highend_phrase_07_micro_tracker_kerning_compression",
-			Filename:     "07_micro_tracker_kerning_compression_1920x1080_24fps_5s.mp4",
-			PlanFilename: "07_micro_tracker_kerning_compression_plan.json",
-			PresetID:     "apple_v2",
-			MotionID:     "micro_tracker_kerning_compression",
-			Text:         "PRECISION TYPOGRAPHY",
-			OutDir:       phraseDir,
-		},
-		{
-			ID:           "highend_phrase_08_isometric_3d_fold",
-			Filename:     "08_isometric_3d_fold_1920x1080_24fps_5s.mp4",
-			PlanFilename: "08_isometric_3d_fold_plan.json",
-			PresetID:     "apple_v2",
-			MotionID:     "isometric_3d_fold",
-			Text:         "SPATIAL COMPUTING",
-			OutDir:       phraseDir,
-		},
-		{
-			ID:           "highend_phrase_09_soft_edge_spotlight_dissolve",
-			Filename:     "09_soft_edge_spotlight_dissolve_1920x1080_24fps_5s.mp4",
-			PlanFilename: "09_soft_edge_spotlight_dissolve_plan.json",
-			PresetID:     "apple_v2",
-			MotionID:     "soft_edge_spotlight_dissolve",
-			Text:         "A SOFT REVEAL",
-			OutDir:       phraseDir,
-		},
-		{
-			ID:           "highend_phrase_10_chromatic_aberration_pop",
-			Filename:     "10_chromatic_aberration_pop_1920x1080_24fps_5s.mp4",
-			PlanFilename: "10_chromatic_aberration_pop_plan.json",
-			PresetID:     "apple_v2",
-			MotionID:     "chromatic_aberration_pop",
-			Text:         "IMPACT",
-			OutDir:       phraseDir,
-		},
-		{
-			ID:           "highend_phrase_11_fluid_gradient_text_flow",
-			Filename:     "11_fluid_gradient_text_flow_1920x1080_24fps_5s.mp4",
-			PlanFilename: "11_fluid_gradient_text_flow_plan.json",
-			PresetID:     "apple_v2",
-			MotionID:     "fluid_gradient_text_flow",
-			Text:         "FLUID MOTION",
-			OutDir:       phraseDir,
-		},
-		{
-			ID:           "highend_phrase_12_velocity_inertia_snap",
-			Filename:     "12_velocity_inertia_snap_1920x1080_24fps_5s.mp4",
-			PlanFilename: "12_velocity_inertia_snap_plan.json",
-			PresetID:     "apple_v2",
-			MotionID:     "velocity_inertia_snap",
-			Text:         "FAST. THEN EXACT.",
-			OutDir:       phraseDir,
-		},
-		{
-			ID:           "highend_phrase_13_vertical_rolling_counter",
-			Filename:     "13_vertical_rolling_counter_1920x1080_24fps_5s.mp4",
-			PlanFilename: "13_vertical_rolling_counter_plan.json",
-			PresetID:     "apple_v2",
-			MotionID:     "vertical_rolling_counter",
-			Text:         "327% GROWTH",
-			OutDir:       phraseDir,
-		},
-		{
-			ID:           "highend_phrase_14_glassmorphism_card_tilt",
-			Filename:     "14_glassmorphism_card_tilt_1920x1080_24fps_5s.mp4",
-			PlanFilename: "14_glassmorphism_card_tilt_plan.json",
-			PresetID:     "apple_v2",
-			MotionID:     "glassmorphism_card_tilt",
-			Text:         "GLASS / LIGHT / DEPTH",
-			OutDir:       phraseDir,
-		},
-		{
-			ID:           "highend_phrase_15_pixel_grid_alpha_matrix",
-			Filename:     "15_pixel_grid_alpha_matrix_1920x1080_24fps_5s.mp4",
-			PlanFilename: "15_pixel_grid_alpha_matrix_plan.json",
-			PresetID:     "apple_v2",
-			MotionID:     "pixel_grid_alpha_matrix",
-			Text:         "MATRIX ASSEMBLY",
-			OutDir:       phraseDir,
-		},
-
-		// 5 Typewriter Animations
-		{
-			ID:           "typewriter_01_clean",
-			Filename:     "01_typewriter_clean_1920x1080_24fps_5s.mp4",
-			PlanFilename: "01_typewriter_clean_plan.json",
-			PresetID:     "apple_v2",
-			MotionID:     "typewriter_clean",
-			Text:         "EVERY PIXEL MATTERS",
-			OutDir:       typewriterDir,
-		},
-		{
-			ID:           "typewriter_02_pop",
-			Filename:     "02_typewriter_pop_1920x1080_24fps_5s.mp4",
-			PlanFilename: "02_typewriter_pop_plan.json",
-			PresetID:     "apple_v2",
-			MotionID:     "typewriter_pop",
-			Text:         "CREATIVE REVOLUTION",
-			OutDir:       typewriterDir,
-		},
-		{
-			ID:           "typewriter_03_neon",
-			Filename:     "03_typewriter_neon_1920x1080_24fps_5s.mp4",
-			PlanFilename: "03_typewriter_neon_plan.json",
-			PresetID:     "apple_v2",
-			MotionID:     "typewriter_neon",
-			Text:         "FUTURE OF MOTION",
-			OutDir:       typewriterDir,
-		},
-		{
-			ID:           "typewriter_04_tracking",
-			Filename:     "04_typewriter_tracking_1920x1080_24fps_5s.mp4",
-			PlanFilename: "04_typewriter_tracking_plan.json",
-			PresetID:     "apple_v2",
-			MotionID:     "typewriter_tracking",
-			Text:         "TIMELESS TYPOGRAPHY",
-			OutDir:       typewriterDir,
-		},
-		{
-			ID:           "typewriter_05_glitch",
-			Filename:     "05_typewriter_glitch_1920x1080_24fps_5s.mp4",
-			PlanFilename: "05_typewriter_glitch_plan.json",
-			PresetID:     "apple_v2",
-			MotionID:     "typewriter_glitch",
-			Text:         "MAXIMUM PERFORMANCE",
-			OutDir:       typewriterDir,
-		},
-	}
-
-	var jobs []PresetJob
-	for i, j := range allJobs {
-		j.Index = i + 1
-		if *onlyPreset != "" && j.PresetID != *onlyPreset && j.MotionID != *onlyPreset && j.Filename != *onlyPreset {
-			continue
-		}
-		jobs = append(jobs, j)
-	}
-
-	totalStart := time.Now()
-	var (
-		completedCount int32
-		failedCount    int32
-		uploadMutex    sync.Mutex
-		wg             sync.WaitGroup
-		jobChan        = make(chan PresetJob, len(jobs))
-	)
-
-	numWorkers := *concurrency
-	if numWorkers < 1 {
-		numWorkers = 1
-	}
-	if numWorkers > len(jobs) {
-		numWorkers = len(jobs)
-	}
-
-	for _, j := range jobs {
-		jobChan <- j
-	}
-	close(jobChan)
-
-	log.Printf("Starting batch render of %d jobs with %d workers...", len(jobs), numWorkers)
-
-	// Render transport. By default every video is a fresh chronon3d_cli
-	// process, which pays the full cold start — Vulkan device init, font/image
-	// caches, surface pools, NVENC open — before the first frame. With -socket
-	// the batch drives a persistent daemon instead and reuses that warm engine
-	// for every job, so the per-video cost collapses to the frames themselves.
-	var renderer chronon.Renderer
-	daemonCleanup := func() {}
-	if *socketPath != "" {
-		handles, err := ensureDaemonPool(*socketPath, *daemonCount, *chrononBin, *assetsRoot, *backend, *gpuDevice)
-		if err != nil {
-			log.Fatalf("daemon: %v", err)
-		}
-		sockets := make([]string, 0, len(handles))
-		for _, h := range handles {
-			sockets = append(sockets, h.socketPath)
-		}
-		lanes := *daemonLanes
-		if lanes < 1 {
-			lanes = 1
-		}
-		renderer = newDaemonPool(sockets, lanes)
-		// Shut the daemons WE started back down and reap them. Idempotent
-		// because both the failure path and the normal exit call it, and it
-		// never touches a daemon that was already serving its socket.
-		var cleanupOnce sync.Once
-		daemonCleanup = func() {
-			cleanupOnce.Do(func() {
-				for _, h := range handles {
-					if h.cmd == nil {
-						continue
-					}
-					shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 10*time.Second)
-					if err := chronon.NewIPCClient(h.socketPath).Shutdown(shutdownCtx); err != nil {
-						log.Printf("WARN: daemon %s shutdown: %v", h.socketPath, err)
-						_ = h.cmd.Process.Kill()
-					}
-					shutdownCancel()
-					_ = h.cmd.Wait()
-				}
-			})
-		}
-		log.Printf("Transport: %d warm daemon(s) %s.0..%d (%d render lane(s) each)",
-			len(handles), *socketPath, len(handles)-1, lanes)
-	} else {
-		log.Printf("Transport: chronon3d_cli subprocess per video (cold engine every job)")
-	}
-
-	// buildRenderRequest is the transport-neutral job description. The GPU
-	// contract travels as semantic Requirements + HardwareEncoder, never as
-	// hand-built flags, so the daemon resolves the encoder through the same
-	// authority (resolveNativeEncodeSelection) the CLI arguments come from and
-	// the two transports cannot drift into different encode lanes.
-	buildRenderRequest := func(planPath, videoPath string) chronon.RenderRequest {
-		gpu := *hardware != "" && *hardware != chronon.HardwareEncoderNone
-		req := chronon.RenderRequest{
-			PlanPath:        planPath,
-			AssetsRoot:      *assetsRoot,
-			OutputPath:      videoPath,
-			EncodePreset:    *encodePreset,
-			HardwareEncoder: *hardware,
-			Requirements: chronon.ExecutionRequirements{
-				Backend:     *backend,
-				GPURequired: gpu,
-				// The batch accepts the engine's own hot-path mode, so the
-				// selection matches what the CLI transport emits today.
-				CPUFallbackAllowed: true,
-			},
-		}
-		if !gpu {
-			// No native encoder requested: the host pipe lane carries the frame
-			// and libx264 rejects the NVENC-only pN presets, so none is sent.
-			req.Output.PipePixFmt = "rgba"
-		}
-		return req
-	}
-
-	for w := 0; w < numWorkers; w++ {
-		wg.Add(1)
-		go func(workerID int) {
-			defer wg.Done()
-			for job := range jobChan {
-				log.Printf("[W%d] [%d/%d] Starting %s (%s)...", workerID, job.Index, len(allJobs), job.ID, job.PresetID)
-
-				// 1. Build semantic plan JSON
-				rawSemantic := fmt.Sprintf(`{
-					"schema_version": "renderinggen.overlay-plan.v1",
-					"plan_id": %q,
-					"video_id": %q,
-					"width": 1920,
-					"height": 1080,
-					"fps_num": 24,
-					"fps_den": 1,
-					"duration_ms": 5000,
-					"background": {
-						"kind": "color",
-						"color": [0.9333333333333333, 0.9450980392156862, 0.9058823529411765, 1.0]
-					},
-					"items": [
-						{
-							"id": "item_1",
-							"template_id": "IMPORTANT_PHRASE",
-					"preset_id": %q,
-					"motion_id": %q,
-							"text": %q,
-							"start_ms": 0,
-							"end_ms": 5000
-						}
-					]
-				}`, job.ID, job.ID, job.PresetID, job.MotionID, job.Text)
-
-				// 2. Compile semantic to chronon plan
-				compileResult, err := overlay.CompileSemantic([]byte(rawSemantic))
-				if err != nil {
-					log.Fatalf("[W%d] FAIL compile semantic for %s: %v", workerID, job.ID, err)
-				}
-				plan := compileResult.Plan
-				videoPath := filepath.Join(job.OutDir, job.Filename)
-				plan.Output.Path = videoPath
-
-				// 3. Write compiled plan
-				planPath := filepath.Join(job.OutDir, job.PlanFilename)
-				planData, err := json.MarshalIndent(plan, "", "  ")
-				if err != nil {
-					log.Fatalf("[W%d] FAIL marshal plan for %s: %v", workerID, job.ID, err)
-				}
-				if err := os.WriteFile(planPath, planData, 0o644); err != nil {
-					log.Fatalf("[W%d] FAIL write plan file %s: %v", workerID, planPath, err)
-				}
-
-				if *dryRun {
-					log.Printf("[W%d] [dry-run] Compiled plan written to %s", workerID, planPath)
-					continue
-				}
-
-				// 4. Render: through the warm daemon when one is configured, else
-				// with one chronon3d_cli subprocess.
-				renderStart := time.Now()
-				ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
-				var detail string
-				var renderErr error
-				if renderer != nil {
-					renderErr = renderer.Render(ctx, buildRenderRequest(planPath, videoPath))
-				} else {
-					renderArgs := []string{
-						"render", "--plan", planPath,
-						"--assets-root", *assetsRoot,
-						"--backend", *backend,
-						"--hardware", *hardware,
-						"--encode-preset", *encodePreset,
-					}
-					if *backend == "software" {
-						renderArgs = append(renderArgs, "--encoder-backend", "pipe", "--pipe-pixfmt", "rgba")
-					}
-					renderArgs = append(renderArgs, "-o", videoPath)
-					cmd := exec.CommandContext(ctx, *chrononBin, renderArgs...)
-					cmd.Dir = *assetsRoot
-
-					out, err := cmd.CombinedOutput()
-					detail, renderErr = string(out), err
-				}
-				cancel()
-				if renderErr != nil {
-					// Fail this job without tearing the transport down: Fatalf would
-					// exit past the daemon cleanup, and stopping the daemon mid-flight
-					// also fails every peer render sharing it.
-					log.Printf("[W%d] FAIL render %s: %v\nOutput: %s", workerID, job.ID, renderErr, detail)
-					atomic.AddInt32(&failedCount, 1)
-					continue
-				}
-				renderDur := time.Since(renderStart)
-				log.Printf("[W%d] Rendered %s in %.2fs (%.1f fps)", workerID, job.ID, renderDur.Seconds(), 120.0/renderDur.Seconds())
-
-				// 5. Structural probe & decode verification
-				verifyMP4(videoPath, 120, 1920, 1080)
-				atomic.AddInt32(&completedCount, 1)
-
-				// 6. Upload to Google Drive if requested (mutex for clean log output)
-				if *doUpload {
-					uploadMutex.Lock()
-					uploadToDrive(*uploadBin, *credPath, *tokenPath, *folderID, videoPath, job.Filename)
-					uploadMutex.Unlock()
-				}
-			}
-		}(w)
-	}
-
-	wg.Wait()
-	// Release an owned daemon before reporting, so the GPU is free even when
-	// jobs failed and the process is about to exit non-zero.
-	daemonCleanup()
-	if failed := atomic.LoadInt32(&failedCount); failed > 0 {
-		log.Fatalf("ALL DONE WITH FAILURES! Rendered %d/%d videos, %d failed, in %s",
-			atomic.LoadInt32(&completedCount), len(jobs), failed, time.Since(totalStart).Round(time.Second))
-	}
-	log.Printf("ALL DONE! Rendered %d/%d videos in %s", completedCount, len(jobs), time.Since(totalStart).Round(time.Second))
+	return opts
 }
 
-func verifyMP4(videoPath string, wantFrames int, wantW, wantH int) {
-	out, err := exec.Command("ffprobe", "-v", "error",
-		"-select_streams", "v:0",
-		"-count_frames",
-		"-show_entries", "stream=width,height,nb_read_frames",
-		"-of", "csv=p=0",
-		videoPath).Output()
-	if err != nil {
-		log.Fatalf("verifyMP4 ffprobe failed for %s: %v", videoPath, err)
-	}
-	parts := strings.Split(strings.TrimSpace(string(out)), ",")
-	if len(parts) < 3 {
-		log.Fatalf("verifyMP4 parse failed for %s: got %q", videoPath, string(out))
-	}
-	w, _ := strconv.Atoi(parts[0])
-	h, _ := strconv.Atoi(parts[1])
-	n, _ := strconv.Atoi(parts[2])
-	if w != wantW || h != wantH || n != wantFrames {
-		log.Fatalf("verifyMP4 %s invalid: got %dx%d, %d frames; want %dx%d, %d frames",
-			videoPath, w, h, n, wantW, wantH, wantFrames)
-	}
-
-	// Full ffmpeg bitstream decode
-	decCmd := exec.Command("ffmpeg", "-v", "error", "-i", videoPath, "-f", "null", "-")
-	decOut, err := decCmd.CombinedOutput()
-	if err != nil {
-		log.Fatalf("verifyMP4 decode error for %s: %v\n%s", videoPath, err, string(decOut))
-	}
+// jobOutcome is one job's result, collected from the render pool.
+type jobOutcome struct {
+	job         renderbatch.Job
+	renderMS    int64
+	verifyMS    int64
+	outputBytes int64
+	renderErr   error
+	verifyErr   error
+	uploadErr   error
+	uploadRef   string
 }
 
-// daemonHandle is one daemon serving one socket. cmd is nil when the socket was
-// already served and this batch therefore does not own — and must not stop —
-// that daemon.
-type daemonHandle struct {
-	socketPath string
-	cmd        *exec.Cmd
+func (o jobOutcome) failed() bool {
+	return o.renderErr != nil || o.verifyErr != nil || o.uploadErr != nil
 }
 
-// daemonPool spreads render jobs across N warm daemons.
+func run(ctx context.Context, opts options) error {
+	if opts.manifestPath == "" {
+		return fmt.Errorf("-manifest is required")
+	}
+	raw, err := os.ReadFile(opts.manifestPath)
+	if err != nil {
+		return fmt.Errorf("read manifest: %w", err)
+	}
+	manifest, err := renderbatch.Decode(raw)
+	if err != nil {
+		return err
+	}
+
+	// Roots resolve against the MANIFEST's directory so the batch is reproducible
+	// from any working directory; an explicit flag is taken as given.
+	roots, err := manifest.ResolveRoots(opts.manifestPath, opts.outDir, opts.assetsRoot)
+	if err != nil {
+		return err
+	}
+	outputRoot, assetsRoot := roots.Output, roots.Assets
+	if info, err := os.Stat(assetsRoot); err != nil || !info.IsDir() {
+		return fmt.Errorf("assets root %q is not a readable directory", assetsRoot)
+	}
+
+	// Compile the WHOLE matrix before rendering anything: a typo anywhere in the
+	// manifest is a load error naming the job, not a failure on job 17 after the
+	// first sixteen renders were paid for.
+	prepared, err := manifest.Prepare(outputRoot)
+	if err != nil {
+		return err
+	}
+	log.Printf("manifest %s: %d job(s), canvas %dx%d @ %d/%d fps, output root %s",
+		opts.manifestPath, len(prepared), manifest.Canvas.Width, manifest.Canvas.Height,
+		manifest.Canvas.FPSNum, manifest.Canvas.FPSDen, outputRoot)
+
+	for _, p := range prepared {
+		if err := writePlan(p); err != nil {
+			return err
+		}
+		log.Printf("plan %s: job=%s preset=%s motion=%s digest=%s frames=%d",
+			p.PlanPath, p.Job.ID, p.Job.PresetID, p.Job.MotionID, p.PlanDigest[:12], p.Expect.Frames)
+	}
+	if opts.dryRun {
+		log.Printf("[dry-run] %d plan(s) compiled and written; nothing rendered", len(prepared))
+		return nil
+	}
+
+	renderer, releaseRenderer, err := buildRenderer(ctx, opts, assetsRoot)
+	if err != nil {
+		return err
+	}
+	defer releaseRenderer()
+
+	publisher, err := buildPublisher(ctx, opts)
+	if err != nil {
+		return err
+	}
+
+	outcomes := renderAll(ctx, opts, prepared, assetsRoot, renderer, publisher)
+	return report(outcomes)
+}
+
+// writePlan materializes one prepared plan beside its output.
+func writePlan(p renderbatch.PreparedJob) error {
+	if err := os.MkdirAll(filepath.Dir(p.PlanPath), 0o755); err != nil {
+		return fmt.Errorf("create plan directory for %s: %w", p.Job.ID, err)
+	}
+	if err := os.WriteFile(p.PlanPath, p.Plan, 0o644); err != nil {
+		return fmt.Errorf("write plan for %s: %w", p.Job.ID, err)
+	}
+	return nil
+}
+
+// buildRenderer returns the renderer plus the function that releases it.
 //
-// One daemon is not enough: its device scheduler admits only a couple of
-// concurrent RENDER_JOBs, rejects the rest outright, and degrades each session
-// towards realtime once two overlap — so a single daemon serializes the batch
-// and loses the overlap N CLI processes had. N single-lane daemons give both a
-// warm engine on every job and the parallelism of the subprocess transport.
-type daemonPool struct {
-	lanes []chronon.Renderer
-	next  atomic.Uint64
+// Both transports are the canonical ones from the chronon package: the CLI path
+// is chronon.Client (stall watchdog, progress parsing, one process per render)
+// and the warm path is the daemon pool. The command previously hand-built CLI
+// flags for the first case, which bypassed every one of those behaviours.
+func buildRenderer(ctx context.Context, opts options, assetsRoot string) (chronon.Renderer, func(), error) {
+	if strings.TrimSpace(opts.socketBase) == "" {
+		client := &chronon.Client{
+			Home:            opts.chrononHome,
+			BinaryPath:      opts.chrononBinary,
+			Backend:         opts.backend,
+			HardwareEncoder: opts.hardware,
+		}
+		log.Printf("transport: chronon3d_cli per job (binary=%s)", client.Binary())
+		return client, func() {}, nil
+	}
+	pool, err := chronon.StartDaemonPool(ctx, chronon.DaemonOptions{
+		SocketBase:     opts.socketBase,
+		Count:          opts.daemons,
+		LanesPerDaemon: opts.daemonLanes,
+		Binary:         chrononBinaryPath(opts),
+		AssetsRoot:     assetsRoot,
+		Backend:        opts.backend,
+		GPUDevice:      opts.gpuDevice,
+		Stdout:         os.Stdout,
+		Stderr:         os.Stderr,
+	})
+	if err != nil {
+		return nil, nil, err
+	}
+	sockets := pool.Sockets()
+	log.Printf("transport: %d warm daemon(s) (%d owned) on %s..%s, %d lane(s) each",
+		len(sockets), pool.OwnedCount(), sockets[0], sockets[len(sockets)-1], opts.daemonLanes)
+	// Shutdown is explicit and idempotent, so releasing the renderer on the
+	// error path below cannot leave a daemon holding the GPU device.
+	return pool, func() { pool.Shutdown(context.Background()) }, nil
 }
 
-func newDaemonPool(sockets []string, lanesPerDaemon int) *daemonPool {
-	pool := &daemonPool{lanes: make([]chronon.Renderer, 0, len(sockets))}
-	for _, socketPath := range sockets {
-		pool.lanes = append(pool.lanes,
-			chronon.LimitConcurrency(chronon.NewIPCClient(socketPath), lanesPerDaemon))
+// chrononBinaryPath resolves the binary for the daemon pool, which needs a path
+// up front (the CLI client can resolve it lazily).
+func chrononBinaryPath(opts options) string {
+	if opts.chrononBinary != "" {
+		return opts.chrononBinary
 	}
-	return pool
+	if override := os.Getenv("CHRONON_BINARY"); override != "" {
+		return override
+	}
+	if opts.chrononHome != "" {
+		return filepath.Join(opts.chrononHome, "bin", "chronon3d_cli")
+	}
+	return "chronon3d_cli"
 }
 
-func (p *daemonPool) Render(ctx context.Context, req chronon.RenderRequest) error {
-	if len(p.lanes) == 0 {
-		return fmt.Errorf("daemon pool has no lanes")
+// buildPublisher constructs the publication sink, or nil when uploads are off.
+func buildPublisher(ctx context.Context, opts options) (drive.Publisher, error) {
+	if !opts.upload {
+		return nil, nil
 	}
-	// Round-robin: jobs are spread evenly, and a lane that is mid-render only
-	// queues the next job assigned to it instead of stalling the whole pool.
-	index := p.next.Add(1) - 1
-	return p.lanes[index%uint64(len(p.lanes))].Render(ctx, req)
+	switch opts.publisher {
+	case "mock":
+		if opts.mockDir == "" {
+			return nil, fmt.Errorf("-mock-dir is required for the mock publisher")
+		}
+		return drive.NewMock(opts.mockDir, 0), nil
+	case "oauth":
+		if opts.credentials == "" || opts.token == "" {
+			return nil, fmt.Errorf("-credentials and -token are required for the oauth publisher")
+		}
+		if opts.folder == "" {
+			return nil, fmt.Errorf("-folder is required to upload")
+		}
+		return drive.NewGoogleOAuth(ctx, opts.credentials, opts.token, opts.folder)
+	case "service-account":
+		if opts.credentials == "" {
+			return nil, fmt.Errorf("-credentials is required for the service-account publisher")
+		}
+		if opts.folder == "" {
+			return nil, fmt.Errorf("-folder is required to upload")
+		}
+		return drive.NewGoogle(ctx, opts.credentials, opts.folder)
+	default:
+		return nil, fmt.Errorf("-publisher must be oauth, service-account or mock, got %q", opts.publisher)
+	}
 }
 
-// ensureDaemonPool makes sure `count` daemons are serving `<socketBase>.<i>`.
-// A socket that is already served is reused and left unowned; the rest are
-// started here and waited for, so the returned handles are immediately usable.
-func ensureDaemonPool(socketBase string, count int, binary, assetsRoot, backend string, gpuDevice uint) ([]daemonHandle, error) {
-	if count < 1 {
-		count = 1
+// renderAll runs the matrix on a fixed-size pool and returns every job's outcome
+// in manifest order.
+//
+// A failed job never stops its peers: this is a render farm, and one bad preset
+// must not throw away the renders that already succeeded.
+func renderAll(ctx context.Context, opts options, prepared []renderbatch.PreparedJob, assetsRoot string, renderer chronon.Renderer, publisher drive.Publisher) []jobOutcome {
+	outcomes := make([]jobOutcome, len(prepared))
+	workers := opts.concurrency
+	if workers < 1 {
+		workers = 1
 	}
-	if err := os.MkdirAll(filepath.Dir(socketBase), 0o755); err != nil {
-		return nil, fmt.Errorf("create socket directory: %w", err)
+	if workers > len(prepared) {
+		workers = len(prepared)
 	}
-	handles := make([]daemonHandle, 0, count)
-	for i := 0; i < count; i++ {
-		socketPath := fmt.Sprintf("%s.%d", socketBase, i)
-		if _, err := os.Stat(socketPath); err == nil {
-			// Already served: reuse it, and never shut down a daemon we did not
-			// start.
-			handles = append(handles, daemonHandle{socketPath: socketPath})
+	jobs := make(chan int)
+	var wg sync.WaitGroup
+	var done int64
+	var progressMu sync.Mutex
+
+	for w := 0; w < workers; w++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for index := range jobs {
+				p := prepared[index]
+				outcome := renderOne(ctx, opts, p, assetsRoot, renderer, publisher)
+				outcomes[index] = outcome
+				progressMu.Lock()
+				done++
+				position := done
+				progressMu.Unlock()
+				logJobOutcome(int(position), len(prepared), outcome)
+			}
+		}()
+	}
+	for i := range prepared {
+		jobs <- i
+	}
+	close(jobs)
+	wg.Wait()
+	return outcomes
+}
+
+// renderOne renders, verifies and (optionally) publishes one job.
+func renderOne(ctx context.Context, opts options, p renderbatch.PreparedJob, assetsRoot string, renderer chronon.Renderer, publisher drive.Publisher) jobOutcome {
+	outcome := jobOutcome{job: p.Job}
+	gpuRequired := opts.hardware != "" && opts.hardware != chronon.HardwareEncoderNone
+
+	req := chronon.RenderRequest{
+		PlanPath:        p.PlanPath,
+		AssetsRoot:      assetsRoot,
+		OutputPath:      p.OutputPath,
+		EncodePreset:    opts.encodePreset,
+		HardwareEncoder: opts.hardware,
+		TotalFrames:     int64(p.Expect.Frames),
+		Requirements: chronon.ExecutionRequirements{
+			Backend:     opts.backend,
+			GPURequired: gpuRequired,
+			// The engine's own hot-path mode, matching what the CLI transport
+			// emits for this workload.
+			CPUFallbackAllowed: true,
+		},
+	}
+	if !gpuRequired {
+		// No native encoder requested: the host pipe lane carries the frame and
+		// libx264 rejects the NVENC-only pN presets, so a non-native pixel
+		// format is used.
+		req.Output.PipePixFmt = "rgba"
+	}
+
+	renderCtx, cancel := context.WithTimeout(ctx, opts.timeout)
+	defer cancel()
+	renderStart := time.Now()
+	if err := renderer.Render(renderCtx, req); err != nil {
+		outcome.renderErr = err
+		return outcome
+	}
+	outcome.renderMS = time.Since(renderStart).Milliseconds()
+
+	verifyStart := time.Now()
+	outcome.verifyErr = verifyRender(renderCtx, p)
+	outcome.verifyMS = time.Since(verifyStart).Milliseconds()
+	if outcome.verifyErr != nil {
+		return outcome
+	}
+
+	if info, err := os.Stat(p.OutputPath); err == nil {
+		outcome.outputBytes = info.Size()
+	}
+	if publisher == nil {
+		return outcome
+	}
+	ref, err := publish(ctx, publisher, p, opts.folder)
+	outcome.uploadRef, outcome.uploadErr = ref, err
+	return outcome
+}
+
+// verifyRender certifies one rendered artifact against the job's DERIVED media
+// contract and then decodes it end to end.
+//
+// Both checks come from internal/media, which is the same certification the
+// production worker applies: the previous command re-implemented the structural
+// half by parsing `ffprobe -of csv` by hand with a hardcoded expectation.
+func verifyRender(ctx context.Context, p renderbatch.PreparedJob) error {
+	probe, err := media.ProbeFile(ctx, p.OutputPath)
+	if err != nil {
+		return err
+	}
+	expect := p.Expect
+	if probe.FrameCount != expect.Frames {
+		return fmt.Errorf("frames: probed %d, want %d", probe.FrameCount, expect.Frames)
+	}
+	if probe.Width != expect.Width || probe.Height != expect.Height {
+		return fmt.Errorf("resolution: probed %dx%d, want %dx%d", probe.Width, probe.Height, expect.Width, expect.Height)
+	}
+	if probe.FPSNum*expect.FPSDen != expect.FPSNum*probe.FPSDen {
+		return fmt.Errorf("fps: probed %d/%d, want %d/%d", probe.FPSNum, probe.FPSDen, expect.FPSNum, expect.FPSDen)
+	}
+	return media.ValidateDecode(ctx, p.OutputPath)
+}
+
+// publish uploads one artifact and returns the provider reference.
+func publish(ctx context.Context, publisher drive.Publisher, p renderbatch.PreparedJob, folder string) (string, error) {
+	name := filepath.Base(p.OutputPath)
+	contentType := mime.TypeByExtension(strings.ToLower(filepath.Ext(name)))
+	if contentType == "" {
+		contentType = "application/octet-stream"
+	}
+	parent := folder
+	if publisherIsMock(publisher) {
+		// The mock publisher writes into its own directory and takes no folder
+		// id; passing one would only mask a missing -folder in the real modes.
+		parent = ""
+	}
+	result, err := publisher.Publish(ctx, drive.PublishRequest{
+		Name:         name,
+		ContentType:  contentType,
+		Path:         p.OutputPath,
+		ParentFolder: parent,
+	})
+	if err != nil {
+		return "", err
+	}
+	if result.WebViewLink != "" {
+		return result.WebViewLink, nil
+	}
+	return result.FileID, nil
+}
+
+// publisherIsMock reports whether the publisher is the in-process mock.
+func publisherIsMock(publisher drive.Publisher) bool {
+	_, ok := publisher.(*drive.Mock)
+	return ok
+}
+
+// logJobOutcome reports one job as it finishes, in the same shape for every
+// terminal state so a log grep sees failures and successes together.
+func logJobOutcome(position, total int, outcome jobOutcome) {
+	switch {
+	case outcome.renderErr != nil:
+		log.Printf("[%d/%d] FAIL render %s: %v", position, total, outcome.job.ID, outcome.renderErr)
+	case outcome.verifyErr != nil:
+		log.Printf("[%d/%d] FAIL verify %s: %v", position, total, outcome.job.ID, outcome.verifyErr)
+	case outcome.uploadErr != nil:
+		log.Printf("[%d/%d] FAIL upload %s: %v", position, total, outcome.job.ID, outcome.uploadErr)
+	default:
+		log.Printf("[%d/%d] OK %s render=%dms verify=%dms bytes=%d%s",
+			position, total, outcome.job.ID, outcome.renderMS, outcome.verifyMS, outcome.outputBytes, uploadSuffix(outcome.uploadRef))
+	}
+}
+
+func uploadSuffix(ref string) string {
+	if ref == "" {
+		return ""
+	}
+	return " uploaded=" + ref
+}
+
+// report prints the batch summary and turns a non-empty failure set into an
+// error, which main logs after every deferred release has already run.
+func report(outcomes []jobOutcome) error {
+	var failed []string
+	var rendered int
+	for _, outcome := range outcomes {
+		if outcome.failed() {
+			failed = append(failed, outcome.job.ID)
 			continue
 		}
-		cmd, err := startDaemon(socketPath, binary, assetsRoot, backend, gpuDevice)
-		if err != nil {
-			for _, h := range handles {
-				if h.cmd != nil {
-					_ = h.cmd.Process.Kill()
-				}
-			}
-			return nil, err
-		}
-		handles = append(handles, daemonHandle{socketPath: socketPath, cmd: cmd})
+		rendered++
 	}
-	return handles, nil
-}
-
-// startDaemon launches one daemon on socketPath and waits for its socket.
-func startDaemon(socketPath, binary, assetsRoot, backend string, gpuDevice uint) (*exec.Cmd, error) {
-	args := []string{"daemon", "-s", socketPath, "-a", assetsRoot, "--backend", backend}
-	if backend != "software" {
-		args = append(args, "--gpu-device", strconv.FormatUint(uint64(gpuDevice), 10))
+	if len(failed) > 0 {
+		return fmt.Errorf("%d/%d job(s) failed: %s", len(failed), len(outcomes), strings.Join(failed, ", "))
 	}
-	cmd := exec.Command(binary, args...)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	if err := cmd.Start(); err != nil {
-		return nil, fmt.Errorf("start daemon on %s: %w", socketPath, err)
-	}
-	deadline := time.Now().Add(60 * time.Second)
-	for time.Now().Before(deadline) {
-		if _, err := os.Stat(socketPath); err == nil {
-			return cmd, nil
-		}
-		if cmd.ProcessState != nil && cmd.ProcessState.Exited() {
-			return nil, fmt.Errorf("daemon on %s exited before creating its socket", socketPath)
-		}
-		time.Sleep(100 * time.Millisecond)
-	}
-	_ = cmd.Process.Kill()
-	return nil, fmt.Errorf("daemon socket %s did not appear within 60s", socketPath)
-}
-
-func uploadToDrive(uploadBin, credPath, tokenPath, folderID, filePath, fileName string) {
-	uploadStart := time.Now()
-	cmd := exec.Command(uploadBin,
-		"-credentials", credPath,
-		"-token", tokenPath,
-		"-folder", folderID,
-		"-file", filePath,
-		"-name", fileName)
-	out, err := cmd.CombinedOutput()
-	if err != nil {
-		log.Fatalf("upload %s failed: %v\n%s", fileName, err, string(out))
-	}
-	log.Printf("  Uploaded %s in %.2fs: %s", fileName, time.Since(uploadStart).Seconds(), strings.TrimSpace(string(out)))
+	log.Printf("done: %d/%d job(s) rendered, verified and published", rendered, len(outcomes))
+	return nil
 }

@@ -37,28 +37,146 @@ func NewSQLite(path string) (*SQLiteRecorder, error) {
 	// (rare) contention against an external reader of the same file.
 	db.SetMaxOpenConns(1)
 	db.SetMaxIdleConns(1)
-	if _, err := db.Exec(schema); err != nil {
+	if err := migrate(db); err != nil {
 		db.Close()
-		return nil, fmt.Errorf("artifactdb: create schema: %w", err)
-	}
-	// Ledgers created before chronon_telemetry / chronon_timing_* existed are
-	// upgraded in place: CREATE TABLE IF NOT EXISTS leaves existing tables
-	// untouched, so the columns are added idempotently here.
-	for _, column := range []string{
-		`ALTER TABLE artifact_records ADD COLUMN chronon_telemetry TEXT NOT NULL DEFAULT ''`,
-		`ALTER TABLE artifact_records ADD COLUMN chronon_timing_storage_key TEXT NOT NULL DEFAULT ''`,
-		`ALTER TABLE artifact_records ADD COLUMN chronon_timing_url TEXT NOT NULL DEFAULT ''`,
-		`ALTER TABLE artifact_records ADD COLUMN chronon_timing_sha256 TEXT NOT NULL DEFAULT ''`,
-		`ALTER TABLE artifact_records ADD COLUMN chronon_timing_size_bytes INTEGER NOT NULL DEFAULT 0`,
-		`ALTER TABLE artifact_records ADD COLUMN chronon_timing_content_type TEXT NOT NULL DEFAULT ''`,
-	} {
-		if _, err := db.Exec(column); err != nil &&
-			!strings.Contains(strings.ToLower(err.Error()), "duplicate column") {
-			db.Close()
-			return nil, fmt.Errorf("artifactdb: migrate schema: %w", err)
-		}
+		return nil, err
 	}
 	return &SQLiteRecorder{db: db}, nil
+}
+
+// migration is one step of the ledger's schema history. The step at index i
+// produces schema version i+1.
+type migration struct {
+	// column is the column this step adds, or "" when the step only establishes
+	// the base table.
+	//
+	// It exists because the pre-versioning worker applied the column-adds in a
+	// loop that SWALLOWED the "duplicate column" error, and recorded no version
+	// at all. Such a ledger can therefore be at any subset of these steps while
+	// reporting user_version = 0 — including a partial set, if the old loop was
+	// interrupted. Asking the catalog whether the column is already there makes
+	// the history idempotent for exactly that population, and repair-capable
+	// for a partially applied one, instead of depending on the driver's error
+	// text (which is what the old loop matched on, and which is not a contract).
+	column string
+	ddl    string
+}
+
+// migrations is the ordered schema history. Each entry's ddl must be valid to
+// run exactly once; idempotence for legacy ledgers comes from the column
+// check, not from the SQL.
+var migrations = []migration{
+	{ddl: schema},
+	{column: "chronon_telemetry", ddl: `ALTER TABLE artifact_records ADD COLUMN chronon_telemetry TEXT NOT NULL DEFAULT ''`},
+	{column: "chronon_timing_storage_key", ddl: `ALTER TABLE artifact_records ADD COLUMN chronon_timing_storage_key TEXT NOT NULL DEFAULT ''`},
+	{column: "chronon_timing_url", ddl: `ALTER TABLE artifact_records ADD COLUMN chronon_timing_url TEXT NOT NULL DEFAULT ''`},
+	{column: "chronon_timing_sha256", ddl: `ALTER TABLE artifact_records ADD COLUMN chronon_timing_sha256 TEXT NOT NULL DEFAULT ''`},
+	{column: "chronon_timing_size_bytes", ddl: `ALTER TABLE artifact_records ADD COLUMN chronon_timing_size_bytes INTEGER NOT NULL DEFAULT 0`},
+	{column: "chronon_timing_content_type", ddl: `ALTER TABLE artifact_records ADD COLUMN chronon_timing_content_type TEXT NOT NULL DEFAULT ''`},
+}
+
+// migrate brings the ledger to the current schema version, recording each step
+// in SQLite's own user_version. A step and its version stamp commit together,
+// so a crash mid-migration leaves the ledger at a step boundary and the next
+// open resumes from there.
+func migrate(db *sql.DB) error {
+	version, err := schemaVersion(db)
+	if err != nil {
+		return err
+	}
+	if version > len(migrations) {
+		// Refuse rather than run an unknown history against a newer ledger: the
+		// alternative is a downgraded worker silently writing a row shape the
+		// newer worker will misread.
+		return fmt.Errorf("artifactdb: ledger schema version %d is newer than this worker's %d; refusing to open it", version, len(migrations))
+	}
+	for i := version; i < len(migrations); i++ {
+		step := migrations[i]
+		if step.column != "" {
+			present, err := hasColumn(db, "artifact_records", step.column)
+			if err != nil {
+				return err
+			}
+			if present {
+				// Already applied by an unversioned worker: record the version and
+				// move on, instead of failing on a duplicate column.
+				if err := setSchemaVersion(db, i+1); err != nil {
+					return err
+				}
+				continue
+			}
+		}
+		tx, err := db.Begin()
+		if err != nil {
+			return fmt.Errorf("artifactdb: begin migration %d: %w", i+1, err)
+		}
+		if _, err := tx.Exec(step.ddl); err != nil {
+			_ = tx.Rollback()
+			return fmt.Errorf("artifactdb: apply migration %d: %w", i+1, err)
+		}
+		if _, err := tx.Exec(versionStamp(i + 1)); err != nil {
+			_ = tx.Rollback()
+			return fmt.Errorf("artifactdb: stamp migration %d: %w", i+1, err)
+		}
+		if err := tx.Commit(); err != nil {
+			return fmt.Errorf("artifactdb: commit migration %d: %w", i+1, err)
+		}
+	}
+	return nil
+}
+
+// schemaVersion reads SQLite's own schema stamp for this database.
+func schemaVersion(db *sql.DB) (int, error) {
+	var version int
+	if err := db.QueryRow(`PRAGMA user_version`).Scan(&version); err != nil {
+		return 0, fmt.Errorf("artifactdb: read schema version: %w", err)
+	}
+	return version, nil
+}
+
+// setSchemaVersion records a version without running a step, used for the
+// legacy ledgers whose columns an unversioned worker already added.
+func setSchemaVersion(db *sql.DB, version int) error {
+	if _, err := db.Exec(versionStamp(version)); err != nil {
+		return fmt.Errorf("artifactdb: stamp schema version %d: %w", version, err)
+	}
+	return nil
+}
+
+// versionStamp renders the PRAGMA that sets user_version. PRAGMA statements
+// cannot take a bound parameter, so the value is formatted from an int this
+// package controls (never from input).
+func versionStamp(version int) string {
+	return fmt.Sprintf("PRAGMA user_version = %d", version)
+}
+
+// hasColumn reports whether table already has the named column.
+//
+// table and column are compile-time constants from this file: PRAGMA
+// table_info cannot take a bound parameter, so the table name is interpolated.
+func hasColumn(db *sql.DB, table, column string) (bool, error) {
+	rows, err := db.Query(`PRAGMA table_info(` + table + `)`)
+	if err != nil {
+		return false, fmt.Errorf("artifactdb: read columns of %s: %w", table, err)
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var (
+			cid        int
+			name       string
+			columnType string
+			notNull    int
+			defaultV   sql.NullString
+			primaryK   int
+		)
+		if err := rows.Scan(&cid, &name, &columnType, &notNull, &defaultV, &primaryK); err != nil {
+			return false, fmt.Errorf("artifactdb: scan columns of %s: %w", table, err)
+		}
+		if name == column {
+			return true, nil
+		}
+	}
+	return false, rows.Err()
 }
 
 // Close releases the ledger.

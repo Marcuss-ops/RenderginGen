@@ -61,6 +61,10 @@ token.json
 # apple_style_final_videos is the same artifact class again: rendered clips plus
 # their sidecars, reproducible from the crime/discovery/young style presets.
 /apple_style_final_videos/
+# mike_tyson_overlay_test is a manual smoke scenario: its request/plan/script
+# JSON and input media are worth keeping, but output/ holds the rendered mp4s
+# that a re-run regenerates on demand — the same artifact class as above.
+/mike_tyson_overlay_test/output/
 assets/backgrounds/*.mp4
 
 # Keep testdata/golden intentionally tiny: only canonical CI/regression fixtures.

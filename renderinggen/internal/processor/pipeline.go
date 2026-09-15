@@ -19,14 +19,15 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
-	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/media"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/metricnames"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/overlay"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/queue"
@@ -64,45 +65,37 @@ type PreparedJob struct {
 // behind a URL/metadata ending in .png; Chronon's image loader uses the file
 // extension, so leaving that mismatch produces a valid but black render.
 //
-// It returns the workspace-relative paths it created (the rename targets), the
-// plan paths that are proven to exist once it returns nil. PrepareJob folds
-// them into the set of paths this stage materialized so
-// validateMaterializedPlanAssets does not stat a file that was just written.
-func normalizeMaterializedImagePaths(root string, plan *overlay.Plan) (map[string]struct{}, error) {
+// It returns a new-path → old-path map for every rename. PrepareJob folds the
+// new paths into the set of paths this stage materialized and uses the mapping
+// to keep the prepared-package asset manifest aligned with the final plan.
+//
+// The extension vocabulary lives in internal/media (media.ImageExtensionMatches),
+// not here: it is media-format knowledge, and the processor's job is only to
+// apply the decision to the plan and report the renames. A format this pass does
+// not recognize is left exactly as the producer declared it — renaming it would
+// hand the engine an extension whose decoder cannot read the bytes.
+func normalizeMaterializedImagePaths(root string, plan *overlay.Plan) (map[string]string, error) {
 	if plan == nil {
 		return nil, nil
 	}
-	var renamed map[string]struct{}
+	var renamed map[string]string
 	for i := range plan.Layers {
 		layer := &plan.Layers[i]
 		if layer.Type != "image" || layer.Asset == "" {
 			continue
 		}
 		path := filepath.Join(root, filepath.FromSlash(layer.Asset))
-		data, err := os.Open(path)
+		head, err := readFileHead(path, imageSniffBytes)
 		if err != nil {
 			return nil, fmt.Errorf("image asset %s: %w", layer.Asset, err)
 		}
-		var sniff [512]byte
-		n, readErr := data.Read(sniff[:])
-		data.Close()
-		if readErr != nil && n == 0 {
-			return nil, fmt.Errorf("image asset %s: %w", layer.Asset, readErr)
-		}
-		contentType := http.DetectContentType(sniff[:n])
-		ext := ".png"
-		switch contentType {
-		case "image/jpeg":
-			ext = ".jpg"
-		case "image/webp":
-			ext = ".webp"
-		case "image/gif":
-			ext = ".gif"
-		case "image/png":
-		default:
+		// Already correct, or a format this package cannot name: leave the
+		// producer's path untouched.
+		if media.ImageExtensionMatches(layer.Asset, head) {
 			continue
 		}
-		if strings.EqualFold(filepath.Ext(layer.Asset), ext) {
+		ext, ok := media.ImageExtensionForData(head)
+		if !ok {
 			continue
 		}
 		newAsset := strings.TrimSuffix(layer.Asset, filepath.Ext(layer.Asset)) + ext
@@ -111,12 +104,57 @@ func normalizeMaterializedImagePaths(root string, plan *overlay.Plan) (map[strin
 			return nil, fmt.Errorf("image asset %s rename: %w", layer.Asset, err)
 		}
 		if renamed == nil {
-			renamed = make(map[string]struct{})
+			renamed = make(map[string]string)
 		}
-		renamed[newAsset] = struct{}{}
+		renamed[newAsset] = layer.Asset
 		layer.Asset = newAsset
 	}
 	return renamed, nil
+}
+
+// imageSniffBytes is how much of the file the extension decision reads. It is
+// net/http's full signature window (DetectContentType documents 512 bytes as the
+// bound for every format it recognizes), so the sniff cannot be "too short" for
+// a format that would otherwise be identified.
+const imageSniffBytes = 512
+
+// readFileHead reads up to n leading bytes of path.
+//
+// A short read at EOF is not an error: image signatures are at the start of the
+// file, and a file smaller than the window is exactly the case where reading
+// what exists is the whole point. Only "no bytes at all" fails (an empty file
+// is not an image), which is what the caller reports against the asset name.
+func readFileHead(path string, n int) ([]byte, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+	buf := make([]byte, n)
+	nn, readErr := io.ReadFull(f, buf)
+	if nn == 0 && readErr != nil {
+		return nil, readErr
+	}
+	return buf[:nn], nil
+}
+
+// finalPreparedAssets projects the semantic asset manifest onto the concrete
+// paths after image-extension normalization. The bytes do not change during a
+// rename, so the original content hash remains authoritative.
+func finalPreparedAssets(compiled []overlay.Asset, renamed map[string]string) []overlay.Asset {
+	if len(renamed) == 0 {
+		return compiled
+	}
+	assets := append([]overlay.Asset(nil), compiled...)
+	for newPath, oldPath := range renamed {
+		for _, asset := range compiled {
+			if asset.LogicalPath == oldPath {
+				assets = append(assets, overlay.Asset{Hash: asset.Hash, LogicalPath: newPath})
+				break
+			}
+		}
+	}
+	return assets
 }
 
 // validateMaterializedPlanAssets is the fail-closed boundary immediately
@@ -350,6 +388,15 @@ func (p *Processor) PrepareJob(ctx context.Context, job *queue.Job) (*PreparedJo
 		if burnErr != nil {
 			p.cleanupWorkspace(ws, job.ID)
 			return nil, burnErr
+		}
+		// Burn-in appends concrete Chronon text layers after CompileSemantic
+		// created the initial package. Rebuild the immutable sidecar from the
+		// final plan so its overlay bindings remain 1:1 with plan.Layers; the
+		// Chronon boundary validates this relationship before GPU compilation.
+		preparedPackage, err = overlay.PreparePackage(plan, preparedPackage.Language, finalPreparedAssets(compiledAssets, renamed))
+		if err != nil {
+			p.cleanupWorkspace(ws, job.ID)
+			return nil, fmt.Errorf("processor: rebuild prepared overlay package after subtitle burn: %w", err)
 		}
 		record(metricnames.PrepareBurnStem, burnStart)
 		metrics[metricnames.SubtitleBurnUS] = float64(time.Since(burnStart).Microseconds())

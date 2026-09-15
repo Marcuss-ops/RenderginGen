@@ -73,6 +73,17 @@ pipeline:
   workspace_lease_ttl: 2h
   lease_renew_attempts: 3 # renewal retries per tick before aborting the job
   lease_renew_backoff: 2s # first retry delay (doubles, capped at lease/2)
+  # Output-verification policy the worker requests from Chronon and enforces
+  # from its receipt: "" (fast, the default) | fast | normal | certify.
+  # config rejects any other spelling at load: silently running fast because of
+  # a typo would mean an operator asked for proof and did not get it.
+  receipt_verify: ""
+  # Sampled ffmpeg visual gate for jobs whose plan carries an authored overlay.
+  # Off by default: it costs an extra decode of the finished output.
+  deep_visual_validation: false
+  # Leave a finished job's workspace on disk for inspection. Off by default —
+  # the jobs root is often tmpfs (RAM), so this is a deliberate debugging aid.
+  keep_workspace: false
 
 gpu:
   device: 0

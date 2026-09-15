@@ -7,7 +7,6 @@ package processor
 import (
 	"fmt"
 	"log"
-	"os"
 	"strings"
 
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/chronon"
@@ -26,17 +25,23 @@ const (
 	renderVerifyCertify renderVerifyLevel = chronon.ReceiptVerifyCertify
 )
 
-// renderVerificationLevel is the SINGLE verification-policy authority on the
+// receiptVerifyLevel is the SINGLE verification-policy authority on the
 // worker. fast (the production default) verifies container/stream metadata
 // without re-decoding the freshly muxed output; normal performs one complete
 // decode; certify is the explicit correctness mode used by CI/golden
-// benchmarks. Only RENDERINGGEN_RECEIPT_VERIFY is read here — the historical
-// CHRONON_RECEIPT_VERIFY alias is deliberately NOT consulted, so the worker
-// and its Chronon subprocess cannot run different policies. The resolved
-// level is forwarded explicitly to the CLI (chronon.RenderRequest.
-// ReceiptVerify -> CHRONON_RECEIPT_VERIFY on the subprocess env) by RunGPU.
-func renderVerificationLevel() renderVerifyLevel {
-	switch renderVerifyLevel(os.Getenv("RENDERINGGEN_RECEIPT_VERIFY")) {
+// benchmarks.
+//
+// The value comes from configuration (pipeline.receipt_verify, and through the
+// aliased RENDERINGGEN_RECEIPT_VERIFY), never from a read inside this package:
+// the historical CHRONON_RECEIPT_VERIFY alias is deliberately NOT consulted, so
+// the worker and its Chronon subprocess cannot run different policies. config
+// validates the accepted spellings at load, so anything else reaching here is a
+// caller that built a Processor directly — which gets the fast default rather
+// than an invented policy. The resolved level is forwarded explicitly to the CLI
+// (chronon.RenderRequest.ReceiptVerify -> CHRONON_RECEIPT_VERIFY on the
+// subprocess env) by RunGPU.
+func (p *Processor) receiptVerifyLevel() renderVerifyLevel {
+	switch p.receiptVerify {
 	case renderVerifyNormal:
 		return renderVerifyNormal
 	case renderVerifyCertify:
@@ -46,7 +51,10 @@ func renderVerificationLevel() renderVerifyLevel {
 	}
 }
 
-// enforceReceiptVerification makes the worker enforce — never duplicate —
+// verifyArtifactReceipt (receipt_identity.go) is the gate's entry point; this
+// is its policy half.
+//
+// enforceReceiptVerificationDirect makes the worker enforce — never duplicate —
 // Chronon's canonical output verification. Under normal/certify the receipt
 // is mandatory evidence: Chronon promised a full decode there, and a missing
 // receipt means the canonical verifier did not run, so the artifact is
@@ -56,13 +64,17 @@ func renderVerificationLevel() renderVerifyLevel {
 // the receipt is present the aggregate verification status must be pass at
 // every policy — Chronon's media checks (container, codec, pixel format,
 // resolution, fps, audio, optional decode) are the verdict.
+// The identity half of the gate is not optional and not policy-blind: it runs
+// here, for every policy, and the store phase consumes its verdict. See
+// receipt_identity.go.
 func (p *Processor) enforceReceiptVerification(outputPath string, metrics map[string]float64) error {
 	receipt, err := chronon.ReadMediaReceipt(outputPath)
-	return p.enforceReceiptVerificationDirect(receipt, err, metrics)
+	_, gateErr := p.verifyArtifactReceipt(outputPath, receipt, err, metrics)
+	return gateErr
 }
 
 func (p *Processor) enforceReceiptVerificationDirect(receipt chronon.MediaReceipt, err error, metrics map[string]float64) error {
-	policy := renderVerificationLevel()
+	policy := p.receiptVerifyLevel()
 	if err != nil {
 		if policy == renderVerifyFast {
 			// Fast never promises a decode; the output is certified by the
@@ -96,10 +108,11 @@ func (p *Processor) enforceReceiptVerificationDirect(receipt chronon.MediaReceip
 }
 
 // deepVisualValidationEnabled reports whether the sampled ffmpeg visual
-// validation should run for this job. Opt-in via RENDERINGGEN_DEEP_VISUAL=1:
-// CI and certification runs enable it; the production hot path relies on the
-// Chronon receipt gate (requireNativeVulkan + media receipt) and pays no
-// extra ffmpeg processes per render.
-func deepVisualValidationEnabled() bool {
-	return os.Getenv("RENDERINGGEN_DEEP_VISUAL") == "1"
+// validation should run for this job. Opt-in through configuration
+// (pipeline.deep_visual_validation, aliased by RENDERINGGEN_DEEP_VISUAL=1): CI
+// and certification runs enable it; the production hot path relies on the
+// Chronon receipt gate (requireNativeVulkan + media receipt) and pays no extra
+// ffmpeg processes per render.
+func (p *Processor) deepVisualValidationEnabled() bool {
+	return p.deepVisualValidation
 }

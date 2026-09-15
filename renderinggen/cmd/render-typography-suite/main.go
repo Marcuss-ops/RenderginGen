@@ -8,30 +8,14 @@ import (
 	"path/filepath"
 
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/overlay"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/renderbatch"
 )
 
-type semanticTypographyPlan struct {
-	SchemaVersion string                   `json:"schema_version"`
-	PlanID        string                   `json:"plan_id"`
-	VideoID       string                   `json:"video_id"`
-	Width         int                      `json:"width"`
-	Height        int                      `json:"height"`
-	FPSNum        int                      `json:"fps_num"`
-	FPSDen        int                      `json:"fps_den"`
-	OutputProfile string                   `json:"output_profile_id"`
-	Items         []semanticTypographyItem `json:"items"`
-}
-
-type semanticTypographyItem struct {
-	ID         string         `json:"id"`
-	Template   string         `json:"template_id"`
-	PresetID   string         `json:"preset_id"`
-	MotionID   string         `json:"motion_id"`
-	MotionArgs map[string]any `json:"motion_params,omitempty"`
-	Text       string         `json:"text"`
-	StartMS    int64          `json:"start_ms"`
-	EndMS      int64          `json:"end_ms"`
-}
+// semanticTypographyItem is the shared typed item of the semantic plan writer in
+// internal/renderbatch. This command used to declare its own copy of the whole
+// overlay-plan.v1 document, so the same wire contract had two hand-maintained
+// writer struct sets that could drift apart.
+type semanticTypographyItem = renderbatch.PlanItem
 
 type benchmarkSpec struct {
 	ID     string
@@ -60,7 +44,7 @@ func main() {
 		return
 	}
 	item := semanticTypographyItem{
-		ID: "typography_title", Template: "IMPORTANT_PHRASE", PresetID: "apple_v2",
+		ID: "typography_title", TemplateID: "IMPORTANT_PHRASE", PresetID: "apple_v2",
 		MotionID: *motionID, Text: "Designed for speed.", StartMS: 0, EndMS: 5000,
 	}
 	path, err := writeV2Plan(*out, "typography-suite", []semanticTypographyItem{item})
@@ -112,11 +96,18 @@ func generateSuite(out string) error {
 }
 
 func writeV2Plan(path, planID string, items []semanticTypographyItem) (string, error) {
-	semantic := semanticTypographyPlan{
-		SchemaVersion: "renderinggen.overlay-plan.v1", PlanID: planID, VideoID: planID,
-		Width: 1920, Height: 1080, FPSNum: 24, FPSDen: 1, OutputProfile: "preview", Items: items,
-	}
-	raw, err := json.Marshal(semantic)
+	// Built through the shared writer, which also lowers the document through
+	// the worker's own compiler, so an unresolvable preset or motion in the suite
+	// fails here with the plan id instead of producing a plan that never renders.
+	raw, err := renderbatch.BuildPlan(renderbatch.PlanSpec{
+		PlanID:          planID,
+		Width:           1920,
+		Height:          1080,
+		FPSNum:          24,
+		FPSDen:          1,
+		OutputProfileID: "preview",
+		Items:           items,
+	})
 	if err != nil {
 		return "", err
 	}
@@ -149,12 +140,12 @@ func writeV2Plan(path, planID string, items []semanticTypographyItem) (string, e
 }
 
 func item(id, motion, text string) semanticTypographyItem {
-	return semanticTypographyItem{ID: id, Template: "IMPORTANT_PHRASE", PresetID: "apple_v2", MotionID: motion, Text: text, EndMS: 5000}
+	return semanticTypographyItem{ID: id, TemplateID: "IMPORTANT_PHRASE", PresetID: "apple_v2", MotionID: motion, Text: text, EndMS: 5000}
 }
 
 func itemPos(id, motion, text string, posX, posY float64) semanticTypographyItem {
 	it := item(id, motion, text)
-	it.MotionArgs = map[string]any{"position_x": posX, "position_y": posY}
+	it.MotionParams = map[string]any{"position_x": posX, "position_y": posY}
 	return it
 }
 

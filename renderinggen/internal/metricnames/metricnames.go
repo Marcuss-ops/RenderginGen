@@ -147,6 +147,26 @@ const (
 	// indistinguishable. It is also set when the store phase has to fall back
 	// to re-hashing the output because the receipt carried no usable identity.
 	ChrononReceiptMissing = "chronon_receipt_missing"
+
+	// Composition prediction cross-check. The worker derives a composition
+	// REQUIREMENT from the plan and Chronon reports the execution path it took;
+	// these two counters are how often the two disagree and how often the report
+	// did not say enough to compare them. Both are per-artifact and land in the
+	// ledger, so a requirement fact that has drifted from the engine's actual
+	// selection is visible without reading render logs.
+	CompositionPredictionDivergence   = "composition_prediction_divergence"
+	CompositionPredictionUnverifiable = "composition_prediction_unverifiable"
+
+	// Receipt-identity provenance. Every artifact is stored under a content
+	// address; these counters say how that address was established, so an
+	// artifact whose digest was accepted on a size match (fast) is never
+	// indistinguishable in the ledger from one that was recomputed from the
+	// bytes (normal/certify). The two failure counters are set on the paths that
+	// reject the artifact under a proof policy.
+	ReceiptIdentityUnverified = "receipt_identity_unverified"
+	ReceiptIdentityMismatch   = "receipt_identity_mismatch"
+	ReceiptIdentityUnusable   = "receipt_identity_unusable"
+	ReceiptSizeMismatch       = "receipt_size_mismatch"
 )
 
 // Ledger facts mirrored into the local artifact database (counts, bytes and
@@ -213,6 +233,9 @@ var vocab = map[string]string{
 	PublicationDriveSkippedPolicy: UnitCount, PublicationDriveSkippedCapability: UnitCount,
 	WorkspaceCleanupFailures: UnitCount, ChrononTelemetryMissing: UnitCount,
 	ChrononTimingSidecarMissing: UnitCount, ChrononReceiptMissing: UnitCount,
+	CompositionPredictionDivergence: UnitCount, CompositionPredictionUnverifiable: UnitCount,
+	ReceiptIdentityUnverified: UnitCount, ReceiptIdentityMismatch: UnitCount,
+	ReceiptIdentityUnusable: UnitCount, ReceiptSizeMismatch: UnitCount,
 
 	EntityCount: UnitCount, ImportantPhraseCount: UnitCount, ImportantWordCount: UnitCount,
 	ImageCount: UnitCount, LightLeakCount: UnitCount, InputBytes: UnitBytes,

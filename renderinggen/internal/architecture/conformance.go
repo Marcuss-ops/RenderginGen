@@ -66,9 +66,21 @@ type rule struct {
 // data (the gate's rule table and its exemplar tests). The skip is per file,
 // not per package: the historical directory-wide skip meant a marker hidden in
 // any future architecture/*.go file was invisible to the gate.
+//
+// The exemplar tests were one 911-line file and are now one file per concern
+// (rules / baseline+scope / documentation / CI). Every one of them has to be
+// listed: the split moved marker literals into files this map did not name, and
+// the gate caught exactly that on the first run — which is the per-file skip
+// doing its job. A NEW exemplar file therefore fails the gate until it is
+// declared here, deliberately, rather than sliding in under a directory-wide
+// exemption.
 var selfSkip = map[string]bool{
-	"renderinggen/internal/architecture/conformance.go":      true,
-	"renderinggen/internal/architecture/conformance_test.go": true,
+	"renderinggen/internal/architecture/conformance.go":               true,
+	"renderinggen/internal/architecture/conformance_test.go":          true,
+	"renderinggen/internal/architecture/conformance_rules_test.go":    true,
+	"renderinggen/internal/architecture/conformance_baseline_test.go": true,
+	"renderinggen/internal/architecture/conformance_docs_test.go":     true,
+	"renderinggen/internal/architecture/conformance_ci_test.go":       true,
 }
 
 // siblingRepos are the other repositories the gate knows about when they are

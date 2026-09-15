@@ -227,6 +227,17 @@ func buildPreparedPackage(plan *Plan, language string, assets []Asset) (Prepared
 	return pkg, nil
 }
 
+// PreparePackage rebuilds the immutable sidecar from the final concrete plan.
+//
+// CompileSemantic calls this during the initial semantic lowering, but later
+// processor stages may append concrete layers (for example ASS subtitle
+// burn-in).  Those stages must not keep a stale package whose overlay list no
+// longer matches plan.Layers: Chronon validates that relationship fail-closed
+// before compiling the GPU program.
+func PreparePackage(plan *Plan, language string, assets []Asset) (PreparedPackage, error) {
+	return buildPreparedPackage(plan, language, assets)
+}
+
 func stableDigest(value any) (string, error) {
 	encoded, err := json.Marshal(value)
 	if err != nil {

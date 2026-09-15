@@ -66,6 +66,19 @@ type Processor struct {
 	// and the refresh period (pipeline.workspace_lease_refresh).
 	workspaceLeaseTTL time.Duration
 
+	// receiptVerify is the output-verification policy requested from Chronon
+	// and enforced from its receipt (see receiptVerifyLevel). Empty means fast,
+	// the production default.
+	receiptVerify renderVerifyLevel
+
+	// deepVisualValidation enables the sampled ffmpeg visual gate; see
+	// deepVisualValidationEnabled.
+	deepVisualValidation bool
+
+	// keepWorkspace leaves a finished job's workspace on disk; see
+	// SetKeepWorkspace.
+	keepWorkspace bool
+
 	// progressTracker, when set, receives per-frame progress observations
 	// during RunGPU so health and the queue pusher can report live render
 	// position instead of an opaque RUNNING/0% for minutes.
@@ -130,6 +143,28 @@ func (p *Processor) workspaceLeaseDuration() time.Duration {
 // misses). Used by the performance benchmark; off by default.
 func (p *Processor) SetReport(enabled bool) {
 	p.report = enabled
+}
+
+// SetReceiptVerify sets the output-verification policy the worker requests from
+// Chronon (fast / normal / certify). The zero value means fast, which is the
+// production default; config validates the accepted spellings at load, so an
+// unrecognized value can only arrive from a caller that bypassed config.
+func (p *Processor) SetReceiptVerify(level string) {
+	p.receiptVerify = renderVerifyLevel(level)
+}
+
+// SetDeepVisualValidation enables the sampled ffmpeg visual gate for jobs whose
+// plan carries an authored overlay.
+func (p *Processor) SetDeepVisualValidation(enabled bool) {
+	p.deepVisualValidation = enabled
+}
+
+// SetKeepWorkspace leaves a finished job's workspace on disk for inspection.
+// The post pool is the workspace's last owner, so it and StagedRender must
+// receive the SAME value: the old arrangement read the environment separately
+// in each, which let the two owners disagree.
+func (p *Processor) SetKeepWorkspace(keep bool) {
+	p.keepWorkspace = keep
 }
 
 // SetHardwareEncoder selects an explicit FFmpeg hardware encoder (for

@@ -41,6 +41,12 @@ var durationType = reflect.TypeOf(time.Duration(0))
 var envAliases = map[string]string{
 	// Read by internal/chronon before the stall timeout became a setting.
 	"CHRONON_STALL_TIMEOUT": EnvPrefix + "CHRONON_STALL_TIMEOUT",
+	// Read pointwise inside internal/processor before these became settings.
+	// The short names are kept because deployments already set them; the
+	// canonical key derived from the yaml path always wins when both are set.
+	"RENDERINGGEN_RECEIPT_VERIFY": EnvPrefix + "PIPELINE_RECEIPT_VERIFY",
+	"RENDERINGGEN_DEEP_VISUAL":    EnvPrefix + "PIPELINE_DEEP_VISUAL_VALIDATION",
+	"RENDERINGGEN_KEEP_WORKSPACE": EnvPrefix + "PIPELINE_KEEP_WORKSPACE",
 }
 
 // applyEnvOverrides walks the configuration and applies every RENDERINGGEN_*
