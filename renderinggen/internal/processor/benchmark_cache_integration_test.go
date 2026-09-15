@@ -12,12 +12,13 @@ import (
 
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/chronon"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/metricnames"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/overlay"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/queue"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/storage"
 )
 
 // words is the 10-text corpus for the cache benchmark: every job renders the
-// same GoldenOverlayJobV2 workload with
+// same GoldenSemanticOverlayJobV1 workload with
 // a different kinetic word, so only the text layer differs between jobs.
 var words = []string{"APPLE", "TESLA", "NVIDIA", "AMD", "INTEL", "SAMSUNG", "GOOGLE", "META", "AMAZON", "MICROSOFT"}
 
@@ -36,8 +37,8 @@ type jobResult struct {
 	EncodeMS        float64 // from telemetry JSONL (--report)
 	EngineCacheHits int64
 	EngineCacheMiss int64
-	L1Hits          int64 // worker asset cache
-	L2Hits          int64
+	L1Hits          int64 // byte-path cache (not used by streaming materialization)
+	L2Hits          int64 // streaming asset cache
 	L3Fetches       int64
 }
 
@@ -50,21 +51,29 @@ type telemetryLine struct {
 	CacheMisses int64   `json:"cache_misses"`
 }
 
-// goldenJobWithWord decodes the canonical GoldenOverlayJobV2 and rewrites the
+// goldenJobWithWord decodes the canonical semantic golden and rewrites the
 // first important-word text layer, keeping everything else identical.
 func goldenJobWithWord(t *testing.T, word string) *queue.Job {
 	t.Helper()
 	var job queue.Job
-	if err := json.Unmarshal([]byte(chronon.GoldenOverlayJobV2), &job); err != nil {
+	if err := json.Unmarshal([]byte(chronon.GoldenSemanticOverlayJobV1), &job); err != nil {
 		t.Fatalf("decode golden: %v", err)
 	}
 	var plan map[string]any
 	if err := json.Unmarshal(job.RenderPlan, &plan); err != nil {
 		t.Fatalf("decode plan: %v", err)
 	}
-	layers, ok := plan["layers"].([]any)
+	collectionKey := "layers"
+	layers, ok := plan[collectionKey].([]any)
 	if !ok {
-		t.Fatal("plan.layers is not an array")
+		// The current worker boundary is semantic overlay-plan.v1, whose
+		// producer-owned collection is `items`; retain `layers` support for
+		// legacy concrete goldens used by unrelated benchmarks.
+		collectionKey = "items"
+		layers, ok = plan[collectionKey].([]any)
+	}
+	if !ok {
+		t.Fatalf("plan.%s is not an array", collectionKey)
 	}
 	found := false
 	for _, l := range layers {
@@ -72,7 +81,7 @@ func goldenJobWithWord(t *testing.T, word string) *queue.Job {
 		if !ok {
 			continue
 		}
-		if layer["id"] == "important_word_1" {
+		if layer["id"] == "important_word" || layer["id"] == "important_word_1" {
 			layer["text"] = word
 			found = true
 		}
@@ -115,8 +124,8 @@ func readLastTelemetry(t *testing.T, dir string) telemetryLine {
 // same assets with different texts, sharing one worker asset cache, and
 // verifies:
 //
-//	job 1:  L1 hit (fixtures are seeded with Client.Put)
-//	jobs 2-10: L1 cache hit (no L3 fetch, no L2 read)
+//	job 1:  L2 hit (fixtures are seeded with Client.Put)
+//	jobs 2-10: L2 cache hit (no L3 fetch)
 //
 // It also records asset fetch / plan / render / publish / total ms per job and
 // the engine-side render_ms / encode_ms / cache hits-misses from the telemetry
@@ -146,8 +155,9 @@ func TestBenchmarkCachePromotion10Jobs(t *testing.T) {
 	proc.SetReport(true)
 
 	// Seed every deterministic fixture into L3 under its content hash.
-	assetCount := int64(len(mustGoldenAssets(t)))
-	seedGoldenAssets(t, store, mustGoldenAssets(t))
+	goldenAssets := mustGoldenAssets(t)
+	assetCount := mustMaterializedAssetCount(t, goldenJobWithWord(t, words[0]))
+	seedGoldenAssets(t, store, goldenAssets)
 
 	var results []jobResult
 	for i, word := range words {
@@ -194,20 +204,25 @@ func TestBenchmarkCachePromotion10Jobs(t *testing.T) {
 
 	// ── Verifications ─────────────────────────────────────────────────────
 	r0 := results[0]
-	// seedGoldenAssets warms L1 through Client.Put, so job 1 starts at L1.
-	if r0.L3Fetches != 0 || r0.L1Hits != assetCount {
-		t.Fatalf("job 1: want %d L1 hits and 0 L3 fetches, got L1=%d L2=%d L3=%d", assetCount, r0.L1Hits, r0.L2Hits, r0.L3Fetches)
+	// Materialize uses the streaming LocalPath API, whose zero-copy contract
+	// deliberately prefers the durable L2 file over loading asset bytes into
+	// the Go-heap L1 cache.
+	if r0.L3Fetches != 0 || r0.L2Hits != assetCount {
+		t.Fatalf("job 1: want %d L2 hits and 0 L3 fetches, got L1=%d L2=%d L3=%d", assetCount, r0.L1Hits, r0.L2Hits, r0.L3Fetches)
 	}
-	if r0.L2Hits != 0 {
-		t.Fatalf("job 1 should not read L2 after the seed, got L1=%d L2=%d", r0.L1Hits, r0.L2Hits)
+	if r0.L1Hits != 0 {
+		t.Fatalf("job 1 should not use byte-path L1 during streaming materialization, got L1=%d L2=%d", r0.L1Hits, r0.L2Hits)
 	}
-	// Jobs 2-10: cache hits, no additional L3 fetch or L2 read.
+	// Jobs 2-10: durable L2 hits, no additional L3 fetch.
 	for i, r := range results[1:] {
 		if r.L3Fetches != 0 {
 			t.Fatalf("job %d (%s): unexpected L3 fetches: %d", i+2, r.Word, r.L3Fetches)
 		}
-		if r.L1Hits < int64(i+2)*assetCount {
-			t.Fatalf("job %d (%s): L1 hits = %d, want >= %d (%d assets x jobs including seed-warm job 1)", i+2, r.Word, r.L1Hits, int64(i+2)*assetCount, assetCount)
+		if r.L2Hits < int64(i+2)*assetCount {
+			t.Fatalf("job %d (%s): L2 hits = %d, want >= %d (%d assets x jobs including seed-warm job 1)", i+2, r.Word, r.L2Hits, int64(i+2)*assetCount, assetCount)
+		}
+		if r.L1Hits != 0 {
+			t.Fatalf("job %d (%s): streaming materialization unexpectedly used byte-path L1: %d", i+2, r.Word, r.L1Hits)
 		}
 	}
 
@@ -236,10 +251,27 @@ func metricMS(metrics map[string]float64, key string) float64 {
 func mustGoldenAssets(t *testing.T) []queue.AssetRef {
 	t.Helper()
 	var job queue.Job
-	if err := json.Unmarshal([]byte(chronon.GoldenOverlayJobV2), &job); err != nil {
+	if err := json.Unmarshal([]byte(chronon.GoldenSemanticOverlayJobV1), &job); err != nil {
 		t.Fatalf("decode golden: %v", err)
 	}
 	return job.Assets
+}
+
+// mustMaterializedAssetCount mirrors the processor's compile+merge boundary.
+// The semantic compiler can add canonical asset paths while preserving a
+// producer-owned alias, so counting only the envelope manifest undercounts
+// the actual streaming resolver calls (and makes the cache assertion brittle).
+func mustMaterializedAssetCount(t *testing.T, job *queue.Job) int64 {
+	t.Helper()
+	result, err := overlay.CompileSemantic(job.RenderPlan)
+	if err != nil {
+		t.Fatalf("compile benchmark asset set: %v", err)
+	}
+	assets, err := mergeAssets(job.Assets, result.Assets)
+	if err != nil {
+		t.Fatalf("merge benchmark asset set: %v", err)
+	}
+	return int64(len(assets))
 }
 
 // rewriteJobID updates the job_id inside the render plan so each benchmark
@@ -250,7 +282,11 @@ func rewriteJobID(t *testing.T, plan []byte, id string) json.RawMessage {
 	if err := json.Unmarshal(plan, &m); err != nil {
 		t.Fatalf("decode plan for job id rewrite: %v", err)
 	}
-	m["job_id"] = id
+	if _, semantic := m["plan_id"]; semantic {
+		m["plan_id"] = id
+	} else {
+		m["job_id"] = id
+	}
 	out, err := json.Marshal(m)
 	if err != nil {
 		t.Fatalf("marshal plan with job id: %v", err)

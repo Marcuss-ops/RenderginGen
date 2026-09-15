@@ -283,6 +283,7 @@ func (c *Client) LocalPath(ctx context.Context, hash string) (string, int64, err
 		return path, int64(len(data)), nil
 	}
 	if path, size, err := c.l2.ContextPath(ctx, hash); err == nil {
+		c.l2Hits.Add(1)
 		return path, size, nil
 	}
 	// L2 miss, L1 hit: the streaming materialize path used to bypass L1
