@@ -18,6 +18,11 @@ queue:
 artifact_store:
   endpoint: https://storage.pipelinegen.example
   local_cache_dir: /var/lib/renderinggen/cache
+  # Cache budgets. These used to be compile-time constants in the worker wiring;
+  # rebalance them for the host (more RAM -> raise l1_max_bytes, more NVMe ->
+  # raise l2_max_bytes). 0 means unbounded.
+  l1_max_bytes: 268435456 # 256 MiB small-object RAM cache
+  l2_max_bytes: 10737418240 # 10 GiB NVMe cache
 
 # DB artifact ledger (optional): every rendered job writes one ArtifactRecord
 # (hash, probe facts, semantic counters, per-phase metrics) to a local SQLite
@@ -40,6 +45,34 @@ chronon:
   socket_path: /var/run/chronon3d/chronon.sock
   encode_preset: p1
   pipe_pixfmt: nv12
+  # Abort a render that produced no output at all for this long. The legacy
+  # CHRONON_STALL_TIMEOUT variable is still honored as an alias of this setting.
+  stall_timeout: 3m
+
+# External certification tools (probe, closed-GOP scan, decode/visibility
+# check). Point these at a pinned build instead of relying on PATH.
+media:
+  ffprobe_binary: ffprobe
+  ffmpeg_binary: ffmpeg
+
+# Pipeline timings. Every value below is a deployment fact: a host with a slow
+# object store wants a longer claim_retry_delay, a host with large workspaces
+# wants a shorter workspace_sweep_interval. 0 (or omitting the key) keeps the
+# shipped default shown in the comments.
+pipeline:
+  claim_long_poll: 25s # long-poll window of the queue claim
+  claim_retry_delay: 5s # pause after a failed claim
+  heartbeat_interval: 20s # queue liveness heartbeat
+  degraded_after_failures: 3 # consecutive heartbeat failures -> /health degraded
+  workspace_sweep_interval: 10m # how often crashed-run workspaces are reaped
+  workspace_stale_after: 1h # age without a valid lease marker before sweeping
+  workspace_lease_refresh: 10m # GPU lane refreshes the liveness marker this often
+  # Must stay comfortably above workspace_lease_refresh: config rejects a TTL
+  # that does not outlive the refresh, because that would let the sweeper remove
+  # a live render's workspace between two refreshes.
+  workspace_lease_ttl: 2h
+  lease_renew_attempts: 3 # renewal retries per tick before aborting the job
+  lease_renew_backoff: 2s # first retry delay (doubles, capped at lease/2)
 
 gpu:
   device: 0

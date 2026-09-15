@@ -46,6 +46,11 @@ type PreparedJob struct {
 	Metrics         map[string]float64      // phase metrics accumulated so far
 	OutputPath      string
 	AudioSourcePath string
+	// AudioTargetSampleRate is the OUTPUT audio rate the sealed plan declares
+	// (0 when it declares none). Forwarded to Chronon's mux, which transcodes
+	// ONLY when the source rate differs, so a matching source keeps the
+	// byte-identical copy path.
+	AudioTargetSampleRate int
 	// NativeCertified is true only when Chronon's native Vulkan/NVENC receipt
 	// gate certified a source-video execution. Image/text-only compositions
 	// may use the GPU compositor, but their host-frame pipe handoff is not the
@@ -221,13 +226,18 @@ func (p *Processor) PrepareJob(ctx context.Context, job *queue.Job) (*PreparedJo
 	// after materialize) so even a >1h asset download is never swept, and
 	// refreshed by the GPU lane for the whole RunGPU stage. Without a valid
 	// marker, CleanupStale would RemoveAll a live job's directory.
-	if err := ws.WriteLease(time.Now().Add(2 * time.Hour)); err != nil {
+	//
+	// The window comes from pipeline.workspace_lease_ttl (see
+	// Processor.SetWorkspaceLeaseTTL); config guarantees the TTL exceeds the
+	// refresh period, so one missed refresh can never make a live render
+	// sweepable.
+	if err := ws.WriteLease(time.Now().Add(p.workspaceLeaseDuration())); err != nil {
 		// Fail closed: without the initial marker CleanupStale would treat an
 		// active workspace as sweepable (its mtime can predate the sweeper
 		// horizon while materialization or the GPU lane is still running), so
 		// the liveness invariant must hold from the moment the workspace
 		// exists. Occasional refresh failures during RunGPU stay tolerable
-		// (the 2h TTL covers them); the missing first marker is not.
+		// (the TTL covers them); the missing first marker is not.
 		p.cleanupWorkspace(ws, job.ID)
 		return nil, fmt.Errorf("processor: establish workspace lease for %s: %w", job.ID, err)
 	}
@@ -386,6 +396,7 @@ func (p *Processor) PrepareJob(ctx context.Context, job *queue.Job) (*PreparedJo
 	record(metricnames.PrepareMarshalStem, marshalStart)
 	record(metricnames.PlanStem, phaseStart)
 	audioPath, warnInert := audioSourcePathFromPlan(plan, ws.Root())
+	audioTargetSampleRate := audioTargetSampleRateFromPlan(plan)
 	if warnInert {
 		metrics[metricnames.AudioInertParams] = 1
 		if plan.Output.Audio != nil && !audioModeCopyOnly(plan.Output.Audio.Mode) {
@@ -403,16 +414,17 @@ func (p *Processor) PrepareJob(ctx context.Context, job *queue.Job) (*PreparedJo
 	}
 	record(metricnames.PrepareTotalStem, totalStart)
 	return &PreparedJob{
-		Job:             job,
-		Workspace:       ws,
-		Plan:            plan,
-		Prepared:        preparedPackage,
-		Stats:           stats,
-		InputBytes:      inputBytes,
-		Metrics:         metrics,
-		OutputPath:      ws.OutputPath("result.mp4"),
-		AudioSourcePath: audioPath,
-		totalStart:      totalStart,
+		Job:                   job,
+		Workspace:             ws,
+		Plan:                  plan,
+		Prepared:              preparedPackage,
+		Stats:                 stats,
+		InputBytes:            inputBytes,
+		Metrics:               metrics,
+		OutputPath:            ws.OutputPath("result.mp4"),
+		AudioSourcePath:       audioPath,
+		AudioTargetSampleRate: audioTargetSampleRate,
+		totalStart:            totalStart,
 	}, nil
 }
 

@@ -58,6 +58,14 @@ type Processor struct {
 	nativeOutputProfiles bool
 	strictNativeBackend  bool
 
+	// workspaceLeaseTTL is the validity window written into the per-workspace
+	// liveness marker at PrepareJob (and refreshed by the GPU lane). Zero means
+	// the shipped default (2h), which is what the value was as a literal. It is
+	// configuration because it has to be consistent with two other settings the
+	// operator owns: the sweeper's stale age (pipeline.workspace_stale_after)
+	// and the refresh period (pipeline.workspace_lease_refresh).
+	workspaceLeaseTTL time.Duration
+
 	// progressTracker, when set, receives per-frame progress observations
 	// during RunGPU so health and the queue pusher can report live render
 	// position instead of an opaque RUNNING/0% for minutes.
@@ -97,6 +105,24 @@ func New(jobsRoot, backend, chrononVersion, storeURL string, store *storage.Clie
 // Used by the performance benchmark; nil (default) disables the overhead.
 func (p *Processor) SetPhaseHook(fn func(phase string, d time.Duration)) {
 	p.phaseHook = fn
+}
+
+// SetWorkspaceLeaseTTL sets the validity window the per-job workspace liveness
+// marker is written with. Zero keeps defaultWorkspaceLeaseTTL.
+func (p *Processor) SetWorkspaceLeaseTTL(ttl time.Duration) {
+	p.workspaceLeaseTTL = ttl
+}
+
+// defaultWorkspaceLeaseTTL is the shipped marker validity window, matching the
+// worker's historical literal so an unconfigured processor behaves identically.
+const defaultWorkspaceLeaseTTL = 2 * time.Hour
+
+// workspaceLeaseDuration resolves the configured marker validity.
+func (p *Processor) workspaceLeaseDuration() time.Duration {
+	if p.workspaceLeaseTTL > 0 {
+		return p.workspaceLeaseTTL
+	}
+	return defaultWorkspaceLeaseTTL
 }
 
 // SetReport enables the chronon3d_cli --report flag so the engine writes its

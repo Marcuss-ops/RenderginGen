@@ -9,6 +9,7 @@ import (
 	"log"
 	"time"
 
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/config"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/queue"
 )
 
@@ -32,7 +33,7 @@ func sleepCtx(ctx context.Context, d time.Duration) bool {
 // render that took minutes: each renewal attempt is retried with backoff, and
 // the job only aborts when the queue definitively reports the lease as lost
 // (a 409-class conflict from the queue) or every retry has been exhausted.
-func withLeaseVoid(ctx context.Context, job *queue.Job, q *queue.Client, fn func(context.Context) error) error {
+func withLeaseVoid(ctx context.Context, job *queue.Job, q *queue.Client, timings config.PipelineConfig, fn func(context.Context) error) error {
 	if job.Lease <= 0 {
 		return fn(ctx)
 	}
@@ -50,7 +51,7 @@ func withLeaseVoid(ctx context.Context, job *queue.Job, q *queue.Client, fn func
 			case <-jobCtx.Done():
 				return
 			case <-ticker.C:
-				if renewWithRetry(jobCtx, job.ID, q, interval) {
+				if renewWithRetry(jobCtx, job.ID, q, interval, timings) {
 					continue
 				}
 				log.Printf("job %s: lease renew failed permanently, aborting", job.ID)
@@ -67,9 +68,15 @@ func withLeaseVoid(ctx context.Context, job *queue.Job, q *queue.Client, fn func
 // false when the queue reports the job is no longer owned by this worker
 // (permanent — the job was requeued elsewhere) or the retry budget is spent.
 // Cancellation of ctx always reports false immediately.
-func renewWithRetry(ctx context.Context, jobID string, q *queue.Client, interval time.Duration) bool {
-	const maxAttempts = 3
-	backoff := 2 * time.Second
+func renewWithRetry(ctx context.Context, jobID string, q *queue.Client, interval time.Duration, timings config.PipelineConfig) bool {
+	maxAttempts := timings.LeaseRenewAttempts
+	if maxAttempts < 1 {
+		maxAttempts = 1
+	}
+	backoff := timings.LeaseRenewBackoff
+	if backoff <= 0 {
+		backoff = time.Second
+	}
 	for attempt := 1; ; attempt++ {
 		err := q.Renew(ctx, jobID)
 		if err == nil {
@@ -97,9 +104,9 @@ func renewWithRetry(ctx context.Context, jobID string, q *queue.Client, interval
 }
 
 // withLease is withLeaseVoid for functions returning an artifact.
-func withLease(ctx context.Context, job *queue.Job, q *queue.Client, fn func(context.Context) (queue.Artifact, error)) (queue.Artifact, error) {
+func withLease(ctx context.Context, job *queue.Job, q *queue.Client, timings config.PipelineConfig, fn func(context.Context) (queue.Artifact, error)) (queue.Artifact, error) {
 	var artifact queue.Artifact
-	err := withLeaseVoid(ctx, job, q, func(jobCtx context.Context) error {
+	err := withLeaseVoid(ctx, job, q, timings, func(jobCtx context.Context) error {
 		var err error
 		artifact, err = fn(jobCtx)
 		return err

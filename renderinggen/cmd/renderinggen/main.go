@@ -27,6 +27,7 @@ import (
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/drive"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/gpu"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/health"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/media"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/processor"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/progresspush"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/queue"
@@ -46,6 +47,16 @@ func main() {
 		log.Fatalf("config: %v", err)
 	}
 
+	// Install the configured certification tools once, before any render can
+	// reach the probe/decode paths. Without this the media package falls back to
+	// the bare "ffprobe"/"ffmpeg" PATH lookup, which is what the pre-settings
+	// worker did unconditionally.
+	media.Configure(media.Binaries{FFprobe: cfg.Media.FFprobeBinary, FFmpeg: cfg.Media.FFmpegBinary})
+
+	// Pipeline timings are configuration: they were unnamed constants spread
+	// over the pool functions, the lease helpers and the startup sweep.
+	timings := cfg.Pipeline
+
 	// Reap workspaces left behind by a crashed worker run: without this the
 	// jobs root (often /dev/shm, i.e. RAM) grows unboundedly. Active
 	// workspaces carry a lease marker (written at PrepareJob, refreshed by
@@ -54,7 +65,7 @@ func main() {
 	// own cleanup (see ParentFinalizer.Finalize).
 	// Reap workspaces left behind by a crashed worker run (see
 	// startWorkspaceCleanup for the full rationale).
-	go startWorkspaceCleanup(ctx, cfg.Workspace.Root)
+	go startWorkspaceCleanup(ctx, cfg.Workspace.Root, timings)
 
 	// 1. Detect GPU.
 	gpuInfo := gpu.Detect(cfg.GPU.Device)
@@ -100,6 +111,7 @@ func main() {
 			Backend:             cfg.Chronon.Backend,
 			StrictNativeBackend: cfg.Chronon.StrictNative(),
 			HardwareEncoder:     cfg.Chronon.HardwareEncoder,
+			StallTimeout:        cfg.Chronon.StallTimeout,
 		}
 		if err := cli.Verify(); err != nil {
 			log.Fatalf("chronon: %v", err)
@@ -123,9 +135,11 @@ func main() {
 	store := storage.New(
 		storage.NewHTTP(cfg.ArtifactStore.Endpoint),
 		storage.Options{
-			L1MaxBytes: 256 << 20, // 256 MiB small-object RAM cache
+			// Cache budgets are configuration: a host with a different RAM/NVMe
+			// balance must be able to rebalance them without a rebuild.
+			L1MaxBytes: cfg.ArtifactStore.L1MaxBytes,
 			L2Dir:      cfg.ArtifactStore.LocalCacheDir,
-			L2MaxBytes: 10 << 30, // 10 GiB NVMe cache
+			L2MaxBytes: cfg.ArtifactStore.L2MaxBytes,
 		},
 	)
 
@@ -146,6 +160,7 @@ func main() {
 	proc.SetHardwareEncoder(cfg.Chronon.HardwareEncoder)
 	proc.SetEncodePreset(cfg.Chronon.EncodePreset)
 	proc.SetPipePixFmt(cfg.Chronon.PipePixFmt)
+	proc.SetWorkspaceLeaseTTL(timings.WorkspaceLeaseTTL)
 	log.Printf("chronon report telemetry: %t, strict_native_backend: %t, encode_preset: %q, pipe_pixfmt: %q", cfg.Chronon.Report, cfg.Chronon.StrictNative(), cfg.Chronon.EncodePreset, cfg.Chronon.PipePixFmt)
 
 	// 3a. Worker-local artifact ledger mirror (the "DB artifact" step): SQLite,
@@ -254,12 +269,12 @@ func main() {
 	// is not fully ready even while it may still be processing a claim.
 	var heartbeatFailures atomic.Int64
 	healthServer.SetQueueStatus(func() string {
-		if heartbeatFailures.Load() >= degradedHeartbeatThreshold {
+		if heartbeatFailures.Load() >= int64(timings.DegradedAfterFailures) {
 			return "degraded"
 		}
 		return "ready"
 	})
-	go runHeartbeatLoop(ctx, queueClient, &heartbeatFailures)
+	go runHeartbeatLoop(ctx, queueClient, &heartbeatFailures, timings)
 
 	numWorkers := cfg.Worker.PipelineWorkers
 	if numWorkers < 1 {
@@ -284,7 +299,7 @@ func main() {
 		workers.Add(1)
 		go func() {
 			defer workers.Done()
-			runPrepPool(ctx, queueClient, proc, prepCh)
+			runPrepPool(ctx, queueClient, proc, prepCh, timings)
 		}()
 	}
 	// GPU lanes: parallel Chronon render sessions.
@@ -292,7 +307,7 @@ func main() {
 		workers.Add(1)
 		go func() {
 			defer workers.Done()
-			runGPULane(ctx, queueClient, proc, prepCh, doneCh)
+			runGPULane(ctx, queueClient, proc, prepCh, doneCh, timings)
 		}()
 	}
 	// Post pool: finalize (probe/hash/store) + Drive publication (CPU/IO).
@@ -300,7 +315,7 @@ func main() {
 		workers.Add(1)
 		go func() {
 			defer workers.Done()
-			runPostPool(ctx, queueClient, proc, parentFinalizer, doneCh)
+			runPostPool(ctx, queueClient, proc, parentFinalizer, doneCh, timings)
 		}()
 	}
 	workers.Wait()

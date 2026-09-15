@@ -10,6 +10,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/config"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/processor"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/queue"
 )
@@ -32,7 +33,7 @@ type renderOutcome struct {
 // jobs complete here without touching the GPU lane. A rendered job observed
 // by the prep pool (worker restart / stage hand-off) is forwarded straight to
 // the post pool: its artifact is already durable and must never re-render.
-func runPrepPool(ctx context.Context, q *queue.Client, proc *processor.Processor, prepCh chan<- *preppedJob) {
+func runPrepPool(ctx context.Context, q *queue.Client, proc *processor.Processor, prepCh chan<- *preppedJob, timings config.PipelineConfig) {
 	for {
 		select {
 		case <-ctx.Done():
@@ -47,10 +48,10 @@ func runPrepPool(ctx context.Context, q *queue.Client, proc *processor.Processor
 		// see job.Artifact below). The atomic claim remains unchanged (SKIP
 		// LOCKED on the DB side), so the wait never assigns work, it only
 		// removes the empty-queue sleep between renders.
-		job, err := q.ClaimWait(ctx, 25*time.Second)
+		job, err := q.ClaimWait(ctx, timings.ClaimLongPoll)
 		if err != nil {
 			log.Printf("prep claim: %v", err)
-			if !sleepCtx(ctx, 5*time.Second) {
+			if !sleepCtx(ctx, timings.ClaimRetryDelay) {
 				return
 			}
 			continue
@@ -66,7 +67,7 @@ func runPrepPool(ctx context.Context, q *queue.Client, proc *processor.Processor
 			log.Printf("job %s prep received durable artifact; switching to publication", job.ID)
 			artifact := *job.Artifact
 			artifact.Metrics = nil
-			pubErr := withLeaseVoid(ctx, job, q, func(jobCtx context.Context) error {
+			pubErr := withLeaseVoid(ctx, job, q, timings, func(jobCtx context.Context) error {
 				published, publishErr := proc.Publish(jobCtx, job.ID, job.JobType, artifact)
 				if publishErr != nil {
 					return publishErr
@@ -85,7 +86,7 @@ func runPrepPool(ctx context.Context, q *queue.Client, proc *processor.Processor
 
 		// Prepare-only jobs (overlay.prepare warm-up) finish here.
 		if job.JobType == queue.JobTypeOverlayPrepare {
-			artifact, prepErr := withLease(ctx, job, q, func(jobCtx context.Context) (queue.Artifact, error) {
+			artifact, prepErr := withLease(ctx, job, q, timings, func(jobCtx context.Context) (queue.Artifact, error) {
 				return proc.Prepare(jobCtx, job)
 			})
 			if prepErr != nil {
@@ -104,7 +105,7 @@ func runPrepPool(ctx context.Context, q *queue.Client, proc *processor.Processor
 		// requeued and double-rendered. Wrap PrepareJob + rendezvous send
 		// in one withLeaseVoid so renewal never stops in channel dwell.
 		var prepared *processor.PreparedJob
-		handoffErr := withLeaseVoid(ctx, job, q, func(jobCtx context.Context) error {
+		handoffErr := withLeaseVoid(ctx, job, q, timings, func(jobCtx context.Context) error {
 			var err error
 			prepared, err = proc.PrepareJob(jobCtx, job)
 			if err != nil {
@@ -154,7 +155,7 @@ func runPrepPool(ctx context.Context, q *queue.Client, proc *processor.Processor
 // sessions — and therefore encoder sessions — run concurrently, matching the
 // NVENC multi-session baseline. While Chronon works here, the prep pool
 // prepares the next job and the post pool finalizes the previous one.
-func runGPULane(ctx context.Context, q *queue.Client, proc *processor.Processor, prepCh <-chan *preppedJob, doneCh chan<- renderOutcome) {
+func runGPULane(ctx context.Context, q *queue.Client, proc *processor.Processor, prepCh <-chan *preppedJob, doneCh chan<- renderOutcome, timings config.PipelineConfig) {
 	for {
 		select {
 		case <-ctx.Done():
@@ -170,20 +171,20 @@ func runGPULane(ctx context.Context, q *queue.Client, proc *processor.Processor,
 			// sweeper could RemoveAll a live render's directory.
 			renderDone := make(chan struct{})
 			go func() {
-				ticker := time.NewTicker(10 * time.Minute)
+				ticker := time.NewTicker(timings.WorkspaceLeaseRefresh)
 				defer ticker.Stop()
 				for {
 					select {
 					case <-renderDone:
 						return
 					case <-ticker.C:
-						if err := p.prepared.Workspace.WriteLease(time.Now().Add(2 * time.Hour)); err != nil {
+						if err := p.prepared.Workspace.WriteLease(time.Now().Add(timings.WorkspaceLeaseTTL)); err != nil {
 							log.Printf("job %s: refresh workspace lease marker: %v", p.job.ID, err)
 						}
 					}
 				}
 			}()
-			gpuErr := withLeaseVoid(ctx, p.job, q, func(jobCtx context.Context) error {
+			gpuErr := withLeaseVoid(ctx, p.job, q, timings, func(jobCtx context.Context) error {
 				return proc.RunGPU(jobCtx, p.prepared)
 			})
 			close(renderDone)
@@ -201,7 +202,7 @@ func runGPULane(ctx context.Context, q *queue.Client, proc *processor.Processor,
 
 // runPostPool finalizes GPU-completed jobs (probe, hash, store, ledger) and
 // publishes them. Workspace cleanup always runs here: it is the last owner.
-func runPostPool(ctx context.Context, q *queue.Client, proc *processor.Processor, parentFinalizer *processor.ParentFinalizer, doneCh <-chan renderOutcome) {
+func runPostPool(ctx context.Context, q *queue.Client, proc *processor.Processor, parentFinalizer *processor.ParentFinalizer, doneCh <-chan renderOutcome, timings config.PipelineConfig) {
 	keepWorkspaces := os.Getenv("RENDERINGGEN_KEEP_WORKSPACE") == "1"
 	for {
 		select {
@@ -228,7 +229,7 @@ func runPostPool(ctx context.Context, q *queue.Client, proc *processor.Processor
 				continue
 			}
 			var artifact queue.Artifact
-			err := withLeaseVoid(ctx, job, q, func(jobCtx context.Context) error {
+			err := withLeaseVoid(ctx, job, q, timings, func(jobCtx context.Context) error {
 				var finalizeErr error
 				artifact, finalizeErr = proc.FinalizeJob(jobCtx, prepared)
 				if finalizeErr != nil {

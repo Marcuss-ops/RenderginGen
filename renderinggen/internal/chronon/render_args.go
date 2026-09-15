@@ -167,6 +167,14 @@ func renderArgs(req RenderRequest) []string {
 		// stream. The worker passes an absolute workspace path, so the CLI can
 		// open it after materialization.
 		args = append(args, "--gop-source", req.AudioSourcePath)
+		// The sealed plan's audio block declares the OUTPUT sample rate. It is
+		// forwarded so the mux can resample a 44.1 kHz source up to the
+		// contract rate instead of publishing audio the contract gate must
+		// reject. Chronon transcodes only on a real mismatch, so a 48 kHz
+		// source keeps the byte-identical copy path.
+		if req.AudioTargetSampleRate > 0 {
+			args = append(args, "--audio-sample-rate", fmt.Sprint(req.AudioTargetSampleRate))
+		}
 	}
 	if req.RangeEnabled {
 		// Only an explicit, VALIDATED range is emitted. Without RangeEnabled the

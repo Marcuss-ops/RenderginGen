@@ -22,7 +22,9 @@ import (
 )
 
 // DefaultStallTimeout is the maximum duration Chronon CLI can produce zero
-// output or progress before being considered stalled.
+// output or progress before being considered stalled. It is the value used when
+// neither the configured StallTimeout nor the legacy CHRONON_STALL_TIMEOUT
+// variable supplies one (see Client.StallTimeout).
 const DefaultStallTimeout = 3 * time.Minute
 
 // EnvReceiptVerify is the environment variable through which RenderingGen
@@ -84,6 +86,12 @@ type RenderRequest struct {
 	// the visual render plan: Chronon renders video, while the native encoder
 	// copies/transcodes the declared master audio stream.
 	AudioSourcePath string
+	// AudioTargetSampleRate is the OUTPUT sample rate (Hz) the muxed master
+	// audio must carry, as declared by the sealed plan's audio block. 0 keeps
+	// the legacy copy semantics (the artifact inherits the source rate).
+	// Chronon only transcodes when the requested rate differs from the
+	// source, so a 48 kHz source stays on the zero-cost copy path.
+	AudioTargetSampleRate int
 	// RangeEnabled marks FirstFrame/LastFrame as an explicit chunk range.
 	// It exists because a chunk covering exactly frame 0 (FirstFrame=0,
 	// LastFrame=0) is otherwise indistinguishable from "no range" — and a
@@ -193,6 +201,16 @@ type Client struct {
 	Backend             string
 	StrictNativeBackend bool
 	HardwareEncoder     string
+	// StallTimeout is how long a render may produce no output at all before the
+	// watchdog aborts it. Zero falls back to DefaultStallTimeout.
+	//
+	// It is a field rather than an os.Getenv read inside Render because the
+	// worker configuration already owns the value (chronon.stall_timeout, with
+	// the legacy CHRONON_STALL_TIMEOUT variable handled as an alias by the
+	// config environment overlay). Reading the environment here as well made two
+	// authorities for one knob, and left a bogus value to be discovered only in
+	// a log line at render time.
+	StallTimeout time.Duration
 }
 
 // Compile-time check that Client satisfies Renderer.
@@ -288,16 +306,12 @@ func (c *Client) Render(ctx context.Context, req RenderRequest) error {
 	if err := validateRenderRequest(req); err != nil {
 		return err
 	}
-	stallTimeout := DefaultStallTimeout
-	if env := os.Getenv("CHRONON_STALL_TIMEOUT"); env != "" {
-		if d, err := time.ParseDuration(env); err == nil && d > 0 {
-			stallTimeout = d
-		} else {
-			// Never silently ignore a misconfiguration: an operator who set a
-			// bogus value must learn the default was applied instead of
-			// assuming their timeout took effect.
-			log.Printf("[chronon WARN] ignoring invalid CHRONON_STALL_TIMEOUT=%q: %v; using default %v", env, err, DefaultStallTimeout)
-		}
+	// The configured value is the single authority (config validates it at
+	// load); the package default covers callers that construct a Client
+	// directly, such as tests and the one-shot command tools.
+	stallTimeout := c.StallTimeout
+	if stallTimeout <= 0 {
+		stallTimeout = DefaultStallTimeout
 	}
 
 	renderCtx, cancel := context.WithCancel(ctx)
