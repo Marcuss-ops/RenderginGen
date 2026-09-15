@@ -79,9 +79,9 @@
           "max_entities_per_segment": 3,
           "max_important_phrases_per_segment": 3,
           "important_phrases": [
-            "La velocità apre la distanza",
-            "La pressione mantiene il controllo",
-            "La disciplina trasforma la potenza"
+            "La velocità apre la distanza.",
+            "La pressione mantiene il controllo.",
+            "La disciplina trasforma la potenza."
           ],
           "max_image_queries_per_segment": 3,
           "entity_images": {
