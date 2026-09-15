@@ -1,37 +1,37 @@
 {
   "version": 2,
   "preset": "custom",
-  "correlation_id": "mike-tyson-overlay-3entities-3phrases-20260915",
+  "correlation_id": "mike-tyson-overlay-5entities-5phrases-20260915",
   "force_refresh": true,
   "items": [
     {
-      "id": "mike-tyson-overlay-3entities-3phrases",
-      "project": "mike-tyson-overlay-3entities-3phrases",
-      "title": "Mike Tyson — velocità, pressione e disciplina",
+      "id": "mike-tyson-overlay-5entities-5phrases",
+      "project": "mike-tyson-overlay-5entities-5phrases",
+      "title": "Mike Tyson — 5 entità e 5 frasi",
       "language": "it",
       "tone": "documentario sportivo intenso",
-      "style": "Scrivi uno script più lungo e prudente in italiano su Mike Tyson. Usa esclusivamente le informazioni fornite. Nomina esattamente queste tre persone e nessun'altra: Mike Tyson, Cus D'Amato e Muhammad Ali. Non inventare date, avversari, statistiche o citazioni. Inserisci esattamente queste tre frasi importanti, mantenendo il testo completo e coerente: La velocità apre la distanza. La pressione mantiene il controllo. La disciplina trasforma la potenza.",
+      "style": "Scrivi uno script prudente in italiano su Mike Tyson e la boxe. Usa esclusivamente le informazioni fornite. Nomina esattamente queste cinque persone e nessun'altra: Mike Tyson, Cus D'Amato, Muhammad Ali, Sugar Ray Robinson e Joe Frazier. Non inventare date, avversari, statistiche o citazioni. Inserisci esattamente queste cinque frasi importanti, mantenendo il testo completo e coerente: La velocità apre la distanza. La pressione mantiene il controllo. La disciplina trasforma la potenza. Il ritmo costruisce il vantaggio. La tecnica sostiene il coraggio.",
       "model": "gemma4:e4b",
       "source": {
         "type": "text",
         "topic": "Mike Tyson: velocità, pressione, potenza e disciplina",
-        "source_text": "Mike Tyson è il protagonista di questo breve racconto sulla boxe dei pesi massimi. Cus D'Amato è presentato come una figura tecnica legata alla disciplina e al lavoro. Muhammad Ali è citato soltanto come riferimento storico per il rapporto tra ritmo, movimento e personalità. Le tre frasi importanti sono: La velocità apre la distanza. La pressione mantiene il controllo. La disciplina trasforma la potenza. Non aggiungere altre persone o fatti.",
+        "source_text": "Mike Tyson è il protagonista di questo racconto sulla boxe dei pesi massimi. Cus D'Amato è presentato come una figura tecnica legata alla disciplina e al lavoro. Muhammad Ali, Sugar Ray Robinson e Joe Frazier sono citati soltanto come riferimenti storici del pugilato. Le cinque frasi importanti sono: La velocità apre la distanza. La pressione mantiene il controllo. La disciplina trasforma la potenza. Il ritmo costruisce il vantaggio. La tecnica sostiene il coraggio. Non aggiungere altre persone o fatti.",
         "force_refresh": true
       },
       "script_params": {
-        "target_words": 60,
-        "min_words": 40,
-        "segment_words": 60,
+        "target_words": 90,
+        "min_words": 55,
+        "segment_words": 90,
         "single_scene": true,
-        "duration": 8,
+        "duration": 12,
         "skip_quality_gate": false,
         "segments": [
           {
-            "id": "mike-tyson-long",
+            "id": "mike-tyson-five",
             "kind": "stock",
             "topic": "Mike Tyson: velocità, pressione, potenza e disciplina",
-            "source_text": "Mike Tyson resta al centro della scena. Cus D'Amato rappresenta il lavoro tecnico e la disciplina. Muhammad Ali è un riferimento storico per ritmo, movimento e personalità. La velocità apre la distanza. La pressione mantiene il controllo. La disciplina trasforma la potenza.",
-            "target_words": 60
+            "source_text": "Mike Tyson resta al centro della scena. Cus D'Amato rappresenta il lavoro tecnico e la disciplina. Muhammad Ali, Sugar Ray Robinson e Joe Frazier sono riferimenti storici per ritmo, movimento, tecnica e personalità. La velocità apre la distanza. La pressione mantiene il controllo. La disciplina trasforma la potenza. Il ritmo costruisce il vantaggio. La tecnica sostiene il coraggio.",
+            "target_words": 90
           }
         ]
       },
@@ -41,10 +41,11 @@
         "generate_metadata": true,
         "generate_timeline": true,
         "voiceover_enabled": true,
+        "languages": ["en"],
         "render": {
           "enabled": true,
           "drive_folder_id": "1J_xUGo_bchzXDIGqSX04CU44c_Dm3SxS",
-          "drive_subfolder_name": "Mike Tyson — 3 entità 3 frasi",
+          "drive_subfolder_name": "Mike Tyson — 5 entità 5 frasi",
           "require_gpu": true
         },
         "drive_folder_id": "1J_xUGo_bchzXDIGqSX04CU44c_Dm3SxS"
@@ -76,14 +77,16 @@
         "extraction": {
           "enabled": true,
           "include": ["entities", "special_names", "important_phrases"],
-          "max_entities_per_segment": 3,
-          "max_important_phrases_per_segment": 3,
+          "max_entities_per_segment": 5,
+          "max_important_phrases_per_segment": 5,
           "important_phrases": [
             "La velocità apre la distanza.",
             "La pressione mantiene il controllo.",
-            "La disciplina trasforma la potenza."
+            "La disciplina trasforma la potenza.",
+            "Il ritmo costruisce il vantaggio.",
+            "La tecnica sostiene il coraggio."
           ],
-          "max_image_queries_per_segment": 3,
+          "max_image_queries_per_segment": 5,
           "entity_images": {
             "enabled": true,
             "entity_types": ["PERSON"],
@@ -96,12 +99,12 @@
           "upload_to_drive": true,
           "wait_for_ready": true
         },
-        "planner": {"candidate_limit": 3},
+        "planner": {"candidate_limit": 5},
         "include_trace": true
       },
       "docs": {
         "enabled": true,
-        "languages": ["it"],
+        "languages": ["it", "en"],
         "folder_id": "1FkEi2yfyixa1NS8DiedseIcUk81xeMzi"
       }
     }
