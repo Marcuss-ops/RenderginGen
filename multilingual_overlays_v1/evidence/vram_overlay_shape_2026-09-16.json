@@ -1,0 +1,17 @@
+{
+ "batch_id": "flat-bg-1",
+ "jobs": {
+  "flat-bg-1:vram_probe_phrase": "completed",
+  "flat-bg-1:vram_probe_image": "completed"
+ },
+ "idle_device_mib": 3517,
+ "idle_daemon_mib": 218,
+ "peak_device_mib": 4110,
+ "peak_daemon_mib": 793,
+ "peak_utilization_pct": 40,
+ "device_delta_mib": 593,
+ "daemon_delta_mib": 575,
+ "samples": 35,
+ "window_start": "2026-09-16T11:55:03",
+ "window_end": "2026-09-16T11:55:09"
+}

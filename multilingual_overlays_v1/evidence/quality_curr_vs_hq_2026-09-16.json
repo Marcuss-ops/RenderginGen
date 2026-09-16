@@ -1,0 +1,31 @@
+{
+ "ref": "cur_f60.png",
+ "test": "hq_f60.png",
+ "region": [
+  0,
+  378,
+  1920,
+  1080
+ ],
+ "psnr_db": 41.04832142902568,
+ "mean_abs_diff": 0.005116209125110949,
+ "edge_ref": {
+  "samples": 623,
+  "gradient_peak_median": 0.2677678431372549,
+  "gradient_peak_p10": 0.23077584313725483,
+  "ramp_px_median": 9.0,
+  "ramp_px_p90": 13.0,
+  "overshoot_median": 0.16050947806984917,
+  "overshoot_p90": 0.5835534210925487
+ },
+ "edge_test": {
+  "samples": 626,
+  "gradient_peak_median": 0.27450980392156854,
+  "gradient_peak_p10": 0.23728078431372546,
+  "ramp_px_median": 9.0,
+  "ramp_px_p90": 13.0,
+  "overshoot_median": 0.16792006103774532,
+  "overshoot_p90": 0.5733307191141046
+ },
+ "chroma_shift_region": 0.004487080745023565
+}

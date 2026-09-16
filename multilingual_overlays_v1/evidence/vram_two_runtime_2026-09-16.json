@@ -1,0 +1,17 @@
+{
+ "kind": "two_runtime_full_graph_1080p_concurrent",
+ "device_idle_mib": 3517,
+ "device_peak_mib": 6319,
+ "delta_2jobs_mib": 2802,
+ "device_total_mib": 16376,
+ "samples": 84,
+ "interval_s": 0.05,
+ "render_ms": {
+  "job_a": 1287.29,
+  "job_b": 1201.28,
+  "single_reference": 1071.65
+ },
+ "artifacts_identical": true,
+ "md5": "0f9f51e96d5703c20f49b7d385d2ceba",
+ "caveat": "two cold-start CLI processes; the daemon keeps warm pools and charges VRAM per plan, so this falsifies the 8.8GB/job calibration for this shape but does not by itself authorize removing m_render_job_mutex"
+}
