@@ -426,6 +426,49 @@ func TestExemptionsActuallySuppress(t *testing.T) {
 	})
 }
 
+// TestNodeScopeMatchesOnSegmentBoundaries is the regression for a false positive
+// that made this gate red on a clean tree: node selectors were matched with
+// strings.Contains, so a rule scoped to "renderinggen/internal/overlay" also
+// governed "renderinggen/internal/overlaybatch" — a different package whose own
+// duration summary is not the overlay compile-stats authority the rule is about.
+// A gate that reports work nobody owns is a gate readers learn to ignore.
+func TestNodeScopeMatchesOnSegmentBoundaries(t *testing.T) {
+	// The selector predicate is pure, so it is pinned directly...
+	if !nodeMatches("renderinggen/internal/chronon/plan.go", "chronon") {
+		t.Error("a bare node name must match the directory segment")
+	}
+	if nodeMatches("renderinggen/internal/chrononx/plan.go", "chronon") {
+		t.Error("a bare node name must not match a longer segment")
+	}
+	if nodeMatches("renderinggen/internal/overlaybatch/run.go", "renderinggen/internal/overlay") {
+		t.Error("a path selector must match on a segment boundary")
+	}
+	if !nodeMatches("renderinggen/internal/overlay/registry.go", "renderinggen/internal/overlay") {
+		t.Error("a path selector must match its own directory")
+	}
+
+	// ...and the whole scan is pinned too, so a future change to `applies`
+	// cannot reintroduce the sibling-package leak behind a correct predicate.
+	body := "package overlaybatch\n\nvar _ = Stats{}\n"
+	sibling := t.TempDir()
+	siblingFile := filepath.Join(sibling, "renderinggen", "internal", "overlaybatch", "run.go")
+	if err := os.MkdirAll(filepath.Dir(siblingFile), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(siblingFile, []byte(body), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	violations, err := ScanTargets([]Target{{Dir: sibling}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, violation := range violations {
+		if violation.Rule == "semantic_stats_second_pass" {
+			t.Errorf("a sibling package (overlaybatch) must not be inside the overlay node scope: %+v", violation)
+		}
+	}
+}
+
 // TestConformanceDocListsEveryRule turns the rule table in CONFORMANCE.md from
 // an independent copy of the rule vocabulary into a checked projection: the
 // gate's rule ids and the documented ids must be the same set, in both

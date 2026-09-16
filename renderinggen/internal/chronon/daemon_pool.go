@@ -20,9 +20,17 @@
 // exit immediately instead of sleeping out a fixed interval.
 //
 // Child reaping has exactly one owner. cmd.Wait must be called once per process,
-// so the goroutine started at spawn owns it for the process's whole life and
-// publishes the result on a channel; nothing else — not the readiness wait, not
-// Shutdown — calls Wait again.
+// so the goroutine started at spawn owns it for the process's whole life, STORES
+// the result and closes a signal channel; nothing else — not the readiness wait,
+// not Shutdown — calls Wait again.
+//
+// Storing the result instead of sending it on a channel is not a detail. The
+// original `chan error` was consumed by whichever receiver got there first, and
+// the readiness wait is always that receiver when a daemon dies during startup:
+// the failure path then blocked on a second receive that nothing would ever
+// satisfy, so a daemon that refused to start (a bad asset root, a missing device)
+// hung the whole pool instead of reporting why. A closed channel supports any
+// number of waiters, and the outcome is read from the handle.
 package chronon
 
 import (
@@ -77,12 +85,51 @@ type DaemonOptions struct {
 //
 // cmd is nil when the socket was already served: that daemon belongs to someone
 // else (an operator's unit, a previous run), so this pool renders through it but
-// must never stop it. For an owned daemon, done carries the single cmd.Wait
+// must never stop it. For an owned daemon, exit carries the single cmd.Wait
 // result.
 type daemonHandle struct {
 	socketPath string
 	cmd        *exec.Cmd
-	done       chan error
+	exit       *daemonExit
+}
+
+// daemonExit is the one-shot outcome of an owned child process.
+//
+// exited is CLOSED (never written) once cmd.Wait returned, so every waiter — the
+// readiness probe, the failure path, the reaper — observes the same result
+// without competing for it, and a waiter that arrives second cannot block.
+type daemonExit struct {
+	exited chan struct{}
+	mu     sync.Mutex
+	err    error
+}
+
+// watchDaemon starts the single cmd.Wait owner.
+func watchDaemon(cmd *exec.Cmd) *daemonExit {
+	exit := &daemonExit{exited: make(chan struct{})}
+	go func() {
+		err := cmd.Wait()
+		exit.mu.Lock()
+		exit.err = err
+		exit.mu.Unlock()
+		close(exit.exited)
+	}()
+	return exit
+}
+
+// done returns the channel that closes when the child is reaped.
+func (e *daemonExit) done() <-chan struct{} {
+	return e.exited
+}
+
+// wait blocks until the child is reaped and returns cmd.Wait's result. It is
+// idempotent: a closed channel never blocks, so the failure path and the reaper
+// can both call it.
+func (e *daemonExit) wait() error {
+	<-e.exited
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	return e.err
 }
 
 // DaemonPool spreads render jobs across warm daemons and owns the ones it
@@ -196,18 +243,18 @@ func (p *DaemonPool) Shutdown(ctx context.Context) {
 // reap waits for the child's single Wait result, escalating to a kill if the
 // process is still alive after a grace period.
 func (p *DaemonPool) reap(handle daemonHandle) {
-	if handle.done == nil {
+	if handle.exit == nil {
 		return
 	}
 	select {
-	case <-handle.done:
+	case <-handle.exit.done():
 		return
 	case <-time.After(10 * time.Second):
 	}
 	if handle.cmd.Process != nil {
 		_ = handle.cmd.Process.Kill()
 	}
-	<-handle.done
+	handle.exit.wait()
 }
 
 // killStarted kills the daemons this pool started and reaps them; used only on
@@ -221,8 +268,8 @@ func (p *DaemonPool) killStarted() {
 		if handle.cmd.Process != nil {
 			_ = handle.cmd.Process.Kill()
 		}
-		if handle.done != nil {
-			<-handle.done
+		if handle.exit != nil {
+			handle.exit.wait()
 		}
 	}
 }
@@ -242,24 +289,25 @@ func startDaemon(ctx context.Context, socketPath string, opts DaemonOptions) (da
 		return daemonHandle{}, fmt.Errorf("chronon daemon pool: start daemon on %s: %w", socketPath, err)
 	}
 	// One owner for cmd.Wait, for the child's whole life.
-	done := make(chan error, 1)
-	go func() { done <- cmd.Wait() }()
+	exit := watchDaemon(cmd)
 
 	timeout := opts.StartupTimeout
 	if timeout <= 0 {
 		timeout = DaemonStartupTimeout
 	}
-	if err := waitForDaemon(ctx, socketPath, done, timeout); err != nil {
+	if err := waitForDaemon(ctx, socketPath, exit, timeout); err != nil {
 		_ = cmd.Process.Kill()
-		<-done
+		// wait() is idempotent, so this cannot deadlock when the readiness wait
+		// already observed the exit — the bug this handle was introduced for.
+		exit.wait()
 		return daemonHandle{}, err
 	}
-	return daemonHandle{socketPath: socketPath, cmd: cmd, done: done}, nil
+	return daemonHandle{socketPath: socketPath, cmd: cmd, exit: exit}, nil
 }
 
 // waitForDaemon blocks until the daemon at socketPath answers a STATUS command,
 // the child exits, the context is canceled, or the timeout expires.
-func waitForDaemon(ctx context.Context, socketPath string, done <-chan error, timeout time.Duration) error {
+func waitForDaemon(ctx context.Context, socketPath string, exit *daemonExit, timeout time.Duration) error {
 	deadline := time.Now().Add(timeout)
 	ticker := time.NewTicker(daemonProbeInterval)
 	defer ticker.Stop()
@@ -267,11 +315,11 @@ func waitForDaemon(ctx context.Context, socketPath string, done <-chan error, ti
 	var lastProbeErr error
 	for {
 		select {
-		case err := <-done:
+		case <-exit.done():
 			// The daemon is gone; no amount of waiting produces a socket, and
 			// exiting immediately beats sleeping out the whole budget for a
 			// process that cannot possibly become ready.
-			return fmt.Errorf("chronon daemon pool: daemon on %s exited before it was serving (%v)", socketPath, err)
+			return fmt.Errorf("chronon daemon pool: daemon on %s exited before it was serving (%v)", socketPath, exit.wait())
 		case <-ctx.Done():
 			return fmt.Errorf("chronon daemon pool: canceled while starting %s: %w", socketPath, ctx.Err())
 		case <-ticker.C:

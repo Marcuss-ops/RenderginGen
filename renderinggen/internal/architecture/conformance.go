@@ -43,7 +43,7 @@ type rule struct {
 	id    string
 	note  string
 	exts  []string // applicable extensions; nil = every scanned file
-	nodes []string // if set, the relative path must contain one of these
+	nodes []string // if set, the path must be INSIDE one of these nodes (segment-boundary match)
 	// exclude lists path substrings where the marker is the CANONICAL owner's
 	// declaration site rather than a violation (e.g. the alias table itself).
 	// It is deliberately narrow: an exclusion is a statement about ownership,
@@ -513,7 +513,7 @@ func (r rule) applies(relSlash string) bool {
 	if len(r.nodes) > 0 {
 		ok := false
 		for _, n := range r.nodes {
-			if strings.Contains(relSlash, n) {
+			if nodeMatches(relSlash, n) {
 				ok = true
 				break
 			}
@@ -528,6 +528,38 @@ func (r rule) applies(relSlash string) bool {
 	ext := strings.ToLower(filepath.Ext(relSlash))
 	for _, e := range r.exts {
 		if ext == e {
+			return true
+		}
+	}
+	return false
+}
+
+// nodeMatches reports whether a node selector covers a repository-relative path.
+//
+// A node names a directory, and it must match on a SEGMENT boundary. The
+// previous rule was `strings.Contains(relSlash, node)`, which made
+// "renderinggen/internal/overlay" also cover "renderinggen/internal/overlaybatch":
+// a rule scoped to the overlay package silently governed a different package and
+// reported a violation (`semantic_stats_second_pass` on the batch runner's own
+// duration summary) that does not exist in the surface the rule describes. A
+// false positive in a gate is not harmless — it teaches readers to ignore the
+// gate. A node without a separator is a bare directory NAME and still matches any
+// path containing that segment ("chronon" → the chronon package), but on segment
+// boundaries too, so "my-chrononx" no longer matches it.
+func nodeMatches(relSlash, node string) bool {
+	selector := strings.Trim(strings.TrimSpace(node), "/")
+	if selector == "" {
+		return false
+	}
+	if strings.HasPrefix(relSlash, selector+"/") {
+		return true
+	}
+	if strings.Contains(selector, "/") {
+		// A path selector is a prefix, never a segment to be found anywhere.
+		return false
+	}
+	for _, segment := range strings.Split(relSlash, "/") {
+		if segment == selector {
 			return true
 		}
 	}

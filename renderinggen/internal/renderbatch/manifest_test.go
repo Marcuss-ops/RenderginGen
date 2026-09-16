@@ -186,6 +186,57 @@ func TestResolveRootsIsManifestRelative(t *testing.T) {
 	}
 }
 
+// TestPhraseAnimationMatrixIsOneMotionPerPhrase pins the published phrase
+// corpus (phrase_animations_v1): the ten editorial phrase candidates, each with
+// its OWN motion, all rendering at the canvas that was published. The corpus is
+// reproducible only from this manifest — the rendered mp4s are gitignored — so
+// a duplicate motion (two phrases showing the same effect) or a job that stops
+// compiling has to fail here rather than at the next real run.
+func TestPhraseAnimationMatrixIsOneMotionPerPhrase(t *testing.T) {
+	const path = "../../cmd/batch-render-presets/phrase-animations-v1-manifest.json"
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read phrase animation manifest: %v", err)
+	}
+	manifest, err := Decode(raw)
+	if err != nil {
+		t.Fatalf("decode phrase animation manifest: %v", err)
+	}
+	if len(manifest.Jobs) != 10 {
+		t.Fatalf("phrase animation manifest declares %d jobs, want the 10 phrase candidates", len(manifest.Jobs))
+	}
+	prepared, err := manifest.Prepare(t.TempDir())
+	if err != nil {
+		t.Fatalf("phrase animation manifest does not compile: %v", err)
+	}
+	const wantFrames = 120 // 5000 ms at 24/1 fps
+	motions := make(map[string]string, len(prepared))
+	for _, p := range prepared {
+		if p.Expect.Frames != wantFrames {
+			t.Errorf("job %s expects %d frames, want %d", p.Job.ID, p.Expect.Frames, wantFrames)
+		}
+		if p.Job.PresetID != "apple_v2" {
+			t.Errorf("job %s preset = %q, want apple_v2", p.Job.ID, p.Job.PresetID)
+		}
+		if p.Job.Text == "" {
+			t.Errorf("job %s carries no phrase text", p.Job.ID)
+		}
+		// The published artifacts live in one corpus directory whose names are
+		// the Drive publication names, so the output path is part of the contract.
+		if !strings.HasPrefix(p.Job.Output, "phrase_animations_v1/") {
+			t.Errorf("job %s output = %q, want it under phrase_animations_v1/", p.Job.ID, p.Job.Output)
+		}
+		if owner, ok := motions[p.Job.MotionID]; ok {
+			t.Errorf("motion %s is used by both %s and %s: each phrase needs its own effect", p.Job.MotionID, owner, p.Job.ID)
+			continue
+		}
+		motions[p.Job.MotionID] = p.Job.ID
+	}
+	if len(motions) != len(prepared) {
+		t.Errorf("%d distinct motion(s) across %d jobs", len(motions), len(prepared))
+	}
+}
+
 // TestShippedMatrixCompiles is the guard on the real matrix: every job in the
 // manifest this command ships must decode AND lower through the worker's own
 // compiler. It is what makes a preset rename or a dropped motion a test failure

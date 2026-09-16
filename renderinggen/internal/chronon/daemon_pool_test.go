@@ -58,6 +58,68 @@ func startFakeIPCDaemon(t *testing.T, socketPath string) *fakeIPCDaemon {
 	return daemon
 }
 
+// stalledExit is an owned child that is still running: its signal channel is
+// open and will never close.
+func stalledExit() *daemonExit {
+	return &daemonExit{exited: make(chan struct{})}
+}
+
+// reapedExit is an owned child that already exited with err.
+func reapedExit(err error) *daemonExit {
+	exit := &daemonExit{exited: make(chan struct{}), err: err}
+	close(exit.exited)
+	return exit
+}
+
+// TestDaemonExitWaitIsIdempotent is the regression for the pool deadlock: the
+// readiness wait and the failure path both observe the same reaped child, and
+// the second read must not block. The previous `chan error` was consumed by the
+// first reader, so a daemon that died during startup hung StartDaemonPool
+// forever instead of reporting the exit.
+func TestDaemonExitWaitIsIdempotent(t *testing.T) {
+	exit := reapedExit(errors.New("exit status 1"))
+	done := make(chan error, 1)
+	go func() { done <- exit.wait() }()
+	select {
+	case err := <-done:
+		if err == nil || !strings.Contains(err.Error(), "exit status 1") {
+			t.Fatalf("wait returned %v", err)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("the first wait blocked on a reaped child")
+	}
+	// The second waiter (the failure path) must observe the same result at once.
+	second := make(chan error, 1)
+	go func() { second <- exit.wait() }()
+	select {
+	case <-second:
+	case <-time.After(5 * time.Second):
+		t.Fatal("the second wait blocked on a reaped child; the pool deadlocks when a daemon dies at startup")
+	}
+}
+
+// TestStartDaemonPoolReportsACrashedDaemon proves the deadlock is gone end to
+// end: a binary that exits immediately must produce an ERROR quickly, not a hang.
+func TestStartDaemonPoolReportsACrashedDaemon(t *testing.T) {
+	dir := t.TempDir()
+	// /bin/true exits 0 without ever creating the socket the pool waits for, which
+	// is exactly what a daemon with a bad asset root or a missing device does.
+	start := time.Now()
+	_, err := StartDaemonPool(context.Background(), DaemonOptions{
+		SocketBase: filepath.Join(dir, "crashed.sock"), Count: 1, Binary: "/bin/true",
+		StartupTimeout: 60 * time.Second,
+	})
+	if err == nil {
+		t.Fatal("a daemon that never serves must fail the pool")
+	}
+	if elapsed := time.Since(start); elapsed > 10*time.Second {
+		t.Fatalf("the pool took %v to report a daemon that exited at once", elapsed)
+	}
+	if !strings.Contains(err.Error(), "exited before it was serving") {
+		t.Fatalf("error = %v, want an exit-detected failure", err)
+	}
+}
+
 // TestWaitForDaemonRequiresAnAnsweringSocket is the regression the readiness
 // check exists for: a socket FILE that nobody serves must not pass as ready, and
 // a listener that answers STATUS must.
@@ -69,7 +131,7 @@ func TestWaitForDaemonRequiresAnAnsweringSocket(t *testing.T) {
 	if err := os.WriteFile(dud, nil, 0o600); err != nil {
 		t.Fatal(err)
 	}
-	never := make(chan error)
+	never := stalledExit()
 	err := waitForDaemon(context.Background(), dud, never, 300*time.Millisecond)
 	if err == nil {
 		t.Fatal("a socket file with no listener must not be reported as serving")
@@ -92,8 +154,7 @@ func TestWaitForDaemonRequiresAnAnsweringSocket(t *testing.T) {
 func TestWaitForDaemonReactsImmediately(t *testing.T) {
 	dir := t.TempDir()
 
-	exited := make(chan error, 1)
-	exited <- errors.New("exit status 1")
+	exited := reapedExit(errors.New("exit status 1"))
 	start := time.Now()
 	err := waitForDaemon(context.Background(), filepath.Join(dir, "gone.sock"), exited, 30*time.Second)
 	if err == nil || !strings.Contains(err.Error(), "exited before it was serving") {
@@ -106,7 +167,7 @@ func TestWaitForDaemonReactsImmediately(t *testing.T) {
 	canceled, cancel := context.WithCancel(context.Background())
 	cancel()
 	start = time.Now()
-	err = waitForDaemon(canceled, filepath.Join(dir, "canceled.sock"), make(chan error), 30*time.Second)
+	err = waitForDaemon(canceled, filepath.Join(dir, "canceled.sock"), stalledExit(), 30*time.Second)
 	if err == nil || !strings.Contains(err.Error(), "canceled while starting") {
 		t.Fatalf("error = %v, want a cancellation failure", err)
 	}
@@ -134,7 +195,7 @@ func TestDaemonPoolSpreadsJobsRoundRobin(t *testing.T) {
 	first, second := &countingRenderer{}, &countingRenderer{}
 	pool := &DaemonPool{
 		// Only the socket paths and lanes matter for routing.
-		handles: []daemonHandle{{socketPath: "/run/a.0"}, {socketPath: "/run/a.1"}},
+		handles: []daemonHandle{{socketPath: "/run/a.0"}, {socketPath: "/run/a.1"}}, // unowned: no cmd, no exit
 		lanes:   []Renderer{first, second},
 	}
 	for i := 0; i < 5; i++ {

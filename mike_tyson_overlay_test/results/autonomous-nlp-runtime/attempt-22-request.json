@@ -1,0 +1,181 @@
+{
+  "version": 2,
+  "preset": "custom",
+  "correlation_id": "mike-tyson-autonomous-nlp-runtime-fact-only-e2b-seven-20260916",
+  "force_refresh": true,
+  "items": [
+    {
+      "id": "mike-tyson-autonomous-nlp-runtime-fact-only-e2b-seven-20260916",
+      "project": "mike-tyson-autonomous-nlp-runtime-fact-only-e2b-v17-seven-scenes",
+      "title": "Mike Tyson: Power, Discipline, and Reinvention — Runtime Fact-Only Script",
+      "language": "en",
+      "tone": "cinematic, balanced sports documentary",
+      "style": "Original, balanced English sports documentary narration; explain documented events in fresh language.",
+      "model": "gemma4:e2b",
+      "source": {
+        "type": "text",
+        "topic": "Mike Tyson's boxing life: discipline, championship, adversity, and reinvention",
+        "source_text": "FACTUAL RECORD: Mike Tyson was born in Brooklyn, New York, on June 30, 1966. Teenager: met Bobby Stewart, a counselor and former boxer; Stewart introduced Tyson to trainer Cus D’Amato. D’Amato became Tyson’s coach and legal guardian. Tyson won Junior Olympic gold medals in 1981 and 1982. Professional debut: March 6, 1985; first 19 professional bouts were knockout wins. D’Amato died on November 4, 1985, before Tyson won a world heavyweight title. On November 22, 1986, Tyson defeated Trevor Berbick for the WBC heavyweight title at age 20, becoming boxing’s youngest heavyweight champion at the time. In 1987 Tyson won the WBA title and defeated Tony Tucker to unify the WBC, WBA, and IBF titles. James “Buster” Douglas gave Tyson his first professional loss in Tokyo in 1990. In 1992 Tyson was convicted of rape in Indiana, received a prison sentence, and was released on parole in 1995. He returned to boxing, regained the WBC and WBA titles in 1996, then lost the WBA title to Evander Holyfield later that year. In their 1997 rematch Tyson was disqualified after biting Holyfield’s ears; Nevada’s commission revoked his boxing license and later restored it. Lennox Lewis knocked Tyson out in 2002. Reported end-of-2005 record: 50 wins, 6 losses, 2 no contests, 44 knockouts. Muhammad Ali, Sugar Ray Robinson, and Joe Frazier are boxing-history context only, not Tyson opponents or coaches.",
+        "force_refresh": true
+      },
+      "script_params": {
+        "target_words": 1960,
+        "min_words": 1800,
+        "segment_words": 280,
+        "single_scene": false,
+        "duration": 800,
+        "skip_quality_gate": false,
+        "segments": [
+          {
+            "id": "brooklyn-and-first-coach",
+            "kind": "narration",
+            "topic": "Tyson’s Brooklyn childhood and how Bobby Stewart introduced him to trainer and guardian Cus D’Amato",
+            "target_words": 280,
+            "min_words": 230,
+            "max_words": 340
+          },
+          {
+            "id": "amateur-and-professional-start",
+            "kind": "narration",
+            "topic": "Junior Olympic gold medals, the 1985 professional debut, and the first nineteen knockout victories",
+            "target_words": 280,
+            "min_words": 230,
+            "max_words": 340
+          },
+          {
+            "id": "damato-and-youngest-champion",
+            "kind": "narration",
+            "topic": "Cus D’Amato’s 1985 death and Tyson’s 1986 victory over Trevor Berbick for the WBC title at age twenty",
+            "target_words": 280,
+            "min_words": 230,
+            "max_words": 340
+          },
+          {
+            "id": "heavyweight-unification",
+            "kind": "narration",
+            "topic": "Tyson wins the WBA title in 1987 and unifies the WBC, WBA, and IBF championships by defeating Tony Tucker",
+            "target_words": 280,
+            "min_words": 230,
+            "max_words": 340
+          },
+          {
+            "id": "tokyo-defeat",
+            "kind": "narration",
+            "topic": "Buster Douglas hands Tyson his first professional loss in Tokyo in 1990",
+            "target_words": 280,
+            "min_words": 230,
+            "max_words": 340
+          },
+          {
+            "id": "conviction-comeback-holyfield",
+            "kind": "narration",
+            "topic": "The 1992 Indiana conviction, prison sentence, 1995 parole, 1996 comeback titles, and later WBA loss to Evander Holyfield",
+            "target_words": 280,
+            "min_words": 230,
+            "max_words": 340
+          },
+          {
+            "id": "rematch-later-career-record",
+            "kind": "narration",
+            "topic": "The 1997 Holyfield rematch and disqualification, later commission action, Lennox Lewis in 2002, and Tyson’s reported end-of-2005 record; Muhammad Ali, Sugar Ray Robinson, and Joe Frazier are historical context only",
+            "target_words": 280,
+            "min_words": 230,
+            "max_words": 340
+          }
+        ],
+        "guidelines": "Write an original, connected narration for each declared topic using the global factual record only as evidence. The source is a fact record, not prose to copy: transform it into fresh sentence structure; never repeat its sentences or return a list of facts. Aim for about 180 words per scene. Preserve chronology and supported facts; invent no dates, outcomes, quotes, motives, or private thoughts. Keep Mike Tyson as the clear subject and name him naturally, especially in the opening scene. Muhammad Ali, Sugar Ray Robinson, and Joe Frazier are contextual historical figures only, not Tyson opponents or coaches; mention them together only in the final scene. Describe the 1992 Indiana rape conviction, prison sentence, and 1995 parole release accurately and soberly. Do not include these instructions in narration. Do not supply a phrase list; runtime NLP selects phrases from the final text.",
+        "concurrency": 1
+      },
+      "output": {
+        "save_to_db": true,
+        "extract_entities": true,
+        "generate_metadata": true,
+        "generate_timeline": true,
+        "voiceover_enabled": true,
+        "languages": [
+          "en"
+        ],
+        "render": {
+          "enabled": true,
+          "drive_folder_id": "1J_xUGo_bchzXDIGqSX04CU44c_Dm3SxS",
+          "drive_subfolder_name": "Mike Tyson — Autonomous NLP Runtime 2026-09-16 v17 E2B Seven Scenes",
+          "require_gpu": true
+        },
+        "drive_folder_id": "1J_xUGo_bchzXDIGqSX04CU44c_Dm3SxS"
+      },
+      "overlay_background": {
+        "kind": "color",
+        "color": [
+          0.9333333333333333,
+          0.9450980392156862,
+          0.9058823529411765,
+          1
+        ],
+        "fit": "cover",
+        "opacity": 1,
+        "loop": false
+      },
+      "audio": {
+        "mode": "CHUNKED_VOICEOVER",
+        "mix_policy": "VOICEOVER_ONLY",
+        "timing": {
+          "mode": "required",
+          "boundary": "word",
+          "formats": [
+            "json",
+            "srt",
+            "vtt"
+          ]
+        }
+      },
+      "media_plan": {
+        "mode": "hybrid",
+        "cache": {
+          "read": false,
+          "write": true
+        },
+        "provider_policy": {
+          "internet_images": "enabled",
+          "artlist": "disabled",
+          "image_generation": "disabled",
+          "youtube": "disabled"
+        },
+        "extraction": {
+          "enabled": true,
+          "include": [
+            "entities",
+            "special_names",
+            "important_phrases"
+          ],
+          "max_entities_per_segment": 5,
+          "max_important_phrases_per_segment": 2,
+          "max_image_queries_per_segment": 5,
+          "entity_images": {
+            "enabled": true,
+            "entity_types": [
+              "PERSON"
+            ],
+            "max_per_entity": 1,
+            "upload_to_drive": true
+          }
+        },
+        "materialization": {
+          "mode": "selected",
+          "upload_to_drive": true,
+          "wait_for_ready": true
+        },
+        "planner": {
+          "candidate_limit": 5
+        },
+        "include_trace": true
+      },
+      "docs": {
+        "enabled": true,
+        "languages": [
+          "en"
+        ],
+        "folder_id": "1FkEi2yfyixa1NS8DiedseIcUk81xeMzi"
+      }
+    }
+  ]
+}
