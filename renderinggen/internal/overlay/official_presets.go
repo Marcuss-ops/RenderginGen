@@ -106,12 +106,12 @@ var officialPresets = map[string]PresetDefinition{
 	StaticTextSmokePresetID: makePreset(StaticTextSmokePresetID, staticTextSmokeSpec()),
 	CanonicalTextPresetID:   canonicalTextPreset(),
 
-	"image_focus_in":     makePreset("image_focus_in", imageSpec("image_right", "focus_in")),
-	"image_fade_in":      makePreset("image_fade_in", imageSpec("image_right", "fade_in")),
-	"image_scale_in":     makePreset("image_scale_in", imageSpec("image_right", "scale_drop")),
-	"image_slide_left":   makePreset("image_slide_left", imageSpec("image_left", "slide_in")),
-	"image_slide_right":  makePreset("image_slide_right", imageSpec("image_right", "slide_from_right")),
-	"image_fast_fade":    makePreset("image_fast_fade", imageSpec("image_right", "fade_in")),
+	"image_focus_in":     makePreset("image_focus_in", imageSpec("image_right", "image_focus_reveal")),
+	"image_fade_in":      makePreset("image_fade_in", imageSpec("image_right", "image_fade_reveal")),
+	"image_scale_in":     makePreset("image_scale_in", imageSpec("image_right", "image_scale_reveal")),
+	"image_slide_left":   makePreset("image_slide_left", imageSpec("image_left", "image_slide_left_reveal")),
+	"image_slide_right":  makePreset("image_slide_right", imageSpec("image_right", "image_slide_right_reveal")),
+	"image_fast_fade":    makePreset("image_fast_fade", imageFastSpec("image_right", "fade_in")),
 	"modern_rounded_pop": makePreset("modern_rounded_pop", imageSpec("image_right", "scale_drop")),
 	"bottom_card_rise":   makePreset("bottom_card_rise", imageSpec("bottom_right", "reveal_from_bottom")),
 }

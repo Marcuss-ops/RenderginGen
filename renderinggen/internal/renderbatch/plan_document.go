@@ -32,7 +32,12 @@ const (
 
 // PlanSpec is a caller-supplied semantic plan to build and compile.
 type PlanSpec struct {
-	PlanID          string
+	PlanID string
+	// ProjectID and Language are the producer's delivery metadata (which project
+	// the plan belongs to, which locale it carries). They travel on the plan and
+	// never influence the lowering.
+	ProjectID       string
+	Language        string
 	Width           int
 	Height          int
 	FPSNum          int
@@ -47,15 +52,39 @@ type PlanSpec struct {
 
 // PlanItem is one overlay item in a PlanSpec.
 type PlanItem struct {
-	ID         string
+	ID string
+	// SceneID is the producer's scene correlation key (which script segment the
+	// item belongs to). It travels with the item and never influences lowering.
+	SceneID    string
 	TemplateID string
 	PresetID   string
 	MotionID   string
-	Text       string
+	// Kind is the semantic item kind when the producer owns it (an entity image
+	// is "entity_image", not the template's default). Empty lets the template
+	// registry supply the kind.
+	Kind string
+	// EntityID is the producer's entity correlation key. Required by the
+	// contract on entity items.
+	EntityID string
+	Text     string
+	// DurationMS is producer-owned timing metadata. When set it must equal
+	// EndMS-StartMS; the semantic decoder enforces that.
+	DurationMS *int64
+	// AssetRefs are the item's content-addressed media (an entity image, a
+	// background plate). Empty for text-only items.
+	AssetRefs []PlanAssetRef
 	// MotionParams are the producer's per-item motion parameters.
 	MotionParams map[string]any
 	StartMS      int64
 	EndMS        int64
+}
+
+// PlanAssetRef is one content-addressed asset reference on a semantic item.
+type PlanAssetRef struct {
+	AssetID   string `json:"asset_id"`
+	SHA256    string `json:"sha256"`
+	URL       string `json:"url"`
+	MediaType string `json:"media_type"`
 }
 
 // BuildPlan builds a renderinggen.overlay-plan.v1 document from a typed spec and
@@ -80,6 +109,8 @@ func BuildPlan(spec PlanSpec) ([]byte, error) {
 		SchemaVersion:   OverlayPlanSchema,
 		PlanID:          spec.PlanID,
 		VideoID:         spec.PlanID,
+		ProjectID:       spec.ProjectID,
+		Language:        spec.Language,
 		Width:           spec.Width,
 		Height:          spec.Height,
 		FPSNum:          spec.FPSNum,
@@ -92,9 +123,14 @@ func BuildPlan(spec PlanSpec) ([]byte, error) {
 	for _, item := range spec.Items {
 		doc.Items = append(doc.Items, semanticItemDocument{
 			ID:           item.ID,
+			SceneID:      item.SceneID,
 			TemplateID:   item.TemplateID,
 			PresetID:     item.PresetID,
 			MotionID:     item.MotionID,
+			Kind:         item.Kind,
+			EntityID:     item.EntityID,
+			DurationMS:   item.DurationMS,
+			AssetRefs:    toAssetRefDocuments(item.AssetRefs),
 			MotionParams: item.MotionParams,
 			Text:         item.Text,
 			StartMS:      item.StartMS,
@@ -147,6 +183,8 @@ type semanticPlanDocument struct {
 	SchemaVersion string `json:"schema_version"`
 	PlanID        string `json:"plan_id"`
 	VideoID       string `json:"video_id"`
+	ProjectID     string `json:"project_id,omitempty"`
+	Language      string `json:"language,omitempty"`
 	Width         int    `json:"width"`
 	Height        int    `json:"height"`
 	FPSNum        int    `json:"fps_num"`
@@ -167,12 +205,40 @@ type semanticPlanDocument struct {
 // semanticItemDocument is one overlay item. The displayed text is owned by the
 // producer: this writer never invents content, it transports the caller's.
 type semanticItemDocument struct {
-	ID           string         `json:"id"`
-	TemplateID   string         `json:"template_id"`
-	PresetID     string         `json:"preset_id"`
-	MotionID     string         `json:"motion_id,omitempty"`
-	MotionParams map[string]any `json:"motion_params,omitempty"`
-	Text         string         `json:"text,omitempty"`
-	StartMS      int64          `json:"start_ms"`
-	EndMS        int64          `json:"end_ms"`
+	ID           string             `json:"id"`
+	SceneID      string             `json:"scene_id,omitempty"`
+	TemplateID   string             `json:"template_id"`
+	PresetID     string             `json:"preset_id"`
+	MotionID     string             `json:"motion_id,omitempty"`
+	Kind         string             `json:"kind,omitempty"`
+	EntityID     string             `json:"entity_id,omitempty"`
+	DurationMS   *int64             `json:"duration_ms,omitempty"`
+	AssetRefs    []semanticAssetRef `json:"asset_refs,omitempty"`
+	MotionParams map[string]any     `json:"motion_params,omitempty"`
+	Text         string             `json:"text,omitempty"`
+	StartMS      int64              `json:"start_ms"`
+	EndMS        int64              `json:"end_ms"`
+}
+
+// semanticAssetRef mirrors the worker's asset_refs entry. It is declared here
+// (not aliased) because the worker's type is unexported; the field set is pinned
+// to it by the parity test.
+type semanticAssetRef struct {
+	AssetID   string `json:"asset_id"`
+	SHA256    string `json:"sha256"`
+	URL       string `json:"url"`
+	MediaType string `json:"media_type"`
+}
+
+// toAssetRefDocuments converts the exported caller-facing refs to the document
+// shape, preserving order.
+func toAssetRefDocuments(refs []PlanAssetRef) []semanticAssetRef {
+	if len(refs) == 0 {
+		return nil
+	}
+	out := make([]semanticAssetRef, 0, len(refs))
+	for _, ref := range refs {
+		out = append(out, semanticAssetRef{AssetID: ref.AssetID, SHA256: ref.SHA256, URL: ref.URL, MediaType: ref.MediaType})
+	}
+	return out
 }
