@@ -1,0 +1,202 @@
+{
+  "aggregate_fps": 52.115,
+  "backends": [
+    "vulkan"
+  ],
+  "batch": "ml-overlays-10x10-run2",
+  "completed": 100,
+  "distinct_artifact_hashes": 49,
+  "failed": 0,
+  "failures": [],
+  "frames_rendered": 12000,
+  "jobs_per_minute": 26.058,
+  "jobs_total": 100,
+  "not_terminal": 0,
+  "per_language": {
+    "de": {
+      "completed": 10,
+      "queue_wait": {
+        "count": 10,
+        "max_ms": 204269,
+        "min_ms": 15,
+        "p50_ms": 108816,
+        "sum_ms": 1007961
+      },
+      "render_wall": {
+        "count": 10,
+        "max_ms": 14356,
+        "min_ms": 9365,
+        "p50_ms": 11380,
+        "sum_ms": 116837
+      }
+    },
+    "en": {
+      "completed": 10,
+      "queue_wait": {
+        "count": 10,
+        "max_ms": 197492,
+        "min_ms": 3,
+        "p50_ms": 101992,
+        "sum_ms": 945876
+      },
+      "render_wall": {
+        "count": 10,
+        "max_ms": 12474,
+        "min_ms": 4596,
+        "p50_ms": 11372,
+        "sum_ms": 106164
+      }
+    },
+    "es": {
+      "completed": 10,
+      "queue_wait": {
+        "count": 10,
+        "max_ms": 207533,
+        "min_ms": 2218,
+        "p50_ms": 111081,
+        "sum_ms": 1029558
+      },
+      "render_wall": {
+        "count": 10,
+        "max_ms": 14352,
+        "min_ms": 10325,
+        "p50_ms": 11367,
+        "sum_ms": 116809
+      }
+    },
+    "fr": {
+      "completed": 10,
+      "queue_wait": {
+        "count": 10,
+        "max_ms": 213050,
+        "min_ms": 6691,
+        "p50_ms": 115554,
+        "sum_ms": 1075728
+      },
+      "render_wall": {
+        "count": 10,
+        "max_ms": 14383,
+        "min_ms": 10313,
+        "p50_ms": 11386,
+        "sum_ms": 116904
+      }
+    },
+    "id": {
+      "completed": 10,
+      "queue_wait": {
+        "count": 10,
+        "max_ms": 217622,
+        "min_ms": 11174,
+        "p50_ms": 123057,
+        "sum_ms": 1123878
+      },
+      "render_wall": {
+        "count": 10,
+        "max_ms": 12487,
+        "min_ms": 10408,
+        "p50_ms": 11382,
+        "sum_ms": 114131
+      }
+    },
+    "it": {
+      "completed": 10,
+      "queue_wait": {
+        "count": 10,
+        "max_ms": 195214,
+        "min_ms": 4,
+        "p50_ms": 99756,
+        "sum_ms": 925575
+      },
+      "render_wall": {
+        "count": 10,
+        "max_ms": 12463,
+        "min_ms": 2299,
+        "p50_ms": 11382,
+        "sum_ms": 104892
+      }
+    },
+    "pl": {
+      "completed": 10,
+      "queue_wait": {
+        "count": 10,
+        "max_ms": 199777,
+        "min_ms": 4,
+        "p50_ms": 104247,
+        "sum_ms": 967235
+      },
+      "render_wall": {
+        "count": 10,
+        "max_ms": 14679,
+        "min_ms": 6820,
+        "p50_ms": 11384,
+        "sum_ms": 112707
+      }
+    },
+    "pt-BR": {
+      "completed": 10,
+      "queue_wait": {
+        "count": 10,
+        "max_ms": 209786,
+        "min_ms": 4498,
+        "p50_ms": 113306,
+        "sum_ms": 1051155
+      },
+      "render_wall": {
+        "count": 10,
+        "max_ms": 14377,
+        "min_ms": 10291,
+        "p50_ms": 11386,
+        "sum_ms": 117804
+      }
+    },
+    "ru": {
+      "completed": 10,
+      "queue_wait": {
+        "count": 10,
+        "max_ms": 202027,
+        "min_ms": 12,
+        "p50_ms": 106502,
+        "sum_ms": 987521
+      },
+      "render_wall": {
+        "count": 10,
+        "max_ms": 13421,
+        "min_ms": 9064,
+        "p50_ms": 11376,
+        "sum_ms": 109434
+      }
+    },
+    "tr": {
+      "completed": 10,
+      "queue_wait": {
+        "count": 10,
+        "max_ms": 215344,
+        "min_ms": 8938,
+        "p50_ms": 118815,
+        "sum_ms": 1099332
+      },
+      "render_wall": {
+        "count": 10,
+        "max_ms": 13364,
+        "min_ms": 10317,
+        "p50_ms": 11383,
+        "sum_ms": 115843
+      }
+    }
+  },
+  "queue_wait": {
+    "count": 100,
+    "max_ms": 217622,
+    "min_ms": 3,
+    "p50_ms": 99756,
+    "sum_ms": 10213819
+  },
+  "render_wall": {
+    "count": 100,
+    "max_ms": 14679,
+    "min_ms": 2299,
+    "p50_ms": 11374,
+    "sum_ms": 1131525
+  },
+  "total_wall_ms": 230259
+}

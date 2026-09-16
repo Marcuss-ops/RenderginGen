@@ -1,0 +1,77 @@
+{
+  "phrase_01_lower_third_safe": {
+    "source": "Christopher Nolan — Director",
+    "translations": {
+      "de": "Christopher Nolan — Direktor",
+      "en": "Christopher Nolan — Director",
+      "es": "Christopher Nolan — Director",
+      "fr": "Christopher Nolan — Directeur",
+      "id": "Christopher Nolan - Direktur",
+      "it": "Christopher Nolan — Direttore",
+      "pl": "Christopher Nolan - dyrektor",
+      "pt-BR": "Christopher Nolan — Director",
+      "ru": "Кристофер Нолан — режиссер",
+      "tr": "Christopher Nolan - Yönetmen"
+    }
+  },
+  "phrase_02_clean_slide_up": {
+    "source": "The Future of High-Speed Video",
+    "translations": {
+      "de": "Die Zukunft des High Speed Videos",
+      "en": "The Future of High-Speed Video",
+      "es": "El futuro del vídeo de alta velocidad",
+      "fr": "L'avenir de la vidéo haute vitesse",
+      "id": "The Future of High- Speed Video",
+      "it": "Il futuro del video ad alta velocità",
+      "pl": "Przyszłość wysokiej prędkości wideo",
+      "pt-BR": "O futuro do vídeo de alta velocidade",
+      "ru": "Будущее высокоскоростного видео",
+      "tr": "Yüksek Hızlı Videonun Geleceği"
+    }
+  },
+  "phrase_03_scale_pop": {
+    "source": "BREAKING NEWS",
+    "translations": {
+      "de": "BREAKING NEWS",
+      "en": "BREAKING NEWS",
+      "es": "NOTICIAS DE ACTUALIDAD",
+      "fr": "NOUVELLES",
+      "id": "BREAKING NEWS",
+      "it": "BREAKING NEWS",
+      "pl": "BREAKING NEWS",
+      "pt-BR": "ÚLTIMAS NOTÍCIAS",
+      "ru": "СРОЧНЫЕ НОВОСТИ",
+      "tr": "YOK NEWS"
+    }
+  },
+  "phrase_04_dm_sans_fade": {
+    "source": "Simplicity is the ultimate sophistication.",
+    "translations": {
+      "de": "Einfachheit ist die ultimative Raffinesse.",
+      "en": "Simplicity is the ultimate sophistication.",
+      "es": "La simplicidad es la sofisticación final.",
+      "fr": "La simplicité est la sophistication ultime.",
+      "id": "Kesederhanaan adalah kecanggihan tertinggi.",
+      "it": "La semplicità è l'ultima raffinatezza.",
+      "pl": "Prostota jest najbardziej wyrafinowana.",
+      "pt-BR": "Simplicidade é a sofisticação final.",
+      "ru": "Простота — это конечная изощренность.",
+      "tr": "Sikatey nihai sofistasyondur."
+    }
+  },
+  "phrase_05_slide_left_punch": {
+    "source": "Artificial Intelligence Infrastructure",
+    "translations": {
+      "de": "Künstliche Intelligenz Infrastruktur",
+      "en": "Artificial Intelligence Infrastructure",
+      "es": "Inteligencia Artificial Infraestructura",
+      "fr": "Intelligence artificielle Infrastructure",
+      "id": "Kecerdasan Buatan Infrastruktur",
+      "it": "Intelligenza artificiale Infrastrutture",
+      "pl": "Sztuczna inteligencja Infrastruktura",
+      "pt-BR": "Inteligência Artificial Infra-estruturas",
+      "ru": "Искусственный интеллект инфраструктура",
+      "tr": "Yapay Zeka Altyapı Altyapı"
+    }
+  }
+}
