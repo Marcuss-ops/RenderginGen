@@ -10,7 +10,10 @@ package overlay
 const (
 	imagePresetBoxWidth  = 480
 	imagePresetBoxHeight = 480
-	imagePresetEnter     = 8
+	// 37 frames give at least 1.5 seconds of entrance motion at 24 fps
+	// (36 frame intervals). Image presets should read clearly at full size.
+	imagePresetEnter     = 37
+	imagePresetFastEnter = 8
 	imagePresetExit      = 6
 )
 
@@ -22,4 +25,10 @@ func imageSpec(anchor, anim string) presetSpec {
 		enter: imagePresetEnter, exit: imagePresetExit,
 		boxW: imagePresetBoxWidth, boxH: imagePresetBoxHeight, fit: FitContain,
 	}
+}
+
+func imageFastSpec(anchor, anim string) presetSpec {
+	spec := imageSpec(anchor, anim)
+	spec.enter = imagePresetFastEnter
+	return spec
 }
