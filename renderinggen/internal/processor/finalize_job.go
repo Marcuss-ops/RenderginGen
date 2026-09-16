@@ -5,6 +5,7 @@ package processor
 import (
 	"context"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/chronon"
@@ -12,6 +13,42 @@ import (
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/metricnames"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/queue"
 )
+
+// probeSource names where the finalized artifact's structural facts came from.
+//
+// It exists so the rule "the receipt is the authority, the local probe is the
+// fallback" is a value a test can assert, instead of a branch inside a 100-line
+// function that only an ffprobe's wall time could observe.
+type probeSource string
+
+const (
+	// probeSourceReceipt: Chronon's canonical receipt described the media, so the
+	// worker did NOT spawn ffprobe again on the artifact it just produced.
+	probeSourceReceipt probeSource = "receipt"
+	// probeSourceLocalProbe: the receipt could not describe the media (absent,
+	// not canonical, unreadable), so the worker inspected the file itself.
+	probeSourceLocalProbe probeSource = "local_ffprobe"
+)
+
+// probeFactsForFinalize resolves the artifact's structural facts from the
+// canonical receipt, falling back to a LOCAL ffprobe only when the receipt
+// cannot describe the media.
+//
+// This is the single decision point for the duplicate-verification cost: the
+// engine already read the bytes while encoding, so the worker paying a second
+// ffprobe per job (~250 ms measured) is pure waste on the hot path. The fallback
+// is not dead code — it is what keeps the worker correct for a renderer that did
+// not write a receipt — but it must never be the normal path.
+func probeFactsForFinalize(ctx context.Context, receipt chronon.MediaReceipt, receiptErr error, outputPath string) (media.ProbeResult, probeSource, error) {
+	if receiptErr == nil && receipt.HasCanonicalMedia() {
+		return probeResultFromReceipt(receipt), probeSourceReceipt, nil
+	}
+	probed, err := media.ProbeFile(ctx, outputPath)
+	if err != nil {
+		return media.ProbeResult{}, probeSourceLocalProbe, err
+	}
+	return probed, probeSourceLocalProbe, nil
+}
 
 // probeResultFromReceipt maps Chronon's canonical media receipt facts into a media.ProbeResult,
 // avoiding duplicate ffprobe process invocations on the critical finalization path.
@@ -89,15 +126,15 @@ func (p *Processor) FinalizeJob(ctx context.Context, prepared *PreparedJob) (que
 	var probe *media.ProbeResult
 	if job.JobType == queue.JobTypeOverlayRender || metadata.ProfileID != "" {
 		probeStart := time.Now()
-		var probed media.ProbeResult
-		var err error
-		if receiptErr == nil && receipt.HasCanonicalMedia() {
-			probed = probeResultFromReceipt(receipt)
-		} else {
-			probed, err = media.ProbeFile(ctx, outputPath)
-			if err != nil {
-				return queue.Artifact{}, fmt.Errorf("processor: overlay ffprobe: %w", err)
-			}
+		probed, source, err := probeFactsForFinalize(ctx, receipt, receiptErr, outputPath)
+		if err != nil {
+			return queue.Artifact{}, fmt.Errorf("processor: overlay ffprobe: %w", err)
+		}
+		if source != probeSourceReceipt {
+			// Not fatal, but never silent: a job whose facts came from a local
+			// probe is paying the duplicate verification the receipt exists to
+			// avoid, and that is worth seeing in the log.
+			log.Printf("[processor] media facts for %s came from %s (no canonical receipt): the artifact was inspected locally", job.ID, source)
 		}
 		probeUS := float64(time.Since(probeStart).Microseconds())
 		metrics[metricnames.ProbeUS] = probeUS

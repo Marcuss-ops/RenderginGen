@@ -1,0 +1,194 @@
+{
+  "version": 2,
+  "preset": "custom",
+  "correlation_id": "mike-tyson-autonomous-nlp-runtime-guidelines-e4b-20260916",
+  "force_refresh": true,
+  "items": [
+    {
+      "id": "mike-tyson-autonomous-nlp-runtime-guidelines-e4b-20260916",
+      "project": "mike-tyson-autonomous-nlp-runtime-guidelines-e4b-20260916-v7",
+      "title": "Mike Tyson: Power, Discipline, and Reinvention — Guided Rewrite Runtime",
+      "language": "en",
+      "tone": "cinematic, balanced sports documentary",
+      "style": "English documentary narration. Rewrite source evidence in original language and structure; use runtime NLP to select phrases.",
+      "model": "gemma4:e4b",
+      "source": {
+        "type": "text",
+        "topic": "Mike Tyson's boxing life: discipline, championship, adversity, and reinvention",
+        "source_text": "FACTUAL RECORD: Mike Tyson was born in Brooklyn, New York, on June 30, 1966. Teenager: met Bobby Stewart, a counselor and former boxer; Stewart introduced Tyson to trainer Cus D’Amato. D’Amato became Tyson’s coach and legal guardian. Tyson won Junior Olympic gold medals in 1981 and 1982. Professional debut: March 6, 1985; first 19 professional bouts were knockout wins. D’Amato died on November 4, 1985, before Tyson won a world heavyweight title. On November 22, 1986, Tyson defeated Trevor Berbick for the WBC heavyweight title at age 20, becoming boxing’s youngest heavyweight champion at the time. In 1987 Tyson won the WBA title and defeated Tony Tucker to unify the WBC, WBA, and IBF titles. James “Buster” Douglas gave Tyson his first professional loss in Tokyo in 1990. In 1992 Tyson was convicted of rape in Indiana, received a prison sentence, and was released on parole in 1995. He returned to boxing, regained the WBC and WBA titles in 1996, then lost the WBA title to Evander Holyfield later that year. In their 1997 rematch Tyson was disqualified after biting Holyfield’s ears; Nevada’s commission revoked his boxing license and later restored it. Lennox Lewis knocked Tyson out in 2002. Reported end-of-2005 record: 50 wins, 6 losses, 2 no contests, 44 knockouts. Muhammad Ali, Sugar Ray Robinson, and Joe Frazier are boxing-history context only, not Tyson opponents or coaches.",
+        "force_refresh": true,
+        "guidelines": "EDITORIAL GUIDELINES: Generate a fresh documentary narration paragraph for this scene. The source text is evidence only, not copy-ready prose. Rebuild its sentence structure and vocabulary; do not repeat any complete source sentence or distinctive 5-word sequence. Preserve all supported facts and chronology. Do not invent names, dates, statistics, outcomes, quotations, motives, or private thoughts. Explain the significance of documented events with grounded transitions, without filler or repetition. Aim for about 200 words and remain within the segment budget. Treat the 1992 Indiana rape conviction as a conviction, state the prison sentence and 1995 parole release accurately, and use sober language. Do not output any list of important phrases; runtime NLP selects phrases from the final narration. The bracketed guidelines are instructions and must never appear in the narration."
+      },
+      "script_params": {
+        "target_words": 2000,
+        "min_words": 1800,
+        "segment_words": 200,
+        "single_scene": false,
+        "duration": 800,
+        "skip_quality_gate": false,
+        "segments": [
+          {
+            "id": "brooklyn-and-the-first-coach",
+            "kind": "narration",
+            "topic": "Brooklyn, childhood context, and the first coach",
+            "target_words": 200,
+            "source_text": "Mike Tyson was born in Brooklyn, New York, on June 30, 1966. His path toward boxing began before professional records or championship belts could define him. As a teenager, he met a counselor and former boxer who introduced him to trainer Cus D’Amato. D’Amato became Tyson’s coach and legal guardian, joining two roles that shaped the early account of his development. Tyson later won Junior Olympic gold medals in 1981 and 1982. Those results place his amateur achievement in the chronology without requiring an invented story about private routines or motives. A documentary can describe the visible structure: a young boxer, a coach, formal competition, and a progression toward the professional ring. Muhammad Ali, Sugar Ray Robinson, and Joe Frazier belong here only as major figures in boxing history and as context for the sport Tyson entered. The narration does not claim that they fought him, coached him, or directly influenced him. Keeping those boundaries clear lets Tyson’s own record remain the subject. A careful account follows the documented sequence and separates known events from assumptions about private motivation.\n\n[EDITORIAL GUIDELINES — DO NOT COPY INTO THE SCRIPT]\nEDITORIAL GUIDELINES: Generate a fresh documentary narration paragraph for this scene. The source text is evidence only, not copy-ready prose. Rebuild its sentence structure and vocabulary; do not repeat any complete source sentence or distinctive 5-word sequence. Preserve all supported facts and chronology. Do not invent names, dates, statistics, outcomes, quotations, motives, or private thoughts. Explain the significance of documented events with grounded transitions, without filler or repetition. Aim for about 200 words and remain within the segment budget. Treat the 1992 Indiana rape conviction as a conviction, state the prison sentence and 1995 parole release accurately, and use sober language. Do not output any list of important phrases; runtime NLP selects phrases from the final narration. The bracketed guidelines are instructions and must never appear in the narration."
+          },
+          {
+            "id": "amateur-to-professional",
+            "kind": "narration",
+            "topic": "From amateur competition to a professional debut",
+            "target_words": 200,
+            "source_text": "The next step in Tyson’s chronology was the move from amateur competition to professional boxing. His Junior Olympic gold medals came in 1981 and 1982, evidence that he was already winning in organized competition before turning professional. The professional debut followed on March 6, 1985. A date like that makes the transition concrete: the story moves from youth competition into a career measured by official bouts, opponents, titles, and losses. A responsible account does not invent training methods, private conversations, or predictions about where the career would lead. It can instead show how a set of dated results begins to accumulate. An amateur medal is a result from one stage of competition. A professional debut opens another stage, with different stakes and a longer public record. In Tyson’s story, the transition came in 1985, after the early victories and relationship with D’Amato already established the foundation. The chronology matters because later fame can make the beginning seem inevitable, even though the available facts only show a sequence of events. The medals and debut mark separate stages in the record; the available facts do not describe private training routines.\n\n[EDITORIAL GUIDELINES — DO NOT COPY INTO THE SCRIPT]\nEDITORIAL GUIDELINES: Generate a fresh documentary narration paragraph for this scene. The source text is evidence only, not copy-ready prose. Rebuild its sentence structure and vocabulary; do not repeat any complete source sentence or distinctive 5-word sequence. Preserve all supported facts and chronology. Do not invent names, dates, statistics, outcomes, quotations, motives, or private thoughts. Explain the significance of documented events with grounded transitions, without filler or repetition. Aim for about 200 words and remain within the segment budget. Treat the 1992 Indiana rape conviction as a conviction, state the prison sentence and 1995 parole release accurately, and use sober language. Do not output any list of important phrases; runtime NLP selects phrases from the final narration. The bracketed guidelines are instructions and must never appear in the narration."
+          },
+          {
+            "id": "early-knockout-streak",
+            "kind": "narration",
+            "topic": "The first nineteen professional victories",
+            "target_words": 200,
+            "source_text": "Tyson won his first nineteen professional bouts by knockout. That is one of the clearest measures of the opening phase of his professional career, and it helps explain why his rise became such a visible sports story. The fact does not say that every bout looked the same, or that a result alone reveals a fighter’s private thoughts. It says that nineteen early professional victories ended by knockout. A careful narration stays close to the evidence: the professional run began in 1985, the wins came by knockout, and the streak preceded the heavyweight championship. The record is striking because it is specific, not because it needs embellishment. As public attention follows a winning athlete, the results can become a shorthand for an entire person. The story should resist that shortcut. A winning streak records what happened in the ring; it does not settle questions about judgment, character, consequence, or the chapters that followed. Tyson’s early results are central to his boxing history, while remaining only one part of a much larger life. Keep the statistic limited to the first nineteen professional bouts and do not infer details about individual rounds.\n\n[EDITORIAL GUIDELINES — DO NOT COPY INTO THE SCRIPT]\nEDITORIAL GUIDELINES: Generate a fresh documentary narration paragraph for this scene. The source text is evidence only, not copy-ready prose. Rebuild its sentence structure and vocabulary; do not repeat any complete source sentence or distinctive 5-word sequence. Preserve all supported facts and chronology. Do not invent names, dates, statistics, outcomes, quotations, motives, or private thoughts. Explain the significance of documented events with grounded transitions, without filler or repetition. Aim for about 200 words and remain within the segment budget. Treat the 1992 Indiana rape conviction as a conviction, state the prison sentence and 1995 parole release accurately, and use sober language. Do not output any list of important phrases; runtime NLP selects phrases from the final narration. The bracketed guidelines are instructions and must never appear in the narration."
+          },
+          {
+            "id": "loss-of-damato",
+            "kind": "narration",
+            "topic": "Cus D’Amato’s death before the championship",
+            "target_words": 200,
+            "source_text": "Cus D’Amato died on November 4, 1985, before Tyson won a world heavyweight title. The timing is important: D’Amato’s death came in the same year as Tyson’s professional debut, and before the championship milestone that later made the boxer world famous. The available facts establish a close professional and legal relationship because D’Amato was Tyson’s trainer and legal guardian. They do not authorize invented dialogue, private thoughts, or a claim that one event alone caused later victories or defeats. A biographical account can acknowledge the loss without turning it into a dramatic explanation for everything afterward. It can mark the chronology, explain D’Amato’s role, and let readers understand why the date matters. Tyson’s later title would arrive after this death, which means the championship story and the loss cannot be told as separate timelines. The line between them is factual, but the meaning people attach to it should be presented with care. This approach keeps the narration humane while distinguishing what is known from what would only be speculation. The chronology places D’Amato’s death before the later championship, without inventing a private reaction or conversation.\n\n[EDITORIAL GUIDELINES — DO NOT COPY INTO THE SCRIPT]\nEDITORIAL GUIDELINES: Generate a fresh documentary narration paragraph for this scene. The source text is evidence only, not copy-ready prose. Rebuild its sentence structure and vocabulary; do not repeat any complete source sentence or distinctive 5-word sequence. Preserve all supported facts and chronology. Do not invent names, dates, statistics, outcomes, quotations, motives, or private thoughts. Explain the significance of documented events with grounded transitions, without filler or repetition. Aim for about 200 words and remain within the segment budget. Treat the 1992 Indiana rape conviction as a conviction, state the prison sentence and 1995 parole release accurately, and use sober language. Do not output any list of important phrases; runtime NLP selects phrases from the final narration. The bracketed guidelines are instructions and must never appear in the narration."
+          },
+          {
+            "id": "youngest-champion",
+            "kind": "narration",
+            "topic": "The 1986 WBC heavyweight title",
+            "target_words": 200,
+            "source_text": "On November 22, 1986, Tyson defeated a reigning heavyweight titleholder for the WBC championship at age twenty. That result made him the youngest heavyweight champion in boxing history. The record is unusually precise: it combines a date, a governing title, an age, and a place in the sport’s history. Winning the WBC belt was a major sporting achievement, and the age record made it especially memorable. A balanced documentary can state that clearly. It should also resist treating one victory as a complete definition of a person or a guarantee of what would happen next. A title is a public result recorded in boxing history. It does not erase later defeat, legal accountability, or the impact of personal choices. The achievement belongs in the story because it was real and historically significant; its place in the story is strongest when it is not used to flatten every other part of the life. The title and age are documented achievements; explain their historical meaning without treating one record as a complete portrait.\n\n[EDITORIAL GUIDELINES — DO NOT COPY INTO THE SCRIPT]\nEDITORIAL GUIDELINES: Generate a fresh documentary narration paragraph for this scene. The source text is evidence only, not copy-ready prose. Rebuild its sentence structure and vocabulary; do not repeat any complete source sentence or distinctive 5-word sequence. Preserve all supported facts and chronology. Do not invent names, dates, statistics, outcomes, quotations, motives, or private thoughts. Explain the significance of documented events with grounded transitions, without filler or repetition. Aim for about 200 words and remain within the segment budget. Treat the 1992 Indiana rape conviction as a conviction, state the prison sentence and 1995 parole release accurately, and use sober language. Do not output any list of important phrases; runtime NLP selects phrases from the final narration. The bracketed guidelines are instructions and must never appear in the narration."
+          },
+          {
+            "id": "unification",
+            "kind": "narration",
+            "topic": "Adding and unifying heavyweight titles in 1987",
+            "target_words": 200,
+            "source_text": "The championship story continued in 1987. Tyson won the WBA heavyweight title that year, then defeated another challenger later in the year to unify the WBC, WBA, and IBF heavyweight titles. These are separate milestones: first another belt, then the unification of three major titles. In boxing, unification means that one champion holds titles from multiple sanctioning bodies at the same time. That explanation makes the achievement understandable without claiming it made Tyson unbeatable or describing unverified details of any particular bout. The sequence also shows how quickly the public record expanded after the first championship. A year earlier, the historic fact was his age when he won the WBC belt. By the end of 1987, the record included the WBA and IBF titles as well. The point is not to turn a list of belts into a moral verdict. It is to show the scale of the athletic accomplishment, then preserve room for the complicated events that followed. Unification means one champion holds titles from several sanctioning bodies at the same time; it is distinct from winning an additional belt.\n\n[EDITORIAL GUIDELINES — DO NOT COPY INTO THE SCRIPT]\nEDITORIAL GUIDELINES: Generate a fresh documentary narration paragraph for this scene. The source text is evidence only, not copy-ready prose. Rebuild its sentence structure and vocabulary; do not repeat any complete source sentence or distinctive 5-word sequence. Preserve all supported facts and chronology. Do not invent names, dates, statistics, outcomes, quotations, motives, or private thoughts. Explain the significance of documented events with grounded transitions, without filler or repetition. Aim for about 200 words and remain within the segment budget. Treat the 1992 Indiana rape conviction as a conviction, state the prison sentence and 1995 parole release accurately, and use sober language. Do not output any list of important phrases; runtime NLP selects phrases from the final narration. The bracketed guidelines are instructions and must never appear in the narration."
+          },
+          {
+            "id": "tokyo-defeat",
+            "kind": "narration",
+            "topic": "The first professional defeat in Tokyo",
+            "target_words": 200,
+            "source_text": "Tyson’s first professional defeat came in Tokyo in 1990. Before that result, his early professional run had included nineteen straight knockout victories and his championship rise. A first loss changed the record, but a record is only one way to describe a career. The source notes establish the defeat and its place in the chronology; they do not provide a license to add private motives, excuses, or dramatic details. A careful sports documentary can distinguish the event from the many later interpretations that people may attach to it. The fact is that a heavily recognized champion experienced his first professional loss in 1990. That result belongs beside the earlier victories, not outside them. Achievement and defeat both form part of the official record, and neither one alone describes every choice or consequence in a life. Placing the loss in sequence gives the audience a clearer view of the career’s changing public narrative while remaining honest about what is documented and what remains unknown. The defeat marks a change in the professional record, but the supplied facts do not establish a private cause or explanation.\n\n[EDITORIAL GUIDELINES — DO NOT COPY INTO THE SCRIPT]\nEDITORIAL GUIDELINES: Generate a fresh documentary narration paragraph for this scene. The source text is evidence only, not copy-ready prose. Rebuild its sentence structure and vocabulary; do not repeat any complete source sentence or distinctive 5-word sequence. Preserve all supported facts and chronology. Do not invent names, dates, statistics, outcomes, quotations, motives, or private thoughts. Explain the significance of documented events with grounded transitions, without filler or repetition. Aim for about 200 words and remain within the segment budget. Treat the 1992 Indiana rape conviction as a conviction, state the prison sentence and 1995 parole release accurately, and use sober language. Do not output any list of important phrases; runtime NLP selects phrases from the final narration. The bracketed guidelines are instructions and must never appear in the narration."
+          },
+          {
+            "id": "conviction-and-prison",
+            "kind": "narration",
+            "topic": "The 1992 conviction and release on parole",
+            "target_words": 200,
+            "source_text": "In 1992, Tyson was convicted of rape in Indiana and received a prison sentence. He was released on parole in 1995. Those statements should be clear and direct because a conviction is not an allegation, and legal accountability is part of the documented history. A documentary should treat this chapter soberly, without graphic detail or sensational language. It should also avoid using athletic accomplishments to minimize personal harm. The period away from boxing is part of the chronology, just as the return would be later. Accuracy requires naming the conviction correctly and stating the sentence and parole release without embellishment. It also requires resisting the temptation to turn a serious legal event into a dramatic device. Tyson’s athletic identity and the conviction both belong in the story, but they answer different questions. One concerns a public career in the ring; the other concerns criminal responsibility and its consequences. Keeping that distinction visible makes the narration more honest and more respectful of those harmed. State the conviction and parole dates accurately, and do not add graphic detail or minimize the legal accountability.\n\n[EDITORIAL GUIDELINES — DO NOT COPY INTO THE SCRIPT]\nEDITORIAL GUIDELINES: Generate a fresh documentary narration paragraph for this scene. The source text is evidence only, not copy-ready prose. Rebuild its sentence structure and vocabulary; do not repeat any complete source sentence or distinctive 5-word sequence. Preserve all supported facts and chronology. Do not invent names, dates, statistics, outcomes, quotations, motives, or private thoughts. Explain the significance of documented events with grounded transitions, without filler or repetition. Aim for about 200 words and remain within the segment budget. Treat the 1992 Indiana rape conviction as a conviction, state the prison sentence and 1995 parole release accurately, and use sober language. Do not output any list of important phrases; runtime NLP selects phrases from the final narration. The bracketed guidelines are instructions and must never appear in the narration."
+          },
+          {
+            "id": "return-and-holyfield",
+            "kind": "narration",
+            "topic": "Return to boxing and the 1996 titles",
+            "target_words": 200,
+            "source_text": "After his release on parole in 1995, Tyson returned to boxing. In 1996, he regained the WBC and WBA heavyweight titles. Later that year, he lost the WBA title to a challenger. These outcomes describe both a comeback in sport and a subsequent setback; neither should be used to erase what happened in the legal chapter or to turn a later victory into a claim of personal repair. The word “return” is useful because it describes a change in the career’s public activity, but it should not carry more meaning than the evidence supports. A title won again is an athletic fact. A title lost later the same year is also an athletic fact. The larger story holds those facts beside the conviction, prison sentence, and parole. A balanced account can acknowledge the audience’s interest in the comeback while keeping the emphasis on documented chronology and responsibility. It does not need to invent motives or promise a simple transformation in order to explain what happened. Regaining and losing a title are separate sporting results; a return to competition does not erase the legal chapter.\n\n[EDITORIAL GUIDELINES — DO NOT COPY INTO THE SCRIPT]\nEDITORIAL GUIDELINES: Generate a fresh documentary narration paragraph for this scene. The source text is evidence only, not copy-ready prose. Rebuild its sentence structure and vocabulary; do not repeat any complete source sentence or distinctive 5-word sequence. Preserve all supported facts and chronology. Do not invent names, dates, statistics, outcomes, quotations, motives, or private thoughts. Explain the significance of documented events with grounded transitions, without filler or repetition. Aim for about 200 words and remain within the segment budget. Treat the 1992 Indiana rape conviction as a conviction, state the prison sentence and 1995 parole release accurately, and use sober language. Do not output any list of important phrases; runtime NLP selects phrases from the final narration. The bracketed guidelines are instructions and must never appear in the narration."
+          },
+          {
+            "id": "rematch-and-legacy",
+            "kind": "narration",
+            "topic": "The 1997 disqualification and later career",
+            "target_words": 200,
+            "source_text": "In the 1997 rematch, Tyson was disqualified after biting his opponent’s ears. The Nevada commission revoked his boxing license and later restored it. In 2002, a heavyweight opponent knocked him out. At the end of 2005, his reported professional record stood at fifty wins, six losses, two no contests, and forty-four knockouts. The sequence includes achievement, defeat, a disqualification, a commission decision, and later career results. Taken together, those events resist a simple ending in which either a title or a controversy speaks for everything. Muhammad Ali, Sugar Ray Robinson, and Joe Frazier remain useful only as major historical figures in boxing, not as people Tyson fought, coached with, or was directly influenced by. A responsible close can recognize why the athlete’s name remains prominent while keeping the facts, consequences, and limits of the record visible. Reinvention is a theme people may discuss, but it should not be used to claim that past harm disappeared. The final reflection belongs to the audience; the narration’s role is to leave them with an accurate chronology. Record totals describe a career through a stated date and cannot by themselves summarize every dimension of a person’s life.\n\n[EDITORIAL GUIDELINES — DO NOT COPY INTO THE SCRIPT]\nEDITORIAL GUIDELINES: Generate a fresh documentary narration paragraph for this scene. The source text is evidence only, not copy-ready prose. Rebuild its sentence structure and vocabulary; do not repeat any complete source sentence or distinctive 5-word sequence. Preserve all supported facts and chronology. Do not invent names, dates, statistics, outcomes, quotations, motives, or private thoughts. Explain the significance of documented events with grounded transitions, without filler or repetition. Aim for about 200 words and remain within the segment budget. Treat the 1992 Indiana rape conviction as a conviction, state the prison sentence and 1995 parole release accurately, and use sober language. Do not output any list of important phrases; runtime NLP selects phrases from the final narration. The bracketed guidelines are instructions and must never appear in the narration."
+          }
+        ]
+      },
+      "output": {
+        "save_to_db": true,
+        "extract_entities": true,
+        "generate_metadata": true,
+        "generate_timeline": true,
+        "voiceover_enabled": true,
+        "languages": [
+          "en"
+        ],
+        "render": {
+          "enabled": true,
+          "drive_folder_id": "1J_xUGo_bchzXDIGqSX04CU44c_Dm3SxS",
+          "drive_subfolder_name": "Mike Tyson — Autonomous NLP Runtime 2026-09-16 v7 Guided Rewrite",
+          "require_gpu": true
+        },
+        "drive_folder_id": "1J_xUGo_bchzXDIGqSX04CU44c_Dm3SxS"
+      },
+      "overlay_background": {
+        "kind": "color",
+        "color": [
+          0.9333333333333333,
+          0.9450980392156862,
+          0.9058823529411765,
+          1
+        ],
+        "fit": "cover",
+        "opacity": 1,
+        "loop": false
+      },
+      "audio": {
+        "mode": "CHUNKED_VOICEOVER",
+        "mix_policy": "VOICEOVER_ONLY",
+        "timing": {
+          "mode": "required",
+          "boundary": "word",
+          "formats": [
+            "json",
+            "srt",
+            "vtt"
+          ]
+        }
+      },
+      "media_plan": {
+        "mode": "hybrid",
+        "cache": {
+          "read": false,
+          "write": true
+        },
+        "provider_policy": {
+          "internet_images": "enabled",
+          "artlist": "disabled",
+          "image_generation": "disabled",
+          "youtube": "disabled"
+        },
+        "extraction": {
+          "enabled": true,
+          "include": [
+            "entities",
+            "special_names",
+            "important_phrases"
+          ],
+          "max_entities_per_segment": 5,
+          "max_important_phrases_per_segment": 1,
+          "max_image_queries_per_segment": 5,
+          "entity_images": {
+            "enabled": true,
+            "entity_types": [
+              "PERSON"
+            ],
+            "max_per_entity": 1,
+            "upload_to_drive": true
+          }
+        },
+        "materialization": {
+          "mode": "selected",
+          "upload_to_drive": true,
+          "wait_for_ready": true
+        },
+        "planner": {
+          "candidate_limit": 5
+        },
+        "include_trace": true
+      },
+      "docs": {
+        "enabled": true,
+        "languages": [
+          "en"
+        ],
+        "folder_id": "1FkEi2yfyixa1NS8DiedseIcUk81xeMzi"
+      }
+    }
+  ]
+}

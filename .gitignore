@@ -65,6 +65,11 @@ token.json
 # cmd/batch-render-presets/phrase-overlay-v3-manifest.json, so the rendered mp4s
 # and their plan pairs stay on disk and out of git.
 /phrase_overlay_v3/
+# phrase_animations_v1 is the real-phrase animation matrix: the ten editorial
+# phrase candidates, one apple_v2 motion each, reproducible from
+# cmd/batch-render-presets/phrase-animations-v1-manifest.json — same artifact
+# class as phrase_overlay_v3 above.
+/phrase_animations_v1/
 # mike_tyson_overlay_test is a manual smoke scenario: its request/plan/script
 # JSON and input media are worth keeping, but output/ holds the rendered mp4s
 # that a re-run regenerates on demand — the same artifact class as above.
