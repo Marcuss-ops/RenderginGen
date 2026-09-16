@@ -1,0 +1,4756 @@
+{
+  "batch_id": "ml-overlays-10x10-run2",
+  "jobs": [
+    {
+      "assets": [
+        {
+          "hash": "983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c",
+          "logical_path": "assets/fonts/Poppins-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Poppins-Bold.ttf"
+        },
+        {
+          "hash": "deb990e241954e1af87c6033d40a76cf0f48e0d112541794526051ac4a3ee2c8",
+          "logical_path": "assets/fonts/Inter-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Inter-Bold.ttf"
+        }
+      ],
+      "id": "phrase_01_lower_third_safe__it",
+      "render_plan": {
+        "background": {
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1.0
+          ],
+          "kind": "color"
+        },
+        "duration_ms": 5000,
+        "fps_den": 1,
+        "fps_num": 24,
+        "height": 1080,
+        "items": [
+          {
+            "end_ms": 5000,
+            "id": "item_1",
+            "kind": "important_phrase",
+            "motion_id": "liquid_glass_ripple",
+            "preset_id": "apple_v2",
+            "start_ms": 0,
+            "template_id": "IMPORTANT_PHRASE",
+            "text": "Christopher Nolan — Direttore"
+          }
+        ],
+        "language": "it",
+        "plan_id": "phrase_01_lower_third_safe__it",
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "video_id": "phrase_01_lower_third_safe__it",
+        "width": 1920
+      }
+    },
+    {
+      "assets": [
+        {
+          "hash": "983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c",
+          "logical_path": "assets/fonts/Poppins-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Poppins-Bold.ttf"
+        },
+        {
+          "hash": "deb990e241954e1af87c6033d40a76cf0f48e0d112541794526051ac4a3ee2c8",
+          "logical_path": "assets/fonts/Inter-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Inter-Bold.ttf"
+        }
+      ],
+      "id": "phrase_01_lower_third_safe__en",
+      "render_plan": {
+        "background": {
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1.0
+          ],
+          "kind": "color"
+        },
+        "duration_ms": 5000,
+        "fps_den": 1,
+        "fps_num": 24,
+        "height": 1080,
+        "items": [
+          {
+            "end_ms": 5000,
+            "id": "item_1",
+            "kind": "important_phrase",
+            "motion_id": "liquid_glass_ripple",
+            "preset_id": "apple_v2",
+            "start_ms": 0,
+            "template_id": "IMPORTANT_PHRASE",
+            "text": "Christopher Nolan — Director"
+          }
+        ],
+        "language": "en",
+        "plan_id": "phrase_01_lower_third_safe__en",
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "video_id": "phrase_01_lower_third_safe__en",
+        "width": 1920
+      }
+    },
+    {
+      "assets": [
+        {
+          "hash": "983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c",
+          "logical_path": "assets/fonts/Poppins-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Poppins-Bold.ttf"
+        },
+        {
+          "hash": "deb990e241954e1af87c6033d40a76cf0f48e0d112541794526051ac4a3ee2c8",
+          "logical_path": "assets/fonts/Inter-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Inter-Bold.ttf"
+        }
+      ],
+      "id": "phrase_01_lower_third_safe__pl",
+      "render_plan": {
+        "background": {
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1.0
+          ],
+          "kind": "color"
+        },
+        "duration_ms": 5000,
+        "fps_den": 1,
+        "fps_num": 24,
+        "height": 1080,
+        "items": [
+          {
+            "end_ms": 5000,
+            "id": "item_1",
+            "kind": "important_phrase",
+            "motion_id": "liquid_glass_ripple",
+            "preset_id": "apple_v2",
+            "start_ms": 0,
+            "template_id": "IMPORTANT_PHRASE",
+            "text": "Christopher Nolan - dyrektor"
+          }
+        ],
+        "language": "pl",
+        "plan_id": "phrase_01_lower_third_safe__pl",
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "video_id": "phrase_01_lower_third_safe__pl",
+        "width": 1920
+      }
+    },
+    {
+      "assets": [
+        {
+          "hash": "983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c",
+          "logical_path": "assets/fonts/Poppins-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Poppins-Bold.ttf"
+        },
+        {
+          "hash": "deb990e241954e1af87c6033d40a76cf0f48e0d112541794526051ac4a3ee2c8",
+          "logical_path": "assets/fonts/Inter-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Inter-Bold.ttf"
+        }
+      ],
+      "id": "phrase_01_lower_third_safe__ru",
+      "render_plan": {
+        "background": {
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1.0
+          ],
+          "kind": "color"
+        },
+        "duration_ms": 5000,
+        "fps_den": 1,
+        "fps_num": 24,
+        "height": 1080,
+        "items": [
+          {
+            "end_ms": 5000,
+            "id": "item_1",
+            "kind": "important_phrase",
+            "motion_id": "liquid_glass_ripple",
+            "preset_id": "apple_v2",
+            "start_ms": 0,
+            "template_id": "IMPORTANT_PHRASE",
+            "text": "Кристофер Нолан — режиссер"
+          }
+        ],
+        "language": "ru",
+        "plan_id": "phrase_01_lower_third_safe__ru",
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "video_id": "phrase_01_lower_third_safe__ru",
+        "width": 1920
+      }
+    },
+    {
+      "assets": [
+        {
+          "hash": "983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c",
+          "logical_path": "assets/fonts/Poppins-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Poppins-Bold.ttf"
+        },
+        {
+          "hash": "deb990e241954e1af87c6033d40a76cf0f48e0d112541794526051ac4a3ee2c8",
+          "logical_path": "assets/fonts/Inter-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Inter-Bold.ttf"
+        }
+      ],
+      "id": "phrase_01_lower_third_safe__de",
+      "render_plan": {
+        "background": {
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1.0
+          ],
+          "kind": "color"
+        },
+        "duration_ms": 5000,
+        "fps_den": 1,
+        "fps_num": 24,
+        "height": 1080,
+        "items": [
+          {
+            "end_ms": 5000,
+            "id": "item_1",
+            "kind": "important_phrase",
+            "motion_id": "liquid_glass_ripple",
+            "preset_id": "apple_v2",
+            "start_ms": 0,
+            "template_id": "IMPORTANT_PHRASE",
+            "text": "Christopher Nolan — Direktor"
+          }
+        ],
+        "language": "de",
+        "plan_id": "phrase_01_lower_third_safe__de",
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "video_id": "phrase_01_lower_third_safe__de",
+        "width": 1920
+      }
+    },
+    {
+      "assets": [
+        {
+          "hash": "983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c",
+          "logical_path": "assets/fonts/Poppins-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Poppins-Bold.ttf"
+        },
+        {
+          "hash": "deb990e241954e1af87c6033d40a76cf0f48e0d112541794526051ac4a3ee2c8",
+          "logical_path": "assets/fonts/Inter-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Inter-Bold.ttf"
+        }
+      ],
+      "id": "phrase_01_lower_third_safe__es",
+      "render_plan": {
+        "background": {
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1.0
+          ],
+          "kind": "color"
+        },
+        "duration_ms": 5000,
+        "fps_den": 1,
+        "fps_num": 24,
+        "height": 1080,
+        "items": [
+          {
+            "end_ms": 5000,
+            "id": "item_1",
+            "kind": "important_phrase",
+            "motion_id": "liquid_glass_ripple",
+            "preset_id": "apple_v2",
+            "start_ms": 0,
+            "template_id": "IMPORTANT_PHRASE",
+            "text": "Christopher Nolan — Director"
+          }
+        ],
+        "language": "es",
+        "plan_id": "phrase_01_lower_third_safe__es",
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "video_id": "phrase_01_lower_third_safe__es",
+        "width": 1920
+      }
+    },
+    {
+      "assets": [
+        {
+          "hash": "983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c",
+          "logical_path": "assets/fonts/Poppins-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Poppins-Bold.ttf"
+        },
+        {
+          "hash": "deb990e241954e1af87c6033d40a76cf0f48e0d112541794526051ac4a3ee2c8",
+          "logical_path": "assets/fonts/Inter-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Inter-Bold.ttf"
+        }
+      ],
+      "id": "phrase_01_lower_third_safe__pt-BR",
+      "render_plan": {
+        "background": {
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1.0
+          ],
+          "kind": "color"
+        },
+        "duration_ms": 5000,
+        "fps_den": 1,
+        "fps_num": 24,
+        "height": 1080,
+        "items": [
+          {
+            "end_ms": 5000,
+            "id": "item_1",
+            "kind": "important_phrase",
+            "motion_id": "liquid_glass_ripple",
+            "preset_id": "apple_v2",
+            "start_ms": 0,
+            "template_id": "IMPORTANT_PHRASE",
+            "text": "Christopher Nolan — Director"
+          }
+        ],
+        "language": "pt-BR",
+        "plan_id": "phrase_01_lower_third_safe__pt-BR",
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "video_id": "phrase_01_lower_third_safe__pt-BR",
+        "width": 1920
+      }
+    },
+    {
+      "assets": [
+        {
+          "hash": "983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c",
+          "logical_path": "assets/fonts/Poppins-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Poppins-Bold.ttf"
+        },
+        {
+          "hash": "deb990e241954e1af87c6033d40a76cf0f48e0d112541794526051ac4a3ee2c8",
+          "logical_path": "assets/fonts/Inter-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Inter-Bold.ttf"
+        }
+      ],
+      "id": "phrase_01_lower_third_safe__fr",
+      "render_plan": {
+        "background": {
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1.0
+          ],
+          "kind": "color"
+        },
+        "duration_ms": 5000,
+        "fps_den": 1,
+        "fps_num": 24,
+        "height": 1080,
+        "items": [
+          {
+            "end_ms": 5000,
+            "id": "item_1",
+            "kind": "important_phrase",
+            "motion_id": "liquid_glass_ripple",
+            "preset_id": "apple_v2",
+            "start_ms": 0,
+            "template_id": "IMPORTANT_PHRASE",
+            "text": "Christopher Nolan — Directeur"
+          }
+        ],
+        "language": "fr",
+        "plan_id": "phrase_01_lower_third_safe__fr",
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "video_id": "phrase_01_lower_third_safe__fr",
+        "width": 1920
+      }
+    },
+    {
+      "assets": [
+        {
+          "hash": "983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c",
+          "logical_path": "assets/fonts/Poppins-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Poppins-Bold.ttf"
+        },
+        {
+          "hash": "deb990e241954e1af87c6033d40a76cf0f48e0d112541794526051ac4a3ee2c8",
+          "logical_path": "assets/fonts/Inter-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Inter-Bold.ttf"
+        }
+      ],
+      "id": "phrase_01_lower_third_safe__tr",
+      "render_plan": {
+        "background": {
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1.0
+          ],
+          "kind": "color"
+        },
+        "duration_ms": 5000,
+        "fps_den": 1,
+        "fps_num": 24,
+        "height": 1080,
+        "items": [
+          {
+            "end_ms": 5000,
+            "id": "item_1",
+            "kind": "important_phrase",
+            "motion_id": "liquid_glass_ripple",
+            "preset_id": "apple_v2",
+            "start_ms": 0,
+            "template_id": "IMPORTANT_PHRASE",
+            "text": "Christopher Nolan - Yönetmen"
+          }
+        ],
+        "language": "tr",
+        "plan_id": "phrase_01_lower_third_safe__tr",
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "video_id": "phrase_01_lower_third_safe__tr",
+        "width": 1920
+      }
+    },
+    {
+      "assets": [
+        {
+          "hash": "983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c",
+          "logical_path": "assets/fonts/Poppins-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Poppins-Bold.ttf"
+        },
+        {
+          "hash": "deb990e241954e1af87c6033d40a76cf0f48e0d112541794526051ac4a3ee2c8",
+          "logical_path": "assets/fonts/Inter-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Inter-Bold.ttf"
+        }
+      ],
+      "id": "phrase_01_lower_third_safe__id",
+      "render_plan": {
+        "background": {
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1.0
+          ],
+          "kind": "color"
+        },
+        "duration_ms": 5000,
+        "fps_den": 1,
+        "fps_num": 24,
+        "height": 1080,
+        "items": [
+          {
+            "end_ms": 5000,
+            "id": "item_1",
+            "kind": "important_phrase",
+            "motion_id": "liquid_glass_ripple",
+            "preset_id": "apple_v2",
+            "start_ms": 0,
+            "template_id": "IMPORTANT_PHRASE",
+            "text": "Christopher Nolan - Direktur"
+          }
+        ],
+        "language": "id",
+        "plan_id": "phrase_01_lower_third_safe__id",
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "video_id": "phrase_01_lower_third_safe__id",
+        "width": 1920
+      }
+    },
+    {
+      "assets": [
+        {
+          "hash": "983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c",
+          "logical_path": "assets/fonts/Poppins-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Poppins-Bold.ttf"
+        },
+        {
+          "hash": "deb990e241954e1af87c6033d40a76cf0f48e0d112541794526051ac4a3ee2c8",
+          "logical_path": "assets/fonts/Inter-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Inter-Bold.ttf"
+        }
+      ],
+      "id": "phrase_02_clean_slide_up__it",
+      "render_plan": {
+        "background": {
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1.0
+          ],
+          "kind": "color"
+        },
+        "duration_ms": 5000,
+        "fps_den": 1,
+        "fps_num": 24,
+        "height": 1080,
+        "items": [
+          {
+            "end_ms": 5000,
+            "id": "item_1",
+            "kind": "important_phrase",
+            "motion_id": "kinetic_stamp_impact",
+            "preset_id": "apple_v2",
+            "start_ms": 0,
+            "template_id": "IMPORTANT_PHRASE",
+            "text": "Il futuro del video ad alta velocità"
+          }
+        ],
+        "language": "it",
+        "plan_id": "phrase_02_clean_slide_up__it",
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "video_id": "phrase_02_clean_slide_up__it",
+        "width": 1920
+      }
+    },
+    {
+      "assets": [
+        {
+          "hash": "983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c",
+          "logical_path": "assets/fonts/Poppins-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Poppins-Bold.ttf"
+        },
+        {
+          "hash": "deb990e241954e1af87c6033d40a76cf0f48e0d112541794526051ac4a3ee2c8",
+          "logical_path": "assets/fonts/Inter-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Inter-Bold.ttf"
+        }
+      ],
+      "id": "phrase_02_clean_slide_up__en",
+      "render_plan": {
+        "background": {
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1.0
+          ],
+          "kind": "color"
+        },
+        "duration_ms": 5000,
+        "fps_den": 1,
+        "fps_num": 24,
+        "height": 1080,
+        "items": [
+          {
+            "end_ms": 5000,
+            "id": "item_1",
+            "kind": "important_phrase",
+            "motion_id": "kinetic_stamp_impact",
+            "preset_id": "apple_v2",
+            "start_ms": 0,
+            "template_id": "IMPORTANT_PHRASE",
+            "text": "The Future of High-Speed Video"
+          }
+        ],
+        "language": "en",
+        "plan_id": "phrase_02_clean_slide_up__en",
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "video_id": "phrase_02_clean_slide_up__en",
+        "width": 1920
+      }
+    },
+    {
+      "assets": [
+        {
+          "hash": "983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c",
+          "logical_path": "assets/fonts/Poppins-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Poppins-Bold.ttf"
+        },
+        {
+          "hash": "deb990e241954e1af87c6033d40a76cf0f48e0d112541794526051ac4a3ee2c8",
+          "logical_path": "assets/fonts/Inter-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Inter-Bold.ttf"
+        }
+      ],
+      "id": "phrase_02_clean_slide_up__pl",
+      "render_plan": {
+        "background": {
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1.0
+          ],
+          "kind": "color"
+        },
+        "duration_ms": 5000,
+        "fps_den": 1,
+        "fps_num": 24,
+        "height": 1080,
+        "items": [
+          {
+            "end_ms": 5000,
+            "id": "item_1",
+            "kind": "important_phrase",
+            "motion_id": "kinetic_stamp_impact",
+            "preset_id": "apple_v2",
+            "start_ms": 0,
+            "template_id": "IMPORTANT_PHRASE",
+            "text": "Przyszłość wysokiej prędkości wideo"
+          }
+        ],
+        "language": "pl",
+        "plan_id": "phrase_02_clean_slide_up__pl",
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "video_id": "phrase_02_clean_slide_up__pl",
+        "width": 1920
+      }
+    },
+    {
+      "assets": [
+        {
+          "hash": "983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c",
+          "logical_path": "assets/fonts/Poppins-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Poppins-Bold.ttf"
+        },
+        {
+          "hash": "deb990e241954e1af87c6033d40a76cf0f48e0d112541794526051ac4a3ee2c8",
+          "logical_path": "assets/fonts/Inter-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Inter-Bold.ttf"
+        }
+      ],
+      "id": "phrase_02_clean_slide_up__ru",
+      "render_plan": {
+        "background": {
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1.0
+          ],
+          "kind": "color"
+        },
+        "duration_ms": 5000,
+        "fps_den": 1,
+        "fps_num": 24,
+        "height": 1080,
+        "items": [
+          {
+            "end_ms": 5000,
+            "id": "item_1",
+            "kind": "important_phrase",
+            "motion_id": "kinetic_stamp_impact",
+            "preset_id": "apple_v2",
+            "start_ms": 0,
+            "template_id": "IMPORTANT_PHRASE",
+            "text": "Будущее высокоскоростного видео"
+          }
+        ],
+        "language": "ru",
+        "plan_id": "phrase_02_clean_slide_up__ru",
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "video_id": "phrase_02_clean_slide_up__ru",
+        "width": 1920
+      }
+    },
+    {
+      "assets": [
+        {
+          "hash": "983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c",
+          "logical_path": "assets/fonts/Poppins-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Poppins-Bold.ttf"
+        },
+        {
+          "hash": "deb990e241954e1af87c6033d40a76cf0f48e0d112541794526051ac4a3ee2c8",
+          "logical_path": "assets/fonts/Inter-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Inter-Bold.ttf"
+        }
+      ],
+      "id": "phrase_02_clean_slide_up__de",
+      "render_plan": {
+        "background": {
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1.0
+          ],
+          "kind": "color"
+        },
+        "duration_ms": 5000,
+        "fps_den": 1,
+        "fps_num": 24,
+        "height": 1080,
+        "items": [
+          {
+            "end_ms": 5000,
+            "id": "item_1",
+            "kind": "important_phrase",
+            "motion_id": "kinetic_stamp_impact",
+            "preset_id": "apple_v2",
+            "start_ms": 0,
+            "template_id": "IMPORTANT_PHRASE",
+            "text": "Die Zukunft des High Speed Videos"
+          }
+        ],
+        "language": "de",
+        "plan_id": "phrase_02_clean_slide_up__de",
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "video_id": "phrase_02_clean_slide_up__de",
+        "width": 1920
+      }
+    },
+    {
+      "assets": [
+        {
+          "hash": "983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c",
+          "logical_path": "assets/fonts/Poppins-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Poppins-Bold.ttf"
+        },
+        {
+          "hash": "deb990e241954e1af87c6033d40a76cf0f48e0d112541794526051ac4a3ee2c8",
+          "logical_path": "assets/fonts/Inter-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Inter-Bold.ttf"
+        }
+      ],
+      "id": "phrase_02_clean_slide_up__es",
+      "render_plan": {
+        "background": {
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1.0
+          ],
+          "kind": "color"
+        },
+        "duration_ms": 5000,
+        "fps_den": 1,
+        "fps_num": 24,
+        "height": 1080,
+        "items": [
+          {
+            "end_ms": 5000,
+            "id": "item_1",
+            "kind": "important_phrase",
+            "motion_id": "kinetic_stamp_impact",
+            "preset_id": "apple_v2",
+            "start_ms": 0,
+            "template_id": "IMPORTANT_PHRASE",
+            "text": "El futuro del vídeo de alta velocidad"
+          }
+        ],
+        "language": "es",
+        "plan_id": "phrase_02_clean_slide_up__es",
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "video_id": "phrase_02_clean_slide_up__es",
+        "width": 1920
+      }
+    },
+    {
+      "assets": [
+        {
+          "hash": "983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c",
+          "logical_path": "assets/fonts/Poppins-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Poppins-Bold.ttf"
+        },
+        {
+          "hash": "deb990e241954e1af87c6033d40a76cf0f48e0d112541794526051ac4a3ee2c8",
+          "logical_path": "assets/fonts/Inter-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Inter-Bold.ttf"
+        }
+      ],
+      "id": "phrase_02_clean_slide_up__pt-BR",
+      "render_plan": {
+        "background": {
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1.0
+          ],
+          "kind": "color"
+        },
+        "duration_ms": 5000,
+        "fps_den": 1,
+        "fps_num": 24,
+        "height": 1080,
+        "items": [
+          {
+            "end_ms": 5000,
+            "id": "item_1",
+            "kind": "important_phrase",
+            "motion_id": "kinetic_stamp_impact",
+            "preset_id": "apple_v2",
+            "start_ms": 0,
+            "template_id": "IMPORTANT_PHRASE",
+            "text": "O futuro do vídeo de alta velocidade"
+          }
+        ],
+        "language": "pt-BR",
+        "plan_id": "phrase_02_clean_slide_up__pt-BR",
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "video_id": "phrase_02_clean_slide_up__pt-BR",
+        "width": 1920
+      }
+    },
+    {
+      "assets": [
+        {
+          "hash": "983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c",
+          "logical_path": "assets/fonts/Poppins-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Poppins-Bold.ttf"
+        },
+        {
+          "hash": "deb990e241954e1af87c6033d40a76cf0f48e0d112541794526051ac4a3ee2c8",
+          "logical_path": "assets/fonts/Inter-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Inter-Bold.ttf"
+        }
+      ],
+      "id": "phrase_02_clean_slide_up__fr",
+      "render_plan": {
+        "background": {
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1.0
+          ],
+          "kind": "color"
+        },
+        "duration_ms": 5000,
+        "fps_den": 1,
+        "fps_num": 24,
+        "height": 1080,
+        "items": [
+          {
+            "end_ms": 5000,
+            "id": "item_1",
+            "kind": "important_phrase",
+            "motion_id": "kinetic_stamp_impact",
+            "preset_id": "apple_v2",
+            "start_ms": 0,
+            "template_id": "IMPORTANT_PHRASE",
+            "text": "L'avenir de la vidéo haute vitesse"
+          }
+        ],
+        "language": "fr",
+        "plan_id": "phrase_02_clean_slide_up__fr",
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "video_id": "phrase_02_clean_slide_up__fr",
+        "width": 1920
+      }
+    },
+    {
+      "assets": [
+        {
+          "hash": "983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c",
+          "logical_path": "assets/fonts/Poppins-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Poppins-Bold.ttf"
+        },
+        {
+          "hash": "deb990e241954e1af87c6033d40a76cf0f48e0d112541794526051ac4a3ee2c8",
+          "logical_path": "assets/fonts/Inter-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Inter-Bold.ttf"
+        }
+      ],
+      "id": "phrase_02_clean_slide_up__tr",
+      "render_plan": {
+        "background": {
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1.0
+          ],
+          "kind": "color"
+        },
+        "duration_ms": 5000,
+        "fps_den": 1,
+        "fps_num": 24,
+        "height": 1080,
+        "items": [
+          {
+            "end_ms": 5000,
+            "id": "item_1",
+            "kind": "important_phrase",
+            "motion_id": "kinetic_stamp_impact",
+            "preset_id": "apple_v2",
+            "start_ms": 0,
+            "template_id": "IMPORTANT_PHRASE",
+            "text": "Yüksek Hızlı Videonun Geleceği"
+          }
+        ],
+        "language": "tr",
+        "plan_id": "phrase_02_clean_slide_up__tr",
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "video_id": "phrase_02_clean_slide_up__tr",
+        "width": 1920
+      }
+    },
+    {
+      "assets": [
+        {
+          "hash": "983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c",
+          "logical_path": "assets/fonts/Poppins-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Poppins-Bold.ttf"
+        },
+        {
+          "hash": "deb990e241954e1af87c6033d40a76cf0f48e0d112541794526051ac4a3ee2c8",
+          "logical_path": "assets/fonts/Inter-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Inter-Bold.ttf"
+        }
+      ],
+      "id": "phrase_02_clean_slide_up__id",
+      "render_plan": {
+        "background": {
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1.0
+          ],
+          "kind": "color"
+        },
+        "duration_ms": 5000,
+        "fps_den": 1,
+        "fps_num": 24,
+        "height": 1080,
+        "items": [
+          {
+            "end_ms": 5000,
+            "id": "item_1",
+            "kind": "important_phrase",
+            "motion_id": "kinetic_stamp_impact",
+            "preset_id": "apple_v2",
+            "start_ms": 0,
+            "template_id": "IMPORTANT_PHRASE",
+            "text": "The Future of High- Speed Video"
+          }
+        ],
+        "language": "id",
+        "plan_id": "phrase_02_clean_slide_up__id",
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "video_id": "phrase_02_clean_slide_up__id",
+        "width": 1920
+      }
+    },
+    {
+      "assets": [
+        {
+          "hash": "983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c",
+          "logical_path": "assets/fonts/Poppins-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Poppins-Bold.ttf"
+        },
+        {
+          "hash": "deb990e241954e1af87c6033d40a76cf0f48e0d112541794526051ac4a3ee2c8",
+          "logical_path": "assets/fonts/Inter-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Inter-Bold.ttf"
+        }
+      ],
+      "id": "phrase_03_scale_pop__it",
+      "render_plan": {
+        "background": {
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1.0
+          ],
+          "kind": "color"
+        },
+        "duration_ms": 5000,
+        "fps_den": 1,
+        "fps_num": 24,
+        "height": 1080,
+        "items": [
+          {
+            "end_ms": 5000,
+            "id": "item_1",
+            "kind": "important_phrase",
+            "motion_id": "editorial_push_in",
+            "preset_id": "apple_v2",
+            "start_ms": 0,
+            "template_id": "IMPORTANT_PHRASE",
+            "text": "BREAKING NEWS"
+          }
+        ],
+        "language": "it",
+        "plan_id": "phrase_03_scale_pop__it",
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "video_id": "phrase_03_scale_pop__it",
+        "width": 1920
+      }
+    },
+    {
+      "assets": [
+        {
+          "hash": "983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c",
+          "logical_path": "assets/fonts/Poppins-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Poppins-Bold.ttf"
+        },
+        {
+          "hash": "deb990e241954e1af87c6033d40a76cf0f48e0d112541794526051ac4a3ee2c8",
+          "logical_path": "assets/fonts/Inter-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Inter-Bold.ttf"
+        }
+      ],
+      "id": "phrase_03_scale_pop__en",
+      "render_plan": {
+        "background": {
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1.0
+          ],
+          "kind": "color"
+        },
+        "duration_ms": 5000,
+        "fps_den": 1,
+        "fps_num": 24,
+        "height": 1080,
+        "items": [
+          {
+            "end_ms": 5000,
+            "id": "item_1",
+            "kind": "important_phrase",
+            "motion_id": "editorial_push_in",
+            "preset_id": "apple_v2",
+            "start_ms": 0,
+            "template_id": "IMPORTANT_PHRASE",
+            "text": "BREAKING NEWS"
+          }
+        ],
+        "language": "en",
+        "plan_id": "phrase_03_scale_pop__en",
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "video_id": "phrase_03_scale_pop__en",
+        "width": 1920
+      }
+    },
+    {
+      "assets": [
+        {
+          "hash": "983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c",
+          "logical_path": "assets/fonts/Poppins-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Poppins-Bold.ttf"
+        },
+        {
+          "hash": "deb990e241954e1af87c6033d40a76cf0f48e0d112541794526051ac4a3ee2c8",
+          "logical_path": "assets/fonts/Inter-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Inter-Bold.ttf"
+        }
+      ],
+      "id": "phrase_03_scale_pop__pl",
+      "render_plan": {
+        "background": {
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1.0
+          ],
+          "kind": "color"
+        },
+        "duration_ms": 5000,
+        "fps_den": 1,
+        "fps_num": 24,
+        "height": 1080,
+        "items": [
+          {
+            "end_ms": 5000,
+            "id": "item_1",
+            "kind": "important_phrase",
+            "motion_id": "editorial_push_in",
+            "preset_id": "apple_v2",
+            "start_ms": 0,
+            "template_id": "IMPORTANT_PHRASE",
+            "text": "BREAKING NEWS"
+          }
+        ],
+        "language": "pl",
+        "plan_id": "phrase_03_scale_pop__pl",
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "video_id": "phrase_03_scale_pop__pl",
+        "width": 1920
+      }
+    },
+    {
+      "assets": [
+        {
+          "hash": "983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c",
+          "logical_path": "assets/fonts/Poppins-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Poppins-Bold.ttf"
+        },
+        {
+          "hash": "deb990e241954e1af87c6033d40a76cf0f48e0d112541794526051ac4a3ee2c8",
+          "logical_path": "assets/fonts/Inter-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Inter-Bold.ttf"
+        }
+      ],
+      "id": "phrase_03_scale_pop__ru",
+      "render_plan": {
+        "background": {
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1.0
+          ],
+          "kind": "color"
+        },
+        "duration_ms": 5000,
+        "fps_den": 1,
+        "fps_num": 24,
+        "height": 1080,
+        "items": [
+          {
+            "end_ms": 5000,
+            "id": "item_1",
+            "kind": "important_phrase",
+            "motion_id": "editorial_push_in",
+            "preset_id": "apple_v2",
+            "start_ms": 0,
+            "template_id": "IMPORTANT_PHRASE",
+            "text": "СРОЧНЫЕ НОВОСТИ"
+          }
+        ],
+        "language": "ru",
+        "plan_id": "phrase_03_scale_pop__ru",
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "video_id": "phrase_03_scale_pop__ru",
+        "width": 1920
+      }
+    },
+    {
+      "assets": [
+        {
+          "hash": "983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c",
+          "logical_path": "assets/fonts/Poppins-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Poppins-Bold.ttf"
+        },
+        {
+          "hash": "deb990e241954e1af87c6033d40a76cf0f48e0d112541794526051ac4a3ee2c8",
+          "logical_path": "assets/fonts/Inter-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Inter-Bold.ttf"
+        }
+      ],
+      "id": "phrase_03_scale_pop__de",
+      "render_plan": {
+        "background": {
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1.0
+          ],
+          "kind": "color"
+        },
+        "duration_ms": 5000,
+        "fps_den": 1,
+        "fps_num": 24,
+        "height": 1080,
+        "items": [
+          {
+            "end_ms": 5000,
+            "id": "item_1",
+            "kind": "important_phrase",
+            "motion_id": "editorial_push_in",
+            "preset_id": "apple_v2",
+            "start_ms": 0,
+            "template_id": "IMPORTANT_PHRASE",
+            "text": "BREAKING NEWS"
+          }
+        ],
+        "language": "de",
+        "plan_id": "phrase_03_scale_pop__de",
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "video_id": "phrase_03_scale_pop__de",
+        "width": 1920
+      }
+    },
+    {
+      "assets": [
+        {
+          "hash": "983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c",
+          "logical_path": "assets/fonts/Poppins-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Poppins-Bold.ttf"
+        },
+        {
+          "hash": "deb990e241954e1af87c6033d40a76cf0f48e0d112541794526051ac4a3ee2c8",
+          "logical_path": "assets/fonts/Inter-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Inter-Bold.ttf"
+        }
+      ],
+      "id": "phrase_03_scale_pop__es",
+      "render_plan": {
+        "background": {
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1.0
+          ],
+          "kind": "color"
+        },
+        "duration_ms": 5000,
+        "fps_den": 1,
+        "fps_num": 24,
+        "height": 1080,
+        "items": [
+          {
+            "end_ms": 5000,
+            "id": "item_1",
+            "kind": "important_phrase",
+            "motion_id": "editorial_push_in",
+            "preset_id": "apple_v2",
+            "start_ms": 0,
+            "template_id": "IMPORTANT_PHRASE",
+            "text": "NOTICIAS DE ACTUALIDAD"
+          }
+        ],
+        "language": "es",
+        "plan_id": "phrase_03_scale_pop__es",
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "video_id": "phrase_03_scale_pop__es",
+        "width": 1920
+      }
+    },
+    {
+      "assets": [
+        {
+          "hash": "983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c",
+          "logical_path": "assets/fonts/Poppins-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Poppins-Bold.ttf"
+        },
+        {
+          "hash": "deb990e241954e1af87c6033d40a76cf0f48e0d112541794526051ac4a3ee2c8",
+          "logical_path": "assets/fonts/Inter-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Inter-Bold.ttf"
+        }
+      ],
+      "id": "phrase_03_scale_pop__pt-BR",
+      "render_plan": {
+        "background": {
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1.0
+          ],
+          "kind": "color"
+        },
+        "duration_ms": 5000,
+        "fps_den": 1,
+        "fps_num": 24,
+        "height": 1080,
+        "items": [
+          {
+            "end_ms": 5000,
+            "id": "item_1",
+            "kind": "important_phrase",
+            "motion_id": "editorial_push_in",
+            "preset_id": "apple_v2",
+            "start_ms": 0,
+            "template_id": "IMPORTANT_PHRASE",
+            "text": "ÚLTIMAS NOTÍCIAS"
+          }
+        ],
+        "language": "pt-BR",
+        "plan_id": "phrase_03_scale_pop__pt-BR",
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "video_id": "phrase_03_scale_pop__pt-BR",
+        "width": 1920
+      }
+    },
+    {
+      "assets": [
+        {
+          "hash": "983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c",
+          "logical_path": "assets/fonts/Poppins-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Poppins-Bold.ttf"
+        },
+        {
+          "hash": "deb990e241954e1af87c6033d40a76cf0f48e0d112541794526051ac4a3ee2c8",
+          "logical_path": "assets/fonts/Inter-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Inter-Bold.ttf"
+        }
+      ],
+      "id": "phrase_03_scale_pop__fr",
+      "render_plan": {
+        "background": {
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1.0
+          ],
+          "kind": "color"
+        },
+        "duration_ms": 5000,
+        "fps_den": 1,
+        "fps_num": 24,
+        "height": 1080,
+        "items": [
+          {
+            "end_ms": 5000,
+            "id": "item_1",
+            "kind": "important_phrase",
+            "motion_id": "editorial_push_in",
+            "preset_id": "apple_v2",
+            "start_ms": 0,
+            "template_id": "IMPORTANT_PHRASE",
+            "text": "NOUVELLES"
+          }
+        ],
+        "language": "fr",
+        "plan_id": "phrase_03_scale_pop__fr",
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "video_id": "phrase_03_scale_pop__fr",
+        "width": 1920
+      }
+    },
+    {
+      "assets": [
+        {
+          "hash": "983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c",
+          "logical_path": "assets/fonts/Poppins-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Poppins-Bold.ttf"
+        },
+        {
+          "hash": "deb990e241954e1af87c6033d40a76cf0f48e0d112541794526051ac4a3ee2c8",
+          "logical_path": "assets/fonts/Inter-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Inter-Bold.ttf"
+        }
+      ],
+      "id": "phrase_03_scale_pop__tr",
+      "render_plan": {
+        "background": {
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1.0
+          ],
+          "kind": "color"
+        },
+        "duration_ms": 5000,
+        "fps_den": 1,
+        "fps_num": 24,
+        "height": 1080,
+        "items": [
+          {
+            "end_ms": 5000,
+            "id": "item_1",
+            "kind": "important_phrase",
+            "motion_id": "editorial_push_in",
+            "preset_id": "apple_v2",
+            "start_ms": 0,
+            "template_id": "IMPORTANT_PHRASE",
+            "text": "YOK NEWS"
+          }
+        ],
+        "language": "tr",
+        "plan_id": "phrase_03_scale_pop__tr",
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "video_id": "phrase_03_scale_pop__tr",
+        "width": 1920
+      }
+    },
+    {
+      "assets": [
+        {
+          "hash": "983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c",
+          "logical_path": "assets/fonts/Poppins-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Poppins-Bold.ttf"
+        },
+        {
+          "hash": "deb990e241954e1af87c6033d40a76cf0f48e0d112541794526051ac4a3ee2c8",
+          "logical_path": "assets/fonts/Inter-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Inter-Bold.ttf"
+        }
+      ],
+      "id": "phrase_03_scale_pop__id",
+      "render_plan": {
+        "background": {
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1.0
+          ],
+          "kind": "color"
+        },
+        "duration_ms": 5000,
+        "fps_den": 1,
+        "fps_num": 24,
+        "height": 1080,
+        "items": [
+          {
+            "end_ms": 5000,
+            "id": "item_1",
+            "kind": "important_phrase",
+            "motion_id": "editorial_push_in",
+            "preset_id": "apple_v2",
+            "start_ms": 0,
+            "template_id": "IMPORTANT_PHRASE",
+            "text": "BREAKING NEWS"
+          }
+        ],
+        "language": "id",
+        "plan_id": "phrase_03_scale_pop__id",
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "video_id": "phrase_03_scale_pop__id",
+        "width": 1920
+      }
+    },
+    {
+      "assets": [
+        {
+          "hash": "983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c",
+          "logical_path": "assets/fonts/Poppins-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Poppins-Bold.ttf"
+        },
+        {
+          "hash": "deb990e241954e1af87c6033d40a76cf0f48e0d112541794526051ac4a3ee2c8",
+          "logical_path": "assets/fonts/Inter-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Inter-Bold.ttf"
+        }
+      ],
+      "id": "phrase_04_dm_sans_fade__it",
+      "render_plan": {
+        "background": {
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1.0
+          ],
+          "kind": "color"
+        },
+        "duration_ms": 5000,
+        "fps_den": 1,
+        "fps_num": 24,
+        "height": 1080,
+        "items": [
+          {
+            "end_ms": 5000,
+            "id": "item_1",
+            "kind": "important_phrase",
+            "motion_id": "neon_flicker_ignite",
+            "preset_id": "apple_v2",
+            "start_ms": 0,
+            "template_id": "IMPORTANT_PHRASE",
+            "text": "La semplicità è l'ultima raffinatezza."
+          }
+        ],
+        "language": "it",
+        "plan_id": "phrase_04_dm_sans_fade__it",
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "video_id": "phrase_04_dm_sans_fade__it",
+        "width": 1920
+      }
+    },
+    {
+      "assets": [
+        {
+          "hash": "983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c",
+          "logical_path": "assets/fonts/Poppins-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Poppins-Bold.ttf"
+        },
+        {
+          "hash": "deb990e241954e1af87c6033d40a76cf0f48e0d112541794526051ac4a3ee2c8",
+          "logical_path": "assets/fonts/Inter-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Inter-Bold.ttf"
+        }
+      ],
+      "id": "phrase_04_dm_sans_fade__en",
+      "render_plan": {
+        "background": {
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1.0
+          ],
+          "kind": "color"
+        },
+        "duration_ms": 5000,
+        "fps_den": 1,
+        "fps_num": 24,
+        "height": 1080,
+        "items": [
+          {
+            "end_ms": 5000,
+            "id": "item_1",
+            "kind": "important_phrase",
+            "motion_id": "neon_flicker_ignite",
+            "preset_id": "apple_v2",
+            "start_ms": 0,
+            "template_id": "IMPORTANT_PHRASE",
+            "text": "Simplicity is the ultimate sophistication."
+          }
+        ],
+        "language": "en",
+        "plan_id": "phrase_04_dm_sans_fade__en",
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "video_id": "phrase_04_dm_sans_fade__en",
+        "width": 1920
+      }
+    },
+    {
+      "assets": [
+        {
+          "hash": "983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c",
+          "logical_path": "assets/fonts/Poppins-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Poppins-Bold.ttf"
+        },
+        {
+          "hash": "deb990e241954e1af87c6033d40a76cf0f48e0d112541794526051ac4a3ee2c8",
+          "logical_path": "assets/fonts/Inter-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Inter-Bold.ttf"
+        }
+      ],
+      "id": "phrase_04_dm_sans_fade__pl",
+      "render_plan": {
+        "background": {
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1.0
+          ],
+          "kind": "color"
+        },
+        "duration_ms": 5000,
+        "fps_den": 1,
+        "fps_num": 24,
+        "height": 1080,
+        "items": [
+          {
+            "end_ms": 5000,
+            "id": "item_1",
+            "kind": "important_phrase",
+            "motion_id": "neon_flicker_ignite",
+            "preset_id": "apple_v2",
+            "start_ms": 0,
+            "template_id": "IMPORTANT_PHRASE",
+            "text": "Prostota jest najbardziej wyrafinowana."
+          }
+        ],
+        "language": "pl",
+        "plan_id": "phrase_04_dm_sans_fade__pl",
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "video_id": "phrase_04_dm_sans_fade__pl",
+        "width": 1920
+      }
+    },
+    {
+      "assets": [
+        {
+          "hash": "983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c",
+          "logical_path": "assets/fonts/Poppins-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Poppins-Bold.ttf"
+        },
+        {
+          "hash": "deb990e241954e1af87c6033d40a76cf0f48e0d112541794526051ac4a3ee2c8",
+          "logical_path": "assets/fonts/Inter-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Inter-Bold.ttf"
+        }
+      ],
+      "id": "phrase_04_dm_sans_fade__ru",
+      "render_plan": {
+        "background": {
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1.0
+          ],
+          "kind": "color"
+        },
+        "duration_ms": 5000,
+        "fps_den": 1,
+        "fps_num": 24,
+        "height": 1080,
+        "items": [
+          {
+            "end_ms": 5000,
+            "id": "item_1",
+            "kind": "important_phrase",
+            "motion_id": "neon_flicker_ignite",
+            "preset_id": "apple_v2",
+            "start_ms": 0,
+            "template_id": "IMPORTANT_PHRASE",
+            "text": "Простота — это конечная изощренность."
+          }
+        ],
+        "language": "ru",
+        "plan_id": "phrase_04_dm_sans_fade__ru",
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "video_id": "phrase_04_dm_sans_fade__ru",
+        "width": 1920
+      }
+    },
+    {
+      "assets": [
+        {
+          "hash": "983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c",
+          "logical_path": "assets/fonts/Poppins-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Poppins-Bold.ttf"
+        },
+        {
+          "hash": "deb990e241954e1af87c6033d40a76cf0f48e0d112541794526051ac4a3ee2c8",
+          "logical_path": "assets/fonts/Inter-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Inter-Bold.ttf"
+        }
+      ],
+      "id": "phrase_04_dm_sans_fade__de",
+      "render_plan": {
+        "background": {
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1.0
+          ],
+          "kind": "color"
+        },
+        "duration_ms": 5000,
+        "fps_den": 1,
+        "fps_num": 24,
+        "height": 1080,
+        "items": [
+          {
+            "end_ms": 5000,
+            "id": "item_1",
+            "kind": "important_phrase",
+            "motion_id": "neon_flicker_ignite",
+            "preset_id": "apple_v2",
+            "start_ms": 0,
+            "template_id": "IMPORTANT_PHRASE",
+            "text": "Einfachheit ist die ultimative Raffinesse."
+          }
+        ],
+        "language": "de",
+        "plan_id": "phrase_04_dm_sans_fade__de",
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "video_id": "phrase_04_dm_sans_fade__de",
+        "width": 1920
+      }
+    },
+    {
+      "assets": [
+        {
+          "hash": "983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c",
+          "logical_path": "assets/fonts/Poppins-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Poppins-Bold.ttf"
+        },
+        {
+          "hash": "deb990e241954e1af87c6033d40a76cf0f48e0d112541794526051ac4a3ee2c8",
+          "logical_path": "assets/fonts/Inter-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Inter-Bold.ttf"
+        }
+      ],
+      "id": "phrase_04_dm_sans_fade__es",
+      "render_plan": {
+        "background": {
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1.0
+          ],
+          "kind": "color"
+        },
+        "duration_ms": 5000,
+        "fps_den": 1,
+        "fps_num": 24,
+        "height": 1080,
+        "items": [
+          {
+            "end_ms": 5000,
+            "id": "item_1",
+            "kind": "important_phrase",
+            "motion_id": "neon_flicker_ignite",
+            "preset_id": "apple_v2",
+            "start_ms": 0,
+            "template_id": "IMPORTANT_PHRASE",
+            "text": "La simplicidad es la sofisticación final."
+          }
+        ],
+        "language": "es",
+        "plan_id": "phrase_04_dm_sans_fade__es",
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "video_id": "phrase_04_dm_sans_fade__es",
+        "width": 1920
+      }
+    },
+    {
+      "assets": [
+        {
+          "hash": "983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c",
+          "logical_path": "assets/fonts/Poppins-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Poppins-Bold.ttf"
+        },
+        {
+          "hash": "deb990e241954e1af87c6033d40a76cf0f48e0d112541794526051ac4a3ee2c8",
+          "logical_path": "assets/fonts/Inter-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Inter-Bold.ttf"
+        }
+      ],
+      "id": "phrase_04_dm_sans_fade__pt-BR",
+      "render_plan": {
+        "background": {
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1.0
+          ],
+          "kind": "color"
+        },
+        "duration_ms": 5000,
+        "fps_den": 1,
+        "fps_num": 24,
+        "height": 1080,
+        "items": [
+          {
+            "end_ms": 5000,
+            "id": "item_1",
+            "kind": "important_phrase",
+            "motion_id": "neon_flicker_ignite",
+            "preset_id": "apple_v2",
+            "start_ms": 0,
+            "template_id": "IMPORTANT_PHRASE",
+            "text": "Simplicidade é a sofisticação final."
+          }
+        ],
+        "language": "pt-BR",
+        "plan_id": "phrase_04_dm_sans_fade__pt-BR",
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "video_id": "phrase_04_dm_sans_fade__pt-BR",
+        "width": 1920
+      }
+    },
+    {
+      "assets": [
+        {
+          "hash": "983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c",
+          "logical_path": "assets/fonts/Poppins-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Poppins-Bold.ttf"
+        },
+        {
+          "hash": "deb990e241954e1af87c6033d40a76cf0f48e0d112541794526051ac4a3ee2c8",
+          "logical_path": "assets/fonts/Inter-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Inter-Bold.ttf"
+        }
+      ],
+      "id": "phrase_04_dm_sans_fade__fr",
+      "render_plan": {
+        "background": {
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1.0
+          ],
+          "kind": "color"
+        },
+        "duration_ms": 5000,
+        "fps_den": 1,
+        "fps_num": 24,
+        "height": 1080,
+        "items": [
+          {
+            "end_ms": 5000,
+            "id": "item_1",
+            "kind": "important_phrase",
+            "motion_id": "neon_flicker_ignite",
+            "preset_id": "apple_v2",
+            "start_ms": 0,
+            "template_id": "IMPORTANT_PHRASE",
+            "text": "La simplicité est la sophistication ultime."
+          }
+        ],
+        "language": "fr",
+        "plan_id": "phrase_04_dm_sans_fade__fr",
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "video_id": "phrase_04_dm_sans_fade__fr",
+        "width": 1920
+      }
+    },
+    {
+      "assets": [
+        {
+          "hash": "983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c",
+          "logical_path": "assets/fonts/Poppins-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Poppins-Bold.ttf"
+        },
+        {
+          "hash": "deb990e241954e1af87c6033d40a76cf0f48e0d112541794526051ac4a3ee2c8",
+          "logical_path": "assets/fonts/Inter-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Inter-Bold.ttf"
+        }
+      ],
+      "id": "phrase_04_dm_sans_fade__tr",
+      "render_plan": {
+        "background": {
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1.0
+          ],
+          "kind": "color"
+        },
+        "duration_ms": 5000,
+        "fps_den": 1,
+        "fps_num": 24,
+        "height": 1080,
+        "items": [
+          {
+            "end_ms": 5000,
+            "id": "item_1",
+            "kind": "important_phrase",
+            "motion_id": "neon_flicker_ignite",
+            "preset_id": "apple_v2",
+            "start_ms": 0,
+            "template_id": "IMPORTANT_PHRASE",
+            "text": "Sikatey nihai sofistasyondur."
+          }
+        ],
+        "language": "tr",
+        "plan_id": "phrase_04_dm_sans_fade__tr",
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "video_id": "phrase_04_dm_sans_fade__tr",
+        "width": 1920
+      }
+    },
+    {
+      "assets": [
+        {
+          "hash": "983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c",
+          "logical_path": "assets/fonts/Poppins-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Poppins-Bold.ttf"
+        },
+        {
+          "hash": "deb990e241954e1af87c6033d40a76cf0f48e0d112541794526051ac4a3ee2c8",
+          "logical_path": "assets/fonts/Inter-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Inter-Bold.ttf"
+        }
+      ],
+      "id": "phrase_04_dm_sans_fade__id",
+      "render_plan": {
+        "background": {
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1.0
+          ],
+          "kind": "color"
+        },
+        "duration_ms": 5000,
+        "fps_den": 1,
+        "fps_num": 24,
+        "height": 1080,
+        "items": [
+          {
+            "end_ms": 5000,
+            "id": "item_1",
+            "kind": "important_phrase",
+            "motion_id": "neon_flicker_ignite",
+            "preset_id": "apple_v2",
+            "start_ms": 0,
+            "template_id": "IMPORTANT_PHRASE",
+            "text": "Kesederhanaan adalah kecanggihan tertinggi."
+          }
+        ],
+        "language": "id",
+        "plan_id": "phrase_04_dm_sans_fade__id",
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "video_id": "phrase_04_dm_sans_fade__id",
+        "width": 1920
+      }
+    },
+    {
+      "assets": [
+        {
+          "hash": "983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c",
+          "logical_path": "assets/fonts/Poppins-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Poppins-Bold.ttf"
+        },
+        {
+          "hash": "deb990e241954e1af87c6033d40a76cf0f48e0d112541794526051ac4a3ee2c8",
+          "logical_path": "assets/fonts/Inter-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Inter-Bold.ttf"
+        }
+      ],
+      "id": "phrase_05_slide_left_punch__it",
+      "render_plan": {
+        "background": {
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1.0
+          ],
+          "kind": "color"
+        },
+        "duration_ms": 5000,
+        "fps_den": 1,
+        "fps_num": 24,
+        "height": 1080,
+        "items": [
+          {
+            "end_ms": 5000,
+            "id": "item_1",
+            "kind": "important_phrase",
+            "motion_id": "hologram_scanline_build",
+            "preset_id": "apple_v2",
+            "start_ms": 0,
+            "template_id": "IMPORTANT_PHRASE",
+            "text": "Intelligenza artificiale Infrastrutture"
+          }
+        ],
+        "language": "it",
+        "plan_id": "phrase_05_slide_left_punch__it",
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "video_id": "phrase_05_slide_left_punch__it",
+        "width": 1920
+      }
+    },
+    {
+      "assets": [
+        {
+          "hash": "983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c",
+          "logical_path": "assets/fonts/Poppins-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Poppins-Bold.ttf"
+        },
+        {
+          "hash": "deb990e241954e1af87c6033d40a76cf0f48e0d112541794526051ac4a3ee2c8",
+          "logical_path": "assets/fonts/Inter-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Inter-Bold.ttf"
+        }
+      ],
+      "id": "phrase_05_slide_left_punch__en",
+      "render_plan": {
+        "background": {
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1.0
+          ],
+          "kind": "color"
+        },
+        "duration_ms": 5000,
+        "fps_den": 1,
+        "fps_num": 24,
+        "height": 1080,
+        "items": [
+          {
+            "end_ms": 5000,
+            "id": "item_1",
+            "kind": "important_phrase",
+            "motion_id": "hologram_scanline_build",
+            "preset_id": "apple_v2",
+            "start_ms": 0,
+            "template_id": "IMPORTANT_PHRASE",
+            "text": "Artificial Intelligence Infrastructure"
+          }
+        ],
+        "language": "en",
+        "plan_id": "phrase_05_slide_left_punch__en",
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "video_id": "phrase_05_slide_left_punch__en",
+        "width": 1920
+      }
+    },
+    {
+      "assets": [
+        {
+          "hash": "983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c",
+          "logical_path": "assets/fonts/Poppins-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Poppins-Bold.ttf"
+        },
+        {
+          "hash": "deb990e241954e1af87c6033d40a76cf0f48e0d112541794526051ac4a3ee2c8",
+          "logical_path": "assets/fonts/Inter-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Inter-Bold.ttf"
+        }
+      ],
+      "id": "phrase_05_slide_left_punch__pl",
+      "render_plan": {
+        "background": {
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1.0
+          ],
+          "kind": "color"
+        },
+        "duration_ms": 5000,
+        "fps_den": 1,
+        "fps_num": 24,
+        "height": 1080,
+        "items": [
+          {
+            "end_ms": 5000,
+            "id": "item_1",
+            "kind": "important_phrase",
+            "motion_id": "hologram_scanline_build",
+            "preset_id": "apple_v2",
+            "start_ms": 0,
+            "template_id": "IMPORTANT_PHRASE",
+            "text": "Sztuczna inteligencja Infrastruktura"
+          }
+        ],
+        "language": "pl",
+        "plan_id": "phrase_05_slide_left_punch__pl",
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "video_id": "phrase_05_slide_left_punch__pl",
+        "width": 1920
+      }
+    },
+    {
+      "assets": [
+        {
+          "hash": "983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c",
+          "logical_path": "assets/fonts/Poppins-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Poppins-Bold.ttf"
+        },
+        {
+          "hash": "deb990e241954e1af87c6033d40a76cf0f48e0d112541794526051ac4a3ee2c8",
+          "logical_path": "assets/fonts/Inter-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Inter-Bold.ttf"
+        }
+      ],
+      "id": "phrase_05_slide_left_punch__ru",
+      "render_plan": {
+        "background": {
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1.0
+          ],
+          "kind": "color"
+        },
+        "duration_ms": 5000,
+        "fps_den": 1,
+        "fps_num": 24,
+        "height": 1080,
+        "items": [
+          {
+            "end_ms": 5000,
+            "id": "item_1",
+            "kind": "important_phrase",
+            "motion_id": "hologram_scanline_build",
+            "preset_id": "apple_v2",
+            "start_ms": 0,
+            "template_id": "IMPORTANT_PHRASE",
+            "text": "Искусственный интеллект инфраструктура"
+          }
+        ],
+        "language": "ru",
+        "plan_id": "phrase_05_slide_left_punch__ru",
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "video_id": "phrase_05_slide_left_punch__ru",
+        "width": 1920
+      }
+    },
+    {
+      "assets": [
+        {
+          "hash": "983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c",
+          "logical_path": "assets/fonts/Poppins-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Poppins-Bold.ttf"
+        },
+        {
+          "hash": "deb990e241954e1af87c6033d40a76cf0f48e0d112541794526051ac4a3ee2c8",
+          "logical_path": "assets/fonts/Inter-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Inter-Bold.ttf"
+        }
+      ],
+      "id": "phrase_05_slide_left_punch__de",
+      "render_plan": {
+        "background": {
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1.0
+          ],
+          "kind": "color"
+        },
+        "duration_ms": 5000,
+        "fps_den": 1,
+        "fps_num": 24,
+        "height": 1080,
+        "items": [
+          {
+            "end_ms": 5000,
+            "id": "item_1",
+            "kind": "important_phrase",
+            "motion_id": "hologram_scanline_build",
+            "preset_id": "apple_v2",
+            "start_ms": 0,
+            "template_id": "IMPORTANT_PHRASE",
+            "text": "Künstliche Intelligenz Infrastruktur"
+          }
+        ],
+        "language": "de",
+        "plan_id": "phrase_05_slide_left_punch__de",
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "video_id": "phrase_05_slide_left_punch__de",
+        "width": 1920
+      }
+    },
+    {
+      "assets": [
+        {
+          "hash": "983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c",
+          "logical_path": "assets/fonts/Poppins-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Poppins-Bold.ttf"
+        },
+        {
+          "hash": "deb990e241954e1af87c6033d40a76cf0f48e0d112541794526051ac4a3ee2c8",
+          "logical_path": "assets/fonts/Inter-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Inter-Bold.ttf"
+        }
+      ],
+      "id": "phrase_05_slide_left_punch__es",
+      "render_plan": {
+        "background": {
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1.0
+          ],
+          "kind": "color"
+        },
+        "duration_ms": 5000,
+        "fps_den": 1,
+        "fps_num": 24,
+        "height": 1080,
+        "items": [
+          {
+            "end_ms": 5000,
+            "id": "item_1",
+            "kind": "important_phrase",
+            "motion_id": "hologram_scanline_build",
+            "preset_id": "apple_v2",
+            "start_ms": 0,
+            "template_id": "IMPORTANT_PHRASE",
+            "text": "Inteligencia Artificial Infraestructura"
+          }
+        ],
+        "language": "es",
+        "plan_id": "phrase_05_slide_left_punch__es",
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "video_id": "phrase_05_slide_left_punch__es",
+        "width": 1920
+      }
+    },
+    {
+      "assets": [
+        {
+          "hash": "983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c",
+          "logical_path": "assets/fonts/Poppins-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Poppins-Bold.ttf"
+        },
+        {
+          "hash": "deb990e241954e1af87c6033d40a76cf0f48e0d112541794526051ac4a3ee2c8",
+          "logical_path": "assets/fonts/Inter-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Inter-Bold.ttf"
+        }
+      ],
+      "id": "phrase_05_slide_left_punch__pt-BR",
+      "render_plan": {
+        "background": {
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1.0
+          ],
+          "kind": "color"
+        },
+        "duration_ms": 5000,
+        "fps_den": 1,
+        "fps_num": 24,
+        "height": 1080,
+        "items": [
+          {
+            "end_ms": 5000,
+            "id": "item_1",
+            "kind": "important_phrase",
+            "motion_id": "hologram_scanline_build",
+            "preset_id": "apple_v2",
+            "start_ms": 0,
+            "template_id": "IMPORTANT_PHRASE",
+            "text": "Inteligência Artificial Infra-estruturas"
+          }
+        ],
+        "language": "pt-BR",
+        "plan_id": "phrase_05_slide_left_punch__pt-BR",
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "video_id": "phrase_05_slide_left_punch__pt-BR",
+        "width": 1920
+      }
+    },
+    {
+      "assets": [
+        {
+          "hash": "983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c",
+          "logical_path": "assets/fonts/Poppins-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Poppins-Bold.ttf"
+        },
+        {
+          "hash": "deb990e241954e1af87c6033d40a76cf0f48e0d112541794526051ac4a3ee2c8",
+          "logical_path": "assets/fonts/Inter-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Inter-Bold.ttf"
+        }
+      ],
+      "id": "phrase_05_slide_left_punch__fr",
+      "render_plan": {
+        "background": {
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1.0
+          ],
+          "kind": "color"
+        },
+        "duration_ms": 5000,
+        "fps_den": 1,
+        "fps_num": 24,
+        "height": 1080,
+        "items": [
+          {
+            "end_ms": 5000,
+            "id": "item_1",
+            "kind": "important_phrase",
+            "motion_id": "hologram_scanline_build",
+            "preset_id": "apple_v2",
+            "start_ms": 0,
+            "template_id": "IMPORTANT_PHRASE",
+            "text": "Intelligence artificielle Infrastructure"
+          }
+        ],
+        "language": "fr",
+        "plan_id": "phrase_05_slide_left_punch__fr",
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "video_id": "phrase_05_slide_left_punch__fr",
+        "width": 1920
+      }
+    },
+    {
+      "assets": [
+        {
+          "hash": "983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c",
+          "logical_path": "assets/fonts/Poppins-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Poppins-Bold.ttf"
+        },
+        {
+          "hash": "deb990e241954e1af87c6033d40a76cf0f48e0d112541794526051ac4a3ee2c8",
+          "logical_path": "assets/fonts/Inter-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Inter-Bold.ttf"
+        }
+      ],
+      "id": "phrase_05_slide_left_punch__tr",
+      "render_plan": {
+        "background": {
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1.0
+          ],
+          "kind": "color"
+        },
+        "duration_ms": 5000,
+        "fps_den": 1,
+        "fps_num": 24,
+        "height": 1080,
+        "items": [
+          {
+            "end_ms": 5000,
+            "id": "item_1",
+            "kind": "important_phrase",
+            "motion_id": "hologram_scanline_build",
+            "preset_id": "apple_v2",
+            "start_ms": 0,
+            "template_id": "IMPORTANT_PHRASE",
+            "text": "Yapay Zeka Altyapı Altyapı"
+          }
+        ],
+        "language": "tr",
+        "plan_id": "phrase_05_slide_left_punch__tr",
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "video_id": "phrase_05_slide_left_punch__tr",
+        "width": 1920
+      }
+    },
+    {
+      "assets": [
+        {
+          "hash": "983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c",
+          "logical_path": "assets/fonts/Poppins-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Poppins-Bold.ttf"
+        },
+        {
+          "hash": "deb990e241954e1af87c6033d40a76cf0f48e0d112541794526051ac4a3ee2c8",
+          "logical_path": "assets/fonts/Inter-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Inter-Bold.ttf"
+        }
+      ],
+      "id": "phrase_05_slide_left_punch__id",
+      "render_plan": {
+        "background": {
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1.0
+          ],
+          "kind": "color"
+        },
+        "duration_ms": 5000,
+        "fps_den": 1,
+        "fps_num": 24,
+        "height": 1080,
+        "items": [
+          {
+            "end_ms": 5000,
+            "id": "item_1",
+            "kind": "important_phrase",
+            "motion_id": "hologram_scanline_build",
+            "preset_id": "apple_v2",
+            "start_ms": 0,
+            "template_id": "IMPORTANT_PHRASE",
+            "text": "Kecerdasan Buatan Infrastruktur"
+          }
+        ],
+        "language": "id",
+        "plan_id": "phrase_05_slide_left_punch__id",
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "video_id": "phrase_05_slide_left_punch__id",
+        "width": 1920
+      }
+    },
+    {
+      "assets": [
+        {
+          "hash": "f30bf283bf392100119d65fad235548468f25999e483856821551fe99277d4b0",
+          "logical_path": "assets/semantic/gerard_butler.jpg",
+          "source_url": "http://127.0.0.1:8099/gerard_butler.jpg"
+        }
+      ],
+      "id": "image_focus_in__it",
+      "render_plan": {
+        "background": {
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1.0
+          ],
+          "kind": "color"
+        },
+        "duration_ms": 5000,
+        "fps_den": 1,
+        "fps_num": 24,
+        "height": 1080,
+        "items": [
+          {
+            "asset_refs": [
+              {
+                "asset_id": "gerard_butler",
+                "media_type": "image/jpeg",
+                "sha256": "f30bf283bf392100119d65fad235548468f25999e483856821551fe99277d4b0",
+                "url": "http://127.0.0.1:8099/gerard_butler.jpg"
+              }
+            ],
+            "end_ms": 5000,
+            "id": "item_1",
+            "kind": "entity_image",
+            "preset_id": "image_focus_in",
+            "start_ms": 0,
+            "template_id": "IMAGE_OVERLAY"
+          }
+        ],
+        "language": "it",
+        "plan_id": "image_focus_in__it",
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "video_id": "image_focus_in__it",
+        "width": 1920
+      }
+    },
+    {
+      "assets": [
+        {
+          "hash": "f30bf283bf392100119d65fad235548468f25999e483856821551fe99277d4b0",
+          "logical_path": "assets/semantic/gerard_butler.jpg",
+          "source_url": "http://127.0.0.1:8099/gerard_butler.jpg"
+        }
+      ],
+      "id": "image_focus_in__en",
+      "render_plan": {
+        "background": {
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1.0
+          ],
+          "kind": "color"
+        },
+        "duration_ms": 5000,
+        "fps_den": 1,
+        "fps_num": 24,
+        "height": 1080,
+        "items": [
+          {
+            "asset_refs": [
+              {
+                "asset_id": "gerard_butler",
+                "media_type": "image/jpeg",
+                "sha256": "f30bf283bf392100119d65fad235548468f25999e483856821551fe99277d4b0",
+                "url": "http://127.0.0.1:8099/gerard_butler.jpg"
+              }
+            ],
+            "end_ms": 5000,
+            "id": "item_1",
+            "kind": "entity_image",
+            "preset_id": "image_focus_in",
+            "start_ms": 0,
+            "template_id": "IMAGE_OVERLAY"
+          }
+        ],
+        "language": "en",
+        "plan_id": "image_focus_in__en",
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "video_id": "image_focus_in__en",
+        "width": 1920
+      }
+    },
+    {
+      "assets": [
+        {
+          "hash": "f30bf283bf392100119d65fad235548468f25999e483856821551fe99277d4b0",
+          "logical_path": "assets/semantic/gerard_butler.jpg",
+          "source_url": "http://127.0.0.1:8099/gerard_butler.jpg"
+        }
+      ],
+      "id": "image_focus_in__pl",
+      "render_plan": {
+        "background": {
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1.0
+          ],
+          "kind": "color"
+        },
+        "duration_ms": 5000,
+        "fps_den": 1,
+        "fps_num": 24,
+        "height": 1080,
+        "items": [
+          {
+            "asset_refs": [
+              {
+                "asset_id": "gerard_butler",
+                "media_type": "image/jpeg",
+                "sha256": "f30bf283bf392100119d65fad235548468f25999e483856821551fe99277d4b0",
+                "url": "http://127.0.0.1:8099/gerard_butler.jpg"
+              }
+            ],
+            "end_ms": 5000,
+            "id": "item_1",
+            "kind": "entity_image",
+            "preset_id": "image_focus_in",
+            "start_ms": 0,
+            "template_id": "IMAGE_OVERLAY"
+          }
+        ],
+        "language": "pl",
+        "plan_id": "image_focus_in__pl",
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "video_id": "image_focus_in__pl",
+        "width": 1920
+      }
+    },
+    {
+      "assets": [
+        {
+          "hash": "f30bf283bf392100119d65fad235548468f25999e483856821551fe99277d4b0",
+          "logical_path": "assets/semantic/gerard_butler.jpg",
+          "source_url": "http://127.0.0.1:8099/gerard_butler.jpg"
+        }
+      ],
+      "id": "image_focus_in__ru",
+      "render_plan": {
+        "background": {
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1.0
+          ],
+          "kind": "color"
+        },
+        "duration_ms": 5000,
+        "fps_den": 1,
+        "fps_num": 24,
+        "height": 1080,
+        "items": [
+          {
+            "asset_refs": [
+              {
+                "asset_id": "gerard_butler",
+                "media_type": "image/jpeg",
+                "sha256": "f30bf283bf392100119d65fad235548468f25999e483856821551fe99277d4b0",
+                "url": "http://127.0.0.1:8099/gerard_butler.jpg"
+              }
+            ],
+            "end_ms": 5000,
+            "id": "item_1",
+            "kind": "entity_image",
+            "preset_id": "image_focus_in",
+            "start_ms": 0,
+            "template_id": "IMAGE_OVERLAY"
+          }
+        ],
+        "language": "ru",
+        "plan_id": "image_focus_in__ru",
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "video_id": "image_focus_in__ru",
+        "width": 1920
+      }
+    },
+    {
+      "assets": [
+        {
+          "hash": "f30bf283bf392100119d65fad235548468f25999e483856821551fe99277d4b0",
+          "logical_path": "assets/semantic/gerard_butler.jpg",
+          "source_url": "http://127.0.0.1:8099/gerard_butler.jpg"
+        }
+      ],
+      "id": "image_focus_in__de",
+      "render_plan": {
+        "background": {
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1.0
+          ],
+          "kind": "color"
+        },
+        "duration_ms": 5000,
+        "fps_den": 1,
+        "fps_num": 24,
+        "height": 1080,
+        "items": [
+          {
+            "asset_refs": [
+              {
+                "asset_id": "gerard_butler",
+                "media_type": "image/jpeg",
+                "sha256": "f30bf283bf392100119d65fad235548468f25999e483856821551fe99277d4b0",
+                "url": "http://127.0.0.1:8099/gerard_butler.jpg"
+              }
+            ],
+            "end_ms": 5000,
+            "id": "item_1",
+            "kind": "entity_image",
+            "preset_id": "image_focus_in",
+            "start_ms": 0,
+            "template_id": "IMAGE_OVERLAY"
+          }
+        ],
+        "language": "de",
+        "plan_id": "image_focus_in__de",
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "video_id": "image_focus_in__de",
+        "width": 1920
+      }
+    },
+    {
+      "assets": [
+        {
+          "hash": "f30bf283bf392100119d65fad235548468f25999e483856821551fe99277d4b0",
+          "logical_path": "assets/semantic/gerard_butler.jpg",
+          "source_url": "http://127.0.0.1:8099/gerard_butler.jpg"
+        }
+      ],
+      "id": "image_focus_in__es",
+      "render_plan": {
+        "background": {
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1.0
+          ],
+          "kind": "color"
+        },
+        "duration_ms": 5000,
+        "fps_den": 1,
+        "fps_num": 24,
+        "height": 1080,
+        "items": [
+          {
+            "asset_refs": [
+              {
+                "asset_id": "gerard_butler",
+                "media_type": "image/jpeg",
+                "sha256": "f30bf283bf392100119d65fad235548468f25999e483856821551fe99277d4b0",
+                "url": "http://127.0.0.1:8099/gerard_butler.jpg"
+              }
+            ],
+            "end_ms": 5000,
+            "id": "item_1",
+            "kind": "entity_image",
+            "preset_id": "image_focus_in",
+            "start_ms": 0,
+            "template_id": "IMAGE_OVERLAY"
+          }
+        ],
+        "language": "es",
+        "plan_id": "image_focus_in__es",
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "video_id": "image_focus_in__es",
+        "width": 1920
+      }
+    },
+    {
+      "assets": [
+        {
+          "hash": "f30bf283bf392100119d65fad235548468f25999e483856821551fe99277d4b0",
+          "logical_path": "assets/semantic/gerard_butler.jpg",
+          "source_url": "http://127.0.0.1:8099/gerard_butler.jpg"
+        }
+      ],
+      "id": "image_focus_in__pt-BR",
+      "render_plan": {
+        "background": {
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1.0
+          ],
+          "kind": "color"
+        },
+        "duration_ms": 5000,
+        "fps_den": 1,
+        "fps_num": 24,
+        "height": 1080,
+        "items": [
+          {
+            "asset_refs": [
+              {
+                "asset_id": "gerard_butler",
+                "media_type": "image/jpeg",
+                "sha256": "f30bf283bf392100119d65fad235548468f25999e483856821551fe99277d4b0",
+                "url": "http://127.0.0.1:8099/gerard_butler.jpg"
+              }
+            ],
+            "end_ms": 5000,
+            "id": "item_1",
+            "kind": "entity_image",
+            "preset_id": "image_focus_in",
+            "start_ms": 0,
+            "template_id": "IMAGE_OVERLAY"
+          }
+        ],
+        "language": "pt-BR",
+        "plan_id": "image_focus_in__pt-BR",
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "video_id": "image_focus_in__pt-BR",
+        "width": 1920
+      }
+    },
+    {
+      "assets": [
+        {
+          "hash": "f30bf283bf392100119d65fad235548468f25999e483856821551fe99277d4b0",
+          "logical_path": "assets/semantic/gerard_butler.jpg",
+          "source_url": "http://127.0.0.1:8099/gerard_butler.jpg"
+        }
+      ],
+      "id": "image_focus_in__fr",
+      "render_plan": {
+        "background": {
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1.0
+          ],
+          "kind": "color"
+        },
+        "duration_ms": 5000,
+        "fps_den": 1,
+        "fps_num": 24,
+        "height": 1080,
+        "items": [
+          {
+            "asset_refs": [
+              {
+                "asset_id": "gerard_butler",
+                "media_type": "image/jpeg",
+                "sha256": "f30bf283bf392100119d65fad235548468f25999e483856821551fe99277d4b0",
+                "url": "http://127.0.0.1:8099/gerard_butler.jpg"
+              }
+            ],
+            "end_ms": 5000,
+            "id": "item_1",
+            "kind": "entity_image",
+            "preset_id": "image_focus_in",
+            "start_ms": 0,
+            "template_id": "IMAGE_OVERLAY"
+          }
+        ],
+        "language": "fr",
+        "plan_id": "image_focus_in__fr",
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "video_id": "image_focus_in__fr",
+        "width": 1920
+      }
+    },
+    {
+      "assets": [
+        {
+          "hash": "f30bf283bf392100119d65fad235548468f25999e483856821551fe99277d4b0",
+          "logical_path": "assets/semantic/gerard_butler.jpg",
+          "source_url": "http://127.0.0.1:8099/gerard_butler.jpg"
+        }
+      ],
+      "id": "image_focus_in__tr",
+      "render_plan": {
+        "background": {
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1.0
+          ],
+          "kind": "color"
+        },
+        "duration_ms": 5000,
+        "fps_den": 1,
+        "fps_num": 24,
+        "height": 1080,
+        "items": [
+          {
+            "asset_refs": [
+              {
+                "asset_id": "gerard_butler",
+                "media_type": "image/jpeg",
+                "sha256": "f30bf283bf392100119d65fad235548468f25999e483856821551fe99277d4b0",
+                "url": "http://127.0.0.1:8099/gerard_butler.jpg"
+              }
+            ],
+            "end_ms": 5000,
+            "id": "item_1",
+            "kind": "entity_image",
+            "preset_id": "image_focus_in",
+            "start_ms": 0,
+            "template_id": "IMAGE_OVERLAY"
+          }
+        ],
+        "language": "tr",
+        "plan_id": "image_focus_in__tr",
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "video_id": "image_focus_in__tr",
+        "width": 1920
+      }
+    },
+    {
+      "assets": [
+        {
+          "hash": "f30bf283bf392100119d65fad235548468f25999e483856821551fe99277d4b0",
+          "logical_path": "assets/semantic/gerard_butler.jpg",
+          "source_url": "http://127.0.0.1:8099/gerard_butler.jpg"
+        }
+      ],
+      "id": "image_focus_in__id",
+      "render_plan": {
+        "background": {
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1.0
+          ],
+          "kind": "color"
+        },
+        "duration_ms": 5000,
+        "fps_den": 1,
+        "fps_num": 24,
+        "height": 1080,
+        "items": [
+          {
+            "asset_refs": [
+              {
+                "asset_id": "gerard_butler",
+                "media_type": "image/jpeg",
+                "sha256": "f30bf283bf392100119d65fad235548468f25999e483856821551fe99277d4b0",
+                "url": "http://127.0.0.1:8099/gerard_butler.jpg"
+              }
+            ],
+            "end_ms": 5000,
+            "id": "item_1",
+            "kind": "entity_image",
+            "preset_id": "image_focus_in",
+            "start_ms": 0,
+            "template_id": "IMAGE_OVERLAY"
+          }
+        ],
+        "language": "id",
+        "plan_id": "image_focus_in__id",
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "video_id": "image_focus_in__id",
+        "width": 1920
+      }
+    },
+    {
+      "assets": [
+        {
+          "hash": "f30bf283bf392100119d65fad235548468f25999e483856821551fe99277d4b0",
+          "logical_path": "assets/semantic/gerard_butler.jpg",
+          "source_url": "http://127.0.0.1:8099/gerard_butler.jpg"
+        }
+      ],
+      "id": "image_fade_in__it",
+      "render_plan": {
+        "background": {
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1.0
+          ],
+          "kind": "color"
+        },
+        "duration_ms": 5000,
+        "fps_den": 1,
+        "fps_num": 24,
+        "height": 1080,
+        "items": [
+          {
+            "asset_refs": [
+              {
+                "asset_id": "gerard_butler",
+                "media_type": "image/jpeg",
+                "sha256": "f30bf283bf392100119d65fad235548468f25999e483856821551fe99277d4b0",
+                "url": "http://127.0.0.1:8099/gerard_butler.jpg"
+              }
+            ],
+            "end_ms": 5000,
+            "id": "item_1",
+            "kind": "entity_image",
+            "preset_id": "image_fade_in",
+            "start_ms": 0,
+            "template_id": "IMAGE_OVERLAY"
+          }
+        ],
+        "language": "it",
+        "plan_id": "image_fade_in__it",
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "video_id": "image_fade_in__it",
+        "width": 1920
+      }
+    },
+    {
+      "assets": [
+        {
+          "hash": "f30bf283bf392100119d65fad235548468f25999e483856821551fe99277d4b0",
+          "logical_path": "assets/semantic/gerard_butler.jpg",
+          "source_url": "http://127.0.0.1:8099/gerard_butler.jpg"
+        }
+      ],
+      "id": "image_fade_in__en",
+      "render_plan": {
+        "background": {
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1.0
+          ],
+          "kind": "color"
+        },
+        "duration_ms": 5000,
+        "fps_den": 1,
+        "fps_num": 24,
+        "height": 1080,
+        "items": [
+          {
+            "asset_refs": [
+              {
+                "asset_id": "gerard_butler",
+                "media_type": "image/jpeg",
+                "sha256": "f30bf283bf392100119d65fad235548468f25999e483856821551fe99277d4b0",
+                "url": "http://127.0.0.1:8099/gerard_butler.jpg"
+              }
+            ],
+            "end_ms": 5000,
+            "id": "item_1",
+            "kind": "entity_image",
+            "preset_id": "image_fade_in",
+            "start_ms": 0,
+            "template_id": "IMAGE_OVERLAY"
+          }
+        ],
+        "language": "en",
+        "plan_id": "image_fade_in__en",
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "video_id": "image_fade_in__en",
+        "width": 1920
+      }
+    },
+    {
+      "assets": [
+        {
+          "hash": "f30bf283bf392100119d65fad235548468f25999e483856821551fe99277d4b0",
+          "logical_path": "assets/semantic/gerard_butler.jpg",
+          "source_url": "http://127.0.0.1:8099/gerard_butler.jpg"
+        }
+      ],
+      "id": "image_fade_in__pl",
+      "render_plan": {
+        "background": {
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1.0
+          ],
+          "kind": "color"
+        },
+        "duration_ms": 5000,
+        "fps_den": 1,
+        "fps_num": 24,
+        "height": 1080,
+        "items": [
+          {
+            "asset_refs": [
+              {
+                "asset_id": "gerard_butler",
+                "media_type": "image/jpeg",
+                "sha256": "f30bf283bf392100119d65fad235548468f25999e483856821551fe99277d4b0",
+                "url": "http://127.0.0.1:8099/gerard_butler.jpg"
+              }
+            ],
+            "end_ms": 5000,
+            "id": "item_1",
+            "kind": "entity_image",
+            "preset_id": "image_fade_in",
+            "start_ms": 0,
+            "template_id": "IMAGE_OVERLAY"
+          }
+        ],
+        "language": "pl",
+        "plan_id": "image_fade_in__pl",
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "video_id": "image_fade_in__pl",
+        "width": 1920
+      }
+    },
+    {
+      "assets": [
+        {
+          "hash": "f30bf283bf392100119d65fad235548468f25999e483856821551fe99277d4b0",
+          "logical_path": "assets/semantic/gerard_butler.jpg",
+          "source_url": "http://127.0.0.1:8099/gerard_butler.jpg"
+        }
+      ],
+      "id": "image_fade_in__ru",
+      "render_plan": {
+        "background": {
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1.0
+          ],
+          "kind": "color"
+        },
+        "duration_ms": 5000,
+        "fps_den": 1,
+        "fps_num": 24,
+        "height": 1080,
+        "items": [
+          {
+            "asset_refs": [
+              {
+                "asset_id": "gerard_butler",
+                "media_type": "image/jpeg",
+                "sha256": "f30bf283bf392100119d65fad235548468f25999e483856821551fe99277d4b0",
+                "url": "http://127.0.0.1:8099/gerard_butler.jpg"
+              }
+            ],
+            "end_ms": 5000,
+            "id": "item_1",
+            "kind": "entity_image",
+            "preset_id": "image_fade_in",
+            "start_ms": 0,
+            "template_id": "IMAGE_OVERLAY"
+          }
+        ],
+        "language": "ru",
+        "plan_id": "image_fade_in__ru",
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "video_id": "image_fade_in__ru",
+        "width": 1920
+      }
+    },
+    {
+      "assets": [
+        {
+          "hash": "f30bf283bf392100119d65fad235548468f25999e483856821551fe99277d4b0",
+          "logical_path": "assets/semantic/gerard_butler.jpg",
+          "source_url": "http://127.0.0.1:8099/gerard_butler.jpg"
+        }
+      ],
+      "id": "image_fade_in__de",
+      "render_plan": {
+        "background": {
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1.0
+          ],
+          "kind": "color"
+        },
+        "duration_ms": 5000,
+        "fps_den": 1,
+        "fps_num": 24,
+        "height": 1080,
+        "items": [
+          {
+            "asset_refs": [
+              {
+                "asset_id": "gerard_butler",
+                "media_type": "image/jpeg",
+                "sha256": "f30bf283bf392100119d65fad235548468f25999e483856821551fe99277d4b0",
+                "url": "http://127.0.0.1:8099/gerard_butler.jpg"
+              }
+            ],
+            "end_ms": 5000,
+            "id": "item_1",
+            "kind": "entity_image",
+            "preset_id": "image_fade_in",
+            "start_ms": 0,
+            "template_id": "IMAGE_OVERLAY"
+          }
+        ],
+        "language": "de",
+        "plan_id": "image_fade_in__de",
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "video_id": "image_fade_in__de",
+        "width": 1920
+      }
+    },
+    {
+      "assets": [
+        {
+          "hash": "f30bf283bf392100119d65fad235548468f25999e483856821551fe99277d4b0",
+          "logical_path": "assets/semantic/gerard_butler.jpg",
+          "source_url": "http://127.0.0.1:8099/gerard_butler.jpg"
+        }
+      ],
+      "id": "image_fade_in__es",
+      "render_plan": {
+        "background": {
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1.0
+          ],
+          "kind": "color"
+        },
+        "duration_ms": 5000,
+        "fps_den": 1,
+        "fps_num": 24,
+        "height": 1080,
+        "items": [
+          {
+            "asset_refs": [
+              {
+                "asset_id": "gerard_butler",
+                "media_type": "image/jpeg",
+                "sha256": "f30bf283bf392100119d65fad235548468f25999e483856821551fe99277d4b0",
+                "url": "http://127.0.0.1:8099/gerard_butler.jpg"
+              }
+            ],
+            "end_ms": 5000,
+            "id": "item_1",
+            "kind": "entity_image",
+            "preset_id": "image_fade_in",
+            "start_ms": 0,
+            "template_id": "IMAGE_OVERLAY"
+          }
+        ],
+        "language": "es",
+        "plan_id": "image_fade_in__es",
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "video_id": "image_fade_in__es",
+        "width": 1920
+      }
+    },
+    {
+      "assets": [
+        {
+          "hash": "f30bf283bf392100119d65fad235548468f25999e483856821551fe99277d4b0",
+          "logical_path": "assets/semantic/gerard_butler.jpg",
+          "source_url": "http://127.0.0.1:8099/gerard_butler.jpg"
+        }
+      ],
+      "id": "image_fade_in__pt-BR",
+      "render_plan": {
+        "background": {
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1.0
+          ],
+          "kind": "color"
+        },
+        "duration_ms": 5000,
+        "fps_den": 1,
+        "fps_num": 24,
+        "height": 1080,
+        "items": [
+          {
+            "asset_refs": [
+              {
+                "asset_id": "gerard_butler",
+                "media_type": "image/jpeg",
+                "sha256": "f30bf283bf392100119d65fad235548468f25999e483856821551fe99277d4b0",
+                "url": "http://127.0.0.1:8099/gerard_butler.jpg"
+              }
+            ],
+            "end_ms": 5000,
+            "id": "item_1",
+            "kind": "entity_image",
+            "preset_id": "image_fade_in",
+            "start_ms": 0,
+            "template_id": "IMAGE_OVERLAY"
+          }
+        ],
+        "language": "pt-BR",
+        "plan_id": "image_fade_in__pt-BR",
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "video_id": "image_fade_in__pt-BR",
+        "width": 1920
+      }
+    },
+    {
+      "assets": [
+        {
+          "hash": "f30bf283bf392100119d65fad235548468f25999e483856821551fe99277d4b0",
+          "logical_path": "assets/semantic/gerard_butler.jpg",
+          "source_url": "http://127.0.0.1:8099/gerard_butler.jpg"
+        }
+      ],
+      "id": "image_fade_in__fr",
+      "render_plan": {
+        "background": {
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1.0
+          ],
+          "kind": "color"
+        },
+        "duration_ms": 5000,
+        "fps_den": 1,
+        "fps_num": 24,
+        "height": 1080,
+        "items": [
+          {
+            "asset_refs": [
+              {
+                "asset_id": "gerard_butler",
+                "media_type": "image/jpeg",
+                "sha256": "f30bf283bf392100119d65fad235548468f25999e483856821551fe99277d4b0",
+                "url": "http://127.0.0.1:8099/gerard_butler.jpg"
+              }
+            ],
+            "end_ms": 5000,
+            "id": "item_1",
+            "kind": "entity_image",
+            "preset_id": "image_fade_in",
+            "start_ms": 0,
+            "template_id": "IMAGE_OVERLAY"
+          }
+        ],
+        "language": "fr",
+        "plan_id": "image_fade_in__fr",
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "video_id": "image_fade_in__fr",
+        "width": 1920
+      }
+    },
+    {
+      "assets": [
+        {
+          "hash": "f30bf283bf392100119d65fad235548468f25999e483856821551fe99277d4b0",
+          "logical_path": "assets/semantic/gerard_butler.jpg",
+          "source_url": "http://127.0.0.1:8099/gerard_butler.jpg"
+        }
+      ],
+      "id": "image_fade_in__tr",
+      "render_plan": {
+        "background": {
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1.0
+          ],
+          "kind": "color"
+        },
+        "duration_ms": 5000,
+        "fps_den": 1,
+        "fps_num": 24,
+        "height": 1080,
+        "items": [
+          {
+            "asset_refs": [
+              {
+                "asset_id": "gerard_butler",
+                "media_type": "image/jpeg",
+                "sha256": "f30bf283bf392100119d65fad235548468f25999e483856821551fe99277d4b0",
+                "url": "http://127.0.0.1:8099/gerard_butler.jpg"
+              }
+            ],
+            "end_ms": 5000,
+            "id": "item_1",
+            "kind": "entity_image",
+            "preset_id": "image_fade_in",
+            "start_ms": 0,
+            "template_id": "IMAGE_OVERLAY"
+          }
+        ],
+        "language": "tr",
+        "plan_id": "image_fade_in__tr",
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "video_id": "image_fade_in__tr",
+        "width": 1920
+      }
+    },
+    {
+      "assets": [
+        {
+          "hash": "f30bf283bf392100119d65fad235548468f25999e483856821551fe99277d4b0",
+          "logical_path": "assets/semantic/gerard_butler.jpg",
+          "source_url": "http://127.0.0.1:8099/gerard_butler.jpg"
+        }
+      ],
+      "id": "image_fade_in__id",
+      "render_plan": {
+        "background": {
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1.0
+          ],
+          "kind": "color"
+        },
+        "duration_ms": 5000,
+        "fps_den": 1,
+        "fps_num": 24,
+        "height": 1080,
+        "items": [
+          {
+            "asset_refs": [
+              {
+                "asset_id": "gerard_butler",
+                "media_type": "image/jpeg",
+                "sha256": "f30bf283bf392100119d65fad235548468f25999e483856821551fe99277d4b0",
+                "url": "http://127.0.0.1:8099/gerard_butler.jpg"
+              }
+            ],
+            "end_ms": 5000,
+            "id": "item_1",
+            "kind": "entity_image",
+            "preset_id": "image_fade_in",
+            "start_ms": 0,
+            "template_id": "IMAGE_OVERLAY"
+          }
+        ],
+        "language": "id",
+        "plan_id": "image_fade_in__id",
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "video_id": "image_fade_in__id",
+        "width": 1920
+      }
+    },
+    {
+      "assets": [
+        {
+          "hash": "f30bf283bf392100119d65fad235548468f25999e483856821551fe99277d4b0",
+          "logical_path": "assets/semantic/gerard_butler.jpg",
+          "source_url": "http://127.0.0.1:8099/gerard_butler.jpg"
+        }
+      ],
+      "id": "image_scale_in__it",
+      "render_plan": {
+        "background": {
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1.0
+          ],
+          "kind": "color"
+        },
+        "duration_ms": 5000,
+        "fps_den": 1,
+        "fps_num": 24,
+        "height": 1080,
+        "items": [
+          {
+            "asset_refs": [
+              {
+                "asset_id": "gerard_butler",
+                "media_type": "image/jpeg",
+                "sha256": "f30bf283bf392100119d65fad235548468f25999e483856821551fe99277d4b0",
+                "url": "http://127.0.0.1:8099/gerard_butler.jpg"
+              }
+            ],
+            "end_ms": 5000,
+            "id": "item_1",
+            "kind": "entity_image",
+            "preset_id": "image_scale_in",
+            "start_ms": 0,
+            "template_id": "IMAGE_OVERLAY"
+          }
+        ],
+        "language": "it",
+        "plan_id": "image_scale_in__it",
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "video_id": "image_scale_in__it",
+        "width": 1920
+      }
+    },
+    {
+      "assets": [
+        {
+          "hash": "f30bf283bf392100119d65fad235548468f25999e483856821551fe99277d4b0",
+          "logical_path": "assets/semantic/gerard_butler.jpg",
+          "source_url": "http://127.0.0.1:8099/gerard_butler.jpg"
+        }
+      ],
+      "id": "image_scale_in__en",
+      "render_plan": {
+        "background": {
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1.0
+          ],
+          "kind": "color"
+        },
+        "duration_ms": 5000,
+        "fps_den": 1,
+        "fps_num": 24,
+        "height": 1080,
+        "items": [
+          {
+            "asset_refs": [
+              {
+                "asset_id": "gerard_butler",
+                "media_type": "image/jpeg",
+                "sha256": "f30bf283bf392100119d65fad235548468f25999e483856821551fe99277d4b0",
+                "url": "http://127.0.0.1:8099/gerard_butler.jpg"
+              }
+            ],
+            "end_ms": 5000,
+            "id": "item_1",
+            "kind": "entity_image",
+            "preset_id": "image_scale_in",
+            "start_ms": 0,
+            "template_id": "IMAGE_OVERLAY"
+          }
+        ],
+        "language": "en",
+        "plan_id": "image_scale_in__en",
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "video_id": "image_scale_in__en",
+        "width": 1920
+      }
+    },
+    {
+      "assets": [
+        {
+          "hash": "f30bf283bf392100119d65fad235548468f25999e483856821551fe99277d4b0",
+          "logical_path": "assets/semantic/gerard_butler.jpg",
+          "source_url": "http://127.0.0.1:8099/gerard_butler.jpg"
+        }
+      ],
+      "id": "image_scale_in__pl",
+      "render_plan": {
+        "background": {
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1.0
+          ],
+          "kind": "color"
+        },
+        "duration_ms": 5000,
+        "fps_den": 1,
+        "fps_num": 24,
+        "height": 1080,
+        "items": [
+          {
+            "asset_refs": [
+              {
+                "asset_id": "gerard_butler",
+                "media_type": "image/jpeg",
+                "sha256": "f30bf283bf392100119d65fad235548468f25999e483856821551fe99277d4b0",
+                "url": "http://127.0.0.1:8099/gerard_butler.jpg"
+              }
+            ],
+            "end_ms": 5000,
+            "id": "item_1",
+            "kind": "entity_image",
+            "preset_id": "image_scale_in",
+            "start_ms": 0,
+            "template_id": "IMAGE_OVERLAY"
+          }
+        ],
+        "language": "pl",
+        "plan_id": "image_scale_in__pl",
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "video_id": "image_scale_in__pl",
+        "width": 1920
+      }
+    },
+    {
+      "assets": [
+        {
+          "hash": "f30bf283bf392100119d65fad235548468f25999e483856821551fe99277d4b0",
+          "logical_path": "assets/semantic/gerard_butler.jpg",
+          "source_url": "http://127.0.0.1:8099/gerard_butler.jpg"
+        }
+      ],
+      "id": "image_scale_in__ru",
+      "render_plan": {
+        "background": {
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1.0
+          ],
+          "kind": "color"
+        },
+        "duration_ms": 5000,
+        "fps_den": 1,
+        "fps_num": 24,
+        "height": 1080,
+        "items": [
+          {
+            "asset_refs": [
+              {
+                "asset_id": "gerard_butler",
+                "media_type": "image/jpeg",
+                "sha256": "f30bf283bf392100119d65fad235548468f25999e483856821551fe99277d4b0",
+                "url": "http://127.0.0.1:8099/gerard_butler.jpg"
+              }
+            ],
+            "end_ms": 5000,
+            "id": "item_1",
+            "kind": "entity_image",
+            "preset_id": "image_scale_in",
+            "start_ms": 0,
+            "template_id": "IMAGE_OVERLAY"
+          }
+        ],
+        "language": "ru",
+        "plan_id": "image_scale_in__ru",
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "video_id": "image_scale_in__ru",
+        "width": 1920
+      }
+    },
+    {
+      "assets": [
+        {
+          "hash": "f30bf283bf392100119d65fad235548468f25999e483856821551fe99277d4b0",
+          "logical_path": "assets/semantic/gerard_butler.jpg",
+          "source_url": "http://127.0.0.1:8099/gerard_butler.jpg"
+        }
+      ],
+      "id": "image_scale_in__de",
+      "render_plan": {
+        "background": {
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1.0
+          ],
+          "kind": "color"
+        },
+        "duration_ms": 5000,
+        "fps_den": 1,
+        "fps_num": 24,
+        "height": 1080,
+        "items": [
+          {
+            "asset_refs": [
+              {
+                "asset_id": "gerard_butler",
+                "media_type": "image/jpeg",
+                "sha256": "f30bf283bf392100119d65fad235548468f25999e483856821551fe99277d4b0",
+                "url": "http://127.0.0.1:8099/gerard_butler.jpg"
+              }
+            ],
+            "end_ms": 5000,
+            "id": "item_1",
+            "kind": "entity_image",
+            "preset_id": "image_scale_in",
+            "start_ms": 0,
+            "template_id": "IMAGE_OVERLAY"
+          }
+        ],
+        "language": "de",
+        "plan_id": "image_scale_in__de",
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "video_id": "image_scale_in__de",
+        "width": 1920
+      }
+    },
+    {
+      "assets": [
+        {
+          "hash": "f30bf283bf392100119d65fad235548468f25999e483856821551fe99277d4b0",
+          "logical_path": "assets/semantic/gerard_butler.jpg",
+          "source_url": "http://127.0.0.1:8099/gerard_butler.jpg"
+        }
+      ],
+      "id": "image_scale_in__es",
+      "render_plan": {
+        "background": {
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1.0
+          ],
+          "kind": "color"
+        },
+        "duration_ms": 5000,
+        "fps_den": 1,
+        "fps_num": 24,
+        "height": 1080,
+        "items": [
+          {
+            "asset_refs": [
+              {
+                "asset_id": "gerard_butler",
+                "media_type": "image/jpeg",
+                "sha256": "f30bf283bf392100119d65fad235548468f25999e483856821551fe99277d4b0",
+                "url": "http://127.0.0.1:8099/gerard_butler.jpg"
+              }
+            ],
+            "end_ms": 5000,
+            "id": "item_1",
+            "kind": "entity_image",
+            "preset_id": "image_scale_in",
+            "start_ms": 0,
+            "template_id": "IMAGE_OVERLAY"
+          }
+        ],
+        "language": "es",
+        "plan_id": "image_scale_in__es",
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "video_id": "image_scale_in__es",
+        "width": 1920
+      }
+    },
+    {
+      "assets": [
+        {
+          "hash": "f30bf283bf392100119d65fad235548468f25999e483856821551fe99277d4b0",
+          "logical_path": "assets/semantic/gerard_butler.jpg",
+          "source_url": "http://127.0.0.1:8099/gerard_butler.jpg"
+        }
+      ],
+      "id": "image_scale_in__pt-BR",
+      "render_plan": {
+        "background": {
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1.0
+          ],
+          "kind": "color"
+        },
+        "duration_ms": 5000,
+        "fps_den": 1,
+        "fps_num": 24,
+        "height": 1080,
+        "items": [
+          {
+            "asset_refs": [
+              {
+                "asset_id": "gerard_butler",
+                "media_type": "image/jpeg",
+                "sha256": "f30bf283bf392100119d65fad235548468f25999e483856821551fe99277d4b0",
+                "url": "http://127.0.0.1:8099/gerard_butler.jpg"
+              }
+            ],
+            "end_ms": 5000,
+            "id": "item_1",
+            "kind": "entity_image",
+            "preset_id": "image_scale_in",
+            "start_ms": 0,
+            "template_id": "IMAGE_OVERLAY"
+          }
+        ],
+        "language": "pt-BR",
+        "plan_id": "image_scale_in__pt-BR",
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "video_id": "image_scale_in__pt-BR",
+        "width": 1920
+      }
+    },
+    {
+      "assets": [
+        {
+          "hash": "f30bf283bf392100119d65fad235548468f25999e483856821551fe99277d4b0",
+          "logical_path": "assets/semantic/gerard_butler.jpg",
+          "source_url": "http://127.0.0.1:8099/gerard_butler.jpg"
+        }
+      ],
+      "id": "image_scale_in__fr",
+      "render_plan": {
+        "background": {
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1.0
+          ],
+          "kind": "color"
+        },
+        "duration_ms": 5000,
+        "fps_den": 1,
+        "fps_num": 24,
+        "height": 1080,
+        "items": [
+          {
+            "asset_refs": [
+              {
+                "asset_id": "gerard_butler",
+                "media_type": "image/jpeg",
+                "sha256": "f30bf283bf392100119d65fad235548468f25999e483856821551fe99277d4b0",
+                "url": "http://127.0.0.1:8099/gerard_butler.jpg"
+              }
+            ],
+            "end_ms": 5000,
+            "id": "item_1",
+            "kind": "entity_image",
+            "preset_id": "image_scale_in",
+            "start_ms": 0,
+            "template_id": "IMAGE_OVERLAY"
+          }
+        ],
+        "language": "fr",
+        "plan_id": "image_scale_in__fr",
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "video_id": "image_scale_in__fr",
+        "width": 1920
+      }
+    },
+    {
+      "assets": [
+        {
+          "hash": "f30bf283bf392100119d65fad235548468f25999e483856821551fe99277d4b0",
+          "logical_path": "assets/semantic/gerard_butler.jpg",
+          "source_url": "http://127.0.0.1:8099/gerard_butler.jpg"
+        }
+      ],
+      "id": "image_scale_in__tr",
+      "render_plan": {
+        "background": {
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1.0
+          ],
+          "kind": "color"
+        },
+        "duration_ms": 5000,
+        "fps_den": 1,
+        "fps_num": 24,
+        "height": 1080,
+        "items": [
+          {
+            "asset_refs": [
+              {
+                "asset_id": "gerard_butler",
+                "media_type": "image/jpeg",
+                "sha256": "f30bf283bf392100119d65fad235548468f25999e483856821551fe99277d4b0",
+                "url": "http://127.0.0.1:8099/gerard_butler.jpg"
+              }
+            ],
+            "end_ms": 5000,
+            "id": "item_1",
+            "kind": "entity_image",
+            "preset_id": "image_scale_in",
+            "start_ms": 0,
+            "template_id": "IMAGE_OVERLAY"
+          }
+        ],
+        "language": "tr",
+        "plan_id": "image_scale_in__tr",
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "video_id": "image_scale_in__tr",
+        "width": 1920
+      }
+    },
+    {
+      "assets": [
+        {
+          "hash": "f30bf283bf392100119d65fad235548468f25999e483856821551fe99277d4b0",
+          "logical_path": "assets/semantic/gerard_butler.jpg",
+          "source_url": "http://127.0.0.1:8099/gerard_butler.jpg"
+        }
+      ],
+      "id": "image_scale_in__id",
+      "render_plan": {
+        "background": {
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1.0
+          ],
+          "kind": "color"
+        },
+        "duration_ms": 5000,
+        "fps_den": 1,
+        "fps_num": 24,
+        "height": 1080,
+        "items": [
+          {
+            "asset_refs": [
+              {
+                "asset_id": "gerard_butler",
+                "media_type": "image/jpeg",
+                "sha256": "f30bf283bf392100119d65fad235548468f25999e483856821551fe99277d4b0",
+                "url": "http://127.0.0.1:8099/gerard_butler.jpg"
+              }
+            ],
+            "end_ms": 5000,
+            "id": "item_1",
+            "kind": "entity_image",
+            "preset_id": "image_scale_in",
+            "start_ms": 0,
+            "template_id": "IMAGE_OVERLAY"
+          }
+        ],
+        "language": "id",
+        "plan_id": "image_scale_in__id",
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "video_id": "image_scale_in__id",
+        "width": 1920
+      }
+    },
+    {
+      "assets": [
+        {
+          "hash": "f30bf283bf392100119d65fad235548468f25999e483856821551fe99277d4b0",
+          "logical_path": "assets/semantic/gerard_butler.jpg",
+          "source_url": "http://127.0.0.1:8099/gerard_butler.jpg"
+        }
+      ],
+      "id": "image_slide_left__it",
+      "render_plan": {
+        "background": {
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1.0
+          ],
+          "kind": "color"
+        },
+        "duration_ms": 5000,
+        "fps_den": 1,
+        "fps_num": 24,
+        "height": 1080,
+        "items": [
+          {
+            "asset_refs": [
+              {
+                "asset_id": "gerard_butler",
+                "media_type": "image/jpeg",
+                "sha256": "f30bf283bf392100119d65fad235548468f25999e483856821551fe99277d4b0",
+                "url": "http://127.0.0.1:8099/gerard_butler.jpg"
+              }
+            ],
+            "end_ms": 5000,
+            "id": "item_1",
+            "kind": "entity_image",
+            "preset_id": "image_slide_left",
+            "start_ms": 0,
+            "template_id": "IMAGE_OVERLAY"
+          }
+        ],
+        "language": "it",
+        "plan_id": "image_slide_left__it",
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "video_id": "image_slide_left__it",
+        "width": 1920
+      }
+    },
+    {
+      "assets": [
+        {
+          "hash": "f30bf283bf392100119d65fad235548468f25999e483856821551fe99277d4b0",
+          "logical_path": "assets/semantic/gerard_butler.jpg",
+          "source_url": "http://127.0.0.1:8099/gerard_butler.jpg"
+        }
+      ],
+      "id": "image_slide_left__en",
+      "render_plan": {
+        "background": {
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1.0
+          ],
+          "kind": "color"
+        },
+        "duration_ms": 5000,
+        "fps_den": 1,
+        "fps_num": 24,
+        "height": 1080,
+        "items": [
+          {
+            "asset_refs": [
+              {
+                "asset_id": "gerard_butler",
+                "media_type": "image/jpeg",
+                "sha256": "f30bf283bf392100119d65fad235548468f25999e483856821551fe99277d4b0",
+                "url": "http://127.0.0.1:8099/gerard_butler.jpg"
+              }
+            ],
+            "end_ms": 5000,
+            "id": "item_1",
+            "kind": "entity_image",
+            "preset_id": "image_slide_left",
+            "start_ms": 0,
+            "template_id": "IMAGE_OVERLAY"
+          }
+        ],
+        "language": "en",
+        "plan_id": "image_slide_left__en",
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "video_id": "image_slide_left__en",
+        "width": 1920
+      }
+    },
+    {
+      "assets": [
+        {
+          "hash": "f30bf283bf392100119d65fad235548468f25999e483856821551fe99277d4b0",
+          "logical_path": "assets/semantic/gerard_butler.jpg",
+          "source_url": "http://127.0.0.1:8099/gerard_butler.jpg"
+        }
+      ],
+      "id": "image_slide_left__pl",
+      "render_plan": {
+        "background": {
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1.0
+          ],
+          "kind": "color"
+        },
+        "duration_ms": 5000,
+        "fps_den": 1,
+        "fps_num": 24,
+        "height": 1080,
+        "items": [
+          {
+            "asset_refs": [
+              {
+                "asset_id": "gerard_butler",
+                "media_type": "image/jpeg",
+                "sha256": "f30bf283bf392100119d65fad235548468f25999e483856821551fe99277d4b0",
+                "url": "http://127.0.0.1:8099/gerard_butler.jpg"
+              }
+            ],
+            "end_ms": 5000,
+            "id": "item_1",
+            "kind": "entity_image",
+            "preset_id": "image_slide_left",
+            "start_ms": 0,
+            "template_id": "IMAGE_OVERLAY"
+          }
+        ],
+        "language": "pl",
+        "plan_id": "image_slide_left__pl",
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "video_id": "image_slide_left__pl",
+        "width": 1920
+      }
+    },
+    {
+      "assets": [
+        {
+          "hash": "f30bf283bf392100119d65fad235548468f25999e483856821551fe99277d4b0",
+          "logical_path": "assets/semantic/gerard_butler.jpg",
+          "source_url": "http://127.0.0.1:8099/gerard_butler.jpg"
+        }
+      ],
+      "id": "image_slide_left__ru",
+      "render_plan": {
+        "background": {
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1.0
+          ],
+          "kind": "color"
+        },
+        "duration_ms": 5000,
+        "fps_den": 1,
+        "fps_num": 24,
+        "height": 1080,
+        "items": [
+          {
+            "asset_refs": [
+              {
+                "asset_id": "gerard_butler",
+                "media_type": "image/jpeg",
+                "sha256": "f30bf283bf392100119d65fad235548468f25999e483856821551fe99277d4b0",
+                "url": "http://127.0.0.1:8099/gerard_butler.jpg"
+              }
+            ],
+            "end_ms": 5000,
+            "id": "item_1",
+            "kind": "entity_image",
+            "preset_id": "image_slide_left",
+            "start_ms": 0,
+            "template_id": "IMAGE_OVERLAY"
+          }
+        ],
+        "language": "ru",
+        "plan_id": "image_slide_left__ru",
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "video_id": "image_slide_left__ru",
+        "width": 1920
+      }
+    },
+    {
+      "assets": [
+        {
+          "hash": "f30bf283bf392100119d65fad235548468f25999e483856821551fe99277d4b0",
+          "logical_path": "assets/semantic/gerard_butler.jpg",
+          "source_url": "http://127.0.0.1:8099/gerard_butler.jpg"
+        }
+      ],
+      "id": "image_slide_left__de",
+      "render_plan": {
+        "background": {
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1.0
+          ],
+          "kind": "color"
+        },
+        "duration_ms": 5000,
+        "fps_den": 1,
+        "fps_num": 24,
+        "height": 1080,
+        "items": [
+          {
+            "asset_refs": [
+              {
+                "asset_id": "gerard_butler",
+                "media_type": "image/jpeg",
+                "sha256": "f30bf283bf392100119d65fad235548468f25999e483856821551fe99277d4b0",
+                "url": "http://127.0.0.1:8099/gerard_butler.jpg"
+              }
+            ],
+            "end_ms": 5000,
+            "id": "item_1",
+            "kind": "entity_image",
+            "preset_id": "image_slide_left",
+            "start_ms": 0,
+            "template_id": "IMAGE_OVERLAY"
+          }
+        ],
+        "language": "de",
+        "plan_id": "image_slide_left__de",
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "video_id": "image_slide_left__de",
+        "width": 1920
+      }
+    },
+    {
+      "assets": [
+        {
+          "hash": "f30bf283bf392100119d65fad235548468f25999e483856821551fe99277d4b0",
+          "logical_path": "assets/semantic/gerard_butler.jpg",
+          "source_url": "http://127.0.0.1:8099/gerard_butler.jpg"
+        }
+      ],
+      "id": "image_slide_left__es",
+      "render_plan": {
+        "background": {
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1.0
+          ],
+          "kind": "color"
+        },
+        "duration_ms": 5000,
+        "fps_den": 1,
+        "fps_num": 24,
+        "height": 1080,
+        "items": [
+          {
+            "asset_refs": [
+              {
+                "asset_id": "gerard_butler",
+                "media_type": "image/jpeg",
+                "sha256": "f30bf283bf392100119d65fad235548468f25999e483856821551fe99277d4b0",
+                "url": "http://127.0.0.1:8099/gerard_butler.jpg"
+              }
+            ],
+            "end_ms": 5000,
+            "id": "item_1",
+            "kind": "entity_image",
+            "preset_id": "image_slide_left",
+            "start_ms": 0,
+            "template_id": "IMAGE_OVERLAY"
+          }
+        ],
+        "language": "es",
+        "plan_id": "image_slide_left__es",
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "video_id": "image_slide_left__es",
+        "width": 1920
+      }
+    },
+    {
+      "assets": [
+        {
+          "hash": "f30bf283bf392100119d65fad235548468f25999e483856821551fe99277d4b0",
+          "logical_path": "assets/semantic/gerard_butler.jpg",
+          "source_url": "http://127.0.0.1:8099/gerard_butler.jpg"
+        }
+      ],
+      "id": "image_slide_left__pt-BR",
+      "render_plan": {
+        "background": {
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1.0
+          ],
+          "kind": "color"
+        },
+        "duration_ms": 5000,
+        "fps_den": 1,
+        "fps_num": 24,
+        "height": 1080,
+        "items": [
+          {
+            "asset_refs": [
+              {
+                "asset_id": "gerard_butler",
+                "media_type": "image/jpeg",
+                "sha256": "f30bf283bf392100119d65fad235548468f25999e483856821551fe99277d4b0",
+                "url": "http://127.0.0.1:8099/gerard_butler.jpg"
+              }
+            ],
+            "end_ms": 5000,
+            "id": "item_1",
+            "kind": "entity_image",
+            "preset_id": "image_slide_left",
+            "start_ms": 0,
+            "template_id": "IMAGE_OVERLAY"
+          }
+        ],
+        "language": "pt-BR",
+        "plan_id": "image_slide_left__pt-BR",
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "video_id": "image_slide_left__pt-BR",
+        "width": 1920
+      }
+    },
+    {
+      "assets": [
+        {
+          "hash": "f30bf283bf392100119d65fad235548468f25999e483856821551fe99277d4b0",
+          "logical_path": "assets/semantic/gerard_butler.jpg",
+          "source_url": "http://127.0.0.1:8099/gerard_butler.jpg"
+        }
+      ],
+      "id": "image_slide_left__fr",
+      "render_plan": {
+        "background": {
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1.0
+          ],
+          "kind": "color"
+        },
+        "duration_ms": 5000,
+        "fps_den": 1,
+        "fps_num": 24,
+        "height": 1080,
+        "items": [
+          {
+            "asset_refs": [
+              {
+                "asset_id": "gerard_butler",
+                "media_type": "image/jpeg",
+                "sha256": "f30bf283bf392100119d65fad235548468f25999e483856821551fe99277d4b0",
+                "url": "http://127.0.0.1:8099/gerard_butler.jpg"
+              }
+            ],
+            "end_ms": 5000,
+            "id": "item_1",
+            "kind": "entity_image",
+            "preset_id": "image_slide_left",
+            "start_ms": 0,
+            "template_id": "IMAGE_OVERLAY"
+          }
+        ],
+        "language": "fr",
+        "plan_id": "image_slide_left__fr",
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "video_id": "image_slide_left__fr",
+        "width": 1920
+      }
+    },
+    {
+      "assets": [
+        {
+          "hash": "f30bf283bf392100119d65fad235548468f25999e483856821551fe99277d4b0",
+          "logical_path": "assets/semantic/gerard_butler.jpg",
+          "source_url": "http://127.0.0.1:8099/gerard_butler.jpg"
+        }
+      ],
+      "id": "image_slide_left__tr",
+      "render_plan": {
+        "background": {
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1.0
+          ],
+          "kind": "color"
+        },
+        "duration_ms": 5000,
+        "fps_den": 1,
+        "fps_num": 24,
+        "height": 1080,
+        "items": [
+          {
+            "asset_refs": [
+              {
+                "asset_id": "gerard_butler",
+                "media_type": "image/jpeg",
+                "sha256": "f30bf283bf392100119d65fad235548468f25999e483856821551fe99277d4b0",
+                "url": "http://127.0.0.1:8099/gerard_butler.jpg"
+              }
+            ],
+            "end_ms": 5000,
+            "id": "item_1",
+            "kind": "entity_image",
+            "preset_id": "image_slide_left",
+            "start_ms": 0,
+            "template_id": "IMAGE_OVERLAY"
+          }
+        ],
+        "language": "tr",
+        "plan_id": "image_slide_left__tr",
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "video_id": "image_slide_left__tr",
+        "width": 1920
+      }
+    },
+    {
+      "assets": [
+        {
+          "hash": "f30bf283bf392100119d65fad235548468f25999e483856821551fe99277d4b0",
+          "logical_path": "assets/semantic/gerard_butler.jpg",
+          "source_url": "http://127.0.0.1:8099/gerard_butler.jpg"
+        }
+      ],
+      "id": "image_slide_left__id",
+      "render_plan": {
+        "background": {
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1.0
+          ],
+          "kind": "color"
+        },
+        "duration_ms": 5000,
+        "fps_den": 1,
+        "fps_num": 24,
+        "height": 1080,
+        "items": [
+          {
+            "asset_refs": [
+              {
+                "asset_id": "gerard_butler",
+                "media_type": "image/jpeg",
+                "sha256": "f30bf283bf392100119d65fad235548468f25999e483856821551fe99277d4b0",
+                "url": "http://127.0.0.1:8099/gerard_butler.jpg"
+              }
+            ],
+            "end_ms": 5000,
+            "id": "item_1",
+            "kind": "entity_image",
+            "preset_id": "image_slide_left",
+            "start_ms": 0,
+            "template_id": "IMAGE_OVERLAY"
+          }
+        ],
+        "language": "id",
+        "plan_id": "image_slide_left__id",
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "video_id": "image_slide_left__id",
+        "width": 1920
+      }
+    },
+    {
+      "assets": [
+        {
+          "hash": "f30bf283bf392100119d65fad235548468f25999e483856821551fe99277d4b0",
+          "logical_path": "assets/semantic/gerard_butler.jpg",
+          "source_url": "http://127.0.0.1:8099/gerard_butler.jpg"
+        }
+      ],
+      "id": "image_slide_right__it",
+      "render_plan": {
+        "background": {
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1.0
+          ],
+          "kind": "color"
+        },
+        "duration_ms": 5000,
+        "fps_den": 1,
+        "fps_num": 24,
+        "height": 1080,
+        "items": [
+          {
+            "asset_refs": [
+              {
+                "asset_id": "gerard_butler",
+                "media_type": "image/jpeg",
+                "sha256": "f30bf283bf392100119d65fad235548468f25999e483856821551fe99277d4b0",
+                "url": "http://127.0.0.1:8099/gerard_butler.jpg"
+              }
+            ],
+            "end_ms": 5000,
+            "id": "item_1",
+            "kind": "entity_image",
+            "preset_id": "image_slide_right",
+            "start_ms": 0,
+            "template_id": "IMAGE_OVERLAY"
+          }
+        ],
+        "language": "it",
+        "plan_id": "image_slide_right__it",
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "video_id": "image_slide_right__it",
+        "width": 1920
+      }
+    },
+    {
+      "assets": [
+        {
+          "hash": "f30bf283bf392100119d65fad235548468f25999e483856821551fe99277d4b0",
+          "logical_path": "assets/semantic/gerard_butler.jpg",
+          "source_url": "http://127.0.0.1:8099/gerard_butler.jpg"
+        }
+      ],
+      "id": "image_slide_right__en",
+      "render_plan": {
+        "background": {
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1.0
+          ],
+          "kind": "color"
+        },
+        "duration_ms": 5000,
+        "fps_den": 1,
+        "fps_num": 24,
+        "height": 1080,
+        "items": [
+          {
+            "asset_refs": [
+              {
+                "asset_id": "gerard_butler",
+                "media_type": "image/jpeg",
+                "sha256": "f30bf283bf392100119d65fad235548468f25999e483856821551fe99277d4b0",
+                "url": "http://127.0.0.1:8099/gerard_butler.jpg"
+              }
+            ],
+            "end_ms": 5000,
+            "id": "item_1",
+            "kind": "entity_image",
+            "preset_id": "image_slide_right",
+            "start_ms": 0,
+            "template_id": "IMAGE_OVERLAY"
+          }
+        ],
+        "language": "en",
+        "plan_id": "image_slide_right__en",
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "video_id": "image_slide_right__en",
+        "width": 1920
+      }
+    },
+    {
+      "assets": [
+        {
+          "hash": "f30bf283bf392100119d65fad235548468f25999e483856821551fe99277d4b0",
+          "logical_path": "assets/semantic/gerard_butler.jpg",
+          "source_url": "http://127.0.0.1:8099/gerard_butler.jpg"
+        }
+      ],
+      "id": "image_slide_right__pl",
+      "render_plan": {
+        "background": {
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1.0
+          ],
+          "kind": "color"
+        },
+        "duration_ms": 5000,
+        "fps_den": 1,
+        "fps_num": 24,
+        "height": 1080,
+        "items": [
+          {
+            "asset_refs": [
+              {
+                "asset_id": "gerard_butler",
+                "media_type": "image/jpeg",
+                "sha256": "f30bf283bf392100119d65fad235548468f25999e483856821551fe99277d4b0",
+                "url": "http://127.0.0.1:8099/gerard_butler.jpg"
+              }
+            ],
+            "end_ms": 5000,
+            "id": "item_1",
+            "kind": "entity_image",
+            "preset_id": "image_slide_right",
+            "start_ms": 0,
+            "template_id": "IMAGE_OVERLAY"
+          }
+        ],
+        "language": "pl",
+        "plan_id": "image_slide_right__pl",
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "video_id": "image_slide_right__pl",
+        "width": 1920
+      }
+    },
+    {
+      "assets": [
+        {
+          "hash": "f30bf283bf392100119d65fad235548468f25999e483856821551fe99277d4b0",
+          "logical_path": "assets/semantic/gerard_butler.jpg",
+          "source_url": "http://127.0.0.1:8099/gerard_butler.jpg"
+        }
+      ],
+      "id": "image_slide_right__ru",
+      "render_plan": {
+        "background": {
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1.0
+          ],
+          "kind": "color"
+        },
+        "duration_ms": 5000,
+        "fps_den": 1,
+        "fps_num": 24,
+        "height": 1080,
+        "items": [
+          {
+            "asset_refs": [
+              {
+                "asset_id": "gerard_butler",
+                "media_type": "image/jpeg",
+                "sha256": "f30bf283bf392100119d65fad235548468f25999e483856821551fe99277d4b0",
+                "url": "http://127.0.0.1:8099/gerard_butler.jpg"
+              }
+            ],
+            "end_ms": 5000,
+            "id": "item_1",
+            "kind": "entity_image",
+            "preset_id": "image_slide_right",
+            "start_ms": 0,
+            "template_id": "IMAGE_OVERLAY"
+          }
+        ],
+        "language": "ru",
+        "plan_id": "image_slide_right__ru",
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "video_id": "image_slide_right__ru",
+        "width": 1920
+      }
+    },
+    {
+      "assets": [
+        {
+          "hash": "f30bf283bf392100119d65fad235548468f25999e483856821551fe99277d4b0",
+          "logical_path": "assets/semantic/gerard_butler.jpg",
+          "source_url": "http://127.0.0.1:8099/gerard_butler.jpg"
+        }
+      ],
+      "id": "image_slide_right__de",
+      "render_plan": {
+        "background": {
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1.0
+          ],
+          "kind": "color"
+        },
+        "duration_ms": 5000,
+        "fps_den": 1,
+        "fps_num": 24,
+        "height": 1080,
+        "items": [
+          {
+            "asset_refs": [
+              {
+                "asset_id": "gerard_butler",
+                "media_type": "image/jpeg",
+                "sha256": "f30bf283bf392100119d65fad235548468f25999e483856821551fe99277d4b0",
+                "url": "http://127.0.0.1:8099/gerard_butler.jpg"
+              }
+            ],
+            "end_ms": 5000,
+            "id": "item_1",
+            "kind": "entity_image",
+            "preset_id": "image_slide_right",
+            "start_ms": 0,
+            "template_id": "IMAGE_OVERLAY"
+          }
+        ],
+        "language": "de",
+        "plan_id": "image_slide_right__de",
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "video_id": "image_slide_right__de",
+        "width": 1920
+      }
+    },
+    {
+      "assets": [
+        {
+          "hash": "f30bf283bf392100119d65fad235548468f25999e483856821551fe99277d4b0",
+          "logical_path": "assets/semantic/gerard_butler.jpg",
+          "source_url": "http://127.0.0.1:8099/gerard_butler.jpg"
+        }
+      ],
+      "id": "image_slide_right__es",
+      "render_plan": {
+        "background": {
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1.0
+          ],
+          "kind": "color"
+        },
+        "duration_ms": 5000,
+        "fps_den": 1,
+        "fps_num": 24,
+        "height": 1080,
+        "items": [
+          {
+            "asset_refs": [
+              {
+                "asset_id": "gerard_butler",
+                "media_type": "image/jpeg",
+                "sha256": "f30bf283bf392100119d65fad235548468f25999e483856821551fe99277d4b0",
+                "url": "http://127.0.0.1:8099/gerard_butler.jpg"
+              }
+            ],
+            "end_ms": 5000,
+            "id": "item_1",
+            "kind": "entity_image",
+            "preset_id": "image_slide_right",
+            "start_ms": 0,
+            "template_id": "IMAGE_OVERLAY"
+          }
+        ],
+        "language": "es",
+        "plan_id": "image_slide_right__es",
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "video_id": "image_slide_right__es",
+        "width": 1920
+      }
+    },
+    {
+      "assets": [
+        {
+          "hash": "f30bf283bf392100119d65fad235548468f25999e483856821551fe99277d4b0",
+          "logical_path": "assets/semantic/gerard_butler.jpg",
+          "source_url": "http://127.0.0.1:8099/gerard_butler.jpg"
+        }
+      ],
+      "id": "image_slide_right__pt-BR",
+      "render_plan": {
+        "background": {
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1.0
+          ],
+          "kind": "color"
+        },
+        "duration_ms": 5000,
+        "fps_den": 1,
+        "fps_num": 24,
+        "height": 1080,
+        "items": [
+          {
+            "asset_refs": [
+              {
+                "asset_id": "gerard_butler",
+                "media_type": "image/jpeg",
+                "sha256": "f30bf283bf392100119d65fad235548468f25999e483856821551fe99277d4b0",
+                "url": "http://127.0.0.1:8099/gerard_butler.jpg"
+              }
+            ],
+            "end_ms": 5000,
+            "id": "item_1",
+            "kind": "entity_image",
+            "preset_id": "image_slide_right",
+            "start_ms": 0,
+            "template_id": "IMAGE_OVERLAY"
+          }
+        ],
+        "language": "pt-BR",
+        "plan_id": "image_slide_right__pt-BR",
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "video_id": "image_slide_right__pt-BR",
+        "width": 1920
+      }
+    },
+    {
+      "assets": [
+        {
+          "hash": "f30bf283bf392100119d65fad235548468f25999e483856821551fe99277d4b0",
+          "logical_path": "assets/semantic/gerard_butler.jpg",
+          "source_url": "http://127.0.0.1:8099/gerard_butler.jpg"
+        }
+      ],
+      "id": "image_slide_right__fr",
+      "render_plan": {
+        "background": {
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1.0
+          ],
+          "kind": "color"
+        },
+        "duration_ms": 5000,
+        "fps_den": 1,
+        "fps_num": 24,
+        "height": 1080,
+        "items": [
+          {
+            "asset_refs": [
+              {
+                "asset_id": "gerard_butler",
+                "media_type": "image/jpeg",
+                "sha256": "f30bf283bf392100119d65fad235548468f25999e483856821551fe99277d4b0",
+                "url": "http://127.0.0.1:8099/gerard_butler.jpg"
+              }
+            ],
+            "end_ms": 5000,
+            "id": "item_1",
+            "kind": "entity_image",
+            "preset_id": "image_slide_right",
+            "start_ms": 0,
+            "template_id": "IMAGE_OVERLAY"
+          }
+        ],
+        "language": "fr",
+        "plan_id": "image_slide_right__fr",
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "video_id": "image_slide_right__fr",
+        "width": 1920
+      }
+    },
+    {
+      "assets": [
+        {
+          "hash": "f30bf283bf392100119d65fad235548468f25999e483856821551fe99277d4b0",
+          "logical_path": "assets/semantic/gerard_butler.jpg",
+          "source_url": "http://127.0.0.1:8099/gerard_butler.jpg"
+        }
+      ],
+      "id": "image_slide_right__tr",
+      "render_plan": {
+        "background": {
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1.0
+          ],
+          "kind": "color"
+        },
+        "duration_ms": 5000,
+        "fps_den": 1,
+        "fps_num": 24,
+        "height": 1080,
+        "items": [
+          {
+            "asset_refs": [
+              {
+                "asset_id": "gerard_butler",
+                "media_type": "image/jpeg",
+                "sha256": "f30bf283bf392100119d65fad235548468f25999e483856821551fe99277d4b0",
+                "url": "http://127.0.0.1:8099/gerard_butler.jpg"
+              }
+            ],
+            "end_ms": 5000,
+            "id": "item_1",
+            "kind": "entity_image",
+            "preset_id": "image_slide_right",
+            "start_ms": 0,
+            "template_id": "IMAGE_OVERLAY"
+          }
+        ],
+        "language": "tr",
+        "plan_id": "image_slide_right__tr",
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "video_id": "image_slide_right__tr",
+        "width": 1920
+      }
+    },
+    {
+      "assets": [
+        {
+          "hash": "f30bf283bf392100119d65fad235548468f25999e483856821551fe99277d4b0",
+          "logical_path": "assets/semantic/gerard_butler.jpg",
+          "source_url": "http://127.0.0.1:8099/gerard_butler.jpg"
+        }
+      ],
+      "id": "image_slide_right__id",
+      "render_plan": {
+        "background": {
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1.0
+          ],
+          "kind": "color"
+        },
+        "duration_ms": 5000,
+        "fps_den": 1,
+        "fps_num": 24,
+        "height": 1080,
+        "items": [
+          {
+            "asset_refs": [
+              {
+                "asset_id": "gerard_butler",
+                "media_type": "image/jpeg",
+                "sha256": "f30bf283bf392100119d65fad235548468f25999e483856821551fe99277d4b0",
+                "url": "http://127.0.0.1:8099/gerard_butler.jpg"
+              }
+            ],
+            "end_ms": 5000,
+            "id": "item_1",
+            "kind": "entity_image",
+            "preset_id": "image_slide_right",
+            "start_ms": 0,
+            "template_id": "IMAGE_OVERLAY"
+          }
+        ],
+        "language": "id",
+        "plan_id": "image_slide_right__id",
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "video_id": "image_slide_right__id",
+        "width": 1920
+      }
+    }
+  ],
+  "schema_version": "renderinggen.batch-manifest.v1"
+}

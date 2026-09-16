@@ -43,6 +43,15 @@ RenderingGen worker validates and compiles that plan locally into Chronon's
 `chronon.render-plan.v2`, materializes its content-addressed assets, and only
 then invokes Chronon3d. Concrete Chronon plans are not accepted on the production semantic job path; RenderingGen owns the only lowering chain.
 
+A job **must declare every font its text needs**, including the coverage font for
+the script: Chronon3d builds its fallback stack by scanning the directory of the
+plan's primary font, while the worker materializes only the assets the job
+declares, so an undeclared font simply does not exist for the shaper and the text
+renders with missing glyphs (or fails at frame 0). See
+[`multilingual_overlays_v1/README.md`](multilingual_overlays_v1/README.md) for the
+measured evidence, the matrix of 10 translated overlays across the 10 configured
+languages, and the reproduction commands.
+
 ## Curated background library
 
 `assets/backgrounds/` contains six normalized background videos supplied from

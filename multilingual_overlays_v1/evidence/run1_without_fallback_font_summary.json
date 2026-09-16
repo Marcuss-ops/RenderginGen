@@ -1,0 +1,218 @@
+{
+  "aggregate_fps": 16.331,
+  "backends": [
+    "vulkan"
+  ],
+  "batch": "ml-overlays-10x10-run1",
+  "completed": 97,
+  "distinct_artifact_hashes": 46,
+  "failed": 3,
+  "failures": [
+    {
+      "fail_reason": "processor: render: ipc render: daemon status Error (1): render job failed with exit code 1",
+      "job_id": "ml-overlays-10x10-run1:phrase_02_clean_slide_up__ru",
+      "state": "failed"
+    },
+    {
+      "fail_reason": "processor: render: ipc render: daemon status Error (1): render job failed with exit code 1",
+      "job_id": "ml-overlays-10x10-run1:phrase_03_scale_pop__ru",
+      "state": "failed"
+    },
+    {
+      "fail_reason": "processor: render: ipc render: daemon status Error (1): render job failed with exit code 1",
+      "job_id": "ml-overlays-10x10-run1:phrase_05_slide_left_punch__ru",
+      "state": "failed"
+    }
+  ],
+  "frames_rendered": 11640,
+  "jobs_per_minute": 8.165,
+  "jobs_total": 100,
+  "not_terminal": 0,
+  "per_language": {
+    "de": {
+      "completed": 10,
+      "queue_wait": {
+        "count": 10,
+        "max_ms": 209069,
+        "min_ms": 11,
+        "p50_ms": 114217,
+        "sum_ms": 975726
+      },
+      "render_wall": {
+        "count": 10,
+        "max_ms": 17381,
+        "min_ms": 2356,
+        "p50_ms": 11470,
+        "sum_ms": 108860
+      }
+    },
+    "en": {
+      "completed": 10,
+      "queue_wait": {
+        "count": 10,
+        "max_ms": 202249,
+        "min_ms": 4,
+        "p50_ms": 108386,
+        "sum_ms": 1008793
+      },
+      "render_wall": {
+        "count": 10,
+        "max_ms": 13561,
+        "min_ms": 7625,
+        "p50_ms": 11405,
+        "sum_ms": 115573
+      }
+    },
+    "es": {
+      "completed": 10,
+      "queue_wait": {
+        "count": 10,
+        "max_ms": 211352,
+        "min_ms": 16,
+        "p50_ms": 116484,
+        "sum_ms": 998297
+      },
+      "render_wall": {
+        "count": 10,
+        "max_ms": 16347,
+        "min_ms": 4639,
+        "p50_ms": 11446,
+        "sum_ms": 109069
+      }
+    },
+    "fr": {
+      "completed": 10,
+      "queue_wait": {
+        "count": 10,
+        "max_ms": 215900,
+        "min_ms": 7,
+        "p50_ms": 122015,
+        "sum_ms": 1043207
+      },
+      "render_wall": {
+        "count": 10,
+        "max_ms": 13458,
+        "min_ms": 2304,
+        "p50_ms": 11380,
+        "sum_ms": 107546
+      }
+    },
+    "id": {
+      "completed": 10,
+      "queue_wait": {
+        "count": 10,
+        "max_ms": 220453,
+        "min_ms": 17320,
+        "p50_ms": 126534,
+        "sum_ms": 1190004
+      },
+      "render_wall": {
+        "count": 10,
+        "max_ms": 14467,
+        "min_ms": 5889,
+        "p50_ms": 11491,
+        "sum_ms": 116601
+      }
+    },
+    "it": {
+      "completed": 10,
+      "queue_wait": {
+        "count": 10,
+        "max_ms": 199994,
+        "min_ms": 8,
+        "p50_ms": 108376,
+        "sum_ms": 987762
+      },
+      "render_wall": {
+        "count": 10,
+        "max_ms": 14546,
+        "min_ms": 3381,
+        "p50_ms": 11435,
+        "sum_ms": 111897
+      }
+    },
+    "pl": {
+      "completed": 10,
+      "queue_wait": {
+        "count": 10,
+        "max_ms": 204530,
+        "min_ms": 7,
+        "p50_ms": 108383,
+        "sum_ms": 1028903
+      },
+      "render_wall": {
+        "count": 10,
+        "max_ms": 13711,
+        "min_ms": 11333,
+        "p50_ms": 11854,
+        "sum_ms": 120091
+      }
+    },
+    "pt-BR": {
+      "completed": 10,
+      "queue_wait": {
+        "count": 10,
+        "max_ms": 213628,
+        "min_ms": 7,
+        "p50_ms": 118750,
+        "sum_ms": 1020804
+      },
+      "render_wall": {
+        "count": 10,
+        "max_ms": 14377,
+        "min_ms": 4623,
+        "p50_ms": 11427,
+        "sum_ms": 109912
+      }
+    },
+    "ru": {
+      "completed": 7,
+      "queue_wait": {
+        "count": 7,
+        "max_ms": 206807,
+        "min_ms": 8,
+        "p50_ms": 138677,
+        "sum_ms": 877188
+      },
+      "render_wall": {
+        "count": 7,
+        "max_ms": 15125,
+        "min_ms": 11388,
+        "p50_ms": 11474,
+        "sum_ms": 84806
+      }
+    },
+    "tr": {
+      "completed": 10,
+      "queue_wait": {
+        "count": 10,
+        "max_ms": 218174,
+        "min_ms": 15054,
+        "p50_ms": 124254,
+        "sum_ms": 1170403
+      },
+      "render_wall": {
+        "count": 10,
+        "max_ms": 14519,
+        "min_ms": 3582,
+        "p50_ms": 11486,
+        "sum_ms": 113484
+      }
+    }
+  },
+  "queue_wait": {
+    "count": 97,
+    "max_ms": 220453,
+    "min_ms": 4,
+    "p50_ms": 108388,
+    "sum_ms": 10301087
+  },
+  "render_wall": {
+    "count": 97,
+    "max_ms": 17381,
+    "min_ms": 2304,
+    "p50_ms": 11443,
+    "sum_ms": 1097839
+  },
+  "total_wall_ms": 712760
+}
