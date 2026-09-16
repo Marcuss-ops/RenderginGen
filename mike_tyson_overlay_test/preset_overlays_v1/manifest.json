@@ -1,35 +1,13 @@
 {
-  "batch_id": "tyson-overlays-20260916-v1",
-  "source_request": "mike_tyson_overlay_test/mike_tyson_2000w_5entities_10phrases_en_sourcebacked_e2b_request.json",
-  "duration_ms": 5000,
-  "fps_num": 24,
-  "fps_den": 1,
-  "background": {
-    "kind": "color",
-    "color": [
-      0.9333333333333333,
-      0.9450980392156862,
-      0.9058823529411765,
-      1.0
-    ],
-    "hex": "#EEF1E7"
-  },
-  "text_style": {
-    "preset_id": "apple_v2",
-    "fill": "#FFFFFF",
-    "stroke": "#111827",
-    "shadow": "black 72%"
-  },
+  "schema_version": "renderinggen.batch-manifest.v1",
+  "batch_id": "tyson-overlays-20260916-v3",
   "jobs": [
     {
-      "id": "tyson-overlays-20260916-v1-phrase-01",
-      "family": "phrase",
-      "text": "Discipline Gives Power a Direction.",
-      "motion_id": "kinetic_split_word",
+      "id": "phrase-01",
       "render_plan": {
         "schema_version": "renderinggen.overlay-plan.v1",
-        "plan_id": "tyson-overlays-20260916-v1-phrase-01",
-        "video_id": "tyson-overlays-20260916-v1-phrase-01",
+        "plan_id": "phrase-01",
+        "video_id": "phrase-01",
         "project_id": "mike-tyson-overlay-presets-v1",
         "language": "en",
         "width": 1920,
@@ -37,23 +15,25 @@
         "fps_num": 24,
         "fps_den": 1,
         "duration_ms": 5000,
+        "output_profile_id": "",
+        "style_profile": "",
         "background": {
           "kind": "color",
           "color": [
             0.9333333333333333,
             0.9450980392156862,
             0.9058823529411765,
-            1.0
+            1
           ]
         },
         "items": [
           {
             "id": "important-phrase",
             "scene_id": "brooklyn-and-the-first-coach",
-            "kind": "important_phrase",
             "template_id": "IMPORTANT_PHRASE",
             "preset_id": "apple_v2",
             "motion_id": "kinetic_split_word",
+            "kind": "important_phrase",
             "text": "Discipline Gives Power a Direction.",
             "start_ms": 0,
             "end_ms": 5000
@@ -71,17 +51,18 @@
           "logical_path": "assets/fonts/Inter-Bold.ttf",
           "source_url": "http://127.0.0.1:8099/testdata/golden/assets/fonts/Inter-Bold.ttf"
         }
-      ]
+      ],
+      "family": "phrase",
+      "text": "Discipline Gives Power a Direction.",
+      "motion_id": "kinetic_split_word",
+      "preset_id": "apple_v2"
     },
     {
-      "id": "tyson-overlays-20260916-v1-phrase-02",
-      "family": "phrase",
-      "text": "Speed Changes the Distance.",
-      "motion_id": "masked_upward_reveal",
+      "id": "phrase-02",
       "render_plan": {
         "schema_version": "renderinggen.overlay-plan.v1",
-        "plan_id": "tyson-overlays-20260916-v1-phrase-02",
-        "video_id": "tyson-overlays-20260916-v1-phrase-02",
+        "plan_id": "phrase-02",
+        "video_id": "phrase-02",
         "project_id": "mike-tyson-overlay-presets-v1",
         "language": "en",
         "width": 1920,
@@ -89,23 +70,25 @@
         "fps_num": 24,
         "fps_den": 1,
         "duration_ms": 5000,
+        "output_profile_id": "",
+        "style_profile": "",
         "background": {
           "kind": "color",
           "color": [
             0.9333333333333333,
             0.9450980392156862,
             0.9058823529411765,
-            1.0
+            1
           ]
         },
         "items": [
           {
             "id": "important-phrase",
             "scene_id": "amateur-to-professional",
-            "kind": "important_phrase",
             "template_id": "IMPORTANT_PHRASE",
             "preset_id": "apple_v2",
             "motion_id": "masked_upward_reveal",
+            "kind": "important_phrase",
             "text": "Speed Changes the Distance.",
             "start_ms": 0,
             "end_ms": 5000
@@ -123,17 +106,18 @@
           "logical_path": "assets/fonts/Inter-Bold.ttf",
           "source_url": "http://127.0.0.1:8099/testdata/golden/assets/fonts/Inter-Bold.ttf"
         }
-      ]
+      ],
+      "family": "phrase",
+      "text": "Speed Changes the Distance.",
+      "motion_id": "masked_upward_reveal",
+      "preset_id": "apple_v2"
     },
     {
-      "id": "tyson-overlays-20260916-v1-phrase-03",
-      "family": "phrase",
-      "text": "Pressure Shapes the Rhythm.",
-      "motion_id": "depth_of_field_rack_focus",
+      "id": "phrase-03",
       "render_plan": {
         "schema_version": "renderinggen.overlay-plan.v1",
-        "plan_id": "tyson-overlays-20260916-v1-phrase-03",
-        "video_id": "tyson-overlays-20260916-v1-phrase-03",
+        "plan_id": "phrase-03",
+        "video_id": "phrase-03",
         "project_id": "mike-tyson-overlay-presets-v1",
         "language": "en",
         "width": 1920,
@@ -141,23 +125,25 @@
         "fps_num": 24,
         "fps_den": 1,
         "duration_ms": 5000,
+        "output_profile_id": "",
+        "style_profile": "",
         "background": {
           "kind": "color",
           "color": [
             0.9333333333333333,
             0.9450980392156862,
             0.9058823529411765,
-            1.0
+            1
           ]
         },
         "items": [
           {
             "id": "important-phrase",
             "scene_id": "early-knockout-streak",
-            "kind": "important_phrase",
             "template_id": "IMPORTANT_PHRASE",
             "preset_id": "apple_v2",
             "motion_id": "depth_of_field_rack_focus",
+            "kind": "important_phrase",
             "text": "Pressure Shapes the Rhythm.",
             "start_ms": 0,
             "end_ms": 5000
@@ -175,17 +161,18 @@
           "logical_path": "assets/fonts/Inter-Bold.ttf",
           "source_url": "http://127.0.0.1:8099/testdata/golden/assets/fonts/Inter-Bold.ttf"
         }
-      ]
+      ],
+      "family": "phrase",
+      "text": "Pressure Shapes the Rhythm.",
+      "motion_id": "depth_of_field_rack_focus",
+      "preset_id": "apple_v2"
     },
     {
-      "id": "tyson-overlays-20260916-v1-phrase-04",
-      "family": "phrase",
-      "text": "Footwork Creates the Opening.",
-      "motion_id": "staggered_char_float",
+      "id": "phrase-04",
       "render_plan": {
         "schema_version": "renderinggen.overlay-plan.v1",
-        "plan_id": "tyson-overlays-20260916-v1-phrase-04",
-        "video_id": "tyson-overlays-20260916-v1-phrase-04",
+        "plan_id": "phrase-04",
+        "video_id": "phrase-04",
         "project_id": "mike-tyson-overlay-presets-v1",
         "language": "en",
         "width": 1920,
@@ -193,23 +180,25 @@
         "fps_num": 24,
         "fps_den": 1,
         "duration_ms": 5000,
+        "output_profile_id": "",
+        "style_profile": "",
         "background": {
           "kind": "color",
           "color": [
             0.9333333333333333,
             0.9450980392156862,
             0.9058823529411765,
-            1.0
+            1
           ]
         },
         "items": [
           {
             "id": "important-phrase",
             "scene_id": "loss-of-damato",
-            "kind": "important_phrase",
             "template_id": "IMPORTANT_PHRASE",
             "preset_id": "apple_v2",
             "motion_id": "staggered_char_float",
+            "kind": "important_phrase",
             "text": "Footwork Creates the Opening.",
             "start_ms": 0,
             "end_ms": 5000
@@ -227,17 +216,18 @@
           "logical_path": "assets/fonts/Inter-Bold.ttf",
           "source_url": "http://127.0.0.1:8099/testdata/golden/assets/fonts/Inter-Bold.ttf"
         }
-      ]
+      ],
+      "family": "phrase",
+      "text": "Footwork Creates the Opening.",
+      "motion_id": "staggered_char_float",
+      "preset_id": "apple_v2"
     },
     {
-      "id": "tyson-overlays-20260916-v1-phrase-05",
-      "family": "phrase",
-      "text": "Technique Makes Aggression Precise.",
-      "motion_id": "dynamic_island_expansion",
+      "id": "phrase-05",
       "render_plan": {
         "schema_version": "renderinggen.overlay-plan.v1",
-        "plan_id": "tyson-overlays-20260916-v1-phrase-05",
-        "video_id": "tyson-overlays-20260916-v1-phrase-05",
+        "plan_id": "phrase-05",
+        "video_id": "phrase-05",
         "project_id": "mike-tyson-overlay-presets-v1",
         "language": "en",
         "width": 1920,
@@ -245,23 +235,25 @@
         "fps_num": 24,
         "fps_den": 1,
         "duration_ms": 5000,
+        "output_profile_id": "",
+        "style_profile": "",
         "background": {
           "kind": "color",
           "color": [
             0.9333333333333333,
             0.9450980392156862,
             0.9058823529411765,
-            1.0
+            1
           ]
         },
         "items": [
           {
             "id": "important-phrase",
             "scene_id": "youngest-champion",
-            "kind": "important_phrase",
             "template_id": "IMPORTANT_PHRASE",
             "preset_id": "apple_v2",
             "motion_id": "dynamic_island_expansion",
+            "kind": "important_phrase",
             "text": "Technique Makes Aggression Precise.",
             "start_ms": 0,
             "end_ms": 5000
@@ -279,17 +271,18 @@
           "logical_path": "assets/fonts/Inter-Bold.ttf",
           "source_url": "http://127.0.0.1:8099/testdata/golden/assets/fonts/Inter-Bold.ttf"
         }
-      ]
+      ],
+      "family": "phrase",
+      "text": "Technique Makes Aggression Precise.",
+      "motion_id": "dynamic_island_expansion",
+      "preset_id": "apple_v2"
     },
     {
-      "id": "tyson-overlays-20260916-v1-phrase-06",
-      "family": "phrase",
-      "text": "Preparation Begins Long Before the Bell.",
-      "motion_id": "soft_edge_spotlight_dissolve",
+      "id": "phrase-06",
       "render_plan": {
         "schema_version": "renderinggen.overlay-plan.v1",
-        "plan_id": "tyson-overlays-20260916-v1-phrase-06",
-        "video_id": "tyson-overlays-20260916-v1-phrase-06",
+        "plan_id": "phrase-06",
+        "video_id": "phrase-06",
         "project_id": "mike-tyson-overlay-presets-v1",
         "language": "en",
         "width": 1920,
@@ -297,23 +290,25 @@
         "fps_num": 24,
         "fps_den": 1,
         "duration_ms": 5000,
+        "output_profile_id": "",
+        "style_profile": "",
         "background": {
           "kind": "color",
           "color": [
             0.9333333333333333,
             0.9450980392156862,
             0.9058823529411765,
-            1.0
+            1
           ]
         },
         "items": [
           {
             "id": "important-phrase",
             "scene_id": "unification",
-            "kind": "important_phrase",
             "template_id": "IMPORTANT_PHRASE",
             "preset_id": "apple_v2",
             "motion_id": "soft_edge_spotlight_dissolve",
+            "kind": "important_phrase",
             "text": "Preparation Begins Long Before the Bell.",
             "start_ms": 0,
             "end_ms": 5000
@@ -331,17 +326,18 @@
           "logical_path": "assets/fonts/Inter-Bold.ttf",
           "source_url": "http://127.0.0.1:8099/testdata/golden/assets/fonts/Inter-Bold.ttf"
         }
-      ]
+      ],
+      "family": "phrase",
+      "text": "Preparation Begins Long Before the Bell.",
+      "motion_id": "soft_edge_spotlight_dissolve",
+      "preset_id": "apple_v2"
     },
     {
-      "id": "tyson-overlays-20260916-v1-phrase-07",
-      "family": "phrase",
-      "text": "A Loss Exposes What Victory Can Hide.",
-      "motion_id": "velocity_inertia_snap",
+      "id": "phrase-07",
       "render_plan": {
         "schema_version": "renderinggen.overlay-plan.v1",
-        "plan_id": "tyson-overlays-20260916-v1-phrase-07",
-        "video_id": "tyson-overlays-20260916-v1-phrase-07",
+        "plan_id": "phrase-07",
+        "video_id": "phrase-07",
         "project_id": "mike-tyson-overlay-presets-v1",
         "language": "en",
         "width": 1920,
@@ -349,23 +345,25 @@
         "fps_num": 24,
         "fps_den": 1,
         "duration_ms": 5000,
+        "output_profile_id": "",
+        "style_profile": "",
         "background": {
           "kind": "color",
           "color": [
             0.9333333333333333,
             0.9450980392156862,
             0.9058823529411765,
-            1.0
+            1
           ]
         },
         "items": [
           {
             "id": "important-phrase",
             "scene_id": "tokyo-defeat",
-            "kind": "important_phrase",
             "template_id": "IMPORTANT_PHRASE",
             "preset_id": "apple_v2",
             "motion_id": "velocity_inertia_snap",
+            "kind": "important_phrase",
             "text": "A Loss Exposes What Victory Can Hide.",
             "start_ms": 0,
             "end_ms": 5000
@@ -383,17 +381,18 @@
           "logical_path": "assets/fonts/Inter-Bold.ttf",
           "source_url": "http://127.0.0.1:8099/testdata/golden/assets/fonts/Inter-Bold.ttf"
         }
-      ]
+      ],
+      "family": "phrase",
+      "text": "A Loss Exposes What Victory Can Hide.",
+      "motion_id": "velocity_inertia_snap",
+      "preset_id": "apple_v2"
     },
     {
-      "id": "tyson-overlays-20260916-v1-phrase-08",
-      "family": "phrase",
-      "text": "A Champion Is More Than a Record.",
-      "motion_id": "editorial_push_in",
+      "id": "phrase-08",
       "render_plan": {
         "schema_version": "renderinggen.overlay-plan.v1",
-        "plan_id": "tyson-overlays-20260916-v1-phrase-08",
-        "video_id": "tyson-overlays-20260916-v1-phrase-08",
+        "plan_id": "phrase-08",
+        "video_id": "phrase-08",
         "project_id": "mike-tyson-overlay-presets-v1",
         "language": "en",
         "width": 1920,
@@ -401,23 +400,25 @@
         "fps_num": 24,
         "fps_den": 1,
         "duration_ms": 5000,
+        "output_profile_id": "",
+        "style_profile": "",
         "background": {
           "kind": "color",
           "color": [
             0.9333333333333333,
             0.9450980392156862,
             0.9058823529411765,
-            1.0
+            1
           ]
         },
         "items": [
           {
             "id": "important-phrase",
             "scene_id": "conviction-and-prison",
-            "kind": "important_phrase",
             "template_id": "IMPORTANT_PHRASE",
             "preset_id": "apple_v2",
             "motion_id": "editorial_push_in",
+            "kind": "important_phrase",
             "text": "A Champion Is More Than a Record.",
             "start_ms": 0,
             "end_ms": 5000
@@ -435,17 +436,18 @@
           "logical_path": "assets/fonts/Inter-Bold.ttf",
           "source_url": "http://127.0.0.1:8099/testdata/golden/assets/fonts/Inter-Bold.ttf"
         }
-      ]
+      ],
+      "family": "phrase",
+      "text": "A Champion Is More Than a Record.",
+      "motion_id": "editorial_push_in",
+      "preset_id": "apple_v2"
     },
     {
-      "id": "tyson-overlays-20260916-v1-phrase-09",
-      "family": "phrase",
-      "text": "Reinvention Is Part of the Fight.",
-      "motion_id": "liquid_glass_ripple",
+      "id": "phrase-09",
       "render_plan": {
         "schema_version": "renderinggen.overlay-plan.v1",
-        "plan_id": "tyson-overlays-20260916-v1-phrase-09",
-        "video_id": "tyson-overlays-20260916-v1-phrase-09",
+        "plan_id": "phrase-09",
+        "video_id": "phrase-09",
         "project_id": "mike-tyson-overlay-presets-v1",
         "language": "en",
         "width": 1920,
@@ -453,23 +455,25 @@
         "fps_num": 24,
         "fps_den": 1,
         "duration_ms": 5000,
+        "output_profile_id": "",
+        "style_profile": "",
         "background": {
           "kind": "color",
           "color": [
             0.9333333333333333,
             0.9450980392156862,
             0.9058823529411765,
-            1.0
+            1
           ]
         },
         "items": [
           {
             "id": "important-phrase",
             "scene_id": "return-and-holyfield",
-            "kind": "important_phrase",
             "template_id": "IMPORTANT_PHRASE",
             "preset_id": "apple_v2",
             "motion_id": "liquid_glass_ripple",
+            "kind": "important_phrase",
             "text": "Reinvention Is Part of the Fight.",
             "start_ms": 0,
             "end_ms": 5000
@@ -487,17 +491,18 @@
           "logical_path": "assets/fonts/Inter-Bold.ttf",
           "source_url": "http://127.0.0.1:8099/testdata/golden/assets/fonts/Inter-Bold.ttf"
         }
-      ]
+      ],
+      "family": "phrase",
+      "text": "Reinvention Is Part of the Fight.",
+      "motion_id": "liquid_glass_ripple",
+      "preset_id": "apple_v2"
     },
     {
-      "id": "tyson-overlays-20260916-v1-phrase-10",
-      "family": "phrase",
-      "text": "Legacy Outlasts the Final Round.",
-      "motion_id": "chromatic_aberration_pop",
+      "id": "phrase-10",
       "render_plan": {
         "schema_version": "renderinggen.overlay-plan.v1",
-        "plan_id": "tyson-overlays-20260916-v1-phrase-10",
-        "video_id": "tyson-overlays-20260916-v1-phrase-10",
+        "plan_id": "phrase-10",
+        "video_id": "phrase-10",
         "project_id": "mike-tyson-overlay-presets-v1",
         "language": "en",
         "width": 1920,
@@ -505,23 +510,25 @@
         "fps_num": 24,
         "fps_den": 1,
         "duration_ms": 5000,
+        "output_profile_id": "",
+        "style_profile": "",
         "background": {
           "kind": "color",
           "color": [
             0.9333333333333333,
             0.9450980392156862,
             0.9058823529411765,
-            1.0
+            1
           ]
         },
         "items": [
           {
             "id": "important-phrase",
             "scene_id": "rematch-and-legacy",
-            "kind": "important_phrase",
             "template_id": "IMPORTANT_PHRASE",
             "preset_id": "apple_v2",
             "motion_id": "chromatic_aberration_pop",
+            "kind": "important_phrase",
             "text": "Legacy Outlasts the Final Round.",
             "start_ms": 0,
             "end_ms": 5000
@@ -539,22 +546,18 @@
           "logical_path": "assets/fonts/Inter-Bold.ttf",
           "source_url": "http://127.0.0.1:8099/testdata/golden/assets/fonts/Inter-Bold.ttf"
         }
-      ]
+      ],
+      "family": "phrase",
+      "text": "Legacy Outlasts the Final Round.",
+      "motion_id": "chromatic_aberration_pop",
+      "preset_id": "apple_v2"
     },
     {
-      "id": "tyson-overlays-20260916-v1-image-01",
-      "family": "image",
-      "entity_id": "person:mike-tyson",
-      "entity_name": "Mike Tyson",
-      "preset_id": "image_focus_in",
-      "asset": "mike_tyson.png",
-      "asset_sha256": "09efce91086e5590248837fe9cc1aac46a93bb2da8e7061c0a74cfa16a42ba3f",
-      "asset_attribution": "AI editorial illustration, generated for this project",
-      "asset_source": "Generated for this project",
+      "id": "image-01",
       "render_plan": {
         "schema_version": "renderinggen.overlay-plan.v1",
-        "plan_id": "tyson-overlays-20260916-v1-image-01",
-        "video_id": "tyson-overlays-20260916-v1-image-01",
+        "plan_id": "image-01",
+        "video_id": "image-01",
         "project_id": "mike-tyson-overlay-presets-v1",
         "language": "en",
         "width": 1920,
@@ -562,34 +565,36 @@
         "fps_num": 24,
         "fps_den": 1,
         "duration_ms": 5000,
+        "output_profile_id": "",
+        "style_profile": "",
         "background": {
           "kind": "color",
           "color": [
             0.9333333333333333,
             0.9450980392156862,
             0.9058823529411765,
-            1.0
+            1
           ]
         },
         "items": [
           {
             "id": "entity-image",
-            "entity_id": "person:mike-tyson",
-            "kind": "entity_image",
             "template_id": "IMAGE_OVERLAY",
             "preset_id": "image_focus_in",
-            "text": "Mike Tyson",
-            "start_ms": 0,
-            "end_ms": 5000,
+            "kind": "entity_image",
+            "entity_id": "person:mike-tyson",
             "duration_ms": 5000,
             "asset_refs": [
               {
                 "asset_id": "person:mike-tyson",
-                "url": "http://127.0.0.1:8099/mike_tyson_overlay_test/preset_overlays_v1/assets/entities/mike_tyson.png",
                 "sha256": "09efce91086e5590248837fe9cc1aac46a93bb2da8e7061c0a74cfa16a42ba3f",
+                "url": "http://127.0.0.1:8099/mike_tyson_overlay_test/preset_overlays_v1/assets/entities/mike_tyson.png",
                 "media_type": "image/png"
               }
-            ]
+            ],
+            "text": "Mike Tyson",
+            "start_ms": 0,
+            "end_ms": 5000
           }
         ]
       },
@@ -609,22 +614,24 @@
           "logical_path": "assets/entities/mike_tyson.png",
           "source_url": "http://127.0.0.1:8099/mike_tyson_overlay_test/preset_overlays_v1/assets/entities/mike_tyson.png"
         }
-      ]
+      ],
+      "family": "image",
+      "text": "Mike Tyson",
+      "preset_id": "image_focus_in",
+      "entity_id": "person:mike-tyson",
+      "entity_name": "Mike Tyson",
+      "asset": "mike_tyson.png",
+      "asset_source": "Generated for this project",
+      "asset_attribution": "AI editorial illustration, generated for this project",
+      "entrance_duration_frames": 37,
+      "entrance_duration_seconds": 1.5
     },
     {
-      "id": "tyson-overlays-20260916-v1-image-02",
-      "family": "image",
-      "entity_id": "person:cus-damato",
-      "entity_name": "Cus D’Amato",
-      "preset_id": "image_fade_in",
-      "asset": "cus_damato.png",
-      "asset_sha256": "c512a4a213b1703308a80bb4ce7fc4bebf2366f79728e6446a46ec2e131c1c7c",
-      "asset_attribution": "AI editorial illustration, generated for this project",
-      "asset_source": "Generated for this project",
+      "id": "image-02",
       "render_plan": {
         "schema_version": "renderinggen.overlay-plan.v1",
-        "plan_id": "tyson-overlays-20260916-v1-image-02",
-        "video_id": "tyson-overlays-20260916-v1-image-02",
+        "plan_id": "image-02",
+        "video_id": "image-02",
         "project_id": "mike-tyson-overlay-presets-v1",
         "language": "en",
         "width": 1920,
@@ -632,34 +639,36 @@
         "fps_num": 24,
         "fps_den": 1,
         "duration_ms": 5000,
+        "output_profile_id": "",
+        "style_profile": "",
         "background": {
           "kind": "color",
           "color": [
             0.9333333333333333,
             0.9450980392156862,
             0.9058823529411765,
-            1.0
+            1
           ]
         },
         "items": [
           {
             "id": "entity-image",
-            "entity_id": "person:cus-damato",
-            "kind": "entity_image",
             "template_id": "IMAGE_OVERLAY",
             "preset_id": "image_fade_in",
-            "text": "Cus D’Amato",
-            "start_ms": 0,
-            "end_ms": 5000,
+            "kind": "entity_image",
+            "entity_id": "person:cus-damato",
             "duration_ms": 5000,
             "asset_refs": [
               {
                 "asset_id": "person:cus-damato",
-                "url": "http://127.0.0.1:8099/mike_tyson_overlay_test/preset_overlays_v1/assets/entities/cus_damato.png",
                 "sha256": "c512a4a213b1703308a80bb4ce7fc4bebf2366f79728e6446a46ec2e131c1c7c",
+                "url": "http://127.0.0.1:8099/mike_tyson_overlay_test/preset_overlays_v1/assets/entities/cus_damato.png",
                 "media_type": "image/png"
               }
-            ]
+            ],
+            "text": "Cus D’Amato",
+            "start_ms": 0,
+            "end_ms": 5000
           }
         ]
       },
@@ -679,22 +688,24 @@
           "logical_path": "assets/entities/cus_damato.png",
           "source_url": "http://127.0.0.1:8099/mike_tyson_overlay_test/preset_overlays_v1/assets/entities/cus_damato.png"
         }
-      ]
+      ],
+      "family": "image",
+      "text": "Cus D’Amato",
+      "preset_id": "image_fade_in",
+      "entity_id": "person:cus-damato",
+      "entity_name": "Cus D’Amato",
+      "asset": "cus_damato.png",
+      "asset_source": "Generated for this project",
+      "asset_attribution": "AI editorial illustration, generated for this project",
+      "entrance_duration_frames": 37,
+      "entrance_duration_seconds": 1.5
     },
     {
-      "id": "tyson-overlays-20260916-v1-image-03",
-      "family": "image",
-      "entity_id": "person:muhammad-ali",
-      "entity_name": "Muhammad Ali",
-      "preset_id": "image_scale_in",
-      "asset": "muhammad_ali.jpg",
-      "asset_sha256": "5d8a5eaf6a7961e1f9369c8396d80b9634319926137e44f7eb909bf442cf95d9",
-      "asset_attribution": "Wikimedia Commons, public-domain status stated on source page",
-      "asset_source": "https://commons.wikimedia.org/wiki/File:Muhammad_Ali_Smiling_1962_Portrait.jpg",
+      "id": "image-03",
       "render_plan": {
         "schema_version": "renderinggen.overlay-plan.v1",
-        "plan_id": "tyson-overlays-20260916-v1-image-03",
-        "video_id": "tyson-overlays-20260916-v1-image-03",
+        "plan_id": "image-03",
+        "video_id": "image-03",
         "project_id": "mike-tyson-overlay-presets-v1",
         "language": "en",
         "width": 1920,
@@ -702,34 +713,36 @@
         "fps_num": 24,
         "fps_den": 1,
         "duration_ms": 5000,
+        "output_profile_id": "",
+        "style_profile": "",
         "background": {
           "kind": "color",
           "color": [
             0.9333333333333333,
             0.9450980392156862,
             0.9058823529411765,
-            1.0
+            1
           ]
         },
         "items": [
           {
             "id": "entity-image",
-            "entity_id": "person:muhammad-ali",
-            "kind": "entity_image",
             "template_id": "IMAGE_OVERLAY",
             "preset_id": "image_scale_in",
-            "text": "Muhammad Ali",
-            "start_ms": 0,
-            "end_ms": 5000,
+            "kind": "entity_image",
+            "entity_id": "person:muhammad-ali",
             "duration_ms": 5000,
             "asset_refs": [
               {
                 "asset_id": "person:muhammad-ali",
-                "url": "http://127.0.0.1:8099/mike_tyson_overlay_test/preset_overlays_v1/assets/entities/muhammad_ali.jpg",
                 "sha256": "5d8a5eaf6a7961e1f9369c8396d80b9634319926137e44f7eb909bf442cf95d9",
+                "url": "http://127.0.0.1:8099/mike_tyson_overlay_test/preset_overlays_v1/assets/entities/muhammad_ali.jpg",
                 "media_type": "image/jpeg"
               }
-            ]
+            ],
+            "text": "Muhammad Ali",
+            "start_ms": 0,
+            "end_ms": 5000
           }
         ]
       },
@@ -749,22 +762,24 @@
           "logical_path": "assets/entities/muhammad_ali.jpg",
           "source_url": "http://127.0.0.1:8099/mike_tyson_overlay_test/preset_overlays_v1/assets/entities/muhammad_ali.jpg"
         }
-      ]
+      ],
+      "family": "image",
+      "text": "Muhammad Ali",
+      "preset_id": "image_scale_in",
+      "entity_id": "person:muhammad-ali",
+      "entity_name": "Muhammad Ali",
+      "asset": "muhammad_ali.jpg",
+      "asset_source": "https://commons.wikimedia.org/wiki/File:Muhammad_Ali_Smiling_1962_Portrait.jpg",
+      "asset_attribution": "Wikimedia Commons, public-domain status stated on source page",
+      "entrance_duration_frames": 37,
+      "entrance_duration_seconds": 1.5
     },
     {
-      "id": "tyson-overlays-20260916-v1-image-04",
-      "family": "image",
-      "entity_id": "person:sugar-ray-robinson",
-      "entity_name": "Sugar Ray Robinson",
-      "preset_id": "image_slide_left",
-      "asset": "sugar_ray_robinson.jpg",
-      "asset_sha256": "3f513c9f396e331d4c604a8a7120a3fa78dfb9a00da087483ca190f3369d4845",
-      "asset_attribution": "Library of Congress / Wikimedia Commons; no known copyright restriction stated on source page",
-      "asset_source": "https://commons.wikimedia.org/wiki/File:Sugar_Ray_Robinson_1965_(cropped).jpg",
+      "id": "image-04",
       "render_plan": {
         "schema_version": "renderinggen.overlay-plan.v1",
-        "plan_id": "tyson-overlays-20260916-v1-image-04",
-        "video_id": "tyson-overlays-20260916-v1-image-04",
+        "plan_id": "image-04",
+        "video_id": "image-04",
         "project_id": "mike-tyson-overlay-presets-v1",
         "language": "en",
         "width": 1920,
@@ -772,34 +787,36 @@
         "fps_num": 24,
         "fps_den": 1,
         "duration_ms": 5000,
+        "output_profile_id": "",
+        "style_profile": "",
         "background": {
           "kind": "color",
           "color": [
             0.9333333333333333,
             0.9450980392156862,
             0.9058823529411765,
-            1.0
+            1
           ]
         },
         "items": [
           {
             "id": "entity-image",
-            "entity_id": "person:sugar-ray-robinson",
-            "kind": "entity_image",
             "template_id": "IMAGE_OVERLAY",
             "preset_id": "image_slide_left",
-            "text": "Sugar Ray Robinson",
-            "start_ms": 0,
-            "end_ms": 5000,
+            "kind": "entity_image",
+            "entity_id": "person:sugar-ray-robinson",
             "duration_ms": 5000,
             "asset_refs": [
               {
                 "asset_id": "person:sugar-ray-robinson",
-                "url": "http://127.0.0.1:8099/mike_tyson_overlay_test/preset_overlays_v1/assets/entities/sugar_ray_robinson.jpg",
                 "sha256": "3f513c9f396e331d4c604a8a7120a3fa78dfb9a00da087483ca190f3369d4845",
+                "url": "http://127.0.0.1:8099/mike_tyson_overlay_test/preset_overlays_v1/assets/entities/sugar_ray_robinson.jpg",
                 "media_type": "image/jpeg"
               }
-            ]
+            ],
+            "text": "Sugar Ray Robinson",
+            "start_ms": 0,
+            "end_ms": 5000
           }
         ]
       },
@@ -819,22 +836,24 @@
           "logical_path": "assets/entities/sugar_ray_robinson.jpg",
           "source_url": "http://127.0.0.1:8099/mike_tyson_overlay_test/preset_overlays_v1/assets/entities/sugar_ray_robinson.jpg"
         }
-      ]
+      ],
+      "family": "image",
+      "text": "Sugar Ray Robinson",
+      "preset_id": "image_slide_left",
+      "entity_id": "person:sugar-ray-robinson",
+      "entity_name": "Sugar Ray Robinson",
+      "asset": "sugar_ray_robinson.jpg",
+      "asset_source": "https://commons.wikimedia.org/wiki/File:Sugar_Ray_Robinson_1965_(cropped).jpg",
+      "asset_attribution": "Library of Congress / Wikimedia Commons; no known copyright restriction stated on source page",
+      "entrance_duration_frames": 37,
+      "entrance_duration_seconds": 1.5
     },
     {
-      "id": "tyson-overlays-20260916-v1-image-05",
-      "family": "image",
-      "entity_id": "person:joe-frazier",
-      "entity_name": "Joe Frazier",
-      "preset_id": "image_slide_right",
-      "asset": "joe_frazier.jpg",
-      "asset_sha256": "9ad66716ab3665e03d5c4d2a06fcc30e3c1a2419be9a785523f24813f73c4d2a",
-      "asset_attribution": "Associated Press photo via Wikimedia Commons; U.S. public-domain/no-notice status stated on source page",
-      "asset_source": "https://commons.wikimedia.org/wiki/File:Joe_Frazier_1971_Press_Photo.jpg",
+      "id": "image-05",
       "render_plan": {
         "schema_version": "renderinggen.overlay-plan.v1",
-        "plan_id": "tyson-overlays-20260916-v1-image-05",
-        "video_id": "tyson-overlays-20260916-v1-image-05",
+        "plan_id": "image-05",
+        "video_id": "image-05",
         "project_id": "mike-tyson-overlay-presets-v1",
         "language": "en",
         "width": 1920,
@@ -842,34 +861,36 @@
         "fps_num": 24,
         "fps_den": 1,
         "duration_ms": 5000,
+        "output_profile_id": "",
+        "style_profile": "",
         "background": {
           "kind": "color",
           "color": [
             0.9333333333333333,
             0.9450980392156862,
             0.9058823529411765,
-            1.0
+            1
           ]
         },
         "items": [
           {
             "id": "entity-image",
-            "entity_id": "person:joe-frazier",
-            "kind": "entity_image",
             "template_id": "IMAGE_OVERLAY",
             "preset_id": "image_slide_right",
-            "text": "Joe Frazier",
-            "start_ms": 0,
-            "end_ms": 5000,
+            "kind": "entity_image",
+            "entity_id": "person:joe-frazier",
             "duration_ms": 5000,
             "asset_refs": [
               {
                 "asset_id": "person:joe-frazier",
-                "url": "http://127.0.0.1:8099/mike_tyson_overlay_test/preset_overlays_v1/assets/entities/joe_frazier.jpg",
                 "sha256": "9ad66716ab3665e03d5c4d2a06fcc30e3c1a2419be9a785523f24813f73c4d2a",
+                "url": "http://127.0.0.1:8099/mike_tyson_overlay_test/preset_overlays_v1/assets/entities/joe_frazier.jpg",
                 "media_type": "image/jpeg"
               }
-            ]
+            ],
+            "text": "Joe Frazier",
+            "start_ms": 0,
+            "end_ms": 5000
           }
         ]
       },
@@ -889,7 +910,17 @@
           "logical_path": "assets/entities/joe_frazier.jpg",
           "source_url": "http://127.0.0.1:8099/mike_tyson_overlay_test/preset_overlays_v1/assets/entities/joe_frazier.jpg"
         }
-      ]
+      ],
+      "family": "image",
+      "text": "Joe Frazier",
+      "preset_id": "image_slide_right",
+      "entity_id": "person:joe-frazier",
+      "entity_name": "Joe Frazier",
+      "asset": "joe_frazier.jpg",
+      "asset_source": "https://commons.wikimedia.org/wiki/File:Joe_Frazier_1971_Press_Photo.jpg",
+      "asset_attribution": "Associated Press photo via Wikimedia Commons; U.S. public-domain/no-notice status stated on source page",
+      "entrance_duration_frames": 37,
+      "entrance_duration_seconds": 1.5
     }
   ]
 }

@@ -37,31 +37,45 @@ Prerequisites: `renderinggen-queue` (:8081), `renderinggen` worker,
 font/image assets (the worker self-heals a missing asset from `source_url` and
 verifies its SHA-256 while streaming).
 
+The whole flow is Go: `cmd/batch-build` (manifest), `cmd/batch-run` (submit,
+wait, download, report), `cmd/batch-verify` (certify), `cmd/drive-upload`
+(publish). The phrases' translations are data (`translations.json`, produced by
+PipelineGen's Argos + Ollama chain); the commands below never invent text.
+
 ```bash
 cd renderinggen
+go build -o bin/batch-build ./cmd/batch-build
+go build -o bin/batch-run ./cmd/batch-run
+go build -o bin/batch-verify ./cmd/batch-verify
+go build -o bin/drive-upload ./cmd/drive-upload
 
-# 1. translate the 5 phrase texts (Argos; models: translate-en_<lang>)
-python3 ../multilingual_overlays_v1/scripts/gen_matrix.py --help   # see --asset-base-url
+# 1. build the manifest (100 jobs: 5 phrases × 10 languages + 5 images × 10).
+#    -repo-root is the RenderingGen checkout (font/image hashing).
+./bin/batch-build -translations ../multilingual_overlays_v1/translations.json \
+  -batch-id ml-overlays-10x10-run2 -asset-base-url http://127.0.0.1:8099 \
+  -repo-root .. -out ../multilingual_overlays_v1/manifest.json \
+  -plans-dir ../multilingual_overlays_v1/plans
 
-# 2. build the manifest (100 jobs)
-python3 scripts/gen_matrix.py --batch-id ml-overlays-10x10-run2 \
-  --asset-base-url http://127.0.0.1:8099 --manifest manifest.json
+# 2. render it on the production path, wait, download and measure.
+#    -serve-assets serves testdata/golden (where the corpus assets live).
+cd ../multilingual_overlays_v1
+../renderinggen/bin/batch-run -manifest manifest.json \
+  -report summary.json -snapshot jobs_snapshot.json \
+  -download-dir artifacts -serve-assets ../testdata/golden \
+  -serve-addr 127.0.0.1:8099
 
-# 3. submit through the queue
-go run ./cmd/batch-submit -queue http://localhost:8081 -manifest manifest.json
+# 3. verify structure, content addresses and the translated-text pixel band
+#    (exit 1 on any FAIL). Add -baseline-manifest to compare against the run
+#    without the coverage font.
+../renderinggen/bin/batch-verify -manifest manifest.json \
+  -report verify_report.json -stage verify
 
-# 4. measure (queue timestamps + certified artifact facts)
-python3 scripts/run_and_measure.py --manifest manifest.json \
-  --snapshot jobs_snapshot.json --summary summary.json
-
-# 5. verify structure + translated-text pixels (exit 1 on any FAIL)
-python3 scripts/verify_matrix.py --manifest manifest.json --baseline-manifest <run-without-fallback>
-
-# 6. publish to Drive (one subfolder per language)
-go build -o drive-upload ./cmd/drive-upload
-python3 scripts/upload_drive.py --uploader ./drive-upload \
-  --folder 1J_xUGo_bchzXDIGqSX04CU44c_Dm3SxS \
-  --credentials <oauth.json> --token <token.json>
+# 4. publish to Drive (one subfolder per language). One call per file; the
+#    provider must account for every byte (-sha256) or the upload is refused.
+../renderinggen/bin/drive-upload -credentials <oauth.json> -token <token.json> \
+  -folder 1J_xUGo_bchzXDIGqSX04CU44c_Dm3SxS -subfolder <lang> \
+  -file artifacts/<job>/<batch>-<job>.mp4 -name <batch>-<job>.mp4 \
+  -sha256 <artifact_hash from summary.json>
 ```
 
 ## The requirement this corpus encodes: a job must declare its coverage font
@@ -90,9 +104,9 @@ Therefore **every phrase job declares both fonts**:
 `assets/fonts/Poppins-Bold.ttf` (the preset's primary) and
 `assets/fonts/Inter-Bold.ttf` (Chronon3d's own bundle font, which covers
 Cyrillic and Latin-extended: tr `ı/ş/ğ`, pt `ã`). This is a job-data
-requirement, not an engine change. `verify_matrix.py` fails any artifact whose
-phrase band carries less than 5000 ink pixels, which is exactly the silent
-truncation the counter-run produced.
+requirement, not an engine change. `cmd/batch-verify` fails any artifact whose
+phrase band carries fewer than `-min-ink` glyph pixels (default 5000), which is
+exactly the silent truncation the counter-run produced.
 
 ## Measured result (run2, RTX A4000, worker `gpu_lanes: 2`)
 
@@ -128,7 +142,7 @@ their text effectively missing.
 
 - **Translation quality is Argos-level**, and Argos degrades on input that is not
   sentence case: all-caps sources are translated title-cased and re-uppercased
-  (`gen_matrix`/translation step), which fixed `BREAKING NEWS` in `es`/`pt-BR`/`ru`
+  (`cmd/batch-build`/translation step), which fixed `BREAKING NEWS` in `es`/`pt-BR`/`ru`
   but still leaves `it`/`pl`/`de`/`id` **untranslated** (identical to the source)
   and `tr` wrong (`YOK NEWS`). `phrase_05` is also weak in `tr`
   (`Altyapı Altyapı`) and `phrase_02` is partially untranslated in `id`. The

@@ -1,0 +1,234 @@
+{
+  "schema": "renderinggen.batch-verify-report.v1",
+  "batch_id": "tyson-overlays-20260916-v3",
+  "generated_at": "2026-09-16T16:43:27.406733971Z",
+  "manifest": "manifest.json",
+  "queue": "http://localhost:8081",
+  "jobs": 15,
+  "passed": 15,
+  "distinctness": [
+    {
+      "overlay": "image-01",
+      "languages": 1,
+      "distinct_hashes": 1
+    },
+    {
+      "overlay": "image-02",
+      "languages": 1,
+      "distinct_hashes": 1
+    },
+    {
+      "overlay": "image-03",
+      "languages": 1,
+      "distinct_hashes": 1
+    },
+    {
+      "overlay": "image-04",
+      "languages": 1,
+      "distinct_hashes": 1
+    },
+    {
+      "overlay": "image-05",
+      "languages": 1,
+      "distinct_hashes": 1
+    },
+    {
+      "overlay": "phrase-01",
+      "languages": 1,
+      "distinct_hashes": 1
+    },
+    {
+      "overlay": "phrase-02",
+      "languages": 1,
+      "distinct_hashes": 1
+    },
+    {
+      "overlay": "phrase-03",
+      "languages": 1,
+      "distinct_hashes": 1
+    },
+    {
+      "overlay": "phrase-04",
+      "languages": 1,
+      "distinct_hashes": 1
+    },
+    {
+      "overlay": "phrase-05",
+      "languages": 1,
+      "distinct_hashes": 1
+    },
+    {
+      "overlay": "phrase-06",
+      "languages": 1,
+      "distinct_hashes": 1
+    },
+    {
+      "overlay": "phrase-07",
+      "languages": 1,
+      "distinct_hashes": 1
+    },
+    {
+      "overlay": "phrase-08",
+      "languages": 1,
+      "distinct_hashes": 1
+    },
+    {
+      "overlay": "phrase-09",
+      "languages": 1,
+      "distinct_hashes": 1
+    },
+    {
+      "overlay": "phrase-10",
+      "languages": 1,
+      "distinct_hashes": 1
+    }
+  ],
+  "rows": [
+    {
+      "job_id": "tyson-overlays-20260916-v3:phrase-01",
+      "family": "phrase",
+      "language": "en",
+      "text": "Discipline Gives Power a Direction.",
+      "state": "completed",
+      "sha256": "02c25c77d96517b2e9c2083e5fb39964cdf1bd7e1c72bc0d82af3039407f47f4",
+      "bytes": 238649,
+      "ink_pixels": 32718
+    },
+    {
+      "job_id": "tyson-overlays-20260916-v3:phrase-02",
+      "family": "phrase",
+      "language": "en",
+      "text": "Speed Changes the Distance.",
+      "state": "completed",
+      "sha256": "9073f019f375df8da78ebbd14fc0eab0d108f440afec24686f92032276c2752c",
+      "bytes": 207178,
+      "ink_pixels": 27804
+    },
+    {
+      "job_id": "tyson-overlays-20260916-v3:phrase-03",
+      "family": "phrase",
+      "language": "en",
+      "text": "Pressure Shapes the Rhythm.",
+      "state": "completed",
+      "sha256": "a2f02a37f85a6485d10312d45c0fe7e4cbc9a0a2d88c0d81cc26df7e14625ef0",
+      "bytes": 238868,
+      "ink_pixels": 27500
+    },
+    {
+      "job_id": "tyson-overlays-20260916-v3:phrase-04",
+      "family": "phrase",
+      "language": "en",
+      "text": "Footwork Creates the Opening.",
+      "state": "completed",
+      "sha256": "a0d3cfa7dc2b1dea16ae23752a41654381437771803f00199e91b27d5fa483ff",
+      "bytes": 352954,
+      "ink_pixels": 29350
+    },
+    {
+      "job_id": "tyson-overlays-20260916-v3:phrase-05",
+      "family": "phrase",
+      "language": "en",
+      "text": "Technique Makes Aggression Precise.",
+      "state": "completed",
+      "sha256": "352b49ff21741572fe147dafbd9b056829934d551114b8fafe62c421ba049a3b",
+      "bytes": 403941,
+      "ink_pixels": 35821
+    },
+    {
+      "job_id": "tyson-overlays-20260916-v3:phrase-06",
+      "family": "phrase",
+      "language": "en",
+      "text": "Preparation Begins Long Before the Bell.",
+      "state": "completed",
+      "sha256": "e51698aa15e7b9573c55079c3922bc6d1a56b29a0543f7903bff2fc2932aab02",
+      "bytes": 274461,
+      "ink_pixels": 37108
+    },
+    {
+      "job_id": "tyson-overlays-20260916-v3:phrase-07",
+      "family": "phrase",
+      "language": "en",
+      "text": "A Loss Exposes What Victory Can Hide.",
+      "state": "completed",
+      "sha256": "f07d3dc1b6c35495adf75dc152b26cafc79e1739b91d383112cf2201dea3688f",
+      "bytes": 307540,
+      "ink_pixels": 34824
+    },
+    {
+      "job_id": "tyson-overlays-20260916-v3:phrase-08",
+      "family": "phrase",
+      "language": "en",
+      "text": "A Champion Is More Than a Record.",
+      "state": "completed",
+      "sha256": "115932cb26c4f16460baff3cf7bbfdcfa52c879cda32f72f9d02229856e7ecb7",
+      "bytes": 251489,
+      "ink_pixels": 32141
+    },
+    {
+      "job_id": "tyson-overlays-20260916-v3:phrase-09",
+      "family": "phrase",
+      "language": "en",
+      "text": "Reinvention Is Part of the Fight.",
+      "state": "completed",
+      "sha256": "c1df495fdde18bf1c791ca45455340c15438650bc44382f1cb136521278eeda4",
+      "bytes": 174406,
+      "ink_pixels": 29783
+    },
+    {
+      "job_id": "tyson-overlays-20260916-v3:phrase-10",
+      "family": "phrase",
+      "language": "en",
+      "text": "Legacy Outlasts the Final Round.",
+      "state": "completed",
+      "sha256": "4da4484575de3d03c4f15f1310e45c5c19aa6448e08d7762500308e26e47fd85",
+      "bytes": 385876,
+      "ink_pixels": 30704
+    },
+    {
+      "job_id": "tyson-overlays-20260916-v3:image-01",
+      "family": "image",
+      "language": "en",
+      "text": "Mike Tyson",
+      "state": "completed",
+      "sha256": "a94b465353b99a854c841bb1966b86a778f29d1f7cba07ab8551a892106e1eb2",
+      "bytes": 893780
+    },
+    {
+      "job_id": "tyson-overlays-20260916-v3:image-02",
+      "family": "image",
+      "language": "en",
+      "text": "Cus D’Amato",
+      "state": "completed",
+      "sha256": "1dd6e272d94441762076ffe54910e17df9b1ba7d35e564886187f8feea44602c",
+      "bytes": 472595
+    },
+    {
+      "job_id": "tyson-overlays-20260916-v3:image-03",
+      "family": "image",
+      "language": "en",
+      "text": "Muhammad Ali",
+      "state": "completed",
+      "sha256": "5a622cdd5e12d817bdaa74151fb150e9ce0381f8ece7b7808a78b911ca5dbd97",
+      "bytes": 893017
+    },
+    {
+      "job_id": "tyson-overlays-20260916-v3:image-04",
+      "family": "image",
+      "language": "en",
+      "text": "Sugar Ray Robinson",
+      "state": "completed",
+      "sha256": "b140c2108188a6710ed94b6edb013cae9750764f9f1b94ba4d52776f600f963c",
+      "bytes": 569431
+    },
+    {
+      "job_id": "tyson-overlays-20260916-v3:image-05",
+      "family": "image",
+      "language": "en",
+      "text": "Joe Frazier",
+      "state": "completed",
+      "sha256": "97c92a0b29de1b7eb593b180a1448cedd7d5983ee866a396d921dcee86fea6c8",
+      "bytes": 850428
+    }
+  ],
+  "verdict": "PASS"
+}
