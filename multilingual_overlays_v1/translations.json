@@ -2,76 +2,76 @@
   "phrase_01_lower_third_safe": {
     "source": "Christopher Nolan — Director",
     "translations": {
-      "de": "Christopher Nolan — Direktor",
+      "it": "Christopher Nolan — Regista",
       "en": "Christopher Nolan — Director",
+      "pl": "Christopher Nolan — Reżyser",
+      "ru": "Кристофер Нолан — режиссёр",
+      "de": "Christopher Nolan — Regisseur",
       "es": "Christopher Nolan — Director",
-      "fr": "Christopher Nolan — Directeur",
-      "id": "Christopher Nolan - Direktur",
-      "it": "Christopher Nolan — Direttore",
-      "pl": "Christopher Nolan - dyrektor",
-      "pt-BR": "Christopher Nolan — Director",
-      "ru": "Кристофер Нолан — режиссер",
-      "tr": "Christopher Nolan - Yönetmen"
+      "pt-BR": "Christopher Nolan — Diretor",
+      "fr": "Christopher Nolan — Réalisateur",
+      "tr": "Christopher Nolan — Yönetmen",
+      "id": "Christopher Nolan — Sutradara"
     }
   },
   "phrase_02_clean_slide_up": {
     "source": "The Future of High-Speed Video",
     "translations": {
-      "de": "Die Zukunft des High Speed Videos",
+      "it": "Il futuro del video ad alta frequenza di fotogrammi",
       "en": "The Future of High-Speed Video",
-      "es": "El futuro del vídeo de alta velocidad",
+      "pl": "Przyszłość wideo o wysokiej liczbie klatek na sekundę",
+      "ru": "Будущее видео высокой частоты кадров",
+      "de": "Die Zukunft des Hochgeschwindigkeits-Videos",
+      "es": "El futuro del video de alta velocidad",
+      "pt-BR": "O Futuro do Vídeo de Alta Taxa de Quadros",
       "fr": "L'avenir de la vidéo haute vitesse",
-      "id": "The Future of High- Speed Video",
-      "it": "Il futuro del video ad alta velocità",
-      "pl": "Przyszłość wysokiej prędkości wideo",
-      "pt-BR": "O futuro do vídeo de alta velocidade",
-      "ru": "Будущее высокоскоростного видео",
-      "tr": "Yüksek Hızlı Videonun Geleceği"
+      "tr": "Yüksek Hızlı Video'nun Geleceği",
+      "id": "Masa Depan Video Berkecepatan Tinggi"
     }
   },
   "phrase_03_scale_pop": {
     "source": "BREAKING NEWS",
     "translations": {
-      "de": "BREAKING NEWS",
+      "it": "ULTIME NOTIZIE",
       "en": "BREAKING NEWS",
-      "es": "NOTICIAS DE ACTUALIDAD",
-      "fr": "NOUVELLES",
-      "id": "BREAKING NEWS",
-      "it": "BREAKING NEWS",
-      "pl": "BREAKING NEWS",
-      "pt-BR": "ÚLTIMAS NOTÍCIAS",
+      "pl": "PILNE WIADOMOŚCI",
       "ru": "СРОЧНЫЕ НОВОСТИ",
-      "tr": "YOK NEWS"
+      "de": "EILMELDUNG",
+      "es": "ÚLTIMA HORA",
+      "pt-BR": "ÚLTIMAS NOTÍCIAS",
+      "fr": "DERNIÈRE MINUTE",
+      "tr": "SON DAKİKA HABERLERİ",
+      "id": "BERITA TERKINI"
     }
   },
   "phrase_04_dm_sans_fade": {
     "source": "Simplicity is the ultimate sophistication.",
     "translations": {
-      "de": "Einfachheit ist die ultimative Raffinesse.",
+      "it": "La semplicità è la massima raffinatezza.",
       "en": "Simplicity is the ultimate sophistication.",
-      "es": "La simplicidad es la sofisticación final.",
+      "pl": "Prostota jest ostatecznym wyrafinowaniem.",
+      "ru": "Простота — высшая степень изящества.",
+      "de": "Einfachheit ist die höchste Raffinesse.",
+      "es": "La simplicidad es la máxima sofisticación.",
+      "pt-BR": "A simplicidade é a sofisticação máxima.",
       "fr": "La simplicité est la sophistication ultime.",
-      "id": "Kesederhanaan adalah kecanggihan tertinggi.",
-      "it": "La semplicità è l'ultima raffinatezza.",
-      "pl": "Prostota jest najbardziej wyrafinowana.",
-      "pt-BR": "Simplicidade é a sofisticação final.",
-      "ru": "Простота — это конечная изощренность.",
-      "tr": "Sikatey nihai sofistasyondur."
+      "tr": "Sadelik en üstün zarafettir.",
+      "id": "Kesederhanaan adalah puncak dari kehalusan."
     }
   },
   "phrase_05_slide_left_punch": {
     "source": "Artificial Intelligence Infrastructure",
     "translations": {
-      "de": "Künstliche Intelligenz Infrastruktur",
+      "it": "Infrastruttura di Intelligenza Artificiale",
       "en": "Artificial Intelligence Infrastructure",
-      "es": "Inteligencia Artificial Infraestructura",
-      "fr": "Intelligence artificielle Infrastructure",
-      "id": "Kecerdasan Buatan Infrastruktur",
-      "it": "Intelligenza artificiale Infrastrutture",
-      "pl": "Sztuczna inteligencja Infrastruktura",
-      "pt-BR": "Inteligência Artificial Infra-estruturas",
-      "ru": "Искусственный интеллект инфраструктура",
-      "tr": "Yapay Zeka Altyapı Altyapı"
+      "pl": "Infrastruktura sztucznej inteligencji",
+      "ru": "Инфраструктура искусственного интеллекта",
+      "de": "Künstliche Intelligenz-Infrastruktur",
+      "es": "Infraestructura de Inteligencia Artificial",
+      "pt-BR": "Infraestrutura de Inteligência Artificial",
+      "fr": "Infrastructure d'intelligence artificielle",
+      "tr": "Yapay Zeka Altyapısı",
+      "id": "Infrastruktur Kecerdasan Buatan"
     }
   }
 }

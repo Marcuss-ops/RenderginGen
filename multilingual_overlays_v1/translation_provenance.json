@@ -1,0 +1,449 @@
+{
+  "schema_version": "velox.ollama-translation-provenance.v1",
+  "provider": "ollama-local",
+  "model": "gemma4:e4b",
+  "source_language": "en",
+  "target_languages": [
+    "it",
+    "en",
+    "pl",
+    "ru",
+    "de",
+    "es",
+    "pt-BR",
+    "fr",
+    "tr",
+    "id"
+  ],
+  "generated_at_utc": "2026-09-17T18:22:16.376767+00:00",
+  "cache_used": false,
+  "argos_used": false,
+  "entries": {
+    "phrase_01_lower_third_safe": {
+      "source_sha256": "01f81793ca41ce4ef9917b142f4625f8193e8ef8137670817ed6f073fdbee9f5",
+      "translations": {
+        "it": {
+          "provider": "ollama-local",
+          "source_language": "en",
+          "target_language": "it",
+          "source_sha256": "01f81793ca41ce4ef9917b142f4625f8193e8ef8137670817ed6f073fdbee9f5",
+          "translated_sha256": "dd223ae82701695efc83657f7cfea9355fc140cd1a5d2d9d5e79840fcf0241db",
+          "wall_ms": 5722
+        },
+        "en": {
+          "provider": "source",
+          "source_language": "en",
+          "target_language": "en",
+          "source_sha256": "01f81793ca41ce4ef9917b142f4625f8193e8ef8137670817ed6f073fdbee9f5",
+          "translated_sha256": "01f81793ca41ce4ef9917b142f4625f8193e8ef8137670817ed6f073fdbee9f5",
+          "wall_ms": 0
+        },
+        "pl": {
+          "provider": "ollama-local",
+          "source_language": "en",
+          "target_language": "pl",
+          "source_sha256": "01f81793ca41ce4ef9917b142f4625f8193e8ef8137670817ed6f073fdbee9f5",
+          "translated_sha256": "c99c3656a1564431e12d8c627f8c05217d90c2ca19a78de0c63dd50b1c8f3657",
+          "wall_ms": 6909
+        },
+        "ru": {
+          "provider": "ollama-local",
+          "source_language": "en",
+          "target_language": "ru",
+          "source_sha256": "01f81793ca41ce4ef9917b142f4625f8193e8ef8137670817ed6f073fdbee9f5",
+          "translated_sha256": "2bffd93da7ef7ec3f895cb1aa4925ed207528171c2c3e22c0e17de1e6b554eaf",
+          "wall_ms": 1309
+        },
+        "de": {
+          "provider": "ollama-local",
+          "source_language": "en",
+          "target_language": "de",
+          "source_sha256": "01f81793ca41ce4ef9917b142f4625f8193e8ef8137670817ed6f073fdbee9f5",
+          "translated_sha256": "3a88a14f2dd708ac29ee6a96b2e9d016827cf35c4c708c0fbb3c3e3a2e33015d",
+          "wall_ms": 5777
+        },
+        "es": {
+          "provider": "ollama-local",
+          "source_language": "en",
+          "target_language": "es",
+          "source_sha256": "01f81793ca41ce4ef9917b142f4625f8193e8ef8137670817ed6f073fdbee9f5",
+          "translated_sha256": "01f81793ca41ce4ef9917b142f4625f8193e8ef8137670817ed6f073fdbee9f5",
+          "wall_ms": 5997
+        },
+        "pt-BR": {
+          "provider": "ollama-local",
+          "source_language": "en",
+          "target_language": "pt-BR",
+          "source_sha256": "01f81793ca41ce4ef9917b142f4625f8193e8ef8137670817ed6f073fdbee9f5",
+          "translated_sha256": "72dab32da85ed0621cc0fba4407a492a00b5c618f6bad285af83aeae7c1ea719",
+          "wall_ms": 5730
+        },
+        "fr": {
+          "provider": "ollama-local",
+          "source_language": "en",
+          "target_language": "fr",
+          "source_sha256": "01f81793ca41ce4ef9917b142f4625f8193e8ef8137670817ed6f073fdbee9f5",
+          "translated_sha256": "f91e989eed637e1005162bea4a1f9e497decf87633766287ff2ff3b0583a921b",
+          "wall_ms": 6022
+        },
+        "tr": {
+          "provider": "ollama-local",
+          "source_language": "en",
+          "target_language": "tr",
+          "source_sha256": "01f81793ca41ce4ef9917b142f4625f8193e8ef8137670817ed6f073fdbee9f5",
+          "translated_sha256": "b23fbc8a0aee162c9c64bced7d8943ccc750102dfc2b701548980399ecd74b16",
+          "wall_ms": 6071
+        },
+        "id": {
+          "provider": "ollama-local",
+          "source_language": "en",
+          "target_language": "id",
+          "source_sha256": "01f81793ca41ce4ef9917b142f4625f8193e8ef8137670817ed6f073fdbee9f5",
+          "translated_sha256": "4f4eee997aa83fd8854a1b7009547b02eef4cc0bdb900dd56d70e2af81a9d1ca",
+          "wall_ms": 5759
+        }
+      }
+    },
+    "phrase_02_clean_slide_up": {
+      "source_sha256": "31b8631536a006325f5a7ba6fa6927dec24bb2f4cf8ed1ab91acf8bffca24402",
+      "translations": {
+        "it": {
+          "provider": "ollama-local",
+          "source_language": "en",
+          "target_language": "it",
+          "source_sha256": "31b8631536a006325f5a7ba6fa6927dec24bb2f4cf8ed1ab91acf8bffca24402",
+          "translated_sha256": "a9cb2b1a4e1691bdea5d10bba9889e20a4f803b8aee266f139147ee776ef3802",
+          "wall_ms": 1342
+        },
+        "en": {
+          "provider": "source",
+          "source_language": "en",
+          "target_language": "en",
+          "source_sha256": "31b8631536a006325f5a7ba6fa6927dec24bb2f4cf8ed1ab91acf8bffca24402",
+          "translated_sha256": "31b8631536a006325f5a7ba6fa6927dec24bb2f4cf8ed1ab91acf8bffca24402",
+          "wall_ms": 0
+        },
+        "pl": {
+          "provider": "ollama-local",
+          "source_language": "en",
+          "target_language": "pl",
+          "source_sha256": "31b8631536a006325f5a7ba6fa6927dec24bb2f4cf8ed1ab91acf8bffca24402",
+          "translated_sha256": "2bef2929622d38529495f468f9bf66029e40b1cfcc4523b20c4dc4983c3285b0",
+          "wall_ms": 1416
+        },
+        "ru": {
+          "provider": "ollama-local",
+          "source_language": "en",
+          "target_language": "ru",
+          "source_sha256": "31b8631536a006325f5a7ba6fa6927dec24bb2f4cf8ed1ab91acf8bffca24402",
+          "translated_sha256": "eef0b3de6fe7960d2df9c83d5a324431a319423c3bd5808aca4e6378205eb5b2",
+          "wall_ms": 1243
+        },
+        "de": {
+          "provider": "ollama-local",
+          "source_language": "en",
+          "target_language": "de",
+          "source_sha256": "31b8631536a006325f5a7ba6fa6927dec24bb2f4cf8ed1ab91acf8bffca24402",
+          "translated_sha256": "837126ad3cadd36c9aa5149e7744fd5277ccc3827452a019559808715642e126",
+          "wall_ms": 7120
+        },
+        "es": {
+          "provider": "ollama-local",
+          "source_language": "en",
+          "target_language": "es",
+          "source_sha256": "31b8631536a006325f5a7ba6fa6927dec24bb2f4cf8ed1ab91acf8bffca24402",
+          "translated_sha256": "abe689b41fe1251818ae978df6454506db22e151139d633890114ffd2622fc33",
+          "wall_ms": 1295
+        },
+        "pt-BR": {
+          "provider": "ollama-local",
+          "source_language": "en",
+          "target_language": "pt-BR",
+          "source_sha256": "31b8631536a006325f5a7ba6fa6927dec24bb2f4cf8ed1ab91acf8bffca24402",
+          "translated_sha256": "d2b665b577abc5a0e3dabc8b633454e79e34be36e6f1d70540a95ff645e176b5",
+          "wall_ms": 1336
+        },
+        "fr": {
+          "provider": "ollama-local",
+          "source_language": "en",
+          "target_language": "fr",
+          "source_sha256": "31b8631536a006325f5a7ba6fa6927dec24bb2f4cf8ed1ab91acf8bffca24402",
+          "translated_sha256": "af3163411987627a6b79408da08a19bd43cb15a52d7f9c94044dd174670f083f",
+          "wall_ms": 8327
+        },
+        "tr": {
+          "provider": "ollama-local",
+          "source_language": "en",
+          "target_language": "tr",
+          "source_sha256": "31b8631536a006325f5a7ba6fa6927dec24bb2f4cf8ed1ab91acf8bffca24402",
+          "translated_sha256": "a0c7e3fac4c19309228cb3dd153d4965bde1b575ffd6c91d4ee3c243bdcd6f6d",
+          "wall_ms": 1333
+        },
+        "id": {
+          "provider": "ollama-local",
+          "source_language": "en",
+          "target_language": "id",
+          "source_sha256": "31b8631536a006325f5a7ba6fa6927dec24bb2f4cf8ed1ab91acf8bffca24402",
+          "translated_sha256": "008d0bd68160d94a83e40b2f5dfa975bda2833e6ae0c6bdbf6041f728b598eb8",
+          "wall_ms": 7218
+        }
+      }
+    },
+    "phrase_03_scale_pop": {
+      "source_sha256": "dfa75d11d676e1f478a8f10dc201b389a5f135a09564825aad560876c528545c",
+      "translations": {
+        "it": {
+          "provider": "ollama-local",
+          "source_language": "en",
+          "target_language": "it",
+          "source_sha256": "dfa75d11d676e1f478a8f10dc201b389a5f135a09564825aad560876c528545c",
+          "translated_sha256": "2b27a130a68a1d5e51c150c8150578384549a24fc3edd8ea4395fe64c86049b1",
+          "wall_ms": 1260
+        },
+        "en": {
+          "provider": "source",
+          "source_language": "en",
+          "target_language": "en",
+          "source_sha256": "dfa75d11d676e1f478a8f10dc201b389a5f135a09564825aad560876c528545c",
+          "translated_sha256": "dfa75d11d676e1f478a8f10dc201b389a5f135a09564825aad560876c528545c",
+          "wall_ms": 0
+        },
+        "pl": {
+          "provider": "ollama-local",
+          "source_language": "en",
+          "target_language": "pl",
+          "source_sha256": "dfa75d11d676e1f478a8f10dc201b389a5f135a09564825aad560876c528545c",
+          "translated_sha256": "0c240a02d9a582dc38ac297f4fb77260a9845ecc903b4191de5f7e3642d4ad5c",
+          "wall_ms": 6580
+        },
+        "ru": {
+          "provider": "ollama-local",
+          "source_language": "en",
+          "target_language": "ru",
+          "source_sha256": "dfa75d11d676e1f478a8f10dc201b389a5f135a09564825aad560876c528545c",
+          "translated_sha256": "0edcc69a41d9e369abd5822b92c65c06e8256b38ef698c128ec03048e5db82ed",
+          "wall_ms": 1282
+        },
+        "de": {
+          "provider": "ollama-local",
+          "source_language": "en",
+          "target_language": "de",
+          "source_sha256": "dfa75d11d676e1f478a8f10dc201b389a5f135a09564825aad560876c528545c",
+          "translated_sha256": "2d8a148d2dda42d8c2937b7af47ae013f92260fb2c3b1e27f36a7d878e7d5936",
+          "wall_ms": 3210
+        },
+        "es": {
+          "provider": "ollama-local",
+          "source_language": "en",
+          "target_language": "es",
+          "source_sha256": "dfa75d11d676e1f478a8f10dc201b389a5f135a09564825aad560876c528545c",
+          "translated_sha256": "986a230aed518ce965420ba1a238a5430745204abd1dceb493675887a662d2c1",
+          "wall_ms": 1209
+        },
+        "pt-BR": {
+          "provider": "ollama-local",
+          "source_language": "en",
+          "target_language": "pt-BR",
+          "source_sha256": "dfa75d11d676e1f478a8f10dc201b389a5f135a09564825aad560876c528545c",
+          "translated_sha256": "33f228a71df8372668743ee38677a3ecb995adcecfa2cea4d345fda38a4fa127",
+          "wall_ms": 1247
+        },
+        "fr": {
+          "provider": "ollama-local",
+          "source_language": "en",
+          "target_language": "fr",
+          "source_sha256": "dfa75d11d676e1f478a8f10dc201b389a5f135a09564825aad560876c528545c",
+          "translated_sha256": "892cb40ea596b3ee57c3b83f1a69c38e2b2cc4a0c5130b0ececa0cb95233c359",
+          "wall_ms": 1202
+        },
+        "tr": {
+          "provider": "ollama-local",
+          "source_language": "en",
+          "target_language": "tr",
+          "source_sha256": "dfa75d11d676e1f478a8f10dc201b389a5f135a09564825aad560876c528545c",
+          "translated_sha256": "4904d996b43e4b3361e190072bbb46d756a7c553541a0256d55bb1019af26916",
+          "wall_ms": 1309
+        },
+        "id": {
+          "provider": "ollama-local",
+          "source_language": "en",
+          "target_language": "id",
+          "source_sha256": "dfa75d11d676e1f478a8f10dc201b389a5f135a09564825aad560876c528545c",
+          "translated_sha256": "1f46fbc6d6fe4f6629eb57eb40097a20f5ea3819119d92b8c8fd6eab68b95622",
+          "wall_ms": 1212
+        }
+      }
+    },
+    "phrase_04_dm_sans_fade": {
+      "source_sha256": "0b71a0cd3016e58bb775c949e3759b649aaafc14f1e00e0a0557d2ec78001eec",
+      "translations": {
+        "it": {
+          "provider": "ollama-local",
+          "source_language": "en",
+          "target_language": "it",
+          "source_sha256": "0b71a0cd3016e58bb775c949e3759b649aaafc14f1e00e0a0557d2ec78001eec",
+          "translated_sha256": "8c6e0e307d241bca2e835fa153ce67a0d0a9bef05f28266913ac751346a635c9",
+          "wall_ms": 1265
+        },
+        "en": {
+          "provider": "source",
+          "source_language": "en",
+          "target_language": "en",
+          "source_sha256": "0b71a0cd3016e58bb775c949e3759b649aaafc14f1e00e0a0557d2ec78001eec",
+          "translated_sha256": "0b71a0cd3016e58bb775c949e3759b649aaafc14f1e00e0a0557d2ec78001eec",
+          "wall_ms": 0
+        },
+        "pl": {
+          "provider": "ollama-local",
+          "source_language": "en",
+          "target_language": "pl",
+          "source_sha256": "0b71a0cd3016e58bb775c949e3759b649aaafc14f1e00e0a0557d2ec78001eec",
+          "translated_sha256": "0e0ce4088255998cb1a232a18c8b9893c314c75d7af5cafbf5bd6b84166f06b1",
+          "wall_ms": 1361
+        },
+        "ru": {
+          "provider": "ollama-local",
+          "source_language": "en",
+          "target_language": "ru",
+          "source_sha256": "0b71a0cd3016e58bb775c949e3759b649aaafc14f1e00e0a0557d2ec78001eec",
+          "translated_sha256": "6e8f8ff3418d5b2a9516ebb7a7086d7a57ae971ddf765716a308d037cdd9b46b",
+          "wall_ms": 1353
+        },
+        "de": {
+          "provider": "ollama-local",
+          "source_language": "en",
+          "target_language": "de",
+          "source_sha256": "0b71a0cd3016e58bb775c949e3759b649aaafc14f1e00e0a0557d2ec78001eec",
+          "translated_sha256": "996105009fc0c2d8328300730e17294d7b7b1a06ff3a040a562a542a5671da37",
+          "wall_ms": 1383
+        },
+        "es": {
+          "provider": "ollama-local",
+          "source_language": "en",
+          "target_language": "es",
+          "source_sha256": "0b71a0cd3016e58bb775c949e3759b649aaafc14f1e00e0a0557d2ec78001eec",
+          "translated_sha256": "9d771050fc8b8e58d078d93385910cd7ed5cc88596ba7a1d2c135dd529080a07",
+          "wall_ms": 1214
+        },
+        "pt-BR": {
+          "provider": "ollama-local",
+          "source_language": "en",
+          "target_language": "pt-BR",
+          "source_sha256": "0b71a0cd3016e58bb775c949e3759b649aaafc14f1e00e0a0557d2ec78001eec",
+          "translated_sha256": "f2ff3025b6ee73b67a781b91d67ebaf634138f190a2cf930eb212efd86774ed3",
+          "wall_ms": 1279
+        },
+        "fr": {
+          "provider": "ollama-local",
+          "source_language": "en",
+          "target_language": "fr",
+          "source_sha256": "0b71a0cd3016e58bb775c949e3759b649aaafc14f1e00e0a0557d2ec78001eec",
+          "translated_sha256": "76a73a91b614f303f659e9a69568097494c6db4f7c33739388d169f79fd5e8b4",
+          "wall_ms": 1265
+        },
+        "tr": {
+          "provider": "ollama-local",
+          "source_language": "en",
+          "target_language": "tr",
+          "source_sha256": "0b71a0cd3016e58bb775c949e3759b649aaafc14f1e00e0a0557d2ec78001eec",
+          "translated_sha256": "1fb72b0aa86296cfb12f8b700157e5e63b699a13ecbbb85bc7d49f18eb2d0a05",
+          "wall_ms": 1337
+        },
+        "id": {
+          "provider": "ollama-local",
+          "source_language": "en",
+          "target_language": "id",
+          "source_sha256": "0b71a0cd3016e58bb775c949e3759b649aaafc14f1e00e0a0557d2ec78001eec",
+          "translated_sha256": "2a3e554ac6a9f1b7d10891883212827b64aa988f23be720c48e438c8e828c804",
+          "wall_ms": 1297
+        }
+      }
+    },
+    "phrase_05_slide_left_punch": {
+      "source_sha256": "6136985b8c2386cc3f24af1377bfa8bb781ca4787fc91ceb4cfbd55807c6fe37",
+      "translations": {
+        "it": {
+          "provider": "ollama-local",
+          "source_language": "en",
+          "target_language": "it",
+          "source_sha256": "6136985b8c2386cc3f24af1377bfa8bb781ca4787fc91ceb4cfbd55807c6fe37",
+          "translated_sha256": "acaf477d035752807d6c85368aca75ec07674d9cb933edd22bebfce43cc13e67",
+          "wall_ms": 1308
+        },
+        "en": {
+          "provider": "source",
+          "source_language": "en",
+          "target_language": "en",
+          "source_sha256": "6136985b8c2386cc3f24af1377bfa8bb781ca4787fc91ceb4cfbd55807c6fe37",
+          "translated_sha256": "6136985b8c2386cc3f24af1377bfa8bb781ca4787fc91ceb4cfbd55807c6fe37",
+          "wall_ms": 0
+        },
+        "pl": {
+          "provider": "ollama-local",
+          "source_language": "en",
+          "target_language": "pl",
+          "source_sha256": "6136985b8c2386cc3f24af1377bfa8bb781ca4787fc91ceb4cfbd55807c6fe37",
+          "translated_sha256": "d3e6f7c7776c071f3f531596fc18fceda2484fa57f775e061d72e64e1eb7d117",
+          "wall_ms": 1265
+        },
+        "ru": {
+          "provider": "ollama-local",
+          "source_language": "en",
+          "target_language": "ru",
+          "source_sha256": "6136985b8c2386cc3f24af1377bfa8bb781ca4787fc91ceb4cfbd55807c6fe37",
+          "translated_sha256": "2183b39c6c7d5cc0516dfee36074dfbe1ac0966cf8c6f04be3d983fa3bd72f22",
+          "wall_ms": 1265
+        },
+        "de": {
+          "provider": "ollama-local",
+          "source_language": "en",
+          "target_language": "de",
+          "source_sha256": "6136985b8c2386cc3f24af1377bfa8bb781ca4787fc91ceb4cfbd55807c6fe37",
+          "translated_sha256": "e1cd622527201f7bbeeec0dfce3e8af72ca6ae0268486e281c5dbccc56552c67",
+          "wall_ms": 1289
+        },
+        "es": {
+          "provider": "ollama-local",
+          "source_language": "en",
+          "target_language": "es",
+          "source_sha256": "6136985b8c2386cc3f24af1377bfa8bb781ca4787fc91ceb4cfbd55807c6fe37",
+          "translated_sha256": "4a247d065d94eb4d157ae4645f69fe50bd4add4014360a4e2f42b26f49c3b13d",
+          "wall_ms": 1264
+        },
+        "pt-BR": {
+          "provider": "ollama-local",
+          "source_language": "en",
+          "target_language": "pt-BR",
+          "source_sha256": "6136985b8c2386cc3f24af1377bfa8bb781ca4787fc91ceb4cfbd55807c6fe37",
+          "translated_sha256": "66a24ac5442ec96612a7cfd295f11475de7eaa05f0df3917551a8cda3dcaf341",
+          "wall_ms": 1254
+        },
+        "fr": {
+          "provider": "ollama-local",
+          "source_language": "en",
+          "target_language": "fr",
+          "source_sha256": "6136985b8c2386cc3f24af1377bfa8bb781ca4787fc91ceb4cfbd55807c6fe37",
+          "translated_sha256": "578b5761b460404cd4b95beba9a85ff4076232ebac0c7ef8a944233325e98be0",
+          "wall_ms": 1174
+        },
+        "tr": {
+          "provider": "ollama-local",
+          "source_language": "en",
+          "target_language": "tr",
+          "source_sha256": "6136985b8c2386cc3f24af1377bfa8bb781ca4787fc91ceb4cfbd55807c6fe37",
+          "translated_sha256": "e6e9aae2a3402d77f4753d095f10632dcb4856c66195da509fdd8efb86f42bfe",
+          "wall_ms": 1249
+        },
+        "id": {
+          "provider": "ollama-local",
+          "source_language": "en",
+          "target_language": "id",
+          "source_sha256": "6136985b8c2386cc3f24af1377bfa8bb781ca4787fc91ceb4cfbd55807c6fe37",
+          "translated_sha256": "80b237feb18ef312714fe5c71e136fb6fb5055fca4580e8af8fbc28f00ab596f",
+          "wall_ms": 1235
+        }
+      }
+    }
+  },
+  "request_count": 47
+}
