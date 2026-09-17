@@ -228,10 +228,18 @@ func (r *Repository) ClaimState(workerID string, state model.State) (*model.Job,
 		}
 		stateFilter = "state = " + stateLiteral(state)
 	}
+	// Assembly anchors (model/lifecycle.go) are never claimable for rendering:
+	// a job that owns chunk children has its output assembled from them, so a
+	// claim here would re-render the whole plan on the GPU. The EXISTS form
+	// keeps the rule structural — no producer has to remember to flag a
+	// parent, and a parent submitted without children stays ordinary work.
 	err = tx.QueryRowContext(ctx, `
 		SELECT id, job_type, job_schema, job_schema_version, render_plan, input_manifest, attempt_count, queued_at, artifact_id, parent_job_id, chunk_index, frame_range
 		FROM render_jobs
 		WHERE `+stateFilter+`
+		  AND NOT EXISTS (
+		      SELECT 1 FROM render_jobs AS child
+		      WHERE child.parent_job_id = render_jobs.id)
 		ORDER BY queued_at ASC
 		FOR UPDATE SKIP LOCKED
 		LIMIT 1`).Scan(&id, &jobType, &schema, &version, &plan, &manifest, &attempts, &queuedAt, &artifactID, &parentJobID, &chunkIndex, &frameRange)

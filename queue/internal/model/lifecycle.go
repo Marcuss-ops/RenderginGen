@@ -34,6 +34,21 @@ func IsClaimable(state State) bool {
 // PostgreSQL claim filter and the in-memory store both derive from it.
 func ClaimableStates() []State { return []State{StatePending, StateRendered} }
 
+// ── Assembly anchors ────────────────────────────────────────────────────────
+//
+// A job that OWNS chunk children is an ASSEMBLY ANCHOR: its output is the
+// concatenation of its children, each of which covers a disjoint half-open
+// FrameRange (see processor.ParentFinalizer + ValidateChildren). Handing such a
+// parent to a render worker would render the FULL plan on top of the children
+// that already cover it — the double work the half-open FrameRange split
+// exists to avoid, paid on the GPU lane.
+//
+// The rule is "owns children", not a job type or a producer flag, so it holds
+// for every producer: both repositories encode it (PostgreSQL as
+// `NOT EXISTS (SELECT 1 FROM render_jobs child WHERE child.parent_job_id = id)`,
+// the in-memory store by scanning its parent links) and ClaimFinalization is
+// the only claim that may take an anchor.
+
 // IsCancelable reports whether a producer cancel may move a job from this
 // state to cancelled. Cancelled is terminal and idempotent (the caller handles
 // the re-cancel case separately); completed and failed are terminal.

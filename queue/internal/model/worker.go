@@ -18,12 +18,17 @@ const (
 
 // Worker is a registered rendering worker: the registry row for the
 // GPU/Chronon worker. LastHeartbeatAt doubles as its liveness ledger so a
-// worker that stops heartbeating can be drained. It is an ALIAS of the public
-// wire type.
+// worker that stops heartbeating can be drained, and it is what the derived
+// Liveness field (see liveness.go) is computed from. It is an ALIAS of the
+// public wire type.
 type Worker = client.Worker
 
+// WorkerLiveness and its vocabulary are declared in liveness.go, next to the
+// only function that computes them.
+
 // WorkerHealth is the aggregate worker-health snapshot used for autoscaling
-// and monitoring. Ready/Busy count only workers with a fresh heartbeat;
-// Offline counts workers whose heartbeat has gone stale. It is an ALIAS of the
-// public wire type.
+// and monitoring. It is an ALIAS of the public wire type, and it is DERIVED
+// here (SummarizeWorkerHealth) from the rows the store returns plus the
+// heartbeat-age boundaries — the same derivation that annotates each worker on
+// GET /workers, so the aggregate cannot contradict the per-worker view.
 type WorkerHealth = client.WorkerHealth

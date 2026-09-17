@@ -8,7 +8,7 @@ import (
 	"github.com/Marcuss-ops/RenderingGen/queue/internal/model"
 )
 
-func TestWorkerRegisterHeartbeatListHealth(t *testing.T) {
+func TestWorkerRegisterHeartbeatList(t *testing.T) {
 	r, db := setupRepo(t, 30*time.Second, 3)
 	if _, err := db.ExecContext(context.Background(), `TRUNCATE rendering_workers CASCADE`); err != nil {
 		t.Fatal(err)
@@ -36,12 +36,13 @@ func TestWorkerRegisterHeartbeatListHealth(t *testing.T) {
 		t.Fatal("w1 should have a heartbeat timestamp")
 	}
 
-	h, err := r.Health(time.Now(), 90*time.Second)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if h.Ready != 1 || h.Busy != 1 || h.Offline != 0 || h.Total != 2 {
-		t.Fatalf("health: %+v", h)
+	// The store does NOT classify liveness (there is deliberately no Health
+	// method on the contract): it returns the stored status and heartbeat, and
+	// model.ClassifyWorkerLiveness is the only thing that turns them into a
+	// verdict. A row that arrived with a derived liveness would be a second
+	// authority for the same question.
+	if workers[0].Liveness != "" {
+		t.Fatalf("store fabricated liveness %q for %s", workers[0].Liveness, workers[0].ID)
 	}
 
 	// A heartbeat row must have been appended to the ledger.

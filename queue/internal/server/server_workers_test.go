@@ -45,12 +45,22 @@ func TestWorkerEndpoints(t *testing.T) {
 	var workers []struct {
 		ID       string `json:"id"`
 		Hostname string `json:"hostname"`
+		Status   string `json:"status"`
+		Liveness string `json:"liveness"`
 	}
 	if err := json.NewDecoder(resp.Body).Decode(&workers); err != nil {
 		t.Fatal(err)
 	}
 	if len(workers) != 1 || workers[0].ID != "w1" || workers[0].Hostname != "h1" {
 		t.Fatalf("unexpected workers: %+v", workers)
+	}
+	// The projection must carry the DERIVED liveness: `status` is what the
+	// worker last reported and cannot answer "is it alive?" on its own.
+	if workers[0].Liveness != "ready" {
+		t.Fatalf("fresh worker liveness = %q, want ready", workers[0].Liveness)
+	}
+	if workers[0].Status != "ready" {
+		t.Fatalf("reported status = %q, want ready", workers[0].Status)
 	}
 
 	resp, err = http.Get(ts.URL + "/workers/health")
@@ -62,13 +72,19 @@ func TestWorkerEndpoints(t *testing.T) {
 		t.Fatalf("health: want 200, got %d", resp.StatusCode)
 	}
 	var health struct {
-		Ready int `json:"ready"`
-		Total int `json:"total"`
+		Ready    int `json:"ready"`
+		Degraded int `json:"degraded"`
+		Stale    int `json:"stale"`
+		Offline  int `json:"offline"`
+		Total    int `json:"total"`
 	}
 	if err := json.NewDecoder(resp.Body).Decode(&health); err != nil {
 		t.Fatal(err)
 	}
 	if health.Ready != 1 || health.Total != 1 {
 		t.Fatalf("unexpected health: %+v", health)
+	}
+	if health.Degraded != 0 || health.Stale != 0 || health.Offline != 0 {
+		t.Fatalf("a fresh fleet must report no ageing bands: %+v", health)
 	}
 }

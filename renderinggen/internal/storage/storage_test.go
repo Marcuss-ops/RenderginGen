@@ -3,11 +3,13 @@ package storage
 import (
 	"bytes"
 	"context"
+	"errors"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -421,5 +423,51 @@ func TestL2Eviction(t *testing.T) {
 	}
 	if present != 2 {
 		t.Fatalf("want 2 of 3 files retained (10-byte budget), got %d", present)
+	}
+}
+
+// TestHTTPBackendRejectsWrongContentAddress pins the worker half of the
+// object-store write contract. The object store recomputes the digest on every
+// PUT (see RenderingGen objectstore/internal/store); when it refuses, the 422
+// (bytes do not hash to the address) and the 400 (key is not a content address)
+// must arrive as ONE typed, non-retryable error carrying the store's own
+// diagnosis — before this, a producer logged an opaque "unexpected status 422"
+// and, worse, a producer that trusted the key name never saw a failure at all.
+func TestHTTPBackendRejectsWrongContentAddress(t *testing.T) {
+	ctx := context.Background()
+	key := Hash([]byte("expected bytes"))
+
+	cases := []struct {
+		name   string
+		status int
+		body   string
+	}{
+		{
+			name:   "digest mismatch",
+			status: http.StatusUnprocessableEntity,
+			body:   "content does not match its content address: key " + key + ", content deadbeef",
+		},
+		{
+			name:   "malformed key",
+			status: http.StatusBadRequest,
+			body:   "invalid content address: \"plan.json\"",
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+				http.Error(w, tc.body, tc.status)
+			}))
+			defer ts.Close()
+
+			payload := []byte("actual bytes")
+			err := NewHTTP(ts.URL).StoreReader(ctx, key, strings.NewReader(string(payload)), int64(len(payload)))
+			if !errors.Is(err, ErrContentAddressRejected) {
+				t.Fatalf("want ErrContentAddressRejected, got %v", err)
+			}
+			if !strings.Contains(err.Error(), tc.body) {
+				t.Fatalf("error must carry the store's diagnosis %q, got %v", tc.body, err)
+			}
+		})
 	}
 }

@@ -415,11 +415,20 @@ func TestCompileSemanticEntityImageKeepsEveryGeneratedPresetMotion(t *testing.T)
 			}
 			// The motion must be the official preset's own lowering, not an
 			// invented opacity/scale track.
+			//
+			// The lowering is asked for with the SAME duration the compiler
+			// used. An official image preset owns an entrance AND an exit window
+			// (imagePresetExit), and the exit only materialises when the layer's
+			// duration is known — so a duration-less lowering would expect an
+			// enter-only motion and reject the official exit as "invented". The
+			// comparison stays exact (reflect.DeepEqual on the whole animation),
+			// which is what makes it a guard against invented tracks rather than
+			// a restatement of the input.
 			def, err := ResolveOfficialPreset(presetID)
 			if err != nil {
 				t.Fatalf("resolve official preset %s: %v", presetID, err)
 			}
-			want, err := animationForDefinition(def)
+			want, err := animationForPreset(def, "", layer.DurationFrames)
 			if err != nil {
 				t.Fatalf("lower official preset %s motion: %v", presetID, err)
 			}

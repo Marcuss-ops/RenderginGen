@@ -278,13 +278,51 @@ func TestAssemblyReadyProfilesMirrorVeloxContract(t *testing.T) {
 	}
 }
 
-// TestAssemblyReadyProfileGapsStayVisible pins the dimensions the contract
-// declares but this package deliberately does NOT pin yet, so the gap cannot be
-// forgotten: a native-lane receipt (2026-09-16) certified mono/58524 audio and
-// a 1/12288 video timebase, so pinning the contract's audio channels/bitrate or
-// its 1/90000 video timebase today would fail closed on legal renders. Each one
-// must be closed by certifying a real clip-lane artifact, not by assumption.
-func TestAssemblyReadyProfileGapsStayVisible(t *testing.T) {
+// Measured facts of certified clip-lane artifacts. These are the numbers the
+// live lane actually produced, recorded here as the reference side of the
+// divergences below. Provenance for every one of them is the RenderingGen
+// queue's artifact record for the certified render:
+//
+//	curl $RENDERINGGEN_QUEUE_URL/jobs/<render job id> → .artifact.output_facts
+//
+// 2026-09-17, job_1789645353996117571_87c8a072 (VELOX_ASSEMBLY_READY_V1,
+// 1920x1080@24, Chronon 0.1.0, chronon_vulkan, 240 frames): stereo/128576 /
+// video timebase 1/12288. 2026-09-16, native-lane receipt: mono/58524.
+const (
+	measuredVideoTimeBaseDen = 12288 // fps_den × 512, the mp4 muxer's convention
+	measuredAudioBitrate     = "128576"
+	measuredAudioChannels    = 2
+	measuredAudioLayout      = "stereo"
+	// The earlier measurement shares the video timebase and disagrees on audio:
+	// the audio lane is copy-first, so the layout follows the SOURCE.
+	earlierMeasuredAudioBitrate  = "58524"
+	earlierMeasuredAudioChannels = 1
+)
+
+// TestMeasuredArtifactDivergencesStayVisible is the gate on the dimensions the
+// VeloxEditing contract declares but this package deliberately does NOT pin.
+//
+// It fails if EITHER side moves silently: if the contract stops declaring the
+// value (someone reconciled it), or if this profile starts pinning it (someone
+// closed the divergence with a code change). Either way the change must land
+// here, next to the measurements, instead of drifting into a quiet
+// contradiction between the renderer's gate and the assembler's contract.
+//
+// Closing these by pinning today would fail closed on legal renders — the
+// evidence for that is in the two measurements, not an assumption:
+//
+//   - video timebase: the artifact carries 1/12288 (= fps_den × 512, what the
+//     mp4 muxer emits, observed on both measurements) while the contract
+//     declares 1/90000. The consumer gate tolerates it explicitly
+//     (cliprender/contract.go lists 12288 among the accepted muxer timebases),
+//     which is why the tolerance lives there and not here. Both values are
+//     asserted below so neither can move unnoticed.
+//   - audio channels/layout/bitrate: the artifact inherits the source layout
+//     (audio_copy_eligible=true), while the consumer gate requires the
+//     contract's channels exactly; the two certified renders disagree
+//     (mono/58524 vs stereo/128576). Pin nothing here until a mono-source
+//     clip-lane render shows which side must change.
+func TestMeasuredArtifactDivergencesStayVisible(t *testing.T) {
 	root := workspaceRoot(t)
 	profile, err := ResolveProfile(ProfileVeloxAssemblyReadyV1)
 	if err != nil {
@@ -292,13 +330,43 @@ func TestAssemblyReadyProfileGapsStayVisible(t *testing.T) {
 	}
 	contract := assemblyContractValues(t, root, ProfileVeloxAssemblyReadyV1)
 
-	if contractInt(t, contract, "AudioChannels") == 0 || contractString(t, contract, "AudioBitrate") == "" {
-		t.Fatal("the contract must keep declaring the audio channels/bitrate that this profile does not yet pin")
+	// Contract side: it must keep declaring the values that disagree with the
+	// measured artifacts, otherwise this gate is checking a claim nobody makes
+	// anymore.
+	if got := contractRationalInt(t, contract, "VideoTimeBase", "Num"); got != 1 {
+		t.Fatalf("contract video timebase numerator = %d, want 1 (re-measure the lane before changing this gate)", got)
 	}
-	if contractRationalInt(t, contract, "VideoTimeBase", "Den") != 90000 {
-		t.Fatal("the contract must keep declaring the video timebase this profile does not yet pin")
+	if got := contractRationalInt(t, contract, "VideoTimeBase", "Den"); got != 90000 {
+		t.Fatalf("contract video timebase denominator = %d; the certified artifact carries 1/%d — if this was reconciled deliberately, update this gate and profile.go together", got, measuredVideoTimeBaseDen)
+	}
+	if got, want := contractInt(t, contract, "AudioChannels"), measuredAudioChannels; got != want {
+		t.Fatalf("contract audio channels = %d, want %d (the declared value this profile does not pin)", got, want)
+	}
+	if got := contractString(t, contract, "AudioBitrate"); got == "" {
+		t.Fatal("contract audio bitrate is empty: the declared value this profile does not pin disappeared")
+	}
+	if earlierMeasuredAudioChannels == measuredAudioChannels || earlierMeasuredAudioBitrate == measuredAudioBitrate {
+		t.Fatal("the two measurements must still disagree: that disagreement is the reason the layout stays unpinned")
+	}
+
+	// Profile side: none of these dimensions may be pinned without landing the
+	// measurement-driven decision above.
+	if profile.VideoTimeBaseNum != 0 || profile.VideoTimeBaseDen != 0 {
+		t.Fatalf("profile V1 pins a video timebase (%d/%d) while the contract declares another one; resolve the divergence explicitly", profile.VideoTimeBaseNum, profile.VideoTimeBaseDen)
+	}
+	if profile.AudioChannels != 0 || profile.AudioChannelLayout != "" || profile.AudioBitrate != "" {
+		t.Fatalf("profile V1 pins an audio layout (%d/%q/%q) that the copy-first lane cannot guarantee from an arbitrary source",
+			profile.AudioChannels, profile.AudioChannelLayout, profile.AudioBitrate)
+	}
+
+	// What IS pinned stays pinned: the renderer-owned audio facts.
+	if profile.AudioCodec != "aac" || profile.AudioProfile != "LC" || profile.AudioSampleRate != 48000 {
+		t.Fatalf("renderer-owned audio facts are no longer pinned: %q/%q/%d", profile.AudioCodec, profile.AudioProfile, profile.AudioSampleRate)
 	}
 	if profile.AudioStreams != 1 {
 		t.Fatal("the stream counts ARE pinned; only the audio channel layout/bitrate and the video timebase are open")
+	}
+	if profile.CodecProfile != "High" || len(profile.AcceptedCodecProfiles) != 1 || profile.AcceptedCodecProfiles[0] != "Main" {
+		t.Fatalf("the certified encoder-lane profile equivalence changed: canonical %q accepted %v (the measured artifact carries Main)", profile.CodecProfile, profile.AcceptedCodecProfiles)
 	}
 }

@@ -1,0 +1,126 @@
+{
+  "schema": "renderinggen.vram-two-runtime-pool-report.v1",
+  "plan_path": "/home/pierone/src/go-master/projects/Pyt/VeloxEditing/RenderingGen/phrase_preset_videos/phrase_01_lower_third_safe_plan.json",
+  "plan_sha256": "7f669df143efc14b67ebd5c7c84de2304c11777788d96c9e8475933447de080d",
+  "shape": {
+    "width": 1920,
+    "height": 1080,
+    "fps_num": 24,
+    "fps_den": 1,
+    "frames": 125,
+    "codec": "h264",
+    "output_format": "mp4",
+    "layer_types": [
+      "text",
+      "video"
+    ]
+  },
+  "device": {
+    "name": "NVIDIA RTX A4000",
+    "driver_version": "595.91.07",
+    "total_mib": 16376
+  },
+  "execution": {
+    "binary": "/home/pierone/src/go-master/projects/Pyt/VeloxEditing/Chronon3d/build/chronon/linux-video-release/apps/chronon3d_cli/chronon3d_cli",
+    "backend": "vulkan",
+    "hardware_encoder": "nvenc",
+    "encode_preset": "p1",
+    "socket_base": "/tmp/vram-two-runtime-268711425/chronon.sock",
+    "gpu_device": 0
+  },
+  "daemon_count": 2,
+  "owned_daemons": 2,
+  "lanes_per_daemon": 1,
+  "sample_interval_ms": 20,
+  "hold_seconds": 15,
+  "idle_device_mib": 320,
+  "warm_pools_device_mib": 322,
+  "rendering_peak_device_mib": 1115,
+  "rendering_delta_mib": 795,
+  "resident_hold_device_mib": 728,
+  "second_runtime_resident_mib": 1,
+  "idle_resident_daemon_mib": 234,
+  "baseline_has_resident_daemon": true,
+  "warm_pools_touched_device": true,
+  "phases": {
+    "after_shutdown": {
+      "samples": 28,
+      "idle_device_mib": 270,
+      "peak_device_mib": 270,
+      "device_delta_mib": 0,
+      "peak_daemon_mib": 218,
+      "idle_daemon_mib": 218,
+      "daemon_delta_mib": 0,
+      "peak_utilization_pct": 0
+    },
+    "idle": {
+      "samples": 24,
+      "idle_device_mib": 270,
+      "peak_device_mib": 320,
+      "device_delta_mib": 50,
+      "peak_daemon_mib": 234,
+      "idle_daemon_mib": 218,
+      "daemon_delta_mib": 16,
+      "peak_utilization_pct": 2
+    },
+    "rendering": {
+      "samples": 15,
+      "idle_device_mib": 322,
+      "peak_device_mib": 1115,
+      "device_delta_mib": 793,
+      "peak_daemon_mib": 1016,
+      "idle_daemon_mib": 234,
+      "daemon_delta_mib": 782,
+      "peak_utilization_pct": 14
+    },
+    "resident_hold": {
+      "samples": 160,
+      "idle_device_mib": 728,
+      "peak_device_mib": 728,
+      "device_delta_mib": 0,
+      "peak_daemon_mib": 630,
+      "idle_daemon_mib": 630,
+      "daemon_delta_mib": 0,
+      "peak_utilization_pct": 4
+    },
+    "warm_pools": {
+      "samples": 39,
+      "idle_device_mib": 322,
+      "peak_device_mib": 322,
+      "device_delta_mib": 0,
+      "peak_daemon_mib": 234,
+      "idle_daemon_mib": 234,
+      "daemon_delta_mib": 0,
+      "peak_utilization_pct": 0
+    }
+  },
+  "samples": 266,
+  "samples_file": "/home/pierone/src/go-master/projects/Pyt/VeloxEditing/RenderingGen/multilingual_overlays_v1/evidence/vram_calibration_suite_2026-09-17.json.run0.json.samples.log",
+  "jobs": [
+    {
+      "index": 0,
+      "socket": "/tmp/vram-two-runtime-268711425/chronon.sock.0",
+      "output": "/tmp/vram-suite/video-source-1080p-run0/two-runtime-job-0.mp4",
+      "render_ms": 1633,
+      "bytes": 543483,
+      "sha256": "7c0e468d0c8e2a3028b463c8a36a00773f5912355ea3aca7fe2c90b0cd1256d8",
+      "started_at": "2026-09-17T11:59:49.912773603Z",
+      "finished_at": "2026-09-17T11:59:51.545856721Z",
+      "wall_ms": 1633
+    },
+    {
+      "index": 1,
+      "socket": "/tmp/vram-two-runtime-268711425/chronon.sock.1",
+      "output": "/tmp/vram-suite/video-source-1080p-run0/two-runtime-job-1.mp4",
+      "render_ms": 1639,
+      "bytes": 549558,
+      "sha256": "00c8b16fc4543012264cb071bf64893ee84a88be04f17248405d59b929a77535",
+      "started_at": "2026-09-17T11:59:49.91255747Z",
+      "finished_at": "2026-09-17T11:59:51.551995555Z",
+      "wall_ms": 1639
+    }
+  ],
+  "artifacts_identical": false,
+  "authorizes_mutex_removal": false,
+  "caveat": "laboratory harness: two OWNED warm daemons, one concurrent job each, one plan shape on one host. It falsifies a per-job VRAM calibration for this shape and measures the second runtime's resident cost; it does NOT authorize removing m_render_job_mutex (that needs several certified shapes plus internal allocator telemetry)."
+}

@@ -127,25 +127,11 @@ func (r *Repository) List() ([]model.Worker, error) {
 	return workers, rows.Err()
 }
 
-// Health returns the aggregate worker-health snapshot: Ready/Busy count only
-// workers with a fresh heartbeat; Offline counts the stale ones.
-func (r *Repository) Health(now time.Time, staleAfter time.Duration) (model.WorkerHealth, error) {
-	threshold := now.Add(-staleAfter)
-	var h model.WorkerHealth
-	ctx, cancel := r.opContext()
-	defer cancel()
-	err := r.db.QueryRowContext(ctx, `
-		SELECT
-			COALESCE(count(*) FILTER (WHERE status = 'ready' AND last_heartbeat_at >= $1), 0),
-			COALESCE(count(*) FILTER (WHERE status = 'busy' AND last_heartbeat_at >= $1), 0),
-			COALESCE(count(*) FILTER (WHERE last_heartbeat_at IS NULL OR last_heartbeat_at < $1), 0),
-			COALESCE(count(*), 0)
-		FROM rendering_workers`, threshold).Scan(&h.Ready, &h.Busy, &h.Offline, &h.Total)
-	if err != nil {
-		return model.WorkerHealth{}, err
-	}
-	return h, nil
-}
+// There is deliberately no Health method here: the aggregate is DERIVED from
+// List() by the single authority in internal/model (see the WorkerRepository
+// contract). The FILTER-count that used to live here was a SECOND, SQL-side
+// answer to "is this worker alive?" — it is gone, so a change to the heartbeat
+// window can never leave the aggregate and the per-worker view disagreeing.
 
 // scanWorker reads one worker row from a *sql.Rows (or Row) scanner.
 func scanWorker(scanner interface{ Scan(...any) error }) (model.Worker, error) {

@@ -22,6 +22,7 @@ import (
 	"time"
 
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/artifactdb"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/buildinfo"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/chronon"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/config"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/drive"
@@ -38,6 +39,15 @@ import (
 func main() {
 	configPath := flag.String("config", "/etc/renderinggen/config.yaml", "path to config file")
 	flag.Parse()
+
+	// Publish the process identity before anything can fail: /health then
+	// answers "which binary, which commit, which config is this worker running?"
+	// which previously required auditing the unit file, the `ps` line and the
+	// config backups under /etc by hand.
+	buildinfo.SetRuntime(buildinfo.RuntimeInfo{
+		ConfigPath: *configPath,
+		Mode:       "renderinggen-worker",
+	})
 
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
@@ -229,6 +239,11 @@ func main() {
 	}
 
 	// 4. READY: expose health.
+	//
+	// The worker id is part of the identity tuple, so it is recorded before
+	// the identity document is assembled.
+	buildinfo.SetRuntime(buildinfo.RuntimeInfo{WorkerID: cfg.Worker.ID})
+	identity := buildinfo.Current()
 	healthInfo := health.Info{
 		Worker:        cfg.Worker.ID,
 		RenderingGen:  version.RenderingGen,
@@ -236,6 +251,7 @@ func main() {
 		OverlaySchema: version.OverlaySchema,
 		Backend:       cfg.Chronon.Backend,
 		Status:        "ready",
+		Build:         &identity,
 	}
 	healthServer := health.NewServer(cfg.Health.Addr, healthInfo)
 	// Live render progress: the tracker receives every frame milestone the

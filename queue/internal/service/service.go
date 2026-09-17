@@ -26,6 +26,10 @@ type Service struct {
 	metrics    *metrics.Metrics
 	notify     *Notifier
 
+	// clock is the seam the worker-liveness classification reads (see
+	// workers.go). nil means time.Now(); production never sets it.
+	clock func() time.Time
+
 	// pendingGaugeMu guards observePending's throttle clock. The pending
 	// gauge reads the whole render_jobs table (count(*) FILTER ...) on every
 	// call; throttling it to once per interval keeps submit/claim/complete
@@ -57,8 +61,13 @@ func (s *Service) SetRequeueRetry(cfg RetryConfig) {
 }
 
 // SetWorkerRepository wires the worker registry and the heartbeat-staleness
-// window used to classify workers as offline. A nil repository disables the
-// worker surface and its metrics.
+// window used to classify worker liveness. A nil repository disables the worker
+// surface and its metrics.
+//
+// staleAfter is the whole window: a worker is DEGRADED past a third of it,
+// STALE past two thirds, and DEAD beyond it (model.WorkerLivenessWindow is the
+// authority). A non-positive window classifies every worker as dead rather than
+// treating "no window" as "no limits".
 func (s *Service) SetWorkerRepository(repo repository.WorkerRepository, staleAfter time.Duration) {
 	s.workerRepo = repo
 	s.staleAfter = staleAfter
