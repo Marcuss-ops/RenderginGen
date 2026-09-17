@@ -14,6 +14,9 @@ on the production path — central queue → worker → warm Chronon3d daemon
   writes its report into `evidence/`, next to the other `vram_*` documents
 - Evidence: `evidence/run2_certified_summary.json`,
   `evidence/run2_verify_report.json`, `evidence/drive_publication.json`
+- Serial video-source determinism control: two sequential renders on one daemon,
+  `evidence/video_source_serial_determinism_2026-09-17.json`; the separate
+  two-runtime VRAM shape remains incomplete because concurrent outputs differ.
 - Counter-run kept on purpose: `evidence/run1_without_fallback_font_summary.json`
 
 ## Matrix
