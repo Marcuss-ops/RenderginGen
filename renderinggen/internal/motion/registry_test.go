@@ -101,6 +101,47 @@ func TestModernPhraseBatchKeepsTheFamilyContract(t *testing.T) {
 	}
 }
 
+// TestPlannerSelectableTextMotionsCarryBothHalves pins the fix for the reported
+// "the phrases have no animation". The generated phrase planner selects from
+// these ids only, and each must lower to BOTH a composition-level entrance and a
+// per-unit text animator: a selector-only motion has no layer dynamics at all,
+// so a backend that cannot prepare the selector renders it as a static line.
+func TestPlannerSelectableTextMotionsCarryBothHalves(t *testing.T) {
+	// Keep in lockstep with PipelineGen's phraseMotionCandidates.
+	selectable := []string{"word_reveal", "character_cascade", "char_wave", "opacity_wave", "center_expansion"}
+	for _, id := range selectable {
+		plugin, err := Registry.Resolve(id)
+		if err != nil {
+			t.Fatalf("resolve %s: %v", id, err)
+		}
+		declarative, ok := plugin.(DeclarativePlugin)
+		if !ok {
+			t.Fatalf("%s is not a declarative definition", id)
+		}
+		d := declarative.Definition
+		if len(d.Tracks) == 0 {
+			t.Errorf("%s: no composition-level entrance (renders static without the selector)", id)
+		}
+		if len(d.TextAnimators) == 0 || len(d.TextAnimators[0].Properties) == 0 {
+			t.Errorf("%s: no per-unit text animator", id)
+		}
+		faded := false
+		for _, track := range d.Tracks {
+			if track.Property == "opacity" {
+				faded = len(track.Keyframes) >= 2 && track.Keyframes[0].Value == 0.0
+			}
+			for _, kf := range track.Keyframes {
+				if kf.Frame < 0 || kf.Frame > int64(d.Enter) {
+					t.Errorf("%s/%s: keyframe %v falls outside the %d-frame entrance window", id, track.Property, kf.Frame, d.Enter)
+				}
+			}
+		}
+		if !faded {
+			t.Errorf("%s: composition-level entrance must start transparent", id)
+		}
+	}
+}
+
 type testPlugin struct{}
 
 func (testPlugin) ID() string            { return "test_plugin" }

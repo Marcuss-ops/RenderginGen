@@ -63,6 +63,10 @@ const (
 	phaseRendering    poolPhase = "rendering"
 	phaseResidentHold poolPhase = "resident_hold"
 	phaseAfterStop    poolPhase = "after_shutdown"
+	// phaseProbe is the single-job probe's ONE window. That mode has no phase
+	// structure, but it uses the same sampler, so its samples still carry a
+	// label rather than a special case in the reduction.
+	phaseProbe poolPhase = "probe"
 )
 
 // PoolOptions configures one two-runtime measurement.
@@ -422,15 +426,15 @@ func RunTwoRuntimePool(ctx context.Context, opts PoolOptions) (*PoolReport, erro
 	if err := collector.writeSamples(opts.SamplesPath); err != nil {
 		return nil, err
 	}
-	raw, err := json.MarshalIndent(report, "", "  ")
-	if err != nil {
+	if err := writeJSONFile(opts.ReportPath, report); err != nil {
 		return nil, err
 	}
-	if err := os.MkdirAll(filepath.Dir(opts.ReportPath), 0o755); err != nil {
-		return nil, err
-	}
-	if err := os.WriteFile(opts.ReportPath, append(raw, '\n'), 0o644); err != nil {
-		return nil, fmt.Errorf("vramprobe: write report: %w", err)
+	if failed := failedJobs(jobs); failed != "" {
+		// The document stays on disk (it is the evidence of what happened, and
+		// of WHY this is not a two-runtime number), but the call is an error:
+		// returning nil here would let a run in which nothing rendered exit
+		// zero, which is the opposite of what the header of this file promises.
+		return report, fmt.Errorf("vramprobe: two-runtime measurement incomplete: %s (report written to %s)", failed, opts.ReportPath)
 	}
 	logger.Printf("phases: idle %d MiB -> warm pools %d -> rendering %d -> resident hold %d -> after shutdown %d",
 		report.IdleDeviceMiB, report.WarmPoolsDeviceMiB, report.RenderingPeakDeviceMiB,
@@ -495,6 +499,19 @@ func runPoolJobs(ctx context.Context, opts PoolOptions, pool *chronon.DaemonPool
 	close(start)
 	wg.Wait()
 	return jobs
+}
+
+// failedJobs names every render that did not produce an artifact, or "" when
+// each runtime rendered. A two-runtime measurement with one failed job did not
+// measure two runtimes, so the report is written and the call is an error.
+func failedJobs(jobs []PoolJobFacts) string {
+	failed := make([]string, 0, len(jobs))
+	for _, job := range jobs {
+		if job.FailedWith != "" {
+			failed = append(failed, fmt.Sprintf("job %d: %s", job.Index, job.FailedWith))
+		}
+	}
+	return strings.Join(failed, "; ")
 }
 
 // jobsIdentical reports whether every job produced the same bytes. Same plan,
@@ -777,13 +794,7 @@ func (s *poolSampler) writeSamples(path string) error {
 	for _, entry := range s.all() {
 		fmt.Fprintf(&builder, "%s %.2f %d %d %d\n", entry.phase, entry.at.Seconds(), entry.device, entry.daemon, entry.utilization)
 	}
-	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
-		return fmt.Errorf("vramprobe: create samples dir: %w", err)
-	}
-	if err := os.WriteFile(path, []byte(builder.String()), 0o644); err != nil {
-		return fmt.Errorf("vramprobe: write samples: %w", err)
-	}
-	return nil
+	return writeFile(path, []byte(builder.String()))
 }
 
 func fileSHA256(path string) string {

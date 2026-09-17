@@ -65,6 +65,50 @@ func TestCompileSemanticTextMotionProducesAnimatorContract(t *testing.T) {
 	if a.Selectors[0].Unit != "glyph" || len(a.Properties) != 2 {
 		t.Fatalf("unexpected character cascade contract: %+v", a)
 	}
+	if compiled.Layers[0].Animation == nil {
+		t.Fatal("important phrase must carry a layer entry/exit animation")
+	}
+	var opacity *AnimationTrack
+	for i := range compiled.Layers[0].Animation.Tracks {
+		if compiled.Layers[0].Animation.Tracks[i].Property == "opacity" {
+			opacity = &compiled.Layers[0].Animation.Tracks[i]
+			break
+		}
+	}
+	if opacity == nil || len(opacity.Keyframes) != 4 {
+		t.Fatalf("phrase opacity animation = %+v, want entry, hold and exit keyframes", compiled.Layers[0].Animation.Tracks)
+	}
+	if opacity.Keyframes[0].Frame != 0 || opacity.Keyframes[0].Value != 0.0 ||
+		opacity.Keyframes[1].Frame != 8 || opacity.Keyframes[1].Value != 1.0 ||
+		opacity.Keyframes[2].Frame != 39 || opacity.Keyframes[2].Value != 1.0 ||
+		opacity.Keyframes[3].Frame != 47 || opacity.Keyframes[3].Value != 0.0 {
+		t.Fatalf("phrase entry/exit curve = %+v, want fade-in, hold, fade-out over 48 frames", opacity.Keyframes)
+	}
+}
+
+func TestCompileSemanticPhraseMotionReplacesExistingOpacityWithEntryExit(t *testing.T) {
+	raw := []byte(`{"schema_version":"renderinggen.overlay-plan.v1","plan_id":"phrase-exit","video_id":"v","width":1920,"height":1080,"fps_num":24,"fps_den":1,"items":[{"id":"phrase","template_id":"IMPORTANT_PHRASE","preset_id":"apple_v2","motion_id":"soft_edge_spotlight_dissolve","text":"Tokyo ended the unbeaten run","start_ms":0,"end_ms":2000}]}`)
+	result, err := CompileSemantic(raw)
+	if err != nil {
+		t.Fatal(err)
+	}
+	layer := result.Plan.Layers[0]
+	if layer.Animation == nil {
+		t.Fatal("phrase motion must include a layer entry/exit animation")
+	}
+	var opacityTracks int
+	for _, track := range layer.Animation.Tracks {
+		if track.Property != "opacity" {
+			continue
+		}
+		opacityTracks++
+		if len(track.Keyframes) != 4 || track.Keyframes[0].Value != 0.0 || track.Keyframes[1].Value != 1.0 || track.Keyframes[2].Value != 1.0 || track.Keyframes[3].Value != 0.0 {
+			t.Fatalf("phrase opacity curve = %+v, want one fade-in/hold/fade-out curve", track.Keyframes)
+		}
+	}
+	if opacityTracks != 1 {
+		t.Fatalf("phrase has %d opacity tracks, want one", opacityTracks)
+	}
 }
 
 func TestCompileSemanticTextUsesExplicitCanvasLocalBox(t *testing.T) {

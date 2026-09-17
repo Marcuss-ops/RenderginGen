@@ -9,18 +9,55 @@ package motion
 // family lives apart from the layer family: a layer motion has no selector and
 // an id from this family that silently resolved to a layer fade would be the
 // "distinct preset renders as one fade" regression.
+//
+// The converse gap is the one the generated phrase planner hit: a selector-only
+// motion has NO composition-level dynamics, so wherever the selector is not
+// prepared it renders as a static line. The ids that planner can select
+// therefore carry both halves (see textEnvelope).
 func textMotions() []MotionDefinition {
 	return []MotionDefinition{
-		textDefinition("word_reveal", "word", 1, 40),
-		textDefinition("character_cascade", "glyph", 1, 40),
+		// The five ids the generated phrase planner can select (word_reveal,
+		// character_cascade, char_wave, opacity_wave, center_expansion) are
+		// animator-only by construction: their whole effect is what the per-unit
+		// selector does, and a motion whose only dynamics ride a selector renders
+		// as a static line wherever the selector is not prepared. Each therefore
+		// also carries a composition-level entrance, so the phrase animates with
+		// or without it. This is the same rule the apple_v2 phrase library states
+		// for its own definitions ("a per-unit text animator AND composition-level
+		// layer tracks, so the same id renders as a visibly different effect on
+		// every backend").
+		textEnvelope(textDefinition("word_reveal", "word", 1, 40), "position_y", 20.0, 0.0, 18),
+		textEnvelope(textDefinition("character_cascade", "glyph", 1, 40), "position_y", 20.0, 0.0, 18),
 		textDefinition("tracking_collapse", "word", 0, 0),
 		textDefinition("tracking_expansion", "word", 0, 0),
 		textDefinition("blur_focus_in", "glyph", 0, 0),
-		textWaveDefinition("opacity_wave", "word", "opacity", []AnimationKeyframe{{0, 0.15}, {36, 1.0}, {72, 0.5}}, 1),
+		textEnvelope(textWaveDefinition("opacity_wave", "word", "opacity", []AnimationKeyframe{{0, 0.15}, {36, 1.0}, {72, 0.5}}, 1), "", 0, 0, 16),
 		textWaveDefinition("scale_wave", "glyph", "scale", []AnimationKeyframe{{0, 0.75}, {36, 1.25}, {72, 1.0}}, 1),
-		textWaveDefinition("char_wave", "glyph", "position_y", []AnimationKeyframe{{0, 0.0}, {24, -30.0}, {48, 15.0}, {72, 0.0}}, 1),
-		textCenterDefinition(),
+		textEnvelope(textWaveDefinition("char_wave", "glyph", "position_y", []AnimationKeyframe{{0, 0.0}, {24, -30.0}, {48, 15.0}, {72, 0.0}}, 1), "position_y", 12.0, 0.0, 16),
+		textEnvelope(textCenterDefinition(), "scale", 0.94, 1.0, 16),
 	}
+}
+
+// textEnvelope appends the composition-level entrance that keeps an
+// animator-only text motion visible on every backend: a settle on the motion's
+// OWN axis (from -> to, keyframed inside the family's 72-frame entrance window)
+// plus a layer fade-in.
+//
+// property is empty when the motion's own axis already IS opacity, so no
+// geometry is invented for it. The magnitudes stay deliberately smaller than
+// the per-unit motion's own offsets: the envelope is the floor of visibility,
+// not a second competing effect — the per-unit curve stays the thing an editor
+// chose.
+func textEnvelope(d MotionDefinition, property string, from, to float64, fadeFrames int64) MotionDefinition {
+	if property != "" {
+		d.Tracks = append(d.Tracks, TrackDefinition{Property: property, Easing: "out_cubic", Keyframes: []AnimationKeyframe{
+			{Frame: 0, Value: from}, {Frame: 60, Value: to}, {Frame: 72, Value: to},
+		}})
+	}
+	d.Tracks = append(d.Tracks, TrackDefinition{Property: "opacity", Easing: "out_cubic", Keyframes: []AnimationKeyframe{
+		{Frame: 0, Value: 0.0}, {Frame: fadeFrames, Value: 1.0},
+	}})
+	return d
 }
 
 // textDefinition covers the reveal/retime family: three ids share the same

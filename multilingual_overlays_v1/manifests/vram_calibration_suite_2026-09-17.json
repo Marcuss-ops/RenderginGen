@@ -1,0 +1,16 @@
+{
+  "schema": "renderinggen.vram-calibration-suite.v1",
+  "_note": "INPUT matrix for the calibration suite (TICKET-DAEMON-JOB-LIFECYCLE §5), not evidence: it lives in manifests/ rather than evidence/ so a reader cannot mistake the matrix for a result, and the suite writes its document of record next to the other vram_* reports in multilingual_overlays_v1/evidence/. Plan paths are relative to THIS FILE's directory (the loader resolves them against the manifest, not the process CWD), so the matrix means the same shapes wherever it is invoked from. It contains ONLY shapes that have a concrete chronon.render-plan.v2 in this checkout, because a row whose plan does not exist would make the suite report a number for something nobody rendered. repeat >= 3 is the ticket's floor and is enforced by the loader. The known gaps are not declared here: 4K has no concrete plan in this checkout (every plan is 1920x1080), and DirectYUV is not a plan property at all (it is the engine's lane decision for a single-source plan), so it has to be certified from the run's telemetry rather than from a label in this matrix.",
+  "shapes": [
+    {
+      "label": "overlay-only-1080p",
+      "plan": "../../phrase_animations_v1/01_discipline_gives_power_a_direction__kinetic_split_word_render_plan.json",
+      "repeat": 3
+    },
+    {
+      "label": "video-source-1080p",
+      "plan": "../../phrase_preset_videos/phrase_01_lower_third_safe_plan.json",
+      "repeat": 3
+    }
+  ]
+}

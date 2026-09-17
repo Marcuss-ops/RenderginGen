@@ -113,6 +113,17 @@ func probeResultFromReceipt(r chronon.MediaReceipt) media.ProbeResult {
 	}
 }
 
+// requiresStructuralProbe decides which finalized jobs are structurally probed.
+// overlay.render jobs are probed because their media contract is validated from
+// the probe; jobs carrying a profile_id because the output profile is validated
+// from it; and ANY job carrying a FrameRange because a chunk is a potential
+// parent-assembly input: the queue's copy-safety gate (queue.ValidateChildren)
+// validates a copied child from exactly these facts, so a chunk that skipped
+// the probe could never be proven safe to concatenate.
+func requiresStructuralProbe(job *queue.Job) bool {
+	return job != nil && (job.JobType == queue.JobTypeOverlayRender || job.FrameRange != nil)
+}
+
 // FinalizeJob runs the CPU-bound post half of the render pipeline: validation
 // probes, output hashing (Chronon receipt first), object-store upload and the
 // artifact ledger row.
@@ -124,7 +135,7 @@ func (p *Processor) FinalizeJob(ctx context.Context, prepared *PreparedJob) (que
 	metadata := planMetadataOf(plan)
 	receipt, receiptErr := chronon.ReadMediaReceipt(outputPath)
 	var probe *media.ProbeResult
-	if job.JobType == queue.JobTypeOverlayRender || metadata.ProfileID != "" {
+	if requiresStructuralProbe(job) || metadata.ProfileID != "" {
 		probeStart := time.Now()
 		probed, source, err := probeFactsForFinalize(ctx, receipt, receiptErr, outputPath)
 		if err != nil {
@@ -176,5 +187,5 @@ func (p *Processor) FinalizeJob(ctx context.Context, prepared *PreparedJob) (que
 		return queue.Artifact{}, err
 	}
 	return p.storeArtifact(ctx, job.ID, outputPath, outcome, plan, metrics, prepared.totalStart, probe, prepared.Stats, prepared.InputBytes,
-		job.JobType == queue.JobTypeOverlayRender || metadata.ProfileID != "", prepared.NativeCertified)
+		requiresStructuralProbe(job) || metadata.ProfileID != "", prepared.NativeCertified)
 }
