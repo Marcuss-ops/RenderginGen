@@ -24,7 +24,7 @@ func sleepCtx(ctx context.Context, d time.Duration) bool {
 	}
 }
 
-// withLease runs fn while renewing the job's lease in the background.
+// withLeaseVoid runs fn while renewing the job's lease in the background.
 // If the lease cannot be renewed (e.g. it expired and the job was requeued to
 // another worker), the job context is cancelled so the work aborts instead of
 // double-processing.

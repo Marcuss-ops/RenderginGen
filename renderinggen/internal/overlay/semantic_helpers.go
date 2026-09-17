@@ -12,27 +12,20 @@ import (
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/motion"
 )
 
-func animationForMotion(id string, params map[string]any, textValue string, duration int64) (*LayerAnimation, error) {
-	plugin, err := motion.Registry.Resolve(id)
+// animationForMotion lowers a producer-selected motion_id through the shared
+// spine (see lowerMotion). presetExit is the selected preset's own exit window:
+// a producer that overrides only the entrance still gets an out instead of a
+// hard cut. The motion's registered windows fill in whatever the caller omits.
+func animationForMotion(id string, params map[string]any, textValue string, duration int64, presetExit int) (*LayerAnimation, error) {
+	animation, err := lowerMotion(id, 0, presetExit, motion.MotionParams(params), textValue, duration)
 	if err != nil {
-		return nil, fmt.Errorf("overlay: %w", err)
+		return nil, err
 	}
-	tracks, err := plugin.Compile(motion.MotionContext{Text: textValue, DurationFrames: duration}, motion.MotionParams(params))
-	if err != nil {
-		return nil, fmt.Errorf("overlay: compile motion %q: %w", id, err)
+	if animation == nil {
+		return nil, nil
 	}
-	animation := &LayerAnimation{Tracks: fromMotionTracks(tracks)}
-	if textPlugin, ok := plugin.(motion.TextMotionPlugin); ok {
-		textDefinitions, err := textPlugin.CompileText(
-			motion.MotionContext{Text: textValue, DurationFrames: duration},
-			motion.MotionParams(params))
-		if err != nil {
-			return nil, fmt.Errorf("compile text motion %q: %w", id, err)
-		}
-		animation.TextAnimators = fromTextMotionDefinitions(textDefinitions, duration)
-		if err := validateTextMotion(animation.TextAnimators, id); err != nil {
-			return nil, err
-		}
+	if err := validateTextMotion(animation.TextAnimators, id); err != nil {
+		return nil, err
 	}
 	return animation, nil
 }
@@ -158,15 +151,12 @@ func applyPresetDefinition(layer *Layer, d PresetDefinition) {
 	}
 }
 
+// animationForDefinition lowers a preset's motion without a concrete layer
+// duration: the entrance is used exactly as authored and no exit window is
+// emitted. Callers that know the layer duration use animationForPreset, which
+// is the same lowering with both windows resolved against that duration.
 func animationForDefinition(d PresetDefinition) (*LayerAnimation, error) {
-	if d.Motion.ID == "" {
-		return nil, nil
-	}
-	tracks, err := tracksForMotion(d.Motion)
-	if err != nil {
-		return nil, err
-	}
-	return &LayerAnimation{Tracks: tracks}, nil
+	return animationForPreset(d, "", 0)
 }
 
 func rgbaHex(v []float64) string {

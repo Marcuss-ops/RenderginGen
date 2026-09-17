@@ -466,7 +466,7 @@ func compileEntityCard(ri resolvedItem, src *semanticPlan, registry *assetRegist
 	img := imageLayer(ri, registry.Path(ri.Item.Assets[0].ID))
 	if ri.ImagePreset.ID != "" {
 		applyPresetDefinition(&img, ri.ImagePreset)
-		imgAnimation, err := animationForDefinition(ri.ImagePreset)
+		imgAnimation, err := animationForPreset(ri.ImagePreset, "", ri.End-ri.Start)
 		if err != nil {
 			return nil, err
 		}
@@ -537,20 +537,31 @@ func compileImageLayer(ri resolvedItem, src *semanticPlan, registry *assetRegist
 		applyPresetDefinition(&layer, ri.Preset)
 	}
 	if ri.Item.MotionID != "" {
-		animation, err := animationForMotion(ri.Item.MotionID, ri.Item.MotionParams, ri.Item.Text, ri.End-ri.Start)
+		animation, err := animationForMotion(ri.Item.MotionID, ri.Item.MotionParams, ri.Item.Text, ri.End-ri.Start, ri.Preset.Motion.Exit)
 		if err != nil {
 			return Layer{}, err
 		}
-		if len(animation.Tracks) > 0 {
-			layer.Animation = animation
+		if animation != nil {
+			if len(animation.Tracks) > 0 {
+				layer.Animation = animation
+			}
+			if len(animation.TextAnimators) > 0 {
+				layer.TextAnimators = animation.TextAnimators
+			}
 		}
-		layer.TextAnimators = animation.TextAnimators
 	} else if ri.Preset.ID != "" {
-		presetAnimation, err := animationForDefinition(ri.Preset)
+		presetAnimation, err := animationForPreset(ri.Preset, "", ri.End-ri.Start)
 		if err != nil {
 			return Layer{}, err
 		}
-		layer.Animation = presetAnimation
+		if presetAnimation != nil {
+			if len(presetAnimation.Tracks) > 0 {
+				layer.Animation = presetAnimation
+			}
+			if len(presetAnimation.TextAnimators) > 0 {
+				layer.TextAnimators = presetAnimation.TextAnimators
+			}
+		}
 	}
 	if layer.Position == nil && ri.Preset.ID != "" {
 		if ri.Kind == KindEntityImage {
@@ -608,15 +619,17 @@ func compileTextLayer(ri resolvedItem, src *semanticPlan, layerID string) (Layer
 	}
 	layer.Size = []float64{float64(layer.BoxWidth), float64(layer.BoxHeight)}
 
+	var textAnimation *LayerAnimation
 	if ri.Item.MotionID != "" {
-		animation, err := animationForMotion(ri.Item.MotionID, ri.Item.MotionParams, ri.Item.Text, ri.End-ri.Start)
+		// Both halves of the selected motion travel, never one of them: the
+		// layer tracks and the per-unit text animators are produced by the same
+		// lowering pass (see lowerMotion). The preset's exit window is the
+		// fallback for a motion that declares none.
+		animation, err := animationForMotion(ri.Item.MotionID, ri.Item.MotionParams, ri.Item.Text, ri.End-ri.Start, ri.Preset.Motion.Exit)
 		if err != nil {
 			return Layer{}, err
 		}
-		if len(animation.Tracks) > 0 {
-			layer.Animation = animation
-		}
-		layer.TextAnimators = animation.TextAnimators
+		textAnimation = animation
 	} else if ri.Preset.ID != "" {
 		// Official text presets lower their motion through the shared
 		// animationForPreset path so word/glyph selectors (word_reveal,
@@ -629,13 +642,16 @@ func compileTextLayer(ri resolvedItem, src *semanticPlan, layerID string) (Layer
 		if err != nil {
 			return Layer{}, err
 		}
-		if presetAnimation != nil {
-			if len(presetAnimation.Tracks) == 0 {
-				layer.TextAnimators = presetAnimation.TextAnimators
-			} else {
-				layer.Animation = presetAnimation
-			}
+		textAnimation = presetAnimation
+	}
+	if ri.Kind == KindImportantPhrase {
+		textAnimation = withPhraseEntryExit(textAnimation, ri.End-ri.Start)
+	}
+	if textAnimation != nil {
+		if len(textAnimation.Tracks) > 0 {
+			layer.Animation = textAnimation
 		}
+		layer.TextAnimators = textAnimation.TextAnimators
 	}
 	if layer.Style != nil && layer.Position == nil {
 		posX, hasPosX := ri.Params["position_x"].(float64)

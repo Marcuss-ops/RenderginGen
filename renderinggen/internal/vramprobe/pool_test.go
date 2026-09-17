@@ -87,3 +87,23 @@ func TestJobsIdenticalRequiresEveryArtifact(t *testing.T) {
 		t.Error("no jobs is not an identical pair")
 	}
 }
+
+// TestFailedJobsNamesEveryFailedRender pins the fail-closed contract the harness
+// header states: a run in which a runtime failed did not measure two runtimes,
+// so the caller must get an error (after the report is written) rather than a
+// zero exit code carrying a number nobody produced.
+func TestFailedJobsNamesEveryFailedRender(t *testing.T) {
+	if got := failedJobs([]PoolJobFacts{{SHA256: "aa"}, {SHA256: "bb"}}); got != "" {
+		t.Errorf("two rendered jobs = %q, want no failure", got)
+	}
+	// A job that produced bytes AND an error still failed: the report must not
+	// be quiet about a runtime that reported a problem after writing output.
+	got := failedJobs([]PoolJobFacts{{Index: 0, SHA256: "aa"}, {Index: 1, FailedWith: "daemon exited"}})
+	if got != "job 1: daemon exited" {
+		t.Errorf("failure = %q, want the failing job named", got)
+	}
+	both := failedJobs([]PoolJobFacts{{Index: 0, FailedWith: "timeout"}, {Index: 1, FailedWith: "timeout"}})
+	if both != "job 0: timeout; job 1: timeout" {
+		t.Errorf("failure = %q, want every failing job named", both)
+	}
+}

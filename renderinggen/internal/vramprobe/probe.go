@@ -21,10 +21,8 @@ import (
 	"log"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	queue "github.com/Marcuss-ops/RenderingGen/queue/client"
@@ -33,6 +31,15 @@ import (
 
 // ReportSchema identifies the probe report.
 const ReportSchema = "renderinggen.vram-probe-report.v1"
+
+// ProbeCaveat states the limit of the single-mode number, in the number.
+//
+// It exists for the same reason the two-runtime and suite documents carry one:
+// a reader who finds a report has to be able to tell how far it reaches without
+// knowing which file produced it. This mode runs behind the daemon's
+// RENDER_JOB mutex, so it is the least able of the three to say anything about
+// concurrency.
+const ProbeCaveat = "single-job probe: both jobs are submitted through the normal queue path, i.e. behind the daemon's RENDER_JOB mutex, so this is the incremental device cost of ONE active job. It cannot show that two jobs coexist and it does not authorize removing m_render_job_mutex."
 
 // Options configures one probe.
 type Options struct {
@@ -70,6 +77,13 @@ type Report struct {
 	WindowEnd       time.Time         `json:"window_end"`
 	SourceManifest  string            `json:"source_manifest"`
 	ProbeManifest   string            `json:"probe_manifest"`
+
+	// AuthorizesMutexRemoval is ALWAYS false, and it is stated in the document
+	// rather than implied by the mode: the number is measured behind the mutex,
+	// so no consumer can mistake it for the calibration that would license a
+	// production concurrency change.
+	AuthorizesMutexRemoval bool   `json:"authorizes_mutex_removal"`
+	Caveat                 string `json:"caveat"`
 }
 
 // Run builds the probe, renders it on the production path and samples the device.
@@ -104,63 +118,35 @@ func Run(ctx context.Context, opts Options) (*Report, error) {
 	if err != nil {
 		return nil, err
 	}
-	if err := os.MkdirAll(filepath.Dir(opts.ProbeManifest), 0o755); err != nil {
+	if err := writeFile(opts.ProbeManifest, probeRaw); err != nil {
 		return nil, err
 	}
-	if err := os.WriteFile(opts.ProbeManifest, probeRaw, 0o644); err != nil {
-		return nil, fmt.Errorf("vramprobe: write probe manifest: %w", err)
-	}
 
-	idleDevice, idleUtil, err := deviceSample(ctx)
+	idleDevice, _, err := deviceSample(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("vramprobe: nvidia-smi: %w", err)
 	}
 	idleDaemon := daemonMiB(ctx)
-	_ = idleUtil
 
-	var (
-		mu      sync.Mutex
-		samples []sample
-		stop    = make(chan struct{})
-		done    = make(chan struct{})
-	)
-	go func() {
-		defer close(done)
-		ticker := time.NewTicker(opts.Interval)
-		defer ticker.Stop()
-		for {
-			select {
-			case <-stop:
-				return
-			case <-ticker.C:
-				device, util, err := deviceSample(ctx)
-				if err != nil {
-					continue
-				}
-				entry := sample{device: device, daemon: daemonMiB(ctx), utilization: util}
-				mu.Lock()
-				samples = append(samples, entry)
-				mu.Unlock()
-			}
-		}
-	}()
+	// The SAME sampler the two-runtime harness uses, instead of a second
+	// ticker loop with its own mutex: this mode has a single phase, so its
+	// peaks are that phase's facts. The deferred stop covers every early
+	// return below (stop is idempotent, so the explicit stop before the
+	// reduction is not a double close).
+	collector := newPoolSampler(ctx, opts.Interval)
+	defer collector.stop()
+	collector.setPhase(phaseProbe)
 
 	windowStart := time.Now()
 	client := queue.New(opts.QueueURL)
 	if err := client.Health(ctx); err != nil {
-		close(stop)
-		<-done
 		return nil, fmt.Errorf("vramprobe: queue %s is not healthy: %w", opts.QueueURL, err)
 	}
 	jobs, err := batch.Decode(probeRaw)
 	if err != nil {
-		close(stop)
-		<-done
 		return nil, err
 	}
 	if _, err := batch.SubmitAll(ctx, batch.ClientSubmitter{Client: client}, jobs); err != nil {
-		close(stop)
-		<-done
 		return nil, err
 	}
 
@@ -170,52 +156,43 @@ func Run(ctx context.Context, opts Options) (*Report, error) {
 	for _, id := range jobIDs {
 		body, err := client.WaitTerminal(renderCtx, id)
 		if err != nil {
-			close(stop)
-			<-done
 			return nil, fmt.Errorf("vramprobe: wait %s: %w", id, err)
 		}
 		states[id] = string(body.State)
 	}
 	windowEnd := time.Now()
-	close(stop)
-	<-done
+	// Stop before reducing: a tick appended while the report is being built
+	// would be counted but not in the peaks, and the two would disagree.
+	collector.stop()
+	facts := collector.phaseFacts()[string(phaseProbe)]
 
 	report := &Report{
-		Schema:         ReportSchema,
-		BatchID:        opts.BatchID,
-		Jobs:           states,
-		IdleDeviceMiB:  idleDevice,
-		IdleDaemonMiB:  idleDaemon,
-		SourceManifest: opts.SourceManifest,
-		ProbeManifest:  opts.ProbeManifest,
-		Samples:        len(samples),
-		WindowStart:    windowStart,
-		WindowEnd:      windowEnd,
-	}
-	for _, entry := range samples {
-		report.PeakDeviceMiB = max(report.PeakDeviceMiB, entry.device)
-		report.PeakDaemonMiB = max(report.PeakDaemonMiB, entry.daemon)
-		report.PeakUtilization = max(report.PeakUtilization, entry.utilization)
+		Schema:          ReportSchema,
+		BatchID:         opts.BatchID,
+		Jobs:            states,
+		IdleDeviceMiB:   idleDevice,
+		IdleDaemonMiB:   idleDaemon,
+		PeakDeviceMiB:   facts.PeakDeviceMiB,
+		PeakDaemonMiB:   facts.PeakDaemonMiB,
+		PeakUtilization: facts.PeakUtilization,
+		SourceManifest:  opts.SourceManifest,
+		ProbeManifest:   opts.ProbeManifest,
+		Samples:         collector.count(),
+		WindowStart:     windowStart,
+		WindowEnd:       windowEnd,
+
+		AuthorizesMutexRemoval: false,
+		Caveat:                 ProbeCaveat,
 	}
 	report.DeviceDeltaMiB = report.PeakDeviceMiB - idleDevice
 	report.DaemonDeltaMiB = report.PeakDaemonMiB - idleDaemon
 
-	raw, err := json.MarshalIndent(report, "", "  ")
-	if err != nil {
+	if err := writeJSONFile(opts.ReportPath, report); err != nil {
 		return nil, err
-	}
-	if err := os.WriteFile(opts.ReportPath, append(raw, '\n'), 0o644); err != nil {
-		return nil, fmt.Errorf("vramprobe: write report: %w", err)
 	}
 	logger.Printf("idle %d MiB (daemon %d MiB) -> peak %d MiB (daemon %d MiB), delta %d MiB over %d samples",
 		report.IdleDeviceMiB, report.IdleDaemonMiB, report.PeakDeviceMiB, report.PeakDaemonMiB, report.DeviceDeltaMiB, report.Samples)
 	return report, nil
-}
-
-type sample struct {
-	device      int
-	daemon      int
-	utilization int
 }
 
 // buildProbe takes one phrase job and one image job from the source manifest and

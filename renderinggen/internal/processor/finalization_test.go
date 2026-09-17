@@ -41,6 +41,13 @@ func (q *finalizerQueue) Complete(_ context.Context, _ string, artifact queue.Ar
 	return nil
 }
 
+// copySafeChunkArtifact mirrors what the production lane certifies on a
+// completed chunk: the structural probe ran (a job carrying a FrameRange is
+// always probed) and the copy-safety facts are proven.
+func copySafeChunkArtifact(storageKey string) *queue.Artifact {
+	return &queue.Artifact{StorageKey: storageKey, CopyEligible: true, ClosedGOP: true, FirstFrameKeyframe: true}
+}
+
 type finalizerAssembler struct{}
 
 func (finalizerAssembler) Assemble(_ context.Context, req chronon.AssembleRequest) error {
@@ -73,8 +80,8 @@ func TestParentFinalizerStoresPublishesAndCompletes(t *testing.T) {
 		t.Fatal(err)
 	}
 	children := []*queue.Job{
-		{ID: "c0", ChunkIndex: 0, FrameRange: &queue.FrameRange{Start: 0, End: 10}, State: queue.StateCompleted, Artifact: &queue.Artifact{StorageKey: "chunk-a"}},
-		{ID: "c1", ChunkIndex: 1, FrameRange: &queue.FrameRange{Start: 10, End: 20}, State: queue.StateCompleted, Artifact: &queue.Artifact{StorageKey: "chunk-b"}},
+		{ID: "c0", ChunkIndex: 0, FrameRange: &queue.FrameRange{Start: 0, End: 10}, State: queue.StateCompleted, Artifact: copySafeChunkArtifact("chunk-a")},
+		{ID: "c1", ChunkIndex: 1, FrameRange: &queue.FrameRange{Start: 10, End: 20}, State: queue.StateCompleted, Artifact: copySafeChunkArtifact("chunk-b")},
 	}
 	q := &finalizerQueue{children: children}
 	driveDir := t.TempDir()
@@ -113,8 +120,8 @@ func TestFinalizeFromChildrenDerivesRangeAndReadsOnceBeforeTheClaim(t *testing.T
 		t.Fatal(err)
 	}
 	children := []*queue.Job{
-		{ID: "c0", ChunkIndex: 0, FrameRange: &queue.FrameRange{Start: 0, End: 10}, State: queue.StateCompleted, Artifact: &queue.Artifact{StorageKey: "chunk-a"}},
-		{ID: "c1", ChunkIndex: 1, FrameRange: &queue.FrameRange{Start: 10, End: 20}, State: queue.StateCompleted, Artifact: &queue.Artifact{StorageKey: "chunk-b"}},
+		{ID: "c0", ChunkIndex: 0, FrameRange: &queue.FrameRange{Start: 0, End: 10}, State: queue.StateCompleted, Artifact: copySafeChunkArtifact("chunk-a")},
+		{ID: "c1", ChunkIndex: 1, FrameRange: &queue.FrameRange{Start: 10, End: 20}, State: queue.StateCompleted, Artifact: copySafeChunkArtifact("chunk-b")},
 	}
 	q := &finalizerQueue{children: children}
 	f := NewParentFinalizer(q, store, finalizerAssembler{}, nil, "worker", t.TempDir())

@@ -253,9 +253,9 @@ populated only once the job completes.
 
 ### Artifact (copy-only certification)
 
-`artifact` carries the certification VeloxEditing uses to assemble the overlay
-with a packet-copy (`video.assemble.copy.v1`) instead of re-decoding and
-re-encoding it:
+`artifact` carries the copy-only certification of the rendered segment: the
+facts a downstream assembler needs in order to concatenate it without decoding
+and re-encoding it.
 
 ```json
 {
@@ -284,7 +284,18 @@ re-encoding it:
 ```
 
 `copy_eligible`, `closed_gop` and `first_frame_keyframe` are the safety
-guarantees: Velox never has to guess whether a stream-copy is safe.
+guarantees: nobody has to guess whether a stream-copy is safe.
+
+Who consumes them, accurately: a completed CHUNK family is assembled by the
+worker's `ParentFinalizer` through the daemon's `ASSEMBLE_SEGMENTS`, and the
+queue's parent-assembly contract (`queue.ValidateChildren`) refuses a family
+whose children are not certified copy-safe — the three flags above are enforced
+there, and a job carrying a `frame_range` is always structurally probed so the
+flags exist. The VeloxEditing packet-copy assembler (`video.assemble.copy.v1`)
+validates the same facts; it is currently **certified but unwired** (no
+production caller) because overlays are composited inside the single Chronon
+render pass (`clip-render-plan.v1` → `PlanOverlaySegment`), so it must not be
+described as the production assembly path.
 
 ### Worker
 

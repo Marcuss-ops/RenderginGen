@@ -8,6 +8,10 @@ on the production path — central queue → worker → warm Chronon3d daemon
 
 - Batch of record: `ml-overlays-10x10-run2` (100 jobs, `manifest.json`)
 - Texts of record: `translations.json` (Argos, en→target)
+- VRAM calibration matrix (an INPUT, not evidence):
+  `manifests/vram_calibration_suite_2026-09-17.json` — the certified shapes ×
+  ≥3 repetitions measured with `vram-probe -mode calibration-suite`; the suite
+  writes its report into `evidence/`, next to the other `vram_*` documents
 - Evidence: `evidence/run2_certified_summary.json`,
   `evidence/run2_verify_report.json`, `evidence/drive_publication.json`
 - Counter-run kept on purpose: `evidence/run1_without_fallback_font_summary.json`

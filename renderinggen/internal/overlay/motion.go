@@ -11,17 +11,178 @@ import (
 // Fail-closed: a registry miss or a compile error is returned to the caller
 // and rejects the job — the historical swallow-and-return-nil turned a broken
 // motion into a silently static overlay that passed the pipeline as healthy.
-func resolveMotion(m MotionDefinition) ([]AnimationTrack, error) {
-	id := m.ID
+//
+// ONE motion lowers to TWO renderer contracts, and both are always produced:
+//
+//   - composition-level tracks (Layer.Animation) — what the whole layer does;
+//   - per-word/glyph animators (Layer.TextAnimators) — what each unit does.
+//
+// The two used to be mutually exclusive on the wire: the producer-selected
+// motion path transported only the animators, the official preset path only the
+// layer tracks. Half of every official motion was therefore dropped — a
+// text-only motion (word_reveal, char_wave, ...) rendered with no composition
+// motion at all, and an apple_v2 phrase lost its glyph choreography. The
+// certified phrase corpus (phrase_animations_v1) carries BOTH on the same
+// layer, and the apple_v2 phrase library authors both, so both is the contract.
+//
+// The lowering also OWNS the exit. MotionDefinition.Exit — and the preset's own
+// exit window — has been carried through the catalog since the beginning and
+// was never read by any code path, so every rendered overlay hard-cut at its
+// last frame. A layer with room for the window now replays its entrance
+// backwards over the last Exit frames (see appendExitTracks).
+func lowerMotion(id string, enter, exit int, params motion.MotionParams, text string, duration int64) (*LayerAnimation, error) {
+	if id == "" {
+		return nil, nil
+	}
 	plugin, err := motion.Registry.Resolve(id)
-	if err != nil || plugin == nil {
+	if err != nil {
 		return nil, fmt.Errorf("overlay: resolve motion %q: %w", id, err)
 	}
-	tracks, err := plugin.Compile(motion.MotionContext{DurationFrames: int64(m.Enter)}, nil)
+	if plugin == nil {
+		return nil, fmt.Errorf("overlay: motion %q resolved to no plugin", id)
+	}
+	// The caller's windows win (an official preset owns its own entrance and
+	// exit); a producer-selected motion_id supplies only the exit fallback, so
+	// the motion's registered windows fill the gaps.
+	if declarative, ok := plugin.(motion.DeclarativePlugin); ok {
+		if enter <= 0 {
+			enter = declarative.Definition.Enter
+		}
+		if exit <= 0 {
+			exit = declarative.Definition.Exit
+		}
+	}
+	entrance := entranceFrames(enter, exit, duration)
+	ctx := motion.MotionContext{Text: text, DurationFrames: entrance}
+	tracks, err := plugin.Compile(ctx, params)
 	if err != nil {
 		return nil, fmt.Errorf("overlay: compile motion %q: %w", id, err)
 	}
-	return retimeMotionTracks(fromMotionTracks(tracks), int64(m.Enter)), nil
+	animation := &LayerAnimation{Tracks: retimeMotionTracks(fromMotionTracks(tracks), entrance)}
+	if textPlugin, ok := plugin.(motion.TextMotionPlugin); ok {
+		definitions, err := textPlugin.CompileText(ctx, params)
+		if err != nil {
+			return nil, fmt.Errorf("overlay: compile text motion %q: %w", id, err)
+		}
+		animation.TextAnimators = retimeTextAnimators(fromTextMotionDefinitions(definitions, entrance), entrance)
+	}
+	animation.Tracks = appendExitTracks(animation.Tracks, exit, duration)
+	return animation, nil
+}
+
+// entranceFrames is how many frames of a layer the entrance may occupy once the
+// exit window is reserved. The authored window is the ceiling — a preset's
+// 72-frame entrance does not stretch on a longer layer — while layer-minus-exit
+// is the cap, so a short overlay compresses its entrance instead of letting
+// keyframes run past the layer boundary (which Chronon rejects, and which used
+// to leave a 0.7 s phrase carrying keyframes authored for 3 s).
+func entranceFrames(authored, exitFrames int, duration int64) int64 {
+	if duration <= 0 {
+		if authored > 0 {
+			return int64(authored)
+		}
+		return 0
+	}
+	target := duration
+	if exitFrames > 0 && int64(exitFrames) < duration {
+		target = duration - int64(exitFrames)
+	}
+	if authored > 0 && int64(authored) < target {
+		target = int64(authored)
+	}
+	if target < 1 {
+		target = 1
+	}
+	return target
+}
+
+// appendExitTracks gives a layer a real OUT. The out replays the entrance
+// backwards inside the last exitFrames frames of the layer: the geometry each
+// track settled on at the end of the entrance returns to the value it started
+// from, so a phrase that slides up in slides back down out instead of cutting.
+//
+// Opacity is the one track that is not mirrored: a layer that leaves must end
+// transparent, so its out is always 1 -> 0 (synthesized when the entrance had no
+// opacity track). Replaying an authored opacity curve backwards could otherwise
+// end a layer half visible — the exact failure an editor reads as "no exit
+// animation". A layer with no room for the window is left untouched rather than
+// given overlapping keyframes.
+func appendExitTracks(tracks []AnimationTrack, exitFrames int, duration int64) []AnimationTrack {
+	if exitFrames <= 0 || duration <= 1 || int64(exitFrames) >= duration {
+		return tracks
+	}
+	start, last := duration-int64(exitFrames), duration-1
+	out := make([]AnimationTrack, 0, len(tracks)+1)
+	hasOpacity := false
+	for _, track := range tracks {
+		if len(track.Keyframes) == 0 {
+			continue
+		}
+		if track.Property == "opacity" {
+			hasOpacity = true
+			track.Keyframes = append(track.Keyframes,
+				AnimationKeyframe{Frame: start, Value: 1.0},
+				AnimationKeyframe{Frame: last, Value: 0.0})
+			out = append(out, track)
+			continue
+		}
+		track.Keyframes = append(track.Keyframes,
+			AnimationKeyframe{Frame: start, Value: track.Keyframes[len(track.Keyframes)-1].Value},
+			AnimationKeyframe{Frame: last, Value: track.Keyframes[0].Value})
+		out = append(out, track)
+	}
+	if !hasOpacity {
+		out = append(out, AnimationTrack{Property: "opacity", Easing: "in_out_sine", Keyframes: []AnimationKeyframe{
+			{Frame: start, Value: 1.0}, {Frame: last, Value: 0.0},
+		}})
+	}
+	return out
+}
+
+// retimeTextAnimators keeps per-unit property keyframes inside the concrete
+// entrance window exactly like retimeMotionTracks does for layer tracks. A
+// selector sweep is already authored against that window by
+// fromTextMotionDefinitions and is left alone.
+func retimeTextAnimators(animators []TextAnimator, duration int64) []TextAnimator {
+	if duration <= 0 || len(animators) == 0 {
+		return animators
+	}
+	var source int64
+	for _, animator := range animators {
+		for _, track := range animator.Properties {
+			for _, keyframe := range track.Keyframes {
+				if keyframe.Frame > source {
+					source = keyframe.Frame
+				}
+			}
+		}
+	}
+	if source <= 0 || source == duration {
+		return animators
+	}
+	for i := range animators {
+		for j := range animators[i].Properties {
+			for k := range animators[i].Properties[j].Keyframes {
+				keyframe := &animators[i].Properties[j].Keyframes[k]
+				keyframe.Frame = keyframe.Frame * duration / source
+			}
+		}
+	}
+	return animators
+}
+
+// resolveMotion is the layer-track-only view of the shared lowering. It keeps
+// the authored motion windows of the definition it is handed and, without a
+// concrete layer duration, emits no exit window.
+func resolveMotion(m MotionDefinition) ([]AnimationTrack, error) {
+	animation, err := lowerMotion(m.ID, m.Enter, m.Exit, nil, "", 0)
+	if err != nil {
+		return nil, err
+	}
+	if animation == nil {
+		return nil, nil
+	}
+	return animation.Tracks, nil
 }
 
 func retimeMotionTracks(tracks []AnimationTrack, duration int64) []AnimationTrack {
@@ -70,34 +231,56 @@ func tracksForMotion(m MotionDefinition) ([]AnimationTrack, error) {
 	return resolveMotion(m)
 }
 
-// animationForPreset is the shared lowering path for the official catalog.
-// The legacy fast adapter used to copy only the layer tracks, which silently
-// discarded word/glyph selectors and made several distinct presets render as
-// the same fade. Keep the preset's layer tracks and text animators together.
+// animationForPreset is the shared lowering path for the official catalog. The
+// preset owns both of its windows (the entrance it declares and the exit), and
+// the same pass produces the layer tracks AND the text animators, so a preset's
+// two halves can never drift apart on the wire again.
 func animationForPreset(d PresetDefinition, text string, duration int64) (*LayerAnimation, error) {
-	if d.Motion.ID == "" {
-		return nil, nil
-	}
-	animation, err := animationForDefinition(d)
-	if err != nil {
-		return nil, err
+	return lowerMotion(d.Motion.ID, d.Motion.Enter, d.Motion.Exit, nil, text, duration)
+}
+
+// withPhraseEntryExit adds a visible layer fade around the phrase's selected
+// text motion. The catalog MotionID owns the phrase-specific entrance; this
+// shared envelope makes entry and exit explicit for every important phrase,
+// including text-only selector motions that have no layer tracks of their
+// own. Existing opacity tracks are replaced so two curves cannot fight over
+// the same layer property.
+func withPhraseEntryExit(animation *LayerAnimation, duration int64) *LayerAnimation {
+	if duration < 3 {
+		return animation
 	}
 	if animation == nil {
 		animation = &LayerAnimation{}
 	}
-	pluginID := d.Motion.ID
-	plugin, err := motion.Registry.Resolve(pluginID)
-	if err != nil {
-		return nil, fmt.Errorf("overlay: resolve preset motion %q: %w", pluginID, err)
+	transitionFrames := duration / 4
+	if transitionFrames > 8 {
+		transitionFrames = 8
 	}
-	if textPlugin, ok := plugin.(motion.TextMotionPlugin); ok {
-		definitions, err := textPlugin.CompileText(motion.MotionContext{Text: text, DurationFrames: duration}, nil)
-		if err != nil {
-			return nil, fmt.Errorf("overlay: compile preset text motion %q: %w", pluginID, err)
+	if transitionFrames < 1 {
+		transitionFrames = 1
+	}
+	enterEnd := transitionFrames
+	exitStart := duration - transitionFrames - 1
+	if exitStart < enterEnd {
+		exitStart = enterEnd
+	}
+	tracks := animation.Tracks[:0]
+	for _, track := range animation.Tracks {
+		if track.Property != "opacity" {
+			tracks = append(tracks, track)
 		}
-		animation.TextAnimators = fromTextMotionDefinitions(definitions, duration)
 	}
-	return animation, nil
+	keyframes := []AnimationKeyframe{
+		{Frame: 0, Value: 0.0},
+		{Frame: enterEnd, Value: 1.0},
+	}
+	if exitStart > enterEnd {
+		keyframes = append(keyframes, AnimationKeyframe{Frame: exitStart, Value: 1.0})
+	}
+	keyframes = append(keyframes, AnimationKeyframe{Frame: duration - 1, Value: 0.0})
+	tracks = append(tracks, AnimationTrack{Property: "opacity", Easing: "linear", Keyframes: keyframes})
+	animation.Tracks = tracks
+	return animation
 }
 
 func fromMotionTracks(src []motion.AnimationTrack) []AnimationTrack {
