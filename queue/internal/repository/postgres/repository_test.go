@@ -82,6 +82,64 @@ func assertChunkMetadata(t *testing.T, job *model.Job) {
 	}
 }
 
+// TestClaimSkipsAssemblyAnchorParent is the PostgreSQL half of the
+// assembly-anchor rule in model/lifecycle.go: the claim query must never pick a
+// pending job that owns chunk children, because its output is the concat of
+// those children (the anchor is claimed by ClaimFinalization instead). The
+// anchor is submitted FIRST so a state-only claim would take it.
+func TestClaimSkipsAssemblyAnchorParent(t *testing.T) {
+	r := newRepo(t, 30*time.Second, 3)
+	plan := []byte(`{"schema":"chronon.render-plan.v2","version":2}`)
+	if err := r.Submit(model.Job{ID: "anchor", RenderPlan: plan}); err != nil {
+		t.Fatal(err)
+	}
+	for i := 0; i < 2; i++ {
+		child := model.Job{
+			ID:          fmt.Sprintf("anchor-chunk-%d", i),
+			ParentJobID: "anchor",
+			ChunkIndex:  i,
+			FrameRange:  &model.FrameRange{Start: int64(i * 120), End: int64((i + 1) * 120)},
+			RenderPlan:  plan,
+		}
+		if err := r.Submit(child); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	seen := map[string]bool{}
+	for claims := 0; claims < 2; claims++ {
+		job, _, err := r.Claim(fmt.Sprintf("worker-%d", claims))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if job == nil {
+			t.Fatalf("claim %d returned nothing; the anchor must not block its children", claims)
+		}
+		if job.ID == "anchor" {
+			t.Fatal("the assembly anchor was handed to a render worker")
+		}
+		seen[job.ID] = true
+	}
+	if !seen["anchor-chunk-0"] || !seen["anchor-chunk-1"] {
+		t.Fatalf("children not claimed exactly once each: %v", seen)
+	}
+	anchor, _, err := r.Claim("worker-3")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if anchor != nil {
+		t.Fatalf("only the anchor is left and it must not be claimable, got %s", anchor.ID)
+	}
+
+	finalized, claimed, err := r.ClaimFinalization("anchor", "finalizer")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !claimed || finalized == nil || finalized.ID != "anchor" {
+		t.Fatalf("finalizer must still claim the anchor: claimed=%v job=%+v", claimed, finalized)
+	}
+}
+
 func TestSubmitClaimComplete(t *testing.T) {
 	r := newRepo(t, 30*time.Second, 3)
 

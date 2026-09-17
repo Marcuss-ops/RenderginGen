@@ -223,6 +223,54 @@ func AllWorkerStatuses() []WorkerStatus {
 	}
 }
 
+// WorkerLiveness is the DERIVED liveness of a registered worker, computed from
+// how long ago it last heartbeated.
+//
+// It exists because WorkerStatus is NOT a liveness signal: it is the value the
+// worker last REPORTED, and a worker that stops (SIGSTOP, a wedged GPU driver, a
+// frozen VM) keeps its last reported status forever. Live observation
+// (2026-09-17): the only RenderingGen worker had every one of its sixteen
+// threads in state `T` — heartbeat frozen for hours, no job claimable — while
+// GET /workers still answered `status: ready`, and GET /workers/health answered
+// `ready: 1`. Anything planned from that number (a benchmark, an autoscaling
+// decision, a certification preflight) was planned from a worker that could not
+// do work.
+//
+// The classification is a pure function of the heartbeat age (see
+// internal/model), so it cannot drift between the repositories, the service and
+// the wire. Its bands are fractions of ONE configured number — the queue's
+// `-worker-stale-after` (the shipped unit runs `3m` against the worker's 20s
+// heartbeat): past a third it is degraded, past two thirds stale, past the
+// window dead.
+type WorkerLiveness string
+
+const (
+	// WorkerLivenessReady — heartbeating inside the first third of the
+	// staleness window.
+	WorkerLivenessReady WorkerLiveness = "ready"
+	// WorkerLivenessDegraded — heartbeat aged past one third of the window but
+	// still inside it, so its leases are intact; must not be counted on.
+	WorkerLivenessDegraded WorkerLiveness = "degraded"
+	// WorkerLivenessStale — aged past two thirds of the window, about to
+	// leave it: treat as unreliable.
+	WorkerLivenessStale WorkerLiveness = "stale"
+	// WorkerLivenessDead — outside the staleness window, or it never
+	// heartbeated after registering. This is the state that used to be
+	// invisible on /workers.
+	WorkerLivenessDead WorkerLiveness = "dead"
+)
+
+// AllWorkerLivenesses returns the canonical liveness vocabulary in
+// most-alive-first order. It is a DERIVED vocabulary, not a stored column: no
+// SQL constraint mirrors it (contrast AllWorkerStatuses), because liveness is a
+// function of the heartbeat age, not a value anyone writes.
+func AllWorkerLivenesses() []WorkerLiveness {
+	return []WorkerLiveness{
+		WorkerLivenessReady, WorkerLivenessDegraded,
+		WorkerLivenessStale, WorkerLivenessDead,
+	}
+}
+
 // Worker represents a worker registration payload / health status.
 type Worker struct {
 	ID                   string       `json:"id"`
@@ -236,14 +284,30 @@ type Worker struct {
 	GPUDriver            string       `json:"gpu_driver,omitempty"`
 	StartedAt            time.Time    `json:"started_at,omitempty"`
 	LastHeartbeatAt      time.Time    `json:"last_heartbeat_at,omitempty"`
+	// Liveness is DERIVED from LastHeartbeatAt and is therefore filled by the
+	// QUEUE, exactly like Progress.LastFrameAt: it is meaningful on the GET
+	// /workers projection and is ignored on POST /workers/register (the worker
+	// does not know, and must not claim, how alive it looks to the queue).
+	Liveness WorkerLiveness `json:"liveness,omitempty"`
 }
 
 // WorkerHealth is the aggregate worker health.
+//
+// Ready/Busy count only workers whose DERIVED liveness is ready and whose
+// reported status is ready/busy: a worker that has stopped heartbeating is not
+// capacity, however recently it claimed to be ready. Degraded/Stale count the
+// workers still inside the staleness window whose heartbeat has visibly aged;
+// Offline counts the ones outside it (the state the old health snapshot called
+// "offline" and the old /workers page called "ready"). A worker whose liveness
+// is ready but whose reported status is draining/unknown is counted in Total
+// only, as before.
 type WorkerHealth struct {
-	Ready   int `json:"ready"`
-	Busy    int `json:"busy"`
-	Offline int `json:"offline"`
-	Total   int `json:"total"`
+	Ready    int `json:"ready"`
+	Busy     int `json:"busy"`
+	Degraded int `json:"degraded"`
+	Stale    int `json:"stale"`
+	Offline  int `json:"offline"`
+	Total    int `json:"total"`
 }
 
 // RegisterWorker registers the worker with the central queue.

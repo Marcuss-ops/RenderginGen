@@ -43,6 +43,91 @@ func TestResolveAssemblyReadyProfile(t *testing.T) {
 	if p.AudioCodec != "aac" || p.AudioProfile != "LC" || p.AudioSampleRate != 48000 {
 		t.Fatalf("audio block not pinned: %+v", p)
 	}
+	// The dimensions whose certified artifacts DISAGREE with the VeloxEditing
+	// contract stay unpinned here until that disagreement is resolved: pinning
+	// either side would hard-code a decision nobody made. See
+	// TestMeasuredArtifactDivergencesStayVisible for the measurements.
+	if p.VideoTimeBaseNum != 0 || p.VideoTimeBaseDen != 0 {
+		t.Fatalf("V1 must not pin a video timebase (measured 1/12288, contract declares 1/90000): %+v", p)
+	}
+	if p.AudioTimeBaseNum != 0 || p.AudioTimeBaseDen != 0 {
+		t.Fatalf("V1 must not pin an audio timebase: %+v", p)
+	}
+	if p.AudioChannels != 0 || p.AudioChannelLayout != "" || p.AudioBitrate != "" {
+		t.Fatalf("V1 must not pin the source-inherited audio layout: %+v", p)
+	}
+}
+
+// TestPinRationalZeroMeansNotPinned pins the struct-wide convention the
+// optional dimensions rely on: 0/0 means "this profile does not check the
+// dimension", while a PINNED dimension whose certified value is missing fails
+// (a missing fact must never pass as a match).
+func TestPinRationalZeroMeansNotPinned(t *testing.T) {
+	if pinned, ok := pinRational(0, 0, 1, 12288); pinned || !ok {
+		t.Fatalf("0/0 must be unpinned and always ok, got pinned=%t ok=%t", pinned, ok)
+	}
+	if pinned, ok := pinRational(1, 12288, 1, 12288); !pinned || !ok {
+		t.Fatalf("equal pairs must pass, got pinned=%t ok=%t", pinned, ok)
+	}
+	if pinned, ok := pinRational(1, 48000, 1, 12288); !pinned || ok {
+		t.Fatalf("a different pair must fail, got pinned=%t ok=%t", pinned, ok)
+	}
+	if pinned, ok := pinRational(1, 12288, 0, 0); !pinned || ok {
+		t.Fatalf("a pinned dimension with no certified value must fail, got pinned=%t ok=%t", pinned, ok)
+	}
+	if pinned, ok := pinRational(2, 4, 1, 2); !pinned || !ok {
+		t.Fatalf("cross-multiplication must accept equivalent fractions, got pinned=%t ok=%t", pinned, ok)
+	}
+}
+
+// TestProfilePinsTimebaseAndAudioLayoutWhenDeclared proves the newly registered
+// dimensions are real gates and not decorative fields: a profile that DOES
+// declare them refuses a drifting artifact, and their absence on the
+// assembly-ready profiles leaves an unconstrained artifact passing (the state
+// recorded by TestMeasuredArtifactDivergencesStayVisible).
+func TestProfilePinsTimebaseAndAudioLayoutWhenDeclared(t *testing.T) {
+	pinned := OutputProfile{
+		ID: "test-timebase-audio-layout", Width: 1920, Height: 1080, FPSNum: 24, FPSDen: 1,
+		Codec: "h264", CodecProfile: "Main", PixelFormat: "yuv420p", Container: "mp4",
+		VideoTimeBaseNum: 1, VideoTimeBaseDen: 12288,
+		AudioTimeBaseNum: 1, AudioTimeBaseDen: 48000,
+		AudioChannels: 2, AudioChannelLayout: "stereo", AudioBitrate: "128576",
+	}
+	probe := assemblyProbe()
+	probe.VideoTimeBaseNum, probe.VideoTimeBaseDen = 1, 12288
+	probe.AudioTimeBaseNum, probe.AudioTimeBaseDen = 1, 48000
+	probe.Channels, probe.ChannelLayout, probe.AudioBitrate = 2, "stereo", "128576"
+	if err := pinned.ValidateProbe(probe); err != nil {
+		t.Fatalf("a declared dimension must accept its certified value: %v", err)
+	}
+
+	cases := map[string]func(*ProbeResult){
+		"video timebase": func(p *ProbeResult) { p.VideoTimeBaseNum, p.VideoTimeBaseDen = 1, 90000 },
+		"audio timebase": func(p *ProbeResult) { p.AudioTimeBaseNum, p.AudioTimeBaseDen = 1, 44100 },
+		"channels":       func(p *ProbeResult) { p.Channels = 1 },
+		"channel layout": func(p *ProbeResult) { p.ChannelLayout = "mono" },
+		"audio bitrate":  func(p *ProbeResult) { p.AudioBitrate = "58524" },
+	}
+	for name, mutate := range cases {
+		drift := probe
+		mutate(&drift)
+		if err := pinned.ValidateProbe(drift); err == nil {
+			t.Fatalf("declared %s drift must be refused", name)
+		}
+	}
+
+	// The assembly-ready profile declares none of them, so the same drifting
+	// fact passes there — the divergence is deliberate, not an oversight.
+	v1, err := ResolveProfile(ProfileVeloxAssemblyReadyV1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	unconstrained := probe
+	unconstrained.VideoTimeBaseNum, unconstrained.VideoTimeBaseDen = 1, 90000
+	unconstrained.Channels, unconstrained.ChannelLayout, unconstrained.AudioBitrate = 1, "mono", "58524"
+	if err := v1.ValidateProbe(unconstrained); err != nil {
+		t.Fatalf("V1 pins neither the timebase nor the source-inherited audio layout: %v", err)
+	}
 }
 
 // assemblyProbe builds the certified fact set a native-lane assembly-ready

@@ -64,24 +64,7 @@ func (s *Repository) List() ([]model.Worker, error) {
 	return out, nil
 }
 
-// Health returns the aggregate worker-health snapshot.
-func (s *Repository) Health(now time.Time, staleAfter time.Duration) (model.WorkerHealth, error) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	var h model.WorkerHealth
-	for _, w := range s.workers {
-		h.Total++
-		if w.LastHeartbeatAt.IsZero() || now.Sub(w.LastHeartbeatAt) > staleAfter {
-			h.Offline++
-			continue
-		}
-		switch w.Status {
-		case model.WorkerStatusReady:
-			h.Ready++
-		case model.WorkerStatusBusy:
-			h.Busy++
-		}
-	}
-	return h, nil
-}
+// There is deliberately no Health method here: the aggregate is DERIVED from
+// List() by the single authority in internal/model (see the WorkerRepository
+// contract). A backend that classified liveness itself would be a second answer
+// to "is this worker alive?".

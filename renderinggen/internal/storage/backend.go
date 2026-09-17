@@ -3,16 +3,34 @@ package storage
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 )
 
 // ErrNotFound is returned when an object is absent from L3.
 var ErrNotFound = fmt.Errorf("object not found")
+
+// ErrContentAddressRejected is returned when an L3 write is refused because the
+// object store PROVED the bytes do not hash to the address they were sent under
+// (HTTP 422), or because the key is not a canonical content address at all
+// (HTTP 400).
+//
+// It exists so a producer never has to parse a status code to learn that the
+// content address it resolved is wrong. It is deliberately NOT transient:
+// retrying the same bytes under the same address is the same failure, so a
+// caller must re-resolve the identity (or hash the file) instead of retrying.
+//
+// This is the worker half of the contract owned by the object store's
+// internal/store package, which recomputes the digest on every write; the two
+// modules are separate Go modules, so the wire contract (201/400/422) is pinned
+// by tests on both sides rather than shared as a type.
+var ErrContentAddressRejected = errors.New("object store rejected the content address")
 
 // Backend is the L3 central object storage.
 type Backend interface {
@@ -176,7 +194,25 @@ func (h *HTTP) StoreReader(ctx context.Context, key string, r io.Reader, size in
 	switch resp.StatusCode {
 	case http.StatusOK, http.StatusCreated, http.StatusNoContent:
 		return nil
+	case http.StatusBadRequest, http.StatusUnprocessableEntity:
+		// The store names both digests in its error body ("key <sha>, content
+		// <sha>"); carrying it into the wrapped error is what makes the failure
+		// diagnosable from the job log without re-running the upload.
+		return fmt.Errorf("%w: store %s: %s", ErrContentAddressRejected, key, errorDetail(resp.Body))
 	default:
 		return fmt.Errorf("store %s: unexpected status %d", key, resp.StatusCode)
 	}
+}
+
+// errorDetail reads a short, bounded diagnostic from an error response body so
+// the object store's own explanation reaches the log instead of being reduced to
+// a bare status code. Bounded because a misbehaving server must not be able to
+// stream an unbounded body into the worker's memory on a failed upload.
+func errorDetail(body io.Reader) string {
+	const maxDetailBytes = 512
+	data, err := io.ReadAll(io.LimitReader(body, maxDetailBytes))
+	if err != nil {
+		return ""
+	}
+	return strings.TrimSpace(string(data))
 }

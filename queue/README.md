@@ -210,7 +210,35 @@ Prometheus metrics: `renderinggen_jobs_pending` (gauge),
 `renderinggen_queue_wait_seconds` (histogram),
 `renderinggen_lease_expired_total` (counter),
 `renderinggen_workers_ready` (gauge),
+`renderinggen_workers_degraded` (gauge),
+`renderinggen_workers_stale` (gauge),
 `renderinggen_workers_offline` (gauge).
+
+### Worker liveness
+
+`GET /workers` annotates every worker with a DERIVED `liveness`
+(`ready` | `degraded` | `stale` | `dead`) computed from its heartbeat age, and
+`GET /workers/health` reports the same bands (`ready`, `busy`, `degraded`,
+`stale`, `offline`, `total`). Both come from one function
+(`internal/model/liveness.go`), so they cannot disagree.
+
+`status` is NOT a liveness signal: it is the value the worker last REPORTED, and
+a worker that stops (SIGSTOP, a wedged GPU driver, a frozen VM) keeps it forever.
+Live observation on 2026-09-17: the only worker had all sixteen threads stopped
+with a heartbeat hours old, while `/workers` still answered `status: ready` and
+`/workers/health` answered `ready: 1` — a benchmark or a certification preflight
+planned against a worker that could not claim a single job.
+
+The bands are fractions of ONE configured number, `-worker-stale-after` (the
+shipped unit runs `3m`; the internal default is `90s`) against the worker's 20s
+heartbeat: beyond one third (60s) → `degraded`, beyond two thirds (120s) →
+`stale`, beyond the window (or never heartbeated) → `dead`, which is what the
+`offline` count has always meant. A window that is never configured classifies
+every worker as `dead` rather than as unrestricted. A preflight must require at
+least one worker with `liveness == "ready"`, not merely a registered row —
+measured on 2026-09-17, the live registry held 17 rows all reporting
+`status: ready`, of which exactly one was alive (the other sixteen had
+heartbeats between 6 hours and 14 days old).
 
 ## Wire types
 

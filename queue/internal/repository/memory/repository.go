@@ -118,6 +118,12 @@ func (s *Repository) ClaimState(workerID string, state model.State) (*model.Job,
 			(state == "" && !model.IsClaimable(job.State)) {
 			continue
 		}
+		// Assembly anchors (model/lifecycle.go) are not render work: a job that
+		// owns chunk children is assembled FROM them, so claiming it here would
+		// re-render a range its children already cover.
+		if s.hasChildrenLocked(id) {
+			continue
+		}
 		s.order = append(s.order[:i], s.order[i+1:]...)
 		job.State = model.StateRunning
 		job.Worker = workerID
@@ -131,6 +137,19 @@ func (s *Repository) ClaimState(workerID string, state model.State) (*model.Job,
 		return job, s.lease, nil
 	}
 	return nil, 0, nil
+}
+
+// hasChildrenLocked reports whether another job declares this id as its parent.
+// The caller holds s.mu (ClaimState does). It is the in-memory encoding of the
+// assembly-anchor rule in model/lifecycle.go and lives next to the claim it
+// guards, so the rule and the claim cannot be edited apart.
+func (s *Repository) hasChildrenLocked(id string) bool {
+	for _, job := range s.jobs {
+		if job != nil && job.ParentJobID == id {
+			return true
+		}
+	}
+	return false
 }
 
 // Get returns the current state of a job, including its artifact when done.

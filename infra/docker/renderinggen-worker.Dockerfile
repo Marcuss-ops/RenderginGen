@@ -22,9 +22,13 @@ COPY renderinggen/go.* ./
 COPY queue/ /queue/
 RUN go mod download
 COPY renderinggen/ ./
+# Build identity (internal/buildinfo). VERSION/COMMIT/BUILD_TIME are stamped into
+# symbols that exist, so the image can prove which revision and bytes it runs.
 ARG VERSION=0.1.0
+ARG COMMIT=unknown
+ARG BUILD_TIME=unknown
 RUN CGO_ENABLED=0 go build \
-      -ldflags "-s -w -X github.com/Marcuss-ops/RenderingGen/renderinggen/internal/version.RenderingGen=${VERSION}" \
+      -ldflags "-s -w -X github.com/Marcuss-ops/RenderingGen/renderinggen/internal/version.RenderingGen=${VERSION} -X github.com/Marcuss-ops/RenderingGen/renderinggen/internal/buildinfo.Version=${VERSION} -X github.com/Marcuss-ops/RenderingGen/renderinggen/internal/buildinfo.GitCommit=${COMMIT} -X github.com/Marcuss-ops/RenderingGen/renderinggen/internal/buildinfo.BuildTime=${BUILD_TIME}" \
       -o /out/renderinggen ./cmd/renderinggen
 
 # --- final image ---

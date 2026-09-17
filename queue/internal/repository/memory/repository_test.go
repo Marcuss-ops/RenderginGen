@@ -42,6 +42,50 @@ func TestClaimIsFIFOAndExclusive(t *testing.T) {
 	}
 }
 
+// TestClaimSkipsAssemblyAnchorParent pins the assembly-anchor rule: a queued
+// job that owns chunk children is assembled FROM them and must never be handed
+// to a render worker. Without this the anchor (queued first, so FIFO would pick
+// it first) renders the full plan on the GPU on top of its children.
+func TestClaimSkipsAssemblyAnchorParent(t *testing.T) {
+	s := New(30*time.Second, 3)
+	submit(t, s, "anchor")
+	if err := s.Submit(model.Job{
+		ID:          "anchor-chunk-0",
+		ParentJobID: "anchor",
+		ChunkIndex:  0,
+		FrameRange:  &model.FrameRange{Start: 0, End: 120},
+		RenderPlan:  json.RawMessage(`{"n":1}`),
+	}); err != nil {
+		t.Fatalf("submit child: %v", err)
+	}
+	submit(t, s, "job-2")
+
+	first, _, err := s.Claim("w1")
+	if err != nil {
+		t.Fatalf("claim: %v", err)
+	}
+	if first == nil || first.ID != "anchor-chunk-0" {
+		t.Fatalf("want the chunk, got %+v", first)
+	}
+	second, _, _ := s.Claim("w2")
+	if second == nil || second.ID != "job-2" {
+		t.Fatalf("want job-2, got %+v", second)
+	}
+	if got, _, _ := s.Claim("w3"); got != nil {
+		t.Fatalf("the anchor must not be claimable for rendering, got %+v", got)
+	}
+
+	// The anchor is still claimable by the FINALIZER, which is the only claim
+	// allowed to take it.
+	anchor, claimed, err := s.ClaimFinalization("anchor", "finalizer")
+	if err != nil {
+		t.Fatalf("finalize claim: %v", err)
+	}
+	if !claimed || anchor == nil {
+		t.Fatalf("finalizer must still claim the anchor: claimed=%v job=%+v", claimed, anchor)
+	}
+}
+
 func TestLeaseExpiryRequeues(t *testing.T) {
 	s := New(10*time.Millisecond, 3)
 	submit(t, s, "job-1")

@@ -1,0 +1,279 @@
+{
+  "schema": "renderinggen.vram-calibration-report.v1",
+  "manifest_path": "../multilingual_overlays_v1/manifests/vram_calibration_suite_2026-09-17.json",
+  "matrix": [
+    {
+      "label": "overlay-only-1080p",
+      "plan": "../phrase_animations_v1/01_discipline_gives_power_a_direction__kinetic_split_word_render_plan.json",
+      "plan_sha256": "b14ec958a2e951348a4089a6186f85cd3c4d1449c88e4f53ba29f94e54b677b7",
+      "shape": {
+        "width": 1920,
+        "height": 1080,
+        "fps_num": 24,
+        "fps_den": 1,
+        "frames": 120,
+        "codec": "h264",
+        "output_format": "mp4",
+        "layer_types": [
+          "color",
+          "text"
+        ]
+      },
+      "repeat": 3
+    },
+    {
+      "label": "video-source-1080p",
+      "plan": "../phrase_preset_videos/phrase_01_lower_third_safe_plan.json",
+      "plan_sha256": "7f669df143efc14b67ebd5c7c84de2304c11777788d96c9e8475933447de080d",
+      "shape": {
+        "width": 1920,
+        "height": 1080,
+        "fps_num": 24,
+        "fps_den": 1,
+        "frames": 125,
+        "codec": "h264",
+        "output_format": "mp4",
+        "layer_types": [
+          "text",
+          "video"
+        ]
+      },
+      "repeat": 3
+    }
+  ],
+  "binary": "/home/pierone/src/go-master/projects/Pyt/VeloxEditing/Chronon3d/build/chronon/linux-video-release/apps/chronon3d_cli/chronon3d_cli",
+  "backend": "vulkan",
+  "hardware_encoder": "nvenc",
+  "encode_preset": "p1",
+  "daemon_count": 2,
+  "lanes_per_daemon": 1,
+  "sample_interval_ms": 20,
+  "hold_seconds": 15,
+  "shapes": [
+    {
+      "label": "overlay-only-1080p",
+      "plan": "../phrase_animations_v1/01_discipline_gives_power_a_direction__kinetic_split_word_render_plan.json",
+      "plan_sha256": "b14ec958a2e951348a4089a6186f85cd3c4d1449c88e4f53ba29f94e54b677b7",
+      "shape": {
+        "width": 1920,
+        "height": 1080,
+        "fps_num": 24,
+        "fps_den": 1,
+        "frames": 120,
+        "codec": "h264",
+        "output_format": "mp4",
+        "layer_types": [
+          "color",
+          "text"
+        ]
+      },
+      "device": {
+        "name": "NVIDIA RTX A4000",
+        "driver_version": "595.91.07",
+        "total_mib": 16376
+      },
+      "execution": {
+        "binary": "/home/pierone/src/go-master/projects/Pyt/VeloxEditing/Chronon3d/build/chronon/linux-video-release/apps/chronon3d_cli/chronon3d_cli",
+        "backend": "vulkan",
+        "hardware_encoder": "nvenc",
+        "encode_preset": "p1",
+        "socket_base": "/tmp/vram-two-runtime-3722728050/chronon.sock",
+        "gpu_device": 0
+      },
+      "runs_requested": 3,
+      "runs_completed": 3,
+      "daemon_attributed_mib": {
+        "min": 1509,
+        "p50": 1776,
+        "max": 1804
+      },
+      "device_peak_mib": {
+        "min": 1601,
+        "p50": 1901,
+        "max": 1929
+      },
+      "device_delta_mib": {
+        "min": 1279,
+        "p50": 1579,
+        "max": 1599
+      },
+      "resident_hold_device_mib": {
+        "min": 724,
+        "p50": 732,
+        "max": 752
+      },
+      "artifacts_identical_across_runs": true,
+      "device_consistent_across_runs": true,
+      "runs": [
+        {
+          "run": 0,
+          "report_path": "../multilingual_overlays_v1/evidence/vram_calibration_suite_2026-09-17.json.run0.json",
+          "device": {
+            "name": "NVIDIA RTX A4000",
+            "driver_version": "595.91.07",
+            "total_mib": 16376
+          },
+          "samples": 302,
+          "idle_device_mib": 330,
+          "rendering_peak_device_mib": 1929,
+          "rendering_delta_mib": 1599,
+          "daemon_attributed_mib": 1804,
+          "resident_hold_device_mib": 752,
+          "artifacts_identical": true,
+          "jobs": 2
+        },
+        {
+          "run": 1,
+          "report_path": "../multilingual_overlays_v1/evidence/vram_calibration_suite_2026-09-17.json.run1.json",
+          "device": {
+            "name": "NVIDIA RTX A4000",
+            "driver_version": "595.91.07",
+            "total_mib": 16376
+          },
+          "samples": 256,
+          "idle_device_mib": 322,
+          "rendering_peak_device_mib": 1901,
+          "rendering_delta_mib": 1579,
+          "daemon_attributed_mib": 1776,
+          "resident_hold_device_mib": 724,
+          "artifacts_identical": true,
+          "jobs": 2
+        },
+        {
+          "run": 2,
+          "report_path": "../multilingual_overlays_v1/evidence/vram_calibration_suite_2026-09-17.json.run2.json",
+          "device": {
+            "name": "NVIDIA RTX A4000",
+            "driver_version": "595.91.07",
+            "total_mib": 16376
+          },
+          "samples": 248,
+          "idle_device_mib": 322,
+          "rendering_peak_device_mib": 1601,
+          "rendering_delta_mib": 1279,
+          "daemon_attributed_mib": 1509,
+          "resident_hold_device_mib": 732,
+          "artifacts_identical": true,
+          "jobs": 2
+        }
+      ]
+    },
+    {
+      "label": "video-source-1080p",
+      "plan": "../phrase_preset_videos/phrase_01_lower_third_safe_plan.json",
+      "plan_sha256": "7f669df143efc14b67ebd5c7c84de2304c11777788d96c9e8475933447de080d",
+      "shape": {
+        "width": 1920,
+        "height": 1080,
+        "fps_num": 24,
+        "fps_den": 1,
+        "frames": 125,
+        "codec": "h264",
+        "output_format": "mp4",
+        "layer_types": [
+          "text",
+          "video"
+        ]
+      },
+      "device": {
+        "name": "NVIDIA RTX A4000",
+        "driver_version": "595.91.07",
+        "total_mib": 16376
+      },
+      "execution": {
+        "binary": "/home/pierone/src/go-master/projects/Pyt/VeloxEditing/Chronon3d/build/chronon/linux-video-release/apps/chronon3d_cli/chronon3d_cli",
+        "backend": "vulkan",
+        "hardware_encoder": "nvenc",
+        "encode_preset": "p1",
+        "socket_base": "/tmp/vram-two-runtime-268711425/chronon.sock",
+        "gpu_device": 0
+      },
+      "runs_requested": 3,
+      "runs_completed": 3,
+      "daemon_attributed_mib": {
+        "min": 1000,
+        "p50": 1012,
+        "max": 1016
+      },
+      "device_peak_mib": {
+        "min": 1099,
+        "p50": 1111,
+        "max": 1115
+      },
+      "device_delta_mib": {
+        "min": 777,
+        "p50": 791,
+        "max": 795
+      },
+      "resident_hold_device_mib": {
+        "min": 720,
+        "p50": 728,
+        "max": 728
+      },
+      "artifacts_identical_across_runs": false,
+      "device_consistent_across_runs": true,
+      "runs": [
+        {
+          "run": 0,
+          "report_path": "../multilingual_overlays_v1/evidence/vram_calibration_suite_2026-09-17.json.run0.json",
+          "device": {
+            "name": "NVIDIA RTX A4000",
+            "driver_version": "595.91.07",
+            "total_mib": 16376
+          },
+          "samples": 266,
+          "idle_device_mib": 320,
+          "rendering_peak_device_mib": 1115,
+          "rendering_delta_mib": 795,
+          "daemon_attributed_mib": 1016,
+          "resident_hold_device_mib": 728,
+          "artifacts_identical": false,
+          "jobs": 2
+        },
+        {
+          "run": 1,
+          "report_path": "../multilingual_overlays_v1/evidence/vram_calibration_suite_2026-09-17.json.run1.json",
+          "device": {
+            "name": "NVIDIA RTX A4000",
+            "driver_version": "595.91.07",
+            "total_mib": 16376
+          },
+          "samples": 261,
+          "idle_device_mib": 322,
+          "rendering_peak_device_mib": 1099,
+          "rendering_delta_mib": 777,
+          "daemon_attributed_mib": 1000,
+          "resident_hold_device_mib": 720,
+          "artifacts_identical": false,
+          "jobs": 2
+        },
+        {
+          "run": 2,
+          "report_path": "../multilingual_overlays_v1/evidence/vram_calibration_suite_2026-09-17.json.run2.json",
+          "device": {
+            "name": "NVIDIA RTX A4000",
+            "driver_version": "595.91.07",
+            "total_mib": 16376
+          },
+          "samples": 264,
+          "idle_device_mib": 320,
+          "rendering_peak_device_mib": 1111,
+          "rendering_delta_mib": 791,
+          "daemon_attributed_mib": 1012,
+          "resident_hold_device_mib": 728,
+          "artifacts_identical": false,
+          "jobs": 2
+        }
+      ]
+    }
+  ],
+  "authorizes_mutex_removal": false,
+  "caveat": "The per-shape daemon-attributed numbers are the calibration input; the device-wide series is reported but is not stable on a host shared with other tenants. A shape is a calibration datapoint only when every requested repetition completed as the SAME shape (artifacts_identical_across_runs and device_consistent_across_runs both true): incomplete_shapes names the shapes that are not, and `complete` stays false until they are re-run.",
+  "complete": false,
+  "incomplete_shapes": [
+    {
+      "label": "video-source-1080p",
+      "reason": "repetitions rendered different bytes"
+    }
+  ]
+}

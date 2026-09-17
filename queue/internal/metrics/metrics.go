@@ -22,7 +22,16 @@ type Metrics struct {
 	QueueWait      prometheus.Histogram
 	LeaseExpired   prometheus.Counter
 	WorkersReady   prometheus.Gauge
-	WorkersOffline prometheus.Gauge
+	// WorkersDegraded/WorkersStale expose the heartbeat-age warning bands
+	// between "ready" and "offline". They exist so a fleet that is slowly
+	// losing its workers is visible BEFORE it has none: a worker whose
+	// heartbeat has aged past a third of the staleness window is already
+	// reported as nothing but a stale row on /workers (see the queue's
+	// worker-liveness contract), while a gauge that only counts dead workers
+	// shows nothing until the fleet is gone.
+	WorkersDegraded prometheus.Gauge
+	WorkersStale    prometheus.Gauge
+	WorkersOffline  prometheus.Gauge
 }
 
 // New constructs a Metrics with its own registry and registers all collectors.
@@ -49,14 +58,23 @@ func New() *Metrics {
 		}),
 		WorkersReady: prometheus.NewGauge(prometheus.GaugeOpts{
 			Name: "renderinggen_workers_ready",
-			Help: "Number of rendering workers currently ready (fresh heartbeat).",
+			Help: "Number of rendering workers whose heartbeat is fresh enough that they are capacity.",
+		}),
+		WorkersDegraded: prometheus.NewGauge(prometheus.GaugeOpts{
+			Name: "renderinggen_workers_degraded",
+			Help: "Number of rendering workers whose heartbeat has aged past a third of the staleness window (one missed heartbeat).",
+		}),
+		WorkersStale: prometheus.NewGauge(prometheus.GaugeOpts{
+			Name: "renderinggen_workers_stale",
+			Help: "Number of rendering workers whose heartbeat has aged past two thirds of the staleness window.",
 		}),
 		WorkersOffline: prometheus.NewGauge(prometheus.GaugeOpts{
 			Name: "renderinggen_workers_offline",
-			Help: "Number of rendering workers whose heartbeat has gone stale.",
+			Help: "Number of rendering workers whose heartbeat is outside the staleness window (or absent).",
 		}),
 	}
-	m.registry.MustRegister(m.JobsPending, m.RenderDuration, m.QueueWait, m.LeaseExpired, m.WorkersReady, m.WorkersOffline)
+	m.registry.MustRegister(m.JobsPending, m.RenderDuration, m.QueueWait, m.LeaseExpired,
+		m.WorkersReady, m.WorkersDegraded, m.WorkersStale, m.WorkersOffline)
 	return m
 }
 

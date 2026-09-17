@@ -2,6 +2,7 @@ package overlay
 
 import (
 	"encoding/json"
+	"fmt"
 	"testing"
 )
 
@@ -38,24 +39,50 @@ func TestCompileSemanticLowersAuthoringConcepts(t *testing.T) {
 	if err := json.Unmarshal(outBytes, &out); err != nil {
 		t.Fatal(err)
 	}
-	forbidden := map[string]bool{"preset_id": true, "style_profile": true, "safe_area": true, "lower_third": true, "animation_preset": true, "unit": true, "enter_duration_frames": true, "exit_duration_frames": true}
-	var walk func(any)
-	walk = func(v any) {
+	forbidden := map[string]bool{"preset_id": true, "style_profile": true, "safe_area": true, "lower_third": true, "animation_preset": true, "enter_duration_frames": true, "exit_duration_frames": true}
+	// `unit` is NOT in that blanket set, and the reason is a name collision that
+	// made this check report a false positive the moment text animators started
+	// surviving the compile (they used to be dropped, so the rule was never
+	// exercised):
+	//
+	//   - AUTHORING unit is the preset/motion authoring concept ("layer" for a
+	//     whole-layer image motion, "glyph" for a text motion). Chronon has no
+	//     such concept and must never receive it.
+	//   - RENDERER unit is `selectors[].unit` in the render-plan v2 contract
+	//     (TextSelectorUnit: glyph/character/grapheme/word/line). Chronon's
+	//     decoder reads it (render_plan_decoder_layer.cpp: `value.value("unit",
+	//     "glyph")`) and glyph_selector_compile.cpp branches on it to decide the
+	//     selection granularity — dropping it would silently change how a
+	//     word-level reveal animates.
+	//
+	// So the authoring concept is banned BY POSITION: `unit` may appear only
+	// inside a selector, and never with the authoring value.
+	const authoringLayerUnit = "layer"
+	var walk func(path string, v any, insideSelector bool)
+	walk = func(path string, v any, insideSelector bool) {
 		switch x := v.(type) {
 		case map[string]any:
 			for k, child := range x {
 				if forbidden[k] {
-					t.Errorf("authoring key %q leaked into Chronon plan", k)
+					t.Errorf("authoring key %q leaked into Chronon plan at %s", k, path)
 				}
-				walk(child)
+				if k == "unit" {
+					if !insideSelector {
+						t.Errorf("authoring key %q leaked into Chronon plan outside a text selector at %s", k, path)
+					}
+					if value, ok := child.(string); ok && value == authoringLayerUnit {
+						t.Errorf("authoring unit %q leaked into a Chronon selector unit at %s", authoringLayerUnit, path)
+					}
+				}
+				walk(path+"."+k, child, insideSelector || k == "selectors")
 			}
 		case []any:
-			for _, child := range x {
-				walk(child)
+			for i, child := range x {
+				walk(fmt.Sprintf("%s[%d]", path, i), child, insideSelector)
 			}
 		}
 	}
-	walk(out)
+	walk("$", out, false)
 	layer := out["layers"].([]any)[0].(map[string]any)
 	if _, ok := layer["position"]; !ok {
 		t.Fatal("resolved absolute geometry missing")

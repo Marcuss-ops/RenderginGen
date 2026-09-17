@@ -132,8 +132,21 @@ func appendExitTracks(tracks []AnimationTrack, exitFrames int, duration int64) [
 		out = append(out, track)
 	}
 	if !hasOpacity {
+		// The motion only animated position/scale, so the exit needs its own
+		// opacity track — and that track must be LAYER-RELATIVE like every
+		// other one: keyframes are measured from the layer's first visible
+		// frame, so a track whose first keyframe sits at `start` animates a
+		// range that does not include the beginning of the layer. That is both
+		// an invalid plan (TestFinal_AnimationFirstMiddleLastFrame: "first
+		// keyframe at 24, want 0 (layer-relative)") and ambiguous for a
+		// renderer that holds the value before the first keyframe: the card
+		// would be born already opaque instead of fading out of nothing.
+		//
+		// Anchoring the corridor at frame 0 preserves the intended reading —
+		// fully visible from the first frame until the exit begins — while
+		// making it explicit instead of implied.
 		out = append(out, AnimationTrack{Property: "opacity", Easing: "in_out_sine", Keyframes: []AnimationKeyframe{
-			{Frame: start, Value: 1.0}, {Frame: last, Value: 0.0},
+			{Frame: 0, Value: 1.0}, {Frame: start, Value: 1.0}, {Frame: last, Value: 0.0},
 		}})
 	}
 	return out

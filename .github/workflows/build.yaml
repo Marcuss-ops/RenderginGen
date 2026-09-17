@@ -90,6 +90,13 @@ jobs:
       - run: go vet ./...
       - run: RENDERINGGEN_SKIP_GPU_E2E=1 go test -race -count=1 ./...
 
+  # Build stamps for the runtime-identity contract (internal/buildinfo in
+  # renderinggen and objectstore). Read once from the checkout: VERSION is the
+  # service's own VERSION file, COMMIT is the revision being published and
+  # BUILD_TIME is that commit's own timestamp. Stamping them is what makes
+  # /health able to answer "is this the code I built?" — the identity symbols
+  # exist in the binaries, so an unset argument used to degrade silently to
+  # "unknown" and leave a published image that could not identify itself.
   publish-worker:
     name: Publish renderinggen-worker
     runs-on: ubuntu-latest
@@ -103,6 +110,8 @@ jobs:
         run: |
           echo "VERSION=$(cat renderinggen/VERSION)" >> "$GITHUB_ENV"
           echo "SHORT_SHA=${GITHUB_SHA::8}" >> "$GITHUB_ENV"
+          echo "COMMIT=${GITHUB_SHA}" >> "$GITHUB_ENV"
+          echo "BUILD_TIME=$(git log -1 --format=%cI)" >> "$GITHUB_ENV"
       - uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
@@ -116,6 +125,8 @@ jobs:
           build-args: |
             CHRONON_RUNTIME=${{ env.IMAGE_BASE }}/chronon3d-runtime:${{ env.CHRONON_RUNTIME_VERSION }}
             VERSION=${{ env.VERSION }}
+            COMMIT=${{ env.COMMIT }}
+            BUILD_TIME=${{ env.BUILD_TIME }}
           tags: |
             ${{ env.IMAGE_BASE }}/renderinggen-worker:${{ env.VERSION }}
             ${{ env.IMAGE_BASE }}/renderinggen-worker:sha-${{ env.SHORT_SHA }}
@@ -160,6 +171,8 @@ jobs:
         run: |
           echo "VERSION=$(cat objectstore/VERSION)" >> "$GITHUB_ENV"
           echo "SHORT_SHA=${GITHUB_SHA::8}" >> "$GITHUB_ENV"
+          echo "COMMIT=${GITHUB_SHA}" >> "$GITHUB_ENV"
+          echo "BUILD_TIME=$(git log -1 --format=%cI)" >> "$GITHUB_ENV"
       - uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
@@ -170,6 +183,10 @@ jobs:
           context: .
           file: objectstore/Dockerfile
           push: true
+          build-args: |
+            VERSION=${{ env.VERSION }}
+            COMMIT=${{ env.COMMIT }}
+            BUILD_TIME=${{ env.BUILD_TIME }}
           tags: |
             ${{ env.IMAGE_BASE }}/objectstore:${{ env.VERSION }}
             ${{ env.IMAGE_BASE }}/objectstore:sha-${{ env.SHORT_SHA }}
@@ -261,6 +278,37 @@ jobs:
           done
           echo "queue did not become ready" >&2
           exit 1
+
+      # The canary trusts the store's addresses, so it first proves the store is
+      # one that VERIFIES them. A pre-verification objectstore build answers
+      # /health with no "store" block at all, and this fails the run before a
+      # single artifact is published under an unverified address.
+      - name: Assert the object store declares a verifying content-address contract
+        run: |
+          BODY="$(curl -fsS http://localhost:9000/health)"
+          echo "objectstore /health: ${BODY}"
+          python3 - "${BODY}" <<'PY'
+          import json, sys
+
+          body = json.loads(sys.argv[1])
+          store = body.get("store") or {}
+          if store.get("content_address") != "sha256-v1":
+              raise SystemExit(f"object store does not implement sha256-v1 addressing: {store}")
+          if store.get("verify_on_write") is not True:
+              raise SystemExit(f"object store does not verify content addresses on write: {store}")
+          if store.get("verify_on_read") is not True:
+              raise SystemExit(f"object store offers no verification surface: {store}")
+
+          build = body.get("build") or {}
+          if not build:
+              raise SystemExit("object store publishes no build identity")
+          if len(build.get("binary_sha256", "")) != 64:
+              raise SystemExit(f"object store build identity has no executable digest: {build}")
+          if not build.get("version"):
+              raise SystemExit(f"object store build identity has no version: {build}")
+          print("objectstore contract OK:", store["content_address"],
+                "version", build["version"], "commit", build.get("git_commit") or "(unstamped)")
+          PY
 
       - name: Run the golden canary
         run: infra/e2e/run-golden-overlay.sh

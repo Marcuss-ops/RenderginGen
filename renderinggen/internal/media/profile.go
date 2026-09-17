@@ -57,6 +57,17 @@ type OutputProfile struct {
 	// SARNum/SARDen is the sample aspect ratio; 0/0 = not pinned.
 	SARNum int
 	SARDen int
+	// VideoTimeBaseNum/Den is the video stream's timebase; 0/0 = not pinned.
+	// No assembly-ready profile pins it today: the certified artifact carries
+	// 1/12288 while the VeloxEditing contract declares 1/90000, and neither
+	// value may be hard-coded before that disagreement is resolved (see
+	// TestMeasuredArtifactDivergencesStayVisible). The dimension exists here so
+	// that resolving it is a profile change, not new machinery.
+	VideoTimeBaseNum int
+	VideoTimeBaseDen int
+	// AudioTimeBaseNum/Den is the audio stream's timebase; 0/0 = not pinned.
+	AudioTimeBaseNum int
+	AudioTimeBaseDen int
 	// Colour block (empty = not pinned). Each dimension is validated only when
 	// ffprobe actually reported it on the artifact.
 	ColorRange     string
@@ -73,6 +84,14 @@ type OutputProfile struct {
 	AudioCodec      string
 	AudioProfile    string
 	AudioSampleRate int
+	// AudioChannels/AudioChannelLayout/AudioBitrate describe the SOURCE-derived
+	// audio layout. No assembly-ready profile pins them: the audio lane is
+	// copy-first, so a mono source yields a mono artifact and pinning the
+	// contract's 2ch/stereo/128k would fail closed on legal renders (two
+	// certified renders disagree — see profile.go's certified-facts block).
+	AudioChannels      int
+	AudioChannelLayout string
+	AudioBitrate       string
 }
 
 const (
@@ -97,6 +116,46 @@ const (
 // stream facts the concat -c copy assembler and the consumer contract gate
 // depend on, sourced from the VeloxEditing assembly contract (V1/V2 differ only
 // in level — see profiles below).
+//
+// ── Certified artifact facts (MEASURED, 2026-09-17) ───────────────────
+//
+// The values below are not read off the contract: they are the facts a real
+// clip-lane artifact carried. Source of truth for each measurement is the
+// RenderingGen queue's own artifact record for the certified render —
+// curl $RENDERINGGEN_QUEUE_URL/jobs/<render job id> → .artifact.output_facts
+// (job_1789645353996117571_87c8a072, VELOX_ASSEMBLY_READY_V1, 1920x1080@24,
+// Chronon 0.1.0, backend chronon_vulkan):
+//
+//	h264 Main 4.0 yuv420p, 1/1 SAR, tv/bt709 progressive, GOP 48 closed,
+//	first frame keyframe, start PTS 0, 1 video + 1 audio,
+//	AAC-LC 48000 stereo, copy_eligible true,
+//	video timebase 1/12288, audio timebase 1/48000, audio bitrate 128576.
+//
+// Dimensions this profile deliberately does NOT pin, with the measurement that
+// keeps them open (see TestMeasuredArtifactDivergencesStayVisible, which fails
+// if either side of each divergence changes):
+//
+//   - video timebase: the artifact carries 1/12288 (= fps_den × 512, the
+//     mp4 muxer's convention) while the VeloxEditing contract declares
+//     1/90000. The CONSUMER gate resolves this by an explicit tolerance
+//     (cliprender/contract.go's video-timebase dimension accepts the known
+//     muxer timebases 12288/90000/24000/15360/12800), so the renderer
+//     deliberately pins nothing: the tolerance belongs to the assembler, and a
+//     producer-side pin would be a second, stricter rule over the same fact.
+//   - audio channels / channel layout / bitrate: the renderer's audio lane is
+//     copy-first (audio_copy_eligible=true), so the artifact inherits the
+//     SOURCE layout, while the consumer gate requires the contract's channels
+//     EXACTLY (cliprender/contract.go checkAudioBlock). Two certified renders
+//     disagree (mono/58524 on 2026-09-16, stereo/128576 on 2026-09-17), so
+//     pinning the contract's 2ch/stereo/128k here would fail closed on a mono
+//     source that the master's copy_if_compatible audio mode may legally copy.
+//     Naming the missing measurement: a mono-SOURCE clip-lane render would show
+//     whether the plan's "copy_if_compatible" transcodes to the declared 2ch or
+//     copies the mono layout (and therefore which side must change).
+//
+// Audio codec/profile/sample rate ARE pinned: the lane enforces the declared
+// output rate (--audio-sample-rate) and AAC-LC is what the muxer emits, so
+// those three are properties of the renderer rather than of the source.
 func assemblyReadyProfile() OutputProfile {
 	return OutputProfile{
 		Width:                 1920,
@@ -156,6 +215,22 @@ func ResolveProfile(id string) (OutputProfile, error) {
 // profile: the canonical value or one of the explicitly accepted encoder-lane
 // values. An empty certified value never satisfies a pinned canonical profile
 // (it means "not reported", and a missing fact must not pass a check).
+// pinRational reports whether a num/den pair is pinned (both sides non-zero)
+// and, if so, whether the certified pair equals it by cross-multiplication.
+// The zero rule is the struct-wide convention: 0 means "this profile does not
+// pin the dimension", so an unpinned dimension never fails a check.
+func pinRational(wantNum, wantDen, gotNum, gotDen int) (pinned bool, ok bool) {
+	if wantNum == 0 || wantDen == 0 {
+		return false, true
+	}
+	if gotNum == 0 || gotDen == 0 {
+		// Not reported by the certification: a missing fact must not pass as a
+		// match (the same rule acceptsProfile states for a missing profile).
+		return true, false
+	}
+	return true, wantNum*gotDen == gotNum*wantDen
+}
+
 func (p OutputProfile) acceptsProfile(certified string) bool {
 	if certified == p.CodecProfile {
 		return true
@@ -200,8 +275,14 @@ func (p OutputProfile) ValidateProbe(probe ProbeResult) error {
 	if p.KeyframeInterval > 0 && probe.KeyframeInterval > 0 && probe.KeyframeInterval != p.KeyframeInterval {
 		return fmt.Errorf("profile %s: keyframe interval %d, want %d", p.ID, probe.KeyframeInterval, p.KeyframeInterval)
 	}
-	if p.SARNum > 0 && p.SARDen > 0 && (probe.SARNum != p.SARNum || probe.SARDen != p.SARDen) {
+	if pinned, ok := pinRational(p.SARNum, p.SARDen, probe.SARNum, probe.SARDen); pinned && !ok {
 		return fmt.Errorf("profile %s: SAR %d/%d, want %d/%d", p.ID, probe.SARNum, probe.SARDen, p.SARNum, p.SARDen)
+	}
+	if pinned, ok := pinRational(p.VideoTimeBaseNum, p.VideoTimeBaseDen, probe.VideoTimeBaseNum, probe.VideoTimeBaseDen); pinned && !ok {
+		return fmt.Errorf("profile %s: video timebase %d/%d, want %d/%d", p.ID, probe.VideoTimeBaseNum, probe.VideoTimeBaseDen, p.VideoTimeBaseNum, p.VideoTimeBaseDen)
+	}
+	if pinned, ok := pinRational(p.AudioTimeBaseNum, p.AudioTimeBaseDen, probe.AudioTimeBaseNum, probe.AudioTimeBaseDen); pinned && !ok {
+		return fmt.Errorf("profile %s: audio timebase %d/%d, want %d/%d", p.ID, probe.AudioTimeBaseNum, probe.AudioTimeBaseDen, p.AudioTimeBaseNum, p.AudioTimeBaseDen)
 	}
 	if err := p.validateColour(probe); err != nil {
 		return err
@@ -223,6 +304,15 @@ func (p OutputProfile) ValidateProbe(probe ProbeResult) error {
 	}
 	if p.AudioSampleRate > 0 && probe.SampleRate > 0 && probe.SampleRate != p.AudioSampleRate {
 		return fmt.Errorf("profile %s: sample rate %d, want %d", p.ID, probe.SampleRate, p.AudioSampleRate)
+	}
+	if p.AudioChannels > 0 && probe.Channels > 0 && probe.Channels != p.AudioChannels {
+		return fmt.Errorf("profile %s: audio channels %d, want %d", p.ID, probe.Channels, p.AudioChannels)
+	}
+	if p.AudioChannelLayout != "" && probe.ChannelLayout != "" && probe.ChannelLayout != p.AudioChannelLayout {
+		return fmt.Errorf("profile %s: channel layout %q, want %q", p.ID, probe.ChannelLayout, p.AudioChannelLayout)
+	}
+	if p.AudioBitrate != "" && probe.AudioBitrate != "" && probe.AudioBitrate != p.AudioBitrate {
+		return fmt.Errorf("profile %s: audio bitrate %q, want %q", p.ID, probe.AudioBitrate, p.AudioBitrate)
 	}
 	if probe.DurationUS <= 0 || probe.FrameCount <= 0 {
 		return fmt.Errorf("profile %s: duration/frame count must be positive", p.ID)

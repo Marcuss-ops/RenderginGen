@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/buildinfo"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/chronon"
 )
 
@@ -18,6 +19,13 @@ type Info struct {
 	OverlaySchema int    `json:"overlay_schema"`
 	Backend       string `json:"backend"`
 	Status        string `json:"status"`
+	// Build is the runtime build identity (internal/buildinfo): the VCS
+	// revision, executable digest, config file, mode, worker id, pid and start
+	// time of THIS process. It travels on /health because that is the endpoint
+	// a certifier already polls — one request then answers both "is the worker
+	// up?" and "is it the code and config I just deployed?". Omitted when
+	// unwired so the historical payload shape survives for direct fixtures.
+	Build *buildinfo.Identity `json:"build,omitempty"`
 	// Degradations carries process-cumulative fail-open degradations (for
 	// example workspaces that could not be removed). Those phases never fail a
 	// render by design, so without this map the worker would report "ready"
