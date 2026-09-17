@@ -1,0 +1,93 @@
+{
+  "schema": "chronon3d.serial-video-source-determinism.v1",
+  "measured_at_utc": "2026-09-17T16:24:51Z",
+  "source_revisions": {
+    "Chronon3d": "e0ca6b8f6dab8c175dbf55504b2eee00c585852a",
+    "RenderingGen": "c4d93eea69a05353e07e5997d2ea9eb961419cec"
+  },
+  "device": {
+    "name": "NVIDIA RTX A4000",
+    "driver_version": "595.91.07",
+    "total_mib": 16376
+  },
+  "plan": {
+    "path": "phrase_preset_videos/phrase_01_lower_third_safe_plan.json",
+    "sha256": "7f669df143efc14b67ebd5c7c84de2304c11777788d96c9e8475933447de080d",
+    "canvas": {
+      "width": 1920,
+      "height": 1080,
+      "fps": "24/1",
+      "frames": 125
+    },
+    "animated_layer": "entity_1_text opacity 0 at frame 0 to 1 at frame 12",
+    "video_source": {
+      "path": "testdata/golden/Pale-Olive.mp4",
+      "sha256": "8fdf404d5eb34effdea1283d3baa825a5349fa911edda6464796a55c3e20b32f"
+    }
+  },
+  "execution": {
+    "transport": "Chronon IPC through one owned DaemonPool runtime",
+    "daemon_count": 1,
+    "owned_daemons": 1,
+    "lanes_per_daemon": 1,
+    "requests": "two sequential renders through the same socket and process; separate output paths",
+    "backend": "vulkan",
+    "decoder": "nvdec",
+    "encoder": "h264_nvenc native",
+    "encode_preset": "p1",
+    "gpu_hot_path_mode": "require_gpu_native",
+    "cpu_fallback_allowed": false
+  },
+  "artifact": {
+    "codec": "h264",
+    "width": 1920,
+    "height": 1080,
+    "fps": "24/1",
+    "frames": 125,
+    "duration_seconds": 5.209,
+    "bytes": 921889,
+    "sha256": "f06ab9e20b8270a7e88e0d2276e4ec3587dd78fe9c306105fc67e50cb128a0c8",
+    "identical_bytes": true,
+    "decoded_frame_count": 125,
+    "decoded_frames_identical": true,
+    "framemd5_records_sha256": "7f769cc3f0cea998ba9c0b1ddcb1f937eee2aa3df2b9ee5cee36f71900ca4db4"
+  },
+  "runs": [
+    {
+      "run": 1,
+      "wall_ms": 2017.333873,
+      "render_loop_ms": 548.674003,
+      "gpu_execute_total_ms": 27.438112,
+      "gpu_device_span_max_ms": 0.232704,
+      "average_frame_ms": 4.384187,
+      "p95_frame_ms": 13.447916,
+      "first_frame_ms": 154.108141,
+      "frames_over_41_67ms_budget": 1,
+      "end_to_end_fps": 61.962971
+    },
+    {
+      "run": 2,
+      "wall_ms": 1102.232130,
+      "render_loop_ms": 444.479580,
+      "gpu_execute_total_ms": 27.248864,
+      "gpu_device_span_max_ms": 0.233376,
+      "average_frame_ms": 3.550307,
+      "p95_frame_ms": 9.105682,
+      "first_frame_ms": 103.696490,
+      "frames_over_41_67ms_budget": 1,
+      "end_to_end_fps": 113.406239
+    }
+  ],
+  "gpu_counters_per_run": {
+    "vulkan_frames": 125,
+    "native_surface_decode_frames": 125,
+    "native_encode_frames": 125,
+    "cpu_pixel_readback_bytes": 0,
+    "gpu_readback_bytes": 0,
+    "cpu_full_surface_upload_bytes": 0,
+    "software_fallback_nodes": 0,
+    "execution_downgrades": 0,
+    "execution_path": "full_graph_native"
+  },
+  "conclusion": "Serial rendering of this video-source plan is byte- and frame-deterministic on one persistent runtime. The separate two-runtime calibration remains incomplete because concurrent renders differed; keep render serialization until that concurrent divergence is explained."
+}
