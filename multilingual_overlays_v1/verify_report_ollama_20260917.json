@@ -1,0 +1,1014 @@
+{
+  "schema": "renderinggen.batch-verify-report.v1",
+  "batch_id": "ml-overlays-ollama-20260917",
+  "generated_at": "2026-09-17T18:26:18.616532624Z",
+  "manifest": "manifest_ollama_20260917.json",
+  "queue": "http://localhost:8081",
+  "jobs": 100,
+  "passed": 100,
+  "distinctness": [
+    {
+      "overlay": "image_fade_in",
+      "languages": 10,
+      "distinct_hashes": 1
+    },
+    {
+      "overlay": "image_focus_in",
+      "languages": 10,
+      "distinct_hashes": 1
+    },
+    {
+      "overlay": "image_scale_in",
+      "languages": 10,
+      "distinct_hashes": 1
+    },
+    {
+      "overlay": "image_slide_left",
+      "languages": 10,
+      "distinct_hashes": 1
+    },
+    {
+      "overlay": "image_slide_right",
+      "languages": 10,
+      "distinct_hashes": 1
+    },
+    {
+      "overlay": "phrase_01_lower_third_safe",
+      "languages": 10,
+      "distinct_hashes": 9
+    },
+    {
+      "overlay": "phrase_02_clean_slide_up",
+      "languages": 10,
+      "distinct_hashes": 10
+    },
+    {
+      "overlay": "phrase_03_scale_pop",
+      "languages": 10,
+      "distinct_hashes": 10
+    },
+    {
+      "overlay": "phrase_04_dm_sans_fade",
+      "languages": 10,
+      "distinct_hashes": 10
+    },
+    {
+      "overlay": "phrase_05_slide_left_punch",
+      "languages": 10,
+      "distinct_hashes": 10
+    }
+  ],
+  "rows": [
+    {
+      "job_id": "ml-overlays-ollama-20260917:phrase_01_lower_third_safe__it",
+      "family": "phrase",
+      "language": "it",
+      "text": "Christopher Nolan — Regista",
+      "state": "completed",
+      "sha256": "fec6c7a622477de0a353880c13e16840b787ed837a84536ff3765b860d449cfd",
+      "bytes": 385166,
+      "ink_pixels": 27314
+    },
+    {
+      "job_id": "ml-overlays-ollama-20260917:phrase_01_lower_third_safe__en",
+      "family": "phrase",
+      "language": "en",
+      "text": "Christopher Nolan — Director",
+      "state": "completed",
+      "sha256": "0e74081df1fb44fab82fed0e021115cd87b33f139ee44013246158dd077c5f19",
+      "bytes": 378897,
+      "ink_pixels": 27409
+    },
+    {
+      "job_id": "ml-overlays-ollama-20260917:phrase_01_lower_third_safe__pl",
+      "family": "phrase",
+      "language": "pl",
+      "text": "Christopher Nolan — Reżyser",
+      "state": "completed",
+      "sha256": "0998f7b7bcb99874a57024cc71fb4468edeb19b538e326a935fbf30592b4ddbd",
+      "bytes": 388246,
+      "ink_pixels": 27116
+    },
+    {
+      "job_id": "ml-overlays-ollama-20260917:phrase_01_lower_third_safe__ru",
+      "family": "phrase",
+      "language": "ru",
+      "text": "Кристофер Нолан — режиссёр",
+      "state": "completed",
+      "sha256": "40652b47a2aae7e0b01a3a42eb390e04e589fbce68f9c2da9860fbe492207e66",
+      "bytes": 414098,
+      "ink_pixels": 30190
+    },
+    {
+      "job_id": "ml-overlays-ollama-20260917:phrase_01_lower_third_safe__de",
+      "family": "phrase",
+      "language": "de",
+      "text": "Christopher Nolan — Regisseur",
+      "state": "completed",
+      "sha256": "93a3612f1b5e609eabd9de420c37a67c2cbc8d56060f5a513632a01b1919017f",
+      "bytes": 417048,
+      "ink_pixels": 29194
+    },
+    {
+      "job_id": "ml-overlays-ollama-20260917:phrase_01_lower_third_safe__es",
+      "family": "phrase",
+      "language": "es",
+      "text": "Christopher Nolan — Director",
+      "state": "completed",
+      "sha256": "0e74081df1fb44fab82fed0e021115cd87b33f139ee44013246158dd077c5f19",
+      "bytes": 378897,
+      "ink_pixels": 27409
+    },
+    {
+      "job_id": "ml-overlays-ollama-20260917:phrase_01_lower_third_safe__pt-BR",
+      "family": "phrase",
+      "language": "pt-BR",
+      "text": "Christopher Nolan — Diretor",
+      "state": "completed",
+      "sha256": "5224cfafba367e49796f330710615541a2557df1c668c29c729b4dd980dd2086",
+      "bytes": 361336,
+      "ink_pixels": 26524
+    },
+    {
+      "job_id": "ml-overlays-ollama-20260917:phrase_01_lower_third_safe__fr",
+      "family": "phrase",
+      "language": "fr",
+      "text": "Christopher Nolan — Réalisateur",
+      "state": "completed",
+      "sha256": "1e7674e0ec57fcc484683f90a87d95bf590c7cd6830bef69366cb3b174853230",
+      "bytes": 435474,
+      "ink_pixels": 31121
+    },
+    {
+      "job_id": "ml-overlays-ollama-20260917:phrase_01_lower_third_safe__tr",
+      "family": "phrase",
+      "language": "tr",
+      "text": "Christopher Nolan — Yönetmen",
+      "state": "completed",
+      "sha256": "432e71fda84f5f4ce00f28eca1cdf4f4ca381f0f4b86a1cc9780d060c28f9e26",
+      "bytes": 416859,
+      "ink_pixels": 29796
+    },
+    {
+      "job_id": "ml-overlays-ollama-20260917:phrase_01_lower_third_safe__id",
+      "family": "phrase",
+      "language": "id",
+      "text": "Christopher Nolan — Sutradara",
+      "state": "completed",
+      "sha256": "9b2e94c13d96c4bd51c0d484d086e802eaa357ff482182a3612c6da4c9bb5fe5",
+      "bytes": 410112,
+      "ink_pixels": 29533
+    },
+    {
+      "job_id": "ml-overlays-ollama-20260917:phrase_02_clean_slide_up__it",
+      "family": "phrase",
+      "language": "it",
+      "text": "Il futuro del video ad alta frequenza di fotogrammi",
+      "state": "completed",
+      "sha256": "d3ba1ac2c2056cd302f1f7cdab94b64514cbcb0582f7b4e7e9ac4b4c4c54e927",
+      "bytes": 698129,
+      "ink_pixels": 48440
+    },
+    {
+      "job_id": "ml-overlays-ollama-20260917:phrase_02_clean_slide_up__en",
+      "family": "phrase",
+      "language": "en",
+      "text": "The Future of High-Speed Video",
+      "state": "completed",
+      "sha256": "b9d10ad5c1cecc91f6207ed22538f9397754358a601b45693d1d97872e1bb040",
+      "bytes": 595461,
+      "ink_pixels": 30473
+    },
+    {
+      "job_id": "ml-overlays-ollama-20260917:phrase_02_clean_slide_up__pl",
+      "family": "phrase",
+      "language": "pl",
+      "text": "Przyszłość wideo o wysokiej liczbie klatek na sekundę",
+      "state": "completed",
+      "sha256": "c45e3e60a957379472964509072c93d2506b0c7cb3e0a96ebbd4c6412289c30a",
+      "bytes": 625381,
+      "ink_pixels": 52600
+    },
+    {
+      "job_id": "ml-overlays-ollama-20260917:phrase_02_clean_slide_up__ru",
+      "family": "phrase",
+      "language": "ru",
+      "text": "Будущее видео высокой частоты кадров",
+      "state": "completed",
+      "sha256": "e3b478fcbaf434831800b30b08f0cdfb1873e47f495cfb6770558544fb500c98",
+      "bytes": 630666,
+      "ink_pixels": 42097
+    },
+    {
+      "job_id": "ml-overlays-ollama-20260917:phrase_02_clean_slide_up__de",
+      "family": "phrase",
+      "language": "de",
+      "text": "Die Zukunft des Hochgeschwindigkeits-Videos",
+      "state": "completed",
+      "sha256": "7836b68f2e634d3072918ecf5468cd74cc3e384ef7672d54c742810c350e6a4d",
+      "bytes": 700211,
+      "ink_pixels": 46915
+    },
+    {
+      "job_id": "ml-overlays-ollama-20260917:phrase_02_clean_slide_up__es",
+      "family": "phrase",
+      "language": "es",
+      "text": "El futuro del video de alta velocidad",
+      "state": "completed",
+      "sha256": "f524d593c624cad2827e0d0f8812a4a71684f1dcfe195fa7ed8ab1e4d83fa3db",
+      "bytes": 659664,
+      "ink_pixels": 34085
+    },
+    {
+      "job_id": "ml-overlays-ollama-20260917:phrase_02_clean_slide_up__pt-BR",
+      "family": "phrase",
+      "language": "pt-BR",
+      "text": "O Futuro do Vídeo de Alta Taxa de Quadros",
+      "state": "completed",
+      "sha256": "e0b442d5ddfeb668c2c6757cc6669ea93d6b8be75613a69544b35ef84d2e8163",
+      "bytes": 651596,
+      "ink_pixels": 40070
+    },
+    {
+      "job_id": "ml-overlays-ollama-20260917:phrase_02_clean_slide_up__fr",
+      "family": "phrase",
+      "language": "fr",
+      "text": "L'avenir de la vidéo haute vitesse",
+      "state": "completed",
+      "sha256": "130b88525f46fe4b0421128a076340119f431de5c1fd288c57f6b00e383e9863",
+      "bytes": 635201,
+      "ink_pixels": 31344
+    },
+    {
+      "job_id": "ml-overlays-ollama-20260917:phrase_02_clean_slide_up__tr",
+      "family": "phrase",
+      "language": "tr",
+      "text": "Yüksek Hızlı Video'nun Geleceği",
+      "state": "completed",
+      "sha256": "f96f13280250320cfb2131a5b1d4931eb84043731eba2020af9338941af1c689",
+      "bytes": 619073,
+      "ink_pixels": 31486
+    },
+    {
+      "job_id": "ml-overlays-ollama-20260917:phrase_02_clean_slide_up__id",
+      "family": "phrase",
+      "language": "id",
+      "text": "Masa Depan Video Berkecepatan Tinggi",
+      "state": "completed",
+      "sha256": "7b10ffd3dce580ead43f90a7a856dbd92b0add4a05a38cc573945e8f676a63b6",
+      "bytes": 634356,
+      "ink_pixels": 37896
+    },
+    {
+      "job_id": "ml-overlays-ollama-20260917:phrase_03_scale_pop__it",
+      "family": "phrase",
+      "language": "it",
+      "text": "ULTIME NOTIZIE",
+      "state": "completed",
+      "sha256": "ddacfca6e47d9a9b901abcd4f02fdb64fa8defaf4b8f0c733d8f2f8675404ef1",
+      "bytes": 241619,
+      "ink_pixels": 15319
+    },
+    {
+      "job_id": "ml-overlays-ollama-20260917:phrase_03_scale_pop__en",
+      "family": "phrase",
+      "language": "en",
+      "text": "BREAKING NEWS",
+      "state": "completed",
+      "sha256": "f4914250f505ee62a272d0245ceda1caa989ce8acdf5033c1dbfae0ed0834563",
+      "bytes": 295043,
+      "ink_pixels": 16523
+    },
+    {
+      "job_id": "ml-overlays-ollama-20260917:phrase_03_scale_pop__pl",
+      "family": "phrase",
+      "language": "pl",
+      "text": "PILNE WIADOMOŚCI",
+      "state": "completed",
+      "sha256": "fae5c051339d167aebcb0855a7dbdafd3cf5d37e83a6c74063b43e7426e06ac1",
+      "bytes": 341360,
+      "ink_pixels": 19584
+    },
+    {
+      "job_id": "ml-overlays-ollama-20260917:phrase_03_scale_pop__ru",
+      "family": "phrase",
+      "language": "ru",
+      "text": "СРОЧНЫЕ НОВОСТИ",
+      "state": "completed",
+      "sha256": "9dfcc2ffe869855f5d9449c96275e4a16c3830e19589d9b596e9fc4627e5cf00",
+      "bytes": 371791,
+      "ink_pixels": 23272
+    },
+    {
+      "job_id": "ml-overlays-ollama-20260917:phrase_03_scale_pop__de",
+      "family": "phrase",
+      "language": "de",
+      "text": "EILMELDUNG",
+      "state": "completed",
+      "sha256": "0fa2db049b26b8d347c71cb3f3f19baf5436d2c2111f69e38c7c8da02c309c96",
+      "bytes": 207083,
+      "ink_pixels": 12364
+    },
+    {
+      "job_id": "ml-overlays-ollama-20260917:phrase_03_scale_pop__es",
+      "family": "phrase",
+      "language": "es",
+      "text": "ÚLTIMA HORA",
+      "state": "completed",
+      "sha256": "ea8e60d0aed8ae79f452fee022ed9a6659f880615493c09acaf5496b7205625a",
+      "bytes": 232660,
+      "ink_pixels": 13423
+    },
+    {
+      "job_id": "ml-overlays-ollama-20260917:phrase_03_scale_pop__pt-BR",
+      "family": "phrase",
+      "language": "pt-BR",
+      "text": "ÚLTIMAS NOTÍCIAS",
+      "state": "completed",
+      "sha256": "ac2572843419bfa48d1e2bd85c1976ff7ee3202d8231691e7ec5e734a3bb97bd",
+      "bytes": 331685,
+      "ink_pixels": 19210
+    },
+    {
+      "job_id": "ml-overlays-ollama-20260917:phrase_03_scale_pop__fr",
+      "family": "phrase",
+      "language": "fr",
+      "text": "DERNIÈRE MINUTE",
+      "state": "completed",
+      "sha256": "535cca9788bc954d0f49b07dab152e9f835c150fb3b2c318e4f0ab4403849f5b",
+      "bytes": 283750,
+      "ink_pixels": 17872
+    },
+    {
+      "job_id": "ml-overlays-ollama-20260917:phrase_03_scale_pop__tr",
+      "family": "phrase",
+      "language": "tr",
+      "text": "SON DAKİKA HABERLERİ",
+      "state": "completed",
+      "sha256": "14b9a93d903bc349ce0a605d62bac71931a6afdc8316a6e7528c0c65bf595c0e",
+      "bytes": 408649,
+      "ink_pixels": 23026
+    },
+    {
+      "job_id": "ml-overlays-ollama-20260917:phrase_03_scale_pop__id",
+      "family": "phrase",
+      "language": "id",
+      "text": "BERITA TERKINI",
+      "state": "completed",
+      "sha256": "87a08bec0bb6616cb6d9de0d43396cd28e5b267727385c620f675d0e3e6543e1",
+      "bytes": 245880,
+      "ink_pixels": 14614
+    },
+    {
+      "job_id": "ml-overlays-ollama-20260917:phrase_04_dm_sans_fade__it",
+      "family": "phrase",
+      "language": "it",
+      "text": "La semplicità è la massima raffinatezza.",
+      "state": "completed",
+      "sha256": "78e6f8c474ac6600c9d3712fa8eb21e133fb500cb05b7be8c174de4e53281372",
+      "bytes": 384957,
+      "ink_pixels": 38669
+    },
+    {
+      "job_id": "ml-overlays-ollama-20260917:phrase_04_dm_sans_fade__en",
+      "family": "phrase",
+      "language": "en",
+      "text": "Simplicity is the ultimate sophistication.",
+      "state": "completed",
+      "sha256": "20942056c5ab0d35424d6d7773d27eeee050684347c4e3519dccb77b72db06b3",
+      "bytes": 394859,
+      "ink_pixels": 41574
+    },
+    {
+      "job_id": "ml-overlays-ollama-20260917:phrase_04_dm_sans_fade__pl",
+      "family": "phrase",
+      "language": "pl",
+      "text": "Prostota jest ostatecznym wyrafinowaniem.",
+      "state": "completed",
+      "sha256": "aa576c8b6f761d11aeceea863fdfc4d7bd032519925bafbc9ed48793023940e8",
+      "bytes": 420335,
+      "ink_pixels": 42375
+    },
+    {
+      "job_id": "ml-overlays-ollama-20260917:phrase_04_dm_sans_fade__ru",
+      "family": "phrase",
+      "language": "ru",
+      "text": "Простота — высшая степень изящества.",
+      "state": "completed",
+      "sha256": "b0ac67fade8f18aac1528bd8f9c1859fc24b92b1ff59304f0a443e9eda81826c",
+      "bytes": 371601,
+      "ink_pixels": 38579
+    },
+    {
+      "job_id": "ml-overlays-ollama-20260917:phrase_04_dm_sans_fade__de",
+      "family": "phrase",
+      "language": "de",
+      "text": "Einfachheit ist die höchste Raffinesse.",
+      "state": "completed",
+      "sha256": "523aed1ed80818e2589dc8ff4f9d07e537571db63497443923158686b3bbde6b",
+      "bytes": 377177,
+      "ink_pixels": 38134
+    },
+    {
+      "job_id": "ml-overlays-ollama-20260917:phrase_04_dm_sans_fade__es",
+      "family": "phrase",
+      "language": "es",
+      "text": "La simplicidad es la máxima sofisticación.",
+      "state": "completed",
+      "sha256": "2703a8e519537c722dff62ee2ea5368149b139ea8828889ad3f6df2771424588",
+      "bytes": 410951,
+      "ink_pixels": 41932
+    },
+    {
+      "job_id": "ml-overlays-ollama-20260917:phrase_04_dm_sans_fade__pt-BR",
+      "family": "phrase",
+      "language": "pt-BR",
+      "text": "A simplicidade é a sofisticação máxima.",
+      "state": "completed",
+      "sha256": "06730ab77261e3a50cab303009b6efee6918432e6da900a5366bd0023fe063e7",
+      "bytes": 405425,
+      "ink_pixels": 40536
+    },
+    {
+      "job_id": "ml-overlays-ollama-20260917:phrase_04_dm_sans_fade__fr",
+      "family": "phrase",
+      "language": "fr",
+      "text": "La simplicité est la sophistication ultime.",
+      "state": "completed",
+      "sha256": "53a20b41a434623500de56201c7a8111066b8924129f5545edf7c2b23f636705",
+      "bytes": 391281,
+      "ink_pixels": 41211
+    },
+    {
+      "job_id": "ml-overlays-ollama-20260917:phrase_04_dm_sans_fade__tr",
+      "family": "phrase",
+      "language": "tr",
+      "text": "Sadelik en üstün zarafettir.",
+      "state": "completed",
+      "sha256": "26f2437409d986c08e67911c2833518c2bfb7182f992dc8085a6a33ea9aa861a",
+      "bytes": 300810,
+      "ink_pixels": 27217
+    },
+    {
+      "job_id": "ml-overlays-ollama-20260917:phrase_04_dm_sans_fade__id",
+      "family": "phrase",
+      "language": "id",
+      "text": "Kesederhanaan adalah puncak dari kehalusan.",
+      "state": "completed",
+      "sha256": "aabe99a5505849973ed782b8a4dc8236aa876ef8a76e24a17f1c6656fe1067c2",
+      "bytes": 433940,
+      "ink_pixels": 45735
+    },
+    {
+      "job_id": "ml-overlays-ollama-20260917:phrase_05_slide_left_punch__it",
+      "family": "phrase",
+      "language": "it",
+      "text": "Infrastruttura di Intelligenza Artificiale",
+      "state": "completed",
+      "sha256": "df53a5948bd2b34b8542ed742faf3f48e9df8774c1c4fff0810a6b63ec342fc5",
+      "bytes": 549666,
+      "ink_pixels": 38799
+    },
+    {
+      "job_id": "ml-overlays-ollama-20260917:phrase_05_slide_left_punch__en",
+      "family": "phrase",
+      "language": "en",
+      "text": "Artificial Intelligence Infrastructure",
+      "state": "completed",
+      "sha256": "4569cb8c9feba85f5b876004de88ecc4cb66279d870bb2fd4f4cbd3ba5271b8d",
+      "bytes": 505424,
+      "ink_pixels": 35581
+    },
+    {
+      "job_id": "ml-overlays-ollama-20260917:phrase_05_slide_left_punch__pl",
+      "family": "phrase",
+      "language": "pl",
+      "text": "Infrastruktura sztucznej inteligencji",
+      "state": "completed",
+      "sha256": "bad074dac61b0e408e038a3ac30a5d8b841af8562f58a6e0aec2330c68dfe10f",
+      "bytes": 524845,
+      "ink_pixels": 36757
+    },
+    {
+      "job_id": "ml-overlays-ollama-20260917:phrase_05_slide_left_punch__ru",
+      "family": "phrase",
+      "language": "ru",
+      "text": "Инфраструктура искусственного интеллекта",
+      "state": "completed",
+      "sha256": "6433d8753c0b6fb3b10c61e74dcdf8d59596f67e62d72bc2a6f87d4561ba5dbc",
+      "bytes": 641561,
+      "ink_pixels": 45992
+    },
+    {
+      "job_id": "ml-overlays-ollama-20260917:phrase_05_slide_left_punch__de",
+      "family": "phrase",
+      "language": "de",
+      "text": "Künstliche Intelligenz-Infrastruktur",
+      "state": "completed",
+      "sha256": "178b50868a249f15e5ee5de36f9d32f7fb1df14296ef3f24eed9be3a60b8d48b",
+      "bytes": 508059,
+      "ink_pixels": 36359
+    },
+    {
+      "job_id": "ml-overlays-ollama-20260917:phrase_05_slide_left_punch__es",
+      "family": "phrase",
+      "language": "es",
+      "text": "Infraestructura de Inteligencia Artificial",
+      "state": "completed",
+      "sha256": "73e8e5cce950dc7fa7fe76cb4c3e05be83eeb691380630947d3f156757820584",
+      "bytes": 569284,
+      "ink_pixels": 39793
+    },
+    {
+      "job_id": "ml-overlays-ollama-20260917:phrase_05_slide_left_punch__pt-BR",
+      "family": "phrase",
+      "language": "pt-BR",
+      "text": "Infraestrutura de Inteligência Artificial",
+      "state": "completed",
+      "sha256": "6d788b8e6f474ea7fcd49c5f27234aff843626054347705dc1a6ce2d6e855d99",
+      "bytes": 558917,
+      "ink_pixels": 38900
+    },
+    {
+      "job_id": "ml-overlays-ollama-20260917:phrase_05_slide_left_punch__fr",
+      "family": "phrase",
+      "language": "fr",
+      "text": "Infrastructure d'intelligence artificielle",
+      "state": "completed",
+      "sha256": "22cb83f66fd94447bee239d49c36c08ca42233341ec52790b8ecccb17be85d2e",
+      "bytes": 551471,
+      "ink_pixels": 39111
+    },
+    {
+      "job_id": "ml-overlays-ollama-20260917:phrase_05_slide_left_punch__tr",
+      "family": "phrase",
+      "language": "tr",
+      "text": "Yapay Zeka Altyapısı",
+      "state": "completed",
+      "sha256": "bd7dcd89e7f3a50eb5e07af0b8063a3142db9f91d87e1e8aafe346de92c6d14c",
+      "bytes": 323017,
+      "ink_pixels": 20411
+    },
+    {
+      "job_id": "ml-overlays-ollama-20260917:phrase_05_slide_left_punch__id",
+      "family": "phrase",
+      "language": "id",
+      "text": "Infrastruktur Kecerdasan Buatan",
+      "state": "completed",
+      "sha256": "71a9955e3686ac1b7bef833ca8113191ec2102bde82b8d4aa83d80827cc79e9b",
+      "bytes": 467116,
+      "ink_pixels": 32097
+    },
+    {
+      "job_id": "ml-overlays-ollama-20260917:image_focus_in__it",
+      "family": "image",
+      "language": "it",
+      "text": "gerard_butler",
+      "state": "completed",
+      "sha256": "9965f10c5eeac0ceb43f6ff9e6df6a78e3996fc2f6d278c3a0e0461f37f68802",
+      "bytes": 886108
+    },
+    {
+      "job_id": "ml-overlays-ollama-20260917:image_focus_in__en",
+      "family": "image",
+      "language": "en",
+      "text": "gerard_butler",
+      "state": "completed",
+      "sha256": "9965f10c5eeac0ceb43f6ff9e6df6a78e3996fc2f6d278c3a0e0461f37f68802",
+      "bytes": 886108
+    },
+    {
+      "job_id": "ml-overlays-ollama-20260917:image_focus_in__pl",
+      "family": "image",
+      "language": "pl",
+      "text": "gerard_butler",
+      "state": "completed",
+      "sha256": "9965f10c5eeac0ceb43f6ff9e6df6a78e3996fc2f6d278c3a0e0461f37f68802",
+      "bytes": 886108
+    },
+    {
+      "job_id": "ml-overlays-ollama-20260917:image_focus_in__ru",
+      "family": "image",
+      "language": "ru",
+      "text": "gerard_butler",
+      "state": "completed",
+      "sha256": "9965f10c5eeac0ceb43f6ff9e6df6a78e3996fc2f6d278c3a0e0461f37f68802",
+      "bytes": 886108
+    },
+    {
+      "job_id": "ml-overlays-ollama-20260917:image_focus_in__de",
+      "family": "image",
+      "language": "de",
+      "text": "gerard_butler",
+      "state": "completed",
+      "sha256": "9965f10c5eeac0ceb43f6ff9e6df6a78e3996fc2f6d278c3a0e0461f37f68802",
+      "bytes": 886108
+    },
+    {
+      "job_id": "ml-overlays-ollama-20260917:image_focus_in__es",
+      "family": "image",
+      "language": "es",
+      "text": "gerard_butler",
+      "state": "completed",
+      "sha256": "9965f10c5eeac0ceb43f6ff9e6df6a78e3996fc2f6d278c3a0e0461f37f68802",
+      "bytes": 886108
+    },
+    {
+      "job_id": "ml-overlays-ollama-20260917:image_focus_in__pt-BR",
+      "family": "image",
+      "language": "pt-BR",
+      "text": "gerard_butler",
+      "state": "completed",
+      "sha256": "9965f10c5eeac0ceb43f6ff9e6df6a78e3996fc2f6d278c3a0e0461f37f68802",
+      "bytes": 886108
+    },
+    {
+      "job_id": "ml-overlays-ollama-20260917:image_focus_in__fr",
+      "family": "image",
+      "language": "fr",
+      "text": "gerard_butler",
+      "state": "completed",
+      "sha256": "9965f10c5eeac0ceb43f6ff9e6df6a78e3996fc2f6d278c3a0e0461f37f68802",
+      "bytes": 886108
+    },
+    {
+      "job_id": "ml-overlays-ollama-20260917:image_focus_in__tr",
+      "family": "image",
+      "language": "tr",
+      "text": "gerard_butler",
+      "state": "completed",
+      "sha256": "9965f10c5eeac0ceb43f6ff9e6df6a78e3996fc2f6d278c3a0e0461f37f68802",
+      "bytes": 886108
+    },
+    {
+      "job_id": "ml-overlays-ollama-20260917:image_focus_in__id",
+      "family": "image",
+      "language": "id",
+      "text": "gerard_butler",
+      "state": "completed",
+      "sha256": "9965f10c5eeac0ceb43f6ff9e6df6a78e3996fc2f6d278c3a0e0461f37f68802",
+      "bytes": 886108
+    },
+    {
+      "job_id": "ml-overlays-ollama-20260917:image_fade_in__it",
+      "family": "image",
+      "language": "it",
+      "text": "gerard_butler",
+      "state": "completed",
+      "sha256": "be0e1b3eb25a8c3fcdbe653114f2b1350e7b5bf5e050aff40572b61132276135",
+      "bytes": 660524
+    },
+    {
+      "job_id": "ml-overlays-ollama-20260917:image_fade_in__en",
+      "family": "image",
+      "language": "en",
+      "text": "gerard_butler",
+      "state": "completed",
+      "sha256": "be0e1b3eb25a8c3fcdbe653114f2b1350e7b5bf5e050aff40572b61132276135",
+      "bytes": 660524
+    },
+    {
+      "job_id": "ml-overlays-ollama-20260917:image_fade_in__pl",
+      "family": "image",
+      "language": "pl",
+      "text": "gerard_butler",
+      "state": "completed",
+      "sha256": "be0e1b3eb25a8c3fcdbe653114f2b1350e7b5bf5e050aff40572b61132276135",
+      "bytes": 660524
+    },
+    {
+      "job_id": "ml-overlays-ollama-20260917:image_fade_in__ru",
+      "family": "image",
+      "language": "ru",
+      "text": "gerard_butler",
+      "state": "completed",
+      "sha256": "be0e1b3eb25a8c3fcdbe653114f2b1350e7b5bf5e050aff40572b61132276135",
+      "bytes": 660524
+    },
+    {
+      "job_id": "ml-overlays-ollama-20260917:image_fade_in__de",
+      "family": "image",
+      "language": "de",
+      "text": "gerard_butler",
+      "state": "completed",
+      "sha256": "be0e1b3eb25a8c3fcdbe653114f2b1350e7b5bf5e050aff40572b61132276135",
+      "bytes": 660524
+    },
+    {
+      "job_id": "ml-overlays-ollama-20260917:image_fade_in__es",
+      "family": "image",
+      "language": "es",
+      "text": "gerard_butler",
+      "state": "completed",
+      "sha256": "be0e1b3eb25a8c3fcdbe653114f2b1350e7b5bf5e050aff40572b61132276135",
+      "bytes": 660524
+    },
+    {
+      "job_id": "ml-overlays-ollama-20260917:image_fade_in__pt-BR",
+      "family": "image",
+      "language": "pt-BR",
+      "text": "gerard_butler",
+      "state": "completed",
+      "sha256": "be0e1b3eb25a8c3fcdbe653114f2b1350e7b5bf5e050aff40572b61132276135",
+      "bytes": 660524
+    },
+    {
+      "job_id": "ml-overlays-ollama-20260917:image_fade_in__fr",
+      "family": "image",
+      "language": "fr",
+      "text": "gerard_butler",
+      "state": "completed",
+      "sha256": "be0e1b3eb25a8c3fcdbe653114f2b1350e7b5bf5e050aff40572b61132276135",
+      "bytes": 660524
+    },
+    {
+      "job_id": "ml-overlays-ollama-20260917:image_fade_in__tr",
+      "family": "image",
+      "language": "tr",
+      "text": "gerard_butler",
+      "state": "completed",
+      "sha256": "be0e1b3eb25a8c3fcdbe653114f2b1350e7b5bf5e050aff40572b61132276135",
+      "bytes": 660524
+    },
+    {
+      "job_id": "ml-overlays-ollama-20260917:image_fade_in__id",
+      "family": "image",
+      "language": "id",
+      "text": "gerard_butler",
+      "state": "completed",
+      "sha256": "be0e1b3eb25a8c3fcdbe653114f2b1350e7b5bf5e050aff40572b61132276135",
+      "bytes": 660524
+    },
+    {
+      "job_id": "ml-overlays-ollama-20260917:image_scale_in__it",
+      "family": "image",
+      "language": "it",
+      "text": "gerard_butler",
+      "state": "completed",
+      "sha256": "f18a3597bb0fb4fe81508f80dd3526ba04caed8283db672f2bc071e43a48005c",
+      "bytes": 809330
+    },
+    {
+      "job_id": "ml-overlays-ollama-20260917:image_scale_in__en",
+      "family": "image",
+      "language": "en",
+      "text": "gerard_butler",
+      "state": "completed",
+      "sha256": "f18a3597bb0fb4fe81508f80dd3526ba04caed8283db672f2bc071e43a48005c",
+      "bytes": 809330
+    },
+    {
+      "job_id": "ml-overlays-ollama-20260917:image_scale_in__pl",
+      "family": "image",
+      "language": "pl",
+      "text": "gerard_butler",
+      "state": "completed",
+      "sha256": "f18a3597bb0fb4fe81508f80dd3526ba04caed8283db672f2bc071e43a48005c",
+      "bytes": 809330
+    },
+    {
+      "job_id": "ml-overlays-ollama-20260917:image_scale_in__ru",
+      "family": "image",
+      "language": "ru",
+      "text": "gerard_butler",
+      "state": "completed",
+      "sha256": "f18a3597bb0fb4fe81508f80dd3526ba04caed8283db672f2bc071e43a48005c",
+      "bytes": 809330
+    },
+    {
+      "job_id": "ml-overlays-ollama-20260917:image_scale_in__de",
+      "family": "image",
+      "language": "de",
+      "text": "gerard_butler",
+      "state": "completed",
+      "sha256": "f18a3597bb0fb4fe81508f80dd3526ba04caed8283db672f2bc071e43a48005c",
+      "bytes": 809330
+    },
+    {
+      "job_id": "ml-overlays-ollama-20260917:image_scale_in__es",
+      "family": "image",
+      "language": "es",
+      "text": "gerard_butler",
+      "state": "completed",
+      "sha256": "f18a3597bb0fb4fe81508f80dd3526ba04caed8283db672f2bc071e43a48005c",
+      "bytes": 809330
+    },
+    {
+      "job_id": "ml-overlays-ollama-20260917:image_scale_in__pt-BR",
+      "family": "image",
+      "language": "pt-BR",
+      "text": "gerard_butler",
+      "state": "completed",
+      "sha256": "f18a3597bb0fb4fe81508f80dd3526ba04caed8283db672f2bc071e43a48005c",
+      "bytes": 809330
+    },
+    {
+      "job_id": "ml-overlays-ollama-20260917:image_scale_in__fr",
+      "family": "image",
+      "language": "fr",
+      "text": "gerard_butler",
+      "state": "completed",
+      "sha256": "f18a3597bb0fb4fe81508f80dd3526ba04caed8283db672f2bc071e43a48005c",
+      "bytes": 809330
+    },
+    {
+      "job_id": "ml-overlays-ollama-20260917:image_scale_in__tr",
+      "family": "image",
+      "language": "tr",
+      "text": "gerard_butler",
+      "state": "completed",
+      "sha256": "f18a3597bb0fb4fe81508f80dd3526ba04caed8283db672f2bc071e43a48005c",
+      "bytes": 809330
+    },
+    {
+      "job_id": "ml-overlays-ollama-20260917:image_scale_in__id",
+      "family": "image",
+      "language": "id",
+      "text": "gerard_butler",
+      "state": "completed",
+      "sha256": "f18a3597bb0fb4fe81508f80dd3526ba04caed8283db672f2bc071e43a48005c",
+      "bytes": 809330
+    },
+    {
+      "job_id": "ml-overlays-ollama-20260917:image_slide_left__it",
+      "family": "image",
+      "language": "it",
+      "text": "gerard_butler",
+      "state": "completed",
+      "sha256": "3b707a7445d5dda1fe041123bde8ecd842a66eed4cad54c13c1d57a5577e1318",
+      "bytes": 827611
+    },
+    {
+      "job_id": "ml-overlays-ollama-20260917:image_slide_left__en",
+      "family": "image",
+      "language": "en",
+      "text": "gerard_butler",
+      "state": "completed",
+      "sha256": "3b707a7445d5dda1fe041123bde8ecd842a66eed4cad54c13c1d57a5577e1318",
+      "bytes": 827611
+    },
+    {
+      "job_id": "ml-overlays-ollama-20260917:image_slide_left__pl",
+      "family": "image",
+      "language": "pl",
+      "text": "gerard_butler",
+      "state": "completed",
+      "sha256": "3b707a7445d5dda1fe041123bde8ecd842a66eed4cad54c13c1d57a5577e1318",
+      "bytes": 827611
+    },
+    {
+      "job_id": "ml-overlays-ollama-20260917:image_slide_left__ru",
+      "family": "image",
+      "language": "ru",
+      "text": "gerard_butler",
+      "state": "completed",
+      "sha256": "3b707a7445d5dda1fe041123bde8ecd842a66eed4cad54c13c1d57a5577e1318",
+      "bytes": 827611
+    },
+    {
+      "job_id": "ml-overlays-ollama-20260917:image_slide_left__de",
+      "family": "image",
+      "language": "de",
+      "text": "gerard_butler",
+      "state": "completed",
+      "sha256": "3b707a7445d5dda1fe041123bde8ecd842a66eed4cad54c13c1d57a5577e1318",
+      "bytes": 827611
+    },
+    {
+      "job_id": "ml-overlays-ollama-20260917:image_slide_left__es",
+      "family": "image",
+      "language": "es",
+      "text": "gerard_butler",
+      "state": "completed",
+      "sha256": "3b707a7445d5dda1fe041123bde8ecd842a66eed4cad54c13c1d57a5577e1318",
+      "bytes": 827611
+    },
+    {
+      "job_id": "ml-overlays-ollama-20260917:image_slide_left__pt-BR",
+      "family": "image",
+      "language": "pt-BR",
+      "text": "gerard_butler",
+      "state": "completed",
+      "sha256": "3b707a7445d5dda1fe041123bde8ecd842a66eed4cad54c13c1d57a5577e1318",
+      "bytes": 827611
+    },
+    {
+      "job_id": "ml-overlays-ollama-20260917:image_slide_left__fr",
+      "family": "image",
+      "language": "fr",
+      "text": "gerard_butler",
+      "state": "completed",
+      "sha256": "3b707a7445d5dda1fe041123bde8ecd842a66eed4cad54c13c1d57a5577e1318",
+      "bytes": 827611
+    },
+    {
+      "job_id": "ml-overlays-ollama-20260917:image_slide_left__tr",
+      "family": "image",
+      "language": "tr",
+      "text": "gerard_butler",
+      "state": "completed",
+      "sha256": "3b707a7445d5dda1fe041123bde8ecd842a66eed4cad54c13c1d57a5577e1318",
+      "bytes": 827611
+    },
+    {
+      "job_id": "ml-overlays-ollama-20260917:image_slide_left__id",
+      "family": "image",
+      "language": "id",
+      "text": "gerard_butler",
+      "state": "completed",
+      "sha256": "3b707a7445d5dda1fe041123bde8ecd842a66eed4cad54c13c1d57a5577e1318",
+      "bytes": 827611
+    },
+    {
+      "job_id": "ml-overlays-ollama-20260917:image_slide_right__it",
+      "family": "image",
+      "language": "it",
+      "text": "gerard_butler",
+      "state": "completed",
+      "sha256": "13eac4824d9e7262a307131e753253513daa04f55fc6864ceb07e4bf98fb155e",
+      "bytes": 816509
+    },
+    {
+      "job_id": "ml-overlays-ollama-20260917:image_slide_right__en",
+      "family": "image",
+      "language": "en",
+      "text": "gerard_butler",
+      "state": "completed",
+      "sha256": "13eac4824d9e7262a307131e753253513daa04f55fc6864ceb07e4bf98fb155e",
+      "bytes": 816509
+    },
+    {
+      "job_id": "ml-overlays-ollama-20260917:image_slide_right__pl",
+      "family": "image",
+      "language": "pl",
+      "text": "gerard_butler",
+      "state": "completed",
+      "sha256": "13eac4824d9e7262a307131e753253513daa04f55fc6864ceb07e4bf98fb155e",
+      "bytes": 816509
+    },
+    {
+      "job_id": "ml-overlays-ollama-20260917:image_slide_right__ru",
+      "family": "image",
+      "language": "ru",
+      "text": "gerard_butler",
+      "state": "completed",
+      "sha256": "13eac4824d9e7262a307131e753253513daa04f55fc6864ceb07e4bf98fb155e",
+      "bytes": 816509
+    },
+    {
+      "job_id": "ml-overlays-ollama-20260917:image_slide_right__de",
+      "family": "image",
+      "language": "de",
+      "text": "gerard_butler",
+      "state": "completed",
+      "sha256": "13eac4824d9e7262a307131e753253513daa04f55fc6864ceb07e4bf98fb155e",
+      "bytes": 816509
+    },
+    {
+      "job_id": "ml-overlays-ollama-20260917:image_slide_right__es",
+      "family": "image",
+      "language": "es",
+      "text": "gerard_butler",
+      "state": "completed",
+      "sha256": "13eac4824d9e7262a307131e753253513daa04f55fc6864ceb07e4bf98fb155e",
+      "bytes": 816509
+    },
+    {
+      "job_id": "ml-overlays-ollama-20260917:image_slide_right__pt-BR",
+      "family": "image",
+      "language": "pt-BR",
+      "text": "gerard_butler",
+      "state": "completed",
+      "sha256": "13eac4824d9e7262a307131e753253513daa04f55fc6864ceb07e4bf98fb155e",
+      "bytes": 816509
+    },
+    {
+      "job_id": "ml-overlays-ollama-20260917:image_slide_right__fr",
+      "family": "image",
+      "language": "fr",
+      "text": "gerard_butler",
+      "state": "completed",
+      "sha256": "13eac4824d9e7262a307131e753253513daa04f55fc6864ceb07e4bf98fb155e",
+      "bytes": 816509
+    },
+    {
+      "job_id": "ml-overlays-ollama-20260917:image_slide_right__tr",
+      "family": "image",
+      "language": "tr",
+      "text": "gerard_butler",
+      "state": "completed",
+      "sha256": "13eac4824d9e7262a307131e753253513daa04f55fc6864ceb07e4bf98fb155e",
+      "bytes": 816509
+    },
+    {
+      "job_id": "ml-overlays-ollama-20260917:image_slide_right__id",
+      "family": "image",
+      "language": "id",
+      "text": "gerard_butler",
+      "state": "completed",
+      "sha256": "13eac4824d9e7262a307131e753253513daa04f55fc6864ceb07e4bf98fb155e",
+      "bytes": 816509
+    }
+  ],
+  "verdict": "PASS"
+}

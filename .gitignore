@@ -74,6 +74,14 @@ token.json
 # JSON and input media are worth keeping, but output/ holds the rendered mp4s
 # that a re-run regenerates on demand — the same artifact class as above.
 /mike_tyson_overlay_test/output/
+
+# Localized 10×10 certification reruns keep large media and queue snapshots
+# available for inspection without checking generated artifacts into git. The
+# manifest and compact JSON reports remain reviewable versioned evidence.
+/multilingual_overlays_v1/artifacts_*/
+/multilingual_overlays_v1/plans_*/
+/multilingual_overlays_v1/verify/
+/multilingual_overlays_v1/jobs_snapshot_*.json
 assets/backgrounds/*.mp4
 
 # Keep testdata/golden intentionally tiny: only canonical CI/regression fixtures.
