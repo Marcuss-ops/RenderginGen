@@ -29,6 +29,7 @@ import (
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/gpu"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/health"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/media"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/overlay"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/processor"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/progresspush"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/queue"
@@ -236,6 +237,15 @@ func main() {
 			filepath.Join(cfg.Workspace.Root, "parents"),
 		)
 		log.Printf("parent finalizer: enabled (Chronon assembler, output=%q)", filepath.Join(cfg.Workspace.Root, "parents"))
+	}
+
+	// 3f. Overlay catalog: the motion vocabulary and the preset ids this worker
+	// renders come from ChrononTemplate's emitted catalog, embedded at build
+	// time. If the embedded catalog and this build's rendering preset registry
+	// disagree, every job naming the missing preset would be rejected after it
+	// was claimed — so the disagreement is resolved here, before READY.
+	if err := overlay.ValidateCatalogParity(); err != nil {
+		log.Fatalf("overlay catalog: %v", err)
 	}
 
 	// 4. READY: expose health.

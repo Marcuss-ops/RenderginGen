@@ -222,3 +222,15 @@ func TestAppleStyleFixturesAreDistinctAndComplete(t *testing.T) {
 		seen[signature] = profile
 	}
 }
+
+// TestCatalogParityHoldsForTheShippedRegistry pins the split between the two
+// halves of the preset catalog: ChrononTemplate declares which preset ids exist
+// and in which family, this package defines how each one renders. The worker
+// refuses to start when they disagree (see ValidateCatalogParity), so this test
+// is what turns an emitter change that renames or drops a preset into a red
+// build here instead of a job rejected after the batch was paid for.
+func TestCatalogParityHoldsForTheShippedRegistry(t *testing.T) {
+	if err := ValidateCatalogParity(); err != nil {
+		t.Fatalf("ValidateCatalogParity: %v", err)
+	}
+}

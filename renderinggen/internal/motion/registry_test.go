@@ -64,15 +64,26 @@ func TestCatalogStaysInsideTheRendererVocabulary(t *testing.T) {
 	}
 }
 
-// TestModernPhraseBatchKeepsTheFamilyContract pins the invariants the modern v3
-// batch shares with the classic phrase library, so a new row cannot be added
-// half-formed (no layer tracks, or no per-unit animator).
-func TestModernPhraseBatchKeepsTheFamilyContract(t *testing.T) {
-	modern := modernPhraseMotions()
-	if len(modern) < 20 {
-		t.Fatalf("modern phrase batch = %d definitions, want at least 20", len(modern))
+// TestAppleV2PhraseFamilyKeepsTheFamilyContract pins the invariants the Apple
+// V2 phrase family shares, so a row added to the canonical catalog cannot land
+// half-formed (no layer tracks, or no per-unit animator). The definitions now
+// come from the emitted catalog rather than a Go family function, so this is
+// also the check that the emitter shipped every row intact.
+func TestAppleV2PhraseFamilyKeepsTheFamilyContract(t *testing.T) {
+	catalog, err := Canonical()
+	if err != nil {
+		t.Fatalf("canonical catalog: %v", err)
 	}
-	for _, d := range modern {
+	var family []MotionDefinition
+	for _, d := range catalog.Motions {
+		if d.Category == "apple_v2" {
+			family = append(family, d)
+		}
+	}
+	if len(family) < 20 {
+		t.Fatalf("apple_v2 phrase family = %d definitions, want at least 20", len(family))
+	}
+	for _, d := range family {
 		if d.Category != "apple_v2" {
 			t.Errorf("%s: category = %q, want apple_v2", d.ID, d.Category)
 		}
@@ -89,7 +100,7 @@ func TestModernPhraseBatchKeepsTheFamilyContract(t *testing.T) {
 			t.Errorf("%s: selector kind %q must match the declared unit %q", d.ID, d.TextAnimators[0].Selector.Kind, d.Unit)
 		}
 		if _, err := Registry.Resolve(d.ID); err != nil {
-			t.Errorf("%s is defined but not registered: %v", d.ID, err)
+			t.Errorf("%s is in the canonical catalog but not registered: %v", d.ID, err)
 		}
 		for _, track := range d.Tracks {
 			for _, kf := range track.Keyframes {

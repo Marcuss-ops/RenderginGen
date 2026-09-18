@@ -12,6 +12,8 @@ import (
 	"strings"
 
 	queue "github.com/Marcuss-ops/RenderingGen/queue/client"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/motion"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/overlay"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/renderbatch"
 )
 
@@ -77,21 +79,6 @@ type batchManifestDocument struct {
 }
 
 // --- Tyson preset corpus ------------------------------------------------------
-
-// tysonPhraseMotions pairs each of the ten fixed request phrases with a distinct
-// official text motion, so the ten overlays stay visually distinguishable.
-var tysonPhraseMotions = []string{
-	"kinetic_split_word",
-	"masked_upward_reveal",
-	"depth_of_field_rack_focus",
-	"staggered_char_float",
-	"dynamic_island_expansion",
-	"soft_edge_spotlight_dissolve",
-	"velocity_inertia_snap",
-	"editorial_push_in",
-	"liquid_glass_ripple",
-	"chromatic_aberration_pop",
-}
 
 // tysonEntity is one entity portrait row of the fixed request.
 type tysonEntity struct {
@@ -190,9 +177,17 @@ func BuildTysonManifest(opts TysonBuildOptions) (*BuildResult, error) {
 	item := request.Items[0]
 	phrases := item.MediaPlan.Extraction.ImportantPhrases
 	segments := item.ScriptParams.Segments
-	if len(phrases) != len(tysonPhraseMotions) || len(segments) != len(tysonPhraseMotions) {
+	// The pairing of phrase index to motion is catalog data (ChrononTemplate's
+	// selection), not a literal list here: the ten overlays stay visually
+	// distinguishable because the catalog pairs each phrase with a distinct
+	// official motion, in order.
+	phraseMotions := motion.PhraseMotions()
+	if len(phraseMotions) == 0 {
+		return nil, fmt.Errorf("overlaybatch: the embedded ChrononTemplate catalog declares no phrase-motion selection")
+	}
+	if len(phrases) != len(phraseMotions) || len(segments) != len(phraseMotions) {
 		return nil, fmt.Errorf("overlaybatch: request must carry %d segments and %d phrases, got %d and %d",
-			len(tysonPhraseMotions), len(tysonPhraseMotions), len(segments), len(phrases))
+			len(phraseMotions), len(phraseMotions), len(segments), len(phrases))
 	}
 	for index, phrase := range phrases {
 		if !strings.Contains(segments[index].SourceText, phrase) {
@@ -206,9 +201,23 @@ func BuildTysonManifest(opts TysonBuildOptions) (*BuildResult, error) {
 		return nil, err
 	}
 
+	// The entity corpus (files, attribution) is RenderingGen's, but the preset
+	// each portrait renders through must be one the catalog declares: a typo here
+	// would otherwise only surface as a rejected plan after the batch was paid
+	// for.
+	imagePresets := make(map[string]bool)
+	for _, id := range motion.OverlayPresetIDs(string(overlay.PresetImage)) {
+		imagePresets[id] = true
+	}
+	for _, entity := range tysonEntities {
+		if !imagePresets[entity.preset] {
+			return nil, fmt.Errorf("overlaybatch: entity %s names image preset %q, which is not in the ChrononTemplate catalog", entity.entityID, entity.preset)
+		}
+	}
+
 	document := batchManifestDocument{SchemaVersion: SchemaBatchManifestV1, BatchID: opts.BatchID}
 	for index, phrase := range phrases {
-		motion := tysonPhraseMotions[index]
+		motionID := phraseMotions[index]
 		jobID := fmt.Sprintf("phrase-%02d", index+1)
 		plan, err := renderbatch.BuildPlan(renderbatch.PlanSpec{
 			PlanID:     jobID,
@@ -225,8 +234,8 @@ func BuildTysonManifest(opts TysonBuildOptions) (*BuildResult, error) {
 				SceneID:    segments[index].ID,
 				Kind:       "important_phrase",
 				TemplateID: "IMPORTANT_PHRASE",
-				PresetID:   "apple_v2",
-				MotionID:   motion,
+				PresetID:   overlay.CanonicalTextPresetID,
+				MotionID:   motionID,
 				Text:       phrase,
 				StartMS:    0,
 				EndMS:      durationMS,
@@ -241,8 +250,8 @@ func BuildTysonManifest(opts TysonBuildOptions) (*BuildResult, error) {
 			Assets:     fonts,
 			Family:     "phrase",
 			Text:       phrase,
-			MotionID:   motion,
-			PresetID:   "apple_v2",
+			MotionID:   motionID,
+			PresetID:   overlay.CanonicalTextPresetID,
 		})
 	}
 
@@ -315,28 +324,6 @@ func BuildTysonManifest(opts TysonBuildOptions) (*BuildResult, error) {
 }
 
 // --- multilingual overlay matrix ---------------------------------------------
-
-// matrixPhraseOverlays is the corpus text set rendered through the production
-// preset with one distinct official motion per overlay.
-var matrixPhraseOverlays = []struct {
-	id, motion string
-}{
-	{"phrase_01_lower_third_safe", "liquid_glass_ripple"},
-	{"phrase_02_clean_slide_up", "kinetic_stamp_impact"},
-	{"phrase_03_scale_pop", "editorial_push_in"},
-	{"phrase_04_dm_sans_fade", "neon_flicker_ignite"},
-	{"phrase_05_slide_left_punch", "hologram_scanline_build"},
-}
-
-// matrixImageOverlays exercises the five official image presets over one corpus
-// portrait; the bytes are language-independent by construction.
-var matrixImageOverlays = []string{
-	"image_focus_in",
-	"image_fade_in",
-	"image_scale_in",
-	"image_slide_left",
-	"image_slide_right",
-}
 
 // matrixLanguages is the language set the PipelineGen production matrix renders.
 var matrixLanguages = []string{"it", "en", "pl", "ru", "de", "es", "pt-BR", "fr", "tr", "id"}
@@ -421,22 +408,32 @@ func BuildMultilingualManifest(opts MultilingualBuildOptions) (*BuildResult, err
 		return nil, err
 	}
 
+	// The overlay rows and the image preset matrix are catalog selections: the
+	// overlay ids are RenderingGen's corpus, but which motion each one renders
+	// through — and which image presets the matrix exercises — is the
+	// ChrononTemplate catalog's answer, not a second list in Go.
+	phraseOverlays := motion.PhraseOverlays()
+	imageOverlays := motion.ImageOverlays()
+	if len(phraseOverlays) == 0 || len(imageOverlays) == 0 {
+		return nil, fmt.Errorf("overlaybatch: the embedded ChrononTemplate catalog is missing its phrase or image overlay selection")
+	}
+
 	document := batchManifestDocument{SchemaVersion: SchemaBatchManifestV1, BatchID: opts.BatchID}
 	phrases, images := 0, 0
-	for _, overlay := range matrixPhraseOverlays {
-		if len(wanted) > 0 && !wanted[overlay.id] {
+	for _, row := range phraseOverlays {
+		if len(wanted) > 0 && !wanted[row.ID] {
 			continue
 		}
-		row, ok := translations[overlay.id]
+		translation, ok := translations[row.ID]
 		if !ok {
-			return nil, fmt.Errorf("overlaybatch: no translation row for %s", overlay.id)
+			return nil, fmt.Errorf("overlaybatch: no translation row for %s", row.ID)
 		}
 		for _, language := range languages {
-			text, ok := row.Translations[language]
+			text, ok := translation.Translations[language]
 			if !ok {
-				return nil, fmt.Errorf("overlaybatch: %s has no %s translation", overlay.id, language)
+				return nil, fmt.Errorf("overlaybatch: %s has no %s translation", row.ID, language)
 			}
-			jobID := overlay.id + "__" + language
+			jobID := row.ID + "__" + language
 			plan, err := renderbatch.BuildPlan(renderbatch.PlanSpec{
 				PlanID:     jobID,
 				Language:   language,
@@ -450,8 +447,8 @@ func BuildMultilingualManifest(opts MultilingualBuildOptions) (*BuildResult, err
 					ID:         "item_1",
 					Kind:       "important_phrase",
 					TemplateID: "IMPORTANT_PHRASE",
-					PresetID:   "apple_v2",
-					MotionID:   overlay.motion,
+					PresetID:   overlay.CanonicalTextPresetID,
+					MotionID:   row.Motion,
 					Text:       text,
 					StartMS:    0,
 					EndMS:      durationMS,
@@ -466,8 +463,8 @@ func BuildMultilingualManifest(opts MultilingualBuildOptions) (*BuildResult, err
 				Assets:     fonts,
 				Family:     "phrase",
 				Text:       text,
-				MotionID:   overlay.motion,
-				PresetID:   "apple_v2",
+				MotionID:   row.Motion,
+				PresetID:   overlay.CanonicalTextPresetID,
 			})
 			phrases++
 		}
@@ -479,7 +476,7 @@ func BuildMultilingualManifest(opts MultilingualBuildOptions) (*BuildResult, err
 	}
 	imageURL := base + "/" + filepath.Base(matrixImageFile)
 	imageAsset := queue.AssetRef{Hash: imageDigest, LogicalPath: matrixImageLogicalPath, SourceURL: imageURL}
-	for _, preset := range matrixImageOverlays {
+	for _, preset := range imageOverlays {
 		if len(wanted) > 0 && !wanted[preset] {
 			continue
 		}
