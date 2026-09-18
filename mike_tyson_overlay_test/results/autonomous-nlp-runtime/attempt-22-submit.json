@@ -1,7 +1,0 @@
-{
-  "ok": true,
-  "job_id": "job_1789582752028716722_ba1fbd59",
-  "status": "QUEUED",
-  "status_url": "/api/jobs/job_1789582752028716722_ba1fbd59/full",
-  "current_stage": "NORMALIZING"
-}
