@@ -52,6 +52,35 @@ renders with missing glyphs (or fails at frame 0). See
 measured evidence, the matrix of 10 translated overlays across the 10 configured
 languages, and the reproduction commands.
 
+## Motion and preset catalog (owned by ChrononTemplate)
+
+RenderingGen does not own the phrase/motion/preset vocabulary. ChrononTemplate
+does, and it emits it as data:
+
+```text
+ChrononTemplate/catalog/motion_catalog.v1.json   ids, keyframes, selections
+ChrononTemplate/tools/emit_catalog.cpp           validation + the C++-owned lists
+                 │  chronontemplate_emit_catalog
+                 ▼
+renderinggen/internal/motion/catalog/chronontemplate_catalog.v1.json   ← embedded
+```
+
+The embedded artifact is the only source the worker reads: `internal/motion`
+registers every motion from it and fails closed at startup if it cannot be read
+or validated, `internal/overlay` checks that its rendering preset registry and
+the catalog's preset families agree (`overlay.ValidateCatalogParity`, called by
+the worker before it reports ready), and `internal/overlaybatch` takes its
+phrase→motion pairing, its phrase-overlay rows and its image-overlay matrix from
+the catalog's selections instead of restating them in Go. There is no second
+list of motion ids left to drift.
+
+Refresh the embedded artifact after a ChrononTemplate catalog change:
+
+```sh
+scripts/sync_motion_catalog.sh --check   # fail if the embedded copy is stale
+scripts/sync_motion_catalog.sh           # rebuild it from ChrononTemplate
+```
+
 ## Curated background library
 
 `assets/backgrounds/` contains six normalized background videos supplied from

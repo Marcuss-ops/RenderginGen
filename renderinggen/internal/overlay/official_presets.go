@@ -116,6 +116,42 @@ var officialPresets = map[string]PresetDefinition{
 	"bottom_card_rise":   makePreset("bottom_card_rise", imageSpec("bottom_right", "reveal_from_bottom")),
 }
 
+// ValidateCatalogParity fails closed when the preset registry this package owns
+// and the preset families the ChrononTemplate catalog declares disagree.
+//
+// The split is deliberate: the catalog owns WHICH presets exist (ids, and which
+// family each belongs to), this package owns HOW each one renders. That leaves
+// exactly one failure mode — the two lists drifting apart, so a preset the
+// catalog advertises has no definition here (and resolves to an error at claim
+// time), or a definition here is unreachable because nothing asks for it. Both
+// are build-ordering mistakes, so the worker checks this before it reports
+// ready.
+func ValidateCatalogParity() error {
+	for _, family := range []PresetFamily{PresetText, PresetImage} {
+		declared := make(map[string]bool)
+		for _, id := range motion.OverlayPresetIDs(string(family)) {
+			declared[id] = true
+		}
+		if len(declared) == 0 {
+			return fmt.Errorf("overlay: the embedded ChrononTemplate catalog declares no %s preset family", family)
+		}
+		for _, d := range officialPresets {
+			if d.Family != family {
+				continue
+			}
+			if !declared[d.ID] {
+				return fmt.Errorf("overlay: %s preset %q is defined here but not declared by the ChrononTemplate catalog", family, d.ID)
+			}
+		}
+		for id := range declared {
+			if _, ok := officialPresets[id]; !ok {
+				return fmt.Errorf("overlay: the ChrononTemplate catalog declares %s preset %q, which this build cannot render", family, id)
+			}
+		}
+	}
+	return nil
+}
+
 func officialPresetIDs() []string {
 	ids := make([]string, 0, len(officialPresets))
 	for id := range officialPresets {
