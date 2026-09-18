@@ -3,14 +3,16 @@
 // download the certified artifacts (and their raw timing sidecars), and write
 // the run report.
 //
-// Why it exists. The producer-side run loop lived in per-corpus Python scripts
-// (mike_tyson_overlay_test/preset_overlays_v1/scripts/render_overlays.py,
-// multilingual_overlays_v1/scripts/run_and_measure.py) that re-implemented the
-// queue HTTP contract — submit, poll, download, hash — beside the Go client that
-// already owns it. Two implementations of one contract means the scripts can
-// drift from it silently (and one of them shipped a broken success count while
-// its renders were already published). Here the SUBMISSION side is the shared
-// internal/batch expansion (same job ids and idempotency keys as
+// Why it exists. The producer-side run loop used to live in per-corpus Python
+// scripts that re-implemented the queue HTTP contract — submit, poll, download,
+// hash — beside the Go client that already owns it. Both were removed when this
+// package landed (mike_tyson_overlay_test/preset_overlays_v1/scripts/ and
+// multilingual_overlays_v1/scripts/ no longer carry a run loop; only
+// localize_with_ollama.py remains there, and it only translates). Two
+// implementations of one contract is a drift hazard: the scripts fell out of
+// step with the client silently, and one of them shipped a broken success count
+// while its renders were already published. Here the SUBMISSION side is the
+// shared internal/batch expansion (same job ids and idempotency keys as
 // cmd/batch-submit), the TRANSPORT is queue/client, and the manifest is data.
 //
 // The manifest is the same renderinggen.batch-manifest.v1 document
