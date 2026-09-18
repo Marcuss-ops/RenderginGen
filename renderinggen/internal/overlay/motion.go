@@ -111,7 +111,7 @@ func appendExitTracks(tracks []AnimationTrack, exitFrames int, duration int64) [
 	if exitFrames <= 0 || duration <= 1 || int64(exitFrames) >= duration {
 		return tracks
 	}
-	start, last := duration-int64(exitFrames), duration-1
+	start, last := duration-int64(exitFrames), lastValidFrame(duration)
 	out := make([]AnimationTrack, 0, len(tracks)+1)
 	hasOpacity := false
 	for _, track := range tracks {
@@ -170,15 +170,19 @@ func retimeTextAnimators(animators []TextAnimator, duration int64) []TextAnimato
 			}
 		}
 	}
-	if source <= 0 || source == duration {
-		return animators
-	}
+	targetLast := lastValidFrame(duration)
 	for i := range animators {
 		for j := range animators[i].Properties {
 			for k := range animators[i].Properties[j].Keyframes {
 				keyframe := &animators[i].Properties[j].Keyframes[k]
-				keyframe.Frame = keyframe.Frame * duration / source
+				if source > 0 {
+					keyframe.Frame = keyframe.Frame * targetLast / source
+				}
 			}
+			clampAnimationTrack(&animators[i].Properties[j], duration)
+		}
+		for j := range animators[i].Selectors {
+			clampTextSelectorTracks(&animators[i].Selectors[j], duration)
 		}
 	}
 	return animators
@@ -213,9 +217,10 @@ func retimeMotionTracks(tracks []AnimationTrack, duration int64) []AnimationTrac
 	if sourceDuration <= 0 || sourceDuration == duration {
 		return clampMotionTracks(tracks, duration)
 	}
+	targetLast := lastValidFrame(duration)
 	for i := range tracks {
 		for j := range tracks[i].Keyframes {
-			tracks[i].Keyframes[j].Frame = tracks[i].Keyframes[j].Frame * duration / sourceDuration
+			tracks[i].Keyframes[j].Frame = tracks[i].Keyframes[j].Frame * targetLast / sourceDuration
 		}
 	}
 	return clampMotionTracks(tracks, duration)
@@ -229,15 +234,44 @@ func clampMotionTracks(tracks []AnimationTrack, duration int64) []AnimationTrack
 	if duration <= 0 {
 		return tracks
 	}
-	lastFrame := duration - 1
 	for i := range tracks {
-		for j := range tracks[i].Keyframes {
-			if tracks[i].Keyframes[j].Frame > lastFrame {
-				tracks[i].Keyframes[j].Frame = lastFrame
-			}
-		}
+		clampAnimationTrack(&tracks[i], duration)
 	}
 	return tracks
+}
+
+// lastValidFrame is the single frame-boundary authority for all animation
+// tracks. A duration is a count of frames, so the valid interval is
+// [0, duration), never [0, duration].
+func lastValidFrame(duration int64) int64 {
+	if duration <= 1 {
+		return 0
+	}
+	return duration - 1
+}
+
+func clampAnimationTrack(track *AnimationTrack, duration int64) {
+	if track == nil || duration <= 0 {
+		return
+	}
+	last := lastValidFrame(duration)
+	for i := range track.Keyframes {
+		if track.Keyframes[i].Frame < 0 {
+			track.Keyframes[i].Frame = 0
+		} else if track.Keyframes[i].Frame > last {
+			track.Keyframes[i].Frame = last
+		}
+	}
+}
+
+func clampTextSelectorTracks(selector *TextSelector, duration int64) {
+	if selector == nil || duration <= 0 {
+		return
+	}
+	clampAnimationTrack(selector.Start, duration)
+	clampAnimationTrack(selector.End, duration)
+	clampAnimationTrack(selector.Offset, duration)
+	clampAnimationTrack(selector.Amount, duration)
 }
 
 func tracksForMotion(m MotionDefinition) ([]AnimationTrack, error) {
@@ -290,7 +324,7 @@ func withPhraseEntryExit(animation *LayerAnimation, duration int64) *LayerAnimat
 	if exitStart > enterEnd {
 		keyframes = append(keyframes, AnimationKeyframe{Frame: exitStart, Value: 1.0})
 	}
-	keyframes = append(keyframes, AnimationKeyframe{Frame: duration - 1, Value: 0.0})
+	keyframes = append(keyframes, AnimationKeyframe{Frame: lastValidFrame(duration), Value: 0.0})
 	tracks = append(tracks, AnimationTrack{Property: "opacity", Easing: "linear", Keyframes: keyframes})
 	animation.Tracks = tracks
 	return animation
@@ -341,7 +375,7 @@ func fromTextMotionDefinitions(src []motion.TextAnimatorDefinition, duration int
 		// with property values (opacity: 0, position_y: offset) makes glyphs start hidden/offset
 		// and progressively drop to their baseline as start sweeps past them.
 		if definition.Selector.Stagger > 0 {
-			sweepDuration := duration
+			sweepDuration := lastValidFrame(duration)
 			if sweepDuration > MaxStaggerSweepFrames {
 				sweepDuration = MaxStaggerSweepFrames
 			}
