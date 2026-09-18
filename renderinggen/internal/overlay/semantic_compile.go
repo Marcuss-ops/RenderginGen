@@ -365,8 +365,11 @@ func resolveSemanticItems(src *semanticPlan) ([]resolvedItem, error) {
 	out := make([]resolvedItem, 0, len(src.Items))
 	for _, item := range src.Items {
 		start, end := msFrames(item.StartMS, item.EndMS, int64(src.FPSNum), int64(src.FPSDen))
-		if item.ID == "" || item.Template == "" || item.StartMS < 0 || item.EndMS <= item.StartMS {
+		if item.ID == "" || item.StartMS < 0 || item.EndMS <= item.StartMS {
 			return nil, fmt.Errorf("overlay: invalid semantic item %q", item.ID)
+		}
+		if err := validateTextElementContract(item); err != nil {
+			return nil, err
 		}
 		spec := templateSpecFor(item.Template)
 		kind, err := spec.resolveKind(item.Kind, item.ID)

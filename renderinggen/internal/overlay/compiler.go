@@ -196,8 +196,18 @@ type semanticItem struct {
 	// PipelineGen sends it; when it is absent the template registry supplies
 	// it. A kind that contradicts the template's kind is rejected fail-closed
 	// (see TemplateSpec.resolveKind).
-	Kind     string `json:"kind"`
-	Template string `json:"template_id"`
+	Kind string `json:"kind"`
+	// Template is optional for a simple text primitive. A non-empty value
+	// selects a reusable composition/template; the displayed text remains
+	// producer-owned and is never stored in the template catalog.
+	Template string `json:"template_id,omitempty"`
+	// StyleID is an opaque Chronon-owned text-style identity. RenderingGen
+	// validates its shape and transports it; it never maps a style to a font,
+	// color or layout default.
+	StyleID string `json:"style_id,omitempty"`
+	// TemplateSlots are producer-owned content values for a reusable template
+	// instance. They are intentionally opaque to RenderingGen.
+	TemplateSlots map[string]any `json:"template_slots,omitempty"`
 	// PresetID is the semantic preset selected by PipelineGen (the plan's
 	// preset_id contract slot). It is preferred over the template mapping.
 	PresetID      string         `json:"preset_id"`
