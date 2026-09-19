@@ -237,6 +237,52 @@ func TestPhraseAnimationMatrixIsOneMotionPerPhrase(t *testing.T) {
 	}
 }
 
+// TestAppleModernPhraseMatrixIsStableByConstruction keeps the modern Apple
+// phrase lane separate from experimental effects. The lane must never acquire
+// 3D/typewriter/glitch/shake motions by accident: those are useful creative
+// families, but they are not the stable IMPORTANT_PHRASE default requested by
+// the editor.
+func TestAppleModernPhraseMatrixIsStableByConstruction(t *testing.T) {
+	const path = "../../cmd/batch-render-presets/apple-modern-phrase-v2-manifest.json"
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read Apple modern phrase manifest: %v", err)
+	}
+	manifest, err := Decode(raw)
+	if err != nil {
+		t.Fatalf("decode Apple modern phrase manifest: %v", err)
+	}
+	if len(manifest.Jobs) != 10 {
+		t.Fatalf("Apple modern phrase manifest declares %d jobs, want 10", len(manifest.Jobs))
+	}
+	prepared, err := manifest.Prepare(t.TempDir())
+	if err != nil {
+		t.Fatalf("Apple modern phrase manifest does not compile: %v", err)
+	}
+	seen := make(map[string]bool, len(prepared))
+	for _, p := range prepared {
+		if p.Job.TemplateID != "IMPORTANT_PHRASE" || p.Job.PresetID != "apple_v2" {
+			t.Errorf("job %s is not an IMPORTANT_PHRASE/apple_v2 job", p.Job.ID)
+		}
+		if p.Expect.Frames != 120 {
+			t.Errorf("job %s expects %d frames, want 120", p.Job.ID, p.Expect.Frames)
+		}
+		if seen[p.Job.MotionID] {
+			t.Errorf("motion %q is duplicated in the stable Apple lane", p.Job.MotionID)
+		}
+		seen[p.Job.MotionID] = true
+		motion := strings.ToLower(p.Job.MotionID)
+		for _, forbidden := range []string{"typewriter", "3d", "glitch", "shake"} {
+			if strings.Contains(motion, forbidden) {
+				t.Errorf("job %s uses forbidden experimental motion %q", p.Job.ID, p.Job.MotionID)
+			}
+		}
+		if !strings.HasPrefix(p.Job.Output, "renderinggen/apple_modern_phrase_v2/") {
+			t.Errorf("job %s output = %q, want Apple modern phrase directory", p.Job.ID, p.Job.Output)
+		}
+	}
+}
+
 // TestShippedMatrixCompiles is the guard on the real matrix: every job in the
 // manifest this command ships must decode AND lower through the worker's own
 // compiler. It is what makes a preset rename or a dropped motion a test failure

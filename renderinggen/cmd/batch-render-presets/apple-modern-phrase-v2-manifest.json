@@ -1,0 +1,22 @@
+{
+  "schema_version": "renderinggen.preset-render-manifest.v1",
+  "canvas": { "width": 1920, "height": 1080, "fps_num": 24, "fps_den": 1 },
+  "background": {
+    "kind": "color",
+    "color": [0.9333333333333333, 0.9450980392156862, 0.9058823529411765, 1.0]
+  },
+  "output_root": "../../..",
+  "assets_root": "../../../testdata/golden",
+  "jobs": [
+    { "id": "apple_modern_phrase_01_clean_reveal", "template_id": "IMPORTANT_PHRASE", "preset_id": "apple_v2", "motion_id": "apple_phrase_v2", "text": "A CLEAN START", "duration_ms": 5000, "output": "renderinggen/apple_modern_phrase_v2/01_clean_reveal_1920x1080_24fps_5s.mp4" },
+    { "id": "apple_modern_phrase_02_editorial_push", "template_id": "IMPORTANT_PHRASE", "preset_id": "apple_v2", "motion_id": "editorial_push_in", "text": "MOVE WITH PURPOSE", "duration_ms": 5000, "output": "renderinggen/apple_modern_phrase_v2/02_editorial_push_1920x1080_24fps_5s.mp4" },
+    { "id": "apple_modern_phrase_03_soft_expansion", "template_id": "IMPORTANT_PHRASE", "preset_id": "apple_v2", "motion_id": "dynamic_island_expansion", "text": "SPACE TO THINK", "duration_ms": 5000, "output": "renderinggen/apple_modern_phrase_v2/03_soft_expansion_1920x1080_24fps_5s.mp4" },
+    { "id": "apple_modern_phrase_04_soft_rise", "template_id": "IMPORTANT_PHRASE", "preset_id": "apple_v2", "motion_id": "air_rise_type_on", "text": "RISE INTO FOCUS", "duration_ms": 5000, "output": "renderinggen/apple_modern_phrase_v2/04_soft_rise_1920x1080_24fps_5s.mp4" },
+    { "id": "apple_modern_phrase_05_center_expansion", "template_id": "IMPORTANT_PHRASE", "preset_id": "apple_v2", "motion_id": "center_expansion", "text": "MADE TO FEEL SIMPLE", "duration_ms": 5000, "output": "renderinggen/apple_modern_phrase_v2/05_center_expansion_1920x1080_24fps_5s.mp4" },
+    { "id": "apple_modern_phrase_06_soft_focus", "template_id": "IMPORTANT_PHRASE", "preset_id": "apple_v2", "motion_id": "blur_focus_in", "text": "LIGHT ON THE IDEA", "duration_ms": 5000, "output": "renderinggen/apple_modern_phrase_v2/06_soft_focus_1920x1080_24fps_5s.mp4" },
+    { "id": "apple_modern_phrase_07_precision_rise", "template_id": "IMPORTANT_PHRASE", "preset_id": "apple_v2", "motion_id": "precision_spring_up", "text": "EVERY DETAIL COUNTS", "duration_ms": 5000, "output": "renderinggen/apple_modern_phrase_v2/07_precision_rise_1920x1080_24fps_5s.mp4" },
+    { "id": "apple_modern_phrase_08_scale_in", "template_id": "IMPORTANT_PHRASE", "preset_id": "apple_v2", "motion_id": "scale_in", "text": "LESS BUT BETTER", "duration_ms": 5000, "output": "renderinggen/apple_modern_phrase_v2/08_scale_in_1920x1080_24fps_5s.mp4" },
+    { "id": "apple_modern_phrase_09_soft_pop", "template_id": "IMPORTANT_PHRASE", "preset_id": "apple_v2", "motion_id": "soft_pop", "text": "BUILT AROUND PEOPLE", "duration_ms": 5000, "output": "renderinggen/apple_modern_phrase_v2/09_soft_pop_1920x1080_24fps_5s.mp4" },
+    { "id": "apple_modern_phrase_10_glass_reveal", "template_id": "IMPORTANT_PHRASE", "preset_id": "apple_v2", "motion_id": "liquid_glass_ripple", "text": "CLARITY IN MOTION", "duration_ms": 5000, "output": "renderinggen/apple_modern_phrase_v2/10_glass_reveal_1920x1080_24fps_5s.mp4" }
+  ]
+}

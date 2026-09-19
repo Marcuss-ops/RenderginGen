@@ -610,6 +610,9 @@ func compileTextLayer(ri resolvedItem, src *semanticPlan, layerID string) (Layer
 	layer := Layer{ID: layerID, Type: "text", Text: text, StartFrame: ri.Start, DurationFrames: ri.End - ri.Start}
 	if ri.Preset.ID != "" {
 		applyPresetDefinition(&layer, ri.Preset)
+		if layer.Style != nil {
+			layer.Style.Font = officialFontPathForLanguage(src.Language)
+		}
 	}
 	// Text placement is expressed as a layer top-left plus a local text box.
 	// materialize_text uses the serialized box size, while the layer position
