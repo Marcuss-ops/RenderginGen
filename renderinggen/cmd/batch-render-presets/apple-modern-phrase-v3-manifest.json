@@ -1,0 +1,24 @@
+{
+  "schema_version": "renderinggen.preset-render-manifest.v1",
+  "canvas": { "width": 1920, "height": 1080, "fps_num": 24, "fps_den": 1 },
+  "background": {
+    "kind": "color",
+    "color": [0.9333333333, 0.9450980392, 0.9058823529, 1.0]
+  },
+  "output_root": "../../..",
+  "assets_root": "../../../testdata/golden",
+  "jobs": [
+    { "id": "apple_modern_phrase_v3_01_rack_focus", "template_id": "IMPORTANT_PHRASE", "preset_id": "apple_v2", "motion_id": "depth_of_field_rack_focus", "motion_params": { "enter_frames": 48, "exit_frames": 48 }, "text": "SEE THE DIFFERENCE", "duration_ms": 6000, "output": "renderinggen/apple_modern_phrase_v3/01_rack_focus_1920x1080_24fps_6s.mp4" },
+    { "id": "apple_modern_phrase_v3_02_masked_rise", "template_id": "IMPORTANT_PHRASE", "preset_id": "apple_v2", "motion_id": "masked_upward_reveal", "motion_params": { "enter_frames": 48, "exit_frames": 48 }, "text": "MADE FOR THE MOMENT", "duration_ms": 6000, "output": "renderinggen/apple_modern_phrase_v3/02_masked_rise_1920x1080_24fps_6s.mp4" },
+    { "id": "apple_modern_phrase_v3_03_stamp_impact", "template_id": "IMPORTANT_PHRASE", "preset_id": "apple_v2", "motion_id": "kinetic_stamp_impact", "motion_params": { "enter_frames": 48, "exit_frames": 48 }, "text": "START WITH CLARITY", "duration_ms": 6000, "output": "renderinggen/apple_modern_phrase_v3/03_stamp_impact_1920x1080_24fps_6s.mp4" },
+    { "id": "apple_modern_phrase_v3_04_center_open", "template_id": "IMPORTANT_PHRASE", "preset_id": "apple_v2", "motion_id": "crisp_mask_center_open", "motion_params": { "enter_frames": 48, "exit_frames": 48 }, "text": "OPEN NEW SPACE", "duration_ms": 6000, "output": "renderinggen/apple_modern_phrase_v3/04_center_open_1920x1080_24fps_6s.mp4" },
+    { "id": "apple_modern_phrase_v3_05_parallax_settle", "template_id": "IMPORTANT_PHRASE", "preset_id": "apple_v2", "motion_id": "parallax_depth_stack", "motion_params": { "enter_frames": 48, "exit_frames": 48 }, "text": "DEPTH IN EVERY DETAIL", "duration_ms": 6000, "output": "renderinggen/apple_modern_phrase_v3/05_parallax_settle_1920x1080_24fps_6s.mp4" },
+    { "id": "apple_modern_phrase_v3_06_spotlight", "template_id": "IMPORTANT_PHRASE", "preset_id": "apple_v2", "motion_id": "spotlight_iris_open", "motion_params": { "enter_frames": 48, "exit_frames": 48 }, "text": "A CLEARER POINT OF VIEW", "duration_ms": 6000, "output": "renderinggen/apple_modern_phrase_v3/06_spotlight_1920x1080_24fps_6s.mp4" },
+    { "id": "apple_modern_phrase_v3_07_float", "template_id": "IMPORTANT_PHRASE", "preset_id": "apple_v2", "motion_id": "weightless_float_settle", "motion_params": { "enter_frames": 48, "exit_frames": 48 }, "text": "LET THE IDEA LAND", "duration_ms": 6000, "output": "renderinggen/apple_modern_phrase_v3/07_float_1920x1080_24fps_6s.mp4" },
+    { "id": "apple_modern_phrase_v3_08_velocity_snap", "template_id": "IMPORTANT_PHRASE", "preset_id": "apple_v2", "motion_id": "velocity_inertia_snap", "motion_params": { "enter_frames": 48, "exit_frames": 48 }, "text": "MOVE WITH INTENT", "duration_ms": 6000, "output": "renderinggen/apple_modern_phrase_v3/08_velocity_snap_1920x1080_24fps_6s.mp4" },
+    { "id": "apple_modern_phrase_v3_09_vertical_reel", "template_id": "IMPORTANT_PHRASE", "preset_id": "apple_v2", "motion_id": "vertical_reel_snap", "motion_params": { "enter_frames": 48, "exit_frames": 48 }, "text": "THE NEXT FRAME", "duration_ms": 6000, "output": "renderinggen/apple_modern_phrase_v3/09_vertical_reel_1920x1080_24fps_6s.mp4" },
+    { "id": "apple_modern_phrase_v3_10_soft_dissolve", "template_id": "IMPORTANT_PHRASE", "preset_id": "apple_v2", "motion_id": "soft_edge_spotlight_dissolve", "motion_params": { "enter_frames": 48, "exit_frames": 48 }, "text": "LIGHT ON THE IDEA", "duration_ms": 6000, "output": "renderinggen/apple_modern_phrase_v3/10_soft_dissolve_1920x1080_24fps_6s.mp4" },
+    { "id": "apple_modern_phrase_v3_11_shutter_reveal", "template_id": "IMPORTANT_PHRASE", "preset_id": "apple_v2", "motion_id": "shutter_blade_reveal", "motion_params": { "enter_frames": 48, "exit_frames": 48 }, "text": "BUILT TO BE SIMPLE", "duration_ms": 6000, "output": "renderinggen/apple_modern_phrase_v3/11_shutter_reveal_1920x1080_24fps_6s.mp4" },
+    { "id": "apple_modern_phrase_v3_12_aurora_flow", "template_id": "IMPORTANT_PHRASE", "preset_id": "apple_v2", "motion_id": "aurora_gradient_sweep", "motion_params": { "enter_frames": 48, "exit_frames": 48 }, "text": "MAKE ROOM FOR MORE", "duration_ms": 6000, "output": "renderinggen/apple_modern_phrase_v3/12_aurora_flow_1920x1080_24fps_6s.mp4" }
+  ]
+}

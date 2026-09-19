@@ -1,0 +1,153 @@
+{
+  "schema": "chronon.render-plan.v2",
+  "version": 2,
+  "job_id": "apple_modern_phrase_v4_01_blur_focus",
+  "canvas": {
+    "width": 1920,
+    "height": 1080,
+    "fps_num": 24,
+    "fps_den": 1,
+    "duration_frames": 144
+  },
+  "layers": [
+    {
+      "id": "background",
+      "type": "color",
+      "color": [
+        0.9333333333,
+        0.9450980392,
+        0.9058823529,
+        1
+      ],
+      "size": [
+        1920,
+        1080
+      ],
+      "start_frame": 0,
+      "duration_frames": 144
+    },
+    {
+      "id": "item_1",
+      "type": "text",
+      "text": "SEE THE DIFFERENCE",
+      "size": [
+        1920,
+        120
+      ],
+      "position": [
+        0,
+        0
+      ],
+      "style": {
+        "font": "assets/fonts/Poppins-Bold.ttf",
+        "font_size": 64,
+        "fill": "#FFFFFF",
+        "stroke": {
+          "color": "#111827",
+          "width": 3.5
+        },
+        "shadow": {
+          "color": "#000000",
+          "opacity": 0.72,
+          "blur": 12,
+          "offset": [
+            0,
+            4
+          ]
+        }
+      },
+      "start_frame": 0,
+      "duration_frames": 144,
+      "animation": {
+        "tracks": [
+          {
+            "property": "opacity",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 0
+              },
+              {
+                "frame": 8,
+                "value": 1
+              },
+              {
+                "frame": 135,
+                "value": 1
+              },
+              {
+                "frame": 143,
+                "value": 0
+              }
+            ],
+            "easing": "linear"
+          }
+        ]
+      },
+      "text_animators": [
+        {
+          "id": "blur_focus_in_text",
+          "selectors": [
+            {
+              "id": "blur_focus_in_text_selector",
+              "unit": "glyph",
+              "shape": "smooth",
+              "order": "forward",
+              "combine": "replace",
+              "exclude_spaces": true
+            }
+          ],
+          "properties": [
+            {
+              "property": "blur",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 24
+                },
+                {
+                  "frame": 47,
+                  "value": 0
+                }
+              ],
+              "easing": "out_cubic"
+            },
+            {
+              "property": "scale",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 1.08
+                },
+                {
+                  "frame": 47,
+                  "value": 1
+                }
+              ],
+              "easing": "out_cubic"
+            },
+            {
+              "property": "opacity",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0
+                },
+                {
+                  "frame": 23,
+                  "value": 1
+                }
+              ],
+              "easing": "out_cubic"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "output": {
+    "path": "result.mp4",
+    "format": "mp4",
+    "codec": "h264"
+  }
+}

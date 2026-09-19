@@ -283,6 +283,63 @@ func TestAppleModernPhraseMatrixIsStableByConstruction(t *testing.T) {
 	}
 }
 
+// TestAppleModernPhraseV4HasFiveDistinctSmoothFamilies protects the visual
+// correction: v4 is deliberately smaller than v3, contains no rotation or
+// experimental motion, and each job has a real two-second entrance and exit.
+func TestAppleModernPhraseV4HasFiveDistinctSmoothFamilies(t *testing.T) {
+	const path = "../../cmd/batch-render-presets/apple-modern-phrase-v4-manifest.json"
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read Apple modern phrase v4 manifest: %v", err)
+	}
+	manifest, err := Decode(raw)
+	if err != nil {
+		t.Fatalf("decode Apple modern phrase v4 manifest: %v", err)
+	}
+	if len(manifest.Jobs) != 5 {
+		t.Fatalf("Apple modern phrase v4 declares %d jobs, want 5", len(manifest.Jobs))
+	}
+	wantMotions := map[string]bool{
+		"blur_focus_in":      true,
+		"air_rise_type_on":   true,
+		"soft_clay_press":    true,
+		"tracking_expansion": true,
+		"letterbox_wipe":     true,
+	}
+	seen := make(map[string]bool, len(manifest.Jobs))
+	prepared, err := manifest.Prepare(t.TempDir())
+	if err != nil {
+		t.Fatalf("Apple modern phrase v4 does not compile: %v", err)
+	}
+	for _, p := range prepared {
+		if p.Job.TemplateID != "IMPORTANT_PHRASE" || p.Job.PresetID != "apple_v2" {
+			t.Errorf("job %s is not an IMPORTANT_PHRASE/apple_v2 job", p.Job.ID)
+		}
+		if p.Expect.Frames != 144 {
+			t.Errorf("job %s expects %d frames, want 144", p.Job.ID, p.Expect.Frames)
+		}
+		if seen[p.Job.MotionID] {
+			t.Errorf("motion %q is duplicated in v4", p.Job.MotionID)
+		}
+		seen[p.Job.MotionID] = true
+		if !wantMotions[p.Job.MotionID] {
+			t.Errorf("job %s uses motion %q outside the five smooth v4 families", p.Job.ID, p.Job.MotionID)
+		}
+		if got := p.Job.MotionParams["enter_frames"]; got != float64(48) {
+			t.Errorf("job %s enter_frames = %#v, want 48", p.Job.ID, got)
+		}
+		if got := p.Job.MotionParams["exit_frames"]; got != float64(48) {
+			t.Errorf("job %s exit_frames = %#v, want 48", p.Job.ID, got)
+		}
+		if strings.Contains(strings.ToLower(p.Job.MotionID), "rotation") {
+			t.Errorf("job %s uses rotation motion %q", p.Job.ID, p.Job.MotionID)
+		}
+		if !strings.HasPrefix(p.Job.Output, "renderinggen/apple_modern_phrase_v4/") {
+			t.Errorf("job %s output = %q, want v4 output directory", p.Job.ID, p.Job.Output)
+		}
+	}
+}
+
 // TestAppleModernPhraseV3UsesRealVisualFamilies guards against another batch
 // that only renames the same gentle fade. The v3 lane is intentionally made of
 // materially different catalog motions: blur, position, scale, rotation and

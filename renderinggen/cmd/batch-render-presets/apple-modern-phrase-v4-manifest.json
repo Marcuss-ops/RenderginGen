@@ -1,0 +1,17 @@
+{
+  "schema_version": "renderinggen.preset-render-manifest.v1",
+  "canvas": { "width": 1920, "height": 1080, "fps_num": 24, "fps_den": 1 },
+  "background": {
+    "kind": "color",
+    "color": [0.9333333333, 0.9450980392, 0.9058823529, 1.0]
+  },
+  "output_root": "../../..",
+  "assets_root": "../../../testdata/golden",
+  "jobs": [
+    { "id": "apple_modern_phrase_v4_01_blur_focus", "template_id": "IMPORTANT_PHRASE", "preset_id": "apple_v2", "motion_id": "blur_focus_in", "motion_params": { "enter_frames": 48, "exit_frames": 48 }, "text": "SEE THE DIFFERENCE", "duration_ms": 6000, "output": "renderinggen/apple_modern_phrase_v4/01_blur_focus_1920x1080_24fps_6s.mp4" },
+    { "id": "apple_modern_phrase_v4_02_glyph_rise", "template_id": "IMPORTANT_PHRASE", "preset_id": "apple_v2", "motion_id": "air_rise_type_on", "motion_params": { "enter_frames": 48, "exit_frames": 48 }, "text": "MADE FOR THE MOMENT", "duration_ms": 6000, "output": "renderinggen/apple_modern_phrase_v4/02_glyph_rise_1920x1080_24fps_6s.mp4" },
+    { "id": "apple_modern_phrase_v4_03_scale_settle", "template_id": "IMPORTANT_PHRASE", "preset_id": "apple_v2", "motion_id": "soft_clay_press", "motion_params": { "enter_frames": 48, "exit_frames": 48 }, "text": "START WITH CLARITY", "duration_ms": 6000, "output": "renderinggen/apple_modern_phrase_v4/03_scale_settle_1920x1080_24fps_6s.mp4" },
+    { "id": "apple_modern_phrase_v4_04_tracking_breathe", "template_id": "IMPORTANT_PHRASE", "preset_id": "apple_v2", "motion_id": "tracking_expansion", "motion_params": { "enter_frames": 48, "exit_frames": 48 }, "text": "OPEN NEW SPACE", "duration_ms": 6000, "output": "renderinggen/apple_modern_phrase_v4/04_tracking_breathe_1920x1080_24fps_6s.mp4" },
+    { "id": "apple_modern_phrase_v4_05_horizontal_wipe", "template_id": "IMPORTANT_PHRASE", "preset_id": "apple_v2", "motion_id": "letterbox_wipe", "motion_params": { "enter_frames": 48, "exit_frames": 48 }, "text": "DEPTH IN EVERY DETAIL", "duration_ms": 6000, "output": "renderinggen/apple_modern_phrase_v4/05_horizontal_wipe_1920x1080_24fps_6s.mp4" }
+  ]
+}
