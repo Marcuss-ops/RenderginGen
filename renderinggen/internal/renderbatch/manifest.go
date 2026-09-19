@@ -75,7 +75,11 @@ type Job struct {
 	TemplateID string `json:"template_id"`
 	PresetID   string `json:"preset_id"`
 	MotionID   string `json:"motion_id,omitempty"`
-	Text       string `json:"text,omitempty"`
+	// MotionParams carries bounded per-job timing overrides and other
+	// renderer-neutral motion parameters. The v3 phrase matrix uses
+	// enter_frames/exit_frames to make both transitions exactly two seconds.
+	MotionParams map[string]any `json:"motion_params,omitempty"`
+	Text         string         `json:"text,omitempty"`
 	// DurationMS defaults to DefaultDurationMS.
 	DurationMS int64 `json:"duration_ms,omitempty"`
 	// Output is the rendered file, relative to the effective output root.
@@ -299,13 +303,14 @@ func (m *Manifest) buildPlan(job Job) ([]byte, error) {
 		DurationMS: duration,
 		Background: &Surface{Kind: m.Background.Kind, Color: m.Background.Color},
 		Items: []PlanItem{{
-			ID:         "item_1",
-			TemplateID: job.TemplateID,
-			PresetID:   job.PresetID,
-			MotionID:   job.MotionID,
-			Text:       job.Text,
-			StartMS:    0,
-			EndMS:      duration,
+			ID:           "item_1",
+			TemplateID:   job.TemplateID,
+			PresetID:     job.PresetID,
+			MotionID:     job.MotionID,
+			MotionParams: job.MotionParams,
+			Text:         job.Text,
+			StartMS:      0,
+			EndMS:        duration,
 		}},
 	})
 }

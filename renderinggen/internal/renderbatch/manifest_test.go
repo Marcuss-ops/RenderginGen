@@ -283,6 +283,55 @@ func TestAppleModernPhraseMatrixIsStableByConstruction(t *testing.T) {
 	}
 }
 
+// TestAppleModernPhraseV3UsesRealVisualFamilies guards against another batch
+// that only renames the same gentle fade. The v3 lane is intentionally made of
+// materially different catalog motions: blur, position, scale, rotation and
+// glyph-level reveals must all remain represented in the compiled plans.
+func TestAppleModernPhraseV3UsesRealVisualFamilies(t *testing.T) {
+	const path = "../../cmd/batch-render-presets/apple-modern-phrase-v3-manifest.json"
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read Apple modern phrase v3 manifest: %v", err)
+	}
+	manifest, err := Decode(raw)
+	if err != nil {
+		t.Fatalf("decode Apple modern phrase v3 manifest: %v", err)
+	}
+	prepared, err := manifest.Prepare(t.TempDir())
+	if err != nil {
+		t.Fatalf("Apple modern phrase v3 manifest does not compile: %v", err)
+	}
+	if len(prepared) != 12 {
+		t.Fatalf("v3 declares %d jobs, want 12", len(prepared))
+	}
+	want := map[string][]string{
+		"depth_of_field_rack_focus": {"blur"},
+		"kinetic_stamp_impact":      {"rotation_z", "scale"},
+		"parallax_depth_stack":      {"rotation_z", "position_y", "scale"},
+		"velocity_inertia_snap":     {"rotation_z", "position_x"},
+		"vertical_reel_snap":        {"rotation_z", "position_y", "scale"},
+	}
+	for _, p := range prepared {
+		if p.Job.TemplateID != "IMPORTANT_PHRASE" || p.Job.PresetID != "apple_v2" {
+			t.Errorf("job %s is not an IMPORTANT_PHRASE/apple_v2 job", p.Job.ID)
+		}
+		if p.Job.MotionID == "" {
+			t.Errorf("job %s has no motion", p.Job.ID)
+		}
+		if p.Expect.Frames != 144 {
+			t.Errorf("job %s expects %d frames, want 144 (6 seconds at 24 fps)", p.Job.ID, p.Expect.Frames)
+		}
+		if p.Job.MotionParams["enter_frames"] != float64(48) || p.Job.MotionParams["exit_frames"] != float64(48) {
+			t.Errorf("job %s timing params = %v, want 48-frame entrance and exit", p.Job.ID, p.Job.MotionParams)
+		}
+		for _, property := range want[p.Job.MotionID] {
+			if !strings.Contains(string(p.RenderPlan), `"property": "`+property+`"`) {
+				t.Errorf("job %s motion %s lost property %s in compiled plan", p.Job.ID, p.Job.MotionID, property)
+			}
+		}
+	}
+}
+
 // TestShippedMatrixCompiles is the guard on the real matrix: every job in the
 // manifest this command ships must decode AND lower through the worker's own
 // compiler. It is what makes a preset rename or a dropped motion a test failure
