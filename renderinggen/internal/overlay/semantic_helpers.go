@@ -5,6 +5,7 @@
 package overlay
 
 import (
+	"encoding/json"
 	"fmt"
 	"math"
 	"strings"
@@ -17,7 +18,8 @@ import (
 // a producer that overrides only the entrance still gets an out instead of a
 // hard cut. The motion's registered windows fill in whatever the caller omits.
 func animationForMotion(id string, params map[string]any, textValue string, duration int64, presetExit int) (*LayerAnimation, error) {
-	animation, err := lowerMotion(id, 0, presetExit, motion.MotionParams(params), textValue, duration)
+	enter, exit := motionWindows(params, presetExit)
+	animation, err := lowerMotion(id, enter, exit, motion.MotionParams(params), textValue, duration)
 	if err != nil {
 		return nil, err
 	}
@@ -28,6 +30,49 @@ func animationForMotion(id string, params map[string]any, textValue string, dura
 		return nil, err
 	}
 	return animation, nil
+}
+
+// motionWindows is deliberately small and bounded: producers may tune the
+// readable timing window, but they cannot use motion_params to inject a new
+// animation contract. Values are frame counts at the plan's frame rate.
+func motionWindows(params map[string]any, presetExit int) (enter, exit int) {
+	exit = presetExit
+	if params == nil {
+		return 0, exit
+	}
+	if value, ok := positiveMotionFrameParam(params["enter_frames"]); ok {
+		enter = value
+	}
+	if value, ok := positiveMotionFrameParam(params["exit_frames"]); ok {
+		exit = value
+	}
+	return enter, exit
+}
+
+func positiveMotionFrameParam(value any) (int, bool) {
+	var frames int
+	switch v := value.(type) {
+	case float64:
+		frames = int(v)
+	case float32:
+		frames = int(v)
+	case int:
+		frames = v
+	case int64:
+		frames = int(v)
+	case json.Number:
+		parsed, err := v.Int64()
+		if err != nil {
+			return 0, false
+		}
+		frames = int(parsed)
+	default:
+		return 0, false
+	}
+	if frames < 1 || frames > 240 {
+		return 0, false
+	}
+	return frames, true
 }
 
 func validateTextMotion(animators []TextAnimator, id string) error {
