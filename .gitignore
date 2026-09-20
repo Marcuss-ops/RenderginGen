@@ -83,6 +83,11 @@ token.json
 /multilingual_overlays_v1/verify/
 /multilingual_overlays_v1/jobs_snapshot_*.json
 assets/backgrounds/*.mp4
+!assets/backgrounds/background-boxe.mp4
+!assets/backgrounds/background-crime.mp4
+!assets/backgrounds/background-music.mp4
+!assets/backgrounds/background-wwe.mp4
+!assets/backgrounds/background-discovery.mp4
 
 # Keep testdata/golden intentionally tiny: only canonical CI/regression fixtures.
 /testdata/golden/*

@@ -1,6 +1,6 @@
 # Curated video backgrounds
 
-These six backgrounds were downloaded from the supplied Google Drive files and
+These eleven backgrounds were downloaded from the supplied Google Drive files and
 normalized for RenderingGen. The original files contained an AAC audio stream;
 the checked-in versions are video-only (`-an`) so they are safe for Chronon's
 `VIDEO_BACKGROUND` layer and preserve the master voiceover/audio contract.
@@ -35,3 +35,21 @@ To use one in a semantic plan, reference it as an asset and select the
 The worker still materializes assets through the content-addressed object
 store. These files are the curated source fixtures; production jobs should
 upload the same bytes under their manifest hashes before enqueueing a job.
+
+The channel-specific plates can be selected from a generation payload with a
+human label; the ingress resolver maps the label to the canonical asset id:
+
+```json
+{
+  "output": {
+    "render": {
+      "background": "Boxe"
+    }
+  }
+}
+```
+
+Supported labels are `Boxe`, `Crime`, `Music`, `Wwe` and `Discovery`. Their
+canonical ids are `drive-background-boxe`, `drive-background-crime`,
+`drive-background-music`, `drive-background-wwe` and
+`drive-background-discovery`.
