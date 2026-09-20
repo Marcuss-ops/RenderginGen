@@ -70,13 +70,13 @@ type CatalogSelections struct {
 
 // Catalog is the parsed canonical catalog.
 type Catalog struct {
-	SchemaVersion  int                    `json:"schema_version"`
-	Source         string                 `json:"source"`
-	Templates      []CatalogTemplate      `json:"templates"`
-	Final3DPresets []CatalogPreset        `json:"final3d_presets"`
-	Motions        []MotionDefinition     `json:"motions"`
-	OverlayPresets map[string][]string    `json:"overlay_presets"`
-	Selections     CatalogSelections      `json:"selections"`
+	SchemaVersion  int                 `json:"schema_version"`
+	Source         string              `json:"source"`
+	Templates      []CatalogTemplate   `json:"templates"`
+	Final3DPresets []CatalogPreset     `json:"final3d_presets"`
+	Motions        []MotionDefinition  `json:"motions"`
+	OverlayPresets map[string][]string `json:"overlay_presets"`
+	Selections     CatalogSelections   `json:"selections"`
 }
 
 var (
