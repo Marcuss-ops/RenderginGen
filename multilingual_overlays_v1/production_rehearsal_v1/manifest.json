@@ -1,0 +1,536 @@
+{
+  "schema_version": "renderinggen.batch-manifest.v1",
+  "batch_id": "ml-production-rehearsal-20260920",
+  "jobs": [
+    {
+      "id": "phrase_01_lower_third_safe__it",
+      "render_plan": {
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "plan_id": "phrase_01_lower_third_safe__it",
+        "video_id": "phrase_01_lower_third_safe__it",
+        "language": "it",
+        "width": 1920,
+        "height": 1080,
+        "fps_num": 24,
+        "fps_den": 1,
+        "duration_ms": 5000,
+        "output_profile_id": "",
+        "style_profile": "",
+        "background": {
+          "kind": "color",
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1
+          ]
+        },
+        "items": [
+          {
+            "id": "item_1",
+            "template_id": "IMPORTANT_PHRASE",
+            "preset_id": "apple_v2",
+            "motion_id": "liquid_glass_ripple",
+            "kind": "important_phrase",
+            "text": "La costanza trasforma un'idea in un risultato.",
+            "start_ms": 0,
+            "end_ms": 5000
+          }
+        ]
+      },
+      "assets": [
+        {
+          "hash": "983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c",
+          "logical_path": "assets/fonts/Poppins-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Poppins-Bold.ttf"
+        },
+        {
+          "hash": "deb990e241954e1af87c6033d40a76cf0f48e0d112541794526051ac4a3ee2c8",
+          "logical_path": "assets/fonts/Inter-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Inter-Bold.ttf"
+        }
+      ],
+      "family": "phrase",
+      "text": "La costanza trasforma un'idea in un risultato.",
+      "motion_id": "liquid_glass_ripple",
+      "preset_id": "apple_v2"
+    },
+    {
+      "id": "phrase_01_lower_third_safe__en",
+      "render_plan": {
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "plan_id": "phrase_01_lower_third_safe__en",
+        "video_id": "phrase_01_lower_third_safe__en",
+        "language": "en",
+        "width": 1920,
+        "height": 1080,
+        "fps_num": 24,
+        "fps_den": 1,
+        "duration_ms": 5000,
+        "output_profile_id": "",
+        "style_profile": "",
+        "background": {
+          "kind": "color",
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1
+          ]
+        },
+        "items": [
+          {
+            "id": "item_1",
+            "template_id": "IMPORTANT_PHRASE",
+            "preset_id": "apple_v2",
+            "motion_id": "liquid_glass_ripple",
+            "kind": "important_phrase",
+            "text": "Consistency turns an idea into results.",
+            "start_ms": 0,
+            "end_ms": 5000
+          }
+        ]
+      },
+      "assets": [
+        {
+          "hash": "983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c",
+          "logical_path": "assets/fonts/Poppins-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Poppins-Bold.ttf"
+        },
+        {
+          "hash": "deb990e241954e1af87c6033d40a76cf0f48e0d112541794526051ac4a3ee2c8",
+          "logical_path": "assets/fonts/Inter-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Inter-Bold.ttf"
+        }
+      ],
+      "family": "phrase",
+      "text": "Consistency turns an idea into results.",
+      "motion_id": "liquid_glass_ripple",
+      "preset_id": "apple_v2"
+    },
+    {
+      "id": "phrase_01_lower_third_safe__pl",
+      "render_plan": {
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "plan_id": "phrase_01_lower_third_safe__pl",
+        "video_id": "phrase_01_lower_third_safe__pl",
+        "language": "pl",
+        "width": 1920,
+        "height": 1080,
+        "fps_num": 24,
+        "fps_den": 1,
+        "duration_ms": 5000,
+        "output_profile_id": "",
+        "style_profile": "",
+        "background": {
+          "kind": "color",
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1
+          ]
+        },
+        "items": [
+          {
+            "id": "item_1",
+            "template_id": "IMPORTANT_PHRASE",
+            "preset_id": "apple_v2",
+            "motion_id": "liquid_glass_ripple",
+            "kind": "important_phrase",
+            "text": "Konsekwencja zamienia pomysł w rezultat.",
+            "start_ms": 0,
+            "end_ms": 5000
+          }
+        ]
+      },
+      "assets": [
+        {
+          "hash": "983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c",
+          "logical_path": "assets/fonts/Poppins-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Poppins-Bold.ttf"
+        },
+        {
+          "hash": "deb990e241954e1af87c6033d40a76cf0f48e0d112541794526051ac4a3ee2c8",
+          "logical_path": "assets/fonts/Inter-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Inter-Bold.ttf"
+        }
+      ],
+      "family": "phrase",
+      "text": "Konsekwencja zamienia pomysł w rezultat.",
+      "motion_id": "liquid_glass_ripple",
+      "preset_id": "apple_v2"
+    },
+    {
+      "id": "phrase_01_lower_third_safe__ru",
+      "render_plan": {
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "plan_id": "phrase_01_lower_third_safe__ru",
+        "video_id": "phrase_01_lower_third_safe__ru",
+        "language": "ru",
+        "width": 1920,
+        "height": 1080,
+        "fps_num": 24,
+        "fps_den": 1,
+        "duration_ms": 5000,
+        "output_profile_id": "",
+        "style_profile": "",
+        "background": {
+          "kind": "color",
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1
+          ]
+        },
+        "items": [
+          {
+            "id": "item_1",
+            "template_id": "IMPORTANT_PHRASE",
+            "preset_id": "apple_v2",
+            "motion_id": "liquid_glass_ripple",
+            "kind": "important_phrase",
+            "text": "Последовательность превращает идею в результат.",
+            "start_ms": 0,
+            "end_ms": 5000
+          }
+        ]
+      },
+      "assets": [
+        {
+          "hash": "983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c",
+          "logical_path": "assets/fonts/Poppins-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Poppins-Bold.ttf"
+        },
+        {
+          "hash": "deb990e241954e1af87c6033d40a76cf0f48e0d112541794526051ac4a3ee2c8",
+          "logical_path": "assets/fonts/Inter-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Inter-Bold.ttf"
+        }
+      ],
+      "family": "phrase",
+      "text": "Последовательность превращает идею в результат.",
+      "motion_id": "liquid_glass_ripple",
+      "preset_id": "apple_v2"
+    },
+    {
+      "id": "phrase_01_lower_third_safe__de",
+      "render_plan": {
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "plan_id": "phrase_01_lower_third_safe__de",
+        "video_id": "phrase_01_lower_third_safe__de",
+        "language": "de",
+        "width": 1920,
+        "height": 1080,
+        "fps_num": 24,
+        "fps_den": 1,
+        "duration_ms": 5000,
+        "output_profile_id": "",
+        "style_profile": "",
+        "background": {
+          "kind": "color",
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1
+          ]
+        },
+        "items": [
+          {
+            "id": "item_1",
+            "template_id": "IMPORTANT_PHRASE",
+            "preset_id": "apple_v2",
+            "motion_id": "liquid_glass_ripple",
+            "kind": "important_phrase",
+            "text": "Beständigkeit macht aus einer Idee ein Ergebnis.",
+            "start_ms": 0,
+            "end_ms": 5000
+          }
+        ]
+      },
+      "assets": [
+        {
+          "hash": "983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c",
+          "logical_path": "assets/fonts/Poppins-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Poppins-Bold.ttf"
+        },
+        {
+          "hash": "deb990e241954e1af87c6033d40a76cf0f48e0d112541794526051ac4a3ee2c8",
+          "logical_path": "assets/fonts/Inter-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Inter-Bold.ttf"
+        }
+      ],
+      "family": "phrase",
+      "text": "Beständigkeit macht aus einer Idee ein Ergebnis.",
+      "motion_id": "liquid_glass_ripple",
+      "preset_id": "apple_v2"
+    },
+    {
+      "id": "phrase_01_lower_third_safe__es",
+      "render_plan": {
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "plan_id": "phrase_01_lower_third_safe__es",
+        "video_id": "phrase_01_lower_third_safe__es",
+        "language": "es",
+        "width": 1920,
+        "height": 1080,
+        "fps_num": 24,
+        "fps_den": 1,
+        "duration_ms": 5000,
+        "output_profile_id": "",
+        "style_profile": "",
+        "background": {
+          "kind": "color",
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1
+          ]
+        },
+        "items": [
+          {
+            "id": "item_1",
+            "template_id": "IMPORTANT_PHRASE",
+            "preset_id": "apple_v2",
+            "motion_id": "liquid_glass_ripple",
+            "kind": "important_phrase",
+            "text": "La constancia convierte una idea en resultados.",
+            "start_ms": 0,
+            "end_ms": 5000
+          }
+        ]
+      },
+      "assets": [
+        {
+          "hash": "983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c",
+          "logical_path": "assets/fonts/Poppins-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Poppins-Bold.ttf"
+        },
+        {
+          "hash": "deb990e241954e1af87c6033d40a76cf0f48e0d112541794526051ac4a3ee2c8",
+          "logical_path": "assets/fonts/Inter-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Inter-Bold.ttf"
+        }
+      ],
+      "family": "phrase",
+      "text": "La constancia convierte una idea en resultados.",
+      "motion_id": "liquid_glass_ripple",
+      "preset_id": "apple_v2"
+    },
+    {
+      "id": "phrase_01_lower_third_safe__pt-BR",
+      "render_plan": {
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "plan_id": "phrase_01_lower_third_safe__pt-BR",
+        "video_id": "phrase_01_lower_third_safe__pt-BR",
+        "language": "pt-BR",
+        "width": 1920,
+        "height": 1080,
+        "fps_num": 24,
+        "fps_den": 1,
+        "duration_ms": 5000,
+        "output_profile_id": "",
+        "style_profile": "",
+        "background": {
+          "kind": "color",
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1
+          ]
+        },
+        "items": [
+          {
+            "id": "item_1",
+            "template_id": "IMPORTANT_PHRASE",
+            "preset_id": "apple_v2",
+            "motion_id": "liquid_glass_ripple",
+            "kind": "important_phrase",
+            "text": "A consistência transforma uma ideia em resultados.",
+            "start_ms": 0,
+            "end_ms": 5000
+          }
+        ]
+      },
+      "assets": [
+        {
+          "hash": "983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c",
+          "logical_path": "assets/fonts/Poppins-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Poppins-Bold.ttf"
+        },
+        {
+          "hash": "deb990e241954e1af87c6033d40a76cf0f48e0d112541794526051ac4a3ee2c8",
+          "logical_path": "assets/fonts/Inter-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Inter-Bold.ttf"
+        }
+      ],
+      "family": "phrase",
+      "text": "A consistência transforma uma ideia em resultados.",
+      "motion_id": "liquid_glass_ripple",
+      "preset_id": "apple_v2"
+    },
+    {
+      "id": "phrase_01_lower_third_safe__fr",
+      "render_plan": {
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "plan_id": "phrase_01_lower_third_safe__fr",
+        "video_id": "phrase_01_lower_third_safe__fr",
+        "language": "fr",
+        "width": 1920,
+        "height": 1080,
+        "fps_num": 24,
+        "fps_den": 1,
+        "duration_ms": 5000,
+        "output_profile_id": "",
+        "style_profile": "",
+        "background": {
+          "kind": "color",
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1
+          ]
+        },
+        "items": [
+          {
+            "id": "item_1",
+            "template_id": "IMPORTANT_PHRASE",
+            "preset_id": "apple_v2",
+            "motion_id": "liquid_glass_ripple",
+            "kind": "important_phrase",
+            "text": "La constance transforme une idée en résultats.",
+            "start_ms": 0,
+            "end_ms": 5000
+          }
+        ]
+      },
+      "assets": [
+        {
+          "hash": "983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c",
+          "logical_path": "assets/fonts/Poppins-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Poppins-Bold.ttf"
+        },
+        {
+          "hash": "deb990e241954e1af87c6033d40a76cf0f48e0d112541794526051ac4a3ee2c8",
+          "logical_path": "assets/fonts/Inter-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Inter-Bold.ttf"
+        }
+      ],
+      "family": "phrase",
+      "text": "La constance transforme une idée en résultats.",
+      "motion_id": "liquid_glass_ripple",
+      "preset_id": "apple_v2"
+    },
+    {
+      "id": "phrase_01_lower_third_safe__tr",
+      "render_plan": {
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "plan_id": "phrase_01_lower_third_safe__tr",
+        "video_id": "phrase_01_lower_third_safe__tr",
+        "language": "tr",
+        "width": 1920,
+        "height": 1080,
+        "fps_num": 24,
+        "fps_den": 1,
+        "duration_ms": 5000,
+        "output_profile_id": "",
+        "style_profile": "",
+        "background": {
+          "kind": "color",
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1
+          ]
+        },
+        "items": [
+          {
+            "id": "item_1",
+            "template_id": "IMPORTANT_PHRASE",
+            "preset_id": "apple_v2",
+            "motion_id": "liquid_glass_ripple",
+            "kind": "important_phrase",
+            "text": "Tutarlılık bir fikri sonuca dönüştürür.",
+            "start_ms": 0,
+            "end_ms": 5000
+          }
+        ]
+      },
+      "assets": [
+        {
+          "hash": "983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c",
+          "logical_path": "assets/fonts/Poppins-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Poppins-Bold.ttf"
+        },
+        {
+          "hash": "deb990e241954e1af87c6033d40a76cf0f48e0d112541794526051ac4a3ee2c8",
+          "logical_path": "assets/fonts/Inter-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Inter-Bold.ttf"
+        }
+      ],
+      "family": "phrase",
+      "text": "Tutarlılık bir fikri sonuca dönüştürür.",
+      "motion_id": "liquid_glass_ripple",
+      "preset_id": "apple_v2"
+    },
+    {
+      "id": "phrase_01_lower_third_safe__id",
+      "render_plan": {
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "plan_id": "phrase_01_lower_third_safe__id",
+        "video_id": "phrase_01_lower_third_safe__id",
+        "language": "id",
+        "width": 1920,
+        "height": 1080,
+        "fps_num": 24,
+        "fps_den": 1,
+        "duration_ms": 5000,
+        "output_profile_id": "",
+        "style_profile": "",
+        "background": {
+          "kind": "color",
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1
+          ]
+        },
+        "items": [
+          {
+            "id": "item_1",
+            "template_id": "IMPORTANT_PHRASE",
+            "preset_id": "apple_v2",
+            "motion_id": "liquid_glass_ripple",
+            "kind": "important_phrase",
+            "text": "Konsistensi mengubah ide menjadi hasil.",
+            "start_ms": 0,
+            "end_ms": 5000
+          }
+        ]
+      },
+      "assets": [
+        {
+          "hash": "983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c",
+          "logical_path": "assets/fonts/Poppins-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Poppins-Bold.ttf"
+        },
+        {
+          "hash": "deb990e241954e1af87c6033d40a76cf0f48e0d112541794526051ac4a3ee2c8",
+          "logical_path": "assets/fonts/Inter-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Inter-Bold.ttf"
+        }
+      ],
+      "family": "phrase",
+      "text": "Konsistensi mengubah ide menjadi hasil.",
+      "motion_id": "liquid_glass_ripple",
+      "preset_id": "apple_v2"
+    }
+  ]
+}
