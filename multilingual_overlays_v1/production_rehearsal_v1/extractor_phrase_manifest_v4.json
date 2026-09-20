@@ -1,0 +1,1611 @@
+{
+  "schema_version": "renderinggen.batch-manifest.v1",
+  "batch_id": "ml-production-rehearsal-extracted-v4-20260920",
+  "jobs": [
+    {
+      "id": "phrase_01_lower_third_safe__it",
+      "render_plan": {
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "plan_id": "phrase_01_lower_third_safe__it",
+        "video_id": "phrase_01_lower_third_safe__it",
+        "language": "it",
+        "width": 1920,
+        "height": 1080,
+        "fps_num": 24,
+        "fps_den": 1,
+        "duration_ms": 5000,
+        "output_profile_id": "",
+        "style_profile": "",
+        "background": {
+          "kind": "color",
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1
+          ]
+        },
+        "items": [
+          {
+            "id": "item_1",
+            "template_id": "IMPORTANT_PHRASE",
+            "preset_id": "apple_v2",
+            "motion_id": "liquid_glass_ripple",
+            "kind": "important_phrase",
+            "text": "coerenza trasforma un'idea",
+            "start_ms": 0,
+            "end_ms": 5000
+          }
+        ]
+      },
+      "assets": [
+        {
+          "hash": "983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c",
+          "logical_path": "assets/fonts/Poppins-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Poppins-Bold.ttf"
+        },
+        {
+          "hash": "deb990e241954e1af87c6033d40a76cf0f48e0d112541794526051ac4a3ee2c8",
+          "logical_path": "assets/fonts/Inter-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Inter-Bold.ttf"
+        }
+      ],
+      "family": "phrase",
+      "text": "coerenza trasforma un'idea",
+      "motion_id": "liquid_glass_ripple",
+      "preset_id": "apple_v2"
+    },
+    {
+      "id": "phrase_01_lower_third_safe__en",
+      "render_plan": {
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "plan_id": "phrase_01_lower_third_safe__en",
+        "video_id": "phrase_01_lower_third_safe__en",
+        "language": "en",
+        "width": 1920,
+        "height": 1080,
+        "fps_num": 24,
+        "fps_den": 1,
+        "duration_ms": 5000,
+        "output_profile_id": "",
+        "style_profile": "",
+        "background": {
+          "kind": "color",
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1
+          ]
+        },
+        "items": [
+          {
+            "id": "item_1",
+            "template_id": "IMPORTANT_PHRASE",
+            "preset_id": "apple_v2",
+            "motion_id": "liquid_glass_ripple",
+            "kind": "important_phrase",
+            "text": "Progress rarely arrives",
+            "start_ms": 0,
+            "end_ms": 5000
+          }
+        ]
+      },
+      "assets": [
+        {
+          "hash": "983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c",
+          "logical_path": "assets/fonts/Poppins-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Poppins-Bold.ttf"
+        },
+        {
+          "hash": "deb990e241954e1af87c6033d40a76cf0f48e0d112541794526051ac4a3ee2c8",
+          "logical_path": "assets/fonts/Inter-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Inter-Bold.ttf"
+        }
+      ],
+      "family": "phrase",
+      "text": "Progress rarely arrives",
+      "motion_id": "liquid_glass_ripple",
+      "preset_id": "apple_v2"
+    },
+    {
+      "id": "phrase_01_lower_third_safe__pl",
+      "render_plan": {
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "plan_id": "phrase_01_lower_third_safe__pl",
+        "video_id": "phrase_01_lower_third_safe__pl",
+        "language": "pl",
+        "width": 1920,
+        "height": 1080,
+        "fps_num": 24,
+        "fps_den": 1,
+        "duration_ms": 5000,
+        "output_profile_id": "",
+        "style_profile": "",
+        "background": {
+          "kind": "color",
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1
+          ]
+        },
+        "items": [
+          {
+            "id": "item_1",
+            "template_id": "IMPORTANT_PHRASE",
+            "preset_id": "apple_v2",
+            "motion_id": "liquid_glass_ripple",
+            "kind": "important_phrase",
+            "text": "Spójność zmienia pomysł",
+            "start_ms": 0,
+            "end_ms": 5000
+          }
+        ]
+      },
+      "assets": [
+        {
+          "hash": "983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c",
+          "logical_path": "assets/fonts/Poppins-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Poppins-Bold.ttf"
+        },
+        {
+          "hash": "deb990e241954e1af87c6033d40a76cf0f48e0d112541794526051ac4a3ee2c8",
+          "logical_path": "assets/fonts/Inter-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Inter-Bold.ttf"
+        }
+      ],
+      "family": "phrase",
+      "text": "Spójność zmienia pomysł",
+      "motion_id": "liquid_glass_ripple",
+      "preset_id": "apple_v2"
+    },
+    {
+      "id": "phrase_01_lower_third_safe__ru",
+      "render_plan": {
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "plan_id": "phrase_01_lower_third_safe__ru",
+        "video_id": "phrase_01_lower_third_safe__ru",
+        "language": "ru",
+        "width": 1920,
+        "height": 1080,
+        "fps_num": 24,
+        "fps_den": 1,
+        "duration_ms": 5000,
+        "output_profile_id": "",
+        "style_profile": "",
+        "background": {
+          "kind": "color",
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1
+          ]
+        },
+        "items": [
+          {
+            "id": "item_1",
+            "template_id": "IMPORTANT_PHRASE",
+            "preset_id": "apple_v2",
+            "motion_id": "liquid_glass_ripple",
+            "kind": "important_phrase",
+            "text": "Последовательность превращает идею",
+            "start_ms": 0,
+            "end_ms": 5000
+          }
+        ]
+      },
+      "assets": [
+        {
+          "hash": "983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c",
+          "logical_path": "assets/fonts/Poppins-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Poppins-Bold.ttf"
+        },
+        {
+          "hash": "deb990e241954e1af87c6033d40a76cf0f48e0d112541794526051ac4a3ee2c8",
+          "logical_path": "assets/fonts/Inter-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Inter-Bold.ttf"
+        },
+        {
+          "hash": "690243adfefe0ce154b547db6205794bd30ac4277275179517a90994f4980648",
+          "logical_path": "assets/fonts/DejaVuSans.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/DejaVuSans.ttf"
+        }
+      ],
+      "family": "phrase",
+      "text": "Последовательность превращает идею",
+      "motion_id": "liquid_glass_ripple",
+      "preset_id": "apple_v2"
+    },
+    {
+      "id": "phrase_01_lower_third_safe__de",
+      "render_plan": {
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "plan_id": "phrase_01_lower_third_safe__de",
+        "video_id": "phrase_01_lower_third_safe__de",
+        "language": "de",
+        "width": 1920,
+        "height": 1080,
+        "fps_num": 24,
+        "fps_den": 1,
+        "duration_ms": 5000,
+        "output_profile_id": "",
+        "style_profile": "",
+        "background": {
+          "kind": "color",
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1
+          ]
+        },
+        "items": [
+          {
+            "id": "item_1",
+            "template_id": "IMPORTANT_PHRASE",
+            "preset_id": "apple_v2",
+            "motion_id": "liquid_glass_ripple",
+            "kind": "important_phrase",
+            "text": "Fortschritt kommt selten",
+            "start_ms": 0,
+            "end_ms": 5000
+          }
+        ]
+      },
+      "assets": [
+        {
+          "hash": "983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c",
+          "logical_path": "assets/fonts/Poppins-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Poppins-Bold.ttf"
+        },
+        {
+          "hash": "deb990e241954e1af87c6033d40a76cf0f48e0d112541794526051ac4a3ee2c8",
+          "logical_path": "assets/fonts/Inter-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Inter-Bold.ttf"
+        }
+      ],
+      "family": "phrase",
+      "text": "Fortschritt kommt selten",
+      "motion_id": "liquid_glass_ripple",
+      "preset_id": "apple_v2"
+    },
+    {
+      "id": "phrase_01_lower_third_safe__es",
+      "render_plan": {
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "plan_id": "phrase_01_lower_third_safe__es",
+        "video_id": "phrase_01_lower_third_safe__es",
+        "language": "es",
+        "width": 1920,
+        "height": 1080,
+        "fps_num": 24,
+        "fps_den": 1,
+        "duration_ms": 5000,
+        "output_profile_id": "",
+        "style_profile": "",
+        "background": {
+          "kind": "color",
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1
+          ]
+        },
+        "items": [
+          {
+            "id": "item_1",
+            "template_id": "IMPORTANT_PHRASE",
+            "preset_id": "apple_v2",
+            "motion_id": "liquid_glass_ripple",
+            "kind": "important_phrase",
+            "text": "video terminado combinando",
+            "start_ms": 0,
+            "end_ms": 5000
+          }
+        ]
+      },
+      "assets": [
+        {
+          "hash": "983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c",
+          "logical_path": "assets/fonts/Poppins-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Poppins-Bold.ttf"
+        },
+        {
+          "hash": "deb990e241954e1af87c6033d40a76cf0f48e0d112541794526051ac4a3ee2c8",
+          "logical_path": "assets/fonts/Inter-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Inter-Bold.ttf"
+        }
+      ],
+      "family": "phrase",
+      "text": "video terminado combinando",
+      "motion_id": "liquid_glass_ripple",
+      "preset_id": "apple_v2"
+    },
+    {
+      "id": "phrase_01_lower_third_safe__pt-BR",
+      "render_plan": {
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "plan_id": "phrase_01_lower_third_safe__pt-BR",
+        "video_id": "phrase_01_lower_third_safe__pt-BR",
+        "language": "pt-BR",
+        "width": 1920,
+        "height": 1080,
+        "fps_num": 24,
+        "fps_den": 1,
+        "duration_ms": 5000,
+        "output_profile_id": "",
+        "style_profile": "",
+        "background": {
+          "kind": "color",
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1
+          ]
+        },
+        "items": [
+          {
+            "id": "item_1",
+            "template_id": "IMPORTANT_PHRASE",
+            "preset_id": "apple_v2",
+            "motion_id": "liquid_glass_ripple",
+            "kind": "important_phrase",
+            "text": "vídeo acabado combinando",
+            "start_ms": 0,
+            "end_ms": 5000
+          }
+        ]
+      },
+      "assets": [
+        {
+          "hash": "983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c",
+          "logical_path": "assets/fonts/Poppins-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Poppins-Bold.ttf"
+        },
+        {
+          "hash": "deb990e241954e1af87c6033d40a76cf0f48e0d112541794526051ac4a3ee2c8",
+          "logical_path": "assets/fonts/Inter-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Inter-Bold.ttf"
+        }
+      ],
+      "family": "phrase",
+      "text": "vídeo acabado combinando",
+      "motion_id": "liquid_glass_ripple",
+      "preset_id": "apple_v2"
+    },
+    {
+      "id": "phrase_01_lower_third_safe__fr",
+      "render_plan": {
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "plan_id": "phrase_01_lower_third_safe__fr",
+        "video_id": "phrase_01_lower_third_safe__fr",
+        "language": "fr",
+        "width": 1920,
+        "height": 1080,
+        "fps_num": 24,
+        "fps_den": 1,
+        "duration_ms": 5000,
+        "output_profile_id": "",
+        "style_profile": "",
+        "background": {
+          "kind": "color",
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1
+          ]
+        },
+        "items": [
+          {
+            "id": "item_1",
+            "template_id": "IMPORTANT_PHRASE",
+            "preset_id": "apple_v2",
+            "motion_id": "liquid_glass_ripple",
+            "kind": "important_phrase",
+            "text": "combinant méticuleusement jugement",
+            "start_ms": 0,
+            "end_ms": 5000
+          }
+        ]
+      },
+      "assets": [
+        {
+          "hash": "983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c",
+          "logical_path": "assets/fonts/Poppins-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Poppins-Bold.ttf"
+        },
+        {
+          "hash": "deb990e241954e1af87c6033d40a76cf0f48e0d112541794526051ac4a3ee2c8",
+          "logical_path": "assets/fonts/Inter-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Inter-Bold.ttf"
+        }
+      ],
+      "family": "phrase",
+      "text": "combinant méticuleusement jugement",
+      "motion_id": "liquid_glass_ripple",
+      "preset_id": "apple_v2"
+    },
+    {
+      "id": "phrase_01_lower_third_safe__tr",
+      "render_plan": {
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "plan_id": "phrase_01_lower_third_safe__tr",
+        "video_id": "phrase_01_lower_third_safe__tr",
+        "language": "tr",
+        "width": 1920,
+        "height": 1080,
+        "fps_num": 24,
+        "fps_den": 1,
+        "duration_ms": 5000,
+        "output_profile_id": "",
+        "style_profile": "",
+        "background": {
+          "kind": "color",
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1
+          ]
+        },
+        "items": [
+          {
+            "id": "item_1",
+            "template_id": "IMPORTANT_PHRASE",
+            "preset_id": "apple_v2",
+            "motion_id": "liquid_glass_ripple",
+            "kind": "important_phrase",
+            "text": "yüksek kaliteyi tekrar",
+            "start_ms": 0,
+            "end_ms": 5000
+          }
+        ]
+      },
+      "assets": [
+        {
+          "hash": "983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c",
+          "logical_path": "assets/fonts/Poppins-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Poppins-Bold.ttf"
+        },
+        {
+          "hash": "deb990e241954e1af87c6033d40a76cf0f48e0d112541794526051ac4a3ee2c8",
+          "logical_path": "assets/fonts/Inter-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Inter-Bold.ttf"
+        }
+      ],
+      "family": "phrase",
+      "text": "yüksek kaliteyi tekrar",
+      "motion_id": "liquid_glass_ripple",
+      "preset_id": "apple_v2"
+    },
+    {
+      "id": "phrase_01_lower_third_safe__id",
+      "render_plan": {
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "plan_id": "phrase_01_lower_third_safe__id",
+        "video_id": "phrase_01_lower_third_safe__id",
+        "language": "id",
+        "width": 1920,
+        "height": 1080,
+        "fps_num": 24,
+        "fps_den": 1,
+        "duration_ms": 5000,
+        "output_profile_id": "",
+        "style_profile": "",
+        "background": {
+          "kind": "color",
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1
+          ]
+        },
+        "items": [
+          {
+            "id": "item_1",
+            "template_id": "IMPORTANT_PHRASE",
+            "preset_id": "apple_v2",
+            "motion_id": "liquid_glass_ripple",
+            "kind": "important_phrase",
+            "text": "Konsistensi mengubah ide",
+            "start_ms": 0,
+            "end_ms": 5000
+          }
+        ]
+      },
+      "assets": [
+        {
+          "hash": "983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c",
+          "logical_path": "assets/fonts/Poppins-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Poppins-Bold.ttf"
+        },
+        {
+          "hash": "deb990e241954e1af87c6033d40a76cf0f48e0d112541794526051ac4a3ee2c8",
+          "logical_path": "assets/fonts/Inter-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Inter-Bold.ttf"
+        }
+      ],
+      "family": "phrase",
+      "text": "Konsistensi mengubah ide",
+      "motion_id": "liquid_glass_ripple",
+      "preset_id": "apple_v2"
+    },
+    {
+      "id": "phrase_02_clean_slide_up__it",
+      "render_plan": {
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "plan_id": "phrase_02_clean_slide_up__it",
+        "video_id": "phrase_02_clean_slide_up__it",
+        "language": "it",
+        "width": 1920,
+        "height": 1080,
+        "fps_num": 24,
+        "fps_den": 1,
+        "duration_ms": 5000,
+        "output_profile_id": "",
+        "style_profile": "",
+        "background": {
+          "kind": "color",
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1
+          ]
+        },
+        "items": [
+          {
+            "id": "item_1",
+            "template_id": "IMPORTANT_PHRASE",
+            "preset_id": "apple_v2",
+            "motion_id": "kinetic_stamp_impact",
+            "kind": "important_phrase",
+            "text": "progresso raramente arriva",
+            "start_ms": 0,
+            "end_ms": 5000
+          }
+        ]
+      },
+      "assets": [
+        {
+          "hash": "983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c",
+          "logical_path": "assets/fonts/Poppins-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Poppins-Bold.ttf"
+        },
+        {
+          "hash": "deb990e241954e1af87c6033d40a76cf0f48e0d112541794526051ac4a3ee2c8",
+          "logical_path": "assets/fonts/Inter-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Inter-Bold.ttf"
+        }
+      ],
+      "family": "phrase",
+      "text": "progresso raramente arriva",
+      "motion_id": "kinetic_stamp_impact",
+      "preset_id": "apple_v2"
+    },
+    {
+      "id": "phrase_02_clean_slide_up__en",
+      "render_plan": {
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "plan_id": "phrase_02_clean_slide_up__en",
+        "video_id": "phrase_02_clean_slide_up__en",
+        "language": "en",
+        "width": 1920,
+        "height": 1080,
+        "fps_num": 24,
+        "fps_den": 1,
+        "duration_ms": 5000,
+        "output_profile_id": "",
+        "style_profile": "",
+        "background": {
+          "kind": "color",
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1
+          ]
+        },
+        "items": [
+          {
+            "id": "item_1",
+            "template_id": "IMPORTANT_PHRASE",
+            "preset_id": "apple_v2",
+            "motion_id": "kinetic_stamp_impact",
+            "kind": "important_phrase",
+            "text": "strong creative workflow",
+            "start_ms": 0,
+            "end_ms": 5000
+          }
+        ]
+      },
+      "assets": [
+        {
+          "hash": "983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c",
+          "logical_path": "assets/fonts/Poppins-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Poppins-Bold.ttf"
+        },
+        {
+          "hash": "deb990e241954e1af87c6033d40a76cf0f48e0d112541794526051ac4a3ee2c8",
+          "logical_path": "assets/fonts/Inter-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Inter-Bold.ttf"
+        }
+      ],
+      "family": "phrase",
+      "text": "strong creative workflow",
+      "motion_id": "kinetic_stamp_impact",
+      "preset_id": "apple_v2"
+    },
+    {
+      "id": "phrase_02_clean_slide_up__pl",
+      "render_plan": {
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "plan_id": "phrase_02_clean_slide_up__pl",
+        "video_id": "phrase_02_clean_slide_up__pl",
+        "language": "pl",
+        "width": 1920,
+        "height": 1080,
+        "fps_num": 24,
+        "fps_den": 1,
+        "duration_ms": 5000,
+        "output_profile_id": "",
+        "style_profile": "",
+        "background": {
+          "kind": "color",
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1
+          ]
+        },
+        "items": [
+          {
+            "id": "item_1",
+            "template_id": "IMPORTANT_PHRASE",
+            "preset_id": "apple_v2",
+            "motion_id": "kinetic_stamp_impact",
+            "kind": "important_phrase",
+            "text": "zamiast tego wynika",
+            "start_ms": 0,
+            "end_ms": 5000
+          }
+        ]
+      },
+      "assets": [
+        {
+          "hash": "983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c",
+          "logical_path": "assets/fonts/Poppins-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Poppins-Bold.ttf"
+        },
+        {
+          "hash": "deb990e241954e1af87c6033d40a76cf0f48e0d112541794526051ac4a3ee2c8",
+          "logical_path": "assets/fonts/Inter-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Inter-Bold.ttf"
+        }
+      ],
+      "family": "phrase",
+      "text": "zamiast tego wynika",
+      "motion_id": "kinetic_stamp_impact",
+      "preset_id": "apple_v2"
+    },
+    {
+      "id": "phrase_02_clean_slide_up__ru",
+      "render_plan": {
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "plan_id": "phrase_02_clean_slide_up__ru",
+        "video_id": "phrase_02_clean_slide_up__ru",
+        "language": "ru",
+        "width": 1920,
+        "height": 1080,
+        "fps_num": 24,
+        "fps_den": 1,
+        "duration_ms": 5000,
+        "output_profile_id": "",
+        "style_profile": "",
+        "background": {
+          "kind": "color",
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1
+          ]
+        },
+        "items": [
+          {
+            "id": "item_1",
+            "template_id": "IMPORTANT_PHRASE",
+            "preset_id": "apple_v2",
+            "motion_id": "kinetic_stamp_impact",
+            "kind": "important_phrase",
+            "text": "превращает грубую концепцию",
+            "start_ms": 0,
+            "end_ms": 5000
+          }
+        ]
+      },
+      "assets": [
+        {
+          "hash": "983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c",
+          "logical_path": "assets/fonts/Poppins-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Poppins-Bold.ttf"
+        },
+        {
+          "hash": "deb990e241954e1af87c6033d40a76cf0f48e0d112541794526051ac4a3ee2c8",
+          "logical_path": "assets/fonts/Inter-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Inter-Bold.ttf"
+        },
+        {
+          "hash": "690243adfefe0ce154b547db6205794bd30ac4277275179517a90994f4980648",
+          "logical_path": "assets/fonts/DejaVuSans.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/DejaVuSans.ttf"
+        }
+      ],
+      "family": "phrase",
+      "text": "превращает грубую концепцию",
+      "motion_id": "kinetic_stamp_impact",
+      "preset_id": "apple_v2"
+    },
+    {
+      "id": "phrase_02_clean_slide_up__de",
+      "render_plan": {
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "plan_id": "phrase_02_clean_slide_up__de",
+        "video_id": "phrase_02_clean_slide_up__de",
+        "language": "de",
+        "width": 1920,
+        "height": 1080,
+        "fps_num": 24,
+        "fps_den": 1,
+        "duration_ms": 5000,
+        "output_profile_id": "",
+        "style_profile": "",
+        "background": {
+          "kind": "color",
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1
+          ]
+        },
+        "items": [
+          {
+            "id": "item_1",
+            "template_id": "IMPORTANT_PHRASE",
+            "preset_id": "apple_v2",
+            "motion_id": "kinetic_stamp_impact",
+            "kind": "important_phrase",
+            "text": "ultimative Ziel geht",
+            "start_ms": 0,
+            "end_ms": 5000
+          }
+        ]
+      },
+      "assets": [
+        {
+          "hash": "983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c",
+          "logical_path": "assets/fonts/Poppins-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Poppins-Bold.ttf"
+        },
+        {
+          "hash": "deb990e241954e1af87c6033d40a76cf0f48e0d112541794526051ac4a3ee2c8",
+          "logical_path": "assets/fonts/Inter-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Inter-Bold.ttf"
+        }
+      ],
+      "family": "phrase",
+      "text": "ultimative Ziel geht",
+      "motion_id": "kinetic_stamp_impact",
+      "preset_id": "apple_v2"
+    },
+    {
+      "id": "phrase_02_clean_slide_up__es",
+      "render_plan": {
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "plan_id": "phrase_02_clean_slide_up__es",
+        "video_id": "phrase_02_clean_slide_up__es",
+        "language": "es",
+        "width": 1920,
+        "height": 1080,
+        "fps_num": 24,
+        "fps_den": 1,
+        "duration_ms": 5000,
+        "output_profile_id": "",
+        "style_profile": "",
+        "background": {
+          "kind": "color",
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1
+          ]
+        },
+        "items": [
+          {
+            "id": "item_1",
+            "template_id": "IMPORTANT_PHRASE",
+            "preset_id": "apple_v2",
+            "motion_id": "kinetic_stamp_impact",
+            "kind": "important_phrase",
+            "text": "objetivo final trasciende",
+            "start_ms": 0,
+            "end_ms": 5000
+          }
+        ]
+      },
+      "assets": [
+        {
+          "hash": "983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c",
+          "logical_path": "assets/fonts/Poppins-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Poppins-Bold.ttf"
+        },
+        {
+          "hash": "deb990e241954e1af87c6033d40a76cf0f48e0d112541794526051ac4a3ee2c8",
+          "logical_path": "assets/fonts/Inter-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Inter-Bold.ttf"
+        }
+      ],
+      "family": "phrase",
+      "text": "objetivo final trasciende",
+      "motion_id": "kinetic_stamp_impact",
+      "preset_id": "apple_v2"
+    },
+    {
+      "id": "phrase_02_clean_slide_up__pt-BR",
+      "render_plan": {
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "plan_id": "phrase_02_clean_slide_up__pt-BR",
+        "video_id": "phrase_02_clean_slide_up__pt-BR",
+        "language": "pt-BR",
+        "width": 1920,
+        "height": 1080,
+        "fps_num": 24,
+        "fps_den": 1,
+        "duration_ms": 5000,
+        "output_profile_id": "",
+        "style_profile": "",
+        "background": {
+          "kind": "color",
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1
+          ]
+        },
+        "items": [
+          {
+            "id": "item_1",
+            "template_id": "IMPORTANT_PHRASE",
+            "preset_id": "apple_v2",
+            "motion_id": "kinetic_stamp_impact",
+            "kind": "important_phrase",
+            "text": "meticulosamente julgamento editorial",
+            "start_ms": 0,
+            "end_ms": 5000
+          }
+        ]
+      },
+      "assets": [
+        {
+          "hash": "983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c",
+          "logical_path": "assets/fonts/Poppins-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Poppins-Bold.ttf"
+        },
+        {
+          "hash": "deb990e241954e1af87c6033d40a76cf0f48e0d112541794526051ac4a3ee2c8",
+          "logical_path": "assets/fonts/Inter-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Inter-Bold.ttf"
+        }
+      ],
+      "family": "phrase",
+      "text": "meticulosamente julgamento editorial",
+      "motion_id": "kinetic_stamp_impact",
+      "preset_id": "apple_v2"
+    },
+    {
+      "id": "phrase_02_clean_slide_up__fr",
+      "render_plan": {
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "plan_id": "phrase_02_clean_slide_up__fr",
+        "video_id": "phrase_02_clean_slide_up__fr",
+        "language": "fr",
+        "width": 1920,
+        "height": 1080,
+        "fps_num": 24,
+        "fps_den": 1,
+        "duration_ms": 5000,
+        "output_profile_id": "",
+        "style_profile": "",
+        "background": {
+          "kind": "color",
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1
+          ]
+        },
+        "items": [
+          {
+            "id": "item_1",
+            "template_id": "IMPORTANT_PHRASE",
+            "preset_id": "apple_v2",
+            "motion_id": "kinetic_stamp_impact",
+            "kind": "important_phrase",
+            "text": "L'objectif ultime transcende",
+            "start_ms": 0,
+            "end_ms": 5000
+          }
+        ]
+      },
+      "assets": [
+        {
+          "hash": "983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c",
+          "logical_path": "assets/fonts/Poppins-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Poppins-Bold.ttf"
+        },
+        {
+          "hash": "deb990e241954e1af87c6033d40a76cf0f48e0d112541794526051ac4a3ee2c8",
+          "logical_path": "assets/fonts/Inter-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Inter-Bold.ttf"
+        }
+      ],
+      "family": "phrase",
+      "text": "L'objectif ultime transcende",
+      "motion_id": "kinetic_stamp_impact",
+      "preset_id": "apple_v2"
+    },
+    {
+      "id": "phrase_02_clean_slide_up__tr",
+      "render_plan": {
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "plan_id": "phrase_02_clean_slide_up__tr",
+        "video_id": "phrase_02_clean_slide_up__tr",
+        "language": "tr",
+        "width": 1920,
+        "height": 1080,
+        "fps_num": 24,
+        "fps_den": 1,
+        "duration_ms": 5000,
+        "output_profile_id": "",
+        "style_profile": "",
+        "background": {
+          "kind": "color",
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1
+          ]
+        },
+        "items": [
+          {
+            "id": "item_1",
+            "template_id": "IMPORTANT_PHRASE",
+            "preset_id": "apple_v2",
+            "motion_id": "kinetic_stamp_impact",
+            "kind": "important_phrase",
+            "text": "sistem inşa ediyor",
+            "start_ms": 0,
+            "end_ms": 5000
+          }
+        ]
+      },
+      "assets": [
+        {
+          "hash": "983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c",
+          "logical_path": "assets/fonts/Poppins-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Poppins-Bold.ttf"
+        },
+        {
+          "hash": "deb990e241954e1af87c6033d40a76cf0f48e0d112541794526051ac4a3ee2c8",
+          "logical_path": "assets/fonts/Inter-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Inter-Bold.ttf"
+        }
+      ],
+      "family": "phrase",
+      "text": "sistem inşa ediyor",
+      "motion_id": "kinetic_stamp_impact",
+      "preset_id": "apple_v2"
+    },
+    {
+      "id": "phrase_02_clean_slide_up__id",
+      "render_plan": {
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "plan_id": "phrase_02_clean_slide_up__id",
+        "video_id": "phrase_02_clean_slide_up__id",
+        "language": "id",
+        "width": 1920,
+        "height": 1080,
+        "fps_num": 24,
+        "fps_den": 1,
+        "duration_ms": 5000,
+        "output_profile_id": "",
+        "style_profile": "",
+        "background": {
+          "kind": "color",
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1
+          ]
+        },
+        "items": [
+          {
+            "id": "item_1",
+            "template_id": "IMPORTANT_PHRASE",
+            "preset_id": "apple_v2",
+            "motion_id": "kinetic_stamp_impact",
+            "kind": "important_phrase",
+            "text": "Sebuah aliran kerja",
+            "start_ms": 0,
+            "end_ms": 5000
+          }
+        ]
+      },
+      "assets": [
+        {
+          "hash": "983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c",
+          "logical_path": "assets/fonts/Poppins-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Poppins-Bold.ttf"
+        },
+        {
+          "hash": "deb990e241954e1af87c6033d40a76cf0f48e0d112541794526051ac4a3ee2c8",
+          "logical_path": "assets/fonts/Inter-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Inter-Bold.ttf"
+        }
+      ],
+      "family": "phrase",
+      "text": "Sebuah aliran kerja",
+      "motion_id": "kinetic_stamp_impact",
+      "preset_id": "apple_v2"
+    },
+    {
+      "id": "phrase_03_scale_pop__it",
+      "render_plan": {
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "plan_id": "phrase_03_scale_pop__it",
+        "video_id": "phrase_03_scale_pop__it",
+        "language": "it",
+        "width": 1920,
+        "height": 1080,
+        "fps_num": 24,
+        "fps_den": 1,
+        "duration_ms": 5000,
+        "output_profile_id": "",
+        "style_profile": "",
+        "background": {
+          "kind": "color",
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1
+          ]
+        },
+        "items": [
+          {
+            "id": "item_1",
+            "template_id": "IMPORTANT_PHRASE",
+            "preset_id": "apple_v2",
+            "motion_id": "editorial_push_in",
+            "kind": "important_phrase",
+            "text": "video finito combinando",
+            "start_ms": 0,
+            "end_ms": 5000
+          }
+        ]
+      },
+      "assets": [
+        {
+          "hash": "983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c",
+          "logical_path": "assets/fonts/Poppins-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Poppins-Bold.ttf"
+        },
+        {
+          "hash": "deb990e241954e1af87c6033d40a76cf0f48e0d112541794526051ac4a3ee2c8",
+          "logical_path": "assets/fonts/Inter-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Inter-Bold.ttf"
+        }
+      ],
+      "family": "phrase",
+      "text": "video finito combinando",
+      "motion_id": "editorial_push_in",
+      "preset_id": "apple_v2"
+    },
+    {
+      "id": "phrase_03_scale_pop__en",
+      "render_plan": {
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "plan_id": "phrase_03_scale_pop__en",
+        "video_id": "phrase_03_scale_pop__en",
+        "language": "en",
+        "width": 1920,
+        "height": 1080,
+        "fps_num": 24,
+        "fps_den": 1,
+        "duration_ms": 5000,
+        "output_profile_id": "",
+        "style_profile": "",
+        "background": {
+          "kind": "color",
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1
+          ]
+        },
+        "items": [
+          {
+            "id": "item_1",
+            "template_id": "IMPORTANT_PHRASE",
+            "preset_id": "apple_v2",
+            "motion_id": "editorial_push_in",
+            "kind": "important_phrase",
+            "text": "entire system capable",
+            "start_ms": 0,
+            "end_ms": 5000
+          }
+        ]
+      },
+      "assets": [
+        {
+          "hash": "983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c",
+          "logical_path": "assets/fonts/Poppins-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Poppins-Bold.ttf"
+        },
+        {
+          "hash": "deb990e241954e1af87c6033d40a76cf0f48e0d112541794526051ac4a3ee2c8",
+          "logical_path": "assets/fonts/Inter-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Inter-Bold.ttf"
+        }
+      ],
+      "family": "phrase",
+      "text": "entire system capable",
+      "motion_id": "editorial_push_in",
+      "preset_id": "apple_v2"
+    },
+    {
+      "id": "phrase_03_scale_pop__pl",
+      "render_plan": {
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "plan_id": "phrase_03_scale_pop__pl",
+        "video_id": "phrase_03_scale_pop__pl",
+        "language": "pl",
+        "width": 1920,
+        "height": 1080,
+        "fps_num": 24,
+        "fps_den": 1,
+        "duration_ms": 5000,
+        "output_profile_id": "",
+        "style_profile": "",
+        "background": {
+          "kind": "color",
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1
+          ]
+        },
+        "items": [
+          {
+            "id": "item_1",
+            "template_id": "IMPORTANT_PHRASE",
+            "preset_id": "apple_v2",
+            "motion_id": "editorial_push_in",
+            "kind": "important_phrase",
+            "text": "powtarzania wyraźnego procesu",
+            "start_ms": 0,
+            "end_ms": 5000
+          }
+        ]
+      },
+      "assets": [
+        {
+          "hash": "983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c",
+          "logical_path": "assets/fonts/Poppins-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Poppins-Bold.ttf"
+        },
+        {
+          "hash": "deb990e241954e1af87c6033d40a76cf0f48e0d112541794526051ac4a3ee2c8",
+          "logical_path": "assets/fonts/Inter-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Inter-Bold.ttf"
+        }
+      ],
+      "family": "phrase",
+      "text": "powtarzania wyraźnego procesu",
+      "motion_id": "editorial_push_in",
+      "preset_id": "apple_v2"
+    },
+    {
+      "id": "phrase_03_scale_pop__ru",
+      "render_plan": {
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "plan_id": "phrase_03_scale_pop__ru",
+        "video_id": "phrase_03_scale_pop__ru",
+        "language": "ru",
+        "width": 1920,
+        "height": 1080,
+        "fps_num": 24,
+        "fps_den": 1,
+        "duration_ms": 5000,
+        "output_profile_id": "",
+        "style_profile": "",
+        "background": {
+          "kind": "color",
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1
+          ]
+        },
+        "items": [
+          {
+            "id": "item_1",
+            "template_id": "IMPORTANT_PHRASE",
+            "preset_id": "apple_v2",
+            "motion_id": "editorial_push_in",
+            "kind": "important_phrase",
+            "text": "сочетая редакционное суждение",
+            "start_ms": 0,
+            "end_ms": 5000
+          }
+        ]
+      },
+      "assets": [
+        {
+          "hash": "983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c",
+          "logical_path": "assets/fonts/Poppins-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Poppins-Bold.ttf"
+        },
+        {
+          "hash": "deb990e241954e1af87c6033d40a76cf0f48e0d112541794526051ac4a3ee2c8",
+          "logical_path": "assets/fonts/Inter-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Inter-Bold.ttf"
+        },
+        {
+          "hash": "690243adfefe0ce154b547db6205794bd30ac4277275179517a90994f4980648",
+          "logical_path": "assets/fonts/DejaVuSans.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/DejaVuSans.ttf"
+        }
+      ],
+      "family": "phrase",
+      "text": "сочетая редакционное суждение",
+      "motion_id": "editorial_push_in",
+      "preset_id": "apple_v2"
+    },
+    {
+      "id": "phrase_03_scale_pop__de",
+      "render_plan": {
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "plan_id": "phrase_03_scale_pop__de",
+        "video_id": "phrase_03_scale_pop__de",
+        "language": "de",
+        "width": 1920,
+        "height": 1080,
+        "fps_num": 24,
+        "fps_den": 1,
+        "duration_ms": 5000,
+        "output_profile_id": "",
+        "style_profile": "",
+        "background": {
+          "kind": "color",
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1
+          ]
+        },
+        "items": [
+          {
+            "id": "item_1",
+            "template_id": "IMPORTANT_PHRASE",
+            "preset_id": "apple_v2",
+            "motion_id": "editorial_push_in",
+            "kind": "important_phrase",
+            "text": "erfolgreichen Clips hinaus",
+            "start_ms": 0,
+            "end_ms": 5000
+          }
+        ]
+      },
+      "assets": [
+        {
+          "hash": "983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c",
+          "logical_path": "assets/fonts/Poppins-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Poppins-Bold.ttf"
+        },
+        {
+          "hash": "deb990e241954e1af87c6033d40a76cf0f48e0d112541794526051ac4a3ee2c8",
+          "logical_path": "assets/fonts/Inter-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Inter-Bold.ttf"
+        }
+      ],
+      "family": "phrase",
+      "text": "erfolgreichen Clips hinaus",
+      "motion_id": "editorial_push_in",
+      "preset_id": "apple_v2"
+    },
+    {
+      "id": "phrase_03_scale_pop__es",
+      "render_plan": {
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "plan_id": "phrase_03_scale_pop__es",
+        "video_id": "phrase_03_scale_pop__es",
+        "language": "es",
+        "width": 1920,
+        "height": 1080,
+        "fps_num": 24,
+        "fps_den": 1,
+        "duration_ms": 5000,
+        "output_profile_id": "",
+        "style_profile": "",
+        "background": {
+          "kind": "color",
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1
+          ]
+        },
+        "items": [
+          {
+            "id": "item_1",
+            "template_id": "IMPORTANT_PHRASE",
+            "preset_id": "apple_v2",
+            "motion_id": "editorial_push_in",
+            "kind": "important_phrase",
+            "text": "sistema completo capaz",
+            "start_ms": 0,
+            "end_ms": 5000
+          }
+        ]
+      },
+      "assets": [
+        {
+          "hash": "983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c",
+          "logical_path": "assets/fonts/Poppins-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Poppins-Bold.ttf"
+        },
+        {
+          "hash": "deb990e241954e1af87c6033d40a76cf0f48e0d112541794526051ac4a3ee2c8",
+          "logical_path": "assets/fonts/Inter-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Inter-Bold.ttf"
+        }
+      ],
+      "family": "phrase",
+      "text": "sistema completo capaz",
+      "motion_id": "editorial_push_in",
+      "preset_id": "apple_v2"
+    },
+    {
+      "id": "phrase_03_scale_pop__pt-BR",
+      "render_plan": {
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "plan_id": "phrase_03_scale_pop__pt-BR",
+        "video_id": "phrase_03_scale_pop__pt-BR",
+        "language": "pt-BR",
+        "width": 1920,
+        "height": 1080,
+        "fps_num": 24,
+        "fps_den": 1,
+        "duration_ms": 5000,
+        "output_profile_id": "",
+        "style_profile": "",
+        "background": {
+          "kind": "color",
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1
+          ]
+        },
+        "items": [
+          {
+            "id": "item_1",
+            "template_id": "IMPORTANT_PHRASE",
+            "preset_id": "apple_v2",
+            "motion_id": "editorial_push_in",
+            "kind": "important_phrase",
+            "text": "objetivo final transcende",
+            "start_ms": 0,
+            "end_ms": 5000
+          }
+        ]
+      },
+      "assets": [
+        {
+          "hash": "983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c",
+          "logical_path": "assets/fonts/Poppins-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Poppins-Bold.ttf"
+        },
+        {
+          "hash": "deb990e241954e1af87c6033d40a76cf0f48e0d112541794526051ac4a3ee2c8",
+          "logical_path": "assets/fonts/Inter-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Inter-Bold.ttf"
+        }
+      ],
+      "family": "phrase",
+      "text": "objetivo final transcende",
+      "motion_id": "editorial_push_in",
+      "preset_id": "apple_v2"
+    },
+    {
+      "id": "phrase_03_scale_pop__fr",
+      "render_plan": {
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "plan_id": "phrase_03_scale_pop__fr",
+        "video_id": "phrase_03_scale_pop__fr",
+        "language": "fr",
+        "width": 1920,
+        "height": 1080,
+        "fps_num": 24,
+        "fps_den": 1,
+        "duration_ms": 5000,
+        "output_profile_id": "",
+        "style_profile": "",
+        "background": {
+          "kind": "color",
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1
+          ]
+        },
+        "items": [
+          {
+            "id": "item_1",
+            "template_id": "IMPORTANT_PHRASE",
+            "preset_id": "apple_v2",
+            "motion_id": "editorial_push_in",
+            "kind": "important_phrase",
+            "text": "construction d'un système",
+            "start_ms": 0,
+            "end_ms": 5000
+          }
+        ]
+      },
+      "assets": [
+        {
+          "hash": "983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c",
+          "logical_path": "assets/fonts/Poppins-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Poppins-Bold.ttf"
+        },
+        {
+          "hash": "deb990e241954e1af87c6033d40a76cf0f48e0d112541794526051ac4a3ee2c8",
+          "logical_path": "assets/fonts/Inter-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Inter-Bold.ttf"
+        }
+      ],
+      "family": "phrase",
+      "text": "construction d'un système",
+      "motion_id": "editorial_push_in",
+      "preset_id": "apple_v2"
+    },
+    {
+      "id": "phrase_03_scale_pop__tr",
+      "render_plan": {
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "plan_id": "phrase_03_scale_pop__tr",
+        "video_id": "phrase_03_scale_pop__tr",
+        "language": "tr",
+        "width": 1920,
+        "height": 1080,
+        "fps_num": 24,
+        "fps_den": 1,
+        "duration_ms": 5000,
+        "output_profile_id": "",
+        "style_profile": "",
+        "background": {
+          "kind": "color",
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1
+          ]
+        },
+        "items": [
+          {
+            "id": "item_1",
+            "template_id": "IMPORTANT_PHRASE",
+            "preset_id": "apple_v2",
+            "motion_id": "editorial_push_in",
+            "kind": "important_phrase",
+            "text": "yaratıcı iş akışı",
+            "start_ms": 0,
+            "end_ms": 5000
+          }
+        ]
+      },
+      "assets": [
+        {
+          "hash": "983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c",
+          "logical_path": "assets/fonts/Poppins-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Poppins-Bold.ttf"
+        },
+        {
+          "hash": "deb990e241954e1af87c6033d40a76cf0f48e0d112541794526051ac4a3ee2c8",
+          "logical_path": "assets/fonts/Inter-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Inter-Bold.ttf"
+        }
+      ],
+      "family": "phrase",
+      "text": "yaratıcı iş akışı",
+      "motion_id": "editorial_push_in",
+      "preset_id": "apple_v2"
+    },
+    {
+      "id": "phrase_03_scale_pop__id",
+      "render_plan": {
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "plan_id": "phrase_03_scale_pop__id",
+        "video_id": "phrase_03_scale_pop__id",
+        "language": "id",
+        "width": 1920,
+        "height": 1080,
+        "fps_num": 24,
+        "fps_den": 1,
+        "duration_ms": 5000,
+        "output_profile_id": "",
+        "style_profile": "",
+        "background": {
+          "kind": "color",
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1
+          ]
+        },
+        "items": [
+          {
+            "id": "item_1",
+            "template_id": "IMPORTANT_PHRASE",
+            "preset_id": "apple_v2",
+            "motion_id": "editorial_push_in",
+            "kind": "important_phrase",
+            "text": "mengubah konsep kasar",
+            "start_ms": 0,
+            "end_ms": 5000
+          }
+        ]
+      },
+      "assets": [
+        {
+          "hash": "983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c",
+          "logical_path": "assets/fonts/Poppins-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Poppins-Bold.ttf"
+        },
+        {
+          "hash": "deb990e241954e1af87c6033d40a76cf0f48e0d112541794526051ac4a3ee2c8",
+          "logical_path": "assets/fonts/Inter-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Inter-Bold.ttf"
+        }
+      ],
+      "family": "phrase",
+      "text": "mengubah konsep kasar",
+      "motion_id": "editorial_push_in",
+      "preset_id": "apple_v2"
+    }
+  ]
+}

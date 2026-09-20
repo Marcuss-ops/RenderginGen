@@ -46,10 +46,34 @@ type CatalogTemplate struct {
 	Name string `json:"name"`
 }
 
+// CatalogGlow is the halo policy ChrononTemplate declares for one composition
+// preset. It is the corrected policy, and it is the one part of a preset that
+// cannot be inferred from its id: Chronon3D maps Falloff onto
+// GlowParams::falloff and HighQuality onto GlowQuality::High.
+type CatalogGlow struct {
+	// Falloff is the halo exponent. >= 1 is non-boosting: the halo decays
+	// monotonically instead of amplifying low-alpha edges into fog.
+	Falloff float64 `json:"falloff"`
+	// HighQuality selects the final render path (separable Gaussian in linear
+	// light) over the interactive preview path.
+	HighQuality bool `json:"high_quality"`
+}
+
+// CatalogMaterial carries only the two facts that decide whether the declared
+// halo is active: a halo exists exactly when the material is emissive with a
+// positive strength. The colour itself stays in the C++ material, so the
+// artifact does not become a second colour authority.
+type CatalogMaterial struct {
+	Kind             string  `json:"kind"`
+	EmissiveStrength float64 `json:"emissive_strength"`
+}
+
 // CatalogPreset is one C++-owned composition preset the emitter listed.
 type CatalogPreset struct {
-	ID   string `json:"id"`
-	Name string `json:"name"`
+	ID       string          `json:"id"`
+	Name     string          `json:"name"`
+	Glow     CatalogGlow     `json:"glow"`
+	Material CatalogMaterial `json:"material"`
 }
 
 // CatalogPhraseOverlay is one corpus row: a phrase overlay rendered through one
@@ -94,8 +118,16 @@ func Canonical() (Catalog, error) {
 }
 
 func loadCanonical() (Catalog, error) {
+	return parseCanonical(canonicalCatalogJSON)
+}
+
+// parseCanonical decodes and validates one canonical catalog document. It is
+// split out from loadCanonical so the gates can be exercised against a mutated
+// document instead of only against the healthy embedded one — a validation that
+// never sees a broken input is not evidence that it rejects one.
+func parseCanonical(raw []byte) (Catalog, error) {
 	var catalog Catalog
-	if err := json.Unmarshal(canonicalCatalogJSON, &catalog); err != nil {
+	if err := json.Unmarshal(raw, &catalog); err != nil {
 		return Catalog{}, fmt.Errorf("motion: decode canonical catalog: %w", err)
 	}
 	if catalog.SchemaVersion != canonicalCatalogSchemaVersion {
@@ -132,6 +164,15 @@ func loadCanonical() (Catalog, error) {
 				return Catalog{}, fmt.Errorf("motion: canonical catalog repeats %s id %q", section.name, id)
 			}
 			seen[id] = struct{}{}
+		}
+	}
+
+	// The glow contract travels with each preset row, so a ChrononTemplate that
+	// stopped shipping the non-boosting final-render policy stops this process
+	// instead of quietly rendering a boosted halo.
+	for _, preset := range catalog.Final3DPresets {
+		if err := validateGlowContract(preset); err != nil {
+			return Catalog{}, err
 		}
 	}
 
@@ -226,6 +267,48 @@ func ImageOverlays() []string {
 		return nil
 	}
 	return append([]string(nil), catalog.Selections.MatrixImageOverlays...)
+}
+
+// validateGlowContract rejects a preset row whose halo policy is not the one
+// the catalog ships. Falloff is checked as `!(>= 1)` so a NaN, an infinity and
+// an absent field (which decodes to zero) all fail the same closed way.
+func validateGlowContract(preset CatalogPreset) error {
+	if !(preset.Glow.Falloff >= 1) {
+		return fmt.Errorf("motion: preset %q declares a boosting or non-finite glow falloff %v (want >= 1)",
+			preset.ID, preset.Glow.Falloff)
+	}
+	if !preset.Glow.HighQuality {
+		return fmt.Errorf("motion: preset %q declares the interactive preview glow path; the catalog ships the final-render path",
+			preset.ID)
+	}
+	switch preset.Material.Kind {
+	case "unlit", "lambert":
+		// A non-emissive material declares no halo, so it has nothing to activate.
+	case "emissive":
+		if !(preset.Material.EmissiveStrength > 0) {
+			return fmt.Errorf("motion: preset %q is emissive with emissive_strength %v; a halo is active exactly when an emissive material declares a positive strength",
+				preset.ID, preset.Material.EmissiveStrength)
+		}
+	default:
+		return fmt.Errorf("motion: preset %q declares unknown material kind %q", preset.ID, preset.Material.Kind)
+	}
+	return nil
+}
+
+// PresetGlow returns the glow policy the canonical catalog declares for one
+// composition preset id, and whether that preset exists. This is the read a
+// caller needs to map the policy onto the renderer's own glow parameters.
+func PresetGlow(id string) (CatalogGlow, bool) {
+	catalog, err := Canonical()
+	if err != nil {
+		return CatalogGlow{}, false
+	}
+	for _, preset := range catalog.Final3DPresets {
+		if preset.ID == id {
+			return preset.Glow, true
+		}
+	}
+	return CatalogGlow{}, false
 }
 
 func templateIDs(templates []CatalogTemplate) []string {

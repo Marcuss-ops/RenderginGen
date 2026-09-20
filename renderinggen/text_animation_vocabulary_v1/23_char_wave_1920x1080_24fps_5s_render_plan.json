@@ -1,0 +1,173 @@
+{
+  "schema": "chronon.render-plan.v2",
+  "version": 2,
+  "job_id": "text_anim_23_char_wave",
+  "canvas": {
+    "width": 1920,
+    "height": 1080,
+    "fps_num": 24,
+    "fps_den": 1,
+    "duration_frames": 120
+  },
+  "layers": [
+    {
+      "id": "background",
+      "type": "color",
+      "color": [
+        0.9333333333333333,
+        0.9450980392156862,
+        0.9058823529411765,
+        1
+      ],
+      "size": [
+        1920,
+        1080
+      ],
+      "start_frame": 0,
+      "duration_frames": 120
+    },
+    {
+      "id": "item_1",
+      "type": "text",
+      "text": "CHAR WAVE",
+      "size": [
+        1920,
+        120
+      ],
+      "position": [
+        0,
+        0
+      ],
+      "style": {
+        "font": "assets/fonts/Poppins-Bold.ttf",
+        "font_size": 64,
+        "fill": "#FFFFFF",
+        "stroke": {
+          "color": "#111827",
+          "width": 3.5
+        },
+        "shadow": {
+          "color": "#000000",
+          "opacity": 0.72,
+          "blur": 12,
+          "offset": [
+            0,
+            4
+          ]
+        }
+      },
+      "start_frame": 0,
+      "duration_frames": 120,
+      "animation": {
+        "tracks": [
+          {
+            "property": "position_y",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 12
+              },
+              {
+                "frame": 60,
+                "value": 0
+              },
+              {
+                "frame": 71,
+                "value": 0
+              },
+              {
+                "frame": 114,
+                "value": 0
+              },
+              {
+                "frame": 119,
+                "value": 12
+              }
+            ],
+            "easing": "out_cubic"
+          },
+          {
+            "property": "opacity",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 0
+              },
+              {
+                "frame": 8,
+                "value": 1
+              },
+              {
+                "frame": 111,
+                "value": 1
+              },
+              {
+                "frame": 119,
+                "value": 0
+              }
+            ],
+            "easing": "linear"
+          }
+        ]
+      },
+      "text_animators": [
+        {
+          "id": "char_wave_text",
+          "selectors": [
+            {
+              "id": "char_wave_text_selector",
+              "unit": "glyph",
+              "shape": "smooth",
+              "order": "forward",
+              "combine": "replace",
+              "start": {
+                "property": "start",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0
+                  },
+                  {
+                    "frame": 71,
+                    "value": 100
+                  }
+                ],
+                "easing": "out_cubic"
+              },
+              "exclude_spaces": true
+            }
+          ],
+          "properties": [
+            {
+              "property": "position_y",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0
+                },
+                {
+                  "frame": 23,
+                  "value": -30
+                },
+                {
+                  "frame": 47,
+                  "value": 15
+                },
+                {
+                  "frame": 71,
+                  "value": 0
+                }
+              ],
+              "easing": "in_out_sine"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "output": {
+    "path": "result.mp4",
+    "format": "mp4",
+    "codec": "h264"
+  }
+}

@@ -1,0 +1,46 @@
+{
+  "schema": "renderinggen.batch-run-report.v1",
+  "batch_id": "ml-production-rehearsal-ru-20260920",
+  "generated_at": "2026-09-20T07:02:48.875374241Z",
+  "manifest": "multilingual_overlays_v1/production_rehearsal_v1/ru_manifest.json",
+  "queue": "http://localhost:8081",
+  "jobs": [
+    {
+      "job_id": "ml-production-rehearsal-ru-20260920:phrase_01_lower_third_safe__ru",
+      "logical_id": "phrase_01_lower_third_safe__ru",
+      "family": "phrase",
+      "template_id": "IMPORTANT_PHRASE",
+      "preset_id": "apple_v2",
+      "motion_id": "liquid_glass_ripple",
+      "language": "ru",
+      "text": "Последовательность превращает идею в результат. Прогресс редко приходит в один драматический момент; вместо этого он возникает из повторения ясного процесса, глубокого изучения каждой попытки и систематического улучшения следующей. Сильный творческий рабочий процесс - это то, что превращает грубую концепцию в законченное видео, тщательно сочетая редакционное суждение, точное время, читаемую типографику и надежную визуализацию. Конечная цель выходит за рамки простого создания одного успешного клипа; скорее, это требует создания целой системы, способной производить то же самое высокое качество снова и снова.",
+      "state": "failed",
+      "attempts": 3,
+      "queued_at": "2026-09-20T07:02:48.852426Z",
+      "started_at": "2026-09-20T07:02:48.858072Z",
+      "queue_wait_ms": 5,
+      "fail_reason": "processor: render: ipc render: daemon status Error (1): render job failed with exit code 1"
+    }
+  ],
+  "summary": {
+    "jobs_total": 1,
+    "completed": 0,
+    "failed": 1,
+    "cancelled": 0,
+    "not_terminal": 0,
+    "phrase_overlays": 0,
+    "image_overlays": 0,
+    "timing_sidecars": 0,
+    "queue_wait": {
+      "count": 1,
+      "min_ms": 5,
+      "p50_ms": 5,
+      "max_ms": 5,
+      "mean_ms": 5
+    },
+    "distinct_artifact_hashes": 0,
+    "failures": [
+      "ml-production-rehearsal-ru-20260920:phrase_01_lower_third_safe__ru (failed)"
+    ]
+  }
+}

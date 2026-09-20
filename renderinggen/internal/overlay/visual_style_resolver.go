@@ -334,9 +334,11 @@ func watermarkMargin(marginPX *int) (int, error) {
 
 // resolveWatermarkGeometry converts the requested position name and the plan's
 // typed geometry (width/height, margin) into BOTH concrete outputs a watermark
-// layer needs: the [x, y] centre offset relative to the canvas centre, and the
-// layer size. Unknown or missing inputs are a compile failure, never a silent
-// "center" fallback.
+// layer needs: the [x, y] top-left box origin in canvas coordinates, and the
+// layer size. The render-plan contract owns top-left coordinates; Chronon's
+// lowering converts them to its canvas-centred scene basis exactly once.
+// Unknown or missing inputs are a compile failure, never a silent "center"
+// fallback.
 //
 // The size is returned from here — not recomputed by the caller — because the
 // box dimensions are an input to the position math itself. When the compiler
@@ -357,21 +359,19 @@ func resolveWatermarkGeometry(position string, canvasW, canvasH, margin int, s *
 		boxH = float64(s.HeightPX)
 	}
 	m := float64(margin)
-	toCenterOffset := func(x, y float64) []float64 {
-		return []float64{x + boxW/2 - float64(canvasW)/2, y + boxH/2 - float64(canvasH)/2}
-	}
+	toTopLeft := func(x, y float64) []float64 { return []float64{x, y} }
 	size = []float64{boxW, boxH}
 	switch strings.ToLower(strings.TrimSpace(position)) {
 	case "top_left":
-		return toCenterOffset(m, m), size, nil
+		return toTopLeft(m, m), size, nil
 	case "top_right":
-		return toCenterOffset(float64(canvasW)-boxW-m, m), size, nil
+		return toTopLeft(float64(canvasW)-boxW-m, m), size, nil
 	case "center":
-		return toCenterOffset((float64(canvasW)-boxW)/2, (float64(canvasH)-boxH)/2), size, nil
+		return toTopLeft((float64(canvasW)-boxW)/2, (float64(canvasH)-boxH)/2), size, nil
 	case "bottom_left":
-		return toCenterOffset(m, float64(canvasH)-boxH-m), size, nil
+		return toTopLeft(m, float64(canvasH)-boxH-m), size, nil
 	case "bottom_right":
-		return toCenterOffset(float64(canvasW)-boxW-m, float64(canvasH)-boxH-m), size, nil
+		return toTopLeft(float64(canvasW)-boxW-m, float64(canvasH)-boxH-m), size, nil
 	default:
 		return nil, nil, fmt.Errorf("overlay: unsupported watermark position %q (supported: top_left, top_right, center, bottom_left, bottom_right)", position)
 	}

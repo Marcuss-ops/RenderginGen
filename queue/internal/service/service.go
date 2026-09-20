@@ -79,6 +79,25 @@ func (s *Service) Submit(job model.Job) error {
 	return err
 }
 
+// SubmitBatch creates a complete anchor+children family atomically. The
+// repository capability is mandatory: silently falling back to a loop would
+// reintroduce the anchor-claim race this API exists to remove.
+func (s *Service) SubmitBatch(jobs []model.Job) error {
+	if len(jobs) == 0 {
+		return fmt.Errorf("job batch is empty")
+	}
+	b, ok := s.repo.(repository.BatchRepository)
+	if !ok {
+		return fmt.Errorf("queue repository does not support atomic job batches")
+	}
+	if err := b.SubmitBatch(jobs); err != nil {
+		return err
+	}
+	s.observePending()
+	s.notify.Notify()
+	return nil
+}
+
 // SubmitIdempotent returns the canonical job for an idempotency key. created
 // is false when the request is a retry of an existing logical job.
 func (s *Service) SubmitIdempotent(job model.Job) (*model.Job, bool, error) {

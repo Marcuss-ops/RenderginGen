@@ -87,8 +87,42 @@ func ValidateDefinition(d MotionDefinition) error {
 		return fmt.Errorf("motion: definition has no id")
 	}
 	for _, t := range d.Tracks {
-		if t.Property == "" || len(t.Keyframes) == 0 {
-			return fmt.Errorf("motion %q: track requires property and keyframes", d.ID)
+		if err := validateTrackDefinition(d.ID, "track", t); err != nil {
+			return err
+		}
+	}
+	for _, animator := range d.TextAnimators {
+		if len(animator.Properties) == 0 {
+			return fmt.Errorf("motion %q: text animator %q has no properties", d.ID, animator.ID)
+		}
+		for _, t := range animator.Properties {
+			if err := validateTrackDefinition(d.ID, "text animator "+animator.ID, t); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+// validateTrackDefinition protects the renderer boundary, where an empty or
+// malformed track otherwise becomes a late render-plan failure. All authored
+// tracks are layer-relative, so they must begin at frame zero and use strictly
+// increasing frame numbers. A separate pack-level gate checks that the
+// authored value curves are actually varying where a reveal is expected; this
+// structural check keeps malformed timelines from reaching the renderer.
+func validateTrackDefinition(motionID, owner string, t TrackDefinition) error {
+	if t.Property == "" || len(t.Keyframes) < 2 {
+		return fmt.Errorf("motion %q: %s requires a property and at least two keyframes", motionID, owner)
+	}
+	if t.Keyframes[0].Frame != 0 {
+		return fmt.Errorf("motion %q: %s must start at frame 0, got %d", motionID, owner, t.Keyframes[0].Frame)
+	}
+	for i, keyframe := range t.Keyframes {
+		if keyframe.Frame < 0 {
+			return fmt.Errorf("motion %q: %s has negative keyframe %d", motionID, owner, keyframe.Frame)
+		}
+		if i > 0 && keyframe.Frame <= t.Keyframes[i-1].Frame {
+			return fmt.Errorf("motion %q: %s keyframes are not strictly increasing at index %d", motionID, owner, i)
 		}
 	}
 	return nil

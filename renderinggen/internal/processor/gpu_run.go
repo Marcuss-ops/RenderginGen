@@ -32,6 +32,10 @@ func (p *Processor) RunGPU(ctx context.Context, prepared *PreparedJob) error {
 	// otherwise indistinguishable from "render the whole plan", which would
 	// silently over-render a single-frame chunk.
 	firstFrame, lastFrame, hasFrameRange := jobFrameRange(job)
+	// Only the chunk producer may request the future disjoint execution class.
+	// Do not infer it from a range: callers can request a range for correctness
+	// or seeking without proving that another job owns the complementary range.
+	parallelDisjoint := job != nil && job.ParentJobID != "" && hasFrameRange && job.ChunkIndex >= 0
 	// Native NVENC is required for every visual job on the strict Vulkan
 	// profile. The worker reports semantic source/overlay facts; Chronon owns
 	// the compiled-program choice between DirectYUV and FullGraph.
@@ -90,9 +94,10 @@ func (p *Processor) RunGPU(ctx context.Context, prepared *PreparedJob) error {
 			VideoSourceRequired: planHasVideoSource(prepared.Plan),
 			PacketCopyAllowed:   true,
 		},
-		FirstFrame:   firstFrame,
-		LastFrame:    lastFrame,
-		RangeEnabled: hasFrameRange,
+		FirstFrame:       firstFrame,
+		LastFrame:        lastFrame,
+		RangeEnabled:     hasFrameRange,
+		ParallelDisjoint: parallelDisjoint,
 		// Forward the complete immutable canvas contract to Chronon. The daemon
 		// uses these fields both for encoder configuration and for the canonical
 		// render receipt; sending only the codec leaves the receipt without an

@@ -322,6 +322,40 @@ func (c *Client) Submit(ctx context.Context, job Job) error {
 	}
 }
 
+// SubmitBatch atomically enqueues an assembly anchor and its render children.
+// The queue server validates and persists the whole family in one transaction;
+// callers must not emulate this with N independent Submit calls.
+func (c *Client) SubmitBatch(ctx context.Context, jobs []Job) error {
+	if len(jobs) == 0 {
+		return errors.New("queue submit batch: jobs are required")
+	}
+	body, err := json.Marshal(struct {
+		Jobs []Job `json:"jobs"`
+	}{Jobs: jobs})
+	if err != nil {
+		return fmt.Errorf("queue submit batch marshal: %w", err)
+	}
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.baseURL+"/jobs/batch", bytes.NewReader(body))
+	if err != nil {
+		return fmt.Errorf("queue submit batch request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := c.http.Do(req)
+	if err != nil {
+		return fmt.Errorf("queue submit batch do: %w", err)
+	}
+	defer resp.Body.Close()
+	switch resp.StatusCode {
+	case http.StatusCreated, http.StatusOK:
+		return nil
+	case http.StatusConflict:
+		return fmt.Errorf("%w: batch", ErrJobExists)
+	default:
+		raw, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("queue submit batch: HTTP %d: %s", resp.StatusCode, strings.TrimSpace(string(raw)))
+	}
+}
+
 // Cancel asks the queue to move a job that has not reached a terminal state
 // to cancelled. Cancelled is terminal: the job is never claimable again and
 // lease expiry never requeues it, so cancelling a job guarantees it can never

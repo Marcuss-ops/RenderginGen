@@ -59,6 +59,7 @@ func (s *Server) SetMetricsHandler(h http.Handler) {
 func (s *Server) Handler() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("POST /jobs", s.submit)
+	mux.HandleFunc("POST /jobs/batch", s.submitBatch)
 	mux.HandleFunc("POST /jobs/claim", s.claim)
 	mux.HandleFunc("POST /jobs/claim/wait", s.claimWait)
 	mux.HandleFunc("POST /jobs/{id}/complete", s.complete)
@@ -93,6 +94,30 @@ func (s *Server) Handler() http.Handler {
 		mux.Handle("GET /metrics", s.metricsHandler)
 	}
 	return mux
+}
+
+func (s *Server) submitBatch(w http.ResponseWriter, r *http.Request) {
+	r.Body = http.MaxBytesReader(w, r.Body, maxSubmitBytes)
+	var req struct {
+		Jobs []model.Job `json:"jobs"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	if len(req.Jobs) == 0 {
+		http.Error(w, "jobs is required", http.StatusBadRequest)
+		return
+	}
+	if err := s.svc.SubmitBatch(req.Jobs); err != nil {
+		if errors.Is(err, repository.ErrJobExists) {
+			http.Error(w, err.Error(), http.StatusConflict)
+			return
+		}
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusCreated)
 }
 
 func parseJobID(r *http.Request) string {

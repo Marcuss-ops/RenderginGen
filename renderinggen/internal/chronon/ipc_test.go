@@ -303,6 +303,40 @@ func TestIPCClientRenderFrameZeroRange(t *testing.T) {
 	}
 }
 
+func TestIPCClientRenderMarksOnlyExplicitChunkChildrenAsParallelDisjoint(t *testing.T) {
+	socketPath, _, gotPayload := startFakeDaemon(t, ipcStatusOk, `{"status":"ok"}`)
+	client := NewIPCClient(socketPath)
+	if err := client.Render(context.Background(), RenderRequest{
+		PlanPath: "/jobs/1/plan.json", AssetsRoot: "/jobs/1", OutputPath: "/jobs/1/chunk.mp4",
+		RangeEnabled: true, FirstFrame: 24, LastFrame: 47, ParallelDisjoint: true,
+	}); err != nil {
+		t.Fatalf("render chunk: %v", err)
+	}
+	var payload map[string]any
+	if err := json.Unmarshal([]byte(<-gotPayload), &payload); err != nil {
+		t.Fatalf("payload decode: %v", err)
+	}
+	if got, ok := payload["parallel_disjoint"].(bool); !ok || !got {
+		t.Fatalf("parallel_disjoint = %#v, want true", payload["parallel_disjoint"])
+	}
+
+	socketPath, _, gotPayload = startFakeDaemon(t, ipcStatusOk, `{"status":"ok"}`)
+	client = NewIPCClient(socketPath)
+	if err := client.Render(context.Background(), RenderRequest{
+		PlanPath: "/jobs/1/plan.json", AssetsRoot: "/jobs/1", OutputPath: "/jobs/1/range.mp4",
+		RangeEnabled: true, FirstFrame: 24, LastFrame: 47,
+	}); err != nil {
+		t.Fatalf("render ranged non-chunk: %v", err)
+	}
+	payload = nil
+	if err := json.Unmarshal([]byte(<-gotPayload), &payload); err != nil {
+		t.Fatalf("payload decode: %v", err)
+	}
+	if got, present := payload["parallel_disjoint"]; present {
+		t.Fatalf("non-chunk range must omit parallel_disjoint, got %#v", got)
+	}
+}
+
 // TestIPCClientRenderWholePlanStaysWhole pins the mirror corner: a
 // whole-plan render (RangeEnabled=false) must not carry range semantics even
 // when coordinates happen to be 0 — the daemon must render the whole plan.

@@ -17,8 +17,9 @@ import (
 // preppedJob is a claimed job whose CPU preparation succeeded; it is ready
 // for the GPU lane. The workspace transfers ownership to the GPU lane.
 type preppedJob struct {
-	job      *queue.Job
-	prepared *processor.PreparedJob
+	job             *queue.Job
+	prepared        *processor.PreparedJob
+	laneWaitStarted time.Time
 }
 
 // renderOutcome carries a GPU-completed job to the post pool.
@@ -112,13 +113,12 @@ func runPrepPool(ctx context.Context, q *queue.Client, proc *processor.Processor
 			}
 			// prepCh is a rendezvous, so the send below completes only when a
 			// GPU lane is free: the interval around it IS this job's admission
-			// wait on the GPU. Recorded because it is the dominant cost of a
-			// backlogged batch and would otherwise be buried in total_ms with
-			// no phase to explain it (see processor.RecordGPULaneWait).
+			// wait on the GPU. The lane records it after receiving the job,
+			// before RunGPU starts writing the job metrics; recording it here
+			// after the send races with the GPU lane on PreparedJob.Metrics.
 			laneWaitStart := time.Now()
 			select {
-			case prepCh <- &preppedJob{job: job, prepared: prepared}:
-				processor.RecordGPULaneWait(prepared, time.Since(laneWaitStart))
+			case prepCh <- &preppedJob{job: job, prepared: prepared, laneWaitStarted: laneWaitStart}:
 				return nil
 			case <-jobCtx.Done():
 				_ = prepared.Workspace.Cleanup()
@@ -160,6 +160,13 @@ func runGPULane(ctx context.Context, q *queue.Client, proc *processor.Processor,
 		case <-ctx.Done():
 			return
 		case p := <-prepCh:
+			// Record before RunGPU touches the same per-job metrics map. This
+			// ordering is required because the prep goroutine cannot safely
+			// write the map after the rendezvous send has handed ownership to
+			// this lane.
+			if !p.laneWaitStarted.IsZero() {
+				processor.RecordGPULaneWait(p.prepared, time.Since(p.laneWaitStarted))
+			}
 			// Chronon is the long-running stage. Keep the queue lease alive
 			// while it renders; renewing only during prepare/post would let a
 			// normal software render expire and be claimed a second time.

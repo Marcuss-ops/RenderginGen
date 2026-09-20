@@ -1,0 +1,59 @@
+{
+  "batch_id": "ml-production-rehearsal-en-probe-20260920",
+  "schema_version": "renderinggen.batch-manifest.v1",
+  "jobs": [
+    {
+      "id": "phrase_01_lower_third_safe__en",
+      "render_plan": {
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "plan_id": "phrase_01_lower_third_safe__en",
+        "video_id": "phrase_01_lower_third_safe__en",
+        "language": "en",
+        "width": 1920,
+        "height": 1080,
+        "fps_num": 24,
+        "fps_den": 1,
+        "duration_ms": 5000,
+        "output_profile_id": "",
+        "style_profile": "",
+        "background": {
+          "kind": "color",
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1
+          ]
+        },
+        "items": [
+          {
+            "id": "item_1",
+            "template_id": "IMPORTANT_PHRASE",
+            "preset_id": "apple_v2",
+            "motion_id": "liquid_glass_ripple",
+            "kind": "important_phrase",
+            "text": "Progress rarely arrives",
+            "start_ms": 0,
+            "end_ms": 5000
+          }
+        ]
+      },
+      "assets": [
+        {
+          "hash": "983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c",
+          "logical_path": "assets/fonts/Poppins-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Poppins-Bold.ttf"
+        },
+        {
+          "hash": "deb990e241954e1af87c6033d40a76cf0f48e0d112541794526051ac4a3ee2c8",
+          "logical_path": "assets/fonts/Inter-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Inter-Bold.ttf"
+        }
+      ],
+      "family": "phrase",
+      "text": "Progress rarely arrives",
+      "motion_id": "liquid_glass_ripple",
+      "preset_id": "apple_v2"
+    }
+  ]
+}

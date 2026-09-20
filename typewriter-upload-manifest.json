@@ -1,0 +1,14 @@
+{
+  "schema_version": "renderinggen.preset-render-manifest.v1",
+  "canvas": { "width": 1920, "height": 1080, "fps_num": 24, "fps_den": 1 },
+  "background": { "kind": "color", "color": [0.02, 0.027, 0.051, 1.0] },
+  "output_root": ".",
+  "assets_root": "testdata/golden",
+  "jobs": [
+    { "id": "typewriter_01_clean", "template_id": "IMPORTANT_PHRASE", "preset_id": "apple_v2", "motion_id": "typewriter_clean", "text": "EVERY PIXEL MATTERS", "duration_ms": 2500, "output": "typewriter_fixed_20260920/typewriter_clean.mp4" },
+    { "id": "typewriter_02_pop", "template_id": "IMPORTANT_PHRASE", "preset_id": "apple_v2", "motion_id": "typewriter_pop", "text": "CREATIVE REVOLUTION", "duration_ms": 2500, "output": "typewriter_fixed_20260920/typewriter_pop.mp4" },
+    { "id": "typewriter_03_neon", "template_id": "IMPORTANT_PHRASE", "preset_id": "apple_v2", "motion_id": "typewriter_neon", "text": "FUTURE OF MOTION", "duration_ms": 2500, "output": "typewriter_fixed_20260920/typewriter_neon.mp4" },
+    { "id": "typewriter_04_tracking", "template_id": "IMPORTANT_PHRASE", "preset_id": "apple_v2", "motion_id": "typewriter_tracking", "text": "TIMELESS TYPOGRAPHY", "duration_ms": 2500, "output": "typewriter_fixed_20260920/typewriter_tracking.mp4" },
+    { "id": "typewriter_05_glitch", "template_id": "IMPORTANT_PHRASE", "preset_id": "apple_v2", "motion_id": "typewriter_glitch", "text": "MAXIMUM PERFORMANCE", "duration_ms": 2500, "output": "typewriter_fixed_20260920/typewriter_glitch.mp4" }
+  ]
+}

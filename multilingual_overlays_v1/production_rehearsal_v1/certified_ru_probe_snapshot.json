@@ -1,0 +1,307 @@
+{
+  "ml-production-rehearsal-certified-ru-20260920:phrase_01_lower_third_safe__ru": {
+    "id": "ml-production-rehearsal-certified-ru-20260920:phrase_01_lower_third_safe__ru",
+    "schema": "renderinggen.job",
+    "version": 1,
+    "idempotency_key": "eb10f62bf86fa573839ffd5084d85a551667893b6d8baf01a676ade806130bd5",
+    "job_type": "render_segment",
+    "render_plan": {
+      "items": [
+        {
+          "id": "item_1",
+          "kind": "important_phrase",
+          "text": "Кристофер Нолан — режиссёр",
+          "end_ms": 5000,
+          "start_ms": 0,
+          "motion_id": "liquid_glass_ripple",
+          "preset_id": "apple_v2",
+          "template_id": "IMPORTANT_PHRASE"
+        }
+      ],
+      "width": 1920,
+      "height": 1080,
+      "fps_den": 1,
+      "fps_num": 24,
+      "plan_id": "phrase_01_lower_third_safe__ru",
+      "language": "ru",
+      "video_id": "phrase_01_lower_third_safe__ru",
+      "background": {
+        "kind": "color",
+        "color": [
+          0.9333333333333333,
+          0.9450980392156862,
+          0.9058823529411765,
+          1
+        ]
+      },
+      "duration_ms": 5000,
+      "style_profile": "",
+      "schema_version": "renderinggen.overlay-plan.v1",
+      "output_profile_id": ""
+    },
+    "assets": [
+      {
+        "hash": "983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c",
+        "logical_path": "assets/fonts/Poppins-Bold.ttf",
+        "source_url": "http://127.0.0.1:8099/assets/fonts/Poppins-Bold.ttf"
+      },
+      {
+        "hash": "deb990e241954e1af87c6033d40a76cf0f48e0d112541794526051ac4a3ee2c8",
+        "logical_path": "assets/fonts/Inter-Bold.ttf",
+        "source_url": "http://127.0.0.1:8099/assets/fonts/Inter-Bold.ttf"
+      }
+    ],
+    "state": "failed",
+    "attempts": 3,
+    "created_at": "0001-01-01T00:00:00Z",
+    "queued_at": "2026-09-20T07:07:08.260189Z",
+    "started_at": "2026-09-20T07:07:08.267286Z",
+    "completed_at": "0001-01-01T00:00:00Z",
+    "lease_until": "0001-01-01T00:00:00Z",
+    "fail_reason": "processor: render: ipc dial /run/chronon3d/chronon.sock: dial unix /run/chronon3d/chronon.sock: connect: connection refused"
+  },
+  "ml-production-rehearsal-certified-ru-20260920:phrase_02_clean_slide_up__ru": {
+    "id": "ml-production-rehearsal-certified-ru-20260920:phrase_02_clean_slide_up__ru",
+    "schema": "renderinggen.job",
+    "version": 1,
+    "idempotency_key": "4e534f6b3420fde9e548d4919b8efaca5edad3e9642d7f16ce79daac42b341ec",
+    "job_type": "render_segment",
+    "render_plan": {
+      "items": [
+        {
+          "id": "item_1",
+          "kind": "important_phrase",
+          "text": "Будущее видео высокой частоты кадров",
+          "end_ms": 5000,
+          "start_ms": 0,
+          "motion_id": "kinetic_stamp_impact",
+          "preset_id": "apple_v2",
+          "template_id": "IMPORTANT_PHRASE"
+        }
+      ],
+      "width": 1920,
+      "height": 1080,
+      "fps_den": 1,
+      "fps_num": 24,
+      "plan_id": "phrase_02_clean_slide_up__ru",
+      "language": "ru",
+      "video_id": "phrase_02_clean_slide_up__ru",
+      "background": {
+        "kind": "color",
+        "color": [
+          0.9333333333333333,
+          0.9450980392156862,
+          0.9058823529411765,
+          1
+        ]
+      },
+      "duration_ms": 5000,
+      "style_profile": "",
+      "schema_version": "renderinggen.overlay-plan.v1",
+      "output_profile_id": ""
+    },
+    "assets": [
+      {
+        "hash": "983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c",
+        "logical_path": "assets/fonts/Poppins-Bold.ttf",
+        "source_url": "http://127.0.0.1:8099/assets/fonts/Poppins-Bold.ttf"
+      },
+      {
+        "hash": "deb990e241954e1af87c6033d40a76cf0f48e0d112541794526051ac4a3ee2c8",
+        "logical_path": "assets/fonts/Inter-Bold.ttf",
+        "source_url": "http://127.0.0.1:8099/assets/fonts/Inter-Bold.ttf"
+      }
+    ],
+    "state": "failed",
+    "attempts": 3,
+    "created_at": "0001-01-01T00:00:00Z",
+    "queued_at": "2026-09-20T07:07:08.266299Z",
+    "started_at": "2026-09-20T07:07:08.273959Z",
+    "completed_at": "0001-01-01T00:00:00Z",
+    "lease_until": "0001-01-01T00:00:00Z",
+    "fail_reason": "processor: render: ipc dial /run/chronon3d/chronon.sock: dial unix /run/chronon3d/chronon.sock: connect: connection refused"
+  },
+  "ml-production-rehearsal-certified-ru-20260920:phrase_03_scale_pop__ru": {
+    "id": "ml-production-rehearsal-certified-ru-20260920:phrase_03_scale_pop__ru",
+    "schema": "renderinggen.job",
+    "version": 1,
+    "idempotency_key": "2ae04a1a624545887ad94b91d4552792ea49db7c012a4ef2be068e2fbf83378f",
+    "job_type": "render_segment",
+    "render_plan": {
+      "items": [
+        {
+          "id": "item_1",
+          "kind": "important_phrase",
+          "text": "СРОЧНЫЕ НОВОСТИ",
+          "end_ms": 5000,
+          "start_ms": 0,
+          "motion_id": "editorial_push_in",
+          "preset_id": "apple_v2",
+          "template_id": "IMPORTANT_PHRASE"
+        }
+      ],
+      "width": 1920,
+      "height": 1080,
+      "fps_den": 1,
+      "fps_num": 24,
+      "plan_id": "phrase_03_scale_pop__ru",
+      "language": "ru",
+      "video_id": "phrase_03_scale_pop__ru",
+      "background": {
+        "kind": "color",
+        "color": [
+          0.9333333333333333,
+          0.9450980392156862,
+          0.9058823529411765,
+          1
+        ]
+      },
+      "duration_ms": 5000,
+      "style_profile": "",
+      "schema_version": "renderinggen.overlay-plan.v1",
+      "output_profile_id": ""
+    },
+    "assets": [
+      {
+        "hash": "983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c",
+        "logical_path": "assets/fonts/Poppins-Bold.ttf",
+        "source_url": "http://127.0.0.1:8099/assets/fonts/Poppins-Bold.ttf"
+      },
+      {
+        "hash": "deb990e241954e1af87c6033d40a76cf0f48e0d112541794526051ac4a3ee2c8",
+        "logical_path": "assets/fonts/Inter-Bold.ttf",
+        "source_url": "http://127.0.0.1:8099/assets/fonts/Inter-Bold.ttf"
+      }
+    ],
+    "state": "failed",
+    "attempts": 3,
+    "created_at": "0001-01-01T00:00:00Z",
+    "queued_at": "2026-09-20T07:07:08.276972Z",
+    "started_at": "2026-09-20T07:07:08.283015Z",
+    "completed_at": "0001-01-01T00:00:00Z",
+    "lease_until": "0001-01-01T00:00:00Z",
+    "fail_reason": "processor: render: ipc dial /run/chronon3d/chronon.sock: dial unix /run/chronon3d/chronon.sock: connect: connection refused"
+  },
+  "ml-production-rehearsal-certified-ru-20260920:phrase_04_dm_sans_fade__ru": {
+    "id": "ml-production-rehearsal-certified-ru-20260920:phrase_04_dm_sans_fade__ru",
+    "schema": "renderinggen.job",
+    "version": 1,
+    "idempotency_key": "62aca51794725a10da0e23d8027f1b90c41c62fb166c8bf17b63da0a8108c9c2",
+    "job_type": "render_segment",
+    "render_plan": {
+      "items": [
+        {
+          "id": "item_1",
+          "kind": "important_phrase",
+          "text": "Простота — высшая степень изящества.",
+          "end_ms": 5000,
+          "start_ms": 0,
+          "motion_id": "neon_flicker_ignite",
+          "preset_id": "apple_v2",
+          "template_id": "IMPORTANT_PHRASE"
+        }
+      ],
+      "width": 1920,
+      "height": 1080,
+      "fps_den": 1,
+      "fps_num": 24,
+      "plan_id": "phrase_04_dm_sans_fade__ru",
+      "language": "ru",
+      "video_id": "phrase_04_dm_sans_fade__ru",
+      "background": {
+        "kind": "color",
+        "color": [
+          0.9333333333333333,
+          0.9450980392156862,
+          0.9058823529411765,
+          1
+        ]
+      },
+      "duration_ms": 5000,
+      "style_profile": "",
+      "schema_version": "renderinggen.overlay-plan.v1",
+      "output_profile_id": ""
+    },
+    "assets": [
+      {
+        "hash": "983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c",
+        "logical_path": "assets/fonts/Poppins-Bold.ttf",
+        "source_url": "http://127.0.0.1:8099/assets/fonts/Poppins-Bold.ttf"
+      },
+      {
+        "hash": "deb990e241954e1af87c6033d40a76cf0f48e0d112541794526051ac4a3ee2c8",
+        "logical_path": "assets/fonts/Inter-Bold.ttf",
+        "source_url": "http://127.0.0.1:8099/assets/fonts/Inter-Bold.ttf"
+      }
+    ],
+    "state": "failed",
+    "attempts": 3,
+    "created_at": "0001-01-01T00:00:00Z",
+    "queued_at": "2026-09-20T07:07:08.28003Z",
+    "started_at": "2026-09-20T07:07:08.2856Z",
+    "completed_at": "0001-01-01T00:00:00Z",
+    "lease_until": "0001-01-01T00:00:00Z",
+    "fail_reason": "processor: render: ipc dial /run/chronon3d/chronon.sock: dial unix /run/chronon3d/chronon.sock: connect: connection refused"
+  },
+  "ml-production-rehearsal-certified-ru-20260920:phrase_05_slide_left_punch__ru": {
+    "id": "ml-production-rehearsal-certified-ru-20260920:phrase_05_slide_left_punch__ru",
+    "schema": "renderinggen.job",
+    "version": 1,
+    "idempotency_key": "bba1ae81c6b421009f5825d3dac7ed53b045a2249177d128c0d3a062c4cf5703",
+    "job_type": "render_segment",
+    "render_plan": {
+      "items": [
+        {
+          "id": "item_1",
+          "kind": "important_phrase",
+          "text": "Инфраструктура искусственного интеллекта",
+          "end_ms": 5000,
+          "start_ms": 0,
+          "motion_id": "hologram_scanline_build",
+          "preset_id": "apple_v2",
+          "template_id": "IMPORTANT_PHRASE"
+        }
+      ],
+      "width": 1920,
+      "height": 1080,
+      "fps_den": 1,
+      "fps_num": 24,
+      "plan_id": "phrase_05_slide_left_punch__ru",
+      "language": "ru",
+      "video_id": "phrase_05_slide_left_punch__ru",
+      "background": {
+        "kind": "color",
+        "color": [
+          0.9333333333333333,
+          0.9450980392156862,
+          0.9058823529411765,
+          1
+        ]
+      },
+      "duration_ms": 5000,
+      "style_profile": "",
+      "schema_version": "renderinggen.overlay-plan.v1",
+      "output_profile_id": ""
+    },
+    "assets": [
+      {
+        "hash": "983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c",
+        "logical_path": "assets/fonts/Poppins-Bold.ttf",
+        "source_url": "http://127.0.0.1:8099/assets/fonts/Poppins-Bold.ttf"
+      },
+      {
+        "hash": "deb990e241954e1af87c6033d40a76cf0f48e0d112541794526051ac4a3ee2c8",
+        "logical_path": "assets/fonts/Inter-Bold.ttf",
+        "source_url": "http://127.0.0.1:8099/assets/fonts/Inter-Bold.ttf"
+      }
+    ],
+    "state": "failed",
+    "attempts": 3,
+    "created_at": "0001-01-01T00:00:00Z",
+    "queued_at": "2026-09-20T07:07:08.285471Z",
+    "started_at": "2026-09-20T07:07:08.292138Z",
+    "completed_at": "0001-01-01T00:00:00Z",
+    "lease_until": "0001-01-01T00:00:00Z",
+    "fail_reason": "processor: render: ipc dial /run/chronon3d/chronon.sock: dial unix /run/chronon3d/chronon.sock: connect: connection refused"
+  }
+}

@@ -1,0 +1,271 @@
+{
+  "batch_id": "ml-production-rehearsal-certified-ru2-20260920",
+  "schema_version": "renderinggen.batch-manifest.v1",
+  "jobs": [
+    {
+      "id": "phrase_01_lower_third_safe__ru",
+      "render_plan": {
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "plan_id": "phrase_01_lower_third_safe__ru",
+        "video_id": "phrase_01_lower_third_safe__ru",
+        "language": "ru",
+        "width": 1920,
+        "height": 1080,
+        "fps_num": 24,
+        "fps_den": 1,
+        "duration_ms": 5000,
+        "output_profile_id": "",
+        "style_profile": "",
+        "background": {
+          "kind": "color",
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1
+          ]
+        },
+        "items": [
+          {
+            "id": "item_1",
+            "template_id": "IMPORTANT_PHRASE",
+            "preset_id": "apple_v2",
+            "motion_id": "liquid_glass_ripple",
+            "kind": "important_phrase",
+            "text": "Кристофер Нолан — режиссёр",
+            "start_ms": 0,
+            "end_ms": 5000
+          }
+        ]
+      },
+      "assets": [
+        {
+          "hash": "983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c",
+          "logical_path": "assets/fonts/Poppins-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Poppins-Bold.ttf"
+        },
+        {
+          "hash": "deb990e241954e1af87c6033d40a76cf0f48e0d112541794526051ac4a3ee2c8",
+          "logical_path": "assets/fonts/Inter-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Inter-Bold.ttf"
+        }
+      ],
+      "family": "phrase",
+      "text": "Кристофер Нолан — режиссёр",
+      "motion_id": "liquid_glass_ripple",
+      "preset_id": "apple_v2"
+    },
+    {
+      "id": "phrase_02_clean_slide_up__ru",
+      "render_plan": {
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "plan_id": "phrase_02_clean_slide_up__ru",
+        "video_id": "phrase_02_clean_slide_up__ru",
+        "language": "ru",
+        "width": 1920,
+        "height": 1080,
+        "fps_num": 24,
+        "fps_den": 1,
+        "duration_ms": 5000,
+        "output_profile_id": "",
+        "style_profile": "",
+        "background": {
+          "kind": "color",
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1
+          ]
+        },
+        "items": [
+          {
+            "id": "item_1",
+            "template_id": "IMPORTANT_PHRASE",
+            "preset_id": "apple_v2",
+            "motion_id": "kinetic_stamp_impact",
+            "kind": "important_phrase",
+            "text": "Будущее видео высокой частоты кадров",
+            "start_ms": 0,
+            "end_ms": 5000
+          }
+        ]
+      },
+      "assets": [
+        {
+          "hash": "983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c",
+          "logical_path": "assets/fonts/Poppins-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Poppins-Bold.ttf"
+        },
+        {
+          "hash": "deb990e241954e1af87c6033d40a76cf0f48e0d112541794526051ac4a3ee2c8",
+          "logical_path": "assets/fonts/Inter-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Inter-Bold.ttf"
+        }
+      ],
+      "family": "phrase",
+      "text": "Будущее видео высокой частоты кадров",
+      "motion_id": "kinetic_stamp_impact",
+      "preset_id": "apple_v2"
+    },
+    {
+      "id": "phrase_03_scale_pop__ru",
+      "render_plan": {
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "plan_id": "phrase_03_scale_pop__ru",
+        "video_id": "phrase_03_scale_pop__ru",
+        "language": "ru",
+        "width": 1920,
+        "height": 1080,
+        "fps_num": 24,
+        "fps_den": 1,
+        "duration_ms": 5000,
+        "output_profile_id": "",
+        "style_profile": "",
+        "background": {
+          "kind": "color",
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1
+          ]
+        },
+        "items": [
+          {
+            "id": "item_1",
+            "template_id": "IMPORTANT_PHRASE",
+            "preset_id": "apple_v2",
+            "motion_id": "editorial_push_in",
+            "kind": "important_phrase",
+            "text": "СРОЧНЫЕ НОВОСТИ",
+            "start_ms": 0,
+            "end_ms": 5000
+          }
+        ]
+      },
+      "assets": [
+        {
+          "hash": "983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c",
+          "logical_path": "assets/fonts/Poppins-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Poppins-Bold.ttf"
+        },
+        {
+          "hash": "deb990e241954e1af87c6033d40a76cf0f48e0d112541794526051ac4a3ee2c8",
+          "logical_path": "assets/fonts/Inter-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Inter-Bold.ttf"
+        }
+      ],
+      "family": "phrase",
+      "text": "СРОЧНЫЕ НОВОСТИ",
+      "motion_id": "editorial_push_in",
+      "preset_id": "apple_v2"
+    },
+    {
+      "id": "phrase_04_dm_sans_fade__ru",
+      "render_plan": {
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "plan_id": "phrase_04_dm_sans_fade__ru",
+        "video_id": "phrase_04_dm_sans_fade__ru",
+        "language": "ru",
+        "width": 1920,
+        "height": 1080,
+        "fps_num": 24,
+        "fps_den": 1,
+        "duration_ms": 5000,
+        "output_profile_id": "",
+        "style_profile": "",
+        "background": {
+          "kind": "color",
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1
+          ]
+        },
+        "items": [
+          {
+            "id": "item_1",
+            "template_id": "IMPORTANT_PHRASE",
+            "preset_id": "apple_v2",
+            "motion_id": "neon_flicker_ignite",
+            "kind": "important_phrase",
+            "text": "Простота — высшая степень изящества.",
+            "start_ms": 0,
+            "end_ms": 5000
+          }
+        ]
+      },
+      "assets": [
+        {
+          "hash": "983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c",
+          "logical_path": "assets/fonts/Poppins-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Poppins-Bold.ttf"
+        },
+        {
+          "hash": "deb990e241954e1af87c6033d40a76cf0f48e0d112541794526051ac4a3ee2c8",
+          "logical_path": "assets/fonts/Inter-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Inter-Bold.ttf"
+        }
+      ],
+      "family": "phrase",
+      "text": "Простота — высшая степень изящества.",
+      "motion_id": "neon_flicker_ignite",
+      "preset_id": "apple_v2"
+    },
+    {
+      "id": "phrase_05_slide_left_punch__ru",
+      "render_plan": {
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "plan_id": "phrase_05_slide_left_punch__ru",
+        "video_id": "phrase_05_slide_left_punch__ru",
+        "language": "ru",
+        "width": 1920,
+        "height": 1080,
+        "fps_num": 24,
+        "fps_den": 1,
+        "duration_ms": 5000,
+        "output_profile_id": "",
+        "style_profile": "",
+        "background": {
+          "kind": "color",
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1
+          ]
+        },
+        "items": [
+          {
+            "id": "item_1",
+            "template_id": "IMPORTANT_PHRASE",
+            "preset_id": "apple_v2",
+            "motion_id": "hologram_scanline_build",
+            "kind": "important_phrase",
+            "text": "Инфраструктура искусственного интеллекта",
+            "start_ms": 0,
+            "end_ms": 5000
+          }
+        ]
+      },
+      "assets": [
+        {
+          "hash": "983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c",
+          "logical_path": "assets/fonts/Poppins-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Poppins-Bold.ttf"
+        },
+        {
+          "hash": "deb990e241954e1af87c6033d40a76cf0f48e0d112541794526051ac4a3ee2c8",
+          "logical_path": "assets/fonts/Inter-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Inter-Bold.ttf"
+        }
+      ],
+      "family": "phrase",
+      "text": "Инфраструктура искусственного интеллекта",
+      "motion_id": "hologram_scanline_build",
+      "preset_id": "apple_v2"
+    }
+  ]
+}

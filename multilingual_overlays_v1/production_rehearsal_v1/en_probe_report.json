@@ -1,0 +1,46 @@
+{
+  "schema": "renderinggen.batch-run-report.v1",
+  "batch_id": "ml-production-rehearsal-en-probe-20260920",
+  "generated_at": "2026-09-20T07:07:40.939750297Z",
+  "manifest": "multilingual_overlays_v1/production_rehearsal_v1/en_probe_manifest.json",
+  "queue": "http://127.0.0.1:8081",
+  "jobs": [
+    {
+      "job_id": "ml-production-rehearsal-en-probe-20260920:phrase_01_lower_third_safe__en",
+      "logical_id": "phrase_01_lower_third_safe__en",
+      "family": "phrase",
+      "template_id": "IMPORTANT_PHRASE",
+      "preset_id": "apple_v2",
+      "motion_id": "liquid_glass_ripple",
+      "language": "en",
+      "text": "Progress rarely arrives",
+      "state": "failed",
+      "attempts": 3,
+      "queued_at": "2026-09-20T07:07:40.922397Z",
+      "started_at": "2026-09-20T07:07:40.927247Z",
+      "queue_wait_ms": 4,
+      "fail_reason": "processor: render: ipc dial /run/chronon3d/chronon.sock: dial unix /run/chronon3d/chronon.sock: connect: connection refused"
+    }
+  ],
+  "summary": {
+    "jobs_total": 1,
+    "completed": 0,
+    "failed": 1,
+    "cancelled": 0,
+    "not_terminal": 0,
+    "phrase_overlays": 0,
+    "image_overlays": 0,
+    "timing_sidecars": 0,
+    "queue_wait": {
+      "count": 1,
+      "min_ms": 4,
+      "p50_ms": 4,
+      "max_ms": 4,
+      "mean_ms": 4
+    },
+    "distinct_artifact_hashes": 0,
+    "failures": [
+      "ml-production-rehearsal-en-probe-20260920:phrase_01_lower_third_safe__en (failed)"
+    ]
+  }
+}

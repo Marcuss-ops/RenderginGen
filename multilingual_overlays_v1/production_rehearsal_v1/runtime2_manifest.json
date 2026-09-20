@@ -1,0 +1,536 @@
+{
+  "schema_version": "renderinggen.batch-manifest.v1",
+  "batch_id": "ml-production-rehearsal-runtime2-20260920",
+  "jobs": [
+    {
+      "id": "phrase_01_lower_third_safe__it",
+      "render_plan": {
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "plan_id": "phrase_01_lower_third_safe__it",
+        "video_id": "phrase_01_lower_third_safe__it",
+        "language": "it",
+        "width": 1920,
+        "height": 1080,
+        "fps_num": 24,
+        "fps_den": 1,
+        "duration_ms": 5000,
+        "output_profile_id": "",
+        "style_profile": "",
+        "background": {
+          "kind": "color",
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1
+          ]
+        },
+        "items": [
+          {
+            "id": "item_1",
+            "template_id": "IMPORTANT_PHRASE",
+            "preset_id": "apple_v2",
+            "motion_id": "liquid_glass_ripple",
+            "kind": "important_phrase",
+            "text": "La coerenza trasforma un'idea in risultati. Il progresso raramente arriva in un momento drammatico; invece, emerge dalla ripetizione di un processo chiaro, imparando profondamente da ogni tentativo, e migliorando sistematicamente il prossimo. Un forte flusso di lavoro creativo è quello che trasforma un concetto grezzo in un video finito combinando meticolosamente giudizio editoriale, tempi precisi, tipografia leggibile e rendering affidabile. L'obiettivo finale trascende semplicemente facendo una clip di successo; piuttosto, richiede la costruzione di un intero sistema in grado di produrre la stessa alta qualità ancora e ancora.",
+            "start_ms": 0,
+            "end_ms": 5000
+          }
+        ]
+      },
+      "assets": [
+        {
+          "hash": "983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c",
+          "logical_path": "assets/fonts/Poppins-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Poppins-Bold.ttf"
+        },
+        {
+          "hash": "deb990e241954e1af87c6033d40a76cf0f48e0d112541794526051ac4a3ee2c8",
+          "logical_path": "assets/fonts/Inter-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Inter-Bold.ttf"
+        }
+      ],
+      "family": "phrase",
+      "text": "La coerenza trasforma un'idea in risultati. Il progresso raramente arriva in un momento drammatico; invece, emerge dalla ripetizione di un processo chiaro, imparando profondamente da ogni tentativo, e migliorando sistematicamente il prossimo. Un forte flusso di lavoro creativo è quello che trasforma un concetto grezzo in un video finito combinando meticolosamente giudizio editoriale, tempi precisi, tipografia leggibile e rendering affidabile. L'obiettivo finale trascende semplicemente facendo una clip di successo; piuttosto, richiede la costruzione di un intero sistema in grado di produrre la stessa alta qualità ancora e ancora.",
+      "motion_id": "liquid_glass_ripple",
+      "preset_id": "apple_v2"
+    },
+    {
+      "id": "phrase_01_lower_third_safe__en",
+      "render_plan": {
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "plan_id": "phrase_01_lower_third_safe__en",
+        "video_id": "phrase_01_lower_third_safe__en",
+        "language": "en",
+        "width": 1920,
+        "height": 1080,
+        "fps_num": 24,
+        "fps_den": 1,
+        "duration_ms": 5000,
+        "output_profile_id": "",
+        "style_profile": "",
+        "background": {
+          "kind": "color",
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1
+          ]
+        },
+        "items": [
+          {
+            "id": "item_1",
+            "template_id": "IMPORTANT_PHRASE",
+            "preset_id": "apple_v2",
+            "motion_id": "liquid_glass_ripple",
+            "kind": "important_phrase",
+            "text": "Consistency turns an idea into results. Progress rarely arrives in one dramatic moment; instead, it emerges from repeating a clear process, learning profoundly from each attempt, and systematically improving the next one. A strong creative workflow is what transforms a rough concept into a finished video by meticulously combining editorial judgment, precise timing, readable typography, and reliable rendering. The ultimate goal transcends simply making one successful clip; rather, it demands building an entire system capable of producing that same high quality again and again.",
+            "start_ms": 0,
+            "end_ms": 5000
+          }
+        ]
+      },
+      "assets": [
+        {
+          "hash": "983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c",
+          "logical_path": "assets/fonts/Poppins-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Poppins-Bold.ttf"
+        },
+        {
+          "hash": "deb990e241954e1af87c6033d40a76cf0f48e0d112541794526051ac4a3ee2c8",
+          "logical_path": "assets/fonts/Inter-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Inter-Bold.ttf"
+        }
+      ],
+      "family": "phrase",
+      "text": "Consistency turns an idea into results. Progress rarely arrives in one dramatic moment; instead, it emerges from repeating a clear process, learning profoundly from each attempt, and systematically improving the next one. A strong creative workflow is what transforms a rough concept into a finished video by meticulously combining editorial judgment, precise timing, readable typography, and reliable rendering. The ultimate goal transcends simply making one successful clip; rather, it demands building an entire system capable of producing that same high quality again and again.",
+      "motion_id": "liquid_glass_ripple",
+      "preset_id": "apple_v2"
+    },
+    {
+      "id": "phrase_01_lower_third_safe__pl",
+      "render_plan": {
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "plan_id": "phrase_01_lower_third_safe__pl",
+        "video_id": "phrase_01_lower_third_safe__pl",
+        "language": "pl",
+        "width": 1920,
+        "height": 1080,
+        "fps_num": 24,
+        "fps_den": 1,
+        "duration_ms": 5000,
+        "output_profile_id": "",
+        "style_profile": "",
+        "background": {
+          "kind": "color",
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1
+          ]
+        },
+        "items": [
+          {
+            "id": "item_1",
+            "template_id": "IMPORTANT_PHRASE",
+            "preset_id": "apple_v2",
+            "motion_id": "liquid_glass_ripple",
+            "kind": "important_phrase",
+            "text": "Spójność zmienia pomysł w rezultaty. Postęp rzadko następuje w jednym dramatycznym momencie; zamiast tego wynika on z powtarzania wyraźnego procesu, głębokiego uczenia się z każdej próby i systematycznej poprawy następnego. Silny kreatywny strumień pracy przekształca szorstką koncepcję w gotowy film poprzez skrupulatne połączenie opinii redakcyjnej, dokładnego czasu, czytelnej typografii i niezawodnego renderowania. Ostateczny cel przekracza po prostu jeden udany klip; wymaga raczej zbudowania całego systemu zdolnego do produkcji tej samej wysokiej jakości raz za razem.",
+            "start_ms": 0,
+            "end_ms": 5000
+          }
+        ]
+      },
+      "assets": [
+        {
+          "hash": "983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c",
+          "logical_path": "assets/fonts/Poppins-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Poppins-Bold.ttf"
+        },
+        {
+          "hash": "deb990e241954e1af87c6033d40a76cf0f48e0d112541794526051ac4a3ee2c8",
+          "logical_path": "assets/fonts/Inter-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Inter-Bold.ttf"
+        }
+      ],
+      "family": "phrase",
+      "text": "Spójność zmienia pomysł w rezultaty. Postęp rzadko następuje w jednym dramatycznym momencie; zamiast tego wynika on z powtarzania wyraźnego procesu, głębokiego uczenia się z każdej próby i systematycznej poprawy następnego. Silny kreatywny strumień pracy przekształca szorstką koncepcję w gotowy film poprzez skrupulatne połączenie opinii redakcyjnej, dokładnego czasu, czytelnej typografii i niezawodnego renderowania. Ostateczny cel przekracza po prostu jeden udany klip; wymaga raczej zbudowania całego systemu zdolnego do produkcji tej samej wysokiej jakości raz za razem.",
+      "motion_id": "liquid_glass_ripple",
+      "preset_id": "apple_v2"
+    },
+    {
+      "id": "phrase_01_lower_third_safe__ru",
+      "render_plan": {
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "plan_id": "phrase_01_lower_third_safe__ru",
+        "video_id": "phrase_01_lower_third_safe__ru",
+        "language": "ru",
+        "width": 1920,
+        "height": 1080,
+        "fps_num": 24,
+        "fps_den": 1,
+        "duration_ms": 5000,
+        "output_profile_id": "",
+        "style_profile": "",
+        "background": {
+          "kind": "color",
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1
+          ]
+        },
+        "items": [
+          {
+            "id": "item_1",
+            "template_id": "IMPORTANT_PHRASE",
+            "preset_id": "apple_v2",
+            "motion_id": "liquid_glass_ripple",
+            "kind": "important_phrase",
+            "text": "Последовательность превращает идею в результат. Прогресс редко приходит в один драматический момент; вместо этого он возникает из повторения ясного процесса, глубокого изучения каждой попытки и систематического улучшения следующей. Сильный творческий рабочий процесс - это то, что превращает грубую концепцию в законченное видео, тщательно сочетая редакционное суждение, точное время, читаемую типографику и надежную визуализацию. Конечная цель выходит за рамки простого создания одного успешного клипа; скорее, это требует создания целой системы, способной производить то же самое высокое качество снова и снова.",
+            "start_ms": 0,
+            "end_ms": 5000
+          }
+        ]
+      },
+      "assets": [
+        {
+          "hash": "983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c",
+          "logical_path": "assets/fonts/Poppins-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Poppins-Bold.ttf"
+        },
+        {
+          "hash": "deb990e241954e1af87c6033d40a76cf0f48e0d112541794526051ac4a3ee2c8",
+          "logical_path": "assets/fonts/Inter-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Inter-Bold.ttf"
+        }
+      ],
+      "family": "phrase",
+      "text": "Последовательность превращает идею в результат. Прогресс редко приходит в один драматический момент; вместо этого он возникает из повторения ясного процесса, глубокого изучения каждой попытки и систематического улучшения следующей. Сильный творческий рабочий процесс - это то, что превращает грубую концепцию в законченное видео, тщательно сочетая редакционное суждение, точное время, читаемую типографику и надежную визуализацию. Конечная цель выходит за рамки простого создания одного успешного клипа; скорее, это требует создания целой системы, способной производить то же самое высокое качество снова и снова.",
+      "motion_id": "liquid_glass_ripple",
+      "preset_id": "apple_v2"
+    },
+    {
+      "id": "phrase_01_lower_third_safe__de",
+      "render_plan": {
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "plan_id": "phrase_01_lower_third_safe__de",
+        "video_id": "phrase_01_lower_third_safe__de",
+        "language": "de",
+        "width": 1920,
+        "height": 1080,
+        "fps_num": 24,
+        "fps_den": 1,
+        "duration_ms": 5000,
+        "output_profile_id": "",
+        "style_profile": "",
+        "background": {
+          "kind": "color",
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1
+          ]
+        },
+        "items": [
+          {
+            "id": "item_1",
+            "template_id": "IMPORTANT_PHRASE",
+            "preset_id": "apple_v2",
+            "motion_id": "liquid_glass_ripple",
+            "kind": "important_phrase",
+            "text": "Konsistenz verwandelt eine Idee in Ergebnisse. Fortschritt kommt selten in einem dramatischen Moment an; stattdessen entsteht er aus der Wiederholung eines klaren Prozesses, dem tiefen Lernen aus jedem Versuch und der systematischen Verbesserung des nächsten. Ein starker kreativer Workflow verwandelt ein grobes Konzept in ein fertiges Video, indem es redaktionelles Urteilsvermögen, präzises Timing, lesbare Typografie und zuverlässiges Rendering akribisch kombiniert. Das ultimative Ziel geht über die einfache Herstellung eines erfolgreichen Clips hinaus; Vielmehr erfordert es den Aufbau eines gesamten Systems, das in der Lage ist, immer wieder dieselbe hohe Qualität zu produzieren.",
+            "start_ms": 0,
+            "end_ms": 5000
+          }
+        ]
+      },
+      "assets": [
+        {
+          "hash": "983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c",
+          "logical_path": "assets/fonts/Poppins-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Poppins-Bold.ttf"
+        },
+        {
+          "hash": "deb990e241954e1af87c6033d40a76cf0f48e0d112541794526051ac4a3ee2c8",
+          "logical_path": "assets/fonts/Inter-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Inter-Bold.ttf"
+        }
+      ],
+      "family": "phrase",
+      "text": "Konsistenz verwandelt eine Idee in Ergebnisse. Fortschritt kommt selten in einem dramatischen Moment an; stattdessen entsteht er aus der Wiederholung eines klaren Prozesses, dem tiefen Lernen aus jedem Versuch und der systematischen Verbesserung des nächsten. Ein starker kreativer Workflow verwandelt ein grobes Konzept in ein fertiges Video, indem es redaktionelles Urteilsvermögen, präzises Timing, lesbare Typografie und zuverlässiges Rendering akribisch kombiniert. Das ultimative Ziel geht über die einfache Herstellung eines erfolgreichen Clips hinaus; Vielmehr erfordert es den Aufbau eines gesamten Systems, das in der Lage ist, immer wieder dieselbe hohe Qualität zu produzieren.",
+      "motion_id": "liquid_glass_ripple",
+      "preset_id": "apple_v2"
+    },
+    {
+      "id": "phrase_01_lower_third_safe__es",
+      "render_plan": {
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "plan_id": "phrase_01_lower_third_safe__es",
+        "video_id": "phrase_01_lower_third_safe__es",
+        "language": "es",
+        "width": 1920,
+        "height": 1080,
+        "fps_num": 24,
+        "fps_den": 1,
+        "duration_ms": 5000,
+        "output_profile_id": "",
+        "style_profile": "",
+        "background": {
+          "kind": "color",
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1
+          ]
+        },
+        "items": [
+          {
+            "id": "item_1",
+            "template_id": "IMPORTANT_PHRASE",
+            "preset_id": "apple_v2",
+            "motion_id": "liquid_glass_ripple",
+            "kind": "important_phrase",
+            "text": "La coherencia convierte una idea en resultados. El progreso raramente llega en un momento dramático; en cambio, surge de repetir un proceso claro, aprender profundamente de cada intento, y mejorar sistemáticamente el siguiente. Un fuerte flujo de trabajo creativo es lo que transforma un concepto áspero en un video terminado combinando meticulosamente el juicio editorial, el tiempo preciso, la tipografía legible y la interpretación fiable. El objetivo final trasciende simplemente haciendo un clip exitoso; más bien, exige construir un sistema completo capaz de producir esa misma alta calidad una y otra vez.",
+            "start_ms": 0,
+            "end_ms": 5000
+          }
+        ]
+      },
+      "assets": [
+        {
+          "hash": "983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c",
+          "logical_path": "assets/fonts/Poppins-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Poppins-Bold.ttf"
+        },
+        {
+          "hash": "deb990e241954e1af87c6033d40a76cf0f48e0d112541794526051ac4a3ee2c8",
+          "logical_path": "assets/fonts/Inter-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Inter-Bold.ttf"
+        }
+      ],
+      "family": "phrase",
+      "text": "La coherencia convierte una idea en resultados. El progreso raramente llega en un momento dramático; en cambio, surge de repetir un proceso claro, aprender profundamente de cada intento, y mejorar sistemáticamente el siguiente. Un fuerte flujo de trabajo creativo es lo que transforma un concepto áspero en un video terminado combinando meticulosamente el juicio editorial, el tiempo preciso, la tipografía legible y la interpretación fiable. El objetivo final trasciende simplemente haciendo un clip exitoso; más bien, exige construir un sistema completo capaz de producir esa misma alta calidad una y otra vez.",
+      "motion_id": "liquid_glass_ripple",
+      "preset_id": "apple_v2"
+    },
+    {
+      "id": "phrase_01_lower_third_safe__pt-BR",
+      "render_plan": {
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "plan_id": "phrase_01_lower_third_safe__pt-BR",
+        "video_id": "phrase_01_lower_third_safe__pt-BR",
+        "language": "pt-BR",
+        "width": 1920,
+        "height": 1080,
+        "fps_num": 24,
+        "fps_den": 1,
+        "duration_ms": 5000,
+        "output_profile_id": "",
+        "style_profile": "",
+        "background": {
+          "kind": "color",
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1
+          ]
+        },
+        "items": [
+          {
+            "id": "item_1",
+            "template_id": "IMPORTANT_PHRASE",
+            "preset_id": "apple_v2",
+            "motion_id": "liquid_glass_ripple",
+            "kind": "important_phrase",
+            "text": "A coerência transforma uma ideia em resultados. O progresso raramente chega em um momento dramático; em vez disso, emerge de repetir um processo claro, aprender profundamente de cada tentativa e melhorar sistematicamente o próximo. Um forte fluxo de trabalho criativo é o que transforma um conceito bruto em um vídeo acabado combinando meticulosamente julgamento editorial, timing preciso, tipografia legível e renderização confiável. O objetivo final transcende simplesmente fazer um clipe de sucesso; em vez disso, exige a construção de um sistema inteiro capaz de produzir essa mesma alta qualidade novamente e novamente.",
+            "start_ms": 0,
+            "end_ms": 5000
+          }
+        ]
+      },
+      "assets": [
+        {
+          "hash": "983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c",
+          "logical_path": "assets/fonts/Poppins-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Poppins-Bold.ttf"
+        },
+        {
+          "hash": "deb990e241954e1af87c6033d40a76cf0f48e0d112541794526051ac4a3ee2c8",
+          "logical_path": "assets/fonts/Inter-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Inter-Bold.ttf"
+        }
+      ],
+      "family": "phrase",
+      "text": "A coerência transforma uma ideia em resultados. O progresso raramente chega em um momento dramático; em vez disso, emerge de repetir um processo claro, aprender profundamente de cada tentativa e melhorar sistematicamente o próximo. Um forte fluxo de trabalho criativo é o que transforma um conceito bruto em um vídeo acabado combinando meticulosamente julgamento editorial, timing preciso, tipografia legível e renderização confiável. O objetivo final transcende simplesmente fazer um clipe de sucesso; em vez disso, exige a construção de um sistema inteiro capaz de produzir essa mesma alta qualidade novamente e novamente.",
+      "motion_id": "liquid_glass_ripple",
+      "preset_id": "apple_v2"
+    },
+    {
+      "id": "phrase_01_lower_third_safe__fr",
+      "render_plan": {
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "plan_id": "phrase_01_lower_third_safe__fr",
+        "video_id": "phrase_01_lower_third_safe__fr",
+        "language": "fr",
+        "width": 1920,
+        "height": 1080,
+        "fps_num": 24,
+        "fps_den": 1,
+        "duration_ms": 5000,
+        "output_profile_id": "",
+        "style_profile": "",
+        "background": {
+          "kind": "color",
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1
+          ]
+        },
+        "items": [
+          {
+            "id": "item_1",
+            "template_id": "IMPORTANT_PHRASE",
+            "preset_id": "apple_v2",
+            "motion_id": "liquid_glass_ripple",
+            "kind": "important_phrase",
+            "text": "La cohérence transforme une idée en résultats. Le progrès arrive rarement dans un moment dramatique; au contraire, il émerge de la répétition d'un processus clair, en apprenant profondément de chaque tentative, et en améliorant systématiquement le prochain. Un flux de travail créatif fort est ce qui transforme un concept rugueux en une vidéo finie en combinant méticuleusement jugement éditorial, timing précis, typographie lisible et rendu fiable. L'objectif ultime transcende tout simplement faire un clip réussi; plutôt, il exige la construction d'un système entier capable de produire cette même qualité encore et encore.",
+            "start_ms": 0,
+            "end_ms": 5000
+          }
+        ]
+      },
+      "assets": [
+        {
+          "hash": "983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c",
+          "logical_path": "assets/fonts/Poppins-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Poppins-Bold.ttf"
+        },
+        {
+          "hash": "deb990e241954e1af87c6033d40a76cf0f48e0d112541794526051ac4a3ee2c8",
+          "logical_path": "assets/fonts/Inter-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Inter-Bold.ttf"
+        }
+      ],
+      "family": "phrase",
+      "text": "La cohérence transforme une idée en résultats. Le progrès arrive rarement dans un moment dramatique; au contraire, il émerge de la répétition d'un processus clair, en apprenant profondément de chaque tentative, et en améliorant systématiquement le prochain. Un flux de travail créatif fort est ce qui transforme un concept rugueux en une vidéo finie en combinant méticuleusement jugement éditorial, timing précis, typographie lisible et rendu fiable. L'objectif ultime transcende tout simplement faire un clip réussi; plutôt, il exige la construction d'un système entier capable de produire cette même qualité encore et encore.",
+      "motion_id": "liquid_glass_ripple",
+      "preset_id": "apple_v2"
+    },
+    {
+      "id": "phrase_01_lower_third_safe__tr",
+      "render_plan": {
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "plan_id": "phrase_01_lower_third_safe__tr",
+        "video_id": "phrase_01_lower_third_safe__tr",
+        "language": "tr",
+        "width": 1920,
+        "height": 1080,
+        "fps_num": 24,
+        "fps_den": 1,
+        "duration_ms": 5000,
+        "output_profile_id": "",
+        "style_profile": "",
+        "background": {
+          "kind": "color",
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1
+          ]
+        },
+        "items": [
+          {
+            "id": "item_1",
+            "template_id": "IMPORTANT_PHRASE",
+            "preset_id": "apple_v2",
+            "motion_id": "liquid_glass_ripple",
+            "kind": "important_phrase",
+            "text": "Consistency, sonuçlara bir fikir döndürür. İlerleme nadiren dramatik bir anda gelir; bunun yerine, her girişimden derin bir şekilde öğrenilir ve bir sonraki kişiyi sistematik olarak geliştirir. Güçlü bir yaratıcı iş akışı, editör kararı, kesin zamanlamayı, okunabilir tipografiyi ve güvenilir bir şekilde birleştirilerek bitmiş bir videoya dönüştürmektir. Nihai hedef, sadece başarılı bir klip yapmaktan geçiyor; yerine, aynı yüksek kaliteyi tekrar üretebilecek tüm bir sistem inşa ediyor.",
+            "start_ms": 0,
+            "end_ms": 5000
+          }
+        ]
+      },
+      "assets": [
+        {
+          "hash": "983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c",
+          "logical_path": "assets/fonts/Poppins-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Poppins-Bold.ttf"
+        },
+        {
+          "hash": "deb990e241954e1af87c6033d40a76cf0f48e0d112541794526051ac4a3ee2c8",
+          "logical_path": "assets/fonts/Inter-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Inter-Bold.ttf"
+        }
+      ],
+      "family": "phrase",
+      "text": "Consistency, sonuçlara bir fikir döndürür. İlerleme nadiren dramatik bir anda gelir; bunun yerine, her girişimden derin bir şekilde öğrenilir ve bir sonraki kişiyi sistematik olarak geliştirir. Güçlü bir yaratıcı iş akışı, editör kararı, kesin zamanlamayı, okunabilir tipografiyi ve güvenilir bir şekilde birleştirilerek bitmiş bir videoya dönüştürmektir. Nihai hedef, sadece başarılı bir klip yapmaktan geçiyor; yerine, aynı yüksek kaliteyi tekrar üretebilecek tüm bir sistem inşa ediyor.",
+      "motion_id": "liquid_glass_ripple",
+      "preset_id": "apple_v2"
+    },
+    {
+      "id": "phrase_01_lower_third_safe__id",
+      "render_plan": {
+        "schema_version": "renderinggen.overlay-plan.v1",
+        "plan_id": "phrase_01_lower_third_safe__id",
+        "video_id": "phrase_01_lower_third_safe__id",
+        "language": "id",
+        "width": 1920,
+        "height": 1080,
+        "fps_num": 24,
+        "fps_den": 1,
+        "duration_ms": 5000,
+        "output_profile_id": "",
+        "style_profile": "",
+        "background": {
+          "kind": "color",
+          "color": [
+            0.9333333333333333,
+            0.9450980392156862,
+            0.9058823529411765,
+            1
+          ]
+        },
+        "items": [
+          {
+            "id": "item_1",
+            "template_id": "IMPORTANT_PHRASE",
+            "preset_id": "apple_v2",
+            "motion_id": "liquid_glass_ripple",
+            "kind": "important_phrase",
+            "text": "Konsistensi mengubah ide menjadi hasil. Kemajuan jarang tiba dalam satu saat dramatis; sebaliknya, muncul dari mengulangi proses yang jelas, belajar sangat dari setiap upaya, dan sistematis meningkatkan yang berikutnya. Sebuah aliran kerja kreatif yang kuat adalah apa yang mengubah konsep kasar menjadi video yang selesai dengan cermat menggabungkan penilaian editorial, waktu yang tepat, tipografi yang dapat dibaca, dan render dapat diandalkan. Tujuan akhir melampaui hanya membuat satu klip sukses; bukan, tujuan untuk membangun seluruh sistem yang mampu memproduksi kualitas tinggi yang sama lagi dan lagi.",
+            "start_ms": 0,
+            "end_ms": 5000
+          }
+        ]
+      },
+      "assets": [
+        {
+          "hash": "983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c",
+          "logical_path": "assets/fonts/Poppins-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Poppins-Bold.ttf"
+        },
+        {
+          "hash": "deb990e241954e1af87c6033d40a76cf0f48e0d112541794526051ac4a3ee2c8",
+          "logical_path": "assets/fonts/Inter-Bold.ttf",
+          "source_url": "http://127.0.0.1:8099/assets/fonts/Inter-Bold.ttf"
+        }
+      ],
+      "family": "phrase",
+      "text": "Konsistensi mengubah ide menjadi hasil. Kemajuan jarang tiba dalam satu saat dramatis; sebaliknya, muncul dari mengulangi proses yang jelas, belajar sangat dari setiap upaya, dan sistematis meningkatkan yang berikutnya. Sebuah aliran kerja kreatif yang kuat adalah apa yang mengubah konsep kasar menjadi video yang selesai dengan cermat menggabungkan penilaian editorial, waktu yang tepat, tipografi yang dapat dibaca, dan render dapat diandalkan. Tujuan akhir melampaui hanya membuat satu klip sukses; bukan, tujuan untuk membangun seluruh sistem yang mampu memproduksi kualitas tinggi yang sama lagi dan lagi.",
+      "motion_id": "liquid_glass_ripple",
+      "preset_id": "apple_v2"
+    }
+  ]
+}

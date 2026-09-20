@@ -1,0 +1,612 @@
+{
+  "ml-production-rehearsal-runtime-20260920:phrase_01_lower_third_safe__de": {
+    "id": "ml-production-rehearsal-runtime-20260920:phrase_01_lower_third_safe__de",
+    "schema": "renderinggen.job",
+    "version": 1,
+    "idempotency_key": "1e0efd492cf1bdb32fad4cb9ce0ba453a08d89df538992d4cd0ea483031e90c0",
+    "job_type": "render_segment",
+    "render_plan": {
+      "items": [
+        {
+          "id": "item_1",
+          "kind": "important_phrase",
+          "text": "Konsistenz verwandelt eine Idee in Ergebnisse. Fortschritt kommt selten in einem dramatischen Moment an; stattdessen entsteht er aus der Wiederholung eines klaren Prozesses, dem tiefen Lernen aus jedem Versuch und der systematischen Verbesserung des nächsten. Ein starker kreativer Workflow verwandelt ein grobes Konzept in ein fertiges Video, indem es redaktionelles Urteilsvermögen, präzises Timing, lesbare Typografie und zuverlässiges Rendering akribisch kombiniert. Das ultimative Ziel geht über die einfache Herstellung eines erfolgreichen Clips hinaus; Vielmehr erfordert es den Aufbau eines gesamten Systems, das in der Lage ist, immer wieder dieselbe hohe Qualität zu produzieren.",
+          "end_ms": 5000,
+          "start_ms": 0,
+          "motion_id": "liquid_glass_ripple",
+          "preset_id": "apple_v2",
+          "template_id": "IMPORTANT_PHRASE"
+        }
+      ],
+      "width": 1920,
+      "height": 1080,
+      "fps_den": 1,
+      "fps_num": 24,
+      "plan_id": "phrase_01_lower_third_safe__de",
+      "language": "de",
+      "video_id": "phrase_01_lower_third_safe__de",
+      "background": {
+        "kind": "color",
+        "color": [
+          0.9333333333333333,
+          0.9450980392156862,
+          0.9058823529411765,
+          1
+        ]
+      },
+      "duration_ms": 5000,
+      "style_profile": "",
+      "schema_version": "renderinggen.overlay-plan.v1",
+      "output_profile_id": ""
+    },
+    "assets": [
+      {
+        "hash": "983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c",
+        "logical_path": "assets/fonts/Poppins-Bold.ttf",
+        "source_url": "http://127.0.0.1:8099/assets/fonts/Poppins-Bold.ttf"
+      },
+      {
+        "hash": "deb990e241954e1af87c6033d40a76cf0f48e0d112541794526051ac4a3ee2c8",
+        "logical_path": "assets/fonts/Inter-Bold.ttf",
+        "source_url": "http://127.0.0.1:8099/assets/fonts/Inter-Bold.ttf"
+      }
+    ],
+    "state": "failed",
+    "attempts": 3,
+    "created_at": "0001-01-01T00:00:00Z",
+    "queued_at": "2026-09-20T07:00:31.723964Z",
+    "started_at": "2026-09-20T07:00:31.73874Z",
+    "completed_at": "0001-01-01T00:00:00Z",
+    "lease_until": "0001-01-01T00:00:00Z",
+    "fail_reason": "processor: render: ipc dial /run/chronon3d/chronon.sock: dial unix /run/chronon3d/chronon.sock: connect: no such file or directory"
+  },
+  "ml-production-rehearsal-runtime-20260920:phrase_01_lower_third_safe__en": {
+    "id": "ml-production-rehearsal-runtime-20260920:phrase_01_lower_third_safe__en",
+    "schema": "renderinggen.job",
+    "version": 1,
+    "idempotency_key": "1ad62466a93c0483658e19117eceb5f2c8b83ded2f297e3df693f8f9f8ff67e0",
+    "job_type": "render_segment",
+    "render_plan": {
+      "items": [
+        {
+          "id": "item_1",
+          "kind": "important_phrase",
+          "text": "Consistency turns an idea into results. Progress rarely arrives in one dramatic moment; instead, it emerges from repeating a clear process, learning profoundly from each attempt, and systematically improving the next one. A strong creative workflow is what transforms a rough concept into a finished video by meticulously combining editorial judgment, precise timing, readable typography, and reliable rendering. The ultimate goal transcends simply making one successful clip; rather, it demands building an entire system capable of producing that same high quality again and again.",
+          "end_ms": 5000,
+          "start_ms": 0,
+          "motion_id": "liquid_glass_ripple",
+          "preset_id": "apple_v2",
+          "template_id": "IMPORTANT_PHRASE"
+        }
+      ],
+      "width": 1920,
+      "height": 1080,
+      "fps_den": 1,
+      "fps_num": 24,
+      "plan_id": "phrase_01_lower_third_safe__en",
+      "language": "en",
+      "video_id": "phrase_01_lower_third_safe__en",
+      "background": {
+        "kind": "color",
+        "color": [
+          0.9333333333333333,
+          0.9450980392156862,
+          0.9058823529411765,
+          1
+        ]
+      },
+      "duration_ms": 5000,
+      "style_profile": "",
+      "schema_version": "renderinggen.overlay-plan.v1",
+      "output_profile_id": ""
+    },
+    "assets": [
+      {
+        "hash": "983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c",
+        "logical_path": "assets/fonts/Poppins-Bold.ttf",
+        "source_url": "http://127.0.0.1:8099/assets/fonts/Poppins-Bold.ttf"
+      },
+      {
+        "hash": "deb990e241954e1af87c6033d40a76cf0f48e0d112541794526051ac4a3ee2c8",
+        "logical_path": "assets/fonts/Inter-Bold.ttf",
+        "source_url": "http://127.0.0.1:8099/assets/fonts/Inter-Bold.ttf"
+      }
+    ],
+    "state": "failed",
+    "attempts": 3,
+    "created_at": "0001-01-01T00:00:00Z",
+    "queued_at": "2026-09-20T07:00:31.709345Z",
+    "started_at": "2026-09-20T07:00:31.726992Z",
+    "completed_at": "0001-01-01T00:00:00Z",
+    "lease_until": "0001-01-01T00:00:00Z",
+    "fail_reason": "processor: render: ipc dial /run/chronon3d/chronon.sock: dial unix /run/chronon3d/chronon.sock: connect: no such file or directory"
+  },
+  "ml-production-rehearsal-runtime-20260920:phrase_01_lower_third_safe__es": {
+    "id": "ml-production-rehearsal-runtime-20260920:phrase_01_lower_third_safe__es",
+    "schema": "renderinggen.job",
+    "version": 1,
+    "idempotency_key": "9a520fea1ed7faa8e62dca126a6e9c5b1200f99da1de82ef2276b22854276382",
+    "job_type": "render_segment",
+    "render_plan": {
+      "items": [
+        {
+          "id": "item_1",
+          "kind": "important_phrase",
+          "text": "La coherencia convierte una idea en resultados. El progreso raramente llega en un momento dramático; en cambio, surge de repetir un proceso claro, aprender profundamente de cada intento, y mejorar sistemáticamente el siguiente. Un fuerte flujo de trabajo creativo es lo que transforma un concepto áspero en un video terminado combinando meticulosamente el juicio editorial, el tiempo preciso, la tipografía legible y la interpretación fiable. El objetivo final trasciende simplemente haciendo un clip exitoso; más bien, exige construir un sistema completo capaz de producir esa misma alta calidad una y otra vez.",
+          "end_ms": 5000,
+          "start_ms": 0,
+          "motion_id": "liquid_glass_ripple",
+          "preset_id": "apple_v2",
+          "template_id": "IMPORTANT_PHRASE"
+        }
+      ],
+      "width": 1920,
+      "height": 1080,
+      "fps_den": 1,
+      "fps_num": 24,
+      "plan_id": "phrase_01_lower_third_safe__es",
+      "language": "es",
+      "video_id": "phrase_01_lower_third_safe__es",
+      "background": {
+        "kind": "color",
+        "color": [
+          0.9333333333333333,
+          0.9450980392156862,
+          0.9058823529411765,
+          1
+        ]
+      },
+      "duration_ms": 5000,
+      "style_profile": "",
+      "schema_version": "renderinggen.overlay-plan.v1",
+      "output_profile_id": ""
+    },
+    "assets": [
+      {
+        "hash": "983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c",
+        "logical_path": "assets/fonts/Poppins-Bold.ttf",
+        "source_url": "http://127.0.0.1:8099/assets/fonts/Poppins-Bold.ttf"
+      },
+      {
+        "hash": "deb990e241954e1af87c6033d40a76cf0f48e0d112541794526051ac4a3ee2c8",
+        "logical_path": "assets/fonts/Inter-Bold.ttf",
+        "source_url": "http://127.0.0.1:8099/assets/fonts/Inter-Bold.ttf"
+      }
+    ],
+    "state": "failed",
+    "attempts": 3,
+    "created_at": "0001-01-01T00:00:00Z",
+    "queued_at": "2026-09-20T07:00:31.732565Z",
+    "started_at": "2026-09-20T07:00:31.74395Z",
+    "completed_at": "0001-01-01T00:00:00Z",
+    "lease_until": "0001-01-01T00:00:00Z",
+    "fail_reason": "processor: render: ipc dial /run/chronon3d/chronon.sock: dial unix /run/chronon3d/chronon.sock: connect: no such file or directory"
+  },
+  "ml-production-rehearsal-runtime-20260920:phrase_01_lower_third_safe__fr": {
+    "id": "ml-production-rehearsal-runtime-20260920:phrase_01_lower_third_safe__fr",
+    "schema": "renderinggen.job",
+    "version": 1,
+    "idempotency_key": "c3ae5b4b94c0f02ab656433ee9a09d4ad220ea115163e718d4db774f98105913",
+    "job_type": "render_segment",
+    "render_plan": {
+      "items": [
+        {
+          "id": "item_1",
+          "kind": "important_phrase",
+          "text": "La cohérence transforme une idée en résultats. Le progrès arrive rarement dans un moment dramatique; au contraire, il émerge de la répétition d'un processus clair, en apprenant profondément de chaque tentative, et en améliorant systématiquement le prochain. Un flux de travail créatif fort est ce qui transforme un concept rugueux en une vidéo finie en combinant méticuleusement jugement éditorial, timing précis, typographie lisible et rendu fiable. L'objectif ultime transcende tout simplement faire un clip réussi; plutôt, il exige la construction d'un système entier capable de produire cette même qualité encore et encore.",
+          "end_ms": 5000,
+          "start_ms": 0,
+          "motion_id": "liquid_glass_ripple",
+          "preset_id": "apple_v2",
+          "template_id": "IMPORTANT_PHRASE"
+        }
+      ],
+      "width": 1920,
+      "height": 1080,
+      "fps_den": 1,
+      "fps_num": 24,
+      "plan_id": "phrase_01_lower_third_safe__fr",
+      "language": "fr",
+      "video_id": "phrase_01_lower_third_safe__fr",
+      "background": {
+        "kind": "color",
+        "color": [
+          0.9333333333333333,
+          0.9450980392156862,
+          0.9058823529411765,
+          1
+        ]
+      },
+      "duration_ms": 5000,
+      "style_profile": "",
+      "schema_version": "renderinggen.overlay-plan.v1",
+      "output_profile_id": ""
+    },
+    "assets": [
+      {
+        "hash": "983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c",
+        "logical_path": "assets/fonts/Poppins-Bold.ttf",
+        "source_url": "http://127.0.0.1:8099/assets/fonts/Poppins-Bold.ttf"
+      },
+      {
+        "hash": "deb990e241954e1af87c6033d40a76cf0f48e0d112541794526051ac4a3ee2c8",
+        "logical_path": "assets/fonts/Inter-Bold.ttf",
+        "source_url": "http://127.0.0.1:8099/assets/fonts/Inter-Bold.ttf"
+      }
+    ],
+    "state": "failed",
+    "attempts": 3,
+    "created_at": "0001-01-01T00:00:00Z",
+    "queued_at": "2026-09-20T07:00:31.748929Z",
+    "started_at": "2026-09-20T07:00:31.75798Z",
+    "completed_at": "0001-01-01T00:00:00Z",
+    "lease_until": "0001-01-01T00:00:00Z",
+    "fail_reason": "processor: render: ipc dial /run/chronon3d/chronon.sock: dial unix /run/chronon3d/chronon.sock: connect: no such file or directory"
+  },
+  "ml-production-rehearsal-runtime-20260920:phrase_01_lower_third_safe__id": {
+    "id": "ml-production-rehearsal-runtime-20260920:phrase_01_lower_third_safe__id",
+    "schema": "renderinggen.job",
+    "version": 1,
+    "idempotency_key": "35245f478e6219d465542354ae5427e78c40b64ac1d8174464343aa220f37577",
+    "job_type": "render_segment",
+    "render_plan": {
+      "items": [
+        {
+          "id": "item_1",
+          "kind": "important_phrase",
+          "text": "Konsistensi mengubah ide menjadi hasil. Kemajuan jarang tiba dalam satu saat dramatis; sebaliknya, muncul dari mengulangi proses yang jelas, belajar sangat dari setiap upaya, dan sistematis meningkatkan yang berikutnya. Sebuah aliran kerja kreatif yang kuat adalah apa yang mengubah konsep kasar menjadi video yang selesai dengan cermat menggabungkan penilaian editorial, waktu yang tepat, tipografi yang dapat dibaca, dan render dapat diandalkan. Tujuan akhir melampaui hanya membuat satu klip sukses; bukan, tujuan untuk membangun seluruh sistem yang mampu memproduksi kualitas tinggi yang sama lagi dan lagi.",
+          "end_ms": 5000,
+          "start_ms": 0,
+          "motion_id": "liquid_glass_ripple",
+          "preset_id": "apple_v2",
+          "template_id": "IMPORTANT_PHRASE"
+        }
+      ],
+      "width": 1920,
+      "height": 1080,
+      "fps_den": 1,
+      "fps_num": 24,
+      "plan_id": "phrase_01_lower_third_safe__id",
+      "language": "id",
+      "video_id": "phrase_01_lower_third_safe__id",
+      "background": {
+        "kind": "color",
+        "color": [
+          0.9333333333333333,
+          0.9450980392156862,
+          0.9058823529411765,
+          1
+        ]
+      },
+      "duration_ms": 5000,
+      "style_profile": "",
+      "schema_version": "renderinggen.overlay-plan.v1",
+      "output_profile_id": ""
+    },
+    "assets": [
+      {
+        "hash": "983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c",
+        "logical_path": "assets/fonts/Poppins-Bold.ttf",
+        "source_url": "http://127.0.0.1:8099/assets/fonts/Poppins-Bold.ttf"
+      },
+      {
+        "hash": "deb990e241954e1af87c6033d40a76cf0f48e0d112541794526051ac4a3ee2c8",
+        "logical_path": "assets/fonts/Inter-Bold.ttf",
+        "source_url": "http://127.0.0.1:8099/assets/fonts/Inter-Bold.ttf"
+      }
+    ],
+    "state": "failed",
+    "attempts": 3,
+    "created_at": "0001-01-01T00:00:00Z",
+    "queued_at": "2026-09-20T07:00:31.764335Z",
+    "started_at": "2026-09-20T07:00:31.771475Z",
+    "completed_at": "0001-01-01T00:00:00Z",
+    "lease_until": "0001-01-01T00:00:00Z",
+    "fail_reason": "processor: render: ipc dial /run/chronon3d/chronon.sock: dial unix /run/chronon3d/chronon.sock: connect: no such file or directory"
+  },
+  "ml-production-rehearsal-runtime-20260920:phrase_01_lower_third_safe__it": {
+    "id": "ml-production-rehearsal-runtime-20260920:phrase_01_lower_third_safe__it",
+    "schema": "renderinggen.job",
+    "version": 1,
+    "idempotency_key": "9a7bf1ee25bbfce731563945559d979446382527822c079d4b0866e763fe159e",
+    "job_type": "render_segment",
+    "render_plan": {
+      "items": [
+        {
+          "id": "item_1",
+          "kind": "important_phrase",
+          "text": "La coerenza trasforma un'idea in risultati. Il progresso raramente arriva in un momento drammatico; invece, emerge dalla ripetizione di un processo chiaro, imparando profondamente da ogni tentativo, e migliorando sistematicamente il prossimo. Un forte flusso di lavoro creativo è quello che trasforma un concetto grezzo in un video finito combinando meticolosamente giudizio editoriale, tempi precisi, tipografia leggibile e rendering affidabile. L'obiettivo finale trascende semplicemente facendo una clip di successo; piuttosto, richiede la costruzione di un intero sistema in grado di produrre la stessa alta qualità ancora e ancora.",
+          "end_ms": 5000,
+          "start_ms": 0,
+          "motion_id": "liquid_glass_ripple",
+          "preset_id": "apple_v2",
+          "template_id": "IMPORTANT_PHRASE"
+        }
+      ],
+      "width": 1920,
+      "height": 1080,
+      "fps_den": 1,
+      "fps_num": 24,
+      "plan_id": "phrase_01_lower_third_safe__it",
+      "language": "it",
+      "video_id": "phrase_01_lower_third_safe__it",
+      "background": {
+        "kind": "color",
+        "color": [
+          0.9333333333333333,
+          0.9450980392156862,
+          0.9058823529411765,
+          1
+        ]
+      },
+      "duration_ms": 5000,
+      "style_profile": "",
+      "schema_version": "renderinggen.overlay-plan.v1",
+      "output_profile_id": ""
+    },
+    "assets": [
+      {
+        "hash": "983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c",
+        "logical_path": "assets/fonts/Poppins-Bold.ttf",
+        "source_url": "http://127.0.0.1:8099/assets/fonts/Poppins-Bold.ttf"
+      },
+      {
+        "hash": "deb990e241954e1af87c6033d40a76cf0f48e0d112541794526051ac4a3ee2c8",
+        "logical_path": "assets/fonts/Inter-Bold.ttf",
+        "source_url": "http://127.0.0.1:8099/assets/fonts/Inter-Bold.ttf"
+      }
+    ],
+    "state": "failed",
+    "attempts": 3,
+    "created_at": "0001-01-01T00:00:00Z",
+    "queued_at": "2026-09-20T07:00:31.732508Z",
+    "started_at": "2026-09-20T07:00:31.752059Z",
+    "completed_at": "0001-01-01T00:00:00Z",
+    "lease_until": "0001-01-01T00:00:00Z",
+    "fail_reason": "processor: render: ipc dial /run/chronon3d/chronon.sock: dial unix /run/chronon3d/chronon.sock: connect: no such file or directory"
+  },
+  "ml-production-rehearsal-runtime-20260920:phrase_01_lower_third_safe__pl": {
+    "id": "ml-production-rehearsal-runtime-20260920:phrase_01_lower_third_safe__pl",
+    "schema": "renderinggen.job",
+    "version": 1,
+    "idempotency_key": "891bcf83df820c61261c3fa6889c16bcccb96103b489b382b23ae9a4da5725e3",
+    "job_type": "render_segment",
+    "render_plan": {
+      "items": [
+        {
+          "id": "item_1",
+          "kind": "important_phrase",
+          "text": "Spójność zmienia pomysł w rezultaty. Postęp rzadko następuje w jednym dramatycznym momencie; zamiast tego wynika on z powtarzania wyraźnego procesu, głębokiego uczenia się z każdej próby i systematycznej poprawy następnego. Silny kreatywny strumień pracy przekształca szorstką koncepcję w gotowy film poprzez skrupulatne połączenie opinii redakcyjnej, dokładnego czasu, czytelnej typografii i niezawodnego renderowania. Ostateczny cel przekracza po prostu jeden udany klip; wymaga raczej zbudowania całego systemu zdolnego do produkcji tej samej wysokiej jakości raz za razem.",
+          "end_ms": 5000,
+          "start_ms": 0,
+          "motion_id": "liquid_glass_ripple",
+          "preset_id": "apple_v2",
+          "template_id": "IMPORTANT_PHRASE"
+        }
+      ],
+      "width": 1920,
+      "height": 1080,
+      "fps_den": 1,
+      "fps_num": 24,
+      "plan_id": "phrase_01_lower_third_safe__pl",
+      "language": "pl",
+      "video_id": "phrase_01_lower_third_safe__pl",
+      "background": {
+        "kind": "color",
+        "color": [
+          0.9333333333333333,
+          0.9450980392156862,
+          0.9058823529411765,
+          1
+        ]
+      },
+      "duration_ms": 5000,
+      "style_profile": "",
+      "schema_version": "renderinggen.overlay-plan.v1",
+      "output_profile_id": ""
+    },
+    "assets": [
+      {
+        "hash": "983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c",
+        "logical_path": "assets/fonts/Poppins-Bold.ttf",
+        "source_url": "http://127.0.0.1:8099/assets/fonts/Poppins-Bold.ttf"
+      },
+      {
+        "hash": "deb990e241954e1af87c6033d40a76cf0f48e0d112541794526051ac4a3ee2c8",
+        "logical_path": "assets/fonts/Inter-Bold.ttf",
+        "source_url": "http://127.0.0.1:8099/assets/fonts/Inter-Bold.ttf"
+      }
+    ],
+    "state": "failed",
+    "attempts": 3,
+    "created_at": "0001-01-01T00:00:00Z",
+    "queued_at": "2026-09-20T07:00:31.70765Z",
+    "started_at": "2026-09-20T07:00:31.721465Z",
+    "completed_at": "0001-01-01T00:00:00Z",
+    "lease_until": "0001-01-01T00:00:00Z",
+    "fail_reason": "processor: render: ipc dial /run/chronon3d/chronon.sock: dial unix /run/chronon3d/chronon.sock: connect: no such file or directory"
+  },
+  "ml-production-rehearsal-runtime-20260920:phrase_01_lower_third_safe__pt-BR": {
+    "id": "ml-production-rehearsal-runtime-20260920:phrase_01_lower_third_safe__pt-BR",
+    "schema": "renderinggen.job",
+    "version": 1,
+    "idempotency_key": "1eff5668d516d9ac6de4f53e90e2cf6739e488e2a2d0bc5e381b9a10745d8f80",
+    "job_type": "render_segment",
+    "render_plan": {
+      "items": [
+        {
+          "id": "item_1",
+          "kind": "important_phrase",
+          "text": "A coerência transforma uma ideia em resultados. O progresso raramente chega em um momento dramático; em vez disso, emerge de repetir um processo claro, aprender profundamente de cada tentativa e melhorar sistematicamente o próximo. Um forte fluxo de trabalho criativo é o que transforma um conceito bruto em um vídeo acabado combinando meticulosamente julgamento editorial, timing preciso, tipografia legível e renderização confiável. O objetivo final transcende simplesmente fazer um clipe de sucesso; em vez disso, exige a construção de um sistema inteiro capaz de produzir essa mesma alta qualidade novamente e novamente.",
+          "end_ms": 5000,
+          "start_ms": 0,
+          "motion_id": "liquid_glass_ripple",
+          "preset_id": "apple_v2",
+          "template_id": "IMPORTANT_PHRASE"
+        }
+      ],
+      "width": 1920,
+      "height": 1080,
+      "fps_den": 1,
+      "fps_num": 24,
+      "plan_id": "phrase_01_lower_third_safe__pt-BR",
+      "language": "pt-BR",
+      "video_id": "phrase_01_lower_third_safe__pt-BR",
+      "background": {
+        "kind": "color",
+        "color": [
+          0.9333333333333333,
+          0.9450980392156862,
+          0.9058823529411765,
+          1
+        ]
+      },
+      "duration_ms": 5000,
+      "style_profile": "",
+      "schema_version": "renderinggen.overlay-plan.v1",
+      "output_profile_id": ""
+    },
+    "assets": [
+      {
+        "hash": "983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c",
+        "logical_path": "assets/fonts/Poppins-Bold.ttf",
+        "source_url": "http://127.0.0.1:8099/assets/fonts/Poppins-Bold.ttf"
+      },
+      {
+        "hash": "deb990e241954e1af87c6033d40a76cf0f48e0d112541794526051ac4a3ee2c8",
+        "logical_path": "assets/fonts/Inter-Bold.ttf",
+        "source_url": "http://127.0.0.1:8099/assets/fonts/Inter-Bold.ttf"
+      }
+    ],
+    "state": "failed",
+    "attempts": 3,
+    "created_at": "0001-01-01T00:00:00Z",
+    "queued_at": "2026-09-20T07:00:31.739578Z",
+    "started_at": "2026-09-20T07:00:31.74706Z",
+    "completed_at": "0001-01-01T00:00:00Z",
+    "lease_until": "0001-01-01T00:00:00Z",
+    "fail_reason": "processor: render: ipc dial /run/chronon3d/chronon.sock: dial unix /run/chronon3d/chronon.sock: connect: no such file or directory"
+  },
+  "ml-production-rehearsal-runtime-20260920:phrase_01_lower_third_safe__ru": {
+    "id": "ml-production-rehearsal-runtime-20260920:phrase_01_lower_third_safe__ru",
+    "schema": "renderinggen.job",
+    "version": 1,
+    "idempotency_key": "b9411f59c2dbe5df26ad9a5b4e4cddc937bcf12db9af465964f7f755c2f199bb",
+    "job_type": "render_segment",
+    "render_plan": {
+      "items": [
+        {
+          "id": "item_1",
+          "kind": "important_phrase",
+          "text": "Последовательность превращает идею в результат. Прогресс редко приходит в один драматический момент; вместо этого он возникает из повторения ясного процесса, глубокого изучения каждой попытки и систематического улучшения следующей. Сильный творческий рабочий процесс - это то, что превращает грубую концепцию в законченное видео, тщательно сочетая редакционное суждение, точное время, читаемую типографику и надежную визуализацию. Конечная цель выходит за рамки простого создания одного успешного клипа; скорее, это требует создания целой системы, способной производить то же самое высокое качество снова и снова.",
+          "end_ms": 5000,
+          "start_ms": 0,
+          "motion_id": "liquid_glass_ripple",
+          "preset_id": "apple_v2",
+          "template_id": "IMPORTANT_PHRASE"
+        }
+      ],
+      "width": 1920,
+      "height": 1080,
+      "fps_den": 1,
+      "fps_num": 24,
+      "plan_id": "phrase_01_lower_third_safe__ru",
+      "language": "ru",
+      "video_id": "phrase_01_lower_third_safe__ru",
+      "background": {
+        "kind": "color",
+        "color": [
+          0.9333333333333333,
+          0.9450980392156862,
+          0.9058823529411765,
+          1
+        ]
+      },
+      "duration_ms": 5000,
+      "style_profile": "",
+      "schema_version": "renderinggen.overlay-plan.v1",
+      "output_profile_id": ""
+    },
+    "assets": [
+      {
+        "hash": "983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c",
+        "logical_path": "assets/fonts/Poppins-Bold.ttf",
+        "source_url": "http://127.0.0.1:8099/assets/fonts/Poppins-Bold.ttf"
+      },
+      {
+        "hash": "deb990e241954e1af87c6033d40a76cf0f48e0d112541794526051ac4a3ee2c8",
+        "logical_path": "assets/fonts/Inter-Bold.ttf",
+        "source_url": "http://127.0.0.1:8099/assets/fonts/Inter-Bold.ttf"
+      }
+    ],
+    "state": "failed",
+    "attempts": 3,
+    "created_at": "0001-01-01T00:00:00Z",
+    "queued_at": "2026-09-20T07:00:31.722983Z",
+    "started_at": "2026-09-20T07:00:31.73756Z",
+    "completed_at": "0001-01-01T00:00:00Z",
+    "lease_until": "0001-01-01T00:00:00Z",
+    "fail_reason": "processor: render: ipc dial /run/chronon3d/chronon.sock: dial unix /run/chronon3d/chronon.sock: connect: no such file or directory"
+  },
+  "ml-production-rehearsal-runtime-20260920:phrase_01_lower_third_safe__tr": {
+    "id": "ml-production-rehearsal-runtime-20260920:phrase_01_lower_third_safe__tr",
+    "schema": "renderinggen.job",
+    "version": 1,
+    "idempotency_key": "7e1bb4f079c540841bb01f97c7cef21f13f2f551ab723ecba687c24a26ccba90",
+    "job_type": "render_segment",
+    "render_plan": {
+      "items": [
+        {
+          "id": "item_1",
+          "kind": "important_phrase",
+          "text": "Consistency, sonuçlara bir fikir döndürür. İlerleme nadiren dramatik bir anda gelir; bunun yerine, her girişimden derin bir şekilde öğrenilir ve bir sonraki kişiyi sistematik olarak geliştirir. Güçlü bir yaratıcı iş akışı, editör kararı, kesin zamanlamayı, okunabilir tipografiyi ve güvenilir bir şekilde birleştirilerek bitmiş bir videoya dönüştürmektir. Nihai hedef, sadece başarılı bir klip yapmaktan geçiyor; yerine, aynı yüksek kaliteyi tekrar üretebilecek tüm bir sistem inşa ediyor.",
+          "end_ms": 5000,
+          "start_ms": 0,
+          "motion_id": "liquid_glass_ripple",
+          "preset_id": "apple_v2",
+          "template_id": "IMPORTANT_PHRASE"
+        }
+      ],
+      "width": 1920,
+      "height": 1080,
+      "fps_den": 1,
+      "fps_num": 24,
+      "plan_id": "phrase_01_lower_third_safe__tr",
+      "language": "tr",
+      "video_id": "phrase_01_lower_third_safe__tr",
+      "background": {
+        "kind": "color",
+        "color": [
+          0.9333333333333333,
+          0.9450980392156862,
+          0.9058823529411765,
+          1
+        ]
+      },
+      "duration_ms": 5000,
+      "style_profile": "",
+      "schema_version": "renderinggen.overlay-plan.v1",
+      "output_profile_id": ""
+    },
+    "assets": [
+      {
+        "hash": "983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c",
+        "logical_path": "assets/fonts/Poppins-Bold.ttf",
+        "source_url": "http://127.0.0.1:8099/assets/fonts/Poppins-Bold.ttf"
+      },
+      {
+        "hash": "deb990e241954e1af87c6033d40a76cf0f48e0d112541794526051ac4a3ee2c8",
+        "logical_path": "assets/fonts/Inter-Bold.ttf",
+        "source_url": "http://127.0.0.1:8099/assets/fonts/Inter-Bold.ttf"
+      }
+    ],
+    "state": "failed",
+    "attempts": 3,
+    "created_at": "0001-01-01T00:00:00Z",
+    "queued_at": "2026-09-20T07:00:31.751827Z",
+    "started_at": "2026-09-20T07:00:31.760288Z",
+    "completed_at": "0001-01-01T00:00:00Z",
+    "lease_until": "0001-01-01T00:00:00Z",
+    "fail_reason": "processor: render: ipc dial /run/chronon3d/chronon.sock: dial unix /run/chronon3d/chronon.sock: connect: no such file or directory"
+  }
+}

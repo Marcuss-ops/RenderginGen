@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 
 	queue "github.com/Marcuss-ops/RenderingGen/queue/client"
@@ -33,8 +34,10 @@ const (
 
 	fontPoppins  = "testdata/golden/assets/fonts/Poppins-Bold.ttf"
 	fontInter    = "testdata/golden/assets/fonts/Inter-Bold.ttf"
+	fontDejaVu   = "testdata/golden/assets/fonts/DejaVuSans.ttf"
 	logicalFontP = "assets/fonts/Poppins-Bold.ttf"
 	logicalFontI = "assets/fonts/Inter-Bold.ttf"
+	logicalFontD = "assets/fonts/DejaVuSans.ttf"
 )
 
 // backgroundRGBA is the corpus canvas colour (hex #EEF1E7).
@@ -352,12 +355,14 @@ type MultilingualBuildOptions struct {
 
 // BuildMultilingualManifest writes the 10 overlays × N languages batch manifest.
 //
-// Every phrase job declares BOTH fonts: the preset's primary and Chronon3d's
-// coverage companion. The worker resolves a job's assets relative to its
-// workspace, and the engine's fallback stack is built by scanning the primary
+// Every phrase job declares the fonts its own plan burns: the two preset fonts
+// plus the primary the plan compiler selects for that job's language. See
+// fontAssetsForLanguage for why that set is derived from the plan's owner
+// instead of restated here. The worker resolves a job's assets relative to its
+// workspace and the engine's fallback stack is built by scanning the primary
 // font's own directory, so an undeclared font does not exist for the shaper —
-// the translated text then rasterises to nothing while the job still reports
-// "completed".
+// the translated text then either rasterises to nothing while the job still
+// reports "completed", or the render dies in preflight with exit 1.
 func BuildMultilingualManifest(opts MultilingualBuildOptions) (*BuildResult, error) {
 	if opts.TranslationsPath == "" {
 		return nil, fmt.Errorf("overlaybatch: -translations is required")
@@ -401,11 +406,16 @@ func BuildMultilingualManifest(opts MultilingualBuildOptions) (*BuildResult, err
 
 	// The matrix corpus is served from testdata/golden, where the fonts sit under
 	// their logical path; the image is addressed by its file name at that root.
-	fonts, err := fontAssets(opts.RepoRoot, func(local string) string {
+	sourcePath := func(local string) string {
 		return base + "/" + strings.TrimPrefix(local, "testdata/golden/")
-	})
-	if err != nil {
-		return nil, err
+	}
+	fontsByLanguage := make(map[string][]queue.AssetRef, len(languages))
+	for _, language := range languages {
+		fonts, err := fontAssetsForLanguage(opts.RepoRoot, sourcePath, language)
+		if err != nil {
+			return nil, err
+		}
+		fontsByLanguage[language] = fonts
 	}
 
 	// The overlay rows and the image preset matrix are catalog selections: the
@@ -460,7 +470,7 @@ func BuildMultilingualManifest(opts MultilingualBuildOptions) (*BuildResult, err
 			document.Jobs = append(document.Jobs, manifestJob{
 				ID:         jobID,
 				RenderPlan: plan,
-				Assets:     fonts,
+				Assets:     fontsByLanguage[language],
 				Family:     "phrase",
 				Text:       text,
 				MotionID:   row.Motion,
@@ -531,7 +541,7 @@ func BuildMultilingualManifest(opts MultilingualBuildOptions) (*BuildResult, err
 
 // --- shared build helpers ----------------------------------------------------
 
-// fontAssets hashes and describes the two fonts every phrase job declares.
+// fontAssets hashes and describes the two fonts every Latin phrase job declares.
 //
 // sourcePath returns the font's path RELATIVE TO THE ASSET BASE URL of the
 // corpus, so the self-heal URL points at bytes a server rooted at that base can
@@ -539,7 +549,59 @@ func BuildMultilingualManifest(opts MultilingualBuildOptions) (*BuildResult, err
 // serves the checkout, the matrix serves testdata/golden) and both manifest of
 // record shapes are preserved.
 func fontAssets(repoRoot string, sourcePath func(local string) string) ([]queue.AssetRef, error) {
-	specs := []struct{ file, logical string }{{fontPoppins, logicalFontP}, {fontInter, logicalFontI}}
+	return fontAssetsForLanguage(repoRoot, sourcePath, "")
+}
+
+// fontSpec is one font a job declares: the checkout file to hash and the
+// logical path the plan refers to it by.
+type fontSpec struct{ file, logical string }
+
+// fontLocalFiles maps a plan's font logical path to the checkout file that
+// backs it. A logical path with no entry here is one this builder cannot serve,
+// and that is a hard error rather than a silently undeclared font.
+var fontLocalFiles = map[string]string{
+	logicalFontP: fontPoppins,
+	logicalFontI: fontInter,
+	logicalFontD: fontDejaVu,
+}
+
+// fontAssetsForLanguage declares the fonts a language's jobs need: the two
+// fonts every phrase job carries (the Latin preset primary and its coverage
+// companion) plus the primary font the semantic plan actually selects for the
+// language.
+//
+// godlike/06 SSOT: the extra font is derived from
+// overlay.OfficialFontPathForLanguage — the same owner the plan compiler uses —
+// so the manifest can never declare a different font than the plan burns. That
+// drift is exactly the Cyrillic failure: the worker resolves a job's assets
+// against its workspace and Chronon builds its fallback stack by scanning the
+// PRIMARY font's directory, so a plan font the manifest omits does not exist for
+// the shaper and the render dies in preflight (exit 1).
+func fontAssetsForLanguage(repoRoot string, sourcePath func(local string) string, language string) ([]queue.AssetRef, error) {
+	return fontAssetsFromSpecs(repoRoot, sourcePath, fontSpecsForLanguage(language))
+}
+
+// fontSpecsForLanguage returns the asset specs for a language, including the
+// plan's primary font when it is not already among the always-declared pair.
+func fontSpecsForLanguage(language string) []fontSpec {
+	specs := []fontSpec{{fontPoppins, logicalFontP}, {fontInter, logicalFontI}}
+	primary := overlay.OfficialFontPathForLanguage(language)
+	if local, ok := fontLocalFiles[primary]; ok && !hasLogicalFont(specs, primary) {
+		specs = append(specs, fontSpec{local, primary})
+	}
+	return specs
+}
+
+func hasLogicalFont(specs []fontSpec, logical string) bool {
+	for _, spec := range specs {
+		if spec.logical == logical {
+			return true
+		}
+	}
+	return false
+}
+
+func fontAssetsFromSpecs(repoRoot string, sourcePath func(local string) string, specs []fontSpec) ([]queue.AssetRef, error) {
 	assets := make([]queue.AssetRef, 0, len(specs))
 	for _, spec := range specs {
 		digest, err := sha256File(filepath.Join(repoRoot, spec.file))
@@ -563,6 +625,12 @@ func writeBuild(document batchManifestDocument, outPath, planDir string, phrases
 	}
 	if len(document.Jobs) == 0 {
 		return nil, fmt.Errorf("overlaybatch: the build produced no jobs")
+	}
+	// Fail closed BEFORE anything is written: a manifest whose plan asks a shaper
+	// for a font the job does not declare is a render that dies in preflight,
+	// and it must not reach the queue at all.
+	if err := checkPlanFonts(document); err != nil {
+		return nil, err
 	}
 	if planDir != "" {
 		for _, job := range document.Jobs {
@@ -589,6 +657,73 @@ func writeBuild(document batchManifestDocument, outPath, planDir string, phrases
 		OutPath: outPath,
 		PlanDir: planDir,
 	}, nil
+}
+
+// checkPlanFonts refuses a manifest whose plan asks the shaper for a font the
+// job does not declare.
+//
+// The plan is lowered the same way the worker lowers it (renderbatch's single
+// compiler), so this compares what will actually be rendered against what will
+// actually be materialised. The failure it prevents is the Cyrillic rehearsal
+// one: the plan burned assets/fonts/DejaVuSans.ttf, the job declared only the
+// Latin pair, and the daemon exited 1 at frame 0 with "no font in stack covers
+// all visible codepoints" — a whole language lost to a manifest that was
+// internally inconsistent while still being schema-valid.
+func checkPlanFonts(document batchManifestDocument) error {
+	for _, job := range document.Jobs {
+		missing, err := undeclaredPlanFonts(job.RenderPlan, job.Assets)
+		if err != nil {
+			return fmt.Errorf("overlaybatch: job %s: %w", job.ID, err)
+		}
+		if len(missing) > 0 {
+			return fmt.Errorf("overlaybatch: job %s renders with %s but declares no such font (declared: %s): the shaper would have no glyphs for it, so the plan and the manifest must be made to agree",
+				job.ID, strings.Join(missing, ", "), strings.Join(logicalPaths(job.Assets), ", "))
+		}
+	}
+	return nil
+}
+
+// undeclaredPlanFonts is the fonts a job's CONCRETE plan references minus the
+// ones the job declares. A job with no text layers (an image overlay) has none.
+func undeclaredPlanFonts(semanticPlan []byte, declared []queue.AssetRef) ([]string, error) {
+	concrete, err := renderbatch.CompileRenderPlan(semanticPlan)
+	if err != nil {
+		return nil, fmt.Errorf("compile plan: %w", err)
+	}
+	var document struct {
+		Layers []struct {
+			Style *struct {
+				Font string `json:"font"`
+			} `json:"style"`
+		} `json:"layers"`
+	}
+	if err := json.Unmarshal(concrete, &document); err != nil {
+		return nil, fmt.Errorf("decode compiled plan: %w", err)
+	}
+	have := make(map[string]bool, len(declared))
+	for _, asset := range declared {
+		have[asset.LogicalPath] = true
+	}
+	seen := make(map[string]bool, len(document.Layers))
+	var missing []string
+	for _, layer := range document.Layers {
+		if layer.Style == nil || layer.Style.Font == "" || have[layer.Style.Font] || seen[layer.Style.Font] {
+			continue
+		}
+		seen[layer.Style.Font] = true
+		missing = append(missing, layer.Style.Font)
+	}
+	sort.Strings(missing)
+	return missing, nil
+}
+
+// logicalPaths is the declared logical paths of an asset list.
+func logicalPaths(assets []queue.AssetRef) []string {
+	paths := make([]string, 0, len(assets))
+	for _, asset := range assets {
+		paths = append(paths, asset.LogicalPath)
+	}
+	return paths
 }
 
 func writePlanFile(path string, plan []byte) error {

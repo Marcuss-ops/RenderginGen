@@ -10,11 +10,18 @@ const (
 	officialCyrillicFontPath = "assets/fonts/DejaVuSans.ttf"
 )
 
-// officialFontPathForLanguage keeps the visual preset unchanged for Latin
+// OfficialFontPathForLanguage keeps the visual preset unchanged for Latin
 // languages while selecting a font with actual Cyrillic coverage for semantic
 // text. The language comes from the same localized overlay plan that carries
 // the text, so this decision is made before Chronon lays out glyphs.
-func officialFontPathForLanguage(language string) string {
+//
+// godlike/06 SSOT: this is the ONLY owner of the "which language burns which
+// primary font" rule. The batch builder derives the fonts a job must DECLARE
+// from this same function, because the worker resolves a job's assets against
+// its workspace and Chronon scans the primary font's directory for fallback: a
+// plan font the manifest does not declare does not exist for the shaper and the
+// Cyrillic render fails in preflight.
+func OfficialFontPathForLanguage(language string) string {
 	parts := strings.FieldsFunc(strings.ToLower(strings.TrimSpace(language)), func(r rune) bool {
 		return r == '-' || r == '_'
 	})

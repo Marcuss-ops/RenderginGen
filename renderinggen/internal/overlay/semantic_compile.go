@@ -611,7 +611,7 @@ func compileTextLayer(ri resolvedItem, src *semanticPlan, layerID string) (Layer
 	if ri.Preset.ID != "" {
 		applyPresetDefinition(&layer, ri.Preset)
 		if layer.Style != nil {
-			layer.Style.Font = officialFontPathForLanguage(src.Language)
+			layer.Style.Font = OfficialFontPathForLanguage(src.Language)
 		}
 	}
 	// Text placement is expressed as a layer top-left plus a local text box.
