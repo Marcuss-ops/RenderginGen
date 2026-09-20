@@ -170,7 +170,10 @@ automatically at startup when `DATABASE_URL` is set — the in-memory store
 remains the default for local/dev without a database.
 
 `infra/docker/docker-compose.yaml` runs only PostgreSQL and the object store.
-The native Queue receives `DATABASE_URL` from `/etc/renderinggen/queue.env`.
+The native Queue receives `DATABASE_URL` through the checked-in
+`infra/systemd/renderinggen-queue-wrapper.sh`, which maps the operator-owned
+`PIPELINEGEN_MEDIA_POSTGRES_DSN` from the PipelineGen environment; the secret
+is not duplicated in the unit or repository.
 
 ## Build & run
 
@@ -184,6 +187,7 @@ Install the checked-in units/configs during host provisioning, then enable:
 
 ```sh
 sudo install -D -m 0644 infra/systemd/*.service /etc/systemd/system/
+sudo install -D -m 0755 infra/systemd/renderinggen-queue-wrapper.sh /usr/local/libexec/renderinggen-queue-wrapper
 sudo install -D -m 0644 infra/native/renderinggen-native.yaml /etc/renderinggen/renderinggen.yaml
 sudo install -D -m 0644 infra/native/renderinggen-b.yaml /etc/renderinggen/renderinggen-b.yaml
 sudo systemctl daemon-reload

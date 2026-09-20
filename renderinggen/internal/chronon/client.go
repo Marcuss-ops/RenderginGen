@@ -100,7 +100,12 @@ type RenderRequest struct {
 	RangeEnabled bool
 	FirstFrame   int64 // first frame to render (only when RangeEnabled)
 	LastFrame    int64 // inclusive last frame to render (only when RangeEnabled)
-	Report       bool  // emit the execution report + telemetry JSONL (--report)
+	// ParallelDisjoint is a trusted execution hint emitted only for a chunk
+	// child (parent id + explicit frame range). It is deliberately separate
+	// from RangeEnabled: a range is a rendering semantic, while this flag is a
+	// scheduler/admission contract. Whole-plan and legacy callers stay false.
+	ParallelDisjoint bool
+	Report           bool // emit the execution report + telemetry JSONL (--report)
 	// EncodePreset is an explicit FFmpeg NVENC preset (e.g. "p2") forwarded
 	// to the chronon CLI for native GPU jobs. Empty preserves the engine
 	// default.

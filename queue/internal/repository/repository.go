@@ -109,3 +109,11 @@ type JobRepository interface {
 type IdempotencyRepository interface {
 	SubmitIdempotent(job model.Job) (*model.Job, bool, error)
 }
+
+// BatchRepository is the atomic family-submit capability. A chunk producer
+// must create the assembly anchor and all of its children in one transaction:
+// submitting the anchor first leaves a race in which a render worker can claim
+// it before the children exist and render the full plan a second time.
+type BatchRepository interface {
+	SubmitBatch(jobs []model.Job) error
+}

@@ -1,83 +1,181 @@
 {
-  "schema_version": 1,
-  "source": "ChrononTemplate",
-  "templates": [
-    {
-      "id": "youtube_subscribe",
-      "name": "youtube_subscribe"
-    },
-    {
-      "id": "instagram_like",
-      "name": "instagram_like"
-    },
-    {
-      "id": "follow_prompt",
-      "name": "follow_prompt"
-    },
-    {
-      "id": "lower_third",
-      "name": "lower_third"
-    },
-    {
-      "id": "quote_card",
-      "name": "quote_card"
-    },
-    {
-      "id": "breaking_news",
-      "name": "breaking_news"
-    },
-    {
-      "id": "episode_tag",
-      "name": "episode_tag"
-    }
-  ],
   "final3d_presets": [
     {
+      "glow": {
+        "falloff": 1.0,
+        "high_quality": true
+      },
       "id": "logo_reveal",
+      "material": {
+        "emissive_strength": 3.0,
+        "kind": "emissive"
+      },
       "name": "logo_reveal"
     },
     {
+      "glow": {
+        "falloff": 1.0,
+        "high_quality": true
+      },
       "id": "product_orbit",
+      "material": {
+        "emissive_strength": 0.0,
+        "kind": "lambert"
+      },
       "name": "product_orbit"
     },
     {
+      "glow": {
+        "falloff": 1.0,
+        "high_quality": true
+      },
       "id": "title_card_3d",
+      "material": {
+        "emissive_strength": 2.0,
+        "kind": "emissive"
+      },
       "name": "title_card_3d"
     },
     {
+      "glow": {
+        "falloff": 1.0,
+        "high_quality": true
+      },
       "id": "camera_push",
+      "material": {
+        "emissive_strength": 0.0,
+        "kind": "lambert"
+      },
       "name": "camera_push"
     },
     {
+      "glow": {
+        "falloff": 1.0,
+        "high_quality": true
+      },
       "id": "light_pulse",
+      "material": {
+        "emissive_strength": 4.0,
+        "kind": "emissive"
+      },
       "name": "light_pulse"
     },
     {
+      "glow": {
+        "falloff": 1.0,
+        "high_quality": true
+      },
       "id": "macbook_product",
+      "material": {
+        "emissive_strength": 0.0,
+        "kind": "lambert"
+      },
       "name": "macbook_product"
     },
     {
+      "glow": {
+        "falloff": 1.0,
+        "high_quality": true
+      },
       "id": "typewriter_3d_glow",
+      "material": {
+        "emissive_strength": 5.0,
+        "kind": "emissive"
+      },
       "name": "typewriter_3d_glow"
     },
     {
+      "glow": {
+        "falloff": 1.0,
+        "high_quality": true
+      },
       "id": "clean_red",
+      "material": {
+        "emissive_strength": 2.5,
+        "kind": "emissive"
+      },
       "name": "clean_red"
+    },
+    {
+      "glow": {
+        "falloff": 1.0,
+        "high_quality": true
+      },
+      "id": "youtube_canary",
+      "material": {
+        "emissive_strength": 5.0,
+        "kind": "emissive"
+      },
+      "name": "youtube_canary"
+    },
+    {
+      "glow": {
+        "falloff": 1.0,
+        "high_quality": true
+      },
+      "id": "text_static",
+      "material": {
+        "emissive_strength": 0.0,
+        "kind": "lambert"
+      },
+      "name": "text_static"
     }
   ],
   "motions": [
     {
-      "id": "air_rise_type_on",
       "category": "apple_v2",
+      "enter": 72,
+      "id": "air_rise_type_on",
+      "selector": {},
+      "stagger": {},
       "targets": [
         "text",
         "phrase"
       ],
-      "unit": "glyph",
-      "enter": 72,
+      "text_animators": [
+        {
+          "id": "air_rise_type_on_text",
+          "properties": [
+            {
+              "easing": "out_cubic",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 26
+                },
+                {
+                  "frame": 60,
+                  "value": 0
+                }
+              ],
+              "property": "position_y"
+            },
+            {
+              "easing": "out_cubic",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0
+                },
+                {
+                  "frame": 18,
+                  "value": 1
+                }
+              ],
+              "property": "opacity"
+            }
+          ],
+          "selector": {
+            "kind": "glyph",
+            "order": "forward",
+            "shape": "ramp_up",
+            "stagger": 1
+          }
+        }
+      ],
       "tracks": [
         {
-          "property": "position_y",
+          "easing": "out_cubic",
           "keyframes": [
             {
               "frame": 0,
@@ -92,10 +190,10 @@
               "value": 0
             }
           ],
-          "easing": "out_cubic"
+          "property": "position_y"
         },
         {
-          "property": "opacity",
+          "easing": "out_cubic",
           "keyframes": [
             {
               "frame": 0,
@@ -106,110 +204,27 @@
               "value": 1
             }
           ],
-          "easing": "out_cubic"
+          "property": "opacity"
         }
       ],
-      "text_animators": [
-        {
-          "id": "air_rise_type_on_text",
-          "selector": {
-            "kind": "glyph",
-            "shape": "ramp_up",
-            "order": "forward",
-            "stagger": 1
-          },
-          "properties": [
-            {
-              "property": "position_y",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 26
-                },
-                {
-                  "frame": 60,
-                  "value": 0
-                }
-              ],
-              "easing": "out_cubic"
-            },
-            {
-              "property": "opacity",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 0
-                },
-                {
-                  "frame": 18,
-                  "value": 1
-                }
-              ],
-              "easing": "out_cubic"
-            }
-          ]
-        }
-      ],
-      "selector": {},
-      "stagger": {}
+      "unit": "glyph"
     },
     {
-      "id": "apple_phrase_v2",
       "category": "apple_v2",
+      "enter": 72,
+      "id": "apple_phrase_v2",
+      "selector": {},
+      "stagger": {},
       "targets": [
         "text",
         "phrase"
       ],
-      "unit": "glyph",
-      "enter": 72,
-      "tracks": [
-        {
-          "property": "position_y",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 24
-            },
-            {
-              "frame": 24,
-              "value": -3
-            },
-            {
-              "frame": 72,
-              "value": 0
-            }
-          ],
-          "easing": "out_cubic"
-        },
-        {
-          "property": "scale",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 0.97
-            },
-            {
-              "frame": 24,
-              "value": 1.02
-            },
-            {
-              "frame": 72,
-              "value": 1
-            }
-          ],
-          "easing": "out_cubic"
-        }
-      ],
       "text_animators": [
         {
           "id": "apple_phrase_v2_text",
-          "selector": {
-            "kind": "glyph",
-            "stagger": 1
-          },
           "properties": [
             {
-              "property": "position_y",
+              "easing": "out_cubic",
               "keyframes": [
                 {
                   "frame": 0,
@@ -224,10 +239,10 @@
                   "value": 0
                 }
               ],
-              "easing": "out_cubic"
+              "property": "position_y"
             },
             {
-              "property": "opacity",
+              "easing": "out_cubic",
               "keyframes": [
                 {
                   "frame": 0,
@@ -238,51 +253,43 @@
                   "value": 1
                 }
               ],
-              "easing": "out_cubic"
+              "property": "opacity"
             }
-          ]
+          ],
+          "selector": {
+            "kind": "glyph",
+            "stagger": 1
+          }
         }
       ],
-      "selector": {},
-      "stagger": {}
-    },
-    {
-      "id": "aurora_gradient_sweep",
-      "category": "apple_v2",
-      "targets": [
-        "text",
-        "phrase"
-      ],
-      "unit": "glyph",
-      "enter": 72,
       "tracks": [
         {
-          "property": "position_x",
+          "easing": "out_cubic",
           "keyframes": [
             {
               "frame": 0,
-              "value": -30
+              "value": 24
             },
             {
-              "frame": 36,
-              "value": 22
+              "frame": 24,
+              "value": -3
             },
             {
               "frame": 72,
               "value": 0
             }
           ],
-          "easing": "in_out_sine"
+          "property": "position_y"
         },
         {
-          "property": "scale",
+          "easing": "out_cubic",
           "keyframes": [
             {
               "frame": 0,
-              "value": 0.98
+              "value": 0.97
             },
             {
-              "frame": 36,
+              "frame": 24,
               "value": 1.02
             },
             {
@@ -290,33 +297,27 @@
               "value": 1
             }
           ],
-          "easing": "out_cubic"
-        },
-        {
-          "property": "opacity",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 0
-            },
-            {
-              "frame": 20,
-              "value": 1
-            }
-          ],
-          "easing": "out_cubic"
+          "property": "scale"
         }
+      ],
+      "unit": "glyph"
+    },
+    {
+      "category": "apple_v2",
+      "enter": 72,
+      "id": "aurora_gradient_sweep",
+      "selector": {},
+      "stagger": {},
+      "targets": [
+        "text",
+        "phrase"
       ],
       "text_animators": [
         {
           "id": "aurora_gradient_sweep_text",
-          "selector": {
-            "kind": "glyph",
-            "stagger": 1
-          },
           "properties": [
             {
-              "property": "tracking",
+              "easing": "out_cubic",
               "keyframes": [
                 {
                   "frame": 0,
@@ -331,10 +332,10 @@
                   "value": -0.5
                 }
               ],
-              "easing": "out_cubic"
+              "property": "tracking"
             },
             {
-              "property": "opacity",
+              "easing": "out_cubic",
               "keyframes": [
                 {
                   "frame": 0,
@@ -345,27 +346,80 @@
                   "value": 1
                 }
               ],
-              "easing": "out_cubic"
+              "property": "opacity"
             }
-          ]
+          ],
+          "selector": {
+            "kind": "glyph",
+            "stagger": 1
+          }
         }
       ],
-      "selector": {},
-      "stagger": {}
+      "tracks": [
+        {
+          "easing": "in_out_sine",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": -30
+            },
+            {
+              "frame": 36,
+              "value": 22
+            },
+            {
+              "frame": 72,
+              "value": 0
+            }
+          ],
+          "property": "position_x"
+        },
+        {
+          "easing": "out_cubic",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.98
+            },
+            {
+              "frame": 36,
+              "value": 1.02
+            },
+            {
+              "frame": 72,
+              "value": 1
+            }
+          ],
+          "property": "scale"
+        },
+        {
+          "easing": "out_cubic",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 20,
+              "value": 1
+            }
+          ],
+          "property": "opacity"
+        }
+      ],
+      "unit": "glyph"
     },
     {
-      "id": "blur_focus_in",
-      "unit": "glyph",
       "enter": 72,
+      "id": "blur_focus_in",
+      "selector": {},
+      "stagger": {},
       "text_animators": [
         {
           "id": "blur_focus_in_text",
-          "selector": {
-            "kind": "glyph"
-          },
           "properties": [
             {
-              "property": "blur",
+              "easing": "out_cubic",
               "keyframes": [
                 {
                   "frame": 0,
@@ -376,10 +430,10 @@
                   "value": 0
                 }
               ],
-              "easing": "out_cubic"
+              "property": "blur"
             },
             {
-              "property": "scale",
+              "easing": "out_cubic",
               "keyframes": [
                 {
                   "frame": 0,
@@ -390,10 +444,10 @@
                   "value": 1
                 }
               ],
-              "easing": "out_cubic"
+              "property": "scale"
             },
             {
-              "property": "opacity",
+              "easing": "out_cubic",
               "keyframes": [
                 {
                   "frame": 0,
@@ -404,22 +458,25 @@
                   "value": 1
                 }
               ],
-              "easing": "out_cubic"
+              "property": "opacity"
             }
-          ]
+          ],
+          "selector": {
+            "kind": "glyph"
+          }
         }
       ],
-      "selector": {},
-      "stagger": {}
+      "unit": "glyph"
     },
     {
-      "id": "bounce_in",
-      "unit": "layer",
       "enter": 54,
       "exit": 8,
+      "id": "bounce_in",
+      "selector": {},
+      "stagger": {},
       "tracks": [
         {
-          "property": "scale",
+          "easing": "out_back",
           "keyframes": [
             {
               "frame": 0,
@@ -438,10 +495,10 @@
               "value": 1
             }
           ],
-          "easing": "out_back"
+          "property": "scale"
         },
         {
-          "property": "opacity",
+          "easing": "out_cubic",
           "keyframes": [
             {
               "frame": 0,
@@ -452,19 +509,73 @@
               "value": 1
             }
           ],
-          "easing": "out_cubic"
+          "property": "opacity"
         }
       ],
-      "selector": {},
-      "stagger": {}
+      "unit": "layer"
     },
     {
-      "id": "center_expansion",
-      "unit": "glyph",
       "enter": 72,
+      "id": "center_expansion",
+      "selector": {},
+      "stagger": {},
+      "text_animators": [
+        {
+          "id": "center_expansion_text",
+          "properties": [
+            {
+              "easing": "out_expo",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0.5
+                },
+                {
+                  "frame": 72,
+                  "value": 1
+                }
+              ],
+              "property": "scale_x"
+            },
+            {
+              "easing": "out_expo",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": -12
+                },
+                {
+                  "frame": 72,
+                  "value": 2
+                }
+              ],
+              "property": "tracking"
+            },
+            {
+              "easing": "out_cubic",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0
+                },
+                {
+                  "frame": 36,
+                  "value": 1
+                }
+              ],
+              "property": "opacity"
+            }
+          ],
+          "selector": {
+            "kind": "glyph",
+            "order": "from_center",
+            "shape": "smooth"
+          }
+        }
+      ],
       "tracks": [
         {
-          "property": "scale",
+          "easing": "out_cubic",
           "keyframes": [
             {
               "frame": 0,
@@ -479,10 +590,10 @@
               "value": 1
             }
           ],
-          "easing": "out_cubic"
+          "property": "scale"
         },
         {
-          "property": "opacity",
+          "easing": "out_cubic",
           "keyframes": [
             {
               "frame": 0,
@@ -493,114 +604,22 @@
               "value": 1
             }
           ],
-          "easing": "out_cubic"
+          "property": "opacity"
         }
       ],
-      "text_animators": [
-        {
-          "id": "center_expansion_text",
-          "selector": {
-            "kind": "glyph",
-            "shape": "smooth",
-            "order": "from_center"
-          },
-          "properties": [
-            {
-              "property": "scale_x",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 0.5
-                },
-                {
-                  "frame": 72,
-                  "value": 1
-                }
-              ],
-              "easing": "out_expo"
-            },
-            {
-              "property": "tracking",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": -12
-                },
-                {
-                  "frame": 72,
-                  "value": 2
-                }
-              ],
-              "easing": "out_expo"
-            },
-            {
-              "property": "opacity",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 0
-                },
-                {
-                  "frame": 36,
-                  "value": 1
-                }
-              ],
-              "easing": "out_cubic"
-            }
-          ]
-        }
-      ],
-      "selector": {},
-      "stagger": {}
+      "unit": "glyph"
     },
     {
-      "id": "char_wave",
-      "unit": "glyph",
       "enter": 72,
-      "tracks": [
-        {
-          "property": "position_y",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 12
-            },
-            {
-              "frame": 60,
-              "value": 0
-            },
-            {
-              "frame": 72,
-              "value": 0
-            }
-          ],
-          "easing": "out_cubic"
-        },
-        {
-          "property": "opacity",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 0
-            },
-            {
-              "frame": 16,
-              "value": 1
-            }
-          ],
-          "easing": "out_cubic"
-        }
-      ],
+      "id": "char_wave",
+      "selector": {},
+      "stagger": {},
       "text_animators": [
         {
           "id": "char_wave_text",
-          "selector": {
-            "kind": "glyph",
-            "stagger": 1
-          },
           "properties": [
             {
-              "property": "position_y",
+              "easing": "in_out_sine",
               "keyframes": [
                 {
                   "frame": 0,
@@ -619,21 +638,98 @@
                   "value": 0
                 }
               ],
-              "easing": "in_out_sine"
+              "property": "position_y"
             }
-          ]
+          ],
+          "selector": {
+            "kind": "glyph",
+            "stagger": 1
+          }
         }
       ],
-      "selector": {},
-      "stagger": {}
-    },
-    {
-      "id": "character_cascade",
-      "unit": "glyph",
-      "enter": 72,
       "tracks": [
         {
-          "property": "position_y",
+          "easing": "out_cubic",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 12
+            },
+            {
+              "frame": 60,
+              "value": 0
+            },
+            {
+              "frame": 72,
+              "value": 0
+            }
+          ],
+          "property": "position_y"
+        },
+        {
+          "easing": "out_cubic",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 16,
+              "value": 1
+            }
+          ],
+          "property": "opacity"
+        }
+      ],
+      "unit": "glyph"
+    },
+    {
+      "enter": 72,
+      "id": "character_cascade",
+      "selector": {},
+      "stagger": {},
+      "text_animators": [
+        {
+          "id": "character_cascade_text",
+          "properties": [
+            {
+              "easing": "linear",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 40
+                },
+                {
+                  "frame": 72,
+                  "value": 40
+                }
+              ],
+              "property": "position_y"
+            },
+            {
+              "easing": "linear",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0
+                },
+                {
+                  "frame": 72,
+                  "value": 0
+                }
+              ],
+              "property": "opacity"
+            }
+          ],
+          "selector": {
+            "kind": "glyph",
+            "stagger": 1
+          }
+        }
+      ],
+      "tracks": [
+        {
+          "easing": "out_cubic",
           "keyframes": [
             {
               "frame": 0,
@@ -648,10 +744,10 @@
               "value": 0
             }
           ],
-          "easing": "out_cubic"
+          "property": "position_y"
         },
         {
-          "property": "opacity",
+          "easing": "out_cubic",
           "keyframes": [
             {
               "frame": 0,
@@ -662,126 +758,27 @@
               "value": 1
             }
           ],
-          "easing": "out_cubic"
+          "property": "opacity"
         }
       ],
-      "text_animators": [
-        {
-          "id": "character_cascade_text",
-          "selector": {
-            "kind": "glyph",
-            "stagger": 1
-          },
-          "properties": [
-            {
-              "property": "position_y",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 40
-                },
-                {
-                  "frame": 72,
-                  "value": 40
-                }
-              ],
-              "easing": "linear"
-            },
-            {
-              "property": "opacity",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 0
-                },
-                {
-                  "frame": 72,
-                  "value": 0
-                }
-              ],
-              "easing": "linear"
-            }
-          ]
-        }
-      ],
-      "selector": {},
-      "stagger": {}
+      "unit": "glyph"
     },
     {
-      "id": "chromatic_aberration_pop",
       "category": "apple_v2",
+      "enter": 72,
+      "id": "chromatic_aberration_pop",
+      "selector": {},
+      "stagger": {},
       "targets": [
         "text",
         "phrase"
       ],
-      "unit": "glyph",
-      "enter": 72,
-      "tracks": [
-        {
-          "property": "position_x",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": -40
-            },
-            {
-              "frame": 24,
-              "value": 18
-            },
-            {
-              "frame": 72,
-              "value": 0
-            }
-          ],
-          "easing": "out_cubic"
-        },
-        {
-          "property": "rotation_z",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": -3
-            },
-            {
-              "frame": 24,
-              "value": 1
-            },
-            {
-              "frame": 72,
-              "value": 0
-            }
-          ],
-          "easing": "out_cubic"
-        },
-        {
-          "property": "scale",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 0.9
-            },
-            {
-              "frame": 24,
-              "value": 1.04
-            },
-            {
-              "frame": 72,
-              "value": 1
-            }
-          ],
-          "easing": "out_cubic"
-        }
-      ],
       "text_animators": [
         {
           "id": "chromatic_aberration_pop_text",
-          "selector": {
-            "kind": "glyph",
-            "stagger": 1
-          },
           "properties": [
             {
-              "property": "position_x",
+              "easing": "out_cubic",
               "keyframes": [
                 {
                   "frame": 0,
@@ -796,10 +793,10 @@
                   "value": 0
                 }
               ],
-              "easing": "out_cubic"
+              "property": "position_x"
             },
             {
-              "property": "opacity",
+              "easing": "out_cubic",
               "keyframes": [
                 {
                   "frame": 0,
@@ -810,62 +807,89 @@
                   "value": 1
                 }
               ],
-              "easing": "out_cubic"
+              "property": "opacity"
             }
-          ]
+          ],
+          "selector": {
+            "kind": "glyph",
+            "stagger": 1
+          }
         }
       ],
-      "selector": {},
-      "stagger": {}
-    },
-    {
-      "id": "cinematic_credits_drift",
-      "category": "apple_v2",
-      "targets": [
-        "text",
-        "phrase"
-      ],
-      "unit": "line",
-      "enter": 72,
       "tracks": [
         {
-          "property": "scale",
+          "easing": "out_cubic",
           "keyframes": [
             {
               "frame": 0,
-              "value": 0.99
+              "value": -40
+            },
+            {
+              "frame": 24,
+              "value": 18
+            },
+            {
+              "frame": 72,
+              "value": 0
+            }
+          ],
+          "property": "position_x"
+        },
+        {
+          "easing": "out_cubic",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": -3
+            },
+            {
+              "frame": 24,
+              "value": 1
+            },
+            {
+              "frame": 72,
+              "value": 0
+            }
+          ],
+          "property": "rotation_z"
+        },
+        {
+          "easing": "out_cubic",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.9
+            },
+            {
+              "frame": 24,
+              "value": 1.04
             },
             {
               "frame": 72,
               "value": 1
             }
           ],
-          "easing": "out_cubic"
-        },
-        {
-          "property": "opacity",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 0
-            },
-            {
-              "frame": 24,
-              "value": 1
-            }
-          ],
-          "easing": "out_cubic"
+          "property": "scale"
         }
+      ],
+      "unit": "glyph"
+    },
+    {
+      "category": "apple_v2",
+      "enter": 72,
+      "id": "cinematic_credits_drift",
+      "selector": {},
+      "stagger": {},
+      "targets": [
+        "text",
+        "phrase"
       ],
       "text_animators": [
         {
           "id": "cinematic_credits_drift_text",
-          "selector": {
-            "kind": "line"
-          },
           "properties": [
             {
-              "property": "position_y",
+              "easing": "out_cubic",
               "keyframes": [
                 {
                   "frame": 0,
@@ -876,10 +900,10 @@
                   "value": -2
                 }
               ],
-              "easing": "out_cubic"
+              "property": "position_y"
             },
             {
-              "property": "opacity",
+              "easing": "out_cubic",
               "keyframes": [
                 {
                   "frame": 0,
@@ -890,84 +914,62 @@
                   "value": 1
                 }
               ],
-              "easing": "out_cubic"
+              "property": "opacity"
             }
-          ]
+          ],
+          "selector": {
+            "kind": "line"
+          }
         }
       ],
-      "selector": {},
-      "stagger": {}
+      "tracks": [
+        {
+          "easing": "out_cubic",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.99
+            },
+            {
+              "frame": 72,
+              "value": 1
+            }
+          ],
+          "property": "scale"
+        },
+        {
+          "easing": "out_cubic",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 24,
+              "value": 1
+            }
+          ],
+          "property": "opacity"
+        }
+      ],
+      "unit": "line"
     },
     {
-      "id": "counter_scroll_reveal",
       "category": "apple_v2",
+      "enter": 72,
+      "id": "counter_scroll_reveal",
+      "selector": {},
+      "stagger": {},
       "targets": [
         "text",
         "phrase"
       ],
-      "unit": "line",
-      "enter": 72,
-      "tracks": [
-        {
-          "property": "position_y",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": -44
-            },
-            {
-              "frame": 26,
-              "value": 4
-            },
-            {
-              "frame": 72,
-              "value": 0
-            }
-          ],
-          "easing": "out_cubic"
-        },
-        {
-          "property": "rotation_z",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 2
-            },
-            {
-              "frame": 26,
-              "value": -0.6
-            },
-            {
-              "frame": 72,
-              "value": 0
-            }
-          ],
-          "easing": "out_cubic"
-        },
-        {
-          "property": "opacity",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 0
-            },
-            {
-              "frame": 16,
-              "value": 1
-            }
-          ],
-          "easing": "out_cubic"
-        }
-      ],
       "text_animators": [
         {
           "id": "counter_scroll_reveal_text",
-          "selector": {
-            "kind": "line"
-          },
           "properties": [
             {
-              "property": "position_y",
+              "easing": "out_cubic",
               "keyframes": [
                 {
                   "frame": 0,
@@ -982,10 +984,10 @@
                   "value": 0
                 }
               ],
-              "easing": "out_cubic"
+              "property": "position_y"
             },
             {
-              "property": "opacity",
+              "easing": "out_cubic",
               "keyframes": [
                 {
                   "frame": 0,
@@ -996,26 +998,119 @@
                   "value": 1
                 }
               ],
-              "easing": "out_cubic"
+              "property": "opacity"
             }
-          ]
+          ],
+          "selector": {
+            "kind": "line"
+          }
         }
       ],
-      "selector": {},
-      "stagger": {}
+      "tracks": [
+        {
+          "easing": "out_cubic",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": -44
+            },
+            {
+              "frame": 26,
+              "value": 4
+            },
+            {
+              "frame": 72,
+              "value": 0
+            }
+          ],
+          "property": "position_y"
+        },
+        {
+          "easing": "out_cubic",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 2
+            },
+            {
+              "frame": 26,
+              "value": -0.6
+            },
+            {
+              "frame": 72,
+              "value": 0
+            }
+          ],
+          "property": "rotation_z"
+        },
+        {
+          "easing": "out_cubic",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 16,
+              "value": 1
+            }
+          ],
+          "property": "opacity"
+        }
+      ],
+      "unit": "line"
     },
     {
-      "id": "crisp_mask_center_open",
       "category": "apple_v2",
+      "enter": 72,
+      "id": "crisp_mask_center_open",
+      "selector": {},
+      "stagger": {},
       "targets": [
         "text",
         "phrase"
       ],
-      "unit": "word",
-      "enter": 72,
+      "text_animators": [
+        {
+          "id": "crisp_mask_center_open_text",
+          "properties": [
+            {
+              "easing": "out_cubic",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0.35
+                },
+                {
+                  "frame": 34,
+                  "value": 1
+                }
+              ],
+              "property": "scale_x"
+            },
+            {
+              "easing": "out_cubic",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0
+                },
+                {
+                  "frame": 18,
+                  "value": 1
+                }
+              ],
+              "property": "opacity"
+            }
+          ],
+          "selector": {
+            "kind": "word"
+          }
+        }
+      ],
       "tracks": [
         {
-          "property": "scale",
+          "easing": "out_cubic",
           "keyframes": [
             {
               "frame": 0,
@@ -1030,10 +1125,10 @@
               "value": 1
             }
           ],
-          "easing": "out_cubic"
+          "property": "scale"
         },
         {
-          "property": "opacity",
+          "easing": "out_cubic",
           "keyframes": [
             {
               "frame": 0,
@@ -1044,32 +1139,41 @@
               "value": 1
             }
           ],
-          "easing": "out_cubic"
+          "property": "opacity"
         }
+      ],
+      "unit": "word"
+    },
+    {
+      "category": "apple_v2",
+      "enter": 72,
+      "id": "depth_of_field_rack_focus",
+      "selector": {},
+      "stagger": {},
+      "targets": [
+        "text",
+        "phrase"
       ],
       "text_animators": [
         {
-          "id": "crisp_mask_center_open_text",
-          "selector": {
-            "kind": "word"
-          },
+          "id": "depth_of_field_rack_focus_text",
           "properties": [
             {
-              "property": "scale_x",
+              "easing": "out_cubic",
               "keyframes": [
                 {
                   "frame": 0,
-                  "value": 0.35
+                  "value": 24
                 },
                 {
-                  "frame": 34,
-                  "value": 1
+                  "frame": 72,
+                  "value": 0
                 }
               ],
-              "easing": "out_cubic"
+              "property": "blur"
             },
             {
-              "property": "opacity",
+              "easing": "out_cubic",
               "keyframes": [
                 {
                   "frame": 0,
@@ -1080,26 +1184,17 @@
                   "value": 1
                 }
               ],
-              "easing": "out_cubic"
+              "property": "opacity"
             }
-          ]
+          ],
+          "selector": {
+            "kind": "glyph"
+          }
         }
       ],
-      "selector": {},
-      "stagger": {}
-    },
-    {
-      "id": "depth_of_field_rack_focus",
-      "category": "apple_v2",
-      "targets": [
-        "text",
-        "phrase"
-      ],
-      "unit": "glyph",
-      "enter": 72,
       "tracks": [
         {
-          "property": "scale",
+          "easing": "out_cubic",
           "keyframes": [
             {
               "frame": 0,
@@ -1114,10 +1209,10 @@
               "value": 1
             }
           ],
-          "easing": "out_cubic"
+          "property": "scale"
         },
         {
-          "property": "position_y",
+          "easing": "out_cubic",
           "keyframes": [
             {
               "frame": 0,
@@ -1132,10 +1227,10 @@
               "value": 0
             }
           ],
-          "easing": "out_cubic"
+          "property": "position_y"
         },
         {
-          "property": "opacity",
+          "easing": "out_cubic",
           "keyframes": [
             {
               "frame": 0,
@@ -1150,32 +1245,41 @@
               "value": 1
             }
           ],
-          "easing": "out_cubic"
+          "property": "opacity"
         }
+      ],
+      "unit": "glyph"
+    },
+    {
+      "category": "apple_v2",
+      "enter": 72,
+      "id": "duotone_block_rise",
+      "selector": {},
+      "stagger": {},
+      "targets": [
+        "text",
+        "phrase"
       ],
       "text_animators": [
         {
-          "id": "depth_of_field_rack_focus_text",
-          "selector": {
-            "kind": "glyph"
-          },
+          "id": "duotone_block_rise_text",
           "properties": [
             {
-              "property": "blur",
+              "easing": "out_cubic",
               "keyframes": [
                 {
                   "frame": 0,
-                  "value": 24
+                  "value": 70
                 },
                 {
-                  "frame": 72,
+                  "frame": 40,
                   "value": 0
                 }
               ],
-              "easing": "out_cubic"
+              "property": "position_y"
             },
             {
-              "property": "opacity",
+              "easing": "out_cubic",
               "keyframes": [
                 {
                   "frame": 0,
@@ -1186,26 +1290,17 @@
                   "value": 1
                 }
               ],
-              "easing": "out_cubic"
+              "property": "opacity"
             }
-          ]
+          ],
+          "selector": {
+            "kind": "line"
+          }
         }
       ],
-      "selector": {},
-      "stagger": {}
-    },
-    {
-      "id": "duotone_block_rise",
-      "category": "apple_v2",
-      "targets": [
-        "text",
-        "phrase"
-      ],
-      "unit": "line",
-      "enter": 72,
       "tracks": [
         {
-          "property": "position_y",
+          "easing": "out_cubic",
           "keyframes": [
             {
               "frame": 0,
@@ -1220,10 +1315,10 @@
               "value": 0
             }
           ],
-          "easing": "out_cubic"
+          "property": "position_y"
         },
         {
-          "property": "scale",
+          "easing": "out_cubic",
           "keyframes": [
             {
               "frame": 0,
@@ -1238,10 +1333,10 @@
               "value": 1
             }
           ],
-          "easing": "out_cubic"
+          "property": "scale"
         },
         {
-          "property": "opacity",
+          "easing": "out_cubic",
           "keyframes": [
             {
               "frame": 0,
@@ -1252,88 +1347,27 @@
               "value": 1
             }
           ],
-          "easing": "out_cubic"
+          "property": "opacity"
         }
       ],
-      "text_animators": [
-        {
-          "id": "duotone_block_rise_text",
-          "selector": {
-            "kind": "line"
-          },
-          "properties": [
-            {
-              "property": "position_y",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 70
-                },
-                {
-                  "frame": 40,
-                  "value": 0
-                }
-              ],
-              "easing": "out_cubic"
-            },
-            {
-              "property": "opacity",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 0
-                },
-                {
-                  "frame": 18,
-                  "value": 1
-                }
-              ],
-              "easing": "out_cubic"
-            }
-          ]
-        }
-      ],
-      "selector": {},
-      "stagger": {}
+      "unit": "line"
     },
     {
-      "id": "dynamic_island_expansion",
       "category": "apple_v2",
+      "enter": 72,
+      "id": "dynamic_island_expansion",
+      "selector": {},
+      "stagger": {},
       "targets": [
         "text",
         "phrase"
       ],
-      "unit": "line",
-      "enter": 72,
-      "tracks": [
-        {
-          "property": "scale",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 0.78
-            },
-            {
-              "frame": 24,
-              "value": 1.04
-            },
-            {
-              "frame": 72,
-              "value": 1
-            }
-          ],
-          "easing": "out_cubic"
-        }
-      ],
       "text_animators": [
         {
           "id": "dynamic_island_expansion_text",
-          "selector": {
-            "kind": "line"
-          },
           "properties": [
             {
-              "property": "scale",
+              "easing": "out_cubic",
               "keyframes": [
                 {
                   "frame": 0,
@@ -1348,10 +1382,10 @@
                   "value": 1
                 }
               ],
-              "easing": "out_cubic"
+              "property": "scale"
             },
             {
-              "property": "opacity",
+              "easing": "out_cubic",
               "keyframes": [
                 {
                   "frame": 0,
@@ -1362,26 +1396,87 @@
                   "value": 1
                 }
               ],
-              "easing": "out_cubic"
+              "property": "opacity"
             }
-          ]
+          ],
+          "selector": {
+            "kind": "line"
+          }
         }
       ],
-      "selector": {},
-      "stagger": {}
+      "tracks": [
+        {
+          "easing": "out_cubic",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.78
+            },
+            {
+              "frame": 24,
+              "value": 1.04
+            },
+            {
+              "frame": 72,
+              "value": 1
+            }
+          ],
+          "property": "scale"
+        }
+      ],
+      "unit": "line"
     },
     {
-      "id": "editorial_push_in",
       "category": "apple_v2",
+      "enter": 72,
+      "id": "editorial_push_in",
+      "selector": {},
+      "stagger": {},
       "targets": [
         "text",
         "phrase"
       ],
-      "unit": "line",
-      "enter": 72,
+      "text_animators": [
+        {
+          "id": "editorial_push_in_text",
+          "properties": [
+            {
+              "easing": "out_cubic",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 36
+                },
+                {
+                  "frame": 30,
+                  "value": 0
+                }
+              ],
+              "property": "position_y"
+            },
+            {
+              "easing": "out_cubic",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0
+                },
+                {
+                  "frame": 18,
+                  "value": 1
+                }
+              ],
+              "property": "opacity"
+            }
+          ],
+          "selector": {
+            "kind": "line"
+          }
+        }
+      ],
       "tracks": [
         {
-          "property": "scale",
+          "easing": "out_cubic",
           "keyframes": [
             {
               "frame": 0,
@@ -1396,10 +1491,10 @@
               "value": 1
             }
           ],
-          "easing": "out_cubic"
+          "property": "scale"
         },
         {
-          "property": "opacity",
+          "easing": "out_cubic",
           "keyframes": [
             {
               "frame": 0,
@@ -1410,58 +1505,20 @@
               "value": 1
             }
           ],
-          "easing": "out_cubic"
+          "property": "opacity"
         }
       ],
-      "text_animators": [
-        {
-          "id": "editorial_push_in_text",
-          "selector": {
-            "kind": "line"
-          },
-          "properties": [
-            {
-              "property": "position_y",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 36
-                },
-                {
-                  "frame": 30,
-                  "value": 0
-                }
-              ],
-              "easing": "out_cubic"
-            },
-            {
-              "property": "opacity",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 0
-                },
-                {
-                  "frame": 18,
-                  "value": 1
-                }
-              ],
-              "easing": "out_cubic"
-            }
-          ]
-        }
-      ],
-      "selector": {},
-      "stagger": {}
+      "unit": "line"
     },
     {
-      "id": "elastic_pop",
-      "unit": "layer",
       "enter": 54,
       "exit": 8,
+      "id": "elastic_pop",
+      "selector": {},
+      "stagger": {},
       "tracks": [
         {
-          "property": "scale",
+          "easing": "out_back",
           "keyframes": [
             {
               "frame": 0,
@@ -1480,10 +1537,10 @@
               "value": 1
             }
           ],
-          "easing": "out_back"
+          "property": "scale"
         },
         {
-          "property": "opacity",
+          "easing": "out_cubic",
           "keyframes": [
             {
               "frame": 0,
@@ -1494,19 +1551,19 @@
               "value": 1
             }
           ],
-          "easing": "out_cubic"
+          "property": "opacity"
         }
       ],
-      "selector": {},
-      "stagger": {}
+      "unit": "layer"
     },
     {
-      "id": "fade",
-      "unit": "layer",
       "enter": 1,
+      "id": "fade",
+      "selector": {},
+      "stagger": {},
       "tracks": [
         {
-          "property": "opacity",
+          "easing": "out_cubic",
           "keyframes": [
             {
               "frame": 0,
@@ -1517,20 +1574,20 @@
               "value": 1
             }
           ],
-          "easing": "out_cubic"
+          "property": "opacity"
         }
       ],
-      "selector": {},
-      "stagger": {}
+      "unit": "layer"
     },
     {
+      "enter": 48,
+      "exit": 8,
       "id": "fade_in",
-      "unit": "layer",
-      "enter": 48,
-      "exit": 8,
+      "selector": {},
+      "stagger": {},
       "tracks": [
         {
-          "property": "opacity",
+          "easing": "out_cubic",
           "keyframes": [
             {
               "frame": 0,
@@ -1541,20 +1598,20 @@
               "value": 1
             }
           ],
-          "easing": "out_cubic"
+          "property": "opacity"
         }
       ],
-      "selector": {},
-      "stagger": {}
+      "unit": "layer"
     },
     {
+      "enter": 48,
+      "exit": 8,
       "id": "fade_out",
-      "unit": "layer",
-      "enter": 48,
-      "exit": 8,
+      "selector": {},
+      "stagger": {},
       "tracks": [
         {
-          "property": "opacity",
+          "easing": "in_out_sine",
           "keyframes": [
             {
               "frame": 0,
@@ -1565,69 +1622,27 @@
               "value": 1
             }
           ],
-          "easing": "out_cubic"
+          "property": "opacity"
         }
       ],
-      "selector": {},
-      "stagger": {}
+      "unit": "layer"
     },
     {
-      "id": "fluid_gradient_text_flow",
       "category": "apple_v2",
+      "enter": 72,
+      "id": "fluid_gradient_text_flow",
+      "selector": {},
+      "stagger": {},
       "targets": [
         "text",
         "phrase"
       ],
-      "unit": "glyph",
-      "enter": 72,
-      "tracks": [
-        {
-          "property": "position_x",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": -48
-            },
-            {
-              "frame": 24,
-              "value": 48
-            },
-            {
-              "frame": 72,
-              "value": 0
-            }
-          ],
-          "easing": "out_cubic"
-        },
-        {
-          "property": "scale",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 0.98
-            },
-            {
-              "frame": 24,
-              "value": 1.02
-            },
-            {
-              "frame": 72,
-              "value": 1
-            }
-          ],
-          "easing": "out_cubic"
-        }
-      ],
       "text_animators": [
         {
           "id": "fluid_gradient_text_flow_text",
-          "selector": {
-            "kind": "glyph",
-            "stagger": 1
-          },
           "properties": [
             {
-              "property": "tracking",
+              "easing": "out_cubic",
               "keyframes": [
                 {
                   "frame": 0,
@@ -1642,10 +1657,10 @@
                   "value": -1
                 }
               ],
-              "easing": "out_cubic"
+              "property": "tracking"
             },
             {
-              "property": "opacity",
+              "easing": "out_cubic",
               "keyframes": [
                 {
                   "frame": 0,
@@ -1656,22 +1671,64 @@
                   "value": 1
                 }
               ],
-              "easing": "out_cubic"
+              "property": "opacity"
             }
-          ]
+          ],
+          "selector": {
+            "kind": "glyph",
+            "stagger": 1
+          }
         }
       ],
-      "selector": {},
-      "stagger": {}
-    },
-    {
-      "id": "focus_in",
-      "unit": "layer",
-      "enter": 48,
-      "exit": 6,
       "tracks": [
         {
-          "property": "scale",
+          "easing": "out_cubic",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": -48
+            },
+            {
+              "frame": 24,
+              "value": 48
+            },
+            {
+              "frame": 72,
+              "value": 0
+            }
+          ],
+          "property": "position_x"
+        },
+        {
+          "easing": "out_cubic",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.98
+            },
+            {
+              "frame": 24,
+              "value": 1.02
+            },
+            {
+              "frame": 72,
+              "value": 1
+            }
+          ],
+          "property": "scale"
+        }
+      ],
+      "unit": "glyph"
+    },
+    {
+      "enter": 48,
+      "exit": 6,
+      "id": "focus_in",
+      "selector": {},
+      "stagger": {},
+      "tracks": [
+        {
+          "easing": "out_cubic",
           "keyframes": [
             {
               "frame": 0,
@@ -1682,24 +1739,62 @@
               "value": 1
             }
           ],
-          "easing": "out_cubic"
+          "property": "scale"
         }
       ],
-      "selector": {},
-      "stagger": {}
+      "unit": "layer"
     },
     {
-      "id": "focus_pull_macro",
       "category": "apple_v2",
+      "enter": 72,
+      "id": "focus_pull_macro",
+      "selector": {},
+      "stagger": {},
       "targets": [
         "text",
         "phrase"
       ],
-      "unit": "glyph",
-      "enter": 72,
+      "text_animators": [
+        {
+          "id": "focus_pull_macro_text",
+          "properties": [
+            {
+              "easing": "out_cubic",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 26
+                },
+                {
+                  "frame": 40,
+                  "value": 0
+                }
+              ],
+              "property": "blur"
+            },
+            {
+              "easing": "out_cubic",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0
+                },
+                {
+                  "frame": 18,
+                  "value": 1
+                }
+              ],
+              "property": "opacity"
+            }
+          ],
+          "selector": {
+            "kind": "glyph"
+          }
+        }
+      ],
       "tracks": [
         {
-          "property": "scale",
+          "easing": "out_cubic",
           "keyframes": [
             {
               "frame": 0,
@@ -1714,10 +1809,10 @@
               "value": 1
             }
           ],
-          "easing": "out_cubic"
+          "property": "scale"
         },
         {
-          "property": "opacity",
+          "easing": "out_cubic",
           "keyframes": [
             {
               "frame": 0,
@@ -1728,125 +1823,27 @@
               "value": 1
             }
           ],
-          "easing": "out_cubic"
+          "property": "opacity"
         }
       ],
-      "text_animators": [
-        {
-          "id": "focus_pull_macro_text",
-          "selector": {
-            "kind": "glyph"
-          },
-          "properties": [
-            {
-              "property": "blur",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 26
-                },
-                {
-                  "frame": 40,
-                  "value": 0
-                }
-              ],
-              "easing": "out_cubic"
-            },
-            {
-              "property": "opacity",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 0
-                },
-                {
-                  "frame": 18,
-                  "value": 1
-                }
-              ],
-              "easing": "out_cubic"
-            }
-          ]
-        }
-      ],
-      "selector": {},
-      "stagger": {}
+      "unit": "glyph"
     },
     {
-      "id": "glassmorphism_card_tilt",
       "category": "apple_v2",
+      "enter": 72,
+      "id": "glassmorphism_card_tilt",
+      "selector": {},
+      "stagger": {},
       "targets": [
         "text",
         "phrase"
       ],
-      "unit": "glyph",
-      "enter": 72,
-      "tracks": [
-        {
-          "property": "rotation_z",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": -6
-            },
-            {
-              "frame": 24,
-              "value": 4
-            },
-            {
-              "frame": 72,
-              "value": 0
-            }
-          ],
-          "easing": "out_cubic"
-        },
-        {
-          "property": "position_x",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": -28
-            },
-            {
-              "frame": 24,
-              "value": 20
-            },
-            {
-              "frame": 72,
-              "value": 0
-            }
-          ],
-          "easing": "out_cubic"
-        },
-        {
-          "property": "scale",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 0.96
-            },
-            {
-              "frame": 24,
-              "value": 1.02
-            },
-            {
-              "frame": 72,
-              "value": 1
-            }
-          ],
-          "easing": "out_cubic"
-        }
-      ],
       "text_animators": [
         {
           "id": "glassmorphism_card_tilt_text",
-          "selector": {
-            "kind": "glyph",
-            "stagger": 1
-          },
           "properties": [
             {
-              "property": "scale",
+              "easing": "out_cubic",
               "keyframes": [
                 {
                   "frame": 0,
@@ -1861,10 +1858,10 @@
                   "value": 1
                 }
               ],
-              "easing": "out_cubic"
+              "property": "scale"
             },
             {
-              "property": "opacity",
+              "easing": "out_cubic",
               "keyframes": [
                 {
                   "frame": 0,
@@ -1875,66 +1872,89 @@
                   "value": 1
                 }
               ],
-              "easing": "out_cubic"
+              "property": "opacity"
             }
-          ]
+          ],
+          "selector": {
+            "kind": "glyph",
+            "stagger": 1
+          }
         }
       ],
-      "selector": {},
-      "stagger": {}
-    },
-    {
-      "id": "glitch_slice_band",
-      "category": "apple_v2",
-      "targets": [
-        "text",
-        "phrase"
-      ],
-      "unit": "line",
-      "enter": 72,
       "tracks": [
         {
-          "property": "scale_x",
+          "easing": "out_cubic",
           "keyframes": [
             {
               "frame": 0,
-              "value": 1.3
+              "value": -6
             },
             {
-              "frame": 30,
-              "value": 1
+              "frame": 24,
+              "value": 4
+            },
+            {
+              "frame": 72,
+              "value": 0
+            }
+          ],
+          "property": "rotation_z"
+        },
+        {
+          "easing": "out_cubic",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": -28
+            },
+            {
+              "frame": 24,
+              "value": 20
+            },
+            {
+              "frame": 72,
+              "value": 0
+            }
+          ],
+          "property": "position_x"
+        },
+        {
+          "easing": "out_cubic",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.96
+            },
+            {
+              "frame": 24,
+              "value": 1.02
             },
             {
               "frame": 72,
               "value": 1
             }
           ],
-          "easing": "out_cubic"
-        },
-        {
-          "property": "opacity",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 0
-            },
-            {
-              "frame": 8,
-              "value": 1
-            }
-          ],
-          "easing": "out_cubic"
+          "property": "scale"
         }
+      ],
+      "unit": "glyph"
+    },
+    {
+      "category": "apple_v2",
+      "enter": 72,
+      "id": "glitch_slice_band",
+      "selector": {},
+      "stagger": {},
+      "targets": [
+        "text",
+        "phrase"
       ],
       "text_animators": [
         {
           "id": "glitch_slice_band_text",
-          "selector": {
-            "kind": "line"
-          },
           "properties": [
             {
-              "property": "position_x",
+              "easing": "out_cubic",
               "keyframes": [
                 {
                   "frame": 0,
@@ -1957,10 +1977,10 @@
                   "value": 0
                 }
               ],
-              "easing": "out_cubic"
+              "property": "position_x"
             },
             {
-              "property": "opacity",
+              "easing": "out_cubic",
               "keyframes": [
                 {
                   "frame": 0,
@@ -1971,71 +1991,66 @@
                   "value": 1
                 }
               ],
-              "easing": "out_cubic"
-            }
-          ]
-        }
-      ],
-      "selector": {},
-      "stagger": {}
-    },
-    {
-      "id": "high_specular_light_sweep",
-      "category": "apple_v2",
-      "targets": [
-        "text",
-        "phrase"
-      ],
-      "unit": "glyph",
-      "enter": 72,
-      "tracks": [
-        {
-          "property": "position_x",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": -48
-            },
-            {
-              "frame": 24,
-              "value": 24
-            },
-            {
-              "frame": 72,
-              "value": 0
+              "property": "opacity"
             }
           ],
-          "easing": "out_cubic"
-        },
+          "selector": {
+            "kind": "line"
+          }
+        }
+      ],
+      "tracks": [
         {
-          "property": "scale",
+          "easing": "out_cubic",
           "keyframes": [
             {
               "frame": 0,
-              "value": 1.05
+              "value": 1.3
             },
             {
-              "frame": 24,
-              "value": 0.98
+              "frame": 30,
+              "value": 1
             },
             {
               "frame": 72,
               "value": 1
             }
           ],
-          "easing": "out_cubic"
+          "property": "scale_x"
+        },
+        {
+          "easing": "out_cubic",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 8,
+              "value": 1
+            }
+          ],
+          "property": "opacity"
         }
+      ],
+      "unit": "line"
+    },
+    {
+      "category": "apple_v2",
+      "enter": 72,
+      "id": "high_specular_light_sweep",
+      "selector": {},
+      "stagger": {},
+      "targets": [
+        "text",
+        "phrase"
       ],
       "text_animators": [
         {
           "id": "high_specular_light_sweep_text",
-          "selector": {
-            "kind": "glyph",
-            "stagger": 1
-          },
           "properties": [
             {
-              "property": "tracking",
+              "easing": "out_cubic",
               "keyframes": [
                 {
                   "frame": 0,
@@ -2050,10 +2065,10 @@
                   "value": 3
                 }
               ],
-              "easing": "out_cubic"
+              "property": "tracking"
             },
             {
-              "property": "opacity",
+              "easing": "out_cubic",
               "keyframes": [
                 {
                   "frame": 0,
@@ -2064,26 +2079,109 @@
                   "value": 1
                 }
               ],
-              "easing": "out_cubic"
+              "property": "opacity"
             }
-          ]
+          ],
+          "selector": {
+            "kind": "glyph",
+            "stagger": 1
+          }
         }
       ],
-      "selector": {},
-      "stagger": {}
+      "tracks": [
+        {
+          "easing": "out_cubic",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": -48
+            },
+            {
+              "frame": 24,
+              "value": 24
+            },
+            {
+              "frame": 72,
+              "value": 0
+            }
+          ],
+          "property": "position_x"
+        },
+        {
+          "easing": "out_cubic",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 1.05
+            },
+            {
+              "frame": 24,
+              "value": 0.98
+            },
+            {
+              "frame": 72,
+              "value": 1
+            }
+          ],
+          "property": "scale"
+        }
+      ],
+      "unit": "glyph"
     },
     {
-      "id": "hologram_scanline_build",
       "category": "apple_v2",
+      "enter": 72,
+      "id": "hologram_scanline_build",
+      "selector": {},
+      "stagger": {},
       "targets": [
         "text",
         "phrase"
       ],
-      "unit": "glyph",
-      "enter": 72,
+      "text_animators": [
+        {
+          "id": "hologram_scanline_build_text",
+          "properties": [
+            {
+              "easing": "out_cubic",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 30
+                },
+                {
+                  "frame": 24,
+                  "value": 0
+                }
+              ],
+              "property": "position_y"
+            },
+            {
+              "easing": "out_cubic",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0
+                },
+                {
+                  "frame": 18,
+                  "value": 1
+                }
+              ],
+              "property": "opacity"
+            }
+          ],
+          "selector": {
+            "kind": "glyph",
+            "order": "forward",
+            "shape": "ramp_up",
+            "stagger": 1
+          }
+        }
+      ],
       "tracks": [
         {
-          "property": "scale",
+          "easing": "out_cubic",
           "keyframes": [
             {
               "frame": 0,
@@ -2098,10 +2196,10 @@
               "value": 1
             }
           ],
-          "easing": "out_cubic"
+          "property": "scale"
         },
         {
-          "property": "position_y",
+          "easing": "out_cubic",
           "keyframes": [
             {
               "frame": 0,
@@ -2116,10 +2214,10 @@
               "value": 0
             }
           ],
-          "easing": "out_cubic"
+          "property": "position_y"
         },
         {
-          "property": "opacity",
+          "easing": "out_cubic",
           "keyframes": [
             {
               "frame": 0,
@@ -2130,60 +2228,19 @@
               "value": 1
             }
           ],
-          "easing": "out_cubic"
+          "property": "opacity"
         }
       ],
-      "text_animators": [
-        {
-          "id": "hologram_scanline_build_text",
-          "selector": {
-            "kind": "glyph",
-            "shape": "ramp_up",
-            "order": "forward",
-            "stagger": 1
-          },
-          "properties": [
-            {
-              "property": "position_y",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 30
-                },
-                {
-                  "frame": 24,
-                  "value": 0
-                }
-              ],
-              "easing": "out_cubic"
-            },
-            {
-              "property": "opacity",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 0
-                },
-                {
-                  "frame": 18,
-                  "value": 1
-                }
-              ],
-              "easing": "out_cubic"
-            }
-          ]
-        }
-      ],
-      "selector": {},
-      "stagger": {}
+      "unit": "glyph"
     },
     {
-      "id": "image_fade_reveal",
-      "unit": "layer",
       "enter": 60,
+      "id": "image_fade_reveal",
+      "selector": {},
+      "stagger": {},
       "tracks": [
         {
-          "property": "opacity",
+          "easing": "linear",
           "keyframes": [
             {
               "frame": 0,
@@ -2194,19 +2251,19 @@
               "value": 1
             }
           ],
-          "easing": "linear"
+          "property": "opacity"
         }
       ],
-      "selector": {},
-      "stagger": {}
+      "unit": "layer"
     },
     {
-      "id": "image_focus_reveal",
-      "unit": "layer",
       "enter": 60,
+      "id": "image_focus_reveal",
+      "selector": {},
+      "stagger": {},
       "tracks": [
         {
-          "property": "scale",
+          "easing": "in_out_sine",
           "keyframes": [
             {
               "frame": 0,
@@ -2217,10 +2274,10 @@
               "value": 1
             }
           ],
-          "easing": "in_out_sine"
+          "property": "scale"
         },
         {
-          "property": "opacity",
+          "easing": "linear",
           "keyframes": [
             {
               "frame": 0,
@@ -2231,19 +2288,19 @@
               "value": 1
             }
           ],
-          "easing": "linear"
+          "property": "opacity"
         }
       ],
-      "selector": {},
-      "stagger": {}
+      "unit": "layer"
     },
     {
-      "id": "image_scale_reveal",
-      "unit": "layer",
       "enter": 60,
+      "id": "image_scale_reveal",
+      "selector": {},
+      "stagger": {},
       "tracks": [
         {
-          "property": "scale",
+          "easing": "in_out_sine",
           "keyframes": [
             {
               "frame": 0,
@@ -2254,10 +2311,10 @@
               "value": 1
             }
           ],
-          "easing": "in_out_sine"
+          "property": "scale"
         },
         {
-          "property": "opacity",
+          "easing": "linear",
           "keyframes": [
             {
               "frame": 0,
@@ -2268,19 +2325,19 @@
               "value": 1
             }
           ],
-          "easing": "linear"
+          "property": "opacity"
         }
       ],
-      "selector": {},
-      "stagger": {}
+      "unit": "layer"
     },
     {
-      "id": "image_slide_left_reveal",
-      "unit": "layer",
       "enter": 60,
+      "id": "image_slide_left_reveal",
+      "selector": {},
+      "stagger": {},
       "tracks": [
         {
-          "property": "position_x",
+          "easing": "in_out_sine",
           "keyframes": [
             {
               "frame": 0,
@@ -2291,10 +2348,10 @@
               "value": 0
             }
           ],
-          "easing": "in_out_sine"
+          "property": "position_x"
         },
         {
-          "property": "opacity",
+          "easing": "linear",
           "keyframes": [
             {
               "frame": 0,
@@ -2305,19 +2362,19 @@
               "value": 1
             }
           ],
-          "easing": "linear"
+          "property": "opacity"
         }
       ],
-      "selector": {},
-      "stagger": {}
+      "unit": "layer"
     },
     {
-      "id": "image_slide_right_reveal",
-      "unit": "layer",
       "enter": 60,
+      "id": "image_slide_right_reveal",
+      "selector": {},
+      "stagger": {},
       "tracks": [
         {
-          "property": "position_x",
+          "easing": "in_out_sine",
           "keyframes": [
             {
               "frame": 0,
@@ -2328,10 +2385,10 @@
               "value": 0
             }
           ],
-          "easing": "in_out_sine"
+          "property": "position_x"
         },
         {
-          "property": "opacity",
+          "easing": "linear",
           "keyframes": [
             {
               "frame": 0,
@@ -2342,65 +2399,27 @@
               "value": 1
             }
           ],
-          "easing": "linear"
+          "property": "opacity"
         }
       ],
-      "selector": {},
-      "stagger": {}
+      "unit": "layer"
     },
     {
-      "id": "ink_bleed_spread",
       "category": "apple_v2",
+      "enter": 72,
+      "id": "ink_bleed_spread",
+      "selector": {},
+      "stagger": {},
       "targets": [
         "text",
         "phrase"
       ],
-      "unit": "glyph",
-      "enter": 72,
-      "tracks": [
-        {
-          "property": "scale",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 1.04
-            },
-            {
-              "frame": 40,
-              "value": 1
-            },
-            {
-              "frame": 72,
-              "value": 1
-            }
-          ],
-          "easing": "out_cubic"
-        },
-        {
-          "property": "opacity",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 0
-            },
-            {
-              "frame": 18,
-              "value": 1
-            }
-          ],
-          "easing": "out_cubic"
-        }
-      ],
       "text_animators": [
         {
           "id": "ink_bleed_spread_text",
-          "selector": {
-            "kind": "glyph",
-            "stagger": 1
-          },
           "properties": [
             {
-              "property": "tracking",
+              "easing": "out_cubic",
               "keyframes": [
                 {
                   "frame": 0,
@@ -2415,10 +2434,10 @@
                   "value": 0
                 }
               ],
-              "easing": "out_cubic"
+              "property": "tracking"
             },
             {
-              "property": "opacity",
+              "easing": "out_cubic",
               "keyframes": [
                 {
                   "frame": 0,
@@ -2429,89 +2448,67 @@
                   "value": 1
                 }
               ],
-              "easing": "out_cubic"
+              "property": "opacity"
             }
-          ]
+          ],
+          "selector": {
+            "kind": "glyph",
+            "stagger": 1
+          }
         }
       ],
-      "selector": {},
-      "stagger": {}
-    },
-    {
-      "id": "isometric_3d_fold",
-      "category": "apple_v2",
-      "targets": [
-        "text",
-        "phrase"
-      ],
-      "unit": "glyph",
-      "enter": 72,
       "tracks": [
         {
-          "property": "rotation_z",
+          "easing": "out_cubic",
           "keyframes": [
             {
               "frame": 0,
-              "value": -8
+              "value": 1.04
             },
             {
-              "frame": 24,
-              "value": 4
-            },
-            {
-              "frame": 72,
-              "value": 0
-            }
-          ],
-          "easing": "out_cubic"
-        },
-        {
-          "property": "position_y",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 44
-            },
-            {
-              "frame": 24,
-              "value": -4
-            },
-            {
-              "frame": 72,
-              "value": 0
-            }
-          ],
-          "easing": "out_cubic"
-        },
-        {
-          "property": "scale",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 0.92
-            },
-            {
-              "frame": 24,
-              "value": 1.02
+              "frame": 40,
+              "value": 1
             },
             {
               "frame": 72,
               "value": 1
             }
           ],
-          "easing": "out_cubic"
+          "property": "scale"
+        },
+        {
+          "easing": "out_cubic",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 18,
+              "value": 1
+            }
+          ],
+          "property": "opacity"
         }
+      ],
+      "unit": "glyph"
+    },
+    {
+      "category": "apple_v2",
+      "enter": 72,
+      "id": "isometric_3d_fold",
+      "selector": {},
+      "stagger": {},
+      "targets": [
+        "text",
+        "phrase"
       ],
       "text_animators": [
         {
           "id": "isometric_3d_fold_text",
-          "selector": {
-            "kind": "glyph",
-            "stagger": 1
-          },
           "properties": [
             {
-              "property": "position_y",
+              "easing": "out_cubic",
               "keyframes": [
                 {
                   "frame": 0,
@@ -2526,10 +2523,10 @@
                   "value": 0
                 }
               ],
-              "easing": "out_cubic"
+              "property": "position_y"
             },
             {
-              "property": "opacity",
+              "easing": "out_cubic",
               "keyframes": [
                 {
                   "frame": 0,
@@ -2540,71 +2537,89 @@
                   "value": 1
                 }
               ],
-              "easing": "out_cubic"
+              "property": "opacity"
             }
-          ]
+          ],
+          "selector": {
+            "kind": "glyph",
+            "stagger": 1
+          }
         }
       ],
-      "selector": {},
-      "stagger": {}
+      "tracks": [
+        {
+          "easing": "out_cubic",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": -8
+            },
+            {
+              "frame": 24,
+              "value": 4
+            },
+            {
+              "frame": 72,
+              "value": 0
+            }
+          ],
+          "property": "rotation_z"
+        },
+        {
+          "easing": "out_cubic",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 44
+            },
+            {
+              "frame": 24,
+              "value": -4
+            },
+            {
+              "frame": 72,
+              "value": 0
+            }
+          ],
+          "property": "position_y"
+        },
+        {
+          "easing": "out_cubic",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.92
+            },
+            {
+              "frame": 24,
+              "value": 1.02
+            },
+            {
+              "frame": 72,
+              "value": 1
+            }
+          ],
+          "property": "scale"
+        }
+      ],
+      "unit": "glyph"
     },
     {
-      "id": "kinetic_split_word",
       "category": "apple_v2",
+      "enter": 72,
+      "id": "kinetic_split_word",
+      "selector": {},
+      "stagger": {},
       "targets": [
         "text",
         "phrase"
       ],
-      "unit": "word",
-      "enter": 72,
-      "tracks": [
-        {
-          "property": "position_y",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 28
-            },
-            {
-              "frame": 24,
-              "value": -6
-            },
-            {
-              "frame": 72,
-              "value": 0
-            }
-          ],
-          "easing": "out_cubic"
-        },
-        {
-          "property": "rotation_z",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": -3
-            },
-            {
-              "frame": 24,
-              "value": 1
-            },
-            {
-              "frame": 72,
-              "value": 0
-            }
-          ],
-          "easing": "out_cubic"
-        }
-      ],
       "text_animators": [
         {
           "id": "kinetic_split_word_text",
-          "selector": {
-            "kind": "word",
-            "stagger": 1
-          },
           "properties": [
             {
-              "property": "position_y",
+              "easing": "out_cubic",
               "keyframes": [
                 {
                   "frame": 0,
@@ -2619,10 +2634,10 @@
                   "value": 0
                 }
               ],
-              "easing": "out_cubic"
+              "property": "position_y"
             },
             {
-              "property": "opacity",
+              "easing": "out_cubic",
               "keyframes": [
                 {
                   "frame": 0,
@@ -2633,26 +2648,111 @@
                   "value": 1
                 }
               ],
-              "easing": "out_cubic"
+              "property": "opacity"
             }
-          ]
+          ],
+          "selector": {
+            "kind": "word",
+            "stagger": 1
+          }
         }
       ],
-      "selector": {},
-      "stagger": {}
+      "tracks": [
+        {
+          "easing": "out_cubic",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 28
+            },
+            {
+              "frame": 24,
+              "value": -6
+            },
+            {
+              "frame": 72,
+              "value": 0
+            }
+          ],
+          "property": "position_y"
+        },
+        {
+          "easing": "out_cubic",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": -3
+            },
+            {
+              "frame": 24,
+              "value": 1
+            },
+            {
+              "frame": 72,
+              "value": 0
+            }
+          ],
+          "property": "rotation_z"
+        }
+      ],
+      "unit": "word"
     },
     {
-      "id": "kinetic_stamp_impact",
       "category": "apple_v2",
+      "enter": 72,
+      "id": "kinetic_stamp_impact",
+      "selector": {},
+      "stagger": {},
       "targets": [
         "text",
         "phrase"
       ],
-      "unit": "word",
-      "enter": 72,
+      "text_animators": [
+        {
+          "id": "kinetic_stamp_impact_text",
+          "properties": [
+            {
+              "easing": "out_cubic",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 1.45
+                },
+                {
+                  "frame": 8,
+                  "value": 0.94
+                },
+                {
+                  "frame": 44,
+                  "value": 1
+                }
+              ],
+              "property": "scale"
+            },
+            {
+              "easing": "out_cubic",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0
+                },
+                {
+                  "frame": 18,
+                  "value": 1
+                }
+              ],
+              "property": "opacity"
+            }
+          ],
+          "selector": {
+            "kind": "word",
+            "stagger": 2
+          }
+        }
+      ],
       "tracks": [
         {
-          "property": "scale",
+          "easing": "out_back",
           "keyframes": [
             {
               "frame": 0,
@@ -2667,10 +2767,10 @@
               "value": 1
             }
           ],
-          "easing": "out_back"
+          "property": "scale"
         },
         {
-          "property": "rotation_z",
+          "easing": "out_back",
           "keyframes": [
             {
               "frame": 0,
@@ -2689,10 +2789,10 @@
               "value": 0
             }
           ],
-          "easing": "out_back"
+          "property": "rotation_z"
         },
         {
-          "property": "opacity",
+          "easing": "out_cubic",
           "keyframes": [
             {
               "frame": 0,
@@ -2703,37 +2803,41 @@
               "value": 1
             }
           ],
-          "easing": "out_cubic"
+          "property": "opacity"
         }
+      ],
+      "unit": "word"
+    },
+    {
+      "category": "apple_v2",
+      "enter": 72,
+      "id": "letterbox_wipe",
+      "selector": {},
+      "stagger": {},
+      "targets": [
+        "text",
+        "phrase"
       ],
       "text_animators": [
         {
-          "id": "kinetic_stamp_impact_text",
-          "selector": {
-            "kind": "word",
-            "stagger": 2
-          },
+          "id": "letterbox_wipe_text",
           "properties": [
             {
-              "property": "scale",
+              "easing": "out_cubic",
               "keyframes": [
                 {
                   "frame": 0,
-                  "value": 1.45
+                  "value": 0.15
                 },
                 {
-                  "frame": 8,
-                  "value": 0.94
-                },
-                {
-                  "frame": 44,
+                  "frame": 36,
                   "value": 1
                 }
               ],
-              "easing": "out_cubic"
+              "property": "scale_x"
             },
             {
-              "property": "opacity",
+              "easing": "out_cubic",
               "keyframes": [
                 {
                   "frame": 0,
@@ -2744,26 +2848,17 @@
                   "value": 1
                 }
               ],
-              "easing": "out_cubic"
+              "property": "opacity"
             }
-          ]
+          ],
+          "selector": {
+            "kind": "line"
+          }
         }
       ],
-      "selector": {},
-      "stagger": {}
-    },
-    {
-      "id": "letterbox_wipe",
-      "category": "apple_v2",
-      "targets": [
-        "text",
-        "phrase"
-      ],
-      "unit": "line",
-      "enter": 72,
       "tracks": [
         {
-          "property": "position_y",
+          "easing": "out_cubic",
           "keyframes": [
             {
               "frame": 0,
@@ -2778,10 +2873,10 @@
               "value": 0
             }
           ],
-          "easing": "out_cubic"
+          "property": "position_y"
         },
         {
-          "property": "opacity",
+          "easing": "out_cubic",
           "keyframes": [
             {
               "frame": 0,
@@ -2792,103 +2887,27 @@
               "value": 1
             }
           ],
-          "easing": "out_cubic"
+          "property": "opacity"
         }
       ],
-      "text_animators": [
-        {
-          "id": "letterbox_wipe_text",
-          "selector": {
-            "kind": "line"
-          },
-          "properties": [
-            {
-              "property": "scale_x",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 0.15
-                },
-                {
-                  "frame": 36,
-                  "value": 1
-                }
-              ],
-              "easing": "out_cubic"
-            },
-            {
-              "property": "opacity",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 0
-                },
-                {
-                  "frame": 18,
-                  "value": 1
-                }
-              ],
-              "easing": "out_cubic"
-            }
-          ]
-        }
-      ],
-      "selector": {},
-      "stagger": {}
+      "unit": "line"
     },
     {
-      "id": "liquid_glass_ripple",
       "category": "apple_v2",
+      "enter": 72,
+      "id": "liquid_glass_ripple",
+      "selector": {},
+      "stagger": {},
       "targets": [
         "text",
         "phrase"
       ],
-      "unit": "glyph",
-      "enter": 72,
-      "tracks": [
-        {
-          "property": "scale",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 1.03
-            },
-            {
-              "frame": 36,
-              "value": 1
-            },
-            {
-              "frame": 72,
-              "value": 1
-            }
-          ],
-          "easing": "out_cubic"
-        },
-        {
-          "property": "opacity",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 0
-            },
-            {
-              "frame": 20,
-              "value": 1
-            }
-          ],
-          "easing": "out_cubic"
-        }
-      ],
       "text_animators": [
         {
           "id": "liquid_glass_ripple_text",
-          "selector": {
-            "kind": "glyph",
-            "stagger": 1
-          },
           "properties": [
             {
-              "property": "position_y",
+              "easing": "out_cubic",
               "keyframes": [
                 {
                   "frame": 0,
@@ -2903,10 +2922,10 @@
                   "value": 0
                 }
               ],
-              "easing": "out_cubic"
+              "property": "position_y"
             },
             {
-              "property": "opacity",
+              "easing": "out_cubic",
               "keyframes": [
                 {
                   "frame": 0,
@@ -2917,26 +2936,104 @@
                   "value": 1
                 }
               ],
-              "easing": "out_cubic"
+              "property": "opacity"
             }
-          ]
+          ],
+          "selector": {
+            "kind": "glyph",
+            "stagger": 1
+          }
         }
       ],
-      "selector": {},
-      "stagger": {}
+      "tracks": [
+        {
+          "easing": "out_cubic",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 1.03
+            },
+            {
+              "frame": 36,
+              "value": 1
+            },
+            {
+              "frame": 72,
+              "value": 1
+            }
+          ],
+          "property": "scale"
+        },
+        {
+          "easing": "out_cubic",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 20,
+              "value": 1
+            }
+          ],
+          "property": "opacity"
+        }
+      ],
+      "unit": "glyph"
     },
     {
-      "id": "magnetic_letters_converge",
       "category": "apple_v2",
+      "enter": 72,
+      "id": "magnetic_letters_converge",
+      "selector": {},
+      "stagger": {},
       "targets": [
         "text",
         "phrase"
       ],
-      "unit": "glyph",
-      "enter": 72,
+      "text_animators": [
+        {
+          "id": "magnetic_letters_converge_text",
+          "properties": [
+            {
+              "easing": "out_cubic",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": -60
+                },
+                {
+                  "frame": 72,
+                  "value": 0
+                }
+              ],
+              "property": "position_x"
+            },
+            {
+              "easing": "out_cubic",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0
+                },
+                {
+                  "frame": 18,
+                  "value": 1
+                }
+              ],
+              "property": "opacity"
+            }
+          ],
+          "selector": {
+            "kind": "glyph",
+            "order": "from_center",
+            "shape": "smooth"
+          }
+        }
+      ],
       "tracks": [
         {
-          "property": "scale",
+          "easing": "out_cubic",
           "keyframes": [
             {
               "frame": 0,
@@ -2951,10 +3048,10 @@
               "value": 1
             }
           ],
-          "easing": "out_cubic"
+          "property": "scale"
         },
         {
-          "property": "opacity",
+          "easing": "out_cubic",
           "keyframes": [
             {
               "frame": 0,
@@ -2965,34 +3062,41 @@
               "value": 1
             }
           ],
-          "easing": "out_cubic"
+          "property": "opacity"
         }
+      ],
+      "unit": "glyph"
+    },
+    {
+      "category": "apple_v2",
+      "enter": 72,
+      "id": "masked_upward_reveal",
+      "selector": {},
+      "stagger": {},
+      "targets": [
+        "text",
+        "phrase"
       ],
       "text_animators": [
         {
-          "id": "magnetic_letters_converge_text",
-          "selector": {
-            "kind": "glyph",
-            "shape": "smooth",
-            "order": "from_center"
-          },
+          "id": "masked_upward_reveal_text",
           "properties": [
             {
-              "property": "position_x",
+              "easing": "out_cubic",
               "keyframes": [
                 {
                   "frame": 0,
-                  "value": -60
+                  "value": 48
                 },
                 {
-                  "frame": 72,
+                  "frame": 22,
                   "value": 0
                 }
               ],
-              "easing": "out_cubic"
+              "property": "position_y"
             },
             {
-              "property": "opacity",
+              "easing": "out_cubic",
               "keyframes": [
                 {
                   "frame": 0,
@@ -3003,26 +3107,17 @@
                   "value": 1
                 }
               ],
-              "easing": "out_cubic"
+              "property": "opacity"
             }
-          ]
+          ],
+          "selector": {
+            "kind": "line"
+          }
         }
       ],
-      "selector": {},
-      "stagger": {}
-    },
-    {
-      "id": "masked_upward_reveal",
-      "category": "apple_v2",
-      "targets": [
-        "text",
-        "phrase"
-      ],
-      "unit": "line",
-      "enter": 72,
       "tracks": [
         {
-          "property": "position_y",
+          "easing": "out_cubic",
           "keyframes": [
             {
               "frame": 0,
@@ -3037,10 +3132,10 @@
               "value": 0
             }
           ],
-          "easing": "out_cubic"
+          "property": "position_y"
         },
         {
-          "property": "rotation_z",
+          "easing": "out_cubic",
           "keyframes": [
             {
               "frame": 0,
@@ -3055,32 +3150,41 @@
               "value": 0
             }
           ],
-          "easing": "out_cubic"
+          "property": "rotation_z"
         }
+      ],
+      "unit": "line"
+    },
+    {
+      "category": "apple_v2",
+      "enter": 72,
+      "id": "micro_tracker_kerning_compression",
+      "selector": {},
+      "stagger": {},
+      "targets": [
+        "text",
+        "phrase"
       ],
       "text_animators": [
         {
-          "id": "masked_upward_reveal_text",
-          "selector": {
-            "kind": "line"
-          },
+          "id": "micro_tracker_kerning_compression_text",
           "properties": [
             {
-              "property": "position_y",
+              "easing": "out_cubic",
               "keyframes": [
                 {
                   "frame": 0,
-                  "value": 48
+                  "value": 28
                 },
                 {
-                  "frame": 22,
-                  "value": 0
+                  "frame": 72,
+                  "value": -2
                 }
               ],
-              "easing": "out_cubic"
+              "property": "tracking"
             },
             {
-              "property": "opacity",
+              "easing": "out_cubic",
               "keyframes": [
                 {
                   "frame": 0,
@@ -3091,26 +3195,17 @@
                   "value": 1
                 }
               ],
-              "easing": "out_cubic"
+              "property": "opacity"
             }
-          ]
+          ],
+          "selector": {
+            "kind": "glyph"
+          }
         }
       ],
-      "selector": {},
-      "stagger": {}
-    },
-    {
-      "id": "micro_tracker_kerning_compression",
-      "category": "apple_v2",
-      "targets": [
-        "text",
-        "phrase"
-      ],
-      "unit": "glyph",
-      "enter": 72,
       "tracks": [
         {
-          "property": "scale",
+          "easing": "out_cubic",
           "keyframes": [
             {
               "frame": 0,
@@ -3125,10 +3220,10 @@
               "value": 1
             }
           ],
-          "easing": "out_cubic"
+          "property": "scale"
         },
         {
-          "property": "position_x",
+          "easing": "out_cubic",
           "keyframes": [
             {
               "frame": 0,
@@ -3143,89 +3238,27 @@
               "value": 0
             }
           ],
-          "easing": "out_cubic"
+          "property": "position_x"
         }
       ],
-      "text_animators": [
-        {
-          "id": "micro_tracker_kerning_compression_text",
-          "selector": {
-            "kind": "glyph"
-          },
-          "properties": [
-            {
-              "property": "tracking",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 28
-                },
-                {
-                  "frame": 72,
-                  "value": -2
-                }
-              ],
-              "easing": "out_cubic"
-            },
-            {
-              "property": "opacity",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 0
-                },
-                {
-                  "frame": 18,
-                  "value": 1
-                }
-              ],
-              "easing": "out_cubic"
-            }
-          ]
-        }
-      ],
-      "selector": {},
-      "stagger": {}
+      "unit": "glyph"
     },
     {
-      "id": "neon_flicker_ignite",
       "category": "apple_v2",
+      "enter": 72,
+      "id": "neon_flicker_ignite",
+      "selector": {},
+      "stagger": {},
       "targets": [
         "text",
         "phrase"
       ],
-      "unit": "glyph",
-      "enter": 72,
-      "tracks": [
-        {
-          "property": "scale",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 1.04
-            },
-            {
-              "frame": 30,
-              "value": 1
-            },
-            {
-              "frame": 72,
-              "value": 1
-            }
-          ],
-          "easing": "out_cubic"
-        }
-      ],
       "text_animators": [
         {
           "id": "neon_flicker_ignite_text",
-          "selector": {
-            "kind": "glyph",
-            "stagger": 1
-          },
           "properties": [
             {
-              "property": "opacity",
+              "easing": "out_cubic",
               "keyframes": [
                 {
                   "frame": 0,
@@ -3248,10 +3281,10 @@
                   "value": 1
                 }
               ],
-              "easing": "out_cubic"
+              "property": "opacity"
             },
             {
-              "property": "blur",
+              "easing": "out_cubic",
               "keyframes": [
                 {
                   "frame": 0,
@@ -3266,44 +3299,48 @@
                   "value": 0
                 }
               ],
-              "easing": "out_cubic"
+              "property": "blur"
             }
-          ]
+          ],
+          "selector": {
+            "kind": "glyph",
+            "stagger": 1
+          }
         }
       ],
-      "selector": {},
-      "stagger": {}
-    },
-    {
-      "id": "opacity_wave",
-      "unit": "word",
-      "enter": 72,
       "tracks": [
         {
-          "property": "opacity",
+          "easing": "out_cubic",
           "keyframes": [
             {
               "frame": 0,
-              "value": 0
+              "value": 1.04
             },
             {
-              "frame": 16,
+              "frame": 30,
+              "value": 1
+            },
+            {
+              "frame": 72,
               "value": 1
             }
           ],
-          "easing": "out_cubic"
+          "property": "scale"
         }
       ],
+      "unit": "glyph"
+    },
+    {
+      "enter": 72,
+      "id": "opacity_wave",
+      "selector": {},
+      "stagger": {},
       "text_animators": [
         {
           "id": "opacity_wave_text",
-          "selector": {
-            "kind": "word",
-            "stagger": 1
-          },
           "properties": [
             {
-              "property": "opacity",
+              "easing": "in_out_sine",
               "keyframes": [
                 {
                   "frame": 0,
@@ -3318,26 +3355,84 @@
                   "value": 0.5
                 }
               ],
-              "easing": "in_out_sine"
+              "property": "opacity"
             }
-          ]
+          ],
+          "selector": {
+            "kind": "word",
+            "stagger": 1
+          }
         }
       ],
-      "selector": {},
-      "stagger": {}
+      "tracks": [
+        {
+          "easing": "out_cubic",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 16,
+              "value": 1
+            }
+          ],
+          "property": "opacity"
+        }
+      ],
+      "unit": "word"
     },
     {
-      "id": "parallax_depth_stack",
       "category": "apple_v2",
+      "enter": 72,
+      "id": "parallax_depth_stack",
+      "selector": {},
+      "stagger": {},
       "targets": [
         "text",
         "phrase"
       ],
-      "unit": "line",
-      "enter": 72,
+      "text_animators": [
+        {
+          "id": "parallax_depth_stack_text",
+          "properties": [
+            {
+              "easing": "out_cubic",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 30
+                },
+                {
+                  "frame": 34,
+                  "value": 0
+                }
+              ],
+              "property": "position_y"
+            },
+            {
+              "easing": "out_cubic",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0
+                },
+                {
+                  "frame": 18,
+                  "value": 1
+                }
+              ],
+              "property": "opacity"
+            }
+          ],
+          "selector": {
+            "kind": "line"
+          }
+        }
+      ],
       "tracks": [
         {
-          "property": "position_y",
+          "easing": "out_cubic",
           "keyframes": [
             {
               "frame": 0,
@@ -3352,10 +3447,10 @@
               "value": 0
             }
           ],
-          "easing": "out_cubic"
+          "property": "position_y"
         },
         {
-          "property": "rotation_z",
+          "easing": "out_cubic",
           "keyframes": [
             {
               "frame": 0,
@@ -3370,10 +3465,10 @@
               "value": 0
             }
           ],
-          "easing": "out_cubic"
+          "property": "rotation_z"
         },
         {
-          "property": "scale",
+          "easing": "out_cubic",
           "keyframes": [
             {
               "frame": 0,
@@ -3388,125 +3483,27 @@
               "value": 1
             }
           ],
-          "easing": "out_cubic"
+          "property": "scale"
         }
       ],
-      "text_animators": [
-        {
-          "id": "parallax_depth_stack_text",
-          "selector": {
-            "kind": "line"
-          },
-          "properties": [
-            {
-              "property": "position_y",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 30
-                },
-                {
-                  "frame": 34,
-                  "value": 0
-                }
-              ],
-              "easing": "out_cubic"
-            },
-            {
-              "property": "opacity",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 0
-                },
-                {
-                  "frame": 18,
-                  "value": 1
-                }
-              ],
-              "easing": "out_cubic"
-            }
-          ]
-        }
-      ],
-      "selector": {},
-      "stagger": {}
+      "unit": "line"
     },
     {
-      "id": "pixel_grid_alpha_matrix",
       "category": "apple_v2",
+      "enter": 72,
+      "id": "pixel_grid_alpha_matrix",
+      "selector": {},
+      "stagger": {},
       "targets": [
         "text",
         "phrase"
       ],
-      "unit": "glyph",
-      "enter": 72,
-      "tracks": [
-        {
-          "property": "scale",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 0.86
-            },
-            {
-              "frame": 24,
-              "value": 1.06
-            },
-            {
-              "frame": 72,
-              "value": 1
-            }
-          ],
-          "easing": "out_cubic"
-        },
-        {
-          "property": "position_y",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 16
-            },
-            {
-              "frame": 24,
-              "value": -3
-            },
-            {
-              "frame": 72,
-              "value": 0
-            }
-          ],
-          "easing": "out_cubic"
-        },
-        {
-          "property": "opacity",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 0
-            },
-            {
-              "frame": 24,
-              "value": 1
-            },
-            {
-              "frame": 72,
-              "value": 1
-            }
-          ],
-          "easing": "out_cubic"
-        }
-      ],
       "text_animators": [
         {
           "id": "pixel_grid_alpha_matrix_text",
-          "selector": {
-            "kind": "glyph",
-            "stagger": 1
-          },
           "properties": [
             {
-              "property": "blur",
+              "easing": "out_cubic",
               "keyframes": [
                 {
                   "frame": 0,
@@ -3521,10 +3518,10 @@
                   "value": 0
                 }
               ],
-              "easing": "out_cubic"
+              "property": "blur"
             },
             {
-              "property": "opacity",
+              "easing": "out_cubic",
               "keyframes": [
                 {
                   "frame": 0,
@@ -3535,91 +3532,58 @@
                   "value": 1
                 }
               ],
-              "easing": "out_cubic"
+              "property": "opacity"
             }
-          ]
+          ],
+          "selector": {
+            "kind": "glyph",
+            "stagger": 1
+          }
         }
       ],
-      "selector": {},
-      "stagger": {}
-    },
-    {
-      "id": "precision_spring_up",
-      "unit": "layer",
-      "enter": 60,
       "tracks": [
         {
-          "property": "position_y",
+          "easing": "out_cubic",
           "keyframes": [
             {
               "frame": 0,
-              "value": 120
+              "value": 0.86
             },
             {
-              "frame": 60,
-              "value": 0
+              "frame": 24,
+              "value": 1.06
+            },
+            {
+              "frame": 72,
+              "value": 1
             }
           ],
-          "easing": "out_back"
+          "property": "scale"
         },
         {
-          "property": "opacity",
+          "easing": "out_cubic",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 16
+            },
+            {
+              "frame": 24,
+              "value": -3
+            },
+            {
+              "frame": 72,
+              "value": 0
+            }
+          ],
+          "property": "position_y"
+        },
+        {
+          "easing": "out_cubic",
           "keyframes": [
             {
               "frame": 0,
               "value": 0
-            },
-            {
-              "frame": 40,
-              "value": 1
-            }
-          ],
-          "easing": "out_cubic"
-        }
-      ],
-      "selector": {},
-      "stagger": {}
-    },
-    {
-      "id": "pulse",
-      "unit": "layer",
-      "enter": 48,
-      "exit": 8,
-      "tracks": [
-        {
-          "property": "opacity",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 0
-            },
-            {
-              "frame": 48,
-              "value": 1
-            }
-          ],
-          "easing": "out_cubic"
-        }
-      ],
-      "selector": {},
-      "stagger": {}
-    },
-    {
-      "id": "pulse_emphasis_beat",
-      "category": "apple_v2",
-      "targets": [
-        "text",
-        "phrase"
-      ],
-      "unit": "line",
-      "enter": 72,
-      "tracks": [
-        {
-          "property": "scale",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 0.96
             },
             {
               "frame": 24,
@@ -3630,32 +3594,106 @@
               "value": 1
             }
           ],
-          "easing": "out_back"
+          "property": "opacity"
+        }
+      ],
+      "unit": "glyph"
+    },
+    {
+      "enter": 60,
+      "id": "precision_spring_up",
+      "selector": {},
+      "stagger": {},
+      "tracks": [
+        {
+          "easing": "out_back",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 120
+            },
+            {
+              "frame": 60,
+              "value": 0
+            }
+          ],
+          "property": "position_y"
         },
         {
-          "property": "opacity",
+          "easing": "out_cubic",
           "keyframes": [
             {
               "frame": 0,
               "value": 0
             },
             {
-              "frame": 12,
+              "frame": 40,
               "value": 1
             }
           ],
-          "easing": "out_cubic"
+          "property": "opacity"
         }
+      ],
+      "unit": "layer"
+    },
+    {
+      "enter": 48,
+      "exit": 8,
+      "id": "pulse",
+      "selector": {},
+      "stagger": {},
+      "tracks": [
+        {
+          "easing": "out_back",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.82
+            },
+            {
+              "frame": 28,
+              "value": 1.08
+            },
+            {
+              "frame": 48,
+              "value": 1
+            }
+          ],
+          "property": "scale"
+        },
+        {
+          "easing": "out_cubic",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 16,
+              "value": 1
+            }
+          ],
+          "property": "opacity"
+        }
+      ],
+      "unit": "layer"
+    },
+    {
+      "category": "apple_v2",
+      "enter": 72,
+      "id": "pulse_emphasis_beat",
+      "selector": {},
+      "stagger": {},
+      "targets": [
+        "text",
+        "phrase"
       ],
       "text_animators": [
         {
           "id": "pulse_emphasis_beat_text",
-          "selector": {
-            "kind": "line"
-          },
           "properties": [
             {
-              "property": "scale",
+              "easing": "out_cubic",
               "keyframes": [
                 {
                   "frame": 0,
@@ -3678,10 +3716,10 @@
                   "value": 1
                 }
               ],
-              "easing": "out_cubic"
+              "property": "scale"
             },
             {
-              "property": "opacity",
+              "easing": "out_cubic",
               "keyframes": [
                 {
                   "frame": 0,
@@ -3692,22 +3730,59 @@
                   "value": 1
                 }
               ],
-              "easing": "out_cubic"
+              "property": "opacity"
             }
-          ]
+          ],
+          "selector": {
+            "kind": "line"
+          }
         }
       ],
-      "selector": {},
-      "stagger": {}
-    },
-    {
-      "id": "reveal_from_bottom",
-      "unit": "layer",
-      "enter": 48,
-      "exit": 6,
       "tracks": [
         {
-          "property": "position_y",
+          "easing": "out_back",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.96
+            },
+            {
+              "frame": 24,
+              "value": 1
+            },
+            {
+              "frame": 72,
+              "value": 1
+            }
+          ],
+          "property": "scale"
+        },
+        {
+          "easing": "out_cubic",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 12,
+              "value": 1
+            }
+          ],
+          "property": "opacity"
+        }
+      ],
+      "unit": "line"
+    },
+    {
+      "enter": 48,
+      "exit": 6,
+      "id": "reveal_from_bottom",
+      "selector": {},
+      "stagger": {},
+      "tracks": [
+        {
+          "easing": "out_cubic",
           "keyframes": [
             {
               "frame": 0,
@@ -3718,24 +3793,66 @@
               "value": 0
             }
           ],
-          "easing": "out_cubic"
+          "property": "position_y"
         }
       ],
-      "selector": {},
-      "stagger": {}
+      "unit": "layer"
     },
     {
-      "id": "risograph_offset_print",
       "category": "apple_v2",
+      "enter": 72,
+      "id": "risograph_offset_print",
+      "selector": {},
+      "stagger": {},
       "targets": [
         "text",
         "phrase"
       ],
-      "unit": "line",
-      "enter": 72,
+      "text_animators": [
+        {
+          "id": "risograph_offset_print_text",
+          "properties": [
+            {
+              "easing": "out_cubic",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": -18
+                },
+                {
+                  "frame": 18,
+                  "value": 6
+                },
+                {
+                  "frame": 44,
+                  "value": 0
+                }
+              ],
+              "property": "position_x"
+            },
+            {
+              "easing": "out_cubic",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0
+                },
+                {
+                  "frame": 18,
+                  "value": 1
+                }
+              ],
+              "property": "opacity"
+            }
+          ],
+          "selector": {
+            "kind": "line"
+          }
+        }
+      ],
       "tracks": [
         {
-          "property": "position_x",
+          "easing": "out_cubic",
           "keyframes": [
             {
               "frame": 0,
@@ -3754,10 +3871,10 @@
               "value": 0
             }
           ],
-          "easing": "out_cubic"
+          "property": "position_x"
         },
         {
-          "property": "rotation_z",
+          "easing": "out_cubic",
           "keyframes": [
             {
               "frame": 0,
@@ -3772,10 +3889,10 @@
               "value": 0
             }
           ],
-          "easing": "out_cubic"
+          "property": "rotation_z"
         },
         {
-          "property": "opacity",
+          "easing": "out_cubic",
           "keyframes": [
             {
               "frame": 0,
@@ -3786,86 +3903,44 @@
               "value": 1
             }
           ],
-          "easing": "out_cubic"
+          "property": "opacity"
         }
       ],
-      "text_animators": [
-        {
-          "id": "risograph_offset_print_text",
-          "selector": {
-            "kind": "line"
-          },
-          "properties": [
-            {
-              "property": "position_x",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": -18
-                },
-                {
-                  "frame": 18,
-                  "value": 6
-                },
-                {
-                  "frame": 44,
-                  "value": 0
-                }
-              ],
-              "easing": "out_cubic"
-            },
-            {
-              "property": "opacity",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 0
-                },
-                {
-                  "frame": 18,
-                  "value": 1
-                }
-              ],
-              "easing": "out_cubic"
-            }
-          ]
-        }
-      ],
-      "selector": {},
-      "stagger": {}
+      "unit": "line"
     },
     {
+      "enter": 48,
+      "exit": 6,
       "id": "scale_drop",
-      "unit": "layer",
-      "enter": 48,
-      "exit": 6,
+      "selector": {},
+      "stagger": {},
       "tracks": [
         {
-          "property": "scale",
+          "easing": "out_cubic",
           "keyframes": [
             {
               "frame": 0,
-              "value": 0.85
+              "value": 1.14
             },
             {
               "frame": 48,
               "value": 1
             }
           ],
-          "easing": "out_cubic"
+          "property": "scale"
         }
       ],
-      "selector": {},
-      "stagger": {}
+      "unit": "layer"
     },
     {
+      "enter": 48,
+      "exit": 6,
       "id": "scale_in",
-      "unit": "layer",
-      "enter": 48,
-      "exit": 6,
+      "selector": {},
+      "stagger": {},
       "tracks": [
         {
-          "property": "scale",
+          "easing": "out_cubic",
           "keyframes": [
             {
               "frame": 0,
@@ -3876,50 +3951,46 @@
               "value": 1
             }
           ],
-          "easing": "out_cubic"
+          "property": "scale"
         }
       ],
-      "selector": {},
-      "stagger": {}
+      "unit": "layer"
     },
     {
-      "id": "scale_out",
-      "unit": "layer",
       "enter": 48,
       "exit": 6,
+      "id": "scale_out",
+      "selector": {},
+      "stagger": {},
       "tracks": [
         {
-          "property": "scale",
+          "easing": "out_cubic",
           "keyframes": [
             {
               "frame": 0,
-              "value": 1
+              "value": 1.12
             },
             {
               "frame": 48,
-              "value": 0
+              "value": 1
             }
           ],
-          "easing": "out_cubic"
+          "property": "scale"
         }
       ],
-      "selector": {},
-      "stagger": {}
+      "unit": "layer"
     },
     {
-      "id": "scale_wave",
-      "unit": "glyph",
       "enter": 72,
+      "id": "scale_wave",
+      "selector": {},
+      "stagger": {},
       "text_animators": [
         {
           "id": "scale_wave_text",
-          "selector": {
-            "kind": "glyph",
-            "stagger": 1
-          },
           "properties": [
             {
-              "property": "scale",
+              "easing": "in_out_sine",
               "keyframes": [
                 {
                   "frame": 0,
@@ -3934,50 +4005,117 @@
                   "value": 1
                 }
               ],
-              "easing": "in_out_sine"
+              "property": "scale"
             }
-          ]
+          ],
+          "selector": {
+            "kind": "glyph",
+            "stagger": 1
+          }
         }
       ],
-      "selector": {},
-      "stagger": {}
+      "unit": "glyph"
     },
     {
-      "id": "shake",
-      "unit": "layer",
       "enter": 48,
       "exit": 8,
+      "id": "shake",
+      "selector": {},
+      "stagger": {},
       "tracks": [
         {
-          "property": "opacity",
+          "easing": "out_cubic",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": -14
+            },
+            {
+              "frame": 18,
+              "value": 12
+            },
+            {
+              "frame": 36,
+              "value": -5
+            },
+            {
+              "frame": 48,
+              "value": 0
+            }
+          ],
+          "property": "position_x"
+        },
+        {
+          "easing": "out_cubic",
           "keyframes": [
             {
               "frame": 0,
               "value": 0
             },
             {
-              "frame": 48,
+              "frame": 14,
               "value": 1
             }
           ],
-          "easing": "out_cubic"
+          "property": "opacity"
         }
       ],
-      "selector": {},
-      "stagger": {}
+      "unit": "layer"
     },
     {
-      "id": "shutter_blade_reveal",
       "category": "apple_v2",
+      "enter": 72,
+      "id": "shutter_blade_reveal",
+      "selector": {},
+      "stagger": {},
       "targets": [
         "text",
         "phrase"
       ],
-      "unit": "glyph",
-      "enter": 72,
+      "text_animators": [
+        {
+          "id": "shutter_blade_reveal_text",
+          "properties": [
+            {
+              "easing": "out_cubic",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0.2
+                },
+                {
+                  "frame": 30,
+                  "value": 1
+                }
+              ],
+              "property": "scale_x"
+            },
+            {
+              "easing": "out_cubic",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0
+                },
+                {
+                  "frame": 18,
+                  "value": 1
+                }
+              ],
+              "property": "opacity"
+            }
+          ],
+          "selector": {
+            "kind": "glyph",
+            "order": "forward",
+            "shape": "square",
+            "stagger": 1
+          }
+        }
+      ],
       "tracks": [
         {
-          "property": "scale",
+          "easing": "out_cubic",
           "keyframes": [
             {
               "frame": 0,
@@ -3992,10 +4130,10 @@
               "value": 1
             }
           ],
-          "easing": "out_cubic"
+          "property": "scale"
         },
         {
-          "property": "opacity",
+          "easing": "out_cubic",
           "keyframes": [
             {
               "frame": 0,
@@ -4006,35 +4144,249 @@
               "value": 1
             }
           ],
-          "easing": "out_cubic"
+          "property": "opacity"
         }
+      ],
+      "unit": "glyph"
+    },
+    {
+      "enter": 48,
+      "exit": 6,
+      "id": "slide_down",
+      "selector": {},
+      "stagger": {},
+      "tracks": [
+        {
+          "easing": "out_cubic",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": -40
+            },
+            {
+              "frame": 48,
+              "value": 0
+            }
+          ],
+          "property": "position_y"
+        }
+      ],
+      "unit": "layer"
+    },
+    {
+      "enter": 48,
+      "exit": 6,
+      "id": "slide_from_right",
+      "selector": {},
+      "stagger": {},
+      "tracks": [
+        {
+          "easing": "out_cubic",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 40
+            },
+            {
+              "frame": 48,
+              "value": 0
+            }
+          ],
+          "property": "position_x"
+        }
+      ],
+      "unit": "layer"
+    },
+    {
+      "enter": 48,
+      "exit": 6,
+      "id": "slide_in",
+      "selector": {},
+      "stagger": {},
+      "tracks": [
+        {
+          "easing": "out_cubic",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": -40
+            },
+            {
+              "frame": 48,
+              "value": 0
+            }
+          ],
+          "property": "position_x"
+        }
+      ],
+      "unit": "layer"
+    },
+    {
+      "enter": 48,
+      "exit": 6,
+      "id": "slide_left",
+      "selector": {},
+      "stagger": {},
+      "tracks": [
+        {
+          "easing": "out_cubic",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": -40
+            },
+            {
+              "frame": 48,
+              "value": 0
+            }
+          ],
+          "property": "position_x"
+        },
+        {
+          "easing": "out_cubic",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.96
+            },
+            {
+              "frame": 48,
+              "value": 1
+            }
+          ],
+          "property": "scale"
+        },
+        {
+          "easing": "out_cubic",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 16,
+              "value": 1
+            }
+          ],
+          "property": "opacity"
+        }
+      ],
+      "unit": "layer"
+    },
+    {
+      "enter": 48,
+      "exit": 6,
+      "id": "slide_right",
+      "selector": {},
+      "stagger": {},
+      "tracks": [
+        {
+          "easing": "out_cubic",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 40
+            },
+            {
+              "frame": 48,
+              "value": 0
+            }
+          ],
+          "property": "position_x"
+        },
+        {
+          "easing": "out_cubic",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.96
+            },
+            {
+              "frame": 48,
+              "value": 1
+            }
+          ],
+          "property": "scale"
+        },
+        {
+          "easing": "out_cubic",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 16,
+              "value": 1
+            }
+          ],
+          "property": "opacity"
+        }
+      ],
+      "unit": "layer"
+    },
+    {
+      "enter": 48,
+      "exit": 6,
+      "id": "slide_up",
+      "selector": {},
+      "stagger": {},
+      "tracks": [
+        {
+          "easing": "out_back",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 40
+            },
+            {
+              "frame": 32,
+              "value": -8
+            },
+            {
+              "frame": 48,
+              "value": 0
+            }
+          ],
+          "property": "position_y"
+        }
+      ],
+      "unit": "layer"
+    },
+    {
+      "category": "apple_v2",
+      "enter": 72,
+      "id": "soft_clay_press",
+      "selector": {},
+      "stagger": {},
+      "targets": [
+        "text",
+        "phrase"
       ],
       "text_animators": [
         {
-          "id": "shutter_blade_reveal_text",
-          "selector": {
-            "kind": "glyph",
-            "shape": "square",
-            "order": "forward",
-            "stagger": 1
-          },
+          "id": "soft_clay_press_text",
           "properties": [
             {
-              "property": "scale_x",
+              "easing": "out_cubic",
               "keyframes": [
                 {
                   "frame": 0,
-                  "value": 0.2
+                  "value": 1.08
                 },
                 {
-                  "frame": 30,
+                  "frame": 16,
+                  "value": 0.97
+                },
+                {
+                  "frame": 48,
                   "value": 1
                 }
               ],
-              "easing": "out_cubic"
+              "property": "scale"
             },
             {
-              "property": "opacity",
+              "easing": "out_cubic",
               "keyframes": [
                 {
                   "frame": 0,
@@ -4045,170 +4397,17 @@
                   "value": 1
                 }
               ],
-              "easing": "out_cubic"
-            }
-          ]
-        }
-      ],
-      "selector": {},
-      "stagger": {}
-    },
-    {
-      "id": "slide_down",
-      "unit": "layer",
-      "enter": 48,
-      "exit": 6,
-      "tracks": [
-        {
-          "property": "position_y",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": -40
-            },
-            {
-              "frame": 48,
-              "value": 0
+              "property": "opacity"
             }
           ],
-          "easing": "out_cubic"
+          "selector": {
+            "kind": "line"
+          }
         }
       ],
-      "selector": {},
-      "stagger": {}
-    },
-    {
-      "id": "slide_from_right",
-      "unit": "layer",
-      "enter": 48,
-      "exit": 6,
       "tracks": [
         {
-          "property": "position_x",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 40
-            },
-            {
-              "frame": 48,
-              "value": 0
-            }
-          ],
-          "easing": "out_cubic"
-        }
-      ],
-      "selector": {},
-      "stagger": {}
-    },
-    {
-      "id": "slide_in",
-      "unit": "layer",
-      "enter": 48,
-      "exit": 6,
-      "tracks": [
-        {
-          "property": "position_x",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": -40
-            },
-            {
-              "frame": 48,
-              "value": 0
-            }
-          ],
-          "easing": "out_cubic"
-        }
-      ],
-      "selector": {},
-      "stagger": {}
-    },
-    {
-      "id": "slide_left",
-      "unit": "layer",
-      "enter": 48,
-      "exit": 6,
-      "tracks": [
-        {
-          "property": "position_x",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": -40
-            },
-            {
-              "frame": 48,
-              "value": 0
-            }
-          ],
-          "easing": "out_cubic"
-        }
-      ],
-      "selector": {},
-      "stagger": {}
-    },
-    {
-      "id": "slide_right",
-      "unit": "layer",
-      "enter": 48,
-      "exit": 6,
-      "tracks": [
-        {
-          "property": "position_x",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 40
-            },
-            {
-              "frame": 48,
-              "value": 0
-            }
-          ],
-          "easing": "out_cubic"
-        }
-      ],
-      "selector": {},
-      "stagger": {}
-    },
-    {
-      "id": "slide_up",
-      "unit": "layer",
-      "enter": 48,
-      "exit": 6,
-      "tracks": [
-        {
-          "property": "position_y",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 40
-            },
-            {
-              "frame": 48,
-              "value": 0
-            }
-          ],
-          "easing": "out_cubic"
-        }
-      ],
-      "selector": {},
-      "stagger": {}
-    },
-    {
-      "id": "soft_clay_press",
-      "category": "apple_v2",
-      "targets": [
-        "text",
-        "phrase"
-      ],
-      "unit": "line",
-      "enter": 72,
-      "tracks": [
-        {
-          "property": "scale",
+          "easing": "out_back",
           "keyframes": [
             {
               "frame": 0,
@@ -4227,10 +4426,10 @@
               "value": 1
             }
           ],
-          "easing": "out_back"
+          "property": "scale"
         },
         {
-          "property": "position_y",
+          "easing": "out_cubic",
           "keyframes": [
             {
               "frame": 0,
@@ -4245,10 +4444,10 @@
               "value": 0
             }
           ],
-          "easing": "out_cubic"
+          "property": "position_y"
         },
         {
-          "property": "opacity",
+          "easing": "out_cubic",
           "keyframes": [
             {
               "frame": 0,
@@ -4259,66 +4458,49 @@
               "value": 1
             }
           ],
-          "easing": "out_cubic"
+          "property": "opacity"
         }
+      ],
+      "unit": "line"
+    },
+    {
+      "category": "apple_v2",
+      "enter": 72,
+      "id": "soft_edge_spotlight_dissolve",
+      "selector": {},
+      "stagger": {},
+      "targets": [
+        "text",
+        "phrase"
       ],
       "text_animators": [
         {
-          "id": "soft_clay_press_text",
-          "selector": {
-            "kind": "line"
-          },
+          "id": "soft_edge_spotlight_dissolve_text",
           "properties": [
             {
-              "property": "scale",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 1.08
-                },
-                {
-                  "frame": 16,
-                  "value": 0.97
-                },
-                {
-                  "frame": 48,
-                  "value": 1
-                }
-              ],
-              "easing": "out_cubic"
-            },
-            {
-              "property": "opacity",
+              "easing": "out_cubic",
               "keyframes": [
                 {
                   "frame": 0,
                   "value": 0
                 },
                 {
-                  "frame": 18,
+                  "frame": 24,
                   "value": 1
                 }
               ],
-              "easing": "out_cubic"
+              "property": "opacity"
             }
-          ]
+          ],
+          "selector": {
+            "kind": "glyph",
+            "stagger": 1
+          }
         }
       ],
-      "selector": {},
-      "stagger": {}
-    },
-    {
-      "id": "soft_edge_spotlight_dissolve",
-      "category": "apple_v2",
-      "targets": [
-        "text",
-        "phrase"
-      ],
-      "unit": "glyph",
-      "enter": 72,
       "tracks": [
         {
-          "property": "scale",
+          "easing": "out_cubic",
           "keyframes": [
             {
               "frame": 0,
@@ -4333,10 +4515,10 @@
               "value": 1
             }
           ],
-          "easing": "out_cubic"
+          "property": "scale"
         },
         {
-          "property": "opacity",
+          "easing": "out_cubic",
           "keyframes": [
             {
               "frame": 0,
@@ -4351,45 +4533,20 @@
               "value": 1
             }
           ],
-          "easing": "out_cubic"
+          "property": "opacity"
         }
       ],
-      "text_animators": [
-        {
-          "id": "soft_edge_spotlight_dissolve_text",
-          "selector": {
-            "kind": "glyph",
-            "stagger": 1
-          },
-          "properties": [
-            {
-              "property": "opacity",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 0
-                },
-                {
-                  "frame": 24,
-                  "value": 1
-                }
-              ],
-              "easing": "out_cubic"
-            }
-          ]
-        }
-      ],
-      "selector": {},
-      "stagger": {}
+      "unit": "glyph"
     },
     {
-      "id": "soft_pop",
-      "unit": "layer",
       "enter": 48,
       "exit": 6,
+      "id": "soft_pop",
+      "selector": {},
+      "stagger": {},
       "tracks": [
         {
-          "property": "scale",
+          "easing": "out_cubic",
           "keyframes": [
             {
               "frame": 0,
@@ -4400,19 +4557,19 @@
               "value": 1
             }
           ],
-          "easing": "out_cubic"
+          "property": "scale"
         }
       ],
-      "selector": {},
-      "stagger": {}
+      "unit": "layer"
     },
     {
-      "id": "soft_scale_reveal",
-      "unit": "layer",
       "enter": 60,
+      "id": "soft_scale_reveal",
+      "selector": {},
+      "stagger": {},
       "tracks": [
         {
-          "property": "scale",
+          "easing": "out_cubic",
           "keyframes": [
             {
               "frame": 0,
@@ -4423,10 +4580,10 @@
               "value": 1
             }
           ],
-          "easing": "out_cubic"
+          "property": "scale"
         },
         {
-          "property": "opacity",
+          "easing": "out_cubic",
           "keyframes": [
             {
               "frame": 0,
@@ -4437,65 +4594,27 @@
               "value": 1
             }
           ],
-          "easing": "out_cubic"
+          "property": "opacity"
         }
       ],
-      "selector": {},
-      "stagger": {}
+      "unit": "layer"
     },
     {
-      "id": "spectrum_shimmer_wave",
       "category": "apple_v2",
+      "enter": 72,
+      "id": "spectrum_shimmer_wave",
+      "selector": {},
+      "stagger": {},
       "targets": [
         "text",
         "phrase"
       ],
-      "unit": "glyph",
-      "enter": 72,
-      "tracks": [
-        {
-          "property": "scale",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 1.02
-            },
-            {
-              "frame": 36,
-              "value": 1
-            },
-            {
-              "frame": 72,
-              "value": 1
-            }
-          ],
-          "easing": "out_cubic"
-        },
-        {
-          "property": "opacity",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 0
-            },
-            {
-              "frame": 20,
-              "value": 1
-            }
-          ],
-          "easing": "out_cubic"
-        }
-      ],
       "text_animators": [
         {
           "id": "spectrum_shimmer_wave_text",
-          "selector": {
-            "kind": "glyph",
-            "stagger": 1
-          },
           "properties": [
             {
-              "property": "scale",
+              "easing": "out_cubic",
               "keyframes": [
                 {
                   "frame": 0,
@@ -4510,10 +4629,10 @@
                   "value": 1
                 }
               ],
-              "easing": "out_cubic"
+              "property": "scale"
             },
             {
-              "property": "opacity",
+              "easing": "out_cubic",
               "keyframes": [
                 {
                   "frame": 0,
@@ -4524,26 +4643,91 @@
                   "value": 1
                 }
               ],
-              "easing": "out_cubic"
+              "property": "opacity"
             }
-          ]
+          ],
+          "selector": {
+            "kind": "glyph",
+            "stagger": 1
+          }
         }
       ],
-      "selector": {},
-      "stagger": {}
+      "tracks": [
+        {
+          "easing": "out_cubic",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 1.02
+            },
+            {
+              "frame": 36,
+              "value": 1
+            },
+            {
+              "frame": 72,
+              "value": 1
+            }
+          ],
+          "property": "scale"
+        },
+        {
+          "easing": "out_cubic",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 20,
+              "value": 1
+            }
+          ],
+          "property": "opacity"
+        }
+      ],
+      "unit": "glyph"
     },
     {
-      "id": "spotlight_iris_open",
       "category": "apple_v2",
+      "enter": 72,
+      "id": "spotlight_iris_open",
+      "selector": {},
+      "stagger": {},
       "targets": [
         "text",
         "phrase"
       ],
-      "unit": "glyph",
-      "enter": 72,
+      "text_animators": [
+        {
+          "id": "spotlight_iris_open_text",
+          "properties": [
+            {
+              "easing": "out_cubic",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0
+                },
+                {
+                  "frame": 40,
+                  "value": 1
+                }
+              ],
+              "property": "opacity"
+            }
+          ],
+          "selector": {
+            "kind": "glyph",
+            "order": "from_center",
+            "shape": "smooth",
+            "stagger": 1
+          }
+        }
+      ],
       "tracks": [
         {
-          "property": "scale",
+          "easing": "out_cubic",
           "keyframes": [
             {
               "frame": 0,
@@ -4558,10 +4742,10 @@
               "value": 1
             }
           ],
-          "easing": "out_cubic"
+          "property": "scale"
         },
         {
-          "property": "opacity",
+          "easing": "out_cubic",
           "keyframes": [
             {
               "frame": 0,
@@ -4572,51 +4756,63 @@
               "value": 1
             }
           ],
-          "easing": "out_cubic"
+          "property": "opacity"
         }
+      ],
+      "unit": "glyph"
+    },
+    {
+      "category": "apple_v2",
+      "enter": 72,
+      "id": "staggered_char_float",
+      "selector": {},
+      "stagger": {},
+      "targets": [
+        "text",
+        "phrase"
       ],
       "text_animators": [
         {
-          "id": "spotlight_iris_open_text",
-          "selector": {
-            "kind": "glyph",
-            "shape": "smooth",
-            "order": "from_center",
-            "stagger": 1
-          },
+          "id": "staggered_char_float_text",
           "properties": [
             {
-              "property": "opacity",
+              "easing": "out_cubic",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 26
+                },
+                {
+                  "frame": 72,
+                  "value": 0
+                }
+              ],
+              "property": "position_y"
+            },
+            {
+              "easing": "out_cubic",
               "keyframes": [
                 {
                   "frame": 0,
                   "value": 0
                 },
                 {
-                  "frame": 40,
+                  "frame": 18,
                   "value": 1
                 }
               ],
-              "easing": "out_cubic"
+              "property": "opacity"
             }
-          ]
+          ],
+          "selector": {
+            "kind": "glyph",
+            "stagger": 2
+          }
         }
       ],
-      "selector": {},
-      "stagger": {}
-    },
-    {
-      "id": "staggered_char_float",
-      "category": "apple_v2",
-      "targets": [
-        "text",
-        "phrase"
-      ],
-      "unit": "glyph",
-      "enter": 72,
       "tracks": [
         {
-          "property": "position_y",
+          "easing": "out_cubic",
           "keyframes": [
             {
               "frame": 0,
@@ -4631,10 +4827,10 @@
               "value": 0
             }
           ],
-          "easing": "out_cubic"
+          "property": "position_y"
         },
         {
-          "property": "scale",
+          "easing": "out_cubic",
           "keyframes": [
             {
               "frame": 0,
@@ -4649,10 +4845,10 @@
               "value": 1
             }
           ],
-          "easing": "out_cubic"
+          "property": "scale"
         },
         {
-          "property": "rotation_z",
+          "easing": "out_cubic",
           "keyframes": [
             {
               "frame": 0,
@@ -4667,64 +4863,22 @@
               "value": 0
             }
           ],
-          "easing": "out_cubic"
+          "property": "rotation_z"
         }
       ],
-      "text_animators": [
-        {
-          "id": "staggered_char_float_text",
-          "selector": {
-            "kind": "glyph",
-            "stagger": 2
-          },
-          "properties": [
-            {
-              "property": "position_y",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 26
-                },
-                {
-                  "frame": 72,
-                  "value": 0
-                }
-              ],
-              "easing": "out_cubic"
-            },
-            {
-              "property": "opacity",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 0
-                },
-                {
-                  "frame": 18,
-                  "value": 1
-                }
-              ],
-              "easing": "out_cubic"
-            }
-          ]
-        }
-      ],
-      "selector": {},
-      "stagger": {}
+      "unit": "glyph"
     },
     {
-      "id": "tracking_collapse",
-      "unit": "word",
       "enter": 72,
+      "id": "tracking_collapse",
+      "selector": {},
+      "stagger": {},
       "text_animators": [
         {
           "id": "tracking_collapse_text",
-          "selector": {
-            "kind": "word"
-          },
           "properties": [
             {
-              "property": "tracking",
+              "easing": "out_expo",
               "keyframes": [
                 {
                   "frame": 0,
@@ -4735,10 +4889,10 @@
                   "value": 0
                 }
               ],
-              "easing": "out_expo"
+              "property": "tracking"
             },
             {
-              "property": "opacity",
+              "easing": "out_cubic",
               "keyframes": [
                 {
                   "frame": 0,
@@ -4749,27 +4903,27 @@
                   "value": 1
                 }
               ],
-              "easing": "out_cubic"
+              "property": "opacity"
             }
-          ]
+          ],
+          "selector": {
+            "kind": "word"
+          }
         }
       ],
-      "selector": {},
-      "stagger": {}
+      "unit": "word"
     },
     {
-      "id": "tracking_expansion",
-      "unit": "word",
       "enter": 72,
+      "id": "tracking_expansion",
+      "selector": {},
+      "stagger": {},
       "text_animators": [
         {
           "id": "tracking_expansion_text",
-          "selector": {
-            "kind": "word"
-          },
           "properties": [
             {
-              "property": "tracking",
+              "easing": "out_expo",
               "keyframes": [
                 {
                   "frame": 0,
@@ -4780,10 +4934,10 @@
                   "value": 16
                 }
               ],
-              "easing": "out_expo"
+              "property": "tracking"
             },
             {
-              "property": "opacity",
+              "easing": "out_cubic",
               "keyframes": [
                 {
                   "frame": 0,
@@ -4794,289 +4948,372 @@
                   "value": 1
                 }
               ],
-              "easing": "out_cubic"
+              "property": "opacity"
             }
-          ]
+          ],
+          "selector": {
+            "kind": "word"
+          }
         }
       ],
-      "selector": {},
-      "stagger": {}
+      "unit": "word"
     },
     {
+      "enter": 42,
       "id": "typewriter_clean",
-      "unit": "glyph",
-      "enter": 72,
+      "selector": {},
+      "stagger": {},
       "text_animators": [
         {
           "id": "typewriter_clean_text",
-          "selector": {
-            "kind": "glyph",
-            "shape": "square",
-            "stagger": 1
-          },
           "properties": [
             {
-              "property": "opacity",
+              "easing": "out_cubic",
               "keyframes": [
                 {
                   "frame": 0,
                   "value": 0
                 },
                 {
-                  "frame": 72,
-                  "value": 0
+                  "frame": 42,
+                  "value": 1
                 }
               ],
-              "easing": "linear"
+              "property": "opacity"
             }
-          ]
+          ],
+          "selector": {
+            "kind": "glyph",
+            "shape": "square",
+            "stagger": 1
+          }
         }
       ],
-      "selector": {},
-      "stagger": {}
+      "unit": "glyph"
     },
     {
+      "enter": 42,
       "id": "typewriter_glitch",
-      "unit": "glyph",
-      "enter": 72,
+      "selector": {},
+      "stagger": {},
       "text_animators": [
         {
           "id": "typewriter_glitch_text",
+          "properties": [
+            {
+              "easing": "out_cubic",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0
+                },
+                {
+                  "frame": 10,
+                  "value": 1
+                }
+              ],
+              "property": "opacity"
+            },
+            {
+              "easing": "out_cubic",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 24
+                },
+                {
+                  "frame": 8,
+                  "value": -8
+                },
+                {
+                  "frame": 18,
+                  "value": 4
+                },
+                {
+                  "frame": 42,
+                  "value": 0
+                }
+              ],
+              "property": "position_x"
+            },
+            {
+              "easing": "out_cubic",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 1.18
+                },
+                {
+                  "frame": 12,
+                  "value": 0.98
+                },
+                {
+                  "frame": 42,
+                  "value": 1
+                }
+              ],
+              "property": "scale_x"
+            }
+          ],
           "selector": {
             "kind": "glyph",
             "shape": "square",
             "stagger": 1
-          },
-          "properties": [
-            {
-              "property": "opacity",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 0
-                },
-                {
-                  "frame": 72,
-                  "value": 0
-                }
-              ],
-              "easing": "linear"
-            },
-            {
-              "property": "position_x",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 20
-                },
-                {
-                  "frame": 72,
-                  "value": 20
-                }
-              ],
-              "easing": "out_cubic"
-            },
-            {
-              "property": "scale_x",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 1.4
-                },
-                {
-                  "frame": 72,
-                  "value": 1.4
-                }
-              ],
-              "easing": "out_cubic"
-            }
-          ]
+          }
         }
       ],
-      "selector": {},
-      "stagger": {}
+      "unit": "glyph"
     },
     {
+      "enter": 42,
       "id": "typewriter_neon",
-      "unit": "glyph",
-      "enter": 72,
+      "selector": {},
+      "stagger": {},
       "text_animators": [
         {
           "id": "typewriter_neon_text",
+          "properties": [
+            {
+              "easing": "out_cubic",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0
+                },
+                {
+                  "frame": 42,
+                  "value": 1
+                }
+              ],
+              "property": "opacity"
+            },
+            {
+              "easing": "out_cubic",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 18
+                },
+                {
+                  "frame": 18,
+                  "value": 4
+                },
+                {
+                  "frame": 42,
+                  "value": 0
+                }
+              ],
+              "property": "blur"
+            },
+            {
+              "easing": "out_cubic",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 1.06
+                },
+                {
+                  "frame": 42,
+                  "value": 1
+                }
+              ],
+              "property": "scale"
+            }
+          ],
           "selector": {
             "kind": "glyph",
             "shape": "smooth",
             "stagger": 1
-          },
-          "properties": [
-            {
-              "property": "opacity",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 0
-                },
-                {
-                  "frame": 72,
-                  "value": 0
-                }
-              ],
-              "easing": "out_cubic"
-            },
-            {
-              "property": "blur",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 16
-                },
-                {
-                  "frame": 72,
-                  "value": 16
-                }
-              ],
-              "easing": "out_cubic"
-            }
-          ]
+          }
         }
       ],
-      "selector": {},
-      "stagger": {}
+      "unit": "glyph"
     },
     {
+      "enter": 42,
       "id": "typewriter_pop",
-      "unit": "glyph",
-      "enter": 72,
+      "selector": {},
+      "stagger": {},
       "text_animators": [
         {
           "id": "typewriter_pop_text",
+          "properties": [
+            {
+              "easing": "out_cubic",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0
+                },
+                {
+                  "frame": 42,
+                  "value": 1
+                }
+              ],
+              "property": "opacity"
+            },
+            {
+              "easing": "out_back",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 18
+                },
+                {
+                  "frame": 18,
+                  "value": -3
+                },
+                {
+                  "frame": 42,
+                  "value": 0
+                }
+              ],
+              "property": "position_y"
+            },
+            {
+              "easing": "out_back",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0.92
+                },
+                {
+                  "frame": 18,
+                  "value": 1.06
+                },
+                {
+                  "frame": 42,
+                  "value": 1
+                }
+              ],
+              "property": "scale"
+            }
+          ],
           "selector": {
             "kind": "glyph",
             "shape": "square",
             "stagger": 1
-          },
-          "properties": [
-            {
-              "property": "opacity",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 0
-                },
-                {
-                  "frame": 72,
-                  "value": 0
-                }
-              ],
-              "easing": "linear"
-            },
-            {
-              "property": "position_y",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": -24
-                },
-                {
-                  "frame": 72,
-                  "value": -24
-                }
-              ],
-              "easing": "out_back"
-            },
-            {
-              "property": "scale",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 1.35
-                },
-                {
-                  "frame": 72,
-                  "value": 1.35
-                }
-              ],
-              "easing": "out_back"
-            }
-          ]
+          }
         }
       ],
-      "selector": {},
-      "stagger": {}
+      "unit": "glyph"
     },
     {
+      "enter": 42,
       "id": "typewriter_tracking",
-      "unit": "glyph",
-      "enter": 72,
+      "selector": {},
+      "stagger": {},
       "text_animators": [
         {
           "id": "typewriter_tracking_text",
+          "properties": [
+            {
+              "easing": "out_cubic",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0
+                },
+                {
+                  "frame": 42,
+                  "value": 1
+                }
+              ],
+              "property": "opacity"
+            },
+            {
+              "easing": "out_expo",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": -10
+                },
+                {
+                  "frame": 24,
+                  "value": 8
+                },
+                {
+                  "frame": 42,
+                  "value": 2
+                }
+              ],
+              "property": "tracking"
+            },
+            {
+              "easing": "out_cubic",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": -10
+                },
+                {
+                  "frame": 42,
+                  "value": 0
+                }
+              ],
+              "property": "position_x"
+            }
+          ],
           "selector": {
             "kind": "glyph",
             "shape": "smooth",
             "stagger": 1
-          },
-          "properties": [
-            {
-              "property": "opacity",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 0
-                },
-                {
-                  "frame": 72,
-                  "value": 0
-                }
-              ],
-              "easing": "out_cubic"
-            },
-            {
-              "property": "tracking",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 16
-                },
-                {
-                  "frame": 72,
-                  "value": 16
-                }
-              ],
-              "easing": "out_expo"
-            },
-            {
-              "property": "position_x",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": -12
-                },
-                {
-                  "frame": 72,
-                  "value": -12
-                }
-              ],
-              "easing": "out_cubic"
-            }
-          ]
+          }
         }
       ],
-      "selector": {},
-      "stagger": {}
+      "unit": "glyph"
     },
     {
-      "id": "underline_swipe_bold",
       "category": "apple_v2",
+      "enter": 72,
+      "id": "underline_swipe_bold",
+      "selector": {},
+      "stagger": {},
       "targets": [
         "text",
         "phrase"
       ],
-      "unit": "line",
-      "enter": 72,
+      "text_animators": [
+        {
+          "id": "underline_swipe_bold_text",
+          "properties": [
+            {
+              "easing": "out_cubic",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0.2
+                },
+                {
+                  "frame": 30,
+                  "value": 1
+                }
+              ],
+              "property": "scale_x"
+            },
+            {
+              "easing": "out_cubic",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0
+                },
+                {
+                  "frame": 18,
+                  "value": 1
+                }
+              ],
+              "property": "opacity"
+            }
+          ],
+          "selector": {
+            "kind": "line"
+          }
+        }
+      ],
       "tracks": [
         {
-          "property": "position_x",
+          "easing": "out_expo",
           "keyframes": [
             {
               "frame": 0,
@@ -5091,10 +5328,10 @@
               "value": 0
             }
           ],
-          "easing": "out_expo"
+          "property": "position_x"
         },
         {
-          "property": "scale",
+          "easing": "out_cubic",
           "keyframes": [
             {
               "frame": 0,
@@ -5109,10 +5346,10 @@
               "value": 1
             }
           ],
-          "easing": "out_cubic"
+          "property": "scale"
         },
         {
-          "property": "opacity",
+          "easing": "out_cubic",
           "keyframes": [
             {
               "frame": 0,
@@ -5123,114 +5360,27 @@
               "value": 1
             }
           ],
-          "easing": "out_cubic"
+          "property": "opacity"
         }
       ],
-      "text_animators": [
-        {
-          "id": "underline_swipe_bold_text",
-          "selector": {
-            "kind": "line"
-          },
-          "properties": [
-            {
-              "property": "scale_x",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 0.2
-                },
-                {
-                  "frame": 30,
-                  "value": 1
-                }
-              ],
-              "easing": "out_cubic"
-            },
-            {
-              "property": "opacity",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 0
-                },
-                {
-                  "frame": 18,
-                  "value": 1
-                }
-              ],
-              "easing": "out_cubic"
-            }
-          ]
-        }
-      ],
-      "selector": {},
-      "stagger": {}
+      "unit": "line"
     },
     {
-      "id": "velocity_inertia_snap",
       "category": "apple_v2",
+      "enter": 72,
+      "id": "velocity_inertia_snap",
+      "selector": {},
+      "stagger": {},
       "targets": [
         "text",
         "phrase"
       ],
-      "unit": "line",
-      "enter": 72,
-      "tracks": [
-        {
-          "property": "position_x",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 64
-            },
-            {
-              "frame": 24,
-              "value": -12
-            },
-            {
-              "frame": 48,
-              "value": 2
-            },
-            {
-              "frame": 72,
-              "value": 0
-            }
-          ],
-          "easing": "out_cubic"
-        },
-        {
-          "property": "rotation_z",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 6
-            },
-            {
-              "frame": 24,
-              "value": -2
-            },
-            {
-              "frame": 48,
-              "value": 1
-            },
-            {
-              "frame": 72,
-              "value": 0
-            }
-          ],
-          "easing": "out_cubic"
-        }
-      ],
       "text_animators": [
         {
           "id": "velocity_inertia_snap_text",
-          "selector": {
-            "kind": "line"
-          },
           "properties": [
             {
-              "property": "position_x",
+              "easing": "out_cubic",
               "keyframes": [
                 {
                   "frame": 0,
@@ -5249,10 +5399,10 @@
                   "value": 0
                 }
               ],
-              "easing": "out_cubic"
+              "property": "position_x"
             },
             {
-              "property": "opacity",
+              "easing": "out_cubic",
               "keyframes": [
                 {
                   "frame": 0,
@@ -5263,84 +5413,78 @@
                   "value": 1
                 }
               ],
-              "easing": "out_cubic"
+              "property": "opacity"
             }
-          ]
+          ],
+          "selector": {
+            "kind": "line"
+          }
         }
       ],
-      "selector": {},
-      "stagger": {}
+      "tracks": [
+        {
+          "easing": "out_cubic",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 64
+            },
+            {
+              "frame": 24,
+              "value": -12
+            },
+            {
+              "frame": 48,
+              "value": 2
+            },
+            {
+              "frame": 72,
+              "value": 0
+            }
+          ],
+          "property": "position_x"
+        },
+        {
+          "easing": "out_cubic",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 6
+            },
+            {
+              "frame": 24,
+              "value": -2
+            },
+            {
+              "frame": 48,
+              "value": 1
+            },
+            {
+              "frame": 72,
+              "value": 0
+            }
+          ],
+          "property": "rotation_z"
+        }
+      ],
+      "unit": "line"
     },
     {
-      "id": "vertical_reel_snap",
       "category": "apple_v2",
+      "enter": 72,
+      "id": "vertical_reel_snap",
+      "selector": {},
+      "stagger": {},
       "targets": [
         "text",
         "phrase"
       ],
-      "unit": "line",
-      "enter": 72,
-      "tracks": [
-        {
-          "property": "scale",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 1.04
-            },
-            {
-              "frame": 44,
-              "value": 1
-            },
-            {
-              "frame": 72,
-              "value": 1
-            }
-          ],
-          "easing": "out_cubic"
-        },
-        {
-          "property": "rotation_z",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 1.5
-            },
-            {
-              "frame": 44,
-              "value": -0.4
-            },
-            {
-              "frame": 72,
-              "value": 0
-            }
-          ],
-          "easing": "out_cubic"
-        },
-        {
-          "property": "opacity",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 0
-            },
-            {
-              "frame": 10,
-              "value": 1
-            }
-          ],
-          "easing": "out_cubic"
-        }
-      ],
       "text_animators": [
         {
           "id": "vertical_reel_snap_text",
-          "selector": {
-            "kind": "line"
-          },
           "properties": [
             {
-              "property": "position_y",
+              "easing": "out_cubic",
               "keyframes": [
                 {
                   "frame": 0,
@@ -5359,10 +5503,10 @@
                   "value": 0
                 }
               ],
-              "easing": "out_cubic"
+              "property": "position_y"
             },
             {
-              "property": "opacity",
+              "easing": "out_cubic",
               "keyframes": [
                 {
                   "frame": 0,
@@ -5373,71 +5517,84 @@
                   "value": 1
                 }
               ],
-              "easing": "out_cubic"
+              "property": "opacity"
             }
-          ]
+          ],
+          "selector": {
+            "kind": "line"
+          }
         }
       ],
-      "selector": {},
-      "stagger": {}
+      "tracks": [
+        {
+          "easing": "out_cubic",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 1.04
+            },
+            {
+              "frame": 44,
+              "value": 1
+            },
+            {
+              "frame": 72,
+              "value": 1
+            }
+          ],
+          "property": "scale"
+        },
+        {
+          "easing": "out_cubic",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 1.5
+            },
+            {
+              "frame": 44,
+              "value": -0.4
+            },
+            {
+              "frame": 72,
+              "value": 0
+            }
+          ],
+          "property": "rotation_z"
+        },
+        {
+          "easing": "out_cubic",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 10,
+              "value": 1
+            }
+          ],
+          "property": "opacity"
+        }
+      ],
+      "unit": "line"
     },
     {
-      "id": "vertical_rolling_counter",
       "category": "apple_v2",
+      "enter": 72,
+      "id": "vertical_rolling_counter",
+      "selector": {},
+      "stagger": {},
       "targets": [
         "text",
         "phrase"
       ],
-      "unit": "glyph",
-      "enter": 72,
-      "tracks": [
-        {
-          "property": "position_y",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 48
-            },
-            {
-              "frame": 24,
-              "value": -6
-            },
-            {
-              "frame": 72,
-              "value": 0
-            }
-          ],
-          "easing": "out_cubic"
-        },
-        {
-          "property": "rotation_z",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 4
-            },
-            {
-              "frame": 24,
-              "value": -2
-            },
-            {
-              "frame": 72,
-              "value": 0
-            }
-          ],
-          "easing": "out_cubic"
-        }
-      ],
       "text_animators": [
         {
           "id": "vertical_rolling_counter_text",
-          "selector": {
-            "kind": "glyph",
-            "stagger": 1
-          },
           "properties": [
             {
-              "property": "position_y",
+              "easing": "out_cubic",
               "keyframes": [
                 {
                   "frame": 0,
@@ -5452,10 +5609,10 @@
                   "value": 0
                 }
               ],
-              "easing": "out_cubic"
+              "property": "position_y"
             },
             {
-              "property": "opacity",
+              "easing": "out_cubic",
               "keyframes": [
                 {
                   "frame": 0,
@@ -5466,26 +5623,109 @@
                   "value": 1
                 }
               ],
-              "easing": "out_cubic"
+              "property": "opacity"
             }
-          ]
+          ],
+          "selector": {
+            "kind": "glyph",
+            "stagger": 1
+          }
         }
       ],
-      "selector": {},
-      "stagger": {}
+      "tracks": [
+        {
+          "easing": "out_cubic",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 48
+            },
+            {
+              "frame": 24,
+              "value": -6
+            },
+            {
+              "frame": 72,
+              "value": 0
+            }
+          ],
+          "property": "position_y"
+        },
+        {
+          "easing": "out_cubic",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 4
+            },
+            {
+              "frame": 24,
+              "value": -2
+            },
+            {
+              "frame": 72,
+              "value": 0
+            }
+          ],
+          "property": "rotation_z"
+        }
+      ],
+      "unit": "glyph"
     },
     {
-      "id": "weightless_float_settle",
       "category": "apple_v2",
+      "enter": 72,
+      "id": "weightless_float_settle",
+      "selector": {},
+      "stagger": {},
       "targets": [
         "text",
         "phrase"
       ],
-      "unit": "glyph",
-      "enter": 72,
+      "text_animators": [
+        {
+          "id": "weightless_float_settle_text",
+          "properties": [
+            {
+              "easing": "out_cubic",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": -20
+                },
+                {
+                  "frame": 72,
+                  "value": 0
+                }
+              ],
+              "property": "position_y"
+            },
+            {
+              "easing": "out_cubic",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0
+                },
+                {
+                  "frame": 18,
+                  "value": 1
+                }
+              ],
+              "property": "opacity"
+            }
+          ],
+          "selector": {
+            "kind": "glyph",
+            "order": "reverse",
+            "shape": "smooth",
+            "stagger": 2
+          }
+        }
+      ],
       "tracks": [
         {
-          "property": "position_y",
+          "easing": "out_cubic",
           "keyframes": [
             {
               "frame": 0,
@@ -5500,10 +5740,10 @@
               "value": 0
             }
           ],
-          "easing": "out_cubic"
+          "property": "position_y"
         },
         {
-          "property": "opacity",
+          "easing": "out_cubic",
           "keyframes": [
             {
               "frame": 0,
@@ -5514,60 +5754,597 @@
               "value": 1
             }
           ],
-          "easing": "out_cubic"
+          "property": "opacity"
         }
+      ],
+      "unit": "glyph"
+    },
+    {
+      "category": "apple_v3",
+      "enter": 72,
+      "id": "premium_soft_reveal",
+      "targets": [
+        "text",
+        "phrase"
       ],
       "text_animators": [
         {
-          "id": "weightless_float_settle_text",
-          "selector": {
-            "kind": "glyph",
-            "shape": "smooth",
-            "order": "reverse",
-            "stagger": 2
-          },
+          "id": "premium_soft_reveal_text",
           "properties": [
             {
-              "property": "position_y",
+              "easing": "out_cubic",
               "keyframes": [
                 {
                   "frame": 0,
-                  "value": -20
+                  "value": 14.0
+                },
+                {
+                  "frame": 60,
+                  "value": 0.0
+                }
+              ],
+              "property": "blur"
+            },
+            {
+              "easing": "out_cubic",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 10.0
+                },
+                {
+                  "frame": 60,
+                  "value": 0.0
+                }
+              ],
+              "property": "position_y"
+            },
+            {
+              "easing": "out_cubic",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0.0
+                },
+                {
+                  "frame": 24,
+                  "value": 1.0
+                }
+              ],
+              "property": "opacity"
+            }
+          ],
+          "selector": {
+            "kind": "glyph",
+            "order": "forward",
+            "shape": "smooth",
+            "stagger": 1
+          }
+        }
+      ],
+      "tracks": [
+        {
+          "easing": "out_cubic",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.97
+            },
+            {
+              "frame": 60,
+              "value": 1.0
+            },
+            {
+              "frame": 72,
+              "value": 1.0
+            }
+          ],
+          "property": "scale"
+        },
+        {
+          "easing": "out_cubic",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.0
+            },
+            {
+              "frame": 22,
+              "value": 1.0
+            }
+          ],
+          "property": "opacity"
+        }
+      ],
+      "unit": "glyph"
+    },
+    {
+      "category": "apple_v3",
+      "enter": 72,
+      "id": "precision_word_stagger",
+      "targets": [
+        "text",
+        "phrase"
+      ],
+      "text_animators": [
+        {
+          "id": "precision_word_stagger_text",
+          "properties": [
+            {
+              "easing": "out_cubic",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 18.0
+                },
+                {
+                  "frame": 60,
+                  "value": 0.0
+                }
+              ],
+              "property": "position_y"
+            },
+            {
+              "easing": "out_cubic",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0.985
+                },
+                {
+                  "frame": 60,
+                  "value": 1.0
+                }
+              ],
+              "property": "scale"
+            },
+            {
+              "easing": "out_cubic",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0.0
+                },
+                {
+                  "frame": 22,
+                  "value": 1.0
+                }
+              ],
+              "property": "opacity"
+            }
+          ],
+          "selector": {
+            "kind": "word",
+            "order": "forward",
+            "shape": "smooth",
+            "stagger": 1
+          }
+        }
+      ],
+      "tracks": [
+        {
+          "easing": "out_cubic",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 12.0
+            },
+            {
+              "frame": 60,
+              "value": 0.0
+            },
+            {
+              "frame": 72,
+              "value": 0.0
+            }
+          ],
+          "property": "position_y"
+        },
+        {
+          "easing": "out_cubic",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.985
+            },
+            {
+              "frame": 60,
+              "value": 1.0
+            },
+            {
+              "frame": 72,
+              "value": 1.0
+            }
+          ],
+          "property": "scale"
+        },
+        {
+          "easing": "out_cubic",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.0
+            },
+            {
+              "frame": 22,
+              "value": 1.0
+            }
+          ],
+          "property": "opacity"
+        }
+      ],
+      "unit": "word"
+    },
+    {
+      "category": "apple_v3",
+      "enter": 72,
+      "id": "masked_vertical_lift",
+      "targets": [
+        "text",
+        "phrase"
+      ],
+      "text_animators": [
+        {
+          "id": "masked_vertical_lift_text",
+          "properties": [
+            {
+              "easing": "out_cubic",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 34.0
+                },
+                {
+                  "frame": 54,
+                  "value": 0.0
+                }
+              ],
+              "property": "position_y"
+            },
+            {
+              "easing": "out_cubic",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0.0
+                },
+                {
+                  "frame": 18,
+                  "value": 1.0
+                }
+              ],
+              "property": "opacity"
+            }
+          ],
+          "selector": {
+            "kind": "word",
+            "order": "forward",
+            "shape": "ramp_up",
+            "stagger": 1
+          }
+        }
+      ],
+      "tracks": [
+        {
+          "easing": "out_cubic",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 30.0
+            },
+            {
+              "frame": 54,
+              "value": 0.0
+            },
+            {
+              "frame": 72,
+              "value": 0.0
+            }
+          ],
+          "property": "position_y"
+        },
+        {
+          "easing": "out_cubic",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.98
+            },
+            {
+              "frame": 54,
+              "value": 1.0
+            },
+            {
+              "frame": 72,
+              "value": 1.0
+            }
+          ],
+          "property": "scale_y"
+        },
+        {
+          "easing": "out_cubic",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.0
+            },
+            {
+              "frame": 18,
+              "value": 1.0
+            }
+          ],
+          "property": "opacity"
+        }
+      ],
+      "unit": "word"
+    },
+    {
+      "category": "apple_v3",
+      "enter": 72,
+      "id": "hero_scale_focus",
+      "targets": [
+        "text",
+        "phrase"
+      ],
+      "text_animators": [
+        {
+          "id": "hero_scale_focus_text",
+          "properties": [
+            {
+              "easing": "out_cubic",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 12.0
+                },
+                {
+                  "frame": 60,
+                  "value": 0.0
+                }
+              ],
+              "property": "blur"
+            },
+            {
+              "easing": "out_cubic",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 1.08
+                },
+                {
+                  "frame": 60,
+                  "value": 1.0
+                }
+              ],
+              "property": "scale"
+            },
+            {
+              "easing": "out_cubic",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0.0
+                },
+                {
+                  "frame": 24,
+                  "value": 1.0
+                }
+              ],
+              "property": "opacity"
+            }
+          ],
+          "selector": {
+            "kind": "glyph",
+            "order": "from_center",
+            "shape": "smooth",
+            "stagger": 1
+          }
+        }
+      ],
+      "tracks": [
+        {
+          "easing": "out_cubic",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 1.08
+            },
+            {
+              "frame": 36,
+              "value": 1.015
+            },
+            {
+              "frame": 72,
+              "value": 1.0
+            }
+          ],
+          "property": "scale"
+        },
+        {
+          "easing": "out_cubic",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.0
+            },
+            {
+              "frame": 24,
+              "value": 1.0
+            }
+          ],
+          "property": "opacity"
+        }
+      ],
+      "unit": "glyph"
+    },
+    {
+      "category": "apple_v3",
+      "enter": 72,
+      "id": "kinetic_keyword_lock",
+      "targets": [
+        "text",
+        "phrase"
+      ],
+      "text_animators": [
+        {
+          "id": "kinetic_keyword_lock_text",
+          "properties": [
+            {
+              "easing": "out_cubic",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0.96
+                },
+                {
+                  "frame": 36,
+                  "value": 1.04
+                },
+                {
+                  "frame": 72,
+                  "value": 1.0
+                }
+              ],
+              "property": "scale"
+            },
+            {
+              "easing": "out_cubic",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 12.0
+                },
+                {
+                  "frame": 60,
+                  "value": 0.0
+                }
+              ],
+              "property": "position_y"
+            },
+            {
+              "easing": "out_cubic",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0.0
+                },
+                {
+                  "frame": 20,
+                  "value": 1.0
+                }
+              ],
+              "property": "opacity"
+            }
+          ],
+          "selector": {
+            "kind": "word",
+            "order": "from_center",
+            "shape": "smooth",
+            "stagger": 1
+          }
+        }
+      ],
+      "tracks": [
+        {
+          "easing": "out_cubic",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 10.0
+            },
+            {
+              "frame": 60,
+              "value": 0.0
+            },
+            {
+              "frame": 72,
+              "value": 0.0
+            }
+          ],
+          "property": "position_y"
+        },
+        {
+          "easing": "out_cubic",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.98
+            },
+            {
+              "frame": 36,
+              "value": 1.02
+            },
+            {
+              "frame": 72,
+              "value": 1.0
+            }
+          ],
+          "property": "scale"
+        },
+        {
+          "easing": "out_cubic",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.0
+            },
+            {
+              "frame": 20,
+              "value": 1.0
+            }
+          ],
+          "property": "opacity"
+        }
+      ],
+      "unit": "word"
+    },
+    {
+      "enter": 72,
+      "id": "word_reveal",
+      "selector": {},
+      "stagger": {},
+      "text_animators": [
+        {
+          "id": "word_reveal_text",
+          "properties": [
+            {
+              "easing": "linear",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 40
+                },
+                {
+                  "frame": 72,
+                  "value": 40
+                }
+              ],
+              "property": "position_y"
+            },
+            {
+              "easing": "linear",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0
                 },
                 {
                   "frame": 72,
                   "value": 0
                 }
               ],
-              "easing": "out_cubic"
-            },
-            {
-              "property": "opacity",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 0
-                },
-                {
-                  "frame": 18,
-                  "value": 1
-                }
-              ],
-              "easing": "out_cubic"
+              "property": "opacity"
             }
-          ]
+          ],
+          "selector": {
+            "kind": "word",
+            "stagger": 1
+          }
         }
       ],
-      "selector": {},
-      "stagger": {}
-    },
-    {
-      "id": "word_reveal",
-      "unit": "word",
-      "enter": 72,
       "tracks": [
         {
-          "property": "position_y",
+          "easing": "out_cubic",
           "keyframes": [
             {
               "frame": 0,
@@ -5582,10 +6359,10 @@
               "value": 0
             }
           ],
-          "easing": "out_cubic"
+          "property": "position_y"
         },
         {
-          "property": "opacity",
+          "easing": "out_cubic",
           "keyframes": [
             {
               "frame": 0,
@@ -5596,52 +6373,44 @@
               "value": 1
             }
           ],
-          "easing": "out_cubic"
+          "property": "opacity"
         }
       ],
-      "text_animators": [
-        {
-          "id": "word_reveal_text",
-          "selector": {
-            "kind": "word",
-            "stagger": 1
-          },
-          "properties": [
-            {
-              "property": "position_y",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 40
-                },
-                {
-                  "frame": 72,
-                  "value": 40
-                }
-              ],
-              "easing": "linear"
-            },
-            {
-              "property": "opacity",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 0
-                },
-                {
-                  "frame": 72,
-                  "value": 0
-                }
-              ],
-              "easing": "linear"
-            }
-          ]
-        }
-      ],
-      "selector": {},
-      "stagger": {}
+      "unit": "word"
     }
   ],
+  "native_phrase_style": {
+    "background": [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+    ],
+    "box": [
+      1700.0,
+      360.0
+    ],
+    "fill": "#FFFFFF",
+    "font": "assets/fonts/Inter-Bold.ttf",
+    "font_size": 190.0,
+    "glow": {
+      "blur": 42.0,
+      "color": "#FFFFFF",
+      "offset": [
+        0.0,
+        0.0
+      ],
+      "opacity": 0.9200000166893005
+    },
+    "position": [
+      960.0,
+      540.0
+    ],
+    "stroke": {
+      "color": "#FFFFFF",
+      "width": 0.0
+    }
+  },
   "overlay_presets": {
     "image": [
       "bottom_card_rise",
@@ -5658,6 +6427,7 @@
       "static_text_smoke"
     ]
   },
+  "schema_version": 1,
   "selections": {
     "matrix_image_overlays": [
       "image_focus_in",
@@ -5689,16 +6459,42 @@
       }
     ],
     "tyson_phrase_motions": [
-      "kinetic_split_word",
-      "masked_upward_reveal",
-      "depth_of_field_rack_focus",
-      "staggered_char_float",
-      "dynamic_island_expansion",
-      "soft_edge_spotlight_dissolve",
-      "velocity_inertia_snap",
-      "editorial_push_in",
-      "liquid_glass_ripple",
-      "chromatic_aberration_pop"
+      "premium_soft_reveal",
+      "precision_word_stagger",
+      "masked_vertical_lift",
+      "hero_scale_focus",
+      "kinetic_keyword_lock"
     ]
-  }
+  },
+  "source": "ChrononTemplate",
+  "templates": [
+    {
+      "id": "youtube_subscribe",
+      "name": "youtube_subscribe"
+    },
+    {
+      "id": "instagram_like",
+      "name": "instagram_like"
+    },
+    {
+      "id": "follow_prompt",
+      "name": "follow_prompt"
+    },
+    {
+      "id": "lower_third",
+      "name": "lower_third"
+    },
+    {
+      "id": "quote_card",
+      "name": "quote_card"
+    },
+    {
+      "id": "breaking_news",
+      "name": "breaking_news"
+    },
+    {
+      "id": "episode_tag",
+      "name": "episode_tag"
+    }
+  ]
 }

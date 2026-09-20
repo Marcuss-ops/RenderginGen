@@ -220,6 +220,8 @@ func (c *IPCClient) Shutdown(ctx context.Context) error {
 //	  single-frame chunk at frame 0 is first=0, last=0 WITH range_enabled
 //	  true — never an "absent range" that silently re-expands to the whole
 //	  plan)
+//	parallel_disjoint (trusted chunk-child admission hint; never inferred from
+//	  a range alone)
 //	audio_source_path (muxed source audio, daemon-side --gop-source)
 //	encode_preset (native NVENC tier)
 //	receipt_verify (per-job verification policy; the daemon reads the same
@@ -237,6 +239,7 @@ type renderJobPayload struct {
 	RangeEnabled          bool                  `json:"range_enabled"`
 	FirstFrame            int64                 `json:"first_frame"`
 	LastFrame             int64                 `json:"last_frame"`
+	ParallelDisjoint      bool                  `json:"parallel_disjoint,omitempty"`
 	Report                bool                  `json:"report"`
 	AudioSourcePath       string                `json:"audio_source_path,omitempty"`
 	AudioTargetSampleRate int                   `json:"audio_target_sample_rate,omitempty"`
@@ -317,6 +320,7 @@ func (c *IPCClient) Render(ctx context.Context, req RenderRequest) error {
 		RangeEnabled:          req.RangeEnabled,
 		FirstFrame:            req.FirstFrame,
 		LastFrame:             req.LastFrame,
+		ParallelDisjoint:      req.ParallelDisjoint,
 		Report:                req.Report,
 		AudioSourcePath:       req.AudioSourcePath,
 		AudioTargetSampleRate: req.AudioTargetSampleRate,

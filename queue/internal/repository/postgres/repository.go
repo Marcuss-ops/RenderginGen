@@ -152,6 +152,73 @@ func (r *Repository) Submit(job model.Job) error {
 	return tx.Commit()
 }
 
+// SubmitBatch atomically inserts an anchor and its chunk children. The queue
+// claim query intentionally skips parents that own children; atomic insertion
+// closes the otherwise real window between creating the anchor and creating
+// its first child.
+func (r *Repository) SubmitBatch(jobs []model.Job) error {
+	if len(jobs) == 0 {
+		return fmt.Errorf("job batch is empty")
+	}
+	seen := make(map[string]struct{}, len(jobs))
+	for _, job := range jobs {
+		if job.ID == "" {
+			return fmt.Errorf("job id is required")
+		}
+		if _, ok := seen[job.ID]; ok {
+			return fmt.Errorf("duplicate job id %s", job.ID)
+		}
+		seen[job.ID] = struct{}{}
+		if err := model.ValidateChunk(job); err != nil {
+			return err
+		}
+	}
+	ctx, cancel := r.opContext()
+	defer cancel()
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	for _, job := range jobs {
+		schema := job.Schema
+		if schema == "" {
+			schema = model.JobSchemaV1
+		}
+		version := job.Version
+		if version == 0 {
+			version = model.JobSchemaVersionV1
+		}
+		plan, err := normalizeJSON(job.RenderPlan)
+		if err != nil {
+			return fmt.Errorf("render_plan: %w", err)
+		}
+		manifest, err := json.Marshal(inputManifest{Assets: job.Assets})
+		if err != nil {
+			return fmt.Errorf("input_manifest: %w", err)
+		}
+		res, err := tx.ExecContext(ctx, `
+			INSERT INTO render_jobs (id, job_type, job_schema, job_schema_version, render_plan, input_manifest, max_attempts, idempotency_key, parent_job_id, chunk_index, frame_range)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, NULLIF($8, ''), NULLIF($9, ''), $10, $11)
+			ON CONFLICT (id) DO NOTHING`,
+			job.ID, nonEmptyJobType(job.JobType), schema, version, plan, manifest, r.maxAttempts, job.IdempotencyKey, job.ParentJobID, job.ChunkIndex, job.FrameRange)
+		if err != nil {
+			return err
+		}
+		n, err := rowsAffected(res)
+		if err != nil {
+			return err
+		}
+		if n == 0 {
+			return fmt.Errorf("%w: job %s", repository.ErrJobExists, job.ID)
+		}
+		if err := recordEvent(ctx, tx, eventJobCreated, job.ID, "", "", nil); err != nil {
+			return err
+		}
+	}
+	return tx.Commit()
+}
+
 // SubmitIdempotent uses the database uniqueness constraint as the race-safe
 // winner selection for concurrent retries of the same logical request.
 func (r *Repository) SubmitIdempotent(job model.Job) (*model.Job, bool, error) {

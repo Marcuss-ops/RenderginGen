@@ -227,3 +227,57 @@ func TestAppleV2MotionsAreComplete(t *testing.T) {
 		}
 	}
 }
+
+func TestChrononTemplateModern15PackIsRenderableAndNonStatic(t *testing.T) {
+	want := []string{
+		"kinetic_split_word", "dynamic_island_expansion", "masked_upward_reveal",
+		"staggered_char_float", "high_specular_light_sweep", "depth_of_field_rack_focus",
+		"micro_tracker_kerning_compression", "isometric_3d_fold", "soft_edge_spotlight_dissolve",
+		"chromatic_aberration_pop", "fluid_gradient_text_flow", "velocity_inertia_snap",
+		"vertical_rolling_counter", "glassmorphism_card_tilt", "pixel_grid_alpha_matrix",
+	}
+	catalog, err := Canonical()
+	if err != nil {
+		t.Fatalf("canonical catalog: %v", err)
+	}
+	definitions := make(map[string]MotionDefinition, len(catalog.Motions))
+	for _, definition := range catalog.Motions {
+		definitions[definition.ID] = definition
+	}
+	for _, id := range want {
+		d, ok := definitions[id]
+		if !ok {
+			t.Fatalf("modern pack is missing %q", id)
+		}
+		if d.Category != "apple_v2" || d.Enter != 72 || d.Unit == "" {
+			t.Errorf("%s: category=%q enter=%d unit=%q; want apple_v2/72/non-empty", id, d.Category, d.Enter, d.Unit)
+		}
+		if len(d.Tracks) == 0 || len(d.TextAnimators) == 0 {
+			t.Errorf("%s: must carry both layer tracks and text animators", id)
+			continue
+		}
+		varyingLayer := false
+		for _, track := range d.Tracks {
+			if len(track.Keyframes) > 1 && track.Keyframes[0].Value != track.Keyframes[len(track.Keyframes)-1].Value {
+				varyingLayer = true
+			}
+		}
+		if !varyingLayer {
+			t.Errorf("%s: layer animation is constant", id)
+		}
+		for _, animator := range d.TextAnimators {
+			if animator.Selector.Kind != d.Unit {
+				t.Errorf("%s: selector kind=%q, want declared unit %q", id, animator.Selector.Kind, d.Unit)
+			}
+			varyingText := false
+			for _, property := range animator.Properties {
+				if len(property.Keyframes) > 1 && property.Keyframes[0].Value != property.Keyframes[len(property.Keyframes)-1].Value {
+					varyingText = true
+				}
+			}
+			if !varyingText {
+				t.Errorf("%s: text animation is constant", id)
+			}
+		}
+	}
+}

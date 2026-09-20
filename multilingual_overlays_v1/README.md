@@ -138,6 +138,30 @@ requirement, not an engine change. `cmd/batch-verify` fails any artifact whose
 phrase band carries fewer than `-min-ink` glyph pixels (default 5000), which is
 exactly the silent truncation the counter-run produced.
 
+### The same rule, enforced by the builder (2026-09-20)
+
+A job must declare **the fonts its own plan burns**, because the plan is what
+decides which font the shaper asks for. `cmd/batch-build` now proves that instead
+of assuming it: it lowers every job's plan with
+`renderbatch.CompileRenderPlan` and refuses the whole manifest when a plan names a
+font the job does not declare (`overlaybatch.checkPlanFonts`), and the extra font
+is derived from the same owner the plan compiler consults
+(`overlay.OfficialFontPathForLanguage`), so the manifest and the plan cannot
+drift apart again.
+
+Cyrillic jobs therefore declare **three** fonts — the Latin pair above plus
+`assets/fonts/DejaVuSans.ttf`, the compiler's primary wherever
+`overlay.OfficialFontPathForLanguage` selects Cyrillic (`ru`, `uk`, `bg`, `sr`,
+`mk`, `be`, `kk`, `ky`, `tg`, `mn`, `az`, `uz`) — while Latin jobs keep the pair.
+
+Measured regression this closes: the `production_rehearsal_v1` runtime2 batch ran
+ten phrase jobs (one per language) and reported 9 completed / 1 failed — the
+`phrase_01_lower_third_safe__ru` row carried the daemon's
+`render job failed with exit code 1` — because its ru jobs still declared the
+Latin pair after the compiler had moved Cyrillic to DejaVuSans. With the
+declaration derived as above, the same 613-character ru text renders 1/1
+completed on the first attempt: 77 311 ink px, `cmd/batch-verify` PASS.
+
 ## Current measured result (Ollama, 2026-09-17)
 
 | Metric | Value |

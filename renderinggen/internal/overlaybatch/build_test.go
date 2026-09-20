@@ -5,10 +5,15 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 
+	queue "github.com/Marcuss-ops/RenderingGen/queue/client"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/batch"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/motion"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/overlay"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/renderbatch"
 )
 
 // writeFile writes a fixture file, creating its directories.
@@ -29,6 +34,7 @@ func fixtureRepo(t *testing.T) string {
 	root := t.TempDir()
 	writeFile(t, filepath.Join(root, fontPoppins), []byte("poppins-bold-bytes"))
 	writeFile(t, filepath.Join(root, fontInter), []byte("inter-bold-bytes"))
+	writeFile(t, filepath.Join(root, fontDejaVu), []byte("dejavu-sans-bytes"))
 	for _, entity := range tysonEntities {
 		writeFile(t, filepath.Join(root, "mike_tyson_overlay_test", "preset_overlays_v1", "assets", "entities", entity.file),
 			[]byte("image-bytes-"+entity.file))
@@ -257,6 +263,168 @@ func TestDistinctnessSeesACollision(t *testing.T) {
 	}
 	if rows[0].DistinctHash != 2 {
 		t.Errorf("distinct hashes = %d, want 2", rows[0].DistinctHash)
+	}
+}
+
+// TestMultilingualJobsDeclareThePlanPrimaryFont is the regression guard for the
+// Cyrillic rehearsal failure. The ru job's plan burns assets/fonts/DejaVuSans.ttf
+// (overlay.OfficialFontPathForLanguage), the worker resolves a job's assets
+// against its own workspace, and Chronon builds its fallback stack by scanning
+// the PRIMARY font's own directory: a manifest that declared only Poppins+Inter
+// left the ru shaper without a single Cyrillic face, and the render died in
+// preflight with exit 1 before it wrote a frame.
+func TestMultilingualJobsDeclareThePlanPrimaryFont(t *testing.T) {
+	root := t.TempDir()
+	writeFile(t, filepath.Join(root, fontPoppins), []byte("poppins-bold-bytes"))
+	writeFile(t, filepath.Join(root, fontInter), []byte("inter-bold-bytes"))
+	writeFile(t, filepath.Join(root, fontDejaVu), []byte("dejavu-sans-bytes"))
+	writeFile(t, filepath.Join(root, matrixImageFile), []byte("gerard-butler-jpeg-bytes"))
+
+	overlays := motion.PhraseOverlays()
+	if len(overlays) == 0 {
+		t.Fatal("the embedded catalog declares no phrase overlays")
+	}
+	row := overlays[0]
+
+	translations, err := json.Marshal(map[string]map[string]map[string]string{
+		row.ID: {"translations": {
+			"en": "A clear process, repeated.",
+			"ru": "\u042f\u0441\u043d\u044b\u0439 \u043f\u0440\u043e\u0446\u0435\u0441\u0441, \u043f\u043e\u0432\u0442\u043e\u0440\u044f\u0435\u043c\u044b\u0439.",
+		}},
+	})
+	if err != nil {
+		t.Fatalf("marshal translations: %v", err)
+	}
+	translationsPath := filepath.Join(root, "translations.json")
+	writeFile(t, translationsPath, translations)
+
+	out := filepath.Join(t.TempDir(), "manifest.json")
+	if _, err := BuildMultilingualManifest(MultilingualBuildOptions{
+		TranslationsPath: translationsPath,
+		BatchID:          "fixture-ml",
+		AssetBaseURL:     "http://127.0.0.1:8099",
+		RepoRoot:         root,
+		Languages:        []string{"en", "ru"},
+		Only:             []string{row.ID},
+		OutPath:          out,
+	}); err != nil {
+		t.Fatalf("BuildMultilingualManifest: %v", err)
+	}
+
+	raw, err := os.ReadFile(out)
+	if err != nil {
+		t.Fatalf("read manifest: %v", err)
+	}
+	// The consumer's own decoder: whatever it drops, the worker never fetches.
+	jobs, err := batch.Decode(raw)
+	if err != nil {
+		t.Fatalf("the built manifest is not a valid batch manifest: %v", err)
+	}
+	if len(jobs) != 2 {
+		t.Fatalf("built %d job(s), want 2 (en + ru)", len(jobs))
+	}
+	for _, job := range jobs {
+		language := job.ID[strings.LastIndex(job.ID, "__")+2:]
+		primary := overlay.OfficialFontPathForLanguage(language)
+		declared := logicalPaths(job.Assets)
+		// The job must carry exactly the preset pair plus the font its plan
+		// resolved. Declaring more is provenance the render never uses;
+		// declaring less is the failure that killed the ru job.
+		want := map[string]bool{logicalFontP: true, logicalFontI: true, primary: true}
+		if len(declared) != len(want) || !slices.Contains(declared, primary) {
+			t.Errorf("%s declares %v, want the preset pair plus the plan's %s", job.ID, declared, primary)
+		}
+		for _, path := range declared {
+			if !want[path] {
+				t.Errorf("%s declares %s, which its plan does not burn", job.ID, path)
+			}
+		}
+		for _, asset := range job.Assets {
+			if asset.SourceURL == "" {
+				t.Errorf("%s: font %s carries no source_url, so the worker cannot self-heal it", job.ID, asset.LogicalPath)
+			}
+		}
+		// The two directions of the regression, named: ru must get the Cyrillic
+		// face, and en must not be handed it for a language that cannot use it.
+		if language == "ru" && !slices.Contains(declared, logicalFontD) {
+			t.Errorf("ru declares %v, want the Cyrillic face %s", declared, logicalFontD)
+		}
+		if language == "en" && slices.Contains(declared, logicalFontD) {
+			t.Errorf("en declares the Cyrillic face: %v", declared)
+		}
+	}
+}
+
+// TestFontSpecsCoverEveryMatrixLanguage: the plan compiler picks a primary font
+// per language, so every language of the production matrix must have a job
+// declaration that can serve it. A language whose plan font this builder cannot
+// map to a checkout file would be declared without it and fail the way the ru
+// rehearsal did.
+func TestFontSpecsCoverEveryMatrixLanguage(t *testing.T) {
+	for _, language := range matrixLanguages {
+		primary := overlay.OfficialFontPathForLanguage(language)
+		if _, ok := fontLocalFiles[primary]; !ok {
+			t.Errorf("%s: the plan burns %s but the builder has no file to serve it", language, primary)
+		}
+		if !hasLogicalFont(fontSpecsForLanguage(language), primary) {
+			t.Errorf("%s: fontSpecsForLanguage does not declare the plan's %s", language, primary)
+		}
+	}
+}
+
+// TestBuildRefusesAPlanFontTheJobDoesNotDeclare reproduces the rehearsal's
+// broken manifest — a Cyrillic plan whose job declared only the Latin pair — and
+// pins that the builder refuses it instead of submitting a render that dies in
+// preflight with "no font in stack covers all visible codepoints".
+func TestBuildRefusesAPlanFontTheJobDoesNotDeclare(t *testing.T) {
+	phraseOverlays := motion.PhraseOverlays()
+	if len(phraseOverlays) == 0 {
+		t.Fatal("the embedded catalog declares no phrase overlays")
+	}
+	plan, err := renderbatch.BuildPlan(renderbatch.PlanSpec{
+		PlanID:     "ru-job",
+		Language:   "ru",
+		Width:      canvasWidth,
+		Height:     canvasHeight,
+		FPSNum:     canvasFPSNum,
+		FPSDen:     canvasFPSDen,
+		DurationMS: durationMS,
+		Background: &renderbatch.Surface{Kind: "color", Color: backgroundRGBA},
+		Items: []renderbatch.PlanItem{{
+			ID:         "item_1",
+			Kind:       "important_phrase",
+			TemplateID: "IMPORTANT_PHRASE",
+			PresetID:   overlay.CanonicalTextPresetID,
+			MotionID:   phraseOverlays[0].Motion,
+			Text:       "Проверка шрифта",
+			StartMS:    0,
+			EndMS:      durationMS,
+		}},
+	})
+	if err != nil {
+		t.Fatalf("BuildPlan: %v", err)
+	}
+
+	document := batchManifestDocument{SchemaVersion: SchemaBatchManifestV1, BatchID: "fixture", Jobs: []manifestJob{{
+		ID:         "ru-job",
+		RenderPlan: plan,
+		Assets: []queue.AssetRef{
+			{Hash: "poppins", LogicalPath: logicalFontP},
+			{Hash: "inter", LogicalPath: logicalFontI},
+		},
+	}}}
+	err = checkPlanFonts(document)
+	if err == nil {
+		t.Fatal("a job that does not declare the font its plan burns must be refused")
+	}
+	if !strings.Contains(err.Error(), logicalFontD) {
+		t.Fatalf("the refusal must name the undeclared font %s: %v", logicalFontD, err)
+	}
+
+	// Declaring it — what fontAssetsForLanguage now does — is the whole fix.
+	document.Jobs[0].Assets = append(document.Jobs[0].Assets, queue.AssetRef{Hash: "dejavu", LogicalPath: logicalFontD})
+	if err := checkPlanFonts(document); err != nil {
+		t.Fatalf("a job that declares its plan's font must be accepted: %v", err)
 	}
 }
 

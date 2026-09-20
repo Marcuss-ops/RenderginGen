@@ -1,0 +1,209 @@
+{
+  "schema": "chronon.render-plan.v2",
+  "version": 2,
+  "job_id": "text_anim_29_apple_phrase_v2",
+  "canvas": {
+    "width": 1920,
+    "height": 1080,
+    "fps_num": 24,
+    "fps_den": 1,
+    "duration_frames": 120
+  },
+  "layers": [
+    {
+      "id": "background",
+      "type": "color",
+      "color": [
+        0.9333333333333333,
+        0.9450980392156862,
+        0.9058823529411765,
+        1
+      ],
+      "size": [
+        1920,
+        1080
+      ],
+      "start_frame": 0,
+      "duration_frames": 120
+    },
+    {
+      "id": "item_1",
+      "type": "text",
+      "text": "APPLE PHRASE V2",
+      "size": [
+        1920,
+        120
+      ],
+      "position": [
+        0,
+        0
+      ],
+      "style": {
+        "font": "assets/fonts/Poppins-Bold.ttf",
+        "font_size": 64,
+        "fill": "#FFFFFF",
+        "stroke": {
+          "color": "#111827",
+          "width": 3.5
+        },
+        "shadow": {
+          "color": "#000000",
+          "opacity": 0.72,
+          "blur": 12,
+          "offset": [
+            0,
+            4
+          ]
+        }
+      },
+      "start_frame": 0,
+      "duration_frames": 120,
+      "animation": {
+        "tracks": [
+          {
+            "property": "position_y",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 24
+              },
+              {
+                "frame": 24,
+                "value": -3
+              },
+              {
+                "frame": 71,
+                "value": 0
+              },
+              {
+                "frame": 114,
+                "value": 0
+              },
+              {
+                "frame": 119,
+                "value": 24
+              }
+            ],
+            "easing": "out_cubic"
+          },
+          {
+            "property": "scale",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 0.97
+              },
+              {
+                "frame": 24,
+                "value": 1.02
+              },
+              {
+                "frame": 71,
+                "value": 1
+              },
+              {
+                "frame": 114,
+                "value": 1
+              },
+              {
+                "frame": 119,
+                "value": 0.97
+              }
+            ],
+            "easing": "out_cubic"
+          },
+          {
+            "property": "opacity",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 0
+              },
+              {
+                "frame": 8,
+                "value": 1
+              },
+              {
+                "frame": 111,
+                "value": 1
+              },
+              {
+                "frame": 119,
+                "value": 0
+              }
+            ],
+            "easing": "linear"
+          }
+        ]
+      },
+      "text_animators": [
+        {
+          "id": "apple_phrase_v2_text",
+          "selectors": [
+            {
+              "id": "apple_phrase_v2_text_selector",
+              "unit": "glyph",
+              "shape": "smooth",
+              "order": "forward",
+              "combine": "replace",
+              "start": {
+                "property": "start",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0
+                  },
+                  {
+                    "frame": 71,
+                    "value": 100
+                  }
+                ],
+                "easing": "out_cubic"
+              },
+              "exclude_spaces": true
+            }
+          ],
+          "properties": [
+            {
+              "property": "position_y",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 18
+                },
+                {
+                  "frame": 23,
+                  "value": -2
+                },
+                {
+                  "frame": 71,
+                  "value": 0
+                }
+              ],
+              "easing": "out_cubic"
+            },
+            {
+              "property": "opacity",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0
+                },
+                {
+                  "frame": 17,
+                  "value": 1
+                }
+              ],
+              "easing": "out_cubic"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "output": {
+    "path": "result.mp4",
+    "format": "mp4",
+    "codec": "h264"
+  }
+}

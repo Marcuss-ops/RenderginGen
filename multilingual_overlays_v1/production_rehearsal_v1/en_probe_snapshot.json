@@ -1,0 +1,63 @@
+{
+  "ml-production-rehearsal-en-probe-20260920:phrase_01_lower_third_safe__en": {
+    "id": "ml-production-rehearsal-en-probe-20260920:phrase_01_lower_third_safe__en",
+    "schema": "renderinggen.job",
+    "version": 1,
+    "idempotency_key": "363c789ceb946e8db120ced4b13a6619408b579550de6b4930f6d3dd7d6b752b",
+    "job_type": "render_segment",
+    "render_plan": {
+      "items": [
+        {
+          "id": "item_1",
+          "kind": "important_phrase",
+          "text": "Progress rarely arrives",
+          "end_ms": 5000,
+          "start_ms": 0,
+          "motion_id": "liquid_glass_ripple",
+          "preset_id": "apple_v2",
+          "template_id": "IMPORTANT_PHRASE"
+        }
+      ],
+      "width": 1920,
+      "height": 1080,
+      "fps_den": 1,
+      "fps_num": 24,
+      "plan_id": "phrase_01_lower_third_safe__en",
+      "language": "en",
+      "video_id": "phrase_01_lower_third_safe__en",
+      "background": {
+        "kind": "color",
+        "color": [
+          0.9333333333333333,
+          0.9450980392156862,
+          0.9058823529411765,
+          1
+        ]
+      },
+      "duration_ms": 5000,
+      "style_profile": "",
+      "schema_version": "renderinggen.overlay-plan.v1",
+      "output_profile_id": ""
+    },
+    "assets": [
+      {
+        "hash": "983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c",
+        "logical_path": "assets/fonts/Poppins-Bold.ttf",
+        "source_url": "http://127.0.0.1:8099/assets/fonts/Poppins-Bold.ttf"
+      },
+      {
+        "hash": "deb990e241954e1af87c6033d40a76cf0f48e0d112541794526051ac4a3ee2c8",
+        "logical_path": "assets/fonts/Inter-Bold.ttf",
+        "source_url": "http://127.0.0.1:8099/assets/fonts/Inter-Bold.ttf"
+      }
+    ],
+    "state": "failed",
+    "attempts": 3,
+    "created_at": "0001-01-01T00:00:00Z",
+    "queued_at": "2026-09-20T07:07:40.922397Z",
+    "started_at": "2026-09-20T07:07:40.927247Z",
+    "completed_at": "0001-01-01T00:00:00Z",
+    "lease_until": "0001-01-01T00:00:00Z",
+    "fail_reason": "processor: render: ipc dial /run/chronon3d/chronon.sock: dial unix /run/chronon3d/chronon.sock: connect: connection refused"
+  }
+}

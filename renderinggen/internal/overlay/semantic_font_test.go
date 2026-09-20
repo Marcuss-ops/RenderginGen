@@ -13,8 +13,8 @@ func TestOfficialFontPathForLanguage(t *testing.T) {
 		"zh-Hans": officialFontPath,
 	}
 	for language, want := range tests {
-		if got := officialFontPathForLanguage(language); got != want {
-			t.Errorf("officialFontPathForLanguage(%q) = %q, want %q", language, got, want)
+		if got := OfficialFontPathForLanguage(language); got != want {
+			t.Errorf("OfficialFontPathForLanguage(%q) = %q, want %q", language, got, want)
 		}
 	}
 }

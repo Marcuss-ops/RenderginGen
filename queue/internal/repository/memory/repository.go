@@ -33,6 +33,7 @@ var (
 	_ repository.JobRepository         = (*Repository)(nil)
 	_ repository.WorkerRepository      = (*Repository)(nil)
 	_ repository.IdempotencyRepository = (*Repository)(nil)
+	_ repository.BatchRepository       = (*Repository)(nil)
 )
 
 // New creates a queue with the given lease duration and max attempts per job.
@@ -99,6 +100,44 @@ func (s *Repository) Submit(job model.Job) error {
 	job.QueuedAt = now
 	s.jobs[job.ID] = &job
 	s.order = append(s.order, job.ID)
+	return nil
+}
+
+// SubmitBatch inserts an entire anchor+children family while holding the
+// repository lock. Validation happens before mutation, so a malformed child
+// or duplicate never leaves a partial family behind.
+func (s *Repository) SubmitBatch(jobs []model.Job) error {
+	if len(jobs) == 0 {
+		return fmt.Errorf("job batch is empty")
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	seen := make(map[string]struct{}, len(jobs))
+	for _, job := range jobs {
+		if job.ID == "" {
+			return fmt.Errorf("job id is required")
+		}
+		if _, ok := seen[job.ID]; ok {
+			return fmt.Errorf("duplicate job id %s", job.ID)
+		}
+		seen[job.ID] = struct{}{}
+		if _, ok := s.jobs[job.ID]; ok {
+			return fmt.Errorf("%w: job %s", repository.ErrJobExists, job.ID)
+		}
+		if err := model.ValidateChunk(job); err != nil {
+			return err
+		}
+	}
+	now := time.Now()
+	for _, job := range jobs {
+		job.State, job.CreatedAt, job.QueuedAt = model.StatePending, now, now
+		copy := job
+		s.jobs[job.ID] = &copy
+		s.order = append(s.order, job.ID)
+		if job.IdempotencyKey != "" {
+			s.idem[job.IdempotencyKey] = job.ID
+		}
+	}
 	return nil
 }
 

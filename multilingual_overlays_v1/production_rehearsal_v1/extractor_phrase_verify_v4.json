@@ -1,0 +1,329 @@
+{
+  "schema": "renderinggen.batch-verify-report.v1",
+  "batch_id": "ml-production-rehearsal-extracted-v4-20260920",
+  "generated_at": "2026-09-20T07:26:21.283087285Z",
+  "manifest": "multilingual_overlays_v1/production_rehearsal_v1/extractor_phrase_manifest_v4.json",
+  "queue": "http://127.0.0.1:8081",
+  "jobs": 30,
+  "passed": 30,
+  "distinctness": [
+    {
+      "overlay": "phrase_01_lower_third_safe",
+      "languages": 10,
+      "distinct_hashes": 10
+    },
+    {
+      "overlay": "phrase_02_clean_slide_up",
+      "languages": 10,
+      "distinct_hashes": 10
+    },
+    {
+      "overlay": "phrase_03_scale_pop",
+      "languages": 10,
+      "distinct_hashes": 10
+    }
+  ],
+  "rows": [
+    {
+      "job_id": "ml-production-rehearsal-extracted-v4-20260920:phrase_01_lower_third_safe__it",
+      "family": "phrase",
+      "language": "it",
+      "text": "coerenza trasforma un'idea",
+      "state": "completed",
+      "sha256": "db21562fbb01d0f9ed3173e3b508d395d583ea6eb773556f9e46a33e2f869c55",
+      "bytes": 495864,
+      "ink_pixels": 26188
+    },
+    {
+      "job_id": "ml-production-rehearsal-extracted-v4-20260920:phrase_01_lower_third_safe__en",
+      "family": "phrase",
+      "language": "en",
+      "text": "Progress rarely arrives",
+      "state": "completed",
+      "sha256": "cb9eee631bcf795bcff7ecc1cfe161d636fe0022e418b6fbfc99f2d44397a2b7",
+      "bytes": 422684,
+      "ink_pixels": 21229
+    },
+    {
+      "job_id": "ml-production-rehearsal-extracted-v4-20260920:phrase_01_lower_third_safe__pl",
+      "family": "phrase",
+      "language": "pl",
+      "text": "Spójność zmienia pomysł",
+      "state": "completed",
+      "sha256": "c468ebe318198c09818541c486b9ed183283e9f8a5c845f147e15d24c180e1be",
+      "bytes": 513567,
+      "ink_pixels": 26529
+    },
+    {
+      "job_id": "ml-production-rehearsal-extracted-v4-20260920:phrase_01_lower_third_safe__ru",
+      "family": "phrase",
+      "language": "ru",
+      "text": "Последовательность превращает идею",
+      "state": "completed",
+      "sha256": "103917f3f8fae2bb7fc1cdac57d7dd18c27c9f42d13bbfdf03d7d02f71bb4b77",
+      "bytes": 760802,
+      "ink_pixels": 43687
+    },
+    {
+      "job_id": "ml-production-rehearsal-extracted-v4-20260920:phrase_01_lower_third_safe__de",
+      "family": "phrase",
+      "language": "de",
+      "text": "Fortschritt kommt selten",
+      "state": "completed",
+      "sha256": "35e872292c99e351a00333d995821c0919b6f4ac3b11e743efa08513c2ff976e",
+      "bytes": 454243,
+      "ink_pixels": 24974
+    },
+    {
+      "job_id": "ml-production-rehearsal-extracted-v4-20260920:phrase_01_lower_third_safe__es",
+      "family": "phrase",
+      "language": "es",
+      "text": "video terminado combinando",
+      "state": "completed",
+      "sha256": "f159a543b1343c03633d4dd6928a7fa8f2056c7f67d083e0a56538e53442b106",
+      "bytes": 544444,
+      "ink_pixels": 28917
+    },
+    {
+      "job_id": "ml-production-rehearsal-extracted-v4-20260920:phrase_01_lower_third_safe__pt-BR",
+      "family": "phrase",
+      "language": "pt-BR",
+      "text": "vídeo acabado combinando",
+      "state": "completed",
+      "sha256": "40f66075e50d02c2c2c59eb00162c6f22eb87586f1371499fdd8ec454785fa6b",
+      "bytes": 520470,
+      "ink_pixels": 27043
+    },
+    {
+      "job_id": "ml-production-rehearsal-extracted-v4-20260920:phrase_01_lower_third_safe__fr",
+      "family": "phrase",
+      "language": "fr",
+      "text": "combinant méticuleusement jugement",
+      "state": "completed",
+      "sha256": "6b9c63380c87b043b962870b9deaced28769df8138d606343a730002b45432d8",
+      "bytes": 726461,
+      "ink_pixels": 39669
+    },
+    {
+      "job_id": "ml-production-rehearsal-extracted-v4-20260920:phrase_01_lower_third_safe__tr",
+      "family": "phrase",
+      "language": "tr",
+      "text": "yüksek kaliteyi tekrar",
+      "state": "completed",
+      "sha256": "49eb8fad7f570d5a77f01973665abb172678eabeeb530939ec366862ae8e1d02",
+      "bytes": 425615,
+      "ink_pixels": 22088
+    },
+    {
+      "job_id": "ml-production-rehearsal-extracted-v4-20260920:phrase_01_lower_third_safe__id",
+      "family": "phrase",
+      "language": "id",
+      "text": "Konsistensi mengubah ide",
+      "state": "completed",
+      "sha256": "f0f8166844297fac27b85118968b6980f4a4fd4b0943eb589ad1e30b8b43dfd1",
+      "bytes": 503485,
+      "ink_pixels": 26764
+    },
+    {
+      "job_id": "ml-production-rehearsal-extracted-v4-20260920:phrase_02_clean_slide_up__it",
+      "family": "phrase",
+      "language": "it",
+      "text": "progresso raramente arriva",
+      "state": "completed",
+      "sha256": "5cd5817fbbcc31d95796be262e72b8bef1fde67225a7cb39b368e4743012bb25",
+      "bytes": 705803,
+      "ink_pixels": 26135
+    },
+    {
+      "job_id": "ml-production-rehearsal-extracted-v4-20260920:phrase_02_clean_slide_up__en",
+      "family": "phrase",
+      "language": "en",
+      "text": "strong creative workflow",
+      "state": "completed",
+      "sha256": "d41ae95b4b9ccad1a2932ac0e139222ae2f18f1d2f8243abcdaa6d58e89587d3",
+      "bytes": 644074,
+      "ink_pixels": 23842
+    },
+    {
+      "job_id": "ml-production-rehearsal-extracted-v4-20260920:phrase_02_clean_slide_up__pl",
+      "family": "phrase",
+      "language": "pl",
+      "text": "zamiast tego wynika",
+      "state": "completed",
+      "sha256": "a9ed3ff22a571825b83a571accb1f53ccfd4e4bfa0fa7b0e6c59d879af608f25",
+      "bytes": 551400,
+      "ink_pixels": 20526
+    },
+    {
+      "job_id": "ml-production-rehearsal-extracted-v4-20260920:phrase_02_clean_slide_up__ru",
+      "family": "phrase",
+      "language": "ru",
+      "text": "превращает грубую концепцию",
+      "state": "completed",
+      "sha256": "aef809c33b13ea2675748bb23ab52937012d321ec23e95de68ecca3dbefac173",
+      "bytes": 863039,
+      "ink_pixels": 35336
+    },
+    {
+      "job_id": "ml-production-rehearsal-extracted-v4-20260920:phrase_02_clean_slide_up__de",
+      "family": "phrase",
+      "language": "de",
+      "text": "ultimative Ziel geht",
+      "state": "completed",
+      "sha256": "5d0d6ea8532c6f63a83ebeac3bfb94700619239808ce413b5a316b6a0349c01f",
+      "bytes": 515163,
+      "ink_pixels": 20099
+    },
+    {
+      "job_id": "ml-production-rehearsal-extracted-v4-20260920:phrase_02_clean_slide_up__es",
+      "family": "phrase",
+      "language": "es",
+      "text": "objetivo final trasciende",
+      "state": "completed",
+      "sha256": "cc04d3c9abf93639373f10b42dc82c79e4b9db2e9cfbda805eba3743af4295a2",
+      "bytes": 644620,
+      "ink_pixels": 24618
+    },
+    {
+      "job_id": "ml-production-rehearsal-extracted-v4-20260920:phrase_02_clean_slide_up__pt-BR",
+      "family": "phrase",
+      "language": "pt-BR",
+      "text": "meticulosamente julgamento editorial",
+      "state": "completed",
+      "sha256": "ebc363b9fd6222cf135280702c4e79600884e45a6c8a0c5921317a868144c748",
+      "bytes": 974230,
+      "ink_pixels": 38739
+    },
+    {
+      "job_id": "ml-production-rehearsal-extracted-v4-20260920:phrase_02_clean_slide_up__fr",
+      "family": "phrase",
+      "language": "fr",
+      "text": "L'objectif ultime transcende",
+      "state": "completed",
+      "sha256": "07d3b5b6e1ac1a2ede08797071257ccceb57b12c78b275687a9514c8b971732c",
+      "bytes": 720455,
+      "ink_pixels": 28169
+    },
+    {
+      "job_id": "ml-production-rehearsal-extracted-v4-20260920:phrase_02_clean_slide_up__tr",
+      "family": "phrase",
+      "language": "tr",
+      "text": "sistem inşa ediyor",
+      "state": "completed",
+      "sha256": "dbf58b359b0af79d3ef66c8b38e0bb60c628b025d3a32ea31df13ce55b68e1a7",
+      "bytes": 503545,
+      "ink_pixels": 18299
+    },
+    {
+      "job_id": "ml-production-rehearsal-extracted-v4-20260920:phrase_02_clean_slide_up__id",
+      "family": "phrase",
+      "language": "id",
+      "text": "Sebuah aliran kerja",
+      "state": "completed",
+      "sha256": "ff6692e6e2282ed27fab2b762a9487f91bcaa4e7d999e01dfecdef1ddc68b3ba",
+      "bytes": 510462,
+      "ink_pixels": 19617
+    },
+    {
+      "job_id": "ml-production-rehearsal-extracted-v4-20260920:phrase_03_scale_pop__it",
+      "family": "phrase",
+      "language": "it",
+      "text": "video finito combinando",
+      "state": "completed",
+      "sha256": "cb60c6058dda0c32cf4e5af87e0cdffc4208fd367a130d9c9e6aa7bec6892c01",
+      "bytes": 552693,
+      "ink_pixels": 24193
+    },
+    {
+      "job_id": "ml-production-rehearsal-extracted-v4-20260920:phrase_03_scale_pop__en",
+      "family": "phrase",
+      "language": "en",
+      "text": "entire system capable",
+      "state": "completed",
+      "sha256": "46d32625f307271155c1a0dcb8a0105f65743d35b5c6dfb0e98862f4ae8d0f9f",
+      "bytes": 515310,
+      "ink_pixels": 21795
+    },
+    {
+      "job_id": "ml-production-rehearsal-extracted-v4-20260920:phrase_03_scale_pop__pl",
+      "family": "phrase",
+      "language": "pl",
+      "text": "powtarzania wyraźnego procesu",
+      "state": "completed",
+      "sha256": "80f384f7689e4eaa0a783f97bbb754989a41fca5fd0856ac89ea6a08ea63cb9e",
+      "bytes": 745084,
+      "ink_pixels": 30877
+    },
+    {
+      "job_id": "ml-production-rehearsal-extracted-v4-20260920:phrase_03_scale_pop__ru",
+      "family": "phrase",
+      "language": "ru",
+      "text": "сочетая редакционное суждение",
+      "state": "completed",
+      "sha256": "9e69e0b412b076cdde7bead0f02f048143e87d1daabc57cc62733bec4e5acf5e",
+      "bytes": 819255,
+      "ink_pixels": 37337
+    },
+    {
+      "job_id": "ml-production-rehearsal-extracted-v4-20260920:phrase_03_scale_pop__de",
+      "family": "phrase",
+      "language": "de",
+      "text": "erfolgreichen Clips hinaus",
+      "state": "completed",
+      "sha256": "a5947402263c2deaeaa4312a85c27327102c700d3e8b979ffc15250f51fcf8eb",
+      "bytes": 603744,
+      "ink_pixels": 26768
+    },
+    {
+      "job_id": "ml-production-rehearsal-extracted-v4-20260920:phrase_03_scale_pop__es",
+      "family": "phrase",
+      "language": "es",
+      "text": "sistema completo capaz",
+      "state": "completed",
+      "sha256": "c69ff436a929792bff0e5cfa8861bba7621b0f2ffd106f863d9113647ad4e7a5",
+      "bytes": 560155,
+      "ink_pixels": 23816
+    },
+    {
+      "job_id": "ml-production-rehearsal-extracted-v4-20260920:phrase_03_scale_pop__pt-BR",
+      "family": "phrase",
+      "language": "pt-BR",
+      "text": "objetivo final transcende",
+      "state": "completed",
+      "sha256": "442a431b350d80fa39b85f007a344f6b9f3335396215d7becf675e244f41d48e",
+      "bytes": 570747,
+      "ink_pixels": 24958
+    },
+    {
+      "job_id": "ml-production-rehearsal-extracted-v4-20260920:phrase_03_scale_pop__fr",
+      "family": "phrase",
+      "language": "fr",
+      "text": "construction d'un système",
+      "state": "completed",
+      "sha256": "024add67b4156ffeed1b98afad8291bc53663c33018467b85f417fa242375f62",
+      "bytes": 608118,
+      "ink_pixels": 26420
+    },
+    {
+      "job_id": "ml-production-rehearsal-extracted-v4-20260920:phrase_03_scale_pop__tr",
+      "family": "phrase",
+      "language": "tr",
+      "text": "yaratıcı iş akışı",
+      "state": "completed",
+      "sha256": "cac845e645bffda0c7db2ddbdfa99111ec9465e57d85afe26be5735ba376bf20",
+      "bytes": 363021,
+      "ink_pixels": 15494
+    },
+    {
+      "job_id": "ml-production-rehearsal-extracted-v4-20260920:phrase_03_scale_pop__id",
+      "family": "phrase",
+      "language": "id",
+      "text": "mengubah konsep kasar",
+      "state": "completed",
+      "sha256": "5f7b56eb126a0e7503dddc76cd31b6157b4f621e5ceb8417ded60956f8bd531e",
+      "bytes": 560405,
+      "ink_pixels": 24141
+    }
+  ],
+  "verdict": "PASS"
+}
