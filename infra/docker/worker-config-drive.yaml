@@ -36,8 +36,11 @@ health:
 drive:
   enabled: true
   mode: oauth
-  # Google OAuth2 client + user token (copied from PipelineGen's repo; never
-  # committed). The token's account owns the target folder.
+  # Google OAuth2 client + user token — never in the repo. Canonical host
+  # location is ~/.config/velox/credentials.json and token.json (0600,
+  # gitignored everywhere); the container bind-mounts them at
+  # /etc/renderinggen/credentials.json and token.json and drive-upload defaults
+  # to that path. See infra/docker/README.md.
   credentials_file: /etc/renderinggen/credentials.json
   token_file: /etc/renderinggen/token.json
   # Target Drive folder (the user's "renders" folder).

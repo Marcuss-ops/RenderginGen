@@ -194,6 +194,18 @@ func applyPresetDefinition(layer *Layer, d PresetDefinition) {
 		s := d.Style.Shadow
 		layer.Style.Shadow = &LayerShadow{Color: s.Color, Opacity: s.Opacity, Blur: s.Blur, Offset: append([]float64(nil), s.Offset...)}
 	}
+	// The preset's halo travels as the wire glow block Chronon's decoder reads
+	// (render_plan_decoder_layer.cpp). Never overwrite a producer-declared
+	// glow: the plan owns the explicit override, the preset is the default.
+	if d.Style.Glow != nil && layer.Style.Glow == nil {
+		g := d.Style.Glow
+		layer.Style.Glow = &LayerGlow{
+			Radius: g.Radius, Intensity: g.Intensity, Threshold: g.Threshold,
+			Falloff: g.Falloff, CoreStrength: g.CoreStrength,
+			AuraStrength: g.AuraStrength, BloomStrength: g.BloomStrength,
+			HighQuality: g.HighQuality,
+		}
+	}
 }
 
 // animationForDefinition lowers a preset's motion without a concrete layer

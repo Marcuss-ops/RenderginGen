@@ -24,15 +24,16 @@ const (
 const officialFontPath = "assets/fonts/Poppins-Bold.ttf"
 
 // textSpec is the text-family authoring row: an anchor, an alignment, the
-// motion id/unit the preset selects by default, and its enter/exit windows.
-func textSpec(anchor, align, anim, unit string, enter, exit int, shadow *StyleShadow) presetSpec {
-	return presetSpec{family: PresetText, anchor: anchor, align: align, anim: anim, unit: unit, enter: enter, exit: exit, shadow: shadow}
+// motion id/unit the preset selects by default, its enter/exit windows, and
+// the legibility pair (stroke + shadow) plus the optional halo (glow).
+func textSpec(anchor, align, anim, unit string, enter, exit int, shadow *StyleShadow, glow *StyleGlow) presetSpec {
+	return presetSpec{family: PresetText, anchor: anchor, align: align, anim: anim, unit: unit, enter: enter, exit: exit, shadow: shadow, glow: glow}
 }
 
 // staticTextSmokeSpec is the smoke preset's row: safe_area, centered, no
 // motion, no shadow (makePreset adds neither stroke nor shadow for it).
 func staticTextSmokeSpec() presetSpec {
-	return textSpec("safe_area", "center", "", "line", 0, 0, nil)
+	return textSpec("safe_area", "center", "", "line", 0, 0, nil, nil)
 }
 
 // canonicalTextPreset is the Apple-style phrase preset: the 1920-wide phrase
@@ -41,7 +42,7 @@ func staticTextSmokeSpec() presetSpec {
 func canonicalTextPreset() PresetDefinition {
 	d := makePreset(CanonicalTextPresetID, textSpec("safe_area", "center", "apple_phrase_v2", "glyph", 72, 6, &StyleShadow{
 		Color: "#000000", Opacity: 0.72, Blur: 12, Offset: []float64{0, 4},
-	}))
+	}, canaryGlow()))
 	d.Layout.BoxWidth = 1920
 	d.Layout.BoxHeight = 220
 	d.Style.FontSize = 64

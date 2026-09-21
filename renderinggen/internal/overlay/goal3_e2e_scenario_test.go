@@ -33,7 +33,9 @@ func TestGoal3_FinalClipBackgroundWatermark(t *testing.T) {
 	t.Logf("outputs: %s", outDir)
 
 	// A font asset must exist at the logical path the watermark references.
-	fontSource := filepath.Join(repoRootAt(t), "RenderingGen", "testdata", "golden", "Poppins-Bold.ttf")
+	// Canonical fixture location is testdata/golden/assets/fonts/; flat
+	// testdata/golden/Poppins-Bold.ttf is a compatibility shim.
+	fontSource := filepath.Join(repoRootAt(t), "RenderingGen", "testdata", "golden", "assets", "fonts", "Poppins-Bold.ttf")
 	if data, err := os.ReadFile(fontSource); err == nil {
 		fontTarget := filepath.Join(assetsRoot, "assets", "semantic", "goal3-font", "Poppins-Bold.ttf")
 		if err := os.MkdirAll(filepath.Dir(fontTarget), 0o755); err != nil {

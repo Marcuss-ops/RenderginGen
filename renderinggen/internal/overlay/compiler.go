@@ -303,6 +303,7 @@ type LayerStyle struct {
 	Fill     string       `json:"fill,omitempty"`
 	Stroke   *LayerStroke `json:"stroke,omitempty"`
 	Shadow   *LayerShadow `json:"shadow,omitempty"`
+	Glow     *LayerGlow   `json:"glow,omitempty"`
 }
 type LayerStroke struct {
 	Color string  `json:"color,omitempty"`
@@ -332,6 +333,16 @@ type LayerShadow struct {
 	Opacity float64   `json:"opacity,omitempty"`
 	Blur    float64   `json:"blur,omitempty"`
 	Offset  []float64 `json:"offset,omitempty"`
+}
+type LayerGlow struct {
+	Radius        float64 `json:"radius"`
+	Intensity     float64 `json:"intensity"`
+	Threshold     float64 `json:"threshold"`
+	Falloff       float64 `json:"falloff"`
+	CoreStrength  float64 `json:"core_strength"`
+	AuraStrength  float64 `json:"aura_strength"`
+	BloomStrength float64 `json:"bloom_strength"`
+	HighQuality   bool    `json:"high_quality"`
 }
 type LayerAnimation struct {
 	Tracks        []AnimationTrack `json:"tracks,omitempty"`
