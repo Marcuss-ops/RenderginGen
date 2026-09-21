@@ -350,15 +350,22 @@ func sampleLuma(t *testing.T, path string, frame, x, y int) float64 {
 
 // entityCoverage returns the canvas region the compiled entity layer occupies
 // at its resting placement, so background sampling never reads a pixel that
-// belongs to the entity itself. Chronon centers both image and text frames at
-// canvas_centre + position. The background color layer is ignored.
+// belongs to the entity itself. The engine reads the position field per layer
+// type: a text layer already carries the layer centre in absolute canvas
+// coordinates (the engine subtracts canvas/2 itself), while an image layer
+// carries an offset from the canvas centre. The background color layer is
+// ignored.
 func entityCoverage(plan *Plan) [4]float64 {
 	for _, layer := range plan.Layers {
 		if (layer.Type != "image" && layer.Type != "text") || len(layer.Position) < 2 || len(layer.Size) < 2 {
 			continue
 		}
-		cx := layer.Position[0] + float64(plan.Canvas.Width)/2
-		cy := layer.Position[1] + float64(plan.Canvas.Height)/2
+		cx := layer.Position[0]
+		cy := layer.Position[1]
+		if layer.Type != "text" {
+			cx += float64(plan.Canvas.Width) / 2
+			cy += float64(plan.Canvas.Height) / 2
+		}
 		return [4]float64{cx - layer.Size[0]/2, cy - layer.Size[1]/2, cx + layer.Size[0]/2, cy + layer.Size[1]/2}
 	}
 	return [4]float64{}

@@ -130,10 +130,11 @@ func TestCompileSemanticTextUsesExplicitCanvasLocalBox(t *testing.T) {
 	if len(layer.Size) != 2 || layer.Size[0] != 1920 || layer.Size[1] != 120 {
 		t.Fatalf("text local box = %#v, want [1920 120]", layer.Size)
 	}
-	// Chronon centers the text frame internally; the layer position is an
-	// offset from the canvas center, so the canonical centered value is [0,0].
-	if len(layer.Position) != 2 || layer.Position[0] != 0 || layer.Position[1] != 0 {
-		t.Fatalf("centered text position = %#v, want [0 0]", layer.Position)
+	// A text layer's plan position is its centre in absolute canvas
+	// coordinates; the engine subtracts canvas/2 itself, so the canonical
+	// centred text on 1920x1080 is [960, 540].
+	if len(layer.Position) != 2 || layer.Position[0] != 960 || layer.Position[1] != 540 {
+		t.Fatalf("centered text position = %#v, want [960 540]", layer.Position)
 	}
 	if len(layer.TextAnimators) != 1 || layer.TextAnimators[0].Selectors[0].Unit != "glyph" {
 		t.Fatalf("ABC selector fixture was not transported: %#v", layer.TextAnimators)

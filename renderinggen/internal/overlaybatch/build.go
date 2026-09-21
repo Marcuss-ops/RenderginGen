@@ -135,7 +135,8 @@ type TysonBuildOptions struct {
 }
 
 // BuildTysonManifest reads the fixed request and writes the batch manifest for
-// the ten phrase overlays and the five entity image overlays.
+// the phrase overlays (one per phrase motion the embedded ChrononTemplate
+// catalog declares) and the five entity image overlays.
 //
 // The phrases are the request's own extraction block, and each one is checked
 // against its source segment: a phrase that no longer appears in the segment it
@@ -181,9 +182,12 @@ func BuildTysonManifest(opts TysonBuildOptions) (*BuildResult, error) {
 	phrases := item.MediaPlan.Extraction.ImportantPhrases
 	segments := item.ScriptParams.Segments
 	// The pairing of phrase index to motion is catalog data (ChrononTemplate's
-	// selection), not a literal list here: the ten overlays stay visually
+	// selection), not a literal list here: the overlays stay visually
 	// distinguishable because the catalog pairs each phrase with a distinct
-	// official motion, in order.
+	// official motion, in order. The request must therefore carry exactly one
+	// phrase per catalog motion — a request with more phrases than the catalog
+	// has motions is a producer that out-ran the vocabulary, and rendering only
+	// the first N would silently drop the rest.
 	phraseMotions := motion.PhraseMotions()
 	if len(phraseMotions) == 0 {
 		return nil, fmt.Errorf("overlaybatch: the embedded ChrononTemplate catalog declares no phrase-motion selection")

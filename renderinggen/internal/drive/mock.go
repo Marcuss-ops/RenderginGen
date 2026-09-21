@@ -6,13 +6,15 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 )
 
-// Mock is an in-process Publisher for tests and the local e2e smoke. It writes
-// uploaded bytes to a directory and can fail the first N uploads, which lets a
-// test exercise the publication-retry path deterministically (first upload
-// fails, retry succeeds) without a real Google Drive account.
+// Mock is an in-process Publisher and FolderCreator for tests and the local e2e
+// smoke. It writes uploaded bytes to a directory and can fail the first N
+// uploads, which lets a test exercise the publication-retry path
+// deterministically (first upload fails, retry succeeds) without a real Google
+// Drive account.
 type Mock struct {
 	mu        sync.Mutex
 	dir       string
@@ -26,6 +28,31 @@ type Mock struct {
 // before succeeding.
 func NewMock(dir string, failFirst int) *Mock {
 	return &Mock{dir: dir, failFirst: failFirst}
+}
+
+// EnsureFolder creates the folder under the mock's directory and returns a
+// deterministic id derived from (parent, name) — the same pair always yields
+// the same id, which is what makes the get-or-create contract observable
+// without a Drive account. Like Publish, the mock ignores the parent for the
+// on-disk layout: it has one root, not a Drive hierarchy.
+func (m *Mock) EnsureFolder(_ context.Context, parentFolderID, name string) (string, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	trimmed := strings.TrimSpace(name)
+	if trimmed == "" {
+		return "", fmt.Errorf("drive: mock ensure folder: folder name is required")
+	}
+	parent := strings.TrimSpace(parentFolderID)
+	if parent == "" {
+		return "", fmt.Errorf("drive: mock ensure folder %q: parent folder id is required", trimmed)
+	}
+	if m.dir != "" {
+		if err := os.MkdirAll(filepath.Join(m.dir, trimmed), 0o755); err != nil {
+			return "", fmt.Errorf("drive: mock ensure folder %q: %w", trimmed, err)
+		}
+	}
+	return "mock-folder-" + parent + "-" + trimmed, nil
 }
 
 // Publish fails the first failFirst calls, then writes the artifact to dir and

@@ -40,7 +40,7 @@ func (p *Processor) Publish(ctx context.Context, jobID, jobType string, artifact
 		// do. Make the skip observable so declared intent degradation is
 		// visible in metrics.
 		if policy == PublicationObjectStoreAndDrive {
-			artifact.Metrics["publication_drive_skipped_no_capability"] = 1
+			artifact.Metrics[metricnames.PublicationDriveSkippedCapability] = 1
 			log.Printf("job %s: drive publication skipped (policy %s but no drive capability)", jobID, policy)
 		}
 		return artifact, nil
@@ -50,7 +50,7 @@ func (p *Processor) Publish(ctx context.Context, jobID, jobType string, artifact
 		// publishes clips to their destination folders). Skip the Drive
 		// upload and say so, so runs never confuse "no Drive phase" with a
 		// fast upload.
-		artifact.Metrics["publication_drive_skipped_by_policy"] = 1
+		artifact.Metrics[metricnames.PublicationDriveSkippedPolicy] = 1
 		log.Printf("job %s: drive publication skipped (resolved policy %s; submitter owns delivery)", jobID, policy)
 		return artifact, nil
 	}

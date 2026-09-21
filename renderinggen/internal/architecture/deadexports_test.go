@@ -29,6 +29,15 @@ package architecture
 //     also keeps interface implementations live: `Service` calls
 //     `repo.SubmitIdempotent`, so the memory repository's implementation is
 //     reachable even though its own package never names it.
+//   - a METHOD named in stdlibInterfaceMethods (today only encoding/json's
+//     UnmarshalJSON) is live when the interface it implements is asserted in
+//     the corpus. The library invokes that method through reflection, so no Go
+//     file can ever contain the call site the identifier count looks for; the
+//     `var _ json.Unmarshaler = (*T)(nil)` assertion is the one place the
+//     wiring can be stated, and it is a deliberate claim about the code rather
+//     than a name that happens to reappear. Without this rule the check reports
+//     a false positive the moment a genuinely dead sibling method with the same
+//     name is deleted, which is what happened to semanticItem.UnmarshalJSON.
 //
 // The check is deliberately conservative in the direction of false negatives:
 // a name reused by a live sibling can mask a dead one. It is exact for the case
@@ -60,6 +69,30 @@ var deadExportModules = []string{"renderinggen", "queue", "objectstore"}
 // ghost entry (naming a symbol that no longer exists) is an error, so a
 // carve-out cannot silently outlive the code it was written for.
 var deadExportExceptions = map[string]string{}
+
+// stdlibInterfaceMethods maps a standard-library interface to the method it
+// invokes without a call site in the consumer's source. Only the entries that
+// are needed belong here: this is an extension point for the next reflection
+// hook, not a catalogue, because an unused entry can only widen the
+// false-negative window the scan already tolerates.
+var stdlibInterfaceMethods = map[string][]string{
+	"Unmarshaler": {"UnmarshalJSON"},
+}
+
+// interfaceHookRefs counts the corpus-wide assertions of every standard-library
+// interface that requires a method with this name. An implementation without
+// its assertion contributes zero, so it stays reported as dead.
+func interfaceHookRefs(method string, allIdents map[string]int) int {
+	hookRefs := 0
+	for iface, methods := range stdlibInterfaceMethods {
+		for _, required := range methods {
+			if required == method {
+				hookRefs += allIdents[iface]
+			}
+		}
+	}
+	return hookRefs
+}
 
 // skippedCorpusDirs are directory names the scan never reads. testdata is
 // skipped because it holds fixtures (including Go sources parsed as data), and
@@ -172,7 +205,7 @@ func scanDeadExports(root string, modules []string) (*deadExportScan, error) {
 	for _, d := range scan.declared {
 		refs := 0
 		if d.Method {
-			refs = allIdents[d.Name]
+			refs = allIdents[d.Name] + interfaceHookRefs(d.Name, allIdents)
 		} else {
 			for _, cf := range corpus {
 				if cf.dir == d.Dir {
@@ -372,6 +405,61 @@ func TestNoDeadExports(t *testing.T) {
 		}
 		t.Errorf("exported %s is referenced nowhere in RenderingGen: wire it, unexport it, or delete it. A zero-caller export is either dead code or a contract nobody honours. If its consumer lives outside this repository, add it to deadExportExceptions with the reason.", d)
 	}
+}
+
+// TestDeadExportScanSeesStdlibInterfaceHooks pins the one rule the identifier
+// count cannot reach. encoding/json invokes UnmarshalJSON through reflection, so
+// a type that implements the hook has no call site that any file could name; the
+// rule fires on the `var _ json.Unmarshaler = (*T)(nil)` assertion, which is a
+// deliberate claim about the code. It must NOT fire without one, otherwise the
+// carve-out would be indistinguishable from a method nobody calls.
+func TestDeadExportScanSeesStdlibInterfaceHooks(t *testing.T) {
+	// The two corpora differ by exactly the assertion line.
+	corpus := func(assertion string) string {
+		return `package mod
+
+import "encoding/json"
+
+type item struct{}
+
+// UnmarshalJSON is the wire contract for item.
+func (i *item) UnmarshalJSON(b []byte) error { return json.Unmarshal(b, i) }
+` + assertion
+	}
+
+	methodIsDead := func(body string) bool {
+		t.Helper()
+		root := t.TempDir()
+		path := filepath.Join(root, "mod", "item.go")
+		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(path, []byte(body), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		scan, err := scanDeadExports(root, []string{"mod"})
+		if err != nil {
+			t.Fatalf("scan synthetic corpus: %v", err)
+		}
+		for _, d := range scan.dead {
+			if d.Name == "UnmarshalJSON" {
+				return true
+			}
+		}
+		return false
+	}
+
+	t.Run("the interface assertion keeps the reflection hook live", func(t *testing.T) {
+		if body := corpus("\nvar _ json.Unmarshaler = (*item)(nil)\n"); methodIsDead(body) {
+			t.Errorf("an asserted json.Unmarshaler implementation was reported dead; encoding/json calls it reflectively, so the assertion is its only visible wiring")
+		}
+	})
+
+	t.Run("without the assertion the same method stays dead", func(t *testing.T) {
+		if body := corpus(""); !methodIsDead(body) {
+			t.Errorf("an UnmarshalJSON implementation that nothing asserts and nothing calls was reported live; the hook rule must key on the assertion, not on the method name")
+		}
+	})
 }
 
 // TestDeadExportScanDetectsSyntheticCase proves the scanner fires, and that it

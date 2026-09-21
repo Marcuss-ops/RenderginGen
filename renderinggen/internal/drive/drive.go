@@ -1,9 +1,15 @@
-// Package drive publishes rendered artifacts to Google Drive.
+// Package drive publishes rendered artifacts to Google Drive and materialises
+// the destination folders an operator asks for.
 //
 // Rendering is decoupled from external publication: the worker first renders
 // and stores the artifact in the content-addressed object store, then publishes
 // it to Drive. If the Drive upload fails, the job is kept in the "rendered"
 // state and a retry only re-runs the publication — never the GPU render.
+//
+// Two ports leave this package: Publisher (worker path: upload an artifact) and
+// FolderCreator (operator path: find-or-create a destination folder). Both sit
+// on the same find-or-create rule, so a folder a publication created and one an
+// operator asked for by name resolve to the same folder.
 package drive
 
 import (
@@ -61,6 +67,32 @@ type Result struct {
 type Publisher interface {
 	Publish(ctx context.Context, req PublishRequest) (Result, error)
 }
+
+// FolderCreator materialises one folder on the storage provider under an
+// explicit parent and returns its stable id.
+//
+// It is a port next to Publisher rather than a tenth method on it because the
+// two serve different callers: publication is what a worker does to an
+// artifact, folder creation is what an operator does to a destination. Folding
+// them together would force every Publisher (today the Google client and the
+// Mock) to grow a folder method whether or not it can honour the contract.
+//
+// The parent is mandatory and explicit: there is no implicit "My Drive" root,
+// because an empty parent silently writing into the credential owner's root is
+// exactly the failure mode this contract exists to prevent.
+type FolderCreator interface {
+	EnsureFolder(ctx context.Context, parentFolderID, name string) (string, error)
+}
+
+// The two ports and their two implementations must stay in step: a publisher
+// that stops satisfying one of them is a broken seam, not a compile error at
+// the call site.
+var (
+	_ Publisher     = (*Google)(nil)
+	_ FolderCreator = (*Google)(nil)
+	_ Publisher     = (*Mock)(nil)
+	_ FolderCreator = (*Mock)(nil)
+)
 
 // Google publishes artifacts to the real Google Drive API using a service
 // account JSON key.
@@ -316,6 +348,30 @@ func fileMD5(f *os.File) (string, error) {
 		return "", err
 	}
 	return hex.EncodeToString(hasher.Sum(nil)), nil
+}
+
+// EnsureFolder returns the id of the folder `name` under parentFolderID,
+// creating it only when it does not exist yet. It is the operator entry point
+// onto the same find-or-create rule Publish applies for PublishRequest.Subfolder,
+// so a folder created by this call and one created as the side effect of a
+// publication are the same folder — not two folders with the same name.
+//
+// Both arguments are required and are trimmed before use: a blank name would
+// ask Drive to materialise a nameless folder, and a blank parent would place it
+// in the credential owner's root.
+func (g *Google) EnsureFolder(ctx context.Context, parentFolderID, name string) (string, error) {
+	if g == nil || g.service == nil {
+		return "", fmt.Errorf("drive: ensure folder %q: publisher is not configured", name)
+	}
+	parent := strings.TrimSpace(parentFolderID)
+	if parent == "" {
+		return "", fmt.Errorf("drive: ensure folder %q: parent folder id is required", name)
+	}
+	trimmed := strings.TrimSpace(name)
+	if trimmed == "" {
+		return "", fmt.Errorf("drive: ensure folder: folder name is required")
+	}
+	return g.ensureFolder(ctx, parent, trimmed)
 }
 
 func (g *Google) ensureFolder(ctx context.Context, parent, name string) (string, error) {

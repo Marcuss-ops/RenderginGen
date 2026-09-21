@@ -110,9 +110,43 @@ func (s *renderOutputSampler) flush(stream string) (string, bool) {
 var progressFrameRE = regexp.MustCompile(`(?i)(?:\[\s*video\s*]\s*)?(\d+)\s*/\s*(\d+)\s+frames|\b(?:frames?_rendered|frames?_done|frame)\s*[:=]\s*(\d+)`)
 var progressFPSRE = regexp.MustCompile(`(?i)\bfps\s*[:=]\s*([0-9]+(?:\.[0-9]+)?)`)
 
+// lineMentionsFrameProgress reports whether a line can carry a frame position,
+// in ONE case-insensitive pass and with no allocation.
+//
+// It is the pre-filter of the hottest callback in a render: it runs for every
+// line the engine prints (tens of thousands per render, on both the stdout and
+// the stderr scanner), while the regexps below run only for lines that pass it.
+// The previous guard was six strings.Contains calls — "frame"/"Frame"/"FRAME"
+// and "video"/"Video"/"VIDEO" — i.e. up to six full scans of every line to
+// decide whether to pay a seventh. Folding one byte with `| 0x20` tests both
+// cases at once: it maps only 'F'/'f' onto 'f' and only 'V'/'v' onto 'v', so no
+// other byte can start a candidate, and the comparison itself allocates nothing.
+//
+// The fold is strictly more permissive than the three spellings it replaces (it
+// also admits "fRaMe"), which only means a line the case-insensitive regexp
+// below may legitimately match is no longer dropped before it is asked.
+func lineMentionsFrameProgress(line string) bool {
+	const frame, video = "frame", "video"
+	for i := 0; i < len(line); i++ {
+		var keyword string
+		switch line[i] | 0x20 {
+		case 'f':
+			keyword = frame
+		case 'v':
+			keyword = video
+		default:
+			continue
+		}
+		if len(line)-i >= len(keyword) && strings.EqualFold(line[i:i+len(keyword)], keyword) {
+			return true
+		}
+	}
+	return false
+}
+
 func parseProgressLine(line string, total int64) (RenderProgress, bool) {
-	// Fast-path: skip regex on lines that cannot be progress.
-	if !strings.Contains(line, "frame") && !strings.Contains(line, "Frame") && !strings.Contains(line, "FRAME") && !strings.Contains(line, "video") && !strings.Contains(line, "Video") && !strings.Contains(line, "VIDEO") {
+	// Fast-path: skip the regexps on lines that cannot be progress.
+	if !lineMentionsFrameProgress(line) {
 		return RenderProgress{}, false
 	}
 	match := progressFrameRE.FindStringSubmatch(line)

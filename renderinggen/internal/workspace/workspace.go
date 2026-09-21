@@ -73,13 +73,14 @@ func New(jobsRoot, jobID string) (*Workspace, error) {
 // Root returns the workspace root directory.
 func (w *Workspace) Root() string { return w.root }
 
-// AssetsRoot returns the directory assets are materialized into.
+// assetsRoot returns the directory assets are materialized into.
 //
-// Deprecated: test-only. Production code uses Root() — Chronon is invoked
-// with workspace Root as AssetsRoot and asset paths are workspace-relative
-// (see assetPath). This method remains exported only for workspace_test and
-// will be unexported after test migration (D3).
-func (w *Workspace) AssetsRoot() string { return w.assetsDir }
+// Unexported on purpose: production code uses Root() — Chronon is invoked with
+// the workspace root as its assets root and asset paths are workspace-relative
+// (see assetPath) — so this accessor exists for the workspace's own tests. It
+// used to be exported, which advertised a second, contradictory definition of
+// "assets root" to every consumer of the package.
+func (w *Workspace) assetsRoot() string { return w.assetsDir }
 
 // OutputPath returns the path for a rendered output file.
 func (w *Workspace) OutputPath(name string) string {

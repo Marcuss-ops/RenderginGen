@@ -51,29 +51,13 @@ type strokeBlock struct {
 	Width float64 `json:"width,omitempty"`
 }
 
-// UnmarshalJSON accepts both spellings emitted by the two public style
-// contracts. PipelineGen normally emits offset_x/offset_y; older semantic
-// fixtures and clients may still send offset:[x,y]. Keeping the conversion at
-// the wire boundary makes every subtitle and watermark use the same concrete
-// LayerShadow without inventing visual defaults.
-func (s *shadowBlock) UnmarshalJSON(data []byte) error {
-	type shadowAlias shadowBlock
-	var raw struct {
-		*shadowAlias
-		Offset []float64 `json:"offset"`
-	}
-	raw.shadowAlias = (*shadowAlias)(s)
-	if err := json.Unmarshal(data, &raw); err != nil {
-		return err
-	}
-	if len(raw.Offset) > 0 {
-		if len(raw.Offset) != 2 {
-			return fmt.Errorf("overlay: shadow.offset must contain exactly [x,y]")
-		}
-		s.OffsetX, s.OffsetY = raw.Offset[0], raw.Offset[1]
-	}
-	return nil
-}
+// Both spellings the two public style contracts emit are accepted by
+// parseStyleBlock, which reads the plan's style map directly: PipelineGen
+// normally emits offset_x/offset_y, while older semantic fixtures and clients
+// may still send offset:[x,y]. The conversion lives there and nowhere else — an
+// UnmarshalJSON accepting the same alias sat here, but nothing decodes a style
+// block through encoding/json, so it was dead code that read as the authority
+// on the alias rule.
 
 type transitionBlock struct {
 	Preset     string `json:"preset,omitempty"`
@@ -359,6 +343,10 @@ func resolveWatermarkGeometry(position string, canvasW, canvasH, margin int, s *
 		boxH = float64(s.HeightPX)
 	}
 	m := float64(margin)
+	// The returned anchor is the box's ABSOLUTE canvas top-left, not a Chronon
+	// position: the engine reads the plan's position field with two different
+	// semantics for text and non-text layers, so turning this anchor into that
+	// field is canvasBoxPosition's job, at the layer-construction site.
 	toTopLeft := func(x, y float64) []float64 { return []float64{x, y} }
 	size = []float64{boxW, boxH}
 	switch strings.ToLower(strings.TrimSpace(position)) {
@@ -378,10 +366,12 @@ func resolveWatermarkGeometry(position string, canvasW, canvasH, margin int, s *
 }
 
 // subtitleCueGeometry resolves the placement of one burned-in ASS cue from
-// the plan's typed style (position + width) and the canvas. Returns the
-// Chronon centre-offset position and the box size. Unknown positions are a
+// the plan's typed style (position + width) and the canvas. Returns the box's
+// ABSOLUTE canvas top-left anchor and its size; converting that anchor into the
+// plan's position field belongs to canvasBoxPosition, because the engine reads
+// that field differently for text and non-text layers. Unknown positions are a
 // compile failure — the worker never silently relocates subtitles.
-func subtitleCueGeometry(s *styleBlock, canvasW, canvasH, cueLayerCount int) (position, size []float64, err error) {
+func subtitleCueGeometry(s *styleBlock, canvasW, canvasH, cueLayerCount int) (anchor, size []float64, err error) {
 	if strings.TrimSpace(s.Position) == "" {
 		return nil, nil, fmt.Errorf("overlay: subtitle style carries no position — PipelineGen must resolve subtitle placement")
 	}
@@ -413,15 +403,32 @@ func subtitleCueGeometry(s *styleBlock, canvasW, canvasH, cueLayerCount int) (po
 	default:
 		return nil, nil, fmt.Errorf("overlay: unsupported subtitle position %q (supported: bottom_center, top_center, middle_center)", pos)
 	}
-	// Chronon layer positions are offsets from the canvas centre and address
-	// the layer centre: convert the absolute top-left anchor once, here —
-	// symmetrically on both axes. (The historical version converted only X,
-	// leaving Y absolute, so SubtitleStyleAsset/BurnASSIntoPlan — which treat
-	// both coordinates as centre offsets — pushed bottom cues off-canvas.)
-	position = []float64{
-		anchorX + boxW/2 - float64(canvasW)/2,
-		anchorY + boxH/2 - float64(canvasH)/2,
-	}
+	anchor = []float64{anchorX, anchorY}
 	size = []float64{boxW, boxH}
-	return position, size, nil
+	return anchor, size, nil
+}
+
+// canvasBoxPosition converts a box expressed in ABSOLUTE canvas coordinates
+// (top-left anchor + size) into the render-plan `position` field for a layer of
+// the given type.
+//
+// This function is the single owner of that conversion because the engine's
+// decoder (render_plan_compiler_animation.cpp:apply_layer_primitives) reads the
+// field with two different semantics:
+//
+//   - text  — the value IS the layer centre's absolute canvas coordinate; the
+//     engine subtracts canvas/2 itself.
+//   - other — the value is an offset from the canvas centre.
+//
+// Emitting one form for both types is what parked every burned cue in the
+// top-left corner: an absolute top-left anchor was handed to the text branch,
+// which subtracted canvas/2 a second time (960,540 on a 1920x1080 canvas), so a
+// bottom_center cue's centre landed at the anchor minus half a canvas.
+func canvasBoxPosition(layerType string, x, y, w, h float64, canvasW, canvasH int) []float64 {
+	cx := x + w/2
+	cy := y + h/2
+	if layerType == "text" {
+		return []float64{cx, cy}
+	}
+	return []float64{cx - float64(canvasW)/2, cy - float64(canvasH)/2}
 }

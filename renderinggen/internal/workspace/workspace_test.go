@@ -25,7 +25,7 @@ func newWorkspace(t *testing.T) *Workspace {
 func TestNewCreatesDirs(t *testing.T) {
 	w := newWorkspace(t)
 
-	for _, dir := range []string{w.Root(), w.AssetsRoot(), filepath.Dir(w.OutputPath("result.mp4"))} {
+	for _, dir := range []string{w.Root(), w.assetsRoot(), filepath.Dir(w.OutputPath("result.mp4"))} {
 		if st, err := os.Stat(dir); err != nil || !st.IsDir() {
 			t.Fatalf("expected dir %s, err=%v", dir, err)
 		}
@@ -85,7 +85,7 @@ func TestMaterializeWritesLogicalPaths(t *testing.T) {
 	}
 
 	for _, a := range assets {
-		p := filepath.Join(w.AssetsRoot(), filepath.FromSlash(a.LogicalPath))
+		p := filepath.Join(w.assetsRoot(), filepath.FromSlash(a.LogicalPath))
 		data, err := os.ReadFile(p)
 		if err != nil {
 			t.Fatalf("read %s: %v", p, err)

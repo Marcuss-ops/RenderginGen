@@ -13,6 +13,7 @@ import (
 	"sync"
 	"sync/atomic"
 	"testing"
+	"time"
 )
 
 func TestGetResolvesL3AndPromotesToL2(t *testing.T) {
@@ -423,6 +424,68 @@ func TestL2Eviction(t *testing.T) {
 	}
 	if present != 2 {
 		t.Fatalf("want 2 of 3 files retained (10-byte budget), got %d", present)
+	}
+}
+
+// TestL2IndexReconcilesPreExistingObjects pins the startup reconciliation of
+// the L2 budget.
+//
+// The index is a cache of the FILESYSTEM, so it dies with the process that
+// built it. A worker that restarted with the previous run's objects still on
+// disk therefore used to measure its budget against zero and could never evict
+// them: the cache directory grew across restarts until the filesystem filled,
+// at which point every install failed and every asset resolution fell back to
+// an L3 fetch. The object below is written DIRECTLY on disk (never through the
+// cache), which is exactly what the previous process left behind, and the
+// assertion is that the first over-budget install reclaims it.
+func TestL2IndexReconcilesPreExistingObjects(t *testing.T) {
+	dir := t.TempDir()
+
+	// One object from "a previous run", at the path the writer would use.
+	previousKey := Hash([]byte("previous-run"))
+	previousPath := filepath.Join(dir, "assets", previousKey[:2], previousKey)
+	if err := os.MkdirAll(filepath.Dir(previousPath), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	previousBytes := bytes.Repeat([]byte("o"), 1024)
+	if err := os.WriteFile(previousPath, previousBytes, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	// Make it unambiguously the oldest entry, so eviction order is deterministic
+	// instead of depending on filesystem timestamp granularity.
+	old := time.Now().Add(-time.Hour)
+	if err := os.Chtimes(previousPath, old, old); err != nil {
+		t.Fatal(err)
+	}
+
+	// A file that is NOT in the writer's layout: it cannot be addressed through
+	// a content key, so the census must not index (and later try to evict) it.
+	foreignPath := filepath.Join(dir, "assets", "foreign.txt")
+	if err := os.WriteFile(foreignPath, bytes.Repeat([]byte("f"), 4096), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	d := newDiskCache(dir, 1500) // budget below: previous object + one new object
+	d.ensureIndexed()
+
+	if _, ok := d.entries[previousKey]; !ok {
+		t.Fatalf("the object already on disk was not indexed: entries=%d total=%d", len(d.entries), d.total)
+	}
+	if d.total != int64(len(previousBytes)) {
+		t.Fatalf("reconciled total = %d, want exactly the %d bytes of the pre-existing object (a foreign file must not be counted)",
+			d.total, len(previousBytes))
+	}
+
+	// The install that overflows the budget must reclaim the pre-existing object.
+	newBytes := bytes.Repeat([]byte("n"), 1024)
+	if _, _, err := d.PutBytes(Hash(newBytes), newBytes); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(previousPath); !os.IsNotExist(err) {
+		t.Fatalf("the pre-existing object survived an over-budget install (stat err = %v): the budget is not measured against disk", err)
+	}
+	if _, err := os.Stat(foreignPath); err != nil {
+		t.Fatalf("the foreign file must never be evicted by the cache: %v", err)
 	}
 }
 

@@ -13,11 +13,25 @@
 //
 // FAIL-CLOSED on everything else: ValidateFile rejects a schema that uses any
 // keyword this package does not implement (recursively, in every subschema
-// position). The historical behavior ignored unknown keywords, so a contract
-// written with `pattern`/`maxLength`/`uniqueItems` validated LESS than it
-// claimed and the boundary tests passed anyway — a false guarantee. A schema
-// author now gets a loud, explicit failure instead, and the fix is either to
-// implement the keyword or to remove it from the contract.
+// position), AND rejects an implemented keyword whose VALUE has a shape this
+// package cannot enforce (a `type` array holding an unknown name, a non-array
+// `enum`, a non-string `pattern`, a `$ref` that is not a string, …). The
+// historical behavior ignored unknown keywords, so a contract written with
+// `pattern`/`maxLength`/`uniqueItems` validated LESS than it claimed and the
+// boundary tests passed anyway — a false guarantee. A schema author now gets a
+// loud, explicit failure instead, and the fix is either to implement the keyword
+// or to remove it from the contract.
+//
+// Two traps this package must never fall into, both of which make a supported
+// keyword validate NOTHING:
+//
+//   - siblings of $ref. Draft 2020-12 applies `$ref` AND the keywords next to
+//     it, so `{"$ref": "#/$defs/x", "required": [...]}` constrains with both.
+//     Returning as soon as the reference resolves would drop the sibling
+//     constraint silently.
+//   - a `type` in array form (`["string", "null"]`). Type-asserting
+//     `schema["type"].(string)` and ignoring the failure means the constraint
+//     disappears; both forms are enforced below.
 package schemaval
 
 import (
@@ -29,7 +43,40 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+	"sync"
 )
+
+// knownTypeNames is the complete set of JSON Schema primitive type names, plus
+// "null" (which the data model of `any` can represent). A name outside this set
+// is a schema authoring bug, not a constraint to ignore.
+var knownTypeNames = map[string]bool{
+	"object": true, "array": true, "string": true, "number": true,
+	"integer": true, "boolean": true, "null": true,
+}
+
+// maxRefDepth bounds $ref indirection. A self-referential schema
+// ({"$ref": "#"}) would otherwise recurse until the stack dies; the error is
+// explicit instead.
+const maxRefDepth = 64
+
+// patternCache memoizes compiled `pattern` regexps. The keyword is evaluated
+// once per matching string INSTANCE, so compiling per value put a regexp
+// compilation (and its allocation) inside the per-item boundary check of every
+// contract test. Keyed by pattern text, which comes from the schemas, so the
+// cache is bounded by the contract surface.
+var patternCache sync.Map // string -> *regexp.Regexp
+
+func compilePattern(pattern string) (*regexp.Regexp, error) {
+	if cached, ok := patternCache.Load(pattern); ok {
+		return cached.(*regexp.Regexp), nil
+	}
+	re, err := regexp.Compile(pattern)
+	if err != nil {
+		return nil, err
+	}
+	patternCache.Store(pattern, re)
+	return re, nil
+}
 
 // valueKeywords are leaf validation keywords: they constrain the instance and
 // contain no subschemas to recurse into.
@@ -61,13 +108,81 @@ var subschemaMap = map[string]bool{
 	"properties": true, "$defs": true, "definitions": true,
 }
 
+// checkValueKeywordShapes rejects an implemented keyword whose value cannot be
+// enforced as declared. Without it, a shape the validator does not understand
+// degrades to "no constraint": `type: ["string","null"]` and `enum: "a"` both
+// used to pass every document, so the gate reported a boundary it never checked.
+func checkValueKeywordShapes(m map[string]any, at string, unsupported *[]string) {
+	if raw, ok := m["$ref"]; ok {
+		if _, isString := raw.(string); !isString {
+			*unsupported = append(*unsupported, at+".$ref (not a string)")
+		}
+	}
+	if raw, ok := m["type"]; ok {
+		switch value := raw.(type) {
+		case string:
+			if !knownTypeNames[value] {
+				*unsupported = append(*unsupported, at+".type (unknown type name "+value+")")
+			}
+		case []any:
+			if len(value) == 0 {
+				*unsupported = append(*unsupported, at+".type (empty array)")
+			}
+			for _, name := range value {
+				s, isString := name.(string)
+				if !isString || !knownTypeNames[s] {
+					*unsupported = append(*unsupported, at+".type (array element is not a known type name)")
+					break
+				}
+			}
+		default:
+			*unsupported = append(*unsupported, at+".type (not a string or array of strings)")
+		}
+	}
+	if raw, ok := m["enum"]; ok {
+		list, isArray := raw.([]any)
+		if !isArray || len(list) == 0 {
+			*unsupported = append(*unsupported, at+".enum (not a non-empty array)")
+		}
+	}
+	if raw, ok := m["required"]; ok {
+		list, isArray := raw.([]any)
+		if !isArray {
+			*unsupported = append(*unsupported, at+".required (not an array)")
+		} else {
+			for _, name := range list {
+				if _, isString := name.(string); !isString {
+					*unsupported = append(*unsupported, at+".required (element is not a string)")
+					break
+				}
+			}
+		}
+	}
+	if raw, ok := m["pattern"]; ok {
+		pattern, isString := raw.(string)
+		if !isString {
+			*unsupported = append(*unsupported, at+".pattern (not a string)")
+		} else if _, err := compilePattern(pattern); err != nil {
+			*unsupported = append(*unsupported, at+".pattern (does not compile: "+err.Error()+")")
+		}
+	}
+	for _, key := range []string{"minimum", "maximum", "exclusiveMinimum", "exclusiveMaximum", "minItems", "maxItems", "minLength", "maxLength"} {
+		if raw, ok := m[key]; ok {
+			if _, isNumber := raw.(float64); !isNumber {
+				*unsupported = append(*unsupported, at+"."+key+" (not a number)")
+			}
+		}
+	}
+}
+
 // checkSupported walks the schema and returns an error naming every keyword
-// this package does not implement, so an unsupported constraint is never
-// silently ignored.
+// this package does not implement (or cannot enforce), so an unsupported
+// constraint is never silently ignored.
 func checkSupported(node map[string]any, path string) error {
 	var unsupported []string
 	var walk func(map[string]any, string)
 	walk = func(m map[string]any, at string) {
+		checkValueKeywordShapes(m, at, &unsupported)
 		keys := make([]string, 0, len(m))
 		for key := range m {
 			keys = append(keys, key)
@@ -151,16 +266,24 @@ func ValidateFile(doc []byte, schemaPath string) error {
 	if err := json.Unmarshal(doc, &d); err != nil {
 		return fmt.Errorf("decode document: %w", err)
 	}
-	return validate(d, schema, schema, "#")
+	return validate(d, schema, schema, "#", 0)
 }
 
-func validate(doc any, schema, root map[string]any, path string) error {
+func validate(doc any, schema, root map[string]any, path string, refDepth int) error {
 	if ref, ok := schema["$ref"].(string); ok {
+		if refDepth >= maxRefDepth {
+			return fmt.Errorf("%s: $ref chain longer than %d (self-referential schema?)", path, maxRefDepth)
+		}
 		target, err := resolveRef(root, ref)
 		if err != nil {
 			return fmt.Errorf("%s: %w", path, err)
 		}
-		return validate(doc, target, root, path)
+		// Siblings of $ref are applied too (draft 2020-12), so the reference is
+		// checked first and then the rest of THIS schema's keywords are applied
+		// by falling through — never by returning here.
+		if err := validate(doc, target, root, path, refDepth+1); err != nil {
+			return err
+		}
 	}
 	if c, ok := schema["const"]; ok {
 		if !deepEqual(doc, c) {
@@ -179,10 +302,8 @@ func validate(doc any, schema, root map[string]any, path string) error {
 			return fmt.Errorf("%s: value %v is not in enum", path, doc)
 		}
 	}
-	if t, ok := schema["type"].(string); ok {
-		if !hasType(doc, t) {
-			return fmt.Errorf("%s: want type %s, got %T", path, t, doc)
-		}
+	if err := validateType(doc, schema, path); err != nil {
+		return err
 	}
 	for _, key := range []string{"allOf"} {
 		if list, ok := schema[key].([]any); ok {
@@ -191,7 +312,7 @@ func validate(doc any, schema, root map[string]any, path string) error {
 				if !ok {
 					continue
 				}
-				if err := validate(doc, m, root, fmt.Sprintf("%s/%s[%d]", path, key, i)); err != nil {
+				if err := validate(doc, m, root, fmt.Sprintf("%s/%s[%d]", path, key, i), refDepth); err != nil {
 					return err
 				}
 			}
@@ -205,7 +326,7 @@ func validate(doc any, schema, root map[string]any, path string) error {
 			if !ok {
 				continue
 			}
-			if err := validate(doc, m, root, path); err == nil {
+			if err := validate(doc, m, root, path, refDepth); err == nil {
 				okAny = true
 				break
 			} else {
@@ -223,7 +344,7 @@ func validate(doc any, schema, root map[string]any, path string) error {
 			if !ok {
 				continue
 			}
-			if err := validate(doc, m, root, path); err == nil {
+			if err := validate(doc, m, root, path, refDepth); err == nil {
 				matches++
 			}
 		}
@@ -232,14 +353,14 @@ func validate(doc any, schema, root map[string]any, path string) error {
 		}
 	}
 	if cond, ok := schema["if"].(map[string]any); ok {
-		if err := validate(doc, cond, root, path); err == nil {
+		if err := validate(doc, cond, root, path, refDepth); err == nil {
 			if thenS, ok := schema["then"].(map[string]any); ok {
-				if err := validate(doc, thenS, root, path); err != nil {
+				if err := validate(doc, thenS, root, path, refDepth); err != nil {
 					return err
 				}
 			}
 		} else if elseS, ok := schema["else"].(map[string]any); ok {
-			if err := validate(doc, elseS, root, path); err != nil {
+			if err := validate(doc, elseS, root, path, refDepth); err != nil {
 				return err
 			}
 		}
@@ -258,7 +379,7 @@ func validate(doc any, schema, root map[string]any, path string) error {
 		props, _ := schema["properties"].(map[string]any)
 		for key, val := range d {
 			if sub, ok := props[key].(map[string]any); ok {
-				if err := validate(val, sub, root, path+"."+key); err != nil {
+				if err := validate(val, sub, root, path+"."+key, refDepth); err != nil {
 					return err
 				}
 				continue
@@ -270,7 +391,7 @@ func validate(doc any, schema, root map[string]any, path string) error {
 						return fmt.Errorf("%s: additional property %q is not allowed", path, key)
 					}
 				case map[string]any:
-					if err := validate(val, apv, root, path+"."+key); err != nil {
+					if err := validate(val, apv, root, path+"."+key, refDepth); err != nil {
 						return err
 					}
 				}
@@ -279,7 +400,7 @@ func validate(doc any, schema, root map[string]any, path string) error {
 	case []any:
 		if items, ok := schema["items"].(map[string]any); ok {
 			for i, item := range d {
-				if err := validate(item, items, root, fmt.Sprintf("%s[%d]", path, i)); err != nil {
+				if err := validate(item, items, root, fmt.Sprintf("%s[%d]", path, i), refDepth); err != nil {
 					return err
 				}
 			}
@@ -298,7 +419,7 @@ func validate(doc any, schema, root map[string]any, path string) error {
 			return fmt.Errorf("%s: string length %d, want <= %v", path, len(d), max)
 		}
 		if pattern, ok := schema["pattern"].(string); ok {
-			re, err := regexp.Compile(pattern)
+			re, err := compilePattern(pattern)
 			if err != nil {
 				return fmt.Errorf("%s: schema pattern %q does not compile: %w", path, pattern, err)
 			}
@@ -323,6 +444,30 @@ func validate(doc any, schema, root map[string]any, path string) error {
 	return nil
 }
 
+// validateType enforces `type`, in both of its spellings. The array form is a
+// union (the instance must match at least one name), and an unknown name can no
+// longer reach here: checkValueKeywordShapes rejects it at load time.
+func validateType(doc any, schema map[string]any, path string) error {
+	switch declared := schema["type"].(type) {
+	case string:
+		if !hasType(doc, declared) {
+			return fmt.Errorf("%s: want type %s, got %T", path, declared, doc)
+		}
+	case []any:
+		for _, name := range declared {
+			if want, ok := name.(string); ok && hasType(doc, want) {
+				return nil
+			}
+		}
+		return fmt.Errorf("%s: want one of types %v, got %T", path, declared, doc)
+	}
+	return nil
+}
+
+// hasType reports whether doc matches one JSON Schema primitive type name. The
+// default is FALSE: a name this function does not implement must not be treated
+// as "everything matches", which is how an unknown type silently disabled the
+// whole constraint.
 func hasType(doc any, want string) bool {
 	switch want {
 	case "object":
@@ -343,8 +488,10 @@ func hasType(doc any, want string) bool {
 	case "number":
 		_, ok := doc.(float64)
 		return ok
+	case "null":
+		return doc == nil
 	}
-	return true
+	return false
 }
 
 func num(v any) (float64, bool) {
@@ -352,6 +499,11 @@ func num(v any) (float64, bool) {
 	return f, ok
 }
 
+// deepEqual compares two decoded JSON values for JSON equality. It compares the
+// CANONICAL encodings (json.Marshal sorts object keys, and every JSON number is
+// an int64/float64 here) rather than using reflect.DeepEqual, whose numeric and
+// nil-vs-empty distinctions are not JSON's: `[]` must not equal `{}`, and a
+// decoded 1.0 must equal a decoded 1.
 func deepEqual(a, b any) bool {
 	ab, errA := json.Marshal(a)
 	bb, errB := json.Marshal(b)

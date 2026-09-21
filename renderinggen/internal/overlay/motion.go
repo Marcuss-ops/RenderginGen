@@ -274,10 +274,6 @@ func clampTextSelectorTracks(selector *TextSelector, duration int64) {
 	clampAnimationTrack(selector.Amount, duration)
 }
 
-func tracksForMotion(m MotionDefinition) ([]AnimationTrack, error) {
-	return resolveMotion(m)
-}
-
 // animationForPreset is the shared lowering path for the official catalog. The
 // preset owns both of its windows (the entrance it declares and the exit), and
 // the same pass produces the layer tracks AND the text animators, so a preset's
@@ -428,14 +424,18 @@ func resolveImageLayout(l PresetLayout, boxWidth, boxHeight, canvasWidth, canvas
 	}
 }
 
-// Chronon centers the text frame itself and treats the layer position as an
-// offset from the canvas center. Keep the canonical text layer at [0,0]; any
-// producer-supplied position_x/position_y values remain explicit offsets.
-func resolveTextLayout(l PresetLayout, boxWidth, boxHeight, canvasWidth, canvasHeight int) []float64 {
-	_ = l
-	_ = boxWidth
-	_ = boxHeight
-	_ = canvasWidth
-	_ = canvasHeight
-	return []float64{0, 0}
+// resolveTextLayout is the canonical text layer position: the canvas centre, in
+// ABSOLUTE canvas coordinates.
+//
+// The engine (render_plan_compiler_animation.cpp:apply_layer_primitives) treats
+// a text layer's position as the absolute canvas coordinate of the layer centre
+// and subtracts canvas/2 itself, so the canonical centred text is [w/2, h/2],
+// not [0,0]. [0,0] under that contract is the canvas corner — which is where
+// every plan that declared a style but no authored placement used to land.
+//
+// The canvas is an argument because the value depends on it. An earlier
+// signature accepted five arguments and discarded all of them, promising a
+// resolution the function did not perform.
+func resolveTextLayout(canvasW, canvasH int) []float64 {
+	return []float64{float64(canvasW) / 2, float64(canvasH) / 2}
 }

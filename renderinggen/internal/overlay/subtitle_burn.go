@@ -69,15 +69,19 @@ func SubtitleStyleAsset(raw []byte) (*LayerStyle, SubtitleStyleBox, error) {
 	if width <= 0 || height <= 0 {
 		return nil, SubtitleStyleBox{}, fmt.Errorf("overlay: subtitle burn requires a canvas")
 	}
-	position, size, err := subtitleCueGeometry(block, width, height, 1)
+	anchor, size, err := subtitleCueGeometry(block, width, height, 1)
 	if err != nil {
 		return nil, SubtitleStyleBox{}, err
 	}
+	// subtitleCueGeometry returns the box's absolute canvas top-left, which is
+	// exactly what the safe-area box carries: no conversion here. Converting
+	// the anchor into a Chronon position is canvasBoxPosition's job, once the
+	// layer type is known.
 	box := SubtitleStyleBox{
 		Width:  int(size[0]),
 		Height: int(size[1]),
-		X:      int(position[0] + float64(width)/2 - size[0]/2),
-		Y:      int(position[1] + float64(height)/2 - size[1]/2),
+		X:      int(anchor[0]),
+		Y:      int(anchor[1]),
 	}
 	return style, box, nil
 }
@@ -131,12 +135,11 @@ func appendSubtitleLayers(plan *Plan, assBytes []byte, fontPath string, style *L
 		plan.Layers = append(plan.Layers, Layer{
 			ID: "subtitle_cue_" + strconv.Itoa(i), Type: "text", Text: cue.Text,
 			Size: []float64{float64(box.Width), float64(box.Height)},
-			// Chronon layer positions are offsets from the canvas centre and
-			// address the layer centre. Convert the absolute safe-area box.
-			Position: []float64{
-				float64(box.X) + float64(box.Width)*0.5 - float64(plan.Canvas.Width)*0.5,
-				float64(box.Y) + float64(box.Height)*0.5 - float64(plan.Canvas.Height)*0.5,
-			},
+			// The safe-area box is absolute canvas geometry; the plan's position
+			// field needs the per-type form (see canvasBoxPosition).
+			Position: canvasBoxPosition("text",
+				float64(box.X), float64(box.Y), float64(box.Width), float64(box.Height),
+				plan.Canvas.Width, plan.Canvas.Height),
 			Style:      &cueStyle,
 			StartFrame: cue.StartFrame, DurationFrames: cue.EndFrame - cue.StartFrame,
 		})

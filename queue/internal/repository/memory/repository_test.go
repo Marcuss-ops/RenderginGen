@@ -86,6 +86,100 @@ func TestClaimSkipsAssemblyAnchorParent(t *testing.T) {
 	}
 }
 
+// TestChildrenIndexCoversEveryInsertPath pins the children index against the one
+// failure mode it can have: an insert path that forgets to index a child. The
+// anchor rule is expressed through that index, so a family whose child arrived
+// through an un-indexed path would silently become claimable for rendering — the
+// exact double-render the rule exists to prevent — and a test that only used one
+// submit path would not notice, because the full scan the index replaced would
+// have found it.
+func TestChildrenIndexCoversEveryInsertPath(t *testing.T) {
+	newParent := func(id string) model.Job {
+		return model.Job{ID: id, RenderPlan: json.RawMessage(`{"n":1}`)}
+	}
+	newChild := func(parent string) model.Job {
+		return model.Job{
+			ID:          parent + "-chunk-0",
+			ParentJobID: parent,
+			ChunkIndex:  0,
+			FrameRange:  &model.FrameRange{Start: 0, End: 120},
+			RenderPlan:  json.RawMessage(`{"n":1}`),
+		}
+	}
+
+	cases := []struct {
+		name   string
+		parent string
+		insert func(t *testing.T, s *Repository, parent, kid model.Job)
+	}{
+		{
+			name:   "Submit",
+			parent: "p-submit",
+			insert: func(t *testing.T, s *Repository, parent, kid model.Job) {
+				if err := s.Submit(parent); err != nil {
+					t.Fatalf("submit parent: %v", err)
+				}
+				if err := s.Submit(kid); err != nil {
+					t.Fatalf("submit child: %v", err)
+				}
+			},
+		},
+		{
+			name:   "SubmitIdempotent",
+			parent: "p-idempotent",
+			insert: func(t *testing.T, s *Repository, parent, kid model.Job) {
+				if _, _, err := s.SubmitIdempotent(parent); err != nil {
+					t.Fatalf("idempotent parent: %v", err)
+				}
+				if _, _, err := s.SubmitIdempotent(kid); err != nil {
+					t.Fatalf("idempotent child: %v", err)
+				}
+			},
+		},
+		{
+			name:   "SubmitBatch",
+			parent: "p-batch",
+			insert: func(t *testing.T, s *Repository, parent, kid model.Job) {
+				if err := s.SubmitBatch([]model.Job{parent, kid}); err != nil {
+					t.Fatalf("submit batch: %v", err)
+				}
+			},
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			s := New(30*time.Second, 3)
+			parent, kid := newParent(tc.parent), newChild(tc.parent)
+			tc.insert(t, s, parent, kid)
+
+			children, err := s.Children(parent.ID)
+			if err != nil {
+				t.Fatalf("children: %v", err)
+			}
+			if len(children) != 1 || children[0].ID != kid.ID {
+				t.Fatalf("Children(%s) = %d job(s), want exactly the child %s", parent.ID, len(children), kid.ID)
+			}
+			if children[0].ParentJobID != parent.ID {
+				t.Fatalf("child %s lost its parent id", children[0].ID)
+			}
+
+			// The anchor must be withheld from a render claim, and the child —
+			// queued after it, so FIFO alone would pick the parent — handed over.
+			claimed, _, err := s.Claim("w1")
+			if err != nil {
+				t.Fatalf("claim: %v", err)
+			}
+			if claimed == nil || claimed.ID != kid.ID {
+				t.Fatalf("claim = %+v, want the child: the parent is an assembly anchor", claimed)
+			}
+			if got, _, _ := s.Claim("w2"); got != nil {
+				t.Fatalf("the anchor must not be claimable for rendering, got %+v", got)
+			}
+		})
+	}
+}
+
 func TestLeaseExpiryRequeues(t *testing.T) {
 	s := New(10*time.Millisecond, 3)
 	submit(t, s, "job-1")
