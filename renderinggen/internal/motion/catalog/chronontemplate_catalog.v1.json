@@ -6394,13 +6394,14 @@
     "font": "assets/fonts/Inter-Bold.ttf",
     "font_size": 190.0,
     "glow": {
-      "blur": 42.0,
-      "color": "#FFFFFF",
-      "offset": [
-        0.0,
-        0.0
-      ],
-      "opacity": 0.9200000166893005
+      "aura_strength": 0.30000001192092896,
+      "bloom_strength": 0.10000000149011612,
+      "core_strength": 0.47999998927116394,
+      "falloff": 1.0,
+      "high_quality": true,
+      "intensity": 0.9200000166893005,
+      "radius": 42.0,
+      "threshold": 0.0
     },
     "position": [
       960.0,

@@ -32,6 +32,7 @@ type PresetStyle struct {
 	Fill       []float64
 	Stroke     *StyleStroke
 	Shadow     *StyleShadow
+	Glow       *StyleGlow
 }
 
 type StyleStroke struct {
@@ -44,6 +45,40 @@ type StyleShadow struct {
 	Opacity float64
 	Blur    float64
 	Offset  []float64
+}
+
+// StyleGlow is the preset-authored halo declaration. It mirrors Chronon's
+// GlowStyle wire contract exactly (chronon.render-plan.v2 style.glow): the
+// renderer lowers it onto GlowParams through GlowPresets::canary_black, so
+// every plan-rendered phrase shares the verified black-canary glow contract.
+// Falloff >= 1 is the non-boosting halo rule; HighQuality selects the final
+// separable-Gaussian path over the interactive preview path.
+type StyleGlow struct {
+	Radius        float64
+	Intensity     float64
+	Threshold     float64
+	Falloff       float64
+	CoreStrength  float64
+	AuraStrength  float64
+	BloomStrength float64
+	HighQuality   bool
+}
+
+// canaryGlow is the single owner of the text glow numbers: the same verified
+// tuning as Chronon's GlowPresets::canary_black(42). Presets author it, the
+// compiler transports it verbatim, and Chronon renders it through the one
+// glow pipeline — no second implementation on this side.
+func canaryGlow() *StyleGlow {
+	return &StyleGlow{
+		Radius:        42,
+		Intensity:     0.92,
+		Threshold:     0,
+		Falloff:       1.5,
+		CoreStrength:  0.48,
+		AuraStrength:  0.30,
+		BloomStrength: 0.10,
+		HighQuality:   true,
+	}
 }
 
 type PresetLayout struct {
@@ -71,6 +106,7 @@ type presetSpec struct {
 	anchor, align, anim, unit string
 	enter, exit               int
 	shadow                    *StyleShadow
+	glow                      *StyleGlow
 	boxW, boxH                int
 	fit                       string
 }
@@ -81,7 +117,7 @@ type presetSpec struct {
 // type (no font, no fill).
 func makePreset(id string, s presetSpec) PresetDefinition {
 	d := PresetDefinition{ID: id, Family: s.family,
-		Style:  PresetStyle{FontFamily: officialFontPath, FontSize: 58, Fill: []float64{1, 1, 1, 1}, Shadow: s.shadow},
+		Style:  PresetStyle{FontFamily: officialFontPath, FontSize: 58, Fill: []float64{1, 1, 1, 1}, Shadow: s.shadow, Glow: s.glow},
 		Layout: PresetLayout{Anchor: s.anchor, Alignment: s.align, BoxWidth: s.boxW, BoxHeight: s.boxH, Fit: s.fit},
 		Motion: MotionDefinition{ID: s.anim, Unit: s.unit, Enter: s.enter, Exit: s.exit}}
 	if s.family == PresetImage {

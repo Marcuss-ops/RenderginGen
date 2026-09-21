@@ -39,11 +39,13 @@ func TestProcessEndToEndCLI(t *testing.T) {
 
 	// Seed the object store with the golden fixtures so the semantic job's
 	// assets materialize by hash.
+	// Canonical font fixtures live in testdata/golden/assets/fonts/; the flat
+	// testdata/golden/*.ttf paths are compatibility shims (symlinks).
 	fixtures := map[string]string{
-		"983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c": filepath.Join("..", "..", "..", "testdata", "golden", "Poppins-Bold.ttf"),
+		"983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c": filepath.Join("..", "..", "..", "testdata", "golden", "assets", "fonts", "Poppins-Bold.ttf"),
 		"52209ee36928dba960583179922a54acf045d52d44c3128c517425d4baaa4f78": filepath.Join("..", "..", "..", "testdata", "golden", "background.jpg"),
 		"ed873745e76173b66999c63546770d9f1426a2189515149176c67637e99a62d6": filepath.Join("..", "..", "..", "testdata", "golden", "apple.png"),
-		"690243adfefe0ce154b547db6205794bd30ac4277275179517a90994f4980648": filepath.Join("..", "..", "..", "testdata", "golden", "DejaVuSans.ttf"),
+		"690243adfefe0ce154b547db6205794bd30ac4277275179517a90994f4980648": filepath.Join("..", "..", "..", "testdata", "golden", "assets", "fonts", "DejaVuSans.ttf"),
 	}
 	mem := storage.NewMemory()
 	for hash, path := range fixtures {
