@@ -147,6 +147,15 @@ func TestWatermarkRequiresResolvedLayout(t *testing.T) {
 		if layer.Style == nil || layer.Style.Font == "" || layer.Style.FontSize <= 0 {
 			t.Fatalf("watermark typography unresolved: %+v", layer.Style)
 		}
+		// The position is the box centre in ABSOLUTE canvas coordinates — the
+		// form the engine reads for text layers — not a canvas-centre offset,
+		// which parked the watermark half a canvas away from its corner.
+		// Box: top_right, 48px margin, size owned by the geometry resolver.
+		wantX := (1920 - layer.Size[0] - 48) + layer.Size[0]/2
+		wantY := 48 + layer.Size[1]/2
+		if layer.Position[0] != wantX || layer.Position[1] != wantY {
+			t.Fatalf("watermark position = %v, want absolute box centre [%g %g]", layer.Position, wantX, wantY)
+		}
 		if layer.Opacity == nil || *layer.Opacity != 0.8 {
 			t.Fatalf("watermark opacity not carried: %v", layer.Opacity)
 		}

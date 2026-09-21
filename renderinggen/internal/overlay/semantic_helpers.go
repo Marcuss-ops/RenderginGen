@@ -146,11 +146,13 @@ func imageLayer(ri resolvedItem, asset string) Layer {
 	return Layer{ID: imageLayerID(ri.Item.ID), Type: "image", Asset: asset, BoxWidth: w, BoxHeight: h, Size: []float64{float64(w), float64(h)}, Fit: stringParam(ri.Params, "fit", "contain"), Radius: float64(intParam(ri.Params, "radius", 0)), StartFrame: ri.Start, DurationFrames: ri.End - ri.Start}
 }
 
-// imageLayerID / textLayerID / overlayLayerID are the only spellings of an
-// item's layer ids. Distinct suffixes keep a video overlay from colliding
-// with an image/text layer of the same item id.
+// imageLayerID / overlayLayerID are the only spellings of an item's layer ids.
+// Distinct suffixes keep a video overlay from colliding with an image layer of
+// the same item id. A `:text` spelling was declared beside them and referenced
+// by no compiler (the text layer carries the item id itself, see
+// compileItem's text branch), so it was deleted instead of left as a third id
+// shape every reader has to consider and no writer emits.
 func imageLayerID(itemID string) string   { return itemID + ":image" }
-func textLayerID(itemID string) string    { return itemID + ":text" }
 func overlayLayerID(itemID string) string { return itemID + ":overlay" }
 
 func applyPresetDefinition(layer *Layer, d PresetDefinition) {

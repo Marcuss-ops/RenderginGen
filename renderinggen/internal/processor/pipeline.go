@@ -40,11 +40,10 @@ import (
 type PreparedJob struct {
 	Job             *queue.Job
 	Workspace       *workspace.Workspace
-	Plan            *overlay.Plan           // typed concrete Chronon plan (post-compile, marshaled once at WritePlan)
-	Prepared        overlay.PreparedPackage // immutable text/image preparation for the staged GPU handoff
-	Stats           overlay.Stats           // semantic counters for the ledger
-	InputBytes      int64                   // materialized input size for the ledger
-	Metrics         map[string]float64      // phase metrics accumulated so far
+	Plan            *overlay.Plan      // typed concrete Chronon plan (post-compile, marshaled once at WritePlan)
+	Stats           overlay.Stats      // semantic counters for the ledger
+	InputBytes      int64              // materialized input size for the ledger
+	Metrics         map[string]float64 // phase metrics accumulated so far
 	OutputPath      string
 	AudioSourcePath string
 	// AudioTargetSampleRate is the OUTPUT audio rate the sealed plan declares
@@ -464,7 +463,6 @@ func (p *Processor) PrepareJob(ctx context.Context, job *queue.Job) (*PreparedJo
 		Job:                   job,
 		Workspace:             ws,
 		Plan:                  plan,
-		Prepared:              preparedPackage,
 		Stats:                 stats,
 		InputBytes:            inputBytes,
 		Metrics:               metrics,

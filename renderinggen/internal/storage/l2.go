@@ -2,11 +2,14 @@ package storage
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -28,6 +31,12 @@ type diskCache struct {
 	mu      sync.Mutex
 	entries map[string]cacheEntry
 	total   int64
+
+	// reconcileOnce runs the startup index reconciliation at most once per
+	// process (see ensureIndexed). It is separate from mu because the census
+	// does filesystem I/O: holding the index lock across a walk of a large
+	// cache tree would stall every concurrent reader for its duration.
+	reconcileOnce sync.Once
 
 	// readErrors counts L2 lookups that failed for a reason OTHER than
 	// "absent". A cache miss is normal; an EACCES/EIO/unmounted directory is a
@@ -105,6 +114,93 @@ func (d *diskCache) Path(key string) (string, bool) {
 	return p, true
 }
 
+// stagingNamePrefix is the name prefix install uses for its in-flight temp
+// files. A leftover file with this prefix is an interrupted write, never an
+// object: it is skipped by the startup census (reconcile) for the same reason
+// it can never be addressed by a content key.
+const stagingNamePrefix = ".install-"
+
+// ensureIndexed runs the startup reconciliation at most once per process, and
+// only when a budget exists to enforce. It is called before the first eviction
+// decision, so the budget is measured against the bytes that are actually on
+// disk rather than against the bytes this process happened to install.
+func (d *diskCache) ensureIndexed() {
+	if d == nil || d.dir == "" || d.max <= 0 {
+		return
+	}
+	d.reconcileOnce.Do(d.reconcile)
+}
+
+// reconcile indexes the objects already present under the cache root.
+//
+// The index is a cache OF THE FILESYSTEM (see install), and that sentence is
+// also why this pass has to exist: the previous process's index died with it,
+// so after a restart d.total started at zero and enforceBudget could only
+// reclaim what THIS process had installed. Every object left on disk by an
+// earlier run was invisible to the budget — uncounted, therefore unevictable —
+// and the cache directory grew without bound across restarts until the
+// filesystem filled, at which point every install failed, every asset
+// resolution degraded to an L3 fetch and the L2 tier silently stopped doing its
+// job (the very failure mode l2PutErrors/reportReadError exist to surface).
+//
+// It is strictly best-effort: an unreadable directory is logged and the install
+// proceeds, because a broken cache is a performance problem and never a
+// correctness one — L3 stays the source of truth.
+func (d *diskCache) reconcile() {
+	root := filepath.Join(d.dir, "assets")
+	type found struct {
+		key      string
+		size     int64
+		accessed time.Time
+	}
+	var files []found
+	err := filepath.WalkDir(root, func(path string, entry fs.DirEntry, walkErr error) error {
+		if walkErr != nil {
+			if errors.Is(walkErr, fs.ErrNotExist) {
+				return nil // no cache tree yet: nothing to index
+			}
+			return walkErr
+		}
+		if entry.IsDir() || strings.HasPrefix(entry.Name(), stagingNamePrefix) {
+			return nil
+		}
+		name := entry.Name()
+		// Only the writer's own layout is indexed: <root>/<2-char prefix>/<key>,
+		// exactly what d.path(key) reconstructs. A foreign file placed anywhere
+		// else cannot be addressed through a key, so indexing it would make
+		// eviction try to unlink a path that never held those bytes.
+		if len(name) < 3 || filepath.Base(filepath.Dir(path)) != name[:2] {
+			return nil
+		}
+		info, infoErr := entry.Info()
+		if infoErr != nil || !info.Mode().IsRegular() {
+			return nil // unreadable or not an object: treated as absent, like a miss
+		}
+		files = append(files, found{key: name, size: info.Size(), accessed: info.ModTime()})
+		return nil
+	})
+	if err != nil {
+		log.Printf("storage: L2 index reconciliation under %s was incomplete: %v (the budget may under-report disk usage)", root, err)
+	}
+	if len(files) == 0 {
+		return
+	}
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	var added int64
+	indexed := 0
+	for _, file := range files {
+		if _, ok := d.entries[file.key]; ok {
+			continue // already indexed by this process (a read or install won the race)
+		}
+		d.entries[file.key] = cacheEntry{size: file.size, accessed: file.accessed}
+		d.total += file.size
+		added += file.size
+		indexed++
+	}
+	log.Printf("storage: L2 index reconciled from disk: %d object(s), %d byte(s) now accounted under %s", indexed, added, root)
+}
+
 // install writes an object into the cache through a temp file and commits it
 // atomically. write receives the open temp file and must return the number of
 // bytes written; it runs WITHOUT the lock (it may stream arbitrarily large
@@ -116,11 +212,16 @@ func (d *diskCache) install(key string, write func(*os.File) (int64, error)) (st
 	if d.dir == "" {
 		return "", 0, fmt.Errorf("L2 cache directory is empty")
 	}
+	// The budget must be measured against what is already on disk before the
+	// first eviction decision: a restarted worker otherwise sees an empty index,
+	// believes the cache is empty and never reclaims a byte of the previous
+	// run's objects.
+	d.ensureIndexed()
 	p := d.path(key)
 	if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
 		return "", 0, err
 	}
-	tmp, err := os.CreateTemp(filepath.Dir(p), ".install-*")
+	tmp, err := os.CreateTemp(filepath.Dir(p), stagingNamePrefix+"*")
 	if err != nil {
 		return "", 0, err
 	}
@@ -269,10 +370,12 @@ func (d *diskCache) path(key string) string {
 // installs finish the eviction (amortized); accounting stays exact.
 const evictionBatch = 64
 
-// enforceBudget evicts the oldest indexed entries. It intentionally does not
-// census the filesystem on every write; startup files are lazily indexed when
-// accessed and stale entries are harmlessly skipped. The caller holds d.mu;
-// only metadata operations (unlink) happen here.
+// enforceBudget evicts the oldest indexed entries. It never walks the
+// filesystem itself: the objects an earlier process left on disk are indexed
+// once by reconcile (see ensureIndexed, run before the first budget decision),
+// which is what keeps this an O(entries) metadata pass instead of a per-write
+// directory scan. The caller holds d.mu; only metadata operations (unlink)
+// happen here.
 //
 // The selection is ONE pass over the index that keeps the evictionBatch oldest
 // entries in a bounded, sorted window, instead of re-scanning the whole index

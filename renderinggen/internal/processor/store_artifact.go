@@ -72,7 +72,7 @@ func (p *Processor) storeArtifact(ctx context.Context, jobID, outputPath string,
 	}
 	shaUS := float64(time.Since(shaStart).Microseconds())
 	phaseMetrics[metricnames.SHA256US] = shaUS
-	phaseMetrics["sha256_ms"] = shaUS / 1000
+	phaseMetrics[metricnames.SHA256MS] = shaUS / 1000
 	// Surface Chronon's own receipt-verification phases (probe / optional
 	// decode / count_frames / sha256 / total, policy-controlled by the
 	// resolved verification policy) on the artifact so per-clip reports can
@@ -103,7 +103,7 @@ func (p *Processor) storeArtifact(ctx context.Context, jobID, outputPath string,
 	}
 	putUS := float64(time.Since(putStart).Microseconds())
 	phaseMetrics[metricnames.ObjectStoreUploadUS] = putUS
-	phaseMetrics["objectstore_upload_ms"] = putUS / 1000
+	phaseMetrics[metricnames.ObjectStoreUploadMS] = putUS / 1000
 	metadata := planMetadataOf(plan)
 	artifact := queue.Artifact{
 		Kind:           "segment",
@@ -146,7 +146,7 @@ func (p *Processor) storeArtifact(ctx context.Context, jobID, outputPath string,
 			// or unable to decode it): closed_gop=false here means "not
 			// proven", not "open GOP". Surface it on the artifact metrics so a
 			// broken probe cannot masquerade as a renderer defect forever.
-			phaseMetrics["closed_gop_uncertifiable"] = 1
+			phaseMetrics[metricnames.ClosedGOPUncertifiable] = 1
 		}
 		artifact.Width, artifact.Height = probe.Width, probe.Height
 		artifact.FPSNum, artifact.FPSDen = probe.FPSNum, probe.FPSDen
@@ -226,8 +226,8 @@ func (p *Processor) preserveRawTimingSidecar(ctx context.Context, artifact *queu
 	if artifact.Metrics == nil {
 		artifact.Metrics = map[string]float64{}
 	}
-	artifact.Metrics["chronon_timing_preserved"] = 1
-	artifact.Metrics["chronon_timing_bytes"] = float64(size)
+	artifact.Metrics[metricnames.ChrononTimingPreserved] = 1
+	artifact.Metrics[metricnames.ChrononTimingBytes] = float64(size)
 	log.Printf("job %s: raw timing sidecar preserved (sha256=%s bytes=%d)", jobID, hash, size)
 }
 

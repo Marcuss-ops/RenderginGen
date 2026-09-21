@@ -42,6 +42,15 @@ func fixtureRepo(t *testing.T) string {
 	return root
 }
 
+// fixtureRequest is the request of record for the Tyson corpus: ONE phrase per
+// phrase motion the embedded ChrononTemplate catalog declares
+// (motion.PhraseMotions). The builder pairs phrase i with catalog motion i, so
+// the request must carry exactly as many phrases as the catalog has motions —
+// the catalog is a generated artifact of another repository and this corpus may
+// not out-vote it. The corpus shrank from ten phrase overlays to five when the
+// catalog's tyson_phrase_motions selection was reduced upstream, and the count
+// here follows that selection instead of pinning a number the vocabulary can no
+// longer honour.
 func fixtureRequest(t *testing.T, root string) string {
 	t.Helper()
 	phrases := []string{
@@ -50,11 +59,6 @@ func fixtureRequest(t *testing.T, root string) string {
 		"Pressure Shapes the Rhythm.",
 		"Footwork Creates the Opening.",
 		"Technique Makes Aggression Precise.",
-		"Preparation Begins Long Before the Bell.",
-		"A Loss Exposes What Victory Can Hide.",
-		"A Champion Is More Than a Record.",
-		"Reinvention Is Part of the Fight.",
-		"Legacy Outlasts the Final Round.",
 	}
 	var segments []string
 	for index, phrase := range phrases {
@@ -72,9 +76,12 @@ func fixtureRequest(t *testing.T, root string) string {
 }
 
 // TestBuildTysonManifestProducesTheFullCorpus is the builder's contract test: the
-// hand-written manifest it replaces (the Python script that used to emit it) had
-// 15 jobs, and the manifest must stay a valid renderinggen.batch-manifest.v1 that
-// cmd/batch-submit and cmd/batch-run can expand.
+// manifest it replaces (the Python script that used to emit it) had one job per
+// phrase candidate plus one per entity portrait, and the manifest must stay a
+// valid renderinggen.batch-manifest.v1 that cmd/batch-submit and cmd/batch-run
+// can expand. The expected counts are derived from the catalog selection and the
+// entity table, so a corpus that out-grows the vocabulary fails here instead of
+// in a booked render.
 func TestBuildTysonManifestProducesTheFullCorpus(t *testing.T) {
 	root := fixtureRepo(t)
 	request := fixtureRequest(t, root)
@@ -91,8 +98,9 @@ func TestBuildTysonManifestProducesTheFullCorpus(t *testing.T) {
 	if err != nil {
 		t.Fatalf("BuildTysonManifest: %v", err)
 	}
-	if result.Jobs != 15 || result.Phrases != 10 || result.Images != 5 {
-		t.Fatalf("built %d job(s) (%d phrase, %d image), want 15 (10, 5)", result.Jobs, result.Phrases, result.Images)
+	if wantPhrases := len(motion.PhraseMotions()); result.Jobs != wantPhrases+len(tysonEntities) || result.Phrases != wantPhrases || result.Images != len(tysonEntities) {
+		t.Fatalf("built %d job(s) (%d phrase, %d image), want %d (%d, %d)",
+			result.Jobs, result.Phrases, result.Images, wantPhrases+len(tysonEntities), wantPhrases, len(tysonEntities))
 	}
 
 	raw, err := os.ReadFile(out)
@@ -105,8 +113,8 @@ func TestBuildTysonManifestProducesTheFullCorpus(t *testing.T) {
 	if err != nil {
 		t.Fatalf("the built manifest is not a valid batch manifest: %v", err)
 	}
-	if len(jobs) != 15 {
-		t.Fatalf("expansion produced %d job(s), want 15", len(jobs))
+	if want := len(motion.PhraseMotions()) + len(tysonEntities); len(jobs) != want {
+		t.Fatalf("expansion produced %d job(s), want %d (one per catalog phrase motion plus one per entity)", len(jobs), want)
 	}
 	for _, job := range jobs {
 		if !strings.HasPrefix(job.ID, "fixture-batch:") {

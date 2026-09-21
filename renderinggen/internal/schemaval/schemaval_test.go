@@ -119,3 +119,116 @@ func TestContractSchemasUseOnlySupportedKeywords(t *testing.T) {
 		}
 	}
 }
+
+// TestRefSiblingsAreEnforced pins the first draft-2020-12 trap: `$ref` does not
+// suspend the keywords declared NEXT TO it. Returning as soon as the reference
+// resolved made `{"$ref": …, "additionalProperties": false}` accept every
+// document — a schema that claimed a constraint it never applied, which is the
+// same false guarantee the fail-closed check exists to prevent.
+func TestRefSiblingsAreEnforced(t *testing.T) {
+	// The referenced schema owns only `required`; the object's shape belongs to
+	// the schema that carries the reference. Draft 2020-12 applies both schemas
+	// independently — a $ref does NOT merge its target's `properties` into its
+	// siblings — so each half has to be enforced on its own evidence.
+	schema := writeSchema(t, `{
+		"$defs": {"requiresA": {"required": ["a"]}},
+		"$ref": "#/$defs/requiresA",
+		"type": "object",
+		"properties": {"a": {"type": "string"}},
+		"additionalProperties": false
+	}`)
+
+	if err := ValidateFile([]byte(`{"a":"x"}`), schema); err != nil {
+		t.Fatalf("the document satisfies the reference and its siblings: %v", err)
+	}
+	// The reference itself must still be applied…
+	if err := ValidateFile([]byte(`{}`), schema); err == nil {
+		t.Error("the referenced `required` was not applied: the document has no `a`")
+	}
+	// …and so must the sibling `additionalProperties`, which is why the schema
+	// carrying the reference also has to carry `properties`.
+	if err := ValidateFile([]byte(`{"a":"x","extra":1}`), schema); err == nil {
+		t.Error("the sibling `additionalProperties` was not applied: `extra` is not allowed")
+	}
+	// The sibling `properties` must constrain the value, not just match the name.
+	if err := ValidateFile([]byte(`{"a":7}`), schema); err == nil {
+		t.Error("the sibling `properties` type constraint was not applied: 7 is not a string")
+	}
+}
+
+// TestTypeArrayAndNullFormsAreEnforced pins the second trap: `type` is legal as
+// an array of names (a union) and "null" is a legal name in it. Type-asserting
+// the string form dropped both, so the constraint vanished from a document that
+// declared it.
+func TestTypeArrayAndNullFormsAreEnforced(t *testing.T) {
+	schema := writeSchema(t, `{
+		"type": "object",
+		"properties": {
+			"maybe": {"type": ["string", "null"]},
+			"nothing": {"type": "null"}
+		},
+		"required": ["maybe", "nothing"]
+	}`)
+
+	for _, doc := range []string{`{"maybe":null,"nothing":null}`, `{"maybe":"text","nothing":null}`} {
+		if err := ValidateFile([]byte(doc), schema); err != nil {
+			t.Fatalf("declared type union rejected %s: %v", doc, err)
+		}
+	}
+	if err := ValidateFile([]byte(`{"maybe":7,"nothing":null}`), schema); err == nil {
+		t.Error("the array-form type union was not enforced: 7 is neither string nor null")
+	}
+	if err := ValidateFile([]byte(`{"maybe":"text","nothing":"text"}`), schema); err == nil {
+		t.Error("type \"null\" was not enforced: a string is not null")
+	}
+}
+
+// TestKeywordValueShapesFailClosed pins that an implemented keyword whose VALUE
+// the validator cannot enforce is rejected at load time. Each of these shapes
+// used to pass silently and therefore validated nothing.
+func TestKeywordValueShapesFailClosed(t *testing.T) {
+	cases := []struct {
+		name   string
+		schema string
+		want   string
+	}{
+		{"unknown type name", `{"type":"strings"}`, "unknown type name"},
+		{"empty type union", `{"type":[]}`, "empty array"},
+		{"type union with a non-string", `{"type":["string",2]}`, "not a known type name"},
+		{"numeric type", `{"type":7}`, "not a string or array of strings"},
+		{"non-string $ref", `{"$ref":7}`, "$ref (not a string)"},
+		{"non-array enum", `{"enum":"a"}`, "enum (not a non-empty array)"},
+		{"non-array required", `{"required":"a"}`, "required (not an array)"},
+		{"required element not a string", `{"required":[1]}`, "element is not a string"},
+		{"non-string pattern", `{"pattern":7}`, "pattern (not a string)"},
+		{"uncompilable pattern", `{"pattern":"["}`, "does not compile"},
+		{"non-numeric minimum", `{"minimum":"0"}`, "minimum (not a number)"},
+		{"non-numeric maxLength", `{"maxLength":"2"}`, "maxLength (not a number)"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			err := ValidateFile([]byte(`{}`), writeSchema(t, tc.schema))
+			if err == nil {
+				t.Fatalf("schema %s must fail closed", tc.schema)
+			}
+			if !strings.Contains(err.Error(), tc.want) {
+				t.Fatalf("error %q does not name %q", err, tc.want)
+			}
+		})
+	}
+}
+
+// TestSelfReferentialRefFailsExplicitly pins the $ref depth guard. A schema that
+// references itself is now an error instead of unbounded recursion.
+func TestSelfReferentialRefFailsExplicitly(t *testing.T) {
+	err := ValidateFile([]byte(`{}`), writeSchema(t, `{
+		"$defs": {"x": {"$ref": "#/$defs/x"}},
+		"$ref": "#/$defs/x"
+	}`))
+	if err == nil {
+		t.Fatal("a self-referential schema must fail explicitly")
+	}
+	if !strings.Contains(err.Error(), "$ref chain") {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}

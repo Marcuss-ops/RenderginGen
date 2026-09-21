@@ -247,7 +247,7 @@ func compileSemantic(raw []byte) (*Plan, []Asset, Stats, []string, error) {
 			return nil, nil, Stats{}, nil, err
 		}
 		wmLayer := Layer{ID: "watermark", StartFrame: 0, DurationFrames: plan.Canvas.DurationFrames,
-			Style: style, Position: position, Size: size}
+			Style: style, Size: size}
 		if wm.Opacity != nil {
 			// Same contract as the background: opacity 0 is a declared value,
 			// not an absent key.
@@ -272,6 +272,12 @@ func compileSemantic(raw []byte) (*Plan, []Asset, Stats, []string, error) {
 		} else {
 			return nil, nil, Stats{}, nil, fmt.Errorf("overlay: watermark requires text or asset_refs")
 		}
+		// resolveWatermarkGeometry returns the box's absolute canvas top-left;
+		// the plan's position field needs the per-type form, so the conversion
+		// happens exactly once, after the layer type is known. A text watermark
+		// takes the absolute centre, an image watermark the canvas-centre offset.
+		wmLayer.Position = canvasBoxPosition(wmLayer.Type,
+			position[0], position[1], size[0], size[1], src.Width, src.Height)
 		plan.Layers = append(plan.Layers, wmLayer)
 	}
 
@@ -660,12 +666,14 @@ func compileTextLayer(ri resolvedItem, src *semanticPlan, layerID string) (Layer
 		layer.TextAnimators = textAnimation.TextAnimators
 	}
 	if layer.Style != nil && layer.Position == nil {
+		// position_x/position_y are absolute canvas coordinates of the text
+		// centre — the same form the engine reads for text layers.
 		posX, hasPosX := ri.Params["position_x"].(float64)
 		posY, hasPosY := ri.Params["position_y"].(float64)
 		if hasPosX && hasPosY {
 			layer.Position = []float64{posX, posY}
 		} else {
-			layer.Position = resolveTextLayout(ri.Preset.Layout, layer.BoxWidth, layer.BoxHeight, src.Width, src.Height)
+			layer.Position = resolveTextLayout(src.Width, src.Height)
 			if hasPosX {
 				layer.Position[0] = posX
 			}

@@ -186,6 +186,47 @@ func TestProgressParserKeepsCallerTotalOnKeyValueForms(t *testing.T) {
 	}
 }
 
+// TestProgressPrefilterIsOneCaseInsensitivePass pins the pre-filter contract the
+// fast path rests on. It runs once per output line of every render, so it must
+// (a) keep every line a milestone can arrive in — including case spellings the
+// engine does not print today — and (b) allocate nothing, because an allocation
+// per engine log line is paid on the render's critical path.
+func TestProgressPrefilterIsOneCaseInsensitivePass(t *testing.T) {
+	for _, line := range []string{
+		"[video]   485/1800 frames",
+		"[VIDEO]   485/1800 frames",
+		"[Video]   485/1800 frames",
+		"render frames_done=485",
+		"render FRAMES_DONE=485",
+		"frame=485",
+	} {
+		if !lineMentionsFrameProgress(line) {
+			t.Errorf("pre-filter dropped %q; that line reaches progress parsing", line)
+		}
+	}
+	for _, line := range []string{"", "allocated 1329 MiB VRAM", "[audio] muxing 2 streams"} {
+		if lineMentionsFrameProgress(line) {
+			t.Errorf("pre-filter accepted %q; the line carries no frame position", line)
+		}
+	}
+
+	if allocs := testing.AllocsPerRun(1000, func() {
+		if lineMentionsFrameProgress("allocated 1329 MiB VRAM") {
+			t.Fatal("pre-filter rejected an allocator line")
+		}
+	}); allocs != 0 {
+		t.Errorf("pre-filter allocated %v times per call; it runs once per output line", allocs)
+	}
+
+	// The single case-insensitive pass is strictly wider than the three
+	// spellings it replaced: a mixed-case milestone now reaches the (already
+	// case-insensitive) regexp instead of being dropped by the guard.
+	progress, ok := parseProgressLine("[video] 7/240 fRaMeS", 0)
+	if !ok || progress.FramesDone != 7 || progress.FramesTotal != 240 {
+		t.Errorf("parseProgressLine(\"[video] 7/240 fRaMeS\") = %+v, %v; want 7/240 parsed", progress, ok)
+	}
+}
+
 // TestProgressParserIgnoresAllocationAndSupportsCaseInsensitivity pins the two
 // properties the fast path depends on: the pre-filter must not drop a real
 // milestone, and the parser must not be case-sensitive about the tag.

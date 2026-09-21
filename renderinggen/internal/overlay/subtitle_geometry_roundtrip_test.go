@@ -12,12 +12,11 @@ import (
 //	style.position → subtitleCueGeometry → SubtitleStyleBox
 //	                 → BurnASSIntoPlan → Layer.Position
 //
-// The historical bug converted X to Chronon's centre-offset space but left Y
-// absolute, so SubtitleStyleAsset (which assumes both axes are offsets) pushed
-// bottom cues below the canvas. The invariant verified here: the burned text
-// layer's Chronon centre offset must equal the position computed by
-// subtitleCueGeometry, and SubtitleStyleAsset's box must round-trip back to
-// the original absolute top-left anchor.
+// The invariant verified here: for a text layer the plan's position field is
+// the layer centre in ABSOLUTE canvas coordinates (the engine subtracts
+// canvas/2 itself), so the burned cue's position must equal the safe-area box's
+// absolute centre, and SubtitleStyleAsset's box must carry the absolute
+// top-left anchor unchanged.
 func TestSubtitleGeometryRoundTripEndToEnd(t *testing.T) {
 	cases := []struct {
 		name     string
@@ -73,16 +72,17 @@ func TestSubtitleGeometryRoundTripEndToEnd(t *testing.T) {
 			}
 			layer := decoded.Layers[1]
 
-			// Independent expectation from the (now symmetric) geometry
-			// resolver: Chronon centre offset of the safe-area box.
-			wantX := tc.wantAnchorX + 1800/2 - 1920/2
-			wantY := tc.wantAnchorY + 70/2 - 1080/2
+			// Independent expectation from the geometry resolver: for a text
+			// layer the plan's position IS the box centre in absolute canvas
+			// coordinates (the engine subtracts canvas/2 itself).
+			wantX := tc.wantAnchorX + 1800/2
+			wantY := tc.wantAnchorY + 70/2
 			if len(layer.Position) != 2 || math.Abs(layer.Position[0]-wantX) > 1e-6 || math.Abs(layer.Position[1]-wantY) > 1e-6 {
-				t.Fatalf("burned layer position = %#v, want centre offset [%.0f %.0f]", layer.Position, wantX, wantY)
+				t.Fatalf("burned layer position = %#v, want absolute canvas centre [%.0f %.0f]", layer.Position, wantX, wantY)
 			}
-			// The layer's absolute centre must land inside the safe-area box.
-			absCenterX := layer.Position[0] + 1920/2
-			absCenterY := layer.Position[1] + 1080/2
+			// For a text layer the position already IS the absolute centre.
+			absCenterX := layer.Position[0]
+			absCenterY := layer.Position[1]
 			if absCenterX < float64(box2.X) || absCenterX > float64(box2.X+box2.Width) ||
 				absCenterY < float64(box2.Y) || absCenterY > float64(box2.Y+box2.Height) {
 				t.Fatalf("cue centre (%.0f,%.0f) escaped the safe-area box %+v", absCenterX, absCenterY, box2)
@@ -91,11 +91,11 @@ func TestSubtitleGeometryRoundTripEndToEnd(t *testing.T) {
 	}
 }
 
-// TestSubtitleBottomCenterOnCanvas is the minimal regression guard for the
-// P0: a bottom_center cue on 1080p must render on-canvas (its centre offset
-// must be < 540, i.e. above the bottom edge). The bug produced 829+35-540+540
-// centre = 864 — wait: the buggy Y produced an absolute anchor passed through
-// the offset converter, putting the centre at ~1369px, 290px off-canvas.
+// TestSubtitleBottomCenterOnCanvas is the minimal regression guard for the P0:
+// a bottom_center cue on 1080p must place its centre at y=864 (829 + 35), well
+// inside the canvas. The bug handed the absolute top-left anchor to the text
+// branch, which subtracts canvas/2 a second time, parking the cue's centre at
+// (0, 324) — the top-left corner, with the text clipped off the left edge.
 func TestSubtitleBottomCenterOnCanvas(t *testing.T) {
 	raw := []byte(`{
 		"schema_version":"renderinggen.overlay-plan.v1",
@@ -126,7 +126,9 @@ func TestSubtitleBottomCenterOnCanvas(t *testing.T) {
 		t.Fatal(err)
 	}
 	y := decoded.Layers[0].Position[1]
-	absCenterY := y + 1080/2
+	// For a text layer the position IS the centre in absolute canvas
+	// coordinates; the engine subtracts canvas/2 itself.
+	absCenterY := y
 	// The cue's centre must sit above the canvas bottom edge with margin for
 	// the box height; 829 + 35 = 864 < 1080 is the correct absolute centre.
 	if absCenterY <= 0 || absCenterY >= 1080 {

@@ -17,8 +17,12 @@ import (
 )
 
 // Repository is a thread-safe in-memory job queue with lease expiry.
+//
+// mu is a RWMutex: the read-only projections (Get, Children, Stats) take it
+// shared, so a dashboard polling the queue cannot serialize the claim path. The
+// mutating transitions hold it exclusively.
 type Repository struct {
-	mu          sync.Mutex
+	mu          sync.RWMutex
 	jobs        map[string]*model.Job
 	artifacts   map[string]model.Artifact
 	order       []string          // FIFO order of pending job IDs
@@ -26,6 +30,15 @@ type Repository struct {
 	workers     map[string]model.Worker
 	lease       time.Duration
 	maxAttempts int
+
+	// children indexes parent job ID -> its child IDs (mirrors the postgres
+	// child lookup). ClaimState asks "does another job declare this id as its
+	// parent?" once per pending candidate, and answering that by scanning every
+	// job row made a single claim O(pending x jobs) — quadratic growth in the
+	// one operation every worker performs in a loop. A job's parent is fixed at
+	// submit time and no job is ever deleted, so the index is append-only and
+	// never needs invalidation.
+	children map[string]map[string]struct{}
 }
 
 // Compile-time check that Repository satisfies the repository contracts.
@@ -43,9 +56,27 @@ func New(lease time.Duration, maxAttempts int) *Repository {
 		artifacts:   make(map[string]model.Artifact),
 		idem:        make(map[string]string),
 		workers:     make(map[string]model.Worker),
+		children:    make(map[string]map[string]struct{}),
 		lease:       lease,
 		maxAttempts: maxAttempts,
 	}
+}
+
+// indexChildLocked records job as a child of its declared parent. The caller
+// holds s.mu for writing. It is the in-memory mirror of the postgres child
+// lookup (children.go), and the single place the children index is grown: every
+// insert path must call it or the claim's anchor rule silently stops protecting
+// a family.
+func (s *Repository) indexChildLocked(job model.Job) {
+	if job.ParentJobID == "" {
+		return
+	}
+	set := s.children[job.ParentJobID]
+	if set == nil {
+		set = make(map[string]struct{})
+		s.children[job.ParentJobID] = set
+	}
+	set[job.ID] = struct{}{}
 }
 
 func (s *Repository) SubmitIdempotent(job model.Job) (*model.Job, bool, error) {
@@ -73,6 +104,7 @@ func (s *Repository) SubmitIdempotent(job model.Job) (*model.Job, bool, error) {
 	}
 	job.State, job.CreatedAt, job.QueuedAt = model.StatePending, now, now
 	s.jobs[job.ID] = &job
+	s.indexChildLocked(job)
 	s.order = append(s.order, job.ID)
 	if job.IdempotencyKey != "" {
 		s.idem[job.IdempotencyKey] = job.ID
@@ -99,6 +131,7 @@ func (s *Repository) Submit(job model.Job) error {
 	job.CreatedAt = now
 	job.QueuedAt = now
 	s.jobs[job.ID] = &job
+	s.indexChildLocked(job)
 	s.order = append(s.order, job.ID)
 	return nil
 }
@@ -133,6 +166,7 @@ func (s *Repository) SubmitBatch(jobs []model.Job) error {
 		job.State, job.CreatedAt, job.QueuedAt = model.StatePending, now, now
 		copy := job
 		s.jobs[job.ID] = &copy
+		s.indexChildLocked(copy)
 		s.order = append(s.order, job.ID)
 		if job.IdempotencyKey != "" {
 			s.idem[job.IdempotencyKey] = job.ID
@@ -182,19 +216,17 @@ func (s *Repository) ClaimState(workerID string, state model.State) (*model.Job,
 // The caller holds s.mu (ClaimState does). It is the in-memory encoding of the
 // assembly-anchor rule in model/lifecycle.go and lives next to the claim it
 // guards, so the rule and the claim cannot be edited apart.
+//
+// It reads the children index, so a claim walks its pending candidates in O(1)
+// each instead of scanning every job row per candidate.
 func (s *Repository) hasChildrenLocked(id string) bool {
-	for _, job := range s.jobs {
-		if job != nil && job.ParentJobID == id {
-			return true
-		}
-	}
-	return false
+	return len(s.children[id]) > 0
 }
 
 // Get returns the current state of a job, including its artifact when done.
 func (s *Repository) Get(id string) (*model.Job, error) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
+	s.mu.RLock()
+	defer s.mu.RUnlock()
 
 	job := s.jobs[id]
 	if job == nil {
@@ -208,19 +240,24 @@ func (s *Repository) Get(id string) (*model.Job, error) {
 }
 
 // Children returns child chunks in deterministic chunk order.
+//
+// It walks the parent's entry in the children index rather than every job, so a
+// family read costs its own size instead of the whole queue's.
 func (s *Repository) Children(parentJobID string) ([]*model.Job, error) {
 	if parentJobID == "" {
 		return nil, fmt.Errorf("parent job id is required")
 	}
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	children := make([]*model.Job, 0)
-	for _, job := range s.jobs {
-		if job.ParentJobID != parentJobID {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	ids := s.children[parentJobID]
+	children := make([]*model.Job, 0, len(ids))
+	for id := range ids {
+		job := s.jobs[id]
+		if job == nil {
 			continue
 		}
 		copy := *job
-		if artifact, ok := s.artifacts[job.ID]; ok {
+		if artifact, ok := s.artifacts[id]; ok {
 			artifactCopy := artifact
 			copy.Artifact = &artifactCopy
 		}
@@ -426,10 +463,12 @@ func (s *Repository) RequeueExpired(now time.Time) (int, error) {
 	return n, nil
 }
 
-// Stats returns a snapshot of the queue state.
+// Stats returns a snapshot of the queue state. It takes the lock shared, so the
+// pending gauge read (throttled to once per interval, but on the same service
+// as every state transition) cannot serialize a claim.
 func (s *Repository) Stats() model.Stats {
-	s.mu.Lock()
-	defer s.mu.Unlock()
+	s.mu.RLock()
+	defer s.mu.RUnlock()
 
 	stats := model.Stats{}
 	for _, job := range s.jobs {

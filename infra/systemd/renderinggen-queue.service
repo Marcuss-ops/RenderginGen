@@ -9,6 +9,13 @@ Type=simple
 User=pierone
 # The wrapper maps the canonical operator-owned PipelineGen media DSN to the
 # queue's DATABASE_URL without duplicating the secret in /etc or the repo.
+#
+# RENDERINGGEN_ENV_FILE is the ONE place the .env location is declared: the file
+# lives in the operator's PipelineGen checkout, whose path is host-specific, so
+# it is deployment configuration. The wrapper refuses to start without a
+# readable file, which turns a wrong path into a loud failure at boot instead of
+# a queue that starts with an empty DSN.
+Environment=RENDERINGGEN_ENV_FILE=/etc/renderinggen/queue.env
 ExecStart=/usr/local/libexec/renderinggen-queue-wrapper --addr 127.0.0.1:8081 --lease 10m --worker-stale-after 3m
 Restart=on-failure
 RestartSec=2

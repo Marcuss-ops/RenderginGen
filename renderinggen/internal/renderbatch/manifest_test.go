@@ -1,8 +1,10 @@
 package renderbatch
 
 import (
+	"maps"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 )
@@ -186,28 +188,33 @@ func TestResolveRootsIsManifestRelative(t *testing.T) {
 	}
 }
 
-// TestPhraseAnimationMatrixIsOneMotionPerPhrase pins the published phrase
-// corpus (phrase_animations_v1): the ten editorial phrase candidates, each with
-// its OWN motion, all rendering at the canvas that was published. The corpus is
-// reproducible only from this manifest — the rendered mp4s are gitignored — so
-// a duplicate motion (two phrases showing the same effect) or a job that stops
-// compiling has to fail here rather than at the next real run.
-func TestPhraseAnimationMatrixIsOneMotionPerPhrase(t *testing.T) {
-	const path = "../../cmd/batch-render-presets/phrase-animations-v1-manifest.json"
+// TestTextAnimationVocabularyIsOneMotionPerJob pins the published vocabulary
+// corpus (text_animation_vocabulary_v1): every row exercises its OWN motion, all
+// rendering at the canvas that was published. The corpus is reproducible only
+// from this manifest — the rendered mp4s are gitignored — so a duplicate motion
+// (two rows showing the same effect) or a job that stops compiling has to fail
+// here rather than at the next real run.
+//
+// It replaces the phrase_animations_v1 guard: that manifest was deleted together
+// with its corpus, and the invariants it carried (one distinct motion per job,
+// the output path is part of the contract) are asserted here against the corpus
+// that still ships instead of being dropped with the file.
+func TestTextAnimationVocabularyIsOneMotionPerJob(t *testing.T) {
+	const path = "../../cmd/batch-render-presets/text-animation-vocabulary-v1-manifest.json"
 	raw, err := os.ReadFile(path)
 	if err != nil {
-		t.Fatalf("read phrase animation manifest: %v", err)
+		t.Fatalf("read text animation vocabulary manifest: %v", err)
 	}
 	manifest, err := Decode(raw)
 	if err != nil {
-		t.Fatalf("decode phrase animation manifest: %v", err)
+		t.Fatalf("decode text animation vocabulary manifest: %v", err)
 	}
-	if len(manifest.Jobs) != 10 {
-		t.Fatalf("phrase animation manifest declares %d jobs, want the 10 phrase candidates", len(manifest.Jobs))
+	if len(manifest.Jobs) != 29 {
+		t.Fatalf("vocabulary manifest declares %d jobs, want the 29 published vocabulary rows", len(manifest.Jobs))
 	}
 	prepared, err := manifest.Prepare(t.TempDir())
 	if err != nil {
-		t.Fatalf("phrase animation manifest does not compile: %v", err)
+		t.Fatalf("text animation vocabulary manifest does not compile: %v", err)
 	}
 	const wantFrames = 120 // 5000 ms at 24/1 fps
 	motions := make(map[string]string, len(prepared))
@@ -223,11 +230,11 @@ func TestPhraseAnimationMatrixIsOneMotionPerPhrase(t *testing.T) {
 		}
 		// The published artifacts live in one corpus directory whose names are
 		// the Drive publication names, so the output path is part of the contract.
-		if !strings.HasPrefix(p.Job.Output, "phrase_animations_v1/") {
-			t.Errorf("job %s output = %q, want it under phrase_animations_v1/", p.Job.ID, p.Job.Output)
+		if !strings.HasPrefix(p.Job.Output, "renderinggen/text_animation_vocabulary_v1/") {
+			t.Errorf("job %s output = %q, want it under renderinggen/text_animation_vocabulary_v1/", p.Job.ID, p.Job.Output)
 		}
 		if owner, ok := motions[p.Job.MotionID]; ok {
-			t.Errorf("motion %s is used by both %s and %s: each phrase needs its own effect", p.Job.MotionID, owner, p.Job.ID)
+			t.Errorf("motion %s is used by both %s and %s: each row needs its own effect", p.Job.MotionID, owner, p.Job.ID)
 			continue
 		}
 		motions[p.Job.MotionID] = p.Job.ID
@@ -237,27 +244,32 @@ func TestPhraseAnimationMatrixIsOneMotionPerPhrase(t *testing.T) {
 	}
 }
 
-// TestAppleModernPhraseMatrixIsStableByConstruction keeps the modern Apple
-// phrase lane separate from experimental effects. The lane must never acquire
-// 3D/typewriter/glitch/shake motions by accident: those are useful creative
-// families, but they are not the stable IMPORTANT_PHRASE default requested by
-// the editor.
-func TestAppleModernPhraseMatrixIsStableByConstruction(t *testing.T) {
-	const path = "../../cmd/batch-render-presets/apple-modern-phrase-v2-manifest.json"
+// TestAppleV3CoreLaneIsStableByConstruction keeps the modern Apple phrase lane
+// separate from experimental effects. The lane must never acquire
+// 3D/typewriter/glitch/shake/rotation motions by accident: those are useful
+// creative families, but they are not the stable IMPORTANT_PHRASE default
+// requested by the editor.
+//
+// It replaces the apple_modern_phrase_v2/v4 guards, whose manifests and corpora
+// were deleted; the live successor is the apple_v3_core corpus, whose five rows
+// are exactly the five phrase motions the embedded ChrononTemplate catalog
+// declares. The no-rotation rule the v4 guard carried is asserted here.
+func TestAppleV3CoreLaneIsStableByConstruction(t *testing.T) {
+	const path = "../../cmd/batch-render-presets/apple-v3-core-manifest.json"
 	raw, err := os.ReadFile(path)
 	if err != nil {
-		t.Fatalf("read Apple modern phrase manifest: %v", err)
+		t.Fatalf("read Apple v3 core manifest: %v", err)
 	}
 	manifest, err := Decode(raw)
 	if err != nil {
-		t.Fatalf("decode Apple modern phrase manifest: %v", err)
+		t.Fatalf("decode Apple v3 core manifest: %v", err)
 	}
-	if len(manifest.Jobs) != 10 {
-		t.Fatalf("Apple modern phrase manifest declares %d jobs, want 10", len(manifest.Jobs))
+	if len(manifest.Jobs) != 5 {
+		t.Fatalf("Apple v3 core manifest declares %d jobs, want the 5 stable phrase families", len(manifest.Jobs))
 	}
 	prepared, err := manifest.Prepare(t.TempDir())
 	if err != nil {
-		t.Fatalf("Apple modern phrase manifest does not compile: %v", err)
+		t.Fatalf("Apple v3 core manifest does not compile: %v", err)
 	}
 	seen := make(map[string]bool, len(prepared))
 	for _, p := range prepared {
@@ -272,120 +284,58 @@ func TestAppleModernPhraseMatrixIsStableByConstruction(t *testing.T) {
 		}
 		seen[p.Job.MotionID] = true
 		motion := strings.ToLower(p.Job.MotionID)
-		for _, forbidden := range []string{"typewriter", "3d", "glitch", "shake"} {
+		for _, forbidden := range []string{"typewriter", "3d", "glitch", "shake", "rotation"} {
 			if strings.Contains(motion, forbidden) {
 				t.Errorf("job %s uses forbidden experimental motion %q", p.Job.ID, p.Job.MotionID)
 			}
 		}
-		if !strings.HasPrefix(p.Job.Output, "renderinggen/apple_modern_phrase_v2/") {
-			t.Errorf("job %s output = %q, want Apple modern phrase directory", p.Job.ID, p.Job.Output)
+		if !strings.HasPrefix(p.Job.Output, "renderinggen/apple_v3_core_v1/") {
+			t.Errorf("job %s output = %q, want the Apple v3 core directory", p.Job.ID, p.Job.Output)
 		}
 	}
 }
 
-// TestAppleModernPhraseV4HasFiveDistinctSmoothFamilies protects the visual
-// correction: v4 is deliberately smaller than v3, contains no rotation or
-// experimental motion, and each job has a real two-second entrance and exit.
-func TestAppleModernPhraseV4HasFiveDistinctSmoothFamilies(t *testing.T) {
-	const path = "../../cmd/batch-render-presets/apple-modern-phrase-v4-manifest.json"
+// TestTextAnimationVocabularyUsesRealVisualFamilies guards against a corpus
+// that only renames the same gentle fade: the vocabulary lane exists to prove
+// that materially different catalog motions render, so its compiled plans must
+// cover several distinct animated properties.
+//
+// It replaces the apple_modern_phrase_v3 guard, whose 12-job corpus was deleted
+// with its manifest; the invariant it carried (rows may not all collapse onto
+// one property family) is asserted here against the corpus that still ships.
+func TestTextAnimationVocabularyUsesRealVisualFamilies(t *testing.T) {
+	const path = "../../cmd/batch-render-presets/text-animation-vocabulary-v1-manifest.json"
 	raw, err := os.ReadFile(path)
 	if err != nil {
-		t.Fatalf("read Apple modern phrase v4 manifest: %v", err)
+		t.Fatalf("read text animation vocabulary manifest: %v", err)
 	}
 	manifest, err := Decode(raw)
 	if err != nil {
-		t.Fatalf("decode Apple modern phrase v4 manifest: %v", err)
-	}
-	if len(manifest.Jobs) != 5 {
-		t.Fatalf("Apple modern phrase v4 declares %d jobs, want 5", len(manifest.Jobs))
-	}
-	wantMotions := map[string]bool{
-		"blur_focus_in":      true,
-		"air_rise_type_on":   true,
-		"soft_clay_press":    true,
-		"tracking_expansion": true,
-		"letterbox_wipe":     true,
-	}
-	seen := make(map[string]bool, len(manifest.Jobs))
-	prepared, err := manifest.Prepare(t.TempDir())
-	if err != nil {
-		t.Fatalf("Apple modern phrase v4 does not compile: %v", err)
-	}
-	for _, p := range prepared {
-		if p.Job.TemplateID != "IMPORTANT_PHRASE" || p.Job.PresetID != "apple_v2" {
-			t.Errorf("job %s is not an IMPORTANT_PHRASE/apple_v2 job", p.Job.ID)
-		}
-		if p.Expect.Frames != 144 {
-			t.Errorf("job %s expects %d frames, want 144", p.Job.ID, p.Expect.Frames)
-		}
-		if seen[p.Job.MotionID] {
-			t.Errorf("motion %q is duplicated in v4", p.Job.MotionID)
-		}
-		seen[p.Job.MotionID] = true
-		if !wantMotions[p.Job.MotionID] {
-			t.Errorf("job %s uses motion %q outside the five smooth v4 families", p.Job.ID, p.Job.MotionID)
-		}
-		if got := p.Job.MotionParams["enter_frames"]; got != float64(48) {
-			t.Errorf("job %s enter_frames = %#v, want 48", p.Job.ID, got)
-		}
-		if got := p.Job.MotionParams["exit_frames"]; got != float64(48) {
-			t.Errorf("job %s exit_frames = %#v, want 48", p.Job.ID, got)
-		}
-		if strings.Contains(strings.ToLower(p.Job.MotionID), "rotation") {
-			t.Errorf("job %s uses rotation motion %q", p.Job.ID, p.Job.MotionID)
-		}
-		if !strings.HasPrefix(p.Job.Output, "renderinggen/apple_modern_phrase_v4/") {
-			t.Errorf("job %s output = %q, want v4 output directory", p.Job.ID, p.Job.Output)
-		}
-	}
-}
-
-// TestAppleModernPhraseV3UsesRealVisualFamilies guards against another batch
-// that only renames the same gentle fade. The v3 lane is intentionally made of
-// materially different catalog motions: blur, position, scale, rotation and
-// glyph-level reveals must all remain represented in the compiled plans.
-func TestAppleModernPhraseV3UsesRealVisualFamilies(t *testing.T) {
-	const path = "../../cmd/batch-render-presets/apple-modern-phrase-v3-manifest.json"
-	raw, err := os.ReadFile(path)
-	if err != nil {
-		t.Fatalf("read Apple modern phrase v3 manifest: %v", err)
-	}
-	manifest, err := Decode(raw)
-	if err != nil {
-		t.Fatalf("decode Apple modern phrase v3 manifest: %v", err)
+		t.Fatalf("decode text animation vocabulary manifest: %v", err)
 	}
 	prepared, err := manifest.Prepare(t.TempDir())
 	if err != nil {
-		t.Fatalf("Apple modern phrase v3 manifest does not compile: %v", err)
+		t.Fatalf("text animation vocabulary manifest does not compile: %v", err)
 	}
-	if len(prepared) != 12 {
-		t.Fatalf("v3 declares %d jobs, want 12", len(prepared))
+	if len(prepared) != 29 {
+		t.Fatalf("vocabulary declares %d jobs, want 29", len(prepared))
 	}
-	want := map[string][]string{
-		"depth_of_field_rack_focus": {"blur"},
-		"kinetic_stamp_impact":      {"rotation_z", "scale"},
-		"parallax_depth_stack":      {"rotation_z", "position_y", "scale"},
-		"velocity_inertia_snap":     {"rotation_z", "position_x"},
-		"vertical_reel_snap":        {"rotation_z", "position_y", "scale"},
-	}
+	properties := map[string]int{}
 	for _, p := range prepared {
-		if p.Job.TemplateID != "IMPORTANT_PHRASE" || p.Job.PresetID != "apple_v2" {
-			t.Errorf("job %s is not an IMPORTANT_PHRASE/apple_v2 job", p.Job.ID)
-		}
-		if p.Job.MotionID == "" {
-			t.Errorf("job %s has no motion", p.Job.ID)
-		}
-		if p.Expect.Frames != 144 {
-			t.Errorf("job %s expects %d frames, want 144 (6 seconds at 24 fps)", p.Job.ID, p.Expect.Frames)
-		}
-		if p.Job.MotionParams["enter_frames"] != float64(48) || p.Job.MotionParams["exit_frames"] != float64(48) {
-			t.Errorf("job %s timing params = %v, want 48-frame entrance and exit", p.Job.ID, p.Job.MotionParams)
-		}
-		for _, property := range want[p.Job.MotionID] {
-			if !strings.Contains(string(p.RenderPlan), `"property": "`+property+`"`) {
-				t.Errorf("job %s motion %s lost property %s in compiled plan", p.Job.ID, p.Job.MotionID, property)
+		for _, occurrence := range strings.Split(string(p.RenderPlan), `"property": "`)[1:] {
+			if end := strings.Index(occurrence, `"`); end > 0 {
+				properties[occurrence[:end]]++
 			}
 		}
+	}
+	// The frozen families. Every one of them must survive a catalog or compiler
+	// change: a motion that silently stops animating a property is
+	// indistinguishable from a working one in the produced file. `start` and
+	// `tracking` are the selector-level half (per-glyph/per-word animation), so a
+	// corpus that collapsed onto layer tracks alone cannot pass this either.
+	wantFamilies := []string{"opacity", "position_x", "position_y", "scale", "scale_x", "start", "tracking"}
+	if got := slices.Sorted(maps.Keys(properties)); !slices.Equal(got, wantFamilies) {
+		t.Errorf("animated property families = %v, want %v", got, wantFamilies)
 	}
 }
 

@@ -6,6 +6,14 @@ import (
 	"strings"
 )
 
+// semanticItem must remain a json.Unmarshaler. Its contract below is invoked by
+// the encoding/json reflection path, so no file in this repository can name the
+// call site: without the assertion a signature that drifted off the interface
+// would not fail to build, it would silently stop validating every item. The
+// assertion is also the only form in which the dead-export ratchet can see that
+// UnmarshalJSON is wired (see stdlibInterfaceMethods in internal/architecture).
+var _ json.Unmarshaler = (*semanticItem)(nil)
+
 // UnmarshalJSON is the wire boundary for one semantic item. PipelineGen owns
 // entity selection/editorial data; RenderingGen only validates and lowers it.
 // Keep wire-only identity/timing fields out of the render model while still
