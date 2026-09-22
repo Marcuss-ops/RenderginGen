@@ -9,7 +9,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"os"
 	"time"
 
@@ -20,6 +19,7 @@ import (
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/overlay"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/queue"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/storage"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/workerlog"
 )
 
 // storeArtifact reads the rendered output, hashes it (sha256), stores it in
@@ -56,14 +56,14 @@ func (p *Processor) storeArtifact(ctx context.Context, jobID, outputPath string,
 	shaStart := time.Now()
 	if outcome.Identity.SHA256 != "" {
 		hash = outcome.Identity.SHA256
-		log.Printf("job %s: artifact identity %s (proven=%t, bytes=%d)", jobID, outcome.Identity.Source, outcome.Identity.Proven, fileInfo.Size())
+		workerlog.ByJobID(jobID).Infof("artifact identity %s (proven=%t, bytes=%d)", outcome.Identity.Source, outcome.Identity.Proven, fileInfo.Size())
 	} else {
 		// No receipt (or an unreadable/unusable one): identity must be proven by
 		// re-reading the output. This costs a full SHA-256 pass on the critical
 		// path, so it is recorded — otherwise the spike is visible only as an
 		// unexplained sha256_ms and the degradation stays unattributable. The
 		// gate has already recorded WHY it could not resolve the address.
-		log.Printf("job %s: hashing output directly (%s)", jobID, outcome.Identity.Source)
+		workerlog.ByJobID(jobID).Warnf("hashing output directly (%s)", outcome.Identity.Source)
 		digest, _, verifyErr := hashio.File(outputPath)
 		if verifyErr != nil {
 			return queue.Artifact{}, fmt.Errorf("processor: hash output %s: %w", outputPath, verifyErr)
@@ -168,7 +168,7 @@ func (p *Processor) storeArtifact(ctx context.Context, jobID, outputPath string,
 		// a renderer that silently stops emitting its summary is visible in the
 		// ledger and on GET /jobs/{id} instead of only in a log line.
 		phaseMetrics[metricnames.ChrononTelemetryMissing] = 1
-		log.Printf("job %s: chronon telemetry summary unavailable: %v", jobID, err)
+		workerlog.ByJobID(jobID).Warnf("chronon telemetry summary unavailable: %v", err)
 	} else {
 		chrononTelemetry = raw
 		artifact.ChrononTelemetry = raw
@@ -210,12 +210,12 @@ func (p *Processor) preserveRawTimingSidecar(ctx context.Context, artifact *queu
 	hash, size, err := p.putTimingSidecar(ctx, outputPath+".timing.json")
 	if err != nil {
 		noteTimingSidecarMissing(artifact)
-		log.Printf("job %s: raw timing sidecar unavailable for preservation: %v", jobID, err)
+		workerlog.ByJobID(jobID).Warnf("raw timing sidecar unavailable for preservation: %v", err)
 		return
 	}
 	if size == 0 {
 		noteTimingSidecarMissing(artifact)
-		log.Printf("job %s: raw timing sidecar empty; skipping preservation", jobID)
+		workerlog.ByJobID(jobID).Warnf("raw timing sidecar empty; skipping preservation")
 		return
 	}
 	artifact.ChrononTimingStorageKey = hash
@@ -228,7 +228,7 @@ func (p *Processor) preserveRawTimingSidecar(ctx context.Context, artifact *queu
 	}
 	artifact.Metrics[metricnames.ChrononTimingPreserved] = 1
 	artifact.Metrics[metricnames.ChrononTimingBytes] = float64(size)
-	log.Printf("job %s: raw timing sidecar preserved (sha256=%s bytes=%d)", jobID, hash, size)
+	workerlog.ByJobID(jobID).Infof("raw timing sidecar preserved (sha256=%s bytes=%d)", hash, size)
 }
 
 // noteTimingSidecarMissing records the fail-open absence of the raw timing

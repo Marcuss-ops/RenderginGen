@@ -5,13 +5,13 @@ package processor
 import (
 	"context"
 	"fmt"
-	"log"
 	"time"
 
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/chronon"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/media"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/metricnames"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/queue"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/workerlog"
 )
 
 // probeSource names where the finalized artifact's structural facts came from.
@@ -145,7 +145,7 @@ func (p *Processor) FinalizeJob(ctx context.Context, prepared *PreparedJob) (que
 			// Not fatal, but never silent: a job whose facts came from a local
 			// probe is paying the duplicate verification the receipt exists to
 			// avoid, and that is worth seeing in the log.
-			log.Printf("[processor] media facts for %s came from %s (no canonical receipt): the artifact was inspected locally", job.ID, source)
+			workerlog.ByJobID(job.ID).Warnf("media facts came from %s (no canonical receipt): the artifact was inspected locally", source)
 		}
 		probeUS := float64(time.Since(probeStart).Microseconds())
 		metrics[metricnames.ProbeUS] = probeUS

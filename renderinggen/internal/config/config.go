@@ -21,9 +21,11 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/chronon"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/workerlog"
 	"gopkg.in/yaml.v3"
 )
 
@@ -40,6 +42,26 @@ type Config struct {
 	ArtifactDB    ArtifactDBConfig `yaml:"artifact_db"`
 	Media         MediaConfig      `yaml:"media"`
 	Pipeline      PipelineConfig   `yaml:"pipeline"`
+	Logging       LoggingConfig    `yaml:"logging"`
+}
+
+// LoggingConfig configures the worker's log surface (see internal/workerlog).
+//
+// It is configuration because the level decides what the GPU worker records
+// about a render — a noisy host wants info, a post-mortem wants debug — and
+// because the per-job log files are a deployment size decision: they live under
+// the jobs root, which is frequently tmpfs (RAM). Before this, the worker had no
+// level at all (everything was an un-levelled log.Printf) and no record of its
+// own, so the collector depended entirely on the host's journald retention.
+type LoggingConfig struct {
+	Level  string `yaml:"level"`  // debug | info (default) | warn | error
+	Format string `yaml:"format"` // json (default) | text
+	// JobLogRetention is how long a finished job's durable log file is kept
+	// under <workspace.root>/.workerlogs before the startup prune removes it.
+	JobLogRetention time.Duration `yaml:"job_log_retention"`
+	// JobLogMaxFiles caps how many durable job logs are kept; the oldest are
+	// pruned first once the count is exceeded.
+	JobLogMaxFiles int `yaml:"job_log_max_files"`
 }
 
 // MediaConfig locates the external certification tools. They are settings, not
@@ -369,6 +391,27 @@ func applyDefaults(c *Config) {
 		c.Chronon.StallTimeout = chronon.DefaultStallTimeout
 	}
 	applyPipelineDefaults(&c.Pipeline)
+	applyLoggingDefaults(&c.Logging)
+}
+
+// applyLoggingDefaults fills the shipped log settings: info level in JSON, with
+// per-job logs kept for 48 h and capped at 2000 files. The retention window is
+// the one the chain's triage actually uses (the collector reads journals and job
+// logs for the last 1–3 hours); 48 h leaves room to look at yesterday's run
+// without letting a tmpfs jobs root grow unboundedly.
+func applyLoggingDefaults(l *LoggingConfig) {
+	if strings.TrimSpace(l.Level) == "" {
+		l.Level = "info"
+	}
+	if strings.TrimSpace(l.Format) == "" {
+		l.Format = workerlog.FormatJSON
+	}
+	if l.JobLogRetention == 0 {
+		l.JobLogRetention = 48 * time.Hour
+	}
+	if l.JobLogMaxFiles == 0 {
+		l.JobLogMaxFiles = 2000
+	}
 }
 
 // applyPipelineDefaults fills the pipeline timings with the values the worker
@@ -482,6 +525,9 @@ func (c *Config) validate() error {
 	if err := c.Pipeline.validate(); err != nil {
 		return err
 	}
+	if err := c.Logging.validate(); err != nil {
+		return err
+	}
 	if c.Drive.Enabled {
 		switch c.Drive.Mode {
 		case "google":
@@ -542,6 +588,29 @@ func (p PipelineConfig) validate() error {
 	case "", "fast", "normal", "certify":
 	default:
 		return fmt.Errorf("pipeline.receipt_verify %q must be one of \"\" (fast), fast, normal, certify", p.ReceiptVerify)
+	}
+	return nil
+}
+
+// validate rejects a log level or format the worker cannot honour. The level
+// spelling is owned by internal/workerlog (ParseLevel), so config cannot accept
+// a value the logger would reject at startup — a worker that fails to install
+// its log surface must fail at LOAD, where the operator sees the file they got
+// wrong.
+func (l LoggingConfig) validate() error {
+	if _, err := workerlog.ParseLevel(l.Level); err != nil {
+		return fmt.Errorf("logging.level: %w", err)
+	}
+	switch l.Format {
+	case workerlog.FormatJSON, workerlog.FormatText:
+	default:
+		return fmt.Errorf("logging.format %q must be %q or %q", l.Format, workerlog.FormatJSON, workerlog.FormatText)
+	}
+	if l.JobLogRetention < 0 {
+		return fmt.Errorf("logging.job_log_retention must not be negative, got %v", l.JobLogRetention)
+	}
+	if l.JobLogMaxFiles < 0 {
+		return fmt.Errorf("logging.job_log_max_files must not be negative, got %d", l.JobLogMaxFiles)
 	}
 	return nil
 }

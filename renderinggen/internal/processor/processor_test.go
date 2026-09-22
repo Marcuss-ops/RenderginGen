@@ -236,7 +236,7 @@ func TestPrefetchWarmAssetsDoesNotBlockPrepare(t *testing.T) {
 	returned := make(chan struct{})
 	go func() {
 		defer close(returned)
-		proc.prefetchWarmAssets(context.Background(), t.TempDir(), []queue.AssetRef{
+		proc.prefetchWarmAssets(context.Background(), "job-warmup", t.TempDir(), []queue.AssetRef{
 			{LogicalPath: "assets/scene.png"},
 			{LogicalPath: "assets/source.mp4"},
 		})

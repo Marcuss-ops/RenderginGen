@@ -5,12 +5,12 @@ package processor
 import (
 	"context"
 	"fmt"
-	"log"
 	"sync"
 	"time"
 
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/chronon"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/metricnames"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/workerlog"
 )
 
 // progressLogInterval bounds how often a render's frame milestones reach the
@@ -122,8 +122,8 @@ func (p *Processor) RunGPU(ctx context.Context, prepared *PreparedJob) error {
 			}
 			progressMu.Unlock()
 			if logNow {
-				log.Printf("job %s progress: stage=chronon_render frames_done=%d frames_total=%d fps=%.2f last_frame_at=%s backend=%s encoder=%s",
-					job.ID, progress.FramesDone, progress.FramesTotal, progress.FPS,
+				workerlog.ByJobID(job.ID).Infof("progress: stage=chronon_render frames_done=%d frames_total=%d fps=%.2f last_frame_at=%s backend=%s encoder=%s",
+					progress.FramesDone, progress.FramesTotal, progress.FPS,
 					progress.At.Format(time.RFC3339Nano), p.backend, p.hardwareEncoder)
 			}
 			if p.progressTracker != nil {

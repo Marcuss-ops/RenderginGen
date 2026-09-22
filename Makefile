@@ -86,19 +86,20 @@ test-module-standalone:
 # test-unit — every module's tests WITHOUT the real-engine runtime
 # certification suite (sub-second gate, no GPU, no ffmpeg, no Chronon).
 #
-# The split exists because the certification suite (real chronon3d_cli renders,
-# decoded and pixel-compared) is discovered automatically when a Chronon
-# checkout sits beside this repository. On such a machine a bare
-# `go test ./...` is minutes of GPU work, not a unit gate — and it is the
-# developer machine where that is least expected. The opt-out
-# (RENDERINGGEN_SKIP_GPU_E2E, owned by
-# renderinggen/internal/overlay/final_certification_runtime_test.go and pinned
-# by TestRuntimeCertificationOptOut) makes the distinction explicit instead of
-# relying on the binary happening to be absent:
+# The real-engine suites (real chronon3d_cli renders, decoded and
+# pixel-compared) are OPT-IN: they run only when CHRONON_BIN names a built
+# chronon3d_cli. They used to be enabled by DISCOVERY of a build beside this
+# repository, which made a bare `go test ./...` on a developer machine minutes of
+# GPU work — and on a host without a usable GPU it hung instead of failing, since
+# the engine's children inherit the output pipe. Discovery is no longer accepted
+# as consent (pinned by TestRuntimeCertificationOptOut in
+# renderinggen/internal/overlay/final_certification_runtime_test.go);
+# RENDERINGGEN_SKIP_GPU_E2E stays as the explicit opt-out CI and this target set:
 #
 #   make test-unit     fast gate, runs everywhere, must always be green
-#   go test ./...      also runs the runtime certification when the engine is
-#                      present (opt in with CHRONON_BIN to force it)
+#   go test ./...      unit + compile-level certification, no engine required
+#   CHRONON_BIN=/path/to/chronon3d_cli go test ./renderinggen/internal/overlay/
+#                      the real-engine + golden-render suites
 #
 # This target does not duplicate the CI command: CI owns the -race scope
 # (pinned by TestCIRunsRaceEnabledModuleTests), this owns the fast local gate.

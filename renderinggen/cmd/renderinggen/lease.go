@@ -6,11 +6,11 @@ package main
 import (
 	"context"
 	"errors"
-	"log"
 	"time"
 
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/config"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/queue"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/workerlog"
 )
 
 // sleepCtx sleeps for d or until ctx is cancelled; reports whether the sleep
@@ -54,7 +54,7 @@ func withLeaseVoid(ctx context.Context, job *queue.Job, q *queue.Client, timings
 				if renewWithRetry(jobCtx, job.ID, q, interval, timings) {
 					continue
 				}
-				log.Printf("job %s: lease renew failed permanently, aborting", job.ID)
+				workerlog.ByJobID(job.ID).Errorf("lease renew failed permanently, aborting")
 				cancel()
 				return
 			}
@@ -90,7 +90,7 @@ func renewWithRetry(ctx context.Context, jobID string, q *queue.Client, interval
 		if attempt >= maxAttempts || ctx.Err() != nil {
 			return false
 		}
-		log.Printf("job %s: lease renew attempt %d/%d failed, retrying: %v", jobID, attempt, maxAttempts, err)
+		workerlog.ByJobID(jobID).Warnf("lease renew attempt %d/%d failed, retrying: %v", attempt, maxAttempts, err)
 		select {
 		case <-ctx.Done():
 			return false

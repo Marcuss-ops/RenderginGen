@@ -269,6 +269,41 @@ func (s *Repository) Children(parentJobID string) ([]*model.Job, error) {
 	return children, nil
 }
 
+// ByParent returns every job submitted under one parent_job_id, ordered by
+// queued_at then id so the read is deterministic for equal timestamps.
+//
+// It walks the parent index rather than every job, so the read costs its own
+// size (the same reason Children uses it) and an unknown parent is an empty
+// answer, not an error.
+func (s *Repository) ByParent(parentJobID string) ([]*model.Job, error) {
+	if parentJobID == "" {
+		return nil, fmt.Errorf("parent job id is required")
+	}
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	ids := s.children[parentJobID]
+	jobs := make([]*model.Job, 0, len(ids))
+	for id := range ids {
+		job := s.jobs[id]
+		if job == nil {
+			continue
+		}
+		copy := *job
+		if artifact, ok := s.artifacts[id]; ok {
+			artifactCopy := artifact
+			copy.Artifact = &artifactCopy
+		}
+		jobs = append(jobs, &copy)
+	}
+	sort.Slice(jobs, func(i, j int) bool {
+		if !jobs[i].QueuedAt.Equal(jobs[j].QueuedAt) {
+			return jobs[i].QueuedAt.Before(jobs[j].QueuedAt)
+		}
+		return jobs[i].ID < jobs[j].ID
+	})
+	return jobs, nil
+}
+
 // ClaimFinalization atomically claims a parent row for one finalizer.
 func (s *Repository) ClaimFinalization(parentJobID, workerID string) (*model.Job, bool, error) {
 	if parentJobID == "" || workerID == "" {

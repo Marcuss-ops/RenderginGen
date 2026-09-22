@@ -13,7 +13,7 @@ package processor
 
 import (
 	"context"
-	"log"
+	"fmt"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -25,6 +25,7 @@ import (
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/metricnames"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/queue"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/storage"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/workerlog"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/workspace"
 )
 
@@ -253,9 +254,30 @@ func (p *Processor) cleanupWorkspace(ws *workspace.Workspace, jobID string) {
 	now := time.Now().UnixNano()
 	last := p.cleanupLogLast.Load()
 	if now-last >= int64(time.Second) && p.cleanupLogLast.CompareAndSwap(last, now) {
-		log.Printf("ERROR processor: workspace cleanup failed for job %s (total failures=%d): %v — the scratch directory is still on disk",
-			jobID, total, err)
+		// Job-scoped, so the degradation is attributable to the job whose
+		// scratch directory survived — and lands in that job's own log file.
+		workerlog.ByJobID(jobID).Errorf("workspace cleanup failed (total failures=%d): %v — the scratch directory is still on disk",
+			total, err)
 	}
+}
+
+// AttachDurableJobLog opens the job's durable per-job log file under the jobs
+// root and returns its path. The pools call it at CLAIM, before any workspace
+// work, so the file already contains the claim/lease lines by the time the job
+// has a workspace (where PrepareJob attaches the live copy).
+//
+// This file is the worker's own record, and it is the reason the collector no
+// longer depends on the host's journald retention: the workspace is removed at
+// the end of every job, so the workspace copy alone would vanish.
+func (p *Processor) AttachDurableJobLog(jobID string) (string, error) {
+	path := workerlog.DurableJobLogPath(p.jobsRoot, jobID)
+	if path == "" {
+		return "", fmt.Errorf("processor: no durable job-log path for job %q (jobs root %q)", jobID, p.jobsRoot)
+	}
+	if _, err := workerlog.AttachJobLog(jobID, path); err != nil {
+		return "", err
+	}
+	return path, nil
 }
 
 // Degradations reports the process-cumulative fail-open degradations. A

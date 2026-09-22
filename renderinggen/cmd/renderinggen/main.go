@@ -35,6 +35,8 @@ import (
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/queue"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/storage"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/version"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/workerlog"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/workermetrics"
 )
 
 func main() {
@@ -58,6 +60,15 @@ func main() {
 		log.Fatalf("config: %v", err)
 	}
 
+	// Logging before anything else can log. The level and format are
+	// configuration (logging.level / logging.format), so a failed startup is
+	// already a structured record instead of a bare line, and the per-job log
+	// files the collector reads exist from the first claimed job. A bad value can
+	// not reach here: config validates both spellings at load.
+	if err := workerlog.Init(workerlog.Options{Level: cfg.Logging.Level, Format: cfg.Logging.Format}); err != nil {
+		log.Fatalf("logging: %v", err)
+	}
+
 	// Install the configured certification tools once, before any render can
 	// reach the probe/decode paths. Without this the media package falls back to
 	// the bare "ffprobe"/"ffmpeg" PATH lookup, which is what the pre-settings
@@ -77,6 +88,9 @@ func main() {
 	// Reap workspaces left behind by a crashed worker run (see
 	// startWorkspaceCleanup for the full rationale).
 	go startWorkspaceCleanup(ctx, cfg.Workspace.Root, timings)
+	// Bound the durable per-job log directory before any job can add to it (the
+	// jobs root is often tmpfs, i.e. RAM). See pruneJobLogs.
+	pruneJobLogs(cfg)
 
 	// 1. Detect GPU.
 	gpuInfo := gpu.Detect(cfg.GPU.Device)
@@ -274,6 +288,15 @@ func main() {
 	// Fail-open degradations (workspace cleanup failures today) must be visible
 	// on the worker's own surface, not only in the log stream.
 	healthServer.SetDegradationFunc(proc.Degradations)
+	// Prometheus exposition on the same admin port. The worker was the only
+	// process in the chain with no scrapeable surface (GET :8085/metrics → 404),
+	// so the per-phase timings it already measures were unreachable. Both feeds
+	// are the EXISTING instrumentation: the processor's phase hook and its
+	// terminal-report funnel.
+	workerMetrics := workermetrics.New()
+	proc.SetPhaseHook(workerMetrics.PhaseHook())
+	processor.SetJobOutcomeHook(workerMetrics.OutcomeHook())
+	healthServer.SetMetricsHandler(workerMetrics.Handler())
 	go func() {
 		progresspush.New(queueClient, progressTracker, progresspush.DefaultInterval).Run(ctx)
 	}()
@@ -317,8 +340,9 @@ func main() {
 		numWorkers = 1
 	}
 
-	log.Printf("worker %s ready: renderinggen=%s chronon=%s schema=%d pipeline_workers=%d gpu_lanes=%d",
-		cfg.Worker.ID, version.RenderingGen, chrononVersion, version.OverlaySchema, numWorkers, gpuLanes)
+	log.Printf("worker %s ready: renderinggen=%s chronon=%s schema=%d pipeline_workers=%d gpu_lanes=%d log_level=%s log_format=%s per_job_logs=%s",
+		cfg.Worker.ID, version.RenderingGen, chrononVersion, version.OverlaySchema, numWorkers, gpuLanes,
+		cfg.Logging.Level, cfg.Logging.Format, workerlog.DurableJobLogDir(cfg.Workspace.Root))
 
 	// 5. Run the three-stage pipeline: CPU preparation feeds GPU lanes,
 	// and CPU post-processing (probe, hash, store, publish) drains behind them.

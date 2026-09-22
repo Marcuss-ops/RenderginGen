@@ -139,6 +139,10 @@ func (s *Service) ClaimFinalization(parentID, workerID string) (*model.Job, bool
 
 func (s *Service) Children(parentID string) ([]*model.Job, error) { return s.repo.Children(parentID) }
 
+// ByParent returns every job submitted under one parent_job_id (the run-scoped
+// read: "what did this run enqueue?"), in submission order.
+func (s *Service) ByParent(parentID string) ([]*model.Job, error) { return s.repo.ByParent(parentID) }
+
 // Get returns the current state of a job, including its artifact when done.
 func (s *Service) Get(id string) (*model.Job, error) {
 	return s.repo.Get(id)

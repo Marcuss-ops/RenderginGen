@@ -551,6 +551,7 @@ func compileImageLayer(ri resolvedItem, src *semanticPlan, registry *assetRegist
 			return Layer{}, err
 		}
 		if animation != nil {
+			layer.Enable3D = animationUses3D(animation)
 			if len(animation.Tracks) > 0 {
 				layer.Animation = animation
 			}
@@ -564,6 +565,7 @@ func compileImageLayer(ri resolvedItem, src *semanticPlan, registry *assetRegist
 			return Layer{}, err
 		}
 		if presetAnimation != nil {
+			layer.Enable3D = animationUses3D(presetAnimation)
 			if len(presetAnimation.Tracks) > 0 {
 				layer.Animation = presetAnimation
 			}
@@ -660,6 +662,7 @@ func compileTextLayer(ri resolvedItem, src *semanticPlan, layerID string) (Layer
 		textAnimation = withPhraseEntryExit(textAnimation, ri.End-ri.Start)
 	}
 	if textAnimation != nil {
+		layer.Enable3D = animationUses3D(textAnimation)
 		if len(textAnimation.Tracks) > 0 {
 			layer.Animation = textAnimation
 		}

@@ -24,11 +24,11 @@ package processor
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/chronon"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/metricnames"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/overlay"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/workerlog"
 )
 
 // compositionDivergence classifies the disagreement between the prediction and
@@ -85,7 +85,7 @@ func verifyCompositionPrediction(plan *overlay.Plan, raw json.RawMessage, metric
 	facts, err := chronon.DecodeExecutionFacts(raw)
 	if err != nil {
 		metrics[metricnames.CompositionPredictionUnverifiable] = 1
-		log.Printf("job %s: composition prediction not verifiable: %v", jobID, err)
+		workerlog.ByJobID(jobID).Warnf("composition prediction not verifiable: %v", err)
 		return nil
 	}
 	predicted := planHasVisualOverlay(plan)
@@ -95,8 +95,8 @@ func verifyCompositionPrediction(plan *overlay.Plan, raw json.RawMessage, metric
 	}
 	metrics[metricnames.CompositionPredictionDivergence] = 1
 	composited, known := facts.Composited()
-	log.Printf("job %s: composition prediction divergence %s: predicted_overlay=%t execution_path=%s composited=%v (reported=%t) handoff=%s",
-		jobID, divergence, predicted, facts.ExecutionPath(), composited, known, facts.Job.SurfaceHandoffPath)
+	workerlog.ByJobID(jobID).Errorf("composition prediction divergence %s: predicted_overlay=%t execution_path=%s composited=%v (reported=%t) handoff=%s",
+		divergence, predicted, facts.ExecutionPath(), composited, known, facts.Job.SurfaceHandoffPath)
 	switch divergence {
 	case divergenceSingleSourceDespiteOverlay:
 		return fmt.Errorf("processor: composition prediction divergence %s: the plan declares an authored overlay but Chronon reported execution_path=%s, so the single decoded source did not carry the plan's layers",

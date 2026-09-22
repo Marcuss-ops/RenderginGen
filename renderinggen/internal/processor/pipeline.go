@@ -20,7 +20,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -31,6 +30,7 @@ import (
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/metricnames"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/overlay"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/queue"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/workerlog"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/workspace"
 )
 
@@ -219,6 +219,14 @@ func (p *Processor) PrepareJob(ctx context.Context, job *queue.Job) (*PreparedJo
 	if err := validate(job); err != nil {
 		return nil, err
 	}
+	// Bind the job to its MASTER run id before anything else can log: every
+	// later line for this job (here, in the GPU lane and in the post pool) is
+	// then greppable by the parent_job_id the master stamped on the child job
+	// (see internal/workerlog). Binding is idempotent, so the serial Render
+	// path and the concurrent pools can both do it. It happens AFTER validate
+	// because a nil/invalid job never reaches the pipeline (validate rejects
+	// it), and binding would dereference it.
+	workerlog.BindJob(job.ParentJobID, job.ID)
 	// One compile pass produces the plan AND the ledger counters, so the
 	// artifact metrics can never drift from the layers that were emitted.
 	compileStart := time.Now()
@@ -236,8 +244,8 @@ func (p *Processor) PrepareJob(ctx context.Context, job *queue.Job) (*PreparedJo
 	// single observable projection of that fact.
 	if len(result.UnknownTemplates) > 0 {
 		metrics[metricnames.UnknownTemplates] = float64(len(result.UnknownTemplates))
-		log.Printf("job %s: %d item template_id(s) resolved to no registry row and were compiled as preset-less primitives: %s",
-			job.ID, len(result.UnknownTemplates), strings.Join(result.UnknownTemplates, ", "))
+		workerlog.ByJobID(job.ID).Warnf("%d item template_id(s) resolved to no registry row and were compiled as preset-less primitives: %s",
+			len(result.UnknownTemplates), strings.Join(result.UnknownTemplates, ", "))
 	}
 	// The chunk contract is validated against the plan that will actually be
 	// rendered, before any asset is downloaded: an out-of-range chunk is a
@@ -277,6 +285,16 @@ func (p *Processor) PrepareJob(ctx context.Context, job *queue.Job) (*PreparedJo
 		// (the TTL covers them); the missing first marker is not.
 		p.cleanupWorkspace(ws, job.ID)
 		return nil, fmt.Errorf("processor: establish workspace lease for %s: %w", job.ID, err)
+	}
+	// Per-job log file, live inside the workspace this job owns: it is what an
+	// operator (and the collector) reads while the job runs, and what survives
+	// on disk when pipeline.keep_workspace is set. The durable copy under the
+	// jobs root was attached at claim, so this file starts at the prepare stage
+	// while the durable one already holds the claim lines.
+	if _, logErr := workerlog.AttachJobLog(job.ID, filepath.Join(ws.Root(), "worker.log")); logErr != nil {
+		// Fail-open: a job is never failed because a diagnostic file could not
+		// be created, but the reason is recorded on the job's own record.
+		workerlog.ByJobID(job.ID).Warnf("per-job workspace log unavailable: %v", logErr)
 	}
 	var inputBytes int64
 	phaseStart := time.Now()
@@ -333,7 +351,7 @@ func (p *Processor) PrepareJob(ctx context.Context, job *queue.Job) (*PreparedJo
 	}
 	record(metricnames.PrepareMaterializeStem, matStart)
 	prefetchStart := time.Now()
-	p.prefetchWarmAssets(ctx, ws.Root(), assets)
+	p.prefetchWarmAssets(ctx, job.ID, ws.Root(), assets)
 	record(metricnames.PreparePrefetchStem, prefetchStart)
 	// The phase name is the metric-name stem; "asset_materialize" matches the
 	// artifact ledger's column and projection (asset_materialize_us), so one
@@ -404,7 +422,7 @@ func (p *Processor) PrepareJob(ctx context.Context, job *queue.Job) (*PreparedJo
 		// in the plan after lowering (0 is possible when every cue was skipped
 		// as empty or degenerate).
 		metrics[metricnames.SubtitleLayers] = float64(subtitleCount)
-		log.Printf("job %s: lowered %d ASS cues into Chronon GPU text layers", job.ID, subtitleCount)
+		workerlog.ByJobID(job.ID).Infof("lowered %d ASS cues into Chronon GPU text layers", subtitleCount)
 	}
 
 	phaseStart = time.Now()
@@ -419,7 +437,7 @@ func (p *Processor) PrepareJob(ctx context.Context, job *queue.Job) (*PreparedJo
 		// happened on every job it affects.
 		plan.Output.ProfileID = ""
 		metrics[metricnames.ProfileStrippedByConfig] = 1
-		log.Printf("job %s: output profile %q stripped (native_output_profiles=false); published artifact carries no profile_id", job.ID, metadata.ProfileID)
+		workerlog.ByJobID(job.ID).Warnf("output profile %q stripped (native_output_profiles=false); published artifact carries no profile_id", metadata.ProfileID)
 	}
 	renderPlan, marshalErr := plan.Marshal()
 	if marshalErr != nil {
@@ -452,11 +470,11 @@ func (p *Processor) PrepareJob(ctx context.Context, job *queue.Job) (*PreparedJo
 			// applied" are different operational facts, and only the second
 			// one changes what the published artifact sounds like.
 			metrics[metricnames.AudioModeUnsupported] = 1
-			log.Printf("job %s: requested audio mode %q is NOT applied (native mux copies the source stream); the artifact carries the source audio unchanged",
-				job.ID, plan.Output.Audio.Mode)
+			workerlog.ByJobID(job.ID).Warnf("requested audio mode %q is NOT applied (native mux copies the source stream); the artifact carries the source audio unchanged",
+				plan.Output.Audio.Mode)
 		}
-		log.Printf("job %s: audio codec/sample_rate/channels are inert (Chronon copies source audio, no transcode); mode=%q codec=%q sr=%d ch=%d",
-			job.ID, plan.Output.Audio.Mode, plan.Output.Audio.Codec, plan.Output.Audio.SampleRate, plan.Output.Audio.Channels)
+		workerlog.ByJobID(job.ID).Warnf("audio codec/sample_rate/channels are inert (Chronon copies source audio, no transcode); mode=%q codec=%q sr=%d ch=%d",
+			plan.Output.Audio.Mode, plan.Output.Audio.Codec, plan.Output.Audio.SampleRate, plan.Output.Audio.Channels)
 	}
 	record(metricnames.PrepareTotalStem, totalStart)
 	return &PreparedJob{
@@ -486,7 +504,7 @@ func (p *Processor) PrepareJob(ctx context.Context, job *queue.Job) (*PreparedJo
 // starting on a job whose render did not depend on it. Each request is bounded
 // by the IPC client's own service timeout, so the detached goroutines cannot
 // accumulate.
-func (p *Processor) prefetchWarmAssets(ctx context.Context, root string, assets []queue.AssetRef) {
+func (p *Processor) prefetchWarmAssets(ctx context.Context, jobID, root string, assets []queue.AssetRef) {
 	if p == nil || p.assetPrefetcher == nil {
 		return
 	}
@@ -522,10 +540,10 @@ func (p *Processor) prefetchWarmAssets(ctx context.Context, root string, assets 
 		path := path
 		go func() {
 			if err := p.assetPrefetcher.PrefetchAsset(warmCtx, path); err != nil {
-				log.Printf("chronon asset warm-up skipped: path=%s err=%v", path, err)
+				workerlog.ByJobID(jobID).Infof("chronon asset warm-up skipped: path=%s err=%v", path, err)
 				return
 			}
-			log.Printf("chronon asset warm-up complete: path=%s", path)
+			workerlog.ByJobID(jobID).Infof("chronon asset warm-up complete: path=%s", path)
 		}()
 	}
 }

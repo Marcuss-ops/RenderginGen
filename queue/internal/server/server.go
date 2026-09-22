@@ -84,6 +84,10 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /jobs/{parent}/{lang}/wait", s.waitJob)
 	mux.HandleFunc("GET /jobs/{id}", s.get)
 	mux.HandleFunc("GET /jobs/{parent}/{lang}", s.get)
+	// Run-scoped listing: every job submitted under one parent_job_id
+	// ("what did this run enqueue?"). Registered before the {id} patterns so
+	// the bare /jobs path is unambiguous.
+	mux.HandleFunc("GET /jobs", s.listByParent)
 	mux.HandleFunc("GET /jobs/depth", s.depth)
 	mux.HandleFunc("GET /health", s.health)
 	mux.HandleFunc("POST /workers/register", s.registerWorker)

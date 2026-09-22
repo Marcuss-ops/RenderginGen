@@ -72,7 +72,7 @@ func TestReadTelemetrySummaryFallsBackToV2TimingSidecar(t *testing.T) {
 		"summary": map[string]any{"render_loop_fps": 29.2},
 		"job": map[string]any{
 			"process_wall_ms": 5123.0,
-			"gpu":            map[string]any{"nvenc_frames": 150, "effective_backend": "vulkan"},
+			"gpu":             map[string]any{"nvenc_frames": 150, "effective_backend": "vulkan"},
 		},
 		"frame_times_ms": []map[string]any{{"frame": 0}, {"frame": 1}},
 	})

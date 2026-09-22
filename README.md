@@ -261,14 +261,18 @@ CHRONON_HOME=/opt/chronon3d go test ./internal/chronon ./internal/processor -run
 ```
 
 La suite di certificazione **runtime** (render reali con `chronon3d_cli`,
-confronto pixel e decodifica) è opt-in e opt-out: si attiva con `CHRONON_BIN` o
-con un build di `chronon3d_cli` presente nel workspace, e si disattiva con
-`RENDERINGGEN_SKIP_GPU_E2E=1`. Su una macchina dove il binario c'è, quindi,
-`go test ./...` esegue i render reali; per la verifica veloce e deterministica
-usare il target che rende esplicita la distinzione:
+confronto pixel e decodifica) è **opt-in**: si attiva solo indicando il binario
+con `CHRONON_BIN`, e si disattiva anche con `RENDERINGGEN_SKIP_GPU_E2E=1`. La
+scoperta automatica di un build presente nel workspace **non** basta più: rendeva
+`go test ./...` una sequenza di render reali, e su una macchina senza una GPU
+utilizzabile la run restava appesa invece di fallire. Il gate veloce e
+deterministico resta quello che rende esplicita la distinzione:
 
 ```sh
 make test-unit   # tutti i moduli, senza la certificazione runtime (gate veloce)
+
+# Suite reali (certificazione + golden render degli Apple style):
+CHRONON_BIN=/path/to/chronon3d_cli go test ./internal/overlay/ -count=1
 ```
 
 ### Runtime certification in CI — manual, self-hosted GPU

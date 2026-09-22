@@ -9,18 +9,16 @@
 //	C. pixel       — background preservation outside the entity bbox,
 //	                 no fully-black frame (the Vulkan black-output regression)
 //
-// The suite is opt-in and skips when the binary is unavailable: compile-level
-// certification (final_certification_test.go) always runs, this one needs a
-// GPU-capable build environment. Point CHRONON_BIN at the chronon3d_cli
-// binary to enable it.
+// The suite is strictly OPT-IN and skips unless CHRONON_BIN names the engine:
+// compile-level certification (final_certification_test.go) always runs, this one
+// needs a GPU-capable build environment. It is never enabled by DISCOVERY of a
+// build beside this repository — see chrononBinFor for why discovery alone is not
+// consent to render video from a bare `go test ./...`.
 //
-// It is also opt-OUT: setting RENDERINGGEN_SKIP_GPU_E2E to any non-empty value
-// skips every test that would drive the real engine. Discovery alone is not an
-// adequate switch — a developer with a Chronon checkout beside this repository
-// has the binary present, so `go test ./...` would silently start real renders
-// (minutes of GPU work + pixel comparison) instead of the sub-second unit
-// suite. The opt-out makes the split explicit, which is what `make test-unit`
-// uses to give a fast, deterministic gate everywhere. See TestRuntimeCertificationOptOut.
+// RENDERINGGEN_SKIP_GPU_E2E remains as the explicit opt-out (any non-empty value
+// skips every test that would drive the real engine), which is what
+// `make test-unit` and CI set to give a fast, deterministic gate everywhere. See
+// TestRuntimeCertificationOptOut.
 package overlay
 
 import (
@@ -45,58 +43,41 @@ import (
 // silently re-enable GPU work in a context that asked not to do any.
 const skipRuntimeCertificationEnv = "RENDERINGGEN_SKIP_GPU_E2E"
 
-// chrononBinFor returns the real binary or skips the calling test. The binary
-// is never pinned to an absolute machine-specific path: the caller supplies
-// CHRONON_BIN, otherwise a checked-out build artifact under the workspace is
-// discovered, otherwise the test skips.
+// engineBinEnv names the native engine binary for the real-engine suites. It is
+// an ENV VAR on purpose: the path is machine-specific and must never be baked
+// into the tests.
+const engineBinEnv = "CHRONON_BIN"
+
+// chrononBinFor returns the real binary or skips the calling test. The binary is
+// never pinned to a machine-specific path and never DISCOVERED: the caller must
+// name it with CHRONON_BIN.
 //
-// The opt-out is checked FIRST: `make test-unit` sets it so the fast gate stays
-// fast on a machine where the binary would otherwise be discovered.
+// Why opt-in rather than opt-out: these tests drive a real engine render —
+// minutes of GPU work, video written under the checkout, and a subprocess whose
+// children can inherit the output pipe, so Cmd.Wait can outlive its own context
+// deadline. When a build beside this repository was enough to enable all of that,
+// a bare `go test ./...` on a development machine silently became a long render —
+// and on a host without a usable GPU it did not even fail, it hung (observed:
+// TestFinal_AllOfficialPresetsRender and the Apple-style golden render each held a
+// package run past its timeout). Discovery is not consent, so it is no longer
+// accepted; `CHRONON_BIN=/path/to/chronon3d_cli go test ./internal/overlay/` runs
+// the suite, everything else skips it.
+//
+// The opt-out is still checked FIRST: CI and `make test-unit` set it, and that
+// must keep working as belt and braces.
 func chrononBinFor(t *testing.T) string {
 	t.Helper()
 	if strings.TrimSpace(os.Getenv(skipRuntimeCertificationEnv)) != "" {
 		t.Skipf("%s is set: the real-engine runtime certification suite is disabled for this run", skipRuntimeCertificationEnv)
 	}
-	if bin := strings.TrimSpace(os.Getenv("CHRONON_BIN")); bin != "" {
-		if _, err := os.Stat(bin); err != nil {
-			t.Skipf("CHRONON_BIN=%s not available: %v", bin, err)
-		}
-		return bin
+	bin := strings.TrimSpace(os.Getenv(engineBinEnv))
+	if bin == "" {
+		t.Skipf("the real-engine suites are opt-in: set %s=/path/to/chronon3d_cli to run them (a build discovered beside this repository is no longer accepted, because it made a bare `go test ./...` render video)", engineBinEnv)
 	}
-	if bin := discoverBuiltChrononBinary(); bin != "" {
-		return bin
+	if _, err := os.Stat(bin); err != nil {
+		t.Skipf("%s=%s is not available: %v", engineBinEnv, bin, err)
 	}
-	t.Skip("chronon3d_cli not available; set CHRONON_BIN to a built chronon3d_cli")
-	return ""
-}
-
-// discoverBuiltChrononBinary looks for a built chronon3d_cli under the
-// workspace (Chronon3d/build/<preset>/apps/...), walking up from this test's
-// source file. It never hardcodes a home directory.
-func discoverBuiltChrononBinary() string {
-	_, source, _, ok := runtime.Caller(0)
-	if !ok {
-		return ""
-	}
-	dir := filepath.Dir(source)
-	for i := 0; i < 8; i++ {
-		matches, _ := filepath.Glob(filepath.Join(dir, "Chronon3d", "build", "chronon", "linux-video-release", "apps", "chronon3d_cli", "chronon3d_cli"))
-		if len(matches) == 0 {
-			matches, _ = filepath.Glob(filepath.Join(dir, "Chronon3d", "build", "chronon", "*", "apps", "chronon3d_cli", "chronon3d_cli"))
-		}
-		if len(matches) == 0 {
-			matches, _ = filepath.Glob(filepath.Join(dir, "Chronon3d", "build", "*", "apps", "chronon3d_cli", "chronon3d_cli"))
-		}
-		if len(matches) > 0 {
-			return matches[0]
-		}
-		parent := filepath.Dir(dir)
-		if parent == dir {
-			break
-		}
-		dir = parent
-	}
-	return ""
+	return bin
 }
 
 // certificationSourceRoot is the checked-in fixture directory the runtime

@@ -1,4 +1,5 @@
-// Package health exposes the versioned worker health endpoint.
+// Package health exposes the versioned worker health endpoint and, when one is
+// wired, the Prometheus /metrics endpoint on the same admin port.
 package health
 
 import (
@@ -46,6 +47,7 @@ type ProgressFunc func() *chronon.Progress
 type Server struct {
 	info Info
 	srv  *http.Server
+	mux  *http.ServeMux
 	// progress, when set, exposes GET /progress (live render position).
 	progress ProgressFunc
 	// queueStatus, when set, overrides Info.Status on every /health response
@@ -53,12 +55,17 @@ type Server struct {
 	queueStatus func() string
 	// degradations, when set, is attached to every /health response.
 	degradations DegradationFunc
+	// metricsHandler, when set, serves GET /metrics (Prometheus exposition) on
+	// the same admin port as /health. Without it the worker was the one process
+	// in the chain with no scrapeable surface: an operator could see the queue's
+	// depth but not how long the phases inside a render took.
+	metricsHandler http.Handler
 }
 
 // NewServer creates a health server for the given metadata.
 func NewServer(addr string, info Info) *Server {
 	mux := http.NewServeMux()
-	s := &Server{info: info, srv: &http.Server{Addr: addr, Handler: mux}}
+	s := &Server{info: info, mux: mux, srv: &http.Server{Addr: addr, Handler: mux}}
 	mux.HandleFunc("/health", s.handle)
 	mux.HandleFunc("/progress", s.handleProgress)
 	return s
@@ -75,6 +82,16 @@ func (s *Server) SetQueueStatus(fn func() string) { s.queueStatus = fn }
 // SetDegradationFunc installs the fail-open degradation reporter. When set,
 // its non-empty result is attached to every /health response.
 func (s *Server) SetDegradationFunc(fn DegradationFunc) { s.degradations = fn }
+
+// SetMetricsHandler installs the Prometheus exposition handler served at
+// GET /metrics. A nil handler leaves the route unregistered (404), which is
+// the honest answer for a worker whose metrics were not wired.
+func (s *Server) SetMetricsHandler(h http.Handler) {
+	s.metricsHandler = h
+	if h != nil {
+		s.mux.Handle("GET /metrics", h)
+	}
+}
 
 func (s *Server) handle(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set("Content-Type", "application/json")

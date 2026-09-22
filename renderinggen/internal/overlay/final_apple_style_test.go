@@ -110,11 +110,30 @@ func appleAssetsRoot(t *testing.T) string {
 	return root
 }
 
+// goldenEngineBinOrSkip gates the Apple-style golden render: the same opt-in
+// engine policy as the certification suite (CHRONON_BIN must name the binary, see
+// chrononBinFor) plus -short.
+//
+// Why it is opt-in at all: this test is a golden GENERATOR, not a certification.
+// It drives the real engine for all three styles (minutes of render work) and
+// writes the resulting MP4s into the checkout under testdata/ (see outDir below),
+// so it must never start as a side effect of `go test ./...`.
+func goldenEngineBinOrSkip(t *testing.T) string {
+	t.Helper()
+	if testing.Short() {
+		t.Skip("short mode: the Apple-style golden render drives the real engine and writes MP4s under testdata/")
+	}
+	return chrononBinFor(t)
+}
+
 // TestRenderingGen2ChrononAppleStyleFinal renders all three Apple styles
 // (crime, discovery, young) through Chronon, validating structural properties,
 // bitstream decoding, and multi-point visual frame difference across styles.
+//
+// Opt-in: see goldenEngineBinOrSkip — CHRONON_BIN must name the engine binary,
+// and -short skips it.
 func TestRenderingGen2ChrononAppleStyleFinal(t *testing.T) {
-	bin := chrononBinFor(t)
+	bin := goldenEngineBinOrSkip(t)
 	stylesDir := appleStylesDir(t)
 	assetsRoot := appleAssetsRoot(t)
 	outDir := filepath.Join(filepath.Dir(stylesDir), "../apple_style_final_videos")

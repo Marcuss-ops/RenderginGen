@@ -11,11 +11,13 @@
 // surface_handoff_path and the composite-frame counters — so the prediction can
 // be checked against the report instead of trusted.
 //
-// This is a decode of the SAME versioned document as NativeTelemetry
-// (chronon3d.render-telemetry-summary.v1), kept as its own type because the two
-// answer different questions: NativeTelemetry certifies the strict-native
-// receipt contract, this says which execution path was taken. Neither is the raw
-// deep-profile sidecar.
+// This is a decode of the SAME versioned documents as NativeTelemetry — the
+// historical bounded summary (chronon3d.render-telemetry-summary.v1) and the
+// current engine's v2 frame-timing sidecar (chronon3d.frame-timing.v2), whose
+// bounded `summary` + `job` sections carry the same field paths inline. It is
+// kept as its own type because the two answer different questions:
+// NativeTelemetry certifies the strict-native receipt contract, this says which
+// execution path was taken. Neither is the raw deep-profile sidecar.
 package chronon
 
 import (
@@ -55,20 +57,49 @@ type ExecutionFacts struct {
 	} `json:"job"`
 }
 
-// DecodeExecutionFacts decodes a bounded telemetry summary for the
-// execution-path cross-check. It rejects any document that is not the versioned
-// summary schema, so the cross-check can never be fed the raw deep-profile
-// sidecar or a future unversioned shape.
+// DecodeExecutionFacts decodes a bounded telemetry document for the
+// execution-path cross-check. It accepts exactly the two documented telemetry
+// shapes and rejects everything else, so the cross-check can never be fed the
+// raw deep-profile sidecar or a future unversioned shape:
+//
+//   - chronon3d.render-telemetry-summary.v1 — the historical bounded summary,
+//     decoded as-is.
+//   - chronon3d.frame-timing.v2 — the CURRENT engine's ONLY telemetry artifact.
+//     It carries the same bounded sections (`summary` + `job`, the same field
+//     paths) INLINE next to an unbounded per-frame array, so it is bounded by
+//     BoundTimingSidecar — the same projection the ledger ingest uses — before
+//     decoding. Accepting it is load-bearing: the legacy summary is forbidden
+//     by Chronon3d's architecture contract, so gating on the v1 schema alone
+//     made every clip report CompositionPredictionUnverifiable=1 and skipped the
+//     check entirely (the exact silent-non-verification this file exists to
+//     prevent).
 func DecodeExecutionFacts(raw json.RawMessage) (ExecutionFacts, error) {
 	var facts ExecutionFacts
 	if len(raw) == 0 {
 		return facts, fmt.Errorf("chronon execution facts: empty document")
 	}
-	if err := json.Unmarshal(raw, &facts); err != nil {
-		return facts, fmt.Errorf("chronon execution facts: decode: %w", err)
+	var header struct {
+		Schema string `json:"schema"`
 	}
-	if facts.Schema != TelemetrySummarySchema {
-		return facts, fmt.Errorf("chronon execution facts: schema %q, want %q", facts.Schema, TelemetrySummarySchema)
+	if err := json.Unmarshal(raw, &header); err != nil {
+		return facts, fmt.Errorf("chronon execution facts: decode schema: %w", err)
+	}
+	document := raw
+	switch header.Schema {
+	case TelemetrySummarySchema:
+		// Decode the bounded summary verbatim.
+	case TimingSidecarSchemaV2:
+		bounded, err := BoundTimingSidecar(raw)
+		if err != nil {
+			return facts, fmt.Errorf("chronon execution facts: %w", err)
+		}
+		document = bounded
+	default:
+		return facts, fmt.Errorf("chronon execution facts: schema %q, want %q or %q",
+			header.Schema, TelemetrySummarySchema, TimingSidecarSchemaV2)
+	}
+	if err := json.Unmarshal(document, &facts); err != nil {
+		return facts, fmt.Errorf("chronon execution facts: decode: %w", err)
 	}
 	return facts, nil
 }
