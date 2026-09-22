@@ -108,3 +108,8 @@ assets/backgrounds/*.mp4
 /testdata/debug/
 __pycache__/
 *.pyc
+
+# Top-level out/ holds certification rerun renders (mp4 + logs + timing
+# sidecars): generated evidence a re-run regenerates on demand — same
+# artifact class as the /preset_videos/ family above. On disk, never in git.
+/out/
