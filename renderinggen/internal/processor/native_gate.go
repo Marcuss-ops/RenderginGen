@@ -1,10 +1,14 @@
 // native_gate.go owns the gpu-vulkan-native receipt gate: a render certified
-// as native Vulkan must prove it in Chronon's BOUNDED telemetry summary
-// (`<output>.telemetry-summary.json`, chronon3d.render-telemetry-summary.v1)
-// + media receipt before the artifact may be published under the strict
-// native identity. The gate never reads Chronon's raw deep-profile timing
-// sidecar (opaque artifact), so it cannot drift from the stable summary
-// contract (observability ownership, Phase 10).
+// as native Vulkan must prove it in Chronon's BOUNDED telemetry document +
+// media receipt before the artifact may be published under the strict native
+// identity. The bounded document is either the legacy summary
+// (`<output>.telemetry-summary.json`, chronon3d.render-telemetry-summary.v1) or
+// the current engine's frame-timing sidecar (`<output>.timing.json`,
+// chronon3d.frame-timing.v2) reduces to its inline summary/job sections — the
+// v2 sidecar became the engine's SINGLE telemetry artifact, and the v2 summary
+// publishes the very same job/gpu counters under the same paths. The gate
+// never reads the per-frame array (opaque artifact), so it cannot drift from
+// the bounded contract (observability ownership, Phase 10).
 package processor
 
 import (
@@ -15,18 +19,19 @@ import (
 
 func requireNativeVulkan(outputPath string, expectedFrames int) error {
 	// Observability ownership (Phase 10): the gate certifies from Chronon's
-	// BOUNDED telemetry summary (`<output>.telemetry-summary.json`), never
-	// from the raw deep-profile timing sidecar. ReadTelemetrySummary +
-	// DecodeNativeTelemetry reject a missing file and any document that is
-	// not the versioned summary schema, so the gate fails closed by
+	// BOUNDED telemetry document — the legacy summary when the engine wrote
+	// one, else the bounded sections of the v2 frame-timing sidecar. Neither
+	// the unbounded per-frame array nor an unversioned document is ever
+	// accepted: ReadTelemetrySummary + DecodeNativeTelemetry reject a missing
+	// artifact and any unknown schema, so the gate fails closed by
 	// construction.
 	raw, err := chronon.ReadTelemetrySummary(outputPath)
 	if err != nil {
-		return fmt.Errorf("missing Chronon telemetry summary: %w", err)
+		return fmt.Errorf("missing Chronon bounded telemetry: %w", err)
 	}
 	telemetry, err := chronon.DecodeNativeTelemetry(raw)
 	if err != nil {
-		return fmt.Errorf("decode Chronon telemetry summary: %w", err)
+		return fmt.Errorf("decode Chronon bounded telemetry: %w", err)
 	}
 	doc := telemetry
 	directYUV := doc.Job.ExecutionPath == "direct_yuv"
