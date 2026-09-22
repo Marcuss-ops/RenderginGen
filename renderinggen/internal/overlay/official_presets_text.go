@@ -16,6 +16,10 @@ const (
 	// it has no motion at all, which is what lets a short composition certify
 	// text pixels without an animation window.
 	StaticTextSmokePresetID = "static_text_smoke"
+	// RenderingGen2PresetID is the current premium overlay style. It keeps the
+	// visual treatment independent from the Apple V3 motion family, so an item
+	// can swap motion_id without multiplying style definitions.
+	RenderingGen2PresetID = "rendering_gen_2"
 )
 
 // officialFontPath is the single font asset every official text preset
@@ -46,6 +50,22 @@ func canonicalTextPreset() PresetDefinition {
 	d.Layout.BoxWidth = 1920
 	d.Layout.BoxHeight = 220
 	d.Style.FontSize = 64
+	d.Style.Fill = []float64{1, 1, 1, 1}
+	d.Style.Stroke = &StyleStroke{Color: "#111827", Width: 3.5}
+	return d
+}
+
+// renderingGen2Preset is the next-generation editorial style: a slightly
+// taller phrase band with the same legibility contract and a quiet 2.5D depth
+// entrance. Its motion is deliberately just a default; producers may select
+// any validated Apple V3 motion through motion_id.
+func renderingGen2Preset() PresetDefinition {
+	d := makePreset(RenderingGen2PresetID, textSpec("safe_area", "center", "depth_parallax_reveal", "glyph", 72, 6, &StyleShadow{
+		Color: "#000000", Opacity: 0.68, Blur: 14, Offset: []float64{0, 5},
+	}, nil))
+	d.Layout.BoxWidth = 1920
+	d.Layout.BoxHeight = 260
+	d.Style.FontSize = 68
 	d.Style.Fill = []float64{1, 1, 1, 1}
 	d.Style.Stroke = &StyleStroke{Color: "#111827", Width: 3.5}
 	return d

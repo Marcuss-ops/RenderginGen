@@ -141,6 +141,7 @@ var officialPresets = map[string]PresetDefinition{
 	// than a short canary composition.
 	StaticTextSmokePresetID: makePreset(StaticTextSmokePresetID, staticTextSmokeSpec()),
 	CanonicalTextPresetID:   canonicalTextPreset(),
+	RenderingGen2PresetID:   renderingGen2Preset(),
 
 	"image_focus_in":     makePreset("image_focus_in", imageSpec("image_right", "image_focus_reveal")),
 	"image_fade_in":      makePreset("image_fade_in", imageSpec("image_right", "image_fade_reveal")),

@@ -49,6 +49,26 @@ func (r *RegistryType) List() []string {
 // Styles are intentionally not part of this list: callers select one visual
 // preset and choose one of these motions independently through motion_id.
 func (r *RegistryType) AppleV2MotionIDs() []string {
+	return r.CategoryMotionIDs("apple_v2")
+}
+
+// AppleV3MotionIDs returns the complete Apple-like Overlay V3 text vocabulary
+// in stable order. The category is read from the canonical ChrononTemplate
+// catalog; this package never maintains a second list of ids.
+func (r *RegistryType) AppleV3MotionIDs() []string {
+	return r.CategoryMotionIDs("apple_v3")
+}
+
+// ImageV3MotionIDs returns the complete Overlay V3 image vocabulary in stable
+// order. Image motions remain layer-level so they can use the same 2.5D
+// position/scale/rotation contract as text without inventing a second engine.
+func (r *RegistryType) ImageV3MotionIDs() []string {
+	return r.CategoryMotionIDs("overlay_v3_image")
+}
+
+// CategoryMotionIDs returns registered declarative motions in one catalog
+// category. It is the single projection used by certification and manifests.
+func (r *RegistryType) CategoryMotionIDs(category string) []string {
 	ids := make([]string, 0)
 	for _, id := range r.List() {
 		plugin, err := r.Resolve(id)
@@ -56,7 +76,7 @@ func (r *RegistryType) AppleV2MotionIDs() []string {
 			continue
 		}
 		declarative, ok := plugin.(DeclarativePlugin)
-		if ok && declarative.Definition.Category == "apple_v2" {
+		if ok && declarative.Definition.Category == category {
 			ids = append(ids, id)
 		}
 	}
