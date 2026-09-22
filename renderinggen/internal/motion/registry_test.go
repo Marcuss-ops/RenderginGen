@@ -228,6 +228,57 @@ func TestAppleV2MotionsAreComplete(t *testing.T) {
 	}
 }
 
+func TestAppleV3OverlayTextPackIs15ModernAnd2Point5DReady(t *testing.T) {
+	ids := Registry.AppleV3MotionIDs()
+	if len(ids) != 15 {
+		t.Fatalf("Apple V3 motion count = %d, want 15: %v", len(ids), ids)
+	}
+	hasDepth := false
+	hasRotation := false
+	for _, id := range ids {
+		plugin, err := Registry.Resolve(id)
+		if err != nil {
+			t.Fatalf("resolve %s: %v", id, err)
+		}
+		definition := plugin.(DeclarativePlugin).Definition
+		if definition.Unit == "" || definition.Enter != 72 || len(definition.TextAnimators) == 0 {
+			t.Fatalf("%s is not a complete Apple V3 text motion: %+v", id, definition)
+		}
+		for _, track := range definition.Tracks {
+			if track.Property == "position_z" {
+				hasDepth = true
+			}
+			if track.Property == "rotation_x" || track.Property == "rotation_y" || track.Property == "rotation_z" {
+				hasRotation = true
+			}
+		}
+	}
+	if !hasDepth || !hasRotation {
+		t.Fatalf("Apple V3 pack has no 2.5D depth/rotation coverage: depth=%v rotation=%v", hasDepth, hasRotation)
+	}
+}
+
+func TestImageV3OverlayPackIs10ModernAndLayerRenderable(t *testing.T) {
+	ids := Registry.ImageV3MotionIDs()
+	if len(ids) != 10 {
+		t.Fatalf("Overlay V3 image motion count = %d, want 10: %v", len(ids), ids)
+	}
+	for _, id := range ids {
+		plugin, err := Registry.Resolve(id)
+		if err != nil {
+			t.Fatalf("resolve %s: %v", id, err)
+		}
+		definition := plugin.(DeclarativePlugin).Definition
+		if definition.Unit != "layer" || definition.Enter != 60 || len(definition.Tracks) == 0 {
+			t.Fatalf("%s is not a complete image layer motion: %+v", id, definition)
+		}
+		tracks, err := plugin.Compile(MotionContext{DurationFrames: 120}, nil)
+		if err != nil || len(tracks) == 0 {
+			t.Fatalf("%s did not compile to layer tracks: tracks=%+v err=%v", id, tracks, err)
+		}
+	}
+}
+
 func TestChrononTemplateModern15PackIsRenderableAndNonStatic(t *testing.T) {
 	want := []string{
 		"kinetic_split_word", "dynamic_island_expansion", "masked_upward_reveal",
