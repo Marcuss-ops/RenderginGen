@@ -287,6 +287,13 @@ func CleanupStale(root string, olderThan time.Duration) error {
 		if !entry.IsDir() {
 			continue
 		}
+		if strings.HasPrefix(entry.Name(), ".") {
+			// Dot-directories are worker bookkeeping, never job workspaces: the
+			// jobs root holds `.workerlogs` (the worker's durable per-job log
+			// files). Sweeping it would delete the only record of a run that does
+			// not depend on journald, and it is not a leaked scratch tree.
+			continue
+		}
 		path := filepath.Join(root, entry.Name())
 		info, err := entry.Info()
 		if err != nil {

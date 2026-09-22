@@ -288,6 +288,9 @@ type Layer struct {
 	DurationFrames int64           `json:"duration_frames"`
 	Animation      *LayerAnimation `json:"animation,omitempty"`
 	TextAnimators  []TextAnimator  `json:"text_animators,omitempty"`
+	// Derived by the lowering pass from concrete Z/rotation tracks. Motion
+	// authors never need to duplicate this renderer routing bit by hand.
+	Enable3D bool `json:"enable_3d,omitempty"`
 	// Opacity is a POINTER so an explicit 0 survives the wire. With a plain
 	// float64 + omitempty the contract's "opacity 0 = invisible" collapsed
 	// into "key absent", and the renderer's decoder then treated the layer as

@@ -90,3 +90,19 @@ gpu:
 
 health:
   addr: ":8080"
+
+# Log surface. `level` is one of debug | info (default) | warn | error; `format`
+# is json (default — what the collector and `journalctl -o json` read) or text
+# for a human on a terminal. Every record carries job_id AND the parent_job_id
+# the master stamped on the job, so `grep job_1790…` on this host matches the
+# worker's lines for that run instead of returning nothing.
+logging:
+  level: info
+  format: json
+  # The worker's own per-job log: written live into each job's workspace as
+  # worker.log (readable while the job runs) and mirrored to a durable,
+  # size-capped copy under <workspace.root>/.workerlogs so it survives the
+  # workspace cleanup. This is what makes collection independent of the host's
+  # journald retention.
+  job_log_retention: 48h
+  job_log_max_files: 2000

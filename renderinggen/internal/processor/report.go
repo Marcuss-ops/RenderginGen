@@ -2,9 +2,9 @@ package processor
 
 import (
 	"context"
-	"log"
 
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/queue"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/workerlog"
 )
 
 // ReportQueue is the queue surface the worker's terminal-report helpers need.
@@ -31,15 +31,22 @@ func hasDurableArtifact(artifact *queue.Artifact) bool {
 // render failure (Fail). Logging happens here so every terminal report — fail
 // or rendered — is visible with the same shape.
 func ReportFailure(ctx context.Context, q ReportQueue, job *queue.Job, err error) {
-	log.Printf("job %s failed: %v", job.ID, err)
+	// Bind here as well as at claim: this funnel is reachable from the serial
+	// Render path too, and a terminal line without the run id would be the one
+	// line an operator most needs to correlate.
+	jobLog := workerlog.BindJob(job.ParentJobID, job.ID)
+	jobLog.Errorf("failed: %v", err)
+	// Observed at the report funnel, so a future worker pool cannot complete or
+	// fail jobs without the worker's own metric surface seeing it.
+	noteJobOutcome(JobOutcomeFailed)
 	if hasDurableArtifact(job.Artifact) {
 		if reportErr := q.Rendered(ctx, job.ID, err.Error(), *job.Artifact); reportErr != nil {
-			log.Printf("job %s report rendered: %v", job.ID, reportErr)
+			jobLog.Warnf("report rendered: %v", reportErr)
 		}
 		return
 	}
 	if reportErr := q.Fail(ctx, job.ID, err.Error()); reportErr != nil {
-		log.Printf("job %s report fail: %v", job.ID, reportErr)
+		jobLog.Warnf("report fail: %v", reportErr)
 	}
 }
 
@@ -49,15 +56,20 @@ func ReportFailure(ctx context.Context, q ReportQueue, job *queue.Job, err error
 // for a publication-only retry so a lost terminal report can never trigger a
 // GPU re-render.
 func ReportFailureWithArtifact(ctx context.Context, q ReportQueue, id string, artifact queue.Artifact, err error) {
-	log.Printf("job %s failed: %v", id, err)
+	// ByJobID resolves the parent_run id recorded when the job was bound at
+	// claim/Prepare: this caller holds only the id, and an unattributed
+	// terminal line is exactly what made worker triage impossible.
+	jobLog := workerlog.ByJobID(id)
+	jobLog.Errorf("failed: %v", err)
+	noteJobOutcome(JobOutcomeFailed)
 	if !hasDurableArtifact(&artifact) {
 		if reportErr := q.Fail(ctx, id, err.Error()); reportErr != nil {
-			log.Printf("job %s report fail: %v", id, reportErr)
+			jobLog.Warnf("report fail: %v", reportErr)
 		}
 		return
 	}
 	if reportErr := q.Rendered(ctx, id, err.Error(), artifact); reportErr != nil {
-		log.Printf("job %s report rendered: %v", id, reportErr)
+		jobLog.Warnf("report rendered: %v", reportErr)
 	}
 }
 
@@ -71,14 +83,25 @@ func ReportFailureWithArtifact(ctx context.Context, q ReportQueue, id string, ar
 // downgraded from a full GPU re-render to an upload retry.
 func ReportComplete(ctx context.Context, q ReportQueue, id string, artifact queue.Artifact, durable bool) {
 	if err := q.Complete(ctx, id, artifact); err != nil {
-		log.Printf("job %s report complete: %v", id, err)
+		workerlog.ByJobID(id).Warnf("report complete: %v", err)
+		// A completion that could not be reported is NOT a completed job: it
+		// either falls back to Rendered (publication-only retry, counted as a
+		// failure below) or stays claimable. Counting it as completed would make
+		// the worker report success for work the queue never accepted.
+		noteJobOutcome(JobOutcomeFailed)
 		if durable && hasDurableArtifact(&artifact) {
 			// The bytes are durable in L3; never let a lost report trigger a
 			// GPU re-render. Record rendered so a publication-only retry
 			// re-claims the artifact (see ReportFailure's artifact branch).
 			if reportErr := q.Rendered(ctx, id, err.Error(), artifact); reportErr != nil {
-				log.Printf("job %s report rendered: %v", id, reportErr)
+				workerlog.ByJobID(id).Warnf("report rendered: %v", reportErr)
 			}
 		}
+		return
 	}
+	// The queue accepted the completion: this attempt finished. It is per
+	// ATTEMPT, not per distinct job — the queue owns the job-level lifecycle and
+	// already counts it (renderinggen_jobs_*), so this series must not be read as
+	// a job census.
+	noteJobOutcome(JobOutcomeCompleted)
 }

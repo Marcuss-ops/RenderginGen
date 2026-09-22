@@ -37,6 +37,69 @@ func TestDecodeExecutionFactsRejectsNonSummaryDocuments(t *testing.T) {
 	}
 }
 
+// timingSidecarDoc builds a v2 frame-timing document: the bounded sections
+// (`summary`/`job`, same field paths as the legacy summary) INLINE next to the
+// unbounded per-frame array. This is the ONLY telemetry artifact the current
+// engine writes, so the cross-check must be able to read it.
+func timingSidecarDoc(t *testing.T, job map[string]any) json.RawMessage {
+	t.Helper()
+	if job == nil {
+		job = map[string]any{}
+	}
+	doc := map[string]any{
+		"schema":  TimingSidecarSchemaV2,
+		"version": 2,
+		"job":     job,
+		"summary": map[string]any{"render_only_fps": 24.0},
+		// Unbounded payload: it must never reach the decoded facts (and must
+		// not make the document undecodable).
+		"frame_times_ms": []float64{1.1, 1.2, 1.3},
+	}
+	raw, err := json.Marshal(doc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return raw
+}
+
+// TestDecodeExecutionFactsAcceptsTheV2TimingSidecar pins the fix for the
+// silently-skipped composition check: the legacy bounded summary is FORBIDDEN by
+// the engine's architecture contract, so a decoder that accepted only that
+// schema recorded "unverifiable" on every clip and never compared the worker's
+// prediction with what Chronon actually executed. The v2 sidecar's bounded
+// sections must decode to the same facts as the legacy summary.
+func TestDecodeExecutionFactsAcceptsTheV2TimingSidecar(t *testing.T) {
+	job := map[string]any{
+		"execution_path":       ExecutionPathFullGraphNative,
+		"surface_handoff_path": "direct",
+		"gpu":                  map[string]any{"cuda_composite_frames": 120},
+	}
+	facts, err := DecodeExecutionFacts(timingSidecarDoc(t, job))
+	if err != nil {
+		t.Fatalf("a v2 frame-timing sidecar must be decodable: %v", err)
+	}
+	if facts.Job.ExecutionPath != ExecutionPathFullGraphNative {
+		t.Errorf("execution_path = %q, want %q", facts.Job.ExecutionPath, ExecutionPathFullGraphNative)
+	}
+	if facts.Job.SurfaceHandoffPath != "direct" {
+		t.Errorf("surface_handoff_path = %q, want direct", facts.Job.SurfaceHandoffPath)
+	}
+	composited, known := facts.Composited()
+	if !known || !composited {
+		t.Errorf("Composited() = (%v, %v), want (true, true)", composited, known)
+	}
+}
+
+// TestDecodeExecutionFactsRejectsV2WithoutJobSection keeps the fail-closed half:
+// a v2-shaped document whose job section is missing is not a telemetry document
+// this cross-check can reason about.
+func TestDecodeExecutionFactsRejectsV2WithoutJobSection(t *testing.T) {
+	raw := json.RawMessage(`{"schema":"` + TimingSidecarSchemaV2 + `","version":2,"frame_times_ms":[1,2]}`)
+	if _, err := DecodeExecutionFacts(raw); err == nil {
+		t.Fatal("a v2 document without its job section must be rejected")
+	}
+}
+
 func TestExecutionFactsDirectSource(t *testing.T) {
 	cases := []struct {
 		path string

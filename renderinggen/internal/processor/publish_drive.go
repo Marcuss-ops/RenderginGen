@@ -7,7 +7,6 @@ package processor
 import (
 	"context"
 	"fmt"
-	"log"
 	"sync/atomic"
 	"time"
 
@@ -16,6 +15,7 @@ import (
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/metricnames"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/queue"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/storage"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/workerlog"
 )
 
 // Publish is the single publisher seam for a queue-served job. It consults
@@ -41,7 +41,7 @@ func (p *Processor) Publish(ctx context.Context, jobID, jobType string, artifact
 		// visible in metrics.
 		if policy == PublicationObjectStoreAndDrive {
 			artifact.Metrics[metricnames.PublicationDriveSkippedCapability] = 1
-			log.Printf("job %s: drive publication skipped (policy %s but no drive capability)", jobID, policy)
+			workerlog.ByJobID(jobID).Warnf("drive publication skipped (policy %s but no drive capability)", policy)
 		}
 		return artifact, nil
 	}
@@ -51,7 +51,7 @@ func (p *Processor) Publish(ctx context.Context, jobID, jobType string, artifact
 		// upload and say so, so runs never confuse "no Drive phase" with a
 		// fast upload.
 		artifact.Metrics[metricnames.PublicationDriveSkippedPolicy] = 1
-		log.Printf("job %s: drive publication skipped (resolved policy %s; submitter owns delivery)", jobID, policy)
+		workerlog.ByJobID(jobID).Infof("drive publication skipped (resolved policy %s; submitter owns delivery)", policy)
 		return artifact, nil
 	}
 	return p.publishToDrive(ctx, jobID, artifact)

@@ -6,7 +6,6 @@ package processor
 import (
 	"context"
 	"encoding/json"
-	"log"
 	"time"
 
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/artifactdb"
@@ -14,6 +13,7 @@ import (
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/metricnames"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/overlay"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/queue"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/workerlog"
 )
 
 // recordArtifact writes an optional worker-local diagnostic mirror. PostgreSQL
@@ -95,7 +95,7 @@ func (p *Processor) recordArtifact(ctx context.Context, jobID string, artifact q
 		// authoritative. Surface the divergence on the artifact itself so the
 		// completed job's metrics (visible on GET /jobs/{id} and benchmark
 		// reports) carry an observable signal instead of a silent gap.
-		log.Printf("processor: artifact diagnostic mirror %s unavailable: %v", jobID, err)
+		workerlog.ByJobID(jobID).Warnf("artifact diagnostic mirror unavailable: %v", err)
 		if artifact.Metrics == nil {
 			artifact.Metrics = map[string]float64{}
 		}

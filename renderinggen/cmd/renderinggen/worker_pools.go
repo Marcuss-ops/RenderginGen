@@ -12,7 +12,17 @@ import (
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/config"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/processor"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/queue"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/workerlog"
 )
+
+// closeJobLog seals a finished job's per-job log files (and drops the job's log
+// binding). A failure to close a diagnostic file is reported on the job's own
+// record and never fails the job.
+func closeJobLog(jobLog *workerlog.Job, jobID string) {
+	if err := workerlog.CloseJobLog(jobID); err != nil {
+		jobLog.Warnf("close job log: %v", err)
+	}
+}
 
 // preppedJob is a claimed job whose CPU preparation succeeded; it is ready
 // for the GPU lane. The workspace transfers ownership to the GPU lane.
@@ -60,11 +70,25 @@ func runPrepPool(ctx context.Context, q *queue.Client, proc *processor.Processor
 			continue
 		}
 
+		// Bind the job to the MASTER run id at the first moment the worker knows
+		// it, and open the durable per-job log alongside the workspace: every
+		// line from here on — including the claim/publication lines that precede
+		// any workspace — carries job_id + parent_job_id, and the job's own log
+		// file exists before the render does. Both are per-job state, so both
+		// live in this simple claim-then-serve loop instead of a goroutine-local
+		// map.
+		jobLog := workerlog.BindJob(job.ParentJobID, job.ID)
+		if path, logErr := proc.AttachDurableJobLog(job.ID); logErr != nil {
+			jobLog.Warnf("durable job log unavailable: %v", logErr)
+		} else {
+			jobLog.Infof("job log: %s", path)
+		}
+
 		// Publication retry of a rendered job: never render again. The lease
 		// is renewed for the whole upload so a multi-minute Drive publish can
 		// never expire mid-transfer and be re-claimed by another worker.
 		if job.Artifact != nil {
-			log.Printf("job %s prep received durable artifact; switching to publication", job.ID)
+			jobLog.Infof("prep received durable artifact; switching to publication")
 			artifact := *job.Artifact
 			artifact.Metrics = nil
 			pubErr := withLeaseVoid(ctx, job, q, timings, func(jobCtx context.Context) error {
@@ -78,9 +102,11 @@ func runPrepPool(ctx context.Context, q *queue.Client, proc *processor.Processor
 			})
 			if pubErr != nil {
 				processor.ReportFailure(ctx, q, job, pubErr)
+				closeJobLog(jobLog, job.ID)
 				continue
 			}
-			log.Printf("job %s publication retry completed (artifact %q)", job.ID, job.Artifact.StorageKey)
+			jobLog.Infof("publication retry completed (artifact %q)", job.Artifact.StorageKey)
+			closeJobLog(jobLog, job.ID)
 			continue
 		}
 
@@ -91,9 +117,11 @@ func runPrepPool(ctx context.Context, q *queue.Client, proc *processor.Processor
 			})
 			if prepErr != nil {
 				processor.ReportFailure(ctx, q, job, prepErr)
+				closeJobLog(jobLog, job.ID)
 				continue
 			}
 			processor.ReportComplete(ctx, q, job.ID, artifact, false)
+			closeJobLog(jobLog, job.ID)
 			continue
 		}
 
@@ -133,6 +161,7 @@ func runPrepPool(ctx context.Context, q *queue.Client, proc *processor.Processor
 				if prepared != nil {
 					_ = prepared.Workspace.Cleanup()
 				}
+				closeJobLog(jobLog, job.ID)
 				return
 			}
 			if errors.Is(handoffErr, context.Canceled) {
@@ -140,9 +169,11 @@ func runPrepPool(ctx context.Context, q *queue.Client, proc *processor.Processor
 				// has requeued the job elsewhere — do not ReportFailure (would
 				// 409) and do not double-render. Workspace already cleaned on
 				// jobCtx cancellation.
+				closeJobLog(jobLog, job.ID)
 				continue
 			}
 			processor.ReportFailure(ctx, q, job, handoffErr)
+			closeJobLog(jobLog, job.ID)
 			continue
 		}
 	}
@@ -185,7 +216,7 @@ func runGPULane(ctx context.Context, q *queue.Client, proc *processor.Processor,
 						return
 					case <-ticker.C:
 						if err := p.prepared.Workspace.WriteLease(time.Now().Add(timings.WorkspaceLeaseTTL)); err != nil {
-							log.Printf("job %s: refresh workspace lease marker: %v", p.job.ID, err)
+							workerlog.ByJobID(p.job.ID).Warnf("refresh workspace lease marker: %v", err)
 						}
 					}
 				}
@@ -219,6 +250,7 @@ func runPostPool(ctx context.Context, q *queue.Client, proc *processor.Processor
 			return
 		case out := <-doneCh:
 			job, prepared := out.job, out.prepared
+			jobLog := workerlog.ByJobID(job.ID)
 			// The post pool is the last owner of the workspace, so cleanup runs
 			// at the end of THIS iteration — never as a deferred call inside
 			// the loop, which would postpone it until pool shutdown and let
@@ -229,12 +261,13 @@ func runPostPool(ctx context.Context, q *queue.Client, proc *processor.Processor
 					return
 				}
 				if err := prepared.Workspace.Cleanup(); err != nil {
-					log.Printf("job %s: workspace cleanup: %v", job.ID, err)
+					jobLog.Warnf("workspace cleanup: %v", err)
 				}
 			}
 			if out.err != nil {
 				processor.ReportFailure(ctx, q, job, out.err)
 				cleanup()
+				closeJobLog(jobLog, job.ID)
 				continue
 			}
 			var artifact queue.Artifact
@@ -258,10 +291,11 @@ func runPostPool(ctx context.Context, q *queue.Client, proc *processor.Processor
 				// anything else is a render failure.
 				processor.ReportFailureWithArtifact(ctx, q, job.ID, artifact, err)
 				cleanup()
+				closeJobLog(jobLog, job.ID)
 				continue
 			}
-			log.Printf("job %s artifact: storage_key=%q sha256=%q size=%d copy_eligible=%t backend=%q frames=%d %dx%d",
-				job.ID, artifact.StorageKey, artifact.ArtifactHash, artifact.SizeBytes,
+			jobLog.Infof("artifact: storage_key=%q sha256=%q size=%d copy_eligible=%t backend=%q frames=%d %dx%d",
+				artifact.StorageKey, artifact.ArtifactHash, artifact.SizeBytes,
 				artifact.CopyEligible, artifact.Backend, artifact.FrameCount, artifact.Width, artifact.Height)
 			processor.ReportComplete(ctx, q, job.ID, artifact, true)
 			if parentFinalizer != nil && job.ParentJobID != "" {
@@ -272,6 +306,10 @@ func runPostPool(ctx context.Context, q *queue.Client, proc *processor.Processor
 			// children's artifacts from the object store/L2, never from the
 			// child workspace.
 			cleanup()
+			// Seal the per-job log LAST: everything this stage had to say is
+			// already in it, and the durable copy under the jobs root (attached
+			// at claim) survives the workspace cleanup above.
+			closeJobLog(jobLog, job.ID)
 		}
 	}
 }
@@ -294,10 +332,10 @@ func tryFinalizeParent(ctx context.Context, finalizer *processor.ParentFinalizer
 	if err != nil {
 		// Incomplete children and a competing finalizer are expected during the
 		// normal fan-in; the queue remains the source of truth for retry.
-		log.Printf("parent %s not finalized yet: %v", parentID, err)
+		workerlog.ByJobID(parentID).Warnf("parent not finalized yet: %v", err)
 		return
 	}
 	if finalized {
-		log.Printf("parent %s finalized: storage_key=%q sha256=%q size=%d", parentID, artifact.StorageKey, artifact.ArtifactHash, artifact.SizeBytes)
+		workerlog.ByJobID(parentID).Infof("parent finalized: storage_key=%q sha256=%q size=%d", artifact.StorageKey, artifact.ArtifactHash, artifact.SizeBytes)
 	}
 }

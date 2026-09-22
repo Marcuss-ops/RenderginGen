@@ -337,6 +337,19 @@ func fromMotionTracks(src []motion.AnimationTrack) []AnimationTrack {
 	return tracks
 }
 
+func animationUses3D(animation *LayerAnimation) bool {
+	if animation == nil {
+		return false
+	}
+	for _, track := range animation.Tracks {
+		switch track.Property {
+		case "position_z", "rotation_x", "rotation_y", "rotation_z", "scale_z":
+			return true
+		}
+	}
+	return false
+}
+
 func fromTrackDefinitions(src []motion.TrackDefinition) []AnimationTrack {
 	result := make([]AnimationTrack, len(src))
 	for i, t := range src {

@@ -61,6 +61,16 @@ type JobRepository interface {
 	// Children returns child chunks ordered by chunk index.
 	Children(parentJobID string) ([]*model.Job, error)
 
+	// ByParent returns EVERY job submitted under one parent_job_id, in
+	// submission (queued_at) order — the run-scoped read. It answers "what did
+	// this run enqueue?" for an operator, which is a different question from
+	// Children's assembly fan-in (child chunks in chunk order): a producer sets
+	// parent_job_id to the master run id on every job it submits, including
+	// standalone render jobs that are nobody's chunk. An unknown parent returns
+	// an empty slice, never an error: "this run enqueued nothing" is a fact, not
+	// a failure.
+	ByParent(parentJobID string) ([]*model.Job, error)
+
 	// ClaimFinalization atomically claims a parent whose children are ready.
 	ClaimFinalization(parentJobID, workerID string) (*model.Job, bool, error)
 

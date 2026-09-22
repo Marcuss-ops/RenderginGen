@@ -81,6 +81,19 @@ func ReadTimingSidecarTelemetry(path string) (json.RawMessage, error) {
 	if err != nil {
 		return nil, fmt.Errorf("chronon timing sidecar: %w", err)
 	}
+	return BoundTimingSidecar(data)
+}
+
+// BoundTimingSidecar projects the raw v2 frame-timing document onto its BOUNDED
+// telemetry sections (`schema`/`version`/`summary`/`job`), dropping the
+// unbounded per-frame array. It is the SINGLE owner of that projection: the
+// ledger ingest (ReadTimingSidecarTelemetry) and the worker's execution-path
+// cross-check (DecodeExecutionFacts) both call it, so a caller that hands the
+// whole sidecar to either one can never get a different bounding than the other.
+//
+// The document is rejected unless it IS the v2 schema and carries the `job`
+// section (the certification surface).
+func BoundTimingSidecar(data []byte) (json.RawMessage, error) {
 	var doc map[string]json.RawMessage
 	if err := json.Unmarshal(data, &doc); err != nil {
 		return nil, fmt.Errorf("chronon timing sidecar: decode: %w", err)

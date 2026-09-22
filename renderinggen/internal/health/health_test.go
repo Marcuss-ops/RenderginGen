@@ -2,8 +2,10 @@ package health
 
 import (
 	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/chronon"
@@ -49,6 +51,47 @@ func TestHealthEndpointReturnsInfo(t *testing.T) {
 	}
 	if got.Degradations != nil {
 		t.Fatalf("a healthy worker must omit degradations, got %v", got.Degradations)
+	}
+}
+
+// TestMetricsRouteIsServedWhenWired pins the fix for the worker being the only
+// process in the chain with no scrapeable surface: with a handler wired, the
+// admin port serves /metrics on the SAME mux as /health; without one, the route
+// stays unregistered (404) rather than serving an empty document.
+func TestMetricsRouteIsServedWhenWired(t *testing.T) {
+	hs := NewServer(":0", Info{Worker: "w1", Status: "ready"})
+	hs.SetMetricsHandler(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte("renderinggen_worker_phase_duration_seconds_count{phase=\"render\"} 3\n"))
+	}))
+	ts := httptest.NewServer(hs.srv.Handler)
+	defer ts.Close()
+
+	resp, err := http.Get(ts.URL + "/metrics")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("GET /metrics = %d, want 200", resp.StatusCode)
+	}
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(body), "renderinggen_worker_phase_duration_seconds_count") {
+		t.Fatalf("exposition was not forwarded: %q", body)
+	}
+
+	// An unwired worker must answer 404, not an empty 200.
+	bare := httptest.NewServer(NewServer(":0", Info{Worker: "w1"}).srv.Handler)
+	defer bare.Close()
+	resp, err = http.Get(bare.URL + "/metrics")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusNotFound {
+		t.Fatalf("unwired GET /metrics = %d, want 404", resp.StatusCode)
 	}
 }
 

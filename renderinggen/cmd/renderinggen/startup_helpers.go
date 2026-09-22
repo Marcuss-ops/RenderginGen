@@ -12,8 +12,32 @@ import (
 
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/config"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/queue"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/workerlog"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/workspace"
 )
+
+// pruneJobLogs bounds the durable per-job log directory at startup.
+//
+// Those files are the worker's own record of a run — the artifact that makes the
+// collector independent of the host's journald retention — so they are kept, not
+// deleted after the job. What they must NOT be is unbounded: the directory lives
+// under the jobs root (frequently tmpfs, i.e. RAM), so retention and a file
+// count cap are applied once at startup, before any job can add to it.
+func pruneJobLogs(cfg *config.Config) {
+	dir := workerlog.DurableJobLogDir(cfg.Workspace.Root)
+	if dir == "" {
+		return
+	}
+	removed, err := workerlog.PruneJobLogs(dir, cfg.Logging.JobLogRetention, cfg.Logging.JobLogMaxFiles)
+	if err != nil {
+		log.Printf("worker job logs: prune %s: %v", dir, err)
+		return
+	}
+	if removed > 0 {
+		log.Printf("worker job logs: pruned %d file(s) from %s (retention=%s, max_files=%d)",
+			removed, dir, cfg.Logging.JobLogRetention, cfg.Logging.JobLogMaxFiles)
+	}
+}
 
 // startWorkspaceCleanup reaps workspaces left behind by a crashed worker
 // run: without this the jobs root (often /dev/shm, i.e. RAM) grows

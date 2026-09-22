@@ -233,6 +233,54 @@ func TestVerifyCompositionPredictionUnverifiableIsRecordedNotFatal(t *testing.T)
 	}
 }
 
+// TestVerifyCompositionPredictionRunsOnTheV2TimingSidecar pins the end-to-end
+// consequence of the decoder fix (P1, Sept 2026): the current engine's ONLY
+// telemetry artifact is the v2 frame-timing sidecar, so the cross-check must
+// actually RUN on it. Before the fix every clip recorded
+// CompositionPredictionUnverifiable=1 and the comparison was skipped in
+// silence — the exact failure the check exists to prevent.
+func TestVerifyCompositionPredictionRunsOnTheV2TimingSidecar(t *testing.T) {
+	v2 := func(executionPath string, compositeFrames int64) json.RawMessage {
+		raw, err := json.Marshal(map[string]any{
+			"schema":  chronon.TimingSidecarSchemaV2,
+			"version": 2,
+			"job": map[string]any{
+				"execution_path": executionPath,
+				"gpu":            map[string]any{"cuda_composite_frames": compositeFrames},
+			},
+			"summary":        map[string]any{"render_only_fps": 24.0},
+			"frame_times_ms": []float64{1.0, 1.1, 1.2},
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return raw
+	}
+
+	// The direction that can produce a wrong picture must be CAUGHT, and the
+	// check must not degrade to "unverifiable".
+	metrics := map[string]float64{}
+	err := verifyCompositionPrediction(overlayPlan(), v2(chronon.ExecutionPathDirectYUV, 0), metrics, renderVerifyFast, "job-1")
+	if err == nil {
+		t.Fatal("a v2 sidecar reporting the single-source path for an overlay plan must fail closed")
+	}
+	if metrics[metricnames.CompositionPredictionUnverifiable] != 0 {
+		t.Errorf("metrics = %v: a v2 sidecar is verifiable, so it must not be recorded as unverifiable", metrics)
+	}
+	if metrics[metricnames.CompositionPredictionDivergence] != 1 {
+		t.Errorf("metrics = %v, want %s=1", metrics, metricnames.CompositionPredictionDivergence)
+	}
+
+	// Agreement stays silent on the current engine's artifact too.
+	metrics = map[string]float64{}
+	if err := verifyCompositionPrediction(overlayPlan(), v2(chronon.ExecutionPathFullGraphNative, 120), metrics, renderVerifyCertify, "job-1"); err != nil {
+		t.Fatalf("unexpected error on agreement: %v", err)
+	}
+	if len(metrics) != 0 {
+		t.Fatalf("metrics = %v, want none on agreement", metrics)
+	}
+}
+
 // TestCrossCheckedMetricNamesAreDeclared pins that the two counters reach the
 // ledger vocabulary. An undeclared metric name is dropped by the queue's
 // projection, which would make the counters above invisible in production.
