@@ -8,29 +8,44 @@ import (
 )
 
 // ═══════════════════════════════════════════════════════════════════════════
-// Observability ownership (Phase 10): Chronon owns telemetry. Chronon emits
-// TWO documents per render:
+// Observability ownership (Phase 10): Chronon owns telemetry. The engine has
+// shipped TWO generations of that contract:
 //
-//   * `<output>.telemetry-summary.json` — the BOUNDED, schema-typed summary
-//     (chronon3d.render-telemetry-summary.v1). This is the ONLY Chronon
-//     telemetry surface this worker ingests. It never contains per-frame
-//     arrays; the worker records it verbatim (Chronon owns the schema) and
-//     projects only its documented numeric subset onto metrics.
-//   * `<output>.timing.json` — the RAW deep-profile sidecar. The worker
-//     treats it exactly like an MP4: bytes → SHA-256 → object store → small
-//     reference. It NEVER parses, mutates or re-transports its internals
-//     (preserveRawTimingSidecar in the processor does the opaque handling).
+//   * `<output>.telemetry-summary.json` (chronon3d.render-telemetry-summary.v1)
+//     — the historical BOUNDED summary. Chronon3d's architecture contract now
+//     FORBIDS this artifact (`timing_sidecar_v2_is_the_only_schema`), so a
+//     current engine never writes it; it is still read when a legacy engine
+//     produces it.
+//   * `<output>.timing.json` (chronon3d.frame-timing.v2) — the canonical
+//     single telemetry artifact of the current engine. It carries the bounded
+//     summary INLINE (`summary` + `job` sections, the same field paths the
+//     legacy summary used) alongside the unbounded per-frame array.
 //
-// RenderingGen therefore never has to know Chronon's raw profile schema, and
-// Chronon may evolve its deep profiler without breaking the worker.
+// This file ingests whichever the engine produced. From the v2 sidecar it
+// takes ONLY the bounded `schema`/`version`/`summary`/`job` sections — the
+// per-frame array never enters the ledger — and it re-derives nothing: every
+// value is Chronon's own, transported verbatim. Independently, the processor
+// preserves the whole sidecar opaquely (bytes → hash → object store → ref).
 // ═══════════════════════════════════════════════════════════════════════════
 
-// TelemetrySummarySchema is the stable schema of Chronon's bounded telemetry
-// summary sidecar (`<output>.telemetry-summary.json`).
+// TelemetrySummarySchema is the schema of Chronon's historical bounded
+// telemetry summary sidecar (`<output>.telemetry-summary.json`).
 const TelemetrySummarySchema = "chronon3d.render-telemetry-summary.v1"
 
 // TelemetrySummarySuffix is the file suffix of the bounded summary sidecar.
 const TelemetrySummarySuffix = ".telemetry-summary.json"
+
+// TimingSidecarSchemaV2 is the schema of Chronon's canonical frame-timing
+// sidecar (`<output>.timing.json`) — the engine's ONLY telemetry artifact.
+const TimingSidecarSchemaV2 = "chronon3d.frame-timing.v2"
+
+// TimingSidecarSuffix is the file suffix of the frame-timing sidecar.
+const TimingSidecarSuffix = ".timing.json"
+
+// boundedTimingSections are the sections of the v2 sidecar that form the
+// bounded telemetry document. Everything else (notably the unbounded
+// `frame_times_ms` array) stays in the opaque artifact.
+var boundedTimingSections = []string{"schema", "version", "summary", "job"}
 
 // RawTimingSidecarContentType is the content type under which the RAW
 // deep-profile timing sidecar (`<output>.timing.json`) is preserved. It is an
@@ -38,13 +53,62 @@ const TelemetrySummarySuffix = ".telemetry-summary.json"
 // they never interpret the body.
 const RawTimingSidecarContentType = "application/vnd.chronon.timing+json"
 
-// ReadTelemetrySummary reads the bounded telemetry summary sidecar Chronon
-// writes next to the rendered output and returns the document VERBATIM (no
-// parse/mutate/re-encode) after validating its schema header. The summary is
-// the single bounded telemetry surface a host may ingest; the raw deep-profile
-// sidecar is handled opaquely elsewhere (bytes → hash → object store → ref).
+// ReadTelemetrySummary reads the bounded telemetry document Chronon wrote next
+// to the rendered output. A legacy engine's summary is returned VERBATIM (no
+// parse/mutate/re-encode) after its schema header validates; a current engine's
+// v2 frame-timing sidecar is projected onto its own bounded sections. A host
+// that finds neither document fails closed — it never falls back to scraping a
+// log.
 func ReadTelemetrySummary(outputPath string) (json.RawMessage, error) {
-	return ReadTelemetrySummaryFile(outputPath + TelemetrySummarySuffix)
+	raw, legacyErr := ReadTelemetrySummaryFile(outputPath + TelemetrySummarySuffix)
+	if legacyErr == nil {
+		return raw, nil
+	}
+	raw, sidecarErr := ReadTimingSidecarTelemetry(outputPath + TimingSidecarSuffix)
+	if sidecarErr == nil {
+		return raw, nil
+	}
+	return nil, fmt.Errorf("%v; %v", legacyErr, sidecarErr)
+}
+
+// ReadTimingSidecarTelemetry reads Chronon's v2 frame-timing sidecar from an
+// explicit path and returns its BOUNDED telemetry projection: the engine's own
+// schema/version/summary/job sections, verbatim, with the unbounded per-frame
+// array deliberately dropped. A document that is not the v2 schema, or that
+// carries no job section (the certification surface), is rejected.
+func ReadTimingSidecarTelemetry(path string) (json.RawMessage, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, fmt.Errorf("chronon timing sidecar: %w", err)
+	}
+	var doc map[string]json.RawMessage
+	if err := json.Unmarshal(data, &doc); err != nil {
+		return nil, fmt.Errorf("chronon timing sidecar: decode: %w", err)
+	}
+	var header struct {
+		Schema string `json:"schema"`
+	}
+	if err := json.Unmarshal(data, &header); err != nil {
+		return nil, fmt.Errorf("chronon timing sidecar: decode schema: %w", err)
+	}
+	if header.Schema != TimingSidecarSchemaV2 {
+		return nil, fmt.Errorf("chronon timing sidecar: schema %q, want %q",
+			header.Schema, TimingSidecarSchemaV2)
+	}
+	bounded := make(map[string]json.RawMessage, len(boundedTimingSections))
+	for _, section := range boundedTimingSections {
+		if value, ok := doc[section]; ok {
+			bounded[section] = value
+		}
+	}
+	if _, ok := bounded["job"]; !ok {
+		return nil, fmt.Errorf("chronon timing sidecar: v2 document carries no job section")
+	}
+	out, err := json.Marshal(bounded)
+	if err != nil {
+		return nil, fmt.Errorf("chronon timing sidecar: bound sections: %w", err)
+	}
+	return out, nil
 }
 
 // ReadTelemetrySummaryFile reads a bounded telemetry summary from an explicit
@@ -90,10 +154,11 @@ type NativeTelemetry struct {
 	} `json:"job"`
 }
 
-// DecodeNativeTelemetry decodes a bounded telemetry summary for the native
-// gate. It rejects documents that are not the bounded summary schema, so the
-// gate can never accidentally certify from the raw deep-profile sidecar (or
-// from any future unversioned shape).
+// DecodeNativeTelemetry decodes a bounded telemetry document for the native
+// gate. It accepts exactly the two certified schemas — the historical bounded
+// summary and the current v2 frame-timing sidecar — and rejects everything
+// else, so the gate can never accidentally certify from a raw v1 deep-profile
+// document or from any future unversioned shape.
 func DecodeNativeTelemetry(raw json.RawMessage) (NativeTelemetry, error) {
 	var telemetry NativeTelemetry
 	if len(raw) == 0 {
@@ -102,9 +167,9 @@ func DecodeNativeTelemetry(raw json.RawMessage) (NativeTelemetry, error) {
 	if err := json.Unmarshal(raw, &telemetry); err != nil {
 		return telemetry, fmt.Errorf("chronon telemetry summary: decode: %w", err)
 	}
-	if telemetry.Schema != TelemetrySummarySchema {
-		return telemetry, fmt.Errorf("chronon telemetry summary: schema %q, want %q",
-			telemetry.Schema, TelemetrySummarySchema)
+	if telemetry.Schema != TelemetrySummarySchema && telemetry.Schema != TimingSidecarSchemaV2 {
+		return telemetry, fmt.Errorf("chronon telemetry summary: schema %q, want %q or %q",
+			telemetry.Schema, TelemetrySummarySchema, TimingSidecarSchemaV2)
 	}
 	return telemetry, nil
 }

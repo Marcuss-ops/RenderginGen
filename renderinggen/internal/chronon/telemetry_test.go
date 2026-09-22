@@ -1,8 +1,10 @@
 package chronon
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -53,6 +55,76 @@ func TestReadTelemetrySummaryRejectsRawDeepProfile(t *testing.T) {
 func TestReadTelemetrySummaryMissingFile(t *testing.T) {
 	if _, err := ReadTelemetrySummary(filepath.Join(t.TempDir(), "result.mp4")); err == nil {
 		t.Fatal("expected an error for a missing summary sidecar")
+	}
+}
+
+// TestReadTelemetrySummaryFallsBackToV2TimingSidecar pins the current-engine
+// contract: Chronon3d emits ONE telemetry artifact — the v2 frame-timing
+// sidecar — with the bounded summary inline. The host must certify from that
+// document, and must transport only its own bounded sections: the unbounded
+// per-frame array never enters the ledger.
+func TestReadTelemetrySummaryFallsBackToV2TimingSidecar(t *testing.T) {
+	dir := t.TempDir()
+	output := filepath.Join(dir, "result.mp4")
+	plain, err := json.Marshal(map[string]any{
+		"schema":  TimingSidecarSchemaV2,
+		"version": 2,
+		"summary": map[string]any{"render_loop_fps": 29.2},
+		"job": map[string]any{
+			"process_wall_ms": 5123.0,
+			"gpu":            map[string]any{"nvenc_frames": 150, "effective_backend": "vulkan"},
+		},
+		"frame_times_ms": []map[string]any{{"frame": 0}, {"frame": 1}},
+	})
+	if err != nil {
+		t.Fatalf("marshal fixture: %v", err)
+	}
+	if err := os.WriteFile(output+TimingSidecarSuffix, plain, 0o644); err != nil {
+		t.Fatalf("write fixture: %v", err)
+	}
+
+	got, err := ReadTelemetrySummary(output)
+	if err != nil {
+		t.Fatalf("ReadTelemetrySummary: %v", err)
+	}
+	if !strings.Contains(string(got), TimingSidecarSchemaV2) {
+		t.Fatalf("bounded document kept no provenance: %s", got)
+	}
+	if strings.Contains(string(got), "frame_times_ms") {
+		t.Fatalf("unbounded per-frame array must never travel in the bounded document: %s", got)
+	}
+	var decoded NativeTelemetry
+	if err := json.Unmarshal(got, &decoded); err != nil {
+		t.Fatalf("decode bounded document: %v", err)
+	}
+	if decoded.Schema != TimingSidecarSchemaV2 || decoded.Job.GPU.NVENCFrames == nil || *decoded.Job.GPU.NVENCFrames != 150 {
+		t.Fatalf("bounded projection lost the certified counters: %+v", decoded)
+	}
+	if _, err := DecodeNativeTelemetry(got); err != nil {
+		t.Fatalf("DecodeNativeTelemetry: %v", err)
+	}
+}
+
+// TestReadTimingSidecarTelemetryRejectsForeignSchemas keeps the fallback
+// non-vacuous: a v1 deep-profile document (or anything else) is not the v2
+// sidecar and must never become the telemetry source.
+func TestReadTimingSidecarTelemetryRejectsForeignSchemas(t *testing.T) {
+	dir := t.TempDir()
+	cases := map[string]string{
+		"v1 raw":  `{"schema":"chronon3d.frame-timing.v1","job":{"process_wall_ms":1}}`,
+		"no job":  `{"schema":"tabula/rasa","summary":{}}`,
+		"no body": ``,
+	}
+	for name, body := range cases {
+		t.Run(name, func(t *testing.T) {
+			path := filepath.Join(dir, name+".timing.json")
+			if err := os.WriteFile(path, []byte(body), 0o644); err != nil {
+				t.Fatal(err)
+			}
+			if _, err := ReadTimingSidecarTelemetry(path); err == nil {
+				t.Fatal("a non-v2 document must not be accepted as bounded telemetry")
+			}
+		})
 	}
 }
 
