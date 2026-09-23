@@ -1,13 +1,9 @@
 #!/usr/bin/env python3
 """Verify Mike Tyson extraction, overlay timing, and render evidence.
 
-The live API response is intentionally accepted in both the current full-job
-shape and the compact result shape.  This keeps the check useful for a saved
-fixture as well as for a freshly polled job.
-
-The canonical matrix has three cases — 1+1, 3+3 and 5+5 — and every case is
-verified against the requests of record in this checkout's
-mike_tyson_overlay_test/ directory.
+The matrix contract is shared with PipelineGen's live Go gate. Request
+fixtures remain the authority for Drive routing, document languages and phrase
+budgets; the shared matrix contract owns the exact expected people and phrases.
 """
 
 from __future__ import annotations
@@ -16,18 +12,28 @@ import argparse
 import json
 import sys
 from pathlib import Path
+from typing import Any
 
 
-def _nested_result(document: dict) -> dict:
+ROOT_DIR = Path(__file__).resolve().parents[1]
+MATRIX_PATH = ROOT_DIR / "mike_tyson_overlay_test" / "matrix_cases.json"
+EXPECTED_CASE_IDS = ("simple", "extended", "five")
+SUCCESS_STATUSES = {"COMPLETED", "DONE", "READY", "SUCCEEDED", "SUCCESS"}
+IMAGE_KINDS = {"entity_image", "image"}
+PHRASE_KIND = "text_phrase"
+
+
+def _nested_result(document: dict[str, Any]) -> dict[str, Any]:
+    job = document.get("job")
+    job_result = job.get("result") if isinstance(job, dict) else None
+    result = document.get("result")
     candidates = [
-        document.get("job", {}).get("result", {}).get("result"),
-        document.get("result", {}).get("result"),
-        document.get("result"),
+        job_result.get("result") if isinstance(job_result, dict) else None,
+        result.get("result") if isinstance(result, dict) else None,
+        result,
     ]
     for candidate in candidates:
-        if isinstance(candidate, dict) and any(
-            key in candidate for key in ("scenes", "overlay_plan", "entities")
-        ):
+        if isinstance(candidate, dict) and any(key in candidate for key in ("scenes", "overlay_plan", "entities")):
             return candidate
     raise ValueError("risultato generazione non trovato")
 
@@ -36,48 +42,49 @@ def _unique_strings(values: list[object]) -> list[str]:
     return sorted({value.strip() for value in values if isinstance(value, str) and value.strip()})
 
 
-def _persons(result: dict) -> list[str]:
-    direct = [item.get("value") for item in result.get("entities", {}).get("persons", [])]
+def _persons(result: dict[str, Any]) -> list[str]:
+    entities = result.get("entities")
+    entities = entities if isinstance(entities, dict) else {}
+    direct = [item.get("value") for item in entities.get("persons", []) if isinstance(item, dict)]
     annotated = [
         entity.get("canonical_name") or entity.get("name") or entity.get("text")
-        for scene in result.get("scenes", [])
-        for entity in scene.get("annotations", {}).get("primary_entities", [])
-        if entity.get("type") == "PERSON"
+        for scene in result.get("scenes", []) if isinstance(scene, dict)
+        for entity in (scene.get("annotations", {}).get("primary_entities", []) if isinstance(scene.get("annotations"), dict) else [])
+        if isinstance(entity, dict) and entity.get("type") == "PERSON"
     ]
+    entity_timeline = result.get("entity_timeline")
+    entity_timeline = entity_timeline if isinstance(entity_timeline, dict) else {}
     timeline = [
         entity.get("name")
-        for scene in result.get("entity_timeline", {}).get("scenes", [])
-        for entity in scene.get("entities", [])
-        if entity.get("type") == "PERSON"
+        for scene in entity_timeline.get("scenes", []) if isinstance(scene, dict)
+        for entity in scene.get("entities", []) if isinstance(scene.get("entities"), list)
+        if isinstance(entity, dict) and entity.get("type") == "PERSON"
     ]
     return _unique_strings(direct + annotated + timeline)
 
 
-def _phrases(result: dict) -> list[str]:
-    values: list[object] = list(result.get("entities", {}).get("important_phrases", []))
+def _phrases(result: dict[str, Any]) -> list[str]:
+    entities = result.get("entities")
+    entities = entities if isinstance(entities, dict) else {}
+    values: list[object] = list(entities.get("important_phrases", []))
     for scene in result.get("scenes", []):
-        values += scene.get("annotations", {}).get("important_phrases", [])
-    for scene in result.get("segments", []):
-        values += scene.get("insights", {}).get("important_phrases", [])
-    normalized = []
-    for value in values:
-        if isinstance(value, dict):
-            normalized.append(value.get("text") or value.get("value"))
-        else:
-            normalized.append(value)
+        annotations = scene.get("annotations") if isinstance(scene, dict) else None
+        if isinstance(annotations, dict) and isinstance(annotations.get("important_phrases"), list):
+            values.extend(annotations["important_phrases"])
+    for segment in result.get("segments", []):
+        insights = segment.get("insights") if isinstance(segment, dict) else None
+        if isinstance(insights, dict) and isinstance(insights.get("important_phrases"), list):
+            values.extend(insights["important_phrases"])
+    normalized = [value.get("text") or value.get("value") if isinstance(value, dict) else value for value in values]
     return _unique_strings(normalized)
 
 
-def _motion(item: dict) -> str:
-    """Resolve the phrase overlay's motion the way the runtime plan carries it.
-
-    The planner writes ``motion_id`` on the plan item; some producers instead
-    nest it under ``params.animation``.  Either shape is the same fact.
-    """
+def _motion(item: dict[str, Any]) -> str:
     direct = item.get("motion_id")
     if isinstance(direct, str) and direct.strip():
         return direct.strip()
-    animation = item.get("params", {}).get("animation", {}) if isinstance(item.get("params"), dict) else {}
+    params = item.get("params")
+    animation = params.get("animation", {}) if isinstance(params, dict) else {}
     if not isinstance(animation, dict):
         return ""
     for key in ("motion_id", "preset"):
@@ -87,16 +94,126 @@ def _motion(item: dict) -> str:
     return ""
 
 
-def _overlay_items(result: dict) -> list[dict]:
-    items = result.get("overlay_plan", {}).get("items", [])
-    if items:
-        return [item for item in items if isinstance(item, dict)]
-    return [item for item in result.get("editing_timeline", {}).get("overlays", []) if isinstance(item, dict)]
+def _overlay_items(result: dict[str, Any]) -> list[dict[str, Any]]:
+    plan = result.get("overlay_plan")
+    if not isinstance(plan, dict):
+        raise AssertionError("result.overlay_plan is missing")
+    items = plan.get("items")
+    if not isinstance(items, list) or not all(isinstance(item, dict) for item in items):
+        raise AssertionError("result.overlay_plan.items is missing or invalid")
+    return items
 
 
-def _timing(item: dict) -> tuple[int, int]:
-    start_us = item.get("start_us")
-    end_us = item.get("end_us")
+def _expected_from_fixture(fixture_path: Path, persons: list[str]) -> dict[str, Any]:
+    request = json.loads(fixture_path.read_text(encoding="utf-8"))
+    items = request.get("items") if isinstance(request, dict) else None
+    if not isinstance(items, list) or len(items) != 1 or not isinstance(items[0], dict):
+        raise ValueError(f"{fixture_path}: expected exactly one request item")
+    item = items[0]
+    source = item.get("source") if isinstance(item.get("source"), dict) else {}
+    params = item.get("script_params") if isinstance(item.get("script_params"), dict) else {}
+    request_texts = [item.get("style", ""), source.get("source_text", "")]
+    for segment in params.get("segments", []):
+        if isinstance(segment, dict):
+            request_texts.append(segment.get("source_text", ""))
+    request_text = " ".join(value for value in request_texts if isinstance(value, str)).casefold()
+    for person in persons:
+        if person.casefold() not in request_text:
+            raise ValueError(f"{fixture_path}: expected person {person!r} is not named in request instructions/source")
+
+    media_plan = item.get("media_plan") if isinstance(item.get("media_plan"), dict) else {}
+    extraction = media_plan.get("extraction") if isinstance(media_plan.get("extraction"), dict) else {}
+    phrases = extraction.get("important_phrases")
+    if not isinstance(phrases, list) or not all(isinstance(value, str) and value.strip() for value in phrases):
+        raise ValueError(f"{fixture_path}: extraction.important_phrases must be a list of non-empty strings")
+    if extraction.get("max_entities_per_segment") != len(persons):
+        raise ValueError(f"{fixture_path}: max_entities_per_segment must match expected person count")
+    phrase_budget = extraction.get("max_important_phrases_per_segment")
+    if isinstance(phrase_budget, bool) or not isinstance(phrase_budget, int) or phrase_budget != len(phrases):
+        raise ValueError(f"{fixture_path}: phrase budget must match declared phrase count")
+    if len(set(phrases)) != len(phrases):
+        raise ValueError(f"{fixture_path}: important_phrases must be unique")
+
+    output = item.get("output") if isinstance(item.get("output"), dict) else {}
+    render = output.get("render") if isinstance(output.get("render"), dict) else {}
+    docs = item.get("docs") if isinstance(item.get("docs"), dict) else {}
+    languages = docs.get("languages")
+    if not isinstance(languages, list) or not languages or not all(isinstance(value, str) and value.strip() for value in languages) or len(set(languages)) != len(languages):
+        raise ValueError(f"{fixture_path}: docs.languages must be non-empty and unique")
+    folder, subfolder = render.get("drive_folder_id"), render.get("drive_subfolder_name")
+    if not render.get("enabled") or not isinstance(folder, str) or not folder.strip() or not isinstance(subfolder, str) or not subfolder.strip():
+        raise ValueError(f"{fixture_path}: render and Drive folder/subfolder must be enabled")
+    return {"phrases": phrases, "drive_folder_id": folder, "subfolder": subfolder, "doc_languages": languages}
+
+
+def _matrix_cases() -> dict[str, dict[str, Any]]:
+    matrix = json.loads(MATRIX_PATH.read_text(encoding="utf-8"))
+    if not isinstance(matrix, dict) or matrix.get("schema_version") != "mike-tyson-overlay-matrix.v1":
+        raise ValueError("unsupported Mike Tyson matrix contract schema")
+    cases = matrix.get("cases")
+    if not isinstance(cases, list) or len(cases) != len(EXPECTED_CASE_IDS):
+        raise ValueError(f"matrix contract must define {len(EXPECTED_CASE_IDS)} cases")
+    if [case.get("id") for case in cases if isinstance(case, dict)] != list(EXPECTED_CASE_IDS):
+        raise ValueError(f"matrix case ids/order must be {list(EXPECTED_CASE_IDS)}")
+    result: dict[str, dict[str, Any]] = {}
+    seen_fixtures: set[str] = set()
+    seen_results: set[str] = set()
+    for index, case in enumerate(cases):
+        if not isinstance(case, dict):
+            raise ValueError(f"matrix case[{index}] must be an object")
+        case_id, fixture, result_file = case.get("id"), case.get("fixture"), case.get("result_file")
+        if not isinstance(fixture, str) or not fixture or Path(fixture).name != fixture or ".." in fixture:
+            raise ValueError(f"{case_id}: fixture must be a filename")
+        if not isinstance(result_file, str) or not result_file or Path(result_file).name != result_file or ".." in result_file:
+            raise ValueError(f"{case_id}: result_file must be a filename")
+        if fixture in seen_fixtures or result_file in seen_results:
+            raise ValueError(f"{case_id}: fixture/result filenames must be unique")
+        seen_fixtures.add(fixture)
+        seen_results.add(result_file)
+        persons, phrases = case.get("persons"), case.get("phrases")
+        if not isinstance(persons, list) or not persons or not all(isinstance(value, str) and value.strip() for value in persons):
+            raise ValueError(f"{case_id}: persons must be a non-empty list of strings")
+        if not isinstance(phrases, list) or not phrases or not all(isinstance(value, str) and value.strip() for value in phrases):
+            raise ValueError(f"{case_id}: phrases must be a non-empty list of strings")
+        if len(set(persons)) != len(persons) or len(set(phrases)) != len(phrases):
+            raise ValueError(f"{case_id}: persons and phrases must be unique")
+        fixture_path = ROOT_DIR / "mike_tyson_overlay_test" / fixture
+        expectations = _expected_from_fixture(fixture_path, persons)
+        if expectations["phrases"] != phrases:
+            raise ValueError(f"{case_id}: matrix phrases differ from request fixture")
+        result[case_id] = {"fixture": fixture_path, "result_file": result_file, "persons": persons, **expectations}
+    return result
+
+
+def _person_overlays(result: dict[str, Any], image_items: list[dict[str, Any]]) -> list[str]:
+    timeline = result.get("entity_timeline")
+    if not isinstance(timeline, dict) or not isinstance(timeline.get("scenes"), list):
+        raise AssertionError("entity_timeline.scenes is missing or invalid")
+    by_id: dict[str, str] = {}
+    for scene in timeline["scenes"]:
+        if not isinstance(scene, dict) or not isinstance(scene.get("entities"), list):
+            raise AssertionError("entity_timeline scene entities are missing or invalid")
+        for entity in scene["entities"]:
+            if not isinstance(entity, dict) or entity.get("type") != "PERSON":
+                continue
+            entity_id, name = entity.get("entity_id"), entity.get("name")
+            if isinstance(entity_id, str) and entity_id and isinstance(name, str) and name.strip():
+                existing = by_id.get(entity_id)
+                if existing is not None and existing != name.strip():
+                    raise AssertionError(f"PERSON entity_id {entity_id!r} has conflicting names")
+                by_id[entity_id] = name.strip()
+    names = []
+    for item in image_items:
+        entity_id = item.get("entity_id")
+        name = by_id.get(entity_id) if isinstance(entity_id, str) else None
+        if name is None:
+            raise AssertionError(f"overlay immagine {item.get('id')!r} is not linked to a PERSON occurrence")
+        names.append(name)
+    return names
+
+
+def _timing(item: dict[str, Any]) -> tuple[int, int]:
+    start_us, end_us = item.get("start_us"), item.get("end_us")
     if start_us is not None and end_us is not None:
         return int(start_us), int(end_us)
     start_ms = int(item.get("start_ms", 0))
@@ -106,154 +223,183 @@ def _timing(item: dict) -> tuple[int, int]:
     return start_ms * 1000, int(end_ms) * 1000
 
 
-def verify(path: Path, expected_persons: list[str], expected_phrases: list[str], expected_render: bool) -> dict:
-    document = json.loads(path.read_text())
+def _is_sha256(value: object) -> bool:
+    if not isinstance(value, str) or len(value) != 64:
+        return False
+    try:
+        int(value, 16)
+    except ValueError:
+        return False
+    return True
+
+
+def _certified_artifact(artifact: object, description: str) -> dict[str, Any]:
+    if not isinstance(artifact, dict) or not _is_sha256(artifact.get("sha256")):
+        raise AssertionError(f"{description} artifact is missing a valid SHA-256")
+    if int(artifact.get("size_bytes", 0)) <= 0 or int(artifact.get("frame_count", 0)) <= 0:
+        raise AssertionError(f"{description} artifact has no positive size/frame_count")
+    if not (artifact.get("drive_link") or artifact.get("url")):
+        raise AssertionError(f"{description} artifact has no published URL")
+    return artifact
+
+
+def _verify_job_status(document: dict[str, Any]) -> None:
+    job = document.get("job")
+    top_id = document.get("id")
+    job_id = job.get("id") if isinstance(job, dict) else None
+    if top_id and job_id and top_id != job_id:
+        raise AssertionError(f"job identity mismatch: top-level id={top_id!r}, job.id={job_id!r}")
+    status = job.get("status") if isinstance(job, dict) else None
+    status = status or document.get("status")
+    if status is not None and str(status).strip().upper() not in SUCCESS_STATUSES:
+        raise AssertionError(f"job non completato; status={str(status).strip().upper() or 'missing'}")
+
+
+def verify(path: Path, expected_persons: list[str], expected_phrases: list[str], expected_drive_folder_id: str,
+           expected_subfolder: str, expected_doc_languages: list[str], expected_render: bool) -> dict[str, Any]:
+    document = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(document, dict):
+        raise ValueError(f"{path}: result must be a JSON object")
+    _verify_job_status(document)
     result = _nested_result(document)
-    persons = _persons(result)
-    phrases = _phrases(result)
+    persons, phrases = _persons(result), _phrases(result)
     items = _overlay_items(result)
-    # Accepted image kinds mirror the Go runtime gate (entity_image / image, plus
-    # the two historical template ids) so both authorities count the same jobs.
-    image_items = [
-        item
-        for item in items
-        if item.get("kind") in {"entity_image", "image", "entity_card"}
-        or item.get("template_id") in {"image_popup", "IMAGE_OVERLAY"}
-    ]
-    phrase_items = [item for item in items if item.get("kind") == "text_phrase" or item.get("template_id") == "IMPORTANT_PHRASE"]
+    unknown_kinds = [item.get("kind") for item in items if item.get("kind") not in IMAGE_KINDS | {PHRASE_KIND}]
+    if unknown_kinds:
+        raise AssertionError(f"overlay plan contains unsupported/unclassified kinds: {unknown_kinds}")
+    image_items = [item for item in items if item.get("kind") in IMAGE_KINDS]
+    phrase_items = [item for item in items if item.get("kind") == PHRASE_KIND]
+    if sorted(persons) != sorted(expected_persons):
+        raise AssertionError(f"PERSON extraction={persons}; expected exactly {expected_persons}")
+    if sorted(phrases) != sorted(expected_phrases):
+        raise AssertionError(f"important phrases={phrases}; expected exactly {expected_phrases}")
+    if len(image_items) != len(expected_persons) or len(phrase_items) != len(expected_phrases):
+        raise AssertionError(f"overlay counts image/phrase={len(image_items)}/{len(phrase_items)}, expected exactly {len(expected_persons)}/{len(expected_phrases)}")
+    rendered_phrases = [item.get("text", "").strip() if isinstance(item.get("text"), str) else "" for item in phrase_items]
+    if sorted(rendered_phrases) != sorted(expected_phrases):
+        raise AssertionError(f"rendered phrase text={rendered_phrases}; expected exactly {expected_phrases}")
+    rendered_people = _person_overlays(result, image_items)
+    if sorted(rendered_people) != sorted(expected_persons):
+        raise AssertionError(f"image overlays are bound to {rendered_people}; expected {expected_persons}")
+    motions = [_motion(item) for item in phrase_items]
+    if any(not motion for motion in motions) or len(set(motions)) != len(phrase_items):
+        raise AssertionError(f"phrase motions must be present and distinct: {motions}")
 
-    missing_persons = sorted(set(expected_persons) - set(persons))
-    missing_phrases = sorted(set(expected_phrases) - set(phrases))
-    unexpected_persons = sorted(set(persons) - set(expected_persons))
-    unexpected_phrases = sorted(set(phrases) - set(expected_phrases))
-    if missing_persons:
-        raise AssertionError(f"PERSON mancanti: {missing_persons}; estratte={persons}")
-    if missing_phrases:
-        raise AssertionError(f"important phrase mancanti: {missing_phrases}; estratte={phrases}")
-    if unexpected_persons:
-        raise AssertionError(f"PERSON inattese: {unexpected_persons}; attese={expected_persons}")
-    if unexpected_phrases:
-        raise AssertionError(f"important phrase inattese: {unexpected_phrases}; attese={expected_phrases}")
-    if len(image_items) < len(expected_persons):
-        raise AssertionError(f"overlay immagine insufficienti: {len(image_items)} < {len(expected_persons)}")
-    if len(phrase_items) < len(expected_phrases):
-        raise AssertionError(f"overlay frase insufficienti: {len(phrase_items)} < {len(expected_phrases)}")
+    plan = result["overlay_plan"]
+    if expected_render:
+        if not all(isinstance(plan.get(key), str) and plan[key].strip() for key in ("fingerprint", "video_id")):
+            raise AssertionError("overlay plan fingerprint/video identity is missing")
+        plan_ids = [item.get("id") for item in items]
+        if any(not isinstance(value, str) or not value for value in plan_ids) or len(set(plan_ids)) != len(plan_ids):
+            raise AssertionError("overlay plan item ids are missing or duplicated")
+        if any(not isinstance(item.get("render_key"), str) or not item["render_key"].strip() for item in items):
+            raise AssertionError("overlay plan item render_key is missing")
 
-    # Every phrase overlay must carry its own motion: the production planner
-    # assigns a distinct Chronon motion per phrase, and a regression that
-    # collapses them onto one animation must fail here rather than in review.
-    motions: dict[str, list[str]] = {}
-    for item in phrase_items:
-        motion = _motion(item)
-        if not motion:
-            raise AssertionError(f"overlay frase senza motion: {item.get('id')}")
-        motions.setdefault(motion, []).append(item.get("id"))
-    if len(motions) != len(phrase_items):
-        raise AssertionError(
-            f"motion distinti insufficienti: {len(motions)} per {len(phrase_items)} frasi ({motions})"
-        )
-
-    invalid_timing = []
     for item in items:
-        start_us, end_us = _timing(item)
-        if start_us < 0 or end_us <= start_us:
-            invalid_timing.append((item.get("id"), start_us, end_us))
-    if invalid_timing:
-        raise AssertionError(f"timing overlay non valido: {invalid_timing}")
+        start, end = _timing(item)
+        if start < 0 or end <= start:
+            raise AssertionError(f"invalid overlay timing for {item.get('id')!r}: [{start},{end})")
 
-    # The plan is the duration authority, while EditingTimeline is the
-    # assembly projection. Their starts must remain identical even though an
-    # entity image may intentionally keep a five-second display window in the
-    # plan and retain only the spoken occurrence in the editing projection.
-    timeline_items = {
-        item.get("artifact_id"): item
-        for item in result.get("editing_timeline", {}).get("overlays", [])
-        if isinstance(item, dict)
-    }
-    for item in result.get("overlay_plan", {}).get("items", []):
-        peer = timeline_items.get(item.get("id"))
+    timeline = result.get("editing_timeline")
+    raw_timeline_items = timeline.get("overlays") if isinstance(timeline, dict) else None
+    if not isinstance(raw_timeline_items, list) or not all(isinstance(item, dict) for item in raw_timeline_items):
+        raise AssertionError("editing_timeline.overlays is missing or invalid")
+    timeline_items = {}
+    for peer in raw_timeline_items:
+        artifact_id = peer.get("artifact_id")
+        if not isinstance(artifact_id, str) or not artifact_id or artifact_id in timeline_items:
+            raise AssertionError(f"editing_timeline artifact_id missing/duplicated: {artifact_id!r}")
+        timeline_items[artifact_id] = peer
+    if expected_render and set(timeline_items) != set(plan_ids):
+        raise AssertionError(f"editing_timeline ids differ from plan ids: {sorted(timeline_items)} != {sorted(plan_ids)}")
+
+    render = result.get("overlay_render")
+    item_renders: dict[str, dict[str, Any]] = {}
+    if expected_render:
+        if not isinstance(render, dict) or render.get("status", "").upper() not in SUCCESS_STATUSES or not render.get("job_id"):
+            raise AssertionError("overlay_render is missing, incomplete, or unsuccessful")
+        top_artifact = _certified_artifact(render.get("artifact"), "overlay render")
+        rendered_items = render.get("items")
+        if not isinstance(rendered_items, list) or len(rendered_items) != len(items):
+            raise AssertionError(f"per-item render count={len(rendered_items) if isinstance(rendered_items, list) else 'missing'}, expected {len(items)}")
+        for index, ref in enumerate(rendered_items):
+            if not isinstance(ref, dict) or ref.get("item_id") != plan_ids[index]:
+                raise AssertionError(f"render item[{index}] does not match plan order")
+            job_id = ref.get("job_id")
+            if not isinstance(job_id, str) or not job_id or any(existing["job_id"] == job_id for existing in item_renders.values()):
+                raise AssertionError(f"render job missing or reused for {ref.get('item_id')!r}")
+            if str(ref.get("status", "")).upper() not in SUCCESS_STATUSES:
+                raise AssertionError(f"render for {ref['item_id']!r} did not succeed")
+            item_renders[ref["item_id"]] = {"job_id": job_id, "artifact": _certified_artifact(ref.get("artifact"), f"item {ref['item_id']}")}
+        first = item_renders[plan_ids[0]]
+        if render["job_id"] != first["job_id"] or top_artifact["sha256"] != first["artifact"]["sha256"]:
+            raise AssertionError("top-level render is not the first per-item render")
+
+    for item in items:
+        item_id = item["id"]
+        peer = timeline_items.get(item_id)
         if peer is None:
             continue
         plan_start, _ = _timing(item)
-        timeline_start, timeline_end = _timing(peer)
-        if plan_start != timeline_start or timeline_end <= timeline_start:
-            raise AssertionError(
-                f"timing non allineato per {item.get('id')}: "
-                f"plan_start={plan_start} timeline=[{timeline_start},{timeline_end})"
-            )
+        peer_start, peer_end = _timing(peer)
+        if plan_start != peer_start or peer_end <= peer_start:
+            raise AssertionError(f"timeline timing differs for {item_id!r}")
+        if expected_render:
+            reference = item_renders[item_id]
+            required = ("render_job_id", "drive_link", "plan_fingerprint", "render_key", "source_video_asset_id")
+            if not all(peer.get(key) for key in required) or not _is_sha256(peer.get("sha256")):
+                raise AssertionError(f"editing_timeline overlay {item_id!r} lacks certified artifact lineage")
+            if peer["render_job_id"] != reference["job_id"] or peer["sha256"] != reference["artifact"]["sha256"]:
+                raise AssertionError(f"editing_timeline job/hash mismatch for {item_id!r}")
+            if peer["plan_fingerprint"] != plan["fingerprint"] or peer["source_video_asset_id"] != plan["video_id"]:
+                raise AssertionError(f"editing_timeline plan/video provenance mismatch for {item_id!r}")
+            if peer["render_key"] != item["render_key"]:
+                raise AssertionError(f"editing_timeline render key mismatch for {item_id!r}")
+            artifact_url = reference["artifact"].get("drive_link") or reference["artifact"].get("url")
+            if artifact_url and peer["drive_link"] != artifact_url:
+                raise AssertionError(f"editing_timeline Drive URL mismatch for {item_id!r}")
 
-    render = result.get("overlay_render", {})
-    documents = result.get("documents", {})
-    it_document = documents.get("it", {}) if isinstance(documents, dict) else {}
-    if not it_document.get("link"):
-        raise AssertionError("Google Doc nativo it non pubblicato dal job")
-    render_config = result.get("render", {})
-    if not render_config.get("drive_folder_id") or not render_config.get("drive_subfolder_name"):
-        raise AssertionError("destinazione Drive automatica assente nel risultato")
-    if expected_render:
-        status = str(render.get("status", "")).upper()
-        artifact = render.get("artifact", {})
-        if status not in {"COMPLETED", "READY", "SUCCEEDED", "SUCCESS"}:
-            raise AssertionError(f"overlay render non completato: {status or 'missing'}")
-        if not (artifact.get("drive_link") or artifact.get("url")):
-            raise AssertionError("overlay render senza artifact URL/Drive")
-        if int(artifact.get("frame_count", 0)) <= 0:
-            raise AssertionError("overlay render senza frame_count")
-
-    return {
-        "file": str(path),
-        "persons": persons,
-        "important_phrases": phrases,
-        "overlay_items": len(items),
-        "image_items": len(image_items),
-        "phrase_items": len(phrase_items),
-        "phrase_motions": sorted(motions),
-        "timed_items": len(items) - len(invalid_timing),
-        "render_status": render.get("status", "not checked"),
-        "google_doc": it_document["link"],
-        "drive_subfolder": render_config["drive_subfolder_name"],
-    }
+    documents = result.get("documents")
+    if not isinstance(documents, dict):
+        raise AssertionError("published documents are missing")
+    for language in expected_doc_languages:
+        if not isinstance(documents.get(language), dict) or not documents[language].get("link"):
+            raise AssertionError(f"native Google Doc for {language} is missing")
+    if not isinstance(documents.get("it"), dict) or not documents["it"].get("link"):
+        raise AssertionError("native Italian Google Doc is missing")
+    render_config = result.get("render")
+    if not isinstance(render_config, dict) or render_config.get("drive_folder_id") != expected_drive_folder_id or render_config.get("drive_subfolder_name") != expected_subfolder:
+        raise AssertionError("unexpected render Drive destination")
+    return {"file": str(path), "persons": persons, "important_phrases": phrases, "overlay_items": len(items),
+            "image_items": len(image_items), "phrase_items": len(phrase_items), "phrase_motions": sorted(motions),
+            "timed_items": len(items), "render_status": render.get("status", "not checked") if isinstance(render, dict) else "not checked",
+            "google_doc": documents["it"]["link"], "drive_subfolder": render_config["drive_subfolder_name"]}
 
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--simple", type=Path, required=True)
-    parser.add_argument("--extended", type=Path)
-    parser.add_argument("--five", type=Path)
+    parser.add_argument("--result", action="append", default=[], metavar="CASE=PATH")
     parser.add_argument("--no-render-check", action="store_true")
+    parser.add_argument("--validate-contract", action="store_true")
     args = parser.parse_args()
-
-    # The expected persons and phrases are the ones DECLARED by the requests of
-    # record (RenderingGen/mike_tyson_overlay_test/*_generate_request.json) and
-    # asserted by the Go runtime gate, including the final punctuation.
-    cases = [(args.simple, ["Mike Tyson"], ["Potenza e disciplina"])]
-    if args.extended:
-        cases.append(
-            (
-                args.extended,
-                ["Mike Tyson", "Cus D'Amato", "Muhammad Ali"],
-                [
-                    "La velocità apre la distanza.",
-                    "La pressione mantiene il controllo.",
-                    "La disciplina trasforma la potenza.",
-                ],
-            )
-        )
-    if args.five:
-        cases.append(
-            (
-                args.five,
-                ["Mike Tyson", "Cus D'Amato", "Muhammad Ali", "Sugar Ray Robinson", "Joe Frazier"],
-                [
-                    "La velocità apre la distanza.",
-                    "La pressione mantiene il controllo.",
-                    "La disciplina trasforma la potenza.",
-                    "Il ritmo costruisce il vantaggio.",
-                    "La tecnica sostiene il coraggio.",
-                ],
-            )
-        )
-    summaries = [verify(path, persons, phrases, not args.no_render_check) for path, persons, phrases in cases]
+    matrix = _matrix_cases()
+    if args.validate_contract:
+        print(json.dumps({"status": "PASS", "cases": list(matrix)}, ensure_ascii=False))
+        return 0
+    selected: dict[str, Path] = {}
+    for value in args.result:
+        case_id, separator, raw_path = value.partition("=")
+        if not separator or not raw_path or case_id not in matrix or case_id in selected:
+            raise ValueError(f"invalid or duplicate --result {value!r}; expected one CASE=PATH per declared case")
+        selected[case_id] = Path(raw_path)
+    if set(selected) != set(matrix):
+        raise ValueError(f"results must cover exactly {list(matrix)}; got {sorted(selected)}")
+    summaries = []
+    for case_id, case in matrix.items():
+        path = selected[case_id]
+        if path.name != case["result_file"]:
+            raise ValueError(f"{case_id}: expected result file {case['result_file']!r}")
+        summaries.append(verify(path, case["persons"], case["phrases"], case["drive_folder_id"], case["subfolder"], case["doc_languages"], not args.no_render_check))
     print(json.dumps({"status": "PASS", "cases": summaries}, ensure_ascii=False, indent=2))
     return 0
 

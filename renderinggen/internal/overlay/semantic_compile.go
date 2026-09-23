@@ -546,7 +546,10 @@ func compileImageLayer(ri resolvedItem, src *semanticPlan, registry *assetRegist
 		applyPresetDefinition(&layer, ri.Preset)
 	}
 	if ri.Item.MotionID != "" {
-		animation, err := animationForMotion(ri.Item.MotionID, ri.Item.MotionParams, ri.Item.Text, ri.End-ri.Start, ri.Preset.Motion.Exit)
+		// An explicit MotionID owns its timing windows in the catalog. Passing
+		// the style preset's exit here would silently override that motion's
+		// authored exit duration (including image_25d_clean_v1's 12 frames).
+		animation, err := animationForMotion(ri.Item.MotionID, ri.Item.MotionParams, ri.Item.Text, ri.End-ri.Start, 0)
 		if err != nil {
 			return Layer{}, err
 		}

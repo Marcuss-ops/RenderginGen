@@ -202,10 +202,7 @@ func applyPresetDefinition(layer *Layer, d PresetDefinition) {
 	if d.Style.Glow != nil && layer.Style.Glow == nil {
 		g := d.Style.Glow
 		layer.Style.Glow = &LayerGlow{
-			Radius: g.Radius, Intensity: g.Intensity, Threshold: g.Threshold,
-			Falloff: g.Falloff, CoreStrength: g.CoreStrength,
-			AuraStrength: g.AuraStrength, BloomStrength: g.BloomStrength,
-			HighQuality: g.HighQuality,
+			Radius: g.Radius, Intensity: g.Intensity, Color: g.Color,
 		}
 	}
 }

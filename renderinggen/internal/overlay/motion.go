@@ -343,7 +343,11 @@ func animationUses3D(animation *LayerAnimation) bool {
 	}
 	for _, track := range animation.Tracks {
 		switch track.Property {
-		case "position_z", "rotation_x", "rotation_y", "rotation_z", "scale_z":
+		// Keep in sync with Chronon3d/src/render_plan/render_plan_decoder.cpp:is_3d_property.
+		// Only position_z / rotation_x / rotation_y require enable_3d; rotation_z is
+		// in-plane (2D) and must NOT force the 3D/projected path which clears
+		// the canvas to black when no camera is present.
+		case "position_z", "rotation_x", "rotation_y":
 			return true
 		}
 	}

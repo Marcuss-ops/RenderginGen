@@ -1,0 +1,36 @@
+{
+  "schema_version": "mike-tyson-overlay-matrix.v1",
+  "cases": [
+    {
+      "id": "simple",
+      "fixture": "mike_tyson_generate_request.json",
+      "result_file": "simple.json",
+      "persons": ["Mike Tyson"],
+      "phrases": ["Potenza e disciplina"]
+    },
+    {
+      "id": "extended",
+      "fixture": "mike_tyson_extended_generate_request.json",
+      "result_file": "extended-3entities-3phrases.json",
+      "persons": ["Mike Tyson", "Cus D'Amato", "Muhammad Ali"],
+      "phrases": [
+        "La velocità apre la distanza.",
+        "La pressione mantiene il controllo.",
+        "La disciplina trasforma la potenza."
+      ]
+    },
+    {
+      "id": "five",
+      "fixture": "mike_tyson_five_generate_request.json",
+      "result_file": "five-5entities-5phrases.json",
+      "persons": ["Mike Tyson", "Cus D'Amato", "Muhammad Ali", "Sugar Ray Robinson", "Joe Frazier"],
+      "phrases": [
+        "La velocità apre la distanza.",
+        "La pressione mantiene il controllo.",
+        "La disciplina trasforma la potenza.",
+        "Il ritmo costruisce il vantaggio.",
+        "La tecnica sostiene il coraggio."
+      ]
+    }
+  ]
+}

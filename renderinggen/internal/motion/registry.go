@@ -66,6 +66,13 @@ func (r *RegistryType) ImageV3MotionIDs() []string {
 	return r.CategoryMotionIDs("overlay_v3_image")
 }
 
+// Image25DCleanV1MotionIDs returns the catalog-owned, layer-only clean 2.5D
+// image motions. Camera-driven recipes are intentionally excluded because
+// they move the whole source composition rather than one overlay layer.
+func (r *RegistryType) Image25DCleanV1MotionIDs() []string {
+	return r.CategoryMotionIDs("image_25d_clean_v1")
+}
+
 // CategoryMotionIDs returns registered declarative motions in one catalog
 // category. It is the single projection used by certification and manifests.
 func (r *RegistryType) CategoryMotionIDs(category string) []string {

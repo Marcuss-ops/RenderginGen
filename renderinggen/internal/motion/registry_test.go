@@ -14,10 +14,10 @@ var (
 		"position": true, "position_x": true, "position_y": true, "position_z": true,
 		"scale": true, "scale_x": true, "scale_y": true, "scale_z": true,
 		"rotation": true, "rotation_x": true, "rotation_y": true, "rotation_z": true,
-		"opacity": true,
+		"opacity": true, "blur": true,
 	}
-	// The text animator vocabulary is wider: it adds blur and tracking, which a
-	// layer track may not carry.
+	// Text animators also support tracking; blur is shared with image/layer
+	// tracks so image entrances can resolve from blurred to sharp.
 	animatorProperties = map[string]bool{
 		"position": true, "position_x": true, "position_y": true,
 		"scale": true, "scale_x": true, "scale_y": true,
@@ -27,8 +27,8 @@ var (
 
 // TestCatalogStaysInsideTheRendererVocabulary pins that every registered motion
 // lowers to a document Chronon's schema accepts. The layer/animator property
-// split is the interesting half: blur and tracking are animator-only, so a
-// phrase that wants one of them must put it on its text animator.
+// split is the interesting half: tracking is animator-only, while blur is
+// supported both for a layer and for per-glyph text animation.
 func TestCatalogStaysInsideTheRendererVocabulary(t *testing.T) {
 	for _, id := range Registry.List() {
 		plugin, err := Registry.Resolve(id)
@@ -41,7 +41,7 @@ func TestCatalogStaysInsideTheRendererVocabulary(t *testing.T) {
 		}
 		for _, track := range declarative.Definition.Tracks {
 			if !layerProperties[track.Property] {
-				t.Errorf("motion %s: layer track %q is not a layer property (blur/tracking are animator-only)", id, track.Property)
+				t.Errorf("motion %s: layer track %q is not a renderer-supported layer property", id, track.Property)
 			}
 		}
 		for _, animator := range declarative.Definition.TextAnimators {

@@ -47,38 +47,17 @@ type StyleShadow struct {
 	Offset  []float64
 }
 
-// StyleGlow is the preset-authored halo declaration. It mirrors Chronon's
-// GlowStyle wire contract exactly (chronon.render-plan.v2 style.glow): the
-// renderer lowers it onto GlowParams through GlowPresets::canary_black, so
-// every plan-rendered phrase shares the verified black-canary glow contract.
-// Falloff >= 1 is the non-boosting halo rule; HighQuality selects the final
-// separable-Gaussian path over the interactive preview path.
+// StyleGlow mirrors Chronon's single glow contract: radius, intensity and tint.
 type StyleGlow struct {
-	Radius        float64
-	Intensity     float64
-	Threshold     float64
-	Falloff       float64
-	CoreStrength  float64
-	AuraStrength  float64
-	BloomStrength float64
-	HighQuality   bool
+	Radius    float64
+	Intensity float64
+	Color     string
 }
 
-// canaryGlow is the single owner of the text glow numbers: the same verified
-// tuning as Chronon's GlowPresets::canary_black(42). Presets author it, the
-// compiler transports it verbatim, and Chronon renders it through the one
-// glow pipeline — no second implementation on this side.
+// canaryGlow provides one restrained neutral halo; callers may change its
+// three visible controls but cannot select a quality path or stacked lobes.
 func canaryGlow() *StyleGlow {
-	return &StyleGlow{
-		Radius:        42,
-		Intensity:     0.92,
-		Threshold:     0,
-		Falloff:       1.5,
-		CoreStrength:  0.48,
-		AuraStrength:  0.30,
-		BloomStrength: 0.10,
-		HighQuality:   true,
-	}
+	return &StyleGlow{Radius: 42, Intensity: 0.25, Color: "#FFFFFF"}
 }
 
 type PresetLayout struct {
@@ -139,9 +118,10 @@ var officialPresets = map[string]PresetDefinition{
 	// Static text is intentionally part of the small smoke/E2E catalog: it
 	// proves text/subtitle pixels without requiring an animation window longer
 	// than a short canary composition.
-	StaticTextSmokePresetID: makePreset(StaticTextSmokePresetID, staticTextSmokeSpec()),
-	CanonicalTextPresetID:   canonicalTextPreset(),
-	RenderingGen2PresetID:   renderingGen2Preset(),
+	StaticTextSmokePresetID:  makePreset(StaticTextSmokePresetID, staticTextSmokeSpec()),
+	CanonicalTextPresetID:    canonicalTextPreset(),
+	RenderingGen2PresetID:    renderingGen2Preset(),
+	PhraseAppleCleanPresetID: phraseAppleCleanPreset(),
 
 	"image_focus_in":     makePreset("image_focus_in", imageSpec("image_right", "image_focus_reveal")),
 	"image_fade_in":      makePreset("image_fade_in", imageSpec("image_right", "image_fade_reveal")),
@@ -184,6 +164,33 @@ func ValidateCatalogParity() error {
 			if _, ok := officialPresets[id]; !ok {
 				return fmt.Errorf("overlay: the ChrononTemplate catalog declares %s preset %q, which this build cannot render", family, id)
 			}
+		}
+	}
+
+	imageMotions := motion.Registry.Image25DCleanV1MotionIDs()
+	if len(imageMotions) != 8 {
+		return fmt.Errorf("overlay: the ChrononTemplate catalog declares %d image_25d_clean_v1 motions, expected 8 layer-only motions", len(imageMotions))
+	}
+	for _, id := range imageMotions {
+		plugin, err := motion.Registry.Resolve(id)
+		if err != nil {
+			return fmt.Errorf("overlay: image motion %q is not registered: %w", id, err)
+		}
+		declarative, ok := plugin.(motion.DeclarativePlugin)
+		if !ok {
+			return fmt.Errorf("overlay: image motion %q is not catalog-declarative", id)
+		}
+		definition := declarative.Definition
+		if definition.Unit != "layer" || definition.Enter < 42 || definition.Enter > 55 ||
+			definition.Exit != 12 || len(definition.Tracks) == 0 || len(definition.TextAnimators) != 0 {
+			return fmt.Errorf("overlay: image motion %q violates the clean 2.5D layer contract", id)
+		}
+		imageTarget := false
+		for _, target := range definition.Targets {
+			imageTarget = imageTarget || target == "image"
+		}
+		if !imageTarget {
+			return fmt.Errorf("overlay: image motion %q does not declare the image target", id)
 		}
 	}
 	return nil

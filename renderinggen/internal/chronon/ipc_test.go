@@ -6,10 +6,20 @@ import (
 	"encoding/json"
 	"io"
 	"net"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 )
+
+func writeStrictNativeTestPlan(t *testing.T) string {
+	t.Helper()
+	path := filepath.Join(t.TempDir(), "plan.json")
+	if err := os.WriteFile(path, []byte(`{"layers":[]}`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	return path
+}
 
 func TestIPCEncodeRequest(t *testing.T) {
 	frame := encodeIPCRequest(ipcCommandRenderJob, []byte(`{"plan_path":"/jobs/1/plan.json"}`))
@@ -141,10 +151,11 @@ func TestIPCClientRenderSuccess(t *testing.T) {
 
 func TestIPCClientRenderUsesSemanticContract(t *testing.T) {
 	socketPath, _, gotPayload := startFakeDaemon(t, ipcStatusOk, `{"status":"ok"}`)
+	planPath := writeStrictNativeTestPlan(t)
 
 	client := NewIPCClient(socketPath)
 	err := client.Render(context.Background(), RenderRequest{
-		PlanPath:   "/jobs/1/plan.json",
+		PlanPath:   planPath,
 		AssetsRoot: "/jobs/1/assets",
 		OutputPath: "/jobs/1/output/result.mp4",
 		Requirements: ExecutionRequirements{
@@ -187,10 +198,11 @@ func TestIPCClientRenderUsesSemanticContract(t *testing.T) {
 // image/text-only render (GoldenSemanticOverlayJobV1).
 func TestIPCClientRenderCarriesStrictNativeSelectionInOutputSpec(t *testing.T) {
 	socketPath, _, gotPayload := startFakeDaemon(t, ipcStatusOk, `{"status":"ok"}`)
+	planPath := writeStrictNativeTestPlan(t)
 
 	client := NewIPCClient(socketPath)
 	err := client.Render(context.Background(), RenderRequest{
-		PlanPath:     "/jobs/1/plan.json",
+		PlanPath:     planPath,
 		AssetsRoot:   "/jobs/1/assets",
 		OutputPath:   "/jobs/1/output/result.mp4",
 		EncodePreset: "p2",
@@ -369,8 +381,9 @@ func TestIPCClientRenderForwardsFullSemanticContract(t *testing.T) {
 	socketPath, _, gotPayload := startFakeDaemon(t, ipcStatusOk, `{"status":"ok"}`)
 
 	client := NewIPCClient(socketPath)
+	planPath := writeStrictNativeTestPlan(t)
 	err := client.Render(context.Background(), RenderRequest{
-		PlanPath:        "/jobs/1/plan.json",
+		PlanPath:        planPath,
 		AssetsRoot:      "/jobs/1/assets",
 		OutputPath:      "/jobs/1/output/result.mp4",
 		AudioSourcePath: "/jobs/1/assets/source.mp4",
