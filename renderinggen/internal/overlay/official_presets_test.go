@@ -10,8 +10,17 @@ import (
 )
 
 func TestOfficialPresetCatalog(t *testing.T) {
-	if got := len(officialPresets); got != 12 {
-		t.Fatalf("official preset count = %d, want 12", got)
+	if got := len(officialPresets); got != 10 {
+		t.Fatalf("official preset count = %d, want 10", got)
+	}
+	textPresets := 0
+	for _, preset := range officialPresets {
+		if preset.Family == PresetText {
+			textPresets++
+		}
+	}
+	if textPresets != 2 {
+		t.Fatalf("text preset count = %d, want phrase_default + static smoke", textPresets)
 	}
 	for id, d := range officialPresets {
 		if id == "" || d.ID != id {
@@ -37,7 +46,7 @@ func TestOfficialPresetCatalog(t *testing.T) {
 }
 
 func TestOfficialPresetFamilyValidation(t *testing.T) {
-	if _, err := resolveOfficialPreset(CanonicalTextPresetID, "image"); err == nil {
+	if _, err := resolveOfficialPreset(PhraseDefaultPresetID, "image"); err == nil {
 		t.Fatal("text preset accepted as image")
 	}
 	if _, err := resolveOfficialPreset("image_focus_in", "text"); err == nil {
@@ -46,13 +55,15 @@ func TestOfficialPresetFamilyValidation(t *testing.T) {
 	if _, err := resolveOfficialPreset("does_not_exist", "text"); err == nil {
 		t.Fatal("unknown preset accepted")
 	}
-	if _, err := resolveOfficialPreset("caption_card", "text"); err == nil {
-		t.Fatal("retired duplicate text preset accepted")
+	for _, retired := range []string{"apple_v2", "rendering_gen_2", "phrase_apple_clean", "caption_card"} {
+		if _, err := resolveOfficialPreset(retired, "text"); err == nil {
+			t.Errorf("retired duplicate text preset %q accepted", retired)
+		}
 	}
 }
 
-func TestCanonicalAppleTextPresetCarriesStrokeShadowAndAnimation(t *testing.T) {
-	d, err := ResolveOfficialPreset(CanonicalTextPresetID)
+func TestCanonicalPhrasePresetCarriesStrokeShadowAndAnimation(t *testing.T) {
+	d, err := ResolveOfficialPreset(PhraseDefaultPresetID)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -66,7 +77,7 @@ func TestCanonicalAppleTextPresetCarriesStrokeShadowAndAnimation(t *testing.T) {
 		t.Fatal("canonical text preset has no default animation")
 	}
 
-	raw := []byte(`{"schema_version":"renderinggen.overlay-plan.v1","plan_id":"apple-style","video_id":"v","width":1920,"height":1080,"fps_num":30,"fps_den":1,"items":[{"id":"phrase","kind":"important_phrase","template_id":"IMPORTANT_PHRASE","preset_id":"apple_v2","text":"IMPORTANT","start_ms":0,"end_ms":3000}]}`)
+	raw := []byte(`{"schema_version":"renderinggen.overlay-plan.v1","plan_id":"apple-style","video_id":"v","width":1920,"height":1080,"fps_num":30,"fps_den":1,"items":[{"id":"phrase","kind":"important_phrase","template_id":"IMPORTANT_PHRASE",		"preset_id":"phrase_default","text":"IMPORTANT","start_ms":0,"end_ms":3000}]}`)
 	result, err := CompileSemantic(raw)
 	if err != nil {
 		t.Fatal(err)
@@ -154,6 +165,46 @@ func TestNoFixtureReferencesUnknownOfficialPreset(t *testing.T) {
 				}
 			}
 		}
+	}
+}
+
+func TestShippedBatchFixturesUseOnlyCanonicalTextPreset(t *testing.T) {
+	_, source, _, ok := runtime.Caller(0)
+	if !ok {
+		t.Fatal("cannot locate test source")
+	}
+	root := filepath.Join(filepath.Dir(source), "../../../")
+	for _, relative := range []string{
+		"multilingual_overlays_v1/manifest.json",
+		"testdata/golden/golden-semantic-overlay-job-v1.json",
+	} {
+		data, err := os.ReadFile(filepath.Join(root, relative))
+		if err != nil {
+			t.Fatalf("read %s: %v", relative, err)
+		}
+		var document any
+		if err := json.Unmarshal(data, &document); err != nil {
+			t.Fatalf("decode %s: %v", relative, err)
+		}
+		var visit func(any)
+		visit = func(value any) {
+			switch node := value.(type) {
+			case map[string]any:
+				if preset, ok := node["preset_id"].(string); ok && preset != "" {
+					if _, exists := officialPresets[preset]; !exists {
+						t.Errorf("%s references retired/unknown preset %q", relative, preset)
+					}
+				}
+				for _, child := range node {
+					visit(child)
+				}
+			case []any:
+				for _, child := range node {
+					visit(child)
+				}
+			}
+		}
+		visit(document)
 	}
 }
 

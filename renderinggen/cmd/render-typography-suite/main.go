@@ -44,7 +44,7 @@ func main() {
 		return
 	}
 	item := semanticTypographyItem{
-		ID: "typography_title", TemplateID: "IMPORTANT_PHRASE", PresetID: "apple_v2",
+		ID: "typography_title", TemplateID: "IMPORTANT_PHRASE", PresetID: "phrase_default",
 		MotionID: *motionID, Text: "Designed for speed.", StartMS: 0, EndMS: 5000,
 	}
 	path, err := writeV2Plan(*out, "typography-suite", []semanticTypographyItem{item})
@@ -140,7 +140,7 @@ func writeV2Plan(path, planID string, items []semanticTypographyItem) (string, e
 }
 
 func item(id, motion, text string) semanticTypographyItem {
-	return semanticTypographyItem{ID: id, TemplateID: "IMPORTANT_PHRASE", PresetID: "apple_v2", MotionID: motion, Text: text, EndMS: 5000}
+	return semanticTypographyItem{ID: id, TemplateID: "IMPORTANT_PHRASE", PresetID: "phrase_default", MotionID: motion, Text: text, EndMS: 5000}
 }
 
 func itemPos(id, motion, text string, posX, posY float64) semanticTypographyItem {

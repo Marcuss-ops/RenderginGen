@@ -11,7 +11,7 @@
 //
 // Lane and flags are the certification lane (software raster + pipe encoder):
 // deterministic, no GPU required, and the lane on which static_text_smoke plus
-// the image presets are certified. apple_v2 (the animated text preset) is
+// the image presets are certified. phrase_default (the animated text preset) is
 // deliberately NOT used.
 package overlay
 

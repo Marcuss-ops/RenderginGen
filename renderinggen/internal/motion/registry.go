@@ -45,16 +45,16 @@ func (r *RegistryType) List() []string {
 	return ids
 }
 
-// AppleV2MotionIDs returns the registered Apple V2 motion IDs in stable order.
-// Styles are intentionally not part of this list: callers select one visual
-// preset and choose one of these motions independently through motion_id.
+// AppleV2MotionIDs returns the registered classic Apple motion IDs in stable
+// order. Styles are intentionally independent: callers select the sole phrase
+// preset and choose one of these motions through motion_id.
 func (r *RegistryType) AppleV2MotionIDs() []string {
 	return r.CategoryMotionIDs("apple_v2")
 }
 
-// AppleV3MotionIDs returns the complete Apple-like Overlay V3 text vocabulary
-// in stable order. The category is read from the canonical ChrononTemplate
-// catalog; this package never maintains a second list of ids.
+// AppleV3MotionIDs returns the canonical Apple V3 text vocabulary in stable
+// order. The category is read from the canonical ChrononTemplate catalog; this
+// package never maintains a second list of ids.
 func (r *RegistryType) AppleV3MotionIDs() []string {
 	return r.CategoryMotionIDs("apple_v3")
 }
@@ -73,6 +73,14 @@ func (r *RegistryType) Image25DCleanV1MotionIDs() []string {
 	return r.CategoryMotionIDs("image_25d_clean_v1")
 }
 
+// ImageOverlayMotionIDs returns the complete independently selectable image
+// motion inventory: Overlay V3 layer motions plus clean 2.5D image motions.
+func (r *RegistryType) ImageOverlayMotionIDs() []string {
+	ids := append(r.ImageV3MotionIDs(), r.Image25DCleanV1MotionIDs()...)
+	sort.Strings(ids)
+	return ids
+}
+
 // CategoryMotionIDs returns registered declarative motions in one catalog
 // category. It is the single projection used by certification and manifests.
 func (r *RegistryType) CategoryMotionIDs(category string) []string {
@@ -83,9 +91,68 @@ func (r *RegistryType) CategoryMotionIDs(category string) []string {
 			continue
 		}
 		declarative, ok := plugin.(DeclarativePlugin)
-		if ok && declarative.Definition.Category == category {
+		if !ok {
+			continue
+		}
+		definition := declarative.Definition
+		if definition.Category == category || belongsToFamily(definition, category) {
 			ids = append(ids, id)
 		}
 	}
 	return ids
+}
+
+func belongsToFamily(definition MotionDefinition, family string) bool {
+	if family == "typewriter" {
+		return strings.HasPrefix(definition.ID, "typewriter_")
+	}
+	if family == "classic_apple" && definition.Category == "apple_v2" {
+		return true
+	}
+	if family == "modern_apple" && (definition.Category == "apple_v3" || definition.Category == "phrase_apple_clean_v1") {
+		return true
+	}
+	if family == "web" && (definition.Category == "web" || definition.Category == "web_motion") {
+		return true
+	}
+	return family == "3d" && motionHas3D(definition)
+}
+
+func motionHas3D(definition MotionDefinition) bool {
+	// Keep in sync with overlay.animationUses3D and Chronon3d's
+	// render-plan decoder: Z translation and X/Y rotation require its
+	// camera-backed path; scale_z and in-plane rotation_z do not.
+	is3DProperty := func(property string) bool {
+		switch property {
+		case "position_z", "rotation_x", "rotation_y":
+			return true
+		default:
+			return false
+		}
+	}
+	for _, track := range definition.Tracks {
+		if is3DProperty(track.Property) {
+			return true
+		}
+	}
+	for _, animator := range definition.TextAnimators {
+		for _, track := range animator.Properties {
+			if is3DProperty(track.Property) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// MotionFamilies is the stable public vocabulary for independently selectable
+// motion groups. A group can be intentionally empty (for example web) without
+// creating a fake or non-renderable motion.
+func (r *RegistryType) MotionFamilies() []string {
+	return []string{"typewriter", "classic_apple", "modern_apple", "web", "3d"}
+}
+
+// FamilyMotionIDs returns the registered motion ids for one public family.
+func (r *RegistryType) FamilyMotionIDs(family string) []string {
+	return r.CategoryMotionIDs(family)
 }

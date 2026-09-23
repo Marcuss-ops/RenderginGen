@@ -14,8 +14,8 @@ func TestBatchRender_InspectCompiledPlans(t *testing.T) {
 		motionID string
 		text     string
 	}{
-		{"01_kinetic_split_word", "apple_v2", "kinetic_split_word", "KINETIC PERFORMANCE"},
-		{"01_typewriter_clean", "apple_v2", "typewriter_clean", "EVERY PIXEL MATTERS"},
+		{"01_kinetic_split_word", "phrase_default", "kinetic_split_word", "KINETIC PERFORMANCE"},
+		{"01_typewriter_clean", "phrase_default", "typewriter_clean", "EVERY PIXEL MATTERS"},
 	}
 
 	for _, tc := range cases {

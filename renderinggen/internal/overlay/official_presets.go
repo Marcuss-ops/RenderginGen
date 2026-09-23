@@ -70,11 +70,21 @@ type PresetLayout struct {
 
 type MotionDefinition = motion.MotionDefinition
 
-// These are the only editorial preset identities. Motion remains a separate
-// concern and can vary per item through motion_id without multiplying styles.
-const (
-	CanonicalTextPresetID = "apple_v2"
-)
+// runtimeFontPath resolves the closed set of bundled font-family IDs accepted
+// in overlay item params. Paths are fixed workspace assets, never paths
+// supplied by a plan.
+func runtimeFontPath(family string) (string, bool) {
+	switch family {
+	case "poppins":
+		return "assets/fonts/Poppins-Bold.ttf", true
+	case "inter":
+		return "assets/fonts/Inter-Bold.ttf", true
+	case "dejavu_sans":
+		return officialCyrillicFontPath, true
+	default:
+		return "", false
+	}
+}
 
 // presetSpec is the family-agnostic authoring row the per-family builders
 // (official_presets_text.go / official_presets_image.go) fill in. It exists so
@@ -115,13 +125,9 @@ func makePreset(id string, s presetSpec) PresetDefinition {
 // in their own files but merged into THIS single map, so a lookup can never
 // depend on which family file happened to be consulted.
 var officialPresets = map[string]PresetDefinition{
-	// Static text is intentionally part of the small smoke/E2E catalog: it
-	// proves text/subtitle pixels without requiring an animation window longer
-	// than a short canary composition.
-	StaticTextSmokePresetID:  makePreset(StaticTextSmokePresetID, staticTextSmokeSpec()),
-	CanonicalTextPresetID:    canonicalTextPreset(),
-	RenderingGen2PresetID:    renderingGen2Preset(),
-	PhraseAppleCleanPresetID: phraseAppleCleanPreset(),
+	// Static text remains a small smoke/E2E preset beside the sole phrase style.
+	StaticTextSmokePresetID: makePreset(StaticTextSmokePresetID, staticTextSmokeSpec()),
+	PhraseDefaultPresetID:   phraseDefaultPreset(),
 
 	"image_focus_in":     makePreset("image_focus_in", imageSpec("image_right", "image_focus_reveal")),
 	"image_fade_in":      makePreset("image_fade_in", imageSpec("image_right", "image_fade_reveal")),

@@ -18,7 +18,7 @@ func entityContractPlan(item string) []byte {
 func TestEntityContractRequiresProducerIdentityAndTiming(t *testing.T) {
 	_, err := CompileSemantic(entityContractPlan(`{
 		"id":"person-1","kind":"entity_card","template_id":"PERSON",
-		"preset_id":"apple_v2","text":"Ada Lovelace",
+		"preset_id":"phrase_default","text":"Ada Lovelace",
 		"start_ms":1000,"end_ms":3000,"duration_ms":2000
 	}`))
 	if err == nil || !strings.Contains(err.Error(), "requires entity_id") {
@@ -29,7 +29,7 @@ func TestEntityContractRequiresProducerIdentityAndTiming(t *testing.T) {
 func TestEntityContractRejectsTimingDrift(t *testing.T) {
 	_, err := CompileSemantic(entityContractPlan(`{
 		"id":"person-1","entity_id":"person:ada","kind":"entity_card","template_id":"PERSON",
-		"preset_id":"apple_v2","text":"Ada Lovelace",
+		"preset_id":"phrase_default","text":"Ada Lovelace",
 		"start_ms":1000,"end_ms":3000,"duration_ms":1999
 	}`))
 	if err == nil || !strings.Contains(err.Error(), "does not match") {
@@ -40,7 +40,7 @@ func TestEntityContractRejectsTimingDrift(t *testing.T) {
 func TestEntityContractAcceptsCompleteProducerItem(t *testing.T) {
 	result, err := CompileSemantic(entityContractPlan(`{
 		"id":"person-1","entity_id":"person:ada","kind":"entity_card","template_id":"PERSON",
-		"preset_id":"apple_v2","text":"Ada Lovelace",
+		"preset_id":"phrase_default","text":"Ada Lovelace",
 		"start_ms":1000,"end_ms":3000,"duration_ms":2000
 	}`))
 	if err != nil {

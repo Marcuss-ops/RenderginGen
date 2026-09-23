@@ -20,8 +20,8 @@
 #     layers, the entity images are centred, and the container contract holds
 #     (1920x1080 @ 24/1, >= 240 frames).
 #
-# apple_v2 (the animated text preset) is deliberately NOT used: the phrases
-# render with static_text_smoke, the text preset certified on this lane.
+# phrase_default is deliberately NOT used: the phrases render with
+# static_text_smoke, the text preset certified on this lane.
 #
 # Usage:
 #   RenderingGen/scripts/run-mixed-overlay-scenario.sh

@@ -1,91 +1,36 @@
 package overlay
 
-// official_presets_text.go owns the TEXT half of the official preset catalog:
-// the font asset every text preset shares, the authoring rows, and the
-// canonical Apple-style phrase preset.
-//
-// A text preset is the only place a phrase's legibility is decided, so both
-// rules that apply to every one of them live here: a stroke and a shadow are
-// mandatory (a phrase over arbitrary footage is unreadable without them) and
-// the canonical preset is the one whose geometry the 1920-wide assembly canvas
-// is sized for.
+// official_presets_text.go owns the text presets. Phrase appearance is a
+// single stable default; animation remains independently selectable through
+// motion_id and the canonical motion registry.
 
-// Preset IDs of the text family.
 const (
 	// StaticTextSmokePresetID is the deliberately static smoke/canary preset:
-	// it has no motion at all, which is what lets a short composition certify
-	// text pixels without an animation window.
+	// it proves text pixels without requiring an animation window.
 	StaticTextSmokePresetID = "static_text_smoke"
-	// RenderingGen2PresetID is the current premium overlay style. It keeps the
-	// visual treatment independent from the Apple V3 motion family, so an item
-	// can swap motion_id without multiplying style definitions.
-	RenderingGen2PresetID = "rendering_gen_2"
-	// PhraseAppleCleanPresetID is the modern Apple-clean phrase style: white
-	// bold text, native-shadow legibility, glow-free (GPU-native), 1920-wide
-	// phrase band, 2s Apple entrance motions. It replaces apple_v2's halo
-	// with pure shadow+blur+tracking finishing — the "finite pulite" look.
-	PhraseAppleCleanPresetID = "phrase_apple_clean"
+	// PhraseDefaultPresetID is the sole official animated phrase preset.
+	PhraseDefaultPresetID = "phrase_default"
 )
 
-// officialFontPath is the single font asset every official text preset
-// references. Keeping this path in one place prevents visual presets from
-// silently drifting to unavailable font aliases.
+// officialFontPath is the canonical default font. Plans may select another
+// bundled font family through the closed runtime font-family vocabulary.
 const officialFontPath = "assets/fonts/Poppins-Bold.ttf"
 
-// textSpec is the text-family authoring row: an anchor, an alignment, the
-// motion id/unit the preset selects by default, its enter/exit windows, and
-// the legibility pair (stroke + shadow) plus the optional halo (glow).
 func textSpec(anchor, align, anim, unit string, enter, exit int, shadow *StyleShadow, glow *StyleGlow) presetSpec {
 	return presetSpec{family: PresetText, anchor: anchor, align: align, anim: anim, unit: unit, enter: enter, exit: exit, shadow: shadow, glow: glow}
 }
 
-// staticTextSmokeSpec is the smoke preset's row: safe_area, centered, no
-// motion, no shadow (makePreset adds neither stroke nor shadow for it).
 func staticTextSmokeSpec() presetSpec {
 	return textSpec("safe_area", "center", "", "line", 0, 0, nil, nil)
 }
 
-// canonicalTextPreset is the Apple-style phrase preset: the 1920-wide phrase
-// band on the assembly canvas, white bold type with the mandatory stroke and
-// shadow, revealed by the apple_phrase_v2 glyph motion.
-func canonicalTextPreset() PresetDefinition {
-	d := makePreset(CanonicalTextPresetID, textSpec("safe_area", "center", "apple_phrase_v2", "glyph", 72, 6, &StyleShadow{
-		Color: "#000000", Opacity: 0.72, Blur: 12, Offset: []float64{0, 4},
+// phraseDefaultPreset is intentionally visual-only apart from its initial
+// motion choice. Callers can replace that motion per item without selecting a
+// second phrase style.
+func phraseDefaultPreset() PresetDefinition {
+	d := makePreset(PhraseDefaultPresetID, textSpec("safe_area", "center", "phrase_apple_clean_01_blur_soft_reveal", "glyph", 60, 12, &StyleShadow{
+		Color: "#000000", Opacity: 0.68, Blur: 14, Offset: []float64{0, 5},
 	}, canaryGlow()))
-	d.Layout.BoxWidth = 1920
-	d.Layout.BoxHeight = 220
-	d.Style.FontSize = 64
-	d.Style.Fill = []float64{1, 1, 1, 1}
-	d.Style.Stroke = &StyleStroke{Color: "#111827", Width: 3.5}
-	return d
-}
-
-// renderingGen2Preset is the next-generation editorial style: a slightly
-// taller phrase band with the same legibility contract and a quiet 2.5D depth
-// entrance. Its motion is deliberately just a default; producers may select
-// any validated Apple V3 motion through motion_id.
-func renderingGen2Preset() PresetDefinition {
-	d := makePreset(RenderingGen2PresetID, textSpec("safe_area", "center", "depth_parallax_reveal", "glyph", 72, 6, &StyleShadow{
-		Color: "#000000", Opacity: 0.68, Blur: 14, Offset: []float64{0, 5},
-	}, nil))
-	d.Layout.BoxWidth = 1920
-	d.Layout.BoxHeight = 260
-	d.Style.FontSize = 68
-	d.Style.Fill = []float64{1, 1, 1, 1}
-	d.Style.Stroke = &StyleStroke{Color: "#111827", Width: 3.5}
-	return d
-}
-
-// phraseAppleCleanPreset is the modern Apple-clean phrase style for the
-// 30 phrase_apple_clean_v1 motions: pure white on a centred 1920x260 band,
-// soft drop-shadow (0.68 / 14px) + stroke for footage legibility, NO halo
-// glow (glow-free = GPU-native residency), blur/tracking/scale are supplied
-// by the motion itself — the “shadow + glow finito pulito + blur moderno”
-// Apple finish without the unverified halo that blocks require_gpu_native.
-func phraseAppleCleanPreset() PresetDefinition {
-	d := makePreset(PhraseAppleCleanPresetID, textSpec("safe_area", "center", "phrase_apple_clean_01_blur_soft_reveal", "glyph", 60, 12, &StyleShadow{
-		Color: "#000000", Opacity: 0.68, Blur: 14, Offset: []float64{0, 5},
-	}, nil))
 	d.Layout.BoxWidth = 1920
 	d.Layout.BoxHeight = 260
 	d.Style.FontSize = 64

@@ -15,9 +15,8 @@
 // writer) and lowered through the worker's own compiler — no hand-rolled JSON
 // and no second lowering.
 //
-// apple_v2 (the animated text preset) is deliberately not used: the phrase
-// items render with static_text_smoke, the text preset certified on the
-// software lane.
+// phrase_default is deliberately not used: the phrase items render with
+// static_text_smoke, the text preset certified on the software lane.
 package main
 
 import (

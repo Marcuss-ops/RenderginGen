@@ -31,7 +31,7 @@ func TestCompileSemanticOptionalBackground(t *testing.T) {
       "schema_version":"renderinggen.overlay-plan.v1",
       "plan_id":"p","video_id":"v","width":1280,"height":720,"fps_num":30,"fps_den":1,
       "background":{"kind":"color","color":[0,0,0,1]},
-      "items":[{"id":"phrase","template_id":"IMPORTANT_PHRASE","preset_id":"apple_v2","text":"hi","start_ms":0,"end_ms":1000}]
+      "items":[{"id":"phrase","template_id":"IMPORTANT_PHRASE","preset_id":"phrase_default","text":"hi","start_ms":0,"end_ms":1000}]
     }`)
 	result, err := CompileSemantic(raw)
 	if err != nil {
@@ -50,7 +50,7 @@ func TestCompileSemanticTextMotionProducesAnimatorContract(t *testing.T) {
 	raw := []byte(`{
       "schema_version":"renderinggen.overlay-plan.v1",
       "plan_id":"p","video_id":"v","width":1920,"height":1080,"fps_num":24,"fps_den":1,
-      "items":[{"id":"title","template_id":"IMPORTANT_PHRASE","preset_id":"apple_v2","motion_id":"character_cascade",
+      "items":[{"id":"title","template_id":"IMPORTANT_PHRASE","preset_id":"phrase_default","motion_id":"character_cascade",
         "text":"Powerfully simple.","start_ms":0,"end_ms":2000}]
     }`)
 	result, err := CompileSemantic(raw)
@@ -87,7 +87,7 @@ func TestCompileSemanticTextMotionProducesAnimatorContract(t *testing.T) {
 }
 
 func TestCompileSemanticPhraseMotionReplacesExistingOpacityWithEntryExit(t *testing.T) {
-	raw := []byte(`{"schema_version":"renderinggen.overlay-plan.v1","plan_id":"phrase-exit","video_id":"v","width":1920,"height":1080,"fps_num":24,"fps_den":1,"items":[{"id":"phrase","template_id":"IMPORTANT_PHRASE","preset_id":"apple_v2","motion_id":"soft_edge_spotlight_dissolve","text":"Tokyo ended the unbeaten run","start_ms":0,"end_ms":2000}]}`)
+	raw := []byte(`{"schema_version":"renderinggen.overlay-plan.v1","plan_id":"phrase-exit","video_id":"v","width":1920,"height":1080,"fps_num":24,"fps_den":1,"items":[{"id":"phrase","template_id":"IMPORTANT_PHRASE","preset_id":"phrase_default","motion_id":"soft_edge_spotlight_dissolve","text":"Tokyo ended the unbeaten run","start_ms":0,"end_ms":2000}]}`)
 	result, err := CompileSemantic(raw)
 	if err != nil {
 		t.Fatal(err)
@@ -115,7 +115,7 @@ func TestCompileSemanticTextUsesExplicitCanvasLocalBox(t *testing.T) {
 	raw := []byte(`{
       "schema_version":"renderinggen.overlay-plan.v1",
       "plan_id":"placement-fixture","video_id":"v","width":1920,"height":1080,"fps_num":24,"fps_den":1,
-      "items":[{"id":"title","template_id":"IMPORTANT_PHRASE","preset_id":"apple_v2",
+      "items":[{"id":"title","template_id":"IMPORTANT_PHRASE","preset_id":"phrase_default",
         "motion_id":"character_cascade","text":"ABC","start_ms":0,"end_ms":5000}]
     }`)
 	result, err := CompileSemantic(raw)
@@ -145,7 +145,7 @@ func TestCompileSemanticTextMotionsDoNotCollapseToSameContract(t *testing.T) {
 	motions := []string{"word_reveal", "character_cascade", "opacity_wave", "scale_wave", "char_wave"}
 	contracts := make(map[string]string, len(motions))
 	for _, motionID := range motions {
-		raw := []byte(`{"schema_version":"renderinggen.overlay-plan.v1","plan_id":"` + motionID + `","video_id":"v","width":1920,"height":1080,"fps_num":24,"fps_den":1,"items":[{"id":"title","template_id":"IMPORTANT_PHRASE","preset_id":"apple_v2","motion_id":"` + motionID + `","text":"ABC","start_ms":0,"end_ms":5000}]}`)
+		raw := []byte(`{"schema_version":"renderinggen.overlay-plan.v1","plan_id":"` + motionID + `","video_id":"v","width":1920,"height":1080,"fps_num":24,"fps_den":1,"items":[{"id":"title","template_id":"IMPORTANT_PHRASE","preset_id":"phrase_default","motion_id":"` + motionID + `","text":"ABC","start_ms":0,"end_ms":5000}]}`)
 		result, err := CompileSemantic(raw)
 		if err != nil {
 			t.Fatalf("%s: %v", motionID, err)
@@ -233,8 +233,8 @@ func TestCompileSemanticKindAndExplicitText(t *testing.T) {
       "schema_version":"renderinggen.overlay-plan.v1",
       "plan_id":"p","video_id":"v","width":1280,"height":720,"fps_num":30,"fps_den":1,
       "items":[
-        {"id":"phrase","kind":"important_phrase","template_id":"IMPORTANT_PHRASE","preset_id":"apple_v2","text":"QUESTO CAMBIA TUTTO","start_ms":0,"end_ms":1000},
-        {"id":"person","entity_id":"person:cook","kind":"entity_card","template_id":"PERSON","preset_id":"apple_v2","text":"Cook","start_ms":1000,"end_ms":2000,"duration_ms":1000}
+        {"id":"phrase","kind":"important_phrase","template_id":"IMPORTANT_PHRASE","preset_id":"phrase_default","text":"QUESTO CAMBIA TUTTO","start_ms":0,"end_ms":1000},
+        {"id":"person","entity_id":"person:cook","kind":"entity_card","template_id":"PERSON","preset_id":"phrase_default","text":"Cook","start_ms":1000,"end_ms":2000,"duration_ms":1000}
       ]
     }`)
 	result, err := CompileSemantic(raw)
@@ -263,7 +263,7 @@ func TestCompileSemanticTextIsMandatory(t *testing.T) {
       "schema_version":"renderinggen.overlay-plan.v1",
       "plan_id":"p","video_id":"v","width":1280,"height":720,"fps_num":30,"fps_den":1,
       "items":[
-        {"id":"person","entity_id":"person:missing-text","kind":"entity_card","template_id":"PERSON","preset_id":"apple_v2","start_ms":0,"end_ms":1000,"duration_ms":1000}
+        {"id":"person","entity_id":"person:missing-text","kind":"entity_card","template_id":"PERSON","preset_id":"phrase_default","start_ms":0,"end_ms":1000,"duration_ms":1000}
       ]
     }`)
 	if _, err := CompileSemantic(raw); err == nil {
@@ -282,9 +282,9 @@ func TestCompileSemanticImportantPhraseAndEntityImage(t *testing.T) {
       "plan_id":"phrase-and-name","video_id":"phrase-and-name",
       "width":1280,"height":720,"fps_num":30,"fps_den":1,
       "items":[
-        {"id":"phrase-important","kind":"important_phrase","template_id":"IMPORTANT_PHRASE","preset_id":"apple_v2",
+        {"id":"phrase-important","kind":"important_phrase","template_id":"IMPORTANT_PHRASE","preset_id":"phrase_default",
          "text":"THIS CHANGES EVERYTHING","start_ms":500,"end_ms":1800},
-        {"id":"person-image-name","entity_id":"person:matt-damon","kind":"entity_card","template_id":"PERSON","preset_id":"apple_v2","image_preset_id":"image_slide_left",
+        {"id":"person-image-name","entity_id":"person:matt-damon","kind":"entity_card","template_id":"PERSON","preset_id":"phrase_default","image_preset_id":"image_slide_left",
          "text":"Matt Damon",
          "start_ms":2200,"end_ms":4200,"duration_ms":2000,
          "asset_refs":[{"asset_id":"matt-damon","sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
@@ -453,7 +453,7 @@ func TestCompileSemanticTransportsChrononPresetID(t *testing.T) {
       "schema_version":"renderinggen.overlay-plan.v1",
       "plan_id":"p","video_id":"v","width":1280,"height":720,"fps_num":30,"fps_den":1,
       "items":[
-        {"id":"phrase","template_id":"IMPORTANT_PHRASE","preset_id":"apple_v2","text":"x","start_ms":0,"end_ms":1000}
+        {"id":"phrase","template_id":"IMPORTANT_PHRASE","preset_id":"phrase_default","text":"x","start_ms":0,"end_ms":1000}
       ]
     }`)
 	if _, err := CompileSemantic(raw); err != nil {

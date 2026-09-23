@@ -71,8 +71,32 @@ or validated, `internal/overlay` checks that its rendering preset registry and
 the catalog's preset families agree (`overlay.ValidateCatalogParity`, called by
 the worker before it reports ready), and `internal/overlaybatch` takes its
 phrase→motion pairing, its phrase-overlay rows and its image-overlay matrix from
-the catalog's selections instead of restating them in Go. There is no second
-list of motion ids left to drift.
+the catalog's selections instead of restating them in Go. Phrase typography has
+one animated preset (`phrase_default`) plus `static_text_smoke`; text animation
+is selected independently with `motion_id`.
+
+The public motion family API keeps these groups independent from preset styles:
+`typewriter` (5 motions), `classic_apple` (42), `modern_apple` (45), `web` (0),
+and `3d` (all catalog motions with Z translation or X/Y rotation). The web
+family is intentionally empty until a concrete catalog motion is authored; no
+placeholder is advertised as renderable. The current image motion inventory is
+18 motions:
+10 `overlay_v3_image` (`image_fade_reveal`, `image_focus_reveal`,
+`image_scale_reveal`, `image_slide_left_reveal`, `image_slide_right_reveal`,
+`image_parallax_depth_reveal`, `image_tilt_settle`, `image_card_push`,
+`image_diagonal_sweep`, `image_soft_focus_reveal`) and 8 `image_25d_clean_v1`
+(`image_25d_depth_float_in`, `image_25d_yaw_flip_in`,
+`image_25d_pitch_lift`, `image_25d_pop_z_bounce`, `image_25d_swipe_3d`,
+`image_25d_card_swing`, `image_25d_blur_focus_in`,
+`image_25d_blur_scale_in`). Use `overlay.ImageMotionInventory()` for the live,
+catalog-derived IDs.
+
+Text item `params` (or the item-level `style` override) may additionally set
+`font_family` to `poppins`, `inter`, or `dejavu_sans`, `glow_size` in `[0,256]`
+pixels, and `stroke_size` in `[0,64]` pixels. Zero disables glow/stroke. All
+font assets must be declared and materialized by the job; the batch builder
+includes the three bundled families. A local `style` value takes precedence
+over the same key in `params`, and both override the preset defaults.
 
 Refresh the embedded artifact after a ChrononTemplate catalog change:
 
@@ -80,6 +104,12 @@ Refresh the embedded artifact after a ChrononTemplate catalog change:
 scripts/sync_motion_catalog.sh --check   # fail if the embedded copy is stale
 scripts/sync_motion_catalog.sh           # rebuild it from ChrononTemplate
 ```
+
+The RenderingGen text-preset contract is now only `phrase_default` plus
+`static_text_smoke`. The producer checkout must publish those same IDs in
+`overlay_presets.text` before the sync check can pass; a stale producer list is
+reported as catalog drift and must be corrected at its owner rather than hidden
+by hand-editing the generated embedded artifact.
 
 ## Curated background library
 

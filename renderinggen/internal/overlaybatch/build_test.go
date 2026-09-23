@@ -145,7 +145,7 @@ func TestBuildTysonManifestProducesTheFullCorpus(t *testing.T) {
 				t.Errorf("job %s: image provenance is incomplete (asset=%q attribution=%q)", job.ID, facts.asset, facts.attribution)
 			}
 		case "phrase":
-			if facts.motion == "" || facts.preset != "apple_v2" {
+			if facts.motion == "" || facts.preset != "phrase_default" {
 				t.Errorf("job %s: phrase job lost its preset/motion (%q/%q)", job.ID, facts.preset, facts.motion)
 			}
 		default:
@@ -243,7 +243,7 @@ func TestArtifactFileName(t *testing.T) {
 // answering for another language's text.
 func TestDistinctnessSeesACollision(t *testing.T) {
 	plan := func(text string) json.RawMessage {
-		return json.RawMessage(fmt.Sprintf(`{"language":"it","items":[{"template_id":"IMPORTANT_PHRASE","preset_id":"apple_v2","text":%q}]}`, text))
+		return json.RawMessage(fmt.Sprintf(`{"language":"it","items":[{"template_id":"IMPORTANT_PHRASE","preset_id":"phrase_default","text":%q}]}`, text))
 	}
 	probe := &manifestProbe{
 		BatchID: "b",
@@ -335,12 +335,12 @@ func TestMultilingualJobsDeclareThePlanPrimaryFont(t *testing.T) {
 		language := job.ID[strings.LastIndex(job.ID, "__")+2:]
 		primary := overlay.OfficialFontPathForLanguage(language)
 		declared := logicalPaths(job.Assets)
-		// The job must carry exactly the preset pair plus the font its plan
-		// resolved. Declaring more is provenance the render never uses;
-		// declaring less is the failure that killed the ru job.
-		want := map[string]bool{logicalFontP: true, logicalFontI: true, primary: true}
+		// The job carries each closed-enum runtime font option plus the language
+		// coverage font. Unused options are still declared because a producer
+		// may choose any supported family per item.
+		want := map[string]bool{logicalFontP: true, logicalFontI: true, logicalFontD: true}
 		if len(declared) != len(want) || !slices.Contains(declared, primary) {
-			t.Errorf("%s declares %v, want the preset pair plus the plan's %s", job.ID, declared, primary)
+			t.Errorf("%s declares %v, want every runtime font family including %s", job.ID, declared, primary)
 		}
 		for _, path := range declared {
 			if !want[path] {
@@ -356,9 +356,6 @@ func TestMultilingualJobsDeclareThePlanPrimaryFont(t *testing.T) {
 		// face, and en must not be handed it for a language that cannot use it.
 		if language == "ru" && !slices.Contains(declared, logicalFontD) {
 			t.Errorf("ru declares %v, want the Cyrillic face %s", declared, logicalFontD)
-		}
-		if language == "en" && slices.Contains(declared, logicalFontD) {
-			t.Errorf("en declares the Cyrillic face: %v", declared)
 		}
 	}
 }
@@ -402,7 +399,7 @@ func TestBuildRefusesAPlanFontTheJobDoesNotDeclare(t *testing.T) {
 			ID:         "item_1",
 			Kind:       "important_phrase",
 			TemplateID: "IMPORTANT_PHRASE",
-			PresetID:   overlay.CanonicalTextPresetID,
+			PresetID:   overlay.PhraseDefaultPresetID,
 			MotionID:   phraseOverlays[0].Motion,
 			Text:       "Проверка шрифта",
 			StartMS:    0,

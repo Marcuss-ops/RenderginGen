@@ -89,7 +89,7 @@ func contractPresetID(family PresetFamily) string {
 	if family == PresetImage {
 		return "image_focus_in"
 	}
-	return "apple_v2"
+	return "phrase_default"
 }
 
 // contractFixture builds the minimal valid overlay-plan.v1 document for one

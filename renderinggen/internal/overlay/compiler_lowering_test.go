@@ -25,7 +25,7 @@ func TestCompileSemanticUntypedConcretePlanIsRejected(t *testing.T) {
 }
 
 func TestCompileSemanticLowersAuthoringConcepts(t *testing.T) {
-	raw := []byte(`{"schema_version":"renderinggen.overlay-plan.v1","plan_id":"p","video_id":"v","width":1280,"height":720,"fps_num":30,"fps_den":1,"style_profile":"crime","items":[{"id":"n","entity_id":"entity:ada","kind":"entity_card","template_id":"PERSON","preset_id":"apple_v2","text":"Ada","start_ms":0,"end_ms":1000,"duration_ms":1000}]}`)
+	raw := []byte(`{"schema_version":"renderinggen.overlay-plan.v1","plan_id":"p","video_id":"v","width":1280,"height":720,"fps_num":30,"fps_den":1,"style_profile":"crime","items":[{"id":"n","entity_id":"entity:ada","kind":"entity_card","template_id":"PERSON","preset_id":"phrase_default","text":"Ada","start_ms":0,"end_ms":1000,"duration_ms":1000}]}`)
 	result, err := CompileSemantic(raw)
 	if err != nil {
 		t.Fatal(err)

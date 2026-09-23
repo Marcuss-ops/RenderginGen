@@ -241,7 +241,7 @@ func BuildTysonManifest(opts TysonBuildOptions) (*BuildResult, error) {
 				SceneID:    segments[index].ID,
 				Kind:       "important_phrase",
 				TemplateID: "IMPORTANT_PHRASE",
-				PresetID:   overlay.CanonicalTextPresetID,
+				PresetID:   overlay.PhraseDefaultPresetID,
 				MotionID:   motionID,
 				Text:       phrase,
 				StartMS:    0,
@@ -258,7 +258,7 @@ func BuildTysonManifest(opts TysonBuildOptions) (*BuildResult, error) {
 			Family:     "phrase",
 			Text:       phrase,
 			MotionID:   motionID,
-			PresetID:   overlay.CanonicalTextPresetID,
+			PresetID:   overlay.PhraseDefaultPresetID,
 		})
 	}
 
@@ -359,12 +359,12 @@ type MultilingualBuildOptions struct {
 
 // BuildMultilingualManifest writes the 10 overlays × N languages batch manifest.
 //
-// Every phrase job declares the fonts its own plan burns: the two preset fonts
-// plus the primary the plan compiler selects for that job's language. See
-// fontAssetsForLanguage for why that set is derived from the plan's owner
-// instead of restated here. The worker resolves a job's assets relative to its
-// workspace and the engine's fallback stack is built by scanning the primary
-// font's own directory, so an undeclared font does not exist for the shaper —
+// Every phrase job declares all closed-enum bundled font families accepted by
+// per-item runtime overrides, plus any language-selected primary not already
+// included. See fontAssetsForLanguage for why that set is derived from the
+// worker's font vocabulary instead of restated here. The worker resolves a
+// job's assets relative to its workspace and the engine's fallback stack is
+// built by scanning the primary font's own directory, so an undeclared font does not exist for the shaper —
 // the translated text then either rasterises to nothing while the job still
 // reports "completed", or the render dies in preflight with exit 1.
 func BuildMultilingualManifest(opts MultilingualBuildOptions) (*BuildResult, error) {
@@ -461,7 +461,7 @@ func BuildMultilingualManifest(opts MultilingualBuildOptions) (*BuildResult, err
 					ID:         "item_1",
 					Kind:       "important_phrase",
 					TemplateID: "IMPORTANT_PHRASE",
-					PresetID:   overlay.CanonicalTextPresetID,
+					PresetID:   overlay.PhraseDefaultPresetID,
 					MotionID:   row.Motion,
 					Text:       text,
 					StartMS:    0,
@@ -478,7 +478,7 @@ func BuildMultilingualManifest(opts MultilingualBuildOptions) (*BuildResult, err
 				Family:     "phrase",
 				Text:       text,
 				MotionID:   row.Motion,
-				PresetID:   overlay.CanonicalTextPresetID,
+				PresetID:   overlay.PhraseDefaultPresetID,
 			})
 			phrases++
 		}
@@ -545,7 +545,7 @@ func BuildMultilingualManifest(opts MultilingualBuildOptions) (*BuildResult, err
 
 // --- shared build helpers ----------------------------------------------------
 
-// fontAssets hashes and describes the two fonts every Latin phrase job declares.
+// fontAssets hashes and describes every bundled font family accepted by item overrides.
 //
 // sourcePath returns the font's path RELATIVE TO THE ASSET BASE URL of the
 // corpus, so the self-heal URL points at bytes a server rooted at that base can
@@ -569,10 +569,9 @@ var fontLocalFiles = map[string]string{
 	logicalFontD: fontDejaVu,
 }
 
-// fontAssetsForLanguage declares the fonts a language's jobs need: the two
-// fonts every phrase job carries (the Latin preset primary and its coverage
-// companion) plus the primary font the semantic plan actually selects for the
-// language.
+// fontAssetsForLanguage declares all fonts a language's jobs can select at
+// runtime (Poppins, Inter and DejaVu Sans), ensuring a valid enum override is
+// always materializable, plus the language-selected primary if it is new.
 //
 // godlike/06 SSOT: the extra font is derived from
 // overlay.OfficialFontPathForLanguage — the same owner the plan compiler uses —
@@ -585,10 +584,10 @@ func fontAssetsForLanguage(repoRoot string, sourcePath func(local string) string
 	return fontAssetsFromSpecs(repoRoot, sourcePath, fontSpecsForLanguage(language))
 }
 
-// fontSpecsForLanguage returns the asset specs for a language, including the
-// plan's primary font when it is not already among the always-declared pair.
+// fontSpecsForLanguage returns all runtime-selectable font assets and ensures
+// the plan's language-selected primary font is included.
 func fontSpecsForLanguage(language string) []fontSpec {
-	specs := []fontSpec{{fontPoppins, logicalFontP}, {fontInter, logicalFontI}}
+	specs := []fontSpec{{fontPoppins, logicalFontP}, {fontInter, logicalFontI}, {fontDejaVu, logicalFontD}}
 	primary := overlay.OfficialFontPathForLanguage(language)
 	if local, ok := fontLocalFiles[primary]; ok && !hasLogicalFont(specs, primary) {
 		specs = append(specs, fontSpec{local, primary})

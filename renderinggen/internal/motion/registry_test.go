@@ -25,6 +25,54 @@ var (
 	}
 )
 
+func TestMotionFamiliesKeepStylesIndependentAndComplete(t *testing.T) {
+	want := []string{"typewriter", "classic_apple", "modern_apple", "web", "3d"}
+	got := Registry.MotionFamilies()
+	if len(got) != len(want) {
+		t.Fatalf("motion families = %v, want %v", got, want)
+	}
+	for i, family := range want {
+		if got[i] != family {
+			t.Fatalf("motion family[%d] = %q, want %q", i, got[i], family)
+		}
+	}
+	for family, count := range map[string]int{"typewriter": 5, "classic_apple": 42, "modern_apple": 45, "web": 0} {
+		if ids := Registry.FamilyMotionIDs(family); len(ids) != count {
+			t.Errorf("%s family has %d motions, want %d", family, len(ids), count)
+		}
+	}
+	threeD := Registry.FamilyMotionIDs("3d")
+	if len(threeD) == 0 {
+		t.Fatal("3D family has no catalog motions")
+	}
+	for _, id := range threeD {
+		plugin, err := Registry.Resolve(id)
+		if err != nil {
+			t.Fatalf("resolve 3D family motion %q: %v", id, err)
+		}
+		definition := plugin.(DeclarativePlugin).Definition
+		if !motionHas3D(definition) {
+			t.Errorf("3D family motion %q has no camera-backed 3D property", id)
+		}
+	}
+	for _, property := range []string{"rotation_z", "scale_z"} {
+		if motionHas3D(MotionDefinition{Tracks: []TrackDefinition{{Property: property}}}) {
+			t.Errorf("2D property %q was classified as camera-backed 3D", property)
+		}
+	}
+	imageIDs := Registry.ImageOverlayMotionIDs()
+	if len(imageIDs) != 18 {
+		t.Fatalf("image motion inventory has %d entries, want 18: %v", len(imageIDs), imageIDs)
+	}
+	for _, family := range want {
+		for _, id := range Registry.FamilyMotionIDs(family) {
+			if _, err := Registry.Resolve(id); err != nil {
+				t.Errorf("%s motion %q does not resolve: %v", family, id, err)
+			}
+		}
+	}
+}
+
 // TestCatalogStaysInsideTheRendererVocabulary pins that every registered motion
 // lowers to a document Chronon's schema accepts. The layer/animator property
 // split is the interesting half: tracking is animator-only, while blur is

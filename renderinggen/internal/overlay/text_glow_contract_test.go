@@ -10,7 +10,7 @@ import (
 // the canonical text preset emits only radius, intensity and color, with no
 // quality selector or layered-lobe controls.
 func TestCanonicalTextPresetLowersTheCanaryGlow(t *testing.T) {
-	def, err := ResolveOfficialPreset(CanonicalTextPresetID)
+	def, err := ResolveOfficialPreset(PhraseDefaultPresetID)
 	if err != nil {
 		t.Fatalf("resolve canonical preset: %v", err)
 	}
@@ -36,7 +36,7 @@ func TestCompiledTextPlanCarriesGlowNotShadowAsGlow(t *testing.T) {
 		"background": {"kind": "color", "color": [0, 0, 0, 1]},
 		"items": [{
 			"id": "phrase", "template_id": "IMPORTANT_PHRASE",
-			"preset_id": "apple_v2", "kind": "important_phrase",
+			"preset_id": "phrase_default", "kind": "important_phrase",
 			"text": "GLOW CONTRACT", "start_ms": 0, "end_ms": 5000
 		}]
 	}`)

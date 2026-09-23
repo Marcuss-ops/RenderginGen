@@ -25,12 +25,13 @@ import (
 // overlay item. It is produced once by resolveSemanticItems and consumed by
 // the per-kind compilers and the ledger — the raw JSON is never re-read.
 type resolvedItem struct {
-	Item   semanticItem
-	Spec   TemplateSpec
-	Kind   ItemKind
-	Params map[string]any
-	Start  int64
-	End    int64
+	Item         semanticItem
+	Spec         TemplateSpec
+	Kind         ItemKind
+	Params       map[string]any
+	RuntimeStyle map[string]any
+	Start        int64
+	End          int64
 	// PresetID is the validated official preset for the (text/image) layer.
 	PresetID string
 	// Preset and ImagePreset are the resolved official definitions.
@@ -390,14 +391,21 @@ func resolveSemanticItems(src *semanticPlan) ([]resolvedItem, error) {
 		} else if spec.Kind == KindPrimitive {
 			spec.Family = PresetText
 		}
-		params := item.Params
-		if params == nil {
-			params = map[string]any{}
-		}
-		for k, v := range item.MotionParams {
+		params := make(map[string]any, len(item.Params)+len(item.Style))
+		for k, v := range item.Params {
 			params[k] = v
 		}
-		ri := resolvedItem{Item: item, Spec: spec, Kind: kind, Params: params, Start: start, End: end}
+		for k, v := range item.Style {
+			params[k] = v
+		}
+		runtimeStyle := make(map[string]any, len(item.Params)+len(item.Style))
+		for k, v := range item.Params {
+			runtimeStyle[k] = v
+		}
+		for k, v := range item.Style {
+			runtimeStyle[k] = v
+		}
+		ri := resolvedItem{Item: item, Spec: spec, Kind: kind, Params: params, RuntimeStyle: runtimeStyle, Start: start, End: end}
 
 		if isImageKind(kind) && len(item.Assets) == 0 {
 			return nil, fmt.Errorf("overlay: image template %q item %q requires asset_refs", item.Template, item.ID)
@@ -416,6 +424,9 @@ func resolveSemanticItems(src *semanticPlan) ([]resolvedItem, error) {
 				return nil, err
 			}
 			ri.Preset = def
+		}
+		if err := validateTextRuntimeOverrides(runtimeStyle, item.ID, kind, preset, len(item.Assets) > 0); err != nil {
+			return nil, err
 		}
 		if isEntityKind(kind) && len(item.Assets) > 0 {
 			if imagePreset := strings.TrimSpace(item.ImagePresetID); imagePreset != "" {
@@ -624,6 +635,9 @@ func compileTextLayer(ri resolvedItem, src *semanticPlan, layerID string) (Layer
 		if layer.Style != nil {
 			layer.Style.Font = OfficialFontPathForLanguage(src.Language)
 		}
+	}
+	if err := applyTextRuntimeOverrides(&layer, ri.RuntimeStyle); err != nil {
+		return Layer{}, fmt.Errorf("overlay: item %q: %w", ri.Item.ID, err)
 	}
 	// Text placement is expressed as a layer top-left plus a local text box.
 	// materialize_text uses the serialized box size, while the layer position
