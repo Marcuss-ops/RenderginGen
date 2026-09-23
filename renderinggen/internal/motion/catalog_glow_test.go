@@ -18,5 +18,3 @@ func TestEveryPresetPublishesMaterialContract(t *testing.T) {
 		}
 	}
 }
-
-

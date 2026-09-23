@@ -35,7 +35,7 @@
             "id": "item_1",
             "kind": "important_phrase",
             "motion_id": "liquid_glass_ripple",
-            "preset_id": "apple_v2",
+            "preset_id": "phrase_default",
             "start_ms": 0,
             "template_id": "IMPORTANT_PHRASE",
             "text": "Christopher Nolan — Direttore"
@@ -82,7 +82,7 @@
             "id": "item_1",
             "kind": "important_phrase",
             "motion_id": "liquid_glass_ripple",
-            "preset_id": "apple_v2",
+            "preset_id": "phrase_default",
             "start_ms": 0,
             "template_id": "IMPORTANT_PHRASE",
             "text": "Christopher Nolan — Director"
@@ -129,7 +129,7 @@
             "id": "item_1",
             "kind": "important_phrase",
             "motion_id": "liquid_glass_ripple",
-            "preset_id": "apple_v2",
+            "preset_id": "phrase_default",
             "start_ms": 0,
             "template_id": "IMPORTANT_PHRASE",
             "text": "Christopher Nolan - dyrektor"
@@ -176,7 +176,7 @@
             "id": "item_1",
             "kind": "important_phrase",
             "motion_id": "liquid_glass_ripple",
-            "preset_id": "apple_v2",
+            "preset_id": "phrase_default",
             "start_ms": 0,
             "template_id": "IMPORTANT_PHRASE",
             "text": "Кристофер Нолан — режиссер"
@@ -223,7 +223,7 @@
             "id": "item_1",
             "kind": "important_phrase",
             "motion_id": "liquid_glass_ripple",
-            "preset_id": "apple_v2",
+            "preset_id": "phrase_default",
             "start_ms": 0,
             "template_id": "IMPORTANT_PHRASE",
             "text": "Christopher Nolan — Direktor"
@@ -270,7 +270,7 @@
             "id": "item_1",
             "kind": "important_phrase",
             "motion_id": "liquid_glass_ripple",
-            "preset_id": "apple_v2",
+            "preset_id": "phrase_default",
             "start_ms": 0,
             "template_id": "IMPORTANT_PHRASE",
             "text": "Christopher Nolan — Director"
@@ -317,7 +317,7 @@
             "id": "item_1",
             "kind": "important_phrase",
             "motion_id": "liquid_glass_ripple",
-            "preset_id": "apple_v2",
+            "preset_id": "phrase_default",
             "start_ms": 0,
             "template_id": "IMPORTANT_PHRASE",
             "text": "Christopher Nolan — Director"
@@ -364,7 +364,7 @@
             "id": "item_1",
             "kind": "important_phrase",
             "motion_id": "liquid_glass_ripple",
-            "preset_id": "apple_v2",
+            "preset_id": "phrase_default",
             "start_ms": 0,
             "template_id": "IMPORTANT_PHRASE",
             "text": "Christopher Nolan — Directeur"
@@ -411,7 +411,7 @@
             "id": "item_1",
             "kind": "important_phrase",
             "motion_id": "liquid_glass_ripple",
-            "preset_id": "apple_v2",
+            "preset_id": "phrase_default",
             "start_ms": 0,
             "template_id": "IMPORTANT_PHRASE",
             "text": "Christopher Nolan - Yönetmen"
@@ -458,7 +458,7 @@
             "id": "item_1",
             "kind": "important_phrase",
             "motion_id": "liquid_glass_ripple",
-            "preset_id": "apple_v2",
+            "preset_id": "phrase_default",
             "start_ms": 0,
             "template_id": "IMPORTANT_PHRASE",
             "text": "Christopher Nolan - Direktur"
@@ -505,7 +505,7 @@
             "id": "item_1",
             "kind": "important_phrase",
             "motion_id": "kinetic_stamp_impact",
-            "preset_id": "apple_v2",
+            "preset_id": "phrase_default",
             "start_ms": 0,
             "template_id": "IMPORTANT_PHRASE",
             "text": "Il futuro del video ad alta velocità"
@@ -552,7 +552,7 @@
             "id": "item_1",
             "kind": "important_phrase",
             "motion_id": "kinetic_stamp_impact",
-            "preset_id": "apple_v2",
+            "preset_id": "phrase_default",
             "start_ms": 0,
             "template_id": "IMPORTANT_PHRASE",
             "text": "The Future of High-Speed Video"
@@ -599,7 +599,7 @@
             "id": "item_1",
             "kind": "important_phrase",
             "motion_id": "kinetic_stamp_impact",
-            "preset_id": "apple_v2",
+            "preset_id": "phrase_default",
             "start_ms": 0,
             "template_id": "IMPORTANT_PHRASE",
             "text": "Przyszłość wysokiej prędkości wideo"
@@ -646,7 +646,7 @@
             "id": "item_1",
             "kind": "important_phrase",
             "motion_id": "kinetic_stamp_impact",
-            "preset_id": "apple_v2",
+            "preset_id": "phrase_default",
             "start_ms": 0,
             "template_id": "IMPORTANT_PHRASE",
             "text": "Будущее высокоскоростного видео"
@@ -693,7 +693,7 @@
             "id": "item_1",
             "kind": "important_phrase",
             "motion_id": "kinetic_stamp_impact",
-            "preset_id": "apple_v2",
+            "preset_id": "phrase_default",
             "start_ms": 0,
             "template_id": "IMPORTANT_PHRASE",
             "text": "Die Zukunft des High Speed Videos"
@@ -740,7 +740,7 @@
             "id": "item_1",
             "kind": "important_phrase",
             "motion_id": "kinetic_stamp_impact",
-            "preset_id": "apple_v2",
+            "preset_id": "phrase_default",
             "start_ms": 0,
             "template_id": "IMPORTANT_PHRASE",
             "text": "El futuro del vídeo de alta velocidad"
@@ -787,7 +787,7 @@
             "id": "item_1",
             "kind": "important_phrase",
             "motion_id": "kinetic_stamp_impact",
-            "preset_id": "apple_v2",
+            "preset_id": "phrase_default",
             "start_ms": 0,
             "template_id": "IMPORTANT_PHRASE",
             "text": "O futuro do vídeo de alta velocidade"
@@ -834,7 +834,7 @@
             "id": "item_1",
             "kind": "important_phrase",
             "motion_id": "kinetic_stamp_impact",
-            "preset_id": "apple_v2",
+            "preset_id": "phrase_default",
             "start_ms": 0,
             "template_id": "IMPORTANT_PHRASE",
             "text": "L'avenir de la vidéo haute vitesse"
@@ -881,7 +881,7 @@
             "id": "item_1",
             "kind": "important_phrase",
             "motion_id": "kinetic_stamp_impact",
-            "preset_id": "apple_v2",
+            "preset_id": "phrase_default",
             "start_ms": 0,
             "template_id": "IMPORTANT_PHRASE",
             "text": "Yüksek Hızlı Videonun Geleceği"
@@ -928,7 +928,7 @@
             "id": "item_1",
             "kind": "important_phrase",
             "motion_id": "kinetic_stamp_impact",
-            "preset_id": "apple_v2",
+            "preset_id": "phrase_default",
             "start_ms": 0,
             "template_id": "IMPORTANT_PHRASE",
             "text": "The Future of High- Speed Video"
@@ -975,7 +975,7 @@
             "id": "item_1",
             "kind": "important_phrase",
             "motion_id": "editorial_push_in",
-            "preset_id": "apple_v2",
+            "preset_id": "phrase_default",
             "start_ms": 0,
             "template_id": "IMPORTANT_PHRASE",
             "text": "BREAKING NEWS"
@@ -1022,7 +1022,7 @@
             "id": "item_1",
             "kind": "important_phrase",
             "motion_id": "editorial_push_in",
-            "preset_id": "apple_v2",
+            "preset_id": "phrase_default",
             "start_ms": 0,
             "template_id": "IMPORTANT_PHRASE",
             "text": "BREAKING NEWS"
@@ -1069,7 +1069,7 @@
             "id": "item_1",
             "kind": "important_phrase",
             "motion_id": "editorial_push_in",
-            "preset_id": "apple_v2",
+            "preset_id": "phrase_default",
             "start_ms": 0,
             "template_id": "IMPORTANT_PHRASE",
             "text": "BREAKING NEWS"
@@ -1116,7 +1116,7 @@
             "id": "item_1",
             "kind": "important_phrase",
             "motion_id": "editorial_push_in",
-            "preset_id": "apple_v2",
+            "preset_id": "phrase_default",
             "start_ms": 0,
             "template_id": "IMPORTANT_PHRASE",
             "text": "СРОЧНЫЕ НОВОСТИ"
@@ -1163,7 +1163,7 @@
             "id": "item_1",
             "kind": "important_phrase",
             "motion_id": "editorial_push_in",
-            "preset_id": "apple_v2",
+            "preset_id": "phrase_default",
             "start_ms": 0,
             "template_id": "IMPORTANT_PHRASE",
             "text": "BREAKING NEWS"
@@ -1210,7 +1210,7 @@
             "id": "item_1",
             "kind": "important_phrase",
             "motion_id": "editorial_push_in",
-            "preset_id": "apple_v2",
+            "preset_id": "phrase_default",
             "start_ms": 0,
             "template_id": "IMPORTANT_PHRASE",
             "text": "NOTICIAS DE ACTUALIDAD"
@@ -1257,7 +1257,7 @@
             "id": "item_1",
             "kind": "important_phrase",
             "motion_id": "editorial_push_in",
-            "preset_id": "apple_v2",
+            "preset_id": "phrase_default",
             "start_ms": 0,
             "template_id": "IMPORTANT_PHRASE",
             "text": "ÚLTIMAS NOTÍCIAS"
@@ -1304,7 +1304,7 @@
             "id": "item_1",
             "kind": "important_phrase",
             "motion_id": "editorial_push_in",
-            "preset_id": "apple_v2",
+            "preset_id": "phrase_default",
             "start_ms": 0,
             "template_id": "IMPORTANT_PHRASE",
             "text": "NOUVELLES"
@@ -1351,7 +1351,7 @@
             "id": "item_1",
             "kind": "important_phrase",
             "motion_id": "editorial_push_in",
-            "preset_id": "apple_v2",
+            "preset_id": "phrase_default",
             "start_ms": 0,
             "template_id": "IMPORTANT_PHRASE",
             "text": "YOK NEWS"
@@ -1398,7 +1398,7 @@
             "id": "item_1",
             "kind": "important_phrase",
             "motion_id": "editorial_push_in",
-            "preset_id": "apple_v2",
+            "preset_id": "phrase_default",
             "start_ms": 0,
             "template_id": "IMPORTANT_PHRASE",
             "text": "BREAKING NEWS"
@@ -1445,7 +1445,7 @@
             "id": "item_1",
             "kind": "important_phrase",
             "motion_id": "neon_flicker_ignite",
-            "preset_id": "apple_v2",
+            "preset_id": "phrase_default",
             "start_ms": 0,
             "template_id": "IMPORTANT_PHRASE",
             "text": "La semplicità è l'ultima raffinatezza."
@@ -1492,7 +1492,7 @@
             "id": "item_1",
             "kind": "important_phrase",
             "motion_id": "neon_flicker_ignite",
-            "preset_id": "apple_v2",
+            "preset_id": "phrase_default",
             "start_ms": 0,
             "template_id": "IMPORTANT_PHRASE",
             "text": "Simplicity is the ultimate sophistication."
@@ -1539,7 +1539,7 @@
             "id": "item_1",
             "kind": "important_phrase",
             "motion_id": "neon_flicker_ignite",
-            "preset_id": "apple_v2",
+            "preset_id": "phrase_default",
             "start_ms": 0,
             "template_id": "IMPORTANT_PHRASE",
             "text": "Prostota jest najbardziej wyrafinowana."
@@ -1586,7 +1586,7 @@
             "id": "item_1",
             "kind": "important_phrase",
             "motion_id": "neon_flicker_ignite",
-            "preset_id": "apple_v2",
+            "preset_id": "phrase_default",
             "start_ms": 0,
             "template_id": "IMPORTANT_PHRASE",
             "text": "Простота — это конечная изощренность."
@@ -1633,7 +1633,7 @@
             "id": "item_1",
             "kind": "important_phrase",
             "motion_id": "neon_flicker_ignite",
-            "preset_id": "apple_v2",
+            "preset_id": "phrase_default",
             "start_ms": 0,
             "template_id": "IMPORTANT_PHRASE",
             "text": "Einfachheit ist die ultimative Raffinesse."
@@ -1680,7 +1680,7 @@
             "id": "item_1",
             "kind": "important_phrase",
             "motion_id": "neon_flicker_ignite",
-            "preset_id": "apple_v2",
+            "preset_id": "phrase_default",
             "start_ms": 0,
             "template_id": "IMPORTANT_PHRASE",
             "text": "La simplicidad es la sofisticación final."
@@ -1727,7 +1727,7 @@
             "id": "item_1",
             "kind": "important_phrase",
             "motion_id": "neon_flicker_ignite",
-            "preset_id": "apple_v2",
+            "preset_id": "phrase_default",
             "start_ms": 0,
             "template_id": "IMPORTANT_PHRASE",
             "text": "Simplicidade é a sofisticação final."
@@ -1774,7 +1774,7 @@
             "id": "item_1",
             "kind": "important_phrase",
             "motion_id": "neon_flicker_ignite",
-            "preset_id": "apple_v2",
+            "preset_id": "phrase_default",
             "start_ms": 0,
             "template_id": "IMPORTANT_PHRASE",
             "text": "La simplicité est la sophistication ultime."
@@ -1821,7 +1821,7 @@
             "id": "item_1",
             "kind": "important_phrase",
             "motion_id": "neon_flicker_ignite",
-            "preset_id": "apple_v2",
+            "preset_id": "phrase_default",
             "start_ms": 0,
             "template_id": "IMPORTANT_PHRASE",
             "text": "Sikatey nihai sofistasyondur."
@@ -1868,7 +1868,7 @@
             "id": "item_1",
             "kind": "important_phrase",
             "motion_id": "neon_flicker_ignite",
-            "preset_id": "apple_v2",
+            "preset_id": "phrase_default",
             "start_ms": 0,
             "template_id": "IMPORTANT_PHRASE",
             "text": "Kesederhanaan adalah kecanggihan tertinggi."
@@ -1915,7 +1915,7 @@
             "id": "item_1",
             "kind": "important_phrase",
             "motion_id": "hologram_scanline_build",
-            "preset_id": "apple_v2",
+            "preset_id": "phrase_default",
             "start_ms": 0,
             "template_id": "IMPORTANT_PHRASE",
             "text": "Intelligenza artificiale Infrastrutture"
@@ -1962,7 +1962,7 @@
             "id": "item_1",
             "kind": "important_phrase",
             "motion_id": "hologram_scanline_build",
-            "preset_id": "apple_v2",
+            "preset_id": "phrase_default",
             "start_ms": 0,
             "template_id": "IMPORTANT_PHRASE",
             "text": "Artificial Intelligence Infrastructure"
@@ -2009,7 +2009,7 @@
             "id": "item_1",
             "kind": "important_phrase",
             "motion_id": "hologram_scanline_build",
-            "preset_id": "apple_v2",
+            "preset_id": "phrase_default",
             "start_ms": 0,
             "template_id": "IMPORTANT_PHRASE",
             "text": "Sztuczna inteligencja Infrastruktura"
@@ -2056,7 +2056,7 @@
             "id": "item_1",
             "kind": "important_phrase",
             "motion_id": "hologram_scanline_build",
-            "preset_id": "apple_v2",
+            "preset_id": "phrase_default",
             "start_ms": 0,
             "template_id": "IMPORTANT_PHRASE",
             "text": "Искусственный интеллект инфраструктура"
@@ -2103,7 +2103,7 @@
             "id": "item_1",
             "kind": "important_phrase",
             "motion_id": "hologram_scanline_build",
-            "preset_id": "apple_v2",
+            "preset_id": "phrase_default",
             "start_ms": 0,
             "template_id": "IMPORTANT_PHRASE",
             "text": "Künstliche Intelligenz Infrastruktur"
@@ -2150,7 +2150,7 @@
             "id": "item_1",
             "kind": "important_phrase",
             "motion_id": "hologram_scanline_build",
-            "preset_id": "apple_v2",
+            "preset_id": "phrase_default",
             "start_ms": 0,
             "template_id": "IMPORTANT_PHRASE",
             "text": "Inteligencia Artificial Infraestructura"
@@ -2197,7 +2197,7 @@
             "id": "item_1",
             "kind": "important_phrase",
             "motion_id": "hologram_scanline_build",
-            "preset_id": "apple_v2",
+            "preset_id": "phrase_default",
             "start_ms": 0,
             "template_id": "IMPORTANT_PHRASE",
             "text": "Inteligência Artificial Infra-estruturas"
@@ -2244,7 +2244,7 @@
             "id": "item_1",
             "kind": "important_phrase",
             "motion_id": "hologram_scanline_build",
-            "preset_id": "apple_v2",
+            "preset_id": "phrase_default",
             "start_ms": 0,
             "template_id": "IMPORTANT_PHRASE",
             "text": "Intelligence artificielle Infrastructure"
@@ -2291,7 +2291,7 @@
             "id": "item_1",
             "kind": "important_phrase",
             "motion_id": "hologram_scanline_build",
-            "preset_id": "apple_v2",
+            "preset_id": "phrase_default",
             "start_ms": 0,
             "template_id": "IMPORTANT_PHRASE",
             "text": "Yapay Zeka Altyapı Altyapı"
@@ -2338,7 +2338,7 @@
             "id": "item_1",
             "kind": "important_phrase",
             "motion_id": "hologram_scanline_build",
-            "preset_id": "apple_v2",
+            "preset_id": "phrase_default",
             "start_ms": 0,
             "template_id": "IMPORTANT_PHRASE",
             "text": "Kecerdasan Buatan Infrastruktur"

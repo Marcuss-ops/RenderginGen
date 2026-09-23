@@ -10882,10 +10882,8 @@
       "modern_rounded_pop"
     ],
     "text": [
-      "apple_v2",
-      "rendering_gen_2",
-      "static_text_smoke",
-      "phrase_apple_clean"
+      "phrase_default",
+      "static_text_smoke"
     ]
   },
   "selections": {

@@ -221,6 +221,7 @@ type semanticItem struct {
 	// end_ms-start_ms at the semantic boundary and is not emitted to Chronon.
 	DurationMS *int64             `json:"duration_ms,omitempty"`
 	Params     map[string]any     `json:"params"`
+	Style      map[string]any     `json:"style"`
 	Assets     []semanticAssetRef `json:"asset_refs"`
 }
 

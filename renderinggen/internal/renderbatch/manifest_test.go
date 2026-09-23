@@ -15,7 +15,7 @@ func minimalManifest(t *testing.T, jobs string) []byte {
 	}`)
 }
 
-const oneJob = `{"id":"job-1","template_id":"IMPORTANT_PHRASE","preset_id":"apple_v2","motion_id":"kinetic_split_word","text":"HELLO","duration_ms":5000,"output":"out/one.mp4"}`
+const oneJob = `{"id":"job-1","template_id":"IMPORTANT_PHRASE","preset_id":"phrase_default","motion_id":"kinetic_split_word","text":"HELLO","duration_ms":5000,"output":"out/one.mp4"}`
 
 // TestDecodeIsStrictAndValidated pins the load-time contract: an unknown key, a
 // wrong schema, a bad canvas and structurally broken jobs are all rejected
@@ -30,14 +30,14 @@ func TestDecodeIsStrictAndValidated(t *testing.T) {
 		{"no jobs", `{"schema_version":"` + SchemaVersion + `","canvas":{"width":1,"height":1,"fps_num":1,"fps_den":1},"jobs":[]}`},
 		{"bad canvas", `{"schema_version":"` + SchemaVersion + `","canvas":{"width":0,"height":1,"fps_num":1,"fps_den":1},"jobs":[` + oneJob + `]}`},
 		{"bad fps", `{"schema_version":"` + SchemaVersion + `","canvas":{"width":1,"height":1,"fps_num":24,"fps_den":0},"jobs":[` + oneJob + `]}`},
-		{"missing id", string(minimalManifest(t, `{"template_id":"IMPORTANT_PHRASE","preset_id":"apple_v2","output":"a.mp4"}`))},
-		{"missing template", string(minimalManifest(t, `{"id":"a","preset_id":"apple_v2","output":"a.mp4"}`))},
+		{"missing id", string(minimalManifest(t, `{"template_id":"IMPORTANT_PHRASE","preset_id":"phrase_default","output":"a.mp4"}`))},
+		{"missing template", string(minimalManifest(t, `{"id":"a","preset_id":"phrase_default","output":"a.mp4"}`))},
 		{"duplicate id", string(minimalManifest(t, oneJob+`,`+strings.Replace(oneJob, "out/one.mp4", "out/two.mp4", 1)))},
 		{"duplicate output", string(minimalManifest(t, oneJob+`,`+strings.Replace(oneJob, `"job-1"`, `"job-2"`, 1)))},
-		{"absolute output", string(minimalManifest(t, `{"id":"a","template_id":"IMPORTANT_PHRASE","preset_id":"apple_v2","output":"/etc/escape.mp4"}`))},
-		{"escaping output", string(minimalManifest(t, `{"id":"a","template_id":"IMPORTANT_PHRASE","preset_id":"apple_v2","output":"../escape.mp4"}`))},
-		{"negative duration", string(minimalManifest(t, `{"id":"a","template_id":"IMPORTANT_PHRASE","preset_id":"apple_v2","duration_ms":-1,"output":"a.mp4"}`))},
-		{"duration shorter than a frame", string(minimalManifest(t, `{"id":"a","template_id":"IMPORTANT_PHRASE","preset_id":"apple_v2","duration_ms":1,"output":"a.mp4"}`))},
+		{"absolute output", string(minimalManifest(t, `{"id":"a","template_id":"IMPORTANT_PHRASE","preset_id":"phrase_default","output":"/etc/escape.mp4"}`))},
+		{"escaping output", string(minimalManifest(t, `{"id":"a","template_id":"IMPORTANT_PHRASE","preset_id":"phrase_default","output":"../escape.mp4"}`))},
+		{"negative duration", string(minimalManifest(t, `{"id":"a","template_id":"IMPORTANT_PHRASE","preset_id":"phrase_default","duration_ms":-1,"output":"a.mp4"}`))},
+		{"duration shorter than a frame", string(minimalManifest(t, `{"id":"a","template_id":"IMPORTANT_PHRASE","preset_id":"phrase_default","duration_ms":1,"output":"a.mp4"}`))},
 		{"non-colour background", `{"schema_version":"` + SchemaVersion + `","canvas":{"width":1,"height":1,"fps_num":1,"fps_den":1},"background":{"kind":"video"},"jobs":[` + oneJob + `]}`},
 		{"background colour not RGBA", `{"schema_version":"` + SchemaVersion + `","canvas":{"width":1,"height":1,"fps_num":1,"fps_den":1},"background":{"kind":"color","color":[1,1,1]},"jobs":[` + oneJob + `]}`},
 	}
@@ -91,7 +91,7 @@ func TestExpectationIsDerivedNotRestated(t *testing.T) {
 // rendered first.
 func TestPrepareCompilesTheWholeMatrix(t *testing.T) {
 	manifest, err := Decode(minimalManifest(t,
-		`{"id":"good","template_id":"IMPORTANT_PHRASE","preset_id":"apple_v2","text":"HELLO","duration_ms":2000,"output":"out/good.mp4"},`+
+		`{"id":"good","template_id":"IMPORTANT_PHRASE","preset_id":"phrase_default","text":"HELLO","duration_ms":2000,"output":"out/good.mp4"},`+
 			`{"id":"broken","template_id":"IMPORTANT_PHRASE","preset_id":"no_such_preset","text":"HELLO","duration_ms":2000,"output":"out/broken.mp4"}`))
 	if err != nil {
 		t.Fatalf("decode: %v", err)

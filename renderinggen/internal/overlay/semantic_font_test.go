@@ -33,6 +33,17 @@ func TestCompileSemanticUsesLocalizedCyrillicFont(t *testing.T) {
 	}
 }
 
+func TestCompileSemanticFontFamilyRuntimeOverride(t *testing.T) {
+	const plan = `{"schema_version":"renderinggen.overlay-plan.v1","plan_id":"font-override","video_id":"v","language":"ru","width":1920,"height":1080,"fps_num":24,"fps_den":1,"items":[{"id":"phrase","kind":"important_phrase","template_id":"IMPORTANT_PHRASE","preset_id":"phrase_default","text":"Hello","params":{"font_family":"inter"},"start_ms":0,"end_ms":1000}]}`
+	result, err := CompileSemantic([]byte(plan))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := result.Plan.Layers[0].Style.Font; got != "assets/fonts/Inter-Bold.ttf" {
+		t.Fatalf("runtime font family override = %q, want Inter Bold asset", got)
+	}
+}
+
 func TestCompileSemanticKeepsLatinPresetFont(t *testing.T) {
 	const plan = `{"schema_version":"renderinggen.overlay-plan.v1","plan_id":"font-en","video_id":"v","language":"en","width":1920,"height":1080,"fps_num":24,"fps_den":1,"items":[{"id":"phrase","kind":"important_phrase","template_id":"IMPORTANT_PHRASE","preset_id":"static_text_smoke","text":"Under watchful eyes","start_ms":0,"end_ms":1000}]}`
 	result, err := CompileSemantic([]byte(plan))

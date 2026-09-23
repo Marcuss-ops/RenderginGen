@@ -5,8 +5,8 @@ package chronon
 // exercises the full semantic vocabulary and every canonical primitive:
 //
 //	video background (background.mp4, full 8s)      → Video primitive
-//	+ IMPORTANT_PHRASE ×2 (apple_v2, animated)
-//	+ IMPORTANT_WORD ×2   (apple_v2, animated)
+//	+ IMPORTANT_PHRASE ×2 (catalog-selected text motion)
+//	+ IMPORTANT_WORD ×2   (catalog-selected text motion)
 //	+ IMAGE_OVERLAY ×2    (contain, popup)          → Image primitive
 //	+ LOGO                (contain, corner)
 //	+ 4 layer animations  (fade_in / scale_in / slide_up / fade_in)

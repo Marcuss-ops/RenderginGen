@@ -101,7 +101,26 @@
           "motion_id": { "type": "string", "minLength": 1, "description": "Per-item motion override resolved through the RenderingGen motion registry. When present it replaces the preset's motion." },
           "motion_params": { "type": "object", "description": "Motion parameters passed to the motion plugin for this item." },
           "text": { "type": "string" },
-          "params": { "type": "object" },
+          "params": {
+            "type": "object",
+            "description": "Per-item runtime controls and motion parameters. Font/glow/stroke overrides are validated against RenderingGen's closed runtime contract.",
+            "properties": {
+              "font_family": { "enum": ["poppins", "inter", "dejavu_sans"] },
+              "glow_size": { "type": "number", "minimum": 0, "maximum": 256 },
+              "stroke_size": { "type": "number", "minimum": 0, "maximum": 64 }
+            },
+            "additionalProperties": true
+          },
+          "style": {
+            "type": "object",
+            "description": "Optional item-local runtime visual overrides; takes precedence over params for matching controls.",
+            "properties": {
+              "font_family": { "enum": ["poppins", "inter", "dejavu_sans"] },
+              "glow_size": { "type": "number", "minimum": 0, "maximum": 256 },
+              "stroke_size": { "type": "number", "minimum": 0, "maximum": 64 }
+            },
+            "additionalProperties": true
+          },
           "render_key": { "type": "string" },
           "asset_refs": {
             "type": "array",

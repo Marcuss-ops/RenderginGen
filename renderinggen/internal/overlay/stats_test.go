@@ -10,11 +10,11 @@ func TestStatsComeFromTheSingleCompilePass(t *testing.T) {
       "schema_version":"renderinggen.overlay-plan.v1",
       "plan_id":"p1","video_id":"v1","width":1280,"height":720,"fps_num":30,"fps_den":1,
       "items":[
-        {"id":"a","entity_id":"person:ada","kind":"entity_card","template_id":"PERSON","preset_id":"apple_v2","text":"Ada","start_ms":0,"end_ms":1000,"duration_ms":1000},
-        {"id":"b","entity_id":"org:acme","kind":"organization","template_id":"ORGANIZATION","preset_id":"apple_v2","text":"ACME","start_ms":1000,"end_ms":2000,"duration_ms":1000},
-        {"id":"c","kind":"important_phrase","template_id":"IMPORTANT_PHRASE","preset_id":"apple_v2","text":"hi","start_ms":0,"end_ms":1000},
-        {"id":"d","kind":"important_word","template_id":"IMPORTANT_WORD","preset_id":"apple_v2","text":"WOW","start_ms":0,"end_ms":1000},
-        {"id":"e","kind":"number","template_id":"NUMBER","preset_id":"apple_v2","text":"42","start_ms":0,"end_ms":1000},
+        {"id":"a","entity_id":"person:ada","kind":"entity_card","template_id":"PERSON","preset_id":"phrase_default","text":"Ada","start_ms":0,"end_ms":1000,"duration_ms":1000},
+        {"id":"b","entity_id":"org:acme","kind":"organization","template_id":"ORGANIZATION","preset_id":"phrase_default","text":"ACME","start_ms":1000,"end_ms":2000,"duration_ms":1000},
+        {"id":"c","kind":"important_phrase","template_id":"IMPORTANT_PHRASE","preset_id":"phrase_default","text":"hi","start_ms":0,"end_ms":1000},
+        {"id":"d","kind":"important_word","template_id":"IMPORTANT_WORD","preset_id":"phrase_default","text":"WOW","start_ms":0,"end_ms":1000},
+        {"id":"e","kind":"number","template_id":"NUMBER","preset_id":"phrase_default","text":"42","start_ms":0,"end_ms":1000},
         {"id":"f","kind":"entity_image","template_id":"IMAGE_OVERLAY","preset_id":"image_focus_in","start_ms":0,"end_ms":1000,
          "asset_refs":[{"asset_id":"a","sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","url":"https://store.example/a.png","media_type":"image/png"}]},
         {"id":"g","kind":"light_leak","template_id":"LIGHT_LEAK","start_ms":0,"end_ms":1000,
@@ -41,8 +41,8 @@ func TestStatsComeFromTheSingleCompilePass(t *testing.T) {
 	if stats.LightLeakCount != 1 {
 		t.Errorf("light_leak_count = %d, want 1", stats.LightLeakCount)
 	}
-	if stats.PresetID != "apple_v2" {
-		t.Errorf("preset_id = %q, want apple_v2 (canonical text preset)", stats.PresetID)
+	if stats.PresetID != "phrase_default" {
+		t.Errorf("preset_id = %q, want phrase_default (canonical text preset)", stats.PresetID)
 	}
 	if len(result.Plan.Layers) == 0 {
 		t.Fatal("compile pass emitted no layers")

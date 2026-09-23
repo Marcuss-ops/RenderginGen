@@ -28,7 +28,7 @@ func TestFinal_ImageAndTextTogether(t *testing.T) {
 			`"background":{"kind":"color","color":%s},"items":[%s,%s]}`,
 		certificationBackgroundRGBA,
 		certificationImageItem("img", "image_scale_in", "matrix-image"),
-		certificationTextItem("phrase", "apple_v2", "Frase importante"))
+		certificationTextItem("phrase", "phrase_default", "Frase importante"))
 	result, err := CompileSemantic([]byte(raw))
 	if err != nil {
 		t.Fatalf("err=%v", err)
@@ -49,7 +49,7 @@ func TestFinal_BackgroundOpacity(t *testing.T) {
 				`{"schema_version":"renderinggen.overlay-plan.v1","plan_id":"opacity","video_id":"v","width":1920,"height":1080,"fps_num":24,"fps_den":1,`+
 					`"background":{"kind":"color","color":%s,"opacity":%v},"items":[%s]}`,
 				certificationBackgroundRGBA, want,
-				certificationTextItem("word", "apple_v2", "opacity"))
+				certificationTextItem("word", "phrase_default", "opacity"))
 			result, err := CompileSemantic([]byte(raw))
 			if err != nil {
 				t.Fatalf("err=%v", err)
@@ -98,8 +98,8 @@ func TestFinal_AssetMatrix(t *testing.T) {
 		certificationAssetSHA,
 		certificationImageItem("img-1", "image_scale_in", "matrix-a"),
 		certificationImageItem("img-2", "modern_rounded_pop", "matrix-b"),
-		certificationTextItem("text-1", "apple_v2", "Nome breve"),
-		certificationTextItem("text-2", "apple_v2", "Frase lunga — àéìòù ✓"))
+		certificationTextItem("text-1", "phrase_default", "Nome breve"),
+		certificationTextItem("text-2", "phrase_default", "Frase lunga — àéìòù ✓"))
 	result, err := CompileSemantic([]byte(raw))
 	if err != nil {
 		t.Fatalf("err=%v", err)

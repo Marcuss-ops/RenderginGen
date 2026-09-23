@@ -21,9 +21,9 @@ import (
 // motion path transported only the animators, the official preset path only the
 // layer tracks. Half of every official motion was therefore dropped — a
 // text-only motion (word_reveal, char_wave, ...) rendered with no composition
-// motion at all, and an apple_v2 phrase lost its glyph choreography. The
+// motion at all, and an phrase_default phrase lost its glyph choreography. The
 // certified phrase corpus (phrase_animations_v1) carries BOTH on the same
-// layer, and the apple_v2 phrase library authors both, so both is the contract.
+// layer, and the phrase_default phrase library authors both, so both is the contract.
 //
 // The lowering also OWNS the exit. MotionDefinition.Exit — and the preset's own
 // exit window — has been carried through the catalog since the beginning and

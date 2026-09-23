@@ -8,8 +8,8 @@ package chronon
 // artifact chain as the concrete golden.
 //
 //	background.jpg (IMAGE_OVERLAY, full 5s, cover)
-//	+ "DONALD TRUMP" (IMPORTANT_PHRASE, apple_v2, f20-60)
-//	+ "TRUMP"        (IMPORTANT_WORD,   apple_v2, f65-95)
+//	+ "DONALD TRUMP" (IMPORTANT_PHRASE, phrase_default, f20-60)
+//	+ "TRUMP"        (IMPORTANT_WORD,   phrase_default, f65-95)
 //
 // 5 seconds at 30 fps = 150 frames on a 1280x720 canvas. The assets are the
 // same deterministic fixtures as GoldenOverlayJobV2 under testdata/golden/
@@ -64,7 +64,7 @@ const GoldenSemanticOverlayJobV1 = `{
       {
         "id": "important_phrase",
         "template_id": "IMPORTANT_PHRASE",
-        "preset_id": "apple_v2",
+        "preset_id": "phrase_default",
         "text": "DONALD TRUMP",
         "start_ms": 667,
         "end_ms": 2000
@@ -72,7 +72,7 @@ const GoldenSemanticOverlayJobV1 = `{
       {
         "id": "important_word",
         "template_id": "IMPORTANT_WORD",
-        "preset_id": "apple_v2",
+        "preset_id": "phrase_default",
         "text": "TRUMP",
         "start_ms": 2167,
         "end_ms": 3167
