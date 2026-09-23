@@ -338,14 +338,9 @@ type LayerShadow struct {
 	Offset  []float64 `json:"offset,omitempty"`
 }
 type LayerGlow struct {
-	Radius        float64 `json:"radius"`
-	Intensity     float64 `json:"intensity"`
-	Threshold     float64 `json:"threshold"`
-	Falloff       float64 `json:"falloff"`
-	CoreStrength  float64 `json:"core_strength"`
-	AuraStrength  float64 `json:"aura_strength"`
-	BloomStrength float64 `json:"bloom_strength"`
-	HighQuality   bool    `json:"high_quality"`
+	Radius    float64 `json:"radius"`
+	Intensity float64 `json:"intensity"`
+	Color     string  `json:"color"`
 }
 type LayerAnimation struct {
 	Tracks        []AnimationTrack `json:"tracks,omitempty"`

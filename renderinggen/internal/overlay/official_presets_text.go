@@ -20,6 +20,11 @@ const (
 	// visual treatment independent from the Apple V3 motion family, so an item
 	// can swap motion_id without multiplying style definitions.
 	RenderingGen2PresetID = "rendering_gen_2"
+	// PhraseAppleCleanPresetID is the modern Apple-clean phrase style: white
+	// bold text, native-shadow legibility, glow-free (GPU-native), 1920-wide
+	// phrase band, 2s Apple entrance motions. It replaces apple_v2's halo
+	// with pure shadow+blur+tracking finishing — the "finite pulite" look.
+	PhraseAppleCleanPresetID = "phrase_apple_clean"
 )
 
 // officialFontPath is the single font asset every official text preset
@@ -66,6 +71,24 @@ func renderingGen2Preset() PresetDefinition {
 	d.Layout.BoxWidth = 1920
 	d.Layout.BoxHeight = 260
 	d.Style.FontSize = 68
+	d.Style.Fill = []float64{1, 1, 1, 1}
+	d.Style.Stroke = &StyleStroke{Color: "#111827", Width: 3.5}
+	return d
+}
+
+// phraseAppleCleanPreset is the modern Apple-clean phrase style for the
+// 30 phrase_apple_clean_v1 motions: pure white on a centred 1920x260 band,
+// soft drop-shadow (0.68 / 14px) + stroke for footage legibility, NO halo
+// glow (glow-free = GPU-native residency), blur/tracking/scale are supplied
+// by the motion itself — the “shadow + glow finito pulito + blur moderno”
+// Apple finish without the unverified halo that blocks require_gpu_native.
+func phraseAppleCleanPreset() PresetDefinition {
+	d := makePreset(PhraseAppleCleanPresetID, textSpec("safe_area", "center", "phrase_apple_clean_01_blur_soft_reveal", "glyph", 60, 12, &StyleShadow{
+		Color: "#000000", Opacity: 0.68, Blur: 14, Offset: []float64{0, 5},
+	}, nil))
+	d.Layout.BoxWidth = 1920
+	d.Layout.BoxHeight = 260
+	d.Style.FontSize = 64
 	d.Style.Fill = []float64{1, 1, 1, 1}
 	d.Style.Stroke = &StyleStroke{Color: "#111827", Width: 3.5}
 	return d
