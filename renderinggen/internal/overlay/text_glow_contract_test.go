@@ -6,20 +6,15 @@ import (
 	"testing"
 )
 
-// TestCanonicalTextPresetLowersTheCanaryGlow pins the simple glow contract:
-// the canonical text preset emits only radius, intensity and color, with no
-// quality selector or layered-lobe controls.
-func TestCanonicalTextPresetLowersTheCanaryGlow(t *testing.T) {
+// The canonical phrase preset avoids the Vulkan native glow path, which
+// currently composites its cropped surface as an opaque rectangle.
+func TestCanonicalTextPresetHasNoDefaultGlow(t *testing.T) {
 	def, err := ResolveOfficialPreset(PhraseDefaultPresetID)
 	if err != nil {
 		t.Fatalf("resolve canonical preset: %v", err)
 	}
-	if def.Style.Glow == nil {
-		t.Fatalf("canonical text preset carries no glow: %+v", def.Style)
-	}
-	g := def.Style.Glow
-	if g.Radius <= 0 || g.Intensity < 0 || g.Color == "" {
-		t.Errorf("preset glow = %+v, want positive radius, non-negative intensity and a color", g)
+	if def.Style.Glow != nil {
+		t.Fatalf("canonical text preset unexpectedly enables glow: %+v", def.Style.Glow)
 	}
 }
 
@@ -37,7 +32,7 @@ func TestCompiledTextPlanCarriesGlowNotShadowAsGlow(t *testing.T) {
 		"items": [{
 			"id": "phrase", "template_id": "IMPORTANT_PHRASE",
 			"preset_id": "phrase_default", "kind": "important_phrase",
-			"text": "GLOW CONTRACT", "start_ms": 0, "end_ms": 5000
+			"text": "GLOW CONTRACT", "params": {"glow_size": 18}, "start_ms": 0, "end_ms": 5000
 		}]
 	}`)
 	result, err := CompileSemantic(raw)
