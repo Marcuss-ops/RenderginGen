@@ -75,8 +75,19 @@ type PlanItem struct {
 	AssetRefs []PlanAssetRef
 	// MotionParams are the producer's per-item motion parameters.
 	MotionParams map[string]any
-	StartMS      int64
-	EndMS        int64
+	// Params carries the item's runtime controls (font family, font size,
+	// glow/stroke sizes, shadow blur/opacity/offset). The worker validates them
+	// against its closed runtime contract; this writer transports them and lets
+	// BuildPlan's compile step reject an unsupported control before it is
+	// written.
+	Params map[string]any
+	// Style is the item-local visual override block. Where the same key appears
+	// in both, Style wins over Params — the precedence the semantic compiler
+	// applies. Declared separately so a caller cannot smuggle a style key into
+	// the motion-parameter block and get the other resolution order.
+	Style   map[string]any
+	StartMS int64
+	EndMS   int64
 }
 
 // PlanAssetRef is one content-addressed asset reference on a semantic item.
@@ -132,6 +143,8 @@ func BuildPlan(spec PlanSpec) ([]byte, error) {
 			DurationMS:   item.DurationMS,
 			AssetRefs:    toAssetRefDocuments(item.AssetRefs),
 			MotionParams: item.MotionParams,
+			Params:       item.Params,
+			Style:        item.Style,
 			Text:         item.Text,
 			StartMS:      item.StartMS,
 			EndMS:        item.EndMS,
@@ -205,40 +218,36 @@ type semanticPlanDocument struct {
 // semanticItemDocument is one overlay item. The displayed text is owned by the
 // producer: this writer never invents content, it transports the caller's.
 type semanticItemDocument struct {
-	ID           string             `json:"id"`
-	SceneID      string             `json:"scene_id,omitempty"`
-	TemplateID   string             `json:"template_id"`
-	PresetID     string             `json:"preset_id"`
-	MotionID     string             `json:"motion_id,omitempty"`
-	Kind         string             `json:"kind,omitempty"`
-	EntityID     string             `json:"entity_id,omitempty"`
-	DurationMS   *int64             `json:"duration_ms,omitempty"`
-	AssetRefs    []semanticAssetRef `json:"asset_refs,omitempty"`
-	MotionParams map[string]any     `json:"motion_params,omitempty"`
-	Text         string             `json:"text,omitempty"`
-	StartMS      int64              `json:"start_ms"`
-	EndMS        int64              `json:"end_ms"`
+	ID           string                     `json:"id"`
+	SceneID      string                     `json:"scene_id,omitempty"`
+	TemplateID   string                     `json:"template_id"`
+	PresetID     string                     `json:"preset_id"`
+	MotionID     string                     `json:"motion_id,omitempty"`
+	Kind         string                     `json:"kind,omitempty"`
+	EntityID     string                     `json:"entity_id,omitempty"`
+	DurationMS   *int64                     `json:"duration_ms,omitempty"`
+	AssetRefs    []overlay.SemanticAssetRef `json:"asset_refs,omitempty"`
+	MotionParams map[string]any             `json:"motion_params,omitempty"`
+	Params       map[string]any             `json:"params,omitempty"`
+	Style        map[string]any             `json:"style,omitempty"`
+	Text         string                     `json:"text,omitempty"`
+	StartMS      int64                      `json:"start_ms"`
+	EndMS        int64                      `json:"end_ms"`
 }
 
-// semanticAssetRef mirrors the worker's asset_refs entry. It is declared here
-// (not aliased) because the worker's type is unexported; the field set is pinned
-// to it by the parity test.
-type semanticAssetRef struct {
-	AssetID   string `json:"asset_id"`
-	SHA256    string `json:"sha256"`
-	URL       string `json:"url"`
-	MediaType string `json:"media_type"`
-}
-
-// toAssetRefDocuments converts the exported caller-facing refs to the document
-// shape, preserving order.
-func toAssetRefDocuments(refs []PlanAssetRef) []semanticAssetRef {
+// toAssetRefDocuments converts the exported caller-facing refs to the worker's
+// own asset_refs entry, preserving order. The document reuses
+// overlay.SemanticAssetRef instead of declaring a second copy: the writer and
+// the decoder must not be able to disagree about an entry, and a copy that only
+// a comment claims is pinned to the other one is exactly how they do.
+func toAssetRefDocuments(refs []PlanAssetRef) []overlay.SemanticAssetRef {
 	if len(refs) == 0 {
 		return nil
 	}
-	out := make([]semanticAssetRef, 0, len(refs))
+	out := make([]overlay.SemanticAssetRef, 0, len(refs))
 	for _, ref := range refs {
-		out = append(out, semanticAssetRef{AssetID: ref.AssetID, SHA256: ref.SHA256, URL: ref.URL, MediaType: ref.MediaType})
+		// AssetID is the caller's spelling of the contract's asset_id.
+		out = append(out, overlay.SemanticAssetRef{ID: ref.AssetID, SHA256: ref.SHA256, URL: ref.URL, MediaType: ref.MediaType})
 	}
 	return out
 }

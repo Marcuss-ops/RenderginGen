@@ -5,10 +5,11 @@
 //   - STRUCTURE: every job is `completed` and its artifact carries the contract's
 //     facts (canvas, fps, frames, duration, certified backend), and the
 //     downloaded bytes hash to the advertised content address;
-//   - TEXT PIXELS: a phrase overlay must actually rasterise its text — the check
-//     counts glyph pixels in the canvas band the preset anchors and fails an
+//   - CONTENT: a phrase overlay must rasterise its text in the anchored band, and
+//     an image overlay must show its card in every sampled frame — both fail an
 //     artifact that "completed" while drawing almost nothing (the missing-font
-//     signature);
+//     signature for phrases, the pure-canvas signature for images);
+
 //   - DISTINCTNESS: two languages whose translated text differs must not produce
 //     identical bytes.
 //
@@ -36,6 +37,8 @@ func main() {
 	stageDir := flag.String("stage", "", "directory to cache the downloaded artifacts in")
 	requireBackend := flag.String("require-backend", "vulkan", "certified backend every artifact must declare (empty disables)")
 	inkFloor := flag.Int("min-ink", overlaybatch.DefaultInkFloor, "minimum glyph pixels a phrase band must carry (negative disables)")
+	imageInkFloor := flag.Int("min-image-ink", overlaybatch.DefaultImageInkFloor,
+		"minimum non-canvas pixels the least inked sampled frame of an image overlay must carry (negative disables)")
 	inkFrame := flag.Int("ink-frame", 60, "frame the pixel check samples")
 	backgroundHex := flag.String("background", "#EEF1E7", "canvas colour the pixel check counts against")
 	baselineManifest := flag.String("baseline-manifest", "", "previous run of the same overlays to compare against")
@@ -57,6 +60,7 @@ func main() {
 		StageDir:             *stageDir,
 		RequireBackend:       *requireBackend,
 		InkFloor:             *inkFloor,
+		ImageInkFloor:        *imageInkFloor,
 		InkFrame:             *inkFrame,
 		Background:           background,
 		BaselineManifestPath: *baselineManifest,

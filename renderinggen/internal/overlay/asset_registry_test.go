@@ -11,32 +11,32 @@ import (
 func TestSemanticAssetPathStripsQuery(t *testing.T) {
 	cases := []struct {
 		name string
-		ref  semanticAssetRef
+		ref  SemanticAssetRef
 		want string
 	}{
 		{
 			"jpg with token query",
-			semanticAssetRef{ID: "img", SHA256: hash64("a"), URL: "https://cdn.example/image.jpg?token=abc"},
+			SemanticAssetRef{ID: "img", SHA256: hash64("a"), URL: "https://cdn.example/image.jpg?token=abc"},
 			"assets/semantic/img.jpg",
 		},
 		{
 			"mp4 with fragment and query",
-			semanticAssetRef{ID: "clip", SHA256: hash64("b"), URL: "https://cdn.example/v.mp4?Expires=1#t=5"},
+			SemanticAssetRef{ID: "clip", SHA256: hash64("b"), URL: "https://cdn.example/v.mp4?Expires=1#t=5"},
 			"assets/semantic/clip.mp4",
 		},
 		{
 			"no extension falls back to media_type",
-			semanticAssetRef{ID: "img2", SHA256: hash64("c"), URL: "https://cdn.example/asset", MediaType: "image/png"},
+			SemanticAssetRef{ID: "img2", SHA256: hash64("c"), URL: "https://cdn.example/asset", MediaType: "image/png"},
 			"assets/semantic/img2.png",
 		},
 		{
 			"drive view generic video type",
-			semanticAssetRef{ID: "classic1", SHA256: hash64("video"), URL: "https://drive.google.com/file/d/id/view", MediaType: "video"},
+			SemanticAssetRef{ID: "classic1", SHA256: hash64("video"), URL: "https://drive.google.com/file/d/id/view", MediaType: "video"},
 			"assets/semantic/classic1.mp4",
 		},
 		{
 			"assets/ prefix passes through",
-			semanticAssetRef{ID: "bg", SHA256: hash64("d"), URL: "assets/backgrounds/night.mp4"},
+			SemanticAssetRef{ID: "bg", SHA256: hash64("d"), URL: "assets/backgrounds/night.mp4"},
 			"assets/backgrounds/night.mp4",
 		},
 	}
@@ -62,10 +62,10 @@ func TestSemanticAssetPathStripsQuery(t *testing.T) {
 // at materialization.
 func TestAssetRegistryRejectsPathCollision(t *testing.T) {
 	r := newAssetRegistry()
-	if _, err := r.Register(semanticAssetRef{ID: "img 1", SHA256: hash64("a"), URL: "https://cdn.example/a.png"}); err != nil {
+	if _, err := r.Register(SemanticAssetRef{ID: "img 1", SHA256: hash64("a"), URL: "https://cdn.example/a.png"}); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := r.Register(semanticAssetRef{ID: "img/1", SHA256: hash64("b"), URL: "https://cdn.example/b.png"}); err == nil {
+	if _, err := r.Register(SemanticAssetRef{ID: "img/1", SHA256: hash64("b"), URL: "https://cdn.example/b.png"}); err == nil {
 		t.Fatal("collision between 'img 1' and 'img/1' must be a compile error")
 	} else if !strings.Contains(err.Error(), "collision") {
 		t.Fatalf("error must name the collision, got: %v", err)
@@ -75,14 +75,14 @@ func TestAssetRegistryRejectsPathCollision(t *testing.T) {
 // TestAssetRegistryRejectsHashConflict pins one-asset-id-one-hash globally.
 func TestAssetRegistryRejectsHashConflict(t *testing.T) {
 	r := newAssetRegistry()
-	if _, err := r.Register(semanticAssetRef{ID: "x", SHA256: hash64("a"), URL: "https://cdn.example/x.png"}); err != nil {
+	if _, err := r.Register(SemanticAssetRef{ID: "x", SHA256: hash64("a"), URL: "https://cdn.example/x.png"}); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := r.Register(semanticAssetRef{ID: "x", SHA256: hash64("b"), URL: "https://cdn.example/x.png"}); err == nil {
+	if _, err := r.Register(SemanticAssetRef{ID: "x", SHA256: hash64("b"), URL: "https://cdn.example/x.png"}); err == nil {
 		t.Fatal("same asset_id with different SHA-256 must be a compile error")
 	}
 	// Idempotent re-registration of the identical pair is fine.
-	path, err := r.Register(semanticAssetRef{ID: "x", SHA256: hash64("a"), URL: "https://cdn.example/x.png"})
+	path, err := r.Register(SemanticAssetRef{ID: "x", SHA256: hash64("a"), URL: "https://cdn.example/x.png"})
 	if err != nil || path != "assets/semantic/x.png" {
 		t.Fatalf("idempotent register: path=%q err=%v", path, err)
 	}
@@ -92,7 +92,7 @@ func TestAssetRegistryRejectsHashConflict(t *testing.T) {
 // that previously lived duplicated in every compileSemantic section.
 func TestAssetRegistryRejectsInvalidRefs(t *testing.T) {
 	r := newAssetRegistry()
-	for _, ref := range []semanticAssetRef{
+	for _, ref := range []SemanticAssetRef{
 		{ID: "", SHA256: hash64("a"), URL: "https://x/y.png"},
 		{ID: "short", SHA256: "abc123", URL: "https://x/y.png"},
 		{ID: "nonhex", SHA256: strings.Repeat("z", 64), URL: "https://x/y.png"},

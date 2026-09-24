@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"reflect"
 	"slices"
 	"strings"
 	"testing"
@@ -286,6 +287,31 @@ func TestBuildImageMotionManifestCompilesAllEighteenMotions(t *testing.T) {
 	}
 }
 
+// TestBuildNamesTheRepoRootWhenTheCorpusIsMissing pins the operator-facing side
+// of -repo-root. It defaults to the current directory while every corpus lives
+// under the RenderingGen checkout, so the common mistake — running the builder
+// from renderinggen/ — must name the flag instead of failing on a relative path
+// the operator cannot act on.
+func TestBuildNamesTheRepoRootWhenTheCorpusIsMissing(t *testing.T) {
+	out := filepath.Join(t.TempDir(), "images.json")
+	_, err := BuildImageMotionManifest(ImageMotionBuildOptions{
+		BatchID: "image-motion-fixture", AssetBaseURL: "http://127.0.0.1:8099",
+		RepoRoot: t.TempDir(), OutPath: out,
+	})
+	if err == nil {
+		t.Fatal("a missing corpus image must fail the build")
+	}
+	if !strings.Contains(err.Error(), "-repo-root") {
+		t.Errorf("error = %v, want a -repo-root hint", err)
+	}
+	if !strings.Contains(err.Error(), matrixImageFile) {
+		t.Errorf("error = %v, want the missing corpus file named", err)
+	}
+	if _, statErr := os.Stat(out); statErr == nil {
+		t.Error("a failed build must not leave a manifest behind")
+	}
+}
+
 // TestBuildTysonManifestRejectsAStalePhrase keeps the request↔manifest coupling
 // honest: a phrase that is no longer in its source segment is a stale request,
 // not something to render.
@@ -559,6 +585,241 @@ func TestBuildRefusesAPlanFontTheJobDoesNotDeclare(t *testing.T) {
 	document.Jobs[0].Assets = append(document.Jobs[0].Assets, queue.AssetRef{Hash: "dejavu", LogicalPath: logicalFontD})
 	if err := checkPlanFonts(document); err != nil {
 		t.Fatalf("a job that declares its plan's font must be accepted: %v", err)
+	}
+}
+
+// matrixImageJobURLs returns every URL a built manifest publishes for the
+// matrix image: the queue asset the worker self-heals from and the plan's
+// asset_ref, which Chronon resolves. A corpus is only servable when the two
+// agree, so both are asserted.
+func matrixImageJobURLs(t *testing.T, path string) []string {
+	t.Helper()
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read %s: %v", path, err)
+	}
+	var document batchManifestDocument
+	if err := json.Unmarshal(raw, &document); err != nil {
+		t.Fatalf("decode %s: %v", path, err)
+	}
+	var urls []string
+	for _, job := range document.Jobs {
+		for _, asset := range job.Assets {
+			if asset.LogicalPath == matrixImageLogicalPath {
+				urls = append(urls, asset.SourceURL)
+			}
+		}
+		var plan struct {
+			Items []struct {
+				AssetRefs []struct {
+					URL string `json:"url"`
+				} `json:"asset_refs"`
+			} `json:"items"`
+		}
+		if err := json.Unmarshal(job.RenderPlan, &plan); err != nil {
+			t.Fatalf("decode plan of %s: %v", job.ID, err)
+		}
+		for _, item := range plan.Items {
+			for _, ref := range item.AssetRefs {
+				urls = append(urls, ref.URL)
+			}
+		}
+	}
+	return urls
+}
+
+// TestBothImageCorporaPublishOneServableMatrixImageURL pins the finding that
+// two builders derived two different URLs for the same bytes: the image-motion
+// matrix appended the checkout-relative path (so a server of either corpus
+// 404ed and the worker could not self-heal a missing asset), while the
+// multilingual matrix published <base>/<file name>, the shape its manifest of
+// record uses. One owner now derives both, and the root it assumes is asserted
+// against where the file actually lives rather than restated.
+func TestBothImageCorporaPublishOneServableMatrixImageURL(t *testing.T) {
+	if got := filepath.Dir(matrixImageFile); got != matrixImageServeRoot {
+		t.Fatalf("the matrix image lives in %q but is published as if the served root were %q", got, matrixImageServeRoot)
+	}
+	const base = "http://127.0.0.1:8099"
+	want := base + "/" + filepath.Base(matrixImageFile)
+
+	root := fixtureRepo(t)
+	writeFile(t, filepath.Join(root, matrixImageFile), []byte("fixed-image-canary"))
+
+	// A trailing slash on the root is the operator's spelling, not a second URL.
+	imageMotions := filepath.Join(t.TempDir(), "image-motions.json")
+	if _, err := BuildImageMotionManifest(ImageMotionBuildOptions{
+		BatchID: "image-motion-fixture", AssetBaseURL: base + "/", RepoRoot: root, OutPath: imageMotions,
+	}); err != nil {
+		t.Fatalf("BuildImageMotionManifest: %v", err)
+	}
+	urls := matrixImageJobURLs(t, imageMotions)
+	if len(urls) != 36 {
+		t.Fatalf("the image-motion matrix published %d image URL(s), want 36 (18 jobs x manifest asset + plan ref)", len(urls))
+	}
+
+	translationsPath := filepath.Join(root, "translations.json")
+	writeFile(t, translationsPath, []byte(`{}`))
+	multilingual := filepath.Join(t.TempDir(), "multilingual.json")
+	if _, err := BuildMultilingualManifest(MultilingualBuildOptions{
+		TranslationsPath: translationsPath,
+		BatchID:          "multilingual-fixture",
+		AssetBaseURL:     base,
+		RepoRoot:         root,
+		Languages:        []string{"en"},
+		Only:             []string{overlay.ImageMotionCorpusPresetID},
+		OutPath:          multilingual,
+	}); err != nil {
+		t.Fatalf("BuildMultilingualManifest: %v", err)
+	}
+	multilingualURLs := matrixImageJobURLs(t, multilingual)
+	if len(multilingualURLs) == 0 {
+		t.Fatal("the multilingual matrix published no image URL")
+	}
+	urls = append(urls, multilingualURLs...)
+
+	for _, url := range urls {
+		if url != want {
+			t.Errorf("published matrix image URL = %q, want %q", url, want)
+		}
+	}
+}
+
+// imageLayer returns the single image layer of a compiled plan. The corpus
+// plan carries the canvas background as its first layer, so "the image layer"
+// is a lookup, not an index.
+func imageLayer(layers []overlay.Layer) (overlay.Layer, bool) {
+	var found overlay.Layer
+	matches := 0
+	for _, layer := range layers {
+		if layer.Type == "image" {
+			found, matches = layer, matches+1
+		}
+	}
+	return found, matches == 1
+}
+
+// TestImageMotionMatrixRendersOneNamedPreset pins the image-motion corpus to
+// the preset the overlay catalog defines. The matrix varies motion_id only, so
+// its plan and its manifest metadata must both name the catalog's own constant:
+// a preset difference between them would silently change what the matrix
+// measures, and a second copy of the string is how the two drift apart.
+func TestImageMotionMatrixRendersOneNamedPreset(t *testing.T) {
+	definition, err := overlay.ResolveOfficialPreset(overlay.ImageMotionCorpusPresetID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if definition.Family != overlay.PresetImage {
+		t.Fatalf("the matrix preset %q is a %s preset, not an image preset", overlay.ImageMotionCorpusPresetID, definition.Family)
+	}
+	// The value and the motion it lowers through are pinned, not just the
+	// family: the catalog's matrix_image_overlays selection
+	// (testdata/golden/golden-semantic-overlay-job-v1.json's sibling corpus and
+	// the embedded ChrononTemplate catalog) and the Tyson entity row still spell
+	// this preset literal, so renaming it must be a deliberate corpus-wide edit
+	// rather than a silent one-line change here.
+	if overlay.ImageMotionCorpusPresetID != "image_focus_in" || definition.Motion.ID != "image_focus_reveal" {
+		t.Fatalf("matrix preset = %q lowered through %q, want image_focus_in through image_focus_reveal", overlay.ImageMotionCorpusPresetID, definition.Motion.ID)
+	}
+	if definition.Layout.BoxWidth != 480 || definition.Layout.BoxHeight != 480 || definition.Layout.Fit != overlay.FitContain {
+		t.Fatalf("the matrix preset geometry = %+v, want a 480x480 contain box", definition.Layout)
+	}
+
+	root := fixtureRepo(t)
+	writeFile(t, filepath.Join(root, matrixImageFile), []byte("fixed-image-canary"))
+	out := filepath.Join(t.TempDir(), "images.json")
+	if _, err := BuildImageMotionManifest(ImageMotionBuildOptions{
+		BatchID: "image-motion-fixture", AssetBaseURL: "http://127.0.0.1:8099", RepoRoot: root, OutPath: out,
+	}); err != nil {
+		t.Fatalf("BuildImageMotionManifest: %v", err)
+	}
+	raw, err := os.ReadFile(out)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var document batchManifestDocument
+	if err := json.Unmarshal(raw, &document); err != nil {
+		t.Fatal(err)
+	}
+
+	// The two 2.5D blur motions are the pair the content gate exists for: one of
+	// them encoded 120 frames of pure canvas through the Vulkan path and still
+	// reported success. Pin that the matrix exercises both, that each lowers with
+	// its blur track, and that their render route is otherwise identical — the
+	// scale track is the whole difference between them.
+	blurMotions := []string{"image_25d_blur_focus_in", "image_25d_blur_scale_in"}
+	// Layer is not comparable (it carries slices), so the route is snapshotted
+	// field by field and the tracks are compared separately.
+	type renderRoute struct {
+		Type, Asset, Fit    string
+		BoxWidth, BoxHeight int
+		Enable3D            bool
+		Tracks              []overlay.AnimationTrack
+	}
+	routes := make(map[string]renderRoute, len(blurMotions))
+
+	seen := make(map[string]bool)
+	for _, job := range document.Jobs {
+		if job.PresetID != overlay.ImageMotionCorpusPresetID {
+			t.Errorf("job %s advertises preset %q, want the catalog's %q", job.ID, job.PresetID, overlay.ImageMotionCorpusPresetID)
+		}
+		var plan struct {
+			Items []struct {
+				PresetID string `json:"preset_id"`
+			} `json:"items"`
+		}
+		if err := json.Unmarshal(job.RenderPlan, &plan); err != nil {
+			t.Fatalf("decode plan of %s: %v", job.ID, err)
+		}
+		if len(plan.Items) != 1 || plan.Items[0].PresetID != job.PresetID {
+			t.Errorf("job %s: plan preset %v disagrees with manifest preset %q", job.ID, plan.Items, job.PresetID)
+		}
+		seen[job.MotionID] = true
+
+		if slices.Contains(blurMotions, job.MotionID) {
+			compiled, err := overlay.CompileSemantic(job.RenderPlan)
+			if err != nil {
+				t.Fatalf("compile %s: %v", job.MotionID, err)
+			}
+			layer, found := imageLayer(compiled.Plan.Layers)
+			if !found || layer.Animation == nil {
+				t.Fatalf("%s did not lower to an animated image layer: %+v", job.MotionID, compiled.Plan.Layers)
+			}
+			blur := false
+			for _, track := range layer.Animation.Tracks {
+				blur = blur || track.Property == "blur"
+			}
+			if !blur {
+				t.Errorf("%s lowered without its blur track", job.MotionID)
+			}
+			routes[job.MotionID] = renderRoute{
+				Type: layer.Type, Asset: layer.Asset, Fit: layer.Fit,
+				BoxWidth: layer.BoxWidth, BoxHeight: layer.BoxHeight,
+				Enable3D: layer.Enable3D, Tracks: layer.Animation.Tracks,
+			}
+		}
+	}
+	if len(seen) != 18 {
+		t.Fatalf("the matrix carries %d distinct motion(s), want 18", len(seen))
+	}
+	for _, id := range blurMotions {
+		route, ok := routes[id]
+		if !ok {
+			t.Fatalf("the matrix no longer exercises the blur motion %q", id)
+		}
+		if route.Type != "image" || route.BoxWidth != definition.Layout.BoxWidth || route.BoxHeight != definition.Layout.BoxHeight {
+			t.Errorf("blur motion %q lowered to %s %dx%d, want an image layer in the %dx%d preset box", id, route.Type, route.BoxWidth, route.BoxHeight, definition.Layout.BoxWidth, definition.Layout.BoxHeight)
+		}
+		if !route.Enable3D {
+			t.Errorf("blur motion %q rendered without the 3D route its position_z track requires", id)
+		}
+	}
+	first, second := routes[blurMotions[0]], routes[blurMotions[1]]
+	if first.Type != second.Type || first.Asset != second.Asset || first.Fit != second.Fit ||
+		first.BoxWidth != second.BoxWidth || first.BoxHeight != second.BoxHeight || first.Enable3D != second.Enable3D {
+		t.Errorf("the two blur motions no longer render through identical flags:\n%+v\n%+v", first, second)
+	}
+	if reflect.DeepEqual(first.Tracks, second.Tracks) {
+		t.Errorf("the two blur motions lower to identical tracks, so the matrix measures one motion twice: %+v", first.Tracks)
 	}
 }
 

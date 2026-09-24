@@ -54,12 +54,6 @@ type StyleGlow struct {
 	Color     string
 }
 
-// canaryGlow provides one restrained neutral halo; callers may change its
-// three visible controls but cannot select a quality path or stacked lobes.
-func canaryGlow() *StyleGlow {
-	return &StyleGlow{Radius: 42, Intensity: 0.25, Color: "#FFFFFF"}
-}
-
 type PresetLayout struct {
 	Anchor    string
 	Alignment string
@@ -129,14 +123,14 @@ var officialPresets = map[string]PresetDefinition{
 	StaticTextSmokePresetID: makePreset(StaticTextSmokePresetID, staticTextSmokeSpec()),
 	PhraseDefaultPresetID:   phraseDefaultPreset(),
 
-	"image_focus_in":     makePreset("image_focus_in", imageSpec("image_right", "image_focus_reveal")),
-	"image_fade_in":      makePreset("image_fade_in", imageSpec("image_right", "image_fade_reveal")),
-	"image_scale_in":     makePreset("image_scale_in", imageSpec("image_right", "image_scale_reveal")),
-	"image_slide_left":   makePreset("image_slide_left", imageSpec("image_left", "image_slide_left_reveal")),
-	"image_slide_right":  makePreset("image_slide_right", imageSpec("image_right", "image_slide_right_reveal")),
-	"image_fast_fade":    makePreset("image_fast_fade", imageFastSpec("image_right", "fade_in")),
-	"modern_rounded_pop": makePreset("modern_rounded_pop", imageSpec("image_right", "scale_drop")),
-	"bottom_card_rise":   makePreset("bottom_card_rise", imageSpec("bottom_right", "reveal_from_bottom")),
+	ImageMotionCorpusPresetID: makePreset(ImageMotionCorpusPresetID, imageSpec("image_right", "image_focus_reveal")),
+	"image_fade_in":           makePreset("image_fade_in", imageSpec("image_right", "image_fade_reveal")),
+	"image_scale_in":          makePreset("image_scale_in", imageSpec("image_right", "image_scale_reveal")),
+	"image_slide_left":        makePreset("image_slide_left", imageSpec("image_left", "image_slide_left_reveal")),
+	"image_slide_right":       makePreset("image_slide_right", imageSpec("image_right", "image_slide_right_reveal")),
+	"image_fast_fade":         makePreset("image_fast_fade", imageFastSpec("image_right", "fade_in")),
+	"modern_rounded_pop":      makePreset("modern_rounded_pop", imageSpec("image_right", "scale_drop")),
+	"bottom_card_rise":        makePreset("bottom_card_rise", imageSpec("bottom_right", "reveal_from_bottom")),
 }
 
 // ValidateCatalogParity fails closed when the preset registry this package owns

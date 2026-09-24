@@ -3,10 +3,10 @@ package overlay
 import (
 	"encoding/json"
 	"fmt"
-	"os"
 	"reflect"
 	"testing"
 
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/contractschema"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/motion"
 )
 
@@ -47,7 +47,7 @@ func TestImage25DCleanV1CatalogLowersLayerOnlyWithCatalogExit(t *testing.T) {
 		if animation == nil || len(animation.Tracks) == 0 || len(animation.TextAnimators) != 0 {
 			t.Fatalf("image motion %s did not lower to layer tracks only: %+v", id, animation)
 		}
-		if !animationUses3D(animation) {
+		if !layerUses3D(animation) {
 			t.Fatalf("image motion %s did not activate 3D", id)
 		}
 		for _, track := range animation.Tracks {
@@ -164,7 +164,7 @@ func TestEveryImageMotionReachesTheChrononRenderPlan(t *testing.T) {
 			if !reflect.DeepEqual(layer.Animation.Tracks, want.Tracks) {
 				t.Fatalf("serialized %q tracks differ from registry lowering\n got: %+v\nwant: %+v", id, layer.Animation.Tracks, want.Tracks)
 			}
-			if got, want3D := layer.Enable3D, animationUses3D(want); got != want3D {
+			if got, want3D := layer.Enable3D, layerUses3D(want); got != want3D {
 				t.Fatalf("serialized %q enable_3d = %v, want %v from its tracks", id, got, want3D)
 			}
 		})
@@ -208,28 +208,65 @@ func TestPhraseDefaultAndMotionFamilyRemainIndependent(t *testing.T) {
 }
 
 func TestRuntimeStyleOverrideSchemaContract(t *testing.T) {
-	raw, err := os.ReadFile(contractSchemaPath(t))
-	if err != nil {
-		t.Fatal(err)
-	}
-	var schema map[string]any
-	if err := json.Unmarshal(raw, &schema); err != nil {
-		t.Fatal(err)
-	}
+	schema := contractschema.Load(t, overlayContractSchema)
 	for _, pointer := range []string{
 		"#/properties/items/items/properties/params",
 		"#/properties/items/items/properties/style",
 	} {
 		t.Run(pointer, func(t *testing.T) {
-			properties := schemaAt(t, schema, pointer)["properties"].(map[string]any)
+			properties := contractschema.At(t, schema, pointer)["properties"].(map[string]any)
 			font := properties["font_family"].(map[string]any)["enum"].([]any)
 			if len(font) != 3 || font[0] != "poppins" || font[1] != "inter" || font[2] != "dejavu_sans" {
 				t.Errorf("font_family enum = %v, want [poppins inter dejavu_sans]", font)
 			}
-			for key, maximum := range map[string]float64{"glow_size": maxRuntimeGlowSize, "stroke_size": maxRuntimeStrokeSize} {
-				field := properties[key].(map[string]any)
-				if field["type"] != "number" || field["minimum"] != float64(0) || field["maximum"] != maximum {
-					t.Errorf("%s schema = %v, want number in [0,%g]", key, field, maximum)
+			// The schema's documented control set and the validator's key set are
+			// the same set, in both spellings. Pinning only the keys that happened
+			// to exist when this test was written is how font_size_px and the four
+			// shadow controls ended up documented but unenforced.
+			documented := make(map[string]bool, len(properties))
+			for name := range properties {
+				documented[name] = true
+			}
+			for _, key := range runtimeTextStyleKeys {
+				if !documented[key] {
+					t.Errorf("the runtime validator enforces %q but the schema does not document it", key)
+				}
+				delete(documented, key)
+			}
+			for extra := range documented {
+				t.Errorf("the schema documents %q, which the runtime validator does not enforce", extra)
+			}
+			for _, bound := range []struct {
+				key              string
+				minimum          float64
+				maximum          float64
+				exclusiveMinimum bool
+			}{
+				{"glow_size", 0, maxRuntimeGlowSize, false},
+				{"stroke_size", 0, maxRuntimeStrokeSize, false},
+				{"font_size_px", 0, maxRuntimeFontSize, true},
+				{"shadow_blur_px", 0, maxRuntimeShadowSize, false},
+				{"shadow_opacity", 0, 1, false},
+				{"shadow_offset_x_px", -maxRuntimeShadowSize, maxRuntimeShadowSize, false},
+				{"shadow_offset_y_px", -maxRuntimeShadowSize, maxRuntimeShadowSize, false},
+			} {
+				field, ok := properties[bound.key].(map[string]any)
+				if !ok {
+					t.Errorf("%s is not documented", bound.key)
+					continue
+				}
+				if field["type"] != "number" || field["maximum"] != bound.maximum {
+					t.Errorf("%s schema = %v, want number with maximum %g", bound.key, field, bound.maximum)
+					continue
+				}
+				if bound.exclusiveMinimum {
+					if field["exclusiveMinimum"] != float64(0) || field["minimum"] != nil {
+						t.Errorf("%s schema = %v, want exclusiveMinimum 0", bound.key, field)
+					}
+					continue
+				}
+				if field["minimum"] != bound.minimum {
+					t.Errorf("%s schema = %v, want minimum %g", bound.key, field, bound.minimum)
 				}
 			}
 		})
@@ -238,7 +275,9 @@ func TestRuntimeStyleOverrideSchemaContract(t *testing.T) {
 
 func TestRuntimeTextStyleOverridesAcceptInclusiveBounds(t *testing.T) {
 	layer, err := compileRuntimeStylePlan(t,
-		`{"glow_size":256,"stroke_size":64}`, `{}`)
+		`{"glow_size":256,"stroke_size":64,"font_size_px":512,`+
+			`"shadow_blur_px":256,"shadow_opacity":1,`+
+			`"shadow_offset_x_px":-256,"shadow_offset_y_px":256}`, `{}`)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -247,6 +286,31 @@ func TestRuntimeTextStyleOverridesAcceptInclusiveBounds(t *testing.T) {
 	}
 	if layer.Style.Stroke == nil || layer.Style.Stroke.Width != maxRuntimeStrokeSize {
 		t.Fatalf("maximum stroke override = %+v", layer.Style.Stroke)
+	}
+	if layer.Style.FontSize != maxRuntimeFontSize {
+		t.Fatalf("maximum font size override = %v", layer.Style.FontSize)
+	}
+	shadow := layer.Style.Shadow
+	if shadow == nil || shadow.Blur != maxRuntimeShadowSize || shadow.Opacity != 1 {
+		t.Fatalf("maximum shadow blur/opacity override = %+v", shadow)
+	}
+	if len(shadow.Offset) != 2 || shadow.Offset[0] != -maxRuntimeShadowSize || shadow.Offset[1] != maxRuntimeShadowSize {
+		t.Fatalf("maximum shadow offset override = %v", shadow.Offset)
+	}
+}
+
+// TestRuntimeShadowOpacityZeroDisablesTheShadow pins the documented semantics:
+// "shadow opacity zero disables the shadow", the same zero-disables rule glow
+// and stroke already follow. A shadow at zero opacity is invisible, so keeping
+// the block in the plan would only mislead the next reader of it.
+func TestRuntimeShadowOpacityZeroDisablesTheShadow(t *testing.T) {
+	layer, err := compileRuntimeStylePlan(t,
+		`{"shadow_blur_px":12,"shadow_opacity":0}`, `{}`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if layer.Style.Shadow != nil {
+		t.Fatalf("shadow opacity zero left a shadow in the plan: %+v", layer.Style.Shadow)
 	}
 }
 

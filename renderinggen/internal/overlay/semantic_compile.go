@@ -164,7 +164,7 @@ func compileSemantic(raw []byte) (*Plan, []Asset, Stats, []string, error) {
 	var sourceLayerIndex = -1
 	if src.Source != nil && src.Source.AssetID != "" {
 		path := src.Source.Path
-		ref := semanticAssetRef{ID: src.Source.AssetID, SHA256: src.Source.SHA256}
+		ref := SemanticAssetRef{ID: src.Source.AssetID, SHA256: src.Source.SHA256}
 		if path == "" {
 			registered, err := registry.Register(ref)
 			if err != nil {
@@ -564,29 +564,13 @@ func compileImageLayer(ri resolvedItem, src *semanticPlan, registry *assetRegist
 		if err != nil {
 			return Layer{}, err
 		}
-		if animation != nil {
-			layer.Enable3D = animationUses3D(animation)
-			if len(animation.Tracks) > 0 {
-				layer.Animation = animation
-			}
-			if len(animation.TextAnimators) > 0 {
-				layer.TextAnimators = animation.TextAnimators
-			}
-		}
+		applyMotionRouting(&layer, animation)
 	} else if ri.Preset.ID != "" {
 		presetAnimation, err := animationForPreset(ri.Preset, "", ri.End-ri.Start)
 		if err != nil {
 			return Layer{}, err
 		}
-		if presetAnimation != nil {
-			layer.Enable3D = animationUses3D(presetAnimation)
-			if len(presetAnimation.Tracks) > 0 {
-				layer.Animation = presetAnimation
-			}
-			if len(presetAnimation.TextAnimators) > 0 {
-				layer.TextAnimators = presetAnimation.TextAnimators
-			}
-		}
+		applyMotionRouting(&layer, presetAnimation)
 	}
 	if layer.Position == nil && ri.Preset.ID != "" {
 		if ri.Kind == KindEntityImage {
@@ -678,13 +662,7 @@ func compileTextLayer(ri resolvedItem, src *semanticPlan, layerID string) (Layer
 	if ri.Kind == KindImportantPhrase {
 		textAnimation = withPhraseEntryExit(textAnimation, ri.End-ri.Start)
 	}
-	if textAnimation != nil {
-		layer.Enable3D = animationUses3D(textAnimation)
-		if len(textAnimation.Tracks) > 0 {
-			layer.Animation = textAnimation
-		}
-		layer.TextAnimators = textAnimation.TextAnimators
-	}
+	applyMotionRouting(&layer, textAnimation)
 	if layer.Style != nil && layer.Position == nil {
 		// position_x/position_y are absolute canvas coordinates of the text
 		// centre — the same form the engine reads for text layers.

@@ -13,25 +13,10 @@ import (
 	"time"
 )
 
-func TestStrictNativeRejectsAnimated25DImageBeforeRender(t *testing.T) {
-	path := filepath.Join(t.TempDir(), "plan.json")
-	if err := os.WriteFile(path, []byte(`{"layers":[{"type":"image","enable_3d":true,"animation":{"tracks":[{"property":"position_z"}]}}]}`), 0o600); err != nil {
-		t.Fatal(err)
-	}
-	req := RenderRequest{PlanPath: path, Requirements: ExecutionRequirements{GPURequired: true, CPUFallbackAllowed: false}}
-	if err := validateRenderRequest(req); err == nil || !strings.Contains(err.Error(), "animated 2.5D image") {
-		t.Fatalf("strict native request error = %v, want 2.5D image rejection", err)
-	}
-	req.Requirements.CPUFallbackAllowed = true
+func TestStrictNativeAllowsAnimated25DImageToReachChronon(t *testing.T) {
+	req := RenderRequest{PlanPath: "/jobs/25d/plan.json", Requirements: ExecutionRequirements{GPURequired: true, CPUFallbackAllowed: false}}
 	if err := validateRenderRequest(req); err != nil {
-		t.Fatalf("non-strict request should remain renderable: %v", err)
-	}
-	req.Requirements.CPUFallbackAllowed = false
-	if err := os.WriteFile(path, []byte(`{"layers":[{"type":"image","enable_3d":true}]}`), 0o600); err != nil {
-		t.Fatal(err)
-	}
-	if err := validateRenderRequest(req); err != nil {
-		t.Fatalf("static 3D image should not hit the animated-image gate: %v", err)
+		t.Fatalf("2.5D layer must reach Chronon's native renderer: %v", err)
 	}
 }
 

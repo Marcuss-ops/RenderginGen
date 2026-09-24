@@ -2,84 +2,13 @@ package batch
 
 import (
 	"encoding/json"
-	"os"
-	"path/filepath"
-	"reflect"
-	"runtime"
-	"sort"
-	"strings"
 	"testing"
 
 	queue "github.com/Marcuss-ops/RenderingGen/queue/client"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/contractschema"
 )
 
-func batchSchemaPath(t *testing.T) string {
-	t.Helper()
-	_, source, _, ok := runtime.Caller(0)
-	if !ok {
-		t.Fatal("cannot locate the test source to resolve the contract schema")
-	}
-	// <repo>/renderinggen/internal/batch -> <repo>/contracts/...
-	path := filepath.Join(filepath.Dir(source), "..", "..", "..", "contracts", "renderinggen.batch-multilingual.v1.schema.json")
-	if _, err := os.Stat(path); err != nil {
-		t.Fatalf("canonical batch schema %s: %v", path, err)
-	}
-	return filepath.Clean(path)
-}
-
-// propertyNames returns the declared keys of a schema object at a JSON pointer.
-func propertyNames(t *testing.T, schema map[string]any, pointer string) []string {
-	t.Helper()
-	node := schema
-	for _, part := range strings.Split(strings.TrimPrefix(pointer, "#/"), "/") {
-		if part == "" {
-			continue
-		}
-		next, ok := node[part].(map[string]any)
-		if !ok {
-			t.Fatalf("schema pointer %s: no object at %q", pointer, part)
-		}
-		node = next
-	}
-	props, ok := node["properties"].(map[string]any)
-	if !ok {
-		t.Fatalf("schema pointer %s: no properties object", pointer)
-	}
-	names := make([]string, 0, len(props))
-	for name := range props {
-		names = append(names, name)
-	}
-	sort.Strings(names)
-	return names
-}
-
-func jsonFieldNames(v any) []string {
-	typ := reflect.TypeOf(v)
-	names := make([]string, 0, typ.NumField())
-	for i := 0; i < typ.NumField(); i++ {
-		name := strings.Split(typ.Field(i).Tag.Get("json"), ",")[0]
-		if name == "" || name == "-" {
-			continue
-		}
-		names = append(names, name)
-	}
-	sort.Strings(names)
-	return names
-}
-
-func difference(a, b []string) []string {
-	set := make(map[string]bool, len(b))
-	for _, v := range b {
-		set[v] = true
-	}
-	var out []string
-	for _, v := range a {
-		if !set[v] {
-			out = append(out, v)
-		}
-	}
-	return out
-}
+const batchContractSchema = "renderinggen.batch-multilingual.v1.schema.json"
 
 // TestMultilingualManifestSchemaMatchesGoStructs pins the published batch
 // contract to the structs that decode it, in both directions. Before this test
@@ -89,14 +18,7 @@ func difference(a, b []string) []string {
 // and its voiceover was dropped — the language job rendered with the base audio
 // and nothing reported the loss.
 func TestMultilingualManifestSchemaMatchesGoStructs(t *testing.T) {
-	raw, err := os.ReadFile(batchSchemaPath(t))
-	if err != nil {
-		t.Fatal(err)
-	}
-	var schema map[string]any
-	if err := json.Unmarshal(raw, &schema); err != nil {
-		t.Fatalf("decode batch schema: %v", err)
-	}
+	schema := contractschema.Load(t, batchContractSchema)
 
 	cases := []struct {
 		name    string
@@ -110,12 +32,12 @@ func TestMultilingualManifestSchemaMatchesGoStructs(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			want := propertyNames(t, schema, tc.pointer)
-			got := jsonFieldNames(tc.goValue)
-			if missing := difference(want, got); len(missing) > 0 {
+			want := contractschema.PropertyNames(t, schema, tc.pointer)
+			got := contractschema.JSONFieldNames(tc.goValue)
+			if missing := contractschema.Difference(want, got); len(missing) > 0 {
 				t.Errorf("%s: schema declares %v, but the Go struct does not decode them (a schema-valid manifest would lose them silently)", tc.name, missing)
 			}
-			if extra := difference(got, want); len(extra) > 0 {
+			if extra := contractschema.Difference(got, want); len(extra) > 0 {
 				t.Errorf("%s: the Go struct decodes %v, which the published schema forbids", tc.name, extra)
 			}
 		})

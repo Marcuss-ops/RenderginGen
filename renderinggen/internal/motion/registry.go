@@ -123,26 +123,31 @@ func belongsToFamily(definition MotionDefinition, family string) bool {
 	return family == "3d" && motionHas3D(definition)
 }
 
-func motionHas3D(definition MotionDefinition) bool {
-	// Keep in sync with overlay.animationUses3D and Chronon3d's
-	// render-plan decoder: Z translation and X/Y rotation require its
-	// camera-backed path; scale_z and in-plane rotation_z do not.
-	is3DProperty := func(property string) bool {
-		switch property {
-		case "position_z", "rotation_x", "rotation_y":
-			return true
-		default:
-			return false
-		}
+// IsCameraBacked3DProperty is RenderingGen's single authority for the closed set
+// of layer properties that require Chronon's camera-backed render path. It
+// mirrors Chronon3d's render_plan_decoder.cpp:is_3d_property exactly: Z
+// translation and X/Y rotation opt in, while scale_z and in-plane rotation_z do
+// not. Every RenderingGen caller — the motion registry's 3d family and the
+// overlay compiler's enable_3d routing — delegates here, so the producer and
+// the consumer can only disagree if this list changes without Chronon.
+func IsCameraBacked3DProperty(property string) bool {
+	switch property {
+	case "position_z", "rotation_x", "rotation_y":
+		return true
+	default:
+		return false
 	}
+}
+
+func motionHas3D(definition MotionDefinition) bool {
 	for _, track := range definition.Tracks {
-		if is3DProperty(track.Property) {
+		if IsCameraBacked3DProperty(track.Property) {
 			return true
 		}
 	}
 	for _, animator := range definition.TextAnimators {
 		for _, track := range animator.Properties {
-			if is3DProperty(track.Property) {
+			if IsCameraBacked3DProperty(track.Property) {
 				return true
 			}
 		}
