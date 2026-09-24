@@ -152,8 +152,124 @@ func TestBuildTysonManifestProducesTheFullCorpus(t *testing.T) {
 			t.Errorf("job %s: unexpected family %q", job.ID, facts.family)
 		}
 	}
+	var emitted batchManifestDocument
+	if err := json.Unmarshal(raw, &emitted); err != nil {
+		t.Fatalf("decode emitted manifest: %v", err)
+	}
+	for _, job := range emitted.Jobs {
+		if job.Family != "phrase" {
+			continue
+		}
+		if len(job.MotionPool) != len(motion.PhraseMotionPool()) || job.SelectionSeed == 0 {
+			t.Errorf("phrase %s missing auditable pool/seed (pool=%d seed=%d)", job.ID, len(job.MotionPool), job.SelectionSeed)
+		}
+		compiled, err := overlay.CompileSemantic(job.RenderPlan)
+		if err != nil {
+			t.Fatalf("compile selected motion %q: %v", job.MotionID, err)
+		}
+		animated := false
+		for _, layer := range compiled.Plan.Layers {
+			if layer.Animation != nil || len(layer.TextAnimators) > 0 {
+				animated = true
+			}
+		}
+		if !animated {
+			t.Errorf("selected motion %q did not lower animation tracks", job.MotionID)
+		}
+	}
 	if images != 5 {
 		t.Errorf("built %d image job(s), want 5", images)
+	}
+}
+
+func TestPhraseMotionSelectionIsSeededCoverageAndFailClosed(t *testing.T) {
+	pool := motion.PhraseMotionPool()
+	planSeed := phraseSelectionSeed("plan-1", "phrase-1")
+	if planSeed != phraseSelectionSeed("plan-1", "phrase-1") {
+		t.Fatal("same plan and item ids produced different seeds")
+	}
+	first, err := selectPhraseMotion(pool, planSeed)
+	if err != nil {
+		t.Fatal(err)
+	}
+	second, err := selectPhraseMotion(pool, planSeed)
+	if err != nil || second != first {
+		t.Fatalf("same seed selected %q then %q (err %v)", first, second, err)
+	}
+	covered := make(map[string]bool, len(pool))
+	for seed := uint64(0); seed < 10000; seed++ {
+		id, err := selectPhraseMotion(pool, seed)
+		if err != nil {
+			t.Fatal(err)
+		}
+		covered[id] = true
+	}
+	if len(covered) != len(pool) {
+		t.Fatalf("seed sweep reached %d/%d pool motions", len(covered), len(pool))
+	}
+	for _, id := range pool {
+		_, err := renderbatch.BuildPlan(renderbatch.PlanSpec{
+			PlanID: "pool-" + id, ProjectID: "phrase-pool-compile-gate", Language: "en",
+			Width: 1920, Height: 1080, FPSNum: 24, FPSDen: 1, DurationMS: 5000,
+			Items: []renderbatch.PlanItem{{
+				ID: "phrase", Kind: "important_phrase", TemplateID: "IMPORTANT_PHRASE",
+				PresetID: overlay.PhraseDefaultPresetID, MotionID: id,
+				Text: "A crisp, seeded motion", StartMS: 0, EndMS: 5000,
+			}},
+		})
+		if err != nil {
+			t.Errorf("pool motion %q fails semantic compilation: %v", id, err)
+		}
+	}
+	if _, err := selectPhraseMotion([]string{"unknown_motion"}, 1); err == nil {
+		t.Fatal("unknown pool id was accepted")
+	}
+}
+
+func TestBuildImageMotionManifestCompilesAllEighteenMotions(t *testing.T) {
+	root := t.TempDir()
+	writeFile(t, filepath.Join(root, matrixImageFile), []byte("fixed-image-canary"))
+	out := filepath.Join(t.TempDir(), "images.json")
+	result, err := BuildImageMotionManifest(ImageMotionBuildOptions{
+		BatchID: "image-motion-fixture", AssetBaseURL: "http://127.0.0.1:8099",
+		RepoRoot: root, OutPath: out, PlanDir: filepath.Join(t.TempDir(), "plans"),
+	})
+	if err != nil {
+		t.Fatalf("BuildImageMotionManifest: %v", err)
+	}
+	if result.Jobs != 18 || result.Images != 18 {
+		t.Fatalf("image motion matrix produced %d jobs/%d images, want 18/18", result.Jobs, result.Images)
+	}
+	raw, err := os.ReadFile(out)
+	if err != nil {
+		t.Fatal(err)
+	}
+	jobs, err := batch.Decode(raw)
+	if err != nil {
+		t.Fatalf("decode image motion manifest: %v", err)
+	}
+	if len(jobs) != 18 {
+		t.Fatalf("decoded %d image jobs, want 18", len(jobs))
+	}
+	var emitted batchManifestDocument
+	if err := json.Unmarshal(raw, &emitted); err != nil {
+		t.Fatal(err)
+	}
+	for _, job := range emitted.Jobs {
+		compiled, err := overlay.CompileSemantic(job.RenderPlan)
+		if err != nil {
+			t.Errorf("compile image motion %q: %v", job.MotionID, err)
+			continue
+		}
+		animated := false
+		for _, layer := range compiled.Plan.Layers {
+			if layer.Animation != nil && len(layer.Animation.Tracks) > 0 {
+				animated = true
+			}
+		}
+		if !animated {
+			t.Errorf("image motion %q did not lower to image layer tracks", job.MotionID)
+		}
 	}
 }
 

@@ -10868,6 +10868,963 @@
           "easing": "out_cubic"
         }
       ]
+    },
+    {
+      "id": "apple_focus_rise",
+      "category": "apple_phrase_v1",
+      "targets": [
+        "text",
+        "phrase"
+      ],
+      "unit": "glyph",
+      "enter": 60,
+      "tracks": [
+        {
+          "property": "position_y",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 210.0
+            },
+            {
+              "frame": 44,
+              "value": -8.0
+            },
+            {
+              "frame": 60,
+              "value": 0.0
+            }
+          ],
+          "easing": "out_cubic"
+        },
+        {
+          "property": "scale",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.8600000143051147
+            },
+            {
+              "frame": 44,
+              "value": 1.0149999856948853
+            },
+            {
+              "frame": 60,
+              "value": 1.0
+            }
+          ],
+          "easing": "out_cubic"
+        },
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.0
+            },
+            {
+              "frame": 60,
+              "value": 1.0
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ],
+      "text_animators": []
+    },
+    {
+      "id": "apple_soft_scale",
+      "category": "apple_phrase_v1",
+      "targets": [
+        "text",
+        "phrase"
+      ],
+      "unit": "glyph",
+      "enter": 60,
+      "tracks": [
+        {
+          "property": "scale",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.5400000214576721
+            },
+            {
+              "frame": 45,
+              "value": 1.0449999570846558
+            },
+            {
+              "frame": 60,
+              "value": 1.0
+            }
+          ],
+          "easing": "out_cubic"
+        },
+        {
+          "property": "position_y",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 38.0
+            },
+            {
+              "frame": 60,
+              "value": 0.0
+            }
+          ],
+          "easing": "out_cubic"
+        },
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.0
+            },
+            {
+              "frame": 60,
+              "value": 1.0
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ],
+      "text_animators": []
+    },
+    {
+      "id": "apple_word_cascade",
+      "category": "apple_phrase_v1",
+      "targets": [
+        "text",
+        "phrase"
+      ],
+      "unit": "word",
+      "enter": 60,
+      "tracks": [
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.0
+            },
+            {
+              "frame": 60,
+              "value": 1.0
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ],
+      "text_animators": [
+        {
+          "id": "apple_word_cascade_text",
+          "selector": {
+            "kind": "word",
+            "shape": "square",
+            "order": "forward",
+            "stagger": 1
+          },
+          "properties": [
+            {
+              "property": "position_y",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 155.0
+                },
+                {
+                  "frame": 60,
+                  "value": 0.0
+                }
+              ],
+              "easing": "out_cubic"
+            },
+            {
+              "property": "opacity",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0.0
+                },
+                {
+                  "frame": 60,
+                  "value": 1.0
+                }
+              ],
+              "easing": "out_cubic"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "apple_line_cascade",
+      "category": "apple_phrase_v1",
+      "targets": [
+        "text",
+        "phrase"
+      ],
+      "unit": "line",
+      "enter": 60,
+      "tracks": [
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.0
+            },
+            {
+              "frame": 60,
+              "value": 1.0
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ],
+      "text_animators": [
+        {
+          "id": "apple_line_cascade_text",
+          "selector": {
+            "kind": "line",
+            "shape": "smooth",
+            "order": "forward",
+            "stagger": 1
+          },
+          "properties": [
+            {
+              "property": "position_y",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 18.0
+                },
+                {
+                  "frame": 60,
+                  "value": 0.0
+                }
+              ],
+              "easing": "out_cubic"
+            },
+            {
+              "property": "position_x",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 110.0
+                },
+                {
+                  "frame": 60,
+                  "value": 0.0
+                }
+              ],
+              "easing": "out_cubic"
+            },
+            {
+              "property": "opacity",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0.0
+                },
+                {
+                  "frame": 60,
+                  "value": 1.0
+                }
+              ],
+              "easing": "out_cubic"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "apple_precision_type",
+      "category": "apple_phrase_v1",
+      "targets": [
+        "text",
+        "phrase"
+      ],
+      "unit": "glyph",
+      "enter": 60,
+      "tracks": [
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.0
+            },
+            {
+              "frame": 60,
+              "value": 1.0
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ],
+      "text_animators": [
+        {
+          "id": "apple_precision_type_text",
+          "selector": {
+            "kind": "glyph",
+            "shape": "square",
+            "order": "forward",
+            "stagger": 1
+          },
+          "properties": [
+            {
+              "property": "opacity",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0.0
+                },
+                {
+                  "frame": 60,
+                  "value": 1.0
+                }
+              ],
+              "easing": "out_cubic"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "apple_tracking_reveal",
+      "category": "apple_phrase_v1",
+      "targets": [
+        "text",
+        "phrase"
+      ],
+      "unit": "glyph",
+      "enter": 60,
+      "tracks": [
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.0
+            },
+            {
+              "frame": 60,
+              "value": 1.0
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ],
+      "text_animators": [
+        {
+          "id": "apple_tracking_reveal_text",
+          "selector": {
+            "kind": "glyph",
+            "shape": "square",
+            "order": "forward",
+            "stagger": 1
+          },
+          "properties": [
+            {
+              "property": "tracking",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 28.0
+                },
+                {
+                  "frame": 60,
+                  "value": 0.0
+                }
+              ],
+              "easing": "out_cubic"
+            },
+            {
+              "property": "opacity",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0.0
+                },
+                {
+                  "frame": 60,
+                  "value": 1.0
+                }
+              ],
+              "easing": "out_cubic"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "apple_expand_from_center",
+      "category": "apple_phrase_v1",
+      "targets": [
+        "text",
+        "phrase"
+      ],
+      "unit": "glyph",
+      "enter": 60,
+      "tracks": [
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.0
+            },
+            {
+              "frame": 60,
+              "value": 1.0
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ],
+      "text_animators": [
+        {
+          "id": "apple_expand_from_center_text",
+          "selector": {
+            "kind": "glyph",
+            "shape": "square",
+            "order": "from_center",
+            "stagger": 1
+          },
+          "properties": [
+            {
+              "property": "scale",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0.11999999731779099
+                },
+                {
+                  "frame": 60,
+                  "value": 1.0
+                }
+              ],
+              "easing": "out_cubic"
+            },
+            {
+              "property": "position_y",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 42.0
+                },
+                {
+                  "frame": 60,
+                  "value": 0.0
+                }
+              ],
+              "easing": "out_cubic"
+            },
+            {
+              "property": "opacity",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0.0
+                },
+                {
+                  "frame": 60,
+                  "value": 1.0
+                }
+              ],
+              "easing": "out_cubic"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "apple_compress_in",
+      "category": "apple_phrase_v1",
+      "targets": [
+        "text",
+        "phrase"
+      ],
+      "unit": "glyph",
+      "enter": 60,
+      "tracks": [
+        {
+          "property": "scale_x",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.5600000023841858
+            },
+            {
+              "frame": 60,
+              "value": 1.0
+            }
+          ],
+          "easing": "out_cubic"
+        },
+        {
+          "property": "position_x",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": -145.0
+            },
+            {
+              "frame": 60,
+              "value": 0.0
+            }
+          ],
+          "easing": "out_cubic"
+        },
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.0
+            },
+            {
+              "frame": 60,
+              "value": 1.0
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ],
+      "text_animators": []
+    },
+    {
+      "id": "apple_scale_push",
+      "category": "apple_phrase_v1",
+      "targets": [
+        "text",
+        "phrase"
+      ],
+      "unit": "glyph",
+      "enter": 60,
+      "tracks": [
+        {
+          "property": "scale",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.2800000011920929
+            },
+            {
+              "frame": 60,
+              "value": 1.0
+            }
+          ],
+          "easing": "out_cubic"
+        },
+        {
+          "property": "position_y",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": -100.0
+            },
+            {
+              "frame": 60,
+              "value": 0.0
+            }
+          ],
+          "easing": "out_cubic"
+        },
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.0
+            },
+            {
+              "frame": 60,
+              "value": 1.0
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ],
+      "text_animators": []
+    },
+    {
+      "id": "apple_scale_settle",
+      "category": "apple_phrase_v1",
+      "targets": [
+        "text",
+        "phrase"
+      ],
+      "unit": "glyph",
+      "enter": 60,
+      "tracks": [
+        {
+          "property": "scale",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.6800000071525574
+            },
+            {
+              "frame": 44,
+              "value": 1.0800000429153442
+            },
+            {
+              "frame": 60,
+              "value": 1.0
+            }
+          ],
+          "easing": "out_cubic"
+        },
+        {
+          "property": "rotation_z",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": -0.11999999731779099
+            },
+            {
+              "frame": 44,
+              "value": 0.014999999664723873
+            },
+            {
+              "frame": 60,
+              "value": 0.0
+            }
+          ],
+          "easing": "out_cubic"
+        },
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.0
+            },
+            {
+              "frame": 60,
+              "value": 1.0
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ],
+      "text_animators": []
+    },
+    {
+      "id": "apple_word_pulse",
+      "category": "apple_phrase_v1",
+      "targets": [
+        "text",
+        "phrase"
+      ],
+      "unit": "word",
+      "enter": 60,
+      "tracks": [
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.0
+            },
+            {
+              "frame": 60,
+              "value": 1.0
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ],
+      "text_animators": [
+        {
+          "id": "apple_word_pulse_text",
+          "selector": {
+            "kind": "word",
+            "shape": "square",
+            "order": "forward",
+            "stagger": 1
+          },
+          "properties": [
+            {
+              "property": "scale",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0.7200000286102295
+                },
+                {
+                  "frame": 24,
+                  "value": 1.1399999856948853
+                },
+                {
+                  "frame": 60,
+                  "value": 1.0
+                }
+              ],
+              "easing": "out_cubic"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "apple_vertical_glyph_lift",
+      "category": "apple_phrase_v1",
+      "targets": [
+        "text",
+        "phrase"
+      ],
+      "unit": "glyph",
+      "enter": 60,
+      "tracks": [
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.0
+            },
+            {
+              "frame": 60,
+              "value": 1.0
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ],
+      "text_animators": [
+        {
+          "id": "apple_vertical_glyph_lift_text",
+          "selector": {
+            "kind": "glyph",
+            "shape": "square",
+            "order": "reverse",
+            "stagger": 1
+          },
+          "properties": [
+            {
+              "property": "position_y",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 145.0
+                },
+                {
+                  "frame": 60,
+                  "value": 0.0
+                }
+              ],
+              "easing": "out_cubic"
+            },
+            {
+              "property": "opacity",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0.0
+                },
+                {
+                  "frame": 60,
+                  "value": 1.0
+                }
+              ],
+              "easing": "out_cubic"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "apple_line_sweep",
+      "category": "apple_phrase_v1",
+      "targets": [
+        "text",
+        "phrase"
+      ],
+      "unit": "line",
+      "enter": 60,
+      "tracks": [
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.0
+            },
+            {
+              "frame": 60,
+              "value": 1.0
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ],
+      "text_animators": [
+        {
+          "id": "apple_line_sweep_text",
+          "selector": {
+            "kind": "line",
+            "shape": "square",
+            "order": "reverse",
+            "stagger": 1
+          },
+          "properties": [
+            {
+              "property": "position_x",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 190.0
+                },
+                {
+                  "frame": 60,
+                  "value": 0.0
+                }
+              ],
+              "easing": "out_cubic"
+            },
+            {
+              "property": "opacity",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0.0
+                },
+                {
+                  "frame": 60,
+                  "value": 1.0
+                }
+              ],
+              "easing": "out_cubic"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "apple_hero_statement",
+      "category": "apple_phrase_v1",
+      "targets": [
+        "text",
+        "phrase"
+      ],
+      "unit": "glyph",
+      "enter": 60,
+      "tracks": [
+        {
+          "property": "scale",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.6800000071525574
+            },
+            {
+              "frame": 48,
+              "value": 1.0549999475479126
+            },
+            {
+              "frame": 60,
+              "value": 1.0
+            }
+          ],
+          "easing": "out_cubic"
+        },
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.0
+            },
+            {
+              "frame": 60,
+              "value": 1.0
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ],
+      "text_animators": []
+    },
+    {
+      "id": "apple_cinematic_exit",
+      "category": "apple_phrase_v1",
+      "targets": [
+        "text",
+        "phrase"
+      ],
+      "unit": "glyph",
+      "enter": 60,
+      "tracks": [
+        {
+          "property": "position_x",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 440.0
+            },
+            {
+              "frame": 42,
+              "value": -14.0
+            },
+            {
+              "frame": 60,
+              "value": 0.0
+            }
+          ],
+          "easing": "out_cubic"
+        },
+        {
+          "property": "rotation_z",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": -0.11999999731779099
+            },
+            {
+              "frame": 42,
+              "value": 0.019999999552965164
+            },
+            {
+              "frame": 60,
+              "value": 0.0
+            }
+          ],
+          "easing": "out_cubic"
+        },
+        {
+          "property": "scale",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.8999999761581421
+            },
+            {
+              "frame": 60,
+              "value": 1.0
+            }
+          ],
+          "easing": "out_cubic"
+        },
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.0
+            },
+            {
+              "frame": 60,
+              "value": 1.0
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ],
+      "text_animators": []
     }
   ],
   "overlay_presets": {
@@ -10922,6 +11879,30 @@
       "masked_vertical_lift",
       "hero_scale_focus",
       "kinetic_keyword_lock"
+    ],
+    "phrase_motion_pool": [
+      "typewriter_clean",
+      "typewriter_glitch",
+      "typewriter_pop",
+      "typewriter_tracking",
+      "precision_word_stagger",
+      "masked_vertical_lift",
+      "kinetic_keyword_lock",
+      "apple_focus_rise",
+      "apple_soft_scale",
+      "apple_word_cascade",
+      "apple_line_cascade",
+      "apple_precision_type",
+      "apple_tracking_reveal",
+      "apple_expand_from_center",
+      "apple_compress_in",
+      "apple_scale_push",
+      "apple_scale_settle",
+      "apple_word_pulse",
+      "apple_vertical_glyph_lift",
+      "apple_line_sweep",
+      "apple_hero_statement",
+      "apple_cinematic_exit"
     ]
   }
 }

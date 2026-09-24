@@ -2,6 +2,7 @@ package overlaybatch
 
 import (
 	"crypto/sha256"
+	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -65,6 +66,8 @@ type manifestJob struct {
 	Family                  string   `json:"family,omitempty"`
 	Text                    string   `json:"text,omitempty"`
 	MotionID                string   `json:"motion_id,omitempty"`
+	MotionPool              []string `json:"motion_pool,omitempty"`
+	SelectionSeed           uint64   `json:"selection_seed,omitempty"`
 	PresetID                string   `json:"preset_id,omitempty"`
 	EntityID                string   `json:"entity_id,omitempty"`
 	EntityName              string   `json:"entity_name,omitempty"`
@@ -181,20 +184,15 @@ func BuildTysonManifest(opts TysonBuildOptions) (*BuildResult, error) {
 	item := request.Items[0]
 	phrases := item.MediaPlan.Extraction.ImportantPhrases
 	segments := item.ScriptParams.Segments
-	// The pairing of phrase index to motion is catalog data (ChrononTemplate's
-	// selection), not a literal list here: the overlays stay visually
-	// distinguishable because the catalog pairs each phrase with a distinct
-	// official motion, in order. The request must therefore carry exactly one
-	// phrase per catalog motion — a request with more phrases than the catalog
-	// has motions is a producer that out-ran the vocabulary, and rendering only
-	// the first N would silently drop the rest.
-	phraseMotions := motion.PhraseMotions()
-	if len(phraseMotions) == 0 {
-		return nil, fmt.Errorf("overlaybatch: the embedded ChrononTemplate catalog declares no phrase-motion selection")
+	// Motion choices come from the emitter-owned pool. A stable seed derived
+	// from the plan and item ids makes repeated builds choose the same motion.
+	phrasePool := motion.PhraseMotionPool()
+	if len(phrasePool) == 0 {
+		return nil, fmt.Errorf("overlaybatch: the embedded ChrononTemplate catalog declares no phrase_motion_pool")
 	}
-	if len(phrases) != len(phraseMotions) || len(segments) != len(phraseMotions) {
-		return nil, fmt.Errorf("overlaybatch: request must carry %d segments and %d phrases, got %d and %d",
-			len(phraseMotions), len(phraseMotions), len(segments), len(phrases))
+	if len(phrases) == 0 || len(segments) != len(phrases) {
+		return nil, fmt.Errorf("overlaybatch: request must carry the same non-zero number of segments and phrases, got %d and %d",
+			len(segments), len(phrases))
 	}
 	for index, phrase := range phrases {
 		if !strings.Contains(segments[index].SourceText, phrase) {
@@ -224,8 +222,12 @@ func BuildTysonManifest(opts TysonBuildOptions) (*BuildResult, error) {
 
 	document := batchManifestDocument{SchemaVersion: SchemaBatchManifestV1, BatchID: opts.BatchID}
 	for index, phrase := range phrases {
-		motionID := phraseMotions[index]
 		jobID := fmt.Sprintf("phrase-%02d", index+1)
+		selectionSeed := phraseSelectionSeed(jobID, "important-phrase")
+		motionID, err := selectPhraseMotion(phrasePool, selectionSeed)
+		if err != nil {
+			return nil, fmt.Errorf("overlaybatch: select motion for %s: %w", jobID, err)
+		}
 		plan, err := renderbatch.BuildPlan(renderbatch.PlanSpec{
 			PlanID:     jobID,
 			ProjectID:  "mike-tyson-overlay-presets-v1",
@@ -252,13 +254,15 @@ func BuildTysonManifest(opts TysonBuildOptions) (*BuildResult, error) {
 			return nil, fmt.Errorf("overlaybatch: build plan %s: %w", jobID, err)
 		}
 		document.Jobs = append(document.Jobs, manifestJob{
-			ID:         jobID,
-			RenderPlan: plan,
-			Assets:     fonts,
-			Family:     "phrase",
-			Text:       phrase,
-			MotionID:   motionID,
-			PresetID:   overlay.PhraseDefaultPresetID,
+			ID:            jobID,
+			RenderPlan:    plan,
+			Assets:        fonts,
+			Family:        "phrase",
+			Text:          phrase,
+			MotionID:      motionID,
+			MotionPool:    append([]string(nil), phrasePool...),
+			SelectionSeed: selectionSeed,
+			PresetID:      overlay.PhraseDefaultPresetID,
 		})
 	}
 
@@ -330,6 +334,65 @@ func BuildTysonManifest(opts TysonBuildOptions) (*BuildResult, error) {
 	return writeBuild(document, opts.OutPath, opts.PlanDir, len(phrases), len(tysonEntities))
 }
 
+// ImageMotionBuildOptions builds a GPU-renderable image-motion matrix using
+// one fixed, content-addressed image so pairwise frame differences isolate the
+// motion itself.
+type ImageMotionBuildOptions struct {
+	BatchID      string
+	AssetBaseURL string
+	RepoRoot     string
+	OutPath      string
+	PlanDir      string
+}
+
+func BuildImageMotionManifest(opts ImageMotionBuildOptions) (*BuildResult, error) {
+	if opts.BatchID == "" || opts.AssetBaseURL == "" || opts.OutPath == "" {
+		return nil, fmt.Errorf("overlaybatch: image-motion build requires batch id, asset base URL, and output path")
+	}
+	if opts.RepoRoot == "" {
+		opts.RepoRoot = "."
+	}
+	base := strings.TrimRight(opts.AssetBaseURL, "/")
+	localPath := filepath.Join(opts.RepoRoot, matrixImageFile)
+	digest, err := sha256File(localPath)
+	if err != nil {
+		return nil, err
+	}
+	assetURL := base + "/" + matrixImageFile
+	length := int64(durationMS)
+	pool := motion.Registry.ImageOverlayMotionIDs()
+	if len(pool) != 18 {
+		return nil, fmt.Errorf("overlaybatch: image motion inventory has %d entries, want 18", len(pool))
+	}
+	document := batchManifestDocument{SchemaVersion: SchemaBatchManifestV1, BatchID: opts.BatchID}
+	for index, motionID := range pool {
+		jobID := fmt.Sprintf("image-motion-%02d", index+1)
+		plan, err := renderbatch.BuildPlan(renderbatch.PlanSpec{
+			PlanID: jobID, ProjectID: "image-motion-certification-v1", Language: "en",
+			Width: canvasWidth, Height: canvasHeight, FPSNum: canvasFPSNum, FPSDen: canvasFPSDen,
+			DurationMS: durationMS,
+			Background: &renderbatch.Surface{Kind: "color", Color: backgroundRGBA},
+			Items: []renderbatch.PlanItem{{
+				ID: "image-motion", EntityID: "entity:image-motion-canary", Kind: "entity_image",
+				TemplateID: "IMAGE_OVERLAY", PresetID: "image_focus_in", MotionID: motionID,
+				Text: "Image motion canary", DurationMS: &length,
+				AssetRefs: []renderbatch.PlanAssetRef{{AssetID: matrixImageAssetID, SHA256: digest, URL: assetURL, MediaType: matrixImageMediaType}},
+				StartMS:   0, EndMS: durationMS,
+			}},
+		})
+		if err != nil {
+			return nil, fmt.Errorf("overlaybatch: build image motion plan %s (%s): %w", jobID, motionID, err)
+		}
+		document.Jobs = append(document.Jobs, manifestJob{
+			ID: jobID, RenderPlan: plan,
+			Assets: []queue.AssetRef{{Hash: digest, LogicalPath: matrixImageLogicalPath, SourceURL: assetURL}},
+			Family: "image", MotionID: motionID, PresetID: "image_focus_in", Asset: filepath.Base(matrixImageFile),
+			AssetSource: "RenderingGen testdata golden image; fixed across motion matrix",
+		})
+	}
+	return writeBuild(document, opts.OutPath, opts.PlanDir, 0, len(pool))
+}
+
 // --- multilingual overlay matrix ---------------------------------------------
 
 // matrixLanguages is the language set the PipelineGen production matrix renders.
@@ -341,6 +404,35 @@ const (
 	matrixImageMediaType   = "image/jpeg"
 	matrixImageLogicalPath = "assets/semantic/gerard_butler.jpg"
 )
+
+func phraseSelectionSeed(planID, itemID string) uint64 {
+	digest := sha256.Sum256([]byte(planID + "\x00" + itemID))
+	return binary.BigEndian.Uint64(digest[:8])
+}
+
+func selectPhraseMotion(pool []string, seed uint64) (string, error) {
+	if len(pool) == 0 {
+		return "", fmt.Errorf("motion pool is empty")
+	}
+	seen := make(map[string]struct{}, len(pool))
+	for _, id := range pool {
+		if strings.TrimSpace(id) == "" {
+			return "", fmt.Errorf("motion pool contains an empty id")
+		}
+		if _, duplicate := seen[id]; duplicate {
+			return "", fmt.Errorf("motion pool repeats %q", id)
+		}
+		seen[id] = struct{}{}
+		if _, err := motion.Registry.Resolve(id); err != nil {
+			return "", fmt.Errorf("motion pool contains unknown id %q: %w", id, err)
+		}
+	}
+	var input [8]byte
+	binary.BigEndian.PutUint64(input[:], seed)
+	digest := sha256.Sum256(input[:])
+	index := binary.BigEndian.Uint64(digest[:8]) % uint64(len(pool))
+	return pool[index], nil
+}
 
 // MultilingualBuildOptions configures the multilingual matrix build.
 type MultilingualBuildOptions struct {

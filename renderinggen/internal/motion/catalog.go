@@ -74,6 +74,7 @@ type CatalogPhraseOverlay struct {
 // by name instead of restating the ids in Go.
 type CatalogSelections struct {
 	TysonPhraseMotions   []string               `json:"tyson_phrase_motions"`
+	PhraseMotionPool     []string               `json:"phrase_motion_pool"`
 	MatrixPhraseOverlays []CatalogPhraseOverlay `json:"matrix_phrase_overlays"`
 	MatrixImageOverlays  []string               `json:"matrix_image_overlays"`
 }
@@ -192,6 +193,19 @@ func parseCanonical(raw []byte) (Catalog, error) {
 			return Catalog{}, fmt.Errorf("motion: canonical catalog selection tyson_phrase_motions names unknown motion %q", id)
 		}
 	}
+	if len(catalog.Selections.PhraseMotionPool) == 0 {
+		return Catalog{}, fmt.Errorf("motion: canonical catalog selection phrase_motion_pool is empty")
+	}
+	phrasePoolSeen := make(map[string]struct{}, len(catalog.Selections.PhraseMotionPool))
+	for _, id := range catalog.Selections.PhraseMotionPool {
+		if _, ok := motionIDs[id]; !ok {
+			return Catalog{}, fmt.Errorf("motion: canonical catalog selection phrase_motion_pool names unknown motion %q", id)
+		}
+		if _, duplicate := phrasePoolSeen[id]; duplicate {
+			return Catalog{}, fmt.Errorf("motion: canonical catalog selection phrase_motion_pool repeats motion %q", id)
+		}
+		phrasePoolSeen[id] = struct{}{}
+	}
 	for _, row := range catalog.Selections.MatrixPhraseOverlays {
 		if _, ok := motionIDs[row.Motion]; !ok {
 			return Catalog{}, fmt.Errorf("motion: canonical catalog selection matrix_phrase_overlays names unknown motion %q", row.Motion)
@@ -231,6 +245,16 @@ func PhraseMotions() []string {
 	}
 	ids := make([]string, 0, len(catalog.Selections.TysonPhraseMotions))
 	return append(ids, catalog.Selections.TysonPhraseMotions...)
+}
+
+// PhraseMotionPool returns the catalog-owned set of GPU-native entrance motions
+// eligible for deterministic phrase selection.
+func PhraseMotionPool() []string {
+	catalog, err := Canonical()
+	if err != nil {
+		return nil
+	}
+	return append([]string(nil), catalog.Selections.PhraseMotionPool...)
 }
 
 // PhraseOverlays returns the multilingual phrase-overlay rows (overlay id plus

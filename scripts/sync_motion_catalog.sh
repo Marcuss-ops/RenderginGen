@@ -76,5 +76,5 @@ if [[ "$check_only" == "1" ]]; then
 fi
 
 mkdir -p "$(dirname "$embedded")"
-normalize "$emitted" >"$embedded"
+cp "$emitted" "$embedded"
 echo "sync_motion_catalog: wrote $target"

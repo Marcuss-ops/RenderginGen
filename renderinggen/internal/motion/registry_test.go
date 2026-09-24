@@ -36,7 +36,7 @@ func TestMotionFamiliesKeepStylesIndependentAndComplete(t *testing.T) {
 			t.Fatalf("motion family[%d] = %q, want %q", i, got[i], family)
 		}
 	}
-	for family, count := range map[string]int{"typewriter": 5, "classic_apple": 42, "modern_apple": 45, "web": 0} {
+	for family, count := range map[string]int{"typewriter": 5, "classic_apple": 42, "modern_apple": 60, "web": 0} {
 		if ids := Registry.FamilyMotionIDs(family); len(ids) != count {
 			t.Errorf("%s family has %d motions, want %d", family, len(ids), count)
 		}
@@ -68,6 +68,65 @@ func TestMotionFamiliesKeepStylesIndependentAndComplete(t *testing.T) {
 		for _, id := range Registry.FamilyMotionIDs(family) {
 			if _, err := Registry.Resolve(id); err != nil {
 				t.Errorf("%s motion %q does not resolve: %v", family, id, err)
+			}
+		}
+	}
+}
+
+func TestApplePhrasePackIsInTheCanonicalPoolAndHasNoPerGlyphBlur(t *testing.T) {
+	want := []string{
+		"apple_focus_rise", "apple_soft_scale", "apple_word_cascade", "apple_line_cascade",
+		"apple_precision_type", "apple_tracking_reveal", "apple_expand_from_center",
+		"apple_compress_in", "apple_scale_push", "apple_scale_settle", "apple_word_pulse",
+		"apple_vertical_glyph_lift", "apple_line_sweep", "apple_hero_statement", "apple_cinematic_exit",
+	}
+	got := Registry.ApplePhrasePackMotionIDs()
+	if len(got) != len(want) {
+		t.Fatalf("Apple phrase pack has %d motions, want %d: %v", len(got), len(want), got)
+	}
+	pool := make(map[string]bool)
+	phrasePool := PhraseMotionPool()
+	if len(phrasePool) != 22 {
+		t.Fatalf("GPU phrase motion pool has %d entries, want 22", len(phrasePool))
+	}
+	for _, id := range phrasePool {
+		pool[id] = true
+		plugin, err := Registry.Resolve(id)
+		if err != nil {
+			t.Fatalf("resolve pool motion %s: %v", id, err)
+		}
+		definition := plugin.(DeclarativePlugin).Definition
+		for _, animator := range definition.TextAnimators {
+			if animator.Selector.Shape != "square" && animator.Selector.Shape != "smooth" {
+				t.Errorf("pool motion %s has non-GPU selector shape %q", id, animator.Selector.Shape)
+			}
+			for _, property := range animator.Properties {
+				if property.Property == "blur" {
+					t.Errorf("pool motion %s carries per-unit blur", id)
+				}
+			}
+		}
+	}
+	if pool["typewriter_neon"] {
+		t.Error("typewriter_neon with per-glyph blur must not be in the GPU-native pool")
+	}
+	for _, id := range want {
+		plugin, err := Registry.Resolve(id)
+		if err != nil {
+			t.Fatalf("resolve %s: %v", id, err)
+		}
+		definition := plugin.(DeclarativePlugin).Definition
+		if definition.Category != "apple_phrase_v1" || definition.Enter != 60 {
+			t.Errorf("%s: category=%q enter=%d, want apple_phrase_v1/60", id, definition.Category, definition.Enter)
+		}
+		if !pool[id] {
+			t.Errorf("%s is absent from phrase_motion_pool", id)
+		}
+		for _, animator := range definition.TextAnimators {
+			for _, property := range animator.Properties {
+				if property.Property == "blur" {
+					t.Errorf("%s carries per-unit blur", id)
+				}
 			}
 		}
 	}
