@@ -54,6 +54,7 @@ type Processor struct {
 	// emitted. Disabled by default; enabled by the performance benchmark.
 	report               bool
 	hardwareEncoder      string
+	encoderBackend       string
 	encodePreset         string
 	pipePixFmt           string
 	nativeOutputProfiles bool
@@ -173,6 +174,11 @@ func (p *Processor) SetKeepWorkspace(keep bool) {
 func (p *Processor) SetHardwareEncoder(encoder string) {
 	p.hardwareEncoder = encoder
 }
+
+// SetEncoderBackend selects the encoder route for this worker process. The
+// pipe option is used by certified Vulkan composition profiles that hand
+// frames to NVENC without requiring a strict native-surface path.
+func (p *Processor) SetEncoderBackend(backend string) { p.encoderBackend = backend }
 
 // SetEncodePreset selects an explicit FFmpeg NVENC preset (for example, "p2"
 // for the throughput tier). Empty preserves the engine default; the worker

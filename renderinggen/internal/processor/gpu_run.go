@@ -78,6 +78,7 @@ func (p *Processor) RunGPU(ctx context.Context, prepared *PreparedJob) error {
 		// the config value is validated at load, so whatever reaches here is
 		// what the CLI is asked to run with.
 		HardwareEncoder: p.hardwareEncoder,
+		EncoderBackend:  p.encoderBackend,
 		// Canonical verification: the worker resolves the policy (single
 		// authority, pipeline.receipt_verify) and requests it explicitly from
 		// Chronon; Chronon verifies and records what actually ran in the

@@ -184,6 +184,7 @@ type ChrononConfig struct {
 	NativeOutputProfiles bool   `yaml:"native_output_profiles"`
 	Report               bool   `yaml:"report"`
 	HardwareEncoder      string `yaml:"hardware_encoder"`
+	EncoderBackend       string `yaml:"encoder_backend"`
 	// EncodePreset is the explicit FFmpeg NVENC preset passed to Chronon for
 	// native GPU jobs (e.g. "p2" for the throughput tier). Empty preserves the
 	// engine default; the worker never invents a preset when none is set.
@@ -477,6 +478,9 @@ func (c *Config) validate() error {
 		if c.Chronon.Mode != "ipc" {
 			return fmt.Errorf("%s requires chronon.mode=ipc (CLI mode disallowed for production GPU profile)", ProfileGPUVulkanNative)
 		}
+		if c.Chronon.EncoderBackend != "" && c.Chronon.EncoderBackend != "native" {
+			return fmt.Errorf("%s requires chronon.encoder_backend=native", ProfileGPUVulkanNative)
+		}
 	}
 	// hardware_encoder reaches the CLI as --hardware on every GPU-required
 	// path. An unsupported value (vaapi, qsv, ...) used to be accepted here and
@@ -489,6 +493,11 @@ func (c *Config) validate() error {
 	default:
 		return fmt.Errorf("chronon.hardware_encoder must be %q, %q or empty (engine default), got %q",
 			chronon.DefaultHardwareEncoder, chronon.HardwareEncoderNone, c.Chronon.HardwareEncoder)
+	}
+	switch c.Chronon.EncoderBackend {
+	case "", "native", "pipe":
+	default:
+		return fmt.Errorf("chronon.encoder_backend must be empty, %q or %q, got %q", "native", "pipe", c.Chronon.EncoderBackend)
 	}
 	if c.Chronon.Mode == "ipc" && c.Chronon.SocketPath == "" {
 		return fmt.Errorf("chronon mode=ipc requires chronon.socket_path")

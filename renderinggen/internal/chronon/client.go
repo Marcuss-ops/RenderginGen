@@ -117,6 +117,10 @@ type RenderRequest struct {
 	// value is actually forwarded to the CLI instead of being accepted by the
 	// config and silently ignored at the render boundary.
 	HardwareEncoder string
+	// EncoderBackend optionally overrides the automatic native backend for a
+	// non-strict per-batch GPU route (for example Vulkan composition through
+	// the pipe writer into NVENC). Empty keeps the profile-derived selection.
+	EncoderBackend string
 	// ReceiptVerify is the explicit output-verification policy
 	// ("fast" | "normal" | "certify") RenderingGen requests for this render.
 	// The worker is the single policy authority: it forwards the resolved
