@@ -71,9 +71,13 @@ func resolveNativeEncodeSelection(req RenderRequest) (nativeEncodeSelection, boo
 		if !reqs.CPUFallbackAllowed {
 			hotPath = "require_gpu_native"
 		}
+		encoderBackend := req.EncoderBackend
+		if encoderBackend == "" {
+			encoderBackend = "native"
+		}
 		return nativeEncodeSelection{
 			HardwareEncoder: hardware,
-			EncoderBackend:  "native",
+			EncoderBackend:  encoderBackend,
 			GpuHotPathMode:  hotPath,
 		}, true
 	}
@@ -81,7 +85,11 @@ func resolveNativeEncodeSelection(req RenderRequest) (nativeEncodeSelection, boo
 		// Non-strict composition still declares semantics only. Chronon owns
 		// the DirectYUV/FullGraph decision after it has compiled the program,
 		// and no hardware encoder is requested.
-		return nativeEncodeSelection{EncoderBackend: "native", GpuHotPathMode: "auto"}, true
+		encoderBackend := req.EncoderBackend
+		if encoderBackend == "" {
+			encoderBackend = "native"
+		}
+		return nativeEncodeSelection{EncoderBackend: encoderBackend, GpuHotPathMode: "auto"}, true
 	}
 	return nativeEncodeSelection{}, false
 }

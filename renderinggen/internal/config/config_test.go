@@ -163,6 +163,30 @@ chronon:
 	}
 }
 
+func TestPerBatchVulkanPipeNVENCConfigDoesNotRequireStrictNative(t *testing.T) {
+	path := writeConfig(t, `
+queue:
+  endpoint: http://queue:8081
+artifact_store:
+  endpoint: http://store:9000
+chronon:
+  backend: vulkan
+  mode: ipc
+  socket_path: /run/chronon3d/chronon.sock
+  hardware_encoder: nvenc
+  encoder_backend: pipe
+  strict_native_backend: false
+`)
+	cfg, err := Load(path)
+	if err != nil {
+		t.Fatalf("load Vulkan pipe profile: %v", err)
+	}
+	if cfg.Chronon.StrictNative() || cfg.Chronon.Backend != "vulkan" ||
+		cfg.Chronon.HardwareEncoder != "nvenc" || cfg.Chronon.EncoderBackend != "pipe" {
+		t.Fatalf("profile config = %+v, want non-strict Vulkan + pipe + NVENC", cfg.Chronon)
+	}
+}
+
 // TestStrictNativeIsDerivedOnceFromProfile pins the single derivation of the
 // "this worker demands the native GPU hot path" rule. The wiring used to
 // re-compare the raw profile string with `|| cfg.Chronon.Profile ==

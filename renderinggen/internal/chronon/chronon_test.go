@@ -142,6 +142,27 @@ func TestRenderArgsKeepsAutoWhenCPUFallbackIsAllowed(t *testing.T) {
 	}
 }
 
+func TestRenderArgsSupportsVulkanPipeNVENCProfile(t *testing.T) {
+	args := renderArgs(RenderRequest{
+		PlanPath: "/jobs/image/plan.json", AssetsRoot: "/jobs/image/assets",
+		OutputPath: "/jobs/image/output/result.mp4", HardwareEncoder: "nvenc",
+		EncoderBackend: "pipe", EncodePreset: "p1",
+		Requirements: ExecutionRequirements{
+			Backend: "vulkan", GPURequired: true, CPUFallbackAllowed: true,
+			CompositionRequired: true, PacketCopyAllowed: true,
+		},
+	})
+	joined := strings.Join(args, " ")
+	for _, want := range []string{
+		"--backend vulkan", "--hardware nvenc", "--encoder-backend pipe",
+		"--gpu-hot-path-mode auto", "--encode-preset p1",
+	} {
+		if !strings.Contains(joined, want) {
+			t.Fatalf("renderArgs=%q, want to contain %q", joined, want)
+		}
+	}
+}
+
 func TestValidateEncodePresetAcceptance(t *testing.T) {
 	// Empty preserves the engine default; every NVENC tier preset is valid.
 	valid := append([]string{""}, ValidEncodePresets...)

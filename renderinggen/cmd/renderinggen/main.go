@@ -185,6 +185,7 @@ func main() {
 	proc.SetStrictNativeBackend(cfg.Chronon.StrictNative())
 	proc.SetReport(cfg.Chronon.Report)
 	proc.SetHardwareEncoder(cfg.Chronon.HardwareEncoder)
+	proc.SetEncoderBackend(cfg.Chronon.EncoderBackend)
 	proc.SetEncodePreset(cfg.Chronon.EncodePreset)
 	proc.SetPipePixFmt(cfg.Chronon.PipePixFmt)
 	proc.SetWorkspaceLeaseTTL(timings.WorkspaceLeaseTTL)
