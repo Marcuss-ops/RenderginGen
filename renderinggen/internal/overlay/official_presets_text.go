@@ -24,13 +24,17 @@ func staticTextSmokeSpec() presetSpec {
 	return textSpec("safe_area", "center", "", "line", 0, 0, nil, nil)
 }
 
+func phraseGlow() *StyleGlow {
+	return &StyleGlow{Radius: 42, Intensity: 0.25, Color: "#FFFFFF"}
+}
+
 // phraseDefaultPreset is intentionally visual-only apart from its initial
 // motion choice. Callers can replace that motion per item without selecting a
 // second phrase style.
 func phraseDefaultPreset() PresetDefinition {
 	d := makePreset(PhraseDefaultPresetID, textSpec("safe_area", "center", "phrase_apple_clean_01_blur_soft_reveal", "glyph", 60, 12, &StyleShadow{
 		Color: "#000000", Opacity: 0.68, Blur: 14, Offset: []float64{0, 5},
-	}, nil))
+	}, phraseGlow()))
 	d.Layout.BoxWidth = 1920
 	d.Layout.BoxHeight = 260
 	d.Style.FontSize = 64

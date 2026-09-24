@@ -6,15 +6,15 @@ import (
 	"testing"
 )
 
-// The canonical phrase preset avoids the Vulkan native glow path, which
-// currently composites its cropped surface as an opaque rectangle.
-func TestCanonicalTextPresetHasNoDefaultGlow(t *testing.T) {
+// The canonical phrase preset carries the restrained native glow now that the
+// renderer preserves cropped GPU text surfaces through the effect stack.
+func TestCanonicalTextPresetHasDefaultGlow(t *testing.T) {
 	def, err := ResolveOfficialPreset(PhraseDefaultPresetID)
 	if err != nil {
 		t.Fatalf("resolve canonical preset: %v", err)
 	}
-	if def.Style.Glow != nil {
-		t.Fatalf("canonical text preset unexpectedly enables glow: %+v", def.Style.Glow)
+	if def.Style.Glow == nil || def.Style.Glow.Radius != 42 || def.Style.Glow.Intensity != 0.25 || def.Style.Glow.Color != "#FFFFFF" {
+		t.Fatalf("canonical text preset glow = %+v, want radius 42/intensity .25/white", def.Style.Glow)
 	}
 }
 
