@@ -33,6 +33,7 @@ import (
 func main() {
 	requestPath := flag.String("request", "", "fixed request JSON to build the Mike Tyson preset corpus from")
 	translations := flag.String("translations", "", "translations.json to build the multilingual matrix from")
+	imageMotions := flag.Bool("image-motions", false, "build the complete 18-motion GPU image certification matrix")
 	batchID := flag.String("batch-id", "", "batch id that scopes every derived job id (required)")
 	assetBaseURL := flag.String("asset-base-url", "", "HTTP(S) root the worker self-heals the corpus assets from (required)")
 	repoRoot := flag.String("repo-root", ".", "RenderingGen checkout root, used to hash the corpus assets")
@@ -48,7 +49,10 @@ func main() {
 	if strings.TrimSpace(*out) == "" {
 		fatal("-out is required")
 	}
-	if (*requestPath == "") == (*translations == "") {
+	if *imageMotions && (*requestPath != "" || *translations != "") {
+		fatal("-image-motions cannot be combined with -request or -translations")
+	}
+	if !*imageMotions && (*requestPath == "") == (*translations == "") {
 		fatal("exactly one of -request and -translations must be set")
 	}
 
@@ -56,7 +60,12 @@ func main() {
 		result *overlaybatch.BuildResult
 		err    error
 	)
-	if *requestPath != "" {
+	if *imageMotions {
+		result, err = overlaybatch.BuildImageMotionManifest(overlaybatch.ImageMotionBuildOptions{
+			BatchID: *batchID, AssetBaseURL: *assetBaseURL, RepoRoot: *repoRoot,
+			OutPath: *out, PlanDir: *plansDir,
+		})
+	} else if *requestPath != "" {
 		result, err = overlaybatch.BuildTysonManifest(overlaybatch.TysonBuildOptions{
 			RequestPath:  *requestPath,
 			BatchID:      *batchID,

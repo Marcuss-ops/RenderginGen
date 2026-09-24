@@ -59,6 +59,11 @@ func (r *RegistryType) AppleV3MotionIDs() []string {
 	return r.CategoryMotionIDs("apple_v3")
 }
 
+// ApplePhrasePackMotionIDs returns the standalone Modern Apple phrase pack.
+func (r *RegistryType) ApplePhrasePackMotionIDs() []string {
+	return r.CategoryMotionIDs("apple_phrase_v1")
+}
+
 // ImageV3MotionIDs returns the complete Overlay V3 image vocabulary in stable
 // order. Image motions remain layer-level so they can use the same 2.5D
 // position/scale/rotation contract as text without inventing a second engine.
@@ -109,7 +114,7 @@ func belongsToFamily(definition MotionDefinition, family string) bool {
 	if family == "classic_apple" && definition.Category == "apple_v2" {
 		return true
 	}
-	if family == "modern_apple" && (definition.Category == "apple_v3" || definition.Category == "phrase_apple_clean_v1") {
+	if family == "modern_apple" && (definition.Category == "apple_v3" || definition.Category == "phrase_apple_clean_v1" || definition.Category == "apple_phrase_v1") {
 		return true
 	}
 	if family == "web" && (definition.Category == "web" || definition.Category == "web_motion") {
