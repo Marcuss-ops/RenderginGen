@@ -207,6 +207,19 @@ func TestPhraseMotionSelectionIsSeededCoverageAndFailClosed(t *testing.T) {
 	if len(covered) != len(pool) {
 		t.Fatalf("seed sweep reached %d/%d pool motions", len(covered), len(pool))
 	}
+	corpusCoverage := make(map[string]bool, len(pool))
+	for job := 1; job <= 100; job++ {
+		planID := fmt.Sprintf("phrase-%02d", job)
+		seed := phraseSelectionSeed(planID, "important-phrase")
+		id, err := selectPhraseMotion(pool, seed)
+		if err != nil {
+			t.Fatal(err)
+		}
+		corpusCoverage[id] = true
+	}
+	if len(corpusCoverage) != len(pool) {
+		t.Fatalf("canonical 100-item phrase corpus reaches %d/%d pool motions", len(corpusCoverage), len(pool))
+	}
 	for _, id := range pool {
 		_, err := renderbatch.BuildPlan(renderbatch.PlanSpec{
 			PlanID: "pool-" + id, ProjectID: "phrase-pool-compile-gate", Language: "en",
