@@ -44,7 +44,7 @@ func newAssetRegistry() *assetRegistry {
 // path. Re-registering the identical (id, sha256) pair is idempotent; any
 // conflicting identity — same id with a different hash, or a different id
 // collapsing onto the same logical path — fails closed.
-func (r *assetRegistry) Register(ref semanticAssetRef) (string, error) {
+func (r *assetRegistry) Register(ref SemanticAssetRef) (string, error) {
 	path, err := semanticAssetPath(ref)
 	if err != nil {
 		return "", err
@@ -56,7 +56,7 @@ func (r *assetRegistry) Register(ref semanticAssetRef) (string, error) {
 // path (the source clip is the canonical example). It keeps that path in the
 // same manifest as background/item assets, so prepared-package identities can
 // use the real content hash instead of falling back to a path-only guess.
-func (r *assetRegistry) RegisterAtPath(ref semanticAssetRef, path string) (string, error) {
+func (r *assetRegistry) RegisterAtPath(ref SemanticAssetRef, path string) (string, error) {
 	path = filepath.ToSlash(strings.TrimSpace(path))
 	if path == "" || filepath.IsAbs(path) || filepath.Clean(path) != filepath.FromSlash(path) || strings.HasPrefix(path, "../") || path == ".." {
 		return "", fmt.Errorf("overlay: invalid explicit asset path %q", path)
@@ -64,7 +64,7 @@ func (r *assetRegistry) RegisterAtPath(ref semanticAssetRef, path string) (strin
 	return r.registerResolved(ref, path)
 }
 
-func (r *assetRegistry) registerResolved(ref semanticAssetRef, path string) (string, error) {
+func (r *assetRegistry) registerResolved(ref SemanticAssetRef, path string) (string, error) {
 	if strings.TrimSpace(ref.ID) == "" || len(ref.SHA256) != 64 || strings.Trim(ref.SHA256, "0123456789abcdefABCDEF") != "" {
 		return "", fmt.Errorf("overlay: invalid asset ref %q (asset_id required, sha256 must be 64 hex chars)", ref.ID)
 	}
@@ -107,7 +107,7 @@ func (r *assetRegistry) Assets() []Asset {
 // semanticAssetPath derives the workspace-relative logical path for one
 // semantic ref. The extension comes from the parsed URL path (query strings
 // stripped by url.Parse), falling back to the declared media_type.
-func semanticAssetPath(ref semanticAssetRef) (string, error) {
+func semanticAssetPath(ref SemanticAssetRef) (string, error) {
 	if strings.HasPrefix(ref.URL, "assets/") {
 		return filepath.ToSlash(ref.URL), nil
 	}

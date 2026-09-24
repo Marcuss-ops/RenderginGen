@@ -33,6 +33,40 @@ const DefaultInkFloor = 5000
 // inkTolerance is the per-channel distance that still counts as background.
 const inkTolerance = 24
 
+// Family names as a manifest declares them. The content gate switches on these,
+// which is why they are constants: the previous gate compared against the
+// literal "phrase", so a second family could only ever be added by editing the
+// one branch that mentioned the first.
+const (
+	familyPhrase = "phrase"
+	familyImage  = "image"
+)
+
+// DefaultImageInkFloor is the minimum non-canvas pixel count the LEAST inked of
+// an image overlay's sampled frames must carry.
+//
+// It exists for the same failure the phrase floor was written for, in the family
+// that had no such check at all: an image overlay that reports "completed" while
+// drawing nothing. The observed instance is the Vulkan 2.5D blur motions, which
+// encoded 120 structurally perfect frames of pure canvas and passed every
+// structural check in this file.
+//
+// The floor is deliberately orders of magnitude below the real signal: the
+// canonical image card is 480x480, so a rendered overlay carries >200,000
+// non-canvas pixels while an empty frame carries exactly 0. That keeps the gate
+// exact for "nothing rendered" and silent about legitimate styling.
+const DefaultImageInkFloor = 5000
+
+// imageContentSampleFractions are the positions the image gate samples, as
+// fractions of the clip, in clip order: 40%, 70% and 90%.
+//
+// They are fractions rather than frame numbers so a different clip length keeps
+// the same relation to the animation. The window is chosen around the canonical
+// image entrance (37 frames of the 120 rendered, so the first sample at frame 48
+// is past it) and stays clear of the 6-frame exit (the last sample at frame 108
+// of 120), so a low sample means the overlay is absent rather than mid-transition.
+var imageContentSampleFractions = [3][2]int{{2, 5}, {7, 10}, {9, 10}}
+
 // VerifyOptions configures one verification pass.
 type VerifyOptions struct {
 	// ManifestPath is the batch manifest the batch was submitted from.
@@ -45,9 +79,13 @@ type VerifyOptions struct {
 	// disables the check.
 	RequireBackend string
 	// InkFloor is the minimum ink pixels for a phrase overlay. Zero uses
-	// DefaultInkFloor; a negative value disables the pixel check.
+	// DefaultInkFloor; a negative value disables the phrase pixel check.
 	InkFloor int
-	// InkFrame is the frame the pixel check samples.
+	// ImageInkFloor is the minimum non-canvas pixel count the least inked of an
+	// image overlay's sampled frames must carry. Zero uses DefaultImageInkFloor;
+	// a negative value disables the image content check.
+	ImageInkFloor int
+	// InkFrame is the frame the phrase pixel check samples.
 	InkFrame int
 	// Background is the corpus canvas colour the ink check counts against.
 	Background [3]uint8
@@ -61,15 +99,19 @@ type VerifyOptions struct {
 
 // VerifyRow is one job's verification result.
 type VerifyRow struct {
-	JobID    string   `json:"job_id"`
-	Family   string   `json:"family,omitempty"`
-	Language string   `json:"language,omitempty"`
-	Text     string   `json:"text,omitempty"`
-	State    string   `json:"state"`
-	SHA256   string   `json:"sha256,omitempty"`
-	Bytes    int64    `json:"bytes,omitempty"`
-	Ink      *int     `json:"ink_pixels,omitempty"`
-	Problems []string `json:"problems,omitempty"`
+	JobID    string `json:"job_id"`
+	Family   string `json:"family,omitempty"`
+	Language string `json:"language,omitempty"`
+	Text     string `json:"text,omitempty"`
+	State    string `json:"state"`
+	SHA256   string `json:"sha256,omitempty"`
+	Bytes    int64  `json:"bytes,omitempty"`
+	Ink      *int   `json:"ink_pixels,omitempty"`
+	// SampledFrames names the frames Ink was measured over, so a report states
+	// which frames the content verdict rests on instead of implying every frame
+	// was measured.
+	SampledFrames []int    `json:"sampled_frames,omitempty"`
+	Problems      []string `json:"problems,omitempty"`
 }
 
 // DistinctnessRow summarizes one overlay's language variants.
@@ -113,7 +155,13 @@ type VerifyReport struct {
 //
 // It fails closed: a job that is not `completed`, an artifact whose structural
 // facts differ from the manifest, bytes that do not hash to their content
-// address, or a phrase band without glyph ink are all FAIL.
+// address, a phrase band without glyph ink, or an image overlay whose sampled
+// frames carry no non-canvas pixels are all FAIL.
+//
+// The content half is family-specific (see contentCheckFor). It is deliberately
+// not optional per family: a structurally perfect artifact of any family can
+// still be empty, and the worker's default receipt policy does not decode the
+// output, so this is the only place a batch proves the pixels are there.
 func Verify(ctx context.Context, opts VerifyOptions) (*VerifyReport, error) {
 	if opts.ManifestPath == "" {
 		return nil, fmt.Errorf("overlaybatch: -manifest is required")
@@ -126,6 +174,9 @@ func Verify(ctx context.Context, opts VerifyOptions) (*VerifyReport, error) {
 	}
 	if opts.InkFloor == 0 {
 		opts.InkFloor = DefaultInkFloor
+	}
+	if opts.ImageInkFloor == 0 {
+		opts.ImageInkFloor = DefaultImageInkFloor
 	}
 	if opts.InkFrame <= 0 {
 		opts.InkFrame = 60
@@ -227,8 +278,9 @@ func Verify(ctx context.Context, opts VerifyOptions) (*VerifyReport, error) {
 	return report, nil
 }
 
-// verifyOne checks one job's certified facts and, for phrase overlays, that the
-// translated text actually rasterised.
+// verifyOne checks one job's certified facts and then the content assertion its
+// family owns: a phrase overlay must rasterise its glyphs in the anchored band,
+// and an image overlay must show its card in every sampled frame.
 func verifyOne(ctx context.Context, client *queue.Client, httpClient *http.Client, opts VerifyOptions,
 	queueID, logicalID string, facts jobFacts, duration int64) (VerifyRow, error) {
 
@@ -265,7 +317,8 @@ func verifyOne(ctx context.Context, client *queue.Client, httpClient *http.Clien
 	if artifact.DurationUS != expectDurationUS {
 		row.Problems = append(row.Problems, fmt.Sprintf("duration_us=%d want %d", artifact.DurationUS, expectDurationUS))
 	}
-	if wantFrames := int(duration * canvasFPSNum / (1000 * canvasFPSDen)); artifact.FrameCount != wantFrames {
+	wantFrames := int(duration * canvasFPSNum / (1000 * canvasFPSDen))
+	if artifact.FrameCount != wantFrames {
 		row.Problems = append(row.Problems, fmt.Sprintf("frame_count=%d want %d", artifact.FrameCount, wantFrames))
 	}
 	if opts.RequireBackend != "" && artifact.Backend != opts.RequireBackend {
@@ -284,17 +337,32 @@ func verifyOne(ctx context.Context, client *queue.Client, httpClient *http.Clien
 	row.SHA256 = artifact.ArtifactHash
 	row.Bytes = artifact.SizeBytes
 
-	if opts.InkFloor < 0 || facts.family != "phrase" {
+	// Every frame the gate measures comes from the artifact itself, so the
+	// verdict describes the bytes on disk; the plan's expectation is only a
+	// fallback for a probe that could not report a frame count.
+	totalFrames := artifact.FrameCount
+	if totalFrames <= 0 {
+		totalFrames = wantFrames
+	}
+	check := contentCheckFor(opts, facts.family, totalFrames)
+	if len(check.frames) == 0 {
 		return row, nil
 	}
-	ink, err := inkPixels(ctx, local, opts.InkFrame, artifact.Width, artifact.Height, opts.Background)
-	if err != nil {
-		row.Problems = append(row.Problems, "ink check: "+err.Error())
-		return row, nil
+	least := -1
+	for _, frame := range check.frames {
+		ink, err := frameInk(ctx, local, frame, artifact.Width, artifact.Height, opts.Background, check.phraseBand)
+		if err != nil {
+			row.Problems = append(row.Problems, fmt.Sprintf("content check frame %d: %v", frame, err))
+			return row, nil
+		}
+		if least < 0 || ink < least {
+			least = ink
+		}
 	}
-	row.Ink = &ink
-	if ink < opts.InkFloor {
-		row.Problems = append(row.Problems, fmt.Sprintf("ink_pixels=%d below floor %d", ink, opts.InkFloor))
+	row.Ink = &least
+	row.SampledFrames = check.frames
+	if least < check.floor {
+		row.Problems = append(row.Problems, check.problem(least))
 	}
 	return row, nil
 }
@@ -457,11 +525,97 @@ func distinctness(probe *manifestProbe, hashes map[string]string) []Distinctness
 	return out
 }
 
+// contentCheck is the family-specific content assertion verifyOne applies after
+// the structural contract: which frames to measure, where, and how much
+// non-canvas ink the least inked of them must carry. The zero value means the
+// structural contract is the whole contract for that family.
+type contentCheck struct {
+	family string
+	// frames are the frames measured, in clip order.
+	frames []int
+	// phraseBand restricts the measurement to the canvas band the canonical
+	// phrase preset anchors. Images are measured across the whole frame, because
+	// the card may be anchored anywhere.
+	phraseBand bool
+	// floor is the minimum ink the least inked measured frame must carry.
+	floor int
+}
+
+// problem names the failure the way the family's user reads it.
+func (c contentCheck) problem(least int) string {
+	if c.phraseBand {
+		return fmt.Sprintf("ink_pixels=%d below floor %d", least, c.floor)
+	}
+	return fmt.Sprintf("content_missing=%d non-canvas pixels below floor %d in the least inked of frames %v",
+		least, c.floor, c.frames)
+}
+
+// contentCheckFor resolves the content assertion for one job's family and clip
+// length.
+//
+// It is the SINGLE authority for "what must an artifact of this family prove
+// beyond its bytes". A family with no case here is still structurally checked;
+// what it loses is the pixel proof, which is why the family switch is a named
+// list (familyPhrase/familyImage) testable against the families the builders
+// emit rather than a comparison against one literal.
+func contentCheckFor(opts VerifyOptions, family string, totalFrames int) contentCheck {
+	switch family {
+	case familyPhrase:
+		if opts.InkFloor < 0 {
+			return contentCheck{family: family}
+		}
+		return contentCheck{family: family, frames: []int{opts.InkFrame}, phraseBand: true, floor: opts.InkFloor}
+	case familyImage:
+		if opts.ImageInkFloor < 0 {
+			return contentCheck{family: family}
+		}
+		return contentCheck{family: family, frames: imageContentFrames(totalFrames), floor: opts.ImageInkFloor}
+	default:
+		return contentCheck{family: family}
+	}
+}
+
+// imageContentFrames resolves the sample positions for a clip of totalFrames,
+// deduplicated, ordered and clamped, so a short clip is measured inside its own
+// length instead of out of range.
+func imageContentFrames(totalFrames int) []int {
+	if totalFrames <= 0 {
+		return nil
+	}
+	seen := make(map[int]bool, len(imageContentSampleFractions))
+	frames := make([]int, 0, len(imageContentSampleFractions))
+	for _, fraction := range imageContentSampleFractions {
+		frame := totalFrames * fraction[0] / fraction[1]
+		if frame >= totalFrames {
+			frame = totalFrames - 1
+		}
+		if frame < 0 || seen[frame] {
+			continue
+		}
+		seen[frame] = true
+		frames = append(frames, frame)
+	}
+	sort.Ints(frames)
+	return frames
+}
+
 // inkPixels counts the pixels of one video frame that differ from the canvas
 // colour inside the phrase band (the middle 120 rows the canonical preset
 // anchors). One frame is enough: the preset animates opacity and scale, not
 // position.
 func inkPixels(ctx context.Context, video string, frame, width, height int, background [3]uint8) (int, error) {
+	return frameInk(ctx, video, frame, width, height, background, true)
+}
+
+// frameInk decodes ONE frame and counts the pixels that differ from the canvas
+// colour, optionally restricted to the phrase band.
+//
+// It is the single pixel-measurement primitive: the phrase gate needs the band
+// because its preset anchors the text there and the rest of the canvas would
+// drown the signal, while an image overlay is measured across the whole frame
+// because its card may sit anywhere. Both gates sharing this function is what
+// keeps "non-canvas pixel" one definition.
+func frameInk(ctx context.Context, video string, frame, width, height int, background [3]uint8, phraseBand bool) (int, error) {
 	if width <= 0 || height <= 0 {
 		return 0, fmt.Errorf("frame geometry unknown (%dx%d)", width, height)
 	}
@@ -478,13 +632,16 @@ func inkPixels(ctx context.Context, video string, frame, width, height int, back
 	if len(raw) < expected {
 		return 0, fmt.Errorf("ffmpeg returned %d bytes, want %d", len(raw), expected)
 	}
-	top := height/2 - 60
-	bottom := height/2 + 60
-	if top < 0 {
-		top = 0
-	}
-	if bottom > height {
-		bottom = height
+	top, bottom := 0, height
+	if phraseBand {
+		top = height/2 - 60
+		bottom = height/2 + 60
+		if top < 0 {
+			top = 0
+		}
+		if bottom > height {
+			bottom = height
+		}
 	}
 	ink := 0
 	for y := top; y < bottom; y++ {

@@ -148,7 +148,7 @@ type semanticSource struct {
 }
 
 type semanticSubtitles struct {
-	AssetRefs []semanticAssetRef `json:"asset_refs,omitempty"`
+	AssetRefs []SemanticAssetRef `json:"asset_refs,omitempty"`
 	StyleID   string             `json:"style_id,omitempty"`
 	Mode      string             `json:"mode,omitempty"`
 	// Style is the caller's typed visual override. It is REQUIRED for burn
@@ -158,8 +158,8 @@ type semanticSubtitles struct {
 
 type semanticWatermark struct {
 	Text      string             `json:"text,omitempty"`
-	AssetRefs []semanticAssetRef `json:"asset_refs,omitempty"`
-	FontRef   *semanticAssetRef  `json:"font_ref,omitempty"`
+	AssetRefs []SemanticAssetRef `json:"asset_refs,omitempty"`
+	FontRef   *SemanticAssetRef  `json:"font_ref,omitempty"`
 	Position  string             `json:"position,omitempty"`
 	Opacity   *float64           `json:"opacity,omitempty"`
 	// MarginPX is the requested distance from the canvas edge. Required for
@@ -178,7 +178,7 @@ type semanticAudio struct {
 type semanticBackground struct {
 	Kind      string             `json:"kind"`
 	Color     []float64          `json:"color,omitempty"`
-	AssetRefs []semanticAssetRef `json:"asset_refs,omitempty"`
+	AssetRefs []SemanticAssetRef `json:"asset_refs,omitempty"`
 	Fit       string             `json:"fit,omitempty"`
 	Opacity   *float64           `json:"opacity,omitempty"`
 	Loop      bool               `json:"loop,omitempty"`
@@ -222,10 +222,16 @@ type semanticItem struct {
 	DurationMS *int64             `json:"duration_ms,omitempty"`
 	Params     map[string]any     `json:"params"`
 	Style      map[string]any     `json:"style"`
-	Assets     []semanticAssetRef `json:"asset_refs"`
+	Assets     []SemanticAssetRef `json:"asset_refs"`
 }
 
-type semanticAssetRef struct {
+// SemanticAssetRef is one content-addressed asset reference of the semantic
+// contract (items[].asset_refs[] and watermark.font_ref). It is exported because
+// the producer-side writer (internal/renderbatch) transports the very same
+// entry: one declaration, so the writer and the worker's decoder cannot describe
+// an asset_refs entry with two field sets that drift apart. Its JSON field set
+// is pinned to the published contract by TestContractSchemaMatchesCompilerStructs.
+type SemanticAssetRef struct {
 	ID        string `json:"asset_id"`
 	SHA256    string `json:"sha256"`
 	URL       string `json:"url"`

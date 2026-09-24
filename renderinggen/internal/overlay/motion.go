@@ -337,21 +337,64 @@ func fromMotionTracks(src []motion.AnimationTrack) []AnimationTrack {
 	return tracks
 }
 
+// animationUses3D reports whether the layer half of a lowered motion carries a
+// camera-backed property. See motion.IsCameraBacked3DProperty for the closed set
+// (position_z / rotation_x / rotation_y); rotation_z is in-plane (2D) and must
+// NOT force the 3D/projected path, which clears the canvas to black when no
+// camera is present.
 func animationUses3D(animation *LayerAnimation) bool {
 	if animation == nil {
 		return false
 	}
 	for _, track := range animation.Tracks {
-		switch track.Property {
-		// Keep in sync with Chronon3d/src/render_plan/render_plan_decoder.cpp:is_3d_property.
-		// Only position_z / rotation_x / rotation_y require enable_3d; rotation_z is
-		// in-plane (2D) and must NOT force the 3D/projected path which clears
-		// the canvas to black when no camera is present.
-		case "position_z", "rotation_x", "rotation_y":
+		if motion.IsCameraBacked3DProperty(track.Property) {
 			return true
 		}
 	}
 	return false
+}
+
+// layerUses3D reports whether a whole lowered motion needs the camera-backed
+// path, scanning both halves of it: the layer tracks AND every per-unit text
+// animator's property tracks. This mirrors Chronon's
+// render_plan_decoder.cpp:find_3d_track, which walks animation.tracks and then
+// text_animators[].properties, and it closes the hole that scanning only the
+// layer tracks left: a motion whose 3D-ness lives in a per-glyph track compiled
+// to enable_3d=false, and the engine then refused the plan with
+// "3D transform data requires enable_3d=true; offending track: position_z".
+func layerUses3D(animation *LayerAnimation) bool {
+	if animation == nil {
+		return false
+	}
+	if animationUses3D(animation) {
+		return true
+	}
+	for _, animator := range animation.TextAnimators {
+		for _, track := range animator.Properties {
+			if motion.IsCameraBacked3DProperty(track.Property) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// applyMotionRouting is the single lowering from a resolved motion to the
+// layer's animated half: the layer tracks, the per-unit text animators and the
+// camera-backed routing bit that has to describe BOTH of them. Assigning
+// Enable3D from one half is how a 3D text animator used to reach the engine
+// with enable_3d=false and be rejected.
+func applyMotionRouting(layer *Layer, animation *LayerAnimation) {
+	if animation == nil {
+		return
+	}
+	layer.Enable3D = layerUses3D(animation)
+	if len(animation.Tracks) > 0 {
+		layer.Animation = animation
+	}
+	if len(animation.TextAnimators) > 0 {
+		layer.TextAnimators = animation.TextAnimators
+	}
 }
 
 func fromTrackDefinitions(src []motion.TrackDefinition) []AnimationTrack {

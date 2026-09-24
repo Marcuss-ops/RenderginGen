@@ -93,10 +93,13 @@ catalog-derived IDs.
 
 Text item `params` (or the item-level `style` override) may additionally set
 `font_family` to `poppins`, `inter`, or `dejavu_sans`, `glow_size` in `[0,256]`
-pixels, and `stroke_size` in `[0,64]` pixels. Zero disables glow/stroke. All
-font assets must be declared and materialized by the job; the batch builder
-includes the three bundled families. A local `style` value takes precedence
-over the same key in `params`, and both override the preset defaults.
+pixels, `stroke_size` in `[0,64]` pixels, `font_size_px` in `(0,512]`, and
+`shadow_blur_px`, `shadow_opacity`, `shadow_offset_x_px`, and
+`shadow_offset_y_px` in `[0,256]`, `[0,1]`, and `[-256,256]` pixels for each
+offset. Zero disables glow/stroke; shadow opacity zero disables the shadow.
+All font assets must be declared and materialized by the job; the batch
+builder includes the three bundled families. A local `style` value takes
+precedence over the same key in `params`, and both override the preset defaults.
 
 Refresh the embedded artifact after a ChrononTemplate catalog change:
 

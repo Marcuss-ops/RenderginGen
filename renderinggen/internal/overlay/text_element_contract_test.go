@@ -59,7 +59,7 @@ func TestSlotsWithoutTemplateAreRejected(t *testing.T) {
 }
 
 func TestImageRequiresReusableTemplateInstance(t *testing.T) {
-	item := semanticItem{ID: "image", Kind: string(KindEntityImage), Text: "", Assets: []semanticAssetRef{{ID: "asset"}}, StartMS: 0, EndMS: 1000}
+	item := semanticItem{ID: "image", Kind: string(KindEntityImage), Text: "", Assets: []SemanticAssetRef{{ID: "asset"}}, StartMS: 0, EndMS: 1000}
 	if err := validateTextElementContract(item); err == nil || !strings.Contains(err.Error(), "without template_id") {
 		t.Fatalf("expected image primitive rejection, got %v", err)
 	}

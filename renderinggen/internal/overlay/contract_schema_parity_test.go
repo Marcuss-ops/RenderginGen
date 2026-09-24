@@ -1,104 +1,14 @@
 package overlay
 
 import (
-	"encoding/json"
-	"os"
-	"path/filepath"
 	"reflect"
-	"runtime"
-	"sort"
 	"strings"
 	"testing"
+
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/contractschema"
 )
 
-func contractSchemaPath(t *testing.T) string {
-	t.Helper()
-	_, source, _, ok := runtime.Caller(0)
-	if !ok {
-		t.Fatal("cannot locate test source")
-	}
-	return filepath.Join(filepath.Dir(source), "../../../contracts/overlay-plan.v1.schema.json")
-}
-
-func schemaAt(t *testing.T, schema map[string]any, pointer string) map[string]any {
-	t.Helper()
-	value := any(schema)
-	for _, part := range strings.Split(strings.TrimPrefix(pointer, "#/"), "/") {
-		if part == "" {
-			continue
-		}
-		object, ok := value.(map[string]any)
-		if !ok {
-			t.Fatalf("schema pointer %q traverses non-object at %q", pointer, part)
-		}
-		value, ok = object[part]
-		if !ok {
-			t.Fatalf("schema pointer %q missing %q", pointer, part)
-		}
-	}
-	object, ok := value.(map[string]any)
-	if !ok {
-		t.Fatalf("schema pointer %q is not an object", pointer)
-	}
-	return object
-}
-
-func propertyNames(t *testing.T, schema map[string]any, pointer string) []string {
-	t.Helper()
-	properties, ok := schemaAt(t, schema, pointer)["properties"].(map[string]any)
-	if !ok {
-		t.Fatalf("schema object %q has no properties", pointer)
-	}
-	names := make([]string, 0, len(properties))
-	for name := range properties {
-		names = append(names, name)
-	}
-	sort.Strings(names)
-	return names
-}
-
-func jsonFieldNames(t *testing.T, value any) []string {
-	t.Helper()
-	typ := reflect.TypeOf(value)
-	if typ.Kind() == reflect.Pointer {
-		typ = typ.Elem()
-	}
-	var names []string
-	for i := 0; i < typ.NumField(); i++ {
-		name := strings.Split(typ.Field(i).Tag.Get("json"), ",")[0]
-		if name == "" {
-			name = typ.Field(i).Name
-		}
-		if name != "-" {
-			names = append(names, name)
-		}
-	}
-	sort.Strings(names)
-	return names
-}
-
-func difference(a, b []string) []string {
-	set := make(map[string]bool, len(b))
-	for _, value := range b {
-		set[value] = true
-	}
-	var out []string
-	for _, value := range a {
-		if !set[value] {
-			out = append(out, value)
-		}
-	}
-	return out
-}
-
-func contains(list []string, want string) bool {
-	for _, value := range list {
-		if value == want {
-			return true
-		}
-	}
-	return false
-}
+const overlayContractSchema = "overlay-plan.v1.schema.json"
 
 func fieldByName(typ reflect.Type, jsonName string) string {
 	for i := 0; i < typ.NumField(); i++ {
@@ -112,14 +22,7 @@ func fieldByName(typ reflect.Type, jsonName string) string {
 // TestContractSchemaMatchesCompilerStructs is the bidirectional pin. Every
 // schema object the compiler decodes is compared with its Go mirror.
 func TestContractSchemaMatchesCompilerStructs(t *testing.T) {
-	raw, err := os.ReadFile(contractSchemaPath(t))
-	if err != nil {
-		t.Fatal(err)
-	}
-	var schema map[string]any
-	if err := json.Unmarshal(raw, &schema); err != nil {
-		t.Fatalf("decode contract schema: %v", err)
-	}
+	schema := contractschema.Load(t, overlayContractSchema)
 	cases := []struct {
 		name, pointer string
 		goValue       any
@@ -131,17 +34,17 @@ func TestContractSchemaMatchesCompilerStructs(t *testing.T) {
 		{"plan.watermark", "#/properties/watermark", semanticWatermark{}},
 		{"plan.audio", "#/properties/audio", semanticAudio{}},
 		{"plan.items[]", "#/properties/items/items", semanticItem{}},
-		{"plan.items[].asset_refs[]", "#/properties/items/items/properties/asset_refs/items", semanticAssetRef{}},
+		{"plan.items[].asset_refs[]", "#/properties/items/items/properties/asset_refs/items", SemanticAssetRef{}},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			want := propertyNames(t, schema, tc.pointer)
-			got := jsonFieldNames(t, tc.goValue)
-			if missing := difference(want, got); len(missing) > 0 {
+			want := contractschema.PropertyNames(t, schema, tc.pointer)
+			got := contractschema.JSONFieldNames(tc.goValue)
+			if missing := contractschema.Difference(want, got); len(missing) > 0 {
 				t.Errorf("schema declares %v, but Go does not decode them", missing)
 			}
-			if missing := difference(got, want); len(missing) > 0 {
-				t.Errorf("Go decodes %v, but schema forbids them", missing)
+			if extra := contractschema.Difference(got, want); len(extra) > 0 {
+				t.Errorf("Go decodes %v, but schema forbids them", extra)
 			}
 		})
 	}
@@ -159,38 +62,24 @@ func TestContractSchemaRejectsUnknownCompilerFields(t *testing.T) {
 }
 
 func TestContractDeclaresEveryLiveLoweringInput(t *testing.T) {
-	raw, err := os.ReadFile(contractSchemaPath(t))
-	if err != nil {
-		t.Fatal(err)
-	}
-	var schema map[string]any
-	if err := json.Unmarshal(raw, &schema); err != nil {
-		t.Fatal(err)
-	}
-	itemProperties := propertyNames(t, schema, "#/properties/items/items")
-	watermarkProperties := propertyNames(t, schema, "#/properties/watermark")
+	schema := contractschema.Load(t, overlayContractSchema)
+	itemProperties := contractschema.PropertyNames(t, schema, "#/properties/items/items")
+	watermarkProperties := contractschema.PropertyNames(t, schema, "#/properties/watermark")
 	for _, field := range []string{"image_preset_id", "motion_id", "motion_params", "params", "style"} {
-		if !contains(itemProperties, field) {
+		if !contractschema.Contains(itemProperties, field) {
 			t.Errorf("items.%s is read by the compiler but absent from the schema", field)
 		}
 	}
 	for _, field := range []string{"font_ref", "margin_px"} {
-		if !contains(watermarkProperties, field) {
+		if !contractschema.Contains(watermarkProperties, field) {
 			t.Errorf("watermark.%s is read by the compiler but absent from the schema", field)
 		}
 	}
 }
 
 func TestStyleProfileVocabularyIsSchemaOwned(t *testing.T) {
-	raw, err := os.ReadFile(contractSchemaPath(t))
-	if err != nil {
-		t.Fatal(err)
-	}
-	var schema map[string]any
-	if err := json.Unmarshal(raw, &schema); err != nil {
-		t.Fatal(err)
-	}
-	styleProfile, ok := schemaAt(t, schema, "#/properties/style_profile")["enum"].([]any)
+	schema := contractschema.Load(t, overlayContractSchema)
+	styleProfile, ok := contractschema.At(t, schema, "#/properties/style_profile")["enum"].([]any)
 	if !ok || len(styleProfile) == 0 {
 		t.Fatal("schema style_profile must carry the producer-owned enum")
 	}

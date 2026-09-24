@@ -5,8 +5,10 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -270,8 +272,8 @@ func BuildTysonManifest(opts TysonBuildOptions) (*BuildResult, error) {
 	entranceSeconds := imageEntranceSeconds
 	for index, entity := range tysonEntities {
 		jobID := fmt.Sprintf("image-%02d", index+1)
-		localPath := filepath.Join(opts.RepoRoot, "mike_tyson_overlay_test", "preset_overlays_v1", "assets", "entities", entity.file)
-		digest, err := sha256File(localPath)
+		entityFile := filepath.Join("mike_tyson_overlay_test", "preset_overlays_v1", "assets", "entities", entity.file)
+		digest, err := corpusDigest(opts.RepoRoot, entityFile)
 		if err != nil {
 			return nil, err
 		}
@@ -352,13 +354,11 @@ func BuildImageMotionManifest(opts ImageMotionBuildOptions) (*BuildResult, error
 	if opts.RepoRoot == "" {
 		opts.RepoRoot = "."
 	}
-	base := strings.TrimRight(opts.AssetBaseURL, "/")
-	localPath := filepath.Join(opts.RepoRoot, matrixImageFile)
-	digest, err := sha256File(localPath)
+	digest, err := corpusDigest(opts.RepoRoot, matrixImageFile)
 	if err != nil {
 		return nil, err
 	}
-	assetURL := base + "/" + matrixImageFile
+	assetURL := matrixImageURL(opts.AssetBaseURL)
 	length := int64(durationMS)
 	pool := motion.Registry.ImageOverlayMotionIDs()
 	if len(pool) != 18 {
@@ -374,7 +374,7 @@ func BuildImageMotionManifest(opts ImageMotionBuildOptions) (*BuildResult, error
 			Background: &renderbatch.Surface{Kind: "color", Color: backgroundRGBA},
 			Items: []renderbatch.PlanItem{{
 				ID: "image-motion", EntityID: "entity:image-motion-canary", Kind: "entity_image",
-				TemplateID: "IMAGE_OVERLAY", PresetID: "image_focus_in", MotionID: motionID,
+				TemplateID: "IMAGE_OVERLAY", PresetID: overlay.ImageMotionCorpusPresetID, MotionID: motionID,
 				Text: "Image motion canary", DurationMS: &length,
 				AssetRefs: []renderbatch.PlanAssetRef{{AssetID: matrixImageAssetID, SHA256: digest, URL: assetURL, MediaType: matrixImageMediaType}},
 				StartMS:   0, EndMS: durationMS,
@@ -386,7 +386,7 @@ func BuildImageMotionManifest(opts ImageMotionBuildOptions) (*BuildResult, error
 		document.Jobs = append(document.Jobs, manifestJob{
 			ID: jobID, RenderPlan: plan,
 			Assets: []queue.AssetRef{{Hash: digest, LogicalPath: matrixImageLogicalPath, SourceURL: assetURL}},
-			Family: "image", MotionID: motionID, PresetID: "image_focus_in", Asset: filepath.Base(matrixImageFile),
+			Family: "image", MotionID: motionID, PresetID: overlay.ImageMotionCorpusPresetID, Asset: filepath.Base(matrixImageFile),
 			AssetSource: "RenderingGen testdata golden image; fixed across motion matrix",
 		})
 	}
@@ -399,11 +399,28 @@ func BuildImageMotionManifest(opts ImageMotionBuildOptions) (*BuildResult, error
 var matrixLanguages = []string{"it", "en", "pl", "ru", "de", "es", "pt-BR", "fr", "tr", "id"}
 
 const (
-	matrixImageFile        = "testdata/golden/gerard_butler.jpg"
+	matrixImageFile = "testdata/golden/gerard_butler.jpg"
+	// matrixImageServeRoot is the directory a corpus HTTP server must be rooted
+	// at for matrixImageURL to resolve. Both image corpora publish the same URL
+	// shape — <base>/<file name>, filepath.Dir(matrixImageFile) — because the
+	// multilingual matrix's manifest of record
+	// (multilingual_overlays_v1/manifest.json) publishes exactly that, and the
+	// runbook that produced it serves testdata/golden. A builder that instead
+	// appended the checkout-relative path published a URL no server of either
+	// corpus answers, so the worker's self-heal of a missing asset 404ed.
+	matrixImageServeRoot = "testdata/golden"
+
 	matrixImageAssetID     = "gerard_butler"
 	matrixImageMediaType   = "image/jpeg"
 	matrixImageLogicalPath = "assets/semantic/gerard_butler.jpg"
 )
+
+// matrixImageURL is the single owner of the matrix image's public URL, so the
+// image-motion matrix and the multilingual matrix cannot publish two different
+// URLs for the same bytes. base is the -asset-base-url root.
+func matrixImageURL(base string) string {
+	return strings.TrimRight(base, "/") + "/" + filepath.Base(matrixImageFile)
+}
 
 func phraseSelectionSeed(planID, itemID string) uint64 {
 	digest := sha256.Sum256([]byte(planID + "\x00" + itemID))
@@ -576,11 +593,11 @@ func BuildMultilingualManifest(opts MultilingualBuildOptions) (*BuildResult, err
 		}
 	}
 
-	imageDigest, err := sha256File(filepath.Join(opts.RepoRoot, matrixImageFile))
+	imageDigest, err := corpusDigest(opts.RepoRoot, matrixImageFile)
 	if err != nil {
 		return nil, err
 	}
-	imageURL := base + "/" + filepath.Base(matrixImageFile)
+	imageURL := matrixImageURL(opts.AssetBaseURL)
 	imageAsset := queue.AssetRef{Hash: imageDigest, LogicalPath: matrixImageLogicalPath, SourceURL: imageURL}
 	for _, preset := range imageOverlays {
 		if len(wanted) > 0 && !wanted[preset] {
@@ -699,7 +716,7 @@ func hasLogicalFont(specs []fontSpec, logical string) bool {
 func fontAssetsFromSpecs(repoRoot string, sourcePath func(local string) string, specs []fontSpec) ([]queue.AssetRef, error) {
 	assets := make([]queue.AssetRef, 0, len(specs))
 	for _, spec := range specs {
-		digest, err := sha256File(filepath.Join(repoRoot, spec.file))
+		digest, err := corpusDigest(repoRoot, spec.file)
 		if err != nil {
 			return nil, err
 		}
@@ -834,6 +851,26 @@ func writePlanFile(path string, plan []byte) error {
 		return err
 	}
 	return os.WriteFile(path, append(out, '\n'), 0o644)
+}
+
+// corpusDigest hashes one checkout-relative corpus file.
+//
+// The corpus paths are this package's closed list, so a miss is almost always
+// -repo-root naming the wrong directory: the flag defaults to the current
+// directory, while every corpus (the fonts, the entity portraits, the matrix
+// image) lives under the RenderingGen checkout. The bare os error names only a
+// relative path, which is exactly what the operator cannot act on, so the hint
+// is added here — at the one place that knows both the flag and the file.
+func corpusDigest(repoRoot, file string) (string, error) {
+	digest, err := sha256File(filepath.Join(repoRoot, file))
+	if err == nil {
+		return digest, nil
+	}
+	if errors.Is(err, fs.ErrNotExist) {
+		return "", fmt.Errorf("overlaybatch: corpus file %s not found under -repo-root %q; pass the RenderingGen checkout root (the one that contains %s)",
+			file, repoRoot, filepath.Dir(file))
+	}
+	return "", err
 }
 
 // sha256File is the content address every asset reference carries.

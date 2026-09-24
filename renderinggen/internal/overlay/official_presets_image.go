@@ -17,6 +17,14 @@ const (
 	imagePresetExit      = 6
 )
 
+// ImageMotionCorpusPresetID is the one image preset the GPU image-motion
+// certification matrix renders with, named once so the catalog entry, the
+// matrix builder and the certification tests cannot drift to three different
+// presets. The matrix varies motion_id only — it exists to isolate the motion —
+// so a preset difference between its plan and its manifest metadata would
+// silently change what the matrix measures.
+const ImageMotionCorpusPresetID = "image_focus_in"
+
 // imageSpec is the image-family authoring row: where the card is anchored and
 // which motion it enters with.
 func imageSpec(anchor, anim string) presetSpec {

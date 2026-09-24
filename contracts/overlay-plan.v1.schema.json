@@ -103,11 +103,16 @@
           "text": { "type": "string" },
           "params": {
             "type": "object",
-            "description": "Per-item runtime controls and motion parameters. Font/glow/stroke overrides are validated against RenderingGen's closed runtime contract.",
+            "description": "Per-item runtime controls and motion parameters. Font, shadow, stroke and glow overrides are validated against RenderingGen's closed runtime contract.",
             "properties": {
               "font_family": { "enum": ["poppins", "inter", "dejavu_sans"] },
+              "font_size_px": { "type": "number", "exclusiveMinimum": 0, "maximum": 512 },
               "glow_size": { "type": "number", "minimum": 0, "maximum": 256 },
-              "stroke_size": { "type": "number", "minimum": 0, "maximum": 64 }
+              "stroke_size": { "type": "number", "minimum": 0, "maximum": 64 },
+              "shadow_blur_px": { "type": "number", "minimum": 0, "maximum": 256 },
+              "shadow_opacity": { "type": "number", "minimum": 0, "maximum": 1 },
+              "shadow_offset_x_px": { "type": "number", "minimum": -256, "maximum": 256 },
+              "shadow_offset_y_px": { "type": "number", "minimum": -256, "maximum": 256 }
             },
             "additionalProperties": true
           },
@@ -116,8 +121,13 @@
             "description": "Optional item-local runtime visual overrides; takes precedence over params for matching controls.",
             "properties": {
               "font_family": { "enum": ["poppins", "inter", "dejavu_sans"] },
+              "font_size_px": { "type": "number", "exclusiveMinimum": 0, "maximum": 512 },
               "glow_size": { "type": "number", "minimum": 0, "maximum": 256 },
-              "stroke_size": { "type": "number", "minimum": 0, "maximum": 64 }
+              "stroke_size": { "type": "number", "minimum": 0, "maximum": 64 },
+              "shadow_blur_px": { "type": "number", "minimum": 0, "maximum": 256 },
+              "shadow_opacity": { "type": "number", "minimum": 0, "maximum": 1 },
+              "shadow_offset_x_px": { "type": "number", "minimum": -256, "maximum": 256 },
+              "shadow_offset_y_px": { "type": "number", "minimum": -256, "maximum": 256 }
             },
             "additionalProperties": true
           },
