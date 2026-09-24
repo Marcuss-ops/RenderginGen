@@ -2,7 +2,9 @@ package overlay
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
+	"reflect"
 	"testing"
 
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/motion"
@@ -98,6 +100,83 @@ func TestImageMotionInventoryHasAllCatalogImageAnimations(t *testing.T) {
 	if len(all) != 18 || len(motion.Registry.ImageOverlayMotionIDs()) != len(all) {
 		t.Fatalf("combined image motion inventory = %d, want 18 unique IDs", len(all))
 	}
+}
+
+// TestEveryImageMotionReachesTheChrononRenderPlan compiles each registered
+// image motion through the public semantic compiler, then checks the serialized
+// Chronon plan. This covers the full producer motion_id -> registry -> layer
+// tracks -> wire path, including the derived enable_3d routing flag.
+func TestEveryImageMotionReachesTheChrononRenderPlan(t *testing.T) {
+	ids := motion.Registry.ImageOverlayMotionIDs()
+	if len(ids) != 18 {
+		t.Fatalf("registered image motions = %d, want 18: %v", len(ids), ids)
+	}
+
+	for _, id := range ids {
+		t.Run(id, func(t *testing.T) {
+			raw := []byte(fmt.Sprintf(`{"schema_version":"renderinggen.overlay-plan.v1","plan_id":"image-motion-%[1]s","video_id":"v","width":1280,"height":720,"fps_num":24,"fps_den":1,"items":[{"id":"image-%[1]s","kind":"image","template_id":"PRODUCT","motion_id":%[2]q,"start_ms":0,"end_ms":5000,"asset_refs":[{"asset_id":"test-image","sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","url":"https://example.test/test-image.png","media_type":"image/png"}]}]}`, id, id))
+			result, err := CompileSemantic(raw)
+			if err != nil {
+				t.Fatalf("compile semantic plan for image motion %q: %v", id, err)
+			}
+			if len(result.Plan.Layers) != 1 {
+				t.Fatalf("compiled %q to %d layers, want one image layer", id, len(result.Plan.Layers))
+			}
+
+			// Exercise the exact serialized contract handed to Chronon rather
+			// than only inspecting the compiler's in-memory layer.
+			wire, err := result.Plan.Marshal()
+			if err != nil {
+				t.Fatalf("marshal Chronon plan for %q: %v", id, err)
+			}
+			var concrete struct {
+				Schema string `json:"schema"`
+				Layers []struct {
+					ID            string          `json:"id"`
+					Type          string          `json:"type"`
+					Asset         string          `json:"asset"`
+					Enable3D      bool            `json:"enable_3d"`
+					Animation     *LayerAnimation `json:"animation"`
+					TextAnimators []TextAnimator  `json:"text_animators"`
+				} `json:"layers"`
+			}
+			if err := json.Unmarshal(wire, &concrete); err != nil {
+				t.Fatalf("decode Chronon plan for %q: %v", id, err)
+			}
+			if concrete.Schema != "chronon.render-plan.v2" || len(concrete.Layers) != 1 {
+				t.Fatalf("serialized plan schema/layers = %q/%d, want chronon.render-plan.v2/1", concrete.Schema, len(concrete.Layers))
+			}
+			layer := concrete.Layers[0]
+			if layer.ID != imageLayerID("image-"+id) || layer.Type != "image" || layer.Asset != "assets/semantic/test-image.png" {
+				t.Fatalf("serialized image layer = %+v", layer)
+			}
+			if layer.Animation == nil || len(layer.Animation.Tracks) == 0 {
+				t.Fatalf("image motion %q did not reach the render plan as layer tracks", id)
+			}
+			if len(layer.TextAnimators) != 0 {
+				t.Fatalf("image motion %q unexpectedly lowered to text animators: %+v", id, layer.TextAnimators)
+			}
+
+			want, err := animationForMotion(id, nil, "", layerDurationFrames(t, result.Plan.Layers[0]), 0)
+			if err != nil {
+				t.Fatalf("independently lower image motion %q: %v", id, err)
+			}
+			if !reflect.DeepEqual(layer.Animation.Tracks, want.Tracks) {
+				t.Fatalf("serialized %q tracks differ from registry lowering\n got: %+v\nwant: %+v", id, layer.Animation.Tracks, want.Tracks)
+			}
+			if got, want3D := layer.Enable3D, animationUses3D(want); got != want3D {
+				t.Fatalf("serialized %q enable_3d = %v, want %v from its tracks", id, got, want3D)
+			}
+		})
+	}
+}
+
+func layerDurationFrames(t *testing.T, layer Layer) int64 {
+	t.Helper()
+	if layer.DurationFrames <= 0 {
+		t.Fatalf("compiled image layer has invalid duration: %d", layer.DurationFrames)
+	}
+	return layer.DurationFrames
 }
 
 func TestTextPresetCatalogContainsOnlyTheTwoSupportedIDs(t *testing.T) {
