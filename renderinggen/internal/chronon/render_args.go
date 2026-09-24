@@ -95,38 +95,36 @@ func resolveNativeEncodeSelection(req RenderRequest) (nativeEncodeSelection, boo
 // but any caller reaching a chronon transport directly would skip that check,
 // so the rule lives here, on the boundary both transports share.
 func validateRenderRequest(req RenderRequest) error {
-	// Until the animated 2.5D image surface is fixed in Chronon, fail before
-	// invoking a strict native render that would otherwise publish a black
-	// image texture as a successful artifact. Software and non-strict requests
-	// remain available.
+	// Keep the strict native gate until Chronon's Vulkan-to-CUDA/NVENC
+	// capability is certified for animated 2.5D image layers. Pixel-correct
+	// Vulkan composition alone does not guarantee a native video-surface feed.
 	if req.Requirements.GPURequired && !req.Requirements.CPUFallbackAllowed && req.PlanPath != "" {
 		data, err := os.ReadFile(req.PlanPath)
 		if err != nil {
 			return fmt.Errorf("chronon: inspect strict-native render plan: %w", err)
-		} else {
-			var plan struct {
-				Layers []struct {
-					Type      string `json:"type"`
-					Enable3D  bool   `json:"enable_3d"`
-					Animation *struct {
-						Tracks []struct {
-							Property string `json:"property"`
-						} `json:"tracks"`
-					} `json:"animation"`
-				} `json:"layers"`
+		}
+		var plan struct {
+			Layers []struct {
+				Type      string `json:"type"`
+				Enable3D  bool   `json:"enable_3d"`
+				Animation *struct {
+					Tracks []struct {
+						Property string `json:"property"`
+					} `json:"tracks"`
+				} `json:"animation"`
+			} `json:"layers"`
+		}
+		if err := json.Unmarshal(data, &plan); err != nil {
+			return fmt.Errorf("chronon: inspect strict-native render plan: %w", err)
+		}
+		for _, layer := range plan.Layers {
+			if layer.Type != "image" || !layer.Enable3D || layer.Animation == nil {
+				continue
 			}
-			if err := json.Unmarshal(data, &plan); err != nil {
-				return fmt.Errorf("chronon: inspect strict-native render plan: %w", err)
-			}
-			for _, layer := range plan.Layers {
-				if layer.Type != "image" || !layer.Enable3D || layer.Animation == nil {
-					continue
-				}
-				for _, track := range layer.Animation.Tracks {
-					switch track.Property {
-					case "position_z", "rotation_x", "rotation_y", "rotation_z", "scale_z":
-						return fmt.Errorf("chronon: require_gpu_native rejects animated 2.5D image layers until Vulkan texture residency is fixed")
-					}
+			for _, track := range layer.Animation.Tracks {
+				switch track.Property {
+				case "position_z", "rotation_x", "rotation_y", "rotation_z", "scale_z":
+					return fmt.Errorf("chronon: require_gpu_native rejects animated 2.5D image layers until native video-surface capability is certified")
 				}
 			}
 		}
