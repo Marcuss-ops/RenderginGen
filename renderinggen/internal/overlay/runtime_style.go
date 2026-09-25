@@ -168,11 +168,14 @@ func applyTextRuntimeOverrides(layer *Layer, params map[string]any) error {
 		if glowSize == 0 {
 			layer.Style.Glow = nil
 		} else {
-			glow := LayerGlow{Radius: glowSize, Intensity: 0.25, Color: "#FFFFFF"}
-			if layer.Style.Glow != nil {
-				glow.Intensity = layer.Style.Glow.Intensity
-				glow.Color = layer.Style.Glow.Color
-			}
+			// A supplied glow_size is an affirmative visual request. The preset's
+			// restrained .25 intensity is nearly invisible on video, so runtime
+			// overrides get a clearly legible halo unless the payload grows an
+			// explicit intensity control.
+			// Use a contrasting warm halo for an explicit runtime override. The
+			// white preset glow disappears against the renderer's pale overlay
+			// background, which made a non-zero payload value look disabled.
+			glow := LayerGlow{Radius: glowSize, Intensity: 0.75, Color: "#FFB020"}
 			layer.Style.Glow = &glow
 		}
 	}
