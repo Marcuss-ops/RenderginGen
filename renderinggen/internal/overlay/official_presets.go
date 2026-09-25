@@ -72,7 +72,9 @@ func runtimeFontPath(family string) (string, bool) {
 	case "poppins":
 		return "assets/fonts/Poppins-Bold.ttf", true
 	case "inter":
-		return "assets/fonts/Inter-Bold.ttf", true
+		// PipelineGen stages this checked-in variable font under the same
+		// canonical content-addressed path used by its asset prefetcher.
+		return "assets/fonts/Inter.ttf", true
 	case "dejavu_sans":
 		return officialCyrillicFontPath, true
 	default:

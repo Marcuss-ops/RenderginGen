@@ -24,7 +24,7 @@ func TestRuntimeTextStyleOverrides(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if layer.Style == nil || layer.Style.Font != "assets/fonts/Inter-Bold.ttf" {
+	if layer.Style == nil || layer.Style.Font != "assets/fonts/Inter.ttf" {
 		t.Fatalf("runtime font override = %+v", layer.Style)
 	}
 	if layer.Style.Glow == nil || layer.Style.Glow.Radius != 28.5 {
@@ -213,7 +213,7 @@ func TestApplyTextRuntimeOverridesFailsClosedOnMalformedControls(t *testing.T) {
 	}); err != nil {
 		t.Fatalf("well-formed controls were rejected: %v", err)
 	}
-	if layer.Style.Font != "assets/fonts/Inter-Bold.ttf" || layer.Style.FontSize != 84 ||
+	if layer.Style.Font != "assets/fonts/Inter.ttf" || layer.Style.FontSize != 84 ||
 		layer.Style.Glow == nil || layer.Style.Glow.Radius != 18 || layer.Style.Stroke == nil || layer.Style.Stroke.Width != 4 ||
 		layer.Style.Shadow == nil || layer.Style.Shadow.Blur != 6 || layer.Style.Shadow.Opacity != 0.5 ||
 		len(layer.Style.Shadow.Offset) != 2 || layer.Style.Shadow.Offset[0] != -2 || layer.Style.Shadow.Offset[1] != 3 {
@@ -251,7 +251,7 @@ func TestRuntimeStyleOverridesReachTheSerializedPlan(t *testing.T) {
 	if err := json.Unmarshal(serialized, &decoded); err != nil {
 		t.Fatalf("decode serialized layer: %v", err)
 	}
-	if decoded.Style.Font != "assets/fonts/Inter-Bold.ttf" || decoded.Style.FontSize != 84 {
+	if decoded.Style.Font != "assets/fonts/Inter.ttf" || decoded.Style.FontSize != 84 {
 		t.Fatalf("serialized font controls = %+v", decoded.Style)
 	}
 	if decoded.Style.Glow == nil || decoded.Style.Glow.Radius != 18 {

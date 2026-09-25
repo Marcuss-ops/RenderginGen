@@ -39,7 +39,7 @@ func TestCompileSemanticFontFamilyRuntimeOverride(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got := result.Plan.Layers[0].Style.Font; got != "assets/fonts/Inter-Bold.ttf" {
+	if got := result.Plan.Layers[0].Style.Font; got != "assets/fonts/Inter.ttf" {
 		t.Fatalf("runtime font family override = %q, want Inter Bold asset", got)
 	}
 }
