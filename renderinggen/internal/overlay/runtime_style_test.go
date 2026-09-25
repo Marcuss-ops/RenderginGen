@@ -214,7 +214,7 @@ func TestApplyTextRuntimeOverridesFailsClosedOnMalformedControls(t *testing.T) {
 		t.Fatalf("well-formed controls were rejected: %v", err)
 	}
 	if layer.Style.Font != "assets/fonts/Inter.ttf" || layer.Style.FontSize != 84 ||
-		layer.Style.Glow == nil || layer.Style.Glow.Radius != 18 || layer.Style.Stroke == nil || layer.Style.Stroke.Width != 4 ||
+		layer.Style.Glow == nil || layer.Style.Glow.Radius != 18 || layer.Style.Glow.Intensity != 0.75 || layer.Style.Glow.Color != "#FFB020" || layer.Style.Stroke == nil || layer.Style.Stroke.Width != 4 ||
 		layer.Style.Shadow == nil || layer.Style.Shadow.Blur != 6 || layer.Style.Shadow.Opacity != 0.5 ||
 		len(layer.Style.Shadow.Offset) != 2 || layer.Style.Shadow.Offset[0] != -2 || layer.Style.Shadow.Offset[1] != 3 {
 		t.Fatalf("lowered style = %+v", layer.Style)
