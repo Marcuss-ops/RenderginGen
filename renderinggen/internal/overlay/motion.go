@@ -44,7 +44,9 @@ func lowerMotion(id string, enter, exit int, params motion.MotionParams, text st
 	// The caller's windows win (an official preset owns its own entrance and
 	// exit); a producer-selected motion_id supplies only the exit fallback, so
 	// the motion's registered windows fill the gaps.
+	authoredEnter := 0
 	if declarative, ok := plugin.(motion.DeclarativePlugin); ok {
+		authoredEnter = declarative.Definition.Enter
 		if enter <= 0 {
 			enter = declarative.Definition.Enter
 		}
@@ -58,7 +60,7 @@ func lowerMotion(id string, enter, exit int, params motion.MotionParams, text st
 	if err != nil {
 		return nil, fmt.Errorf("overlay: compile motion %q: %w", id, err)
 	}
-	animation := &LayerAnimation{Tracks: retimeMotionTracks(fromMotionTracks(tracks), entrance)}
+	animation := &LayerAnimation{Tracks: retimeMotionTracks(fromMotionTracks(tracks), entrance, int64(authoredEnter))}
 	if textPlugin, ok := plugin.(motion.TextMotionPlugin); ok {
 		definitions, err := textPlugin.CompileText(ctx, params)
 		if err != nil {
@@ -202,25 +204,34 @@ func resolveMotion(m MotionDefinition) ([]AnimationTrack, error) {
 	return animation.Tracks, nil
 }
 
-func retimeMotionTracks(tracks []AnimationTrack, duration int64) []AnimationTrack {
+func retimeMotionTracks(tracks []AnimationTrack, duration, authoredEnter int64) []AnimationTrack {
 	if duration <= 0 {
 		return tracks
 	}
-	var sourceDuration int64
-	for _, track := range tracks {
-		for _, keyframe := range track.Keyframes {
-			if keyframe.Frame > sourceDuration {
-				sourceDuration = keyframe.Frame
+	if authoredEnter <= 0 {
+		for _, track := range tracks {
+			for _, keyframe := range track.Keyframes {
+				if keyframe.Frame > authoredEnter {
+					authoredEnter = keyframe.Frame
+				}
 			}
 		}
 	}
-	if sourceDuration <= 0 || sourceDuration == duration {
+	if authoredEnter <= 0 || authoredEnter == duration {
 		return clampMotionTracks(tracks, duration)
 	}
 	targetLast := lastValidFrame(duration)
 	for i := range tracks {
 		for j := range tracks[i].Keyframes {
-			tracks[i].Keyframes[j].Frame = tracks[i].Keyframes[j].Frame * targetLast / sourceDuration
+			frame := tracks[i].Keyframes[j].Frame
+			if frame > authoredEnter {
+				// Catalogs may append long hold keyframes after the entrance.
+				// They define a settled state, not a longer entrance; collapse
+				// them to the entrance's final frame before appending the exit.
+				tracks[i].Keyframes[j].Frame = targetLast
+				continue
+			}
+			tracks[i].Keyframes[j].Frame = frame * targetLast / authoredEnter
 		}
 	}
 	return clampMotionTracks(tracks, duration)
