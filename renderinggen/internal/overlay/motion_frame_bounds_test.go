@@ -48,6 +48,31 @@ func TestEveryCatalogMotionKeepsAllKeyframesInsideLayerDuration(t *testing.T) {
 	}
 }
 
+func TestImage25DHoldsDoNotCompressTheEntrance(t *testing.T) {
+	animation, err := lowerMotion("image_25d_yaw_flip_in", 16, 12, nil, "", 72)
+	if err != nil {
+		t.Fatalf("lower image motion: %v", err)
+	}
+	var rotation *AnimationTrack
+	for i := range animation.Tracks {
+		if animation.Tracks[i].Property == "rotation_y" {
+			rotation = &animation.Tracks[i]
+			break
+		}
+	}
+	if rotation == nil {
+		t.Fatal("image motion has no rotation_y track")
+	}
+	if len(rotation.Keyframes) < 3 {
+		t.Fatalf("image rotation has only %d keyframes: %+v", len(rotation.Keyframes), rotation.Keyframes)
+	}
+	firstValue, firstOK := rotation.Keyframes[0].Value.(float64)
+	secondValue, secondOK := rotation.Keyframes[1].Value.(float64)
+	if !firstOK || !secondOK || rotation.Keyframes[0].Frame != 0 || firstValue > -17.9 || rotation.Keyframes[1].Frame != 15 || secondValue < -0.1 || secondValue > 0.1 {
+		t.Fatalf("image rotation entrance was compressed by post-entrance holds: %+v", rotation.Keyframes)
+	}
+}
+
 func assertTracksInsideDuration(t *testing.T, path string, tracks []AnimationTrack, duration int64) {
 	t.Helper()
 	for _, track := range tracks {
