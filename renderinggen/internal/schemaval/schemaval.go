@@ -6,7 +6,7 @@
 // Implemented validation keywords: $ref (local JSON pointers), type, const,
 // enum, required, properties, additionalProperties, items, minItems, maxItems,
 // minimum, maximum, exclusiveMinimum, exclusiveMaximum, minLength, maxLength,
-// pattern, allOf, anyOf, oneOf, if/then/else. Annotation-only keywords ($schema,
+// pattern, allOf, anyOf, oneOf, not, if/then/else. Annotation-only keywords ($schema,
 // $id, title, description, $comment, default, examples, deprecated, readOnly,
 // writeOnly, format) are accepted and, per draft 2020-12, do not constrain the
 // instance.
@@ -98,6 +98,7 @@ var annotationKeywords = map[string]bool{
 // singleSubschema keywords hold one subschema (or a boolean schema).
 var singleSubschema = map[string]bool{
 	"additionalProperties": true, "items": true, "if": true, "then": true, "else": true,
+	"not": true,
 }
 
 // subschemaArray keywords hold an array of subschemas.
@@ -350,6 +351,17 @@ func validate(doc any, schema, root map[string]any, path string, refDepth int) e
 		}
 		if matches != 1 {
 			return fmt.Errorf("%s: matches %d oneOf branches, want exactly 1", path, matches)
+		}
+	}
+	if notSchema, ok := schema["not"].(map[string]any); ok {
+		// Draft 2020-12: the instance is valid when it does NOT match this
+		// subschema. A match (nil error) is the failure; a non-match is the
+		// success, so the inner error is deliberately discarded. Without this
+		// the published v3 extension contract — which uses `not` to forbid
+		// stroke.color+stroke.gradient together and to close the path-command
+		// variants — was reported as unsupported and validated NOTHING.
+		if err := validate(doc, notSchema, root, path, refDepth); err == nil {
+			return fmt.Errorf("%s: instance matches a schema it must not match (not)", path)
 		}
 	}
 	if cond, ok := schema["if"].(map[string]any); ok {
