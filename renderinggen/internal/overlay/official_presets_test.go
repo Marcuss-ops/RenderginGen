@@ -70,6 +70,9 @@ func TestCanonicalPhrasePresetCarriesStrokeShadowAndAnimation(t *testing.T) {
 	if d.Style.Stroke == nil || d.Style.Stroke.Width <= 0 || d.Style.Stroke.Color == "" {
 		t.Fatalf("canonical text preset has no usable stroke: %+v", d.Style.Stroke)
 	}
+	if d.Style.Stroke.Color != "#000000" || d.Style.Stroke.Width < 6 {
+		t.Fatalf("canonical text preset stroke is too weak to survive video downscaling: %+v", d.Style.Stroke)
+	}
 	if d.Style.Shadow == nil || d.Style.Shadow.Opacity <= 0 || d.Style.Shadow.Blur <= 0 {
 		t.Fatalf("canonical text preset has no usable shadow: %+v", d.Style.Shadow)
 	}

@@ -333,6 +333,10 @@ func (p *Processor) PrepareJob(ctx context.Context, job *queue.Job) (*PreparedJo
 		p.cleanupWorkspace(ws, job.ID)
 		return nil, err
 	}
+	if err := fitEntityImageLayersToAssets(ws.Root(), plan); err != nil {
+		p.cleanupWorkspace(ws, job.ID)
+		return nil, err
+	}
 	// Every path this stage created: each manifest asset MaterializePaths
 	// resolved (it returns nil only when all of them landed) plus each rename
 	// target normalization just wrote. The gate below still stats anything the

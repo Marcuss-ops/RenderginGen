@@ -4,8 +4,11 @@
 package processor
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
+	"image"
+	"image/png"
 	"os"
 	"path/filepath"
 	"strings"
@@ -15,6 +18,15 @@ import (
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/queue"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/storage"
 )
+
+func testImagePNG(t *testing.T, width, height int) []byte {
+	t.Helper()
+	var buf bytes.Buffer
+	if err := png.Encode(&buf, image.NewRGBA(image.Rect(0, 0, width, height))); err != nil {
+		t.Fatal(err)
+	}
+	return buf.Bytes()
+}
 
 func TestProcessFullPipeline(t *testing.T) {
 	proc, store, renderer := newProcessor(t)
@@ -208,7 +220,7 @@ func TestProcessExecutesSemanticOverlayPlan(t *testing.T) {
 
 	// The semantic plan carries a content-addressed asset ref (sha256 of the
 	// fixture bytes) exactly as PipelineGen emits it.
-	assetBytes := []byte("apple-image-bytes")
+	assetBytes := testImagePNG(t, 1600, 900)
 	assetHash := storage.Hash(assetBytes)
 	if err := store.Put(context.Background(), assetHash, assetBytes); err != nil {
 		t.Fatalf("put asset: %v", err)
@@ -259,9 +271,10 @@ func TestProcessExecutesSemanticOverlayPlan(t *testing.T) {
 	}
 	var concrete struct {
 		Layers []struct {
-			ID     string `json:"id"`
-			Preset string `json:"preset"`
-			Asset  string `json:"asset"`
+			ID     string    `json:"id"`
+			Preset string    `json:"preset"`
+			Asset  string    `json:"asset"`
+			Size   []float64 `json:"size"`
 		} `json:"layers"`
 	}
 	if err := json.Unmarshal(capturedPlan, &concrete); err != nil {
@@ -275,6 +288,9 @@ func TestProcessExecutesSemanticOverlayPlan(t *testing.T) {
 	}
 	if concrete.Layers[1].ID != "img-1:image" || concrete.Layers[1].Preset != "" {
 		t.Fatalf("image layer = %+v", concrete.Layers[1])
+	}
+	if len(concrete.Layers[1].Size) != 2 || concrete.Layers[1].Size[0] != 480 || concrete.Layers[1].Size[1] != 270 {
+		t.Fatalf("landscape entity image size = %v, want 480x270", concrete.Layers[1].Size)
 	}
 
 	// The content-addressed asset was materialized at its compiled path.
@@ -303,7 +319,7 @@ func TestProcessRecordsArtifactLedger(t *testing.T) {
 	ledger := artifactdb.NewMemory()
 	proc.SetArtifactRecorder(ledger)
 
-	assetBytes := []byte("apple-image-bytes")
+	assetBytes := testImagePNG(t, 1600, 900)
 	assetHash := storage.Hash(assetBytes)
 	if err := store.Put(context.Background(), assetHash, assetBytes); err != nil {
 		t.Fatalf("put asset: %v", err)
