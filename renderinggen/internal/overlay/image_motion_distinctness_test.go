@@ -130,7 +130,7 @@ func imageMotionDistinctPlan(t *testing.T, motionID string) *Plan {
 	t.Helper()
 	raw := fmt.Sprintf(`{"schema_version":"renderinggen.overlay-plan.v1","plan_id":%q,"video_id":"v","width":1920,"height":1080,"fps_num":24,"fps_den":1,`+
 		`"background":{"kind":"color","color":%s},`+
-		`"items":[{"id":"image-motion","kind":"entity_image","template_id":"IMAGE_OVERLAY","preset_id":%q,"motion_id":%q,"text":"Image motion canary","start_ms":%d,"end_ms":%d,`+
+		`"items":[{"id":"image-motion","kind":"image","template_id":"IMAGE_OVERLAY","preset_id":%q,"motion_id":%q,"text":"Image motion canary","start_ms":%d,"end_ms":%d,`+
 		`"entity_id":%q,"asset_refs":[{"asset_id":%q,"sha256":%q,"url":"https://example.test/certification.jpg","media_type":"image/jpeg"}]}]}`,
 		"image-motion-"+motionID, certificationBackgroundRGBA,
 		ImageMotionCorpusPresetID, motionID, certificationStartMS, certificationEndMS,

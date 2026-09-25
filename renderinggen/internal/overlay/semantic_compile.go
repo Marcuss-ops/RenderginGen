@@ -561,6 +561,7 @@ func compileImageLayer(ri resolvedItem, src *semanticPlan, registry *assetRegist
 		applyPresetDefinition(&layer, ri.Preset)
 	}
 	layer.EntityImage = ri.Kind == KindEntityImage
+	ignoreEntityImageMotion := false
 	if ri.Item.MotionID != "" {
 		// An explicit MotionID owns its timing windows in the catalog. Passing
 		// the style preset's exit here would silently override that motion's
@@ -569,8 +570,15 @@ func compileImageLayer(ri resolvedItem, src *semanticPlan, registry *assetRegist
 		if err != nil {
 			return Layer{}, err
 		}
-		applyMotionRouting(&layer, animation)
-	} else if ri.Preset.ID != "" {
+		// Skip 2.5D transforms on editorial entity photos. Chronon renders them
+		// as a tilted plane, which exposes a black rectangular edge around the
+		// source. Keep the preset's ordinary 2D entrance when one is declared.
+		ignoreEntityImageMotion = ri.Kind == KindEntityImage && layerUses3D(animation)
+		if !ignoreEntityImageMotion {
+			applyMotionRouting(&layer, animation)
+		}
+	}
+	if (ri.Item.MotionID == "" || ignoreEntityImageMotion) && ri.Preset.ID != "" {
 		presetAnimation, err := animationForPreset(ri.Preset, "", ri.End-ri.Start)
 		if err != nil {
 			return Layer{}, err
@@ -580,9 +588,8 @@ func compileImageLayer(ri resolvedItem, src *semanticPlan, registry *assetRegist
 	if layer.Position == nil && ri.Preset.ID != "" {
 		if ri.Kind == KindEntityImage {
 			// Entity portraits are centered visual subjects. Keep the official
-			// preset's box and animation, but do not apply the image_popup
-			// anchor: its slide/fade motion must start from the center without
-			// pushing the portrait off-canvas or cropping it.
+			// preset's box, but do not apply the image_popup anchor or push the
+			// portrait off-canvas/crop it.
 			layer.Position = []float64{0, 0}
 			layer.Fit = FitContain
 		} else {
