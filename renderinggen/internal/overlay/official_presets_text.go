@@ -39,8 +39,8 @@ func phraseDefaultPreset() PresetDefinition {
 	d.Layout.BoxHeight = 260
 	d.Style.FontSize = 64
 	d.Style.Fill = []float64{1, 1, 1, 1}
-	// A thin 3.5 px edge drops out after the 4:2:0 encode and common video
-	// downscales. Use a solid black edge with enough width to survive delivery.
-	d.Style.Stroke = &StyleStroke{Color: "#000000", Width: 6}
+	// Keep the original restrained outline; a thick pure-black edge overwhelms
+	// the white phrase and reads as a sticker after video encoding.
+	d.Style.Stroke = &StyleStroke{Color: "#111827", Width: 3.5}
 	return d
 }

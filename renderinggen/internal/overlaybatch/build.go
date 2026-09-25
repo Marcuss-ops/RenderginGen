@@ -373,7 +373,7 @@ func BuildImageMotionManifest(opts ImageMotionBuildOptions) (*BuildResult, error
 			DurationMS: durationMS,
 			Background: &renderbatch.Surface{Kind: "color", Color: backgroundRGBA},
 			Items: []renderbatch.PlanItem{{
-				ID: "image-motion", EntityID: "entity:image-motion-canary", Kind: "entity_image",
+				ID: "image-motion", EntityID: "entity:image-motion-canary", Kind: "image",
 				TemplateID: "IMAGE_OVERLAY", PresetID: overlay.ImageMotionCorpusPresetID, MotionID: motionID,
 				Text: "Image motion canary", DurationMS: &length,
 				AssetRefs: []renderbatch.PlanAssetRef{{AssetID: matrixImageAssetID, SHA256: digest, URL: assetURL, MediaType: matrixImageMediaType}},

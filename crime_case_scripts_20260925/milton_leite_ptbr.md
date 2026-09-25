@@ -2,7 +2,7 @@
 
 Job: `job_1790341420153356461_7a4d1dc5` · 904 palavras · 5 cenas
 
-Render: 15 frases exatas do briefing, com stroke reforçado · 5 imagens com motion 2.5D
+Render: 15 frases exatas do briefing, com stroke discreto · imagens estáticas sem moldura
 
 ## Roteiro
 
