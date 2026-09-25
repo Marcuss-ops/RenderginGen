@@ -1,0 +1,220 @@
+{
+  "version": 2,
+  "preset": "custom",
+  "correlation_id": "mike-tyson-entities-overlay-20260925-v1",
+  "force_refresh": true,
+  "items": [
+    {
+      "id": "mike-tyson-entities-overlay-v1",
+      "project": "mike-tyson-entities-overlay-v1",
+      "title": "Mike Tyson — cinque persone e overlay multiscena",
+      "language": "en",
+      "tone": "cinematic, balanced sports documentary",
+      "style": "Polish each supplied English segment into one documentary narration paragraph of about 200 words. The segment source is already complete factual narration: preserve its detail, chronology, and length; do not condense it to a summary. Do not invent dates, statistics, fight results, quotations, motives, or private thoughts. Do not add named people outside the five image targets already specified; refer to other opponents by role. Use each segment’s original overlay line once, verbatim. These are editorial narrator captions, not Mike Tyson quotations. Keep ten segments in the supplied order so they form one chronological story with an engaging opening and reflective close. Be accurate and sober about the 1992 conviction and accountability. English only.",
+      "model": "gemma4:e2b",
+      "source": {
+        "type": "text",
+        "topic": "Mike Tyson's boxing life: discipline, championship, adversity, and reinvention",
+        "source_text": "Factual source notes for an original documentary narration. Mike Tyson was born in Brooklyn, New York, on June 30, 1966. As a teenager he met Bobby Stewart, a counselor and former boxer, who introduced him to trainer Cus D'Amato. D'Amato became Tyson's coach and legal guardian. Tyson won Junior Olympic gold medals in 1981 and 1982. He made his professional debut on March 6, 1985, and won his first 19 professional bouts by knockout. D'Amato died on November 4, 1985, before Tyson won a world heavyweight title. On November 22, 1986, Tyson defeated Trevor Berbick for the WBC heavyweight title at age 20, becoming the youngest heavyweight champion in boxing history. He won the WBA title in 1987 and later that year unified the WBC, WBA, and IBF heavyweight titles by defeating Tony Tucker. His first professional defeat came against James 'Buster' Douglas in Tokyo in 1990. In 1992 Tyson was convicted of rape in Indiana and received a prison sentence; he was released on parole in 1995. He returned to boxing and regained the WBC and WBA titles in 1996. He lost the WBA title to Evander Holyfield later in 1996. In their 1997 rematch Tyson was disqualified after biting Holyfield's ears; the Nevada commission revoked his boxing license, which was later restored. Tyson was knocked out by Lennox Lewis in 2002. His professional record at the end of 2005 was reported as 50 wins, 6 losses, 2 no contests, and 44 knockouts. Muhammad Ali, Sugar Ray Robinson, and Joe Frazier are major historical figures in boxing and may be used only as contextual reference points, not as people who fought or coached Tyson. A balanced account should distinguish athletic achievement from personal harm and legal accountability, avoid treating conviction as an allegation, avoid inventing direct quotes, and avoid claiming that boxing outcomes alone define a person's whole life. Five people are image targets: Mike Tyson, Cus D'Amato, Muhammad Ali, Sugar Ray Robinson, and Joe Frazier.",
+        "force_refresh": true
+      },
+      "script_params": {
+        "target_words": 2000,
+        "min_words": 1900,
+        "segment_words": 200,
+        "single_scene": false,
+        "duration": 800,
+        "skip_quality_gate": false,
+        "segments": [
+          {
+            "id": "brooklyn-and-the-first-coach",
+            "kind": "narration",
+            "topic": "Brooklyn, early life, and the first coach",
+            "source_text": "Mike Tyson was born in Brooklyn, New York, on June 30, 1966. His path toward boxing began before professional records or championship belts could define him. As a teenager, he met a counselor and former boxer who introduced him to trainer Cus D’Amato. D’Amato became Tyson’s coach and legal guardian, joining two roles that shaped the early account of his development. Tyson later won Junior Olympic gold medals in 1981 and 1982. Those results place his amateur achievement in the chronology without requiring an invented story about private routines or motives. A documentary can describe the visible structure: a young boxer, a coach, formal competition, and a progression toward the professional ring. Discipline Gives Power a Direction. That line is an editorial caption, not a quotation from Tyson. It points to preparation as a theme while leaving the historical record intact. Muhammad Ali, Sugar Ray Robinson, and Joe Frazier belong here only as major figures in boxing history and as context for the sport Tyson entered. The narration does not claim that they fought him, coached him, or directly influenced him. Keeping those boundaries clear lets Tyson’s own record remain the subject.",
+            "target_words": 200,
+            "min_words": 150,
+            "max_words": 250
+          },
+          {
+            "id": "amateur-to-professional",
+            "kind": "narration",
+            "topic": "Amateur competition and the professional debut",
+            "source_text": "The next step in Tyson’s chronology was the move from amateur competition to professional boxing. His Junior Olympic gold medals came in 1981 and 1982, evidence that he was already winning in organized competition before turning professional. The professional debut followed on March 6, 1985. A date like that makes the transition concrete: the story moves from youth competition into a career measured by official bouts, opponents, titles, and losses. Speed Changes the Distance. This original editorial line can sit over the narration as a compact observation about boxing technique; it is not presented as Tyson’s own words or as a sourced quotation. A responsible account does not invent training methods, private conversations, or predictions about where the career would lead. It can instead show how a set of dated results begins to accumulate. An amateur medal is a result from one stage of competition. A professional debut opens another stage, with different stakes and a longer public record. In Tyson’s story, the transition came in 1985, after the early victories and relationship with D’Amato already established the foundation. The chronology matters because later fame can make the beginning seem inevitable, even though the available facts only show a sequence of events.",
+            "target_words": 200,
+            "min_words": 150,
+            "max_words": 250
+          },
+          {
+            "id": "early-knockout-streak",
+            "kind": "narration",
+            "topic": "The first nineteen professional victories",
+            "source_text": "Tyson won his first nineteen professional bouts by knockout. That is one of the clearest measures of the opening phase of his professional career, and it helps explain why his rise became such a visible sports story. The fact does not say that every bout looked the same, or that a result alone reveals a fighter’s private thoughts. It says that nineteen early professional victories ended by knockout. Pressure Shapes the Rhythm. This is an original narrator caption for the test overlay, not a quotation. It can frame the contrast between a fast accumulating record and the patience required to prepare for each contest, without claiming an undocumented training routine. A careful narration stays close to the evidence: the professional run began in 1985, the wins came by knockout, and the streak preceded the heavyweight championship. The record is striking because it is specific, not because it needs embellishment. As public attention follows a winning athlete, the results can become a shorthand for an entire person. The story should resist that shortcut. A winning streak records what happened in the ring; it does not settle questions about judgment, character, consequence, or the chapters that followed. Tyson’s early results are central to his boxing history, while remaining only one part of a much larger life.",
+            "target_words": 200,
+            "min_words": 150,
+            "max_words": 250
+          },
+          {
+            "id": "loss-of-damato",
+            "kind": "narration",
+            "topic": "Cus D’Amato’s death before the title",
+            "source_text": "Cus D’Amato died on November 4, 1985, before Tyson won a world heavyweight title. The timing is important: D’Amato’s death came in the same year as Tyson’s professional debut, and before the championship milestone that later made the boxer world famous. The available facts establish a close professional and legal relationship because D’Amato was Tyson’s trainer and legal guardian. They do not authorize invented dialogue, private thoughts, or a claim that one event alone caused later victories or defeats. Footwork Creates the Opening. The phrase is a narrator’s editorial caption, not Tyson’s quotation; it links a technical image to a story that contains both movement and interruption. A biographical account can acknowledge the loss without turning it into a dramatic explanation for everything afterward. It can mark the chronology, explain D’Amato’s role, and let readers understand why the date matters. Tyson’s later title would arrive after this death, which means the championship story and the loss cannot be told as separate timelines. The line between them is factual, but the meaning people attach to it should be presented with care. This approach keeps the narration humane while distinguishing what is known from what would only be speculation.",
+            "target_words": 200,
+            "min_words": 150,
+            "max_words": 250
+          },
+          {
+            "id": "youngest-champion",
+            "kind": "narration",
+            "topic": "The 1986 WBC heavyweight title",
+            "source_text": "On November 22, 1986, Tyson defeated a reigning heavyweight titleholder for the WBC championship at age twenty. That result made him the youngest heavyweight champion in boxing history. The record is unusually precise: it combines a date, a governing title, an age, and a place in the sport’s history. Technique Makes Aggression Precise. This original editorial line is designed for the overlay test; it is not an attributed Tyson quotation. It offers a concise way to describe how a championship performance can be discussed through craft as well as force, without inventing round-by-round details or statistics that are not part of the source notes. Winning the WBC belt was a major sporting achievement, and the age record made it especially memorable. A balanced documentary can state that clearly. It should also resist treating one victory as a complete definition of a person or a guarantee of what would happen next. A title is a public result recorded in boxing history. It does not erase later defeat, legal accountability, or the impact of personal choices. The achievement belongs in the story because it was real and historically significant; its place in the story is strongest when it is not used to flatten every other part of the life.",
+            "target_words": 200,
+            "min_words": 150,
+            "max_words": 250
+          },
+          {
+            "id": "unification",
+            "kind": "narration",
+            "topic": "Adding and unifying the heavyweight titles",
+            "source_text": "The championship story continued in 1987. Tyson won the WBA heavyweight title that year, then defeated another challenger later in the year to unify the WBC, WBA, and IBF heavyweight titles. These are separate milestones: first another belt, then the unification of three major titles. Preparation Begins Long Before the Bell. This is an original narrator caption for the test, not a quotation from Tyson. It can accompany a sequence of photographs or title graphics while keeping the narration anchored to the documented result. In boxing, unification means that one champion holds titles from multiple sanctioning bodies at the same time. That explanation makes the achievement understandable without claiming it made Tyson unbeatable or describing unverified details of any particular bout. The sequence also shows how quickly the public record expanded after the first championship. A year earlier, the historic fact was his age when he won the WBC belt. By the end of 1987, the record included the WBA and IBF titles as well. The point is not to turn a list of belts into a moral verdict. It is to show the scale of the athletic accomplishment, then preserve room for the complicated events that followed.",
+            "target_words": 200,
+            "min_words": 150,
+            "max_words": 250
+          },
+          {
+            "id": "tokyo-defeat",
+            "kind": "narration",
+            "topic": "The first professional defeat",
+            "source_text": "Tyson’s first professional defeat came in Tokyo in 1990. Before that result, his early professional run had included nineteen straight knockout victories and his championship rise. A first loss changed the record, but a record is only one way to describe a career. A Loss Exposes What Victory Can Hide. This original editorial line is written for the overlay test and is not presented as Tyson’s words. It invites reflection on the limits of a winning streak without inventing an explanation for what happened in Tokyo. The source notes establish the defeat and its place in the chronology; they do not provide a license to add private motives, excuses, or dramatic details. A careful sports documentary can distinguish the event from the many later interpretations that people may attach to it. The fact is that a heavily recognized champion experienced his first professional loss in 1990. That result belongs beside the earlier victories, not outside them. Achievement and defeat both form part of the official record, and neither one alone describes every choice or consequence in a life. Placing the loss in sequence gives the audience a clearer view of the career’s changing public narrative while remaining honest about what is documented and what remains unknown.",
+            "target_words": 200,
+            "min_words": 150,
+            "max_words": 250
+          },
+          {
+            "id": "conviction-and-prison",
+            "kind": "narration",
+            "topic": "The 1992 conviction and release on parole",
+            "source_text": "In 1992, Tyson was convicted of rape in Indiana and received a prison sentence. He was released on parole in 1995. Those statements should be clear and direct because a conviction is not an allegation, and legal accountability is part of the documented history. A documentary should treat this chapter soberly, without graphic detail or sensational language. It should also avoid using athletic accomplishments to minimize personal harm. A Champion Is More Than a Record. This original caption does not excuse the conviction or claim that success in sport cancels its consequences. It marks the difference between an official boxing record and a fuller account of human choices, harm, and responsibility. The period away from boxing is part of the chronology, just as the return would be later. Accuracy requires naming the conviction correctly and stating the sentence and parole release without embellishment. It also requires resisting the temptation to turn a serious legal event into a dramatic device. Tyson’s athletic identity and the conviction both belong in the story, but they answer different questions. One concerns a public career in the ring; the other concerns criminal responsibility and its consequences. Keeping that distinction visible makes the narration more honest and more respectful of those harmed.",
+            "target_words": 200,
+            "min_words": 150,
+            "max_words": 250
+          },
+          {
+            "id": "return-and-holyfield",
+            "kind": "narration",
+            "topic": "The return to boxing and the 1996 titles",
+            "source_text": "After his release on parole in 1995, Tyson returned to boxing. In 1996, he regained the WBC and WBA heavyweight titles. Later that year, he lost the WBA title to a challenger. These outcomes describe both a comeback in sport and a subsequent setback; neither should be used to erase what happened in the legal chapter or to turn a later victory into a claim of personal repair. Reinvention Is Part of the Fight. This is an original editorial overlay phrase, not a quotation or an assertion that returning to the ring resolved every consequence. It gives the chapter a theme while the narration states the results plainly. The word “return” is useful because it describes a change in the career’s public activity, but it should not carry more meaning than the evidence supports. A title won again is an athletic fact. A title lost later the same year is also an athletic fact. The larger story holds those facts beside the conviction, prison sentence, and parole. A balanced account can acknowledge the audience’s interest in the comeback while keeping the emphasis on documented chronology and responsibility. It does not need to invent motives or promise a simple transformation in order to explain what happened.",
+            "target_words": 200,
+            "min_words": 150,
+            "max_words": 250
+          },
+          {
+            "id": "rematch-and-legacy",
+            "kind": "narration",
+            "topic": "The 1997 disqualification and later career",
+            "source_text": "In the 1997 rematch, Tyson was disqualified after biting his opponent’s ears. The Nevada commission revoked his boxing license and later restored it. In 2002, a heavyweight opponent knocked him out. At the end of 2005, his reported professional record stood at fifty wins, six losses, two no contests, and forty-four knockouts. Legacy Outlasts the Final Round. This original narrator caption is an editorial line, not an attributed Tyson quotation and not a substitute for the full record. The sequence includes achievement, defeat, a disqualification, a commission decision, and later career results. Taken together, those events resist a simple ending in which either a title or a controversy speaks for everything. Muhammad Ali, Sugar Ray Robinson, and Joe Frazier remain useful only as major historical figures in boxing, not as people Tyson fought, coached with, or was directly influenced by. A responsible close can recognize why the athlete’s name remains prominent while keeping the facts, consequences, and limits of the record visible. Reinvention is a theme people may discuss, but it should not be used to claim that past harm disappeared. The final reflection belongs to the audience; the narration’s role is to leave them with an accurate chronology.",
+            "target_words": 200,
+            "min_words": 150,
+            "max_words": 250
+          }
+        ]
+      },
+      "output": {
+        "save_to_db": true,
+        "extract_entities": true,
+        "generate_metadata": true,
+        "generate_timeline": true,
+        "voiceover_enabled": true,
+        "languages": [
+          "en"
+        ],
+        "render": {
+          "enabled": true,
+          "drive_folder_id": "1J_xUGo_bchzXDIGqSX04CU44c_Dm3SxS",
+          "drive_subfolder_name": "Mike Tyson overlay multiscena 20260925",
+          "require_gpu": true
+        },
+        "drive_folder_id": "1J_xUGo_bchzXDIGqSX04CU44c_Dm3SxS"
+      },
+      "overlay_background": {
+        "kind": "color",
+        "color": [
+          0.035,
+          0.045,
+          0.065,
+          1
+        ],
+        "fit": "cover",
+        "opacity": 1,
+        "loop": false
+      },
+      "audio": {
+        "mode": "COMBINED_TIMELINE",
+        "timing": {
+          "mode": "required",
+          "boundary": "word",
+          "formats": [
+            "json",
+            "srt",
+            "vtt"
+          ]
+        }
+      },
+      "media_plan": {
+        "mode": "hybrid",
+        "cache": {
+          "read": true,
+          "write": true
+        },
+        "provider_policy": {
+          "internet_images": "enabled",
+          "artlist": "disabled",
+          "image_generation": "disabled",
+          "youtube": "disabled"
+        },
+        "extraction": {
+          "enabled": true,
+          "include": [
+            "entities",
+            "special_names",
+            "important_phrases"
+          ],
+          "max_entities_per_segment": 5,
+          "max_important_phrases_per_segment": 10,
+          "important_phrases": [
+            "Discipline Gives Power a Direction.",
+            "Speed Changes the Distance.",
+            "Pressure Shapes the Rhythm.",
+            "Footwork Creates the Opening.",
+            "Technique Makes Aggression Precise.",
+            "Preparation Begins Long Before the Bell.",
+            "A Loss Exposes What Victory Can Hide.",
+            "A Champion Is More Than a Record.",
+            "Reinvention Is Part of the Fight.",
+            "Legacy Outlasts the Final Round."
+          ],
+          "max_image_queries_per_segment": 5,
+          "entity_images": {
+            "enabled": true,
+            "entity_types": [
+              "PERSON"
+            ],
+            "max_per_entity": 1,
+            "upload_to_drive": true
+          }
+        },
+        "materialization": {
+          "mode": "selected",
+          "upload_to_drive": true,
+          "wait_for_ready": true
+        },
+        "planner": {
+          "candidate_limit": 5
+        },
+        "include_trace": true
+      },
+      "docs": {
+        "enabled": false
+      }
+    }
+  ]
+}

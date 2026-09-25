@@ -1,0 +1,84 @@
+{
+  "version": 2,
+  "preset": "custom",
+  "correlation_id": "mike-tyson-five-entities-one-scene-20260925",
+  "force_refresh": true,
+  "items": [
+    {
+      "id": "mike-tyson-five-entities-one-scene",
+      "project": "mike-tyson-five-entities-one-scene",
+      "title": "Mike Tyson — cinque persone, cinque overlay",
+      "language": "en",
+      "tone": "concise sports documentary",
+      "style": "Write one short, factual English narration in one scene, roughly 90 words. Preserve the supplied facts. Mention all five named people: Mike Tyson, Cus D’Amato, Muhammad Ali, Sugar Ray Robinson, and Joe Frazier. Describe Ali, Robinson, and Frazier only as historical boxing figures; do not imply they fought or coached Tyson. Include each of the five supplied editorial overlay lines exactly once, with the same wording and capitalization. They are narrator captions, not quotations.",
+      "model": "gemma4:e2b",
+      "source": {
+        "type": "text",
+        "topic": "Mike Tyson, boxing history, discipline and movement",
+        "source_text": "Mike Tyson became known for an aggressive heavyweight style built around speed and pressure. Trainer Cus D’Amato was Tyson’s coach and legal guardian. Muhammad Ali, Sugar Ray Robinson, and Joe Frazier are major figures in boxing history; this narration does not suggest they fought or coached Tyson. A short visual story can show focused preparation, movement in the ring, and a measured close. Discipline gives power a direction. Speed changes the distance. Pressure shapes the rhythm. Footwork creates the opening. Technique makes aggression precise. These are editorial narrator lines, not quotations.",
+        "force_refresh": true
+      },
+      "script_params": {
+        "target_words": 90,
+        "min_words": 45,
+        "segment_words": 90,
+        "single_scene": true,
+        "duration": 25,
+        "skip_quality_gate": false,
+        "segments": [
+          {
+            "id": "five-named-boxing-figures",
+            "kind": "narration",
+            "topic": "Five named people in boxing history",
+            "source_text": "Mike Tyson became known for an aggressive heavyweight style built around speed and pressure. Trainer Cus D’Amato was Tyson’s coach and legal guardian. Muhammad Ali, Sugar Ray Robinson, and Joe Frazier are major figures in boxing history; this narration does not suggest they fought or coached Tyson. A short visual story can show focused preparation, movement in the ring, and a measured close. Discipline gives power a direction. Speed changes the distance. Pressure shapes the rhythm. Footwork creates the opening. Technique makes aggression precise. These are editorial narrator lines, not quotations.",
+            "target_words": 90,
+            "min_words": 45,
+            "max_words": 130
+          }
+        ]
+      },
+      "output": {
+        "save_to_db": true,
+        "extract_entities": true,
+        "generate_metadata": true,
+        "generate_timeline": true,
+        "voiceover_enabled": true,
+        "render": {
+          "enabled": true,
+          "drive_folder_id": "1J_xUGo_bchzXDIGqSX04CU44c_Dm3SxS",
+          "drive_subfolder_name": "Mike Tyson five entities one scene 20260925",
+          "require_gpu": true
+        },
+        "drive_folder_id": "1J_xUGo_bchzXDIGqSX04CU44c_Dm3SxS"
+      },
+      "audio": {
+        "mode": "COMBINED_TIMELINE",
+        "timing": {"mode": "required", "boundary": "word", "formats": ["json", "srt", "vtt"]}
+      },
+      "media_plan": {
+        "mode": "hybrid",
+        "cache": {"read": true, "write": true},
+        "provider_policy": {"internet_images": "enabled", "artlist": "disabled", "youtube": "disabled", "image_generation": "disabled"},
+        "extraction": {
+          "enabled": true,
+          "include": ["entities", "special_names", "important_phrases"],
+          "max_entities_per_segment": 5,
+          "max_important_phrases_per_segment": 5,
+          "important_phrases": [
+            "Discipline gives power a direction",
+            "Speed changes the distance",
+            "Pressure shapes the rhythm",
+            "Footwork creates the opening",
+            "Technique makes aggression precise"
+          ],
+          "max_image_queries_per_segment": 5,
+          "entity_images": {"enabled": true, "entity_types": ["PERSON"], "max_per_entity": 1, "upload_to_drive": true}
+        },
+        "planner": {"candidate_limit": 1},
+        "materialization": {"mode": "selected", "upload_to_drive": true, "wait_for_ready": true},
+        "include_trace": true
+      },
+      "docs": {"enabled": false}
+    }
+  ]
+}

@@ -218,6 +218,50 @@ func TestKeywordValueShapesFailClosed(t *testing.T) {
 	}
 }
 
+// TestNotIsEnforced pins the `not` keyword, the one the published v3 extension
+// contract uses to forbid stroke.color+stroke.gradient together and to close the
+// path-command variants. Before it was implemented, CheckSupported rejected the
+// contract outright; ignoring it instead would have silently accepted a document
+// that declared two mutually exclusive stroke paints.
+func TestNotIsEnforced(t *testing.T) {
+	schema := writeSchema(t, `{
+		"type":"object",
+		"properties": {
+			"stroke": {
+				"type":"object",
+				"properties": {"color":{"type":"string"},"gradient":{"type":"object"}},
+				"not": {"required": ["color", "gradient"]}
+			},
+			"command": {
+				"type":"object",
+				"required":["type"],
+				"properties": {"type":{"enum":["move_to","close"]},"point":{"type":"array"}}
+			}
+		},
+		"allOf": [
+			{"if": {"properties": {"command": {"type": "object"}}, "required": ["command"]},
+			 "then": {"properties": {"command": {"not": {"required": ["point"]}}}}}
+		]
+	}`)
+
+	// A stroke with only one paint is valid.
+	if err := ValidateFile([]byte(`{"stroke":{"color":"#FFFFFF"}}`), schema); err != nil {
+		t.Fatalf("single stroke paint rejected: %v", err)
+	}
+	// Both paints at once must be rejected by `not`.
+	if err := ValidateFile([]byte(`{"stroke":{"color":"#FFFFFF","gradient":{}}}`), schema); err == nil {
+		t.Fatal("stroke with color AND gradient must be rejected by not")
+	}
+	// The conditional `not` closes the move_to variant: a point is forbidden.
+	if err := ValidateFile([]byte(`{"command":{"type":"move_to","point":[0,0]}}`), schema); err == nil {
+		t.Fatal("move_to with a point must be rejected by the conditional not")
+	}
+	// A command with no point satisfies the same `not`.
+	if err := ValidateFile([]byte(`{"command":{"type":"close"}}`), schema); err != nil {
+		t.Fatalf("close without a point rejected: %v", err)
+	}
+}
+
 // TestSelfReferentialRefFailsExplicitly pins the $ref depth guard. A schema that
 // references itself is now an error instead of unbounded recursion.
 func TestSelfReferentialRefFailsExplicitly(t *testing.T) {
