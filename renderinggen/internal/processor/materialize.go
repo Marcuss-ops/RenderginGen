@@ -80,6 +80,9 @@ func (p *Processor) Prepare(ctx context.Context, job *queue.Job) (queue.Artifact
 	if err := ws.MaterializePaths(ctx, p.resolveAssetStreaming, assets); err != nil {
 		return queue.Artifact{}, err
 	}
+	if err := fitEntityImageLayersToAssets(ws.Root(), plan); err != nil {
+		return queue.Artifact{}, err
+	}
 	planBytes, err := plan.Marshal()
 	if err != nil {
 		return queue.Artifact{}, fmt.Errorf("processor: encode render plan: %w", err)

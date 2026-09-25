@@ -277,16 +277,20 @@ type AnimationKeyframe struct {
 }
 
 type Layer struct {
-	ID             string          `json:"id"`
-	Type           string          `json:"type"`
-	Asset          string          `json:"asset,omitempty"`
-	Source         string          `json:"source,omitempty"`
-	Color          []float64       `json:"color,omitempty"`
-	Text           string          `json:"text,omitempty"`
-	BoxWidth       int             `json:"-"`
-	BoxHeight      int             `json:"-"`
-	Size           []float64       `json:"size,omitempty"`
-	Fit            string          `json:"fit,omitempty"`
+	ID        string    `json:"id"`
+	Type      string    `json:"type"`
+	Asset     string    `json:"asset,omitempty"`
+	Source    string    `json:"source,omitempty"`
+	Color     []float64 `json:"color,omitempty"`
+	Text      string    `json:"text,omitempty"`
+	BoxWidth  int       `json:"-"`
+	BoxHeight int       `json:"-"`
+	Size      []float64 `json:"size,omitempty"`
+	Fit       string    `json:"fit,omitempty"`
+	// EntityImage is transient compiler metadata. The processor clears the
+	// source's contain bars after assets have been materialized, then serializes
+	// only the derived geometry in Size.
+	EntityImage    bool            `json:"-"`
 	Radius         float64         `json:"radius,omitempty"`
 	Position       []float64       `json:"position,omitempty"`
 	Scale          []float64       `json:"scale,omitempty"`

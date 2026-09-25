@@ -17,6 +17,10 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"image"
+	_ "image/jpeg"
+	_ "image/png"
+	"os"
 	"sort"
 	"strings"
 )
@@ -556,6 +560,7 @@ func compileImageLayer(ri resolvedItem, src *semanticPlan, registry *assetRegist
 	if ri.Preset.ID != "" {
 		applyPresetDefinition(&layer, ri.Preset)
 	}
+	layer.EntityImage = ri.Kind == KindEntityImage
 	if ri.Item.MotionID != "" {
 		// An explicit MotionID owns its timing windows in the catalog. Passing
 		// the style preset's exit here would silently override that motion's
@@ -603,6 +608,41 @@ func compileImageLayer(ri resolvedItem, src *semanticPlan, registry *assetRegist
 		}
 	}
 	return layer, nil
+}
+
+// FitEntityImageLayerToAsset matches an entity image's bounded contain box to
+// the source aspect ratio. Call after the processor materializes the asset at
+// assetPath; compilation alone only knows its logical path.
+func FitEntityImageLayerToAsset(layer *Layer, assetPath string) error {
+	if layer == nil || strings.TrimSpace(assetPath) == "" || layer.BoxWidth <= 0 || layer.BoxHeight <= 0 {
+		return fmt.Errorf("missing image geometry")
+	}
+	f, err := os.Open(assetPath)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	config, _, err := image.DecodeConfig(f)
+	if err != nil {
+		return err
+	}
+	if config.Width <= 0 || config.Height <= 0 {
+		return fmt.Errorf("invalid source dimensions %dx%d", config.Width, config.Height)
+	}
+	maxW, maxH := layer.BoxWidth, layer.BoxHeight
+	if int64(config.Width)*int64(maxH) > int64(config.Height)*int64(maxW) {
+		layer.BoxWidth = maxW
+		layer.BoxHeight = max(1, int(float64(maxW)*float64(config.Height)/float64(config.Width)+0.5))
+	} else {
+		layer.BoxHeight = maxH
+		layer.BoxWidth = max(1, int(float64(maxH)*float64(config.Width)/float64(config.Height)+0.5))
+	}
+	layer.Size = []float64{float64(layer.BoxWidth), float64(layer.BoxHeight)}
+	// The box now has the source's aspect ratio, so cover fills the complete
+	// surface without cropping meaningful image content or leaving a dark
+	// contain matte around the texture.
+	layer.Fit = FitCover
+	return nil
 }
 
 // compileTextLayer lowers a text kind to a single text layer. Text is
