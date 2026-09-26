@@ -1,0 +1,99 @@
+{
+  "version": 2,
+  "preset": "custom",
+  "correlation_id": "milton_leite_ptbr_20260926",
+  "force_refresh": true,
+  "items": [
+    {
+      "id": "milton_leite_ptbr_20260926",
+      "project": "milton_leite_ptbr_20260926",
+      "title": "MILTON LEITE: a decisão do STJ que mudou o rumo do caso — o que está por trás da investigação?",
+      "language": "pt",
+      "tone": "documentário investigativo, urgente e sóbrio",
+      "style": "Escreva um roteiro documental em português brasileiro, dividido em exatamente cinco cenas, com aproximadamente 650 a 800 palavras no total. A Cena 1 deve começar com um gancho de alta curiosidade, estilo clickbait responsável: pergunta incisiva ou contraste surpreendente, sem afirmar culpa nem inventar revelação. Narração ágil, frases claras, ritmo crescente. Use somente os fatos e as ressalvas fornecidos no texto-fonte. Diferencie alegações, informações atribuídas às autoridades, versão da defesa e fatos estabelecidos. Não invente citações, datas, provas ou desfechos; não trate suspeita como condenação. Não use linguagem gráfica. A última cena deve terminar com o que ainda falta esclarecer, sem especular. Gere cenas coesas e evite repetir a mesma informação.",
+      "model": "gemma4:e4b",
+      "source": {
+        "type": "text",
+        "topic": "Milton Leite, Operação Vectura Corrupta/Decurio e investigação sobre empresas de transporte público em São Paulo",
+        "source_text": "Em 17 de setembro de 2026, o Ministério Público de São Paulo e a Polícia Civil deflagraram a Operação Vectura Corrupta, investigação sobre suspeitas de lavagem de dinheiro e infiltração do PCC em empresas de transporte coletivo. Foram divulgados 16 mandados de prisão temporária e 18 de busca e apreensão em cidades paulistas. Milton Leite, ex-vereador e ex-presidente da Câmara Municipal de São Paulo, estava entre os alvos. Ele afirmou que provaria sua inocência.\n\nMilton se apresentou às autoridades em 18 de setembro, acompanhado de advogado. A Justiça manteve a prisão temporária após audiência de custódia. A investigação menciona suspeitas envolvendo empresas de ônibus e possíveis relações com agentes públicos e financiamento político; são linhas investigativas e alegações, não conclusões judiciais definitivas.\n\nEm 25 de setembro, o ministro Rogerio Schietti Cruz, do Superior Tribunal de Justiça, negou liminarmente o habeas corpus que pedia a revogação da prisão temporária. O STJ entendeu que, naquele exame inicial, não havia ilegalidade manifesta na fundamentação da medida. O ministro observou que a análise mais aprofundada ainda pode ocorrer em eventual impetração posterior. Essa decisão não julgou Milton culpado.\n\nA defesa contesta a necessidade e a proporcionalidade da prisão e nega envolvimento criminoso. A apuração segue em curso; até as informações disponíveis em 25 de setembro, não havia condenação definitiva de Milton neste caso. Distinguir prisão cautelar, investigação e julgamento é essencial.\n\nUse os nomes Operação Vectura Corrupta e Operação Decurio com cuidado: fontes oficiais do STJ identificam o contexto processual como Operação Decurio, enquanto a ação de setembro foi noticiada como Vectura Corrupta. Explique que o ponto central ainda é o que as provas sustentarão sobre as suspeitas e sobre a relação entre empresas, transporte e política."
+      },
+      "script_params": {
+        "target_words": 700,
+        "min_words": 550,
+        "segment_words": 150,
+        "single_scene": false,
+        "duration": 0,
+        "skip_quality_gate": false,
+        "segments": [
+          {
+            "id": "milton_leite_ptbr_20260926-scene-1",
+            "kind": "stock",
+            "topic": "Milton Leite, Operação Vectura Corrupta/Decurio e investigação sobre empresas de transporte público em São Paulo — Cena 1",
+            "source_text": "Em 17 de setembro de 2026, o Ministério Público de São Paulo e a Polícia Civil deflagraram a Operação Vectura Corrupta, investigação sobre suspeitas de lavagem de dinheiro e infiltração do PCC em empresas de transporte coletivo. Foram divulgados 16 mandados de prisão temporária e 18 de busca e apreensão em cidades paulistas. Milton Leite, ex-vereador e ex-presidente da Câmara Municipal de São Paulo, estava entre os alvos. Ele afirmou que provaria sua inocência.",
+            "target_words": 140
+          },
+          {
+            "id": "milton_leite_ptbr_20260926-scene-2",
+            "kind": "stock",
+            "topic": "Milton Leite, Operação Vectura Corrupta/Decurio e investigação sobre empresas de transporte público em São Paulo — Cena 2",
+            "source_text": "Milton se apresentou às autoridades em 18 de setembro, acompanhado de advogado. A Justiça manteve a prisão temporária após audiência de custódia. A investigação menciona suspeitas envolvendo empresas de ônibus e possíveis relações com agentes públicos e financiamento político; são linhas investigativas e alegações, não conclusões judiciais definitivas.",
+            "target_words": 140
+          },
+          {
+            "id": "milton_leite_ptbr_20260926-scene-3",
+            "kind": "stock",
+            "topic": "Milton Leite, Operação Vectura Corrupta/Decurio e investigação sobre empresas de transporte público em São Paulo — Cena 3",
+            "source_text": "Em 25 de setembro, o ministro Rogerio Schietti Cruz, do Superior Tribunal de Justiça, negou liminarmente o habeas corpus que pedia a revogação da prisão temporária. O STJ entendeu que, naquele exame inicial, não havia ilegalidade manifesta na fundamentação da medida. O ministro observou que a análise mais aprofundada ainda pode ocorrer em eventual impetração posterior. Essa decisão não julgou Milton culpado.",
+            "target_words": 140
+          },
+          {
+            "id": "milton_leite_ptbr_20260926-scene-4",
+            "kind": "stock",
+            "topic": "Milton Leite, Operação Vectura Corrupta/Decurio e investigação sobre empresas de transporte público em São Paulo — Cena 4",
+            "source_text": "A defesa contesta a necessidade e a proporcionalidade da prisão e nega envolvimento criminoso. A apuração segue em curso; até as informações disponíveis em 25 de setembro, não havia condenação definitiva de Milton neste caso. Distinguir prisão cautelar, investigação e julgamento é essencial.",
+            "target_words": 140
+          },
+          {
+            "id": "milton_leite_ptbr_20260926-scene-5",
+            "kind": "stock",
+            "topic": "Milton Leite, Operação Vectura Corrupta/Decurio e investigação sobre empresas de transporte público em São Paulo — Cena 5",
+            "source_text": "Use os nomes Operação Vectura Corrupta e Operação Decurio com cuidado: fontes oficiais do STJ identificam o contexto processual como Operação Decurio, enquanto a ação de setembro foi noticiada como Vectura Corrupta. Explique que o ponto central ainda é o que as provas sustentarão sobre as suspeitas e sobre a relação entre empresas, transporte e política.",
+            "target_words": 140
+          }
+        ]
+      },
+      "output": {
+        "save_to_db": true,
+        "extract_entities": false,
+        "generate_metadata": false,
+        "generate_timeline": false,
+        "voiceover_enabled": false,
+        "languages": [
+          "pt"
+        ],
+        "render": {
+          "enabled": false
+        }
+      },
+      "docs": {
+        "enabled": false
+      },
+      "media_plan": {
+        "mode": "disabled",
+        "cache": {
+          "read": false,
+          "write": false
+        },
+        "provider_policy": {
+          "internet_images": "disabled",
+          "artlist": "disabled",
+          "image_generation": "disabled",
+          "youtube": "disabled"
+        },
+        "extraction": {
+          "enabled": false
+        }
+      }
+    }
+  ]
+}
