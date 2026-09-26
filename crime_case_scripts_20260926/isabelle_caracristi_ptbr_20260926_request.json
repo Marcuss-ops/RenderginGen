@@ -1,0 +1,99 @@
+{
+  "version": 2,
+  "preset": "custom",
+  "correlation_id": "isabelle_caracristi_ptbr_20260926",
+  "force_refresh": true,
+  "items": [
+    {
+      "id": "isabelle_caracristi_ptbr_20260926",
+      "project": "isabelle_caracristi_ptbr_20260926",
+      "title": "CASO ISABELLE: a perícia apontou uma dinâmica — mas a investigação ainda busca respostas",
+      "language": "pt",
+      "tone": "documentário investigativo, urgente e sóbrio",
+      "style": "Escreva um roteiro documental em português brasileiro, dividido em exatamente cinco cenas, com aproximadamente 650 a 800 palavras no total. A Cena 1 deve começar com um gancho de alta curiosidade, estilo clickbait responsável: pergunta incisiva ou contraste surpreendente, sem afirmar culpa nem inventar revelação. Narração ágil, frases claras, ritmo crescente. Use somente os fatos e as ressalvas fornecidos no texto-fonte. Diferencie alegações, informações atribuídas às autoridades, versão da defesa e fatos estabelecidos. Não invente citações, datas, provas ou desfechos; não trate suspeita como condenação. Não use linguagem gráfica. A última cena deve terminar com o que ainda falta esclarecer, sem especular. Gere cenas coesas e evite repetir a mesma informação.",
+      "model": "gemma4:e4b",
+      "source": {
+        "type": "text",
+        "topic": "Caso Isabelle Caracristi: laudos periciais e perguntas ainda abertas em Fortaleza",
+        "source_text": "Isabelle Caracristi, estudante de Direito de 22 anos, morreu em 13 de setembro de 2026 após cair de um condomínio na Aldeota, em Fortaleza. Em 23 de setembro, a Pefoce informou que os laudos apontavam “precipitação voluntária”, com trajetória vertical. As autoridades disseram que essa conclusão descreve a dinâmica da queda; não encerra a investigação sobre o contexto nem sobre eventual influência de terceiros.\n\nSegundo a Polícia Civil e a Pefoce, Isabelle subiu sozinha ao rooftop e permaneceu ali por cerca de uma hora e meia. Aproximadamente 700 vídeos do condomínio foram analisados; o rooftop não tinha câmera, portanto não há gravação do instante da queda. As autoridades disseram que os exames não identificaram lesões de defesa ou sinais de luta no apartamento. Apresente tudo como informação divulgada pelas autoridades.\n\nJoão Munhoz Neto, namorado de Isabelle, está preso preventivamente e é investigado por suspeita de violência psicológica, induzimento ou instigação ao suicídio e possível fraude processual. Ele nega as acusações por meio da defesa. A prisão preventiva é uma medida cautelar e não equivale a condenação.\n\nA polícia analisa aparelhos eletrônicos e mensagens, além de ouvir testemunhas. O POVO noticiou que, em 25 de setembro, o ex-namorado de Isabelle prestou depoimento; a identidade dele não foi confirmada publicamente. Até aquela data, a investigação seguia aberta. Evite transformar relatos de terceiros em fatos provados e não reproduza mensagens privadas como se fossem integralmente verificadas.\n\nA família de Isabelle cobra esclarecimentos, enquanto as autoridades afirmam que continuam apurando pontos como a cronologia, os dados digitais e se houve contribuição de terceiros. O gancho final deve devolver a pergunta ao que a investigação ainda precisa estabelecer: o que ocorreu no contexto daquela noite e quais provas independentes poderão responder? Trate a morte com respeito, sem suspense mórbido ou culpabilização."
+      },
+      "script_params": {
+        "target_words": 700,
+        "min_words": 550,
+        "segment_words": 150,
+        "single_scene": false,
+        "duration": 0,
+        "skip_quality_gate": false,
+        "segments": [
+          {
+            "id": "isabelle_caracristi_ptbr_20260926-scene-1",
+            "kind": "stock",
+            "topic": "Caso Isabelle Caracristi: laudos periciais e perguntas ainda abertas em Fortaleza — Cena 1",
+            "source_text": "Isabelle Caracristi, estudante de Direito de 22 anos, morreu em 13 de setembro de 2026 após cair de um condomínio na Aldeota, em Fortaleza. Em 23 de setembro, a Pefoce informou que os laudos apontavam “precipitação voluntária”, com trajetória vertical. As autoridades disseram que essa conclusão descreve a dinâmica da queda; não encerra a investigação sobre o contexto nem sobre eventual influência de terceiros.",
+            "target_words": 140
+          },
+          {
+            "id": "isabelle_caracristi_ptbr_20260926-scene-2",
+            "kind": "stock",
+            "topic": "Caso Isabelle Caracristi: laudos periciais e perguntas ainda abertas em Fortaleza — Cena 2",
+            "source_text": "Segundo a Polícia Civil e a Pefoce, Isabelle subiu sozinha ao rooftop e permaneceu ali por cerca de uma hora e meia. Aproximadamente 700 vídeos do condomínio foram analisados; o rooftop não tinha câmera, portanto não há gravação do instante da queda. As autoridades disseram que os exames não identificaram lesões de defesa ou sinais de luta no apartamento. Apresente tudo como informação divulgada pelas autoridades.",
+            "target_words": 140
+          },
+          {
+            "id": "isabelle_caracristi_ptbr_20260926-scene-3",
+            "kind": "stock",
+            "topic": "Caso Isabelle Caracristi: laudos periciais e perguntas ainda abertas em Fortaleza — Cena 3",
+            "source_text": "João Munhoz Neto, namorado de Isabelle, está preso preventivamente e é investigado por suspeita de violência psicológica, induzimento ou instigação ao suicídio e possível fraude processual. Ele nega as acusações por meio da defesa. A prisão preventiva é uma medida cautelar e não equivale a condenação.",
+            "target_words": 140
+          },
+          {
+            "id": "isabelle_caracristi_ptbr_20260926-scene-4",
+            "kind": "stock",
+            "topic": "Caso Isabelle Caracristi: laudos periciais e perguntas ainda abertas em Fortaleza — Cena 4",
+            "source_text": "A polícia analisa aparelhos eletrônicos e mensagens, além de ouvir testemunhas. O POVO noticiou que, em 25 de setembro, o ex-namorado de Isabelle prestou depoimento; a identidade dele não foi confirmada publicamente. Até aquela data, a investigação seguia aberta. Evite transformar relatos de terceiros em fatos provados e não reproduza mensagens privadas como se fossem integralmente verificadas.",
+            "target_words": 140
+          },
+          {
+            "id": "isabelle_caracristi_ptbr_20260926-scene-5",
+            "kind": "stock",
+            "topic": "Caso Isabelle Caracristi: laudos periciais e perguntas ainda abertas em Fortaleza — Cena 5",
+            "source_text": "A família de Isabelle cobra esclarecimentos, enquanto as autoridades afirmam que continuam apurando pontos como a cronologia, os dados digitais e se houve contribuição de terceiros. O gancho final deve devolver a pergunta ao que a investigação ainda precisa estabelecer: o que ocorreu no contexto daquela noite e quais provas independentes poderão responder? Trate a morte com respeito, sem suspense mórbido ou culpabilização.",
+            "target_words": 140
+          }
+        ]
+      },
+      "output": {
+        "save_to_db": true,
+        "extract_entities": false,
+        "generate_metadata": false,
+        "generate_timeline": false,
+        "voiceover_enabled": false,
+        "languages": [
+          "pt"
+        ],
+        "render": {
+          "enabled": false
+        }
+      },
+      "docs": {
+        "enabled": false
+      },
+      "media_plan": {
+        "mode": "disabled",
+        "cache": {
+          "read": false,
+          "write": false
+        },
+        "provider_policy": {
+          "internet_images": "disabled",
+          "artlist": "disabled",
+          "image_generation": "disabled",
+          "youtube": "disabled"
+        },
+        "extraction": {
+          "enabled": false
+        }
+      }
+    }
+  ]
+}

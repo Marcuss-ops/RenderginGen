@@ -114,7 +114,7 @@ func TestEveryImageMotionReachesTheChrononRenderPlan(t *testing.T) {
 
 	for _, id := range ids {
 		t.Run(id, func(t *testing.T) {
-			raw := []byte(fmt.Sprintf(`{"schema_version":"renderinggen.overlay-plan.v1","plan_id":"image-motion-%[1]s","video_id":"v","width":1280,"height":720,"fps_num":24,"fps_den":1,"items":[{"id":"image-%[1]s","kind":"image","template_id":"PRODUCT","motion_id":%[2]q,"start_ms":0,"end_ms":5000,"asset_refs":[{"asset_id":"test-image","sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","url":"https://example.test/test-image.png","media_type":"image/png"}]}]}`, id, id))
+			raw := []byte(fmt.Sprintf(`{"schema_version":"renderinggen.overlay-plan.v1","plan_id":"image-motion-%[1]s","video_id":"v","width":1280,"height":720,"fps_num":24,"fps_den":1,"items":[{"id":"image-%[1]s","kind":"image","template_id":"IMAGE_OVERLAY","preset_id":%[3]q,"motion_id":%[2]q,"start_ms":0,"end_ms":5000,"asset_refs":[{"asset_id":"test-image","sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","url":"https://example.test/test-image.png","media_type":"image/png"}]}]}`, id, id, ImageMotionCorpusPresetID))
 			result, err := CompileSemantic(raw)
 			if err != nil {
 				t.Fatalf("compile semantic plan for image motion %q: %v", id, err)
@@ -166,6 +166,47 @@ func TestEveryImageMotionReachesTheChrononRenderPlan(t *testing.T) {
 			}
 			if got, want3D := layer.Enable3D, layerUses3D(want); got != want3D {
 				t.Fatalf("serialized %q enable_3d = %v, want %v from its tracks", id, got, want3D)
+			}
+		})
+	}
+}
+
+// TestEveryPhraseFamilyMotionReachesTheChrononRenderPlan is the runtime
+// counterpart to the registry inventory test: every selectable family ID must
+// resolve, lower to a text layer and survive serialization into Chronon's plan.
+func TestEveryPhraseFamilyMotionReachesTheChrononRenderPlan(t *testing.T) {
+	var ids []string
+	for _, family := range []string{"typewriter", "classic_apple", "modern_apple"} {
+		ids = append(ids, motion.Registry.FamilyMotionIDs(family)...)
+	}
+	if len(ids) != 107 {
+		t.Fatalf("registered phrase family motions = %d, want 107", len(ids))
+	}
+	seen := make(map[string]bool, len(ids))
+	for _, id := range ids {
+		if seen[id] {
+			t.Fatalf("phrase family inventory repeats %q", id)
+		}
+		seen[id] = true
+		t.Run(id, func(t *testing.T) {
+			raw := []byte(fmt.Sprintf(`{"schema_version":"renderinggen.overlay-plan.v1","plan_id":"phrase-motion-%[1]s","video_id":"v","width":1280,"height":720,"fps_num":24,"fps_den":1,"items":[{"id":"phrase-%[1]s","kind":"important_phrase","template_id":"IMPORTANT_PHRASE","preset_id":"phrase_default","motion_id":%[2]q,"text":"EVERY PHRASE MOTION MUST LOWER","start_ms":0,"end_ms":5000}]}`, id, id))
+			result, err := CompileSemantic(raw)
+			if err != nil {
+				t.Fatalf("compile phrase motion %q: %v", id, err)
+			}
+			if len(result.Plan.Layers) != 1 {
+				t.Fatalf("phrase motion %q compiled to %d layers, want 1", id, len(result.Plan.Layers))
+			}
+			layer := result.Plan.Layers[0]
+			if layer.Type != "text" || layer.Text != "EVERY PHRASE MOTION MUST LOWER" {
+				t.Fatalf("phrase motion %q compiled to unexpected layer: %+v", id, layer)
+			}
+			hasTracks := layer.Animation != nil && len(layer.Animation.Tracks) > 0
+			if !hasTracks && len(layer.TextAnimators) == 0 {
+				t.Fatalf("phrase motion %q did not reach the Chronon plan as animation tracks/animators", id)
+			}
+			if _, err := result.Plan.Marshal(); err != nil {
+				t.Fatalf("serialize phrase motion %q Chronon plan: %v", id, err)
 			}
 		})
 	}
