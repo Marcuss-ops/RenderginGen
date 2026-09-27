@@ -163,6 +163,15 @@ func applyTextRuntimeOverrides(layer *Layer, params map[string]any) error {
 	}
 	if hasFontSize {
 		layer.Style.FontSize = fontSize
+		if layer.Style.FitMode != "" && layer.Style.FitMode != "none" {
+			// Keep shrink-only fitting bounded by the runtime-authored size,
+			// and keep the interval valid even when the override is smaller
+			// than the preset's normal minimum.
+			layer.Style.MaxFontSize = fontSize
+			if layer.Style.MinFontSize > fontSize {
+				layer.Style.MinFontSize = fontSize
+			}
+		}
 	}
 	if hasGlow {
 		if glowSize == 0 {

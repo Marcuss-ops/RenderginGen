@@ -35,6 +35,7 @@ func TestContractSchemaMatchesCompilerStructs(t *testing.T) {
 		{"plan.audio", "#/properties/audio", semanticAudio{}},
 		{"plan.items[]", "#/properties/items/items", semanticItem{}},
 		{"plan.items[].asset_refs[]", "#/properties/items/items/properties/asset_refs/items", SemanticAssetRef{}},
+		{"plan.items[].image_layers[]", "#/properties/items/items/properties/image_layers/items", SemanticImageLayer{}},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -65,7 +66,7 @@ func TestContractDeclaresEveryLiveLoweringInput(t *testing.T) {
 	schema := contractschema.Load(t, overlayContractSchema)
 	itemProperties := contractschema.PropertyNames(t, schema, "#/properties/items/items")
 	watermarkProperties := contractschema.PropertyNames(t, schema, "#/properties/watermark")
-	for _, field := range []string{"image_preset_id", "motion_id", "motion_params", "params", "style"} {
+	for _, field := range []string{"image_preset_id", "motion_id", "motion_params", "params", "style", "image_layers"} {
 		if !contractschema.Contains(itemProperties, field) {
 			t.Errorf("items.%s is read by the compiler but absent from the schema", field)
 		}

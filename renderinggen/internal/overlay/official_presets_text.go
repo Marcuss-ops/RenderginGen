@@ -38,6 +38,9 @@ func phraseDefaultPreset() PresetDefinition {
 	d.Layout.BoxWidth = 1920
 	d.Layout.BoxHeight = 260
 	d.Style.FontSize = 64
+	d.Style.TextFitMode = "shrink_only"
+	d.Style.MinFontSize = 28
+	d.Style.MaxFontSize = d.Style.FontSize
 	d.Style.Fill = []float64{1, 1, 1, 1}
 	// Keep the original restrained outline; a thick pure-black edge overwhelms
 	// the white phrase and reads as a sticker after video encoding.

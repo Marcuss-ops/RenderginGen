@@ -145,6 +145,25 @@
                 "media_type": { "type": "string" }
               }
             }
+          },
+          "image_layers": {
+            "type": "array",
+            "description": "Optional independently animated image layers within a composite image item. Their asset_id values must reference the item's asset_refs; times are relative to the parent item.",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["id", "asset_id", "start_ms", "end_ms"],
+              "properties": {
+                "id": { "type": "string", "minLength": 1 },
+                "asset_id": { "type": "string", "minLength": 1 },
+                "start_ms": { "type": "integer", "minimum": 0 },
+                "end_ms": { "type": "integer", "exclusiveMinimum": 0 },
+                "preset_id": { "type": "string" },
+                "motion_id": { "type": "string" },
+                "motion_params": { "type": "object" },
+                "params": { "type": "object" }
+              }
+            }
           }
         }
       }

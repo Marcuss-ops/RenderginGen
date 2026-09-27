@@ -5,11 +5,13 @@ package processor
 import (
 	"context"
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/chronon"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/metricnames"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/queue"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/workerlog"
 )
 
@@ -25,6 +27,14 @@ const progressLogInterval = 10 * time.Second
 func (p *Processor) RunGPU(ctx context.Context, prepared *PreparedJob) error {
 	phaseStart := time.Now()
 	job := prepared.Job
+	finalComposite := isFinalJobComposite(job)
+	renderBackend := p.backend
+	if finalComposite {
+		// Final-job intermediates must use the full Vulkan compositor so layers
+		// that begin after frame zero are preserved.
+		renderBackend = "auto"
+	}
+	encodePreset := p.encodePreset
 	metadata := planMetadataOf(prepared.Plan)
 	// The chunk contract is half-open [Start, End); Chronon consumes an
 	// inclusive last frame. The range is carried EXPLICITLY (RangeEnabled)
@@ -73,7 +83,7 @@ func (p *Processor) RunGPU(ctx context.Context, prepared *PreparedJob) error {
 		AudioSourcePath:       prepared.AudioSourcePath,
 		AudioTargetSampleRate: prepared.AudioTargetSampleRate,
 		Report:                p.report,
-		EncodePreset:          p.encodePreset,
+		EncodePreset:          encodePreset,
 		// Forward the configured encoder instead of letting the adapter guess:
 		// the config value is validated at load, so whatever reaches here is
 		// what the CLI is asked to run with.
@@ -85,9 +95,14 @@ func (p *Processor) RunGPU(ctx context.Context, prepared *PreparedJob) error {
 		// receipt, which FinalizeJob enforces.
 		ReceiptVerify: string(p.receiptVerifyLevel()),
 		Requirements: chronon.ExecutionRequirements{
-			Backend:            p.backend,
-			GPURequired:        gpuRequired,
-			CPUFallbackAllowed: !p.strictNativeBackend,
+			Backend:     renderBackend,
+			GPURequired: gpuRequired,
+			// Final-job scene composites have a dedicated, namespaced job ID.
+			// Their authored layers can start after frame zero, so Chronon must
+			// classify and execute the complete Vulkan graph instead of selecting
+			// DirectYUV from a frame that has no active overlay yet. Ordinary jobs
+			// retain the configured fallback policy.
+			CPUFallbackAllowed: !p.strictNativeBackend && !finalComposite,
 			// This is a semantic composition requirement, not a backend/path
 			// selection. Chronon classifies the compiled program after this
 			// request crosses the boundary.
@@ -125,7 +140,7 @@ func (p *Processor) RunGPU(ctx context.Context, prepared *PreparedJob) error {
 			if logNow {
 				workerlog.ByJobID(job.ID).Infof("progress: stage=chronon_render frames_done=%d frames_total=%d fps=%.2f last_frame_at=%s backend=%s encoder=%s",
 					progress.FramesDone, progress.FramesTotal, progress.FPS,
-					progress.At.Format(time.RFC3339Nano), p.backend, p.hardwareEncoder)
+					progress.At.Format(time.RFC3339Nano), renderBackend, p.hardwareEncoder)
 			}
 			if p.progressTracker != nil {
 				p.progressTracker.Observe(job.ID, progress.FramesDone, progress.FramesTotal)
@@ -168,7 +183,7 @@ func (p *Processor) RunGPU(ctx context.Context, prepared *PreparedJob) error {
 	// image/text-only composition is a different valid Chronon plan: GPU
 	// composition plus host-frame pipe handoff, with no native video surface to
 	// certify. Do not demand NVENC surface counters from that plan.
-	if p.strictNativeBackend && hasSourceVideo {
+	if p.strictNativeBackend && hasSourceVideo && !finalComposite {
 		// metadata was computed once at the top of RunGPU from this same plan;
 		// do not re-derive (and shadow) it here.
 		if err := requireNativeVulkan(prepared.OutputPath, metadata.FrameCount); err != nil {
@@ -177,4 +192,12 @@ func (p *Processor) RunGPU(ctx context.Context, prepared *PreparedJob) error {
 		prepared.NativeCertified = true
 	}
 	return nil
+}
+
+// isFinalJobComposite recognizes the local scene-composite jobs emitted by
+// PipelineGen's final_job pipeline. The namespace is part of the queue job ID
+// contract (e.g. <plan>:final-composite:<scene>); the exception is limited to
+// these intermediate scene renders and does not alter other worker traffic.
+func isFinalJobComposite(job *queue.Job) bool {
+	return job != nil && strings.Contains(job.ID, ":final-composite:")
 }

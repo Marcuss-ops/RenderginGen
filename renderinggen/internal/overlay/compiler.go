@@ -219,10 +219,11 @@ type semanticItem struct {
 	EndMS         int64          `json:"end_ms"`
 	// DurationMS is producer-owned timing metadata. It is validated against
 	// end_ms-start_ms at the semantic boundary and is not emitted to Chronon.
-	DurationMS *int64             `json:"duration_ms,omitempty"`
-	Params     map[string]any     `json:"params"`
-	Style      map[string]any     `json:"style"`
-	Assets     []SemanticAssetRef `json:"asset_refs"`
+	DurationMS  *int64               `json:"duration_ms,omitempty"`
+	Params      map[string]any       `json:"params"`
+	Style       map[string]any       `json:"style"`
+	Assets      []SemanticAssetRef   `json:"asset_refs"`
+	ImageLayers []SemanticImageLayer `json:"image_layers"`
 }
 
 // SemanticAssetRef is one content-addressed asset reference of the semantic
@@ -236,6 +237,20 @@ type SemanticAssetRef struct {
 	SHA256    string `json:"sha256"`
 	URL       string `json:"url"`
 	MediaType string `json:"media_type"`
+}
+
+// SemanticImageLayer is one independently timed and animated source image in a
+// composite image item. Assets are declared once on the parent item; each child
+// names its asset_id from that declared set.
+type SemanticImageLayer struct {
+	ID           string         `json:"id"`
+	AssetID      string         `json:"asset_id"`
+	StartMS      int64          `json:"start_ms"`
+	EndMS        int64          `json:"end_ms"`
+	PresetID     string         `json:"preset_id"`
+	MotionID     string         `json:"motion_id"`
+	MotionParams map[string]any `json:"motion_params"`
+	Params       map[string]any `json:"params"`
 }
 
 // Audio carries the audio policy in the Chronon render plan so the
@@ -312,12 +327,15 @@ type Layer struct {
 	Loop    bool     `json:"loop,omitempty"`
 }
 type LayerStyle struct {
-	Font     string       `json:"font,omitempty"`
-	FontSize float64      `json:"font_size,omitempty"`
-	Fill     string       `json:"fill,omitempty"`
-	Stroke   *LayerStroke `json:"stroke,omitempty"`
-	Shadow   *LayerShadow `json:"shadow,omitempty"`
-	Glow     *LayerGlow   `json:"glow,omitempty"`
+	Font        string       `json:"font,omitempty"`
+	FontSize    float64      `json:"font_size,omitempty"`
+	Fill        string       `json:"fill,omitempty"`
+	FitMode     string       `json:"fit_mode,omitempty"`
+	MinFontSize float64      `json:"min_font_size,omitempty"`
+	MaxFontSize float64      `json:"max_font_size,omitempty"`
+	Stroke      *LayerStroke `json:"stroke,omitempty"`
+	Shadow      *LayerShadow `json:"shadow,omitempty"`
+	Glow        *LayerGlow   `json:"glow,omitempty"`
 }
 type LayerStroke struct {
 	Color string  `json:"color,omitempty"`
