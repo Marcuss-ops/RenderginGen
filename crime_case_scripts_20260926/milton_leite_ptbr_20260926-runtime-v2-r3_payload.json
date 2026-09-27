@@ -1,0 +1,296 @@
+{
+  "version": 2,
+  "preset": "custom",
+  "correlation_id": "milton_leite_ptbr_20260926-runtime-v2-r3",
+  "force_refresh": true,
+  "items": [
+    {
+      "id": "milton_leite_ptbr_20260926-runtime-v2-r3",
+      "project": "milton_leite_ptbr_20260926-runtime-v2",
+      "title": "MILTON LEITE: a decisão do STJ que mudou o rumo do caso — o que está por trás da investigação?",
+      "language": "pt",
+      "tone": "documentário investigativo, urgente e sóbrio",
+      "style": "Português brasileiro natural. Documentário investigativo, ritmo ágil e tom respeitoso, com uma abertura forte e curiosa.",
+      "model": "gemma4:e4b",
+      "source": {
+        "type": "text",
+        "topic": "Milton Leite, Operação Vectura Corrupta/Decurio e investigação sobre empresas de transporte público em São Paulo",
+        "source_text": "Em 17 de setembro de 2026, o Ministério Público de São Paulo e a Polícia Civil deflagraram a Operação Vectura Corrupta. A investigação apura suspeitas de lavagem de dinheiro e possível infiltração do PCC em empresas de transporte coletivo. Foram divulgados 16 mandados de prisão temporária e 18 de busca e apreensão em cidades paulistas. Milton Leite, ex-vereador e ex-presidente da Câmara Municipal de São Paulo, estava entre os alvos. Ele afirmou que provaria sua inocência.\n\nMilton Leite se apresentou às autoridades em 18 de setembro, acompanhado de advogado. A Justiça manteve a prisão temporária após audiência de custódia. A investigação menciona suspeitas envolvendo empresas de ônibus, possíveis relações com agentes públicos e financiamento político. Essas informações fazem parte de linhas investigativas.\n\nEm 25 de setembro, o ministro Rogerio Schietti Cruz, do Superior Tribunal de Justiça, negou liminarmente o habeas corpus que pedia a revogação da prisão temporária. O STJ entendeu que, naquele exame inicial, não havia ilegalidade manifesta na fundamentação da medida. O ministro observou que uma análise mais aprofundada ainda poderia ocorrer posteriormente. A decisão não julgou Milton culpado.\n\nA defesa contesta a necessidade e a proporcionalidade da prisão e nega envolvimento criminoso. A apuração segue em curso. Até as informações disponíveis em 25 de setembro, não havia condenação definitiva de Milton neste caso. A prisão temporária é uma medida cautelar durante a investigação.\n\nA ação de setembro foi noticiada como Operação Vectura Corrupta. O STJ identifica o contexto processual como Operação Decurio. O ponto central continua sendo o que as provas poderão demonstrar sobre as suspeitas e sobre possíveis relações entre empresas, transporte e política."
+      },
+      "script_params": {
+        "target_words": 650,
+        "min_words": 500,
+        "segment_words": 140,
+        "single_scene": false,
+        "duration": 0,
+        "skip_quality_gate": false,
+        "segments": [
+          {
+            "id": "milton_leite_ptbr_20260926-runtime-v2-scene-1",
+            "kind": "stock",
+            "topic": "Milton Leite, Operação Vectura Corrupta/Decurio e investigação sobre empresas de transporte público em São Paulo — Cena 1",
+            "source_text": "Em 17 de setembro de 2026, o Ministério Público de São Paulo e a Polícia Civil deflagraram a Operação Vectura Corrupta. A investigação apura suspeitas de lavagem de dinheiro e possível infiltração do PCC em empresas de transporte coletivo. Foram divulgados 16 mandados de prisão temporária e 18 de busca e apreensão em cidades paulistas. Milton Leite, ex-vereador e ex-presidente da Câmara Municipal de São Paulo, estava entre os alvos. Ele afirmou que provaria sua inocência.",
+            "target_words": 130,
+            "stock_folder_id": "1Sr15dwjKQkuNn9yaPBav8TwNS_lfEzd-",
+            "stock_folder_link": "https://drive.google.com/drive/folders/1Sr15dwjKQkuNn9yaPBav8TwNS_lfEzd-"
+          },
+          {
+            "id": "milton_leite_ptbr_20260926-runtime-v2-scene-2",
+            "kind": "stock",
+            "topic": "Milton Leite, Operação Vectura Corrupta/Decurio e investigação sobre empresas de transporte público em São Paulo — Cena 2",
+            "source_text": "Milton Leite se apresentou às autoridades em 18 de setembro, acompanhado de advogado. A Justiça manteve a prisão temporária após audiência de custódia. A investigação menciona suspeitas envolvendo empresas de ônibus, possíveis relações com agentes públicos e financiamento político. Essas informações fazem parte de linhas investigativas.",
+            "target_words": 130,
+            "stock_folder_id": "1Sr15dwjKQkuNn9yaPBav8TwNS_lfEzd-",
+            "stock_folder_link": "https://drive.google.com/drive/folders/1Sr15dwjKQkuNn9yaPBav8TwNS_lfEzd-"
+          },
+          {
+            "id": "milton_leite_ptbr_20260926-runtime-v2-scene-3",
+            "kind": "stock",
+            "topic": "Milton Leite, Operação Vectura Corrupta/Decurio e investigação sobre empresas de transporte público em São Paulo — Cena 3",
+            "source_text": "Em 25 de setembro, o ministro Rogerio Schietti Cruz, do Superior Tribunal de Justiça, negou liminarmente o habeas corpus que pedia a revogação da prisão temporária. O STJ entendeu que, naquele exame inicial, não havia ilegalidade manifesta na fundamentação da medida. O ministro observou que uma análise mais aprofundada ainda poderia ocorrer posteriormente. A decisão não julgou Milton culpado.",
+            "target_words": 130,
+            "stock_folder_id": "1Sr15dwjKQkuNn9yaPBav8TwNS_lfEzd-",
+            "stock_folder_link": "https://drive.google.com/drive/folders/1Sr15dwjKQkuNn9yaPBav8TwNS_lfEzd-"
+          },
+          {
+            "id": "milton_leite_ptbr_20260926-runtime-v2-scene-4",
+            "kind": "stock",
+            "topic": "Milton Leite, Operação Vectura Corrupta/Decurio e investigação sobre empresas de transporte público em São Paulo — Cena 4",
+            "source_text": "A defesa contesta a necessidade e a proporcionalidade da prisão e nega envolvimento criminoso. A apuração segue em curso. Até as informações disponíveis em 25 de setembro, não havia condenação definitiva de Milton neste caso. A prisão temporária é uma medida cautelar durante a investigação.",
+            "target_words": 130,
+            "stock_folder_id": "1Sr15dwjKQkuNn9yaPBav8TwNS_lfEzd-",
+            "stock_folder_link": "https://drive.google.com/drive/folders/1Sr15dwjKQkuNn9yaPBav8TwNS_lfEzd-"
+          },
+          {
+            "id": "milton_leite_ptbr_20260926-runtime-v2-scene-5",
+            "kind": "stock",
+            "topic": "Milton Leite, Operação Vectura Corrupta/Decurio e investigação sobre empresas de transporte público em São Paulo — Cena 5",
+            "source_text": "A ação de setembro foi noticiada como Operação Vectura Corrupta. O STJ identifica o contexto processual como Operação Decurio. O ponto central continua sendo o que as provas poderão demonstrar sobre as suspeitas e sobre possíveis relações entre empresas, transporte e política.",
+            "target_words": 130,
+            "stock_folder_id": "1Sr15dwjKQkuNn9yaPBav8TwNS_lfEzd-",
+            "stock_folder_link": "https://drive.google.com/drive/folders/1Sr15dwjKQkuNn9yaPBav8TwNS_lfEzd-"
+          }
+        ]
+      },
+      "output": {
+        "save_to_db": true,
+        "extract_entities": true,
+        "generate_metadata": true,
+        "generate_timeline": true,
+        "voiceover_enabled": true,
+        "languages": [
+          "pt"
+        ],
+        "render": {
+          "enabled": true,
+          "drive_folder_id": "1m0L7A757S23ptFLu6LKrxT85ZS9JF__V",
+          "drive_subfolder_name": "milton-leite-final-r3",
+          "require_gpu": true
+        },
+        "drive_folder_id": "1m0L7A757S23ptFLu6LKrxT85ZS9JF__V"
+      },
+      "overlay_background": {
+        "kind": "color",
+        "color": [
+          0.035,
+          0.045,
+          0.065,
+          1
+        ],
+        "fit": "cover",
+        "opacity": 1,
+        "loop": false
+      },
+      "audio": {
+        "mode": "COMBINED_TIMELINE",
+        "timing": {
+          "mode": "required",
+          "boundary": "word",
+          "formats": [
+            "json",
+            "srt",
+            "vtt"
+          ]
+        }
+      },
+      "media_plan": {
+        "mode": "hybrid",
+        "cache": {
+          "read": true,
+          "write": true
+        },
+        "provider_policy": {
+          "internet_images": "enabled",
+          "artlist": "disabled",
+          "image_generation": "disabled",
+          "youtube": "disabled"
+        },
+        "extraction": {
+          "enabled": true,
+          "include": [
+            "entities",
+            "special_names",
+            "important_phrases"
+          ],
+          "max_entities_per_segment": 5,
+          "max_important_phrases_per_segment": 5,
+          "important_phrases": [
+            "A investigação segue aberta.",
+            "A prisão temporária não é condenação.",
+            "O STJ negou o pedido de liberdade.",
+            "A defesa questiona a prisão.",
+            "As suspeitas ainda serão apuradas."
+          ],
+          "max_image_queries_per_segment": 2,
+          "entity_images": {
+            "enabled": true,
+            "entity_types": [
+              "PERSON",
+              "ORGANIZATION",
+              "LOCATION"
+            ],
+            "max_per_entity": 1,
+            "upload_to_drive": true
+          }
+        },
+        "materialization": {
+          "mode": "selected",
+          "upload_to_drive": true,
+          "wait_for_ready": true
+        },
+        "planner": {
+          "candidate_limit": 5
+        },
+        "include_trace": true,
+        "post_segments": [
+          {
+            "segment_id": "milton_leite_ptbr_20260926-runtime-v2-scene-3",
+            "mode": "automatic",
+            "target_duration_ms": 5000,
+            "max_clips": 1,
+            "candidate_asset_ids": [
+              "planner:6337333335333730:11",
+              "planner:3730636437356435:10",
+              "planner:3631333266653832:8",
+              "planner:3230623466303764:9",
+              "planner:6634343738316430:10",
+              "planner:6633383332313739:1",
+              "planner:6631633031613062:7",
+              "planner:6566376435366364:4",
+              "planner:6563333036363961:6",
+              "planner:6562636365653936:4",
+              "planner:6561623130376236:3",
+              "planner:6538653664316335:4",
+              "planner:6537356337383864:1",
+              "planner:6534373531373163:2",
+              "planner:6530636537393961:0",
+              "planner:6463363466393262:3",
+              "planner:6439363332653738:10",
+              "planner:6437666232663836:6",
+              "planner:6437383732353061:6",
+              "planner:6436336666613038:2",
+              "planner:6435383564316438:0",
+              "planner:6434653238646634:4",
+              "planner:6366333935396161:3",
+              "planner:6365663438363034:5",
+              "planner:6336393038303639:0",
+              "planner:6266386639663261:6",
+              "planner:6265366539306363:8",
+              "planner:6264363734333264:6",
+              "planner:6230663736383638:9",
+              "planner:6230386435323132:0",
+              "planner:6163363230343638:0",
+              "planner:6137396437366363:3",
+              "planner:6135363036326331:10",
+              "planner:6133663065366537:9",
+              "planner:6133306665636437:11",
+              "planner:6132396235366264:7",
+              "planner:3966343539616264:11",
+              "planner:3961323339623361:4",
+              "planner:3933376435633966:2",
+              "planner:3931623436343530:9",
+              "planner:3861313661386632:5",
+              "planner:3837633533316334:5",
+              "planner:3835643037623566:5",
+              "planner:3835346235346465:2",
+              "planner:3831303964306236:9",
+              "planner:3764383437303661:9",
+              "planner:3739633632303836:11",
+              "planner:3736393539393135:4",
+              "planner:3736383839623736:10",
+              "planner:3734633438663531:7",
+              "planner:3730393766393463:4",
+              "planner:3665306533386164:8",
+              "planner:3564393332316335:0",
+              "planner:3537643637303930:1",
+              "planner:3536356265353933:7",
+              "planner:3466623631613639:9",
+              "planner:3466616239653033:11",
+              "planner:3466323964383931:10",
+              "planner:3463663561383763:7",
+              "planner:3463643565306161:1",
+              "planner:3463396435346238:9",
+              "planner:3463376464336465:7",
+              "planner:3462353133396464:6",
+              "planner:3439373733663938:5",
+              "planner:3438663531656133:5",
+              "planner:3437356335316230:4",
+              "planner:3435653430393532:7",
+              "planner:3430653435626537:11",
+              "planner:3366636235613466:1",
+              "planner:3361663964303639:11",
+              "planner:3335333630626535:6",
+              "planner:3332643866323064:5",
+              "planner:3331636637636437:1",
+              "planner:3266633466366237:0",
+              "planner:3265336636366432:5",
+              "planner:3263616663643631:2",
+              "planner:3238363135333065:8",
+              "planner:3237346331373433:3",
+              "planner:3236366130303866:3",
+              "planner:3235643636386630:2",
+              "planner:3234616236383733:10",
+              "planner:3232663364326430:1",
+              "planner:3231666138363765:6",
+              "planner:3163646161333931:8",
+              "planner:3138623631373361:8",
+              "planner:3138396261373938:8",
+              "planner:3137393734613864:3",
+              "planner:3135643263346438:7",
+              "planner:3135623632643531:10",
+              "planner:3135393965616665:3",
+              "planner:3135363563303064:8",
+              "planner:3039323263643364:0",
+              "planner:3037636334363334:2",
+              "planner:3036363761323436:2",
+              "planner:3034393232623262:1",
+              "planner:3032616436633263:11"
+            ],
+            "goal": "Scegli un clip pertinente dal pool completo della cartella Drive per una sola transizione dopo il terzo segmento."
+          }
+        ]
+      },
+      "docs": {
+        "enabled": true,
+        "languages": [
+          "pt"
+        ],
+        "folder_id": "1m0L7A757S23ptFLu6LKrxT85ZS9JF__V"
+      },
+      "intro": {
+        "clip_ids": [
+          "planner:6337333335333730:11",
+          "planner:6634343738316430:10",
+          "planner:6631633031613062:7"
+        ],
+        "title": "Abertura com três clips",
+        "playback": {
+          "audio_mode": "original_clip",
+          "source_in_ms": 0,
+          "source_out_ms": 5000
+        }
+      },
+      "media_mode": "stock_only"
+    }
+  ]
+}
