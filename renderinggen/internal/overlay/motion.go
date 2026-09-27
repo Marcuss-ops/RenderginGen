@@ -30,7 +30,7 @@ import (
 // was never read by any code path, so every rendered overlay hard-cut at its
 // last frame. A layer with room for the window now replays its entrance
 // backwards over the last Exit frames (see appendExitTracks).
-func lowerMotion(id string, enter, exit int, params motion.MotionParams, text string, duration int64) (*LayerAnimation, error) {
+func lowerMotion(id string, enter, exit int, params motion.MotionParams, text string, duration int64, phraseEntranceFloor bool) (*LayerAnimation, error) {
 	if id == "" {
 		return nil, nil
 	}
@@ -54,7 +54,7 @@ func lowerMotion(id string, enter, exit int, params motion.MotionParams, text st
 			exit = declarative.Definition.Exit
 		}
 	}
-	entrance := entranceFrames(enter, exit, duration)
+	entrance := entranceFrames(enter, exit, duration, phraseEntranceFloor)
 	ctx := motion.MotionContext{Text: text, DurationFrames: entrance}
 	tracks, err := plugin.Compile(ctx, params)
 	if err != nil {
@@ -73,24 +73,46 @@ func lowerMotion(id string, enter, exit int, params motion.MotionParams, text st
 }
 
 // entranceFrames is how many frames of a layer the entrance may occupy once the
-// exit window is reserved. The authored window is the ceiling — a preset's
-// 72-frame entrance does not stretch on a longer layer — while layer-minus-exit
-// is the cap, so a short overlay compresses its entrance instead of letting
-// keyframes run past the layer boundary (which Chronon rejects, and which used
-// to leave a 0.7 s phrase carrying keyframes authored for 3 s).
-func entranceFrames(authored, exitFrames int, duration int64) int64 {
+// exit window is reserved. The authored window is the preferred ceiling, but a
+// phrase entrance is stretched to at least one third of its duration whenever
+// the non-exit window permits it. A short overlay compresses its entrance to
+// layer-minus-exit instead of letting keyframes run past the layer boundary.
+// For phrase previews around 4.5s (108 frames at 24fps) the entrance is
+// stretched to the full available window (duration-exit) so the glyph
+// stagger stays visibly animated for ~4 seconds instead of <1s.
+func entranceFrames(authored, exitFrames int, duration int64, phraseEntranceFloor bool) int64 {
 	if duration <= 0 {
 		if authored > 0 {
 			return int64(authored)
 		}
 		return 0
 	}
-	target := duration
+	available := duration
 	if exitFrames > 0 && int64(exitFrames) < duration {
-		target = duration - int64(exitFrames)
+		available = duration - int64(exitFrames)
 	}
+	// Short phrase previews (3-6s) must keep the stagger alive for ~4s.
+	// Without this, a 42-frame typewriter on a 108-frame layer animates
+	// for 1.7s then sits static for 2.8s — the "meno di un secondo"
+	// complaint. Stretching to available keeps the selector sweep inside
+	// MaxStaggerSweepFrames (96 = 4s) and lets appendExitTracks own the out.
+	if phraseEntranceFloor && duration >= 72 && duration <= 144 {
+		return available
+	}
+	target := available
 	if authored > 0 && int64(authored) < target {
 		target = int64(authored)
+	}
+	if phraseEntranceFloor {
+		minimum := (duration + 2) / 3 // ceil(duration/3), retaining an integer-frame guarantee.
+		if minimum > available {
+			// The reserved exit takes precedence when it leaves less than one
+			// third of the layer for an entrance; never overlap the exit window.
+			minimum = available
+		}
+		if target < minimum {
+			target = minimum
+		}
 	}
 	if target < 1 {
 		target = 1
@@ -194,7 +216,7 @@ func retimeTextAnimators(animators []TextAnimator, duration int64) []TextAnimato
 // the authored motion windows of the definition it is handed and, without a
 // concrete layer duration, emits no exit window.
 func resolveMotion(m MotionDefinition) ([]AnimationTrack, error) {
-	animation, err := lowerMotion(m.ID, m.Enter, m.Exit, nil, "", 0)
+	animation, err := lowerMotion(m.ID, m.Enter, m.Exit, nil, "", 0, false)
 	if err != nil {
 		return nil, err
 	}
@@ -273,6 +295,22 @@ func clampAnimationTrack(track *AnimationTrack, duration int64) {
 			track.Keyframes[i].Frame = last
 		}
 	}
+	// Retiming and clamping can collapse authored hold keyframes onto the
+	// same frame (for example an entrance endpoint and a later settled hold).
+	// Chronon requires unique frames; keep the last authored value when that
+	// happens so the settled state wins at the collapsed boundary.
+	if len(track.Keyframes) < 2 {
+		return
+	}
+	unique := track.Keyframes[:0]
+	for _, keyframe := range track.Keyframes {
+		if len(unique) > 0 && unique[len(unique)-1].Frame == keyframe.Frame {
+			unique[len(unique)-1] = keyframe
+			continue
+		}
+		unique = append(unique, keyframe)
+	}
+	track.Keyframes = unique
 }
 
 func clampTextSelectorTracks(selector *TextSelector, duration int64) {
@@ -289,8 +327,9 @@ func clampTextSelectorTracks(selector *TextSelector, duration int64) {
 // preset owns both of its windows (the entrance it declares and the exit), and
 // the same pass produces the layer tracks AND the text animators, so a preset's
 // two halves can never drift apart on the wire again.
-func animationForPreset(d PresetDefinition, text string, duration int64) (*LayerAnimation, error) {
-	return lowerMotion(d.Motion.ID, d.Motion.Enter, d.Motion.Exit, nil, text, duration)
+func animationForPreset(d PresetDefinition, text string, duration int64, phraseFloor ...bool) (*LayerAnimation, error) {
+	isPhrase := len(phraseFloor) > 0 && phraseFloor[0]
+	return lowerMotion(d.Motion.ID, d.Motion.Enter, d.Motion.Exit, nil, text, duration, isPhrase)
 }
 
 // withPhraseEntryExit adds a visible layer fade around the phrase's selected

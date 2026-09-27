@@ -17,9 +17,10 @@ import (
 // spine (see lowerMotion). presetExit is the selected preset's own exit window:
 // a producer that overrides only the entrance still gets an out instead of a
 // hard cut. The motion's registered windows fill in whatever the caller omits.
-func animationForMotion(id string, params map[string]any, textValue string, duration int64, presetExit int) (*LayerAnimation, error) {
+func animationForMotion(id string, params map[string]any, textValue string, duration int64, presetExit int, phraseFloor ...bool) (*LayerAnimation, error) {
 	enter, exit := motionWindows(params, presetExit)
-	animation, err := lowerMotion(id, enter, exit, motion.MotionParams(params), textValue, duration)
+	isPhrase := len(phraseFloor) > 0 && phraseFloor[0]
+	animation, err := lowerMotion(id, enter, exit, motion.MotionParams(params), textValue, duration, isPhrase)
 	if err != nil {
 		return nil, err
 	}
@@ -187,7 +188,10 @@ func applyPresetDefinition(layer *Layer, d PresetDefinition) {
 		// catalog-owned visual properties.
 		font = layer.Style.Font
 	}
-	layer.Style = &LayerStyle{Font: font, FontSize: d.Style.FontSize, Fill: rgbaHex(d.Style.Fill)}
+	layer.Style = &LayerStyle{
+		Font: font, FontSize: d.Style.FontSize, Fill: rgbaHex(d.Style.Fill),
+		FitMode: d.Style.TextFitMode, MinFontSize: d.Style.MinFontSize, MaxFontSize: d.Style.MaxFontSize,
+	}
 	if d.Style.Stroke != nil {
 		stroke := d.Style.Stroke
 		layer.Style.Stroke = &LayerStroke{Color: stroke.Color, Width: stroke.Width}

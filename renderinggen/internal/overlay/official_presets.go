@@ -27,12 +27,15 @@ type PresetDefinition struct {
 }
 
 type PresetStyle struct {
-	FontFamily string
-	FontSize   float64
-	Fill       []float64
-	Stroke     *StyleStroke
-	Shadow     *StyleShadow
-	Glow       *StyleGlow
+	FontFamily  string
+	FontSize    float64
+	TextFitMode string
+	MinFontSize float64
+	MaxFontSize float64
+	Fill        []float64
+	Stroke      *StyleStroke
+	Shadow      *StyleShadow
+	Glow        *StyleGlow
 }
 
 type StyleStroke struct {

@@ -206,7 +206,10 @@ func TestRenderPlanSchemaCheckDetectsAnUndeclaredProperty(t *testing.T) {
 						"type": map[string]any{"type": "string"},
 						"style": map[string]any{
 							"properties": map[string]any{
-								"font": map[string]any{"type": "string"},
+								"font":           map[string]any{"type": "string"},
+								"fit_mode":       map[string]any{"type": "string"},
+								"min_font_size":  map[string]any{"type": "number"},
+								"max_font_size":  map[string]any{"type": "number"},
 								"shadow": map[string]any{
 									"properties": map[string]any{
 										"color": map[string]any{"type": "string"},
@@ -226,10 +229,13 @@ func TestRenderPlanSchemaCheckDetectsAnUndeclaredProperty(t *testing.T) {
 				"id":   "phrase",
 				"type": "text",
 				"style": map[string]any{
-					"font":   "Poppins",
-					"shadow": map[string]any{"color": "#000", "glow": true},
-					"glow":   map[string]any{"radius": 12.0},
-					"bogus":  "x",
+					"font":          "Poppins",
+					"fit_mode":      "shrink_only",
+					"min_font_size": 28.0,
+					"max_font_size": 64.0,
+					"shadow":        map[string]any{"color": "#000", "glow": true},
+					"glow":          map[string]any{"radius": 12.0},
+					"bogus":         "x",
 				},
 			},
 		},
@@ -242,7 +248,7 @@ func TestRenderPlanSchemaCheckDetectsAnUndeclaredProperty(t *testing.T) {
 			t.Errorf("walker missed undeclared property %s; unknown=%v", want, keysOf(unknown))
 		}
 	}
-	for _, mustBeKnown := range []string{"layers[].id", "layers[].type", "layers[].style.font", "layers[].style.shadow.color"} {
+	for _, mustBeKnown := range []string{"layers[].id", "layers[].type", "layers[].style.font", "layers[].style.shadow.color", "layers[].style.fit_mode", "layers[].style.min_font_size", "layers[].style.max_font_size"} {
 		if unknown[mustBeKnown] {
 			t.Errorf("walker reported declared property %s as unknown; unknown=%v", mustBeKnown, keysOf(unknown))
 		}

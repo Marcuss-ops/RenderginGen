@@ -4,7 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
+	"strings"
 	"testing"
+	"unicode/utf8"
 
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/contractschema"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/motion"
@@ -114,7 +116,7 @@ func TestEveryImageMotionReachesTheChrononRenderPlan(t *testing.T) {
 
 	for _, id := range ids {
 		t.Run(id, func(t *testing.T) {
-			raw := []byte(fmt.Sprintf(`{"schema_version":"renderinggen.overlay-plan.v1","plan_id":"image-motion-%[1]s","video_id":"v","width":1280,"height":720,"fps_num":24,"fps_den":1,"items":[{"id":"image-%[1]s","kind":"image","template_id":"IMAGE_OVERLAY","preset_id":%[3]q,"motion_id":%[2]q,"start_ms":0,"end_ms":5000,"asset_refs":[{"asset_id":"test-image","sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","url":"https://example.test/test-image.png","media_type":"image/png"}]}]}`, id, id, ImageMotionCorpusPresetID))
+			raw := []byte(fmt.Sprintf(`{"schema_version":"renderinggen.overlay-plan.v1","plan_id":"image-motion-%[1]s","video_id":"v","width":1280,"height":720,"fps_num":24,"fps_den":1,"items":[{"id":"image-%[1]s","kind":"entity_image","template_id":"image_popup","preset_id":"image_focus_in","motion_id":%[2]q,"start_ms":0,"end_ms":5000,"asset_refs":[{"asset_id":"test-image","sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","url":"https://example.test/test-image.png","media_type":"image/png"}]}]}`, id, id))
 			result, err := CompileSemantic(raw)
 			if err != nil {
 				t.Fatalf("compile semantic plan for image motion %q: %v", id, err)
@@ -157,7 +159,11 @@ func TestEveryImageMotionReachesTheChrononRenderPlan(t *testing.T) {
 				t.Fatalf("image motion %q unexpectedly lowered to text animators: %+v", id, layer.TextAnimators)
 			}
 
-			want, err := animationForMotion(id, nil, "", layerDurationFrames(t, result.Plan.Layers[0]), 0)
+			preset, err := ResolveOfficialPreset("image_focus_in")
+			if err != nil {
+				t.Fatalf("resolve image preset: %v", err)
+			}
+			want, err := animationForMotion(id, nil, "", layerDurationFrames(t, result.Plan.Layers[0]), preset.Motion.Exit)
 			if err != nil {
 				t.Fatalf("independently lower image motion %q: %v", id, err)
 			}
@@ -174,6 +180,71 @@ func TestEveryImageMotionReachesTheChrononRenderPlan(t *testing.T) {
 // TestEveryPhraseFamilyMotionReachesTheChrononRenderPlan is the runtime
 // counterpart to the registry inventory test: every selectable family ID must
 // resolve, lower to a text layer and survive serialization into Chronon's plan.
+func TestCompositeEntityImageLayersKeepIndependentTimingAndMotion(t *testing.T) {
+	raw := []byte(`{
+		"schema_version":"renderinggen.overlay-plan.v1",
+		"plan_id":"composite-entities","video_id":"composite-entities",
+		"width":1920,"height":1080,"fps_num":24,"fps_den":1,
+		"items":[{
+			"id":"ada+grace","kind":"entity_image","template_id":"image_popup","preset_id":"image_focus_in",
+			"start_ms":1000,"end_ms":7500,
+			"asset_refs":[
+				{"asset_id":"ada","sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","url":"https://example.test/ada.jpg","media_type":"image/jpeg"},
+				{"asset_id":"grace","sha256":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","url":"https://example.test/grace.jpg","media_type":"image/jpeg"}
+			],
+			"image_layers":[
+				{"id":"ada","asset_id":"ada","start_ms":0,"end_ms":5000,"preset_id":"image_focus_in","motion_id":"image_focus_reveal","params":{"width":422,"height":453,"position_x":-460.8,"position_y":0,"fit":"contain"}},
+				{"id":"grace","asset_id":"grace","start_ms":1500,"end_ms":6500,"preset_id":"image_scale_in","motion_id":"image_25d_yaw_flip_in","params":{"width":422,"height":453,"position_x":460.8,"position_y":0,"fit":"contain"}}
+			]
+		}]
+	}`)
+	result, err := CompileSemantic(raw)
+	if err != nil {
+		t.Fatalf("compile composite entity images: %v", err)
+	}
+	if len(result.Plan.Layers) != 2 {
+		t.Fatalf("composite lowers to %d Chronon layers, want two: %+v", len(result.Plan.Layers), result.Plan.Layers)
+	}
+	first, second := result.Plan.Layers[0], result.Plan.Layers[1]
+	if first.Asset != "assets/semantic/ada.jpg" || second.Asset != "assets/semantic/grace.jpg" {
+		t.Fatalf("composite assets = %q / %q", first.Asset, second.Asset)
+	}
+	if first.StartFrame != 24 || first.DurationFrames != 120 || second.StartFrame != 60 || second.DurationFrames != 120 {
+		t.Fatalf("staggered layer frames = [%d,+%d), [%d,+%d), want [24,+120), [60,+120)", first.StartFrame, first.DurationFrames, second.StartFrame, second.DurationFrames)
+	}
+	if !first.EntityImage || !second.EntityImage || first.Enable3D || !second.Enable3D {
+		t.Fatalf("entity-image or 2.5D routing lost: first=%+v second=%+v", first, second)
+	}
+	if len(first.Position) != 2 || first.Position[0] != -460.8 || len(second.Position) != 2 || second.Position[0] != 460.8 {
+		t.Fatalf("paired geometry = %v / %v", first.Position, second.Position)
+	}
+	if first.Animation == nil || second.Animation == nil || len(first.Animation.Tracks) == 0 || len(second.Animation.Tracks) == 0 {
+		t.Fatalf("both child motions must lower independently: %+v / %+v", first.Animation, second.Animation)
+	}
+	if reflect.DeepEqual(first.Animation.Tracks, second.Animation.Tracks) {
+		t.Fatal("independently selected image motions collapsed to the same animation tracks")
+	}
+	if len(result.Assets) != 2 {
+		t.Fatalf("composite prepared assets = %d, want both image assets", len(result.Assets))
+	}
+}
+
+func TestCompositeImageContractRejectsUndeclaredAssetAndInvalidWindow(t *testing.T) {
+	base := `{"schema_version":"renderinggen.overlay-plan.v1","plan_id":"bad-composite","video_id":"v","width":1280,"height":720,"fps_num":24,"fps_den":1,"items":[{"id":"pair","kind":"entity_image","template_id":"image_popup","preset_id":"image_focus_in","start_ms":0,"end_ms":5000,"asset_refs":[{"asset_id":"a","sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","url":"https://example.test/a.jpg"},{"asset_id":"b","sha256":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","url":"https://example.test/b.jpg"}],"image_layers":[{"id":"a","asset_id":"a","start_ms":0,"end_ms":3000,"preset_id":"image_focus_in"},{"id":"b","asset_id":"%s","start_ms":2000,"end_ms":6000,"preset_id":"image_focus_in"}]}]}`
+	for _, test := range []struct {
+		name, asset string
+	}{
+		{name: "undeclared asset", asset: "missing"},
+		{name: "window exceeds parent", asset: "b"},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			if _, err := CompileSemantic([]byte(fmt.Sprintf(base, test.asset))); err == nil {
+				t.Fatal("invalid composite image contract was accepted")
+			}
+		})
+	}
+}
+
 func TestEveryPhraseFamilyMotionReachesTheChrononRenderPlan(t *testing.T) {
 	var ids []string
 	for _, family := range []string{"typewriter", "classic_apple", "modern_apple"} {
@@ -198,8 +269,23 @@ func TestEveryPhraseFamilyMotionReachesTheChrononRenderPlan(t *testing.T) {
 				t.Fatalf("phrase motion %q compiled to %d layers, want 1", id, len(result.Plan.Layers))
 			}
 			layer := result.Plan.Layers[0]
-			if layer.Type != "text" || layer.Text != "EVERY PHRASE MOTION MUST LOWER" {
-				t.Fatalf("phrase motion %q compiled to unexpected layer: %+v", id, layer)
+			// Ogni 25 caratteri a capo correttamente: the compiled text is
+			// word-wrapped, never word-cut, each line <=25 runes. The test
+			// fixture's 30-char phrase must wrap to two centered lines.
+			unwrapped := strings.Join(strings.Fields(strings.ReplaceAll(layer.Text, "\n", " ")), " ")
+			if layer.Type != "text" || unwrapped != "EVERY PHRASE MOTION MUST LOWER" {
+				t.Fatalf("phrase motion %q compiled to unexpected layer (unwrapped %q): %+v", id, unwrapped, layer)
+			}
+			for _, line := range strings.Split(layer.Text, "\n") {
+				if utf8.RuneCountInString(line) > 25 {
+					t.Fatalf("phrase motion %q line %q exceeds 25-char budget", id, line)
+				}
+				if line != strings.TrimSpace(line) {
+					t.Fatalf("phrase motion %q line %q has border whitespace", id, line)
+				}
+				if strings.Contains(line, "  ") {
+					t.Fatalf("phrase motion %q line %q has double space", id, line)
+				}
 			}
 			hasTracks := layer.Animation != nil && len(layer.Animation.Tracks) > 0
 			if !hasTracks && len(layer.TextAnimators) == 0 {

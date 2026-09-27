@@ -87,5 +87,7 @@ const (
 // MaxStaggerSweepFrames bounds the selector sweep a staggered preset emits: a
 // reveal sweeps its glyphs over at most this many frames, so a long layer does
 // not turn a stagger into a slow crawl. Preset definitions in the catalog
-// declare their own enter durations against the same 72-frame budget.
-const MaxStaggerSweepFrames = 72
+// declare their own enter durations against the same budget, and the 96-frame
+// (4s at 24fps) floor guarantees a phrase remains visibly animated for four
+// seconds whenever the clip length permits it.
+const MaxStaggerSweepFrames = 96

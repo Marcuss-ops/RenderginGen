@@ -6,6 +6,7 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+	"unicode/utf8"
 )
 
 // TestCompileSemanticRejectsUntypedConcretePlan pins the fail-closed
@@ -127,8 +128,8 @@ func TestCompileSemanticTextUsesExplicitCanvasLocalBox(t *testing.T) {
 		t.Fatalf("expected one text layer, got %d", len(compiled.Layers))
 	}
 	layer := compiled.Layers[0]
-	if len(layer.Size) != 2 || layer.Size[0] != 1920 || layer.Size[1] != 120 {
-		t.Fatalf("text local box = %#v, want [1920 120]", layer.Size)
+	if len(layer.Size) != 2 || layer.Size[0] != 1920 || layer.Size[1] != 260 {
+		t.Fatalf("text local box = %#v, want [1920 260]", layer.Size)
 	}
 	// A text layer's plan position is its centre in absolute canvas
 	// coordinates; the engine subtracts canvas/2 itself, so the canonical
@@ -284,7 +285,7 @@ func TestCompileSemanticImportantPhraseAndEntityImage(t *testing.T) {
       "items":[
         {"id":"phrase-important","kind":"important_phrase","template_id":"IMPORTANT_PHRASE","preset_id":"phrase_default",
          "text":"THIS CHANGES EVERYTHING","start_ms":500,"end_ms":1800},
-        {"id":"person-image-name","entity_id":"person:matt-damon","kind":"entity_card","template_id":"PERSON","preset_id":"phrase_default","image_preset_id":"image_slide_left",
+        {"id":"person-image-name","entity_id":"person:matt-damon","kind":"entity_card","template_id":"PERSON","preset_id":"phrase_default","image_preset_id":"image_slide_left","motion_id":"image_focus_reveal",
          "text":"Matt Damon",
          "start_ms":2200,"end_ms":4200,"duration_ms":2000,
          "asset_refs":[{"asset_id":"matt-damon","sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
@@ -299,14 +300,24 @@ func TestCompileSemanticImportantPhraseAndEntityImage(t *testing.T) {
 	if len(compiled.Layers) != 2 {
 		t.Fatalf("compiled layers = %+v", compiled.Layers)
 	}
-	if compiled.Layers[0].Text != "THIS CHANGES EVERYTHING" {
-		t.Fatalf("important phrase layer = %+v", compiled.Layers[0])
+	unwrapped := strings.Join(strings.Fields(strings.ReplaceAll(compiled.Layers[0].Text, "\n", " ")), " ")
+	if unwrapped != "THIS CHANGES EVERYTHING" {
+		t.Fatalf("important phrase layer unwrapped = %q (raw %q), want THIS CHANGES EVERYTHING", unwrapped, compiled.Layers[0].Text)
+	}
+	for _, line := range strings.Split(compiled.Layers[0].Text, "\n") {
+		if utf8.RuneCountInString(line) > 25 {
+			t.Fatalf("important phrase line %q exceeds 25-char budget", line)
+		}
 	}
 	if compiled.Layers[1].Type != "image" || compiled.Layers[1].Asset != "assets/semantic/matt-damon.png" {
 		t.Fatalf("named image asset layer = %+v", compiled.Layers[1])
 	}
 	if compiled.Layers[1].Animation == nil || len(compiled.Layers[1].Animation.Tracks) == 0 {
-		t.Fatalf("entity image must carry image preset animation = %+v", compiled.Layers[1].Animation)
+		t.Fatalf("entity image must carry explicit image motion = %+v", compiled.Layers[1].Animation)
+	}
+	wantImageMotion, err := animationForMotion("image_focus_reveal", nil, "", compiled.Layers[1].DurationFrames, imagePresetExitForTest(t, "image_slide_left"))
+	if err != nil || !reflect.DeepEqual(compiled.Layers[1].Animation.Tracks, wantImageMotion.Tracks) {
+		t.Fatalf("entity image did not use its explicit motion_id: got=%+v want=%+v err=%v", compiled.Layers[1].Animation, wantImageMotion, err)
 	}
 	// Entity portraits remain at the preset's resolved 480px size, but the
 	// subject itself is centered in the composition and fully contained.
@@ -337,7 +348,7 @@ func TestCompileSemanticEntityImagePopupKeepsPresetMotionAndCenters(t *testing.T
       "plan_id":"entity-image-popup","video_id":"entity-image-popup",
       "width":1920,"height":1080,"fps_num":24,"fps_den":1,
       "items":[
-        {"id":"jordan-image","entity_id":"person:michael-jordan","kind":"entity_image","template_id":"image_popup","preset_id":"image_slide_right",
+        {"id":"jordan-image","entity_id":"person:michael-jordan","kind":"entity_image","template_id":"image_popup","preset_id":"image_slide_right","motion_id":"image_focus_reveal",
          "start_ms":0,"end_ms":5000,
          "asset_refs":[{"asset_id":"jordan","sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
                          "url":"https://store.example/objects/jordan.jpg","media_type":"image/jpeg"}]}
@@ -355,7 +366,11 @@ func TestCompileSemanticEntityImagePopupKeepsPresetMotionAndCenters(t *testing.T
 		t.Fatalf("entity image popup layer = %+v", layer)
 	}
 	if layer.Animation == nil || len(layer.Animation.Tracks) == 0 {
-		t.Fatalf("official image preset animation was dropped = %+v", layer.Animation)
+		t.Fatalf("explicit image motion was dropped = %+v", layer.Animation)
+	}
+	wantMotion, err := animationForMotion("image_focus_reveal", nil, "", layer.DurationFrames, imagePresetExitForTest(t, "image_slide_right"))
+	if err != nil || !reflect.DeepEqual(layer.Animation.Tracks, wantMotion.Tracks) {
+		t.Fatalf("explicit entity-image motion was not lowered: got=%+v want=%+v err=%v", layer.Animation, wantMotion, err)
 	}
 	if len(layer.Position) != 2 || layer.Position[0] != 0 || layer.Position[1] != 0 {
 		t.Fatalf("entity image popup must be centered = %+v", layer.Position)
@@ -382,7 +397,7 @@ func TestCompileSemanticEntityImageKeepsEveryGeneratedPresetMotion(t *testing.T)
               "plan_id":"entity-image-%[1]s","video_id":"entity-image-%[1]s",
               "width":1920,"height":1080,"fps_num":24,"fps_den":1,
               "items":[
-                {"id":"jordan-%[1]s","entity_id":"person:michael-jordan","kind":"entity_image","template_id":"image_popup","preset_id":"%[1]s",
+                {"id":"jordan-%[1]s","entity_id":"person:michael-jordan","kind":"entity_image","template_id":"image_popup","preset_id":"%[1]s","motion_id":"image_focus_reveal",
                  "start_ms":0,"end_ms":5000,
                  "asset_refs":[{"asset_id":"jordan","sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
                                  "url":"https://store.example/objects/jordan.jpg","media_type":"image/jpeg"}]}
@@ -436,13 +451,26 @@ func TestCompileSemanticEntityImageKeepsEveryGeneratedPresetMotion(t *testing.T)
 			if want == nil || len(want.Tracks) == 0 {
 				t.Fatalf("official preset %s must own a motion", presetID)
 			}
-			if !reflect.DeepEqual(layer.Animation, want) {
-				t.Fatalf("entity image animation is not the official %s motion\n got: %+v\nwant: %+v", presetID, layer.Animation, want)
+			if layer.Animation == nil || len(layer.Animation.Tracks) == 0 {
+				t.Fatalf("explicit image motion was dropped for preset %s: %+v", presetID, layer.Animation)
+			}
+			wantSelected, err := animationForMotion("image_focus_reveal", nil, "", layer.DurationFrames, def.Motion.Exit)
+			if err != nil || !reflect.DeepEqual(layer.Animation.Tracks, wantSelected.Tracks) {
+				t.Fatalf("entity image did not honor motion_id for preset %s\n got: %+v\nwant: %+v\nerr: %v", presetID, layer.Animation, wantSelected, err)
 			}
 			t.Logf("preset=%s anchor=%s motion=%s box=%dx%d position=%v tracks=%+v",
 				presetID, def.Layout.Anchor, def.Motion.ID, layer.BoxWidth, layer.BoxHeight, layer.Position, layer.Animation.Tracks)
 		})
 	}
+}
+
+func imagePresetExitForTest(t *testing.T, presetID string) int {
+	t.Helper()
+	preset, err := ResolveOfficialPreset(presetID)
+	if err != nil {
+		t.Fatalf("resolve image preset %q: %v", presetID, err)
+	}
+	return preset.Motion.Exit
 }
 
 // TestCompileSemanticTransportsChrononPresetID ensures RenderingGen does

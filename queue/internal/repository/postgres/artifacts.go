@@ -321,5 +321,19 @@ func getArtifact(ctx context.Context, db *sql.DB, id string) (*model.Artifact, e
 	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("iterate processing metrics for artifact %s: %w", id, err)
 	}
+	// render_telemetry is the BOUNDED Chronon ledger document (schema
+	// chronon3d.render-telemetry-summary.v1 or chronon3d.frame-timing.v2
+	// projected onto schema/version/summary/job, without the unbounded
+	// per-frame array). It is stored separately from processing_metrics so
+	// the queue API must rehydrate it here; without this the GET /jobs/{id}
+	// artifact silently drops chronon_telemetry even though the worker
+	// reported it and the ledger contains it (P0 per-overlay tracing
+	// completeness). Fail-open on missing row (legacy worker).
+	var telemetry []byte
+	if err := db.QueryRowContext(ctx, `
+		SELECT telemetry FROM render_telemetry
+		WHERE job_id = $1 ORDER BY created_at DESC LIMIT 1`, jobID).Scan(&telemetry); err == nil && len(telemetry) > 0 {
+		a.ChrononTelemetry = json.RawMessage(telemetry)
+	}
 	return &a, nil
 }

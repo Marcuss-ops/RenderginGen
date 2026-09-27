@@ -45,6 +45,14 @@ func (i *semanticItem) UnmarshalJSON(data []byte) error {
 		return nil
 	}
 
+	if kind == KindEntityImage && len(i.ImageLayers) > 0 {
+		// Composite image items carry child identity, preset and timing on each
+		// image_layers entry; the legacy one-layer entity metadata is not used.
+		if strings.TrimSpace(i.Kind) == "" || strings.TrimSpace(i.PresetID) == "" || i.DurationMS == nil {
+			return fmt.Errorf("overlay: composite entity image %q requires kind, preset_id and duration_ms from PipelineGen", i.ID)
+		}
+		return nil
+	}
 	if strings.TrimSpace(i.EntityID) == "" {
 		return fmt.Errorf("overlay: entity item %q requires entity_id from PipelineGen", i.ID)
 	}

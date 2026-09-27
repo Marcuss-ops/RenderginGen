@@ -85,6 +85,45 @@ func TestRunGPUImageTextCompositionUsesChrononGPUPipeContract(t *testing.T) {
 	}
 }
 
+func TestFinalJobCompositeRequiresNativeCompositionPath(t *testing.T) {
+	proc, _, renderer := newProcessor(t)
+	proc.backend = "vulkan"
+	proc.encodePreset = "p1"
+	proc.SetStrictNativeBackend(true)
+	ws, err := workspace.New(proc.jobsRoot, "final-composite-fallback")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer ws.Cleanup()
+	prepared := &PreparedJob{
+		Job:       &queue.Job{ID: "plan:final-composite:scene-1"},
+		Workspace: ws,
+		Plan: &overlay.Plan{
+			Canvas: overlay.Canvas{Width: 1280, Height: 720, FPSNum: 30, FPSDen: 1, DurationFrames: 30},
+			Layers: []overlay.Layer{{ID: "source", Type: "video"}, {ID: "image", Type: "image"}},
+		},
+		Metrics: map[string]float64{},
+	}
+	if err := proc.RunGPU(context.Background(), prepared); err != nil {
+		t.Fatalf("RunGPU() = %v, want final composite native path to be accepted", err)
+	}
+	if renderer.req.Requirements.CPUFallbackAllowed {
+		t.Fatal("final composite must keep the GPU composition requirement strict")
+	}
+	if renderer.req.Requirements.Backend != "auto" || !renderer.req.Requirements.GPURequired {
+		t.Fatalf("final composite requirements = %+v, want Vulkan/NVENC native composition with GPU execution required", renderer.req.Requirements)
+	}
+	if renderer.req.EncodePreset != "p1" {
+		t.Fatalf("final composite encode preset = %q, want fast NVENC preset p1", renderer.req.EncodePreset)
+	}
+	if prepared.NativeCertified {
+		t.Fatal("intermediate final composite must not claim whole-video native-surface certification")
+	}
+	if isFinalJobComposite(&queue.Job{ID: "ordinary-render"}) {
+		t.Fatal("ordinary render must remain under strict native policy")
+	}
+}
+
 func (f *fakeRenderer) Render(_ context.Context, req chronon.RenderRequest) error {
 	f.calls++
 	f.req = req

@@ -23,6 +23,7 @@ import (
 	"os"
 	"sort"
 	"strings"
+	"unicode/utf8"
 )
 
 // resolvedItem is RenderingGen's canonical internal representation of one
@@ -382,6 +383,9 @@ func resolveSemanticItems(src *semanticPlan) ([]resolvedItem, error) {
 		if err := validateTextElementContract(item); err != nil {
 			return nil, err
 		}
+		if err := validateSemanticImageLayers(item); err != nil {
+			return nil, err
+		}
 		spec := templateSpecFor(item.Template)
 		kind, err := spec.resolveKind(item.Kind, item.ID)
 		if err != nil {
@@ -468,11 +472,7 @@ func compileItem(ri resolvedItem, src *semanticPlan, registry *assetRegistry) ([
 		}
 		return []Layer{layer}, nil
 	case isImageKind(ri.Kind):
-		layer, err := compileImageLayer(ri, src, registry)
-		if err != nil {
-			return nil, err
-		}
-		return []Layer{layer}, nil
+		return compileImageLayers(ri, src, registry)
 	default:
 		layer, err := compileTextLayer(ri, src, ri.Item.ID)
 		if err != nil {
@@ -490,16 +490,21 @@ func compileEntityCard(ri resolvedItem, src *semanticPlan, registry *assetRegist
 	img := imageLayer(ri, registry.Path(ri.Item.Assets[0].ID))
 	if ri.ImagePreset.ID != "" {
 		applyPresetDefinition(&img, ri.ImagePreset)
-		imgAnimation, err := animationForPreset(ri.ImagePreset, "", ri.End-ri.Start)
+		var imgAnimation *LayerAnimation
+		var err error
+		if ri.Item.MotionID != "" {
+			imgAnimation, err = animationForMotion(ri.Item.MotionID, ri.Item.MotionParams, "", ri.End-ri.Start, ri.ImagePreset.Motion.Exit)
+		} else {
+			imgAnimation, err = animationForPreset(ri.ImagePreset, "", ri.End-ri.Start)
+		}
 		if err != nil {
 			return nil, err
 		}
-		img.Animation = imgAnimation
+		applyMotionRouting(&img, imgAnimation)
 		// Entity portraits are centered visual subjects.  The image presets
-		// still own the box size and the entrance motion, but their legacy
-		// left/right/bottom anchors must not move the portrait off-canvas.
-		// Keep the resolved size untouched and use contain so the source is
-		// fully visible inside that box without cropping.
+		// still own the box size, but their legacy left/right/bottom anchors
+		// must not move the portrait off-canvas. Keep the resolved size
+		// untouched and use contain so the source is fully visible without crop.
 		img.Position = []float64{0, 0}
 		img.Fit = FitContain
 	}
@@ -550,71 +555,159 @@ func compileVideoOverlayLayer(ri resolvedItem, src *semanticPlan, registry *asse
 	return layer, nil
 }
 
-// compileImageLayer lowers an image kind (IMAGE_OVERLAY/PRODUCT/LOGO/…) to a
-// single image layer.
-func compileImageLayer(ri resolvedItem, src *semanticPlan, registry *assetRegistry) (Layer, error) {
+// compileImageLayers lowers an image kind (IMAGE_OVERLAY/PRODUCT/LOGO/…) to one
+// or more Chronon image layers. Composite children share one semantic item and
+// queue render while retaining independent timing and motion.
+func validateSemanticImageLayers(item semanticItem) error {
+	if len(item.ImageLayers) == 0 {
+		return nil
+	}
+	kind := ItemKind(strings.ToLower(strings.TrimSpace(item.Kind)))
+	if kind == "" {
+		kind = templateSpecFor(item.Template).Kind
+	}
+	if behaviorOf(kind) != behaviorImage || len(item.ImageLayers) < 2 || len(item.Assets) < 2 {
+		return fmt.Errorf("overlay: item %q image_layers require an image item with at least two layers and assets", item.ID)
+	}
+	assets := make(map[string]struct{}, len(item.Assets))
+	for _, ref := range item.Assets {
+		assets[ref.ID] = struct{}{}
+	}
+	layerIDs := make(map[string]struct{}, len(item.ImageLayers))
+	parentDuration := item.EndMS - item.StartMS
+	for index, layer := range item.ImageLayers {
+		if strings.TrimSpace(layer.ID) == "" || strings.TrimSpace(layer.AssetID) == "" {
+			return fmt.Errorf("overlay: item %q image_layers[%d] requires id and asset_id", item.ID, index)
+		}
+		if _, ok := assets[layer.AssetID]; !ok {
+			return fmt.Errorf("overlay: item %q image layer %q references undeclared asset %q", item.ID, layer.ID, layer.AssetID)
+		}
+		if _, exists := layerIDs[layer.ID]; exists {
+			return fmt.Errorf("overlay: item %q has duplicate image layer id %q", item.ID, layer.ID)
+		}
+		layerIDs[layer.ID] = struct{}{}
+		if layer.StartMS < 0 || layer.EndMS <= layer.StartMS || layer.EndMS > parentDuration {
+			return fmt.Errorf("overlay: item %q image layer %q has invalid relative timing [%d,%d) for parent duration %dms", item.ID, layer.ID, layer.StartMS, layer.EndMS, parentDuration)
+		}
+		if strings.TrimSpace(layer.PresetID) == "" {
+			return fmt.Errorf("overlay: item %q image layer %q requires preset_id", item.ID, layer.ID)
+		}
+	}
+	return nil
+}
+
+func compileImageLayers(ri resolvedItem, src *semanticPlan, registry *assetRegistry) ([]Layer, error) {
 	if len(ri.Item.Assets) == 0 {
-		return Layer{}, fmt.Errorf("overlay: image template %q item %q requires asset_refs", ri.Item.Template, ri.Item.ID)
+		return nil, fmt.Errorf("overlay: image template %q item %q requires asset_refs", ri.Item.Template, ri.Item.ID)
 	}
-	layer := imageLayer(ri, registry.Path(ri.Item.Assets[0].ID))
-	if ri.Preset.ID != "" {
-		applyPresetDefinition(&layer, ri.Preset)
+	if len(ri.Item.ImageLayers) == 0 {
+		layer, err := compileSingleImageLayer(ri, src, registry.Path(ri.Item.Assets[0].ID), ri.Preset, ri.Item.MotionID, ri.Item.MotionParams, ri.Start, ri.End, ri.Item.ID)
+		if err != nil {
+			return nil, err
+		}
+		return []Layer{layer}, nil
 	}
-	layer.EntityImage = ri.Kind == KindEntityImage
-	ignoreEntityImageMotion := false
-	if ri.Item.MotionID != "" {
-		// An explicit MotionID owns its timing windows in the catalog. Passing
-		// the style preset's exit here would silently override that motion's
-		// authored exit duration (including image_25d_clean_v1's 12 frames).
-		animation, err := animationForMotion(ri.Item.MotionID, ri.Item.MotionParams, ri.Item.Text, ri.End-ri.Start, 0)
+
+	assets := make(map[string]string, len(ri.Item.Assets))
+	for _, ref := range ri.Item.Assets {
+		assets[ref.ID] = registry.Path(ref.ID)
+	}
+	layers := make([]Layer, 0, len(ri.Item.ImageLayers))
+	for _, child := range ri.Item.ImageLayers {
+		assetPath, ok := assets[child.AssetID]
+		if !ok {
+			return nil, fmt.Errorf("overlay: composite image item %q layer %q references undeclared asset %q", ri.Item.ID, child.ID, child.AssetID)
+		}
+		preset, err := resolveOfficialPreset(child.PresetID, string(PresetImage))
+		if err != nil {
+			return nil, fmt.Errorf("overlay: composite image item %q layer %q: %w", ri.Item.ID, child.ID, err)
+		}
+		startOffset, endOffset := msFrames(child.StartMS, child.EndMS, int64(src.FPSNum), int64(src.FPSDen))
+		start, end := ri.Start+startOffset, ri.Start+endOffset
+		params := child.Params
+		if params == nil {
+			params = map[string]any{}
+		}
+		childItem := ri.Item
+		childItem.ID = ri.Item.ID + ":" + child.ID
+		childItem.PresetID = child.PresetID
+		childItem.MotionID = child.MotionID
+		childItem.MotionParams = child.MotionParams
+		childItem.StartMS, childItem.EndMS = child.StartMS, child.EndMS
+		childItem.Params = params
+		childResolved := ri
+		childResolved.Item = childItem
+		childResolved.Params = params
+		childResolved.Start, childResolved.End = start, end
+		layer, err := compileSingleImageLayer(childResolved, src, assetPath, preset, child.MotionID, child.MotionParams, start, end, ri.Item.ID+":"+child.ID)
+		if err != nil {
+			return nil, err
+		}
+		// Keep camera-backed 2.5D tracks as authored. Image geometry and
+		// motion are independent contract inputs; Enable3D is derived by the
+		// shared motion-routing helper above.
+		layers = append(layers, layer)
+	}
+	return layers, nil
+}
+
+func compileSingleImageLayer(ri resolvedItem, src *semanticPlan, assetPath string, preset PresetDefinition, motionID string, motionParams map[string]any, start, end int64, layerID string) (Layer, error) {
+	layer := imageLayer(ri, assetPath)
+	layer.ID = imageLayerID(layerID)
+	layer.StartFrame, layer.DurationFrames = start, end-start
+	applyPresetDefinition(&layer, preset)
+	if motionID != "" {
+		animation, err := animationForMotion(motionID, motionParams, ri.Item.Text, end-start, preset.Motion.Exit)
 		if err != nil {
 			return Layer{}, err
 		}
-		// Skip 2.5D transforms on editorial entity photos. Chronon renders them
-		// as a tilted plane, which exposes a black rectangular edge around the
-		// source. Keep the preset's ordinary 2D entrance when one is declared.
-		ignoreEntityImageMotion = ri.Kind == KindEntityImage && layerUses3D(animation)
-		if !ignoreEntityImageMotion {
-			applyMotionRouting(&layer, animation)
-		}
-	}
-	if (ri.Item.MotionID == "" || ignoreEntityImageMotion) && ri.Preset.ID != "" {
-		presetAnimation, err := animationForPreset(ri.Preset, "", ri.End-ri.Start)
+		// Explicit image motion_id is authoritative for both entity and generic
+		// images; 2.5D recipes are no longer silently discarded for portraits.
+		applyMotionRouting(&layer, animation)
+	} else if preset.ID != "" {
+		animation, err := animationForPreset(preset, "", end-start)
 		if err != nil {
 			return Layer{}, err
 		}
-		applyMotionRouting(&layer, presetAnimation)
+		applyMotionRouting(&layer, animation)
 	}
-	if layer.Position == nil && ri.Preset.ID != "" {
+	if x, ok := numericParam(ri.Params["position_x"]); ok {
+		y, _ := numericParam(ri.Params["position_y"])
+		layer.Position = []float64{x, y}
+	} else if layer.Position == nil {
 		if ri.Kind == KindEntityImage {
-			// Entity portraits are centered visual subjects. Keep the official
-			// preset's box, but do not apply the image_popup anchor or push the
-			// portrait off-canvas/crop it.
 			layer.Position = []float64{0, 0}
 			layer.Fit = FitContain
+		} else if position, ok := ri.Params["position"].(string); ok && strings.EqualFold(strings.TrimSpace(position), "center") {
+			layer.Position = []float64{0, 0}
 		} else {
-			// A semantic image may request the same explicit center/anchor the
-			// official image presets express. Keep the preset as the owner of fit
-			// and motion, while honoring this layout intent.
-			if position, ok := ri.Params["position"].(string); ok {
-				switch strings.ToLower(strings.TrimSpace(position)) {
-				case "center":
-					layer.Position = []float64{0, 0}
-				case "image_left", "left":
-					layer.Position = []float64{-float64(src.Width-layer.BoxWidth) / 2, 0}
-				case "image_right", "right":
-					layer.Position = []float64{float64(src.Width-layer.BoxWidth) / 2, 0}
-				case "bottom_right":
-					layer.Position = []float64{float64(src.Width-layer.BoxWidth) / 2, float64(src.Height-layer.BoxHeight) / 2}
-				default:
-					layer.Position = resolveImageLayout(ri.Preset.Layout, layer.BoxWidth, layer.BoxHeight, src.Width, src.Height)
-				}
-			} else {
-				layer.Position = resolveImageLayout(ri.Preset.Layout, layer.BoxWidth, layer.BoxHeight, src.Width, src.Height)
-			}
+			layer.Position = resolveImageLayout(preset.Layout, layer.BoxWidth, layer.BoxHeight, src.Width, src.Height)
 		}
 	}
+	if y, ok := numericParam(ri.Params["position_y"]); ok {
+		if layer.Position == nil {
+			layer.Position = []float64{0, 0}
+		}
+		layer.Position[1] = y
+	}
+	if ri.Kind == KindEntityImage {
+		layer.Fit = FitContain
+		layer.EntityImage = true
+	}
 	return layer, nil
+}
+
+func numericParam(value any) (float64, bool) {
+	switch number := value.(type) {
+	case float64:
+		return number, true
+	case int:
+		return float64(number), true
+	case int64:
+		return float64(number), true
+	default:
+		return 0, false
+	}
 }
 
 // FitEntityImageLayerToAsset matches an entity image's bounded contain box to
@@ -652,14 +745,91 @@ func FitEntityImageLayerToAsset(layer *Layer, assetPath string) error {
 	return nil
 }
 
+// phraseWrapCols is the hard line-length budget for important phrases:
+// ogni 25 caratteri a capo correttamente, word-aware, mai tagliando una parola
+// a metà. Una parola isolata più lunga di 25 resta intera sulla propria riga.
+const phraseWrapCols = 25
+
+// phraseLineHeight is the estimated raster height of one wrapped line at the
+// phrase preset's authored font size (64) with its glow/shadow. It is used
+// only to grow the text box when wrapping produces more lines than the
+// preset's 260px can hold — the renderer still owns the final line layout.
+const phraseLineHeight = 78
+
+func wrapPhraseAt25(text string) (string, int) {
+	if utf8.RuneCountInString(strings.TrimSpace(text)) <= phraseWrapCols {
+		return strings.TrimSpace(text), 1
+	}
+	// Respect existing hard breaks: each paragraph is wrapped independently
+	// so an authored manuale \n is never collapsed.
+	paragraphs := strings.Split(text, "\n")
+	var out []string
+	for _, para := range paragraphs {
+		trimmed := strings.TrimSpace(para)
+		if trimmed == "" {
+			out = append(out, "")
+			continue
+		}
+		words := strings.Fields(trimmed)
+		if len(words) == 0 {
+			continue
+		}
+		var cur strings.Builder
+		curLen := 0
+		for idx, word := range words {
+			wLen := utf8.RuneCountInString(word)
+			if curLen == 0 {
+				cur.WriteString(word)
+				curLen = wLen
+			} else if curLen+1+wLen <= phraseWrapCols {
+				cur.WriteString(" ")
+				cur.WriteString(word)
+				curLen += 1 + wLen
+			} else {
+				out = append(out, cur.String())
+				cur.Reset()
+				cur.WriteString(word)
+				curLen = wLen
+			}
+			if idx == len(words)-1 {
+				out = append(out, cur.String())
+			}
+		}
+	}
+	if len(out) == 0 {
+		return strings.TrimSpace(text), 1
+	}
+	lineCount := len(out)
+	// Drop a leading/trailing empty produced by borderline splits.
+	for len(out) > 0 && strings.TrimSpace(out[0]) == "" {
+		out = out[1:]
+		lineCount--
+	}
+	for len(out) > 0 && strings.TrimSpace(out[len(out)-1]) == "" {
+		out = out[:len(out)-1]
+		lineCount--
+	}
+	if lineCount <= 0 {
+		return strings.TrimSpace(text), 1
+	}
+	return strings.Join(out, "\n"), lineCount
+}
+
 // compileTextLayer lowers a text kind to a single text layer. Text is
 // mandatory: PipelineGen owns the displayed text and RenderingGen never
 // invents one (there is no entity_ref fallback).
 func compileTextLayer(ri resolvedItem, src *semanticPlan, layerID string) (Layer, error) {
-	text := ri.Item.Text
-	if strings.TrimSpace(text) == "" {
+	rawText := ri.Item.Text
+	if strings.TrimSpace(rawText) == "" {
 		return Layer{}, fmt.Errorf("overlay: item %q requires text (PipelineGen owns the displayed text)", ri.Item.ID)
 	}
+	// Ogni 25 caratteri a capo correttamente: word-aware wrap that never cuts
+	// a word. Applied at compile so Chronon's word wrap and the motion's
+	// glyph stagger both operate on the finalized line breaks, and every line
+	// remains horizontally Center-aligned by materialize_text.
+	text, wrappedLines := wrapPhraseAt25(rawText)
+	// Preserve the phrase kind's semantic flag for the motion floor even when
+	// the raw kind was routed through the text branch.
 	layer := Layer{ID: layerID, Type: "text", Text: text, StartFrame: ri.Start, DurationFrames: ri.End - ri.Start}
 	if ri.Preset.ID != "" {
 		applyPresetDefinition(&layer, ri.Preset)
@@ -675,9 +845,27 @@ func compileTextLayer(ri resolvedItem, src *semanticPlan, layerID string) (Layer
 	// is applied exactly once by Chronon.
 	if layer.BoxWidth <= 0 {
 		layer.BoxWidth = src.Width
+		if ri.Preset.Family == PresetText && ri.Preset.Layout.BoxWidth > 0 && ri.Preset.Layout.BoxWidth < layer.BoxWidth {
+			layer.BoxWidth = ri.Preset.Layout.BoxWidth
+		}
 	}
 	if layer.BoxHeight <= 0 {
 		layer.BoxHeight = DefaultTextBoxHeight
+		if ri.Preset.Family == PresetText && ri.Preset.Layout.BoxHeight > 0 {
+			layer.BoxHeight = ri.Preset.Layout.BoxHeight
+		}
+	}
+	// Grow the text box when the 25-char wrap produced more lines than the
+	// preset's 260px (≈3.3 lines) can hold — the renderer owns the final
+	// line layout but the box must be tall enough to not clip centred lines.
+	if wrappedLines > 1 {
+		needed := wrappedLines*phraseLineHeight + 16 // glow/shadow padding
+		if needed > layer.BoxHeight {
+			if needed > src.Height {
+				needed = src.Height
+			}
+			layer.BoxHeight = needed
+		}
 	}
 	layer.Size = []float64{float64(layer.BoxWidth), float64(layer.BoxHeight)}
 
@@ -686,8 +874,9 @@ func compileTextLayer(ri resolvedItem, src *semanticPlan, layerID string) (Layer
 		// Both halves of the selected motion travel, never one of them: the
 		// layer tracks and the per-unit text animators are produced by the same
 		// lowering pass (see lowerMotion). The preset's exit window is the
-		// fallback for a motion that declares none.
-		animation, err := animationForMotion(ri.Item.MotionID, ri.Item.MotionParams, ri.Item.Text, ri.End-ri.Start, ri.Preset.Motion.Exit)
+		// fallback for a motion that declares none. The wrapped text is used
+		// as the motion context so the stagger aligns with the final lines.
+		animation, err := animationForMotion(ri.Item.MotionID, ri.Item.MotionParams, text, ri.End-ri.Start, ri.Preset.Motion.Exit, ri.Kind == KindImportantPhrase)
 		if err != nil {
 			return Layer{}, err
 		}
@@ -700,7 +889,7 @@ func compileTextLayer(ri resolvedItem, src *semanticPlan, layerID string) (Layer
 		// requires animation objects to carry tracks, so an animator-only
 		// motion keeps the animation field absent and rides the layer's
 		// text_animators contract.
-		presetAnimation, err := animationForPreset(ri.Preset, text, ri.End-ri.Start)
+		presetAnimation, err := animationForPreset(ri.Preset, text, ri.End-ri.Start, ri.Kind == KindImportantPhrase)
 		if err != nil {
 			return Layer{}, err
 		}

@@ -79,6 +79,9 @@ func TestCanonicalPhrasePresetCarriesStrokeShadowAndAnimation(t *testing.T) {
 	if d.Motion.ID == "" {
 		t.Fatal("canonical text preset has no default animation")
 	}
+	if d.Style.TextFitMode != "shrink_only" || d.Style.MinFontSize <= 0 || d.Style.MaxFontSize < d.Style.MinFontSize {
+		t.Fatalf("canonical text preset has no safe shrink-only text fit: %+v", d.Style)
+	}
 
 	raw := []byte(`{"schema_version":"renderinggen.overlay-plan.v1","plan_id":"apple-style","video_id":"v","width":1920,"height":1080,"fps_num":30,"fps_den":1,"items":[{"id":"phrase","kind":"important_phrase","template_id":"IMPORTANT_PHRASE",		"preset_id":"phrase_default","text":"IMPORTANT","start_ms":0,"end_ms":3000}]}`)
 	result, err := CompileSemantic(raw)
