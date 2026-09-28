@@ -3,9 +3,15 @@ Description=RenderingGen native GPU worker B
 # Docker is deliberately NOT a dependency: the worker is host-native and
 # must start (and restart) even while containers are down or being upgraded.
 # Only PostgreSQL remains containerized, and only the queue talks to it.
-After=network-online.target chronon3d.service renderinggen-queue.service
+#
+# Ordering mirrors the primary worker: the worker needs the QUEUE, not the
+# daemon (the daemon is reached lazily over IPC and restarts independently).
+# Worker B additionally needs its OWN daemon instance, chronon3d-b.service,
+# which serves the dedicated socket in renderinggen-b.yaml. Without that unit
+# the worker starts but every render fails to connect.
+After=network-online.target renderinggen-queue.service chronon3d-b.service
 Wants=network-online.target
-Requires=renderinggen-queue.service chronon3d.service
+Requires=renderinggen-queue.service
 
 [Service]
 Type=simple

@@ -1,25 +1,41 @@
 worker:
   id: renderinggen-b
   pipeline_workers: 3
-  # See renderinggen-native.yaml: >2 lanes do not increase throughput.
-  gpu_lanes: 2
+  # See renderinggen-native.yaml: lanes above the daemon's own capacity only
+  # add queue wait. A worker only ever reaches its OWN daemon (socket_path
+  # below), and one daemon executes one RENDER_JOB at a time, so lanes here
+  # pipeline the per-worker pre/post chain and never multiply GPU concurrency.
+  # Two concurrent renders come from TWO daemons (chronon3d.service +
+  # chronon3d-b.service), not from this number.
+  gpu_lanes: 3
 queue:
+  # Same central queue as worker A: the PostgreSQL claim is FOR UPDATE SKIP
+  # LOCKED, so the two workers distribute jobs between them instead of
+  # duplicating them. Sharing the queue is what makes the second daemon useful.
   endpoint: http://127.0.0.1:8081
 artifact_store:
   endpoint: http://127.0.0.1:9000
+  # Separate cache root: two workers sharing one local cache directory would
+  # race on the same content-addressed entries.
   local_cache_dir: /var/lib/renderinggen/cache-b
 workspace:
+  # Separate workspace: /dev/shm holds live render working sets for BOTH workers.
   root: /dev/shm/renderinggen/jobs-b
 chronon:
   profile: gpu-vulkan-native
   home: /opt/chronon3d
   binary: /usr/local/bin/chronon3d_cli
   mode: ipc
-  socket_path: /var/run/chronon3d/chronon.sock
+  # DEDICATED daemon socket. This is the whole point: it must NOT be
+  # /var/run/chronon3d/chronon.sock (which resolves to /run/... — the same file
+  # worker A uses), or worker B just queues behind daemon A's execution mutex
+  # and adds nothing. Serve it with chronon3d-b.service.
+  socket_path: /run/chronon3d-b/chronon.sock
   strict_native_backend: true
   encode_preset: p1
   pipe_pixfmt: nv12
 gpu:
   device: 0
 health:
+  # Distinct from worker A's 8080 so both can bind.
   addr: 127.0.0.1:8082
