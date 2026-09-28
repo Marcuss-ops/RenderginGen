@@ -123,16 +123,7 @@ func TestImage25DMotionChangesRenderedPixels(t *testing.T) {
 
 func phraseMotionFrame(t *testing.T, path string, frame int) []byte {
 	t.Helper()
-	filter := fmt.Sprintf("select=eq(n\\,%d)", frame)
-	out, err := exec.Command("ffmpeg", "-v", "error", "-i", path, "-vf", filter,
-		"-frames:v", "1", "-f", "rawvideo", "-pix_fmt", "rgb24", "-").Output()
-	if err != nil {
-		t.Fatalf("decode frame %d: %v", frame, err)
-	}
-	if len(out) != 640*360*3 {
-		t.Fatalf("decoded frame %d has %d RGB bytes, want %d", frame, len(out), 640*360*3)
-	}
-	return out
+	return frameRGBAt(t, path, frame, 640, 360)
 }
 
 func absByteDiff(a, b byte) int {
