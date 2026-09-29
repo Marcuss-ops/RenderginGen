@@ -291,11 +291,13 @@ func main() {
 	healthServer.SetDegradationFunc(proc.Degradations)
 	// Prometheus exposition on the same admin port. The worker was the only
 	// process in the chain with no scrapeable surface (GET :8085/metrics → 404),
-	// so the per-phase timings it already measures were unreachable. Both feeds
-	// are the EXISTING instrumentation: the processor's phase hook and its
-	// terminal-report funnel.
+	// so the per-phase timings it already measures were unreachable. Every feed
+	// is the EXISTING instrumentation: the processor's phase hook, its terminal
+	// report funnel, and its gpu_gap_us duty-cycle KPI (the one number that says
+	// whether the GPU idles BETWEEN renders as opposed to inside them).
 	workerMetrics := workermetrics.New()
 	proc.SetPhaseHook(workerMetrics.PhaseHook())
+	proc.SetGPUGapHook(workerMetrics.GPUGapHook())
 	processor.SetJobOutcomeHook(workerMetrics.OutcomeHook())
 	healthServer.SetMetricsHandler(workerMetrics.Handler())
 	go func() {

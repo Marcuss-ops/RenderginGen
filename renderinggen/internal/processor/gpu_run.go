@@ -154,8 +154,12 @@ func (p *Processor) RunGPU(ctx context.Context, prepared *PreparedJob) error {
 	prepared.Metrics[metricnames.RenderUS] = us
 	p.recordPhase(metricnames.RenderStem, phaseStart)
 	// Duty-cycle telemetry: the gap this render waited since the previous
-	// render ended on this worker. First job reports 0.
-	prepared.Metrics[metricnames.GPUGapUS] = p.recordGPUGap(phaseStart)
+	// render ended on this worker. First job reports 0. The same value is
+	// published to the optional duty-cycle observer (gpu_gap_hook.go), so the
+	// per-job metric and the worker's histogram can never disagree.
+	gapUS := p.recordGPUGap(phaseStart)
+	prepared.Metrics[metricnames.GPUGapUS] = gapUS
+	p.noteGPUGap(time.Duration(gapUS) * time.Microsecond)
 	progressMu.Lock()
 	observedProgress := sawProgress
 	finalProgress := lastProgress

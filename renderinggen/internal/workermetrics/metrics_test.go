@@ -46,6 +46,58 @@ func TestExpositionCarriesPhaseHistogramAndOutcome(t *testing.T) {
 	}
 }
 
+// TestExpositionCarriesGPUDutyCycleGap pins the third feed: the gap between two
+// renders on a worker lane (gpu_gap_us) must be scrapeable, because that is the
+// only number that answers "is the GPU idle BETWEEN jobs".
+func TestExpositionCarriesGPUDutyCycleGap(t *testing.T) {
+	m := New()
+	m.ObserveGPUGap(250 * time.Millisecond)
+	m.ObserveGPUGap(-time.Second) // clock skew must clamp to 0, never a negative bucket
+
+	body := scrape(t, m)
+	for _, want := range []string{
+		"renderinggen_worker_gpu_gap_seconds_count 2",
+		"renderinggen_worker_gpu_gap_seconds_bucket{le=\"0.5\"} 2",
+		"renderinggen_worker_gpu_gap_seconds_sum 0.25",
+	} {
+		if !strings.Contains(body, want) {
+			t.Errorf("exposition is missing %q\n---\n%s", want, body)
+		}
+	}
+}
+
+// TestGPUGapHookMatchesDirectObservation pins that the processor hook and the
+// direct call produce the same gpu_gap series — the hook is an adapter, not a
+// second measurement. Only this family is compared: a fresh registry also
+// carries the Go collector, whose values are per-process by design.
+func TestGPUGapHookMatchesDirectObservation(t *testing.T) {
+	viaHook := New()
+	viaHook.GPUGapHook()(750 * time.Millisecond)
+	direct := New()
+	direct.ObserveGPUGap(750 * time.Millisecond)
+	if got, want := gpuGapFamily(scrape(t, viaHook)), gpuGapFamily(scrape(t, direct)); got != want {
+		t.Errorf("hook exposition differs from direct observation:\nhook:\n%s\ndirect:\n%s", got, want)
+	}
+}
+
+// gpuGapFamily returns only the gpu_gap series of an exposition.
+func gpuGapFamily(body string) string {
+	var out []string
+	for _, line := range strings.Split(body, "\n") {
+		if strings.HasPrefix(line, "renderinggen_worker_gpu_gap_seconds") {
+			out = append(out, line)
+		}
+	}
+	return strings.Join(out, "\n")
+}
+
+// TestNilGPUGapIsSafe pins the unwired contract for the duty-cycle feed.
+func TestNilGPUGapIsSafe(t *testing.T) {
+	var m *Metrics
+	m.ObserveGPUGap(time.Second)
+	m.GPUGapHook()(time.Second)
+}
+
 // TestUnknownOutcomeFoldsIntoOneBoundedLabel pins that a typo cannot mint an
 // unbounded number of series (a caller passing a job id by mistake would
 // otherwise create one series per job).

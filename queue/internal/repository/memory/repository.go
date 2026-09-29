@@ -185,10 +185,18 @@ func (s *Repository) ClaimState(workerID string, state model.State) (*model.Job,
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
+	now := time.Now()
 	for i, id := range s.order {
 		job := s.jobs[id]
 		if job == nil || (state != "" && job.State != state) ||
 			(state == "" && !model.IsClaimable(job.State)) {
+			continue
+		}
+		// Deferred jobs (not_before in the future) are NOT claimable yet. The
+		// job keeps its FIFO slot and its pending state; the next claim after
+		// the due time picks it up. This mirrors the postgres claim predicate
+		// so the two backends cannot disagree about when a job is available.
+		if job.NotBefore != nil && job.NotBefore.After(now) {
 			continue
 		}
 		// Assembly anchors (model/lifecycle.go) are not render work: a job that
@@ -201,7 +209,7 @@ func (s *Repository) ClaimState(workerID string, state model.State) (*model.Job,
 		job.State = model.StateRunning
 		job.Worker = workerID
 		job.Attempts++
-		job.StartedAt = time.Now()
+		job.StartedAt = now
 		job.LeaseUntil = job.StartedAt.Add(s.lease)
 		if artifact, ok := s.artifacts[id]; ok {
 			copy := artifact

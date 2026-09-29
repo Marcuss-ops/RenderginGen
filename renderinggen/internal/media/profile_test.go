@@ -26,10 +26,9 @@ func TestResolveAssemblyReadyProfile(t *testing.T) {
 	if p.RequireNoAudio {
 		t.Fatalf("assembly-ready clips carry audio: %+v", p)
 	}
-	// V1 mirrors the VeloxEditing contract values (High canonical). The native
-	// lane's certified Main is an explicit accepted value, never a wildcard.
-	if len(p.AcceptedCodecProfiles) != 1 || p.AcceptedCodecProfiles[0] != "Main" {
-		t.Fatalf("accepted profiles = %v, want exactly [Main]", p.AcceptedCodecProfiles)
+	// Assembly-ready assets must carry exactly the canonical High profile.
+	if len(p.AcceptedCodecProfiles) != 0 {
+		t.Fatalf("accepted profiles = %v, want none", p.AcceptedCodecProfiles)
 	}
 	if p.VideoLevel != "4.0" || !p.RequireClosedGOP || p.KeyframeInterval != 48 {
 		t.Fatalf("assembly invariants not pinned: %+v", p)
@@ -94,6 +93,7 @@ func TestProfilePinsTimebaseAndAudioLayoutWhenDeclared(t *testing.T) {
 		AudioChannels: 2, AudioChannelLayout: "stereo", AudioBitrate: "128576",
 	}
 	probe := assemblyProbe()
+	probe.CodecProfile = pinned.CodecProfile
 	probe.VideoTimeBaseNum, probe.VideoTimeBaseDen = 1, 12288
 	probe.AudioTimeBaseNum, probe.AudioTimeBaseDen = 1, 48000
 	probe.Channels, probe.ChannelLayout, probe.AudioBitrate = 2, "stereo", "128576"
@@ -122,7 +122,7 @@ func TestProfilePinsTimebaseAndAudioLayoutWhenDeclared(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	unconstrained := probe
+	unconstrained := assemblyProbe()
 	unconstrained.VideoTimeBaseNum, unconstrained.VideoTimeBaseDen = 1, 90000
 	unconstrained.Channels, unconstrained.ChannelLayout, unconstrained.AudioBitrate = 1, "mono", "58524"
 	if err := v1.ValidateProbe(unconstrained); err != nil {
@@ -130,9 +130,8 @@ func TestProfilePinsTimebaseAndAudioLayoutWhenDeclared(t *testing.T) {
 	}
 }
 
-// assemblyProbe builds the certified fact set a native-lane assembly-ready
-// artifact produces today (values taken from a real GPU-native render receipt,
-// 2026-09-16: profile Main, level 4.0, closed GOP 48, SAR 1/1, bt709/tv,
+// assemblyProbe builds the canonical assembly-ready fact set (H.264 High,
+// level 4.0, closed GOP 48, SAR 1/1, bt709/tv,
 // start_pts 0).
 func assemblyProbe() ProbeResult {
 	return ProbeResult{
@@ -144,7 +143,7 @@ func assemblyProbe() ProbeResult {
 		FPSDen:             1,
 		PixelFormat:        "yuv420p",
 		VideoCodec:         "h264",
-		CodecProfile:       "Main",
+		CodecProfile:       "High",
 		VideoLevel:         "4.0",
 		FrameCount:         120,
 		FirstFrameKeyframe: true,
@@ -167,20 +166,18 @@ func assemblyProbe() ProbeResult {
 	}
 }
 
-func TestAssemblyReadyProfileAcceptsTheNativeLaneProfile(t *testing.T) {
+func TestAssemblyReadyProfileRequiresCanonicalHighProfile(t *testing.T) {
 	p, err := ResolveProfile(ProfileVeloxAssemblyReadyV1)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if err := p.ValidateProbe(assemblyProbe()); err != nil {
-		t.Fatalf("the native lane's certified artifact must pass the contract mirror: %v", err)
-	}
-	// The canonical value passes too: the contract declares High and a High
-	// encoder lane is not a violation.
-	probe := assemblyProbe()
-	probe.CodecProfile = "High"
-	if err := p.ValidateProbe(probe); err != nil {
 		t.Fatalf("canonical High must pass: %v", err)
+	}
+	probe := assemblyProbe()
+	probe.CodecProfile = "Main"
+	if err := p.ValidateProbe(probe); err == nil {
+		t.Fatal("Main must be refused when the shared contract requires High")
 	}
 }
 

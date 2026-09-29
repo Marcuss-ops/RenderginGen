@@ -214,6 +214,13 @@ type Job struct {
 	ChunkIndex     int         `json:"chunk_index,omitempty"`
 	FrameRange     *FrameRange `json:"frame_range,omitempty"`
 
+	// NotBefore defers the job: when set to a future time the queue stores it
+	// but NO worker can claim it until the time is due. Omitted or a past time
+	// makes the job immediately claimable, so existing producers are
+	// unaffected. The claim query enforces it, so deferral cannot be bypassed
+	// by a worker that ignores the field.
+	NotBefore *time.Time `json:"not_before,omitempty"`
+
 	RenderPlan json.RawMessage `json:"render_plan"`
 	Assets     []AssetRef      `json:"assets"`
 

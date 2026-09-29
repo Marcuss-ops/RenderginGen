@@ -210,9 +210,9 @@ func TestAssemblyReadyProfilesMirrorVeloxContract(t *testing.T) {
 			// VeloxEditing vocabulary); ffprobe — and therefore this registry,
 			// which validates ffprobe output — spells it "High". Same profile,
 			// different vocabulary, compared case-insensitively so the gate
-			// catches a REAL drift (Main ≠ High) without flagging the casing.
+			// catches a REAL profile drift without flagging casing.
 			if got, want := profile.CodecProfile, contractString(t, contract, "VideoProfile"); !strings.EqualFold(got, want) {
-				t.Errorf("CodecProfile = %q, contract declares %q (accepted values are the encoder-lane equivalence, not a replacement for the canonical value)", got, want)
+				t.Errorf("CodecProfile = %q, contract declares %q", got, want)
 			}
 			if got, want := profile.PixelFormat, contractString(t, contract, "PixelFormat"); got != want {
 				t.Errorf("PixelFormat = %q, contract declares %q", got, want)
@@ -366,7 +366,7 @@ func TestMeasuredArtifactDivergencesStayVisible(t *testing.T) {
 	if profile.AudioStreams != 1 {
 		t.Fatal("the stream counts ARE pinned; only the audio channel layout/bitrate and the video timebase are open")
 	}
-	if profile.CodecProfile != "High" || len(profile.AcceptedCodecProfiles) != 1 || profile.AcceptedCodecProfiles[0] != "Main" {
-		t.Fatalf("the certified encoder-lane profile equivalence changed: canonical %q accepted %v (the measured artifact carries Main)", profile.CodecProfile, profile.AcceptedCodecProfiles)
+	if profile.CodecProfile != "High" || len(profile.AcceptedCodecProfiles) != 0 {
+		t.Fatalf("the assembly-ready profile must be exact High with no alternate profiles: canonical %q accepted %v", profile.CodecProfile, profile.AcceptedCodecProfiles)
 	}
 }

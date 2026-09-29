@@ -69,6 +69,13 @@ Request (only `id`, `schema`, `version`, `render_plan` and `assets` are used):
 - Response `201 Created`: `{"id":"job-123"}`.
 - Response `409 Conflict`: a job with that `id` already exists. Producers treat
   this as idempotent success and poll the existing job.
+- `not_before` (RFC 3339) defers the job: it is stored immediately but **no
+  worker can claim it until the time is due**. Omitted or a past time keeps the
+  historical immediately-claimable behaviour, so existing producers are
+  unaffected. The deferral is enforced by the claim query (and by the in-memory
+  backend identically), so a worker cannot bypass it by ignoring the field —
+  this is how a producer pre-loads a queue of thousands of jobs without
+  overrunning the GPU workers.
 
 #### `POST /jobs/{id}/cancel`
 
@@ -370,7 +377,9 @@ cancellation therefore cannot produce a second Chronon invocation even when the
 cancel lands while the job is leased/running and the lease later elapses.
 
 - A claim opens a lease (`lease` field) and records a new `render_attempt`; the
-  attempt history is append-only, never overwritten.
+  attempt history is append-only, never overwritten. A pending job whose
+  `not_before` is in the future is skipped by the claim until it is due, so a
+  deferred backlog never blocks or is blocked by immediately-claimable work.
 - The worker renews via `POST /jobs/{id}/renew`; if the lease expires before
   completion, `RequeueExpired` requeues the job (or fails it after
   `max_attempts`), and another worker may claim it.

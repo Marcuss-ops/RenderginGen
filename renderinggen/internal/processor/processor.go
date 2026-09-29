@@ -93,6 +93,11 @@ type Processor struct {
 	gpuGapMu            sync.Mutex
 	gpuGapLastRenderEnd time.Time
 
+	// gpuGapHook, when set, receives the same duty-cycle gap the per-job
+	// gpu_gap_us metric carries, so the worker can expose its distribution.
+	// See gpu_gap_hook.go.
+	gpuGapHook func(gap time.Duration)
+
 	// cleanupFailures counts workspaces that could not be removed. Workspace
 	// cleanup is fail-open by design (a render must never fail because its
 	// scratch directory survived), but the jobs root is frequently tmpfs, so a

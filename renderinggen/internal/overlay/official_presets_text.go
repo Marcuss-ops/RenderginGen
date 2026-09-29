@@ -37,9 +37,12 @@ func phraseDefaultPreset() PresetDefinition {
 	}, phraseGlow()))
 	d.Layout.BoxWidth = 1920
 	d.Layout.BoxHeight = 260
-	d.Style.FontSize = 64
+	d.Style.FontSize = 112
 	d.Style.TextFitMode = "shrink_only"
-	d.Style.MinFontSize = 28
+	// Long important phrases are wrapped to 25 characters before rendering.
+	// Keep a readable floor on 1080p output while still allowing the layout
+	// engine to shrink unusually long unbroken words when necessary.
+	d.Style.MinFontSize = 64
 	d.Style.MaxFontSize = d.Style.FontSize
 	d.Style.Fill = []float64{1, 1, 1, 1}
 	// Keep the original restrained outline; a thick pure-black edge overwhelms

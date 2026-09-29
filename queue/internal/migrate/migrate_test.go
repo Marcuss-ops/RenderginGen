@@ -58,6 +58,7 @@ func TestMigrationsOrdered(t *testing.T) {
 		"024_terminal_state_notifications.sql",
 		"025_artifact_output_facts.sql",
 		"026_drop_dead_job_columns.sql",
+		"027_render_job_not_before.sql",
 	}
 	if len(names) != len(want) {
 		t.Fatalf("want %d migrations, got %d: %v", len(want), len(names), names)

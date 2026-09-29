@@ -131,21 +131,47 @@ func TestIPCClientRenderSuccess(t *testing.T) {
 		t.Fatalf("command = %d", cmd)
 	}
 	var payload struct {
-		PlanPath   string `json:"plan_path"`
-		AssetsRoot string `json:"assets_root"`
-		Output     string `json:"output"`
-		FirstFrame int64  `json:"first_frame"`
-		LastFrame  int64  `json:"last_frame"`
-		Report     bool   `json:"report"`
+		PlanPath            string `json:"plan_path"`
+		PreparedPackagePath string `json:"prepared_package_path"`
+		AssetsRoot          string `json:"assets_root"`
+		Output              string `json:"output"`
+		FirstFrame          int64  `json:"first_frame"`
+		LastFrame           int64  `json:"last_frame"`
+		Report              bool   `json:"report"`
 	}
 	if err := json.Unmarshal([]byte(<-gotPayload), &payload); err != nil {
 		t.Fatalf("payload decode: %v", err)
 	}
 	if payload.PlanPath != "/jobs/1/plan.json" ||
+		payload.PreparedPackagePath != "" ||
 		payload.AssetsRoot != "/jobs/1/assets" ||
 		payload.Output != "/jobs/1/output/result.mp4" ||
 		!payload.Report || payload.FirstFrame != 240 || payload.LastFrame != 359 {
 		t.Fatalf("payload = %+v", payload)
+	}
+}
+
+func TestIPCClientRenderForwardsPreparedPackage(t *testing.T) {
+	socketPath, _, gotPayload := startFakeDaemon(t, ipcStatusOk, `{"status":"ok"}`)
+	planPath := writeStrictNativeTestPlan(t)
+	const preparedPackagePath = "/jobs/1/prepared.json"
+
+	client := NewIPCClient(socketPath)
+	if err := client.Render(context.Background(), RenderRequest{
+		PlanPath:            planPath,
+		PreparedPackagePath: preparedPackagePath,
+		AssetsRoot:          "/jobs/1",
+		OutputPath:          "/jobs/1/output/result.mp4",
+	}); err != nil {
+		t.Fatalf("render: %v", err)
+	}
+
+	var payload map[string]any
+	if err := json.Unmarshal([]byte(<-gotPayload), &payload); err != nil {
+		t.Fatalf("payload decode: %v", err)
+	}
+	if got := payload["prepared_package_path"]; got != preparedPackagePath {
+		t.Fatalf("prepared_package_path = %v, want %q (payload=%v)", got, preparedPackagePath, payload)
 	}
 }
 
