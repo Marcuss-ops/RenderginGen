@@ -751,10 +751,10 @@ func FitEntityImageLayerToAsset(layer *Layer, assetPath string) error {
 const phraseWrapCols = 25
 
 // phraseLineHeight is the estimated raster height of one wrapped line at the
-// phrase preset's authored font size (64) with its glow/shadow. It is used
+// phrase preset's authored font size (112) with its glow/shadow. It is used
 // only to grow the text box when wrapping produces more lines than the
 // preset's 260px can hold — the renderer still owns the final line layout.
-const phraseLineHeight = 78
+const phraseLineHeight = 132
 
 func wrapPhraseAt25(text string) (string, int) {
 	if utf8.RuneCountInString(strings.TrimSpace(text)) <= phraseWrapCols {

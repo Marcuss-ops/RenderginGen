@@ -41,6 +41,10 @@ func startFakeIPCDaemon(t *testing.T, socketPath string) *fakeIPCDaemon {
 				if _, err := io.ReadFull(c, header); err != nil {
 					return
 				}
+				if binary.BigEndian.Uint32(header[0:4]) != ipcMagic ||
+					binary.BigEndian.Uint32(header[4:8]) != ipcCommandStatus {
+					return
+				}
 				if payloadLen := binary.BigEndian.Uint32(header[8:12]); payloadLen > 0 {
 					if _, err := io.ReadFull(c, make([]byte, payloadLen)); err != nil {
 						return
@@ -218,21 +222,18 @@ func TestDaemonPoolSpreadsJobsRoundRobin(t *testing.T) {
 	pool.Shutdown(context.Background()) // idempotent
 }
 
-// TestStartDaemonPoolReusesServedSocket pins that a socket already served is
-// reused unowned, and that input validation fails rather than starting
-// something.
+// TestStartDaemonPoolReusesServedSocket pins that only an answering daemon is
+// reused unowned; a file or stale socket path must never pass readiness.
 func TestStartDaemonPoolReusesServedSocket(t *testing.T) {
 	dir := t.TempDir()
 	base := filepath.Join(dir, "chronon.sock")
-	if err := os.WriteFile(base+".0", nil, 0o600); err != nil {
-		t.Fatal(err)
-	}
+	startFakeIPCDaemon(t, base+".0")
 
 	pool, err := StartDaemonPool(context.Background(), DaemonOptions{
 		SocketBase: base, Count: 1, Binary: "/nonexistent/chronon3d_cli",
 	})
 	if err != nil {
-		t.Fatalf("an already-served socket must be reused without starting anything: %v", err)
+		t.Fatalf("an already-serving socket must be reused without starting anything: %v", err)
 	}
 	if pool.OwnedCount() != 0 {
 		t.Fatalf("owned = %d, want 0", pool.OwnedCount())
@@ -251,5 +252,42 @@ func TestStartDaemonPoolReusesServedSocket(t *testing.T) {
 		SocketBase: filepath.Join(dir, "fresh.sock"), Count: 1, Binary: "/nonexistent/chronon3d_cli",
 	}); err == nil {
 		t.Error("starting a daemon from a missing binary must fail")
+	}
+}
+
+func TestStartDaemonPoolRejectsNonSocketAndStaleSocketPaths(t *testing.T) {
+	dir := t.TempDir()
+	base := filepath.Join(dir, "chronon.sock")
+
+	nonSocketBase := filepath.Join(dir, "file.sock")
+	if err := os.WriteFile(nonSocketBase+".0", nil, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := StartDaemonPool(context.Background(), DaemonOptions{
+		SocketBase: nonSocketBase, Count: 1, Binary: "/nonexistent/chronon3d_cli",
+	}); err == nil || !strings.Contains(err.Error(), "is not a unix socket") {
+		t.Fatalf("regular file path error = %v, want a non-socket rejection", err)
+	}
+
+	staleSocketPath := base + ".0"
+	listener, err := net.Listen("unix", staleSocketPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	unixListener := listener.(*net.UnixListener)
+	unixListener.SetUnlinkOnClose(false)
+	if err := listener.Close(); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Lstat(staleSocketPath); err != nil {
+		t.Fatalf("stale socket path was not preserved for test: %v", err)
+	}
+
+	_, err = StartDaemonPool(context.Background(), DaemonOptions{
+		SocketBase: base, Count: 1, Binary: "/nonexistent/chronon3d_cli",
+		StartupTimeout: 300 * time.Millisecond,
+	})
+	if err == nil || !strings.Contains(err.Error(), "existing socket") || !strings.Contains(err.Error(), "not serving") {
+		t.Fatalf("stale socket error = %v, want fail-closed readiness error", err)
 	}
 }

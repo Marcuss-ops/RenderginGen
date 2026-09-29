@@ -1,0 +1,67 @@
+{
+  "tool": "audio_publish_gate_evidence.py",
+  "threshold_ms": 10000,
+  "evaluated": 4,
+  "passed": 4,
+  "failed": 0,
+  "worst_audio_publish_ms": 9221,
+  "all_pass": true,
+  "results": [
+    {
+      "job_id": "job_1790624170732489187_8806df10",
+      "status": "SUCCEEDED",
+      "audio_publish_stage_ms": 9221,
+      "audio_publish_operation_work_ms": 9036,
+      "audio_publish_window_started_at": "2026-09-28T19:51:37.531319+00:00",
+      "audio_publish_window_finished_at": "2026-09-28T19:51:46.752529+00:00",
+      "drive_waits_inside_audio_publish": 1,
+      "max_drive_wait_ms": 0,
+      "threshold_ms": 10000,
+      "gate_engaged": true,
+      "under_threshold": true,
+      "pass": true
+    },
+    {
+      "job_id": "job_1790625240286917109_5ce13e8a",
+      "status": "SUCCEEDED",
+      "audio_publish_stage_ms": 6168,
+      "audio_publish_operation_work_ms": 6104,
+      "audio_publish_window_started_at": "2026-09-28T19:56:43.058178+00:00",
+      "audio_publish_window_finished_at": "2026-09-28T19:56:49.226780+00:00",
+      "drive_waits_inside_audio_publish": 1,
+      "max_drive_wait_ms": 0,
+      "threshold_ms": 10000,
+      "gate_engaged": true,
+      "under_threshold": true,
+      "pass": true
+    },
+    {
+      "job_id": "job_1790625240288455194_421d0d2b",
+      "status": "SUCCEEDED",
+      "audio_publish_stage_ms": 6299,
+      "audio_publish_operation_work_ms": 6257,
+      "audio_publish_window_started_at": "2026-09-28T19:58:48.052850+00:00",
+      "audio_publish_window_finished_at": "2026-09-28T19:58:54.352315+00:00",
+      "drive_waits_inside_audio_publish": 1,
+      "max_drive_wait_ms": 0,
+      "threshold_ms": 10000,
+      "gate_engaged": true,
+      "under_threshold": true,
+      "pass": true
+    },
+    {
+      "job_id": "job_1790625598513610028_7cf9af46",
+      "status": "SUCCEEDED",
+      "audio_publish_stage_ms": 8874,
+      "audio_publish_operation_work_ms": 8575,
+      "audio_publish_window_started_at": "2026-09-28T20:11:18.473243+00:00",
+      "audio_publish_window_finished_at": "2026-09-28T20:11:27.347352+00:00",
+      "drive_waits_inside_audio_publish": 1,
+      "max_drive_wait_ms": 0,
+      "threshold_ms": 10000,
+      "gate_engaged": true,
+      "under_threshold": true,
+      "pass": true
+    }
+  ]
+}

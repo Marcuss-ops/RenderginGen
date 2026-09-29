@@ -215,7 +215,7 @@ func (c *IPCClient) Shutdown(ctx context.Context) error {
 // renderJobPayload is the JSON payload for the RENDER_JOB IPC command.  It is
 // the daemon-side mirror of the full RenderRequest semantic contract:
 //
-//	plan_path / assets_root / output / report
+//	plan_path / prepared_package_path / assets_root / output / report
 //	range_enabled + first_frame + last_frame  (explicit chunk range; a
 //	  single-frame chunk at frame 0 is first=0, last=0 WITH range_enabled
 //	  true — never an "absent range" that silently re-expands to the whole
@@ -234,6 +234,7 @@ func (c *IPCClient) Shutdown(ctx context.Context) error {
 // plan.
 type renderJobPayload struct {
 	PlanPath              string                `json:"plan_path"`
+	PreparedPackagePath   string                `json:"prepared_package_path,omitempty"`
 	AssetsRoot            string                `json:"assets_root"`
 	Output                string                `json:"output"`
 	RangeEnabled          bool                  `json:"range_enabled"`
@@ -312,8 +313,10 @@ func (c *IPCClient) Render(ctx context.Context, req RenderRequest) error {
 		return err
 	}
 	payload, err := json.Marshal(renderJobPayload{
-		PlanPath:   req.PlanPath,
-		AssetsRoot: req.AssetsRoot, Output: req.OutputPath,
+		PlanPath:            req.PlanPath,
+		PreparedPackagePath: req.PreparedPackagePath,
+		AssetsRoot:          req.AssetsRoot,
+		Output:              req.OutputPath,
 		// Range parity: coordinates are always marshaled (0 is meaningful)
 		// and range_enabled marks them as an explicit chunk. A whole-plan
 		// render is range_enabled=false even when the coordinates are 0.

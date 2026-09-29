@@ -131,10 +131,10 @@ func (r *Repository) Submit(job model.Job) error {
 	defer tx.Rollback()
 
 	res, err := tx.ExecContext(ctx, `
-		INSERT INTO render_jobs (id, job_type, job_schema, job_schema_version, render_plan, input_manifest, max_attempts, idempotency_key, parent_job_id, chunk_index, frame_range)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, NULLIF($8, ''), NULLIF($9, ''), $10, $11)
+		INSERT INTO render_jobs (id, job_type, job_schema, job_schema_version, render_plan, input_manifest, max_attempts, idempotency_key, parent_job_id, chunk_index, frame_range, not_before)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, NULLIF($8, ''), NULLIF($9, ''), $10, $11, $12)
 		ON CONFLICT (id) DO NOTHING`,
-		job.ID, nonEmptyJobType(job.JobType), schema, version, plan, manifest, r.maxAttempts, job.IdempotencyKey, job.ParentJobID, job.ChunkIndex, job.FrameRange)
+		job.ID, nonEmptyJobType(job.JobType), schema, version, plan, manifest, r.maxAttempts, job.IdempotencyKey, job.ParentJobID, job.ChunkIndex, job.FrameRange, job.NotBefore)
 	if err != nil {
 		return err
 	}
@@ -198,10 +198,10 @@ func (r *Repository) SubmitBatch(jobs []model.Job) error {
 			return fmt.Errorf("input_manifest: %w", err)
 		}
 		res, err := tx.ExecContext(ctx, `
-			INSERT INTO render_jobs (id, job_type, job_schema, job_schema_version, render_plan, input_manifest, max_attempts, idempotency_key, parent_job_id, chunk_index, frame_range)
-			VALUES ($1, $2, $3, $4, $5, $6, $7, NULLIF($8, ''), NULLIF($9, ''), $10, $11)
+			INSERT INTO render_jobs (id, job_type, job_schema, job_schema_version, render_plan, input_manifest, max_attempts, idempotency_key, parent_job_id, chunk_index, frame_range, not_before)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, NULLIF($8, ''), NULLIF($9, ''), $10, $11, $12)
 			ON CONFLICT (id) DO NOTHING`,
-			job.ID, nonEmptyJobType(job.JobType), schema, version, plan, manifest, r.maxAttempts, job.IdempotencyKey, job.ParentJobID, job.ChunkIndex, job.FrameRange)
+			job.ID, nonEmptyJobType(job.JobType), schema, version, plan, manifest, r.maxAttempts, job.IdempotencyKey, job.ParentJobID, job.ChunkIndex, job.FrameRange, job.NotBefore)
 		if err != nil {
 			return err
 		}
@@ -304,12 +304,13 @@ func (r *Repository) ClaimState(workerID string, state model.State) (*model.Job,
 		SELECT id, job_type, job_schema, job_schema_version, render_plan, input_manifest, attempt_count, queued_at, artifact_id, parent_job_id, chunk_index, frame_range
 		FROM render_jobs
 		WHERE `+stateFilter+`
+		  AND (not_before IS NULL OR not_before <= $1)
 		  AND NOT EXISTS (
 		      SELECT 1 FROM render_jobs AS child
 		      WHERE child.parent_job_id = render_jobs.id)
 		ORDER BY queued_at ASC
 		FOR UPDATE SKIP LOCKED
-		LIMIT 1`).Scan(&id, &jobType, &schema, &version, &plan, &manifest, &attempts, &queuedAt, &artifactID, &parentJobID, &chunkIndex, &frameRange)
+		LIMIT 1`, now).Scan(&id, &jobType, &schema, &version, &plan, &manifest, &attempts, &queuedAt, &artifactID, &parentJobID, &chunkIndex, &frameRange)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, 0, nil
 	}
@@ -412,6 +413,7 @@ func (r *Repository) Get(id string) (*model.Job, error) {
 		parentJobID    sql.NullString
 		chunkIndex     int
 		frameRange     []byte
+		notBefore      sql.NullTime
 		pFramesDone    sql.NullInt64
 		pTotalFrames   sql.NullInt64
 		pLastFrameAt   sql.NullTime
@@ -422,7 +424,7 @@ func (r *Repository) Get(id string) (*model.Job, error) {
 		       input_manifest, attempt_count,
 		       current_worker_id, queued_at, started_at, completed_at,
 		       lease_until, error_message, artifact_id, idempotency_key,
-		       parent_job_id, chunk_index, frame_range,
+		       parent_job_id, chunk_index, frame_range, not_before,
 		       progress_frames_done, progress_total_frames, progress_last_frame_at, progress_worker
 		FROM render_jobs
 		WHERE id = $1`, id).Scan(
@@ -430,7 +432,7 @@ func (r *Repository) Get(id string) (*model.Job, error) {
 		&manifest, &job.Attempts,
 		&worker, &queuedAt, &startedAt, &completedAt,
 		&leaseUntil, &errorMsg, &artifactID, &idempotencyKey,
-		&parentJobID, &chunkIndex, &frameRange,
+		&parentJobID, &chunkIndex, &frameRange, &notBefore,
 		&pFramesDone, &pTotalFrames, &pLastFrameAt, &pWorker)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, fmt.Errorf("job %s: %w", id, repository.ErrNotFound)
@@ -452,6 +454,10 @@ func (r *Repository) Get(id string) (*model.Job, error) {
 	}
 	if job.Assets, decErr = decodeAssets(manifest); decErr != nil {
 		return nil, r.poisonCorruptRead(ctx, id, decErr)
+	}
+	if notBefore.Valid {
+		nb := notBefore.Time
+		job.NotBefore = &nb
 	}
 	if worker.Valid {
 		job.Worker = worker.String

@@ -147,10 +147,11 @@ var _ Renderer = (*DaemonPool)(nil)
 
 // StartDaemonPool ensures Count daemons serve SocketBase.0..Count-1.
 //
-// A socket that is already served is reused and left UNOWNED; the rest are
-// started here and waited for, so the returned pool is immediately usable. On
-// failure, every daemon this call started is killed before returning, so a
-// failed start cannot leave GPU-holding processes behind.
+// A socket is reused and left UNOWNED only after it answers STATUS; stale or
+// non-socket paths fail closed instead of being treated as a usable daemon. The
+// rest are started here and waited for, so the returned pool is immediately
+// usable. On failure, every daemon this call started is killed before returning,
+// so a failed start cannot leave GPU-holding processes behind.
 func StartDaemonPool(ctx context.Context, opts DaemonOptions) (*DaemonPool, error) {
 	if opts.SocketBase == "" {
 		return nil, fmt.Errorf("chronon daemon pool: socket base is required")
@@ -169,10 +170,23 @@ func StartDaemonPool(ctx context.Context, opts DaemonOptions) (*DaemonPool, erro
 	pool := &DaemonPool{handles: make([]daemonHandle, 0, count), lanes: make([]Renderer, 0, count)}
 	for i := 0; i < count; i++ {
 		socketPath := fmt.Sprintf("%s.%d", opts.SocketBase, i)
-		if _, err := os.Stat(socketPath); err == nil {
+		info, statErr := os.Lstat(socketPath)
+		if statErr == nil {
+			if info.Mode()&os.ModeSocket == 0 {
+				pool.killStarted()
+				return nil, fmt.Errorf("chronon daemon pool: existing path %s is not a unix socket", socketPath)
+			}
+			if err := waitForDaemon(ctx, socketPath, nil, startupTimeout(opts.StartupTimeout)); err != nil {
+				pool.killStarted()
+				return nil, fmt.Errorf("chronon daemon pool: existing socket %s is not serving: %w", socketPath, err)
+			}
 			pool.handles = append(pool.handles, daemonHandle{socketPath: socketPath})
 			pool.lanes = append(pool.lanes, LimitConcurrency(NewIPCClient(socketPath), opts.LanesPerDaemon))
 			continue
+		}
+		if !os.IsNotExist(statErr) {
+			pool.killStarted()
+			return nil, fmt.Errorf("chronon daemon pool: inspect socket %s: %w", socketPath, statErr)
 		}
 		handle, err := startDaemon(ctx, socketPath, opts)
 		if err != nil {
@@ -291,10 +305,7 @@ func startDaemon(ctx context.Context, socketPath string, opts DaemonOptions) (da
 	// One owner for cmd.Wait, for the child's whole life.
 	exit := watchDaemon(cmd)
 
-	timeout := opts.StartupTimeout
-	if timeout <= 0 {
-		timeout = DaemonStartupTimeout
-	}
+	timeout := startupTimeout(opts.StartupTimeout)
 	if err := waitForDaemon(ctx, socketPath, exit, timeout); err != nil {
 		_ = cmd.Process.Kill()
 		// wait() is idempotent, so this cannot deadlock when the readiness wait
@@ -305,17 +316,31 @@ func startDaemon(ctx context.Context, socketPath string, opts DaemonOptions) (da
 	return daemonHandle{socketPath: socketPath, cmd: cmd, exit: exit}, nil
 }
 
+// startupTimeout resolves an optional daemon readiness budget.
+func startupTimeout(timeout time.Duration) time.Duration {
+	if timeout <= 0 {
+		return DaemonStartupTimeout
+	}
+	return timeout
+}
+
 // waitForDaemon blocks until the daemon at socketPath answers a STATUS command,
-// the child exits, the context is canceled, or the timeout expires.
+// the owned child exits (when exit is non-nil), the context is canceled, or the
+// timeout expires. A nil exit channel is intentionally disabled for a socket
+// already owned by another process.
 func waitForDaemon(ctx context.Context, socketPath string, exit *daemonExit, timeout time.Duration) error {
 	deadline := time.Now().Add(timeout)
+	var exited <-chan struct{}
+	if exit != nil {
+		exited = exit.done()
+	}
 	ticker := time.NewTicker(daemonProbeInterval)
 	defer ticker.Stop()
 
 	var lastProbeErr error
 	for {
 		select {
-		case <-exit.done():
+		case <-exited:
 			// The daemon is gone; no amount of waiting produces a socket, and
 			// exiting immediately beats sleeping out the whole budget for a
 			// process that cannot possibly become ready.
@@ -334,7 +359,11 @@ func waitForDaemon(ctx context.Context, socketPath string, exit *daemonExit, tim
 				lastProbeErr = err
 				continue
 			}
-			probeCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
+			probeTimeout := min(2*time.Second, time.Until(deadline))
+			if probeTimeout <= 0 {
+				continue
+			}
+			probeCtx, cancel := context.WithTimeout(ctx, probeTimeout)
 			_, probeErr := NewIPCClient(socketPath).Status(probeCtx)
 			cancel()
 			if probeErr == nil {

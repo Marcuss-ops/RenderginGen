@@ -49,6 +49,48 @@ func TestHasVisualOverlayDistinguishesVideoOnlyFromAuthoredComposition(t *testin
 	}
 }
 
+// TestRunGPUReportsDutyCycleGapToHook pins the gpu_gap_hook contract: the value
+// the per-job gpu_gap_us KPI carries is the SAME value the optional observer
+// receives, so the worker's histogram cannot drift from the per-job metric.
+func TestRunGPUReportsDutyCycleGapToHook(t *testing.T) {
+	proc, _, _ := newProcessor(t)
+	proc.backend = "vulkan"
+	proc.SetStrictNativeBackend(true)
+	ws, err := workspace.New(proc.jobsRoot, "gpu-gap-hook")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer ws.Cleanup()
+
+	// A previous render on THIS processor ended 2s ago: the gap this render
+	// waits must be measured from there, not invented.
+	proc.PutGPURenderEnd(time.Now().Add(-2 * time.Second))
+	var gaps []time.Duration
+	proc.SetGPUGapHook(func(gap time.Duration) { gaps = append(gaps, gap) })
+
+	prepared := &PreparedJob{
+		Job:       &queue.Job{ID: "gpu-gap-hook"},
+		Workspace: ws,
+		Plan: &overlay.Plan{
+			Canvas: overlay.Canvas{Width: 1280, Height: 720, FPSNum: 30, FPSDen: 1, DurationFrames: 30},
+			Layers: []overlay.Layer{{ID: "caption", Type: "text", Text: "Duty cycle"}},
+		},
+		Metrics: map[string]float64{},
+	}
+	if err := proc.RunGPU(context.Background(), prepared); err != nil {
+		t.Fatalf("RunGPU() = %v, want the render to complete", err)
+	}
+	if len(gaps) != 1 {
+		t.Fatalf("gpu gap hook calls = %d, want exactly 1", len(gaps))
+	}
+	if gaps[0] < time.Second {
+		t.Fatalf("gpu gap = %v, want >= 1s (the previous render ended 2s before this one)", gaps[0])
+	}
+	if got := prepared.Metrics[metricnames.GPUGapUS]; got != float64(gaps[0].Microseconds()) {
+		t.Fatalf("gpu_gap_us = %v, hook received %v: the two must carry the same measurement", got, gaps[0])
+	}
+}
+
 func TestRunGPUImageTextCompositionUsesChrononGPUPipeContract(t *testing.T) {
 	proc, _, renderer := newProcessor(t)
 	proc.backend = "vulkan"

@@ -45,6 +45,7 @@ const (
 type Metrics struct {
 	outcomesTotal *prometheus.CounterVec
 	phaseSecond   *prometheus.HistogramVec
+	gpuGapSecond  prometheus.Histogram
 	registry      *prometheus.Registry
 }
 
@@ -54,6 +55,12 @@ type Metrics struct {
 // the point of using a histogram: percentiles aggregate across workers without
 // the workers having to agree on a quantile first.
 var PhaseBuckets = []float64{0.05, 0.1, 0.25, 0.5, 1, 2, 5, 10, 20, 30, 60, 120}
+
+// GPUGapBuckets covers the duty-cycle gap between two renders on one worker:
+// from sub-millisecond back-to-back pipelining to a minute of idling between
+// jobs. The question the series answers is "is the GPU waiting, and on what?",
+// so it must resolve both ends of that range.
+var GPUGapBuckets = []float64{0.0005, 0.001, 0.005, 0.01, 0.05, 0.1, 0.25, 0.5, 1, 2, 5, 10, 30, 60}
 
 // New builds the collector set. It uses a dedicated registry rather than the
 // process default, so the worker's series cannot be polluted by (or pollute) an
@@ -76,8 +83,15 @@ func New() *Metrics {
 			Help:      "Wall-clock duration of each pipeline phase, as measured by the processor's phase hook.",
 			Buckets:   PhaseBuckets,
 		}, []string{"phase"}),
+		gpuGapSecond: prometheus.NewHistogram(prometheus.HistogramOpts{
+			Namespace: Namespace,
+			Subsystem: "worker",
+			Name:      "gpu_gap_seconds",
+			Help:      "GPU duty-cycle gap between the end of one render and the start of the next on a worker lane, as measured by the processor's gpu_gap_us KPI.",
+			Buckets:   GPUGapBuckets,
+		}),
 	}
-	reg.MustRegister(m.outcomesTotal, m.phaseSecond)
+	reg.MustRegister(m.outcomesTotal, m.phaseSecond, m.gpuGapSecond)
 	reg.MustRegister(prometheus.NewGoCollector())
 	return m
 }
@@ -120,11 +134,29 @@ func (m *Metrics) ObservePhase(phase string, d time.Duration) {
 	m.phaseSecond.WithLabelValues(phase).Observe(d.Seconds())
 }
 
+// ObserveGPUGap records one duty-cycle gap. Negative values are clamped to 0:
+// the KPI counts "the GPU waited this long between renders", and a negative gap
+// (clock skew across lanes) is not a shorter wait, it is no wait.
+func (m *Metrics) ObserveGPUGap(gap time.Duration) {
+	if m == nil {
+		return
+	}
+	if gap < 0 {
+		gap = 0
+	}
+	m.gpuGapSecond.Observe(gap.Seconds())
+}
+
 // PhaseHook adapts ObservePhase to processor.SetPhaseHook, so the worker's
 // metrics are fed by the pipeline's existing measurement rather than a parallel
 // one.
 func (m *Metrics) PhaseHook() func(phase string, d time.Duration) {
 	return func(phase string, d time.Duration) { m.ObservePhase(phase, d) }
+}
+
+// GPUGapHook adapts ObserveGPUGap to processor.SetGPUGapHook.
+func (m *Metrics) GPUGapHook() func(gap time.Duration) {
+	return func(gap time.Duration) { m.ObserveGPUGap(gap) }
 }
 
 // OutcomeHook adapts CountOutcome to processor.SetJobOutcomeHook.

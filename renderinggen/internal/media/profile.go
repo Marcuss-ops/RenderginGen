@@ -30,15 +30,10 @@ type OutputProfile struct {
 	// CodecProfile is the CANONICAL profile value declared by the VeloxEditing
 	// assembly contract this profile mirrors, in ffprobe casing ("High").
 	CodecProfile string
-	// AcceptedCodecProfiles are additional certified values that satisfy the
-	// same canonical profile on a real encoder lane. The native NVENC lane
-	// certifies "Main" while the contract declares "High": H.264 Main and High
-	// are both valid inputs for the copy-only assembler, and the consumer-side
-	// contract gate (cliprender.ValidateContract, videoProfileCompatible)
-	// already treats the pair as equivalent, so refusing Main here would reject
-	// a legal render while the exact same bytes pass the consumer gate. This is
-	// an explicit, finite equivalence — never a wildcard: an unlisted profile
-	// ("Baseline", "Constrained Baseline") is refused.
+	// AcceptedCodecProfiles is intentionally empty for assembly-ready output.
+	// Every newly produced asset must have the same codec profile as the
+	// canonical assembly contract; accepting Main alongside High made overlays
+	// pass validation with a different H.264 bitstream profile.
 	AcceptedCodecProfiles []string
 	PixelFormat           string
 	Container             string
@@ -117,10 +112,11 @@ const (
 // depend on, sourced from the VeloxEditing assembly contract (V1/V2 differ only
 // in level — see profiles below).
 //
-// ── Certified artifact facts (MEASURED, 2026-09-17) ───────────────────
+// ── Historical artifact facts (MEASURED, 2026-09-17) ──────────────────
 //
-// The values below are not read off the contract: they are the facts a real
-// clip-lane artifact carried. Source of truth for each measurement is the
+// The values below record the old Main-profile encoder output that motivated
+// the mismatch fix; they are no longer accepted as the canonical profile.
+// New output must be H.264 High. Source of truth for each measurement is the
 // RenderingGen queue's own artifact record for the certified render —
 // curl $RENDERINGGEN_QUEUE_URL/jobs/<render job id> → .artifact.output_facts
 // (job_1789645353996117571_87c8a072, VELOX_ASSEMBLY_READY_V1, 1920x1080@24,
@@ -135,7 +131,7 @@ const (
 // keeps them open (see TestMeasuredArtifactDivergencesStayVisible, which fails
 // if either side of each divergence changes):
 //
-//   - video timebase: the artifact carries 1/12288 (= fps_den × 512, the
+//   - video timebase: the historical artifact carries 1/12288 (= fps_den × 512, the
 //     mp4 muxer's convention) while the VeloxEditing contract declares
 //     1/90000. The CONSUMER gate resolves this by an explicit tolerance
 //     (cliprender/contract.go's video-timebase dimension accepts the known
@@ -164,7 +160,6 @@ func assemblyReadyProfile() OutputProfile {
 		FPSDen:                1,
 		Codec:                 "h264",
 		CodecProfile:          "High",
-		AcceptedCodecProfiles: []string{"Main"},
 		PixelFormat:           "yuv420p",
 		Container:             "mp4",
 		RequireNoAudio:        false,
