@@ -1,6 +1,7 @@
 package motion
 
 import (
+	"encoding/json"
 	"math"
 	"testing"
 )
@@ -63,5 +64,37 @@ func TestPresentationCatalogFamilyAndPresetParity(t *testing.T) {
 	}
 	if got := Registry.PresentationMotionIDs("unknown_family"); len(got) != 0 {
 		t.Fatalf("unknown family unexpectedly returned %v", got)
+	}
+}
+
+func TestPresentationCatalogRejectsFamilyMetadataAndTrackDrift(t *testing.T) {
+	catalog, err := Canonical()
+	if err != nil {
+		t.Fatal(err)
+	}
+	mutated := func() PresentationCatalog {
+		copy := catalog.EntityPresentationFamilies()
+		return PresentationCatalog{Schema: "chronontemplate.entity-presentation.v1", Version: 1, Families: copy}
+	}
+	motions := append([]MotionDefinition(nil), catalog.Motions...)
+
+	familyMetadata := mutated()
+	familyMetadata.Families[0].SupportedTemplate = "unknown_template"
+	raw, err := json.Marshal(familyMetadata)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := validateEntityPresentationCatalog(raw, motions); err == nil {
+		t.Fatal("family metadata drift accepted")
+	}
+
+	trackDrift := mutated()
+	trackDrift.Families[0].Presets[0].Tracks[0].Keyframes[1].Value = float64(0.123)
+	raw, err = json.Marshal(trackDrift)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := validateEntityPresentationCatalog(raw, motions); err == nil {
+		t.Fatal("keyframe drift between authored family and emitted motion accepted")
 	}
 }

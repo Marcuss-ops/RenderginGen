@@ -105,6 +105,43 @@ func TestDateEntityNormalization(t *testing.T) {
 	}
 }
 
+func TestDateTimelineSpacingModesAreSortedAndMonotonic(t *testing.T) {
+	entities := make([]DateEntity, 0, 3)
+	for _, raw := range []string{"2020", "1990", "2000"} {
+		entity, err := ParseDateEntity(raw)
+		if err != nil {
+			t.Fatal(err)
+		}
+		entities = append(entities, entity)
+	}
+	for _, mode := range []string{"equal", "proportional"} {
+		positions, err := LayoutDateTimeline(entities, 100, 900, mode)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if len(positions) != 3 || positions[0].Date.Display != "1990" || positions[1].Date.Display != "2000" || positions[2].Date.Display != "2020" {
+			t.Fatalf("%s order = %+v", mode, positions)
+		}
+		if !(positions[0].X < positions[1].X && positions[1].X < positions[2].X) {
+			t.Fatalf("%s positions are not strictly monotonic: %+v", mode, positions)
+		}
+		if positions[0].X != 100 || positions[2].X != 900 {
+			t.Fatalf("%s endpoints = %v, %v", mode, positions[0].X, positions[2].X)
+		}
+	}
+	equal, _ := LayoutDateTimeline(entities, 100, 900, "equal")
+	proportional, _ := LayoutDateTimeline(entities, 100, 900, "proportional")
+	if equal[1].X == proportional[1].X {
+		t.Fatalf("unequal 10y/20y gaps should differ by spacing mode: equal=%v proportional=%v", equal[1].X, proportional[1].X)
+	}
+	if _, err := LayoutDateTimeline(entities, 900, 100, "equal"); err == nil {
+		t.Fatal("reversed x interval accepted")
+	}
+	if _, err := LayoutDateTimeline(entities, 0, 10, "random"); err == nil {
+		t.Fatal("unknown spacing mode accepted")
+	}
+}
+
 func TestEntityCardPreservesUnicodeAndImagePathAndRejectsTraversal(t *testing.T) {
 	for _, name := range []string{"José Mourinho", "François Hollande", "李小龍", "محمد علي", "Alexander Jonathan Montgomery Williams"} {
 		card, err := NewEntityCard(name, "assets/people/person.png")

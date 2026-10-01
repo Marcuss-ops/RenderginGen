@@ -29,6 +29,10 @@ func TestTwoEntitiesGroupIntoOneScene(t *testing.T) {
 	if len(placements) != 2 {
 		t.Fatalf("group produced %d placements, want 2 (one scene, not two)", len(placements))
 	}
+	if placements[0].Entity.Name != "PERSON A" || placements[1].Entity.Name != "PERSON B" ||
+		placements[0].Entity.ImagePath != "assets/people/a.png" || placements[1].Entity.ImagePath != "assets/people/b.png" {
+		t.Fatalf("one-scene grouping changed entity/image association: %+v", placements)
+	}
 	// The group is one composition on one 1920x1080 canvas: both cards share
 	// the same canvas and both stay inside it.
 	for i, p := range placements {
@@ -47,6 +51,9 @@ func TestTwoEntityCaptionsRemainVisible(t *testing.T) {
 	// removes or clears an identity. Both captions survive the grouping with
 	// their names and image paths intact.
 	for i, p := range placements {
+		if p.Width <= 0 || p.Height <= 0 {
+			t.Errorf("card %d has invalid shared-lifetime geometry: %+v", i, p)
+		}
 		if p.Entity.Name == "" {
 			t.Errorf("caption %d was cleared by grouping", i)
 		}

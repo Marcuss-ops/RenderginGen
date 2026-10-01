@@ -2,6 +2,7 @@ package motion
 
 import (
 	"fmt"
+	"math"
 	"math/big"
 	"path/filepath"
 	"regexp"
@@ -112,6 +113,53 @@ func utcDate(year, month, day int) time.Time {
 }
 func daysInMonth(year int, month time.Month) int {
 	return time.Date(year, month+1, 0, 0, 0, 0, 0, time.UTC).Day()
+}
+
+type DateTimelinePosition struct {
+	Date DateEntity
+	X    float64
+}
+
+// LayoutDateTimeline sorts date entities and maps them monotonically into a
+// horizontal interval. "equal" spaces events by ordinal; "proportional" uses
+// their normalized start timestamps so larger time gaps occupy larger spans.
+func LayoutDateTimeline(entities []DateEntity, minX, maxX float64, mode string) ([]DateTimelinePosition, error) {
+	if len(entities) == 0 || math.IsNaN(minX) || math.IsNaN(maxX) ||
+		math.IsInf(minX, 0) || math.IsInf(maxX, 0) || maxX <= minX {
+		return nil, fmt.Errorf("date timeline: requires dates and a finite increasing x interval")
+	}
+	if mode != "equal" && mode != "proportional" {
+		return nil, fmt.Errorf("date timeline: unsupported spacing mode %q", mode)
+	}
+	sorted := append([]DateEntity(nil), entities...)
+	for _, entity := range sorted {
+		if entity.Start.IsZero() || entity.End.Before(entity.Start) {
+			return nil, fmt.Errorf("date timeline: invalid normalized date %q", entity.Raw)
+		}
+	}
+	sort.SliceStable(sorted, func(i, j int) bool {
+		if sorted[i].Start.Equal(sorted[j].Start) {
+			if sorted[i].Display == sorted[j].Display {
+				return sorted[i].Raw < sorted[j].Raw
+			}
+			return sorted[i].Display < sorted[j].Display
+		}
+		return sorted[i].Start.Before(sorted[j].Start)
+	})
+	positions := make([]DateTimelinePosition, len(sorted))
+	firstSeconds, lastSeconds := sorted[0].Start.Unix(), sorted[len(sorted)-1].Start.Unix()
+	for index, entity := range sorted {
+		progress := 0.5
+		if len(sorted) > 1 {
+			if mode == "equal" {
+				progress = float64(index) / float64(len(sorted)-1)
+			} else if lastSeconds != firstSeconds {
+				progress = float64(entity.Start.Unix()-firstSeconds) / float64(lastSeconds-firstSeconds)
+			}
+		}
+		positions[index] = DateTimelinePosition{Date: entity, X: minX + (maxX-minX)*progress}
+	}
+	return positions, nil
 }
 
 // EntityCardInput keeps identity fields immutable from asset attachment onward.

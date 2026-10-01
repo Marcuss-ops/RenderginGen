@@ -52,6 +52,7 @@ func validateEntityPresentationCatalog(raw json.RawMessage, motions []MotionDefi
 		if len(family.Presets) != count || family.SupportedTemplate == "" || len(family.SupportedContent) == 0 || !family.RenderSafe || family.DurationBounds.MinimumFrames < 1 || family.DurationBounds.MaximumFrames < family.DurationBounds.MinimumFrames {
 			return fmt.Errorf("motion: entity presentation family %q has invalid metadata or preset count", family.ID)
 		}
+		seenFamilyPresets := make(map[string]bool, len(family.Presets))
 		for _, preset := range family.Presets {
 			if preset.ID == "" || seenPresets[preset.ID] {
 				return fmt.Errorf("motion: empty or duplicate entity presentation preset %q", preset.ID)
@@ -61,18 +62,42 @@ func validateEntityPresentationCatalog(raw json.RawMessage, motions []MotionDefi
 			if !ok {
 				return fmt.Errorf("motion: entity presentation preset %q missing from motions", preset.ID)
 			}
-			if d.Category != family.ID || len(d.Tracks) != len(preset.Tracks) {
-				return fmt.Errorf("motion: entity presentation preset %q does not match canonical motion definition", preset.ID)
+			if d.Category != family.ID || d.SupportedTemplate != family.SupportedTemplate ||
+				d.RenderSafe == nil || !*d.RenderSafe || d.DurationBounds == nil || *d.DurationBounds != family.DurationBounds ||
+				len(d.SupportedContent) != len(family.SupportedContent) || len(d.Tracks) != len(preset.Tracks) {
+				return fmt.Errorf("motion: entity presentation preset %q does not match canonical family metadata or motion definition", preset.ID)
 			}
+			for _, content := range family.SupportedContent {
+				if !containsMotionString(d.SupportedContent, content) {
+					return fmt.Errorf("motion: entity presentation preset %q omits supported content %q", preset.ID, content)
+				}
+			}
+			if seenFamilyPresets[preset.ID] {
+				return fmt.Errorf("motion: entity presentation family %q repeats preset %q", family.ID, preset.ID)
+			}
+			seenFamilyPresets[preset.ID] = true
 			for i, track := range preset.Tracks {
 				if err := validateTrackDefinition(preset.ID, "entity presentation track", track); err != nil {
 					return err
 				}
 				actual := d.Tracks[i]
-				if actual.Property != track.Property || len(actual.Keyframes) != len(track.Keyframes) {
+				if actual.Property != track.Property || actual.Easing != track.Easing || len(actual.Keyframes) != len(track.Keyframes) {
 					return fmt.Errorf("motion: entity presentation preset %q differs from emitted motion tracks", preset.ID)
 				}
+				for keyIndex, key := range track.Keyframes {
+					actualKey := actual.Keyframes[keyIndex]
+					wantValue, wantOK := motionNumericValue(key.Value)
+					gotValue, gotOK := motionNumericValue(actualKey.Value)
+					if actualKey.Frame != key.Frame || !wantOK || !gotOK || wantValue != gotValue {
+						return fmt.Errorf("motion: entity presentation preset %q track %q keyframe %d differs from emitted motion", preset.ID, track.Property, keyIndex)
+					}
+				}
 			}
+		}
+	}
+	for familyID := range expectedPresentationFamilies {
+		if !seenFamilies[familyID] {
+			return fmt.Errorf("motion: entity presentation catalog is missing family %q", familyID)
 		}
 	}
 	return nil
@@ -83,11 +108,19 @@ func validateEntityPresentationMotion(d MotionDefinition) error {
 	if !ok {
 		return nil
 	}
-	if d.DurationBounds == nil || d.DurationBounds.MinimumFrames < 1 || d.DurationBounds.MaximumFrames < d.DurationBounds.MinimumFrames || d.RenderSafe == nil || !*d.RenderSafe || d.SupportedTemplate == "" || len(d.SupportedContent) == 0 || len(d.RequiredProperties) == 0 || len(d.Tracks) == 0 {
+	if d.DurationBounds == nil || d.DurationBounds.MinimumFrames < 1 || d.DurationBounds.MaximumFrames < d.DurationBounds.MinimumFrames || d.RenderSafe == nil || !*d.RenderSafe || d.Requires3D == nil || d.RequiresCamera == nil || d.SupportedTemplate == "" || len(d.Targets) == 0 || len(d.SupportedContent) == 0 || len(d.RequiredProperties) == 0 || len(d.Tracks) == 0 {
 		return fmt.Errorf("motion %q: incomplete %s certification metadata", d.ID, d.Category)
 	}
-	if len(d.RequiredProperties) != len(d.Tracks) {
-		return fmt.Errorf("motion %q: required_properties must list every presentation track", d.ID)
+	if *d.Requires3D != *d.RequiresCamera || *d.Requires3D != motionHas3D(d) {
+		return fmt.Errorf("motion %q: 3D and camera requirements must match the camera-backed tracks", d.ID)
+	}
+	if d.Unit != "layer" || len(d.RequiredProperties) != len(d.Tracks) {
+		return fmt.Errorf("motion %q: presentation motions must be layer motions with required_properties for every track", d.ID)
+	}
+	for _, content := range d.SupportedContent {
+		if !containsMotionString(d.Targets, content) {
+			return fmt.Errorf("motion %q: supported content %q is absent from targets", d.ID, content)
+		}
 	}
 	for i, track := range d.Tracks {
 		if d.RequiredProperties[i] != track.Property {
