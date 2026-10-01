@@ -48,6 +48,15 @@ const (
 	// background video layers, so a clip carrying an overlay is encoded once
 	// instead of being re-encoded by a post-render compositor pass.
 	KindVideoOverlay ItemKind = "video_overlay"
+	// KindShape lowers to a procedural shape layer (rect, rounded_rect, grid,
+	// dot_grid, device_frame, world_map, etc.) with optional layer effects.
+	KindShape ItemKind = "shape"
+	// KindMap is a georeferenced map of an operator-supplied local raster. It
+	// lowers to the primitives the renderer already supports — a full-canvas
+	// image layer for the basemap, one ellipse per grounded pin, one text layer
+	// per pin label and one text layer for the visible attribution — never to a
+	// tile fetch or a second basemap renderer (see semantic_map.go).
+	KindMap ItemKind = "map"
 	// KindPrimitive is the kind of a template RenderingGen does not know: a
 	// preset-less text primitive whose behaviour follows the generic text
 	// lowering. The producer's kind (when present) is authoritative for it.
@@ -133,6 +142,15 @@ var templateRegistry = map[string]TemplateSpec{
 	// visual preset to decide.
 	"VIDEO_OVERLAY":    {Kind: KindVideoOverlay, Stat: overlayStatImage},
 	"RENDERED_OVERLAY": {Kind: KindVideoOverlay, Stat: overlayStatImage},
+
+	// Procedural shapes — background plates, grids, dot grids, cards, world maps, etc.
+	"SHAPE":        {Kind: KindShape, Stat: overlayStatImage},
+	"SHAPE_STATIC": {Kind: KindShape, Stat: overlayStatImage},
+
+	// Georeferenced local maps. Preset-less and family-less on purpose: the
+	// plate carries its own pixels and the producer owns the georeference, so
+	// there is nothing for a visual preset to decide.
+	"MAP": {Kind: KindMap, Stat: overlayStatImage},
 }
 
 // legacyTemplateAliases resolve the migrated organization/place spellings ONCE
@@ -178,6 +196,8 @@ const (
 	behaviorEntity
 	behaviorImage
 	behaviorVideo
+	behaviorShape
+	behaviorMap
 )
 
 // behaviorOf maps every accepted kind (including PipelineGen synonyms such as
@@ -190,6 +210,10 @@ func behaviorOf(kind ItemKind) kindBehavior {
 		return behaviorImage
 	case KindVideoOverlay, ItemKind("video"), ItemKind("rendered_overlay"):
 		return behaviorVideo
+	case KindShape:
+		return behaviorShape
+	case KindMap:
+		return behaviorMap
 	default:
 		return behaviorText
 	}
@@ -230,3 +254,9 @@ func isImageKind(kind ItemKind) bool { return behaviorOf(kind) == behaviorImage 
 // isVideoKind reports whether a kind lowers to a timed video layer (a
 // pre-rendered overlay segment) and therefore requires an asset ref.
 func isVideoKind(kind ItemKind) bool { return behaviorOf(kind) == behaviorVideo }
+
+// isShapeKind reports whether a kind lowers to a procedural shape layer.
+func isShapeKind(kind ItemKind) bool { return behaviorOf(kind) == behaviorShape }
+
+// isMapKind reports whether a kind lowers to the georeferenced map layer set.
+func isMapKind(kind ItemKind) bool { return behaviorOf(kind) == behaviorMap }

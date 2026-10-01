@@ -25,8 +25,8 @@ import (
 const certificationDurationFrames = int64(125)
 
 // certificationMSRange is the millisecond range that lowers to the certified
-// frame window at the fixture's 24 fps: floor(start_ms·24/1000)=10 and
-// ceil(end_ms·24/1000)=125.
+// frame window at the fixture's 24 fps: nearest(start_ms·24/1000)=10 and
+// nearest(end_ms·24/1000)=125.
 const (
 	certificationStartMS = int64(417)
 	certificationEndMS   = int64(5208)

@@ -587,11 +587,12 @@ func readPoolPlan(path string) (PoolShape, string, error) {
 	if err := json.Unmarshal(raw, &document); err != nil {
 		return PoolShape{}, "", fmt.Errorf("vramprobe: decode plan %s: %w", path, err)
 	}
-	// The schema constant is renderbatch's: it is the one declaration of the
-	// concrete plan contract, so the harness cannot silently accept a document
-	// the renderer would reject.
-	if document.Schema != renderbatch.ChrononPlanSchema {
-		return PoolShape{}, "", fmt.Errorf("vramprobe: plan %s declares schema %q, want the concrete %s (a semantic plan cannot be rendered)", path, document.Schema, renderbatch.ChrononPlanSchema)
+	// The schema constants are renderbatch's: they are the one declaration of
+	// the concrete plan contract, so the harness cannot silently accept a
+	// document the renderer would reject. V3 is the Marshal() upgrade for
+	// plans whose layers use V3 features; the decoder accepts both.
+	if document.Schema != renderbatch.ChrononPlanSchema && document.Schema != renderbatch.ChrononPlanSchemaV3 {
+		return PoolShape{}, "", fmt.Errorf("vramprobe: plan %s declares schema %q, want the concrete %s or %s (a semantic plan cannot be rendered)", path, document.Schema, renderbatch.ChrononPlanSchema, renderbatch.ChrononPlanSchemaV3)
 	}
 	if document.Canvas.Width <= 0 || document.Canvas.Height <= 0 || document.Canvas.DurationFrames <= 0 {
 		return PoolShape{}, "", fmt.Errorf("vramprobe: plan %s has an unusable canvas %dx%d frames=%d", path, document.Canvas.Width, document.Canvas.Height, document.Canvas.DurationFrames)

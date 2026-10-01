@@ -81,13 +81,14 @@ type CatalogSelections struct {
 
 // Catalog is the parsed canonical catalog.
 type Catalog struct {
-	SchemaVersion  int                 `json:"schema_version"`
-	Source         string              `json:"source"`
-	Templates      []CatalogTemplate   `json:"templates"`
-	Final3DPresets []CatalogPreset     `json:"final3d_presets"`
-	Motions        []MotionDefinition  `json:"motions"`
-	OverlayPresets map[string][]string `json:"overlay_presets"`
-	Selections     CatalogSelections   `json:"selections"`
+	SchemaVersion      int                 `json:"schema_version"`
+	Source             string              `json:"source"`
+	Templates          []CatalogTemplate   `json:"templates"`
+	Final3DPresets     []CatalogPreset     `json:"final3d_presets"`
+	EntityPresentation json.RawMessage     `json:"entity_presentation"`
+	Motions            []MotionDefinition  `json:"motions"`
+	OverlayPresets     map[string][]string `json:"overlay_presets"`
+	Selections         CatalogSelections   `json:"selections"`
 }
 
 var (
@@ -127,6 +128,9 @@ func parseCanonical(raw []byte) (Catalog, error) {
 	}
 	if len(catalog.Motions) == 0 {
 		return Catalog{}, fmt.Errorf("motion: canonical catalog defines no motions")
+	}
+	if err := validateEntityPresentationCatalog(catalog.EntityPresentation, catalog.Motions); err != nil {
+		return Catalog{}, err
 	}
 	// The template and composition-preset sections are owned by ChrononTemplate
 	// and are not rendered by this repository; they are still validated here

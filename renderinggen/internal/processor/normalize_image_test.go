@@ -2,6 +2,8 @@ package processor
 
 import (
 	"fmt"
+	"image"
+	"image/png"
 	"os"
 	"path/filepath"
 	"sort"
@@ -334,6 +336,49 @@ func TestFinalPreparedAssetsProjectsRenames(t *testing.T) {
 
 // TestFinalPreparedAssetsWithoutRenamesIsTheIdentity pins the common case: the
 // compiled manifest is returned as-is (not copied) when nothing was renamed.
+func TestValidateMapRasterAssetsChecksActualPNGDimensions(t *testing.T) {
+	root := t.TempDir()
+	writePNG := func(path string, width, height int) {
+		t.Helper()
+		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		file, err := os.Create(path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		img := image.NewRGBA(image.Rect(0, 0, width, height))
+		if err := png.Encode(file, img); err != nil {
+			file.Close()
+			t.Fatal(err)
+		}
+		if err := file.Close(); err != nil {
+			t.Fatal(err)
+		}
+	}
+	assetPath := "assets/semantic/map.png"
+	writePNG(filepath.Join(root, filepath.FromSlash(assetPath)), 1280, 720)
+	plan := &overlay.Plan{Layers: []overlay.Layer{{
+		ID: "map:map_lod:00", Type: "image", Asset: assetPath,
+		MapRasterWidth: 1280, MapRasterHeight: 720,
+	}}}
+	if err := validateMapRasterAssets(root, plan); err != nil {
+		t.Fatalf("matching certified PNG dimensions rejected: %v", err)
+	}
+	plan.Layers[0].MapRasterWidth = 2048
+	if err := validateMapRasterAssets(root, plan); err == nil || !strings.Contains(err.Error(), "declares 2048x720") {
+		t.Fatalf("mismatched declared raster dimensions must fail, got %v", err)
+	}
+	writePNG(filepath.Join(root, filepath.FromSlash(assetPath)), 1280, 720)
+	if err := os.WriteFile(filepath.Join(root, filepath.FromSlash(assetPath)), []byte("not a PNG"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	plan.Layers[0].MapRasterWidth = 1280
+	if err := validateMapRasterAssets(root, plan); err == nil || !strings.Contains(err.Error(), "not a decodable PNG") {
+		t.Fatalf("invalid staged PNG must fail, got %v", err)
+	}
+}
+
 func TestFinalPreparedAssetsWithoutRenamesIsTheIdentity(t *testing.T) {
 	compiled := []overlay.Asset{{Hash: "h1", LogicalPath: "assets/photo.png"}}
 	projected := finalPreparedAssets(compiled, nil)

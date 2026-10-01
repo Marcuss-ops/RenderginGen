@@ -122,8 +122,15 @@ func TestPhrasePreviewAnimationStaysVisibleForFourSeconds(t *testing.T) {
 		t.Fatalf("typewriter_clean has no selector sweep: %+v", animation.TextAnimators)
 	}
 	sweep := animation.TextAnimators[0].Selectors[0].Start
-	if len(sweep.Keyframes) != 2 || sweep.Keyframes[1].Frame != 95 {
-		t.Fatalf("preview sweep must reach frame 95 (96 frames), got %+v", sweep.Keyframes)
+	// The sweep is baked per-frame (selector tracks accept linear keyframes
+	// only), so the contract is: it starts at 0, reaches the last valid frame
+	// 95 of the 96-frame window, and settles at the full 100.
+	if len(sweep.Keyframes) < 2 {
+		t.Fatalf("preview sweep must span the 96-frame window, got %+v", sweep.Keyframes)
+	}
+	lastSweep := sweep.Keyframes[len(sweep.Keyframes)-1]
+	if lastSweep.Frame != 95 || lastSweep.Value != 100.0 || sweep.Keyframes[0].Frame != 0 || sweep.Keyframes[0].Value != 0.0 {
+		t.Fatalf("preview sweep must run 0..95 and settle at 100, got first=%+v last=%+v", sweep.Keyframes[0], lastSweep)
 	}
 	// Non-phrase must not stretch: a 42-frame motion on 108 frames stays 42.
 	nonPhrase, err := lowerMotion("typewriter_clean", 42, 12, nil, "OLHA ISSO!", 108, false)

@@ -86,6 +86,65 @@ func (r *RegistryType) ImageOverlayMotionIDs() []string {
 	return ids
 }
 
+// EditorialImageV1MotionIDs returns the Editorial Visual Motion V1 image
+// vocabulary in stable order — the 14 goal motions with the full resting-pose
+// and duration-bounds metadata the V1 contract certifies.
+func (r *RegistryType) EditorialImageV1MotionIDs() []string {
+	return r.CategoryMotionIDs("editorial_image_v1")
+}
+
+// ImagePremiumV1MotionIDs returns the data-driven rounded-frame image recipes.
+// This dedicated category is intentionally separate from the legacy 18-ID
+// overlay inventory and its certified batch matrix.
+func (r *RegistryType) ImagePremiumV1MotionIDs() []string {
+	return r.CategoryMotionIDs("image_premium_v1")
+}
+
+// Text3DV1MotionIDs returns the Editorial Visual Motion V1 text 2.5D/3D
+// vocabulary in stable order: 8 motions carrying camera-backed transforms.
+func (r *RegistryType) Text3DV1MotionIDs() []string {
+	return r.CategoryMotionIDs("text_3d_v1")
+}
+
+// EntityCaptionV1MotionIDs returns the animated-caption vocabulary for entity
+// cards in stable order.
+func (r *RegistryType) EntityCaptionV1MotionIDs() []string {
+	return r.CategoryMotionIDs("entity_caption_v1")
+}
+
+// VisualAccentsV1MotionIDs returns one official Visual Accents V1 family
+// (brush_v1, web_rect_v1, paint_v1, light_leak_v1) in stable order. Each
+// family is a closed 12-motion vocabulary certified by its own gate.
+func (r *RegistryType) VisualAccentsV1MotionIDs(category string) []string {
+	return r.CategoryMotionIDs(category)
+}
+
+// VisualAccentsV1FamilyMotionIDs returns every registered Visual Accents V1
+// motion across the four official families, sorted.
+func (r *RegistryType) VisualAccentsV1FamilyMotionIDs() []string {
+	ids := make([]string, 0, 48)
+	for _, category := range VisualAccentsV1Categories {
+		ids = append(ids, r.CategoryMotionIDs(category)...)
+	}
+	sort.Strings(ids)
+	return ids
+}
+
+// VisualAccentsV1Categories is the stable public list of the four official
+// Visual Accents V1 families.
+var VisualAccentsV1Categories = []string{"brush_v1", "web_rect_v1", "paint_v1", "light_leak_v1"}
+
+// VisualAccentsV1CategoriesContains reports whether category is one of the
+// four official Visual Accents V1 families.
+func VisualAccentsV1CategoriesContains(category string) bool {
+	for _, family := range VisualAccentsV1Categories {
+		if family == category {
+			return true
+		}
+	}
+	return false
+}
+
 // CategoryMotionIDs returns registered declarative motions in one catalog
 // category. It is the single projection used by certification and manifests.
 func (r *RegistryType) CategoryMotionIDs(category string) []string {
@@ -164,5 +223,29 @@ func (r *RegistryType) MotionFamilies() []string {
 
 // FamilyMotionIDs returns the registered motion ids for one public family.
 func (r *RegistryType) FamilyMotionIDs(family string) []string {
-	return r.CategoryMotionIDs(family)
+	ids := r.CategoryMotionIDs(family)
+	if family == "3d" {
+		// Text 3D is a named V1 subfamily as well as part of the public 3D
+		// capability family. Unioning it here keeps the dedicated catalog view
+		// tied to the same renderable family API.
+		ids = append(ids, r.Text3DV1MotionIDs()...)
+		sort.Strings(ids)
+		ids = compactMotionIDs(ids)
+	}
+	return ids
+}
+
+func compactMotionIDs(ids []string) []string {
+	if len(ids) < 2 {
+		return ids
+	}
+	write := 1
+	for read := 1; read < len(ids); read++ {
+		if ids[read] == ids[write-1] {
+			continue
+		}
+		ids[write] = ids[read]
+		write++
+	}
+	return ids[:write]
 }

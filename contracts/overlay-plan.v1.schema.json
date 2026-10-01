@@ -6,6 +6,94 @@
   "type": "object",
   "additionalProperties": false,
   "required": ["schema_version", "plan_id", "video_id", "width", "height", "fps_num", "fps_den"],
+  "$defs": {
+    "rgba": {
+      "type": "array", "minItems": 3, "maxItems": 4,
+      "items": { "type": "number", "minimum": 0, "maximum": 1 }
+    },
+    "map_point": {
+      "type": "object", "additionalProperties": false,
+      "required": ["latitude", "longitude"],
+      "properties": {
+        "latitude": { "type": "number", "minimum": -90, "maximum": 90 },
+        "longitude": { "type": "number", "minimum": -180, "maximum": 180 }
+      }
+    },
+    "stroke": {
+      "type": "object", "additionalProperties": false,
+      "properties": {
+        "color": { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}([0-9A-Fa-f]{2})?$" },
+        "width": { "type": "number", "minimum": 0 }
+      }
+    },
+    "gradient": {
+      "type": "object", "additionalProperties": false,
+      "properties": {
+        "type": { "enum": ["linear", "radial", "conic"] },
+        "stops": {
+          "type": "array", "minItems": 2,
+          "items": { "type": "array", "minItems": 2, "maxItems": 2 }
+        },
+        "color_stops": {
+          "type": "array", "minItems": 2,
+          "items": {
+            "type": "object", "additionalProperties": false,
+            "required": ["color", "position"],
+            "properties": {
+              "color": { "oneOf": [{ "$ref": "#/$defs/rgba" }, { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}([0-9A-Fa-f]{2})?$" }] },
+              "position": { "type": "number", "minimum": 0, "maximum": 1 }
+            }
+          }
+        },
+        "start": { "type": "array", "minItems": 2, "maxItems": 2, "items": { "type": "number" } },
+        "end": { "type": "array", "minItems": 2, "maxItems": 2, "items": { "type": "number" } },
+        "opacity_stops": {
+          "type": "array", "minItems": 2,
+          "items": {
+            "type": "object", "additionalProperties": false,
+            "required": ["position", "opacity"],
+            "properties": {
+              "position": { "type": "number", "minimum": 0, "maximum": 1 },
+              "opacity": { "type": "number", "minimum": 0, "maximum": 1 }
+            }
+          }
+        }
+      }
+    },
+    "path_command": {
+      "type": "object", "additionalProperties": false,
+      "required": ["type"],
+      "properties": {
+        "type": { "enum": ["move_to", "line_to", "quadratic_to", "cubic_to", "close"] },
+        "point": { "type": "array", "minItems": 2, "maxItems": 2, "items": { "type": "number" } },
+        "control1": { "type": "array", "minItems": 2, "maxItems": 2, "items": { "type": "number" } },
+        "control2": { "type": "array", "minItems": 2, "maxItems": 2, "items": { "type": "number" } }
+      },
+      "allOf": [
+        { "if": { "properties": { "type": { "enum": ["move_to", "line_to", "quadratic_to", "cubic_to"] } }, "required": ["type"] }, "then": { "required": ["point"] } },
+        { "if": { "properties": { "type": { "enum": ["move_to", "line_to"] } }, "required": ["type"] }, "then": { "not": { "anyOf": [{ "required": ["control1"] }, { "required": ["control2"] }] } } },
+        { "if": { "properties": { "type": { "const": "quadratic_to" } }, "required": ["type"] }, "then": { "required": ["control1"], "not": { "required": ["control2"] } } },
+        { "if": { "properties": { "type": { "const": "cubic_to" } }, "required": ["type"] }, "then": { "required": ["control1", "control2"] } },
+        { "if": { "properties": { "type": { "const": "close" } }, "required": ["type"] }, "then": { "not": { "anyOf": [{ "required": ["point"] }, { "required": ["control1"] }, { "required": ["control2"] }] } } }
+      ]
+    },
+    "layer_effect": {
+      "type": "object", "additionalProperties": false,
+      "required": ["type"],
+      "properties": {
+        "type": { "enum": ["noise", "fractal_noise", "vignette", "gaussian_blur", "drop_shadow", "bloom", "glow", "light_rays", "threshold", "mosaic", "lut_3d", "echo", "keying", "chromatic_aberration", "halftone", "directional_blur", "radial_blur", "sharpen", "turbulent_displace", "wave_warp", "ripple", "displacement_map", "corner_pin", "twirl", "bulge", "mesh_warp", "catalog"] },
+        "params": { "type": "object" },
+        "intensity": { "type": "number" },
+        "amount": { "type": "number" },
+        "amplitude": { "type": "number" },
+        "size": { "type": "number", "exclusiveMinimum": 0, "maximum": 256 },
+        "frequency": { "type": "number", "exclusiveMinimum": 0, "maximum": 10 },
+        "octaves": { "type": "integer", "minimum": 1, "maximum": 16 },
+        "radius": { "type": "number", "minimum": 0, "maximum": 256 },
+        "softness": { "type": "number", "minimum": 0, "maximum": 1 }
+      }
+    }
+  },
   "properties": {
     "schema_version": { "const": "renderinggen.overlay-plan.v1" },
     "plan_id": { "type": "string", "minLength": 1 },
@@ -19,7 +107,6 @@
     "fps_den": { "type": "integer", "minimum": 1, "description": "FPS denominator (rational framerate). Use with fps_num." },
     "duration_ms": { "type": "integer", "minimum": 0, "description": "Explicit clip duration in milliseconds. Required when items is empty (clip render without entity overlays). Items can extend but not shorten the canvas duration." },
     "output_profile_id": { "type": "string", "minLength": 1 },
-    "style_profile": { "enum": ["discovery", "young", "crime"] },
     "media_contract": { "type": "string" },
     "renderer_version": { "type": "string" },
     "fingerprint": { "type": "string" },
@@ -34,6 +121,35 @@
       }
     },
     "foreground_scale_percent": { "type": "integer", "minimum": 1, "maximum": 100 },
+    "source_frame": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Optional card treatment of the source clip: a rounded border frame painted behind the clip plus its drop shadow. The worker lowers it onto the source video layer (style.background + style.shadow + radius); the renderer never invents geometry, colour or blur.",
+      "properties": {
+        "border": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["width_px", "color"],
+          "properties": {
+            "width_px": { "type": "number", "minimum": 0, "maximum": 512, "description": "Visible frame thickness around the clip, in output pixels." },
+            "color": { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$" },
+            "radius_px": { "type": "number", "minimum": 0, "maximum": 512, "description": "Corner radius of the frame. The clip's own inner radius is derived as radius_px - width_px." }
+          }
+        },
+        "shadow": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["color"],
+          "properties": {
+            "color": { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$" },
+            "opacity": { "type": "number", "minimum": 0, "maximum": 1 },
+            "blur_px": { "type": "number", "minimum": 0, "maximum": 256 },
+            "offset_x_px": { "type": "number", "minimum": -256, "maximum": 256 },
+            "offset_y_px": { "type": "number", "minimum": -256, "maximum": 256 }
+          }
+        }
+      }
+    },
     "background": {
       "type": "object",
       "additionalProperties": false,
@@ -101,10 +217,61 @@
           "motion_id": { "type": "string", "minLength": 1, "description": "Per-item motion override resolved through the RenderingGen motion registry. When present it replaces the preset's motion." },
           "motion_params": { "type": "object", "description": "Motion parameters passed to the motion plugin for this item." },
           "text": { "type": "string" },
+          "entity_caption": { "type": "string", "minLength": 1, "description": "Optional explicit entity name preserved by PipelineGen when an image is available; RenderingGen compiles it as a caption layer with the image's lifetime." },
+          "caption_motion_id": { "type": "string", "minLength": 1, "description": "Optional motion override for the entity caption layer. Empty resolves the shared default (text_fade_up); a motion that does not target text is refused by the caption lowering." },
           "params": {
             "type": "object",
-            "description": "Per-item runtime controls and motion parameters. Font, shadow, stroke and glow overrides are validated against RenderingGen's closed runtime contract.",
+            "description": "Per-item runtime controls and motion parameters. Font, shadow, stroke, glow and shape controls are validated by RenderingGen. Shape-only geometry and effects use the shape variant and its closed nested contracts.",
             "properties": {
+              "shape": { "type": "string", "enum": ["rect", "rounded_rect", "ellipse", "line", "path", "star", "polygon", "arrow", "arc", "grid", "dot_grid", "device_frame", "world_map", "chart"] },
+              "width": { "type": "number", "exclusiveMinimum": 0 },
+              "height": { "type": "number", "exclusiveMinimum": 0 },
+              "fill": { "oneOf": [{ "$ref": "#/$defs/rgba" }, { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}([0-9A-Fa-f]{2})?$" }] },
+              "fill_gradient": { "$ref": "#/$defs/gradient" },
+              "stroke": { "$ref": "#/$defs/stroke" },
+              "radius": { "type": "number", "minimum": 0 },
+              "corner_radius": { "type": "array", "minItems": 4, "maxItems": 4, "items": { "type": "number", "minimum": 0 } },
+              "points": { "type": "integer", "minimum": 3, "maximum": 64 },
+              "inner_radius_ratio": { "type": "number", "minimum": 0.05, "maximum": 0.95 },
+              "grid_spacing": { "type": "number", "minimum": 4, "maximum": 512 },
+              "grid_line_width": { "type": "number", "minimum": 0.25, "maximum": 32 },
+              "dot_radius": { "type": "number", "minimum": 0.5, "maximum": 64 },
+              "arc_start_deg": { "type": "number" },
+              "arc_sweep_deg": { "type": "number", "minimum": 1, "maximum": 359.9 },
+              "arc_thickness": { "type": "number", "minimum": 0, "maximum": 10000 },
+              "world_map": {
+                "type": "object", "additionalProperties": false,
+                "properties": {
+                  "projection": { "enum": ["mercator", "equirectangular", "equirect"] },
+                  "center": { "type": "array", "minItems": 2, "maxItems": 2, "items": { "type": "number" } },
+                  "zoom": { "type": "number", "minimum": 1, "maximum": 8 },
+                  "highlight": { "type": "array", "maxItems": 64, "items": { "type": "string" } },
+                  "highlight_color": { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}([0-9A-Fa-f]{2})?$" },
+                  "route": { "type": "array", "maxItems": 256, "items": { "type": "array", "minItems": 2, "maxItems": 2, "items": { "type": "number" } } },
+                  "dots": { "type": "boolean" }
+                }
+              },
+              "device_frame_kind": { "enum": ["phone", "browser", "window"] },
+              "path": { "type": "array", "items": { "$ref": "#/$defs/path_command" } },
+              "effects": { "type": "array", "maxItems": 64, "items": { "$ref": "#/$defs/layer_effect" } },
+              "opacity": { "type": "number", "minimum": 0, "maximum": 1 },
+              "position": { "type": "array", "minItems": 2, "maxItems": 2, "items": { "type": "number" } },
+              "rotation_degrees": { "type": "number" },
+              "arrow_direction": { "type": "string" },
+              "arrow_head_length": { "type": "number", "exclusiveMinimum": 0 },
+              "arrow_head_width": { "type": "number", "exclusiveMinimum": 0 },
+              "arrow_shaft_width": { "type": "number", "exclusiveMinimum": 0 },
+              "device": { "enum": ["phone", "browser", "window"] },
+              "chrome": { "type": "boolean" },
+              "chart": {
+                "type": "object", "additionalProperties": false,
+                "properties": {
+                  "chart_type": { "type": "string" },
+                  "type": { "type": "string" },
+                  "data": { "type": "array", "items": { "type": "number" } },
+                  "colors": { "type": "array", "items": { "oneOf": [{ "$ref": "#/$defs/rgba" }, { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}([0-9A-Fa-f]{2})?$" }] } }
+                }
+              },
               "font_family": { "enum": ["poppins", "inter", "dejavu_sans"] },
               "font_size_px": { "type": "number", "exclusiveMinimum": 0, "maximum": 512 },
               "glow_size": { "type": "number", "minimum": 0, "maximum": 256 },
@@ -146,6 +313,102 @@
               }
             }
           },
+          "frame": {
+            "type": "object",
+            "additionalProperties": false,
+            "description": "Optional card treatment of a video overlay item (kind video_overlay). Same contract as the plan-level source_frame: border lowers to the renderer-owned frame behind the item, shadow to its drop shadow. params.scale_percent insets the item so the frame is visible.",
+            "properties": {
+              "border": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["width_px", "color"],
+                "properties": {
+                  "width_px": { "type": "number", "minimum": 0, "maximum": 512 },
+                  "color": { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$" },
+                  "radius_px": { "type": "number", "minimum": 0, "maximum": 512 }
+                }
+              },
+              "shadow": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["color"],
+                "properties": {
+                  "color": { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$" },
+                  "opacity": { "type": "number", "minimum": 0, "maximum": 1 },
+                  "blur_px": { "type": "number", "minimum": 0, "maximum": 256 },
+                  "offset_x_px": { "type": "number", "minimum": -256, "maximum": 256 },
+                  "offset_y_px": { "type": "number", "minimum": -256, "maximum": 256 }
+                }
+              }
+            }
+          },
+          "map": {
+            "type": "object",
+            "additionalProperties": false,
+            "description": "Typed, fail-closed Web Mercator map metadata. Only an explicitly supplied locally licensed raster is allowed; attribution is rendered visibly and pins share its centered pixel window.",
+            "required": ["provider", "source_id", "source_license", "center", "zoom", "width", "height", "attribution", "motion_id", "pins"],
+            "properties": {
+              "provider": { "const": "local" },
+              "source_id": { "type": "string", "minLength": 1 },
+              "source_license": { "type": "string", "minLength": 1 },
+              "center": { "$ref": "#/$defs/map_point" },
+              "zoom": { "type": "integer", "minimum": 0, "maximum": 22 },
+              "width": { "type": "integer", "minimum": 1, "maximum": 7680 },
+              "height": { "type": "integer", "minimum": 1, "maximum": 4320 },
+              "attribution": { "type": "string", "minLength": 1, "maxLength": 512, "description": "Provider-required visible credit. PipelineGen enforces the stricter byte budget plus a no-control-character rule; the schema pins the same ceiling so a plan the producer accepted is never rejected here for length." },
+              "motion_id": { "type": "string", "minLength": 1, "description": "Motion resolved through RenderingGen's canonical motion registry; only centered image motions are accepted for a georeferenced map." },
+              "lods": {
+                "type": "array", "minItems": 2, "maxItems": 8,
+                "description": "Ordered, offline, locally staged Web-Mercator raster levels, coarse to fine. Every raster is content-addressed in asset_refs and must cover the full camera route and viewport at its active zoom.",
+                "items": {
+                  "type": "object", "additionalProperties": false,
+                  "required": ["asset_id", "source_id", "source_license", "attribution", "center", "zoom", "width", "height"],
+                  "properties": {
+                    "asset_id": { "type": "string", "minLength": 1 },
+                    "source_id": { "type": "string", "minLength": 1 },
+                    "source_license": { "type": "string", "minLength": 1 },
+                    "attribution": { "type": "string", "minLength": 1, "maxLength": 512 },
+                    "center": { "$ref": "#/$defs/map_point" },
+                    "zoom": { "type": "integer", "minimum": 0, "maximum": 18 },
+                    "width": { "type": "integer", "minimum": 1, "maximum": 7680 },
+                    "height": { "type": "integer", "minimum": 1, "maximum": 4320 }
+                  }
+                }
+              },
+              "camera_move": {
+                "type": "object", "additionalProperties": false,
+                "required": ["from", "to", "start_zoom", "end_zoom", "start_tilt_deg", "end_tilt_deg", "bearing_deg"],
+                "properties": {
+                  "from": { "$ref": "#/$defs/map_point" },
+                  "to": { "$ref": "#/$defs/map_point" },
+                  "start_zoom": { "type": "number", "minimum": 0, "maximum": 18 },
+                  "end_zoom": { "type": "number", "exclusiveMinimum": 0, "maximum": 18 },
+                  "start_tilt_deg": { "type": "number", "minimum": -80, "maximum": 80 },
+                  "end_tilt_deg": { "type": "number", "minimum": -80, "maximum": 80 },
+                  "bearing_deg": { "type": "number", "minimum": -360, "maximum": 360 }
+                }
+              },
+              "pins": {
+                "type": "array", "maxItems": 128,
+                "items": {
+                  "type": "object", "additionalProperties": false,
+                  "required": ["id", "label", "latitude", "longitude", "color", "radius_px"],
+                  "properties": {
+                    "id": { "type": "string", "minLength": 1, "maxLength": 128 },
+                    "label": { "type": "string", "minLength": 1, "maxLength": 256 },
+                    "latitude": { "type": "number", "minimum": -90, "maximum": 90 },
+                    "longitude": { "type": "number", "minimum": -180, "maximum": 180 },
+                    "color": { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$" },
+                    "radius_px": { "type": "number", "exclusiveMinimum": 0, "maximum": 128 }
+                  }
+                }
+              }
+            },
+            "allOf": [
+              { "if": { "required": ["lods"] }, "then": { "required": ["camera_move"] } },
+              { "if": { "required": ["camera_move"] }, "then": { "required": ["lods"] } }
+            ]
+          },
           "image_layers": {
             "type": "array",
             "description": "Optional independently animated image layers within a composite image item. Their asset_id values must reference the item's asset_refs; times are relative to the parent item.",
@@ -161,6 +424,7 @@
                 "preset_id": { "type": "string" },
                 "motion_id": { "type": "string" },
                 "motion_params": { "type": "object" },
+                "caption": { "type": "string", "minLength": 1 },
                 "params": { "type": "object" }
               }
             }

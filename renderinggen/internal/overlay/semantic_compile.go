@@ -20,6 +20,7 @@ import (
 	"image"
 	_ "image/jpeg"
 	_ "image/png"
+	"math"
 	"os"
 	"sort"
 	"strings"
@@ -201,8 +202,18 @@ func compileSemantic(raw []byte) (*Plan, []Asset, Stats, []string, error) {
 			srcLayer.Position = []float64{-float64(src.Width) * 0.5, -float64(src.Height) * 0.5}
 			srcLayer.Scale = []float64{float64(src.ForegroundScale) / 100, float64(src.ForegroundScale) / 100}
 		}
+		// Card treatment of the clip (border frame + drop shadow). It is
+		// lowered onto the source layer itself; the renderer paints the frame
+		// behind the media box. A declaration the worker cannot honour is a
+		// compile error (see applyFrameTreatment) and never a silent drop.
+		if err := applyFrameTreatment(&srcLayer, src.SourceFrame); err != nil {
+			return nil, nil, Stats{}, nil, err
+		}
 		sourceLayerIndex = len(plan.Layers)
 		plan.Layers = append(plan.Layers, srcLayer)
+	} else if src.SourceFrame != nil {
+		// A frame with no source clip to attach to would be dropped silently.
+		return nil, nil, Stats{}, nil, fmt.Errorf("overlay: source_frame requires a source clip")
 	}
 
 	// Sidecar subtitles remain a published companion asset. Chronon's current
@@ -290,15 +301,39 @@ func compileSemantic(raw []byte) (*Plan, []Asset, Stats, []string, error) {
 	// Item overlay layers — one compile per resolved kind, counters from the
 	// same pass.
 	var stats Stats
+	var cameraMove *SemanticMapCameraMove
+	var cameraStartFrame, cameraEndFrame int64
+	var cameraMapItemID string
 	for _, ri := range resolved {
 		layers, err := compileItem(ri, &src, registry)
 		if err != nil {
 			return nil, nil, Stats{}, nil, err
 		}
+		if ri.Item.Map != nil && ri.Item.Map.CameraMove != nil {
+			if cameraMove != nil {
+				return nil, nil, Stats{}, nil, fmt.Errorf("overlay: only one native camera fly-to map is allowed per plan")
+			}
+			move := *ri.Item.Map.CameraMove
+			cameraMove = &move
+			cameraMapItemID = ri.Item.ID
+			cameraStartFrame, cameraEndFrame = ri.Start, ri.End
+		}
 		plan.Layers = append(plan.Layers, layers...)
 		stats.addResolved(ri)
 		if ri.End > plan.Canvas.DurationFrames {
 			plan.Canvas.DurationFrames = ri.End
+		}
+	}
+
+	if cameraMove != nil {
+		if err := compileMapCamera(&plan, *cameraMove, cameraStartFrame, cameraEndFrame, src.FPSNum, src.FPSDen); err != nil {
+			return nil, nil, Stats{}, nil, err
+		}
+		for i := range plan.Layers {
+			if strings.HasPrefix(plan.Layers[i].ID, cameraMapItemID+":map_") {
+				plan.Layers[i].StartFrame = cameraStartFrame
+				plan.Layers[i].DurationFrames = cameraEndFrame - cameraStartFrame
+			}
 		}
 	}
 
@@ -323,6 +358,16 @@ func compileSemantic(raw []byte) (*Plan, []Asset, Stats, []string, error) {
 	if plan.Canvas.DurationFrames <= 0 {
 		return nil, nil, Stats{}, nil, fmt.Errorf("overlay: semantic plan duration is zero — provide duration_ms or at least one item with end_ms > 0")
 	}
+
+	for _, l := range plan.Layers {
+		if l.Type == "shape" || l.Shape != nil || plan.Camera != nil || l.ScreenSpace || len(l.Effects) > 0 ||
+			len(l.EffectParamTracks) > 0 || len(l.Masks) > 0 || layerAnimationNeedsV3(l.Animation) {
+			plan.Schema = "chronon.render-plan.v3"
+			plan.Version = 3
+			break
+		}
+	}
+
 	// Stable asset order (the registry sorts) keeps prepared-plan
 	// fingerprints reproducible. The plan stays typed; the caller marshals it
 	// exactly once at the Chronon boundary.
@@ -380,6 +425,10 @@ func resolveSemanticItems(src *semanticPlan) ([]resolvedItem, error) {
 		if item.ID == "" || item.StartMS < 0 || item.EndMS <= item.StartMS {
 			return nil, fmt.Errorf("overlay: invalid semantic item %q", item.ID)
 		}
+		if end <= start {
+			return nil, fmt.Errorf("overlay: item %q window [%d,%d) ms collapses to no frames at %d/%d fps",
+				item.ID, item.StartMS, item.EndMS, src.FPSNum, src.FPSDen)
+		}
 		if err := validateTextElementContract(item); err != nil {
 			return nil, err
 		}
@@ -389,6 +438,13 @@ func resolveSemanticItems(src *semanticPlan) ([]resolvedItem, error) {
 		spec := templateSpecFor(item.Template)
 		kind, err := spec.resolveKind(item.Kind, item.ID)
 		if err != nil {
+			return nil, err
+		}
+		// The map declaration is validated for EVERY item, not only map ones: a
+		// map block on a phrase item would otherwise be carried through the plan
+		// and silently ignored, which is exactly the kind of contract drift the
+		// worker exists to stop.
+		if err := validateMapContract(item, kind, src.Width, src.Height); err != nil {
 			return nil, err
 		}
 		// The resolved kind is authoritative for the preset family too, so an
@@ -415,7 +471,7 @@ func resolveSemanticItems(src *semanticPlan) ([]resolvedItem, error) {
 		}
 		ri := resolvedItem{Item: item, Spec: spec, Kind: kind, Params: params, RuntimeStyle: runtimeStyle, Start: start, End: end}
 
-		if isImageKind(kind) && len(item.Assets) == 0 {
+		if isImageKind(kind) && len(item.Assets) == 0 && len(item.ImageLayers) == 0 {
 			return nil, fmt.Errorf("overlay: image template %q item %q requires asset_refs", item.Template, item.ID)
 		}
 		if isVideoKind(kind) && len(item.Assets) == 0 {
@@ -457,6 +513,9 @@ func resolveSemanticItems(src *semanticPlan) ([]resolvedItem, error) {
 func compileItem(ri resolvedItem, src *semanticPlan, registry *assetRegistry) ([]Layer, error) {
 	switch {
 	case isEntityKind(ri.Kind):
+		if len(ri.Item.ImageLayers) > 0 {
+			return compileImageLayers(ri, src, registry)
+		}
 		if len(ri.Item.Assets) == 0 {
 			layer, err := compileTextLayer(ri, src, ri.Item.ID)
 			if err != nil {
@@ -473,6 +532,14 @@ func compileItem(ri resolvedItem, src *semanticPlan, registry *assetRegistry) ([
 		return []Layer{layer}, nil
 	case isImageKind(ri.Kind):
 		return compileImageLayers(ri, src, registry)
+	case isShapeKind(ri.Kind):
+		layer, err := compileShapeLayer(ri, src)
+		if err != nil {
+			return nil, err
+		}
+		return []Layer{layer}, nil
+	case isMapKind(ri.Kind):
+		return compileMapLayers(ri, src, registry)
 	default:
 		layer, err := compileTextLayer(ri, src, ri.Item.ID)
 		if err != nil {
@@ -493,7 +560,7 @@ func compileEntityCard(ri resolvedItem, src *semanticPlan, registry *assetRegist
 		var imgAnimation *LayerAnimation
 		var err error
 		if ri.Item.MotionID != "" {
-			imgAnimation, err = animationForMotion(ri.Item.MotionID, ri.Item.MotionParams, "", ri.End-ri.Start, ri.ImagePreset.Motion.Exit)
+			imgAnimation, err = imageMotionAnimation(ri.Item.MotionID, ri.Item.MotionParams, ri.End-ri.Start, ri.ImagePreset.Motion.Exit)
 		} else {
 			imgAnimation, err = animationForPreset(ri.ImagePreset, "", ri.End-ri.Start)
 		}
@@ -508,7 +575,35 @@ func compileEntityCard(ri resolvedItem, src *semanticPlan, registry *assetRegist
 		img.Position = []float64{0, 0}
 		img.Fit = FitContain
 	}
-	return []Layer{img}, nil
+	if err := applyFrameTreatment(&img, ri.Item.Frame); err != nil {
+		return nil, fmt.Errorf("overlay: entity image item %q: %w", ri.Item.ID, err)
+	}
+	if ri.Item.MotionID != "" && ri.ImagePreset.ID == "" {
+		return nil, fmt.Errorf("overlay: entity image item %q with motion_id requires image_preset_id", ri.Item.ID)
+	}
+	premium, err := premiumImageDefinition(ri.Item.MotionID)
+	if err != nil {
+		return nil, fmt.Errorf("overlay: entity image motion %q: %w", ri.Item.MotionID, err)
+	}
+	layers, err := compilePremiumImageLayers(ri, src, img, premium)
+	if err != nil {
+		return nil, err
+	}
+	if caption := strings.TrimSpace(ri.Item.EntityCaption); caption != "" {
+		imageIndex := premiumImageLayerIndex(layers)
+		captionLayer, err := compileEntityCaptionLayer(ri, src, ri.Item, caption, &layers[imageIndex], "entity")
+		if err != nil {
+			return nil, err
+		}
+		if premium != nil && len(premium.ImageRecipe.CaptionTracks) > 0 {
+			premiumLayerActive(&captionLayer, premiumTracks(*premium, premium.ImageRecipe.CaptionTracks, captionLayer.DurationFrames))
+		}
+		layers = append(layers, captionLayer)
+	}
+	if premium != nil && premium.ImageRecipe.RequireCaption && strings.TrimSpace(ri.Item.EntityCaption) == "" {
+		return nil, fmt.Errorf("overlay: motion %q requires entity_caption", premium.ID)
+	}
+	return layers, nil
 }
 
 // compileVideoOverlayLayer lowers a rendered video overlay to a TIMED video
@@ -552,7 +647,129 @@ func compileVideoOverlayLayer(ri resolvedItem, src *semanticPlan, registry *asse
 		}
 		layer.Opacity = &opacity
 	}
+	// scale_percent insets a full-canvas overlay segment so its declared frame
+	// is actually visible. It uses the same centred transform contract as the
+	// source clip's foreground_scale_percent (which is the only place the
+	// modular resolver's implicit canvas-centre shift is cancelled).
+	if raw, exists := ri.Params["scale_percent"]; exists {
+		percent, ok := numericParam(raw)
+		if !ok || percent <= 0 || percent > 100 {
+			return Layer{}, fmt.Errorf("overlay: video overlay item %q has scale_percent outside (0,100]", ri.Item.ID)
+		}
+		if percent < 100 {
+			layer.Position = []float64{-float64(src.Width) * 0.5, -float64(src.Height) * 0.5}
+			layer.Scale = []float64{percent / 100, percent / 100}
+		}
+	}
+	if err := applyFrameTreatment(&layer, ri.Item.Frame); err != nil {
+		return Layer{}, fmt.Errorf("overlay: item %q: %w", ri.Item.ID, err)
+	}
 	return layer, nil
+}
+
+// applyFrameTreatment lowers a card declaration (plan-level source_frame or an
+// item's frame) onto a media layer. It is the SINGLE owner of the translation:
+//
+//   - the border becomes the renderer-owned frame behind the media box, i.e.
+//     style.background with the border colour, the border thickness as padding
+//     and radius_px as the frame's outer corner radius;
+//   - the media box itself takes the concentric inner radius
+//     (radius_px - width_px), so the clip's corners nest inside the frame;
+//   - the shadow becomes style.shadow, which the renderer attaches to the
+//     frame when a frame exists and to the media layer otherwise.
+//
+// Every value comes from the declaration: the worker invents no colour, blur or
+// geometry. A declaration with neither border nor shadow, an out-of-range
+// value or a malformed colour is rejected here (fail-closed).
+func applyFrameTreatment(layer *Layer, frame *semanticSourceFrame) error {
+	if frame == nil {
+		return nil
+	}
+	if frame.Border == nil && frame.Shadow == nil {
+		return fmt.Errorf("frame requires border or shadow")
+	}
+	if frame.Border != nil {
+		border := frame.Border
+		if math.IsNaN(border.WidthPX) || math.IsInf(border.WidthPX, 0) || border.WidthPX < 0 || border.WidthPX > maxFrameBorderWidth {
+			return fmt.Errorf("frame border width_px must be within [0,%g]", maxFrameBorderWidth)
+		}
+		if math.IsNaN(border.RadiusPX) || math.IsInf(border.RadiusPX, 0) || border.RadiusPX < 0 || border.RadiusPX > maxFrameRadius {
+			return fmt.Errorf("frame border radius_px must be within [0,%g]", maxFrameRadius)
+		}
+		if !isHexColor(border.Color) {
+			return fmt.Errorf("frame border color %q must be #RRGGBB", border.Color)
+		}
+		if border.WidthPX > 0 {
+			style := ensureLayerStyle(layer)
+			style.Background = &LayerBackground{
+				Color:   border.Color,
+				Radius:  border.RadiusPX,
+				Padding: []float64{border.WidthPX, border.WidthPX},
+			}
+		}
+		// Concentric inner radius: the clip's corners nest inside the frame's.
+		if inner := border.RadiusPX - border.WidthPX; inner > 0 {
+			layer.Radius = inner
+		}
+	}
+	if frame.Shadow != nil {
+		shadow := frame.Shadow
+		if !isHexColor(shadow.Color) {
+			return fmt.Errorf("frame shadow color %q must be #RRGGBB", shadow.Color)
+		}
+		if math.IsNaN(shadow.Opacity) || shadow.Opacity < 0 || shadow.Opacity > 1 {
+			return fmt.Errorf("frame shadow opacity must be within [0,1]")
+		}
+		if math.IsNaN(shadow.BlurPX) || shadow.BlurPX < 0 || shadow.BlurPX > maxFrameShadowBlur {
+			return fmt.Errorf("frame shadow blur_px must be within [0,%g]", maxFrameShadowBlur)
+		}
+		if math.IsNaN(shadow.OffsetXP) || math.Abs(shadow.OffsetXP) > maxFrameShadowOffset ||
+			math.IsNaN(shadow.OffsetYP) || math.Abs(shadow.OffsetYP) > maxFrameShadowOffset {
+			return fmt.Errorf("frame shadow offsets must be within ±%g", maxFrameShadowOffset)
+		}
+		style := ensureLayerStyle(layer)
+		style.Shadow = &LayerShadow{
+			Color:   shadow.Color,
+			Opacity: shadow.Opacity,
+			Blur:    shadow.BlurPX,
+			Offset:  []float64{shadow.OffsetXP, shadow.OffsetYP},
+		}
+	}
+	return nil
+}
+
+// Bounds of the frame contract. They mirror the published schema, so a value
+// the contract admits is never rejected here and vice versa.
+const (
+	maxFrameBorderWidth  float64 = 512
+	maxFrameRadius       float64 = 512
+	maxFrameShadowBlur   float64 = 256
+	maxFrameShadowOffset float64 = 256
+)
+
+func ensureLayerStyle(layer *Layer) *LayerStyle {
+	if layer.Style == nil {
+		layer.Style = &LayerStyle{}
+	}
+	return layer.Style
+}
+
+// isHexColor accepts exactly the #RRGGBB form the render plan's colour
+// properties declare (the engine parses no other spelling).
+func isHexColor(value string) bool {
+	if len(value) != 7 || value[0] != '#' {
+		return false
+	}
+	for _, digit := range value[1:] {
+		switch {
+		case digit >= '0' && digit <= '9':
+		case digit >= 'a' && digit <= 'f':
+		case digit >= 'A' && digit <= 'F':
+		default:
+			return false
+		}
+	}
+	return true
 }
 
 // compileImageLayers lowers an image kind (IMAGE_OVERLAY/PRODUCT/LOGO/…) to one
@@ -597,22 +814,70 @@ func validateSemanticImageLayers(item semanticItem) error {
 }
 
 func compileImageLayers(ri resolvedItem, src *semanticPlan, registry *assetRegistry) ([]Layer, error) {
-	if len(ri.Item.Assets) == 0 {
-		return nil, fmt.Errorf("overlay: image template %q item %q requires asset_refs", ri.Item.Template, ri.Item.ID)
+	premium, err := premiumImageDefinition(ri.Item.MotionID)
+	if err != nil {
+		return nil, fmt.Errorf("overlay: image motion %q: %w", ri.Item.MotionID, err)
+	}
+	visualAccents, err := visualAccentsDefinition(ri.Item.MotionID)
+	if err != nil {
+		return nil, fmt.Errorf("overlay: visual accents motion %q: %w", ri.Item.MotionID, err)
+	}
+	if visualAccents != nil && visualAccents.ImageRecipe != nil && visualAccents.ImageRecipe.Stack {
+		return nil, fmt.Errorf("overlay: motion %q requires multiple image_layers", visualAccents.ID)
 	}
 	if len(ri.Item.ImageLayers) == 0 {
+		if len(ri.Item.Assets) == 0 {
+			return nil, fmt.Errorf("overlay: image template %q item %q requires asset_refs", ri.Item.Template, ri.Item.ID)
+		}
+		if premium != nil && premium.ImageRecipe.Stack {
+			return nil, fmt.Errorf("overlay: motion %q requires at least two image_layers and motion_params.active_layer_id", premium.ID)
+		}
 		layer, err := compileSingleImageLayer(ri, src, registry.Path(ri.Item.Assets[0].ID), ri.Preset, ri.Item.MotionID, ri.Item.MotionParams, ri.Start, ri.End, ri.Item.ID)
 		if err != nil {
 			return nil, err
 		}
-		return []Layer{layer}, nil
+		if visualAccents != nil {
+			layers, err := compileVisualAccentsImageLayers(ri, src, layer, visualAccents)
+			if err != nil {
+				return nil, err
+			}
+			return layers, nil
+		}
+		layers, err := compilePremiumImageLayers(ri, src, layer, premium)
+		if err != nil {
+			return nil, err
+		}
+		if caption := strings.TrimSpace(ri.Item.EntityCaption); caption != "" {
+			imageIndex := premiumImageLayerIndex(layers)
+			captionLayer, err := compileEntityCaptionLayer(ri, src, ri.Item, caption, &layers[imageIndex], "entity")
+			if err != nil {
+				return nil, err
+			}
+			if premium != nil && len(premium.ImageRecipe.CaptionTracks) > 0 {
+				premiumLayerActive(&captionLayer, premiumTracks(*premium, premium.ImageRecipe.CaptionTracks, captionLayer.DurationFrames))
+			}
+			return append(layers, captionLayer), nil
+		}
+		if premium != nil && premium.ImageRecipe.RequireCaption {
+			return nil, fmt.Errorf("overlay: motion %q requires entity_caption", premium.ID)
+		}
+		return layers, nil
 	}
-
+	if premium != nil && premium.ImageRecipe.Stack {
+		return compilePremiumImageStack(ri, src, registry, premium)
+	}
+	if premium != nil && premium.ImageRecipe.RequireCaption {
+		for _, child := range ri.Item.ImageLayers {
+			if strings.TrimSpace(child.Caption) == "" {
+				return nil, fmt.Errorf("overlay: motion %q requires a caption on every image layer", premium.ID)
+			}
+		}
+	}
 	assets := make(map[string]string, len(ri.Item.Assets))
 	for _, ref := range ri.Item.Assets {
 		assets[ref.ID] = registry.Path(ref.ID)
 	}
-	layers := make([]Layer, 0, len(ri.Item.ImageLayers))
+	layers := make([]Layer, 0, len(ri.Item.ImageLayers)*2)
 	for _, child := range ri.Item.ImageLayers {
 		assetPath, ok := assets[child.AssetID]
 		if !ok {
@@ -633,6 +898,8 @@ func compileImageLayers(ri resolvedItem, src *semanticPlan, registry *assetRegis
 		childItem.PresetID = child.PresetID
 		childItem.MotionID = child.MotionID
 		childItem.MotionParams = child.MotionParams
+		childItem.EntityCaption = ""
+		childItem.CaptionMotionID = ""
 		childItem.StartMS, childItem.EndMS = child.StartMS, child.EndMS
 		childItem.Params = params
 		childResolved := ri
@@ -646,9 +913,105 @@ func compileImageLayers(ri resolvedItem, src *semanticPlan, registry *assetRegis
 		// Keep camera-backed 2.5D tracks as authored. Image geometry and
 		// motion are independent contract inputs; Enable3D is derived by the
 		// shared motion-routing helper above.
-		layers = append(layers, layer)
+		decorated, err := compilePremiumImageLayers(childResolved, src, layer, premium)
+		if err != nil {
+			return nil, err
+		}
+		if caption := strings.TrimSpace(child.Caption); caption != "" {
+			imageIndex := premiumImageLayerIndex(decorated)
+			captionLayer, err := compileEntityCaptionLayer(ri, src, childItem, caption, &decorated[imageIndex], child.ID)
+			if err != nil {
+				return nil, err
+			}
+			if premium != nil && len(premium.ImageRecipe.CaptionTracks) > 0 {
+				premiumLayerActive(&captionLayer, premiumTracks(*premium, premium.ImageRecipe.CaptionTracks, captionLayer.DurationFrames))
+			}
+			layers = append(layers, decorated...)
+			layers = append(layers, captionLayer)
+		} else {
+			layers = append(layers, decorated...)
+		}
 	}
 	return layers, nil
+}
+
+func compileEntityCaptionLayer(parent resolvedItem, src *semanticPlan, child semanticItem, caption string, image *Layer, childID string) (Layer, error) {
+	if len(image.Size) < 2 || image.Size[0] <= 0 || image.Size[1] <= 0 {
+		return Layer{}, fmt.Errorf("overlay: item %q image caption has no positive image geometry", parent.Item.ID)
+	}
+	// The resolver owns the geometry: image bottom_center + margin anchor,
+	// safe-area clamping and long-name font fitting all happen there. The
+	// lowering below only writes the resolver's answer into the layer.
+	imageBounds := EntityCardImageBoundsFromCenter(src.Width, src.Height, image.Position, image.Size[0], image.Size[1])
+	layout, err := ResolveEntityCardLayout(src.Width, src.Height, imageBounds, caption)
+	if err != nil {
+		return Layer{}, fmt.Errorf("overlay: item %q entity caption layout: %w", parent.Item.ID, err)
+	}
+	// Vertical fallback: the resolver may shift the image up so the pair
+	// image + margin + caption fits inside the safe area. Image layers are
+	// positioned relative to the canvas center, so an upward canvas shift of
+	// `shift` px converts to exactly minus `shift`; the caption's geometry
+	// below is canvas-absolute.
+	if shift := imageBounds.Y - layout.ImageBounds.Y; shift != 0 {
+		if len(image.Position) < 2 {
+			image.Position = []float64{0, 0}
+		}
+		image.Position[1] -= shift
+	}
+	captionBounds := layout.CaptionBounds
+	width := int(captionBounds.Width)
+	if width < 1 {
+		width = 1
+	}
+	captionItem := parent.Item
+	captionItem.ID = parent.Item.ID + ":" + childID + ":caption"
+	captionItem.Kind = string(KindEntityCard)
+	captionItem.Template = "PERSON_DEFAULT"
+	captionItem.PresetID = PhraseDefaultPresetID
+	captionItem.Text = caption
+	// The caption is a first-class animated layer: resolve the requested
+	// motion (or the shared default) and refuse non-text motions here, before
+	// compileTextLayer lowers MotionID — an image motion on a caption would
+	// otherwise lower camera-backed tracks a text layer cannot honor.
+	captionMotion := EntityCaptionMotionID(child.CaptionMotionID)
+	if !entityCaptionMotionAllowed(captionMotion) {
+		captionMotion = ""
+	}
+	captionItem.MotionID = captionMotion
+	captionItem.MotionParams = nil
+	captionItem.Assets = nil
+	captionItem.ImageLayers = nil
+	positionX := captionBounds.CenterX
+	positionY := captionBounds.CenterY
+	captionItem.Params = map[string]any{
+		"position_x":   positionX,
+		"position_y":   positionY,
+		"font_size_px": captionBounds.FontSize,
+	}
+	captionItem.Style = nil
+	captionResolved := resolvedItem{
+		Item: captionItem, Spec: parent.Spec, Kind: KindEntityCard,
+		Params: captionItem.Params,
+		Start:  image.StartFrame, End: image.StartFrame + image.DurationFrames,
+	}
+	captionResolved.Preset = phraseDefaultPreset()
+	captionLayer, err := compileTextLayer(captionResolved, src, captionItem.ID)
+	if err != nil {
+		return Layer{}, fmt.Errorf("overlay: entity image caption %q: %w", captionItem.ID, err)
+	}
+	captionLayer.BoxWidth = width
+	captionLayer.BoxHeight = int(captionBounds.Height)
+	captionLayer.Size = []float64{captionBounds.Width, captionBounds.Height}
+	captionLayer.Position = []float64{captionBounds.CenterX, captionBounds.CenterY}
+	captionLayer.Style.Fill = "#FFFFFF"
+	captionLayer.Style.FontSize = captionBounds.FontSize
+	captionLayer.Style.MinFontSize = captionBounds.FontSize
+	captionLayer.Style.MaxFontSize = captionBounds.FontSize
+	captionLayer.Style.Background = &LayerBackground{
+		Color: "#111827", Opacity: floatPointer(0.82), Radius: 18,
+		Padding: []float64{16, 8},
+	}
+	return captionLayer, nil
 }
 
 func compileSingleImageLayer(ri resolvedItem, src *semanticPlan, assetPath string, preset PresetDefinition, motionID string, motionParams map[string]any, start, end int64, layerID string) (Layer, error) {
@@ -657,7 +1020,7 @@ func compileSingleImageLayer(ri resolvedItem, src *semanticPlan, assetPath strin
 	layer.StartFrame, layer.DurationFrames = start, end-start
 	applyPresetDefinition(&layer, preset)
 	if motionID != "" {
-		animation, err := animationForMotion(motionID, motionParams, ri.Item.Text, end-start, preset.Motion.Exit)
+		animation, err := imageMotionAnimation(motionID, motionParams, end-start, preset.Motion.Exit)
 		if err != nil {
 			return Layer{}, err
 		}
@@ -693,6 +1056,9 @@ func compileSingleImageLayer(ri resolvedItem, src *semanticPlan, assetPath strin
 	if ri.Kind == KindEntityImage {
 		layer.Fit = FitContain
 		layer.EntityImage = true
+	}
+	if err := applyFrameTreatment(&layer, ri.Item.Frame); err != nil {
+		return Layer{}, fmt.Errorf("overlay: image item %q: %w", ri.Item.ID, err)
 	}
 	return layer, nil
 }
@@ -843,6 +1209,12 @@ func compileTextLayer(ri resolvedItem, src *semanticPlan, layerID string) (Layer
 	// Text placement is expressed as a layer top-left plus a local text box.
 	// materialize_text uses the serialized box size, while the layer position
 	// is applied exactly once by Chronon.
+	if width, ok := numericParam(ri.Params["width"]); ok && width > 0 {
+		layer.BoxWidth = int(width)
+	}
+	if height, ok := numericParam(ri.Params["height"]); ok && height > 0 {
+		layer.BoxHeight = int(height)
+	}
 	if layer.BoxWidth <= 0 {
 		layer.BoxWidth = src.Width
 		if ri.Preset.Family == PresetText && ri.Preset.Layout.BoxWidth > 0 && ri.Preset.Layout.BoxWidth < layer.BoxWidth {

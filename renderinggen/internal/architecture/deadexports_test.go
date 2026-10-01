@@ -77,6 +77,7 @@ var deadExportExceptions = map[string]string{}
 // false-negative window the scan already tolerates.
 var stdlibInterfaceMethods = map[string][]string{
 	"Unmarshaler": {"UnmarshalJSON"},
+	"Marshaler":   {"MarshalJSON"},
 }
 
 // interfaceHookRefs counts the corpus-wide assertions of every standard-library

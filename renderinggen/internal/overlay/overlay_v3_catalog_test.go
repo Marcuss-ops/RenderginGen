@@ -3,6 +3,7 @@ package overlay
 import (
 	"encoding/json"
 	"fmt"
+	"math"
 	"reflect"
 	"strings"
 	"testing"
@@ -42,7 +43,12 @@ func TestImage25DCleanV1CatalogLowersLayerOnlyWithCatalogExit(t *testing.T) {
 		t.Fatalf("clean 2.5D image catalog has %d motions, want 8", len(ids))
 	}
 	for _, id := range ids {
-		animation, err := animationForMotion(id, nil, "", 120, 0)
+		plugin, err := motion.Registry.Resolve(id)
+		if err != nil {
+			t.Fatalf("resolve image motion %s: %v", id, err)
+		}
+		definition := plugin.(motion.DeclarativePlugin).Definition
+		animation, err := animationForMotion(id, nil, "", 240, 0)
 		if err != nil {
 			t.Fatalf("image motion %s: %v", id, err)
 		}
@@ -52,20 +58,76 @@ func TestImage25DCleanV1CatalogLowersLayerOnlyWithCatalogExit(t *testing.T) {
 		if !layerUses3D(animation) {
 			t.Fatalf("image motion %s did not activate 3D", id)
 		}
+		catalogPose := make(map[string]any)
+		for _, track := range definition.Tracks {
+			for _, keyframe := range track.Keyframes {
+				if keyframe.Frame > int64(definition.Enter) {
+					break
+				}
+				catalogPose[track.Property] = keyframe.Value
+			}
+		}
+		if len(catalogPose) == 0 {
+			t.Fatalf("image motion %s has no authored entrance pose to certify", id)
+		}
 		for _, track := range animation.Tracks {
 			if track.Property == "opacity" {
 				last := track.Keyframes[len(track.Keyframes)-1]
-				if last.Frame != 119 || last.Value != 0.0 {
-					t.Fatalf("image motion %s exit = frame %d value %v, want frame 119 opacity 0", id, last.Frame, last.Value)
+				if last.Frame != 239 || last.Value != 0.0 {
+					t.Fatalf("image motion %s exit = frame %d value %v, want frame 239 opacity 0", id, last.Frame, last.Value)
+				}
+			}
+			if resting, exists := catalogPose[track.Property]; exists {
+				settled, ok := resting.(float64)
+				if !ok {
+					t.Fatalf("image motion %s resting %s value has type %T", id, track.Property, resting)
+				}
+				settledFrame := int64(definition.Enter)
+				if track.Property == "rotation_y" || track.Property == "rotation_x" || track.Property == "position_z" {
+					if settled != 0 {
+						t.Fatalf("image motion %s 3D property %s rests at %v, want neutral 0", id, track.Property, settled)
+					}
+				}
+				if got := sampleNumericTrack(track, settledFrame); got != settled {
+					t.Fatalf("image motion %s %s at resting frame %d = %v, want %v", id, track.Property, settledFrame, got, settled)
 				}
 			}
 		}
+		if animationUses3D(animation) != motion.IsCameraBacked3DProperty(firstCameraBackedProperty(definition)) {
+			t.Fatalf("image motion %s no longer routes camera-backed transforms", id)
+		}
 	}
+}
+
+func sampleNumericTrack(track AnimationTrack, frame int64) float64 {
+	var latest float64
+	for _, keyframe := range track.Keyframes {
+		if keyframe.Frame > frame {
+			break
+		}
+		value, ok := keyframe.Value.(float64)
+		if !ok {
+			return math.NaN()
+		}
+		latest = value
+	}
+	return latest
+}
+
+func firstCameraBackedProperty(definition motion.MotionDefinition) string {
+	for _, track := range definition.Tracks {
+		if motion.IsCameraBacked3DProperty(track.Property) {
+			return track.Property
+		}
+	}
+	return ""
 }
 
 func TestImageMotionInventoryHasAllCatalogImageAnimations(t *testing.T) {
 	inventory := ImageMotionInventory()
 	want := map[string][]string{
+		"editorial_image_v1": motion.Registry.EditorialImageV1MotionIDs(),
+		"image_premium_v1": motion.Registry.ImagePremiumV1MotionIDs(),
 		"overlay_v3_image": {
 			"image_fade_reveal", "image_focus_reveal", "image_scale_reveal",
 			"image_slide_left_reveal", "image_slide_right_reveal", "image_parallax_depth_reveal",
@@ -76,6 +138,10 @@ func TestImageMotionInventoryHasAllCatalogImageAnimations(t *testing.T) {
 			"image_25d_pop_z_bounce", "image_25d_swipe_3d", "image_25d_card_swing",
 			"image_25d_blur_focus_in", "image_25d_blur_scale_in",
 		},
+		"brush_v1":      motion.Registry.VisualAccentsV1MotionIDs("brush_v1"),
+		"web_rect_v1":   motion.Registry.VisualAccentsV1MotionIDs("web_rect_v1"),
+		"paint_v1":      motion.Registry.VisualAccentsV1MotionIDs("paint_v1"),
+		"light_leak_v1": motion.Registry.VisualAccentsV1MotionIDs("light_leak_v1"),
 	}
 	if len(inventory) != len(want) {
 		t.Fatalf("image inventory groups = %v, want exactly %v", inventory, want)
@@ -99,8 +165,8 @@ func TestImageMotionInventoryHasAllCatalogImageAnimations(t *testing.T) {
 			}
 		}
 	}
-	if len(all) != 18 || len(motion.Registry.ImageOverlayMotionIDs()) != len(all) {
-		t.Fatalf("combined image motion inventory = %d, want 18 unique IDs", len(all))
+	if len(all) != 100 || len(motion.Registry.ImageOverlayMotionIDs()) != 18 || len(motion.Registry.ImagePremiumV1MotionIDs()) != 20 {
+		t.Fatalf("combined image motion inventory = %d, want 100 catalog IDs (52 legacy + 48 visual accents), 18 legacy IDs, and 20 premium IDs", len(all))
 	}
 }
 
@@ -145,8 +211,15 @@ func TestEveryImageMotionReachesTheChrononRenderPlan(t *testing.T) {
 			if err := json.Unmarshal(wire, &concrete); err != nil {
 				t.Fatalf("decode Chronon plan for %q: %v", id, err)
 			}
-			if concrete.Schema != "chronon.render-plan.v2" || len(concrete.Layers) != 1 {
-				t.Fatalf("serialized plan schema/layers = %q/%d, want chronon.render-plan.v2/1", concrete.Schema, len(concrete.Layers))
+			// Blur motions lower to layer effects, and a plan containing
+			// effects marshals as chronon.render-plan.v3 by contract; every
+			// other image motion stays on the v2 baseline.
+			wantSchema := "chronon.render-plan.v2"
+			if strings.Contains(id, "blur") {
+				wantSchema = "chronon.render-plan.v3"
+			}
+			if concrete.Schema != wantSchema || len(concrete.Layers) != 1 {
+				t.Fatalf("serialized plan schema/layers = %q/%d, want %s/1", concrete.Schema, len(concrete.Layers), wantSchema)
 			}
 			layer := concrete.Layers[0]
 			if layer.ID != imageLayerID("image-"+id) || layer.Type != "image" || layer.Asset != "assets/semantic/test-image.png" {
@@ -187,7 +260,7 @@ func TestCompositeEntityImageLayersKeepIndependentTimingAndMotion(t *testing.T) 
 		"width":1920,"height":1080,"fps_num":24,"fps_den":1,
 		"items":[{
 			"id":"ada+grace","kind":"entity_image","template_id":"image_popup","preset_id":"image_focus_in",
-			"start_ms":1000,"end_ms":7500,
+			"start_ms":1000,"end_ms":7500,"duration_ms":6500,
 			"asset_refs":[
 				{"asset_id":"ada","sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","url":"https://example.test/ada.jpg","media_type":"image/jpeg"},
 				{"asset_id":"grace","sha256":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","url":"https://example.test/grace.jpg","media_type":"image/jpeg"}
@@ -326,8 +399,10 @@ func TestPhraseDefaultAndMotionFamilyRemainIndependent(t *testing.T) {
 	if got := len(motion.Registry.FamilyMotionIDs("typewriter")); got != 5 {
 		t.Fatalf("typewriter family has %d motions, want 5", got)
 	}
-	if got := len(motion.Registry.FamilyMotionIDs("web")); got != 0 {
-		t.Fatalf("web family has %d placeholder motions, want 0", got)
+	// Editorial Visual Motion V1 grows the certified web vocabulary to 14:
+	// web_cursor_focus and web_section_spotlight joined the family.
+	if got := len(motion.Registry.FamilyMotionIDs("web")); got != 14 {
+		t.Fatalf("web family has %d motions, want 14", got)
 	}
 	if got := len(motion.Registry.FamilyMotionIDs("3d")); got == 0 {
 		t.Fatal("3d family should expose catalog motions independently of phrase_default")
@@ -360,8 +435,13 @@ func TestRuntimeStyleOverrideSchemaContract(t *testing.T) {
 				}
 				delete(documented, key)
 			}
-			for extra := range documented {
-				t.Errorf("the schema documents %q, which the runtime validator does not enforce", extra)
+			// params is the union of text, shape, image, map and producer
+			// controls. This test owns only the text-runtime subset; the other
+			// controls are checked by their canonical resolvers and parity tests.
+			if pointer == "#/properties/items/items/properties/style" {
+				for extra := range documented {
+					t.Errorf("the schema documents %q, which the runtime validator does not enforce", extra)
+				}
 			}
 			for _, bound := range []struct {
 				key              string

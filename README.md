@@ -88,8 +88,30 @@ placeholder is advertised as renderable. The current image motion inventory is
 (`image_25d_depth_float_in`, `image_25d_yaw_flip_in`,
 `image_25d_pitch_lift`, `image_25d_pop_z_bounce`, `image_25d_swipe_3d`,
 `image_25d_card_swing`, `image_25d_blur_focus_in`,
-`image_25d_blur_scale_in`). Use `overlay.ImageMotionInventory()` for the live,
-catalog-derived IDs.
+`image_25d_blur_scale_in`). The legacy `ImageOverlayMotionIDs()` remains exactly
+these 18 ids; they remain the matrix/certified inventory.
+
+The separate `image_premium_v1` family adds 20 `image_recipe` motions without
+expanding that legacy matrix. They lower to Chronon render-plan v3 primitives
+(shape components, built-in effects and effect-parameter tracks, animated path
+trim, gradient fills, path masks, 2.5D transforms, captions, and active/inactive
+selection for image stacks). This is still the regular Chronon3D renderer; there
+is no premium-specific renderer. `overlay.ImageMotionInventory()` reports the
+live catalog groups: the image total is 52 (18 legacy + 14 Editorial Image V1
++ 20 premium). Use `ImagePremiumV1MotionIDs()` for only the 20 premium ids, or
+`ImageOverlayMotionIDs()` when a caller specifically needs the unchanged
+legacy 18. The premium ids are `image_glow_depth_in`, `image_border_draw_in`,
+`image_soft_yaw_glow`, `image_tilt_frame_in`, `image_frame_scale_reveal`,
+`image_glow_pulse_settle`, `image_neon_trace`, `image_corner_bloom`,
+`image_depth_float`, `image_parallax_frame`, `image_mask_wipe_border`,
+`image_split_light_reveal`, `image_focus_breath`, `image_roll_depth_in`,
+`image_card_flip_soft`, `image_border_expand`, `image_glow_ring_expand`,
+`image_caption_frame_combo`, `image_spotlight_focus`, and `image_stack_focus`.
+
+Catalog ownership and sync direction remain ChrononTemplate JSON -> its catalog
+emitter -> RenderingGen embedded artifact. Run `scripts/sync_motion_catalog.sh`
+after changing the canonical catalog; never edit the generated embedded catalog
+by hand.
 
 Text item `params` (or the item-level `style` override) may additionally set
 `font_family` to `poppins`, `inter`, or `dejavu_sans`, `glow_size` in `[0,256]`

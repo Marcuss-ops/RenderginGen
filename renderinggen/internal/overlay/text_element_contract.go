@@ -28,7 +28,7 @@ func validateTextElementContract(item semanticItem) error {
 	if templateID == "" && len(item.TemplateSlots) > 0 {
 		return fmt.Errorf("overlay: item %q has template_slots but no template_id", item.ID)
 	}
-	if templateID == "" && behavior != behaviorText {
+	if templateID == "" && behavior != behaviorText && behavior != behaviorShape {
 		return fmt.Errorf("overlay: item %q without template_id must be a text primitive, got kind %q", item.ID, item.Kind)
 	}
 	if templateID == "" && len(item.Assets) > 0 {
@@ -37,8 +37,16 @@ func validateTextElementContract(item semanticItem) error {
 	if styleID != "" && behavior != behaviorText {
 		return fmt.Errorf("overlay: item %q style_id %q is only valid for text content", item.ID, item.StyleID)
 	}
-	if behavior != behaviorImage && behavior != behaviorVideo && text == "" {
-		return fmt.Errorf("overlay: item %q requires text (RenderingGen owns content; templates do not provide phrases)", item.ID)
+	// Media-bearing behaviours (image, video, shape, map) carry their content in
+	// their own declaration: a map's visible text is its pins and its
+	// attribution, which the map block owns (see semantic_map.go), so an empty
+	// item text is not a missing-content error for them.
+	switch behavior {
+	case behaviorImage, behaviorVideo, behaviorShape, behaviorMap:
+	default:
+		if text == "" {
+			return fmt.Errorf("overlay: item %q requires text (RenderingGen owns content; templates do not provide phrases)", item.ID)
+		}
 	}
 	return nil
 }

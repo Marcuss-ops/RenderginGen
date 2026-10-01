@@ -71,6 +71,8 @@ func TestEveryImageMotionRendersADistinctFrame(t *testing.T) {
 	if len(ids) != 18 {
 		t.Fatalf("registered image motions = %d, want 18", len(ids))
 	}
+	// Visual Accents V1 carries its own 48-motion certified matrix below; the
+	// legacy 18-motion render dedup matrix stays exactly as certified.
 	assetsRoot := certificationAssetsRoot(t)
 	outDir := t.TempDir()
 

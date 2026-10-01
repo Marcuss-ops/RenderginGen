@@ -2,6 +2,8 @@ package overlay
 
 import (
 	"fmt"
+	"math"
+	"sort"
 
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/motion"
 )
@@ -66,7 +68,11 @@ func lowerMotion(id string, enter, exit int, params motion.MotionParams, text st
 		if err != nil {
 			return nil, fmt.Errorf("overlay: compile text motion %q: %w", id, err)
 		}
-		animation.TextAnimators = retimeTextAnimators(fromTextMotionDefinitions(definitions, entrance), entrance)
+		textAnimators, err := fromTextMotionDefinitions(definitions, entrance)
+		if err != nil {
+			return nil, fmt.Errorf("overlay: lower text motion %q: %w", id, err)
+		}
+		animation.TextAnimators = retimeTextAnimators(textAnimators, entrance)
 	}
 	animation.Tracks = appendExitTracks(animation.Tracks, exit, duration)
 	return animation, nil
@@ -321,6 +327,25 @@ func clampTextSelectorTracks(selector *TextSelector, duration int64) {
 	clampAnimationTrack(selector.End, duration)
 	clampAnimationTrack(selector.Offset, duration)
 	clampAnimationTrack(selector.Amount, duration)
+	// Clamping a sweep whose authored extent equals the last valid frame
+	// collapses its keyframes onto that frame (the 95-frame layer with a
+	// 0..95 sweep: every authored keyframe clamps to 95, leaving duplicates
+	// that Chronon's strict decoder rejects). Coalesce to the LAST value so
+	// the sweep keeps its settled 100 semantics instead of restarting.
+	for _, track := range []*AnimationTrack{selector.Start, selector.End, selector.Offset, selector.Amount} {
+		if track == nil || len(track.Keyframes) < 2 {
+			continue
+		}
+		unique := track.Keyframes[:0]
+		for _, keyframe := range track.Keyframes {
+			if len(unique) > 0 && unique[len(unique)-1].Frame == keyframe.Frame {
+				unique[len(unique)-1] = keyframe
+				continue
+			}
+			unique = append(unique, keyframe)
+		}
+		track.Keyframes = unique
+	}
 }
 
 // animationForPreset is the shared lowering path for the official catalog. The
@@ -458,7 +483,7 @@ func fromTrackDefinitions(src []motion.TrackDefinition) []AnimationTrack {
 	return result
 }
 
-func fromTextMotionDefinitions(src []motion.TextAnimatorDefinition, duration int64) []TextAnimator {
+func fromTextMotionDefinitions(src []motion.TextAnimatorDefinition, duration int64) ([]TextAnimator, error) {
 	result := make([]TextAnimator, 0, len(src))
 	for _, definition := range src {
 		selector := TextSelector{
@@ -485,14 +510,109 @@ func fromTextMotionDefinitions(src []motion.TextAnimatorDefinition, duration int
 			if sweepDuration > MaxStaggerSweepFrames {
 				sweepDuration = MaxStaggerSweepFrames
 			}
-			selector.Start = &AnimationTrack{Property: "start", Easing: "out_cubic", Keyframes: []AnimationKeyframe{
-				{Frame: 0, Value: 0.0}, {Frame: sweepDuration, Value: 100.0},
-			}}
+			// Selector timing animates the selector's start value itself. The
+			// Chronon selector contract has no property field; putting "start"
+			// here makes the strict decoder reject otherwise valid phrase cards.
+			keyframes := make([]AnimationKeyframe, sweepDuration+1)
+			for frame := int64(0); frame <= sweepDuration; frame++ {
+				t := float64(frame) / float64(sweepDuration)
+				// Bake the authored out-cubic sweep because selector tracks
+				// accept explicit linear keyframes only.
+				value := 1 - (1-t)*(1-t)*(1-t)
+				keyframes[frame] = AnimationKeyframe{Frame: frame, Value: 100 * value}
+			}
+			selector.Start = &AnimationTrack{Easing: "linear", Keyframes: keyframes}
 		}
-		animator := TextAnimator{ID: definition.ID, Selectors: []TextSelector{selector}, Properties: fromTrackDefinitions(definition.Properties)}
+		properties := make([]AnimationTrack, 0, len(definition.Properties))
+		for _, track := range definition.Properties {
+			sampled, err := sampleTextPropertyTrack(track)
+			if err != nil {
+				return nil, fmt.Errorf("text animator %q property %q: %w", definition.ID, track.Property, err)
+			}
+			properties = append(properties, sampled)
+		}
+		animator := TextAnimator{ID: definition.ID, Selectors: []TextSelector{selector}, Properties: properties}
 		result = append(result, animator)
 	}
-	return result
+	return result, nil
+}
+
+// sampleTextPropertyTrack bakes catalog easing into frame-sampled linear
+// keyframes. Chronon intentionally accepts no easing metadata on per-glyph
+// property tracks, so forwarding a catalog's "out_cubic" made phrase overlays
+// fail during plan validation.
+func sampleTextPropertyTrack(track motion.TrackDefinition) (AnimationTrack, error) {
+	if len(track.Keyframes) == 0 {
+		return AnimationTrack{}, fmt.Errorf("no keyframes")
+	}
+	keys := append([]motion.AnimationKeyframe(nil), track.Keyframes...)
+	sort.Slice(keys, func(i, j int) bool { return keys[i].Frame < keys[j].Frame })
+	for i := 1; i < len(keys); i++ {
+		if keys[i].Frame <= keys[i-1].Frame {
+			return AnimationTrack{}, fmt.Errorf("keyframe frames must be unique and increasing")
+		}
+	}
+	if len(keys) == 1 {
+		return AnimationTrack{Property: track.Property, Easing: "linear", Keyframes: []AnimationKeyframe{{Frame: keys[0].Frame, Value: keys[0].Value}}}, nil
+	}
+	first, last := keys[0].Frame, keys[len(keys)-1].Frame
+	if first < 0 || last-first > 65535 {
+		return AnimationTrack{}, fmt.Errorf("sample window [%d,%d] exceeds Chronon's 65536-keyframe limit", first, last)
+	}
+	out := AnimationTrack{Property: track.Property, Easing: "linear", Keyframes: make([]AnimationKeyframe, 0, last-first+1)}
+	segment := 0
+	for frame := first; frame <= last; frame++ {
+		for segment+1 < len(keys)-1 && frame > keys[segment+1].Frame {
+			segment++
+		}
+		a, err := numericComponents(keys[segment].Value)
+		if err != nil { return AnimationTrack{}, err }
+		b, err := numericComponents(keys[segment+1].Value)
+		if err != nil { return AnimationTrack{}, err }
+		if len(a) != len(b) { return AnimationTrack{}, fmt.Errorf("keyframe value arity changed") }
+		rawT := float64(frame-keys[segment].Frame) / float64(keys[segment+1].Frame-keys[segment].Frame)
+		t, err := easingValue(track.Easing, rawT)
+		if err != nil { return AnimationTrack{}, err }
+		values := make([]float64, len(a))
+		for i := range values { values[i] = a[i] + (b[i]-a[i])*t }
+		var value any = values
+		if len(values) == 1 { value = values[0] }
+		out.Keyframes = append(out.Keyframes, AnimationKeyframe{Frame: frame, Value: value})
+	}
+	return out, nil
+}
+
+func numericComponents(value any) ([]float64, error) {
+	switch v := value.(type) {
+	case float64: return []float64{v}, nil
+	case float32: return []float64{float64(v)}, nil
+	case int: return []float64{float64(v)}, nil
+	case int64: return []float64{float64(v)}, nil
+	case []float64: return append([]float64(nil), v...), nil
+	case []any:
+		out := make([]float64, len(v))
+		for i, component := range v {
+			n, ok := component.(float64); if !ok { return nil, fmt.Errorf("keyframe component %d is %T, want number", i, component) }; out[i] = n
+		}
+		return out, nil
+	default: return nil, fmt.Errorf("keyframe value is %T, want numeric scalar or vector", value)
+	}
+}
+
+func easingValue(easing string, t float64) (float64, error) {
+	switch easing {
+	case "", "linear": return t, nil
+	case "out_cubic": return 1 - math.Pow(1-t, 3), nil
+	case "in_out_cubic":
+		if t < 0.5 { return 4*t*t*t, nil }
+		return 1 - math.Pow(-2*t+2, 3)/2, nil
+	case "in_out_sine": return -(math.Cos(math.Pi*t)-1)/2, nil
+	case "out_expo": if t == 1 { return 1, nil }; return 1-math.Pow(2, -10*t), nil
+	case "out_back":
+		const c1, c3 = 1.70158, 2.70158
+		return 1 + c3*math.Pow(t-1, 3) + c1*math.Pow(t-1, 2), nil
+	default: return 0, fmt.Errorf("unsupported easing %q", easing)
+	}
 }
 
 func resolveLayout(l PresetLayout, boxWidth, boxHeight, canvasWidth, canvasHeight int) []float64 {

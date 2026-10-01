@@ -3,6 +3,9 @@
 *.test
 *.out
 renderinggen/renderinggen
+# Showcase binary built from cmd/render-showcase (ELF with debug info) —
+# same artifact class as renderinggen/renderinggen.
+renderinggen/render-showcase
 renderinggen/bin/
 /bin/
 .tmp/
@@ -113,3 +116,6 @@ __pycache__/
 # sidecars): generated evidence a re-run regenerates on demand — same
 # artifact class as the /preset_videos/ family above. On disk, never in git.
 /out/
+# Same artifact class, but under the Go module root (274 MB of editorial_v1 /
+# map_motion renders, timing sidecars and copied fonts).
+/renderinggen/out/

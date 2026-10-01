@@ -28,6 +28,15 @@ import (
 const (
 	ChrononPlanSchema  = "chronon.render-plan.v2"
 	ChrononPlanVersion = 2
+	// ChrononPlanSchemaV3 is the schema Marshal() upgrades a plan to when the
+	// compiled layers use V3 features (effects, masks, camera…). Chronon's
+	// decoder accepts both; the batch must too, or one blur motion breaks the
+	// whole matrix.
+	ChrononPlanSchemaV3 = "chronon.render-plan.v3"
+	// ChrononPlanVersionV3 pairs with ChrononPlanSchemaV3: Marshal() bumps the
+	// version with the schema, so the batch can pin the pairing instead of
+	// trusting one half of it.
+	ChrononPlanVersionV3 = 3
 )
 
 // PlanSpec is a caller-supplied semantic plan to build and compile.
@@ -180,9 +189,17 @@ func CompileRenderPlan(raw []byte) ([]byte, error) {
 	if result.Plan == nil {
 		return nil, fmt.Errorf("renderbatch: compiler returned no plan")
 	}
-	if result.Plan.Schema != ChrononPlanSchema || result.Plan.Version != ChrononPlanVersion {
-		return nil, fmt.Errorf("renderbatch: compiler emitted %s v%d, want %s v%d",
-			result.Plan.Schema, result.Plan.Version, ChrononPlanSchema, ChrononPlanVersion)
+	wantVersion := ChrononPlanVersion
+	if result.Plan.Schema == ChrononPlanSchemaV3 {
+		wantVersion = ChrononPlanVersionV3
+	}
+	if result.Plan.Schema != ChrononPlanSchema && result.Plan.Schema != ChrononPlanSchemaV3 {
+		return nil, fmt.Errorf("renderbatch: compiler emitted %s v%d, want %s or %s",
+			result.Plan.Schema, result.Plan.Version, ChrononPlanSchema, ChrononPlanSchemaV3)
+	}
+	if result.Plan.Version != wantVersion {
+		return nil, fmt.Errorf("renderbatch: compiler emitted %s v%d, want %s paired with v%d",
+			result.Plan.Schema, result.Plan.Version, result.Plan.Schema, wantVersion)
 	}
 	data, err := json.MarshalIndent(result.Plan, "", "  ")
 	if err != nil {
@@ -205,10 +222,8 @@ type semanticPlanDocument struct {
 	// DurationMS seeds the canvas duration; the item below extends it to the
 	// same value, which is what the compiler requires for an item-bearing plan.
 	DurationMS int64 `json:"duration_ms,omitempty"`
-	// OutputProfileID / StyleProfile are part of the published contract. Empty
-	// means "no output profile requested", which is what this batch renders.
+	// Empty OutputProfileID means this batch leaves encode policy to its caller.
 	OutputProfileID string `json:"output_profile_id"`
-	StyleProfile    string `json:"style_profile"`
 	// Background reuses the manifest's Surface type: one declaration of the
 	// block, so the reader and writer cannot describe it differently.
 	Background *Surface               `json:"background,omitempty"`
