@@ -612,6 +612,552 @@
                 "easing": "out_cubic"
               }
             ]
+          },
+          {
+            "id": "metric_count_flip",
+            "tracks": [
+              {
+                "property": "opacity",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0
+                  },
+                  {
+                    "frame": 22,
+                    "value": 0.7
+                  },
+                  {
+                    "frame": 44,
+                    "value": 1
+                  },
+                  {
+                    "frame": 72,
+                    "value": 1
+                  }
+                ],
+                "easing": "out_cubic"
+              },
+              {
+                "property": "rotation_x",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 18
+                  },
+                  {
+                    "frame": 26,
+                    "value": 3
+                  },
+                  {
+                    "frame": 48,
+                    "value": 0
+                  },
+                  {
+                    "frame": 72,
+                    "value": 0
+                  }
+                ],
+                "easing": "out_cubic"
+              },
+              {
+                "property": "scale",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0.88
+                  },
+                  {
+                    "frame": 30,
+                    "value": 1.02
+                  },
+                  {
+                    "frame": 50,
+                    "value": 1
+                  },
+                  {
+                    "frame": 72,
+                    "value": 1
+                  }
+                ],
+                "easing": "out_cubic"
+              }
+            ]
+          },
+          {
+            "id": "metric_slide_left",
+            "tracks": [
+              {
+                "property": "opacity",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0
+                  },
+                  {
+                    "frame": 18,
+                    "value": 1
+                  },
+                  {
+                    "frame": 72,
+                    "value": 1
+                  }
+                ],
+                "easing": "out_cubic"
+              },
+              {
+                "property": "position_x",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": -84
+                  },
+                  {
+                    "frame": 24,
+                    "value": -18
+                  },
+                  {
+                    "frame": 48,
+                    "value": 0
+                  },
+                  {
+                    "frame": 72,
+                    "value": 0
+                  }
+                ],
+                "easing": "out_cubic"
+              }
+            ]
+          },
+          {
+            "id": "metric_ribbon_unfold",
+            "tracks": [
+              {
+                "property": "opacity",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0
+                  },
+                  {
+                    "frame": 20,
+                    "value": 1
+                  },
+                  {
+                    "frame": 72,
+                    "value": 1
+                  }
+                ],
+                "easing": "out_cubic"
+              },
+              {
+                "property": "scale_y",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0.02
+                  },
+                  {
+                    "frame": 16,
+                    "value": 0.35
+                  },
+                  {
+                    "frame": 38,
+                    "value": 1
+                  },
+                  {
+                    "frame": 72,
+                    "value": 1
+                  }
+                ],
+                "easing": "out_cubic"
+              }
+            ]
+          },
+          {
+            "id": "metric_split_odometer",
+            "tracks": [
+              {
+                "property": "opacity",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0
+                  },
+                  {
+                    "frame": 24,
+                    "value": 1
+                  },
+                  {
+                    "frame": 72,
+                    "value": 1
+                  }
+                ],
+                "easing": "out_cubic"
+              },
+              {
+                "property": "position_y",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 42
+                  },
+                  {
+                    "frame": 18,
+                    "value": 12
+                  },
+                  {
+                    "frame": 38,
+                    "value": -4
+                  },
+                  {
+                    "frame": 52,
+                    "value": 0
+                  },
+                  {
+                    "frame": 72,
+                    "value": 0
+                  }
+                ],
+                "easing": "out_cubic"
+              }
+            ]
+          },
+          {
+            "id": "metric_bounce_settle",
+            "tracks": [
+              {
+                "property": "opacity",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0
+                  },
+                  {
+                    "frame": 18,
+                    "value": 1
+                  },
+                  {
+                    "frame": 72,
+                    "value": 1
+                  }
+                ],
+                "easing": "out_cubic"
+              },
+              {
+                "property": "scale",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0.72
+                  },
+                  {
+                    "frame": 22,
+                    "value": 1.09
+                  },
+                  {
+                    "frame": 36,
+                    "value": 0.97
+                  },
+                  {
+                    "frame": 50,
+                    "value": 1.02
+                  },
+                  {
+                    "frame": 72,
+                    "value": 1
+                  }
+                ],
+                "easing": "out_cubic"
+              }
+            ]
+          },
+          {
+            "id": "metric_arc_sweep",
+            "tracks": [
+              {
+                "property": "opacity",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0
+                  },
+                  {
+                    "frame": 22,
+                    "value": 1
+                  },
+                  {
+                    "frame": 72,
+                    "value": 1
+                  }
+                ],
+                "easing": "out_cubic"
+              },
+              {
+                "property": "rotation_y",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": -22
+                  },
+                  {
+                    "frame": 24,
+                    "value": -8
+                  },
+                  {
+                    "frame": 46,
+                    "value": 0
+                  },
+                  {
+                    "frame": 72,
+                    "value": 0
+                  }
+                ],
+                "easing": "out_cubic"
+              },
+              {
+                "property": "scale_x",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0.86
+                  },
+                  {
+                    "frame": 32,
+                    "value": 1.04
+                  },
+                  {
+                    "frame": 52,
+                    "value": 1
+                  },
+                  {
+                    "frame": 72,
+                    "value": 1
+                  }
+                ],
+                "easing": "out_cubic"
+              }
+            ]
+          },
+          {
+            "id": "metric_digit_cascade",
+            "tracks": [
+              {
+                "property": "opacity",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0
+                  },
+                  {
+                    "frame": 28,
+                    "value": 1
+                  },
+                  {
+                    "frame": 72,
+                    "value": 1
+                  }
+                ],
+                "easing": "out_cubic"
+              },
+              {
+                "property": "position_x",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 38
+                  },
+                  {
+                    "frame": 16,
+                    "value": 14
+                  },
+                  {
+                    "frame": 38,
+                    "value": 0
+                  },
+                  {
+                    "frame": 72,
+                    "value": 0
+                  }
+                ],
+                "easing": "out_cubic"
+              },
+              {
+                "property": "scale",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0.9
+                  },
+                  {
+                    "frame": 34,
+                    "value": 1
+                  },
+                  {
+                    "frame": 72,
+                    "value": 1
+                  }
+                ],
+                "easing": "out_cubic"
+              }
+            ]
+          },
+          {
+            "id": "metric_compare_wipe",
+            "tracks": [
+              {
+                "property": "opacity",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0
+                  },
+                  {
+                    "frame": 26,
+                    "value": 1
+                  },
+                  {
+                    "frame": 72,
+                    "value": 1
+                  }
+                ],
+                "easing": "out_cubic"
+              },
+              {
+                "property": "scale_x",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0.01
+                  },
+                  {
+                    "frame": 20,
+                    "value": 0.42
+                  },
+                  {
+                    "frame": 42,
+                    "value": 1
+                  },
+                  {
+                    "frame": 72,
+                    "value": 1
+                  }
+                ],
+                "easing": "out_cubic"
+              }
+            ]
+          },
+          {
+            "id": "metric_pulse_hold",
+            "tracks": [
+              {
+                "property": "opacity",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 1
+                  },
+                  {
+                    "frame": 72,
+                    "value": 1
+                  }
+                ],
+                "easing": "linear"
+              },
+              {
+                "property": "scale",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 1
+                  },
+                  {
+                    "frame": 16,
+                    "value": 1.08
+                  },
+                  {
+                    "frame": 30,
+                    "value": 1
+                  },
+                  {
+                    "frame": 48,
+                    "value": 1.035
+                  },
+                  {
+                    "frame": 60,
+                    "value": 1
+                  },
+                  {
+                    "frame": 72,
+                    "value": 1
+                  }
+                ],
+                "easing": "out_cubic"
+              }
+            ]
+          },
+          {
+            "id": "metric_debt_flip",
+            "tracks": [
+              {
+                "property": "opacity",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0
+                  },
+                  {
+                    "frame": 24,
+                    "value": 1
+                  },
+                  {
+                    "frame": 72,
+                    "value": 1
+                  }
+                ],
+                "easing": "out_cubic"
+              },
+              {
+                "property": "rotation_x",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": -76
+                  },
+                  {
+                    "frame": 24,
+                    "value": -18
+                  },
+                  {
+                    "frame": 46,
+                    "value": 0
+                  },
+                  {
+                    "frame": 72,
+                    "value": 0
+                  }
+                ],
+                "easing": "out_cubic"
+              },
+              {
+                "property": "position_y",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 28
+                  },
+                  {
+                    "frame": 30,
+                    "value": 0
+                  },
+                  {
+                    "frame": 72,
+                    "value": 0
+                  }
+                ],
+                "easing": "out_cubic"
+              }
+            ]
           }
         ]
       },
@@ -1069,6 +1615,464 @@
                   {
                     "frame": 72,
                     "value": 1
+                  }
+                ],
+                "easing": "out_cubic"
+              }
+            ]
+          },
+          {
+            "id": "date_page_turn",
+            "tracks": [
+              {
+                "property": "opacity",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0
+                  },
+                  {
+                    "frame": 24,
+                    "value": 1
+                  },
+                  {
+                    "frame": 72,
+                    "value": 1
+                  }
+                ],
+                "easing": "out_cubic"
+              },
+              {
+                "property": "rotation_y",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 64
+                  },
+                  {
+                    "frame": 22,
+                    "value": 14
+                  },
+                  {
+                    "frame": 44,
+                    "value": 0
+                  },
+                  {
+                    "frame": 72,
+                    "value": 0
+                  }
+                ],
+                "easing": "out_cubic"
+              }
+            ]
+          },
+          {
+            "id": "date_calendar_drop",
+            "tracks": [
+              {
+                "property": "opacity",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0
+                  },
+                  {
+                    "frame": 20,
+                    "value": 1
+                  },
+                  {
+                    "frame": 72,
+                    "value": 1
+                  }
+                ],
+                "easing": "out_cubic"
+              },
+              {
+                "property": "position_y",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": -54
+                  },
+                  {
+                    "frame": 20,
+                    "value": -8
+                  },
+                  {
+                    "frame": 38,
+                    "value": 0
+                  },
+                  {
+                    "frame": 72,
+                    "value": 0
+                  }
+                ],
+                "easing": "out_cubic"
+              }
+            ]
+          },
+          {
+            "id": "date_month_wipe",
+            "tracks": [
+              {
+                "property": "opacity",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0
+                  },
+                  {
+                    "frame": 22,
+                    "value": 1
+                  },
+                  {
+                    "frame": 72,
+                    "value": 1
+                  }
+                ],
+                "easing": "out_cubic"
+              },
+              {
+                "property": "scale_x",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0.05
+                  },
+                  {
+                    "frame": 18,
+                    "value": 0.62
+                  },
+                  {
+                    "frame": 40,
+                    "value": 1
+                  },
+                  {
+                    "frame": 72,
+                    "value": 1
+                  }
+                ],
+                "easing": "out_cubic"
+              }
+            ]
+          },
+          {
+            "id": "date_timeline_sweep",
+            "tracks": [
+              {
+                "property": "opacity",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0
+                  },
+                  {
+                    "frame": 26,
+                    "value": 1
+                  },
+                  {
+                    "frame": 72,
+                    "value": 1
+                  }
+                ],
+                "easing": "out_cubic"
+              },
+              {
+                "property": "position_x",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": -92
+                  },
+                  {
+                    "frame": 24,
+                    "value": -20
+                  },
+                  {
+                    "frame": 46,
+                    "value": 0
+                  },
+                  {
+                    "frame": 72,
+                    "value": 0
+                  }
+                ],
+                "easing": "out_cubic"
+              }
+            ]
+          },
+          {
+            "id": "date_marker_pop",
+            "tracks": [
+              {
+                "property": "opacity",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0
+                  },
+                  {
+                    "frame": 18,
+                    "value": 1
+                  },
+                  {
+                    "frame": 72,
+                    "value": 1
+                  }
+                ],
+                "easing": "out_cubic"
+              },
+              {
+                "property": "scale",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0.38
+                  },
+                  {
+                    "frame": 20,
+                    "value": 1.16
+                  },
+                  {
+                    "frame": 34,
+                    "value": 0.96
+                  },
+                  {
+                    "frame": 48,
+                    "value": 1
+                  },
+                  {
+                    "frame": 72,
+                    "value": 1
+                  }
+                ],
+                "easing": "out_cubic"
+              }
+            ]
+          },
+          {
+            "id": "date_split_year",
+            "tracks": [
+              {
+                "property": "opacity",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0
+                  },
+                  {
+                    "frame": 25,
+                    "value": 1
+                  },
+                  {
+                    "frame": 72,
+                    "value": 1
+                  }
+                ],
+                "easing": "out_cubic"
+              },
+              {
+                "property": "position_x",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 76
+                  },
+                  {
+                    "frame": 18,
+                    "value": 30
+                  },
+                  {
+                    "frame": 40,
+                    "value": 0
+                  },
+                  {
+                    "frame": 72,
+                    "value": 0
+                  }
+                ],
+                "easing": "out_cubic"
+              }
+            ]
+          },
+          {
+            "id": "date_bracket_draw",
+            "tracks": [
+              {
+                "property": "opacity",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0
+                  },
+                  {
+                    "frame": 20,
+                    "value": 1
+                  },
+                  {
+                    "frame": 72,
+                    "value": 1
+                  }
+                ],
+                "easing": "out_cubic"
+              },
+              {
+                "property": "scale_y",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0.03
+                  },
+                  {
+                    "frame": 22,
+                    "value": 0.58
+                  },
+                  {
+                    "frame": 42,
+                    "value": 1
+                  },
+                  {
+                    "frame": 72,
+                    "value": 1
+                  }
+                ],
+                "easing": "out_cubic"
+              }
+            ]
+          },
+          {
+            "id": "date_stamp_reveal",
+            "tracks": [
+              {
+                "property": "opacity",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0
+                  },
+                  {
+                    "frame": 24,
+                    "value": 1
+                  },
+                  {
+                    "frame": 72,
+                    "value": 1
+                  }
+                ],
+                "easing": "out_cubic"
+              },
+              {
+                "property": "scale",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 1.24
+                  },
+                  {
+                    "frame": 20,
+                    "value": 0.96
+                  },
+                  {
+                    "frame": 38,
+                    "value": 1.02
+                  },
+                  {
+                    "frame": 52,
+                    "value": 1
+                  },
+                  {
+                    "frame": 72,
+                    "value": 1
+                  }
+                ],
+                "easing": "out_cubic"
+              }
+            ]
+          },
+          {
+            "id": "date_era_zoom",
+            "tracks": [
+              {
+                "property": "opacity",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0
+                  },
+                  {
+                    "frame": 28,
+                    "value": 1
+                  },
+                  {
+                    "frame": 72,
+                    "value": 1
+                  }
+                ],
+                "easing": "out_cubic"
+              },
+              {
+                "property": "scale",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0.68
+                  },
+                  {
+                    "frame": 26,
+                    "value": 1.08
+                  },
+                  {
+                    "frame": 44,
+                    "value": 1
+                  },
+                  {
+                    "frame": 72,
+                    "value": 1
+                  }
+                ],
+                "easing": "out_cubic"
+              }
+            ]
+          },
+          {
+            "id": "date_digit_flip",
+            "tracks": [
+              {
+                "property": "opacity",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0
+                  },
+                  {
+                    "frame": 22,
+                    "value": 1
+                  },
+                  {
+                    "frame": 72,
+                    "value": 1
+                  }
+                ],
+                "easing": "out_cubic"
+              },
+              {
+                "property": "rotation_x",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": -82
+                  },
+                  {
+                    "frame": 18,
+                    "value": -24
+                  },
+                  {
+                    "frame": 40,
+                    "value": 0
+                  },
+                  {
+                    "frame": 72,
+                    "value": 0
                   }
                 ],
                 "easing": "out_cubic"
@@ -23758,6 +24762,796 @@
       ]
     },
     {
+      "id": "metric_count_flip",
+      "category": "metric_v1",
+      "supported_template": "metric_stat_card",
+      "targets": [
+        "text",
+        "metric"
+      ],
+      "supported_content": [
+        "text",
+        "metric"
+      ],
+      "unit": "layer",
+      "duration_bounds": {
+        "minimum_frames": 24,
+        "maximum_frames": 240
+      },
+      "required_properties": [
+        "opacity",
+        "rotation_x",
+        "scale"
+      ],
+      "render_safe": true,
+      "requires_3d": true,
+      "requires_camera": true,
+      "seeded": false,
+      "enter": 48,
+      "tracks": [
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 22,
+              "value": 0.7
+            },
+            {
+              "frame": 44,
+              "value": 1
+            },
+            {
+              "frame": 72,
+              "value": 1
+            }
+          ],
+          "easing": "out_cubic"
+        },
+        {
+          "property": "rotation_x",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 18
+            },
+            {
+              "frame": 26,
+              "value": 3
+            },
+            {
+              "frame": 48,
+              "value": 0
+            },
+            {
+              "frame": 72,
+              "value": 0
+            }
+          ],
+          "easing": "out_cubic"
+        },
+        {
+          "property": "scale",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.88
+            },
+            {
+              "frame": 30,
+              "value": 1.02
+            },
+            {
+              "frame": 50,
+              "value": 1
+            },
+            {
+              "frame": 72,
+              "value": 1
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ]
+    },
+    {
+      "id": "metric_slide_left",
+      "category": "metric_v1",
+      "supported_template": "metric_stat_card",
+      "targets": [
+        "text",
+        "metric"
+      ],
+      "supported_content": [
+        "text",
+        "metric"
+      ],
+      "unit": "layer",
+      "duration_bounds": {
+        "minimum_frames": 24,
+        "maximum_frames": 240
+      },
+      "required_properties": [
+        "opacity",
+        "position_x"
+      ],
+      "render_safe": true,
+      "requires_3d": false,
+      "requires_camera": false,
+      "seeded": false,
+      "enter": 48,
+      "tracks": [
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 18,
+              "value": 1
+            },
+            {
+              "frame": 72,
+              "value": 1
+            }
+          ],
+          "easing": "out_cubic"
+        },
+        {
+          "property": "position_x",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": -84
+            },
+            {
+              "frame": 24,
+              "value": -18
+            },
+            {
+              "frame": 48,
+              "value": 0
+            },
+            {
+              "frame": 72,
+              "value": 0
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ]
+    },
+    {
+      "id": "metric_ribbon_unfold",
+      "category": "metric_v1",
+      "supported_template": "metric_stat_card",
+      "targets": [
+        "text",
+        "metric"
+      ],
+      "supported_content": [
+        "text",
+        "metric"
+      ],
+      "unit": "layer",
+      "duration_bounds": {
+        "minimum_frames": 24,
+        "maximum_frames": 240
+      },
+      "required_properties": [
+        "opacity",
+        "scale_y"
+      ],
+      "render_safe": true,
+      "requires_3d": false,
+      "requires_camera": false,
+      "seeded": false,
+      "enter": 48,
+      "tracks": [
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 20,
+              "value": 1
+            },
+            {
+              "frame": 72,
+              "value": 1
+            }
+          ],
+          "easing": "out_cubic"
+        },
+        {
+          "property": "scale_y",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.02
+            },
+            {
+              "frame": 16,
+              "value": 0.35
+            },
+            {
+              "frame": 38,
+              "value": 1
+            },
+            {
+              "frame": 72,
+              "value": 1
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ]
+    },
+    {
+      "id": "metric_split_odometer",
+      "category": "metric_v1",
+      "supported_template": "metric_stat_card",
+      "targets": [
+        "text",
+        "metric"
+      ],
+      "supported_content": [
+        "text",
+        "metric"
+      ],
+      "unit": "layer",
+      "duration_bounds": {
+        "minimum_frames": 24,
+        "maximum_frames": 240
+      },
+      "required_properties": [
+        "opacity",
+        "position_y"
+      ],
+      "render_safe": true,
+      "requires_3d": false,
+      "requires_camera": false,
+      "seeded": false,
+      "enter": 48,
+      "tracks": [
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 24,
+              "value": 1
+            },
+            {
+              "frame": 72,
+              "value": 1
+            }
+          ],
+          "easing": "out_cubic"
+        },
+        {
+          "property": "position_y",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 42
+            },
+            {
+              "frame": 18,
+              "value": 12
+            },
+            {
+              "frame": 38,
+              "value": -4
+            },
+            {
+              "frame": 52,
+              "value": 0
+            },
+            {
+              "frame": 72,
+              "value": 0
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ]
+    },
+    {
+      "id": "metric_bounce_settle",
+      "category": "metric_v1",
+      "supported_template": "metric_stat_card",
+      "targets": [
+        "text",
+        "metric"
+      ],
+      "supported_content": [
+        "text",
+        "metric"
+      ],
+      "unit": "layer",
+      "duration_bounds": {
+        "minimum_frames": 24,
+        "maximum_frames": 240
+      },
+      "required_properties": [
+        "opacity",
+        "scale"
+      ],
+      "render_safe": true,
+      "requires_3d": false,
+      "requires_camera": false,
+      "seeded": false,
+      "enter": 48,
+      "tracks": [
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 18,
+              "value": 1
+            },
+            {
+              "frame": 72,
+              "value": 1
+            }
+          ],
+          "easing": "out_cubic"
+        },
+        {
+          "property": "scale",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.72
+            },
+            {
+              "frame": 22,
+              "value": 1.09
+            },
+            {
+              "frame": 36,
+              "value": 0.97
+            },
+            {
+              "frame": 50,
+              "value": 1.02
+            },
+            {
+              "frame": 72,
+              "value": 1
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ]
+    },
+    {
+      "id": "metric_arc_sweep",
+      "category": "metric_v1",
+      "supported_template": "metric_stat_card",
+      "targets": [
+        "text",
+        "metric"
+      ],
+      "supported_content": [
+        "text",
+        "metric"
+      ],
+      "unit": "layer",
+      "duration_bounds": {
+        "minimum_frames": 24,
+        "maximum_frames": 240
+      },
+      "required_properties": [
+        "opacity",
+        "rotation_y",
+        "scale_x"
+      ],
+      "render_safe": true,
+      "requires_3d": true,
+      "requires_camera": true,
+      "seeded": false,
+      "enter": 48,
+      "tracks": [
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 22,
+              "value": 1
+            },
+            {
+              "frame": 72,
+              "value": 1
+            }
+          ],
+          "easing": "out_cubic"
+        },
+        {
+          "property": "rotation_y",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": -22
+            },
+            {
+              "frame": 24,
+              "value": -8
+            },
+            {
+              "frame": 46,
+              "value": 0
+            },
+            {
+              "frame": 72,
+              "value": 0
+            }
+          ],
+          "easing": "out_cubic"
+        },
+        {
+          "property": "scale_x",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.86
+            },
+            {
+              "frame": 32,
+              "value": 1.04
+            },
+            {
+              "frame": 52,
+              "value": 1
+            },
+            {
+              "frame": 72,
+              "value": 1
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ]
+    },
+    {
+      "id": "metric_digit_cascade",
+      "category": "metric_v1",
+      "supported_template": "metric_stat_card",
+      "targets": [
+        "text",
+        "metric"
+      ],
+      "supported_content": [
+        "text",
+        "metric"
+      ],
+      "unit": "layer",
+      "duration_bounds": {
+        "minimum_frames": 24,
+        "maximum_frames": 240
+      },
+      "required_properties": [
+        "opacity",
+        "position_x",
+        "scale"
+      ],
+      "render_safe": true,
+      "requires_3d": false,
+      "requires_camera": false,
+      "seeded": false,
+      "enter": 48,
+      "tracks": [
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 28,
+              "value": 1
+            },
+            {
+              "frame": 72,
+              "value": 1
+            }
+          ],
+          "easing": "out_cubic"
+        },
+        {
+          "property": "position_x",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 38
+            },
+            {
+              "frame": 16,
+              "value": 14
+            },
+            {
+              "frame": 38,
+              "value": 0
+            },
+            {
+              "frame": 72,
+              "value": 0
+            }
+          ],
+          "easing": "out_cubic"
+        },
+        {
+          "property": "scale",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.9
+            },
+            {
+              "frame": 34,
+              "value": 1
+            },
+            {
+              "frame": 72,
+              "value": 1
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ]
+    },
+    {
+      "id": "metric_compare_wipe",
+      "category": "metric_v1",
+      "supported_template": "metric_stat_card",
+      "targets": [
+        "text",
+        "metric"
+      ],
+      "supported_content": [
+        "text",
+        "metric"
+      ],
+      "unit": "layer",
+      "duration_bounds": {
+        "minimum_frames": 24,
+        "maximum_frames": 240
+      },
+      "required_properties": [
+        "opacity",
+        "scale_x"
+      ],
+      "render_safe": true,
+      "requires_3d": false,
+      "requires_camera": false,
+      "seeded": false,
+      "enter": 48,
+      "tracks": [
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 26,
+              "value": 1
+            },
+            {
+              "frame": 72,
+              "value": 1
+            }
+          ],
+          "easing": "out_cubic"
+        },
+        {
+          "property": "scale_x",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.01
+            },
+            {
+              "frame": 20,
+              "value": 0.42
+            },
+            {
+              "frame": 42,
+              "value": 1
+            },
+            {
+              "frame": 72,
+              "value": 1
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ]
+    },
+    {
+      "id": "metric_pulse_hold",
+      "category": "metric_v1",
+      "supported_template": "metric_stat_card",
+      "targets": [
+        "text",
+        "metric"
+      ],
+      "supported_content": [
+        "text",
+        "metric"
+      ],
+      "unit": "layer",
+      "duration_bounds": {
+        "minimum_frames": 24,
+        "maximum_frames": 240
+      },
+      "required_properties": [
+        "opacity",
+        "scale"
+      ],
+      "render_safe": true,
+      "requires_3d": false,
+      "requires_camera": false,
+      "seeded": false,
+      "enter": 48,
+      "tracks": [
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 1
+            },
+            {
+              "frame": 72,
+              "value": 1
+            }
+          ],
+          "easing": "linear"
+        },
+        {
+          "property": "scale",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 1
+            },
+            {
+              "frame": 16,
+              "value": 1.08
+            },
+            {
+              "frame": 30,
+              "value": 1
+            },
+            {
+              "frame": 48,
+              "value": 1.035
+            },
+            {
+              "frame": 60,
+              "value": 1
+            },
+            {
+              "frame": 72,
+              "value": 1
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ]
+    },
+    {
+      "id": "metric_debt_flip",
+      "category": "metric_v1",
+      "supported_template": "metric_stat_card",
+      "targets": [
+        "text",
+        "metric"
+      ],
+      "supported_content": [
+        "text",
+        "metric"
+      ],
+      "unit": "layer",
+      "duration_bounds": {
+        "minimum_frames": 24,
+        "maximum_frames": 240
+      },
+      "required_properties": [
+        "opacity",
+        "rotation_x",
+        "position_y"
+      ],
+      "render_safe": true,
+      "requires_3d": true,
+      "requires_camera": true,
+      "seeded": false,
+      "enter": 48,
+      "tracks": [
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 24,
+              "value": 1
+            },
+            {
+              "frame": 72,
+              "value": 1
+            }
+          ],
+          "easing": "out_cubic"
+        },
+        {
+          "property": "rotation_x",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": -76
+            },
+            {
+              "frame": 24,
+              "value": -18
+            },
+            {
+              "frame": 46,
+              "value": 0
+            },
+            {
+              "frame": 72,
+              "value": 0
+            }
+          ],
+          "easing": "out_cubic"
+        },
+        {
+          "property": "position_y",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 28
+            },
+            {
+              "frame": 30,
+              "value": 0
+            },
+            {
+              "frame": 72,
+              "value": 0
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ]
+    },
+    {
       "id": "date_fade_rise",
       "category": "date_v1",
       "supported_template": "timeline_date_card",
@@ -24437,6 +26231,704 @@
             {
               "frame": 72,
               "value": 1
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ]
+    },
+    {
+      "id": "date_page_turn",
+      "category": "date_v1",
+      "supported_template": "timeline_date_card",
+      "targets": [
+        "text",
+        "date"
+      ],
+      "supported_content": [
+        "text",
+        "date"
+      ],
+      "unit": "layer",
+      "duration_bounds": {
+        "minimum_frames": 24,
+        "maximum_frames": 240
+      },
+      "required_properties": [
+        "opacity",
+        "rotation_y"
+      ],
+      "render_safe": true,
+      "requires_3d": true,
+      "requires_camera": true,
+      "seeded": false,
+      "enter": 48,
+      "tracks": [
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 24,
+              "value": 1
+            },
+            {
+              "frame": 72,
+              "value": 1
+            }
+          ],
+          "easing": "out_cubic"
+        },
+        {
+          "property": "rotation_y",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 64
+            },
+            {
+              "frame": 22,
+              "value": 14
+            },
+            {
+              "frame": 44,
+              "value": 0
+            },
+            {
+              "frame": 72,
+              "value": 0
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ]
+    },
+    {
+      "id": "date_calendar_drop",
+      "category": "date_v1",
+      "supported_template": "timeline_date_card",
+      "targets": [
+        "text",
+        "date"
+      ],
+      "supported_content": [
+        "text",
+        "date"
+      ],
+      "unit": "layer",
+      "duration_bounds": {
+        "minimum_frames": 24,
+        "maximum_frames": 240
+      },
+      "required_properties": [
+        "opacity",
+        "position_y"
+      ],
+      "render_safe": true,
+      "requires_3d": false,
+      "requires_camera": false,
+      "seeded": false,
+      "enter": 48,
+      "tracks": [
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 20,
+              "value": 1
+            },
+            {
+              "frame": 72,
+              "value": 1
+            }
+          ],
+          "easing": "out_cubic"
+        },
+        {
+          "property": "position_y",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": -54
+            },
+            {
+              "frame": 20,
+              "value": -8
+            },
+            {
+              "frame": 38,
+              "value": 0
+            },
+            {
+              "frame": 72,
+              "value": 0
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ]
+    },
+    {
+      "id": "date_month_wipe",
+      "category": "date_v1",
+      "supported_template": "timeline_date_card",
+      "targets": [
+        "text",
+        "date"
+      ],
+      "supported_content": [
+        "text",
+        "date"
+      ],
+      "unit": "layer",
+      "duration_bounds": {
+        "minimum_frames": 24,
+        "maximum_frames": 240
+      },
+      "required_properties": [
+        "opacity",
+        "scale_x"
+      ],
+      "render_safe": true,
+      "requires_3d": false,
+      "requires_camera": false,
+      "seeded": false,
+      "enter": 48,
+      "tracks": [
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 22,
+              "value": 1
+            },
+            {
+              "frame": 72,
+              "value": 1
+            }
+          ],
+          "easing": "out_cubic"
+        },
+        {
+          "property": "scale_x",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.05
+            },
+            {
+              "frame": 18,
+              "value": 0.62
+            },
+            {
+              "frame": 40,
+              "value": 1
+            },
+            {
+              "frame": 72,
+              "value": 1
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ]
+    },
+    {
+      "id": "date_timeline_sweep",
+      "category": "date_v1",
+      "supported_template": "timeline_date_card",
+      "targets": [
+        "text",
+        "date"
+      ],
+      "supported_content": [
+        "text",
+        "date"
+      ],
+      "unit": "layer",
+      "duration_bounds": {
+        "minimum_frames": 24,
+        "maximum_frames": 240
+      },
+      "required_properties": [
+        "opacity",
+        "position_x"
+      ],
+      "render_safe": true,
+      "requires_3d": false,
+      "requires_camera": false,
+      "seeded": false,
+      "enter": 48,
+      "tracks": [
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 26,
+              "value": 1
+            },
+            {
+              "frame": 72,
+              "value": 1
+            }
+          ],
+          "easing": "out_cubic"
+        },
+        {
+          "property": "position_x",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": -92
+            },
+            {
+              "frame": 24,
+              "value": -20
+            },
+            {
+              "frame": 46,
+              "value": 0
+            },
+            {
+              "frame": 72,
+              "value": 0
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ]
+    },
+    {
+      "id": "date_marker_pop",
+      "category": "date_v1",
+      "supported_template": "timeline_date_card",
+      "targets": [
+        "text",
+        "date"
+      ],
+      "supported_content": [
+        "text",
+        "date"
+      ],
+      "unit": "layer",
+      "duration_bounds": {
+        "minimum_frames": 24,
+        "maximum_frames": 240
+      },
+      "required_properties": [
+        "opacity",
+        "scale"
+      ],
+      "render_safe": true,
+      "requires_3d": false,
+      "requires_camera": false,
+      "seeded": false,
+      "enter": 48,
+      "tracks": [
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 18,
+              "value": 1
+            },
+            {
+              "frame": 72,
+              "value": 1
+            }
+          ],
+          "easing": "out_cubic"
+        },
+        {
+          "property": "scale",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.38
+            },
+            {
+              "frame": 20,
+              "value": 1.16
+            },
+            {
+              "frame": 34,
+              "value": 0.96
+            },
+            {
+              "frame": 48,
+              "value": 1
+            },
+            {
+              "frame": 72,
+              "value": 1
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ]
+    },
+    {
+      "id": "date_split_year",
+      "category": "date_v1",
+      "supported_template": "timeline_date_card",
+      "targets": [
+        "text",
+        "date"
+      ],
+      "supported_content": [
+        "text",
+        "date"
+      ],
+      "unit": "layer",
+      "duration_bounds": {
+        "minimum_frames": 24,
+        "maximum_frames": 240
+      },
+      "required_properties": [
+        "opacity",
+        "position_x"
+      ],
+      "render_safe": true,
+      "requires_3d": false,
+      "requires_camera": false,
+      "seeded": false,
+      "enter": 48,
+      "tracks": [
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 25,
+              "value": 1
+            },
+            {
+              "frame": 72,
+              "value": 1
+            }
+          ],
+          "easing": "out_cubic"
+        },
+        {
+          "property": "position_x",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 76
+            },
+            {
+              "frame": 18,
+              "value": 30
+            },
+            {
+              "frame": 40,
+              "value": 0
+            },
+            {
+              "frame": 72,
+              "value": 0
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ]
+    },
+    {
+      "id": "date_bracket_draw",
+      "category": "date_v1",
+      "supported_template": "timeline_date_card",
+      "targets": [
+        "text",
+        "date"
+      ],
+      "supported_content": [
+        "text",
+        "date"
+      ],
+      "unit": "layer",
+      "duration_bounds": {
+        "minimum_frames": 24,
+        "maximum_frames": 240
+      },
+      "required_properties": [
+        "opacity",
+        "scale_y"
+      ],
+      "render_safe": true,
+      "requires_3d": false,
+      "requires_camera": false,
+      "seeded": false,
+      "enter": 48,
+      "tracks": [
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 20,
+              "value": 1
+            },
+            {
+              "frame": 72,
+              "value": 1
+            }
+          ],
+          "easing": "out_cubic"
+        },
+        {
+          "property": "scale_y",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.03
+            },
+            {
+              "frame": 22,
+              "value": 0.58
+            },
+            {
+              "frame": 42,
+              "value": 1
+            },
+            {
+              "frame": 72,
+              "value": 1
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ]
+    },
+    {
+      "id": "date_stamp_reveal",
+      "category": "date_v1",
+      "supported_template": "timeline_date_card",
+      "targets": [
+        "text",
+        "date"
+      ],
+      "supported_content": [
+        "text",
+        "date"
+      ],
+      "unit": "layer",
+      "duration_bounds": {
+        "minimum_frames": 24,
+        "maximum_frames": 240
+      },
+      "required_properties": [
+        "opacity",
+        "scale"
+      ],
+      "render_safe": true,
+      "requires_3d": false,
+      "requires_camera": false,
+      "seeded": false,
+      "enter": 48,
+      "tracks": [
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 24,
+              "value": 1
+            },
+            {
+              "frame": 72,
+              "value": 1
+            }
+          ],
+          "easing": "out_cubic"
+        },
+        {
+          "property": "scale",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 1.24
+            },
+            {
+              "frame": 20,
+              "value": 0.96
+            },
+            {
+              "frame": 38,
+              "value": 1.02
+            },
+            {
+              "frame": 52,
+              "value": 1
+            },
+            {
+              "frame": 72,
+              "value": 1
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ]
+    },
+    {
+      "id": "date_era_zoom",
+      "category": "date_v1",
+      "supported_template": "timeline_date_card",
+      "targets": [
+        "text",
+        "date"
+      ],
+      "supported_content": [
+        "text",
+        "date"
+      ],
+      "unit": "layer",
+      "duration_bounds": {
+        "minimum_frames": 24,
+        "maximum_frames": 240
+      },
+      "required_properties": [
+        "opacity",
+        "scale"
+      ],
+      "render_safe": true,
+      "requires_3d": false,
+      "requires_camera": false,
+      "seeded": false,
+      "enter": 48,
+      "tracks": [
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 28,
+              "value": 1
+            },
+            {
+              "frame": 72,
+              "value": 1
+            }
+          ],
+          "easing": "out_cubic"
+        },
+        {
+          "property": "scale",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.68
+            },
+            {
+              "frame": 26,
+              "value": 1.08
+            },
+            {
+              "frame": 44,
+              "value": 1
+            },
+            {
+              "frame": 72,
+              "value": 1
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ]
+    },
+    {
+      "id": "date_digit_flip",
+      "category": "date_v1",
+      "supported_template": "timeline_date_card",
+      "targets": [
+        "text",
+        "date"
+      ],
+      "supported_content": [
+        "text",
+        "date"
+      ],
+      "unit": "layer",
+      "duration_bounds": {
+        "minimum_frames": 24,
+        "maximum_frames": 240
+      },
+      "required_properties": [
+        "opacity",
+        "rotation_x"
+      ],
+      "render_safe": true,
+      "requires_3d": true,
+      "requires_camera": true,
+      "seeded": false,
+      "enter": 48,
+      "tracks": [
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 22,
+              "value": 1
+            },
+            {
+              "frame": 72,
+              "value": 1
+            }
+          ],
+          "easing": "out_cubic"
+        },
+        {
+          "property": "rotation_x",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": -82
+            },
+            {
+              "frame": 18,
+              "value": -24
+            },
+            {
+              "frame": 40,
+              "value": 0
+            },
+            {
+              "frame": 72,
+              "value": 0
             }
           ],
           "easing": "out_cubic"

@@ -17,3 +17,15 @@ func ImageMotionInventory() map[string][]string {
 		"light_leak_v1":      motion.Registry.VisualAccentsV1MotionIDs("light_leak_v1"),
 	}
 }
+
+// PresentationMotionInventory returns Date, Metric and entity-card animation
+// IDs from the canonical ChrononTemplate presentation catalog. Each ID is
+// selected on a semantic overlay item with motion_id; it is independent of
+// the item's text preset_id.
+func PresentationMotionInventory() map[string][]string {
+	inventory := make(map[string][]string)
+	for _, family := range motion.Registry.PresentationFamilyIDs() {
+		inventory[family] = motion.Registry.PresentationMotionIDs(family)
+	}
+	return inventory
+}

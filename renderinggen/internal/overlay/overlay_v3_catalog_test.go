@@ -127,7 +127,7 @@ func TestImageMotionInventoryHasAllCatalogImageAnimations(t *testing.T) {
 	inventory := ImageMotionInventory()
 	want := map[string][]string{
 		"editorial_image_v1": motion.Registry.EditorialImageV1MotionIDs(),
-		"image_premium_v1": motion.Registry.ImagePremiumV1MotionIDs(),
+		"image_premium_v1":   motion.Registry.ImagePremiumV1MotionIDs(),
 		"overlay_v3_image": {
 			"image_fade_reveal", "image_focus_reveal", "image_scale_reveal",
 			"image_slide_left_reveal", "image_slide_right_reveal", "image_parallax_depth_reveal",
@@ -266,8 +266,8 @@ func TestCompositeEntityImageLayersKeepIndependentTimingAndMotion(t *testing.T) 
 				{"asset_id":"grace","sha256":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","url":"https://example.test/grace.jpg","media_type":"image/jpeg"}
 			],
 			"image_layers":[
-				{"id":"ada","asset_id":"ada","start_ms":0,"end_ms":5000,"preset_id":"image_focus_in","motion_id":"image_focus_reveal","params":{"width":422,"height":453,"position_x":-460.8,"position_y":0,"fit":"contain"}},
-				{"id":"grace","asset_id":"grace","start_ms":1500,"end_ms":6500,"preset_id":"image_scale_in","motion_id":"image_25d_yaw_flip_in","params":{"width":422,"height":453,"position_x":460.8,"position_y":0,"fit":"contain"}}
+				{"id":"ada","asset_id":"ada","start_ms":0,"end_ms":5000,"preset_id":"image_focus_in","motion_id":"image_focus_reveal","caption":"Ada Lovelace","params":{"width":422,"height":453,"position_x":-460.8,"position_y":0,"fit":"contain"}},
+				{"id":"grace","asset_id":"grace","start_ms":1500,"end_ms":6500,"preset_id":"image_scale_in","motion_id":"image_25d_yaw_flip_in","caption":"Grace Hopper","params":{"width":422,"height":453,"position_x":460.8,"position_y":0,"fit":"contain"}}
 			]
 		}]
 	}`)
@@ -275,10 +275,10 @@ func TestCompositeEntityImageLayersKeepIndependentTimingAndMotion(t *testing.T) 
 	if err != nil {
 		t.Fatalf("compile composite entity images: %v", err)
 	}
-	if len(result.Plan.Layers) != 2 {
-		t.Fatalf("composite lowers to %d Chronon layers, want two: %+v", len(result.Plan.Layers), result.Plan.Layers)
+	if len(result.Plan.Layers) != 4 {
+		t.Fatalf("two composite images with captions lower to %d Chronon layers, want two images and two captions: %+v", len(result.Plan.Layers), result.Plan.Layers)
 	}
-	first, second := result.Plan.Layers[0], result.Plan.Layers[1]
+	first, second := result.Plan.Layers[0], result.Plan.Layers[2]
 	if first.Asset != "assets/semantic/ada.jpg" || second.Asset != "assets/semantic/grace.jpg" {
 		t.Fatalf("composite assets = %q / %q", first.Asset, second.Asset)
 	}
@@ -299,6 +299,67 @@ func TestCompositeEntityImageLayersKeepIndependentTimingAndMotion(t *testing.T) 
 	}
 	if len(result.Assets) != 2 {
 		t.Fatalf("composite prepared assets = %d, want both image assets", len(result.Assets))
+	}
+	if result.Plan.Layers[1].Type != "text" || result.Plan.Layers[1].Text != "Ada Lovelace" ||
+		result.Plan.Layers[3].Type != "text" || result.Plan.Layers[3].Text != "Grace Hopper" {
+		t.Fatalf("composite child captions were not lowered beside their portraits: %+v", result.Plan.Layers)
+	}
+}
+
+func TestCompositeEntityImageLayerCountsTwoThroughFiveCompile(t *testing.T) {
+	for count := 2; count <= 5; count++ {
+		t.Run(fmt.Sprintf("layers-%d", count), func(t *testing.T) {
+			assets := make([]any, 0, count)
+			layers := make([]any, 0, count)
+			parentEnd := int64(5000 + (count-1)*250)
+			for index := 0; index < count; index++ {
+				id := fmt.Sprintf("person-%d", index)
+				digest := strings.Repeat(string(rune('a'+index)), 64)
+				assets = append(assets, map[string]any{
+					"asset_id": id, "sha256": digest,
+					"url": "https://example.test/" + id + ".jpg", "media_type": "image/jpeg",
+				})
+				motionID := "image_focus_reveal"
+				if index%2 == 1 {
+					motionID = "image_25d_yaw_flip_in"
+				}
+				layers = append(layers, map[string]any{
+					"id": id, "asset_id": id, "start_ms": index * 250,
+					"end_ms": index*250 + 5000, "preset_id": "image_focus_in",
+					"motion_id": motionID, "caption": "Person " + fmt.Sprint(index),
+					"params": map[string]any{"width": 300, "height": 360, "position_x": index * 320, "position_y": 0, "fit": "contain"},
+				})
+			}
+			document := map[string]any{
+				"schema_version": "renderinggen.overlay-plan.v1", "plan_id": fmt.Sprintf("multi-%d", count),
+				"video_id": "multi", "width": 1920, "height": 1080, "fps_num": 24, "fps_den": 1,
+				"items": []any{map[string]any{
+					"id": fmt.Sprintf("group-%d", count), "kind": "entity_image", "template_id": "image_popup",
+					"preset_id": "image_focus_in", "start_ms": 0, "end_ms": parentEnd, "duration_ms": parentEnd,
+					"asset_refs": assets, "image_layers": layers,
+				}},
+			}
+			raw, err := json.Marshal(document)
+			if err != nil {
+				t.Fatal(err)
+			}
+			compiled, err := CompileSemantic(raw)
+			if err != nil {
+				t.Fatalf("compile %d-image composite: %v", count, err)
+			}
+			if len(compiled.Plan.Layers) != count*2 || len(compiled.Assets) != count {
+				t.Fatalf("compiled layers/assets = %d/%d, want %d image+caption pairs and assets", len(compiled.Plan.Layers), len(compiled.Assets), count)
+			}
+			for index := 0; index < count; index++ {
+				image, caption := compiled.Plan.Layers[index*2], compiled.Plan.Layers[index*2+1]
+				if image.Type != "image" || caption.Type != "text" || caption.Text != "Person "+fmt.Sprint(index) {
+					t.Fatalf("child %d image/caption lowering = %+v / %+v", index, image, caption)
+				}
+				if image.Animation == nil || len(image.Animation.Tracks) == 0 {
+					t.Fatalf("child %d lost its independent motion", index)
+				}
+			}
+		})
 	}
 }
 

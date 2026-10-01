@@ -41,6 +41,8 @@ const (
 	KindEntityImage     ItemKind = "entity_image"
 	KindImportantPhrase ItemKind = "important_phrase"
 	KindImportantWord   ItemKind = "important_word"
+	KindMetricStat      ItemKind = "metric_stat"
+	KindTimelineDate    ItemKind = "timeline_date"
 	KindLightLeak       ItemKind = "light_leak"
 	// KindVideoOverlay is a pre-rendered video segment composited onto the
 	// timeline inside the SAME Chronon render pass (clip.render entity
@@ -126,6 +128,14 @@ var templateRegistry = map[string]TemplateSpec{
 	"NUMBER":         {Kind: KindNumber, RequiresPreset: true, Family: PresetText, Stat: overlayStatWord},
 	"MONEY":          {Kind: KindNumber, RequiresPreset: true, Family: PresetText, Stat: overlayStatWord},
 	"PERCENT":        {Kind: KindNumber, RequiresPreset: true, Family: PresetText, Stat: overlayStatWord},
+
+	// ChrononTemplate presentation families. The catalog IDs travel in
+	// motion_id; phrase_default supplies the independent text styling. They
+	// intentionally share text behavior with the numeric lane so the semantic
+	// number kind and its certified budget remain authoritative.
+	"METRIC_STAT_CARD":   {Kind: KindNumber, RequiresPreset: true, Family: PresetText, Stat: overlayStatWord},
+	"TIMELINE_DATE_CARD": {Kind: KindNumber, RequiresPreset: true, Family: PresetText, Stat: overlayStatWord},
+	"ENTITY_CARD_PERSON": {Kind: KindEntityCard, Family: PresetText, Stat: overlayStatEntity},
 
 	// Image overlays.
 	"IMAGE_OVERLAY": {Kind: KindEntityImage, RequiresPreset: true, Family: PresetImage, Stat: overlayStatImage},

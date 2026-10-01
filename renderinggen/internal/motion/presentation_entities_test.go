@@ -26,7 +26,7 @@ func TestMetricValueParsing(t *testing.T) {
 			}
 		})
 	}
-	for _, bad := range []string{"", "NaN", "$", "1,2,3", "1e9"} {
+	for _, bad := range []string{"", "NaN", "$", "1,2,3", "1e9", "42%%", "--12", "1.", "1,234.56.7", "42 units too many"} {
 		if _, err := ParseMetricValue(bad); err == nil {
 			t.Errorf("accepted invalid metric %q", bad)
 		}
@@ -139,6 +139,16 @@ func TestDateTimelineSpacingModesAreSortedAndMonotonic(t *testing.T) {
 	}
 	if _, err := LayoutDateTimeline(entities, 0, 10, "random"); err == nil {
 		t.Fatal("unknown spacing mode accepted")
+	}
+	if _, err := LayoutDateTimeline(nil, 0, 10, "equal"); err == nil {
+		t.Fatal("empty timeline accepted")
+	}
+	if _, err := LayoutDateTimeline(entities, math.NaN(), 10, "equal"); err == nil {
+		t.Fatal("non-finite timeline bounds accepted")
+	}
+	invalid := []DateEntity{{Raw: "invalid", Display: "invalid"}}
+	if _, err := LayoutDateTimeline(invalid, 0, 10, "equal"); err == nil {
+		t.Fatal("unnormalized timeline date accepted")
 	}
 }
 

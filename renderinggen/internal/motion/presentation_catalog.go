@@ -25,7 +25,7 @@ type PresentationCatalog struct {
 	Families []PresentationFamily `json:"families"`
 }
 
-var expectedPresentationFamilies = map[string]int{"metric_v1": 10, "date_v1": 10, "entity_card_v1": 10}
+var expectedPresentationFamilies = map[string]int{"metric_v1": 20, "date_v1": 20, "entity_card_v1": 10}
 
 func validateEntityPresentationCatalog(raw json.RawMessage, motions []MotionDefinition) error {
 	if len(raw) == 0 {

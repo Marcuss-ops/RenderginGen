@@ -449,10 +449,12 @@ func resolveSemanticItems(src *semanticPlan) ([]resolvedItem, error) {
 		}
 		// The resolved kind is authoritative for the preset family too, so an
 		// unknown template paired with an explicit image kind still validates
-		// against the image catalog.
+		// against the image catalog. Registered DATE/METRIC presentation kinds
+		// also stay on the text preset family while their dedicated catalog
+		// motion_id controls the presentation animation.
 		if isImageKind(kind) {
 			spec.Family = PresetImage
-		} else if spec.Kind == KindPrimitive {
+		} else if spec.Kind == KindPrimitive || kind == KindNumber || kind == KindMetricStat || kind == KindTimelineDate {
 			spec.Family = PresetText
 		}
 		params := make(map[string]any, len(item.Params)+len(item.Style))
