@@ -19,6 +19,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"image"
+	_ "image/png"
 	"io"
 	"os"
 	"path/filepath"
@@ -109,6 +111,48 @@ func normalizeMaterializedImagePaths(root string, plan *overlay.Plan) (map[strin
 		layer.Asset = newAsset
 	}
 	return renamed, nil
+}
+
+// validateMapRasterAssets checks the actual staged PNG bytes for every compiled
+// map raster. Producer metadata and SHA-256 establish provenance/integrity, but
+// only DecodeConfig can confirm that the bytes have the georeferenced size.
+// This runs after materialization and path normalization, before plan.json or
+// Chronon, and never performs network access.
+func validateMapRasterAssets(root string, plan *overlay.Plan) error {
+	if plan == nil {
+		return fmt.Errorf("processor: map raster validation requires a render plan")
+	}
+	seen := make(map[string]struct{})
+	for _, layer := range plan.Layers {
+		if layer.MapRasterWidth <= 0 && layer.MapRasterHeight <= 0 {
+			continue
+		}
+		if layer.MapRasterWidth <= 0 || layer.MapRasterHeight <= 0 || layer.Type != "image" || strings.TrimSpace(layer.Asset) == "" {
+			return fmt.Errorf("processor: map raster layer %q has incomplete verification metadata", layer.ID)
+		}
+		if _, duplicate := seen[layer.Asset]; duplicate {
+			continue
+		}
+		seen[layer.Asset] = struct{}{}
+		path := filepath.Join(root, filepath.FromSlash(layer.Asset))
+		file, err := os.Open(path)
+		if err != nil {
+			return fmt.Errorf("processor: map raster layer %q asset %q: %w", layer.ID, layer.Asset, err)
+		}
+		config, format, decodeErr := image.DecodeConfig(file)
+		closeErr := file.Close()
+		if decodeErr != nil {
+			return fmt.Errorf("processor: map raster layer %q asset %q is not a decodable PNG: %w", layer.ID, layer.Asset, decodeErr)
+		}
+		if closeErr != nil {
+			return fmt.Errorf("processor: close map raster layer %q asset %q: %w", layer.ID, layer.Asset, closeErr)
+		}
+		if format != "png" || config.Width != layer.MapRasterWidth || config.Height != layer.MapRasterHeight {
+			return fmt.Errorf("processor: map raster layer %q declares %dx%d but staged %s is %dx%d",
+				layer.ID, layer.MapRasterWidth, layer.MapRasterHeight, format, config.Width, config.Height)
+		}
+	}
+	return nil
 }
 
 // imageSniffBytes is how much of the file the extension decision reads. It is
@@ -333,7 +377,26 @@ func (p *Processor) PrepareJob(ctx context.Context, job *queue.Job) (*PreparedJo
 		p.cleanupWorkspace(ws, job.ID)
 		return nil, err
 	}
+	if len(renamed) > 0 {
+		// Image sniffing may normalize a producer extension (for example
+		// .jpeg to .jpg). The concrete plan now points at the renamed path;
+		// rebuild the prepared sidecar from that same plan so Chronon's strict
+		// package-to-layer validation sees identical logical paths.
+		preparedPackage, err = overlay.PreparePackage(plan, preparedPackage.Language, finalPreparedAssets(compiledAssets, renamed))
+		if err != nil {
+			p.cleanupWorkspace(ws, job.ID)
+			return nil, fmt.Errorf("processor: rebuild prepared overlay package after image path normalization: %w", err)
+		}
+	}
 	if err := fitEntityImageLayersToAssets(ws.Root(), plan); err != nil {
+		p.cleanupWorkspace(ws, job.ID)
+		return nil, err
+	}
+	if err := validateMapRasterAssets(ws.Root(), plan); err != nil {
+		p.cleanupWorkspace(ws, job.ID)
+		return nil, err
+	}
+	if err := materializeBuiltinFonts(ws.Root(), plan); err != nil {
 		p.cleanupWorkspace(ws, job.ID)
 		return nil, err
 	}

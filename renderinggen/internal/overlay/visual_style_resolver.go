@@ -3,6 +3,7 @@ package overlay
 import (
 	"encoding/json"
 	"fmt"
+	"math"
 	"strings"
 )
 
@@ -245,6 +246,9 @@ func toInt(v any) (int, error) {
 	f, err := toFloat(v)
 	if err != nil {
 		return 0, err
+	}
+	if math.IsNaN(f) || math.IsInf(f, 0) || math.Trunc(f) != f || f < float64(math.MinInt) || f > float64(math.MaxInt) {
+		return 0, fmt.Errorf("must be a finite integer, got %v", v)
 	}
 	return int(f), nil
 }

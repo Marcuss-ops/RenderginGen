@@ -101,8 +101,16 @@ func validateTextMotion(animators []TextAnimator, id string) error {
 }
 
 func msFrames(start, end, fpsNum, fpsDen int64) (int64, int64) {
-	return int64(math.Floor(float64(start) * float64(fpsNum) / float64(fpsDen) / 1000)),
-		int64(math.Ceil(float64(end) * float64(fpsNum) / float64(fpsDen) / 1000))
+	// Millisecond endpoints are quantized independently to the nearest frame
+	// boundary. Rounding the start down and the end up expands every non-aligned
+	// interval; at 24 fps that can add a frame to many otherwise correctly sized
+	// overlay assets, leaving a packet-copy assembler to repeat or decode a bad
+	// tail frame. The wire interval is half-open [start, end), so nearest-frame
+	// boundaries preserve the requested duration without a fixed frame count.
+	frameAtMS := func(ms int64) int64 {
+		return int64(math.Round(float64(ms) * float64(fpsNum) / float64(fpsDen) / 1000))
+	}
+	return frameAtMS(start), frameAtMS(end)
 }
 
 func presetFor(item semanticItem, spec TemplateSpec) (string, error) {
@@ -117,6 +125,9 @@ func presetFor(item semanticItem, spec TemplateSpec) (string, error) {
 	// (PRODUCT, LOGO, LIGHT_LEAK, …) legitimately compile without one.
 	p := strings.TrimSpace(item.PresetID)
 	if p != "" {
+		if spec.Kind == KindShape && (p == "shape_static" || p == "none") {
+			return p, nil
+		}
 		family := string(spec.Family)
 		if family == "" {
 			family = string(PresetText)

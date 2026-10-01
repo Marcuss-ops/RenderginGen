@@ -3,14 +3,13 @@ worker:
   # Pipeline (CPU/I/O) workers stay ahead of the GPU stages; the Vulkan B2 deep
   # ring (Chronon kSubmissionRingDepth=6) removed the per-batch drain stall.
   pipeline_workers: 3
-  # 2 lanes is the measured ceiling, NOT the deep ring: see
-  # infra/native/renderinggen-native.yaml (extra lanes add queue wait, VRAM
-  # pressure and text-path lock contention without raising the render-loop
-  # rate) and the daemon's serialized execution domain
-  # (Chronon3d/apps/chronon3d_cli/daemon/daemon_render_concurrency.hpp).
+  # Keep the worker at the certified three-lane admission contract. Chronon
+  # daemon execution is serialized per socket; additional lanes pipeline CPU
+  # preparation and post-processing, while PipelineGen declares the matching
+  # RENDERINGGEN_GPU_SLOTS value.
   # Keep PipelineGen's RENDERINGGEN_GPU_SLOTS equal to this value — the shipped
   # systemd drop-in is scripts/systemd/pipelinegen.service.d/gpu-slots.conf.
-  gpu_lanes: 2
+  gpu_lanes: 3
 
 queue:
   endpoint: https://queue.pipelinegen.example
@@ -74,10 +73,11 @@ pipeline:
   lease_renew_attempts: 3 # renewal retries per tick before aborting the job
   lease_renew_backoff: 2s # first retry delay (doubles, capped at lease/2)
   # Output-verification policy the worker requests from Chronon and enforces
-  # from its receipt: "" (fast, the default) | fast | normal | certify.
+  # from its receipt: normal decodes every rendered output completely; this
+  # catches corrupt overlay tail frames before an MP4 is published | fast | certify.
   # config rejects any other spelling at load: silently running fast because of
   # a typo would mean an operator asked for proof and did not get it.
-  receipt_verify: ""
+  receipt_verify: normal
   # Sampled ffmpeg visual gate for jobs whose plan carries an authored overlay.
   # Off by default: it costs an extra decode of the finished output.
   deep_visual_validation: false

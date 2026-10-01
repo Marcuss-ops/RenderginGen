@@ -1,6 +1,7 @@
 package overlay
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -21,7 +22,16 @@ var _ json.Unmarshaler = (*semanticItem)(nil)
 func (i *semanticItem) UnmarshalJSON(data []byte) error {
 	type alias semanticItem
 	var decoded alias
-	if err := json.Unmarshal(data, &decoded); err != nil {
+	// DisallowUnknownFields here is load-bearing, not decoration: because
+	// semanticItem implements json.Unmarshaler, the outer plan decoder hands
+	// this method the item's raw bytes and its own DisallowUnknownFields stops
+	// applying. A plain json.Unmarshal silently DROPPED any item-level field
+	// outside the contract — including the nested map block, whose schema and
+	// SemanticMap mirror forbid additional properties precisely so map
+	// geometry and legal attribution can never be discarded unnoticed.
+	decoder := json.NewDecoder(bytes.NewReader(data))
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(&decoded); err != nil {
 		return err
 	}
 
@@ -41,16 +51,21 @@ func (i *semanticItem) UnmarshalJSON(data []byte) error {
 	if err != nil {
 		return err
 	}
-	if !isEntityKind(kind) {
-		return nil
+	if isShapeKind(kind) && i.Template != "" {
+		if !spec.Registered || !isShapeKind(spec.Kind) {
+			return fmt.Errorf("overlay: item %q shape template %q is not registered", i.ID, i.Template)
+		}
 	}
-
 	if kind == KindEntityImage && len(i.ImageLayers) > 0 {
-		// Composite image items carry child identity, preset and timing on each
-		// image_layers entry; the legacy one-layer entity metadata is not used.
+		// Composite image captions are optional metadata. PipelineGen supplies
+		// them for named entities, while generic composite image plans remain
+		// valid without names.
 		if strings.TrimSpace(i.Kind) == "" || strings.TrimSpace(i.PresetID) == "" || i.DurationMS == nil {
 			return fmt.Errorf("overlay: composite entity image %q requires kind, preset_id and duration_ms from PipelineGen", i.ID)
 		}
+		return nil
+	}
+	if !isEntityKind(kind) {
 		return nil
 	}
 	if strings.TrimSpace(i.EntityID) == "" {

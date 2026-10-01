@@ -26,7 +26,6 @@ func videoOverlayPlanJSON(startMS, endMS int64, kind, template, fit string) stri
 	  "fps_den": 1,
 	  "duration_ms": 4000,
 	  "output_profile_id": "VELOX_ASSEMBLY_READY_V1",
-	  "style_profile": "discovery",
 	  "source": {"asset_id": "source-asset-001", "path": "assets/semantic/source-asset-001/source.mp4", "sha256": "` + videoOverlaySHA + `"},
 	  "audio": {"mode": "copy_if_compatible", "codec": "aac", "sample_rate": 48000, "channels": 2},
 	  "items": [{

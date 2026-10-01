@@ -16,7 +16,7 @@ const (
 // deterministically. font_family names a bundled family, while glow_size and
 // stroke_size are pixel dimensions. Zero explicitly disables that effect.
 func validateTextRuntimeOverrides(params map[string]any, itemID string, kind ItemKind, presetID string, hasImage bool) error {
-	if isImageKind(kind) || isVideoKind(kind) || (isEntityKind(kind) && hasImage) {
+	if isShapeKind(kind) || isImageKind(kind) || isVideoKind(kind) || (isEntityKind(kind) && hasImage) {
 		for _, key := range runtimeTextStyleKeys {
 			if _, exists := params[key]; exists {
 				return fmt.Errorf("overlay: item %q cannot apply text runtime override %q to a non-text layer", itemID, key)

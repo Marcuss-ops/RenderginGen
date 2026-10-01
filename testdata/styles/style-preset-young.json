@@ -13,7 +13,6 @@
     "fps_num": 30,
     "fps_den": 1,
     "duration_ms": 12000,
-    "style_profile": "young",
     "background": {
       "kind": "color",
       "color": [0.9333333333333333, 0.9450980392156862, 0.9058823529411765, 1.0]

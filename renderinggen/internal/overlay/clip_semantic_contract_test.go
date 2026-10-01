@@ -35,6 +35,10 @@ func clipSemanticFixture() []byte {
 			"sha256": "` + clipTestSHA + `"
 		},
 		"foreground_scale_percent": 80,
+		"source_frame": {
+			"border": {"width_px": 8, "color": "#FFFFFF", "radius_px": 24},
+			"shadow": {"color": "#000000", "opacity": 0.5, "blur_px": 16, "offset_x_px": 0, "offset_y_px": 8}
+		},
 		"background": {
 			"kind": "video",
 			"asset_refs": [{"asset_id": "bg-001", "sha256": "` + bgTestSHA + `"}],
@@ -148,6 +152,19 @@ func TestClipSemanticContractFull(t *testing.T) {
 		}
 		if len(src.Scale) != 2 || src.Scale[0] != 0.8 || src.Scale[1] != 0.8 {
 			t.Errorf("source scale FAIL: scale = %v, want [0.8 0.8]", src.Scale)
+		}
+		if src.Radius != 16 {
+			t.Errorf("source inner radius FAIL: got %v, want radius_px - width_px = 16", src.Radius)
+		}
+		if src.Style == nil || src.Style.Background == nil {
+			t.Fatal("source frame FAIL: renderer-owned border plate missing")
+		}
+		if src.Style.Background.Color != "#FFFFFF" || src.Style.Background.Radius != 24 ||
+			len(src.Style.Background.Padding) != 2 || src.Style.Background.Padding[0] != 8 || src.Style.Background.Padding[1] != 8 {
+			t.Errorf("source frame plate FAIL: %+v", src.Style.Background)
+		}
+		if src.Style.Shadow == nil || src.Style.Shadow.Color != "#000000" || src.Style.Shadow.Blur != 16 {
+			t.Errorf("source frame shadow FAIL: %+v", src.Style)
 		}
 	}
 

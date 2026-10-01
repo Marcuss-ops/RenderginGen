@@ -20,6 +20,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"math"
 	"path"
 	"path/filepath"
 	"strings"
@@ -110,7 +111,7 @@ func (j Job) Expectation(canvas Canvas) Expect {
 		duration = DefaultDurationMS
 	}
 	return Expect{
-		Frames: int(duration * int64(canvas.FPSNum) / (1000 * int64(canvas.FPSDen))),
+		Frames: int(math.Round(float64(duration) * float64(canvas.FPSNum) / (1000 * float64(canvas.FPSDen)))),
 		Width:  canvas.Width,
 		Height: canvas.Height,
 		FPSNum: canvas.FPSNum,

@@ -30,16 +30,38 @@ const SemanticSchema = "renderinggen.overlay-plan.v1"
 // schema_version_test.go.
 const SemanticSchemaVersion = 1
 
-// Plan is the single concrete chronon.render-plan.v2 model. The compiler
-// builds it, the processor mutates it mechanically (asset-path normalization,
+// Plan is the single concrete Chronon render-plan model. The compiler builds
+// it, the processor mutates it mechanically (asset-path normalization,
 // subtitle burn-in) and it is marshaled exactly once at the Chronon boundary.
 type Plan struct {
-	Schema  string  `json:"schema"`
-	Version int     `json:"version"`
-	JobID   string  `json:"job_id"`
-	Canvas  Canvas  `json:"canvas"`
-	Layers  []Layer `json:"layers"`
-	Output  Output  `json:"output"`
+	Schema          string           `json:"schema"`
+	Version         int              `json:"version"`
+	JobID           string           `json:"job_id"`
+	Camera          *CameraPlan      `json:"camera,omitempty"`
+	CameraAnimation *CameraAnimation `json:"camera_animation,omitempty"`
+	Canvas          Canvas           `json:"canvas"`
+	Layers          []Layer          `json:"layers"`
+	Output          Output           `json:"output"`
+}
+
+type CameraPlan struct {
+	Type     string     `json:"type"`
+	Position [3]float64 `json:"position"`
+	Rotation [3]float64 `json:"rotation_deg"`
+	FOVDeg   float64    `json:"fov_deg"`
+	Near     float64    `json:"near"`
+	Far      float64    `json:"far"`
+	Zoom     float64    `json:"zoom,omitempty"`
+}
+
+type CameraAnimation struct {
+	Tracks []CameraTrack `json:"tracks"`
+}
+
+type CameraTrack struct {
+	Property  string              `json:"property"`
+	Keyframes []AnimationKeyframe `json:"keyframes"`
+	Easing    string              `json:"easing,omitempty"`
 }
 
 type Asset struct {
@@ -100,7 +122,34 @@ func CompileSemantic(raw []byte) (CompileResult, error) {
 
 // Marshal serializes the typed plan once at the Chronon boundary.
 func (p *Plan) Marshal() ([]byte, error) {
-	return json.Marshal(p)
+	clone := *p
+	hasV3 := clone.Camera != nil && len(clone.Layers) > 0
+	for _, l := range p.Layers {
+		if l.Type == "shape" || len(l.Effects) > 0 || l.Shape != nil || l.ScreenSpace ||
+			len(l.EffectParamTracks) > 0 || l.Parent != "" || l.TransitionIn != nil || len(l.Masks) > 0 ||
+			layerAnimationNeedsV3(l.Animation) {
+			hasV3 = true
+			break
+		}
+	}
+	if hasV3 {
+		clone.Schema = "chronon.render-plan.v3"
+		clone.Version = 3
+	}
+	return json.Marshal(&clone)
+}
+
+func layerAnimationNeedsV3(animation *LayerAnimation) bool {
+	if animation == nil {
+		return false
+	}
+	for _, track := range animation.Tracks {
+		switch track.Property {
+		case "stroke_width", "stroke_color", "fill_color", "blur":
+			return true
+		}
+	}
+	return false
 }
 
 // The struct fields below are the compiler's projection of
@@ -123,16 +172,20 @@ type semanticPlan struct {
 	Fingerprint     string          `json:"fingerprint,omitempty"`      // producer metadata
 	Source          *semanticSource `json:"source,omitempty"`
 	ForegroundScale int             `json:"foreground_scale_percent,omitempty"`
-	Width           int             `json:"width"`
-	Height          int             `json:"height"`
-	FPSNum          int             `json:"fps_num"`
-	FPSDen          int             `json:"fps_den"`
+	// SourceFrame is the optional card treatment of the source clip (border
+	// frame + drop shadow). It is lowered onto the source layer; it is never
+	// rendered by the worker, so an unresolvable declaration is a compile
+	// error instead of a silently dropped style block.
+	SourceFrame *semanticSourceFrame `json:"source_frame,omitempty"`
+	Width       int                  `json:"width"`
+	Height      int                  `json:"height"`
+	FPSNum      int                  `json:"fps_num"`
+	FPSDen      int                  `json:"fps_den"`
 	// DurationMS is the explicit clip duration. When provided it seeds the
 	// canvas duration before items are processed; items can only extend it.
 	// Required when items is empty (clip render without entity overlays).
 	DurationMS      int64               `json:"duration_ms,omitempty"`
 	OutputProfileID string              `json:"output_profile_id"`
-	StyleProfile    string              `json:"style_profile"`
 	MediaContract   string              `json:"media_contract,omitempty"` // producer media metadata
 	Background      *semanticBackground `json:"background,omitempty"`
 	Subtitles       *semanticSubtitles  `json:"subtitles,omitempty"`
@@ -145,6 +198,33 @@ type semanticSource struct {
 	AssetID string `json:"asset_id"`
 	Path    string `json:"path,omitempty"`
 	SHA256  string `json:"sha256"`
+}
+
+// semanticSourceFrame is the producer-owned card declaration of a media layer
+// (the source clip and, per item, a video overlay). Both surfaces share one
+// declaration shape: `source_frame` at plan level and `frame` on the item.
+type semanticSourceFrame struct {
+	Border *semanticFrameBorder `json:"border,omitempty"`
+	Shadow *semanticFrameShadow `json:"shadow,omitempty"`
+}
+
+// semanticFrameBorder is the visible frame around the media box.
+// WidthPX is the visible thickness in output pixels; RadiusPX is the frame's
+// outer corner radius (the media's own inner radius is derived from it).
+type semanticFrameBorder struct {
+	WidthPX  float64 `json:"width_px"`
+	Color    string  `json:"color"`
+	RadiusPX float64 `json:"radius_px,omitempty"`
+}
+
+// semanticFrameShadow is the drop shadow of the card (the frame when a border
+// exists, the media layer itself otherwise).
+type semanticFrameShadow struct {
+	Color    string  `json:"color"`
+	Opacity  float64 `json:"opacity,omitempty"`
+	BlurPX   float64 `json:"blur_px,omitempty"`
+	OffsetXP float64 `json:"offset_x_px,omitempty"`
+	OffsetYP float64 `json:"offset_y_px,omitempty"`
 }
 
 type semanticSubtitles struct {
@@ -215,15 +295,77 @@ type semanticItem struct {
 	MotionID      string         `json:"motion_id"`
 	MotionParams  map[string]any `json:"motion_params"`
 	Text          string         `json:"text"`
-	StartMS       int64          `json:"start_ms"`
-	EndMS         int64          `json:"end_ms"`
+	EntityCaption string         `json:"entity_caption,omitempty"`
+	// CaptionMotionID is the optional motion override for the entity caption
+	// layer. Empty resolves the shared default (text_fade_up); a value that
+	// does not target text is refused by the caption lowering instead of
+	// lowering image tracks onto a text layer.
+	CaptionMotionID string `json:"caption_motion_id,omitempty"`
+	StartMS         int64  `json:"start_ms"`
+	EndMS           int64  `json:"end_ms"`
 	// DurationMS is producer-owned timing metadata. It is validated against
 	// end_ms-start_ms at the semantic boundary and is not emitted to Chronon.
-	DurationMS  *int64               `json:"duration_ms,omitempty"`
+	DurationMS *int64 `json:"duration_ms,omitempty"`
+	// Frame is the optional card treatment of this item's video overlay.
+	Frame       *semanticSourceFrame `json:"frame,omitempty"`
 	Params      map[string]any       `json:"params"`
 	Style       map[string]any       `json:"style"`
 	Assets      []SemanticAssetRef   `json:"asset_refs"`
 	ImageLayers []SemanticImageLayer `json:"image_layers"`
+	Map         *SemanticMap         `json:"map"`
+}
+
+// SemanticMap is the worker mirror of the georeferenced map declaration.
+// It is deliberately typed so strict decoding, bounds checks and schema parity
+// cannot silently discard map geometry or legal attribution.
+type SemanticMap struct {
+	Provider      string                 `json:"provider"`
+	SourceID      string                 `json:"source_id"`
+	SourceLicense string                 `json:"source_license"`
+	Center        SemanticMapPoint       `json:"center"`
+	Zoom          int                    `json:"zoom"`
+	Width         int                    `json:"width"`
+	Height        int                    `json:"height"`
+	Attribution   string                 `json:"attribution"`
+	MotionID      string                 `json:"motion_id"`
+	Pins          []SemanticMapPin       `json:"pins"`
+	LODs          []SemanticMapLOD       `json:"lods,omitempty"`
+	CameraMove    *SemanticMapCameraMove `json:"camera_move,omitempty"`
+}
+
+type SemanticMapLOD struct {
+	AssetID       string           `json:"asset_id"`
+	SourceID      string           `json:"source_id"`
+	SourceLicense string           `json:"source_license"`
+	Attribution   string           `json:"attribution"`
+	Center        SemanticMapPoint `json:"center"`
+	Zoom          int              `json:"zoom"`
+	Width         int              `json:"width"`
+	Height        int              `json:"height"`
+}
+
+type SemanticMapCameraMove struct {
+	From         SemanticMapPoint `json:"from"`
+	To           SemanticMapPoint `json:"to"`
+	StartZoom    float64          `json:"start_zoom"`
+	EndZoom      float64          `json:"end_zoom"`
+	StartTiltDeg float64          `json:"start_tilt_deg"`
+	EndTiltDeg   float64          `json:"end_tilt_deg"`
+	BearingDeg   float64          `json:"bearing_deg"`
+}
+
+type SemanticMapPoint struct {
+	Latitude  float64 `json:"latitude"`
+	Longitude float64 `json:"longitude"`
+}
+
+type SemanticMapPin struct {
+	ID        string  `json:"id"`
+	Label     string  `json:"label"`
+	Latitude  float64 `json:"latitude"`
+	Longitude float64 `json:"longitude"`
+	Color     string  `json:"color"`
+	RadiusPX  float64 `json:"radius_px"`
 }
 
 // SemanticAssetRef is one content-addressed asset reference of the semantic
@@ -250,6 +392,7 @@ type SemanticImageLayer struct {
 	PresetID     string         `json:"preset_id"`
 	MotionID     string         `json:"motion_id"`
 	MotionParams map[string]any `json:"motion_params"`
+	Caption      string         `json:"caption,omitempty"`
 	Params       map[string]any `json:"params"`
 }
 
@@ -281,7 +424,11 @@ type Output struct {
 // AnimationTrack is the renderer-neutral motion contract produced by
 // RenderingGen after selector/stagger expansion.
 type AnimationTrack struct {
-	Property  string              `json:"property"`
+	// Property is omitted when empty: layer-level tracks always name their
+	// property, but text-selector sub-tracks (start/end/offset/amount) are
+	// positionless by contract — chronon.render-plan.v2 closes the object with
+	// additionalProperties:false and rejects an empty "property" key.
+	Property  string              `json:"property,omitempty"`
 	Keyframes []AnimationKeyframe `json:"keyframes"`
 	Easing    string              `json:"easing,omitempty"`
 }
@@ -300,6 +447,10 @@ type Layer struct {
 	Text      string    `json:"text,omitempty"`
 	BoxWidth  int       `json:"-"`
 	BoxHeight int       `json:"-"`
+	// MapRaster dimensions are transient verification metadata. The processor
+	// compares the staged PNG's decoded dimensions to this georeferenced size.
+	MapRasterWidth  int `json:"-"`
+	MapRasterHeight int `json:"-"`
 	Size      []float64 `json:"size,omitempty"`
 	Fit       string    `json:"fit,omitempty"`
 	// EntityImage is transient compiler metadata. The processor clears the
@@ -316,27 +467,249 @@ type Layer struct {
 	TextAnimators  []TextAnimator  `json:"text_animators,omitempty"`
 	// Derived by the lowering pass from concrete Z/rotation tracks. Motion
 	// authors never need to duplicate this renderer routing bit by hand.
-	Enable3D bool `json:"enable_3d,omitempty"`
+	Enable3D    bool `json:"enable_3d,omitempty"`
+	ScreenSpace bool `json:"screen_space,omitempty"`
+	// Opacity is preserved as a pointer so a LOD layer can explicitly fade out.
 	// Opacity is a POINTER so an explicit 0 survives the wire. With a plain
 	// float64 + omitempty the contract's "opacity 0 = invisible" collapsed
 	// into "key absent", and the renderer's decoder then treated the layer as
 	// fully opaque: the one value the contract documents as special was the
 	// one value that could not be expressed. Nil means "not declared" (the
 	// renderer default applies).
-	Opacity *float64 `json:"opacity,omitempty"`
-	Loop    bool     `json:"loop,omitempty"`
+	Opacity           *float64                `json:"opacity,omitempty"`
+	Loop              bool                    `json:"loop,omitempty"`
+	Light             *LayerLight             `json:"light,omitempty"`
+	Shape             *LayerShape             `json:"shape,omitempty"`
+	Effects           []LayerEffect           `json:"effects,omitempty"`
+	EffectParamTracks []LayerEffectParamTrack `json:"effect_param_tracks,omitempty"`
+	Parent            string                  `json:"parent,omitempty"`
+	TransitionIn      *LayerTransition        `json:"transition_in,omitempty"`
+	Masks             []LayerMask             `json:"masks,omitempty"`
+	// These transient relations keep premium frame geometry aligned when the
+	// processor resolves an entity image's final source-aspect size.
+	PremiumParentImageID  string    `json:"-"`
+	PremiumParentSize     []float64 `json:"-"`
+	PremiumSizeScale      []float64 `json:"-"`
+	PremiumPositionOffset []float64 `json:"-"`
+	PremiumRadiusScale    float64   `json:"-"`
+	PremiumZOffset        float64   `json:"-"`
+	PremiumShapeKind      string    `json:"-"`
+	PremiumPathKind       string    `json:"-"`
+	PremiumCanvasSize     bool      `json:"-"`
+	PremiumSyncTransform  bool      `json:"-"`
+	PremiumWipeMask       bool      `json:"-"`
 }
+
+type LayerShape struct {
+	Type            string              `json:"type"`
+	Fill            any                 `json:"fill,omitempty"`
+	Radius          float64             `json:"radius,omitempty"`
+	CornerRadius    []float64           `json:"corner_radius,omitempty"`
+	Stroke          *LayerStroke        `json:"stroke,omitempty"`
+	Gradient        *LayerGradient      `json:"-"`
+	Points          int                 `json:"points,omitempty"`
+	InnerRadius     float64             `json:"inner_radius_ratio,omitempty"`
+	RotationDeg     float64             `json:"rotation_degrees,omitempty"`
+	ArrowDirection  string              `json:"-"`
+	ArrowHeadLength float64             `json:"-"`
+	ArrowHeadWidth  float64             `json:"-"`
+	ArrowShaftWidth float64             `json:"-"`
+	GridSpacing     float64             `json:"spacing,omitempty"`
+	GridLineWidth   float64             `json:"-"`
+	DotRadius       float64             `json:"dot_radius,omitempty"`
+	ArcStartDeg     float64             `json:"start_degrees,omitempty"`
+	ArcSweepDeg     float64             `json:"sweep_degrees,omitempty"`
+	ArcThickness    float64             `json:"-"`
+	WorldMap        *LayerWorldMap      `json:"world_map,omitempty"`
+	Chart           *LayerChart         `json:"chart,omitempty"`
+	DeviceFrame     string              `json:"-"`
+	Device          string              `json:"device,omitempty"`
+	Chrome          *bool               `json:"chrome,omitempty"`
+	Path            []LayerPathCommand  `json:"path,omitempty"`
+	Operators       []LayerPathOperator `json:"operators,omitempty"`
+}
+
+type LayerPathOperator struct {
+	Kind   string          `json:"kind"`
+	Params LayerTrimParams `json:"params"`
+}
+
+type LayerPathAnimation struct {
+	Easing    string              `json:"easing,omitempty"`
+	Keyframes []AnimationKeyframe `json:"keyframes"`
+}
+
+type LayerTrimParams struct {
+	Start     float64             `json:"start"`
+	End       float64             `json:"end"`
+	Animation *LayerPathAnimation `json:"animation,omitempty"`
+}
+
+type LayerEffectParamTrack struct {
+	EffectID  string              `json:"effect_id"`
+	Param     string              `json:"param"`
+	Keyframes []AnimationKeyframe `json:"keyframes"`
+	Easing    string              `json:"easing,omitempty"`
+}
+
+type LayerTransition struct {
+	ID             string         `json:"id"`
+	Kind           string         `json:"kind"`
+	DurationFrames int64          `json:"duration_frames"`
+	Direction      string         `json:"direction,omitempty"`
+	Easing         string         `json:"easing,omitempty"`
+	Params         map[string]any `json:"params,omitempty"`
+}
+
+type LayerMask struct {
+	Type       string              `json:"type"`
+	Mode       string              `json:"mode"`
+	Position   []float64           `json:"position,omitempty"`
+	Size       []float64           `json:"size,omitempty"`
+	Radius     float64             `json:"radius,omitempty"`
+	Feather    float64             `json:"feather,omitempty"`
+	Opacity    float64             `json:"opacity,omitempty"`
+	Path       []LayerPathCommand  `json:"path,omitempty"`
+	TargetPath []LayerPathCommand  `json:"target_path,omitempty"`
+	Animation  *LayerPathAnimation `json:"animation,omitempty"`
+	// Field carries the Field2D recipe of a paint_v1 field mask. It maps to
+	// Chronon's native mask type "field" (MaskType::Field2D), which samples
+	// the deterministic Field2D generator directly — no second mask engine.
+	Field map[string]any `json:"field,omitempty"`
+	// ExpansionTrack/OpacityTrack carry the paint reveal on a field mask:
+	// the renderer animates the mask threshold through expansion (negative
+	// growth) and the overall coverage through opacity. Field masks reject a
+	// morph `animation` by contract, so the reveal travels on these tracks.
+	ExpansionTrack *LayerMaskParameterTrack `json:"expansion_track,omitempty"`
+	OpacityTrack   *LayerMaskParameterTrack `json:"opacity_track,omitempty"`
+}
+
+// LayerMaskParameterTrack is one scalar mask parameter animation. Values are
+// layer-relative frames like every other track.
+type LayerMaskParameterTrack struct {
+	Property  string              `json:"property"`
+	Keyframes []AnimationKeyframe `json:"keyframes"`
+	Easing    string              `json:"easing,omitempty"`
+}
+
+type LayerChart struct {
+	ChartType string      `json:"chart_type,omitempty"`
+	Data      []float64   `json:"data,omitempty"`
+	Colors    [][]float64 `json:"colors,omitempty"`
+}
+
+type LayerGradient struct {
+	Type         string              `json:"type"`
+	Stops        [][2]any            `json:"-"`
+	ColorStops   []LayerGradientStop `json:"color_stops,omitempty"`
+	OpacityStops []LayerOpacityStop  `json:"opacity_stops,omitempty"`
+	Start        []float64           `json:"start,omitempty"`
+	End          []float64           `json:"end,omitempty"`
+}
+
+func (g LayerGradient) MarshalJSON() ([]byte, error) {
+	type wire struct {
+		Type         string              `json:"type"`
+		ColorStops   []LayerGradientStop `json:"color_stops"`
+		OpacityStops []LayerOpacityStop  `json:"opacity_stops,omitempty"`
+		Start        []float64           `json:"start,omitempty"`
+		End          []float64           `json:"end,omitempty"`
+	}
+	return json.Marshal(wire{Type: g.Type, ColorStops: g.ColorStops, OpacityStops: g.OpacityStops, Start: g.Start, End: g.End})
+}
+
+type LayerGradientStop struct {
+	Position float64   `json:"position"`
+	Color    []float64 `json:"color"`
+}
+
+type LayerOpacityStop struct {
+	Position float64 `json:"position"`
+	Opacity  float64 `json:"opacity"`
+}
+
+type LayerWorldMap struct {
+	Projection     string      `json:"projection,omitempty"`
+	Center         []float64   `json:"center,omitempty"`
+	Zoom           float64     `json:"zoom,omitempty"`
+	Highlight      []string    `json:"highlight,omitempty"`
+	HighlightColor string      `json:"highlight_color,omitempty"`
+	Route          [][]float64 `json:"route,omitempty"`
+	Dots           bool        `json:"dots,omitempty"`
+}
+
+type LayerPathCommand struct {
+	Type     string    `json:"type"`
+	Point    []float64 `json:"point,omitempty"`
+	Points   []float64 `json:"points,omitempty"`
+	Control1 []float64 `json:"control1,omitempty"`
+	Control2 []float64 `json:"control2,omitempty"`
+}
+
+type LayerEffect struct {
+	Type   string         `json:"type"`
+	Params map[string]any `json:"params,omitempty"`
+}
+
+func (e LayerEffect) MarshalJSON() ([]byte, error) {
+	m := make(map[string]any, len(e.Params)+1)
+	for k, v := range e.Params {
+		m[k] = v
+	}
+	m["type"] = e.Type
+	return json.Marshal(m)
+}
+
+func (e *LayerEffect) UnmarshalJSON(b []byte) error {
+	var m map[string]any
+	if err := json.Unmarshal(b, &m); err != nil {
+		return err
+	}
+	if t, ok := m["type"].(string); ok {
+		e.Type = t
+	}
+	delete(m, "type")
+	e.Params = m
+	return nil
+}
+
+var (
+	_ json.Marshaler   = (*LayerEffect)(nil)
+	_ json.Unmarshaler = (*LayerEffect)(nil)
+)
+
+type LayerLight struct {
+	Radius    float64 `json:"radius"`
+	Color     string  `json:"color"`
+	Intensity float64 `json:"intensity"`
+}
+
 type LayerStyle struct {
-	Font        string       `json:"font,omitempty"`
-	FontSize    float64      `json:"font_size,omitempty"`
-	Fill        string       `json:"fill,omitempty"`
-	FitMode     string       `json:"fit_mode,omitempty"`
-	MinFontSize float64      `json:"min_font_size,omitempty"`
-	MaxFontSize float64      `json:"max_font_size,omitempty"`
-	Stroke      *LayerStroke `json:"stroke,omitempty"`
-	Shadow      *LayerShadow `json:"shadow,omitempty"`
-	Glow        *LayerGlow   `json:"glow,omitempty"`
+	Font        string           `json:"font,omitempty"`
+	FontSize    float64          `json:"font_size,omitempty"`
+	Fill        string           `json:"fill,omitempty"`
+	FitMode     string           `json:"fit_mode,omitempty"`
+	MinFontSize float64          `json:"min_font_size,omitempty"`
+	MaxFontSize float64          `json:"max_font_size,omitempty"`
+	Stroke      *LayerStroke     `json:"stroke,omitempty"`
+	Shadow      *LayerShadow     `json:"shadow,omitempty"`
+	Glow        *LayerGlow       `json:"glow,omitempty"`
+	Background  *LayerBackground `json:"background,omitempty"`
 }
+
+// LayerBackground is the rounded, padded plate the renderer paints behind a
+// layer. For a media layer it is the card the frame contract lowers to: the
+// padding IS the visible border thickness and the radius IS the frame's outer
+// corner radius. Text layers already use the same field for their text card.
+type LayerBackground struct {
+	Color   string    `json:"color"`
+	Opacity *float64  `json:"opacity,omitempty"`
+	Radius  float64   `json:"radius,omitempty"`
+	Padding []float64 `json:"padding,omitempty"`
+}
+
+func floatPointer(value float64) *float64 { return &value }
+
 type LayerStroke struct {
 	Color string  `json:"color,omitempty"`
 	Width float64 `json:"width,omitempty"`

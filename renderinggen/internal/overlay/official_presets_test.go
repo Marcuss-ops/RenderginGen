@@ -224,7 +224,7 @@ func TestAppleStyleFixturesAreDistinctAndComplete(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	profiles := map[string]string{}
+	fixtures := map[string]string{}
 	for _, entry := range entries {
 		if entry.IsDir() || filepath.Ext(entry.Name()) != ".json" {
 			continue
@@ -236,7 +236,6 @@ func TestAppleStyleFixturesAreDistinctAndComplete(t *testing.T) {
 		var job struct {
 			RenderPlan struct {
 				SchemaVersion string `json:"schema_version"`
-				StyleProfile  string `json:"style_profile"`
 				Items         []struct {
 					Kind     string `json:"kind"`
 					Template string `json:"template_id"`
@@ -254,9 +253,6 @@ func TestAppleStyleFixturesAreDistinctAndComplete(t *testing.T) {
 		if job.RenderPlan.SchemaVersion != "renderinggen.overlay-plan.v1" {
 			t.Errorf("%s: render_plan must be the semantic overlay-plan.v1 contract, got %q", entry.Name(), job.RenderPlan.SchemaVersion)
 		}
-		if job.RenderPlan.StyleProfile == "" {
-			t.Errorf("%s: missing style_profile", entry.Name())
-		}
 		var signature strings.Builder
 		for _, item := range job.RenderPlan.Items {
 			if item.PresetID != "" {
@@ -266,17 +262,17 @@ func TestAppleStyleFixturesAreDistinctAndComplete(t *testing.T) {
 		if signature.Len() == 0 {
 			t.Errorf("%s: no visual layers", entry.Name())
 		}
-		profiles[job.RenderPlan.StyleProfile] = signature.String()
+		fixtures[entry.Name()] = signature.String()
 	}
-	if len(profiles) < 3 {
-		t.Fatalf("expected three Apple style profiles, got %d", len(profiles))
+	if len(fixtures) < 3 {
+		t.Fatalf("expected three Apple style fixtures, got %d", len(fixtures))
 	}
 	seen := map[string]string{}
-	for profile, signature := range profiles {
+	for fixture, signature := range fixtures {
 		if previous, exists := seen[signature]; exists {
-			t.Fatalf("Apple style profiles %q and %q are visually identical", previous, profile)
+			t.Fatalf("Apple style fixtures %q and %q are visually identical", previous, fixture)
 		}
-		seen[signature] = profile
+		seen[signature] = fixture
 	}
 }
 

@@ -133,6 +133,10 @@ type textPreparationIdentity struct {
 	Size  []float64   `json:"size,omitempty"`
 }
 
+// assetPreparationIdentity deliberately excludes LogicalPath: the upload/cache
+// identity is content-based, so the same bytes reached through different
+// logical paths must share one prepared asset. The representative path is
+// retained separately on PreparedAsset for diagnostics.
 type assetPreparationIdentity struct {
 	ContentHash string    `json:"content_hash"`
 	Kind        string    `json:"kind"`

@@ -1,6 +1,9 @@
 package motion
 
-import "testing"
+import (
+	"fmt"
+	"testing"
+)
 
 // The renderer's closed vocabularies, mirrored from
 // chronon.render-plan.v2 ($defs/text_selector and layers[].animation.tracks[]).
@@ -36,7 +39,9 @@ func TestMotionFamiliesKeepStylesIndependentAndComplete(t *testing.T) {
 			t.Fatalf("motion family[%d] = %q, want %q", i, got[i], family)
 		}
 	}
-	for family, count := range map[string]int{"typewriter": 5, "classic_apple": 42, "modern_apple": 60, "web": 0} {
+	// Editorial Visual Motion V1 grows the certified web vocabulary to 14
+	// (web_cursor_focus and web_section_spotlight joined).
+	for family, count := range map[string]int{"typewriter": 5, "classic_apple": 42, "modern_apple": 60, "web": 14} {
 		if ids := Registry.FamilyMotionIDs(family); len(ids) != count {
 			t.Errorf("%s family has %d motions, want %d", family, len(ids), count)
 		}
@@ -70,6 +75,112 @@ func TestMotionFamiliesKeepStylesIndependentAndComplete(t *testing.T) {
 				t.Errorf("%s motion %q does not resolve: %v", family, id, err)
 			}
 		}
+	}
+}
+
+func TestWebFamilyHasTwelveRenderSafeDistinctCatalogMotions(t *testing.T) {
+	catalog, err := Canonical()
+	if err != nil {
+		t.Fatal(err)
+	}
+	definitions := make(map[string]MotionDefinition, len(catalog.Motions))
+	for _, definition := range catalog.Motions {
+		definitions[definition.ID] = definition
+	}
+	ids := Registry.FamilyMotionIDs("web")
+	// Editorial Visual Motion V1 grows the certified web vocabulary to 14:
+	// the original 12 plus web_cursor_focus and web_section_spotlight.
+	if len(ids) != 14 {
+		t.Fatalf("web motion count = %d, want 14: %v", len(ids), ids)
+	}
+	seenTracks := make(map[string]bool)
+	for _, id := range ids {
+		definition, exists := definitions[id]
+		if !exists {
+			t.Fatalf("web motion %q is absent from canonical catalog", id)
+		}
+		if definition.Category != "web" || definition.RenderSafe == nil || !*definition.RenderSafe {
+			t.Errorf("web motion %q has incomplete render-safety metadata: %+v", id, definition)
+		}
+		properties := make(map[string]bool)
+		var fingerprint string
+		for _, track := range definition.Tracks {
+			properties[track.Property] = true
+			fingerprint += track.Property + ":"
+			for _, keyframe := range track.Keyframes {
+				fingerprint += fmt.Sprint(keyframe.Frame, "=", keyframe.Value, ";")
+			}
+		}
+		for _, required := range definition.RequiredProperties {
+			if !properties[required] {
+				t.Errorf("web motion %q lacks required track %q", id, required)
+			}
+		}
+		if fingerprint == "" || seenTracks[fingerprint] {
+			t.Errorf("web motion %q duplicates another motion's track recipe", id)
+		}
+		seenTracks[fingerprint] = true
+	}
+}
+
+func TestImage3DFamilyHasEightCameraBackedMotionsWithRestingFinalPose(t *testing.T) {
+	ids := Registry.Image25DCleanV1MotionIDs()
+	if len(ids) != 8 {
+		t.Fatalf("image 3D family has %d motions, want 8: %v", len(ids), ids)
+	}
+	for _, id := range ids {
+		plugin, err := Registry.Resolve(id)
+		if err != nil {
+			t.Fatalf("resolve %q: %v", id, err)
+		}
+		declarative, ok := plugin.(DeclarativePlugin)
+		if !ok {
+			t.Fatalf("%q is not catalog-backed", id)
+		}
+		definition := declarative.Definition
+		cameraBacked := false
+		for _, track := range definition.Tracks {
+			if IsCameraBacked3DProperty(track.Property) {
+				cameraBacked = true
+			}
+			if len(track.Keyframes) < 2 {
+				t.Fatalf("%q track %q has no complete entrance/rest pair", id, track.Property)
+			}
+			last := track.Keyframes[len(track.Keyframes)-1]
+			value, ok := numericMotionValue(last.Value)
+			if !ok {
+				t.Fatalf("%q track %q final value %T is not numeric", id, track.Property, last.Value)
+			}
+			want := 0.0
+			switch track.Property {
+			case "scale", "scale_x", "scale_y", "scale_z", "opacity":
+				want = 1
+			case "position_x", "position_y", "position_z", "rotation_x", "rotation_y", "rotation_z", "blur":
+			default:
+				t.Fatalf("%q has an unreviewed image 3D track property %q", id, track.Property)
+			}
+			if value != want {
+				t.Errorf("%q track %q final pose = %v, want %v", id, track.Property, value, want)
+			}
+		}
+		if !cameraBacked {
+			t.Errorf("%q does not require Chronon's camera-backed 3D path", id)
+		}
+	}
+}
+
+func numericMotionValue(value any) (float64, bool) {
+	switch number := value.(type) {
+	case float64:
+		return number, true
+	case float32:
+		return float64(number), true
+	case int:
+		return float64(number), true
+	case int64:
+		return float64(number), true
+	default:
+		return 0, false
 	}
 }
 

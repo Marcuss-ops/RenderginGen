@@ -10,7 +10,8 @@
 # final-audio Drive upload). Baseline under cross-job contention was 85 741 ms
 # (3 concurrent publication phases); the fair gate must keep it well under 10 s.
 set -Eeuo pipefail
-cd /home/pierone/src/go-master/projects/Pyt/VeloxEditing/refactored
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "${REFACTORED_DIR:-"$SCRIPT_DIR/../../refactored"}"
 
 BASE="http://127.0.0.1:8000"
 STATE=/tmp/benchfair_state.json
