@@ -108,6 +108,45 @@ legacy 18. The premium ids are `image_glow_depth_in`, `image_border_draw_in`,
 `image_card_flip_soft`, `image_border_expand`, `image_glow_ring_expand`,
 `image_caption_frame_combo`, `image_spotlight_focus`, and `image_stack_focus`.
 
+ChrononTemplate also owns the declarative presentation catalog: `metric_v1`
+(20 presets), `date_v1` (20), and `entity_card_v1` (10). RenderingGen exposes
+these catalog-derived choices to in-process selectors through
+`overlay.PresentationMotionInventory()` and
+`motion.Registry.PresentationMotionIDs(familyID)`; it does not maintain a
+second list. The canonical template IDs `metric_stat_card` and
+`timeline_date_card` are registered as text-layer templates. Select one by
+setting `motion_id` on the semantic overlay item; keep `preset_id` for the
+independent text appearance. For example:
+
+```json
+{
+  "kind": "metric_stat",
+  "template_id": "metric_stat_card",
+  "preset_id": "phrase_default",
+  "motion_id": "metric_count_flip",
+  "text": "$59.99",
+  "start_ms": 0,
+  "end_ms": 3000
+}
+```
+
+Use `kind: "timeline_date"`, `template_id: "timeline_date_card"`, and a
+`date_v1` motion such as `date_page_turn` for dates. Entity-card presets use
+the existing entity contract (`kind`, `entity_id`, `duration_ms`) and
+`template_id: "entity_card_person"`. All three families lower to ordinary
+Chronon layer-animation tracks; camera-backed tracks set `enable_3d`
+automatically. `TestPresentationMotionInventoryAndSemanticWiring` compiles all
+50 IDs through the semantic compiler and checks the serialized plan. The
+opt-in `TestEveryPresentationMotionExecutesOnTheStrictGPU` renders each through
+Vulkan with `require_gpu_native` and native NVENC output; it requires a
+Chronon3d build with Vulkan and CUDA interop enabled, a usable NVIDIA device,
+and working NVENC. The strict mode fails closed rather than falling back to CPU;
+`ffprobe` must decode each non-empty MP4 as H.264, 1280×720, exactly 48 frames.
+When `RENDERINGGEN_GPU_CERT_OUTPUT_DIR` is set, the suite preserves those 50
+renders and writes a manifest with per-file SHA-256/size and strict-lane metadata.
+A registered Vulkan backend or a successful software preview alone is not GPU
+certification.
+
 Catalog ownership and sync direction remain ChrononTemplate JSON -> its catalog
 emitter -> RenderingGen embedded artifact. Run `scripts/sync_motion_catalog.sh`
 after changing the canonical catalog; never edit the generated embedded catalog
