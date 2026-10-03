@@ -26,6 +26,9 @@ func fitEntityImageLayersToAssets(root string, plan *overlay.Plan) error {
 		if err := overlay.ResizePremiumImageMask(layer); err != nil {
 			return fmt.Errorf("processor: resize premium image mask for %q: %w", layer.ID, err)
 		}
+		if err := alignEntityCaptionToFittedImage(plan, layer); err != nil {
+			return fmt.Errorf("processor: align entity caption for %q: %w", layer.ID, err)
+		}
 		layer.EntityImage = false
 		for j := range plan.Layers {
 			component := &plan.Layers[j]
@@ -63,6 +66,42 @@ func fitEntityImageLayersToAssets(root string, plan *overlay.Plan) error {
 				}
 			}
 		}
+	}
+	return nil
+}
+
+// alignEntityCaptionToFittedImage recomputes caption anchoring after the image
+// box has been fitted to the verified source aspect ratio. Semantic lowering
+// only knows the requested contain box; without this pass a wide source can
+// shrink vertically while its name stays at the old box bottom, leaving an
+// oversized gap between portrait and label.
+func alignEntityCaptionToFittedImage(plan *overlay.Plan, image *overlay.Layer) error {
+	if plan == nil || image == nil || len(image.Size) < 2 || len(image.Position) < 2 {
+		return nil
+	}
+	for i := range plan.Layers {
+		caption := &plan.Layers[i]
+		if caption.EntityCaptionForImageID != image.ID {
+			continue
+		}
+		bounds := overlay.EntityCardImageBoundsFromCenter(
+			plan.Canvas.Width, plan.Canvas.Height, image.Position, image.Size[0], image.Size[1],
+		)
+		layout, err := overlay.ResolveEntityCardLayout(plan.Canvas.Width, plan.Canvas.Height, bounds, caption.Text)
+		if err != nil {
+			return err
+		}
+		image.Position[1] = layout.ImageBounds.Y + image.Size[1]/2 - float64(plan.Canvas.Height)/2
+		caption.Position = []float64{layout.CaptionBounds.CenterX, layout.CaptionBounds.CenterY}
+		caption.Size = []float64{layout.CaptionBounds.Width, layout.CaptionBounds.Height}
+		caption.BoxWidth = int(layout.CaptionBounds.Width)
+		caption.BoxHeight = int(layout.CaptionBounds.Height)
+		if caption.Style != nil {
+			caption.Style.FontSize = layout.CaptionBounds.FontSize
+			caption.Style.MinFontSize = layout.CaptionBounds.FontSize
+			caption.Style.MaxFontSize = layout.CaptionBounds.FontSize
+		}
+		return nil
 	}
 	return nil
 }

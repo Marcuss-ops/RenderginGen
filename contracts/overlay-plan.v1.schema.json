@@ -124,7 +124,7 @@
     "source_frame": {
       "type": "object",
       "additionalProperties": false,
-      "description": "Optional card treatment of the source clip: a rounded border frame painted behind the clip plus its drop shadow. The worker lowers it onto the source video layer (style.background + style.shadow + radius); the renderer never invents geometry, colour or blur.",
+      "description": "Optional source-clip treatment: a border frame behind the clip, drop shadow, standalone rounded corners, and/or a stroke over the clip perimeter. The renderer never invents geometry or colour.",
       "properties": {
         "border": {
           "type": "object",
@@ -146,6 +146,17 @@
             "blur_px": { "type": "number", "minimum": 0, "maximum": 256 },
             "offset_x_px": { "type": "number", "minimum": -256, "maximum": 256 },
             "offset_y_px": { "type": "number", "minimum": -256, "maximum": 256 }
+          }
+        },
+        "clip_radius_px": { "type": "number", "minimum": 0, "maximum": 512, "description": "Standalone bounding-box corner radius of the clip video. When a border is present, the clip's inner radius is max(radius_px - width_px, clip_radius_px). When no border is declared, this directly rounds the clip's corners. Zero or absent means no standalone rounding." },
+        "stroke": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["width_px", "color"],
+          "description": "Outline painted over the video perimeter (not a padded plate behind it). It follows the clip's rounded corners.",
+          "properties": {
+            "width_px": { "type": "number", "minimum": 0, "maximum": 64 },
+            "color": { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$" }
           }
         }
       }
@@ -316,7 +327,7 @@
           "frame": {
             "type": "object",
             "additionalProperties": false,
-            "description": "Optional card treatment of a video overlay item (kind video_overlay). Same contract as the plan-level source_frame: border lowers to the renderer-owned frame behind the item, shadow to its drop shadow. params.scale_percent insets the item so the frame is visible.",
+            "description": "Optional video-overlay treatment. Same contract as source_frame: border behind the item, shadow, standalone rounded corners, and/or a stroke over its perimeter. params.scale_percent can inset the item to expose the surrounding frame.",
             "properties": {
               "border": {
                 "type": "object",
@@ -338,6 +349,17 @@
                   "blur_px": { "type": "number", "minimum": 0, "maximum": 256 },
                   "offset_x_px": { "type": "number", "minimum": -256, "maximum": 256 },
                   "offset_y_px": { "type": "number", "minimum": -256, "maximum": 256 }
+                }
+              },
+              "clip_radius_px": { "type": "number", "minimum": 0, "maximum": 512, "description": "Standalone bounding-box corner radius of the overlay item. Same semantics as plan-level source_frame.clip_radius_px." },
+              "stroke": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["width_px", "color"],
+                "description": "Outline painted over the video-overlay perimeter, following its rounded corners. Same semantics as plan-level source_frame.stroke.",
+                "properties": {
+                  "width_px": { "type": "number", "minimum": 0, "maximum": 64 },
+                  "color": { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$" }
                 }
               }
             }
@@ -425,7 +447,18 @@
                 "motion_id": { "type": "string" },
                 "motion_params": { "type": "object" },
                 "caption": { "type": "string", "minLength": 1 },
-                "params": { "type": "object" }
+                "params": { "type": "object" },
+                "frame": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "description": "Optional card treatment of this image layer.",
+                  "properties": {
+                    "border": { "type": "object", "additionalProperties": false, "required": ["width_px", "color"], "properties": { "width_px": { "type": "number", "minimum": 0, "maximum": 512 }, "color": { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$" }, "radius_px": { "type": "number", "minimum": 0, "maximum": 512 } } },
+                    "shadow": { "type": "object", "additionalProperties": false, "required": ["color"], "properties": { "color": { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$" }, "opacity": { "type": "number", "minimum": 0, "maximum": 1 }, "blur_px": { "type": "number", "minimum": 0, "maximum": 256 }, "offset_x_px": { "type": "number", "minimum": -256, "maximum": 256 }, "offset_y_px": { "type": "number", "minimum": -256, "maximum": 256 } } },
+                    "clip_radius_px": { "type": "number", "minimum": 0, "maximum": 512 },
+                    "stroke": { "type": "object", "additionalProperties": false, "required": ["width_px", "color"], "properties": { "width_px": { "type": "number", "minimum": 0, "maximum": 64 }, "color": { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$" } } }
+                  }
+                }
               }
             }
           }

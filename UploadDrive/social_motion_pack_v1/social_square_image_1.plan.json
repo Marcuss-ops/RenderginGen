@@ -1,0 +1,115 @@
+{
+  "schema": "chronon.render-plan.v3",
+  "version": 3,
+  "job_id": "social_square_image_1",
+  "canvas": {
+    "width": 1080,
+    "height": 1080,
+    "fps_num": 30,
+    "fps_den": 1,
+    "duration_frames": 150
+  },
+  "output": {
+    "path": "social_square_image_1.mp4",
+    "format": "mp4",
+    "codec": "h264"
+  },
+  "layers": [
+    {
+      "id": "background",
+      "type": "color",
+      "color": [
+        0.025,
+        0.035,
+        0.065,
+        1.0
+      ],
+      "start_frame": 0,
+      "duration_frames": 150
+    },
+    {
+      "id": "image_1",
+      "type": "image",
+      "asset": "assets/images/dual_entity_left.png",
+      "size": [
+        778,
+        518
+      ],
+      "position": [
+        0,
+        0
+      ],
+      "fit": "cover",
+      "radius": 0,
+      "enable_3d": false,
+      "start_frame": 0,
+      "duration_frames": 150,
+      "animation": {
+        "tracks": [
+          {
+            "property": "position_x",
+            "easing": "out_cubic",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": -72
+              },
+              {
+                "frame": 24,
+                "value": 0
+              },
+              {
+                "frame": 149,
+                "value": 0
+              }
+            ]
+          },
+          {
+            "property": "opacity",
+            "easing": "out_cubic",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 0
+              },
+              {
+                "frame": 16,
+                "value": 1
+              },
+              {
+                "frame": 149,
+                "value": 1
+              }
+            ]
+          },
+          {
+            "property": "scale",
+            "easing": "in_out_cubic",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 0.88
+              },
+              {
+                "frame": 24,
+                "value": 1.0
+              },
+              {
+                "frame": 28,
+                "value": 1.04
+              },
+              {
+                "frame": 46,
+                "value": 0.97
+              },
+              {
+                "frame": 149,
+                "value": 1.0
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

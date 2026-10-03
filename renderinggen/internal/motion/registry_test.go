@@ -41,7 +41,7 @@ func TestMotionFamiliesKeepStylesIndependentAndComplete(t *testing.T) {
 	}
 	// Editorial Visual Motion V1 grows the certified web vocabulary to 14
 	// (web_cursor_focus and web_section_spotlight joined).
-	for family, count := range map[string]int{"typewriter": 5, "classic_apple": 42, "modern_apple": 60, "web": 14} {
+	for family, count := range map[string]int{"typewriter": 5, "classic_apple": 42, "modern_apple": 61, "web": 14} {
 		if ids := Registry.FamilyMotionIDs(family); len(ids) != count {
 			t.Errorf("%s family has %d motions, want %d", family, len(ids), count)
 		}
@@ -446,10 +446,10 @@ func TestAppleV2MotionsAreComplete(t *testing.T) {
 	}
 }
 
-func TestAppleV3OverlayTextPackIs15ModernAnd2Point5DReady(t *testing.T) {
+func TestAppleV3OverlayTextPackIs16ModernAnd2Point5DReady(t *testing.T) {
 	ids := Registry.AppleV3MotionIDs()
-	if len(ids) != 15 {
-		t.Fatalf("Apple V3 motion count = %d, want 15: %v", len(ids), ids)
+	if len(ids) != 16 {
+		t.Fatalf("Apple V3 motion count = %d, want 16: %v", len(ids), ids)
 	}
 	hasDepth := false
 	hasRotation := false

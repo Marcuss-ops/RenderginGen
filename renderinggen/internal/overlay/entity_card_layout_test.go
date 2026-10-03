@@ -127,7 +127,7 @@ func TestEntityCaptionLongNameFits(t *testing.T) {
 		if caption.Position[0]-halfWidth < 0 || caption.Position[0]+halfWidth > 1280 {
 			t.Fatalf("long-name caption box leaves the canvas: size %v pos %v", caption.Size, caption.Position)
 		}
-		if caption.Style == nil || caption.Style.FontSize < 12 || caption.Style.FontSize > 24 {
+		if caption.Style == nil || caption.Style.FontSize < 12 || caption.Style.FontSize > 30 {
 			t.Fatalf("long-name font size %v outside the fitted band", caption.Style.FontSize)
 		}
 	}

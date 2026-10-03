@@ -1,0 +1,63 @@
+[2026-10-02 18:59:33.350] [info] [overlay-prepare] validated package=/tmp/velox-image-gpu-cert-small/inputs/image_split_light_reveal/prepared.json hash=b9a089cbd2e9d2f52911fc650d58841af2a37050654c6e007c18d5463c5f02de assets=1 text_runs=1 overlays=3
+[2026-10-02 18:59:33.354] [info] [asset-profile] kind=3 path=assets/fonts/Poppins-Bold.ttf bytes=155996 cache=miss invalidated=0 stat=0.01ms hash=3.55ms hashed_bytes=155996 total=3.74ms
+[2026-10-02 18:59:33.355] [info] [asset-profile] kind=0 path=assets/semantic/certification-image.jpg bytes=4146 cache=miss invalidated=0 stat=0.01ms hash=0.16ms hashed_bytes=4146 total=0.32ms
+[2026-10-02 18:59:33.355] [info] [asset-digest-cache] hits=0 misses=2 invalidations=0 bytes_hashed=160142 lookup_ms=0.01 write_ms=0.02 full_hash_ms=3.71
+[2026-10-02 18:59:33.356] [info] [plan-profile] read=0.12ms parse=1.05ms decode=409.56ms resolver=0.03ms compile_validate=5.69ms total=418.14ms
+[2026-10-02 18:59:33.356] [info] [asset-profile] kind=3 path=assets/fonts/Poppins-Bold.ttf bytes=155996 cache=hit invalidated=0 stat=0.01ms hash=0.00ms hashed_bytes=0 total=0.14ms
+[2026-10-02 18:59:33.357] [info] [asset-profile] kind=0 path=assets/semantic/certification-image.jpg bytes=4146 cache=hit invalidated=0 stat=0.01ms hash=0.00ms hashed_bytes=0 total=0.17ms
+[2026-10-02 18:59:33.357] [info] [asset-digest-cache] hits=2 misses=0 invalidations=0 bytes_hashed=0 lookup_ms=0.01 write_ms=0.00 full_hash_ms=0.00
+[2026-10-02 18:59:33.359] [info] [plan-compile-profile] assets=0.55ms fingerprint=1.44ms media_resolution=0.00ms materialize=0.17ms composition_compile=0.00ms compatibility_view=0.08ms total=2.66ms
+[2026-10-02 18:59:33.359] [info] [video] Auto-selecting yuv420p pipe pixel format for 1280x720 output
+[2026-10-02 18:59:33.360] [info] [video] execution plan resolved (reason: required_gpu_native_full_graph); decode=1 composite=2 encode=1 interop=2 handoff=1 codec=3
+[2026-10-02 18:59:33.379] [info] [video-runtime] created persistent runtime for device 0 (CUDA ordinal 0)
+[2026-10-02 18:59:33.379] [info] [video] encoder feed capability: host_frame=false direct_yuv=false native_surface=true
+[2026-10-02 18:59:33.583] [info] [native_av] CUDA context contract: native=0x561bf5485740 ffmpeg=0x561bf5485740
+[2026-10-02 18:59:33.602] [info] [native_av] NVENC tuning applied: rc=constqp preset=p1 async_depth=4 nvenc_surfaces=8 qp=23 bitrate=0
+[2026-10-02 18:59:33.632] [info] [native_av] encoder bitstream contract: codec=27 profile=100 level=-99 pix_fmt=119 parameter_sets=49 materialized=true
+[2026-10-02 18:59:33.633] [info] [native_av] Opened native encoder: 1280x720 @ 24fps, codec=h264_nvenc, rc=constqp, preset=p1, output='/tmp/velox-image-gpu-cert-small/inputs/image_split_light_reveal/catalog-motions.partial.mp4'
+[2026-10-02 18:59:35.528] [info] ImageCache: loaded 'assets/semantic/certification-image.jpg' (480x360) in 780.299ms
+[2026-10-02 18:59:35.642] [info] [pool-warm] Pre-allocated and pre-imported 6 execution slots (1280x720) for native NVENC
+[2026-10-02 18:59:35.717] [info] chronon3d::vulkan text batch formats: dst_image.format=109 atlas_image.format=44 atlas_encoding=2 (shader contract: dst rgba32f, atlas rgba8)
+[2026-10-02 18:59:35.718] [info] [temp-lifetime] frame=0 after_level=0 live=[0,1,5,] retired=[]
+[2026-10-02 18:59:35.718] [info] [exec-level-diag] frame=0 level=0 nodes=4 input_ms=0.006 dispatch_ms=5.585 fb_release_ms=0.005
+[2026-10-02 18:59:35.718] [info] [graph-edge] frame=0 level=1 consumer_id=2 input_index=0 producer_id=0 producer_level=0
+[2026-10-02 18:59:35.718] [info] [graph-edge] frame=0 level=1 consumer_id=2 input_index=1 producer_id=1 producer_level=0
+[2026-10-02 18:59:35.718] [info] [temp-lifetime] frame=0 after_level=1 live=[5,] retired=[0,1,]
+[2026-10-02 18:59:35.718] [info] [exec-level-diag] frame=0 level=1 nodes=1 input_ms=0.101 dispatch_ms=0.054 fb_release_ms=0.011
+[2026-10-02 18:59:35.718] [warning] [input-unresolved] frame=0 level=2 consumer_id=4 input_index=0 producer_id=2 producer_level=1
+[2026-10-02 18:59:35.718] [warning] [input-unresolved] frame=0 level=2 consumer_id=4 input_index=1 producer_id=3 producer_level=0
+[2026-10-02 18:59:35.718] [info] [temp-lifetime] frame=0 after_level=2 live=[5,] retired=[2,3,]
+[2026-10-02 18:59:35.719] [info] [exec-level-diag] frame=0 level=2 nodes=1 input_ms=0.068 dispatch_ms=0.040 fb_release_ms=0.005
+[2026-10-02 18:59:35.719] [warning] [input-unresolved] frame=0 level=3 consumer_id=6 input_index=0 producer_id=4 producer_level=2
+[2026-10-02 18:59:35.719] [info] [graph-edge] frame=0 level=3 consumer_id=6 input_index=1 producer_id=5 producer_level=0
+[2026-10-02 18:59:35.719] [info] [temp-lifetime] frame=0 after_level=3 live=[] retired=[4,5,]
+[2026-10-02 18:59:35.719] [info] [exec-level-diag] frame=0 level=3 nodes=1 input_ms=0.087 dispatch_ms=0.044 fb_release_ms=0.007
+[2026-10-02 18:59:35.719] [error] [executor] frame 0 failed: node 'shape' error [UnsupportedCapability] VulkanBackend::draw_node: no legacy-node fallback attached; node='shape' shape_type=2
+[2026-10-02 18:59:35.719] [error] [tile-exec] frame 0 single-pass execution failed (executor returned null — check frame_error for details)
+[2026-10-02 18:59:35.719] [error] [backend] native encode copy has no source surface for frame 0
+[2026-10-02 18:59:35.719] [error] [video] Failed to render frame 0
+[2026-10-02 18:59:35.720] [info] [video] writer join complete
+[2026-10-02 18:59:35.720] [info] [drain-debug] start drain, capacity=6
+[2026-10-02 18:59:35.720] [info] [drain-debug] reap done, busy_count=0
+[2026-10-02 18:59:35.720] [info] [video] trimming framebuffer pool
+[2026-10-02 18:59:35.720] [info] [video] Released framebuffer pool — memory trimmed
+[2026-10-02 18:59:35.720] [info] [video] frame-loop cleanup complete
+[2026-10-02 18:59:35.720] [info] [video] Encoder write blocked duration: 0.00 ms
+[2026-10-02 18:59:35.720] [info] [video_diag] conversion_and_copy_duration_ms: 0 ms
+[2026-10-02 18:59:35.720] [info] [video_diag] conversion_bytes_written=0 encoder_staging_copy_bytes=0 encoder_slot_reuses=0
+[2026-10-02 18:59:35.720] [info] [native_av] close: sending encoder flush
+[2026-10-02 18:59:35.720] [info] [native_av] close: encoder flush accepted
+[2026-10-02 18:59:35.720] [info] [native_av] close: packets drained=true
+[2026-10-02 18:59:35.720] [info] [native_av] close: finalizing mux session
+[2026-10-02 18:59:35.720] [info] [native_av] close: mux session finalized
+[2026-10-02 18:59:35.720] [info] [native_av] Closed native encoder — 0 frames accepted, encoder_packets=0 mux_packets=0 packet_pts=-1..-1, YUV cache: 0 hits / 0 misses
+[2026-10-02 18:59:35.720] [info] [video_native] convert=0.00ms  send_frame=0.00ms  backpressure=0.00ms  flush=0.39ms  receive_packet=0.00ms  mux_write=0.00ms  trailer=0.17ms
+[2026-10-02 18:59:35.721] [warning] [vulkan] GPU timing completion has no telemetry frame: frame=0 slot=0
+[2026-10-02 18:59:35.722] [info] [video] render_ms=53.50 encode_ms=2.19 writer_encode_ms=0.00 wall_ms=2361.86 nvml_stop_ms=0.13
+[2026-10-02 18:59:35.722] [info] [video] FFmpeg queue wait duration: 0.00 ms
+[2026-10-02 18:59:35.722] [error] [video] Export incomplete: cancelled=false render_failed=true writer_error=false exception=false
+[2026-10-02 18:59:35.722] [info] [startup-profile] total=1240.52ms logger=0.13ms cli_bootstrap=11.43ms cli_parse=0.00ms composition=0.49ms plan_read=0.12ms json_parse=1.05ms plan_decode_validate=409.56ms asset_resolve=0.03ms plan_compile=5.69ms other=0.00ms
+[2026-10-02 18:59:35.746] [info] [INFO] job-lifecycle: slot_pool_close_ms=0.0 surface_release_ms=0.1
+[2026-10-02 18:59:35.885] [info] [INFO] job-lifecycle: queue_close_ms=0.0 writer_join_ms=0.0 encoder_reset_ms=24.0 decoder_reset_ms=0.0 full_graph_reset_ms=138.8 sink_ctx_reset_ms=0.0 device_runtime_reset_ms=0.0 device_reservation_reset_ms=0.0
+[2026-10-02 18:59:35.885] [info] [INFO] job-lifecycle: sidecar_write_ms=0.0 session_teardown_ms=163.2
+[2026-10-02 18:59:35.894] [error] Render plan job failed: EncoderFailed: video encoder failed for composition 'catalog-motions-gpu-016' using codec 'auto' output '/tmp/velox-image-gpu-cert-small/inputs/image_split_light_reveal/catalog-motions.mp4'

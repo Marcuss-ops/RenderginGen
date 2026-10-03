@@ -1,0 +1,92 @@
+[2026-10-02 18:58:21.447] [info] [overlay-prepare] validated package=/tmp/velox-image-gpu-cert-small/inputs/image_corner_bloom/prepared.json hash=36da9874e650abd7dc97553ad7000e9219b46b722c51257bf39a48783d9a0850 assets=1 text_runs=1 overlays=6
+[2026-10-02 18:58:21.451] [info] [asset-profile] kind=3 path=assets/fonts/Poppins-Bold.ttf bytes=155996 cache=miss invalidated=0 stat=0.01ms hash=3.43ms hashed_bytes=155996 total=3.57ms
+[2026-10-02 18:58:21.451] [info] [asset-profile] kind=0 path=assets/semantic/certification-image.jpg bytes=4146 cache=miss invalidated=0 stat=0.01ms hash=0.12ms hashed_bytes=4146 total=0.23ms
+[2026-10-02 18:58:21.451] [info] [asset-digest-cache] hits=0 misses=2 invalidations=0 bytes_hashed=160142 lookup_ms=0.01 write_ms=0.02 full_hash_ms=3.54
+[2026-10-02 18:58:21.453] [info] [plan-profile] read=0.13ms parse=1.77ms decode=407.68ms resolver=0.03ms compile_validate=6.07ms total=418.23ms
+[2026-10-02 18:58:21.453] [info] [asset-profile] kind=3 path=assets/fonts/Poppins-Bold.ttf bytes=155996 cache=hit invalidated=0 stat=0.01ms hash=0.00ms hashed_bytes=0 total=0.10ms
+[2026-10-02 18:58:21.454] [info] [asset-profile] kind=0 path=assets/semantic/certification-image.jpg bytes=4146 cache=hit invalidated=0 stat=0.01ms hash=0.00ms hashed_bytes=0 total=0.10ms
+[2026-10-02 18:58:21.454] [info] [asset-digest-cache] hits=2 misses=0 invalidations=0 bytes_hashed=0 lookup_ms=0.01 write_ms=0.00 full_hash_ms=0.00
+[2026-10-02 18:58:21.457] [info] [plan-compile-profile] assets=0.47ms fingerprint=2.43ms media_resolution=0.00ms materialize=0.17ms composition_compile=0.00ms compatibility_view=0.11ms total=3.56ms
+[2026-10-02 18:58:21.458] [info] [video] Auto-selecting yuv420p pipe pixel format for 1280x720 output
+[2026-10-02 18:58:21.458] [info] [video] execution plan resolved (reason: required_gpu_native_full_graph); decode=1 composite=2 encode=1 interop=2 handoff=1 codec=3
+[2026-10-02 18:58:21.479] [info] [video-runtime] created persistent runtime for device 0 (CUDA ordinal 0)
+[2026-10-02 18:58:21.480] [info] [video] encoder feed capability: host_frame=false direct_yuv=false native_surface=true
+[2026-10-02 18:58:21.677] [info] [native_av] CUDA context contract: native=0x558c200e0b60 ffmpeg=0x558c200e0b60
+[2026-10-02 18:58:21.696] [info] [native_av] NVENC tuning applied: rc=constqp preset=p1 async_depth=4 nvenc_surfaces=8 qp=23 bitrate=0
+[2026-10-02 18:58:21.727] [info] [native_av] encoder bitstream contract: codec=27 profile=100 level=-99 pix_fmt=119 parameter_sets=49 materialized=true
+[2026-10-02 18:58:21.728] [info] [native_av] Opened native encoder: 1280x720 @ 24fps, codec=h264_nvenc, rc=constqp, preset=p1, output='/tmp/velox-image-gpu-cert-small/inputs/image_corner_bloom/catalog-motions.partial.mp4'
+[2026-10-02 18:58:23.606] [info] ImageCache: loaded 'assets/semantic/certification-image.jpg' (480x360) in 773.958ms
+[2026-10-02 18:58:23.719] [info] [pool-warm] Pre-allocated and pre-imported 6 execution slots (1280x720) for native NVENC
+[2026-10-02 18:58:23.799] [info] chronon3d::vulkan text batch formats: dst_image.format=109 atlas_image.format=44 atlas_encoding=2 (shader contract: dst rgba32f, atlas rgba8)
+[2026-10-02 18:58:23.800] [info] [temp-lifetime] frame=0 after_level=0 live=[0,1,3,6,9,12,15,] retired=[]
+[2026-10-02 18:58:23.800] [info] [exec-level-diag] frame=0 level=0 nodes=7 input_ms=0.007 dispatch_ms=11.124 fb_release_ms=0.005
+[2026-10-02 18:58:23.800] [info] [graph-edge] frame=0 level=1 consumer_id=2 input_index=0 producer_id=0 producer_level=0
+[2026-10-02 18:58:23.800] [info] [graph-edge] frame=0 level=1 consumer_id=2 input_index=1 producer_id=1 producer_level=0
+[2026-10-02 18:58:23.800] [info] [graph-edge] frame=0 level=1 consumer_id=4 input_index=0 producer_id=3 producer_level=0
+[2026-10-02 18:58:23.800] [info] [graph-edge] frame=0 level=1 consumer_id=7 input_index=0 producer_id=6 producer_level=0
+[2026-10-02 18:58:23.800] [info] [graph-edge] frame=0 level=1 consumer_id=10 input_index=0 producer_id=9 producer_level=0
+[2026-10-02 18:58:23.800] [info] [graph-edge] frame=0 level=1 consumer_id=13 input_index=0 producer_id=12 producer_level=0
+[2026-10-02 18:58:23.815] [info] [temp-lifetime] frame=0 after_level=1 live=[2,4,7,10,13,15,] retired=[0,1,3,6,9,12,]
+[2026-10-02 18:58:23.815] [info] [exec-level-diag] frame=0 level=1 nodes=5 input_ms=0.315 dispatch_ms=15.213 fb_release_ms=0.024
+[2026-10-02 18:58:23.815] [info] [graph-edge] frame=0 level=2 consumer_id=5 input_index=0 producer_id=2 producer_level=1
+[2026-10-02 18:58:23.815] [info] [graph-edge] frame=0 level=2 consumer_id=5 input_index=1 producer_id=4 producer_level=1
+[2026-10-02 18:58:23.816] [info] [temp-lifetime] frame=0 after_level=2 live=[5,7,10,13,15,] retired=[2,4,]
+[2026-10-02 18:58:23.816] [info] [exec-level-diag] frame=0 level=2 nodes=1 input_ms=0.070 dispatch_ms=0.222 fb_release_ms=0.008
+[2026-10-02 18:58:23.816] [info] [graph-edge] frame=0 level=3 consumer_id=8 input_index=0 producer_id=5 producer_level=2
+[2026-10-02 18:58:23.816] [info] [graph-edge] frame=0 level=3 consumer_id=8 input_index=1 producer_id=7 producer_level=1
+[2026-10-02 18:58:23.816] [info] [temp-lifetime] frame=0 after_level=3 live=[8,10,13,15,] retired=[5,7,]
+[2026-10-02 18:58:23.816] [info] [exec-level-diag] frame=0 level=3 nodes=1 input_ms=0.069 dispatch_ms=0.192 fb_release_ms=0.008
+[2026-10-02 18:58:23.816] [info] [graph-edge] frame=0 level=4 consumer_id=11 input_index=0 producer_id=8 producer_level=3
+[2026-10-02 18:58:23.816] [info] [graph-edge] frame=0 level=4 consumer_id=11 input_index=1 producer_id=10 producer_level=1
+[2026-10-02 18:58:23.817] [info] [temp-lifetime] frame=0 after_level=4 live=[11,13,15,] retired=[8,10,]
+[2026-10-02 18:58:23.817] [info] [exec-level-diag] frame=0 level=4 nodes=1 input_ms=0.093 dispatch_ms=0.259 fb_release_ms=0.011
+[2026-10-02 18:58:23.817] [info] [graph-edge] frame=0 level=5 consumer_id=14 input_index=0 producer_id=11 producer_level=4
+[2026-10-02 18:58:23.817] [info] [graph-edge] frame=0 level=5 consumer_id=14 input_index=1 producer_id=13 producer_level=1
+[2026-10-02 18:58:23.817] [info] [temp-lifetime] frame=0 after_level=5 live=[14,15,] retired=[11,13,]
+[2026-10-02 18:58:23.817] [info] [exec-level-diag] frame=0 level=5 nodes=1 input_ms=0.107 dispatch_ms=0.291 fb_release_ms=0.008
+[2026-10-02 18:58:23.817] [info] [graph-edge] frame=0 level=6 consumer_id=16 input_index=0 producer_id=14 producer_level=5
+[2026-10-02 18:58:23.817] [info] [graph-edge] frame=0 level=6 consumer_id=16 input_index=1 producer_id=15 producer_level=0
+[2026-10-02 18:58:23.818] [info] [temp-lifetime] frame=0 after_level=6 live=[16,] retired=[14,15,]
+[2026-10-02 18:58:23.818] [info] [exec-level-diag] frame=0 level=6 nodes=1 input_ms=0.145 dispatch_ms=0.242 fb_release_ms=0.012
+[2026-10-02 18:58:23.829] [info] [video] Exporting via Arena-backed SIMD pipeline
+[2026-10-02 18:58:33.829] [error] [native_av] CUDA/Vulkan frame handoff failed: Vulkan device lost during vkWaitForFences(CUDA export slot)
+[2026-10-02 18:58:33.830] [error] [video] Exception during render loop (frame 1): GPU worker is poisoned after a terminal device-loss failure
+[2026-10-02 18:58:33.830] [info] [video] writer join complete
+[2026-10-02 18:58:33.830] [info] [drain-debug] start drain, capacity=6
+[2026-10-02 18:58:33.830] [info] [drain-debug] slot_id=0 has completion, waiting
+[2026-10-02 18:58:33.830] [info] [drain-debug] slot_id=0 wait complete
+[2026-10-02 18:58:33.830] [info] [drain-debug] reap done, busy_count=0
+[2026-10-02 18:58:33.830] [info] [video] trimming framebuffer pool
+[2026-10-02 18:58:33.830] [info] [video] Released framebuffer pool — memory trimmed
+[2026-10-02 18:58:33.830] [info] [video] frame-loop cleanup complete
+[2026-10-02 18:58:33.830] [info] [video] Encoder write blocked duration: 0.00 ms
+[2026-10-02 18:58:33.830] [info] [video_diag] conversion_and_copy_duration_ms: 0 ms
+[2026-10-02 18:58:33.830] [info] [video_diag] conversion_bytes_written=0 encoder_staging_copy_bytes=0 encoder_slot_reuses=0
+[2026-10-02 18:58:33.830] [info] [native_av] close: sending encoder flush
+[2026-10-02 18:58:33.830] [info] [native_av] close: encoder flush accepted
+[2026-10-02 18:58:33.830] [info] [native_av] close: packets drained=true
+[2026-10-02 18:58:33.830] [info] [native_av] close: finalizing mux session
+[2026-10-02 18:58:33.830] [info] [native_av] close: mux session finalized
+[2026-10-02 18:58:33.830] [info] [native_av] Closed native encoder — 0 frames accepted, encoder_packets=0 mux_packets=0 packet_pts=-1..-1, YUV cache: 0 hits / 0 misses
+[2026-10-02 18:58:33.830] [info] [video_native] convert=0.00ms  send_frame=0.00ms  backpressure=0.00ms  flush=0.20ms  receive_packet=0.00ms  mux_write=0.00ms  trailer=0.11ms
+[2026-10-02 18:58:33.830] [error] [vulkan] DEVICE LOST REPORT phase=wait_for_pending slot=0 in_flight_slots=[1,0,0,0,0,0] pending_timeline=0
+[2026-10-02 18:58:33.830] [error] [vulkan] native submission drain failed: Vulkan device lost during vkWaitForFences(frame batch slot)
+[2026-10-02 18:58:33.830] [error] [vulkan] DEVICE LOST REPORT phase=wait_for_pending slot=0 in_flight_slots=[1,0,0,0,0,0] pending_timeline=0
+[2026-10-02 18:58:33.830] [error] [vulkan] transient cleanup failed: Vulkan device lost during vkWaitForFences(frame batch slot)
+[2026-10-02 18:58:33.831] [info] [video] render_ms=10087.60 encode_ms=0.68 writer_encode_ms=0.00 wall_ms=12372.68 nvml_stop_ms=0.15
+[2026-10-02 18:58:33.831] [info] [video] FFmpeg queue wait duration: 0.02 ms
+[2026-10-02 18:58:33.831] [error] [video] Export incomplete: cancelled=false render_failed=false writer_error=true exception=true
+[2026-10-02 18:58:33.831] [info] [startup-profile] total=1211.59ms logger=0.10ms cli_bootstrap=9.64ms cli_parse=0.00ms composition=0.30ms plan_read=0.13ms json_parse=1.77ms plan_decode_validate=407.68ms asset_resolve=0.03ms plan_compile=6.07ms other=0.00ms
+[2026-10-02 18:58:33.834] [info] [video] Wrote exact per-frame timing sidecar: /tmp/velox-image-gpu-cert-small/inputs/image_corner_bloom/catalog-motions.mp4.timing.json
+[2026-10-02 18:58:33.859] [error] [vulkan] DEVICE LOST REPORT phase=wait_for_pending slot=0 in_flight_slots=[1,0,0,0,0,0] pending_timeline=0
+[2026-10-02 18:58:33.859] [error] [vulkan] DEVICE LOST REPORT phase=wait_for_pending slot=0 in_flight_slots=[1,0,0,0,0,0] pending_timeline=0
+[2026-10-02 18:58:33.859] [error] [vulkan] DEVICE LOST REPORT phase=wait_for_pending slot=0 in_flight_slots=[1,0,0,0,0,0] pending_timeline=0
+[2026-10-02 18:58:33.859] [error] [vulkan] DEVICE LOST REPORT phase=wait_for_pending slot=0 in_flight_slots=[1,0,0,0,0,0] pending_timeline=0
+[2026-10-02 18:58:33.859] [error] [vulkan] DEVICE LOST REPORT phase=wait_for_pending slot=0 in_flight_slots=[1,0,0,0,0,0] pending_timeline=0
+[2026-10-02 18:58:33.859] [error] [vulkan] DEVICE LOST REPORT phase=wait_for_pending slot=0 in_flight_slots=[1,0,0,0,0,0] pending_timeline=0
+[2026-10-02 18:58:33.859] [info] [INFO] job-lifecycle: slot_pool_close_ms=0.0 surface_release_ms=0.6
+[2026-10-02 18:58:33.887] [error] [vulkan] DEVICE LOST REPORT phase=wait_for_pending slot=0 in_flight_slots=[1,0,0,0,0,0] pending_timeline=0
+[2026-10-02 18:58:33.888] [error] [vulkan] DEVICE LOST REPORT phase=wait_for_pending slot=0 in_flight_slots=[1,0,0,0,0,0] pending_timeline=0
+[2026-10-02 18:58:34.014] [info] [INFO] job-lifecycle: queue_close_ms=0.0 writer_join_ms=0.0 encoder_reset_ms=24.3 decoder_reset_ms=0.0 full_graph_reset_ms=155.4 sink_ctx_reset_ms=0.0 device_runtime_reset_ms=0.0 device_reservation_reset_ms=0.0
+[2026-10-02 18:58:34.015] [info] [INFO] job-lifecycle: sidecar_write_ms=3.4 session_teardown_ms=180.2
+[2026-10-02 18:58:34.023] [error] Render plan job failed: EncoderFailed: video encoder failed for composition 'catalog-motions-gpu-004' using codec 'auto' output '/tmp/velox-image-gpu-cert-small/inputs/image_corner_bloom/catalog-motions.mp4'

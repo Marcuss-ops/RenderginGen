@@ -354,6 +354,7 @@ func (c *Client) Render(ctx context.Context, req RenderRequest) error {
 	activity := newStallActivity(time.Now())
 
 	var streamFailed atomic.Bool
+	var failureDiagnostics renderFailureDiagnostics
 	// Output sampling: every line still feeds progress parsing and the stall
 	// heartbeat, but only diagnostics and a bounded sample of frame milestones
 	// pay a formatted write on the standard logger's mutex (shared by every GPU
@@ -362,6 +363,9 @@ func (c *Client) Render(ctx context.Context, req RenderRequest) error {
 	streamLines := func(r io.Reader, prefix string) {
 		if err := scanRenderOutput(r, func(line string) {
 			activity.touch(time.Now())
+			if prefix == "stderr" {
+				failureDiagnostics.remember(line)
+			}
 			if progress, ok := parseProgressLine(line, req.TotalFrames); ok {
 				if outputLog.allowProgress(prefix) {
 					log.Printf("[chronon %s] %s", prefix, line)
@@ -442,6 +446,9 @@ func (c *Client) Render(ctx context.Context, req RenderRequest) error {
 				return fmt.Errorf("chronon render aborted: output stream failure (aborted after %v): %w", duration, err)
 			}
 			return fmt.Errorf("chronon render stalled: no output for %v (aborted after %v)", stallTimeout, duration)
+		}
+		if diagnostics := failureDiagnostics.snapshot(); diagnostics != "" {
+			return fmt.Errorf("chronon execution failed after %v: %w (stderr: %s)", duration, err, diagnostics)
 		}
 		return fmt.Errorf("chronon execution failed after %v: %w", duration, err)
 	}

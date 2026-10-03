@@ -1,0 +1,89 @@
+{
+  "generated_at_utc": "2026-10-02T18:51:11+00:00",
+  "backend": "software",
+  "hardware_encoder": "none",
+  "encoder_backend": "native",
+  "gpu_hot_path_mode": "auto",
+  "motions": [
+    {
+      "motion_id": "image_border_draw_in",
+      "status": "passed"
+    },
+    {
+      "motion_id": "image_border_expand",
+      "status": "passed"
+    },
+    {
+      "motion_id": "image_caption_frame_combo",
+      "status": "passed"
+    },
+    {
+      "motion_id": "image_card_flip_soft",
+      "status": "passed"
+    },
+    {
+      "motion_id": "image_corner_bloom",
+      "status": "passed"
+    },
+    {
+      "motion_id": "image_depth_float",
+      "status": "passed"
+    },
+    {
+      "motion_id": "image_focus_breath",
+      "status": "passed"
+    },
+    {
+      "motion_id": "image_frame_scale_reveal",
+      "status": "passed"
+    },
+    {
+      "motion_id": "image_glow_depth_in",
+      "status": "passed"
+    },
+    {
+      "motion_id": "image_glow_pulse_settle",
+      "status": "passed"
+    },
+    {
+      "motion_id": "image_glow_ring_expand",
+      "status": "passed"
+    },
+    {
+      "motion_id": "image_mask_wipe_border",
+      "status": "passed"
+    },
+    {
+      "motion_id": "image_neon_trace",
+      "status": "passed"
+    },
+    {
+      "motion_id": "image_parallax_frame",
+      "status": "passed"
+    },
+    {
+      "motion_id": "image_roll_depth_in",
+      "status": "passed"
+    },
+    {
+      "motion_id": "image_soft_yaw_glow",
+      "status": "passed"
+    },
+    {
+      "motion_id": "image_split_light_reveal",
+      "status": "passed"
+    },
+    {
+      "motion_id": "image_spotlight_focus",
+      "status": "passed"
+    },
+    {
+      "motion_id": "image_stack_focus",
+      "status": "passed"
+    },
+    {
+      "motion_id": "image_tilt_frame_in",
+      "status": "passed"
+    }
+  ]
+}

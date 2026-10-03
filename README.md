@@ -147,6 +147,26 @@ renders and writes a manifest with per-file SHA-256/size and strict-lane metadat
 A registered Vulkan backend or a successful software preview alone is not GPU
 certification.
 
+The catalog runtime canary covers all 108 callable phrase motions and all 20
+premium image motions. Set `RENDERINGGEN_GPU_CERT_FAMILY=phrase` or `image` to
+run one inventory; set `RENDERINGGEN_GPU_CERT_MOTION=<id>` to isolate a single
+motion. `RENDERINGGEN_GPU_CERT_OUTPUT_DIR` preserves the compiled plan, prepared
+package, native render log, and an incrementally updated
+`motion-runtime-report.json` with each ID, backend, encoder, status, and render
+duration. The default lane is strict Vulkan/NVENC. To certify the Vulkan render
+path without the failing CUDA-to-Vulkan NVENC handoff, set
+`RENDERINGGEN_GPU_CERT_GPU_MODE=auto`,
+`RENDERINGGEN_GPU_CERT_HARDWARE=none`, and
+`RENDERINGGEN_GPU_CERT_ENCODER_BACKEND=native`. To force full software
+rendering, also set `RENDERINGGEN_GPU_CERT_BACKEND=software`.
+The current checked runtime snapshot is in
+`renderinggen/motion-certification/latest/`; it keeps the 108 phrase logs, 20
+software image logs, and strict Vulkan/NVENC failure logs next to their status
+reports. In the worker's non-strict mode, a recoverable Vulkan device loss or
+unsupported native draw retries the same plan in software and records
+`chronon_software_fallback=1`. Explicit strict-native mode continues to fail
+closed and preserves the error in the job log.
+
 Catalog ownership and sync direction remain ChrononTemplate JSON -> its catalog
 emitter -> RenderingGen embedded artifact. Run `scripts/sync_motion_catalog.sh`
 after changing the canonical catalog; never edit the generated embedded catalog
@@ -445,6 +465,37 @@ make golden-e2e
 Reset the canary's persisted state (needed after intentional golden drift)
 with `make golden-e2e-reset`. The canary also runs in CI on every push to
 `main` (`.github/workflows/build.yaml` → `golden-e2e`).
+
+### Concatenated overlay scenario (frasi · date · metric · entità · luoghi · immagini)
+
+`cmd/vidrush-scenario` defines ONE concatenated timeline that walks every
+animated overlay family back to back — the shape a social/editorial cut uses:
+
+two important phrases (`phrase_default` + catalog phrase motions), a
+`TIMELINE_DATE_CARD` (date_v1) and a `METRIC_STAT_CARD` (metric_v1), exactly
+two entity cards with text (a PERSON portrait with an animated
+`entity_caption` and a text-only ORGANIZATION riding an `entity_card_v1`
+motion), a LOCATION card plus a georeferenced local map with grounded pins,
+and composite image items with 2, 3, 4 and 5 independently animated
+`image_layers` (the images-x2/x3/x4/x5 matrix). Every act starts on the frame
+the previous one ends, so the whole 34 s timeline is one continuous chain of
+animations with no gap.
+
+The command generates its own deterministic fixtures (world-map plate,
+portraits, scene plates) into `-assets-root`, builds the plan through the
+typed `renderbatch` writer and lowers it through the worker's own compiler,
+then writes `semantic_plan.json`, `render_plan.json` and a `scenario.json`
+descriptor (acts, windows, sampled frames, thresholds). The compile-level gate
+is `go test ./cmd/vidrush-scenario/`; the render + per-act pixel probe is:
+
+```sh
+scripts/run-vidrush-scenario.sh                 # software lane
+LANE=vulkan scripts/run-vidrush-scenario.sh     # GPU-native lane
+```
+
+The script never restates a window or a frame number — it reads the
+descriptor — and leaves the MP4 plus one still per act under
+`out/vidrush-scenario-<date>/` for human inspection.
 
 ## Health
 

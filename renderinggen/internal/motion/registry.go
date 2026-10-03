@@ -64,6 +64,19 @@ func (r *RegistryType) ApplePhrasePackMotionIDs() []string {
 	return r.CategoryMotionIDs("apple_phrase_v1")
 }
 
+// PhraseAnimationIDs returns every motion in the callable text animation
+// families used by important phrases, in stable order. This includes the
+// typewriter, classic Apple, and modern Apple catalogs; PhraseMotionPool is a
+// narrower legacy subset for the GPU certification corpus.
+func (r *RegistryType) PhraseAnimationIDs() []string {
+	ids := make([]string, 0)
+	for _, family := range []string{"typewriter", "classic_apple", "modern_apple"} {
+		ids = append(ids, r.FamilyMotionIDs(family)...)
+	}
+	sort.Strings(ids)
+	return compactMotionIDs(ids)
+}
+
 // ImageV3MotionIDs returns the complete Overlay V3 image vocabulary in stable
 // order. Image motions remain layer-level so they can use the same 2.5D
 // position/scale/rotation contract as text without inventing a second engine.

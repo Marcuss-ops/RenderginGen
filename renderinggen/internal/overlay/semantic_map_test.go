@@ -53,7 +53,7 @@ func TestGeoreferencedMapCompilesGroundedLayers(t *testing.T) {
 	if basemap.Type != "image" || basemap.Size[0] != 1280 || basemap.Size[1] != 720 {
 		t.Fatalf("basemap does not preserve the certified raster canvas: %+v", basemap)
 	}
-	if pin.Type != "shape" || pin.Shape == nil || pin.Shape.Type != "ellipse" || pin.Position[0] != 0 || pin.Position[1] != 0 {
+	if pin.Type != "text" || pin.Text != "O" || pin.Style == nil || pin.Position[0] != 640 || pin.Position[1] != 360 {
 		t.Fatalf("pin at the georeference center did not land at the canvas center: %+v", pin)
 	}
 	if label.Type != "text" || label.Text != "Target" || credit.Type != "text" || credit.Text != "Map data supplied by operator" {
@@ -134,8 +134,8 @@ func cameraMapPlan() map[string]any {
 		},
 	}
 	mapSpec["camera_move"] = map[string]any{
-		"from": map[string]any{"latitude": 0.0, "longitude": 0.0},
-		"to": map[string]any{"latitude": 0.0, "longitude": 0.2},
+		"from":       map[string]any{"latitude": 0.0, "longitude": 0.0},
+		"to":         map[string]any{"latitude": 0.0, "longitude": 0.2},
 		"start_zoom": 4.0, "end_zoom": 6.0, "start_tilt_deg": 0.0, "end_tilt_deg": 0.0, "bearing_deg": 0.0,
 	}
 	return plan
