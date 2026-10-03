@@ -161,8 +161,8 @@ func TestBuildTysonManifestProducesTheFullCorpus(t *testing.T) {
 		if job.Family != "phrase" {
 			continue
 		}
-		if len(job.MotionPool) != len(motion.PhraseMotionPool()) || job.SelectionSeed == 0 {
-			t.Errorf("phrase %s missing auditable pool/seed (pool=%d seed=%d)", job.ID, len(job.MotionPool), job.SelectionSeed)
+		if len(job.MotionPool) != len(motion.Registry.PhraseAnimationIDs()) || job.SelectionSeed == 0 {
+			t.Errorf("phrase %s missing complete auditable pool/seed (pool=%d seed=%d)", job.ID, len(job.MotionPool), job.SelectionSeed)
 		}
 		compiled, err := overlay.CompileSemantic(job.RenderPlan)
 		if err != nil {

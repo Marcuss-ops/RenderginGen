@@ -42,8 +42,8 @@ const (
 	// entityCaptionMinFontPX / entityCaptionMaxFontPX bound the font fitting
 	// for long names: the text scales down before it truncates, and it never
 	// truncates.
-	entityCaptionMinFontPX = 18.0
-	entityCaptionMaxFontPX = 24.0
+	entityCaptionMinFontPX = 20.0
+	entityCaptionMaxFontPX = 30.0
 )
 
 // EntityCardImageBounds is the resolved image rect of an entity card, in
@@ -74,14 +74,14 @@ type EntityCardCaptionAnchor struct {
 
 // EntityCardCaptionBounds is the resolved caption rect in canvas coordinates.
 type EntityCardCaptionBounds struct {
-	X         float64 `json:"x"`
-	Y         float64 `json:"y"`
-	Width     float64 `json:"width"`
-	Height    float64 `json:"height"`
-	CenterX   float64 `json:"center_x"`
-	CenterY   float64 `json:"center_y"`
-	FontSize  float64 `json:"font_size"`
-	Top       float64 `json:"top"`
+	X        float64 `json:"x"`
+	Y        float64 `json:"y"`
+	Width    float64 `json:"width"`
+	Height   float64 `json:"height"`
+	CenterX  float64 `json:"center_x"`
+	CenterY  float64 `json:"center_y"`
+	FontSize float64 `json:"font_size"`
+	Top      float64 `json:"top"`
 }
 
 // EntityCardSafeBounds is the area the caption must stay inside.
@@ -96,11 +96,11 @@ type EntityCardSafeBounds struct {
 // caption: the two rects, the anchor relation and the safe area they were
 // resolved against.
 type EntityCardLayout struct {
-	ImageBounds    EntityCardImageBounds    `json:"image_bounds"`
-	CaptionBounds  EntityCardCaptionBounds  `json:"caption_bounds"`
-	CaptionAnchor  EntityCardCaptionAnchor  `json:"caption_anchor"`
-	SafeBounds     EntityCardSafeBounds     `json:"safe_bounds"`
-	CaptionPreserved bool                   `json:"caption_preserved"`
+	ImageBounds      EntityCardImageBounds   `json:"image_bounds"`
+	CaptionBounds    EntityCardCaptionBounds `json:"caption_bounds"`
+	CaptionAnchor    EntityCardCaptionAnchor `json:"caption_anchor"`
+	SafeBounds       EntityCardSafeBounds    `json:"safe_bounds"`
+	CaptionPreserved bool                    `json:"caption_preserved"`
 }
 
 // ResolveEntityCardLayout derives the entity card geometry. imageRect is the

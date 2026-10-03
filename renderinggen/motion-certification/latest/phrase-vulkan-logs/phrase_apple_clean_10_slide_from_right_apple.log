@@ -1,0 +1,94 @@
+[2026-10-02 18:51:58.464] [info] [overlay-prepare] validated package=/tmp/velox-phrase-runtime-cert/inputs/phrase_apple_clean_10_slide_from_right_apple/prepared.json hash=f31b1182c660a327e3bbdbaa831104da98a402f28af53e8cb2114938752d0439 assets=0 text_runs=1 overlays=2
+[2026-10-02 18:51:58.468] [info] [asset-profile] kind=3 path=assets/fonts/Poppins-Bold.ttf bytes=155996 cache=miss invalidated=0 stat=0.01ms hash=3.50ms hashed_bytes=155996 total=3.64ms
+[2026-10-02 18:51:58.468] [info] [asset-digest-cache] hits=0 misses=1 invalidations=0 bytes_hashed=155996 lookup_ms=0.01 write_ms=0.02 full_hash_ms=3.50
+[2026-10-02 18:51:58.470] [info] [plan-profile] read=0.17ms parse=2.38ms decode=54.15ms resolver=0.02ms compile_validate=5.98ms total=66.10ms
+[2026-10-02 18:51:58.470] [info] [asset-profile] kind=3 path=assets/fonts/Poppins-Bold.ttf bytes=155996 cache=hit invalidated=0 stat=0.01ms hash=0.00ms hashed_bytes=0 total=0.10ms
+[2026-10-02 18:51:58.471] [info] [asset-digest-cache] hits=1 misses=0 invalidations=0 bytes_hashed=0 lookup_ms=0.01 write_ms=0.00 full_hash_ms=0.00
+[2026-10-02 18:51:58.474] [info] [plan-compile-profile] assets=0.28ms fingerprint=2.69ms media_resolution=0.00ms materialize=0.19ms composition_compile=0.00ms compatibility_view=0.12ms total=3.63ms
+[2026-10-02 18:51:58.475] [info] [video] Auto-selecting yuv420p pipe pixel format for 1280x720 output
+[2026-10-02 18:51:58.475] [info] [video] execution plan resolved (reason: required_gpu_native_full_graph); decode=1 composite=2 encode=1 interop=2 handoff=1 codec=3
+[2026-10-02 18:51:58.498] [info] [video-runtime] created persistent runtime for device 0 (CUDA ordinal 0)
+[2026-10-02 18:51:58.498] [info] [video] encoder feed capability: host_frame=false direct_yuv=false native_surface=true
+[2026-10-02 18:51:58.773] [info] [native_av] CUDA context contract: native=0x558386fa7db0 ffmpeg=0x558386fa7db0
+[2026-10-02 18:51:58.793] [info] [native_av] NVENC tuning applied: rc=constqp preset=p1 async_depth=4 nvenc_surfaces=8 qp=23 bitrate=0
+[2026-10-02 18:51:58.827] [info] [native_av] encoder bitstream contract: codec=27 profile=100 level=-99 pix_fmt=119 parameter_sets=49 materialized=true
+[2026-10-02 18:51:58.827] [info] [native_av] Opened native encoder: 1280x720 @ 24fps, codec=h264_nvenc, rc=constqp, preset=p1, output='/tmp/velox-phrase-runtime-cert/inputs/phrase_apple_clean_10_slide_from_right_apple/catalog-motions.partial.mp4'
+[2026-10-02 18:52:00.106] [info] [pool-warm] Pre-allocated and pre-imported 6 execution slots (1280x720) for native NVENC
+[2026-10-02 18:52:00.204] [info] chronon3d::vulkan text batch formats: dst_image.format=109 atlas_image.format=44 atlas_encoding=2 (shader contract: dst rgba32f, atlas rgba8)
+[2026-10-02 18:52:00.204] [info] [temp-lifetime] frame=0 after_level=0 live=[0,1,3,] retired=[]
+[2026-10-02 18:52:00.204] [info] [exec-level-diag] frame=0 level=0 nodes=3 input_ms=0.007 dispatch_ms=5.473 fb_release_ms=0.006
+[2026-10-02 18:52:00.204] [info] [graph-edge] frame=0 level=1 consumer_id=2 input_index=0 producer_id=0 producer_level=0
+[2026-10-02 18:52:00.204] [info] [graph-edge] frame=0 level=1 consumer_id=2 input_index=1 producer_id=1 producer_level=0
+[2026-10-02 18:52:00.205] [info] [graph-edge] frame=0 level=1 consumer_id=4 input_index=0 producer_id=3 producer_level=0
+[2026-10-02 18:52:00.208] [info] [temp-lifetime] frame=0 after_level=1 live=[2,4,] retired=[0,1,3,]
+[2026-10-02 18:52:00.209] [info] [exec-level-diag] frame=0 level=1 nodes=2 input_ms=0.132 dispatch_ms=3.886 fb_release_ms=0.020
+[2026-10-02 18:52:00.209] [info] [graph-edge] frame=0 level=2 consumer_id=5 input_index=0 producer_id=2 producer_level=1
+[2026-10-02 18:52:00.209] [info] [graph-edge] frame=0 level=2 consumer_id=5 input_index=1 producer_id=4 producer_level=1
+[2026-10-02 18:52:00.209] [info] [temp-lifetime] frame=0 after_level=2 live=[5,] retired=[2,4,]
+[2026-10-02 18:52:00.209] [info] [exec-level-diag] frame=0 level=2 nodes=1 input_ms=0.124 dispatch_ms=0.202 fb_release_ms=0.009
+[2026-10-02 18:52:00.210] [info] [video] Exporting via Arena-backed SIMD pipeline
+[2026-10-02 18:52:00.220] [info] [temp-lifetime] frame=1 after_level=0 live=[0,1,3,] retired=[]
+[2026-10-02 18:52:00.220] [info] [exec-level-diag] frame=1 level=0 nodes=3 input_ms=0.003 dispatch_ms=1.105 fb_release_ms=0.003
+[2026-10-02 18:52:00.220] [info] [graph-edge] frame=1 level=1 consumer_id=2 input_index=0 producer_id=0 producer_level=0
+[2026-10-02 18:52:00.220] [info] [graph-edge] frame=1 level=1 consumer_id=2 input_index=1 producer_id=1 producer_level=0
+[2026-10-02 18:52:00.220] [info] [graph-edge] frame=1 level=1 consumer_id=4 input_index=0 producer_id=3 producer_level=0
+[2026-10-02 18:52:00.220] [info] [temp-lifetime] frame=1 after_level=1 live=[2,4,] retired=[0,1,3,]
+[2026-10-02 18:52:00.220] [info] [exec-level-diag] frame=1 level=1 nodes=2 input_ms=0.120 dispatch_ms=0.441 fb_release_ms=0.012
+[2026-10-02 18:52:00.220] [info] [graph-edge] frame=1 level=2 consumer_id=5 input_index=0 producer_id=2 producer_level=1
+[2026-10-02 18:52:00.220] [info] [graph-edge] frame=1 level=2 consumer_id=5 input_index=1 producer_id=4 producer_level=1
+[2026-10-02 18:52:00.221] [info] [temp-lifetime] frame=1 after_level=2 live=[5,] retired=[2,4,]
+[2026-10-02 18:52:00.221] [info] [exec-level-diag] frame=1 level=2 nodes=1 input_ms=0.088 dispatch_ms=0.176 fb_release_ms=0.008
+[2026-10-02 18:52:00.235] [info] [temp-lifetime] frame=2 after_level=0 live=[0,1,3,] retired=[]
+[2026-10-02 18:52:00.235] [info] [exec-level-diag] frame=2 level=0 nodes=3 input_ms=0.003 dispatch_ms=1.474 fb_release_ms=0.004
+[2026-10-02 18:52:00.236] [info] [graph-edge] frame=2 level=1 consumer_id=2 input_index=0 producer_id=0 producer_level=0
+[2026-10-02 18:52:00.236] [info] [graph-edge] frame=2 level=1 consumer_id=2 input_index=1 producer_id=1 producer_level=0
+[2026-10-02 18:52:00.236] [info] [graph-edge] frame=2 level=1 consumer_id=4 input_index=0 producer_id=3 producer_level=0
+[2026-10-02 18:52:00.236] [info] [temp-lifetime] frame=2 after_level=1 live=[2,4,] retired=[0,1,3,]
+[2026-10-02 18:52:00.236] [info] [exec-level-diag] frame=2 level=1 nodes=2 input_ms=0.119 dispatch_ms=0.393 fb_release_ms=0.014
+[2026-10-02 18:52:00.236] [info] [graph-edge] frame=2 level=2 consumer_id=5 input_index=0 producer_id=2 producer_level=1
+[2026-10-02 18:52:00.236] [info] [graph-edge] frame=2 level=2 consumer_id=5 input_index=1 producer_id=4 producer_level=1
+[2026-10-02 18:52:00.236] [info] [temp-lifetime] frame=2 after_level=2 live=[5,] retired=[2,4,]
+[2026-10-02 18:52:00.237] [info] [exec-level-diag] frame=2 level=2 nodes=1 input_ms=0.069 dispatch_ms=0.187 fb_release_ms=0.008
+[2026-10-02 18:52:00.237] [info] [video]   4/48 frames
+[2026-10-02 18:52:00.279] [info] [video]   8/48 frames
+[2026-10-02 18:52:00.325] [info] [video]   12/48 frames
+[2026-10-02 18:52:00.370] [info] [video]   16/48 frames
+[2026-10-02 18:52:00.415] [info] [video]   20/48 frames
+[2026-10-02 18:52:00.459] [info] [video]   24/48 frames
+[2026-10-02 18:52:00.484] [info] [vulkan-lifecycle] frame=25 vram_bytes=333283328 live_surfaces=13 surface_bindings=7 registry_live_handles=107 physical_images=13 deferred_releases=2 vma_allocations=50 surfaces_created=157 surfaces_released=150 queue_packages=1 execution_slots_busy=2 command_batch_active=false
+[2026-10-02 18:52:00.507] [info] [video]   28/48 frames
+[2026-10-02 18:52:00.553] [info] [video]   32/48 frames
+[2026-10-02 18:52:00.595] [info] [video]   36/48 frames
+[2026-10-02 18:52:00.637] [info] [video]   40/48 frames
+[2026-10-02 18:52:00.683] [info] [video]   44/48 frames
+[2026-10-02 18:52:00.727] [info] [video]   48/48 frames
+[2026-10-02 18:52:00.743] [info] [video] writer join complete
+[2026-10-02 18:52:00.743] [info] [drain-debug] start drain, capacity=6
+[2026-10-02 18:52:00.743] [info] [drain-debug] slot_id=4 has completion, waiting
+[2026-10-02 18:52:00.743] [info] [drain-debug] slot_id=4 wait complete
+[2026-10-02 18:52:00.743] [info] [drain-debug] slot_id=5 has completion, waiting
+[2026-10-02 18:52:00.744] [info] [drain-debug] slot_id=5 wait complete
+[2026-10-02 18:52:00.744] [info] [drain-debug] reap done, busy_count=0
+[2026-10-02 18:52:00.744] [info] [video] trimming framebuffer pool
+[2026-10-02 18:52:00.744] [info] [video] Released framebuffer pool — memory trimmed
+[2026-10-02 18:52:00.744] [info] [video] frame-loop cleanup complete
+[2026-10-02 18:52:00.744] [info] [video] Encoder write blocked duration: 0.00 ms
+[2026-10-02 18:52:00.744] [info] [video_diag] conversion_and_copy_duration_ms: 0 ms
+[2026-10-02 18:52:00.744] [info] [video_diag] conversion_bytes_written=0 encoder_staging_copy_bytes=0 encoder_slot_reuses=0
+[2026-10-02 18:52:00.744] [info] [native_av] close: sending encoder flush
+[2026-10-02 18:52:00.744] [info] [native_av] close: encoder flush accepted
+[2026-10-02 18:52:00.745] [info] [native_av] close: packets drained=true
+[2026-10-02 18:52:00.745] [info] [native_av] close: finalizing mux session
+[2026-10-02 18:52:00.745] [info] [native_av] close: mux session finalized
+[2026-10-02 18:52:00.745] [info] [native_av] Closed native encoder — 48 frames accepted, encoder_packets=48 mux_packets=48 packet_pts=0..47, YUV cache: 0 hits / 0 misses
+[2026-10-02 18:52:00.745] [info] [video_native] convert=114.51ms  send_frame=13.42ms  backpressure=0.00ms  flush=1.23ms  receive_packet=0.57ms  mux_write=0.83ms  trailer=0.46ms
+[2026-10-02 18:52:00.747] [info] [video] render_ms=607.15 encode_ms=7.84 writer_encode_ms=130.79 wall_ms=2271.77 nvml_stop_ms=0.16
+[2026-10-02 18:52:00.747] [info] [video] FFmpeg queue wait duration: 0.40 ms
+[2026-10-02 18:52:00.756] [info] [video] copy_eligible=true sha256=62dc934877b4e5e8a3ce03a54dbc7b56b4167ed24ab3955a98a225f7977ed687
+[2026-10-02 18:52:00.756] [info] [video] Wrote /tmp/velox-phrase-runtime-cert/inputs/phrase_apple_clean_10_slide_from_right_apple/catalog-motions.mp4
+[2026-10-02 18:52:00.756] [info] [startup-profile] total=1008.18ms logger=0.11ms cli_bootstrap=9.74ms cli_parse=0.00ms composition=0.32ms plan_read=0.17ms json_parse=2.38ms plan_decode_validate=54.15ms asset_resolve=0.02ms plan_compile=5.98ms other=0.00ms
+[2026-10-02 18:52:00.786] [info] [video] Wrote exact per-frame timing sidecar: /tmp/velox-phrase-runtime-cert/inputs/phrase_apple_clean_10_slide_from_right_apple/catalog-motions.mp4.timing.json
+[2026-10-02 18:52:00.815] [info] [INFO] job-lifecycle: slot_pool_close_ms=0.0 surface_release_ms=0.1
+[2026-10-02 18:52:00.945] [info] [INFO] job-lifecycle: queue_close_ms=0.0 writer_join_ms=0.0 encoder_reset_ms=26.2 decoder_reset_ms=0.0 full_graph_reset_ms=130.1 sink_ctx_reset_ms=0.0 device_runtime_reset_ms=0.0 device_reservation_reset_ms=0.0
+[2026-10-02 18:52:00.945] [info] [INFO] job-lifecycle: sidecar_write_ms=32.2 session_teardown_ms=156.7
+[2026-10-02 18:52:00.954] [info] [INFO] job-lifecycle: execute_ms=2478.6 receipt_build_ms=0.0 receipt_write_ms=0.0 caller_tail_ms=0.0

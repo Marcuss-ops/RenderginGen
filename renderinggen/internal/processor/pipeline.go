@@ -147,7 +147,9 @@ func validateMapRasterAssets(root string, plan *overlay.Plan) error {
 		if closeErr != nil {
 			return fmt.Errorf("processor: close map raster layer %q asset %q: %w", layer.ID, layer.Asset, closeErr)
 		}
-		if format != "png" || config.Width != layer.MapRasterWidth || config.Height != layer.MapRasterHeight {
+		fullResolution := config.Width == layer.MapRasterWidth && config.Height == layer.MapRasterHeight
+		halfResolution := config.Width*2 == layer.MapRasterWidth && config.Height*2 == layer.MapRasterHeight
+		if format != "png" || (!fullResolution && !halfResolution) {
 			return fmt.Errorf("processor: map raster layer %q declares %dx%d but staged %s is %dx%d",
 				layer.ID, layer.MapRasterWidth, layer.MapRasterHeight, format, config.Width, config.Height)
 		}

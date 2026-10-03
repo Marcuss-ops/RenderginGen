@@ -5,6 +5,8 @@ package processor
 import (
 	"context"
 	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -73,7 +75,7 @@ func (p *Processor) RunGPU(ctx context.Context, prepared *PreparedJob) error {
 	var lastProgress chronon.RenderProgress
 	sawProgress := false
 	var lastProgressLogAt time.Time
-	if err := p.renderer.Render(ctx, chronon.RenderRequest{
+	renderRequest := chronon.RenderRequest{
 		PlanPath:            prepared.Workspace.PlanPath(),
 		PreparedPackagePath: prepared.Workspace.PreparedPackagePath(),
 		// Plans use the canonical assets/<file> namespace. The workspace
@@ -102,7 +104,7 @@ func (p *Processor) RunGPU(ctx context.Context, prepared *PreparedJob) error {
 			// classify and execute the complete Vulkan graph instead of selecting
 			// DirectYUV from a frame that has no active overlay yet. Ordinary jobs
 			// retain the configured fallback policy.
-			CPUFallbackAllowed: !p.strictNativeBackend && !finalComposite,
+			CPUFallbackAllowed: !p.strictNativeBackend,
 			// This is a semantic composition requirement, not a backend/path
 			// selection. Chronon classifies the compiled program after this
 			// request crosses the boundary.
@@ -146,8 +148,52 @@ func (p *Processor) RunGPU(ctx context.Context, prepared *PreparedJob) error {
 				p.progressTracker.Observe(job.ID, progress.FramesDone, progress.FramesTotal)
 			}
 		},
-	}); err != nil {
-		return fmt.Errorf("processor: render: %w", err)
+	}
+	if err := p.renderer.Render(ctx, renderRequest); err != nil {
+		if !gpuRequired || p.strictNativeBackend || !softwareRetryableGPUFailure(err) {
+			return fmt.Errorf("processor: render: %w", err)
+		}
+		workerlog.ByJobID(job.ID).Warnf("Vulkan render failed with a recoverable device/capability error; retrying the same plan through the software renderer: %v", err)
+		fallbackRequest := renderRequest
+		fallbackRequest.OutputPath = prepared.OutputPath + ".software-fallback.mp4"
+		fallbackRequest.EncodePreset = ""
+		fallbackRequest.HardwareEncoder = chronon.HardwareEncoderNone
+		fallbackRequest.EncoderBackend = "pipe"
+		fallbackRequest.Requirements.Backend = "software"
+		fallbackRequest.Requirements.GPURequired = false
+		fallbackRequest.Requirements.CPUFallbackAllowed = true
+		fallbackRequest.Progress = func(progress chronon.RenderProgress) {
+			workerlog.ByJobID(job.ID).Infof("progress: stage=chronon_render_software_fallback frames_done=%d frames_total=%d fps=%.2f last_frame_at=%s backend=software encoder=libx264",
+				progress.FramesDone, progress.FramesTotal, progress.FPS,
+				progress.At.Format(time.RFC3339Nano))
+			if p.progressTracker != nil {
+				p.progressTracker.Observe(job.ID, progress.FramesDone, progress.FramesTotal)
+			}
+		}
+		if _, statErr := os.Stat(fallbackRequest.OutputPath); statErr == nil {
+			return fmt.Errorf("processor: software fallback output already exists; refusing to overwrite %s (original render error: %w)", fallbackRequest.OutputPath, err)
+		} else if !os.IsNotExist(statErr) {
+			return fmt.Errorf("processor: inspect software fallback output %s: %w", fallbackRequest.OutputPath, statErr)
+		}
+		if fallbackErr := p.renderer.Render(ctx, fallbackRequest); fallbackErr != nil {
+			return fmt.Errorf("processor: render failed on Vulkan (%v) and software fallback failed: %w", err, fallbackErr)
+		}
+		if _, statErr := os.Stat(prepared.OutputPath); statErr == nil {
+			return fmt.Errorf("processor: original render left an output at %s; preserving it and the successful software fallback at %s", prepared.OutputPath, fallbackRequest.OutputPath)
+		} else if !os.IsNotExist(statErr) {
+			return fmt.Errorf("processor: inspect original output %s before publishing software fallback: %w", prepared.OutputPath, statErr)
+		}
+		if renameErr := os.Rename(fallbackRequest.OutputPath, prepared.OutputPath); renameErr != nil {
+			return fmt.Errorf("processor: publish software fallback %s as %s: %w", fallbackRequest.OutputPath, prepared.OutputPath, renameErr)
+		}
+		fallbackTiming := fallbackRequest.OutputPath + ".timing.json"
+		if _, statErr := os.Stat(fallbackTiming); statErr == nil {
+			if renameErr := os.Rename(fallbackTiming, prepared.OutputPath+".timing.json"); renameErr != nil {
+				return fmt.Errorf("processor: publish software fallback timing sidecar: %w", renameErr)
+			}
+		}
+		prepared.Metrics[metricnames.ChrononSoftwareFallback] = 1
+		workerlog.ByJobID(job.ID).Infof("software fallback completed and was published at %s", filepath.Base(prepared.OutputPath))
 	}
 	us := float64(time.Since(phaseStart).Microseconds())
 	prepared.Metrics[metricnames.RenderMS] = us / 1000
@@ -204,4 +250,23 @@ func (p *Processor) RunGPU(ctx context.Context, prepared *PreparedJob) error {
 // these intermediate scene renders and does not alter other worker traffic.
 func isFinalJobComposite(job *queue.Job) bool {
 	return job != nil && strings.Contains(job.ID, ":final-composite:")
+}
+
+func softwareRetryableGPUFailure(err error) bool {
+	if err == nil {
+		return false
+	}
+	message := strings.ToLower(err.Error())
+	for _, marker := range []string{
+		"device lost",
+		"segmentation fault",
+		"unsupportedcapability",
+		"no legacy-node fallback",
+		"native residency violation",
+	} {
+		if strings.Contains(message, marker) {
+			return true
+		}
+	}
+	return false
 }

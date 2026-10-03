@@ -107,6 +107,81 @@ func TestSourceFrameLowersToBackgroundAndShadow(t *testing.T) {
 	}
 }
 
+// TestSourceFrameStrokeLowersToPerimeterShape: stroke is a distinct visible
+// outline above the media; it must not be confused with the padded border plate.
+func TestSourceFrameStrokeLowersToPerimeterShape(t *testing.T) {
+	raw := sourceFramePlan(t,
+		`{"stroke": {"width_px": 5, "color": "#00FF80"}, "clip_radius_px": 18}`,
+		"", "")
+	layers := func() []Layer {
+		result, err := CompileSemantic(raw)
+		if err != nil {
+			t.Fatalf("CompileSemantic: %v", err)
+		}
+		return result.Plan.Layers
+	}()
+	if len(layers) < 2 || layers[0].ID != "source" || layers[1].ID != "source__stroke" {
+		t.Fatalf("source/stroke order = %v, want source then source__stroke", layerIDs(layers))
+	}
+	stroke := layers[1]
+	if stroke.Type != "shape" || stroke.Shape == nil || stroke.Shape.Type != "rounded_rect" {
+		t.Fatalf("stroke layer = %+v, want rounded rectangle shape", stroke)
+	}
+	if stroke.Shape.Stroke == nil {
+		t.Fatalf("stroke shape = %+v, want an explicit outline", stroke.Shape)
+	}
+	if len(stroke.Color) != 4 || stroke.Color[3] != 0 {
+		t.Fatalf("stroke layer fill colour = %v, want transparent RGBA", stroke.Color)
+	}
+	if stroke.Shape.Stroke.Color != "#00FF80" || stroke.Shape.Stroke.Width != 5 || stroke.Shape.Radius != 18 {
+		t.Errorf("stroke style/radius = %+v radius %v, want declared #00FF80/5 and radius 18", stroke.Shape.Stroke, stroke.Shape.Radius)
+	}
+	if len(stroke.Size) != 2 || stroke.Size[0] != 1344 || stroke.Size[1] != 756 {
+		t.Errorf("stroke bounds = %v, want displayed video box [1344 756]", stroke.Size)
+	}
+	if stroke.Position[0] != -1248 || stroke.Position[1] != -702 {
+		t.Errorf("stroke position = %v, want [-1248 -702] aligned to the scaled source box", stroke.Position)
+	}
+	if len(stroke.Scale) != 2 || stroke.Scale[0] != 1 || stroke.Scale[1] != 1 {
+		t.Errorf("stroke shape scale = %v, want unit scale because bounds are in output pixels", stroke.Scale)
+	}
+	compiled, err := CompileSemantic(raw)
+	if err != nil {
+		t.Fatalf("CompileSemantic for serialized frame stroke: %v", err)
+	}
+	encoded, err := json.Marshal(compiled.Plan)
+	if err != nil {
+		t.Fatalf("marshal Chronon plan: %v", err)
+	}
+	if strings.Contains(string(encoded), `"frame_stroke"`) {
+		t.Error("transient frame stroke metadata must not leak into Chronon plan")
+	}
+	if compiled.Plan.Schema != "chronon.render-plan.v3" || compiled.Plan.Version != 3 {
+		t.Errorf("stroke plan schema = %s v%d, want chronon.render-plan.v3", compiled.Plan.Schema, compiled.Plan.Version)
+	}
+}
+
+// TestSourceFrameStrokeLowersOnItemVideoOverlay pins the same behavior for
+// item-level video frame declarations.
+func TestSourceFrameStrokeLowersOnItemVideoOverlay(t *testing.T) {
+	raw := sourceFramePlan(t, `{"shadow": {"color": "#000000"}}`,
+		`{"stroke": {"width_px": 3, "color": "#FF4000"}, "clip_radius_px": 12}`,
+		`"fit": "cover", "scale_percent": 75`)
+	layer := compiledLayer(t, raw, overlayLayerID("overlay-aaaa")+"__stroke")
+	if layer.Shape == nil || layer.Shape.Stroke == nil || layer.Shape.Stroke.Color != "#FF4000" || layer.Shape.Stroke.Width != 3 {
+		t.Fatalf("item stroke layer = %+v, want the declared #FF4000 3px outline", layer)
+	}
+	if layer.Shape.Radius != 12 || len(layer.Size) != 2 || layer.Size[0] != 1440 || layer.Size[1] != 810 {
+		t.Errorf("item stroke geometry = radius %v size %v, want displayed video box [1440 810]", layer.Shape.Radius, layer.Size)
+	}
+	if layer.Position[0] != -1200 || layer.Position[1] != -675 {
+		t.Errorf("item stroke transform position = %v, want [-1200 -675] for shape/media alignment", layer.Position)
+	}
+	if len(layer.Scale) != 2 || layer.Scale[0] != 1 || layer.Scale[1] != 1 {
+		t.Errorf("item stroke scale = %v, want unit scale because bounds are in output pixels", layer.Scale)
+	}
+}
+
 // TestSourceFrameShadowOnlyLeavesGeometryAlone: a shadow without a border is a
 // clip shadow (no plate, no inner radius), which is the native-shadow path.
 func TestSourceFrameShadowOnlyLeavesGeometryAlone(t *testing.T) {
@@ -136,6 +211,9 @@ func TestSourceFrameIsFailClosed(t *testing.T) {
 		{"shorthand color", `{"border": {"width_px": 4, "color": "#FFF"}}`},
 		{"negative width", `{"border": {"width_px": -1, "color": "#FFFFFF"}}`},
 		{"oversized blur", `{"shadow": {"color": "#000000", "blur_px": 4096}}`},
+		{"malformed stroke color", `{"stroke": {"width_px": 4, "color": "white"}}`},
+		{"negative stroke width", `{"stroke": {"width_px": -1, "color": "#FFFFFF"}}`},
+		{"oversized stroke width", `{"stroke": {"width_px": 65, "color": "#FFFFFF"}}`},
 		{"oversized offset", `{"shadow": {"color": "#000000", "offset_x_px": 4096}}`},
 		{"opacity out of range", `{"shadow": {"color": "#000000", "opacity": 2}}`},
 	}

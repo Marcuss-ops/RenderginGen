@@ -1,0 +1,120 @@
+[2026-10-02 18:40:24.276] [info] [overlay-prepare] validated package=/tmp/velox-image-software-cert/inputs/image_focus_breath/prepared.json hash=466d02763e2d25c3b27d92b8cd4f6e24825dabc6175d3fca22718d985393e5c5 assets=1 text_runs=1 overlays=3
+[2026-10-02 18:40:24.280] [info] [asset-profile] kind=3 path=assets/fonts/Poppins-Bold.ttf bytes=155996 cache=miss invalidated=0 stat=0.01ms hash=3.58ms hashed_bytes=155996 total=3.77ms
+[2026-10-02 18:40:24.280] [info] [asset-profile] kind=0 path=assets/semantic/certification-image.jpg bytes=4146 cache=miss invalidated=0 stat=0.01ms hash=0.19ms hashed_bytes=4146 total=0.35ms
+[2026-10-02 18:40:24.280] [info] [asset-digest-cache] hits=0 misses=2 invalidations=0 bytes_hashed=160142 lookup_ms=0.01 write_ms=0.03 full_hash_ms=3.76
+[2026-10-02 18:40:24.282] [info] [plan-profile] read=0.13ms parse=1.47ms decode=409.83ms resolver=0.07ms compile_validate=6.01ms total=419.42ms
+[2026-10-02 18:40:24.282] [info] [asset-profile] kind=3 path=assets/fonts/Poppins-Bold.ttf bytes=155996 cache=hit invalidated=0 stat=0.01ms hash=0.00ms hashed_bytes=0 total=0.10ms
+[2026-10-02 18:40:24.283] [info] [asset-profile] kind=0 path=assets/semantic/certification-image.jpg bytes=4146 cache=hit invalidated=0 stat=0.01ms hash=0.00ms hashed_bytes=0 total=0.14ms
+[2026-10-02 18:40:24.283] [info] [asset-digest-cache] hits=2 misses=0 invalidations=0 bytes_hashed=0 lookup_ms=0.01 write_ms=0.00 full_hash_ms=0.00
+[2026-10-02 18:40:24.285] [info] [plan-compile-profile] assets=0.65ms fingerprint=1.81ms media_resolution=0.00ms materialize=0.22ms composition_compile=0.00ms compatibility_view=0.09ms total=3.15ms
+[2026-10-02 18:40:24.286] [info] [video] Auto-selecting yuv420p pipe pixel format for 640x360 output
+[2026-10-02 18:40:24.286] [info] [video] execution plan resolved (reason: render_graph_default); decode=2 composite=3 encode=2 interop=0 handoff=3 codec=3
+[2026-10-02 18:40:24.319] [info] [video-runtime] created persistent runtime for device 0 (CUDA ordinal 0)
+[2026-10-02 18:40:24.319] [info] [video] encoder feed capability: host_frame=true direct_yuv=false native_surface=false
+[libx264 @ 0x5564f15b6dc0] using cpu capabilities: MMX2 SSE2Fast SSSE3 SSE4.2 AVX
+[libx264 @ 0x5564f15b6dc0] profile High, level 3.0, 4:2:0, 8-bit
+[libx264 @ 0x5564f15b6dc0] 264 - core 163 r3060 5db6aa6 - H.264/MPEG-4 AVC codec - Copyleft 2003-2021 - http://www.videolan.org/x264.html - options: cabac=1 ref=3 deblock=1:0:0 analyse=0x3:0x113 me=hex subme=7 psy=1 psy_rd=1.00:0.00 mixed_ref=1 me_range=16 chroma_me=1 trellis=1 8x8dct=1 cqm=0 deadzone=21,11 fast_pskip=1 chroma_qp_offset=-2 threads=1 lookahead_threads=1 sliced_threads=0 nr=0 decimate=1 interlaced=0 bluray_compat=0 constrained_intra=0 bframes=0 weightp=2 keyint=48 keyint_min=4 scenecut=40 intra_refresh=0 rc_lookahead=40 rc=crf mbtree=1 crf=23.0 qcomp=0.60 qpmin=0 qpmax=69 qpstep=4 ip_ratio=1.40 aq=1:1.00
+[2026-10-02 18:40:24.325] [info] [native_av] encoder bitstream contract: codec=27 profile=100 level=-99 pix_fmt=0 parameter_sets=43 materialized=true
+[2026-10-02 18:40:24.325] [info] [native_av] Opened native encoder: 640x360 @ 24fps, codec=libx264, rc=crf, preset=medium, output='/tmp/velox-image-software-cert/inputs/image_focus_breath/catalog-motions.partial.mp4'
+[2026-10-02 18:40:25.685] [info] ImageCache: loaded 'assets/semantic/certification-image.jpg' (480x360) in 799.356ms
+[2026-10-02 18:40:26.000] [info] [temp-lifetime] frame=0 after_level=0 live=[0,1,3,6,] retired=[]
+[2026-10-02 18:40:26.000] [info] [exec-level-diag] frame=0 level=0 nodes=4 input_ms=0.006 dispatch_ms=211.660 fb_release_ms=0.011
+[2026-10-02 18:40:26.000] [info] [graph-edge] frame=0 level=1 consumer_id=2 input_index=0 producer_id=0 producer_level=0
+[2026-10-02 18:40:26.000] [info] [graph-edge] frame=0 level=1 consumer_id=2 input_index=1 producer_id=1 producer_level=0
+[2026-10-02 18:40:26.000] [info] [graph-edge] frame=0 level=1 consumer_id=4 input_index=0 producer_id=3 producer_level=0
+[2026-10-02 18:40:26.379] [info] [temp-lifetime] frame=0 after_level=1 live=[2,4,6,] retired=[0,1,3,]
+[2026-10-02 18:40:26.379] [info] [exec-level-diag] frame=0 level=1 nodes=2 input_ms=0.038 dispatch_ms=378.594 fb_release_ms=0.058
+[2026-10-02 18:40:26.379] [info] [graph-edge] frame=0 level=2 consumer_id=5 input_index=0 producer_id=2 producer_level=1
+[2026-10-02 18:40:26.379] [info] [graph-edge] frame=0 level=2 consumer_id=5 input_index=1 producer_id=4 producer_level=1
+[2026-10-02 18:40:26.380] [info] [temp-lifetime] frame=0 after_level=2 live=[5,6,] retired=[2,4,]
+[2026-10-02 18:40:26.380] [info] [exec-level-diag] frame=0 level=2 nodes=1 input_ms=0.029 dispatch_ms=1.257 fb_release_ms=0.026
+[2026-10-02 18:40:26.380] [info] [graph-edge] frame=0 level=3 consumer_id=7 input_index=0 producer_id=5 producer_level=2
+[2026-10-02 18:40:26.380] [info] [graph-edge] frame=0 level=3 consumer_id=7 input_index=1 producer_id=6 producer_level=0
+[2026-10-02 18:40:26.380] [info] [temp-lifetime] frame=0 after_level=3 live=[7,] retired=[5,6,]
+[2026-10-02 18:40:26.380] [info] [exec-level-diag] frame=0 level=3 nodes=1 input_ms=0.043 dispatch_ms=0.118 fb_release_ms=0.030
+[2026-10-02 18:40:26.417] [info] [pool-warm] Pre-allocated 4 canvas buffers (640x384 bucket) at startup
+[2026-10-02 18:40:26.612] [info] [pool-warm] Pre-allocated 3 buffers (text-bbox+glow-pad) bucket 1920x1024 at startup
+[2026-10-02 18:40:26.678] [info] [pool-warm] Pre-allocated 3 buffers (downsample-half) bucket 1024x640 at startup
+[2026-10-02 18:40:26.700] [info] [pool-warm] Pre-allocated 3 buffers (downsample-quarter) bucket 512x384 at startup
+[2026-10-02 18:40:26.730] [info] [video] Exporting via Arena-backed SIMD pipeline
+[2026-10-02 18:40:26.924] [info] [temp-lifetime] frame=1 after_level=0 live=[0,1,3,6,] retired=[]
+[2026-10-02 18:40:26.924] [info] [exec-level-diag] frame=1 level=0 nodes=4 input_ms=0.006 dispatch_ms=191.390 fb_release_ms=0.014
+[2026-10-02 18:40:26.925] [info] [graph-edge] frame=1 level=1 consumer_id=2 input_index=0 producer_id=0 producer_level=0
+[2026-10-02 18:40:26.925] [info] [graph-edge] frame=1 level=1 consumer_id=2 input_index=1 producer_id=1 producer_level=0
+[2026-10-02 18:40:26.925] [info] [graph-edge] frame=1 level=1 consumer_id=4 input_index=0 producer_id=3 producer_level=0
+[2026-10-02 18:40:27.265] [info] [temp-lifetime] frame=1 after_level=1 live=[2,4,6,] retired=[0,1,3,]
+[2026-10-02 18:40:27.265] [info] [exec-level-diag] frame=1 level=1 nodes=2 input_ms=0.155 dispatch_ms=340.325 fb_release_ms=0.035
+[2026-10-02 18:40:27.265] [info] [graph-edge] frame=1 level=2 consumer_id=5 input_index=0 producer_id=2 producer_level=1
+[2026-10-02 18:40:27.265] [info] [graph-edge] frame=1 level=2 consumer_id=5 input_index=1 producer_id=4 producer_level=1
+[2026-10-02 18:40:27.267] [info] [temp-lifetime] frame=1 after_level=2 live=[5,6,] retired=[2,4,]
+[2026-10-02 18:40:27.268] [info] [exec-level-diag] frame=1 level=2 nodes=1 input_ms=0.082 dispatch_ms=2.048 fb_release_ms=0.016
+[2026-10-02 18:40:27.268] [info] [graph-edge] frame=1 level=3 consumer_id=7 input_index=0 producer_id=5 producer_level=2
+[2026-10-02 18:40:27.268] [info] [graph-edge] frame=1 level=3 consumer_id=7 input_index=1 producer_id=6 producer_level=0
+[2026-10-02 18:40:27.268] [info] [temp-lifetime] frame=1 after_level=3 live=[7,] retired=[5,6,]
+[2026-10-02 18:40:27.268] [info] [exec-level-diag] frame=1 level=3 nodes=1 input_ms=0.103 dispatch_ms=0.156 fb_release_ms=0.025
+[2026-10-02 18:40:27.468] [info] [temp-lifetime] frame=2 after_level=0 live=[0,1,3,6,] retired=[]
+[2026-10-02 18:40:27.469] [info] [exec-level-diag] frame=2 level=0 nodes=4 input_ms=0.003 dispatch_ms=196.499 fb_release_ms=0.017
+[2026-10-02 18:40:27.469] [info] [graph-edge] frame=2 level=1 consumer_id=2 input_index=0 producer_id=0 producer_level=0
+[2026-10-02 18:40:27.469] [info] [graph-edge] frame=2 level=1 consumer_id=2 input_index=1 producer_id=1 producer_level=0
+[2026-10-02 18:40:27.469] [info] [graph-edge] frame=2 level=1 consumer_id=4 input_index=0 producer_id=3 producer_level=0
+[2026-10-02 18:40:27.757] [info] [temp-lifetime] frame=2 after_level=1 live=[2,4,6,] retired=[0,1,3,]
+[2026-10-02 18:40:27.757] [info] [exec-level-diag] frame=2 level=1 nodes=2 input_ms=0.259 dispatch_ms=287.922 fb_release_ms=0.053
+[2026-10-02 18:40:27.757] [info] [graph-edge] frame=2 level=2 consumer_id=5 input_index=0 producer_id=2 producer_level=1
+[2026-10-02 18:40:27.757] [info] [graph-edge] frame=2 level=2 consumer_id=5 input_index=1 producer_id=4 producer_level=1
+[2026-10-02 18:40:27.759] [info] [temp-lifetime] frame=2 after_level=2 live=[5,6,] retired=[2,4,]
+[2026-10-02 18:40:27.759] [info] [exec-level-diag] frame=2 level=2 nodes=1 input_ms=0.029 dispatch_ms=1.687 fb_release_ms=0.025
+[2026-10-02 18:40:27.759] [info] [graph-edge] frame=2 level=3 consumer_id=7 input_index=0 producer_id=5 producer_level=2
+[2026-10-02 18:40:27.759] [info] [graph-edge] frame=2 level=3 consumer_id=7 input_index=1 producer_id=6 producer_level=0
+[2026-10-02 18:40:27.759] [info] [temp-lifetime] frame=2 after_level=3 live=[7,] retired=[5,6,]
+[2026-10-02 18:40:27.759] [info] [exec-level-diag] frame=2 level=3 nodes=1 input_ms=0.020 dispatch_ms=0.144 fb_release_ms=0.029
+[2026-10-02 18:40:27.759] [info] [video]   4/48 frames
+[2026-10-02 18:40:29.965] [info] [video]   8/48 frames
+[2026-10-02 18:40:31.969] [info] [video]   12/48 frames
+[2026-10-02 18:40:33.955] [info] [video]   16/48 frames
+[2026-10-02 18:40:36.120] [info] [video]   20/48 frames
+[2026-10-02 18:40:38.112] [info] [video]   24/48 frames
+[2026-10-02 18:40:40.269] [info] [video]   28/48 frames
+[2026-10-02 18:40:42.351] [info] [video]   32/48 frames
+[2026-10-02 18:40:44.502] [info] [video]   36/48 frames
+[2026-10-02 18:40:46.630] [info] [video]   40/48 frames
+[2026-10-02 18:40:48.946] [info] [video]   44/48 frames
+[2026-10-02 18:40:51.177] [info] [video]   48/48 frames
+[2026-10-02 18:40:51.888] [info] [video] writer join complete
+[2026-10-02 18:40:51.888] [info] [drain-debug] start drain, capacity=6
+[2026-10-02 18:40:51.888] [info] [drain-debug] reap done, busy_count=0
+[2026-10-02 18:40:51.888] [info] [video] trimming framebuffer pool
+[2026-10-02 18:40:52.106] [info] [video] Released framebuffer pool — memory trimmed
+[2026-10-02 18:40:52.106] [info] [video] frame-loop cleanup complete
+[2026-10-02 18:40:52.106] [info] [video] Encoder write blocked duration: 0.00 ms
+[2026-10-02 18:40:52.106] [info] [video_diag] conversion_and_copy_duration_ms: 216 ms
+[2026-10-02 18:40:52.106] [info] [video_diag] conversion_bytes_written=0 encoder_staging_copy_bytes=0 encoder_slot_reuses=0
+[2026-10-02 18:40:52.106] [info] [native_av] close: sending encoder flush
+[2026-10-02 18:40:52.106] [info] [native_av] close: encoder flush accepted
+[2026-10-02 18:40:52.486] [info] [native_av] close: packets drained=true
+[2026-10-02 18:40:52.487] [info] [native_av] close: finalizing mux session
+[2026-10-02 18:40:52.487] [info] [native_av] close: mux session finalized
+[2026-10-02 18:40:52.487] [info] [native_av] Closed native encoder — 48 frames accepted, encoder_packets=48 mux_packets=48 packet_pts=0..47, YUV cache: 0 hits / 48 misses
+[2026-10-02 18:40:52.487] [info] [video_native] convert=244.30ms  send_frame=132.79ms  backpressure=61.59ms  flush=380.80ms  receive_packet=439.60ms  mux_write=1.65ms  trailer=0.53ms
+[2026-10-02 18:40:52.488] [info] [video] render_ms=25102.86 encode_ms=656.96 writer_encode_ms=440.88 wall_ms=28200.97 nvml_stop_ms=0.20
+[2026-10-02 18:40:52.488] [info] [video] FFmpeg queue wait duration: 0.73 ms
+[2026-10-02 18:40:52.493] [info] [video] copy_eligible=true sha256=30994e7b8ba4da01c6b995b683346fd52f0dea763206243bfcea4e58598060bf
+[2026-10-02 18:40:52.493] [info] [video] Wrote /tmp/velox-image-software-cert/inputs/image_focus_breath/catalog-motions.mp4
+[2026-10-02 18:40:52.494] [info] [startup-profile] total=528.83ms logger=0.11ms cli_bootstrap=10.17ms cli_parse=0.00ms composition=0.32ms plan_read=0.13ms json_parse=1.47ms plan_decode_validate=409.83ms asset_resolve=0.07ms plan_compile=6.01ms other=0.00ms
+[2026-10-02 18:40:52.525] [info] [video] Wrote exact per-frame timing sidecar: /tmp/velox-image-software-cert/inputs/image_focus_breath/catalog-motions.mp4.timing.json
+[libx264 @ 0x5564f15b6dc0] frame I:1     Avg QP:15.01  size:  2393
+[libx264 @ 0x5564f15b6dc0] frame P:47    Avg QP:16.62  size:   486
+[libx264 @ 0x5564f15b6dc0] mb I  I16..4: 98.3%  1.1%  0.7%
+[libx264 @ 0x5564f15b6dc0] mb P  I16..4:  2.5%  0.5%  0.0%  P16..4: 20.3%  1.0%  0.2%  0.0%  0.0%    skip:75.4%
+[libx264 @ 0x5564f15b6dc0] 8x8 transform intra:10.9% inter:78.1%
+[libx264 @ 0x5564f15b6dc0] coded y,uvDC,uvAC intra: 0.8% 29.4% 21.4% inter: 0.4% 4.4% 1.0%
+[libx264 @ 0x5564f15b6dc0] i16 v,h,dc,p: 59% 39%  2%  0%
+[libx264 @ 0x5564f15b6dc0] i8 v,h,dc,ddl,ddr,vr,hd,vl,hu:  8% 21% 70%  1%  0%  0%  0%  0%  0%
+[libx264 @ 0x5564f15b6dc0] i4 v,h,dc,ddl,ddr,vr,hd,vl,hu: 34% 56% 10%  0%  0%  0%  0%  0%  0%
+[libx264 @ 0x5564f15b6dc0] i8c dc,h,v,p: 23% 44% 33%  0%
+[libx264 @ 0x5564f15b6dc0] Weighted P-Frames: Y:0.0% UV:0.0%
+[libx264 @ 0x5564f15b6dc0] ref P L0: 59.0%  0.2% 25.3% 15.6%
+[libx264 @ 0x5564f15b6dc0] kb/s:100.87
+[2026-10-02 18:40:52.531] [info] [INFO] job-lifecycle: slot_pool_close_ms=0.0 surface_release_ms=0.0
+[2026-10-02 18:40:52.570] [info] [INFO] job-lifecycle: queue_close_ms=0.0 writer_join_ms=0.0 encoder_reset_ms=2.2 decoder_reset_ms=0.0 full_graph_reset_ms=39.6 sink_ctx_reset_ms=0.0 device_runtime_reset_ms=0.0 device_reservation_reset_ms=0.0
+[2026-10-02 18:40:52.571] [info] [INFO] job-lifecycle: sidecar_write_ms=35.0 session_teardown_ms=42.2
+[2026-10-02 18:40:52.601] [info] [INFO] job-lifecycle: execute_ms=28314.7 receipt_build_ms=0.0 receipt_write_ms=0.0 caller_tail_ms=0.0

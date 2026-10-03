@@ -174,6 +174,10 @@ func BuildTysonManifest(opts TysonBuildOptions) (*BuildResult, error) {
 				Extraction struct {
 					ImportantPhrases []string `json:"important_phrases"`
 				} `json:"extraction"`
+				Animation struct {
+					PhraseMotionIDs []string `json:"phrase_motion_ids"`
+					ImageMotionIDs  []string `json:"image_motion_ids"`
+				} `json:"animation"`
 			} `json:"media_plan"`
 		} `json:"items"`
 	}
@@ -186,11 +190,15 @@ func BuildTysonManifest(opts TysonBuildOptions) (*BuildResult, error) {
 	item := request.Items[0]
 	phrases := item.MediaPlan.Extraction.ImportantPhrases
 	segments := item.ScriptParams.Segments
-	// Motion choices come from the emitter-owned pool. A stable seed derived
-	// from the plan and item ids makes repeated builds choose the same motion.
-	phrasePool := motion.PhraseMotionPool()
+	// Use every callable phrase animation unless the request provides a narrower
+	// explicit list. The batch-specific order is written into the manifest for
+	// later audit.
+	phrasePool := motion.Registry.PhraseAnimationIDs()
+	if len(item.MediaPlan.Animation.PhraseMotionIDs) > 0 {
+		phrasePool = item.MediaPlan.Animation.PhraseMotionIDs
+	}
 	if len(phrasePool) == 0 {
-		return nil, fmt.Errorf("overlaybatch: the embedded ChrononTemplate catalog declares no phrase_motion_pool")
+		return nil, fmt.Errorf("overlaybatch: the embedded ChrononTemplate catalog declares no phrase animations")
 	}
 	if len(phrases) == 0 || len(segments) != len(phrases) {
 		return nil, fmt.Errorf("overlaybatch: request must carry the same non-zero number of segments and phrases, got %d and %d",
@@ -225,8 +233,8 @@ func BuildTysonManifest(opts TysonBuildOptions) (*BuildResult, error) {
 	document := batchManifestDocument{SchemaVersion: SchemaBatchManifestV1, BatchID: opts.BatchID}
 	for index, phrase := range phrases {
 		jobID := fmt.Sprintf("phrase-%02d", index+1)
-		selectionSeed := phraseSelectionSeed(jobID, "important-phrase")
-		motionID, err := selectPhraseMotion(phrasePool, selectionSeed)
+		selectionSeed := phraseSelectionSeed(opts.BatchID+"/"+jobID, "important-phrase")
+		motionID, err := selectBatchMotion(phrasePool, opts.BatchID, index)
 		if err != nil {
 			return nil, fmt.Errorf("overlaybatch: select motion for %s: %w", jobID, err)
 		}
@@ -267,11 +275,23 @@ func BuildTysonManifest(opts TysonBuildOptions) (*BuildResult, error) {
 			PresetID:      overlay.PhraseDefaultPresetID,
 		})
 	}
+	imageMotionPool := item.MediaPlan.Animation.ImageMotionIDs
+	if len(imageMotionPool) == 0 {
+		imageMotionPool = motion.Registry.ImagePremiumV1MotionIDs()
+	}
+	if len(imageMotionPool) == 0 {
+		return nil, fmt.Errorf("overlaybatch: image motion inventory is empty")
+	}
 
 	entranceFrames := imageEntranceFrames
 	entranceSeconds := imageEntranceSeconds
 	for index, entity := range tysonEntities {
 		jobID := fmt.Sprintf("image-%02d", index+1)
+		selectionSeed := phraseSelectionSeed(opts.BatchID+"/"+jobID, "entity-image")
+		motionID, err := selectBatchMotion(imageMotionPool, opts.BatchID, index)
+		if err != nil {
+			return nil, fmt.Errorf("overlaybatch: select motion for %s: %w", jobID, err)
+		}
 		entityFile := filepath.Join("mike_tyson_overlay_test", "preset_overlays_v1", "assets", "entities", entity.file)
 		digest, err := corpusDigest(opts.RepoRoot, entityFile)
 		if err != nil {
@@ -279,6 +299,31 @@ func BuildTysonManifest(opts TysonBuildOptions) (*BuildResult, error) {
 		}
 		assetURL := base + "/mike_tyson_overlay_test/preset_overlays_v1/assets/entities/" + url.PathEscape(entity.file)
 		length := int64(durationMS)
+		motionParams := map[string]any{}
+		var imageLayers []overlay.SemanticImageLayer
+		assetRefs := []renderbatch.PlanAssetRef{{
+			AssetID: entity.entityID, SHA256: digest, URL: assetURL, MediaType: entity.mediaType,
+		}}
+		entityCaption := ""
+		imageKind := "entity_image"
+		if motionID == "image_stack_focus" {
+			imageKind = "image"
+			motionParams["active_layer_id"] = "front"
+			backID, frontID := entity.entityID+"-back", entity.entityID+"-front"
+			assetRefs = []renderbatch.PlanAssetRef{
+				{AssetID: backID, SHA256: digest, URL: assetURL, MediaType: entity.mediaType},
+				{AssetID: frontID, SHA256: digest, URL: assetURL, MediaType: entity.mediaType},
+			}
+			for _, layerID := range []string{"back", "front"} {
+				imageLayers = append(imageLayers, overlay.SemanticImageLayer{
+					ID: layerID, AssetID: entity.entityID + "-" + layerID, StartMS: 0, EndMS: durationMS,
+					PresetID: entity.preset,
+				})
+			}
+		}
+		if motionID == "image_caption_frame_combo" {
+			entityCaption = entity.name
+		}
 		plan, err := renderbatch.BuildPlan(renderbatch.PlanSpec{
 			PlanID:     jobID,
 			ProjectID:  "mike-tyson-overlay-presets-v1",
@@ -290,21 +335,20 @@ func BuildTysonManifest(opts TysonBuildOptions) (*BuildResult, error) {
 			DurationMS: durationMS,
 			Background: &renderbatch.Surface{Kind: "color", Color: backgroundRGBA},
 			Items: []renderbatch.PlanItem{{
-				ID:         "entity-image",
-				EntityID:   entity.entityID,
-				Kind:       "entity_image",
-				TemplateID: "IMAGE_OVERLAY",
-				PresetID:   entity.preset,
-				Text:       entity.name,
-				DurationMS: &length,
-				AssetRefs: []renderbatch.PlanAssetRef{{
-					AssetID:   entity.entityID,
-					SHA256:    digest,
-					URL:       assetURL,
-					MediaType: entity.mediaType,
-				}},
-				StartMS: 0,
-				EndMS:   durationMS,
+				ID:            "entity-image",
+				EntityID:      entity.entityID,
+				Kind:          imageKind,
+				TemplateID:    "IMAGE_OVERLAY",
+				PresetID:      entity.preset,
+				MotionID:      motionID,
+				MotionParams:  motionParams,
+				ImageLayers:   imageLayers,
+				EntityCaption: entityCaption,
+				Text:          entity.name,
+				DurationMS:    &length,
+				AssetRefs:     assetRefs,
+				StartMS:       0,
+				EndMS:         durationMS,
 			}},
 		})
 		if err != nil {
@@ -323,6 +367,9 @@ func BuildTysonManifest(opts TysonBuildOptions) (*BuildResult, error) {
 			Family:                  "image",
 			Text:                    entity.name,
 			PresetID:                entity.preset,
+			MotionID:                motionID,
+			MotionPool:              append([]string(nil), imageMotionPool...),
+			SelectionSeed:           selectionSeed,
 			EntityID:                entity.entityID,
 			EntityName:              entity.name,
 			Asset:                   entity.file,
@@ -449,6 +496,29 @@ func selectPhraseMotion(pool []string, seed uint64) (string, error) {
 	digest := sha256.Sum256(input[:])
 	index := binary.BigEndian.Uint64(digest[:8]) % uint64(len(pool))
 	return pool[index], nil
+}
+
+// selectBatchMotion rotates through a catalog pool from a batch-specific
+// starting point, avoiding repeats within one cycle through the pool.
+func selectBatchMotion(pool []string, batchID string, index int) (string, error) {
+	if len(pool) == 0 {
+		return "", fmt.Errorf("motion pool is empty")
+	}
+	seen := make(map[string]struct{}, len(pool))
+	for _, id := range pool {
+		if strings.TrimSpace(id) == "" {
+			return "", fmt.Errorf("motion pool contains an empty id")
+		}
+		if _, duplicate := seen[id]; duplicate {
+			return "", fmt.Errorf("motion pool repeats %q", id)
+		}
+		seen[id] = struct{}{}
+		if _, err := motion.Registry.Resolve(id); err != nil {
+			return "", fmt.Errorf("motion pool contains unknown id %q: %w", id, err)
+		}
+	}
+	start := phraseSelectionSeed(batchID, "animation-order") % uint64(len(pool))
+	return pool[(start+uint64(index))%uint64(len(pool))], nil
 }
 
 // MultilingualBuildOptions configures the multilingual matrix build.

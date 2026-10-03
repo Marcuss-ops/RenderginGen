@@ -1,0 +1,94 @@
+[2026-10-02 18:50:11.237] [info] [overlay-prepare] validated package=/tmp/velox-phrase-runtime-cert/inputs/vertical_rolling_counter/prepared.json hash=91ff3a91c2afce50e897cfaaa526aec91baeec2aeb4065a2b3ae4ce971267400 assets=0 text_runs=1 overlays=2
+[2026-10-02 18:50:11.242] [info] [asset-profile] kind=3 path=assets/fonts/Poppins-Bold.ttf bytes=155996 cache=miss invalidated=0 stat=0.01ms hash=4.09ms hashed_bytes=155996 total=4.26ms
+[2026-10-02 18:50:11.242] [info] [asset-digest-cache] hits=0 misses=1 invalidations=0 bytes_hashed=155996 lookup_ms=0.01 write_ms=0.02 full_hash_ms=4.09
+[2026-10-02 18:50:11.245] [info] [plan-profile] read=0.18ms parse=2.43ms decode=68.11ms resolver=0.03ms compile_validate=7.38ms total=81.35ms
+[2026-10-02 18:50:11.245] [info] [asset-profile] kind=3 path=assets/fonts/Poppins-Bold.ttf bytes=155996 cache=hit invalidated=0 stat=0.01ms hash=0.00ms hashed_bytes=0 total=0.12ms
+[2026-10-02 18:50:11.245] [info] [asset-digest-cache] hits=1 misses=0 invalidations=0 bytes_hashed=0 lookup_ms=0.01 write_ms=0.00 full_hash_ms=0.00
+[2026-10-02 18:50:11.249] [info] [plan-compile-profile] assets=0.25ms fingerprint=3.19ms media_resolution=0.00ms materialize=0.19ms composition_compile=0.00ms compatibility_view=0.17ms total=4.16ms
+[2026-10-02 18:50:11.250] [info] [video] Auto-selecting yuv420p pipe pixel format for 1280x720 output
+[2026-10-02 18:50:11.250] [info] [video] execution plan resolved (reason: required_gpu_native_full_graph); decode=1 composite=2 encode=1 interop=2 handoff=1 codec=3
+[2026-10-02 18:50:11.272] [info] [video-runtime] created persistent runtime for device 0 (CUDA ordinal 0)
+[2026-10-02 18:50:11.272] [info] [video] encoder feed capability: host_frame=false direct_yuv=false native_surface=true
+[2026-10-02 18:50:11.502] [info] [native_av] CUDA context contract: native=0x5593e3200490 ffmpeg=0x5593e3200490
+[2026-10-02 18:50:11.520] [info] [native_av] NVENC tuning applied: rc=constqp preset=p1 async_depth=4 nvenc_surfaces=8 qp=23 bitrate=0
+[2026-10-02 18:50:11.556] [info] [native_av] encoder bitstream contract: codec=27 profile=100 level=-99 pix_fmt=119 parameter_sets=49 materialized=true
+[2026-10-02 18:50:11.556] [info] [native_av] Opened native encoder: 1280x720 @ 24fps, codec=h264_nvenc, rc=constqp, preset=p1, output='/tmp/velox-phrase-runtime-cert/inputs/vertical_rolling_counter/catalog-motions.partial.mp4'
+[2026-10-02 18:50:12.892] [info] [pool-warm] Pre-allocated and pre-imported 6 execution slots (1280x720) for native NVENC
+[2026-10-02 18:50:12.979] [info] chronon3d::vulkan text batch formats: dst_image.format=109 atlas_image.format=44 atlas_encoding=2 (shader contract: dst rgba32f, atlas rgba8)
+[2026-10-02 18:50:12.979] [info] [temp-lifetime] frame=0 after_level=0 live=[0,1,3,] retired=[]
+[2026-10-02 18:50:12.979] [info] [exec-level-diag] frame=0 level=0 nodes=3 input_ms=0.006 dispatch_ms=5.142 fb_release_ms=0.005
+[2026-10-02 18:50:12.979] [info] [graph-edge] frame=0 level=1 consumer_id=2 input_index=0 producer_id=0 producer_level=0
+[2026-10-02 18:50:12.980] [info] [graph-edge] frame=0 level=1 consumer_id=2 input_index=1 producer_id=1 producer_level=0
+[2026-10-02 18:50:12.980] [info] [graph-edge] frame=0 level=1 consumer_id=4 input_index=0 producer_id=3 producer_level=0
+[2026-10-02 18:50:12.984] [info] [temp-lifetime] frame=0 after_level=1 live=[2,4,] retired=[0,1,3,]
+[2026-10-02 18:50:12.984] [info] [exec-level-diag] frame=0 level=1 nodes=2 input_ms=0.068 dispatch_ms=4.767 fb_release_ms=0.025
+[2026-10-02 18:50:12.984] [info] [graph-edge] frame=0 level=2 consumer_id=5 input_index=0 producer_id=2 producer_level=1
+[2026-10-02 18:50:12.984] [info] [graph-edge] frame=0 level=2 consumer_id=5 input_index=1 producer_id=4 producer_level=1
+[2026-10-02 18:50:12.985] [info] [temp-lifetime] frame=0 after_level=2 live=[5,] retired=[2,4,]
+[2026-10-02 18:50:12.985] [info] [exec-level-diag] frame=0 level=2 nodes=1 input_ms=0.033 dispatch_ms=0.246 fb_release_ms=0.012
+[2026-10-02 18:50:12.985] [info] [video] Exporting via Arena-backed SIMD pipeline
+[2026-10-02 18:50:12.996] [info] [temp-lifetime] frame=1 after_level=0 live=[0,1,3,] retired=[]
+[2026-10-02 18:50:12.996] [info] [exec-level-diag] frame=1 level=0 nodes=3 input_ms=0.003 dispatch_ms=1.247 fb_release_ms=0.005
+[2026-10-02 18:50:12.996] [info] [graph-edge] frame=1 level=1 consumer_id=2 input_index=0 producer_id=0 producer_level=0
+[2026-10-02 18:50:12.996] [info] [graph-edge] frame=1 level=1 consumer_id=2 input_index=1 producer_id=1 producer_level=0
+[2026-10-02 18:50:12.996] [info] [graph-edge] frame=1 level=1 consumer_id=4 input_index=0 producer_id=3 producer_level=0
+[2026-10-02 18:50:12.997] [info] [temp-lifetime] frame=1 after_level=1 live=[2,4,] retired=[0,1,3,]
+[2026-10-02 18:50:12.997] [info] [exec-level-diag] frame=1 level=1 nodes=2 input_ms=0.065 dispatch_ms=0.539 fb_release_ms=0.018
+[2026-10-02 18:50:12.997] [info] [graph-edge] frame=1 level=2 consumer_id=5 input_index=0 producer_id=2 producer_level=1
+[2026-10-02 18:50:12.997] [info] [graph-edge] frame=1 level=2 consumer_id=5 input_index=1 producer_id=4 producer_level=1
+[2026-10-02 18:50:12.997] [info] [temp-lifetime] frame=1 after_level=2 live=[5,] retired=[2,4,]
+[2026-10-02 18:50:12.997] [info] [exec-level-diag] frame=1 level=2 nodes=1 input_ms=0.042 dispatch_ms=0.244 fb_release_ms=0.013
+[2026-10-02 18:50:13.012] [info] [temp-lifetime] frame=2 after_level=0 live=[0,1,3,] retired=[]
+[2026-10-02 18:50:13.012] [info] [exec-level-diag] frame=2 level=0 nodes=3 input_ms=0.003 dispatch_ms=1.401 fb_release_ms=0.005
+[2026-10-02 18:50:13.012] [info] [graph-edge] frame=2 level=1 consumer_id=2 input_index=0 producer_id=0 producer_level=0
+[2026-10-02 18:50:13.012] [info] [graph-edge] frame=2 level=1 consumer_id=2 input_index=1 producer_id=1 producer_level=0
+[2026-10-02 18:50:13.012] [info] [graph-edge] frame=2 level=1 consumer_id=4 input_index=0 producer_id=3 producer_level=0
+[2026-10-02 18:50:13.013] [info] [temp-lifetime] frame=2 after_level=1 live=[2,4,] retired=[0,1,3,]
+[2026-10-02 18:50:13.013] [info] [exec-level-diag] frame=2 level=1 nodes=2 input_ms=0.029 dispatch_ms=0.657 fb_release_ms=0.020
+[2026-10-02 18:50:13.013] [info] [graph-edge] frame=2 level=2 consumer_id=5 input_index=0 producer_id=2 producer_level=1
+[2026-10-02 18:50:13.013] [info] [graph-edge] frame=2 level=2 consumer_id=5 input_index=1 producer_id=4 producer_level=1
+[2026-10-02 18:50:13.013] [info] [temp-lifetime] frame=2 after_level=2 live=[5,] retired=[2,4,]
+[2026-10-02 18:50:13.013] [info] [exec-level-diag] frame=2 level=2 nodes=1 input_ms=0.043 dispatch_ms=0.257 fb_release_ms=0.033
+[2026-10-02 18:50:13.013] [info] [video]   4/48 frames
+[2026-10-02 18:50:13.068] [info] [video]   8/48 frames
+[2026-10-02 18:50:13.122] [info] [video]   12/48 frames
+[2026-10-02 18:50:13.169] [info] [video]   16/48 frames
+[2026-10-02 18:50:13.225] [info] [video]   20/48 frames
+[2026-10-02 18:50:13.276] [info] [video]   24/48 frames
+[2026-10-02 18:50:13.300] [info] [vulkan-lifecycle] frame=25 vram_bytes=333283328 live_surfaces=13 surface_bindings=7 registry_live_handles=107 physical_images=13 deferred_releases=2 vma_allocations=45 surfaces_created=157 surfaces_released=150 queue_packages=1 execution_slots_busy=2 command_batch_active=false
+[2026-10-02 18:50:13.322] [info] [video]   28/48 frames
+[2026-10-02 18:50:13.380] [info] [video]   32/48 frames
+[2026-10-02 18:50:13.436] [info] [video]   36/48 frames
+[2026-10-02 18:50:13.493] [info] [video]   40/48 frames
+[2026-10-02 18:50:13.539] [info] [video]   44/48 frames
+[2026-10-02 18:50:13.595] [info] [video]   48/48 frames
+[2026-10-02 18:50:13.612] [info] [video] writer join complete
+[2026-10-02 18:50:13.612] [info] [drain-debug] start drain, capacity=6
+[2026-10-02 18:50:13.612] [info] [drain-debug] slot_id=4 has completion, waiting
+[2026-10-02 18:50:13.612] [info] [drain-debug] slot_id=4 wait complete
+[2026-10-02 18:50:13.612] [info] [drain-debug] slot_id=5 has completion, waiting
+[2026-10-02 18:50:13.612] [info] [drain-debug] slot_id=5 wait complete
+[2026-10-02 18:50:13.612] [info] [drain-debug] reap done, busy_count=0
+[2026-10-02 18:50:13.612] [info] [video] trimming framebuffer pool
+[2026-10-02 18:50:13.612] [info] [video] Released framebuffer pool — memory trimmed
+[2026-10-02 18:50:13.612] [info] [video] frame-loop cleanup complete
+[2026-10-02 18:50:13.612] [info] [video] Encoder write blocked duration: 0.00 ms
+[2026-10-02 18:50:13.612] [info] [video_diag] conversion_and_copy_duration_ms: 0 ms
+[2026-10-02 18:50:13.612] [info] [video_diag] conversion_bytes_written=0 encoder_staging_copy_bytes=0 encoder_slot_reuses=0
+[2026-10-02 18:50:13.612] [info] [native_av] close: sending encoder flush
+[2026-10-02 18:50:13.612] [info] [native_av] close: encoder flush accepted
+[2026-10-02 18:50:13.613] [info] [native_av] close: packets drained=true
+[2026-10-02 18:50:13.613] [info] [native_av] close: finalizing mux session
+[2026-10-02 18:50:13.613] [info] [native_av] close: mux session finalized
+[2026-10-02 18:50:13.613] [info] [native_av] Closed native encoder — 48 frames accepted, encoder_packets=48 mux_packets=48 packet_pts=0..47, YUV cache: 0 hits / 0 misses
+[2026-10-02 18:50:13.613] [info] [video_native] convert=106.58ms  send_frame=15.03ms  backpressure=0.00ms  flush=1.12ms  receive_packet=0.81ms  mux_write=0.98ms  trailer=0.28ms
+[2026-10-02 18:50:13.615] [info] [video] render_ms=691.28 encode_ms=6.80 writer_encode_ms=125.20 wall_ms=2364.21 nvml_stop_ms=0.14
+[2026-10-02 18:50:13.615] [info] [video] FFmpeg queue wait duration: 0.54 ms
+[2026-10-02 18:50:13.622] [info] [video] copy_eligible=true sha256=ce5d18ed144907814041b1ba30069acd9092f6f0de55522f9330fd80a45d6790
+[2026-10-02 18:50:13.622] [info] [video] Wrote /tmp/velox-phrase-runtime-cert/inputs/vertical_rolling_counter/catalog-motions.mp4
+[2026-10-02 18:50:13.622] [info] [startup-profile] total=991.76ms logger=0.11ms cli_bootstrap=11.48ms cli_parse=0.00ms composition=0.36ms plan_read=0.18ms json_parse=2.43ms plan_decode_validate=68.11ms asset_resolve=0.03ms plan_compile=7.38ms other=0.00ms
+[2026-10-02 18:50:13.652] [info] [video] Wrote exact per-frame timing sidecar: /tmp/velox-phrase-runtime-cert/inputs/vertical_rolling_counter/catalog-motions.mp4.timing.json
+[2026-10-02 18:50:13.690] [info] [INFO] job-lifecycle: slot_pool_close_ms=0.0 surface_release_ms=0.1
+[2026-10-02 18:50:13.817] [info] [INFO] job-lifecycle: queue_close_ms=0.0 writer_join_ms=0.0 encoder_reset_ms=35.2 decoder_reset_ms=0.0 full_graph_reset_ms=128.1 sink_ctx_reset_ms=0.0 device_runtime_reset_ms=0.0 device_reservation_reset_ms=0.0
+[2026-10-02 18:50:13.818] [info] [INFO] job-lifecycle: sidecar_write_ms=32.1 session_teardown_ms=163.6
+[2026-10-02 18:50:13.826] [info] [INFO] job-lifecycle: execute_ms=2576.2 receipt_build_ms=0.0 receipt_write_ms=0.0 caller_tail_ms=0.0

@@ -202,15 +202,22 @@ func compileSemantic(raw []byte) (*Plan, []Asset, Stats, []string, error) {
 			srcLayer.Position = []float64{-float64(src.Width) * 0.5, -float64(src.Height) * 0.5}
 			srcLayer.Scale = []float64{float64(src.ForegroundScale) / 100, float64(src.ForegroundScale) / 100}
 		}
-		// Card treatment of the clip (border frame + drop shadow). It is
-		// lowered onto the source layer itself; the renderer paints the frame
-		// behind the media box. A declaration the worker cannot honour is a
-		// compile error (see applyFrameTreatment) and never a silent drop.
+		// Card treatment of the clip (border frame + drop shadow + perimeter
+		// stroke). The border is lowered behind the source layer; the stroke gets
+		// its own transparent shape above the media box. A declaration the worker
+		// cannot honour is a compile error (see applyFrameTreatment), never dropped.
 		if err := applyFrameTreatment(&srcLayer, src.SourceFrame); err != nil {
 			return nil, nil, Stats{}, nil, err
 		}
 		sourceLayerIndex = len(plan.Layers)
 		plan.Layers = append(plan.Layers, srcLayer)
+		if srcLayer.FrameStroke != nil {
+			strokeLayer, err := compileMediaStrokeLayer(srcLayer, src.Width, src.Height)
+			if err != nil {
+				return nil, nil, Stats{}, nil, fmt.Errorf("overlay: source_frame: %w", err)
+			}
+			plan.Layers = append(plan.Layers, strokeLayer)
+		}
 	} else if src.SourceFrame != nil {
 		// A frame with no source clip to attach to would be dropped silently.
 		return nil, nil, Stats{}, nil, fmt.Errorf("overlay: source_frame requires a source clip")
@@ -318,12 +325,26 @@ func compileSemantic(raw []byte) (*Plan, []Asset, Stats, []string, error) {
 			cameraMapItemID = ri.Item.ID
 			cameraStartFrame, cameraEndFrame = ri.Start, ri.End
 		}
-		plan.Layers = append(plan.Layers, layers...)
+		for _, layer := range layers {
+			// A premium image motion can expand one item into several linked
+			// layers. Attach a clip stroke to the actual image layer only.
+			plan.Layers = append(plan.Layers, layer)
+			if layer.FrameStroke != nil && layer.Type != "shape" {
+				strokeLayer, err := compileMediaStrokeLayer(layer, src.Width, src.Height)
+				if err != nil {
+					return nil, nil, Stats{}, nil, fmt.Errorf("overlay: item %q: %w", ri.Item.ID, err)
+				}
+				plan.Layers = append(plan.Layers, strokeLayer)
+			}
+		}
+		// Stroke shapes require render-plan.v3 even though the semantic item
+		// itself is a media layer.
 		stats.addResolved(ri)
 		if ri.End > plan.Canvas.DurationFrames {
 			plan.Canvas.DurationFrames = ri.End
 		}
 	}
+
 
 	if cameraMove != nil {
 		if err := compileMapCamera(&plan, *cameraMove, cameraStartFrame, cameraEndFrame, src.FPSNum, src.FPSDen); err != nil {
@@ -337,6 +358,7 @@ func compileSemantic(raw []byte) (*Plan, []Asset, Stats, []string, error) {
 		}
 	}
 
+
 	// Patch background duration to match the final canvas duration.
 	if len(plan.Layers) > 0 && plan.Layers[0].ID == "background" {
 		plan.Layers[0].DurationFrames = plan.Canvas.DurationFrames
@@ -344,6 +366,9 @@ func compileSemantic(raw []byte) (*Plan, []Asset, Stats, []string, error) {
 	// Patch source layer duration — it spans the full clip.
 	if sourceLayerIndex >= 0 {
 		plan.Layers[sourceLayerIndex].DurationFrames = plan.Canvas.DurationFrames
+		if sourceLayerIndex+1 < len(plan.Layers) && plan.Layers[sourceLayerIndex+1].ID == "source__stroke" {
+			plan.Layers[sourceLayerIndex+1].DurationFrames = plan.Canvas.DurationFrames
+		}
 	}
 	// Patch subtitle and watermark layers — they span the full clip.
 	for i := range plan.Layers {
@@ -360,7 +385,7 @@ func compileSemantic(raw []byte) (*Plan, []Asset, Stats, []string, error) {
 	}
 
 	for _, l := range plan.Layers {
-		if l.Type == "shape" || l.Shape != nil || plan.Camera != nil || l.ScreenSpace || len(l.Effects) > 0 ||
+		if l.Type == "shape" || l.Shape != nil || l.FrameStroke != nil || plan.Camera != nil || l.ScreenSpace || len(l.Effects) > 0 ||
 			len(l.EffectParamTracks) > 0 || len(l.Masks) > 0 || layerAnimationNeedsV3(l.Animation) {
 			plan.Schema = "chronon.render-plan.v3"
 			plan.Version = 3
@@ -677,19 +702,42 @@ func compileVideoOverlayLayer(ri resolvedItem, src *semanticPlan, registry *asse
 //     and radius_px as the frame's outer corner radius;
 //   - the media box itself takes the concentric inner radius
 //     (radius_px - width_px), so the clip's corners nest inside the frame;
+//   - clip_radius_px is a standalone bounding-box corner radius of the media
+//     box. When a border IS present, the clip's inner radius is
+//     max(radius_px - width_px, clip_radius_px); when no border is declared,
+//     clip_radius_px directly rounds the clip's corners without painting any
+//     visible frame behind it;
 //   - the shadow becomes style.shadow, which the renderer attaches to the
-//     frame when a frame exists and to the media layer otherwise.
+//     frame when a frame exists and to the media layer otherwise;
+//   - the stroke becomes a transparent, unfilled rounded rectangle above the
+//     media, so it traces the visible clip perimeter rather than painting a
+//     padded plate behind it.
 //
 // Every value comes from the declaration: the worker invents no colour, blur or
-// geometry. A declaration with neither border nor shadow, an out-of-range
-// value or a malformed colour is rejected here (fail-closed).
+// geometry. A declaration with none of border, shadow, stroke, or
+// clip_radius_px is rejected here (fail-closed).
 func applyFrameTreatment(layer *Layer, frame *semanticSourceFrame) error {
 	if frame == nil {
 		return nil
 	}
-	if frame.Border == nil && frame.Shadow == nil {
-		return fmt.Errorf("frame requires border or shadow")
+	if frame.Border == nil && frame.Shadow == nil && frame.Stroke == nil && frame.ClipRadiusPX == 0 {
+		return fmt.Errorf("frame requires border, shadow, stroke, or clip_radius_px")
 	}
+	if frame.Stroke != nil {
+		stroke := frame.Stroke
+		if math.IsNaN(stroke.WidthPX) || math.IsInf(stroke.WidthPX, 0) || stroke.WidthPX < 0 || stroke.WidthPX > maxFrameStrokeWidth {
+			return fmt.Errorf("frame stroke width_px must be within [0,%g]", maxFrameStrokeWidth)
+		}
+		if !isHexColor(stroke.Color) {
+			return fmt.Errorf("frame stroke color %q must be #RRGGBB", stroke.Color)
+		}
+	}
+	// Validate clip_radius_px range (same ceiling as border.radius_px).
+	if math.IsNaN(frame.ClipRadiusPX) || math.IsInf(frame.ClipRadiusPX, 0) || frame.ClipRadiusPX < 0 || frame.ClipRadiusPX > maxFrameRadius {
+		return fmt.Errorf("frame clip_radius_px must be within [0,%g]", maxFrameRadius)
+	}
+	// Start with the standalone clip bounding-box radius.
+	clipRadius := frame.ClipRadiusPX
 	if frame.Border != nil {
 		border := frame.Border
 		if math.IsNaN(border.WidthPX) || math.IsInf(border.WidthPX, 0) || border.WidthPX < 0 || border.WidthPX > maxFrameBorderWidth {
@@ -710,9 +758,20 @@ func applyFrameTreatment(layer *Layer, frame *semanticSourceFrame) error {
 			}
 		}
 		// Concentric inner radius: the clip's corners nest inside the frame's.
-		if inner := border.RadiusPX - border.WidthPX; inner > 0 {
-			layer.Radius = inner
+		// When clip_radius_px is also declared, the larger value wins so the
+		// caller can always guarantee a minimum bounding-box rounding.
+		if inner := border.RadiusPX - border.WidthPX; inner > clipRadius {
+			clipRadius = inner
 		}
+	}
+	if clipRadius > 0 {
+		layer.Radius = clipRadius
+	}
+	if frame.Stroke != nil && frame.Stroke.WidthPX > 0 {
+		// The requested stroke follows the actual visible perimeter, including
+		// an inset border's inner edge. Use the resolved clip radius, not the
+		// optional standalone radius, to keep border+stroke concentric.
+		layer.FrameStroke = &LayerStroke{Color: frame.Stroke.Color, Width: frame.Stroke.WidthPX}
 	}
 	if frame.Shadow != nil {
 		shadow := frame.Shadow
@@ -745,9 +804,72 @@ func applyFrameTreatment(layer *Layer, frame *semanticSourceFrame) error {
 const (
 	maxFrameBorderWidth  float64 = 512
 	maxFrameRadius       float64 = 512
+	maxFrameStrokeWidth  float64 = 64
 	maxFrameShadowBlur   float64 = 256
 	maxFrameShadowOffset float64 = 256
 )
+
+// compileMediaStrokeLayer expands transient frame-stroke metadata into a
+// Chronon rounded-rectangle path which sits above its media layer. Its fill is
+// transparent, while the visible line follows the same radius as the clip.
+func compileMediaStrokeLayer(media Layer, canvasWidth, canvasHeight int) (Layer, error) {
+	if media.FrameStroke == nil || media.FrameStroke.Width <= 0 {
+		return Layer{}, fmt.Errorf("media frame stroke is missing a positive width")
+	}
+	if len(media.Size) != 2 || media.Size[0] <= 0 || media.Size[1] <= 0 {
+		return Layer{}, fmt.Errorf("media frame stroke requires a resolved two-dimensional box")
+	}
+	scaleX, scaleY := 1.0, 1.0
+	if len(media.Scale) >= 2 {
+		scaleX, scaleY = math.Abs(media.Scale[0]), math.Abs(media.Scale[1])
+	}
+	if scaleX <= 0 || scaleY <= 0 || math.IsNaN(scaleX) || math.IsNaN(scaleY) || math.IsInf(scaleX, 0) || math.IsInf(scaleY, 0) {
+		return Layer{}, fmt.Errorf("media frame stroke scale must be finite and positive")
+	}
+	width, height := media.Size[0]*scaleX, media.Size[1]*scaleY
+	if math.IsNaN(width) || math.IsInf(width, 0) || math.IsNaN(height) || math.IsInf(height, 0) || width <= 0 || height <= 0 {
+		return Layer{}, fmt.Errorf("media frame stroke dimensions must be finite and positive")
+	}
+	strokeWidth := media.FrameStroke.Width
+	strokeRadius := media.Radius
+	position := append([]float64(nil), media.Position...)
+	if media.Type == "video" && len(position) >= 2 {
+		if canvasWidth <= 0 || canvasHeight <= 0 {
+			return Layer{}, fmt.Errorf("video frame stroke requires positive canvas dimensions")
+		}
+		// Render-plan video positions name the source surface origin; shape
+		// positions name the box center. The source clip geometry is transformed
+		// by size×scale and then centered on the canvas for inset foregrounds.
+		position[0] += (width - float64(canvasWidth)) * 0.5
+		position[1] += (height - float64(canvasHeight)) * 0.5
+	}
+	if math.IsNaN(strokeWidth) || math.IsInf(strokeWidth, 0) || math.IsNaN(strokeRadius) || math.IsInf(strokeRadius, 0) {
+		return Layer{}, fmt.Errorf("media frame stroke width/radius must be finite")
+	}
+	style := *media.FrameStroke
+	style.Width = strokeWidth
+	// Stroke width and radius are declared in output pixels. Bake the media
+	// scale into the shape bounds and keep the shape itself at unit scale so
+	// Chronon does not shrink the outline (or corner radius) with the clip.
+	strokeLayer := Layer{
+		ID:             media.ID + "__stroke",
+		Type:           "shape",
+		Size:           []float64{width, height},
+		Position:       position,
+		Scale:          []float64{1, 1},
+		Radius:         strokeRadius,
+		Color:          []float64{0, 0, 0, 0},
+		StartFrame:     media.StartFrame,
+		DurationFrames: media.DurationFrames,
+		Opacity:        media.Opacity,
+		Shape: &LayerShape{
+			Type: "rounded_rect", Radius: strokeRadius,
+			Stroke: &style,
+		},
+		Animation: media.Animation,
+	}
+	return strokeLayer, nil
+}
 
 func ensureLayerStyle(layer *Layer) *LayerStyle {
 	if layer.Style == nil {
@@ -902,6 +1024,7 @@ func compileImageLayers(ri resolvedItem, src *semanticPlan, registry *assetRegis
 		childItem.MotionParams = child.MotionParams
 		childItem.EntityCaption = ""
 		childItem.CaptionMotionID = ""
+		childItem.Frame = child.Frame
 		childItem.StartMS, childItem.EndMS = child.StartMS, child.EndMS
 		childItem.Params = params
 		childResolved := ri
@@ -980,7 +1103,7 @@ func compileEntityCaptionLayer(parent resolvedItem, src *semanticPlan, child sem
 		captionMotion = ""
 	}
 	captionItem.MotionID = captionMotion
-	captionItem.MotionParams = nil
+	captionItem.MotionParams = map[string]any{"enter_frames": 8}
 	captionItem.Assets = nil
 	captionItem.ImageLayers = nil
 	positionX := captionBounds.CenterX
@@ -1005,14 +1128,18 @@ func compileEntityCaptionLayer(parent resolvedItem, src *semanticPlan, child sem
 	captionLayer.BoxHeight = int(captionBounds.Height)
 	captionLayer.Size = []float64{captionBounds.Width, captionBounds.Height}
 	captionLayer.Position = []float64{captionBounds.CenterX, captionBounds.CenterY}
-	captionLayer.Style.Fill = "#FFFFFF"
+	// Entity names sit on the scene below the image card. Use a dark ink with a
+	// fine light keyline so the label stays legible on both pale and dark footage.
+	captionLayer.Style.Fill = "#101827"
 	captionLayer.Style.FontSize = captionBounds.FontSize
 	captionLayer.Style.MinFontSize = captionBounds.FontSize
 	captionLayer.Style.MaxFontSize = captionBounds.FontSize
-	captionLayer.Style.Background = &LayerBackground{
-		Color: "#111827", Opacity: floatPointer(0.82), Radius: 18,
-		Padding: []float64{16, 8},
-	}
+	captionLayer.Style.Stroke = &LayerStroke{Color: "#FFFFFF", Width: 1.0}
+	captionLayer.Style.Glow = nil
+	// Avoid text background cards here: the native Vulkan text path lowers
+	// those to a text_card node that the strict GPU backend cannot execute.
+	captionLayer.Style.Background = nil
+	captionLayer.EntityCaptionForImageID = image.ID
 	return captionLayer, nil
 }
 

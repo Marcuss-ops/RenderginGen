@@ -155,8 +155,29 @@ func TestRenderArgsSupportsVulkanPipeNVENCProfile(t *testing.T) {
 	joined := strings.Join(args, " ")
 	for _, want := range []string{
 		"--backend vulkan", "--hardware nvenc", "--encoder-backend pipe",
-		"--gpu-hot-path-mode auto", "--encode-preset p1",
+		"--gpu-hot-path-mode auto",
 	} {
+		if !strings.Contains(joined, want) {
+			t.Fatalf("renderArgs=%q, want to contain %q", joined, want)
+		}
+	}
+	if strings.Contains(joined, "--encode-preset") {
+		t.Fatalf("renderArgs=%q, pipe encoder must not receive an NVENC preset", joined)
+	}
+}
+
+func TestRenderArgsDisablesGPUHandoffForSoftwareEncodedVulkanComposition(t *testing.T) {
+	got := renderArgs(RenderRequest{
+		PlanPath: "/jobs/map/plan.json", AssetsRoot: "/jobs/map",
+		OutputPath: "/jobs/map/output/result.mp4", HardwareEncoder: HardwareEncoderNone,
+		EncoderBackend: "pipe",
+		Requirements: ExecutionRequirements{
+			Backend: "vulkan", GPURequired: false, CPUFallbackAllowed: true,
+			CompositionRequired: true,
+		},
+	})
+	joined := strings.Join(got, " ")
+	for _, want := range []string{"--backend vulkan", "--hardware none", "--encoder-backend pipe", "--gpu-hot-path-mode auto"} {
 		if !strings.Contains(joined, want) {
 			t.Fatalf("renderArgs=%q, want to contain %q", joined, want)
 		}

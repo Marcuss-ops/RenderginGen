@@ -21,6 +21,15 @@ four combine with a fade). Each clip is 5 seconds at 1920×1080, 24 fps, on the
 existing pale olive background (`#EEF1E7`); the canonical phrase preset supplies
 white type with a dark stroke and shadow.
 
+Requests may select animation IDs with
+`media_plan.animation.phrase_motion_ids` and
+`media_plan.animation.image_motion_ids`; omitted lists use the canonical phrase
+inventory (107 callable phrase motions) and the 20 `image_premium_v1` image
+motions. The builder rotates through the selected list from a batch-specific
+starting point, so jobs within one batch avoid repeats until the list is
+exhausted. The saved `batch-run` report records each job's
+`motion_id`; use it to audit which animations actually rendered.
+
 ## Deliverables
 
 - The historical checked-in `manifest.json`, `plans/`, and `docs/` are retained

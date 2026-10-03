@@ -1,0 +1,549 @@
+{
+  "generated_at_utc": "2026-10-02T19:11:03+00:00",
+  "backend": "vulkan",
+  "hardware_encoder": "nvenc",
+  "encoder_backend": "native",
+  "gpu_hot_path_mode": "require_gpu_native",
+  "motions": [
+    {
+      "motion_id": "typewriter_clean",
+      "status": "passed",
+      "duration_seconds": 2.973983167
+    },
+    {
+      "motion_id": "typewriter_glitch",
+      "status": "passed",
+      "duration_seconds": 2.721275983
+    },
+    {
+      "motion_id": "typewriter_neon",
+      "status": "passed",
+      "duration_seconds": 2.765239449
+    },
+    {
+      "motion_id": "typewriter_pop",
+      "status": "passed",
+      "duration_seconds": 2.700649551
+    },
+    {
+      "motion_id": "typewriter_tracking",
+      "status": "passed",
+      "duration_seconds": 2.771368001
+    },
+    {
+      "motion_id": "air_rise_type_on",
+      "status": "passed",
+      "duration_seconds": 2.735337455
+    },
+    {
+      "motion_id": "apple_phrase_v2",
+      "status": "passed",
+      "duration_seconds": 2.798792559
+    },
+    {
+      "motion_id": "aurora_gradient_sweep",
+      "status": "passed",
+      "duration_seconds": 2.752996968
+    },
+    {
+      "motion_id": "chromatic_aberration_pop",
+      "status": "passed",
+      "duration_seconds": 2.7490417320000002
+    },
+    {
+      "motion_id": "cinematic_credits_drift",
+      "status": "passed",
+      "duration_seconds": 2.925504423
+    },
+    {
+      "motion_id": "counter_scroll_reveal",
+      "status": "passed",
+      "duration_seconds": 2.59461252
+    },
+    {
+      "motion_id": "crisp_mask_center_open",
+      "status": "passed",
+      "duration_seconds": 2.902695295
+    },
+    {
+      "motion_id": "depth_of_field_rack_focus",
+      "status": "passed",
+      "duration_seconds": 2.653471457
+    },
+    {
+      "motion_id": "duotone_block_rise",
+      "status": "passed",
+      "duration_seconds": 3.71370117
+    },
+    {
+      "motion_id": "dynamic_island_expansion",
+      "status": "passed",
+      "duration_seconds": 2.732289388
+    },
+    {
+      "motion_id": "editorial_push_in",
+      "status": "passed",
+      "duration_seconds": 2.687709679
+    },
+    {
+      "motion_id": "fluid_gradient_text_flow",
+      "status": "passed",
+      "duration_seconds": 2.770837362
+    },
+    {
+      "motion_id": "focus_pull_macro",
+      "status": "passed",
+      "duration_seconds": 2.613667698
+    },
+    {
+      "motion_id": "glassmorphism_card_tilt",
+      "status": "passed",
+      "duration_seconds": 2.753756334
+    },
+    {
+      "motion_id": "glitch_slice_band",
+      "status": "passed",
+      "duration_seconds": 2.717661112
+    },
+    {
+      "motion_id": "high_specular_light_sweep",
+      "status": "passed",
+      "duration_seconds": 2.6687067129999997
+    },
+    {
+      "motion_id": "hologram_scanline_build",
+      "status": "passed",
+      "duration_seconds": 2.6799259109999998
+    },
+    {
+      "motion_id": "ink_bleed_spread",
+      "status": "passed",
+      "duration_seconds": 2.541742605
+    },
+    {
+      "motion_id": "isometric_3d_fold",
+      "status": "passed",
+      "duration_seconds": 2.680191917
+    },
+    {
+      "motion_id": "kinetic_split_word",
+      "status": "passed",
+      "duration_seconds": 2.560369959
+    },
+    {
+      "motion_id": "kinetic_stamp_impact",
+      "status": "passed",
+      "duration_seconds": 2.773791726
+    },
+    {
+      "motion_id": "letterbox_wipe",
+      "status": "passed",
+      "duration_seconds": 2.719178609
+    },
+    {
+      "motion_id": "liquid_glass_ripple",
+      "status": "passed",
+      "duration_seconds": 2.621599256
+    },
+    {
+      "motion_id": "magnetic_letters_converge",
+      "status": "passed",
+      "duration_seconds": 2.48832631
+    },
+    {
+      "motion_id": "masked_upward_reveal",
+      "status": "passed",
+      "duration_seconds": 2.674891507
+    },
+    {
+      "motion_id": "micro_tracker_kerning_compression",
+      "status": "passed",
+      "duration_seconds": 2.517809761
+    },
+    {
+      "motion_id": "neon_flicker_ignite",
+      "status": "passed",
+      "duration_seconds": 2.660693511
+    },
+    {
+      "motion_id": "parallax_depth_stack",
+      "status": "passed",
+      "duration_seconds": 2.644470503
+    },
+    {
+      "motion_id": "pixel_grid_alpha_matrix",
+      "status": "passed",
+      "duration_seconds": 2.651719922
+    },
+    {
+      "motion_id": "pulse_emphasis_beat",
+      "status": "passed",
+      "duration_seconds": 2.692143487
+    },
+    {
+      "motion_id": "risograph_offset_print",
+      "status": "passed",
+      "duration_seconds": 3.152180987
+    },
+    {
+      "motion_id": "shutter_blade_reveal",
+      "status": "passed",
+      "duration_seconds": 3.114564119
+    },
+    {
+      "motion_id": "soft_clay_press",
+      "status": "passed",
+      "duration_seconds": 3.428181972
+    },
+    {
+      "motion_id": "soft_edge_spotlight_dissolve",
+      "status": "passed",
+      "duration_seconds": 2.775502759
+    },
+    {
+      "motion_id": "spectrum_shimmer_wave",
+      "status": "passed",
+      "duration_seconds": 2.832873095
+    },
+    {
+      "motion_id": "spotlight_iris_open",
+      "status": "passed",
+      "duration_seconds": 2.6049704240000002
+    },
+    {
+      "motion_id": "staggered_char_float",
+      "status": "passed",
+      "duration_seconds": 2.6440850129999998
+    },
+    {
+      "motion_id": "underline_swipe_bold",
+      "status": "passed",
+      "duration_seconds": 2.619721371
+    },
+    {
+      "motion_id": "velocity_inertia_snap",
+      "status": "passed",
+      "duration_seconds": 2.681663574
+    },
+    {
+      "motion_id": "vertical_reel_snap",
+      "status": "passed",
+      "duration_seconds": 2.931675521
+    },
+    {
+      "motion_id": "vertical_rolling_counter",
+      "status": "passed",
+      "duration_seconds": 2.869375729
+    },
+    {
+      "motion_id": "weightless_float_settle",
+      "status": "passed",
+      "duration_seconds": 2.776820087
+    },
+    {
+      "motion_id": "apple_cinematic_exit",
+      "status": "passed",
+      "duration_seconds": 2.624667816
+    },
+    {
+      "motion_id": "apple_compress_in",
+      "status": "passed",
+      "duration_seconds": 2.942117099
+    },
+    {
+      "motion_id": "apple_expand_from_center",
+      "status": "passed",
+      "duration_seconds": 2.728511072
+    },
+    {
+      "motion_id": "apple_focus_rise",
+      "status": "passed",
+      "duration_seconds": 2.690604763
+    },
+    {
+      "motion_id": "apple_hero_statement",
+      "status": "passed",
+      "duration_seconds": 3.455385038
+    },
+    {
+      "motion_id": "apple_line_cascade",
+      "status": "passed",
+      "duration_seconds": 3.375916718
+    },
+    {
+      "motion_id": "apple_line_sweep",
+      "status": "passed",
+      "duration_seconds": 3.031139482
+    },
+    {
+      "motion_id": "apple_precision_type",
+      "status": "passed",
+      "duration_seconds": 3.067679856
+    },
+    {
+      "motion_id": "apple_scale_push",
+      "status": "passed",
+      "duration_seconds": 2.867742229
+    },
+    {
+      "motion_id": "apple_scale_settle",
+      "status": "passed",
+      "duration_seconds": 2.70812558
+    },
+    {
+      "motion_id": "apple_soft_scale",
+      "status": "passed",
+      "duration_seconds": 2.935225866
+    },
+    {
+      "motion_id": "apple_spread_rise",
+      "status": "passed",
+      "duration_seconds": 3.1375721739999998
+    },
+    {
+      "motion_id": "apple_tracking_reveal",
+      "status": "passed",
+      "duration_seconds": 2.851728737
+    },
+    {
+      "motion_id": "apple_vertical_glyph_lift",
+      "status": "passed",
+      "duration_seconds": 2.6721405110000003
+    },
+    {
+      "motion_id": "apple_word_cascade",
+      "status": "passed",
+      "duration_seconds": 2.672288032
+    },
+    {
+      "motion_id": "apple_word_pulse",
+      "status": "passed",
+      "duration_seconds": 2.958990237
+    },
+    {
+      "motion_id": "cinematic_camera_push",
+      "status": "passed",
+      "duration_seconds": 3.5362177040000002
+    },
+    {
+      "motion_id": "depth_parallax_reveal",
+      "status": "passed",
+      "duration_seconds": 3.001834955
+    },
+    {
+      "motion_id": "editorial_line_build",
+      "status": "passed",
+      "duration_seconds": 3.040797729
+    },
+    {
+      "motion_id": "glass_morphism_fade",
+      "status": "passed",
+      "duration_seconds": 2.936617833
+    },
+    {
+      "motion_id": "hero_scale_focus",
+      "status": "passed",
+      "duration_seconds": 3.078429109
+    },
+    {
+      "motion_id": "isometric_plane_fold",
+      "status": "passed",
+      "duration_seconds": 3.039473308
+    },
+    {
+      "motion_id": "kinetic_keyword_lock",
+      "status": "passed",
+      "duration_seconds": 2.963226828
+    },
+    {
+      "motion_id": "light_sweep_reveal",
+      "status": "passed",
+      "duration_seconds": 2.81538053
+    },
+    {
+      "motion_id": "magnetic_word_focus",
+      "status": "passed",
+      "duration_seconds": 2.689763938
+    },
+    {
+      "motion_id": "masked_vertical_lift",
+      "status": "passed",
+      "duration_seconds": 2.660710239
+    },
+    {
+      "motion_id": "phrase_apple_clean_01_blur_soft_reveal",
+      "status": "passed",
+      "duration_seconds": 2.825445362
+    },
+    {
+      "motion_id": "phrase_apple_clean_02_blur_focus_snap",
+      "status": "passed",
+      "duration_seconds": 2.774131282
+    },
+    {
+      "motion_id": "phrase_apple_clean_03_blur_scale_clean",
+      "status": "passed",
+      "duration_seconds": 2.806745684
+    },
+    {
+      "motion_id": "phrase_apple_clean_04_blur_tracking_drift",
+      "status": "passed",
+      "duration_seconds": 2.784983388
+    },
+    {
+      "motion_id": "phrase_apple_clean_05_blur_apple_fade",
+      "status": "passed",
+      "duration_seconds": 2.776928591
+    },
+    {
+      "motion_id": "phrase_apple_clean_06_blur_gravity",
+      "status": "passed",
+      "duration_seconds": 2.863759039
+    },
+    {
+      "motion_id": "phrase_apple_clean_07_slide_up_soft",
+      "status": "passed",
+      "duration_seconds": 2.757217396
+    },
+    {
+      "motion_id": "phrase_apple_clean_08_slide_up_spring",
+      "status": "passed",
+      "duration_seconds": 2.757926526
+    },
+    {
+      "motion_id": "phrase_apple_clean_09_slide_down_catch",
+      "status": "passed",
+      "duration_seconds": 2.782428807
+    },
+    {
+      "motion_id": "phrase_apple_clean_10_slide_from_right_apple",
+      "status": "passed",
+      "duration_seconds": 2.730969172
+    },
+    {
+      "motion_id": "phrase_apple_clean_11_slide_left_ease",
+      "status": "passed",
+      "duration_seconds": 2.680156147
+    },
+    {
+      "motion_id": "phrase_apple_clean_12_slide_diagonal_pop",
+      "status": "passed",
+      "duration_seconds": 3.10031297
+    },
+    {
+      "motion_id": "phrase_apple_clean_13_scale_soft_pop",
+      "status": "passed",
+      "duration_seconds": 3.231122343
+    },
+    {
+      "motion_id": "phrase_apple_clean_14_scale_bounce_clean",
+      "status": "passed",
+      "duration_seconds": 3.5014949250000003
+    },
+    {
+      "motion_id": "phrase_apple_clean_15_scale_hero_focus",
+      "status": "passed",
+      "duration_seconds": 3.495171819
+    },
+    {
+      "motion_id": "phrase_apple_clean_16_scale_line_build",
+      "status": "passed",
+      "duration_seconds": 2.891091448
+    },
+    {
+      "motion_id": "phrase_apple_clean_17_scale_in_place",
+      "status": "passed",
+      "duration_seconds": 2.765051525
+    },
+    {
+      "motion_id": "phrase_apple_clean_18_scale_card_tilt",
+      "status": "passed",
+      "duration_seconds": 2.725029782
+    },
+    {
+      "motion_id": "phrase_apple_clean_19_tracking_tighten",
+      "status": "passed",
+      "duration_seconds": 2.8357479
+    },
+    {
+      "motion_id": "phrase_apple_clean_20_tracking_spread_clean",
+      "status": "passed",
+      "duration_seconds": 2.755487213
+    },
+    {
+      "motion_id": "phrase_apple_clean_21_tracking_magnetic",
+      "status": "passed",
+      "duration_seconds": 2.81132423
+    },
+    {
+      "motion_id": "phrase_apple_clean_22_tracking_word_focus",
+      "status": "passed",
+      "duration_seconds": 2.646326742
+    },
+    {
+      "motion_id": "phrase_apple_clean_23_tracking_precision_lock",
+      "status": "passed",
+      "duration_seconds": 2.660670701
+    },
+    {
+      "motion_id": "phrase_apple_clean_24_tracking_soft_kinetic",
+      "status": "passed",
+      "duration_seconds": 3.087923068
+    },
+    {
+      "motion_id": "phrase_apple_clean_25_opacity_soft_reveal",
+      "status": "passed",
+      "duration_seconds": 2.896075443
+    },
+    {
+      "motion_id": "phrase_apple_clean_26_opacity_depth_push",
+      "status": "passed",
+      "duration_seconds": 2.66103404
+    },
+    {
+      "motion_id": "phrase_apple_clean_27_opacity_parallax",
+      "status": "passed",
+      "duration_seconds": 2.659895851
+    },
+    {
+      "motion_id": "phrase_apple_clean_28_opacity_cinematic",
+      "status": "passed",
+      "duration_seconds": 2.674647544
+    },
+    {
+      "motion_id": "phrase_apple_clean_29_opacity_hero_settle",
+      "status": "passed",
+      "duration_seconds": 2.562443187
+    },
+    {
+      "motion_id": "phrase_apple_clean_30_opacity_clean_apple",
+      "status": "passed",
+      "duration_seconds": 2.585231194
+    },
+    {
+      "motion_id": "precision_tracking_lock",
+      "status": "passed",
+      "duration_seconds": 2.596949099
+    },
+    {
+      "motion_id": "precision_word_stagger",
+      "status": "passed",
+      "duration_seconds": 2.549830572
+    },
+    {
+      "motion_id": "premium_soft_reveal",
+      "status": "passed",
+      "duration_seconds": 2.571147759
+    },
+    {
+      "motion_id": "quiet_hero_settle",
+      "status": "passed",
+      "duration_seconds": 2.61646495
+    },
+    {
+      "motion_id": "soft_kinetic_rise",
+      "status": "passed",
+      "duration_seconds": 2.5572082529999998
+    }
+  ]
+}

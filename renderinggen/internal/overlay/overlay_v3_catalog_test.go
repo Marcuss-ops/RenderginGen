@@ -170,14 +170,15 @@ func TestImageMotionInventoryHasAllCatalogImageAnimations(t *testing.T) {
 	}
 }
 
-// TestEveryImageMotionReachesTheChrononRenderPlan compiles each registered
-// image motion through the public semantic compiler, then checks the serialized
-// Chronon plan. This covers the full producer motion_id -> registry -> layer
-// tracks -> wire path, including the derived enable_3d routing flag.
-func TestEveryImageMotionReachesTheChrononRenderPlan(t *testing.T) {
-	ids := motion.Registry.ImageOverlayMotionIDs()
-	if len(ids) != 18 {
-		t.Fatalf("registered image motions = %d, want 18: %v", len(ids), ids)
+// TestEveryGeneratedImageMotionReachesTheChrononRenderPlan compiles every
+// layer-only motion selected by PipelineGen through the public semantic
+// compiler, then checks the serialized Chronon plan. This covers the complete
+// producer motion_id -> registry -> layer tracks -> wire path, including the
+// derived enable_3d routing flag. Premium recipes remain separately opt-in.
+func TestEveryGeneratedImageMotionReachesTheChrononRenderPlan(t *testing.T) {
+	ids := append(motion.Registry.ImageOverlayMotionIDs(), motion.Registry.EditorialImageV1MotionIDs()...)
+	if len(ids) != 32 {
+		t.Fatalf("registered generated-overlay image motions = %d, want 32: %v", len(ids), ids)
 	}
 
 	for _, id := range ids {
@@ -185,7 +186,7 @@ func TestEveryImageMotionReachesTheChrononRenderPlan(t *testing.T) {
 			raw := []byte(fmt.Sprintf(`{"schema_version":"renderinggen.overlay-plan.v1","plan_id":"image-motion-%[1]s","video_id":"v","width":1280,"height":720,"fps_num":24,"fps_den":1,"items":[{"id":"image-%[1]s","kind":"entity_image","template_id":"image_popup","preset_id":"image_focus_in","motion_id":%[2]q,"start_ms":0,"end_ms":5000,"asset_refs":[{"asset_id":"test-image","sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","url":"https://example.test/test-image.png","media_type":"image/png"}]}]}`, id, id))
 			result, err := CompileSemantic(raw)
 			if err != nil {
-				t.Fatalf("compile semantic plan for image motion %q: %v", id, err)
+				t.Fatalf("compile generated image motion %q: %v", id, err)
 			}
 			if len(result.Plan.Layers) != 1 {
 				t.Fatalf("compiled %q to %d layers, want one image layer", id, len(result.Plan.Layers))
@@ -384,8 +385,8 @@ func TestEveryPhraseFamilyMotionReachesTheChrononRenderPlan(t *testing.T) {
 	for _, family := range []string{"typewriter", "classic_apple", "modern_apple"} {
 		ids = append(ids, motion.Registry.FamilyMotionIDs(family)...)
 	}
-	if len(ids) != 107 {
-		t.Fatalf("registered phrase family motions = %d, want 107", len(ids))
+	if len(ids) != 108 {
+		t.Fatalf("registered phrase family motions = %d, want 108", len(ids))
 	}
 	seen := make(map[string]bool, len(ids))
 	for _, id := range ids {

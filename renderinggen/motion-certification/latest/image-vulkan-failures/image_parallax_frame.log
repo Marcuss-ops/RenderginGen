@@ -1,0 +1,33 @@
+[2026-10-02 18:59:14.347] [info] [overlay-prepare] validated package=/tmp/velox-image-gpu-cert-small/inputs/image_parallax_frame/prepared.json hash=c9505f20137dbfebe11674ce296d9a74b3bc13b62cf583f5777f57215540cfaf assets=1 text_runs=1 overlays=4
+[2026-10-02 18:59:14.351] [info] [asset-profile] kind=3 path=assets/fonts/Poppins-Bold.ttf bytes=155996 cache=miss invalidated=0 stat=0.01ms hash=3.43ms hashed_bytes=155996 total=3.56ms
+[2026-10-02 18:59:14.351] [info] [asset-profile] kind=0 path=assets/semantic/certification-image.jpg bytes=4146 cache=miss invalidated=0 stat=0.01ms hash=0.12ms hashed_bytes=4146 total=0.24ms
+[2026-10-02 18:59:14.352] [info] [asset-digest-cache] hits=0 misses=2 invalidations=0 bytes_hashed=160142 lookup_ms=0.01 write_ms=0.02 full_hash_ms=3.55
+[2026-10-02 18:59:14.353] [info] [plan-profile] read=0.14ms parse=1.87ms decode=412.77ms resolver=0.03ms compile_validate=5.96ms total=423.09ms
+[2026-10-02 18:59:14.354] [info] [asset-profile] kind=3 path=assets/fonts/Poppins-Bold.ttf bytes=155996 cache=hit invalidated=0 stat=0.01ms hash=0.00ms hashed_bytes=0 total=0.10ms
+[2026-10-02 18:59:14.354] [info] [asset-profile] kind=0 path=assets/semantic/certification-image.jpg bytes=4146 cache=hit invalidated=0 stat=0.01ms hash=0.00ms hashed_bytes=0 total=0.10ms
+[2026-10-02 18:59:14.354] [info] [asset-digest-cache] hits=2 misses=0 invalidations=0 bytes_hashed=0 lookup_ms=0.01 write_ms=0.00 full_hash_ms=0.00
+[2026-10-02 18:59:14.357] [info] [plan-compile-profile] assets=0.48ms fingerprint=2.23ms media_resolution=0.00ms materialize=0.18ms composition_compile=0.00ms compatibility_view=0.12ms total=3.40ms
+[2026-10-02 18:59:14.358] [info] [video] Auto-selecting yuv420p pipe pixel format for 1280x720 output
+[2026-10-02 18:59:14.358] [info] [video] execution plan resolved (reason: required_gpu_native_full_graph); decode=1 composite=2 encode=1 interop=2 handoff=1 codec=3
+[2026-10-02 18:59:14.385] [info] [video-runtime] created persistent runtime for device 0 (CUDA ordinal 0)
+[2026-10-02 18:59:14.385] [info] [video] encoder feed capability: host_frame=false direct_yuv=false native_surface=true
+[2026-10-02 18:59:14.601] [info] [native_av] CUDA context contract: native=0x56136ff7cf60 ffmpeg=0x56136ff7cf60
+[2026-10-02 18:59:14.620] [info] [native_av] NVENC tuning applied: rc=constqp preset=p1 async_depth=4 nvenc_surfaces=8 qp=23 bitrate=0
+[2026-10-02 18:59:14.653] [info] [native_av] encoder bitstream contract: codec=27 profile=100 level=-99 pix_fmt=119 parameter_sets=49 materialized=true
+[2026-10-02 18:59:14.653] [info] [native_av] Opened native encoder: 1280x720 @ 24fps, codec=h264_nvenc, rc=constqp, preset=p1, output='/tmp/velox-image-gpu-cert-small/inputs/image_parallax_frame/catalog-motions.partial.mp4'
+[2026-10-02 18:59:16.574] [info] ImageCache: loaded 'assets/semantic/certification-image.jpg' (480x360) in 800.753ms
+[2026-10-02 18:59:16.687] [info] [pool-warm] Pre-allocated and pre-imported 6 execution slots (1280x720) for native NVENC
+[2026-10-02 18:59:16.767] [info] chronon3d::vulkan text batch formats: dst_image.format=109 atlas_image.format=44 atlas_encoding=2 (shader contract: dst rgba32f, atlas rgba8)
+[2026-10-02 18:59:16.768] [info] [temp-lifetime] frame=0 after_level=0 live=[0,6,14,] retired=[]
+[2026-10-02 18:59:16.768] [info] [exec-level-diag] frame=0 level=0 nodes=5 input_ms=0.007 dispatch_ms=8.373 fb_release_ms=0.007
+[2026-10-02 18:59:16.768] [warning] [input-unresolved] frame=0 level=1 consumer_id=2 input_index=0 producer_id=1 producer_level=0
+[2026-10-02 18:59:16.768] [info] [graph-edge] frame=0 level=1 consumer_id=7 input_index=0 producer_id=6 producer_level=0
+[2026-10-02 18:59:16.768] [warning] [input-unresolved] frame=0 level=1 consumer_id=11 input_index=0 producer_id=10 producer_level=0
+[2026-10-02 18:59:16.776] [info] [temp-lifetime] frame=0 after_level=1 live=[0,2,7,11,14,] retired=[1,6,10,]
+[2026-10-02 18:59:16.776] [info] [exec-level-diag] frame=0 level=1 nodes=3 input_ms=0.334 dispatch_ms=8.169 fb_release_ms=0.025
+[2026-10-02 18:59:16.776] [info] [graph-edge] frame=0 level=2 consumer_id=3 input_index=0 producer_id=2 producer_level=1
+[2026-10-02 18:59:16.777] [info] [graph-edge] frame=0 level=2 consumer_id=8 input_index=0 producer_id=7 producer_level=1
+[2026-10-02 18:59:16.777] [info] [graph-edge] frame=0 level=2 consumer_id=12 input_index=0 producer_id=11 producer_level=1
+[2026-10-02 18:59:16.813] [info] [temp-lifetime] frame=0 after_level=2 live=[0,3,8,12,14,] retired=[2,7,11,]
+[2026-10-02 18:59:16.813] [info] [exec-level-diag] frame=0 level=2 nodes=3 input_ms=0.240 dispatch_ms=36.137 fb_release_ms=0.041
+[2026-10-02 18:59:16.813] [info] [graph-edge] frame=0 level=3 consumer_id=4 input_index=0 producer_id=3 producer_level=2

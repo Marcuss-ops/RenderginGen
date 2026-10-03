@@ -52,7 +52,8 @@ func TestSourceFrameRuntimePixels(t *testing.T) {
 		"foreground_scale_percent":80,
 		"source_frame":{
 			"border":{"width_px":8,"color":"#FFFFFF","radius_px":24},
-			"shadow":{"color":"#000000","opacity":0.35,"blur_px":8,"offset_x_px":0,"offset_y_px":4}
+			"shadow":{"color":"#000000","opacity":0.35,"blur_px":8,"offset_x_px":0,"offset_y_px":4},
+			"stroke":{"width_px":5,"color":"#00FF80"}
 		},
 		"background":{"kind":"color","color":[0.02,0.04,0.2,1]},
 		"items":[]
@@ -139,6 +140,25 @@ func TestSourceFrameRuntimePixels(t *testing.T) {
 		if rgb := averageRGB(frame, point, 1); !(rgb.r > 190 && rgb.g > 190 && rgb.b > 190) {
 			t.Errorf("rounded clip corner at %v = RGB%v, want visible white frame", point, rgb)
 		}
+	}
+	// The stroke sits on top of the media at the inner perimeter of the frame.
+	for _, point := range []image.Point{{320, 42}, {320, 318}, {72, 180}, {568, 180}} {
+		if rgb := averageRGB(frame, point, 1); !(rgb.g > rgb.r*1.2 && rgb.g > 80) {
+			t.Errorf("inner perimeter stroke at %v = RGB%v, want visible green stroke", point, rgb)
+		}
+	}
+	strokePixels := 0
+	for y := 36; y < 324; y++ {
+		for x := 64; x < 576; x++ {
+			rgb := averageRGB(frame, image.Pt(x, y), 0)
+			if rgb.g > 150 && rgb.g > rgb.r*1.25 && rgb.g > rgb.b*0.8 && rgb.b < rgb.g*1.4 {
+				strokePixels++
+			}
+		}
+	}
+	t.Logf("green perimeter stroke pixels: %d", strokePixels)
+	if strokePixels == 0 {
+		t.Error("rendered perimeter contains no #00FF80 stroke pixels")
 	}
 	if rgb := averageRGB(frame, image.Pt(100, 70), 1); !(rgb.r > rgb.g*1.5 && rgb.r > rgb.b*1.5) {
 		t.Errorf("clip interior = RGB%v, want red source video", rgb)

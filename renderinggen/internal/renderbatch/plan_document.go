@@ -75,7 +75,18 @@ type PlanItem struct {
 	// EntityID is the producer's entity correlation key. Required by the
 	// contract on entity items.
 	EntityID string
-	Text     string
+	// ImagePresetID is the image preset of an entity card that carries a
+	// portrait asset. The contract requires it whenever an entity item declares
+	// asset_refs (see semanticItem.UnmarshalJSON), so the writer must be able to
+	// transport it instead of forcing callers to hand-write the plan.
+	ImagePresetID string
+	Text          string
+	// EntityCaption is the optional caption rendered with an entity image. The
+	// caption is a first-class animated layer: CaptionMotionID selects its
+	// motion (empty resolves the shared default), and the compiler refuses a
+	// non-text motion rather than lowering image tracks onto a text layer.
+	EntityCaption   string
+	CaptionMotionID string
 	// DurationMS is producer-owned timing metadata. When set it must equal
 	// EndMS-StartMS; the semantic decoder enforces that.
 	DurationMS *int64
@@ -84,6 +95,14 @@ type PlanItem struct {
 	AssetRefs []PlanAssetRef
 	// MotionParams are the producer's per-item motion parameters.
 	MotionParams map[string]any
+	// ImageLayers are the independently timed and animated children of a
+	// composite image item (the images-x2/x3/x4/x5 path). The parent item
+	// declares the assets; each child names its asset_id from that set.
+	ImageLayers []overlay.SemanticImageLayer
+	// Map is the georeferenced map declaration of a kind=map item. It is the
+	// worker's own exported type so the writer cannot describe map geometry
+	// with a second field set that drifts from the decoder.
+	Map *overlay.SemanticMap
 	// Params carries the item's runtime controls (font family, font size,
 	// glow/stroke sizes, shadow blur/opacity/offset). The worker validates them
 	// against its closed runtime contract; this writer transports them and lets
@@ -142,21 +161,26 @@ func BuildPlan(spec PlanSpec) ([]byte, error) {
 	}
 	for _, item := range spec.Items {
 		doc.Items = append(doc.Items, semanticItemDocument{
-			ID:           item.ID,
-			SceneID:      item.SceneID,
-			TemplateID:   item.TemplateID,
-			PresetID:     item.PresetID,
-			MotionID:     item.MotionID,
-			Kind:         item.Kind,
-			EntityID:     item.EntityID,
-			DurationMS:   item.DurationMS,
-			AssetRefs:    toAssetRefDocuments(item.AssetRefs),
-			MotionParams: item.MotionParams,
-			Params:       item.Params,
-			Style:        item.Style,
-			Text:         item.Text,
-			StartMS:      item.StartMS,
-			EndMS:        item.EndMS,
+			ID:              item.ID,
+			SceneID:         item.SceneID,
+			TemplateID:      item.TemplateID,
+			PresetID:        item.PresetID,
+			ImagePresetID:   item.ImagePresetID,
+			MotionID:        item.MotionID,
+			Kind:            item.Kind,
+			EntityID:        item.EntityID,
+			EntityCaption:   item.EntityCaption,
+			CaptionMotionID: item.CaptionMotionID,
+			DurationMS:      item.DurationMS,
+			AssetRefs:       toAssetRefDocuments(item.AssetRefs),
+			ImageLayers:     item.ImageLayers,
+			Map:             item.Map,
+			MotionParams:    item.MotionParams,
+			Params:          item.Params,
+			Style:           item.Style,
+			Text:            item.Text,
+			StartMS:         item.StartMS,
+			EndMS:           item.EndMS,
 		})
 	}
 	// Typed build, then marshal: no format string can drift from the struct tags
@@ -233,21 +257,26 @@ type semanticPlanDocument struct {
 // semanticItemDocument is one overlay item. The displayed text is owned by the
 // producer: this writer never invents content, it transports the caller's.
 type semanticItemDocument struct {
-	ID           string                     `json:"id"`
-	SceneID      string                     `json:"scene_id,omitempty"`
-	TemplateID   string                     `json:"template_id"`
-	PresetID     string                     `json:"preset_id"`
-	MotionID     string                     `json:"motion_id,omitempty"`
-	Kind         string                     `json:"kind,omitempty"`
-	EntityID     string                     `json:"entity_id,omitempty"`
-	DurationMS   *int64                     `json:"duration_ms,omitempty"`
-	AssetRefs    []overlay.SemanticAssetRef `json:"asset_refs,omitempty"`
-	MotionParams map[string]any             `json:"motion_params,omitempty"`
-	Params       map[string]any             `json:"params,omitempty"`
-	Style        map[string]any             `json:"style,omitempty"`
-	Text         string                     `json:"text,omitempty"`
-	StartMS      int64                      `json:"start_ms"`
-	EndMS        int64                      `json:"end_ms"`
+	ID              string                       `json:"id"`
+	SceneID         string                       `json:"scene_id,omitempty"`
+	TemplateID      string                       `json:"template_id"`
+	PresetID        string                       `json:"preset_id"`
+	ImagePresetID   string                       `json:"image_preset_id,omitempty"`
+	MotionID        string                       `json:"motion_id,omitempty"`
+	Kind            string                       `json:"kind,omitempty"`
+	EntityID        string                       `json:"entity_id,omitempty"`
+	EntityCaption   string                       `json:"entity_caption,omitempty"`
+	CaptionMotionID string                       `json:"caption_motion_id,omitempty"`
+	DurationMS      *int64                       `json:"duration_ms,omitempty"`
+	AssetRefs       []overlay.SemanticAssetRef   `json:"asset_refs,omitempty"`
+	ImageLayers     []overlay.SemanticImageLayer `json:"image_layers,omitempty"`
+	Map             *overlay.SemanticMap         `json:"map,omitempty"`
+	MotionParams    map[string]any               `json:"motion_params,omitempty"`
+	Params          map[string]any               `json:"params,omitempty"`
+	Style           map[string]any               `json:"style,omitempty"`
+	Text            string                       `json:"text,omitempty"`
+	StartMS         int64                        `json:"start_ms"`
+	EndMS           int64                        `json:"end_ms"`
 }
 
 // toAssetRefDocuments converts the exported caller-facing refs to the worker's

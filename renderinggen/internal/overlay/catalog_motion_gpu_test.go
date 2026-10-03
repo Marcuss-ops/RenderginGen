@@ -1,11 +1,15 @@
 package overlay
 
 import (
+	"bytes"
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"image"
+	"image/color"
+	"image/jpeg"
 	"io"
 	"os"
 	"os/exec"
@@ -208,20 +212,31 @@ func TestEveryPresentationMotionExecutesOnTheStrictGPU(t *testing.T) {
 func TestEveryCallableCatalogMotionExecutesOnTheStrictGPU(t *testing.T) {
 	bin := chrononBinFor(t)
 	assetsRoot := certificationAssetsRoot(t)
-	imageBytes, err := os.ReadFile(filepath.Join(assetsRoot, "assets", "semantic", certificationAssetID+".jpg"))
-	if err != nil {
+	outputRoot := strings.TrimSpace(os.Getenv("RENDERINGGEN_GPU_CERT_OUTPUT_DIR"))
+	preserveInputs := outputRoot != ""
+	if preserveInputs {
+		if err := os.MkdirAll(outputRoot, 0o755); err != nil {
+			t.Fatalf("create persistent GPU test output directory: %v", err)
+		}
+	}
+	imageBytes := motionCanaryJPEG(t, color.RGBA{R: 32, G: 160, B: 220, A: 255})
+	if err := os.WriteFile(filepath.Join(assetsRoot, "assets", "semantic", certificationAssetID+".jpg"), imageBytes, 0o644); err != nil {
 		t.Fatal(err)
 	}
 	imageDigest := sha256.Sum256(imageBytes)
 	imageSHA := hex.EncodeToString(imageDigest[:])
+	stackAssetPath := filepath.Join(assetsRoot, "assets", "semantic", "certification_image_back.jpg")
+	stackImageBytes := motionCanaryJPEG(t, color.RGBA{R: 210, G: 95, B: 45, A: 255})
+	stackImageDigest := sha256.Sum256(stackImageBytes)
+	stackImageSHA := hex.EncodeToString(stackImageDigest[:])
 
 	var items []map[string]any
-	phraseIDs := make([]string, 0, 107)
+	phraseIDs := make([]string, 0, 108)
 	for _, family := range []string{"typewriter", "classic_apple", "modern_apple"} {
 		phraseIDs = append(phraseIDs, motion.Registry.FamilyMotionIDs(family)...)
 	}
-	if len(phraseIDs) != 107 {
-		t.Fatalf("phrase family inventory has %d IDs, want 107", len(phraseIDs))
+	if len(phraseIDs) != 108 {
+		t.Fatalf("phrase family inventory has %d IDs, want 108", len(phraseIDs))
 	}
 	for i, id := range phraseIDs {
 		items = append(items, map[string]any{
@@ -230,30 +245,118 @@ func TestEveryCallableCatalogMotionExecutesOnTheStrictGPU(t *testing.T) {
 			"text": "MOTION CATALOG GPU CANARY", "start_ms": 0, "end_ms": 2000,
 		})
 	}
-	imageIDs := motion.Registry.ImageOverlayMotionIDs()
-	if len(imageIDs) != 18 {
-		t.Fatalf("image motion inventory has %d IDs, want 18", len(imageIDs))
+	imageIDs := motion.Registry.ImagePremiumV1MotionIDs()
+	if len(imageIDs) != 20 {
+		t.Fatalf("premium image motion inventory has %d IDs, want 20", len(imageIDs))
 	}
 	for i, id := range imageIDs {
-		items = append(items, map[string]any{
+		item := map[string]any{
 			"id": fmt.Sprintf("image-%02d", i), "kind": "image", "template_id": "IMAGE_OVERLAY",
 			"preset_id": ImageMotionCorpusPresetID, "motion_id": id, "start_ms": 0, "end_ms": 2000,
+			"entity_caption": "GPU motion canary",
 			"asset_refs": []map[string]any{{
 				"asset_id": certificationAssetID, "sha256": imageSHA,
 				"url": "https://example.test/certification.jpg", "media_type": "image/jpeg",
 			}},
-		})
+		}
+		if id == "image_stack_focus" {
+			if err := os.WriteFile(stackAssetPath, stackImageBytes, 0o644); err != nil {
+				t.Fatalf("materialize second stack image asset: %v", err)
+			}
+			item["motion_params"] = map[string]any{"active_layer_id": "front"}
+			item["image_layers"] = []map[string]any{
+				{"id": "back", "asset_id": certificationAssetID, "start_ms": 0, "end_ms": 2000, "preset_id": ImageMotionCorpusPresetID},
+				{"id": "front", "asset_id": certificationAssetID, "start_ms": 0, "end_ms": 2000, "preset_id": ImageMotionCorpusPresetID},
+			}
+			item["asset_refs"] = append(item["asset_refs"].([]map[string]any), map[string]any{
+				"asset_id": "certification_image_back", "sha256": stackImageSHA,
+				"url": "https://example.test/certification.jpg", "media_type": "image/jpeg",
+			})
+			item["image_layers"].([]map[string]any)[0]["asset_id"] = "certification_image_back"
+		}
+		items = append(items, item)
+	}
+	familyFilter := strings.TrimSpace(os.Getenv("RENDERINGGEN_GPU_CERT_FAMILY"))
+	motionFilter := strings.TrimSpace(os.Getenv("RENDERINGGEN_GPU_CERT_MOTION"))
+	gpuHotPathMode := strings.TrimSpace(os.Getenv("RENDERINGGEN_GPU_CERT_GPU_MODE"))
+	if gpuHotPathMode == "" {
+		gpuHotPathMode = "require_gpu_native"
+	}
+	backend := strings.TrimSpace(os.Getenv("RENDERINGGEN_GPU_CERT_BACKEND"))
+	if backend == "" {
+		backend = "vulkan"
+	}
+	hardware := strings.TrimSpace(os.Getenv("RENDERINGGEN_GPU_CERT_HARDWARE"))
+	if hardware == "" {
+		hardware = "nvenc"
+	}
+	encoderBackend := strings.TrimSpace(os.Getenv("RENDERINGGEN_GPU_CERT_ENCODER_BACKEND"))
+	if encoderBackend == "" {
+		encoderBackend = "native"
+	}
+	encodePreset := "p1"
+	rateControl := "qp"
+	rateValueFlag := "--qp"
+	if hardware == "none" {
+		encodePreset = "medium"
+		rateControl = "crf"
+		rateValueFlag = "--crf"
+	}
+	type motionResult struct {
+		MotionID  string  `json:"motion_id"`
+		Status    string  `json:"status"`
+		DurationS float64 `json:"duration_seconds,omitempty"`
+		Error     string  `json:"error,omitempty"`
+	}
+	var results []motionResult
+	writeReport := func() {
+		if !preserveInputs {
+			return
+		}
+		report := struct {
+			GeneratedAt    string         `json:"generated_at_utc"`
+			Backend        string         `json:"backend"`
+			Hardware       string         `json:"hardware_encoder"`
+			EncoderBackend string         `json:"encoder_backend"`
+			GPUHotPathMode string         `json:"gpu_hot_path_mode"`
+			Motions        []motionResult `json:"motions"`
+		}{time.Now().UTC().Format(time.RFC3339), backend, hardware, encoderBackend, gpuHotPathMode, results}
+		data, marshalErr := json.MarshalIndent(report, "", "  ")
+		if marshalErr == nil {
+			_ = os.WriteFile(filepath.Join(outputRoot, "motion-runtime-report.json"), data, 0o644)
+		}
+	}
+	switch familyFilter {
+	case "":
+	case "phrase":
+		items = items[:len(phraseIDs)]
+	case "image":
+		items = items[len(phraseIDs):]
+		phraseIDs = nil
+	default:
+		t.Fatalf("RENDERINGGEN_GPU_CERT_FAMILY=%q, want phrase or image", familyFilter)
+	}
+	if motionFilter != "" {
+		filtered := items[:0]
+		for _, item := range items {
+			if item["motion_id"] == motionFilter {
+				filtered = append(filtered, item)
+			}
+		}
+		if len(filtered) != 1 {
+			t.Fatalf("RENDERINGGEN_GPU_CERT_MOTION=%q matched %d motions", motionFilter, len(filtered))
+		}
+		items = filtered
+		if items[0]["kind"] == "image" {
+			phraseIDs = nil
+		}
 	}
 
-	// Keep phrase engine graphs to four layers. Image motions use one real image
-	// per graph, matching the production image overlay render request; several
-	// simultaneous camera-backed image layers can exceed the native compositor's
-	// per-frame 2.5D resource budget even though each is individually renderable.
+	// Render each motion in isolation so one unsupported track cannot take down
+	// unrelated motions in the same Vulkan device submission. Image motions use
+	// one real image per graph, matching the production image overlay request.
 	for start := 0; start < len(items); {
-		batchSize := 4
-		if start >= len(phraseIDs) {
-			batchSize = 1
-		}
+		batchSize := 1
 		end := start + batchSize
 		if end > len(items) {
 			end = len(items)
@@ -263,24 +366,49 @@ func TestEveryCallableCatalogMotionExecutesOnTheStrictGPU(t *testing.T) {
 		for i, item := range batchItems {
 			ids[i] = item["motion_id"].(string)
 		}
-		raw, err := json.Marshal(map[string]any{
+		canvasWidth, canvasHeight := 1280, 720
+		if backend == "software" {
+			canvasWidth, canvasHeight = 640, 360
+		}
+		planDocument := map[string]any{
 			"schema_version": "renderinggen.overlay-plan.v1",
 			"plan_id":        fmt.Sprintf("catalog-motions-gpu-%03d", start/batchSize),
-			"video_id":       "motion-catalog-canary", "width": 1280, "height": 720, "fps_num": 24, "fps_den": 1,
-			"background": map[string]any{"kind": "color", "color": []float64{0.08, 0.08, 0.08, 1}},
-			"items":      batchItems,
-		})
+			"video_id":       "motion-catalog-canary", "width": canvasWidth, "height": canvasHeight, "fps_num": 24, "fps_den": 1,
+			"items": batchItems,
+		}
+		if start < len(phraseIDs) {
+			planDocument["background"] = map[string]any{"kind": "color", "color": []float64{0.08, 0.08, 0.08, 1}}
+		}
+		raw, err := json.Marshal(planDocument)
 		if err != nil {
 			t.Fatal(err)
 		}
 		compiled, err := CompileSemantic(raw)
 		if err != nil {
-			t.Fatalf("compile catalog motions %v: %v", ids, err)
+			results = append(results, motionResult{MotionID: ids[0], Status: "compile_failed", Error: err.Error()})
+			if preserveInputs {
+				outDir := filepath.Join(outputRoot, "inputs", ids[0])
+				_ = os.MkdirAll(outDir, 0o755)
+				_ = os.WriteFile(filepath.Join(outDir, "compile-error.txt"), []byte(err.Error()+"\n"), 0o644)
+			}
+			writeReport()
+			t.Errorf("compile catalog motion %v: %v", ids, err)
+			start = end
+			continue
 		}
-		if len(compiled.Plan.Layers) != len(batchItems)+1 {
-			t.Fatalf("compiled %d layers for motions %v, want background + %d overlays", len(compiled.Plan.Layers), ids, len(batchItems))
+		if start < len(phraseIDs) && len(compiled.Plan.Layers) != len(batchItems)+1 {
+			t.Fatalf("compiled %d layers for phrase motions %v, want background + %d overlays", len(compiled.Plan.Layers), ids, len(batchItems))
+		}
+		if start >= len(phraseIDs) && len(compiled.Plan.Layers) < 2 {
+			t.Fatalf("compiled %d layers for image motions %v, want a background and rendered image layers", len(compiled.Plan.Layers), ids)
 		}
 		outDir := t.TempDir()
+		if preserveInputs {
+			outDir = filepath.Join(outputRoot, "inputs", ids[0])
+			if err := os.MkdirAll(outDir, 0o755); err != nil {
+				t.Fatalf("create persistent GPU input directory: %v", err)
+			}
+		}
 		videoPath := filepath.Join(outDir, "catalog-motions.mp4")
 		compiled.Plan.Output.Path = videoPath
 		planBytes, err := json.MarshalIndent(compiled.Plan, "", "  ")
@@ -300,18 +428,50 @@ func TestEveryCallableCatalogMotionExecutesOnTheStrictGPU(t *testing.T) {
 			t.Fatal(err)
 		}
 		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
+		renderStarted := time.Now()
 		cmd := exec.CommandContext(ctx, bin, "render", "--plan", planPath, "--prepared-package", preparedPath,
-			"--assets-root", assetsRoot, "--backend", "vulkan", "--hardware", "nvenc", "--encoder-backend", "native",
-			"--gpu-hot-path-mode", "require_gpu_native", "--encode-preset", "p1", "--rate-control", "qp", "--qp", "23", "-o", videoPath)
+			"--assets-root", assetsRoot, "--backend", backend, "--hardware", hardware, "--encoder-backend", encoderBackend,
+			"--gpu-hot-path-mode", gpuHotPathMode, "--encode-preset", encodePreset, "--rate-control", rateControl, rateValueFlag, "23", "-o", videoPath)
 		cmd.Dir = assetsRoot
 		output, renderErr := cmd.CombinedOutput()
 		cancel()
+		duration := time.Since(renderStarted).Seconds()
+		if preserveInputs {
+			_ = os.WriteFile(filepath.Join(outDir, "render.log"), output, 0o644)
+		}
 		if renderErr != nil {
-			t.Fatalf("strict GPU render rejected catalog motions %v: %v\n%s", ids, renderErr, tailBytes(output))
+			results = append(results, motionResult{MotionID: ids[0], Status: "render_failed", DurationS: duration, Error: renderErr.Error()})
+			writeReport()
+			t.Errorf("strict GPU render rejected catalog motion %v: %v", ids, renderErr)
+			start = end
+			continue
 		}
 		if _, err := os.Stat(videoPath); err != nil {
-			t.Fatalf("strict GPU render of motions %v succeeded but output is missing: %v", ids, err)
+			results = append(results, motionResult{MotionID: ids[0], Status: "output_missing", Error: err.Error()})
+			writeReport()
+			t.Errorf("strict GPU render of motion %v succeeded but output is missing: %v", ids, err)
+			start = end
+			continue
 		}
+		results = append(results, motionResult{MotionID: ids[0], Status: "passed", DurationS: duration})
+		writeReport()
 		start = end
 	}
+}
+
+func motionCanaryJPEG(t *testing.T, base color.RGBA) []byte {
+	t.Helper()
+	const width, height = 480, 360
+	img := image.NewRGBA(image.Rect(0, 0, width, height))
+	for y := 0; y < height; y++ {
+		for x := 0; x < width; x++ {
+			stripe := uint8((x/32 + y/32) % 2 * 24)
+			img.SetRGBA(x, y, color.RGBA{R: min(base.R+stripe, 255), G: base.G, B: base.B, A: 255})
+		}
+	}
+	var buf bytes.Buffer
+	if err := jpeg.Encode(&buf, img, &jpeg.Options{Quality: 88}); err != nil {
+		t.Fatalf("encode GPU motion canary image: %v", err)
+	}
+	return buf.Bytes()
 }

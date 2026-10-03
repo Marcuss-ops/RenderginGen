@@ -333,7 +333,15 @@ func compilePremiumComponent(src *semanticPlan, image Layer, definition motion.M
 		if shapeType == "" {
 			shapeType = "rounded_rect"
 		}
-		var fill any = component.Fill
+		var fill any
+		if len(component.Fill) > 0 {
+			fill = component.Fill
+		} else if shapeType == "path" {
+			// Recipe paths are commonly decorative outlines. The render-plan
+			// decoder defaults an omitted path fill to opaque white, which makes
+			// stroke-only paths fall out of the native Vulkan path-stroke lane.
+			fill = []float64{0, 0, 0, 0}
+		}
 		if component.Gradient != nil {
 			fill = nil
 		}
@@ -538,6 +546,7 @@ func compilePremiumImageStack(ri resolvedItem, src *semanticPlan, registry *asse
 		childItem.MotionParams = nil
 		childItem.EntityCaption = ""
 		childItem.CaptionMotionID = ""
+		childItem.Frame = child.Frame
 		childItem.Params = child.Params
 		childResolved := ri
 		childResolved.Item, childResolved.Params = childItem, child.Params

@@ -173,9 +173,8 @@ type semanticPlan struct {
 	Source          *semanticSource `json:"source,omitempty"`
 	ForegroundScale int             `json:"foreground_scale_percent,omitempty"`
 	// SourceFrame is the optional card treatment of the source clip (border
-	// frame + drop shadow). It is lowered onto the source layer; it is never
-	// rendered by the worker, so an unresolvable declaration is a compile
-	// error instead of a silently dropped style block.
+	// frame + drop shadow + rounded corners + on-edge stroke). An unresolvable
+	// declaration is a compile error instead of a silently dropped style block.
 	SourceFrame *semanticSourceFrame `json:"source_frame,omitempty"`
 	Width       int                  `json:"width"`
 	Height      int                  `json:"height"`
@@ -204,8 +203,16 @@ type semanticSource struct {
 // (the source clip and, per item, a video overlay). Both surfaces share one
 // declaration shape: `source_frame` at plan level and `frame` on the item.
 type semanticSourceFrame struct {
-	Border *semanticFrameBorder `json:"border,omitempty"`
-	Shadow *semanticFrameShadow `json:"shadow,omitempty"`
+	Border       *semanticFrameBorder `json:"border,omitempty"`
+	Shadow       *semanticFrameShadow `json:"shadow,omitempty"`
+	Stroke       *semanticFrameStroke `json:"stroke,omitempty"`
+	ClipRadiusPX float64              `json:"clip_radius_px,omitempty"`
+}
+
+// semanticFrameStroke is an outline painted over the clip perimeter.
+type semanticFrameStroke struct {
+	WidthPX float64 `json:"width_px"`
+	Color   string  `json:"color"`
 }
 
 // semanticFrameBorder is the visible frame around the media box.
@@ -385,15 +392,16 @@ type SemanticAssetRef struct {
 // composite image item. Assets are declared once on the parent item; each child
 // names its asset_id from that declared set.
 type SemanticImageLayer struct {
-	ID           string         `json:"id"`
-	AssetID      string         `json:"asset_id"`
-	StartMS      int64          `json:"start_ms"`
-	EndMS        int64          `json:"end_ms"`
-	PresetID     string         `json:"preset_id"`
-	MotionID     string         `json:"motion_id"`
-	MotionParams map[string]any `json:"motion_params"`
-	Caption      string         `json:"caption,omitempty"`
-	Params       map[string]any `json:"params"`
+	ID           string               `json:"id"`
+	AssetID      string               `json:"asset_id"`
+	StartMS      int64                `json:"start_ms"`
+	EndMS        int64                `json:"end_ms"`
+	PresetID     string               `json:"preset_id"`
+	MotionID     string               `json:"motion_id"`
+	MotionParams map[string]any       `json:"motion_params"`
+	Caption      string               `json:"caption,omitempty"`
+	Params       map[string]any       `json:"params"`
+	Frame        *semanticSourceFrame `json:"frame,omitempty"`
 }
 
 // Audio carries the audio policy in the Chronon render plan so the
@@ -449,22 +457,25 @@ type Layer struct {
 	BoxHeight int       `json:"-"`
 	// MapRaster dimensions are transient verification metadata. The processor
 	// compares the staged PNG's decoded dimensions to this georeferenced size.
-	MapRasterWidth  int `json:"-"`
-	MapRasterHeight int `json:"-"`
-	Size      []float64 `json:"size,omitempty"`
-	Fit       string    `json:"fit,omitempty"`
+	MapRasterWidth  int       `json:"-"`
+	MapRasterHeight int       `json:"-"`
+	Size            []float64 `json:"size,omitempty"`
+	Fit             string    `json:"fit,omitempty"`
 	// EntityImage is transient compiler metadata. The processor clears the
 	// source's contain bars after assets have been materialized, then serializes
 	// only the derived geometry in Size.
-	EntityImage    bool            `json:"-"`
-	Radius         float64         `json:"radius,omitempty"`
-	Position       []float64       `json:"position,omitempty"`
-	Scale          []float64       `json:"scale,omitempty"`
-	Style          *LayerStyle     `json:"style,omitempty"`
-	StartFrame     int64           `json:"start_frame"`
-	DurationFrames int64           `json:"duration_frames"`
-	Animation      *LayerAnimation `json:"animation,omitempty"`
-	TextAnimators  []TextAnimator  `json:"text_animators,omitempty"`
+	EntityImage bool `json:"-"`
+	// EntityCaptionForImageID links a first-class caption to the image whose
+	// final source-aspect geometry is resolved after asset materialization.
+	EntityCaptionForImageID string          `json:"-"`
+	Radius                  float64         `json:"radius,omitempty"`
+	Position                []float64       `json:"position,omitempty"`
+	Scale                   []float64       `json:"scale,omitempty"`
+	Style                   *LayerStyle     `json:"style,omitempty"`
+	StartFrame              int64           `json:"start_frame"`
+	DurationFrames          int64           `json:"duration_frames"`
+	Animation               *LayerAnimation `json:"animation,omitempty"`
+	TextAnimators           []TextAnimator  `json:"text_animators,omitempty"`
 	// Derived by the lowering pass from concrete Z/rotation tracks. Motion
 	// authors never need to duplicate this renderer routing bit by hand.
 	Enable3D    bool `json:"enable_3d,omitempty"`
@@ -498,6 +509,9 @@ type Layer struct {
 	PremiumCanvasSize     bool      `json:"-"`
 	PremiumSyncTransform  bool      `json:"-"`
 	PremiumWipeMask       bool      `json:"-"`
+	// FrameStroke is transient compiler metadata expanded to a native shape
+	// layer after the media layer is compiled; it never crosses the Chronon wire.
+	FrameStroke *LayerStroke `json:"-"`
 }
 
 type LayerShape struct {

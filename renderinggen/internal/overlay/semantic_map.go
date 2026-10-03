@@ -311,8 +311,9 @@ func mapLODWindowCoversMove(window geo.Window, move *SemanticMapCameraMove, lowZ
 	fromX, fromY := geo.LatLonToGlobalPixel(move.From.Latitude, move.From.Longitude, window.Zoom)
 	toX, toY := geo.LatLonToGlobalPixel(move.To.Latitude, move.To.Longitude, window.Zoom)
 	deltaX := wrapMapPlaneDelta(toX-fromX, geo.MercatorTileSize*math.Pow(2, float64(window.Zoom)))
-	viewportRadius := math.Hypot(float64(canvasWidth)/2, float64(canvasHeight)/2) /
-		math.Max(0.17, math.Cos(math.Pi/180*math.Max(math.Abs(move.StartTiltDeg), math.Abs(move.EndTiltDeg))))
+	viewportScale := 1 / math.Max(0.17, math.Cos(math.Pi/180*math.Max(math.Abs(move.StartTiltDeg), math.Abs(move.EndTiltDeg))))
+	viewportHalfWidth := float64(canvasWidth) / 2 * viewportScale
+	viewportHalfHeight := float64(canvasHeight) / 2 * viewportScale
 	zoomFactor := math.Pow(2, move.EndZoom-move.StartZoom)
 	toTime := func(zoom float64) float64 {
 		return math.Max(0, math.Min(1, (math.Pow(2, zoom-move.StartZoom)-1)/(zoomFactor-1)))
@@ -323,8 +324,10 @@ func mapLODWindowCoversMove(window geo.Window, move *SemanticMapCameraMove, lowZ
 		zoom := move.StartZoom + math.Log2(1+(zoomFactor-1)*t)
 		x := fromX + deltaX*t - window.TopLeftX
 		y := fromY + (toY-fromY)*t - window.TopLeftY
-		margin := viewportRadius * math.Pow(2, float64(window.Zoom)-zoom)
-		if x < margin || y < margin || x > window.Width-margin || y > window.Height-margin {
+		zoomScale := math.Pow(2, float64(window.Zoom)-zoom)
+		marginX := viewportHalfWidth * zoomScale
+		marginY := viewportHalfHeight * zoomScale
+		if x < marginX || y < marginY || x > window.Width-marginX || y > window.Height-marginY {
 			return false
 		}
 	}
@@ -350,39 +353,27 @@ func compileMapLayers(ri resolvedItem, src *semanticPlan, registry *assetRegistr
 	window := geo.CenteredOn(m.Center.Latitude, m.Center.Longitude, m.Zoom, m.Width, m.Height)
 	basemap := Layer{
 		ID: mapBasemapLayerID(ri.Item.ID), Type: "image",
-		Asset: registry.Path(ri.Item.Assets[0].ID),
+		Asset:    registry.Path(ri.Item.Assets[0].ID),
 		BoxWidth: m.Width, BoxHeight: m.Height, MapRasterWidth: m.Width, MapRasterHeight: m.Height,
 		Size: []float64{float64(m.Width), float64(m.Height)}, Fit: FitStretch,
 		StartFrame: ri.Start, DurationFrames: duration,
 	}
-	animation, err := animationForMotion(m.MotionID, ri.Item.MotionParams, "", duration, 0)
-	if err != nil {
-		return nil, fmt.Errorf("overlay: map item %q motion %q: %w", ri.Item.ID, m.MotionID, err)
-	}
-	applyMotionRouting(&basemap, animation)
-	layers := make([]Layer, 0, len(m.LODs)+2+2*len(m.Pins))
-	if m.CameraMove == nil {
-		layers = append(layers, basemap)
+	// Use one certified full-resolution plate as the 3D camera's continuous
+	// backing surface. The multi-LOD cross-fades expose blank frames on the
+	// Vulkan path; the base raster stays opaque while the camera zooms over it.
+	if m.CameraMove != nil {
+		originX, originY := geo.LatLonToGlobalPixel(m.CameraMove.From.Latitude, m.CameraMove.From.Longitude, int(m.CameraMove.StartZoom))
+		centerX, centerY := geo.LatLonToGlobalPixel(m.Center.Latitude, m.Center.Longitude, m.Zoom)
+		worldSize := geo.MercatorTileSize * math.Pow(2, m.CameraMove.StartZoom)
+		scale := math.Pow(2, float64(m.Zoom)-m.CameraMove.StartZoom)
+		basemap.Position = []float64{wrapMapPlaneDelta(centerX*scale-originX, worldSize), -(centerY*scale - originY), 0}
+		basemap.Scale = []float64{scale, scale}
+		basemap.Enable3D = true
 	} else {
-		originX, originY := geo.LatLonToGlobalPixel(m.CameraMove.From.Latitude, m.CameraMove.From.Longitude, m.Zoom)
-		worldSize := geo.MercatorTileSize * math.Pow(2, float64(m.Zoom))
-		for index, lod := range m.LODs {
-			centerX, centerY := geo.LatLonToGlobalPixel(lod.Center.Latitude, lod.Center.Longitude, lod.Zoom)
-			scale := math.Pow(2, float64(m.Zoom-lod.Zoom))
-			worldOffsetX := wrapMapPlaneDelta(centerX*scale-originX, worldSize)
-			worldOffsetY := -(centerY*scale - originY)
-			layer := Layer{
-				ID: mapLODLayerID(ri.Item.ID, index), Type: "image",
-				Asset: registry.Path(lod.AssetID), BoxWidth: lod.Width, BoxHeight: lod.Height,
-				MapRasterWidth: lod.Width, MapRasterHeight: lod.Height,
-				Size: []float64{float64(lod.Width), float64(lod.Height)}, Fit: FitStretch,
-				Position: []float64{worldOffsetX, worldOffsetY, 0}, Scale: []float64{scale, scale},
-				StartFrame: ri.Start, DurationFrames: duration, Enable3D: true,
-			}
-			layer.Animation = mapLODAnimation(index, m.LODs, duration, m.CameraMove)
-			layers = append(layers, layer)
-		}
+		basemap.Scale = []float64{float64(src.Width) / float64(m.Width), float64(src.Height) / float64(m.Height)}
 	}
+	layers := make([]Layer, 0, 1+2*len(m.Pins)+1)
+	layers = append(layers, basemap)
 	font := OfficialFontPathForLanguage(src.Language)
 	for _, pin := range m.Pins {
 		x, y := window.ToRaster(pin.Latitude, pin.Longitude)
@@ -432,22 +423,32 @@ func mapTextStyle(font string, size, minSize float64, fill string) *LayerStyle {
 }
 
 func clampMapBox(value, limit float64) float64 {
-	if limit < 0 { limit = 0 }
-	if value < 0 { return 0 }
-	if value > limit { return limit }
+	if limit < 0 {
+		limit = 0
+	}
+	if value < 0 {
+		return 0
+	}
+	if value > limit {
+		return limit
+	}
 	return value
 }
 
 func wrapMapPlaneDelta(value, worldSize float64) float64 {
-	if value > worldSize/2 { value -= worldSize }
-	if value < -worldSize/2 { value += worldSize }
+	if value > worldSize/2 {
+		value -= worldSize
+	}
+	if value < -worldSize/2 {
+		value += worldSize
+	}
 	return value
 }
 
 func mapWorldPoint(latitude, longitude float64, zoom int, origin SemanticMapPoint) (float64, float64) {
 	x, y := geo.LatLonToGlobalPixel(latitude, longitude, zoom)
 	originX, originY := geo.LatLonToGlobalPixel(origin.Latitude, origin.Longitude, zoom)
-	return wrapMapPlaneDelta(x-originX, geo.MercatorTileSize*math.Pow(2, float64(zoom))), -(y-originY)
+	return wrapMapPlaneDelta(x-originX, geo.MercatorTileSize*math.Pow(2, float64(zoom))), -(y - originY)
 }
 
 func mapCameraKeyframes(move *SemanticMapCameraMove, startFrame, endFrame int64) (*CameraPlan, *CameraAnimation) {
@@ -474,16 +475,18 @@ func mapCameraKeyframes(move *SemanticMapCameraMove, startFrame, endFrame int64)
 	return base, &CameraAnimation{Tracks: tracks}
 }
 
-// mapPinLayer draws one grounded place as an ellipse centred on its projected
-// raster pixel. The white ring keeps the marker legible over any basemap.
+// mapPinLayer draws one grounded place as a circular text glyph centred on its
+// projected raster pixel. The text backend supports this on the native Vulkan
+// path, where the generic shape node is not available.
 func mapPinLayer(ri resolvedItem, src *semanticPlan, pin SemanticMapPin, x, y float64, duration int64) Layer {
 	size := 2 * pin.RadiusPX
-	fill, _ := parseRGBA(pin.Color)
+	style := mapTextStyle(OfficialFontPathForLanguage(src.Language), size*1.5, size, pin.Color)
+	style.Stroke = &LayerStroke{Color: mapPinStrokeColor, Width: mapPinStrokeWidthPX}
 	return Layer{
-		ID: mapPinLayerID(ri.Item.ID, pin.ID), Type: "shape", Size: []float64{size, size},
-		Position:   canvasBoxPosition("shape", x-pin.RadiusPX, y-pin.RadiusPX, size, size, src.Width, src.Height),
+		ID: mapPinLayerID(ri.Item.ID, pin.ID), Type: "text", Text: "O", Size: []float64{size, size},
+		Position:   canvasBoxPosition("text", x-pin.RadiusPX, y-pin.RadiusPX, size, size, src.Width, src.Height),
 		StartFrame: ri.Start, DurationFrames: duration,
-		Shape: &LayerShape{Type: "ellipse", Fill: fill, Stroke: &LayerStroke{Color: mapPinStrokeColor, Width: mapPinStrokeWidthPX}},
+		Style: style,
 	}
 }
 
@@ -521,20 +524,24 @@ func mapLODAnimation(index int, lods []SemanticMapLOD, duration int64, move *Sem
 	keys := []AnimationKeyframe{}
 	add := func(frame int64, value float64) { keys = append(keys, AnimationKeyframe{Frame: frame, Value: value}) }
 	if index == 0 {
+		// Keep the coarsest certified plate as a visible fallback for the full
+		// move. Finer plates fade in above it; it must never fade out underneath
+		// them or any uncovered part of the canvas becomes blank.
 		add(0, 1)
+		add(duration, 1)
 	} else {
 		add(0, 0)
 		start := math.Max(startZoom, thresholds[index-1]-0.25)
 		add(mapFrameAtZoom(start, startZoom, endZoom, duration), 0)
 		add(mapFrameAtZoom(math.Min(endZoom, thresholds[index-1]+0.25), startZoom, endZoom, duration), 1)
-	}
-	if index < len(lods)-1 {
-		end := thresholds[index]
-		add(mapFrameAtZoom(math.Max(startZoom, end-0.25), startZoom, endZoom, duration), 1)
-		add(mapFrameAtZoom(math.Min(endZoom, end+0.25), startZoom, endZoom, duration), 0)
-	} else {
-		add(mapFrameAtZoom(math.Max(startZoom, endZoom-0.25), startZoom, endZoom, duration), 1)
-		add(duration, 1)
+		if index < len(lods)-1 {
+			end := thresholds[index]
+			add(mapFrameAtZoom(math.Max(startZoom, end-0.25), startZoom, endZoom, duration), 1)
+			add(mapFrameAtZoom(math.Min(endZoom, end+0.25), startZoom, endZoom, duration), 0)
+		} else {
+			add(mapFrameAtZoom(math.Max(startZoom, endZoom-0.25), startZoom, endZoom, duration), 1)
+			add(duration, 1)
+		}
 	}
 	if duration <= 1 {
 		return nil

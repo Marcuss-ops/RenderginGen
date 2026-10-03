@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"errors"
 	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -28,10 +29,12 @@ import (
 const videoHash = "79fd615a866fe7f9eb4da8d9c41ab57e3bd48056df42fd2c13e4d461a87afbe3"
 
 type fakeRenderer struct {
-	req   chronon.RenderRequest
-	err   error
-	write func(path string) error
-	calls int
+	req      chronon.RenderRequest
+	requests []chronon.RenderRequest
+	err      error
+	errs     []error
+	write    func(path string) error
+	calls    int
 }
 
 func TestHasVisualOverlayDistinguishesVideoOnlyFromAuthoredComposition(t *testing.T) {
@@ -166,9 +169,55 @@ func TestFinalJobCompositeRequiresNativeCompositionPath(t *testing.T) {
 	}
 }
 
+func TestRunGPURetriesRecoverableDeviceLossInSoftwareWhenAllowed(t *testing.T) {
+	proc, _, renderer := newProcessor(t)
+	proc.backend = "vulkan"
+	proc.hardwareEncoder = "nvenc"
+	ws, err := workspace.New(proc.jobsRoot, "final-composite-device-loss")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer ws.Cleanup()
+	renderer.errs = []error{errors.New("Vulkan device lost during vkWaitForFences(CUDA export slot)"), nil}
+	renderer.write = func(path string) error { return os.WriteFile(path, []byte("software-video"), 0o600) }
+	prepared := &PreparedJob{
+		Job:        &queue.Job{ID: "plan:final-composite:scene-device-loss"},
+		Workspace:  ws,
+		OutputPath: filepath.Join(ws.Root(), "rendered.mp4"),
+		Plan: &overlay.Plan{
+			Canvas: overlay.Canvas{Width: 1280, Height: 720, FPSNum: 30, FPSDen: 1, DurationFrames: 30},
+			Layers: []overlay.Layer{{ID: "source", Type: "video"}, {ID: "image", Type: "image"}},
+		},
+		Metrics: map[string]float64{},
+	}
+	if err := proc.RunGPU(context.Background(), prepared); err != nil {
+		t.Fatalf("RunGPU() = %v, want software retry after Vulkan device loss", err)
+	}
+	if renderer.calls != 2 || len(renderer.requests) != 2 {
+		t.Fatalf("renderer calls=%d requests=%d, want one Vulkan attempt and one software retry", renderer.calls, len(renderer.requests))
+	}
+	if !renderer.requests[0].Requirements.CPUFallbackAllowed {
+		t.Fatal("non-strict final composite must allow recovery after GPU capability loss")
+	}
+	fallback := renderer.requests[1]
+	if fallback.Requirements.Backend != "software" || fallback.Requirements.GPURequired || fallback.HardwareEncoder != chronon.HardwareEncoderNone {
+		t.Fatalf("fallback request = %+v, want software backend without GPU encoder handoff", fallback)
+	}
+	if got := prepared.Metrics["chronon_software_fallback"]; got != 1 {
+		t.Fatalf("chronon_software_fallback = %v, want 1", got)
+	}
+	if data, err := os.ReadFile(prepared.OutputPath); err != nil || string(data) != "software-video" {
+		t.Fatalf("published fallback output = %q, err=%v", data, err)
+	}
+}
+
 func (f *fakeRenderer) Render(_ context.Context, req chronon.RenderRequest) error {
 	f.calls++
 	f.req = req
+	f.requests = append(f.requests, req)
+	if f.calls <= len(f.errs) && f.errs[f.calls-1] != nil {
+		return f.errs[f.calls-1]
+	}
 	if f.err != nil {
 		return f.err
 	}

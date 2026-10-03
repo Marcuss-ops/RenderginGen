@@ -46,7 +46,11 @@ func resolveNativeEncodeSelection(req RenderRequest) (nativeEncodeSelection, boo
 		// pipe encoder instead of the in-process native muxer: the latter can
 		// report fewer encoded frames for software-composed output, causing the
 		// receipt frame-count gate to reject an otherwise complete render.
-		return nativeEncodeSelection{EncoderBackend: "pipe", GpuHotPathMode: "auto"}, true
+		hardware := ""
+		if req.HardwareEncoder == HardwareEncoderNone {
+			hardware = HardwareEncoderNone
+		}
+		return nativeEncodeSelection{HardwareEncoder: hardware, EncoderBackend: "pipe", GpuHotPathMode: "auto"}, true
 	}
 	if reqs.GPURequired {
 		// GPU requirements select the native encoder capability. RenderingGen
@@ -87,7 +91,11 @@ func resolveNativeEncodeSelection(req RenderRequest) (nativeEncodeSelection, boo
 		if encoderBackend == "" {
 			encoderBackend = "native"
 		}
-		return nativeEncodeSelection{EncoderBackend: encoderBackend, GpuHotPathMode: "auto"}, true
+		hardware := ""
+		if req.HardwareEncoder == HardwareEncoderNone {
+			hardware = HardwareEncoderNone
+		}
+		return nativeEncodeSelection{HardwareEncoder: hardware, EncoderBackend: encoderBackend, GpuHotPathMode: "auto"}, true
 	}
 	return nativeEncodeSelection{}, false
 }
@@ -148,7 +156,7 @@ func renderArgs(req RenderRequest) []string {
 			args = append(args, "--hardware", selection.HardwareEncoder)
 		}
 		args = append(args, "--encoder-backend", selection.EncoderBackend)
-		if req.EncodePreset != "" && selection.HardwareEncoder != "" {
+		if req.EncodePreset != "" && selection.HardwareEncoder != "" && selection.EncoderBackend == "native" {
 			// Explicit NVENC preset (e.g. "p2"): the throughput tier the
 			// worker is configured with. Only the native branch targets
 			// h264_nvenc; the pipe branch uses x264 vocabulary and must never

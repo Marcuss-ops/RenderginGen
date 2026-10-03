@@ -82,8 +82,11 @@ func TestEntityCaptionEmitsImageAndCaptionWithSharedLifetime(t *testing.T) {
 	if caption.Position[1] <= image.Position[1] {
 		t.Fatalf("caption center y=%v must be below image center y=%v", caption.Position[1], image.Position[1])
 	}
-	if caption.Style.Background == nil || caption.Style.Background.Radius <= 0 {
-		t.Fatal("caption must use the shared rounded background style")
+	if caption.Style.Background != nil {
+		t.Fatal("caption must avoid a Vulkan-unsupported text background card")
+	}
+	if caption.Style.Fill != "#101827" || caption.Style.Stroke == nil || caption.Style.Stroke.Width <= 0 {
+		t.Fatalf("caption contrast style = %+v; want dark ink and a light keyline", caption.Style)
 	}
 }
 

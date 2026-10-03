@@ -118,6 +118,7 @@ const (
 	AudioModeUnsupported              = "audio_mode_unsupported"
 	UnknownTemplates                  = "unknown_templates"
 	ChrononGPUCompositionPipe         = "chronon_gpu_composition_pipe"
+	ChrononSoftwareFallback           = "chronon_software_fallback"
 	MirrorFailure                     = "mirror_failure"
 	DriveUploadChunks                 = "drive_upload_chunks"
 	DriveUploadBytes                  = "drive_upload_bytes"
@@ -226,8 +227,9 @@ var vocab = map[string]string{
 	SubtitleLayers: UnitCount, RenderFramesDone: UnitCount, RenderFramesTotal: UnitCount,
 	RenderFPS: "fps", ProfileStrippedByConfig: UnitCount, AudioInertParams: UnitCount,
 	AudioModeUnsupported: UnitCount, UnknownTemplates: UnitCount, ChrononGPUCompositionPipe: UnitCount,
-	MirrorFailure:     UnitCount,
-	DriveUploadChunks: UnitCount, DriveUploadBytes: UnitBytes,
+	ChrononSoftwareFallback: UnitCount,
+	MirrorFailure:           UnitCount,
+	DriveUploadChunks:       UnitCount, DriveUploadBytes: UnitBytes,
 	ChrononTimingPreserved: UnitCount, ChrononTimingBytes: UnitBytes,
 	ClosedGOPUncertifiable:        UnitCount,
 	PublicationDriveSkippedPolicy: UnitCount, PublicationDriveSkippedCapability: UnitCount,

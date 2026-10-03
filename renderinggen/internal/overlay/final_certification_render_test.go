@@ -202,8 +202,8 @@ func TestFinal_RepeatedRenderSameProcess(t *testing.T) {
 
 func tailBytes(b []byte) string {
 	s := strings.TrimSpace(string(b))
-	if len(s) > 800 {
-		s = s[len(s)-800:]
+	if len(s) > 5000 {
+		s = s[len(s)-5000:]
 	}
 	return s
 }

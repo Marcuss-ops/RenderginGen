@@ -13,6 +13,48 @@ import (
 	"time"
 )
 
+const (
+	maxRenderFailureLines = 6
+	maxRenderFailureLine  = 384
+)
+
+// renderFailureDiagnostics retains only a short tail of stderr lines that
+// look like actionable errors. The CLI output is already streamed to worker
+// logs; this copy carries the useful cause through the job error when a fast
+// preflight failure would otherwise be reduced to only "exit status 1".
+type renderFailureDiagnostics struct {
+	mu    sync.Mutex
+	lines []string
+}
+
+func (d *renderFailureDiagnostics) remember(line string) {
+	lower := strings.ToLower(line)
+	if !strings.Contains(lower, "error") && !strings.Contains(lower, "failed") &&
+		!strings.Contains(lower, "invalid") && !strings.Contains(lower, "unsupported") &&
+		!strings.Contains(lower, "missing") && !strings.Contains(lower, "fatal") {
+		return
+	}
+	line = strings.TrimSpace(line)
+	if line == "" {
+		return
+	}
+	if len(line) > maxRenderFailureLine {
+		line = line[:maxRenderFailureLine] + "…"
+	}
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	d.lines = append(d.lines, line)
+	if len(d.lines) > maxRenderFailureLines {
+		d.lines = append([]string(nil), d.lines[len(d.lines)-maxRenderFailureLines:]...)
+	}
+}
+
+func (d *renderFailureDiagnostics) snapshot() string {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	return strings.Join(d.lines, " | ")
+}
+
 // scanRenderOutput forwards each complete output line to onLine and returns
 // the terminal scanner error (nil on EOF). The scanner buffer starts at 64
 // KiB and grows up to maxRenderOutputLine, so ordinary multi-KiB log lines are
