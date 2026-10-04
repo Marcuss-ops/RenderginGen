@@ -120,38 +120,6 @@ func CompileSemantic(raw []byte) (CompileResult, error) {
 	return CompileResult{Plan: plan, Assets: assets, Stats: stats, Prepared: prepared, UnknownTemplates: unknown}, nil
 }
 
-// Marshal serializes the typed plan once at the Chronon boundary.
-func (p *Plan) Marshal() ([]byte, error) {
-	clone := *p
-	hasV3 := clone.Camera != nil && len(clone.Layers) > 0
-	for _, l := range p.Layers {
-		if l.Type == "shape" || len(l.Effects) > 0 || l.Shape != nil || l.ScreenSpace ||
-			len(l.EffectParamTracks) > 0 || l.Parent != "" || l.TransitionIn != nil || len(l.Masks) > 0 ||
-			layerAnimationNeedsV3(l.Animation) {
-			hasV3 = true
-			break
-		}
-	}
-	if hasV3 {
-		clone.Schema = "chronon.render-plan.v3"
-		clone.Version = 3
-	}
-	return json.Marshal(&clone)
-}
-
-func layerAnimationNeedsV3(animation *LayerAnimation) bool {
-	if animation == nil {
-		return false
-	}
-	for _, track := range animation.Tracks {
-		switch track.Property {
-		case "stroke_width", "stroke_color", "fill_color", "blur":
-			return true
-		}
-	}
-	return false
-}
-
 // The struct fields below are the compiler's projection of
 // contracts/overlay-plan.v1.schema.json. The two declarations must describe
 // EXACTLY the same property set in both directions —
@@ -392,16 +360,17 @@ type SemanticAssetRef struct {
 // composite image item. Assets are declared once on the parent item; each child
 // names its asset_id from that declared set.
 type SemanticImageLayer struct {
-	ID           string               `json:"id"`
-	AssetID      string               `json:"asset_id"`
-	StartMS      int64                `json:"start_ms"`
-	EndMS        int64                `json:"end_ms"`
-	PresetID     string               `json:"preset_id"`
-	MotionID     string               `json:"motion_id"`
-	MotionParams map[string]any       `json:"motion_params"`
-	Caption      string               `json:"caption,omitempty"`
-	Params       map[string]any       `json:"params"`
-	Frame        *semanticSourceFrame `json:"frame,omitempty"`
+	ID              string               `json:"id"`
+	AssetID         string               `json:"asset_id"`
+	StartMS         int64                `json:"start_ms"`
+	EndMS           int64                `json:"end_ms"`
+	PresetID        string               `json:"preset_id"`
+	MotionID        string               `json:"motion_id"`
+	MotionParams    map[string]any       `json:"motion_params"`
+	Caption         string               `json:"caption,omitempty"`
+	CaptionMotionID string               `json:"caption_motion_id,omitempty"`
+	Params          map[string]any       `json:"params"`
+	Frame           *semanticSourceFrame `json:"frame,omitempty"`
 }
 
 // Audio carries the audio policy in the Chronon render plan so the

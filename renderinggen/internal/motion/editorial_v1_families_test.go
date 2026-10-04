@@ -298,7 +298,7 @@ func TestText3DCatalogParity(t *testing.T) {
 }
 
 func TestEntityCaptionV1FamilyServesTextTargets(t *testing.T) {
-	definitions := loadV1Family(t, "entity_caption_v1", 6)
+	definitions := loadV1Family(t, "entity_caption_v1", 16)
 	for _, d := range definitions {
 		servesText := false
 		for _, target := range d.Targets {

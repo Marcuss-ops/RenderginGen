@@ -8,11 +8,16 @@ func TestTypewriterVariantsHaveVisibleNonConstantMotion(t *testing.T) {
 		t.Fatalf("canonical catalog: %v", err)
 	}
 	want := map[string]bool{
-		"typewriter_clean":    true,
-		"typewriter_pop":      true,
-		"typewriter_neon":     true,
-		"typewriter_tracking": true,
-		"typewriter_glitch":   true,
+		"typewriter_clean":      true,
+		"typewriter_pop":        true,
+		"typewriter_neon":       true,
+		"typewriter_tracking":   true,
+		"typewriter_glitch":     true,
+		"typewriter_lift":       true,
+		"typewriter_slide_in":   true,
+		"typewriter_scale_up":   true,
+		"typewriter_blur_focus": true,
+		"typewriter_soft_lift":  true,
 	}
 	found := make(map[string]bool, len(want))
 	for _, definition := range catalog.Motions {

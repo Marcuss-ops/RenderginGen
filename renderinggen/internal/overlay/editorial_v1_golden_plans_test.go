@@ -619,8 +619,14 @@ func TestGoldenMediaFrameGallery(t *testing.T) {
 	}
 	seen := map[string]bool{}
 	for _, layer := range layers {
-		if layer.Style == nil || layer.Style.Background == nil {
+		// The framed image keeps its card treatment; the caption text must NOT
+		// carry a background card — the strict native Vulkan text path cannot
+		// lower a text_card node, so captions use typography and shadow instead.
+		if layer.Type == "image" && (layer.Style == nil || layer.Style.Background == nil) {
 			t.Fatalf("media frame layer %s lowered without its border background", layer.ID)
+		}
+		if layer.Type == "text" && layer.Style != nil && layer.Style.Background != nil {
+			t.Fatalf("caption layer %s lowered with a text_card background the GPU path cannot render", layer.ID)
 		}
 		seen[layer.ID] = true
 	}
@@ -774,6 +780,11 @@ func TestGoldenCaptionMotionCompilesThroughFullPipeline(t *testing.T) {
 	for _, motionID := range []string{
 		"text_depth_in", "text_fade_up", "text_scale_punch",
 		"text_word_rise", "text_word_stagger", "text_yaw_in",
+		"entity_caption_blur_reveal", "entity_caption_tracking_snap",
+		"entity_caption_word_spring", "entity_caption_glyph_rise",
+		"entity_caption_side_glide", "entity_caption_warm_reveal",
+		"entity_caption_flip_settle", "entity_caption_word_drop",
+		"entity_caption_focus_punch", "entity_caption_neon_breathe",
 	} {
 		item := entityCardItem("cap-"+motionID, "Determinism Check", 0, 2000, "image_25d_depth_float_in")
 		item["caption_motion_id"] = motionID

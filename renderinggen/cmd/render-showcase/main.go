@@ -12,7 +12,7 @@ import (
 )
 
 type ShowcaseSpec struct {
-	Name    string
+	Name     string
 	PlanJSON string
 }
 

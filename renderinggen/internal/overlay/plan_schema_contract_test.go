@@ -206,10 +206,10 @@ func TestRenderPlanSchemaCheckDetectsAnUndeclaredProperty(t *testing.T) {
 						"type": map[string]any{"type": "string"},
 						"style": map[string]any{
 							"properties": map[string]any{
-								"font":           map[string]any{"type": "string"},
-								"fit_mode":       map[string]any{"type": "string"},
-								"min_font_size":  map[string]any{"type": "number"},
-								"max_font_size":  map[string]any{"type": "number"},
+								"font":          map[string]any{"type": "string"},
+								"fit_mode":      map[string]any{"type": "string"},
+								"min_font_size": map[string]any{"type": "number"},
+								"max_font_size": map[string]any{"type": "number"},
 								"shadow": map[string]any{
 									"properties": map[string]any{
 										"color": map[string]any{"type": "string"},

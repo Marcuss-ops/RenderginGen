@@ -41,7 +41,7 @@ func TestMotionFamiliesKeepStylesIndependentAndComplete(t *testing.T) {
 	}
 	// Editorial Visual Motion V1 grows the certified web vocabulary to 14
 	// (web_cursor_focus and web_section_spotlight joined).
-	for family, count := range map[string]int{"typewriter": 5, "classic_apple": 42, "modern_apple": 61, "web": 14} {
+	for family, count := range map[string]int{"typewriter": 10, "classic_apple": 42, "modern_apple": 61, "web": 14} {
 		if ids := Registry.FamilyMotionIDs(family); len(ids) != count {
 			t.Errorf("%s family has %d motions, want %d", family, len(ids), count)
 		}
@@ -197,8 +197,8 @@ func TestApplePhrasePackIsInTheCanonicalPoolAndHasNoPerGlyphBlur(t *testing.T) {
 	}
 	pool := make(map[string]bool)
 	phrasePool := PhraseMotionPool()
-	if len(phrasePool) != 22 {
-		t.Fatalf("GPU phrase motion pool has %d entries, want 22", len(phrasePool))
+	if len(phrasePool) != 26 {
+		t.Fatalf("GPU phrase motion pool has %d entries, want 26", len(phrasePool))
 	}
 	for _, id := range phrasePool {
 		pool[id] = true

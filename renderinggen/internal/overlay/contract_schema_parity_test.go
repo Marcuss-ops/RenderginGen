@@ -166,6 +166,10 @@ func TestContractDeclaresEveryLiveLoweringInput(t *testing.T) {
 			t.Errorf("items.%s is read by the compiler but absent from the schema", field)
 		}
 	}
+	imageLayerProperties := contractschema.PropertyNames(t, schema, "#/properties/items/items/properties/image_layers/items")
+	if !contractschema.Contains(imageLayerProperties, "caption_motion_id") {
+		t.Error("image_layers[].caption_motion_id is consumed by the compiler but absent from the schema")
+	}
 	for _, field := range []string{"font_ref", "margin_px"} {
 		if !contractschema.Contains(watermarkProperties, field) {
 			t.Errorf("watermark.%s is read by the compiler but absent from the schema", field)

@@ -447,6 +447,7 @@
                 "motion_id": { "type": "string" },
                 "motion_params": { "type": "object" },
                 "caption": { "type": "string", "minLength": 1 },
+                "caption_motion_id": { "type": "string", "minLength": 1, "description": "Optional caption motion override for this image layer; resolved through the entity_caption_v1 motion catalog." },
                 "params": { "type": "object" },
                 "frame": {
                   "type": "object",

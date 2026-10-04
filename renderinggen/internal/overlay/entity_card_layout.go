@@ -3,6 +3,7 @@ package overlay
 import (
 	"fmt"
 	"math"
+	"strings"
 	"unicode/utf8"
 
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/motion"
@@ -39,11 +40,11 @@ const (
 	// entityCaptionMaxHeightPX is the caption box height handed to the text
 	// compiler; the box is the hit area, not the text run.
 	entityCaptionMaxHeightPX = 88.0
-	// entityCaptionMinFontPX / entityCaptionMaxFontPX bound the font fitting
-	// for long names: the text scales down before it truncates, and it never
-	// truncates.
-	entityCaptionMinFontPX = 20.0
-	entityCaptionMaxFontPX = 30.0
+	// entityCaptionMinFontPX / entityCaptionMaxFontPX bound the cinematic title
+	// scale. Long names shrink before wrapping/clamping so short labels read as
+	// titles while unusually long names remain complete and safe.
+	entityCaptionMinFontPX = 12.0
+	entityCaptionMaxFontPX = 42.0
 )
 
 // EntityCardImageBounds is the resolved image rect of an entity card, in
@@ -141,15 +142,26 @@ func ResolveEntityCardLayout(canvasWidth, canvasHeight int, imageRect EntityCard
 		return layout, nil
 	}
 
-	// Long names fit by shrinking the font first, then by clamping the box
-	// width to the safe area. The text compiler wraps within the box, so a
-	// clamped box keeps every rune on screen.
-	fontSize := entityCaptionMaxFontPX
+	// Use the same word-aware 25-rune wrapping as the text compiler to size
+	// the widest visible line (not the unwrapped full name). This preserves a
+	// strong title size for normal names and keeps long names complete.
+	wrapped, lineCount := wrapPhraseAt25(caption)
+	lines := strings.Split(wrapped, "\n")
 	maxWidth := safe.Right - safe.Left
-	width := captionBoxWidth(caption, fontSize)
+	fontSize := entityCaptionMaxFontPX
+	bottomLimit := float64(canvasHeight) - entityCaptionSafeMarginPX
+	minimumImageTop := math.Min(imageRect.Top(), entityCaptionSafeMarginPX)
+	maxCaptionHeight := bottomLimit - minimumImageTop - imageRect.Height - entityCaptionMarginPX
+	if maxCaptionHeight > 0 && lineCount > 0 {
+		verticalFontLimit := (maxCaptionHeight - 24) / (float64(lineCount) * 1.35)
+		if verticalFontLimit < fontSize {
+			fontSize = math.Max(entityCaptionMinFontPX, verticalFontLimit)
+		}
+	}
+	width := captionLinesWidth(lines, fontSize)
 	for width > maxWidth && fontSize > entityCaptionMinFontPX {
 		fontSize -= 1
-		width = captionBoxWidth(caption, fontSize)
+		width = captionLinesWidth(lines, fontSize)
 	}
 	if width > maxWidth {
 		width = maxWidth
@@ -159,24 +171,26 @@ func ResolveEntityCardLayout(canvasWidth, canvasHeight int, imageRect EntityCard
 	// margin below the image bottom edge; its horizontal center tracks the
 	// image center unless clamping keeps the box inside the safe area.
 	captionTop := imageRect.Bottom() + entityCaptionMarginPX
-	captionHeight := entityCaptionMaxHeightPX
+	captionHeight := math.Max(entityCaptionMaxHeightPX, float64(lineCount)*fontSize*1.35+24)
 	// Vertical fallback: when image + margin + caption runs past the bottom
 	// limit, the IMAGE moves up — the card is the pair, so the caption never
 	// slides off-frame and the anchor relation never breaks. The shift is
-	// clamped so the image never rises above the safe top band; a card that
-	// cannot fit either way keeps the caption's bottom on the limit.
-	bottomLimit := float64(canvasHeight) - entityCaptionSafeMarginPX
+	// clamped so the image stays within the canvas margin; a card that cannot
+	// fit either way keeps the caption's bottom on the limit.
 	if captionTop+captionHeight > bottomLimit {
-		// The image rises as far as needed (never above the safe top band) so
-		// image + margin + caption fits; when even safe.Top cannot free enough
-		// space, the caption keeps its clamped position on the bottom limit.
+		// The image rises as far as needed (never beyond the canvas margin) so
+		// image + margin + caption fits; when the complete pair cannot fit,
+		// retain the caption's bottom limit rather than moving it off-canvas.
 		bestTop := bottomLimit - imageRect.Height - entityCaptionMarginPX - captionHeight
-		imageTop := math.Min(imageRect.Top(), bestTop)
-		if imageTop >= safe.Top {
+		imageTop := math.Max(entityCaptionSafeMarginPX, math.Min(imageRect.Top(), bestTop))
+		if imageTop <= imageRect.Top() {
 			imageRect.Y = imageTop
 			layout.ImageBounds.Y = imageTop
 			captionTop = imageTop + imageRect.Height + entityCaptionMarginPX
 		}
+		// Avoid floating-point roundoff leaving the final bottom edge a
+		// fractional pixel outside the safe margin on extreme long names.
+		captionTop = math.Min(captionTop, bottomLimit-captionHeight)
 	}
 
 	centerX := imageRect.CenterX()
@@ -224,8 +238,18 @@ func captionBoxWidth(caption string, fontSize float64) float64 {
 	if runes == 0 {
 		return 0
 	}
-	// 0.62em average advance plus the rounded background padding (2x16).
-	return float64(runes)*fontSize*0.62 + 32
+	// 0.62em average advance plus room for the title's outline and shadow.
+	return float64(runes)*fontSize*0.62 + 40
+}
+
+func captionLinesWidth(lines []string, fontSize float64) float64 {
+	width := 0.0
+	for _, line := range lines {
+		if lineWidth := captionBoxWidth(line, fontSize); lineWidth > width {
+			width = lineWidth
+		}
+	}
+	return width
 }
 
 // EntityCaptionMotionID returns the caption's motion id, resolving the shared
