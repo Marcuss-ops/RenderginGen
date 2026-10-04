@@ -385,8 +385,8 @@ func TestEveryPhraseFamilyMotionReachesTheChrononRenderPlan(t *testing.T) {
 	for _, family := range []string{"typewriter", "classic_apple", "modern_apple"} {
 		ids = append(ids, motion.Registry.FamilyMotionIDs(family)...)
 	}
-	if len(ids) != 108 {
-		t.Fatalf("registered phrase family motions = %d, want 108", len(ids))
+	if len(ids) != 113 {
+		t.Fatalf("registered phrase family motions = %d, want 113", len(ids))
 	}
 	seen := make(map[string]bool, len(ids))
 	for _, id := range ids {
@@ -458,8 +458,8 @@ func TestPhraseDefaultAndMotionFamilyRemainIndependent(t *testing.T) {
 	if _, err := ResolveOfficialPreset(PhraseDefaultPresetID); err != nil {
 		t.Fatal(err)
 	}
-	if got := len(motion.Registry.FamilyMotionIDs("typewriter")); got != 5 {
-		t.Fatalf("typewriter family has %d motions, want 5", got)
+	if got := len(motion.Registry.FamilyMotionIDs("typewriter")); got != 10 {
+		t.Fatalf("typewriter family has %d motions, want 10", got)
 	}
 	// Editorial Visual Motion V1 grows the certified web vocabulary to 14:
 	// web_cursor_focus and web_section_spotlight joined the family.

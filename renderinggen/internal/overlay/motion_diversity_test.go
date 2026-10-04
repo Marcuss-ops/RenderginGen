@@ -32,8 +32,8 @@ func TestMixedSemanticPlanPreservesMotionDiversityThroughChrononLowering(t *test
 			"kind": "important_phrase", "template_id": "IMPORTANT_PHRASE",
 			"preset_id": "phrase_default", "motion_id": motionID,
 			"motion_params": map[string]any{"enter_frames": 22},
-			"text": fmt.Sprintf("Grounded phrase number %d", i+1),
-			"start_ms": i * 2_000, "end_ms": i*2_000 + 1_800,
+			"text":          fmt.Sprintf("Grounded phrase number %d", i+1),
+			"start_ms":      i * 2_000, "end_ms": i*2_000 + 1_800,
 		})
 	}
 	for i, motionID := range imageMotions {
@@ -42,19 +42,19 @@ func TestMixedSemanticPlanPreservesMotionDiversityThroughChrononLowering(t *test
 			"id": assetID, "scene_id": "scene-1", "kind": "image",
 			"template_id": "IMAGE_OVERLAY", "preset_id": "image_focus_in",
 			"motion_id": motionID,
-			"start_ms": i*2_000 + 1_000, "end_ms": i*2_000 + 1_900,
+			"start_ms":  i*2_000 + 1_000, "end_ms": i*2_000 + 1_900,
 			"params": map[string]any{"position": "center"},
 			"asset_refs": []any{map[string]any{
-				"asset_id": assetID,
-				"sha256": fmt.Sprintf("%064x", i+1),
-				"url": fmt.Sprintf("https://example.test/%s.jpg", assetID),
+				"asset_id":   assetID,
+				"sha256":     fmt.Sprintf("%064x", i+1),
+				"url":        fmt.Sprintf("https://example.test/%s.jpg", assetID),
 				"media_type": "image/jpeg",
 			}},
 		})
 	}
 	semantic, err := json.Marshal(map[string]any{
 		"schema_version": SemanticSchema,
-		"plan_id": "motion-diversity-e2e", "video_id": "motion-diversity-e2e",
+		"plan_id":        "motion-diversity-e2e", "video_id": "motion-diversity-e2e",
 		"width": 1280, "height": 720, "fps_num": 24, "fps_den": 1,
 		"duration_ms": 8_000, "items": items,
 	})

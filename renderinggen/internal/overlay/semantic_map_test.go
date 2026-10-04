@@ -53,7 +53,7 @@ func TestGeoreferencedMapCompilesGroundedLayers(t *testing.T) {
 	if basemap.Type != "image" || basemap.Size[0] != 1280 || basemap.Size[1] != 720 {
 		t.Fatalf("basemap does not preserve the certified raster canvas: %+v", basemap)
 	}
-	if pin.Type != "text" || pin.Text != "O" || pin.Style == nil || pin.Position[0] != 640 || pin.Position[1] != 360 {
+	if pin.Type != "shape" || pin.Shape == nil || pin.Shape.Type != "ellipse" || pin.Position[0] != 0 || pin.Position[1] != 0 {
 		t.Fatalf("pin at the georeference center did not land at the canvas center: %+v", pin)
 	}
 	if label.Type != "text" || label.Text != "Target" || credit.Type != "text" || credit.Text != "Map data supplied by operator" {
@@ -152,21 +152,21 @@ func TestGeoreferencedFlyToCompilesNativeCameraAndOfflineLODs(t *testing.T) {
 	if len(result.Plan.CameraAnimation.Tracks) != 4 {
 		t.Fatalf("camera tracks = %d, want x/y pan, tilt and zoom", len(result.Plan.CameraAnimation.Tracks))
 	}
-	if got, want := len(result.Plan.Layers), 7; got != want {
-		t.Fatalf("camera map layers = %d, want 2 LODs + 2 pins/labels + attribution = %d", got, want)
+	if got, want := len(result.Plan.Layers), 6; got != want {
+		t.Fatalf("camera map layers = %d, want one basemap + 2 pins/labels + attribution = %d", got, want)
 	}
-	coarse, fine := result.Plan.Layers[0], result.Plan.Layers[1]
-	if coarse.ID != mapLODLayerID("map", 0) || fine.ID != mapLODLayerID("map", 1) || !coarse.Enable3D || !fine.Enable3D {
-		t.Fatalf("offline LOD layers are not ordered 3D map planes: %+v / %+v", coarse, fine)
+	coarse := result.Plan.Layers[0]
+	if coarse.ID != mapBasemapLayerID("map") || !coarse.Enable3D {
+		t.Fatalf("base map plate is not a 3D plane: %+v", coarse)
 	}
-	if coarse.Animation == nil || fine.Animation == nil || coarse.Animation.Tracks[0].Property != "opacity" || fine.Animation.Tracks[0].Property != "opacity" {
-		t.Fatal("LOD pair has no synchronized opacity cross-fade tracks")
+	if coarse.Animation != nil {
+		t.Fatal("single base map plate must stay opaque without LOD cross-fades")
 	}
 	credit := result.Plan.Layers[len(result.Plan.Layers)-1]
 	if credit.ID != mapAttributionLayerID("map") || !credit.ScreenSpace || credit.Text != "Map data supplied by operator" {
 		t.Fatalf("camera fly-to attribution must remain visible in screen space: %+v", credit)
 	}
-	for _, layer := range result.Plan.Layers[2:6] {
+	for _, layer := range result.Plan.Layers[1:5] {
 		if !layer.Enable3D {
 			t.Fatalf("grounded marker/label %q does not follow the native camera", layer.ID)
 		}

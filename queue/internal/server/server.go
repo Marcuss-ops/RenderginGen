@@ -18,16 +18,10 @@
 package server
 
 import (
-	"context"
-	"crypto/rand"
-	"encoding/hex"
 	"encoding/json"
-	"errors"
 	"net/http"
 	"time"
 
-	"github.com/Marcuss-ops/RenderingGen/queue/internal/model"
-	"github.com/Marcuss-ops/RenderingGen/queue/internal/repository"
 	"github.com/Marcuss-ops/RenderingGen/queue/internal/service"
 )
 
@@ -100,169 +94,8 @@ func (s *Server) Handler() http.Handler {
 	return mux
 }
 
-func (s *Server) submitBatch(w http.ResponseWriter, r *http.Request) {
-	r.Body = http.MaxBytesReader(w, r.Body, maxSubmitBytes)
-	var req struct {
-		Jobs []model.Job `json:"jobs"`
-	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-	if len(req.Jobs) == 0 {
-		http.Error(w, "jobs is required", http.StatusBadRequest)
-		return
-	}
-	if err := s.svc.SubmitBatch(req.Jobs); err != nil {
-		if errors.Is(err, repository.ErrJobExists) {
-			http.Error(w, err.Error(), http.StatusConflict)
-			return
-		}
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	w.WriteHeader(http.StatusCreated)
-}
-
-func parseJobID(r *http.Request) string {
-	if parent := r.PathValue("parent"); parent != "" {
-		if lang := r.PathValue("lang"); lang != "" {
-			return parent + "/" + lang
-		}
-	}
-	return r.PathValue("id")
-}
-
-func (s *Server) submit(w http.ResponseWriter, r *http.Request) {
-	r.Body = http.MaxBytesReader(w, r.Body, maxSubmitBytes)
-	var job model.Job
-	if err := json.NewDecoder(r.Body).Decode(&job); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-	if job.ID == "" {
-		job.ID = newID()
-	}
-	canonical, created, err := s.svc.SubmitIdempotent(job)
-	if err != nil {
-		// 409 is reserved for the duplicate-ID condition. Producers treat 409
-		// as idempotent success (queue/client maps it to ErrJobExists), so a
-		// transient storage failure must never be reported as 409: that would
-		// silently drop the job. Everything else is a server error.
-		if errors.Is(err, repository.ErrJobExists) {
-			http.Error(w, err.Error(), http.StatusConflict)
-			return
-		}
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	// SubmitIdempotent already notified claim waiters on creation.
-	status := http.StatusCreated
-	if !created {
-		status = http.StatusOK
-	}
-	writeJSON(w, status, map[string]string{"id": canonical.ID})
-}
-
-// claim is the thin polling endpoint. With wait_ms==0 it is a single atomic
-// ClaimState; with wait_ms>0 it delegates to the single Notifier-backed
-// WaitAndClaim so both claim endpoints share one wake-up path. The wait never
-// assigns work — every wake just re-runs the atomic claim (SKIP LOCKED).
-func (s *Server) claim(w http.ResponseWriter, r *http.Request) {
-	var req struct {
-		Worker string `json:"worker"`
-		State  string `json:"state,omitempty"`
-		WaitMS int64  `json:"wait_ms,omitempty"`
-	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	job, lease, err := s.svc.ClaimState(req.Worker, model.State(req.State))
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	if job == nil && req.WaitMS > 0 {
-		wait := time.Duration(req.WaitMS) * time.Millisecond
-		if wait > maxClaimWait {
-			wait = maxClaimWait
-		}
-		// Delegate the wait to the service: it re-runs the atomic claim on
-		// every wake-up and bounded re-poll, on the single shared Notifier.
-		waitCtx, cancel := context.WithTimeout(r.Context(), wait+5*time.Second)
-		defer cancel()
-		job, lease, err = s.svc.WaitAndClaim(waitCtx, req.Worker, model.State(req.State), wait)
-		if err != nil {
-			if r.Context().Err() != nil {
-				return // client disconnected; nothing to write
-			}
-			if errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled) {
-				w.WriteHeader(http.StatusNoContent)
-				return
-			}
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-	}
-	if job == nil {
-		w.WriteHeader(http.StatusNoContent)
-		return
-	}
-
-	// The claim response is the canonical Job envelope plus the lease the
-	// worker must renew. There is no separate claim-response type: the wire
-	// contract exists once, in queue/client, and every layer aliases it.
-	job.Lease = lease
-	writeJSON(w, http.StatusOK, job)
-}
-
-// claimWait is the dedicated long-poll endpoint. It is a thin wrapper over
-// the same service WaitAndClaim as claim's wait_ms path — both share the
-// single Notifier broadcast (submit/complete/fail/requeue all Notify). The
-// only difference is wire naming (max_wait_ms vs wait_ms) and default wait.
-func (s *Server) claimWait(w http.ResponseWriter, r *http.Request) {
-	var req struct {
-		Worker    string `json:"worker"`
-		State     string `json:"state,omitempty"`
-		MaxWaitMs int64  `json:"max_wait_ms,omitempty"`
-	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-	maxWait := time.Duration(req.MaxWaitMs) * time.Millisecond
-	ctx, cancel := context.WithTimeout(r.Context(), maxWait+5*time.Second)
-	defer cancel()
-	job, lease, err := s.svc.WaitAndClaim(ctx, req.Worker, model.State(req.State), maxWait)
-	if err != nil {
-		if errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled) {
-			w.WriteHeader(http.StatusNoContent)
-			return
-		}
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	if job == nil {
-		w.WriteHeader(http.StatusNoContent)
-		return
-	}
-	// The claim response is the canonical Job envelope plus the lease the
-	// worker must renew. There is no separate claim-response type: the wire
-	// contract exists once, in queue/client, and every layer aliases it.
-	job.Lease = lease
-	writeJSON(w, http.StatusOK, job)
-}
-
 func writeJSON(w http.ResponseWriter, status int, v any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	_ = json.NewEncoder(w).Encode(v)
-}
-
-func newID() string {
-	b := make([]byte, 8)
-	_, _ = rand.Read(b)
-	return "job-" + hex.EncodeToString(b)
 }

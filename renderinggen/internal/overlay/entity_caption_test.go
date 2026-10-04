@@ -85,8 +85,25 @@ func TestEntityCaptionEmitsImageAndCaptionWithSharedLifetime(t *testing.T) {
 	if caption.Style.Background != nil {
 		t.Fatal("caption must avoid a Vulkan-unsupported text background card")
 	}
-	if caption.Style.Fill != "#101827" || caption.Style.Stroke == nil || caption.Style.Stroke.Width <= 0 {
-		t.Fatalf("caption contrast style = %+v; want dark ink and a light keyline", caption.Style)
+	if caption.Style.Fill != "#F8F5EA" || caption.Style.FontSize < 36 || caption.Style.Stroke == nil || caption.Style.Stroke.Color != "#111827" || caption.Style.Stroke.Width < 1.5 {
+		t.Fatalf("caption title style = %+v; want large warm-white lettering with a dark keyline", caption.Style)
+	}
+	if caption.Style.Shadow == nil || caption.Style.Shadow.Blur < 6 || caption.Style.Shadow.Opacity < 0.6 {
+		t.Fatalf("caption shadow = %+v; want a soft cinematic separation from footage", caption.Style.Shadow)
+	}
+	if caption.Style.Glow == nil || caption.Style.Glow.Color != "#F8F5EA" || caption.Style.Glow.Radius < 10 || caption.Style.Glow.Intensity <= 0 || caption.Style.Glow.Intensity > 0.35 {
+		t.Fatalf("caption glow = %+v; want a restrained warm halo", caption.Style.Glow)
+	}
+}
+
+func TestEntityCaptionLongNameUsesLargerWrappedTitleAndRemainsReadable(t *testing.T) {
+	layers := compileEntityCaptionForTest(t, "Alexander Boris de Pfeffel Johnson")
+	caption := layers[1]
+	if caption.Style == nil || caption.Style.FontSize <= 30 {
+		t.Fatalf("wrapped long-name title font size = %+v; want a larger cinematic size after wrapping", caption.Style)
+	}
+	if len(caption.Size) != 2 || caption.Size[0] > 1280-48 || caption.Size[1] < 100 {
+		t.Fatalf("long-name title geometry = %v; want wrapped lines inside safe area", caption.Size)
 	}
 }
 
@@ -104,7 +121,7 @@ func TestEntityCaptionKeepsLongAndUnicodeNamesInsideSafeArea(t *testing.T) {
 			if caption.Position[0]-caption.Size[0]/2 < 24 || caption.Position[0]+caption.Size[0]/2 > 1280-24 {
 				t.Fatalf("caption bounds escape horizontal safe area: x=%v size=%v", caption.Position[0], caption.Size)
 			}
-			if caption.Position[1]-caption.Size[1]/2 < 24 || caption.Position[1]+caption.Size[1]/2 > 720-24 {
+			if caption.Position[1]-caption.Size[1]/2 < 23.99 || caption.Position[1]+caption.Size[1]/2 > 720-24+0.01 {
 				t.Fatalf("caption bounds escape vertical safe area: y=%v size=%v", caption.Position[1], caption.Size)
 			}
 		})

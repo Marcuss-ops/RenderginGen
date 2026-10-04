@@ -11,6 +11,8 @@ import (
 	"testing"
 
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/overlay"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/queue"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/storage"
 )
 
 // normalizeMaterializedImagePaths is the workaround for a producer that declares
@@ -275,6 +277,195 @@ func TestNormalizeMaterializedImagePathsNilPlan(t *testing.T) {
 	}
 }
 
+func TestNormalizeMaterializedImagePathsRejectsRenameCollision(t *testing.T) {
+	root := t.TempDir()
+	writeAsset(t, root, "assets/photo.png", imageFixtures[".jpg"])
+	writeAsset(t, root, "assets/photo.jpg", imageFixtures[".png"])
+	plan := imagePlan("assets/photo.png")
+
+	if _, err := normalizeMaterializedImagePaths(root, plan); err == nil {
+		t.Fatal("renaming onto an existing path must fail")
+	}
+	if got := plan.Layers[0].Asset; got != "assets/photo.png" {
+		t.Fatalf("plan path after failed rename = %q, want original path", got)
+	}
+	if paths := assetPaths(t, root); len(paths) != 2 {
+		t.Fatalf("workspace files after failed rename = %v, want both originals", paths)
+	}
+}
+
+func TestNormalizeMaterializedImagePathsDoesNotLoseEarlierRenameOnLaterFailure(t *testing.T) {
+	root := t.TempDir()
+	writeAsset(t, root, "assets/first.png", imageFixtures[".jpg"])
+	writeAsset(t, root, "assets/second.png", imageFixtures[".webp"])
+	writeAsset(t, root, "assets/second.webp", imageFixtures[".png"])
+	plan := imagePlan("assets/first.png", "assets/second.png")
+
+	if _, err := normalizeMaterializedImagePaths(root, plan); err == nil {
+		t.Fatal("later rename collision must fail")
+	}
+	if paths := assetPaths(t, root); len(paths) != 3 {
+		t.Fatalf("workspace files after partial normalization = %v, want no overwritten asset", paths)
+	}
+	if got := plan.Layers[1].Asset; got != "assets/second.png" {
+		t.Fatalf("plan path after failed later rename = %q, want original path", got)
+	}
+}
+
+func TestFinalPreparedAssetsRenameWithoutMatchingOriginalIsIgnored(t *testing.T) {
+	compiled := []overlay.Asset{{Hash: "h1", LogicalPath: "assets/other.png"}}
+	projected := finalPreparedAssets(compiled, map[string]string{"assets/photo.jpg": "assets/photo.png"})
+	if len(projected) != len(compiled) || projected[0] != compiled[0] {
+		t.Fatalf("projected = %v, want no invented asset for an unknown old path", projected)
+	}
+}
+
+func TestValidateMapRasterAssetsAcceptsHalfResolutionAndSkipsNonMaps(t *testing.T) {
+	root := t.TempDir()
+	assetPath := "assets/semantic/map-half.png"
+	writePNG := filepath.Join(root, filepath.FromSlash(assetPath))
+	if err := os.MkdirAll(filepath.Dir(writePNG), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	file, err := os.Create(writePNG)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := png.Encode(file, image.NewRGBA(image.Rect(0, 0, 640, 360))); err != nil {
+		file.Close()
+		t.Fatal(err)
+	}
+	if err := file.Close(); err != nil {
+		t.Fatal(err)
+	}
+	plan := &overlay.Plan{Layers: []overlay.Layer{
+		{ID: "map-lod-half", Type: "image", Asset: assetPath, MapRasterWidth: 1280, MapRasterHeight: 720},
+		{ID: "ordinary-image", Type: "image", Asset: "assets/not-checked.jpg"},
+	}}
+	if err := validateMapRasterAssets(root, plan); err != nil {
+		t.Fatalf("half-resolution PNG rejected or ordinary image inspected: %v", err)
+	}
+}
+
+func TestValidateMapRasterAssetsRejectsIncompleteMetadataAndNilPlan(t *testing.T) {
+	if err := validateMapRasterAssets(t.TempDir(), nil); err == nil {
+		t.Fatal("nil plan must fail")
+	}
+	plan := &overlay.Plan{Layers: []overlay.Layer{{ID: "map", Type: "image", Asset: "assets/map.png", MapRasterWidth: 1280}}}
+	if err := validateMapRasterAssets(t.TempDir(), plan); err == nil {
+		t.Fatal("incomplete map raster metadata must fail")
+	}
+}
+
+func TestValidateMaterializedPlanAssetsAllowsDuplicatesAndChecksRegularFiles(t *testing.T) {
+	root := t.TempDir()
+	asset := "assets/semantic/present.jpg"
+	writeAsset(t, root, asset, []byte("bytes"))
+	plan := &overlay.Plan{Layers: []overlay.Layer{
+		{ID: "first", Asset: asset},
+		{ID: "duplicate", Asset: asset},
+	}}
+	if err := validateMaterializedPlanAssets(root, plan, nil); err != nil {
+		t.Fatalf("duplicate references to a present asset rejected: %v", err)
+	}
+	if err := os.Mkdir(filepath.Join(root, "assets", "semantic", "directory"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	plan.Layers = []overlay.Layer{{ID: "directory", Asset: "assets/semantic/directory"}}
+	if err := validateMaterializedPlanAssets(root, plan, nil); err == nil {
+		t.Fatal("directory path must be rejected as a non-regular asset")
+	}
+}
+
+func TestValidateMaterializedPlanAssetsNilPlan(t *testing.T) {
+	if err := validateMaterializedPlanAssets(t.TempDir(), nil, nil); err == nil {
+		t.Fatal("nil plan must fail")
+	}
+}
+
+func TestArtifactFromFileReportsHashAndByteSize(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "parent.mp4")
+	content := []byte("parent artifact contents")
+	if err := os.WriteFile(path, content, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	artifact, err := artifactFromFile(path)
+	if err != nil {
+		t.Fatalf("artifactFromFile: %v", err)
+	}
+	wantHash := storage.Hash(content)
+	if artifact.Kind != "parent" || artifact.StorageKey != wantHash || artifact.ArtifactHash != wantHash ||
+		artifact.ContentType != "video/mp4" || artifact.SizeBytes != int64(len(content)) {
+		t.Fatalf("artifact = %+v, expected parent/hash=%s/size=%d", artifact, wantHash, len(content))
+	}
+}
+
+func TestArtifactFromFileMissingPath(t *testing.T) {
+	if _, err := artifactFromFile(filepath.Join(t.TempDir(), "missing.mp4")); err == nil {
+		t.Fatal("artifactFromFile must fail for a missing path")
+	}
+}
+
+func TestMergeAssetsCanonicalizesURLBackedManifestAndRetainsSourceURL(t *testing.T) {
+	hash := strings.Repeat("a", 64)
+	got, err := mergeAssets(
+		[]queue.AssetRef{{Hash: hash, LogicalPath: "https://cdn.example/photo.png"}},
+		[]overlay.Asset{{Hash: hash, LogicalPath: "assets/semantic/photo.png"}},
+	)
+	if err != nil {
+		t.Fatalf("mergeAssets: %v", err)
+	}
+	want := queue.AssetRef{Hash: hash, LogicalPath: "assets/semantic/photo.png", SourceURL: "https://cdn.example/photo.png"}
+	if len(got) != 1 || got[0] != want {
+		t.Fatalf("merged assets = %+v, want [%+v]", got, want)
+	}
+}
+
+func TestMergeAssetsKeepsLegacyAliasAndAddsCanonicalPath(t *testing.T) {
+	hash := strings.Repeat("b", 64)
+	legacy := queue.AssetRef{Hash: hash, LogicalPath: "legacy/photo.png"}
+	got, err := mergeAssets([]queue.AssetRef{legacy}, []overlay.Asset{{Hash: hash, LogicalPath: "assets/semantic/photo.png"}})
+	if err != nil {
+		t.Fatalf("mergeAssets: %v", err)
+	}
+	want := []queue.AssetRef{
+		legacy,
+		{Hash: hash, LogicalPath: "assets/semantic/photo.png"},
+	}
+	if len(got) != len(want) || got[0] != want[0] || got[1] != want[1] {
+		t.Fatalf("merged assets = %+v, want %+v", got, want)
+	}
+}
+
+func TestMergeAssetsDeduplicatesAndRejectsConflictingPathHashes(t *testing.T) {
+	hash := strings.Repeat("c", 64)
+	path := "assets/semantic/photo.png"
+	got, err := mergeAssets(
+		[]queue.AssetRef{{Hash: hash, LogicalPath: path}},
+		[]overlay.Asset{{Hash: hash, LogicalPath: path}},
+	)
+	if err != nil || len(got) != 1 {
+		t.Fatalf("identical path/hash should deduplicate: assets=%+v err=%v", got, err)
+	}
+	if _, err := mergeAssets(
+		[]queue.AssetRef{{Hash: hash, LogicalPath: path}},
+		[]overlay.Asset{{Hash: strings.Repeat("d", 64), LogicalPath: path}},
+	); err == nil {
+		t.Fatal("same logical path with different hashes must fail")
+	}
+}
+
+func TestMergeAssetsDetectsConflictingManifestPaths(t *testing.T) {
+	path := "assets/semantic/photo.png"
+	_, err := mergeAssets(
+		[]queue.AssetRef{{Hash: strings.Repeat("e", 64), LogicalPath: path}, {Hash: strings.Repeat("f", 64), LogicalPath: path}},
+		nil,
+	)
+	if err == nil {
+		t.Fatal("conflicting hashes for duplicate manifest paths must fail")
+	}
+}
+
 // TestReadFileHeadShortReads pins the head reader's contract, which the rename
 // decision depends on: a file shorter than the sniff window yields its bytes
 // rather than an error, and only a truly empty file fails.
@@ -376,13 +567,5 @@ func TestValidateMapRasterAssetsChecksActualPNGDimensions(t *testing.T) {
 	plan.Layers[0].MapRasterWidth = 1280
 	if err := validateMapRasterAssets(root, plan); err == nil || !strings.Contains(err.Error(), "not a decodable PNG") {
 		t.Fatalf("invalid staged PNG must fail, got %v", err)
-	}
-}
-
-func TestFinalPreparedAssetsWithoutRenamesIsTheIdentity(t *testing.T) {
-	compiled := []overlay.Asset{{Hash: "h1", LogicalPath: "assets/photo.png"}}
-	projected := finalPreparedAssets(compiled, nil)
-	if len(projected) != 1 || projected[0] != compiled[0] {
-		t.Fatalf("projected = %v, want the input unchanged", projected)
 	}
 }

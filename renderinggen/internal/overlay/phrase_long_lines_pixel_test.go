@@ -105,7 +105,6 @@ func TestLongPhraseRendersEveryWrappedLine(t *testing.T) {
 	}
 }
 
-
 // frameRGBAt decodes one frame of path as raw rgb24 through ffmpeg.  It is the
 // width/height-parameterised form of phraseMotionFrame.
 func frameRGBAt(t *testing.T, path string, frame, w, h int) []byte {

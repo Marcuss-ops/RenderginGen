@@ -73,7 +73,7 @@ func TestImagePremiumV1EveryRecipeLowersToNativeV3(t *testing.T) {
 						t.Errorf("image enable_3d = %v, want %v", layer.Enable3D, requiresPremium3D(id))
 					}
 				}
-						if layer.Type == "shape" || layer.Type == "color" {
+				if layer.Type == "shape" || layer.Type == "color" {
 					componentFound = true
 				}
 				if id == "image_border_draw_in" || id == "image_neon_trace" {

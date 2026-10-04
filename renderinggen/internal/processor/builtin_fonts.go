@@ -43,22 +43,22 @@ func materializeBuiltinFonts(root string, plan *overlay.Plan) error {
 		if info, statErr := os.Stat(target); statErr == nil && info.Mode().IsRegular() {
 			continue
 		}
-	var source string
-	for ancestor := wd; ; ancestor = filepath.Dir(ancestor) {
-		for _, bundle := range []string{
-			filepath.Join(ancestor, "renderinggen", "out", "editorial_v1"),
-			filepath.Join(ancestor, "out", "editorial_v1"),
-		} {
-			candidate := filepath.Join(bundle, filepath.FromSlash(font))
-			if info, statErr := os.Stat(candidate); statErr == nil && info.Mode().IsRegular() {
-				source = candidate
+		var source string
+		for ancestor := wd; ; ancestor = filepath.Dir(ancestor) {
+			for _, bundle := range []string{
+				filepath.Join(ancestor, "renderinggen", "out", "editorial_v1"),
+				filepath.Join(ancestor, "out", "editorial_v1"),
+			} {
+				candidate := filepath.Join(bundle, filepath.FromSlash(font))
+				if info, statErr := os.Stat(candidate); statErr == nil && info.Mode().IsRegular() {
+					source = candidate
+					break
+				}
+			}
+			if source != "" || filepath.Dir(ancestor) == ancestor {
 				break
 			}
 		}
-		if source != "" || filepath.Dir(ancestor) == ancestor {
-			break
-		}
-	}
 		if source == "" {
 			return fmt.Errorf("processor: official preset font %q is missing from the editorial_v1 bundle", font)
 		}

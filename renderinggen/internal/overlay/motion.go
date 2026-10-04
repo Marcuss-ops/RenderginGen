@@ -78,110 +78,6 @@ func lowerMotion(id string, enter, exit int, params motion.MotionParams, text st
 	return animation, nil
 }
 
-// entranceFrames is how many frames of a layer the entrance may occupy once the
-// exit window is reserved. The authored window is the preferred ceiling, but a
-// phrase entrance is stretched to at least one third of its duration whenever
-// the non-exit window permits it. A short overlay compresses its entrance to
-// layer-minus-exit instead of letting keyframes run past the layer boundary.
-// For phrase previews around 4.5s (108 frames at 24fps) the entrance is
-// stretched to the full available window (duration-exit) so the glyph
-// stagger stays visibly animated for ~4 seconds instead of <1s.
-func entranceFrames(authored, exitFrames int, duration int64, phraseEntranceFloor bool) int64 {
-	if duration <= 0 {
-		if authored > 0 {
-			return int64(authored)
-		}
-		return 0
-	}
-	available := duration
-	if exitFrames > 0 && int64(exitFrames) < duration {
-		available = duration - int64(exitFrames)
-	}
-	// Short phrase previews (3-6s) must keep the stagger alive for ~4s.
-	// Without this, a 42-frame typewriter on a 108-frame layer animates
-	// for 1.7s then sits static for 2.8s — the "meno di un secondo"
-	// complaint. Stretching to available keeps the selector sweep inside
-	// MaxStaggerSweepFrames (96 = 4s) and lets appendExitTracks own the out.
-	if phraseEntranceFloor && duration >= 72 && duration <= 144 {
-		return available
-	}
-	target := available
-	if authored > 0 && int64(authored) < target {
-		target = int64(authored)
-	}
-	if phraseEntranceFloor {
-		minimum := (duration + 2) / 3 // ceil(duration/3), retaining an integer-frame guarantee.
-		if minimum > available {
-			// The reserved exit takes precedence when it leaves less than one
-			// third of the layer for an entrance; never overlap the exit window.
-			minimum = available
-		}
-		if target < minimum {
-			target = minimum
-		}
-	}
-	if target < 1 {
-		target = 1
-	}
-	return target
-}
-
-// appendExitTracks gives a layer a real OUT. The out replays the entrance
-// backwards inside the last exitFrames frames of the layer: the geometry each
-// track settled on at the end of the entrance returns to the value it started
-// from, so a phrase that slides up in slides back down out instead of cutting.
-//
-// Opacity is the one track that is not mirrored: a layer that leaves must end
-// transparent, so its out is always 1 -> 0 (synthesized when the entrance had no
-// opacity track). Replaying an authored opacity curve backwards could otherwise
-// end a layer half visible — the exact failure an editor reads as "no exit
-// animation". A layer with no room for the window is left untouched rather than
-// given overlapping keyframes.
-func appendExitTracks(tracks []AnimationTrack, exitFrames int, duration int64) []AnimationTrack {
-	if exitFrames <= 0 || duration <= 1 || int64(exitFrames) >= duration {
-		return tracks
-	}
-	start, last := duration-int64(exitFrames), lastValidFrame(duration)
-	out := make([]AnimationTrack, 0, len(tracks)+1)
-	hasOpacity := false
-	for _, track := range tracks {
-		if len(track.Keyframes) == 0 {
-			continue
-		}
-		if track.Property == "opacity" {
-			hasOpacity = true
-			track.Keyframes = append(track.Keyframes,
-				AnimationKeyframe{Frame: start, Value: 1.0},
-				AnimationKeyframe{Frame: last, Value: 0.0})
-			out = append(out, track)
-			continue
-		}
-		track.Keyframes = append(track.Keyframes,
-			AnimationKeyframe{Frame: start, Value: track.Keyframes[len(track.Keyframes)-1].Value},
-			AnimationKeyframe{Frame: last, Value: track.Keyframes[0].Value})
-		out = append(out, track)
-	}
-	if !hasOpacity {
-		// The motion only animated position/scale, so the exit needs its own
-		// opacity track — and that track must be LAYER-RELATIVE like every
-		// other one: keyframes are measured from the layer's first visible
-		// frame, so a track whose first keyframe sits at `start` animates a
-		// range that does not include the beginning of the layer. That is both
-		// an invalid plan (TestFinal_AnimationFirstMiddleLastFrame: "first
-		// keyframe at 24, want 0 (layer-relative)") and ambiguous for a
-		// renderer that holds the value before the first keyframe: the card
-		// would be born already opaque instead of fading out of nothing.
-		//
-		// Anchoring the corridor at frame 0 preserves the intended reading —
-		// fully visible from the first frame until the exit begins — while
-		// making it explicit instead of implied.
-		out = append(out, AnimationTrack{Property: "opacity", Easing: "in_out_sine", Keyframes: []AnimationKeyframe{
-			{Frame: 0, Value: 1.0}, {Frame: start, Value: 1.0}, {Frame: last, Value: 0.0},
-		}})
-	}
-	return out
-}
-
 // retimeTextAnimators keeps per-unit property keyframes inside the concrete
 // entrance window exactly like retimeMotionTracks does for layer tracks. A
 // selector sweep is already authored against that window by
@@ -566,17 +462,29 @@ func sampleTextPropertyTrack(track motion.TrackDefinition) (AnimationTrack, erro
 			segment++
 		}
 		a, err := numericComponents(keys[segment].Value)
-		if err != nil { return AnimationTrack{}, err }
+		if err != nil {
+			return AnimationTrack{}, err
+		}
 		b, err := numericComponents(keys[segment+1].Value)
-		if err != nil { return AnimationTrack{}, err }
-		if len(a) != len(b) { return AnimationTrack{}, fmt.Errorf("keyframe value arity changed") }
+		if err != nil {
+			return AnimationTrack{}, err
+		}
+		if len(a) != len(b) {
+			return AnimationTrack{}, fmt.Errorf("keyframe value arity changed")
+		}
 		rawT := float64(frame-keys[segment].Frame) / float64(keys[segment+1].Frame-keys[segment].Frame)
 		t, err := easingValue(track.Easing, rawT)
-		if err != nil { return AnimationTrack{}, err }
+		if err != nil {
+			return AnimationTrack{}, err
+		}
 		values := make([]float64, len(a))
-		for i := range values { values[i] = a[i] + (b[i]-a[i])*t }
+		for i := range values {
+			values[i] = a[i] + (b[i]-a[i])*t
+		}
 		var value any = values
-		if len(values) == 1 { value = values[0] }
+		if len(values) == 1 {
+			value = values[0]
+		}
 		out.Keyframes = append(out.Keyframes, AnimationKeyframe{Frame: frame, Value: value})
 	}
 	return out, nil
@@ -584,34 +492,54 @@ func sampleTextPropertyTrack(track motion.TrackDefinition) (AnimationTrack, erro
 
 func numericComponents(value any) ([]float64, error) {
 	switch v := value.(type) {
-	case float64: return []float64{v}, nil
-	case float32: return []float64{float64(v)}, nil
-	case int: return []float64{float64(v)}, nil
-	case int64: return []float64{float64(v)}, nil
-	case []float64: return append([]float64(nil), v...), nil
+	case float64:
+		return []float64{v}, nil
+	case float32:
+		return []float64{float64(v)}, nil
+	case int:
+		return []float64{float64(v)}, nil
+	case int64:
+		return []float64{float64(v)}, nil
+	case []float64:
+		return append([]float64(nil), v...), nil
 	case []any:
 		out := make([]float64, len(v))
 		for i, component := range v {
-			n, ok := component.(float64); if !ok { return nil, fmt.Errorf("keyframe component %d is %T, want number", i, component) }; out[i] = n
+			n, ok := component.(float64)
+			if !ok {
+				return nil, fmt.Errorf("keyframe component %d is %T, want number", i, component)
+			}
+			out[i] = n
 		}
 		return out, nil
-	default: return nil, fmt.Errorf("keyframe value is %T, want numeric scalar or vector", value)
+	default:
+		return nil, fmt.Errorf("keyframe value is %T, want numeric scalar or vector", value)
 	}
 }
 
 func easingValue(easing string, t float64) (float64, error) {
 	switch easing {
-	case "", "linear": return t, nil
-	case "out_cubic": return 1 - math.Pow(1-t, 3), nil
+	case "", "linear":
+		return t, nil
+	case "out_cubic":
+		return 1 - math.Pow(1-t, 3), nil
 	case "in_out_cubic":
-		if t < 0.5 { return 4*t*t*t, nil }
+		if t < 0.5 {
+			return 4 * t * t * t, nil
+		}
 		return 1 - math.Pow(-2*t+2, 3)/2, nil
-	case "in_out_sine": return -(math.Cos(math.Pi*t)-1)/2, nil
-	case "out_expo": if t == 1 { return 1, nil }; return 1-math.Pow(2, -10*t), nil
+	case "in_out_sine":
+		return -(math.Cos(math.Pi*t) - 1) / 2, nil
+	case "out_expo":
+		if t == 1 {
+			return 1, nil
+		}
+		return 1 - math.Pow(2, -10*t), nil
 	case "out_back":
 		const c1, c3 = 1.70158, 2.70158
 		return 1 + c3*math.Pow(t-1, 3) + c1*math.Pow(t-1, 2), nil
-	default: return 0, fmt.Errorf("unsupported easing %q", easing)
+	default:
+		return 0, fmt.Errorf("unsupported easing %q", easing)
 	}
 }
 

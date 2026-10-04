@@ -36,9 +36,9 @@ func TestBuildPlanTransportsCompositeEntityAndMapFields(t *testing.T) {
 				ID: "gallery", Kind: "entity_image", TemplateID: "IMAGE_OVERLAY", PresetID: "image_scale_in",
 				AssetRefs: []PlanAssetRef{plateA, plateB}, DurationMS: int64Pointer(4000), StartMS: 4000, EndMS: 8000,
 				ImageLayers: []overlay.SemanticImageLayer{
-					{ID: "a", AssetID: "plate-a", StartMS: 0, EndMS: 4000, PresetID: "image_scale_in", MotionID: "image_yaw_reveal",
+					{ID: "a", AssetID: "plate-a", StartMS: 0, EndMS: 4000, PresetID: "image_scale_in", MotionID: "image_yaw_reveal", Caption: "Ada Lovelace", CaptionMotionID: "text_word_rise",
 						Params: map[string]any{"width": 640.0, "height": 420.0, "position_x": -320.0, "position_y": 0.0}},
-					{ID: "b", AssetID: "plate-b", StartMS: 300, EndMS: 4000, PresetID: "image_scale_in", MotionID: "image_photo_drop",
+					{ID: "b", AssetID: "plate-b", StartMS: 300, EndMS: 4000, PresetID: "image_scale_in", MotionID: "image_photo_drop", Caption: "Grace Hopper", CaptionMotionID: "text_word_stagger",
 						Params: map[string]any{"width": 640.0, "height": 420.0, "position_x": 320.0, "position_y": 0.0}},
 				},
 			},
@@ -65,6 +65,8 @@ func TestBuildPlanTransportsCompositeEntityAndMapFields(t *testing.T) {
 		`"entity_caption":"Ada Lovelace"`,
 		`"caption_motion_id":"text_fade_up"`,
 		`"image_layers"`,
+		`"caption_motion_id":"text_word_rise"`,
+		`"caption_motion_id":"text_word_stagger"`,
 		`"map"`,
 		`"asset_id":"basemap"`,
 	} {
@@ -89,10 +91,10 @@ func TestBuildPlanTransportsCompositeEntityAndMapFields(t *testing.T) {
 			t.Fatalf("the decoder dropped %s: %+v", want, byID)
 		}
 	}
-	// No background is declared: entity pair + 2 gallery children + basemap,
-	// pin, pin label and attribution.
-	if len(result.Plan.Layers) != 2+2+4 {
-		t.Fatalf("compiled %d layers, want entity pair + 2 gallery children + 4 map layers: %+v", len(result.Plan.Layers), result.Plan.Layers)
+	// No background is declared: entity pair + two gallery image-caption
+	// pairs + basemap, pin, pin label and attribution.
+	if len(result.Plan.Layers) != 2+4+4 {
+		t.Fatalf("compiled %d layers, want entity pair + 2 gallery image-caption pairs + 4 map layers: %+v", len(result.Plan.Layers), result.Plan.Layers)
 	}
 
 	// The wire keys must survive the round trip through the strict decoder, not
@@ -109,6 +111,9 @@ func TestBuildPlanTransportsCompositeEntityAndMapFields(t *testing.T) {
 	}
 	if len(probe.Items) != 3 || len(probe.Items[1].ImageLayers) != 2 || probe.Items[2].Map == nil {
 		t.Fatalf("wire round trip lost the composite/map declarations: %+v", probe.Items)
+	}
+	if probe.Items[1].ImageLayers[0].CaptionMotionID != "text_word_rise" || probe.Items[1].ImageLayers[1].CaptionMotionID != "text_word_stagger" {
+		t.Fatalf("writer lost composite caption motions: %+v", probe.Items[1].ImageLayers)
 	}
 	if probe.Items[2].Map.Pins[0].ID != "rome" {
 		t.Fatalf("wire round trip lost the grounded pin: %+v", probe.Items[2].Map.Pins)

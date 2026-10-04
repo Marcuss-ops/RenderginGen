@@ -133,7 +133,7 @@ func main() {
 				"sha256":   sourceHex,
 			},
 			"foreground_scale_percent": 80,
-			"source_frame":            sc.SourceFrame,
+			"source_frame":             sc.SourceFrame,
 			"background": map[string]any{
 				"kind":  "color",
 				"color": []float64{0.06, 0.09, 0.16, 1.0},

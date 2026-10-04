@@ -4,10 +4,16 @@
 # Every upload is verified by the tool itself: sha256 + byte accounting.
 set -euo pipefail
 
-CRED="${CRED:-/home/pierone/.config/velox/credentials.json}"
-TOK="${TOK:-/home/pierone/.config/velox/token.json}"
+# Resolve the OAuth material from the environment; the operator exports the
+# paths (or VELOX config), the script never embeds a developer home prefix.
+CRED="${CRED:-}"
+TOK="${TOK:-}"
 FOLDER="${FOLDER:-1ATL0bnJXijNqFlKkgWye3PEAdAuQa1HI}"
 OUT="renderinggen/out"
+if [[ -z "$CRED" || -z "$TOK" ]]; then
+  echo "usage: CRED=... TOK=... $0 (OAuth credential paths are required)" >&2
+  exit 2
+fi
 
 FILES=(
   "$OUT/editorial_v1/renders/editorial_v1_mega_vulkan.mp4"

@@ -21,7 +21,6 @@ package overlay
 import (
 	"fmt"
 	"math"
-	"sort"
 	"strings"
 	"unicode/utf8"
 
@@ -283,12 +282,19 @@ func validateMapLODs(item semanticItem, canvasWidth, canvasHeight int) error {
 	return nil
 }
 
+// mapLODFadeHalfBandZoom is the ONE half-width (in zoom stops) of every LOD
+// cross-fade. Validation and animation share it: a plate is certified exactly
+// over the interval where its opacity is > 0, so a fade can never run outside
+// the window the plate actually covers, and a wider band is a single edit that
+// softens both sides together.
+const mapLODFadeHalfBandZoom = 0.5
+
 func mapLODActiveZoomRange(index int, lods []SemanticMapLOD, move *SemanticMapCameraMove) (float64, float64) {
 	low, high := float64(lods[index].Zoom), float64(lods[index].Zoom)
 	if index == 0 {
 		low = move.StartZoom
 	} else {
-		low = (float64(lods[index-1].Zoom)+float64(lods[index].Zoom))/2 - 0.25
+		low = (float64(lods[index-1].Zoom)+float64(lods[index].Zoom))/2 - mapLODFadeHalfBandZoom
 		if low < move.StartZoom {
 			low = move.StartZoom
 		}
@@ -296,7 +302,7 @@ func mapLODActiveZoomRange(index int, lods []SemanticMapLOD, move *SemanticMapCa
 	if index == len(lods)-1 {
 		high = move.EndZoom
 	} else {
-		high = (float64(lods[index].Zoom)+float64(lods[index+1].Zoom))/2 + 0.25
+		high = (float64(lods[index].Zoom)+float64(lods[index+1].Zoom))/2 + mapLODFadeHalfBandZoom
 		if high > move.EndZoom {
 			high = move.EndZoom
 		}
@@ -351,33 +357,59 @@ func compileMapLayers(ri resolvedItem, src *semanticPlan, registry *assetRegistr
 	m := ri.Item.Map
 	duration := ri.End - ri.Start
 	window := geo.CenteredOn(m.Center.Latitude, m.Center.Longitude, m.Zoom, m.Width, m.Height)
-	basemap := Layer{
-		ID: mapBasemapLayerID(ri.Item.ID), Type: "image",
-		Asset:    registry.Path(ri.Item.Assets[0].ID),
-		BoxWidth: m.Width, BoxHeight: m.Height, MapRasterWidth: m.Width, MapRasterHeight: m.Height,
-		Size: []float64{float64(m.Width), float64(m.Height)}, Fit: FitStretch,
-		StartFrame: ri.Start, DurationFrames: duration,
-	}
-	// Use one certified full-resolution plate as the 3D camera's continuous
-	// backing surface. The multi-LOD cross-fades expose blank frames on the
-	// Vulkan path; the base raster stays opaque while the camera zooms over it.
-	if m.CameraMove != nil {
-		originX, originY := geo.LatLonToGlobalPixel(m.CameraMove.From.Latitude, m.CameraMove.From.Longitude, int(m.CameraMove.StartZoom))
-		centerX, centerY := geo.LatLonToGlobalPixel(m.Center.Latitude, m.Center.Longitude, m.Zoom)
-		worldSize := geo.MercatorTileSize * math.Pow(2, m.CameraMove.StartZoom)
-		scale := math.Pow(2, float64(m.Zoom)-m.CameraMove.StartZoom)
-		basemap.Position = []float64{wrapMapPlaneDelta(centerX*scale-originX, worldSize), -(centerY*scale - originY), 0}
-		basemap.Scale = []float64{scale, scale}
-		basemap.Enable3D = true
-	} else {
-		basemap.Scale = []float64{float64(src.Width) / float64(m.Width), float64(src.Height) / float64(m.Height)}
-	}
 	layers := make([]Layer, 0, 1+2*len(m.Pins)+1)
-	layers = append(layers, basemap)
+	if m.CameraMove == nil {
+		basemap := Layer{
+			ID: mapBasemapLayerID(ri.Item.ID), Type: "image",
+			Asset:    registry.Path(ri.Item.Assets[0].ID),
+			BoxWidth: m.Width, BoxHeight: m.Height, MapRasterWidth: m.Width, MapRasterHeight: m.Height,
+			Size: []float64{float64(m.Width), float64(m.Height)}, Fit: FitStretch,
+			StartFrame: ri.Start, DurationFrames: duration,
+			Scale: []float64{float64(src.Width) / float64(m.Width), float64(src.Height) / float64(m.Height)},
+		}
+		// The certified centered motion (validateMapContract admits only
+		// opacity/scale/blur tracks) still applies to the static plate: without
+		// this routing the declared motion silently never reached the basemap.
+		if m.MotionID != "" {
+			animation, err := imageMotionAnimation(m.MotionID, nil, duration, 0)
+			if err != nil {
+				return nil, fmt.Errorf("overlay: map item %q motion %q: %w", ri.Item.ID, m.MotionID, err)
+			}
+			applyMotionRouting(&basemap, animation)
+		}
+		layers = append(layers, basemap)
+	} else {
+		// Keep one certified base plate on the continuous Web-Mercator plane
+		// for the whole move. Crossfading independent raster planes produces
+		// visible rectangles on the native Vulkan path; a single opaque plate
+		// lets the camera animate without LOD switching or flicker.
+		move := m.CameraMove
+		originX, originY := geo.LatLonToGlobalPixel(move.From.Latitude, move.From.Longitude, int(move.StartZoom))
+		worldSize := geo.MercatorTileSize * math.Pow(2, move.StartZoom)
+		lod := m.LODs[0]
+		centerX, centerY := geo.LatLonToGlobalPixel(lod.Center.Latitude, lod.Center.Longitude, int(move.StartZoom))
+		scale := math.Pow(2, move.StartZoom-float64(lod.Zoom))
+		basemap := Layer{
+			ID: mapBasemapLayerID(ri.Item.ID), Type: "image",
+			Asset:    registry.Path(lod.AssetID),
+			BoxWidth: lod.Width, BoxHeight: lod.Height,
+			MapRasterWidth: lod.Width, MapRasterHeight: lod.Height,
+			Size: []float64{float64(lod.Width), float64(lod.Height)}, Fit: FitStretch,
+			Position: []float64{
+				wrapMapPlaneDelta(centerX-originX, worldSize), -(centerY - originY), 0,
+			},
+			Scale: []float64{scale, scale}, Enable3D: true,
+			StartFrame: ri.Start, DurationFrames: duration,
+		}
+		layers = append(layers, basemap)
+	}
 	font := OfficialFontPathForLanguage(src.Language)
 	for _, pin := range m.Pins {
 		x, y := window.ToRaster(pin.Latitude, pin.Longitude)
-		marker := mapPinLayer(ri, src, pin, x, y, duration)
+		marker, err := mapPinLayer(ri, src, pin, x, y, duration)
+		if err != nil {
+			return nil, err
+		}
 		label := mapPinLabelLayer(ri, src, pin, font, x, y, duration)
 		if m.CameraMove != nil {
 			worldX, worldY := mapWorldPoint(pin.Latitude, pin.Longitude, m.Zoom, m.CameraMove.From)
@@ -451,111 +483,26 @@ func mapWorldPoint(latitude, longitude float64, zoom int, origin SemanticMapPoin
 	return wrapMapPlaneDelta(x-originX, geo.MercatorTileSize*math.Pow(2, float64(zoom))), -(y - originY)
 }
 
-func mapCameraKeyframes(move *SemanticMapCameraMove, startFrame, endFrame int64) (*CameraPlan, *CameraAnimation) {
-	originX, originY := geo.LatLonToGlobalPixel(move.From.Latitude, move.From.Longitude, int(move.StartZoom))
-	destinationX, destinationY := geo.LatLonToGlobalPixel(move.To.Latitude, move.To.Longitude, int(move.StartZoom))
-	worldSize := geo.MercatorTileSize * math.Pow(2, move.StartZoom)
-	deltaX := wrapMapPlaneDelta(destinationX-originX, worldSize)
-	deltaY := -(destinationY - originY)
-	zoomFactor := math.Pow(2, move.EndZoom-move.StartZoom)
-	base := &CameraPlan{Type: "orthographic", Position: [3]float64{0, 0, -1000}, Rotation: [3]float64{move.StartTiltDeg, 0, move.BearingDeg}, FOVDeg: 50, Near: 1, Far: 10000000, Zoom: 1}
-	keyframes := func(from, to float64) []AnimationKeyframe {
-		keys := []AnimationKeyframe{{Frame: startFrame, Value: from}, {Frame: endFrame, Value: to}}
-		if startFrame > 0 {
-			keys = append([]AnimationKeyframe{{Frame: 0, Value: from}}, keys...)
-		}
-		return keys
-	}
-	tracks := []CameraTrack{
-		{Property: "camera_position_x", Keyframes: keyframes(0, deltaX), Easing: "linear"},
-		{Property: "camera_position_y", Keyframes: keyframes(0, deltaY), Easing: "linear"},
-		{Property: "camera_rotation_x", Keyframes: keyframes(move.StartTiltDeg, move.EndTiltDeg), Easing: "linear"},
-		{Property: "camera_zoom", Keyframes: keyframes(1, zoomFactor), Easing: "linear"},
-	}
-	return base, &CameraAnimation{Tracks: tracks}
-}
-
-// mapPinLayer draws one grounded place as a circular text glyph centred on its
-// projected raster pixel. The text backend supports this on the native Vulkan
-// path, where the generic shape node is not available.
-func mapPinLayer(ri resolvedItem, src *semanticPlan, pin SemanticMapPin, x, y float64, duration int64) Layer {
+// mapPinLayer draws one grounded place as a native ellipse shape centred on
+// its projected raster pixel. The plan's shape primitive is supported on the
+// native Vulkan path (and is what the certified map canary pins), so pins no
+// longer borrow the text glyph "O"; the white ring is the shape's stroke.
+func mapPinLayer(ri resolvedItem, src *semanticPlan, pin SemanticMapPin, x, y float64, duration int64) (Layer, error) {
 	size := 2 * pin.RadiusPX
-	style := mapTextStyle(OfficialFontPathForLanguage(src.Language), size*1.5, size, pin.Color)
-	style.Stroke = &LayerStroke{Color: mapPinStrokeColor, Width: mapPinStrokeWidthPX}
+	// validateMapPin already admitted only #RRGGBB, so this parse cannot fail;
+	// the error branch keeps the lowering fail-closed anyway.
+	rgb, err := parseHexColor(pin.Color)
+	if err != nil {
+		return Layer{}, fmt.Errorf("overlay: map item %q pin %q color: %w", ri.Item.ID, pin.ID, err)
+	}
 	return Layer{
-		ID: mapPinLayerID(ri.Item.ID, pin.ID), Type: "text", Text: "O", Size: []float64{size, size},
-		Position:   canvasBoxPosition("text", x-pin.RadiusPX, y-pin.RadiusPX, size, size, src.Width, src.Height),
+		ID: mapPinLayerID(ri.Item.ID, pin.ID), Type: "shape",
+		Size:       []float64{size, size},
+		Position:   canvasBoxPosition("shape", x-pin.RadiusPX, y-pin.RadiusPX, size, size, src.Width, src.Height),
 		StartFrame: ri.Start, DurationFrames: duration,
-		Style: style,
-	}
-}
-
-func compileMapCamera(plan *Plan, move SemanticMapCameraMove, startFrame, endFrame int64, fpsNum, fpsDen int) error {
-	if plan == nil || fpsNum <= 0 || fpsDen <= 0 {
-		return fmt.Errorf("overlay: invalid camera map frame rate")
-	}
-	if startFrame < 0 || endFrame <= startFrame || endFrame > plan.Canvas.DurationFrames || endFrame > maxCameraMoveFrames {
-		return fmt.Errorf("overlay: camera map frame window must be within the plan and at most %d frames", maxCameraMoveFrames)
-	}
-	plan.Camera, plan.CameraAnimation = mapCameraKeyframes(&move, startFrame, endFrame)
-	return nil
-}
-
-func mapFrameAtZoom(zoom, startZoom, endZoom float64, duration int64) int64 {
-	if duration <= 0 || endZoom <= startZoom {
-		return 0
-	}
-	factor := math.Pow(2, endZoom-startZoom)
-	return int64(math.Round((math.Pow(2, zoom-startZoom) - 1) / (factor - 1) * float64(duration)))
-}
-
-func mapCameraScaleAnimation(move *SemanticMapCameraMove, duration int64) *LayerAnimation {
-	factor := math.Pow(2, move.EndZoom-move.StartZoom)
-	keys := []AnimationKeyframe{{Frame: 0, Value: 1.0}, {Frame: duration, Value: 1 / factor}}
-	return &LayerAnimation{Tracks: []AnimationTrack{{Property: "scale_x", Keyframes: keys, Easing: "linear"}, {Property: "scale_y", Keyframes: keys, Easing: "linear"}}}
-}
-
-func mapLODAnimation(index int, lods []SemanticMapLOD, duration int64, move *SemanticMapCameraMove) *LayerAnimation {
-	startZoom, endZoom := move.StartZoom, move.EndZoom
-	thresholds := make([]float64, len(lods)-1)
-	for i := range thresholds {
-		thresholds[i] = (float64(lods[i].Zoom) + float64(lods[i+1].Zoom)) / 2
-	}
-	keys := []AnimationKeyframe{}
-	add := func(frame int64, value float64) { keys = append(keys, AnimationKeyframe{Frame: frame, Value: value}) }
-	if index == 0 {
-		// Keep the coarsest certified plate as a visible fallback for the full
-		// move. Finer plates fade in above it; it must never fade out underneath
-		// them or any uncovered part of the canvas becomes blank.
-		add(0, 1)
-		add(duration, 1)
-	} else {
-		add(0, 0)
-		start := math.Max(startZoom, thresholds[index-1]-0.25)
-		add(mapFrameAtZoom(start, startZoom, endZoom, duration), 0)
-		add(mapFrameAtZoom(math.Min(endZoom, thresholds[index-1]+0.25), startZoom, endZoom, duration), 1)
-		if index < len(lods)-1 {
-			end := thresholds[index]
-			add(mapFrameAtZoom(math.Max(startZoom, end-0.25), startZoom, endZoom, duration), 1)
-			add(mapFrameAtZoom(math.Min(endZoom, end+0.25), startZoom, endZoom, duration), 0)
-		} else {
-			add(mapFrameAtZoom(math.Max(startZoom, endZoom-0.25), startZoom, endZoom, duration), 1)
-			add(duration, 1)
-		}
-	}
-	if duration <= 1 {
-		return nil
-	}
-	sort.SliceStable(keys, func(i, j int) bool { return keys[i].Frame < keys[j].Frame })
-	deduped := keys[:0]
-	for _, key := range keys {
-		if len(deduped) > 0 && key.Frame == deduped[len(deduped)-1].Frame {
-			deduped[len(deduped)-1] = key
-		} else {
-			deduped = append(deduped, key)
-		}
-	}
-	return &LayerAnimation{Tracks: []AnimationTrack{{Property: "opacity", Keyframes: deduped, Easing: "linear"}}}
+		Shape: &LayerShape{Type: "ellipse", Fill: append(rgb, 1.0),
+			Stroke: &LayerStroke{Color: mapPinStrokeColor, Width: mapPinStrokeWidthPX}},
+	}, nil
 }
 
 func mapBasemapLayerID(itemID string) string    { return itemID + ":map_basemap" }

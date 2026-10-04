@@ -149,6 +149,106 @@
       "color": "#FFFFFF"
     }
   },
+  "documentary_snapshot_recipes": [
+    {
+      "id": "doc_title_snap_down",
+      "family": "documentary_title_snapshot_v1",
+      "requires_camera": true,
+      "camera_only": true,
+      "minimum_snapshots": 1
+    },
+    {
+      "id": "doc_title_pullback_photo_reveal",
+      "family": "documentary_title_snapshot_v1",
+      "requires_camera": true,
+      "camera_only": true,
+      "minimum_snapshots": 1
+    },
+    {
+      "id": "doc_title_push_through_snapshot",
+      "family": "documentary_title_snapshot_v1",
+      "requires_camera": true,
+      "camera_only": true,
+      "minimum_snapshots": 1
+    },
+    {
+      "id": "doc_title_whip_to_photo",
+      "family": "documentary_title_snapshot_v1",
+      "requires_camera": true,
+      "camera_only": true,
+      "minimum_snapshots": 1
+    },
+    {
+      "id": "doc_title_focus_drop",
+      "family": "documentary_title_snapshot_v1",
+      "requires_camera": true,
+      "camera_only": true,
+      "minimum_snapshots": 1
+    },
+    {
+      "id": "doc_title_90_reveal",
+      "family": "documentary_title_snapshot_v1",
+      "requires_camera": true,
+      "camera_only": true,
+      "minimum_snapshots": 1
+    },
+    {
+      "id": "doc_title_corner_turn",
+      "family": "documentary_title_snapshot_v1",
+      "requires_camera": true,
+      "camera_only": true,
+      "minimum_snapshots": 1
+    },
+    {
+      "id": "doc_title_foreground_photo_pass",
+      "family": "documentary_title_snapshot_v1",
+      "requires_camera": true,
+      "camera_only": false,
+      "minimum_snapshots": 1
+    },
+    {
+      "id": "doc_title_photo_stack",
+      "family": "documentary_title_snapshot_v1",
+      "requires_camera": true,
+      "camera_only": true,
+      "minimum_snapshots": 3
+    },
+    {
+      "id": "doc_title_filmstrip_handoff",
+      "family": "documentary_title_snapshot_v1",
+      "requires_camera": true,
+      "camera_only": true,
+      "minimum_snapshots": 3
+    },
+    {
+      "id": "doc_title_split_depth",
+      "family": "documentary_title_snapshot_v1",
+      "requires_camera": true,
+      "camera_only": true,
+      "minimum_snapshots": 1
+    },
+    {
+      "id": "doc_archive_crane_reveal",
+      "family": "documentary_title_snapshot_v1",
+      "requires_camera": true,
+      "camera_only": true,
+      "minimum_snapshots": 3
+    }
+  ],
+  "documentary_snapshot_styles": [
+    {
+      "id": "snapshot_clean",
+      "implementation": "image_frame_style"
+    },
+    {
+      "id": "snapshot_archive",
+      "implementation": "image_frame_style"
+    },
+    {
+      "id": "snapshot_evidence",
+      "implementation": "image_frame_style"
+    }
+  ],
   "entity_presentation": {
     "schema": "chronontemplate.entity-presentation.v1",
     "version": 1,
@@ -5260,6 +5360,668 @@
       ],
       "selector": {},
       "stagger": {}
+    },
+    {
+      "id": "entity_caption_blur_reveal",
+      "category": "entity_caption_v1",
+      "targets": [
+        "text"
+      ],
+      "unit": "layer",
+      "enter": 48,
+      "tracks": [
+        {
+          "property": "position_y",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 26
+            },
+            {
+              "frame": 48,
+              "value": 0
+            }
+          ],
+          "easing": "out_cubic"
+        },
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 20,
+              "value": 1
+            },
+            {
+              "frame": 48,
+              "value": 1
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ]
+    },
+    {
+      "id": "entity_caption_tracking_snap",
+      "category": "entity_caption_v1",
+      "targets": [
+        "text"
+      ],
+      "unit": "layer",
+      "enter": 44,
+      "tracks": [
+        {
+          "property": "scale_x",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.78
+            },
+            {
+              "frame": 26,
+              "value": 1.04
+            },
+            {
+              "frame": 44,
+              "value": 1
+            }
+          ],
+          "easing": "out_cubic"
+        },
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 16,
+              "value": 1
+            },
+            {
+              "frame": 44,
+              "value": 1
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ]
+    },
+    {
+      "id": "entity_caption_word_spring",
+      "category": "entity_caption_v1",
+      "targets": [
+        "text"
+      ],
+      "unit": "word",
+      "enter": 56,
+      "tracks": [
+        {
+          "property": "scale",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.92
+            },
+            {
+              "frame": 32,
+              "value": 1.02
+            },
+            {
+              "frame": 56,
+              "value": 1
+            }
+          ],
+          "easing": "out_cubic"
+        },
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 18,
+              "value": 1
+            },
+            {
+              "frame": 56,
+              "value": 1
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ],
+      "text_animators": [
+        {
+          "id": "entity_caption_word_spring_text",
+          "selector": {
+            "kind": "word",
+            "shape": "square",
+            "order": "forward",
+            "stagger": 2
+          },
+          "properties": [
+            {
+              "property": "position_y",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 28
+                },
+                {
+                  "frame": 32,
+                  "value": -3
+                },
+                {
+                  "frame": 48,
+                  "value": 0
+                }
+              ],
+              "easing": "out_cubic"
+            },
+            {
+              "property": "opacity",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0
+                },
+                {
+                  "frame": 14,
+                  "value": 1
+                }
+              ],
+              "easing": "out_cubic"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "entity_caption_glyph_rise",
+      "category": "entity_caption_v1",
+      "targets": [
+        "text"
+      ],
+      "unit": "glyph",
+      "enter": 54,
+      "tracks": [
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 20,
+              "value": 1
+            },
+            {
+              "frame": 54,
+              "value": 1
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ],
+      "text_animators": [
+        {
+          "id": "entity_caption_glyph_rise_text",
+          "selector": {
+            "kind": "glyph",
+            "shape": "square",
+            "order": "forward",
+            "stagger": 1
+          },
+          "properties": [
+            {
+              "property": "position_y",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 22
+                },
+                {
+                  "frame": 36,
+                  "value": 0
+                }
+              ],
+              "easing": "out_cubic"
+            },
+            {
+              "property": "scale",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0.82
+                },
+                {
+                  "frame": 30,
+                  "value": 1.03
+                },
+                {
+                  "frame": 42,
+                  "value": 1
+                }
+              ],
+              "easing": "out_cubic"
+            },
+            {
+              "property": "opacity",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0
+                },
+                {
+                  "frame": 12,
+                  "value": 1
+                }
+              ],
+              "easing": "out_cubic"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "entity_caption_side_glide",
+      "category": "entity_caption_v1",
+      "targets": [
+        "text"
+      ],
+      "unit": "layer",
+      "enter": 42,
+      "tracks": [
+        {
+          "property": "position_x",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": -96
+            },
+            {
+              "frame": 30,
+              "value": 4
+            },
+            {
+              "frame": 42,
+              "value": 0
+            }
+          ],
+          "easing": "out_cubic"
+        },
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 16,
+              "value": 1
+            },
+            {
+              "frame": 42,
+              "value": 1
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ]
+    },
+    {
+      "id": "entity_caption_warm_reveal",
+      "category": "entity_caption_v1",
+      "targets": [
+        "text"
+      ],
+      "unit": "layer",
+      "enter": 48,
+      "tracks": [
+        {
+          "property": "scale",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.88
+            },
+            {
+              "frame": 30,
+              "value": 1.02
+            },
+            {
+              "frame": 48,
+              "value": 1
+            }
+          ],
+          "easing": "out_back"
+        },
+        {
+          "property": "position_y",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 14
+            },
+            {
+              "frame": 38,
+              "value": 0
+            }
+          ],
+          "easing": "out_cubic"
+        },
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 16,
+              "value": 1
+            },
+            {
+              "frame": 48,
+              "value": 1
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ]
+    },
+    {
+      "id": "entity_caption_flip_settle",
+      "category": "entity_caption_v1",
+      "targets": [
+        "text"
+      ],
+      "unit": "layer",
+      "enter": 48,
+      "tracks": [
+        {
+          "property": "rotation_z",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": -5
+            },
+            {
+              "frame": 30,
+              "value": 1
+            },
+            {
+              "frame": 48,
+              "value": 0
+            }
+          ],
+          "easing": "out_cubic"
+        },
+        {
+          "property": "position_x",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 42
+            },
+            {
+              "frame": 38,
+              "value": 0
+            }
+          ],
+          "easing": "out_cubic"
+        },
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 14,
+              "value": 1
+            },
+            {
+              "frame": 48,
+              "value": 1
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ]
+    },
+    {
+      "id": "entity_caption_word_drop",
+      "category": "entity_caption_v1",
+      "targets": [
+        "text"
+      ],
+      "unit": "word",
+      "enter": 58,
+      "tracks": [
+        {
+          "property": "position_y",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": -18
+            },
+            {
+              "frame": 42,
+              "value": 0
+            }
+          ],
+          "easing": "out_cubic"
+        },
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 20,
+              "value": 1
+            },
+            {
+              "frame": 58,
+              "value": 1
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ],
+      "text_animators": [
+        {
+          "id": "entity_caption_word_drop_text",
+          "selector": {
+            "kind": "word",
+            "shape": "square",
+            "order": "forward",
+            "stagger": 3
+          },
+          "properties": [
+            {
+              "property": "position_y",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": -36
+                },
+                {
+                  "frame": 30,
+                  "value": 4
+                },
+                {
+                  "frame": 44,
+                  "value": 0
+                }
+              ],
+              "easing": "out_cubic"
+            },
+            {
+              "property": "opacity",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0
+                },
+                {
+                  "frame": 14,
+                  "value": 1
+                }
+              ],
+              "easing": "out_cubic"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "entity_caption_focus_punch",
+      "category": "entity_caption_v1",
+      "targets": [
+        "text"
+      ],
+      "unit": "layer",
+      "enter": 46,
+      "tracks": [
+        {
+          "property": "scale",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 1.18
+            },
+            {
+              "frame": 22,
+              "value": 0.97
+            },
+            {
+              "frame": 46,
+              "value": 1
+            }
+          ],
+          "easing": "out_back"
+        },
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 12,
+              "value": 1
+            },
+            {
+              "frame": 46,
+              "value": 1
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ]
+    },
+    {
+      "id": "entity_caption_neon_breathe",
+      "category": "entity_caption_v1",
+      "targets": [
+        "text"
+      ],
+      "unit": "glyph",
+      "enter": 54,
+      "tracks": [
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 24,
+              "value": 1
+            },
+            {
+              "frame": 54,
+              "value": 1
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ],
+      "text_animators": [
+        {
+          "id": "entity_caption_neon_breathe_text",
+          "selector": {
+            "kind": "glyph",
+            "shape": "square",
+            "order": "forward",
+            "stagger": 1
+          },
+          "properties": [
+            {
+              "property": "scale",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0.88
+                },
+                {
+                  "frame": 28,
+                  "value": 1.05
+                },
+                {
+                  "frame": 46,
+                  "value": 1
+                }
+              ],
+              "easing": "out_cubic"
+            },
+            {
+              "property": "tracking",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 3
+                },
+                {
+                  "frame": 48,
+                  "value": 0
+                }
+              ],
+              "easing": "out_cubic"
+            },
+            {
+              "property": "opacity",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0
+                },
+                {
+                  "frame": 16,
+                  "value": 1
+                }
+              ],
+              "easing": "out_cubic"
+            }
+          ]
+        }
+      ]
     },
     {
       "id": "fade",
@@ -24139,6 +24901,271 @@
       "stagger": {}
     },
     {
+      "id": "typewriter_lift",
+      "unit": "glyph",
+      "enter": 42,
+      "text_animators": [
+        {
+          "id": "typewriter_lift_text",
+          "selector": {
+            "kind": "glyph",
+            "shape": "square",
+            "stagger": 1
+          },
+          "properties": [
+            {
+              "property": "opacity",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0
+                },
+                {
+                  "frame": 42,
+                  "value": 1
+                }
+              ],
+              "easing": "out_cubic"
+            },
+            {
+              "property": "position_y",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 18
+                },
+                {
+                  "frame": 20,
+                  "value": -2
+                },
+                {
+                  "frame": 42,
+                  "value": 0
+                }
+              ],
+              "easing": "out_cubic"
+            }
+          ]
+        }
+      ],
+      "selector": {},
+      "stagger": {}
+    },
+    {
+      "id": "typewriter_slide_in",
+      "unit": "glyph",
+      "enter": 42,
+      "text_animators": [
+        {
+          "id": "typewriter_slide_in_text",
+          "selector": {
+            "kind": "glyph",
+            "shape": "square",
+            "stagger": 1
+          },
+          "properties": [
+            {
+              "property": "opacity",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0
+                },
+                {
+                  "frame": 42,
+                  "value": 1
+                }
+              ],
+              "easing": "out_cubic"
+            },
+            {
+              "property": "position_x",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": -24
+                },
+                {
+                  "frame": 20,
+                  "value": 3
+                },
+                {
+                  "frame": 42,
+                  "value": 0
+                }
+              ],
+              "easing": "out_cubic"
+            }
+          ]
+        }
+      ],
+      "selector": {},
+      "stagger": {}
+    },
+    {
+      "id": "typewriter_scale_up",
+      "unit": "glyph",
+      "enter": 42,
+      "text_animators": [
+        {
+          "id": "typewriter_scale_up_text",
+          "selector": {
+            "kind": "glyph",
+            "shape": "square",
+            "stagger": 1
+          },
+          "properties": [
+            {
+              "property": "opacity",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0
+                },
+                {
+                  "frame": 42,
+                  "value": 1
+                }
+              ],
+              "easing": "out_cubic"
+            },
+            {
+              "property": "scale",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0.78
+                },
+                {
+                  "frame": 24,
+                  "value": 1.04
+                },
+                {
+                  "frame": 42,
+                  "value": 1
+                }
+              ],
+              "easing": "out_back"
+            }
+          ]
+        }
+      ],
+      "selector": {},
+      "stagger": {}
+    },
+    {
+      "id": "typewriter_blur_focus",
+      "unit": "glyph",
+      "enter": 42,
+      "text_animators": [
+        {
+          "id": "typewriter_blur_focus_text",
+          "selector": {
+            "kind": "glyph",
+            "shape": "square",
+            "stagger": 1
+          },
+          "properties": [
+            {
+              "property": "opacity",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0
+                },
+                {
+                  "frame": 42,
+                  "value": 1
+                }
+              ],
+              "easing": "out_cubic"
+            },
+            {
+              "property": "blur",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 16
+                },
+                {
+                  "frame": 20,
+                  "value": 4
+                },
+                {
+                  "frame": 42,
+                  "value": 0
+                }
+              ],
+              "easing": "out_cubic"
+            }
+          ]
+        }
+      ],
+      "selector": {},
+      "stagger": {}
+    },
+    {
+      "id": "typewriter_soft_lift",
+      "unit": "glyph",
+      "enter": 42,
+      "text_animators": [
+        {
+          "id": "typewriter_soft_lift_text",
+          "selector": {
+            "kind": "glyph",
+            "shape": "square",
+            "stagger": 1
+          },
+          "properties": [
+            {
+              "property": "opacity",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0
+                },
+                {
+                  "frame": 42,
+                  "value": 1
+                }
+              ],
+              "easing": "out_cubic"
+            },
+            {
+              "property": "position_y",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 10
+                },
+                {
+                  "frame": 42,
+                  "value": 0
+                }
+              ],
+              "easing": "out_cubic"
+            },
+            {
+              "property": "tracking",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": -2
+                },
+                {
+                  "frame": 42,
+                  "value": 1
+                }
+              ],
+              "easing": "out_cubic"
+            }
+          ]
+        }
+      ],
+      "selector": {},
+      "stagger": {}
+    },
+    {
       "id": "metric_counter_rise",
       "category": "metric_v1",
       "supported_template": "metric_stat_card",
@@ -28750,6 +29777,10 @@
       "typewriter_glitch",
       "typewriter_pop",
       "typewriter_tracking",
+      "typewriter_lift",
+      "typewriter_slide_in",
+      "typewriter_scale_up",
+      "typewriter_soft_lift",
       "apple_focus_rise",
       "apple_soft_scale",
       "apple_word_cascade",

@@ -182,13 +182,26 @@ func TestCompositeSemanticCompilerPreservesDistinctAssetsAndStaggeredWindows(t *
 		t.Fatalf("compiled layers=%d, want background, three images and three captions", len(compiled.Plan.Layers))
 	}
 	captionCount := 0
+	captionMotions := map[string]bool{}
+	captionAnimations := map[string]*LayerAnimation{}
 	for _, layer := range compiled.Plan.Layers {
 		if layer.Type == "text" && (layer.Text == "Ada Lovelace" || layer.Text == "Grace Hopper" || layer.Text == "Single Entity") {
 			captionCount++
+			if layer.Animation == nil || len(layer.Animation.Tracks) == 0 {
+				t.Errorf("caption %q has no compiled motion tracks", layer.Text)
+			}
+			captionMotions[layer.Text] = true
+			captionAnimations[layer.Text] = layer.Animation
 		}
 	}
 	if captionCount != 3 {
 		t.Fatalf("compiled entity captions=%d, want Ada Lovelace, Grace Hopper and Single Entity", captionCount)
+	}
+	if !captionMotions["Ada Lovelace"] || !captionMotions["Grace Hopper"] || !captionMotions["Single Entity"] {
+		t.Fatalf("entity caption motion was not lowered for every caption: %+v", captionMotions)
+	}
+	if captionAnimations["Ada Lovelace"].Tracks[0].Property != "position_y" || captionAnimations["Grace Hopper"].Tracks[0].Property != "position_y" {
+		t.Fatalf("composite caption-specific motions were not preserved: Ada=%+v Grace=%+v", captionAnimations["Ada Lovelace"], captionAnimations["Grace Hopper"])
 	}
 }
 
@@ -214,8 +227,8 @@ func compileDistinctCompositePlan(t *testing.T) (string, CompileResult) {
 				{"asset_id":"image-right","sha256":%q,"url":"https://fixtures.example/image-right.png","media_type":"image/png"}
 			],
 			"image_layers":[
-				{"id":"image-left","asset_id":"image-left","start_ms":0,"end_ms":2000,"preset_id":"image_focus_in","motion_id":"image_focus_reveal","motion_params":{"enter_frames":8},"caption":"Ada Lovelace","params":{"width":250,"height":230,"position_x":-230,"position_y":0,"fit":"contain"}},
-				{"id":"image-right","asset_id":"image-right","start_ms":750,"end_ms":3000,"preset_id":"image_focus_in","motion_id":"image_scale_reveal","motion_params":{"enter_frames":8},"caption":"Grace Hopper","params":{"width":250,"height":230,"position_x":230,"position_y":0,"fit":"contain"}}
+				{"id":"image-left","asset_id":"image-left","start_ms":0,"end_ms":2000,"preset_id":"image_focus_in","motion_id":"image_focus_reveal","motion_params":{"enter_frames":8},"caption":"Ada Lovelace","caption_motion_id":"text_word_rise","params":{"width":250,"height":230,"position_x":-230,"position_y":0,"fit":"contain"}},
+				{"id":"image-right","asset_id":"image-right","start_ms":750,"end_ms":3000,"preset_id":"image_focus_in","motion_id":"image_scale_reveal","motion_params":{"enter_frames":8},"caption":"Grace Hopper","caption_motion_id":"text_word_stagger","params":{"width":250,"height":230,"position_x":230,"position_y":0,"fit":"contain"}}
 			]
 		},{
 			"id":"single-image","kind":"entity_image","template_id":"image_popup","preset_id":"image_focus_in",
