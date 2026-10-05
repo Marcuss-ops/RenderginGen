@@ -2,6 +2,7 @@ package postgres
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"testing"
 	"time"
@@ -53,6 +54,7 @@ func TestArtifactPersistedOnComplete(t *testing.T) {
 		CodecProfile:       "high",
 		ClosedGOP:          true,
 		FirstFrameKeyframe: true,
+		Provenance:         &queueclient.ArtifactProvenance{SchemaVersion: "renderinggen.artifact-provenance.v1", Protocol: "renderinggen.overlay-import.v1", Producer: "pipelinegen-map", ImportJobID: "job-1", SourceSHA256: "abc123", SourceSizeBytes: 12345, IdentityVerified: true, StructureVerified: true, FullDecodeVerified: true},
 	}
 	if err := r.Complete("job-1", "w1", art); err != nil {
 		t.Fatal(err)
@@ -76,6 +78,17 @@ func TestArtifactPersistedOnComplete(t *testing.T) {
 	if sha != "abc123" || !copyEligible || codec != "h264" || !closedGOP {
 		t.Fatalf("artifact not persisted correctly: sha=%q copy=%v codec=%q gop=%v",
 			sha, copyEligible, codec, closedGOP)
+	}
+	var provenanceRaw []byte
+	if err := db.QueryRowContext(ctx, `SELECT provenance FROM render_artifacts WHERE id='art-1'`).Scan(&provenanceRaw); err != nil {
+		t.Fatalf("query artifact provenance: %v", err)
+	}
+	var persisted queueclient.ArtifactProvenance
+	if err := json.Unmarshal(provenanceRaw, &persisted); err != nil {
+		t.Fatalf("decode artifact provenance: %v", err)
+	}
+	if persisted.Protocol != "renderinggen.overlay-import.v1" || persisted.Producer != "pipelinegen-map" || !persisted.FullDecodeVerified {
+		t.Fatalf("artifact provenance = %+v", persisted)
 	}
 
 	var jobArtifactID string

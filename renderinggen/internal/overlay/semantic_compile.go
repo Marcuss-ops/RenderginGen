@@ -416,6 +416,17 @@ func resolveSemanticItems(src *semanticPlan) ([]resolvedItem, error) {
 		if err != nil {
 			return nil, err
 		}
+		if item.EntityStyleID != "" {
+			if item.EntityStyleID != "premium_random_v1" {
+				return nil, fmt.Errorf("overlay: item %q has unsupported entity_style_id %q", item.ID, item.EntityStyleID)
+			}
+			if kind != KindEntityCard {
+				return nil, fmt.Errorf("overlay: item %q entity_style_id is only valid for entity_card items", item.ID)
+			}
+			if len(item.Assets) == 0 || strings.TrimSpace(item.EntityCaption) == "" {
+				return nil, fmt.Errorf("overlay: item %q entity_style_id %q requires an image and entity_caption", item.ID, item.EntityStyleID)
+			}
+		}
 		// The map declaration is validated for EVERY item, not only map ones: a
 		// map block on a phrase item would otherwise be carried through the plan
 		// and silently ignored, which is exactly the kind of contract drift the
@@ -499,7 +510,7 @@ func compileItem(ri resolvedItem, src *semanticPlan, registry *assetRegistry) ([
 			if err != nil {
 				return nil, err
 			}
-			return []Layer{layer}, nil
+			return compileTextVisualAccentLayers(ri, src, layer)
 		}
 		return compileEntityCard(ri, src, registry)
 	case isVideoKind(ri.Kind):
@@ -523,15 +534,66 @@ func compileItem(ri resolvedItem, src *semanticPlan, registry *assetRegistry) ([
 		if err != nil {
 			return nil, err
 		}
-		return []Layer{layer}, nil
+		return compileTextVisualAccentLayers(ri, src, layer)
 	}
 }
 
-// compileEntityCard is the compatibility path for legacy entity_card payloads
-// that still carry an asset. Portrait entities are image-only: the image preset
-// owns the geometry and motion, while the name stays provenance metadata and
-// is not rendered as a second lower-third layer.
+// Brush motions target text as well as images. Their recipe components must be
+// emitted beside the phrase layer; the ordinary text motion lowering only
+// consumes tracks and would otherwise silently omit the authored brush stroke.
+func compileTextVisualAccentLayers(ri resolvedItem, src *semanticPlan, text Layer) ([]Layer, error) {
+	definition, err := visualAccentsDefinition(ri.Item.MotionID)
+	if err != nil {
+		return nil, err
+	}
+	var layers []Layer
+	if definition == nil || definition.Category != "brush_v1" {
+		layers = []Layer{text}
+	} else {
+		targetsText := false
+		for _, target := range definition.Targets {
+			targetsText = targetsText || target == "text"
+		}
+		if !targetsText {
+			return nil, fmt.Errorf("overlay: brush motion %q does not target text", definition.ID)
+		}
+		layers, err = compileVisualAccentsComponents(src, text, *definition)
+		if err != nil {
+			return nil, err
+		}
+	}
+	if cursor, ok := compileTypewriterCursor(ri, src, text); ok {
+		layers = append(layers, cursor)
+	}
+	return layers, nil
+}
+
+// compileEntityCard lowers a portrait and its optional entity caption. The
+// image preset owns the portrait geometry and motion; position_x/position_y
+// can move the portrait so caption_layout can use the opposite side.
 func compileEntityCard(ri resolvedItem, src *semanticPlan, registry *assetRegistry) ([]Layer, error) {
+	if ri.Item.EntityStyleID != "" {
+		style := selectRandomEntityStyle(src.PlanID, src.VideoID, ri.Item.ID)
+		ri.Item.MotionID = style.ImageMotionID
+		ri.Item.CaptionMotionID = style.CaptionMotionID
+		ri.Item.CaptionLayout = style.CaptionLayout
+		ri.Item.CaptionFontFamily = style.CaptionFontFamily
+		ri.Item.CaptionColor = style.CaptionColor
+		// Place the runtime portrait in one of two balanced columns. The
+		// caption resolver then lays the runtime name in the opposite column.
+		x := 0.0
+		switch style.ImageSide {
+		case "left":
+			x = -float64(src.Width) * 0.25
+		case "right":
+			x = float64(src.Width) * 0.25
+		case "center":
+		default:
+			return nil, fmt.Errorf("overlay: entity style %q has unsupported image side %q", style.Name, style.ImageSide)
+		}
+		ri.Params["position_x"] = x
+		ri.Params["position_y"] = 0.0
+	}
 	img := imageLayer(ri, registry.Path(ri.Item.Assets[0].ID))
 	if ri.ImagePreset.ID != "" {
 		applyPresetDefinition(&img, ri.ImagePreset)
@@ -546,12 +608,14 @@ func compileEntityCard(ri resolvedItem, src *semanticPlan, registry *assetRegist
 			return nil, err
 		}
 		applyMotionRouting(&img, imgAnimation)
-		// Entity portraits are centered visual subjects.  The image presets
-		// still own the box size, but their legacy left/right/bottom anchors
-		// must not move the portrait off-canvas. Keep the resolved size
-		// untouched and use contain so the source is fully visible without crop.
+		// Keep the source portrait uncropped; an explicit position lets the
+		// producer place it on either side while the preset retains its size.
 		img.Position = []float64{0, 0}
 		img.Fit = FitContain
+	}
+	if x, ok := numericParam(ri.Params["position_x"]); ok {
+		y, _ := numericParam(ri.Params["position_y"])
+		img.Position = []float64{x, y}
 	}
 	if err := applyFrameTreatment(&img, ri.Item.Frame); err != nil {
 		return nil, fmt.Errorf("overlay: entity image item %q: %w", ri.Item.ID, err)

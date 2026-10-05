@@ -500,7 +500,7 @@ func mapPinLayer(ri resolvedItem, src *semanticPlan, pin SemanticMapPin, x, y fl
 		Size:       []float64{size, size},
 		Position:   canvasBoxPosition("shape", x-pin.RadiusPX, y-pin.RadiusPX, size, size, src.Width, src.Height),
 		StartFrame: ri.Start, DurationFrames: duration,
-		Shape: &LayerShape{Type: "ellipse", Fill: append(rgb, 1.0),
+		Shape: &LayerShape{Type: "ellipse", Fill: rgb,
 			Stroke: &LayerStroke{Color: mapPinStrokeColor, Width: mapPinStrokeWidthPX}},
 	}, nil
 }

@@ -85,8 +85,11 @@ type PlanItem struct {
 	// caption is a first-class animated layer: CaptionMotionID selects its
 	// motion (empty resolves the shared default), and the compiler refuses a
 	// non-text motion rather than lowering image tracks onto a text layer.
-	EntityCaption   string
-	CaptionMotionID string
+	EntityCaption     string
+	CaptionMotionID   string
+	CaptionLayout     string
+	CaptionFontFamily string
+	CaptionColor      string
 	// DurationMS is producer-owned timing metadata. When set it must equal
 	// EndMS-StartMS; the semantic decoder enforces that.
 	DurationMS *int64
@@ -161,26 +164,29 @@ func BuildPlan(spec PlanSpec) ([]byte, error) {
 	}
 	for _, item := range spec.Items {
 		doc.Items = append(doc.Items, semanticItemDocument{
-			ID:              item.ID,
-			SceneID:         item.SceneID,
-			TemplateID:      item.TemplateID,
-			PresetID:        item.PresetID,
-			ImagePresetID:   item.ImagePresetID,
-			MotionID:        item.MotionID,
-			Kind:            item.Kind,
-			EntityID:        item.EntityID,
-			EntityCaption:   item.EntityCaption,
-			CaptionMotionID: item.CaptionMotionID,
-			DurationMS:      item.DurationMS,
-			AssetRefs:       toAssetRefDocuments(item.AssetRefs),
-			ImageLayers:     item.ImageLayers,
-			Map:             item.Map,
-			MotionParams:    item.MotionParams,
-			Params:          item.Params,
-			Style:           item.Style,
-			Text:            item.Text,
-			StartMS:         item.StartMS,
-			EndMS:           item.EndMS,
+			ID:                item.ID,
+			SceneID:           item.SceneID,
+			TemplateID:        item.TemplateID,
+			PresetID:          item.PresetID,
+			ImagePresetID:     item.ImagePresetID,
+			MotionID:          item.MotionID,
+			Kind:              item.Kind,
+			EntityID:          item.EntityID,
+			EntityCaption:     item.EntityCaption,
+			CaptionMotionID:   item.CaptionMotionID,
+			CaptionLayout:     item.CaptionLayout,
+			CaptionFontFamily: item.CaptionFontFamily,
+			CaptionColor:      item.CaptionColor,
+			DurationMS:        item.DurationMS,
+			AssetRefs:         toAssetRefDocuments(item.AssetRefs),
+			ImageLayers:       item.ImageLayers,
+			Map:               item.Map,
+			MotionParams:      item.MotionParams,
+			Params:            item.Params,
+			Style:             item.Style,
+			Text:              item.Text,
+			StartMS:           item.StartMS,
+			EndMS:             item.EndMS,
 		})
 	}
 	// Typed build, then marshal: no format string can drift from the struct tags
@@ -257,26 +263,29 @@ type semanticPlanDocument struct {
 // semanticItemDocument is one overlay item. The displayed text is owned by the
 // producer: this writer never invents content, it transports the caller's.
 type semanticItemDocument struct {
-	ID              string                       `json:"id"`
-	SceneID         string                       `json:"scene_id,omitempty"`
-	TemplateID      string                       `json:"template_id"`
-	PresetID        string                       `json:"preset_id"`
-	ImagePresetID   string                       `json:"image_preset_id,omitempty"`
-	MotionID        string                       `json:"motion_id,omitempty"`
-	Kind            string                       `json:"kind,omitempty"`
-	EntityID        string                       `json:"entity_id,omitempty"`
-	EntityCaption   string                       `json:"entity_caption,omitempty"`
-	CaptionMotionID string                       `json:"caption_motion_id,omitempty"`
-	DurationMS      *int64                       `json:"duration_ms,omitempty"`
-	AssetRefs       []overlay.SemanticAssetRef   `json:"asset_refs,omitempty"`
-	ImageLayers     []overlay.SemanticImageLayer `json:"image_layers,omitempty"`
-	Map             *overlay.SemanticMap         `json:"map,omitempty"`
-	MotionParams    map[string]any               `json:"motion_params,omitempty"`
-	Params          map[string]any               `json:"params,omitempty"`
-	Style           map[string]any               `json:"style,omitempty"`
-	Text            string                       `json:"text,omitempty"`
-	StartMS         int64                        `json:"start_ms"`
-	EndMS           int64                        `json:"end_ms"`
+	ID                string                       `json:"id"`
+	SceneID           string                       `json:"scene_id,omitempty"`
+	TemplateID        string                       `json:"template_id"`
+	PresetID          string                       `json:"preset_id"`
+	ImagePresetID     string                       `json:"image_preset_id,omitempty"`
+	MotionID          string                       `json:"motion_id,omitempty"`
+	Kind              string                       `json:"kind,omitempty"`
+	EntityID          string                       `json:"entity_id,omitempty"`
+	EntityCaption     string                       `json:"entity_caption,omitempty"`
+	CaptionMotionID   string                       `json:"caption_motion_id,omitempty"`
+	CaptionLayout     string                       `json:"caption_layout,omitempty"`
+	CaptionFontFamily string                       `json:"caption_font_family,omitempty"`
+	CaptionColor      string                       `json:"caption_color,omitempty"`
+	DurationMS        *int64                       `json:"duration_ms,omitempty"`
+	AssetRefs         []overlay.SemanticAssetRef   `json:"asset_refs,omitempty"`
+	ImageLayers       []overlay.SemanticImageLayer `json:"image_layers,omitempty"`
+	Map               *overlay.SemanticMap         `json:"map,omitempty"`
+	MotionParams      map[string]any               `json:"motion_params,omitempty"`
+	Params            map[string]any               `json:"params,omitempty"`
+	Style             map[string]any               `json:"style,omitempty"`
+	Text              string                       `json:"text,omitempty"`
+	StartMS           int64                        `json:"start_ms"`
+	EndMS             int64                        `json:"end_ms"`
 }
 
 // toAssetRefDocuments converts the exported caller-facing refs to the worker's

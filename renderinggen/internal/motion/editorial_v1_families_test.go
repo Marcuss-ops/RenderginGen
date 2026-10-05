@@ -184,11 +184,11 @@ func TestEditorialImageV1CatalogParity(t *testing.T) {
 }
 
 func TestText3DFamilyCount(t *testing.T) {
-	loadV1Family(t, "text_3d_v1", 8)
+	loadV1Family(t, "text_3d_v1", 10)
 }
 
 func TestText3DMotionsRequire3D(t *testing.T) {
-	definitions := loadV1Family(t, "text_3d_v1", 8)
+	definitions := loadV1Family(t, "text_3d_v1", 10)
 	for _, d := range definitions {
 		has3D := false
 		for _, track := range d.Tracks {
@@ -212,7 +212,7 @@ func TestText3DUsesKnownProperties(t *testing.T) {
 	// Chronon's render-plan contract is the authority: layer tracks may
 	// animate XYZ and rotations, animator tracks are limited to the
 	// in-plane properties the glyph pipeline supports.
-	definitions := loadV1Family(t, "text_3d_v1", 8)
+	definitions := loadV1Family(t, "text_3d_v1", 10)
 	for _, d := range definitions {
 		for _, track := range d.Tracks {
 			if !layerProperties[track.Property] {
@@ -230,39 +230,36 @@ func TestText3DUsesKnownProperties(t *testing.T) {
 }
 
 func TestText3DFinalPoseRestored(t *testing.T) {
-	definitions := loadV1Family(t, "text_3d_v1", 8)
+	definitions := loadV1Family(t, "text_3d_v1", 10)
 	assertFiniteAndResting(t, "text_3d_v1", definitions)
 }
 
 func TestText3DWordSelector(t *testing.T) {
-	definition := v1Definition(t, "text_3d_v1", "text_3d_word_cascade")
-	if len(definition.TextAnimators) == 0 {
-		t.Fatal("text_3d_word_cascade has no text animator")
-	}
-	selector := definition.TextAnimators[0].Selector
-	if selector.Kind != "word" {
-		t.Fatalf("text_3d_word_cascade selector kind = %q, want word", selector.Kind)
-	}
-	if selector.Stagger <= 0 {
-		t.Fatalf("text_3d_word_cascade stagger = %d, want a positive deterministic stagger", selector.Stagger)
+	for _, definition := range loadV1Family(t, "text_3d_v1", 10) {
+		if definition.Unit != "layer" || len(definition.TextAnimators) != 0 {
+			t.Fatalf("%s must animate the phrase layer as a whole: unit=%q animators=%d", definition.ID, definition.Unit, len(definition.TextAnimators))
+		}
 	}
 }
 
-func TestText3DGlyphSelector(t *testing.T) {
-	definition := v1Definition(t, "text_3d_v1", "text_3d_character_wave")
-	if len(definition.TextAnimators) == 0 {
-		t.Fatal("text_3d_character_wave has no text animator")
-	}
-	selector := definition.TextAnimators[0].Selector
-	if selector.Kind != "glyph" {
-		t.Fatalf("text_3d_character_wave selector kind = %q, want glyph", selector.Kind)
+func TestText3DAnimationsUseBothCameraAxes(t *testing.T) {
+	for _, definition := range loadV1Family(t, "text_3d_v1", 10) {
+		axes := map[string]bool{}
+		for _, track := range definition.Tracks {
+			if track.Property == "rotation_x" || track.Property == "rotation_y" {
+				axes[track.Property] = true
+			}
+		}
+		if !axes["rotation_x"] || !axes["rotation_y"] {
+			t.Errorf("%s does not use both pitch and yaw for a dimensional angle: %v", definition.ID, axes)
+		}
 	}
 }
 
 func TestText3DDeterministicOrder(t *testing.T) {
 	// Stagger must be deterministic: no random selector order anywhere in
 	// the family, and every stagger is a fixed frame count.
-	definitions := loadV1Family(t, "text_3d_v1", 8)
+	definitions := loadV1Family(t, "text_3d_v1", 10)
 	for _, d := range definitions {
 		for _, animator := range d.TextAnimators {
 			if animator.Selector.Order == "random" {
@@ -276,12 +273,15 @@ func TestText3DDeterministicOrder(t *testing.T) {
 }
 
 func TestText3DCatalogParity(t *testing.T) {
-	definitions := loadV1Family(t, "text_3d_v1", 8)
+	definitions := loadV1Family(t, "text_3d_v1", 10)
 	want := map[string]bool{
-		"text_3d_yaw_flip_in": false, "text_3d_depth_push": false,
-		"text_3d_tilt_rise": false, "text_3d_perspective_drop": false,
+		"text_3d_yaw_flip_in": false,
+		"text_3d_tilt_rise":   false, "text_3d_perspective_drop": false,
 		"text_3d_roll_depth": false, "text_3d_camera_push": false,
-		"text_3d_word_cascade": false, "text_3d_character_wave": false,
+		"text_3d_word_cascade": false,
+		"text_3d_pitch_lift":   false, "text_3d_yaw_sweep": false,
+		"text_3d_double_axis_reveal": false,
+		"text_3d_orbit_lock":         false,
 	}
 	for _, d := range definitions {
 		if _, ok := want[d.ID]; !ok {
@@ -295,10 +295,15 @@ func TestText3DCatalogParity(t *testing.T) {
 			t.Errorf("text_3d_v1 motion %q missing", id)
 		}
 	}
+	for _, id := range []string{"text_3d_character_wave", "text_3d_depth_float", "text_3d_depth_push", "text_3d_glyph_depth_wave", "text_3d_word_yaw_cascade"} {
+		if _, err := Registry.Resolve(id); err == nil {
+			t.Errorf("removed text 3D motion %q still resolves", id)
+		}
+	}
 }
 
 func TestEntityCaptionV1FamilyServesTextTargets(t *testing.T) {
-	definitions := loadV1Family(t, "entity_caption_v1", 16)
+	definitions := loadV1Family(t, "entity_caption_v1", 6)
 	for _, d := range definitions {
 		servesText := false
 		for _, target := range d.Targets {
@@ -306,6 +311,15 @@ func TestEntityCaptionV1FamilyServesTextTargets(t *testing.T) {
 		}
 		if !servesText {
 			t.Fatalf("entity_caption_v1 motion %q does not target text: %v", d.ID, d.Targets)
+		}
+	}
+}
+
+func TestTrumpEntityTextV1FamilyCount(t *testing.T) {
+	definitions := loadV1Family(t, "trump_entity_text_v1", 15)
+	for _, definition := range definitions {
+		if definition.Unit != "layer" || len(definition.TextAnimators) != 0 {
+			t.Errorf("%s must animate the complete entity name as a layer", definition.ID)
 		}
 	}
 }

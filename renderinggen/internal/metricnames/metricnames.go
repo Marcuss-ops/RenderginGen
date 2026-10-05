@@ -168,6 +168,12 @@ const (
 	ReceiptIdentityMismatch   = "receipt_identity_mismatch"
 	ReceiptIdentityUnusable   = "receipt_identity_unusable"
 	ReceiptSizeMismatch       = "receipt_size_mismatch"
+
+	// Producer-import verification facts and timings. Import jobs never emit
+	// Chronon render/encode metrics because they do not invoke Chronon.
+	ImportVerified   = "import_verified"
+	ImportIdentityUS = "import_identity_us"
+	ImportTotalUS    = "import_total_us"
 )
 
 // Ledger facts mirrored into the local artifact database (counts, bytes and
@@ -238,6 +244,7 @@ var vocab = map[string]string{
 	CompositionPredictionDivergence: UnitCount, CompositionPredictionUnverifiable: UnitCount,
 	ReceiptIdentityUnverified: UnitCount, ReceiptIdentityMismatch: UnitCount,
 	ReceiptIdentityUnusable: UnitCount, ReceiptSizeMismatch: UnitCount,
+	ImportVerified: UnitCount, ImportIdentityUS: UnitUS, ImportTotalUS: UnitUS,
 
 	EntityCount: UnitCount, ImportantPhraseCount: UnitCount, ImportantWordCount: UnitCount,
 	ImageCount: UnitCount, LightLeakCount: UnitCount, InputBytes: UnitBytes,

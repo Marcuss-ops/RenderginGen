@@ -13,7 +13,13 @@
 
 CHRONON_RUNTIME ?= ghcr.io/marcuss-ops/chronon3d-runtime:0.1.0
 
-.PHONY: native-build golden-e2e golden-e2e-runtime golden-e2e-reset golden-e2e-down test-architecture conformance test-gofmt test-unit test-module-standalone
+.PHONY: native-build golden-e2e golden-e2e-runtime golden-e2e-reset golden-e2e-down test-architecture conformance test-gofmt test-unit test-module-standalone check-gpu-lanes
+
+# check-gpu-lanes — verify profile-specific GPU lane contracts. Native, Docker,
+# and CI profiles intentionally differ; this catches accidental divergence
+# without treating producer pipelining as GPU admission.
+check-gpu-lanes:
+	python3 scripts/check_gpu_lane_profiles.py
 
 # test-architecture — the cross-repo boundary conformance gate.
 #

@@ -276,8 +276,16 @@ type semanticItem struct {
 	// does not target text is refused by the caption lowering instead of
 	// lowering image tracks onto a text layer.
 	CaptionMotionID string `json:"caption_motion_id,omitempty"`
-	StartMS         int64  `json:"start_ms"`
-	EndMS           int64  `json:"end_ms"`
+	// EntityStyleID selects a RenderingGen-owned entity-card composition. The
+	// premium_random_v1 selector deterministically chooses one of 15 variants.
+	EntityStyleID string `json:"entity_style_id,omitempty"`
+	// CaptionLayout may be "below", "left", or "right"; side layouts keep
+	// the name in the free column beside the portrait.
+	CaptionLayout     string `json:"caption_layout,omitempty"`
+	CaptionFontFamily string `json:"caption_font_family,omitempty"`
+	CaptionColor      string `json:"caption_color,omitempty"`
+	StartMS           int64  `json:"start_ms"`
+	EndMS             int64  `json:"end_ms"`
 	// DurationMS is producer-owned timing metadata. It is validated against
 	// end_ms-start_ms at the semantic boundary and is not emitted to Chronon.
 	DurationMS *int64 `json:"duration_ms,omitempty"`

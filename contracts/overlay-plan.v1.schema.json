@@ -230,6 +230,10 @@
           "text": { "type": "string" },
           "entity_caption": { "type": "string", "minLength": 1, "description": "Optional explicit entity name preserved by PipelineGen when an image is available; RenderingGen compiles it as a caption layer with the image's lifetime." },
           "caption_motion_id": { "type": "string", "minLength": 1, "description": "Optional motion override for the entity caption layer. Empty resolves the shared default (text_fade_up); a motion that does not target text is refused by the caption lowering." },
+          "caption_layout": { "type": "string", "enum": ["below", "left", "right"], "description": "Optional entity caption placement. left/right place the caption in that column relative to the image; below anchors it under the image." },
+          "caption_font_family": { "type": "string", "enum": ["poppins", "inter", "dejavu_sans"], "description": "Optional bundled font family for an entity caption." },
+          "caption_color": { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$", "description": "Optional hex color for an entity caption." },
+          "entity_style_id": { "type": "string", "enum": ["premium_random_v1"], "description": "Optional RenderingGen entity-card composition selector. premium_random_v1 deterministically chooses one of 15 editorial image and caption animation/layout variants using the plan and entity identity; runtime background, image and caption content are preserved." },
           "params": {
             "type": "object",
             "description": "Per-item runtime controls and motion parameters. Font, shadow, stroke, glow and shape controls are validated by RenderingGen. Shape-only geometry and effects use the shape variant and its closed nested contracts.",

@@ -66,11 +66,11 @@ func (r *RegistryType) ApplePhrasePackMotionIDs() []string {
 
 // PhraseAnimationIDs returns every motion in the callable text animation
 // families used by important phrases, in stable order. This includes the
-// typewriter, classic Apple, and modern Apple catalogs; PhraseMotionPool is a
-// narrower legacy subset for the GPU certification corpus.
+// typewriter, classic Apple, modern Apple, Brush, and camera-backed text 3D
+// catalogs; PhraseMotionPool is a narrower legacy subset for GPU certification.
 func (r *RegistryType) PhraseAnimationIDs() []string {
 	ids := make([]string, 0)
-	for _, family := range []string{"typewriter", "classic_apple", "modern_apple"} {
+	for _, family := range []string{"typewriter", "classic_apple", "modern_apple", "brush_v1", "text_3d_v1"} {
 		ids = append(ids, r.FamilyMotionIDs(family)...)
 	}
 	sort.Strings(ids)
@@ -114,7 +114,7 @@ func (r *RegistryType) ImagePremiumV1MotionIDs() []string {
 }
 
 // Text3DV1MotionIDs returns the Editorial Visual Motion V1 text 2.5D/3D
-// vocabulary in stable order: 8 motions carrying camera-backed transforms.
+// vocabulary in stable order: 10 motions carrying camera-backed transforms.
 func (r *RegistryType) Text3DV1MotionIDs() []string {
 	return r.CategoryMotionIDs("text_3d_v1")
 }
@@ -123,6 +123,11 @@ func (r *RegistryType) Text3DV1MotionIDs() []string {
 // cards in stable order.
 func (r *RegistryType) EntityCaptionV1MotionIDs() []string {
 	return r.CategoryMotionIDs("entity_caption_v1")
+}
+
+// TrumpEntityTextV1MotionIDs returns the premium Trump entity-caption styles.
+func (r *RegistryType) TrumpEntityTextV1MotionIDs() []string {
+	return r.CategoryMotionIDs("trump_entity_text_v1")
 }
 
 // VisualAccentsV1MotionIDs returns one official Visual Accents V1 family
@@ -231,11 +236,17 @@ func motionHas3D(definition MotionDefinition) bool {
 // motion groups. A group can be intentionally empty (for example web) without
 // creating a fake or non-renderable motion.
 func (r *RegistryType) MotionFamilies() []string {
-	return []string{"typewriter", "classic_apple", "modern_apple", "web", "3d"}
+	return []string{"phrase", "typewriter", "classic_apple", "modern_apple", "brush_v1", "text_3d_v1", "trump_entity_text_v1", "web", "3d"}
 }
 
 // FamilyMotionIDs returns the registered motion ids for one public family.
 func (r *RegistryType) FamilyMotionIDs(family string) []string {
+	if family == "phrase" {
+		return r.PhraseAnimationIDs()
+	}
+	if family == "brush_v1" {
+		return r.VisualAccentsV1MotionIDs(family)
+	}
 	ids := r.CategoryMotionIDs(family)
 	if family == "3d" {
 		// Text 3D is a named V1 subfamily as well as part of the public 3D

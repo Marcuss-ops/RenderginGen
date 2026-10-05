@@ -90,23 +90,26 @@ type childSpec struct {
 // itemSpec is one overlay of the scenario plus the probe contract the
 // verification script enforces for it.
 type itemSpec struct {
-	Name          string
-	Kind          string // phrase | date | metric | entity_image | entity_text | location | map | image_composite
-	Template      string
-	Preset        string
-	ImagePreset   string
-	Motion        string
-	Text          string
-	EntityID      string
-	EntityCaption string
-	CaptionMotion string
-	StartMS       int64
-	EndMS         int64
-	Asset         string // logical path relative to the assets root (portrait / map plate)
-	Children      []childSpec
-	Params        map[string]any
-	MinDiffPixels int
-	CenterOnly    bool
+	Name              string
+	Kind              string // phrase | date | metric | entity_image | entity_text | location | map | image_composite
+	Template          string
+	Preset            string
+	ImagePreset       string
+	Motion            string
+	Text              string
+	EntityID          string
+	EntityCaption     string
+	CaptionMotion     string
+	CaptionLayout     string
+	CaptionFontFamily string
+	CaptionColor      string
+	StartMS           int64
+	EndMS             int64
+	Asset             string // logical path relative to the assets root (portrait / map plate)
+	Children          []childSpec
+	Params            map[string]any
+	MinDiffPixels     int
+	CenterOnly        bool
 }
 
 type actSpec struct {
@@ -146,23 +149,28 @@ var scenarioItems = []itemSpec{
 		StartMS: metricStart, EndMS: metricEnd, MinDiffPixels: 300,
 	},
 
-	// ── entità: exactly two entity cards with text ────────────────────────
-	// PERSON carries a portrait + animated caption (entity_caption_v1);
-	// ORGANIZATION is a text-only entity card riding an entity_card_v1 motion.
+	// ── entità: two Trump portrait cards with animated V1 captions ────────
 	{
-		Name: "entita_persona", Kind: "entity_card", Template: "PERSON",
+		Name: "entita_trump_newsroom", Kind: "entity_card", Template: "PERSON",
 		Preset: "phrase_default", ImagePreset: "image_scale_in", Motion: "image_depth_dolly",
-		Text: "Ada Lovelace", EntityID: "person:ada-lovelace",
-		EntityCaption: "Ada Lovelace", CaptionMotion: "text_fade_up",
+		Text: "DONALD TRUMP", EntityID: "person:donald-trump",
+		EntityCaption: "DONALD TRUMP", CaptionMotion: "trump_entity_text_02",
+		CaptionLayout:     "right",
+		CaptionFontFamily: "bricolage_grotesque", CaptionColor: "#161718",
 		StartMS: entitaStart, EndMS: entitaStart + 3000, MinDiffPixels: 20000, CenterOnly: true,
-		Asset:  "assets/semantic/vidrush-portrait-ada.png",
-		Params: map[string]any{"width": 520.0, "height": 520.0, "position_y": -40.0},
+		Asset:  "assets/semantic/vidrush-portrait-trump.png",
+		Params: map[string]any{"width": 620.0, "height": 760.0, "position_x": -500.0, "position_y": -20.0},
 	},
 	{
-		Name: "entita_organizzazione", Kind: "organization", Template: "ORGANIZATION",
-		Preset: "phrase_default", Motion: "entity_name_pill",
-		Text: "Analytical Engine Co.", EntityID: "org:analytical-engine",
+		Name: "entita_trump_halftone", Kind: "entity_card", Template: "PERSON",
+		Preset: "phrase_default", ImagePreset: "image_scale_in", Motion: "image_yaw_reveal",
+		Text: "DONALD TRUMP", EntityID: "person:donald-trump",
+		EntityCaption: "DONALD TRUMP", CaptionMotion: "trump_entity_text_03",
+		CaptionLayout:     "left",
+		CaptionFontFamily: "bricolage_grotesque", CaptionColor: "#161718",
 		StartMS: entitaStart + 3000, EndMS: entitaEnd, MinDiffPixels: 300,
+		Asset:  "assets/semantic/vidrush-portrait-trump.png",
+		Params: map[string]any{"width": 620.0, "height": 760.0, "position_x": 500.0, "position_y": -20.0},
 	},
 
 	// ── luoghi: a LOCATION card followed by the georeferenced map ─────────
@@ -318,7 +326,7 @@ func run(assetsRoot, outDir, fontPath string) error {
 		FPSNum:     scenarioFPS,
 		FPSDen:     1,
 		DurationMS: scenarioDuration,
-		Background: &renderbatch.Surface{Kind: "color", Color: []float64{0.071, 0.078, 0.098, 1}},
+		Background: &renderbatch.Surface{Kind: "color", Color: []float64{0.98, 0.98, 0.97, 1}},
 		Items:      items,
 	})
 	if err != nil {
@@ -391,6 +399,8 @@ func buildItems(assetsRoot string) ([]renderbatch.PlanItem, error) {
 			PresetID: spec.Preset, ImagePresetID: spec.ImagePreset,
 			MotionID: spec.Motion, Text: spec.Text, EntityID: spec.EntityID,
 			EntityCaption: spec.EntityCaption, CaptionMotionID: spec.CaptionMotion,
+			CaptionLayout:     spec.CaptionLayout,
+			CaptionFontFamily: spec.CaptionFontFamily, CaptionColor: spec.CaptionColor,
 			DurationMS: &duration,
 			StartMS:    spec.StartMS, EndMS: spec.EndMS,
 			Params: spec.Params,
@@ -428,7 +438,7 @@ func buildItems(assetsRoot string) ([]renderbatch.PlanItem, error) {
 				return nil, err
 			}
 			item.AssetRefs = []renderbatch.PlanAssetRef{{
-				AssetID: "vidrush-portrait-ada", SHA256: sha, URL: spec.Asset, MediaType: "image/png",
+				AssetID: "vidrush-portrait-trump", SHA256: sha, URL: spec.Asset, MediaType: "image/png",
 			}}
 		}
 		items = append(items, item)
@@ -491,7 +501,44 @@ func generateAssets(assetsRoot string) error {
 	if err := writeWorldPlate(filepath.Join(assetsRoot, "assets", "maps", "vidrush-world-plate.png")); err != nil {
 		return err
 	}
-	return writePortrait(filepath.Join(assetsRoot, "assets", "semantic", "vidrush-portrait-ada.png"), 800, 800)
+	portraitSources := []string{
+		filepath.Join("ChrononTemplate", "out", "entity_caption_reference_v3", "assets", "portraits", "donald-trump-editorial.png"),
+		filepath.Join("..", "ChrononTemplate", "out", "entity_caption_reference_v3", "assets", "portraits", "donald-trump-editorial.png"),
+		filepath.Join("..", "..", "ChrononTemplate", "out", "entity_caption_reference_v3", "assets", "portraits", "donald-trump-editorial.png"),
+		filepath.Join("..", "..", "..", "ChrononTemplate", "out", "entity_caption_reference_v3", "assets", "portraits", "donald-trump-editorial.png"),
+		filepath.Join("..", "..", "..", "..", "ChrononTemplate", "out", "entity_caption_reference_v3", "assets", "portraits", "donald-trump-editorial.png"),
+	}
+	var portrait []byte
+	var source string
+	for _, candidate := range portraitSources {
+		if data, err := os.ReadFile(candidate); err == nil {
+			portrait, source = data, candidate
+			break
+		}
+	}
+	if portrait == nil {
+		return fmt.Errorf("Trump portrait from entity_caption_reference_v3 not found (checked %v)", portraitSources)
+	}
+	if err := os.WriteFile(filepath.Join(assetsRoot, "assets", "semantic", "vidrush-portrait-trump.png"), portrait, 0o644); err != nil {
+		return fmt.Errorf("copy Trump portrait from %s: %w", source, err)
+	}
+	fontSources := []string{
+		filepath.Join("ChrononTemplate", "out", "entity_caption_reference_v3", "assets", "fonts", "Bricolage-Grotesque.ttf"),
+		filepath.Join("..", "ChrononTemplate", "out", "entity_caption_reference_v3", "assets", "fonts", "Bricolage-Grotesque.ttf"),
+		filepath.Join("..", "..", "ChrononTemplate", "out", "entity_caption_reference_v3", "assets", "fonts", "Bricolage-Grotesque.ttf"),
+		filepath.Join("..", "..", "..", "ChrononTemplate", "out", "entity_caption_reference_v3", "assets", "fonts", "Bricolage-Grotesque.ttf"),
+		filepath.Join("..", "..", "..", "..", "ChrononTemplate", "out", "entity_caption_reference_v3", "assets", "fonts", "Bricolage-Grotesque.ttf"),
+	}
+	for _, candidate := range fontSources {
+		if data, err := os.ReadFile(candidate); err == nil {
+			target := filepath.Join(assetsRoot, "assets", "fonts", "Bricolage-Grotesque.ttf")
+			if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
+				return err
+			}
+			return os.WriteFile(target, data, 0o644)
+		}
+	}
+	return fmt.Errorf("Bricolage Grotesque font not found (checked %v)", fontSources)
 }
 
 // stageOfficialFont copies the official preset font into the assets root. The

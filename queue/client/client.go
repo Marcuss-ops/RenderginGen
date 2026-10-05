@@ -66,6 +66,11 @@ const (
 	JobTypeRenderSegment  = "render_segment"
 	JobTypeOverlayPrepare = "overlay.prepare"
 	JobTypeOverlayRender  = "overlay.render"
+	// JobTypeOverlayImport validates and records an MP4 produced by a trusted
+	// upstream renderer without invoking Chronon. Its request is versioned
+	// independently from the queue envelope and its provenance is persisted
+	// with the resulting artifact.
+	JobTypeOverlayImport = "overlay.import"
 )
 
 // JobSchemaV1 identifies the renderinggen.job.v1 envelope.
@@ -142,6 +147,24 @@ type OutputFacts struct {
 
 // Artifact is the metadata of a rendered artifact, including the copy-only
 // certification (codec, profile, GOP/keyframe flags) VeloxEditing relies on.
+// ArtifactProvenance records how artifact bytes entered the certified artifact
+// ledger. Imported artifacts deliberately identify the upstream producer and
+// the worker-side verification gates instead of claiming a Chronon render.
+type ArtifactProvenance struct {
+	SchemaVersion      string          `json:"schema_version"`
+	Protocol           string          `json:"protocol"`
+	Producer           string          `json:"producer"`
+	ImportJobID        string          `json:"import_job_id"`
+	SourceSHA256       string          `json:"source_sha256"`
+	SourceSizeBytes    int64           `json:"source_size_bytes"`
+	IdentityVerified   bool            `json:"identity_verified"`
+	StructureVerified  bool            `json:"structure_verified"`
+	FullDecodeVerified bool            `json:"full_decode_verified"`
+	ProducerTelemetry  json.RawMessage `json:"producer_telemetry,omitempty"`
+}
+
+// Artifact is the metadata of a rendered or imported artifact, including the copy-only
+// certification (codec, profile, GOP/keyframe flags) VeloxEditing relies on.
 type Artifact struct {
 	ID                 string             `json:"id,omitempty"`
 	Kind               string             `json:"kind,omitempty"`
@@ -188,6 +211,9 @@ type Artifact struct {
 	// OutputFacts is the complete structural certification (see OutputFacts).
 	// Nil when the boundary did not certify the full fact set.
 	OutputFacts *OutputFacts `json:"output_facts,omitempty"`
+	// Provenance is present for non-Chronon artifacts. It is persisted as
+	// JSONB in the authoritative queue artifact ledger and relayed to producers.
+	Provenance *ArtifactProvenance `json:"provenance,omitempty"`
 }
 
 // Job is the unit of work exchanged with the queue: one render SEGMENT. On

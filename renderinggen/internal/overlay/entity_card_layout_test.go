@@ -208,7 +208,7 @@ func TestEntityCardResolverUnit(t *testing.T) {
 }
 
 func TestEntityCaptionDefaultMotionFromCatalog(t *testing.T) {
-	if got := EntityCaptionMotionID(""); got != "text_fade_up" {
+	if got := EntityCaptionMotionID(""); got != "trump_entity_text_01" {
 		t.Fatalf("default caption motion = %q", got)
 	}
 	if got := EntityCaptionMotionID("text_word_stagger"); got != "text_word_stagger" {

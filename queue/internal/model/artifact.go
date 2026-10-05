@@ -19,3 +19,8 @@ type Artifact = client.Artifact
 // certification (see client.OutputFacts): one definition, so the persisted
 // JSON and the emitted JSON can never diverge.
 type OutputFacts = client.OutputFacts
+
+// ArtifactProvenance is an alias of the wire contract's provenance record
+// (see client.ArtifactProvenance): how artifact bytes entered the certified
+// artifact store, persisted as the render_artifacts.provenance JSONB column.
+type ArtifactProvenance = client.ArtifactProvenance
