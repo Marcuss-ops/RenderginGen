@@ -56,7 +56,7 @@ func compileTextLayer(ri resolvedItem, src *semanticPlan, layerID string) (Layer
 	// phrase_default size. Give that requested size enough vertical layout room;
 	// otherwise shrink_only fitting silently reduces it back to the preset's
 	// small minimum inside the preset's fixed 260px box.
-	if ri.Kind == KindTimelineDate || ri.Kind == KindMetricStat {
+	if ri.Kind == KindTimelineDate || ri.Kind == KindMetricStat || ri.Kind == KindNumber {
 		if requestedSize, ok := numericParam(ri.RuntimeStyle["font_size_px"]); ok && requestedSize > 0 {
 			minimumHeight := int(math.Ceil(requestedSize*1.7)) + 32
 			if layer.BoxHeight < minimumHeight {

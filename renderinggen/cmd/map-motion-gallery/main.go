@@ -334,7 +334,7 @@ func buildPlan(cat gallery, item motion, outputRoot, generatedRoot string) ([]by
 	}
 	baseURL := filepath.ToSlash(filepath.Join("assets", "maps", assetName))
 	boundsURL := filepath.ToSlash(filepath.Join("assets", "maps", boundsName))
-	motionID, motionParams := basemapMotion(item.ID)
+	motionID, motionParams := basemapMotion()
 	attribution := "Natural Earth public domain · " + item.Source
 	if item.Source == "nasa" {
 		attribution = "NASA Blue Marble Next Generation · Aug 2004"
@@ -359,22 +359,13 @@ func buildPlan(cat gallery, item motion, outputRoot, generatedRoot string) ([]by
 	return append(raw, '\n'), result.Plan, assets, nil
 }
 
-func basemapMotion(id string) (string, map[string]any) {
-	motion := "image_fade_reveal"
-	enter := 28
-	switch id {
-	case "map_world_to_country", "map_city_fly_to", "map_satellite_dolly_in", "map_satellite_altitude_drop", "map_historical_zoom":
-		motion, enter = "image_focus_push", 44
-	case "map_satellite_orbit_target", "map_satellite_tilt_in", "map_terrain_flyover":
-		motion, enter = "image_float_settle", 50
-	case "map_country_pop_focus", "map_multi_focus_cycle", "map_city_spotlight", "map_metric_focus", "map_satellite_pin_reveal":
-		motion, enter = "image_focus_breath", 36
-	case "map_historical_parchment_reveal", "map_historical_route_ink":
-		motion, enter = "image_focus_reveal", 40
-	case "map_route_draw", "map_route_air_arc", "map_multi_pin_stagger", "map_city_pin_drop", "map_country_outline_draw":
-		motion, enter = "image_scale_reveal", 40
-	}
-	return motion, map[string]any{"enter_frames": enter, "exit_frames": 8}
+func basemapMotion() (string, map[string]any) {
+	// The gallery's country borders, routes and pins are projected to fixed
+	// canvas coordinates. Moving/scaling only the basemap makes them drift away
+	// from the geography. Keep the raster transform stationary; animate it with
+	// opacity only. True camera moves belong to SemanticMap, which projects the
+	// raster, camera and georeferenced pins through one shared world transform.
+	return "image_fade_reveal", map[string]any{"enter_frames": 28, "exit_frames": 8}
 }
 
 func familyFor(cat gallery, id string) string {

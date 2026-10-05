@@ -2951,6 +2951,103 @@
       "stagger": {}
     },
     {
+      "id": "apple_spread_rise",
+      "category": "apple_v3",
+      "targets": [
+        "text",
+        "phrase"
+      ],
+      "unit": "glyph",
+      "enter": 72,
+      "tracks": [
+        {
+          "property": "position_y",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 24
+            },
+            {
+              "frame": 72,
+              "value": 0
+            }
+          ],
+          "easing": "out_cubic"
+        },
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 30,
+              "value": 1
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ],
+      "text_animators": [
+        {
+          "id": "apple_spread_rise_text",
+          "selector": {
+            "kind": "glyph",
+            "shape": "ramp_up",
+            "order": "forward",
+            "stagger": 1
+          },
+          "properties": [
+            {
+              "property": "position_y",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 32
+                },
+                {
+                  "frame": 72,
+                  "value": 0
+                }
+              ],
+              "easing": "out_cubic"
+            },
+            {
+              "property": "scale",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0.92
+                },
+                {
+                  "frame": 72,
+                  "value": 1
+                }
+              ],
+              "easing": "out_cubic"
+            },
+            {
+              "property": "opacity",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0
+                },
+                {
+                  "frame": 72,
+                  "value": 1
+                }
+              ],
+              "easing": "out_cubic"
+            }
+          ]
+        }
+      ],
+      "selector": {},
+      "stagger": {}
+    },
+    {
       "id": "aurora_gradient_sweep",
       "category": "apple_v2",
       "targets": [
@@ -3969,6 +4066,908 @@
                   },
                   {
                     "frame": 52,
+                    "value": [
+                      0.0,
+                      1.0
+                    ]
+                  }
+                ],
+                "easing": "in_out_quad"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "brush_phrase_arrow_point",
+      "category": "brush_v1",
+      "targets": [
+        "image",
+        "text",
+        "shape"
+      ],
+      "unit": "layer",
+      "duration_bounds": {
+        "minimum_frames": 20,
+        "maximum_frames": 240
+      },
+      "render_safe": true,
+      "requires_3d": false,
+      "requires_camera": false,
+      "enter": 36,
+      "exit": 10,
+      "tracks": [
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 6,
+              "value": 1
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ],
+      "image_recipe": {
+        "components": [
+          {
+            "id": "brush_phrase_arrow_point_stroke",
+            "type": "shape",
+            "shape": "path",
+            "path_kind": "arrow",
+            "sync_transform": true,
+            "placement": "after_image",
+            "stroke": {
+              "color": "#F1F0EB",
+              "width": 4
+            },
+            "trim": {
+              "start": 0.0,
+              "end": 1.0,
+              "animation": {
+                "property": "trim",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": [
+                      0.0,
+                      0.0
+                    ]
+                  },
+                  {
+                    "frame": 36,
+                    "value": [
+                      0.0,
+                      1.0
+                    ]
+                  },
+                  {
+                    "frame": 48,
+                    "value": [
+                      0.0,
+                      1.0
+                    ]
+                  }
+                ],
+                "easing": "in_out_quad"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "brush_phrase_circle_focus",
+      "category": "brush_v1",
+      "targets": [
+        "image",
+        "text",
+        "shape"
+      ],
+      "unit": "layer",
+      "duration_bounds": {
+        "minimum_frames": 20,
+        "maximum_frames": 240
+      },
+      "render_safe": true,
+      "requires_3d": false,
+      "requires_camera": false,
+      "enter": 40,
+      "exit": 10,
+      "tracks": [
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 6,
+              "value": 1
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ],
+      "image_recipe": {
+        "components": [
+          {
+            "id": "brush_phrase_circle_focus_stroke",
+            "type": "shape",
+            "shape": "path",
+            "path_kind": "ellipse",
+            "sync_transform": true,
+            "placement": "after_image",
+            "stroke": {
+              "color": "#F1F0EB",
+              "width": 5
+            },
+            "trim": {
+              "start": 0.0,
+              "end": 1.0,
+              "animation": {
+                "property": "trim",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": [
+                      0.0,
+                      0.0
+                    ]
+                  },
+                  {
+                    "frame": 40,
+                    "value": [
+                      0.0,
+                      1.0
+                    ]
+                  },
+                  {
+                    "frame": 52,
+                    "value": [
+                      0.0,
+                      1.0
+                    ]
+                  }
+                ],
+                "easing": "in_out_quad"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "brush_phrase_gold_marker",
+      "category": "brush_v1",
+      "targets": [
+        "image",
+        "text",
+        "shape"
+      ],
+      "unit": "layer",
+      "duration_bounds": {
+        "minimum_frames": 20,
+        "maximum_frames": 240
+      },
+      "render_safe": true,
+      "requires_3d": false,
+      "requires_camera": false,
+      "enter": 34,
+      "exit": 10,
+      "tracks": [
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 6,
+              "value": 1
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ],
+      "image_recipe": {
+        "components": [
+          {
+            "id": "brush_phrase_gold_marker_stroke",
+            "type": "shape",
+            "shape": "path",
+            "path_kind": "line",
+            "sync_transform": true,
+            "placement": "after_image",
+            "stroke": {
+              "color": "#D9A64E",
+              "width": 28
+            },
+            "trim": {
+              "start": 0.0,
+              "end": 1.0,
+              "animation": {
+                "property": "trim",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": [
+                      0.0,
+                      0.0
+                    ]
+                  },
+                  {
+                    "frame": 34,
+                    "value": [
+                      0.0,
+                      1.0
+                    ]
+                  },
+                  {
+                    "frame": 46,
+                    "value": [
+                      0.0,
+                      1.0
+                    ]
+                  }
+                ],
+                "easing": "in_out_quad"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "brush_phrase_lower_rule",
+      "category": "brush_v1",
+      "targets": [
+        "image",
+        "text",
+        "shape"
+      ],
+      "unit": "layer",
+      "duration_bounds": {
+        "minimum_frames": 20,
+        "maximum_frames": 240
+      },
+      "render_safe": true,
+      "requires_3d": false,
+      "requires_camera": false,
+      "enter": 32,
+      "exit": 10,
+      "tracks": [
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 6,
+              "value": 1
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ],
+      "image_recipe": {
+        "components": [
+          {
+            "id": "brush_phrase_lower_rule_stroke",
+            "type": "shape",
+            "shape": "path",
+            "path_kind": "underline",
+            "sync_transform": true,
+            "placement": "after_image",
+            "stroke": {
+              "color": "#E12636",
+              "width": 6
+            },
+            "trim": {
+              "start": 0.0,
+              "end": 1.0,
+              "animation": {
+                "property": "trim",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": [
+                      0.0,
+                      0.0
+                    ]
+                  },
+                  {
+                    "frame": 32,
+                    "value": [
+                      0.0,
+                      1.0
+                    ]
+                  },
+                  {
+                    "frame": 44,
+                    "value": [
+                      0.0,
+                      1.0
+                    ]
+                  }
+                ],
+                "easing": "in_out_quad"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "brush_phrase_red_brush_underline",
+      "category": "brush_v1",
+      "targets": [
+        "image",
+        "text",
+        "shape"
+      ],
+      "unit": "layer",
+      "duration_bounds": {
+        "minimum_frames": 20,
+        "maximum_frames": 240
+      },
+      "render_safe": true,
+      "requires_3d": false,
+      "requires_camera": false,
+      "enter": 42,
+      "exit": 10,
+      "tracks": [
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 6,
+              "value": 1
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ],
+      "image_recipe": {
+        "components": [
+          {
+            "id": "brush_phrase_red_brush_underline_stroke",
+            "type": "shape",
+            "shape": "path",
+            "path_kind": "underline_wave",
+            "sync_transform": true,
+            "placement": "after_image",
+            "stroke": {
+              "color": "#E12636",
+              "width": 15
+            },
+            "trim": {
+              "start": 0.0,
+              "end": 1.0,
+              "animation": {
+                "property": "trim",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": [
+                      0.0,
+                      0.0
+                    ]
+                  },
+                  {
+                    "frame": 42,
+                    "value": [
+                      0.0,
+                      1.0
+                    ]
+                  },
+                  {
+                    "frame": 54,
+                    "value": [
+                      0.0,
+                      1.0
+                    ]
+                  }
+                ],
+                "easing": "in_out_quad"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "brush_phrase_red_endpoint_rule",
+      "category": "brush_v1",
+      "targets": [
+        "image",
+        "text",
+        "shape"
+      ],
+      "unit": "layer",
+      "duration_bounds": {
+        "minimum_frames": 20,
+        "maximum_frames": 240
+      },
+      "render_safe": true,
+      "requires_3d": false,
+      "requires_camera": false,
+      "enter": 36,
+      "exit": 10,
+      "tracks": [
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 6,
+              "value": 1
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ],
+      "image_recipe": {
+        "components": [
+          {
+            "id": "brush_phrase_red_endpoint_rule_stroke",
+            "type": "shape",
+            "shape": "path",
+            "path_kind": "underline",
+            "sync_transform": true,
+            "placement": "after_image",
+            "stroke": {
+              "color": "#E12636",
+              "width": 5
+            },
+            "trim": {
+              "start": 0.0,
+              "end": 1.0,
+              "animation": {
+                "property": "trim",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": [
+                      0.0,
+                      0.0
+                    ]
+                  },
+                  {
+                    "frame": 36,
+                    "value": [
+                      0.0,
+                      1.0
+                    ]
+                  },
+                  {
+                    "frame": 48,
+                    "value": [
+                      0.0,
+                      1.0
+                    ]
+                  }
+                ],
+                "easing": "in_out_quad"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "brush_phrase_red_underline",
+      "category": "brush_v1",
+      "targets": [
+        "image",
+        "text",
+        "shape"
+      ],
+      "unit": "layer",
+      "duration_bounds": {
+        "minimum_frames": 20,
+        "maximum_frames": 240
+      },
+      "render_safe": true,
+      "requires_3d": false,
+      "requires_camera": false,
+      "enter": 34,
+      "exit": 10,
+      "tracks": [
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 6,
+              "value": 1
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ],
+      "image_recipe": {
+        "components": [
+          {
+            "id": "brush_phrase_red_underline_stroke",
+            "type": "shape",
+            "shape": "path",
+            "path_kind": "underline",
+            "sync_transform": true,
+            "placement": "after_image",
+            "stroke": {
+              "color": "#E12636",
+              "width": 12
+            },
+            "trim": {
+              "start": 0.0,
+              "end": 1.0,
+              "animation": {
+                "property": "trim",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": [
+                      0.0,
+                      0.0
+                    ]
+                  },
+                  {
+                    "frame": 34,
+                    "value": [
+                      0.0,
+                      1.0
+                    ]
+                  },
+                  {
+                    "frame": 46,
+                    "value": [
+                      0.0,
+                      1.0
+                    ]
+                  }
+                ],
+                "easing": "in_out_quad"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "brush_phrase_signature_flourish",
+      "category": "brush_v1",
+      "targets": [
+        "image",
+        "text",
+        "shape"
+      ],
+      "unit": "layer",
+      "duration_bounds": {
+        "minimum_frames": 20,
+        "maximum_frames": 240
+      },
+      "render_safe": true,
+      "requires_3d": false,
+      "requires_camera": false,
+      "enter": 42,
+      "exit": 10,
+      "tracks": [
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 6,
+              "value": 1
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ],
+      "image_recipe": {
+        "components": [
+          {
+            "id": "brush_phrase_signature_flourish_stroke",
+            "type": "shape",
+            "shape": "path",
+            "path_kind": "underline_wave",
+            "sync_transform": true,
+            "placement": "after_image",
+            "stroke": {
+              "color": "#E8E7E2",
+              "width": 3
+            },
+            "trim": {
+              "start": 0.0,
+              "end": 1.0,
+              "animation": {
+                "property": "trim",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": [
+                      0.0,
+                      0.0
+                    ]
+                  },
+                  {
+                    "frame": 42,
+                    "value": [
+                      0.0,
+                      1.0
+                    ]
+                  },
+                  {
+                    "frame": 54,
+                    "value": [
+                      0.0,
+                      1.0
+                    ]
+                  }
+                ],
+                "easing": "in_out_quad"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "brush_phrase_white_double_underline",
+      "category": "brush_v1",
+      "targets": [
+        "image",
+        "text",
+        "shape"
+      ],
+      "unit": "layer",
+      "duration_bounds": {
+        "minimum_frames": 20,
+        "maximum_frames": 240
+      },
+      "render_safe": true,
+      "requires_3d": false,
+      "requires_camera": false,
+      "enter": 40,
+      "exit": 10,
+      "tracks": [
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 6,
+              "value": 1
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ],
+      "image_recipe": {
+        "components": [
+          {
+            "id": "brush_phrase_white_double_underline_stroke",
+            "type": "shape",
+            "shape": "path",
+            "path_kind": "underline_double",
+            "sync_transform": true,
+            "placement": "after_image",
+            "stroke": {
+              "color": "#E8E7E2",
+              "width": 3
+            },
+            "trim": {
+              "start": 0.0,
+              "end": 1.0,
+              "animation": {
+                "property": "trim",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": [
+                      0.0,
+                      0.0
+                    ]
+                  },
+                  {
+                    "frame": 40,
+                    "value": [
+                      0.0,
+                      1.0
+                    ]
+                  },
+                  {
+                    "frame": 52,
+                    "value": [
+                      0.0,
+                      1.0
+                    ]
+                  }
+                ],
+                "easing": "in_out_quad"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "brush_phrase_white_light_sweep",
+      "category": "brush_v1",
+      "targets": [
+        "image",
+        "text",
+        "shape"
+      ],
+      "unit": "layer",
+      "duration_bounds": {
+        "minimum_frames": 20,
+        "maximum_frames": 240
+      },
+      "render_safe": true,
+      "requires_3d": false,
+      "requires_camera": false,
+      "enter": 36,
+      "exit": 10,
+      "tracks": [
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 6,
+              "value": 1
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ],
+      "image_recipe": {
+        "components": [
+          {
+            "id": "brush_phrase_white_light_sweep_stroke",
+            "type": "shape",
+            "shape": "path",
+            "path_kind": "underline_wave",
+            "sync_transform": true,
+            "placement": "after_image",
+            "stroke": {
+              "color": "#E8E7E2",
+              "width": 3
+            },
+            "trim": {
+              "start": 0.0,
+              "end": 1.0,
+              "animation": {
+                "property": "trim",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": [
+                      0.0,
+                      0.0
+                    ]
+                  },
+                  {
+                    "frame": 36,
+                    "value": [
+                      0.0,
+                      1.0
+                    ]
+                  },
+                  {
+                    "frame": 48,
+                    "value": [
+                      0.0,
+                      1.0
+                    ]
+                  }
+                ],
+                "easing": "in_out_quad"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "brush_phrase_white_underline",
+      "category": "brush_v1",
+      "targets": [
+        "image",
+        "text",
+        "shape"
+      ],
+      "unit": "layer",
+      "duration_bounds": {
+        "minimum_frames": 20,
+        "maximum_frames": 240
+      },
+      "render_safe": true,
+      "requires_3d": false,
+      "requires_camera": false,
+      "enter": 30,
+      "exit": 10,
+      "tracks": [
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 6,
+              "value": 1
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ],
+      "image_recipe": {
+        "components": [
+          {
+            "id": "brush_phrase_white_underline_stroke",
+            "type": "shape",
+            "shape": "path",
+            "path_kind": "underline",
+            "sync_transform": true,
+            "placement": "after_image",
+            "stroke": {
+              "color": "#F1F0EB",
+              "width": 4
+            },
+            "trim": {
+              "start": 0.0,
+              "end": 1.0,
+              "animation": {
+                "property": "trim",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": [
+                      0.0,
+                      0.0
+                    ]
+                  },
+                  {
+                    "frame": 30,
+                    "value": [
+                      0.0,
+                      1.0
+                    ]
+                  },
+                  {
+                    "frame": 42,
                     "value": [
                       0.0,
                       1.0
@@ -13234,6 +14233,540 @@
       ]
     },
     {
+      "id": "map_image_australia_sunset_drift",
+      "category": "map_image_v1",
+      "targets": [
+        "image"
+      ],
+      "unit": "layer",
+      "enter": 60,
+      "exit": 14,
+      "tracks": [
+        {
+          "property": "scale",
+          "easing": "in_out_sine",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 1.19
+            },
+            {
+              "frame": 42,
+              "value": 1.025
+            },
+            {
+              "frame": 60,
+              "value": 1
+            }
+          ]
+        },
+        {
+          "property": "opacity",
+          "easing": "linear",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 21,
+              "value": 1
+            },
+            {
+              "frame": 60,
+              "value": 1
+            }
+          ]
+        }
+      ],
+      "duration_bounds": {
+        "minimum_frames": 48,
+        "maximum_frames": 240
+      },
+      "render_safe": true
+    },
+    {
+      "id": "map_image_brazil_glow_reveal",
+      "category": "map_image_v1",
+      "targets": [
+        "image"
+      ],
+      "unit": "layer",
+      "enter": 54,
+      "exit": 14,
+      "tracks": [
+        {
+          "property": "scale",
+          "easing": "in_out_sine",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 1.24
+            },
+            {
+              "frame": 40,
+              "value": 1.015
+            },
+            {
+              "frame": 54,
+              "value": 1
+            }
+          ]
+        },
+        {
+          "property": "opacity",
+          "easing": "linear",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 18,
+              "value": 1
+            },
+            {
+              "frame": 54,
+              "value": 1
+            }
+          ]
+        }
+      ],
+      "duration_bounds": {
+        "minimum_frames": 48,
+        "maximum_frames": 240
+      },
+      "render_safe": true
+    },
+    {
+      "id": "map_image_china_slow_reveal",
+      "category": "map_image_v1",
+      "targets": [
+        "image"
+      ],
+      "unit": "layer",
+      "enter": 64,
+      "exit": 14,
+      "tracks": [
+        {
+          "property": "scale",
+          "easing": "in_out_sine",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 1.16
+            },
+            {
+              "frame": 42,
+              "value": 1.035
+            },
+            {
+              "frame": 64,
+              "value": 1
+            }
+          ]
+        },
+        {
+          "property": "opacity",
+          "easing": "linear",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 24,
+              "value": 1
+            },
+            {
+              "frame": 64,
+              "value": 1
+            }
+          ]
+        }
+      ],
+      "duration_bounds": {
+        "minimum_frames": 48,
+        "maximum_frames": 240
+      },
+      "render_safe": true
+    },
+    {
+      "id": "map_image_gujarat_detail_push",
+      "category": "map_image_v1",
+      "targets": [
+        "image"
+      ],
+      "unit": "layer",
+      "enter": 46,
+      "exit": 14,
+      "tracks": [
+        {
+          "property": "scale",
+          "easing": "in_out_sine",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 1.15
+            },
+            {
+              "frame": 28,
+              "value": 1.025
+            },
+            {
+              "frame": 46,
+              "value": 1
+            }
+          ]
+        },
+        {
+          "property": "opacity",
+          "easing": "linear",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 13,
+              "value": 1
+            },
+            {
+              "frame": 46,
+              "value": 1
+            }
+          ]
+        }
+      ],
+      "duration_bounds": {
+        "minimum_frames": 48,
+        "maximum_frames": 240
+      },
+      "render_safe": true
+    },
+    {
+      "id": "map_image_india_contour_draw",
+      "category": "map_image_v1",
+      "targets": [
+        "image"
+      ],
+      "unit": "layer",
+      "enter": 52,
+      "exit": 14,
+      "tracks": [
+        {
+          "property": "scale",
+          "easing": "in_out_sine",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 1.22
+            },
+            {
+              "frame": 34,
+              "value": 1.02
+            },
+            {
+              "frame": 52,
+              "value": 1
+            }
+          ]
+        },
+        {
+          "property": "opacity",
+          "easing": "linear",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 17,
+              "value": 1
+            },
+            {
+              "frame": 52,
+              "value": 1
+            }
+          ]
+        }
+      ],
+      "duration_bounds": {
+        "minimum_frames": 48,
+        "maximum_frames": 240
+      },
+      "render_safe": true
+    },
+    {
+      "id": "map_image_iran_gold_focus",
+      "category": "map_image_v1",
+      "targets": [
+        "image"
+      ],
+      "unit": "layer",
+      "enter": 56,
+      "exit": 14,
+      "tracks": [
+        {
+          "property": "scale",
+          "easing": "in_out_sine",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 1.18
+            },
+            {
+              "frame": 38,
+              "value": 1.025
+            },
+            {
+              "frame": 56,
+              "value": 1
+            }
+          ]
+        },
+        {
+          "property": "opacity",
+          "easing": "linear",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 22,
+              "value": 1
+            },
+            {
+              "frame": 56,
+              "value": 1
+            }
+          ]
+        }
+      ],
+      "duration_bounds": {
+        "minimum_frames": 48,
+        "maximum_frames": 240
+      },
+      "render_safe": true
+    },
+    {
+      "id": "map_image_italy_beacon_arrival",
+      "category": "map_image_v1",
+      "targets": [
+        "image"
+      ],
+      "unit": "layer",
+      "enter": 58,
+      "exit": 14,
+      "tracks": [
+        {
+          "property": "scale",
+          "easing": "in_out_sine",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 1.26
+            },
+            {
+              "frame": 42,
+              "value": 1.02
+            },
+            {
+              "frame": 58,
+              "value": 1
+            }
+          ]
+        },
+        {
+          "property": "opacity",
+          "easing": "linear",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 20,
+              "value": 1
+            },
+            {
+              "frame": 58,
+              "value": 1
+            }
+          ]
+        }
+      ],
+      "duration_bounds": {
+        "minimum_frames": 48,
+        "maximum_frames": 240
+      },
+      "render_safe": true
+    },
+    {
+      "id": "map_image_korea_pin_focus",
+      "category": "map_image_v1",
+      "targets": [
+        "image"
+      ],
+      "unit": "layer",
+      "enter": 44,
+      "exit": 14,
+      "tracks": [
+        {
+          "property": "scale",
+          "easing": "in_out_sine",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 1.28
+            },
+            {
+              "frame": 30,
+              "value": 1.02
+            },
+            {
+              "frame": 44,
+              "value": 1
+            }
+          ]
+        },
+        {
+          "property": "opacity",
+          "easing": "linear",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 12,
+              "value": 1
+            },
+            {
+              "frame": 44,
+              "value": 1
+            }
+          ]
+        }
+      ],
+      "duration_bounds": {
+        "minimum_frames": 48,
+        "maximum_frames": 240
+      },
+      "render_safe": true
+    },
+    {
+      "id": "map_image_nigeria_neon_bloom",
+      "category": "map_image_v1",
+      "targets": [
+        "image"
+      ],
+      "unit": "layer",
+      "enter": 50,
+      "exit": 14,
+      "tracks": [
+        {
+          "property": "scale",
+          "easing": "in_out_sine",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 1.2
+            },
+            {
+              "frame": 34,
+              "value": 1.015
+            },
+            {
+              "frame": 50,
+              "value": 1
+            }
+          ]
+        },
+        {
+          "property": "opacity",
+          "easing": "linear",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 12,
+              "value": 1
+            },
+            {
+              "frame": 50,
+              "value": 1
+            }
+          ]
+        }
+      ],
+      "duration_bounds": {
+        "minimum_frames": 48,
+        "maximum_frames": 240
+      },
+      "render_safe": true
+    },
+    {
+      "id": "map_image_usa_sweep_in",
+      "category": "map_image_v1",
+      "targets": [
+        "image"
+      ],
+      "unit": "layer",
+      "enter": 48,
+      "exit": 14,
+      "tracks": [
+        {
+          "property": "scale",
+          "easing": "in_out_sine",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 1.34
+            },
+            {
+              "frame": 18,
+              "value": 1.15
+            },
+            {
+              "frame": 36,
+              "value": 1.025
+            },
+            {
+              "frame": 48,
+              "value": 1
+            }
+          ]
+        },
+        {
+          "property": "opacity",
+          "easing": "linear",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 15,
+              "value": 1
+            },
+            {
+              "frame": 48,
+              "value": 1
+            }
+          ]
+        }
+      ],
+      "duration_bounds": {
+        "minimum_frames": 48,
+        "maximum_frames": 240
+      },
+      "render_safe": true
+    },
+    {
       "id": "masked_upward_reveal",
       "category": "apple_v2",
       "targets": [
@@ -20506,6 +22039,907 @@
       "stagger": {}
     },
     {
+      "id": "trump_entity_text_01",
+      "category": "trump_entity_text_v1",
+      "targets": [
+        "text"
+      ],
+      "unit": "layer",
+      "enter": 38,
+      "tracks": [
+        {
+          "property": "position_x",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 34
+            },
+            {
+              "frame": 38,
+              "value": 0
+            }
+          ],
+          "easing": "out_cubic"
+        },
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 15,
+              "value": 1
+            },
+            {
+              "frame": 38,
+              "value": 1
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ],
+      "render_safe": true
+    },
+    {
+      "id": "trump_entity_text_02",
+      "category": "trump_entity_text_v1",
+      "targets": [
+        "text"
+      ],
+      "unit": "layer",
+      "enter": 40,
+      "tracks": [
+        {
+          "property": "position_y",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 24
+            },
+            {
+              "frame": 40,
+              "value": 0
+            }
+          ],
+          "easing": "out_cubic"
+        },
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 16,
+              "value": 1
+            },
+            {
+              "frame": 40,
+              "value": 1
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ],
+      "render_safe": true
+    },
+    {
+      "id": "trump_entity_text_03",
+      "category": "trump_entity_text_v1",
+      "targets": [
+        "text"
+      ],
+      "unit": "layer",
+      "enter": 36,
+      "tracks": [
+        {
+          "property": "scale",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.9
+            },
+            {
+              "frame": 27,
+              "value": 1.015
+            },
+            {
+              "frame": 36,
+              "value": 1
+            }
+          ],
+          "easing": "out_cubic"
+        },
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 13,
+              "value": 1
+            },
+            {
+              "frame": 36,
+              "value": 1
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ],
+      "render_safe": true
+    },
+    {
+      "id": "trump_entity_text_04",
+      "category": "trump_entity_text_v1",
+      "targets": [
+        "text"
+      ],
+      "unit": "layer",
+      "enter": 42,
+      "tracks": [
+        {
+          "property": "blur",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 12
+            },
+            {
+              "frame": 24,
+              "value": 0
+            },
+            {
+              "frame": 42,
+              "value": 0
+            }
+          ],
+          "easing": "out_cubic"
+        },
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 14,
+              "value": 1
+            },
+            {
+              "frame": 42,
+              "value": 1
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ],
+      "render_safe": true
+    },
+    {
+      "id": "trump_entity_text_05",
+      "category": "trump_entity_text_v1",
+      "targets": [
+        "text"
+      ],
+      "unit": "layer",
+      "enter": 40,
+      "tracks": [
+        {
+          "property": "rotation_z",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": -3
+            },
+            {
+              "frame": 40,
+              "value": 0
+            }
+          ],
+          "easing": "out_cubic"
+        },
+        {
+          "property": "position_y",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 12
+            },
+            {
+              "frame": 40,
+              "value": 0
+            }
+          ],
+          "easing": "out_cubic"
+        },
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 14,
+              "value": 1
+            },
+            {
+              "frame": 40,
+              "value": 1
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ],
+      "render_safe": true
+    },
+    {
+      "id": "trump_entity_text_06",
+      "category": "trump_entity_text_v1",
+      "targets": [
+        "text"
+      ],
+      "unit": "layer",
+      "enter": 42,
+      "tracks": [
+        {
+          "property": "position_z",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 48
+            },
+            {
+              "frame": 42,
+              "value": 0
+            }
+          ],
+          "easing": "in_out_sine"
+        },
+        {
+          "property": "rotation_y",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": -8
+            },
+            {
+              "frame": 42,
+              "value": 0
+            }
+          ],
+          "easing": "in_out_cubic"
+        },
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 18,
+              "value": 1
+            },
+            {
+              "frame": 42,
+              "value": 1
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ],
+      "render_safe": true,
+      "requires_3d": true
+    },
+    {
+      "id": "trump_entity_text_07",
+      "category": "trump_entity_text_v1",
+      "targets": [
+        "text"
+      ],
+      "unit": "layer",
+      "enter": 38,
+      "tracks": [
+        {
+          "property": "position_x",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": -42
+            },
+            {
+              "frame": 38,
+              "value": 0
+            }
+          ],
+          "easing": "out_cubic"
+        },
+        {
+          "property": "rotation_z",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 2
+            },
+            {
+              "frame": 38,
+              "value": 0
+            }
+          ],
+          "easing": "out_cubic"
+        },
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 14,
+              "value": 1
+            },
+            {
+              "frame": 38,
+              "value": 1
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ],
+      "render_safe": true
+    },
+    {
+      "id": "trump_entity_text_08",
+      "category": "trump_entity_text_v1",
+      "targets": [
+        "text"
+      ],
+      "unit": "layer",
+      "enter": 42,
+      "tracks": [
+        {
+          "property": "rotation_y",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 9
+            },
+            {
+              "frame": 42,
+              "value": 0
+            }
+          ],
+          "easing": "in_out_cubic"
+        },
+        {
+          "property": "position_z",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 34
+            },
+            {
+              "frame": 42,
+              "value": 0
+            }
+          ],
+          "easing": "out_cubic"
+        },
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 17,
+              "value": 1
+            },
+            {
+              "frame": 42,
+              "value": 1
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ],
+      "render_safe": true,
+      "requires_3d": true
+    },
+    {
+      "id": "trump_entity_text_09",
+      "category": "trump_entity_text_v1",
+      "targets": [
+        "text"
+      ],
+      "unit": "layer",
+      "enter": 36,
+      "tracks": [
+        {
+          "property": "scale_x",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.76
+            },
+            {
+              "frame": 22,
+              "value": 1.02
+            },
+            {
+              "frame": 36,
+              "value": 1
+            }
+          ],
+          "easing": "out_cubic"
+        },
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 12,
+              "value": 1
+            },
+            {
+              "frame": 36,
+              "value": 1
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ],
+      "render_safe": true
+    },
+    {
+      "id": "trump_entity_text_10",
+      "category": "trump_entity_text_v1",
+      "targets": [
+        "text"
+      ],
+      "unit": "layer",
+      "enter": 40,
+      "tracks": [
+        {
+          "property": "position_x",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 46
+            },
+            {
+              "frame": 40,
+              "value": 0
+            }
+          ],
+          "easing": "out_cubic"
+        },
+        {
+          "property": "position_y",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": -12
+            },
+            {
+              "frame": 40,
+              "value": 0
+            }
+          ],
+          "easing": "out_cubic"
+        },
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 16,
+              "value": 1
+            },
+            {
+              "frame": 40,
+              "value": 1
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ],
+      "render_safe": true
+    },
+    {
+      "id": "trump_entity_text_11",
+      "category": "trump_entity_text_v1",
+      "targets": [
+        "text"
+      ],
+      "unit": "layer",
+      "enter": 42,
+      "tracks": [
+        {
+          "property": "rotation_x",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": -7
+            },
+            {
+              "frame": 42,
+              "value": 0
+            }
+          ],
+          "easing": "in_out_cubic"
+        },
+        {
+          "property": "position_y",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 18
+            },
+            {
+              "frame": 42,
+              "value": 0
+            }
+          ],
+          "easing": "out_cubic"
+        },
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 16,
+              "value": 1
+            },
+            {
+              "frame": 42,
+              "value": 1
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ],
+      "render_safe": true,
+      "requires_3d": true
+    },
+    {
+      "id": "trump_entity_text_12",
+      "category": "trump_entity_text_v1",
+      "targets": [
+        "text"
+      ],
+      "unit": "layer",
+      "enter": 38,
+      "tracks": [
+        {
+          "property": "rotation_z",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 4
+            },
+            {
+              "frame": 26,
+              "value": -1
+            },
+            {
+              "frame": 38,
+              "value": 0
+            }
+          ],
+          "easing": "in_out_cubic"
+        },
+        {
+          "property": "scale",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.94
+            },
+            {
+              "frame": 38,
+              "value": 1
+            }
+          ],
+          "easing": "out_cubic"
+        },
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 13,
+              "value": 1
+            },
+            {
+              "frame": 38,
+              "value": 1
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ],
+      "render_safe": true
+    },
+    {
+      "id": "trump_entity_text_13",
+      "category": "trump_entity_text_v1",
+      "targets": [
+        "text"
+      ],
+      "unit": "layer",
+      "enter": 44,
+      "tracks": [
+        {
+          "property": "position_y",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": -22
+            },
+            {
+              "frame": 44,
+              "value": 0
+            }
+          ],
+          "easing": "out_cubic"
+        },
+        {
+          "property": "position_z",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 26
+            },
+            {
+              "frame": 44,
+              "value": 0
+            }
+          ],
+          "easing": "out_cubic"
+        },
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 18,
+              "value": 1
+            },
+            {
+              "frame": 44,
+              "value": 1
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ],
+      "render_safe": true,
+      "requires_3d": true
+    },
+    {
+      "id": "trump_entity_text_14",
+      "category": "trump_entity_text_v1",
+      "targets": [
+        "text"
+      ],
+      "unit": "layer",
+      "enter": 40,
+      "tracks": [
+        {
+          "property": "rotation_x",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 5
+            },
+            {
+              "frame": 40,
+              "value": 0
+            }
+          ],
+          "easing": "in_out_cubic"
+        },
+        {
+          "property": "rotation_y",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 7
+            },
+            {
+              "frame": 40,
+              "value": 0
+            }
+          ],
+          "easing": "in_out_cubic"
+        },
+        {
+          "property": "scale",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.96
+            },
+            {
+              "frame": 40,
+              "value": 1
+            }
+          ],
+          "easing": "out_cubic"
+        },
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 15,
+              "value": 1
+            },
+            {
+              "frame": 40,
+              "value": 1
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ],
+      "render_safe": true,
+      "requires_3d": true
+    },
+    {
+      "id": "trump_entity_text_15",
+      "category": "trump_entity_text_v1",
+      "targets": [
+        "text"
+      ],
+      "unit": "layer",
+      "enter": 42,
+      "tracks": [
+        {
+          "property": "position_x",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": -25
+            },
+            {
+              "frame": 42,
+              "value": 0
+            }
+          ],
+          "easing": "out_cubic"
+        },
+        {
+          "property": "position_z",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 42
+            },
+            {
+              "frame": 42,
+              "value": 0
+            }
+          ],
+          "easing": "out_cubic"
+        },
+        {
+          "property": "rotation_y",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": -6
+            },
+            {
+              "frame": 42,
+              "value": 0
+            }
+          ],
+          "easing": "in_out_cubic"
+        },
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 18,
+              "value": 1
+            },
+            {
+              "frame": 42,
+              "value": 1
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ],
+      "render_safe": true,
+      "requires_3d": true
+    },
+    {
+      "id": "typewriter_blur_focus",
+      "unit": "glyph",
+      "enter": 42,
+      "text_animators": [
+        {
+          "id": "typewriter_blur_focus_text",
+          "selector": {
+            "kind": "glyph",
+            "shape": "square",
+            "stagger": 1
+          },
+          "properties": [
+            {
+              "property": "opacity",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0
+                },
+                {
+                  "frame": 42,
+                  "value": 1
+                }
+              ],
+              "easing": "out_cubic"
+            },
+            {
+              "property": "blur",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 16
+                },
+                {
+                  "frame": 20,
+                  "value": 4
+                },
+                {
+                  "frame": 42,
+                  "value": 0
+                }
+              ],
+              "easing": "out_cubic"
+            }
+          ]
+        }
+      ],
+      "selector": {},
+      "stagger": {}
+    },
+    {
       "id": "typewriter_clean",
       "unit": "glyph",
       "enter": 42,
@@ -20601,6 +23035,57 @@
                 {
                   "frame": 42,
                   "value": 1
+                }
+              ],
+              "easing": "out_cubic"
+            }
+          ]
+        }
+      ],
+      "selector": {},
+      "stagger": {}
+    },
+    {
+      "id": "typewriter_lift",
+      "unit": "glyph",
+      "enter": 42,
+      "text_animators": [
+        {
+          "id": "typewriter_lift_text",
+          "selector": {
+            "kind": "glyph",
+            "shape": "square",
+            "stagger": 1
+          },
+          "properties": [
+            {
+              "property": "opacity",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0
+                },
+                {
+                  "frame": 42,
+                  "value": 1
+                }
+              ],
+              "easing": "out_cubic"
+            },
+            {
+              "property": "position_y",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 18
+                },
+                {
+                  "frame": 20,
+                  "value": -2
+                },
+                {
+                  "frame": 42,
+                  "value": 0
                 }
               ],
               "easing": "out_cubic"
@@ -20738,6 +23223,169 @@
                 }
               ],
               "easing": "out_back"
+            }
+          ]
+        }
+      ],
+      "selector": {},
+      "stagger": {}
+    },
+    {
+      "id": "typewriter_scale_up",
+      "unit": "glyph",
+      "enter": 42,
+      "text_animators": [
+        {
+          "id": "typewriter_scale_up_text",
+          "selector": {
+            "kind": "glyph",
+            "shape": "square",
+            "stagger": 1
+          },
+          "properties": [
+            {
+              "property": "opacity",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0
+                },
+                {
+                  "frame": 42,
+                  "value": 1
+                }
+              ],
+              "easing": "out_cubic"
+            },
+            {
+              "property": "scale",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0.78
+                },
+                {
+                  "frame": 24,
+                  "value": 1.04
+                },
+                {
+                  "frame": 42,
+                  "value": 1
+                }
+              ],
+              "easing": "out_back"
+            }
+          ]
+        }
+      ],
+      "selector": {},
+      "stagger": {}
+    },
+    {
+      "id": "typewriter_slide_in",
+      "unit": "glyph",
+      "enter": 42,
+      "text_animators": [
+        {
+          "id": "typewriter_slide_in_text",
+          "selector": {
+            "kind": "glyph",
+            "shape": "square",
+            "stagger": 1
+          },
+          "properties": [
+            {
+              "property": "opacity",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0
+                },
+                {
+                  "frame": 42,
+                  "value": 1
+                }
+              ],
+              "easing": "out_cubic"
+            },
+            {
+              "property": "position_x",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": -24
+                },
+                {
+                  "frame": 20,
+                  "value": 3
+                },
+                {
+                  "frame": 42,
+                  "value": 0
+                }
+              ],
+              "easing": "out_cubic"
+            }
+          ]
+        }
+      ],
+      "selector": {},
+      "stagger": {}
+    },
+    {
+      "id": "typewriter_soft_lift",
+      "unit": "glyph",
+      "enter": 42,
+      "text_animators": [
+        {
+          "id": "typewriter_soft_lift_text",
+          "selector": {
+            "kind": "glyph",
+            "shape": "square",
+            "stagger": 1
+          },
+          "properties": [
+            {
+              "property": "opacity",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0
+                },
+                {
+                  "frame": 42,
+                  "value": 1
+                }
+              ],
+              "easing": "out_cubic"
+            },
+            {
+              "property": "position_y",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 10
+                },
+                {
+                  "frame": 42,
+                  "value": 0
+                }
+              ],
+              "easing": "out_cubic"
+            },
+            {
+              "property": "tracking",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": -2
+                },
+                {
+                  "frame": 42,
+                  "value": 1
+                }
+              ],
+              "easing": "out_cubic"
             }
           ]
         }
@@ -24528,1752 +27176,6 @@
       ],
       "selector": {},
       "stagger": {}
-    },
-    {
-      "id": "apple_spread_rise",
-      "category": "apple_v3",
-      "targets": [
-        "text",
-        "phrase"
-      ],
-      "unit": "glyph",
-      "enter": 72,
-      "tracks": [
-        {
-          "property": "position_y",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 24
-            },
-            {
-              "frame": 72,
-              "value": 0
-            }
-          ],
-          "easing": "out_cubic"
-        },
-        {
-          "property": "opacity",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 0
-            },
-            {
-              "frame": 30,
-              "value": 1
-            }
-          ],
-          "easing": "out_cubic"
-        }
-      ],
-      "text_animators": [
-        {
-          "id": "apple_spread_rise_text",
-          "selector": {
-            "kind": "glyph",
-            "shape": "ramp_up",
-            "order": "forward",
-            "stagger": 1
-          },
-          "properties": [
-            {
-              "property": "position_y",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 32
-                },
-                {
-                  "frame": 72,
-                  "value": 0
-                }
-              ],
-              "easing": "out_cubic"
-            },
-            {
-              "property": "scale",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 0.92
-                },
-                {
-                  "frame": 72,
-                  "value": 1
-                }
-              ],
-              "easing": "out_cubic"
-            },
-            {
-              "property": "opacity",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 0
-                },
-                {
-                  "frame": 72,
-                  "value": 1
-                }
-              ],
-              "easing": "out_cubic"
-            }
-          ]
-        }
-      ],
-      "selector": {},
-      "stagger": {}
-    },
-    {
-      "id": "typewriter_lift",
-      "unit": "glyph",
-      "enter": 42,
-      "text_animators": [
-        {
-          "id": "typewriter_lift_text",
-          "selector": {
-            "kind": "glyph",
-            "shape": "square",
-            "stagger": 1
-          },
-          "properties": [
-            {
-              "property": "opacity",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 0
-                },
-                {
-                  "frame": 42,
-                  "value": 1
-                }
-              ],
-              "easing": "out_cubic"
-            },
-            {
-              "property": "position_y",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 18
-                },
-                {
-                  "frame": 20,
-                  "value": -2
-                },
-                {
-                  "frame": 42,
-                  "value": 0
-                }
-              ],
-              "easing": "out_cubic"
-            }
-          ]
-        }
-      ],
-      "selector": {},
-      "stagger": {}
-    },
-    {
-      "id": "typewriter_slide_in",
-      "unit": "glyph",
-      "enter": 42,
-      "text_animators": [
-        {
-          "id": "typewriter_slide_in_text",
-          "selector": {
-            "kind": "glyph",
-            "shape": "square",
-            "stagger": 1
-          },
-          "properties": [
-            {
-              "property": "opacity",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 0
-                },
-                {
-                  "frame": 42,
-                  "value": 1
-                }
-              ],
-              "easing": "out_cubic"
-            },
-            {
-              "property": "position_x",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": -24
-                },
-                {
-                  "frame": 20,
-                  "value": 3
-                },
-                {
-                  "frame": 42,
-                  "value": 0
-                }
-              ],
-              "easing": "out_cubic"
-            }
-          ]
-        }
-      ],
-      "selector": {},
-      "stagger": {}
-    },
-    {
-      "id": "typewriter_scale_up",
-      "unit": "glyph",
-      "enter": 42,
-      "text_animators": [
-        {
-          "id": "typewriter_scale_up_text",
-          "selector": {
-            "kind": "glyph",
-            "shape": "square",
-            "stagger": 1
-          },
-          "properties": [
-            {
-              "property": "opacity",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 0
-                },
-                {
-                  "frame": 42,
-                  "value": 1
-                }
-              ],
-              "easing": "out_cubic"
-            },
-            {
-              "property": "scale",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 0.78
-                },
-                {
-                  "frame": 24,
-                  "value": 1.04
-                },
-                {
-                  "frame": 42,
-                  "value": 1
-                }
-              ],
-              "easing": "out_back"
-            }
-          ]
-        }
-      ],
-      "selector": {},
-      "stagger": {}
-    },
-    {
-      "id": "trump_entity_text_01",
-      "category": "trump_entity_text_v1",
-      "targets": [
-        "text"
-      ],
-      "unit": "layer",
-      "enter": 38,
-      "tracks": [
-        {
-          "property": "position_x",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 34
-            },
-            {
-              "frame": 38,
-              "value": 0
-            }
-          ],
-          "easing": "out_cubic"
-        },
-        {
-          "property": "opacity",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 0
-            },
-            {
-              "frame": 15,
-              "value": 1
-            },
-            {
-              "frame": 38,
-              "value": 1
-            }
-          ],
-          "easing": "out_cubic"
-        }
-      ],
-      "render_safe": true
-    },
-    {
-      "id": "trump_entity_text_02",
-      "category": "trump_entity_text_v1",
-      "targets": [
-        "text"
-      ],
-      "unit": "layer",
-      "enter": 40,
-      "tracks": [
-        {
-          "property": "position_y",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 24
-            },
-            {
-              "frame": 40,
-              "value": 0
-            }
-          ],
-          "easing": "out_cubic"
-        },
-        {
-          "property": "opacity",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 0
-            },
-            {
-              "frame": 16,
-              "value": 1
-            },
-            {
-              "frame": 40,
-              "value": 1
-            }
-          ],
-          "easing": "out_cubic"
-        }
-      ],
-      "render_safe": true
-    },
-    {
-      "id": "trump_entity_text_03",
-      "category": "trump_entity_text_v1",
-      "targets": [
-        "text"
-      ],
-      "unit": "layer",
-      "enter": 36,
-      "tracks": [
-        {
-          "property": "scale",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 0.9
-            },
-            {
-              "frame": 27,
-              "value": 1.015
-            },
-            {
-              "frame": 36,
-              "value": 1
-            }
-          ],
-          "easing": "out_cubic"
-        },
-        {
-          "property": "opacity",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 0
-            },
-            {
-              "frame": 13,
-              "value": 1
-            },
-            {
-              "frame": 36,
-              "value": 1
-            }
-          ],
-          "easing": "out_cubic"
-        }
-      ],
-      "render_safe": true
-    },
-    {
-      "id": "trump_entity_text_04",
-      "category": "trump_entity_text_v1",
-      "targets": [
-        "text"
-      ],
-      "unit": "layer",
-      "enter": 42,
-      "tracks": [
-        {
-          "property": "blur",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 12
-            },
-            {
-              "frame": 24,
-              "value": 0
-            },
-            {
-              "frame": 42,
-              "value": 0
-            }
-          ],
-          "easing": "out_cubic"
-        },
-        {
-          "property": "opacity",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 0
-            },
-            {
-              "frame": 14,
-              "value": 1
-            },
-            {
-              "frame": 42,
-              "value": 1
-            }
-          ],
-          "easing": "out_cubic"
-        }
-      ],
-      "render_safe": true
-    },
-    {
-      "id": "trump_entity_text_05",
-      "category": "trump_entity_text_v1",
-      "targets": [
-        "text"
-      ],
-      "unit": "layer",
-      "enter": 40,
-      "tracks": [
-        {
-          "property": "rotation_z",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": -3
-            },
-            {
-              "frame": 40,
-              "value": 0
-            }
-          ],
-          "easing": "out_cubic"
-        },
-        {
-          "property": "position_y",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 12
-            },
-            {
-              "frame": 40,
-              "value": 0
-            }
-          ],
-          "easing": "out_cubic"
-        },
-        {
-          "property": "opacity",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 0
-            },
-            {
-              "frame": 14,
-              "value": 1
-            },
-            {
-              "frame": 40,
-              "value": 1
-            }
-          ],
-          "easing": "out_cubic"
-        }
-      ],
-      "render_safe": true
-    },
-    {
-      "id": "trump_entity_text_06",
-      "category": "trump_entity_text_v1",
-      "targets": [
-        "text"
-      ],
-      "unit": "layer",
-      "enter": 42,
-      "tracks": [
-        {
-          "property": "position_z",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 48
-            },
-            {
-              "frame": 42,
-              "value": 0
-            }
-          ],
-          "easing": "in_out_sine"
-        },
-        {
-          "property": "rotation_y",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": -8
-            },
-            {
-              "frame": 42,
-              "value": 0
-            }
-          ],
-          "easing": "in_out_cubic"
-        },
-        {
-          "property": "opacity",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 0
-            },
-            {
-              "frame": 18,
-              "value": 1
-            },
-            {
-              "frame": 42,
-              "value": 1
-            }
-          ],
-          "easing": "out_cubic"
-        }
-      ],
-      "render_safe": true,
-      "requires_3d": true
-    },
-    {
-      "id": "trump_entity_text_07",
-      "category": "trump_entity_text_v1",
-      "targets": [
-        "text"
-      ],
-      "unit": "layer",
-      "enter": 38,
-      "tracks": [
-        {
-          "property": "position_x",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": -42
-            },
-            {
-              "frame": 38,
-              "value": 0
-            }
-          ],
-          "easing": "out_cubic"
-        },
-        {
-          "property": "rotation_z",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 2
-            },
-            {
-              "frame": 38,
-              "value": 0
-            }
-          ],
-          "easing": "out_cubic"
-        },
-        {
-          "property": "opacity",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 0
-            },
-            {
-              "frame": 14,
-              "value": 1
-            },
-            {
-              "frame": 38,
-              "value": 1
-            }
-          ],
-          "easing": "out_cubic"
-        }
-      ],
-      "render_safe": true
-    },
-    {
-      "id": "trump_entity_text_08",
-      "category": "trump_entity_text_v1",
-      "targets": [
-        "text"
-      ],
-      "unit": "layer",
-      "enter": 42,
-      "tracks": [
-        {
-          "property": "rotation_y",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 9
-            },
-            {
-              "frame": 42,
-              "value": 0
-            }
-          ],
-          "easing": "in_out_cubic"
-        },
-        {
-          "property": "position_z",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 34
-            },
-            {
-              "frame": 42,
-              "value": 0
-            }
-          ],
-          "easing": "out_cubic"
-        },
-        {
-          "property": "opacity",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 0
-            },
-            {
-              "frame": 17,
-              "value": 1
-            },
-            {
-              "frame": 42,
-              "value": 1
-            }
-          ],
-          "easing": "out_cubic"
-        }
-      ],
-      "render_safe": true,
-      "requires_3d": true
-    },
-    {
-      "id": "trump_entity_text_09",
-      "category": "trump_entity_text_v1",
-      "targets": [
-        "text"
-      ],
-      "unit": "layer",
-      "enter": 36,
-      "tracks": [
-        {
-          "property": "scale_x",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 0.76
-            },
-            {
-              "frame": 22,
-              "value": 1.02
-            },
-            {
-              "frame": 36,
-              "value": 1
-            }
-          ],
-          "easing": "out_cubic"
-        },
-        {
-          "property": "opacity",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 0
-            },
-            {
-              "frame": 12,
-              "value": 1
-            },
-            {
-              "frame": 36,
-              "value": 1
-            }
-          ],
-          "easing": "out_cubic"
-        }
-      ],
-      "render_safe": true
-    },
-    {
-      "id": "trump_entity_text_10",
-      "category": "trump_entity_text_v1",
-      "targets": [
-        "text"
-      ],
-      "unit": "layer",
-      "enter": 40,
-      "tracks": [
-        {
-          "property": "position_x",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 46
-            },
-            {
-              "frame": 40,
-              "value": 0
-            }
-          ],
-          "easing": "out_cubic"
-        },
-        {
-          "property": "position_y",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": -12
-            },
-            {
-              "frame": 40,
-              "value": 0
-            }
-          ],
-          "easing": "out_cubic"
-        },
-        {
-          "property": "opacity",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 0
-            },
-            {
-              "frame": 16,
-              "value": 1
-            },
-            {
-              "frame": 40,
-              "value": 1
-            }
-          ],
-          "easing": "out_cubic"
-        }
-      ],
-      "render_safe": true
-    },
-    {
-      "id": "trump_entity_text_11",
-      "category": "trump_entity_text_v1",
-      "targets": [
-        "text"
-      ],
-      "unit": "layer",
-      "enter": 42,
-      "tracks": [
-        {
-          "property": "rotation_x",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": -7
-            },
-            {
-              "frame": 42,
-              "value": 0
-            }
-          ],
-          "easing": "in_out_cubic"
-        },
-        {
-          "property": "position_y",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 18
-            },
-            {
-              "frame": 42,
-              "value": 0
-            }
-          ],
-          "easing": "out_cubic"
-        },
-        {
-          "property": "opacity",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 0
-            },
-            {
-              "frame": 16,
-              "value": 1
-            },
-            {
-              "frame": 42,
-              "value": 1
-            }
-          ],
-          "easing": "out_cubic"
-        }
-      ],
-      "render_safe": true,
-      "requires_3d": true
-    },
-    {
-      "id": "trump_entity_text_12",
-      "category": "trump_entity_text_v1",
-      "targets": [
-        "text"
-      ],
-      "unit": "layer",
-      "enter": 38,
-      "tracks": [
-        {
-          "property": "rotation_z",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 4
-            },
-            {
-              "frame": 26,
-              "value": -1
-            },
-            {
-              "frame": 38,
-              "value": 0
-            }
-          ],
-          "easing": "in_out_cubic"
-        },
-        {
-          "property": "scale",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 0.94
-            },
-            {
-              "frame": 38,
-              "value": 1
-            }
-          ],
-          "easing": "out_cubic"
-        },
-        {
-          "property": "opacity",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 0
-            },
-            {
-              "frame": 13,
-              "value": 1
-            },
-            {
-              "frame": 38,
-              "value": 1
-            }
-          ],
-          "easing": "out_cubic"
-        }
-      ],
-      "render_safe": true
-    },
-    {
-      "id": "trump_entity_text_13",
-      "category": "trump_entity_text_v1",
-      "targets": [
-        "text"
-      ],
-      "unit": "layer",
-      "enter": 44,
-      "tracks": [
-        {
-          "property": "position_y",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": -22
-            },
-            {
-              "frame": 44,
-              "value": 0
-            }
-          ],
-          "easing": "out_cubic"
-        },
-        {
-          "property": "position_z",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 26
-            },
-            {
-              "frame": 44,
-              "value": 0
-            }
-          ],
-          "easing": "out_cubic"
-        },
-        {
-          "property": "opacity",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 0
-            },
-            {
-              "frame": 18,
-              "value": 1
-            },
-            {
-              "frame": 44,
-              "value": 1
-            }
-          ],
-          "easing": "out_cubic"
-        }
-      ],
-      "render_safe": true,
-      "requires_3d": true
-    },
-    {
-      "id": "trump_entity_text_14",
-      "category": "trump_entity_text_v1",
-      "targets": [
-        "text"
-      ],
-      "unit": "layer",
-      "enter": 40,
-      "tracks": [
-        {
-          "property": "rotation_x",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 5
-            },
-            {
-              "frame": 40,
-              "value": 0
-            }
-          ],
-          "easing": "in_out_cubic"
-        },
-        {
-          "property": "rotation_y",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 7
-            },
-            {
-              "frame": 40,
-              "value": 0
-            }
-          ],
-          "easing": "in_out_cubic"
-        },
-        {
-          "property": "scale",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 0.96
-            },
-            {
-              "frame": 40,
-              "value": 1
-            }
-          ],
-          "easing": "out_cubic"
-        },
-        {
-          "property": "opacity",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 0
-            },
-            {
-              "frame": 15,
-              "value": 1
-            },
-            {
-              "frame": 40,
-              "value": 1
-            }
-          ],
-          "easing": "out_cubic"
-        }
-      ],
-      "render_safe": true,
-      "requires_3d": true
-    },
-    {
-      "id": "trump_entity_text_15",
-      "category": "trump_entity_text_v1",
-      "targets": [
-        "text"
-      ],
-      "unit": "layer",
-      "enter": 42,
-      "tracks": [
-        {
-          "property": "position_x",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": -25
-            },
-            {
-              "frame": 42,
-              "value": 0
-            }
-          ],
-          "easing": "out_cubic"
-        },
-        {
-          "property": "position_z",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 42
-            },
-            {
-              "frame": 42,
-              "value": 0
-            }
-          ],
-          "easing": "out_cubic"
-        },
-        {
-          "property": "rotation_y",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": -6
-            },
-            {
-              "frame": 42,
-              "value": 0
-            }
-          ],
-          "easing": "in_out_cubic"
-        },
-        {
-          "property": "opacity",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 0
-            },
-            {
-              "frame": 18,
-              "value": 1
-            },
-            {
-              "frame": 42,
-              "value": 1
-            }
-          ],
-          "easing": "out_cubic"
-        }
-      ],
-      "render_safe": true,
-      "requires_3d": true
-    },
-    {
-      "id": "typewriter_blur_focus",
-      "unit": "glyph",
-      "enter": 42,
-      "text_animators": [
-        {
-          "id": "typewriter_blur_focus_text",
-          "selector": {
-            "kind": "glyph",
-            "shape": "square",
-            "stagger": 1
-          },
-          "properties": [
-            {
-              "property": "opacity",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 0
-                },
-                {
-                  "frame": 42,
-                  "value": 1
-                }
-              ],
-              "easing": "out_cubic"
-            },
-            {
-              "property": "blur",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 16
-                },
-                {
-                  "frame": 20,
-                  "value": 4
-                },
-                {
-                  "frame": 42,
-                  "value": 0
-                }
-              ],
-              "easing": "out_cubic"
-            }
-          ]
-        }
-      ],
-      "selector": {},
-      "stagger": {}
-    },
-    {
-      "id": "typewriter_soft_lift",
-      "unit": "glyph",
-      "enter": 42,
-      "text_animators": [
-        {
-          "id": "typewriter_soft_lift_text",
-          "selector": {
-            "kind": "glyph",
-            "shape": "square",
-            "stagger": 1
-          },
-          "properties": [
-            {
-              "property": "opacity",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 0
-                },
-                {
-                  "frame": 42,
-                  "value": 1
-                }
-              ],
-              "easing": "out_cubic"
-            },
-            {
-              "property": "position_y",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 10
-                },
-                {
-                  "frame": 42,
-                  "value": 0
-                }
-              ],
-              "easing": "out_cubic"
-            },
-            {
-              "property": "tracking",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": -2
-                },
-                {
-                  "frame": 42,
-                  "value": 1
-                }
-              ],
-              "easing": "out_cubic"
-            }
-          ]
-        }
-      ],
-      "selector": {},
-      "stagger": {}
-    },
-    {
-      "id": "map_image_brazil_glow_reveal",
-      "category": "map_image_v1",
-      "targets": [
-        "image"
-      ],
-      "unit": "layer",
-      "enter": 54,
-      "exit": 14,
-      "tracks": [
-        {
-          "property": "scale",
-          "easing": "in_out_sine",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 1.24
-            },
-            {
-              "frame": 40,
-              "value": 1.015
-            },
-            {
-              "frame": 54,
-              "value": 1
-            }
-          ]
-        },
-        {
-          "property": "opacity",
-          "easing": "linear",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 0
-            },
-            {
-              "frame": 18,
-              "value": 1
-            },
-            {
-              "frame": 54,
-              "value": 1
-            }
-          ]
-        }
-      ],
-      "duration_bounds": {
-        "minimum_frames": 48,
-        "maximum_frames": 240
-      },
-      "render_safe": true
-    },
-    {
-      "id": "map_image_usa_sweep_in",
-      "category": "map_image_v1",
-      "targets": [
-        "image"
-      ],
-      "unit": "layer",
-      "enter": 48,
-      "exit": 14,
-      "tracks": [
-        {
-          "property": "scale",
-          "easing": "in_out_sine",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 1.34
-            },
-            {
-              "frame": 18,
-              "value": 1.15
-            },
-            {
-              "frame": 36,
-              "value": 1.025
-            },
-            {
-              "frame": 48,
-              "value": 1
-            }
-          ]
-        },
-        {
-          "property": "opacity",
-          "easing": "linear",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 0
-            },
-            {
-              "frame": 15,
-              "value": 1
-            },
-            {
-              "frame": 48,
-              "value": 1
-            }
-          ]
-        }
-      ],
-      "duration_bounds": {
-        "minimum_frames": 48,
-        "maximum_frames": 240
-      },
-      "render_safe": true
-    },
-    {
-      "id": "map_image_iran_gold_focus",
-      "category": "map_image_v1",
-      "targets": [
-        "image"
-      ],
-      "unit": "layer",
-      "enter": 56,
-      "exit": 14,
-      "tracks": [
-        {
-          "property": "scale",
-          "easing": "in_out_sine",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 1.18
-            },
-            {
-              "frame": 38,
-              "value": 1.025
-            },
-            {
-              "frame": 56,
-              "value": 1
-            }
-          ]
-        },
-        {
-          "property": "opacity",
-          "easing": "linear",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 0
-            },
-            {
-              "frame": 22,
-              "value": 1
-            },
-            {
-              "frame": 56,
-              "value": 1
-            }
-          ]
-        }
-      ],
-      "duration_bounds": {
-        "minimum_frames": 48,
-        "maximum_frames": 240
-      },
-      "render_safe": true
-    },
-    {
-      "id": "map_image_india_contour_draw",
-      "category": "map_image_v1",
-      "targets": [
-        "image"
-      ],
-      "unit": "layer",
-      "enter": 52,
-      "exit": 14,
-      "tracks": [
-        {
-          "property": "scale",
-          "easing": "in_out_sine",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 1.22
-            },
-            {
-              "frame": 34,
-              "value": 1.02
-            },
-            {
-              "frame": 52,
-              "value": 1
-            }
-          ]
-        },
-        {
-          "property": "opacity",
-          "easing": "linear",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 0
-            },
-            {
-              "frame": 17,
-              "value": 1
-            },
-            {
-              "frame": 52,
-              "value": 1
-            }
-          ]
-        }
-      ],
-      "duration_bounds": {
-        "minimum_frames": 48,
-        "maximum_frames": 240
-      },
-      "render_safe": true
-    },
-    {
-      "id": "map_image_gujarat_detail_push",
-      "category": "map_image_v1",
-      "targets": [
-        "image"
-      ],
-      "unit": "layer",
-      "enter": 46,
-      "exit": 14,
-      "tracks": [
-        {
-          "property": "scale",
-          "easing": "in_out_sine",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 1.15
-            },
-            {
-              "frame": 28,
-              "value": 1.025
-            },
-            {
-              "frame": 46,
-              "value": 1
-            }
-          ]
-        },
-        {
-          "property": "opacity",
-          "easing": "linear",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 0
-            },
-            {
-              "frame": 13,
-              "value": 1
-            },
-            {
-              "frame": 46,
-              "value": 1
-            }
-          ]
-        }
-      ],
-      "duration_bounds": {
-        "minimum_frames": 48,
-        "maximum_frames": 240
-      },
-      "render_safe": true
-    },
-    {
-      "id": "map_image_italy_beacon_arrival",
-      "category": "map_image_v1",
-      "targets": [
-        "image"
-      ],
-      "unit": "layer",
-      "enter": 58,
-      "exit": 14,
-      "tracks": [
-        {
-          "property": "scale",
-          "easing": "in_out_sine",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 1.26
-            },
-            {
-              "frame": 42,
-              "value": 1.02
-            },
-            {
-              "frame": 58,
-              "value": 1
-            }
-          ]
-        },
-        {
-          "property": "opacity",
-          "easing": "linear",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 0
-            },
-            {
-              "frame": 20,
-              "value": 1
-            },
-            {
-              "frame": 58,
-              "value": 1
-            }
-          ]
-        }
-      ],
-      "duration_bounds": {
-        "minimum_frames": 48,
-        "maximum_frames": 240
-      },
-      "render_safe": true
-    },
-    {
-      "id": "map_image_nigeria_neon_bloom",
-      "category": "map_image_v1",
-      "targets": [
-        "image"
-      ],
-      "unit": "layer",
-      "enter": 50,
-      "exit": 14,
-      "tracks": [
-        {
-          "property": "scale",
-          "easing": "in_out_sine",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 1.2
-            },
-            {
-              "frame": 34,
-              "value": 1.015
-            },
-            {
-              "frame": 50,
-              "value": 1
-            }
-          ]
-        },
-        {
-          "property": "opacity",
-          "easing": "linear",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 0
-            },
-            {
-              "frame": 12,
-              "value": 1
-            },
-            {
-              "frame": 50,
-              "value": 1
-            }
-          ]
-        }
-      ],
-      "duration_bounds": {
-        "minimum_frames": 48,
-        "maximum_frames": 240
-      },
-      "render_safe": true
-    },
-    {
-      "id": "map_image_china_slow_reveal",
-      "category": "map_image_v1",
-      "targets": [
-        "image"
-      ],
-      "unit": "layer",
-      "enter": 64,
-      "exit": 14,
-      "tracks": [
-        {
-          "property": "scale",
-          "easing": "in_out_sine",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 1.16
-            },
-            {
-              "frame": 42,
-              "value": 1.035
-            },
-            {
-              "frame": 64,
-              "value": 1
-            }
-          ]
-        },
-        {
-          "property": "opacity",
-          "easing": "linear",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 0
-            },
-            {
-              "frame": 24,
-              "value": 1
-            },
-            {
-              "frame": 64,
-              "value": 1
-            }
-          ]
-        }
-      ],
-      "duration_bounds": {
-        "minimum_frames": 48,
-        "maximum_frames": 240
-      },
-      "render_safe": true
-    },
-    {
-      "id": "map_image_korea_pin_focus",
-      "category": "map_image_v1",
-      "targets": [
-        "image"
-      ],
-      "unit": "layer",
-      "enter": 44,
-      "exit": 14,
-      "tracks": [
-        {
-          "property": "scale",
-          "easing": "in_out_sine",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 1.28
-            },
-            {
-              "frame": 30,
-              "value": 1.02
-            },
-            {
-              "frame": 44,
-              "value": 1
-            }
-          ]
-        },
-        {
-          "property": "opacity",
-          "easing": "linear",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 0
-            },
-            {
-              "frame": 12,
-              "value": 1
-            },
-            {
-              "frame": 44,
-              "value": 1
-            }
-          ]
-        }
-      ],
-      "duration_bounds": {
-        "minimum_frames": 48,
-        "maximum_frames": 240
-      },
-      "render_safe": true
-    },
-    {
-      "id": "map_image_australia_sunset_drift",
-      "category": "map_image_v1",
-      "targets": [
-        "image"
-      ],
-      "unit": "layer",
-      "enter": 60,
-      "exit": 14,
-      "tracks": [
-        {
-          "property": "scale",
-          "easing": "in_out_sine",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 1.19
-            },
-            {
-              "frame": 42,
-              "value": 1.025
-            },
-            {
-              "frame": 60,
-              "value": 1
-            }
-          ]
-        },
-        {
-          "property": "opacity",
-          "easing": "linear",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 0
-            },
-            {
-              "frame": 21,
-              "value": 1
-            },
-            {
-              "frame": 60,
-              "value": 1
-            }
-          ]
-        }
-      ],
-      "duration_bounds": {
-        "minimum_frames": 48,
-        "maximum_frames": 240
-      },
-      "render_safe": true
     },
     {
       "id": "metric_counter_rise",
@@ -30885,12 +31787,12 @@
       "precision_word_stagger",
       "typewriter_clean",
       "typewriter_glitch",
-      "typewriter_pop",
-      "typewriter_tracking",
       "typewriter_lift",
-      "typewriter_slide_in",
+      "typewriter_pop",
       "typewriter_scale_up",
+      "typewriter_slide_in",
       "typewriter_soft_lift",
+      "typewriter_tracking",
       "apple_focus_rise",
       "apple_soft_scale",
       "apple_word_cascade",

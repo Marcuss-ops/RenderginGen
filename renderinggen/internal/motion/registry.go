@@ -99,6 +99,13 @@ func (r *RegistryType) ImageOverlayMotionIDs() []string {
 	return ids
 }
 
+// MapImageV1MotionIDs returns the ChrononTemplate map-image recipe family.
+// These motions are admitted only by the semantic map compiler, where their
+// shared scale track is also projected onto grounded pins and labels.
+func (r *RegistryType) MapImageV1MotionIDs() []string {
+	return r.CategoryMotionIDs("map_image_v1")
+}
+
 // EditorialImageV1MotionIDs returns the Editorial Visual Motion V1 image
 // vocabulary in stable order — the 14 goal motions with the full resting-pose
 // and duration-bounds metadata the V1 contract certifies.
@@ -140,7 +147,7 @@ func (r *RegistryType) VisualAccentsV1MotionIDs(category string) []string {
 // VisualAccentsV1FamilyMotionIDs returns every registered Visual Accents V1
 // motion across the four official families, sorted.
 func (r *RegistryType) VisualAccentsV1FamilyMotionIDs() []string {
-	ids := make([]string, 0, 48)
+	ids := make([]string, 0, 59)
 	for _, category := range VisualAccentsV1Categories {
 		ids = append(ids, r.CategoryMotionIDs(category)...)
 	}

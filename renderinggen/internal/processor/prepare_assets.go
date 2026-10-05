@@ -5,6 +5,7 @@ import (
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/media"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/overlay"
 	"image"
+	_ "image/jpeg"
 	_ "image/png"
 	"io"
 	"os"

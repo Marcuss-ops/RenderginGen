@@ -135,7 +135,8 @@ func validateMapContract(item semanticItem, kind ItemKind, canvasWidth, canvasHe
 // the raster away from the georeferenced pin window.
 func isCenteredMapMotion(id string) bool {
 	registeredImageMotion := false
-	for _, imageID := range motion.Registry.ImageOverlayMotionIDs() {
+	allowedIDs := append(motion.Registry.ImageOverlayMotionIDs(), motion.Registry.MapImageV1MotionIDs()...)
+	for _, imageID := range allowedIDs {
 		if imageID == id {
 			registeredImageMotion = true
 			break
@@ -358,6 +359,7 @@ func compileMapLayers(ri resolvedItem, src *semanticPlan, registry *assetRegistr
 	duration := ri.End - ri.Start
 	window := geo.CenteredOn(m.Center.Latitude, m.Center.Longitude, m.Zoom, m.Width, m.Height)
 	layers := make([]Layer, 0, 1+2*len(m.Pins)+1)
+	var mapAnimation *LayerAnimation
 	if m.CameraMove == nil {
 		basemap := Layer{
 			ID: mapBasemapLayerID(ri.Item.ID), Type: "image",
@@ -375,6 +377,7 @@ func compileMapLayers(ri resolvedItem, src *semanticPlan, registry *assetRegistr
 			if err != nil {
 				return nil, fmt.Errorf("overlay: map item %q motion %q: %w", ri.Item.ID, m.MotionID, err)
 			}
+			mapAnimation = animation
 			applyMotionRouting(&basemap, animation)
 		}
 		layers = append(layers, basemap)
@@ -411,6 +414,10 @@ func compileMapLayers(ri resolvedItem, src *semanticPlan, registry *assetRegistr
 			return nil, err
 		}
 		label := mapPinLabelLayer(ri, src, pin, font, x, y, duration)
+		if mapAnimation != nil {
+			applyMotionRouting(&marker, mapPinMotion(mapAnimation, marker.Position))
+			applyMotionRouting(&label, mapPinMotion(mapAnimation, label.Position))
+		}
 		if m.CameraMove != nil {
 			worldX, worldY := mapWorldPoint(pin.Latitude, pin.Longitude, m.Zoom, m.CameraMove.From)
 			marker.Enable3D = true
@@ -452,6 +459,41 @@ func mapTextStyle(font string, size, minSize float64, fill string) *LayerStyle {
 	return &LayerStyle{Font: font, FontSize: size, MinFontSize: minSize, MaxFontSize: size,
 		FitMode: "shrink_only", Fill: fill,
 		Shadow: &LayerShadow{Color: mapTextShadowColor, Opacity: mapTextShadowOpacity, Blur: mapTextShadowBlur, Offset: []float64{0, 2}}}
+}
+
+// mapPinMotion applies the basemap's image recipe to each projected pin and
+// label as a group: opacity stays in sync, glyph size follows the zoom, and
+// each pin's centre follows the raster's scale about the canvas centre.
+func mapPinMotion(source *LayerAnimation, position []float64) *LayerAnimation {
+	if source == nil {
+		return nil
+	}
+	result := &LayerAnimation{Tracks: make([]AnimationTrack, 0, len(source.Tracks)+2)}
+	var scaleKeys []AnimationKeyframe
+	var scaleEasing string
+	for _, track := range source.Tracks {
+		cloned := AnimationTrack{Property: track.Property, Easing: track.Easing, Keyframes: append([]AnimationKeyframe(nil), track.Keyframes...)}
+		result.Tracks = append(result.Tracks, cloned)
+		if track.Property == "scale" {
+			scaleKeys = track.Keyframes
+			scaleEasing = track.Easing
+		}
+	}
+	if len(scaleKeys) == 0 || len(position) < 2 {
+		return result
+	}
+	for axis, property := range []string{"position_x", "position_y"} {
+		keys := make([]AnimationKeyframe, len(scaleKeys))
+		for index, key := range scaleKeys {
+			scale, ok := numericParam(key.Value)
+			if !ok {
+				return result
+			}
+			keys[index] = AnimationKeyframe{Frame: key.Frame, Value: position[axis] * scale}
+		}
+		result.Tracks = append(result.Tracks, AnimationTrack{Property: property, Easing: scaleEasing, Keyframes: keys})
+	}
+	return result
 }
 
 func clampMapBox(value, limit float64) float64 {

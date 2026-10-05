@@ -165,8 +165,50 @@ func TestImageMotionInventoryHasAllCatalogImageAnimations(t *testing.T) {
 			}
 		}
 	}
-	if len(all) != 100 || len(motion.Registry.ImageOverlayMotionIDs()) != 18 || len(motion.Registry.ImagePremiumV1MotionIDs()) != 20 {
-		t.Fatalf("combined image motion inventory = %d, want 100 catalog IDs (52 legacy + 48 visual accents), 18 legacy IDs, and 20 premium IDs", len(all))
+	if len(all) != 111 || len(motion.Registry.ImageOverlayMotionIDs()) != 18 || len(motion.Registry.ImagePremiumV1MotionIDs()) != 20 {
+		t.Fatalf("combined image motion inventory = %d, want 111 catalog IDs (52 legacy + 59 visual accents), 18 legacy IDs, and 20 premium IDs", len(all))
+	}
+}
+
+func TestBrushPhraseVariantsCompileForWrappedLongCopy(t *testing.T) {
+	phrase := "Anche 3.000€ al mese: una frase più lunga deve restare leggibile, centrata e accompagnata da un accento Brush che segue il testo senza tagliarlo ai bordi."
+	ids := motion.Registry.VisualAccentsV1MotionIDs("brush_v1")
+	if len(ids) != 23 {
+		t.Fatalf("brush_v1 exposes %d motions, want the 12 original plus 11 phrase variants", len(ids))
+	}
+	for _, id := range ids {
+		t.Run(id, func(t *testing.T) {
+			raw := []byte(fmt.Sprintf(`{"schema_version":"renderinggen.overlay-plan.v1","plan_id":"brush-long-%[1]s","video_id":"v","width":1920,"height":1080,"fps_num":24,"fps_den":1,"background":{"kind":"color","color":[0.02,0.02,0.025,1]},"items":[{"id":"phrase","kind":"important_phrase","template_id":"IMPORTANT_PHRASE","preset_id":"phrase_default","motion_id":%[2]q,"text":%[3]q,"start_ms":0,"end_ms":5000}]}`, id, id, phrase))
+			result, err := CompileSemantic(raw)
+			if err != nil {
+				t.Fatalf("compile long phrase with %q: %v", id, err)
+			}
+			var phraseLayer *Layer
+			var accentCount int
+			for i := range result.Plan.Layers {
+				layer := &result.Plan.Layers[i]
+				if layer.ID == "phrase" && layer.Type == "text" {
+					phraseLayer = layer
+				}
+				if strings.HasPrefix(layer.ID, "phrase:premium:") {
+					accentCount++
+					if len(layer.Size) < 2 || layer.Size[0] >= 1920 {
+						t.Errorf("brush accent %q uses an unbounded phrase width: %v", layer.ID, layer.Size)
+					}
+				}
+			}
+			if phraseLayer == nil || !strings.Contains(phraseLayer.Text, "\n") {
+				t.Fatalf("phrase %q did not wrap into multiple readable lines", phrase)
+			}
+			for _, line := range strings.Split(phraseLayer.Text, "\n") {
+				if utf8.RuneCountInString(line) > 25 {
+					t.Errorf("wrapped phrase line exceeds 25 runes: %q", line)
+				}
+			}
+			if accentCount == 0 {
+				t.Fatalf("brush motion %q compiled no companion stroke layers", id)
+			}
+		})
 	}
 }
 
@@ -480,8 +522,8 @@ func TestRuntimeStyleOverrideSchemaContract(t *testing.T) {
 		t.Run(pointer, func(t *testing.T) {
 			properties := contractschema.At(t, schema, pointer)["properties"].(map[string]any)
 			font := properties["font_family"].(map[string]any)["enum"].([]any)
-			if len(font) != 3 || font[0] != "poppins" || font[1] != "inter" || font[2] != "dejavu_sans" {
-				t.Errorf("font_family enum = %v, want [poppins inter dejavu_sans]", font)
+			if len(font) != 4 || font[0] != "poppins" || font[1] != "inter" || font[2] != "dejavu_sans" || font[3] != "playfair_display_italic" {
+				t.Errorf("font_family enum = %v, want [poppins inter dejavu_sans playfair_display_italic]", font)
 			}
 			// The schema's documented control set and the validator's key set are
 			// the same set, in both spellings. Pinning only the keys that happened

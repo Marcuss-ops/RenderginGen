@@ -342,7 +342,7 @@ func compilePremiumComponent(src *semanticPlan, image Layer, definition motion.M
 			}
 		case "path":
 			switch component.PathKind {
-			case "arrow", "scribble", "check", "ellipse", "corner_marks", "cross", "double_line", "wave":
+			case "arrow", "scribble", "check", "ellipse", "corner_marks", "cross", "double_line", "wave", "underline", "underline_double", "underline_wave":
 				shape.Path = brushPath(component.PathKind, width, height)
 			case "rounded_rect":
 				radius := image.Radius * component.RadiusScale

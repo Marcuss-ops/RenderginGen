@@ -17,8 +17,11 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"math"
 	"strings"
 	"unicode/utf8"
+
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/motion"
 )
 
 // resolvedItem is RenderingGen's canonical internal representation of one
@@ -478,7 +481,7 @@ func resolveSemanticItems(src *semanticPlan) ([]resolvedItem, error) {
 			}
 			ri.Preset = def
 		}
-		if err := validateTextRuntimeOverrides(runtimeStyle, item.ID, kind, preset, len(item.Assets) > 0); err != nil {
+		if err := validateTextRuntimeOverrides(runtimeStyle, item.ID, kind, preset, len(item.Assets) > 0, strings.TrimSpace(item.EntityCaption) != ""); err != nil {
 			return nil, err
 		}
 		if isEntityKind(kind) && len(item.Assets) > 0 {
@@ -557,15 +560,91 @@ func compileTextVisualAccentLayers(ri resolvedItem, src *semanticPlan, text Laye
 		if !targetsText {
 			return nil, fmt.Errorf("overlay: brush motion %q does not target text", definition.ID)
 		}
-		layers, err = compileVisualAccentsComponents(src, text, *definition)
+		// Brush paths for phrases use the visible text block as their local
+		// coordinate system. Phrase text layers span the full canvas so long
+		// copy can wrap; using that entire box for a circle or underline makes
+		// short phrases look lost and long phrases run edge-to-edge.
+		textAnchor := brushTextAnchor(text, src)
+		textDefinition := *definition
+		if definition.ImageRecipe != nil {
+			recipe := *definition.ImageRecipe
+			recipe.Components = append([]motion.ImageMotionComponent(nil), definition.ImageRecipe.Components...)
+			for i := range recipe.Components {
+				switch recipe.Components[i].PathKind {
+				case "line":
+					if definition.ID != "brush_marker_highlight" {
+						recipe.Components[i].PathKind = "underline"
+					}
+				case "double_line":
+					recipe.Components[i].PathKind = "underline_double"
+				case "wave":
+					recipe.Components[i].PathKind = "underline_wave"
+				}
+			}
+			textDefinition.ImageRecipe = &recipe
+		}
+		layers, err = compileVisualAccentsComponents(src, textAnchor, textDefinition)
 		if err != nil {
 			return nil, err
+		}
+		for i := range layers {
+			if layers[i].ID == textAnchor.ID {
+				layers[i] = text
+				break
+			}
 		}
 	}
 	if cursor, ok := compileTypewriterCursor(ri, src, text); ok {
 		layers = append(layers, cursor)
 	}
 	return layers, nil
+}
+
+func brushTextAnchor(text Layer, src *semanticPlan) Layer {
+	anchor := text
+	fontSize := 72.0
+	if text.Style != nil && text.Style.FontSize > 0 {
+		fontSize = text.Style.FontSize
+	}
+	maxUnits := 0.0
+	lineCount := 0
+	for _, line := range strings.Split(text.Text, "\n") {
+		lineCount++
+		units := 0.0
+		for _, r := range line {
+			switch {
+			case r == ' ':
+				units += 0.31
+			case strings.ContainsRune("ilI.,:;!'|", r):
+				units += 0.30
+			case strings.ContainsRune("MW@%&", r):
+				units += 0.83
+			case r >= '0' && r <= '9':
+				units += 0.56
+			default:
+				units += 0.55
+			}
+		}
+		if units > maxUnits {
+			maxUnits = units
+		}
+	}
+	width := maxUnits*fontSize + fontSize*1.05
+	minWidth := fontSize * 3
+	maxWidth := float64(src.Width - 96)
+	if width < minWidth {
+		width = minWidth
+	}
+	if width > maxWidth {
+		width = maxWidth
+	}
+	height := math.Max(fontSize*1.5, float64(lineCount)*fontSize*1.3+16)
+	maxHeight := float64(src.Height - 96)
+	if height > maxHeight {
+		height = maxHeight
+	}
+	anchor.Size = []float64{width, height}
+	return anchor
 }
 
 // compileEntityCard lowers a portrait and its optional entity caption. The

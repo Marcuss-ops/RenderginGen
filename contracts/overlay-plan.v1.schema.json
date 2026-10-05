@@ -231,7 +231,7 @@
           "entity_caption": { "type": "string", "minLength": 1, "description": "Optional explicit entity name preserved by PipelineGen when an image is available; RenderingGen compiles it as a caption layer with the image's lifetime." },
           "caption_motion_id": { "type": "string", "minLength": 1, "description": "Optional motion override for the entity caption layer. Empty resolves the shared default (text_fade_up); a motion that does not target text is refused by the caption lowering." },
           "caption_layout": { "type": "string", "enum": ["below", "left", "right"], "description": "Optional entity caption placement. left/right place the caption in that column relative to the image; below anchors it under the image." },
-          "caption_font_family": { "type": "string", "enum": ["poppins", "inter", "dejavu_sans"], "description": "Optional bundled font family for an entity caption." },
+          "caption_font_family": { "type": "string", "enum": ["poppins", "inter", "dejavu_sans", "playfair_display_italic"], "description": "Optional bundled font family for an entity caption." },
           "caption_color": { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$", "description": "Optional hex color for an entity caption." },
           "entity_style_id": { "type": "string", "enum": ["premium_random_v1"], "description": "Optional RenderingGen entity-card composition selector. premium_random_v1 deterministically chooses one of 15 editorial image and caption animation/layout variants using the plan and entity identity; runtime background, image and caption content are preserved." },
           "params": {
@@ -287,7 +287,7 @@
                   "colors": { "type": "array", "items": { "oneOf": [{ "$ref": "#/$defs/rgba" }, { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}([0-9A-Fa-f]{2})?$" }] } }
                 }
               },
-              "font_family": { "enum": ["poppins", "inter", "dejavu_sans"] },
+              "font_family": { "enum": ["poppins", "inter", "dejavu_sans", "playfair_display_italic"] },
               "font_size_px": { "type": "number", "exclusiveMinimum": 0, "maximum": 512 },
               "glow_size": { "type": "number", "minimum": 0, "maximum": 256 },
               "stroke_size": { "type": "number", "minimum": 0, "maximum": 64 },
@@ -302,7 +302,7 @@
             "type": "object",
             "description": "Optional item-local runtime visual overrides; takes precedence over params for matching controls.",
             "properties": {
-              "font_family": { "enum": ["poppins", "inter", "dejavu_sans"] },
+              "font_family": { "enum": ["poppins", "inter", "dejavu_sans", "playfair_display_italic"] },
               "font_size_px": { "type": "number", "exclusiveMinimum": 0, "maximum": 512 },
               "glow_size": { "type": "number", "minimum": 0, "maximum": 256 },
               "stroke_size": { "type": "number", "minimum": 0, "maximum": 64 },
