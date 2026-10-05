@@ -39,9 +39,8 @@ func TestMotionFamiliesKeepStylesIndependentAndComplete(t *testing.T) {
 			t.Fatalf("motion family[%d] = %q, want %q", i, got[i], family)
 		}
 	}
-	// Editorial Visual Motion V1 grows the certified web vocabulary to 14
-	// (web_cursor_focus and web_section_spotlight joined).
-	for family, count := range map[string]int{"typewriter": 10, "classic_apple": 42, "modern_apple": 61, "text_3d_v1": 10, "trump_entity_text_v1": 15, "web": 14} {
+	// Editorial Visual Motion V1 grows the certified web vocabulary to 14.
+	for family, count := range map[string]int{"typewriter": 10, "classic_apple": 42, "modern_apple": 61, "brush_v1": 23, "text_3d_v1": 10, "trump_entity_text_v1": 15, "web": 14} {
 		if ids := Registry.FamilyMotionIDs(family); len(ids) != count {
 			t.Errorf("%s family has %d motions, want %d", family, len(ids), count)
 		}
@@ -88,8 +87,7 @@ func TestWebFamilyHasTwelveRenderSafeDistinctCatalogMotions(t *testing.T) {
 		definitions[definition.ID] = definition
 	}
 	ids := Registry.FamilyMotionIDs("web")
-	// Editorial Visual Motion V1 grows the certified web vocabulary to 14:
-	// the original 12 plus web_cursor_focus and web_section_spotlight.
+	// Editorial Visual Motion V1 grows the certified web vocabulary to 14.
 	if len(ids) != 14 {
 		t.Fatalf("web motion count = %d, want 14: %v", len(ids), ids)
 	}
@@ -122,6 +120,7 @@ func TestWebFamilyHasTwelveRenderSafeDistinctCatalogMotions(t *testing.T) {
 		seenTracks[fingerprint] = true
 	}
 }
+
 
 func TestImage3DFamilyHasEightCameraBackedMotionsWithRestingFinalPose(t *testing.T) {
 	ids := Registry.Image25DCleanV1MotionIDs()

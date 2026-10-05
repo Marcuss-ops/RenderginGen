@@ -82,6 +82,8 @@ func runtimeFontPath(family string) (string, bool) {
 		return officialCyrillicFontPath, true
 	case "bricolage_grotesque":
 		return "assets/fonts/Bricolage-Grotesque.ttf", true
+	case "playfair_display_italic":
+		return "assets/fonts/PlayfairDisplay-Italic.ttf", true
 	default:
 		return "", false
 	}

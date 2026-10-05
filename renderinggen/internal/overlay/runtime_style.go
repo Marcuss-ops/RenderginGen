@@ -15,10 +15,25 @@ const (
 // validateTextRuntimeOverrides accepts only controls the compiler can lower
 // deterministically. font_family names a bundled family, while glow_size and
 // stroke_size are pixel dimensions. Zero explicitly disables that effect.
-func validateTextRuntimeOverrides(params map[string]any, itemID string, kind ItemKind, presetID string, hasImage bool) error {
+func validateTextRuntimeOverrides(params map[string]any, itemID string, kind ItemKind, presetID string, hasImage, hasEntityCaption bool) error {
+	captionedEntityImage := kind == KindEntityImage && hasImage && hasEntityCaption
 	if isShapeKind(kind) || isImageKind(kind) || isVideoKind(kind) || (isEntityKind(kind) && hasImage) {
 		for _, key := range runtimeTextStyleKeys {
-			if _, exists := params[key]; exists {
+			value, exists := params[key]
+			if !exists {
+				continue
+			}
+			if key == "font_family" && captionedEntityImage {
+				family, ok := value.(string)
+				if !ok {
+					return fmt.Errorf("overlay: item %q params.font_family must be a string family id", itemID)
+				}
+				if _, ok := runtimeFontPath(family); !ok {
+					return fmt.Errorf("overlay: item %q params.font_family %q is unsupported", itemID, family)
+				}
+				continue
+			}
+			if exists {
 				return fmt.Errorf("overlay: item %q cannot apply text runtime override %q to a non-text layer", itemID, key)
 			}
 		}
@@ -39,7 +54,7 @@ func validateTextRuntimeOverrides(params map[string]any, itemID string, kind Ite
 				return fmt.Errorf("overlay: item %q params.font_family must be a string family id", itemID)
 			}
 			if _, ok := runtimeFontPath(family); !ok {
-				return fmt.Errorf("overlay: item %q params.font_family %q is unsupported (supported: poppins, inter, dejavu_sans)", itemID, family)
+				return fmt.Errorf("overlay: item %q params.font_family %q is unsupported (supported: poppins, inter, dejavu_sans, playfair_display_italic)", itemID, family)
 			}
 		case "glow_size":
 			if _, err := boundedRuntimeSize(value, key, maxRuntimeGlowSize); err != nil {

@@ -6,14 +6,15 @@ import (
 )
 
 // The Visual Accents V1 acceptance suite: the four official families
-// (brush_v1, web_rect_v1, paint_v1, light_leak_v1) with exactly 12 motions
-// each, the V1 metadata contract, and family-specific recipe shapes.
+// (brush_v1, web_rect_v1, paint_v1, light_leak_v1) with 23 phrase-ready Brush
+// motions and 12 motions in each other family, plus their metadata and recipes.
 
 func TestVisualAccentsV1_FamilyCounts(t *testing.T) {
+	wantCounts := map[string]int{"brush_v1": 23, "web_rect_v1": 12, "paint_v1": 12, "light_leak_v1": 12}
 	for _, category := range VisualAccentsV1Categories {
 		ids := Registry.CategoryMotionIDs(category)
-		if len(ids) != 12 {
-			t.Fatalf("%s family has %d motions, want 12: %v", category, len(ids), ids)
+		if len(ids) != wantCounts[category] {
+			t.Fatalf("%s family has %d motions, want %d: %v", category, len(ids), wantCounts[category], ids)
 		}
 		seen := make(map[string]bool, len(ids))
 		for _, id := range ids {
@@ -23,8 +24,8 @@ func TestVisualAccentsV1_FamilyCounts(t *testing.T) {
 			seen[id] = true
 		}
 	}
-	if got := len(Registry.VisualAccentsV1FamilyMotionIDs()); got != 48 {
-		t.Fatalf("visual accents V1 total = %d motions, want 48", got)
+	if got := len(Registry.VisualAccentsV1FamilyMotionIDs()); got != 59 {
+		t.Fatalf("visual accents V1 total = %d motions, want 59", got)
 	}
 }
 

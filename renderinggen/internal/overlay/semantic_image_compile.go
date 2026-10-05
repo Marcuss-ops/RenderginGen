@@ -222,6 +222,11 @@ func compileEntityCaptionLayer(parent resolvedItem, src *semanticPlan, child sem
 		"position_y":   positionY,
 		"font_size_px": captionBounds.FontSize,
 	}
+	// A run-level font_family is the explicit runtime style choice. Preserve
+	// the entity preset's typeface only when the caller did not choose one.
+	if family, ok := parent.Params["font_family"].(string); ok && strings.TrimSpace(family) != "" {
+		captionItem.Params["font_family"] = strings.TrimSpace(family)
+	}
 	captionItem.Style = nil
 	captionResolved := resolvedItem{
 		Item: captionItem, Spec: parent.Spec, Kind: KindEntityCard,
@@ -240,7 +245,11 @@ func compileEntityCaptionLayer(parent resolvedItem, src *semanticPlan, child sem
 	// Cinematic nameplate treatment: a large warm-white title, a restrained
 	// dark keyline and soft drop shadow keep names readable over moving footage.
 	captionLayer.Style.Fill = "#F8F5EA"
-	if family := strings.TrimSpace(child.CaptionFontFamily); family != "" {
+	family, _ := captionItem.Params["font_family"].(string)
+	if family == "" {
+		family = child.CaptionFontFamily
+	}
+	if family = strings.TrimSpace(family); family != "" {
 		fontPath, ok := runtimeFontPath(family)
 		if !ok {
 			return Layer{}, fmt.Errorf("overlay: item %q entity caption font family %q is unsupported", parent.Item.ID, family)

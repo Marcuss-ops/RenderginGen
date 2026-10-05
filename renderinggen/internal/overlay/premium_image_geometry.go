@@ -44,6 +44,13 @@ func brushPath(kind string, width, height float64) []LayerPathCommand {
 		return []LayerPathCommand{{Type: "move_to", Point: []float64{-x * .8, -y * .8}}, {Type: "line_to", Point: []float64{x * .8, y * .8}}, {Type: "move_to", Point: []float64{x * .8, -y * .8}}, {Type: "line_to", Point: []float64{-x * .8, y * .8}}}
 	case "double_line":
 		return []LayerPathCommand{{Type: "move_to", Point: []float64{-x, -y * .2}}, {Type: "line_to", Point: []float64{x, -y * .2}}, {Type: "move_to", Point: []float64{-x, y * .25}}, {Type: "line_to", Point: []float64{x, y * .25}}}
+	case "underline":
+		return []LayerPathCommand{{Type: "move_to", Point: []float64{-x, height * .43}}, {Type: "line_to", Point: []float64{x, height * .43}}}
+	case "underline_double":
+		y1, y2 := height*.32, height*.45
+		return []LayerPathCommand{{Type: "move_to", Point: []float64{-x, y1}}, {Type: "line_to", Point: []float64{x, y1}}, {Type: "move_to", Point: []float64{-x, y2}}, {Type: "line_to", Point: []float64{x, y2}}}
+	case "underline_wave":
+		return []LayerPathCommand{{Type: "move_to", Point: []float64{-x, height * .4}}, {Type: "cubic_to", Control1: []float64{-width * .25, height * .28}, Control2: []float64{-width * .12, height * .54}, Point: []float64{0, height * .4}}, {Type: "cubic_to", Control1: []float64{width * .12, height * .25}, Control2: []float64{width * .25, height * .55}, Point: []float64{x, height * .4}}}
 	case "wave":
 		return []LayerPathCommand{{Type: "move_to", Point: []float64{-x, 0}}, {Type: "cubic_to", Control1: []float64{-x * .5, -y}, Control2: []float64{-x * .25, y}, Point: []float64{0, 0}}, {Type: "cubic_to", Control1: []float64{x * .25, -y}, Control2: []float64{x * .5, y}, Point: []float64{x, 0}}}
 	default:
