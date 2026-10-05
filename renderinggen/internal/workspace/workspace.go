@@ -87,6 +87,13 @@ func (w *Workspace) OutputPath(name string) string {
 	return filepath.Join(w.outputDir, name)
 }
 
+// AssetPath returns a validated workspace path for a declared logical asset.
+// It is exposed for CPU-only consumers that must inspect materialized inputs
+// without writing a Chronon plan or entering the render pipeline.
+func (w *Workspace) AssetPath(logical string) (string, error) {
+	return w.assetPath(logical)
+}
+
 // PlanPath returns the path of the render plan written for Chronon.
 func (w *Workspace) PlanPath() string {
 	return filepath.Join(w.root, "plan.json")

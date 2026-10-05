@@ -72,6 +72,7 @@ const (
 	JobTypeRenderSegment  = client.JobTypeRenderSegment
 	JobTypeOverlayPrepare = client.JobTypeOverlayPrepare
 	JobTypeOverlayRender  = client.JobTypeOverlayRender
+	JobTypeOverlayImport  = client.JobTypeOverlayImport
 )
 
 // JobSchemaV1 identifies the renderinggen.job.v1 envelope. It is an alias of

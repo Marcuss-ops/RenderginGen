@@ -29,7 +29,7 @@ var (
 )
 
 func TestMotionFamiliesKeepStylesIndependentAndComplete(t *testing.T) {
-	want := []string{"typewriter", "classic_apple", "modern_apple", "web", "3d"}
+	want := []string{"phrase", "typewriter", "classic_apple", "modern_apple", "brush_v1", "text_3d_v1", "trump_entity_text_v1", "web", "3d"}
 	got := Registry.MotionFamilies()
 	if len(got) != len(want) {
 		t.Fatalf("motion families = %v, want %v", got, want)
@@ -41,14 +41,14 @@ func TestMotionFamiliesKeepStylesIndependentAndComplete(t *testing.T) {
 	}
 	// Editorial Visual Motion V1 grows the certified web vocabulary to 14
 	// (web_cursor_focus and web_section_spotlight joined).
-	for family, count := range map[string]int{"typewriter": 10, "classic_apple": 42, "modern_apple": 61, "web": 14} {
+	for family, count := range map[string]int{"typewriter": 10, "classic_apple": 42, "modern_apple": 61, "text_3d_v1": 10, "trump_entity_text_v1": 15, "web": 14} {
 		if ids := Registry.FamilyMotionIDs(family); len(ids) != count {
 			t.Errorf("%s family has %d motions, want %d", family, len(ids), count)
 		}
 	}
 	threeD := Registry.FamilyMotionIDs("3d")
-	if len(threeD) == 0 {
-		t.Fatal("3D family has no catalog motions")
+	if len(threeD) != 10 {
+		t.Fatalf("3D family has %d motions, want the 10 retained premium text animations", len(threeD))
 	}
 	for _, id := range threeD {
 		plugin, err := Registry.Resolve(id)

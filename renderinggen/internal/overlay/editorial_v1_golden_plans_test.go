@@ -225,15 +225,15 @@ func TestGoldenEditorialV1MegaCanary(t *testing.T) {
 
 	// Act 5 (13–16 s): four kinetic 3D text treatments.
 	t3dMotions := []string{
-		"text_3d_yaw_flip_in", "text_3d_depth_push",
-		"text_3d_word_cascade", "text_3d_character_wave",
+		"text_3d_yaw_flip_in", "text_3d_tilt_rise",
+		"text_3d_word_cascade", "text_3d_double_axis_reveal",
 	}
 	for i, motionID := range t3dMotions {
 		// Four centred text boxes in canvas coordinates, one per row.
 		items = append(items, map[string]any{
 			"id": "mega-t3d-" + motionID, "entity_id": "text:mega-" + motionID, "kind": "entity_card",
 			"template_id": "PERSON_DEFAULT", "preset_id": "phrase_default",
-			"text":      []string{"YAW FLIP", "DEPTH PUSH", "WORD CASCADE", "CHARACTER WAVE"}[i],
+			"text":      []string{"YAW FLIP", "TILT RISE", "WORD CASCADE", "DOUBLE AXIS"}[i],
 			"motion_id": motionID,
 			"params": map[string]any{
 				"width":      560.0,
@@ -687,8 +687,8 @@ func TestGoldenImageMotionGallery4x4(t *testing.T) {
 func TestGoldenText3DGallery(t *testing.T) {
 	// Four simultaneous 3D text entrances, per the goal canary.
 	motions := []string{
-		"text_3d_yaw_flip_in", "text_3d_depth_push",
-		"text_3d_word_cascade", "text_3d_character_wave",
+		"text_3d_yaw_flip_in", "text_3d_tilt_rise",
+		"text_3d_word_cascade", "text_3d_double_axis_reveal",
 	}
 	items := make([]any, 0, len(motions))
 	for i, motionID := range motions {
@@ -696,7 +696,7 @@ func TestGoldenText3DGallery(t *testing.T) {
 		items = append(items, map[string]any{
 			"id": "t3d-" + motionID, "entity_id": "text:" + motionID, "kind": "entity_card",
 			"template_id": "PERSON_DEFAULT", "preset_id": "phrase_default",
-			"text":              []string{"YAW FLIP", "DEPTH PUSH", "WORD CASCADE", "CHARACTER WAVE"}[i],
+			"text":              []string{"YAW FLIP", "TILT RISE", "WORD CASCADE", "DOUBLE AXIS"}[i],
 			"caption_motion_id": motionID,
 			"params":            map[string]any{"position_x": 0.0, "position_y": y},
 			"start_ms":          0, "end_ms": 5000, "duration_ms": 5000,
@@ -775,16 +775,16 @@ func webFanCard(id string, x float64, motionID string) map[string]any {
 }
 
 func TestGoldenCaptionMotionCompilesThroughFullPipeline(t *testing.T) {
-	// Every entity_caption_v1 motion must lower through the full pipeline
+	// Every shared and Trump entity text motion must lower through the full pipeline
 	// onto a caption bound to its image's lifetime.
 	for _, motionID := range []string{
 		"text_depth_in", "text_fade_up", "text_scale_punch",
 		"text_word_rise", "text_word_stagger", "text_yaw_in",
-		"entity_caption_blur_reveal", "entity_caption_tracking_snap",
-		"entity_caption_word_spring", "entity_caption_glyph_rise",
-		"entity_caption_side_glide", "entity_caption_warm_reveal",
-		"entity_caption_flip_settle", "entity_caption_word_drop",
-		"entity_caption_focus_punch", "entity_caption_neon_breathe",
+		"trump_entity_text_01", "trump_entity_text_02", "trump_entity_text_03",
+		"trump_entity_text_04", "trump_entity_text_05", "trump_entity_text_06",
+		"trump_entity_text_07", "trump_entity_text_08", "trump_entity_text_09",
+		"trump_entity_text_10", "trump_entity_text_11", "trump_entity_text_12",
+		"trump_entity_text_13", "trump_entity_text_14", "trump_entity_text_15",
 	} {
 		item := entityCardItem("cap-"+motionID, "Determinism Check", 0, 2000, "image_25d_depth_float_in")
 		item["caption_motion_id"] = motionID

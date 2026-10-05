@@ -28,6 +28,7 @@ const (
 	JobTypeRenderSegment  = queueclient.JobTypeRenderSegment
 	JobTypeOverlayPrepare = queueclient.JobTypeOverlayPrepare
 	JobTypeOverlayRender  = queueclient.JobTypeOverlayRender
+	JobTypeOverlayImport  = queueclient.JobTypeOverlayImport
 )
 
 // RenewConflictError identifies a permanent lease loss reported by the queue
@@ -81,6 +82,7 @@ type Job = queueclient.Job
 // edit. A new artifact field is added once, in queue/client, and every layer
 // compiles against it.
 type Artifact = queueclient.Artifact
+type ArtifactProvenance = queueclient.ArtifactProvenance
 
 // OutputFacts is the complete structural certification carried on the
 // artifact (see queueclient.OutputFacts): one definition, so the worker and

@@ -73,6 +73,15 @@ func validate(job *queue.Job) error {
 	if !json.Valid(job.RenderPlan) {
 		return fmt.Errorf("processor: render_plan is not valid JSON")
 	}
+	if job.JobType == queue.JobTypeOverlayImport {
+		if _, err := decodeOverlayImport(job.RenderPlan); err != nil {
+			return err
+		}
+		if len(job.Assets) != 1 {
+			return fmt.Errorf("processor: overlay.import requires exactly one source asset")
+		}
+		return nil
+	}
 	for _, a := range job.Assets {
 		if a.Hash == "" {
 			return fmt.Errorf("processor: asset hash is required")

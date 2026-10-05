@@ -177,7 +177,7 @@ func compileEntityCaptionLayer(parent resolvedItem, src *semanticPlan, child sem
 	// safe-area clamping and long-name font fitting all happen there. The
 	// lowering below only writes the resolver's answer into the layer.
 	imageBounds := EntityCardImageBoundsFromCenter(src.Width, src.Height, image.Position, image.Size[0], image.Size[1])
-	layout, err := ResolveEntityCardLayout(src.Width, src.Height, imageBounds, caption)
+	layout, err := ResolveEntityCardLayoutAt(src.Width, src.Height, imageBounds, caption, child.CaptionLayout)
 	if err != nil {
 		return Layer{}, fmt.Errorf("overlay: item %q entity caption layout: %w", parent.Item.ID, err)
 	}
@@ -240,6 +240,22 @@ func compileEntityCaptionLayer(parent resolvedItem, src *semanticPlan, child sem
 	// Cinematic nameplate treatment: a large warm-white title, a restrained
 	// dark keyline and soft drop shadow keep names readable over moving footage.
 	captionLayer.Style.Fill = "#F8F5EA"
+	if family := strings.TrimSpace(child.CaptionFontFamily); family != "" {
+		fontPath, ok := runtimeFontPath(family)
+		if !ok {
+			return Layer{}, fmt.Errorf("overlay: item %q entity caption font family %q is unsupported", parent.Item.ID, family)
+		}
+		captionLayer.Style.Font = fontPath
+	}
+	if fill := strings.TrimSpace(child.CaptionColor); fill != "" {
+		if _, err := parseHexColor(fill); err != nil {
+			return Layer{}, fmt.Errorf("overlay: item %q entity caption color: %w", parent.Item.ID, err)
+		}
+		captionLayer.Style.Fill = fill
+		captionLayer.Style.Stroke = nil
+		captionLayer.Style.Shadow = nil
+		captionLayer.Style.Glow = nil
+	}
 	captionLayer.Style.FontSize = captionBounds.FontSize
 	captionLayer.Style.MinFontSize = captionBounds.FontSize
 	captionLayer.Style.MaxFontSize = captionBounds.FontSize

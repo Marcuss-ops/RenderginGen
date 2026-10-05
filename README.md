@@ -76,8 +76,12 @@ one animated preset (`phrase_default`) plus `static_text_smoke`; text animation
 is selected independently with `motion_id`.
 
 The public motion family API keeps these groups independent from preset styles:
-`typewriter` (5 motions), `classic_apple` (42), `modern_apple` (45), `web` (0),
-and `3d` (all catalog motions with Z translation or X/Y rotation). The web
+`phrase` (all callable important-phrase motions, including Brush V1 accents),
+`typewriter` (5 motions), `classic_apple` (42), `modern_apple` (45), `brush_v1`
+(12 text-targetable brush accents), `web` (0), and `3d` (all catalog motions
+with Z translation or X/Y rotation). The `phrase` family combines text
+animation groups; it does not define a second set of motions. Brush recipes
+selected on phrases emit their native stroked-path layers beside the text. The web
 family is intentionally empty until a concrete catalog motion is authored; no
 placeholder is advertised as renderable. The current image motion inventory is
 18 motions:

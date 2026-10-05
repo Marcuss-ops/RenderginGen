@@ -1,0 +1,218 @@
+package overlay
+
+import (
+	"math"
+	"strings"
+	"unicode"
+)
+
+type typewriterCursorStyle struct {
+	shape  string
+	width  float64
+	height float64
+	radius float64
+	fill   []float64
+}
+
+// The cursor family is keyed by the same typewriter motion IDs used by the
+// runtime phrase selector. Geometry stays deliberately bold enough to read at
+// 1080p while the restrained accent colors keep it in the phrase style.
+func typewriterCursorForMotion(id string, fontSize float64) (typewriterCursorStyle, bool) {
+	styles := map[string]typewriterCursorStyle{
+		"typewriter_clean":      {shape: "rounded_rect", width: .105, height: .72, radius: .05, fill: []float64{.96, .98, 1, 1}},
+		"typewriter_glitch":     {shape: "rect", width: .17, height: .68, fill: []float64{1, .48, .58, 1}},
+		"typewriter_neon":       {shape: "rounded_rect", width: .11, height: .76, radius: .055, fill: []float64{.36, .84, 1, 1}},
+		"typewriter_pop":        {shape: "ellipse", width: .25, height: .25, fill: []float64{1, .77, .37, 1}},
+		"typewriter_tracking":   {shape: "rounded_rect", width: .58, height: .16, radius: .08, fill: []float64{.96, .98, 1, 1}},
+		"typewriter_lift":       {shape: "ellipse", width: .23, height: .23, fill: []float64{.53, .9, .78, 1}},
+		"typewriter_slide_in":   {shape: "rounded_rect", width: .19, height: .72, radius: .07, fill: []float64{.96, .98, 1, 1}},
+		"typewriter_scale_up":   {shape: "ellipse", width: .27, height: .27, fill: []float64{.5, .83, 1, 1}},
+		"typewriter_blur_focus": {shape: "rounded_rect", width: .13, height: .8, radius: .065, fill: []float64{.72, .68, 1, 1}},
+		"typewriter_soft_lift":  {shape: "rounded_rect", width: .16, height: .7, radius: .08, fill: []float64{.7, .94, .82, 1}},
+	}
+	style, ok := styles[id]
+	if !ok {
+		return typewriterCursorStyle{}, false
+	}
+	style.width *= fontSize
+	style.height *= fontSize
+	style.radius *= fontSize
+	return style, true
+}
+
+// compileTypewriterCursor emits a real overlay shape and drives its path from
+// the text selector's own sampled keyframes. This makes every motion's caret
+// share the exact timing curve used to reveal its glyphs.
+func compileTypewriterCursor(ri resolvedItem, src *semanticPlan, text Layer) (Layer, bool) {
+	style, ok := typewriterCursorForMotion(ri.Item.MotionID, 112)
+	if !ok || len(text.TextAnimators) == 0 || len(text.Position) < 2 {
+		return Layer{}, false
+	}
+	var sweep *AnimationTrack
+	for _, animator := range text.TextAnimators {
+		for i := range animator.Selectors {
+			if animator.Selectors[i].Start != nil && len(animator.Selectors[i].Start.Keyframes) > 1 {
+				sweep = animator.Selectors[i].Start
+				break
+			}
+		}
+		if sweep != nil {
+			break
+		}
+	}
+	if sweep == nil {
+		return Layer{}, false
+	}
+	lines := strings.Split(text.Text, "\n")
+	lineWidths := make([]float64, len(lines))
+	lineAdvances := make([][]float64, len(lines))
+	fontSize := 112.0
+	if text.Style != nil && text.Style.FontSize > 0 {
+		fontSize = text.Style.FontSize
+	}
+	totalGlyphs := 0
+	for lineIndex, line := range lines {
+		advance := 0.0
+		lineAdvances[lineIndex] = make([]float64, 0, len([]rune(line))+1)
+		lineAdvances[lineIndex] = append(lineAdvances[lineIndex], 0)
+		for _, char := range line {
+			advance += typewriterGlyphAdvance(char, fontSize)
+			lineAdvances[lineIndex] = append(lineAdvances[lineIndex], advance)
+			if !unicode.IsSpace(char) {
+				totalGlyphs++
+			}
+		}
+		lineWidths[lineIndex] = advance
+	}
+	if totalGlyphs == 0 {
+		return Layer{}, false
+	}
+	lineHeight := fontSize * 1.18
+	blockHeight := float64(len(lines)-1) * lineHeight
+	positionsX := make([]AnimationKeyframe, 0, len(sweep.Keyframes))
+	positionsY := make([]AnimationKeyframe, 0, len(sweep.Keyframes))
+	for _, key := range sweep.Keyframes {
+		progress, ok := cursorNumericValue(key.Value)
+		if !ok {
+			return Layer{}, false
+		}
+		visible := int(math.Round(math.Max(0, math.Min(100, progress)) / 100 * float64(totalGlyphs)))
+		remaining := visible
+		lineIndex := 0
+		charIndex := 0
+		for lineIndex < len(lines) {
+			glyphs := 0
+			for _, char := range lines[lineIndex] {
+				if !unicode.IsSpace(char) {
+					glyphs++
+				}
+			}
+			if remaining <= glyphs || lineIndex == len(lines)-1 {
+				break
+			}
+			remaining -= glyphs
+			lineIndex++
+		}
+		for runeIndex, char := range []rune(lines[lineIndex]) {
+			if !unicode.IsSpace(char) {
+				if remaining == 0 {
+					break
+				}
+				remaining--
+			}
+			charIndex = runeIndex + 1
+		}
+		if visible >= totalGlyphs {
+			charIndex = len([]rune(lines[lineIndex]))
+		}
+		localX := lineAdvances[lineIndex][charIndex] - lineWidths[lineIndex]*.5
+		localY := float64(lineIndex)*lineHeight - blockHeight*.5
+		positionsX = append(positionsX, AnimationKeyframe{Frame: key.Frame, Value: localX + sampleLayerOffset(text.Animation, "position_x", key.Frame)})
+		positionsY = append(positionsY, AnimationKeyframe{Frame: key.Frame, Value: localY + sampleLayerOffset(text.Animation, "position_y", key.Frame)})
+	}
+	tracks := []AnimationTrack{{Property: "position_x", Keyframes: positionsX, Easing: "linear"}, {Property: "position_y", Keyframes: positionsY, Easing: "linear"}}
+	// Copy layer-level transforms so the caret follows the phrase's entrance
+	// choreography as well as its selector timing.
+	if text.Animation != nil {
+		for _, track := range text.Animation.Tracks {
+			if track.Property == "scale_x" || track.Property == "scale_y" || track.Property == "scale" {
+				copyTrack := track
+				copyTrack.Keyframes = append([]AnimationKeyframe(nil), track.Keyframes...)
+				tracks = append(tracks, copyTrack)
+			}
+		}
+	}
+	return Layer{
+		ID: text.ID + "__typewriter_cursor", Type: "shape",
+		Size: []float64{style.width, style.height}, Position: []float64{text.Position[0], text.Position[1]},
+		StartFrame: text.StartFrame, DurationFrames: text.DurationFrames,
+		Shape:     &LayerShape{Type: style.shape, Radius: style.radius, Fill: style.fill},
+		Animation: &LayerAnimation{Tracks: tracks},
+	}, true
+}
+
+func sampleLayerOffset(animation *LayerAnimation, property string, frame int64) float64 {
+	if animation == nil {
+		return 0
+	}
+	for _, track := range animation.Tracks {
+		if track.Property != property || len(track.Keyframes) == 0 {
+			continue
+		}
+		if value, ok := cursorNumericValue(track.Keyframes[0].Value); ok && frame <= track.Keyframes[0].Frame {
+			return value
+		}
+		for i := 1; i < len(track.Keyframes); i++ {
+			left, right := track.Keyframes[i-1], track.Keyframes[i]
+			if frame > right.Frame {
+				continue
+			}
+			leftValue, leftOK := cursorNumericValue(left.Value)
+			rightValue, rightOK := cursorNumericValue(right.Value)
+			if !leftOK || !rightOK {
+				return 0
+			}
+			if right.Frame <= left.Frame {
+				return rightValue
+			}
+			ratio := float64(frame-left.Frame) / float64(right.Frame-left.Frame)
+			return leftValue + (rightValue-leftValue)*ratio
+		}
+		if value, ok := cursorNumericValue(track.Keyframes[len(track.Keyframes)-1].Value); ok {
+			return value
+		}
+	}
+	return 0
+}
+
+func typewriterGlyphAdvance(char rune, fontSize float64) float64 {
+	var em float64
+	switch {
+	case unicode.IsSpace(char):
+		em = .32
+	case strings.ContainsRune("ilI|!.,:;'`", char):
+		em = .32
+	case strings.ContainsRune("mwMW@%&", char):
+		em = .88
+	case unicode.IsPunct(char):
+		em = .43
+	default:
+		em = .63
+	}
+	return em * fontSize
+}
+
+func cursorNumericValue(value any) (float64, bool) {
+	switch number := value.(type) {
+	case float64:
+		return number, true
+	case float32:
+		return float64(number), true
+	case int:
+		return float64(number), true
+	case int64:
+		return float64(number), true
+	default:
+		return 0, false
+	}
+}

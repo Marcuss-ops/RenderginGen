@@ -238,15 +238,31 @@
   "documentary_snapshot_styles": [
     {
       "id": "snapshot_clean",
-      "implementation": "image_frame_style"
+      "implementation": "image_frame_and_grade"
     },
     {
       "id": "snapshot_archive",
-      "implementation": "image_frame_style"
+      "implementation": "image_frame_and_grade"
+    },
+    {
+      "id": "snapshot_polaroid",
+      "implementation": "image_frame_and_grade"
+    },
+    {
+      "id": "snapshot_filmstrip",
+      "implementation": "image_frame_and_grade"
     },
     {
       "id": "snapshot_evidence",
-      "implementation": "image_frame_style"
+      "implementation": "image_frame_and_grade"
+    },
+    {
+      "id": "snapshot_newspaper",
+      "implementation": "image_frame_and_grade"
+    },
+    {
+      "id": "snapshot_bw_documentary",
+      "implementation": "image_frame_and_grade"
     }
   ],
   "entity_presentation": {
@@ -2671,6 +2687,86 @@
           }
         ]
       }
+    ]
+  },
+  "abstract_backgrounds": {
+    "schema": "chronontemplate.abstract-backgrounds.v1",
+    "version": 1,
+    "category": "abstract_background_v1",
+    "recipes": [
+      "aurora_horizon",
+      "liquid_neon",
+      "liquid_magenta",
+      "liquid_cyan",
+      "metaball_soft",
+      "metaball_neon",
+      "glass_orb",
+      "dual_orbs",
+      "plasma_orb",
+      "topographic_contours",
+      "flowlines_vertical",
+      "flowlines_mesh",
+      "folded_ribbon",
+      "gradient_fan",
+      "blue_atmosphere",
+      "mega_mix"
+    ]
+  },
+  "photo_motion": {
+    "schema": "chronontemplate.photo-motion.v1",
+    "version": 1,
+    "family_id": "photo_motion_v1",
+    "recipes": [
+      "photo_polaroid_drop_settle",
+      "photo_polaroid_rotate_in",
+      "photo_polaroid_push_focus",
+      "photo_polaroid_slide_swap",
+      "photo_stack_vertical_cycle",
+      "photo_stack_depth_cycle",
+      "photo_stack_focus_handoff",
+      "photo_stack_browser_shuffle",
+      "photo_pile_drop",
+      "photo_pile_top_slide",
+      "photo_pile_top_flip",
+      "photo_pile_top_throw",
+      "photo_capsule_zoom_reveal",
+      "photo_slit_reveal",
+      "photo_circle_focus",
+      "photo_diagonal_wipe",
+      "photo_radial_burst",
+      "photo_mask_expand"
+    ]
+  },
+  "tech_backgrounds": {
+    "schema": "chronontemplate.tech-backgrounds.v1",
+    "version": 1,
+    "family_id": "tech_background_v1",
+    "category": "tech_background_v1",
+    "recipes": [
+      "tech_blue_horizon",
+      "tech_aqua_horizon",
+      "tech_magenta_cone",
+      "tech_arc_green",
+      "tech_arc_red",
+      "tech_duotone_blob"
+    ]
+  },
+  "rgb_motion": {
+    "schema": "chronontemplate.rgb-motion.v1",
+    "version": 1,
+    "family_id": "rgb_motion_v1",
+    "category": "rgb_motion_v1",
+    "recipes": [
+      "rgb_wave_in",
+      "rgb_slice_break",
+      "rgb_vertical_trail",
+      "rgb_velocity_snap",
+      "rgb_temporal_split",
+      "rgb_prism_smear",
+      "rgb_ghost_echo",
+      "rgb_spectrum_drop",
+      "rgb_block_shuffle",
+      "rgb_radial_burst"
     ]
   },
   "motions": [
@@ -5360,668 +5456,6 @@
       ],
       "selector": {},
       "stagger": {}
-    },
-    {
-      "id": "entity_caption_blur_reveal",
-      "category": "entity_caption_v1",
-      "targets": [
-        "text"
-      ],
-      "unit": "layer",
-      "enter": 48,
-      "tracks": [
-        {
-          "property": "position_y",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 26
-            },
-            {
-              "frame": 48,
-              "value": 0
-            }
-          ],
-          "easing": "out_cubic"
-        },
-        {
-          "property": "opacity",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 0
-            },
-            {
-              "frame": 20,
-              "value": 1
-            },
-            {
-              "frame": 48,
-              "value": 1
-            }
-          ],
-          "easing": "out_cubic"
-        }
-      ]
-    },
-    {
-      "id": "entity_caption_tracking_snap",
-      "category": "entity_caption_v1",
-      "targets": [
-        "text"
-      ],
-      "unit": "layer",
-      "enter": 44,
-      "tracks": [
-        {
-          "property": "scale_x",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 0.78
-            },
-            {
-              "frame": 26,
-              "value": 1.04
-            },
-            {
-              "frame": 44,
-              "value": 1
-            }
-          ],
-          "easing": "out_cubic"
-        },
-        {
-          "property": "opacity",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 0
-            },
-            {
-              "frame": 16,
-              "value": 1
-            },
-            {
-              "frame": 44,
-              "value": 1
-            }
-          ],
-          "easing": "out_cubic"
-        }
-      ]
-    },
-    {
-      "id": "entity_caption_word_spring",
-      "category": "entity_caption_v1",
-      "targets": [
-        "text"
-      ],
-      "unit": "word",
-      "enter": 56,
-      "tracks": [
-        {
-          "property": "scale",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 0.92
-            },
-            {
-              "frame": 32,
-              "value": 1.02
-            },
-            {
-              "frame": 56,
-              "value": 1
-            }
-          ],
-          "easing": "out_cubic"
-        },
-        {
-          "property": "opacity",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 0
-            },
-            {
-              "frame": 18,
-              "value": 1
-            },
-            {
-              "frame": 56,
-              "value": 1
-            }
-          ],
-          "easing": "out_cubic"
-        }
-      ],
-      "text_animators": [
-        {
-          "id": "entity_caption_word_spring_text",
-          "selector": {
-            "kind": "word",
-            "shape": "square",
-            "order": "forward",
-            "stagger": 2
-          },
-          "properties": [
-            {
-              "property": "position_y",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 28
-                },
-                {
-                  "frame": 32,
-                  "value": -3
-                },
-                {
-                  "frame": 48,
-                  "value": 0
-                }
-              ],
-              "easing": "out_cubic"
-            },
-            {
-              "property": "opacity",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 0
-                },
-                {
-                  "frame": 14,
-                  "value": 1
-                }
-              ],
-              "easing": "out_cubic"
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "id": "entity_caption_glyph_rise",
-      "category": "entity_caption_v1",
-      "targets": [
-        "text"
-      ],
-      "unit": "glyph",
-      "enter": 54,
-      "tracks": [
-        {
-          "property": "opacity",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 0
-            },
-            {
-              "frame": 20,
-              "value": 1
-            },
-            {
-              "frame": 54,
-              "value": 1
-            }
-          ],
-          "easing": "out_cubic"
-        }
-      ],
-      "text_animators": [
-        {
-          "id": "entity_caption_glyph_rise_text",
-          "selector": {
-            "kind": "glyph",
-            "shape": "square",
-            "order": "forward",
-            "stagger": 1
-          },
-          "properties": [
-            {
-              "property": "position_y",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 22
-                },
-                {
-                  "frame": 36,
-                  "value": 0
-                }
-              ],
-              "easing": "out_cubic"
-            },
-            {
-              "property": "scale",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 0.82
-                },
-                {
-                  "frame": 30,
-                  "value": 1.03
-                },
-                {
-                  "frame": 42,
-                  "value": 1
-                }
-              ],
-              "easing": "out_cubic"
-            },
-            {
-              "property": "opacity",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 0
-                },
-                {
-                  "frame": 12,
-                  "value": 1
-                }
-              ],
-              "easing": "out_cubic"
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "id": "entity_caption_side_glide",
-      "category": "entity_caption_v1",
-      "targets": [
-        "text"
-      ],
-      "unit": "layer",
-      "enter": 42,
-      "tracks": [
-        {
-          "property": "position_x",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": -96
-            },
-            {
-              "frame": 30,
-              "value": 4
-            },
-            {
-              "frame": 42,
-              "value": 0
-            }
-          ],
-          "easing": "out_cubic"
-        },
-        {
-          "property": "opacity",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 0
-            },
-            {
-              "frame": 16,
-              "value": 1
-            },
-            {
-              "frame": 42,
-              "value": 1
-            }
-          ],
-          "easing": "out_cubic"
-        }
-      ]
-    },
-    {
-      "id": "entity_caption_warm_reveal",
-      "category": "entity_caption_v1",
-      "targets": [
-        "text"
-      ],
-      "unit": "layer",
-      "enter": 48,
-      "tracks": [
-        {
-          "property": "scale",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 0.88
-            },
-            {
-              "frame": 30,
-              "value": 1.02
-            },
-            {
-              "frame": 48,
-              "value": 1
-            }
-          ],
-          "easing": "out_back"
-        },
-        {
-          "property": "position_y",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 14
-            },
-            {
-              "frame": 38,
-              "value": 0
-            }
-          ],
-          "easing": "out_cubic"
-        },
-        {
-          "property": "opacity",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 0
-            },
-            {
-              "frame": 16,
-              "value": 1
-            },
-            {
-              "frame": 48,
-              "value": 1
-            }
-          ],
-          "easing": "out_cubic"
-        }
-      ]
-    },
-    {
-      "id": "entity_caption_flip_settle",
-      "category": "entity_caption_v1",
-      "targets": [
-        "text"
-      ],
-      "unit": "layer",
-      "enter": 48,
-      "tracks": [
-        {
-          "property": "rotation_z",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": -5
-            },
-            {
-              "frame": 30,
-              "value": 1
-            },
-            {
-              "frame": 48,
-              "value": 0
-            }
-          ],
-          "easing": "out_cubic"
-        },
-        {
-          "property": "position_x",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 42
-            },
-            {
-              "frame": 38,
-              "value": 0
-            }
-          ],
-          "easing": "out_cubic"
-        },
-        {
-          "property": "opacity",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 0
-            },
-            {
-              "frame": 14,
-              "value": 1
-            },
-            {
-              "frame": 48,
-              "value": 1
-            }
-          ],
-          "easing": "out_cubic"
-        }
-      ]
-    },
-    {
-      "id": "entity_caption_word_drop",
-      "category": "entity_caption_v1",
-      "targets": [
-        "text"
-      ],
-      "unit": "word",
-      "enter": 58,
-      "tracks": [
-        {
-          "property": "position_y",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": -18
-            },
-            {
-              "frame": 42,
-              "value": 0
-            }
-          ],
-          "easing": "out_cubic"
-        },
-        {
-          "property": "opacity",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 0
-            },
-            {
-              "frame": 20,
-              "value": 1
-            },
-            {
-              "frame": 58,
-              "value": 1
-            }
-          ],
-          "easing": "out_cubic"
-        }
-      ],
-      "text_animators": [
-        {
-          "id": "entity_caption_word_drop_text",
-          "selector": {
-            "kind": "word",
-            "shape": "square",
-            "order": "forward",
-            "stagger": 3
-          },
-          "properties": [
-            {
-              "property": "position_y",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": -36
-                },
-                {
-                  "frame": 30,
-                  "value": 4
-                },
-                {
-                  "frame": 44,
-                  "value": 0
-                }
-              ],
-              "easing": "out_cubic"
-            },
-            {
-              "property": "opacity",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 0
-                },
-                {
-                  "frame": 14,
-                  "value": 1
-                }
-              ],
-              "easing": "out_cubic"
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "id": "entity_caption_focus_punch",
-      "category": "entity_caption_v1",
-      "targets": [
-        "text"
-      ],
-      "unit": "layer",
-      "enter": 46,
-      "tracks": [
-        {
-          "property": "scale",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 1.18
-            },
-            {
-              "frame": 22,
-              "value": 0.97
-            },
-            {
-              "frame": 46,
-              "value": 1
-            }
-          ],
-          "easing": "out_back"
-        },
-        {
-          "property": "opacity",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 0
-            },
-            {
-              "frame": 12,
-              "value": 1
-            },
-            {
-              "frame": 46,
-              "value": 1
-            }
-          ],
-          "easing": "out_cubic"
-        }
-      ]
-    },
-    {
-      "id": "entity_caption_neon_breathe",
-      "category": "entity_caption_v1",
-      "targets": [
-        "text"
-      ],
-      "unit": "glyph",
-      "enter": 54,
-      "tracks": [
-        {
-          "property": "opacity",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 0
-            },
-            {
-              "frame": 24,
-              "value": 1
-            },
-            {
-              "frame": 54,
-              "value": 1
-            }
-          ],
-          "easing": "out_cubic"
-        }
-      ],
-      "text_animators": [
-        {
-          "id": "entity_caption_neon_breathe_text",
-          "selector": {
-            "kind": "glyph",
-            "shape": "square",
-            "order": "forward",
-            "stagger": 1
-          },
-          "properties": [
-            {
-              "property": "scale",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 0.88
-                },
-                {
-                  "frame": 28,
-                  "value": 1.05
-                },
-                {
-                  "frame": 46,
-                  "value": 1
-                }
-              ],
-              "easing": "out_cubic"
-            },
-            {
-              "property": "tracking",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 3
-                },
-                {
-                  "frame": 48,
-                  "value": 0
-                }
-              ],
-              "easing": "out_cubic"
-            },
-            {
-              "property": "opacity",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 0
-                },
-                {
-                  "frame": 16,
-                  "value": 1
-                }
-              ],
-              "easing": "out_cubic"
-            }
-          ]
-        }
-      ]
     },
     {
       "id": "fade",
@@ -19760,31 +19194,59 @@
         "text"
       ],
       "unit": "layer",
-      "enter": 46,
+      "enter": 39,
       "tracks": [
         {
           "property": "position_z",
           "keyframes": [
             {
               "frame": 0,
-              "value": 200
+              "value": 54
             },
             {
-              "frame": 46,
+              "frame": 39,
               "value": 0
             }
           ],
           "easing": "in_out_sine"
         },
         {
+          "property": "rotation_x",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 7
+            },
+            {
+              "frame": 39,
+              "value": 0
+            }
+          ],
+          "easing": "in_out_cubic"
+        },
+        {
+          "property": "rotation_y",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": -10
+            },
+            {
+              "frame": 39,
+              "value": 0
+            }
+          ],
+          "easing": "in_out_cubic"
+        },
+        {
           "property": "scale",
           "keyframes": [
             {
               "frame": 0,
-              "value": 0.8
+              "value": 0.975
             },
             {
-              "frame": 46,
+              "frame": 39,
               "value": 1.0
             }
           ],
@@ -19798,11 +19260,11 @@
               "value": 0
             },
             {
-              "frame": 18,
+              "frame": 24,
               "value": 1
             },
             {
-              "frame": 46,
+              "frame": 39,
               "value": 1
             }
           ],
@@ -19817,27 +19279,55 @@
       "requires_3d": true
     },
     {
-      "id": "text_3d_character_wave",
+      "id": "text_3d_double_axis_reveal",
       "category": "text_3d_v1",
       "targets": [
         "text"
       ],
-      "unit": "glyph",
-      "enter": 60,
+      "unit": "layer",
+      "enter": 41,
       "tracks": [
+        {
+          "property": "rotation_x",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": -9
+            },
+            {
+              "frame": 41,
+              "value": 0
+            }
+          ],
+          "easing": "in_out_cubic"
+        },
+        {
+          "property": "rotation_y",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 11
+            },
+            {
+              "frame": 41,
+              "value": 0
+            }
+          ],
+          "easing": "in_out_cubic"
+        },
         {
           "property": "position_z",
           "keyframes": [
             {
               "frame": 0,
-              "value": 40
+              "value": 46
             },
             {
-              "frame": 60,
+              "frame": 41,
               "value": 0
             }
           ],
-          "easing": "out_cubic"
+          "easing": "in_out_sine"
         },
         {
           "property": "opacity",
@@ -19847,11 +19337,11 @@
               "value": 0
             },
             {
-              "frame": 16,
+              "frame": 26,
               "value": 1
             },
             {
-              "frame": 60,
+              "frame": 41,
               "value": 1
             }
           ],
@@ -19863,75 +19353,58 @@
         "maximum_frames": 240
       },
       "render_safe": true,
-      "requires_3d": true,
-      "text_animators": [
-        {
-          "id": "text_3d_character_wave_text",
-          "selector": {
-            "kind": "glyph",
-            "shape": "square",
-            "order": "forward",
-            "stagger": 1
-          },
-          "properties": [
-            {
-              "property": "position_y",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": -18
-                },
-                {
-                  "frame": 30,
-                  "value": 10
-                },
-                {
-                  "frame": 60,
-                  "value": 0
-                }
-              ],
-              "easing": "in_out_sine"
-            },
-            {
-              "property": "opacity",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 0
-                },
-                {
-                  "frame": 14,
-                  "value": 1
-                }
-              ],
-              "easing": "out_cubic"
-            }
-          ]
-        }
-      ]
+      "requires_3d": true
     },
     {
-      "id": "text_3d_depth_push",
+      "id": "text_3d_orbit_lock",
       "category": "text_3d_v1",
       "targets": [
         "text"
       ],
       "unit": "layer",
-      "enter": 40,
+      "enter": 42,
       "tracks": [
+        {
+          "property": "rotation_x",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 9
+            },
+            {
+              "frame": 42,
+              "value": 0
+            }
+          ],
+          "easing": "in_out_cubic"
+        },
+        {
+          "property": "rotation_y",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": -12
+            },
+            {
+              "frame": 42,
+              "value": 0
+            }
+          ],
+          "easing": "in_out_cubic"
+        },
         {
           "property": "position_z",
           "keyframes": [
             {
               "frame": 0,
-              "value": 260
+              "value": 52
             },
             {
-              "frame": 40,
+              "frame": 42,
               "value": 0
             }
           ],
-          "easing": "out_cubic"
+          "easing": "in_out_sine"
         },
         {
           "property": "opacity",
@@ -19941,11 +19414,11 @@
               "value": 0
             },
             {
-              "frame": 20,
+              "frame": 26,
               "value": 1
             },
             {
-              "frame": 40,
+              "frame": 42,
               "value": 1
             }
           ],
@@ -19966,17 +19439,31 @@
         "text"
       ],
       "unit": "layer",
-      "enter": 48,
+      "enter": 41,
       "tracks": [
         {
           "property": "rotation_x",
           "keyframes": [
             {
               "frame": 0,
-              "value": -24
+              "value": -9
             },
             {
-              "frame": 48,
+              "frame": 41,
+              "value": 0
+            }
+          ],
+          "easing": "in_out_cubic"
+        },
+        {
+          "property": "rotation_y",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 7
+            },
+            {
+              "frame": 41,
               "value": 0
             }
           ],
@@ -19987,10 +19474,10 @@
           "keyframes": [
             {
               "frame": 0,
-              "value": -40
+              "value": -14
             },
             {
-              "frame": 48,
+              "frame": 41,
               "value": 0
             }
           ],
@@ -20001,10 +19488,10 @@
           "keyframes": [
             {
               "frame": 0,
-              "value": 120
+              "value": 44
             },
             {
-              "frame": 48,
+              "frame": 41,
               "value": 0
             }
           ],
@@ -20018,11 +19505,102 @@
               "value": 0
             },
             {
-              "frame": 20,
+              "frame": 24,
               "value": 1
             },
             {
-              "frame": 48,
+              "frame": 41,
+              "value": 1
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ],
+      "duration_bounds": {
+        "minimum_frames": 30,
+        "maximum_frames": 240
+      },
+      "render_safe": true,
+      "requires_3d": true
+    },
+    {
+      "id": "text_3d_pitch_lift",
+      "category": "text_3d_v1",
+      "targets": [
+        "text"
+      ],
+      "unit": "layer",
+      "enter": 41,
+      "tracks": [
+        {
+          "property": "rotation_x",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 10
+            },
+            {
+              "frame": 41,
+              "value": 0
+            }
+          ],
+          "easing": "in_out_cubic"
+        },
+        {
+          "property": "rotation_y",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": -8
+            },
+            {
+              "frame": 41,
+              "value": 0
+            }
+          ],
+          "easing": "in_out_cubic"
+        },
+        {
+          "property": "position_y",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 10
+            },
+            {
+              "frame": 41,
+              "value": 0
+            }
+          ],
+          "easing": "out_cubic"
+        },
+        {
+          "property": "position_z",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 32
+            },
+            {
+              "frame": 41,
+              "value": 0
+            }
+          ],
+          "easing": "out_cubic"
+        },
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 26,
+              "value": 1
+            },
+            {
+              "frame": 41,
               "value": 1
             }
           ],
@@ -20043,17 +19621,45 @@
         "text"
       ],
       "unit": "layer",
-      "enter": 44,
+      "enter": 39,
       "tracks": [
         {
           "property": "rotation_z",
           "keyframes": [
             {
               "frame": 0,
-              "value": -10
+              "value": -2
             },
             {
-              "frame": 44,
+              "frame": 39,
+              "value": 0
+            }
+          ],
+          "easing": "in_out_cubic"
+        },
+        {
+          "property": "rotation_x",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 7
+            },
+            {
+              "frame": 39,
+              "value": 0
+            }
+          ],
+          "easing": "in_out_cubic"
+        },
+        {
+          "property": "rotation_y",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": -8
+            },
+            {
+              "frame": 39,
               "value": 0
             }
           ],
@@ -20064,14 +19670,14 @@
           "keyframes": [
             {
               "frame": 0,
-              "value": 180
+              "value": 36
             },
             {
-              "frame": 44,
+              "frame": 39,
               "value": 0
             }
           ],
-          "easing": "out_cubic"
+          "easing": "in_out_sine"
         },
         {
           "property": "opacity",
@@ -20081,11 +19687,11 @@
               "value": 0
             },
             {
-              "frame": 18,
+              "frame": 24,
               "value": 1
             },
             {
-              "frame": 44,
+              "frame": 39,
               "value": 1
             }
           ],
@@ -20106,17 +19712,31 @@
         "text"
       ],
       "unit": "layer",
-      "enter": 44,
+      "enter": 39,
       "tracks": [
         {
           "property": "rotation_x",
           "keyframes": [
             {
               "frame": 0,
-              "value": 18
+              "value": 8
             },
             {
-              "frame": 44,
+              "frame": 39,
+              "value": 0
+            }
+          ],
+          "easing": "in_out_cubic"
+        },
+        {
+          "property": "rotation_y",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": -6
+            },
+            {
+              "frame": 39,
               "value": 0
             }
           ],
@@ -20127,10 +19747,24 @@
           "keyframes": [
             {
               "frame": 0,
-              "value": 30
+              "value": 12
             },
             {
-              "frame": 44,
+              "frame": 39,
+              "value": 0
+            }
+          ],
+          "easing": "out_cubic"
+        },
+        {
+          "property": "position_z",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 26
+            },
+            {
+              "frame": 39,
               "value": 0
             }
           ],
@@ -20144,11 +19778,11 @@
               "value": 0
             },
             {
-              "frame": 18,
+              "frame": 24,
               "value": 1
             },
             {
-              "frame": 44,
+              "frame": 39,
               "value": 1
             }
           ],
@@ -20168,18 +19802,32 @@
       "targets": [
         "text"
       ],
-      "unit": "word",
-      "enter": 60,
+      "unit": "layer",
+      "enter": 44,
       "tracks": [
+        {
+          "property": "position_y",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 14
+            },
+            {
+              "frame": 44,
+              "value": 0
+            }
+          ],
+          "easing": "out_cubic"
+        },
         {
           "property": "position_z",
           "keyframes": [
             {
               "frame": 0,
-              "value": 80
+              "value": 38
             },
             {
-              "frame": 60,
+              "frame": 44,
               "value": 0
             }
           ],
@@ -20190,10 +19838,24 @@
           "keyframes": [
             {
               "frame": 0,
-              "value": -14
+              "value": -8
             },
             {
-              "frame": 60,
+              "frame": 44,
+              "value": 0
+            }
+          ],
+          "easing": "in_out_cubic"
+        },
+        {
+          "property": "rotation_x",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 6
+            },
+            {
+              "frame": 44,
               "value": 0
             }
           ],
@@ -20207,11 +19869,11 @@
               "value": 0
             },
             {
-              "frame": 18,
+              "frame": 26,
               "value": 1
             },
             {
-              "frame": 60,
+              "frame": 44,
               "value": 1
             }
           ],
@@ -20223,48 +19885,7 @@
         "maximum_frames": 240
       },
       "render_safe": true,
-      "requires_3d": true,
-      "text_animators": [
-        {
-          "id": "text_3d_word_cascade_text",
-          "selector": {
-            "kind": "word",
-            "shape": "square",
-            "order": "forward",
-            "stagger": 3
-          },
-          "properties": [
-            {
-              "property": "position_y",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 24
-                },
-                {
-                  "frame": 44,
-                  "value": 0
-                }
-              ],
-              "easing": "out_cubic"
-            },
-            {
-              "property": "opacity",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 0
-                },
-                {
-                  "frame": 18,
-                  "value": 1
-                }
-              ],
-              "easing": "out_cubic"
-            }
-          ]
-        }
-      ]
+      "requires_3d": true
     },
     {
       "id": "text_3d_yaw_flip_in",
@@ -20273,17 +19894,31 @@
         "text"
       ],
       "unit": "layer",
-      "enter": 30,
+      "enter": 39,
       "tracks": [
         {
           "property": "rotation_y",
           "keyframes": [
             {
               "frame": 0,
-              "value": -70
+              "value": -14
             },
             {
-              "frame": 30,
+              "frame": 39,
+              "value": 0
+            }
+          ],
+          "easing": "in_out_cubic"
+        },
+        {
+          "property": "rotation_x",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 7
+            },
+            {
+              "frame": 39,
               "value": 0
             }
           ],
@@ -20294,10 +19929,101 @@
           "keyframes": [
             {
               "frame": 0,
-              "value": -120
+              "value": 36
             },
             {
-              "frame": 30,
+              "frame": 39,
+              "value": 0
+            }
+          ],
+          "easing": "in_out_sine"
+        },
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 24,
+              "value": 1
+            },
+            {
+              "frame": 39,
+              "value": 1
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ],
+      "duration_bounds": {
+        "minimum_frames": 30,
+        "maximum_frames": 240
+      },
+      "render_safe": true,
+      "requires_3d": true
+    },
+    {
+      "id": "text_3d_yaw_sweep",
+      "category": "text_3d_v1",
+      "targets": [
+        "text"
+      ],
+      "unit": "layer",
+      "enter": 41,
+      "tracks": [
+        {
+          "property": "rotation_y",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 12
+            },
+            {
+              "frame": 41,
+              "value": 0
+            }
+          ],
+          "easing": "in_out_cubic"
+        },
+        {
+          "property": "rotation_x",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": -6
+            },
+            {
+              "frame": 41,
+              "value": 0
+            }
+          ],
+          "easing": "in_out_cubic"
+        },
+        {
+          "property": "position_x",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 34
+            },
+            {
+              "frame": 41,
+              "value": 0
+            }
+          ],
+          "easing": "out_cubic"
+        },
+        {
+          "property": "position_z",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 30
+            },
+            {
+              "frame": 41,
               "value": 0
             }
           ],
@@ -20311,11 +20037,11 @@
               "value": 0
             },
             {
-              "frame": 18,
+              "frame": 26,
               "value": 1
             },
             {
-              "frame": 30,
+              "frame": 41,
               "value": 1
             }
           ],
@@ -25054,6 +24780,856 @@
       "stagger": {}
     },
     {
+      "id": "trump_entity_text_01",
+      "category": "trump_entity_text_v1",
+      "targets": [
+        "text"
+      ],
+      "unit": "layer",
+      "enter": 38,
+      "tracks": [
+        {
+          "property": "position_x",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 34
+            },
+            {
+              "frame": 38,
+              "value": 0
+            }
+          ],
+          "easing": "out_cubic"
+        },
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 15,
+              "value": 1
+            },
+            {
+              "frame": 38,
+              "value": 1
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ],
+      "render_safe": true
+    },
+    {
+      "id": "trump_entity_text_02",
+      "category": "trump_entity_text_v1",
+      "targets": [
+        "text"
+      ],
+      "unit": "layer",
+      "enter": 40,
+      "tracks": [
+        {
+          "property": "position_y",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 24
+            },
+            {
+              "frame": 40,
+              "value": 0
+            }
+          ],
+          "easing": "out_cubic"
+        },
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 16,
+              "value": 1
+            },
+            {
+              "frame": 40,
+              "value": 1
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ],
+      "render_safe": true
+    },
+    {
+      "id": "trump_entity_text_03",
+      "category": "trump_entity_text_v1",
+      "targets": [
+        "text"
+      ],
+      "unit": "layer",
+      "enter": 36,
+      "tracks": [
+        {
+          "property": "scale",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.9
+            },
+            {
+              "frame": 27,
+              "value": 1.015
+            },
+            {
+              "frame": 36,
+              "value": 1
+            }
+          ],
+          "easing": "out_cubic"
+        },
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 13,
+              "value": 1
+            },
+            {
+              "frame": 36,
+              "value": 1
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ],
+      "render_safe": true
+    },
+    {
+      "id": "trump_entity_text_04",
+      "category": "trump_entity_text_v1",
+      "targets": [
+        "text"
+      ],
+      "unit": "layer",
+      "enter": 42,
+      "tracks": [
+        {
+          "property": "blur",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 12
+            },
+            {
+              "frame": 24,
+              "value": 0
+            },
+            {
+              "frame": 42,
+              "value": 0
+            }
+          ],
+          "easing": "out_cubic"
+        },
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 14,
+              "value": 1
+            },
+            {
+              "frame": 42,
+              "value": 1
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ],
+      "render_safe": true
+    },
+    {
+      "id": "trump_entity_text_05",
+      "category": "trump_entity_text_v1",
+      "targets": [
+        "text"
+      ],
+      "unit": "layer",
+      "enter": 40,
+      "tracks": [
+        {
+          "property": "rotation_z",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": -3
+            },
+            {
+              "frame": 40,
+              "value": 0
+            }
+          ],
+          "easing": "out_cubic"
+        },
+        {
+          "property": "position_y",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 12
+            },
+            {
+              "frame": 40,
+              "value": 0
+            }
+          ],
+          "easing": "out_cubic"
+        },
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 14,
+              "value": 1
+            },
+            {
+              "frame": 40,
+              "value": 1
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ],
+      "render_safe": true
+    },
+    {
+      "id": "trump_entity_text_06",
+      "category": "trump_entity_text_v1",
+      "targets": [
+        "text"
+      ],
+      "unit": "layer",
+      "enter": 42,
+      "tracks": [
+        {
+          "property": "position_z",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 48
+            },
+            {
+              "frame": 42,
+              "value": 0
+            }
+          ],
+          "easing": "in_out_sine"
+        },
+        {
+          "property": "rotation_y",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": -8
+            },
+            {
+              "frame": 42,
+              "value": 0
+            }
+          ],
+          "easing": "in_out_cubic"
+        },
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 18,
+              "value": 1
+            },
+            {
+              "frame": 42,
+              "value": 1
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ],
+      "render_safe": true,
+      "requires_3d": true
+    },
+    {
+      "id": "trump_entity_text_07",
+      "category": "trump_entity_text_v1",
+      "targets": [
+        "text"
+      ],
+      "unit": "layer",
+      "enter": 38,
+      "tracks": [
+        {
+          "property": "position_x",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": -42
+            },
+            {
+              "frame": 38,
+              "value": 0
+            }
+          ],
+          "easing": "out_cubic"
+        },
+        {
+          "property": "rotation_z",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 2
+            },
+            {
+              "frame": 38,
+              "value": 0
+            }
+          ],
+          "easing": "out_cubic"
+        },
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 14,
+              "value": 1
+            },
+            {
+              "frame": 38,
+              "value": 1
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ],
+      "render_safe": true
+    },
+    {
+      "id": "trump_entity_text_08",
+      "category": "trump_entity_text_v1",
+      "targets": [
+        "text"
+      ],
+      "unit": "layer",
+      "enter": 42,
+      "tracks": [
+        {
+          "property": "rotation_y",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 9
+            },
+            {
+              "frame": 42,
+              "value": 0
+            }
+          ],
+          "easing": "in_out_cubic"
+        },
+        {
+          "property": "position_z",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 34
+            },
+            {
+              "frame": 42,
+              "value": 0
+            }
+          ],
+          "easing": "out_cubic"
+        },
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 17,
+              "value": 1
+            },
+            {
+              "frame": 42,
+              "value": 1
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ],
+      "render_safe": true,
+      "requires_3d": true
+    },
+    {
+      "id": "trump_entity_text_09",
+      "category": "trump_entity_text_v1",
+      "targets": [
+        "text"
+      ],
+      "unit": "layer",
+      "enter": 36,
+      "tracks": [
+        {
+          "property": "scale_x",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.76
+            },
+            {
+              "frame": 22,
+              "value": 1.02
+            },
+            {
+              "frame": 36,
+              "value": 1
+            }
+          ],
+          "easing": "out_cubic"
+        },
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 12,
+              "value": 1
+            },
+            {
+              "frame": 36,
+              "value": 1
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ],
+      "render_safe": true
+    },
+    {
+      "id": "trump_entity_text_10",
+      "category": "trump_entity_text_v1",
+      "targets": [
+        "text"
+      ],
+      "unit": "layer",
+      "enter": 40,
+      "tracks": [
+        {
+          "property": "position_x",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 46
+            },
+            {
+              "frame": 40,
+              "value": 0
+            }
+          ],
+          "easing": "out_cubic"
+        },
+        {
+          "property": "position_y",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": -12
+            },
+            {
+              "frame": 40,
+              "value": 0
+            }
+          ],
+          "easing": "out_cubic"
+        },
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 16,
+              "value": 1
+            },
+            {
+              "frame": 40,
+              "value": 1
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ],
+      "render_safe": true
+    },
+    {
+      "id": "trump_entity_text_11",
+      "category": "trump_entity_text_v1",
+      "targets": [
+        "text"
+      ],
+      "unit": "layer",
+      "enter": 42,
+      "tracks": [
+        {
+          "property": "rotation_x",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": -7
+            },
+            {
+              "frame": 42,
+              "value": 0
+            }
+          ],
+          "easing": "in_out_cubic"
+        },
+        {
+          "property": "position_y",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 18
+            },
+            {
+              "frame": 42,
+              "value": 0
+            }
+          ],
+          "easing": "out_cubic"
+        },
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 16,
+              "value": 1
+            },
+            {
+              "frame": 42,
+              "value": 1
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ],
+      "render_safe": true,
+      "requires_3d": true
+    },
+    {
+      "id": "trump_entity_text_12",
+      "category": "trump_entity_text_v1",
+      "targets": [
+        "text"
+      ],
+      "unit": "layer",
+      "enter": 38,
+      "tracks": [
+        {
+          "property": "rotation_z",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 4
+            },
+            {
+              "frame": 26,
+              "value": -1
+            },
+            {
+              "frame": 38,
+              "value": 0
+            }
+          ],
+          "easing": "in_out_cubic"
+        },
+        {
+          "property": "scale",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.94
+            },
+            {
+              "frame": 38,
+              "value": 1
+            }
+          ],
+          "easing": "out_cubic"
+        },
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 13,
+              "value": 1
+            },
+            {
+              "frame": 38,
+              "value": 1
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ],
+      "render_safe": true
+    },
+    {
+      "id": "trump_entity_text_13",
+      "category": "trump_entity_text_v1",
+      "targets": [
+        "text"
+      ],
+      "unit": "layer",
+      "enter": 44,
+      "tracks": [
+        {
+          "property": "position_y",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": -22
+            },
+            {
+              "frame": 44,
+              "value": 0
+            }
+          ],
+          "easing": "out_cubic"
+        },
+        {
+          "property": "position_z",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 26
+            },
+            {
+              "frame": 44,
+              "value": 0
+            }
+          ],
+          "easing": "out_cubic"
+        },
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 18,
+              "value": 1
+            },
+            {
+              "frame": 44,
+              "value": 1
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ],
+      "render_safe": true,
+      "requires_3d": true
+    },
+    {
+      "id": "trump_entity_text_14",
+      "category": "trump_entity_text_v1",
+      "targets": [
+        "text"
+      ],
+      "unit": "layer",
+      "enter": 40,
+      "tracks": [
+        {
+          "property": "rotation_x",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 5
+            },
+            {
+              "frame": 40,
+              "value": 0
+            }
+          ],
+          "easing": "in_out_cubic"
+        },
+        {
+          "property": "rotation_y",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 7
+            },
+            {
+              "frame": 40,
+              "value": 0
+            }
+          ],
+          "easing": "in_out_cubic"
+        },
+        {
+          "property": "scale",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.96
+            },
+            {
+              "frame": 40,
+              "value": 1
+            }
+          ],
+          "easing": "out_cubic"
+        },
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 15,
+              "value": 1
+            },
+            {
+              "frame": 40,
+              "value": 1
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ],
+      "render_safe": true,
+      "requires_3d": true
+    },
+    {
+      "id": "trump_entity_text_15",
+      "category": "trump_entity_text_v1",
+      "targets": [
+        "text"
+      ],
+      "unit": "layer",
+      "enter": 42,
+      "tracks": [
+        {
+          "property": "position_x",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": -25
+            },
+            {
+              "frame": 42,
+              "value": 0
+            }
+          ],
+          "easing": "out_cubic"
+        },
+        {
+          "property": "position_z",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 42
+            },
+            {
+              "frame": 42,
+              "value": 0
+            }
+          ],
+          "easing": "out_cubic"
+        },
+        {
+          "property": "rotation_y",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": -6
+            },
+            {
+              "frame": 42,
+              "value": 0
+            }
+          ],
+          "easing": "in_out_cubic"
+        },
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 18,
+              "value": 1
+            },
+            {
+              "frame": 42,
+              "value": 1
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ],
+      "render_safe": true,
+      "requires_3d": true
+    },
+    {
       "id": "typewriter_blur_focus",
       "unit": "glyph",
       "enter": 42,
@@ -25164,6 +25740,540 @@
       ],
       "selector": {},
       "stagger": {}
+    },
+    {
+      "id": "map_image_brazil_glow_reveal",
+      "category": "map_image_v1",
+      "targets": [
+        "image"
+      ],
+      "unit": "layer",
+      "enter": 54,
+      "exit": 14,
+      "tracks": [
+        {
+          "property": "scale",
+          "easing": "in_out_sine",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 1.24
+            },
+            {
+              "frame": 40,
+              "value": 1.015
+            },
+            {
+              "frame": 54,
+              "value": 1
+            }
+          ]
+        },
+        {
+          "property": "opacity",
+          "easing": "linear",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 18,
+              "value": 1
+            },
+            {
+              "frame": 54,
+              "value": 1
+            }
+          ]
+        }
+      ],
+      "duration_bounds": {
+        "minimum_frames": 48,
+        "maximum_frames": 240
+      },
+      "render_safe": true
+    },
+    {
+      "id": "map_image_usa_sweep_in",
+      "category": "map_image_v1",
+      "targets": [
+        "image"
+      ],
+      "unit": "layer",
+      "enter": 48,
+      "exit": 14,
+      "tracks": [
+        {
+          "property": "scale",
+          "easing": "in_out_sine",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 1.34
+            },
+            {
+              "frame": 18,
+              "value": 1.15
+            },
+            {
+              "frame": 36,
+              "value": 1.025
+            },
+            {
+              "frame": 48,
+              "value": 1
+            }
+          ]
+        },
+        {
+          "property": "opacity",
+          "easing": "linear",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 15,
+              "value": 1
+            },
+            {
+              "frame": 48,
+              "value": 1
+            }
+          ]
+        }
+      ],
+      "duration_bounds": {
+        "minimum_frames": 48,
+        "maximum_frames": 240
+      },
+      "render_safe": true
+    },
+    {
+      "id": "map_image_iran_gold_focus",
+      "category": "map_image_v1",
+      "targets": [
+        "image"
+      ],
+      "unit": "layer",
+      "enter": 56,
+      "exit": 14,
+      "tracks": [
+        {
+          "property": "scale",
+          "easing": "in_out_sine",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 1.18
+            },
+            {
+              "frame": 38,
+              "value": 1.025
+            },
+            {
+              "frame": 56,
+              "value": 1
+            }
+          ]
+        },
+        {
+          "property": "opacity",
+          "easing": "linear",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 22,
+              "value": 1
+            },
+            {
+              "frame": 56,
+              "value": 1
+            }
+          ]
+        }
+      ],
+      "duration_bounds": {
+        "minimum_frames": 48,
+        "maximum_frames": 240
+      },
+      "render_safe": true
+    },
+    {
+      "id": "map_image_india_contour_draw",
+      "category": "map_image_v1",
+      "targets": [
+        "image"
+      ],
+      "unit": "layer",
+      "enter": 52,
+      "exit": 14,
+      "tracks": [
+        {
+          "property": "scale",
+          "easing": "in_out_sine",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 1.22
+            },
+            {
+              "frame": 34,
+              "value": 1.02
+            },
+            {
+              "frame": 52,
+              "value": 1
+            }
+          ]
+        },
+        {
+          "property": "opacity",
+          "easing": "linear",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 17,
+              "value": 1
+            },
+            {
+              "frame": 52,
+              "value": 1
+            }
+          ]
+        }
+      ],
+      "duration_bounds": {
+        "minimum_frames": 48,
+        "maximum_frames": 240
+      },
+      "render_safe": true
+    },
+    {
+      "id": "map_image_gujarat_detail_push",
+      "category": "map_image_v1",
+      "targets": [
+        "image"
+      ],
+      "unit": "layer",
+      "enter": 46,
+      "exit": 14,
+      "tracks": [
+        {
+          "property": "scale",
+          "easing": "in_out_sine",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 1.15
+            },
+            {
+              "frame": 28,
+              "value": 1.025
+            },
+            {
+              "frame": 46,
+              "value": 1
+            }
+          ]
+        },
+        {
+          "property": "opacity",
+          "easing": "linear",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 13,
+              "value": 1
+            },
+            {
+              "frame": 46,
+              "value": 1
+            }
+          ]
+        }
+      ],
+      "duration_bounds": {
+        "minimum_frames": 48,
+        "maximum_frames": 240
+      },
+      "render_safe": true
+    },
+    {
+      "id": "map_image_italy_beacon_arrival",
+      "category": "map_image_v1",
+      "targets": [
+        "image"
+      ],
+      "unit": "layer",
+      "enter": 58,
+      "exit": 14,
+      "tracks": [
+        {
+          "property": "scale",
+          "easing": "in_out_sine",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 1.26
+            },
+            {
+              "frame": 42,
+              "value": 1.02
+            },
+            {
+              "frame": 58,
+              "value": 1
+            }
+          ]
+        },
+        {
+          "property": "opacity",
+          "easing": "linear",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 20,
+              "value": 1
+            },
+            {
+              "frame": 58,
+              "value": 1
+            }
+          ]
+        }
+      ],
+      "duration_bounds": {
+        "minimum_frames": 48,
+        "maximum_frames": 240
+      },
+      "render_safe": true
+    },
+    {
+      "id": "map_image_nigeria_neon_bloom",
+      "category": "map_image_v1",
+      "targets": [
+        "image"
+      ],
+      "unit": "layer",
+      "enter": 50,
+      "exit": 14,
+      "tracks": [
+        {
+          "property": "scale",
+          "easing": "in_out_sine",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 1.2
+            },
+            {
+              "frame": 34,
+              "value": 1.015
+            },
+            {
+              "frame": 50,
+              "value": 1
+            }
+          ]
+        },
+        {
+          "property": "opacity",
+          "easing": "linear",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 12,
+              "value": 1
+            },
+            {
+              "frame": 50,
+              "value": 1
+            }
+          ]
+        }
+      ],
+      "duration_bounds": {
+        "minimum_frames": 48,
+        "maximum_frames": 240
+      },
+      "render_safe": true
+    },
+    {
+      "id": "map_image_china_slow_reveal",
+      "category": "map_image_v1",
+      "targets": [
+        "image"
+      ],
+      "unit": "layer",
+      "enter": 64,
+      "exit": 14,
+      "tracks": [
+        {
+          "property": "scale",
+          "easing": "in_out_sine",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 1.16
+            },
+            {
+              "frame": 42,
+              "value": 1.035
+            },
+            {
+              "frame": 64,
+              "value": 1
+            }
+          ]
+        },
+        {
+          "property": "opacity",
+          "easing": "linear",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 24,
+              "value": 1
+            },
+            {
+              "frame": 64,
+              "value": 1
+            }
+          ]
+        }
+      ],
+      "duration_bounds": {
+        "minimum_frames": 48,
+        "maximum_frames": 240
+      },
+      "render_safe": true
+    },
+    {
+      "id": "map_image_korea_pin_focus",
+      "category": "map_image_v1",
+      "targets": [
+        "image"
+      ],
+      "unit": "layer",
+      "enter": 44,
+      "exit": 14,
+      "tracks": [
+        {
+          "property": "scale",
+          "easing": "in_out_sine",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 1.28
+            },
+            {
+              "frame": 30,
+              "value": 1.02
+            },
+            {
+              "frame": 44,
+              "value": 1
+            }
+          ]
+        },
+        {
+          "property": "opacity",
+          "easing": "linear",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 12,
+              "value": 1
+            },
+            {
+              "frame": 44,
+              "value": 1
+            }
+          ]
+        }
+      ],
+      "duration_bounds": {
+        "minimum_frames": 48,
+        "maximum_frames": 240
+      },
+      "render_safe": true
+    },
+    {
+      "id": "map_image_australia_sunset_drift",
+      "category": "map_image_v1",
+      "targets": [
+        "image"
+      ],
+      "unit": "layer",
+      "enter": 60,
+      "exit": 14,
+      "tracks": [
+        {
+          "property": "scale",
+          "easing": "in_out_sine",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 1.19
+            },
+            {
+              "frame": 42,
+              "value": 1.025
+            },
+            {
+              "frame": 60,
+              "value": 1
+            }
+          ]
+        },
+        {
+          "property": "opacity",
+          "easing": "linear",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 21,
+              "value": 1
+            },
+            {
+              "frame": 60,
+              "value": 1
+            }
+          ]
+        }
+      ],
+      "duration_bounds": {
+        "minimum_frames": 48,
+        "maximum_frames": 240
+      },
+      "render_safe": true
     },
     {
       "id": "metric_counter_rise",

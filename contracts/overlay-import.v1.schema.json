@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://renderinggen.dev/schemas/overlay-import.v1.schema.json",
+  "title": "RenderingGen Overlay Import V1",
+  "description": "A trusted upstream renderer's immutable MP4 staged into the RenderingGen object store. RenderingGen verifies the byte identity, probes the media structure, fully decodes the file on CPU, and records the artifact without invoking Chronon.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "producer", "plan_id", "video_id", "source_sha256", "source_size_bytes", "width", "height", "fps_num", "fps_den", "duration_us", "frame_count"],
+  "properties": {
+    "schema_version": { "const": "renderinggen.overlay-import.v1" },
+    "producer": { "type": "string", "minLength": 1 },
+    "plan_id": { "type": "string", "minLength": 1 },
+    "video_id": { "type": "string", "minLength": 1 },
+    "source_sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "source_size_bytes": { "type": "integer", "minimum": 1 },
+    "width": { "type": "integer", "minimum": 1 },
+    "height": { "type": "integer", "minimum": 1 },
+    "fps_num": { "type": "integer", "minimum": 1 },
+    "fps_den": { "type": "integer", "minimum": 1 },
+    "duration_us": { "type": "integer", "minimum": 1 },
+    "frame_count": { "type": "integer", "minimum": 1 },
+    "producer_telemetry": { "type": "object" }
+  }
+}

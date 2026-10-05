@@ -121,7 +121,7 @@ func probeResultFromReceipt(r chronon.MediaReceipt) media.ProbeResult {
 // validates a copied child from exactly these facts, so a chunk that skipped
 // the probe could never be proven safe to concatenate.
 func requiresStructuralProbe(job *queue.Job) bool {
-	return job != nil && (job.JobType == queue.JobTypeOverlayRender || job.FrameRange != nil)
+	return job != nil && (job.JobType == queue.JobTypeOverlayRender || job.JobType == queue.JobTypeOverlayImport || job.FrameRange != nil)
 }
 
 // FinalizeJob runs the CPU-bound post half of the render pipeline: validation

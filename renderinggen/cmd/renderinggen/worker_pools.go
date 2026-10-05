@@ -110,6 +110,30 @@ func runPrepPool(ctx context.Context, q *queue.Client, proc *processor.Processor
 			continue
 		}
 
+		// Producer imports take an explicit CPU-only path. They are never
+		// prepared as semantic render plans and never enter a GPU lane.
+		if job.JobType == queue.JobTypeOverlayImport {
+			artifact, importErr := withLease(ctx, job, q, timings, func(jobCtx context.Context) (queue.Artifact, error) {
+				return proc.ImportOverlayArtifact(jobCtx, job)
+			})
+			if importErr != nil {
+				processor.ReportFailure(ctx, q, job, importErr)
+				closeJobLog(jobLog, job.ID)
+				continue
+			}
+			published, publishErr := withLease(ctx, job, q, timings, func(jobCtx context.Context) (queue.Artifact, error) {
+				return proc.Publish(jobCtx, job.ID, job.JobType, artifact)
+			})
+			if publishErr != nil {
+				processor.ReportFailureWithArtifact(ctx, q, job.ID, artifact, publishErr)
+				closeJobLog(jobLog, job.ID)
+				continue
+			}
+			processor.ReportComplete(ctx, q, job.ID, published, true)
+			closeJobLog(jobLog, job.ID)
+			continue
+		}
+
 		// Prepare-only jobs (overlay.prepare warm-up) finish here.
 		if job.JobType == queue.JobTypeOverlayPrepare {
 			artifact, prepErr := withLease(ctx, job, q, timings, func(jobCtx context.Context) (queue.Artifact, error) {

@@ -80,6 +80,8 @@ func runtimeFontPath(family string) (string, bool) {
 		return "assets/fonts/Inter.ttf", true
 	case "dejavu_sans":
 		return officialCyrillicFontPath, true
+	case "bricolage_grotesque":
+		return "assets/fonts/Bricolage-Grotesque.ttf", true
 	default:
 		return "", false
 	}

@@ -113,6 +113,13 @@ type EntityCardLayout struct {
 // toward entityCaptionMinFontPX before the box width is clamped by the safe
 // area — the name is never cut.
 func ResolveEntityCardLayout(canvasWidth, canvasHeight int, imageRect EntityCardImageBounds, caption string) (EntityCardLayout, error) {
+	return ResolveEntityCardLayoutAt(canvasWidth, canvasHeight, imageRect, caption, "below")
+}
+
+// ResolveEntityCardLayoutAt resolves the caption below the image or in a
+// side column. "left" and "right" are relative to the image; callers choose
+// the image's canvas position to switch portrait sides without changing text.
+func ResolveEntityCardLayoutAt(canvasWidth, canvasHeight int, imageRect EntityCardImageBounds, caption, mode string) (EntityCardLayout, error) {
 	if canvasWidth <= 0 || canvasHeight <= 0 {
 		return EntityCardLayout{}, fmt.Errorf("overlay: entity card layout needs a positive canvas, got %dx%d", canvasWidth, canvasHeight)
 	}
@@ -139,6 +146,38 @@ func ResolveEntityCardLayout(canvasWidth, canvasHeight int, imageRect EntityCard
 		},
 	}
 	if caption == "" {
+		return layout, nil
+	}
+	if mode == "left" || mode == "right" {
+		gap := entityCaptionMarginPX
+		available := 0.0
+		centerX := 0.0
+		if mode == "right" {
+			left := imageRect.X + imageRect.Width + gap
+			available = safe.Right - left
+			centerX = left + available/2
+		} else {
+			right := imageRect.X - gap
+			available = right - safe.Left
+			centerX = safe.Left + available/2
+		}
+		if available < 48 {
+			return EntityCardLayout{}, fmt.Errorf("overlay: caption side %q has only %.1fpx beside image", mode, available)
+		}
+		wrapped, lineCount := wrapPhraseAt25(caption)
+		lines := strings.Split(wrapped, "\n")
+		fontSize := entityCaptionMaxFontPX
+		width := captionLinesWidth(lines, fontSize)
+		for width > available && fontSize > entityCaptionMinFontPX {
+			fontSize -= 1
+			width = captionLinesWidth(lines, fontSize)
+		}
+		width = math.Min(width, available)
+		height := math.Max(entityCaptionMaxHeightPX, float64(lineCount)*fontSize*1.35+24)
+		centerY := math.Max(safe.Top+height/2, math.Min(safe.Bottom-height/2, imageRect.CenterY()))
+		layout.CaptionAnchor = EntityCardCaptionAnchor{Reference: mode + "_center", Margin: gap}
+		layout.CaptionBounds = EntityCardCaptionBounds{X: centerX - width/2, Y: centerY - height/2,
+			Width: width, Height: height, CenterX: centerX, CenterY: centerY, FontSize: fontSize, Top: centerY - height/2}
 		return layout, nil
 	}
 
@@ -254,13 +293,13 @@ func captionLinesWidth(lines []string, fontSize float64) float64 {
 
 // EntityCaptionMotionID returns the caption's motion id, resolving the shared
 // default when the producer did not pick one. The caption is a first-class
-// animated layer: it may carry its own motion (text_word_rise, text_fade_up,
+// animated layer: it may carry its own motion (trump_entity_text_01, text_fade_up,
 // …) through the same canonical catalog the image uses.
 func EntityCaptionMotionID(requested string) string {
 	if requested != "" {
 		return requested
 	}
-	return "text_fade_up"
+	return "trump_entity_text_01"
 }
 
 // entityCaptionMotionAllowed is the closed set of text motions a caption may
@@ -268,6 +307,12 @@ func EntityCaptionMotionID(requested string) string {
 // motions that are not text targets at all (an image motion on a caption
 // would lower to tracks the text layer cannot honor).
 func entityCaptionMotionAllowed(id string) bool {
+	for _, candidate := range motion.Registry.TrumpEntityTextV1MotionIDs() {
+		if candidate == id {
+			return true
+		}
+	}
+	// Retain the six base text-caption IDs for existing generic entity plans.
 	for _, candidate := range motion.Registry.EntityCaptionV1MotionIDs() {
 		if candidate == id {
 			return true
