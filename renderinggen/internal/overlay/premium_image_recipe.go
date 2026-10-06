@@ -166,8 +166,8 @@ func SyncPremiumComponentTransform(image, component *Layer) {
 	component.Animation = premiumAnimationWithZOffset(image.Animation, component.PremiumZOffset)
 }
 
-// numericTrackValue extracts one finite scalar from a keyframe value.
-func numericTrackValue(value any) (float64, bool) {
+// numericValue extracts a supported scalar from a keyframe or semantic parameter.
+func numericValue(value any) (float64, bool) {
 	switch number := value.(type) {
 	case float64:
 		return number, true
@@ -194,7 +194,7 @@ func premiumAnimationWithZOffset(source *LayerAnimation, zOffset float64) *Layer
 			continue
 		}
 		for j := range clone.Tracks[i].Keyframes {
-			if value, ok := numericTrackValue(clone.Tracks[i].Keyframes[j].Value); ok {
+			if value, ok := numericValue(clone.Tracks[i].Keyframes[j].Value); ok {
 				clone.Tracks[i].Keyframes[j].Value = value + zOffset
 			}
 		}

@@ -114,10 +114,6 @@ func firstParam(m map[string]any, keys ...string) (any, bool) {
 	return nil, false
 }
 
-func compileShapeLayer(ri resolvedItem, src *semanticPlan) (Layer, error) {
-	return resolveShape(ri, src)
-}
-
 // resolveShape is the one lowering boundary for shape items: semantic params
 // enter here, are validated fail-closed, and leave as the normalized Chronon
 // layer representation.

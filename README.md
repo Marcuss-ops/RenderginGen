@@ -52,6 +52,52 @@ renders with missing glyphs (or fails at frame 0). See
 measured evidence, the matrix of 10 translated overlays across the 10 configured
 languages, and the reproduction commands.
 
+## Organizzazione editoriale: sezioni, classi e renderer
+
+Per scegliere un overlay senza confondere il contenuto con la tecnica, usare
+questa gerarchia: **sezione editoriale → tipo semantico (`kind`) → template / preset
+visivo → animazione (`motion_id`) → renderer**. Una sezione editoriale è un
+raggruppamento per chi crea il video; non è un renderer, né implica un nuovo
+`kind` nel contratto.
+
+| Sezione editoriale | Modello attuale | Cosa distingue |
+|---|---|---|
+| Entità con testo + 1 immagine | `entity_card` con un asset e caption | Un’unica entità genera ritratto e didascalia animata; non è un composito. |
+| Immagine singola | `entity_image` con un asset | Una scheda immagine indipendente, senza caption obbligatoria. |
+| Immagini x2, x3, x4, x5… | `entity_image` con `image_layers` | Una voce semantica, almeno 2 layer/assets e motion indipendente per layer; il contratto non impone un massimo. x2–x5 sono gli scenari di esempio già presenti. |
+| Frasi importanti | `important_phrase` | Frasi editoriali, con stile testo separato dall’animazione. |
+| Frasi importanti brevi | `important_phrase` + stile/motion breve | 14 stili `short_phrase_style`; la famiglia `typewriter_modern_v1` aggiunge 15 animazioni, catalogate separatamente. |
+| Numeri, metriche e date | `number`, `metric_stat`, `timeline_date` | Le famiglie disponibili sono 20 motion `metric_v1` e 20 `date_v1`; `entity_card_v1` ha altri 10 motion per schede entità. |
+| Mappe | `map` | Mappa georeferenziata con basemap locale, pin/etichette e 10 motion `map_image_v1`; distinta da un’immagine generica. |
+| Altri elementi | `important_word`, `quote`, entità testuali, `product`, `logo`, `shape`, `video_overlay`, ecc. | Rimangono classi supportate dal compilatore; non vanno mescolate alle sezioni principali dell’editor. |
+
+Quindi la proposta editoriale parte da **7 sezioni principali** (le prime sette
+righe) più “Altri elementi”. Lo scenario concatenato già presente, invece, ha
+**6 atti runtime**: frasi, date, metriche, entità, luoghi+mappa, immagini. Date
+e metriche sono separate nello scenario per provare le due famiglie, pur
+appartenendo alla macro-sezione editoriale “Numeri, metriche e date”.
+
+**Fotografia runtime verificata:** c’è **1 renderer** (Chronon3D); il worker
+RenderingGen compila il piano semantico, non è un secondo renderer. Il registry
+contiene **20 `ItemKind`**, **29 template**, **10 preset ufficiali** (2 testo +
+8 immagini) e **6 comportamenti di compilazione** (testo, entità, immagine,
+video, shape, mappa). Sono conteggi di livelli diversi: kind/template/preset non
+sono sinonimi di “sezione”. Il registry motion contiene **388 ID**: 374 dal
+catalogo ChrononTemplate incorporato e 14 stili brevi registrati dal catalogo
+short-phrase.
+
+Le famiglie si sovrappongono per progetto: non sommare i numeri come se fossero
+animazioni uniche. Le famiglie principali esposte dall’API sono **11**: `phrase`
+146, `short_phrase_style` 14, `typewriter` 10, `typewriter_modern_v1` 15,
+`classic_apple` 42, `modern_apple` 61, `brush_v1` 23, `text_3d_v1` 10,
+`trump_entity_text_v1` 15, `web` 14 e `3d` 73. Inventari dedicati e
+potenzialmente sovrapposti: immagini **52** (10 Overlay V3 + 8 2.5D + 14
+Editorial Image V1 + 20 Premium), mappe **10**, didascalie entità generiche **6**,
+metriche/date/entità **20/20/10**. Per pianificare le prime sezioni editoriali,
+le categorie sopra sono il livello corretto; per verificare l’effettiva
+certificazione GPU va consultato il report runtime separato, che può coprire
+meno ID di quelli registrati.
+
 ## Motion and preset catalog (owned by ChrononTemplate)
 
 RenderingGen does not own the phrase/motion/preset vocabulary. ChrononTemplate
@@ -75,25 +121,18 @@ the catalog's selections instead of restating them in Go. Phrase typography has
 one animated preset (`phrase_default`) plus `static_text_smoke`; text animation
 is selected independently with `motion_id`.
 
-The public motion family API keeps these groups independent from preset styles:
-`phrase` (all callable important-phrase motions, including Brush V1 accents),
-`typewriter` (5 motions), `classic_apple` (42), `modern_apple` (45), `brush_v1`
-(12 text-targetable brush accents), `web` (0), and `3d` (all catalog motions
-with Z translation or X/Y rotation). The `phrase` family combines text
-animation groups; it does not define a second set of motions. Brush recipes
-selected on phrases emit their native stroked-path layers beside the text. The web
-family is intentionally empty until a concrete catalog motion is authored; no
-placeholder is advertised as renderable. The current image motion inventory is
-18 motions:
-10 `overlay_v3_image` (`image_fade_reveal`, `image_focus_reveal`,
-`image_scale_reveal`, `image_slide_left_reveal`, `image_slide_right_reveal`,
-`image_parallax_depth_reveal`, `image_tilt_settle`, `image_card_push`,
-`image_diagonal_sweep`, `image_soft_focus_reveal`) and 8 `image_25d_clean_v1`
-(`image_25d_depth_float_in`, `image_25d_yaw_flip_in`,
-`image_25d_pitch_lift`, `image_25d_pop_z_bounce`, `image_25d_swipe_3d`,
-`image_25d_card_swing`, `image_25d_blur_focus_in`,
-`image_25d_blur_scale_in`). The legacy `ImageOverlayMotionIDs()` remains exactly
-these 18 ids; they remain the matrix/certified inventory.
+The public motion family API keeps motion selection independent from preset
+styles. Its **current runtime counts** are documented in
+[Organizzazione editoriale](#organizzazione-editoriale-sezioni-classi-e-renderer)
+above; family counts overlap (for example, `phrase` includes motions exposed by
+named text subfamilies). `phrase` combines text animation groups; it does not
+define a second set of motions. Brush recipes selected on phrases emit their
+native stroked-path layers beside the text. The image motion inventory is 52
+motions across `overlay_v3_image` (10), `image_25d_clean_v1` (8),
+`editorial_image_v1` (14), and `image_premium_v1` (20). The legacy
+`ImageOverlayMotionIDs()` deliberately remains exactly the first 18 ids; those
+are a compatibility/certification matrix, not the complete current image
+inventory. `web` now has 14 catalog motions; it is not empty.
 
 The separate `image_premium_v1` family adds 20 `image_recipe` motions without
 expanding that legacy matrix. They lower to Chronon render-plan v3 primitives
@@ -151,10 +190,14 @@ renders and writes a manifest with per-file SHA-256/size and strict-lane metadat
 A registered Vulkan backend or a successful software preview alone is not GPU
 certification.
 
-The catalog runtime canary covers all 108 callable phrase motions and all 20
-premium image motions. Set `RENDERINGGEN_GPU_CERT_FAMILY=phrase` or `image` to
-run one inventory; set `RENDERINGGEN_GPU_CERT_MOTION=<id>` to isolate a single
-motion. `RENDERINGGEN_GPU_CERT_OUTPUT_DIR` preserves the compiled plan, prepared
+The checked runtime snapshot in `renderinggen/motion-certification/latest/`
+contains 108 phrase render logs and 20 software image logs; this is historical
+certification evidence, **not** a count of all motions currently registered
+(388 total, including 146 in the current `phrase` family). Do not infer GPU
+certification for newly registered IDs from those older logs. Set
+`RENDERINGGEN_GPU_CERT_FAMILY=phrase` or `image` to run the current selected
+inventory; set `RENDERINGGEN_GPU_CERT_MOTION=<id>` to isolate a single motion.
+`RENDERINGGEN_GPU_CERT_OUTPUT_DIR` preserves the compiled plan, prepared
 package, native render log, and an incrementally updated
 `motion-runtime-report.json` with each ID, backend, encoder, status, and render
 duration. The default lane is strict Vulkan/NVENC. To certify the Vulkan render
@@ -163,10 +206,7 @@ path without the failing CUDA-to-Vulkan NVENC handoff, set
 `RENDERINGGEN_GPU_CERT_HARDWARE=none`, and
 `RENDERINGGEN_GPU_CERT_ENCODER_BACKEND=native`. To force full software
 rendering, also set `RENDERINGGEN_GPU_CERT_BACKEND=software`.
-The current checked runtime snapshot is in
-`renderinggen/motion-certification/latest/`; it keeps the 108 phrase logs, 20
-software image logs, and strict Vulkan/NVENC failure logs next to their status
-reports. In the worker's non-strict mode, a recoverable Vulkan device loss or
+In the worker's non-strict mode, a recoverable Vulkan device loss or
 unsupported native draw retries the same plan in software and records
 `chronon_software_fallback=1`. Explicit strict-native mode continues to fail
 closed and preserves the error in the job log.

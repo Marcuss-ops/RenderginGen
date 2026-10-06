@@ -53,5 +53,5 @@ func ClaimableStates() []State { return []State{StatePending, StateRendered} }
 // state to cancelled. Cancelled is terminal and idempotent (the caller handles
 // the re-cancel case separately); completed and failed are terminal.
 func IsCancelable(state State) bool {
-	return !IsTerminalState(state) && state != StateCancelled
+	return !IsTerminalState(state)
 }

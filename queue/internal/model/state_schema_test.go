@@ -227,6 +227,14 @@ func TestMaxAttemptsDefaultMatchesMigration(t *testing.T) {
 	}
 }
 
+func TestIsCancelableMatchesTerminalState(t *testing.T) {
+	for _, state := range append(States(), State("unknown")) {
+		if got, want := IsCancelable(state), !IsTerminalState(state); got != want {
+			t.Errorf("IsCancelable(%q) = %t, want %t", state, got, want)
+		}
+	}
+}
+
 func TestStateAliasesMatchClientType(t *testing.T) {
 	pairs := map[string]struct{ alias, canonical string }{
 		"pending":    {string(StatePending), "pending"},
