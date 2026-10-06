@@ -343,12 +343,50 @@ type SemanticMapPoint struct {
 }
 
 type SemanticMapPin struct {
-	ID        string  `json:"id"`
-	Label     string  `json:"label"`
-	Latitude  float64 `json:"latitude"`
-	Longitude float64 `json:"longitude"`
+	ID            string                `json:"id"`
+	Label         string                `json:"label"`
+	Latitude      float64               `json:"latitude"`
+	Longitude     float64               `json:"longitude"`
+	Color         string                `json:"color"`
+	RadiusPX      float64               `json:"radius_px"`
+	LabelStyle    *SemanticMapTextStyle `json:"label_style,omitempty"`
+	LabelOffsetPX []float64             `json:"label_offset_px,omitempty"`
+	LabelPriority int                   `json:"label_priority,omitempty"`
+}
+
+type SemanticMapTextStyle struct {
+	FontFamily string                 `json:"font_family,omitempty"`
+	FontSizePX *float64               `json:"font_size_px,omitempty"`
+	Fill       string                 `json:"fill,omitempty"`
+	Stroke     *semanticMapTextStroke `json:"stroke,omitempty"`
+	Shadow     *semanticMapTextShadow `json:"shadow,omitempty"`
+	Glow       *semanticMapTextGlow   `json:"glow,omitempty"`
+	Background *semanticMapTextPlate  `json:"background,omitempty"`
+}
+
+type semanticMapTextStroke struct {
+	Color string  `json:"color"`
+	Width float64 `json:"width"`
+}
+
+type semanticMapTextShadow struct {
+	Color   string    `json:"color"`
+	Opacity float64   `json:"opacity"`
+	Blur    float64   `json:"blur"`
+	Offset  []float64 `json:"offset"`
+}
+
+type semanticMapTextGlow struct {
 	Color     string  `json:"color"`
-	RadiusPX  float64 `json:"radius_px"`
+	Radius    float64 `json:"radius"`
+	Intensity float64 `json:"intensity"`
+}
+
+type semanticMapTextPlate struct {
+	Color   string    `json:"color"`
+	Opacity float64   `json:"opacity"`
+	Radius  float64   `json:"radius"`
+	Padding []float64 `json:"padding"`
 }
 
 // SemanticAssetRef is one content-addressed asset reference of the semantic
@@ -698,8 +736,6 @@ type LayerBackground struct {
 	Radius  float64   `json:"radius,omitempty"`
 	Padding []float64 `json:"padding,omitempty"`
 }
-
-func floatPointer(value float64) *float64 { return &value }
 
 type LayerStroke struct {
 	Color string  `json:"color,omitempty"`

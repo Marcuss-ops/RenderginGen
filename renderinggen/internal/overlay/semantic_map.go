@@ -21,6 +21,7 @@ package overlay
 import (
 	"fmt"
 	"math"
+	"sort"
 	"strings"
 	"unicode/utf8"
 
@@ -48,10 +49,10 @@ const (
 // not producer inputs: the plan decides WHERE a place is and what it is called,
 // never how thick the ring around it is.
 const (
-	mapPinStrokeWidthPX   = 3.0
-	mapPinStrokeColor     = "#FFFFFF"
-	mapPinLabelWidthPX    = 360.0
-	mapPinLabelHeightPX   = 52.0
+	mapPinStrokeWidthPX = 3.0
+	mapPinStrokeColor   = "#FFFFFF"
+	mapPinLabelHeightPX = 52.0
+
 	mapPinLabelGapPX      = 10.0
 	mapPinLabelFontPX     = 34.0
 	mapPinLabelMinFontPX  = 12.0
@@ -63,6 +64,7 @@ const (
 	mapTextShadowColor    = "#000000"
 	mapTextShadowOpacity  = 0.75
 	mapTextShadowBlur     = 6.0
+	mapLabelCollisionGap  = 6.0
 )
 
 // validateMapContract is the single owner of the map item's admission rules. It
@@ -127,6 +129,9 @@ func validateMapContract(item semanticItem, kind ItemKind, canvasWidth, canvasHe
 		}
 		seen[pin.ID] = struct{}{}
 	}
+	if _, err := mapLabelPlacements(m.Pins, window, canvasWidth, canvasHeight); err != nil {
+		return fmt.Errorf("overlay: map item %q: %w", item.ID, err)
+	}
 	return nil
 }
 
@@ -183,6 +188,22 @@ func validateMapPin(pin SemanticMapPin, index int, window geo.Window) error {
 	if !isHexColor(pin.Color) {
 		return fmt.Errorf("pin[%d] color %q must be #RRGGBB", index, pin.Color)
 	}
+	if pin.LabelPriority < -1000 || pin.LabelPriority > 1000 {
+		return fmt.Errorf("pin[%d] label_priority must be within [-1000,1000]", index)
+	}
+	if len(pin.LabelOffsetPX) != 0 && len(pin.LabelOffsetPX) != 2 {
+		return fmt.Errorf("pin[%d] label_offset_px must contain exactly [x,y]", index)
+	}
+	for _, offset := range pin.LabelOffsetPX {
+		if !finite(offset) || math.Abs(offset) > 2048 {
+			return fmt.Errorf("pin[%d] label_offset_px components must be finite and within [-2048,2048]", index)
+		}
+	}
+	if pin.LabelStyle != nil {
+		if err := validateMapTextStyle(pin.LabelStyle, index); err != nil {
+			return err
+		}
+	}
 	if math.IsNaN(pin.RadiusPX) || math.IsInf(pin.RadiusPX, 0) || pin.RadiusPX <= 0 || pin.RadiusPX > 128 {
 		return fmt.Errorf("pin[%d] radius_px %v must be finite and within (0,128]", index, pin.RadiusPX)
 	}
@@ -193,6 +214,148 @@ func validateMapPin(pin SemanticMapPin, index int, window geo.Window) error {
 		return fmt.Errorf("pin[%d] %q falls outside the basemap window", index, pin.Label)
 	}
 	return nil
+}
+
+func validateMapTextStyle(style *SemanticMapTextStyle, index int) error {
+	if style.FontFamily != "" {
+		if _, ok := runtimeFontPath(style.FontFamily); !ok {
+			return fmt.Errorf("pin[%d] label_style.font_family %q is unsupported", index, style.FontFamily)
+		}
+	}
+	if style.FontSizePX != nil && (!finite(*style.FontSizePX) || *style.FontSizePX < mapPinLabelMinFontPX || *style.FontSizePX > 256) {
+		return fmt.Errorf("pin[%d] label_style.font_size_px must be finite and within [%g,256]", index, mapPinLabelMinFontPX)
+	}
+	if style.Fill != "" && !isHexColor(style.Fill) {
+		return fmt.Errorf("pin[%d] label_style.fill must be #RRGGBB", index)
+	}
+	if stroke := style.Stroke; stroke != nil {
+		if !isHexColor(stroke.Color) || !finite(stroke.Width) || stroke.Width < 0 || stroke.Width > 16 {
+			return fmt.Errorf("pin[%d] label_style.stroke requires #RRGGBB and width in [0,16]", index)
+		}
+	}
+	if shadow := style.Shadow; shadow != nil {
+		if !isHexColor(shadow.Color) || !finite(shadow.Opacity) || shadow.Opacity < 0 || shadow.Opacity > 1 ||
+			!finite(shadow.Blur) || shadow.Blur < 0 || shadow.Blur > 64 || len(shadow.Offset) != 2 ||
+			!finite(shadow.Offset[0]) || !finite(shadow.Offset[1]) || math.Abs(shadow.Offset[0]) > 128 || math.Abs(shadow.Offset[1]) > 128 {
+			return fmt.Errorf("pin[%d] label_style.shadow has invalid color/opacity/blur/offset", index)
+		}
+	}
+	if glow := style.Glow; glow != nil {
+		if !isHexColor(glow.Color) || !finite(glow.Radius) || glow.Radius < 0 || glow.Radius > 128 ||
+			!finite(glow.Intensity) || glow.Intensity < 0 || glow.Intensity > 1 {
+			return fmt.Errorf("pin[%d] label_style.glow has invalid color/radius/intensity", index)
+		}
+	}
+	if plate := style.Background; plate != nil {
+		if !isHexColor(plate.Color) || !finite(plate.Opacity) || plate.Opacity < 0 || plate.Opacity > 1 ||
+			!finite(plate.Radius) || plate.Radius < 0 || plate.Radius > 128 || len(plate.Padding) != 2 ||
+			!finite(plate.Padding[0]) || !finite(plate.Padding[1]) || plate.Padding[0] < 0 || plate.Padding[1] < 0 ||
+			plate.Padding[0] > 128 || plate.Padding[1] > 128 {
+			return fmt.Errorf("pin[%d] label_style.background has invalid color/opacity/radius/padding", index)
+		}
+	}
+	return nil
+}
+
+// mapLabelPlacements resolves deterministic candidate positions in priority
+// order and refuses plans whose visible labels cannot be placed without
+// overlapping one another. It never silently hides producer content.
+func mapLabelPlacements(pins []SemanticMapPin, window geo.Window, canvasW, canvasH int) (map[string][2]float64, error) {
+	placements := make(map[string][2]float64, len(pins))
+	order := make([]int, 0, len(pins))
+	for index := range pins {
+		order = append(order, index)
+	}
+	sort.SliceStable(order, func(i, j int) bool {
+		left, right := pins[order[i]], pins[order[j]]
+		if left.LabelPriority != right.LabelPriority {
+			return left.LabelPriority > right.LabelPriority
+		}
+		return left.ID < right.ID
+	})
+	placed := make([][4]float64, 0, len(order))
+	for _, index := range order {
+		pin := pins[index]
+		x, y := window.ToRaster(pin.Latitude, pin.Longitude)
+		x *= float64(canvasW) / float64(window.Width)
+		y *= float64(canvasH) / float64(window.Height)
+		width, height := mapPinLabelDimensions(pin, canvasW, canvasH)
+		candidates := mapPinLabelCandidates(pin, x, y, width, height)
+		found := false
+		for _, candidate := range candidates {
+			left := clampMapBox(candidate[0], float64(canvasW)-width)
+			top := clampMapBox(candidate[1], float64(canvasH)-height)
+			if math.Abs(left-candidate[0]) >= 0.001 || math.Abs(top-candidate[1]) >= 0.001 {
+				continue
+			}
+			rect := [4]float64{left, top, left + width, top + height}
+			collision := false
+			for _, previous := range placed {
+				if mapLabelRectsOverlap(rect, previous) {
+					collision = true
+					break
+				}
+			}
+			if !collision {
+				placed = append(placed, rect)
+				placements[pin.ID] = [2]float64{left, top}
+				found = true
+				break
+			}
+		}
+		if !found {
+			return nil, fmt.Errorf("pin %q label cannot be placed without clipping or colliding; move it or adjust label_offset_px", pin.ID)
+		}
+	}
+	return placements, nil
+}
+
+func mapTypographyScale(canvasW, canvasH int) float64 {
+	scale := math.Sqrt(float64(canvasW*canvasH) / float64(1280*720))
+	return math.Max(0.65, math.Min(2.2, scale))
+}
+
+func mapPinLabelDimensions(pin SemanticMapPin, canvasW, canvasH int) (float64, float64) {
+	fontSize := mapPinLabelFontPX
+	if pin.LabelStyle != nil && pin.LabelStyle.FontSizePX != nil {
+		fontSize = *pin.LabelStyle.FontSizePX
+	}
+	scale := mapTypographyScale(canvasW, canvasH)
+	width := math.Max(96*scale, float64(utf8.RuneCountInString(pin.Label))*fontSize*scale*0.68+24*scale)
+	height := math.Max(mapPinLabelHeightPX*scale, fontSize*scale*1.6)
+	if plate := pin.LabelStyle; plate != nil && plate.Background != nil && len(plate.Background.Padding) == 2 {
+		width += 2 * plate.Background.Padding[0] * scale
+		height += 2 * plate.Background.Padding[1] * scale
+	}
+	return math.Min(width, float64(canvasW)), math.Min(height, float64(canvasH))
+}
+
+func mapPinLabelCandidates(pin SemanticMapPin, x, y, width, height float64) [][2]float64 {
+	offsetX, offsetY := 0.0, 0.0
+	if len(pin.LabelOffsetPX) == 2 {
+		offsetX, offsetY = pin.LabelOffsetPX[0], pin.LabelOffsetPX[1]
+	}
+	candidates := [][2]float64{
+		{x - width/2 + offsetX, y + pin.RadiusPX + mapPinLabelGapPX + offsetY},
+		{x - width/2, y - pin.RadiusPX - mapPinLabelGapPX - height},
+		{x + pin.RadiusPX + mapPinLabelGapPX, y - height/2},
+		{x - pin.RadiusPX - mapPinLabelGapPX - width, y - height/2},
+	}
+	for ring := 1; ring <= 8; ring++ {
+		distance := float64(ring) * (height + mapLabelCollisionGap)
+		for _, direction := range [][2]float64{{0, -1}, {1, 0}, {0, 1}, {-1, 0}, {1, -1}, {1, 1}, {-1, 1}, {-1, -1}} {
+			candidates = append(candidates, [2]float64{
+				x - width/2 + direction[0]*distance,
+				y - height/2 + direction[1]*distance,
+			})
+		}
+	}
+	return candidates
+}
+
+func mapLabelRectsOverlap(a, b [4]float64) bool {
+	return a[0] < b[2]+mapLabelCollisionGap && a[2]+mapLabelCollisionGap > b[0] &&
+		a[1] < b[3]+mapLabelCollisionGap && a[3]+mapLabelCollisionGap > b[1]
 }
 
 func validateMapPoint(latitude, longitude float64) error {
@@ -291,7 +454,7 @@ func validateMapLODs(item semanticItem, canvasWidth, canvasHeight int) error {
 const mapLODFadeHalfBandZoom = 0.5
 
 func mapLODActiveZoomRange(index int, lods []SemanticMapLOD, move *SemanticMapCameraMove) (float64, float64) {
-	low, high := float64(lods[index].Zoom), float64(lods[index].Zoom)
+	var low, high float64
 	if index == 0 {
 		low = move.StartZoom
 	} else {
@@ -407,6 +570,10 @@ func compileMapLayers(ri resolvedItem, src *semanticPlan, registry *assetRegistr
 		layers = append(layers, basemap)
 	}
 	font := OfficialFontPathForLanguage(src.Language)
+	labelPlacements, err := mapLabelPlacements(m.Pins, window, src.Width, src.Height)
+	if err != nil {
+		return nil, fmt.Errorf("overlay: map item %q label layout: %w", ri.Item.ID, err)
+	}
 	for _, pin := range m.Pins {
 		x, y := window.ToRaster(pin.Latitude, pin.Longitude)
 		marker, err := mapPinLayer(ri, src, pin, x, y, duration)
@@ -414,6 +581,8 @@ func compileMapLayers(ri resolvedItem, src *semanticPlan, registry *assetRegistr
 			return nil, err
 		}
 		label := mapPinLabelLayer(ri, src, pin, font, x, y, duration)
+		labelTopLeft := labelPlacements[pin.ID]
+		label.Position = canvasBoxPosition("text", labelTopLeft[0], labelTopLeft[1], label.Size[0], label.Size[1], src.Width, src.Height)
 		if mapAnimation != nil {
 			applyMotionRouting(&marker, mapPinMotion(mapAnimation, marker.Position))
 			applyMotionRouting(&label, mapPinMotion(mapAnimation, label.Position))
@@ -423,7 +592,13 @@ func compileMapLayers(ri resolvedItem, src *semanticPlan, registry *assetRegistr
 			marker.Enable3D = true
 			marker.Position = []float64{worldX + float64(src.Width)/2, worldY + float64(src.Height)/2, 0}
 			label.Enable3D = true
-			label.Position = []float64{worldX + float64(src.Width)/2, worldY + float64(src.Height)/2 + pin.RadiusPX + mapPinLabelGapPX, 0}
+			pinRasterX, pinRasterY := window.ToRaster(pin.Latitude, pin.Longitude)
+			labelCenterX := labelTopLeft[0] + label.Size[0]/2
+			labelCenterY := labelTopLeft[1] + label.Size[1]/2
+			label.Position = []float64{
+				worldX + float64(src.Width)/2 + labelCenterX - pinRasterX,
+				worldY + float64(src.Height)/2 - (labelCenterY - pinRasterY), 0,
+			}
 		}
 		layers = append(layers, marker, label)
 	}
@@ -436,23 +611,66 @@ func compileMapLayers(ri resolvedItem, src *semanticPlan, registry *assetRegistr
 }
 
 func mapPinLabelLayer(ri resolvedItem, src *semanticPlan, pin SemanticMapPin, font string, x, y float64, duration int64) Layer {
-	width, height := math.Min(mapPinLabelWidthPX, float64(src.Width)), math.Min(mapPinLabelHeightPX, float64(src.Height))
-	boxX := clampMapBox(x-width/2, float64(src.Width)-width)
-	boxY := clampMapBox(y+pin.RadiusPX+mapPinLabelGapPX, float64(src.Height)-height)
+	scale := mapTypographyScale(src.Width, src.Height)
+	fontSize, minFontSize, maxFontSize, fill := mapPinLabelFontPX*scale, mapPinLabelMinFontPX*scale, mapPinLabelFontPX*scale, pin.Color
+	if pin.LabelStyle != nil {
+		style := pin.LabelStyle
+		if style.FontFamily != "" {
+			font, _ = runtimeFontPath(style.FontFamily)
+		}
+		if style.FontSizePX != nil {
+			fontSize, minFontSize, maxFontSize = *style.FontSizePX*scale, *style.FontSizePX*scale, *style.FontSizePX*scale
+		}
+		if style.Fill != "" {
+			fill = style.Fill
+		}
+	}
+	width, height := mapPinLabelDimensions(pin, src.Width, src.Height)
+	boxX, boxY := mapPinLabelCandidates(pin, x, y, width, height)[0][0], mapPinLabelCandidates(pin, x, y, width, height)[0][1]
+	if len(pin.LabelOffsetPX) != 2 {
+		boxX = x - width/2
+		boxY = y + pin.RadiusPX + mapPinLabelGapPX
+	}
+	boxX = clampMapBox(boxX, float64(src.Width)-width)
+	boxY = clampMapBox(boxY, float64(src.Height)-height)
+	labelStyle := mapTextStyle(font, fontSize, minFontSize, fill)
+	labelStyle.MaxFontSize = maxFontSize
+	if pin.LabelStyle != nil {
+		applyMapTextEffects(labelStyle, pin.LabelStyle)
+	}
 	return Layer{ID: mapPinLabelLayerID(ri.Item.ID, pin.ID), Type: "text", Text: pin.Label,
 		Size: []float64{width, height}, Position: canvasBoxPosition("text", boxX, boxY, width, height, src.Width, src.Height),
 		StartFrame: ri.Start, DurationFrames: duration,
-		Style: mapTextStyle(font, mapPinLabelFontPX, mapPinLabelMinFontPX, pin.Color)}
+		Style: labelStyle}
+}
+
+func applyMapTextEffects(style *LayerStyle, overrides *SemanticMapTextStyle) {
+	if overrides.Stroke != nil {
+		style.Stroke = &LayerStroke{Color: overrides.Stroke.Color, Width: overrides.Stroke.Width}
+	}
+	if overrides.Shadow != nil {
+		style.Shadow = &LayerShadow{Color: overrides.Shadow.Color, Opacity: overrides.Shadow.Opacity,
+			Blur: overrides.Shadow.Blur, Offset: append([]float64(nil), overrides.Shadow.Offset...)}
+	}
+	if overrides.Glow != nil {
+		style.Glow = &LayerGlow{Color: overrides.Glow.Color, Radius: overrides.Glow.Radius, Intensity: overrides.Glow.Intensity}
+	}
+	if overrides.Background != nil {
+		opacity := overrides.Background.Opacity
+		style.Background = &LayerBackground{Color: overrides.Background.Color, Opacity: &opacity,
+			Radius: overrides.Background.Radius, Padding: append([]float64(nil), overrides.Background.Padding...)}
+	}
 }
 
 func mapAttributionLayer(ri resolvedItem, src *semanticPlan, font string, duration int64) Layer {
 	width, height := math.Min(mapAttributionWidth, float64(src.Width)), math.Min(mapAttributionHeight, float64(src.Height))
 	boxX := clampMapBox(mapAttributionMargin, float64(src.Width)-width)
 	boxY := clampMapBox(float64(src.Height)-mapAttributionMargin-height, float64(src.Height)-height)
+	scale := mapTypographyScale(src.Width, src.Height)
 	return Layer{ID: mapAttributionLayerID(ri.Item.ID), Type: "text", Text: ri.Item.Map.Attribution,
 		Size: []float64{width, height}, Position: canvasBoxPosition("text", boxX, boxY, width, height, src.Width, src.Height),
 		StartFrame: ri.Start, DurationFrames: duration,
-		Style: mapTextStyle(font, mapAttributionFontPX, mapAttributionMinFont, "#FFFFFF")}
+		Style: mapTextStyle(font, mapAttributionFontPX*scale, mapAttributionMinFont*scale, "#FFFFFF")}
 }
 
 func mapTextStyle(font string, size, minSize float64, fill string) *LayerStyle {
@@ -547,10 +765,7 @@ func mapPinLayer(ri resolvedItem, src *semanticPlan, pin SemanticMapPin, x, y fl
 	}, nil
 }
 
-func mapBasemapLayerID(itemID string) string    { return itemID + ":map_basemap" }
-func mapPinLayerID(itemID, pinID string) string { return itemID + ":map_pin:" + pinID }
-func mapLODLayerID(itemID string, index int) string {
-	return fmt.Sprintf("%s:map_lod:%02d", itemID, index)
-}
+func mapBasemapLayerID(itemID string) string         { return itemID + ":map_basemap" }
+func mapPinLayerID(itemID, pinID string) string      { return itemID + ":map_pin:" + pinID }
 func mapPinLabelLayerID(itemID, pinID string) string { return itemID + ":map_pin_label:" + pinID }
 func mapAttributionLayerID(itemID string) string     { return itemID + ":map_attribution" }

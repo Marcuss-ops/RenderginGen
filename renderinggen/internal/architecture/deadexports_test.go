@@ -68,7 +68,9 @@ var deadExportModules = []string{"renderinggen", "queue", "objectstore"}
 // the CONSUMER lives outside this repository, and the reason must name it. A
 // ghost entry (naming a symbol that no longer exists) is an error, so a
 // carve-out cannot silently outlive the code it was written for.
-var deadExportExceptions = map[string]string{}
+var deadExportExceptions = map[string]string{
+	"ShortPhraseStyles": "public motion-picker API consumed by the external RenderingGen service contract",
+}
 
 // stdlibInterfaceMethods maps a standard-library interface to the method it
 // invokes without a call site in the consumer's source. Only the entries that

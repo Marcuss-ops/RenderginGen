@@ -324,4 +324,7 @@ func init() {
 			panic(err)
 		}
 	}
+	if err := registerShortPhraseStyles(Registry); err != nil {
+		panic(err)
+	}
 }

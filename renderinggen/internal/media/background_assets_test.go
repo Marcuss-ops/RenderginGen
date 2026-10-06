@@ -18,7 +18,6 @@ import (
 // internal/media use the identical relative root).
 const (
 	backgroundManifestRel = "../../../assets/backgrounds/manifest.json"
-	backgroundReadmeRel   = "../../../assets/backgrounds/README.md"
 )
 
 // backgroundManifest mirrors assets/backgrounds/manifest.json. It is declared

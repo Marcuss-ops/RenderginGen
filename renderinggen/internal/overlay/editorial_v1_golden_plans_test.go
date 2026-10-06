@@ -50,15 +50,6 @@ func writeGoldenPlan(t *testing.T, result CompileResult, name string) string {
 	return path
 }
 
-func portraitAsset(id string) map[string]any {
-	return map[string]any{
-		"asset_id":   id,
-		"sha256":     "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-		"url":        "assets/canary/portrait.png",
-		"media_type": "image/png",
-	}
-}
-
 // uniquePortraitAsset gives every item its own logical path so the asset
 // registry's one-path-one-identity rule is satisfied.
 func uniquePortraitAsset(id string) map[string]any {
@@ -75,15 +66,6 @@ func uniqueBrowserAsset(id string) map[string]any {
 		"asset_id":   id,
 		"sha256":     "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
 		"url":        "assets/canary/" + id + ".png",
-		"media_type": "image/png",
-	}
-}
-
-func browserAsset(id string) map[string]any {
-	return map[string]any{
-		"asset_id":   id,
-		"sha256":     "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-		"url":        "assets/canary/browser.png",
 		"media_type": "image/png",
 	}
 }

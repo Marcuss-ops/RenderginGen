@@ -64,10 +64,6 @@ func mustFloat(raw any) float64 {
 	value, _ := toFloat(raw)
 	return value
 }
-func finiteAny(raw any) bool {
-	value, err := toFloat(raw)
-	return err == nil && finite(value)
-}
 func resolveLayerEffects(raw any, itemID string) ([]LayerEffect, error) {
 	if raw == nil {
 		return nil, nil

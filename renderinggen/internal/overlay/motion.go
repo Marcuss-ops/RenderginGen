@@ -57,6 +57,15 @@ func lowerMotion(id string, enter, exit int, params motion.MotionParams, text st
 		}
 	}
 	entrance := entranceFrames(enter, exit, duration, phraseEntranceFloor)
+	if phraseEntranceFloor && duration > 0 && exit > 0 {
+		// The phrase entrance duration is invariant (one third of its window).
+		// When a caller's exit would overlap it, shorten the exit rather than
+		// stretching or clipping the entrance.
+		maxExit := duration - entrance
+		if int64(exit) > maxExit {
+			exit = int(maxExit)
+		}
+	}
 	ctx := motion.MotionContext{Text: text, DurationFrames: entrance}
 	tracks, err := plugin.Compile(ctx, params)
 	if err != nil {
@@ -368,17 +377,6 @@ func applyMotionRouting(layer *Layer, animation *LayerAnimation) {
 	}
 }
 
-func fromTrackDefinitions(src []motion.TrackDefinition) []AnimationTrack {
-	result := make([]AnimationTrack, len(src))
-	for i, t := range src {
-		result[i] = AnimationTrack{Property: t.Property, Easing: t.Easing, Keyframes: make([]AnimationKeyframe, len(t.Keyframes))}
-		for j, k := range t.Keyframes {
-			result[i].Keyframes[j] = AnimationKeyframe{Frame: k.Frame, Value: k.Value}
-		}
-	}
-	return result
-}
-
 func fromTextMotionDefinitions(src []motion.TextAnimatorDefinition, duration int64) ([]TextAnimator, error) {
 	result := make([]TextAnimator, 0, len(src))
 	for _, definition := range src {
@@ -386,6 +384,14 @@ func fromTextMotionDefinitions(src []motion.TextAnimatorDefinition, duration int
 			ID: definition.ID + "_selector", Unit: definition.Selector.Kind,
 			Shape: definition.Selector.Shape, Order: definition.Selector.Order, Combine: "replace",
 			ExcludeSpaces: true,
+		}
+		if definition.Selector.RangeStart != nil && definition.Selector.RangeEnd != nil {
+			endFrame := lastValidFrame(duration)
+			if endFrame < 1 {
+				endFrame = 1
+			}
+			selector.Start = &AnimationTrack{Property: "start", Keyframes: []AnimationKeyframe{{Frame: 0, Value: *definition.Selector.RangeStart}, {Frame: endFrame, Value: *definition.Selector.RangeStart}}}
+			selector.End = &AnimationTrack{Property: "end", Keyframes: []AnimationKeyframe{{Frame: 0, Value: *definition.Selector.RangeEnd}, {Frame: endFrame, Value: *definition.Selector.RangeEnd}}}
 		}
 		if definition.Selector.Kind == "" {
 			selector.Unit = "glyph"
@@ -404,7 +410,7 @@ func fromTextMotionDefinitions(src []motion.TextAnimatorDefinition, duration int
 		if definition.Selector.Stagger > 0 {
 			sweepDuration := lastValidFrame(duration)
 			if sweepDuration > MaxStaggerSweepFrames {
-				sweepDuration = MaxStaggerSweepFrames
+				return nil, fmt.Errorf("selector sweep duration %d exceeds Chronon's %d-frame keyframe limit", sweepDuration, MaxStaggerSweepFrames)
 			}
 			// Selector timing animates the selector's start value itself. The
 			// Chronon selector contract has no property field; putting "start"
@@ -538,6 +544,18 @@ func easingValue(easing string, t float64) (float64, error) {
 	case "out_back":
 		const c1, c3 = 1.70158, 2.70158
 		return 1 + c3*math.Pow(t-1, 3) + c1*math.Pow(t-1, 2), nil
+	case "per_word_land":
+		const split, residual = 0.78, 0.07
+		const slope = ((1 - residual) / split) * 0.5
+		if t < split {
+			x := t / split
+			return (1 - residual) * (0.5*(1-math.Pow(1-x, 3)) + 0.5*x), nil
+		}
+		u := (t - split) / (1 - split)
+		b := slope * (1 - split)
+		c := 3*residual - 2*b
+		d := b - 2*residual
+		return 1 - residual + b*u + c*u*u + d*u*u*u, nil
 	default:
 		return 0, fmt.Errorf("unsupported easing %q", easing)
 	}

@@ -424,11 +424,11 @@ func TestCompositeImageContractRejectsUndeclaredAssetAndInvalidWindow(t *testing
 
 func TestEveryPhraseFamilyMotionReachesTheChrononRenderPlan(t *testing.T) {
 	var ids []string
-	for _, family := range []string{"typewriter", "classic_apple", "modern_apple"} {
+	for _, family := range []string{"typewriter", "typewriter_modern_v1", "classic_apple", "modern_apple"} {
 		ids = append(ids, motion.Registry.FamilyMotionIDs(family)...)
 	}
-	if len(ids) != 113 {
-		t.Fatalf("registered phrase family motions = %d, want 113", len(ids))
+	if len(ids) != 128 {
+		t.Fatalf("registered phrase family motions = %d, want 128", len(ids))
 	}
 	seen := make(map[string]bool, len(ids))
 	for _, id := range ids {
@@ -442,8 +442,12 @@ func TestEveryPhraseFamilyMotionReachesTheChrononRenderPlan(t *testing.T) {
 			if err != nil {
 				t.Fatalf("compile phrase motion %q: %v", id, err)
 			}
-			if len(result.Plan.Layers) != 1 {
-				t.Fatalf("phrase motion %q compiled to %d layers, want 1", id, len(result.Plan.Layers))
+			wantLayers := 1
+			if strings.HasPrefix(id, "typewriter_") {
+				wantLayers = 2 // text layer plus synchronized runtime cursor
+			}
+			if len(result.Plan.Layers) != wantLayers {
+				t.Fatalf("phrase motion %q compiled to %d layers, want %d", id, len(result.Plan.Layers), wantLayers)
 			}
 			layer := result.Plan.Layers[0]
 			// Ogni 25 caratteri a capo correttamente: the compiled text is
@@ -502,6 +506,15 @@ func TestPhraseDefaultAndMotionFamilyRemainIndependent(t *testing.T) {
 	}
 	if got := len(motion.Registry.FamilyMotionIDs("typewriter")); got != 10 {
 		t.Fatalf("typewriter family has %d motions, want 10", got)
+	}
+	if got := len(motion.Registry.FamilyMotionIDs("typewriter_modern_v1")); got != 15 {
+		t.Fatalf("modern typewriter family has %d motions, want 15", got)
+	}
+	for _, id := range motion.Registry.FamilyMotionIDs("typewriter_modern_v1") {
+		animation, err := animationForMotion(id, nil, "18 MAY 2026", 150, 0)
+		if err != nil || animation == nil || len(animation.Tracks) == 0 || len(animation.TextAnimators) == 0 {
+			t.Fatalf("modern typewriter %q is not runtime-renderable: animation=%+v error=%v", id, animation, err)
+		}
 	}
 	// Editorial Visual Motion V1 grows the certified web vocabulary to 14:
 	// web_cursor_focus and web_section_spotlight joined the family.

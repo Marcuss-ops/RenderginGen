@@ -127,3 +127,56 @@ func TestEntityCaptionKeepsLongAndUnicodeNamesInsideSafeArea(t *testing.T) {
 		})
 	}
 }
+
+func TestEntityStyleTestoSottoWiring(t *testing.T) {
+	stylesToTest := []string{
+		"testo_sotto",
+		"below",
+		"Center top",
+		"Vertical editorial",
+		"Centered signature",
+		"premium_random_v1",
+	}
+
+	for _, styleID := range stylesToTest {
+		t.Run(styleID, func(t *testing.T) {
+			item := map[string]any{
+				"id":              "portrait",
+				"entity_id":       "person:trump",
+				"kind":            "entity_card",
+				"template_id":     "PERSON",
+				"preset_id":       "phrase_default",
+				"text":            "Donald Trump",
+				"image_preset_id": "image_scale_in",
+				"entity_caption":  "Donald Trump",
+				"entity_style_id": styleID,
+				"start_ms":        0, "end_ms": 2000, "duration_ms": 2000,
+				"asset_refs": []any{map[string]any{
+					"asset_id":   "portrait-asset",
+					"sha256":     "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+					"url":        "https://store.example/portrait.png",
+					"media_type": "image/png",
+				}},
+			}
+			plan := map[string]any{
+				"schema_version": "renderinggen.overlay-plan.v1",
+				"plan_id":        "entity-sotto-plan",
+				"video_id":       "entity-sotto-video",
+				"width":          1920, "height": 1080,
+				"fps_num": 30, "fps_den": 1,
+				"items": []any{item},
+			}
+			raw, err := json.Marshal(plan)
+			if err != nil {
+				t.Fatal(err)
+			}
+			result, err := CompileSemantic(raw)
+			if err != nil {
+				t.Fatalf("CompileSemantic failed for style %q: %v", styleID, err)
+			}
+			if len(result.Plan.Layers) < 2 {
+				t.Fatalf("expected at least 2 layers, got %d", len(result.Plan.Layers))
+			}
+		})
+	}
+}

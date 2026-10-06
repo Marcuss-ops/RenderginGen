@@ -39,10 +39,12 @@ type TrackDefinition struct {
 }
 
 type SelectorDefinition struct {
-	Kind    string `json:"kind,omitempty"`  // glyph, grapheme, character, word, line
-	Shape   string `json:"shape,omitempty"` // square, ramp_up, ramp_down, triangle, round, smooth
-	Order   string `json:"order,omitempty"` // forward, reverse, from_center, to_center, random
-	Stagger int64  `json:"stagger,omitempty"`
+	Kind       string   `json:"kind,omitempty"`  // glyph, grapheme, character, word, line
+	Shape      string   `json:"shape,omitempty"` // square, ramp_up, ramp_down, triangle, round, smooth
+	Order      string   `json:"order,omitempty"` // forward, reverse, from_center, to_center, random
+	Stagger    int64    `json:"stagger,omitempty"`
+	RangeStart *float64 `json:"range_start,omitempty"`
+	RangeEnd   *float64 `json:"range_end,omitempty"`
 }
 
 type TextAnimatorDefinition struct {

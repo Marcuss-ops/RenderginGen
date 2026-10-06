@@ -25,11 +25,12 @@ var (
 		"position": true, "position_x": true, "position_y": true,
 		"scale": true, "scale_x": true, "scale_y": true,
 		"opacity": true, "blur": true, "tracking": true,
+		"fill_blue": true, "fill_gray": true,
 	}
 )
 
 func TestMotionFamiliesKeepStylesIndependentAndComplete(t *testing.T) {
-	want := []string{"phrase", "typewriter", "classic_apple", "modern_apple", "brush_v1", "text_3d_v1", "trump_entity_text_v1", "web", "3d"}
+	want := []string{"phrase", "short_phrase_style", "typewriter", "typewriter_modern_v1", "classic_apple", "modern_apple", "brush_v1", "text_3d_v1", "trump_entity_text_v1", "web", "3d"}
 	got := Registry.MotionFamilies()
 	if len(got) != len(want) {
 		t.Fatalf("motion families = %v, want %v", got, want)
@@ -40,14 +41,14 @@ func TestMotionFamiliesKeepStylesIndependentAndComplete(t *testing.T) {
 		}
 	}
 	// Editorial Visual Motion V1 grows the certified web vocabulary to 14.
-	for family, count := range map[string]int{"typewriter": 10, "classic_apple": 42, "modern_apple": 61, "brush_v1": 23, "text_3d_v1": 10, "trump_entity_text_v1": 15, "web": 14} {
+	for family, count := range map[string]int{"short_phrase_style": 14, "typewriter": 10, "typewriter_modern_v1": 15, "classic_apple": 42, "modern_apple": 61, "brush_v1": 23, "text_3d_v1": 10, "trump_entity_text_v1": 15, "web": 14} {
 		if ids := Registry.FamilyMotionIDs(family); len(ids) != count {
 			t.Errorf("%s family has %d motions, want %d", family, len(ids), count)
 		}
 	}
 	threeD := Registry.FamilyMotionIDs("3d")
-	if len(threeD) != 10 {
-		t.Fatalf("3D family has %d motions, want the 10 retained premium text animations", len(threeD))
+	if len(threeD) != 73 {
+		t.Fatalf("3D family has %d motions, want 73 catalog-backed camera motions", len(threeD))
 	}
 	for _, id := range threeD {
 		plugin, err := Registry.Resolve(id)
@@ -120,7 +121,6 @@ func TestWebFamilyHasTwelveRenderSafeDistinctCatalogMotions(t *testing.T) {
 		seenTracks[fingerprint] = true
 	}
 }
-
 
 func TestImage3DFamilyHasEightCameraBackedMotionsWithRestingFinalPose(t *testing.T) {
 	ids := Registry.Image25DCleanV1MotionIDs()

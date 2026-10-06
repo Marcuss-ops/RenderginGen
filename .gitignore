@@ -3,8 +3,6 @@
 *.test
 *.out
 renderinggen/renderinggen
-# Showcase binary built from cmd/render-showcase (ELF with debug info) —
-# same artifact class as renderinggen/renderinggen.
 renderinggen/render-showcase
 renderinggen/bin/
 /bin/
@@ -50,9 +48,7 @@ token.json
 /renderinggen/phrase_preset_videos/
 /renderinggen/preset_videos/
 /renderinggen/highend_phrase_videos/
-/renderinggen/typography_benchmark_videos/
 /renderinggen/warm_videos/
-/typography_benchmark_videos/
 # Top-level preset/demo renders (were tracked as 37 MB bloat, D5): keep on
 # disk but never in git — same artifact class as /renderinggen/* variants.
 # .gitignore only covered /renderinggen/*.mp4 + 5 subdirs, not these roots.

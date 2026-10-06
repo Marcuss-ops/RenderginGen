@@ -64,10 +64,10 @@ func (r *RegistryType) ApplePhrasePackMotionIDs() []string {
 	return r.CategoryMotionIDs("apple_phrase_v1")
 }
 
-// PhraseAnimationIDs returns every motion in the callable text animation
-// families used by important phrases, in stable order. This includes the
-// typewriter, classic Apple, modern Apple, Brush, and camera-backed text 3D
-// catalogs; PhraseMotionPool is a narrower legacy subset for GPU certification.
+// PhraseAnimationIDs returns every motion in the established phrase-planning
+// families, in stable order. The separately selectable typewriter_modern_v1
+// preview family stays out of the seeded legacy pool; callers can request that
+// family explicitly through FamilyMotionIDs.
 func (r *RegistryType) PhraseAnimationIDs() []string {
 	ids := make([]string, 0)
 	for _, family := range []string{"typewriter", "classic_apple", "modern_apple", "brush_v1", "text_3d_v1"} {
@@ -193,7 +193,10 @@ func (r *RegistryType) CategoryMotionIDs(category string) []string {
 
 func belongsToFamily(definition MotionDefinition, family string) bool {
 	if family == "typewriter" {
-		return strings.HasPrefix(definition.ID, "typewriter_")
+		return strings.HasPrefix(definition.ID, "typewriter_") && definition.Category != "typewriter_modern_v1"
+	}
+	if family == "typewriter_modern_v1" {
+		return definition.Category == "typewriter_modern_v1"
 	}
 	if family == "classic_apple" && definition.Category == "apple_v2" {
 		return true
@@ -243,13 +246,16 @@ func motionHas3D(definition MotionDefinition) bool {
 // motion groups. A group can be intentionally empty (for example web) without
 // creating a fake or non-renderable motion.
 func (r *RegistryType) MotionFamilies() []string {
-	return []string{"phrase", "typewriter", "classic_apple", "modern_apple", "brush_v1", "text_3d_v1", "trump_entity_text_v1", "web", "3d"}
+	return []string{"phrase", "short_phrase_style", "typewriter", "typewriter_modern_v1", "classic_apple", "modern_apple", "brush_v1", "text_3d_v1", "trump_entity_text_v1", "web", "3d"}
 }
 
 // FamilyMotionIDs returns the registered motion ids for one public family.
 func (r *RegistryType) FamilyMotionIDs(family string) []string {
 	if family == "phrase" {
 		return r.PhraseAnimationIDs()
+	}
+	if family == "short_phrase_style" {
+		return r.ShortPhraseStyleIDs()
 	}
 	if family == "brush_v1" {
 		return r.VisualAccentsV1MotionIDs(family)

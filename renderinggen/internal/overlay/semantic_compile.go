@@ -308,7 +308,13 @@ func compileSemantic(raw []byte) (*Plan, []Asset, Stats, []string, error) {
 	var cameraMove *SemanticMapCameraMove
 	var cameraStartFrame, cameraEndFrame int64
 	var cameraMapItemID string
+	var entityCameraMotionID string
 	for _, ri := range resolved {
+		if isEntityKind(ri.Kind) && ri.Item.EntityStyleID != "" {
+			if style, ok := ResolveEntityStyle(ri.Item.EntityStyleID, src.PlanID, src.VideoID, ri.Item.ID); ok && style.CameraMotionID != "" {
+				entityCameraMotionID = style.CameraMotionID
+			}
+		}
 		layers, err := compileItem(ri, &src, registry)
 		if err != nil {
 			return nil, nil, Stats{}, nil, err
@@ -351,6 +357,129 @@ func compileSemantic(raw []byte) (*Plan, []Asset, Stats, []string, error) {
 				plan.Layers[i].StartFrame = cameraStartFrame
 				plan.Layers[i].DurationFrames = cameraEndFrame - cameraStartFrame
 			}
+		}
+	} else if entityCameraMotionID != "" && plan.Camera == nil {
+		cx := float64(src.Width) / 2
+		cy := float64(src.Height) / 2
+		plan.Camera = &CameraPlan{
+			Type:     "perspective",
+			Position: [3]float64{cx, cy, -1400.0},
+			Rotation: [3]float64{0, 0, 0},
+			FOVDeg:   55.0,
+			Near:     1.0,
+			Far:      5000.0,
+			Zoom:     1.0,
+		}
+		var tracks []CameraTrack
+		switch entityCameraMotionID {
+		case "camera_dolly_push":
+			tracks = []CameraTrack{
+				{
+					Property: "camera_position_z",
+					Easing:   "out_cubic",
+					Keyframes: []AnimationKeyframe{
+						{Frame: 0, Value: -1700.0},
+						{Frame: 65, Value: -1400.0},
+						{Frame: 89, Value: -1400.0},
+					},
+				},
+			}
+		case "camera_orbit_yaw":
+			tracks = []CameraTrack{
+				{
+					Property: "camera_rotation_y",
+					Easing:   "out_cubic",
+					Keyframes: []AnimationKeyframe{
+						{Frame: 0, Value: 12.0},
+						{Frame: 55, Value: 0.0},
+						{Frame: 89, Value: 0.0},
+					},
+				},
+				{
+					Property: "camera_position_x",
+					Easing:   "out_cubic",
+					Keyframes: []AnimationKeyframe{
+						{Frame: 0, Value: cx + 160.0},
+						{Frame: 55, Value: cx},
+						{Frame: 89, Value: cx},
+					},
+				},
+			}
+		case "camera_crane_rise":
+			tracks = []CameraTrack{
+				{
+					Property: "camera_position_y",
+					Easing:   "out_cubic",
+					Keyframes: []AnimationKeyframe{
+						{Frame: 0, Value: cy + 120.0},
+						{Frame: 55, Value: cy},
+						{Frame: 89, Value: cy},
+					},
+				},
+				{
+					Property: "camera_rotation_x",
+					Easing:   "out_cubic",
+					Keyframes: []AnimationKeyframe{
+						{Frame: 0, Value: -4.0},
+						{Frame: 55, Value: 0.0},
+						{Frame: 89, Value: 0.0},
+					},
+				},
+			}
+		case "camera_dutch_spatial":
+			tracks = []CameraTrack{
+				{
+					Property: "camera_rotation_z",
+					Easing:   "out_cubic",
+					Keyframes: []AnimationKeyframe{
+						{Frame: 0, Value: -3.5},
+						{Frame: 50, Value: 0.0},
+						{Frame: 89, Value: 0.0},
+					},
+				},
+				{
+					Property: "camera_position_z",
+					Easing:   "out_cubic",
+					Keyframes: []AnimationKeyframe{
+						{Frame: 0, Value: -1560.0},
+						{Frame: 50, Value: -1400.0},
+						{Frame: 89, Value: -1400.0},
+					},
+				},
+			}
+		case "camera_flyby_parallax":
+			tracks = []CameraTrack{
+				{
+					Property: "camera_position_x",
+					Easing:   "out_cubic",
+					Keyframes: []AnimationKeyframe{
+						{Frame: 0, Value: cx - 110.0},
+						{Frame: 60, Value: cx},
+						{Frame: 89, Value: cx},
+					},
+				},
+				{
+					Property: "camera_rotation_y",
+					Easing:   "out_cubic",
+					Keyframes: []AnimationKeyframe{
+						{Frame: 0, Value: -8.5},
+						{Frame: 60, Value: 0.0},
+						{Frame: 89, Value: 0.0},
+					},
+				},
+				{
+					Property: "camera_position_z",
+					Easing:   "out_cubic",
+					Keyframes: []AnimationKeyframe{
+						{Frame: 0, Value: -1600.0},
+						{Frame: 60, Value: -1400.0},
+						{Frame: 89, Value: -1400.0},
+					},
+				},
+			}
+		}
+		if len(tracks) > 0 {
+			plan.CameraAnimation = &CameraAnimation{Tracks: tracks}
 		}
 	}
 
@@ -420,7 +549,7 @@ func resolveSemanticItems(src *semanticPlan) ([]resolvedItem, error) {
 			return nil, err
 		}
 		if item.EntityStyleID != "" {
-			if item.EntityStyleID != "premium_random_v1" {
+			if _, ok := ResolveEntityStyle(item.EntityStyleID, src.PlanID, src.VideoID, item.ID); !ok {
 				return nil, fmt.Errorf("overlay: item %q has unsupported entity_style_id %q", item.ID, item.EntityStyleID)
 			}
 			if kind != KindEntityCard {
@@ -545,6 +674,14 @@ func compileItem(ri resolvedItem, src *semanticPlan, registry *assetRegistry) ([
 // emitted beside the phrase layer; the ordinary text motion lowering only
 // consumes tracks and would otherwise silently omit the authored brush stroke.
 func compileTextVisualAccentLayers(ri resolvedItem, src *semanticPlan, text Layer) ([]Layer, error) {
+	if strings.HasPrefix(ri.Item.MotionID, "typewriter_modern_") && text.Style != nil {
+		// These date/number animations mirror the modern Short Phrases previews.
+		// Respect a producer's explicit font override, but otherwise use the
+		// bundled Bricolage face rather than the generic phrase preset default.
+		if _, explicit := ri.RuntimeStyle["font_family"]; !explicit {
+			text.Style.Font = "assets/fonts/Bricolage-Grotesque.ttf"
+		}
+	}
 	definition, err := visualAccentsDefinition(ri.Item.MotionID)
 	if err != nil {
 		return nil, err
@@ -651,22 +788,30 @@ func brushTextAnchor(text Layer, src *semanticPlan) Layer {
 // image preset owns the portrait geometry and motion; position_x/position_y
 // can move the portrait so caption_layout can use the opposite side.
 func compileEntityCard(ri resolvedItem, src *semanticPlan, registry *assetRegistry) ([]Layer, error) {
+	var currentStyle entityStyleVariant
+	var hasStyle bool
 	if ri.Item.EntityStyleID != "" {
-		style := selectRandomEntityStyle(src.PlanID, src.VideoID, ri.Item.ID)
+		style, ok := ResolveEntityStyle(ri.Item.EntityStyleID, src.PlanID, src.VideoID, ri.Item.ID)
+		if !ok {
+			style = selectRandomEntityStyle(src.PlanID, src.VideoID, ri.Item.ID)
+		}
+		currentStyle = style
+		hasStyle = true
 		ri.Item.MotionID = style.ImageMotionID
 		ri.Item.CaptionMotionID = style.CaptionMotionID
 		ri.Item.CaptionLayout = style.CaptionLayout
 		ri.Item.CaptionFontFamily = style.CaptionFontFamily
 		ri.Item.CaptionColor = style.CaptionColor
-		// Place the runtime portrait in one of two balanced columns. The
-		// caption resolver then lays the runtime name in the opposite column.
+		// Place the runtime portrait in one of two balanced columns, or center it
+		// for below-caption layouts.
 		x := 0.0
 		switch style.ImageSide {
 		case "left":
 			x = -float64(src.Width) * 0.25
 		case "right":
 			x = float64(src.Width) * 0.25
-		case "center":
+		case "center", "below":
+			x = 0.0
 		default:
 			return nil, fmt.Errorf("overlay: entity style %q has unsupported image side %q", style.Name, style.ImageSide)
 		}
@@ -674,6 +819,9 @@ func compileEntityCard(ri resolvedItem, src *semanticPlan, registry *assetRegist
 		ri.Params["position_y"] = 0.0
 	}
 	img := imageLayer(ri, registry.Path(ri.Item.Assets[0].ID))
+	if hasStyle && currentStyle.CameraMotionID != "" {
+		img.Enable3D = true
+	}
 	if ri.ImagePreset.ID != "" {
 		applyPresetDefinition(&img, ri.ImagePreset)
 		var imgAnimation *LayerAnimation
@@ -718,6 +866,33 @@ func compileEntityCard(ri resolvedItem, src *semanticPlan, registry *assetRegist
 		}
 		if premium != nil && len(premium.ImageRecipe.CaptionTracks) > 0 {
 			premiumLayerActive(&captionLayer, premiumTracks(*premium, premium.ImageRecipe.CaptionTracks, captionLayer.DurationFrames))
+		}
+		if hasStyle && currentStyle.IsBadge && currentStyle.BadgeColor != "" {
+			badgeWidth := captionLayer.Size[0] + 56.0
+			if badgeWidth < 300.0 {
+				badgeWidth = 300.0
+			}
+			badgeHeight := captionLayer.Size[1] + 16.0
+			if badgeHeight < 64.0 {
+				badgeHeight = 64.0
+			}
+			badgeLayer := Layer{
+				ID:             ri.Item.ID + ":entity_badge",
+				Type:           "shape",
+				Position:       []float64{captionLayer.Position[0], captionLayer.Position[1]},
+				Size:           []float64{badgeWidth, badgeHeight},
+				StartFrame:     captionLayer.StartFrame,
+				DurationFrames: captionLayer.DurationFrames,
+				Shape: &LayerShape{
+					Type:         "rect",
+					Fill:         currentStyle.BadgeColor,
+					CornerRadius: []float64{24, 24, 24, 24},
+				},
+			}
+			if captionLayer.Animation != nil {
+				badgeLayer.Animation = captionLayer.Animation
+			}
+			layers = append(layers, badgeLayer)
 		}
 		layers = append(layers, captionLayer)
 	}
