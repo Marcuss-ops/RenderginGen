@@ -1,0 +1,137 @@
+{
+  "version": 2,
+  "preset": "custom",
+  "correlation_id": "apollo11-animation-runtime-20261005-v2",
+  "force_refresh": true,
+  "final_job": false,
+  "items": [
+    {
+      "id": "apollo11-animation-runtime-20261005-v2",
+      "project": "apollo11-animation-runtime-20261005-v2",
+      "title": "Apollo 11: il viaggio che portò i primi esseri umani sulla Luna",
+      "language": "it",
+      "tone": "documentario storico, chiaro e cinematografico",
+      "style": "Italiano naturale, tono documentaristico sobrio. Mantieni accurati i nomi Neil Armstrong, Buzz Aldrin, NASA, Apollo 11, Kennedy Space Center e Luna. Evidenzia date e numeri senza inventare dettagli.",
+      "source": {
+        "type": "text",
+        "topic": "La missione Apollo 11, il lancio dalla Florida e il primo allunaggio umano nel luglio 1969",
+        "source_text": "Apollo 11 fu la missione NASA che portò i primi esseri umani sulla Luna. Il Saturn V partì dal Kennedy Space Center, in Florida, il 16 luglio 1969. Neil Armstrong e Buzz Aldrin scesero sulla superficie lunare il 20 luglio, mentre Michael Collins rimase in orbita. Armstrong fu il primo a camminare sulla Luna; Aldrin lo seguì. Il modulo lunare Eagle ripartì il 21 luglio e l'equipaggio tornò sulla Terra il 24 luglio. La missione si concluse con l'ammaraggio nell'Oceano Pacifico. Le date della partenza, dell'allunaggio e del ritorno scandiscono un viaggio durato otto giorni.",
+        "cache": {},
+        "research": {}
+      },
+      "script_params": {
+        "target_words": 120,
+        "min_words": 80,
+        "segment_words": 60,
+        "single_scene": false,
+        "skip_quality_gate": false,
+        "segments": [
+          {
+            "id": "apollo11-launch-florida",
+            "kind": "narration",
+            "topic": "Il lancio di Apollo 11 dal Kennedy Space Center il 16 luglio 1969",
+            "source_text": "Il 16 luglio 1969, il Saturn V decolla dal Kennedy Space Center, in Florida. A bordo di Apollo 11 ci sono Neil Armstrong, Buzz Aldrin e Michael Collins. La NASA avvia così il viaggio che porterà due astronauti sulla Luna.",
+            "target_words": 60,
+            "min_words": 40
+          },
+          {
+            "id": "apollo11-moon-landing",
+            "kind": "narration",
+            "topic": "Neil Armstrong e Buzz Aldrin raggiungono la Luna il 20 luglio 1969",
+            "source_text": "Il 20 luglio, il modulo Eagle raggiunge la superficie lunare. Neil Armstrong scende per primo, Buzz Aldrin lo segue, mentre Michael Collins resta in orbita. Dopo la ripartenza del modulo il 21 luglio, l'equipaggio rientra sulla Terra il 24 luglio.",
+            "target_words": 60,
+            "min_words": 40
+          }
+        ]
+      },
+      "output": {
+        "save_to_db": true,
+        "extract_entities": true,
+        "generate_metadata": true,
+        "generate_timeline": true,
+        "voiceover_enabled": true,
+        "render": {
+          "enabled": true,
+          "require_gpu": true,
+          "subtitles": {
+            "enabled": false
+          }
+        }
+      },
+      "overlay_background": {
+        "kind": "color",
+        "color": [
+          0.025,
+          0.035,
+          0.06,
+          1
+        ],
+        "fit": "cover",
+        "opacity": 1
+      },
+      "max_phrase_overlays": 4,
+      "max_image_overlays": 4,
+      "media_plan": {
+        "mode": "hybrid",
+        "provider_policy": {
+          "geocoding": "enabled",
+          "internet_images": "enabled",
+          "youtube": "disabled",
+          "artlist": "disabled",
+          "image_generation": "disabled"
+        },
+        "cache": {
+          "read": true,
+          "write": true
+        },
+        "extraction": {
+          "enabled": true,
+          "include": [
+            "entities",
+            "special_names",
+            "important_phrases",
+            "metrics",
+            "dates",
+            "locations"
+          ],
+          "max_entities_per_segment": 5,
+          "max_important_phrases_per_segment": 2,
+          "important_phrases": [
+            "Il primo allunaggio umano",
+            "Otto giorni dalla partenza al ritorno"
+          ],
+          "max_image_queries_per_segment": 1,
+          "entity_images": {
+            "enabled": true,
+            "entity_types": [
+              "PERSON",
+              "ORGANIZATION"
+            ],
+            "max_per_entity": 1,
+            "upload_to_drive": true
+          }
+        },
+        "planner": {
+          "candidate_limit": 4
+        },
+        "materialization": {
+          "mode": "selected",
+          "upload_to_drive": true,
+          "wait_for_ready": true
+        }
+      },
+      "audio": {
+        "mode": "COMBINED_TIMELINE",
+        "timing": {
+          "mode": "required",
+          "boundary": "word",
+          "formats": [
+            "json",
+            "srt",
+            "vtt"
+          ]
+        }
+      }
+    }
+  ]
+}

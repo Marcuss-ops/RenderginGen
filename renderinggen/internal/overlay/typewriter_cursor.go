@@ -44,9 +44,23 @@ func typewriterCursorForMotion(id string, fontSize float64) (typewriterCursorSty
 // the text selector's own sampled keyframes. This makes every motion's caret
 // share the exact timing curve used to reveal its glyphs.
 func compileTypewriterCursor(ri resolvedItem, src *semanticPlan, text Layer) (Layer, bool) {
-	style, ok := typewriterCursorForMotion(ri.Item.MotionID, 112)
+	fontSize := 112.0
+	if text.Style != nil && text.Style.FontSize > 0 {
+		fontSize = text.Style.FontSize
+	}
+	style, ok := typewriterCursorForMotion(ri.Item.MotionID, fontSize)
 	if !ok || len(text.TextAnimators) == 0 || len(text.Position) < 2 {
 		return Layer{}, false
+	}
+	isTimelineDate := canonicalTemplateID(ri.Item.Template) == "TIMELINE_DATE_CARD"
+	if isTimelineDate {
+		// Date overlays use a restrained documentary caret regardless of the
+		// selected typewriter motion. Avoid the dots and underline shapes that
+		// read as decorative punctuation rather than a typing cursor.
+		style = typewriterCursorStyle{
+			shape: "rounded_rect", width: .045 * fontSize, height: .58 * fontSize,
+			radius: .022 * fontSize, fill: []float64{.48, .78, .82, 1},
+		}
 	}
 	var sweep *AnimationTrack
 	for _, animator := range text.TextAnimators {
@@ -66,10 +80,6 @@ func compileTypewriterCursor(ri resolvedItem, src *semanticPlan, text Layer) (La
 	lines := strings.Split(text.Text, "\n")
 	lineWidths := make([]float64, len(lines))
 	lineAdvances := make([][]float64, len(lines))
-	fontSize := 112.0
-	if text.Style != nil && text.Style.FontSize > 0 {
-		fontSize = text.Style.FontSize
-	}
 	totalGlyphs := 0
 	for lineIndex, line := range lines {
 		advance := 0.0
@@ -141,6 +151,18 @@ func compileTypewriterCursor(ri resolvedItem, src *semanticPlan, text Layer) (La
 				tracks = append(tracks, copyTrack)
 			}
 		}
+	}
+	if isTimelineDate {
+		// Let the caret blink briefly after the last glyph, then disappear while
+		// the date remains on screen.
+		last := sweep.Keyframes[len(sweep.Keyframes)-1].Frame
+		tracks = append(tracks, AnimationTrack{Property: "opacity", Keyframes: []AnimationKeyframe{
+			{Frame: 0, Value: 1},
+			{Frame: last, Value: 1},
+			{Frame: last + 8, Value: 0},
+			{Frame: last + 14, Value: 1},
+			{Frame: last + 22, Value: 0},
+		}, Easing: "linear"})
 	}
 	return Layer{
 		ID: text.ID + "__typewriter_cursor", Type: "shape",

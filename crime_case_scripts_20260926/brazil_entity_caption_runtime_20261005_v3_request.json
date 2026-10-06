@@ -1,0 +1,135 @@
+{
+  "version": 2,
+  "preset": "custom",
+  "correlation_id": "brazil-entity-caption-runtime-20261005-v3",
+  "force_refresh": true,
+  "final_job": false,
+  "items": [
+    {
+      "id": "brazil-entity-caption-runtime-20261005-v3",
+      "project": "brazil-entity-caption-runtime-20261005-v3",
+      "title": "Brasile 1970: la squadra che conquistò il terzo titolo mondiale",
+      "language": "it",
+      "tone": "documentario sportivo, autorevole e cinematografico",
+      "style": "Italiano naturale. Mantieni corretti i nomi Brasile, Pelé, Gérson, Jairzinho e Carlos Alberto. Evidenzia il risultato della finale e il terzo titolo mondiale senza aggiungere risultati non presenti nella fonte.",
+      "source": {
+        "type": "text",
+        "topic": "La vittoria del Brasile di Pelé ai Mondiali di calcio del 1970",
+        "source_text": "Il Campionato del mondo di calcio del 1970 si disputò in Messico. Nella finale del 21 giugno, il Brasile batté l'Italia per 4-1 allo stadio Azteca di Città del Messico. Pelé segnò il primo gol; Gérson, Jairzinho e Carlos Alberto segnarono gli altri. Con quella vittoria, il Brasile conquistò il suo terzo titolo mondiale e divenne la prima nazionale a vincere tre Coppe del Mondo. La squadra è ricordata per il gioco offensivo e la qualità tecnica. Il 4-1 della finale e i quattro marcatori sono il cuore di questa storia.",
+        "cache": {},
+        "research": {}
+      },
+      "script_params": {
+        "target_words": 120,
+        "min_words": 80,
+        "segment_words": 60,
+        "single_scene": false,
+        "skip_quality_gate": false,
+        "segments": [
+          {
+            "id": "brazil-world-cup-final-1970",
+            "kind": "narration",
+            "topic": "La finale Brasile-Italia del 21 giugno 1970",
+            "source_text": "Il 21 giugno 1970, allo stadio Azteca di Città del Messico, il Brasile affronta l'Italia nella finale mondiale. Pelé segna il primo gol. Poi arrivano le reti di Gérson, Jairzinho e Carlos Alberto: il Brasile vince 4-1.",
+            "target_words": 60,
+            "min_words": 40
+          },
+          {
+            "id": "brazil-third-world-title",
+            "kind": "narration",
+            "topic": "Il terzo titolo mondiale del Brasile e i protagonisti",
+            "source_text": "Con il successo del 1970, il Brasile conquista il suo terzo titolo mondiale ed è la prima nazionale a vincere tre Coppe del Mondo. Pelé guida una squadra ricordata per tecnica e gioco offensivo; Gérson, Jairzinho e Carlos Alberto firmano le altre reti della finale.",
+            "target_words": 60,
+            "min_words": 40
+          }
+        ]
+      },
+      "output": {
+        "save_to_db": true,
+        "extract_entities": true,
+        "generate_metadata": true,
+        "generate_timeline": true,
+        "voiceover_enabled": true,
+        "render": {
+          "enabled": true,
+          "require_gpu": true,
+          "subtitles": {
+            "enabled": false
+          }
+        }
+      },
+      "overlay_background": {
+        "kind": "color",
+        "color": [
+          0.025,
+          0.035,
+          0.06,
+          1
+        ],
+        "fit": "cover",
+        "opacity": 1
+      },
+      "max_phrase_overlays": 4,
+      "max_image_overlays": 8,
+      "media_plan": {
+        "mode": "hybrid",
+        "provider_policy": {
+          "geocoding": "disabled",
+          "internet_images": "enabled",
+          "youtube": "disabled",
+          "artlist": "disabled",
+          "image_generation": "disabled"
+        },
+        "cache": {
+          "read": true,
+          "write": true
+        },
+        "extraction": {
+          "enabled": true,
+          "include": [
+            "entities",
+            "special_names",
+            "important_phrases",
+            "metrics",
+            "dates"
+          ],
+          "max_entities_per_segment": 5,
+          "max_important_phrases_per_segment": 2,
+          "important_phrases": [
+            "Il Brasile batté l'Italia per 4-1",
+            "Il terzo titolo mondiale del Brasile"
+          ],
+          "max_image_queries_per_segment": 1,
+          "entity_images": {
+            "enabled": true,
+            "entity_types": [
+              "PERSON"
+            ],
+            "max_per_entity": 1,
+            "upload_to_drive": true
+          }
+        },
+        "planner": {
+          "candidate_limit": 4
+        },
+        "materialization": {
+          "mode": "selected",
+          "upload_to_drive": true,
+          "wait_for_ready": true
+        }
+      },
+      "audio": {
+        "mode": "COMBINED_TIMELINE",
+        "timing": {
+          "mode": "required",
+          "boundary": "word",
+          "formats": [
+            "json",
+            "srt",
+            "vtt"
+          ]
+        }
+      }
+    }
+  ]
+}
