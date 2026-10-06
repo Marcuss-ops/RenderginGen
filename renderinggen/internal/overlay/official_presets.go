@@ -67,26 +67,34 @@ type PresetLayout struct {
 
 type MotionDefinition = motion.MotionDefinition
 
-// runtimeFontPath resolves the closed set of bundled font-family IDs accepted
-// in overlay item params. Paths are fixed workspace assets, never paths
-// supplied by a plan.
+// runtimeFontsByFamily is the only owner of runtime font-family IDs and their
+// workspace paths. Paths are fixed assets, never paths supplied by a plan.
+// The published schema intentionally exposes a narrower selectable subset;
+// Bricolage is also selected internally by the modern typewriter lowering.
+var runtimeFontsByFamily = map[string]string{
+	"poppins":                 "assets/fonts/Poppins-Bold.ttf",
+	"inter":                   "assets/fonts/Inter.ttf",
+	"dejavu_sans":             officialCyrillicFontPath,
+	"bricolage_grotesque":     "assets/fonts/Bricolage-Grotesque.ttf",
+	"playfair_display_italic": "assets/fonts/PlayfairDisplay-Italic.ttf",
+}
+
+// runtimeFontPath resolves a closed runtime font-family ID to its workspace
+// asset path. Unknown names never become arbitrary filesystem paths.
 func runtimeFontPath(family string) (string, bool) {
-	switch family {
-	case "poppins":
-		return "assets/fonts/Poppins-Bold.ttf", true
-	case "inter":
-		// PipelineGen stages this checked-in variable font under the same
-		// canonical content-addressed path used by its asset prefetcher.
-		return "assets/fonts/Inter.ttf", true
-	case "dejavu_sans":
-		return officialCyrillicFontPath, true
-	case "bricolage_grotesque":
-		return "assets/fonts/Bricolage-Grotesque.ttf", true
-	case "playfair_display_italic":
-		return "assets/fonts/PlayfairDisplay-Italic.ttf", true
-	default:
-		return "", false
+	path, ok := runtimeFontsByFamily[family]
+	return path, ok
+}
+
+// runtimeFontFamilies returns the resolver's supported IDs in stable order for
+// diagnostics. The list is derived, not maintained beside the resolver.
+func runtimeFontFamilies() []string {
+	families := make([]string, 0, len(runtimeFontsByFamily))
+	for family := range runtimeFontsByFamily {
+		families = append(families, family)
 	}
+	sort.Strings(families)
+	return families
 }
 
 // presetSpec is the family-agnostic authoring row the per-family builders

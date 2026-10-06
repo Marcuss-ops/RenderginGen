@@ -28,13 +28,12 @@ import (
 // overlay item. It is produced once by resolveSemanticItems and consumed by
 // the per-kind compilers and the ledger — the raw JSON is never re-read.
 type resolvedItem struct {
-	Item         semanticItem
-	Spec         TemplateSpec
-	Kind         ItemKind
-	Params       map[string]any
-	RuntimeStyle map[string]any
-	Start        int64
-	End          int64
+	Item   semanticItem
+	Spec   TemplateSpec
+	Kind   ItemKind
+	Params map[string]any
+	Start  int64
+	End    int64
 	// PresetID is the validated official preset for the (text/image) layer.
 	PresetID string
 	// Preset and ImagePreset are the resolved official definitions.
@@ -583,14 +582,7 @@ func resolveSemanticItems(src *semanticPlan) ([]resolvedItem, error) {
 		for k, v := range item.Style {
 			params[k] = v
 		}
-		runtimeStyle := make(map[string]any, len(item.Params)+len(item.Style))
-		for k, v := range item.Params {
-			runtimeStyle[k] = v
-		}
-		for k, v := range item.Style {
-			runtimeStyle[k] = v
-		}
-		ri := resolvedItem{Item: item, Spec: spec, Kind: kind, Params: params, RuntimeStyle: runtimeStyle, Start: start, End: end}
+		ri := resolvedItem{Item: item, Spec: spec, Kind: kind, Params: params, Start: start, End: end}
 
 		if isImageKind(kind) && len(item.Assets) == 0 && len(item.ImageLayers) == 0 {
 			return nil, fmt.Errorf("overlay: image template %q item %q requires asset_refs", item.Template, item.ID)
@@ -610,7 +602,7 @@ func resolveSemanticItems(src *semanticPlan) ([]resolvedItem, error) {
 			}
 			ri.Preset = def
 		}
-		if err := validateTextRuntimeOverrides(runtimeStyle, item.ID, kind, preset, len(item.Assets) > 0, strings.TrimSpace(item.EntityCaption) != ""); err != nil {
+		if err := validateTextRuntimeOverrides(params, item.ID, kind, preset, len(item.Assets) > 0, strings.TrimSpace(item.EntityCaption) != ""); err != nil {
 			return nil, err
 		}
 		if isEntityKind(kind) && len(item.Assets) > 0 {
@@ -633,17 +625,9 @@ func resolveSemanticItems(src *semanticPlan) ([]resolvedItem, error) {
 // image asset.
 func compileItem(ri resolvedItem, src *semanticPlan, registry *assetRegistry) ([]Layer, error) {
 	switch {
-	case isEntityKind(ri.Kind):
-		if len(ri.Item.ImageLayers) > 0 {
-			return compileImageLayers(ri, src, registry)
-		}
-		if len(ri.Item.Assets) == 0 {
-			layer, err := compileTextLayer(ri, src, ri.Item.ID)
-			if err != nil {
-				return nil, err
-			}
-			return compileTextVisualAccentLayers(ri, src, layer)
-		}
+	case isEntityKind(ri.Kind) && len(ri.Item.ImageLayers) > 0:
+		return compileImageLayers(ri, src, registry)
+	case isEntityKind(ri.Kind) && len(ri.Item.Assets) > 0:
 		return compileEntityCard(ri, src, registry)
 	case isVideoKind(ri.Kind):
 		layer, err := compileVideoOverlayLayer(ri, src, registry)
@@ -654,7 +638,7 @@ func compileItem(ri resolvedItem, src *semanticPlan, registry *assetRegistry) ([
 	case isImageKind(ri.Kind):
 		return compileImageLayers(ri, src, registry)
 	case isShapeKind(ri.Kind):
-		layer, err := compileShapeLayer(ri, src)
+		layer, err := resolveShape(ri, src)
 		if err != nil {
 			return nil, err
 		}
@@ -678,8 +662,11 @@ func compileTextVisualAccentLayers(ri resolvedItem, src *semanticPlan, text Laye
 		// These date/number animations mirror the modern Short Phrases previews.
 		// Respect a producer's explicit font override, but otherwise use the
 		// bundled Bricolage face rather than the generic phrase preset default.
-		if _, explicit := ri.RuntimeStyle["font_family"]; !explicit {
-			text.Style.Font = "assets/fonts/Bricolage-Grotesque.ttf"
+		if _, explicit := ri.Params["font_family"]; !explicit {
+			// Resolve the internal modern-typewriter default through the same
+			// font registry as explicit family overrides; keep its asset path
+			// out of this lowering branch.
+			text.Style.Font, _ = runtimeFontPath("bricolage_grotesque")
 		}
 	}
 	definition, err := visualAccentsDefinition(ri.Item.MotionID)
@@ -840,8 +827,8 @@ func compileEntityCard(ri resolvedItem, src *semanticPlan, registry *assetRegist
 		img.Position = []float64{0, 0}
 		img.Fit = FitContain
 	}
-	if x, ok := numericParam(ri.Params["position_x"]); ok {
-		y, _ := numericParam(ri.Params["position_y"])
+	if x, ok := numericValue(ri.Params["position_x"]); ok {
+		y, _ := numericValue(ri.Params["position_y"])
 		img.Position = []float64{x, y}
 	}
 	if err := applyFrameTreatment(&img, ri.Item.Frame); err != nil {
@@ -948,7 +935,7 @@ func compileVideoOverlayLayer(ri resolvedItem, src *semanticPlan, registry *asse
 	// source clip's foreground_scale_percent (which is the only place the
 	// modular resolver's implicit canvas-centre shift is cancelled).
 	if raw, exists := ri.Params["scale_percent"]; exists {
-		percent, ok := numericParam(raw)
+		percent, ok := numericValue(raw)
 		if !ok || percent <= 0 || percent > 100 {
 			return Layer{}, fmt.Errorf("overlay: video overlay item %q has scale_percent outside (0,100]", ri.Item.ID)
 		}

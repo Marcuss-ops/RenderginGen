@@ -112,7 +112,7 @@ func compileVisualAccentsFieldMask(image Layer, mask *motion.ImageMaskDefinition
 	opacityKeys := make([]AnimationKeyframe, len(animation.Keyframes))
 	const fieldSwing = 2.0 // field values live in [0,1]; swing covers any warp overshoot
 	for i, keyframe := range animation.Keyframes {
-		progress, ok := numericTrackValue(keyframe.Value)
+		progress, ok := numericValue(keyframe.Value)
 		if !ok {
 			return LayerMask{}, fmt.Errorf("overlay: image layer %q paint mask progress keyframe %d is not scalar", image.ID, i)
 		}

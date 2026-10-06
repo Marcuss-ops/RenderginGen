@@ -152,6 +152,7 @@ func compileImageLayers(ri resolvedItem, src *semanticPlan, registry *assetRegis
 		if err != nil {
 			return nil, err
 		}
+		layers = append(layers, decorated...)
 		if caption := strings.TrimSpace(child.Caption); caption != "" {
 			imageIndex := premiumImageLayerIndex(decorated)
 			captionLayer, err := compileEntityCaptionLayer(ri, src, childItem, caption, &decorated[imageIndex], child.ID)
@@ -161,10 +162,7 @@ func compileImageLayers(ri resolvedItem, src *semanticPlan, registry *assetRegis
 			if premium != nil && len(premium.ImageRecipe.CaptionTracks) > 0 {
 				premiumLayerActive(&captionLayer, premiumTracks(*premium, premium.ImageRecipe.CaptionTracks, captionLayer.DurationFrames))
 			}
-			layers = append(layers, decorated...)
 			layers = append(layers, captionLayer)
-		} else {
-			layers = append(layers, decorated...)
 		}
 	}
 	return layers, nil
@@ -299,8 +297,8 @@ func compileSingleImageLayer(ri resolvedItem, src *semanticPlan, assetPath strin
 		}
 		applyMotionRouting(&layer, animation)
 	}
-	if x, ok := numericParam(ri.Params["position_x"]); ok {
-		y, _ := numericParam(ri.Params["position_y"])
+	if x, ok := numericValue(ri.Params["position_x"]); ok {
+		y, _ := numericValue(ri.Params["position_y"])
 		layer.Position = []float64{x, y}
 	} else if layer.Position == nil {
 		if ri.Kind == KindEntityImage {
@@ -312,7 +310,7 @@ func compileSingleImageLayer(ri resolvedItem, src *semanticPlan, assetPath strin
 			layer.Position = resolveImageLayout(preset.Layout, layer.BoxWidth, layer.BoxHeight, src.Width, src.Height)
 		}
 	}
-	if y, ok := numericParam(ri.Params["position_y"]); ok {
+	if y, ok := numericValue(ri.Params["position_y"]); ok {
 		if layer.Position == nil {
 			layer.Position = []float64{0, 0}
 		}
@@ -326,18 +324,6 @@ func compileSingleImageLayer(ri resolvedItem, src *semanticPlan, assetPath strin
 		return Layer{}, fmt.Errorf("overlay: image item %q: %w", ri.Item.ID, err)
 	}
 	return layer, nil
-}
-func numericParam(value any) (float64, bool) {
-	switch number := value.(type) {
-	case float64:
-		return number, true
-	case int:
-		return float64(number), true
-	case int64:
-		return float64(number), true
-	default:
-		return 0, false
-	}
 }
 
 // FitEntityImageLayerToAsset matches an entity image's bounded contain box to

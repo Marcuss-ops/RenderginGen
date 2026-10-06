@@ -117,7 +117,7 @@ func compileTypewriterCursor(ri resolvedItem, src *semanticPlan, text Layer) (La
 	positionsX := make([]AnimationKeyframe, 0, len(sweep.Keyframes))
 	positionsY := make([]AnimationKeyframe, 0, len(sweep.Keyframes))
 	for _, key := range sweep.Keyframes {
-		progress, ok := cursorNumericValue(key.Value)
+		progress, ok := numericValue(key.Value)
 		if !ok {
 			return Layer{}, false
 		}
@@ -200,7 +200,7 @@ func sampleLayerOffset(animation *LayerAnimation, property string, frame int64) 
 		if track.Property != property || len(track.Keyframes) == 0 {
 			continue
 		}
-		if value, ok := cursorNumericValue(track.Keyframes[0].Value); ok && frame <= track.Keyframes[0].Frame {
+		if value, ok := numericValue(track.Keyframes[0].Value); ok && frame <= track.Keyframes[0].Frame {
 			return value
 		}
 		for i := 1; i < len(track.Keyframes); i++ {
@@ -208,8 +208,8 @@ func sampleLayerOffset(animation *LayerAnimation, property string, frame int64) 
 			if frame > right.Frame {
 				continue
 			}
-			leftValue, leftOK := cursorNumericValue(left.Value)
-			rightValue, rightOK := cursorNumericValue(right.Value)
+			leftValue, leftOK := numericValue(left.Value)
+			rightValue, rightOK := numericValue(right.Value)
 			if !leftOK || !rightOK {
 				return 0
 			}
@@ -219,7 +219,7 @@ func sampleLayerOffset(animation *LayerAnimation, property string, frame int64) 
 			ratio := float64(frame-left.Frame) / float64(right.Frame-left.Frame)
 			return leftValue + (rightValue-leftValue)*ratio
 		}
-		if value, ok := cursorNumericValue(track.Keyframes[len(track.Keyframes)-1].Value); ok {
+		if value, ok := numericValue(track.Keyframes[len(track.Keyframes)-1].Value); ok {
 			return value
 		}
 	}
@@ -243,19 +243,4 @@ func typewriterGlyphAdvance(char rune, fontSize float64) float64 {
 		em = .63
 	}
 	return em * fontSize
-}
-
-func cursorNumericValue(value any) (float64, bool) {
-	switch number := value.(type) {
-	case float64:
-		return number, true
-	case float32:
-		return float64(number), true
-	case int:
-		return float64(number), true
-	case int64:
-		return float64(number), true
-	default:
-		return 0, false
-	}
 }

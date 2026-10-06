@@ -703,7 +703,7 @@ func mapPinMotion(source *LayerAnimation, position []float64) *LayerAnimation {
 	for axis, property := range []string{"position_x", "position_y"} {
 		keys := make([]AnimationKeyframe, len(scaleKeys))
 		for index, key := range scaleKeys {
-			scale, ok := numericParam(key.Value)
+			scale, ok := numericValue(key.Value)
 			if !ok {
 				return result
 			}

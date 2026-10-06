@@ -28,16 +28,16 @@ func compileTextLayer(ri resolvedItem, src *semanticPlan, layerID string) (Layer
 			layer.Style.Font = OfficialFontPathForLanguage(src.Language)
 		}
 	}
-	if err := applyTextRuntimeOverrides(&layer, ri.RuntimeStyle); err != nil {
+	if err := applyTextRuntimeOverrides(&layer, ri.Params); err != nil {
 		return Layer{}, fmt.Errorf("overlay: item %q: %w", ri.Item.ID, err)
 	}
 	// Text placement is expressed as a layer top-left plus a local text box.
 	// materialize_text uses the serialized box size, while the layer position
 	// is applied exactly once by Chronon.
-	if width, ok := numericParam(ri.Params["width"]); ok && width > 0 {
+	if width, ok := numericValue(ri.Params["width"]); ok && width > 0 {
 		layer.BoxWidth = int(width)
 	}
-	if height, ok := numericParam(ri.Params["height"]); ok && height > 0 {
+	if height, ok := numericValue(ri.Params["height"]); ok && height > 0 {
 		layer.BoxHeight = int(height)
 	}
 	if layer.BoxWidth <= 0 {
@@ -57,7 +57,7 @@ func compileTextLayer(ri resolvedItem, src *semanticPlan, layerID string) (Layer
 	// otherwise shrink_only fitting silently reduces it back to the preset's
 	// small minimum inside the preset's fixed 260px box.
 	if ri.Kind == KindTimelineDate || ri.Kind == KindMetricStat || ri.Kind == KindNumber {
-		if requestedSize, ok := numericParam(ri.RuntimeStyle["font_size_px"]); ok && requestedSize > 0 {
+		if requestedSize, ok := numericValue(ri.Params["font_size_px"]); ok && requestedSize > 0 {
 			minimumHeight := int(math.Ceil(requestedSize*1.7)) + 32
 			if layer.BoxHeight < minimumHeight {
 				layer.BoxHeight = minimumHeight

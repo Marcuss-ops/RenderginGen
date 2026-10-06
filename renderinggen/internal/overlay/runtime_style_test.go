@@ -137,6 +137,36 @@ func TestRuntimeFontFamilyIsCaseSensitiveClosedEnum(t *testing.T) {
 	}
 }
 
+func TestUnsupportedFontErrorListsResolverFamilies(t *testing.T) {
+	_, err := compileRuntimeStylePlan(t, `{"font_family":"unknown"}`, `{}`)
+	if err == nil {
+		t.Fatal("unknown font family must be rejected")
+	}
+	message := err.Error()
+	for _, family := range runtimeFontFamilies() {
+		if !strings.Contains(message, family) {
+			t.Errorf("unsupported-font diagnostic %q omits supported family %q", message, family)
+		}
+	}
+	if strings.Index(message, "bricolage_grotesque") > strings.Index(message, "dejavu_sans") {
+		t.Errorf("supported families are not reported in stable sorted order: %q", message)
+	}
+}
+
+func TestRuntimeFontResolverHasNoDuplicateAssetPaths(t *testing.T) {
+	seen := make(map[string]string, len(runtimeFontsByFamily))
+	for family := range runtimeFontsByFamily {
+		path, ok := runtimeFontPath(family)
+		if !ok || path == "" {
+			t.Errorf("registered family %q did not resolve to a path", family)
+		}
+		if previous, duplicate := seen[path]; duplicate {
+			t.Errorf("families %q and %q unexpectedly share asset path %q", previous, family, path)
+		}
+		seen[path] = family
+	}
+}
+
 // TestRuntimeTextStyleOverridesRejectImageLayers walks the WHOLE control set, not
 // just the key that happens to be convenient: a non-text layer must reject every
 // control the validator used to accept, or a new control would silently become
