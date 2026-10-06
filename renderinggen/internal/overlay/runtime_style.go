@@ -54,7 +54,7 @@ func validateTextRuntimeOverrides(params map[string]any, itemID string, kind Ite
 				return fmt.Errorf("overlay: item %q params.font_family must be a string family id", itemID)
 			}
 			if _, ok := runtimeFontPath(family); !ok {
-				return fmt.Errorf("overlay: item %q params.font_family %q is unsupported (supported: poppins, inter, dejavu_sans, playfair_display_italic)", itemID, family)
+				return fmt.Errorf("overlay: item %q params.font_family %q is unsupported (supported: poppins, inter, bricolage_grotesque, dejavu_sans, playfair_display_italic)", itemID, family)
 			}
 		case "glow_size":
 			if _, err := boundedRuntimeSize(value, key, maxRuntimeGlowSize); err != nil {

@@ -19,6 +19,51 @@
         "longitude": { "type": "number", "minimum": -180, "maximum": 180 }
       }
     },
+    "map_text_style": {
+      "type": "object", "additionalProperties": false,
+      "properties": {
+        "font_family": { "enum": ["poppins", "inter", "dejavu_sans", "playfair_display_italic"] },
+        "font_size_px": { "type": "number", "minimum": 12, "maximum": 256 },
+        "fill": { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$" },
+        "stroke": {
+          "type": "object", "additionalProperties": false,
+          "required": ["color", "width"],
+          "properties": {
+            "color": { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$" },
+            "width": { "type": "number", "minimum": 0, "maximum": 16 }
+          }
+        },
+        "shadow": {
+          "type": "object", "additionalProperties": false,
+          "required": ["color", "opacity", "blur", "offset"],
+          "properties": {
+            "color": { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$" },
+            "opacity": { "type": "number", "minimum": 0, "maximum": 1 },
+            "blur": { "type": "number", "minimum": 0, "maximum": 64 },
+            "offset": { "type": "array", "minItems": 2, "maxItems": 2, "items": { "type": "number", "minimum": -128, "maximum": 128 } }
+          }
+        },
+        "glow": {
+          "type": "object", "additionalProperties": false,
+          "required": ["color", "radius", "intensity"],
+          "properties": {
+            "color": { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$" },
+            "radius": { "type": "number", "minimum": 0, "maximum": 128 },
+            "intensity": { "type": "number", "minimum": 0, "maximum": 1 }
+          }
+        },
+        "background": {
+          "type": "object", "additionalProperties": false,
+          "required": ["color", "opacity", "radius", "padding"],
+          "properties": {
+            "color": { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$" },
+            "opacity": { "type": "number", "minimum": 0, "maximum": 1 },
+            "radius": { "type": "number", "minimum": 0, "maximum": 128 },
+            "padding": { "type": "array", "minItems": 2, "maxItems": 2, "items": { "type": "number", "minimum": 0, "maximum": 128 } }
+          }
+        }
+      }
+    },
     "stroke": {
       "type": "object", "additionalProperties": false,
       "properties": {
@@ -232,8 +277,8 @@
           "caption_motion_id": { "type": "string", "minLength": 1, "description": "Optional motion override for the entity caption layer. Empty resolves the shared default (text_fade_up); a motion that does not target text is refused by the caption lowering." },
           "caption_layout": { "type": "string", "enum": ["below", "left", "right"], "description": "Optional entity caption placement. left/right place the caption in that column relative to the image; below anchors it under the image." },
           "caption_font_family": { "type": "string", "enum": ["poppins", "inter", "dejavu_sans", "playfair_display_italic"], "description": "Optional bundled font family for an entity caption." },
-          "caption_color": { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$", "description": "Optional hex color for an entity caption." },
-          "entity_style_id": { "type": "string", "enum": ["premium_random_v1"], "description": "Optional RenderingGen entity-card composition selector. premium_random_v1 deterministically chooses one of 15 editorial image and caption animation/layout variants using the plan and entity identity; runtime background, image and caption content are preserved." },
+          "caption_color": { "type": "string", "description": "Optional explicit color for an entity caption." },
+          "entity_style_id": { "type": "string", "description": "Optional RenderingGen entity-card composition selector. Supports premium_random_v1, testo_sotto, below, premium_below_random_v1, badge, camera, side, typewriter, or 01..25 Apple-style spatial variants; runtime background, image and caption content are preserved." },
           "params": {
             "type": "object",
             "description": "Per-item runtime controls and motion parameters. Font, shadow, stroke, glow and shape controls are validated by RenderingGen. Shape-only geometry and effects use the shape variant and its closed nested contracts.",
@@ -425,7 +470,10 @@
                     "latitude": { "type": "number", "minimum": -90, "maximum": 90 },
                     "longitude": { "type": "number", "minimum": -180, "maximum": 180 },
                     "color": { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$" },
-                    "radius_px": { "type": "number", "exclusiveMinimum": 0, "maximum": 128 }
+                    "radius_px": { "type": "number", "exclusiveMinimum": 0, "maximum": 128 },
+                    "label_style": { "$ref": "#/$defs/map_text_style", "description": "Optional per-label typography/effects. Omit to retain the map's stable readable default." },
+                    "label_offset_px": { "type": "array", "minItems": 2, "maxItems": 2, "items": { "type": "number", "minimum": -2048, "maximum": 2048 }, "description": "Optional preferred [x,y] offset from the default label position in output pixels; deterministic alternate sides are used when the preferred box clips or collides." },
+                    "label_priority": { "type": "integer", "minimum": -1000, "maximum": 1000, "description": "Higher-priority labels are placed first; equal priorities use stable pin-id ordering." }
                   }
                 }
               }

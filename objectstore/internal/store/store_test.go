@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
+	"io"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -44,19 +45,6 @@ func assertNoTempFiles(t *testing.T, s *Store, key string) {
 	}
 }
 
-func TestPutGet(t *testing.T) {
-	s := New(t.TempDir())
-	payload := []byte("hello")
-	key := digestOf(payload)
-	if err := s.Put(key, payload); err != nil {
-		t.Fatal(err)
-	}
-	data, err := s.Get(key)
-	if err != nil || !bytes.Equal(data, payload) {
-		t.Fatalf("get: %v %q", err, data)
-	}
-}
-
 func TestPutReaderStreamsAndInstalls(t *testing.T) {
 	dir := t.TempDir()
 	s := New(dir)
@@ -65,12 +53,17 @@ func TestPutReaderStreamsAndInstalls(t *testing.T) {
 	if err := s.PutReader(key, bytes.NewReader(payload), int64(len(payload))); err != nil {
 		t.Fatal(err)
 	}
-	got, err := s.Get(key)
-	if err != nil || !bytes.Equal(got, payload) {
-		t.Fatalf("streamed get: %v, %d bytes", err, len(got))
+	reader, size, err := s.Open(key)
+	if err != nil {
+		t.Fatalf("open stored object: %v", err)
 	}
-	if _, err := os.Stat(s.path(key)); err != nil {
-		t.Fatalf("object path missing: %v", err)
+	defer reader.Close()
+	if size != int64(len(payload)) {
+		t.Fatalf("streamed object size = %d, want %d", size, len(payload))
+	}
+	got, err := io.ReadAll(reader)
+	if err != nil || !bytes.Equal(got, payload) {
+		t.Fatalf("streamed read: %v, %d bytes", err, len(got))
 	}
 }
 
@@ -83,17 +76,16 @@ func TestPutVerifiesEmptyObject(t *testing.T) {
 	if err := s.Put(key, nil); err != nil {
 		t.Fatalf("empty object: %v", err)
 	}
-	data, err := s.Get(key)
-	if err != nil || len(data) != 0 {
-		t.Fatalf("empty object get: %v %d bytes", err, len(data))
+	reader, size, err := s.Open(key)
+	if err != nil {
+		t.Fatalf("empty object open: %v", err)
 	}
-}
-
-func TestGetMissing(t *testing.T) {
-	s := New(t.TempDir())
-	key := digestOf([]byte("never stored"))
-	if _, err := s.Get(key); !errors.Is(err, ErrNotFound) {
-		t.Fatalf("want ErrNotFound, got %v", err)
+	defer reader.Close()
+	if size != 0 {
+		t.Fatalf("empty object size = %d, want 0", size)
+	}
+	if data, err := io.ReadAll(reader); err != nil || len(data) != 0 {
+		t.Fatalf("empty object read: %v %d bytes", err, len(data))
 	}
 }
 
@@ -112,9 +104,6 @@ func TestPutRejectsContentAddressMismatch(t *testing.T) {
 	}
 	// The address must be untouched: a later reader has to get 404, never the
 	// wrong bytes.
-	if _, err := s.Get(key); !errors.Is(err, ErrNotFound) {
-		t.Fatalf("rejected content left an object at %s: %v", key, err)
-	}
 	if _, _, err := s.Open(key); !errors.Is(err, ErrNotFound) {
 		t.Fatalf("Open of a rejected address: %v", err)
 	}
@@ -154,9 +143,6 @@ func TestPutRejectsMalformedContentAddress(t *testing.T) {
 			if err := s.PutReader(key, bytes.NewReader([]byte("hello")), -1); !errors.Is(err, ErrInvalidContentAddress) {
 				t.Fatalf("PutReader(%q): want ErrInvalidContentAddress, got %v", key, err)
 			}
-			if _, err := s.Get(key); !errors.Is(err, ErrInvalidContentAddress) {
-				t.Fatalf("Get(%q): want ErrInvalidContentAddress, got %v", key, err)
-			}
 			if _, _, err := s.Open(key); !errors.Is(err, ErrInvalidContentAddress) {
 				t.Fatalf("Open(%q): want ErrInvalidContentAddress, got %v", key, err)
 			}
@@ -187,7 +173,7 @@ func TestPutRejectsDeclaredLengthMismatch(t *testing.T) {
 	} else if errors.Is(err, ErrInvalidContentAddress) || errors.Is(err, ErrContentAddressMismatch) {
 		t.Fatalf("length mismatch must be its own failure, got %v", err)
 	}
-	if _, err := s.Get(key); !errors.Is(err, ErrNotFound) {
+	if _, _, err := s.Open(key); !errors.Is(err, ErrNotFound) {
 		t.Fatalf("length mismatch installed an object: %v", err)
 	}
 	assertNoTempFiles(t, s, key)
@@ -217,7 +203,7 @@ func TestStoreExposesNoUnverifiedWritePath(t *testing.T) {
 	}
 	sort.Strings(methods)
 
-	want := []string{"Capabilities", "Get", "Open", "Put", "PutReader", "Scan", "Verify"}
+	want := []string{"Capabilities", "Open", "Put", "PutReader", "Scan", "Verify"}
 	if !reflect.DeepEqual(methods, want) {
 		t.Fatalf("exported *store.Store methods = %v, want %v; a NEW method must be classified as read-only, or verify the content address if it installs bytes", methods, want)
 	}
@@ -247,9 +233,17 @@ func TestPutReinstallIsIdempotent(t *testing.T) {
 			t.Fatalf("republish %d: %v", i, err)
 		}
 	}
-	data, err := s.Get(key)
+	reader, size, err := s.Open(key)
+	if err != nil {
+		t.Fatalf("open after republish: %v", err)
+	}
+	defer reader.Close()
+	if size != int64(len(payload)) {
+		t.Fatalf("size after republish = %d, want %d", size, len(payload))
+	}
+	data, err := io.ReadAll(reader)
 	if err != nil || !bytes.Equal(data, payload) {
-		t.Fatalf("get after republish: %v %q", err, data)
+		t.Fatalf("read after republish: %v %q", err, data)
 	}
 	assertNoTempFiles(t, s, key)
 }

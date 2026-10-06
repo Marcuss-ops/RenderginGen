@@ -155,9 +155,6 @@ func textAttr() func([]string, slog.Attr) slog.Attr {
 	}
 }
 
-// Level reports the active level.
-func Level() slog.Level { return levelVar.Level() }
-
 // ── standard library bridge ──────────────────────────────────────────────
 
 // maxPendingLine bounds the bridge buffer. log's Writer contract has no newline
@@ -415,37 +412,6 @@ func (j *Job) emit(level slog.Level, msg string, attrs ...slog.Attr) {
 	for _, s := range j.st.snapshotSinks() {
 		s.log(level, msg, all)
 	}
-}
-
-// Writer returns an io.Writer that turns each written line into a job-scoped
-// record. It exists for subprocess output (the engine's render stream), which
-// arrives as bytes and must be attributed to the job that produced it.
-func (j *Job) Writer() io.Writer { return &lineWriter{job: j} }
-
-// lineWriter splits byte streams into records.
-type lineWriter struct {
-	job *Job
-	buf []byte
-}
-
-func (w *lineWriter) Write(p []byte) (int, error) {
-	w.buf = append(w.buf, p...)
-	for {
-		i := bytes.IndexByte(w.buf, '\n')
-		if i < 0 {
-			break
-		}
-		line := string(w.buf[:i])
-		w.buf = w.buf[i+1:]
-		if strings.TrimSpace(line) != "" {
-			w.job.emit(slog.LevelInfo, strings.TrimSpace(line), slog.String(FieldLogger, "engine"))
-		}
-	}
-	if len(w.buf) >= maxPendingLine {
-		w.job.emit(slog.LevelInfo, strings.TrimSpace(string(w.buf)), slog.String(FieldLogger, "engine"))
-		w.buf = w.buf[:0]
-	}
-	return len(p), nil
 }
 
 // ── per-job sinks ────────────────────────────────────────────────────────

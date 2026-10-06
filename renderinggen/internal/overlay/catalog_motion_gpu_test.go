@@ -231,12 +231,12 @@ func TestEveryCallableCatalogMotionExecutesOnTheStrictGPU(t *testing.T) {
 	stackImageSHA := hex.EncodeToString(stackImageDigest[:])
 
 	var items []map[string]any
-	phraseIDs := make([]string, 0, 113)
-	for _, family := range []string{"typewriter", "classic_apple", "modern_apple"} {
+	phraseIDs := make([]string, 0, 128)
+	for _, family := range []string{"typewriter", "typewriter_modern_v1", "classic_apple", "modern_apple"} {
 		phraseIDs = append(phraseIDs, motion.Registry.FamilyMotionIDs(family)...)
 	}
-	if len(phraseIDs) != 113 {
-		t.Fatalf("phrase family inventory has %d IDs, want 113", len(phraseIDs))
+	if len(phraseIDs) != 128 {
+		t.Fatalf("phrase family inventory has %d IDs, want 128", len(phraseIDs))
 	}
 	for i, id := range phraseIDs {
 		items = append(items, map[string]any{

@@ -2767,6 +2767,247 @@
       "rgb_spectrum_drop",
       "rgb_block_shuffle",
       "rgb_radial_burst"
+    ],
+    "rapid_transitions": [
+      {
+        "id": "rgb_split_whip",
+        "minimum_frames": 5,
+        "maximum_frames": 8,
+        "recommended_frames": 7,
+        "timing_class": "normal"
+      },
+      {
+        "id": "rgb_snap",
+        "minimum_frames": 4,
+        "maximum_frames": 6,
+        "recommended_frames": 5,
+        "timing_class": "micro"
+      },
+      {
+        "id": "rgb_zoom_punch",
+        "minimum_frames": 6,
+        "maximum_frames": 10,
+        "recommended_frames": 8,
+        "timing_class": "normal"
+      },
+      {
+        "id": "rgb_horizontal_tear",
+        "minimum_frames": 6,
+        "maximum_frames": 10,
+        "recommended_frames": 8,
+        "timing_class": "normal"
+      },
+      {
+        "id": "rgb_glitch_cut",
+        "minimum_frames": 4,
+        "maximum_frames": 8,
+        "recommended_frames": 6,
+        "timing_class": "micro"
+      },
+      {
+        "id": "rgb_lens_snap",
+        "minimum_frames": 6,
+        "maximum_frames": 9,
+        "recommended_frames": 8,
+        "timing_class": "normal"
+      },
+      {
+        "id": "rgb_spin_blur",
+        "minimum_frames": 6,
+        "maximum_frames": 10,
+        "recommended_frames": 8,
+        "timing_class": "normal"
+      },
+      {
+        "id": "prismatic_flash",
+        "minimum_frames": 6,
+        "maximum_frames": 10,
+        "recommended_frames": 8,
+        "timing_class": "normal"
+      },
+      {
+        "id": "lightleak_rgb_combo",
+        "minimum_frames": 8,
+        "maximum_frames": 12,
+        "recommended_frames": 10,
+        "timing_class": "normal"
+      },
+      {
+        "id": "film_burn_rgb",
+        "minimum_frames": 8,
+        "maximum_frames": 12,
+        "recommended_frames": 10,
+        "timing_class": "normal"
+      }
+    ]
+  },
+  "transitions": {
+    "schema": "chronontemplate.transitions.v1",
+    "version": 1,
+    "family_id": "transitions_v1",
+    "micro_frames": [
+      4,
+      6
+    ],
+    "normal_frames": [
+      7,
+      10
+    ],
+    "hero_frames": [
+      11,
+      16
+    ],
+    "recipes": [
+      {
+        "id": "transition_wipe",
+        "timing_class": "legacy",
+        "minimum_frames": 2,
+        "maximum_frames": 0,
+        "recommended_frames": 24,
+        "weight_percent": 0,
+        "implementation": "ShapePlateSweep"
+      },
+      {
+        "id": "transition_push_through",
+        "timing_class": "legacy",
+        "minimum_frames": 2,
+        "maximum_frames": 0,
+        "recommended_frames": 24,
+        "weight_percent": 0,
+        "implementation": "ShapePlateSweep"
+      },
+      {
+        "id": "transition_dip_to_black",
+        "timing_class": "legacy",
+        "minimum_frames": 2,
+        "maximum_frames": 0,
+        "recommended_frames": 24,
+        "weight_percent": 0,
+        "implementation": "OpacityPlate"
+      },
+      {
+        "id": "transition_dip_to_color",
+        "timing_class": "legacy",
+        "minimum_frames": 2,
+        "maximum_frames": 0,
+        "recommended_frames": 24,
+        "weight_percent": 0,
+        "implementation": "OpacityPlate"
+      },
+      {
+        "id": "transition_blinds",
+        "timing_class": "legacy",
+        "minimum_frames": 2,
+        "maximum_frames": 0,
+        "recommended_frames": 24,
+        "weight_percent": 0,
+        "implementation": "ScaleSlats"
+      },
+      {
+        "id": "transition_iris_circle",
+        "timing_class": "legacy",
+        "minimum_frames": 2,
+        "maximum_frames": 0,
+        "recommended_frames": 24,
+        "weight_percent": 0,
+        "implementation": "ScalePlate"
+      },
+      {
+        "id": "transition_glitch_slices",
+        "timing_class": "legacy",
+        "minimum_frames": 2,
+        "maximum_frames": 0,
+        "recommended_frames": 24,
+        "weight_percent": 0,
+        "implementation": "DeterministicSlices"
+      },
+      {
+        "id": "transition_light_leak",
+        "timing_class": "legacy",
+        "minimum_frames": 2,
+        "maximum_frames": 0,
+        "recommended_frames": 24,
+        "weight_percent": 0,
+        "implementation": "OpacityPlate"
+      },
+      {
+        "id": "lightleak_flash_sweep",
+        "timing_class": "normal",
+        "minimum_frames": 6,
+        "maximum_frames": 10,
+        "recommended_frames": 8,
+        "weight_percent": 35,
+        "implementation": "AnimatedShapeApproximation"
+      },
+      {
+        "id": "lightleak_corner_burn",
+        "timing_class": "normal",
+        "minimum_frames": 8,
+        "maximum_frames": 12,
+        "recommended_frames": 10,
+        "weight_percent": 4,
+        "implementation": "AnimatedShapeApproximation"
+      },
+      {
+        "id": "lightleak_whiteout",
+        "timing_class": "micro",
+        "minimum_frames": 5,
+        "maximum_frames": 8,
+        "recommended_frames": 6,
+        "weight_percent": 10,
+        "implementation": "WarmAndWhiteOpacityPlates"
+      },
+      {
+        "id": "lightleak_diagonal_cut",
+        "timing_class": "normal",
+        "minimum_frames": 6,
+        "maximum_frames": 9,
+        "recommended_frames": 7,
+        "weight_percent": 8,
+        "implementation": "RotatedShapeApproximation"
+      },
+      {
+        "id": "lightleak_double_pass",
+        "timing_class": "hero",
+        "minimum_frames": 10,
+        "maximum_frames": 14,
+        "recommended_frames": 12,
+        "weight_percent": 5,
+        "implementation": "TwoAnimatedShapePlates"
+      },
+      {
+        "id": "lightleak_film_burn",
+        "timing_class": "normal",
+        "minimum_frames": 8,
+        "maximum_frames": 12,
+        "recommended_frames": 10,
+        "weight_percent": 15,
+        "implementation": "DeterministicEdgeShapeApproximation"
+      },
+      {
+        "id": "lightleak_center_burst",
+        "timing_class": "micro",
+        "minimum_frames": 5,
+        "maximum_frames": 8,
+        "recommended_frames": 6,
+        "weight_percent": 3,
+        "implementation": "ScaledShapeApproximation"
+      },
+      {
+        "id": "lightleak_horizontal_whip",
+        "timing_class": "micro",
+        "minimum_frames": 4,
+        "maximum_frames": 7,
+        "recommended_frames": 5,
+        "weight_percent": 20,
+        "implementation": "AnimatedShapeApproximation"
+      }
+    ],
+    "capability_gaps": [
+      "WarpedLightLeak",
+      "ChannelSplit",
+      "ChannelTrail",
+      "SliceDisplace"
     ]
   },
   "motions": [
@@ -27176,6 +27417,1086 @@
       ],
       "selector": {},
       "stagger": {}
+    },
+    {
+      "id": "typewriter_modern_01_monospace_block_cursor",
+      "category": "typewriter_modern_v1",
+      "unit": "glyph",
+      "enter": 42,
+      "exit": 0,
+      "tracks": [
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 18,
+              "value": 1
+            },
+            {
+              "frame": 42,
+              "value": 1
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ],
+      "text_animators": [
+        {
+          "id": "typewriter_modern_01_monospace_block_cursor_text",
+          "selector": {
+            "kind": "glyph",
+            "shape": "square",
+            "order": "forward",
+            "stagger": 1
+          },
+          "properties": [
+            {
+              "property": "opacity",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0
+                },
+                {
+                  "frame": 42,
+                  "value": 1
+                }
+              ],
+              "easing": "linear"
+            },
+            {
+              "property": "tracking",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": -5
+                },
+                {
+                  "frame": 20,
+                  "value": 0
+                },
+                {
+                  "frame": 42,
+                  "value": 0
+                }
+              ],
+              "easing": "out_cubic"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "typewriter_modern_02_kinetic_scramble",
+      "category": "typewriter_modern_v1",
+      "unit": "glyph",
+      "enter": 42,
+      "exit": 0,
+      "tracks": [
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 18,
+              "value": 1
+            },
+            {
+              "frame": 42,
+              "value": 1
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ],
+      "text_animators": [
+        {
+          "id": "typewriter_modern_02_kinetic_scramble_text",
+          "selector": {
+            "kind": "glyph",
+            "shape": "square",
+            "order": "forward",
+            "stagger": 1
+          },
+          "properties": [
+            {
+              "property": "opacity",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0
+                },
+                {
+                  "frame": 42,
+                  "value": 1
+                }
+              ],
+              "easing": "linear"
+            },
+            {
+              "property": "position_x",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 18
+                },
+                {
+                  "frame": 18,
+                  "value": 0
+                },
+                {
+                  "frame": 42,
+                  "value": 0
+                }
+              ],
+              "easing": "out_cubic"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "typewriter_modern_03_soft_opacity_ramp",
+      "category": "typewriter_modern_v1",
+      "unit": "glyph",
+      "enter": 42,
+      "exit": 0,
+      "tracks": [
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 18,
+              "value": 1
+            },
+            {
+              "frame": 42,
+              "value": 1
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ],
+      "text_animators": [
+        {
+          "id": "typewriter_modern_03_soft_opacity_ramp_text",
+          "selector": {
+            "kind": "glyph",
+            "shape": "square",
+            "order": "forward",
+            "stagger": 1
+          },
+          "properties": [
+            {
+              "property": "opacity",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0
+                },
+                {
+                  "frame": 42,
+                  "value": 1
+                }
+              ],
+              "easing": "linear"
+            },
+            {
+              "property": "blur",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 12
+                },
+                {
+                  "frame": 20,
+                  "value": 3.5999999999999996
+                },
+                {
+                  "frame": 42,
+                  "value": 0
+                }
+              ],
+              "easing": "out_cubic"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "typewriter_modern_04_character_bounce",
+      "category": "typewriter_modern_v1",
+      "unit": "glyph",
+      "enter": 42,
+      "exit": 0,
+      "tracks": [
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 18,
+              "value": 1
+            },
+            {
+              "frame": 42,
+              "value": 1
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ],
+      "text_animators": [
+        {
+          "id": "typewriter_modern_04_character_bounce_text",
+          "selector": {
+            "kind": "glyph",
+            "shape": "square",
+            "order": "forward",
+            "stagger": 1
+          },
+          "properties": [
+            {
+              "property": "opacity",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0
+                },
+                {
+                  "frame": 42,
+                  "value": 1
+                }
+              ],
+              "easing": "linear"
+            },
+            {
+              "property": "position_y",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 18
+                },
+                {
+                  "frame": 18,
+                  "value": 0
+                },
+                {
+                  "frame": 42,
+                  "value": 0
+                }
+              ],
+              "easing": "out_cubic"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "typewriter_modern_05_backspace_correction",
+      "category": "typewriter_modern_v1",
+      "unit": "glyph",
+      "enter": 42,
+      "exit": 0,
+      "tracks": [
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 18,
+              "value": 1
+            },
+            {
+              "frame": 42,
+              "value": 1
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ],
+      "text_animators": [
+        {
+          "id": "typewriter_modern_05_backspace_correction_text",
+          "selector": {
+            "kind": "glyph",
+            "shape": "square",
+            "order": "forward",
+            "stagger": 1
+          },
+          "properties": [
+            {
+              "property": "opacity",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0
+                },
+                {
+                  "frame": 42,
+                  "value": 1
+                }
+              ],
+              "easing": "linear"
+            },
+            {
+              "property": "scale",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0.82
+                },
+                {
+                  "frame": 18,
+                  "value": 0
+                },
+                {
+                  "frame": 42,
+                  "value": 1
+                }
+              ],
+              "easing": "out_cubic"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "typewriter_modern_06_glow_beam_sweep",
+      "category": "typewriter_modern_v1",
+      "unit": "glyph",
+      "enter": 42,
+      "exit": 0,
+      "tracks": [
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 18,
+              "value": 1
+            },
+            {
+              "frame": 42,
+              "value": 1
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ],
+      "text_animators": [
+        {
+          "id": "typewriter_modern_06_glow_beam_sweep_text",
+          "selector": {
+            "kind": "glyph",
+            "shape": "square",
+            "order": "forward",
+            "stagger": 1
+          },
+          "properties": [
+            {
+              "property": "opacity",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0
+                },
+                {
+                  "frame": 42,
+                  "value": 1
+                }
+              ],
+              "easing": "linear"
+            },
+            {
+              "property": "tracking",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": -2
+                },
+                {
+                  "frame": 20,
+                  "value": 4
+                },
+                {
+                  "frame": 42,
+                  "value": 0
+                }
+              ],
+              "easing": "out_cubic"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "typewriter_modern_07_word_snap",
+      "category": "typewriter_modern_v1",
+      "unit": "glyph",
+      "enter": 42,
+      "exit": 0,
+      "tracks": [
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 18,
+              "value": 1
+            },
+            {
+              "frame": 42,
+              "value": 1
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ],
+      "text_animators": [
+        {
+          "id": "typewriter_modern_07_word_snap_text",
+          "selector": {
+            "kind": "glyph",
+            "shape": "square",
+            "order": "forward",
+            "stagger": 1
+          },
+          "properties": [
+            {
+              "property": "opacity",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0
+                },
+                {
+                  "frame": 42,
+                  "value": 1
+                }
+              ],
+              "easing": "linear"
+            },
+            {
+              "property": "scale",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0.72
+                },
+                {
+                  "frame": 18,
+                  "value": 0
+                },
+                {
+                  "frame": 42,
+                  "value": 1
+                }
+              ],
+              "easing": "out_cubic"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "typewriter_modern_08_mechanical_y_shift",
+      "category": "typewriter_modern_v1",
+      "unit": "glyph",
+      "enter": 42,
+      "exit": 0,
+      "tracks": [
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 18,
+              "value": 1
+            },
+            {
+              "frame": 42,
+              "value": 1
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ],
+      "text_animators": [
+        {
+          "id": "typewriter_modern_08_mechanical_y_shift_text",
+          "selector": {
+            "kind": "glyph",
+            "shape": "square",
+            "order": "forward",
+            "stagger": 1
+          },
+          "properties": [
+            {
+              "property": "opacity",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0
+                },
+                {
+                  "frame": 42,
+                  "value": 1
+                }
+              ],
+              "easing": "linear"
+            },
+            {
+              "property": "position_y",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 14
+                },
+                {
+                  "frame": 18,
+                  "value": 0
+                },
+                {
+                  "frame": 42,
+                  "value": 0
+                }
+              ],
+              "easing": "out_cubic"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "typewriter_modern_09_highlighter_expansion",
+      "category": "typewriter_modern_v1",
+      "unit": "glyph",
+      "enter": 42,
+      "exit": 0,
+      "tracks": [
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 18,
+              "value": 1
+            },
+            {
+              "frame": 42,
+              "value": 1
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ],
+      "text_animators": [
+        {
+          "id": "typewriter_modern_09_highlighter_expansion_text",
+          "selector": {
+            "kind": "glyph",
+            "shape": "square",
+            "order": "forward",
+            "stagger": 1
+          },
+          "properties": [
+            {
+              "property": "opacity",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0
+                },
+                {
+                  "frame": 42,
+                  "value": 1
+                }
+              ],
+              "easing": "linear"
+            },
+            {
+              "property": "scale_x",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0.84
+                },
+                {
+                  "frame": 18,
+                  "value": 0
+                },
+                {
+                  "frame": 42,
+                  "value": 1
+                }
+              ],
+              "easing": "out_cubic"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "typewriter_modern_10_weight_ramp",
+      "category": "typewriter_modern_v1",
+      "unit": "glyph",
+      "enter": 42,
+      "exit": 0,
+      "tracks": [
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 18,
+              "value": 1
+            },
+            {
+              "frame": 42,
+              "value": 1
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ],
+      "text_animators": [
+        {
+          "id": "typewriter_modern_10_weight_ramp_text",
+          "selector": {
+            "kind": "glyph",
+            "shape": "square",
+            "order": "forward",
+            "stagger": 1
+          },
+          "properties": [
+            {
+              "property": "opacity",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0
+                },
+                {
+                  "frame": 42,
+                  "value": 1
+                }
+              ],
+              "easing": "linear"
+            },
+            {
+              "property": "tracking",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": -3
+                },
+                {
+                  "frame": 20,
+                  "value": 0
+                },
+                {
+                  "frame": 42,
+                  "value": 0
+                }
+              ],
+              "easing": "out_cubic"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "typewriter_modern_11_dynamic_auto_wrap",
+      "category": "typewriter_modern_v1",
+      "unit": "glyph",
+      "enter": 42,
+      "exit": 0,
+      "tracks": [
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 18,
+              "value": 1
+            },
+            {
+              "frame": 42,
+              "value": 1
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ],
+      "text_animators": [
+        {
+          "id": "typewriter_modern_11_dynamic_auto_wrap_text",
+          "selector": {
+            "kind": "glyph",
+            "shape": "square",
+            "order": "forward",
+            "stagger": 1
+          },
+          "properties": [
+            {
+              "property": "opacity",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0
+                },
+                {
+                  "frame": 42,
+                  "value": 1
+                }
+              ],
+              "easing": "linear"
+            },
+            {
+              "property": "position_y",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 12
+                },
+                {
+                  "frame": 18,
+                  "value": 0
+                },
+                {
+                  "frame": 42,
+                  "value": 0
+                }
+              ],
+              "easing": "out_cubic"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "typewriter_modern_12_glitch_pop",
+      "category": "typewriter_modern_v1",
+      "unit": "glyph",
+      "enter": 42,
+      "exit": 0,
+      "tracks": [
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 18,
+              "value": 1
+            },
+            {
+              "frame": 42,
+              "value": 1
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ],
+      "text_animators": [
+        {
+          "id": "typewriter_modern_12_glitch_pop_text",
+          "selector": {
+            "kind": "glyph",
+            "shape": "square",
+            "order": "forward",
+            "stagger": 1
+          },
+          "properties": [
+            {
+              "property": "opacity",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0
+                },
+                {
+                  "frame": 42,
+                  "value": 1
+                }
+              ],
+              "easing": "linear"
+            },
+            {
+              "property": "position_x",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 12
+                },
+                {
+                  "frame": 18,
+                  "value": 0
+                },
+                {
+                  "frame": 42,
+                  "value": 0
+                }
+              ],
+              "easing": "out_cubic"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "typewriter_modern_13_elastic_leading_cursor",
+      "category": "typewriter_modern_v1",
+      "unit": "glyph",
+      "enter": 42,
+      "exit": 0,
+      "tracks": [
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 18,
+              "value": 1
+            },
+            {
+              "frame": 42,
+              "value": 1
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ],
+      "text_animators": [
+        {
+          "id": "typewriter_modern_13_elastic_leading_cursor_text",
+          "selector": {
+            "kind": "glyph",
+            "shape": "square",
+            "order": "forward",
+            "stagger": 1
+          },
+          "properties": [
+            {
+              "property": "opacity",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0
+                },
+                {
+                  "frame": 42,
+                  "value": 1
+                }
+              ],
+              "easing": "linear"
+            },
+            {
+              "property": "scale",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0.78
+                },
+                {
+                  "frame": 18,
+                  "value": 0
+                },
+                {
+                  "frame": 42,
+                  "value": 1
+                }
+              ],
+              "easing": "out_cubic"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "typewriter_modern_14_focal_blur_dissolve",
+      "category": "typewriter_modern_v1",
+      "unit": "glyph",
+      "enter": 42,
+      "exit": 0,
+      "tracks": [
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 18,
+              "value": 1
+            },
+            {
+              "frame": 42,
+              "value": 1
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ],
+      "text_animators": [
+        {
+          "id": "typewriter_modern_14_focal_blur_dissolve_text",
+          "selector": {
+            "kind": "glyph",
+            "shape": "square",
+            "order": "forward",
+            "stagger": 1
+          },
+          "properties": [
+            {
+              "property": "opacity",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0
+                },
+                {
+                  "frame": 42,
+                  "value": 1
+                }
+              ],
+              "easing": "linear"
+            },
+            {
+              "property": "blur",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 16
+                },
+                {
+                  "frame": 20,
+                  "value": 4.8
+                },
+                {
+                  "frame": 42,
+                  "value": 0
+                }
+              ],
+              "easing": "out_cubic"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "typewriter_modern_15_paper_punch_stencil",
+      "category": "typewriter_modern_v1",
+      "unit": "glyph",
+      "enter": 42,
+      "exit": 0,
+      "tracks": [
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 18,
+              "value": 1
+            },
+            {
+              "frame": 42,
+              "value": 1
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ],
+      "text_animators": [
+        {
+          "id": "typewriter_modern_15_paper_punch_stencil_text",
+          "selector": {
+            "kind": "glyph",
+            "shape": "square",
+            "order": "forward",
+            "stagger": 1
+          },
+          "properties": [
+            {
+              "property": "opacity",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0
+                },
+                {
+                  "frame": 42,
+                  "value": 1
+                }
+              ],
+              "easing": "linear"
+            },
+            {
+              "property": "scale",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0.86
+                },
+                {
+                  "frame": 18,
+                  "value": 0
+                },
+                {
+                  "frame": 42,
+                  "value": 1
+                }
+              ],
+              "easing": "out_cubic"
+            }
+          ]
+        }
+      ]
     },
     {
       "id": "metric_counter_rise",

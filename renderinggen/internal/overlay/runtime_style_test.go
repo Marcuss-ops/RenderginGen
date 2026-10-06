@@ -35,6 +35,16 @@ func TestRuntimeTextStyleOverrides(t *testing.T) {
 	}
 }
 
+func TestRuntimeBricolageFontFamilyMatchesModernShortPhrases(t *testing.T) {
+	layer, err := compileRuntimeStylePlan(t, `{"font_family":"bricolage_grotesque"}`, `{}`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if layer.Style.Font != "assets/fonts/Bricolage-Grotesque.ttf" {
+		t.Fatalf("Bricolage runtime font = %q", layer.Style.Font)
+	}
+}
+
 func TestRuntimeTextStyleNumericShadowAndFontSize(t *testing.T) {
 	layer, err := compileRuntimeStylePlan(t,
 		`{"font_size_px":84,"shadow_blur_px":12,"shadow_opacity":0.6,"shadow_offset_x_px":-3,"shadow_offset_y_px":7}`, `{}`)

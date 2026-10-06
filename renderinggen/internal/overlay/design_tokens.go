@@ -84,10 +84,8 @@ const (
 	SubtitleTopCenterYFraction = 0.10
 )
 
-// MaxStaggerSweepFrames bounds the selector sweep a staggered preset emits: a
-// reveal sweeps its glyphs over at most this many frames, so a long layer does
-// not turn a stagger into a slow crawl. Preset definitions in the catalog
-// declare their own enter durations against the same budget, and the 96-frame
-// (4s at 24fps) floor guarantees a phrase remains visibly animated for four
-// seconds whenever the clip length permits it.
-const MaxStaggerSweepFrames = 96
+// MaxStaggerSweepFrames is the maximum selector keyframe span supported by
+// Chronon's 65,536-keyframe track contract. Phrase selector sweeps use their
+// complete one-third entrance window up to this representational limit; longer
+// windows fail closed instead of silently changing the requested animation.
+const MaxStaggerSweepFrames = 65_535

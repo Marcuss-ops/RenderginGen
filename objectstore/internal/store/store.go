@@ -225,25 +225,6 @@ func syncFile(path string) error {
 	return closeErr
 }
 
-// Get reads object data for key.
-//
-// Deprecated: test-only byte path. Production uses Open (streaming) and
-// LocalPath — buffering a multi-GB artifact into a byte slice would spike
-// worker memory. Kept exported only for store_test (D3); do not use in prod.
-func (s *Store) Get(key string) ([]byte, error) {
-	if !CanonicalContentAddress(key) {
-		return nil, fmt.Errorf("%w: %q", ErrInvalidContentAddress, key)
-	}
-	data, err := os.ReadFile(s.path(key))
-	if errors.Is(err, os.ErrNotExist) {
-		return nil, ErrNotFound
-	}
-	if err != nil {
-		return nil, err
-	}
-	return data, nil
-}
-
 // Open returns a streaming reader for the object plus its size (-1 when
 // unknown). Callers must Close the reader. Used by the HTTP server so large
 // artifacts are streamed from disk instead of buffered in RAM.

@@ -48,6 +48,11 @@ func TestContractSchemaMatchesCompilerStructs(t *testing.T) {
 		{"plan.items[].map", "#/properties/items/items/properties/map", SemanticMap{}},
 		{"plan.items[].map.center", "#/$defs/map_point", SemanticMapPoint{}},
 		{"plan.items[].map.pins[]", "#/properties/items/items/properties/map/properties/pins/items", SemanticMapPin{}},
+		{"plan.items[].map.pins[].label_style", "#/$defs/map_text_style", SemanticMapTextStyle{}},
+		{"plan.items[].map.pins[].label_style.stroke", "#/$defs/map_text_style/properties/stroke", semanticMapTextStroke{}},
+		{"plan.items[].map.pins[].label_style.shadow", "#/$defs/map_text_style/properties/shadow", semanticMapTextShadow{}},
+		{"plan.items[].map.pins[].label_style.glow", "#/$defs/map_text_style/properties/glow", semanticMapTextGlow{}},
+		{"plan.items[].map.pins[].label_style.background", "#/$defs/map_text_style/properties/background", semanticMapTextPlate{}},
 		{"plan.items[].map.lods[]", "#/properties/items/items/properties/map/properties/lods/items", SemanticMapLOD{}},
 		{"plan.items[].map.camera_move", "#/properties/items/items/properties/map/properties/camera_move", SemanticMapCameraMove{}},
 	}
@@ -143,6 +148,69 @@ func TestContractSchemaDeclaresMapVisibleTextBounds(t *testing.T) {
 	label := contractschema.At(t, schema, "#/properties/items/items/properties/map/properties/pins/items/properties/label")
 	if label["maxLength"] != float64(256) {
 		t.Errorf("map.pins[].label maxLength = %v, want 256", label["maxLength"])
+	}
+	for _, field := range []string{"label_style", "label_offset_px", "label_priority"} {
+		if !contractschema.Contains(contractschema.PropertyNames(t, schema, "#/properties/items/items/properties/map/properties/pins/items"), field) {
+			t.Errorf("map.pins[].%s missing from the published schema", field)
+		}
+	}
+}
+
+func TestMapLabelStyleAndPlacementContractCompilesAndRemainsOptional(t *testing.T) {
+	styled := georeferencedMapPlan(0, 0)
+	item := styled["items"].([]any)[0].(map[string]any)
+	pin := item["map"].(map[string]any)["pins"].([]any)[0].(map[string]any)
+	pin["label_style"] = map[string]any{
+		"font_family": "inter", "font_size_px": 28.0, "fill": "#F7F4EA",
+		"stroke":     map[string]any{"color": "#07121A", "width": 2.0},
+		"shadow":     map[string]any{"color": "#000000", "opacity": 0.7, "blur": 8.0, "offset": []any{1.0, 3.0}},
+		"glow":       map[string]any{"color": "#68E1FD", "radius": 24.0, "intensity": 0.3},
+		"background": map[string]any{"color": "#07121A", "opacity": 0.7, "radius": 8.0, "padding": []any{10.0, 6.0}},
+	}
+	pin["label_offset_px"] = []any{8.0, 4.0}
+	pin["label_priority"] = 10
+	result, err := compileMapTestPlan(t, styled)
+	if err != nil {
+		t.Fatalf("compile styled map label: %v", err)
+	}
+	label := result.Plan.Layers[2]
+	if label.Style == nil || label.Style.Font != "assets/fonts/Inter.ttf" || label.Style.FontSize != 28 ||
+		label.Style.Fill != "#F7F4EA" || label.Style.Stroke == nil || label.Style.Stroke.Width != 2 ||
+		label.Style.Shadow == nil || label.Style.Shadow.Blur != 8 || label.Style.Glow == nil ||
+		label.Style.Glow.Color != "#68E1FD" || label.Style.Background == nil || label.Style.Background.Radius != 8 {
+		t.Fatalf("map text effects did not lower to the label's renderer style: %+v", label.Style)
+	}
+	if label.Position[0] < 0 || label.Position[1] < 0 {
+		t.Fatalf("preferred label offset produced a clipped text origin: got %v", label.Position)
+	}
+
+	legacy, err := compileMapTestPlan(t, georeferencedMapPlan(0, 0))
+	if err != nil {
+		t.Fatalf("legacy map plan without optional style fields must remain valid: %v", err)
+	}
+	legacyLabel := legacy.Plan.Layers[2]
+	if legacyLabel.Style == nil || legacyLabel.Style.Shadow == nil || legacyLabel.Style.Glow != nil || legacyLabel.Style.Stroke != nil {
+		t.Fatalf("legacy default style was not retained: %+v", legacyLabel.Style)
+	}
+}
+
+func TestMapLabelsFailClosedOnInvalidStyleOrUnresolvableCollisions(t *testing.T) {
+	plan := georeferencedMapPlan(0, 0)
+	pin := plan["items"].([]any)[0].(map[string]any)["map"].(map[string]any)["pins"].([]any)[0].(map[string]any)
+	pin["label_style"] = map[string]any{"glow": map[string]any{"color": "#00FFFF", "radius": 24.0, "intensity": 2.0}}
+	if _, err := compileMapTestPlan(t, plan); err == nil || !strings.Contains(err.Error(), "label_style.glow") {
+		t.Fatalf("out-of-contract glow intensity should fail closed, got %v", err)
+	}
+
+	plan = georeferencedMapPlan(0, 0)
+	mapItem := plan["items"].([]any)[0].(map[string]any)
+	mapSpec := mapItem["map"].(map[string]any)
+	mapSpec["pins"] = []any{
+		map[string]any{"id": "one", "label": "An extremely long city label that cannot fit without colliding", "latitude": 0.0, "longitude": 0.0, "color": "#E11D48", "radius_px": 12.0},
+		map[string]any{"id": "two", "label": "Another extremely long city label that cannot fit without colliding", "latitude": 0.0, "longitude": 0.001, "color": "#E11D48", "radius_px": 12.0},
+	}
+	if _, err := compileMapTestPlan(t, plan); err == nil || !strings.Contains(err.Error(), "cannot be placed") {
+		t.Fatalf("unresolvable colliding labels should fail closed, got %v", err)
 	}
 }
 

@@ -64,13 +64,10 @@ const goal3VideoPlateHex = "0xA83C1E"
 // render: 8-bit channels with a tolerance that absorbs the RGB→YUV420→RGB
 // round trip the encoder performs.
 const (
-	goal3PlateR      = 30
-	goal3PlateG      = 90
-	goal3PlateB      = 168
-	goal3VideoPlateR = 168
-	goal3VideoPlateG = 60
-	goal3VideoPlateB = 30
-	goal3Tol         = 30
+	goal3PlateR = 30
+	goal3PlateG = 90
+	goal3PlateB = 168
+	goal3Tol    = 30
 )
 
 // repoRootAt walks up from this source file until a directory containing BOTH

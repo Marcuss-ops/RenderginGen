@@ -19,16 +19,31 @@ type typewriterCursorStyle struct {
 // 1080p while the restrained accent colors keep it in the phrase style.
 func typewriterCursorForMotion(id string, fontSize float64) (typewriterCursorStyle, bool) {
 	styles := map[string]typewriterCursorStyle{
-		"typewriter_clean":      {shape: "rounded_rect", width: .105, height: .72, radius: .05, fill: []float64{.96, .98, 1, 1}},
-		"typewriter_glitch":     {shape: "rect", width: .17, height: .68, fill: []float64{1, .48, .58, 1}},
-		"typewriter_neon":       {shape: "rounded_rect", width: .11, height: .76, radius: .055, fill: []float64{.36, .84, 1, 1}},
-		"typewriter_pop":        {shape: "ellipse", width: .25, height: .25, fill: []float64{1, .77, .37, 1}},
-		"typewriter_tracking":   {shape: "rounded_rect", width: .58, height: .16, radius: .08, fill: []float64{.96, .98, 1, 1}},
-		"typewriter_lift":       {shape: "ellipse", width: .23, height: .23, fill: []float64{.53, .9, .78, 1}},
-		"typewriter_slide_in":   {shape: "rounded_rect", width: .19, height: .72, radius: .07, fill: []float64{.96, .98, 1, 1}},
-		"typewriter_scale_up":   {shape: "ellipse", width: .27, height: .27, fill: []float64{.5, .83, 1, 1}},
-		"typewriter_blur_focus": {shape: "rounded_rect", width: .13, height: .8, radius: .065, fill: []float64{.72, .68, 1, 1}},
-		"typewriter_soft_lift":  {shape: "rounded_rect", width: .16, height: .7, radius: .08, fill: []float64{.7, .94, .82, 1}},
+		"typewriter_clean":                            {shape: "rounded_rect", width: .105, height: .72, radius: .05, fill: []float64{.96, .98, 1, 1}},
+		"typewriter_glitch":                           {shape: "rect", width: .17, height: .68, fill: []float64{1, .48, .58, 1}},
+		"typewriter_neon":                             {shape: "rounded_rect", width: .11, height: .76, radius: .055, fill: []float64{.36, .84, 1, 1}},
+		"typewriter_pop":                              {shape: "ellipse", width: .25, height: .25, fill: []float64{1, .77, .37, 1}},
+		"typewriter_tracking":                         {shape: "rounded_rect", width: .58, height: .16, radius: .08, fill: []float64{.96, .98, 1, 1}},
+		"typewriter_lift":                             {shape: "ellipse", width: .23, height: .23, fill: []float64{.53, .9, .78, 1}},
+		"typewriter_slide_in":                         {shape: "rounded_rect", width: .19, height: .72, radius: .07, fill: []float64{.96, .98, 1, 1}},
+		"typewriter_scale_up":                         {shape: "ellipse", width: .27, height: .27, fill: []float64{.5, .83, 1, 1}},
+		"typewriter_blur_focus":                       {shape: "rounded_rect", width: .13, height: .8, radius: .065, fill: []float64{.72, .68, 1, 1}},
+		"typewriter_soft_lift":                        {shape: "rounded_rect", width: .16, height: .7, radius: .08, fill: []float64{.7, .94, .82, 1}},
+		"typewriter_modern_01_monospace_block_cursor": {shape: "rect", width: .18, height: .78, fill: []float64{1, .25, .3, 1}},
+		"typewriter_modern_02_kinetic_scramble":       {shape: "rounded_rect", width: .12, height: .72, radius: .05, fill: []float64{.3, .95, .72, 1}},
+		"typewriter_modern_03_soft_opacity_ramp":      {shape: "rounded_rect", width: .09, height: .72, radius: .04, fill: []float64{.96, .98, 1, 1}},
+		"typewriter_modern_04_character_bounce":       {shape: "ellipse", width: .22, height: .22, fill: []float64{1, .76, .38, 1}},
+		"typewriter_modern_05_backspace_correction":   {shape: "rect", width: .12, height: .72, fill: []float64{.95, .96, 1, 1}},
+		"typewriter_modern_06_glow_beam_sweep":        {shape: "rounded_rect", width: .1, height: .82, radius: .05, fill: []float64{1, .28, .32, 1}},
+		"typewriter_modern_07_word_snap":              {shape: "rect", width: .11, height: .72, fill: []float64{.96, .98, 1, 1}},
+		"typewriter_modern_08_mechanical_y_shift":     {shape: "rounded_rect", width: .12, height: .75, radius: .05, fill: []float64{.47, .84, 1, 1}},
+		"typewriter_modern_09_highlighter_expansion":  {shape: "rect", width: .15, height: .7, fill: []float64{1, .72, .28, 1}},
+		"typewriter_modern_10_weight_ramp":            {shape: "rounded_rect", width: .1, height: .72, radius: .05, fill: []float64{.92, .95, 1, 1}},
+		"typewriter_modern_11_dynamic_auto_wrap":      {shape: "rect", width: .12, height: .75, fill: []float64{.95, .96, 1, 1}},
+		"typewriter_modern_12_glitch_pop":             {shape: "rect", width: .18, height: .72, fill: []float64{1, .3, .4, 1}},
+		"typewriter_modern_13_elastic_leading_cursor": {shape: "rounded_rect", width: .1, height: .74, radius: .05, fill: []float64{.4, .92, .8, 1}},
+		"typewriter_modern_14_focal_blur_dissolve":    {shape: "rounded_rect", width: .1, height: .78, radius: .05, fill: []float64{.72, .69, 1, 1}},
+		"typewriter_modern_15_paper_punch_stencil":    {shape: "rect", width: .14, height: .72, fill: []float64{.96, .98, 1, 1}},
 	}
 	style, ok := styles[id]
 	if !ok {
@@ -106,7 +121,8 @@ func compileTypewriterCursor(ri resolvedItem, src *semanticPlan, text Layer) (La
 		if !ok {
 			return Layer{}, false
 		}
-		visible := int(math.Round(math.Max(0, math.Min(100, progress)) / 100 * float64(totalGlyphs)))
+		clampedProgress := math.Max(0, math.Min(100, progress))
+		visible := int(math.Round(clampedProgress / 100 * float64(totalGlyphs)))
 		remaining := visible
 		lineIndex := 0
 		charIndex := 0
@@ -136,6 +152,9 @@ func compileTypewriterCursor(ri resolvedItem, src *semanticPlan, text Layer) (La
 			charIndex = len([]rune(lines[lineIndex]))
 		}
 		localX := lineAdvances[lineIndex][charIndex] - lineWidths[lineIndex]*.5
+		if visible >= totalGlyphs && clampedProgress >= 100 {
+			localX += fontSize * .32
+		}
 		localY := float64(lineIndex)*lineHeight - blockHeight*.5
 		positionsX = append(positionsX, AnimationKeyframe{Frame: key.Frame, Value: localX + sampleLayerOffset(text.Animation, "position_x", key.Frame)})
 		positionsY = append(positionsY, AnimationKeyframe{Frame: key.Frame, Value: localY + sampleLayerOffset(text.Animation, "position_y", key.Frame)})
@@ -208,10 +227,12 @@ func sampleLayerOffset(animation *LayerAnimation, property string, frame int64) 
 }
 
 func typewriterGlyphAdvance(char rune, fontSize float64) float64 {
+	// Bricolage Grotesque metric ratios (including the word-space advance),
+	// matching the modern Short Phrases face used by the date previews.
 	var em float64
 	switch {
 	case unicode.IsSpace(char):
-		em = .32
+		em = .28
 	case strings.ContainsRune("ilI|!.,:;'`", char):
 		em = .32
 	case strings.ContainsRune("mwMW@%&", char):

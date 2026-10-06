@@ -147,7 +147,7 @@ func compositeRuntimeAssetsRoot(t *testing.T) string {
 		t.Fatal("resolve runtime test source path for official font fixture")
 	}
 	repoRoot := filepath.Clean(filepath.Join(filepath.Dir(sourceFile), "..", "..", ".."))
-	fontSource := filepath.Join(repoRoot, "renderinggen", "out", "editorial_v1", "assets", "fonts", "Poppins-Bold.ttf")
+	fontSource := filepath.Join(repoRoot, "testdata", "golden", "fonts", "Poppins-Bold.ttf")
 	fontBytes, err := os.ReadFile(fontSource)
 	if err != nil {
 		t.Fatalf("read official caption font fixture: %v", err)

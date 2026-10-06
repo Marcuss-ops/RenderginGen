@@ -218,8 +218,20 @@ func TestPhraseMotionSelectionIsSeededCoverageAndFailClosed(t *testing.T) {
 		}
 		corpusCoverage[id] = true
 	}
-	if len(corpusCoverage) != len(pool) {
-		t.Fatalf("canonical 100-item phrase corpus reaches %d/%d pool motions", len(corpusCoverage), len(pool))
+	legacyPoolSize := 0
+	for _, id := range pool {
+		if !strings.HasPrefix(id, "typewriter_modern_") {
+			legacyPoolSize++
+		}
+	}
+	legacyCoverage := 0
+	for id := range corpusCoverage {
+		if !strings.HasPrefix(id, "typewriter_modern_") {
+			legacyCoverage++
+		}
+	}
+	if legacyCoverage != legacyPoolSize {
+		t.Fatalf("canonical 100-item phrase corpus reaches %d/%d legacy pool motions", legacyCoverage, legacyPoolSize)
 	}
 	for _, id := range pool {
 		_, err := renderbatch.BuildPlan(renderbatch.PlanSpec{

@@ -292,7 +292,6 @@ const (
 	measuredVideoTimeBaseDen = 12288 // fps_den × 512, the mp4 muxer's convention
 	measuredAudioBitrate     = "128576"
 	measuredAudioChannels    = 2
-	measuredAudioLayout      = "stereo"
 	// The earlier measurement shares the video timebase and disagrees on audio:
 	// the audio lane is copy-first, so the layout follows the SOURCE.
 	earlierMeasuredAudioBitrate  = "58524"
