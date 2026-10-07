@@ -75,13 +75,11 @@ func lowerResolvedMotion(id string, resolved *resolvedMotion, enter, exit int, p
 			exit = definition.Exit
 		}
 	}
-	// ChrononTemplate product short-phrase recipes author one complete
-	// enter/hold/exit timeline. Treating those frames as an entrance and then
-	// collapsing every keyframe after Definition.Enter used to collapse the
-	// authored opacity 0 at the end onto the opacity 1 entrance frame. The
-	// result was black/transparent text for most of the clip, then a late pop
-	// or no visible animation. Retiming the authored timeline over the phrase
-	// lifetime preserves its complete choreography and exit.
+	// ChrononTemplate product short-phrase recipes author an enter/hold/exit
+	// timeline, but overlay clips are often shorter than the recipe's full
+	// timeline. Keep the authored entrance and hold the resolved state for the
+	// rest of the clip. Compressing the exit into the remaining frames made the
+	// phrase slide or fade out while the overlay was still visible.
 	fullPhraseTimeline := resolved.definition != nil && resolved.definition.Category == "short_phrase_style"
 	entrance := entranceFrames(enter, exit, duration, phraseEntranceFloor)
 	if fullPhraseTimeline && duration > 0 {
@@ -103,7 +101,7 @@ func lowerResolvedMotion(id string, resolved *resolvedMotion, enter, exit int, p
 	}
 	animationTracks := fromMotionTracks(tracks)
 	if fullPhraseTimeline {
-		animationTracks = retimeFullMotionTimeline(animationTracks, duration)
+		animationTracks = retimePhraseEntrance(animationTracks, int64(authoredEnter), duration)
 	} else {
 		animationTracks = retimeMotionTracks(animationTracks, entrance, int64(authoredEnter))
 	}
@@ -117,7 +115,11 @@ func lowerResolvedMotion(id string, resolved *resolvedMotion, enter, exit int, p
 		if err != nil {
 			return nil, fmt.Errorf("overlay: lower text motion %q: %w", id, err)
 		}
-		animation.TextAnimators = retimeTextAnimators(textAnimators, entrance)
+		if fullPhraseTimeline {
+			animation.TextAnimators = retimePhraseTextEntrance(textAnimators, int64(authoredEnter), duration)
+		} else {
+			animation.TextAnimators = retimeTextAnimators(textAnimators, entrance)
+		}
 	}
 	if !fullPhraseTimeline {
 		animation.Tracks = appendExitTracks(animation.Tracks, exit, duration)
@@ -125,32 +127,59 @@ func lowerResolvedMotion(id string, resolved *resolvedMotion, enter, exit int, p
 	return animation, nil
 }
 
-// retimeFullMotionTimeline fits every authored keyframe to the concrete layer
-// lifetime. It is used for ChrononTemplate recipes whose tracks already
-// contain their enter, hold and exit phases.
-func retimeFullMotionTimeline(tracks []AnimationTrack, duration int64) []AnimationTrack {
+// retimePhraseEntrance keeps only the authored entrance and holds its final
+// value for the rest of the concrete layer lifetime. Recipe exits can exceed
+// short overlay clips and must not move text out of frame at the clip edge.
+func retimePhraseEntrance(tracks []AnimationTrack, authoredEnter, duration int64) []AnimationTrack {
 	if duration <= 0 || len(tracks) == 0 {
 		return tracks
 	}
-	var sourceLast int64
-	for _, track := range tracks {
-		for _, keyframe := range track.Keyframes {
-			if keyframe.Frame > sourceLast {
-				sourceLast = keyframe.Frame
-			}
-		}
-	}
-	if sourceLast <= 0 {
-		return clampMotionTracks(tracks, duration)
-	}
-	targetLast := lastValidFrame(duration)
 	for i := range tracks {
-		for j := range tracks[i].Keyframes {
-			tracks[i].Keyframes[j].Frame = tracks[i].Keyframes[j].Frame * targetLast / sourceLast
-		}
+		tracks[i].Keyframes = retimePhraseKeyframes(tracks[i].Keyframes, authoredEnter, duration)
 		clampAnimationTrack(&tracks[i], duration)
 	}
 	return tracks
+}
+
+func retimePhraseKeyframes(keyframes []AnimationKeyframe, authoredEnter, duration int64) []AnimationKeyframe {
+	if authoredEnter <= 0 {
+		return keyframes
+	}
+	// Some catalog recipes declare Enter a few frames before their final
+	// entrance keyframe (for example Enter=90, opacity reaches 1 at frame 96).
+	// Include that short settling tail so clipping the later exit cannot leave
+	// the layer stuck at its initial low opacity.
+	sourceLimit := authoredEnter + 15
+	targetLast := lastValidFrame(duration)
+	result := make([]AnimationKeyframe, 0, len(keyframes))
+	for _, keyframe := range keyframes {
+		if keyframe.Frame > sourceLimit {
+			continue
+		}
+		keyframe.Frame = keyframe.Frame * targetLast / sourceLimit
+		result = append(result, keyframe)
+	}
+	return result
+}
+
+func retimePhraseTextEntrance(animators []TextAnimator, authoredEnter, duration int64) []TextAnimator {
+	for i := range animators {
+		for j := range animators[i].Properties {
+			animators[i].Properties[j].Keyframes = retimePhraseKeyframes(
+				animators[i].Properties[j].Keyframes, authoredEnter, duration,
+			)
+			clampAnimationTrack(&animators[i].Properties[j], duration)
+		}
+		// Selector sweeps are authored against the recipe window by
+		// fromTextMotionDefinitions, so like retimeTextAnimators they are only
+		// clamped into the concrete layer bounds, never rescaled. Without this
+		// a duration-1 phrase clip keeps selector start/end keyframes at frame
+		// 1, outside the [0, duration) boundary Chronon accepts.
+		for j := range animators[i].Selectors {
+			clampTextSelectorTracks(&animators[i].Selectors[j], duration)
+		}
+	}
+	return animators
 }
 
 // retimeTextAnimators keeps per-unit property keyframes inside the concrete
