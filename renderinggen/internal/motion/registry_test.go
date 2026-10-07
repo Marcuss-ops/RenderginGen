@@ -2,6 +2,7 @@ package motion
 
 import (
 	"fmt"
+	"sort"
 	"testing"
 )
 
@@ -536,4 +537,51 @@ func TestChrononTemplateModern15PackIsRenderableAndNonStatic(t *testing.T) {
 			}
 		}
 	}
+}
+
+// TestPhrasePoolClassificationIsExhaustive pins the 2.0 rule for the seeded
+// phrase pool: every category in the catalog must be either a phrase-planning
+// family, an explicitly preview-gated one, or an explicitly excluded one with
+// a reason. A new catalog category that appears in none of the three lists
+// fails here instead of silently dropping out of (or leaking into) the pool,
+// and the pool itself must equal the union of the classified families.
+func TestPhrasePoolClassificationIsExhaustive(t *testing.T) {
+	planned := map[string]bool{}
+	for _, category := range phrasePlanningCategories {
+		planned[category] = true
+	}
+	for _, category := range Registry.Categories() {
+		if planned[category] {
+			continue
+		}
+		if reason, gated := previewGatedCategories[category]; gated && reason != "" {
+			continue
+		}
+		if reason, excluded := phrasePoolExcludedCategories[category]; excluded && reason != "" {
+			continue
+		}
+		t.Errorf("category %q is in no classification list (phrasePlanningCategories, previewGatedCategories, phrasePoolExcludedCategories): classify it with a reason", category)
+	}
+	want := map[string]bool{}
+	for _, category := range phrasePlanningCategories {
+		for _, id := range Registry.CategoryMotionIDs(category) {
+			want[id] = true
+		}
+	}
+	got := map[string]bool{}
+	for _, id := range Registry.PhraseAnimationIDs() {
+		got[id] = true
+	}
+	if fmt.Sprint(sortedKeys(got)) != fmt.Sprint(sortedKeys(want)) {
+		t.Fatalf("PhraseAnimationIDs drifted from the classified families")
+	}
+}
+
+func sortedKeys(set map[string]bool) []string {
+	keys := make([]string, 0, len(set))
+	for key := range set {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	return keys
 }

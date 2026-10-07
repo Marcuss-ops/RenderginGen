@@ -131,15 +131,82 @@ func (r *RegistryType) List() []string {
 	return ids
 }
 
+// Categories returns every motion category present in the registry in stable
+// order. It exists so classification decisions (phrase-planning pool,
+// preview gating) are audited against the actual catalog instead of a
+// remembered list: a new category must be classified explicitly, or the
+// classification test fails.
+func (r *RegistryType) Categories() []string {
+	seen := map[string]struct{}{}
+	categories := []string{}
+	for _, id := range r.List() {
+		plugin, err := r.Resolve(id)
+		if err != nil {
+			continue
+		}
+		declarative, ok := plugin.(DeclarativePlugin)
+		if !ok {
+			continue
+		}
+		category := strings.TrimSpace(declarative.Definition.Category)
+		if category == "" {
+			continue
+		}
+		if _, ok := seen[category]; !ok {
+			seen[category] = struct{}{}
+			categories = append(categories, category)
+		}
+	}
+	sort.Strings(categories)
+	return categories
+}
+
+// phrasePlanningCategories is the ONE explicit list of families that feed the
+// seeded phrase-planning pool. Categories that are selectable elsewhere but
+// deliberately excluded here (preview-gated families) live in
+// previewGatedCategories with their reason, so the exclusion is a decision,
+// not an omission. TestPhrasePoolClassificationIsExhaustive fails when a new
+// catalog category appears in neither list.
+var phrasePlanningCategories = [...]string{
+	"typewriter", "apple_v2", "apple_v3", "phrase_apple_clean_v1", "apple_phrase_v1", "brush_v1", "text_3d_v1",
+}
+
+// previewGatedCategories are selectable through the runtime catalog but stay
+// out of the seeded legacy pool: reason documents why.
+var previewGatedCategories = map[string]string{
+	"typewriter_modern_v1": "separately selectable preview category, exposed independently through CategoryMotionIDs",
+}
+
+// phrasePoolExcludedCategories admit planning-relevant targets but are
+// deliberately out of the seeded pool: each has its own selection surface.
+// Listed here with reasons so the exclusion stays a decision: the historical
+// pool bytes are unchanged, and a future family cannot slip into this state
+// silently.
+var phrasePoolExcludedCategories = map[string]string{
+	"short_phrase_style":   "selected through the short-phrase style catalog, not the legacy phrase pool",
+	"trump_entity_text_v1": "entity-text family selected through entity surfaces, not the legacy phrase pool",
+	"entity_caption_v1":    "caption family selected through the caption use case, not the legacy phrase pool",
+	"entity_card_v1":       "entity-card family selected through entity surfaces, not the legacy phrase pool",
+	"metric_v1":            "metric family selected through the metric_stat composition, not the legacy phrase pool",
+	"date_v1":              "date family selected through the timeline_date composition, not the legacy phrase pool",
+	"image_25d_clean_v1":   "image-surface family, never a phrase-planning family",
+	"editorial_image_v1":   "image-surface family, never a phrase-planning family",
+	"image_premium_v1":     "image-surface family, never a phrase-planning family",
+	"overlay_v3_image":     "image-surface family, never a phrase-planning family",
+	"light_leak_v1":        "image-surface family, never a phrase-planning family",
+	"paint_v1":             "image-surface family, never a phrase-planning family",
+	"web":                  "image-surface family, never a phrase-planning family",
+	"web_rect_v1":          "image-surface family, never a phrase-planning family",
+	"map_image_v1":         "map-surface family, never a phrase-planning family",
+}
+
 // PhraseAnimationIDs returns every motion in the established phrase-planning
 // families, in stable order. The separately selectable typewriter_modern_v1
 // preview category stays out of the seeded legacy pool; the runtime catalog
 // exposes it independently through CategoryMotionIDs.
 func (r *RegistryType) PhraseAnimationIDs() []string {
 	ids := make([]string, 0)
-	for _, category := range []string{
-		"typewriter", "apple_v2", "apple_v3", "phrase_apple_clean_v1", "apple_phrase_v1", "brush_v1", "text_3d_v1",
-	} {
+	for _, category := range phrasePlanningCategories {
 		ids = append(ids, r.CategoryMotionIDs(category)...)
 	}
 	sort.Strings(ids)

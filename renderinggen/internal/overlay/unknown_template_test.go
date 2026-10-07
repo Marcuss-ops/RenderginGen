@@ -15,23 +15,23 @@ func compileJSON(t *testing.T, body string) CompileResult {
 	return result
 }
 
-// TestUnknownTemplateIsReportedNotSwallowed pins the observability of the
-// preset-less fall-through. An unknown template_id still compiles (so
-// historical documents keep rendering) but must appear in
-// CompileResult.UnknownTemplates: before this, a producer rename degraded every
-// affected entity to a bare text primitive and the only evidence was the pixels.
-func TestUnknownTemplateIsReportedNotSwallowed(t *testing.T) {
-	result := compileJSON(t,
-		`{"id":"a","template_id":"BRAND_NEW_WIDGET","text":"Ada","start_ms":0,"end_ms":1000},`+
-			`{"id":"b","template_id":"brand_new_widget","text":"Bob","start_ms":0,"end_ms":1000},`+
-			`{"id":"c","template_id":"ANOTHER_NEW","text":"Eve","start_ms":0,"end_ms":1000}`)
-
-	if len(result.Plan.Layers) == 0 {
-		t.Fatal("an unknown template must still lower to a layer (no fail-closed regression)")
+// TestUnknownTemplateFailsClosed pins the strict contract: an unknown
+// template_id fails compilation with a diagnostic naming the item and the
+// template, instead of silently lowering a bare primitive. Historical
+// documents keep rendering only through registered ids and the explicit
+// legacyTemplateAliases table — never through fall-through.
+func TestUnknownTemplateFailsClosed(t *testing.T) {
+	body := `{"schema_version":"renderinggen.overlay-plan.v1","plan_id":"p","video_id":"v",` +
+		`"width":1280,"height":720,"fps_num":30,"fps_den":1,"items":[` +
+		`{"id":"a","template_id":"BRAND_NEW_WIDGET","text":"Ada","start_ms":0,"end_ms":1000},` +
+		`{"id":"b","template_id":"brand_new_widget","text":"Bob","start_ms":0,"end_ms":1000},` +
+		`{"id":"c","template_id":"ANOTHER_NEW","text":"Eve","start_ms":0,"end_ms":1000}]}`
+	_, err := CompileSemantic([]byte(body))
+	if err == nil {
+		t.Fatal("unknown template compiled; want fail-closed")
 	}
-	want := []string{"ANOTHER_NEW", "BRAND_NEW_WIDGET", "brand_new_widget"}
-	if strings.Join(result.UnknownTemplates, ",") != strings.Join(want, ",") {
-		t.Fatalf("UnknownTemplates = %v, want %v (sorted, de-duplicated, verbatim spellings)", result.UnknownTemplates, want)
+	if !strings.Contains(err.Error(), `"a"`) || !strings.Contains(err.Error(), "BRAND_NEW_WIDGET") {
+		t.Fatalf("diagnostic %q must name the first item and its template", err)
 	}
 }
 
@@ -61,16 +61,20 @@ func TestRegisteredAndAliasedTemplatesAreNeverReportedUnknown(t *testing.T) {
 	}
 }
 
-// TestUnknownTemplateReportsEveryItemOnce pins the counting contract: the
-// worker records one metric value (the number of distinct unknown templates)
-// and logs the ids, so the list must not contain duplicates and must not drop
-// an item.
-func TestUnknownTemplateReportsEveryItemOnce(t *testing.T) {
-	result := compileJSON(t,
-		`{"id":"a","template_id":"MYSTERY","text":"A","start_ms":0,"end_ms":500},`+
-			`{"id":"b","template_id":"MYSTERY","text":"B","start_ms":500,"end_ms":1000},`+
-			`{"id":"c","template_id":"MYSTERY","text":"C","start_ms":1000,"end_ms":1500}`)
-	if len(result.UnknownTemplates) != 1 || result.UnknownTemplates[0] != "MYSTERY" {
-		t.Fatalf("UnknownTemplates = %v, want [MYSTERY] once for three items", result.UnknownTemplates)
+// TestUnknownTemplateFailsClosedOnEveryItem pins that the strict rule is
+// per-item: three items sharing one unknown template fail on the first, and
+// the diagnostic names it verbatim.
+func TestUnknownTemplateFailsClosedOnEveryItem(t *testing.T) {
+	body := `{"schema_version":"renderinggen.overlay-plan.v1","plan_id":"p","video_id":"v",` +
+		`"width":1280,"height":720,"fps_num":30,"fps_den":1,"items":[` +
+		`{"id":"a","template_id":"MYSTERY","text":"A","start_ms":0,"end_ms":500},` +
+		`{"id":"b","template_id":"MYSTERY","text":"B","start_ms":500,"end_ms":1000},` +
+		`{"id":"c","template_id":"MYSTERY","text":"C","start_ms":1000,"end_ms":1500}]}`
+	_, err := CompileSemantic([]byte(body))
+	if err == nil {
+		t.Fatal("unknown template compiled; want fail-closed")
+	}
+	if !strings.Contains(err.Error(), `"a"`) || !strings.Contains(err.Error(), "MYSTERY") {
+		t.Fatalf("diagnostic %q must name the first item and its template", err)
 	}
 }

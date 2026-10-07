@@ -452,15 +452,15 @@ func runtimeCompositionTarget(id string) string {
 	if target := dataCompositionTarget(id); target != "" {
 		return target
 	}
-	switch id {
-	case "entity_caption":
-		return "caption"
-	case "important_phrase":
-		return "important_phrase"
-	case "short_important_phrase":
-		return "short_phrase"
-	}
-	return ""
+	return compositionTargetOverrides[id]
+}
+
+// compositionTargetOverrides covers the compositions owned by no count-based
+// catalog: adding one means adding one map entry, never a new switch case.
+var compositionTargetOverrides = map[string]string{
+	"entity_caption":         "caption",
+	"important_phrase":       "important_phrase",
+	"short_important_phrase": "short_phrase",
 }
 
 func runtimeZones() []RuntimeZone {
@@ -633,50 +633,44 @@ func runtimeCompositionLayouts() []RuntimeCompositionLayout {
 // runtimeMapLayouts declares every map layout and what the lowering supports.
 // Route has a closed local raster/path lowering. Stops and callout remain
 // explicitly unavailable until their distinct presentation/lifetime contracts exist.
-func runtimeMapLayouts() []RuntimeMapLayout {
-	unsupported := "no lowering exists for this map layout yet"
-	return []RuntimeMapLayout{
-		{ID: "basemap", CompositionID: "one_map", Supported: true, Description: "Full-canvas georeferenced raster plate.", ProjectedMotionTargets: []string{"map_view"}},
-		{ID: "pins", CompositionID: "one_map", Supported: true, Description: "One grounded shape layer per declared place.", ProjectedMotionTargets: []string{"map_view"}},
-		{ID: "pin_labels", CompositionID: "one_map", Supported: true, Description: "One text layer per pin, placed clear of the pin and its neighbours.", ProjectedMotionTargets: []string{"map_view"}},
-		{ID: "attribution", CompositionID: "one_map", Supported: true, Description: "Provider-required credit carried by its own text layer.", ProjectedMotionTargets: []string{}},
-		{ID: "camera_fly_to", CompositionID: "one_map", Supported: true, Description: "Continues the map plate through camera_move or Natural Earth fly_to_feature resolution instead of a static motion.", ProjectedMotionTargets: []string{"map_view"}},
-		{ID: "route", CompositionID: "one_map", Supported: true, Description: "A great-circle path between grounded WGS84 stops, projected into the certified local raster and revealed with the native trim-path operator.", ProjectedMotionTargets: []string{"map_view"}},
-		{ID: "stops", CompositionID: "one_map", Supported: false, Description: "An ordered sequence of itinerary stops.", ProjectedMotionTargets: []string{}, UnavailableReason: unsupported},
-		{ID: "callout", CompositionID: "one_map", Supported: false, Description: "A connected label box anchored to a place.", ProjectedMotionTargets: []string{}, UnavailableReason: unsupported},
-	}
+// mapLayoutCatalog is the map-primitive catalog the runtime picker projects:
+// one entry per primitive the map compiler owns (basemap, pins, labels,
+// attribution, camera, route) plus the declared-but-unsupported primitives a
+// future V4 slice implements. Data, not code: extending the map system means
+// extending this table, and runtimeMapLayouts serves a copy so callers can
+// never mutate the catalog through the returned slice.
+var mapLayoutCatalog = []RuntimeMapLayout{
+	{ID: "basemap", CompositionID: "one_map", Supported: true, Description: "Full-canvas georeferenced raster plate.", ProjectedMotionTargets: []string{"map_view"}},
+	{ID: "pins", CompositionID: "one_map", Supported: true, Description: "One grounded shape layer per declared place.", ProjectedMotionTargets: []string{"map_view"}},
+	{ID: "pin_labels", CompositionID: "one_map", Supported: true, Description: "One text layer per pin, placed clear of the pin and its neighbours.", ProjectedMotionTargets: []string{"map_view"}},
+	{ID: "attribution", CompositionID: "one_map", Supported: true, Description: "Provider-required credit carried by its own text layer.", ProjectedMotionTargets: []string{}},
+	{ID: "camera_fly_to", CompositionID: "one_map", Supported: true, Description: "Continues the map plate through camera_move or Natural Earth fly_to_feature resolution instead of a static motion.", ProjectedMotionTargets: []string{"map_view"}},
+	{ID: "route", CompositionID: "one_map", Supported: true, Description: "A great-circle path between grounded WGS84 stops, projected into the certified local raster and revealed with the native trim-path operator.", ProjectedMotionTargets: []string{"map_view"}},
+	{ID: "stops", CompositionID: "one_map", Supported: false, Description: "An ordered sequence of itinerary stops.", ProjectedMotionTargets: []string{}, UnavailableReason: "no lowering exists for this map layout yet"},
+	{ID: "callout", CompositionID: "one_map", Supported: false, Description: "A connected label box anchored to a place.", ProjectedMotionTargets: []string{}, UnavailableReason: "no lowering exists for this map layout yet"},
 }
 
-// runtimeBackgroundSources derives the supported sources from the background
-// composition catalog and appends the sources the lowering still refuses, so
-// the picker can show them as unavailable instead of hiding them.
+func runtimeMapLayouts() []RuntimeMapLayout {
+	return append([]RuntimeMapLayout(nil), mapLayoutCatalog...)
+}
+
+// runtimeBackgroundSources projects the background composition catalog — both
+// supported and declared-but-unsupported sources — so the picker shows every
+// source with its catalog-declared availability instead of a parallel list.
 func runtimeBackgroundSources() []RuntimeBackgroundSource {
-	sources := make([]RuntimeBackgroundSource, 0, len(backgroundCompositionCatalog)+3)
+	sources := make([]RuntimeBackgroundSource, 0, len(backgroundCompositionCatalog))
 	for _, definition := range backgroundCompositionCatalog {
 		source := RuntimeBackgroundSource{
 			Kind: definition.Kind, CompositionID: definition.ID,
-			Description: definition.Description, Supported: true, Coverage: "full_canvas",
-		}
-		switch definition.Kind {
-		case "color":
-			source.Priority = 0
-		case "image":
-			source.RequiresAssets = true
-			source.FitPolicy = "cover"
-			source.Priority = 1
-		case "video":
-			source.RequiresAssets = true
-			source.FitPolicy = "cover"
-			source.Loop = true
-			source.Priority = 1
+			Description: definition.Description, Supported: definition.Supported,
+			UnavailableReason: definition.UnavailableReason,
+			RequiresAssets:    definition.RequiresAssets,
+			FitPolicy:         definition.FitPolicy,
+			Loop:              definition.Loop,
+			Priority:          definition.Priority,
+			Coverage:          "full_canvas",
 		}
 		sources = append(sources, source)
 	}
-	unsupported := "the background lowering accepts only color, image and video today"
-	sources = append(sources,
-		RuntimeBackgroundSource{Kind: "gradient", Description: "Interpolated color ramp.", Coverage: "full_canvas", Priority: 2, UnavailableReason: unsupported},
-		RuntimeBackgroundSource{Kind: "pattern", Description: "Tiled texture.", Coverage: "full_canvas", RequiresAssets: true, Priority: 2, UnavailableReason: unsupported},
-		RuntimeBackgroundSource{Kind: "generated", Description: "Renderer-synthesised abstract plate.", Coverage: "full_canvas", Priority: 2, UnavailableReason: unsupported},
-	)
 	return sources
 }

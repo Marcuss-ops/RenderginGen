@@ -95,14 +95,33 @@ func (m *Memory) StoreReader(ctx context.Context, key string, r io.Reader, _ int
 //
 //	GET {base}/objects/{key} -> 200 body | 404
 //	PUT {base}/objects/{key} -> 200/201/204
+//
+// When the store requires a bearer token (OBJECTSTORE_TOKEN on the server),
+// every request carries it as `Authorization: Bearer <token>`; a 401 then
+// means the worker's token is missing or wrong, never an anonymous outage.
 type HTTP struct {
 	base   string
+	token  string
 	client *http.Client
 }
 
 // NewHTTP creates an HTTP backend pointing at an object store base URL.
 func NewHTTP(base string) *HTTP {
 	return &HTTP{base: base, client: newLargeObjectHTTPClient()}
+}
+
+// NewHTTPWithToken creates an HTTP backend that authenticates every request
+// with the store's shared bearer token. An empty token behaves exactly like
+// NewHTTP (open store, local/dev posture).
+func NewHTTPWithToken(base, token string) *HTTP {
+	return &HTTP{base: base, token: token, client: newLargeObjectHTTPClient()}
+}
+
+// setAuth attaches the bearer credential when one is configured.
+func (h *HTTP) setAuth(req *http.Request) {
+	if h.token != "" {
+		req.Header.Set("Authorization", "Bearer "+h.token)
+	}
 }
 
 // newLargeObjectHTTPClient returns an HTTP client tuned for multi-GB object
@@ -137,6 +156,7 @@ func (h *HTTP) FetchReader(ctx context.Context, key string) (io.ReadCloser, int6
 	if err != nil {
 		return nil, 0, err
 	}
+	h.setAuth(req)
 	resp, err := h.client.Do(req)
 	if err != nil {
 		return nil, 0, err
@@ -144,6 +164,10 @@ func (h *HTTP) FetchReader(ctx context.Context, key string) (io.ReadCloser, int6
 	if resp.StatusCode == http.StatusNotFound {
 		resp.Body.Close()
 		return nil, 0, ErrNotFound
+	}
+	if resp.StatusCode == http.StatusUnauthorized {
+		resp.Body.Close()
+		return nil, 0, fmt.Errorf("fetch %s: store requires a bearer token (401): set artifact_store.token", key)
 	}
 	if resp.StatusCode != http.StatusOK {
 		resp.Body.Close()
@@ -157,6 +181,7 @@ func (h *HTTP) Fetch(ctx context.Context, key string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+	h.setAuth(req)
 	resp, err := h.client.Do(req)
 	if err != nil {
 		return nil, err
@@ -165,6 +190,9 @@ func (h *HTTP) Fetch(ctx context.Context, key string) ([]byte, error) {
 
 	if resp.StatusCode == http.StatusNotFound {
 		return nil, ErrNotFound
+	}
+	if resp.StatusCode == http.StatusUnauthorized {
+		return nil, fmt.Errorf("fetch %s: store requires a bearer token (401): set artifact_store.token", key)
 	}
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("fetch %s: unexpected status %d", key, resp.StatusCode)
@@ -185,6 +213,7 @@ func (h *HTTP) StoreReader(ctx context.Context, key string, r io.Reader, size in
 		return err
 	}
 	req.ContentLength = size
+	h.setAuth(req)
 	resp, err := h.client.Do(req)
 	if err != nil {
 		return err
@@ -194,6 +223,8 @@ func (h *HTTP) StoreReader(ctx context.Context, key string, r io.Reader, size in
 	switch resp.StatusCode {
 	case http.StatusOK, http.StatusCreated, http.StatusNoContent:
 		return nil
+	case http.StatusUnauthorized:
+		return fmt.Errorf("store %s: store requires a bearer token (401): set artifact_store.token", key)
 	case http.StatusBadRequest, http.StatusUnprocessableEntity:
 		// The store names both digests in its error body ("key <sha>, content
 		// <sha>"); carrying it into the wrapped error is what makes the failure

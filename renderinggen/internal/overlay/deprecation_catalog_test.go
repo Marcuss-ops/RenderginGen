@@ -3,7 +3,6 @@ package overlay
 import (
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/motion"
 )
@@ -46,7 +45,7 @@ func TestDeprecatedMotionIsVisibleButNotSelectable(t *testing.T) {
 
 func TestDeprecatedMotionHasDeterministicSemanticCompileError(t *testing.T) {
 	id := "typewriter_modern_01_monospace_block_cursor"
-	reason := "fixture removal after the compatibility window"
+	reason := "fixture retired with no compatibility window"
 	registry := motion.Registry
 	motion.Registry = motion.NewRegistry()
 	defer func() { motion.Registry = registry }()
@@ -66,25 +65,25 @@ func TestDeprecatedMotionHasDeterministicSemanticCompileError(t *testing.T) {
 	}); err != nil {
 		t.Fatal(err)
 	}
+	// Immediate policy: a deprecated ID fails compilation even though its
+	// remove_after lies in the future. There is no grace window to test.
 	raw := []byte(`{"schema_version":"renderinggen.overlay-plan.v1","plan_id":"retired-motion","video_id":"fixture","width":1280,"height":720,"fps_num":24,"fps_den":1,"items":[{"id":"phrase","kind":"important_phrase","template_id":"IMPORTANT_PHRASE","preset_id":"phrase_default","motion_id":"typewriter_modern_01_monospace_block_cursor","text":"Fixture","start_ms":0,"end_ms":3000}]}`)
 	_, firstErr := CompileSemantic(raw)
 	_, secondErr := CompileSemantic(raw)
-	if firstErr != nil || secondErr != nil {
-		t.Fatalf("saved plan must remain compilable within its compatibility window: first=%v second=%v", firstErr, secondErr)
+	if firstErr == nil || secondErr == nil {
+		t.Fatalf("deprecated plan must fail compilation immediately: first=%v second=%v", firstErr, secondErr)
 	}
-	info, ok := motion.Registry.DeprecationInfo(id)
-	if !ok {
-		t.Fatal("isolated registry lost its deprecation record")
+	if firstErr.Error() != secondErr.Error() {
+		t.Fatalf("deprecation diagnostic is not deterministic: first=%v second=%v", firstErr, secondErr)
 	}
-	before := deprecationErrorAfter(id, info, time.Date(2098, 12, 31, 0, 0, 0, 0, time.UTC))
-	atRemoval := deprecationErrorAfter(id, info, time.Date(2099, 1, 1, 0, 0, 0, 0, time.UTC))
-	if before != nil {
-		t.Fatalf("motion rejected before remove_after: %v", before)
+	for _, want := range []string{"deprecated and no longer resolvable", reason} {
+		if !strings.Contains(firstErr.Error(), want) {
+			t.Fatalf("diagnostic %q does not contain %q", firstErr, want)
+		}
 	}
-	if atRemoval == nil || !strings.Contains(atRemoval.Error(), "deprecated and no longer resolvable") || !strings.Contains(atRemoval.Error(), reason) {
-		t.Fatalf("removal diagnostic = %v, want stable deprecation reason at boundary", atRemoval)
-	}
-	if second := deprecationErrorAfter(id, info, time.Date(2099, 1, 1, 0, 0, 0, 0, time.UTC)); second == nil || atRemoval.Error() != second.Error() {
-		t.Fatalf("post-window diagnostic is not deterministic: first=%v second=%v", atRemoval, second)
+	if err := motionDeprecationError(id); err == nil {
+		t.Fatal("motionDeprecationError must reject a deprecated ID without consulting the clock")
+	} else if !strings.Contains(err.Error(), reason) {
+		t.Fatalf("diagnostic %q does not carry the registry reason", err)
 	}
 }
