@@ -17,12 +17,24 @@ import (
 // a producer that overrides only the entrance still gets an out instead of a
 // hard cut. The motion's registered windows fill in whatever the caller omits.
 func animationForMotion(id string, params map[string]any, textValue string, duration int64, presetExit int, phraseFloor ...bool) (*LayerAnimation, error) {
+	isPhrase := len(phraseFloor) > 0 && phraseFloor[0]
+	return animationForMotionTarget(id, params, textValue, duration, presetExit, "", "", isPhrase)
+}
+
+func animationForMotionTarget(id string, params map[string]any, textValue string, duration int64, presetExit int, itemID, target string, phraseFloor bool) (*LayerAnimation, error) {
+	resolved, err := resolveRegisteredMotion(id)
+	if err != nil {
+		return nil, fmt.Errorf("overlay: item %q motion %q: %w", itemID, id, err)
+	}
+	return animationForResolvedMotionTarget(id, resolved, params, textValue, duration, presetExit, itemID, target, phraseFloor)
+}
+
+func animationForResolvedMotionTarget(id string, resolved *resolvedMotion, params map[string]any, textValue string, duration int64, presetExit int, itemID, target string, phraseFloor bool) (*LayerAnimation, error) {
 	enter, exit, err := motionWindows(params, presetExit)
 	if err != nil {
 		return nil, err
 	}
-	isPhrase := len(phraseFloor) > 0 && phraseFloor[0]
-	animation, err := lowerMotion(id, enter, exit, motion.MotionParams(params), textValue, duration, isPhrase)
+	animation, err := lowerResolvedMotion(id, resolved, enter, exit, motion.MotionParams(params), textValue, duration, phraseFloor, itemID, target)
 	if err != nil {
 		return nil, err
 	}

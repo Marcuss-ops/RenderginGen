@@ -52,6 +52,15 @@ jobs:
       # unit job must never turn into real renders because someone later added
       # a Chronon checkout to the workspace.
       - run: RENDERINGGEN_SKIP_GPU_E2E=1 go test -race -count=1 $(go list ./... | grep -v '/internal/architecture$')
+      # The certification suites carry //go:build certification, so the -race
+      # step above no longer compiles them — that is the point: they certify
+      # presets/goldens, and a developer's `go test ./...` must not pay for the
+      # corpus on every save. The tag must not orphan them, though: this step
+      # runs them in CI exactly as they used to run (engine-dependent tests
+      # self-skip through RENDERINGGEN_SKIP_GPU_E2E=1), and the manual GPU job
+      # runs them again with a real engine. Both facts are pinned by
+      # TestCIRunsRaceEnabledModuleTests and TestCIRuntimeCertificationHasAnOwner.
+      - run: RENDERINGGEN_SKIP_GPU_E2E=1 go test -tags certification -count=1 ./internal/overlay/
       - run: go test -count=1 ./internal/architecture/...
 
   test-queue:
@@ -233,7 +242,7 @@ jobs:
             echo "CHRONON_BIN=$CHRONON_BIN is not executable on this runner" >&2
             exit 1
           }
-          go test -count=1 -timeout 30m -v ./internal/overlay/ \
+          go test -tags certification -count=1 -timeout 30m -v ./internal/overlay/ \
             -run 'TestFinal_|TestGoal3|TestRenderingGen2Chronon'
 
   # ═══════════════════════════════════════════════════════════════════════

@@ -17,7 +17,7 @@ import (
 // by semantic_compile. It keeps the catalog gate meaningful: an id may exist
 // in JSON and still be unusable if it cannot produce a concrete layer plan.
 func TestOverlayV3CatalogLowersEveryModernMotion(t *testing.T) {
-	for _, id := range motion.Registry.AppleV3MotionIDs() {
+	for _, id := range motion.Registry.CategoryMotionIDs("apple_v3") {
 		animation, err := animationForMotion(id, nil, "A MODERN OVERLAY", 120, 6)
 		if err != nil {
 			t.Fatalf("text motion %s: %v", id, err)
@@ -26,7 +26,7 @@ func TestOverlayV3CatalogLowersEveryModernMotion(t *testing.T) {
 			t.Fatalf("text motion %s lowered incompletely: %+v", id, animation)
 		}
 	}
-	for _, id := range motion.Registry.ImageV3MotionIDs() {
+	for _, id := range motion.Registry.CategoryMotionIDs("overlay_v3_image") {
 		animation, err := animationForMotion(id, nil, "", 120, 6)
 		if err != nil {
 			t.Fatalf("image motion %s: %v", id, err)
@@ -38,7 +38,7 @@ func TestOverlayV3CatalogLowersEveryModernMotion(t *testing.T) {
 }
 
 func TestImage25DCleanV1CatalogLowersLayerOnlyWithCatalogExit(t *testing.T) {
-	ids := motion.Registry.Image25DCleanV1MotionIDs()
+	ids := motion.Registry.CategoryMotionIDs("image_25d_clean_v1")
 	if len(ids) != 8 {
 		t.Fatalf("clean 2.5D image catalog has %d motions, want 8", len(ids))
 	}
@@ -123,50 +123,9 @@ func firstCameraBackedProperty(definition motion.MotionDefinition) string {
 	return ""
 }
 
-func TestImageMotionInventoryHasAllCatalogImageAnimations(t *testing.T) {
-	inventory := ImageMotionInventory()
-	want := make(map[string][]string)
-	for _, id := range motion.Registry.List() {
-		plugin, err := motion.Registry.Resolve(id)
-		if err != nil || plugin == nil {
-			t.Fatalf("resolve catalog motion %q: %v", id, err)
-		}
-		definition, ok := plugin.(motion.DeclarativePlugin)
-		if !ok {
-			continue
-		}
-		if containsString(definition.Definition.Targets, "image") ||
-			(definition.Definition.Targets == nil && definition.Definition.Category == "overlay_v3_image") {
-			want[definition.Definition.Category] = append(want[definition.Definition.Category], id)
-		}
-	}
-	if !reflect.DeepEqual(inventory, want) {
-		t.Fatalf("image inventory diverges from canonical target/category metadata:\n got: %#v\nwant: %#v", inventory, want)
-	}
-	all := make(map[string]bool)
-	for family, ids := range inventory {
-		for _, id := range ids {
-			if all[id] {
-				t.Errorf("image inventory repeats motion %q", id)
-			}
-			all[id] = true
-			plugin, err := motion.Registry.Resolve(id)
-			if err != nil || plugin.(motion.DeclarativePlugin).Definition.Category != family {
-				t.Errorf("family %q contains non-canonical motion %q", family, id)
-			}
-		}
-	}
-	if len(all) == 0 {
-		t.Fatal("catalog image inventory is empty")
-	}
-	if len(motion.Registry.ImageOverlayMotionIDs()) != 18 || len(motion.Registry.ImagePremiumV1MotionIDs()) != 20 {
-		t.Fatalf("legacy image APIs changed unexpectedly: overlay=%d premium=%d", len(motion.Registry.ImageOverlayMotionIDs()), len(motion.Registry.ImagePremiumV1MotionIDs()))
-	}
-}
-
 func TestBrushPhraseVariantsCompileForWrappedLongCopy(t *testing.T) {
 	phrase := "Anche 3.000€ al mese: una frase più lunga deve restare leggibile, centrata e accompagnata da un accento Brush che segue il testo senza tagliarlo ai bordi."
-	ids := motion.Registry.VisualAccentsV1MotionIDs("brush_v1")
+	ids := motion.Registry.CategoryMotionIDs("brush_v1")
 	if len(ids) != 23 {
 		t.Fatalf("brush_v1 exposes %d motions, want the 12 original plus 11 phrase variants", len(ids))
 	}
@@ -212,7 +171,7 @@ func TestBrushPhraseVariantsCompileForWrappedLongCopy(t *testing.T) {
 // producer motion_id -> registry -> layer tracks -> wire path, including the
 // derived enable_3d routing flag. Premium recipes remain separately opt-in.
 func TestEveryGeneratedImageMotionReachesTheChrononRenderPlan(t *testing.T) {
-	ids := append(motion.Registry.ImageOverlayMotionIDs(), motion.Registry.EditorialImageV1MotionIDs()...)
+	ids := append(motion.Registry.ImageOverlayMotionIDs(), motion.Registry.CategoryMotionIDs("editorial_image_v1")...)
 	if len(ids) != 32 {
 		t.Fatalf("registered generated-overlay image motions = %d, want 32: %v", len(ids), ids)
 	}
@@ -344,8 +303,10 @@ func TestCompositeEntityImageLayersKeepIndependentTimingAndMotion(t *testing.T) 
 }
 
 func TestCompositeEntityImageLayerCountsTwoThroughFiveCompile(t *testing.T) {
+	compositionIDs := map[int]string{2: "image_double_with_text", 3: "image_triplet_with_text", 4: "image_four_with_text", 5: "image_five_with_text"}
 	for count := 2; count <= 5; count++ {
 		t.Run(fmt.Sprintf("layers-%d", count), func(t *testing.T) {
+			captionCount := count - 1 // Exercise the supported one-through-four caption range.
 			assets := make([]any, 0, count)
 			layers := make([]any, 0, count)
 			parentEnd := int64(5000 + (count-1)*250)
@@ -360,19 +321,30 @@ func TestCompositeEntityImageLayerCountsTwoThroughFiveCompile(t *testing.T) {
 				if index%2 == 1 {
 					motionID = "image_25d_yaw_flip_in"
 				}
-				layers = append(layers, map[string]any{
+				layer := map[string]any{
 					"id": id, "asset_id": id, "start_ms": index * 250,
 					"end_ms": index*250 + 5000, "preset_id": "image_focus_in",
-					"motion_id": motionID, "caption": "Person " + fmt.Sprint(index),
-					"params": map[string]any{"width": 300, "height": 360, "position_x": index * 320, "position_y": 0, "fit": "contain"},
-				})
+					"motion_id": motionID,
+					"params":    map[string]any{"width": 300, "height": 360, "position_x": index*450 - (count-1)*225, "position_y": 0, "fit": "contain"},
+				}
+				if index < captionCount {
+					captionMotionID := "text_fade_up"
+					if index%2 == 1 {
+						captionMotionID = "text_word_rise"
+					}
+					layer["caption"] = "Person " + fmt.Sprint(index)
+					layer["caption_motion_id"] = captionMotionID
+					layer["caption_motion_params"] = map[string]any{"enter_frames": 8 + index}
+				}
+				layers = append(layers, layer)
 			}
 			document := map[string]any{
 				"schema_version": "renderinggen.overlay-plan.v1", "plan_id": fmt.Sprintf("multi-%d", count),
 				"video_id": "multi", "width": 1920, "height": 1080, "fps_num": 24, "fps_den": 1,
 				"items": []any{map[string]any{
 					"id": fmt.Sprintf("group-%d", count), "kind": "entity_image", "template_id": "image_popup",
-					"preset_id": "image_focus_in", "start_ms": 0, "end_ms": parentEnd, "duration_ms": parentEnd,
+					"composition_id": compositionIDs[count],
+					"preset_id":      "image_focus_in", "start_ms": 0, "end_ms": parentEnd, "duration_ms": parentEnd,
 					"asset_refs": assets, "image_layers": layers,
 				}},
 			}
@@ -384,33 +356,216 @@ func TestCompositeEntityImageLayerCountsTwoThroughFiveCompile(t *testing.T) {
 			if err != nil {
 				t.Fatalf("compile %d-image composite: %v", count, err)
 			}
-			if len(compiled.Plan.Layers) != count*2 || len(compiled.Assets) != count {
-				t.Fatalf("compiled layers/assets = %d/%d, want %d image+caption pairs and assets", len(compiled.Plan.Layers), len(compiled.Assets), count)
+			wantLayerCount := count + captionCount
+			if len(compiled.Plan.Layers) != wantLayerCount || len(compiled.Assets) != count {
+				t.Fatalf("compiled layers/assets = %d/%d, want %d images + %d captions and assets", len(compiled.Plan.Layers), len(compiled.Assets), count, captionCount)
 			}
+			layerIndex := 0
+			captionIDs := make(map[string]bool, captionCount)
+			var firstCaptionTracks []AnimationTrack
 			for index := 0; index < count; index++ {
-				image, caption := compiled.Plan.Layers[index*2], compiled.Plan.Layers[index*2+1]
-				if image.Type != "image" || caption.Type != "text" || caption.Text != "Person "+fmt.Sprint(index) {
-					t.Fatalf("child %d image/caption lowering = %+v / %+v", index, image, caption)
+				image := compiled.Plan.Layers[layerIndex]
+				layerIndex++
+				if image.Type != "image" {
+					t.Fatalf("child %d lowered as %q, want image", index, image.Type)
 				}
 				if image.Animation == nil || len(image.Animation.Tracks) == 0 {
 					t.Fatalf("child %d lost its independent motion", index)
+				}
+				if index >= captionCount {
+					continue
+				}
+				caption := compiled.Plan.Layers[layerIndex]
+				layerIndex++
+				if caption.Type != "text" || caption.Text != "Person "+fmt.Sprint(index) {
+					t.Fatalf("child %d caption lowering = %+v", index, caption)
+				}
+				if caption.EntityCaptionForImageID != image.ID {
+					t.Errorf("caption %q links to image %q, want %q", caption.ID, caption.EntityCaptionForImageID, image.ID)
+				}
+				if caption.StartFrame != image.StartFrame || caption.DurationFrames != image.DurationFrames {
+					t.Errorf("caption %q lifetime differs from image %q", caption.ID, image.ID)
+				}
+				if captionIDs[caption.ID] {
+					t.Errorf("duplicate caption layer id %q", caption.ID)
+				}
+				captionIDs[caption.ID] = true
+				if caption.Animation == nil || len(caption.Animation.Tracks) == 0 {
+					t.Errorf("caption %q lost its independent motion", caption.ID)
+				}
+				if index == 0 {
+					firstCaptionTracks = caption.Animation.Tracks
+				} else if index == 1 && reflect.DeepEqual(firstCaptionTracks, caption.Animation.Tracks) {
+					t.Error("different child caption motions collapsed to the same animation")
 				}
 			}
 		})
 	}
 }
 
+func TestCompositeImageRejectsMoreThanCatalogMaximum(t *testing.T) {
+	const count = 6
+	item := semanticItem{
+		ID: "six-images", Kind: string(KindEntityImage), Template: "image_popup",
+		StartMS: 0, EndMS: 5000,
+		Assets:      make([]SemanticAssetRef, count),
+		ImageLayers: make([]SemanticImageLayer, count),
+	}
+	for index := 0; index < count; index++ {
+		id := fmt.Sprintf("image-%d", index)
+		item.Assets[index] = SemanticAssetRef{ID: id}
+		item.ImageLayers[index] = SemanticImageLayer{ID: id, AssetID: id, StartMS: 0, EndMS: 5000, PresetID: "image_focus_in"}
+	}
+	if err := validateSemanticImageLayers(item, KindEntityImage); err == nil || !strings.Contains(err.Error(), "at most 5 images") {
+		t.Fatalf("six-image composition error = %v, want five-image catalog limit", err)
+	}
+}
+
+func TestCompositeEntityCaptionsRejectOverlappingBounds(t *testing.T) {
+	raw := []byte(`{
+		"schema_version":"renderinggen.overlay-plan.v1","plan_id":"caption-overlap","video_id":"caption-overlap",
+		"width":1280,"height":720,"fps_num":24,"fps_den":1,
+		"items":[{"id":"pair","kind":"entity_image","template_id":"image_popup","preset_id":"image_focus_in","start_ms":0,"end_ms":5000,"duration_ms":5000,
+		"asset_refs":[
+			{"asset_id":"a","sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","url":"https://example.test/a.jpg"},
+			{"asset_id":"b","sha256":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","url":"https://example.test/b.jpg"}],
+		"image_layers":[
+			{"id":"person-a","asset_id":"a","start_ms":0,"end_ms":5000,"preset_id":"image_focus_in","caption":"First caption","params":{"width":420,"height":360,"position_x":0,"position_y":0}},
+			{"id":"person-b","asset_id":"b","start_ms":0,"end_ms":5000,"preset_id":"image_focus_in","caption":"Second caption","params":{"width":420,"height":360,"position_x":0,"position_y":0}}]}]}`)
+	compiled, err := CompileSemantic(raw)
+	if err != nil {
+		t.Fatalf("compile captions before source-asset geometry is known: %v", err)
+	}
+	err = ValidateEntityCaptionCollisions(compiled.Plan.Layers)
+	if err == nil || !strings.Contains(err.Error(), `captions "pair:person-a:caption"`) || !strings.Contains(err.Error(), `"pair:person-b:caption"`) || !strings.Contains(err.Error(), "shared frame window") {
+		t.Fatalf("overlapping entity captions error = %v, want both caption IDs and overlap diagnostic", err)
+	}
+}
+
+func TestCompositeEntityCaptionsWithDisjointWindowsMayReuseLayout(t *testing.T) {
+	raw := []byte(`{
+		"schema_version":"renderinggen.overlay-plan.v1","plan_id":"caption-sequential","video_id":"caption-sequential",
+		"width":1280,"height":720,"fps_num":24,"fps_den":1,
+		"items":[{"id":"pair","kind":"entity_image","template_id":"image_popup","preset_id":"image_focus_in","start_ms":0,"end_ms":6000,"duration_ms":6000,
+		"asset_refs":[
+			{"asset_id":"a","sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","url":"https://example.test/a.jpg"},
+			{"asset_id":"b","sha256":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","url":"https://example.test/b.jpg"}],
+		"image_layers":[
+			{"id":"person-a","asset_id":"a","start_ms":0,"end_ms":2500,"preset_id":"image_focus_in","caption":"First caption","params":{"width":420,"height":360,"position_x":0,"position_y":0}},
+			{"id":"person-b","asset_id":"b","start_ms":3000,"end_ms":5500,"preset_id":"image_focus_in","caption":"Second caption","params":{"width":420,"height":360,"position_x":0,"position_y":0}}]}]}`)
+	compiled, err := CompileSemantic(raw)
+	if err != nil {
+		t.Fatalf("non-concurrent captions sharing a layout should compile: %v", err)
+	}
+	captions := 0
+	for _, layer := range compiled.Plan.Layers {
+		if layer.EntityCaptionForImageID == "" {
+			continue
+		}
+		captions++
+	}
+	if captions != 2 {
+		t.Fatalf("compiled captions = %d, want 2", captions)
+	}
+	if err := ValidateEntityCaptionCollisions(compiled.Plan.Layers); err != nil {
+		t.Fatalf("disjoint half-open caption windows must not collide: %v", err)
+	}
+}
+
 func TestCompositeImageContractRejectsUndeclaredAssetAndInvalidWindow(t *testing.T) {
-	base := `{"schema_version":"renderinggen.overlay-plan.v1","plan_id":"bad-composite","video_id":"v","width":1280,"height":720,"fps_num":24,"fps_den":1,"items":[{"id":"pair","kind":"entity_image","template_id":"image_popup","preset_id":"image_focus_in","start_ms":0,"end_ms":5000,"asset_refs":[{"asset_id":"a","sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","url":"https://example.test/a.jpg"},{"asset_id":"b","sha256":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","url":"https://example.test/b.jpg"}],"image_layers":[{"id":"a","asset_id":"a","start_ms":0,"end_ms":3000,"preset_id":"image_focus_in"},{"id":"b","asset_id":"%s","start_ms":2000,"end_ms":6000,"preset_id":"image_focus_in"}]}]}`
+	base := `{"schema_version":"renderinggen.overlay-plan.v1","plan_id":"bad-composite","video_id":"v","width":1280,"height":720,"fps_num":24,"fps_den":1,"items":[{"id":"pair","kind":"entity_image","template_id":"image_popup","preset_id":"image_focus_in","start_ms":0,"end_ms":5000,"asset_refs":[{"asset_id":"a","sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","url":"https://example.test/a.jpg"},{"asset_id":"b","sha256":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","url":"https://example.test/b.jpg"}],"image_layers":[{"id":"a","asset_id":"a","start_ms":0,"end_ms":3000,"preset_id":"image_focus_in"},{"id":"b","asset_id":"%s","start_ms":2000,"end_ms":%s%s}]}]}`
 	for _, test := range []struct {
-		name, asset string
+		name, asset, end, preset string
 	}{
-		{name: "undeclared asset", asset: "missing"},
-		{name: "window exceeds parent", asset: "b"},
+		{name: "undeclared asset", asset: "missing", end: "4000", preset: `,"preset_id":"image_focus_in"`},
+		{name: "window exceeds parent", asset: "b", end: "6000", preset: `,"preset_id":"image_focus_in"`},
+		{name: "missing child preset", asset: "b", end: "4000", preset: ""},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			if _, err := CompileSemantic([]byte(fmt.Sprintf(base, test.asset))); err == nil {
+			if _, err := CompileSemantic([]byte(fmt.Sprintf(base, test.asset, test.end, test.preset))); err == nil {
 				t.Fatal("invalid composite image contract was accepted")
+			}
+		})
+	}
+}
+
+func TestMultipleAssetsMustMatchExplicitImageRepresentation(t *testing.T) {
+	for _, tc := range []struct {
+		name, item, want string
+	}{
+		{
+			name: "image composition",
+			item: `{"id":"pair","kind":"image","template_id":"IMAGE_OVERLAY","preset_id":"image_focus_in","start_ms":0,"end_ms":3000,"asset_refs":[{"asset_id":"a","sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","url":"https://example.test/a.jpg"},{"asset_id":"b","sha256":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","url":"https://example.test/b.jpg"}]}`,
+			want: "no image_layers",
+		},
+		{
+			name: "entity portrait",
+			item: `{"id":"person","kind":"entity_card","template_id":"PERSON","preset_id":"phrase_default","image_preset_id":"image_focus_in","entity_id":"entity:ada-lovelace","text":"Ada Lovelace","start_ms":0,"end_ms":3000,"duration_ms":3000,"asset_refs":[{"asset_id":"a","sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","url":"https://example.test/a.jpg"},{"asset_id":"b","sha256":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","url":"https://example.test/b.jpg"}]}`,
+			want: "entity cards support one portrait asset",
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			raw := []byte(`{"schema_version":"renderinggen.overlay-plan.v1","plan_id":"unlayered-images","video_id":"v","width":1280,"height":720,"fps_num":24,"fps_den":1,"items":[` + tc.item + `]}`)
+			_, err := CompileSemantic(raw)
+			if err == nil || !strings.Contains(err.Error(), tc.want) {
+				t.Fatalf("multiple image assets error = %v, want substring %q", err, tc.want)
+			}
+		})
+	}
+}
+
+func TestImageCompositionIDValidatesImageAndCaptionCounts(t *testing.T) {
+	makeItem := func(compositionID string, count, captions int) semanticItem {
+		item := semanticItem{
+			ID: "composition", Kind: string(KindEntityImage), Template: "image_popup",
+			CompositionID: compositionID, StartMS: 0, EndMS: 2000,
+			Assets: make([]SemanticAssetRef, count), ImageLayers: make([]SemanticImageLayer, count),
+		}
+		for index := 0; index < count; index++ {
+			assetID := fmt.Sprintf("asset-%d", index)
+			item.Assets[index] = SemanticAssetRef{ID: assetID}
+			item.ImageLayers[index] = SemanticImageLayer{
+				ID: fmt.Sprintf("image-%d", index), AssetID: assetID,
+				StartMS: 0, EndMS: 2000, PresetID: "image_focus_in",
+			}
+			if index < captions {
+				item.ImageLayers[index].Caption = fmt.Sprintf("Caption %d", index)
+			}
+		}
+		return item
+	}
+	singleAsset := makeItem("image_double", 1, 0)
+	singleAsset.ImageLayers = nil
+	singleCaption := semanticItem{
+		ID: "single-caption", Kind: string(KindEntityImage), Template: "image_popup",
+		CompositionID: "single_image_with_text", StartMS: 0, EndMS: 2000,
+		Assets: []SemanticAssetRef{{ID: "asset-0"}}, EntityCaption: "Ada",
+	}
+	parentCaption := makeItem("image_double", 2, 0)
+	parentCaption.EntityCaption = "orphaned caption"
+	cases := []struct {
+		name string
+		item semanticItem
+		want string
+	}{
+		{name: "single image with caption", item: singleCaption},
+		{name: "double with caption", item: makeItem("image_double_with_text", 2, 1)},
+		{name: "single image count mismatch", item: singleAsset, want: "requires 2 images, got 1"},
+		{name: "caption required", item: makeItem("image_double_with_text", 2, 0), want: "requires between 1 and 2 captions, got 0"},
+		{name: "caption forbidden", item: makeItem("image_double", 2, 1), want: "does not allow captions"},
+		{name: "parent caption on composite", item: parentCaption, want: "put captions on the owning image layer"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			err := validateSemanticImageLayers(tc.item, KindEntityImage)
+			if tc.want == "" {
+				if err != nil {
+					t.Fatalf("valid composition rejected: %v", err)
+				}
+				return
+			}
+			if err == nil || !strings.Contains(err.Error(), tc.want) {
+				t.Fatalf("composition validation error = %v, want substring %q", err, tc.want)
 			}
 		})
 	}
@@ -418,8 +573,8 @@ func TestCompositeImageContractRejectsUndeclaredAssetAndInvalidWindow(t *testing
 
 func TestEveryPhraseFamilyMotionReachesTheChrononRenderPlan(t *testing.T) {
 	var ids []string
-	for _, family := range []string{"typewriter", "typewriter_modern_v1", "classic_apple", "modern_apple"} {
-		ids = append(ids, motion.Registry.FamilyMotionIDs(family)...)
+	for _, category := range []string{"typewriter", "typewriter_modern_v1", "apple_v2", "apple_v3", "phrase_apple_clean_v1", "apple_phrase_v1"} {
+		ids = append(ids, motion.Registry.CategoryMotionIDs(category)...)
 	}
 	if len(ids) != 128 {
 		t.Fatalf("registered phrase family motions = %d, want 128", len(ids))
@@ -498,13 +653,13 @@ func TestPhraseDefaultAndMotionFamilyRemainIndependent(t *testing.T) {
 	if _, err := ResolveOfficialPreset(PhraseDefaultPresetID); err != nil {
 		t.Fatal(err)
 	}
-	if got := len(motion.Registry.FamilyMotionIDs("typewriter")); got != 10 {
+	if got := len(motion.Registry.CategoryMotionIDs("typewriter")); got != 10 {
 		t.Fatalf("typewriter family has %d motions, want 10", got)
 	}
-	if got := len(motion.Registry.FamilyMotionIDs("typewriter_modern_v1")); got != 15 {
+	if got := len(motion.Registry.CategoryMotionIDs("typewriter_modern_v1")); got != 15 {
 		t.Fatalf("modern typewriter family has %d motions, want 15", got)
 	}
-	for _, id := range motion.Registry.FamilyMotionIDs("typewriter_modern_v1") {
+	for _, id := range motion.Registry.CategoryMotionIDs("typewriter_modern_v1") {
 		animation, err := animationForMotion(id, nil, "18 MAY 2026", 150, 0)
 		if err != nil || animation == nil || len(animation.Tracks) == 0 || len(animation.TextAnimators) == 0 {
 			t.Fatalf("modern typewriter %q is not runtime-renderable: animation=%+v error=%v", id, animation, err)
@@ -512,11 +667,8 @@ func TestPhraseDefaultAndMotionFamilyRemainIndependent(t *testing.T) {
 	}
 	// Editorial Visual Motion V1 grows the certified web vocabulary to 14:
 	// web_cursor_focus and web_section_spotlight joined the family.
-	if got := len(motion.Registry.FamilyMotionIDs("web")); got != 14 {
+	if got := len(motion.Registry.CategoryMotionIDs("web")); got != 14 {
 		t.Fatalf("web family has %d motions, want 14", got)
-	}
-	if got := len(motion.Registry.FamilyMotionIDs("3d")); got == 0 {
-		t.Fatal("3d family should expose catalog motions independently of phrase_default")
 	}
 }
 

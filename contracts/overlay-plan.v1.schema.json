@@ -24,6 +24,32 @@
       "type": "array", "minItems": 3, "maxItems": 4,
       "items": { "type": "number", "minimum": 0, "maximum": 1 }
     },
+    "metric_data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["value", "unit"],
+      "description": "Structured metric payload of a metric_stat card. Optional on the wire so a plan that carries no structured value keeps compiling; a declared block must be complete, so a half-filled metric fails instead of being displayed as if it were validated.",
+      "properties": {
+        "value": { "type": "string", "minLength": 1, "description": "The measured number as displayed." },
+        "unit": { "type": "string", "minLength": 1, "description": "The unit suffix the value is shown with." },
+        "label": { "type": "string", "description": "What the metric describes." },
+        "delta": { "type": "string", "description": "Comparison against a previous value, as displayed." },
+        "precision": { "type": "integer", "minimum": 0, "maximum": 12, "description": "Declared decimal places; the engine default applies when absent." }
+      }
+    },
+    "date_data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["value"],
+      "description": "Structured date payload of a timeline_date card. Optional on the wire like metric_data; a declared block must carry the displayed instant.",
+      "properties": {
+        "value": { "type": "string", "minLength": 1, "description": "The date or instant shown." },
+        "end": { "type": "string", "description": "Interval end; absent means a single date." },
+        "format": { "type": "string", "description": "Display format; the locale default applies when absent." },
+        "timezone": { "type": "string", "description": "Display zone; UTC applies when absent." },
+        "ordering": { "type": "integer", "minimum": 0, "maximum": 1000000, "description": "Event order inside a timeline composition." }
+      }
+    },
     "map_point": {
       "type": "object", "additionalProperties": false,
       "required": ["latitude", "longitude"],
@@ -155,6 +181,7 @@
   "properties": {
     "schema_version": { "const": "renderinggen.overlay-plan.v1" },
     "animation_policies": { "type": "array", "maxItems": 1024, "items": { "$ref": "#/$defs/animation_policy" }, "description": "Runtime animation defaults selected by group/subgroup and target. Exact subgroup rules override group rules; item/layer motion ids override both." },
+    "map_composition_id": { "type": "string", "minLength": 1, "description": "Optional plan-level map composition resolved through the runtime map composition catalog. When set, the plan must contain exactly the declared number of georeferenced map items." },
     "plan_id": { "type": "string", "minLength": 1 },
     "video_id": { "type": "string", "minLength": 1 },
     "project_id": { "type": "string" },
@@ -278,6 +305,10 @@
           "group_id": { "type": "string", "minLength": 1, "maxLength": 128, "description": "Producer-defined group selector used by animation_policies." },
           "subgroup_id": { "type": "string", "minLength": 1, "maxLength": 128, "description": "Optional producer-defined subgroup selector; when present group_id is also required." },
           "kind": { "type": "string" },
+          "composition_id": {
+            "enum": ["single_image", "image_double", "image_triplet", "image_four", "image_five", "single_image_with_text", "image_double_with_text", "image_triplet_with_text", "image_four_with_text", "image_five_with_text"],
+            "description": "Optional image-composition picker id. When present, image and caption counts are validated against the runtime composition catalog. Omit for legacy plans."
+          },
           "start_ms": { "type": "integer", "minimum": 0 },
           "end_ms": { "type": "integer", "exclusiveMinimum": 0 },
           "duration_ms": { "type": "integer", "minimum": 1, "description": "Producer-owned item duration. For entity items it is required and must equal end_ms-start_ms; the worker validates it and does not emit it to Chronon." },
@@ -380,6 +411,7 @@
           "subgroup_id": { "type": "string", "minLength": 1, "maxLength": 128, "description": "Optional producer-defined subgroup selector; when present group_id is also required." },
           "asset_refs": {
             "type": "array",
+            "description": "An image item uses one asset_refs entry for a single image; multiple images require image_layers with one entry per image and its own asset reference. An entity_card accepts one portrait asset; compositions use separate image items. Unsupported extra image assets are rejected by the compiler.",
             "items": {
               "type": "object",
               "additionalProperties": false,
@@ -436,7 +468,7 @@
             "type": "object",
             "additionalProperties": false,
             "description": "Typed, fail-closed Web Mercator map metadata. Only an explicitly supplied locally licensed raster is allowed; attribution is rendered visibly and pins share its centered pixel window.",
-            "required": ["provider", "source_id", "source_license", "center", "zoom", "width", "height", "attribution", "motion_id", "pins"],
+            "required": ["provider", "source_id", "source_license", "center", "zoom", "width", "height", "attribution", "pins"],
             "properties": {
               "provider": { "const": "local" },
               "source_id": { "type": "string", "minLength": 1 },
@@ -446,7 +478,7 @@
               "width": { "type": "integer", "minimum": 1, "maximum": 7680 },
               "height": { "type": "integer", "minimum": 1, "maximum": 4320 },
               "attribution": { "type": "string", "minLength": 1, "maxLength": 512, "description": "Provider-required visible credit. PipelineGen enforces the stricter byte budget plus a no-control-character rule; the schema pins the same ceiling so a plan the producer accepted is never rejected here for length." },
-              "motion_id": { "type": "string", "minLength": 1, "description": "Motion resolved through RenderingGen's canonical motion registry; only centered image motions are accepted for a georeferenced map." },
+              "motion_id": { "type": "string", "minLength": 1, "description": "Optional centered map_view motion for a static basemap. camera_move controls fly-to; a supplied motion_id is validated for compatibility but is not applied during fly-to." },
               "lods": {
                 "type": "array", "minItems": 2, "maxItems": 8,
                 "description": "Ordered, offline, locally staged Web-Mercator raster levels, coarse to fine. Every raster is content-addressed in asset_refs and must cover the full camera route and viewport at its active zoom.",
@@ -462,6 +494,32 @@
                     "zoom": { "type": "integer", "minimum": 0, "maximum": 18 },
                     "width": { "type": "integer", "minimum": 1, "maximum": 7680 },
                     "height": { "type": "integer", "minimum": 1, "maximum": 4320 }
+                  }
+                }
+              },
+              "fly_to_feature": {
+                "type": "object", "additionalProperties": false,
+                "required": ["feature", "padding"],
+                "description": "Resolve a Natural Earth feature by canonical ID or unambiguous name and lower its bounds to the existing camera_move contract. Requires operator-supplied local licensed LOD rasters that cover the entire move; no tile fetching occurs.",
+                "properties": {
+                  "feature": { "type": "string", "minLength": 1 },
+                  "road": { "enum": ["world"], "description": "Optional route origin. Omit to start at the declared map center; world flies from the bundled world feature." },
+                  "padding": { "type": "number", "minimum": 0, "exclusiveMaximum": 0.5 }
+                }
+              },
+              "routes": {
+                "type": "array", "maxItems": 128,
+                "description": "Ordered local great-circle routes drawn above the basemap. Every interpolated sample must lie within each certified local raster LOD; no route or tile is silently clipped or fetched.",
+                "items": {
+                  "type": "object", "additionalProperties": false,
+                  "required": ["id", "stops", "color", "width_px"],
+                  "properties": {
+                    "id": { "type": "string", "minLength": 1, "maxLength": 128 },
+                    "stops": { "type": "array", "minItems": 2, "maxItems": 128, "items": { "$ref": "#/$defs/map_point" } },
+                    "color": { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$" },
+                    "width_px": { "type": "number", "exclusiveMinimum": 0, "maximum": 64 },
+                    "trim_start": { "type": "number", "minimum": 0, "maximum": 1 },
+                    "trim_end": { "type": "number", "exclusiveMinimum": 0, "maximum": 1 }
                   }
                 }
               },
@@ -499,16 +557,21 @@
             },
             "allOf": [
               { "if": { "required": ["lods"] }, "then": { "required": ["camera_move"] } },
-              { "if": { "required": ["camera_move"] }, "then": { "required": ["lods"] } }
+              { "if": { "required": ["camera_move"] }, "then": { "required": ["lods"] } },
+              { "if": { "required": ["fly_to_feature"] }, "then": { "required": ["lods"] } },
+              { "if": { "required": ["routes"] }, "then": { "required": ["camera_move", "lods"] } },
+              { "not": { "required": ["fly_to_feature", "camera_move"] } }
             ]
           },
+          "metric": { "$ref": "#/$defs/metric_data" },
+          "date": { "$ref": "#/$defs/date_data" },
           "image_layers": {
             "type": "array",
             "description": "Optional independently animated image layers for a composite (two or more) image item. A single image uses the parent item's asset_refs/motion_id/motion_params. Each child asset_id references the parent asset_refs; times are relative to the parent and child motion_id/motion_params override animation independently.",
             "items": {
               "type": "object",
               "additionalProperties": false,
-              "required": ["id", "asset_id", "start_ms", "end_ms"],
+              "required": ["id", "asset_id", "start_ms", "end_ms", "preset_id"],
               "properties": {
                 "id": { "type": "string", "minLength": 1 },
                 "group_id": { "type": "string", "minLength": 1, "maxLength": 128, "description": "Optional child-specific animation group; inherits the parent image item's group_id when omitted." },
@@ -519,7 +582,7 @@
                 "preset_id": { "type": "string" },
                 "motion_id": { "type": "string" },
                 "motion_params": { "type": "object", "description": "Open motion-plugin parameters; enter_frames/exit_frames are optional integer frame counts from 0 to 240 (0 keeps the catalog/preset window)." },
-                "caption": { "type": "string", "minLength": 1 },
+                "caption": { "type": "string", "minLength": 1, "description": "Optional caption owned by this image layer. RenderingGen emits a separate text layer linked to the generated image-layer ID and shares its time window." },
                 "caption_motion_id": { "type": "string", "minLength": 1, "description": "Optional caption motion override for this image layer; resolved through the entity_caption_v1 motion catalog." },
                 "caption_motion_params": { "type": "object", "description": "Optional motion parameters for this child caption, independent of image motion." },
                 "params": { "type": "object" },

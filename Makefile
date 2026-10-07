@@ -13,7 +13,7 @@
 
 CHRONON_RUNTIME ?= ghcr.io/marcuss-ops/chronon3d-runtime:0.1.0
 
-.PHONY: native-build golden-e2e golden-e2e-runtime golden-e2e-reset golden-e2e-down test-architecture conformance test-gofmt test-unit test-module-standalone check-gpu-lanes
+.PHONY: native-build golden-e2e golden-e2e-runtime golden-e2e-reset golden-e2e-down test-architecture conformance test-gofmt test-unit test-certification test-module-standalone check-gpu-lanes
 
 # check-gpu-lanes — verify profile-specific GPU lane contracts. Native, Docker,
 # and CI profiles intentionally differ; this catches accidental divergence
@@ -99,13 +99,15 @@ test-module-standalone:
 # GPU work — and on a host without a usable GPU it hung instead of failing, since
 # the engine's children inherit the output pipe. Discovery is no longer accepted
 # as consent (pinned by TestRuntimeCertificationOptOut in
-# renderinggen/internal/overlay/final_certification_runtime_test.go);
+# renderinggen/internal/overlay/runtime_certification_policy_test.go, which is
+# deliberately NOT behind the tag so the default loop keeps proving it);
 # RENDERINGGEN_SKIP_GPU_E2E stays as the explicit opt-out CI and this target set:
 #
-#   make test-unit     fast gate, runs everywhere, must always be green
-#   go test ./...      unit + compile-level certification, no engine required
-#   CHRONON_BIN=/path/to/chronon3d_cli go test ./renderinggen/internal/overlay/
-#                      the real-engine + golden-render suites
+#   make test-unit           fast gate, runs everywhere, must always be green
+#   make test-certification  the //go:build certification suites (no engine needed)
+#   go test ./...            unit tests; certification is tag-gated, not run
+#   CHRONON_BIN=... go test -tags certification ./renderinggen/internal/overlay/
+#                            the real-engine + golden-render suites
 #
 # This target does not duplicate the CI command: CI owns the -race scope
 # (pinned by TestCIRunsRaceEnabledModuleTests), this owns the fast local gate.
@@ -115,6 +117,21 @@ test-unit:
 	  (cd $$m && RENDERINGGEN_SKIP_GPU_E2E=1 go test -count=1 ./...) || fail=1; \
 	done; \
 	exit $$fail
+
+# test-certification — the preset/golden certification suites, kept out of the
+# default loop by //go:build certification.
+#
+# They are tagged because they certify preset matrices and golden plans rather
+# than unit behaviour: a developer's `go test ./...` (and make test-unit) should
+# not pay for the corpus on every save. Tagging must not ORPHAN them, so the tag
+# is pinned by the architecture gate (TestCIRunsRaceEnabledModuleTests requires
+# CI to run them; TestCIRuntimeCertificationHasAnOwner requires the manual GPU
+# job to pass -tags certification) and this target is the local entry point.
+#
+# No engine is required: the compile-level suites run, and the real-engine ones
+# self-skip unless CHRONON_BIN names a built chronon3d_cli.
+test-certification:
+	cd renderinggen && go test -tags certification -count=1 ./internal/overlay/
 
 native-build:
 	go build -o /usr/local/bin/renderinggen-queue ./queue/cmd/queued

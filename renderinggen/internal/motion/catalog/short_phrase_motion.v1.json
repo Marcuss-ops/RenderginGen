@@ -82,6 +82,10 @@
       "id": "short_phrase_scale_settle_word",
       "family": "classic",
       "subcategory": "word_sequence",
+      "targets": [
+        "short_phrase",
+        "caption"
+      ],
       "title": "Scale Settle",
       "phrase": "Clean",
       "enter": 90,
@@ -168,12 +172,14 @@
           ]
         }
       ],
+      "text_overlays": [],
       "accents": [],
       "font_size": 0.0,
       "light": false,
       "emphasis": [],
       "exit": "reverse",
       "decor": null,
+      "adaptation_note": "",
       "timing": {
         "min_frames": 180,
         "max_frames": 210,
@@ -186,6 +192,10 @@
       "id": "short_phrase_shape_phrase_wipe",
       "family": "classic",
       "subcategory": "shape_reveal",
+      "targets": [
+        "short_phrase",
+        "caption"
+      ],
       "title": "Shape Phrase Wipe",
       "phrase": "It's really easy to manage.",
       "enter": 90,
@@ -236,12 +246,14 @@
           ]
         }
       ],
+      "text_overlays": [],
       "accents": [],
       "font_size": 0.0,
       "light": true,
       "emphasis": [],
       "exit": "wipe",
       "decor": "star_bumper",
+      "adaptation_note": "",
       "timing": {
         "min_frames": 210,
         "max_frames": 210,
@@ -254,6 +266,10 @@
       "id": "short_phrase_semantic_two_line",
       "family": "classic",
       "subcategory": "kinetic_reveal",
+      "targets": [
+        "short_phrase",
+        "caption"
+      ],
       "title": "Semantic Two Line",
       "phrase": "Good design\nfeels invisible",
       "enter": 90,
@@ -303,6 +319,7 @@
           ]
         }
       ],
+      "text_overlays": [],
       "accents": [],
       "font_size": 76.0,
       "light": false,
@@ -312,6 +329,7 @@
       ],
       "exit": "forward",
       "decor": null,
+      "adaptation_note": "",
       "timing": {
         "min_frames": 195,
         "max_frames": 210,
@@ -324,6 +342,10 @@
       "id": "short_phrase_phrase_build_focus",
       "family": "classic",
       "subcategory": "kinetic_reveal",
+      "targets": [
+        "short_phrase",
+        "caption"
+      ],
       "title": "Phrase Build Focus",
       "phrase": "Will make your video",
       "enter": 90,
@@ -387,12 +409,14 @@
           ]
         }
       ],
+      "text_overlays": [],
       "accents": [],
       "font_size": 0.0,
       "light": false,
       "emphasis": [],
       "exit": "reverse",
       "decor": null,
+      "adaptation_note": "",
       "timing": {
         "min_frames": 195,
         "max_frames": 210,
@@ -405,6 +429,10 @@
       "id": "short_phrase_character_tracking_reveal",
       "family": "classic",
       "subcategory": "letter_by_letter_reveal",
+      "targets": [
+        "short_phrase",
+        "caption"
+      ],
       "title": "Character Tracking Reveal",
       "phrase": "more expensive",
       "enter": 90,
@@ -468,12 +496,14 @@
           ]
         }
       ],
+      "text_overlays": [],
       "accents": [],
       "font_size": 0.0,
       "light": false,
       "emphasis": [],
       "exit": "wipe",
       "decor": null,
+      "adaptation_note": "",
       "timing": {
         "min_frames": 180,
         "max_frames": 210,
@@ -486,6 +516,10 @@
       "id": "short_phrase_word_mask_sequence",
       "family": "classic",
       "subcategory": "word_sequence",
+      "targets": [
+        "short_phrase",
+        "caption"
+      ],
       "title": "Word Mask Sequence",
       "phrase": "leave your message",
       "enter": 90,
@@ -539,12 +573,14 @@
           ]
         }
       ],
+      "text_overlays": [],
       "accents": [],
       "font_size": 0.0,
       "light": false,
       "emphasis": [],
       "exit": "wipe",
       "decor": null,
+      "adaptation_note": "",
       "timing": {
         "min_frames": 195,
         "max_frames": 210,
@@ -557,6 +593,10 @@
       "id": "short_phrase_character_cascade_shapes",
       "family": "classic",
       "subcategory": "letter_by_letter_reveal",
+      "targets": [
+        "short_phrase",
+        "caption"
+      ],
       "title": "Character Cascade Shapes",
       "phrase": "Really smooth.",
       "enter": 90,
@@ -592,12 +632,14 @@
           ]
         }
       ],
+      "text_overlays": [],
       "accents": [],
       "font_size": 0.0,
       "light": true,
       "emphasis": [],
       "exit": "scatter",
       "decor": "star_bumper",
+      "adaptation_note": "",
       "timing": {
         "min_frames": 180,
         "max_frames": 210,
@@ -610,6 +652,10 @@
       "id": "short_phrase_word_cascade_sentence",
       "family": "classic",
       "subcategory": "word_sequence",
+      "targets": [
+        "short_phrase",
+        "caption"
+      ],
       "title": "Word Cascade Sentence",
       "phrase": "Clean. Simple. Attractive.",
       "enter": 90,
@@ -673,12 +719,14 @@
           ]
         }
       ],
+      "text_overlays": [],
       "accents": [],
       "font_size": 0.0,
       "light": false,
       "emphasis": [],
       "exit": "reverse",
       "decor": null,
+      "adaptation_note": "",
       "timing": {
         "min_frames": 195,
         "max_frames": 210,
@@ -691,6 +739,10 @@
       "id": "short_phrase_semantic_chain_curve",
       "family": "classic",
       "subcategory": "depth_and_space",
+      "targets": [
+        "short_phrase",
+        "caption"
+      ],
       "title": "Semantic Chain Curve",
       "phrase": "we draw focus",
       "enter": 90,
@@ -754,6 +806,7 @@
           ]
         }
       ],
+      "text_overlays": [],
       "accents": [],
       "font_size": 0.0,
       "light": false,
@@ -762,6 +815,7 @@
       ],
       "exit": "arc_dissolve",
       "decor": null,
+      "adaptation_note": "",
       "timing": {
         "min_frames": 195,
         "max_frames": 210,
@@ -774,6 +828,10 @@
       "id": "short_phrase_simple_progressive_phrase",
       "family": "classic",
       "subcategory": "word_sequence",
+      "targets": [
+        "short_phrase",
+        "caption"
+      ],
       "title": "Simple Progressive Phrase",
       "phrase": "Just what I needed",
       "enter": 90,
@@ -823,12 +881,14 @@
           ]
         }
       ],
+      "text_overlays": [],
       "accents": [],
       "font_size": 0.0,
       "light": false,
       "emphasis": [],
       "exit": "forward",
       "decor": null,
+      "adaptation_note": "",
       "timing": {
         "min_frames": 195,
         "max_frames": 210,
@@ -841,6 +901,10 @@
       "id": "short_phrase_single_word_swap",
       "family": "classic",
       "subcategory": "word_sequence",
+      "targets": [
+        "short_phrase",
+        "caption"
+      ],
       "title": "Single Word Swap",
       "phrase": "Intro style animation",
       "enter": 90,
@@ -890,6 +954,7 @@
           ]
         }
       ],
+      "text_overlays": [],
       "accents": [],
       "font_size": 0.0,
       "light": false,
@@ -898,6 +963,7 @@
       ],
       "exit": "reverse",
       "decor": null,
+      "adaptation_note": "",
       "timing": {
         "min_frames": 195,
         "max_frames": 210,
@@ -910,6 +976,10 @@
       "id": "short_phrase_character_write_on",
       "family": "classic",
       "subcategory": "letter_by_letter_reveal",
+      "targets": [
+        "short_phrase",
+        "caption"
+      ],
       "title": "Character Write On",
       "phrase": "Thanks for watching!",
       "enter": 90,
@@ -959,12 +1029,14 @@
           ]
         }
       ],
+      "text_overlays": [],
       "accents": [],
       "font_size": 0.0,
       "light": false,
       "emphasis": [],
       "exit": "wipe",
       "decor": null,
+      "adaptation_note": "",
       "timing": {
         "min_frames": 195,
         "max_frames": 210,
@@ -977,6 +1049,10 @@
       "id": "short_phrase_editorial_baseline_rise",
       "family": "editorial",
       "subcategory": "kinetic_reveal",
+      "targets": [
+        "short_phrase",
+        "caption"
+      ],
       "title": "Word Snap",
       "phrase": "Le idee prendono forma",
       "enter": 90,
@@ -1093,12 +1169,14 @@
           ]
         }
       ],
+      "text_overlays": [],
       "accents": [],
       "font_size": 104.0,
       "light": false,
       "emphasis": [],
       "exit": "reverse",
       "decor": null,
+      "adaptation_note": "",
       "timing": {
         "min_frames": 195,
         "max_frames": 210,
@@ -1111,6 +1189,10 @@
       "id": "short_phrase_editorial_side_glide",
       "family": "editorial",
       "subcategory": "depth_and_space",
+      "targets": [
+        "short_phrase",
+        "caption"
+      ],
       "title": "Split Slide",
       "phrase": "Il dettaglio fa la differenza",
       "enter": 90,
@@ -1231,12 +1313,14 @@
           ]
         }
       ],
+      "text_overlays": [],
       "accents": [],
       "font_size": 88.0,
       "light": true,
       "emphasis": [],
       "exit": "reverse",
       "decor": null,
+      "adaptation_note": "",
       "timing": {
         "min_frames": 210,
         "max_frames": 210,
@@ -1249,6 +1333,10 @@
       "id": "short_phrase_editorial_tracking_close",
       "family": "editorial",
       "subcategory": "typographic_motion",
+      "targets": [
+        "short_phrase",
+        "caption"
+      ],
       "title": "Type Bloom",
       "phrase": "Meno rumore. Più significato.",
       "enter": 90,
@@ -1367,12 +1455,14 @@
           ]
         }
       ],
+      "text_overlays": [],
       "accents": [],
       "font_size": 86.0,
       "light": false,
       "emphasis": [],
       "exit": "reverse",
       "decor": null,
+      "adaptation_note": "",
       "timing": {
         "min_frames": 195,
         "max_frames": 210,
@@ -1385,6 +1475,10 @@
       "id": "short_phrase_editorial_focus_resolve",
       "family": "editorial",
       "subcategory": "kinetic_reveal",
+      "targets": [
+        "short_phrase",
+        "caption"
+      ],
       "title": "Focus Lock",
       "phrase": "Un nuovo punto di vista",
       "enter": 90,
@@ -1503,12 +1597,14 @@
           ]
         }
       ],
+      "text_overlays": [],
       "accents": [],
       "font_size": 96.0,
       "light": false,
       "emphasis": [],
       "exit": "reverse",
       "decor": null,
+      "adaptation_note": "",
       "timing": {
         "min_frames": 210,
         "max_frames": 210,
@@ -1521,6 +1617,10 @@
       "id": "short_phrase_editorial_underline_draw",
       "family": "editorial",
       "subcategory": "light_and_accent",
+      "targets": [
+        "short_phrase",
+        "caption"
+      ],
       "title": "Accent Sweep",
       "phrase": "Semplice. Non banale.",
       "enter": 90,
@@ -1605,6 +1705,7 @@
           ]
         }
       ],
+      "text_overlays": [],
       "accents": [
         {
           "id": "underline",
@@ -1705,6 +1806,7 @@
       "emphasis": [],
       "exit": "reverse",
       "decor": null,
+      "adaptation_note": "",
       "timing": {
         "min_frames": 195,
         "max_frames": 210,
@@ -1717,6 +1819,10 @@
       "id": "short_phrase_editorial_rule_handoff",
       "family": "editorial",
       "subcategory": "light_and_accent",
+      "targets": [
+        "short_phrase",
+        "caption"
+      ],
       "title": "Color Flip",
       "phrase": "Dalle idee ai risultati",
       "enter": 90,
@@ -1801,6 +1907,7 @@
           ]
         }
       ],
+      "text_overlays": [],
       "accents": [
         {
           "id": "rule",
@@ -1881,6 +1988,7 @@
       "emphasis": [],
       "exit": "reverse",
       "decor": null,
+      "adaptation_note": "",
       "timing": {
         "min_frames": 195,
         "max_frames": 210,
@@ -1893,6 +2001,10 @@
       "id": "short_phrase_editorial_glyph_curtain",
       "family": "editorial",
       "subcategory": "letter_by_letter_reveal",
+      "targets": [
+        "short_phrase",
+        "caption"
+      ],
       "title": "Mask Reveal",
       "phrase": "Lascia parlare le immagini",
       "enter": 90,
@@ -2021,12 +2133,14 @@
           ]
         }
       ],
+      "text_overlays": [],
       "accents": [],
       "font_size": 92.0,
       "light": false,
       "emphasis": [],
       "exit": "wipe",
       "decor": null,
+      "adaptation_note": "",
       "timing": {
         "min_frames": 195,
         "max_frames": 210,
@@ -2039,6 +2153,10 @@
       "id": "short_phrase_editorial_contrast_sweep",
       "family": "editorial",
       "subcategory": "typographic_motion",
+      "targets": [
+        "short_phrase",
+        "caption"
+      ],
       "title": "Word Highlight",
       "phrase": "La chiarezza cambia tutto",
       "enter": 90,
@@ -2186,6 +2304,7 @@
           ]
         }
       ],
+      "text_overlays": [],
       "accents": [],
       "font_size": 96.0,
       "light": true,
@@ -2194,6 +2313,7 @@
       ],
       "exit": "reverse",
       "decor": null,
+      "adaptation_note": "",
       "timing": {
         "min_frames": 195,
         "max_frames": 210,
@@ -2206,6 +2326,9 @@
       "id": "short_phrase_editorial_quiet_zoom",
       "family": "editorial",
       "subcategory": "kinetic_reveal",
+      "targets": [
+        "short_phrase"
+      ],
       "title": "Pop Settle",
       "phrase": "Guarda oltre",
       "enter": 90,
@@ -2284,12 +2407,14 @@
         }
       ],
       "text_animators": [],
+      "text_overlays": [],
       "accents": [],
       "font_size": 132.0,
       "light": false,
       "emphasis": [],
       "exit": "reverse",
       "decor": null,
+      "adaptation_note": "",
       "timing": {
         "min_frames": 180,
         "max_frames": 210,
@@ -2302,6 +2427,10 @@
       "id": "short_phrase_editorial_lift_and_rule",
       "family": "editorial",
       "subcategory": "light_and_accent",
+      "targets": [
+        "short_phrase",
+        "caption"
+      ],
       "title": "Float Stack",
       "phrase": "Una storia da ricordare",
       "enter": 90,
@@ -2418,6 +2547,7 @@
           ]
         }
       ],
+      "text_overlays": [],
       "accents": [
         {
           "id": "top_rule",
@@ -2480,6 +2610,7 @@
       "emphasis": [],
       "exit": "reverse",
       "decor": null,
+      "adaptation_note": "",
       "timing": {
         "min_frames": 195,
         "max_frames": 210,
@@ -2492,6 +2623,10 @@
       "id": "short_phrase_product_blur_out_up",
       "family": "product_video",
       "subcategory": "kinetic_reveal",
+      "targets": [
+        "short_phrase",
+        "caption"
+      ],
       "title": "Blur Out Up",
       "phrase": "Words leave softly",
       "enter": 90,
@@ -2602,12 +2737,14 @@
           ]
         }
       ],
+      "text_overlays": [],
       "accents": [],
       "font_size": 106.0,
       "light": false,
       "emphasis": [],
       "exit": "reverse",
       "decor": null,
+      "adaptation_note": "",
       "timing": {
         "min_frames": 195,
         "max_frames": 210,
@@ -2620,6 +2757,10 @@
       "id": "short_phrase_product_bottom_up_letters",
       "family": "product_video",
       "subcategory": "kinetic_reveal",
+      "targets": [
+        "short_phrase",
+        "caption"
+      ],
       "title": "Bottom Up Letters",
       "phrase": "Build the moment",
       "enter": 90,
@@ -2730,12 +2871,14 @@
           ]
         }
       ],
+      "text_overlays": [],
       "accents": [],
       "font_size": 108.0,
       "light": false,
       "emphasis": [],
       "exit": "reverse",
       "decor": null,
+      "adaptation_note": "",
       "timing": {
         "min_frames": 195,
         "max_frames": 210,
@@ -2748,6 +2891,10 @@
       "id": "short_phrase_product_focus_blur_resolve",
       "family": "product_video",
       "subcategory": "kinetic_reveal",
+      "targets": [
+        "short_phrase",
+        "caption"
+      ],
       "title": "Focus Blur Resolve",
       "phrase": "Crystal clear",
       "enter": 90,
@@ -2858,12 +3005,14 @@
           ]
         }
       ],
+      "text_overlays": [],
       "accents": [],
       "font_size": 106.0,
       "light": false,
       "emphasis": [],
       "exit": "reverse",
       "decor": null,
+      "adaptation_note": "",
       "timing": {
         "min_frames": 180,
         "max_frames": 210,
@@ -2876,6 +3025,9 @@
       "id": "short_phrase_product_kinetic_center_build",
       "family": "product_video",
       "subcategory": "kinetic_reveal",
+      "targets": [
+        "short_phrase"
+      ],
       "title": "Kinetic Center Build",
       "phrase": "Words push left.",
       "enter": 90,
@@ -2887,12 +3039,201 @@
       },
       "tracks": [],
       "text_animators": [],
+      "text_overlays": [
+        {
+          "id": "kcb_word_0",
+          "text": "Words",
+          "fill": "#F7F8FA",
+          "offset_x": 0.0,
+          "offset_y": 0.0,
+          "opacity": 1.0,
+          "tracks": [
+            {
+              "property": "position_x",
+              "easing": "kcb_entry",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0.0
+                },
+                {
+                  "frame": 45,
+                  "value": -150.0
+                },
+                {
+                  "frame": 90,
+                  "value": -300.0
+                },
+                {
+                  "frame": 194,
+                  "value": -300.0
+                },
+                {
+                  "frame": 209,
+                  "value": -440.0
+                }
+              ]
+            },
+            {
+              "property": "opacity",
+              "easing": "linear",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0.0
+                },
+                {
+                  "frame": 8,
+                  "value": 1.0
+                },
+                {
+                  "frame": 194,
+                  "value": 1.0
+                },
+                {
+                  "frame": 209,
+                  "value": 0.0
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "kcb_word_1",
+          "text": "push",
+          "fill": "#F7F8FA",
+          "offset_x": 0.0,
+          "offset_y": 0.0,
+          "opacity": 1.0,
+          "tracks": [
+            {
+              "property": "position_x",
+              "easing": "kcb_entry",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 600.0
+                },
+                {
+                  "frame": 35,
+                  "value": 600.0
+                },
+                {
+                  "frame": 65,
+                  "value": 0.0
+                },
+                {
+                  "frame": 90,
+                  "value": 0.0
+                },
+                {
+                  "frame": 194,
+                  "value": 0.0
+                },
+                {
+                  "frame": 209,
+                  "value": -140.0
+                }
+              ]
+            },
+            {
+              "property": "opacity",
+              "easing": "linear",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0.0
+                },
+                {
+                  "frame": 38,
+                  "value": 0.0
+                },
+                {
+                  "frame": 65,
+                  "value": 1.0
+                },
+                {
+                  "frame": 194,
+                  "value": 1.0
+                },
+                {
+                  "frame": 209,
+                  "value": 0.0
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "kcb_word_2",
+          "text": "left.",
+          "fill": "#F7F8FA",
+          "offset_x": 0.0,
+          "offset_y": 0.0,
+          "opacity": 1.0,
+          "tracks": [
+            {
+              "property": "position_x",
+              "easing": "kcb_entry",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 600.0
+                },
+                {
+                  "frame": 62,
+                  "value": 600.0
+                },
+                {
+                  "frame": 90,
+                  "value": 300.0
+                },
+                {
+                  "frame": 194,
+                  "value": 300.0
+                },
+                {
+                  "frame": 209,
+                  "value": 440.0
+                }
+              ]
+            },
+            {
+              "property": "opacity",
+              "easing": "linear",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0.0
+                },
+                {
+                  "frame": 66,
+                  "value": 0.0
+                },
+                {
+                  "frame": 90,
+                  "value": 1.0
+                },
+                {
+                  "frame": 194,
+                  "value": 1.0
+                },
+                {
+                  "frame": 209,
+                  "value": 0.0
+                }
+              ]
+            }
+          ]
+        }
+      ],
       "accents": [],
       "font_size": 100.0,
       "light": false,
       "emphasis": [],
       "exit": "reverse",
       "decor": null,
+      "adaptation_note": "",
       "timing": {
         "min_frames": 195,
         "max_frames": 210,
@@ -2904,9 +3245,13 @@
     {
       "id": "short_phrase_product_line_by_line_slide",
       "family": "product_video",
-      "subcategory": "depth_and_space",
+      "subcategory": "word_sequence",
+      "targets": [
+        "short_phrase",
+        "caption"
+      ],
       "title": "Line By Line Slide",
-      "phrase": "Design faster\nRender cleaner\nShip louder",
+      "phrase": "Design fast\nRender clean\nShip loud",
       "enter": 90,
       "word_count": 6,
       "selector": {
@@ -3015,12 +3360,14 @@
           ]
         }
       ],
+      "text_overlays": [],
       "accents": [],
       "font_size": 112.0,
       "light": false,
       "emphasis": [],
       "exit": "forward",
       "decor": null,
+      "adaptation_note": "",
       "timing": {
         "min_frames": 210,
         "max_frames": 210,
@@ -3033,6 +3380,10 @@
       "id": "short_phrase_product_per_word_rise",
       "family": "product_video",
       "subcategory": "word_sequence",
+      "targets": [
+        "short_phrase",
+        "caption"
+      ],
       "title": "Per Word Rise",
       "phrase": "WORDS IN MOTION",
       "enter": 40,
@@ -3313,12 +3664,14 @@
           ]
         }
       ],
+      "text_overlays": [],
       "accents": [],
       "font_size": 126.0,
       "light": false,
       "emphasis": [],
       "exit": "reverse",
       "decor": null,
+      "adaptation_note": "",
       "timing": {
         "min_frames": 195,
         "max_frames": 210,
@@ -3331,6 +3684,9 @@
       "id": "short_phrase_product_perspective_marquee",
       "family": "product_video",
       "subcategory": "kinetic_reveal",
+      "targets": [
+        "short_phrase"
+      ],
       "title": "Perspective Marquee",
       "phrase": "COMPONENTS PRIMITIVES TRANSITIONS AGENTS",
       "enter": 96,
@@ -3342,12 +3698,51 @@
       },
       "tracks": [],
       "text_animators": [],
+      "text_overlays": [
+        {
+          "id": "marquee_0",
+          "text": "COMPONENTS",
+          "fill": "#F7F8FA",
+          "offset_x": -1140.0,
+          "offset_y": 0.0,
+          "opacity": 1.0,
+          "tracks": []
+        },
+        {
+          "id": "marquee_1",
+          "text": "PRIMITIVES",
+          "fill": "#F7F8FA",
+          "offset_x": -380.0,
+          "offset_y": 0.0,
+          "opacity": 1.0,
+          "tracks": []
+        },
+        {
+          "id": "marquee_2",
+          "text": "TRANSITIONS",
+          "fill": "#F7F8FA",
+          "offset_x": 380.0,
+          "offset_y": 0.0,
+          "opacity": 1.0,
+          "tracks": []
+        },
+        {
+          "id": "marquee_3",
+          "text": "AGENTS",
+          "fill": "#F7F8FA",
+          "offset_x": 1140.0,
+          "offset_y": 0.0,
+          "opacity": 1.0,
+          "tracks": []
+        }
+      ],
       "accents": [],
       "font_size": 88.0,
       "light": false,
       "emphasis": [],
       "exit": "reverse",
       "decor": null,
+      "adaptation_note": "",
       "timing": {
         "min_frames": 195,
         "max_frames": 210,
@@ -3360,6 +3755,9 @@
       "id": "short_phrase_product_scan_band",
       "family": "product_video",
       "subcategory": "kinetic_reveal",
+      "targets": [
+        "short_phrase"
+      ],
       "title": "Scan Band",
       "phrase": "HYPERFRAMES",
       "enter": 106,
@@ -3390,12 +3788,77 @@
         }
       ],
       "text_animators": [],
+      "text_overlays": [
+        {
+          "id": "scan_cursor",
+          "text": "┃",
+          "fill": "#35C8D9",
+          "offset_x": 0.0,
+          "offset_y": 0.0,
+          "opacity": 1.0,
+          "tracks": [
+            {
+              "property": "position_x",
+              "easing": "in_out_cubic",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": -820.0
+                },
+                {
+                  "frame": 16,
+                  "value": -820.0
+                },
+                {
+                  "frame": 106,
+                  "value": 820.0
+                },
+                {
+                  "frame": 124,
+                  "value": 820.0
+                },
+                {
+                  "frame": 209,
+                  "value": 820.0
+                }
+              ]
+            },
+            {
+              "property": "opacity",
+              "easing": "linear",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0.0
+                },
+                {
+                  "frame": 16,
+                  "value": 0.8999999761581421
+                },
+                {
+                  "frame": 106,
+                  "value": 0.8999999761581421
+                },
+                {
+                  "frame": 124,
+                  "value": 0.0
+                },
+                {
+                  "frame": 209,
+                  "value": 0.0
+                }
+              ]
+            }
+          ]
+        }
+      ],
       "accents": [],
       "font_size": 128.0,
       "light": false,
       "emphasis": [],
       "exit": "reverse",
       "decor": null,
+      "adaptation_note": "",
       "timing": {
         "min_frames": 180,
         "max_frames": 210,
@@ -3408,6 +3871,9 @@
       "id": "short_phrase_product_scramble_reveal",
       "family": "product_video",
       "subcategory": "kinetic_reveal",
+      "targets": [
+        "short_phrase"
+      ],
       "title": "Scramble Reveal",
       "phrase": "HYPERFRAMES",
       "enter": 90,
@@ -3419,12 +3885,483 @@
       },
       "tracks": [],
       "text_animators": [],
+      "text_overlays": [
+        {
+          "id": "decode_0",
+          "text": "N?0K&XH#UE7",
+          "fill": "#35C8D9",
+          "offset_x": 0.0,
+          "offset_y": 0.0,
+          "opacity": 1.0,
+          "tracks": [
+            {
+              "property": "opacity",
+              "easing": "linear",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 1.0
+                },
+                {
+                  "frame": 11,
+                  "value": 0.0
+                },
+                {
+                  "frame": 194,
+                  "value": 0.0
+                },
+                {
+                  "frame": 209,
+                  "value": 0.0
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "decode_1",
+          "text": "HO<1L*YI$VF",
+          "fill": "#35C8D9",
+          "offset_x": 0.0,
+          "offset_y": 0.0,
+          "opacity": 1.0,
+          "tracks": [
+            {
+              "property": "opacity",
+              "easing": "linear",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0.0
+                },
+                {
+                  "frame": 11,
+                  "value": 0.0
+                },
+                {
+                  "frame": 13,
+                  "value": 1.0
+                },
+                {
+                  "frame": 19,
+                  "value": 0.0
+                },
+                {
+                  "frame": 194,
+                  "value": 0.0
+                },
+                {
+                  "frame": 209,
+                  "value": 0.0
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "decode_2",
+          "text": "HYP>2M+ZJ%W",
+          "fill": "#35C8D9",
+          "offset_x": 0.0,
+          "offset_y": 0.0,
+          "opacity": 1.0,
+          "tracks": [
+            {
+              "property": "opacity",
+              "easing": "linear",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0.0
+                },
+                {
+                  "frame": 19,
+                  "value": 0.0
+                },
+                {
+                  "frame": 21,
+                  "value": 1.0
+                },
+                {
+                  "frame": 27,
+                  "value": 0.0
+                },
+                {
+                  "frame": 194,
+                  "value": 0.0
+                },
+                {
+                  "frame": 209,
+                  "value": 0.0
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "decode_3",
+          "text": "HYPQA3N?0K&",
+          "fill": "#35C8D9",
+          "offset_x": 0.0,
+          "offset_y": 0.0,
+          "opacity": 1.0,
+          "tracks": [
+            {
+              "property": "opacity",
+              "easing": "linear",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0.0
+                },
+                {
+                  "frame": 27,
+                  "value": 0.0
+                },
+                {
+                  "frame": 29,
+                  "value": 1.0
+                },
+                {
+                  "frame": 35,
+                  "value": 0.0
+                },
+                {
+                  "frame": 194,
+                  "value": 0.0
+                },
+                {
+                  "frame": 209,
+                  "value": 0.0
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "decode_4",
+          "text": "HYPERB4O<1L",
+          "fill": "#35C8D9",
+          "offset_x": 0.0,
+          "offset_y": 0.0,
+          "opacity": 1.0,
+          "tracks": [
+            {
+              "property": "opacity",
+              "easing": "linear",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0.0
+                },
+                {
+                  "frame": 35,
+                  "value": 0.0
+                },
+                {
+                  "frame": 37,
+                  "value": 1.0
+                },
+                {
+                  "frame": 43,
+                  "value": 0.0
+                },
+                {
+                  "frame": 194,
+                  "value": 0.0
+                },
+                {
+                  "frame": 209,
+                  "value": 0.0
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "decode_5",
+          "text": "HYPERSC5P>2",
+          "fill": "#35C8D9",
+          "offset_x": 0.0,
+          "offset_y": 0.0,
+          "opacity": 1.0,
+          "tracks": [
+            {
+              "property": "opacity",
+              "easing": "linear",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0.0
+                },
+                {
+                  "frame": 43,
+                  "value": 0.0
+                },
+                {
+                  "frame": 45,
+                  "value": 1.0
+                },
+                {
+                  "frame": 51,
+                  "value": 0.0
+                },
+                {
+                  "frame": 194,
+                  "value": 0.0
+                },
+                {
+                  "frame": 209,
+                  "value": 0.0
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "decode_6",
+          "text": "HYPERFTD6QA",
+          "fill": "#35C8D9",
+          "offset_x": 0.0,
+          "offset_y": 0.0,
+          "opacity": 1.0,
+          "tracks": [
+            {
+              "property": "opacity",
+              "easing": "linear",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0.0
+                },
+                {
+                  "frame": 51,
+                  "value": 0.0
+                },
+                {
+                  "frame": 53,
+                  "value": 1.0
+                },
+                {
+                  "frame": 59,
+                  "value": 0.0
+                },
+                {
+                  "frame": 194,
+                  "value": 0.0
+                },
+                {
+                  "frame": 209,
+                  "value": 0.0
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "decode_7",
+          "text": "HYPERFRUE7R",
+          "fill": "#35C8D9",
+          "offset_x": 0.0,
+          "offset_y": 0.0,
+          "opacity": 1.0,
+          "tracks": [
+            {
+              "property": "opacity",
+              "easing": "linear",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0.0
+                },
+                {
+                  "frame": 59,
+                  "value": 0.0
+                },
+                {
+                  "frame": 61,
+                  "value": 1.0
+                },
+                {
+                  "frame": 67,
+                  "value": 0.0
+                },
+                {
+                  "frame": 194,
+                  "value": 0.0
+                },
+                {
+                  "frame": 209,
+                  "value": 0.0
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "decode_8",
+          "text": "HYPERFRAVF8",
+          "fill": "#35C8D9",
+          "offset_x": 0.0,
+          "offset_y": 0.0,
+          "opacity": 1.0,
+          "tracks": [
+            {
+              "property": "opacity",
+              "easing": "linear",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0.0
+                },
+                {
+                  "frame": 67,
+                  "value": 0.0
+                },
+                {
+                  "frame": 69,
+                  "value": 1.0
+                },
+                {
+                  "frame": 75,
+                  "value": 0.0
+                },
+                {
+                  "frame": 194,
+                  "value": 0.0
+                },
+                {
+                  "frame": 209,
+                  "value": 0.0
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "decode_9",
+          "text": "HYPERFRAMWG",
+          "fill": "#35C8D9",
+          "offset_x": 0.0,
+          "offset_y": 0.0,
+          "opacity": 1.0,
+          "tracks": [
+            {
+              "property": "opacity",
+              "easing": "linear",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0.0
+                },
+                {
+                  "frame": 75,
+                  "value": 0.0
+                },
+                {
+                  "frame": 77,
+                  "value": 1.0
+                },
+                {
+                  "frame": 83,
+                  "value": 0.0
+                },
+                {
+                  "frame": 194,
+                  "value": 0.0
+                },
+                {
+                  "frame": 209,
+                  "value": 0.0
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "decode_10",
+          "text": "HYPERFRAMEX",
+          "fill": "#35C8D9",
+          "offset_x": 0.0,
+          "offset_y": 0.0,
+          "opacity": 1.0,
+          "tracks": [
+            {
+              "property": "opacity",
+              "easing": "linear",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0.0
+                },
+                {
+                  "frame": 83,
+                  "value": 0.0
+                },
+                {
+                  "frame": 85,
+                  "value": 1.0
+                },
+                {
+                  "frame": 91,
+                  "value": 0.0
+                },
+                {
+                  "frame": 194,
+                  "value": 0.0
+                },
+                {
+                  "frame": 209,
+                  "value": 0.0
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "decode_target",
+          "text": "HYPERFRAMES",
+          "fill": "#35C8D9",
+          "offset_x": 0.0,
+          "offset_y": 0.0,
+          "opacity": 1.0,
+          "tracks": [
+            {
+              "property": "opacity",
+              "easing": "linear",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0.0
+                },
+                {
+                  "frame": 91,
+                  "value": 0.0
+                },
+                {
+                  "frame": 93,
+                  "value": 1.0
+                },
+                {
+                  "frame": 194,
+                  "value": 1.0
+                },
+                {
+                  "frame": 209,
+                  "value": 0.0
+                }
+              ]
+            }
+          ]
+        }
+      ],
       "accents": [],
       "font_size": 98.0,
       "light": false,
       "emphasis": [],
       "exit": "reverse",
       "decor": null,
+      "adaptation_note": "",
       "timing": {
         "min_frames": 180,
         "max_frames": 210,
@@ -3437,6 +4374,9 @@
       "id": "short_phrase_product_strikethrough_replace",
       "family": "product_video",
       "subcategory": "kinetic_reveal",
+      "targets": [
+        "short_phrase"
+      ],
       "title": "Strikethrough Replace",
       "phrase": "Everyone promised you AI.",
       "enter": 132,
@@ -3475,6 +4415,70 @@
         }
       ],
       "text_animators": [],
+      "text_overlays": [
+        {
+          "id": "replacement",
+          "text": "Almost nobody promised control.",
+          "fill": "#F7F8FA",
+          "offset_x": 0.0,
+          "offset_y": 0.0,
+          "opacity": 1.0,
+          "tracks": [
+            {
+              "property": "opacity",
+              "easing": "linear",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0.0
+                },
+                {
+                  "frame": 88,
+                  "value": 0.0
+                },
+                {
+                  "frame": 116,
+                  "value": 1.0
+                },
+                {
+                  "frame": 194,
+                  "value": 1.0
+                },
+                {
+                  "frame": 209,
+                  "value": 0.0
+                }
+              ]
+            },
+            {
+              "property": "position_y",
+              "easing": "out_cubic",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 36.0
+                },
+                {
+                  "frame": 88,
+                  "value": 36.0
+                },
+                {
+                  "frame": 116,
+                  "value": 0.0
+                },
+                {
+                  "frame": 194,
+                  "value": 0.0
+                },
+                {
+                  "frame": 209,
+                  "value": -120.0
+                }
+              ]
+            }
+          ]
+        }
+      ],
       "accents": [
         {
           "id": "strike_rule",
@@ -3553,6 +4557,7 @@
       "emphasis": [],
       "exit": "reverse",
       "decor": null,
+      "adaptation_note": "",
       "timing": {
         "min_frames": 195,
         "max_frames": 210,
@@ -3565,6 +4570,9 @@
       "id": "short_phrase_product_text_match_cut",
       "family": "product_video",
       "subcategory": "kinetic_reveal",
+      "targets": [
+        "short_phrase"
+      ],
       "title": "Text Match Cut",
       "phrase": "Basic Interface Behavior",
       "enter": 90,
@@ -3633,12 +4641,77 @@
         }
       ],
       "text_animators": [],
+      "text_overlays": [
+        {
+          "id": "match_cut_b",
+          "text": "Thoughtful Experience Design",
+          "fill": "#F7F8FA",
+          "offset_x": 0.0,
+          "offset_y": 0.0,
+          "opacity": 1.0,
+          "tracks": [
+            {
+              "property": "scale",
+              "easing": "out_cubic",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 1.7000000476837158
+                },
+                {
+                  "frame": 45,
+                  "value": 1.350000023841858
+                },
+                {
+                  "frame": 90,
+                  "value": 1.0
+                },
+                {
+                  "frame": 194,
+                  "value": 1.0
+                },
+                {
+                  "frame": 209,
+                  "value": 0.7799999713897705
+                }
+              ]
+            },
+            {
+              "property": "opacity",
+              "easing": "linear",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0.0
+                },
+                {
+                  "frame": 44,
+                  "value": 0.0
+                },
+                {
+                  "frame": 45,
+                  "value": 1.0
+                },
+                {
+                  "frame": 194,
+                  "value": 1.0
+                },
+                {
+                  "frame": 209,
+                  "value": 0.0
+                }
+              ]
+            }
+          ]
+        }
+      ],
       "accents": [],
       "font_size": 118.0,
       "light": false,
       "emphasis": [],
       "exit": "reverse",
       "decor": null,
+      "adaptation_note": "",
       "timing": {
         "min_frames": 195,
         "max_frames": 210,
@@ -3651,6 +4724,10 @@
       "id": "short_phrase_product_text_shimmer",
       "family": "product_video",
       "subcategory": "kinetic_reveal",
+      "targets": [
+        "short_phrase",
+        "caption"
+      ],
       "title": "Text Shimmer",
       "phrase": "Effortless",
       "enter": 42,
@@ -3721,12 +4798,14 @@
           ]
         }
       ],
+      "text_overlays": [],
       "accents": [],
       "font_size": 144.0,
       "light": false,
       "emphasis": [],
       "exit": "reverse",
       "decor": null,
+      "adaptation_note": "",
       "timing": {
         "min_frames": 180,
         "max_frames": 210,
@@ -3738,7 +4817,11 @@
     {
       "id": "short_phrase_product_weight_wave",
       "family": "product_video",
-      "subcategory": "typographic_motion",
+      "subcategory": "letter_by_letter_reveal",
+      "targets": [
+        "short_phrase",
+        "caption"
+      ],
       "title": "Weight Wave",
       "phrase": "WEIGHT IN MOTION",
       "enter": 90,
@@ -3861,12 +4944,14 @@
           ]
         }
       ],
+      "text_overlays": [],
       "accents": [],
       "font_size": 126.0,
       "light": false,
       "emphasis": [],
       "exit": "reverse",
       "decor": null,
+      "adaptation_note": "",
       "timing": {
         "min_frames": 195,
         "max_frames": 210,
@@ -3878,7 +4963,11 @@
     {
       "id": "short_phrase_product_chromatic_fringe_title",
       "family": "product_video",
-      "subcategory": "kinetic_reveal",
+      "subcategory": "computer_character_assembly",
+      "targets": [
+        "short_phrase",
+        "caption"
+      ],
       "title": "Chromatic Fringe Title",
       "phrase": "yt-prism",
       "enter": 90,
@@ -3979,14 +5068,2165 @@
           ]
         }
       ],
+      "text_overlays": [
+        {
+          "id": "prism_red",
+          "text": "yt-prism",
+          "fill": "#FF2A4D",
+          "offset_x": 0.0,
+          "offset_y": 0.0,
+          "opacity": 0.44999998807907104,
+          "tracks": [
+            {
+              "property": "position_x",
+              "easing": "out_cubic",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": -24.0
+                },
+                {
+                  "frame": 90,
+                  "value": -4.0
+                },
+                {
+                  "frame": 120,
+                  "value": -5.400000095367432
+                },
+                {
+                  "frame": 172,
+                  "value": -4.0
+                },
+                {
+                  "frame": 194,
+                  "value": -4.0
+                },
+                {
+                  "frame": 209,
+                  "value": -4.0
+                }
+              ]
+            },
+            {
+              "property": "scale",
+              "easing": "out_cubic",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 1.0800000429153442
+                },
+                {
+                  "frame": 30,
+                  "value": 1.0
+                },
+                {
+                  "frame": 120,
+                  "value": 1.0
+                },
+                {
+                  "frame": 180,
+                  "value": 1.034999966621399
+                },
+                {
+                  "frame": 194,
+                  "value": 1.034999966621399
+                },
+                {
+                  "frame": 209,
+                  "value": 0.800000011920929
+                }
+              ]
+            },
+            {
+              "property": "opacity",
+              "easing": "linear",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0.0
+                },
+                {
+                  "frame": 12,
+                  "value": 0.44999998807907104
+                },
+                {
+                  "frame": 90,
+                  "value": 0.8500000238418579
+                },
+                {
+                  "frame": 194,
+                  "value": 0.8500000238418579
+                },
+                {
+                  "frame": 209,
+                  "value": 0.0
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "prism_blue",
+          "text": "yt-prism",
+          "fill": "#2A7FFF",
+          "offset_x": 0.0,
+          "offset_y": 0.0,
+          "opacity": 0.44999998807907104,
+          "tracks": [
+            {
+              "property": "position_x",
+              "easing": "out_cubic",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 24.0
+                },
+                {
+                  "frame": 90,
+                  "value": 4.0
+                },
+                {
+                  "frame": 120,
+                  "value": 5.400000095367432
+                },
+                {
+                  "frame": 172,
+                  "value": 4.0
+                },
+                {
+                  "frame": 194,
+                  "value": 4.0
+                },
+                {
+                  "frame": 209,
+                  "value": 4.0
+                }
+              ]
+            },
+            {
+              "property": "scale",
+              "easing": "out_cubic",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 1.0800000429153442
+                },
+                {
+                  "frame": 30,
+                  "value": 1.0
+                },
+                {
+                  "frame": 120,
+                  "value": 1.0
+                },
+                {
+                  "frame": 180,
+                  "value": 1.034999966621399
+                },
+                {
+                  "frame": 194,
+                  "value": 1.034999966621399
+                },
+                {
+                  "frame": 209,
+                  "value": 0.800000011920929
+                }
+              ]
+            },
+            {
+              "property": "opacity",
+              "easing": "linear",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0.0
+                },
+                {
+                  "frame": 12,
+                  "value": 0.44999998807907104
+                },
+                {
+                  "frame": 90,
+                  "value": 0.8500000238418579
+                },
+                {
+                  "frame": 194,
+                  "value": 0.8500000238418579
+                },
+                {
+                  "frame": 209,
+                  "value": 0.0
+                }
+              ]
+            }
+          ]
+        }
+      ],
       "accents": [],
       "font_size": 260.0,
       "light": false,
       "emphasis": [],
       "exit": "reverse",
       "decor": null,
+      "adaptation_note": "",
       "timing": {
         "min_frames": 180,
+        "max_frames": 210,
+        "in_frames": 90,
+        "hold_frames": 105,
+        "out_frames": 15
+      }
+    },
+    {
+      "id": "short_phrase_product_masked_heading",
+      "family": "product_video",
+      "subcategory": "kinetic_reveal",
+      "targets": [
+        "short_phrase",
+        "caption"
+      ],
+      "title": "Masked Heading",
+      "phrase": "DETAILS DEFINE DESIGN",
+      "enter": 90,
+      "word_count": 3,
+      "selector": {
+        "unit": "glyph",
+        "order": "forward",
+        "window": "reveal_soft"
+      },
+      "tracks": [
+        {
+          "property": "opacity",
+          "easing": "linear",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.0
+            },
+            {
+              "frame": 90,
+              "value": 1.0
+            },
+            {
+              "frame": 194,
+              "value": 1.0
+            },
+            {
+              "frame": 209,
+              "value": 0.0
+            }
+          ]
+        }
+      ],
+      "text_animators": [
+        {
+          "selector": {
+            "unit": "glyph",
+            "order": "forward",
+            "window": "reveal_soft"
+          },
+          "properties": [
+            {
+              "property": "position_y",
+              "easing": "out_cubic",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 52.0
+                },
+                {
+                  "frame": 90,
+                  "value": 0.0
+                },
+                {
+                  "frame": 194,
+                  "value": 0.0
+                },
+                {
+                  "frame": 209,
+                  "value": -32.0
+                }
+              ]
+            },
+            {
+              "property": "opacity",
+              "easing": "linear",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0.0
+                },
+                {
+                  "frame": 90,
+                  "value": 1.0
+                },
+                {
+                  "frame": 194,
+                  "value": 1.0
+                },
+                {
+                  "frame": 209,
+                  "value": 0.0
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "text_overlays": [],
+      "accents": [],
+      "font_size": 110.0,
+      "light": false,
+      "emphasis": [],
+      "exit": "reverse",
+      "decor": null,
+      "adaptation_note": "Native soft glyph mask/rise; React image/video fill, pointer parallax, and hover/view triggers are not represented.",
+      "timing": {
+        "min_frames": 195,
+        "max_frames": 210,
+        "in_frames": 90,
+        "hold_frames": 105,
+        "out_frames": 15
+      }
+    },
+    {
+      "id": "short_phrase_product_split_flap_text",
+      "family": "product_video",
+      "subcategory": "word_sequence",
+      "targets": null,
+      "title": "Split Flap Text",
+      "phrase": "SIGNAL LIVE",
+      "enter": 90,
+      "word_count": 2,
+      "selector": {
+        "unit": "glyph",
+        "order": "forward",
+        "window": "reveal_soft"
+      },
+      "tracks": [
+        {
+          "property": "opacity",
+          "easing": "linear",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.0
+            },
+            {
+              "frame": 90,
+              "value": 1.0
+            },
+            {
+              "frame": 194,
+              "value": 1.0
+            },
+            {
+              "frame": 209,
+              "value": 0.0
+            }
+          ]
+        }
+      ],
+      "text_animators": [
+        {
+          "selector": {
+            "unit": "glyph",
+            "order": "forward",
+            "window": "reveal_soft"
+          },
+          "properties": [
+            {
+              "property": "position_y",
+              "easing": "out_cubic",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 20.0
+                },
+                {
+                  "frame": 12,
+                  "value": 5.0
+                },
+                {
+                  "frame": 90,
+                  "value": 0.0
+                },
+                {
+                  "frame": 194,
+                  "value": 0.0
+                },
+                {
+                  "frame": 209,
+                  "value": -10.0
+                }
+              ]
+            },
+            {
+              "property": "rotation",
+              "easing": "out_cubic",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": -8.0
+                },
+                {
+                  "frame": 45,
+                  "value": 0.0
+                },
+                {
+                  "frame": 90,
+                  "value": 0.0
+                },
+                {
+                  "frame": 194,
+                  "value": 0.0
+                },
+                {
+                  "frame": 209,
+                  "value": 0.0
+                }
+              ]
+            },
+            {
+              "property": "opacity",
+              "easing": "linear",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0.0
+                },
+                {
+                  "frame": 90,
+                  "value": 1.0
+                },
+                {
+                  "frame": 194,
+                  "value": 1.0
+                },
+                {
+                  "frame": 209,
+                  "value": 0.0
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "text_overlays": [],
+      "accents": [],
+      "font_size": 118.0,
+      "light": false,
+      "emphasis": [],
+      "exit": "reverse",
+      "decor": null,
+      "adaptation_note": "Deterministic glyph flip/rise proxy; live randomized character cycling, tile geometry, and phrase loops are not represented.",
+      "timing": {
+        "min_frames": 180,
+        "max_frames": 210,
+        "in_frames": 90,
+        "hold_frames": 105,
+        "out_frames": 15
+      }
+    },
+    {
+      "id": "short_phrase_product_warp_text",
+      "family": "product_video",
+      "subcategory": "kinetic_reveal",
+      "targets": null,
+      "title": "Warp Text",
+      "phrase": "BEND THE MOMENT",
+      "enter": 90,
+      "word_count": 3,
+      "selector": {
+        "unit": "glyph",
+        "order": "forward",
+        "window": "band"
+      },
+      "tracks": [
+        {
+          "property": "scale",
+          "easing": "out_cubic",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.9599999785423279
+            },
+            {
+              "frame": 45,
+              "value": 1.0149999856948853
+            },
+            {
+              "frame": 90,
+              "value": 1.0
+            },
+            {
+              "frame": 194,
+              "value": 1.0
+            },
+            {
+              "frame": 209,
+              "value": 1.0
+            }
+          ]
+        },
+        {
+          "property": "opacity",
+          "easing": "linear",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.0
+            },
+            {
+              "frame": 90,
+              "value": 1.0
+            },
+            {
+              "frame": 194,
+              "value": 1.0
+            },
+            {
+              "frame": 209,
+              "value": 0.0
+            }
+          ]
+        }
+      ],
+      "text_animators": [
+        {
+          "selector": {
+            "unit": "glyph",
+            "order": "forward",
+            "window": "band"
+          },
+          "properties": [
+            {
+              "property": "position_y",
+              "easing": "out_cubic",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 10.0
+                },
+                {
+                  "frame": 45,
+                  "value": -8.0
+                },
+                {
+                  "frame": 90,
+                  "value": 0.0
+                },
+                {
+                  "frame": 194,
+                  "value": 0.0
+                },
+                {
+                  "frame": 209,
+                  "value": 0.0
+                }
+              ]
+            },
+            {
+              "property": "rotation",
+              "easing": "out_cubic",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": -4.0
+                },
+                {
+                  "frame": 45,
+                  "value": 4.0
+                },
+                {
+                  "frame": 90,
+                  "value": 0.0
+                },
+                {
+                  "frame": 194,
+                  "value": 0.0
+                },
+                {
+                  "frame": 209,
+                  "value": 0.0
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "text_overlays": [],
+      "accents": [],
+      "font_size": 114.0,
+      "light": false,
+      "emphasis": [],
+      "exit": "reverse",
+      "decor": null,
+      "adaptation_note": "Native deterministic glyph-wave proxy; WebGL noise/refraction shader and pointer-reactive bulge/ripple are not represented.",
+      "timing": {
+        "min_frames": 195,
+        "max_frames": 210,
+        "in_frames": 90,
+        "hold_frames": 105,
+        "out_frames": 15
+      }
+    },
+    {
+      "id": "short_phrase_product_fold_text",
+      "family": "product_video",
+      "subcategory": "kinetic_reveal",
+      "targets": [
+        "short_phrase"
+      ],
+      "title": "Fold Text",
+      "phrase": "UNFOLD",
+      "enter": 90,
+      "word_count": 1,
+      "selector": {
+        "unit": "layer",
+        "order": "forward",
+        "window": "full"
+      },
+      "tracks": [
+        {
+          "property": "scale",
+          "easing": "out_cubic",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.9399999976158142
+            },
+            {
+              "frame": 90,
+              "value": 1.0
+            },
+            {
+              "frame": 194,
+              "value": 1.0
+            },
+            {
+              "frame": 209,
+              "value": 1.0
+            }
+          ]
+        },
+        {
+          "property": "rotation_x",
+          "easing": "out_cubic",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": -88.0
+            },
+            {
+              "frame": 90,
+              "value": 0.0
+            },
+            {
+              "frame": 194,
+              "value": 0.0
+            },
+            {
+              "frame": 209,
+              "value": 0.0
+            }
+          ]
+        },
+        {
+          "property": "opacity",
+          "easing": "linear",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.0
+            },
+            {
+              "frame": 90,
+              "value": 1.0
+            },
+            {
+              "frame": 194,
+              "value": 1.0
+            },
+            {
+              "frame": 209,
+              "value": 0.0
+            }
+          ]
+        }
+      ],
+      "text_animators": [],
+      "text_overlays": [],
+      "accents": [],
+      "font_size": 122.0,
+      "light": false,
+      "emphasis": [],
+      "exit": "reverse",
+      "decor": null,
+      "adaptation_note": "Phrase-level 3D hinge approximation; React char/word/line-specific hinge origins, crease shading, and trigger modes are not represented.",
+      "timing": {
+        "min_frames": 180,
+        "max_frames": 210,
+        "in_frames": 90,
+        "hold_frames": 105,
+        "out_frames": 15
+      }
+    },
+    {
+      "id": "short_phrase_product_decrypted_text",
+      "family": "product_video",
+      "subcategory": "kinetic_reveal",
+      "targets": [
+        "short_phrase"
+      ],
+      "title": "Decrypted Text",
+      "phrase": "DECODE THE SIGNAL",
+      "enter": 90,
+      "word_count": 3,
+      "selector": {
+        "unit": "layer",
+        "order": "forward",
+        "window": "full"
+      },
+      "tracks": [],
+      "text_animators": [],
+      "text_overlays": [
+        {
+          "id": "decrypt_stage_0",
+          "text": "H%YK+1 >4Q 7TF#WI",
+          "fill": "#35C8D9",
+          "offset_x": 0.0,
+          "offset_y": 0.0,
+          "opacity": 1.0,
+          "tracks": [
+            {
+              "property": "opacity",
+              "easing": "linear",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0.0
+                },
+                {
+                  "frame": 2,
+                  "value": 1.0
+                },
+                {
+                  "frame": 4,
+                  "value": 0.0
+                },
+                {
+                  "frame": 194,
+                  "value": 0.0
+                },
+                {
+                  "frame": 209,
+                  "value": 0.0
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "decrypt_stage_1",
+          "text": "DM<3PB SE9 H%YK+1",
+          "fill": "#35C8D9",
+          "offset_x": 0.0,
+          "offset_y": 0.0,
+          "opacity": 1.0,
+          "tracks": [
+            {
+              "property": "opacity",
+              "easing": "linear",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0.0
+                },
+                {
+                  "frame": 8,
+                  "value": 0.0
+                },
+                {
+                  "frame": 10,
+                  "value": 1.0
+                },
+                {
+                  "frame": 12,
+                  "value": 0.0
+                },
+                {
+                  "frame": 194,
+                  "value": 0.0
+                },
+                {
+                  "frame": 209,
+                  "value": 0.0
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "decrypt_stage_2",
+          "text": "DERD8U $XJ 0M<3PB",
+          "fill": "#35C8D9",
+          "offset_x": 0.0,
+          "offset_y": 0.0,
+          "opacity": 1.0,
+          "tracks": [
+            {
+              "property": "opacity",
+              "easing": "linear",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0.0
+                },
+                {
+                  "frame": 16,
+                  "value": 0.0
+                },
+                {
+                  "frame": 18,
+                  "value": 1.0
+                },
+                {
+                  "frame": 20,
+                  "value": 0.0
+                },
+                {
+                  "frame": 194,
+                  "value": 0.0
+                },
+                {
+                  "frame": 209,
+                  "value": 0.0
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "decrypt_stage_3",
+          "text": "DECWI& L?2 A5RD8U",
+          "fill": "#35C8D9",
+          "offset_x": 0.0,
+          "offset_y": 0.0,
+          "opacity": 1.0,
+          "tracks": [
+            {
+              "property": "opacity",
+              "easing": "linear",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0.0
+                },
+                {
+                  "frame": 24,
+                  "value": 0.0
+                },
+                {
+                  "frame": 26,
+                  "value": 1.0
+                },
+                {
+                  "frame": 28,
+                  "value": 0.0
+                },
+                {
+                  "frame": 194,
+                  "value": 0.0
+                },
+                {
+                  "frame": 209,
+                  "value": 0.0
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "decrypt_stage_4",
+          "text": "DECO1N 4QC TF#WI&",
+          "fill": "#35C8D9",
+          "offset_x": 0.0,
+          "offset_y": 0.0,
+          "opacity": 1.0,
+          "tracks": [
+            {
+              "property": "opacity",
+              "easing": "linear",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0.0
+                },
+                {
+                  "frame": 32,
+                  "value": 0.0
+                },
+                {
+                  "frame": 34,
+                  "value": 1.0
+                },
+                {
+                  "frame": 36,
+                  "value": 0.0
+                },
+                {
+                  "frame": 194,
+                  "value": 0.0
+                },
+                {
+                  "frame": 209,
+                  "value": 0.0
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "decrypt_stage_5",
+          "text": "DECOD6 E9V %YK+1N",
+          "fill": "#35C8D9",
+          "offset_x": 0.0,
+          "offset_y": 0.0,
+          "opacity": 1.0,
+          "tracks": [
+            {
+              "property": "opacity",
+              "easing": "linear",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0.0
+                },
+                {
+                  "frame": 40,
+                  "value": 0.0
+                },
+                {
+                  "frame": 42,
+                  "value": 1.0
+                },
+                {
+                  "frame": 44,
+                  "value": 0.0
+                },
+                {
+                  "frame": 194,
+                  "value": 0.0
+                },
+                {
+                  "frame": 209,
+                  "value": 0.0
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "decrypt_stage_6",
+          "text": "DECODE XJ* M<3PB6",
+          "fill": "#35C8D9",
+          "offset_x": 0.0,
+          "offset_y": 0.0,
+          "opacity": 1.0,
+          "tracks": [
+            {
+              "property": "opacity",
+              "easing": "linear",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0.0
+                },
+                {
+                  "frame": 48,
+                  "value": 0.0
+                },
+                {
+                  "frame": 50,
+                  "value": 1.0
+                },
+                {
+                  "frame": 52,
+                  "value": 0.0
+                },
+                {
+                  "frame": 194,
+                  "value": 0.0
+                },
+                {
+                  "frame": 209,
+                  "value": 0.0
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "decrypt_stage_7",
+          "text": "DECODE ?2O 5RD8UG",
+          "fill": "#35C8D9",
+          "offset_x": 0.0,
+          "offset_y": 0.0,
+          "opacity": 1.0,
+          "tracks": [
+            {
+              "property": "opacity",
+              "easing": "linear",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0.0
+                },
+                {
+                  "frame": 56,
+                  "value": 0.0
+                },
+                {
+                  "frame": 58,
+                  "value": 1.0
+                },
+                {
+                  "frame": 60,
+                  "value": 0.0
+                },
+                {
+                  "frame": 194,
+                  "value": 0.0
+                },
+                {
+                  "frame": 209,
+                  "value": 0.0
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "decrypt_stage_8",
+          "text": "DECODE TC7 F#WI&Z",
+          "fill": "#35C8D9",
+          "offset_x": 0.0,
+          "offset_y": 0.0,
+          "opacity": 1.0,
+          "tracks": [
+            {
+              "property": "opacity",
+              "easing": "linear",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0.0
+                },
+                {
+                  "frame": 64,
+                  "value": 0.0
+                },
+                {
+                  "frame": 66,
+                  "value": 1.0
+                },
+                {
+                  "frame": 68,
+                  "value": 0.0
+                },
+                {
+                  "frame": 194,
+                  "value": 0.0
+                },
+                {
+                  "frame": 209,
+                  "value": 0.0
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "decrypt_resolved",
+          "text": "DECODE THE SIGNAL",
+          "fill": "#F7F8FA",
+          "offset_x": 0.0,
+          "offset_y": 0.0,
+          "opacity": 1.0,
+          "tracks": [
+            {
+              "property": "opacity",
+              "easing": "linear",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0.0
+                },
+                {
+                  "frame": 74,
+                  "value": 0.0
+                },
+                {
+                  "frame": 76,
+                  "value": 1.0
+                },
+                {
+                  "frame": 194,
+                  "value": 1.0
+                },
+                {
+                  "frame": 209,
+                  "value": 0.0
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "accents": [],
+      "font_size": 108.0,
+      "light": false,
+      "emphasis": [],
+      "exit": "reverse",
+      "decor": null,
+      "adaptation_note": "Pre-baked deterministic encoded-character stages resolve left-to-right; React hover/click/view triggers and per-frame randomness are not represented.",
+      "timing": {
+        "min_frames": 195,
+        "max_frames": 210,
+        "in_frames": 90,
+        "hold_frames": 105,
+        "out_frames": 15
+      }
+    },
+    {
+      "id": "short_phrase_product_scroll_reveal",
+      "family": "product_video",
+      "subcategory": "kinetic_reveal",
+      "targets": [
+        "short_phrase",
+        "caption"
+      ],
+      "title": "Scroll Reveal",
+      "phrase": "WORDS EMERGE WITH CLARITY",
+      "enter": 90,
+      "word_count": 4,
+      "selector": {
+        "unit": "word",
+        "order": "forward",
+        "window": "band"
+      },
+      "tracks": [
+        {
+          "property": "rotation_z",
+          "easing": "out_cubic",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 3.0
+            },
+            {
+              "frame": 90,
+              "value": 0.0
+            },
+            {
+              "frame": 194,
+              "value": 0.0
+            },
+            {
+              "frame": 209,
+              "value": 0.0
+            }
+          ]
+        },
+        {
+          "property": "opacity",
+          "easing": "linear",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.15000000596046448
+            },
+            {
+              "frame": 90,
+              "value": 1.0
+            },
+            {
+              "frame": 194,
+              "value": 1.0
+            },
+            {
+              "frame": 209,
+              "value": 0.0
+            }
+          ]
+        }
+      ],
+      "text_animators": [
+        {
+          "selector": {
+            "unit": "word",
+            "order": "forward",
+            "window": "band"
+          },
+          "properties": [
+            {
+              "property": "blur",
+              "easing": "out_cubic",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 5.0
+                },
+                {
+                  "frame": 90,
+                  "value": 0.0
+                },
+                {
+                  "frame": 194,
+                  "value": 0.0
+                },
+                {
+                  "frame": 209,
+                  "value": 5.0
+                }
+              ]
+            },
+            {
+              "property": "opacity",
+              "easing": "linear",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0.11999999731779099
+                },
+                {
+                  "frame": 90,
+                  "value": 1.0
+                },
+                {
+                  "frame": 194,
+                  "value": 1.0
+                },
+                {
+                  "frame": 209,
+                  "value": 0.0
+                }
+              ]
+            },
+            {
+              "property": "position_y",
+              "easing": "out_cubic",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 12.0
+                },
+                {
+                  "frame": 90,
+                  "value": 0.0
+                },
+                {
+                  "frame": 194,
+                  "value": 0.0
+                },
+                {
+                  "frame": 209,
+                  "value": 12.0
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "text_overlays": [],
+      "accents": [],
+      "font_size": 108.0,
+      "light": false,
+      "emphasis": [],
+      "exit": "reverse",
+      "decor": null,
+      "adaptation_note": "Scroll-scrub style progression baked into ordinary clip frames; a native eased entrance replaces viewport scrubbing, with no scroll container, observer, or runtime trigger (not represented).",
+      "timing": {
+        "min_frames": 195,
+        "max_frames": 210,
+        "in_frames": 90,
+        "hold_frames": 105,
+        "out_frames": 15
+      }
+    },
+    {
+      "id": "short_phrase_product_scrambled_text",
+      "family": "product_video",
+      "subcategory": "kinetic_reveal",
+      "targets": [
+        "short_phrase",
+        "caption"
+      ],
+      "title": "Scrambled Text",
+      "phrase": "THE MESSAGE RESOLVES",
+      "enter": 90,
+      "word_count": 3,
+      "selector": {
+        "unit": "glyph",
+        "order": "forward",
+        "window": "reveal_soft"
+      },
+      "tracks": [
+        {
+          "property": "opacity",
+          "easing": "linear",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.0
+            },
+            {
+              "frame": 90,
+              "value": 1.0
+            },
+            {
+              "frame": 194,
+              "value": 1.0
+            },
+            {
+              "frame": 209,
+              "value": 0.0
+            }
+          ]
+        }
+      ],
+      "text_animators": [
+        {
+          "selector": {
+            "unit": "glyph",
+            "order": "forward",
+            "window": "reveal_soft"
+          },
+          "properties": [
+            {
+              "property": "position_y",
+              "easing": "out_cubic",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 6.0
+                },
+                {
+                  "frame": 90,
+                  "value": 0.0
+                },
+                {
+                  "frame": 194,
+                  "value": 0.0
+                },
+                {
+                  "frame": 209,
+                  "value": -12.0
+                }
+              ]
+            },
+            {
+              "property": "opacity",
+              "easing": "linear",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0.0
+                },
+                {
+                  "frame": 90,
+                  "value": 1.0
+                },
+                {
+                  "frame": 194,
+                  "value": 1.0
+                },
+                {
+                  "frame": 209,
+                  "value": 0.0
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "text_overlays": [],
+      "accents": [],
+      "font_size": 108.0,
+      "light": false,
+      "emphasis": [],
+      "exit": "reverse",
+      "decor": null,
+      "adaptation_note": "Deterministic smooth glyph reveal proxy; pointer-distance scrambling and GSAP hover reversion are not represented.",
+      "timing": {
+        "min_frames": 195,
+        "max_frames": 210,
+        "in_frames": 90,
+        "hold_frames": 105,
+        "out_frames": 15
+      }
+    },
+    {
+      "id": "short_phrase_product_glare_hover",
+      "family": "product_video",
+      "subcategory": "kinetic_reveal",
+      "targets": [
+        "short_phrase",
+        "caption"
+      ],
+      "title": "Glare Hover",
+      "phrase": "LIGHT IN MOTION",
+      "enter": 90,
+      "word_count": 3,
+      "selector": {
+        "unit": "glyph",
+        "order": "forward",
+        "window": "full"
+      },
+      "tracks": [
+        {
+          "property": "opacity",
+          "easing": "linear",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.0
+            },
+            {
+              "frame": 12,
+              "value": 1.0
+            },
+            {
+              "frame": 194,
+              "value": 1.0
+            },
+            {
+              "frame": 209,
+              "value": 0.0
+            }
+          ]
+        }
+      ],
+      "text_animators": [
+        {
+          "selector": {
+            "unit": "glyph",
+            "order": "forward",
+            "window": "full"
+          },
+          "properties": [
+            {
+              "property": "blur",
+              "easing": "out_cubic",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 5.0
+                },
+                {
+                  "frame": 90,
+                  "value": 0.0
+                },
+                {
+                  "frame": 194,
+                  "value": 0.0
+                },
+                {
+                  "frame": 209,
+                  "value": 4.0
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "text_overlays": [],
+      "accents": [
+        {
+          "id": "glare_sweep",
+          "color": "#FFFFFF",
+          "width": 360.0,
+          "height": 150.0,
+          "y_offset": 0.0,
+          "radius": 0.0,
+          "opacity": 0.2800000011920929,
+          "tracks": [
+            {
+              "property": "position_x",
+              "easing": "in_out_cubic",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": -900.0
+                },
+                {
+                  "frame": 22,
+                  "value": -900.0
+                },
+                {
+                  "frame": 94,
+                  "value": 900.0
+                },
+                {
+                  "frame": 112,
+                  "value": 900.0
+                },
+                {
+                  "frame": 209,
+                  "value": 900.0
+                }
+              ]
+            },
+            {
+              "property": "opacity",
+              "easing": "linear",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0.0
+                },
+                {
+                  "frame": 18,
+                  "value": 0.0
+                },
+                {
+                  "frame": 30,
+                  "value": 1.0
+                },
+                {
+                  "frame": 94,
+                  "value": 1.0
+                },
+                {
+                  "frame": 108,
+                  "value": 0.0
+                },
+                {
+                  "frame": 209,
+                  "value": 0.0
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "font_size": 120.0,
+      "light": false,
+      "emphasis": [],
+      "exit": "reverse",
+      "decor": null,
+      "adaptation_note": "Deterministic highlight-bar sweep approximates the CSS glare pass; hover re-entry, playOnce and card layout styles are not represented.",
+      "timing": {
+        "min_frames": 195,
+        "max_frames": 210,
+        "in_frames": 90,
+        "hold_frames": 105,
+        "out_frames": 15
+      }
+    },
+    {
+      "id": "short_phrase_product_glow_cursor",
+      "family": "product_video",
+      "subcategory": "kinetic_reveal",
+      "targets": [
+        "short_phrase",
+        "caption"
+      ],
+      "title": "Glow Cursor",
+      "phrase": "FOLLOW THE LIGHT",
+      "enter": 90,
+      "word_count": 3,
+      "selector": {
+        "unit": "glyph",
+        "order": "forward",
+        "window": "full"
+      },
+      "tracks": [
+        {
+          "property": "opacity",
+          "easing": "linear",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.0
+            },
+            {
+              "frame": 8,
+              "value": 1.0
+            },
+            {
+              "frame": 194,
+              "value": 1.0
+            },
+            {
+              "frame": 209,
+              "value": 0.0
+            }
+          ]
+        }
+      ],
+      "text_animators": [
+        {
+          "selector": {
+            "unit": "glyph",
+            "order": "forward",
+            "window": "full"
+          },
+          "properties": [
+            {
+              "property": "blur",
+              "easing": "out_cubic",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 18.0
+                },
+                {
+                  "frame": 90,
+                  "value": 1.0
+                },
+                {
+                  "frame": 194,
+                  "value": 1.0
+                },
+                {
+                  "frame": 209,
+                  "value": 12.0
+                }
+              ]
+            },
+            {
+              "property": "scale",
+              "easing": "out_cubic",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0.9599999785423279
+                },
+                {
+                  "frame": 90,
+                  "value": 1.0
+                },
+                {
+                  "frame": 194,
+                  "value": 1.0
+                },
+                {
+                  "frame": 209,
+                  "value": 0.9800000190734863
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "text_overlays": [],
+      "accents": [
+        {
+          "id": "glow_trail",
+          "color": "#A78BFA",
+          "width": 520.0,
+          "height": 5.0,
+          "y_offset": 76.0,
+          "radius": 2.0,
+          "opacity": 0.800000011920929,
+          "tracks": [
+            {
+              "property": "position_x",
+              "easing": "in_out_cubic",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": -720.0
+                },
+                {
+                  "frame": 22,
+                  "value": -720.0
+                },
+                {
+                  "frame": 95,
+                  "value": 720.0
+                },
+                {
+                  "frame": 112,
+                  "value": 720.0
+                },
+                {
+                  "frame": 195,
+                  "value": 720.0
+                },
+                {
+                  "frame": 209,
+                  "value": 860.0
+                }
+              ]
+            },
+            {
+              "property": "position_y",
+              "easing": "in_out_cubic",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 70.0
+                },
+                {
+                  "frame": 22,
+                  "value": 70.0
+                },
+                {
+                  "frame": 95,
+                  "value": 45.0
+                },
+                {
+                  "frame": 112,
+                  "value": -24.0
+                },
+                {
+                  "frame": 195,
+                  "value": 0.0
+                },
+                {
+                  "frame": 209,
+                  "value": -140.0
+                }
+              ]
+            },
+            {
+              "property": "scale_x",
+              "easing": "in_out_cubic",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0.07999999821186066
+                },
+                {
+                  "frame": 22,
+                  "value": 0.07999999821186066
+                },
+                {
+                  "frame": 95,
+                  "value": 1.0
+                },
+                {
+                  "frame": 112,
+                  "value": 0.07999999821186066
+                },
+                {
+                  "frame": 195,
+                  "value": 0.07999999821186066
+                },
+                {
+                  "frame": 209,
+                  "value": 0.07999999821186066
+                }
+              ]
+            },
+            {
+              "property": "opacity",
+              "easing": "in_out_cubic",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0.0
+                },
+                {
+                  "frame": 22,
+                  "value": 0.0
+                },
+                {
+                  "frame": 95,
+                  "value": 0.8500000238418579
+                },
+                {
+                  "frame": 112,
+                  "value": 0.0
+                },
+                {
+                  "frame": 195,
+                  "value": 0.0
+                },
+                {
+                  "frame": 209,
+                  "value": 0.0
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "font_size": 116.0,
+      "light": false,
+      "emphasis": [],
+      "exit": "reverse",
+      "decor": null,
+      "adaptation_note": "A single deterministic cyan-violet trail animates across the title; live pointer tracking, GPU noise, pulse and idle fading are not represented.",
+      "timing": {
+        "min_frames": 195,
+        "max_frames": 210,
+        "in_frames": 90,
+        "hold_frames": 105,
+        "out_frames": 15
+      }
+    },
+    {
+      "id": "short_phrase_product_gradual_blur",
+      "family": "product_video",
+      "subcategory": "kinetic_reveal",
+      "targets": [
+        "short_phrase",
+        "caption"
+      ],
+      "title": "Gradual Blur",
+      "phrase": "A SOFTER ARRIVAL",
+      "enter": 90,
+      "word_count": 3,
+      "selector": {
+        "unit": "glyph",
+        "order": "forward",
+        "window": "reveal_soft"
+      },
+      "tracks": [
+        {
+          "property": "opacity",
+          "easing": "linear",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.0
+            },
+            {
+              "frame": 90,
+              "value": 1.0
+            },
+            {
+              "frame": 194,
+              "value": 1.0
+            },
+            {
+              "frame": 209,
+              "value": 0.0
+            }
+          ]
+        },
+        {
+          "property": "position_y",
+          "easing": "out_cubic",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 32.0
+            },
+            {
+              "frame": 90,
+              "value": 0.0
+            },
+            {
+              "frame": 194,
+              "value": 0.0
+            },
+            {
+              "frame": 209,
+              "value": -18.0
+            }
+          ]
+        }
+      ],
+      "text_animators": [
+        {
+          "selector": {
+            "unit": "glyph",
+            "order": "forward",
+            "window": "reveal_soft"
+          },
+          "properties": [
+            {
+              "property": "blur",
+              "easing": "out_cubic",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 30.0
+                },
+                {
+                  "frame": 18,
+                  "value": 22.0
+                },
+                {
+                  "frame": 42,
+                  "value": 12.0
+                },
+                {
+                  "frame": 66,
+                  "value": 4.0
+                },
+                {
+                  "frame": 90,
+                  "value": 0.0
+                },
+                {
+                  "frame": 194,
+                  "value": 0.0
+                },
+                {
+                  "frame": 209,
+                  "value": 14.0
+                }
+              ]
+            },
+            {
+              "property": "opacity",
+              "easing": "linear",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0.0
+                },
+                {
+                  "frame": 18,
+                  "value": 0.18000000715255737
+                },
+                {
+                  "frame": 42,
+                  "value": 0.47999998927116394
+                },
+                {
+                  "frame": 66,
+                  "value": 0.8199999928474426
+                },
+                {
+                  "frame": 90,
+                  "value": 1.0
+                },
+                {
+                  "frame": 194,
+                  "value": 1.0
+                },
+                {
+                  "frame": 209,
+                  "value": 0.0
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "text_overlays": [],
+      "accents": [],
+      "font_size": 112.0,
+      "light": false,
+      "emphasis": [],
+      "exit": "reverse",
+      "decor": null,
+      "adaptation_note": "Progressive native glyph blur/opacity approximates the bottom-edge backdrop blur; the CSS layer stack, responsive presets and scroll/hover triggers are not represented.",
+      "timing": {
+        "min_frames": 195,
+        "max_frames": 210,
+        "in_frames": 90,
+        "hold_frames": 105,
+        "out_frames": 15
+      }
+    },
+    {
+      "id": "short_phrase_product_shape_blur",
+      "family": "product_video",
+      "subcategory": "shape_reveal",
+      "targets": [
+        "short_phrase",
+        "caption"
+      ],
+      "title": "Shape Blur",
+      "phrase": "SHAPE FINDS FOCUS",
+      "enter": 90,
+      "word_count": 3,
+      "selector": {
+        "unit": "glyph",
+        "order": "forward",
+        "window": "reveal_soft"
+      },
+      "tracks": [
+        {
+          "property": "opacity",
+          "easing": "linear",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.0
+            },
+            {
+              "frame": 90,
+              "value": 1.0
+            },
+            {
+              "frame": 194,
+              "value": 1.0
+            },
+            {
+              "frame": 209,
+              "value": 0.0
+            }
+          ]
+        },
+        {
+          "property": "scale",
+          "easing": "out_cubic",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.9399999976158142
+            },
+            {
+              "frame": 90,
+              "value": 1.0
+            },
+            {
+              "frame": 194,
+              "value": 1.0
+            },
+            {
+              "frame": 209,
+              "value": 1.0199999809265137
+            }
+          ]
+        }
+      ],
+      "text_animators": [
+        {
+          "selector": {
+            "unit": "glyph",
+            "order": "forward",
+            "window": "reveal_soft"
+          },
+          "properties": [
+            {
+              "property": "blur",
+              "easing": "out_cubic",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 22.0
+                },
+                {
+                  "frame": 45,
+                  "value": 9.0
+                },
+                {
+                  "frame": 90,
+                  "value": 0.0
+                },
+                {
+                  "frame": 194,
+                  "value": 0.0
+                },
+                {
+                  "frame": 209,
+                  "value": 10.0
+                }
+              ]
+            },
+            {
+              "property": "opacity",
+              "easing": "linear",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0.0
+                },
+                {
+                  "frame": 45,
+                  "value": 0.44999998807907104
+                },
+                {
+                  "frame": 90,
+                  "value": 1.0
+                },
+                {
+                  "frame": 194,
+                  "value": 1.0
+                },
+                {
+                  "frame": 209,
+                  "value": 0.0
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "text_overlays": [],
+      "accents": [
+        {
+          "id": "shape_blur_accent",
+          "color": "#67E8F9",
+          "width": 360.0,
+          "height": 4.0,
+          "y_offset": 92.0,
+          "radius": 2.0,
+          "opacity": 0.800000011920929,
+          "tracks": [
+            {
+              "property": "scale_x",
+              "easing": "out_cubic",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0.07999999821186066
+                },
+                {
+                  "frame": 48,
+                  "value": 0.6200000047683716
+                },
+                {
+                  "frame": 90,
+                  "value": 1.0
+                },
+                {
+                  "frame": 194,
+                  "value": 1.0
+                },
+                {
+                  "frame": 209,
+                  "value": 1.0800000429153442
+                }
+              ]
+            },
+            {
+              "property": "opacity",
+              "easing": "linear",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0.0
+                },
+                {
+                  "frame": 26,
+                  "value": 0.18000000715255737
+                },
+                {
+                  "frame": 74,
+                  "value": 0.30000001192092896
+                },
+                {
+                  "frame": 110,
+                  "value": 0.0
+                },
+                {
+                  "frame": 209,
+                  "value": 0.0
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "font_size": 118.0,
+      "light": false,
+      "emphasis": [],
+      "exit": "reverse",
+      "decor": null,
+      "adaptation_note": "A native accent bar and soft glyph reveal stand in for the mouse-lit Three.js SDF shader; mouse following, shape variations and WebGL rendering are not represented.",
+      "timing": {
+        "min_frames": 195,
         "max_frames": 210,
         "in_frames": 90,
         "hold_frames": 105,
@@ -4003,7 +7243,8 @@
       "short_phrase_product_bottom_up_letters",
       "short_phrase_product_scramble_reveal",
       "short_phrase_product_strikethrough_replace",
-      "short_phrase_product_per_word_rise"
+      "short_phrase_product_per_word_rise",
+      "short_phrase_product_fold_text"
     ],
     "2": [
       "short_phrase_character_tracking_reveal",
@@ -4016,7 +7257,15 @@
       "short_phrase_product_kinetic_center_build",
       "short_phrase_product_perspective_marquee",
       "short_phrase_product_weight_wave",
-      "short_phrase_product_chromatic_fringe_title"
+      "short_phrase_product_chromatic_fringe_title",
+      "short_phrase_product_masked_heading",
+      "short_phrase_product_split_flap_text",
+      "short_phrase_product_warp_text",
+      "short_phrase_product_scrambled_text",
+      "short_phrase_product_glare_hover",
+      "short_phrase_product_glow_cursor",
+      "short_phrase_product_gradual_blur",
+      "short_phrase_product_shape_blur"
     ],
     "3": [
       "short_phrase_character_tracking_reveal",
@@ -4029,7 +7278,15 @@
       "short_phrase_product_kinetic_center_build",
       "short_phrase_product_perspective_marquee",
       "short_phrase_product_weight_wave",
-      "short_phrase_product_chromatic_fringe_title"
+      "short_phrase_product_chromatic_fringe_title",
+      "short_phrase_product_masked_heading",
+      "short_phrase_product_split_flap_text",
+      "short_phrase_product_warp_text",
+      "short_phrase_product_scrambled_text",
+      "short_phrase_product_glare_hover",
+      "short_phrase_product_glow_cursor",
+      "short_phrase_product_gradual_blur",
+      "short_phrase_product_shape_blur"
     ],
     "4": [
       "short_phrase_word_cascade_sentence",
@@ -4043,7 +7300,11 @@
       "short_phrase_product_text_match_cut",
       "short_phrase_product_text_shimmer",
       "short_phrase_product_weight_wave",
-      "short_phrase_product_chromatic_fringe_title"
+      "short_phrase_product_chromatic_fringe_title",
+      "short_phrase_product_split_flap_text",
+      "short_phrase_product_scroll_reveal",
+      "short_phrase_product_warp_text",
+      "short_phrase_product_scrambled_text"
     ],
     "5": [
       "short_phrase_word_cascade_sentence",
@@ -4057,7 +7318,11 @@
       "short_phrase_product_text_match_cut",
       "short_phrase_product_text_shimmer",
       "short_phrase_product_weight_wave",
-      "short_phrase_product_chromatic_fringe_title"
+      "short_phrase_product_chromatic_fringe_title",
+      "short_phrase_product_split_flap_text",
+      "short_phrase_product_scroll_reveal",
+      "short_phrase_product_warp_text",
+      "short_phrase_product_scrambled_text"
     ]
   }
 }

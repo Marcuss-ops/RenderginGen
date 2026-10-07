@@ -11,8 +11,10 @@ import (
 
 func TestVisualAccentsV1_FamilyCounts(t *testing.T) {
 	wantCounts := map[string]int{"brush_v1": 23, "web_rect_v1": 12, "paint_v1": 12, "light_leak_v1": 12}
+	total := 0
 	for _, category := range VisualAccentsV1Categories {
 		ids := Registry.CategoryMotionIDs(category)
+		total += len(ids)
 		if len(ids) != wantCounts[category] {
 			t.Fatalf("%s family has %d motions, want %d: %v", category, len(ids), wantCounts[category], ids)
 		}
@@ -24,8 +26,19 @@ func TestVisualAccentsV1_FamilyCounts(t *testing.T) {
 			seen[id] = true
 		}
 	}
-	if got := len(Registry.VisualAccentsV1FamilyMotionIDs()); got != 59 {
-		t.Fatalf("visual accents V1 total = %d motions, want 59", got)
+	if total != 59 {
+		t.Fatalf("visual accents V1 total = %d motions, want 59", total)
+	}
+}
+
+func TestVisualAccentsV1CategoryAllowlist(t *testing.T) {
+	for _, category := range VisualAccentsV1Categories {
+		if !VisualAccentsV1CategoriesContains(category) {
+			t.Errorf("published Visual Accents category %q is not accepted by validation", category)
+		}
+	}
+	if VisualAccentsV1CategoriesContains("editorial_image_v1") {
+		t.Fatal("non Visual Accents family entered the category allowlist")
 	}
 }
 

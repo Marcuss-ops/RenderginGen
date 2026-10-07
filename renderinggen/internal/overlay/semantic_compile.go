@@ -21,6 +21,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/geofeatures"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/motion"
 )
 
@@ -58,6 +59,12 @@ func compileSemantic(raw []byte) (*Plan, []Asset, Stats, []string, error) {
 		return nil, nil, Stats{}, nil, fmt.Errorf("overlay: semantic plan requires plan_id, video_id and positive canvas/fps")
 	}
 	if err := resolveAnimationPolicies(&src); err != nil {
+		return nil, nil, Stats{}, nil, err
+	}
+	// Retirement is checked after the policies are expanded, so a motion that
+	// arrives through a plan-level default is rejected exactly like an explicit
+	// motion_id instead of only when the item names it directly.
+	if err := validateDeprecatedMotions(&src); err != nil {
 		return nil, nil, Stats{}, nil, err
 	}
 	// A plan must have at least one renderable primitive: a source clip, a
@@ -152,6 +159,11 @@ func compileSemantic(raw []byte) (*Plan, []Asset, Stats, []string, error) {
 		}
 	}
 
+	// Resolve named map targets before map-contract validation so the existing
+	// camera_move/LOD admission path remains the single authority for fly-to.
+	if err := resolveMapFeatureMoves(&src); err != nil {
+		return nil, nil, Stats{}, nil, err
+	}
 	// Resolve every item ONCE through the template registry: kind validation,
 	// preset resolution and timing. Both the per-kind compilers and the ledger
 	// read this resolution, so they can never disagree.
@@ -322,7 +334,7 @@ func compileSemantic(raw []byte) (*Plan, []Asset, Stats, []string, error) {
 				entityCameraMotionItemID = ri.Item.ID
 			}
 		}
-		if isEntityKind(ri.Kind) && ri.Item.EntityStyleID != "" && cameraMove != nil {
+		if entityCameraMotionID != "" && cameraMove != nil {
 			return nil, nil, Stats{}, nil, fmt.Errorf("overlay: entity item %q camera motion conflicts with map item %q scene camera move", ri.Item.ID, cameraMapItemID)
 		}
 		if ri.Item.Map != nil && ri.Item.Map.CameraMove != nil && entityCameraMotionID != "" {
@@ -335,10 +347,8 @@ func compileSemantic(raw []byte) (*Plan, []Asset, Stats, []string, error) {
 		if err != nil {
 			return nil, nil, Stats{}, nil, err
 		}
+
 		if ri.Item.Map != nil && ri.Item.Map.CameraMove != nil {
-			if cameraMove != nil {
-				return nil, nil, Stats{}, nil, fmt.Errorf("overlay: only one native camera fly-to map is allowed per plan")
-			}
 			move := *ri.Item.Map.CameraMove
 			cameraMove = &move
 			cameraMapItemID = ri.Item.ID
@@ -535,6 +545,53 @@ func compileSemantic(raw []byte) (*Plan, []Asset, Stats, []string, error) {
 // resolveSemanticItems validates the plan's items once and lowers each to its
 // canonical resolvedItem. This is the only place an item's kind, preset and
 // timing are decided.
+func resolveMapFeatureMoves(src *semanticPlan) error {
+	registry, registryErr := geofeatures.DefaultRegistry()
+	for index := range src.Items {
+		item := &src.Items[index]
+		if item.Map == nil || item.Map.FlyToFeature == nil {
+			continue
+		}
+		if item.Map.CameraMove != nil {
+			return fmt.Errorf("overlay: map item %q must not combine fly_to_feature and camera_move", item.ID)
+		}
+		spec := templateSpecFor(item.Template)
+		kind, err := spec.resolveKind(item.Kind, item.ID)
+		if err != nil {
+			return err
+		}
+		if kind != KindMap {
+			return fmt.Errorf("overlay: item %q fly_to_feature is only valid on a map", item.ID)
+		}
+		if registryErr != nil {
+			return fmt.Errorf("overlay: map item %q cannot resolve fly_to_feature: %w", item.ID, registryErr)
+		}
+		if item.Map.MotionID != "" {
+			return fmt.Errorf("overlay: map item %q fly_to_feature cannot be combined with motion_id", item.ID)
+		}
+		if len(item.Map.LODs) < 2 {
+			return fmt.Errorf("overlay: map item %q fly_to_feature requires at least two offline LOD assets", item.ID)
+		}
+		start := SemanticMapPoint{Latitude: item.Map.Center.Latitude, Longitude: item.Map.Center.Longitude}
+		move, feature, err := resolveFeatureCameraMove(registry, item.Map.FlyToFeature.Feature, item.Map.FlyToFeature.Padding, start, item.Map.Zoom, item.Map.LODs[len(item.Map.LODs)-1].Zoom, src.Width, src.Height)
+		if err != nil {
+			return fmt.Errorf("overlay: map item %q fly_to_feature: %w", item.ID, err)
+		}
+		if road := strings.TrimSpace(item.Map.FlyToFeature.Road); road != "" {
+			if road != "world" {
+				return fmt.Errorf("overlay: map item %q fly_to_feature road %q is unsupported (supported: world)", item.ID, road)
+			}
+			if feature.Type == "world" {
+				return fmt.Errorf("overlay: map item %q fly_to_feature road world requires a non-world feature", item.ID)
+			}
+			move.From = SemanticMapPoint{Latitude: 0, Longitude: 0}
+			move.StartZoom = float64(item.Map.LODs[0].Zoom)
+		}
+		item.Map.CameraMove = &move
+	}
+	return nil
+}
+
 func resolveSemanticItems(src *semanticPlan) ([]resolvedItem, error) {
 	out := make([]resolvedItem, 0, len(src.Items))
 	for _, item := range src.Items {
@@ -549,20 +606,20 @@ func resolveSemanticItems(src *semanticPlan) ([]resolvedItem, error) {
 		if err := validateTextElementContract(item); err != nil {
 			return nil, err
 		}
-		if err := validateSemanticImageLayers(item); err != nil {
-			return nil, err
-		}
 		spec := templateSpecFor(item.Template)
 		kind, err := spec.resolveKind(item.Kind, item.ID)
 		if err != nil {
+			return nil, err
+		}
+		if err := validateSemanticImageLayers(item, kind); err != nil {
 			return nil, err
 		}
 		if item.EntityStyleID != "" {
 			if _, ok := ResolveEntityStyle(item.EntityStyleID, src.PlanID, src.VideoID, item.ID); !ok {
 				return nil, fmt.Errorf("overlay: item %q has unsupported entity_style_id %q", item.ID, item.EntityStyleID)
 			}
-			if kind != KindEntityCard {
-				return nil, fmt.Errorf("overlay: item %q entity_style_id is only valid for entity_card items", item.ID)
+			if !isEntityKind(kind) {
+				return nil, fmt.Errorf("overlay: item %q entity_style_id is only valid for entity items", item.ID)
 			}
 			if len(item.Assets) == 0 || strings.TrimSpace(item.EntityCaption) == "" {
 				return nil, fmt.Errorf("overlay: item %q entity_style_id %q requires an image and entity_caption", item.ID, item.EntityStyleID)
@@ -626,6 +683,9 @@ func resolveSemanticItems(src *semanticPlan) ([]resolvedItem, error) {
 		}
 		out = append(out, ri)
 	}
+	if err := validateMapComposition(src.MapCompositionID, out); err != nil {
+		return nil, err
+	}
 	return out, nil
 }
 
@@ -668,7 +728,11 @@ func compileItem(ri resolvedItem, src *semanticPlan, registry *assetRegistry) ([
 // emitted beside the phrase layer; the ordinary text motion lowering only
 // consumes tracks and would otherwise silently omit the authored brush stroke.
 func compileTextVisualAccentLayers(ri resolvedItem, src *semanticPlan, text Layer) ([]Layer, error) {
-	if strings.HasPrefix(ri.Item.MotionID, "typewriter_modern_") && text.Style != nil {
+	definition, err := resolveMotionDefinition(ri.Item.MotionID)
+	if err != nil {
+		return nil, err
+	}
+	if definition != nil && definition.Category == "typewriter_modern_v1" && text.Style != nil {
 		// These date/number animations mirror the modern Short Phrases previews.
 		// Respect a producer's explicit font override, but otherwise use the
 		// bundled Bricolage face rather than the generic phrase preset default.
@@ -679,19 +743,11 @@ func compileTextVisualAccentLayers(ri resolvedItem, src *semanticPlan, text Laye
 			text.Style.Font, _ = runtimeFontPath("bricolage_grotesque")
 		}
 	}
-	definition, err := visualAccentsDefinition(ri.Item.MotionID)
-	if err != nil {
-		return nil, err
-	}
 	var layers []Layer
 	if definition == nil || definition.Category != "brush_v1" {
 		layers = []Layer{text}
 	} else {
-		targetsText := false
-		for _, target := range definition.Targets {
-			targetsText = targetsText || target == "text"
-		}
-		if !targetsText {
+		if !motionDefinitionAdmitsTarget(definition, "text") {
 			return nil, fmt.Errorf("overlay: brush motion %q does not target text", definition.ID)
 		}
 		// Brush paths for phrases use the visible text block as their local
@@ -825,6 +881,10 @@ func compileEntityCard(ri resolvedItem, src *semanticPlan, registry *assetRegist
 		ri.Params["position_x"] = x
 		ri.Params["position_y"] = 0.0
 	}
+	resolvedImageMotion, err := resolveRegisteredMotion(ri.Item.MotionID)
+	if err != nil {
+		return nil, fmt.Errorf("overlay: entity image motion %q: %w", ri.Item.MotionID, err)
+	}
 	img := imageLayer(ri, registry.Path(ri.Item.Assets[0].ID))
 	if hasStyle && currentStyle.CameraMotionID != "" {
 		img.Enable3D = true
@@ -832,9 +892,8 @@ func compileEntityCard(ri resolvedItem, src *semanticPlan, registry *assetRegist
 	if ri.ImagePreset.ID != "" {
 		applyPresetDefinition(&img, ri.ImagePreset)
 		var imgAnimation *LayerAnimation
-		var err error
 		if ri.Item.MotionID != "" {
-			imgAnimation, err = imageMotionAnimation(ri.Item.MotionID, ri.Item.MotionParams, ri.End-ri.Start, ri.ImagePreset.Motion.Exit)
+			imgAnimation, err = imageMotionAnimationResolved(ri.Item.MotionID, ri.Item.MotionParams, ri.End-ri.Start, ri.ImagePreset.Motion.Exit, ri.Item.ID, "image", resolvedImageMotion)
 		} else {
 			imgAnimation, err = animationForPreset(ri.ImagePreset, "", ri.End-ri.Start)
 		}
@@ -857,9 +916,9 @@ func compileEntityCard(ri resolvedItem, src *semanticPlan, registry *assetRegist
 	if ri.Item.MotionID != "" && ri.ImagePreset.ID == "" {
 		return nil, fmt.Errorf("overlay: entity image item %q with motion_id requires image_preset_id", ri.Item.ID)
 	}
-	premium, err := premiumImageDefinition(ri.Item.MotionID)
-	if err != nil {
-		return nil, fmt.Errorf("overlay: entity image motion %q: %w", ri.Item.MotionID, err)
+	var premium *motion.MotionDefinition
+	if resolvedImageMotion != nil {
+		premium = premiumImageRecipeDefinition(resolvedImageMotion.definition)
 	}
 	layers, err := compilePremiumImageLayers(ri, src, img, premium)
 	if err != nil {

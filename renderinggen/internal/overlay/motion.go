@@ -33,27 +33,46 @@ import (
 // last frame. A layer with room for the window now replays its entrance
 // backwards over the last Exit frames (see appendExitTracks).
 func lowerMotion(id string, enter, exit int, params motion.MotionParams, text string, duration int64, phraseEntranceFloor bool) (*LayerAnimation, error) {
+	return lowerMotionForTarget(id, enter, exit, params, text, duration, phraseEntranceFloor, "", "")
+}
+
+func lowerMotionForTarget(id string, enter, exit int, params motion.MotionParams, text string, duration int64, phraseEntranceFloor bool, itemID, target string) (*LayerAnimation, error) {
 	if id == "" {
 		return nil, nil
 	}
-	plugin, err := motion.Registry.Resolve(id)
+	resolved, err := resolveRegisteredMotion(id)
 	if err != nil {
+		if target != "" {
+			return nil, fmt.Errorf("overlay: item %q motion %q: %w", itemID, id, err)
+		}
 		return nil, fmt.Errorf("overlay: resolve motion %q: %w", id, err)
 	}
-	if plugin == nil {
+	return lowerResolvedMotion(id, resolved, enter, exit, params, text, duration, phraseEntranceFloor, itemID, target)
+}
+
+func lowerResolvedMotion(id string, resolved *resolvedMotion, enter, exit int, params motion.MotionParams, text string, duration int64, phraseEntranceFloor bool, itemID, target string) (*LayerAnimation, error) {
+	if resolved == nil || resolved.plugin == nil {
 		return nil, fmt.Errorf("overlay: motion %q resolved to no plugin", id)
 	}
+	if err := motionDeprecationError(id); err != nil {
+		return nil, err
+	}
+	if target != "" && resolved.definition != nil && resolved.definition.Targets != nil &&
+		!motionDefinitionAdmitsTarget(resolved.definition, target) {
+		return nil, fmt.Errorf("overlay: item %q motion %q is not supported for target %q", itemID, id, target)
+	}
+	plugin := resolved.plugin
 	// The caller's windows win (an official preset owns its own entrance and
 	// exit); a producer-selected motion_id supplies only the exit fallback, so
 	// the motion's registered windows fill the gaps.
 	authoredEnter := 0
-	if declarative, ok := plugin.(motion.DeclarativePlugin); ok {
-		authoredEnter = declarative.Definition.Enter
+	if definition := resolved.definition; definition != nil {
+		authoredEnter = definition.Enter
 		if enter <= 0 {
-			enter = declarative.Definition.Enter
+			enter = definition.Enter
 		}
 		if exit <= 0 {
-			exit = declarative.Definition.Exit
+			exit = definition.Exit
 		}
 	}
 	entrance := entranceFrames(enter, exit, duration, phraseEntranceFloor)

@@ -1,0 +1,20 @@
+{
+  "schema": "renderinggen.motion-deprecation-proposal.v1",
+  "version": 1,
+  "motion_id": "typewriter_modern_01_monospace_block_cursor",
+  "deprecated_on": "2098-01-01",
+  "remove_after": "2098-03-02",
+  "reason": "Fixture only: exercise the deprecation audit without changing production catalog state.",
+  "replacement_id": "typewriter_modern_02_kinetic_scramble",
+  "required_targets": [
+    "short_phrase"
+  ],
+  "owner": "RenderingGen cleanup verification fixture",
+  "compatibility_window_days": 60,
+  "consumers": [
+    "renderinggen/internal/motion/catalog/chronontemplate_catalog.v1.json",
+    "renderinggen/internal/overlay/runtime_animation_catalog_test.go",
+    "renderinggen/internal/overlay/typewriter_cursor.go",
+    "renderinggen/internal/overlay/typewriter_cursor_test.go"
+  ]
+}

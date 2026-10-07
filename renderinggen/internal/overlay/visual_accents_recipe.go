@@ -17,21 +17,13 @@ import (
 //	paint_v1      native Field2D mask on the image layer
 //	light_leak_v1 blurred ellipse glow plates composited around the image
 //
-// visualAccentsDefinition resolves one visual accents V1 motion definition.
-func visualAccentsDefinition(id string) (*motion.MotionDefinition, error) {
-	plugin, err := motion.Registry.Resolve(id)
-	if err != nil || plugin == nil {
-		return nil, err
+// visualAccentsRecipeDefinition classifies an already resolved motion so
+// image lowering does not resolve the same registry entry twice.
+func visualAccentsRecipeDefinition(definition *motion.MotionDefinition) *motion.MotionDefinition {
+	if definition == nil || !motion.VisualAccentsV1CategoriesContains(definition.Category) {
+		return nil
 	}
-	declarative, ok := plugin.(motion.DeclarativePlugin)
-	if !ok {
-		return nil, nil
-	}
-	definition := declarative.Definition
-	if !motion.VisualAccentsV1CategoriesContains(definition.Category) {
-		return nil, nil
-	}
-	return &definition, nil
+	return definition
 }
 
 // compileVisualAccentsImageLayers lowers one visual accents motion around a

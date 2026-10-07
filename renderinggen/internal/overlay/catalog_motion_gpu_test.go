@@ -232,8 +232,8 @@ func TestEveryCallableCatalogMotionExecutesOnTheStrictGPU(t *testing.T) {
 
 	var items []map[string]any
 	phraseIDs := make([]string, 0, 128)
-	for _, family := range []string{"typewriter", "typewriter_modern_v1", "classic_apple", "modern_apple"} {
-		phraseIDs = append(phraseIDs, motion.Registry.FamilyMotionIDs(family)...)
+	for _, category := range []string{"typewriter", "typewriter_modern_v1", "apple_v2", "apple_v3", "phrase_apple_clean_v1", "apple_phrase_v1"} {
+		phraseIDs = append(phraseIDs, motion.Registry.CategoryMotionIDs(category)...)
 	}
 	if len(phraseIDs) != 128 {
 		t.Fatalf("phrase family inventory has %d IDs, want 128", len(phraseIDs))
@@ -245,7 +245,7 @@ func TestEveryCallableCatalogMotionExecutesOnTheStrictGPU(t *testing.T) {
 			"text": "MOTION CATALOG GPU CANARY", "start_ms": 0, "end_ms": 2000,
 		})
 	}
-	imageIDs := motion.Registry.ImagePremiumV1MotionIDs()
+	imageIDs := motion.Registry.CategoryMotionIDs("image_premium_v1")
 	if len(imageIDs) != 20 {
 		t.Fatalf("premium image motion inventory has %d IDs, want 20", len(imageIDs))
 	}
@@ -273,6 +273,11 @@ func TestEveryCallableCatalogMotionExecutesOnTheStrictGPU(t *testing.T) {
 				"url": "https://example.test/certification.jpg", "media_type": "image/jpeg",
 			})
 			item["image_layers"].([]map[string]any)[0]["asset_id"] = "certification_image_back"
+			// A composited item owns its caption on the image layer, never on the
+			// parent: the compiler rejects a parent entity_caption on image_layers,
+			// so the harness must build the plan the contract actually accepts.
+			delete(item, "entity_caption")
+			item["image_layers"].([]map[string]any)[1]["caption"] = "GPU motion canary"
 		}
 		items = append(items, item)
 	}

@@ -11,13 +11,91 @@ conservando una via verificabile per riprodurre i render e mantenendo intatti
 contratti e gate. Prima si correggono le misure; poi si affrontano solo le fasi
 con criteri di accettazione espliciti.
 
-**Stato:** rimozioni e verifiche degli asset concluse; inventario completo dei
-128 percorsi MP4 baseline. Tutti i gate repository eseguibili sono verdi dopo
-aver riallineato il contratto semantic e mantenuto interni i picker senza
-consumer. Restano decisioni non repository-verificabili su retention e
-sign-off owner dei profili deployment; non sono state presunte.
+**Stato al 7 ottobre:** rimozioni e verifiche degli asset concluse; inventario
+completo dei 128 percorsi MP4 baseline. I gate repository erano verdi in una
+verifica precedente, ma il checkout corrente non è ancora verificato verde:
+controlli successivi hanno trovato errori di compilazione nel lavoro concorrente
+sulle mappe. Retention e sign-off owner dei profili deployment restano aperti.
+Non sono state presunte approvazioni esterne.
+
+**Aggiornamento checkout — 7 ottobre 2026:** il piano overlay dettagliato è in
+[`cleanupplan2.0.md`](cleanupplan2.0.md). La deduplica media, il catalogo runtime
+compilato e i contratti semantici sono già implementati; non va confuso questo
+lavoro completato con le certificazioni GPU o la retention, ancora aperte. La
+verifica di oggi ha trovato modifiche concorrenti ai sorgenti della mappa: una
+suite completa ha riportato PASS, ma la successiva compilazione del consumer
+`motion-catalog` e il test mirato overlay falliscono su incoerenze di firma/tipi
+in `semantic_map.go` e `map_route.go`. Di conseguenza **lo stato compilabile
+finale del worktree non è verde** e va verificato dopo aver stabilizzato quelle
+modifiche. `make test-gofmt test-architecture`, `make conformance` e
+`git diff --check` sono passati; non sostituiscono il build/test Go.
 
 ---
+
+## Stato sintetico: già fatto e ancora da fare (7 ottobre 2026)
+
+### Già fatto / verificato nel repository
+
+- Inventario dei 128 path MP4 baseline, con hash/probe e motivazione; rimossi
+  solo 30 duplicati byte-identici più un file vuoto. I byte rimossi sono
+  recuperabili dalla storia Git e copie identiche esistono nel checkout. Non è
+  stata riscritta la storia Git né cancellata altra evidenza.
+- Catalogo runtime v1 compilato da metadata canonici, con matrice di
+  compatibilità, zone/composizioni, requisiti, stato certificazione datato,
+  indice preview e policy di deprecazione. La UI non è più nel perimetro di
+  RenderingGen: il consumer è esterno.
+- Composizioni immagini 1–5 e immagini-con-testo, lowering a layer ordinati,
+  motion immagine per layer e associazioni caption→layer; controlli compiler
+  per cardinalità, target e collisioni spazio/tempo. Mappe, background,
+  metriche/date hanno contratti e gate dedicati. `two_maps` riusa il target
+  mappa per placca.
+- Rimozione di duplicazioni/wrapper senza consumer, consolidamento delle
+  verifiche di ammissione motion e audit dei batch/config/test; non emerge
+  evidenza per unificare i manifest o cancellare test/gallery solo per anzianità.
+- Il gate GPU strict è stato effettivamente tentato: 3/20 motion passate,
+  16 `render_failed` (`EncoderFailed`), 1 errore dell’harness corretto. Questo
+  non equivale a certificazione strict.
+
+### Ancora da fare / bloccato
+
+1. **Stabilizzare e rilanciare i gate Go.** Nella verifica di questo checkout,
+   `go run ./cmd/motion-catalog` non compila: `semantic_map.go` invoca
+   `compileMapRoutes` con 8 argomenti mentre la firma in `map_route.go` ne
+   richiede 9; il test mirato segnala inoltre l’uso di `*float64` come `float64`
+   per `trimStart`/`trimEnd`. Le modifiche alla mappa risultano in lavorazione;
+   non le ho alterate. Rilanciare `go test ./... -count=1`, la CLI e i gate dopo
+   aver allineato firma e tipi.
+2. **Certificazione GPU strict e pixel dei layout caption densi:** serve un
+   percorso encoder affidabile/sign-off e verifica visiva riproducibile. I test
+   di compilazione non certificano il rendering.
+3. **Camera Roll scena:** semantica/contratto sono decisi e pubblicati, ma manca
+   la famiglia canonica ChrononTemplate, il lowering RenderingGen e la
+   certificazione; nessuna motion scena è selezionabile.
+4. **Retention media:** audit read-only dimostra copie byte-identiche nel
+   checkout, non archivio indipendente o approvazione. L’owner deve indicare
+   policy, archivio verificato, restore test e firmatario; non rimuovere altre
+   prove prima del sign-off. L’audit lanciato con output temporaneo ha rilevato
+   riferimenti ai path rimossi nel report JSON già presente: ripetere usando il
+   report di output escluso dallo scanner per distinguere l’autoreferenza da
+   consumer effettivi.
+5. **Pulizia selettiva residua:** audit separato delle pool batch editoriali;
+   trasferire test/gallery one-off a fixture/manifests riproducibili prima di
+   rimuoverli; eliminare campi/schema solo dopo audit produttori e deprecazione.
+   L’audit harness non ha trovato uno spostamento sicuro senza rifattorizzare
+   API di test e call-site.
+6. **UI esterna e profili deployment:** non sono criteri di chiusura del
+   repository; eventuali consumer o sign-off owner vanno verificati fuori dal
+   codice qui presente.
+
+**Conclusione:** la parte di cleanup dimostrabile (inventario, deduplica,
+contratti/catalogo e refactor senza consumer) è in larga parte completata. Non
+è corretto dichiarare concluso il cleanup complessivo: build del checkout da
+ristabilizzare, certificazione GPU e retention/sign-off restano i blocchi
+principali. Nessuna ulteriore cancellazione è autorizzata da questo stato.
+
+---
+
+## Riepilogo delle misure verificate
 
 ## Piano di lavoro (ordine e criteri di completamento)
 

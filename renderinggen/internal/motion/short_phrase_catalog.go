@@ -36,6 +36,7 @@ type shortPhraseRecipe struct {
 	ID            string                `json:"id"`
 	Family        string                `json:"family"`
 	Subcategory   string                `json:"subcategory"`
+	Targets       []string              `json:"targets"`
 	Title         string                `json:"title"`
 	Enter         int                   `json:"enter"`
 	Exit          string                `json:"exit"`
@@ -65,7 +66,7 @@ func readShortPhraseStyles() ([]shortPhraseRecipe, error) {
 	var recipes []shortPhraseRecipe
 	seen := map[string]bool{}
 	for _, recipe := range catalog.Recipes {
-		if recipe.Family != "product_video" {
+		if recipe.Family != "product_video" || !containsMotionString(recipe.Targets, "short_phrase") {
 			continue
 		}
 		if recipe.ID == "" || seen[recipe.ID] || recipe.Enter <= 0 {
@@ -74,15 +75,20 @@ func readShortPhraseStyles() ([]shortPhraseRecipe, error) {
 		seen[recipe.ID] = true
 		recipes = append(recipes, recipe)
 	}
-	if len(recipes) != 14 {
-		return nil, fmt.Errorf("motion: short phrase catalog has %d product styles, expected 14", len(recipes))
+	for _, recipe := range recipes {
+		if !containsMotionString(recipe.Targets, "short_phrase") {
+			return nil, fmt.Errorf("motion: short phrase style %q must declare short_phrase target", recipe.ID)
+		}
+		if len(recipe.TextAnimators) > 0 && !containsMotionString(recipe.Targets, "caption") {
+			return nil, fmt.Errorf("motion: short phrase style %q with text animators must declare caption target", recipe.ID)
+		}
 	}
 	return recipes, nil
 }
 
 func shortPhraseMotionDefinition(recipe shortPhraseRecipe) MotionDefinition {
 	definition := MotionDefinition{
-		ID: recipe.ID, Category: "short_phrase_style", Enter: recipe.Enter,
+		ID: recipe.ID, Category: "short_phrase_style", Targets: append([]string(nil), recipe.Targets...), Enter: recipe.Enter,
 		Exit: recipe.Timing.ExitFrames, Tracks: recipe.Tracks,
 		TextAnimators: make([]TextAnimatorDefinition, 0, len(recipe.TextAnimators)),
 	}

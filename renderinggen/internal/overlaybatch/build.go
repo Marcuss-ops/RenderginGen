@@ -273,7 +273,7 @@ func BuildTysonManifest(opts TysonBuildOptions) (*BuildResult, error) {
 	}
 	imageMotionPool := item.MediaPlan.Animation.ImageMotionIDs
 	if len(imageMotionPool) == 0 {
-		imageMotionPool = motion.Registry.ImagePremiumV1MotionIDs()
+		imageMotionPool = motion.Registry.CategoryMotionIDs("image_premium_v1")
 	}
 	if err := validateMotionPool(imageMotionPool); err != nil {
 		return nil, fmt.Errorf("overlaybatch: invalid image motion pool: %w", err)

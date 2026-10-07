@@ -5,7 +5,6 @@ package overlay
 import (
 	"encoding/json"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/motion"
-	"image"
 	"math"
 	"strings"
 	"testing"

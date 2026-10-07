@@ -70,6 +70,7 @@ var deadExportModules = []string{"renderinggen", "queue", "objectstore"}
 // carve-out cannot silently outlive the code it was written for.
 var deadExportExceptions = map[string]string{
 	"ShortPhraseStyles": "public motion-picker API consumed by the external RenderingGen service contract",
+	"DefaultRegistry":   "public loader API used by consumers that provide ChrononTemplate Natural Earth data outside this checkout",
 }
 
 // stdlibInterfaceMethods maps a standard-library interface to the method it

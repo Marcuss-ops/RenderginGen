@@ -8,24 +8,34 @@ import (
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/motion"
 )
 
-func premiumImageDefinition(id string) (*motion.MotionDefinition, error) {
-	plugin, err := motion.Registry.Resolve(id)
-	if err != nil || plugin == nil {
-		return nil, err
+func premiumImageRecipeDefinition(definition *motion.MotionDefinition) *motion.MotionDefinition {
+	if definition == nil || definition.ImageRecipe == nil || motion.VisualAccentsV1CategoriesContains(definition.Category) {
+		return nil
 	}
-	declarative, ok := plugin.(motion.DeclarativePlugin)
-	if !ok || declarative.Definition.Category != "image_premium_v1" {
-		return nil, nil
-	}
-	return &declarative.Definition, nil
+	return definition
 }
 
-func imageMotionAnimation(id string, params map[string]any, duration int64, presetExit int) (*LayerAnimation, error) {
-	definition, err := premiumImageDefinition(id)
+func isMultiImageRecipe(definition *motion.MotionDefinition) bool {
+	return definition != nil && definition.ImageRecipe != nil && definition.ImageRecipe.Stack
+}
+
+func imageMotionAnimation(id string, params map[string]any, duration int64, presetExit int, itemID, target string) (*LayerAnimation, error) {
+	resolved, err := resolveRegisteredMotion(id)
 	if err != nil {
 		return nil, err
 	}
+	return imageMotionAnimationResolved(id, params, duration, presetExit, itemID, target, resolved)
+}
+
+func imageMotionAnimationResolved(id string, params map[string]any, duration int64, presetExit int, itemID, target string, resolved *resolvedMotion) (*LayerAnimation, error) {
+	var definition *motion.MotionDefinition
+	if resolved != nil {
+		definition = premiumImageRecipeDefinition(resolved.definition)
+	}
 	if definition != nil {
+		if target != "" && definition.Targets != nil && !motionDefinitionAdmitsTarget(definition, target) {
+			return nil, fmt.Errorf("overlay: item %q motion %q is not supported for target %q", itemID, id, target)
+		}
 		enter, exit, err := motionWindows(params, definition.Exit)
 		if err != nil {
 			return nil, err
@@ -41,7 +51,7 @@ func imageMotionAnimation(id string, params map[string]any, duration int64, pres
 		}
 		return animation, nil
 	}
-	return animationForMotion(id, params, "", duration, presetExit)
+	return animationForResolvedMotionTarget(id, resolved, params, "", duration, presetExit, itemID, target, false)
 }
 
 func premiumTracks(definition motion.MotionDefinition, tracks []motion.TrackDefinition, duration int64) *LayerAnimation {
@@ -498,11 +508,11 @@ func compilePremiumImageLayers(ri resolvedItem, src *semanticPlan, image Layer, 
 	return compilePremiumComponents(src, image, *definition)
 }
 
-func compilePremiumImageStack(ri resolvedItem, src *semanticPlan, registry *assetRegistry, definition *motion.MotionDefinition) ([]Layer, error) {
+func compilePremiumMultiImageRecipe(ri resolvedItem, src *semanticPlan, registry *assetRegistry, definition *motion.MotionDefinition) ([]Layer, error) {
 	if len(ri.Item.ImageLayers) < 2 {
 		return nil, fmt.Errorf("overlay: motion %q requires at least two image_layers", definition.ID)
 	}
-	activeID, err := premiumStackSelection(ri.Item.MotionParams, definition.ImageRecipe.ActiveLayerParam)
+	activeID, err := requiredImageLayerID(ri.Item.MotionParams, definition.ImageRecipe.ActiveLayerParam, definition.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -515,7 +525,7 @@ func compilePremiumImageStack(ri resolvedItem, src *semanticPlan, registry *asse
 	for _, child := range ri.Item.ImageLayers {
 		assetPath, ok := assets[child.AssetID]
 		if !ok {
-			return nil, fmt.Errorf("overlay: stacked image %q references undeclared asset %q", child.ID, child.AssetID)
+			return nil, fmt.Errorf("overlay: image layer %q references undeclared asset %q", child.ID, child.AssetID)
 		}
 		preset, err := resolveOfficialPreset(child.PresetID, string(PresetImage))
 		if err != nil {
@@ -574,10 +584,10 @@ func compilePremiumImageStack(ri resolvedItem, src *semanticPlan, registry *asse
 	return output, nil
 }
 
-func premiumStackSelection(params map[string]any, name string) (string, error) {
+func requiredImageLayerID(params map[string]any, name, motionID string) (string, error) {
 	value, ok := params[name].(string)
 	if !ok || strings.TrimSpace(value) == "" {
-		return "", fmt.Errorf("overlay: image_stack_focus requires motion_params.%s", name)
+		return "", fmt.Errorf("overlay: motion %q requires motion_params.%s", motionID, name)
 	}
 	return strings.TrimSpace(value), nil
 }

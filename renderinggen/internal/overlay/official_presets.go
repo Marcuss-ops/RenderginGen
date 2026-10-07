@@ -184,7 +184,7 @@ func ValidateCatalogParity() error {
 		}
 	}
 
-	imageMotions := motion.Registry.Image25DCleanV1MotionIDs()
+	imageMotions := motion.Registry.CategoryMotionIDs("image_25d_clean_v1")
 	if len(imageMotions) != 8 {
 		return fmt.Errorf("overlay: the ChrononTemplate catalog declares %d image_25d_clean_v1 motions, expected 8 layer-only motions", len(imageMotions))
 	}
@@ -202,11 +202,7 @@ func ValidateCatalogParity() error {
 			definition.Exit != 12 || len(definition.Tracks) == 0 || len(definition.TextAnimators) != 0 {
 			return fmt.Errorf("overlay: image motion %q violates the clean 2.5D layer contract", id)
 		}
-		imageTarget := false
-		for _, target := range definition.Targets {
-			imageTarget = imageTarget || target == "image"
-		}
-		if !imageTarget {
+		if !motionDefinitionAdmitsTarget(&definition, "image") {
 			return fmt.Errorf("overlay: image motion %q does not declare the image target", id)
 		}
 	}

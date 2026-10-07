@@ -99,6 +99,9 @@ type TemplateSpec struct {
 	RequiresPreset bool
 	// Family is the official preset catalog family the template resolves in.
 	Family PresetFamily
+	// MotionTarget is the specialized catalog target for templates such as
+	// metric and date cards. Empty means the item's semantic kind decides.
+	MotionTarget string
 	// Stat is the artifact-ledger bucket the template is counted as.
 	Stat overlayStatKind
 }
@@ -133,8 +136,8 @@ var templateRegistry = map[string]TemplateSpec{
 	// motion_id; phrase_default supplies the independent text styling. They
 	// intentionally share text behavior with the numeric lane so the semantic
 	// number kind and its certified budget remain authoritative.
-	"METRIC_STAT_CARD":   {Kind: KindNumber, RequiresPreset: true, Family: PresetText, Stat: overlayStatWord},
-	"TIMELINE_DATE_CARD": {Kind: KindNumber, RequiresPreset: true, Family: PresetText, Stat: overlayStatWord},
+	"METRIC_STAT_CARD":   {Kind: KindNumber, RequiresPreset: true, Family: PresetText, MotionTarget: "metric", Stat: overlayStatWord},
+	"TIMELINE_DATE_CARD": {Kind: KindNumber, RequiresPreset: true, Family: PresetText, MotionTarget: "date", Stat: overlayStatWord},
 	"ENTITY_CARD_PERSON": {Kind: KindEntityCard, Family: PresetText, Stat: overlayStatEntity},
 
 	// Image overlays.

@@ -186,6 +186,7 @@ type semanticPlan struct {
 	Subtitles         *semanticSubtitles        `json:"subtitles,omitempty"`
 	Watermark         *semanticWatermark        `json:"watermark,omitempty"`
 	Audio             *semanticAudio            `json:"audio,omitempty"`
+	MapCompositionID  string                    `json:"map_composition_id,omitempty"`
 	Items             []semanticItem            `json:"items"`
 	AnimationPolicies []semanticAnimationPolicy `json:"animation_policies,omitempty"`
 }
@@ -290,6 +291,10 @@ type semanticItem struct {
 	// it. A kind that contradicts the template's kind is rejected fail-closed
 	// (see TemplateSpec.resolveKind).
 	Kind string `json:"kind"`
+	// CompositionID is an optional picker composition selector. When present,
+	// the compiler validates image and caption cardinality against that catalog
+	// composition; omitted values preserve older plans.
+	CompositionID string `json:"composition_id,omitempty"`
 	// Template is optional for a simple text primitive. A non-empty value
 	// selects a reusable composition/template; the displayed text remains
 	// producer-owned and is never stored in the template catalog.
@@ -317,7 +322,7 @@ type semanticItem struct {
 	CaptionMotionID     string         `json:"caption_motion_id,omitempty"`
 	CaptionMotionParams map[string]any `json:"caption_motion_params,omitempty"`
 
-	// EntityStyleID selects a RenderingGen-owned entity-card composition. The
+	// EntityStyleID selects a RenderingGen-owned entity composition. The
 	// premium_random_v1 selector deterministically chooses one of 15 variants.
 	EntityStyleID string `json:"entity_style_id,omitempty"`
 	// CaptionLayout may be "below", "left", or "right"; side layouts keep
@@ -337,24 +342,47 @@ type semanticItem struct {
 	Assets      []SemanticAssetRef   `json:"asset_refs"`
 	ImageLayers []SemanticImageLayer `json:"image_layers"`
 	Map         *SemanticMap         `json:"map"`
+	// Metric/Date carry the optional structured payload of the two data
+	// compositions. They are typed so strict decoding plus schema parity cannot
+	// silently discard a declared value, and they are validated against the
+	// item's data target in validateSemanticDataBlocks.
+	Metric *SemanticMetricData `json:"metric"`
+	Date   *SemanticDateData   `json:"date"`
 }
 
 // SemanticMap is the worker mirror of the georeferenced map declaration.
 // It is deliberately typed so strict decoding, bounds checks and schema parity
 // cannot silently discard map geometry or legal attribution.
 type SemanticMap struct {
-	Provider      string                 `json:"provider"`
-	SourceID      string                 `json:"source_id"`
-	SourceLicense string                 `json:"source_license"`
-	Center        SemanticMapPoint       `json:"center"`
-	Zoom          int                    `json:"zoom"`
-	Width         int                    `json:"width"`
-	Height        int                    `json:"height"`
-	Attribution   string                 `json:"attribution"`
-	MotionID      string                 `json:"motion_id"`
-	Pins          []SemanticMapPin       `json:"pins"`
-	LODs          []SemanticMapLOD       `json:"lods,omitempty"`
-	CameraMove    *SemanticMapCameraMove `json:"camera_move,omitempty"`
+	Provider      string                   `json:"provider"`
+	SourceID      string                   `json:"source_id"`
+	SourceLicense string                   `json:"source_license"`
+	Center        SemanticMapPoint         `json:"center"`
+	Zoom          int                      `json:"zoom"`
+	Width         int                      `json:"width"`
+	Height        int                      `json:"height"`
+	Attribution   string                   `json:"attribution"`
+	MotionID      string                   `json:"motion_id,omitempty"`
+	Pins          []SemanticMapPin         `json:"pins"`
+	LODs          []SemanticMapLOD         `json:"lods,omitempty"`
+	CameraMove    *SemanticMapCameraMove   `json:"camera_move,omitempty"`
+	FlyToFeature  *SemanticMapFlyToFeature `json:"fly_to_feature,omitempty"`
+	Routes        []SemanticMapRoute       `json:"routes,omitempty"`
+}
+
+type SemanticMapFlyToFeature struct {
+	Feature string  `json:"feature"`
+	Road    string  `json:"road,omitempty"`
+	Padding float64 `json:"padding"`
+}
+
+type SemanticMapRoute struct {
+	ID        string             `json:"id"`
+	Stops     []SemanticMapPoint `json:"stops"`
+	Color     string             `json:"color"`
+	WidthPX   float64            `json:"width_px"`
+	TrimStart *float64           `json:"trim_start,omitempty"`
+	TrimEnd   *float64           `json:"trim_end,omitempty"`
 }
 
 type SemanticMapLOD struct {
@@ -447,7 +475,9 @@ type SemanticAssetRef struct {
 // composite image item. Use it only for two or more images; a single image uses
 // the parent item's asset_refs, motion_id and motion_params. Assets are declared
 // once on the parent item; each child names its asset_id from that declared set
-// and may override preset_id, motion_id and motion_params independently.
+// and may override preset_id, motion_id and motion_params independently. A child
+// caption lowers to a separate text layer linked internally to this image ID;
+// it shares the child's time window and may select its own motion.
 type SemanticImageLayer struct {
 	ID                  string               `json:"id"`
 	GroupID             string               `json:"group_id,omitempty"`
@@ -617,6 +647,7 @@ type LayerPathAnimation struct {
 type LayerTrimParams struct {
 	Start     float64             `json:"start"`
 	End       float64             `json:"end"`
+	Offset    float64             `json:"offset,omitempty"`
 	Animation *LayerPathAnimation `json:"animation,omitempty"`
 }
 

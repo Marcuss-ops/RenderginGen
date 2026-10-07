@@ -1,70 +1,192 @@
 package overlay
 
-import "github.com/Marcuss-ops/RenderingGen/renderinggen/internal/motion"
+import (
+	"errors"
+	"fmt"
+	"strings"
+	"time"
 
-// motionAdmitsTarget is the single overlay-side admission gate for selecting a
-// catalog motion on a semantic target. Declared targets are authoritative;
-// legacy compatibility is isolated here until the canonical catalog has
-// explicit target metadata for every registered motion.
-func motionAdmitsTarget(id, target string) bool {
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/motion"
+)
+
+type resolvedMotion struct {
+	plugin     motion.MotionPlugin
+	definition *motion.MotionDefinition
+}
+
+func resolveRegisteredMotion(id string) (*resolvedMotion, error) {
 	plugin, err := motion.Registry.Resolve(id)
 	if err != nil || plugin == nil {
-		return false
+		return nil, err
 	}
-	declarative, ok := plugin.(motion.DeclarativePlugin)
-	if !ok {
-		return false
+	resolved := &resolvedMotion{plugin: plugin}
+	if declarative, ok := plugin.(motion.DeclarativePlugin); ok {
+		definition := declarative.Definition
+		resolved.definition = &definition
 	}
-	definition := declarative.Definition
+	return resolved, nil
+}
 
+func resolveMotionDefinition(id string) (*motion.MotionDefinition, error) {
+	resolved, err := resolveRegisteredMotion(id)
+	if err != nil {
+		return nil, err
+	}
+	if resolved == nil {
+		return nil, nil
+	}
+	return resolved.definition, nil
+}
+
+// deprecationDiagnostic renders the deterministic diagnostic for a retired
+// motion. It is a pure function over the registry record, so the wording is
+// testable without mutating the production registry.
+func deprecationDiagnostic(id string, info motion.Deprecation) error {
+	message := fmt.Sprintf("overlay: motion %q is deprecated and no longer resolvable", id)
+	if reason := strings.TrimSpace(info.Reason); reason != "" {
+		message += ": " + reason
+	}
+	if retired := strings.TrimSpace(info.RemoveAfter); retired != "" {
+		message += fmt.Sprintf(" (retired %s)", retired)
+	}
+	if replacement := strings.TrimSpace(info.Replacement); replacement != "" {
+		message += fmt.Sprintf("; migrate to %q", replacement)
+	}
+	return errors.New(message)
+}
+
+// motionDeprecationError keeps saved plans compilable until remove_after. The
+// picker is gated immediately by the deprecated state; after the published date
+// the compiler fails with a deterministic diagnostic instead of substituting a
+// similar animation.
+func motionDeprecationError(id string) error {
+	info, ok := motion.Registry.DeprecationInfo(id)
+	if !ok {
+		return nil
+	}
+	return deprecationErrorAfter(id, info, time.Now().UTC())
+}
+
+func deprecationErrorAfter(id string, info motion.Deprecation, now time.Time) error {
+	removeAfter, err := time.Parse("2006-01-02", strings.TrimSpace(info.RemoveAfter))
+	if err != nil {
+		return fmt.Errorf("overlay: motion %q has invalid deprecation date %q: %w", id, info.RemoveAfter, err)
+	}
+	if now.UTC().Before(removeAfter) {
+		return nil
+	}
+	return deprecationDiagnostic(id, info)
+}
+
+// semanticItemMotionIDs lists every motion ID an item can name, including its
+// composited image layers and its map block, so the retirement gate covers all
+// of them instead of only the item-level field.
+func semanticItemMotionIDs(item semanticItem) []string {
+	ids := []string{item.MotionID, item.CaptionMotionID}
+	for _, layer := range item.ImageLayers {
+		ids = append(ids, layer.MotionID, layer.CaptionMotionID)
+	}
+	if item.Map != nil {
+		ids = append(ids, item.Map.MotionID)
+	}
+	return ids
+}
+
+// validateDeprecatedMotions rejects a plan that names a retired motion on any
+// item, image layer, caption or animation policy. It runs before any lowering so
+// the failure is the same every time and names the ID, the item and the reason:
+// a retired motion is never replaced by a similar one, and no partially lowered
+// plan reaches the renderer.
+func validateDeprecatedMotions(src *semanticPlan) error {
+	for _, policy := range src.AnimationPolicies {
+		if err := motionDeprecationError(policy.MotionID); err != nil {
+			return fmt.Errorf("overlay: animation_policies motion %q: %w", policy.MotionID, err)
+		}
+	}
+	for _, item := range src.Items {
+		for _, id := range semanticItemMotionIDs(item) {
+			if err := motionDeprecationError(id); err != nil {
+				return fmt.Errorf("overlay: item %q: %w", item.ID, err)
+			}
+		}
+	}
+	return nil
+}
+
+// motionAdmitsTarget is the overlay admission gate. Motion applicability comes
+// from the canonical catalog; semantic targets keep specialized content
+// (metrics, dates and entities) out of generic phrase/caption choices.
+func motionAdmitsTarget(id, target string) bool {
+	if _, deprecated := motion.Registry.DeprecationInfo(id); deprecated {
+		return false
+	}
+	definition, err := resolveMotionDefinition(id)
+	if err != nil {
+		return false
+	}
+	return motionDefinitionAdmitsTarget(definition, target)
+}
+
+func motionDefinitionAdmitsTarget(definition *motion.MotionDefinition, target string) bool {
+	if definition == nil {
+		return false
+	}
 	switch target {
 	case "important_phrase":
-		if definition.Targets != nil {
-			return containsString(definition.Targets, "text") || containsString(definition.Targets, "phrase")
+		if containsString(definition.Targets, "metric") || containsString(definition.Targets, "date") || containsString(definition.Targets, "entity") {
+			return false
 		}
-		return legacyPhraseMotion(id)
+		return containsString(definition.Targets, "text") || containsString(definition.Targets, "phrase") ||
+			containsString(definition.Targets, "short_phrase") || containsString(definition.Targets, "caption")
+	case "text":
+		if containsString(definition.Targets, "metric") || containsString(definition.Targets, "date") {
+			return false
+		}
+		return containsString(definition.Targets, "text") || containsString(definition.Targets, "phrase") ||
+			containsString(definition.Targets, "short_phrase") || containsString(definition.Targets, "caption") ||
+			containsString(definition.Targets, "entity")
 	case "caption":
-		if definition.Targets != nil {
-			return containsString(definition.Targets, "text") || containsString(definition.Targets, "phrase") || containsString(definition.Targets, "entity")
+		if containsString(definition.Targets, "caption") {
+			return true
 		}
-		return len(definition.TextAnimators) > 0 || definition.Category == "entity_caption_v1" || definition.Category == "trump_entity_text_v1"
+		if containsString(definition.Targets, "metric") || containsString(definition.Targets, "date") {
+			return false
+		}
+		return containsString(definition.Targets, "text") || containsString(definition.Targets, "phrase") || containsString(definition.Targets, "entity")
 	case "image":
-		if definition.Targets != nil {
-			return containsString(definition.Targets, "image")
-		}
-		return definition.Category == "overlay_v3_image"
+		return containsString(definition.Targets, "image")
+	case "metric":
+		return containsString(definition.Targets, "metric")
+	case "date":
+		return containsString(definition.Targets, "date")
+	case "short_phrase":
+		return containsString(definition.Targets, "short_phrase")
 	case "map_view":
-		return centeredMapMotion(definition)
+		return centeredMapMotion(*definition)
 	default:
 		return false
 	}
 }
 
-func legacyPhraseMotion(id string) bool {
-	for _, family := range []string{"phrase", "typewriter", "typewriter_modern_v1", "short_phrase_style", "classic_apple", "modern_apple", "text_3d_v1", "3d", "trump_entity_text_v1"} {
-		for _, candidate := range motion.Registry.FamilyMotionIDs(family) {
-			if candidate == id {
-				return true
-			}
-		}
+func semanticTextMotionTarget(item semanticItem, kind ItemKind) string {
+	if target := templateSpecFor(item.Template).MotionTarget; target != "" {
+		return target
 	}
-	return false
+	switch kind {
+	case KindImportantPhrase:
+		return "important_phrase"
+	case KindMetricStat:
+		return "metric"
+	case KindTimelineDate:
+		return "date"
+	}
+	return "text"
 }
 
 func centeredMapMotion(definition motion.MotionDefinition) bool {
-	// Map-specific applicability has not yet been declared in ChrononTemplate.
-	// Until it is, preserve only the established map_image_v1 catalog as a
-	// legacy fallback; do not infer map support for arbitrary image motions.
-	if definition.Targets != nil {
-		if !containsString(definition.Targets, "image") || definition.Category != "map_image_v1" && definition.Category != "image_25d_clean_v1" && definition.Category != "overlay_v3_image" {
-			return false
-		}
-	} else if definition.Category != "overlay_v3_image" {
-		return false
-	}
-	// This track check is a geospatial invariant, not a second family allowlist:
-	// it prevents an authored map motion from detaching the raster from its pins.
-	if len(definition.Tracks) == 0 {
+	// Map applicability comes from the canonical catalog. This track restriction
+	// prevents pins and labels from drifting relative to the raster.
+	if !containsString(definition.Targets, "map_view") || len(definition.Tracks) == 0 {
 		return false
 	}
 	for _, track := range definition.Tracks {

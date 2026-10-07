@@ -77,20 +77,28 @@ righe) più “Altri elementi”. Lo scenario concatenato già presente, invece,
 e metriche sono separate nello scenario per provare le due famiglie, pur
 appartenendo alla macro-sezione editoriale “Numeri, metriche e date”.
 
+Nei piani nuovi, `composition_id` può identificare una delle dieci
+composizioni immagine del catalogo runtime. RenderingGen verifica il numero
+esatto di immagini e, nelle varianti “con testo”, richiede da una a N caption.
+Il campo è opzionale: i piani esistenti senza `composition_id` restano validi.
+Su un composito, la caption va dichiarata sul relativo `image_layers[]`; il
+campo item-level `entity_caption` resta per l’immagine singola.
+
 **Fotografia runtime verificata:** c’è **1 renderer** (Chronon3D); il worker
 RenderingGen compila il piano semantico, non è un secondo renderer. Il registry
 contiene **20 `ItemKind`**, **29 template**, **10 preset ufficiali** (2 testo +
 8 immagini) e **6 comportamenti di compilazione** (testo, entità, immagine,
 video, shape, mappa). Sono conteggi di livelli diversi: kind/template/preset non
-sono sinonimi di “sezione”. Il registry motion contiene **388 ID**: 374 dal
-catalogo ChrononTemplate incorporato e 14 stili brevi registrati dal catalogo
-short-phrase.
+sono sinonimi di “sezione”. Il registry motion contiene **397 ID**: 374 dal
+catalogo ChrononTemplate incorporato e 23 stili brevi selezionabili dal catalogo
+Short Phrases. Il catalogo C++ contiene 47 ricette; due dichiarano `targets: null`
+perché usano `rotation` negli animator, non ancora abbassabile dal renderer.
 
 Le famiglie si sovrappongono per progetto: non sommare i numeri come se fossero
 animazioni uniche. Le famiglie principali esposte dall’API sono **11**: `phrase`
-146, `short_phrase_style` 14, `typewriter` 10, `typewriter_modern_v1` 15,
+146, `short_phrase_style` 23, `typewriter` 10, `typewriter_modern_v1` 15,
 `classic_apple` 42, `modern_apple` 61, `brush_v1` 23, `text_3d_v1` 10,
-`trump_entity_text_v1` 15, `web` 14 e `3d` 73. Inventari dedicati e
+`trump_entity_text_v1` 15, `web` 14 e `3d` 74. Inventari dedicati e
 potenzialmente sovrapposti: immagini **52** (10 Overlay V3 + 8 2.5D + 14
 Editorial Image V1 + 20 Premium), mappe **10**, didascalie entità generiche **6**,
 metriche/date/entità **20/20/10**. Per pianificare le prime sezioni editoriali,
@@ -109,6 +117,11 @@ ChrononTemplate/tools/emit_catalog.cpp           validation + the C++-owned list
                  │  chronontemplate_emit_catalog
                  ▼
 renderinggen/internal/motion/catalog/chronontemplate_catalog.v1.json   ← embedded
+
+ChrononTemplate/tools/short_phrases/emit_short_phrase_catalog.cpp
+                 │  chronontemplate_emit_short_phrase_catalog
+                 ▼
+renderinggen/internal/motion/catalog/short_phrase_motion.v1.json       ← embedded
 ```
 
 The embedded artifact is the only source the worker reads: `internal/motion`
@@ -138,9 +151,9 @@ The separate `image_premium_v1` family adds 20 `image_recipe` motions without
 expanding that legacy matrix. They lower to Chronon render-plan v3 primitives
 (shape components, built-in effects and effect-parameter tracks, animated path
 trim, gradient fills, path masks, 2.5D transforms, captions, and active/inactive
-selection for image stacks). This is still the regular Chronon3D renderer; there
-is no premium-specific renderer. `overlay.ImageMotionInventory()` reports the
-live catalog groups: the image total is 52 (18 legacy + 14 Editorial Image V1
+selection for legacy multi-layer compositions). This is still the regular Chronon3D renderer; there
+is no premium-specific renderer. The compiled runtime animation catalog reports
+the live groups: the image total is 52 (18 legacy + 14 Editorial Image V1
 + 20 premium). Use `ImagePremiumV1MotionIDs()` for only the 20 premium ids, or
 `ImageOverlayMotionIDs()` when a caller specifically needs the unchanged
 legacy 18. The premium ids are `image_glow_depth_in`, `image_border_draw_in`,
@@ -153,10 +166,9 @@ legacy 18. The premium ids are `image_glow_depth_in`, `image_border_draw_in`,
 
 ChrononTemplate also owns the declarative presentation catalog: `metric_v1`
 (20 presets), `date_v1` (20), and `entity_card_v1` (10). RenderingGen exposes
-these catalog-derived choices to in-process selectors through
-`overlay.PresentationMotionInventory()` and
-`motion.Registry.PresentationMotionIDs(familyID)`; it does not maintain a
-second list. The canonical template IDs `metric_stat_card` and
+these catalog-derived choices through
+`motion.Registry.PresentationMotionIDs(familyID)` directly; RenderingGen does
+not maintain a presentation inventory wrapper. The canonical template IDs `metric_stat_card` and
 `timeline_date_card` are registered as text-layer templates. Select one by
 setting `motion_id` on the semantic overlay item; keep `preset_id` for the
 independent text appearance. For example:
@@ -193,7 +205,7 @@ certification.
 The checked runtime snapshot in `renderinggen/motion-certification/latest/`
 contains 108 phrase render logs and 20 software image logs; this is historical
 certification evidence, **not** a count of all motions currently registered
-(388 total, including 146 in the current `phrase` family). Do not infer GPU
+(397 total, including 146 in the current `phrase` family). Do not infer GPU
 certification for newly registered IDs from those older logs. Set
 `RENDERINGGEN_GPU_CERT_FAMILY=phrase` or `image` to run the current selected
 inventory; set `RENDERINGGEN_GPU_CERT_MOTION=<id>` to isolate a single motion.
@@ -211,9 +223,10 @@ unsupported native draw retries the same plan in software and records
 `chronon_software_fallback=1`. Explicit strict-native mode continues to fail
 closed and preserves the error in the job log.
 
-Catalog ownership and sync direction remain ChrononTemplate JSON -> its catalog
-emitter -> RenderingGen embedded artifact. Run `scripts/sync_motion_catalog.sh`
-after changing the canonical catalog; never edit the generated embedded catalog
+Catalog ownership and sync direction remain ChrononTemplate sources -> their
+catalog emitters -> RenderingGen embedded artifacts. Run
+`scripts/sync_motion_catalog.sh` after changing either canonical motion source;
+its `--check` mode verifies both copies. Never edit generated embedded catalogs
 by hand.
 
 Text item `params` (or the item-level `style` override) may additionally set
@@ -226,11 +239,11 @@ All font assets must be declared and materialized by the job; the batch
 builder includes the three bundled families. A local `style` value takes
 precedence over the same key in `params`, and both override the preset defaults.
 
-Refresh the embedded artifact after a ChrononTemplate catalog change:
+Refresh both embedded artifacts after a ChrononTemplate motion catalog change:
 
 ```sh
-scripts/sync_motion_catalog.sh --check   # fail if the embedded copy is stale
-scripts/sync_motion_catalog.sh           # rebuild it from ChrononTemplate
+scripts/sync_motion_catalog.sh --check   # fail if either embedded copy is stale
+scripts/sync_motion_catalog.sh           # rebuild both from ChrononTemplate
 ```
 
 The RenderingGen text-preset contract is now only `phrase_default` plus

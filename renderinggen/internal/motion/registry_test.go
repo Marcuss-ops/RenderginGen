@@ -29,36 +29,24 @@ var (
 	}
 )
 
-func TestMotionFamiliesKeepStylesIndependentAndComplete(t *testing.T) {
-	want := []string{"phrase", "short_phrase_style", "typewriter", "typewriter_modern_v1", "classic_apple", "modern_apple", "brush_v1", "text_3d_v1", "trump_entity_text_v1", "web", "3d"}
-	got := Registry.MotionFamilies()
-	if len(got) != len(want) {
-		t.Fatalf("motion families = %v, want %v", got, want)
+func TestCatalogCategoriesKeepMotionsIndependentAndComplete(t *testing.T) {
+	// This registry exposes authored categories directly. Semantic groupings
+	// such as modern_apple belong to the runtime catalog, not a second alias map.
+	categoryCounts := map[string]int{
+		"typewriter": 10, "typewriter_modern_v1": 15, "apple_v2": 42,
+		"apple_v3": 16, "phrase_apple_clean_v1": 30, "apple_phrase_v1": 15,
+		"brush_v1": 23, "text_3d_v1": 10, "trump_entity_text_v1": 15, "web": 14,
 	}
-	for i, family := range want {
-		if got[i] != family {
-			t.Fatalf("motion family[%d] = %q, want %q", i, got[i], family)
+	for category, count := range categoryCounts {
+		if ids := Registry.CategoryMotionIDs(category); len(ids) != count {
+			t.Errorf("%s category has %d motions, want %d", category, len(ids), count)
 		}
 	}
-	// Editorial Visual Motion V1 grows the certified web vocabulary to 14.
-	for family, count := range map[string]int{"short_phrase_style": 14, "typewriter": 10, "typewriter_modern_v1": 15, "classic_apple": 42, "modern_apple": 61, "brush_v1": 23, "text_3d_v1": 10, "trump_entity_text_v1": 15, "web": 14} {
-		if ids := Registry.FamilyMotionIDs(family); len(ids) != count {
-			t.Errorf("%s family has %d motions, want %d", family, len(ids), count)
-		}
+	if ids := Registry.ShortPhraseStyleIDs(); len(ids) != 23 {
+		t.Errorf("short phrase catalog has %d motions, want 23", len(ids))
 	}
-	threeD := Registry.FamilyMotionIDs("3d")
-	if len(threeD) != 73 {
-		t.Fatalf("3D family has %d motions, want 73 catalog-backed camera motions", len(threeD))
-	}
-	for _, id := range threeD {
-		plugin, err := Registry.Resolve(id)
-		if err != nil {
-			t.Fatalf("resolve 3D family motion %q: %v", id, err)
-		}
-		definition := plugin.(DeclarativePlugin).Definition
-		if !motionHas3D(definition) {
-			t.Errorf("3D family motion %q has no camera-backed 3D property", id)
-		}
+	if ids := Registry.PhraseAnimationIDs(); len(ids) != 146 {
+		t.Errorf("phrase planning pool has %d motions, want 146", len(ids))
 	}
 	for _, property := range []string{"rotation_z", "scale_z"} {
 		if motionHas3D(MotionDefinition{Tracks: []TrackDefinition{{Property: property}}}) {
@@ -69,10 +57,10 @@ func TestMotionFamiliesKeepStylesIndependentAndComplete(t *testing.T) {
 	if len(imageIDs) != 18 {
 		t.Fatalf("image motion inventory has %d entries, want 18: %v", len(imageIDs), imageIDs)
 	}
-	for _, family := range want {
-		for _, id := range Registry.FamilyMotionIDs(family) {
+	for category := range categoryCounts {
+		for _, id := range Registry.CategoryMotionIDs(category) {
 			if _, err := Registry.Resolve(id); err != nil {
-				t.Errorf("%s motion %q does not resolve: %v", family, id, err)
+				t.Errorf("%s motion %q does not resolve: %v", category, id, err)
 			}
 		}
 	}
@@ -87,7 +75,7 @@ func TestWebFamilyHasTwelveRenderSafeDistinctCatalogMotions(t *testing.T) {
 	for _, definition := range catalog.Motions {
 		definitions[definition.ID] = definition
 	}
-	ids := Registry.FamilyMotionIDs("web")
+	ids := Registry.CategoryMotionIDs("web")
 	// Editorial Visual Motion V1 grows the certified web vocabulary to 14.
 	if len(ids) != 14 {
 		t.Fatalf("web motion count = %d, want 14: %v", len(ids), ids)
@@ -123,7 +111,7 @@ func TestWebFamilyHasTwelveRenderSafeDistinctCatalogMotions(t *testing.T) {
 }
 
 func TestImage3DFamilyHasEightCameraBackedMotionsWithRestingFinalPose(t *testing.T) {
-	ids := Registry.Image25DCleanV1MotionIDs()
+	ids := Registry.CategoryMotionIDs("image_25d_clean_v1")
 	if len(ids) != 8 {
 		t.Fatalf("image 3D family has %d motions, want 8: %v", len(ids), ids)
 	}
@@ -190,7 +178,7 @@ func TestApplePhrasePackIsInTheCanonicalPoolAndHasNoPerGlyphBlur(t *testing.T) {
 		"apple_compress_in", "apple_scale_push", "apple_scale_settle", "apple_word_pulse",
 		"apple_vertical_glyph_lift", "apple_line_sweep", "apple_hero_statement", "apple_cinematic_exit",
 	}
-	got := Registry.ApplePhrasePackMotionIDs()
+	got := Registry.CategoryMotionIDs("apple_phrase_v1")
 	if len(got) != len(want) {
 		t.Fatalf("Apple phrase pack has %d motions, want %d: %v", len(got), len(want), got)
 	}
@@ -411,7 +399,7 @@ func TestAppleV2MotionsAreComplete(t *testing.T) {
 	// never reaches the registry (a missing familyMotions() entry in the init)
 	// fails here instead of silently shrinking the published catalog.
 	// 16 classic apple_v2 motions + 26 modern v3 phrase motions.
-	ids := Registry.AppleV2MotionIDs()
+	ids := Registry.CategoryMotionIDs("apple_v2")
 	if len(ids) != 42 {
 		t.Fatalf("Apple V2 motion count = %d, want 42", len(ids))
 	}
@@ -446,7 +434,7 @@ func TestAppleV2MotionsAreComplete(t *testing.T) {
 }
 
 func TestAppleV3OverlayTextPackIs16ModernAnd2Point5DReady(t *testing.T) {
-	ids := Registry.AppleV3MotionIDs()
+	ids := Registry.CategoryMotionIDs("apple_v3")
 	if len(ids) != 16 {
 		t.Fatalf("Apple V3 motion count = %d, want 16: %v", len(ids), ids)
 	}
@@ -476,7 +464,7 @@ func TestAppleV3OverlayTextPackIs16ModernAnd2Point5DReady(t *testing.T) {
 }
 
 func TestImageV3OverlayPackIs10ModernAndLayerRenderable(t *testing.T) {
-	ids := Registry.ImageV3MotionIDs()
+	ids := Registry.CategoryMotionIDs("overlay_v3_image")
 	if len(ids) != 10 {
 		t.Fatalf("Overlay V3 image motion count = %d, want 10: %v", len(ids), ids)
 	}

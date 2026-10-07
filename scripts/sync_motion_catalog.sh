@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Regenerate (or verify) the ChrononTemplate catalog embedded by the worker.
+# Regenerate (or verify) both ChrononTemplate motion catalogs embedded by the worker.
 #
 # ChrononTemplate owns the motion/preset vocabulary; RenderingGen embeds the
 # artifact it emits, so the two repositories cannot drift silently:
@@ -10,6 +10,10 @@
 #                    │  chronontemplate_emit_catalog
 #                    ▼
 #   renderinggen/internal/motion/catalog/chronontemplate_catalog.v1.json   ← embedded
+#   ChrononTemplate/tools/short_phrases/emit_short_phrase_catalog.cpp
+#                    │  chronontemplate_emit_short_phrase_catalog
+#                    ▼
+#   renderinggen/internal/motion/catalog/short_phrase_motion.v1.json       ← embedded
 #
 # Usage:
 #   scripts/sync_motion_catalog.sh            regenerate the embedded artifact
@@ -17,7 +21,7 @@
 #
 # Environment:
 #   CHRONONTEMPLATE_DIR        checkout of ChrononTemplate (default: ../ChrononTemplate)
-#   CHRONONTEMPLATE_BUILD_DIR  cmake build tree for the emitter
+#   CHRONONTEMPLATE_BUILD_DIR  cmake build tree for both emitters
 #                              (default: $CHRONONTEMPLATE_DIR/build/catalog)
 set -euo pipefail
 
@@ -26,6 +30,8 @@ template_dir="${CHRONONTEMPLATE_DIR:-$repo_root/../ChrononTemplate}"
 build_dir="${CHRONONTEMPLATE_BUILD_DIR:-$template_dir/build/catalog}"
 target="renderinggen/internal/motion/catalog/chronontemplate_catalog.v1.json"
 embedded="$repo_root/$target"
+short_phrase_target="renderinggen/internal/motion/catalog/short_phrase_motion.v1.json"
+short_phrase_embedded="$repo_root/$short_phrase_target"
 
 check_only=0
 case "${1:-}" in
@@ -50,11 +56,13 @@ if [[ ! -f "$build_dir/CMakeCache.txt" ]]; then
         -DCHRONONTEMPLATE_BUILD_TESTS=OFF \
         -DCHRONONTEMPLATE_BUILD_CATALOG_TOOL=ON >&2
 fi
-cmake --build "$build_dir" --target chronontemplate_emit_catalog >&2
+cmake --build "$build_dir" --target chronontemplate_emit_catalog chronontemplate_emit_short_phrase_catalog >&2
 
 emitted="$(mktemp)"
-trap 'rm -f "$emitted"' EXIT
+short_phrase_emitted="$(mktemp)"
+trap 'rm -f "$emitted" "$short_phrase_emitted"' EXIT
 "$build_dir/chronontemplate_emit_catalog" >"$emitted"
+"$build_dir/chronontemplate_emit_short_phrase_catalog" >"$short_phrase_emitted"
 
 # Compare parsed documents, not bytes: the emitter owns the format and a
 # whitespace-only difference is not drift.
@@ -71,10 +79,19 @@ if [[ "$check_only" == "1" ]]; then
         echo "sync_motion_catalog: $target is stale; run $0 to refresh it" >&2
         exit 1
     fi
-    echo "sync_motion_catalog: $target is in sync with $template_dir"
+    if [[ ! -f "$short_phrase_embedded" ]]; then
+        echo "sync_motion_catalog: $short_phrase_target is missing; run $0" >&2
+        exit 1
+    fi
+    if ! diff -u <(normalize "$short_phrase_embedded") <(normalize "$short_phrase_emitted") >&2; then
+        echo "sync_motion_catalog: $short_phrase_target is stale; run $0 to refresh it" >&2
+        exit 1
+    fi
+    echo "sync_motion_catalog: both embedded motion catalogs are in sync with $template_dir"
     exit 0
 fi
 
 mkdir -p "$(dirname "$embedded")"
 cp "$emitted" "$embedded"
-echo "sync_motion_catalog: wrote $target"
+cp "$short_phrase_emitted" "$short_phrase_embedded"
+echo "sync_motion_catalog: wrote $target and $short_phrase_target"

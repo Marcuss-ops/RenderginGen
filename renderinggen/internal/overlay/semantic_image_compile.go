@@ -5,23 +5,35 @@ import (
 	"image"
 	"os"
 	"strings"
+
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/motion"
 )
 
 // compileImageItem lowers one semantic image item. With no image_layers it uses
 // the single-image path (one asset, item-level motion_id/motion_params); with
 // image_layers it compiles each child independently (its own asset, time,
-// preset, motion_id and motion_params). Stack recipes are a third, explicit
-// multi-image mode selected by their catalog definition.
-func validateSemanticImageLayers(item semanticItem) error {
+// preset, motion_id and motion_params). Multi-image recipes are a separate
+// catalog-defined mode that coordinates the image layers as one motion.
+// validateSemanticImageLayers uses the kind already resolved for this item so
+// composition checks cannot reinterpret its template independently.
+func validateSemanticImageLayers(item semanticItem, kind ItemKind) error {
 	if len(item.ImageLayers) == 0 {
-		return nil
-	}
-	kind := ItemKind(strings.ToLower(strings.TrimSpace(item.Kind)))
-	if kind == "" {
-		kind = templateSpecFor(item.Template).Kind
+		if len(item.Assets) > 1 {
+			switch behaviorOf(kind) {
+			case behaviorImage:
+				return fmt.Errorf("overlay: image item %q has %d asset_refs but no image_layers; declare one image_layers entry per image", item.ID, len(item.Assets))
+			case behaviorEntity:
+				return fmt.Errorf("overlay: entity item %q has %d asset_refs; entity cards support one portrait asset, use separate image items for a composition", item.ID, len(item.Assets))
+			}
+		}
+		return validateImageComposition(item, kind)
 	}
 	if behaviorOf(kind) != behaviorImage || len(item.ImageLayers) < 2 || len(item.Assets) < 2 {
 		return fmt.Errorf("overlay: item %q image_layers require an image item with at least two layers and assets", item.ID)
+	}
+	maximumImages := maxImageCompositionCount()
+	if len(item.ImageLayers) > maximumImages {
+		return fmt.Errorf("overlay: item %q has %d image layers; image compositions support at most %d images", item.ID, len(item.ImageLayers), maximumImages)
 	}
 	assets := make(map[string]struct{}, len(item.Assets))
 	for _, ref := range item.Assets {
@@ -47,36 +59,89 @@ func validateSemanticImageLayers(item semanticItem) error {
 			return fmt.Errorf("overlay: item %q image layer %q requires preset_id", item.ID, layer.ID)
 		}
 	}
+	if strings.TrimSpace(item.EntityCaption) != "" {
+		return fmt.Errorf("overlay: item %q uses image_layers; put captions on the owning image layer, not entity_caption", item.ID)
+	}
+	return validateImageComposition(item, kind)
+}
+
+func validateImageComposition(item semanticItem, kind ItemKind) error {
+	if item.CompositionID == "" {
+		return nil
+	}
+	composition := imageCompositionFor(item.CompositionID)
+	if composition == nil {
+		return fmt.Errorf("overlay: item %q has unsupported image composition_id %q", item.ID, item.CompositionID)
+	}
+	if behaviorOf(kind) != behaviorImage {
+		return fmt.Errorf("overlay: item %q composition_id %q requires an image item", item.ID, item.CompositionID)
+	}
+	imageCount := len(item.Assets)
+	if len(item.ImageLayers) > 0 {
+		imageCount = len(item.ImageLayers)
+	}
+	if imageCount != composition.ImageCount {
+		return fmt.Errorf("overlay: item %q composition_id %q requires %d images, got %d", item.ID, item.CompositionID, composition.ImageCount, imageCount)
+	}
+	captionCount := 0
+	if len(item.ImageLayers) == 0 {
+		if strings.TrimSpace(item.EntityCaption) != "" {
+			captionCount = 1
+		}
+	} else {
+		for _, layer := range item.ImageLayers {
+			if strings.TrimSpace(layer.Caption) != "" {
+				captionCount++
+			}
+		}
+	}
+	if composition.Caption == nil {
+		if captionCount != 0 {
+			return fmt.Errorf("overlay: item %q composition_id %q does not allow captions", item.ID, item.CompositionID)
+		}
+		return nil
+	}
+	if captionCount < composition.Caption.Minimum || captionCount > composition.Caption.Maximum {
+		return fmt.Errorf("overlay: item %q composition_id %q requires between %d and %d captions, got %d", item.ID, item.CompositionID, composition.Caption.Minimum, composition.Caption.Maximum, captionCount)
+	}
 	return nil
 }
 func compileImageItem(ri resolvedItem, src *semanticPlan, registry *assetRegistry) ([]Layer, error) {
 	// Item-level controls apply only to the standalone image or to a catalog
-	// recipe that coordinates a stack. Ordinary composite children own their
+	// recipe that coordinates multiple image layers. Ordinary composite children own their
 	// independent motion_params and are validated in compileSingleImageLayer.
 	if len(ri.Item.ImageLayers) > 0 {
 		if _, _, err := motionWindows(ri.Item.MotionParams, ri.Preset.Motion.Exit); err != nil {
 			return nil, err
 		}
 	}
-	premium, err := premiumImageDefinition(ri.Item.MotionID)
+	resolvedImageMotion, err := resolveRegisteredMotion(ri.Item.MotionID)
 	if err != nil {
 		return nil, fmt.Errorf("overlay: image motion %q: %w", ri.Item.MotionID, err)
 	}
-	visualAccents, err := visualAccentsDefinition(ri.Item.MotionID)
-	if err != nil {
-		return nil, fmt.Errorf("overlay: visual accents motion %q: %w", ri.Item.MotionID, err)
+	var imageRecipe *motion.MotionDefinition
+	if resolvedImageMotion != nil {
+		imageRecipe = resolvedImageMotion.definition
 	}
-	if visualAccents != nil && visualAccents.ImageRecipe != nil && visualAccents.ImageRecipe.Stack {
+	if imageRecipe == nil || imageRecipe.ImageRecipe == nil {
+		imageRecipe = nil
+	}
+	premium := premiumImageRecipeDefinition(imageRecipe)
+	if isMultiImageRecipe(imageRecipe) && premium == nil {
+		return nil, fmt.Errorf("overlay: multi-image motion %q in category %q has no recipe lowering", ri.Item.MotionID, imageRecipe.Category)
+	}
+	visualAccents := visualAccentsRecipeDefinition(imageRecipe)
+	if isMultiImageRecipe(visualAccents) {
 		return nil, fmt.Errorf("overlay: motion %q requires multiple image_layers", visualAccents.ID)
 	}
 	if len(ri.Item.ImageLayers) == 0 {
 		if len(ri.Item.Assets) == 0 {
 			return nil, fmt.Errorf("overlay: image template %q item %q requires asset_refs", ri.Item.Template, ri.Item.ID)
 		}
-		if premium != nil && premium.ImageRecipe.Stack {
+		if isMultiImageRecipe(premium) {
 			return nil, fmt.Errorf("overlay: motion %q requires at least two image_layers and motion_params.active_layer_id", premium.ID)
 		}
-		layer, err := compileSingleImageLayer(ri, src, registry.Path(ri.Item.Assets[0].ID), ri.Preset, ri.Item.MotionID, ri.Item.MotionParams, ri.Start, ri.End, ri.Item.ID)
+		layer, err := compileSingleImageLayerResolved(ri, src, registry.Path(ri.Item.Assets[0].ID), ri.Preset, ri.Item.MotionID, ri.Item.MotionParams, ri.Start, ri.End, ri.Item.ID, resolvedImageMotion)
 		if err != nil {
 			return nil, err
 		}
@@ -107,8 +172,11 @@ func compileImageItem(ri resolvedItem, src *semanticPlan, registry *assetRegistr
 		}
 		return layers, nil
 	}
-	if premium != nil && premium.ImageRecipe.Stack {
-		return compilePremiumImageStack(ri, src, registry, premium)
+	if isMultiImageRecipe(premium) {
+		if !motionDefinitionAdmitsTarget(premium, "image") {
+			return nil, fmt.Errorf("overlay: item %q motion %q is not supported for target %q", ri.Item.ID, ri.Item.MotionID, "image")
+		}
+		return compilePremiumMultiImageRecipe(ri, src, registry, premium)
 	}
 	if premium != nil && premium.ImageRecipe.RequireCaption {
 		for _, child := range ri.Item.ImageLayers {
@@ -178,6 +246,46 @@ func compileImageItem(ri resolvedItem, src *semanticPlan, registry *assetRegistr
 	}
 	return layers, nil
 }
+
+// ValidateEntityCaptionCollisions rejects caption boxes that overlap in both
+// canvas space and time. Call after entity-image geometry has been fitted to
+// the materialized source assets; pre-materialization boxes can be provisional.
+func ValidateEntityCaptionCollisions(layers []Layer) error {
+	type captionBounds struct {
+		id, imageID              string
+		left, top, right, bottom float64
+		start, end               int64
+	}
+	var captions []captionBounds
+	for _, layer := range layers {
+		if layer.EntityCaptionForImageID == "" {
+			continue
+		}
+		if len(layer.Position) < 2 || len(layer.Size) < 2 || layer.Size[0] <= 0 || layer.Size[1] <= 0 || layer.StartFrame < 0 || layer.DurationFrames <= 0 {
+			return fmt.Errorf("overlay: caption %q for image %q has invalid collision bounds or frame window", layer.ID, layer.EntityCaptionForImageID)
+		}
+		captions = append(captions, captionBounds{
+			id: layer.ID, imageID: layer.EntityCaptionForImageID,
+			left: layer.Position[0] - layer.Size[0]/2, top: layer.Position[1] - layer.Size[1]/2,
+			right: layer.Position[0] + layer.Size[0]/2, bottom: layer.Position[1] + layer.Size[1]/2,
+			start: layer.StartFrame, end: layer.StartFrame + layer.DurationFrames,
+		})
+	}
+	for i := 0; i < len(captions); i++ {
+		for j := i + 1; j < len(captions); j++ {
+			a, b := captions[i], captions[j]
+			// Layers use half-open frame windows [start,end), matching the
+			// semantic timing contract: captions that never appear together
+			// cannot visually collide even when they reuse the same layout.
+			if a.start < b.end && b.start < a.end && a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top {
+				return fmt.Errorf("overlay: captions %q (image %q) and %q (image %q) overlap in a shared frame window; adjust caption_layout or image positions",
+					a.id, a.imageID, b.id, b.imageID)
+			}
+		}
+	}
+	return nil
+}
+
 func compileEntityCaptionLayer(parent resolvedItem, src *semanticPlan, child semanticItem, caption string, image *Layer, childID string) (Layer, error) {
 	if len(image.Size) < 2 || image.Size[0] <= 0 || image.Size[1] <= 0 {
 		return Layer{}, fmt.Errorf("overlay: item %q image caption has no positive image geometry", parent.Item.ID)
@@ -297,12 +405,24 @@ func compileEntityCaptionLayer(parent resolvedItem, src *semanticPlan, child sem
 // compileSingleImageLayer is shared by standalone images and composite
 // children; callers pass the correct animation controls for that semantic unit.
 func compileSingleImageLayer(ri resolvedItem, src *semanticPlan, assetPath string, preset PresetDefinition, motionID string, motionParams map[string]any, start, end int64, layerID string) (Layer, error) {
+	var resolved *resolvedMotion
+	var err error
+	if motionID != "" {
+		resolved, err = resolveRegisteredMotion(motionID)
+		if err != nil {
+			return Layer{}, err
+		}
+	}
+	return compileSingleImageLayerResolved(ri, src, assetPath, preset, motionID, motionParams, start, end, layerID, resolved)
+}
+
+func compileSingleImageLayerResolved(ri resolvedItem, src *semanticPlan, assetPath string, preset PresetDefinition, motionID string, motionParams map[string]any, start, end int64, layerID string, resolved *resolvedMotion) (Layer, error) {
 	layer := imageLayer(ri, assetPath)
 	layer.ID = imageLayerID(layerID)
 	layer.StartFrame, layer.DurationFrames = start, end-start
 	applyPresetDefinition(&layer, preset)
 	if motionID != "" {
-		animation, err := imageMotionAnimation(motionID, motionParams, end-start, preset.Motion.Exit)
+		animation, err := imageMotionAnimationResolved(motionID, motionParams, end-start, preset.Motion.Exit, layerID, "image", resolved)
 		if err != nil {
 			return Layer{}, err
 		}

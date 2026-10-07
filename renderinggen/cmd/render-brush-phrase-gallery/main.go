@@ -46,7 +46,7 @@ func main() {
 	check(os.MkdirAll(outDir, 0o755))
 
 	var entries []galleryEntry
-	for _, id := range motion.Registry.VisualAccentsV1MotionIDs("brush_v1") {
+	for _, id := range motion.Registry.CategoryMotionIDs("brush_v1") {
 		if !strings.HasPrefix(id, "brush_phrase_") {
 			continue
 		}

@@ -109,6 +109,206 @@ func TestMapMotionMustResolveAndKeepBasemapCentered(t *testing.T) {
 	}
 }
 
+func TestMapCanCompileWithoutOptionalLayerMotion(t *testing.T) {
+	plan := cameraMapPlan()
+	item := plan["items"].([]any)[0].(map[string]any)
+	mapSpec := item["map"].(map[string]any)
+	delete(mapSpec, "motion_id")
+	result, err := compileMapTestPlan(t, plan)
+	if err != nil {
+		t.Fatalf("camera_move map should not require a separate layer motion: %v", err)
+	}
+	if result.Plan.CameraAnimation == nil || result.Plan.Layers[0].Animation != nil {
+		t.Fatal("camera_move should own fly-to while the map plate stays free of a layer animation")
+	}
+
+	plan = georeferencedMapPlan(0, 0)
+	item = plan["items"].([]any)[0].(map[string]any)
+	mapSpec = item["map"].(map[string]any)
+	delete(mapSpec, "motion_id")
+	result, err = compileMapTestPlan(t, plan)
+	if err != nil {
+		t.Fatalf("static map without an optional motion should compile: %v", err)
+	}
+	if result.Plan.Layers[0].Animation != nil {
+		t.Fatal("static map without motion_id unexpectedly received an animation")
+	}
+}
+
+func TestMapCompositionIDValidatesPlanMapCount(t *testing.T) {
+	plan := georeferencedMapPlan(0, 0)
+	plan["map_composition_id"] = "two_maps"
+	if _, err := compileMapTestPlan(t, plan); err == nil || !strings.Contains(err.Error(), `requires 2 map items, got 1`) {
+		t.Fatalf("one map cannot satisfy two_maps, got %v", err)
+	}
+
+	first := plan["items"].([]any)[0].(map[string]any)
+	encoded, err := json.Marshal(first)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var second map[string]any
+	if err := json.Unmarshal(encoded, &second); err != nil {
+		t.Fatal(err)
+	}
+	second["id"] = "map-two"
+	secondAsset := second["asset_refs"].([]any)[0].(map[string]any)
+	secondAsset["asset_id"] = "basemap-two"
+	secondAsset["url"] = "assets/maps/plate-two.png"
+	plan["items"] = append(plan["items"].([]any), second)
+	if _, err := compileMapTestPlan(t, plan); err != nil {
+		t.Fatalf("two map items should satisfy two_maps: %v", err)
+	}
+
+	delete(plan, "map_composition_id")
+	if _, err := compileMapTestPlan(t, plan); err != nil {
+		t.Fatalf("legacy plans without map_composition_id should remain valid: %v", err)
+	}
+
+	plan["map_composition_id"] = "unsupported_map_group"
+	if _, err := compileMapTestPlan(t, plan); err == nil || !strings.Contains(err.Error(), "unsupported map_composition_id") {
+		t.Fatalf("unknown map composition should fail clearly, got %v", err)
+	}
+}
+
+func TestFeatureFlyToLowersByNaturalEarthNameUsingOfflineLODs(t *testing.T) {
+	plan := cameraMapPlan()
+	item := plan["items"].([]any)[0].(map[string]any)
+	mapSpec := item["map"].(map[string]any)
+	mapSpec["center"] = map[string]any{"latitude": 51.0, "longitude": -5.0}
+	mapSpec["width"], mapSpec["height"] = 4096, 4096
+	mapSpec["lods"].([]any)[0].(map[string]any)["center"] = mapSpec["center"]
+	mapSpec["zoom"] = 4
+	lods := mapSpec["lods"].([]any)
+	lods[0].(map[string]any)["zoom"] = 4
+	lods[0].(map[string]any)["width"], lods[0].(map[string]any)["height"] = 4096, 4096
+	// The offline LOD range must be able to satisfy the feature fly-to: the
+	// resolver requires finalLODZoom > startZoom and finalLODZoom at or below
+	// the zoom at which the feature still fits, so a second level is required.
+	lods[1].(map[string]any)["zoom"] = 5
+	lods[1].(map[string]any)["center"] = map[string]any{"latitude": 51.0, "longitude": 0.0}
+	lods[1].(map[string]any)["width"], lods[1].(map[string]any)["height"] = 4096, 4096
+	mapSpec["camera_move"] = map[string]any{"from": map[string]any{"latitude": 51.0, "longitude": -5.0}, "to": map[string]any{"latitude": 51.0, "longitude": 0.0}, "start_zoom": 4.0, "end_zoom": 4.0, "start_tilt_deg": 0.0, "end_tilt_deg": 0.0, "bearing_deg": 0.0}
+	delete(mapSpec, "motion_id")
+	mapSpec["fly_to_feature"] = map[string]any{"feature": "United Kingdom", "padding": 0.12}
+	delete(mapSpec, "camera_move")
+	result, err := compileMapTestPlan(t, plan)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Plan.Camera == nil || result.Plan.CameraAnimation == nil || len(result.Plan.CameraAnimation.Tracks) != 4 {
+		t.Fatalf("feature selector did not lower to the native camera animation: %+v", result.Plan.CameraAnimation)
+	}
+	if len(result.Plan.Layers) != 6 || result.Plan.Layers[0].Asset != "assets/maps/coarse.png" {
+		t.Fatalf("feature fly-to should retain the certified first LOD and map layers: %+v", result.Plan.Layers)
+	}
+	if result.Plan.Schema != RenderPlanSchemaV3 {
+		t.Fatalf("feature fly-to wire schema = %q, want V3", result.Plan.Schema)
+	}
+}
+
+func TestFeatureFlyToRejectsUnknownNameAndInsufficientOfflineZoom(t *testing.T) {
+	plan := cameraMapPlan()
+	item := plan["items"].([]any)[0].(map[string]any)
+	mapSpec := item["map"].(map[string]any)
+	delete(mapSpec, "motion_id")
+	mapSpec["fly_to_feature"] = map[string]any{"feature": "Unknown place", "padding": 0.12}
+	delete(mapSpec, "camera_move")
+	if _, err := compileMapTestPlan(t, plan); err == nil || !strings.Contains(err.Error(), "feature not found") {
+		t.Fatalf("unknown feature must fail closed, got %v", err)
+	}
+
+	plan = cameraMapPlan()
+	item = plan["items"].([]any)[0].(map[string]any)
+	mapSpec = item["map"].(map[string]any)
+	delete(mapSpec, "motion_id")
+	mapSpec["fly_to_feature"] = map[string]any{"feature": "United Kingdom", "padding": 0.12}
+	delete(mapSpec, "camera_move")
+	lods := mapSpec["lods"].([]any)
+	lods[1].(map[string]any)["zoom"] = 18
+	if _, err := compileMapTestPlan(t, plan); err == nil || !strings.Contains(err.Error(), "would crop its bounds") {
+		t.Fatalf("feature fit exceeding certified LOD resolution must fail, got %v", err)
+	}
+}
+
+func TestFeatureFlyToRejectsCompetingCameraDeclarations(t *testing.T) {
+	plan := cameraMapPlan()
+	item := plan["items"].([]any)[0].(map[string]any)
+	mapSpec := item["map"].(map[string]any)
+	delete(mapSpec, "motion_id")
+	mapSpec["fly_to_feature"] = map[string]any{"feature": "United Kingdom", "padding": 0.12}
+	if _, err := compileMapTestPlan(t, plan); err == nil || !strings.Contains(err.Error(), "must not combine") {
+		t.Fatalf("two competing camera declarations should be rejected, got %v", err)
+	}
+}
+
+func TestMapRoutesCompileWithDefaultAndExplicitTrimRanges(t *testing.T) {
+	for _, tc := range []struct {
+		name      string
+		trimStart any
+		trimEnd   any
+		wantStart float64
+		wantEnd   float64
+	}{
+		{name: "default full route", wantStart: 0, wantEnd: 1},
+		{name: "explicit partial route", trimStart: 0.2, trimEnd: 0.8, wantStart: 0.2, wantEnd: 0.8},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			plan := cameraMapPlan()
+			item := plan["items"].([]any)[0].(map[string]any)
+			mapSpec := item["map"].(map[string]any)
+			mapSpec["routes"] = []any{map[string]any{
+				"id": "journey", "stops": []any{
+					map[string]any{"latitude": 0.0, "longitude": 0.0},
+					map[string]any{"latitude": 0.0, "longitude": 0.2},
+				},
+				"color": "#22AAFF", "width_px": 6.0,
+			}}
+			route := mapSpec["routes"].([]any)[0].(map[string]any)
+			if tc.trimStart != nil {
+				route["trim_start"] = tc.trimStart
+				route["trim_end"] = tc.trimEnd
+			}
+
+			result, err := compileMapTestPlan(t, plan)
+			if err != nil {
+				t.Fatalf("compile route: %v", err)
+			}
+			got := result.Plan.Layers[len(result.Plan.Layers)-1]
+			if got.ID != "map:map_route:journey" || got.Shape == nil || got.Shape.Type != "path" || len(got.Shape.Path) < 2 {
+				t.Fatalf("route was not lowered as a path layer: %+v", got)
+			}
+			if len(got.Shape.Operators) != 1 || got.Shape.Operators[0].Kind != "trim" {
+				t.Fatalf("route should use one trim operator: %+v", got.Shape.Operators)
+			}
+			trim := got.Shape.Operators[0].Params
+			if trim.Start != tc.wantStart || trim.End != tc.wantStart || trim.Animation == nil || len(trim.Animation.Keyframes) != 2 {
+				t.Fatalf("initial trim state = %+v, want start/end %v and two animated keyframes", trim, tc.wantStart)
+			}
+			last, ok := trim.Animation.Keyframes[1].Value.([]float64)
+			if !ok || len(last) != 3 || last[0] != tc.wantStart || last[1] != tc.wantEnd {
+				t.Fatalf("final trim keyframe = %v, want [%v %v 0]", trim.Animation.Keyframes[1].Value, tc.wantStart, tc.wantEnd)
+			}
+		})
+	}
+}
+
+func TestMapRoutesRejectInvalidTrimRange(t *testing.T) {
+	plan := cameraMapPlan()
+	item := plan["items"].([]any)[0].(map[string]any)
+	mapSpec := item["map"].(map[string]any)
+	mapSpec["routes"] = []any{map[string]any{
+		"id": "bad-trim", "stops": []any{
+			map[string]any{"latitude": 0.0, "longitude": 0.0},
+			map[string]any{"latitude": 0.0, "longitude": 0.2},
+		},
+		"color": "#22AAFF", "width_px": 6.0, "trim_start": 0.8, "trim_end": 0.2,
+	}}
+	if _, err := compileMapTestPlan(t, plan); err == nil || !strings.Contains(err.Error(), "trim range") {
+		t.Fatalf("reversed route trim must fail closed, got %v", err)
+	}
+}
+
 func cameraMapPlan() map[string]any {
 	plan := georeferencedMapPlan(0, 0)
 	item := plan["items"].([]any)[0].(map[string]any)
@@ -191,6 +391,12 @@ func TestSceneCameraRejectsMultipleControllers(t *testing.T) {
 			"url": "assets/semantic/portrait.png", "media_type": "image/png",
 		}},
 	}
+	mapCamera := cameraMapPlan()["items"].([]any)[0].(map[string]any)
+	secondMapCamera := make(map[string]any, len(mapCamera))
+	for key, value := range mapCamera {
+		secondMapCamera[key] = value
+	}
+	secondMapCamera["id"] = "camera-map-2"
 	for _, tc := range []struct {
 		name  string
 		items []any
@@ -198,6 +404,7 @@ func TestSceneCameraRejectsMultipleControllers(t *testing.T) {
 	}{
 		{name: "map camera then entity camera", items: []any{cameraMapPlan()["items"].([]any)[0], entity}, want: "camera motion conflicts with map item"},
 		{name: "entity camera then map camera", items: []any{entity, cameraMapPlan()["items"].([]any)[0]}, want: "scene camera move conflicts with entity item"},
+		{name: "two map camera controllers", items: []any{mapCamera, secondMapCamera}, want: "only one scene camera controller"},
 		{name: "two entity camera controllers", items: []any{entity, func() map[string]any {
 			duplicate := make(map[string]any, len(entity))
 			for key, value := range entity {
@@ -222,6 +429,36 @@ func TestSceneCameraRejectsMultipleControllers(t *testing.T) {
 				t.Fatalf("camera conflict error = %v, want %q", err, tc.want)
 			}
 		})
+	}
+}
+
+func TestMapCameraAllowsEntityStyleWithoutCameraMotion(t *testing.T) {
+	entity := map[string]any{
+		"id": "badge-portrait", "entity_id": "person:ada", "kind": "entity_card",
+		"template_id": "PERSON", "preset_id": PhraseDefaultPresetID, "text": "Ada Lovelace",
+		"image_preset_id": "image_scale_in", "entity_caption": "Ada Lovelace",
+		"entity_style_id": "badge", "start_ms": 0, "end_ms": 3000, "duration_ms": 3000,
+		"asset_refs": []any{map[string]any{
+			"asset_id": "portrait", "sha256": strings.Repeat("d", 64),
+			"url": "assets/semantic/portrait.png", "media_type": "image/png",
+		}},
+	}
+	plan := map[string]any{
+		"schema_version": "renderinggen.overlay-plan.v1", "plan_id": "camera-compatible",
+		"video_id": "camera-compatible", "width": 1280, "height": 720,
+		"fps_num": 24, "fps_den": 1,
+		"items": []any{cameraMapPlan()["items"].([]any)[0], entity},
+	}
+	raw, err := json.Marshal(plan)
+	if err != nil {
+		t.Fatal(err)
+	}
+	result, err := CompileSemantic(raw)
+	if err != nil {
+		t.Fatalf("map camera with non-camera entity style should compile: %v", err)
+	}
+	if result.Plan.Camera == nil {
+		t.Fatal("map camera controller was not compiled")
 	}
 }
 

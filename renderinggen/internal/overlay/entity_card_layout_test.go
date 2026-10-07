@@ -156,11 +156,69 @@ func TestEntityCaptionMotionCompiles(t *testing.T) {
 	}
 }
 
-func TestEntityCaptionMotionAllowsEveryEntityStyle(t *testing.T) {
+func TestEntityStyleMotionsAdmitTheirTargets(t *testing.T) {
 	for _, style := range premiumEntityStyles {
+		if !motionAdmitsTarget(style.ImageMotionID, "image") {
+			t.Errorf("entity style %q image motion %q is not admitted by its canonical image target", style.ID, style.ImageMotionID)
+		}
 		if !motionAdmitsTarget(style.CaptionMotionID, "caption") {
 			t.Errorf("entity style %q caption motion %q is not admitted by its canonical text target", style.ID, style.CaptionMotionID)
 		}
+	}
+}
+
+func TestEntityStylesCompileForEveryEntityKind(t *testing.T) {
+	kinds := []struct {
+		kind     ItemKind
+		template string
+	}{
+		{KindEntityCard, "PERSON"},
+		{KindOrganization, "ORGANIZATION"},
+		{KindLocation, "LOCATION"},
+		{KindConcept, "CONCEPT"},
+	}
+	for _, tc := range kinds {
+		t.Run(string(tc.kind), func(t *testing.T) {
+			for _, style := range premiumEntityStyles {
+				t.Run(style.ID, func(t *testing.T) {
+					itemID := "entity-" + string(tc.kind) + "-" + style.ID
+					item := map[string]any{
+						"id": itemID, "entity_id": "entity:test", "kind": tc.kind, "template_id": tc.template,
+						"preset_id": "phrase_default", "text": "Test Entity", "image_preset_id": "image_scale_in",
+						"entity_caption": "Test Entity", "entity_style_id": style.ID,
+						"start_ms": 0, "end_ms": 2000, "duration_ms": 2000,
+						"asset_refs": []any{map[string]any{
+							"asset_id": "portrait", "sha256": strings.Repeat("a", 64),
+							"url": "https://store.example/portrait.png", "media_type": "image/png",
+						}},
+					}
+					planID := itemID + "-plan"
+					plan := map[string]any{
+						"schema_version": SemanticSchema, "plan_id": planID, "video_id": planID,
+						"width": 1280, "height": 720, "fps_num": 30, "fps_den": 1,
+						"items": []any{item},
+					}
+					raw, err := json.Marshal(plan)
+					if err != nil {
+						t.Fatal(err)
+					}
+					compiled, err := CompileSemantic(raw)
+					if err != nil {
+						t.Fatalf("entity style must compile: %v", err)
+					}
+					if len(compiled.Plan.Layers) < 2 {
+						t.Fatalf("compiled layers = %d, want portrait and caption", len(compiled.Plan.Layers))
+					}
+					if compiled.Plan.Layers[0].Animation == nil || len(compiled.Plan.Layers[0].Animation.Tracks) == 0 {
+						t.Error("entity image family did not lower to runtime animation tracks")
+					}
+					caption := compiled.Plan.Layers[1]
+					if caption.Animation == nil && len(caption.TextAnimators) == 0 {
+						t.Error("entity caption family did not lower to runtime animation tracks")
+					}
+				})
+			}
+		})
 	}
 }
 
