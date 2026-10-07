@@ -83,6 +83,12 @@ func fixtureRequest(t *testing.T, root string) string {
 // can expand. The expected counts are derived from the catalog selection and the
 // entity table, so a corpus that out-grows the vocabulary fails here instead of
 // in a booked render.
+func TestSchemaBatchManifestV1RemainsCanonicalBatchAlias(t *testing.T) {
+	if SchemaBatchManifestV1 != batch.SchemaBatchManifestV1 {
+		t.Fatalf("overlaybatch schema = %q, batch schema = %q", SchemaBatchManifestV1, batch.SchemaBatchManifestV1)
+	}
+}
+
 func TestBuildTysonManifestProducesTheFullCorpus(t *testing.T) {
 	root := fixtureRepo(t)
 	request := fixtureRequest(t, root)
@@ -157,13 +163,18 @@ func TestBuildTysonManifestProducesTheFullCorpus(t *testing.T) {
 	if err := json.Unmarshal(raw, &emitted); err != nil {
 		t.Fatalf("decode emitted manifest: %v", err)
 	}
+	phraseIndex := 0
 	for _, job := range emitted.Jobs {
 		if job.Family != "phrase" {
 			continue
 		}
-		if len(job.MotionPool) != len(motion.Registry.PhraseAnimationIDs()) || job.SelectionSeed == 0 {
-			t.Errorf("phrase %s missing complete auditable pool/seed (pool=%d seed=%d)", job.ID, len(job.MotionPool), job.SelectionSeed)
+		if len(job.MotionPool) != len(motion.Registry.PhraseAnimationIDs()) {
+			t.Errorf("phrase %s missing complete auditable motion pool (pool=%d)", job.ID, len(job.MotionPool))
 		}
+		if expected, err := selectBatchMotion(job.MotionPool, "fixture-batch", phraseIndex); err != nil || job.MotionID != expected {
+			t.Errorf("phrase %s motion = %q, batch/index selection = %q (err %v)", job.ID, job.MotionID, expected, err)
+		}
+		phraseIndex++
 		compiled, err := overlay.CompileSemantic(job.RenderPlan)
 		if err != nil {
 			t.Fatalf("compile selected motion %q: %v", job.MotionID, err)
@@ -183,40 +194,50 @@ func TestBuildTysonManifestProducesTheFullCorpus(t *testing.T) {
 	}
 }
 
-func TestPhraseMotionSelectionIsSeededCoverageAndFailClosed(t *testing.T) {
+func TestPhraseMotionPoolValidationAndCoverage(t *testing.T) {
 	pool := motion.PhraseMotionPool()
-	planSeed := phraseSelectionSeed("plan-1", "phrase-1")
-	if planSeed != phraseSelectionSeed("plan-1", "phrase-1") {
-		t.Fatal("same plan and item ids produced different seeds")
+	if err := validateMotionPool(pool); err != nil {
+		t.Fatalf("catalog phrase pool rejected: %v", err)
 	}
-	first, err := selectPhraseMotion(pool, planSeed)
+	if err := validateMotionPool(nil); err == nil {
+		t.Fatal("empty pool was accepted")
+	}
+	if err := validateMotionPool([]string{" "}); err == nil {
+		t.Fatal("blank motion id was accepted")
+	}
+	if err := validateMotionPool([]string{pool[0], pool[0]}); err == nil {
+		t.Fatal("duplicate motion id was accepted")
+	}
+	if err := validateMotionPool([]string{"unknown_motion"}); err == nil {
+		t.Fatal("unknown pool id was accepted")
+	}
+	if _, err := selectBatchMotion(pool, "phrase-corpus", -1); err == nil {
+		t.Fatal("negative motion index was accepted")
+	}
+	first, err := selectBatchMotion(pool, "phrase-corpus", 0)
 	if err != nil {
 		t.Fatal(err)
 	}
-	second, err := selectPhraseMotion(pool, planSeed)
-	if err != nil || second != first {
-		t.Fatalf("same seed selected %q then %q (err %v)", first, second, err)
-	}
-	covered := make(map[string]bool, len(pool))
-	for seed := uint64(0); seed < 10000; seed++ {
-		id, err := selectPhraseMotion(pool, seed)
-		if err != nil {
-			t.Fatal(err)
-		}
-		covered[id] = true
-	}
-	if len(covered) != len(pool) {
-		t.Fatalf("seed sweep reached %d/%d pool motions", len(covered), len(pool))
+	if got, err := selectBatchMotion(pool, "phrase-corpus", len(pool)); err != nil || got != first {
+		t.Fatalf("motion index did not wrap at pool length: got %q, want %q (err %v)", got, first, err)
 	}
 	corpusCoverage := make(map[string]bool, len(pool))
-	for job := 1; job <= 100; job++ {
-		planID := fmt.Sprintf("phrase-%02d", job)
-		seed := phraseSelectionSeed(planID, "important-phrase")
-		id, err := selectPhraseMotion(pool, seed)
+	for index := range pool {
+		id, err := selectBatchMotion(pool, "phrase-corpus", index)
 		if err != nil {
 			t.Fatal(err)
 		}
+		again, err := selectBatchMotion(pool, "phrase-corpus", index)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if again != id {
+			t.Fatalf("same batch and index selected %q then %q", id, again)
+		}
 		corpusCoverage[id] = true
+	}
+	if len(corpusCoverage) != len(pool) {
+		t.Fatalf("batch cycle reached %d/%d phrase pool motions", len(corpusCoverage), len(pool))
 	}
 	legacyPoolSize := 0
 	for _, id := range pool {
@@ -231,7 +252,7 @@ func TestPhraseMotionSelectionIsSeededCoverageAndFailClosed(t *testing.T) {
 		}
 	}
 	if legacyCoverage != legacyPoolSize {
-		t.Fatalf("canonical 100-item phrase corpus reaches %d/%d legacy pool motions", legacyCoverage, legacyPoolSize)
+		t.Fatalf("one batch cycle reaches %d/%d legacy pool motions", legacyCoverage, legacyPoolSize)
 	}
 	for _, id := range pool {
 		_, err := renderbatch.BuildPlan(renderbatch.PlanSpec{
@@ -246,9 +267,6 @@ func TestPhraseMotionSelectionIsSeededCoverageAndFailClosed(t *testing.T) {
 		if err != nil {
 			t.Errorf("pool motion %q fails semantic compilation: %v", id, err)
 		}
-	}
-	if _, err := selectPhraseMotion([]string{"unknown_motion"}, 1); err == nil {
-		t.Fatal("unknown pool id was accepted")
 	}
 }
 
@@ -415,9 +433,9 @@ func TestDistinctnessSeesACollision(t *testing.T) {
 	probe := &manifestProbe{
 		BatchID: "b",
 		Jobs: []reportProbe{
-			{ID: "phrase_01__it", RenderPlan: plan("ciao")},
-			{ID: "phrase_01__en", RenderPlan: plan("hello")},
-			{ID: "phrase_01__de", RenderPlan: plan("hello")},
+			{FlatJob: batch.FlatJob{ID: "phrase_01__it", RenderPlan: plan("ciao")}},
+			{FlatJob: batch.FlatJob{ID: "phrase_01__en", RenderPlan: plan("hello")}},
+			{FlatJob: batch.FlatJob{ID: "phrase_01__de", RenderPlan: plan("hello")}},
 		},
 	}
 	rows := distinctness(probe, map[string]string{
@@ -577,12 +595,14 @@ func TestBuildRefusesAPlanFontTheJobDoesNotDeclare(t *testing.T) {
 		t.Fatalf("BuildPlan: %v", err)
 	}
 
-	document := batchManifestDocument{SchemaVersion: SchemaBatchManifestV1, BatchID: "fixture", Jobs: []manifestJob{{
-		ID:         "ru-job",
-		RenderPlan: plan,
-		Assets: []queue.AssetRef{
-			{Hash: "poppins", LogicalPath: logicalFontP},
-			{Hash: "inter", LogicalPath: logicalFontI},
+	document := batchManifestDocument{SchemaVersion: batch.SchemaBatchManifestV1, BatchID: "fixture", Jobs: []manifestJob{{
+		FlatJob: batch.FlatJob{
+			ID:         "ru-job",
+			RenderPlan: plan,
+			Assets: []queue.AssetRef{
+				{Hash: "poppins", LogicalPath: logicalFontP},
+				{Hash: "inter", LogicalPath: logicalFontI},
+			},
 		},
 	}}}
 	err = checkPlanFonts(document)

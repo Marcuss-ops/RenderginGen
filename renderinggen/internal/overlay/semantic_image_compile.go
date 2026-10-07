@@ -7,9 +7,11 @@ import (
 	"strings"
 )
 
-// compileImageLayers lowers an image kind (IMAGE_OVERLAY/PRODUCT/LOGO/…) to one
-// or more Chronon image layers. Composite children share one semantic item and
-// queue render while retaining independent timing and motion.
+// compileImageItem lowers one semantic image item. With no image_layers it uses
+// the single-image path (one asset, item-level motion_id/motion_params); with
+// image_layers it compiles each child independently (its own asset, time,
+// preset, motion_id and motion_params). Stack recipes are a third, explicit
+// multi-image mode selected by their catalog definition.
 func validateSemanticImageLayers(item semanticItem) error {
 	if len(item.ImageLayers) == 0 {
 		return nil
@@ -47,7 +49,15 @@ func validateSemanticImageLayers(item semanticItem) error {
 	}
 	return nil
 }
-func compileImageLayers(ri resolvedItem, src *semanticPlan, registry *assetRegistry) ([]Layer, error) {
+func compileImageItem(ri resolvedItem, src *semanticPlan, registry *assetRegistry) ([]Layer, error) {
+	// Item-level controls apply only to the standalone image or to a catalog
+	// recipe that coordinates a stack. Ordinary composite children own their
+	// independent motion_params and are validated in compileSingleImageLayer.
+	if len(ri.Item.ImageLayers) > 0 {
+		if _, _, err := motionWindows(ri.Item.MotionParams, ri.Preset.Motion.Exit); err != nil {
+			return nil, err
+		}
+	}
 	premium, err := premiumImageDefinition(ri.Item.MotionID)
 	if err != nil {
 		return nil, fmt.Errorf("overlay: image motion %q: %w", ri.Item.MotionID, err)
@@ -134,6 +144,7 @@ func compileImageLayers(ri resolvedItem, src *semanticPlan, registry *assetRegis
 		childItem.MotionParams = child.MotionParams
 		childItem.EntityCaption = ""
 		childItem.CaptionMotionID = child.CaptionMotionID
+		childItem.CaptionMotionParams = child.CaptionMotionParams
 		childItem.Frame = child.Frame
 		childItem.StartMS, childItem.EndMS = child.StartMS, child.EndMS
 		childItem.Params = params
@@ -196,6 +207,8 @@ func compileEntityCaptionLayer(parent resolvedItem, src *semanticPlan, child sem
 		width = 1
 	}
 	captionItem := parent.Item
+	captionItem.CaptionMotionID = child.CaptionMotionID
+	captionItem.CaptionMotionParams = child.CaptionMotionParams
 	captionItem.ID = parent.Item.ID + ":" + childID + ":caption"
 	captionItem.Kind = string(KindEntityCard)
 	captionItem.Template = "PERSON_DEFAULT"
@@ -206,11 +219,14 @@ func compileEntityCaptionLayer(parent resolvedItem, src *semanticPlan, child sem
 	// compileTextLayer lowers MotionID — an image motion on a caption would
 	// otherwise lower camera-backed tracks a text layer cannot honor.
 	captionMotion := EntityCaptionMotionID(child.CaptionMotionID)
-	if !entityCaptionMotionAllowed(captionMotion) {
-		captionMotion = ""
+	if !motionAdmitsTarget(captionMotion, "caption") {
+		return Layer{}, fmt.Errorf("overlay: item %q caption motion %q is not supported for text captions", parent.Item.ID, captionMotion)
 	}
 	captionItem.MotionID = captionMotion
-	captionItem.MotionParams = map[string]any{"enter_frames": 8}
+	captionItem.MotionParams = child.CaptionMotionParams
+	if captionItem.MotionParams == nil {
+		captionItem.MotionParams = map[string]any{"enter_frames": 8}
+	}
 	captionItem.Assets = nil
 	captionItem.ImageLayers = nil
 	positionX := captionBounds.CenterX
@@ -277,6 +293,9 @@ func compileEntityCaptionLayer(parent resolvedItem, src *semanticPlan, child sem
 	captionLayer.EntityCaptionForImageID = image.ID
 	return captionLayer, nil
 }
+
+// compileSingleImageLayer is shared by standalone images and composite
+// children; callers pass the correct animation controls for that semantic unit.
 func compileSingleImageLayer(ri resolvedItem, src *semanticPlan, assetPath string, preset PresetDefinition, motionID string, motionParams map[string]any, start, end int64, layerID string) (Layer, error) {
 	layer := imageLayer(ri, assetPath)
 	layer.ID = imageLayerID(layerID)

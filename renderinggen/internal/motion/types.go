@@ -537,15 +537,6 @@ func validateImagePremiumV1(d MotionDefinition) error {
 	if len(required) != len(trackProperties) {
 		return fmt.Errorf("motion %q: required_properties must list every image track property", d.ID)
 	}
-	validateTracks := func(owner string, tracks []TrackDefinition) error {
-		for _, track := range tracks {
-			if err := validateImageMotionTrack(d.ID, owner, track); err != nil {
-				return err
-			}
-			has3D = has3D || IsCameraBacked3DProperty(track.Property)
-		}
-		return nil
-	}
 	recipe := d.ImageRecipe
 	if recipe.Stack && recipe.ActiveLayerParam == "" {
 		return fmt.Errorf("motion %q: stacked recipes must name the active_layer_id parameter", d.ID)
@@ -559,10 +550,13 @@ func validateImagePremiumV1(d MotionDefinition) error {
 	if recipe.RequireCaption && (len(recipe.CaptionTracks) == 0 || !containsMotionString(d.Targets, "image")) {
 		return fmt.Errorf("motion %q: required image captions need an image target and caption_tracks", d.ID)
 	}
-	if err := validateTracks("inactive image track", recipe.InactiveTracks); err != nil {
+	var err error
+	has3D, err = validateImageMotionTracks(d.ID, "inactive image track", recipe.InactiveTracks, has3D)
+	if err != nil {
 		return err
 	}
-	if err := validateTracks("caption track", recipe.CaptionTracks); err != nil {
+	has3D, err = validateImageMotionTracks(d.ID, "caption track", recipe.CaptionTracks, has3D)
+	if err != nil {
 		return err
 	}
 	componentIDs := make(map[string]bool, len(recipe.Components))
@@ -680,7 +674,8 @@ func validateImagePremiumV1(d MotionDefinition) error {
 				previousStop = stop.Position
 			}
 		}
-		if err := validateTracks("component "+component.ID, component.Tracks); err != nil {
+		has3D, err = validateImageMotionTracks(d.ID, "component "+component.ID, component.Tracks, has3D)
+		if err != nil {
 			return err
 		}
 		for _, paramTrack := range component.EffectParamTracks {
@@ -760,6 +755,19 @@ func validateImagePremiumV1(d MotionDefinition) error {
 		return fmt.Errorf("motion %q: requires_camera=%v does not match its camera-backed recipe tracks (%v)", d.ID, *d.RequiresCamera, has3D)
 	}
 	return nil
+}
+
+// validateImageMotionTracks validates a recipe track collection and accumulates
+// whether any property requires camera-backed 3D routing. Collection order and
+// the first validation error are preserved by this shared helper.
+func validateImageMotionTracks(id, owner string, tracks []TrackDefinition, has3D bool) (bool, error) {
+	for _, track := range tracks {
+		if err := validateImageMotionTrack(id, owner, track); err != nil {
+			return has3D, err
+		}
+		has3D = has3D || IsCameraBacked3DProperty(track.Property)
+	}
+	return has3D, nil
 }
 
 func finiteMotionValue(value float64) bool {

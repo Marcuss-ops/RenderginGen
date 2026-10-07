@@ -170,44 +170,22 @@ func main() {
 		},
 	)
 
-	// The processor owns the per-job pipeline (validate -> workspace ->
-	// materialize -> plan.json -> render -> hash -> publish).
-	proc := processor.New(
-		cfg.Workspace.Root,
-		cfg.Chronon.Backend,
-		chrononVersion,
-		cfg.ArtifactStore.Endpoint,
-		store,
-		renderer,
-	)
-	proc.SetAssetPrefetcher(assetPrefetcher)
-	proc.SetNativeOutputProfiles(cfg.Chronon.NativeOutputProfiles)
-	proc.SetStrictNativeBackend(cfg.Chronon.StrictNative())
-	proc.SetReport(cfg.Chronon.Report)
-	proc.SetHardwareEncoder(cfg.Chronon.HardwareEncoder)
-	proc.SetEncoderBackend(cfg.Chronon.EncoderBackend)
-	proc.SetEncodePreset(cfg.Chronon.EncodePreset)
-	proc.SetPipePixFmt(cfg.Chronon.PipePixFmt)
-	proc.SetWorkspaceLeaseTTL(timings.WorkspaceLeaseTTL)
-	// Verification policy, deep visual validation and workspace retention come
-	// from configuration, so the post pool (the workspace's last owner) and the
-	// processor cannot be told different things.
-	proc.SetReceiptVerify(cfg.Pipeline.ReceiptVerify)
-	proc.SetDeepVisualValidation(cfg.Pipeline.DeepVisualValidation)
-	proc.SetKeepWorkspace(cfg.Pipeline.KeepWorkspace)
-	log.Printf("chronon report telemetry: %t, strict_native_backend: %t, encode_preset: %q, pipe_pixfmt: %q", cfg.Chronon.Report, cfg.Chronon.StrictNative(), cfg.Chronon.EncodePreset, cfg.Chronon.PipePixFmt)
-
 	// 3a. Worker-local artifact ledger mirror (the "DB artifact" step): SQLite,
 	// pure Go so the CGO_ENABLED=0 worker image keeps building. The mirror is
 	// diagnostic: a failed write is logged and flagged on the artifact's
 	// metrics (mirror_failure=1), never fatal — the central queue PostgreSQL
 	// row is authoritative for the artifact.
+	//
+	// Every collaborator the processor needs is built BEFORE it, so the single
+	// Options literal below is the worker's ONLY configuration point. The
+	// historical arrangement spread 17 Set* calls across the startup flow, where
+	// one omitted line was invisible until a job rendered with the wrong knob.
+	var recorder artifactdb.Recorder
 	if cfg.ArtifactDB.Path != "" {
-		recorder, err := artifactdb.NewSQLite(cfg.ArtifactDB.Path)
+		recorder, err = artifactdb.NewSQLite(cfg.ArtifactDB.Path)
 		if err != nil {
 			log.Fatalf("artifact_db: %v", err)
 		}
-		proc.SetArtifactRecorder(recorder)
 		log.Printf("artifact_db: ledger enabled at %q", cfg.ArtifactDB.Path)
 	}
 
@@ -236,9 +214,48 @@ func main() {
 			log.Printf("drive: google publisher (folder=%q, chunk_bytes=%d)", cfg.Drive.ParentFolderID, cfg.Drive.ChunkBytes)
 		}
 	}
-	if publisher != nil {
-		proc.SetPublisher(publisher)
-	}
+
+	// Render progress tracker and Prometheus metrics: both are observers the
+	// processor and the health surface forward into, so they exist before it
+	// does and are handed to the processor through the same Options literal.
+	progressTracker := chronon.NewProgressTracker()
+	workerMetrics := workermetrics.New()
+	processor.SetJobOutcomeHook(workerMetrics.OutcomeHook())
+
+	// The processor owns the per-job pipeline (validate -> workspace ->
+	// materialize -> plan.json -> render -> hash -> publish).
+	proc := processor.NewWithOptions(
+		cfg.Workspace.Root,
+		cfg.Chronon.Backend,
+		chrononVersion,
+		cfg.ArtifactStore.Endpoint,
+		store,
+		renderer,
+		processor.Options{
+			AssetPrefetcher:      assetPrefetcher,
+			NativeOutputProfiles: cfg.Chronon.NativeOutputProfiles,
+			StrictNativeBackend:  cfg.Chronon.StrictNative(),
+			Report:               cfg.Chronon.Report,
+			HardwareEncoder:      cfg.Chronon.HardwareEncoder,
+			EncoderBackend:       cfg.Chronon.EncoderBackend,
+			EncodePreset:         cfg.Chronon.EncodePreset,
+			PipePixFmt:           cfg.Chronon.PipePixFmt,
+			WorkspaceLeaseTTL:    timings.WorkspaceLeaseTTL,
+			// Verification policy, deep visual validation and workspace
+			// retention come from configuration, so the post pool (the
+			// workspace's last owner) and the processor cannot be told
+			// different things.
+			ReceiptVerify:        cfg.Pipeline.ReceiptVerify,
+			DeepVisualValidation: cfg.Pipeline.DeepVisualValidation,
+			KeepWorkspace:        cfg.Pipeline.KeepWorkspace,
+			Publisher:            publisher,
+			ArtifactRecorder:     recorder,
+			ProgressTracker:      progressTracker,
+			PhaseHook:            workerMetrics.PhaseHook(),
+			GPUGapHook:           workerMetrics.GPUGapHook(),
+		},
+	)
+	log.Printf("chronon report telemetry: %t, strict_native_backend: %t, encode_preset: %q, pipe_pixfmt: %q", cfg.Chronon.Report, cfg.Chronon.StrictNative(), cfg.Chronon.EncodePreset, cfg.Chronon.PipePixFmt)
 	// Canonical publication authority: queue-served render segments resolve
 	// to object-store-only (the submitter owns Drive delivery), so a Drive
 	// capability here is never a silent second upload of master-routed clips.
@@ -282,9 +299,9 @@ func main() {
 	// Live render progress: the tracker receives every frame milestone the
 	// renderer prints; /progress exposes it locally and the pusher relays a
 	// throttled snapshot to the queue so GET /jobs/{id} shows real position
-	// instead of an opaque RUNNING/0% for the whole render.
-	progressTracker := chronon.NewProgressTracker()
-	proc.SetProgressTracker(progressTracker)
+	// instead of an opaque RUNNING/0% for the whole render. The tracker and
+	// workerMetrics were built before the processor and handed to it through
+	// Options, so this step only wires the health surface to them.
 	healthServer.SetProgressFunc(progressTracker.Current)
 	// Fail-open degradations (workspace cleanup failures today) must be visible
 	// on the worker's own surface, not only in the log stream.
@@ -295,10 +312,6 @@ func main() {
 	// is the EXISTING instrumentation: the processor's phase hook, its terminal
 	// report funnel, and its gpu_gap_us duty-cycle KPI (the one number that says
 	// whether the GPU idles BETWEEN renders as opposed to inside them).
-	workerMetrics := workermetrics.New()
-	proc.SetPhaseHook(workerMetrics.PhaseHook())
-	proc.SetGPUGapHook(workerMetrics.GPUGapHook())
-	processor.SetJobOutcomeHook(workerMetrics.OutcomeHook())
 	healthServer.SetMetricsHandler(workerMetrics.Handler())
 	go func() {
 		progresspush.New(queueClient, progressTracker, progresspush.DefaultInterval).Run(ctx)

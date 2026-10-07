@@ -51,9 +51,6 @@ func (p *Processor) receiptVerifyLevel() renderVerifyLevel {
 	}
 }
 
-// verifyArtifactReceipt (receipt_identity.go) is the gate's entry point; this
-// is its policy half.
-//
 // enforceReceiptVerificationDirect makes the worker enforce — never duplicate —
 // Chronon's canonical output verification. Under normal/certify the receipt
 // is mandatory evidence: Chronon promised a full decode there, and a missing
@@ -67,12 +64,6 @@ func (p *Processor) receiptVerifyLevel() renderVerifyLevel {
 // The identity half of the gate is not optional and not policy-blind: it runs
 // here, for every policy, and the store phase consumes its verdict. See
 // receipt_identity.go.
-func (p *Processor) enforceReceiptVerification(outputPath string, metrics map[string]float64) error {
-	receipt, err := chronon.ReadMediaReceipt(outputPath)
-	_, gateErr := p.verifyArtifactReceipt(outputPath, receipt, err, metrics)
-	return gateErr
-}
-
 func (p *Processor) enforceReceiptVerificationDirect(receipt chronon.MediaReceipt, err error, metrics map[string]float64) error {
 	policy := p.receiptVerifyLevel()
 	if err != nil {

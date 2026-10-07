@@ -99,41 +99,39 @@ func TestVidrushScenarioLayersAreWired(t *testing.T) {
 		}
 	}
 
-	// ── Act: entità — exactly two entity cards, both with text ───────────
-	person, ok := byID["entita_persona:image"]
-	if !ok || person.Type != "image" {
-		t.Fatalf("entity portrait did not lower to an image layer: %+v", person)
-	}
-	if !animated(person) {
-		t.Fatal("entity portrait lowered without motion")
-	}
-	caption, ok := byID["entita_persona:entity:caption"]
-	if !ok || caption.Type != "text" {
-		t.Fatalf("entity caption did not lower to a text layer: %+v", caption)
-	}
-	if !animated(caption) {
-		t.Fatal("entity caption lowered without motion")
-	}
-	if len(caption.Position) < 2 || len(person.Position) < 2 {
-		t.Fatal("entity card layers carry no geometry")
-	}
-	// The caption is anchored below the image: image bottom edge + margin.
-	imageBottom := float64(canvasHeight)/2 + person.Position[1] + person.Size[1]/2
-	if caption.Position[1]-caption.Size[1]/2 <= imageBottom {
-		t.Fatalf("entity caption top %v is not below the image bottom %v", caption.Position[1]-caption.Size[1]/2, imageBottom)
-	}
-	org, ok := byID["entita_organizzazione"]
-	if !ok || org.Type != "text" || !animated(org) {
-		t.Fatalf("organization card did not lower to an animated text layer: %+v", org)
+	// ── Act: entità — the two declared portrait cards and captions ────────
+	entityImages := []string{"entita_trump_newsroom:image", "entita_trump_halftone:image"}
+	for _, imageID := range entityImages {
+		person, ok := byID[imageID]
+		if !ok || person.Type != "image" {
+			t.Fatalf("entity portrait %q did not lower to an image layer: %+v", imageID, person)
+		}
+		if !animated(person) {
+			t.Fatalf("entity portrait %q lowered without motion", imageID)
+		}
+		captionID := strings.TrimSuffix(imageID, ":image") + ":entity:caption"
+		caption, ok := byID[captionID]
+		if !ok || caption.Type != "text" {
+			t.Fatalf("entity caption %q did not lower to a text layer: %+v", captionID, caption)
+		}
+		if !animated(caption) {
+			t.Fatalf("entity caption %q lowered without motion", captionID)
+		}
+		if caption.EntityCaptionForImageID != person.ID {
+			t.Fatalf("caption %q is linked to image %q, want %q", captionID, caption.EntityCaptionForImageID, person.ID)
+		}
+		if len(caption.Position) < 2 || len(person.Position) < 2 {
+			t.Fatalf("entity card %q layers carry no geometry", imageID)
+		}
 	}
 	entityCards := 0
 	for id := range byID {
-		if id == "entita_persona:image" || id == "entita_organizzazione" {
+		if strings.HasSuffix(id, ":image") && strings.HasPrefix(id, "entita_trump_") {
 			entityCards++
 		}
 	}
-	if entityCards != 2 {
-		t.Fatalf("scenario carries %d entity cards, want the max-2 scene", entityCards)
+	if entityCards != len(entityImages) {
+		t.Fatalf("scenario carries %d Trump entity cards, want %d", entityCards, len(entityImages))
 	}
 
 	// ── Act: luoghi — a location card and the grounded map ───────────────
@@ -196,12 +194,12 @@ func TestVidrushScenarioLayersAreWired(t *testing.T) {
 	}
 
 	// ── Layer census: no family may silently drop ─────────────────────────
-	if got, want := len(result.plan.Layers), 1+2+2+2+1+1+8+14; got != want {
+	if got, want := len(result.plan.Layers), 1+2+2+4+1+8+14; got != want {
 		ids := make([]string, 0, len(result.plan.Layers))
 		for _, layer := range result.plan.Layers {
 			ids = append(ids, layer.ID)
 		}
-		t.Fatalf("compiled %d layers, want %d (background, frasi, date+metric, 2 entity cards, location, 8 map layers, 14 image children)\n%v",
+		t.Fatalf("compiled %d layers, want %d (background, frasi, date+metric, 2 portrait/caption pairs, location, 8 map layers, 14 image children)\n%v",
 			got, want, ids)
 	}
 }

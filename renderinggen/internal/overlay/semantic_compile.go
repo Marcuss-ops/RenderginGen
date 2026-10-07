@@ -57,6 +57,9 @@ func compileSemantic(raw []byte) (*Plan, []Asset, Stats, []string, error) {
 	if src.PlanID == "" || src.VideoID == "" || src.Width <= 0 || src.Height <= 0 || src.FPSNum <= 0 || src.FPSDen <= 0 {
 		return nil, nil, Stats{}, nil, fmt.Errorf("overlay: semantic plan requires plan_id, video_id and positive canvas/fps")
 	}
+	if err := resolveAnimationPolicies(&src); err != nil {
+		return nil, nil, Stats{}, nil, err
+	}
 	// A plan must have at least one renderable primitive: a source clip, a
 	// background, or an overlay item. An empty plan with nothing to render is
 	// always rejected fail-closed.
@@ -308,11 +311,25 @@ func compileSemantic(raw []byte) (*Plan, []Asset, Stats, []string, error) {
 	var cameraStartFrame, cameraEndFrame int64
 	var cameraMapItemID string
 	var entityCameraMotionID string
+	var entityCameraMotionItemID string
 	for _, ri := range resolved {
 		if isEntityKind(ri.Kind) && ri.Item.EntityStyleID != "" {
 			if style, ok := ResolveEntityStyle(ri.Item.EntityStyleID, src.PlanID, src.VideoID, ri.Item.ID); ok && style.CameraMotionID != "" {
+				if entityCameraMotionID != "" {
+					return nil, nil, Stats{}, nil, fmt.Errorf("overlay: camera motion on entity item %q conflicts with camera motion on entity item %q; only one scene camera controller is allowed per plan", ri.Item.ID, entityCameraMotionItemID)
+				}
 				entityCameraMotionID = style.CameraMotionID
+				entityCameraMotionItemID = ri.Item.ID
 			}
+		}
+		if isEntityKind(ri.Kind) && ri.Item.EntityStyleID != "" && cameraMove != nil {
+			return nil, nil, Stats{}, nil, fmt.Errorf("overlay: entity item %q camera motion conflicts with map item %q scene camera move", ri.Item.ID, cameraMapItemID)
+		}
+		if ri.Item.Map != nil && ri.Item.Map.CameraMove != nil && entityCameraMotionID != "" {
+			return nil, nil, Stats{}, nil, fmt.Errorf("overlay: map item %q scene camera move conflicts with entity item %q camera motion", ri.Item.ID, entityCameraMotionItemID)
+		}
+		if ri.Item.Map != nil && ri.Item.Map.CameraMove != nil && cameraMove != nil {
+			return nil, nil, Stats{}, nil, fmt.Errorf("overlay: map item %q camera move conflicts with map item %q; only one scene camera controller is allowed per plan", ri.Item.ID, cameraMapItemID)
 		}
 		layers, err := compileItem(ri, &src, registry)
 		if err != nil {
@@ -507,14 +524,7 @@ func compileSemantic(raw []byte) (*Plan, []Asset, Stats, []string, error) {
 		return nil, nil, Stats{}, nil, fmt.Errorf("overlay: semantic plan duration is zero — provide duration_ms or at least one item with end_ms > 0")
 	}
 
-	for _, l := range plan.Layers {
-		if l.Type == "shape" || l.Shape != nil || l.FrameStroke != nil || plan.Camera != nil || l.ScreenSpace || len(l.Effects) > 0 ||
-			len(l.EffectParamTracks) > 0 || len(l.Masks) > 0 || layerAnimationNeedsV3(l.Animation) {
-			plan.Schema = "chronon.render-plan.v3"
-			plan.Version = 3
-			break
-		}
-	}
+	plan.Schema, plan.Version = RenderPlanWireVersion(&plan)
 
 	// Stable asset order (the registry sorts) keeps prepared-plan
 	// fingerprints reproducible. The plan stays typed; the caller marshals it
@@ -626,7 +636,7 @@ func resolveSemanticItems(src *semanticPlan) ([]resolvedItem, error) {
 func compileItem(ri resolvedItem, src *semanticPlan, registry *assetRegistry) ([]Layer, error) {
 	switch {
 	case isEntityKind(ri.Kind) && len(ri.Item.ImageLayers) > 0:
-		return compileImageLayers(ri, src, registry)
+		return compileImageItem(ri, src, registry)
 	case isEntityKind(ri.Kind) && len(ri.Item.Assets) > 0:
 		return compileEntityCard(ri, src, registry)
 	case isVideoKind(ri.Kind):
@@ -636,7 +646,7 @@ func compileItem(ri resolvedItem, src *semanticPlan, registry *assetRegistry) ([
 		}
 		return []Layer{layer}, nil
 	case isImageKind(ri.Kind):
-		return compileImageLayers(ri, src, registry)
+		return compileImageItem(ri, src, registry)
 	case isShapeKind(ri.Kind):
 		layer, err := resolveShape(ri, src)
 		if err != nil {
@@ -778,6 +788,9 @@ func compileEntityCard(ri resolvedItem, src *semanticPlan, registry *assetRegist
 	var currentStyle entityStyleVariant
 	var hasStyle bool
 	if ri.Item.EntityStyleID != "" {
+		imageMotionOverride := ri.Item.MotionID
+		captionMotionOverride := ri.Item.CaptionMotionID
+		captionMotionParams := ri.Item.CaptionMotionParams
 		style, ok := ResolveEntityStyle(ri.Item.EntityStyleID, src.PlanID, src.VideoID, ri.Item.ID)
 		if !ok {
 			style = selectRandomEntityStyle(src.PlanID, src.VideoID, ri.Item.ID)
@@ -785,7 +798,14 @@ func compileEntityCard(ri resolvedItem, src *semanticPlan, registry *assetRegist
 		currentStyle = style
 		hasStyle = true
 		ri.Item.MotionID = style.ImageMotionID
+		if imageMotionOverride != "" {
+			ri.Item.MotionID = imageMotionOverride
+		}
 		ri.Item.CaptionMotionID = style.CaptionMotionID
+		if captionMotionOverride != "" {
+			ri.Item.CaptionMotionID = captionMotionOverride
+		}
+		ri.Item.CaptionMotionParams = captionMotionParams
 		ri.Item.CaptionLayout = style.CaptionLayout
 		ri.Item.CaptionFontFamily = style.CaptionFontFamily
 		ri.Item.CaptionColor = style.CaptionColor
@@ -847,7 +867,8 @@ func compileEntityCard(ri resolvedItem, src *semanticPlan, registry *assetRegist
 	}
 	if caption := strings.TrimSpace(ri.Item.EntityCaption); caption != "" {
 		imageIndex := premiumImageLayerIndex(layers)
-		captionLayer, err := compileEntityCaptionLayer(ri, src, ri.Item, caption, &layers[imageIndex], "entity")
+		captionItem := ri.Item
+		captionLayer, err := compileEntityCaptionLayer(ri, src, captionItem, caption, &layers[imageIndex], "entity")
 		if err != nil {
 			return nil, err
 		}

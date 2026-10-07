@@ -26,12 +26,15 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/batch"
 )
 
 // reportProbe is this package's view of one manifest job: everything the report
 // needs that the submission contract does not carry.
 type reportProbe struct {
-	ID     string `json:"id"`
+	batch.FlatJob
+
 	Family string `json:"family,omitempty"`
 	Text   string `json:"text,omitempty"`
 	// MotionID/PresetID are duplicated from the plan when the producer records
@@ -46,9 +49,8 @@ type reportProbe struct {
 	Attribution string `json:"asset_attribution,omitempty"`
 	// EntranceDuration* record the reveal window a preset corpus was rendered
 	// with, so the report states the motion duration instead of implying it.
-	EntranceDurationFrames  *int            `json:"entrance_duration_frames,omitempty"`
-	EntranceDurationSeconds *float64        `json:"entrance_duration_seconds,omitempty"`
-	RenderPlan              json.RawMessage `json:"render_plan"`
+	EntranceDurationFrames  *int     `json:"entrance_duration_frames,omitempty"`
+	EntranceDurationSeconds *float64 `json:"entrance_duration_seconds,omitempty"`
 }
 
 // manifestProbe is the envelope: batch id plus the jobs' reporting metadata.

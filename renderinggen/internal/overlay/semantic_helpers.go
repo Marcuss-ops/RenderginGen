@@ -5,7 +5,6 @@
 package overlay
 
 import (
-	"encoding/json"
 	"fmt"
 	"math"
 	"strings"
@@ -18,7 +17,10 @@ import (
 // a producer that overrides only the entrance still gets an out instead of a
 // hard cut. The motion's registered windows fill in whatever the caller omits.
 func animationForMotion(id string, params map[string]any, textValue string, duration int64, presetExit int, phraseFloor ...bool) (*LayerAnimation, error) {
-	enter, exit := motionWindows(params, presetExit)
+	enter, exit, err := motionWindows(params, presetExit)
+	if err != nil {
+		return nil, err
+	}
 	isPhrase := len(phraseFloor) > 0 && phraseFloor[0]
 	animation, err := lowerMotion(id, enter, exit, motion.MotionParams(params), textValue, duration, isPhrase)
 	if err != nil {
@@ -35,45 +37,36 @@ func animationForMotion(id string, params map[string]any, textValue string, dura
 
 // motionWindows is deliberately small and bounded: producers may tune the
 // readable timing window, but they cannot use motion_params to inject a new
-// animation contract. Values are frame counts at the plan's frame rate.
-func motionWindows(params map[string]any, presetExit int) (enter, exit int) {
+// animation contract. Values are frame counts at the plan's frame rate. Zero
+// keeps the catalog/preset window; every other supplied value must be an
+// integer in [1, 240] so a typo cannot silently disable a requested override.
+func motionWindows(params map[string]any, presetExit int) (enter, exit int, err error) {
 	exit = presetExit
 	if params == nil {
-		return 0, exit
+		return 0, exit, nil
 	}
-	if value, ok := positiveMotionFrameParam(params["enter_frames"]); ok {
-		enter = value
+	enter, err = motionFrameParam(params, "enter_frames")
+	if err != nil {
+		return 0, 0, err
 	}
-	if value, ok := positiveMotionFrameParam(params["exit_frames"]); ok {
-		exit = value
+	if exitOverride, err := motionFrameParam(params, "exit_frames"); err != nil {
+		return 0, 0, err
+	} else if exitOverride > 0 {
+		exit = exitOverride
 	}
-	return enter, exit
+	return enter, exit, nil
 }
 
-func positiveMotionFrameParam(value any) (int, bool) {
-	var frames int
-	switch v := value.(type) {
-	case float64:
-		frames = int(v)
-	case float32:
-		frames = int(v)
-	case int:
-		frames = v
-	case int64:
-		frames = int(v)
-	case json.Number:
-		parsed, err := v.Int64()
-		if err != nil {
-			return 0, false
-		}
-		frames = int(parsed)
-	default:
-		return 0, false
+func motionFrameParam(params map[string]any, name string) (int, error) {
+	value, present := params[name]
+	if !present {
+		return 0, nil
 	}
-	if frames < 1 || frames > 240 {
-		return 0, false
+	frames, err := toFloat(value)
+	if err != nil || math.IsNaN(frames) || math.IsInf(frames, 0) || math.Trunc(frames) != frames || frames < 0 || frames > 240 {
+		return 0, fmt.Errorf("overlay: motion_params.%s must be an integer in [0, 240] (zero keeps the catalog/preset value)", name)
 	}
-	return frames, true
+	return int(frames), nil
 }
 
 func validateTextMotion(animators []TextAnimator, id string) error {

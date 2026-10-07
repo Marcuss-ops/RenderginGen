@@ -24,6 +24,8 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
+
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/overlay"
 )
 
 // SchemaVersion is the manifest contract this package decodes. It is checked
@@ -32,7 +34,7 @@ import (
 const SchemaVersion = "renderinggen.preset-render-manifest.v1"
 
 // OverlayPlanSchema is the semantic contract the built plans declare.
-const OverlayPlanSchema = "renderinggen.overlay-plan.v1"
+const OverlayPlanSchema = overlay.SemanticSchema
 
 // DefaultDurationMS is applied when a job omits duration_ms.
 const DefaultDurationMS = 5000

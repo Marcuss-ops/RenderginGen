@@ -2,7 +2,7 @@
 //
 // It exists because the worker had no scrapeable surface at all: the queue
 // exposes render_duration_seconds while the process that spends the GPU time
-// answered 404 on /metrics. The phase hook (SetPhaseHook) already carries the
+// answered 404 on /metrics. The phase hook (Options.PhaseHook) already carries the
 // per-phase timings; this is its sibling for the outcome, so a wiring site in
 // cmd/renderinggen can turn both into Prometheus series without the processor
 // depending on a metrics library.

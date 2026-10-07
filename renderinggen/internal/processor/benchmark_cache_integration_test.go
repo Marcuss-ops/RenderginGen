@@ -151,8 +151,15 @@ func TestBenchmarkCachePromotion10Jobs(t *testing.T) {
 		L2Dir:      filepath.Join(t.TempDir(), "l2"),
 		L2MaxBytes: 64 << 20,
 	})
-	proc := New(t.TempDir(), "software", cli.Version(), "http://store:9000", store, cli)
-	proc.SetReport(true)
+	// phases is captured by the configured hook and reassigned per iteration so
+	// one construction (Options) replaces the per-job SetPhaseHook call.
+	var phases map[string]float64
+	proc := NewWithOptions(t.TempDir(), "software", cli.Version(), "http://store:9000", store, cli, Options{
+		Report: true,
+		PhaseHook: func(phase string, d time.Duration) {
+			phases[phase] = float64(d.Microseconds()) / 1000.0
+		},
+	})
 
 	// Seed every deterministic fixture into L3 under its content hash.
 	goldenAssets := mustGoldenAssets(t)
@@ -165,10 +172,7 @@ func TestBenchmarkCachePromotion10Jobs(t *testing.T) {
 		job.ID = fmt.Sprintf("bench-%02d-%s", i+1, word)
 		job.RenderPlan = rewriteJobID(t, job.RenderPlan, job.ID)
 
-		var phases = map[string]float64{}
-		proc.SetPhaseHook(func(phase string, d time.Duration) {
-			phases[phase] = float64(d.Microseconds()) / 1000.0
-		})
+		phases = map[string]float64{}
 
 		start := time.Now()
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)

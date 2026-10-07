@@ -7,6 +7,19 @@
   "additionalProperties": false,
   "required": ["schema_version", "plan_id", "video_id", "width", "height", "fps_num", "fps_den"],
   "$defs": {
+    "animation_policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["target", "group_id", "motion_id"],
+      "properties": {
+        "target": { "enum": ["important_phrase", "image", "caption"] },
+        "group_id": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "subgroup_id": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "motion_id": { "type": "string", "minLength": 1 },
+        "motion_params": { "type": "object", "description": "Open motion-plugin parameters. enter_frames/exit_frames are optional integer frame counts from 1 to 240; zero retains the catalog or preset window." }
+      },
+      "allOf": [{ "if": { "required": ["subgroup_id"] }, "then": { "required": ["group_id"] } }]
+    },
     "rgba": {
       "type": "array", "minItems": 3, "maxItems": 4,
       "items": { "type": "number", "minimum": 0, "maximum": 1 }
@@ -141,6 +154,7 @@
   },
   "properties": {
     "schema_version": { "const": "renderinggen.overlay-plan.v1" },
+    "animation_policies": { "type": "array", "maxItems": 1024, "items": { "$ref": "#/$defs/animation_policy" }, "description": "Runtime animation defaults selected by group/subgroup and target. Exact subgroup rules override group rules; item/layer motion ids override both." },
     "plan_id": { "type": "string", "minLength": 1 },
     "video_id": { "type": "string", "minLength": 1 },
     "project_id": { "type": "string" },
@@ -261,6 +275,8 @@
           "id": { "type": "string", "minLength": 1 },
           "scene_id": { "type": "string" },
           "entity_id": { "type": "string" },
+          "group_id": { "type": "string", "minLength": 1, "maxLength": 128, "description": "Producer-defined group selector used by animation_policies." },
+          "subgroup_id": { "type": "string", "minLength": 1, "maxLength": 128, "description": "Optional producer-defined subgroup selector; when present group_id is also required." },
           "kind": { "type": "string" },
           "start_ms": { "type": "integer", "minimum": 0 },
           "end_ms": { "type": "integer", "exclusiveMinimum": 0 },
@@ -271,10 +287,11 @@
           "preset_id": { "type": "string", "minLength": 1, "description": "Semantic visual preset resolved by PipelineGen's SemanticOverlayResolver (ADR-029). REQUIRED for preset-driven templates (text cards, IMAGE_OVERLAY); ABSENT for preset-less primitives (PRODUCT, LOGO, LIGHT_LEAK, BACKGROUND, SHAPE) which compile to a bare renderer-default layer." },
           "image_preset_id": { "type": "string", "minLength": 1, "description": "Image-layer preset for an entity card that carries an asset (the text preset stays in preset_id). Validated against the same official catalog." },
           "motion_id": { "type": "string", "minLength": 1, "description": "Per-item motion override resolved through the RenderingGen motion registry. When present it replaces the preset's motion." },
-          "motion_params": { "type": "object", "description": "Motion parameters passed to the motion plugin for this item." },
+          "motion_params": { "type": "object", "description": "Open parameters for the selected motion_id. Shared runtime timing controls are enter_frames and exit_frames: integer frame counts from 0 to 240; 0 keeps the catalog/preset window. Other keys are motion-plugin-specific." },
           "text": { "type": "string" },
           "entity_caption": { "type": "string", "minLength": 1, "description": "Optional explicit entity name preserved by PipelineGen when an image is available; RenderingGen compiles it as a caption layer with the image's lifetime." },
           "caption_motion_id": { "type": "string", "minLength": 1, "description": "Optional motion override for the entity caption layer. Empty resolves the shared default (text_fade_up); a motion that does not target text is refused by the caption lowering." },
+          "caption_motion_params": { "type": "object", "description": "Optional open motion-plugin parameters for the caption motion, independent of the image motion. enter_frames/exit_frames accept integer frame counts from 1 to 240; zero retains the catalog or preset window." },
           "caption_layout": { "type": "string", "enum": ["below", "left", "right"], "description": "Optional entity caption placement. left/right place the caption in that column relative to the image; below anchors it under the image." },
           "caption_font_family": { "type": "string", "enum": ["poppins", "inter", "dejavu_sans", "playfair_display_italic"], "description": "Optional bundled font family for an entity caption." },
           "caption_color": { "type": "string", "description": "Optional explicit color for an entity caption." },
@@ -359,6 +376,8 @@
             "additionalProperties": true
           },
           "render_key": { "type": "string" },
+          "group_id": { "type": "string", "minLength": 1, "maxLength": 128, "description": "Producer-defined group selector used by animation_policies." },
+          "subgroup_id": { "type": "string", "minLength": 1, "maxLength": 128, "description": "Optional producer-defined subgroup selector; when present group_id is also required." },
           "asset_refs": {
             "type": "array",
             "items": {
@@ -485,21 +504,24 @@
           },
           "image_layers": {
             "type": "array",
-            "description": "Optional independently animated image layers within a composite image item. Their asset_id values must reference the item's asset_refs; times are relative to the parent item.",
+            "description": "Optional independently animated image layers for a composite (two or more) image item. A single image uses the parent item's asset_refs/motion_id/motion_params. Each child asset_id references the parent asset_refs; times are relative to the parent and child motion_id/motion_params override animation independently.",
             "items": {
               "type": "object",
               "additionalProperties": false,
               "required": ["id", "asset_id", "start_ms", "end_ms"],
               "properties": {
                 "id": { "type": "string", "minLength": 1 },
+                "group_id": { "type": "string", "minLength": 1, "maxLength": 128, "description": "Optional child-specific animation group; inherits the parent image item's group_id when omitted." },
+                "subgroup_id": { "type": "string", "minLength": 1, "maxLength": 128, "description": "Optional child-specific animation subgroup; inherits the parent image item's subgroup_id when omitted." },
                 "asset_id": { "type": "string", "minLength": 1 },
                 "start_ms": { "type": "integer", "minimum": 0 },
                 "end_ms": { "type": "integer", "exclusiveMinimum": 0 },
                 "preset_id": { "type": "string" },
                 "motion_id": { "type": "string" },
-                "motion_params": { "type": "object" },
+                "motion_params": { "type": "object", "description": "Open motion-plugin parameters; enter_frames/exit_frames are optional integer frame counts from 0 to 240 (0 keeps the catalog/preset window)." },
                 "caption": { "type": "string", "minLength": 1 },
                 "caption_motion_id": { "type": "string", "minLength": 1, "description": "Optional caption motion override for this image layer; resolved through the entity_caption_v1 motion catalog." },
+                "caption_motion_params": { "type": "object", "description": "Optional motion parameters for this child caption, independent of image motion." },
                 "params": { "type": "object" },
                 "frame": {
                   "type": "object",

@@ -22,6 +22,34 @@ import (
 // compiles it mechanically; PipelineGen remains the owner of its decisions.
 const SemanticSchema = "renderinggen.overlay-plan.v1"
 
+// RenderPlanSchemaV2/V3 and versions are the canonical concrete Chronon wire
+// identities.
+const (
+	RenderPlanSchemaV2  = "chronon.render-plan.v2"
+	RenderPlanVersionV2 = 2
+	RenderPlanSchemaV3  = "chronon.render-plan.v3"
+	RenderPlanVersionV3 = 3
+)
+
+// RenderPlanWireVersion selects the concrete schema required by a plan's features.
+// Compilation and all serializers share this selector to prevent contract drift.
+func RenderPlanWireVersion(plan *Plan) (string, int) {
+	if plan == nil {
+		return RenderPlanSchemaV2, RenderPlanVersionV2
+	}
+	if plan.CameraAnimation != nil || plan.Camera != nil && len(plan.Layers) > 0 {
+		return RenderPlanSchemaV3, RenderPlanVersionV3
+	}
+	for _, layer := range plan.Layers {
+		if layer.Type == "shape" || layer.Shape != nil || layer.FrameStroke != nil || layer.ScreenSpace ||
+			len(layer.Effects) > 0 || len(layer.EffectParamTracks) > 0 || layer.Parent != "" ||
+			layer.TransitionIn != nil || len(layer.Masks) > 0 || layerAnimationNeedsV3(layer.Animation) {
+			return RenderPlanSchemaV3, RenderPlanVersionV3
+		}
+	}
+	return RenderPlanSchemaV2, RenderPlanVersionV2
+}
+
 // SemanticSchemaVersion is the integer form of the same contract version. It
 // is the SINGLE source for the version the worker advertises (`overlay_schema`
 // on /health and in the worker registry): advertising a bare integer that no
@@ -70,7 +98,7 @@ type Asset struct {
 }
 
 func newPlan(jobID string, width, height, fpsNum, fpsDen int, duration int64) *Plan {
-	return &Plan{Schema: "chronon.render-plan.v2", Version: 2, JobID: jobID,
+	return &Plan{Schema: RenderPlanSchemaV2, Version: RenderPlanVersionV2, JobID: jobID,
 		Canvas: Canvas{Width: width, Height: height, FPSNum: fpsNum, FPSDen: fpsDen, DurationFrames: duration},
 		Output: Output{Path: "result.mp4", Format: "mp4", Codec: "h264"}}
 }
@@ -151,14 +179,23 @@ type semanticPlan struct {
 	// DurationMS is the explicit clip duration. When provided it seeds the
 	// canvas duration before items are processed; items can only extend it.
 	// Required when items is empty (clip render without entity overlays).
-	DurationMS      int64               `json:"duration_ms,omitempty"`
-	OutputProfileID string              `json:"output_profile_id"`
-	MediaContract   string              `json:"media_contract,omitempty"` // producer media metadata
-	Background      *semanticBackground `json:"background,omitempty"`
-	Subtitles       *semanticSubtitles  `json:"subtitles,omitempty"`
-	Watermark       *semanticWatermark  `json:"watermark,omitempty"`
-	Audio           *semanticAudio      `json:"audio,omitempty"`
-	Items           []semanticItem      `json:"items"`
+	DurationMS        int64                     `json:"duration_ms,omitempty"`
+	OutputProfileID   string                    `json:"output_profile_id"`
+	MediaContract     string                    `json:"media_contract,omitempty"` // producer media metadata
+	Background        *semanticBackground       `json:"background,omitempty"`
+	Subtitles         *semanticSubtitles        `json:"subtitles,omitempty"`
+	Watermark         *semanticWatermark        `json:"watermark,omitempty"`
+	Audio             *semanticAudio            `json:"audio,omitempty"`
+	Items             []semanticItem            `json:"items"`
+	AnimationPolicies []semanticAnimationPolicy `json:"animation_policies,omitempty"`
+}
+
+type semanticAnimationPolicy struct {
+	Target       string         `json:"target"`
+	GroupID      string         `json:"group_id"`
+	SubgroupID   string         `json:"subgroup_id,omitempty"`
+	MotionID     string         `json:"motion_id"`
+	MotionParams map[string]any `json:"motion_params,omitempty"`
 }
 
 type semanticSource struct {
@@ -241,12 +278,13 @@ type semanticBackground struct {
 
 type semanticItem struct {
 	ID string `json:"id"`
-	// SceneID/EntityID/RenderKey are producer correlation metadata: they are
-	// part of the published contract, are accepted, and never influence the
-	// lowering.
-	SceneID   string `json:"scene_id,omitempty"`
-	EntityID  string `json:"entity_id,omitempty"`
-	RenderKey string `json:"render_key,omitempty"`
+	// Producer correlation/group metadata. group_id/subgroup_id select
+	// plan-level animation policies; the other keys remain metadata only.
+	SceneID    string `json:"scene_id,omitempty"`
+	EntityID   string `json:"entity_id,omitempty"`
+	RenderKey  string `json:"render_key,omitempty"`
+	GroupID    string `json:"group_id,omitempty"`
+	SubgroupID string `json:"subgroup_id,omitempty"`
 	// Kind is the semantic SSOT of the item. It is authoritative when
 	// PipelineGen sends it; when it is absent the template registry supplies
 	// it. A kind that contradicts the template's kind is rejected fail-closed
@@ -265,17 +303,20 @@ type semanticItem struct {
 	TemplateSlots map[string]any `json:"template_slots,omitempty"`
 	// PresetID is the semantic preset selected by PipelineGen (the plan's
 	// preset_id contract slot). It is preferred over the template mapping.
-	PresetID      string         `json:"preset_id"`
-	ImagePresetID string         `json:"image_preset_id,omitempty"`
+	PresetID      string `json:"preset_id"`
+	ImagePresetID string `json:"image_preset_id,omitempty"`
+	// MotionID selects an animation independently of PresetID (visual style).
+	// MotionParams carries that catalog plugin's open parameter set; the
+	// compiler additionally validates shared enter_frames/exit_frames controls.
 	MotionID      string         `json:"motion_id"`
 	MotionParams  map[string]any `json:"motion_params"`
 	Text          string         `json:"text"`
 	EntityCaption string         `json:"entity_caption,omitempty"`
 	// CaptionMotionID is the optional motion override for the entity caption
-	// layer. Empty resolves the shared default (text_fade_up); a value that
-	// does not target text is refused by the caption lowering instead of
-	// lowering image tracks onto a text layer.
-	CaptionMotionID string `json:"caption_motion_id,omitempty"`
+	// layer. CaptionMotionParams remain independent from the image motion.
+	CaptionMotionID     string         `json:"caption_motion_id,omitempty"`
+	CaptionMotionParams map[string]any `json:"caption_motion_params,omitempty"`
+
 	// EntityStyleID selects a RenderingGen-owned entity-card composition. The
 	// premium_random_v1 selector deterministically chooses one of 15 variants.
 	EntityStyleID string `json:"entity_style_id,omitempty"`
@@ -403,20 +444,25 @@ type SemanticAssetRef struct {
 }
 
 // SemanticImageLayer is one independently timed and animated source image in a
-// composite image item. Assets are declared once on the parent item; each child
-// names its asset_id from that declared set.
+// composite image item. Use it only for two or more images; a single image uses
+// the parent item's asset_refs, motion_id and motion_params. Assets are declared
+// once on the parent item; each child names its asset_id from that declared set
+// and may override preset_id, motion_id and motion_params independently.
 type SemanticImageLayer struct {
-	ID              string               `json:"id"`
-	AssetID         string               `json:"asset_id"`
-	StartMS         int64                `json:"start_ms"`
-	EndMS           int64                `json:"end_ms"`
-	PresetID        string               `json:"preset_id"`
-	MotionID        string               `json:"motion_id"`
-	MotionParams    map[string]any       `json:"motion_params"`
-	Caption         string               `json:"caption,omitempty"`
-	CaptionMotionID string               `json:"caption_motion_id,omitempty"`
-	Params          map[string]any       `json:"params"`
-	Frame           *semanticSourceFrame `json:"frame,omitempty"`
+	ID                  string               `json:"id"`
+	GroupID             string               `json:"group_id,omitempty"`
+	SubgroupID          string               `json:"subgroup_id,omitempty"`
+	AssetID             string               `json:"asset_id"`
+	StartMS             int64                `json:"start_ms"`
+	EndMS               int64                `json:"end_ms"`
+	PresetID            string               `json:"preset_id"`
+	MotionID            string               `json:"motion_id"`
+	MotionParams        map[string]any       `json:"motion_params"`
+	Caption             string               `json:"caption,omitempty"`
+	CaptionMotionID     string               `json:"caption_motion_id,omitempty"`
+	CaptionMotionParams map[string]any       `json:"caption_motion_params,omitempty"`
+	Params              map[string]any       `json:"params"`
+	Frame               *semanticSourceFrame `json:"frame,omitempty"`
 }
 
 // Audio carries the audio policy in the Chronon render plan so the

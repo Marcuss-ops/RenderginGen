@@ -56,12 +56,13 @@ func (i *semanticItem) UnmarshalJSON(data []byte) error {
 			return fmt.Errorf("overlay: item %q shape template %q is not registered", i.ID, i.Template)
 		}
 	}
-	if kind == KindEntityImage && len(i.ImageLayers) > 0 {
-		// Composite image captions are optional metadata. PipelineGen supplies
-		// them for named entities, while generic composite image plans remain
-		// valid without names.
-		if strings.TrimSpace(i.Kind) == "" || strings.TrimSpace(i.PresetID) == "" || i.DurationMS == nil {
-			return fmt.Errorf("overlay: composite entity image %q requires kind, preset_id and duration_ms from PipelineGen", i.ID)
+	if len(i.ImageLayers) > 0 && (kind == KindEntityImage || isImageKind(kind)) {
+		// Composite image declarations carry their own independently timed
+		// layers. A parent duration is not consumed by the compiler, but when
+		// PipelineGen supplies it, the usual positive/matching check above
+		// still applies. Require an explicit kind and preset for entity cards.
+		if kind == KindEntityImage && (strings.TrimSpace(i.Kind) == "" || strings.TrimSpace(i.PresetID) == "") {
+			return fmt.Errorf("overlay: composite entity image %q requires kind and preset_id from PipelineGen", i.ID)
 		}
 		return nil
 	}

@@ -119,6 +119,19 @@ func (p *Processor) PrepareJob(ctx context.Context, job *queue.Job) (*PreparedJo
 	if err != nil {
 		return nil, err
 	}
+	// This stage OWNS the workspace until it hands the prepared job to the GPU
+	// lane. Registering the cleanup guard once makes "an error path forgot to
+	// remove the workspace" impossible: the historical shape repeated an
+	// explicit cleanupWorkspace call on ~20 return sites, so a new error path
+	// that omitted it leaked a scratch directory — invisible except as RAM
+	// exhaustion on the (frequently tmpfs) jobs root. Ownership transfers only
+	// on the single success return, which clears owned first.
+	owned := true
+	defer func() {
+		if owned {
+			p.cleanupWorkspace(ws, job.ID)
+		}
+	}()
 	// Liveness marker for the stale-workspace sweeper: a prepared workspace
 	// can sit idle until a GPU lane picks it up, and materialization or a
 	// long render may write nothing new to the workspace directory tree for
@@ -128,8 +141,8 @@ func (p *Processor) PrepareJob(ctx context.Context, job *queue.Job) (*PreparedJo
 	// marker, CleanupStale would RemoveAll a live job's directory.
 	//
 	// The window comes from pipeline.workspace_lease_ttl (see
-	// Processor.SetWorkspaceLeaseTTL); config guarantees the TTL exceeds the
-	// refresh period, so one missed refresh can never make a live render
+	// processor.Options.WorkspaceLeaseTTL); config guarantees the TTL exceeds
+	// the refresh period, so one missed refresh can never make a live render
 	// sweepable.
 	if err := ws.WriteLease(time.Now().Add(p.workspaceLeaseDuration())); err != nil {
 		// Fail closed: without the initial marker CleanupStale would treat an
@@ -138,7 +151,6 @@ func (p *Processor) PrepareJob(ctx context.Context, job *queue.Job) (*PreparedJo
 		// the liveness invariant must hold from the moment the workspace
 		// exists. Occasional refresh failures during RunGPU stay tolerable
 		// (the TTL covers them); the missing first marker is not.
-		p.cleanupWorkspace(ws, job.ID)
 		return nil, fmt.Errorf("processor: establish workspace lease for %s: %w", job.ID, err)
 	}
 	// Per-job log file, live inside the workspace this job owns: it is what an
@@ -174,7 +186,6 @@ func (p *Processor) PrepareJob(ctx context.Context, job *queue.Job) (*PreparedJo
 		return res, rErr
 	}
 	if err := ws.MaterializePaths(ctx, wrappedResolve, assets); err != nil {
-		p.cleanupWorkspace(ws, job.ID)
 		return nil, err
 	}
 	record(metricnames.PrepareAssetResolveStem, time.Now().Add(-totalResolveDur))
@@ -185,7 +196,6 @@ func (p *Processor) PrepareJob(ctx context.Context, job *queue.Job) (*PreparedJo
 	// no JSON round-trip.
 	renamed, err := normalizeMaterializedImagePaths(ws.Root(), plan)
 	if err != nil {
-		p.cleanupWorkspace(ws, job.ID)
 		return nil, err
 	}
 	if len(renamed) > 0 {
@@ -195,20 +205,16 @@ func (p *Processor) PrepareJob(ctx context.Context, job *queue.Job) (*PreparedJo
 		// package-to-layer validation sees identical logical paths.
 		preparedPackage, err = overlay.PreparePackage(plan, preparedPackage.Language, finalPreparedAssets(compiledAssets, renamed))
 		if err != nil {
-			p.cleanupWorkspace(ws, job.ID)
 			return nil, fmt.Errorf("processor: rebuild prepared overlay package after image path normalization: %w", err)
 		}
 	}
 	if err := fitEntityImageLayersToAssets(ws.Root(), plan); err != nil {
-		p.cleanupWorkspace(ws, job.ID)
 		return nil, err
 	}
 	if err := validateMapRasterAssets(ws.Root(), plan); err != nil {
-		p.cleanupWorkspace(ws, job.ID)
 		return nil, err
 	}
 	if err := materializeBuiltinFonts(ws.Root(), plan); err != nil {
-		p.cleanupWorkspace(ws, job.ID)
 		return nil, err
 	}
 	// Every path this stage created: each manifest asset MaterializePaths
@@ -224,7 +230,6 @@ func (p *Processor) PrepareJob(ctx context.Context, job *queue.Job) (*PreparedJo
 		proven[name] = struct{}{}
 	}
 	if err := validateMaterializedPlanAssets(ws.Root(), plan, proven); err != nil {
-		p.cleanupWorkspace(ws, job.ID)
 		return nil, err
 	}
 	record(metricnames.PrepareMaterializeStem, matStart)
@@ -240,7 +245,6 @@ func (p *Processor) PrepareJob(ctx context.Context, job *queue.Job) (*PreparedJo
 	// written. This keeps subtitles in the Vulkan composition and avoids a
 	// second full-file ffmpeg encode after NVENC has finished.
 	if subtitleHash, burn, ok, subtitleErr := overlay.SubtitleAsset(job.RenderPlan); subtitleErr != nil {
-		p.cleanupWorkspace(ws, job.ID)
 		return nil, subtitleErr
 	} else if ok && burn {
 		var subtitlePath, fontPath string
@@ -255,33 +259,27 @@ func (p *Processor) PrepareJob(ctx context.Context, job *queue.Job) (*PreparedJo
 			}
 		}
 		if subtitlePath == "" {
-			p.cleanupWorkspace(ws, job.ID)
 			return nil, fmt.Errorf("processor: burn subtitles asset %s was not materialized", subtitleHash)
 		}
 		if fontPath == "" {
-			p.cleanupWorkspace(ws, job.ID)
 			return nil, fmt.Errorf("processor: burn subtitles requires a materialized .ttf or .otf font")
 		}
 		burnStart := time.Now()
 		subtitleBytes, readErr := os.ReadFile(subtitlePath)
 		if readErr != nil {
-			p.cleanupWorkspace(ws, job.ID)
 			return nil, fmt.Errorf("processor: read subtitles %s: %w", subtitlePath, readErr)
 		}
 		// Style + safe-area box are resolved from the plan's typed subtitle
 		// block (SubtitleStyleAsset). The processor never invents typography.
 		burnStyle, burnBox, styleErr := overlay.SubtitleStyleAsset(job.RenderPlan)
 		if styleErr != nil {
-			p.cleanupWorkspace(ws, job.ID)
 			return nil, styleErr
 		}
 		if burnStyle == nil || burnBox.Width <= 0 || burnBox.Height <= 0 {
-			p.cleanupWorkspace(ws, job.ID)
 			return nil, fmt.Errorf("processor: burn subtitles requires a typed subtitle style block (font_size_px, width/height) in the plan")
 		}
 		subtitleCount, burnErr := overlay.BurnASSIntoPlanTyped(plan, subtitleBytes, fontPath, burnStyle, burnBox)
 		if burnErr != nil {
-			p.cleanupWorkspace(ws, job.ID)
 			return nil, burnErr
 		}
 		// Burn-in appends concrete Chronon text layers after CompileSemantic
@@ -290,7 +288,6 @@ func (p *Processor) PrepareJob(ctx context.Context, job *queue.Job) (*PreparedJo
 		// Chronon boundary validates this relationship before GPU compilation.
 		preparedPackage, err = overlay.PreparePackage(plan, preparedPackage.Language, finalPreparedAssets(compiledAssets, renamed))
 		if err != nil {
-			p.cleanupWorkspace(ws, job.ID)
 			return nil, fmt.Errorf("processor: rebuild prepared overlay package after subtitle burn: %w", err)
 		}
 		record(metricnames.PrepareBurnStem, burnStart)
@@ -319,20 +316,16 @@ func (p *Processor) PrepareJob(ctx context.Context, job *queue.Job) (*PreparedJo
 	}
 	renderPlan, marshalErr := plan.Marshal()
 	if marshalErr != nil {
-		p.cleanupWorkspace(ws, job.ID)
 		return nil, fmt.Errorf("processor: encode render plan: %w", marshalErr)
 	}
 	if err := ws.WritePlan(renderPlan); err != nil {
-		p.cleanupWorkspace(ws, job.ID)
 		return nil, err
 	}
 	preparedBytes, preparedErr := json.Marshal(preparedPackage)
 	if preparedErr != nil {
-		p.cleanupWorkspace(ws, job.ID)
 		return nil, fmt.Errorf("processor: encode prepared overlay package: %w", preparedErr)
 	}
 	if err := ws.WritePreparedPackage(preparedBytes); err != nil {
-		p.cleanupWorkspace(ws, job.ID)
 		return nil, fmt.Errorf("processor: write prepared overlay package: %w", err)
 	}
 	record(metricnames.PrepareMarshalStem, marshalStart)
@@ -355,6 +348,7 @@ func (p *Processor) PrepareJob(ctx context.Context, job *queue.Job) (*PreparedJo
 			plan.Output.Audio.Mode, plan.Output.Audio.Codec, plan.Output.Audio.SampleRate, plan.Output.Audio.Channels)
 	}
 	record(metricnames.PrepareTotalStem, totalStart)
+	owned = false
 	return &PreparedJob{
 		Job:                   job,
 		Workspace:             ws,

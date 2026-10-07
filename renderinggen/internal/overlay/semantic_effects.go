@@ -2,22 +2,36 @@ package overlay
 
 import (
 	"fmt"
-	"math"
 	"strings"
 )
 
-func validateEffectNumber(params map[string]any, key, effect, itemID string, minimum, maximum float64, exclusiveMinimum bool) error {
+type effectParameterBounds struct {
+	minimum      float64
+	maximum      float64
+	exclusiveMin bool
+	integer      bool
+}
+
+func validateEffectNumber(params map[string]any, key, effect, itemID string, bounds effectParameterBounds) error {
 	raw, exists := params[key]
 	if !exists {
 		return nil
 	}
 	value, err := toFloat(raw)
-	if err != nil || !finite(value) || value > maximum || value < minimum || (exclusiveMinimum && value == minimum) {
+	if err != nil || !finite(value) || value > bounds.maximum || value < bounds.minimum || (bounds.exclusiveMin && value == bounds.minimum) {
 		comparison := "["
-		if exclusiveMinimum {
+		if bounds.exclusiveMin {
 			comparison = "("
 		}
-		return fmt.Errorf("overlay: item %q %s %s must be in %s%g, %g]", itemID, effect, key, comparison, minimum, maximum)
+		return fmt.Errorf("overlay: item %q %s %s must be in %s%g, %g]", itemID, effect, key, comparison, bounds.minimum, bounds.maximum)
+	}
+	if bounds.integer {
+		integer, err := toInt(raw)
+		if err != nil {
+			return fmt.Errorf("overlay: item %q %s %s must be in [%g, %g]", itemID, effect, key, bounds.minimum, bounds.maximum)
+		}
+		params[key] = integer
+		return nil
 	}
 	params[key] = value
 	return nil
@@ -36,33 +50,28 @@ func validateEffectParams(effect LayerEffect, itemID string) error {
 			params[key] = color
 			continue
 		}
-		if _, err := toFloat(value); err == nil {
-			if !finite(mustFloat(value)) {
-				return fmt.Errorf("overlay: item %q effect %s parameter %s must be finite", itemID, effect.Type, key)
-			}
+		if number, err := toFloat(value); err == nil && !finite(number) {
+			return fmt.Errorf("overlay: item %q effect %s parameter %s must be finite", itemID, effect.Type, key)
 		}
 	}
-	bounds := map[string][3]float64{
-		"noise.amount": {0, 1, 0}, "noise.size": {0, 256, 1},
-		"fractal_noise.amplitude": {0, 4, 0}, "fractal_noise.frequency": {0, 10, 1}, "fractal_noise.octaves": {1, 16, 0},
-		"vignette.amount": {0, 1, 0}, "vignette.radius": {0, 1, 0}, "vignette.softness": {0, 1, 0},
-		"gaussian_blur.radius": {0, 256, 0}, "bloom.radius": {0, 256, 0}, "bloom.intensity": {0, 4, 0},
-		"glow.radius": {0, 256, 0}, "glow.intensity": {0, 4, 0},
+	bounds := map[string]effectParameterBounds{
+		"noise.amount": {minimum: 0, maximum: 1}, "noise.size": {minimum: 0, maximum: 256, exclusiveMin: true},
+		"fractal_noise.amplitude": {minimum: 0, maximum: 4}, "fractal_noise.frequency": {minimum: 0, maximum: 10, exclusiveMin: true},
+		"fractal_noise.octaves": {minimum: 1, maximum: 16, integer: true},
+		"vignette.amount":       {minimum: 0, maximum: 1}, "vignette.radius": {minimum: 0, maximum: 1}, "vignette.softness": {minimum: 0, maximum: 1},
+		"gaussian_blur.radius": {minimum: 0, maximum: 256}, "bloom.radius": {minimum: 0, maximum: 256}, "bloom.intensity": {minimum: 0, maximum: 4},
+		"glow.radius": {minimum: 0, maximum: 256}, "glow.intensity": {minimum: 0, maximum: 4},
 	}
 	for key, limits := range bounds {
 		prefix, name, _ := strings.Cut(key, ".")
 		if effect.Type != prefix {
 			continue
 		}
-		if err := validateEffectNumber(params, name, effect.Type, itemID, limits[0], limits[1], limits[2] == 1); err != nil {
+		if err := validateEffectNumber(params, name, effect.Type, itemID, limits); err != nil {
 			return err
 		}
 	}
 	return nil
-}
-func mustFloat(raw any) float64 {
-	value, _ := toFloat(raw)
-	return value
 }
 func resolveLayerEffects(raw any, itemID string) ([]LayerEffect, error) {
 	if raw == nil {
@@ -118,107 +127,20 @@ func resolveLayerEffects(raw any, itemID string) ([]LayerEffect, error) {
 		// Normalize parameters
 		if intensity, ok := params["intensity"]; ok {
 			f, err := toFloat(intensity)
-			if err == nil {
-				switch effType {
-				case "noise", "vignette":
-					if _, hasAmount := params["amount"]; !hasAmount {
-						params["amount"] = f
-					}
-				case "fractal_noise":
-					if _, hasAmp := params["amplitude"]; !hasAmp {
-						params["amplitude"] = f
-					}
-				case "bloom", "glow":
-					params["intensity"] = f
-				}
+			if err != nil {
+				return nil, fmt.Errorf("overlay: item %q effect %s intensity must be a number: %w", itemID, effType, err)
 			}
-		}
-
-		// Fail-closed bounds check for each effect kind
-		switch effType {
-		case "noise":
-			if amt, ok := params["amount"]; ok {
-				f, err := toFloat(amt)
-				if err != nil || f < 0 || f > 1 || math.IsNaN(f) || math.IsInf(f, 0) {
-					return nil, fmt.Errorf("overlay: item %q noise amount %v must be in [0, 1]", itemID, amt)
+			switch effType {
+			case "noise", "vignette":
+				if _, hasAmount := params["amount"]; !hasAmount {
+					params["amount"] = f
 				}
-			}
-			if sz, ok := params["size"]; ok {
-				f, err := toFloat(sz)
-				if err != nil || f <= 0 || f > 256 || math.IsNaN(f) {
-					return nil, fmt.Errorf("overlay: item %q noise size %v must be in (0, 256]", itemID, sz)
+			case "fractal_noise":
+				if _, hasAmp := params["amplitude"]; !hasAmp {
+					params["amplitude"] = f
 				}
-			}
-		case "fractal_noise":
-			if amp, ok := params["amplitude"]; ok {
-				f, err := toFloat(amp)
-				if err != nil || f < 0 || f > 4 || math.IsNaN(f) {
-					return nil, fmt.Errorf("overlay: item %q fractal_noise amplitude %v must be in [0, 4]", itemID, amp)
-				}
-			}
-			if freq, ok := params["frequency"]; ok {
-				f, err := toFloat(freq)
-				if err != nil || f <= 0 || f > 10 || math.IsNaN(f) {
-					return nil, fmt.Errorf("overlay: item %q fractal_noise frequency %v must be in (0, 10]", itemID, freq)
-				}
-			}
-			if oct, ok := params["octaves"]; ok {
-				i, err := toInt(oct)
-				if err != nil || i < 1 || i > 16 {
-					return nil, fmt.Errorf("overlay: item %q fractal_noise octaves %v must be in [1, 16]", itemID, oct)
-				}
-			}
-		case "vignette":
-			if rad, ok := params["radius"]; ok {
-				f, err := toFloat(rad)
-				if err != nil || f < 0 || f > 1 || math.IsNaN(f) || math.IsInf(f, 0) {
-					return nil, fmt.Errorf("overlay: item %q vignette radius %v must be in [0, 1]", itemID, rad)
-				}
-			}
-			if soft, ok := params["softness"]; ok {
-				f, err := toFloat(soft)
-				if err != nil || f < 0 || f > 1 || math.IsNaN(f) || math.IsInf(f, 0) {
-					return nil, fmt.Errorf("overlay: item %q vignette softness %v must be in [0, 1]", itemID, soft)
-				}
-			}
-			if amt, ok := params["amount"]; ok {
-				f, err := toFloat(amt)
-				if err != nil || f < 0 || f > 1 || math.IsNaN(f) || math.IsInf(f, 0) {
-					return nil, fmt.Errorf("overlay: item %q vignette amount %v must be in [0, 1]", itemID, amt)
-				}
-			}
-		case "gaussian_blur":
-			if rad, ok := params["radius"]; ok {
-				f, err := toFloat(rad)
-				if err != nil || f < 0 || f > 256 || math.IsNaN(f) {
-					return nil, fmt.Errorf("overlay: item %q gaussian_blur radius %v must be in [0, 256]", itemID, rad)
-				}
-			}
-		case "bloom":
-			if rad, ok := params["radius"]; ok {
-				f, err := toFloat(rad)
-				if err != nil || f < 0 || f > 256 || math.IsNaN(f) {
-					return nil, fmt.Errorf("overlay: item %q bloom radius %v must be in [0, 256]", itemID, rad)
-				}
-			}
-			if inten, ok := params["intensity"]; ok {
-				f, err := toFloat(inten)
-				if err != nil || f < 0 || f > 4 || math.IsNaN(f) {
-					return nil, fmt.Errorf("overlay: item %q bloom intensity %v must be in [0, 4]", itemID, inten)
-				}
-			}
-		case "glow":
-			if rad, ok := params["radius"]; ok {
-				f, err := toFloat(rad)
-				if err != nil || f < 0 || f > 256 || math.IsNaN(f) {
-					return nil, fmt.Errorf("overlay: item %q glow radius %v must be in [0, 256]", itemID, rad)
-				}
-			}
-			if inten, ok := params["intensity"]; ok {
-				f, err := toFloat(inten)
-				if err != nil || f < 0 || f > 4 || math.IsNaN(f) {
-					return nil, fmt.Errorf("overlay: item %q glow intensity %v must be in [0, 4]", itemID, inten)
-				}
+			case "bloom", "glow":
+				params["intensity"] = f
 			}
 		}
 

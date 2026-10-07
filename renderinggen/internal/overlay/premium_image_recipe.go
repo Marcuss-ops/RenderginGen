@@ -26,8 +26,11 @@ func imageMotionAnimation(id string, params map[string]any, duration int64, pres
 		return nil, err
 	}
 	if definition != nil {
+		enter, exit, err := motionWindows(params, definition.Exit)
+		if err != nil {
+			return nil, err
+		}
 		animation := premiumTracks(*definition, definition.Tracks, duration)
-		enter, exit := motionWindows(params, definition.Exit)
 		if animation != nil {
 			if enter > 0 {
 				animation.Tracks = retimeMotionTracks(animation.Tracks, duration, int64(enter))
@@ -526,6 +529,7 @@ func compilePremiumImageStack(ri resolvedItem, src *semanticPlan, registry *asse
 		childItem.MotionParams = nil
 		childItem.EntityCaption = ""
 		childItem.CaptionMotionID = child.CaptionMotionID
+		childItem.CaptionMotionParams = child.CaptionMotionParams
 		childItem.Frame = child.Frame
 		childItem.Params = child.Params
 		childResolved := ri

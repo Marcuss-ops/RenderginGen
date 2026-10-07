@@ -16,10 +16,14 @@ import (
 	"strings"
 
 	queue "github.com/Marcuss-ops/RenderingGen/queue/client"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/batch"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/motion"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/overlay"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/renderbatch"
 )
+
+// SchemaBatchManifestV1 is retained as an alias for corpus-builder callers.
+const SchemaBatchManifestV1 = batch.SchemaBatchManifestV1
 
 // Corpus canvas constants. Both preset corpora render the same 5-second
 // 1920x1080/24 fps clip on the pale olive canvas the preset matrix was authored
@@ -30,10 +34,6 @@ const (
 	canvasFPSNum = 24
 	canvasFPSDen = 1
 	durationMS   = 5000
-
-	// SchemaBatchManifestV1 is the batch master this package emits: the same
-	// envelope cmd/batch-submit expands.
-	SchemaBatchManifestV1 = "renderinggen.batch-manifest.v1"
 
 	fontPoppins  = "testdata/golden/assets/fonts/Poppins-Bold.ttf"
 	fontInter    = "testdata/golden/assets/fonts/Inter-Bold.ttf"
@@ -61,15 +61,12 @@ type BuildResult struct {
 // fields, so this single document is both the input of record and the report
 // source.
 type manifestJob struct {
-	ID         string           `json:"id"`
-	RenderPlan json.RawMessage  `json:"render_plan"`
-	Assets     []queue.AssetRef `json:"assets"`
+	batch.FlatJob
 
 	Family                  string   `json:"family,omitempty"`
 	Text                    string   `json:"text,omitempty"`
 	MotionID                string   `json:"motion_id,omitempty"`
 	MotionPool              []string `json:"motion_pool,omitempty"`
-	SelectionSeed           uint64   `json:"selection_seed,omitempty"`
 	PresetID                string   `json:"preset_id,omitempty"`
 	EntityID                string   `json:"entity_id,omitempty"`
 	EntityName              string   `json:"entity_name,omitempty"`
@@ -82,7 +79,7 @@ type manifestJob struct {
 
 type batchManifestDocument struct {
 	SchemaVersion string        `json:"schema_version"`
-	BatchID       string        `json:"batch_id"`
+	BatchID       batch.BatchID `json:"batch_id"`
 	Jobs          []manifestJob `json:"jobs"`
 }
 
@@ -230,10 +227,12 @@ func BuildTysonManifest(opts TysonBuildOptions) (*BuildResult, error) {
 		}
 	}
 
-	document := batchManifestDocument{SchemaVersion: SchemaBatchManifestV1, BatchID: opts.BatchID}
+	document := batchManifestDocument{SchemaVersion: SchemaBatchManifestV1, BatchID: batch.BatchID(opts.BatchID)}
+	if err := validateMotionPool(phrasePool); err != nil {
+		return nil, fmt.Errorf("overlaybatch: invalid phrase motion pool: %w", err)
+	}
 	for index, phrase := range phrases {
 		jobID := fmt.Sprintf("phrase-%02d", index+1)
-		selectionSeed := phraseSelectionSeed(opts.BatchID+"/"+jobID, "important-phrase")
 		motionID, err := selectBatchMotion(phrasePool, opts.BatchID, index)
 		if err != nil {
 			return nil, fmt.Errorf("overlaybatch: select motion for %s: %w", jobID, err)
@@ -264,30 +263,26 @@ func BuildTysonManifest(opts TysonBuildOptions) (*BuildResult, error) {
 			return nil, fmt.Errorf("overlaybatch: build plan %s: %w", jobID, err)
 		}
 		document.Jobs = append(document.Jobs, manifestJob{
-			ID:            jobID,
-			RenderPlan:    plan,
-			Assets:        fonts,
-			Family:        "phrase",
-			Text:          phrase,
-			MotionID:      motionID,
-			MotionPool:    append([]string(nil), phrasePool...),
-			SelectionSeed: selectionSeed,
-			PresetID:      overlay.PhraseDefaultPresetID,
+			FlatJob:    batch.FlatJob{ID: jobID, RenderPlan: plan, Assets: fonts},
+			Family:     "phrase",
+			Text:       phrase,
+			MotionID:   motionID,
+			MotionPool: append([]string(nil), phrasePool...),
+			PresetID:   overlay.PhraseDefaultPresetID,
 		})
 	}
 	imageMotionPool := item.MediaPlan.Animation.ImageMotionIDs
 	if len(imageMotionPool) == 0 {
 		imageMotionPool = motion.Registry.ImagePremiumV1MotionIDs()
 	}
-	if len(imageMotionPool) == 0 {
-		return nil, fmt.Errorf("overlaybatch: image motion inventory is empty")
+	if err := validateMotionPool(imageMotionPool); err != nil {
+		return nil, fmt.Errorf("overlaybatch: invalid image motion pool: %w", err)
 	}
 
 	entranceFrames := imageEntranceFrames
 	entranceSeconds := imageEntranceSeconds
 	for index, entity := range tysonEntities {
 		jobID := fmt.Sprintf("image-%02d", index+1)
-		selectionSeed := phraseSelectionSeed(opts.BatchID+"/"+jobID, "entity-image")
 		motionID, err := selectBatchMotion(imageMotionPool, opts.BatchID, index)
 		if err != nil {
 			return nil, fmt.Errorf("overlaybatch: select motion for %s: %w", jobID, err)
@@ -361,15 +356,12 @@ func BuildTysonManifest(opts TysonBuildOptions) (*BuildResult, error) {
 			SourceURL:   assetURL,
 		})
 		document.Jobs = append(document.Jobs, manifestJob{
-			ID:                      jobID,
-			RenderPlan:              plan,
-			Assets:                  assets,
+			FlatJob:                 batch.FlatJob{ID: jobID, RenderPlan: plan, Assets: assets},
 			Family:                  "image",
 			Text:                    entity.name,
 			PresetID:                entity.preset,
 			MotionID:                motionID,
 			MotionPool:              append([]string(nil), imageMotionPool...),
-			SelectionSeed:           selectionSeed,
 			EntityID:                entity.entityID,
 			EntityName:              entity.name,
 			Asset:                   entity.file,
@@ -411,7 +403,7 @@ func BuildImageMotionManifest(opts ImageMotionBuildOptions) (*BuildResult, error
 	if len(pool) != 18 {
 		return nil, fmt.Errorf("overlaybatch: image motion inventory has %d entries, want 18", len(pool))
 	}
-	document := batchManifestDocument{SchemaVersion: SchemaBatchManifestV1, BatchID: opts.BatchID}
+	document := batchManifestDocument{SchemaVersion: SchemaBatchManifestV1, BatchID: batch.BatchID(opts.BatchID)}
 	for index, motionID := range pool {
 		jobID := fmt.Sprintf("image-motion-%02d", index+1)
 		plan, err := renderbatch.BuildPlan(renderbatch.PlanSpec{
@@ -431,8 +423,8 @@ func BuildImageMotionManifest(opts ImageMotionBuildOptions) (*BuildResult, error
 			return nil, fmt.Errorf("overlaybatch: build image motion plan %s (%s): %w", jobID, motionID, err)
 		}
 		document.Jobs = append(document.Jobs, manifestJob{
-			ID: jobID, RenderPlan: plan,
-			Assets: []queue.AssetRef{{Hash: digest, LogicalPath: matrixImageLogicalPath, SourceURL: assetURL}},
+			FlatJob: batch.FlatJob{ID: jobID, RenderPlan: plan,
+				Assets: []queue.AssetRef{{Hash: digest, LogicalPath: matrixImageLogicalPath, SourceURL: assetURL}}},
 			Family: "image", MotionID: motionID, PresetID: overlay.ImageMotionCorpusPresetID, Asset: filepath.Base(matrixImageFile),
 			AssetSource: "RenderingGen testdata golden image; fixed across motion matrix",
 		})
@@ -469,56 +461,44 @@ func matrixImageURL(base string) string {
 	return strings.TrimRight(base, "/") + "/" + filepath.Base(matrixImageFile)
 }
 
-func phraseSelectionSeed(planID, itemID string) uint64 {
-	digest := sha256.Sum256([]byte(planID + "\x00" + itemID))
-	return binary.BigEndian.Uint64(digest[:8])
-}
-
-func selectPhraseMotion(pool []string, seed uint64) (string, error) {
-	if len(pool) == 0 {
-		return "", fmt.Errorf("motion pool is empty")
-	}
-	seen := make(map[string]struct{}, len(pool))
-	for _, id := range pool {
-		if strings.TrimSpace(id) == "" {
-			return "", fmt.Errorf("motion pool contains an empty id")
-		}
-		if _, duplicate := seen[id]; duplicate {
-			return "", fmt.Errorf("motion pool repeats %q", id)
-		}
-		seen[id] = struct{}{}
-		if _, err := motion.Registry.Resolve(id); err != nil {
-			return "", fmt.Errorf("motion pool contains unknown id %q: %w", id, err)
-		}
-	}
-	var input [8]byte
-	binary.BigEndian.PutUint64(input[:], seed)
-	digest := sha256.Sum256(input[:])
-	index := binary.BigEndian.Uint64(digest[:8]) % uint64(len(pool))
-	return pool[index], nil
+func batchMotionStart(batchID string, poolSize uint64) uint64 {
+	digest := sha256.Sum256([]byte(batchID + "\x00animation-order"))
+	return binary.BigEndian.Uint64(digest[:8]) % poolSize
 }
 
 // selectBatchMotion rotates through a catalog pool from a batch-specific
 // starting point, avoiding repeats within one cycle through the pool.
 func selectBatchMotion(pool []string, batchID string, index int) (string, error) {
+	if err := validateMotionPool(pool); err != nil {
+		return "", err
+	}
+	if index < 0 {
+		return "", fmt.Errorf("motion index cannot be negative")
+	}
+	poolSize := uint64(len(pool))
+	start := batchMotionStart(batchID, poolSize)
+	offset := uint64(index) % poolSize
+	return pool[(start+offset)%poolSize], nil
+}
+
+func validateMotionPool(pool []string) error {
 	if len(pool) == 0 {
-		return "", fmt.Errorf("motion pool is empty")
+		return fmt.Errorf("motion pool is empty")
 	}
 	seen := make(map[string]struct{}, len(pool))
 	for _, id := range pool {
 		if strings.TrimSpace(id) == "" {
-			return "", fmt.Errorf("motion pool contains an empty id")
+			return fmt.Errorf("motion pool contains an empty id")
 		}
 		if _, duplicate := seen[id]; duplicate {
-			return "", fmt.Errorf("motion pool repeats %q", id)
+			return fmt.Errorf("motion pool repeats %q", id)
 		}
 		seen[id] = struct{}{}
 		if _, err := motion.Registry.Resolve(id); err != nil {
-			return "", fmt.Errorf("motion pool contains unknown id %q: %w", id, err)
+			return fmt.Errorf("motion pool contains unknown id %q: %w", id, err)
 		}
 	}
-	start := phraseSelectionSeed(batchID, "animation-order") % uint64(len(pool))
-	return pool[(start+uint64(index))%uint64(len(pool))], nil
+	return nil
 }
 
 // MultilingualBuildOptions configures the multilingual matrix build.
@@ -611,7 +591,7 @@ func BuildMultilingualManifest(opts MultilingualBuildOptions) (*BuildResult, err
 		return nil, fmt.Errorf("overlaybatch: the embedded ChrononTemplate catalog is missing its phrase or image overlay selection")
 	}
 
-	document := batchManifestDocument{SchemaVersion: SchemaBatchManifestV1, BatchID: opts.BatchID}
+	document := batchManifestDocument{SchemaVersion: SchemaBatchManifestV1, BatchID: batch.BatchID(opts.BatchID)}
 	phrases, images := 0, 0
 	for _, row := range phraseOverlays {
 		if len(wanted) > 0 && !wanted[row.ID] {
@@ -651,13 +631,11 @@ func BuildMultilingualManifest(opts MultilingualBuildOptions) (*BuildResult, err
 				return nil, fmt.Errorf("overlaybatch: build plan %s: %w", jobID, err)
 			}
 			document.Jobs = append(document.Jobs, manifestJob{
-				ID:         jobID,
-				RenderPlan: plan,
-				Assets:     fontsByLanguage[language],
-				Family:     "phrase",
-				Text:       text,
-				MotionID:   row.Motion,
-				PresetID:   overlay.PhraseDefaultPresetID,
+				FlatJob:  batch.FlatJob{ID: jobID, RenderPlan: plan, Assets: fontsByLanguage[language]},
+				Family:   "phrase",
+				Text:     text,
+				MotionID: row.Motion,
+				PresetID: overlay.PhraseDefaultPresetID,
 			})
 			phrases++
 		}
@@ -705,9 +683,7 @@ func BuildMultilingualManifest(opts MultilingualBuildOptions) (*BuildResult, err
 				return nil, fmt.Errorf("overlaybatch: build plan %s: %w", jobID, err)
 			}
 			document.Jobs = append(document.Jobs, manifestJob{
-				ID:         jobID,
-				RenderPlan: plan,
-				Assets:     []queue.AssetRef{imageAsset},
+				FlatJob:    batch.FlatJob{ID: jobID, RenderPlan: plan, Assets: []queue.AssetRef{imageAsset}},
 				Family:     "image",
 				Text:       matrixImageAssetID,
 				PresetID:   preset,
@@ -814,16 +790,21 @@ func writeBuild(document batchManifestDocument, outPath, planDir string, phrases
 	if err := checkPlanFonts(document); err != nil {
 		return nil, err
 	}
+	raw, err := json.MarshalIndent(document, "", "  ")
+	if err != nil {
+		return nil, fmt.Errorf("overlaybatch: encode manifest: %w", err)
+	}
+	// Validate the exact wire document through the same decoder used by
+	// batch-submit before writing either the manifest or its plan sidecars.
+	if _, err := batch.Decode(raw); err != nil {
+		return nil, fmt.Errorf("overlaybatch: built manifest is not submit-ready: %w", err)
+	}
 	if planDir != "" {
 		for _, job := range document.Jobs {
 			if err := writePlanFile(filepath.Join(planDir, job.ID+".json"), job.RenderPlan); err != nil {
 				return nil, err
 			}
 		}
-	}
-	raw, err := json.MarshalIndent(document, "", "  ")
-	if err != nil {
-		return nil, fmt.Errorf("overlaybatch: encode manifest: %w", err)
 	}
 	if err := os.MkdirAll(filepath.Dir(outPath), 0o755); err != nil {
 		return nil, err
@@ -832,7 +813,7 @@ func writeBuild(document batchManifestDocument, outPath, planDir string, phrases
 		return nil, err
 	}
 	return &BuildResult{
-		BatchID: document.BatchID,
+		BatchID: string(document.BatchID),
 		Jobs:    len(document.Jobs),
 		Phrases: phrases,
 		Images:  images,

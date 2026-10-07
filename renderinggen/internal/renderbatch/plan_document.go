@@ -26,17 +26,8 @@ import (
 // version fails at prepare time instead of producing a file the renderer
 // silently rejects.
 const (
-	ChrononPlanSchema  = "chronon.render-plan.v2"
-	ChrononPlanVersion = 2
-	// ChrononPlanSchemaV3 is the schema Marshal() upgrades a plan to when the
-	// compiled layers use V3 features (effects, masks, camera…). Chronon's
-	// decoder accepts both; the batch must too, or one blur motion breaks the
-	// whole matrix.
-	ChrononPlanSchemaV3 = "chronon.render-plan.v3"
-	// ChrononPlanVersionV3 pairs with ChrononPlanSchemaV3: Marshal() bumps the
-	// version with the schema, so the batch can pin the pairing instead of
-	// trusting one half of it.
-	ChrononPlanVersionV3 = 3
+	ChrononPlanSchema   = overlay.RenderPlanSchemaV2
+	ChrononPlanSchemaV3 = overlay.RenderPlanSchemaV3
 )
 
 // PlanSpec is a caller-supplied semantic plan to build and compile.
@@ -148,7 +139,7 @@ func BuildPlan(spec PlanSpec) ([]byte, error) {
 		return nil, fmt.Errorf("renderbatch: plan %s declares no items", spec.PlanID)
 	}
 	doc := semanticPlanDocument{
-		SchemaVersion:   OverlayPlanSchema,
+		SchemaVersion:   overlay.SemanticSchema,
 		PlanID:          spec.PlanID,
 		VideoID:         spec.PlanID,
 		ProjectID:       spec.ProjectID,
@@ -219,19 +210,12 @@ func CompileRenderPlan(raw []byte) ([]byte, error) {
 	if result.Plan == nil {
 		return nil, fmt.Errorf("renderbatch: compiler returned no plan")
 	}
-	wantVersion := ChrononPlanVersion
-	if result.Plan.Schema == ChrononPlanSchemaV3 {
-		wantVersion = ChrononPlanVersionV3
+	wantSchema, wantVersion := overlay.RenderPlanWireVersion(result.Plan)
+	if result.Plan.Schema != wantSchema || result.Plan.Version != wantVersion {
+		return nil, fmt.Errorf("renderbatch: compiler emitted %s v%d, want %s v%d",
+			result.Plan.Schema, result.Plan.Version, wantSchema, wantVersion)
 	}
-	if result.Plan.Schema != ChrononPlanSchema && result.Plan.Schema != ChrononPlanSchemaV3 {
-		return nil, fmt.Errorf("renderbatch: compiler emitted %s v%d, want %s or %s",
-			result.Plan.Schema, result.Plan.Version, ChrononPlanSchema, ChrononPlanSchemaV3)
-	}
-	if result.Plan.Version != wantVersion {
-		return nil, fmt.Errorf("renderbatch: compiler emitted %s v%d, want %s paired with v%d",
-			result.Plan.Schema, result.Plan.Version, result.Plan.Schema, wantVersion)
-	}
-	data, err := json.MarshalIndent(result.Plan, "", "  ")
+	data, err := result.Plan.MarshalIndent("", "  ")
 	if err != nil {
 		return nil, fmt.Errorf("renderbatch: encode render plan: %w", err)
 	}

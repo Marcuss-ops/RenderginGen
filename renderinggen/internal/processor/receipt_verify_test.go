@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/chronon"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/metricnames"
 )
 
@@ -23,7 +24,7 @@ func TestEnforceReceiptVerificationFastRecordsMissingReceipt(t *testing.T) {
 	// policy (what config.Load produces for an empty pipeline.receipt_verify)
 	// resolves to fast.
 	p := &Processor{}
-	if err := p.enforceReceiptVerification(output, metrics); err != nil {
+	if _, err := p.verifyArtifactReceipt(output, chronon.MediaReceipt{}, os.ErrNotExist, metrics); err != nil {
 		t.Fatalf("fast policy must tolerate a missing receipt: %v", err)
 	}
 	if metrics[metricnames.ChrononReceiptMissing] != 1 {
@@ -38,9 +39,8 @@ func TestEnforceReceiptVerificationNormalFailsClosedOnMissingReceipt(t *testing.
 	output := filepath.Join(t.TempDir(), "result.mp4")
 	metrics := map[string]float64{}
 
-	p := &Processor{}
-	p.SetReceiptVerify("normal")
-	if err := p.enforceReceiptVerification(output, metrics); err == nil {
+	p := &Processor{receiptVerify: renderVerifyLevel("normal")}
+	if _, err := p.verifyArtifactReceipt(output, chronon.MediaReceipt{}, os.ErrNotExist, metrics); err == nil {
 		t.Fatal("normal policy must fail closed when the receipt is missing")
 	}
 	if metrics[metricnames.ChrononReceiptMissing] != 0 {
@@ -70,9 +70,12 @@ func TestEnforceReceiptVerificationPassesWithValidReceipt(t *testing.T) {
 	}
 	metrics := map[string]float64{}
 
-	p := &Processor{}
-	p.SetReceiptVerify("normal")
-	if err := p.enforceReceiptVerification(output, metrics); err != nil {
+	p := &Processor{receiptVerify: renderVerifyLevel("normal")}
+	parsedReceipt, err := chronon.ReadMediaReceipt(output)
+	if err != nil {
+		t.Fatalf("read valid receipt: %v", err)
+	}
+	if _, err := p.verifyArtifactReceipt(output, parsedReceipt, nil, metrics); err != nil {
 		t.Fatalf("verified receipt rejected: %v", err)
 	}
 	if metrics[metricnames.ChrononReceiptMissing] != 0 {

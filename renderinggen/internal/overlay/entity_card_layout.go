@@ -5,8 +5,6 @@ import (
 	"math"
 	"strings"
 	"unicode/utf8"
-
-	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/motion"
 )
 
 // EntityCardLayoutResolver resolves the geometry of an entity card — image
@@ -300,23 +298,4 @@ func EntityCaptionMotionID(requested string) string {
 		return requested
 	}
 	return "trump_entity_text_01"
-}
-
-// entityCaptionMotionAllowed is the closed set of text motions a caption may
-// ride. The catalog is the vocabulary authority; this gate only refuses
-// motions that are not text targets at all (an image motion on a caption
-// would lower to tracks the text layer cannot honor).
-func entityCaptionMotionAllowed(id string) bool {
-	for _, candidate := range motion.Registry.TrumpEntityTextV1MotionIDs() {
-		if candidate == id {
-			return true
-		}
-	}
-	// Retain the six base text-caption IDs for existing generic entity plans.
-	for _, candidate := range motion.Registry.EntityCaptionV1MotionIDs() {
-		if candidate == id {
-			return true
-		}
-	}
-	return false
 }

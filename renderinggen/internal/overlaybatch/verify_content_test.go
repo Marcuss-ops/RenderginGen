@@ -13,6 +13,7 @@ import (
 	"testing"
 
 	queue "github.com/Marcuss-ops/RenderingGen/queue/client"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/batch"
 )
 
 // verifyCanvasBackground is the corpus canvas colour the fixtures paint, so
@@ -93,7 +94,7 @@ func verifyImageBatch(t *testing.T, clip string, opts VerifyOptions) (*VerifyRep
 	dir := t.TempDir()
 	// The artifact contract is derived from the plan, so the fixture states its
 	// duration the way a real manifest does.
-	doc := `{"schema_version":"` + SchemaBatchManifestV1 + `","batch_id":"content-gate","jobs":[` +
+	doc := `{"schema_version":"` + batch.SchemaBatchManifestV1 + `","batch_id":"content-gate","jobs":[` +
 		`{"id":"image-motion-01","family":"image","motion_id":"image_25d_blur_focus_in",` +
 		`"render_plan":{"duration_ms":5000,"items":[{"id":"image-motion","start_ms":0,"end_ms":5000}]}}]}`
 	manifest := filepath.Join(dir, "manifest.json")

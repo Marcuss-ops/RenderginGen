@@ -9,7 +9,7 @@
 //
 // The surface is deliberately fed from EXISTING instrumentation instead of a
 // second measurement: the processor already reports every phase through
-// SetPhaseHook (processor.recordPhase) and reports every terminal outcome
+// Options.PhaseHook (processor.recordPhase) and reports every terminal outcome
 // through ReportComplete/ReportFailure. This package only carries those
 // observations to Prometheus, so nothing is timed twice and no series exists
 // here that the pipeline does not really produce. Series that were not wired are
@@ -147,14 +147,14 @@ func (m *Metrics) ObserveGPUGap(gap time.Duration) {
 	m.gpuGapSecond.Observe(gap.Seconds())
 }
 
-// PhaseHook adapts ObservePhase to processor.SetPhaseHook, so the worker's
+// PhaseHook adapts ObservePhase to processor.Options.PhaseHook, so the worker's
 // metrics are fed by the pipeline's existing measurement rather than a parallel
 // one.
 func (m *Metrics) PhaseHook() func(phase string, d time.Duration) {
 	return func(phase string, d time.Duration) { m.ObservePhase(phase, d) }
 }
 
-// GPUGapHook adapts ObserveGPUGap to processor.SetGPUGapHook.
+// GPUGapHook adapts ObserveGPUGap to processor.Options.GPUGapHook.
 func (m *Metrics) GPUGapHook() func(gap time.Duration) {
 	return func(gap time.Duration) { m.ObserveGPUGap(gap) }
 }
