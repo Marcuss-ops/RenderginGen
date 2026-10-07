@@ -75,7 +75,18 @@ func lowerResolvedMotion(id string, resolved *resolvedMotion, enter, exit int, p
 			exit = definition.Exit
 		}
 	}
+	// ChrononTemplate product short-phrase recipes author one complete
+	// enter/hold/exit timeline. Treating those frames as an entrance and then
+	// collapsing every keyframe after Definition.Enter used to collapse the
+	// authored opacity 0 at the end onto the opacity 1 entrance frame. The
+	// result was black/transparent text for most of the clip, then a late pop
+	// or no visible animation. Retiming the authored timeline over the phrase
+	// lifetime preserves its complete choreography and exit.
+	fullPhraseTimeline := resolved.definition != nil && resolved.definition.Category == "short_phrase_style"
 	entrance := entranceFrames(enter, exit, duration, phraseEntranceFloor)
+	if fullPhraseTimeline && duration > 0 {
+		entrance = duration
+	}
 	if phraseEntranceFloor && duration > 0 && exit > 0 {
 		// The phrase entrance duration is invariant (one third of its window).
 		// When a caller's exit would overlap it, shorten the exit rather than
@@ -90,7 +101,13 @@ func lowerResolvedMotion(id string, resolved *resolvedMotion, enter, exit int, p
 	if err != nil {
 		return nil, fmt.Errorf("overlay: compile motion %q: %w", id, err)
 	}
-	animation := &LayerAnimation{Tracks: retimeMotionTracks(fromMotionTracks(tracks), entrance, int64(authoredEnter))}
+	animationTracks := fromMotionTracks(tracks)
+	if fullPhraseTimeline {
+		animationTracks = retimeFullMotionTimeline(animationTracks, duration)
+	} else {
+		animationTracks = retimeMotionTracks(animationTracks, entrance, int64(authoredEnter))
+	}
+	animation := &LayerAnimation{Tracks: animationTracks}
 	if textPlugin, ok := plugin.(motion.TextMotionPlugin); ok {
 		definitions, err := textPlugin.CompileText(ctx, params)
 		if err != nil {
@@ -102,8 +119,38 @@ func lowerResolvedMotion(id string, resolved *resolvedMotion, enter, exit int, p
 		}
 		animation.TextAnimators = retimeTextAnimators(textAnimators, entrance)
 	}
-	animation.Tracks = appendExitTracks(animation.Tracks, exit, duration)
+	if !fullPhraseTimeline {
+		animation.Tracks = appendExitTracks(animation.Tracks, exit, duration)
+	}
 	return animation, nil
+}
+
+// retimeFullMotionTimeline fits every authored keyframe to the concrete layer
+// lifetime. It is used for ChrononTemplate recipes whose tracks already
+// contain their enter, hold and exit phases.
+func retimeFullMotionTimeline(tracks []AnimationTrack, duration int64) []AnimationTrack {
+	if duration <= 0 || len(tracks) == 0 {
+		return tracks
+	}
+	var sourceLast int64
+	for _, track := range tracks {
+		for _, keyframe := range track.Keyframes {
+			if keyframe.Frame > sourceLast {
+				sourceLast = keyframe.Frame
+			}
+		}
+	}
+	if sourceLast <= 0 {
+		return clampMotionTracks(tracks, duration)
+	}
+	targetLast := lastValidFrame(duration)
+	for i := range tracks {
+		for j := range tracks[i].Keyframes {
+			tracks[i].Keyframes[j].Frame = tracks[i].Keyframes[j].Frame * targetLast / sourceLast
+		}
+		clampAnimationTrack(&tracks[i], duration)
+	}
+	return tracks
 }
 
 // retimeTextAnimators keeps per-unit property keyframes inside the concrete

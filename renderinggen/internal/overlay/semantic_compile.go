@@ -611,6 +611,16 @@ func resolveSemanticItems(src *semanticPlan) ([]resolvedItem, error) {
 		if err != nil {
 			return nil, err
 		}
+		// Unknown templates fail closed: a non-empty template_id that
+		// resolves to no registry row and no legacy alias is a producer
+		// typo or an unregistered addition, and silently lowering it as a
+		// bare primitive once produced visibly wrong videos with pixels as
+		// the only evidence. An empty template_id stays valid (simple text
+		// primitive); compatibility travels only through the explicit
+		// legacyTemplateAliases table.
+		if strings.TrimSpace(item.Template) != "" && !spec.Registered {
+			return nil, fmt.Errorf("overlay: item %q names unknown template %q: register it in the template registry or add an explicit legacy alias", item.ID, item.Template)
+		}
 		if err := validateSemanticImageLayers(item, kind); err != nil {
 			return nil, err
 		}
@@ -849,7 +859,7 @@ func compileEntityCard(ri resolvedItem, src *semanticPlan, registry *assetRegist
 		captionMotionParams := ri.Item.CaptionMotionParams
 		style, ok := ResolveEntityStyle(ri.Item.EntityStyleID, src.PlanID, src.VideoID, ri.Item.ID)
 		if !ok {
-			style = selectRandomEntityStyle(src.PlanID, src.VideoID, ri.Item.ID)
+			style = entityStyleRegistry.sample(entityStyleRegistry.query(nil), "", src.PlanID, src.VideoID, ri.Item.ID)
 		}
 		currentStyle = style
 		hasStyle = true
