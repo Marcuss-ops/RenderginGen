@@ -9,9 +9,33 @@
     "schema_version": { "const": 1 },
     "families": { "type": "array", "items": { "type": "string", "minLength": 1 } },
     "motions": { "type": "array", "items": { "$ref": "#/$defs/motion" } },
-    "use_cases": { "type": "array", "items": { "$ref": "#/$defs/use_case" } }
+    "use_cases": { "type": "array", "items": { "$ref": "#/$defs/use_case" } },
+    "selection_model": { "$ref": "#/$defs/selection_model" }
   },
   "$defs": {
+    "caption_count": {
+      "type": "object", "additionalProperties": false,
+      "required": ["minimum", "maximum"],
+      "properties": {
+        "minimum": { "type": "integer", "minimum": 1, "maximum": 5 },
+        "maximum": { "type": "integer", "minimum": 1, "maximum": 5 }
+      }
+    },
+    "composition": {
+      "type": "object", "additionalProperties": false,
+      "properties": {
+        "image_count": { "type": "integer", "minimum": 1, "maximum": 5 },
+        "caption_count": { "$ref": "#/$defs/caption_count" },
+        "map_count": { "type": "integer", "minimum": 1, "maximum": 2 }
+      },
+      "oneOf": [
+        { "required": ["image_count"], "not": { "required": ["map_count"] } },
+        { "required": ["map_count"], "not": { "required": ["image_count"] } }
+      ],
+      "allOf": [
+        { "if": { "required": ["caption_count"] }, "then": { "required": ["image_count"] } }
+      ]
+    },
     "duration_bounds": {
       "type": "object", "additionalProperties": false,
       "required": ["minimum_frames", "maximum_frames"],
@@ -25,6 +49,9 @@
       "required": ["id", "targets_declared"],
       "properties": {
         "id": { "type": "string", "minLength": 1 },
+        "deprecated": { "type": "boolean" },
+        "remove_after": { "type": "string", "minLength": 1 },
+        "deprecation_note": { "type": "string", "minLength": 1 },
         "family": { "type": "string", "minLength": 1 },
         "targets": { "type": "array", "items": { "type": "string", "minLength": 1 } },
         "targets_declared": { "type": "boolean" },
@@ -32,18 +59,277 @@
         "exit_frames": { "type": "integer", "minimum": 0 },
         "duration_bounds": { "$ref": "#/$defs/duration_bounds" },
         "requires_3d": { "type": "boolean" },
-        "requires_camera": { "type": "boolean" }
+        "requires_camera": { "type": "boolean" },
+        "certification": { "$ref": "#/$defs/motion_certification" },
+        "preview": { "$ref": "#/$defs/motion_preview" }
+      }
+    },
+    "motion_preview": {
+      "type": "object", "additionalProperties": false,
+      "required": ["status"],
+      "properties": {
+        "status": { "enum": ["recorded", "none"], "description": "recorded means the preview ledger has an entry for this motion, not that the clip is present: the media is gitignored and regenerated from the named artifact." },
+        "artifact": { "type": "string", "minLength": 1 },
+        "media": { "type": "string", "minLength": 1 }
+      }
+    },
+    "motion_certification": {
+      "type": "object", "additionalProperties": false,
+      "required": ["status"],
+      "properties": {
+        "status": { "enum": ["passed", "failed", "unverified"], "description": "Recorded outcome inside the report snapshot. unverified means no report names this motion, so it must not be presented as certified." },
+        "report": { "type": "string", "minLength": 1 },
+        "generated_at_utc": { "type": "string", "minLength": 1 },
+        "error": { "type": "string", "minLength": 1 }
       }
     },
     "use_case": {
       "type": "object", "additionalProperties": false,
-      "required": ["id", "item_kinds", "cardinality", "description", "motion_ids"],
+      "required": ["id", "cardinality", "description", "motion_ids"],
       "properties": {
         "id": { "type": "string", "minLength": 1 },
+        "scope": { "const": "plan", "description": "Omitted for item-level use cases; plan-level compositions use this scope." },
+        "zone": { "type": "string", "minLength": 1, "description": "Product zone of the picker. Text use cases are intentionally unzoned." },
         "item_kinds": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 1 } },
         "cardinality": { "type": "string", "minLength": 1 },
         "description": { "type": "string", "minLength": 1 },
+        "composition": { "$ref": "#/$defs/composition" },
+        "background_kind": { "enum": ["color", "image", "video"] },
         "motion_ids": { "type": ["array", "null"], "items": { "type": "string", "minLength": 1 } }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "scope": { "const": "plan" } }, "required": ["scope"] },
+          "then": { "required": ["background_kind"], "not": { "anyOf": [{ "required": ["item_kinds"] }, { "required": ["composition"] }] } }
+        },
+        {
+          "if": { "required": ["background_kind"] },
+          "then": { "required": ["scope"] }
+        }
+      ]
+    },
+    "zone": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "label", "description", "status", "composition_ids"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "label": { "type": "string", "minLength": 1 },
+        "description": { "type": "string", "minLength": 1 },
+        "status": { "enum": ["available", "no_composition_authored"] },
+        "composition_ids": { "type": "array", "items": { "type": "string", "minLength": 1 } }
+      }
+    },
+    "capability": { "enum": ["2d", "3d", "camera", "geospatial"] },
+    "compatibility": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["composition_id", "motion_target", "motion_families", "motion_count", "available", "required_capabilities"],
+      "properties": {
+        "composition_id": { "type": "string", "minLength": 1 },
+        "zone": { "type": "string", "minLength": 1 },
+        "motion_target": { "type": "string", "minLength": 1 },
+        "motion_families": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+        "motion_count": { "type": "integer", "minimum": 0 },
+        "available": { "type": "boolean" },
+        "required_capabilities": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/capability" } },
+        "unavailable_reason": { "type": "string", "minLength": 1 }
+      }
+    },
+    "composition_layout": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "composition_id", "zone", "aspect_ratio", "crop_mode", "safe_area_fraction", "gap_fraction", "layer_order", "active_layer", "missing_asset_behavior", "motion_scope"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "composition_id": { "type": "string", "minLength": 1 },
+        "zone": { "type": "string", "minLength": 1 },
+        "aspect_ratio": { "type": "string", "minLength": 1 },
+        "crop_mode": { "enum": ["cover", "contain", "stretch", "none"] },
+        "safe_area_fraction": { "type": "number", "minimum": 0, "maximum": 1 },
+        "gap_fraction": { "type": "number", "minimum": 0, "maximum": 1 },
+        "layer_order": { "type": "string", "minLength": 1 },
+        "active_layer": { "type": "string", "minLength": 1 },
+        "missing_asset_behavior": { "type": "string", "minLength": 1 },
+        "motion_scope": { "enum": ["item", "per_layer"] },
+        "max_captions": { "type": "integer", "minimum": 1, "maximum": 5 },
+        "caption_motion_scope": { "enum": ["per_caption"] },
+        "caption_entry_order": { "type": "string", "minLength": 1 },
+        "caption_use_case": { "enum": ["entity_caption"] },
+        "text_limit_lines": { "type": "integer", "minimum": 1, "maximum": 3 }
+      }
+    },
+    "map_layout": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "composition_id", "description", "supported", "projected_motion_targets"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "composition_id": { "type": "string", "minLength": 1 },
+        "description": { "type": "string", "minLength": 1 },
+        "supported": { "type": "boolean" },
+        "projected_motion_targets": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+        "unavailable_reason": { "type": "string", "minLength": 1 }
+      }
+    },
+    "background_source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "description", "supported", "coverage", "requires_assets", "priority"],
+      "properties": {
+        "kind": { "type": "string", "minLength": 1 },
+        "composition_id": { "type": "string", "minLength": 1 },
+        "description": { "type": "string", "minLength": 1 },
+        "supported": { "type": "boolean" },
+        "coverage": { "enum": ["full_canvas", "region"] },
+        "requires_assets": { "type": "boolean" },
+        "fit_policy": { "enum": ["cover", "contain", "stretch", "none"] },
+        "loop": { "type": "boolean" },
+        "priority": { "type": "integer", "minimum": 0 },
+        "unavailable_reason": { "type": "string", "minLength": 1 }
+      }
+    },
+    "camera_movement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "description", "direction_parameter", "duration_bounds", "crop_bounds", "initial_pose", "final_pose", "supported"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "description": { "type": "string", "minLength": 1 },
+        "direction_parameter": { "type": "string", "minLength": 1 },
+        "duration_bounds": { "type": "string", "minLength": 1 },
+        "crop_bounds": { "type": "string", "minLength": 1 },
+        "initial_pose": { "type": "string", "minLength": 1 },
+        "final_pose": { "type": "string", "minLength": 1 },
+        "supported": { "type": "boolean" },
+        "unavailable_reason": { "type": "string", "minLength": 1 }
+      }
+    },
+    "camera_destination": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "description", "status", "runtime_support", "requires_product_decision"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "description": { "type": "string", "minLength": 1 },
+        "status": { "enum": ["implemented", "blocked_product_decision", "requires_renderer_lowering"] },
+        "runtime_support": { "type": "string", "minLength": 1 },
+        "motion_target": { "type": "string", "minLength": 1 },
+        "requires_product_decision": { "type": "boolean" },
+        "movements": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/camera_movement" } }
+      }
+    },
+    "camera_policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["max_scene_controllers", "rule"],
+      "properties": {
+        "max_scene_controllers": { "type": "integer", "minimum": 0, "maximum": 1 },
+        "rule": { "type": "string", "minLength": 1 }
+      }
+    },
+    "data_field": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["composition_id", "name", "required", "enforced", "description"],
+      "properties": {
+        "composition_id": { "type": "string", "minLength": 1 },
+        "name": { "type": "string", "minLength": 1 },
+        "required": { "type": "boolean" },
+        "enforced": { "type": "boolean" },
+        "description": { "type": "string", "minLength": 1 }
+      }
+    },
+    "deprecation_entry": {
+      "type": "object", "additionalProperties": false,
+      "required": ["motion_id"],
+      "properties": {
+        "motion_id": { "type": "string", "minLength": 1 },
+        "retired_on": { "type": "string", "minLength": 1 },
+        "reason": { "type": "string", "minLength": 1 },
+        "replacement": { "type": "string", "minLength": 1 }
+      }
+    },
+    "deprecation": {
+      "type": "object", "additionalProperties": false,
+      "required": ["policy", "compatibility_window_days", "aliases_allowed", "rule", "deprecated"],
+      "properties": {
+        "policy": { "enum": ["immediate"] },
+        "compatibility_window_days": { "type": "integer", "minimum": 0, "maximum": 0 },
+        "aliases_allowed": { "const": false },
+        "rule": { "type": "string", "minLength": 1 },
+        "deprecated": { "type": "array", "items": { "$ref": "#/$defs/deprecation_entry" } }
+      }
+    },
+    "certification_report": {
+      "type": "object", "additionalProperties": false,
+      "required": ["report", "scope", "backend", "generated_at_utc", "motions"],
+      "properties": {
+        "report": { "type": "string", "minLength": 1 },
+        "scope": { "type": "string", "minLength": 1 },
+        "backend": { "type": "string", "minLength": 1 },
+        "generated_at_utc": { "type": "string", "minLength": 1 },
+        "motions": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "certification": {
+      "type": "object", "additionalProperties": false,
+      "required": ["source", "is_current", "rule", "passed", "failed", "unverified", "reports"],
+      "properties": {
+        "source": { "type": "string", "minLength": 1 },
+        "snapshot_at": { "type": "string", "minLength": 1 },
+        "is_current": { "type": "boolean", "description": "False while the statuses come from dated report artifacts instead of a run against the current build." },
+        "rule": { "type": "string", "minLength": 1 },
+        "passed": { "type": "integer", "minimum": 0 },
+        "failed": { "type": "integer", "minimum": 0 },
+        "unverified": { "type": "integer", "minimum": 0 },
+        "reports": { "type": "array", "items": { "$ref": "#/$defs/certification_report" } },
+        "error": { "type": "string", "minLength": 1 }
+      }
+    },
+    "preview": {
+      "type": "object", "additionalProperties": false,
+      "required": ["source", "roots", "media_in_git", "recorded", "none", "entries", "rule"],
+      "properties": {
+        "source": { "type": "string", "minLength": 1 },
+        "generated_at_utc": { "type": "string", "minLength": 1 },
+        "roots": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+        "media_in_git": { "type": "boolean", "description": "False while the rendered clips stay out of git and are regenerated from the artifact." },
+        "recorded": { "type": "integer", "minimum": 0 },
+        "none": { "type": "integer", "minimum": 0 },
+        "entries": { "type": "integer", "minimum": 0 },
+        "rule": { "type": "string", "minLength": 1 },
+        "error": { "type": "string", "minLength": 1 }
+      }
+    },
+    "ownership": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["motion_definitions", "semantic_contract", "composition_model", "runtime_catalog"],
+      "properties": {
+        "motion_definitions": { "type": "string", "minLength": 1 },
+        "semantic_contract": { "type": "string", "minLength": 1 },
+        "composition_model": { "type": "string", "minLength": 1 },
+        "runtime_catalog": { "type": "string", "minLength": 1 }
+      }
+    },
+    "selection_model": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["zones", "compatibility", "layouts", "map_layouts", "background_sources", "camera_destinations", "camera_policy", "data_fields", "deprecation", "certification", "preview", "ownership"],
+      "properties": {
+        "zones": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/zone" } },
+        "compatibility": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/compatibility" } },
+        "layouts": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/composition_layout" } },
+        "map_layouts": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/map_layout" } },
+        "background_sources": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/background_source" } },
+        "camera_destinations": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/camera_destination" } },
+        "camera_policy": { "$ref": "#/$defs/camera_policy" },
+        "data_fields": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/data_field" } },
+        "deprecation": { "$ref": "#/$defs/deprecation" },
+        "certification": { "$ref": "#/$defs/certification" },
+        "preview": { "$ref": "#/$defs/preview" },
+        "ownership": { "$ref": "#/$defs/ownership" }
       }
     }
   }

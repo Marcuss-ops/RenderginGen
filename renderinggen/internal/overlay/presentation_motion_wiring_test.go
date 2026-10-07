@@ -9,18 +9,11 @@ import (
 )
 
 func TestPresentationMotionInventoryAndSemanticWiring(t *testing.T) {
-	inventory := PresentationMotionInventory()
 	families := motion.Registry.PresentationFamilyIDs()
-	if len(inventory) != len(families) {
-		t.Fatalf("presentation inventory has %d families, want %d", len(inventory), len(families))
-	}
 
 	total := 0
 	for _, familyID := range families {
-		ids := inventory[familyID]
-		if len(ids) != len(motion.Registry.PresentationMotionIDs(familyID)) {
-			t.Fatalf("%s inventory differs from canonical catalog", familyID)
-		}
+		ids := motion.Registry.PresentationMotionIDs(familyID)
 		for _, id := range ids {
 			t.Run(id, func(t *testing.T) {
 				plugin, err := motion.Registry.Resolve(id)
@@ -142,6 +135,13 @@ func TestPresentationTemplateRegistryMatchesCatalog(t *testing.T) {
 			spec := templateSpecFor(tc.template)
 			if !spec.Registered || !spec.RequiresPreset || spec.Kind != tc.kind || spec.Family != PresetText {
 				t.Fatalf("template registry row = %+v", spec)
+			}
+			wantTarget := "metric"
+			if tc.template == "timeline_date_card" {
+				wantTarget = "date"
+			}
+			if spec.MotionTarget != wantTarget {
+				t.Fatalf("template motion target = %q, want %q", spec.MotionTarget, wantTarget)
 			}
 		})
 	}

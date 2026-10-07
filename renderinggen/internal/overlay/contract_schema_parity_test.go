@@ -46,6 +46,8 @@ func TestContractSchemaMatchesCompilerStructs(t *testing.T) {
 		{"plan.items[].frame.border", "#/properties/items/items/properties/frame/properties/border", semanticFrameBorder{}},
 		{"plan.items[].frame.shadow", "#/properties/items/items/properties/frame/properties/shadow", semanticFrameShadow{}},
 		{"plan.items[].frame.stroke", "#/properties/items/items/properties/frame/properties/stroke", semanticFrameStroke{}},
+		{"plan.items[].metric", "#/$defs/metric_data", SemanticMetricData{}},
+		{"plan.items[].date", "#/$defs/date_data", SemanticDateData{}},
 		{"plan.items[].map", "#/properties/items/items/properties/map", SemanticMap{}},
 		{"plan.items[].map.center", "#/$defs/map_point", SemanticMapPoint{}},
 		{"plan.items[].map.pins[]", "#/properties/items/items/properties/map/properties/pins/items", SemanticMapPin{}},
@@ -56,6 +58,8 @@ func TestContractSchemaMatchesCompilerStructs(t *testing.T) {
 		{"plan.items[].map.pins[].label_style.background", "#/$defs/map_text_style/properties/background", semanticMapTextPlate{}},
 		{"plan.items[].map.lods[]", "#/properties/items/items/properties/map/properties/lods/items", SemanticMapLOD{}},
 		{"plan.items[].map.camera_move", "#/properties/items/items/properties/map/properties/camera_move", SemanticMapCameraMove{}},
+		{"plan.items[].map.fly_to_feature", "#/properties/items/items/properties/map/properties/fly_to_feature", SemanticMapFlyToFeature{}},
+		{"plan.items[].map.routes[]", "#/properties/items/items/properties/map/properties/routes/items", SemanticMapRoute{}},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -68,6 +72,63 @@ func TestContractSchemaMatchesCompilerStructs(t *testing.T) {
 				t.Errorf("Go decodes %v, but schema forbids them", extra)
 			}
 		})
+	}
+}
+
+// TestDataBlockSchemaRequiresTheDeclaredFields pins the two required lists the
+// compiler enforces. The Go validator and the schema must agree on what a
+// declared block is missing, otherwise a producer would pass validation here
+// and be rejected there (or the reverse) with no shared diagnostic.
+func TestDataBlockSchemaRequiresTheDeclaredFields(t *testing.T) {
+	schema := contractschema.Load(t, overlayContractSchema)
+	cases := []struct {
+		def      string
+		required []string
+	}{
+		{"#/$defs/metric_data", []string{"value", "unit"}},
+		{"#/$defs/date_data", []string{"value"}},
+	}
+	for _, tc := range cases {
+		block := contractschema.At(t, schema, tc.def)
+		required, ok := block["required"].([]any)
+		if !ok {
+			t.Fatalf("%s declares no required field list", tc.def)
+		}
+		declared := make(map[string]bool, len(required))
+		for _, value := range required {
+			if field, ok := value.(string); ok {
+				declared[field] = true
+			}
+		}
+		for _, field := range tc.required {
+			if !declared[field] {
+				t.Errorf("%s does not require compiler input %q", tc.def, field)
+			}
+		}
+	}
+	if !contractschema.Contains(contractschema.PropertyNames(t, schema, "#/properties/items/items"), "metric") ||
+		!contractschema.Contains(contractschema.PropertyNames(t, schema, "#/properties/items/items"), "date") {
+		t.Error("item schema does not declare the metric/date blocks the compiler decodes")
+	}
+}
+
+func TestImageLayerSchemaRequiresCompilerInputs(t *testing.T) {
+	schema := contractschema.Load(t, overlayContractSchema)
+	imageLayer := contractschema.At(t, schema, "#/properties/items/items/properties/image_layers/items")
+	required, ok := imageLayer["required"].([]any)
+	if !ok {
+		t.Fatal("image layer schema has no required field list")
+	}
+	requiredFields := make(map[string]bool, len(required))
+	for _, value := range required {
+		if field, ok := value.(string); ok {
+			requiredFields[field] = true
+		}
+	}
+	for _, field := range []string{"id", "asset_id", "start_ms", "end_ms", "preset_id"} {
+		if !requiredFields[field] {
+			t.Errorf("image layer schema does not require compiler input %q", field)
+		}
 	}
 }
 

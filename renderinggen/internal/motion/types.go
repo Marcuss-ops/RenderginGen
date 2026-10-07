@@ -373,17 +373,6 @@ func validateV1RestingTrack(d MotionDefinition, owner string, t TrackDefinition)
 	return nil
 }
 
-// visualAccentsV1Categories are the four official Visual Accents V1 families.
-// Each closes one semantic vocabulary — brush traits, web cards, paint areas,
-// light leaks — over the SAME image-recipe lowering, never over a per-family
-// mini renderer.
-var visualAccentsV1Categories = map[string]bool{
-	"brush_v1":      true,
-	"web_rect_v1":   true,
-	"paint_v1":      true,
-	"light_leak_v1": true,
-}
-
 // validateVisualAccentsV1Family enforces the Visual Accents V1 contract on the
 // four official families: V1 metadata completeness (duration bounds, render
 // safety, 3D/camera truthfulness) and, for the families that lower through the
@@ -392,7 +381,7 @@ var visualAccentsV1Categories = map[string]bool{
 // masks, light leaks are additive glow plates. A wrong shape in a family is a
 // catalog authoring bug and fails closed here, before it can reach a render.
 func validateVisualAccentsV1Family(d MotionDefinition) error {
-	if !visualAccentsV1Categories[d.Category] {
+	if !VisualAccentsV1CategoriesContains(d.Category) {
 		return nil
 	}
 	if d.DurationBounds == nil || d.DurationBounds.MinimumFrames < 1 || d.DurationBounds.MaximumFrames < d.DurationBounds.MinimumFrames {
@@ -424,7 +413,7 @@ func validateVisualAccentsV1Family(d MotionDefinition) error {
 	}
 	recipe := d.ImageRecipe
 	if recipe.Stack || recipe.RequireCaption || recipe.ActiveLayerParam != "" || len(recipe.CaptionTracks) > 0 || len(recipe.InactiveTracks) > 0 {
-		return fmt.Errorf("motion %q: %s recipes do not support stacks or captions", d.ID, d.Category)
+		return fmt.Errorf("motion %q: %s recipes do not support multi-image compositions or captions", d.ID, d.Category)
 	}
 	switch d.Category {
 	case "paint_v1":
@@ -491,7 +480,7 @@ func validateImagePremiumV1(d MotionDefinition) error {
 		// own family-shaped gate in validateVisualAccentsV1Family; every other
 		// category must stay recipe-free so a recipe cannot silently ship
 		// outside a certified lowering path.
-		if d.ImageRecipe != nil && !visualAccentsV1Categories[d.Category] {
+		if d.ImageRecipe != nil && !VisualAccentsV1CategoriesContains(d.Category) {
 			return fmt.Errorf("motion %q: image_recipe is only valid in image_premium_v1", d.ID)
 		}
 		return nil
@@ -539,13 +528,13 @@ func validateImagePremiumV1(d MotionDefinition) error {
 	}
 	recipe := d.ImageRecipe
 	if recipe.Stack && recipe.ActiveLayerParam == "" {
-		return fmt.Errorf("motion %q: stacked recipes must name the active_layer_id parameter", d.ID)
+		return fmt.Errorf("motion %q: multi-image recipes must name the active_layer_id parameter", d.ID)
 	}
 	if !recipe.Stack && recipe.ActiveLayerParam != "" {
-		return fmt.Errorf("motion %q: active_layer_param requires a stacked recipe", d.ID)
+		return fmt.Errorf("motion %q: active_layer_param requires a multi-image recipe", d.ID)
 	}
 	if recipe.Stack && recipe.ActiveLayerParam != "active_layer_id" {
-		return fmt.Errorf("motion %q: stacked image recipe must use active_layer_id", d.ID)
+		return fmt.Errorf("motion %q: multi-image recipe must use active_layer_id", d.ID)
 	}
 	if recipe.RequireCaption && (len(recipe.CaptionTracks) == 0 || !containsMotionString(d.Targets, "image")) {
 		return fmt.Errorf("motion %q: required image captions need an image target and caption_tracks", d.ID)

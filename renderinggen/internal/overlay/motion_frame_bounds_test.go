@@ -70,7 +70,7 @@ func TestImageLayerRuntimeTimingRejectsInvalidStandaloneAndChildOverrides(t *tes
 			}
 		})
 	}
-	if _, err := imageMotionAnimation("image_glow_depth_in", map[string]any{"enter_frames": "slow"}, 120, 12); err == nil {
+	if _, err := imageMotionAnimation("image_glow_depth_in", map[string]any{"enter_frames": "slow"}, 120, 12, "test-image", "image"); err == nil {
 		t.Fatal("premium image recipe accepted malformed runtime timing")
 	}
 }

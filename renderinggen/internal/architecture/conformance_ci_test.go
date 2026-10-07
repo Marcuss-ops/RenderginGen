@@ -49,6 +49,13 @@ func TestCIRunsRaceEnabledModuleTests(t *testing.T) {
 			if !strings.Contains(block, "RENDERINGGEN_SKIP_GPU_E2E=1") {
 				t.Errorf("CI job %q must disable the real-engine runtime certification suite explicitly, so the unit job cannot start real renders", job)
 			}
+			// The certification suites are behind //go:build certification, so the
+			// -race step above cannot see them. That is the intended split, but a
+			// tag with no runner is a silent coverage cut: CI must run them in
+			// their own step, and the manual GPU job must run them with an engine.
+			if !strings.Contains(block, "-tags certification") {
+				t.Errorf("CI job %q must run the //go:build certification suites in their own step: the tagged files are invisible to the -race step, so without a runner the tag silently removes the certification coverage from CI", job)
+			}
 			continue
 		}
 		if !strings.Contains(block, "go test -race -count=1 ./...") {
@@ -90,6 +97,9 @@ func TestCIRuntimeCertificationHasAnOwner(t *testing.T) {
 	}
 	if !strings.Contains(block, "CHRONON_BIN") {
 		t.Errorf("CI job %q must point CHRONON_BIN at the engine it certifies", job)
+	}
+	if !strings.Contains(block, "-tags certification") {
+		t.Errorf("CI job %q must pass -tags certification: the certification suites live behind that build tag, so without it the job would run only the untagged overlay tests and report a green run in which every certification assertion had been compiled out", job)
 	}
 	if !strings.Contains(block, "workflow_dispatch") {
 		t.Errorf("CI job %q must be manual: the hosted runners have no GPU", job)

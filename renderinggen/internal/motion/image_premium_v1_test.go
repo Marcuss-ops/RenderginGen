@@ -15,7 +15,7 @@ var expectedImagePremiumV1 = []string{
 }
 
 func TestImagePremiumV1InventoryIsExactAndSeparate(t *testing.T) {
-	ids := Registry.ImagePremiumV1MotionIDs()
+	ids := Registry.CategoryMotionIDs("image_premium_v1")
 	if len(ids) != len(expectedImagePremiumV1) {
 		t.Fatalf("image_premium_v1 has %d motions, want %d: %v", len(ids), len(expectedImagePremiumV1), ids)
 	}
@@ -35,7 +35,7 @@ func TestImagePremiumV1InventoryIsExactAndSeparate(t *testing.T) {
 	if got := len(Registry.ImageOverlayMotionIDs()); got != 18 {
 		t.Fatalf("premium additions changed the legacy image inventory to %d; want 18", got)
 	}
-	if got := len(Registry.EditorialImageV1MotionIDs()); got != 14 {
+	if got := len(Registry.CategoryMotionIDs("editorial_image_v1")); got != 14 {
 		t.Fatalf("premium additions changed the editorial image inventory to %d; want 14", got)
 	}
 }

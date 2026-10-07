@@ -51,6 +51,12 @@ func (i *semanticItem) UnmarshalJSON(data []byte) error {
 	if err != nil {
 		return err
 	}
+	// The optional metric/date payload is validated on the same pass that
+	// resolves the kind, so "this block belongs to this card" is decided once,
+	// by the same resolver the motion gate uses.
+	if err := validateSemanticDataBlocks(*i, kind); err != nil {
+		return err
+	}
 	if isShapeKind(kind) && i.Template != "" {
 		if !spec.Registered || !isShapeKind(spec.Kind) {
 			return fmt.Errorf("overlay: item %q shape template %q is not registered", i.ID, i.Template)

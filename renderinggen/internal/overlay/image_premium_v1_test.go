@@ -11,13 +11,33 @@ import (
 
 const premiumImageAssetRef = `{"asset_id":"premium-photo","sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","url":"https://example.test/premium.png","media_type":"image/png"}`
 
+func TestImageStackClassificationComesFromRecipeMetadata(t *testing.T) {
+	stack := &motion.MotionDefinition{Category: "future_image_family", ImageRecipe: &motion.ImageMotionRecipe{Stack: true}}
+	if !isMultiImageRecipe(stack) {
+		t.Fatal("stack recipe was not recognized outside the premium category")
+	}
+	if got := premiumImageRecipeDefinition(stack); got != stack {
+		t.Fatal("generic image recipe was rejected because its category was not premium")
+	}
+	visualAccent := &motion.MotionDefinition{Category: "brush_v1", ImageRecipe: &motion.ImageMotionRecipe{}}
+	if got := premiumImageRecipeDefinition(visualAccent); got != nil {
+		t.Fatal("visual accent recipe entered the generic image recipe lowering")
+	}
+	if isMultiImageRecipe(&motion.MotionDefinition{Category: "image_premium_v1", ImageRecipe: &motion.ImageMotionRecipe{}}) {
+		t.Fatal("non-stack premium recipe was classified as a stack")
+	}
+	if !animationUsesMultiImageRecipe("image_stack_focus") {
+		t.Fatal("registered image_stack_focus recipe was not classified as a stack")
+	}
+}
+
 func premiumImagePlan(id, extra string) []byte {
 	return []byte(fmt.Sprintf(`{"schema_version":"renderinggen.overlay-plan.v1","plan_id":"premium-%s","video_id":"v","width":1280,"height":720,"fps_num":24,"fps_den":1,"items":[{"id":"premium-image","kind":"image","template_id":"image_popup","preset_id":"image_focus_in","motion_id":%q,"start_ms":0,"end_ms":5000,"asset_refs":[%s]%s}]}`,
 		id, id, premiumImageAssetRef, extra))
 }
 
 func TestImagePremiumV1EveryRecipeLowersToNativeV3(t *testing.T) {
-	ids := motion.Registry.ImagePremiumV1MotionIDs()
+	ids := motion.Registry.CategoryMotionIDs("image_premium_v1")
 	if len(ids) != 20 {
 		t.Fatalf("premium catalog has %d ids, want 20: %v", len(ids), ids)
 	}

@@ -69,16 +69,13 @@ func resolveAnimationPolicies(src *semanticPlan) error {
 			return fmt.Errorf("overlay: item %q caption motion %q is not supported for text captions", item.ID, item.CaptionMotionID)
 		}
 		if len(item.ImageLayers) > 0 {
-			if err := validateAnimationGroupIDs(item.GroupID, item.SubgroupID); err != nil {
-				return fmt.Errorf("overlay: item %q: %w", item.ID, err)
-			}
 			if item.MotionID == "" {
-				if policy, ok := selectAnimationPolicy(policies, "image", item.GroupID, item.SubgroupID); ok && animationIsImageStack(policy.MotionID) {
+				if policy, ok := selectAnimationPolicy(policies, "image", item.GroupID, item.SubgroupID); ok && animationUsesMultiImageRecipe(policy.MotionID) {
 					item.MotionID = policy.MotionID
 					item.MotionParams = cloneMotionParams(policy.MotionParams)
 				}
 			}
-			stackMotion := animationIsImageStack(item.MotionID)
+			multiImageMotion := animationUsesMultiImageRecipe(item.MotionID)
 			for childIndex := range item.ImageLayers {
 				child := &item.ImageLayers[childIndex]
 				if child.GroupID == "" {
@@ -92,8 +89,8 @@ func resolveAnimationPolicies(src *semanticPlan) error {
 				if err := validateAnimationGroupIDs(child.GroupID, child.SubgroupID); err != nil {
 					return fmt.Errorf("overlay: item %q image layer %q: %w", item.ID, child.ID, err)
 				}
-				if child.MotionID == "" && !stackMotion {
-					if policy, ok := selectAnimationPolicy(policies, "image", child.GroupID, child.SubgroupID); ok && !animationIsImageStack(policy.MotionID) {
+				if child.MotionID == "" && !multiImageMotion {
+					if policy, ok := selectAnimationPolicy(policies, "image", child.GroupID, child.SubgroupID); ok && !animationUsesMultiImageRecipe(policy.MotionID) {
 						child.MotionID = policy.MotionID
 						child.MotionParams = cloneMotionParams(policy.MotionParams)
 					}
@@ -169,7 +166,7 @@ func isTextLikeKind(kind ItemKind) bool {
 	return behavior == behaviorText || behavior == behaviorEntity
 }
 
-func animationIsImageStack(id string) bool {
-	definition, err := premiumImageDefinition(id)
-	return err == nil && definition != nil && definition.ImageRecipe != nil && definition.ImageRecipe.Stack
+func animationUsesMultiImageRecipe(id string) bool {
+	definition, err := resolveMotionDefinition(id)
+	return err == nil && isMultiImageRecipe(definition)
 }

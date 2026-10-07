@@ -1,0 +1,3008 @@
+{
+  "schema_version": 1,
+  "generated_at_utc": "2026-10-07T10:31:51Z",
+  "roots": [
+    "out",
+    "preset_videos",
+    "phrase_preset_videos",
+    "typewriter_phrase_videos",
+    "apple_style_final_videos"
+  ],
+  "media_in_git": false,
+  "entries": [
+    {
+      "motion_id": "air_rise_type_on",
+      "artifact": "out/phrase_motion_pool_20260924/manifest.json"
+    },
+    {
+      "motion_id": "air_rise_type_on",
+      "artifact": "out/phrase_motion_pool_20260924/plans/phrase-06.json"
+    },
+    {
+      "motion_id": "air_rise_type_on",
+      "artifact": "out/phrase_motion_pool_20260924/report.json"
+    },
+    {
+      "motion_id": "apple_cinematic_exit",
+      "artifact": "out/phrase_motion_pool_100_20260924/manifest.json"
+    },
+    {
+      "motion_id": "apple_cinematic_exit",
+      "artifact": "out/phrase_motion_pool_100_20260924/plans/phrase-12.json"
+    },
+    {
+      "motion_id": "apple_cinematic_exit",
+      "artifact": "out/phrase_motion_pool_100_20260924/plans/phrase-48.json"
+    },
+    {
+      "motion_id": "apple_cinematic_exit",
+      "artifact": "out/phrase_motion_pool_100_20260924/plans/phrase-62.json"
+    },
+    {
+      "motion_id": "apple_cinematic_exit",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/manifest.json"
+    },
+    {
+      "motion_id": "apple_cinematic_exit",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/plans/phrase-12.json"
+    },
+    {
+      "motion_id": "apple_cinematic_exit",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/plans/phrase-48.json"
+    },
+    {
+      "motion_id": "apple_cinematic_exit",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/plans/phrase-62.json"
+    },
+    {
+      "motion_id": "apple_cinematic_exit",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/queue-snapshot.json"
+    },
+    {
+      "motion_id": "apple_cinematic_exit",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/run-report.json"
+    },
+    {
+      "motion_id": "apple_cinematic_exit",
+      "artifact": "out/phrase_motion_pool_100_20260924_r4/queue-snapshot.json"
+    },
+    {
+      "motion_id": "apple_cinematic_exit",
+      "artifact": "out/phrase_motion_pool_100_20260924_r4/run-report.json"
+    },
+    {
+      "motion_id": "apple_compress_in",
+      "artifact": "out/phrase_motion_pool_100_20260924/manifest.json"
+    },
+    {
+      "motion_id": "apple_compress_in",
+      "artifact": "out/phrase_motion_pool_100_20260924/plans/phrase-28.json"
+    },
+    {
+      "motion_id": "apple_compress_in",
+      "artifact": "out/phrase_motion_pool_100_20260924/plans/phrase-44.json"
+    },
+    {
+      "motion_id": "apple_compress_in",
+      "artifact": "out/phrase_motion_pool_100_20260924/plans/phrase-54.json"
+    },
+    {
+      "motion_id": "apple_compress_in",
+      "artifact": "out/phrase_motion_pool_100_20260924/plans/phrase-69.json"
+    },
+    {
+      "motion_id": "apple_compress_in",
+      "artifact": "out/phrase_motion_pool_100_20260924/plans/phrase-96.json"
+    },
+    {
+      "motion_id": "apple_compress_in",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/manifest.json"
+    },
+    {
+      "motion_id": "apple_compress_in",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/plans/phrase-28.json"
+    },
+    {
+      "motion_id": "apple_compress_in",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/plans/phrase-44.json"
+    },
+    {
+      "motion_id": "apple_compress_in",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/plans/phrase-54.json"
+    },
+    {
+      "motion_id": "apple_compress_in",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/plans/phrase-69.json"
+    },
+    {
+      "motion_id": "apple_compress_in",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/plans/phrase-96.json"
+    },
+    {
+      "motion_id": "apple_compress_in",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/queue-snapshot.json"
+    },
+    {
+      "motion_id": "apple_compress_in",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/run-report.json"
+    },
+    {
+      "motion_id": "apple_compress_in",
+      "artifact": "out/phrase_motion_pool_100_20260924_r4/queue-snapshot.json"
+    },
+    {
+      "motion_id": "apple_compress_in",
+      "artifact": "out/phrase_motion_pool_100_20260924_r4/run-report.json"
+    },
+    {
+      "motion_id": "apple_expand_from_center",
+      "artifact": "out/phrase_motion_pool_100_20260924/manifest.json"
+    },
+    {
+      "motion_id": "apple_expand_from_center",
+      "artifact": "out/phrase_motion_pool_100_20260924/plans/phrase-70.json"
+    },
+    {
+      "motion_id": "apple_expand_from_center",
+      "artifact": "out/phrase_motion_pool_100_20260924/plans/phrase-97.json"
+    },
+    {
+      "motion_id": "apple_expand_from_center",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/manifest.json"
+    },
+    {
+      "motion_id": "apple_expand_from_center",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/plans/phrase-70.json"
+    },
+    {
+      "motion_id": "apple_expand_from_center",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/plans/phrase-97.json"
+    },
+    {
+      "motion_id": "apple_expand_from_center",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/queue-snapshot.json"
+    },
+    {
+      "motion_id": "apple_expand_from_center",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/run-report.json"
+    },
+    {
+      "motion_id": "apple_expand_from_center",
+      "artifact": "out/phrase_motion_pool_100_20260924_r4/queue-snapshot.json"
+    },
+    {
+      "motion_id": "apple_expand_from_center",
+      "artifact": "out/phrase_motion_pool_100_20260924_r4/run-report.json"
+    },
+    {
+      "motion_id": "apple_focus_rise",
+      "artifact": "out/phrase_motion_pool_100_20260924/manifest.json"
+    },
+    {
+      "motion_id": "apple_focus_rise",
+      "artifact": "out/phrase_motion_pool_100_20260924/plans/phrase-20.json"
+    },
+    {
+      "motion_id": "apple_focus_rise",
+      "artifact": "out/phrase_motion_pool_100_20260924/plans/phrase-57.json"
+    },
+    {
+      "motion_id": "apple_focus_rise",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/manifest.json"
+    },
+    {
+      "motion_id": "apple_focus_rise",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/plans/phrase-20.json"
+    },
+    {
+      "motion_id": "apple_focus_rise",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/plans/phrase-57.json"
+    },
+    {
+      "motion_id": "apple_focus_rise",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/queue-snapshot.json"
+    },
+    {
+      "motion_id": "apple_focus_rise",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/run-report.json"
+    },
+    {
+      "motion_id": "apple_focus_rise",
+      "artifact": "out/phrase_motion_pool_100_20260924_r4/queue-snapshot.json"
+    },
+    {
+      "motion_id": "apple_focus_rise",
+      "artifact": "out/phrase_motion_pool_100_20260924_r4/run-report.json"
+    },
+    {
+      "motion_id": "apple_hero_statement",
+      "artifact": "out/phrase_motion_pool_100_20260924/manifest.json"
+    },
+    {
+      "motion_id": "apple_hero_statement",
+      "artifact": "out/phrase_motion_pool_100_20260924/plans/phrase-30.json"
+    },
+    {
+      "motion_id": "apple_hero_statement",
+      "artifact": "out/phrase_motion_pool_100_20260924/plans/phrase-58.json"
+    },
+    {
+      "motion_id": "apple_hero_statement",
+      "artifact": "out/phrase_motion_pool_100_20260924/plans/phrase-81.json"
+    },
+    {
+      "motion_id": "apple_hero_statement",
+      "artifact": "out/phrase_motion_pool_100_20260924/plans/phrase-99.json"
+    },
+    {
+      "motion_id": "apple_hero_statement",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/manifest.json"
+    },
+    {
+      "motion_id": "apple_hero_statement",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/plans/phrase-30.json"
+    },
+    {
+      "motion_id": "apple_hero_statement",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/plans/phrase-58.json"
+    },
+    {
+      "motion_id": "apple_hero_statement",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/plans/phrase-81.json"
+    },
+    {
+      "motion_id": "apple_hero_statement",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/plans/phrase-99.json"
+    },
+    {
+      "motion_id": "apple_hero_statement",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/queue-snapshot.json"
+    },
+    {
+      "motion_id": "apple_hero_statement",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/run-report.json"
+    },
+    {
+      "motion_id": "apple_hero_statement",
+      "artifact": "out/phrase_motion_pool_100_20260924_r4/queue-snapshot.json"
+    },
+    {
+      "motion_id": "apple_hero_statement",
+      "artifact": "out/phrase_motion_pool_100_20260924_r4/run-report.json"
+    },
+    {
+      "motion_id": "apple_line_cascade",
+      "artifact": "out/phrase_motion_pool_100_20260924/manifest.json"
+    },
+    {
+      "motion_id": "apple_line_cascade",
+      "artifact": "out/phrase_motion_pool_100_20260924/plans/phrase-67.json"
+    },
+    {
+      "motion_id": "apple_line_cascade",
+      "artifact": "out/phrase_motion_pool_100_20260924/plans/phrase-80.json"
+    },
+    {
+      "motion_id": "apple_line_cascade",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/manifest.json"
+    },
+    {
+      "motion_id": "apple_line_cascade",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/plans/phrase-67.json"
+    },
+    {
+      "motion_id": "apple_line_cascade",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/plans/phrase-80.json"
+    },
+    {
+      "motion_id": "apple_line_cascade",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/queue-snapshot.json"
+    },
+    {
+      "motion_id": "apple_line_cascade",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/run-report.json"
+    },
+    {
+      "motion_id": "apple_line_cascade",
+      "artifact": "out/phrase_motion_pool_100_20260924_r4/queue-snapshot.json"
+    },
+    {
+      "motion_id": "apple_line_cascade",
+      "artifact": "out/phrase_motion_pool_100_20260924_r4/run-report.json"
+    },
+    {
+      "motion_id": "apple_line_sweep",
+      "artifact": "out/phrase_motion_pool_100_20260924/manifest.json"
+    },
+    {
+      "motion_id": "apple_line_sweep",
+      "artifact": "out/phrase_motion_pool_100_20260924/plans/phrase-100.json"
+    },
+    {
+      "motion_id": "apple_line_sweep",
+      "artifact": "out/phrase_motion_pool_100_20260924/plans/phrase-33.json"
+    },
+    {
+      "motion_id": "apple_line_sweep",
+      "artifact": "out/phrase_motion_pool_100_20260924/plans/phrase-59.json"
+    },
+    {
+      "motion_id": "apple_line_sweep",
+      "artifact": "out/phrase_motion_pool_100_20260924/plans/phrase-68.json"
+    },
+    {
+      "motion_id": "apple_line_sweep",
+      "artifact": "out/phrase_motion_pool_100_20260924/plans/phrase-79.json"
+    },
+    {
+      "motion_id": "apple_line_sweep",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/manifest.json"
+    },
+    {
+      "motion_id": "apple_line_sweep",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/plans/phrase-100.json"
+    },
+    {
+      "motion_id": "apple_line_sweep",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/plans/phrase-33.json"
+    },
+    {
+      "motion_id": "apple_line_sweep",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/plans/phrase-59.json"
+    },
+    {
+      "motion_id": "apple_line_sweep",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/plans/phrase-68.json"
+    },
+    {
+      "motion_id": "apple_line_sweep",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/plans/phrase-79.json"
+    },
+    {
+      "motion_id": "apple_line_sweep",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/queue-snapshot.json"
+    },
+    {
+      "motion_id": "apple_line_sweep",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/run-report.json"
+    },
+    {
+      "motion_id": "apple_line_sweep",
+      "artifact": "out/phrase_motion_pool_100_20260924_r4/queue-snapshot.json"
+    },
+    {
+      "motion_id": "apple_line_sweep",
+      "artifact": "out/phrase_motion_pool_100_20260924_r4/run-report.json"
+    },
+    {
+      "motion_id": "apple_precision_type",
+      "artifact": "out/phrase_motion_pool_100_20260924/manifest.json"
+    },
+    {
+      "motion_id": "apple_precision_type",
+      "artifact": "out/phrase_motion_pool_100_20260924/plans/phrase-01.json"
+    },
+    {
+      "motion_id": "apple_precision_type",
+      "artifact": "out/phrase_motion_pool_100_20260924/plans/phrase-75.json"
+    },
+    {
+      "motion_id": "apple_precision_type",
+      "artifact": "out/phrase_motion_pool_100_20260924/plans/phrase-86.json"
+    },
+    {
+      "motion_id": "apple_precision_type",
+      "artifact": "out/phrase_motion_pool_100_20260924/plans/phrase-92.json"
+    },
+    {
+      "motion_id": "apple_precision_type",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/manifest.json"
+    },
+    {
+      "motion_id": "apple_precision_type",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/plans/phrase-01.json"
+    },
+    {
+      "motion_id": "apple_precision_type",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/plans/phrase-75.json"
+    },
+    {
+      "motion_id": "apple_precision_type",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/plans/phrase-86.json"
+    },
+    {
+      "motion_id": "apple_precision_type",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/plans/phrase-92.json"
+    },
+    {
+      "motion_id": "apple_precision_type",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/queue-snapshot.json"
+    },
+    {
+      "motion_id": "apple_precision_type",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/run-report.json"
+    },
+    {
+      "motion_id": "apple_precision_type",
+      "artifact": "out/phrase_motion_pool_100_20260924_r4/queue-snapshot.json"
+    },
+    {
+      "motion_id": "apple_precision_type",
+      "artifact": "out/phrase_motion_pool_100_20260924_r4/run-report.json"
+    },
+    {
+      "motion_id": "apple_precision_type",
+      "artifact": "out/phrase_motion_pool_20260924/manifest.json"
+    },
+    {
+      "motion_id": "apple_precision_type",
+      "artifact": "out/phrase_motion_pool_20260924/plans/phrase-09.json"
+    },
+    {
+      "motion_id": "apple_precision_type",
+      "artifact": "out/phrase_motion_pool_20260924/report.json"
+    },
+    {
+      "motion_id": "apple_precision_type",
+      "artifact": "out/phrase_motion_pool_20260924_r1/manifest.json"
+    },
+    {
+      "motion_id": "apple_precision_type",
+      "artifact": "out/phrase_motion_pool_20260924_r1/plans/phrase-01.json"
+    },
+    {
+      "motion_id": "apple_precision_type",
+      "artifact": "out/phrase_motion_pool_20260924_r1/report.json"
+    },
+    {
+      "motion_id": "apple_precision_type",
+      "artifact": "out/phrase_motion_pool_20260924_r2/manifest.json"
+    },
+    {
+      "motion_id": "apple_precision_type",
+      "artifact": "out/phrase_motion_pool_20260924_r2/plans/phrase-01.json"
+    },
+    {
+      "motion_id": "apple_precision_type",
+      "artifact": "out/phrase_motion_pool_20260924_r2/report.json"
+    },
+    {
+      "motion_id": "apple_precision_type",
+      "artifact": "out/text_style_runtime_canary_20260924_r1/queue-snapshot.json"
+    },
+    {
+      "motion_id": "apple_precision_type",
+      "artifact": "out/text_style_runtime_canary_20260924_r1/run-report.json"
+    },
+    {
+      "motion_id": "apple_scale_push",
+      "artifact": "out/phrase_motion_pool_100_20260924/manifest.json"
+    },
+    {
+      "motion_id": "apple_scale_push",
+      "artifact": "out/phrase_motion_pool_100_20260924/plans/phrase-45.json"
+    },
+    {
+      "motion_id": "apple_scale_push",
+      "artifact": "out/phrase_motion_pool_100_20260924/plans/phrase-88.json"
+    },
+    {
+      "motion_id": "apple_scale_push",
+      "artifact": "out/phrase_motion_pool_100_20260924/plans/phrase-95.json"
+    },
+    {
+      "motion_id": "apple_scale_push",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/manifest.json"
+    },
+    {
+      "motion_id": "apple_scale_push",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/plans/phrase-45.json"
+    },
+    {
+      "motion_id": "apple_scale_push",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/plans/phrase-88.json"
+    },
+    {
+      "motion_id": "apple_scale_push",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/plans/phrase-95.json"
+    },
+    {
+      "motion_id": "apple_scale_push",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/queue-snapshot.json"
+    },
+    {
+      "motion_id": "apple_scale_push",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/run-report.json"
+    },
+    {
+      "motion_id": "apple_scale_push",
+      "artifact": "out/phrase_motion_pool_100_20260924_r4/queue-snapshot.json"
+    },
+    {
+      "motion_id": "apple_scale_push",
+      "artifact": "out/phrase_motion_pool_100_20260924_r4/run-report.json"
+    },
+    {
+      "motion_id": "apple_scale_settle",
+      "artifact": "out/phrase_motion_pool_100_20260924/manifest.json"
+    },
+    {
+      "motion_id": "apple_scale_settle",
+      "artifact": "out/phrase_motion_pool_100_20260924/plans/phrase-02.json"
+    },
+    {
+      "motion_id": "apple_scale_settle",
+      "artifact": "out/phrase_motion_pool_100_20260924/plans/phrase-31.json"
+    },
+    {
+      "motion_id": "apple_scale_settle",
+      "artifact": "out/phrase_motion_pool_100_20260924/plans/phrase-40.json"
+    },
+    {
+      "motion_id": "apple_scale_settle",
+      "artifact": "out/phrase_motion_pool_100_20260924/plans/phrase-47.json"
+    },
+    {
+      "motion_id": "apple_scale_settle",
+      "artifact": "out/phrase_motion_pool_100_20260924/plans/phrase-53.json"
+    },
+    {
+      "motion_id": "apple_scale_settle",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/manifest.json"
+    },
+    {
+      "motion_id": "apple_scale_settle",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/plans/phrase-02.json"
+    },
+    {
+      "motion_id": "apple_scale_settle",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/plans/phrase-31.json"
+    },
+    {
+      "motion_id": "apple_scale_settle",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/plans/phrase-40.json"
+    },
+    {
+      "motion_id": "apple_scale_settle",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/plans/phrase-47.json"
+    },
+    {
+      "motion_id": "apple_scale_settle",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/plans/phrase-53.json"
+    },
+    {
+      "motion_id": "apple_scale_settle",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/queue-snapshot.json"
+    },
+    {
+      "motion_id": "apple_scale_settle",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/run-report.json"
+    },
+    {
+      "motion_id": "apple_scale_settle",
+      "artifact": "out/phrase_motion_pool_100_20260924_r4/queue-snapshot.json"
+    },
+    {
+      "motion_id": "apple_scale_settle",
+      "artifact": "out/phrase_motion_pool_100_20260924_r4/run-report.json"
+    },
+    {
+      "motion_id": "apple_scale_settle",
+      "artifact": "out/phrase_motion_pool_20260924_r1/manifest.json"
+    },
+    {
+      "motion_id": "apple_scale_settle",
+      "artifact": "out/phrase_motion_pool_20260924_r1/plans/phrase-02.json"
+    },
+    {
+      "motion_id": "apple_scale_settle",
+      "artifact": "out/phrase_motion_pool_20260924_r1/report.json"
+    },
+    {
+      "motion_id": "apple_scale_settle",
+      "artifact": "out/phrase_motion_pool_20260924_r2/manifest.json"
+    },
+    {
+      "motion_id": "apple_scale_settle",
+      "artifact": "out/phrase_motion_pool_20260924_r2/plans/phrase-02.json"
+    },
+    {
+      "motion_id": "apple_scale_settle",
+      "artifact": "out/phrase_motion_pool_20260924_r2/report.json"
+    },
+    {
+      "motion_id": "apple_soft_scale",
+      "artifact": "out/phrase_motion_pool_100_20260924/manifest.json"
+    },
+    {
+      "motion_id": "apple_soft_scale",
+      "artifact": "out/phrase_motion_pool_100_20260924/plans/phrase-10.json"
+    },
+    {
+      "motion_id": "apple_soft_scale",
+      "artifact": "out/phrase_motion_pool_100_20260924/plans/phrase-19.json"
+    },
+    {
+      "motion_id": "apple_soft_scale",
+      "artifact": "out/phrase_motion_pool_100_20260924/plans/phrase-25.json"
+    },
+    {
+      "motion_id": "apple_soft_scale",
+      "artifact": "out/phrase_motion_pool_100_20260924/plans/phrase-26.json"
+    },
+    {
+      "motion_id": "apple_soft_scale",
+      "artifact": "out/phrase_motion_pool_100_20260924/plans/phrase-27.json"
+    },
+    {
+      "motion_id": "apple_soft_scale",
+      "artifact": "out/phrase_motion_pool_100_20260924/plans/phrase-56.json"
+    },
+    {
+      "motion_id": "apple_soft_scale",
+      "artifact": "out/phrase_motion_pool_100_20260924/plans/phrase-72.json"
+    },
+    {
+      "motion_id": "apple_soft_scale",
+      "artifact": "out/phrase_motion_pool_100_20260924/plans/phrase-76.json"
+    },
+    {
+      "motion_id": "apple_soft_scale",
+      "artifact": "out/phrase_motion_pool_100_20260924/plans/phrase-93.json"
+    },
+    {
+      "motion_id": "apple_soft_scale",
+      "artifact": "out/phrase_motion_pool_100_20260924/plans/phrase-98.json"
+    },
+    {
+      "motion_id": "apple_soft_scale",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/manifest.json"
+    },
+    {
+      "motion_id": "apple_soft_scale",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/plans/phrase-10.json"
+    },
+    {
+      "motion_id": "apple_soft_scale",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/plans/phrase-19.json"
+    },
+    {
+      "motion_id": "apple_soft_scale",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/plans/phrase-25.json"
+    },
+    {
+      "motion_id": "apple_soft_scale",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/plans/phrase-26.json"
+    },
+    {
+      "motion_id": "apple_soft_scale",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/plans/phrase-27.json"
+    },
+    {
+      "motion_id": "apple_soft_scale",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/plans/phrase-56.json"
+    },
+    {
+      "motion_id": "apple_soft_scale",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/plans/phrase-72.json"
+    },
+    {
+      "motion_id": "apple_soft_scale",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/plans/phrase-76.json"
+    },
+    {
+      "motion_id": "apple_soft_scale",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/plans/phrase-93.json"
+    },
+    {
+      "motion_id": "apple_soft_scale",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/plans/phrase-98.json"
+    },
+    {
+      "motion_id": "apple_soft_scale",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/queue-snapshot.json"
+    },
+    {
+      "motion_id": "apple_soft_scale",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/run-report.json"
+    },
+    {
+      "motion_id": "apple_soft_scale",
+      "artifact": "out/phrase_motion_pool_100_20260924_r4/queue-snapshot.json"
+    },
+    {
+      "motion_id": "apple_soft_scale",
+      "artifact": "out/phrase_motion_pool_100_20260924_r4/run-report.json"
+    },
+    {
+      "motion_id": "apple_soft_scale",
+      "artifact": "out/phrase_motion_pool_20260924/manifest.json"
+    },
+    {
+      "motion_id": "apple_soft_scale",
+      "artifact": "out/phrase_motion_pool_20260924/plans/phrase-07.json"
+    },
+    {
+      "motion_id": "apple_soft_scale",
+      "artifact": "out/phrase_motion_pool_20260924/report.json"
+    },
+    {
+      "motion_id": "apple_soft_scale",
+      "artifact": "out/phrase_motion_pool_20260924_r1/manifest.json"
+    },
+    {
+      "motion_id": "apple_soft_scale",
+      "artifact": "out/phrase_motion_pool_20260924_r1/plans/phrase-10.json"
+    },
+    {
+      "motion_id": "apple_soft_scale",
+      "artifact": "out/phrase_motion_pool_20260924_r1/report.json"
+    },
+    {
+      "motion_id": "apple_soft_scale",
+      "artifact": "out/phrase_motion_pool_20260924_r2/manifest.json"
+    },
+    {
+      "motion_id": "apple_soft_scale",
+      "artifact": "out/phrase_motion_pool_20260924_r2/plans/phrase-10.json"
+    },
+    {
+      "motion_id": "apple_soft_scale",
+      "artifact": "out/phrase_motion_pool_20260924_r2/report.json"
+    },
+    {
+      "motion_id": "apple_tracking_reveal",
+      "artifact": "out/phrase_motion_pool_100_20260924/manifest.json"
+    },
+    {
+      "motion_id": "apple_tracking_reveal",
+      "artifact": "out/phrase_motion_pool_100_20260924/plans/phrase-06.json"
+    },
+    {
+      "motion_id": "apple_tracking_reveal",
+      "artifact": "out/phrase_motion_pool_100_20260924/plans/phrase-07.json"
+    },
+    {
+      "motion_id": "apple_tracking_reveal",
+      "artifact": "out/phrase_motion_pool_100_20260924/plans/phrase-18.json"
+    },
+    {
+      "motion_id": "apple_tracking_reveal",
+      "artifact": "out/phrase_motion_pool_100_20260924/plans/phrase-32.json"
+    },
+    {
+      "motion_id": "apple_tracking_reveal",
+      "artifact": "out/phrase_motion_pool_100_20260924/plans/phrase-42.json"
+    },
+    {
+      "motion_id": "apple_tracking_reveal",
+      "artifact": "out/phrase_motion_pool_100_20260924/plans/phrase-43.json"
+    },
+    {
+      "motion_id": "apple_tracking_reveal",
+      "artifact": "out/phrase_motion_pool_100_20260924/plans/phrase-64.json"
+    },
+    {
+      "motion_id": "apple_tracking_reveal",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/manifest.json"
+    },
+    {
+      "motion_id": "apple_tracking_reveal",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/plans/phrase-06.json"
+    },
+    {
+      "motion_id": "apple_tracking_reveal",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/plans/phrase-07.json"
+    },
+    {
+      "motion_id": "apple_tracking_reveal",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/plans/phrase-18.json"
+    },
+    {
+      "motion_id": "apple_tracking_reveal",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/plans/phrase-32.json"
+    },
+    {
+      "motion_id": "apple_tracking_reveal",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/plans/phrase-42.json"
+    },
+    {
+      "motion_id": "apple_tracking_reveal",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/plans/phrase-43.json"
+    },
+    {
+      "motion_id": "apple_tracking_reveal",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/plans/phrase-64.json"
+    },
+    {
+      "motion_id": "apple_tracking_reveal",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/queue-snapshot.json"
+    },
+    {
+      "motion_id": "apple_tracking_reveal",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/run-report.json"
+    },
+    {
+      "motion_id": "apple_tracking_reveal",
+      "artifact": "out/phrase_motion_pool_100_20260924_r4/queue-snapshot.json"
+    },
+    {
+      "motion_id": "apple_tracking_reveal",
+      "artifact": "out/phrase_motion_pool_100_20260924_r4/run-report.json"
+    },
+    {
+      "motion_id": "apple_tracking_reveal",
+      "artifact": "out/phrase_motion_pool_20260924_r1/manifest.json"
+    },
+    {
+      "motion_id": "apple_tracking_reveal",
+      "artifact": "out/phrase_motion_pool_20260924_r1/plans/phrase-06.json"
+    },
+    {
+      "motion_id": "apple_tracking_reveal",
+      "artifact": "out/phrase_motion_pool_20260924_r1/plans/phrase-07.json"
+    },
+    {
+      "motion_id": "apple_tracking_reveal",
+      "artifact": "out/phrase_motion_pool_20260924_r1/report.json"
+    },
+    {
+      "motion_id": "apple_tracking_reveal",
+      "artifact": "out/phrase_motion_pool_20260924_r2/manifest.json"
+    },
+    {
+      "motion_id": "apple_tracking_reveal",
+      "artifact": "out/phrase_motion_pool_20260924_r2/plans/phrase-06.json"
+    },
+    {
+      "motion_id": "apple_tracking_reveal",
+      "artifact": "out/phrase_motion_pool_20260924_r2/plans/phrase-07.json"
+    },
+    {
+      "motion_id": "apple_tracking_reveal",
+      "artifact": "out/phrase_motion_pool_20260924_r2/report.json"
+    },
+    {
+      "motion_id": "apple_vertical_glyph_lift",
+      "artifact": "out/phrase_motion_pool_100_20260924/manifest.json"
+    },
+    {
+      "motion_id": "apple_vertical_glyph_lift",
+      "artifact": "out/phrase_motion_pool_100_20260924/plans/phrase-22.json"
+    },
+    {
+      "motion_id": "apple_vertical_glyph_lift",
+      "artifact": "out/phrase_motion_pool_100_20260924/plans/phrase-24.json"
+    },
+    {
+      "motion_id": "apple_vertical_glyph_lift",
+      "artifact": "out/phrase_motion_pool_100_20260924/plans/phrase-65.json"
+    },
+    {
+      "motion_id": "apple_vertical_glyph_lift",
+      "artifact": "out/phrase_motion_pool_100_20260924/plans/phrase-87.json"
+    },
+    {
+      "motion_id": "apple_vertical_glyph_lift",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/manifest.json"
+    },
+    {
+      "motion_id": "apple_vertical_glyph_lift",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/plans/phrase-22.json"
+    },
+    {
+      "motion_id": "apple_vertical_glyph_lift",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/plans/phrase-24.json"
+    },
+    {
+      "motion_id": "apple_vertical_glyph_lift",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/plans/phrase-65.json"
+    },
+    {
+      "motion_id": "apple_vertical_glyph_lift",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/plans/phrase-87.json"
+    },
+    {
+      "motion_id": "apple_vertical_glyph_lift",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/queue-snapshot.json"
+    },
+    {
+      "motion_id": "apple_vertical_glyph_lift",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/run-report.json"
+    },
+    {
+      "motion_id": "apple_vertical_glyph_lift",
+      "artifact": "out/phrase_motion_pool_100_20260924_r4/queue-snapshot.json"
+    },
+    {
+      "motion_id": "apple_vertical_glyph_lift",
+      "artifact": "out/phrase_motion_pool_100_20260924_r4/run-report.json"
+    },
+    {
+      "motion_id": "apple_word_cascade",
+      "artifact": "out/phrase_motion_pool_100_20260924/manifest.json"
+    },
+    {
+      "motion_id": "apple_word_cascade",
+      "artifact": "out/phrase_motion_pool_100_20260924/plans/phrase-11.json"
+    },
+    {
+      "motion_id": "apple_word_cascade",
+      "artifact": "out/phrase_motion_pool_100_20260924/plans/phrase-14.json"
+    },
+    {
+      "motion_id": "apple_word_cascade",
+      "artifact": "out/phrase_motion_pool_100_20260924/plans/phrase-41.json"
+    },
+    {
+      "motion_id": "apple_word_cascade",
+      "artifact": "out/phrase_motion_pool_100_20260924/plans/phrase-63.json"
+    },
+    {
+      "motion_id": "apple_word_cascade",
+      "artifact": "out/phrase_motion_pool_100_20260924/plans/phrase-94.json"
+    },
+    {
+      "motion_id": "apple_word_cascade",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/manifest.json"
+    },
+    {
+      "motion_id": "apple_word_cascade",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/plans/phrase-11.json"
+    },
+    {
+      "motion_id": "apple_word_cascade",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/plans/phrase-14.json"
+    },
+    {
+      "motion_id": "apple_word_cascade",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/plans/phrase-41.json"
+    },
+    {
+      "motion_id": "apple_word_cascade",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/plans/phrase-63.json"
+    },
+    {
+      "motion_id": "apple_word_cascade",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/plans/phrase-94.json"
+    },
+    {
+      "motion_id": "apple_word_cascade",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/queue-snapshot.json"
+    },
+    {
+      "motion_id": "apple_word_cascade",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/run-report.json"
+    },
+    {
+      "motion_id": "apple_word_cascade",
+      "artifact": "out/phrase_motion_pool_100_20260924_r4/queue-snapshot.json"
+    },
+    {
+      "motion_id": "apple_word_cascade",
+      "artifact": "out/phrase_motion_pool_100_20260924_r4/run-report.json"
+    },
+    {
+      "motion_id": "apple_word_pulse",
+      "artifact": "out/phrase_motion_pool_100_20260924/manifest.json"
+    },
+    {
+      "motion_id": "apple_word_pulse",
+      "artifact": "out/phrase_motion_pool_100_20260924/plans/phrase-35.json"
+    },
+    {
+      "motion_id": "apple_word_pulse",
+      "artifact": "out/phrase_motion_pool_100_20260924/plans/phrase-39.json"
+    },
+    {
+      "motion_id": "apple_word_pulse",
+      "artifact": "out/phrase_motion_pool_100_20260924/plans/phrase-82.json"
+    },
+    {
+      "motion_id": "apple_word_pulse",
+      "artifact": "out/phrase_motion_pool_100_20260924/plans/phrase-83.json"
+    },
+    {
+      "motion_id": "apple_word_pulse",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/manifest.json"
+    },
+    {
+      "motion_id": "apple_word_pulse",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/plans/phrase-35.json"
+    },
+    {
+      "motion_id": "apple_word_pulse",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/plans/phrase-39.json"
+    },
+    {
+      "motion_id": "apple_word_pulse",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/plans/phrase-82.json"
+    },
+    {
+      "motion_id": "apple_word_pulse",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/plans/phrase-83.json"
+    },
+    {
+      "motion_id": "apple_word_pulse",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/queue-snapshot.json"
+    },
+    {
+      "motion_id": "apple_word_pulse",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/run-report.json"
+    },
+    {
+      "motion_id": "apple_word_pulse",
+      "artifact": "out/phrase_motion_pool_100_20260924_r4/queue-snapshot.json"
+    },
+    {
+      "motion_id": "apple_word_pulse",
+      "artifact": "out/phrase_motion_pool_100_20260924_r4/run-report.json"
+    },
+    {
+      "motion_id": "brush_phrase_arrow_point",
+      "artifact": "out/brush_v1_phrase_gallery/manifest.json",
+      "media": "out/brush_v1_phrase_gallery/brush_phrase_arrow_point_long.mp4"
+    },
+    {
+      "motion_id": "brush_phrase_circle_focus",
+      "artifact": "out/brush_v1_phrase_gallery/manifest.json",
+      "media": "out/brush_v1_phrase_gallery/brush_phrase_circle_focus_short.mp4"
+    },
+    {
+      "motion_id": "brush_phrase_gold_marker",
+      "artifact": "out/brush_v1_phrase_gallery/manifest.json"
+    },
+    {
+      "motion_id": "brush_phrase_lower_rule",
+      "artifact": "out/brush_v1_phrase_gallery/manifest.json"
+    },
+    {
+      "motion_id": "brush_phrase_red_brush_underline",
+      "artifact": "out/brush_v1_phrase_gallery/manifest.json"
+    },
+    {
+      "motion_id": "brush_phrase_red_endpoint_rule",
+      "artifact": "out/brush_v1_phrase_gallery/manifest.json"
+    },
+    {
+      "motion_id": "brush_phrase_red_underline",
+      "artifact": "out/brush_v1_phrase_gallery/manifest.json"
+    },
+    {
+      "motion_id": "brush_phrase_signature_flourish",
+      "artifact": "out/brush_v1_phrase_gallery/manifest.json"
+    },
+    {
+      "motion_id": "brush_phrase_white_double_underline",
+      "artifact": "out/brush_v1_phrase_gallery/manifest.json"
+    },
+    {
+      "motion_id": "brush_phrase_white_light_sweep",
+      "artifact": "out/brush_v1_phrase_gallery/manifest.json"
+    },
+    {
+      "motion_id": "brush_phrase_white_underline",
+      "artifact": "out/brush_v1_phrase_gallery/manifest.json"
+    },
+    {
+      "motion_id": "dynamic_island_expansion",
+      "artifact": "out/phrase_motion_pool_20260924/manifest.json"
+    },
+    {
+      "motion_id": "dynamic_island_expansion",
+      "artifact": "out/phrase_motion_pool_20260924/plans/phrase-10.json"
+    },
+    {
+      "motion_id": "dynamic_island_expansion",
+      "artifact": "out/phrase_motion_pool_20260924/report.json"
+    },
+    {
+      "motion_id": "image_25d_blur_focus_in",
+      "artifact": "out/image_motion_18_20260924/manifest.json"
+    },
+    {
+      "motion_id": "image_25d_blur_focus_in",
+      "artifact": "out/image_motion_18_20260924/plans/image-motion-01.json"
+    },
+    {
+      "motion_id": "image_25d_blur_focus_in",
+      "artifact": "out/image_motion_18_20260924/report.json"
+    },
+    {
+      "motion_id": "image_25d_blur_focus_in",
+      "artifact": "out/image_motion_18_20260924_r1/manifest.json"
+    },
+    {
+      "motion_id": "image_25d_blur_focus_in",
+      "artifact": "out/image_motion_18_20260924_r1/plans/image-motion-01.json"
+    },
+    {
+      "motion_id": "image_25d_blur_focus_in",
+      "artifact": "out/image_motion_18_20260924_r2/manifest.json"
+    },
+    {
+      "motion_id": "image_25d_blur_focus_in",
+      "artifact": "out/image_motion_18_20260924_r2/plans/image-motion-01.json"
+    },
+    {
+      "motion_id": "image_25d_blur_focus_in",
+      "artifact": "out/image_motion_18_20260924_r2/queue-snapshot.json"
+    },
+    {
+      "motion_id": "image_25d_blur_focus_in",
+      "artifact": "out/image_motion_18_20260924_r2/run-report.json"
+    },
+    {
+      "motion_id": "image_25d_blur_focus_in",
+      "artifact": "out/image_motion_18_20260924_r3/manifest.json"
+    },
+    {
+      "motion_id": "image_25d_blur_focus_in",
+      "artifact": "out/image_motion_18_20260924_r3/plans/image-motion-01.json"
+    },
+    {
+      "motion_id": "image_25d_blur_focus_in",
+      "artifact": "out/image_motion_18_20260924_r3/queue-snapshot.json"
+    },
+    {
+      "motion_id": "image_25d_blur_focus_in",
+      "artifact": "out/image_motion_18_20260924_r3/run-report.json"
+    },
+    {
+      "motion_id": "image_25d_blur_focus_in",
+      "artifact": "out/image_motion_18_20260924_r4/queue-snapshot.json"
+    },
+    {
+      "motion_id": "image_25d_blur_focus_in",
+      "artifact": "out/image_motion_18_20260924_r4/run-report.json"
+    },
+    {
+      "motion_id": "image_25d_blur_focus_in",
+      "artifact": "out/image_motion_18_20260924_r5/queue-snapshot.json"
+    },
+    {
+      "motion_id": "image_25d_blur_focus_in",
+      "artifact": "out/image_motion_18_20260924_r5/run-report.json"
+    },
+    {
+      "motion_id": "image_25d_blur_scale_in",
+      "artifact": "out/image_motion_18_20260924/manifest.json"
+    },
+    {
+      "motion_id": "image_25d_blur_scale_in",
+      "artifact": "out/image_motion_18_20260924/plans/image-motion-02.json"
+    },
+    {
+      "motion_id": "image_25d_blur_scale_in",
+      "artifact": "out/image_motion_18_20260924/report.json"
+    },
+    {
+      "motion_id": "image_25d_blur_scale_in",
+      "artifact": "out/image_motion_18_20260924_r1/manifest.json"
+    },
+    {
+      "motion_id": "image_25d_blur_scale_in",
+      "artifact": "out/image_motion_18_20260924_r1/plans/image-motion-02.json"
+    },
+    {
+      "motion_id": "image_25d_blur_scale_in",
+      "artifact": "out/image_motion_18_20260924_r2/manifest.json"
+    },
+    {
+      "motion_id": "image_25d_blur_scale_in",
+      "artifact": "out/image_motion_18_20260924_r2/plans/image-motion-02.json"
+    },
+    {
+      "motion_id": "image_25d_blur_scale_in",
+      "artifact": "out/image_motion_18_20260924_r2/queue-snapshot.json"
+    },
+    {
+      "motion_id": "image_25d_blur_scale_in",
+      "artifact": "out/image_motion_18_20260924_r2/run-report.json"
+    },
+    {
+      "motion_id": "image_25d_blur_scale_in",
+      "artifact": "out/image_motion_18_20260924_r3/manifest.json"
+    },
+    {
+      "motion_id": "image_25d_blur_scale_in",
+      "artifact": "out/image_motion_18_20260924_r3/plans/image-motion-02.json"
+    },
+    {
+      "motion_id": "image_25d_blur_scale_in",
+      "artifact": "out/image_motion_18_20260924_r3/queue-snapshot.json"
+    },
+    {
+      "motion_id": "image_25d_blur_scale_in",
+      "artifact": "out/image_motion_18_20260924_r3/run-report.json"
+    },
+    {
+      "motion_id": "image_25d_blur_scale_in",
+      "artifact": "out/image_motion_18_20260924_r4/queue-snapshot.json"
+    },
+    {
+      "motion_id": "image_25d_blur_scale_in",
+      "artifact": "out/image_motion_18_20260924_r4/run-report.json"
+    },
+    {
+      "motion_id": "image_25d_blur_scale_in",
+      "artifact": "out/image_motion_18_20260924_r5/queue-snapshot.json"
+    },
+    {
+      "motion_id": "image_25d_blur_scale_in",
+      "artifact": "out/image_motion_18_20260924_r5/run-report.json"
+    },
+    {
+      "motion_id": "image_25d_card_swing",
+      "artifact": "out/image_motion_18_20260924/manifest.json"
+    },
+    {
+      "motion_id": "image_25d_card_swing",
+      "artifact": "out/image_motion_18_20260924/plans/image-motion-03.json"
+    },
+    {
+      "motion_id": "image_25d_card_swing",
+      "artifact": "out/image_motion_18_20260924/report.json"
+    },
+    {
+      "motion_id": "image_25d_card_swing",
+      "artifact": "out/image_motion_18_20260924_r1/manifest.json"
+    },
+    {
+      "motion_id": "image_25d_card_swing",
+      "artifact": "out/image_motion_18_20260924_r1/plans/image-motion-03.json"
+    },
+    {
+      "motion_id": "image_25d_card_swing",
+      "artifact": "out/image_motion_18_20260924_r2/manifest.json"
+    },
+    {
+      "motion_id": "image_25d_card_swing",
+      "artifact": "out/image_motion_18_20260924_r2/plans/image-motion-03.json"
+    },
+    {
+      "motion_id": "image_25d_card_swing",
+      "artifact": "out/image_motion_18_20260924_r2/queue-snapshot.json"
+    },
+    {
+      "motion_id": "image_25d_card_swing",
+      "artifact": "out/image_motion_18_20260924_r2/run-report.json"
+    },
+    {
+      "motion_id": "image_25d_card_swing",
+      "artifact": "out/image_motion_18_20260924_r3/manifest.json"
+    },
+    {
+      "motion_id": "image_25d_card_swing",
+      "artifact": "out/image_motion_18_20260924_r3/plans/image-motion-03.json"
+    },
+    {
+      "motion_id": "image_25d_card_swing",
+      "artifact": "out/image_motion_18_20260924_r3/queue-snapshot.json"
+    },
+    {
+      "motion_id": "image_25d_card_swing",
+      "artifact": "out/image_motion_18_20260924_r3/run-report.json"
+    },
+    {
+      "motion_id": "image_25d_card_swing",
+      "artifact": "out/image_motion_18_20260924_r4/queue-snapshot.json"
+    },
+    {
+      "motion_id": "image_25d_card_swing",
+      "artifact": "out/image_motion_18_20260924_r4/run-report.json"
+    },
+    {
+      "motion_id": "image_25d_card_swing",
+      "artifact": "out/image_motion_18_20260924_r5/queue-snapshot.json"
+    },
+    {
+      "motion_id": "image_25d_card_swing",
+      "artifact": "out/image_motion_18_20260924_r5/run-report.json"
+    },
+    {
+      "motion_id": "image_25d_depth_float_in",
+      "artifact": "out/image_motion_18_20260924/manifest.json"
+    },
+    {
+      "motion_id": "image_25d_depth_float_in",
+      "artifact": "out/image_motion_18_20260924/plans/image-motion-04.json"
+    },
+    {
+      "motion_id": "image_25d_depth_float_in",
+      "artifact": "out/image_motion_18_20260924/report.json"
+    },
+    {
+      "motion_id": "image_25d_depth_float_in",
+      "artifact": "out/image_motion_18_20260924_r1/manifest.json"
+    },
+    {
+      "motion_id": "image_25d_depth_float_in",
+      "artifact": "out/image_motion_18_20260924_r1/plans/image-motion-04.json"
+    },
+    {
+      "motion_id": "image_25d_depth_float_in",
+      "artifact": "out/image_motion_18_20260924_r2/manifest.json"
+    },
+    {
+      "motion_id": "image_25d_depth_float_in",
+      "artifact": "out/image_motion_18_20260924_r2/plans/image-motion-04.json"
+    },
+    {
+      "motion_id": "image_25d_depth_float_in",
+      "artifact": "out/image_motion_18_20260924_r2/queue-snapshot.json"
+    },
+    {
+      "motion_id": "image_25d_depth_float_in",
+      "artifact": "out/image_motion_18_20260924_r2/run-report.json"
+    },
+    {
+      "motion_id": "image_25d_depth_float_in",
+      "artifact": "out/image_motion_18_20260924_r3/manifest.json"
+    },
+    {
+      "motion_id": "image_25d_depth_float_in",
+      "artifact": "out/image_motion_18_20260924_r3/plans/image-motion-04.json"
+    },
+    {
+      "motion_id": "image_25d_depth_float_in",
+      "artifact": "out/image_motion_18_20260924_r3/queue-snapshot.json"
+    },
+    {
+      "motion_id": "image_25d_depth_float_in",
+      "artifact": "out/image_motion_18_20260924_r3/run-report.json"
+    },
+    {
+      "motion_id": "image_25d_depth_float_in",
+      "artifact": "out/image_motion_18_20260924_r4/queue-snapshot.json"
+    },
+    {
+      "motion_id": "image_25d_depth_float_in",
+      "artifact": "out/image_motion_18_20260924_r4/run-report.json"
+    },
+    {
+      "motion_id": "image_25d_depth_float_in",
+      "artifact": "out/image_motion_18_20260924_r5/queue-snapshot.json"
+    },
+    {
+      "motion_id": "image_25d_depth_float_in",
+      "artifact": "out/image_motion_18_20260924_r5/run-report.json"
+    },
+    {
+      "motion_id": "image_25d_pitch_lift",
+      "artifact": "out/image_motion_18_20260924/manifest.json"
+    },
+    {
+      "motion_id": "image_25d_pitch_lift",
+      "artifact": "out/image_motion_18_20260924/plans/image-motion-05.json"
+    },
+    {
+      "motion_id": "image_25d_pitch_lift",
+      "artifact": "out/image_motion_18_20260924/report.json"
+    },
+    {
+      "motion_id": "image_25d_pitch_lift",
+      "artifact": "out/image_motion_18_20260924_r1/manifest.json"
+    },
+    {
+      "motion_id": "image_25d_pitch_lift",
+      "artifact": "out/image_motion_18_20260924_r1/plans/image-motion-05.json"
+    },
+    {
+      "motion_id": "image_25d_pitch_lift",
+      "artifact": "out/image_motion_18_20260924_r2/manifest.json"
+    },
+    {
+      "motion_id": "image_25d_pitch_lift",
+      "artifact": "out/image_motion_18_20260924_r2/plans/image-motion-05.json"
+    },
+    {
+      "motion_id": "image_25d_pitch_lift",
+      "artifact": "out/image_motion_18_20260924_r2/queue-snapshot.json"
+    },
+    {
+      "motion_id": "image_25d_pitch_lift",
+      "artifact": "out/image_motion_18_20260924_r2/run-report.json"
+    },
+    {
+      "motion_id": "image_25d_pitch_lift",
+      "artifact": "out/image_motion_18_20260924_r3/manifest.json"
+    },
+    {
+      "motion_id": "image_25d_pitch_lift",
+      "artifact": "out/image_motion_18_20260924_r3/plans/image-motion-05.json"
+    },
+    {
+      "motion_id": "image_25d_pitch_lift",
+      "artifact": "out/image_motion_18_20260924_r3/queue-snapshot.json"
+    },
+    {
+      "motion_id": "image_25d_pitch_lift",
+      "artifact": "out/image_motion_18_20260924_r3/run-report.json"
+    },
+    {
+      "motion_id": "image_25d_pitch_lift",
+      "artifact": "out/image_motion_18_20260924_r4/queue-snapshot.json"
+    },
+    {
+      "motion_id": "image_25d_pitch_lift",
+      "artifact": "out/image_motion_18_20260924_r4/run-report.json"
+    },
+    {
+      "motion_id": "image_25d_pitch_lift",
+      "artifact": "out/image_motion_18_20260924_r5/queue-snapshot.json"
+    },
+    {
+      "motion_id": "image_25d_pitch_lift",
+      "artifact": "out/image_motion_18_20260924_r5/run-report.json"
+    },
+    {
+      "motion_id": "image_25d_pop_z_bounce",
+      "artifact": "out/image_motion_18_20260924/manifest.json"
+    },
+    {
+      "motion_id": "image_25d_pop_z_bounce",
+      "artifact": "out/image_motion_18_20260924/plans/image-motion-06.json"
+    },
+    {
+      "motion_id": "image_25d_pop_z_bounce",
+      "artifact": "out/image_motion_18_20260924/report.json"
+    },
+    {
+      "motion_id": "image_25d_pop_z_bounce",
+      "artifact": "out/image_motion_18_20260924_r1/manifest.json"
+    },
+    {
+      "motion_id": "image_25d_pop_z_bounce",
+      "artifact": "out/image_motion_18_20260924_r1/plans/image-motion-06.json"
+    },
+    {
+      "motion_id": "image_25d_pop_z_bounce",
+      "artifact": "out/image_motion_18_20260924_r2/manifest.json"
+    },
+    {
+      "motion_id": "image_25d_pop_z_bounce",
+      "artifact": "out/image_motion_18_20260924_r2/plans/image-motion-06.json"
+    },
+    {
+      "motion_id": "image_25d_pop_z_bounce",
+      "artifact": "out/image_motion_18_20260924_r2/queue-snapshot.json"
+    },
+    {
+      "motion_id": "image_25d_pop_z_bounce",
+      "artifact": "out/image_motion_18_20260924_r2/run-report.json"
+    },
+    {
+      "motion_id": "image_25d_pop_z_bounce",
+      "artifact": "out/image_motion_18_20260924_r3/manifest.json"
+    },
+    {
+      "motion_id": "image_25d_pop_z_bounce",
+      "artifact": "out/image_motion_18_20260924_r3/plans/image-motion-06.json"
+    },
+    {
+      "motion_id": "image_25d_pop_z_bounce",
+      "artifact": "out/image_motion_18_20260924_r3/queue-snapshot.json"
+    },
+    {
+      "motion_id": "image_25d_pop_z_bounce",
+      "artifact": "out/image_motion_18_20260924_r3/run-report.json"
+    },
+    {
+      "motion_id": "image_25d_pop_z_bounce",
+      "artifact": "out/image_motion_18_20260924_r4/queue-snapshot.json"
+    },
+    {
+      "motion_id": "image_25d_pop_z_bounce",
+      "artifact": "out/image_motion_18_20260924_r4/run-report.json"
+    },
+    {
+      "motion_id": "image_25d_pop_z_bounce",
+      "artifact": "out/image_motion_18_20260924_r5/queue-snapshot.json"
+    },
+    {
+      "motion_id": "image_25d_pop_z_bounce",
+      "artifact": "out/image_motion_18_20260924_r5/run-report.json"
+    },
+    {
+      "motion_id": "image_25d_swipe_3d",
+      "artifact": "out/image_motion_18_20260924/manifest.json"
+    },
+    {
+      "motion_id": "image_25d_swipe_3d",
+      "artifact": "out/image_motion_18_20260924/plans/image-motion-07.json"
+    },
+    {
+      "motion_id": "image_25d_swipe_3d",
+      "artifact": "out/image_motion_18_20260924/report.json"
+    },
+    {
+      "motion_id": "image_25d_swipe_3d",
+      "artifact": "out/image_motion_18_20260924_r1/manifest.json"
+    },
+    {
+      "motion_id": "image_25d_swipe_3d",
+      "artifact": "out/image_motion_18_20260924_r1/plans/image-motion-07.json"
+    },
+    {
+      "motion_id": "image_25d_swipe_3d",
+      "artifact": "out/image_motion_18_20260924_r2/manifest.json"
+    },
+    {
+      "motion_id": "image_25d_swipe_3d",
+      "artifact": "out/image_motion_18_20260924_r2/plans/image-motion-07.json"
+    },
+    {
+      "motion_id": "image_25d_swipe_3d",
+      "artifact": "out/image_motion_18_20260924_r2/queue-snapshot.json"
+    },
+    {
+      "motion_id": "image_25d_swipe_3d",
+      "artifact": "out/image_motion_18_20260924_r2/run-report.json"
+    },
+    {
+      "motion_id": "image_25d_swipe_3d",
+      "artifact": "out/image_motion_18_20260924_r3/manifest.json"
+    },
+    {
+      "motion_id": "image_25d_swipe_3d",
+      "artifact": "out/image_motion_18_20260924_r3/plans/image-motion-07.json"
+    },
+    {
+      "motion_id": "image_25d_swipe_3d",
+      "artifact": "out/image_motion_18_20260924_r3/queue-snapshot.json"
+    },
+    {
+      "motion_id": "image_25d_swipe_3d",
+      "artifact": "out/image_motion_18_20260924_r3/run-report.json"
+    },
+    {
+      "motion_id": "image_25d_swipe_3d",
+      "artifact": "out/image_motion_18_20260924_r4/queue-snapshot.json"
+    },
+    {
+      "motion_id": "image_25d_swipe_3d",
+      "artifact": "out/image_motion_18_20260924_r4/run-report.json"
+    },
+    {
+      "motion_id": "image_25d_swipe_3d",
+      "artifact": "out/image_motion_18_20260924_r5/queue-snapshot.json"
+    },
+    {
+      "motion_id": "image_25d_swipe_3d",
+      "artifact": "out/image_motion_18_20260924_r5/run-report.json"
+    },
+    {
+      "motion_id": "image_25d_yaw_flip_in",
+      "artifact": "out/image_motion_18_20260924/manifest.json"
+    },
+    {
+      "motion_id": "image_25d_yaw_flip_in",
+      "artifact": "out/image_motion_18_20260924/plans/image-motion-08.json"
+    },
+    {
+      "motion_id": "image_25d_yaw_flip_in",
+      "artifact": "out/image_motion_18_20260924/report.json"
+    },
+    {
+      "motion_id": "image_25d_yaw_flip_in",
+      "artifact": "out/image_motion_18_20260924_r1/manifest.json"
+    },
+    {
+      "motion_id": "image_25d_yaw_flip_in",
+      "artifact": "out/image_motion_18_20260924_r1/plans/image-motion-08.json"
+    },
+    {
+      "motion_id": "image_25d_yaw_flip_in",
+      "artifact": "out/image_motion_18_20260924_r2/manifest.json"
+    },
+    {
+      "motion_id": "image_25d_yaw_flip_in",
+      "artifact": "out/image_motion_18_20260924_r2/plans/image-motion-08.json"
+    },
+    {
+      "motion_id": "image_25d_yaw_flip_in",
+      "artifact": "out/image_motion_18_20260924_r2/queue-snapshot.json"
+    },
+    {
+      "motion_id": "image_25d_yaw_flip_in",
+      "artifact": "out/image_motion_18_20260924_r2/run-report.json"
+    },
+    {
+      "motion_id": "image_25d_yaw_flip_in",
+      "artifact": "out/image_motion_18_20260924_r3/manifest.json"
+    },
+    {
+      "motion_id": "image_25d_yaw_flip_in",
+      "artifact": "out/image_motion_18_20260924_r3/plans/image-motion-08.json"
+    },
+    {
+      "motion_id": "image_25d_yaw_flip_in",
+      "artifact": "out/image_motion_18_20260924_r3/queue-snapshot.json"
+    },
+    {
+      "motion_id": "image_25d_yaw_flip_in",
+      "artifact": "out/image_motion_18_20260924_r3/run-report.json"
+    },
+    {
+      "motion_id": "image_25d_yaw_flip_in",
+      "artifact": "out/image_motion_18_20260924_r4/queue-snapshot.json"
+    },
+    {
+      "motion_id": "image_25d_yaw_flip_in",
+      "artifact": "out/image_motion_18_20260924_r4/run-report.json"
+    },
+    {
+      "motion_id": "image_25d_yaw_flip_in",
+      "artifact": "out/image_motion_18_20260924_r5/queue-snapshot.json"
+    },
+    {
+      "motion_id": "image_25d_yaw_flip_in",
+      "artifact": "out/image_motion_18_20260924_r5/run-report.json"
+    },
+    {
+      "motion_id": "image_card_push",
+      "artifact": "out/image_motion_18_20260924/manifest.json"
+    },
+    {
+      "motion_id": "image_card_push",
+      "artifact": "out/image_motion_18_20260924/plans/image-motion-09.json"
+    },
+    {
+      "motion_id": "image_card_push",
+      "artifact": "out/image_motion_18_20260924/report.json"
+    },
+    {
+      "motion_id": "image_card_push",
+      "artifact": "out/image_motion_18_20260924_r1/manifest.json"
+    },
+    {
+      "motion_id": "image_card_push",
+      "artifact": "out/image_motion_18_20260924_r1/plans/image-motion-09.json"
+    },
+    {
+      "motion_id": "image_card_push",
+      "artifact": "out/image_motion_18_20260924_r2/manifest.json"
+    },
+    {
+      "motion_id": "image_card_push",
+      "artifact": "out/image_motion_18_20260924_r2/plans/image-motion-09.json"
+    },
+    {
+      "motion_id": "image_card_push",
+      "artifact": "out/image_motion_18_20260924_r2/queue-snapshot.json"
+    },
+    {
+      "motion_id": "image_card_push",
+      "artifact": "out/image_motion_18_20260924_r2/run-report.json"
+    },
+    {
+      "motion_id": "image_card_push",
+      "artifact": "out/image_motion_18_20260924_r3/manifest.json"
+    },
+    {
+      "motion_id": "image_card_push",
+      "artifact": "out/image_motion_18_20260924_r3/plans/image-motion-09.json"
+    },
+    {
+      "motion_id": "image_card_push",
+      "artifact": "out/image_motion_18_20260924_r3/queue-snapshot.json"
+    },
+    {
+      "motion_id": "image_card_push",
+      "artifact": "out/image_motion_18_20260924_r3/run-report.json"
+    },
+    {
+      "motion_id": "image_card_push",
+      "artifact": "out/image_motion_18_20260924_r4/queue-snapshot.json"
+    },
+    {
+      "motion_id": "image_card_push",
+      "artifact": "out/image_motion_18_20260924_r4/run-report.json"
+    },
+    {
+      "motion_id": "image_card_push",
+      "artifact": "out/image_motion_18_20260924_r5/queue-snapshot.json"
+    },
+    {
+      "motion_id": "image_card_push",
+      "artifact": "out/image_motion_18_20260924_r5/run-report.json"
+    },
+    {
+      "motion_id": "image_diagonal_sweep",
+      "artifact": "out/image_motion_18_20260924/manifest.json"
+    },
+    {
+      "motion_id": "image_diagonal_sweep",
+      "artifact": "out/image_motion_18_20260924/plans/image-motion-10.json"
+    },
+    {
+      "motion_id": "image_diagonal_sweep",
+      "artifact": "out/image_motion_18_20260924/report.json"
+    },
+    {
+      "motion_id": "image_diagonal_sweep",
+      "artifact": "out/image_motion_18_20260924_r1/manifest.json"
+    },
+    {
+      "motion_id": "image_diagonal_sweep",
+      "artifact": "out/image_motion_18_20260924_r1/plans/image-motion-10.json"
+    },
+    {
+      "motion_id": "image_diagonal_sweep",
+      "artifact": "out/image_motion_18_20260924_r2/manifest.json"
+    },
+    {
+      "motion_id": "image_diagonal_sweep",
+      "artifact": "out/image_motion_18_20260924_r2/plans/image-motion-10.json"
+    },
+    {
+      "motion_id": "image_diagonal_sweep",
+      "artifact": "out/image_motion_18_20260924_r2/queue-snapshot.json"
+    },
+    {
+      "motion_id": "image_diagonal_sweep",
+      "artifact": "out/image_motion_18_20260924_r2/run-report.json"
+    },
+    {
+      "motion_id": "image_diagonal_sweep",
+      "artifact": "out/image_motion_18_20260924_r3/manifest.json"
+    },
+    {
+      "motion_id": "image_diagonal_sweep",
+      "artifact": "out/image_motion_18_20260924_r3/plans/image-motion-10.json"
+    },
+    {
+      "motion_id": "image_diagonal_sweep",
+      "artifact": "out/image_motion_18_20260924_r3/queue-snapshot.json"
+    },
+    {
+      "motion_id": "image_diagonal_sweep",
+      "artifact": "out/image_motion_18_20260924_r3/run-report.json"
+    },
+    {
+      "motion_id": "image_diagonal_sweep",
+      "artifact": "out/image_motion_18_20260924_r4/queue-snapshot.json"
+    },
+    {
+      "motion_id": "image_diagonal_sweep",
+      "artifact": "out/image_motion_18_20260924_r4/run-report.json"
+    },
+    {
+      "motion_id": "image_diagonal_sweep",
+      "artifact": "out/image_motion_18_20260924_r5/queue-snapshot.json"
+    },
+    {
+      "motion_id": "image_diagonal_sweep",
+      "artifact": "out/image_motion_18_20260924_r5/run-report.json"
+    },
+    {
+      "motion_id": "image_fade_reveal",
+      "artifact": "out/image_motion_18_20260924/manifest.json"
+    },
+    {
+      "motion_id": "image_fade_reveal",
+      "artifact": "out/image_motion_18_20260924/plans/image-motion-11.json"
+    },
+    {
+      "motion_id": "image_fade_reveal",
+      "artifact": "out/image_motion_18_20260924/report.json"
+    },
+    {
+      "motion_id": "image_fade_reveal",
+      "artifact": "out/image_motion_18_20260924_r1/manifest.json"
+    },
+    {
+      "motion_id": "image_fade_reveal",
+      "artifact": "out/image_motion_18_20260924_r1/plans/image-motion-11.json"
+    },
+    {
+      "motion_id": "image_fade_reveal",
+      "artifact": "out/image_motion_18_20260924_r2/manifest.json"
+    },
+    {
+      "motion_id": "image_fade_reveal",
+      "artifact": "out/image_motion_18_20260924_r2/plans/image-motion-11.json"
+    },
+    {
+      "motion_id": "image_fade_reveal",
+      "artifact": "out/image_motion_18_20260924_r2/queue-snapshot.json"
+    },
+    {
+      "motion_id": "image_fade_reveal",
+      "artifact": "out/image_motion_18_20260924_r2/run-report.json"
+    },
+    {
+      "motion_id": "image_fade_reveal",
+      "artifact": "out/image_motion_18_20260924_r3/manifest.json"
+    },
+    {
+      "motion_id": "image_fade_reveal",
+      "artifact": "out/image_motion_18_20260924_r3/plans/image-motion-11.json"
+    },
+    {
+      "motion_id": "image_fade_reveal",
+      "artifact": "out/image_motion_18_20260924_r3/queue-snapshot.json"
+    },
+    {
+      "motion_id": "image_fade_reveal",
+      "artifact": "out/image_motion_18_20260924_r3/run-report.json"
+    },
+    {
+      "motion_id": "image_fade_reveal",
+      "artifact": "out/image_motion_18_20260924_r4/queue-snapshot.json"
+    },
+    {
+      "motion_id": "image_fade_reveal",
+      "artifact": "out/image_motion_18_20260924_r4/run-report.json"
+    },
+    {
+      "motion_id": "image_fade_reveal",
+      "artifact": "out/image_motion_18_20260924_r5/queue-snapshot.json"
+    },
+    {
+      "motion_id": "image_fade_reveal",
+      "artifact": "out/image_motion_18_20260924_r5/run-report.json"
+    },
+    {
+      "motion_id": "image_focus_reveal",
+      "artifact": "out/image_motion_18_20260924/manifest.json"
+    },
+    {
+      "motion_id": "image_focus_reveal",
+      "artifact": "out/image_motion_18_20260924/plans/image-motion-12.json"
+    },
+    {
+      "motion_id": "image_focus_reveal",
+      "artifact": "out/image_motion_18_20260924/report.json"
+    },
+    {
+      "motion_id": "image_focus_reveal",
+      "artifact": "out/image_motion_18_20260924_r1/manifest.json"
+    },
+    {
+      "motion_id": "image_focus_reveal",
+      "artifact": "out/image_motion_18_20260924_r1/plans/image-motion-12.json"
+    },
+    {
+      "motion_id": "image_focus_reveal",
+      "artifact": "out/image_motion_18_20260924_r2/manifest.json"
+    },
+    {
+      "motion_id": "image_focus_reveal",
+      "artifact": "out/image_motion_18_20260924_r2/plans/image-motion-12.json"
+    },
+    {
+      "motion_id": "image_focus_reveal",
+      "artifact": "out/image_motion_18_20260924_r2/queue-snapshot.json"
+    },
+    {
+      "motion_id": "image_focus_reveal",
+      "artifact": "out/image_motion_18_20260924_r2/run-report.json"
+    },
+    {
+      "motion_id": "image_focus_reveal",
+      "artifact": "out/image_motion_18_20260924_r3/manifest.json"
+    },
+    {
+      "motion_id": "image_focus_reveal",
+      "artifact": "out/image_motion_18_20260924_r3/plans/image-motion-12.json"
+    },
+    {
+      "motion_id": "image_focus_reveal",
+      "artifact": "out/image_motion_18_20260924_r3/queue-snapshot.json"
+    },
+    {
+      "motion_id": "image_focus_reveal",
+      "artifact": "out/image_motion_18_20260924_r3/run-report.json"
+    },
+    {
+      "motion_id": "image_focus_reveal",
+      "artifact": "out/image_motion_18_20260924_r4/queue-snapshot.json"
+    },
+    {
+      "motion_id": "image_focus_reveal",
+      "artifact": "out/image_motion_18_20260924_r4/run-report.json"
+    },
+    {
+      "motion_id": "image_focus_reveal",
+      "artifact": "out/image_motion_18_20260924_r5/queue-snapshot.json"
+    },
+    {
+      "motion_id": "image_focus_reveal",
+      "artifact": "out/image_motion_18_20260924_r5/run-report.json"
+    },
+    {
+      "motion_id": "image_parallax_depth_reveal",
+      "artifact": "out/image_motion_18_20260924/manifest.json"
+    },
+    {
+      "motion_id": "image_parallax_depth_reveal",
+      "artifact": "out/image_motion_18_20260924/plans/image-motion-13.json"
+    },
+    {
+      "motion_id": "image_parallax_depth_reveal",
+      "artifact": "out/image_motion_18_20260924/report.json"
+    },
+    {
+      "motion_id": "image_parallax_depth_reveal",
+      "artifact": "out/image_motion_18_20260924_r1/manifest.json"
+    },
+    {
+      "motion_id": "image_parallax_depth_reveal",
+      "artifact": "out/image_motion_18_20260924_r1/plans/image-motion-13.json"
+    },
+    {
+      "motion_id": "image_parallax_depth_reveal",
+      "artifact": "out/image_motion_18_20260924_r2/manifest.json"
+    },
+    {
+      "motion_id": "image_parallax_depth_reveal",
+      "artifact": "out/image_motion_18_20260924_r2/plans/image-motion-13.json"
+    },
+    {
+      "motion_id": "image_parallax_depth_reveal",
+      "artifact": "out/image_motion_18_20260924_r2/queue-snapshot.json"
+    },
+    {
+      "motion_id": "image_parallax_depth_reveal",
+      "artifact": "out/image_motion_18_20260924_r2/run-report.json"
+    },
+    {
+      "motion_id": "image_parallax_depth_reveal",
+      "artifact": "out/image_motion_18_20260924_r3/manifest.json"
+    },
+    {
+      "motion_id": "image_parallax_depth_reveal",
+      "artifact": "out/image_motion_18_20260924_r3/plans/image-motion-13.json"
+    },
+    {
+      "motion_id": "image_parallax_depth_reveal",
+      "artifact": "out/image_motion_18_20260924_r3/queue-snapshot.json"
+    },
+    {
+      "motion_id": "image_parallax_depth_reveal",
+      "artifact": "out/image_motion_18_20260924_r3/run-report.json"
+    },
+    {
+      "motion_id": "image_parallax_depth_reveal",
+      "artifact": "out/image_motion_18_20260924_r4/queue-snapshot.json"
+    },
+    {
+      "motion_id": "image_parallax_depth_reveal",
+      "artifact": "out/image_motion_18_20260924_r4/run-report.json"
+    },
+    {
+      "motion_id": "image_parallax_depth_reveal",
+      "artifact": "out/image_motion_18_20260924_r5/queue-snapshot.json"
+    },
+    {
+      "motion_id": "image_parallax_depth_reveal",
+      "artifact": "out/image_motion_18_20260924_r5/run-report.json"
+    },
+    {
+      "motion_id": "image_scale_reveal",
+      "artifact": "out/image_motion_18_20260924/manifest.json"
+    },
+    {
+      "motion_id": "image_scale_reveal",
+      "artifact": "out/image_motion_18_20260924/plans/image-motion-14.json"
+    },
+    {
+      "motion_id": "image_scale_reveal",
+      "artifact": "out/image_motion_18_20260924/report.json"
+    },
+    {
+      "motion_id": "image_scale_reveal",
+      "artifact": "out/image_motion_18_20260924_r1/manifest.json"
+    },
+    {
+      "motion_id": "image_scale_reveal",
+      "artifact": "out/image_motion_18_20260924_r1/plans/image-motion-14.json"
+    },
+    {
+      "motion_id": "image_scale_reveal",
+      "artifact": "out/image_motion_18_20260924_r2/manifest.json"
+    },
+    {
+      "motion_id": "image_scale_reveal",
+      "artifact": "out/image_motion_18_20260924_r2/plans/image-motion-14.json"
+    },
+    {
+      "motion_id": "image_scale_reveal",
+      "artifact": "out/image_motion_18_20260924_r2/queue-snapshot.json"
+    },
+    {
+      "motion_id": "image_scale_reveal",
+      "artifact": "out/image_motion_18_20260924_r2/run-report.json"
+    },
+    {
+      "motion_id": "image_scale_reveal",
+      "artifact": "out/image_motion_18_20260924_r3/manifest.json"
+    },
+    {
+      "motion_id": "image_scale_reveal",
+      "artifact": "out/image_motion_18_20260924_r3/plans/image-motion-14.json"
+    },
+    {
+      "motion_id": "image_scale_reveal",
+      "artifact": "out/image_motion_18_20260924_r3/queue-snapshot.json"
+    },
+    {
+      "motion_id": "image_scale_reveal",
+      "artifact": "out/image_motion_18_20260924_r3/run-report.json"
+    },
+    {
+      "motion_id": "image_scale_reveal",
+      "artifact": "out/image_motion_18_20260924_r4/queue-snapshot.json"
+    },
+    {
+      "motion_id": "image_scale_reveal",
+      "artifact": "out/image_motion_18_20260924_r4/run-report.json"
+    },
+    {
+      "motion_id": "image_scale_reveal",
+      "artifact": "out/image_motion_18_20260924_r5/queue-snapshot.json"
+    },
+    {
+      "motion_id": "image_scale_reveal",
+      "artifact": "out/image_motion_18_20260924_r5/run-report.json"
+    },
+    {
+      "motion_id": "image_slide_left_reveal",
+      "artifact": "out/image_motion_18_20260924/manifest.json"
+    },
+    {
+      "motion_id": "image_slide_left_reveal",
+      "artifact": "out/image_motion_18_20260924/plans/image-motion-15.json"
+    },
+    {
+      "motion_id": "image_slide_left_reveal",
+      "artifact": "out/image_motion_18_20260924/report.json"
+    },
+    {
+      "motion_id": "image_slide_left_reveal",
+      "artifact": "out/image_motion_18_20260924_r1/manifest.json"
+    },
+    {
+      "motion_id": "image_slide_left_reveal",
+      "artifact": "out/image_motion_18_20260924_r1/plans/image-motion-15.json"
+    },
+    {
+      "motion_id": "image_slide_left_reveal",
+      "artifact": "out/image_motion_18_20260924_r2/manifest.json"
+    },
+    {
+      "motion_id": "image_slide_left_reveal",
+      "artifact": "out/image_motion_18_20260924_r2/plans/image-motion-15.json"
+    },
+    {
+      "motion_id": "image_slide_left_reveal",
+      "artifact": "out/image_motion_18_20260924_r2/queue-snapshot.json"
+    },
+    {
+      "motion_id": "image_slide_left_reveal",
+      "artifact": "out/image_motion_18_20260924_r2/run-report.json"
+    },
+    {
+      "motion_id": "image_slide_left_reveal",
+      "artifact": "out/image_motion_18_20260924_r3/manifest.json"
+    },
+    {
+      "motion_id": "image_slide_left_reveal",
+      "artifact": "out/image_motion_18_20260924_r3/plans/image-motion-15.json"
+    },
+    {
+      "motion_id": "image_slide_left_reveal",
+      "artifact": "out/image_motion_18_20260924_r3/queue-snapshot.json"
+    },
+    {
+      "motion_id": "image_slide_left_reveal",
+      "artifact": "out/image_motion_18_20260924_r3/run-report.json"
+    },
+    {
+      "motion_id": "image_slide_left_reveal",
+      "artifact": "out/image_motion_18_20260924_r4/queue-snapshot.json"
+    },
+    {
+      "motion_id": "image_slide_left_reveal",
+      "artifact": "out/image_motion_18_20260924_r4/run-report.json"
+    },
+    {
+      "motion_id": "image_slide_left_reveal",
+      "artifact": "out/image_motion_18_20260924_r5/queue-snapshot.json"
+    },
+    {
+      "motion_id": "image_slide_left_reveal",
+      "artifact": "out/image_motion_18_20260924_r5/run-report.json"
+    },
+    {
+      "motion_id": "image_slide_right_reveal",
+      "artifact": "out/image_motion_18_20260924/manifest.json"
+    },
+    {
+      "motion_id": "image_slide_right_reveal",
+      "artifact": "out/image_motion_18_20260924/plans/image-motion-16.json"
+    },
+    {
+      "motion_id": "image_slide_right_reveal",
+      "artifact": "out/image_motion_18_20260924/report.json"
+    },
+    {
+      "motion_id": "image_slide_right_reveal",
+      "artifact": "out/image_motion_18_20260924_r1/manifest.json"
+    },
+    {
+      "motion_id": "image_slide_right_reveal",
+      "artifact": "out/image_motion_18_20260924_r1/plans/image-motion-16.json"
+    },
+    {
+      "motion_id": "image_slide_right_reveal",
+      "artifact": "out/image_motion_18_20260924_r2/manifest.json"
+    },
+    {
+      "motion_id": "image_slide_right_reveal",
+      "artifact": "out/image_motion_18_20260924_r2/plans/image-motion-16.json"
+    },
+    {
+      "motion_id": "image_slide_right_reveal",
+      "artifact": "out/image_motion_18_20260924_r2/queue-snapshot.json"
+    },
+    {
+      "motion_id": "image_slide_right_reveal",
+      "artifact": "out/image_motion_18_20260924_r2/run-report.json"
+    },
+    {
+      "motion_id": "image_slide_right_reveal",
+      "artifact": "out/image_motion_18_20260924_r3/manifest.json"
+    },
+    {
+      "motion_id": "image_slide_right_reveal",
+      "artifact": "out/image_motion_18_20260924_r3/plans/image-motion-16.json"
+    },
+    {
+      "motion_id": "image_slide_right_reveal",
+      "artifact": "out/image_motion_18_20260924_r3/queue-snapshot.json"
+    },
+    {
+      "motion_id": "image_slide_right_reveal",
+      "artifact": "out/image_motion_18_20260924_r3/run-report.json"
+    },
+    {
+      "motion_id": "image_slide_right_reveal",
+      "artifact": "out/image_motion_18_20260924_r4/queue-snapshot.json"
+    },
+    {
+      "motion_id": "image_slide_right_reveal",
+      "artifact": "out/image_motion_18_20260924_r4/run-report.json"
+    },
+    {
+      "motion_id": "image_slide_right_reveal",
+      "artifact": "out/image_motion_18_20260924_r5/queue-snapshot.json"
+    },
+    {
+      "motion_id": "image_slide_right_reveal",
+      "artifact": "out/image_motion_18_20260924_r5/run-report.json"
+    },
+    {
+      "motion_id": "image_soft_focus_reveal",
+      "artifact": "out/image_motion_18_20260924/manifest.json"
+    },
+    {
+      "motion_id": "image_soft_focus_reveal",
+      "artifact": "out/image_motion_18_20260924/plans/image-motion-17.json"
+    },
+    {
+      "motion_id": "image_soft_focus_reveal",
+      "artifact": "out/image_motion_18_20260924/report.json"
+    },
+    {
+      "motion_id": "image_soft_focus_reveal",
+      "artifact": "out/image_motion_18_20260924_r1/manifest.json"
+    },
+    {
+      "motion_id": "image_soft_focus_reveal",
+      "artifact": "out/image_motion_18_20260924_r1/plans/image-motion-17.json"
+    },
+    {
+      "motion_id": "image_soft_focus_reveal",
+      "artifact": "out/image_motion_18_20260924_r2/manifest.json"
+    },
+    {
+      "motion_id": "image_soft_focus_reveal",
+      "artifact": "out/image_motion_18_20260924_r2/plans/image-motion-17.json"
+    },
+    {
+      "motion_id": "image_soft_focus_reveal",
+      "artifact": "out/image_motion_18_20260924_r2/queue-snapshot.json"
+    },
+    {
+      "motion_id": "image_soft_focus_reveal",
+      "artifact": "out/image_motion_18_20260924_r2/run-report.json"
+    },
+    {
+      "motion_id": "image_soft_focus_reveal",
+      "artifact": "out/image_motion_18_20260924_r3/manifest.json"
+    },
+    {
+      "motion_id": "image_soft_focus_reveal",
+      "artifact": "out/image_motion_18_20260924_r3/plans/image-motion-17.json"
+    },
+    {
+      "motion_id": "image_soft_focus_reveal",
+      "artifact": "out/image_motion_18_20260924_r3/queue-snapshot.json"
+    },
+    {
+      "motion_id": "image_soft_focus_reveal",
+      "artifact": "out/image_motion_18_20260924_r3/run-report.json"
+    },
+    {
+      "motion_id": "image_soft_focus_reveal",
+      "artifact": "out/image_motion_18_20260924_r4/queue-snapshot.json"
+    },
+    {
+      "motion_id": "image_soft_focus_reveal",
+      "artifact": "out/image_motion_18_20260924_r4/run-report.json"
+    },
+    {
+      "motion_id": "image_soft_focus_reveal",
+      "artifact": "out/image_motion_18_20260924_r5/queue-snapshot.json"
+    },
+    {
+      "motion_id": "image_soft_focus_reveal",
+      "artifact": "out/image_motion_18_20260924_r5/run-report.json"
+    },
+    {
+      "motion_id": "image_tilt_settle",
+      "artifact": "out/image_motion_18_20260924/manifest.json"
+    },
+    {
+      "motion_id": "image_tilt_settle",
+      "artifact": "out/image_motion_18_20260924/plans/image-motion-18.json"
+    },
+    {
+      "motion_id": "image_tilt_settle",
+      "artifact": "out/image_motion_18_20260924/report.json"
+    },
+    {
+      "motion_id": "image_tilt_settle",
+      "artifact": "out/image_motion_18_20260924_r1/manifest.json"
+    },
+    {
+      "motion_id": "image_tilt_settle",
+      "artifact": "out/image_motion_18_20260924_r1/plans/image-motion-18.json"
+    },
+    {
+      "motion_id": "image_tilt_settle",
+      "artifact": "out/image_motion_18_20260924_r2/manifest.json"
+    },
+    {
+      "motion_id": "image_tilt_settle",
+      "artifact": "out/image_motion_18_20260924_r2/plans/image-motion-18.json"
+    },
+    {
+      "motion_id": "image_tilt_settle",
+      "artifact": "out/image_motion_18_20260924_r2/queue-snapshot.json"
+    },
+    {
+      "motion_id": "image_tilt_settle",
+      "artifact": "out/image_motion_18_20260924_r2/run-report.json"
+    },
+    {
+      "motion_id": "image_tilt_settle",
+      "artifact": "out/image_motion_18_20260924_r3/manifest.json"
+    },
+    {
+      "motion_id": "image_tilt_settle",
+      "artifact": "out/image_motion_18_20260924_r3/plans/image-motion-18.json"
+    },
+    {
+      "motion_id": "image_tilt_settle",
+      "artifact": "out/image_motion_18_20260924_r3/queue-snapshot.json"
+    },
+    {
+      "motion_id": "image_tilt_settle",
+      "artifact": "out/image_motion_18_20260924_r3/run-report.json"
+    },
+    {
+      "motion_id": "image_tilt_settle",
+      "artifact": "out/image_motion_18_20260924_r4/queue-snapshot.json"
+    },
+    {
+      "motion_id": "image_tilt_settle",
+      "artifact": "out/image_motion_18_20260924_r4/run-report.json"
+    },
+    {
+      "motion_id": "image_tilt_settle",
+      "artifact": "out/image_motion_18_20260924_r5/queue-snapshot.json"
+    },
+    {
+      "motion_id": "image_tilt_settle",
+      "artifact": "out/image_motion_18_20260924_r5/run-report.json"
+    },
+    {
+      "motion_id": "kinetic_keyword_lock",
+      "artifact": "out/phrase_motion_pool_100_20260924/manifest.json"
+    },
+    {
+      "motion_id": "kinetic_keyword_lock",
+      "artifact": "out/phrase_motion_pool_100_20260924/plans/phrase-21.json"
+    },
+    {
+      "motion_id": "kinetic_keyword_lock",
+      "artifact": "out/phrase_motion_pool_100_20260924/plans/phrase-23.json"
+    },
+    {
+      "motion_id": "kinetic_keyword_lock",
+      "artifact": "out/phrase_motion_pool_100_20260924/plans/phrase-51.json"
+    },
+    {
+      "motion_id": "kinetic_keyword_lock",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/manifest.json"
+    },
+    {
+      "motion_id": "kinetic_keyword_lock",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/plans/phrase-21.json"
+    },
+    {
+      "motion_id": "kinetic_keyword_lock",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/plans/phrase-23.json"
+    },
+    {
+      "motion_id": "kinetic_keyword_lock",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/plans/phrase-51.json"
+    },
+    {
+      "motion_id": "kinetic_keyword_lock",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/queue-snapshot.json"
+    },
+    {
+      "motion_id": "kinetic_keyword_lock",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/run-report.json"
+    },
+    {
+      "motion_id": "kinetic_keyword_lock",
+      "artifact": "out/phrase_motion_pool_100_20260924_r4/queue-snapshot.json"
+    },
+    {
+      "motion_id": "kinetic_keyword_lock",
+      "artifact": "out/phrase_motion_pool_100_20260924_r4/run-report.json"
+    },
+    {
+      "motion_id": "kinetic_stamp_impact",
+      "artifact": "out/phrase_motion_pool_20260924/manifest.json"
+    },
+    {
+      "motion_id": "kinetic_stamp_impact",
+      "artifact": "out/phrase_motion_pool_20260924/plans/phrase-05.json"
+    },
+    {
+      "motion_id": "kinetic_stamp_impact",
+      "artifact": "out/phrase_motion_pool_20260924/report.json"
+    },
+    {
+      "motion_id": "masked_upward_reveal",
+      "artifact": "out/phrase_motion_pool_20260924/manifest.json"
+    },
+    {
+      "motion_id": "masked_upward_reveal",
+      "artifact": "out/phrase_motion_pool_20260924/plans/phrase-01.json"
+    },
+    {
+      "motion_id": "masked_upward_reveal",
+      "artifact": "out/phrase_motion_pool_20260924/report.json"
+    },
+    {
+      "motion_id": "masked_vertical_lift",
+      "artifact": "out/phrase_motion_pool_100_20260924/manifest.json"
+    },
+    {
+      "motion_id": "masked_vertical_lift",
+      "artifact": "out/phrase_motion_pool_100_20260924/plans/phrase-09.json"
+    },
+    {
+      "motion_id": "masked_vertical_lift",
+      "artifact": "out/phrase_motion_pool_100_20260924/plans/phrase-34.json"
+    },
+    {
+      "motion_id": "masked_vertical_lift",
+      "artifact": "out/phrase_motion_pool_100_20260924/plans/phrase-37.json"
+    },
+    {
+      "motion_id": "masked_vertical_lift",
+      "artifact": "out/phrase_motion_pool_100_20260924/plans/phrase-60.json"
+    },
+    {
+      "motion_id": "masked_vertical_lift",
+      "artifact": "out/phrase_motion_pool_100_20260924/plans/phrase-77.json"
+    },
+    {
+      "motion_id": "masked_vertical_lift",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/manifest.json"
+    },
+    {
+      "motion_id": "masked_vertical_lift",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/plans/phrase-09.json"
+    },
+    {
+      "motion_id": "masked_vertical_lift",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/plans/phrase-34.json"
+    },
+    {
+      "motion_id": "masked_vertical_lift",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/plans/phrase-37.json"
+    },
+    {
+      "motion_id": "masked_vertical_lift",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/plans/phrase-60.json"
+    },
+    {
+      "motion_id": "masked_vertical_lift",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/plans/phrase-77.json"
+    },
+    {
+      "motion_id": "masked_vertical_lift",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/queue-snapshot.json"
+    },
+    {
+      "motion_id": "masked_vertical_lift",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/run-report.json"
+    },
+    {
+      "motion_id": "masked_vertical_lift",
+      "artifact": "out/phrase_motion_pool_100_20260924_r4/queue-snapshot.json"
+    },
+    {
+      "motion_id": "masked_vertical_lift",
+      "artifact": "out/phrase_motion_pool_100_20260924_r4/run-report.json"
+    },
+    {
+      "motion_id": "masked_vertical_lift",
+      "artifact": "out/phrase_motion_pool_20260924/manifest.json"
+    },
+    {
+      "motion_id": "masked_vertical_lift",
+      "artifact": "out/phrase_motion_pool_20260924/plans/phrase-04.json"
+    },
+    {
+      "motion_id": "masked_vertical_lift",
+      "artifact": "out/phrase_motion_pool_20260924/report.json"
+    },
+    {
+      "motion_id": "masked_vertical_lift",
+      "artifact": "out/phrase_motion_pool_20260924_r1/manifest.json"
+    },
+    {
+      "motion_id": "masked_vertical_lift",
+      "artifact": "out/phrase_motion_pool_20260924_r1/plans/phrase-09.json"
+    },
+    {
+      "motion_id": "masked_vertical_lift",
+      "artifact": "out/phrase_motion_pool_20260924_r1/report.json"
+    },
+    {
+      "motion_id": "masked_vertical_lift",
+      "artifact": "out/phrase_motion_pool_20260924_r2/manifest.json"
+    },
+    {
+      "motion_id": "masked_vertical_lift",
+      "artifact": "out/phrase_motion_pool_20260924_r2/plans/phrase-09.json"
+    },
+    {
+      "motion_id": "masked_vertical_lift",
+      "artifact": "out/phrase_motion_pool_20260924_r2/report.json"
+    },
+    {
+      "motion_id": "phrase_apple_clean_01_blur_soft_reveal",
+      "artifact": "out/web_phrase_gallery/manifest.json"
+    },
+    {
+      "motion_id": "phrase_apple_clean_03_blur_scale_clean",
+      "artifact": "out/web_phrase_gallery/manifest.json"
+    },
+    {
+      "motion_id": "phrase_apple_clean_07_slide_up_soft",
+      "artifact": "out/web_phrase_gallery/manifest.json"
+    },
+    {
+      "motion_id": "phrase_apple_clean_09_slide_down_catch",
+      "artifact": "out/web_phrase_gallery/manifest.json"
+    },
+    {
+      "motion_id": "phrase_apple_clean_10_slide_from_right_apple",
+      "artifact": "out/web_phrase_gallery/manifest.json"
+    },
+    {
+      "motion_id": "phrase_apple_clean_13_scale_soft_pop",
+      "artifact": "out/web_phrase_gallery/manifest.json"
+    },
+    {
+      "motion_id": "phrase_apple_clean_19_tracking_tighten",
+      "artifact": "out/web_phrase_gallery/manifest.json"
+    },
+    {
+      "motion_id": "phrase_apple_clean_25_opacity_soft_reveal",
+      "artifact": "out/web_phrase_gallery/manifest.json"
+    },
+    {
+      "motion_id": "phrase_apple_clean_29_opacity_hero_settle",
+      "artifact": "out/web_phrase_gallery/manifest.json"
+    },
+    {
+      "motion_id": "phrase_apple_clean_30_opacity_clean_apple",
+      "artifact": "out/web_phrase_gallery/manifest.json"
+    },
+    {
+      "motion_id": "precision_word_stagger",
+      "artifact": "out/phrase_motion_pool_100_20260924/manifest.json"
+    },
+    {
+      "motion_id": "precision_word_stagger",
+      "artifact": "out/phrase_motion_pool_100_20260924/plans/phrase-04.json"
+    },
+    {
+      "motion_id": "precision_word_stagger",
+      "artifact": "out/phrase_motion_pool_100_20260924/plans/phrase-13.json"
+    },
+    {
+      "motion_id": "precision_word_stagger",
+      "artifact": "out/phrase_motion_pool_100_20260924/plans/phrase-15.json"
+    },
+    {
+      "motion_id": "precision_word_stagger",
+      "artifact": "out/phrase_motion_pool_100_20260924/plans/phrase-17.json"
+    },
+    {
+      "motion_id": "precision_word_stagger",
+      "artifact": "out/phrase_motion_pool_100_20260924/plans/phrase-36.json"
+    },
+    {
+      "motion_id": "precision_word_stagger",
+      "artifact": "out/phrase_motion_pool_100_20260924/plans/phrase-46.json"
+    },
+    {
+      "motion_id": "precision_word_stagger",
+      "artifact": "out/phrase_motion_pool_100_20260924/plans/phrase-52.json"
+    },
+    {
+      "motion_id": "precision_word_stagger",
+      "artifact": "out/phrase_motion_pool_100_20260924/plans/phrase-74.json"
+    },
+    {
+      "motion_id": "precision_word_stagger",
+      "artifact": "out/phrase_motion_pool_100_20260924/plans/phrase-85.json"
+    },
+    {
+      "motion_id": "precision_word_stagger",
+      "artifact": "out/phrase_motion_pool_100_20260924/plans/phrase-89.json"
+    },
+    {
+      "motion_id": "precision_word_stagger",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/manifest.json"
+    },
+    {
+      "motion_id": "precision_word_stagger",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/plans/phrase-04.json"
+    },
+    {
+      "motion_id": "precision_word_stagger",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/plans/phrase-13.json"
+    },
+    {
+      "motion_id": "precision_word_stagger",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/plans/phrase-15.json"
+    },
+    {
+      "motion_id": "precision_word_stagger",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/plans/phrase-17.json"
+    },
+    {
+      "motion_id": "precision_word_stagger",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/plans/phrase-36.json"
+    },
+    {
+      "motion_id": "precision_word_stagger",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/plans/phrase-46.json"
+    },
+    {
+      "motion_id": "precision_word_stagger",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/plans/phrase-52.json"
+    },
+    {
+      "motion_id": "precision_word_stagger",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/plans/phrase-74.json"
+    },
+    {
+      "motion_id": "precision_word_stagger",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/plans/phrase-85.json"
+    },
+    {
+      "motion_id": "precision_word_stagger",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/plans/phrase-89.json"
+    },
+    {
+      "motion_id": "precision_word_stagger",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/queue-snapshot.json"
+    },
+    {
+      "motion_id": "precision_word_stagger",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/run-report.json"
+    },
+    {
+      "motion_id": "precision_word_stagger",
+      "artifact": "out/phrase_motion_pool_100_20260924_r4/queue-snapshot.json"
+    },
+    {
+      "motion_id": "precision_word_stagger",
+      "artifact": "out/phrase_motion_pool_100_20260924_r4/run-report.json"
+    },
+    {
+      "motion_id": "precision_word_stagger",
+      "artifact": "out/phrase_motion_pool_20260924_r1/manifest.json"
+    },
+    {
+      "motion_id": "precision_word_stagger",
+      "artifact": "out/phrase_motion_pool_20260924_r1/plans/phrase-04.json"
+    },
+    {
+      "motion_id": "precision_word_stagger",
+      "artifact": "out/phrase_motion_pool_20260924_r1/report.json"
+    },
+    {
+      "motion_id": "precision_word_stagger",
+      "artifact": "out/phrase_motion_pool_20260924_r2/manifest.json"
+    },
+    {
+      "motion_id": "precision_word_stagger",
+      "artifact": "out/phrase_motion_pool_20260924_r2/plans/phrase-04.json"
+    },
+    {
+      "motion_id": "precision_word_stagger",
+      "artifact": "out/phrase_motion_pool_20260924_r2/report.json"
+    },
+    {
+      "motion_id": "shutter_blade_reveal",
+      "artifact": "out/phrase_motion_pool_20260924/manifest.json"
+    },
+    {
+      "motion_id": "shutter_blade_reveal",
+      "artifact": "out/phrase_motion_pool_20260924/plans/phrase-03.json"
+    },
+    {
+      "motion_id": "shutter_blade_reveal",
+      "artifact": "out/phrase_motion_pool_20260924/report.json"
+    },
+    {
+      "motion_id": "typewriter_clean",
+      "artifact": "out/phrase_motion_pool_100_20260924/manifest.json"
+    },
+    {
+      "motion_id": "typewriter_clean",
+      "artifact": "out/phrase_motion_pool_100_20260924/plans/phrase-16.json"
+    },
+    {
+      "motion_id": "typewriter_clean",
+      "artifact": "out/phrase_motion_pool_100_20260924/plans/phrase-49.json"
+    },
+    {
+      "motion_id": "typewriter_clean",
+      "artifact": "out/phrase_motion_pool_100_20260924/plans/phrase-61.json"
+    },
+    {
+      "motion_id": "typewriter_clean",
+      "artifact": "out/phrase_motion_pool_100_20260924/plans/phrase-71.json"
+    },
+    {
+      "motion_id": "typewriter_clean",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/manifest.json"
+    },
+    {
+      "motion_id": "typewriter_clean",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/plans/phrase-16.json"
+    },
+    {
+      "motion_id": "typewriter_clean",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/plans/phrase-49.json"
+    },
+    {
+      "motion_id": "typewriter_clean",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/plans/phrase-61.json"
+    },
+    {
+      "motion_id": "typewriter_clean",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/plans/phrase-71.json"
+    },
+    {
+      "motion_id": "typewriter_clean",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/queue-snapshot.json"
+    },
+    {
+      "motion_id": "typewriter_clean",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/run-report.json"
+    },
+    {
+      "motion_id": "typewriter_clean",
+      "artifact": "out/phrase_motion_pool_100_20260924_r4/queue-snapshot.json"
+    },
+    {
+      "motion_id": "typewriter_clean",
+      "artifact": "out/phrase_motion_pool_100_20260924_r4/run-report.json"
+    },
+    {
+      "motion_id": "typewriter_clean",
+      "artifact": "typewriter_phrase_videos/01_typewriter_clean_1920x1080_24fps_5s_plan.json"
+    },
+    {
+      "motion_id": "typewriter_glitch",
+      "artifact": "out/phrase_motion_pool_100_20260924/manifest.json"
+    },
+    {
+      "motion_id": "typewriter_glitch",
+      "artifact": "out/phrase_motion_pool_100_20260924/plans/phrase-05.json"
+    },
+    {
+      "motion_id": "typewriter_glitch",
+      "artifact": "out/phrase_motion_pool_100_20260924/plans/phrase-55.json"
+    },
+    {
+      "motion_id": "typewriter_glitch",
+      "artifact": "out/phrase_motion_pool_100_20260924/plans/phrase-66.json"
+    },
+    {
+      "motion_id": "typewriter_glitch",
+      "artifact": "out/phrase_motion_pool_100_20260924/plans/phrase-73.json"
+    },
+    {
+      "motion_id": "typewriter_glitch",
+      "artifact": "out/phrase_motion_pool_100_20260924/plans/phrase-84.json"
+    },
+    {
+      "motion_id": "typewriter_glitch",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/manifest.json"
+    },
+    {
+      "motion_id": "typewriter_glitch",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/plans/phrase-05.json"
+    },
+    {
+      "motion_id": "typewriter_glitch",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/plans/phrase-55.json"
+    },
+    {
+      "motion_id": "typewriter_glitch",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/plans/phrase-66.json"
+    },
+    {
+      "motion_id": "typewriter_glitch",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/plans/phrase-73.json"
+    },
+    {
+      "motion_id": "typewriter_glitch",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/plans/phrase-84.json"
+    },
+    {
+      "motion_id": "typewriter_glitch",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/queue-snapshot.json"
+    },
+    {
+      "motion_id": "typewriter_glitch",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/run-report.json"
+    },
+    {
+      "motion_id": "typewriter_glitch",
+      "artifact": "out/phrase_motion_pool_100_20260924_r4/queue-snapshot.json"
+    },
+    {
+      "motion_id": "typewriter_glitch",
+      "artifact": "out/phrase_motion_pool_100_20260924_r4/run-report.json"
+    },
+    {
+      "motion_id": "typewriter_glitch",
+      "artifact": "out/phrase_motion_pool_20260924_r1/manifest.json"
+    },
+    {
+      "motion_id": "typewriter_glitch",
+      "artifact": "out/phrase_motion_pool_20260924_r1/plans/phrase-05.json"
+    },
+    {
+      "motion_id": "typewriter_glitch",
+      "artifact": "out/phrase_motion_pool_20260924_r1/report.json"
+    },
+    {
+      "motion_id": "typewriter_glitch",
+      "artifact": "out/phrase_motion_pool_20260924_r2/manifest.json"
+    },
+    {
+      "motion_id": "typewriter_glitch",
+      "artifact": "out/phrase_motion_pool_20260924_r2/plans/phrase-05.json"
+    },
+    {
+      "motion_id": "typewriter_glitch",
+      "artifact": "out/phrase_motion_pool_20260924_r2/report.json"
+    },
+    {
+      "motion_id": "typewriter_glitch",
+      "artifact": "typewriter_phrase_videos/05_typewriter_glitch_1920x1080_24fps_5s_plan.json"
+    },
+    {
+      "motion_id": "typewriter_neon",
+      "artifact": "typewriter_phrase_videos/03_typewriter_neon_1920x1080_24fps_5s_plan.json"
+    },
+    {
+      "motion_id": "typewriter_pop",
+      "artifact": "out/phrase_motion_pool_100_20260924/manifest.json"
+    },
+    {
+      "motion_id": "typewriter_pop",
+      "artifact": "out/phrase_motion_pool_100_20260924/plans/phrase-03.json"
+    },
+    {
+      "motion_id": "typewriter_pop",
+      "artifact": "out/phrase_motion_pool_100_20260924/plans/phrase-08.json"
+    },
+    {
+      "motion_id": "typewriter_pop",
+      "artifact": "out/phrase_motion_pool_100_20260924/plans/phrase-29.json"
+    },
+    {
+      "motion_id": "typewriter_pop",
+      "artifact": "out/phrase_motion_pool_100_20260924/plans/phrase-90.json"
+    },
+    {
+      "motion_id": "typewriter_pop",
+      "artifact": "out/phrase_motion_pool_100_20260924/plans/phrase-91.json"
+    },
+    {
+      "motion_id": "typewriter_pop",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/manifest.json"
+    },
+    {
+      "motion_id": "typewriter_pop",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/plans/phrase-03.json"
+    },
+    {
+      "motion_id": "typewriter_pop",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/plans/phrase-08.json"
+    },
+    {
+      "motion_id": "typewriter_pop",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/plans/phrase-29.json"
+    },
+    {
+      "motion_id": "typewriter_pop",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/plans/phrase-90.json"
+    },
+    {
+      "motion_id": "typewriter_pop",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/plans/phrase-91.json"
+    },
+    {
+      "motion_id": "typewriter_pop",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/queue-snapshot.json"
+    },
+    {
+      "motion_id": "typewriter_pop",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/run-report.json"
+    },
+    {
+      "motion_id": "typewriter_pop",
+      "artifact": "out/phrase_motion_pool_100_20260924_r4/queue-snapshot.json"
+    },
+    {
+      "motion_id": "typewriter_pop",
+      "artifact": "out/phrase_motion_pool_100_20260924_r4/run-report.json"
+    },
+    {
+      "motion_id": "typewriter_pop",
+      "artifact": "out/phrase_motion_pool_20260924/manifest.json"
+    },
+    {
+      "motion_id": "typewriter_pop",
+      "artifact": "out/phrase_motion_pool_20260924/plans/phrase-02.json"
+    },
+    {
+      "motion_id": "typewriter_pop",
+      "artifact": "out/phrase_motion_pool_20260924/report.json"
+    },
+    {
+      "motion_id": "typewriter_pop",
+      "artifact": "out/phrase_motion_pool_20260924_r1/manifest.json"
+    },
+    {
+      "motion_id": "typewriter_pop",
+      "artifact": "out/phrase_motion_pool_20260924_r1/plans/phrase-03.json"
+    },
+    {
+      "motion_id": "typewriter_pop",
+      "artifact": "out/phrase_motion_pool_20260924_r1/plans/phrase-08.json"
+    },
+    {
+      "motion_id": "typewriter_pop",
+      "artifact": "out/phrase_motion_pool_20260924_r1/report.json"
+    },
+    {
+      "motion_id": "typewriter_pop",
+      "artifact": "out/phrase_motion_pool_20260924_r2/manifest.json"
+    },
+    {
+      "motion_id": "typewriter_pop",
+      "artifact": "out/phrase_motion_pool_20260924_r2/plans/phrase-03.json"
+    },
+    {
+      "motion_id": "typewriter_pop",
+      "artifact": "out/phrase_motion_pool_20260924_r2/plans/phrase-08.json"
+    },
+    {
+      "motion_id": "typewriter_pop",
+      "artifact": "out/phrase_motion_pool_20260924_r2/report.json"
+    },
+    {
+      "motion_id": "typewriter_pop",
+      "artifact": "typewriter_phrase_videos/02_typewriter_pop_1920x1080_24fps_5s_plan.json"
+    },
+    {
+      "motion_id": "typewriter_tracking",
+      "artifact": "out/phrase_motion_pool_100_20260924/manifest.json"
+    },
+    {
+      "motion_id": "typewriter_tracking",
+      "artifact": "out/phrase_motion_pool_100_20260924/plans/phrase-38.json"
+    },
+    {
+      "motion_id": "typewriter_tracking",
+      "artifact": "out/phrase_motion_pool_100_20260924/plans/phrase-50.json"
+    },
+    {
+      "motion_id": "typewriter_tracking",
+      "artifact": "out/phrase_motion_pool_100_20260924/plans/phrase-78.json"
+    },
+    {
+      "motion_id": "typewriter_tracking",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/manifest.json"
+    },
+    {
+      "motion_id": "typewriter_tracking",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/plans/phrase-38.json"
+    },
+    {
+      "motion_id": "typewriter_tracking",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/plans/phrase-50.json"
+    },
+    {
+      "motion_id": "typewriter_tracking",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/plans/phrase-78.json"
+    },
+    {
+      "motion_id": "typewriter_tracking",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/queue-snapshot.json"
+    },
+    {
+      "motion_id": "typewriter_tracking",
+      "artifact": "out/phrase_motion_pool_100_20260924_r3/run-report.json"
+    },
+    {
+      "motion_id": "typewriter_tracking",
+      "artifact": "out/phrase_motion_pool_100_20260924_r4/queue-snapshot.json"
+    },
+    {
+      "motion_id": "typewriter_tracking",
+      "artifact": "out/phrase_motion_pool_100_20260924_r4/run-report.json"
+    },
+    {
+      "motion_id": "typewriter_tracking",
+      "artifact": "typewriter_phrase_videos/04_typewriter_tracking_1920x1080_24fps_5s_plan.json"
+    },
+    {
+      "motion_id": "weightless_float_settle",
+      "artifact": "out/phrase_motion_pool_20260924/manifest.json"
+    },
+    {
+      "motion_id": "weightless_float_settle",
+      "artifact": "out/phrase_motion_pool_20260924/plans/phrase-08.json"
+    },
+    {
+      "motion_id": "weightless_float_settle",
+      "artifact": "out/phrase_motion_pool_20260924/report.json"
+    }
+  ]
+}

@@ -1,0 +1,36 @@
+{
+  "schema": "renderinggen.motion-deprecation-audit.v1",
+  "version": 1,
+  "motion_id": "typewriter_modern_01_monospace_block_cursor",
+  "replacement_id": "typewriter_modern_02_kinetic_scramble",
+  "owner": "RenderingGen cleanup verification fixture",
+  "deprecated_on": "2098-01-01",
+  "remove_after": "2098-03-02",
+  "audit_date": "2098-01-02",
+  "registry_present": true,
+  "selectable_before_deprecation": true,
+  "replacement_present": true,
+  "targets_compatible": true,
+  "consumers": [
+    "renderinggen/internal/motion/catalog/chronontemplate_catalog.v1.json",
+    "renderinggen/internal/overlay/runtime_animation_catalog_test.go",
+    "renderinggen/internal/overlay/typewriter_cursor.go",
+    "renderinggen/internal/overlay/typewriter_cursor_test.go"
+  ],
+  "declared_consumers": [
+    "renderinggen/internal/motion/catalog/chronontemplate_catalog.v1.json",
+    "renderinggen/internal/overlay/runtime_animation_catalog_test.go",
+    "renderinggen/internal/overlay/typewriter_cursor.go",
+    "renderinggen/internal/overlay/typewriter_cursor_test.go"
+  ],
+  "undeclared_consumers": [],
+  "missing_declared_consumers": [],
+  "compatibility_window_days": 60,
+  "gate": "PASS_AUDIT_ONLY",
+  "limitations": [
+    "This read-only audit does not write deprecated state, edit catalog data, remove registry entries, migrate plans, or authorize removal.",
+    "Static text search cannot find dynamically assembled IDs, external consumers, untracked ignored content, or consumers outside this checkout.",
+    "A PASS_AUDIT_ONLY result is not product/owner approval; removal still requires the declared compatibility window to expire and a separately reviewed migration.",
+    "At compile level this package keeps old plans resolvable during the window; the runtime registry also supports a separately reviewed MarkDeprecated transition that removes the ID from selectable projections without breaking Resolve."
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://renderinggen.dev/schemas/motion-deprecation-proposal.v1.schema.json",
+  "title": "RenderingGen Motion Deprecation Proposal V1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "version", "motion_id", "deprecated_on", "remove_after", "reason", "replacement_id", "required_targets", "owner"],
+  "properties": {
+    "schema": { "const": "renderinggen.motion-deprecation-proposal.v1" },
+    "version": { "const": 1 },
+    "motion_id": { "type": "string", "minLength": 1 },
+    "deprecated_on": { "type": "string", "format": "date" },
+    "remove_after": { "type": "string", "format": "date" },
+    "reason": { "type": "string", "minLength": 1 },
+    "replacement_id": { "type": "string", "minLength": 1 },
+    "required_targets": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 1 } },
+    "owner": { "type": "string", "minLength": 1 },
+    "compatibility_window_days": { "type": "integer", "minimum": 30 },
+    "consumers": { "type": "array", "items": { "type": "string", "minLength": 1 } }
+  }
+}

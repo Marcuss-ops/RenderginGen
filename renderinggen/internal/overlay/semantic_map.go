@@ -105,7 +105,7 @@ func validateMapContract(item semanticItem, kind ItemKind, canvasWidth, canvasHe
 	if m.Width > maxMapRasterWidth || m.Height > maxMapRasterHeight {
 		return fmt.Errorf("overlay: map item %q raster %dx%d exceeds the contract maximum %dx%d", item.ID, m.Width, m.Height, maxMapRasterWidth, maxMapRasterHeight)
 	}
-	if !motionAdmitsTarget(m.MotionID, "map_view") {
+	if strings.TrimSpace(m.MotionID) != "" && !motionAdmitsTarget(m.MotionID, "map_view") {
 		return fmt.Errorf("overlay: map item %q motion %q is not a registered centered image motion", item.ID, m.MotionID)
 	}
 	if err := validateMapPoint(m.Center.Latitude, m.Center.Longitude); err != nil {
@@ -113,6 +113,32 @@ func validateMapContract(item semanticItem, kind ItemKind, canvasWidth, canvasHe
 	}
 	if err := validateMapLODs(item, canvasWidth, canvasHeight); err != nil {
 		return err
+	}
+	if len(m.Routes) > maxMapRouteCount {
+		return fmt.Errorf("overlay: map item %q declares %d routes; the contract allows at most %d", item.ID, len(m.Routes), maxMapRouteCount)
+	}
+	seenRouteIDs := make(map[string]bool, len(m.Routes))
+	for routeIndex, route := range m.Routes {
+		if route.ID == "" || len(route.ID) > 128 || !isSingleLineVisibleText(route.ID) || seenRouteIDs[route.ID] {
+			return fmt.Errorf("overlay: map item %q route[%d] id must be unique, non-empty single-line text of at most 128 bytes", item.ID, routeIndex)
+		}
+		seenRouteIDs[route.ID] = true
+		if len(route.Stops) < 2 || len(route.Stops) > maxMapRouteStops || !isHexColor(route.Color) || !finite(route.WidthPX) || route.WidthPX <= 0 || route.WidthPX > 64 {
+			return fmt.Errorf("overlay: map item %q route[%d] requires 2..%d stops, #RRGGBB color, and width_px in (0,64]", item.ID, routeIndex, maxMapRouteStops)
+		}
+		for stopIndex, stop := range route.Stops {
+			if err := validateMapPoint(stop.Latitude, stop.Longitude); err != nil {
+				return fmt.Errorf("overlay: map item %q route[%d] stop[%d]: %w", item.ID, routeIndex, stopIndex, err)
+			}
+		}
+	}
+	if m.CameraMove == nil && len(m.Routes) > 0 {
+		return fmt.Errorf("overlay: map item %q routes require a certified camera_move/LOD coverage window", item.ID)
+	}
+	if len(m.Routes) > 0 {
+		if _, err := validateMapRouteLODCoverage(m.Routes, m); err != nil {
+			return fmt.Errorf("overlay: map item %q: %w", item.ID, err)
+		}
 	}
 	if len(m.Pins) > maxMapPins {
 		return fmt.Errorf("overlay: map item %q declares %d pins; the contract allows at most %d", item.ID, len(m.Pins), maxMapPins)
@@ -481,9 +507,9 @@ func validMapPNGAsset(asset SemanticAssetRef) bool {
 // compileMapLayers lowers a validated map item to its renderable layers: one
 // static plate or ordered LODs, grounded pins and labels, and visible credit.
 func compileMapLayers(ri resolvedItem, src *semanticPlan, registry *assetRegistry) ([]Layer, error) {
-	if err := validateMapContract(ri.Item, ri.Kind, src.Width, src.Height); err != nil {
-		return nil, err
-	}
+	// resolveSemanticItems owns map-contract validation for every item before
+	// lowering. Keep this function focused on turning that validated contract
+	// into render layers instead of revalidating the same map contract twice.
 	m := ri.Item.Map
 	duration := ri.End - ri.Start
 	window := geo.CenteredOn(m.Center.Latitude, m.Center.Longitude, m.Zoom, m.Width, m.Height)
@@ -502,7 +528,7 @@ func compileMapLayers(ri resolvedItem, src *semanticPlan, registry *assetRegistr
 		// opacity/scale/blur tracks) still applies to the static plate: without
 		// this routing the declared motion silently never reached the basemap.
 		if m.MotionID != "" {
-			animation, err := imageMotionAnimation(m.MotionID, nil, duration, 0)
+			animation, err := imageMotionAnimation(m.MotionID, nil, duration, 0, ri.Item.ID, "map_view")
 			if err != nil {
 				return nil, fmt.Errorf("overlay: map item %q motion %q: %w", ri.Item.ID, m.MotionID, err)
 			}
@@ -534,6 +560,14 @@ func compileMapLayers(ri resolvedItem, src *semanticPlan, registry *assetRegistr
 			StartFrame: ri.Start, DurationFrames: duration,
 		}
 		layers = append(layers, basemap)
+	}
+	if len(m.Routes) > 0 {
+		routeLayers, err := compileMapRoutes(ri.Item.ID, m.Routes, m.CameraMove.From, int(m.CameraMove.StartZoom),
+			src.Width, src.Height, ri.Start, duration)
+		if err != nil {
+			return nil, fmt.Errorf("overlay: map item %q routes: %w", ri.Item.ID, err)
+		}
+		layers = append(layers, routeLayers...)
 	}
 	font := OfficialFontPathForLanguage(src.Language)
 	labelPlacements, err := mapLabelPlacements(m.Pins, window, src.Width, src.Height)

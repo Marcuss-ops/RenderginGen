@@ -67,6 +67,9 @@ func fitEntityImageLayersToAssets(root string, plan *overlay.Plan) error {
 			}
 		}
 	}
+	if err := overlay.ValidateEntityCaptionCollisions(plan.Layers); err != nil {
+		return fmt.Errorf("processor: fitted entity caption layout: %w", err)
+	}
 	return nil
 }
 

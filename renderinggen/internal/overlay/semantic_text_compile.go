@@ -88,12 +88,13 @@ func compileTextLayer(ri resolvedItem, src *semanticPlan, layerID string) (Layer
 
 	var textAnimation *LayerAnimation
 	if ri.Item.MotionID != "" {
+		target := semanticTextMotionTarget(ri.Item, ri.Kind)
 		// Both halves of the selected motion travel, never one of them: the
 		// layer tracks and the per-unit text animators are produced by the same
 		// lowering pass (see lowerMotion). The preset's exit window is the
 		// fallback for a motion that declares none. The wrapped text is used
 		// as the motion context so the stagger aligns with the final lines.
-		animation, err := animationForMotion(ri.Item.MotionID, ri.Item.MotionParams, text, ri.End-ri.Start, ri.Preset.Motion.Exit, ri.Kind == KindImportantPhrase)
+		animation, err := animationForMotionTarget(ri.Item.MotionID, ri.Item.MotionParams, text, ri.End-ri.Start, ri.Preset.Motion.Exit, ri.Item.ID, target, ri.Kind == KindImportantPhrase)
 		if err != nil {
 			return Layer{}, err
 		}

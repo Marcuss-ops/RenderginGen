@@ -5,76 +5,168 @@ import (
 	"fmt"
 	"io"
 	"sort"
+	"sync"
 
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/motion"
+	motioncert "github.com/Marcuss-ops/RenderingGen/renderinggen/motion-certification"
+	previewassets "github.com/Marcuss-ops/RenderingGen/renderinggen/motion-preview"
 )
+
+// RuntimeMotionCertification is the recorded certification outcome of one
+// motion. It is always published, so "no recorded run" travels as the explicit
+// status unverified instead of a missing key a consumer could read as certified.
+// The status describes the report snapshot, not the current build: the selection
+// model names the snapshot date and the reports it came from.
+type RuntimeMotionCertification struct {
+	Status      string `json:"status"`
+	Report      string `json:"report,omitempty"`
+	GeneratedAt string `json:"generated_at_utc,omitempty"`
+	Error       string `json:"error,omitempty"`
+}
+
+// RuntimeMotionPreview is the recorded preview POINTER for one motion. The clip
+// itself is gitignored, so the catalog publishes where the preview was produced
+// and, only when the gallery named it mechanically, which clip belongs to the
+// motion. Status recorded means the ledger has an entry, not that the media file
+// is present on this machine.
+type RuntimeMotionPreview struct {
+	Status   string `json:"status"`
+	Artifact string `json:"artifact,omitempty"`
+	Media    string `json:"media,omitempty"`
+}
 
 // RuntimeMotionOption is the renderer-facing, read-only description of one
 // registered animation choice. Targets are copied from the canonical motion
-// catalog when declared; a missing target list is reported as undeclared, not
-// guessed from the ID or category. The compiler remains the compatibility
-// authority when legacy catalog entries omit targets.
+// catalog when declared; a missing target list is reported as undeclared and
+// does not make the motion selectable for a target.
 type RuntimeMotionOption struct {
-	ID              string                 `json:"id"`
-	Family          string                 `json:"family,omitempty"`
-	Targets         []string               `json:"targets,omitempty"`
-	TargetsDeclared bool                   `json:"targets_declared"`
-	EnterFrames     int                    `json:"enter_frames,omitempty"`
-	ExitFrames      int                    `json:"exit_frames,omitempty"`
-	DurationBounds  *motion.DurationBounds `json:"duration_bounds,omitempty"`
-	Requires3D      bool                   `json:"requires_3d,omitempty"`
-	RequiresCamera  bool                   `json:"requires_camera,omitempty"`
+	ID              string `json:"id"`
+	Deprecated      bool   `json:"deprecated,omitempty"`
+	RemoveAfter     string `json:"remove_after,omitempty"`
+	DeprecationNote string `json:"deprecation_note,omitempty"`
+
+	Family          string                     `json:"family,omitempty"`
+	Targets         []string                   `json:"targets,omitempty"`
+	TargetsDeclared bool                       `json:"targets_declared"`
+	EnterFrames     int                        `json:"enter_frames,omitempty"`
+	ExitFrames      int                        `json:"exit_frames,omitempty"`
+	DurationBounds  *motion.DurationBounds     `json:"duration_bounds,omitempty"`
+	Requires3D      bool                       `json:"requires_3d,omitempty"`
+	RequiresCamera  bool                       `json:"requires_camera,omitempty"`
+	Certification   RuntimeMotionCertification `json:"certification"`
+	Preview         RuntimeMotionPreview       `json:"preview"`
 }
 
-// RuntimeMotionCatalog returns all selectable motions in stable ID order,
-// including text/phrase, image, visual-accent, presentation and short-phrase
-// styles. Family is the canonical catalog category; use Targets only when
-// TargetsDeclared is true. motion_id remains independent from preset_id.
-func RuntimeMotionCatalog() []RuntimeMotionOption {
+// certificationSnapshotOnce parses the embedded reports once per process: the
+// payload is compiled in, so re-reading it per motion would repeat identical
+// work and could not change the result.
+var (
+	certificationSnapshotOnce  sync.Once
+	certificationSnapshotValue motioncert.Snapshot
+	certificationSnapshotErr   error
+)
+
+// certificationSnapshot returns the cached report snapshot. The error is
+// returned rather than swallowed: the selection model publishes it, so a corrupt
+// report cannot silently degrade into "all motions unverified".
+func certificationSnapshot() (motioncert.Snapshot, error) {
+	certificationSnapshotOnce.Do(func() {
+		certificationSnapshotValue, certificationSnapshotErr = motioncert.Load()
+	})
+	return certificationSnapshotValue, certificationSnapshotErr
+}
+
+// runtimeMotionCertification publishes one motion's recorded status. When the
+// snapshot itself is unavailable the motion stays unverified; the selection
+// model carries the parse error for the consumer.
+func runtimeMotionCertification(snapshot motioncert.Snapshot, id string) RuntimeMotionCertification {
+	status := snapshot.Status(id)
+	return RuntimeMotionCertification{
+		Status:      status.Status,
+		Report:      status.Report,
+		GeneratedAt: status.GeneratedAt,
+		Error:       status.Error,
+	}
+}
+
+// previewRegistryOnce parses the embedded preview ledger once per process, for
+// the same reason the certification snapshot is cached: the payload is compiled
+// in and re-reading it per motion could not change the answer.
+var (
+	previewRegistryOnce  sync.Once
+	previewRegistryValue previewassets.Registry
+	previewRegistryErr   error
+)
+
+// previewRegistry returns the cached ledger. The error is published by the
+// selection model rather than swallowed, so a corrupt ledger cannot degrade into
+// a payload that says no motion has a preview.
+func previewRegistry() (previewassets.Registry, error) {
+	previewRegistryOnce.Do(func() {
+		previewRegistryValue, previewRegistryErr = previewassets.Load()
+	})
+	return previewRegistryValue, previewRegistryErr
+}
+
+// runtimeMotionPreview publishes one motion's preview pointer. A motion the
+// ledger never recorded stays "none"; the model carries any ledger error.
+func runtimeMotionPreview(registry previewassets.Registry, id string) RuntimeMotionPreview {
+	entry, ok := registry.EntryFor(id)
+	if !ok {
+		return RuntimeMotionPreview{Status: previewStatusNone}
+	}
+	return RuntimeMotionPreview{Status: previewStatusRecorded, Artifact: entry.Artifact, Media: entry.Media}
+}
+
+func runtimeMotionCatalog() ([]RuntimeMotionOption, map[string]*motion.MotionDefinition) {
+	snapshot, _ := certificationSnapshot()
+	registry, _ := previewRegistry()
 	ids := motion.Registry.List()
 	options := make([]RuntimeMotionOption, 0, len(ids))
+	definitions := make(map[string]*motion.MotionDefinition, len(ids))
 	for _, id := range ids {
-		option := RuntimeMotionOption{ID: id}
-		plugin, err := motion.Registry.Resolve(id)
-		if err == nil && plugin != nil {
-			if declarative, ok := plugin.(motion.DeclarativePlugin); ok {
-				definition := declarative.Definition
-				option.Family = definition.Category
-				option.Targets = append([]string(nil), definition.Targets...)
-				option.TargetsDeclared = definition.Targets != nil
-				option.EnterFrames = definition.Enter
-				option.ExitFrames = definition.Exit
-				option.Requires3D = definition.Requires3D != nil && *definition.Requires3D
-				option.RequiresCamera = definition.RequiresCamera != nil && *definition.RequiresCamera
-				if definition.DurationBounds != nil {
-					bounds := *definition.DurationBounds
-					option.DurationBounds = &bounds
-				}
+		option := RuntimeMotionOption{
+			ID:            id,
+			Certification: runtimeMotionCertification(snapshot, id),
+			Preview:       runtimeMotionPreview(registry, id),
+		}
+		if deprecation, ok := motion.Registry.DeprecationInfo(id); ok {
+			option.Deprecated = true
+			option.RemoveAfter = deprecation.RemoveAfter
+			option.DeprecationNote = deprecation.Reason
+		}
+		definition, err := resolveMotionDefinition(id)
+		if err == nil && definition != nil {
+			definitions[id] = definition
+			option.Family = definition.Category
+			option.Targets = append([]string(nil), definition.Targets...)
+			option.TargetsDeclared = definition.Targets != nil
+			option.EnterFrames = definition.Enter
+			option.ExitFrames = definition.Exit
+			option.Requires3D = definition.Requires3D != nil && *definition.Requires3D
+			option.RequiresCamera = definition.RequiresCamera != nil && *definition.RequiresCamera
+			if definition.DurationBounds != nil {
+				bounds := *definition.DurationBounds
+				option.DurationBounds = &bounds
 			}
 		}
 		options = append(options, option)
 	}
-	return options
+	return options, definitions
 }
 
-// runtimeMotionFamilies groups the runtime catalog by its authored canonical
-// family/category. It is additive to the narrower legacy family and image
-// inventory helpers below, so consumers can offer one family-based picker.
-func RuntimeMotionFamilies() map[string][]RuntimeMotionOption {
+func runtimeMotionFamilies(options []RuntimeMotionOption) map[string][]RuntimeMotionOption {
 	families := make(map[string][]RuntimeMotionOption)
-	for _, option := range RuntimeMotionCatalog() {
-		family := option.Family
-		if family == "" {
-			family = "uncategorized"
+	for _, option := range options {
+		if option.Deprecated || !option.TargetsDeclared || len(option.Targets) == 0 || option.Family == "" {
+			continue
 		}
-		families[family] = append(families[family], option)
+		families[option.Family] = append(families[option.Family], option)
 	}
 	return families
 }
 
-// RuntimeMotionFamilyIDs returns catalog categories in deterministic order.
-func RuntimeMotionFamilyIDs() []string {
-	families := RuntimeMotionFamilies()
+func runtimeMotionFamilyIDs(families map[string][]RuntimeMotionOption) []string {
 	ids := make([]string, 0, len(families))
 	for id := range families {
 		ids = append(ids, id)
@@ -83,84 +175,89 @@ func RuntimeMotionFamilyIDs() []string {
 	return ids
 }
 
-// RuntimeMotionFamily returns the selectable motions in one canonical family.
-// The result is copied from the runtime inventory and stable by motion ID.
-func RuntimeMotionFamily(id string) []RuntimeMotionOption {
-	return cloneRuntimeMotionOptions(RuntimeMotionFamilies()[id])
-}
-
-// RuntimeAnimationUseCase describes a selectable family at the semantic-item
-// level. MotionIDs lists only choices exposed for that usage; item-level
-// motion_id selects one choice, while image_layers let every child select one
-// independently.
+// RuntimeAnimationUseCase describes a selectable composition. Scope is omitted
+// for item-level cases and set to "plan" for plan-owned fields such as a
+// background. MotionIDs lists only choices exposed for that usage; a nil slice
+// means the composition has no dedicated family yet.
 type RuntimeAnimationUseCase struct {
-	ID          string   `json:"id"`
-	ItemKinds   []string `json:"item_kinds"`
-	Cardinality string   `json:"cardinality"`
-	Description string   `json:"description"`
-	MotionIDs   []string `json:"motion_ids"`
+	ID             string                       `json:"id"`
+	Scope          string                       `json:"scope,omitempty"`
+	Zone           string                       `json:"zone,omitempty"`
+	ItemKinds      []string                     `json:"item_kinds,omitempty"`
+	Cardinality    string                       `json:"cardinality"`
+	Description    string                       `json:"description"`
+	Composition    *RuntimeAnimationComposition `json:"composition,omitempty"`
+	BackgroundKind string                       `json:"background_kind,omitempty"`
+	MotionIDs      []string                     `json:"motion_ids"`
 }
 
-// RuntimeAnimationUseCases builds practical picker groups matching semantic
-// compiler paths, from canonical targets and explicit legacy fallbacks.
-func RuntimeAnimationUseCases() []RuntimeAnimationUseCase {
-	allOptions := RuntimeMotionCatalog()
-	shortPhrases := uniqueSortedMotionIDs(appendMotionIDs(nil,
-		motion.Registry.FamilyMotionIDs("short_phrase_style"),
-		motion.Registry.FamilyMotionIDs("typewriter_modern_v1"),
-	))
-	shortPhraseIDs := make(map[string]bool, len(shortPhrases))
-	for _, id := range shortPhrases {
-		shortPhraseIDs[id] = true
-	}
-	images := make(map[string]bool)
-	maps := make(map[string]bool)
-	phrases := make(map[string]bool)
-	captions := make(map[string]bool)
-	for _, option := range allOptions {
-		if motionAdmitsTarget(option.ID, "image") && !animationIsImageStack(option.ID) {
-			images[option.ID] = true
-		}
-		if motionAdmitsTarget(option.ID, "map_view") {
-			maps[option.ID] = true
-		}
-		if motionAdmitsTarget(option.ID, "important_phrase") {
-			phrases[option.ID] = true
-		}
-		if motionAdmitsTarget(option.ID, "caption") {
-			captions[option.ID] = true
-		}
-	}
-	// Keep short phrases as a distinct use case if a future canonical target
-	// declaration also makes them eligible for the general phrase target.
-	phraseIDs := make([]string, 0, len(phrases))
-	for id := range phrases {
-		if !shortPhraseIDs[id] {
-			phraseIDs = append(phraseIDs, id)
-		}
-	}
-	phraseIDs = uniqueSortedMotionIDs(phraseIDs)
-	captionIDs := sortedMotionSet(captions)
-	imageIDs := sortedMotionSet(images)
-	mapIDs := sortedMotionSet(maps)
+// RuntimeAnimationComposition makes picker cardinality machine-readable.
+// Captions is nil for image-only compositions and a bounded count for
+// image-with-text compositions; Maps is used by map compositions.
+type RuntimeAnimationComposition struct {
+	ImageCount int                  `json:"image_count,omitempty"`
+	Caption    *RuntimeCaptionCount `json:"caption_count,omitempty"`
+	MapCount   int                  `json:"map_count,omitempty"`
+}
+
+type RuntimeCaptionCount struct {
+	Minimum int `json:"minimum"`
+	Maximum int `json:"maximum"`
+}
+
+func runtimeAnimationUseCases(allOptions []RuntimeMotionOption, definitions map[string]*motion.MotionDefinition) []RuntimeAnimationUseCase {
+	groups := collectRuntimeAnimationMotionGroups(allOptions, definitions)
 	imageKinds := []string{"entity_image", "image", "image_popup", "product", "logo"}
-	return []RuntimeAnimationUseCase{
-		{ID: "important_phrase", ItemKinds: []string{"important_phrase"}, Cardinality: "one text layer", Description: "Editorial phrase motion; choose a text preset separately.", MotionIDs: phraseIDs},
-		{ID: "short_important_phrase", ItemKinds: []string{"important_phrase"}, Cardinality: "one text layer", Description: "Short-phrase styles and modern typewriter motions; choose a text preset separately.", MotionIDs: shortPhrases},
-		{ID: "single_image", ItemKinds: imageKinds, Cardinality: "one image", Description: "One image. Motions belong to the single-image family.", MotionIDs: imageIDs},
-		{ID: "image_double", ItemKinds: imageKinds, Cardinality: "two images", Description: "Two images. A dedicated motion family has not been authored yet.", MotionIDs: nil},
-		{ID: "image_triplet", ItemKinds: imageKinds, Cardinality: "three images", Description: "Three images. A dedicated motion family has not been authored yet.", MotionIDs: nil},
-		{ID: "image_four", ItemKinds: imageKinds, Cardinality: "four images", Description: "Four images. A dedicated motion family has not been authored yet.", MotionIDs: nil},
-		{ID: "image_five", ItemKinds: imageKinds, Cardinality: "five images", Description: "Five images. A dedicated motion family has not been authored yet.", MotionIDs: nil},
-		{ID: "single_image_with_text", ItemKinds: imageKinds, Cardinality: "one image with text", Description: "One image with text. A dedicated motion family has not been authored yet.", MotionIDs: nil},
-		{ID: "image_double_with_text", ItemKinds: imageKinds, Cardinality: "two images with text", Description: "Two images with text. A dedicated motion family has not been authored yet.", MotionIDs: nil},
-		{ID: "image_triplet_with_text", ItemKinds: imageKinds, Cardinality: "three images with text", Description: "Three images with text. A dedicated motion family has not been authored yet.", MotionIDs: nil},
-		{ID: "image_four_with_text", ItemKinds: imageKinds, Cardinality: "four images with text", Description: "Four images with text. A dedicated motion family has not been authored yet.", MotionIDs: nil},
-		{ID: "image_five_with_text", ItemKinds: imageKinds, Cardinality: "five images with text", Description: "Five images with text. A dedicated motion family has not been authored yet.", MotionIDs: nil},
-		{ID: "one_map", ItemKinds: []string{"map"}, Cardinality: "one map", Description: "One georeferenced map with its dedicated map motion family.", MotionIDs: mapIDs},
-		{ID: "two_maps", ItemKinds: []string{"map"}, Cardinality: "two maps", Description: "Two georeferenced maps. A dedicated multi-map motion family has not been authored yet.", MotionIDs: nil},
-		{ID: "entity_caption", ItemKinds: []string{"entity_image"}, Cardinality: "one caption per image or composite child", Description: "Caption motion is selected separately from the image motion.", MotionIDs: captionIDs},
+	captionKinds := []string{
+		string(KindEntityCard), string(KindOrganization), string(KindLocation), string(KindConcept),
+		string(KindEntityImage), "image", string(KindImagePopup), string(KindProduct), string(KindLogo), string(KindLightLeak),
 	}
+	useCases := []RuntimeAnimationUseCase{
+		{ID: "important_phrase", ItemKinds: []string{"important_phrase"}, Cardinality: "one text layer", Description: "Editorial phrase motion; choose a text preset separately.", MotionIDs: groups.phrases},
+		{ID: "short_important_phrase", ItemKinds: []string{"important_phrase"}, Cardinality: "one text layer", Description: "Short-phrase styles and modern typewriter motions; choose a text preset separately.", MotionIDs: groups.shortPhrases},
+	}
+	for _, definition := range imageCompositionCatalog {
+		cardinality := imageCompositionCardinality(definition.Composition)
+		useCase := RuntimeAnimationUseCase{
+			ID: definition.ID, ItemKinds: imageKinds, Cardinality: cardinality,
+			Description: compositionDescription(cardinality, definition.Description), Composition: cloneRuntimeAnimationComposition(definition.Composition),
+		}
+		useCase.MotionIDs = groups.forTarget(definition.MotionTarget)
+		useCases = append(useCases, useCase)
+	}
+	for _, definition := range mapCompositionCatalog {
+		cardinality := mapCompositionCardinality(definition.MapCount)
+		useCase := RuntimeAnimationUseCase{
+			ID: definition.ID, ItemKinds: []string{"map"}, Cardinality: cardinality,
+			Description: definition.Description,
+			Composition: &RuntimeAnimationComposition{MapCount: definition.MapCount},
+		}
+		useCase.MotionIDs = groups.forTarget(definition.MotionTarget)
+		useCases = append(useCases, useCase)
+	}
+	for _, definition := range backgroundCompositionCatalog {
+		useCases = append(useCases, RuntimeAnimationUseCase{
+			ID: definition.ID, Scope: "plan", Cardinality: "one canvas background",
+			Description: definition.Description, BackgroundKind: definition.Kind, MotionIDs: nil,
+		})
+	}
+	useCases = append(useCases,
+		RuntimeAnimationUseCase{ID: "entity_caption", ItemKinds: captionKinds, Cardinality: "one caption per image or composite child", Description: "Caption motion is selected separately from the image motion.", MotionIDs: groups.captions},
+	)
+	for _, definition := range dataCompositionCatalog {
+		useCases = append(useCases, RuntimeAnimationUseCase{
+			ID: definition.ID, ItemKinds: []string{string(definition.Kind)},
+			Cardinality: definition.Cardinality, Description: definition.Description,
+			MotionIDs: groups.forTarget(definition.MotionTarget),
+		})
+	}
+	// The product zone is derived from the composition owners, never declared
+	// twice: a use case added without a zone would show up as unzoned instead of
+	// silently landing in someone else's picker area.
+	for index := range useCases {
+		useCases[index].Zone = runtimeUseCaseZone(useCases[index].ID)
+	}
+	return useCases
 }
 
 func containsString(values []string, want string) bool {
@@ -172,65 +269,63 @@ func containsString(values []string, want string) bool {
 	return false
 }
 
-func appendMotionIDs(dst []string, groups ...[]string) []string {
-	for _, group := range groups {
-		dst = append(dst, group...)
-	}
-	return dst
+type runtimeAnimationMotionGroups struct {
+	shortPhrases []string
+	phrases      []string
+	images       []string
+	maps         []string
+	captions     []string
+	metrics      []string
+	dates        []string
 }
 
-func sortedMotionSet(set map[string]bool) []string {
-	ids := make([]string, 0, len(set))
-	for id := range set {
-		ids = append(ids, id)
+func (groups runtimeAnimationMotionGroups) forTarget(target string) []string {
+	switch target {
+	case "image":
+		return groups.images
+	case "map_view":
+		return groups.maps
+	case "metric":
+		return groups.metrics
+	case "date":
+		return groups.dates
+	default:
+		return nil
 	}
-	sort.Strings(ids)
-	return ids
 }
 
-func uniqueSortedMotionIDs(ids []string) []string {
-	set := make(map[string]bool, len(ids))
-	for _, id := range ids {
-		set[id] = true
-	}
-	return sortedMotionSet(set)
-}
-
-// cloneRuntimeMotionOptions prevents catalog callers from mutating inventory
-// data shared with another API result.
-func cloneRuntimeMotionOptions(options []RuntimeMotionOption) []RuntimeMotionOption {
-	cloned := make([]RuntimeMotionOption, len(options))
-	for i, option := range options {
-		cloned[i] = option
-		cloned[i].Targets = append([]string(nil), option.Targets...)
-		if option.DurationBounds != nil {
-			bounds := *option.DurationBounds
-			cloned[i].DurationBounds = &bounds
-		}
-	}
-	return cloned
-}
-
-// ImageMotionInventory returns registered image-target motions grouped by
-// their canonical catalog category. Declared targets are authoritative; the
-// sole targetless image category is retained as a compatibility fallback.
-func ImageMotionInventory() map[string][]string {
-	inventory := make(map[string][]string)
-	for _, id := range motion.Registry.List() {
-		plugin, err := motion.Registry.Resolve(id)
-		if err != nil || plugin == nil {
+func collectRuntimeAnimationMotionGroups(options []RuntimeMotionOption, definitions map[string]*motion.MotionDefinition) runtimeAnimationMotionGroups {
+	var groups runtimeAnimationMotionGroups
+	for _, option := range options {
+		definition := definitions[option.ID]
+		if definition == nil || option.Deprecated {
 			continue
 		}
-		declarative, ok := plugin.(motion.DeclarativePlugin)
-		if !ok {
-			continue
+		shortPhrase := motionDefinitionAdmitsTarget(definition, "short_phrase")
+		if shortPhrase {
+			groups.shortPhrases = append(groups.shortPhrases, option.ID)
 		}
-		definition := declarative.Definition
-		if motionAdmitsTarget(id, "image") {
-			inventory[definition.Category] = append(inventory[definition.Category], id)
+		// The two picker categories share an item kind but must stay disjoint.
+		if !shortPhrase && motionDefinitionAdmitsTarget(definition, "important_phrase") {
+			groups.phrases = append(groups.phrases, option.ID)
+		}
+		if motionDefinitionAdmitsTarget(definition, "image") && !isMultiImageRecipe(definition) {
+			groups.images = append(groups.images, option.ID)
+		}
+		if motionDefinitionAdmitsTarget(definition, "map_view") {
+			groups.maps = append(groups.maps, option.ID)
+		}
+		if motionDefinitionAdmitsTarget(definition, "caption") {
+			groups.captions = append(groups.captions, option.ID)
+		}
+		if motionDefinitionAdmitsTarget(definition, "metric") {
+			groups.metrics = append(groups.metrics, option.ID)
+		}
+		if motionDefinitionAdmitsTarget(definition, "date") {
+			groups.dates = append(groups.dates, option.ID)
 		}
 	}
-	return inventory
+	return groups
 }
 
 // RuntimeAnimationCatalog is the versioned JSON payload served to picker/UI
@@ -242,16 +337,24 @@ type RuntimeAnimationCatalog struct {
 	Families      []string                  `json:"families"`
 	Motions       []RuntimeMotionOption     `json:"motions"`
 	UseCases      []RuntimeAnimationUseCase `json:"use_cases"`
+	// SelectionModel is the compiled picker model: zones, the compatibility
+	// matrix, the layout constraints, the map layouts, the background sources,
+	// the camera destinations and the declared metric/date fields.
+	SelectionModel RuntimeSelectionModel `json:"selection_model"`
 }
 
 // CompiledRuntimeAnimationCatalog returns a deterministic snapshot suitable
 // for JSON serialization and external UI consumption.
 func CompiledRuntimeAnimationCatalog() RuntimeAnimationCatalog {
+	options, definitions := runtimeMotionCatalog()
+	families := runtimeMotionFamilies(options)
+	useCases := runtimeAnimationUseCases(options, definitions)
 	return RuntimeAnimationCatalog{
-		SchemaVersion: 1,
-		Families:      RuntimeMotionFamilyIDs(),
-		Motions:       RuntimeMotionCatalog(),
-		UseCases:      RuntimeAnimationUseCases(),
+		SchemaVersion:  1,
+		Families:       runtimeMotionFamilyIDs(families),
+		Motions:        options,
+		UseCases:       useCases,
+		SelectionModel: runtimeSelectionModel(useCases, definitions),
 	}
 }
 
@@ -264,16 +367,4 @@ func WriteRuntimeAnimationCatalog(w io.Writer) error {
 		return fmt.Errorf("overlay: encode runtime animation catalog: %w", err)
 	}
 	return nil
-}
-
-// PresentationMotionInventory returns Date, Metric and entity-card animation
-// IDs from the canonical ChrononTemplate presentation catalog. Each ID is
-// selected on a semantic overlay item with motion_id; it is independent of
-// the item's text preset_id.
-func PresentationMotionInventory() map[string][]string {
-	inventory := make(map[string][]string)
-	for _, family := range motion.Registry.PresentationFamilyIDs() {
-		inventory[family] = motion.Registry.PresentationMotionIDs(family)
-	}
-	return inventory
 }

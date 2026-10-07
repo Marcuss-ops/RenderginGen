@@ -3,8 +3,6 @@ package overlay
 import (
 	"encoding/json"
 	"strings"
-
-	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/motion"
 	"testing"
 )
 
@@ -171,7 +169,7 @@ func TestAnimationPolicyPreservesEntityStyleCompositionAndCaptionTimingSeparatio
 	}
 }
 
-func TestAnimationPolicyPhraseUsesCanonicalTextTargetsAndLegacyFamilyFallback(t *testing.T) {
+func TestAnimationPolicyPhraseUsesCanonicalTextTargets(t *testing.T) {
 	declaredPhrase := []any{map[string]any{"target": "important_phrase", "group_id": "g", "motion_id": "text_fade_up"}}
 	if _, err := compileAnimationPolicyFixture(t, declaredPhrase, []any{
 		map[string]any{"id": "phrase", "kind": "important_phrase", "template_id": "IMPORTANT_PHRASE", "preset_id": PhraseDefaultPresetID, "group_id": "g", "text": "Declared target", "start_ms": 0, "end_ms": 3000},
@@ -179,15 +177,15 @@ func TestAnimationPolicyPhraseUsesCanonicalTextTargetsAndLegacyFamilyFallback(t 
 		t.Fatalf("declared text target should be accepted: %v", err)
 	}
 
-	legacyPhrase := []any{map[string]any{"target": "important_phrase", "group_id": "g", "motion_id": "typewriter_clean"}}
-	if _, err := compileAnimationPolicyFixture(t, legacyPhrase, []any{
-		map[string]any{"id": "phrase", "kind": "important_phrase", "template_id": "IMPORTANT_PHRASE", "preset_id": PhraseDefaultPresetID, "group_id": "g", "text": "Legacy target", "start_ms": 0, "end_ms": 3000},
+	catalogPhrase := []any{map[string]any{"target": "important_phrase", "group_id": "g", "motion_id": "typewriter_clean"}}
+	if _, err := compileAnimationPolicyFixture(t, catalogPhrase, []any{
+		map[string]any{"id": "phrase", "kind": "important_phrase", "template_id": "IMPORTANT_PHRASE", "preset_id": PhraseDefaultPresetID, "group_id": "g", "text": "Catalog target", "start_ms": 0, "end_ms": 3000},
 	}); err != nil {
-		t.Fatalf("legacy motion with no targets should use fallback: %v", err)
+		t.Fatalf("catalog-declared text target should be accepted: %v", err)
 	}
-
-	if _, err := motion.Registry.Resolve("typewriter_clean"); err != nil {
-		t.Fatalf("resolve legacy typewriter: %v", err)
+	definition, err := resolveMotionDefinition("typewriter_clean")
+	if err != nil || definition == nil || !containsString(definition.Targets, "text") {
+		t.Fatalf("typewriter_clean must declare its text target in the canonical catalog: definition=%+v err=%v", definition, err)
 	}
 }
 

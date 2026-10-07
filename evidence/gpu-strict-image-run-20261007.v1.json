@@ -1,0 +1,169 @@
+{
+  "generated_at_utc": "2026-10-07T11:23:50Z",
+  "backend": "vulkan",
+  "hardware_encoder": "nvenc",
+  "encoder_backend": "native",
+  "gpu_hot_path_mode": "require_gpu_native",
+  "motions": [
+    {
+      "motion_id": "image_border_draw_in",
+      "status": "passed",
+      "duration_seconds": 3.31615321
+    },
+    {
+      "motion_id": "image_border_expand",
+      "status": "passed",
+      "duration_seconds": 3.016568617
+    },
+    {
+      "motion_id": "image_caption_frame_combo",
+      "status": "passed",
+      "duration_seconds": 2.896682238
+    },
+    {
+      "motion_id": "image_card_flip_soft",
+      "status": "render_failed",
+      "duration_seconds": 8.911199671,
+      "error": "exit status 1"
+    },
+    {
+      "motion_id": "image_corner_bloom",
+      "status": "render_failed",
+      "duration_seconds": 2.667418904,
+      "error": "exit status 1"
+    },
+    {
+      "motion_id": "image_depth_float",
+      "status": "render_failed",
+      "duration_seconds": 8.405303425,
+      "error": "exit status 1"
+    },
+    {
+      "motion_id": "image_focus_breath",
+      "status": "render_failed",
+      "duration_seconds": 8.98036872,
+      "error": "exit status 1"
+    },
+    {
+      "motion_id": "image_frame_scale_reveal",
+      "status": "render_failed",
+      "duration_seconds": 9.349460958,
+      "error": "exit status 1"
+    },
+    {
+      "motion_id": "image_glow_depth_in",
+      "status": "render_failed",
+      "duration_seconds": 7.52111951,
+      "error": "exit status 1"
+    },
+    {
+      "motion_id": "image_glow_pulse_settle",
+      "status": "render_failed",
+      "duration_seconds": 7.138450993,
+      "error": "exit status 1"
+    },
+    {
+      "motion_id": "image_glow_ring_expand",
+      "status": "render_failed",
+      "duration_seconds": 11.769257763,
+      "error": "exit status 1"
+    },
+    {
+      "motion_id": "image_mask_wipe_border",
+      "status": "render_failed",
+      "duration_seconds": 7.899503394,
+      "error": "exit status 1"
+    },
+    {
+      "motion_id": "image_neon_trace",
+      "status": "render_failed",
+      "duration_seconds": 2.795913438,
+      "error": "exit status 1"
+    },
+    {
+      "motion_id": "image_parallax_frame",
+      "status": "render_failed",
+      "duration_seconds": 8.314013805,
+      "error": "exit status 1"
+    },
+    {
+      "motion_id": "image_roll_depth_in",
+      "status": "render_failed",
+      "duration_seconds": 8.243816197,
+      "error": "exit status 1"
+    },
+    {
+      "motion_id": "image_soft_yaw_glow",
+      "status": "render_failed",
+      "duration_seconds": 8.583337988,
+      "error": "exit status 1"
+    },
+    {
+      "motion_id": "image_split_light_reveal",
+      "status": "render_failed",
+      "duration_seconds": 2.657279797,
+      "error": "exit status 1"
+    },
+    {
+      "motion_id": "image_spotlight_focus",
+      "status": "render_failed",
+      "duration_seconds": 11.915225879,
+      "error": "exit status 1"
+    },
+    {
+      "motion_id": "image_stack_focus",
+      "status": "compile_failed",
+      "error": "overlay: item \"image-18\" uses image_layers; put captions on the owning image layer, not entity_caption"
+    },
+    {
+      "motion_id": "image_tilt_frame_in",
+      "status": "render_failed",
+      "duration_seconds": 7.77249133,
+      "error": "exit status 1"
+    }
+  ],
+  "evidence_note": {
+    "what": "strict Vulkan/NVENC certification run of the 20 image_premium_v1 catalog motions, executed 2026-10-07 on this host",
+    "command": "CHRONON_BIN=<Chronon3d build>/chronon3d_cli RENDERINGGEN_GPU_CERT_FAMILY=image RENDERINGGEN_GPU_CERT_OUTPUT_DIR=<dir> go test ./internal/overlay -run TestEveryCallableCatalogMotionExecutesOnTheStrictGPU -count=1",
+    "engine": "Chronon3d 0.1.0 (chronon.render-plan.v2) build 2026-10-06, RTX A4000, nvenc native",
+    "outcome": "3 passed, 16 render_failed, 1 compile_failed",
+    "failure_signature": "EncoderFailed: video encoder failed (0 frames accepted) - encoder-side failure, identical plan shape to the runs that passed",
+    "passed_motions": [
+      "image_border_draw_in",
+      "image_border_expand",
+      "image_caption_frame_combo"
+    ],
+    "not_passed_motions": [
+      "image_card_flip_soft",
+      "image_corner_bloom",
+      "image_depth_float",
+      "image_focus_breath",
+      "image_frame_scale_reveal",
+      "image_glow_depth_in",
+      "image_glow_pulse_settle",
+      "image_glow_ring_expand",
+      "image_mask_wipe_border",
+      "image_neon_trace",
+      "image_parallax_frame",
+      "image_roll_depth_in",
+      "image_soft_yaw_glow",
+      "image_split_light_reveal",
+      "image_spotlight_focus",
+      "image_stack_focus",
+      "image_tilt_frame_in"
+    ],
+    "not_a_claim": "This run does not certify the failing motions and does not replace a strict-lane sign-off; it records the current reproduction so the failures are explicit instead of historical.",
+    "control_runs": {
+      "hardware_none_native": "20/20 render_failed in 5s (the strict lane requires the NVENC path)",
+      "hardware_none_pipe": "20/20 render_failed in 5s"
+    },
+    "root_cause_analysis": {
+      "corrected_conclusion": "The dominant failure is NOT the encoder and not motion semantics: the CLI reports EncoderFailed only because no frame ever reaches the encoder.",
+      "cause_1_unsupported_shape": "VulkanBackend::draw_node implements natively only grid, path fill, path stroke and solid rect (src/backends/vulkan/vulkan_native_shape_dispatch.cpp). Every other shape falls back to the legacy CPU backend, and the strict lane (--gpu-hot-path-mode require_gpu_native) deliberately attaches no fallback, so the node fails with UnsupportedCapability. Reproduced in isolation: image_corner_bloom fails alone with 'frame 0 failed ... UnsupportedCapability ... node=shape' while it emits four ellipse layers; the three motions that pass emit a single path layer.",
+      "cause_2_device_loss": "Independent Vulkan device loss during the CUDA/Vulkan export handoff: '[native_av] CUDA/Vulkan frame handoff failed: Vulkan device lost during vkWaitForFences(CUDA export slot)' followed by 'GPU worker is poisoned after a terminal device-loss failure'. Reproduced in isolation: image_card_flip_soft fails alone with three device-lost reports and no UnsupportedCapability.",
+      "isolation_runs": "Both defects reproduce in a fresh process with RENDERINGGEN_GPU_CERT_MOTION=<id>, so they are not a cascade of one poisoned run.",
+      "owner": "Chronon3d: (a) native support (or an accepted fallback policy) for the shape types the premium image motions emit, and (b) the CUDA/Vulkan handoff device loss. RenderingGen cannot certify these motions until either lands.",
+      "not_a_claim": "Neither defect is a RenderingGen semantic error, and this evidence does not certify any failing motion."
+    }
+  }
+}
