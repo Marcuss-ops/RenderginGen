@@ -6,6 +6,10 @@ import (
 	"strings"
 )
 
+// typewriterCaptionPrefix identifies the typewriter caption class: the only
+// caption-motion alias class the entity registry needs to tag separately.
+const typewriterCaptionPrefix = "typewriter"
+
 // entityStyleVariant contains only composition choices. Image pixels, caption
 // text and the plan's background remain producer supplied at runtime.
 type entityStyleVariant struct {
@@ -357,19 +361,125 @@ var premiumEntityStyles = [...]entityStyleVariant{
 	},
 }
 
-// belowStyleIndices contains all styles that place the caption below the portrait:
-// Group 1 (0..4), Group 3 (10..14), Group 4 (15..19), Group 5 (20..24).
-var belowStyleIndices = [...]int{
-	0, 1, 2, 3, 4,
-	10, 11, 12, 13, 14,
-	15, 16, 17, 18, 19,
-	20, 21, 22, 23, 24,
+// entityStyleTags derives every tag of a variant from its composition fields:
+// no parallel index classification exists. A tag is either an inherent part of
+// the composition (layout side, badge, camera controller) or an alias class of
+// the caption motion (typewriter). Producers can query the registry by tag
+// instead of by hard-coded index groups.
+func entityStyleTags(style entityStyleVariant) []string {
+	var tags []string
+	seen := map[string]struct{}{}
+	add := func(tag string) {
+		tag = normalizeStyleKey(tag)
+		if tag == "" {
+			return
+		}
+		if _, ok := seen[tag]; ok {
+			return
+		}
+		seen[tag] = struct{}{}
+		tags = append(tags, tag)
+	}
+	const (
+		tagBadge      = "badge"
+		tagTypewriter = "typewriter"
+	)
+	switch style.CaptionLayout {
+	case "below":
+		add("below")
+	case "left", "right":
+		add("side")
+	}
+	switch style.ImageSide {
+	case "center":
+		add("below")
+	case "left", "right":
+		add("side")
+	}
+	if style.CameraMotionID != "" {
+		add("camera")
+	}
+	if style.IsBadge {
+		add(tagBadge)
+	}
+	if strings.HasPrefix(style.CaptionMotionID, typewriterCaptionPrefix) {
+		// Typewriter recipes are their own composition class in the catalog:
+		// tag the caption-motion family the style actually uses.
+		add(tagTypewriter)
+	}
+	return tags
 }
 
-var badgeStyleIndices = [...]int{15, 16, 17, 18, 19}
-var cameraStyleIndices = [...]int{20, 21, 22, 23, 24}
-var sideStyleIndices = [...]int{5, 6, 7, 8, 9}
-var typewriterStyleIndices = [...]int{10, 11, 12, 13, 14}
+// styleHash is the deterministic sampling key shared by the registry sampler
+// and the badge runtime randomization, so both derive from the same salted
+// identity inputs and no third randomizer can drift apart.
+func styleHash(domain, planID, videoID, itemID string, mod uint64) uint64 {
+	h := sha256.Sum256([]byte(domain + "\x00" + planID + "\x00" + videoID + "\x00" + itemID))
+	return binary.LittleEndian.Uint64(h[:8]) % mod
+}
+
+// entityStyleQuery is a tag query over the registry: every requested tag must
+// be present on the candidate. Empty queries match everything.
+type entityStyleQuery []string
+
+// entityStyleRegistry is the queryable catalog over premiumEntityStyles. It is
+// built once from the definitions; tags are derived, never stored, so no
+// parallel classification of the same array can drift out of sync.
+var entityStyleRegistry = newEntityStyleRegistry()
+
+type entityStyleRegistryType struct {
+	byTag map[string][]int
+	all   []int
+}
+
+func newEntityStyleRegistry() *entityStyleRegistryType {
+	reg := &entityStyleRegistryType{byTag: map[string][]int{}}
+	for i := range premiumEntityStyles {
+		reg.all = append(reg.all, i)
+		for _, tag := range entityStyleTags(premiumEntityStyles[i]) {
+			reg.byTag[tag] = append(reg.byTag[tag], i)
+		}
+	}
+	return reg
+}
+
+// query returns the indices whose tags satisfy every requested tag.
+func (reg *entityStyleRegistryType) query(tags []string) []int {
+	if len(tags) == 0 {
+		return reg.all
+	}
+	result := make([]int, 0, len(reg.all))
+	for _, idx := range reg.all {
+		candidate := entityStyleTags(premiumEntityStyles[idx])
+		match := true
+		for _, want := range tags {
+			want = normalizeStyleKey(want)
+			found := false
+			for _, have := range candidate {
+				if have == want {
+					found = true
+					break
+				}
+			}
+			if !found {
+				match = false
+				break
+			}
+		}
+		if match {
+			result = append(result, idx)
+		}
+	}
+	return result
+}
+
+// sample deterministically picks one candidate for the identity tuple.
+func (reg *entityStyleRegistryType) sample(indices []int, domain, planID, videoID, itemID string) entityStyleVariant {
+	if len(indices) == 0 {
+		indices = reg.all
+	}
+	return premiumEntityStyles[indices[styleHash(domain, planID, videoID, itemID, uint64(len(indices)))]]
+}
 
 func normalizeStyleKey(s string) string {
 	s = strings.ToLower(strings.TrimSpace(s))
@@ -380,7 +490,7 @@ func normalizeStyleKey(s string) string {
 
 // applyBadgeRuntimeRandomization enforces the runtime yellow/red contrast rule:
 // badges are always randomized between Yellow (#FFDE00, dark lettering #0A0B0E)
-// and Red (#EB1E2D, white lettering #FFFFFF).
+// and Red (#EB1E2D, white lettering #FFFFFF). The sampler shares styleHash.
 func applyBadgeRuntimeRandomization(style *entityStyleVariant, query, planID, videoID, itemID string) {
 	if !style.IsBadge {
 		return
@@ -397,8 +507,7 @@ func applyBadgeRuntimeRandomization(style *entityStyleVariant, query, planID, vi
 		return
 	}
 	// Deterministic runtime randomization between yellow and red
-	h := sha256.Sum256([]byte("badge_color\x00" + planID + "\x00" + videoID + "\x00" + itemID))
-	if binary.LittleEndian.Uint64(h[:8])%2 == 0 {
+	if styleHash("badge_color", planID, videoID, itemID, 2) == 0 {
 		style.BadgeColor = "#FFDE00"
 		style.CaptionColor = "#0A0B0E"
 	} else {
@@ -433,63 +542,51 @@ func LookupEntityStyle(query string) (entityStyleVariant, bool) {
 	return entityStyleVariant{}, false
 }
 
-// selectRandomEntityStyle chooses a stable pseudo-random variant across all 25
-// Apple-style options.
-func selectRandomEntityStyle(planID, videoID, itemID string) entityStyleVariant {
-	h := sha256.Sum256([]byte(planID + "\x00" + videoID + "\x00" + itemID))
-	index := binary.LittleEndian.Uint64(h[:8]) % uint64(len(premiumEntityStyles))
-	return premiumEntityStyles[index]
-}
-
-// selectRandomBelowEntityStyle deterministically selects from the 20 "Testo Sotto"
-// (caption below image) layouts.
-func selectRandomBelowEntityStyle(planID, videoID, itemID string) entityStyleVariant {
-	h := sha256.Sum256([]byte("below\x00" + planID + "\x00" + videoID + "\x00" + itemID))
-	idx := binary.LittleEndian.Uint64(h[:8]) % uint64(len(belowStyleIndices))
-	return premiumEntityStyles[belowStyleIndices[idx]]
+// entityTagSelectors maps the formerly hard-coded group selectors to tag
+// queries. Adding a composition class now means tagging it: no new switch case,
+// no new index group. Empty query ("random") covers the whole registry.
+var entityTagSelectors = map[string]entityStyleQuery{
+	"":                        {},
+	"premium_random_v1":       {},
+	"random":                  {},
+	"testo_sotto":             {"below"},
+	"below":                   {"below"},
+	"premium_below_random_v1": {"below"},
+	"caption_below":           {"below"},
+	"badge":                   {"badge"},
+	"badge_random":            {"badge"},
+	"camera":                  {"camera"},
+	"camera_random":           {"camera"},
+	"side":                    {"side"},
+	"side_random":             {"side"},
+	"typewriter":              {"typewriter"},
+	"typewriter_random":       {"typewriter"},
 }
 
 // ResolveEntityStyle maps a user or producer style selector to an entity
-// variant. Supports "premium_random_v1", "testo_sotto", "below",
-// "premium_below_random_v1", group selectors, and specific style IDs.
+// variant. Selector words "premium_random_v1", "testo_sotto", "badge",
+// "camera", "side", "typewriter" (and their _random aliases) resolve as tag
+// queries over the registry; everything else is a lookup by ID, name, slug,
+// reference number, or motion id.
 func ResolveEntityStyle(styleID, planID, videoID, itemID string) (entityStyleVariant, bool) {
-	norm := normalizeStyleKey(styleID)
-	var style entityStyleVariant
-	var ok bool
-
-	switch norm {
-	case "premium_random_v1", "random", "":
-		style = selectRandomEntityStyle(planID, videoID, itemID)
-		ok = true
-	case "testo_sotto", "below", "premium_below_random_v1", "caption_below":
-		style = selectRandomBelowEntityStyle(planID, videoID, itemID)
-		ok = true
-	case "badge", "badge_random":
-		h := sha256.Sum256([]byte("badge\x00" + planID + "\x00" + videoID + "\x00" + itemID))
-		idx := binary.LittleEndian.Uint64(h[:8]) % uint64(len(badgeStyleIndices))
-		style = premiumEntityStyles[badgeStyleIndices[idx]]
-		ok = true
-	case "camera", "camera_random":
-		h := sha256.Sum256([]byte("camera\x00" + planID + "\x00" + videoID + "\x00" + itemID))
-		idx := binary.LittleEndian.Uint64(h[:8]) % uint64(len(cameraStyleIndices))
-		style = premiumEntityStyles[cameraStyleIndices[idx]]
-		ok = true
-	case "side", "side_random":
-		h := sha256.Sum256([]byte("side\x00" + planID + "\x00" + videoID + "\x00" + itemID))
-		idx := binary.LittleEndian.Uint64(h[:8]) % uint64(len(sideStyleIndices))
-		style = premiumEntityStyles[sideStyleIndices[idx]]
-		ok = true
-	case "typewriter", "typewriter_random":
-		h := sha256.Sum256([]byte("typewriter\x00" + planID + "\x00" + videoID + "\x00" + itemID))
-		idx := binary.LittleEndian.Uint64(h[:8]) % uint64(len(typewriterStyleIndices))
-		style = premiumEntityStyles[typewriterStyleIndices[idx]]
-		ok = true
-	default:
-		style, ok = LookupEntityStyle(styleID)
+	if query, isSelector := entityTagSelectors[normalizeStyleKey(styleID)]; isSelector {
+		style := entityStyleRegistry.sample(entityStyleRegistry.query(query), styleDomain(query), planID, videoID, itemID)
+		applyBadgeRuntimeRandomization(&style, styleID, planID, videoID, itemID)
+		return style, true
 	}
-
+	style, ok := LookupEntityStyle(styleID)
 	if ok {
 		applyBadgeRuntimeRandomization(&style, styleID, planID, videoID, itemID)
 	}
 	return style, ok
+}
+
+// styleDomain is the sampling salt shared by all tag selectors: the selector
+// class, not the raw query, so "badge" and "badge_random" sample identically.
+// The empty query keeps the historic unprefixed salt of the all-styles sample.
+func styleDomain(tags entityStyleQuery) string {
+	if len(tags) != 0 {
+		return strings.Join(tags, "+")
+	}
+	return ""
 }

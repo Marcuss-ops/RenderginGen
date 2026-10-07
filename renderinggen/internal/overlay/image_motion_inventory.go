@@ -236,6 +236,13 @@ func runtimeAnimationUseCases(allOptions []RuntimeMotionOption, definitions map[
 		useCases = append(useCases, useCase)
 	}
 	for _, definition := range backgroundCompositionCatalog {
+		if !definition.Supported {
+			// Declared-but-unsupported sources stay out of the picker's use
+			// cases: the runtime selection surface lists them via the selection
+			// model's background sources, and the published schema enum for
+			// background_kind covers only the lowering-supported kinds.
+			continue
+		}
 		useCases = append(useCases, RuntimeAnimationUseCase{
 			ID: definition.ID, Scope: "plan", Cardinality: "one canvas background",
 			Description: definition.Description, BackgroundKind: definition.Kind, MotionIDs: nil,
