@@ -668,7 +668,22 @@ richiesta dal gate `test-gofmt`.
 
 ### Stato rilevato successivamente nel checkout (7 ottobre 2026)
 
-La verifica incrociata odierna aggiorna i gate riportati sopra: una suite
+**Aggiornamento 7 ottobre (sera) — risolto.** La non compilabilità segnalata
+sotto (`compileMapRoutes` a 8 vs 9 argomenti, `*float64` per
+`trimStart`/`trimEnd`) è stata riparata dalla lavorazione concorrente. Verifica
+attuale su questo checkout: `go build ./...` e `go vet ./...` PASS;
+`RENDERINGGEN_SKIP_GPU_E2E=1 go test ./... -count=1` PASS su tutti i package;
+CLI `go run ./cmd/motion-catalog` — schema v1, 397 motion, 6 zone, 20 use case,
+certificazione snapshot `2026-10-02T19:11:03Z` (`is_current: false`), preview
+68 registrate / 329 senza. Audit retention rieseguito self-consistente:
+`all_paths_have_no_current_textual_reference: True`, report aggiornato in
+`evidence/mp4-retention-audit.v1.json` (baseline commit `b0dd7253`, 30/30 hash
+e copie identiche confermate). Il ledger preview
+(`motion-preview/registry.v1.json`) resta lo snapshot committato: una
+rigenerazione locale trova le root di scan vuote (i clip sono gitignored per
+policy) e va rieseguita solo quando nascono nuove gallery.
+
+Storico della verifica incrociata: una suite
 `RENDERINGGEN_SKIP_GPU_E2E=1 go test ./... -count=1` è terminata PASS, ma in un
 comando successivo la CLI `go run ./cmd/motion-catalog` e il test mirato overlay
 non compilano a causa di modifiche concorrenti alle mappe. In particolare,
