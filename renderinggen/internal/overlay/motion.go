@@ -463,7 +463,10 @@ func applyMotionRouting(layer *Layer, animation *LayerAnimation) {
 	if animation == nil {
 		return
 	}
-	layer.Enable3D = layerUses3D(animation)
+	// Preserve a 3D requirement established by the layer's own geometry (for
+	// example a georeferenced map plane with camera_move) while adding any 3D
+	// requirement carried by this animation.
+	layer.Enable3D = layer.Enable3D || layerUses3D(animation)
 	if len(animation.Tracks) > 0 {
 		layer.Animation = animation
 	}

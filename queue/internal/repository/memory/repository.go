@@ -5,9 +5,17 @@
 // Jobs are pulled (claimed) by workers instead of being pushed. A claim
 // carries a lease: if the worker dies before completing, the lease expires
 // and the job is requeued for another worker.
+//
+// Every method accepts the caller's context first, for interface parity with the
+// PostgreSQL backend. The in-memory store never blocks on I/O — an operation
+// either returns immediately or fails immediately — so it has nothing to
+// observe cancellation on, and the parameter is deliberately ignored (named
+// `_`) rather than checked for tidiness. Ignoring it is not an oversight: a
+// context check here would only add a branch that can never change the answer.
 package memory
 
 import (
+	"context"
 	"fmt"
 	"github.com/Marcuss-ops/RenderingGen/queue/internal/model"
 	"github.com/Marcuss-ops/RenderingGen/queue/internal/repository"
@@ -79,7 +87,7 @@ func (s *Repository) indexChildLocked(job model.Job) {
 	set[job.ID] = struct{}{}
 }
 
-func (s *Repository) SubmitIdempotent(job model.Job) (*model.Job, bool, error) {
+func (s *Repository) SubmitIdempotent(_ context.Context, job model.Job) (*model.Job, bool, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if job.ID == "" {
@@ -114,7 +122,7 @@ func (s *Repository) SubmitIdempotent(job model.Job) (*model.Job, bool, error) {
 }
 
 // Submit enqueues a job. The ID is required and must be unique.
-func (s *Repository) Submit(job model.Job) error {
+func (s *Repository) Submit(_ context.Context, job model.Job) error {
 	if job.ID == "" {
 		return fmt.Errorf("job id is required")
 	}
@@ -139,7 +147,7 @@ func (s *Repository) Submit(job model.Job) error {
 // SubmitBatch inserts an entire anchor+children family while holding the
 // repository lock. Validation happens before mutation, so a malformed child
 // or duplicate never leaves a partial family behind.
-func (s *Repository) SubmitBatch(jobs []model.Job) error {
+func (s *Repository) SubmitBatch(_ context.Context, jobs []model.Job) error {
 	if len(jobs) == 0 {
 		return fmt.Errorf("job batch is empty")
 	}
@@ -177,11 +185,11 @@ func (s *Repository) SubmitBatch(jobs []model.Job) error {
 
 // Claim atomically claims the oldest pending job for a worker and returns it
 // with its lease duration. It returns nil when the queue is empty.
-func (s *Repository) Claim(workerID string) (*model.Job, time.Duration, error) {
-	return s.ClaimState(workerID, "")
+func (s *Repository) Claim(ctx context.Context, workerID string) (*model.Job, time.Duration, error) {
+	return s.ClaimState(ctx, workerID, "")
 }
 
-func (s *Repository) ClaimState(workerID string, state model.State) (*model.Job, time.Duration, error) {
+func (s *Repository) ClaimState(_ context.Context, workerID string, state model.State) (*model.Job, time.Duration, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -232,7 +240,7 @@ func (s *Repository) hasChildrenLocked(id string) bool {
 }
 
 // Get returns the current state of a job, including its artifact when done.
-func (s *Repository) Get(id string) (*model.Job, error) {
+func (s *Repository) Get(_ context.Context, id string) (*model.Job, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -251,7 +259,7 @@ func (s *Repository) Get(id string) (*model.Job, error) {
 //
 // It walks the parent's entry in the children index rather than every job, so a
 // family read costs its own size instead of the whole queue's.
-func (s *Repository) Children(parentJobID string) ([]*model.Job, error) {
+func (s *Repository) Children(_ context.Context, parentJobID string) ([]*model.Job, error) {
 	if parentJobID == "" {
 		return nil, fmt.Errorf("parent job id is required")
 	}
@@ -283,7 +291,7 @@ func (s *Repository) Children(parentJobID string) ([]*model.Job, error) {
 // It walks the parent index rather than every job, so the read costs its own
 // size (the same reason Children uses it) and an unknown parent is an empty
 // answer, not an error.
-func (s *Repository) ByParent(parentJobID string) ([]*model.Job, error) {
+func (s *Repository) ByParent(_ context.Context, parentJobID string) ([]*model.Job, error) {
 	if parentJobID == "" {
 		return nil, fmt.Errorf("parent job id is required")
 	}
@@ -313,7 +321,7 @@ func (s *Repository) ByParent(parentJobID string) ([]*model.Job, error) {
 }
 
 // ClaimFinalization atomically claims a parent row for one finalizer.
-func (s *Repository) ClaimFinalization(parentJobID, workerID string) (*model.Job, bool, error) {
+func (s *Repository) ClaimFinalization(_ context.Context, parentJobID, workerID string) (*model.Job, bool, error) {
 	if parentJobID == "" || workerID == "" {
 		return nil, false, fmt.Errorf("parent job id and worker id are required")
 	}
@@ -337,7 +345,7 @@ func (s *Repository) ClaimFinalization(parentJobID, workerID string) (*model.Job
 }
 
 // Complete marks a running job as completed and records its artifact.
-func (s *Repository) Complete(id, workerID string, artifact model.Artifact) error {
+func (s *Repository) Complete(_ context.Context, id, workerID string, artifact model.Artifact) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -354,7 +362,7 @@ func (s *Repository) Complete(id, workerID string, artifact model.Artifact) erro
 // Rendered marks a running job as rendered: its artifact is durably stored, but
 // external publication failed, so the job stays out of `completed` and is
 // re-claimable for a publication-only retry.
-func (s *Repository) Rendered(id, workerID string, artifact model.Artifact, reason string) error {
+func (s *Repository) Rendered(_ context.Context, id, workerID string, artifact model.Artifact, reason string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -376,7 +384,7 @@ func (s *Repository) Rendered(id, workerID string, artifact model.Artifact, reas
 
 // Fail marks a running job failed. Jobs that have not exhausted their attempts
 // are requeued; otherwise they are permanently failed.
-func (s *Repository) Fail(id, workerID, reason string) error {
+func (s *Repository) Fail(_ context.Context, id, workerID, reason string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -399,7 +407,7 @@ func (s *Repository) Fail(id, workerID, reason string) error {
 }
 
 // Renew extends the lease for a running job owned by workerID.
-func (s *Repository) Renew(id, workerID string) error {
+func (s *Repository) Renew(_ context.Context, id, workerID string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -412,7 +420,7 @@ func (s *Repository) Renew(id, workerID string) error {
 }
 
 // Retry resets a failed job back to pending state for re-execution.
-func (s *Repository) Retry(id string) error {
+func (s *Repository) Retry(_ context.Context, id string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -440,7 +448,7 @@ func (s *Repository) Retry(id string) error {
 // elapses. Cancelling an already-cancelled job is a no-op; cancelling a
 // completed/failed job is an error. Attempts are deliberately NOT incremented:
 // every claim that would have invoked Chronon already happened.
-func (s *Repository) Cancel(id string) error {
+func (s *Repository) Cancel(_ context.Context, id string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -465,7 +473,7 @@ func (s *Repository) Cancel(id string) error {
 // SetProgress stores the latest render progress from the lease-owning worker.
 // It rejects reports for jobs that are not running or whose lease moved to
 // another worker, mirroring the PostgreSQL backend.
-func (s *Repository) SetProgress(id, workerID string, p model.Progress) error {
+func (s *Repository) SetProgress(_ context.Context, id, workerID string, p model.Progress) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -483,7 +491,7 @@ func (s *Repository) SetProgress(id, workerID string, p model.Progress) error {
 // RequeueExpired moves running jobs whose lease has elapsed back to pending,
 // or permanently fails them if they exhausted their attempts. It returns the
 // number of jobs affected.
-func (s *Repository) RequeueExpired(now time.Time) (int, error) {
+func (s *Repository) RequeueExpired(_ context.Context, now time.Time) (int, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -509,7 +517,7 @@ func (s *Repository) RequeueExpired(now time.Time) (int, error) {
 // Stats returns a snapshot of the queue state. It takes the lock shared, so the
 // pending gauge read (throttled to once per interval, but on the same service
 // as every state transition) cannot serialize a claim.
-func (s *Repository) Stats() model.Stats {
+func (s *Repository) Stats(_ context.Context) model.Stats {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 

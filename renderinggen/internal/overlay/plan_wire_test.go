@@ -24,7 +24,8 @@ func TestRenderPlanWireVersionUsesOneFeatureSelector(t *testing.T) {
 		{name: "parent", plan: &Plan{Layers: []Layer{{Parent: "parent"}}}, schema: RenderPlanSchemaV3, version: RenderPlanVersionV3},
 		{name: "transition", plan: &Plan{Layers: []Layer{{TransitionIn: &LayerTransition{ID: "fade"}}}}, schema: RenderPlanSchemaV3, version: RenderPlanVersionV3},
 		{name: "mask", plan: &Plan{Layers: []Layer{{Masks: []LayerMask{{Type: "rect"}}}}}, schema: RenderPlanSchemaV3, version: RenderPlanVersionV3},
-		{name: "animation property", plan: &Plan{Layers: []Layer{{Animation: &LayerAnimation{Tracks: []AnimationTrack{{Property: "blur"}}}}}}, schema: RenderPlanSchemaV3, version: RenderPlanVersionV3},
+		{name: "animation property", plan: &Plan{Layers: []Layer{{Animation: &LayerAnimation{Tracks: []AnimationTrack{{Property: "stroke_width"}}}}}}, schema: RenderPlanSchemaV3, version: RenderPlanVersionV3},
+		{name: "text animator fill color", plan: &Plan{Layers: []Layer{{TextAnimators: []TextAnimator{{Properties: []AnimationTrack{{Property: "fill_color"}}}}}}}, schema: RenderPlanSchemaV3, version: RenderPlanVersionV3},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {

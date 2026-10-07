@@ -39,6 +39,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"time"
 )
 
 // ErrNotFound is returned when an object does not exist.
@@ -97,13 +98,7 @@ type Capabilities struct {
 // read-only replica, or a store constructed with verification disabled by
 // policy, must describe itself rather than publishing a package constant.
 func (s *Store) Capabilities() Capabilities {
-	return Capabilities{
-		ContentAddress: ContentAddressProtocol,
-		AddressLength:  SHA256HexLen,
-		PathLayout:     PathLayout,
-		VerifyOnWrite:  true,
-		VerifyOnRead:   true,
-	}
+	return capabilities()
 }
 
 // Store is a disk-backed, content-addressed object store.
@@ -233,6 +228,9 @@ func syncFile(path string) error {
 // and re-reading a multi-GB artifact on every GET/HEAD would defeat the
 // streaming contract. Trust in the bytes comes from the write path, which
 // refuses to install anything that does not hash to its address.
+//
+// Open is the disk adapter's own accessor (it hands back an *os.File so an
+// operator can Stat it); Backend consumers stream through Get.
 func (s *Store) Open(key string) (*os.File, int64, error) {
 	if !CanonicalContentAddress(key) {
 		return nil, 0, fmt.Errorf("%w: %q", ErrInvalidContentAddress, key)
@@ -251,6 +249,24 @@ func (s *Store) Open(key string) (*os.File, int64, error) {
 		return nil, 0, err
 	}
 	return f, info.Size(), nil
+}
+
+// Get implements Backend for the single-node disk adapter: it delegates to
+// Open and adds the modification time the HTTP surface needs for conditional
+// and range responses. The disk adapter has nothing extra to verify — the
+// write path already refused any byte set that disagrees with its address — so
+// a read stays a cheap probe here exactly as it does in Open.
+func (s *Store) Get(key string) (io.ReadSeekCloser, int64, time.Time, error) {
+	f, size, err := s.Open(key)
+	if err != nil {
+		return nil, 0, time.Time{}, err
+	}
+	info, err := f.Stat()
+	if err != nil {
+		f.Close()
+		return nil, 0, time.Time{}, err
+	}
+	return f, size, info.ModTime(), nil
 }
 
 func (s *Store) path(key string) string {

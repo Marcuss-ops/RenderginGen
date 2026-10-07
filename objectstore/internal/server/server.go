@@ -19,6 +19,13 @@
 // /verify is the explicit way to ask the stronger question — "are the bytes
 // stored here actually the ones this address names?" — which is what an
 // operator needs after a volume restore or a disk migration.
+//
+// The handlers are written against store.Backend, not against the disk
+// adapter: this deployment ships the single-node filesystem backend, and a
+// deployment that needs several replicas behind a load balancer supplies a
+// backend over a shared content-addressed store instead. None of the statuses
+// above depend on where the bytes live, so the HTTP contract above is the same
+// for every backend.
 package server
 
 import (
@@ -33,7 +40,7 @@ import (
 
 // Server wraps the store with HTTP handlers.
 type Server struct {
-	store *store.Store
+	store store.Backend
 	// build, when set, supplies the runtime build identity published as the
 	// "build" object on /health. A function rather than a value: the executable
 	// digest is computed once and memoized, and a live accessor keeps the
@@ -41,9 +48,11 @@ type Server struct {
 	build func() buildinfo.Identity
 }
 
-// New creates a server backed by the given store.
-func New(s *store.Store) *Server {
-	return &Server{store: s}
+// New creates a server backed by the given storage backend. The filesystem
+// adapter (store.New) and the in-process adapter (store.NewMemory) are both
+// accepted; so is any implementation of store.Backend over a shared store.
+func New(b store.Backend) *Server {
+	return &Server{store: b}
 }
 
 // SetBuildInfo installs the runtime build-identity accessor. The composition
@@ -112,7 +121,7 @@ func (s *Server) verify(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) head(w http.ResponseWriter, r *http.Request) {
 	key := r.PathValue("key")
-	f, size, err := s.store.Open(key)
+	reader, size, _, err := s.store.Get(key)
 	if errors.Is(err, store.ErrNotFound) {
 		http.NotFound(w, r)
 		return
@@ -125,7 +134,7 @@ func (s *Server) head(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	f.Close()
+	reader.Close()
 	if size >= 0 {
 		w.Header().Set("Content-Length", strconv.FormatInt(size, 10))
 	}
@@ -169,9 +178,10 @@ func putErrorStatus(err error) int {
 
 func (s *Server) get(w http.ResponseWriter, r *http.Request) {
 	key := r.PathValue("key")
-	// Stream from disk: buffering a multi-GB rendered artifact in RAM per
-	// request would make every download a worker memory spike.
-	f, _, err := s.store.Open(key)
+	// Stream, never buffer: the backend hands back a seekable reader (a file on
+	// the disk adapter, a byte slice on the in-process one), and a multi-GB
+	// rendered artifact must not become a per-request RAM spike.
+	reader, _, modTime, err := s.store.Get(key)
 	if errors.Is(err, store.ErrNotFound) {
 		http.NotFound(w, r)
 		return
@@ -184,14 +194,9 @@ func (s *Server) get(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	defer f.Close()
-	info, err := f.Stat()
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
+	defer reader.Close()
 	w.Header().Set("Content-Type", "application/octet-stream")
-	http.ServeContent(w, r, key, info.ModTime(), f)
+	http.ServeContent(w, r, key, modTime, reader)
 }
 
 // health answers two questions in one request, because a probe that asks

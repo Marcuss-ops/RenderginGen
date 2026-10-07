@@ -446,16 +446,41 @@ func newEntityStyleRegistry() *entityStyleRegistryType {
 // query returns the indices whose tags satisfy every requested tag.
 func (reg *entityStyleRegistryType) query(tags []string) []int {
 	if len(tags) == 0 {
-		return reg.all
+		return append([]int(nil), reg.all...)
 	}
-	result := make([]int, 0, len(reg.all))
-	for _, idx := range reg.all {
-		candidate := entityStyleTags(premiumEntityStyles[idx])
+	// Seed from the smallest indexed tag set, then intersect the rest. The
+	// registry index is authoritative; do not rescan/rederive every style tag
+	// for each sampler request.
+	var candidates []int
+	hasTag := false
+	for _, tag := range tags {
+		tag = normalizeStyleKey(tag)
+		if tag == "" {
+			continue
+		}
+		hasTag = true
+		indices, exists := reg.byTag[tag]
+		if !exists {
+			return nil
+		}
+		if candidates == nil || len(indices) < len(candidates) {
+			candidates = indices
+		}
+	}
+	if !hasTag {
+		return append([]int(nil), reg.all...)
+	}
+	result := make([]int, 0, len(candidates))
+	for _, idx := range candidates {
+		styleTags := entityStyleTags(premiumEntityStyles[idx])
 		match := true
 		for _, want := range tags {
 			want = normalizeStyleKey(want)
+			if want == "" {
+				continue
+			}
 			found := false
-			for _, have := range candidate {
+			for _, have := range styleTags {
 				if have == want {
 					found = true
 					break
@@ -471,6 +496,21 @@ func (reg *entityStyleRegistryType) query(tags []string) []int {
 		}
 	}
 	return result
+}
+
+var entityStyleAliases = map[string]string{
+	"center_top":         "01_entity_pitch_lift_text_below",
+	"vertical_editorial": "02_entity_yaw_flip_text_below",
+	"centered_signature": "05_entity_depth_float_text_below",
+}
+
+func entityStyleByID(id string) (entityStyleVariant, bool) {
+	for _, style := range premiumEntityStyles {
+		if style.ID == id {
+			return style, true
+		}
+	}
+	return entityStyleVariant{}, false
 }
 
 // sample deterministically picks one candidate for the identity tuple.
@@ -520,14 +560,10 @@ func applyBadgeRuntimeRandomization(style *entityStyleVariant, query, planID, vi
 // number, or motion id.
 func LookupEntityStyle(query string) (entityStyleVariant, bool) {
 	norm := normalizeStyleKey(query)
-	// Backward-compatibility aliases for golden tests
-	switch norm {
-	case "center_top":
-		return premiumEntityStyles[0], true
-	case "vertical_editorial":
-		return premiumEntityStyles[1], true
-	case "centered_signature":
-		return premiumEntityStyles[4], true
+	// Backward-compatibility aliases are catalog entries by stable ID, not
+	// positional references into the 25-style array.
+	if id, ok := entityStyleAliases[norm]; ok {
+		return entityStyleByID(id)
 	}
 	for _, style := range premiumEntityStyles {
 		if normalizeStyleKey(style.ID) == norm ||

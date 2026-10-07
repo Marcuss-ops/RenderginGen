@@ -52,23 +52,23 @@ func newRepo(t *testing.T, lease time.Duration, maxAttempts int) *Repository {
 func TestChunkMetadataRoundTripsThroughGetAndClaim(t *testing.T) {
 	r := newRepo(t, 30*time.Second, 3)
 	job := model.Job{ID: "parent-001-chunk-2", ParentJobID: "parent-001", ChunkIndex: 2, FrameRange: &model.FrameRange{Start: 240, End: 360}, RenderPlan: []byte(`{"schema":"chronon.render-plan.v2","version":2}`)}
-	if err := r.Submit(job); err != nil {
+	if err := r.Submit(context.Background(), job); err != nil {
 		t.Fatal(err)
 	}
-	got, err := r.Get(job.ID)
+	got, err := r.Get(context.Background(), job.ID)
 	if err != nil {
 		t.Fatal(err)
 	}
 	assertChunkMetadata(t, got)
-	claimed, _, err := r.Claim("worker-1")
+	claimed, _, err := r.Claim(context.Background(), "worker-1")
 	if err != nil {
 		t.Fatal(err)
 	}
 	assertChunkMetadata(t, claimed)
-	if err := r.Fail(job.ID, "worker-1", "retry"); err != nil {
+	if err := r.Fail(context.Background(), job.ID, "worker-1", "retry"); err != nil {
 		t.Fatal(err)
 	}
-	again, _, err := r.Claim("worker-2")
+	again, _, err := r.Claim(context.Background(), "worker-2")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -90,7 +90,7 @@ func assertChunkMetadata(t *testing.T, job *model.Job) {
 func TestClaimSkipsAssemblyAnchorParent(t *testing.T) {
 	r := newRepo(t, 30*time.Second, 3)
 	plan := []byte(`{"schema":"chronon.render-plan.v2","version":2}`)
-	if err := r.Submit(model.Job{ID: "anchor", RenderPlan: plan}); err != nil {
+	if err := r.Submit(context.Background(), model.Job{ID: "anchor", RenderPlan: plan}); err != nil {
 		t.Fatal(err)
 	}
 	for i := 0; i < 2; i++ {
@@ -101,14 +101,14 @@ func TestClaimSkipsAssemblyAnchorParent(t *testing.T) {
 			FrameRange:  &model.FrameRange{Start: int64(i * 120), End: int64((i + 1) * 120)},
 			RenderPlan:  plan,
 		}
-		if err := r.Submit(child); err != nil {
+		if err := r.Submit(context.Background(), child); err != nil {
 			t.Fatal(err)
 		}
 	}
 
 	seen := map[string]bool{}
 	for claims := 0; claims < 2; claims++ {
-		job, _, err := r.Claim(fmt.Sprintf("worker-%d", claims))
+		job, _, err := r.Claim(context.Background(), fmt.Sprintf("worker-%d", claims))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -123,7 +123,7 @@ func TestClaimSkipsAssemblyAnchorParent(t *testing.T) {
 	if !seen["anchor-chunk-0"] || !seen["anchor-chunk-1"] {
 		t.Fatalf("children not claimed exactly once each: %v", seen)
 	}
-	anchor, _, err := r.Claim("worker-3")
+	anchor, _, err := r.Claim(context.Background(), "worker-3")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -131,7 +131,7 @@ func TestClaimSkipsAssemblyAnchorParent(t *testing.T) {
 		t.Fatalf("only the anchor is left and it must not be claimable, got %s", anchor.ID)
 	}
 
-	finalized, claimed, err := r.ClaimFinalization("anchor", "finalizer")
+	finalized, claimed, err := r.ClaimFinalization(context.Background(), "anchor", "finalizer")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -150,14 +150,14 @@ func TestSubmitClaimComplete(t *testing.T) {
 		RenderPlan: []byte(`{"n":1}`),
 		Assets:     []model.AssetRef{{Hash: "abc", LogicalPath: "videos/base.mp4"}},
 	}
-	if err := r.Submit(job); err != nil {
+	if err := r.Submit(context.Background(), job); err != nil {
 		t.Fatalf("submit: %v", err)
 	}
-	if err := r.Submit(job); err == nil {
+	if err := r.Submit(context.Background(), job); err == nil {
 		t.Fatal("duplicate submit should fail")
 	}
 
-	claimed, lease, err := r.Claim("w1")
+	claimed, lease, err := r.Claim(context.Background(), "w1")
 	if err != nil {
 		t.Fatalf("claim: %v", err)
 	}
@@ -174,65 +174,65 @@ func TestSubmitClaimComplete(t *testing.T) {
 		t.Fatalf("envelope not round-tripped: schema=%q version=%d", claimed.Schema, claimed.Version)
 	}
 
-	if err := r.Complete("job-1", "w1", model.Artifact{}); err != nil {
+	if err := r.Complete(context.Background(), "job-1", "w1", model.Artifact{}); err != nil {
 		t.Fatalf("complete: %v", err)
 	}
-	if s := r.Stats(); s.Completed != 1 {
+	if s := r.Stats(context.Background()); s.Completed != 1 {
 		t.Fatalf("want 1 completed, got %+v", s)
 	}
 }
 
 func TestClaimFIFOAndExclusive(t *testing.T) {
 	r := newRepo(t, 30*time.Second, 3)
-	if err := r.Submit(model.Job{ID: "job-1"}); err != nil {
+	if err := r.Submit(context.Background(), model.Job{ID: "job-1"}); err != nil {
 		t.Fatal(err)
 	}
-	if err := r.Submit(model.Job{ID: "job-2"}); err != nil {
+	if err := r.Submit(context.Background(), model.Job{ID: "job-2"}); err != nil {
 		t.Fatal(err)
 	}
 
-	first, _, err := r.Claim("w1")
+	first, _, err := r.Claim(context.Background(), "w1")
 	if err != nil {
 		t.Fatal(err)
 	}
 	if first == nil || first.ID != "job-1" {
 		t.Fatalf("want job-1, got %+v", first)
 	}
-	second, _, err := r.Claim("w2")
+	second, _, err := r.Claim(context.Background(), "w2")
 	if err != nil {
 		t.Fatal(err)
 	}
 	if second == nil || second.ID != "job-2" {
 		t.Fatalf("want job-2, got %+v", second)
 	}
-	if got, _, _ := r.Claim("w3"); got != nil {
+	if got, _, _ := r.Claim(context.Background(), "w3"); got != nil {
 		t.Fatalf("queue should be empty, got %+v", got)
 	}
 }
 
 func TestFailRequeuesUntilMaxAttempts(t *testing.T) {
 	r := newRepo(t, 30*time.Second, 2)
-	if err := r.Submit(model.Job{ID: "job-1"}); err != nil {
+	if err := r.Submit(context.Background(), model.Job{ID: "job-1"}); err != nil {
 		t.Fatal(err)
 	}
 
 	// Attempt 1 -> requeue.
-	if _, _, err := r.Claim("w1"); err != nil {
+	if _, _, err := r.Claim(context.Background(), "w1"); err != nil {
 		t.Fatal(err)
 	}
-	if err := r.Fail("job-1", "w1", "boom"); err != nil {
+	if err := r.Fail(context.Background(), "job-1", "w1", "boom"); err != nil {
 		t.Fatal(err)
 	}
 
 	// Attempt 2 -> permanent fail.
-	if _, _, err := r.Claim("w2"); err != nil {
+	if _, _, err := r.Claim(context.Background(), "w2"); err != nil {
 		t.Fatal(err)
 	}
-	if err := r.Fail("job-1", "w2", "boom"); err != nil {
+	if err := r.Fail(context.Background(), "job-1", "w2", "boom"); err != nil {
 		t.Fatal(err)
 	}
 
-	s := r.Stats()
+	s := r.Stats(context.Background())
 	if s.Failed != 1 || s.Pending != 0 {
 		t.Fatalf("want 1 failed, 0 pending; got %+v", s)
 	}
@@ -240,28 +240,28 @@ func TestFailRequeuesUntilMaxAttempts(t *testing.T) {
 
 func TestFailWrongWorkerFails(t *testing.T) {
 	r := newRepo(t, 30*time.Second, 3)
-	if err := r.Submit(model.Job{ID: "job-1"}); err != nil {
+	if err := r.Submit(context.Background(), model.Job{ID: "job-1"}); err != nil {
 		t.Fatal(err)
 	}
-	if _, _, err := r.Claim("w1"); err != nil {
+	if _, _, err := r.Claim(context.Background(), "w1"); err != nil {
 		t.Fatal(err)
 	}
-	if err := r.Complete("job-1", "w2", model.Artifact{}); err == nil {
+	if err := r.Complete(context.Background(), "job-1", "w2", model.Artifact{}); err == nil {
 		t.Fatal("expected error completing with wrong worker")
 	}
 }
 
 func TestLeaseExpiryRequeues(t *testing.T) {
 	r := newRepo(t, 10*time.Millisecond, 3)
-	if err := r.Submit(model.Job{ID: "job-1"}); err != nil {
+	if err := r.Submit(context.Background(), model.Job{ID: "job-1"}); err != nil {
 		t.Fatal(err)
 	}
-	if _, _, err := r.Claim("w1"); err != nil {
+	if _, _, err := r.Claim(context.Background(), "w1"); err != nil {
 		t.Fatal(err)
 	}
 
 	time.Sleep(30 * time.Millisecond)
-	n, err := r.RequeueExpired(time.Now())
+	n, err := r.RequeueExpired(context.Background(), time.Now())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -269,7 +269,7 @@ func TestLeaseExpiryRequeues(t *testing.T) {
 		t.Fatalf("want 1 requeued, got %d", n)
 	}
 
-	again, _, err := r.Claim("w2")
+	again, _, err := r.Claim(context.Background(), "w2")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -283,20 +283,20 @@ func TestLeaseExpiryRequeues(t *testing.T) {
 
 func TestRenewExtendsLease(t *testing.T) {
 	r := newRepo(t, 100*time.Millisecond, 3)
-	if err := r.Submit(model.Job{ID: "job-1"}); err != nil {
+	if err := r.Submit(context.Background(), model.Job{ID: "job-1"}); err != nil {
 		t.Fatal(err)
 	}
-	if _, _, err := r.Claim("w1"); err != nil {
+	if _, _, err := r.Claim(context.Background(), "w1"); err != nil {
 		t.Fatal(err)
 	}
 
 	time.Sleep(60 * time.Millisecond) // near the end of the original lease
-	if err := r.Renew("job-1", "w1"); err != nil {
+	if err := r.Renew(context.Background(), "job-1", "w1"); err != nil {
 		t.Fatalf("renew: %v", err)
 	}
 	time.Sleep(60 * time.Millisecond) // past original lease, within renewed lease
 
-	n, err := r.RequeueExpired(time.Now())
+	n, err := r.RequeueExpired(context.Background(), time.Now())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -307,12 +307,12 @@ func TestRenewExtendsLease(t *testing.T) {
 
 func TestRenderedThenClaimPublishOnlyThenComplete(t *testing.T) {
 	r, db := setupRepo(t, 30*time.Second, 3)
-	if err := r.Submit(model.Job{ID: "job-rendered"}); err != nil {
+	if err := r.Submit(context.Background(), model.Job{ID: "job-rendered"}); err != nil {
 		t.Fatal(err)
 	}
 
 	// Attempt 1: render done, Drive publication fails -> rendered.
-	if _, _, err := r.Claim("w1"); err != nil {
+	if _, _, err := r.Claim(context.Background(), "w1"); err != nil {
 		t.Fatal(err)
 	}
 	stored := model.Artifact{
@@ -324,11 +324,11 @@ func TestRenderedThenClaimPublishOnlyThenComplete(t *testing.T) {
 		Height:       720,
 		DurationUS:   3_000_000,
 	}
-	if err := r.Rendered("job-rendered", "w1", stored, "drive: upload failed"); err != nil {
+	if err := r.Rendered(context.Background(), "job-rendered", "w1", stored, "drive: upload failed"); err != nil {
 		t.Fatalf("rendered: %v", err)
 	}
 
-	got, err := r.Get("job-rendered")
+	got, err := r.Get(context.Background(), "job-rendered")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -341,7 +341,7 @@ func TestRenderedThenClaimPublishOnlyThenComplete(t *testing.T) {
 
 	// Attempt 2: re-claim in the rendered state -> artifact returned for a
 	// publication-only retry (no re-render).
-	again, _, err := r.Claim("w2")
+	again, _, err := r.Claim(context.Background(), "w2")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -356,11 +356,11 @@ func TestRenderedThenClaimPublishOnlyThenComplete(t *testing.T) {
 	published := stored
 	published.DriveFileID = "drive-1"
 	published.DriveLink = "https://drive.example.com/file/d/drive-1"
-	if err := r.Complete("job-rendered", "w2", published); err != nil {
+	if err := r.Complete(context.Background(), "job-rendered", "w2", published); err != nil {
 		t.Fatalf("complete: %v", err)
 	}
 
-	done, err := r.Get("job-rendered")
+	done, err := r.Get(context.Background(), "job-rendered")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -392,7 +392,7 @@ func TestClaimConcurrentExclusive(t *testing.T) {
 
 	const jobs = 50
 	for i := 0; i < jobs; i++ {
-		if err := r.Submit(model.Job{ID: fmt.Sprintf("job-%02d", i)}); err != nil {
+		if err := r.Submit(context.Background(), model.Job{ID: fmt.Sprintf("job-%02d", i)}); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -405,7 +405,7 @@ func TestClaimConcurrentExclusive(t *testing.T) {
 		go func(worker string) {
 			defer wg.Done()
 			for {
-				job, _, err := r.Claim(worker)
+				job, _, err := r.Claim(context.Background(), worker)
 				if err != nil {
 					t.Errorf("claim: %v", err)
 					return
@@ -427,7 +427,7 @@ func TestClaimConcurrentExclusive(t *testing.T) {
 	if len(seen) != jobs {
 		t.Fatalf("want %d distinct claims, got %d", jobs, len(seen))
 	}
-	if s := r.Stats(); s.Running != jobs {
+	if s := r.Stats(context.Background()); s.Running != jobs {
 		t.Fatalf("want %d running, got %d", jobs, s.Running)
 	}
 }

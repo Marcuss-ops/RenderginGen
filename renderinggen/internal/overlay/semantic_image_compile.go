@@ -57,6 +57,14 @@ func compileImageItem(ri resolvedItem, src *semanticPlan, registry *assetRegistr
 			if err != nil {
 				return nil, err
 			}
+			if caption := strings.TrimSpace(ri.Item.EntityCaption); caption != "" {
+				imageIndex := premiumImageLayerIndex(layers)
+				captionLayer, err := compileImageCaptionLayer(ri, src, ri.Item, caption, &layers[imageIndex], "entity", textRoleImageCaption)
+				if err != nil {
+					return nil, err
+				}
+				layers = append(layers, captionLayer)
+			}
 			return layers, nil
 		}
 		layers, err := compilePremiumImageLayers(ri, src, layer, premium)
@@ -65,7 +73,7 @@ func compileImageItem(ri resolvedItem, src *semanticPlan, registry *assetRegistr
 		}
 		if caption := strings.TrimSpace(ri.Item.EntityCaption); caption != "" {
 			imageIndex := premiumImageLayerIndex(layers)
-			captionLayer, err := compileEntityCaptionLayer(ri, src, ri.Item, caption, &layers[imageIndex], "entity")
+			captionLayer, err := compileImageCaptionLayer(ri, src, ri.Item, caption, &layers[imageIndex], "entity", textRoleImageCaption)
 			if err != nil {
 				return nil, err
 			}
@@ -141,7 +149,7 @@ func compileImageItem(ri resolvedItem, src *semanticPlan, registry *assetRegistr
 		layers = append(layers, decorated...)
 		if caption := strings.TrimSpace(child.Caption); caption != "" {
 			imageIndex := premiumImageLayerIndex(decorated)
-			captionLayer, err := compileEntityCaptionLayer(ri, src, childItem, caption, &decorated[imageIndex], child.ID)
+			captionLayer, err := compileImageCaptionLayer(ri, src, childItem, caption, &decorated[imageIndex], child.ID, textRoleImageCaption)
 			if err != nil {
 				return nil, err
 			}

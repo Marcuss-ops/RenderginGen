@@ -14,7 +14,7 @@ func (s *Server) registerWorker(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	if err := s.svc.RegisterWorker(worker); err != nil {
+	if err := s.svc.RegisterWorker(r.Context(), worker); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -30,16 +30,18 @@ func (s *Server) heartbeat(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	if err := s.svc.WorkerHeartbeat(req.Worker); err != nil {
+	if err := s.svc.WorkerHeartbeat(r.Context(), req.Worker); err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
 }
 
-// listWorkers handles GET /workers.
-func (s *Server) listWorkers(w http.ResponseWriter, _ *http.Request) {
-	workers, err := s.svc.ListWorkers()
+// listWorkers handles GET /workers. The request context is threaded into the
+// read so a client that disconnects stops the query instead of leaving it to
+// run to completion against the registry.
+func (s *Server) listWorkers(w http.ResponseWriter, r *http.Request) {
+	workers, err := s.svc.ListWorkers(r.Context())
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -48,8 +50,8 @@ func (s *Server) listWorkers(w http.ResponseWriter, _ *http.Request) {
 }
 
 // workerHealth handles GET /workers/health.
-func (s *Server) workerHealth(w http.ResponseWriter, _ *http.Request) {
-	health, err := s.svc.WorkerHealth()
+func (s *Server) workerHealth(w http.ResponseWriter, r *http.Request) {
+	health, err := s.svc.WorkerHealth(r.Context())
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

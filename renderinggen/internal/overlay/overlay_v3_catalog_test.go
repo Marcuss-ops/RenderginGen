@@ -380,8 +380,11 @@ func TestCompositeEntityImageLayerCountsTwoThroughFiveCompile(t *testing.T) {
 				if caption.Type != "text" || caption.Text != "Person "+fmt.Sprint(index) {
 					t.Fatalf("child %d caption lowering = %+v", index, caption)
 				}
-				if caption.EntityCaptionForImageID != image.ID {
-					t.Errorf("caption %q links to image %q, want %q", caption.ID, caption.EntityCaptionForImageID, image.ID)
+				if caption.CaptionForImageID != image.ID {
+					t.Errorf("caption %q links to image %q, want %q", caption.ID, caption.CaptionForImageID, image.ID)
+				}
+				if caption.Style == nil || caption.Style.Fill != "#F8F5EA" || caption.Style.Stroke == nil || caption.Style.Shadow == nil || caption.Style.Glow == nil {
+					t.Errorf("image caption %q did not lower through the shared caption role style: %+v", caption.ID, caption.Style)
 				}
 				if caption.StartFrame != image.StartFrame || caption.DurationFrames != image.DurationFrames {
 					t.Errorf("caption %q lifetime differs from image %q", caption.ID, image.ID)
@@ -459,7 +462,7 @@ func TestCompositeEntityCaptionsWithDisjointWindowsMayReuseLayout(t *testing.T) 
 	}
 	captions := 0
 	for _, layer := range compiled.Plan.Layers {
-		if layer.EntityCaptionForImageID == "" {
+		if layer.CaptionForImageID == "" {
 			continue
 		}
 		captions++

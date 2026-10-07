@@ -95,7 +95,9 @@
         "description": { "type": "string", "minLength": 1 },
         "composition": { "$ref": "#/$defs/composition" },
         "background_kind": { "enum": ["color", "image", "video"] },
-        "motion_ids": { "type": ["array", "null"], "items": { "type": "string", "minLength": 1 } }
+        "motion_ids": { "type": ["array", "null"], "items": { "type": "string", "minLength": 1 } },
+        "style_count_default": { "type": "integer", "minimum": 1 },
+        "style_count_maximum": { "type": "integer", "minimum": 1 }
       },
       "allOf": [
         {

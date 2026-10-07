@@ -14,18 +14,18 @@ func TestWorkerRegisterHeartbeatList(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := r.Register(model.Worker{ID: "w1", Hostname: "h1", Status: model.WorkerStatusReady, RenderingGenVersion: "v1"}); err != nil {
+	if err := r.Register(context.Background(), model.Worker{ID: "w1", Hostname: "h1", Status: model.WorkerStatusReady, RenderingGenVersion: "v1"}); err != nil {
 		t.Fatal(err)
 	}
-	if err := r.Register(model.Worker{ID: "w2", Status: model.WorkerStatusBusy}); err != nil {
-		t.Fatal(err)
-	}
-
-	if err := r.Heartbeat("w1"); err != nil {
+	if err := r.Register(context.Background(), model.Worker{ID: "w2", Status: model.WorkerStatusBusy}); err != nil {
 		t.Fatal(err)
 	}
 
-	workers, err := r.List()
+	if err := r.Heartbeat(context.Background(), "w1"); err != nil {
+		t.Fatal(err)
+	}
+
+	workers, err := r.List(context.Background())
 	if err != nil || len(workers) != 2 {
 		t.Fatalf("list: got %d workers, err=%v", len(workers), err)
 	}
@@ -58,7 +58,7 @@ func TestWorkerRegisterHeartbeatList(t *testing.T) {
 
 func TestWorkerHeartbeatUnregisteredFails(t *testing.T) {
 	r, _ := setupRepo(t, 30*time.Second, 3)
-	if err := r.Heartbeat("missing"); err == nil {
+	if err := r.Heartbeat(context.Background(), "missing"); err == nil {
 		t.Fatal("heartbeat on unregistered worker should fail")
 	}
 }

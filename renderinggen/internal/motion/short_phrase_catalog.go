@@ -41,6 +41,7 @@ type shortPhraseRecipe struct {
 	Enter         int                   `json:"enter"`
 	Exit          string                `json:"exit"`
 	Tracks        []TrackDefinition     `json:"tracks"`
+	Light         bool                  `json:"light"`
 	Selector      shortPhraseSelector   `json:"selector"`
 	TextAnimators []shortPhraseAnimator `json:"text_animators"`
 	Timing        struct {
@@ -66,7 +67,7 @@ func readShortPhraseStyles() ([]shortPhraseRecipe, error) {
 	var recipes []shortPhraseRecipe
 	seen := map[string]bool{}
 	for _, recipe := range catalog.Recipes {
-		if recipe.Family != "product_video" || !containsMotionString(recipe.Targets, "short_phrase") {
+		if !containsMotionString(recipe.Targets, "short_phrase") {
 			continue
 		}
 		if recipe.ID == "" || seen[recipe.ID] || recipe.Enter <= 0 {
@@ -94,13 +95,76 @@ func shortPhraseMotionDefinition(recipe shortPhraseRecipe) MotionDefinition {
 	}
 	for index, animator := range recipe.TextAnimators {
 		selector := shortPhraseSelectorDefinition(animator.Selector)
+		properties := make([]TrackDefinition, len(animator.Properties))
+		for propertyIndex, track := range animator.Properties {
+			properties[propertyIndex] = lowerShortPhraseColorTrack(track, recipe.Light)
+		}
 		definition.TextAnimators = append(definition.TextAnimators, TextAnimatorDefinition{
 			ID:         fmt.Sprintf("%s_animator_%d", recipe.ID, index),
 			Selector:   selector,
-			Properties: animator.Properties,
+			Properties: properties,
 		})
 	}
 	return definition
+}
+
+// ChrononTemplate authors short-phrase color mixes as scalar fill_blue and
+// fill_gray tracks. The renderer contract uses native animated RGBA fill_color
+// tracks, so project the authoring shorthand at the catalog boundary.
+func lowerShortPhraseColorTrack(track TrackDefinition, light bool) TrackDefinition {
+	var target [4]float64
+	switch track.Property {
+	case "fill_blue":
+		target = [4]float64{0.30, 0.55, 1, 1}
+	case "fill_gray":
+		gray := 0.40
+		if light {
+			gray = 0.62
+		}
+		target = [4]float64{gray, gray, gray, 1}
+	default:
+		return track
+	}
+	rest := [4]float64{1, 1, 1, 1}
+	if light {
+		rest = [4]float64{0.03, 0.03, 0.03, 1}
+	}
+	converted := TrackDefinition{Property: "fill_color", Easing: track.Easing, Keyframes: make([]AnimationKeyframe, 0, len(track.Keyframes))}
+	for _, key := range track.Keyframes {
+		mix, ok := shortPhraseNumericValue(key.Value)
+		if !ok {
+			// Leave malformed authoring data untouched so ValidateDefinition
+			// reports it with the motion ID instead of silently changing it.
+			return track
+		}
+		if mix < 0 {
+			mix = 0
+		}
+		if mix > 1 {
+			mix = 1
+		}
+		color := make([]float64, 4)
+		for channel := range color {
+			color[channel] = rest[channel] + (target[channel]-rest[channel])*mix
+		}
+		converted.Keyframes = append(converted.Keyframes, AnimationKeyframe{Frame: key.Frame, Value: color})
+	}
+	return converted
+}
+
+func shortPhraseNumericValue(value any) (float64, bool) {
+	switch number := value.(type) {
+	case float64:
+		return number, true
+	case float32:
+		return float64(number), true
+	case int:
+		return float64(number), true
+	case int64:
+		return float64(number), true
+	default:
+		return 0, false
+	}
 }
 
 func shortPhraseSelectorDefinition(selector shortPhraseSelector) SelectorDefinition {
@@ -133,7 +197,7 @@ func shortPhraseWindowShape(window string) string {
 	}
 }
 
-// ShortPhraseStyleIDs returns the generated product-video style ids in C++ catalog order.
+// ShortPhraseStyleIDs returns the generated short-phrase style ids in C++ catalog order.
 func (r *RegistryType) ShortPhraseStyleIDs() []string {
 	recipes, err := readShortPhraseStyles()
 	if err != nil {

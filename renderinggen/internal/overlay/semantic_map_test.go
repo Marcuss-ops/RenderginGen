@@ -2,8 +2,11 @@ package overlay
 
 import (
 	"encoding/json"
+	"reflect"
 	"strings"
 	"testing"
+
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/geo"
 )
 
 func georeferencedMapPlan(pinLat, pinLon float64) map[string]any {
@@ -39,6 +42,32 @@ func compileMapTestPlan(t *testing.T, plan map[string]any) (CompileResult, error
 		t.Fatal(err)
 	}
 	return CompileSemantic(raw)
+}
+
+func TestMapLabelGeometryResolvesStablePlacementsAndDimensions(t *testing.T) {
+	window := geo.CenteredOn(0, 0, 8, 1280, 720)
+	pins := []SemanticMapPin{
+		{ID: "b", Label: "Second", Latitude: 0, Longitude: 0.05, Color: "#E11D48", RadiusPX: 12},
+		{ID: "a", Label: "First", Latitude: 0, Longitude: 0, Color: "#E11D48", RadiusPX: 12, LabelPriority: 10},
+	}
+	placements, err := resolveMapLabelPlacements(pins, window, 1280, 720)
+	if err != nil {
+		t.Fatalf("resolve map label geometry: %v", err)
+	}
+	again, err := resolveMapLabelPlacements(pins, window, 1280, 720)
+	if err != nil {
+		t.Fatalf("repeat map label geometry: %v", err)
+	}
+	if !reflect.DeepEqual(placements, again) {
+		t.Fatalf("map label geometry is not deterministic: %v vs %v", placements, again)
+	}
+	if len(placements) != len(pins) {
+		t.Fatalf("placements = %v, want one per pin", placements)
+	}
+	width, height := mapPinLabelDimensions(pins[0], 1280, 720)
+	if width <= 0 || height <= 0 || width > 1280 || height > 720 {
+		t.Fatalf("label geometry size = %vx%v outside canvas", width, height)
+	}
 }
 
 func TestGeoreferencedMapCompilesGroundedLayers(t *testing.T) {
@@ -353,7 +382,10 @@ func cameraMapPlan() map[string]any {
 }
 
 func TestGeoreferencedFlyToCompilesNativeCameraAndOfflineLODs(t *testing.T) {
-	result, err := compileMapTestPlan(t, cameraMapPlan())
+	plan := cameraMapPlan()
+	item := plan["items"].([]any)[0].(map[string]any)
+	item["map"].(map[string]any)["motion_id"] = "map_image_brazil_glow_reveal"
+	result, err := compileMapTestPlan(t, plan)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -370,8 +402,15 @@ func TestGeoreferencedFlyToCompilesNativeCameraAndOfflineLODs(t *testing.T) {
 	if coarse.ID != mapBasemapLayerID("map") || !coarse.Enable3D {
 		t.Fatalf("base map plate is not a 3D plane: %+v", coarse)
 	}
-	if coarse.Animation != nil {
-		t.Fatal("single base map plate must stay opaque without LOD cross-fades")
+	if coarse.Animation == nil {
+		t.Fatal("camera-moved map dropped its declared map_image_v1 treatment")
+	}
+	properties := map[string]bool{}
+	for _, track := range coarse.Animation.Tracks {
+		properties[track.Property] = true
+	}
+	if !properties["scale"] || !properties["opacity"] {
+		t.Fatalf("camera-moved map tracks = %v, want map recipe scale and opacity", properties)
 	}
 	credit := result.Plan.Layers[len(result.Plan.Layers)-1]
 	if credit.ID != mapAttributionLayerID("map") || !credit.ScreenSpace || credit.Text != "Map data supplied by operator" {

@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"strings"
 	"testing"
 	"time"
@@ -14,19 +15,19 @@ import (
 // recorded and a fresh last_frame_at timestamp.
 func TestServiceProgressRoundTrip(t *testing.T) {
 	svc := New(memory.New(30*time.Second, 3))
-	if err := svc.Submit(model.Job{ID: "job-progress"}); err != nil {
+	if err := svc.Submit(context.Background(), model.Job{ID: "job-progress"}); err != nil {
 		t.Fatal(err)
 	}
-	if _, _, err := svc.Claim("w1"); err != nil {
+	if _, _, err := svc.Claim(context.Background(), "w1"); err != nil {
 		t.Fatal(err)
 	}
 
 	before := time.Now()
-	if err := svc.SetProgress("job-progress", "w1", model.Progress{FramesDone: 485, TotalFrames: 1800}); err != nil {
+	if err := svc.SetProgress(context.Background(), "job-progress", "w1", model.Progress{FramesDone: 485, TotalFrames: 1800}); err != nil {
 		t.Fatalf("set progress: %v", err)
 	}
 
-	job, err := svc.Get("job-progress")
+	job, err := svc.Get(context.Background(), "job-progress")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -48,13 +49,13 @@ func TestServiceProgressRoundTrip(t *testing.T) {
 // held) the lease cannot overwrite the current owner's progress.
 func TestServiceProgressRejectsNonOwner(t *testing.T) {
 	svc := New(memory.New(30*time.Second, 3))
-	if err := svc.Submit(model.Job{ID: "job-owner"}); err != nil {
+	if err := svc.Submit(context.Background(), model.Job{ID: "job-owner"}); err != nil {
 		t.Fatal(err)
 	}
-	if _, _, err := svc.Claim("w1"); err != nil {
+	if _, _, err := svc.Claim(context.Background(), "w1"); err != nil {
 		t.Fatal(err)
 	}
-	err := svc.SetProgress("job-owner", "w2", model.Progress{FramesDone: 10})
+	err := svc.SetProgress(context.Background(), "job-owner", "w2", model.Progress{FramesDone: 10})
 	if err == nil {
 		t.Fatal("want error for non-owner progress report, got nil")
 	}
@@ -62,7 +63,7 @@ func TestServiceProgressRejectsNonOwner(t *testing.T) {
 		t.Fatalf("want ownership error, got %v", err)
 	}
 	// The job's progress must remain unset.
-	job, err := svc.Get("job-owner")
+	job, err := svc.Get(context.Background(), "job-owner")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -75,10 +76,10 @@ func TestServiceProgressRejectsNonOwner(t *testing.T) {
 // failed jobs: progress is only meaningful while a lease is held.
 func TestServiceProgressRejectsNonRunningStates(t *testing.T) {
 	svc := New(memory.New(30*time.Second, 3))
-	if err := svc.Submit(model.Job{ID: "job-pending"}); err != nil {
+	if err := svc.Submit(context.Background(), model.Job{ID: "job-pending"}); err != nil {
 		t.Fatal(err)
 	}
-	if err := svc.SetProgress("job-pending", "w1", model.Progress{FramesDone: 1}); err == nil {
+	if err := svc.SetProgress(context.Background(), "job-pending", "w1", model.Progress{FramesDone: 1}); err == nil {
 		t.Fatal("want error for pending job progress, got nil")
 	}
 }
@@ -87,19 +88,19 @@ func TestServiceProgressRejectsNonRunningStates(t *testing.T) {
 // previous snapshot (latest wins) rather than accumulating.
 func TestServiceProgressOverwriteInPlace(t *testing.T) {
 	svc := New(memory.New(30*time.Second, 3))
-	if err := svc.Submit(model.Job{ID: "job-latest"}); err != nil {
+	if err := svc.Submit(context.Background(), model.Job{ID: "job-latest"}); err != nil {
 		t.Fatal(err)
 	}
-	if _, _, err := svc.Claim("w1"); err != nil {
+	if _, _, err := svc.Claim(context.Background(), "w1"); err != nil {
 		t.Fatal(err)
 	}
-	if err := svc.SetProgress("job-latest", "w1", model.Progress{FramesDone: 100, TotalFrames: 900}); err != nil {
+	if err := svc.SetProgress(context.Background(), "job-latest", "w1", model.Progress{FramesDone: 100, TotalFrames: 900}); err != nil {
 		t.Fatal(err)
 	}
-	if err := svc.SetProgress("job-latest", "w1", model.Progress{FramesDone: 200, TotalFrames: 900}); err != nil {
+	if err := svc.SetProgress(context.Background(), "job-latest", "w1", model.Progress{FramesDone: 200, TotalFrames: 900}); err != nil {
 		t.Fatal(err)
 	}
-	job, err := svc.Get("job-latest")
+	job, err := svc.Get(context.Background(), "job-latest")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -113,27 +114,27 @@ func TestServiceProgressOverwriteInPlace(t *testing.T) {
 // not be mistaken for progress of the new attempt).
 func TestServiceRetryClearsProgress(t *testing.T) {
 	svc := New(memory.New(30*time.Second, 3))
-	if err := svc.Submit(model.Job{ID: "job-retry-progress"}); err != nil {
+	if err := svc.Submit(context.Background(), model.Job{ID: "job-retry-progress"}); err != nil {
 		t.Fatal(err)
 	}
 	// Exhaust max_attempts: only a permanently failed job can be retried.
 	for i := 0; i < 3; i++ {
-		if _, _, err := svc.Claim("w1"); err != nil {
+		if _, _, err := svc.Claim(context.Background(), "w1"); err != nil {
 			t.Fatal(err)
 		}
 		if i == 0 {
-			if err := svc.SetProgress("job-retry-progress", "w1", model.Progress{FramesDone: 500, TotalFrames: 1000}); err != nil {
+			if err := svc.SetProgress(context.Background(), "job-retry-progress", "w1", model.Progress{FramesDone: 500, TotalFrames: 1000}); err != nil {
 				t.Fatal(err)
 			}
 		}
-		if err := svc.Fail("job-retry-progress", "w1", "boom"); err != nil {
+		if err := svc.Fail(context.Background(), "job-retry-progress", "w1", "boom"); err != nil {
 			t.Fatal(err)
 		}
 	}
-	if err := svc.Retry("job-retry-progress"); err != nil {
+	if err := svc.Retry(context.Background(), "job-retry-progress"); err != nil {
 		t.Fatal(err)
 	}
-	job, err := svc.Get("job-retry-progress")
+	job, err := svc.Get(context.Background(), "job-retry-progress")
 	if err != nil {
 		t.Fatal(err)
 	}

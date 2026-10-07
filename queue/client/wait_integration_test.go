@@ -26,10 +26,10 @@ func TestWaitTerminalEndToEndWithRealQueue(t *testing.T) {
 	ts := httptest.NewServer(server.New(svc).Handler())
 	defer ts.Close()
 
-	if err := svc.Submit(model.Job{ID: "job-1"}); err != nil {
+	if err := svc.Submit(context.Background(), model.Job{ID: "job-1"}); err != nil {
 		t.Fatal(err)
 	}
-	if _, _, err := svc.Claim("w1"); err != nil {
+	if _, _, err := svc.Claim(context.Background(), "w1"); err != nil {
 		t.Fatal(err)
 	}
 
@@ -48,7 +48,7 @@ func TestWaitTerminalEndToEndWithRealQueue(t *testing.T) {
 	// Park the server-side long poll, then complete the job.
 	time.Sleep(150 * time.Millisecond)
 	start := time.Now()
-	if err := svc.Complete("job-1", "w1", model.Artifact{
+	if err := svc.Complete(context.Background(), "job-1", "w1", model.Artifact{
 		StorageKey: "abc", ArtifactHash: "abc", SizeBytes: 1, ContentType: "video/mp4",
 	}); err != nil {
 		t.Fatal(err)

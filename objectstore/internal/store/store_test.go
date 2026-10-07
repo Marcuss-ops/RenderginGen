@@ -189,9 +189,11 @@ func TestPutRejectsDeclaredLengthMismatch(t *testing.T) {
 //
 // The list is exhaustive on purpose: adding a method means editing it here,
 // which forces the author to classify it. Only Put and PutReader install bytes
-// (both verify); Verify, Scan and Capabilities are read-only, and that property
-// is itself pinned — TestScanRemovesNothing proves a scan touches nothing on
-// disk, and Verify only ever opens a file for reading. The gate proved its
+// (both verify); Open, Get, Verify, Scan and Capabilities are read-only, and
+// that property is itself pinned — TestScanRemovesNothing proves a scan touches
+// nothing on disk, Verify only ever opens a file for reading, and Get is the
+// Backend-shaped wrapper around Open (it re-hashes nothing and installs
+// nothing). The gate proved its
 // worth while this file was being written: adding Capabilities() as a method
 // failed the build until it was classified here, which is the intended
 // build-time conversation rather than a silent regression.
@@ -203,7 +205,7 @@ func TestStoreExposesNoUnverifiedWritePath(t *testing.T) {
 	}
 	sort.Strings(methods)
 
-	want := []string{"Capabilities", "Open", "Put", "PutReader", "Scan", "Verify"}
+	want := []string{"Capabilities", "Get", "Open", "Put", "PutReader", "Scan", "Verify"}
 	if !reflect.DeepEqual(methods, want) {
 		t.Fatalf("exported *store.Store methods = %v, want %v; a NEW method must be classified as read-only, or verify the content address if it installs bytes", methods, want)
 	}

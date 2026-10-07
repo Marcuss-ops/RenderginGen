@@ -2,6 +2,7 @@ package server
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"github.com/Marcuss-ops/RenderingGen/queue/internal/model"
@@ -93,7 +94,7 @@ type failingRepo struct {
 	*memory.Repository
 }
 
-func (failingRepo) SubmitIdempotent(model.Job) (*model.Job, bool, error) {
+func (failingRepo) SubmitIdempotent(_ context.Context, _ model.Job) (*model.Job, bool, error) {
 	return nil, false, errors.New("storage unavailable")
 }
 

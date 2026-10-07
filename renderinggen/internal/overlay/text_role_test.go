@@ -12,8 +12,8 @@ func TestTextRoleEntityCaptionOwnsTheNameplateTreatment(t *testing.T) {
 	if style.Fill != "#F8F5EA" {
 		t.Errorf("default fill = %q, want the warm-white nameplate", style.Fill)
 	}
-	if style.FontSize != 42 || style.MinFontSize != 42 || style.MaxFontSize != 42 {
-		t.Errorf("font sizes = %v/%v/%v, want 42 locked", style.FontSize, style.MinFontSize, style.MaxFontSize)
+	if style.FontSize != 42 || style.MinFontSize != 0 || style.MaxFontSize != 0 {
+		t.Errorf("font sizes = %v/%v/%v, want fixed 42 with no fit interval", style.FontSize, style.MinFontSize, style.MaxFontSize)
 	}
 	if style.Stroke == nil || style.Stroke.Color != "#111827" || style.Stroke.Width != 2.0 {
 		t.Errorf("stroke = %+v, want the dark keyline", style.Stroke)

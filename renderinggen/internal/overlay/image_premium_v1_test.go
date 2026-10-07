@@ -216,6 +216,70 @@ func TestImagePremiumCaptionAndDurationContractsFailClosed(t *testing.T) {
 	}
 }
 
+func TestStandaloneImageCaptionsSurviveRecipeLowering(t *testing.T) {
+	plainImage := []byte(fmt.Sprintf(`{"schema_version":"renderinggen.overlay-plan.v1","plan_id":"standalone-caption","video_id":"v","width":1280,"height":720,"fps_num":24,"fps_den":1,"items":[{"id":"standalone","kind":"image","template_id":"image_popup","preset_id":"image_focus_in","start_ms":0,"end_ms":3000,"entity_caption":"Caption acceptance","asset_refs":[%s]}]}`, premiumImageAssetRef))
+	for _, tc := range []struct {
+		name string
+		plan []byte
+	}{
+		{name: "plain standalone image", plan: plainImage},
+		{name: "premium image recipe", plan: premiumImagePlan("image_caption_frame_combo", `,"entity_caption":"Caption acceptance"`)},
+		{name: "visual accent recipe", plan: premiumImagePlan("brush_arrow_point", `,"entity_caption":"Caption acceptance"`)},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			result, err := CompileSemantic(tc.plan)
+			if err != nil {
+				t.Fatalf("compile image caption plan: %v", err)
+			}
+			var image *Layer
+			var caption *Layer
+			for i := range result.Plan.Layers {
+				layer := &result.Plan.Layers[i]
+				if layer.Type == "image" && (image == nil || layer.ID == "premium-image:image") {
+					image = layer
+				}
+				if layer.Type == "text" && layer.Text == "Caption acceptance" {
+					caption = layer
+				}
+			}
+			if image == nil || caption == nil {
+				t.Fatalf("image/caption output missing: image=%+v caption=%+v layers=%+v", image, caption, result.Plan.Layers)
+			}
+			if caption.CaptionForImageID != image.ID {
+				t.Fatalf("caption image link = %q, want %q", caption.CaptionForImageID, image.ID)
+			}
+			if caption.StartFrame != image.StartFrame || caption.DurationFrames != image.DurationFrames {
+				t.Fatalf("caption timing=(%d,%d), image timing=(%d,%d)", caption.StartFrame, caption.DurationFrames, image.StartFrame, image.DurationFrames)
+			}
+			wire, err := result.Plan.Marshal()
+			if err != nil {
+				t.Fatalf("marshal compiled caption plan: %v", err)
+			}
+			var wireDocument struct {
+				Layers []map[string]json.RawMessage `json:"layers"`
+			}
+			if err := json.Unmarshal(wire, &wireDocument); err != nil {
+				t.Fatalf("decode Chronon plan: %v", err)
+			}
+			for _, wireLayer := range wireDocument.Layers {
+				text, ok := wireLayer["text"]
+				if !ok {
+					continue
+				}
+				var decodedText string
+				if err := json.Unmarshal(text, &decodedText); err != nil || decodedText != "Caption acceptance" {
+					continue
+				}
+				for _, internalKey := range []string{"role", "style_policy", "caption_for_image_id", "caption_layout"} {
+					if _, leaked := wireLayer[internalKey]; leaked {
+						t.Errorf("internal caption field %q leaked into Chronon wire", internalKey)
+					}
+				}
+			}
+		})
+	}
+}
+
 func TestImagePremiumNativeV3ComponentOrderAndMaskTopology(t *testing.T) {
 	result, err := CompileSemantic(premiumImagePlan("image_caption_frame_combo", `,"entity_caption":"Frame label"`))
 	if err != nil {

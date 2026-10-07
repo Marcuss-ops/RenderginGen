@@ -37,12 +37,15 @@ func nonEmptyJobType(jobType string) string {
 
 // defaultOpTimeout bounds EVERY statement/transaction the repository issues.
 //
-// The bound is load-bearing, not cosmetic: the repository contract takes no
-// context (see the repository.JobRepository doc), so without it a stalled
-// connection, a lock wait or a mid-failover backend would pin the calling
-// HTTP handler / worker goroutine for as long as the driver is willing to
-// wait — which is forever. It is deliberately generous: it exists to fail a
-// stuck operation, not to be a performance budget.
+// The bound is load-bearing, not cosmetic: every operation now derives its
+// deadline from the CALLER's context (repository v2), so a cancelled request —
+// a disconnected client, a shutting-down worker — aborts its statement instead
+// of running to completion. The timeout below is the implementation's own
+// SECOND guarantee, kept because it must hold even for a caller that never
+// cancels: a stalled connection, a lock wait or a mid-failover backend would
+// otherwise pin the calling HTTP handler / worker goroutine for as long as the
+// driver is willing to wait — which is forever. It is deliberately generous: it
+// exists to fail a stuck operation, not to be a performance budget.
 const defaultOpTimeout = 15 * time.Second
 
 // Repository is the PostgreSQL backend for the central job queue.
@@ -56,14 +59,23 @@ type Repository struct {
 	opTimeout time.Duration
 }
 
-// opContext returns the context of one repository operation, bounded by
-// opTimeout so no call can outlive it.
-func (r *Repository) opContext() (context.Context, context.CancelFunc) {
+// opContext derives one repository operation's context from the CALLER's
+// context and bounds it by opTimeout, so no call can outlive either the caller
+// or the deadline. Deriving from the caller is what makes cancellation and
+// tracing actually reach PostgreSQL: the HTTP request context now flows
+// handler → service → repository → driver.
+func (r *Repository) opContext(ctx context.Context) (context.Context, context.CancelFunc) {
+	if ctx == nil {
+		// A nil caller context is a bug upstream, but it must not panic inside
+		// the storage layer: fall back to a bounded background context so the
+		// operation still cannot outlive opTimeout.
+		ctx = context.Background()
+	}
 	timeout := r.opTimeout
 	if timeout <= 0 {
 		timeout = defaultOpTimeout
 	}
-	return context.WithTimeout(context.Background(), timeout)
+	return context.WithTimeout(ctx, timeout)
 }
 
 // SetOpTimeout overrides the per-operation deadline (values <= 0 restore
@@ -98,7 +110,7 @@ type inputManifest struct {
 }
 
 // Submit enqueues a job. The ID is required and must be unique.
-func (r *Repository) Submit(job model.Job) error {
+func (r *Repository) Submit(ctx context.Context, job model.Job) error {
 	if job.ID == "" {
 		return fmt.Errorf("job id is required")
 	}
@@ -122,7 +134,7 @@ func (r *Repository) Submit(job model.Job) error {
 		return fmt.Errorf("input_manifest: %w", err)
 	}
 
-	ctx, cancel := r.opContext()
+	ctx, cancel := r.opContext(ctx)
 	defer cancel()
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -156,7 +168,7 @@ func (r *Repository) Submit(job model.Job) error {
 // claim query intentionally skips parents that own children; atomic insertion
 // closes the otherwise real window between creating the anchor and creating
 // its first child.
-func (r *Repository) SubmitBatch(jobs []model.Job) error {
+func (r *Repository) SubmitBatch(ctx context.Context, jobs []model.Job) error {
 	if len(jobs) == 0 {
 		return fmt.Errorf("job batch is empty")
 	}
@@ -173,7 +185,7 @@ func (r *Repository) SubmitBatch(jobs []model.Job) error {
 			return err
 		}
 	}
-	ctx, cancel := r.opContext()
+	ctx, cancel := r.opContext(ctx)
 	defer cancel()
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -221,45 +233,45 @@ func (r *Repository) SubmitBatch(jobs []model.Job) error {
 
 // SubmitIdempotent uses the database uniqueness constraint as the race-safe
 // winner selection for concurrent retries of the same logical request.
-func (r *Repository) SubmitIdempotent(job model.Job) (*model.Job, bool, error) {
+func (r *Repository) SubmitIdempotent(ctx context.Context, job model.Job) (*model.Job, bool, error) {
 	if job.IdempotencyKey == "" {
-		if err := r.Submit(job); err != nil {
+		if err := r.Submit(ctx, job); err != nil {
 			return nil, false, err
 		}
-		canonical, err := r.Get(job.ID)
+		canonical, err := r.Get(ctx, job.ID)
 		return canonical, true, err
 	}
-	ctx, cancel := r.opContext()
+	ctx, cancel := r.opContext(ctx)
 	defer cancel()
 	var existingID string
 	err := r.db.QueryRowContext(ctx, `SELECT id FROM render_jobs WHERE idempotency_key = $1`, job.IdempotencyKey).Scan(&existingID)
 	if err == nil {
-		canonical, getErr := r.Get(existingID)
+		canonical, getErr := r.Get(ctx, existingID)
 		return canonical, false, getErr
 	}
 	if !errors.Is(err, sql.ErrNoRows) {
 		return nil, false, err
 	}
-	if err := r.Submit(job); err == nil {
-		canonical, getErr := r.Get(job.ID)
+	if err := r.Submit(ctx, job); err == nil {
+		canonical, getErr := r.Get(ctx, job.ID)
 		return canonical, true, getErr
 	}
 	// Another submitter may have won the unique-key race.
 	if err := r.db.QueryRowContext(ctx, `SELECT id FROM render_jobs WHERE idempotency_key = $1`, job.IdempotencyKey).Scan(&existingID); err != nil {
 		return nil, false, err
 	}
-	canonical, getErr := r.Get(existingID)
+	canonical, getErr := r.Get(ctx, existingID)
 	return canonical, false, getErr
 }
 
 // Claim atomically claims the longest-waiting pending job for a worker,
 // holding it under a lease. It returns nil when no job is pending.
-func (r *Repository) Claim(workerID string) (*model.Job, time.Duration, error) {
-	return r.ClaimState(workerID, "")
+func (r *Repository) Claim(ctx context.Context, workerID string) (*model.Job, time.Duration, error) {
+	return r.ClaimState(ctx, workerID, "")
 }
 
-func (r *Repository) ClaimState(workerID string, state model.State) (*model.Job, time.Duration, error) {
-	ctx, cancel := r.opContext()
+func (r *Repository) ClaimState(ctx context.Context, workerID string, state model.State) (*model.Job, time.Duration, error) {
+	ctx, cancel := r.opContext(ctx)
 	defer cancel()
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -391,8 +403,8 @@ func (r *Repository) ClaimState(workerID string, state model.State) (*model.Job,
 }
 
 // Get returns the current state of a job, including its artifact when done.
-func (r *Repository) Get(id string) (*model.Job, error) {
-	ctx, cancel := r.opContext()
+func (r *Repository) Get(ctx context.Context, id string) (*model.Job, error) {
+	ctx, cancel := r.opContext(ctx)
 	defer cancel()
 
 	var (

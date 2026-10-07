@@ -1,6 +1,7 @@
 package postgres
 
 import (
+	"context"
 	"database/sql"
 	"testing"
 	"time"
@@ -27,18 +28,18 @@ func assertAttemptStatus(t *testing.T, db *sql.DB, jobID, want string) {
 
 func TestCancelRunningJobFreezesAttemptsAcrossLeaseCycle(t *testing.T) {
 	r, db := setupRepo(t, 10*time.Millisecond, 3)
-	if err := r.Submit(model.Job{ID: "pg-cancel-running", RenderPlan: []byte(`{"o":1}`)}); err != nil {
+	if err := r.Submit(context.Background(), model.Job{ID: "pg-cancel-running", RenderPlan: []byte(`{"o":1}`)}); err != nil {
 		t.Fatal(err)
 	}
-	claimed, _, err := r.Claim("worker-1")
+	claimed, _, err := r.Claim(context.Background(), "worker-1")
 	if err != nil || claimed == nil {
 		t.Fatalf("claim = %v/%v, want job", claimed, err)
 	}
-	if err := r.Cancel("pg-cancel-running"); err != nil {
+	if err := r.Cancel(context.Background(), "pg-cancel-running"); err != nil {
 		t.Fatalf("cancel: %v", err)
 	}
 
-	job, err := r.Get("pg-cancel-running")
+	job, err := r.Get(context.Background(), "pg-cancel-running")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -49,10 +50,10 @@ func TestCancelRunningJobFreezesAttemptsAcrossLeaseCycle(t *testing.T) {
 
 	// The in-flight worker's reports must be rejected: the job is no longer
 	// running, so neither complete nor fail can move/requeue it.
-	if err := r.Complete("pg-cancel-running", "worker-1", cancelArtifact()); err == nil {
+	if err := r.Complete(context.Background(), "pg-cancel-running", "worker-1", cancelArtifact()); err == nil {
 		t.Fatal("complete on cancelled job must be rejected")
 	}
-	if err := r.Fail("pg-cancel-running", "worker-1", "late failure"); err == nil {
+	if err := r.Fail(context.Background(), "pg-cancel-running", "worker-1", "late failure"); err == nil {
 		t.Fatal("fail on cancelled job must be rejected")
 	}
 
@@ -60,13 +61,13 @@ func TestCancelRunningJobFreezesAttemptsAcrossLeaseCycle(t *testing.T) {
 	// are attempted repeatedly. The job must never come back.
 	for cycle := 0; cycle < 3; cycle++ {
 		time.Sleep(15 * time.Millisecond)
-		if n, err := r.RequeueExpired(time.Now()); err != nil || n != 0 {
+		if n, err := r.RequeueExpired(context.Background(), time.Now()); err != nil || n != 0 {
 			t.Fatalf("cycle %d: RequeueExpired = %d/%v, want 0", cycle, n, err)
 		}
-		if again, _, err := r.Claim("worker-2"); err != nil || again != nil {
+		if again, _, err := r.Claim(context.Background(), "worker-2"); err != nil || again != nil {
 			t.Fatalf("cycle %d: claim = %v/%v, want nil", cycle, again, err)
 		}
-		job, _ := r.Get("pg-cancel-running")
+		job, _ := r.Get(context.Background(), "pg-cancel-running")
 		if job.State != model.StateCancelled || job.Attempts != 1 {
 			t.Fatalf("cycle %d: state=%q attempts=%d, want cancelled/1", cycle, job.State, job.Attempts)
 		}
@@ -109,16 +110,16 @@ func TestCancelRunningJobFreezesAttemptsAcrossLeaseCycle(t *testing.T) {
 
 func TestCancelPendingJobIsNeverClaimable(t *testing.T) {
 	r, db := setupRepo(t, time.Second, 3)
-	if err := r.Submit(model.Job{ID: "pg-cancel-pending", RenderPlan: []byte(`{"o":1}`)}); err != nil {
+	if err := r.Submit(context.Background(), model.Job{ID: "pg-cancel-pending", RenderPlan: []byte(`{"o":1}`)}); err != nil {
 		t.Fatal(err)
 	}
-	if err := r.Cancel("pg-cancel-pending"); err != nil {
+	if err := r.Cancel(context.Background(), "pg-cancel-pending"); err != nil {
 		t.Fatal(err)
 	}
-	if job, err := r.Get("pg-cancel-pending"); err != nil || job.State != model.StateCancelled || job.Attempts != 0 {
+	if job, err := r.Get(context.Background(), "pg-cancel-pending"); err != nil || job.State != model.StateCancelled || job.Attempts != 0 {
 		t.Fatalf("after cancel: %v state=%v attempts=%d, want cancelled/0", err, job.State, job.Attempts)
 	}
-	if claimed, _, err := r.Claim("worker-1"); err != nil || claimed != nil {
+	if claimed, _, err := r.Claim(context.Background(), "worker-1"); err != nil || claimed != nil {
 		t.Fatalf("claim = %v/%v, want nil", claimed, err)
 	}
 	// A job cancelled before any claim has zero attempt rows: Chronon was
@@ -134,26 +135,26 @@ func TestCancelPendingJobIsNeverClaimable(t *testing.T) {
 
 func TestCancelIdempotentAndTerminalConflict(t *testing.T) {
 	r, _ := setupRepo(t, time.Second, 3)
-	if err := r.Submit(model.Job{ID: "pg-cancel-2x", RenderPlan: []byte(`{"o":1}`)}); err != nil {
+	if err := r.Submit(context.Background(), model.Job{ID: "pg-cancel-2x", RenderPlan: []byte(`{"o":1}`)}); err != nil {
 		t.Fatal(err)
 	}
-	if err := r.Cancel("pg-cancel-2x"); err != nil {
+	if err := r.Cancel(context.Background(), "pg-cancel-2x"); err != nil {
 		t.Fatal(err)
 	}
-	if err := r.Cancel("pg-cancel-2x"); err != nil {
+	if err := r.Cancel(context.Background(), "pg-cancel-2x"); err != nil {
 		t.Fatalf("second cancel must be a no-op: %v", err)
 	}
 
-	if err := r.Submit(model.Job{ID: "pg-completed", RenderPlan: []byte(`{"o":1}`)}); err != nil {
+	if err := r.Submit(context.Background(), model.Job{ID: "pg-completed", RenderPlan: []byte(`{"o":1}`)}); err != nil {
 		t.Fatal(err)
 	}
-	if _, _, err := r.Claim("worker-1"); err != nil {
+	if _, _, err := r.Claim(context.Background(), "worker-1"); err != nil {
 		t.Fatal(err)
 	}
-	if err := r.Complete("pg-completed", "worker-1", cancelArtifact()); err != nil {
+	if err := r.Complete(context.Background(), "pg-completed", "worker-1", cancelArtifact()); err != nil {
 		t.Fatal(err)
 	}
-	if err := r.Cancel("pg-completed"); err == nil {
+	if err := r.Cancel(context.Background(), "pg-completed"); err == nil {
 		t.Fatal("cancel completed must fail")
 	}
 }

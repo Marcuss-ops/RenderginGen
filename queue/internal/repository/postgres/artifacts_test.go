@@ -27,10 +27,10 @@ func TestMetricUnitUsesMetricSemantics(t *testing.T) {
 
 func TestArtifactPersistedOnComplete(t *testing.T) {
 	r, db := setupRepo(t, 30*time.Second, 3)
-	if err := r.Submit(model.Job{ID: "job-1"}); err != nil {
+	if err := r.Submit(context.Background(), model.Job{ID: "job-1"}); err != nil {
 		t.Fatal(err)
 	}
-	if _, _, err := r.Claim("w1"); err != nil {
+	if _, _, err := r.Claim(context.Background(), "w1"); err != nil {
 		t.Fatal(err)
 	}
 
@@ -56,7 +56,7 @@ func TestArtifactPersistedOnComplete(t *testing.T) {
 		FirstFrameKeyframe: true,
 		Provenance:         &queueclient.ArtifactProvenance{SchemaVersion: "renderinggen.artifact-provenance.v1", Protocol: "renderinggen.overlay-import.v1", Producer: "pipelinegen-map", ImportJobID: "job-1", SourceSHA256: "abc123", SourceSizeBytes: 12345, IdentityVerified: true, StructureVerified: true, FullDecodeVerified: true},
 	}
-	if err := r.Complete("job-1", "w1", art); err != nil {
+	if err := r.Complete(context.Background(), "job-1", "w1", art); err != nil {
 		t.Fatal(err)
 	}
 
@@ -103,19 +103,19 @@ func TestArtifactPersistedOnComplete(t *testing.T) {
 
 func TestGetReturnsJobWithArtifact(t *testing.T) {
 	r, _ := setupRepo(t, 30*time.Second, 3)
-	if err := r.Submit(model.Job{ID: "job-1"}); err != nil {
+	if err := r.Submit(context.Background(), model.Job{ID: "job-1"}); err != nil {
 		t.Fatal(err)
 	}
-	if _, _, err := r.Claim("w1"); err != nil {
+	if _, _, err := r.Claim(context.Background(), "w1"); err != nil {
 		t.Fatal(err)
 	}
-	if err := r.Complete("job-1", "w1", model.Artifact{
+	if err := r.Complete(context.Background(), "job-1", "w1", model.Artifact{
 		ID: "art-1", StorageKey: "overlay/job-1/out.mp4", ArtifactHash: "abc", ProfileID: queueclient.CertifiedProfileVeloxH2641080p30V1, CopyEligible: true,
 	}); err != nil {
 		t.Fatal(err)
 	}
 
-	job, err := r.Get("job-1")
+	job, err := r.Get(context.Background(), "job-1")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -129,21 +129,21 @@ func TestGetReturnsJobWithArtifact(t *testing.T) {
 
 func TestGetMissingJobReturnsNotFound(t *testing.T) {
 	r, _ := setupRepo(t, 30*time.Second, 3)
-	if _, err := r.Get("missing"); !errors.Is(err, repository.ErrNotFound) {
+	if _, err := r.Get(context.Background(), "missing"); !errors.Is(err, repository.ErrNotFound) {
 		t.Fatalf("want ErrNotFound, got %v", err)
 	}
 }
 
 func TestCompleteWithoutArtifactSkipsPersistence(t *testing.T) {
 	r, db := setupRepo(t, 30*time.Second, 3)
-	if err := r.Submit(model.Job{ID: "job-1"}); err != nil {
+	if err := r.Submit(context.Background(), model.Job{ID: "job-1"}); err != nil {
 		t.Fatal(err)
 	}
-	if _, _, err := r.Claim("w1"); err != nil {
+	if _, _, err := r.Claim(context.Background(), "w1"); err != nil {
 		t.Fatal(err)
 	}
 	// Empty artifact: the job completes but no artifact row is written.
-	if err := r.Complete("job-1", "w1", model.Artifact{}); err != nil {
+	if err := r.Complete(context.Background(), "job-1", "w1", model.Artifact{}); err != nil {
 		t.Fatal(err)
 	}
 

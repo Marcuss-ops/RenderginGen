@@ -20,7 +20,7 @@ func TestServiceConcurrentClaimExclusive(t *testing.T) {
 
 	const jobs = 100
 	for i := 0; i < jobs; i++ {
-		if err := svc.Submit(model.Job{ID: fmt.Sprintf("job-%03d", i)}); err != nil {
+		if err := svc.Submit(context.Background(), model.Job{ID: fmt.Sprintf("job-%03d", i)}); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -33,7 +33,7 @@ func TestServiceConcurrentClaimExclusive(t *testing.T) {
 		go func(worker string) {
 			defer wg.Done()
 			for {
-				job, lease, err := svc.Claim(worker)
+				job, lease, err := svc.Claim(context.Background(), worker)
 				if err != nil {
 					t.Errorf("claim(%s): %v", worker, err)
 					return
@@ -59,7 +59,7 @@ func TestServiceConcurrentClaimExclusive(t *testing.T) {
 	if len(claimed) != jobs {
 		t.Fatalf("want %d distinct claims, got %d", jobs, len(claimed))
 	}
-	if s := svc.Stats(); s.Running != jobs || s.Pending != 0 {
+	if s := svc.Stats(context.Background()); s.Running != jobs || s.Pending != 0 {
 		t.Fatalf("want %d running / 0 pending, got %+v", jobs, s)
 	}
 }
@@ -69,10 +69,10 @@ func TestServiceConcurrentClaimExclusive(t *testing.T) {
 // fresh (the job must not be requeued).
 func TestServiceConcurrentRenewSingleOwner(t *testing.T) {
 	svc := New(memory.New(time.Second, 3))
-	if err := svc.Submit(model.Job{ID: "job-1"}); err != nil {
+	if err := svc.Submit(context.Background(), model.Job{ID: "job-1"}); err != nil {
 		t.Fatal(err)
 	}
-	if _, _, err := svc.Claim("w1"); err != nil {
+	if _, _, err := svc.Claim(context.Background(), "w1"); err != nil {
 		t.Fatal(err)
 	}
 
@@ -85,7 +85,7 @@ func TestServiceConcurrentRenewSingleOwner(t *testing.T) {
 		go func() {
 			defer wg.Done()
 			for i := 0; i < renews; i++ {
-				if err := svc.Renew("job-1", "w1"); err != nil {
+				if err := svc.Renew(context.Background(), "job-1", "w1"); err != nil {
 					errs <- err
 					return
 				}
@@ -98,7 +98,7 @@ func TestServiceConcurrentRenewSingleOwner(t *testing.T) {
 		t.Fatalf("renew: %v", err)
 	}
 
-	if s := svc.Stats(); s.Running != 1 {
+	if s := svc.Stats(context.Background()); s.Running != 1 {
 		t.Fatalf("job should still be running, got %+v", s)
 	}
 	if n, err := svc.RequeueExpired(context.Background(), time.Now()); err != nil || n != 0 {
@@ -116,13 +116,13 @@ func TestServiceConcurrentRequeueThenClaim(t *testing.T) {
 	svc := New(memory.New(lease, 3))
 
 	for i := 0; i < jobs; i++ {
-		if err := svc.Submit(model.Job{ID: fmt.Sprintf("job-%03d", i)}); err != nil {
+		if err := svc.Submit(context.Background(), model.Job{ID: fmt.Sprintf("job-%03d", i)}); err != nil {
 			t.Fatal(err)
 		}
 	}
 	// One worker claims everything so all jobs are running and leased.
 	for i := 0; i < jobs; i++ {
-		job, _, err := svc.Claim("w0")
+		job, _, err := svc.Claim(context.Background(), "w0")
 		if err != nil || job == nil {
 			t.Fatalf("initial claim %d: job=%v err=%v", i, job, err)
 		}
@@ -144,7 +144,7 @@ func TestServiceConcurrentRequeueThenClaim(t *testing.T) {
 		go func(worker string) {
 			defer wg.Done()
 			for {
-				job, _, err := svc.Claim(worker)
+				job, _, err := svc.Claim(context.Background(), worker)
 				if err != nil {
 					t.Errorf("claim(%s): %v", worker, err)
 					return
@@ -171,7 +171,7 @@ func TestServiceConcurrentRequeueThenClaim(t *testing.T) {
 			t.Errorf("job %s: want attempts=2, got %d", id, attempts)
 		}
 	}
-	if s := svc.Stats(); s.Running != jobs || s.Pending != 0 {
+	if s := svc.Stats(context.Background()); s.Running != jobs || s.Pending != 0 {
 		t.Fatalf("all jobs should be running again, got %+v", s)
 	}
 }

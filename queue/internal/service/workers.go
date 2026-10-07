@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"time"
@@ -10,27 +11,27 @@ import (
 
 // RegisterWorker upserts a worker's identity and records its initial
 // heartbeat, then refreshes the worker-health metrics.
-func (s *Service) RegisterWorker(worker model.Worker) error {
+func (s *Service) RegisterWorker(ctx context.Context, worker model.Worker) error {
 	if s.workerRepo == nil {
 		return fmt.Errorf("worker repository is not configured")
 	}
-	if err := s.workerRepo.Register(worker); err != nil {
+	if err := s.workerRepo.Register(ctx, worker); err != nil {
 		return err
 	}
-	s.observeWorkerHealth()
+	s.observeWorkerHealth(ctx)
 	return nil
 }
 
 // WorkerHeartbeat records a heartbeat for a registered worker, then refreshes
 // the worker-health metrics.
-func (s *Service) WorkerHeartbeat(workerID string) error {
+func (s *Service) WorkerHeartbeat(ctx context.Context, workerID string) error {
 	if s.workerRepo == nil {
 		return fmt.Errorf("worker repository is not configured")
 	}
-	if err := s.workerRepo.Heartbeat(workerID); err != nil {
+	if err := s.workerRepo.Heartbeat(ctx, workerID); err != nil {
 		return err
 	}
-	s.observeWorkerHealth()
+	s.observeWorkerHealth(ctx)
 	return nil
 }
 
@@ -43,11 +44,11 @@ func (s *Service) WorkerHeartbeat(workerID string) error {
 // frozen worker (all threads stopped, heartbeat hours old) was listed as
 // `status: ready` — the exact reading a benchmark or a certification preflight
 // would trust.
-func (s *Service) ListWorkers() ([]model.Worker, error) {
+func (s *Service) ListWorkers(ctx context.Context) ([]model.Worker, error) {
 	if s.workerRepo == nil {
 		return nil, fmt.Errorf("worker repository is not configured")
 	}
-	workers, err := s.workerRepo.List()
+	workers, err := s.workerRepo.List(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -61,11 +62,11 @@ func (s *Service) ListWorkers() ([]model.Worker, error) {
 
 // WorkerHealth returns the aggregate worker-health snapshot, derived from the
 // SAME rows and the same boundaries as ListWorkers.
-func (s *Service) WorkerHealth() (model.WorkerHealth, error) {
+func (s *Service) WorkerHealth(ctx context.Context) (model.WorkerHealth, error) {
 	if s.workerRepo == nil {
 		return model.WorkerHealth{}, fmt.Errorf("worker repository is not configured")
 	}
-	workers, err := s.workerRepo.List()
+	workers, err := s.workerRepo.List(ctx)
 	if err != nil {
 		return model.WorkerHealth{}, err
 	}
@@ -78,11 +79,11 @@ func (s *Service) WorkerHealth() (model.WorkerHealth, error) {
 // live worker, not by a registered row. Kept on the service (rather than left to
 // each caller to compute from a /workers body) so the answer uses the same
 // boundaries as the listing it came from.
-func (s *Service) ReadyWorkers() ([]string, error) {
+func (s *Service) ReadyWorkers(ctx context.Context) ([]string, error) {
 	if s.workerRepo == nil {
 		return nil, fmt.Errorf("worker repository is not configured")
 	}
-	workers, err := s.workerRepo.List()
+	workers, err := s.workerRepo.List(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -92,8 +93,8 @@ func (s *Service) ReadyWorkers() ([]string, error) {
 // RefreshWorkerHealth recomputes the worker-health metrics from the current
 // registry snapshot. It is called on register/heartbeat and periodically by
 // the server so the ready/offline gauges decay as heartbeats age.
-func (s *Service) RefreshWorkerHealth() {
-	s.observeWorkerHealth()
+func (s *Service) RefreshWorkerHealth(ctx context.Context) {
+	s.observeWorkerHealth(ctx)
 }
 
 // livenessWindow resolves the heartbeat-age boundaries for the configured
@@ -122,11 +123,11 @@ func (s *Service) SetLivenessClock(clock func() time.Time) {
 	s.clock = clock
 }
 
-func (s *Service) observeWorkerHealth() {
+func (s *Service) observeWorkerHealth(ctx context.Context) {
 	if s.workerRepo == nil || s.metrics == nil {
 		return
 	}
-	workers, err := s.workerRepo.List()
+	workers, err := s.workerRepo.List(ctx)
 	if err != nil {
 		log.Printf("worker health query failed: %v", err)
 		// Do not freeze gauges at stale values: on query failure the last

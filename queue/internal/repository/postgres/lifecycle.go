@@ -5,6 +5,7 @@
 package postgres
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -16,8 +17,8 @@ import (
 
 // Fail marks a running job failed. Jobs that have not exhausted their attempts
 // are requeued; otherwise they are permanently failed.
-func (r *Repository) Fail(id, workerID, reason string) error {
-	ctx, cancel := r.opContext()
+func (r *Repository) Fail(ctx context.Context, id, workerID, reason string) error {
+	ctx, cancel := r.opContext(ctx)
 	defer cancel()
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -77,8 +78,8 @@ func (r *Repository) Fail(id, workerID, reason string) error {
 }
 
 // Renew extends the lease for a running job owned by workerID.
-func (r *Repository) Renew(id, workerID string) error {
-	ctx, cancel := r.opContext()
+func (r *Repository) Renew(ctx context.Context, id, workerID string) error {
+	ctx, cancel := r.opContext(ctx)
 	defer cancel()
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -119,8 +120,8 @@ func (r *Repository) Renew(id, workerID string) error {
 }
 
 // Retry resets a failed job back to pending state for re-execution.
-func (r *Repository) Retry(id string) error {
-	ctx, cancel := r.opContext()
+func (r *Repository) Retry(ctx context.Context, id string) error {
+	ctx, cancel := r.opContext(ctx)
 	defer cancel()
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -166,8 +167,8 @@ func (r *Repository) Retry(id string) error {
 // 'cancelled' in render_attempts so the history explains why the attempt
 // ended without a re-render. Attempts are deliberately NOT incremented: every
 // claim that would have invoked Chronon already happened.
-func (r *Repository) Cancel(id string) error {
-	ctx, cancel := r.opContext()
+func (r *Repository) Cancel(ctx context.Context, id string) error {
+	ctx, cancel := r.opContext(ctx)
 	defer cancel()
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -223,7 +224,7 @@ func (r *Repository) Cancel(id string) error {
 // The conditional UPDATE (state = StateRunning AND current_worker_id=workerID)
 // makes a stale worker's report a no-op instead of a corruption vector: the
 // report either lands on the current owner's row or affects zero rows.
-func (r *Repository) SetProgress(id, workerID string, p model.Progress) error {
+func (r *Repository) SetProgress(ctx context.Context, id, workerID string, p model.Progress) error {
 	if id == "" || workerID == "" {
 		return fmt.Errorf("job id and worker id are required")
 	}
@@ -233,7 +234,7 @@ func (r *Repository) SetProgress(id, workerID string, p model.Progress) error {
 	if p.TotalFrames > 0 && p.FramesDone > p.TotalFrames {
 		return fmt.Errorf("job %s: frames_done %d exceeds frames_total %d", id, p.FramesDone, p.TotalFrames)
 	}
-	ctx, cancel := r.opContext()
+	ctx, cancel := r.opContext(ctx)
 	defer cancel()
 	res, err := r.db.ExecContext(ctx, `
 		UPDATE render_jobs

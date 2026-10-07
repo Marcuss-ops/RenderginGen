@@ -20,13 +20,13 @@ type flakyRepo struct {
 	calls    int
 }
 
-func (f *flakyRepo) RequeueExpired(now time.Time) (int, error) {
+func (f *flakyRepo) RequeueExpired(ctx context.Context, now time.Time) (int, error) {
 	f.calls++
 	if f.failures > 0 {
 		f.failures--
 		return 0, errors.New("transient failure")
 	}
-	return f.Repository.RequeueExpired(now)
+	return f.Repository.RequeueExpired(ctx, now)
 }
 
 func TestBackoffDelayDeterministic(t *testing.T) {
@@ -64,10 +64,10 @@ func TestRequeueExpiredRetriesThenSucceeds(t *testing.T) {
 	repo := &flakyRepo{Repository: memory.New(5*time.Millisecond, 3), failures: 2}
 
 	// Lease one job so a successful requeue reports n=1.
-	if err := repo.Submit(model.Job{ID: "job-1"}); err != nil {
+	if err := repo.Submit(context.Background(), model.Job{ID: "job-1"}); err != nil {
 		t.Fatal(err)
 	}
-	if _, _, err := repo.Claim("w1"); err != nil {
+	if _, _, err := repo.Claim(context.Background(), "w1"); err != nil {
 		t.Fatal(err)
 	}
 	time.Sleep(10 * time.Millisecond) // let the lease expire
@@ -106,10 +106,10 @@ func TestRequeueExpiredGivesUpAfterMaxAttempts(t *testing.T) {
 func TestRequeueExpiredMetricCountedOnce(t *testing.T) {
 	repo := &flakyRepo{Repository: memory.New(5*time.Millisecond, 3), failures: 2}
 
-	if err := repo.Submit(model.Job{ID: "job-1"}); err != nil {
+	if err := repo.Submit(context.Background(), model.Job{ID: "job-1"}); err != nil {
 		t.Fatal(err)
 	}
-	if _, _, err := repo.Claim("w1"); err != nil {
+	if _, _, err := repo.Claim(context.Background(), "w1"); err != nil {
 		t.Fatal(err)
 	}
 	time.Sleep(10 * time.Millisecond)

@@ -55,7 +55,7 @@ func (s *Service) WaitState(ctx context.Context, id string, maxWait time.Duratio
 	if maxWait <= 0 {
 		maxWait = 25 * time.Second
 	}
-	job, err := s.repo.Get(id)
+	job, err := s.repo.Get(ctx, id)
 	if err != nil {
 		return nil, err
 	}
@@ -86,7 +86,7 @@ func (s *Service) WaitState(ctx context.Context, id string, maxWait time.Duratio
 				pollDelay = waitPollCeiling
 			}
 		}
-		job, err = s.repo.Get(id)
+		job, err = s.repo.Get(ctx, id)
 		if err != nil {
 			return nil, err
 		}

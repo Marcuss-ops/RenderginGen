@@ -13,6 +13,7 @@
 package postgres
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -23,11 +24,11 @@ import (
 // ByParent returns every job whose parent_job_id is parentJobID, ordered by
 // queued_at (then id, so equal timestamps stay deterministic). An unknown
 // parent yields an empty slice and a nil error.
-func (r *Repository) ByParent(parentJobID string) ([]*model.Job, error) {
+func (r *Repository) ByParent(ctx context.Context, parentJobID string) ([]*model.Job, error) {
 	if parentJobID == "" {
 		return nil, fmt.Errorf("parent job id is required")
 	}
-	ctx, cancel := r.opContext()
+	ctx, cancel := r.opContext(ctx)
 	defer cancel()
 	rows, err := r.db.QueryContext(ctx, `
 		SELECT j.id, j.state, j.chunk_index, j.frame_range, j.attempt_count,

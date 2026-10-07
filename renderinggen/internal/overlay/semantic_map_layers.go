@@ -22,8 +22,16 @@ func compileMapLayers(ri resolvedItem, src *semanticPlan, registry *assetRegistr
 	window := geo.CenteredOn(m.Center.Latitude, m.Center.Longitude, m.Zoom, m.Width, m.Height)
 	layers := make([]Layer, 0, 1+2*len(m.Pins)+1)
 	var mapAnimation *LayerAnimation
+	if m.MotionID != "" {
+		animation, err := imageMotionAnimation(m.MotionID, nil, duration, 0, ri.Item.ID, "map_view")
+		if err != nil {
+			return nil, fmt.Errorf("overlay: map item %q motion %q: %w", ri.Item.ID, m.MotionID, err)
+		}
+		mapAnimation = animation
+	}
+	var basemap Layer
 	if m.CameraMove == nil {
-		basemap := Layer{
+		basemap = Layer{
 			ID: mapBasemapLayerID(ri.Item.ID), Type: "image",
 			Asset:    registry.Path(ri.Item.Assets[0].ID),
 			BoxWidth: m.Width, BoxHeight: m.Height, MapRasterWidth: m.Width, MapRasterHeight: m.Height,
@@ -31,18 +39,6 @@ func compileMapLayers(ri resolvedItem, src *semanticPlan, registry *assetRegistr
 			StartFrame: ri.Start, DurationFrames: duration,
 			Scale: []float64{float64(src.Width) / float64(m.Width), float64(src.Height) / float64(m.Height)},
 		}
-		// The certified centered motion (validateMapContract admits only
-		// opacity/scale/blur tracks) still applies to the static plate: without
-		// this routing the declared motion silently never reached the basemap.
-		if m.MotionID != "" {
-			animation, err := imageMotionAnimation(m.MotionID, nil, duration, 0, ri.Item.ID, "map_view")
-			if err != nil {
-				return nil, fmt.Errorf("overlay: map item %q motion %q: %w", ri.Item.ID, m.MotionID, err)
-			}
-			mapAnimation = animation
-			applyMotionRouting(&basemap, animation)
-		}
-		layers = append(layers, basemap)
 	} else {
 		// Keep one certified base plate on the continuous Web-Mercator plane
 		// for the whole move. Crossfading independent raster planes produces
@@ -54,7 +50,7 @@ func compileMapLayers(ri resolvedItem, src *semanticPlan, registry *assetRegistr
 		lod := m.LODs[0]
 		centerX, centerY := geo.LatLonToGlobalPixel(lod.Center.Latitude, lod.Center.Longitude, int(move.StartZoom))
 		scale := math.Pow(2, move.StartZoom-float64(lod.Zoom))
-		basemap := Layer{
+		basemap = Layer{
 			ID: mapBasemapLayerID(ri.Item.ID), Type: "image",
 			Asset:    registry.Path(lod.AssetID),
 			BoxWidth: lod.Width, BoxHeight: lod.Height,
@@ -66,8 +62,13 @@ func compileMapLayers(ri resolvedItem, src *semanticPlan, registry *assetRegistr
 			Scale: []float64{scale, scale}, Enable3D: true,
 			StartFrame: ri.Start, DurationFrames: duration,
 		}
-		layers = append(layers, basemap)
 	}
+	// Both static plates and camera-moved plates receive their declared
+	// map_view treatment. Before this was shared, the camera_move branch skipped
+	// map_image_v1 entirely, leaving every newly authored map motion inert on
+	// the runtime path that generated maps use most often.
+	applyMotionRouting(&basemap, mapAnimation)
+	layers = append(layers, basemap)
 	if len(m.Routes) > 0 {
 		routeLayers, err := compileMapRoutes(ri.Item.ID, m.Routes, m.CameraMove.From, int(m.CameraMove.StartZoom),
 			src.Width, src.Height, ri.Start, duration)
@@ -77,7 +78,7 @@ func compileMapLayers(ri resolvedItem, src *semanticPlan, registry *assetRegistr
 		layers = append(layers, routeLayers...)
 	}
 	font := OfficialFontPathForLanguage(src.Language)
-	labelPlacements, err := mapLabelPlacements(m.Pins, window, src.Width, src.Height)
+	labelPlacements, err := resolveMapLabelPlacements(m.Pins, window, src.Width, src.Height)
 	if err != nil {
 		return nil, fmt.Errorf("overlay: map item %q label layout: %w", ri.Item.ID, err)
 	}
@@ -133,14 +134,15 @@ func mapPinLabelLayer(ri resolvedItem, src *semanticPlan, pin SemanticMapPin, fo
 		}
 	}
 	width, height := mapPinLabelDimensions(pin, src.Width, src.Height)
-	boxX, boxY := mapPinLabelCandidates(pin, x, y, width, height)[0][0], mapPinLabelCandidates(pin, x, y, width, height)[0][1]
+	candidates := mapPinLabelCandidates(pin, x, y, width, height)
+	boxX, boxY := candidates[0][0], candidates[0][1]
 	if len(pin.LabelOffsetPX) != 2 {
 		boxX = x - width/2
 		boxY = y + pin.RadiusPX + mapPinLabelGapPX
 	}
 	boxX = clampMapBox(boxX, float64(src.Width)-width)
 	boxY = clampMapBox(boxY, float64(src.Height)-height)
-	labelStyle := mapTextStyle(font, fontSize, minFontSize, fill)
+	labelStyle := mapTextStyle(textRoleMapLabel, font, fontSize, minFontSize, fill)
 	labelStyle.MaxFontSize = maxFontSize
 	if pin.LabelStyle != nil {
 		applyMapTextEffects(labelStyle, pin.LabelStyle)
@@ -177,13 +179,18 @@ func mapAttributionLayer(ri resolvedItem, src *semanticPlan, font string, durati
 	return Layer{ID: mapAttributionLayerID(ri.Item.ID), Type: "text", Text: ri.Item.Map.Attribution,
 		Size: []float64{width, height}, Position: canvasBoxPosition("text", boxX, boxY, width, height, src.Width, src.Height),
 		StartFrame: ri.Start, DurationFrames: duration,
-		Style: mapTextStyle(font, mapAttributionFontPX*scale, mapAttributionMinFont*scale, "#FFFFFF")}
+		Style: mapTextStyle(textRoleMapAttribution, font, mapAttributionFontPX*scale, mapAttributionMinFont*scale, "#FFFFFF")}
 }
 
-func mapTextStyle(font string, size, minSize float64, fill string) *LayerStyle {
-	return &LayerStyle{Font: font, FontSize: size, MinFontSize: minSize, MaxFontSize: size,
-		FitMode: "shrink_only", Fill: fill,
-		Shadow: &LayerShadow{Color: mapTextShadowColor, Opacity: mapTextShadowOpacity, Blur: mapTextShadowBlur, Offset: []float64{0, 2}}}
+// mapTextStyle asks the shared text system for a map plate's base style. It is a
+// thin call rather than a second style builder on purpose: the map decides
+// WHERE a plate goes, how big its box is and how plates avoid each other, while
+// the text system decides what a map plate looks like (text_role.go). The
+// previous shape built the shadow and fit policy inline, which is how a
+// subsystem that is supposed to own geometry quietly becomes a second text
+// engine.
+func mapTextStyle(role textRole, font string, size, minSize float64, fill string) *LayerStyle {
+	return mapTextPlateStyle(role, font, size, minSize, fill)
 }
 
 // mapPinMotion applies the basemap's image recipe to each projected pin and

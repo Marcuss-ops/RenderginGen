@@ -1,12 +1,8 @@
-// Package motion owns RenderingGen's renderer-neutral motion plugins.
-// Motion IDs never cross into Chronon; text plugins lower to generic
-// TextAnimator definitions (selector + property tracks).
 package motion
 
 import (
 	"encoding/json"
 	"fmt"
-	"math"
 )
 
 type Params map[string]any
@@ -66,6 +62,10 @@ type DurationBounds struct {
 // layer. Its components lower to ordinary Chronon image/shape/color layers;
 // masks, path operators and effect parameter tracks remain native render-plan
 // primitives rather than a second motion renderer.
+// ImageMotionRecipe describes renderer-neutral additions around one image
+// layer. Its components lower to ordinary Chronon image/shape/color layers;
+// masks, path operators and effect parameter tracks remain native render-plan
+// primitives rather than a second motion renderer.
 type ImageMotionRecipe struct {
 	RequireCaption   bool                   `json:"require_caption,omitempty"`
 	Stack            bool                   `json:"stack,omitempty"`
@@ -119,6 +119,10 @@ type ImageMotionStroke struct {
 // {"type":"glow","radius":12,"intensity":0.2,"color":[...]}. The extra
 // properties stay in Params so the recipe can lower catalog-native effects
 // without hard-coding a parallel effect schema here.
+// ImageMotionEffect mirrors Chronon's flattened built-in effect objects, e.g.
+// {"type":"glow","radius":12,"intensity":0.2,"color":[...]}. The extra
+// properties stay in Params so the recipe can lower catalog-native effects
+// without hard-coding a parallel effect schema here.
 type ImageMotionEffect struct {
 	Type   string         `json:"type"`
 	Params map[string]any `json:"-"`
@@ -165,6 +169,8 @@ type ImageMaskDefinition struct {
 
 // ImageMotionFieldDefinition mirrors the renderer's Field2D plan: a generator
 // vocabulary, a seed, and a bounded scalar operator chain applied in order.
+// ImageMotionFieldDefinition mirrors the renderer's Field2D plan: a generator
+// vocabulary, a seed, and a bounded scalar operator chain applied in order.
 type ImageMotionFieldDefinition struct {
 	Generator string                     `json:"generator"`
 	Seed      uint32                     `json:"seed,omitempty"`
@@ -173,6 +179,9 @@ type ImageMotionFieldDefinition struct {
 	Operators []ImageMotionFieldOperator `json:"operators,omitempty"`
 }
 
+// ImageMotionFieldOperator is one bounded scalar operator in a field chain.
+// The Params stay open so the lowering can pass renderer-native operator
+// parameters (edge, softness, amount, …) without a second schema here.
 // ImageMotionFieldOperator is one bounded scalar operator in a field chain.
 // The Params stay open so the lowering can pass renderer-native operator
 // parameters (edge, softness, amount, …) without a second schema here.
@@ -196,6 +205,11 @@ func (o *ImageMotionFieldOperator) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+// MotionDefinition is the declarative motion contract. ID is the ONLY
+// identity: the historical `Name` alias (read as a fallback by the registry,
+// the overlay resolver and the preset catalog) has been removed, because two
+// fields that can each name the same motion let one producer set only the
+// other and silently fail to resolve at render time.
 // MotionDefinition is the declarative motion contract. ID is the ONLY
 // identity: the historical `Name` alias (read as a fallback by the registry,
 // the overlay resolver and the preset catalog) has been removed, because two
@@ -229,6 +243,8 @@ type MotionPlugin interface {
 	Compile(ctx MotionContext, params MotionParams) ([]AnimationTrack, error)
 }
 
+// TextMotionPlugin is optional: layer/image plugins keep using MotionPlugin,
+// while text plugins can lower selectors and per-glyph properties as well.
 // TextMotionPlugin is optional: layer/image plugins keep using MotionPlugin,
 // while text plugins can lower selectors and per-glyph properties as well.
 type TextMotionPlugin interface {
@@ -309,6 +325,18 @@ func ValidateDefinition(d MotionDefinition) error {
 // the neutral 0), and a text 3D motion always carries camera-backed motion.
 // Scoped to the V1 categories so the legacy families keep their historical
 // freedoms while every new motion is born under the stricter gate.
+// validateTrackDefinition protects the renderer boundary, where an empty or
+// malformed track otherwise becomes a late render-plan failure. All authored
+// tracks are layer-relative, so they must begin at frame zero and use strictly
+// increasing frame numbers. A separate pack-level gate checks that the
+// authored value curves are actually varying where a reveal is expected; this
+// structural check keeps malformed timelines from reaching the renderer.
+// validateEditorialV1Family enforces the Editorial Visual Motion V1 contract
+// on the two families the milestone certifies: an editorial image entrance
+// settles exactly (scale/opacity rest at 1, camera-backed transforms rest at
+// the neutral 0), and a text 3D motion always carries camera-backed motion.
+// Scoped to the V1 categories so the legacy families keep their historical
+// freedoms while every new motion is born under the stricter gate.
 func validateEditorialV1Family(d MotionDefinition) error {
 	if d.Category != "editorial_image_v1" && d.Category != "text_3d_v1" {
 		return nil
@@ -351,6 +379,10 @@ func validateEditorialV1Family(d MotionDefinition) error {
 // entrance ends at the authored resting value, so opacity and scale return
 // to 1 and camera-backed transforms return to the neutral 0 — a motion that
 // rests elsewhere leaves every rendered card subtly rotated or faded.
+// validateV1RestingTrack pins the final resting pose of one V1 track: an
+// entrance ends at the authored resting value, so opacity and scale return
+// to 1 and camera-backed transforms return to the neutral 0 — a motion that
+// rests elsewhere leaves every rendered card subtly rotated or faded.
 func validateV1RestingTrack(d MotionDefinition, owner string, t TrackDefinition) error {
 	if len(t.Keyframes) < 2 {
 		return fmt.Errorf("motion %q: %s needs at least two keyframes", d.ID, owner)
@@ -373,6 +405,13 @@ func validateV1RestingTrack(d MotionDefinition, owner string, t TrackDefinition)
 	return nil
 }
 
+// validateVisualAccentsV1Family enforces the Visual Accents V1 contract on the
+// four official families: V1 metadata completeness (duration bounds, render
+// safety, 3D/camera truthfulness) and, for the families that lower through the
+// image recipe, exactly the recipe shapes each family admits — brush traits
+// are stroked paths, web cards are rounded panels, paint reveals are field
+// masks, light leaks are additive glow plates. A wrong shape in a family is a
+// catalog authoring bug and fails closed here, before it can reach a render.
 // validateVisualAccentsV1Family enforces the Visual Accents V1 contract on the
 // four official families: V1 metadata completeness (duration bounds, render
 // safety, 3D/camera truthfulness) and, for the families that lower through the
@@ -464,6 +503,9 @@ func validateVisualAccentsV1Family(d MotionDefinition) error {
 // validateVisualAccentsFieldMask bounds the field recipes the paint family may
 // author: bounded frequency and feather, a bounded operator chain, and a
 // progress track that starts closed and ends open.
+// validateVisualAccentsFieldMask bounds the field recipes the paint family may
+// author: bounded frequency and feather, a bounded operator chain, and a
+// progress track that starts closed and ends open.
 func validateVisualAccentsFieldMask(d MotionDefinition, field ImageMotionFieldDefinition) error {
 	if field.Frequency <= 0 || field.Frequency > 4096 {
 		return fmt.Errorf("motion %q: paint_v1 field frequency must be in (0, 4096]", d.ID)
@@ -472,535 +514,6 @@ func validateVisualAccentsFieldMask(d MotionDefinition, field ImageMotionFieldDe
 		return fmt.Errorf("motion %q: paint_v1 field operator chain exceeds 8", d.ID)
 	}
 	return nil
-}
-
-func validateImagePremiumV1(d MotionDefinition) error {
-	if d.Category != "image_premium_v1" {
-		// Visual Accents V1 families are recipe-driven by design and carry their
-		// own family-shaped gate in validateVisualAccentsV1Family; every other
-		// category must stay recipe-free so a recipe cannot silently ship
-		// outside a certified lowering path.
-		if d.ImageRecipe != nil && !VisualAccentsV1CategoriesContains(d.Category) {
-			return fmt.Errorf("motion %q: image_recipe is only valid in image_premium_v1", d.ID)
-		}
-		return nil
-	}
-	if d.ImageRecipe == nil || d.Unit != "layer" || d.RenderSafe == nil || !*d.RenderSafe ||
-		d.Requires3D == nil || d.RequiresCamera == nil || d.DurationBounds == nil ||
-		d.DurationBounds.MinimumFrames < 1 || d.DurationBounds.MaximumFrames < d.DurationBounds.MinimumFrames ||
-		d.Enter <= 0 || int64(d.Enter) > d.DurationBounds.MaximumFrames || d.Exit < 0 ||
-		int64(d.Exit) >= d.DurationBounds.MinimumFrames ||
-		len(d.Tracks) == 0 || len(d.ImageRecipe.Components) == 0 ||
-		len(d.SupportedContent) == 0 || !containsMotionString(d.SupportedContent, "image") ||
-		len(d.RequiredProperties) == 0 {
-		return fmt.Errorf("motion %q: image_premium_v1 requires a layer recipe, render safety, enter and valid duration bounds", d.ID)
-	}
-	imageTarget := false
-	for _, target := range d.Targets {
-		imageTarget = imageTarget || target == "image"
-	}
-	if !imageTarget {
-		return fmt.Errorf("motion %q: image_premium_v1 must target image", d.ID)
-	}
-	for _, target := range d.Targets {
-		if target != "image" {
-			return fmt.Errorf("motion %q: image_premium_v1 has unsupported target %q", d.ID, target)
-		}
-	}
-	has3D := false
-	trackProperties := make(map[string]bool, len(d.Tracks))
-	for _, track := range d.Tracks {
-		if err := validateImageMotionTrack(d.ID, "image track", track); err != nil {
-			return err
-		}
-		trackProperties[track.Property] = true
-		has3D = has3D || IsCameraBacked3DProperty(track.Property)
-	}
-	required := make(map[string]bool, len(d.RequiredProperties))
-	for _, property := range d.RequiredProperties {
-		if !trackProperties[property] || required[property] {
-			return fmt.Errorf("motion %q: required property %q is missing or duplicated", d.ID, property)
-		}
-		required[property] = true
-	}
-	if len(required) != len(trackProperties) {
-		return fmt.Errorf("motion %q: required_properties must list every image track property", d.ID)
-	}
-	recipe := d.ImageRecipe
-	if recipe.Stack && recipe.ActiveLayerParam == "" {
-		return fmt.Errorf("motion %q: multi-image recipes must name the active_layer_id parameter", d.ID)
-	}
-	if !recipe.Stack && recipe.ActiveLayerParam != "" {
-		return fmt.Errorf("motion %q: active_layer_param requires a multi-image recipe", d.ID)
-	}
-	if recipe.Stack && recipe.ActiveLayerParam != "active_layer_id" {
-		return fmt.Errorf("motion %q: multi-image recipe must use active_layer_id", d.ID)
-	}
-	if recipe.RequireCaption && (len(recipe.CaptionTracks) == 0 || !containsMotionString(d.Targets, "image")) {
-		return fmt.Errorf("motion %q: required image captions need an image target and caption_tracks", d.ID)
-	}
-	var err error
-	has3D, err = validateImageMotionTracks(d.ID, "inactive image track", recipe.InactiveTracks, has3D)
-	if err != nil {
-		return err
-	}
-	has3D, err = validateImageMotionTracks(d.ID, "caption track", recipe.CaptionTracks, has3D)
-	if err != nil {
-		return err
-	}
-	componentIDs := make(map[string]bool, len(recipe.Components))
-	for _, component := range recipe.Components {
-		if component.ID == "" || componentIDs[component.ID] {
-			return fmt.Errorf("motion %q: image recipe component ids must be non-empty and unique", d.ID)
-		}
-		componentIDs[component.ID] = true
-		if component.Type != "shape" && component.Type != "color" {
-			return fmt.Errorf("motion %q: component %q has unsupported type %q", d.ID, component.ID, component.Type)
-		}
-		if component.Type == "shape" && component.Shape != "rounded_rect" && component.Shape != "ellipse" && component.Shape != "path" && component.Shape != "rect" {
-			return fmt.Errorf("motion %q: component %q has unsupported shape %q", d.ID, component.ID, component.Shape)
-		}
-		if component.Placement != "" && component.Placement != "before_image" && component.Placement != "after_image" {
-			return fmt.Errorf("motion %q: component %q placement must be before_image or after_image", d.ID, component.ID)
-		}
-		if len(component.SizeScale) != 0 && len(component.SizeScale) != 2 {
-			return fmt.Errorf("motion %q: component %q size_scale must contain two values", d.ID, component.ID)
-		}
-		for _, value := range component.SizeScale {
-			if !finiteMotionValue(value) || value <= 0 {
-				return fmt.Errorf("motion %q: component %q size_scale values must be finite and positive", d.ID, component.ID)
-			}
-		}
-		if len(component.PositionOffset) != 0 && len(component.PositionOffset) != 2 {
-			return fmt.Errorf("motion %q: component %q position_offset must contain two values", d.ID, component.ID)
-		}
-		for _, value := range component.PositionOffset {
-			if !finiteMotionValue(value) {
-				return fmt.Errorf("motion %q: component %q position_offset values must be finite", d.ID, component.ID)
-			}
-		}
-		if !finiteMotionValue(component.ZOffset) || !finiteMotionValue(component.RadiusScale) || component.RadiusScale < 0 {
-			return fmt.Errorf("motion %q: component %q offsets and radius scale must be finite; radius scale cannot be negative", d.ID, component.ID)
-		}
-		if len(component.Fill) != 0 {
-			if len(component.Fill) != 4 {
-				return fmt.Errorf("motion %q: component %q fill must be RGBA", d.ID, component.ID)
-			}
-			for _, value := range component.Fill {
-				if !finiteMotionValue(value) || value < 0 || value > 1 {
-					return fmt.Errorf("motion %q: component %q fill channels must be in [0, 1]", d.ID, component.ID)
-				}
-			}
-		}
-		if component.Opacity != nil && (!finiteMotionValue(*component.Opacity) || *component.Opacity < 0 || *component.Opacity > 1) {
-			return fmt.Errorf("motion %q: component %q opacity must be in [0, 1]", d.ID, component.ID)
-		}
-		if component.SyncTransform && component.Type != "shape" {
-			return fmt.Errorf("motion %q: only shape components can synchronize an image transform", d.ID)
-		}
-		if component.SyncTransform && len(component.Tracks) > 0 {
-			return fmt.Errorf("motion %q: synchronized frame %q cannot override the source transform with component tracks", d.ID, component.ID)
-		}
-		if component.Type == "color" && component.CanvasSize && component.Shape != "" {
-			return fmt.Errorf("motion %q: canvas color component %q cannot declare a shape", d.ID, component.ID)
-		}
-		if component.Type == "color" && len(component.Fill) != 4 {
-			return fmt.Errorf("motion %q: color component %q requires RGBA fill", d.ID, component.ID)
-		}
-		if component.Type == "shape" && len(component.Fill) == 0 && component.Gradient == nil && component.Stroke == nil {
-			return fmt.Errorf("motion %q: shape component %q needs a fill, gradient or stroke", d.ID, component.ID)
-		}
-		if component.Type == "shape" && component.Shape == "path" && component.Stroke == nil {
-			return fmt.Errorf("motion %q: path component %q requires a stroke", d.ID, component.ID)
-		}
-		if component.CanvasSize && component.Type != "color" {
-			return fmt.Errorf("motion %q: only color components may cover the full canvas", d.ID)
-		}
-		if component.Type == "shape" && component.Shape == "path" && component.PathKind != "rounded_rect" && component.PathKind != "line" {
-			return fmt.Errorf("motion %q: component %q path requires a supported path_kind", d.ID, component.ID)
-		}
-		if component.Type == "shape" && component.Shape != "path" && component.PathKind != "" {
-			return fmt.Errorf("motion %q: component %q path_kind is only valid on path shapes", d.ID, component.ID)
-		}
-		if component.Type == "shape" && component.Shape == "rect" && component.RadiusScale != 0 {
-			return fmt.Errorf("motion %q: rect component %q cannot set a corner radius scale", d.ID, component.ID)
-		}
-		if component.ZOffset != 0 {
-			has3D = true
-		}
-		if component.Stroke != nil {
-			if component.Stroke.Width < 0 || !finiteMotionValue(component.Stroke.Width) || !validMotionHexColor(component.Stroke.Color) {
-				return fmt.Errorf("motion %q: component %q stroke needs a hex color and finite non-negative width", d.ID, component.ID)
-			}
-		}
-		if component.Gradient != nil {
-			if component.Gradient.Type != "linear" {
-				return fmt.Errorf("motion %q: component %q has unsupported gradient type %q (only linear is currently lowered)", d.ID, component.ID, component.Gradient.Type)
-			}
-			if len(component.Gradient.Start) != 2 || len(component.Gradient.End) != 2 {
-				return fmt.Errorf("motion %q: component %q linear gradient requires start and end points", d.ID, component.ID)
-			}
-			for _, point := range [][]float64{component.Gradient.Start, component.Gradient.End} {
-				for _, value := range point {
-					if !finiteMotionValue(value) || math.Abs(value) > 1000000 {
-						return fmt.Errorf("motion %q: component %q gradient geometry is invalid", d.ID, component.ID)
-					}
-				}
-			}
-			if len(component.Gradient.Stops) < 2 {
-				return fmt.Errorf("motion %q: component %q gradient needs at least two color stops", d.ID, component.ID)
-			}
-			previousStop := -1.0
-			for _, stop := range component.Gradient.Stops {
-				if !finiteMotionValue(stop.Position) || stop.Position < 0 || stop.Position > 1 || stop.Position < previousStop || len(stop.Color) != 4 {
-					return fmt.Errorf("motion %q: component %q gradient stop is invalid", d.ID, component.ID)
-				}
-				for _, value := range stop.Color {
-					if !finiteMotionValue(value) || value < 0 || value > 1 {
-						return fmt.Errorf("motion %q: component %q gradient color channels must be in [0, 1]", d.ID, component.ID)
-					}
-				}
-				previousStop = stop.Position
-			}
-		}
-		has3D, err = validateImageMotionTracks(d.ID, "component "+component.ID, component.Tracks, has3D)
-		if err != nil {
-			return err
-		}
-		for _, paramTrack := range component.EffectParamTracks {
-			if paramTrack.EffectID == "" || paramTrack.Param == "" {
-				return fmt.Errorf("motion %q: component %q effect parameter tracks require effect_id and param", d.ID, component.ID)
-			}
-			if err := validateImageMotionTrack(d.ID, "component "+component.ID+" effect parameter", paramTrack.Track); err != nil {
-				return err
-			}
-			if !imageRecipeHasEffect(component, paramTrack.EffectID) {
-				return fmt.Errorf("motion %q: component %q effect parameter track targets undeclared effect %q", d.ID, component.ID, paramTrack.EffectID)
-			}
-			if paramTrack.EffectID != "light.glow" || paramTrack.Param != "intensity" && paramTrack.Param != "radius" {
-				return fmt.Errorf("motion %q: component %q uses unsupported animatable effect parameter %s.%s", d.ID, component.ID, paramTrack.EffectID, paramTrack.Param)
-			}
-			for _, keyframe := range paramTrack.Track.Keyframes {
-				value, ok := motionNumericValue(keyframe.Value)
-				maximum := 4.0
-				if paramTrack.Param == "radius" {
-					maximum = 256
-				}
-				if !ok || value < 0 || value > maximum {
-					return fmt.Errorf("motion %q: component %q %s.%s samples must be in [0, %g]", d.ID, component.ID, paramTrack.EffectID, paramTrack.Param, maximum)
-				}
-			}
-		}
-		if component.Trim != nil {
-			if !finiteMotionValue(component.Trim.Start) || !finiteMotionValue(component.Trim.End) || component.Trim.Start < 0 || component.Trim.Start > component.Trim.End || component.Trim.End > 1 {
-				return fmt.Errorf("motion %q: component %q trim bounds must satisfy 0 <= start <= end <= 1", d.ID, component.ID)
-			}
-			if component.Shape != "path" {
-				return fmt.Errorf("motion %q: component %q trim requires a path shape", d.ID, component.ID)
-			}
-			if err := validateImageMotionTrack(d.ID, "component "+component.ID+" trim", component.Trim.Animation); err != nil {
-				return err
-			}
-			for _, keyframe := range component.Trim.Animation.Keyframes {
-				values, ok := motionNumericVector(keyframe.Value)
-				if !ok || len(values) < 2 || len(values) > 3 || values[0] < 0 || values[0] > 1 || values[1] < values[0] || values[1] > 1 || (len(values) > 2 && math.Abs(values[2]) > 1000000) {
-					return fmt.Errorf("motion %q: component %q trim animation requires bounded [start,end,offset?] values", d.ID, component.ID)
-				}
-			}
-		}
-		for _, effect := range component.Effects {
-			if effect.Type == "" || !imageRecipeEffectSupported(effect.Type) {
-				return fmt.Errorf("motion %q: component %q has unsupported effect type %q", d.ID, component.ID, effect.Type)
-			}
-			if err := validateImageRecipeEffect(d.ID, component.ID, effect); err != nil {
-				return err
-			}
-		}
-		for _, track := range component.EffectParamTracks {
-			has3D = has3D || IsCameraBacked3DProperty(track.Track.Property)
-		}
-	}
-	if recipe.Mask != nil {
-		if recipe.Mask.Kind != "wipe_left" || !finiteMotionValue(recipe.Mask.Feather) || recipe.Mask.Feather < 0 || recipe.Mask.Feather > 1000000 || !containsMotionString(d.Targets, "image") {
-			return fmt.Errorf("motion %q: image mask must be a bounded wipe_left recipe", d.ID)
-		}
-		if err := validateTrackDefinition(d.ID, "image mask progress", recipe.Mask.Progress); err != nil {
-			return err
-		}
-		if recipe.Mask.Progress.Property != "mask_morph" || recipe.Mask.Progress.Easing != "" && !validMotionEasing(recipe.Mask.Progress.Easing) {
-			return fmt.Errorf("motion %q: image mask progress must use mask_morph with a supported easing", d.ID)
-		}
-		for _, keyframe := range recipe.Mask.Progress.Keyframes {
-			value, ok := motionNumericValue(keyframe.Value)
-			if !ok || value < 0 || value > 1 {
-				return fmt.Errorf("motion %q: image mask progress keyframes must be in [0, 1]", d.ID)
-			}
-		}
-	}
-	if *d.Requires3D != has3D {
-		return fmt.Errorf("motion %q: requires_3d=%v does not match its camera-backed recipe tracks (%v)", d.ID, *d.Requires3D, has3D)
-	}
-	if *d.RequiresCamera != has3D {
-		return fmt.Errorf("motion %q: requires_camera=%v does not match its camera-backed recipe tracks (%v)", d.ID, *d.RequiresCamera, has3D)
-	}
-	return nil
-}
-
-// validateImageMotionTracks validates a recipe track collection and accumulates
-// whether any property requires camera-backed 3D routing. Collection order and
-// the first validation error are preserved by this shared helper.
-func validateImageMotionTracks(id, owner string, tracks []TrackDefinition, has3D bool) (bool, error) {
-	for _, track := range tracks {
-		if err := validateImageMotionTrack(id, owner, track); err != nil {
-			return has3D, err
-		}
-		has3D = has3D || IsCameraBacked3DProperty(track.Property)
-	}
-	return has3D, nil
-}
-
-func finiteMotionValue(value float64) bool {
-	return !math.IsNaN(value) && !math.IsInf(value, 0)
-}
-
-func motionNumericValue(value any) (float64, bool) {
-	switch number := value.(type) {
-	case float64:
-		return number, finiteMotionValue(number)
-	case float32:
-		result := float64(number)
-		return result, finiteMotionValue(result)
-	case int:
-		return float64(number), true
-	case int64:
-		return float64(number), true
-	case int32:
-		return float64(number), true
-	default:
-		return 0, false
-	}
-}
-
-func motionNumericVector(value any) ([]float64, bool) {
-	switch values := value.(type) {
-	case []any:
-		out := make([]float64, len(values))
-		for i, item := range values {
-			number, ok := motionNumericValue(item)
-			if !ok {
-				return nil, false
-			}
-			out[i] = number
-		}
-		return out, true
-	case []float64:
-		for _, number := range values {
-			if !finiteMotionValue(number) {
-				return nil, false
-			}
-		}
-		return values, true
-	default:
-		return nil, false
-	}
-}
-
-func validateImageMotionTrack(id, owner string, track TrackDefinition) error {
-	if err := validateTrackDefinition(id, owner, track); err != nil {
-		return err
-	}
-	propertyAllowed := false
-	for _, property := range []string{"position", "position_x", "position_y", "position_z", "scale", "scale_x", "scale_y", "rotation", "rotation_x", "rotation_y", "rotation_z", "opacity", "blur", "stroke_width", "stroke_color", "fill_color", "trim", "intensity", "radius"} {
-		propertyAllowed = propertyAllowed || track.Property == property
-	}
-	if !propertyAllowed {
-		return fmt.Errorf("motion %q: %s uses unsupported image-renderer property %q", id, owner, track.Property)
-	}
-	if track.Easing != "" && !validMotionEasing(track.Easing) {
-		return fmt.Errorf("motion %q: %s has unsupported easing %q", id, owner, track.Easing)
-	}
-	for _, keyframe := range track.Keyframes {
-		switch track.Property {
-		case "position", "rotation", "stroke_color", "fill_color", "trim":
-			vector, ok := motionNumericVector(keyframe.Value)
-			if !ok {
-				return fmt.Errorf("motion %q: %s %s keyframe values must be numeric vectors", id, owner, track.Property)
-			}
-			switch track.Property {
-			case "position":
-				if len(vector) != 2 && len(vector) != 3 {
-					return fmt.Errorf("motion %q: %s position vectors must have two or three values", id, owner)
-				}
-			case "rotation":
-				if len(vector) != 3 {
-					return fmt.Errorf("motion %q: %s rotation vectors must have three values", id, owner)
-				}
-			case "stroke_color", "fill_color":
-				if len(vector) != 4 {
-					return fmt.Errorf("motion %q: %s %s values must be RGBA vectors", id, owner, track.Property)
-				}
-				for _, value := range vector {
-					if value < 0 || value > 1 {
-						return fmt.Errorf("motion %q: %s %s channels must be in [0, 1]", id, owner, track.Property)
-					}
-				}
-			case "trim":
-				if len(vector) < 2 || len(vector) > 3 || vector[0] < 0 || vector[0] > 1 || vector[1] < vector[0] || vector[1] > 1 {
-					return fmt.Errorf("motion %q: %s trim values require [start,end,offset?] with 0 <= start <= end <= 1", id, owner)
-				}
-			}
-			for _, value := range vector {
-				if value < -1000000 || value > 1000000 {
-					return fmt.Errorf("motion %q: %s vector is outside supported bounds", id, owner)
-				}
-			}
-		default:
-			number, ok := motionNumericValue(keyframe.Value)
-			if !ok || number < -1000000 || number > 1000000 {
-				return fmt.Errorf("motion %q: %s %s keyframe values must be finite bounded numbers", id, owner, track.Property)
-			}
-		}
-	}
-	return nil
-}
-
-func validMotionEasing(easing string) bool {
-	switch easing {
-	case "linear", "in_quad", "out_quad", "in_out_quad", "in_cubic", "out_cubic", "in_out_cubic",
-		"in_expo", "out_expo", "in_out_expo", "in_sine", "out_sine", "in_out_sine",
-		"in_back", "out_back", "in_out_back", "in_elastic", "out_elastic", "in_out_elastic",
-		"in_bounce", "out_bounce", "in_out_bounce", "smoothstep", "hold":
-		return true
-	default:
-		return false
-	}
-}
-
-func finiteMotionValueTree(value any) bool {
-	switch item := value.(type) {
-	case float64:
-		return finiteMotionValue(item)
-	case float32:
-		return finiteMotionValue(float64(item))
-	case []any:
-		for _, child := range item {
-			if !finiteMotionValueTree(child) {
-				return false
-			}
-		}
-	case []float64:
-		for _, child := range item {
-			if !finiteMotionValue(child) {
-				return false
-			}
-		}
-	case map[string]any:
-		for _, child := range item {
-			if !finiteMotionValueTree(child) {
-				return false
-			}
-		}
-	}
-	return true
-}
-
-func imageRecipeHasEffect(component ImageMotionComponent, id string) bool {
-	for _, effect := range component.Effects {
-		if imageRecipeEffectID(effect.Type) == id {
-			return true
-		}
-	}
-	return false
-}
-
-func imageRecipeEffectID(kind string) string {
-	switch kind {
-	case "glow":
-		return "light.glow"
-	case "bloom":
-		return "light.bloom"
-	case "drop_shadow":
-		return "light.drop_shadow"
-	case "gaussian_blur":
-		return "blur.gaussian"
-	default:
-		return ""
-	}
-}
-
-func imageRecipeEffectSupported(kind string) bool { return imageRecipeEffectID(kind) != "" }
-
-func validateImageRecipeEffect(motionID, componentID string, effect ImageMotionEffect) error {
-	allowed := map[string]map[string]bool{
-		"glow":          {"radius": true, "intensity": true, "color": true},
-		"bloom":         {"radius": true, "intensity": true, "threshold": true},
-		"drop_shadow":   {"radius": true, "offset": true, "color": true},
-		"gaussian_blur": {"radius": true},
-	}[effect.Type]
-	for key, raw := range effect.Params {
-		if !allowed[key] || !finiteMotionValueTree(raw) {
-			return fmt.Errorf("motion %q: component %q has unsupported or non-finite %s parameter %q", motionID, componentID, effect.Type, key)
-		}
-		switch key {
-		case "radius":
-			value, ok := motionNumericValue(raw)
-			if !ok || value < 0 || value > 256 {
-				return fmt.Errorf("motion %q: component %q effect radius must be in [0, 256]", motionID, componentID)
-			}
-		case "intensity":
-			value, ok := motionNumericValue(raw)
-			if !ok || value < 0 || value > 4 {
-				return fmt.Errorf("motion %q: component %q effect intensity must be in [0, 4]", motionID, componentID)
-			}
-		case "threshold":
-			value, ok := motionNumericValue(raw)
-			if !ok || value < 0 || value > 1 {
-				return fmt.Errorf("motion %q: component %q effect threshold must be in [0, 1]", motionID, componentID)
-			}
-		case "color":
-			values, ok := motionNumericVector(raw)
-			if !ok || len(values) != 4 {
-				return fmt.Errorf("motion %q: component %q effect color must be RGBA", motionID, componentID)
-			}
-			for _, value := range values {
-				if value < 0 || value > 1 {
-					return fmt.Errorf("motion %q: component %q effect color must be in [0, 1]", motionID, componentID)
-				}
-			}
-		case "offset":
-			values, ok := motionNumericVector(raw)
-			if !ok || len(values) != 2 {
-				return fmt.Errorf("motion %q: component %q shadow offset must be [x,y]", motionID, componentID)
-			}
-			for _, value := range values {
-				if math.Abs(value) > 10000 {
-					return fmt.Errorf("motion %q: component %q shadow offset exceeds supported bounds", motionID, componentID)
-				}
-			}
-		}
-	}
-	return nil
-}
-
-func containsMotionString(values []string, wanted string) bool {
-	for _, value := range values {
-		if value == wanted {
-			return true
-		}
-	}
-	return false
-}
-
-func validMotionHexColor(value string) bool {
-	if len(value) != 7 || value[0] != '#' {
-		return false
-	}
-	for _, r := range value[1:] {
-		if !((r >= '0' && r <= '9') || (r >= 'a' && r <= 'f') || (r >= 'A' && r <= 'F')) {
-			return false
-		}
-	}
-	return true
 }
 
 func validateTrackDefinition(motionID, owner string, t TrackDefinition) error {

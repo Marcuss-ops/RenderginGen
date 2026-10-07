@@ -62,7 +62,7 @@ func TestClaimConcurrentExclusiveAcrossRepositories(t *testing.T) {
 
 	repos := openRepos(t, 30*time.Second, 3, reposN)
 	for i := 0; i < jobs; i++ {
-		if err := repos[0].Submit(model.Job{ID: fmt.Sprintf("job-%03d", i)}); err != nil {
+		if err := repos[0].Submit(context.Background(), model.Job{ID: fmt.Sprintf("job-%03d", i)}); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -75,7 +75,7 @@ func TestClaimConcurrentExclusiveAcrossRepositories(t *testing.T) {
 		go func(worker string, repo *Repository) {
 			defer wg.Done()
 			for {
-				job, _, err := repo.Claim(worker)
+				job, _, err := repo.Claim(context.Background(), worker)
 				if err != nil {
 					t.Errorf("claim(%s): %v", worker, err)
 					return
@@ -97,7 +97,7 @@ func TestClaimConcurrentExclusiveAcrossRepositories(t *testing.T) {
 	if len(seen) != jobs {
 		t.Fatalf("want %d distinct claims, got %d", jobs, len(seen))
 	}
-	if s := repos[0].Stats(); s.Running != jobs || s.Pending != 0 {
+	if s := repos[0].Stats(context.Background()); s.Running != jobs || s.Pending != 0 {
 		t.Fatalf("want %d running / 0 pending, got %+v", jobs, s)
 	}
 }
@@ -109,10 +109,10 @@ func TestLeaseExpiryRequeuesAcrossRepositories(t *testing.T) {
 	const lease = 30 * time.Millisecond
 	repos := openRepos(t, lease, 3, 3)
 
-	if err := repos[0].Submit(model.Job{ID: "job-1"}); err != nil {
+	if err := repos[0].Submit(context.Background(), model.Job{ID: "job-1"}); err != nil {
 		t.Fatal(err)
 	}
-	if job, _, err := repos[0].Claim("w1"); err != nil || job == nil || job.ID != "job-1" {
+	if job, _, err := repos[0].Claim(context.Background(), "w1"); err != nil || job == nil || job.ID != "job-1" {
 		t.Fatalf("initial claim: job=%v err=%v", job, err)
 	}
 
@@ -120,12 +120,12 @@ func TestLeaseExpiryRequeuesAcrossRepositories(t *testing.T) {
 
 	// Requeue the expired lease through a different repository, then re-claim
 	// through a third one.
-	n, err := repos[1].RequeueExpired(time.Now())
+	n, err := repos[1].RequeueExpired(context.Background(), time.Now())
 	if err != nil || n != 1 {
 		t.Fatalf("requeue expired: n=%d err=%v", n, err)
 	}
 
-	job, _, err := repos[2].Claim("w2")
+	job, _, err := repos[2].Claim(context.Background(), "w2")
 	if err != nil || job == nil || job.ID != "job-1" {
 		t.Fatalf("re-claim: job=%v err=%v", job, err)
 	}

@@ -567,7 +567,7 @@ func compilePremiumMultiImageRecipe(ri resolvedItem, src *semanticPlan, registry
 			decorated = normalizedPremiumComponents(src, image, decorated)
 		}
 		if caption := strings.TrimSpace(child.Caption); caption != "" {
-			captionLayer, err := compileEntityCaptionLayer(ri, src, childItem, caption, &decorated[premiumImageLayerIndex(decorated)], child.ID)
+			captionLayer, err := compileImageCaptionLayer(ri, src, childItem, caption, &decorated[premiumImageLayerIndex(decorated)], child.ID, textRoleImageCaption)
 			if err != nil {
 				return nil, err
 			}

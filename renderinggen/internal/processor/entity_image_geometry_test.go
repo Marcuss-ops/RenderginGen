@@ -70,9 +70,9 @@ func TestFitEntityImageLayersToAssetsRejectsCaptionCollisionAfterAspectFit(t *te
 		Canvas: overlay.Canvas{Width: 1280, Height: 720},
 		Layers: []overlay.Layer{
 			{ID: "a:image", Type: "image", Asset: "assets/semantic/a.png", BoxWidth: 480, BoxHeight: 480, Size: []float64{480, 480}, Fit: overlay.FitContain, EntityImage: true, Position: []float64{0, 0}, StartFrame: 0, DurationFrames: 120},
-			{ID: "a:caption", Type: "text", Text: "First", Position: []float64{640, 600}, Size: []float64{300, 80}, EntityCaptionForImageID: "a:image", StartFrame: 0, DurationFrames: 120},
+			{ID: "a:caption", Type: "text", Text: "First", Position: []float64{640, 600}, Size: []float64{300, 80}, CaptionForImageID: "a:image", StartFrame: 0, DurationFrames: 120},
 			{ID: "b:image", Type: "image", Asset: "assets/semantic/b.png", BoxWidth: 480, BoxHeight: 480, Size: []float64{480, 480}, Fit: overlay.FitContain, EntityImage: true, Position: []float64{0, 0}, StartFrame: 0, DurationFrames: 120},
-			{ID: "b:caption", Type: "text", Text: "Second", Position: []float64{640, 600}, Size: []float64{300, 80}, EntityCaptionForImageID: "b:image", StartFrame: 0, DurationFrames: 120},
+			{ID: "b:caption", Type: "text", Text: "Second", Position: []float64{640, 600}, Size: []float64{300, 80}, CaptionForImageID: "b:image", StartFrame: 0, DurationFrames: 120},
 		},
 	}
 	if err := fitEntityImageLayersToAssets(root, plan); err == nil {

@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"slices"
 	"testing"
 	"time"
@@ -30,13 +31,13 @@ func newWorkerService(t *testing.T) (svc *Service, m *metrics.Metrics, advance f
 	m = metrics.New()
 	svc.SetMetrics(m)
 
-	if err := svc.RegisterWorker(model.Worker{ID: "w1", Status: model.WorkerStatusReady}); err != nil {
+	if err := svc.RegisterWorker(context.Background(), model.Worker{ID: "w1", Status: model.WorkerStatusReady}); err != nil {
 		t.Fatal(err)
 	}
-	if err := svc.RegisterWorker(model.Worker{ID: "w2", Status: model.WorkerStatusBusy}); err != nil {
+	if err := svc.RegisterWorker(context.Background(), model.Worker{ID: "w2", Status: model.WorkerStatusBusy}); err != nil {
 		t.Fatal(err)
 	}
-	workers, err := svc.ListWorkers()
+	workers, err := svc.ListWorkers(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -58,7 +59,7 @@ func TestServiceWorkerHealthMetrics(t *testing.T) {
 		t.Fatalf("workers_offline: want 0, got %v", got)
 	}
 
-	if err := svc.WorkerHeartbeat("w1"); err != nil {
+	if err := svc.WorkerHeartbeat(context.Background(), "w1"); err != nil {
 		t.Fatal(err)
 	}
 	if got := testutil.ToFloat64(m.WorkersReady); got != 1 {
@@ -68,7 +69,7 @@ func TestServiceWorkerHealthMetrics(t *testing.T) {
 	// Age every heartbeat past one full beat: the ready gauge must decay even
 	// though every worker still REPORTS ready/busy.
 	advance(40 * time.Second)
-	svc.RefreshWorkerHealth()
+	svc.RefreshWorkerHealth(context.Background())
 	if got := testutil.ToFloat64(m.WorkersReady); got != 0 {
 		t.Fatalf("workers_ready after ageing: want 0, got %v", got)
 	}
@@ -77,7 +78,7 @@ func TestServiceWorkerHealthMetrics(t *testing.T) {
 	}
 
 	advance(10 * time.Minute)
-	svc.RefreshWorkerHealth()
+	svc.RefreshWorkerHealth(context.Background())
 	if got := testutil.ToFloat64(m.WorkersOffline); got != 2 {
 		t.Fatalf("workers_offline when frozen: want 2, got %v", got)
 	}
@@ -95,7 +96,7 @@ func TestFrozenWorkerIsNotReportedReady(t *testing.T) {
 	svc, _, advance, _ := newWorkerService(t)
 
 	// w1 says "ready" and then stops: its status is never updated again.
-	workers, err := svc.ListWorkers()
+	workers, err := svc.ListWorkers(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -104,7 +105,7 @@ func TestFrozenWorkerIsNotReportedReady(t *testing.T) {
 	}
 
 	advance(3 * time.Hour)
-	workers, err = svc.ListWorkers()
+	workers, err = svc.ListWorkers(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -115,7 +116,7 @@ func TestFrozenWorkerIsNotReportedReady(t *testing.T) {
 		t.Fatalf("frozen worker liveness = %s, want %s", workers[0].Liveness, model.WorkerLivenessDead)
 	}
 
-	health, err := svc.WorkerHealth()
+	health, err := svc.WorkerHealth(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -126,7 +127,7 @@ func TestFrozenWorkerIsNotReportedReady(t *testing.T) {
 		t.Fatalf("health = %+v, want offline 2 of 2", health)
 	}
 
-	ready, err := svc.ReadyWorkers()
+	ready, err := svc.ReadyWorkers(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -146,7 +147,7 @@ func TestFrozenWorkerRecoversOnHeartbeat(t *testing.T) {
 	svc, _, advance, resync := newWorkerService(t)
 
 	advance(3 * time.Hour)
-	ready, err := svc.ReadyWorkers()
+	ready, err := svc.ReadyWorkers(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -155,10 +156,10 @@ func TestFrozenWorkerRecoversOnHeartbeat(t *testing.T) {
 	}
 
 	resync()
-	if err := svc.WorkerHeartbeat("w1"); err != nil {
+	if err := svc.WorkerHeartbeat(context.Background(), "w1"); err != nil {
 		t.Fatal(err)
 	}
-	ready, err = svc.ReadyWorkers()
+	ready, err = svc.ReadyWorkers(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -174,14 +175,14 @@ func TestWorkerLivenessBandsAreVisibleBeforeDeath(t *testing.T) {
 	svc, _, advance, _ := newWorkerService(t)
 
 	advance(70 * time.Second) // past two thirds of the 90s window
-	health, err := svc.WorkerHealth()
+	health, err := svc.WorkerHealth(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
 	if health.Stale != 2 || health.Offline != 0 {
 		t.Fatalf("health = %+v, want 2 stale and 0 offline", health)
 	}
-	workers, err := svc.ListWorkers()
+	workers, err := svc.ListWorkers(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -196,13 +197,13 @@ func TestWorkerLivenessBandsAreVisibleBeforeDeath(t *testing.T) {
 // (i.e. healthy-looking) fleet when the worker registry is not wired.
 func TestWorkerSurfaceWithoutRepository(t *testing.T) {
 	svc := New(memory.New(30*time.Second, 3))
-	if _, err := svc.ListWorkers(); err == nil {
+	if _, err := svc.ListWorkers(context.Background()); err == nil {
 		t.Fatal("ListWorkers without a worker repository should fail")
 	}
-	if _, err := svc.WorkerHealth(); err == nil {
+	if _, err := svc.WorkerHealth(context.Background()); err == nil {
 		t.Fatal("WorkerHealth without a worker repository should fail")
 	}
-	if _, err := svc.ReadyWorkers(); err == nil {
+	if _, err := svc.ReadyWorkers(context.Background()); err == nil {
 		t.Fatal("ReadyWorkers without a worker repository should fail")
 	}
 }

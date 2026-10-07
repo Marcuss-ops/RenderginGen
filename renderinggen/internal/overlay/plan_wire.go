@@ -30,13 +30,25 @@ func (p *Plan) MarshalIndent(prefix, indent string) ([]byte, error) {
 	return out.Bytes(), nil
 }
 
+func textAnimatorsNeedV3(animators []TextAnimator) bool {
+	for _, animator := range animators {
+		for _, property := range animator.Properties {
+			switch property.Property {
+			case "fill_color":
+				return true
+			}
+		}
+	}
+	return false
+}
+
 func layerAnimationNeedsV3(animation *LayerAnimation) bool {
 	if animation == nil {
 		return false
 	}
 	for _, track := range animation.Tracks {
 		switch track.Property {
-		case "stroke_width", "stroke_color", "fill_color", "blur":
+		case "stroke_width", "stroke_color", "blur":
 			return true
 		}
 	}

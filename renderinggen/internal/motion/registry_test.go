@@ -7,7 +7,7 @@ import (
 )
 
 // The renderer's closed vocabularies, mirrored from
-// chronon.render-plan.v2 ($defs/text_selector and layers[].animation.tracks[]).
+// chronon.render-plan.v3 ($defs/text_selector and animator properties).
 // A definition written outside one of these sets compiles fine here and is then
 // rejected by Chronon at render time, after the batch has already been paid for.
 var (
@@ -26,7 +26,7 @@ var (
 		"position": true, "position_x": true, "position_y": true,
 		"scale": true, "scale_x": true, "scale_y": true,
 		"opacity": true, "blur": true, "tracking": true,
-		"fill_blue": true, "fill_gray": true,
+		"fill_color": true,
 	}
 )
 
@@ -43,8 +43,8 @@ func TestCatalogCategoriesKeepMotionsIndependentAndComplete(t *testing.T) {
 			t.Errorf("%s category has %d motions, want %d", category, len(ids), count)
 		}
 	}
-	if ids := Registry.ShortPhraseStyleIDs(); len(ids) != 23 {
-		t.Errorf("short phrase catalog has %d motions, want 23", len(ids))
+	if ids := Registry.ShortPhraseStyleIDs(); len(ids) != 45 {
+		t.Errorf("short phrase catalog has %d motions, want 45", len(ids))
 	}
 	if ids := Registry.PhraseAnimationIDs(); len(ids) != 146 {
 		t.Errorf("phrase planning pool has %d motions, want 146", len(ids))
@@ -268,6 +268,56 @@ func TestCatalogStaysInsideTheRendererVocabulary(t *testing.T) {
 			}
 		}
 	}
+}
+
+func TestShortPhraseColorShorthandLowersToNativeRGBA(t *testing.T) {
+	for _, id := range Registry.ShortPhraseStyleIDs() {
+		plugin, err := Registry.Resolve(id)
+		if err != nil {
+			t.Fatalf("resolve %s: %v", id, err)
+		}
+		definition := plugin.(DeclarativePlugin).Definition
+		for _, animator := range definition.TextAnimators {
+			for _, property := range animator.Properties {
+				if property.Property == "fill_blue" || property.Property == "fill_gray" {
+					t.Errorf("%s retains non-renderer color shorthand %q", id, property.Property)
+				}
+				if property.Property != "fill_color" {
+					continue
+				}
+				for _, key := range property.Keyframes {
+					color, ok := key.Value.([]float64)
+					if !ok || len(color) != 4 {
+						t.Errorf("%s fill_color frame %d = %#v, want RGBA", id, key.Frame, key.Value)
+					}
+				}
+			}
+		}
+	}
+}
+
+func TestCharacterTrackingRevealMakesGlyphsVisible(t *testing.T) {
+	plugin, err := Registry.Resolve("short_phrase_character_tracking_reveal")
+	if err != nil {
+		t.Fatal(err)
+	}
+	definition := plugin.(DeclarativePlugin).Definition
+	for _, animator := range definition.TextAnimators {
+		for _, property := range animator.Properties {
+			if property.Property != "opacity" {
+				continue
+			}
+			if len(property.Keyframes) < 2 {
+				t.Fatalf("opacity has %d keyframes, want an entrance", len(property.Keyframes))
+			}
+			last, ok := shortPhraseNumericValue(property.Keyframes[len(property.Keyframes)-1].Value)
+			if !ok || last < 0.99 {
+				t.Fatalf("final glyph opacity = %#v, want fully visible", property.Keyframes[len(property.Keyframes)-1].Value)
+			}
+			return
+		}
+	}
+	t.Fatal("character tracking reveal has no glyph opacity track")
 }
 
 // TestAppleV2PhraseFamilyKeepsTheFamilyContract pins the invariants the Apple

@@ -61,6 +61,9 @@ func TestRuntimeAnimationUseCasesSeparateCountedCompositions(t *testing.T) {
 			t.Fatalf("duplicate runtime animation use case %q", useCase.ID)
 		}
 		byID[useCase.ID] = useCase
+		if len(useCase.MotionIDs) > 0 && (useCase.StyleCountDefault != min(5, len(useCase.MotionIDs)) || useCase.StyleCountMaximum != len(useCase.MotionIDs)) {
+			t.Errorf("use case %q style count default/maximum = %d/%d, want %d/%d", useCase.ID, useCase.StyleCountDefault, useCase.StyleCountMaximum, min(5, len(useCase.MotionIDs)), len(useCase.MotionIDs))
+		}
 		for _, id := range useCase.MotionIDs {
 			if _, err := motion.Registry.Resolve(id); err != nil {
 				t.Errorf("use case %q contains unknown motion %q", useCase.ID, id)
@@ -71,7 +74,7 @@ func TestRuntimeAnimationUseCasesSeparateCountedCompositions(t *testing.T) {
 		"important_phrase", "short_important_phrase", "single_image", "image_double", "image_triplet", "image_four", "image_five",
 		"single_image_with_text", "image_double_with_text", "image_triplet_with_text", "image_four_with_text", "image_five_with_text",
 		"one_map", "two_maps", "background_color", "background_image", "background_video",
-		"entity_caption", "metric_stat", "timeline_date",
+		"entities", "entity_caption", "metric_stat", "timeline_date",
 	} {
 		if _, ok := byID[id]; !ok {
 			t.Errorf("runtime use case %q missing", id)
@@ -198,11 +201,11 @@ func TestRuntimeAnimationUseCasesSeparateCountedCompositions(t *testing.T) {
 	}
 	for _, kind := range []ItemKind{KindEntityCard, KindOrganization, KindLocation, KindConcept, KindEntityImage, KindImagePopup, KindProduct, KindLogo, KindLightLeak} {
 		if !containsString(byID["entity_caption"].ItemKinds, string(kind)) {
-			t.Errorf("entity_caption use case does not advertise supported image-bearing kind %q", kind)
+			t.Errorf("caption use case does not advertise supported image-bearing kind %q", kind)
 		}
 	}
 	if !containsString(byID["entity_caption"].ItemKinds, "image") {
-		t.Error("entity_caption use case does not advertise generic image layers")
+		t.Error("caption use case does not advertise generic image layers")
 	}
 }
 

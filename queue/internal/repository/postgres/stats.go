@@ -2,6 +2,7 @@
 package postgres
 
 import (
+	"context"
 	"log"
 
 	"github.com/Marcuss-ops/RenderingGen/queue/internal/model"
@@ -10,9 +11,9 @@ import (
 // Stats returns a snapshot of the queue state. A database error is logged and
 // reported through the Ok flag: silently returning zeros would make dashboards
 // and autoscalers read an empty queue during an outage.
-func (r *Repository) Stats() model.Stats {
+func (r *Repository) Stats(ctx context.Context) model.Stats {
 	var stats model.Stats
-	ctx, cancel := r.opContext()
+	ctx, cancel := r.opContext(ctx)
 	defer cancel()
 	err := r.db.QueryRowContext(ctx, `
 		SELECT

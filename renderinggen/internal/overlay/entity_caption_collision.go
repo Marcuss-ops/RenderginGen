@@ -2,9 +2,9 @@ package overlay
 
 import "fmt"
 
-// ValidateEntityCaptionCollisions rejects fitted caption boxes that overlap
+// ValidateEntityCaptionCollisions rejects fitted image-caption boxes that overlap
 // in both canvas space and time. Caption positions are layer centers and sizes
-// are concrete pixel dimensions after entity-image fitting.
+// are concrete pixel dimensions after image fitting.
 func ValidateEntityCaptionCollisions(layers []Layer) error {
 	type caption struct {
 		id         string
@@ -14,7 +14,7 @@ func ValidateEntityCaptionCollisions(layers []Layer) error {
 	}
 	var captions []caption
 	for _, layer := range layers {
-		if layer.EntityCaptionForImageID == "" || len(layer.Position) < 2 || len(layer.Size) < 2 {
+		if layer.CaptionForImageID == "" || len(layer.Position) < 2 || len(layer.Size) < 2 {
 			continue
 		}
 		start := layer.StartFrame

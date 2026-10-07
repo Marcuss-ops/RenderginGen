@@ -77,7 +77,7 @@ func TestNotifyStateWakesReplicaWaiter(t *testing.T) {
 	}()
 
 	time.Sleep(25 * time.Millisecond)
-	if err := svc.Submit(model.Job{ID: "replica-job"}); err != nil {
+	if err := svc.Submit(context.Background(), model.Job{ID: "replica-job"}); err != nil {
 		t.Fatal(err)
 	}
 	// Simulate the PostgreSQL LISTEN loop in another queue replica: the DB

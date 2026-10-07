@@ -117,8 +117,8 @@ func TestVidrushScenarioLayersAreWired(t *testing.T) {
 		if !animated(caption) {
 			t.Fatalf("entity caption %q lowered without motion", captionID)
 		}
-		if caption.EntityCaptionForImageID != person.ID {
-			t.Fatalf("caption %q is linked to image %q, want %q", captionID, caption.EntityCaptionForImageID, person.ID)
+		if caption.CaptionForImageID != person.ID {
+			t.Fatalf("caption %q is linked to image %q, want %q", captionID, caption.CaptionForImageID, person.ID)
 		}
 		if len(caption.Position) < 2 || len(person.Position) < 2 {
 			t.Fatalf("entity card %q layers carry no geometry", imageID)

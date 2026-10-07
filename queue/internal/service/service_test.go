@@ -16,10 +16,10 @@ func TestServiceRecordsQueueMetrics(t *testing.T) {
 	m := metrics.New()
 	svc.SetMetrics(m)
 
-	if err := svc.Submit(model.Job{ID: "job-1"}); err != nil {
+	if err := svc.Submit(context.Background(), model.Job{ID: "job-1"}); err != nil {
 		t.Fatal(err)
 	}
-	if err := svc.Submit(model.Job{ID: "job-2"}); err != nil {
+	if err := svc.Submit(context.Background(), model.Job{ID: "job-2"}); err != nil {
 		t.Fatal(err)
 	}
 	func() {
@@ -29,7 +29,7 @@ func TestServiceRecordsQueueMetrics(t *testing.T) {
 		t.Fatalf("pending: want 2, got %v", got)
 	}
 
-	if _, _, err := svc.Claim("w1"); err != nil {
+	if _, _, err := svc.Claim(context.Background(), "w1"); err != nil {
 		t.Fatal(err)
 	}
 	svc.RefreshPendingGauge()
@@ -37,7 +37,7 @@ func TestServiceRecordsQueueMetrics(t *testing.T) {
 		t.Fatalf("pending after claim: want 1, got %v", got)
 	}
 
-	if err := svc.Complete("job-1", "w1", model.Artifact{StorageKey: "sha", ArtifactHash: "sha", SizeBytes: 1, ContentType: "video/mp4"}); err != nil {
+	if err := svc.Complete(context.Background(), "job-1", "w1", model.Artifact{StorageKey: "sha", ArtifactHash: "sha", SizeBytes: 1, ContentType: "video/mp4"}); err != nil {
 		t.Fatal(err)
 	}
 	svc.RefreshPendingGauge()
@@ -58,14 +58,14 @@ func TestPendingGaugeThrottleSkipsFullScans(t *testing.T) {
 	m := metrics.New()
 	svc.SetMetrics(m)
 
-	if err := svc.Submit(model.Job{ID: "job-1"}); err != nil {
+	if err := svc.Submit(context.Background(), model.Job{ID: "job-1"}); err != nil {
 		t.Fatal(err)
 	}
 	svc.RefreshPendingGauge() // establishes the throttle clock
 	// Within the throttle window the gauge must NOT be re-read from the
 	// repository: this claim moves the job to running, so an unthrottled
 	// observePending would drop the gauge to 0.
-	if _, _, err := svc.Claim("w1"); err != nil {
+	if _, _, err := svc.Claim(context.Background(), "w1"); err != nil {
 		t.Fatal(err)
 	}
 	if got := testutil.ToFloat64(m.JobsPending); got != 1 {
@@ -80,16 +80,16 @@ func TestPendingGaugeThrottleSkipsFullScans(t *testing.T) {
 
 func TestServiceRejectsCompletionWithoutArtifact(t *testing.T) {
 	svc := New(memory.New(30*time.Second, 3))
-	if err := svc.Submit(model.Job{ID: "job-1"}); err != nil {
+	if err := svc.Submit(context.Background(), model.Job{ID: "job-1"}); err != nil {
 		t.Fatal(err)
 	}
-	if _, _, err := svc.Claim("w1"); err != nil {
+	if _, _, err := svc.Claim(context.Background(), "w1"); err != nil {
 		t.Fatal(err)
 	}
-	if err := svc.Complete("job-1", "w1", model.Artifact{}); err == nil {
+	if err := svc.Complete(context.Background(), "job-1", "w1", model.Artifact{}); err == nil {
 		t.Fatal("expected empty artifact to be rejected")
 	}
-	job, err := svc.Get("job-1")
+	job, err := svc.Get(context.Background(), "job-1")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -103,10 +103,10 @@ func TestServiceLeaseExpiredMetric(t *testing.T) {
 	m := metrics.New()
 	svc.SetMetrics(m)
 
-	if err := svc.Submit(model.Job{ID: "job-1"}); err != nil {
+	if err := svc.Submit(context.Background(), model.Job{ID: "job-1"}); err != nil {
 		t.Fatal(err)
 	}
-	if _, _, err := svc.Claim("w1"); err != nil {
+	if _, _, err := svc.Claim(context.Background(), "w1"); err != nil {
 		t.Fatal(err)
 	}
 

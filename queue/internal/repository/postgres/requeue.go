@@ -4,6 +4,7 @@
 package postgres
 
 import (
+	"context"
 	"time"
 
 	"github.com/Marcuss-ops/RenderingGen/queue/internal/model"
@@ -11,8 +12,8 @@ import (
 
 // RequeueExpired permanently fails expired jobs that exhausted their attempts
 // and requeues the rest, recording the attempt outcome and an event for each.
-func (r *Repository) RequeueExpired(now time.Time) (int, error) {
-	ctx, cancel := r.opContext()
+func (r *Repository) RequeueExpired(ctx context.Context, now time.Time) (int, error) {
+	ctx, cancel := r.opContext(ctx)
 	defer cancel()
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {

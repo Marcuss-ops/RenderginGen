@@ -461,13 +461,13 @@
                 },
                 {
                   "frame": 90,
-                  "value": 0.0
+                  "value": 1.0
                 }
               ]
             },
             {
               "property": "tracking",
-              "easing": "linear",
+              "easing": "out_cubic",
               "keyframes": [
                 {
                   "frame": 0,
@@ -475,13 +475,13 @@
                 },
                 {
                   "frame": 90,
-                  "value": 20.0
+                  "value": 0.0
                 }
               ]
             },
             {
               "property": "position_x",
-              "easing": "linear",
+              "easing": "out_cubic",
               "keyframes": [
                 {
                   "frame": 0,
@@ -489,7 +489,7 @@
                 },
                 {
                   "frame": 90,
-                  "value": 8.0
+                  "value": 0.0
                 }
               ]
             }
