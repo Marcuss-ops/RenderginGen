@@ -204,7 +204,7 @@ modificati o rimossi da un altro processo.
 | T10 | Bloccare più controller camera scena concorrenti e rendere il risultato indipendente dall’ordine item. | [x] PASS (compile-time) | `TestSceneCameraRejectsMultipleControllers` copre mappa→entità, entità→mappa, due mappe e due entità; diagnosi identifica i due item. `TestMapCameraAllowsEntityStyleWithoutCameraMotion` verifica la convivenza con uno stile senza controller. Non equivale a una decisione di prodotto su Camera Roll. |
 | T11 | Verificare mappe georeferenziate: raster locale/provenienza, pin/etichette/attribuzione, LOD/viewport e camera fly-to; casi invalidi fail-closed. | [x] PASS (compilazione) | `semantic_map_test.go` copre layer grounded, attribuzione, pin fuori finestra, LOD/coverage/licenza, fly-to, motion opzionale, conteggi `map_composition_id` uno/due, input invalidi e piani legacy senza il nuovo campo. Preview/render GPU correnti non risultano certificati da questi test. |
 | T12 | Verificare background, metriche/date e un esempio valido/invalid per i target semantici. | [x] PASS (compilazione) | `background_contract_test.go` verifica sorgenti fit e fail-closed; `presentation_motion_wiring_test.go` compila i 50 motion Metric/Date/Entity. Certificazione hardware va riportata separatamente. |
-| T13 | Stabilire separazione camera scena/clip, camera immagine e camera mappa, con precedenza/fallback approvati. | [x] DECISO / [ ] LOWERING MANCANTE | L’owner ha deciso il 7 ottobre 2026 che Camera Roll copre anche l’intera scena/video. Il catalogo pubblica `camera_destinations.scene` con `requires_product_decision: false`, stato `requires_renderer_lowering` e il contratto dei cinque movimenti (pan, push/pull, zoom, tilt/roll, parallax: direzione, durata, crop bounds, posa iniziale e finale). Nessun ID scena è selezionabile: manca la famiglia canonica (ChrononTemplate `camera_roll/SceneCameraPack.hpp` e `dump_scene_camera_poses.cpp`) e il lowering RenderingGen su `camera_animation`. `TestCameraRollPublishesTheApprovedSceneContract` pinna contratto e fail-closed. |
+| T13 | Stabilire separazione camera scena/clip, camera immagine e camera mappa, con precedenza/fallback approvati. | [x] CHIUSO come out-of-scope | La camera sull’intera scena è dichiarata fuori perimetro: il catalogo pubblica `camera_destinations.scene` con `requires_product_decision: false`, stato `unsupported` e motivo esplicito, senza contratto di movimenti e senza ID selezionabili (fail-closed). Il contratto speculativo a cinque movimenti è stato rimosso. Camera immagine e camera mappa restano `implemented`. |
 | T14 | Verificare JSON Schema ↔ struct Go, campi chiusi, decode strict e compatibilità dei nuovi campi. | [x] PASS (snapshot finale verificato) | Il run finale `TestContractSchemaMatchesCompilerStructs` + `TestContractSchemaRejectsUnknownCompilerFields` passa; i campi policy, group/subgroup e caption hanno parity struct/schema e il compiler resta `DisallowUnknownFields`. |
 | T15 | Inventariare tutti i 128 path MP4 baseline, preservare decisione/hash/probe e verificare i media rimasti. | [x] PASS (checkout attuale) | CSV: 128 righe, 97 presenti, 30 `removed_duplicate`, 1 `removed_in_worktree`; tutti i 97 hash/byte coincidono col CSV e tutti hanno stream H.264 con durata positiva via `ffprobe`. La verifica SHA dei blob Git originari prova per 30/30 una copia superstite con hash uguale. Il partial rimosso è vuoto. |
 | T16 | Provare che i 30 path rimossi non sono più necessari e distinguere delete nel worktree da azione di questo ciclo. | [~] PARZIALE (audit checkout) | `scripts/audit_removed_mp4_retention.py` e `evidence/mp4-retention-audit.v1.json`: 30/30 blob storici coincidono con CSV, tutte le path assenti, copie byte-identiche (1–3 per file), ffprobe H.264/durata positiva e nessun riferimento testuale letterale nel checkout corrente. L’audit è read-only e non ha eseguito le rimozioni. Non prova assenza consumer dinamici/esterni né approva una retention. |
@@ -444,11 +444,12 @@ consumer UI esterno o infrastruttura non disponibile.
       4, 1 oltre; `caption_use_case: entity_caption` collega ogni composizione
       con testo all’use case che possiede le motion della caption). Conteggi
       immagini 1–5, mappe 1–2 e ownership pubblicata sono chiusi.
-- [x] **T13** — deciso: Camera Roll copre anche l’intera scena/video. Il catalogo
-      pubblica `camera_destinations.scene` con `requires_product_decision: false`,
-      il contratto dei cinque movimenti e il motivo del lowering mancante;
-      nessun ID scena è selezionabile finché la famiglia canonica non esiste ed è
-      certificata.
+- [x] **T13** — chiuso come out-of-scope: la camera sull’intera scena non è
+      pianificata. Il catalogo pubblica `camera_destinations.scene` con
+      `requires_product_decision: false`, stato `unsupported` e motivo
+      esplicito, senza contratto di movimenti e senza ID selezionabili
+      (fail-closed). Il contratto speculativo a cinque movimenti è stato
+      rimosso dal codice e dallo schema (che ora ammette `unsupported`).
 - [~] **T16/T17** — **archivio locale eseguito e verificato** il 7 ottobre 2026
       con `scripts/archive_removed_mp4_duplicates.py`: 30 digest distinti, 30 path
       rimossi coperti, 30/30 ri-hashati e coincidenti, manifest
@@ -519,11 +520,9 @@ consumer UI esterno o infrastruttura non disponibile.
       `two_maps` riusa allo stesso modo le motion `map_view` per placca (14
       scelte). Le famiglie dedicate per conteggio restano un’opzione editoriale,
       non un prerequisito.
-- [ ] **Famiglia camera scena** — authoring in ChrononTemplate
-      (`camera_roll/SceneCameraPack.hpp`, `dump_scene_camera_poses.cpp`) più
-      lowering RenderingGen su `camera_animation` e certificazione: è il
-      prerequisito per rendere selezionabile la destinazione `scene` già
-      pubblicata con il suo contratto.
+- [x] **Famiglia camera scena** — chiusa come non pianificata (vedi T13):
+      nessun authoring, lowering o certificazione da attendere; la destinazione
+      `scene` resta pubblicata come `unsupported` e fail-closed.
 - [ ] **Selezioni batch** — il catalogo categorie è la query canonica, ma alcune
       pool batch restano selezioni editoriali intenzionali e richiedono un audit
       consumer separato.
@@ -600,12 +599,10 @@ perimetro ciò che l’owner ha scartato.
 
 - **T18 rimosso** con tutte le voci UI (Fase 2 selezione, Fase 6 duplicati UI):
   nessun criterio UI resta in questo repository.
-- **T13 deciso e pubblicato**: Camera Roll copre anche l’intera scena/video. Il
-  catalogo espone la destinazione `scene` con `requires_product_decision: false`,
-  stato `requires_renderer_lowering`, il contratto dei cinque movimenti
-  (`pan`, `push_pull`, `zoom`, `tilt_roll`, `parallax` con direzione, durata,
-  crop bounds e posa iniziale/finale) e il motivo del lowering mancante. Nessun
-  ID scena è selezionabile: la famiglia canonica non esiste ancora.
+- **T13 chiuso come out-of-scope**: la camera sull’intera scena non è
+  pianificata. Il catalogo espone la destinazione `scene` con
+  `requires_product_decision: false`, stato `unsupported` e motivo esplicito,
+  senza contratto di movimenti e senza ID selezionabili (fail-closed).
 - **Fase 4 decisa e implementata**: deprecazione **immediata**, nessuna finestra e
   nessun alias (`selection_model.deprecation`), picker escluso e compiler che
   rifiuta un ID ritirato prima del lowering con diagnosi che nomina ID, motivo e

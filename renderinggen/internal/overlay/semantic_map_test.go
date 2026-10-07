@@ -274,7 +274,18 @@ func TestMapRoutesCompileWithDefaultAndExplicitTrimRanges(t *testing.T) {
 			if err != nil {
 				t.Fatalf("compile route: %v", err)
 			}
-			got := result.Plan.Layers[len(result.Plan.Layers)-1]
+			var got Layer
+			found := false
+			for _, layer := range result.Plan.Layers {
+				if layer.ID == "map:map_route:journey" {
+					got = layer
+					found = true
+					break
+				}
+			}
+			if !found {
+				t.Fatalf("route layer map:map_route:journey not found: %+v", result.Plan.Layers)
+			}
 			if got.ID != "map:map_route:journey" || got.Shape == nil || got.Shape.Type != "path" || len(got.Shape.Path) < 2 {
 				t.Fatalf("route was not lowered as a path layer: %+v", got)
 			}

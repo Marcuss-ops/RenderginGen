@@ -7,10 +7,9 @@ import (
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/motion"
 )
 
-// TestCameraRollPublishesTheApprovedSceneContract pins the owner decision of
-// 7 October 2026: the camera roll covers the whole scene or source clip, so the
-// scene destination stops asking for a product decision and instead publishes
-// the movement contract plus the exact reason it is not selectable yet.
+// TestCameraRollPublishesTheApprovedSceneContract pins the GOAL-2 closure:
+// the whole-scene camera is out of scope — published as unsupported with no
+// movement contract and no selectable IDs (fail-closed).
 func TestCameraRollPublishesTheApprovedSceneContract(t *testing.T) {
 	byID := make(map[string]RuntimeCameraDestination)
 	for _, destination := range runtimeCameraDestinations() {
@@ -25,8 +24,8 @@ func TestCameraRollPublishesTheApprovedSceneContract(t *testing.T) {
 	if scene.RequiresProductDecision {
 		t.Error("scene camera still requests a product decision after the owner approved it")
 	}
-	if scene.Status != cameraDestinationNeedsLowering {
-		t.Errorf("scene camera status = %q, want %q", scene.Status, cameraDestinationNeedsLowering)
+	if scene.Status != cameraDestinationUnsupported {
+		t.Errorf("scene camera status = %q, want %q", scene.Status, cameraDestinationUnsupported)
 	}
 	if strings.TrimSpace(scene.RuntimeSupport) == "" {
 		t.Error("scene camera does not state what is still missing")
@@ -34,39 +33,15 @@ func TestCameraRollPublishesTheApprovedSceneContract(t *testing.T) {
 	if scene.MotionTarget != cameraSceneTarget {
 		t.Errorf("scene camera target = %q, want %q", scene.MotionTarget, cameraSceneTarget)
 	}
-	// Fail-closed: the approved destination must not become selectable before a
-	// canonical family exists, so no registered motion may be admitted for it.
+	// Fail-closed: the out-of-scope destination must not become selectable and
+	// carries no movement contract (removed as unimplemented complexity).
 	for _, id := range motion.Registry.List() {
 		if motionAdmitsTarget(id, cameraSceneTarget) {
-			t.Errorf("motion %q is admitted for the scene camera target before its family is authored", id)
+			t.Errorf("motion %q is admitted for the scene camera target, which is out of scope", id)
 		}
 	}
-	wantMovements := []string{"pan", "push_pull", "zoom", "tilt_roll", "parallax"}
-	if len(scene.Movements) != len(wantMovements) {
-		t.Fatalf("scene camera movements = %d, want %d", len(scene.Movements), len(wantMovements))
-	}
-	for index, want := range wantMovements {
-		movement := scene.Movements[index]
-		if movement.ID != want {
-			t.Errorf("movement %d = %q, want %q", index, movement.ID, want)
-		}
-		if movement.Supported {
-			t.Errorf("movement %q claims renderer support before the family exists", movement.ID)
-		}
-		if strings.TrimSpace(movement.UnavailableReason) == "" {
-			t.Errorf("movement %q does not explain why it is unavailable", movement.ID)
-		}
-		for name, value := range map[string]string{
-			"direction_parameter": movement.Direction,
-			"duration_bounds":     movement.DurationBounds,
-			"crop_bounds":         movement.CropBounds,
-			"initial_pose":        movement.InitialPose,
-			"final_pose":          movement.FinalPose,
-		} {
-			if strings.TrimSpace(value) == "" {
-				t.Errorf("movement %q declares no %s", movement.ID, name)
-			}
-		}
+	if len(scene.Movements) != 0 {
+		t.Fatalf("scene camera movements = %d, want 0 (out of scope, no contract)", len(scene.Movements))
 	}
 	for _, id := range []string{"image", "map"} {
 		if byID[id].Status != cameraDestinationImplemented || len(byID[id].Movements) != 0 {

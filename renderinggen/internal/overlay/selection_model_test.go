@@ -332,12 +332,10 @@ func TestSelectionModelCameraDestinationsSeparateImplementedFromBlocked(t *testi
 			t.Errorf("camera destination %q requires a decision but reports %q", destination.ID, destination.Status)
 		}
 	}
-	// The owner approved the scene camera on 7 October 2026, so the blocker
-	// moved from a product decision to the missing canonical family and its
-	// renderer certification. The contract of that family is published beside
-	// the destination (see TestCameraRollPublishesTheApprovedSceneContract).
-	if scene := byID["scene"]; scene.RequiresProductDecision || scene.Status != cameraDestinationNeedsLowering {
-		t.Errorf("scene camera must report the missing lowering, not a product decision: %+v", scene)
+	// GOAL-2 closure: whole-scene camera is out of scope — published as
+	// unsupported with no movement contract (fail-closed, no selectable IDs).
+	if scene := byID["scene"]; scene.RequiresProductDecision || scene.Status != cameraDestinationUnsupported || len(scene.Movements) != 0 {
+		t.Errorf("scene camera must report unsupported with no movements: %+v", scene)
 	}
 	if image := byID["image"]; image.Status != "implemented" || image.MotionTarget != "image" {
 		t.Errorf("image camera destination = %+v", image)

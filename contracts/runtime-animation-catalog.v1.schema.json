@@ -212,7 +212,7 @@
       "properties": {
         "id": { "type": "string", "minLength": 1 },
         "description": { "type": "string", "minLength": 1 },
-        "status": { "enum": ["implemented", "blocked_product_decision", "requires_renderer_lowering"] },
+        "status": { "enum": ["implemented", "blocked_product_decision", "requires_renderer_lowering", "unsupported"] },
         "runtime_support": { "type": "string", "minLength": 1 },
         "motion_target": { "type": "string", "minLength": 1 },
         "requires_product_decision": { "type": "boolean" },
