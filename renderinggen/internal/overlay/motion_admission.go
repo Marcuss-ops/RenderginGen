@@ -52,19 +52,18 @@ func legacyPhraseMotion(id string) bool {
 }
 
 func centeredMapMotion(definition motion.MotionDefinition) bool {
-	if !containsString(definition.Targets, "image") {
-		if definition.Targets != nil || definition.Category != "overlay_v3_image" {
+	// Map-specific applicability has not yet been declared in ChrononTemplate.
+	// Until it is, preserve only the established map_image_v1 catalog as a
+	// legacy fallback; do not infer map support for arbitrary image motions.
+	if definition.Targets != nil {
+		if !containsString(definition.Targets, "image") || definition.Category != "map_image_v1" && definition.Category != "image_25d_clean_v1" && definition.Category != "overlay_v3_image" {
 			return false
 		}
-	}
-	// These catalog categories are the currently approved map image vocabulary.
-	// The track check below is a separate geospatial invariant: it prevents a
-	// motion from moving the raster away from the coordinates used by its pins.
-	switch definition.Category {
-	case "overlay_v3_image", "image_25d_clean_v1", "map_image_v1":
-	default:
+	} else if definition.Category != "overlay_v3_image" {
 		return false
 	}
+	// This track check is a geospatial invariant, not a second family allowlist:
+	// it prevents an authored map motion from detaching the raster from its pins.
 	if len(definition.Tracks) == 0 {
 		return false
 	}

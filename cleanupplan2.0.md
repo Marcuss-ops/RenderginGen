@@ -4,10 +4,11 @@
 
 ## Decisioni di prodotto da fissare
 
-- [ ] Usare la gerarchia **Zona → Composizione → Layout → Stile → Animazione**.
-- [ ] Tenere distinti i numeri di immagine e i numeri di didascalia: “3 immagini + 2 testi” significa 3 layer immagine e 2 blocchi testo, non un nuovo tipo di renderer.
-- [ ] Interpretare “Immagini con testo 1–4” come **una composizione immagini con da 1 a 4 didascalie**. Confermare con prodotto prima di congelare i nomi pubblici.
-- [ ] Definire “5+ immagini” come composizione a stack/griglia con un limite tecnico documentato; il contratto non deve creare una famiglia distinta per ogni N.
+- [x] Usare la gerarchia **Zona → Composizione per conteggio → Layout → Famiglia → Animazione**.
+- [x] Il conteggio delle composizioni indica il numero di immagini. Le categorie “con testo” si distinguono anch’esse per numero di immagini, non per numero di testi.
+- [x] Rimuovere `image_stack` dalla tassonomia del picker. “Stack” resta un dettaglio tecnico legacy, non una categoria utente.
+- [x] Esporre conteggi distinti: Immagine singola, 2 immagini, 3 immagini, 4 immagini e 5 immagini. Nessuna categoria `5+` implicita.
+- [x] Una categoria senza una famiglia dedicata ha `motion_ids: null`; non eredita le motion generiche delle immagini.
 - [ ] Stabilire se Camera Roll è un movimento della camera sull’intero video/scene, un movimento su una singola immagine, o entrambi. Esporli come destinazioni distinte se entrambi sono supportati.
 - [ ] Stabilire ownership: ChrononTemplate resta proprietario di motion ID e ricette; il contratto semantico resta proprietario dei dati di composizione; la UI consuma un catalogo compilato e non mantiene proprie liste di ID.
 
@@ -17,29 +18,27 @@ Le voci sotto sono **zone e composizioni navigabili**, non famiglie di animazion
 
 ### A. Immagini
 
-- [ ] **Immagine singola**: 1 immagine, 0 didascalie.
-- [ ] **2 immagini**: layout affiancato, sovrapposto, confronto o prima/dopo.
-- [ ] **3 immagini**: triptych, sequenza o immagine principale con due secondarie.
-- [ ] **4 immagini**: griglia 2×2, collage o immagine principale con tre secondarie.
-- [ ] **5+ immagini**: stack/griglia con numero variabile di layer.
+- [x] **Immagine singola**: 1 immagine, 0 testi; unica categoria con le motion single-image già esistenti.
+- [x] **Immagine Double**: 2 immagini; `motion_ids: null` finché non esiste una famiglia dedicata.
+- [x] **Immagine Triplet**: 3 immagini; `motion_ids: null` finché non esiste una famiglia dedicata.
+- [x] **Immagine Four**: 4 immagini; `motion_ids: null` finché non esiste una famiglia dedicata.
+- [x] **Immagine Five**: 5 immagini; `motion_ids: null` finché non esiste una famiglia dedicata.
 - [ ] Definire per ogni layout vincoli di aspect ratio, crop, margini, ordine layer, selezione attiva e comportamento per asset mancanti.
 - [ ] Riutilizzare lo stesso contratto a layer per 2–5+; evitare nuovi `kind` solo per il numero di immagini se il comportamento semantico è identico.
-- [ ] Definire animazioni a due livelli: animazione della composizione/stack e animazione per layer. Specificare quando i layer possono avere motion indipendenti.
+- [ ] Definire per ogni conteggio la famiglia dedicata e se la motion agisce sulla composizione o sui singoli layer. Non esporre una motion composta finché non è supportata dal compiler.
 
 ### B. Immagini con testo
 
-- [ ] **Immagine/i + 1 didascalia**.
-- [ ] **Immagine/i + 2 didascalie**.
-- [ ] **Immagine/i + 3 didascalie**.
-- [ ] **Immagine/i + 4 didascalie**.
-- [ ] Specificare se le 1–4 didascalie si riferiscono a una sola immagine o se possono accompagnare qualsiasi composizione immagini.
+- [x] Creare categorie **Immagine singola con testo**, **Double con testo**, **Triplet con testo**, **Four con testo** e **Five con testo**: il numero nel nome indica sempre le immagini.
+- [x] Impostare `motion_ids: null` in tutte le categorie immagini-con-testo finché non esistono famiglie dedicate.
 - [ ] Modellare didascalie come elementi testuali collegati a un’immagine o a un layer tramite ID/ancora; non duplicare l’immagine per ogni didascalia.
 - [ ] Stabilire layout, ordine di entrata, collisioni, limiti testo e comportamento responsive per ciascun numero di didascalie.
 - [ ] Riutilizzare le motion caption esistenti quando target e layout sono compatibili; tenere motion immagine e motion testo selezionabili separatamente.
 
 ### C. Mappe
 
-- [ ] Esporre composizioni: mappa con pin, percorso, più tappe, callout/etichette, mappa con scheda o immagine laterale.
+- [x] Esporre **One Map** con la famiglia map-motion esistente e **Two Maps** con `motion_ids: null` finché non esiste una famiglia multi-mappa.
+- [ ] Esporre in seguito mappa con pin, percorso, tappe e callout come layout della zona Mappe, senza mescolarli alle categorie immagini.
 - [ ] Specificare il coordinamento fra camera/viewport, basemap, percorso, pin, label e attribuzione.
 - [ ] Dichiarare quali motion mappa sono applicabili alla basemap e quali vengono proiettate anche su pin/label.
 - [ ] Tenere i dati geospaziali e le regole di proiezione nel contratto mappa; non trattare una mappa come immagine generica se deve mantenere coordinate geografiche.
@@ -69,7 +68,7 @@ Le voci sotto sono **zone e composizioni navigabili**, non famiglie di animazion
 ## Source of truth e contratto dati
 
 - [ ] Mantenere **una sola fonte canonica per ogni tipo di dato**: ChrononTemplate per definizioni e ID delle motion; contratto overlay per gli elementi semantici; catalogo UI compilato per la navigazione e la compatibilità.
-- [ ] Aggiungere metadati di applicabilità alle motion nel catalogo canonico: zona, target (`image_layer`, `image_stack`, `caption`, `map_view`, `background`, `camera`, `metric`, `date`), composizioni supportate, requisiti renderer e stato di certificazione.
+- [ ] Aggiungere metadati di applicabilità alle motion nel catalogo canonico: zona, target (`image`, `caption`, `map_view`, `background`, `camera`, `metric`, `date`), composizioni supportate, requisiti renderer e stato di certificazione. Non esporre `image_stack` come target di prodotto.
 - [ ] Generare l’inventario consumato da RenderingGen/UI a partire dal catalogo canonico. Non mantenere array paralleli di ID in Go, frontend, gallery e documentazione.
 - [ ] Tenere separati i concetti `kind`, composizione, layout, preset/stile e `motion_id`. Non codificare `2_images`, `3_images`, `image_with_two_captions` come motion family.
 - [ ] Definire una matrice di compatibilità generata: **composizione × target motion × renderer capability**. Le combinazioni non supportate devono risultare indisponibili già in selezione/validazione.
@@ -89,7 +88,7 @@ Le voci sotto sono **zone e composizioni navigabili**, non famiglie di animazion
 ### Fase 1 — Disegno delle zone e della matrice di compatibilità
 
 - [ ] Approvare le sei zone di questo piano: Immagini, Immagini con testo, Mappe, Background, Dati, Camera Roll.
-- [ ] Approvare le composizioni e chiarire il significato di “testo 1–4” e “5+ immagini”.
+- [x] Composizioni approvate: immagini da 1 a 5; immagini-con-testo da 1 a 5 (conteggio immagini); una mappa e due mappe. Le categorie prive di famiglia usano `motion_ids: null`.
 - [ ] Compilare la matrice che associa ogni composizione ai target e alle motion consentite.
 - [ ] Decidere quali categorie attuali sono raggruppamenti editoriali, quali sono compatibilità runtime e quali sono raccolte storiche/certificazione.
 - [ ] Pubblicare un glossario breve: zona ≠ `kind` ≠ template ≠ preset ≠ motion.
@@ -164,7 +163,7 @@ Le voci sotto sono **zone e composizioni navigabili**, non famiglie di animazion
 
 ## Ordine consigliato di consegna
 
-1. Inventario + glossario + decisioni sui conteggi e sul significato di testo 1–4.
+1. Inventario + glossario + decisioni sui conteggi immagini (testo indica presenza di testo, non cardinalità).
 2. Catalogo UI generato e matrice di compatibilità; nessun cambio distruttivo ai contratti.
 3. Sezione Immagini (1, 2, 3, 4, 5+) riusando layer e motion esistenti.
 4. Immagini con didascalie collegate e motion testo/immagine indipendenti.
@@ -236,3 +235,14 @@ modificati o rimossi da un altro processo.
 - [x] Consolidare l’ammissione compiler-side in `motionAdmitsTarget`, riusata da policy, picker, caption e mappa. Il gate conserva il controllo delle tracce map-safe perché tutela la corrispondenza geospaziale.
 - [ ] Completare i metadati canonici per eliminare i fallback legacy rimasti in `motion_admission.go`; non inventare `map_view` sui motion senza aggiornare la fonte proprietaria.
 - [x] Verificare la tranche con il test mirato policy/catalogo/caption/map e con `go test ./internal/overlay -count=1`; entrambi passano. `git diff --check` è pulito.
+
+### Tassonomia picker per conteggio
+
+- [x] Sostituire il gruppo generico `composite_image_layer` e la categoria `image_stack` con `image_double`, `image_triplet`, `image_four` e `image_five`.
+- [x] Aggiungere le cinque categorie immagini-con-testo con conteggio riferito alle immagini. Le relative famiglie sono `null` finché non vengono progettate e implementate.
+- [x] Aggiungere `one_map` e `two_maps`; solo `one_map` espone la famiglia attualmente supportata.
+- [x] Escludere le ricette legacy di stack dalla categoria `single_image`; mantenere il supporto compiler necessario ai piani già salvati.
+- [x] Verificare test e JSON serializzato: i gruppi non implementati risultano esplicitamente `null`, non `[]` e non una lista generica condivisa.
+- [ ] Implementare in tranche successive soltanto le famiglie richieste per ciascuna categoria, aggiornando catalogo e compiler insieme.
+- [ ] Completare `map_view` nel catalogo canonico: sincronizzazione rinviata perché `scripts/sync_motion_catalog.sh` si arresta su un errore C++ preesistente (`authorizePresetForLayer` non dichiarata) e l’emitter disponibile rifiuta una validazione preesistente delle recipe. Nessuna modifica non sincronizzata è stata lasciata in ChrononTemplate.
+- [x] Conservare `image_stack_focus` per compatibilità compiler; non esporlo come categoria picker né nella famiglia `single_image`.

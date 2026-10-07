@@ -115,3 +115,19 @@ __pycache__/
 # Same artifact class, but under the Go module root (274 MB of editorial_v1 /
 # map_motion renders, timing sidecars and copied fonts).
 /renderinggen/out/
+
+# production_rehearsal_v1 is the localized 10×10 certification rerun tree. Its
+# rendered clips are the same artifact class as the /out and artifacts_* /
+# plans_* families above — a re-run regenerates them from the manifests — but
+# they were never covered, so each run re-added 76 mp4 under nested
+# *_artifacts*//*_timing* dirs. The patterns below ignore ONLY the media: the
+# per-run manifests and compact reports at the tree root stay reviewable
+# versioned evidence, which is the same split the artifacts_*/plans_* rules
+# above already make.
+/multilingual_overlays_v1/production_rehearsal_v1/**/*.mp4
+
+# mike_tyson_overlay_test keeps its request/plan/script JSON and the input
+# assets (all reviewable); only the preset gallery's rendered clips are the
+# artifact class. /mike_tyson_overlay_test/output/ is already ignored above,
+# but preset_overlays_v1/renders/ was not, so a gallery re-run re-added mp4.
+/mike_tyson_overlay_test/preset_overlays_v1/renders/

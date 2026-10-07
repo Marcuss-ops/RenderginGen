@@ -1,3 +1,5 @@
+//go:build certification
+
 package overlay
 
 import (
@@ -7,7 +9,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"runtime"
 	"testing"
 	"time"
 )
@@ -69,61 +70,6 @@ func TestFinal_AppleStyleSemanticLowering(t *testing.T) {
 			}
 		})
 	}
-}
-
-func appleStylesDir(t *testing.T) string {
-	t.Helper()
-	_, source, _, ok := runtime.Caller(0)
-	if !ok {
-		t.Fatal("cannot locate test source")
-	}
-	return filepath.Join(filepath.Dir(source), "../../../testdata/styles")
-}
-
-func appleAssetsRoot(t *testing.T) string {
-	t.Helper()
-	source := certificationSourceRoot(t)
-	root := t.TempDir()
-
-	fixtures := map[string]string{
-		"assets/apple.png":              "apple.png",
-		"assets/background.jpg":         "background.jpg",
-		"assets/fonts/Poppins-Bold.ttf": "Poppins-Bold.ttf",
-		"fonts/Poppins-Bold.ttf":        "Poppins-Bold.ttf",
-		"Poppins-Bold.ttf":              "Poppins-Bold.ttf",
-		"apple.png":                     "apple.png",
-	}
-
-	for logicalPath, fixture := range fixtures {
-		data, err := os.ReadFile(filepath.Join(source, fixture))
-		if err != nil {
-			t.Skipf("fixture %s not available: %v", fixture, err)
-		}
-		target := filepath.Join(root, filepath.FromSlash(logicalPath))
-		if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
-			t.Fatalf("mkdir: %v", err)
-		}
-		if err := os.WriteFile(target, data, 0o644); err != nil {
-			t.Fatalf("write asset %s: %v", logicalPath, err)
-		}
-	}
-	return root
-}
-
-// goldenEngineBinOrSkip gates the Apple-style golden render: the same opt-in
-// engine policy as the certification suite (CHRONON_BIN must name the binary, see
-// chrononBinFor) plus -short.
-//
-// Why it is opt-in at all: this test is a golden GENERATOR, not a certification.
-// It drives the real engine for all three styles (minutes of render work) and
-// writes the resulting MP4s into the checkout under testdata/ (see outDir below),
-// so it must never start as a side effect of `go test ./...`.
-func goldenEngineBinOrSkip(t *testing.T) string {
-	t.Helper()
-	if testing.Short() {
-		t.Skip("short mode: the Apple-style golden render drives the real engine and writes MP4s under testdata/")
-	}
-	return chrononBinFor(t)
 }
 
 // TestRenderingGen2ChrononAppleStyleFinal renders all three Apple styles
@@ -236,40 +182,5 @@ func TestRenderingGen2ChrononAppleStyleFinal(t *testing.T) {
 				}
 			}
 		}
-	}
-}
-
-func probeMP4StructuralWithFPS(t *testing.T, path string, wantFPS, wantFrames int, wantMinDuration float64) {
-	t.Helper()
-	out, err := exec.Command("ffprobe", "-v", "error", "-select_streams", "v:0",
-		"-show_entries", "stream=width,height,nb_frames,r_frame_rate",
-		"-show_entries", "format=duration", "-of", "json", path).Output()
-	if err != nil {
-		t.Fatalf("ffprobe %s: %v", path, err)
-	}
-	var probe struct {
-		Streams []struct {
-			Width      int    `json:"width"`
-			Height     int    `json:"height"`
-			NBFrames   string `json:"nb_frames"`
-			RFrameRate string `json:"r_frame_rate"`
-		} `json:"streams"`
-		Format struct {
-			Duration string `json:"duration"`
-		} `json:"format"`
-	}
-	if err := json.Unmarshal(out, &probe); err != nil {
-		t.Fatalf("ffprobe JSON: %v", err)
-	}
-	if len(probe.Streams) != 1 {
-		t.Fatalf("expected 1 video stream, got %d", len(probe.Streams))
-	}
-	s := probe.Streams[0]
-	if s.Width != 1920 || s.Height != 1080 {
-		t.Errorf("resolution %dx%d, want 1920x1080", s.Width, s.Height)
-	}
-	wantRFR := fmt.Sprintf("%d/1", wantFPS)
-	if s.RFrameRate != wantRFR {
-		t.Errorf("fps %q, want %s", s.RFrameRate, wantRFR)
 	}
 }
