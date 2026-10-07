@@ -18,6 +18,16 @@ controlli successivi hanno trovato errori di compilazione nel lavoro concorrente
 sulle mappe. Retention e sign-off owner dei profili deployment restano aperti.
 Non sono state presunte approvazioni esterne.
 
+**Chiusura (stesso giorno, tranche finale):** build ristabilizzata (wire trim
+`offset` sempre serializzato; test route cerca l’ID invece dell’ultimo layer);
+Camera Roll scena chiusa come out-of-scope (`unsupported`, nessun contratto di
+movimenti, schema aggiornato); GPU strict confermata non bloccante (gate
+bloccante = `test-unit`, certificazione = job manuale GPU); retention chiusa
+con il repository come archivio (97/97 presenti, nessuna cancellazione
+ulteriore); rimosse 4 directory `cmd/` vuote e senza riferimenti; UI già
+assente e 7 profili config tutti referenziati (mantenuti). Gate finali verdi
+vedi sotto.
+
 **Aggiornamento checkout — 7 ottobre 2026:** il piano overlay dettagliato è in
 [`cleanupplan2.0.md`](cleanupplan2.0.md). La deduplica media, il catalogo runtime
 compilato e i contratti semantici sono già implementati; non va confuso questo

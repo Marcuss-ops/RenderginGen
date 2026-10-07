@@ -647,7 +647,7 @@ type LayerPathAnimation struct {
 type LayerTrimParams struct {
 	Start     float64             `json:"start"`
 	End       float64             `json:"end"`
-	Offset    float64             `json:"offset,omitempty"`
+	Offset    float64             `json:"offset"`
 	Animation *LayerPathAnimation `json:"animation,omitempty"`
 }
 
