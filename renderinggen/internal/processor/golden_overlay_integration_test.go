@@ -130,9 +130,8 @@ func TestProcessGoldenSemanticOverlayJobV1(t *testing.T) {
 
 	store := storage.New(storage.NewMemory(), storage.Options{})
 	renderer := &capturingRenderer{Renderer: cli}
-	proc := New(t.TempDir(), "software", cli.Version(), "http://store:9000", store, renderer)
 	ledger := artifactdb.NewMemory()
-	proc.SetArtifactRecorder(ledger)
+	proc := NewWithOptions(t.TempDir(), "software", cli.Version(), "http://store:9000", store, renderer, Options{ArtifactRecorder: ledger})
 
 	var job queue.Job
 	if err := json.Unmarshal([]byte(chronon.GoldenSemanticOverlayJobV1), &job); err != nil {

@@ -21,8 +21,7 @@ import (
 // artifact bytes are still in the object store, and the completed artifact's
 // metrics carry mirror_failure=1 so the divergence is observable.
 func TestProcessMirrorFailureKeepsRenderCompleted(t *testing.T) {
-	proc, store, renderer := newProcessor(t)
-	proc.SetArtifactRecorder(failingRecorder{})
+	proc, store, renderer := newProcessorWith(t, Options{ArtifactRecorder: failingRecorder{}})
 	if err := store.Put(context.Background(), videoHash, []byte("video-bytes")); err != nil {
 		t.Fatalf("put asset: %v", err)
 	}
@@ -52,16 +51,14 @@ func TestProcessMirrorFailureKeepsRenderCompleted(t *testing.T) {
 // time. The skip is recorded on the artifact so a run can never confuse "no
 // Drive phase" with a fast upload.
 func TestPublishSkipsDriveForQueueJobs(t *testing.T) {
-	proc, store, renderer := newProcessor(t)
 	ledger := artifactdb.NewMemory()
-	proc.SetArtifactRecorder(ledger)
+	proc, store, renderer := newProcessorWith(t, Options{ArtifactRecorder: ledger, Publisher: drive.NewMock(t.TempDir(), 0)})
 	if err := store.Put(context.Background(), videoHash, []byte("video-bytes")); err != nil {
 		t.Fatalf("put asset: %v", err)
 	}
 	renderer.write = func(path string) error {
 		return os.WriteFile(path, []byte("output-bytes"), 0o644)
 	}
-	proc.SetPublisher(drive.NewMock(t.TempDir(), 0))
 
 	artifact, err := proc.Render(context.Background(), validJob())
 	if err != nil {
@@ -93,9 +90,8 @@ func TestPublishSkipsDriveForQueueJobs(t *testing.T) {
 // re-rendering (RENDERED -> PUBLISH_RETRY -> PUBLISHED, never a Chronon
 // re-render).
 func TestPublishUpdatesLedgerDriveMetric(t *testing.T) {
-	proc, store, renderer := newProcessor(t)
 	ledger := artifactdb.NewMemory()
-	proc.SetArtifactRecorder(ledger)
+	proc, store, renderer := newProcessorWith(t, Options{ArtifactRecorder: ledger, Publisher: drive.NewMock(t.TempDir(), 0)})
 	if err := store.Put(context.Background(), videoHash, []byte("video-bytes")); err != nil {
 		t.Fatalf("put asset: %v", err)
 	}
@@ -112,7 +108,6 @@ func TestPublishUpdatesLedgerDriveMetric(t *testing.T) {
 		t.Fatalf("drive_upload_us before publish = %d, want 0", rec.DriveUploadUS)
 	}
 
-	proc.SetPublisher(drive.NewMock(t.TempDir(), 0))
 	if _, err := proc.publishToDrive(context.Background(), validJob().ID, artifact); err != nil {
 		t.Fatalf("publish: %v", err)
 	}
@@ -129,14 +124,13 @@ func TestPublishUpdatesLedgerDriveMetric(t *testing.T) {
 }
 
 func TestRenderThenPublishRetrySkipsRender(t *testing.T) {
-	proc, store, renderer := newProcessor(t)
+	proc, store, renderer := newProcessorWith(t, Options{Publisher: drive.NewMock(t.TempDir(), 1)}) // first upload fails
 	if err := store.Put(context.Background(), videoHash, []byte("video-bytes")); err != nil {
 		t.Fatalf("put asset: %v", err)
 	}
 	renderer.write = func(path string) error {
 		return os.WriteFile(path, []byte("output-bytes"), 0o644)
 	}
-	proc.SetPublisher(drive.NewMock(t.TempDir(), 1)) // first upload fails
 
 	// Render succeeds and stores the artifact in the object store.
 	artifact, err := proc.Render(context.Background(), validJob())
@@ -181,8 +175,7 @@ func TestPublishEnforcesStoreDBInvariant(t *testing.T) {
 	// artifact key is NOT in the L1/L2 cache (it was never Put through this
 	// client), so Get falls through to the corrupted backend.
 	store := storage.New(corruptBackend{}, storage.Options{})
-	proc := New(t.TempDir(), "software", "0.1.0", "http://store:9000", store, &fakeRenderer{})
-	proc.SetPublisher(drive.NewMock(t.TempDir(), 0))
+	proc := NewWithOptions(t.TempDir(), "software", "0.1.0", "http://store:9000", store, &fakeRenderer{}, Options{Publisher: drive.NewMock(t.TempDir(), 0)})
 
 	// A claimed rendered job whose stored bytes no longer match the recorded
 	// hash (the object store drifted from what the worker hashed).
@@ -200,14 +193,13 @@ func TestPublishEnforcesStoreDBInvariant(t *testing.T) {
 // TestPublishEnforcesDriveInvariant proves the provider identity leg of the
 // chain: a publisher that reports an incorrect uploaded size fails the job.
 func TestPublishEnforcesDriveInvariant(t *testing.T) {
-	proc, store, renderer := newProcessor(t)
+	proc, store, renderer := newProcessorWith(t, Options{Publisher: badSizePublisher{}})
 	if err := store.Put(context.Background(), videoHash, []byte("video-bytes")); err != nil {
 		t.Fatalf("put asset: %v", err)
 	}
 	renderer.write = func(path string) error {
 		return os.WriteFile(path, []byte("output-bytes"), 0o644)
 	}
-	proc.SetPublisher(badSizePublisher{})
 
 	artifact, err := proc.Render(context.Background(), validJob())
 	if err != nil {
@@ -224,15 +216,12 @@ func TestPublishEnforcesDriveInvariant(t *testing.T) {
 // result are all the same, and the bytes Drive received are the bytes the
 // worker hashed.
 func TestPublishSHAChainInvariant(t *testing.T) {
-	proc, store, renderer := newProcessor(t)
+	driveDir := t.TempDir()
+	ledger := artifactdb.NewMemory()
+	proc, store, renderer := newProcessorWith(t, Options{ArtifactRecorder: ledger, Publisher: drive.NewMock(driveDir, 0)})
 	if err := store.Put(context.Background(), videoHash, []byte("video-bytes")); err != nil {
 		t.Fatalf("put asset: %v", err)
 	}
-	ledger := artifactdb.NewMemory()
-	proc.SetArtifactRecorder(ledger)
-	driveDir := t.TempDir()
-	publisher := drive.NewMock(driveDir, 0)
-	proc.SetPublisher(publisher)
 	renderer.write = func(path string) error {
 		return os.WriteFile(path, []byte("output-bytes"), 0o644)
 	}

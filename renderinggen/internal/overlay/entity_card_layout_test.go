@@ -156,18 +156,43 @@ func TestEntityCaptionMotionCompiles(t *testing.T) {
 	}
 }
 
-func TestEntityCaptionMotionRejectsNonText(t *testing.T) {
-	layers := entityCardPlan(t, "Ada Lovelace", "image_slide_left", false)
-	caption := layers[1]
-	if caption.Animation != nil && len(caption.Animation.Tracks) > 0 {
-		// An image motion on a caption must not lower image tracks onto the
-		// text layer; the resolver refuses it and the caption stays static
-		// (preset-owned) rather than carrying impossible tracks.
-		for _, track := range caption.Animation.Tracks {
-			if track.Property == "position_z" || track.Property == "rotation_x" || track.Property == "rotation_y" {
-				t.Fatalf("caption carried image-motion 3D track %q", track.Property)
-			}
+func TestEntityCaptionMotionAllowsEveryEntityStyle(t *testing.T) {
+	for _, style := range premiumEntityStyles {
+		if !motionAdmitsTarget(style.CaptionMotionID, "caption") {
+			t.Errorf("entity style %q caption motion %q is not admitted by its canonical text target", style.ID, style.CaptionMotionID)
 		}
+	}
+}
+
+func TestEntityCaptionMotionRejectsNonText(t *testing.T) {
+	item := map[string]any{
+		"id": "portrait", "entity_id": "person:ada-lovelace", "kind": "entity_card",
+		"template_id": "PERSON", "preset_id": "phrase_default", "text": "Ada Lovelace",
+		"image_preset_id": "image_scale_in", "entity_caption": "Ada Lovelace",
+		"caption_motion_id": "image_slide_left", "start_ms": 0, "end_ms": 2000, "duration_ms": 2000,
+		"asset_refs": []any{map[string]any{
+			"asset_id": "portrait-asset", "sha256": strings.Repeat("a", 64),
+			"url": "https://store.example/portrait.png", "media_type": "image/png",
+		}},
+	}
+	plan := map[string]any{
+		"schema_version": "renderinggen.overlay-plan.v1", "plan_id": "reject-caption-motion",
+		"video_id": "reject-caption-motion", "width": 1280, "height": 720,
+		"fps_num": 30, "fps_den": 1, "items": []any{item},
+	}
+	raw, err := json.Marshal(plan)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := CompileSemantic(raw); err == nil || !strings.Contains(err.Error(), `caption motion "image_slide_left" is not supported`) {
+		t.Fatalf("non-text caption motion error = %v, want explicit pre-render rejection", err)
+	}
+}
+
+func TestCompositeImageCaptionRejectsNonTextMotion(t *testing.T) {
+	raw := []byte(`{"schema_version":"renderinggen.overlay-plan.v1","plan_id":"bad-caption-motion","video_id":"v","width":1280,"height":720,"fps_num":24,"fps_den":1,"items":[{"id":"pair","kind":"entity_image","template_id":"image_popup","preset_id":"image_focus_in","start_ms":0,"end_ms":5000,"duration_ms":5000,"asset_refs":[{"asset_id":"a","sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","url":"https://example.test/a.png"},{"asset_id":"b","sha256":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","url":"https://example.test/b.png"}],"image_layers":[{"id":"a","asset_id":"a","start_ms":0,"end_ms":5000,"preset_id":"image_focus_in","caption":"Ada","caption_motion_id":"image_slide_left"},{"id":"b","asset_id":"b","start_ms":0,"end_ms":5000,"preset_id":"image_focus_in"}]}]}`)
+	if _, err := CompileSemantic(raw); err == nil || !strings.Contains(err.Error(), `caption motion "image_slide_left" is not supported`) {
+		t.Fatalf("composite non-text caption motion error = %v, want explicit pre-render rejection", err)
 	}
 }
 

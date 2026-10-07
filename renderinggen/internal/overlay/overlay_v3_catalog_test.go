@@ -125,48 +125,42 @@ func firstCameraBackedProperty(definition motion.MotionDefinition) string {
 
 func TestImageMotionInventoryHasAllCatalogImageAnimations(t *testing.T) {
 	inventory := ImageMotionInventory()
-	want := map[string][]string{
-		"editorial_image_v1": motion.Registry.EditorialImageV1MotionIDs(),
-		"image_premium_v1":   motion.Registry.ImagePremiumV1MotionIDs(),
-		"overlay_v3_image": {
-			"image_fade_reveal", "image_focus_reveal", "image_scale_reveal",
-			"image_slide_left_reveal", "image_slide_right_reveal", "image_parallax_depth_reveal",
-			"image_tilt_settle", "image_card_push", "image_diagonal_sweep", "image_soft_focus_reveal",
-		},
-		"image_25d_clean_v1": {
-			"image_25d_depth_float_in", "image_25d_yaw_flip_in", "image_25d_pitch_lift",
-			"image_25d_pop_z_bounce", "image_25d_swipe_3d", "image_25d_card_swing",
-			"image_25d_blur_focus_in", "image_25d_blur_scale_in",
-		},
-		"brush_v1":      motion.Registry.VisualAccentsV1MotionIDs("brush_v1"),
-		"web_rect_v1":   motion.Registry.VisualAccentsV1MotionIDs("web_rect_v1"),
-		"paint_v1":      motion.Registry.VisualAccentsV1MotionIDs("paint_v1"),
-		"light_leak_v1": motion.Registry.VisualAccentsV1MotionIDs("light_leak_v1"),
+	want := make(map[string][]string)
+	for _, id := range motion.Registry.List() {
+		plugin, err := motion.Registry.Resolve(id)
+		if err != nil || plugin == nil {
+			t.Fatalf("resolve catalog motion %q: %v", id, err)
+		}
+		definition, ok := plugin.(motion.DeclarativePlugin)
+		if !ok {
+			continue
+		}
+		if containsString(definition.Definition.Targets, "image") ||
+			(definition.Definition.Targets == nil && definition.Definition.Category == "overlay_v3_image") {
+			want[definition.Definition.Category] = append(want[definition.Definition.Category], id)
+		}
 	}
-	if len(inventory) != len(want) {
-		t.Fatalf("image inventory groups = %v, want exactly %v", inventory, want)
+	if !reflect.DeepEqual(inventory, want) {
+		t.Fatalf("image inventory diverges from canonical target/category metadata:\n got: %#v\nwant: %#v", inventory, want)
 	}
 	all := make(map[string]bool)
-	for family, expected := range want {
-		got := inventory[family]
-		if len(got) != len(expected) {
-			t.Fatalf("%s inventory = %v, want %d IDs", family, got, len(expected))
-		}
-		seen := make(map[string]bool, len(got))
-		for _, id := range got {
-			if seen[id] {
-				t.Errorf("%s inventory repeats %q", family, id)
+	for family, ids := range inventory {
+		for _, id := range ids {
+			if all[id] {
+				t.Errorf("image inventory repeats motion %q", id)
 			}
-			seen[id], all[id] = true, true
-		}
-		for _, id := range expected {
-			if !seen[id] {
-				t.Errorf("%s inventory is missing catalog motion %q", family, id)
+			all[id] = true
+			plugin, err := motion.Registry.Resolve(id)
+			if err != nil || plugin.(motion.DeclarativePlugin).Definition.Category != family {
+				t.Errorf("family %q contains non-canonical motion %q", family, id)
 			}
 		}
 	}
-	if len(all) != 111 || len(motion.Registry.ImageOverlayMotionIDs()) != 18 || len(motion.Registry.ImagePremiumV1MotionIDs()) != 20 {
-		t.Fatalf("combined image motion inventory = %d, want 111 catalog IDs (52 legacy + 59 visual accents), 18 legacy IDs, and 20 premium IDs", len(all))
+	if len(all) == 0 {
+		t.Fatal("catalog image inventory is empty")
+	}
+	if len(motion.Registry.ImageOverlayMotionIDs()) != 18 || len(motion.Registry.ImagePremiumV1MotionIDs()) != 20 {
+		t.Fatalf("legacy image APIs changed unexpectedly: overlay=%d premium=%d", len(motion.Registry.ImageOverlayMotionIDs()), len(motion.Registry.ImagePremiumV1MotionIDs()))
 	}
 }
 

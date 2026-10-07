@@ -26,7 +26,6 @@ import (
 	"unicode/utf8"
 
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/geo"
-	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/motion"
 )
 
 // Map contract bounds. They mirror the published overlay-plan.v1 schema, so a
@@ -106,7 +105,7 @@ func validateMapContract(item semanticItem, kind ItemKind, canvasWidth, canvasHe
 	if m.Width > maxMapRasterWidth || m.Height > maxMapRasterHeight {
 		return fmt.Errorf("overlay: map item %q raster %dx%d exceeds the contract maximum %dx%d", item.ID, m.Width, m.Height, maxMapRasterWidth, maxMapRasterHeight)
 	}
-	if !isCenteredMapMotion(m.MotionID) {
+	if !motionAdmitsTarget(m.MotionID, "map_view") {
 		return fmt.Errorf("overlay: map item %q motion %q is not a registered centered image motion", item.ID, m.MotionID)
 	}
 	if err := validateMapPoint(m.Center.Latitude, m.Center.Longitude); err != nil {
@@ -133,39 +132,6 @@ func validateMapContract(item semanticItem, kind ItemKind, canvasWidth, canvasHe
 		return fmt.Errorf("overlay: map item %q: %w", item.ID, err)
 	}
 	return nil
-}
-
-// isCenteredMapMotion resolves through the shared motion registry and admits
-// only catalog-authored image motions whose tracks cannot translate or rotate
-// the raster away from the georeferenced pin window.
-func isCenteredMapMotion(id string) bool {
-	registeredImageMotion := false
-	allowedIDs := append(motion.Registry.ImageOverlayMotionIDs(), motion.Registry.MapImageV1MotionIDs()...)
-	for _, imageID := range allowedIDs {
-		if imageID == id {
-			registeredImageMotion = true
-			break
-		}
-	}
-	if !registeredImageMotion {
-		return false
-	}
-	plugin, err := motion.Registry.Resolve(id)
-	if err != nil {
-		return false
-	}
-	declarative, ok := plugin.(motion.DeclarativePlugin)
-	if !ok || len(declarative.Definition.Tracks) == 0 {
-		return false
-	}
-	for _, track := range declarative.Definition.Tracks {
-		switch track.Property {
-		case "opacity", "scale", "scale_x", "scale_y", "blur":
-		default:
-			return false
-		}
-	}
-	return true
 }
 
 func validateMapAttribution(attribution string) error {

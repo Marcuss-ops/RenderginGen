@@ -20,16 +20,15 @@ import (
 // serial path would silently stop applying publication policy while the pools
 // keep doing so — a split-brain this test makes impossible.
 func TestSerialProcessAppliesPublicationPolicy(t *testing.T) {
-	proc, store, renderer := newProcessor(t)
+	// A Drive capability is configured, so the absence of an upload is a
+	// POLICY decision, not a missing dependency.
+	proc, store, renderer := newProcessorWith(t, Options{Publisher: drive.NewMock(t.TempDir(), 0)})
 	if err := store.Put(context.Background(), videoHash, []byte("video-bytes")); err != nil {
 		t.Fatalf("put asset: %v", err)
 	}
 	renderer.write = func(path string) error {
 		return os.WriteFile(path, []byte("output-bytes"), 0o644)
 	}
-	// A Drive capability is configured, so the absence of an upload is a
-	// POLICY decision, not a missing dependency.
-	proc.SetPublisher(drive.NewMock(t.TempDir(), 0))
 
 	rendered, err := proc.Render(context.Background(), validJob())
 	if err != nil {

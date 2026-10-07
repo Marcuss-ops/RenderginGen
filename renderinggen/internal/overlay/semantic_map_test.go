@@ -180,6 +180,51 @@ func TestGeoreferencedFlyToCompilesNativeCameraAndOfflineLODs(t *testing.T) {
 	}
 }
 
+func TestSceneCameraRejectsMultipleControllers(t *testing.T) {
+	entity := map[string]any{
+		"id": "camera-portrait", "entity_id": "person:ada", "kind": "entity_card",
+		"template_id": "PERSON", "preset_id": PhraseDefaultPresetID, "text": "Ada Lovelace",
+		"image_preset_id": "image_scale_in", "entity_caption": "Ada Lovelace",
+		"entity_style_id": "camera", "start_ms": 0, "end_ms": 3000, "duration_ms": 3000,
+		"asset_refs": []any{map[string]any{
+			"asset_id": "portrait", "sha256": strings.Repeat("d", 64),
+			"url": "assets/semantic/portrait.png", "media_type": "image/png",
+		}},
+	}
+	for _, tc := range []struct {
+		name  string
+		items []any
+		want  string
+	}{
+		{name: "map camera then entity camera", items: []any{cameraMapPlan()["items"].([]any)[0], entity}, want: "camera motion conflicts with map item"},
+		{name: "entity camera then map camera", items: []any{entity, cameraMapPlan()["items"].([]any)[0]}, want: "scene camera move conflicts with entity item"},
+		{name: "two entity camera controllers", items: []any{entity, func() map[string]any {
+			duplicate := make(map[string]any, len(entity))
+			for key, value := range entity {
+				duplicate[key] = value
+			}
+			duplicate["id"] = "camera-portrait-2"
+			duplicate["entity_id"] = "person:grace"
+			return duplicate
+		}()}, want: "only one scene camera controller"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			plan := map[string]any{
+				"schema_version": "renderinggen.overlay-plan.v1", "plan_id": "camera-conflict",
+				"video_id": "camera-conflict", "width": 1280, "height": 720,
+				"fps_num": 24, "fps_den": 1, "items": tc.items,
+			}
+			raw, err := json.Marshal(plan)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if _, err := CompileSemantic(raw); err == nil || !strings.Contains(err.Error(), tc.want) {
+				t.Fatalf("camera conflict error = %v, want %q", err, tc.want)
+			}
+		})
+	}
+}
+
 func TestGeoreferencedFlyToRejectsUncoveredOrUnlicensedLOD(t *testing.T) {
 	plan := cameraMapPlan()
 	item := plan["items"].([]any)[0].(map[string]any)

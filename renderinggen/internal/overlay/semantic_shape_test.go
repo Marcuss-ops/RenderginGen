@@ -295,6 +295,21 @@ func TestCompileShapeItem_FailClosedBounds(t *testing.T) {
 			params:      map[string]any{"shape": "rect", "effects": []any{map[string]any{"type": "noise", "params": map[string]any{"amount": 1.5}}}},
 			errContains: "noise amount",
 		},
+		{
+			name:        "noise intensity rejects non numeric value",
+			params:      map[string]any{"shape": "rect", "effects": []any{map[string]any{"type": "noise", "params": map[string]any{"intensity": "loud"}}}},
+			errContains: "intensity must be a number",
+		},
+		{
+			name:        "noise size rejects infinity",
+			params:      map[string]any{"shape": "rect", "effects": []any{map[string]any{"type": "noise", "params": map[string]any{"size": "Infinity"}}}},
+			errContains: "noise size",
+		},
+		{
+			name:        "fractal noise octaves remain integral",
+			params:      map[string]any{"shape": "rect", "effects": []any{map[string]any{"type": "fractal_noise", "params": map[string]any{"octaves": 2.5}}}},
+			errContains: "octaves",
+		},
 	}
 
 	for _, tc := range testCases {

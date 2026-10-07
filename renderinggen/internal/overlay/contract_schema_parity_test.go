@@ -29,6 +29,7 @@ func TestContractSchemaMatchesCompilerStructs(t *testing.T) {
 		goValue       any
 	}{
 		{"plan", "#/", semanticPlan{}},
+		{"plan.animation_policies[]", "#/$defs/animation_policy", semanticAnimationPolicy{}},
 		{"plan.source", "#/properties/source", semanticSource{}},
 		{"plan.source_frame", "#/properties/source_frame", semanticSourceFrame{}},
 		{"plan.source_frame.border", "#/properties/source_frame/properties/border", semanticFrameBorder{}},
@@ -229,14 +230,16 @@ func TestContractDeclaresEveryLiveLoweringInput(t *testing.T) {
 	schema := contractschema.Load(t, overlayContractSchema)
 	itemProperties := contractschema.PropertyNames(t, schema, "#/properties/items/items")
 	watermarkProperties := contractschema.PropertyNames(t, schema, "#/properties/watermark")
-	for _, field := range []string{"image_preset_id", "motion_id", "motion_params", "params", "style", "image_layers", "map", "caption_motion_id"} {
+	for _, field := range []string{"image_preset_id", "motion_id", "motion_params", "params", "style", "image_layers", "map", "caption_motion_id", "caption_motion_params", "group_id", "subgroup_id"} {
 		if !contractschema.Contains(itemProperties, field) {
 			t.Errorf("items.%s is read by the compiler but absent from the schema", field)
 		}
 	}
 	imageLayerProperties := contractschema.PropertyNames(t, schema, "#/properties/items/items/properties/image_layers/items")
-	if !contractschema.Contains(imageLayerProperties, "caption_motion_id") {
-		t.Error("image_layers[].caption_motion_id is consumed by the compiler but absent from the schema")
+	for _, field := range []string{"caption_motion_id", "caption_motion_params", "group_id", "subgroup_id"} {
+		if !contractschema.Contains(imageLayerProperties, field) {
+			t.Errorf("image_layers[].%s is consumed by the compiler but absent from the schema", field)
+		}
 	}
 	for _, field := range []string{"font_ref", "margin_px"} {
 		if !contractschema.Contains(watermarkProperties, field) {

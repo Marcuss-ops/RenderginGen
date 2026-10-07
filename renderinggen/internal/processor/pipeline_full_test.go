@@ -122,9 +122,8 @@ func TestProcessFullPipeline(t *testing.T) {
 // The bounded ChrononTelemetry copy stays the ledger telemetry — the array is
 // never inlined anywhere.
 func TestProcessPreservesRawTimingSidecarReference(t *testing.T) {
-	proc, store, renderer := newProcessor(t)
 	ledger := artifactdb.NewMemory()
-	proc.SetArtifactRecorder(ledger)
+	proc, store, renderer := newProcessorWith(t, Options{ArtifactRecorder: ledger})
 	if err := store.Put(context.Background(), videoHash, []byte("video-bytes")); err != nil {
 		t.Fatalf("put asset: %v", err)
 	}
@@ -315,9 +314,8 @@ func TestProcessExecutesSemanticOverlayPlan(t *testing.T) {
 // input/output byte counts. The ledger hash must equal the object-store key
 // (local_sha == objectstore_sha == db_sha invariant).
 func TestProcessRecordsArtifactLedger(t *testing.T) {
-	proc, store, renderer := newProcessor(t)
 	ledger := artifactdb.NewMemory()
-	proc.SetArtifactRecorder(ledger)
+	proc, store, renderer := newProcessorWith(t, Options{ArtifactRecorder: ledger})
 
 	assetBytes := testImagePNG(t, 1600, 900)
 	assetHash := storage.Hash(assetBytes)

@@ -126,9 +126,9 @@ func (r *RegistryType) Text3DV1MotionIDs() []string {
 	return r.CategoryMotionIDs("text_3d_v1")
 }
 
-// EntityCaptionV1MotionIDs returns the animated-caption vocabulary for entity
+// entityCaptionV1MotionIDs returns the animated-caption vocabulary for entity
 // cards in stable order.
-func (r *RegistryType) EntityCaptionV1MotionIDs() []string {
+func (r *RegistryType) entityCaptionV1MotionIDs() []string {
 	return r.CategoryMotionIDs("entity_caption_v1")
 }
 

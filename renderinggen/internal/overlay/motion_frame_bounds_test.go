@@ -2,10 +2,78 @@ package overlay
 
 import (
 	"fmt"
+	"math"
+	"strings"
 	"testing"
 
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/motion"
 )
+
+func TestMotionWindowsRejectsInvalidRuntimeTimingOverrides(t *testing.T) {
+	for _, tc := range []struct {
+		name  string
+		value any
+	}{
+		{name: "string", value: "fast"},
+		{name: "fraction", value: 2.5},
+		{name: "negative", value: -1},
+		{name: "too large", value: 241},
+		{name: "positive infinity", value: math.Inf(1)},
+		{name: "NaN", value: math.NaN()},
+		{name: "integer overflow", value: int64(math.MaxInt64)},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			if _, _, err := motionWindows(map[string]any{"enter_frames": tc.value}, 12); err == nil || !strings.Contains(err.Error(), "motion_params.enter_frames") {
+				t.Fatalf("motionWindows accepted %v or returned an unclear error: %v", tc.value, err)
+			}
+		})
+	}
+}
+
+func TestMotionWindowsExposeRuntimeFrameControlsWithoutClosingPluginParams(t *testing.T) {
+	enter, exit, err := motionWindows(map[string]any{
+		"enter_frames":           1,
+		"exit_frames":            240,
+		"active_layer_id":        "front",
+		"plugin_specific_option": map[string]any{"mode": "focus"},
+	}, 12)
+	if err != nil {
+		t.Fatalf("valid runtime timing: %v", err)
+	}
+	if enter != 1 || exit != 240 {
+		t.Fatalf("runtime windows = %d/%d, want 1/240", enter, exit)
+	}
+	enter, exit, err = motionWindows(map[string]any{"enter_frames": 0, "exit_frames": 0}, 12)
+	if err != nil || enter != 0 || exit != 12 {
+		t.Fatalf("zero should retain catalog/preset windows, got %d/%d, err=%v", enter, exit, err)
+	}
+}
+
+func TestCompileImportantPhraseRejectsInvalidRuntimeTiming(t *testing.T) {
+	raw := []byte(`{"schema_version":"renderinggen.overlay-plan.v1","plan_id":"bad-phrase-timing","video_id":"v","width":1280,"height":720,"fps_num":24,"fps_den":1,"items":[{"id":"phrase","kind":"important_phrase","template_id":"IMPORTANT_PHRASE","preset_id":"phrase_default","motion_id":"typewriter_clean","motion_params":{"enter_frames":"fast"},"text":"Runtime timing stays explicit","start_ms":0,"end_ms":3000}]}`)
+	if _, err := CompileSemantic(raw); err == nil || !strings.Contains(err.Error(), "motion_params.enter_frames") {
+		t.Fatalf("invalid phrase motion timing was not rejected clearly: %v", err)
+	}
+}
+
+func TestImageLayerRuntimeTimingRejectsInvalidStandaloneAndChildOverrides(t *testing.T) {
+	preset, err := resolveOfficialPreset("image_focus_in", string(PresetImage))
+	if err != nil {
+		t.Fatalf("resolve image preset: %v", err)
+	}
+	for _, scope := range []string{"standalone image", "composite child"} {
+		t.Run(scope, func(t *testing.T) {
+			_, err := compileSingleImageLayer(resolvedItem{Kind: KindEntityImage}, nil, "asset.png", preset,
+				"image_focus_reveal", map[string]any{"exit_frames": -2}, 0, 120, "image")
+			if err == nil || !strings.Contains(err.Error(), "motion_params.exit_frames") {
+				t.Fatalf("invalid %s timing was not rejected: %v", scope, err)
+			}
+		})
+	}
+	if _, err := imageMotionAnimation("image_glow_depth_in", map[string]any{"enter_frames": "slow"}, 120, 12); err == nil {
+		t.Fatal("premium image recipe accepted malformed runtime timing")
+	}
+}
 
 func TestEveryCatalogMotionKeepsAllKeyframesInsideLayerDuration(t *testing.T) {
 	durations := []int64{1, 2, 8, 17, 24, 72, 120}

@@ -78,7 +78,7 @@ type Processor struct {
 	deepVisualValidation bool
 
 	// keepWorkspace leaves a finished job's workspace on disk; see
-	// SetKeepWorkspace.
+	// Options.KeepWorkspace.
 	keepWorkspace bool
 
 	// progressTracker, when set, receives per-frame progress observations
@@ -108,29 +108,120 @@ type Processor struct {
 	cleanupLogLast  atomic.Int64 // unix nanos of the last degradation log (rate limit)
 }
 
-// New creates a job processor.
+// Options is the complete configuration surface of a Processor, applied once
+// at construction. The zero value reproduces the shipped defaults exactly, so
+// New(..) and NewWithOptions(.., Options{}) are behaviorally identical.
+//
+// It replaces the open-ended sequence of Set* calls the worker used to compose:
+// one typed literal is auditable in a single place (the compiler enforces every
+// field name and every call site composes the SAME struct), while a long run of
+// positional setters let a field be silently omitted, applied twice, or applied
+// in a different order in two callers. Collaborators a worker builds later in
+// startup (the artifact mirror, the Drive publisher, the progress tracker and
+// the metrics hooks) are simply constructed BEFORE the processor and passed
+// here, so there is exactly one configuration point.
+type Options struct {
+	// PhaseHook receives each pipeline phase's wall-clock duration:
+	// "materialize", "plan", "render", "publish". nil disables the overhead.
+	PhaseHook func(phase string, d time.Duration)
+
+	// GPUGapHook receives the wall-clock gap between consecutive GPU renders on
+	// this processor (the duty-cycle KPI behind gpu_gap_us). nil disables it.
+	GPUGapHook func(gap time.Duration)
+
+	// WorkspaceLeaseTTL is the validity window the per-job workspace liveness
+	// marker is written with. Zero keeps defaultWorkspaceLeaseTTL.
+	WorkspaceLeaseTTL time.Duration
+
+	// Report passes --report to chronon3d_cli so the engine writes its execution
+	// report and telemetry JSONL (render_ms, encode_ms, cache hits/misses).
+	Report bool
+
+	// ReceiptVerify is the output-verification policy requested from Chronon
+	// (fast / normal / certify). Empty means fast, the production default;
+	// config validates the accepted spellings at load.
+	ReceiptVerify string
+
+	// DeepVisualValidation enables the sampled ffmpeg visual gate.
+	DeepVisualValidation bool
+
+	// KeepWorkspace leaves a finished job's workspace on disk for inspection.
+	// The post pool is the workspace's last owner, so it and StagedRender must
+	// receive the SAME value.
+	KeepWorkspace bool
+
+	// HardwareEncoder selects an explicit FFmpeg hardware encoder (e.g. nvenc).
+	// Empty preserves the software encoder path.
+	HardwareEncoder string
+
+	// EncoderBackend selects the encoder route for this worker process. The pipe
+	// option is used by certified Vulkan composition profiles that hand frames
+	// to NVENC without requiring a strict native-surface path.
+	EncoderBackend string
+
+	// EncodePreset selects an explicit FFmpeg NVENC preset (e.g. "p2"). Empty
+	// preserves the engine default; the worker never invents a preset.
+	EncodePreset string
+
+	// PipePixFmt selects the explicit host-frame pipe format forwarded to Chronon
+	// for GPU composition jobs. Empty preserves Chronon's default.
+	PipePixFmt string
+
+	// NativeOutputProfiles enables passing output.profile_id to Chronon. Keep
+	// disabled for legacy runtimes that reject unknown output properties.
+	NativeOutputProfiles bool
+
+	// StrictNativeBackend makes the gpu-vulkan-native profile fail closed when
+	// Chronon reports a hybrid or software-fallback execution.
+	StrictNativeBackend bool
+
+	// Publisher is the external publication backend (Drive). nil disables it.
+	Publisher drive.Publisher
+
+	// ArtifactRecorder is the worker-local artifact ledger mirror. nil disables
+	// it; a failed Record is diagnostic and never fails the render.
+	ArtifactRecorder artifactdb.Recorder
+
+	// ProgressTracker receives per-frame render progress. nil disables it.
+	ProgressTracker *chronon.ProgressTracker
+
+	// AssetPrefetcher is the optional Chronon daemon warm-up bridge. Warm-up is
+	// best-effort and never changes the semantic plan or render gate.
+	AssetPrefetcher chronon.AssetPrefetcher
+}
+
+// New creates a job processor with the shipped defaults (Options{}).
 func New(jobsRoot, backend, chrononVersion, storeURL string, store *storage.Client, renderer chronon.Renderer) *Processor {
+	return NewWithOptions(jobsRoot, backend, chrononVersion, storeURL, store, renderer, Options{})
+}
+
+// NewWithOptions creates a job processor with an explicit configuration.
+func NewWithOptions(jobsRoot, backend, chrononVersion, storeURL string, store *storage.Client, renderer chronon.Renderer, opts Options) *Processor {
 	return &Processor{
-		jobsRoot:       jobsRoot,
-		backend:        backend,
-		chrononVersion: chrononVersion,
-		storeURL:       strings.TrimRight(storeURL, "/"),
-		store:          store,
-		renderer:       renderer,
+		jobsRoot:             jobsRoot,
+		backend:              backend,
+		chrononVersion:       chrononVersion,
+		storeURL:             strings.TrimRight(storeURL, "/"),
+		store:                store,
+		renderer:             renderer,
+		assetPrefetcher:      opts.AssetPrefetcher,
+		phaseHook:            opts.PhaseHook,
+		gpuGapHook:           opts.GPUGapHook,
+		report:               opts.Report,
+		hardwareEncoder:      opts.HardwareEncoder,
+		encoderBackend:       opts.EncoderBackend,
+		encodePreset:         opts.EncodePreset,
+		pipePixFmt:           opts.PipePixFmt,
+		nativeOutputProfiles: opts.NativeOutputProfiles,
+		strictNativeBackend:  opts.StrictNativeBackend,
+		workspaceLeaseTTL:    opts.WorkspaceLeaseTTL,
+		receiptVerify:        renderVerifyLevel(opts.ReceiptVerify),
+		deepVisualValidation: opts.DeepVisualValidation,
+		keepWorkspace:        opts.KeepWorkspace,
+		progressTracker:      opts.ProgressTracker,
+		drive:                opts.Publisher,
+		recorder:             opts.ArtifactRecorder,
 	}
-}
-
-// SetPhaseHook installs an optional callback that receives each pipeline
-// phase's wall-clock duration: "materialize", "plan", "render", "publish".
-// Used by the performance benchmark; nil (default) disables the overhead.
-func (p *Processor) SetPhaseHook(fn func(phase string, d time.Duration)) {
-	p.phaseHook = fn
-}
-
-// SetWorkspaceLeaseTTL sets the validity window the per-job workspace liveness
-// marker is written with. Zero keeps defaultWorkspaceLeaseTTL.
-func (p *Processor) SetWorkspaceLeaseTTL(ttl time.Duration) {
-	p.workspaceLeaseTTL = ttl
 }
 
 // defaultWorkspaceLeaseTTL is the shipped marker validity window, matching the
@@ -143,102 +234,6 @@ func (p *Processor) workspaceLeaseDuration() time.Duration {
 		return p.workspaceLeaseTTL
 	}
 	return defaultWorkspaceLeaseTTL
-}
-
-// SetReport enables the chronon3d_cli --report flag so the engine writes its
-// execution report and telemetry JSONL (render_ms, encode_ms, cache hits and
-// misses). Used by the performance benchmark; off by default.
-func (p *Processor) SetReport(enabled bool) {
-	p.report = enabled
-}
-
-// SetReceiptVerify sets the output-verification policy the worker requests from
-// Chronon (fast / normal / certify). The zero value means fast, which is the
-// production default; config validates the accepted spellings at load, so an
-// unrecognized value can only arrive from a caller that bypassed config.
-func (p *Processor) SetReceiptVerify(level string) {
-	p.receiptVerify = renderVerifyLevel(level)
-}
-
-// SetDeepVisualValidation enables the sampled ffmpeg visual gate for jobs whose
-// plan carries an authored overlay.
-func (p *Processor) SetDeepVisualValidation(enabled bool) {
-	p.deepVisualValidation = enabled
-}
-
-// SetKeepWorkspace leaves a finished job's workspace on disk for inspection.
-// The post pool is the workspace's last owner, so it and StagedRender must
-// receive the SAME value: the old arrangement read the environment separately
-// in each, which let the two owners disagree.
-func (p *Processor) SetKeepWorkspace(keep bool) {
-	p.keepWorkspace = keep
-}
-
-// SetHardwareEncoder selects an explicit FFmpeg hardware encoder (for
-// example, nvenc). Empty/none preserves the software encoder path.
-func (p *Processor) SetHardwareEncoder(encoder string) {
-	p.hardwareEncoder = encoder
-}
-
-// SetEncoderBackend selects the encoder route for this worker process. The
-// pipe option is used by certified Vulkan composition profiles that hand
-// frames to NVENC without requiring a strict native-surface path.
-func (p *Processor) SetEncoderBackend(backend string) { p.encoderBackend = backend }
-
-// SetEncodePreset selects an explicit FFmpeg NVENC preset (for example, "p2"
-// for the throughput tier). Empty preserves the engine default; the worker
-// never invents a preset when none is configured.
-func (p *Processor) SetEncodePreset(preset string) {
-	p.encodePreset = preset
-}
-
-// SetPipePixFmt selects the explicit host-frame pipe format forwarded to
-// Chronon for GPU composition jobs. Empty preserves Chronon's default.
-func (p *Processor) SetPipePixFmt(format string) {
-	p.pipePixFmt = format
-}
-
-// SetNativeOutputProfiles enables passing output.profile_id to Chronon. Keep
-// this disabled for legacy runtimes that reject unknown output properties; the
-// worker still certifies the requested profile from the encoded MP4.
-func (p *Processor) SetNativeOutputProfiles(enabled bool) { p.nativeOutputProfiles = enabled }
-
-// SetStrictNativeBackend makes the gpu-vulkan-native profile fail closed when
-// Chronon reports a hybrid or software-fallback execution. The artifact is
-// rejected before object-store publication, so a receipt cannot certify the
-// wrong execution path.
-func (p *Processor) SetStrictNativeBackend(enabled bool) { p.strictNativeBackend = enabled }
-
-// SetPublisher installs the Google Drive publisher used by Publish. When nil
-// (the default) publication is disabled and Publish is a no-op.
-func (p *Processor) SetPublisher(pub drive.Publisher) {
-	p.drive = pub
-}
-
-// SetArtifactRecorder installs the worker-local artifact mirror. When set,
-// every rendered job writes one ArtifactRecord (hash, probe facts, semantic
-// counters, per-phase metrics) after the object store accepted the bytes. The
-// mirror is diagnostic: a failed Record is logged and flagged on the artifact
-// metrics (mirror_failure=1), it never fails the render — the central queue
-// PostgreSQL row remains authoritative for the artifact. nil (default)
-// disables the mirror.
-func (p *Processor) SetArtifactRecorder(rec artifactdb.Recorder) {
-	p.recorder = rec
-}
-
-// SetProgressTracker installs the shared render progress tracker. When set,
-// RunGPU feeds every renderer frame-milestone into it and records the final
-// frame position + average fps into the job's ledger metrics.
-func (p *Processor) SetProgressTracker(tracker *chronon.ProgressTracker) {
-	p.progressTracker = tracker
-}
-
-// SetAssetPrefetcher installs the optional Chronon daemon warm-up bridge.
-// Warm-up is best-effort and never changes the semantic plan or render gate.
-func (p *Processor) SetAssetPrefetcher(prefetcher chronon.AssetPrefetcher) {
-	if p != nil {
-		p.assetPrefetcher = prefetcher
-	}
 }
 
 func (p *Processor) recordPhase(phase string, start time.Time) {

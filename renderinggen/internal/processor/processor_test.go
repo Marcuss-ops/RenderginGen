@@ -56,9 +56,12 @@ func TestHasVisualOverlayDistinguishesVideoOnlyFromAuthoredComposition(t *testin
 // the per-job gpu_gap_us KPI carries is the SAME value the optional observer
 // receives, so the worker's histogram cannot drift from the per-job metric.
 func TestRunGPUReportsDutyCycleGapToHook(t *testing.T) {
-	proc, _, _ := newProcessor(t)
+	var gaps []time.Duration
+	proc, _, _ := newProcessorWith(t, Options{
+		StrictNativeBackend: true,
+		GPUGapHook:          func(gap time.Duration) { gaps = append(gaps, gap) },
+	})
 	proc.backend = "vulkan"
-	proc.SetStrictNativeBackend(true)
 	ws, err := workspace.New(proc.jobsRoot, "gpu-gap-hook")
 	if err != nil {
 		t.Fatal(err)
@@ -68,8 +71,6 @@ func TestRunGPUReportsDutyCycleGapToHook(t *testing.T) {
 	// A previous render on THIS processor ended 2s ago: the gap this render
 	// waits must be measured from there, not invented.
 	proc.PutGPURenderEnd(time.Now().Add(-2 * time.Second))
-	var gaps []time.Duration
-	proc.SetGPUGapHook(func(gap time.Duration) { gaps = append(gaps, gap) })
 
 	prepared := &PreparedJob{
 		Job:       &queue.Job{ID: "gpu-gap-hook"},
@@ -95,9 +96,8 @@ func TestRunGPUReportsDutyCycleGapToHook(t *testing.T) {
 }
 
 func TestRunGPUImageTextCompositionUsesChrononGPUPipeContract(t *testing.T) {
-	proc, _, renderer := newProcessor(t)
+	proc, _, renderer := newProcessorWith(t, Options{StrictNativeBackend: true})
 	proc.backend = "vulkan"
-	proc.SetStrictNativeBackend(true)
 	ws, err := workspace.New(proc.jobsRoot, "image-text-only")
 	if err != nil {
 		t.Fatal(err)
@@ -131,10 +131,9 @@ func TestRunGPUImageTextCompositionUsesChrononGPUPipeContract(t *testing.T) {
 }
 
 func TestFinalJobCompositeRequiresNativeCompositionPath(t *testing.T) {
-	proc, _, renderer := newProcessor(t)
+	proc, _, renderer := newProcessorWith(t, Options{StrictNativeBackend: true})
 	proc.backend = "vulkan"
 	proc.encodePreset = "p1"
-	proc.SetStrictNativeBackend(true)
 	ws, err := workspace.New(proc.jobsRoot, "final-composite-fallback")
 	if err != nil {
 		t.Fatal(err)
@@ -229,9 +228,16 @@ func (f *fakeRenderer) Render(_ context.Context, req chronon.RenderRequest) erro
 
 func newProcessor(t *testing.T) (*Processor, *storage.Client, *fakeRenderer) {
 	t.Helper()
+	return newProcessorWith(t, Options{})
+}
+
+// newProcessorWith builds the same fixture with an explicit configuration, so a
+// test states the knobs it needs once instead of composing a run of setters.
+func newProcessorWith(t *testing.T, opts Options) (*Processor, *storage.Client, *fakeRenderer) {
+	t.Helper()
 	store := storage.New(storage.NewMemory(), storage.Options{})
 	renderer := &fakeRenderer{}
-	proc := New(t.TempDir(), "software", "0.1.0", "http://store:9000", store, renderer)
+	proc := NewWithOptions(t.TempDir(), "software", "0.1.0", "http://store:9000", store, renderer, opts)
 	return proc, store, renderer
 }
 
@@ -360,8 +366,7 @@ func (b *blockingPrefetcher) PrefetchAsset(_ context.Context, path string) error
 // its cache. The request still has to be issued.
 func TestPrefetchWarmAssetsDoesNotBlockPrepare(t *testing.T) {
 	prefetcher := &blockingPrefetcher{started: make(chan string, 4), release: make(chan struct{})}
-	proc := &Processor{}
-	proc.SetAssetPrefetcher(prefetcher)
+	proc := &Processor{assetPrefetcher: prefetcher}
 
 	returned := make(chan struct{})
 	go func() {

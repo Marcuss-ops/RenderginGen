@@ -25,7 +25,8 @@ import (
 	queue "github.com/Marcuss-ops/RenderingGen/queue/client"
 )
 
-// SchemaBatchManifestV1 identifies the batch manifest envelope.
+// SchemaBatchManifestV1 is the canonical flat batch envelope consumed and
+// emitted by this package's producer and decoder.
 const SchemaBatchManifestV1 = "renderinggen.batch-manifest.v1"
 
 // SchemaMultilingualBatchV1 identifies the multilingual batch manifest

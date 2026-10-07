@@ -70,8 +70,7 @@ func TestResolveArtifactIdentityRejectsAWrongDigestOfTheRightLength(t *testing.T
 
 	for _, level := range []renderVerifyLevel{renderVerifyNormal, renderVerifyCertify} {
 		metrics := map[string]float64{}
-		p := &Processor{}
-		p.SetReceiptVerify(string(level))
+		p := &Processor{receiptVerify: renderVerifyLevel(string(level))}
 		identity, err := p.resolveArtifactIdentity(path, receipt, nil, metrics)
 		if err == nil {
 			t.Fatalf("policy %s accepted a digest that does not match the bytes (identity=%+v)", level, identity)
@@ -100,8 +99,7 @@ func TestResolveArtifactIdentityProvesTheDigestUnderProofPolicies(t *testing.T) 
 
 	for _, level := range []renderVerifyLevel{renderVerifyNormal, renderVerifyCertify} {
 		metrics := map[string]float64{}
-		p := &Processor{}
-		p.SetReceiptVerify(string(level))
+		p := &Processor{receiptVerify: renderVerifyLevel(string(level))}
 		identity, err := p.resolveArtifactIdentity(path, receipt, nil, metrics)
 		if err != nil {
 			t.Fatalf("policy %s: %v", level, err)
@@ -167,8 +165,7 @@ func TestResolveArtifactIdentitySizeMismatch(t *testing.T) {
 
 	for _, level := range []renderVerifyLevel{renderVerifyNormal, renderVerifyCertify} {
 		metrics := map[string]float64{}
-		p := &Processor{}
-		p.SetReceiptVerify(string(level))
+		p := &Processor{receiptVerify: renderVerifyLevel(string(level))}
 		if _, err := p.resolveArtifactIdentity(path, receipt, nil, metrics); err == nil {
 			t.Fatalf("policy %s must reject a receipt that describes a different size", level)
 		}
@@ -218,8 +215,7 @@ func TestResolveArtifactIdentityRejectsAReceiptWithoutADigest(t *testing.T) {
 		t.Errorf("metrics = %v, want %s=1", metrics, metricnames.ReceiptIdentityUnusable)
 	}
 
-	p = &Processor{}
-	p.SetReceiptVerify("certify")
+	p = &Processor{receiptVerify: renderVerifyLevel("certify")}
 	if _, err := p.resolveArtifactIdentity(path, receipt, nil, map[string]float64{}); err == nil {
 		t.Fatal("certify must reject a receipt with no digest")
 	}
@@ -238,8 +234,7 @@ func TestVerifyArtifactReceiptAppliesBothVerdicts(t *testing.T) {
 		writeReceipt(t, path, info.Size(), strings.Repeat("d", 64))
 		receipt, receiptErr := readReceipt(t, path)
 
-		p := &Processor{}
-		p.SetReceiptVerify("normal")
+		p := &Processor{receiptVerify: renderVerifyLevel("normal")}
 		if _, err := p.verifyArtifactReceipt(path, receipt, receiptErr, map[string]float64{}); err == nil {
 			t.Fatal("the gate must reject a receipt whose digest does not match the bytes")
 		}
@@ -263,8 +258,7 @@ func TestVerifyArtifactReceiptAppliesBothVerdicts(t *testing.T) {
 		}
 		receipt, receiptErr := readReceipt(t, path)
 
-		p := &Processor{}
-		p.SetReceiptVerify("normal")
+		p := &Processor{receiptVerify: renderVerifyLevel("normal")}
 		metrics := map[string]float64{}
 		if _, err := p.verifyArtifactReceipt(path, receipt, receiptErr, metrics); err == nil {
 			t.Fatal("a failing receipt verdict must reject the artifact")
@@ -283,8 +277,7 @@ func TestVerifyArtifactReceiptAppliesBothVerdicts(t *testing.T) {
 		writeReceipt(t, path, info.Size(), real)
 		receipt, receiptErr := readReceipt(t, path)
 
-		p := &Processor{}
-		p.SetReceiptVerify("normal")
+		p := &Processor{receiptVerify: renderVerifyLevel("normal")}
 		outcome, err := p.verifyArtifactReceipt(path, receipt, receiptErr, map[string]float64{})
 		if err != nil {
 			t.Fatalf("gate: %v", err)
