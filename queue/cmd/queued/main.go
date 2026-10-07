@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/Marcuss-ops/RenderingGen/queue/internal/metrics"
@@ -39,7 +40,24 @@ func main() {
 	requeueRetryJitter := flag.Float64("requeue-retry-jitter", 0, "fraction of the requeue retry delay to randomize, clamped to [0,1]")
 	workerStale := flag.Duration("worker-stale-after", 90*time.Second, "worker heartbeat staleness threshold")
 	dbURL := flag.String("db-url", "", "PostgreSQL DSN; enables the postgres repository when set (defaults to $DATABASE_URL)")
+	// Backend selects the job repository explicitly: postgres persists to
+	// PostgreSQL, memory is volatile process state for dev/test, auto keeps
+	// the historical rule (postgres when a DSN is configured, else memory).
+	// Production must pass -backend=postgres (the systemd unit does): an
+	// unset DSN then fails startup instead of silently running production
+	// traffic on a volatile queue that loses every job on restart.
+	backend := flag.String("backend", "auto", "job repository backend: auto | postgres | memory")
 	flag.Parse()
+
+	selected := strings.ToLower(strings.TrimSpace(*backend))
+	switch selected {
+	case "auto", "postgres", "memory":
+	default:
+		log.Fatalf("unknown -backend %q: want auto | postgres | memory", *backend)
+	}
+	if selected == "postgres" && databaseURL(*dbURL) == "" {
+		log.Fatalf("-backend=postgres but no DSN: set -db-url or $DATABASE_URL")
+	}
 
 	// In-memory is the default backend; PostgreSQL is used when configured.
 	// Both backends implement the job and worker contracts.
@@ -47,7 +65,9 @@ func main() {
 	repo := repository.JobRepository(memRepo)
 	var workerRepo repository.WorkerRepository = memRepo
 	var postgresDSN string
-	if dsn := databaseURL(*dbURL); dsn != "" {
+	usePostgres := selected == "postgres" || (selected == "auto" && databaseURL(*dbURL) != "")
+	if usePostgres {
+		dsn := databaseURL(*dbURL)
 		db, err := openDatabase(dsn)
 		if err != nil {
 			log.Fatalf("connect database: %v", err)
@@ -70,6 +90,10 @@ func main() {
 		workerRepo = pgRepo
 		postgresDSN = dsn
 		log.Printf("using postgres job repository")
+	} else if selected == "memory" {
+		log.Printf("WARNING: using volatile in-memory job repository by explicit -backend=memory: all jobs are lost on restart")
+	} else {
+		log.Printf("WARNING: no DSN configured, using volatile in-memory job repository: pass -backend=postgres with a DSN for production")
 	}
 
 	svc := service.New(repo)

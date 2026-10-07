@@ -55,25 +55,24 @@ func deprecationDiagnostic(id string, info motion.Deprecation) error {
 	return errors.New(message)
 }
 
-// motionDeprecationError keeps saved plans compilable until remove_after. The
-// picker is gated immediately by the deprecated state; after the published date
-// the compiler fails with a deterministic diagnostic instead of substituting a
-// similar animation.
+// motionDeprecationError enforces the single published policy: a deprecated
+// motion is immediately non-selectable AND not resolvable — no compatibility
+// window, no alias. The picker gate (motionAdmitsTarget), the lowering gate
+// (lowerMotionForTarget) and this plan gate all fail the same way, so the
+// catalog ("immediate", window 0) finally describes the compiler instead of
+// contradicting it. It is also clock-free: the same plan and binary compile
+// identically today and tomorrow, which the old remove_after grace check
+// (time.Now in the compile path) could not promise.
 func motionDeprecationError(id string) error {
 	info, ok := motion.Registry.DeprecationInfo(id)
 	if !ok {
 		return nil
 	}
-	return deprecationErrorAfter(id, info, time.Now().UTC())
-}
-
-func deprecationErrorAfter(id string, info motion.Deprecation, now time.Time) error {
-	removeAfter, err := time.Parse("2006-01-02", strings.TrimSpace(info.RemoveAfter))
-	if err != nil {
-		return fmt.Errorf("overlay: motion %q has invalid deprecation date %q: %w", id, info.RemoveAfter, err)
+	if strings.TrimSpace(info.RemoveAfter) == "" {
+		return fmt.Errorf("overlay: motion %q has invalid deprecation record: remove_after is required", id)
 	}
-	if now.UTC().Before(removeAfter) {
-		return nil
+	if _, err := time.Parse("2006-01-02", strings.TrimSpace(info.RemoveAfter)); err != nil {
+		return fmt.Errorf("overlay: motion %q has invalid deprecation date %q: %w", id, info.RemoveAfter, err)
 	}
 	return deprecationDiagnostic(id, info)
 }
@@ -127,58 +126,90 @@ func motionAdmitsTarget(id, target string) bool {
 	return motionDefinitionAdmitsTarget(definition, target)
 }
 
+// targetAdmissionRule is the single source for one motion target: which
+// catalog target tags admit a motion and which deny it, evaluated
+// deny-first. Rules that are not pure set membership (ordering-sensitive
+// caption, predicate-based map_view) use custom instead. Adding a target
+// means adding one map entry — never extending a switch in a second file.
+type targetAdmissionRule struct {
+	admit  []string
+	deny   []string
+	custom func(*motion.MotionDefinition) bool
+}
+
+var targetAdmissionRules = map[string]targetAdmissionRule{
+	"important_phrase": {
+		deny:  []string{"metric", "date", "entity"},
+		admit: []string{"text", "phrase", "short_phrase", "caption"},
+	},
+	"text": {
+		deny:  []string{"metric", "date"},
+		admit: []string{"text", "phrase", "short_phrase", "caption", "entity"},
+	},
+	"caption": {custom: captionTargetAdmits},
+	"image":   {admit: []string{"image"}},
+	"metric":  {admit: []string{"metric"}},
+	"date":    {admit: []string{"date"}},
+	"short_phrase": {
+		admit: []string{"short_phrase"},
+	},
+	"map_view": {custom: func(definition *motion.MotionDefinition) bool {
+		return centeredMapMotion(*definition)
+	}},
+}
+
+// captionTargetAdmits preserves the historical evaluation order: an explicit
+// caption tag always admits (even alongside tags another target would
+// deny), metric/date deny, then the text-family admits.
+func captionTargetAdmits(definition *motion.MotionDefinition) bool {
+	if containsString(definition.Targets, "caption") {
+		return true
+	}
+	if containsString(definition.Targets, "metric") || containsString(definition.Targets, "date") {
+		return false
+	}
+	return containsString(definition.Targets, "text") || containsString(definition.Targets, "phrase") || containsString(definition.Targets, "entity")
+}
+
 func motionDefinitionAdmitsTarget(definition *motion.MotionDefinition, target string) bool {
 	if definition == nil {
 		return false
 	}
-	switch target {
-	case "important_phrase":
-		if containsString(definition.Targets, "metric") || containsString(definition.Targets, "date") || containsString(definition.Targets, "entity") {
-			return false
-		}
-		return containsString(definition.Targets, "text") || containsString(definition.Targets, "phrase") ||
-			containsString(definition.Targets, "short_phrase") || containsString(definition.Targets, "caption")
-	case "text":
-		if containsString(definition.Targets, "metric") || containsString(definition.Targets, "date") {
-			return false
-		}
-		return containsString(definition.Targets, "text") || containsString(definition.Targets, "phrase") ||
-			containsString(definition.Targets, "short_phrase") || containsString(definition.Targets, "caption") ||
-			containsString(definition.Targets, "entity")
-	case "caption":
-		if containsString(definition.Targets, "caption") {
-			return true
-		}
-		if containsString(definition.Targets, "metric") || containsString(definition.Targets, "date") {
-			return false
-		}
-		return containsString(definition.Targets, "text") || containsString(definition.Targets, "phrase") || containsString(definition.Targets, "entity")
-	case "image":
-		return containsString(definition.Targets, "image")
-	case "metric":
-		return containsString(definition.Targets, "metric")
-	case "date":
-		return containsString(definition.Targets, "date")
-	case "short_phrase":
-		return containsString(definition.Targets, "short_phrase")
-	case "map_view":
-		return centeredMapMotion(*definition)
-	default:
+	rule, ok := targetAdmissionRules[target]
+	if !ok {
 		return false
 	}
+	if rule.custom != nil {
+		return rule.custom(definition)
+	}
+	for _, deny := range rule.deny {
+		if containsString(definition.Targets, deny) {
+			return false
+		}
+	}
+	for _, admit := range rule.admit {
+		if containsString(definition.Targets, admit) {
+			return true
+		}
+	}
+	return false
+}
+
+// semanticKindMotionTargets is the single kind → admission-target table for
+// items whose template declares no MotionTarget. Anything not listed is a
+// generic text item; adding a kind means adding one map entry.
+var semanticKindMotionTargets = map[ItemKind]string{
+	KindImportantPhrase: "important_phrase",
+	KindMetricStat:      "metric",
+	KindTimelineDate:    "date",
 }
 
 func semanticTextMotionTarget(item semanticItem, kind ItemKind) string {
 	if target := templateSpecFor(item.Template).MotionTarget; target != "" {
 		return target
 	}
-	switch kind {
-	case KindImportantPhrase:
-		return "important_phrase"
-	case KindMetricStat:
-		return "metric"
-	case KindTimelineDate:
-		return "date"
+	if target, ok := semanticKindMotionTargets[kind]; ok {
+		return target
 	}
 	return "text"
 }

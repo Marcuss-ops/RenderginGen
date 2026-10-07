@@ -153,6 +153,13 @@ type QueueConfig struct {
 type StorageConfig struct {
 	Endpoint      string `yaml:"endpoint"`
 	LocalCacheDir string `yaml:"local_cache_dir"`
+	// Token is the object store's shared bearer token, sent as
+	// `Authorization: Bearer` on every artifact request. Empty means the
+	// store is open (local/dev posture); when the store sets
+	// OBJECTSTORE_TOKEN, this must match or every fetch/store fails with a
+	// 401 that names this field. Supplied via
+	// RENDERINGGEN_ARTIFACT_STORE_TOKEN, never baked into a shipped YAML.
+	Token string `yaml:"token"`
 	// L1MaxBytes caps the in-memory (RAM) cache and L2MaxBytes the on-disk
 	// (NVMe) cache. Both were compile-time constants in the wiring, so an
 	// operator on a host with a different RAM/NVMe balance could not rebalance

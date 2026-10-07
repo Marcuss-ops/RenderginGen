@@ -8,8 +8,10 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
+	"sync"
 	"testing"
 	"time"
 
@@ -388,6 +390,71 @@ func TestPrefetchWarmAssetsDoesNotBlockPrepare(t *testing.T) {
 		t.Fatal("the warm-up request was never issued")
 	}
 	close(prefetcher.release)
+}
+
+// countingPrefetcher records peak concurrency: every request increments,
+// blocks briefly, then decrements, so a test can observe whether the caller
+// bounded the fan-out.
+type countingPrefetcher struct {
+	mu       sync.Mutex
+	inflight int
+	peak     int
+	done     chan struct{}
+	count    int
+	total    int
+}
+
+func (c *countingPrefetcher) PrefetchAsset(_ context.Context, _ string) error {
+	c.mu.Lock()
+	c.inflight++
+	if c.inflight > c.peak {
+		c.peak = c.inflight
+	}
+	c.mu.Unlock()
+	time.Sleep(20 * time.Millisecond)
+	c.mu.Lock()
+	c.inflight--
+	c.count++
+	if c.count == c.total {
+		close(c.done)
+	}
+	c.mu.Unlock()
+	return nil
+}
+
+// TestPrefetchWarmAssetsIsGloballyBounded pins the process-wide concurrency
+// ceiling: ten video assets must all be attempted, but never more than four
+// concurrently, no matter how video-heavy a single job is.
+func TestPrefetchWarmAssetsIsGloballyBounded(t *testing.T) {
+	prefetcher := &countingPrefetcher{done: make(chan struct{}), total: 10}
+	proc := &Processor{assetPrefetcher: prefetcher}
+	assets := make([]queue.AssetRef, 0, 10)
+	for i := 0; i < 10; i++ {
+		assets = append(assets, queue.AssetRef{LogicalPath: fmt.Sprintf("assets/clip-%02d.mp4", i)})
+	}
+	returned := make(chan struct{})
+	go func() {
+		defer close(returned)
+		proc.prefetchWarmAssets(context.Background(), "job-bound", t.TempDir(), assets)
+	}()
+	select {
+	case <-returned:
+	case <-time.After(5 * time.Second):
+		t.Fatal("prefetchWarmAssets blocked; the bound must live inside the detached goroutines")
+	}
+	select {
+	case <-prefetcher.done:
+	case <-time.After(10 * time.Second):
+		t.Fatal("not all warm-ups were attempted")
+	}
+	prefetcher.mu.Lock()
+	defer prefetcher.mu.Unlock()
+	if prefetcher.count != 10 {
+		t.Fatalf("attempted %d warm-ups, want 10", prefetcher.count)
+	}
+	if prefetcher.peak > 4 {
+		t.Fatalf("peak concurrency %d exceeds the bound of 4", prefetcher.peak)
+	}
 }
 
 func TestProcessMissingOutput(t *testing.T) {

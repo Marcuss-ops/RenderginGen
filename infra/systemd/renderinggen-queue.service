@@ -16,7 +16,7 @@ User=pierone
 # readable file, which turns a wrong path into a loud failure at boot instead of
 # a queue that starts with an empty DSN.
 Environment=RENDERINGGEN_ENV_FILE=/etc/renderinggen/queue.env
-ExecStart=/usr/local/libexec/renderinggen-queue-wrapper --addr 127.0.0.1:8081 --lease 10m --worker-stale-after 3m
+ExecStart=/usr/local/libexec/renderinggen-queue-wrapper --backend=postgres --addr 127.0.0.1:8081 --lease 10m --worker-stale-after 3m
 Restart=on-failure
 RestartSec=2
 

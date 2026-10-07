@@ -160,7 +160,7 @@ func main() {
 	// 3. Connect queue + storage.
 	queueClient := queue.New(cfg.Queue.Endpoint, cfg.Worker.ID)
 	store := storage.New(
-		storage.NewHTTP(cfg.ArtifactStore.Endpoint),
+		storage.NewHTTPWithToken(cfg.ArtifactStore.Endpoint, cfg.ArtifactStore.Token),
 		storage.Options{
 			// Cache budgets are configuration: a host with a different RAM/NVMe
 			// balance must be able to rebalance them without a rebuild.

@@ -376,6 +376,15 @@ func (p *Processor) PrepareJob(ctx context.Context, job *queue.Job) (*PreparedJo
 // starting on a job whose render did not depend on it. Each request is bounded
 // by the IPC client's own service timeout, so the detached goroutines cannot
 // accumulate.
+// prefetchInflight bounds warm-up concurrency process-wide. Selection above
+// caps images but not videos, so one video-heavy job used to fan out one
+// detached goroutine per asset with no global limit; at high throughput those
+// accumulate against the daemon faster than it drains them. Four in flight
+// keeps the warm-up ahead of the render without a thundering herd. The
+// semaphore is acquired inside the detached goroutine, so the bound never
+// blocks the prepare stage it serves.
+var prefetchInflight = make(chan struct{}, 4)
+
 func (p *Processor) prefetchWarmAssets(ctx context.Context, jobID, root string, assets []queue.AssetRef) {
 	if p == nil || p.assetPrefetcher == nil {
 		return
@@ -411,6 +420,8 @@ func (p *Processor) prefetchWarmAssets(ctx context.Context, jobID, root string, 
 	for _, path := range selected {
 		path := path
 		go func() {
+			prefetchInflight <- struct{}{}
+			defer func() { <-prefetchInflight }()
 			if err := p.assetPrefetcher.PrefetchAsset(warmCtx, path); err != nil {
 				workerlog.ByJobID(jobID).Infof("chronon asset warm-up skipped: path=%s err=%v", path, err)
 				return

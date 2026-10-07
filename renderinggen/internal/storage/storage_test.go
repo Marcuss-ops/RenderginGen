@@ -192,6 +192,64 @@ func TestHTTPBackendRoundTrip(t *testing.T) {
 	}
 }
 
+// TestHTTPBackendSendsBearerToken pins the auth E2E half the worker owns: a
+// store fronted by a bearer check must accept the configured token on fetch
+// and store, and reject a missing/wrong one with a diagnostic naming the
+// config field instead of a bare 401.
+func TestHTTPBackendSendsBearerToken(t *testing.T) {
+	ctx := context.Background()
+	const token = "test-token"
+	objects := map[string][]byte{}
+	mux := http.NewServeMux()
+	requireAuth := func(w http.ResponseWriter, r *http.Request) bool {
+		if r.Header.Get("Authorization") != "Bearer "+token {
+			http.Error(w, "unauthorized", http.StatusUnauthorized)
+			return false
+		}
+		return true
+	}
+	mux.HandleFunc("PUT /objects/{key}", func(w http.ResponseWriter, r *http.Request) {
+		if !requireAuth(w, r) {
+			return
+		}
+		body, _ := io.ReadAll(r.Body)
+		objects[r.PathValue("key")] = body
+		w.WriteHeader(http.StatusCreated)
+	})
+	mux.HandleFunc("GET /objects/{key}", func(w http.ResponseWriter, r *http.Request) {
+		if !requireAuth(w, r) {
+			return
+		}
+		data, ok := objects[r.PathValue("key")]
+		if !ok {
+			http.NotFound(w, r)
+			return
+		}
+		_, _ = w.Write(data)
+	})
+	ts := httptest.NewServer(mux)
+	defer ts.Close()
+
+	authed := NewHTTPWithToken(ts.URL, token)
+	if err := authed.Store(ctx, "k", []byte("v")); err != nil {
+		t.Fatalf("authed store: %v", err)
+	}
+	if data, err := authed.Fetch(ctx, "k"); err != nil || string(data) != "v" {
+		t.Fatalf("authed fetch: %v %q", err, data)
+	}
+
+	anon := NewHTTP(ts.URL)
+	if err := anon.Store(ctx, "k", []byte("v")); err == nil || !strings.Contains(err.Error(), "artifact_store.token") {
+		t.Fatalf("anonymous store must name the token field, got %v", err)
+	}
+	if _, err := anon.Fetch(ctx, "k"); err == nil || !strings.Contains(err.Error(), "artifact_store.token") {
+		t.Fatalf("anonymous fetch must name the token field, got %v", err)
+	}
+	if _, _, err := anon.FetchReader(ctx, "k"); err == nil || !strings.Contains(err.Error(), "artifact_store.token") {
+		t.Fatalf("anonymous stream must name the token field, got %v", err)
+	}
+}
+
 type countingBackend struct {
 	inner Backend
 	calls int
