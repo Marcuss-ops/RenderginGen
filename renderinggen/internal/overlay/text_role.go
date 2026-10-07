@@ -28,6 +28,19 @@ const (
 // used to. Migrated call-sites render byte-identical layers.
 func applyTextRoleBaseStyle(role textRole, style *LayerStyle, fontSize float64, fill string) {
 	switch role {
+	case textRolePhrase, textRoleImportantPhrase:
+		// Phrase recipes can arrive without their authored fill in the runtime
+		// motion catalog. Give editorial text a contrast-safe foreground so it
+		// remains readable over the dark phrase background. Everything else —
+		// the preset's legibility stroke/shadow, the shrink-only fit range and
+		// any runtime override — is already on the seeded style: re-deriving
+		// them here would clobber explicit decisions (zero-disables, font
+		// size, fit bounds) the runtime style contract pins.
+		if fill == "" {
+			fill = "#F8F5EA"
+		}
+		style.Fill = fill
+		style.Background = nil
 	case textRoleEntityCaption:
 		// Cinematic nameplate treatment: a large warm-white title, a
 		// restrained dark keyline and soft drop shadow keep names readable

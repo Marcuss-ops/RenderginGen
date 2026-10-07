@@ -76,6 +76,12 @@ func buildResolvedTextSpec(ri resolvedItem, src *semanticPlan) (resolvedTextSpec
 		spec.PresetID = ri.Preset.ID
 		spec.PresetDef = ri.Preset
 	}
+	if spec.MotionID == "" && spec.PresetID == "phrase_default" && len(strings.Fields(spec.Text)) <= 5 {
+		// Keep the preset's typography and layout, but do not let its legacy
+		// animation silently fill an empty ChrononTemplate short-phrase slot.
+		spec.PresetID = ""
+		spec.PresetDef = PresetDefinition{}
+	}
 	// Position is the canvas centre the engine reads for text layers; without
 	// an explicit centre the default text layout owns the placement.
 	posX, hasPosX := spec.StyleParams["position_x"].(float64)
