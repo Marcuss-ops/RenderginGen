@@ -109,6 +109,45 @@ func TestCIRuntimeCertificationHasAnOwner(t *testing.T) {
 	}
 }
 
+// TestCIPublishRequiresAggregateVerify pins the release-integrity gate: no
+// publish-* job may depend only on its own service test job, because a red
+// renderinggen then does not stop queue/objectstore from shipping artifacts
+// from a revision the repository as a whole considers broken. Every publish
+// job needs the aggregate `verify` job, which itself needs all three unit
+// suites green on the same commit.
+func TestCIPublishRequiresAggregateVerify(t *testing.T) {
+	path := filepath.Join(RepoRoot(), ".github", "workflows", "build.yaml")
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read %s: %v", path, err)
+	}
+	workflow := string(raw)
+	verify := ciJobBlock(t, workflow, "verify")
+	if strings.TrimSpace(verify) == "" {
+		t.Fatal("CI no longer declares the aggregate `verify` job: publish jobs would fall back to per-service gates and ship from a globally red revision")
+	}
+	for _, job := range []string{"test-renderinggen", "test-queue", "test-objectstore"} {
+		if !strings.Contains(verify, job) {
+			t.Errorf("CI `verify` gate does not need %q: a red %s would no longer block publish", job, job)
+		}
+	}
+	for _, job := range []string{"publish-worker", "publish-queue", "publish-objectstore"} {
+		block := ciJobBlock(t, workflow, job)
+		if strings.TrimSpace(block) == "" {
+			t.Errorf("CI job %q is gone", job)
+			continue
+		}
+		if !strings.Contains(block, "needs: verify") {
+			t.Errorf("CI job %q must need the aggregate `verify` gate, not a single service test job", job)
+		}
+	}
+	if strings.Contains(workflow, "IMAGE_BASE }}/renderinggen-worker:${{ env.VERSION }}\n") ||
+		strings.Contains(workflow, "IMAGE_BASE }}/queue:${{ env.VERSION }}\n") ||
+		strings.Contains(workflow, "IMAGE_BASE }}/objectstore:${{ env.VERSION }}\n") {
+		t.Error("CI pushes a bare ${VERSION} tag: VERSION stays 0.1.0 across pushes, so the tag would name different bytes over time; publish SHA-qualified tags only")
+	}
+}
+
 // ciJobBlock slices one CI job out of a workflow by indentation. A job header is
 // a line indented exactly two spaces ending in ':'; its body is everything up to
 // the next line at the same indent depth (or a top-level key). Slicing on the raw
