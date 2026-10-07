@@ -11,10 +11,10 @@ import (
 
 func TestWaitStateReturnsImmediatelyWhenTerminal(t *testing.T) {
 	svc := New(memory.New(30*time.Second, 3))
-	if err := svc.Submit(model.Job{ID: "job-1"}); err != nil {
+	if err := svc.Submit(context.Background(), model.Job{ID: "job-1"}); err != nil {
 		t.Fatal(err)
 	}
-	if err := svc.Cancel("job-1"); err != nil {
+	if err := svc.Cancel(context.Background(), "job-1"); err != nil {
 		t.Fatal(err)
 	}
 
@@ -33,10 +33,10 @@ func TestWaitStateReturnsImmediatelyWhenTerminal(t *testing.T) {
 
 func TestWaitStateWakesOnComplete(t *testing.T) {
 	svc := New(memory.New(30*time.Second, 3))
-	if err := svc.Submit(model.Job{ID: "job-1"}); err != nil {
+	if err := svc.Submit(context.Background(), model.Job{ID: "job-1"}); err != nil {
 		t.Fatal(err)
 	}
-	if _, _, err := svc.Claim("w1"); err != nil {
+	if _, _, err := svc.Claim(context.Background(), "w1"); err != nil {
 		t.Fatal(err)
 	}
 
@@ -53,7 +53,7 @@ func TestWaitStateWakesOnComplete(t *testing.T) {
 	// Park the waiter on the wake channel, then complete the job.
 	time.Sleep(100 * time.Millisecond)
 	start := time.Now()
-	if err := svc.Complete("job-1", "w1", model.Artifact{
+	if err := svc.Complete(context.Background(), "job-1", "w1", model.Artifact{
 		StorageKey: "abc", ArtifactHash: "abc", SizeBytes: 1, ContentType: "video/mp4",
 	}); err != nil {
 		t.Fatal(err)
@@ -77,7 +77,7 @@ func TestWaitStateWakesOnComplete(t *testing.T) {
 
 func TestWaitStateTimesOutWithCurrentJob(t *testing.T) {
 	svc := New(memory.New(30*time.Second, 3))
-	if err := svc.Submit(model.Job{ID: "job-1"}); err != nil {
+	if err := svc.Submit(context.Background(), model.Job{ID: "job-1"}); err != nil {
 		t.Fatal(err)
 	}
 
@@ -107,7 +107,7 @@ func TestWaitStateUnknownJobFailsImmediately(t *testing.T) {
 
 func TestWaitStateHonorsContextCancellation(t *testing.T) {
 	svc := New(memory.New(30*time.Second, 3))
-	if err := svc.Submit(model.Job{ID: "job-1"}); err != nil {
+	if err := svc.Submit(context.Background(), model.Job{ID: "job-1"}); err != nil {
 		t.Fatal(err)
 	}
 	ctx, cancel := context.WithCancel(context.Background())

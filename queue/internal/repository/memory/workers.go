@@ -1,6 +1,7 @@
 package memory
 
 import (
+	"context"
 	"fmt"
 	"sort"
 	"time"
@@ -8,8 +9,10 @@ import (
 	"github.com/Marcuss-ops/RenderingGen/queue/internal/model"
 )
 
-// Register upserts a worker's identity and records its initial heartbeat.
-func (s *Repository) Register(worker model.Worker) error {
+// Register upserts a worker's identity and records its initial heartbeat. The
+// context is accepted for interface parity and ignored: the store never blocks
+// (see the package doc).
+func (s *Repository) Register(_ context.Context, worker model.Worker) error {
 	if worker.ID == "" {
 		return fmt.Errorf("worker id is required")
 	}
@@ -38,7 +41,7 @@ func (s *Repository) Register(worker model.Worker) error {
 }
 
 // Heartbeat records a heartbeat for a registered worker.
-func (s *Repository) Heartbeat(workerID string) error {
+func (s *Repository) Heartbeat(_ context.Context, workerID string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -52,7 +55,7 @@ func (s *Repository) Heartbeat(workerID string) error {
 }
 
 // List returns all registered workers sorted by ID.
-func (s *Repository) List() ([]model.Worker, error) {
+func (s *Repository) List(_ context.Context) ([]model.Worker, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 

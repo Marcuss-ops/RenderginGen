@@ -1,0 +1,18 @@
+{
+  "type": "FeatureCollection",
+  "name": "ne_10m_admin_1_gujarat",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Gujarat",
+        "admin": "India",
+        "type_en": "State"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[68.1, 20.1], [68.1, 24.7], [74.5, 24.7], [74.5, 20.1], [68.1, 20.1]]]
+      }
+    }
+  ]
+}

@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"fmt"
 	"sync"
 	"testing"
@@ -22,7 +23,7 @@ func TestServiceMaxAttemptsUnderConcurrentRetries(t *testing.T) {
 
 	svc := New(memory.New(30*time.Second, maxAttempts))
 	for i := 0; i < jobs; i++ {
-		if err := svc.Submit(model.Job{ID: fmt.Sprintf("job-%03d", i)}); err != nil {
+		if err := svc.Submit(context.Background(), model.Job{ID: fmt.Sprintf("job-%03d", i)}); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -35,7 +36,7 @@ func TestServiceMaxAttemptsUnderConcurrentRetries(t *testing.T) {
 		go func(worker string) {
 			defer wg.Done()
 			for {
-				job, _, err := svc.Claim(worker)
+				job, _, err := svc.Claim(context.Background(), worker)
 				if err != nil {
 					t.Errorf("claim(%s): %v", worker, err)
 					return
@@ -46,7 +47,7 @@ func TestServiceMaxAttemptsUnderConcurrentRetries(t *testing.T) {
 				mu.Lock()
 				claimsPerJob[job.ID]++
 				mu.Unlock()
-				if err := svc.Fail(job.ID, worker, "boom"); err != nil {
+				if err := svc.Fail(context.Background(), job.ID, worker, "boom"); err != nil {
 					t.Errorf("fail(%s): %v", worker, err)
 					return
 				}
@@ -62,7 +63,7 @@ func TestServiceMaxAttemptsUnderConcurrentRetries(t *testing.T) {
 		if claims != maxAttempts {
 			t.Errorf("job %s: want %d claims, got %d", id, maxAttempts, claims)
 		}
-		job, err := svc.Get(id)
+		job, err := svc.Get(context.Background(), id)
 		if err != nil {
 			t.Errorf("get %s: %v", id, err)
 			continue
@@ -74,7 +75,7 @@ func TestServiceMaxAttemptsUnderConcurrentRetries(t *testing.T) {
 			t.Errorf("job %s: want attempts=%d, got %d", id, maxAttempts, job.Attempts)
 		}
 	}
-	if s := svc.Stats(); s.Failed != jobs || s.Pending != 0 || s.Running != 0 {
+	if s := svc.Stats(context.Background()); s.Failed != jobs || s.Pending != 0 || s.Running != 0 {
 		t.Fatalf("want %d failed / 0 pending / 0 running, got %+v", jobs, s)
 	}
 }

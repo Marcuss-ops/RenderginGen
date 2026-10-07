@@ -76,6 +76,12 @@ func TestEntityCaptionEmitsImageAndCaptionWithSharedLifetime(t *testing.T) {
 	if caption.Text != "Ada Lovelace" {
 		t.Fatalf("caption text = %q", caption.Text)
 	}
+	if caption.CaptionForImageID != image.ID {
+		t.Fatalf("entity caption image link = %q, want %q", caption.CaptionForImageID, image.ID)
+	}
+	if caption.ID != "portrait:entity:caption" {
+		t.Fatalf("entity caption layer ID = %q, want stable legacy ID", caption.ID)
+	}
 	if image.StartFrame != caption.StartFrame || image.DurationFrames != caption.DurationFrames {
 		t.Fatalf("lifetimes differ: image=(%d,%d) caption=(%d,%d)", image.StartFrame, image.DurationFrames, caption.StartFrame, caption.DurationFrames)
 	}

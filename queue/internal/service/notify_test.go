@@ -12,7 +12,7 @@ import (
 
 func TestWaitAndClaimReturnsImmediatelyWhenJobAvailable(t *testing.T) {
 	svc := New(memory.New(30*time.Second, 3))
-	if err := svc.Submit(model.Job{ID: "job-1"}); err != nil {
+	if err := svc.Submit(context.Background(), model.Job{ID: "job-1"}); err != nil {
 		t.Fatal(err)
 	}
 	start := time.Now()
@@ -44,7 +44,7 @@ func TestWaitAndClaimWakesOnSubmit(t *testing.T) {
 	}()
 	// Give the waiter time to park on the wake channel, then submit.
 	time.Sleep(150 * time.Millisecond)
-	if err := svc.Submit(model.Job{ID: "wake-job"}); err != nil {
+	if err := svc.Submit(context.Background(), model.Job{ID: "wake-job"}); err != nil {
 		t.Fatal(err)
 	}
 	select {
@@ -100,7 +100,7 @@ func TestWaitAndClaimConcurrentSubmitWakeDeliversOnce(t *testing.T) {
 	}
 	time.Sleep(100 * time.Millisecond)
 	for i := 0; i < 2; i++ {
-		if err := svc.Submit(model.Job{ID: string(rune('a' + i))}); err != nil {
+		if err := svc.Submit(context.Background(), model.Job{ID: string(rune('a' + i))}); err != nil {
 			t.Fatal(err)
 		}
 	}

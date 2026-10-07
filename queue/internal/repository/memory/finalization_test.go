@@ -1,6 +1,7 @@
 package memory
 
 import (
+	"context"
 	"sync"
 	"testing"
 	"time"
@@ -10,7 +11,7 @@ import (
 
 func TestClaimFinalizationHasSingleOwner(t *testing.T) {
 	r := New(time.Minute, 3)
-	if err := r.Submit(model.Job{ID: "parent", RenderPlan: []byte(`{}`)}); err != nil {
+	if err := r.Submit(context.Background(), model.Job{ID: "parent", RenderPlan: []byte(`{}`)}); err != nil {
 		t.Fatal(err)
 	}
 	const claimers = 16
@@ -21,7 +22,7 @@ func TestClaimFinalizationHasSingleOwner(t *testing.T) {
 		wg.Add(1)
 		go func(i int) {
 			defer wg.Done()
-			_, claimed, err := r.ClaimFinalization("parent", "worker")
+			_, claimed, err := r.ClaimFinalization(context.Background(), "parent", "worker")
 			if err != nil {
 				t.Errorf("claim: %v", err)
 				return
@@ -37,7 +38,7 @@ func TestClaimFinalizationHasSingleOwner(t *testing.T) {
 	if owners != 1 {
 		t.Fatalf("owners = %d, want 1", owners)
 	}
-	job, err := r.Get("parent")
+	job, err := r.Get(context.Background(), "parent")
 	if err != nil {
 		t.Fatal(err)
 	}

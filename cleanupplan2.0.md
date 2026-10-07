@@ -704,6 +704,14 @@ consumer reali.
 
 ### Ancora aperto (fuori dal controllo di questo repository)
 
+- **Identità del repository (già decisa, azione esterna)** — il nome canonico
+  è **RenderingGen** (capital R, capital G): è il module path Go dei tre moduli,
+  il nome del repo remoto atteso e la regola `module_path_typo` della
+  conformance, che rifiuta ogni variante con refuso. Il remote configurato in
+  questo checkout porta una variante refusa del nome, quindi la correzione è un
+  **rename del repository su GitHub da parte dell'owner**: nessuna modifica di
+  import, `go.mod` o codice è corretta o necessaria qui, e nessuna è stata
+  fatta. Non reintrodurre la variante refusa in codice, `go.mod` o config.
 - **Famiglia camera scena** — authoring in ChrononTemplate
   (`camera_roll/SceneCameraPack.hpp`) più lowering RenderingGen su
   `camera_animation` e certificazione: prerequisito per rendere selezionabile la

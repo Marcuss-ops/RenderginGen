@@ -1,9 +1,10 @@
-// semantic_map.go owns the worker side of the georeferenced map item: the
-// fail-closed validation of the declared basemap, and its deterministic
-// lowering to layers the renderer actually supports.
+// semantic_map.go owns contract admission for georeferenced map items. It
+// validates basemap provenance, viewport, pins, routes and certified LODs;
+// label geometry lives in semantic_map_geometry.go and layer lowering in
+// semantic_map_layers.go.
 //
-// A map is not a first-class renderer primitive. It lowers to exactly the
-// primitives Chronon already executes:
+// A map is not a first-class renderer primitive. It lowers to the primitives
+// declared by mapLayoutCatalog and executed by Chronon:
 //
 //	basemap      one full-canvas image layer of the operator's certified raster
 //	             (the plate IS the canvas, so cover neither crops nor stretches)
@@ -21,7 +22,6 @@ package overlay
 import (
 	"fmt"
 	"math"
-	"sort"
 	"strings"
 	"unicode/utf8"
 
@@ -60,10 +60,10 @@ const (
 	mapAttributionFontPX  = 26.0
 	mapAttributionMinFont = 10.0
 	mapAttributionMargin  = 24.0
-	mapTextShadowColor    = "#000000"
-	mapTextShadowOpacity  = 0.75
-	mapTextShadowBlur     = 6.0
-	mapLabelCollisionGap  = 6.0
+	// A map plate's shadow and fit policy are NOT here: typography belongs to
+	// the text system (see text_role.go, mapTextPlateShadow*/mapTextPlateFitMode).
+	// This file owns geometry only.
+	mapLabelCollisionGap = 6.0
 )
 
 // validateMapContract is the single owner of the map item's admission rules. It
@@ -154,7 +154,7 @@ func validateMapContract(item semanticItem, kind ItemKind, canvasWidth, canvasHe
 		}
 		seen[pin.ID] = struct{}{}
 	}
-	if _, err := mapLabelPlacements(m.Pins, window, canvasWidth, canvasHeight); err != nil {
+	if _, err := resolveMapLabelPlacements(m.Pins, window, canvasWidth, canvasHeight); err != nil {
 		return fmt.Errorf("overlay: map item %q: %w", item.ID, err)
 	}
 	return nil
@@ -247,107 +247,6 @@ func validateMapTextStyle(style *SemanticMapTextStyle, index int) error {
 		}
 	}
 	return nil
-}
-
-// mapLabelPlacements resolves deterministic candidate positions in priority
-// order and refuses plans whose visible labels cannot be placed without
-// overlapping one another. It never silently hides producer content.
-func mapLabelPlacements(pins []SemanticMapPin, window geo.Window, canvasW, canvasH int) (map[string][2]float64, error) {
-	placements := make(map[string][2]float64, len(pins))
-	order := make([]int, 0, len(pins))
-	for index := range pins {
-		order = append(order, index)
-	}
-	sort.SliceStable(order, func(i, j int) bool {
-		left, right := pins[order[i]], pins[order[j]]
-		if left.LabelPriority != right.LabelPriority {
-			return left.LabelPriority > right.LabelPriority
-		}
-		return left.ID < right.ID
-	})
-	placed := make([][4]float64, 0, len(order))
-	for _, index := range order {
-		pin := pins[index]
-		x, y := window.ToRaster(pin.Latitude, pin.Longitude)
-		x *= float64(canvasW) / float64(window.Width)
-		y *= float64(canvasH) / float64(window.Height)
-		width, height := mapPinLabelDimensions(pin, canvasW, canvasH)
-		candidates := mapPinLabelCandidates(pin, x, y, width, height)
-		found := false
-		for _, candidate := range candidates {
-			left := clampMapBox(candidate[0], float64(canvasW)-width)
-			top := clampMapBox(candidate[1], float64(canvasH)-height)
-			if math.Abs(left-candidate[0]) >= 0.001 || math.Abs(top-candidate[1]) >= 0.001 {
-				continue
-			}
-			rect := [4]float64{left, top, left + width, top + height}
-			collision := false
-			for _, previous := range placed {
-				if mapLabelRectsOverlap(rect, previous) {
-					collision = true
-					break
-				}
-			}
-			if !collision {
-				placed = append(placed, rect)
-				placements[pin.ID] = [2]float64{left, top}
-				found = true
-				break
-			}
-		}
-		if !found {
-			return nil, fmt.Errorf("pin %q label cannot be placed without clipping or colliding; move it or adjust label_offset_px", pin.ID)
-		}
-	}
-	return placements, nil
-}
-
-func mapTypographyScale(canvasW, canvasH int) float64 {
-	scale := math.Sqrt(float64(canvasW*canvasH) / float64(1280*720))
-	return math.Max(0.65, math.Min(2.2, scale))
-}
-
-func mapPinLabelDimensions(pin SemanticMapPin, canvasW, canvasH int) (float64, float64) {
-	fontSize := mapPinLabelFontPX
-	if pin.LabelStyle != nil && pin.LabelStyle.FontSizePX != nil {
-		fontSize = *pin.LabelStyle.FontSizePX
-	}
-	scale := mapTypographyScale(canvasW, canvasH)
-	width := math.Max(96*scale, float64(utf8.RuneCountInString(pin.Label))*fontSize*scale*0.68+24*scale)
-	height := math.Max(mapPinLabelHeightPX*scale, fontSize*scale*1.6)
-	if plate := pin.LabelStyle; plate != nil && plate.Background != nil && len(plate.Background.Padding) == 2 {
-		width += 2 * plate.Background.Padding[0] * scale
-		height += 2 * plate.Background.Padding[1] * scale
-	}
-	return math.Min(width, float64(canvasW)), math.Min(height, float64(canvasH))
-}
-
-func mapPinLabelCandidates(pin SemanticMapPin, x, y, width, height float64) [][2]float64 {
-	offsetX, offsetY := 0.0, 0.0
-	if len(pin.LabelOffsetPX) == 2 {
-		offsetX, offsetY = pin.LabelOffsetPX[0], pin.LabelOffsetPX[1]
-	}
-	candidates := [][2]float64{
-		{x - width/2 + offsetX, y + pin.RadiusPX + mapPinLabelGapPX + offsetY},
-		{x - width/2, y - pin.RadiusPX - mapPinLabelGapPX - height},
-		{x + pin.RadiusPX + mapPinLabelGapPX, y - height/2},
-		{x - pin.RadiusPX - mapPinLabelGapPX - width, y - height/2},
-	}
-	for ring := 1; ring <= 8; ring++ {
-		distance := float64(ring) * (height + mapLabelCollisionGap)
-		for _, direction := range [][2]float64{{0, -1}, {1, 0}, {0, 1}, {-1, 0}, {1, -1}, {1, 1}, {-1, 1}, {-1, -1}} {
-			candidates = append(candidates, [2]float64{
-				x - width/2 + direction[0]*distance,
-				y - height/2 + direction[1]*distance,
-			})
-		}
-	}
-	return candidates
-}
-
-func mapLabelRectsOverlap(a, b [4]float64) bool {
-	return a[0] < b[2]+mapLabelCollisionGap && a[2]+mapLabelCollisionGap > b[0] &&
-		a[1] < b[3]+mapLabelCollisionGap && a[3]+mapLabelCollisionGap > b[1]
 }
 
 func validateMapPoint(latitude, longitude float64) error {

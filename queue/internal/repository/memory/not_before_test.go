@@ -1,6 +1,7 @@
 package memory
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -16,20 +17,20 @@ func TestClaimSkipsJobsUntilNotBefore(t *testing.T) {
 	repo := New(time.Minute, 3)
 
 	future := time.Now().Add(time.Hour)
-	if err := repo.Submit(model.Job{ID: "deferred", NotBefore: &future}); err != nil {
+	if err := repo.Submit(context.Background(), model.Job{ID: "deferred", NotBefore: &future}); err != nil {
 		t.Fatalf("Submit(deferred): %v", err)
 	}
 
 	// The only pending job is not due: a claim must return nothing and must
 	// leave the job pending (still claimable later).
-	job, _, err := repo.Claim("worker-1")
+	job, _, err := repo.Claim(context.Background(), "worker-1")
 	if err != nil {
 		t.Fatalf("Claim: %v", err)
 	}
 	if job != nil {
 		t.Fatalf("deferred job claimed before its not_before: %+v", job)
 	}
-	stored, err := repo.Get("deferred")
+	stored, err := repo.Get(context.Background(), "deferred")
 	if err != nil {
 		t.Fatalf("Get(deferred): %v", err)
 	}
@@ -39,10 +40,10 @@ func TestClaimSkipsJobsUntilNotBefore(t *testing.T) {
 
 	// A due job queued behind it is claimed first (FIFO over the claimable set).
 	past := time.Now().Add(-time.Minute)
-	if err := repo.Submit(model.Job{ID: "due", NotBefore: &past}); err != nil {
+	if err := repo.Submit(context.Background(), model.Job{ID: "due", NotBefore: &past}); err != nil {
 		t.Fatalf("Submit(due): %v", err)
 	}
-	job, _, err = repo.Claim("worker-1")
+	job, _, err = repo.Claim(context.Background(), "worker-1")
 	if err != nil {
 		t.Fatalf("Claim(due): %v", err)
 	}
@@ -55,10 +56,10 @@ func TestClaimSkipsJobsUntilNotBefore(t *testing.T) {
 // an unset not_before (every pre-existing producer) is claimable at once.
 func TestJobWithoutNotBeforeIsImmediatelyClaimable(t *testing.T) {
 	repo := New(time.Minute, 3)
-	if err := repo.Submit(model.Job{ID: "immediate"}); err != nil {
+	if err := repo.Submit(context.Background(), model.Job{ID: "immediate"}); err != nil {
 		t.Fatalf("Submit: %v", err)
 	}
-	job, _, err := repo.Claim("worker-1")
+	job, _, err := repo.Claim(context.Background(), "worker-1")
 	if err != nil {
 		t.Fatalf("Claim: %v", err)
 	}

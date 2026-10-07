@@ -82,10 +82,10 @@ func hasEvent(events []string, want string) bool {
 
 func TestAttemptsAndEventsOnClaimComplete(t *testing.T) {
 	r, db := setupRepo(t, 30*time.Second, 3)
-	if err := r.Submit(model.Job{ID: "job-1"}); err != nil {
+	if err := r.Submit(context.Background(), model.Job{ID: "job-1"}); err != nil {
 		t.Fatal(err)
 	}
-	if _, _, err := r.Claim("w1"); err != nil {
+	if _, _, err := r.Claim(context.Background(), "w1"); err != nil {
 		t.Fatal(err)
 	}
 
@@ -97,7 +97,7 @@ func TestAttemptsAndEventsOnClaimComplete(t *testing.T) {
 		t.Fatalf("unexpected attempt: %+v", attempts[0])
 	}
 
-	if err := r.Complete("job-1", "w1", model.Artifact{}); err != nil {
+	if err := r.Complete(context.Background(), "job-1", "w1", model.Artifact{}); err != nil {
 		t.Fatal(err)
 	}
 
@@ -116,23 +116,23 @@ func TestAttemptsAndEventsOnClaimComplete(t *testing.T) {
 
 func TestAttemptsPreservedAcrossFailures(t *testing.T) {
 	r, db := setupRepo(t, 30*time.Second, 3)
-	if err := r.Submit(model.Job{ID: "job-1"}); err != nil {
+	if err := r.Submit(context.Background(), model.Job{ID: "job-1"}); err != nil {
 		t.Fatal(err)
 	}
 
 	// Attempt 1 fails -> requeue.
-	if _, _, err := r.Claim("w1"); err != nil {
+	if _, _, err := r.Claim(context.Background(), "w1"); err != nil {
 		t.Fatal(err)
 	}
-	if err := r.Fail("job-1", "w1", "boom"); err != nil {
+	if err := r.Fail(context.Background(), "job-1", "w1", "boom"); err != nil {
 		t.Fatal(err)
 	}
 
 	// Attempt 2 claims and completes.
-	if _, _, err := r.Claim("w2"); err != nil {
+	if _, _, err := r.Claim(context.Background(), "w2"); err != nil {
 		t.Fatal(err)
 	}
-	if err := r.Complete("job-1", "w2", model.Artifact{}); err != nil {
+	if err := r.Complete(context.Background(), "job-1", "w2", model.Artifact{}); err != nil {
 		t.Fatal(err)
 	}
 
@@ -155,15 +155,15 @@ func TestAttemptsPreservedAcrossFailures(t *testing.T) {
 
 func TestLeaseExpiryMarksAttempt(t *testing.T) {
 	r, db := setupRepo(t, 10*time.Millisecond, 3)
-	if err := r.Submit(model.Job{ID: "job-1"}); err != nil {
+	if err := r.Submit(context.Background(), model.Job{ID: "job-1"}); err != nil {
 		t.Fatal(err)
 	}
-	if _, _, err := r.Claim("w1"); err != nil {
+	if _, _, err := r.Claim(context.Background(), "w1"); err != nil {
 		t.Fatal(err)
 	}
 
 	time.Sleep(30 * time.Millisecond)
-	if _, err := r.RequeueExpired(time.Now()); err != nil {
+	if _, err := r.RequeueExpired(context.Background(), time.Now()); err != nil {
 		t.Fatal(err)
 	}
 

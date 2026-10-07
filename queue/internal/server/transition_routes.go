@@ -32,7 +32,7 @@ func (s *Server) complete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := s.svc.Complete(id, req.Worker, req.Data); err != nil {
+	if err := s.svc.Complete(r.Context(), id, req.Worker, req.Data); err != nil {
 		http.Error(w, err.Error(), http.StatusConflict)
 		return
 	}
@@ -56,7 +56,7 @@ func (s *Server) fail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := s.svc.Fail(id, req.Worker, req.Data.Reason); err != nil {
+	if err := s.svc.Fail(r.Context(), id, req.Worker, req.Data.Reason); err != nil {
 		http.Error(w, err.Error(), http.StatusConflict)
 		return
 	}
@@ -65,7 +65,7 @@ func (s *Server) fail(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) retry(w http.ResponseWriter, r *http.Request) {
 	id := parseJobID(r)
-	if err := s.svc.Retry(id); err != nil {
+	if err := s.svc.Retry(r.Context(), id); err != nil {
 		if errors.Is(err, repository.ErrNotFound) {
 			http.Error(w, err.Error(), http.StatusNotFound)
 			return
@@ -85,7 +85,7 @@ func (s *Server) retry(w http.ResponseWriter, r *http.Request) {
 // completed or failed cannot be cancelled (409).
 func (s *Server) cancel(w http.ResponseWriter, r *http.Request) {
 	id := parseJobID(r)
-	if err := s.svc.Cancel(id); err != nil {
+	if err := s.svc.Cancel(r.Context(), id); err != nil {
 		if errors.Is(err, repository.ErrNotFound) {
 			http.Error(w, err.Error(), http.StatusNotFound)
 			return
@@ -114,7 +114,7 @@ func (s *Server) rendered(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := s.svc.Rendered(id, req.Worker, req.Data.Artifact, req.Data.Reason); err != nil {
+	if err := s.svc.Rendered(r.Context(), id, req.Worker, req.Data.Artifact, req.Data.Reason); err != nil {
 		http.Error(w, err.Error(), http.StatusConflict)
 		return
 	}
@@ -138,7 +138,7 @@ func (s *Server) progress(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "worker is required", http.StatusBadRequest)
 		return
 	}
-	if err := s.svc.SetProgress(id, req.Worker, req.Data); err != nil {
+	if err := s.svc.SetProgress(r.Context(), id, req.Worker, req.Data); err != nil {
 		if errors.Is(err, repository.ErrNotFound) {
 			http.Error(w, err.Error(), http.StatusNotFound)
 			return
@@ -163,7 +163,7 @@ func (s *Server) renew(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := s.svc.Renew(id, req.Worker); err != nil {
+	if err := s.svc.Renew(r.Context(), id, req.Worker); err != nil {
 		http.Error(w, err.Error(), http.StatusConflict)
 		return
 	}
@@ -178,7 +178,7 @@ func (s *Server) claimFinalization(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	job, claimed, err := s.svc.ClaimFinalization(parseJobID(r), req.Worker)
+	job, claimed, err := s.svc.ClaimFinalization(r.Context(), parseJobID(r), req.Worker)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusConflict)
 		return

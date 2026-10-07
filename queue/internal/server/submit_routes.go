@@ -23,7 +23,7 @@ func (s *Server) submitBatch(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "jobs is required", http.StatusBadRequest)
 		return
 	}
-	if err := s.svc.SubmitBatch(req.Jobs); err != nil {
+	if err := s.svc.SubmitBatch(r.Context(), req.Jobs); err != nil {
 		if errors.Is(err, repository.ErrJobExists) {
 			http.Error(w, err.Error(), http.StatusConflict)
 			return
@@ -51,7 +51,7 @@ func (s *Server) submit(w http.ResponseWriter, r *http.Request) {
 	if job.ID == "" {
 		job.ID = newID()
 	}
-	canonical, created, err := s.svc.SubmitIdempotent(job)
+	canonical, created, err := s.svc.SubmitIdempotent(r.Context(), job)
 	if err != nil {
 		// 409 is reserved for the duplicate-ID condition. Producers treat 409
 		// as idempotent success (queue/client maps it to ErrJobExists), so a

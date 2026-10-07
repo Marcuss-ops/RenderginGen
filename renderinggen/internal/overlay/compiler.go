@@ -46,6 +46,9 @@ func RenderPlanWireVersion(plan *Plan) (string, int) {
 			layer.TransitionIn != nil || len(layer.Masks) > 0 || layerAnimationNeedsV3(layer.Animation) {
 			return RenderPlanSchemaV3, RenderPlanVersionV3
 		}
+		if textAnimatorsNeedV3(layer.TextAnimators) {
+			return RenderPlanSchemaV3, RenderPlanVersionV3
+		}
 	}
 	return RenderPlanSchemaV2, RenderPlanVersionV2
 }
@@ -323,7 +326,7 @@ type semanticItem struct {
 	CaptionMotionParams map[string]any `json:"caption_motion_params,omitempty"`
 
 	// EntityStyleID selects a RenderingGen-owned entity composition. The
-	// premium_random_v1 selector deterministically chooses one of 15 variants.
+	// premium_random_v1 selector deterministically chooses one of 25 variants.
 	EntityStyleID string `json:"entity_style_id,omitempty"`
 	// CaptionLayout may be "below", "left", or "right"; side layouts keep
 	// the name in the free column beside the portrait.
@@ -556,17 +559,18 @@ type Layer struct {
 	// source's contain bars after assets have been materialized, then serializes
 	// only the derived geometry in Size.
 	EntityImage bool `json:"-"`
-	// EntityCaptionForImageID links a first-class caption to the image whose
-	// final source-aspect geometry is resolved after asset materialization.
-	EntityCaptionForImageID string          `json:"-"`
-	Radius                  float64         `json:"radius,omitempty"`
-	Position                []float64       `json:"position,omitempty"`
-	Scale                   []float64       `json:"scale,omitempty"`
-	Style                   *LayerStyle     `json:"style,omitempty"`
-	StartFrame              int64           `json:"start_frame"`
-	DurationFrames          int64           `json:"duration_frames"`
-	Animation               *LayerAnimation `json:"animation,omitempty"`
-	TextAnimators           []TextAnimator  `json:"text_animators,omitempty"`
+	// CaptionForImageID links a first-class caption to the image whose final
+	// source-aspect geometry is resolved after asset materialization.
+	CaptionForImageID string          `json:"-"`
+	CaptionLayout     string          `json:"-"`
+	Radius            float64         `json:"radius,omitempty"`
+	Position          []float64       `json:"position,omitempty"`
+	Scale             []float64       `json:"scale,omitempty"`
+	Style             *LayerStyle     `json:"style,omitempty"`
+	StartFrame        int64           `json:"start_frame"`
+	DurationFrames    int64           `json:"duration_frames"`
+	Animation         *LayerAnimation `json:"animation,omitempty"`
+	TextAnimators     []TextAnimator  `json:"text_animators,omitempty"`
 	// Derived by the lowering pass from concrete Z/rotation tracks. Motion
 	// authors never need to duplicate this renderer routing bit by hand.
 	Enable3D    bool `json:"enable_3d,omitempty"`

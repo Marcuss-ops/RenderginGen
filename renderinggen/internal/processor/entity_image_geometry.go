@@ -84,13 +84,13 @@ func alignEntityCaptionToFittedImage(plan *overlay.Plan, image *overlay.Layer) e
 	}
 	for i := range plan.Layers {
 		caption := &plan.Layers[i]
-		if caption.EntityCaptionForImageID != image.ID {
+		if caption.CaptionForImageID != image.ID {
 			continue
 		}
 		bounds := overlay.EntityCardImageBoundsFromCenter(
 			plan.Canvas.Width, plan.Canvas.Height, image.Position, image.Size[0], image.Size[1],
 		)
-		layout, err := overlay.ResolveEntityCardLayout(plan.Canvas.Width, plan.Canvas.Height, bounds, caption.Text)
+		layout, err := overlay.ResolveEntityCardLayoutAt(plan.Canvas.Width, plan.Canvas.Height, bounds, caption.Text, caption.CaptionLayout)
 		if err != nil {
 			return err
 		}

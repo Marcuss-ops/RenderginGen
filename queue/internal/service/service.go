@@ -73,15 +73,15 @@ func (s *Service) SetWorkerRepository(repo repository.WorkerRepository, staleAft
 }
 
 // Submit enqueues a job. The ID is required and must be unique.
-func (s *Service) Submit(job model.Job) error {
-	_, _, err := s.SubmitIdempotent(job)
+func (s *Service) Submit(ctx context.Context, job model.Job) error {
+	_, _, err := s.SubmitIdempotent(ctx, job)
 	return err
 }
 
 // SubmitBatch creates a complete anchor+children family atomically. The
 // repository capability is mandatory: silently falling back to a loop would
 // reintroduce the anchor-claim race this API exists to remove.
-func (s *Service) SubmitBatch(jobs []model.Job) error {
+func (s *Service) SubmitBatch(ctx context.Context, jobs []model.Job) error {
 	if len(jobs) == 0 {
 		return fmt.Errorf("job batch is empty")
 	}
@@ -89,37 +89,37 @@ func (s *Service) SubmitBatch(jobs []model.Job) error {
 	if !ok {
 		return fmt.Errorf("queue repository does not support atomic job batches")
 	}
-	if err := b.SubmitBatch(jobs); err != nil {
+	if err := b.SubmitBatch(ctx, jobs); err != nil {
 		return err
 	}
-	s.observePending()
+	s.observePending(ctx)
 	s.notify.Notify()
 	return nil
 }
 
 // SubmitIdempotent returns the canonical job for an idempotency key. created
 // is false when the request is a retry of an existing logical job.
-func (s *Service) SubmitIdempotent(job model.Job) (*model.Job, bool, error) {
+func (s *Service) SubmitIdempotent(ctx context.Context, job model.Job) (*model.Job, bool, error) {
 	if job.ID == "" {
 		return nil, false, fmt.Errorf("job id is required")
 	}
 	if idem, ok := s.repo.(repository.IdempotencyRepository); ok {
-		canonical, created, err := idem.SubmitIdempotent(job)
+		canonical, created, err := idem.SubmitIdempotent(ctx, job)
 		if err != nil {
 			return nil, false, err
 		}
 		if created {
-			s.observePending()
+			s.observePending(ctx)
 			s.notify.Notify()
 		}
 		return canonical, created, nil
 	}
-	if err := s.repo.Submit(job); err != nil {
+	if err := s.repo.Submit(ctx, job); err != nil {
 		return nil, false, err
 	}
-	s.observePending()
+	s.observePending(ctx)
 	s.notify.Notify()
-	canonical, err := s.repo.Get(job.ID)
+	canonical, err := s.repo.Get(ctx, job.ID)
 	return canonical, true, err
 }
 
@@ -128,43 +128,47 @@ func (s *Service) SubmitIdempotent(job model.Job) (*model.Job, bool, error) {
 // wakes a waiting claim to re-run the atomic claim against the store.
 func (s *Service) Notify() *Notifier { return s.notify }
 
-func (s *Service) ClaimFinalization(parentID, workerID string) (*model.Job, bool, error) {
-	job, claimed, err := s.repo.ClaimFinalization(parentID, workerID)
+func (s *Service) ClaimFinalization(ctx context.Context, parentID, workerID string) (*model.Job, bool, error) {
+	job, claimed, err := s.repo.ClaimFinalization(ctx, parentID, workerID)
 	if claimed {
 		s.notify.Notify()
 	}
 	return job, claimed, err
 }
 
-func (s *Service) Children(parentID string) ([]*model.Job, error) { return s.repo.Children(parentID) }
+func (s *Service) Children(ctx context.Context, parentID string) ([]*model.Job, error) {
+	return s.repo.Children(ctx, parentID)
+}
 
 // ByParent returns every job submitted under one parent_job_id (the run-scoped
 // read: "what did this run enqueue?"), in submission order.
-func (s *Service) ByParent(parentID string) ([]*model.Job, error) { return s.repo.ByParent(parentID) }
+func (s *Service) ByParent(ctx context.Context, parentID string) ([]*model.Job, error) {
+	return s.repo.ByParent(ctx, parentID)
+}
 
 // Get returns the current state of a job, including its artifact when done.
-func (s *Service) Get(id string) (*model.Job, error) {
-	return s.repo.Get(id)
+func (s *Service) Get(ctx context.Context, id string) (*model.Job, error) {
+	return s.repo.Get(ctx, id)
 }
 
 // Claim atomically claims the next pending job for a worker, returning the job
 // and its lease duration. It returns a nil job when the queue is empty.
-func (s *Service) Claim(workerID string) (*model.Job, time.Duration, error) {
-	return s.ClaimState(workerID, "")
+func (s *Service) Claim(ctx context.Context, workerID string) (*model.Job, time.Duration, error) {
+	return s.ClaimState(ctx, workerID, "")
 }
 
-func (s *Service) ClaimState(workerID string, state model.State) (*model.Job, time.Duration, error) {
+func (s *Service) ClaimState(ctx context.Context, workerID string, state model.State) (*model.Job, time.Duration, error) {
 	if workerID == "" {
 		return nil, 0, fmt.Errorf("worker id is required")
 	}
-	job, lease, err := s.repo.ClaimState(workerID, state)
+	job, lease, err := s.repo.ClaimState(ctx, workerID, state)
 	if err != nil {
 		return nil, 0, err
 	}
 	if job != nil && s.metrics != nil && !job.QueuedAt.IsZero() {
 		s.metrics.QueueWait.Observe(time.Since(job.QueuedAt).Seconds())
 	}
-	s.observePending()
+	s.observePending(ctx)
 	return job, lease, nil
 }
 
@@ -180,7 +184,7 @@ func (s *Service) WaitAndClaim(ctx context.Context, workerID string, state model
 	if maxWait <= 0 {
 		maxWait = 25 * time.Second
 	}
-	job, lease, err := s.ClaimState(workerID, state)
+	job, lease, err := s.ClaimState(ctx, workerID, state)
 	if err != nil || job != nil {
 		return job, lease, err
 	}
@@ -200,7 +204,7 @@ func (s *Service) WaitAndClaim(ctx context.Context, workerID string, state model
 		case <-deadline.C:
 			return nil, 0, nil
 		case <-wake:
-			job, lease, err := s.ClaimState(workerID, state)
+			job, lease, err := s.ClaimState(ctx, workerID, state)
 			if err != nil || job != nil {
 				return job, lease, err
 			}
@@ -212,7 +216,7 @@ func (s *Service) WaitAndClaim(ctx context.Context, workerID string, state model
 			// Bounded fallback re-poll so a missed wake-up cannot stall a
 			// worker until the deadline. Back off after every empty poll;
 			// the deadline timer bounds the total wait regardless.
-			job, lease, err := s.ClaimState(workerID, state)
+			job, lease, err := s.ClaimState(ctx, workerID, state)
 			if err != nil || job != nil {
 				return job, lease, err
 			}
@@ -224,15 +228,15 @@ func (s *Service) WaitAndClaim(ctx context.Context, workerID string, state model
 	}
 }
 
-func (s *Service) Complete(id, workerID string, artifact model.Artifact) error {
+func (s *Service) Complete(ctx context.Context, id, workerID string, artifact model.Artifact) error {
 	if err := validateArtifact(artifact); err != nil {
 		return err
 	}
-	if err := s.repo.Complete(id, workerID, artifact); err != nil {
+	if err := s.repo.Complete(ctx, id, workerID, artifact); err != nil {
 		return err
 	}
 	if s.metrics != nil {
-		if job, err := s.repo.Get(id); err == nil && job != nil && !job.StartedAt.IsZero() {
+		if job, err := s.repo.Get(ctx, id); err == nil && job != nil && !job.StartedAt.IsZero() {
 			d := job.CompletedAt.Sub(job.StartedAt)
 			if d <= 0 {
 				d = time.Since(job.StartedAt)
@@ -240,7 +244,7 @@ func (s *Service) Complete(id, workerID string, artifact model.Artifact) error {
 			s.metrics.RenderDuration.Observe(d.Seconds())
 		}
 	}
-	s.observePending()
+	s.observePending(ctx)
 	return nil
 }
 
@@ -250,13 +254,13 @@ func (s *Service) Complete(id, workerID string, artifact model.Artifact) error {
 // full-table scan per request. State-changing paths still notify claim
 // waiters through s.notify, which is what latency depends on — the gauge is
 // observability, not correctness.
-func (s *Service) observePending() {
-	s.observePendingThrottled(false)
+func (s *Service) observePending(ctx context.Context) {
+	s.observePendingThrottled(ctx, false)
 }
 
 // observePendingThrottled is the shared implementation; force bypasses the
 // throttle clock.
-func (s *Service) observePendingThrottled(force bool) {
+func (s *Service) observePendingThrottled(ctx context.Context, force bool) {
 	if s.metrics == nil {
 		return
 	}
@@ -276,7 +280,7 @@ func (s *Service) observePendingThrottled(force bool) {
 	s.pendingGaugeLast = time.Now()
 	s.pendingGaugeMu.Unlock()
 
-	s.metrics.JobsPending.Set(float64(s.repo.Stats().Pending))
+	s.metrics.JobsPending.Set(float64(s.repo.Stats(ctx).Pending))
 }
 
 // RefreshPendingGauge forces an immediate, unthrottled pending-gauge refresh.
@@ -287,5 +291,7 @@ func (s *Service) observePendingThrottled(force bool) {
 // an on-demand scrape of the gauge is a metrics concern, not a queue API — so
 // do not describe it as production-wired.
 func (s *Service) RefreshPendingGauge() {
-	s.observePendingThrottled(true)
+	// Deliberately not request-scoped: this is the gauge-refresh seam tests
+	// call directly, and it owns no caller context to propagate.
+	s.observePendingThrottled(context.Background(), true)
 }

@@ -47,6 +47,12 @@ func TestEntityStyleRegistryTagQueries(t *testing.T) {
 	if got := entityStyleRegistry.query(nil); len(got) != len(premiumEntityStyles) {
 		t.Fatalf("empty query matched %d styles, want %d", len(got), len(premiumEntityStyles))
 	}
+	if got := entityStyleRegistry.query(entityStyleQuery{"side", "camera"}); len(got) != 0 {
+		t.Fatalf("impossible side+camera query matched %v, want no styles", got)
+	}
+	if got := entityStyleRegistry.query(entityStyleQuery{"unknown-tag"}); len(got) != 0 {
+		t.Fatalf("unknown tag query matched %v, want no styles", got)
+	}
 }
 
 // Tag selectors and their _random aliases are one registry query with one
@@ -90,14 +96,11 @@ func TestEntityStyleRegistryLookupCoversAllStyles(t *testing.T) {
 			t.Fatalf("style %q badge colors drifted: %+v vs %+v", style.ID, got, want)
 		}
 	}
-	if _, ok := ResolveEntityStyle("center_top", "p", "v", "i"); !ok {
-		t.Fatal("golden alias center_top lost")
-	}
-	if _, ok := ResolveEntityStyle("vertical_editorial", "p", "v", "i"); !ok {
-		t.Fatal("golden alias vertical_editorial lost")
-	}
-	if _, ok := ResolveEntityStyle("centered_signature", "p", "v", "i"); !ok {
-		t.Fatal("golden alias centered_signature lost")
+	for alias, wantID := range entityStyleAliases {
+		got, ok := ResolveEntityStyle(alias, "p", "v", "i")
+		if !ok || got.ID != wantID {
+			t.Fatalf("alias %q resolved to %+v, %v; want style %q", alias, got, ok, wantID)
+		}
 	}
 	if _, ok := ResolveEntityStyle("01", "p", "v", "i"); !ok {
 		t.Fatal("legacy reference lookup lost")

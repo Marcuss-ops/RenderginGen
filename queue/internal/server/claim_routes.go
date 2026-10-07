@@ -25,7 +25,7 @@ func (s *Server) claim(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	job, lease, err := s.svc.ClaimState(req.Worker, model.State(req.State))
+	job, lease, err := s.svc.ClaimState(r.Context(), req.Worker, model.State(req.State))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

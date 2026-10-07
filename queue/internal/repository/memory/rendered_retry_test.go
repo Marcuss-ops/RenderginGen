@@ -1,6 +1,7 @@
 package memory
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -14,10 +15,10 @@ func TestRenderedJobIsReclaimableWithArtifact(t *testing.T) {
 	repo := New(30*time.Second, 3)
 
 	job := model.Job{ID: "job-rendered", RenderPlan: []byte(`{"n":1}`)}
-	if err := repo.Submit(job); err != nil {
+	if err := repo.Submit(context.Background(), job); err != nil {
 		t.Fatal(err)
 	}
-	claimed, _, err := repo.ClaimState("w1", "")
+	claimed, _, err := repo.ClaimState(context.Background(), "w1", "")
 	if err != nil || claimed == nil {
 		t.Fatalf("claim: %v %v", claimed, err)
 	}
@@ -27,16 +28,16 @@ func TestRenderedJobIsReclaimableWithArtifact(t *testing.T) {
 		SizeBytes:    42,
 		ContentType:  "video/mp4",
 	}
-	if err := repo.Rendered("job-rendered", "w1", artifact, "drive upload failed"); err != nil {
+	if err := repo.Rendered(context.Background(), "job-rendered", "w1", artifact, "drive upload failed"); err != nil {
 		t.Fatal(err)
 	}
 
 	// A pending-only claim (the old worker behavior) must NOT pick it up.
 	pending := model.Job{ID: "job-pending", RenderPlan: []byte(`{"n":2}`)}
-	if err := repo.Submit(pending); err != nil {
+	if err := repo.Submit(context.Background(), pending); err != nil {
 		t.Fatal(err)
 	}
-	got, _, err := repo.ClaimState("w2", model.StatePending)
+	got, _, err := repo.ClaimState(context.Background(), "w2", model.StatePending)
 	if err != nil || got == nil {
 		t.Fatalf("pending claim: %v %v", got, err)
 	}
@@ -46,7 +47,7 @@ func TestRenderedJobIsReclaimableWithArtifact(t *testing.T) {
 
 	// A blank-state claim (any claimable state) returns the rendered job with
 	// its artifact attached.
-	got, _, err = repo.ClaimState("w3", "")
+	got, _, err = repo.ClaimState(context.Background(), "w3", "")
 	if err != nil || got == nil {
 		t.Fatalf("blank claim: %v %v", got, err)
 	}
@@ -64,7 +65,7 @@ func TestRenderedJobIsReclaimableWithArtifact(t *testing.T) {
 	}
 
 	// And it can be completed by the new owner (publication-only retry done).
-	if err := repo.Complete("job-rendered", "w3", artifact); err != nil {
+	if err := repo.Complete(context.Background(), "job-rendered", "w3", artifact); err != nil {
 		t.Fatalf("complete after publication retry: %v", err)
 	}
 }
@@ -73,14 +74,14 @@ func TestRenderedStateIsNeverLeaseRequeued(t *testing.T) {
 	repo := New(30*time.Second, 3)
 
 	job := model.Job{ID: "job-rendered", RenderPlan: []byte(`{"n":1}`)}
-	if err := repo.Submit(job); err != nil {
+	if err := repo.Submit(context.Background(), job); err != nil {
 		t.Fatal(err)
 	}
-	claimed, _, err := repo.ClaimState("w1", "")
+	claimed, _, err := repo.ClaimState(context.Background(), "w1", "")
 	if err != nil || claimed == nil {
 		t.Fatalf("claim: %v %v", claimed, err)
 	}
-	if err := repo.Rendered("job-rendered", "w1", model.Artifact{
+	if err := repo.Rendered(context.Background(), "job-rendered", "w1", model.Artifact{
 		StorageKey: "sha", ArtifactHash: "sha", SizeBytes: 1, ContentType: "video/mp4",
 	}, "drive down"); err != nil {
 		t.Fatal(err)
@@ -88,14 +89,14 @@ func TestRenderedStateIsNeverLeaseRequeued(t *testing.T) {
 
 	// Expired-lease requeue must not touch rendered jobs (they hold no lease
 	// and are claimable on demand): a far-future clock changes nothing.
-	n, err := repo.RequeueExpired(time.Now().Add(24 * time.Hour))
+	n, err := repo.RequeueExpired(context.Background(), time.Now().Add(24*time.Hour))
 	if err != nil {
 		t.Fatal(err)
 	}
 	if n != 0 {
 		t.Fatalf("requeue expired touched %d jobs, want 0", n)
 	}
-	got, err := repo.Get("job-rendered")
+	got, err := repo.Get(context.Background(), "job-rendered")
 	if err != nil {
 		t.Fatal(err)
 	}

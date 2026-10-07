@@ -25,14 +25,15 @@ type resolvedTextSpec struct {
 	// the compiler lowers exactly one style path.
 	StyleParams  map[string]any
 	MotionTarget string
-	Emphasized   bool
 	StylePolicy  textRole
+	EntryExit    bool
+	// FitPolicy is the resolved no-shrink decision for metric/date font sizes.
+	FitPolicy string
 	// FontSize is the role's resolved base size: the caption resolver pins the
 	// fitted size, preset-backed specs leave zero and inherit the style.
 	FontSize     float64
 	OverrideFill string
 	OverrideFont string
-	FitPolicy    string
 }
 
 // preset returns the preset definition attached to the spec, if any.
@@ -41,6 +42,22 @@ func (s resolvedTextSpec) preset() PresetDefinition {
 		return PresetDefinition{}
 	}
 	return s.PresetDef
+}
+
+// resolveTextRole assigns the generic semantic role used by the text system.
+// Template-specific typography remains a resolved style input, not a compiler
+// branch, and the compiler sees only this role and the effective policy flags.
+func resolveTextRole(ri resolvedItem) textRole {
+	if ri.Kind == KindImportantPhrase {
+		return textRoleImportantPhrase
+	}
+	if ri.Kind == KindTimelineDate {
+		return textRoleDate
+	}
+	if ri.Kind == KindMetricStat || ri.Kind == KindNumber {
+		return textRoleMetric
+	}
+	return textRolePhrase
 }
 
 // resolveTextSpec lowers one resolved semantic text item into the spec the
@@ -59,11 +76,9 @@ func buildResolvedTextSpec(ri resolvedItem, src *semanticPlan) (resolvedTextSpec
 		MotionParams: ri.Item.MotionParams,
 		StyleParams:  ri.Params,
 		MotionTarget: semanticTextMotionTarget(ri.Item, ri.Kind),
-		Emphasized:   ri.Kind == KindImportantPhrase,
-		StylePolicy:  textRolePhrase,
-	}
-	if spec.Emphasized {
-		spec.StylePolicy = textRoleImportantPhrase
+		EntryExit:    resolveTextRole(ri) == textRoleImportantPhrase,
+		StylePolicy:  resolveTextRole(ri),
+		FitPolicy:    resolvedTextFitPolicy(ri),
 	}
 	// Preset style and family layout travel with the spec; the compiler never
 	// re-derives them from a template lookup.
@@ -118,20 +133,16 @@ func buildResolvedTextSpec(ri resolvedItem, src *semanticPlan) (resolvedTextSpec
 			spec.BoxHeight = ri.Preset.Layout.BoxHeight
 		}
 	}
-	// Date and metric cards may carry a runtime font size above the canonical
-	// phrase_default size; grow the box and disable shrink-only fitting so the
-	// requested size survives instead of collapsing to the preset minimum.
-	if ri.Kind == KindTimelineDate || ri.Kind == KindMetricStat || ri.Kind == KindNumber {
+	// Grow the box when the wrap produced more lines than the preset's
+	// canonical height can hold, so centred lines are never clipped.
+	if spec.FitPolicy == "none" {
 		if requestedSize, ok := numericValue(spec.StyleParams["font_size_px"]); ok && requestedSize > 0 {
 			minimumHeight := int(requestedSize*1.7) + 32
 			if spec.BoxHeight < minimumHeight {
 				spec.BoxHeight = minimumHeight
 			}
-			spec.FitPolicy = "none"
 		}
 	}
-	// Grow the box when the wrap produced more lines than the preset's
-	// canonical height can hold, so centred lines are never clipped.
 	if lines > 1 {
 		needed := lines*phraseLineHeight + 16 // glow/shadow padding
 		if needed > spec.BoxHeight {
@@ -142,6 +153,18 @@ func buildResolvedTextSpec(ri resolvedItem, src *semanticPlan) (resolvedTextSpec
 		}
 	}
 	return spec, nil
+}
+
+// resolvedTextFitPolicy resolves data-style no-shrink behavior before text
+// compilation. The compiler receives only the decision, not semantic item kind.
+func resolvedTextFitPolicy(ri resolvedItem) string {
+	if ri.Kind != KindTimelineDate && ri.Kind != KindMetricStat && ri.Kind != KindNumber {
+		return ""
+	}
+	if requestedSize, ok := numericValue(ri.Params["font_size_px"]); ok && requestedSize > 0 {
+		return "none"
+	}
+	return ""
 }
 
 // applyResolvedTextSpecStyle seeds the spec with the item's preset style and
@@ -194,7 +217,7 @@ func compileResolvedText(layerID string, start, end int64, spec resolvedTextSpec
 		// none; the wrapped text is the motion context so the stagger aligns
 		// with the final lines. Motion-target admission stays where the plan
 		// contract owns it (resolver/caller): this lowering lowers.
-		resolved, err := animationForMotionTarget(spec.MotionID, spec.MotionParams, spec.Text, layer.DurationFrames, spec.PresetDef.Motion.Exit, layerID, spec.MotionTarget, spec.Emphasized)
+		resolved, err := animationForMotionTarget(spec.MotionID, spec.MotionParams, spec.Text, layer.DurationFrames, spec.PresetDef.Motion.Exit, layerID, spec.MotionTarget, spec.EntryExit)
 		if err != nil {
 			return Layer{}, err
 		}
@@ -203,24 +226,17 @@ func compileResolvedText(layerID string, start, end int64, spec resolvedTextSpec
 		// Official text presets lower their motion through the shared
 		// animationForPreset path so word/glyph selectors are transported as
 		// text animators instead of being silently compiled away.
-		presetAnimation, err := animationForPreset(spec.preset(), spec.Text, layer.DurationFrames, spec.Emphasized)
+		presetAnimation, err := animationForPreset(spec.preset(), spec.Text, layer.DurationFrames, spec.EntryExit)
 		if err != nil {
 			return Layer{}, err
 		}
 		animation = presetAnimation
 	}
-	if spec.Emphasized {
+	if spec.EntryExit {
 		animation = withPhraseEntryExit(animation, layer.DurationFrames)
 	}
 	applyMotionRouting(&layer, animation)
 	return layer, nil
-}
-
-// resolvedTextMotionAllowed reports whether the spec's role accepts the requested
-// motion. The phrase/important-phrase role keeps the canonical admission gate;
-// role-owned lowering (entity captions) already resolved its motion upstream.
-func resolvedTextMotionAllowed(spec resolvedTextSpec, motionID string) bool {
-	return motionAdmitsTarget(motionID, spec.MotionTarget)
 }
 
 // resolvedTextFontSize is the role style's base size: an explicitly resolved

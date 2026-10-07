@@ -4,17 +4,18 @@
 package postgres
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/Marcuss-ops/RenderingGen/queue/internal/model"
 )
 
 // ClaimFinalization atomically claims a parent row for one finalizer.
-func (r *Repository) ClaimFinalization(parentJobID, workerID string) (*model.Job, bool, error) {
+func (r *Repository) ClaimFinalization(ctx context.Context, parentJobID, workerID string) (*model.Job, bool, error) {
 	if parentJobID == "" || workerID == "" {
 		return nil, false, fmt.Errorf("parent job id and worker id are required")
 	}
-	ctx, cancel := r.opContext()
+	ctx, cancel := r.opContext(ctx)
 	defer cancel()
 	res, err := r.db.ExecContext(ctx, `
 		UPDATE render_jobs
@@ -29,7 +30,7 @@ func (r *Repository) ClaimFinalization(parentJobID, workerID string) (*model.Job
 		return nil, false, err
 	}
 	if n == 0 {
-		job, getErr := r.Get(parentJobID)
+		job, getErr := r.Get(ctx, parentJobID)
 		if getErr != nil {
 			return nil, false, getErr
 		}
@@ -38,14 +39,14 @@ func (r *Repository) ClaimFinalization(parentJobID, workerID string) (*model.Job
 		}
 		return job, false, fmt.Errorf("parent job %s is in state %q", parentJobID, job.State)
 	}
-	job, err := r.Get(parentJobID)
+	job, err := r.Get(ctx, parentJobID)
 	return job, true, err
 }
 
 // Complete marks a running job as completed and, when the artifact has a
 // storage key, persists it and links it to the job.
-func (r *Repository) Complete(id, workerID string, artifact model.Artifact) error {
-	ctx, cancel := r.opContext()
+func (r *Repository) Complete(ctx context.Context, id, workerID string, artifact model.Artifact) error {
+	ctx, cancel := r.opContext(ctx)
 	defer cancel()
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -100,8 +101,8 @@ func (r *Repository) Complete(id, workerID string, artifact model.Artifact) erro
 // the object store but external publication (Google Drive) failed. The job is
 // kept out of `completed` and becomes claimable again for a publication-only
 // retry, so a flaky upload never wastes a GPU re-render.
-func (r *Repository) Rendered(id, workerID string, artifact model.Artifact, reason string) error {
-	ctx, cancel := r.opContext()
+func (r *Repository) Rendered(ctx context.Context, id, workerID string, artifact model.Artifact, reason string) error {
+	ctx, cancel := r.opContext(ctx)
 	defer cancel()
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {

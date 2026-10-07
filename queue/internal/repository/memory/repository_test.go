@@ -1,6 +1,7 @@
 package memory
 
 import (
+	"context"
 	"encoding/json"
 	"testing"
 	"time"
@@ -11,7 +12,7 @@ import (
 func submit(t *testing.T, s *Repository, id string) {
 	t.Helper()
 	job := model.Job{ID: id, RenderPlan: json.RawMessage(`{"n":1}`)}
-	if err := s.Submit(job); err != nil {
+	if err := s.Submit(context.Background(), job); err != nil {
 		t.Fatalf("submit: %v", err)
 	}
 }
@@ -21,7 +22,7 @@ func TestClaimIsFIFOAndExclusive(t *testing.T) {
 	submit(t, s, "job-1")
 	submit(t, s, "job-2")
 
-	first, lease, err := s.Claim("w1")
+	first, lease, err := s.Claim(context.Background(), "w1")
 	if err != nil {
 		t.Fatalf("claim: %v", err)
 	}
@@ -32,12 +33,12 @@ func TestClaimIsFIFOAndExclusive(t *testing.T) {
 		t.Fatalf("want lease 30s, got %s", lease)
 	}
 
-	second, _, _ := s.Claim("w2")
+	second, _, _ := s.Claim(context.Background(), "w2")
 	if second == nil || second.ID != "job-2" {
 		t.Fatalf("want job-2, got %+v", second)
 	}
 
-	if got, _, _ := s.Claim("w3"); got != nil {
+	if got, _, _ := s.Claim(context.Background(), "w3"); got != nil {
 		t.Fatalf("queue should be empty, got %+v", got)
 	}
 }
@@ -49,7 +50,7 @@ func TestClaimIsFIFOAndExclusive(t *testing.T) {
 func TestClaimSkipsAssemblyAnchorParent(t *testing.T) {
 	s := New(30*time.Second, 3)
 	submit(t, s, "anchor")
-	if err := s.Submit(model.Job{
+	if err := s.Submit(context.Background(), model.Job{
 		ID:          "anchor-chunk-0",
 		ParentJobID: "anchor",
 		ChunkIndex:  0,
@@ -60,24 +61,24 @@ func TestClaimSkipsAssemblyAnchorParent(t *testing.T) {
 	}
 	submit(t, s, "job-2")
 
-	first, _, err := s.Claim("w1")
+	first, _, err := s.Claim(context.Background(), "w1")
 	if err != nil {
 		t.Fatalf("claim: %v", err)
 	}
 	if first == nil || first.ID != "anchor-chunk-0" {
 		t.Fatalf("want the chunk, got %+v", first)
 	}
-	second, _, _ := s.Claim("w2")
+	second, _, _ := s.Claim(context.Background(), "w2")
 	if second == nil || second.ID != "job-2" {
 		t.Fatalf("want job-2, got %+v", second)
 	}
-	if got, _, _ := s.Claim("w3"); got != nil {
+	if got, _, _ := s.Claim(context.Background(), "w3"); got != nil {
 		t.Fatalf("the anchor must not be claimable for rendering, got %+v", got)
 	}
 
 	// The anchor is still claimable by the FINALIZER, which is the only claim
 	// allowed to take it.
-	anchor, claimed, err := s.ClaimFinalization("anchor", "finalizer")
+	anchor, claimed, err := s.ClaimFinalization(context.Background(), "anchor", "finalizer")
 	if err != nil {
 		t.Fatalf("finalize claim: %v", err)
 	}
@@ -116,10 +117,10 @@ func TestChildrenIndexCoversEveryInsertPath(t *testing.T) {
 			name:   "Submit",
 			parent: "p-submit",
 			insert: func(t *testing.T, s *Repository, parent, kid model.Job) {
-				if err := s.Submit(parent); err != nil {
+				if err := s.Submit(context.Background(), parent); err != nil {
 					t.Fatalf("submit parent: %v", err)
 				}
-				if err := s.Submit(kid); err != nil {
+				if err := s.Submit(context.Background(), kid); err != nil {
 					t.Fatalf("submit child: %v", err)
 				}
 			},
@@ -128,10 +129,10 @@ func TestChildrenIndexCoversEveryInsertPath(t *testing.T) {
 			name:   "SubmitIdempotent",
 			parent: "p-idempotent",
 			insert: func(t *testing.T, s *Repository, parent, kid model.Job) {
-				if _, _, err := s.SubmitIdempotent(parent); err != nil {
+				if _, _, err := s.SubmitIdempotent(context.Background(), parent); err != nil {
 					t.Fatalf("idempotent parent: %v", err)
 				}
-				if _, _, err := s.SubmitIdempotent(kid); err != nil {
+				if _, _, err := s.SubmitIdempotent(context.Background(), kid); err != nil {
 					t.Fatalf("idempotent child: %v", err)
 				}
 			},
@@ -140,7 +141,7 @@ func TestChildrenIndexCoversEveryInsertPath(t *testing.T) {
 			name:   "SubmitBatch",
 			parent: "p-batch",
 			insert: func(t *testing.T, s *Repository, parent, kid model.Job) {
-				if err := s.SubmitBatch([]model.Job{parent, kid}); err != nil {
+				if err := s.SubmitBatch(context.Background(), []model.Job{parent, kid}); err != nil {
 					t.Fatalf("submit batch: %v", err)
 				}
 			},
@@ -153,7 +154,7 @@ func TestChildrenIndexCoversEveryInsertPath(t *testing.T) {
 			parent, kid := newParent(tc.parent), newChild(tc.parent)
 			tc.insert(t, s, parent, kid)
 
-			children, err := s.Children(parent.ID)
+			children, err := s.Children(context.Background(), parent.ID)
 			if err != nil {
 				t.Fatalf("children: %v", err)
 			}
@@ -166,14 +167,14 @@ func TestChildrenIndexCoversEveryInsertPath(t *testing.T) {
 
 			// The anchor must be withheld from a render claim, and the child —
 			// queued after it, so FIFO alone would pick the parent — handed over.
-			claimed, _, err := s.Claim("w1")
+			claimed, _, err := s.Claim(context.Background(), "w1")
 			if err != nil {
 				t.Fatalf("claim: %v", err)
 			}
 			if claimed == nil || claimed.ID != kid.ID {
 				t.Fatalf("claim = %+v, want the child: the parent is an assembly anchor", claimed)
 			}
-			if got, _, _ := s.Claim("w2"); got != nil {
+			if got, _, _ := s.Claim(context.Background(), "w2"); got != nil {
 				t.Fatalf("the anchor must not be claimable for rendering, got %+v", got)
 			}
 		})
@@ -184,13 +185,13 @@ func TestLeaseExpiryRequeues(t *testing.T) {
 	s := New(10*time.Millisecond, 3)
 	submit(t, s, "job-1")
 
-	job, _, _ := s.Claim("w1")
+	job, _, _ := s.Claim(context.Background(), "w1")
 	if job == nil {
 		t.Fatal("claim returned nil")
 	}
 
 	time.Sleep(20 * time.Millisecond)
-	n, err := s.RequeueExpired(time.Now())
+	n, err := s.RequeueExpired(context.Background(), time.Now())
 	if err != nil {
 		t.Fatalf("requeue: %v", err)
 	}
@@ -198,7 +199,7 @@ func TestLeaseExpiryRequeues(t *testing.T) {
 		t.Fatalf("want 1 requeued, got %d", n)
 	}
 
-	again, _, _ := s.Claim("w2")
+	again, _, _ := s.Claim(context.Background(), "w2")
 	if again == nil || again.ID != "job-1" {
 		t.Fatalf("job should be claimable again, got %+v", again)
 	}
@@ -210,24 +211,24 @@ func TestLeaseExpiryRequeues(t *testing.T) {
 func TestComplete(t *testing.T) {
 	s := New(30*time.Second, 3)
 	submit(t, s, "job-1")
-	if _, _, err := s.Claim("w1"); err != nil {
+	if _, _, err := s.Claim(context.Background(), "w1"); err != nil {
 		t.Fatal(err)
 	}
-	if err := s.Complete("job-1", "w1", model.Artifact{}); err != nil {
+	if err := s.Complete(context.Background(), "job-1", "w1", model.Artifact{}); err != nil {
 		t.Fatalf("complete: %v", err)
 	}
-	if s.Stats().Completed != 1 {
-		t.Fatalf("want 1 completed, got %+v", s.Stats())
+	if s.Stats(context.Background()).Completed != 1 {
+		t.Fatalf("want 1 completed, got %+v", s.Stats(context.Background()))
 	}
 }
 
 func TestCompleteWrongWorkerFails(t *testing.T) {
 	s := New(30*time.Second, 3)
 	submit(t, s, "job-1")
-	if _, _, err := s.Claim("w1"); err != nil {
+	if _, _, err := s.Claim(context.Background(), "w1"); err != nil {
 		t.Fatal(err)
 	}
-	if err := s.Complete("job-1", "w2", model.Artifact{}); err == nil {
+	if err := s.Complete(context.Background(), "job-1", "w2", model.Artifact{}); err == nil {
 		t.Fatal("expected error completing with wrong worker")
 	}
 }
@@ -237,22 +238,22 @@ func TestFailRequeuesUntilMaxAttempts(t *testing.T) {
 	submit(t, s, "job-1")
 
 	// Attempt 1 -> requeue.
-	if _, _, err := s.Claim("w1"); err != nil {
+	if _, _, err := s.Claim(context.Background(), "w1"); err != nil {
 		t.Fatal(err)
 	}
-	if err := s.Fail("job-1", "w1", "boom"); err != nil {
+	if err := s.Fail(context.Background(), "job-1", "w1", "boom"); err != nil {
 		t.Fatal(err)
 	}
 
 	// Attempt 2 -> permanent fail.
-	if _, _, err := s.Claim("w2"); err != nil {
+	if _, _, err := s.Claim(context.Background(), "w2"); err != nil {
 		t.Fatal(err)
 	}
-	if err := s.Fail("job-1", "w2", "boom"); err != nil {
+	if err := s.Fail(context.Background(), "job-1", "w2", "boom"); err != nil {
 		t.Fatal(err)
 	}
 
-	stats := s.Stats()
+	stats := s.Stats(context.Background())
 	if stats.Failed != 1 || stats.Pending != 0 {
 		t.Fatalf("want 1 failed, 0 pending; got %+v", stats)
 	}
@@ -261,17 +262,17 @@ func TestFailRequeuesUntilMaxAttempts(t *testing.T) {
 func TestRenewExtendsLease(t *testing.T) {
 	s := New(100*time.Millisecond, 3)
 	submit(t, s, "job-1")
-	if _, _, err := s.Claim("w1"); err != nil {
+	if _, _, err := s.Claim(context.Background(), "w1"); err != nil {
 		t.Fatal(err)
 	}
 
 	time.Sleep(60 * time.Millisecond) // near the end of the original lease
-	if err := s.Renew("job-1", "w1"); err != nil {
+	if err := s.Renew(context.Background(), "job-1", "w1"); err != nil {
 		t.Fatalf("renew: %v", err)
 	}
 	time.Sleep(60 * time.Millisecond) // past original lease, within renewed lease
 
-	n, err := s.RequeueExpired(time.Now())
+	n, err := s.RequeueExpired(context.Background(), time.Now())
 	if err != nil {
 		t.Fatalf("requeue: %v", err)
 	}
@@ -283,10 +284,10 @@ func TestRenewExtendsLease(t *testing.T) {
 func TestRenewWrongWorkerFails(t *testing.T) {
 	s := New(30*time.Second, 3)
 	submit(t, s, "job-1")
-	if _, _, err := s.Claim("w1"); err != nil {
+	if _, _, err := s.Claim(context.Background(), "w1"); err != nil {
 		t.Fatal(err)
 	}
-	if err := s.Renew("job-1", "w2"); err == nil {
+	if err := s.Renew(context.Background(), "job-1", "w2"); err == nil {
 		t.Fatal("expected error renewing with wrong worker")
 	}
 }
@@ -295,7 +296,7 @@ func TestFinalizationLeaseRecoversAfterWorkerLoss(t *testing.T) {
 	s := New(10*time.Millisecond, 3)
 	submit(t, s, "parent-1")
 
-	claimed, ok, err := s.ClaimFinalization("parent-1", "w1")
+	claimed, ok, err := s.ClaimFinalization(context.Background(), "parent-1", "w1")
 	if err != nil || !ok || claimed == nil {
 		t.Fatalf("claim finalization: job=%+v ok=%t err=%v", claimed, ok, err)
 	}
@@ -304,14 +305,14 @@ func TestFinalizationLeaseRecoversAfterWorkerLoss(t *testing.T) {
 	}
 
 	time.Sleep(20 * time.Millisecond)
-	n, err := s.RequeueExpired(time.Now())
+	n, err := s.RequeueExpired(context.Background(), time.Now())
 	if err != nil {
 		t.Fatalf("requeue: %v", err)
 	}
 	if n != 1 {
 		t.Fatalf("want one finalizing parent recovered, got %d", n)
 	}
-	if _, ok, err := s.ClaimFinalization("parent-1", "w2"); err != nil || !ok {
+	if _, ok, err := s.ClaimFinalization(context.Background(), "parent-1", "w2"); err != nil || !ok {
 		t.Fatalf("reclaimed parent: ok=%t err=%v", ok, err)
 	}
 }

@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -149,7 +150,7 @@ func TestJobWaitCancellationNotifies(t *testing.T) {
 	}()
 
 	time.Sleep(100 * time.Millisecond)
-	if err := svc.Cancel("job-1"); err != nil {
+	if err := svc.Cancel(context.Background(), "job-1"); err != nil {
 		t.Fatal(err)
 	}
 

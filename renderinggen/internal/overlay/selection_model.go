@@ -83,9 +83,8 @@ const (
 	// wraps to at most the derived number of lines before the packer reports a
 	// collision.
 	compositionCaptionEntryOrder = "declaration_order"
-	// compositionCaptionUseCase names the picker case that owns caption
-	// motions, so an image-with-text composition points at the caption selector
-	// instead of publishing a second, duplicated caption motion list.
+	// compositionCaptionUseCase preserves the versioned picker contract; the
+	// use-case ID is legacy-named but its caption target is generic.
 	compositionCaptionUseCase = "entity_caption"
 	// Motion scope answers "does the motion act on the composition or on its
 	// children" for every counted composition, so a UI never offers a
@@ -419,6 +418,9 @@ func backgroundCompositionFor(id string) *backgroundCompositionDefinition {
 // to no zone of this model; the empty string keeps them out of the picker zones
 // without inventing a seventh area.
 func runtimeUseCaseZone(id string) string {
+	if id == "entities" {
+		return ZoneImagesWithText
+	}
 	for _, definition := range imageCompositionCatalog {
 		if definition.ID == id {
 			return definition.Zone
@@ -458,6 +460,7 @@ func runtimeCompositionTarget(id string) string {
 // compositionTargetOverrides covers the compositions owned by no count-based
 // catalog: adding one means adding one map entry, never a new switch case.
 var compositionTargetOverrides = map[string]string{
+	"entities":               "image",
 	"entity_caption":         "caption",
 	"important_phrase":       "important_phrase",
 	"short_important_phrase": "short_phrase",

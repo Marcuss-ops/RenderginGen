@@ -4,6 +4,7 @@
 package postgres
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 
@@ -17,11 +18,11 @@ import (
 // full plan JSONB per child would turn the fan-in into an O(children²)
 // transfer of large blobs nobody reads. A child's frame range, state and
 // artifact are all the validation and assembly need.
-func (r *Repository) Children(parentJobID string) ([]*model.Job, error) {
+func (r *Repository) Children(ctx context.Context, parentJobID string) ([]*model.Job, error) {
 	if parentJobID == "" {
 		return nil, fmt.Errorf("parent job id is required")
 	}
-	ctx, cancel := r.opContext()
+	ctx, cancel := r.opContext(ctx)
 	defer cancel()
 	rows, err := r.db.QueryContext(ctx, `
 		SELECT j.id, j.state, j.chunk_index, j.frame_range,

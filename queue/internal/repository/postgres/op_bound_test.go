@@ -1,29 +1,29 @@
 // op_bound_test.go pins the invariant the repository contracts document but
-// cannot express in Go: the persistence interfaces carry NO context, so every
-// PostgreSQL operation must bound ITSELF.
+// cannot express in Go: carrying the caller's context is NOT the same as being
+// BOUNDED, so every PostgreSQL operation must ALSO derive its own deadline.
 //
-// The contracts' own words are "a backend must bound the work it performs (the
-// PostgreSQL backend derives a per-operation deadline — see its opContext)".
-// Without a test that is a comment. One new method that calls
-// db.ExecContext(context.Background(), …) puts an unbounded query back on the
-// availability-critical path, where the caller (an HTTP handler, a worker
-// goroutine) then waits on a lock wait or a mid-failover server indefinitely —
-// and the contract looks unchanged, so nothing else would notice.
+// The contracts' own words are "a backend must still derive a per-operation
+// deadline FROM the incoming context (the PostgreSQL backend does this in its
+// opContext)". Without a test that is a comment. One new method that calls
+// db.ExecContext(ctx, …) without going through opContext puts an unbounded query
+// back on the availability-critical path, where the caller (an HTTP handler, a
+// worker goroutine) then waits on a lock wait or a mid-failover server for as
+// long as its own context lives. A request context is long-lived by design and
+// may carry no deadline at all, so "the caller's ctx bounds it" is exactly the
+// reasoning that silently removes the bound.
 //
 // The check is structural, not textual: it parses every repository contract and
 // this package, resolves each exported *Repository method to the deadline it
 // derives (directly, or through a delegation chain like Claim -> ClaimState),
 // and requires every contract method to be bound that way.
 //
-// On the deferred context migration: threading `ctx` through
-// JobRepository -> service -> server was measured at 20 interface methods x 3
-// implementations, ~125 production and ~281 test call sites. It is deliberately
-// NOT done as a drive-by — a half-finished pass leaves an availability-critical
-// module unbuildable, and it must not share a branch with other work. What makes
-// deferring it safe is this file: the bound it would provide is already enforced
-// here, structurally, over every contract and every *Repository method, with
-// delegation resolved and ghost exceptions rejected. Do the migration as its own
-// change, one package per step; until then a new unbound method cannot land.
+// The context migration this file used to justify deferring is DONE: every
+// contract method takes ctx first and the service and HTTP layers thread it, so
+// cancellation and tracing now reach the driver. That is precisely why the check
+// below still has to exist — the migration provided propagation, not the bound
+// — and TestOperationBoundIsADeadline proves the derived deadline is real even
+// when the caller's context carries none. A new unbounded method still cannot
+// land.
 package postgres
 
 import (
@@ -100,7 +100,7 @@ func TestEveryRepositoryOperationIsBounded(t *testing.T) {
 			t.Errorf("contract declares %s but no exported *Repository method implements it", method)
 			continue
 		}
-		t.Errorf("%s implements %s but derives no deadline from opContext(): the contract carries no ctx, so the operation must bound itself", methods[method].where, method)
+		t.Errorf("%s implements %s but derives no deadline from opContext(): the caller's ctx is long-lived and may carry no deadline, so the operation must bound itself", methods[method].where, method)
 	}
 
 	// (2) A ghost exception is a permission nobody needs, and it hides the
@@ -140,7 +140,10 @@ func TestOperationBoundIsADeadline(t *testing.T) {
 	}
 
 	repo := &Repository{opTimeout: 50 * time.Millisecond}
-	ctx, cancel := repo.opContext()
+	// The parent here is deliberately deadline-less: opContext must IMPOSE a
+	// bound rather than inherit one, so this is the case the migration did not
+	// solve by itself.
+	ctx, cancel := repo.opContext(context.Background())
 	defer cancel()
 	assertOpDeadlineWithin(t, ctx, 50*time.Millisecond, "configured bound", 0)
 
@@ -148,12 +151,12 @@ func TestOperationBoundIsADeadline(t *testing.T) {
 	// to the default instead. The lower bound proves the override was actually
 	// cleared rather than the previous (tiny) bound still being in force.
 	repo.SetOpTimeout(0)
-	ctx, cancel = repo.opContext()
+	ctx, cancel = repo.opContext(context.Background())
 	defer cancel()
 	assertOpDeadlineWithin(t, ctx, defaultOpTimeout, "zero override", 50*time.Millisecond)
 
 	repo.SetOpTimeout(2 * time.Second)
-	ctx, cancel = repo.opContext()
+	ctx, cancel = repo.opContext(context.Background())
 	defer cancel()
 	assertOpDeadlineWithin(t, ctx, 2*time.Second, "explicit override", 50*time.Millisecond)
 }

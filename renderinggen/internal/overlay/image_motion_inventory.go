@@ -180,15 +180,17 @@ func runtimeMotionFamilyIDs(families map[string][]RuntimeMotionOption) []string 
 // background. MotionIDs lists only choices exposed for that usage; a nil slice
 // means the composition has no dedicated family yet.
 type RuntimeAnimationUseCase struct {
-	ID             string                       `json:"id"`
-	Scope          string                       `json:"scope,omitempty"`
-	Zone           string                       `json:"zone,omitempty"`
-	ItemKinds      []string                     `json:"item_kinds,omitempty"`
-	Cardinality    string                       `json:"cardinality"`
-	Description    string                       `json:"description"`
-	Composition    *RuntimeAnimationComposition `json:"composition,omitempty"`
-	BackgroundKind string                       `json:"background_kind,omitempty"`
-	MotionIDs      []string                     `json:"motion_ids"`
+	ID                string                       `json:"id"`
+	Scope             string                       `json:"scope,omitempty"`
+	Zone              string                       `json:"zone,omitempty"`
+	ItemKinds         []string                     `json:"item_kinds,omitempty"`
+	Cardinality       string                       `json:"cardinality"`
+	Description       string                       `json:"description"`
+	Composition       *RuntimeAnimationComposition `json:"composition,omitempty"`
+	BackgroundKind    string                       `json:"background_kind,omitempty"`
+	MotionIDs         []string                     `json:"motion_ids"`
+	StyleCountDefault int                          `json:"style_count_default,omitempty"`
+	StyleCountMaximum int                          `json:"style_count_maximum,omitempty"`
 }
 
 // RuntimeAnimationComposition makes picker cardinality machine-readable.
@@ -249,7 +251,8 @@ func runtimeAnimationUseCases(allOptions []RuntimeMotionOption, definitions map[
 		})
 	}
 	useCases = append(useCases,
-		RuntimeAnimationUseCase{ID: "entity_caption", ItemKinds: captionKinds, Cardinality: "one caption per image or composite child", Description: "Caption motion is selected separately from the image motion.", MotionIDs: groups.captions},
+		RuntimeAnimationUseCase{ID: "entities", ItemKinds: []string{string(KindEntityCard), string(KindOrganization), string(KindLocation), string(KindConcept), string(KindEntityImage)}, Cardinality: "one image layer per entity", Description: "Entity images rotate through their own bounded image-motion pool; caption styles remain independently selectable.", MotionIDs: groups.forTarget("image")},
+		RuntimeAnimationUseCase{ID: "entity_caption", ItemKinds: captionKinds, Cardinality: "one caption per image or composite child", Description: "Caption motion is selected separately from the image motion, independent of whether the image represents an entity.", MotionIDs: groups.captions},
 	)
 	for _, definition := range dataCompositionCatalog {
 		useCases = append(useCases, RuntimeAnimationUseCase{
@@ -263,6 +266,10 @@ func runtimeAnimationUseCases(allOptions []RuntimeMotionOption, definitions map[
 	// silently landing in someone else's picker area.
 	for index := range useCases {
 		useCases[index].Zone = runtimeUseCaseZone(useCases[index].ID)
+		if len(useCases[index].MotionIDs) > 0 {
+			useCases[index].StyleCountDefault = min(5, len(useCases[index].MotionIDs))
+			useCases[index].StyleCountMaximum = len(useCases[index].MotionIDs)
+		}
 	}
 	return useCases
 }

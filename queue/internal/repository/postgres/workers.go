@@ -1,6 +1,7 @@
 package postgres
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -16,7 +17,7 @@ import (
 var _ repository.WorkerRepository = (*Repository)(nil)
 
 // Register upserts a worker's identity and records its initial heartbeat.
-func (r *Repository) Register(worker model.Worker) error {
+func (r *Repository) Register(ctx context.Context, worker model.Worker) error {
 	if worker.ID == "" {
 		return fmt.Errorf("worker id is required")
 	}
@@ -25,7 +26,7 @@ func (r *Repository) Register(worker model.Worker) error {
 		status = string(model.WorkerStatusReady)
 	}
 
-	ctx, cancel := r.opContext()
+	ctx, cancel := r.opContext(ctx)
 	defer cancel()
 	_, err := r.db.ExecContext(ctx, `
 		INSERT INTO rendering_workers
@@ -57,8 +58,8 @@ func (r *Repository) Register(worker model.Worker) error {
 // Heartbeat records a heartbeat for a registered worker: it updates the
 // current liveness and appends to the heartbeat ledger in one transaction.
 // The ledger is pruned to a 7-day TTL to bound unbounded growth.
-func (r *Repository) Heartbeat(workerID string) error {
-	ctx, cancel := r.opContext()
+func (r *Repository) Heartbeat(ctx context.Context, workerID string) error {
+	ctx, cancel := r.opContext(ctx)
 	defer cancel()
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -102,8 +103,8 @@ func (r *Repository) Heartbeat(workerID string) error {
 // without a contract that declares it.
 
 // List returns all registered workers sorted by ID.
-func (r *Repository) List() ([]model.Worker, error) {
-	ctx, cancel := r.opContext()
+func (r *Repository) List(ctx context.Context) ([]model.Worker, error) {
+	ctx, cancel := r.opContext(ctx)
 	defer cancel()
 	rows, err := r.db.QueryContext(ctx, `
 		SELECT id, hostname, status, renderinggen_version, chronon_version,
