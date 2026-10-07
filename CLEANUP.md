@@ -39,6 +39,10 @@ in `semantic_map.go` e `map_route.go`. Di conseguenza **lo stato compilabile
 finale del worktree non è verde** e va verificato dopo aver stabilizzato quelle
 modifiche. `make test-gofmt test-architecture`, `make conformance` e
 `git diff --check` sono passati; non sostituiscono il build/test Go.
+**Aggiornamento 7 ottobre (sera):** superato — la riparazione concorrente è
+convergente; build, suite completa, CLI motion-catalog e audit retention sono
+verdi su questo checkout (dettagli in «Stato rilevato successivamente» di
+cleanupplan2.0.md e nella voce 4 sopra).
 
 ---
 
@@ -84,10 +88,13 @@ modifiche. `make test-gofmt test-architecture`, `make conformance` e
 4. **Retention media:** audit read-only dimostra copie byte-identiche nel
    checkout, non archivio indipendente o approvazione. L’owner deve indicare
    policy, archivio verificato, restore test e firmatario; non rimuovere altre
-   prove prima del sign-off. L’audit lanciato con output temporaneo ha rilevato
-   riferimenti ai path rimossi nel report JSON già presente: ripetere usando il
-   report di output escluso dallo scanner per distinguere l’autoreferenza da
-   consumer effettivi.
+   prove prima del sign-off. **Aggiornamento 7 ottobre (sera):** l’audit è stato
+   rieseguito e ora è self-consistente — `all_paths_have_no_current_textual_reference`
+   è `True` (il detector esclude i report con lo stesso schema), report
+   rigenerato in `evidence/mp4-retention-audit.v1.json` con baseline commit
+   `b0dd7253`; il sign-off esterno resta aperto. L’archivio tecnico locale
+   (`mp4-duplicates-20261007`, 30 file, manifest verificato) resta host-local:
+   non è un archivio indipendente e non chiude la voce.
 5. **Pulizia selettiva residua:** audit separato delle pool batch editoriali;
    trasferire test/gallery one-off a fixture/manifests riproducibili prima di
    rimuoverli; eliminare campi/schema solo dopo audit produttori e deprecazione.
