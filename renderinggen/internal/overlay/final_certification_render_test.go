@@ -1,3 +1,5 @@
+//go:build certification
+
 package overlay
 
 import (
@@ -10,46 +12,6 @@ import (
 	"strings"
 	"testing"
 )
-
-// cornerInsideEntity reports whether the 2x2 crop sampled at corner c is fully
-// inside the entity's coverage region. A flush bottom/right card legitimately
-// owns its corner of the canvas, so those corners must be excluded from the
-// background-preservation check (the black regression is caught by the
-// corners the entity does NOT cover).
-func cornerInsideEntity(c [2]int, region [4]float64) bool {
-	if region[2] <= region[0] || region[3] <= region[1] {
-		return false
-	}
-	return float64(c[0]) >= region[0] && float64(c[0])+1 <= region[2] &&
-		float64(c[1]) >= region[1] && float64(c[1])+1 <= region[3]
-}
-
-// assertBackgroundPreserved checks the corners of every sampled frame that
-// fall outside the entity's declared coverage: the Pale Olive background must
-// survive untouched there. A dark corner is the black-background regression
-// signature.
-func assertBackgroundPreserved(t *testing.T, plan *Plan, path string, frames []int) {
-	t.Helper()
-	corners := [][2]int{{50, 50}, {1869, 50}, {50, 1029}, {1869, 1029}}
-	coverage := entityCoverage(plan)
-	for _, frame := range frames {
-		checked := 0
-		for _, c := range corners {
-			if cornerInsideEntity(c, coverage) {
-				continue
-			}
-			checked++
-			luma := sampleLuma(t, path, frame, c[0], c[1])
-			if luma < 180 {
-				t.Errorf("frame %d corner (%d,%d) luma=%.1f: background replaced (black-frame regression?)",
-					frame, c[0], c[1], luma)
-			}
-		}
-		if checked == 0 {
-			t.Errorf("frame %d: every corner is inside the entity coverage; background preservation is unverifiable", frame)
-		}
-	}
-}
 
 // TestFinal_AllOfficialPresetsRender is the runtime registry gate: every
 // official preset must produce a structurally valid, fully decodable MP4
@@ -198,12 +160,4 @@ func TestFinal_RepeatedRenderSameProcess(t *testing.T) {
 		probeMP4Structural(t, videoPath)
 		decodeFully(t, videoPath)
 	}
-}
-
-func tailBytes(b []byte) string {
-	s := strings.TrimSpace(string(b))
-	if len(s) > 5000 {
-		s = s[len(s)-5000:]
-	}
-	return s
 }

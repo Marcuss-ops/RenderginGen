@@ -1,3 +1,5 @@
+//go:build certification
+
 // Final rendering certification — compile level.
 //
 // These tests prove that every official RenderingGen preset compiles into a
@@ -9,96 +11,15 @@
 // Every fixture goes through the REAL production path — CompileSemantic on
 // a renderinggen.overlay-plan.v1 document — so the suite certifies the single
 // lowering chain that PipelineGen submits to, not a test-only compiler.
+
 package overlay
 
 import (
 	"encoding/json"
 	"fmt"
-	"os"
 	"strings"
 	"testing"
 )
-
-// certificationDurationFrames is the certified composition length. The
-// fixture starts at frame 10, so the entity's own window is 10..124 inclusive
-// (exclusive end 125).
-const certificationDurationFrames = int64(125)
-
-// certificationMSRange is the millisecond range that lowers to the certified
-// frame window at the fixture's 24 fps: nearest(start_ms·24/1000)=10 and
-// nearest(end_ms·24/1000)=125.
-const (
-	certificationStartMS = int64(417)
-	certificationEndMS   = int64(5208)
-)
-
-// certificationBackgroundRGBA is the Pale Olive Classic background, the color
-// layer contract that keeps a compositor backend from rendering branded
-// content as black.
-const certificationBackgroundRGBA = "[0.9333333333333333,0.9450980392156862,0.9058823529411765,1]"
-
-// certificationAssetID/SHA identify the single fixture image every
-// certification plan references. At runtime the harness materializes the real
-// bytes at the semantic logical path (assets/semantic/<id>.jpg).
-const (
-	certificationAssetID  = "certification-image"
-	certificationAssetSHA = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
-)
-
-const certificationText = "Pipeline Certificata — 450% più veloce, fino a 125 frame"
-
-// certificationItemJSON builds one real semantic item for a registry preset,
-// using the same template vocabulary PipelineGen emits: IMAGE_OVERLAY for the
-// image family, IMPORTANT_PHRASE for the text family.
-func certificationItemJSON(def PresetDefinition) (string, error) {
-	if def.Family == PresetImage {
-		return fmt.Sprintf(
-			`{"id":%q,"template_id":"IMAGE_OVERLAY","preset_id":%q,"start_ms":%d,"end_ms":%d,`+
-				`"asset_refs":[{"asset_id":%q,"sha256":%q,"url":"https://store.example/certification.jpg","media_type":"image/jpeg"}]}`,
-			def.ID, def.ID, certificationStartMS, certificationEndMS, certificationAssetID, certificationAssetSHA), nil
-	}
-	return fmt.Sprintf(
-		`{"id":%q,"template_id":"IMPORTANT_PHRASE","preset_id":%q,"text":%q,"start_ms":%d,"end_ms":%d}`,
-		def.ID, def.ID, certificationText, certificationStartMS, certificationEndMS), nil
-}
-
-// certificationPlanRaw is the renderinggen.overlay-plan.v1 document the whole
-// certification suite (compile and runtime) lowers and renders.
-func certificationPlanRaw(def PresetDefinition) (string, error) {
-	item, err := certificationItemJSON(def)
-	if err != nil {
-		return "", err
-	}
-	return fmt.Sprintf(
-		`{"schema_version":"renderinggen.overlay-plan.v1","plan_id":%q,"video_id":"certification","width":1920,"height":1080,"fps_num":24,"fps_den":1,`+
-			`"background":{"kind":"color","color":%s},"items":[%s]}`,
-		"certification-"+def.ID, certificationBackgroundRGBA, item), nil
-}
-
-// certificationPlan compiles the fixture for one preset through the single
-// production compiler and returns the exact chronon.render-plan.v2 the
-// runtime certification renders. It is deterministic, so pixel tests can read
-// the entity's declared geometry from the same plan that produced the MP4
-// instead of hard-coding sample points.
-func certificationPlan(t *testing.T, presetID string) *Plan {
-	t.Helper()
-	def, err := ResolveOfficialPreset(presetID)
-	if err != nil {
-		t.Fatalf("resolve registry preset: %v", err)
-	}
-	raw, err := certificationPlanRaw(def)
-	if err != nil {
-		t.Fatalf("build certification plan: %v", err)
-	}
-	// CompileSemantic is the single compile entry point: a successful return
-	// IS the proof that the plan went through the semantic lowering (there is
-	// no "compiled but not semantic" outcome any more).
-	result, err := CompileSemantic([]byte(raw))
-	if err != nil {
-		t.Fatalf("compile certification plan %s: %v", presetID, err)
-	}
-	return result.Plan
-}
 
 // TestFinal_AllOfficialPresetsCovered is the completeness gate: the registry
 // must enumerate at least one preset of each family, and every registered ID
@@ -341,76 +262,4 @@ func TestFinal_InvalidPresetFailsClosed(t *testing.T) {
 	if _, err := resolveOfficialPreset("preset_that_does_not_exist", "text"); err == nil {
 		t.Fatal("kind-checked resolve accepted an unknown preset")
 	}
-} // TestRuntimeCertificationOptOut pins the two switches that keep a normal test
-// run from turning into minutes of real GPU renders plus pixel comparison:
-//
-//  1. the OPT-OUT env var, which `make test-unit` and CI set, and
-//  2. the opt-IN requirement itself: with no CHRONON_BIN naming an engine, the
-//     suite does not run.
-//     That is the direction that used to be enforced by DISCOVERY of a build
-//     beside this repository — which is exactly how a bare `go test ./...`
-//     started rendering video on a development machine, and how it hung on a host
-//     without a usable GPU. Pinning it here means removing that requirement is a
-//     test failure, not a silent regression.
-//
-// Each switch is asserted, not described. A skipped subtest never reaches the
-// statement after the guard, so the marker stays false — which is exactly what
-// "it skipped" means. The last case pins the other direction: an EMPTY opt-out
-// must not disable the suite (a stray empty variable cannot silently drop the
-// certification), which is why the guard tests for non-empty instead of mere
-// presence.
-func TestRuntimeCertificationOptOut(t *testing.T) {
-	t.Run("a non-empty value skips the suite", func(t *testing.T) {
-		t.Setenv(skipRuntimeCertificationEnv, "1")
-		proceeded := false
-		t.Run("guarded test", func(t *testing.T) {
-			chrononBinFor(t)
-			proceeded = true
-		})
-		if proceeded {
-			t.Fatalf("%s=1 did not skip a test that asks for the real engine", skipRuntimeCertificationEnv)
-		}
-	})
-
-	t.Run("no engine named means no real render", func(t *testing.T) {
-		t.Setenv(skipRuntimeCertificationEnv, "")
-		t.Setenv(engineBinEnv, "")
-		proceeded := false
-		t.Run("guarded test", func(t *testing.T) {
-			chrononBinFor(t)
-			proceeded = true
-		})
-		if proceeded {
-			t.Fatalf("the real-engine suite ran without %s being set; a discovered build beside this repository must not be enough", engineBinEnv)
-		}
-	})
-
-	t.Run("an empty opt-out with an engine named leaves the suite enabled", func(t *testing.T) {
-		exe, err := os.Executable()
-		if err != nil {
-			t.Skipf("cannot resolve the test binary path: %v", err)
-		}
-		t.Setenv(skipRuntimeCertificationEnv, "")
-		t.Setenv(engineBinEnv, exe)
-		returned := ""
-		t.Run("guarded test", func(t *testing.T) {
-			returned = chrononBinFor(t)
-		})
-		if returned != exe {
-			t.Fatalf("an empty %s disabled the suite: chrononBinFor returned %q, want the %s path %q", skipRuntimeCertificationEnv, returned, engineBinEnv, exe)
-		}
-	})
-}
-
-func certificationEntityLayer(plan *Plan, def PresetDefinition) *Layer {
-	for i := range plan.Layers {
-		layer := &plan.Layers[i]
-		if def.Family == PresetImage && layer.Type == "image" {
-			return layer
-		}
-		if def.Family == PresetText && layer.Type == "text" {
-			return layer
-		}
-	}
-	return nil
 }

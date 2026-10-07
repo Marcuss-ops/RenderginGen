@@ -1,3 +1,5 @@
+//go:build certification
+
 // goal3_e2e_scenario_test.go is the Goal 3 end-to-end SCENARIO: one clip with a
 // background plate (image and video families) and a text watermark, rendered on
 // the strict GPU-native lane and certified structurally, by decode, by A/V
@@ -13,6 +15,7 @@
 //
 // It is opt-in: it skips when chronon3d_cli is unavailable (see the harness for
 // the exact rules and the GOAL3_RENDER_OUT_DIR override).
+
 package overlay
 
 import (

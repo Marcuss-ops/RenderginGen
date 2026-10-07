@@ -26,7 +26,7 @@ type RuntimeMotionOption struct {
 	RequiresCamera  bool                   `json:"requires_camera,omitempty"`
 }
 
-// runtimeMotionCatalog returns all selectable motions in stable ID order,
+// RuntimeMotionCatalog returns all selectable motions in stable ID order,
 // including text/phrase, image, visual-accent, presentation and short-phrase
 // styles. Family is the canonical catalog category; use Targets only when
 // TargetsDeclared is true. motion_id remains independent from preset_id.
@@ -114,15 +114,16 @@ func RuntimeAnimationUseCases() []RuntimeAnimationUseCase {
 		shortPhraseIDs[id] = true
 	}
 	images := make(map[string]bool)
-	for _, ids := range ImageMotionInventory() {
-		for _, id := range ids {
-			images[id] = true
-		}
-	}
-	imageIDs := sortedMotionSet(images)
+	maps := make(map[string]bool)
 	phrases := make(map[string]bool)
 	captions := make(map[string]bool)
 	for _, option := range allOptions {
+		if motionAdmitsTarget(option.ID, "image") && !animationIsImageStack(option.ID) {
+			images[option.ID] = true
+		}
+		if motionAdmitsTarget(option.ID, "map_view") {
+			maps[option.ID] = true
+		}
 		if motionAdmitsTarget(option.ID, "important_phrase") {
 			phrases[option.ID] = true
 		}
@@ -140,18 +141,24 @@ func RuntimeAnimationUseCases() []RuntimeAnimationUseCase {
 	}
 	phraseIDs = uniqueSortedMotionIDs(phraseIDs)
 	captionIDs := sortedMotionSet(captions)
-	stackMotions := make(map[string]bool)
-	for _, option := range allOptions {
-		if animationIsImageStack(option.ID) {
-			stackMotions[option.ID] = true
-		}
-	}
+	imageIDs := sortedMotionSet(images)
+	mapIDs := sortedMotionSet(maps)
+	imageKinds := []string{"entity_image", "image", "image_popup", "product", "logo"}
 	return []RuntimeAnimationUseCase{
 		{ID: "important_phrase", ItemKinds: []string{"important_phrase"}, Cardinality: "one text layer", Description: "Editorial phrase motion; choose a text preset separately.", MotionIDs: phraseIDs},
 		{ID: "short_important_phrase", ItemKinds: []string{"important_phrase"}, Cardinality: "one text layer", Description: "Short-phrase styles and modern typewriter motions; choose a text preset separately.", MotionIDs: shortPhrases},
-		{ID: "single_image", ItemKinds: []string{"entity_image", "image", "image_popup", "product", "logo"}, Cardinality: "one image", Description: "One asset on the semantic item; motion_id and motion_params are on the item.", MotionIDs: imageIDs},
-		{ID: "composite_image_layer", ItemKinds: []string{"entity_image", "image", "image_popup", "product", "logo"}, Cardinality: "two or more image_layers", Description: "Each child image_layer owns its asset, relative time, preset_id, motion_id and motion_params.", MotionIDs: imageIDs},
-		{ID: "image_stack", ItemKinds: []string{"image", "entity_image"}, Cardinality: "two or more image_layers", Description: "Stack recipes coordinate the item-level motion across layers and require an active layer selector.", MotionIDs: sortedMotionSet(stackMotions)},
+		{ID: "single_image", ItemKinds: imageKinds, Cardinality: "one image", Description: "One image. Motions belong to the single-image family.", MotionIDs: imageIDs},
+		{ID: "image_double", ItemKinds: imageKinds, Cardinality: "two images", Description: "Two images. A dedicated motion family has not been authored yet.", MotionIDs: nil},
+		{ID: "image_triplet", ItemKinds: imageKinds, Cardinality: "three images", Description: "Three images. A dedicated motion family has not been authored yet.", MotionIDs: nil},
+		{ID: "image_four", ItemKinds: imageKinds, Cardinality: "four images", Description: "Four images. A dedicated motion family has not been authored yet.", MotionIDs: nil},
+		{ID: "image_five", ItemKinds: imageKinds, Cardinality: "five images", Description: "Five images. A dedicated motion family has not been authored yet.", MotionIDs: nil},
+		{ID: "single_image_with_text", ItemKinds: imageKinds, Cardinality: "one image with text", Description: "One image with text. A dedicated motion family has not been authored yet.", MotionIDs: nil},
+		{ID: "image_double_with_text", ItemKinds: imageKinds, Cardinality: "two images with text", Description: "Two images with text. A dedicated motion family has not been authored yet.", MotionIDs: nil},
+		{ID: "image_triplet_with_text", ItemKinds: imageKinds, Cardinality: "three images with text", Description: "Three images with text. A dedicated motion family has not been authored yet.", MotionIDs: nil},
+		{ID: "image_four_with_text", ItemKinds: imageKinds, Cardinality: "four images with text", Description: "Four images with text. A dedicated motion family has not been authored yet.", MotionIDs: nil},
+		{ID: "image_five_with_text", ItemKinds: imageKinds, Cardinality: "five images with text", Description: "Five images with text. A dedicated motion family has not been authored yet.", MotionIDs: nil},
+		{ID: "one_map", ItemKinds: []string{"map"}, Cardinality: "one map", Description: "One georeferenced map with its dedicated map motion family.", MotionIDs: mapIDs},
+		{ID: "two_maps", ItemKinds: []string{"map"}, Cardinality: "two maps", Description: "Two georeferenced maps. A dedicated multi-map motion family has not been authored yet.", MotionIDs: nil},
 		{ID: "entity_caption", ItemKinds: []string{"entity_image"}, Cardinality: "one caption per image or composite child", Description: "Caption motion is selected separately from the image motion.", MotionIDs: captionIDs},
 	}
 }

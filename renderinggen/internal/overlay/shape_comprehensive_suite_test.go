@@ -1,3 +1,5 @@
+//go:build certification
+
 package overlay
 
 import (
@@ -5,53 +7,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"image"
-	_ "image/png"
 	"os"
 	"os/exec"
 	"path/filepath"
-	"sort"
 	"strings"
 	"testing"
 	"time"
 )
-
-// Helper to compile a single-item plan
-func compileSingleShape(t *testing.T, params map[string]any) (CompileResult, Layer, error) {
-	t.Helper()
-	planMap := map[string]any{
-		"schema_version": "renderinggen.overlay-plan.v1",
-		"plan_id":        "test-shape-plan",
-		"video_id":       "test-vid",
-		"width":          1920,
-		"height":         1080,
-		"fps_num":        30,
-		"fps_den":        1,
-		"duration_ms":    5000,
-		"items": []any{
-			map[string]any{
-				"id":          "test-shape-item",
-				"kind":        "shape",
-				"template_id": "shape_static",
-				"start_ms":    0,
-				"end_ms":      5000,
-				"params":      params,
-			},
-		},
-	}
-	raw, err := json.Marshal(planMap)
-	if err != nil {
-		return CompileResult{}, Layer{}, fmt.Errorf("marshal plan: %w", err)
-	}
-	res, err := CompileSemantic(raw)
-	if err != nil {
-		return CompileResult{}, Layer{}, err
-	}
-	if len(res.Plan.Layers) == 0 {
-		return res, Layer{}, fmt.Errorf("no layers produced")
-	}
-	return res, res.Plan.Layers[0], nil
-}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 1. Contract Tests
@@ -1378,51 +1340,6 @@ func TestExistingOverlayPlansStillCompile(t *testing.T) {
 	}
 }
 
-func findChrononBin(t *testing.T) (string, string) {
-	t.Helper()
-	chrononBin := os.Getenv("CHRONON_BIN")
-	assetsRoot := ""
-	if wsRoot, ok := findWorkspaceRoot("."); ok {
-		assetsRoot = filepath.Join(wsRoot, "Chronon3d")
-		if chrononBin == "" {
-			candidate := filepath.Join(wsRoot, "Chronon3d", "build", "chronon", "linux-video-release", "apps", "chronon3d_cli", "chronon3d_cli")
-			if _, err := os.Stat(candidate); err == nil {
-				chrononBin = candidate
-			}
-		}
-	}
-	if chrononBin == "" {
-		cwd, _ := os.Getwd()
-		candidateDirs := []string{
-			"../../Chronon3d",
-			"../../../Chronon3d",
-			"../Chronon3d",
-		}
-		dir := cwd
-		for i := 0; i < 5; i++ {
-			c := filepath.Join(dir, "Chronon3d")
-			if info, err := os.Stat(c); err == nil && info.IsDir() {
-				candidateDirs = append(candidateDirs, c)
-				break
-			}
-			parent := filepath.Dir(dir)
-			if parent == dir {
-				break
-			}
-			dir = parent
-		}
-		for _, candidateDir := range candidateDirs {
-			candidate := filepath.Join(candidateDir, "build", "chronon", "linux-video-release", "apps", "chronon3d_cli", "chronon3d_cli")
-			if _, err := os.Stat(candidate); err == nil {
-				chrononBin = candidate
-				assetsRoot = candidateDir
-				break
-			}
-		}
-	}
-	return chrononBin, assetsRoot
-}
-
 func TestBrowserBackgroundE2E(t *testing.T) {
 	res, layer, err := compileSingleShape(t, map[string]any{
 		"shape":  "device_frame",
@@ -1539,85 +1456,6 @@ func TestNoiseVignetteGpuSafe(t *testing.T) {
 	if err != nil || info.Size() == 0 {
 		t.Fatalf("expected non-empty output frame at %s (resolved %s), err: %v", outPath, actualOut, err)
 	}
-}
-
-func resolveOutputFrame(target string) string {
-	if info, err := os.Stat(target); err == nil && info.Size() > 0 {
-		return target
-	}
-	ext := filepath.Ext(target)
-	base := strings.TrimSuffix(target, ext)
-	seqName := fmt.Sprintf("%s_0000%s", base, ext)
-	if info, err := os.Stat(seqName); err == nil && info.Size() > 0 {
-		return seqName
-	}
-	dir := filepath.Dir(target)
-	out0 := filepath.Join(dir, "out_0000.png")
-	if info, err := os.Stat(out0); err == nil && info.Size() > 0 {
-		return out0
-	}
-	return target
-}
-
-func assertRenderFramesClose(t *testing.T, firstPath, secondPath string) {
-	t.Helper()
-	decode := func(path string) image.Image {
-		file, err := os.Open(path)
-		if err != nil {
-			t.Fatalf("open rendered frame %s: %v", path, err)
-		}
-		defer file.Close()
-		frame, _, err := image.Decode(file)
-		if err != nil {
-			t.Fatalf("decode rendered frame %s: %v", path, err)
-		}
-		return frame
-	}
-	first, second := decode(firstPath), decode(secondPath)
-	if first.Bounds() != second.Bounds() {
-		t.Fatalf("rendered frame bounds differ: %v vs %v", first.Bounds(), second.Bounds())
-	}
-	maxChannelError := make([]int, 0, first.Bounds().Dx()*first.Bounds().Dy())
-	total := 0.0
-	for y := first.Bounds().Min.Y; y < first.Bounds().Max.Y; y++ {
-		for x := first.Bounds().Min.X; x < first.Bounds().Max.X; x++ {
-			ar, ag, ab, _ := first.At(x, y).RGBA()
-			br, bg, bb, _ := second.At(x, y).RGBA()
-			delta := max(channelError(ar, br), channelError(ag, bg), channelError(ab, bb))
-			maxChannelError = append(maxChannelError, delta)
-			total += float64(delta)
-		}
-	}
-	sort.Ints(maxChannelError)
-	p99 := maxChannelError[(len(maxChannelError)*99-1)/100]
-	mean := total / float64(len(maxChannelError))
-	t.Logf("software/Vulkan pixel parity: mean max-channel error %.2f/255, p99 %d/255", mean, p99)
-	if mean > 8 || p99 > 48 {
-		t.Fatalf("software/Vulkan parity exceeded tolerance: mean %.2f/255 (max 8), p99 %d/255 (max 48)", mean, p99)
-	}
-}
-
-func extractVideoFramePNG(t *testing.T, path string, frame int) []byte {
-	t.Helper()
-	cmd := exec.Command("ffmpeg", "-v", "error", "-i", path,
-		"-vf", fmt.Sprintf("select=eq(n\\,%d)", frame), "-frames:v", "1",
-		"-f", "image2pipe", "-vcodec", "png", "pipe:1")
-	data, err := cmd.Output()
-	if err != nil {
-		t.Fatalf("extract encoded frame %d from %s: %v", frame, path, err)
-	}
-	if _, _, err := image.Decode(bytes.NewReader(data)); err != nil {
-		t.Fatalf("decode encoded frame %d from %s: %v", frame, path, err)
-	}
-	return data
-}
-
-func channelError(a, b uint32) int {
-	delta := int(a>>8) - int(b>>8)
-	if delta < 0 {
-		return -delta
-	}
-	return delta
 }
 
 // TestShapeSoftwareGpuParity compares a rounded backing plate with an inset

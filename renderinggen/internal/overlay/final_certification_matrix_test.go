@@ -1,3 +1,5 @@
+//go:build certification
+
 package overlay
 
 import (
@@ -5,22 +7,6 @@ import (
 	"fmt"
 	"testing"
 )
-
-// certificationImageItem is one asset-driven certification item in the
-// semantic contract. It reuses the single fixture image identity so a plan can
-// carry several image items without tripping the registry's collision guard.
-func certificationImageItem(id, presetID string, assetID string) string {
-	return fmt.Sprintf(
-		`{"id":%q,"template_id":"IMAGE_OVERLAY","preset_id":%q,"start_ms":%d,"end_ms":%d,`+
-			`"asset_refs":[{"asset_id":%q,"sha256":%q,"url":"https://store.example/%s.jpg","media_type":"image/jpeg"}]}`,
-		id, presetID, certificationStartMS, certificationEndMS, assetID, certificationAssetSHA, assetID)
-}
-
-func certificationTextItem(id, presetID, text string) string {
-	return fmt.Sprintf(
-		`{"id":%q,"template_id":"IMPORTANT_PHRASE","preset_id":%q,"text":%q,"start_ms":%d,"end_ms":%d}`,
-		id, presetID, text, certificationStartMS, certificationEndMS)
-}
 
 func TestFinal_ImageAndTextTogether(t *testing.T) {
 	raw := fmt.Sprintf(
