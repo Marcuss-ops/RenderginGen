@@ -201,7 +201,7 @@ func resolveMapAttribution(ri resolvedItem, src *semanticPlan, attribution strin
 		Position:    canvasBoxPosition("text", boxX, boxY, width, height, src.Width, src.Height),
 		Style:       &LayerStyle{Font: OfficialFontPathForLanguage(src.Language)},
 		StyleParams: map[string]any{}, MotionTarget: "text", StylePolicy: textRoleMapAttribution,
-		FontSize: mapAttributionFontPX * scale,
+		FontSize: mapAttributionFontPX * scale, OverrideFill: "#F8F5EA",
 	}
 	// Role base styles supply fit and shadow policy; retain the contract's
 	// authored range, including its smaller shrink floor.
