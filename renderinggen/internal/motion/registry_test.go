@@ -43,8 +43,8 @@ func TestCatalogCategoriesKeepMotionsIndependentAndComplete(t *testing.T) {
 			t.Errorf("%s category has %d motions, want %d", category, len(ids), count)
 		}
 	}
-	if ids := Registry.ShortPhraseStyleIDs(); len(ids) != 45 {
-		t.Errorf("short phrase catalog has %d motions, want 45", len(ids))
+	if ids := Registry.ShortPhraseStyleIDs(); len(ids) != 48 {
+		t.Errorf("short phrase catalog has %d motions, want 48", len(ids))
 	}
 	if ids := Registry.PhraseAnimationIDs(); len(ids) != 146 {
 		t.Errorf("phrase planning pool has %d motions, want 146", len(ids))
@@ -279,7 +279,7 @@ func TestShortPhraseColorShorthandLowersToNativeRGBA(t *testing.T) {
 		definition := plugin.(DeclarativePlugin).Definition
 		for _, animator := range definition.TextAnimators {
 			for _, property := range animator.Properties {
-				if property.Property == "fill_blue" || property.Property == "fill_gray" {
+				if property.Property == "fill_blue" || property.Property == "fill_gray" || property.Property == "fill_orange" {
 					t.Errorf("%s retains non-renderer color shorthand %q", id, property.Property)
 				}
 				if property.Property != "fill_color" {
@@ -292,6 +292,35 @@ func TestShortPhraseColorShorthandLowersToNativeRGBA(t *testing.T) {
 					}
 				}
 			}
+		}
+	}
+}
+
+func TestClaudeInspiredShortPhrasePaletteLowersToBlackAndOrange(t *testing.T) {
+	id := "short_phrase_editorial_claude_diff_patch"
+	plugin, err := Registry.Resolve(id)
+	if err != nil {
+		t.Fatalf("resolve %s: %v", id, err)
+	}
+	definition := plugin.(DeclarativePlugin).Definition
+	if definition.Category != "short_phrase_style" {
+		t.Fatalf("category = %q, want short_phrase_style", definition.Category)
+	}
+	if len(definition.TextAnimators) != 2 {
+		t.Fatalf("%s animators = %d, want 2 (word entrance + orange selection)", id, len(definition.TextAnimators))
+	}
+	orange := definition.TextAnimators[1].Properties[0]
+	if orange.Property != "fill_color" || len(orange.Keyframes) == 0 {
+		t.Fatalf("orange accent lowered to %+v, want animated fill_color", orange)
+	}
+	got, ok := orange.Keyframes[0].Value.([]float64)
+	if !ok || len(got) != 4 {
+		t.Fatalf("orange value = %#v, want RGBA", orange.Keyframes[0].Value)
+	}
+	want := []float64{1, 0.38, 0.12, 1}
+	for channel := range want {
+		if got[channel] != want[channel] {
+			t.Fatalf("orange channel %d = %v, want %v", channel, got[channel], want[channel])
 		}
 	}
 }

@@ -25,7 +25,7 @@ type PresentationCatalog struct {
 	Families []PresentationFamily `json:"families"`
 }
 
-var expectedPresentationFamilies = map[string]int{"metric_v1": 20, "date_v1": 20, "entity_card_v1": 10}
+var expectedPresentationFamilies = map[string]int{"metric_v1": 20, "date_v1": 20, "entity_card_v1": 10, "metric_didone_v1": 10, "date_didone_v1": 10}
 
 func validateEntityPresentationCatalog(raw json.RawMessage, motions []MotionDefinition) error {
 	if len(raw) == 0 {
@@ -35,7 +35,7 @@ func validateEntityPresentationCatalog(raw json.RawMessage, motions []MotionDefi
 	if err := json.Unmarshal(raw, &catalog); err != nil {
 		return fmt.Errorf("motion: decode entity_presentation: %w", err)
 	}
-	if catalog.Schema != "chronontemplate.entity-presentation.v1" || catalog.Version != 1 || len(catalog.Families) != 3 {
+	if catalog.Schema != "chronontemplate.entity-presentation.v1" || catalog.Version != 1 || len(catalog.Families) != len(expectedPresentationFamilies) {
 		return fmt.Errorf("motion: invalid entity_presentation schema/version/family count")
 	}
 	byID := make(map[string]MotionDefinition, len(motions))

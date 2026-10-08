@@ -68,7 +68,7 @@ raggruppamento per chi crea il video; non è un renderer, né implica un nuovo
 | Frasi importanti | `important_phrase` | Frasi editoriali, con stile testo separato dall’animazione. |
 | Frasi importanti brevi | `important_phrase` + stile/motion breve | 14 stili `short_phrase_style`; la famiglia `typewriter_modern_v1` aggiunge 15 animazioni, catalogate separatamente. |
 | Numeri, metriche e date | `number`, `metric_stat`, `timeline_date` | Le famiglie disponibili sono 20 motion `metric_v1` e 20 `date_v1`; `entity_card_v1` ha altri 10 motion per schede entità. |
-| Mappe | `map` | Mappa georeferenziata con basemap locale, pin/etichette e 10 motion `map_image_v1`; distinta da un’immagine generica. |
+| Mappe | `map` | Cinque animazioni (`radar_lock`, `archipelago_chain`, `continental_laser`, `industrial_nodes`, `desert_pipeline`) disponibili sia con renderer Dark Map sia OpenCV; le dieci opzioni condividono tempi e keyframe. Le motion precedenti restano nel catalogo come deprecate e non sono più selezionabili né risolvibili. |
 | Altri elementi | `important_word`, `quote`, entità testuali, `product`, `logo`, `shape`, `video_overlay`, ecc. | Rimangono classi supportate dal compilatore; non vanno mescolate alle sezioni principali dell’editor. |
 
 Quindi la proposta editoriale parte da **7 sezioni principali** (le prime sette

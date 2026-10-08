@@ -289,13 +289,50 @@ func captionLinesWidth(lines []string, fontSize float64) float64 {
 	return width
 }
 
-// EntityCaptionMotionID returns the caption's motion id, resolving the shared
-// default when the producer did not pick one. The caption is a first-class
-// animated layer: it may carry its own motion (trump_entity_text_01, text_fade_up,
-// …) through the same canonical catalog the image uses.
+// captionMotionPlanID / captionMotionVideoID / captionMotionItemID carry the
+// owning item's identity into EntityCaptionMotionID so the pool rotation is
+// deterministic per (plan, video, item) — exactly like the entity-style
+// styleHash sampler. The caption compiler sets them for the duration of one
+// lower; they are unset otherwise.
+var (
+	captionMotionPlanID, captionMotionVideoID, captionMotionItemID string
+)
+
+// entityCaptionMotionPool is the certified caption-motion pool an unstyled
+// producer item rotates through instead of the legacy single hardcoded
+// fallback: authored text treatments, the typewriter families and the
+// trump_entity_text_01..15 catalog recipes. Every id is registered in the
+// motion catalog and admits the "caption" target.
+var entityCaptionMotionPool = []string{
+	"text_depth_in",
+	"text_fade_up",
+	"text_scale_punch",
+	"text_word_rise",
+	"text_word_stagger",
+	"text_yaw_in",
+	"typewriter_blur_focus",
+	"typewriter_clean",
+	"typewriter_lift",
+	"typewriter_neon",
+	"typewriter_pop",
+	"typewriter_scale_up",
+	"typewriter_slide_in",
+	"typewriter_soft_lift",
+	"typewriter_tracking",
+	"trump_entity_text_01", "trump_entity_text_02", "trump_entity_text_03",
+	"trump_entity_text_04", "trump_entity_text_05", "trump_entity_text_06",
+	"trump_entity_text_07", "trump_entity_text_08", "trump_entity_text_09",
+	"trump_entity_text_10", "trump_entity_text_11", "trump_entity_text_12",
+	"trump_entity_text_13", "trump_entity_text_14", "trump_entity_text_15",
+}
+
+// EntityCaptionMotionID returns the caption's motion id. A requested id is
+// authoritative. Empty resolves one catalog motion deterministically from the
+// (plan, video, item) identity: the caption rotates through the FULL certified
+// pool instead of always falling back to trump_entity_text_01.
 func EntityCaptionMotionID(requested string) string {
 	if requested != "" {
 		return requested
 	}
-	return "trump_entity_text_01"
+	return entityCaptionMotionPool[styleHash("caption_motion", captionMotionPlanID, captionMotionVideoID, captionMotionItemID, uint64(len(entityCaptionMotionPool)))]
 }

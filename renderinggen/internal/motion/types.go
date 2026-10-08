@@ -5,6 +5,8 @@ import (
 	"fmt"
 )
 
+import "github.com/Marcuss-ops/RenderingGen/renderinggen/countryflags"
+
 type Params map[string]any
 
 type MotionParams = Params
@@ -216,25 +218,32 @@ func (o *ImageMotionFieldOperator) UnmarshalJSON(data []byte) error {
 // fields that can each name the same motion let one producer set only the
 // other and silently fail to resolve at render time.
 type MotionDefinition struct {
-	ID                 string                   `json:"id"`
-	Category           string                   `json:"category,omitempty"`
-	SupportedTemplate  string                   `json:"supported_template,omitempty"`
-	Seeded             bool                     `json:"seeded,omitempty"`
-	Targets            []string                 `json:"targets,omitempty"`
-	Unit               string                   `json:"unit,omitempty"`
-	SupportedContent   []string                 `json:"supported_content,omitempty"`
-	DurationBounds     *DurationBounds          `json:"duration_bounds,omitempty"`
-	RequiredProperties []string                 `json:"required_properties,omitempty"`
-	RenderSafe         *bool                    `json:"render_safe,omitempty"`
-	Requires3D         *bool                    `json:"requires_3d,omitempty"`
-	RequiresCamera     *bool                    `json:"requires_camera,omitempty"`
-	Enter              int                      `json:"enter,omitempty"` // legacy preset timing
-	Exit               int                      `json:"exit,omitempty"`
-	Tracks             []TrackDefinition        `json:"tracks,omitempty"`
-	TextAnimators      []TextAnimatorDefinition `json:"text_animators,omitempty"`
-	Selector           SelectorDefinition       `json:"selector,omitempty"`
-	Stagger            StaggerDefinition        `json:"stagger,omitempty"`
-	ImageRecipe        *ImageMotionRecipe       `json:"image_recipe,omitempty"`
+	ID                  string                   `json:"id"`
+	Category            string                   `json:"category,omitempty"`
+	MapRenderer         string                   `json:"map_renderer,omitempty"`
+	MapID               string                   `json:"map_id,omitempty"`
+	MapAnimation        string                   `json:"map_animation,omitempty"`
+	Deprecated          bool                     `json:"deprecated,omitempty"`
+	RemoveAfter         string                   `json:"remove_after,omitempty"`
+	DeprecationNote     string                   `json:"deprecation_note,omitempty"`
+	ReplacementMotionID string                   `json:"replacement_motion_id,omitempty"`
+	SupportedTemplate   string                   `json:"supported_template,omitempty"`
+	Seeded              bool                     `json:"seeded,omitempty"`
+	Targets             []string                 `json:"targets,omitempty"`
+	Unit                string                   `json:"unit,omitempty"`
+	SupportedContent    []string                 `json:"supported_content,omitempty"`
+	DurationBounds      *DurationBounds          `json:"duration_bounds,omitempty"`
+	RequiredProperties  []string                 `json:"required_properties,omitempty"`
+	RenderSafe          *bool                    `json:"render_safe,omitempty"`
+	Requires3D          *bool                    `json:"requires_3d,omitempty"`
+	RequiresCamera      *bool                    `json:"requires_camera,omitempty"`
+	Enter               int                      `json:"enter,omitempty"` // legacy preset timing
+	Exit                int                      `json:"exit,omitempty"`
+	Tracks              []TrackDefinition        `json:"tracks,omitempty"`
+	TextAnimators       []TextAnimatorDefinition `json:"text_animators,omitempty"`
+	Selector            SelectorDefinition       `json:"selector,omitempty"`
+	Stagger             StaggerDefinition        `json:"stagger,omitempty"`
+	ImageRecipe         *ImageMotionRecipe       `json:"image_recipe,omitempty"`
 }
 
 type MotionPlugin interface {
@@ -255,6 +264,27 @@ type TextMotionPlugin interface {
 func ValidateDefinition(d MotionDefinition) error {
 	if d.ID == "" {
 		return fmt.Errorf("motion: definition has no id")
+	}
+	if d.Deprecated && (d.RemoveAfter == "" || d.DeprecationNote == "") {
+		return fmt.Errorf("motion %q: deprecated definitions require remove_after and deprecation_note", d.ID)
+	}
+	if d.MapRenderer != "" || d.MapID != "" || d.MapAnimation != "" {
+		hasMapTarget := false
+		for _, target := range d.Targets {
+			hasMapTarget = hasMapTarget || target == "map_view"
+		}
+		if d.Category != "map_image_v1" || !hasMapTarget {
+			return fmt.Errorf("motion %q: map renderer metadata requires the map_image_v1/map_view family", d.ID)
+		}
+		if (d.MapRenderer != "dark_map" && d.MapRenderer != "opencv") || d.MapID == "" || d.MapAnimation == "" {
+			return fmt.Errorf("motion %q: map renderer metadata is incomplete or unsupported", d.ID)
+		}
+		if d.DurationBounds == nil || d.DurationBounds.MinimumFrames != 150 || d.DurationBounds.MaximumFrames != 150 {
+			return fmt.Errorf("motion %q: paired map motions must have a fixed 150-frame duration", d.ID)
+		}
+		if _, ok := countryflags.LookupByName(d.MapID); !ok {
+			return fmt.Errorf("motion %q: map_id %q has no bundled country flag", d.ID, d.MapID)
+		}
 	}
 	if err := validateImagePremiumV1(d); err != nil {
 		return err

@@ -86,16 +86,16 @@ func mapPinLabelDimensions(pin SemanticMapPin, canvasW, canvasH int) (float64, f
 	return math.Min(width, float64(canvasW)), math.Min(height, float64(canvasH))
 }
 
-// mapPinLabelCandidates is the geometry resolver's stable candidate order:
-// below, above, right, left, then outward rings around the grounded pin.
+// mapPinLabelCandidates prefers a name above the grounded pin, followed by
+// below/right/left and outward rings when the preferred position collides.
 func mapPinLabelCandidates(pin SemanticMapPin, x, y, width, height float64) [][2]float64 {
 	offsetX, offsetY := 0.0, 0.0
 	if len(pin.LabelOffsetPX) == 2 {
 		offsetX, offsetY = pin.LabelOffsetPX[0], pin.LabelOffsetPX[1]
 	}
 	candidates := [][2]float64{
-		{x - width/2 + offsetX, y + pin.RadiusPX + mapPinLabelGapPX + offsetY},
 		{x - width/2, y - pin.RadiusPX - mapPinLabelGapPX - height},
+		{x - width/2 + offsetX, y + pin.RadiusPX + mapPinLabelGapPX + offsetY},
 		{x + pin.RadiusPX + mapPinLabelGapPX, y - height/2},
 		{x - pin.RadiusPX - mapPinLabelGapPX - width, y - height/2},
 	}

@@ -461,7 +461,9 @@ func overlaysFor(id, title, family, attribution string) []map[string]any {
 			layers = append(layers, shape("documentary_dim", "rect", []any{640.0, 360.0}, canvasWidth, canvasHeight, "#07121A80", 500, nil))
 		}
 		if id == "map_satellite_tilt_in" || id == "map_satellite_orbit_target" {
-			layers = append(layers, shape("satellite_bearing", "line", []any{target[0], target[1]}, 260, 2, "#00000000", 600, map[string]any{"color": "#79D6CE", "width": 2}))
+			// RenderPlan V3 has no primitive "line" shape; use a stroked
+			// rectangle for the same restrained horizontal bearing indicator.
+			layers = append(layers, shape("satellite_bearing", "rect", []any{target[0], target[1]}, 260, 2, "#00000000", 600, map[string]any{"color": "#79D6CE", "width": 2}))
 		}
 	case "map_route_draw", "map_route_camera_follow", "map_route_air_arc", "map_route_multi_destination", "map_route_reverse", "map_route_caption", "map_terrain_route", "map_historical_route_ink", "location_duo_route", "location_trio_route_chain", "location_penta_route_star":
 		newYork, london := mapPixel(40.7128, -74.0060), mapPixel(51.5074, -0.1278)

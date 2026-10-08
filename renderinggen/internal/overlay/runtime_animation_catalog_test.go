@@ -163,21 +163,28 @@ func TestRuntimeAnimationUseCasesSeparateCountedCompositions(t *testing.T) {
 	if !strings.Contains(mapDescription, "static maps") || !strings.Contains(mapDescription, "camera_move") {
 		t.Errorf("one_map description must distinguish static motion from fly-to: %q", byID["one_map"].Description)
 	}
-	for id, targetAndFamily := range map[string][2]string{
-		"metric_stat":   {"metric", "metric_v1"},
-		"timeline_date": {"date", "date_v1"},
+	for id, targetAndFamilies := range map[string]struct {
+		target   string
+		families []string
+	}{
+		"metric_stat":   {"metric", []string{"metric_v1", "metric_didone_v1"}},
+		"timeline_date": {"date", []string{"date_v1", "date_didone_v1"}},
 	} {
-		target, family := targetAndFamily[0], targetAndFamily[1]
+		target := targetAndFamilies.target
+		allowed := map[string]bool{}
+		for _, family := range targetAndFamilies.families {
+			allowed[family] = true
+		}
 		if len(byID[id].MotionIDs) == 0 {
-			t.Errorf("%s should expose its authored %s motion family", id, target)
+			t.Errorf("%s should expose its authored %s motion families", id, target)
 		}
 		for _, motionID := range byID[id].MotionIDs {
 			if !motionAdmitsTarget(motionID, target) {
 				t.Errorf("%s contains motion %q that does not admit target %q", id, motionID, target)
 			}
 			definition, err := resolveMotionDefinition(motionID)
-			if err != nil || definition == nil || definition.Category != family {
-				t.Errorf("%s contains motion %q outside canonical family %q", id, motionID, family)
+			if err != nil || definition == nil || !allowed[definition.Category] {
+				t.Errorf("%s contains motion %q outside its canonical families %v", id, motionID, targetAndFamilies.families)
 			}
 		}
 	}
@@ -270,7 +277,7 @@ func TestAnimationPolicyUsesDeclaredTargets(t *testing.T) {
 			t.Errorf("motionAdmitsTarget(%q, %q) = %v, want %v", tc.id, tc.target, got, tc.want)
 		}
 	}
-	if !motionAdmitsTarget("map_image_italy_beacon_arrival", "map_view") {
+	if !motionAdmitsTarget("map_image_dark_map_italy_radar_lock", "map_view") {
 		t.Error("canonical map_image_v1 target should admit the map motion")
 	}
 	if motionAdmitsTarget("image_depth_float", "map_view") || motionAdmitsTarget("image_card_push", "map_view") {

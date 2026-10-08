@@ -1,11 +1,9 @@
 package overlay
 
-// textRole names the semantic job a text layer does. It is the seam the
-// visual 2.0 refactor grows from: phrase, entity-caption and map-label text
-// must become roles of one text system instead of disguised template kinds
-// with style patched after lowering. entity_caption and the two map roles are
-// migrated; the remaining roles are declared so the vocabulary is fixed before
-// each migration, not invented per call-site.
+// textRole names the semantic job a text layer does. Phrase, important phrase,
+// lower-third, metric and date use dedicated resolvers; entity/image captions
+// and map labels/attribution provide role-resolved specs directly. All share
+// compileResolvedText, keeping semantic policy out of template-specific lowering.
 type textRole string
 
 const (
@@ -37,16 +35,6 @@ const (
 	mapTextPlateFitMode       = "shrink_only"
 )
 
-// mapTextPlateStyle builds a map plate's base style for a role. The map supplies
-// the measured typography scale and the minimum fit bound, because both are
-// consequences of the box the map measured; everything else is the role's.
-func mapTextPlateStyle(role textRole, font string, fontSize, minFontSize float64, fill string) *LayerStyle {
-	style := &LayerStyle{Font: font}
-	applyTextRoleBaseStyle(role, style, fontSize, fill)
-	style.MinFontSize = minFontSize
-	return style
-}
-
 // applyTextRoleBaseStyle owns a role's base treatment: the fill, keyline,
 // shadow, glow, fit and background-card policy that used to be patched field by
 // field inside the image compiler after compileTextLayer returned, or built
@@ -56,7 +44,7 @@ func mapTextPlateStyle(role textRole, font string, fontSize, minFontSize float64
 // byte-identical layers.
 func applyTextRoleBaseStyle(role textRole, style *LayerStyle, fontSize float64, fill string) {
 	switch role {
-	case textRolePhrase, textRoleImportantPhrase:
+	case textRolePhrase, textRoleImportantPhrase, textRoleLowerThird:
 		// Phrase recipes can arrive without their authored fill in the runtime
 		// motion catalog. Give editorial text a contrast-safe foreground so it
 		// remains readable over the dark phrase background. Everything else —
@@ -115,6 +103,6 @@ func applyTextRoleBaseStyle(role textRole, style *LayerStyle, fontSize float64, 
 			Offset:  []float64{0, 2},
 		}
 	default:
-		// Roles not yet migrated keep the preset style untouched.
+		// Unrecognized roles keep the preset style untouched.
 	}
 }

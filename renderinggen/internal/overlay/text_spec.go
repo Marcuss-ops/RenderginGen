@@ -7,19 +7,27 @@ import (
 
 // resolvedTextSpec is the fully resolved input of the role-agnostic text compiler:
 // every semantic decision (role, style, geometry, motion) has already been
-// made by the role resolver, so compileTextSpec never inspects a template,
+// made by the role resolver, so compileResolvedText never inspects a template,
 // preset family or item kind. This is the seam that keeps phrases, entity
 // captions and map labels from growing back into per-kind text engines.
 type resolvedTextSpec struct {
-	Text         string
-	BoxWidth     int
-	BoxHeight    int
-	Position     []float64
-	Style        *LayerStyle
-	PresetID     string
-	PresetDef    PresetDefinition
-	MotionID     string
-	MotionParams map[string]any
+	Text      string
+	BoxWidth  int
+	BoxHeight int
+	Position  []float64
+	// Size preserves fractional role-resolved geometry where the layer's
+	// renderer size is more precise than the integer text box dimensions.
+	Size []float64
+	// OmitBox keeps legacy role specs whose wire contract carries Size only.
+	OmitBox bool
+	Style   *LayerStyle
+	// RoleOverrides carries role-specific caller effects resolved before
+	// lowering; the text compiler applies them after the shared role defaults.
+	RoleOverrides *LayerStyle
+	PresetID      string
+	PresetDef     PresetDefinition
+	MotionID      string
+	MotionParams  map[string]any
 	// StyleParams are the item's runtime style controls (params.style /
 	// top-level params). The resolver splits them from the motion controls so
 	// the compiler lowers exactly one style path.
@@ -32,6 +40,8 @@ type resolvedTextSpec struct {
 	// FontSize is the role's resolved base size: the caption resolver pins the
 	// fitted size, preset-backed specs leave zero and inherit the style.
 	FontSize     float64
+	MinFontSize  float64
+	MaxFontSize  float64
 	OverrideFill string
 	OverrideFont string
 }
@@ -44,12 +54,21 @@ func (s resolvedTextSpec) preset() PresetDefinition {
 	return s.PresetDef
 }
 
-// resolveTextRole assigns the generic semantic role used by the text system.
-// Template-specific typography remains a resolved style input, not a compiler
-// branch, and the compiler sees only this role and the effective policy flags.
+// resolveTextRole selects the dedicated resolver from the validated semantic
+// kind and its registered motion target. Template metadata wins for date and
+// metric presentation routes, whose wire kind may intentionally be `number`.
 func resolveTextRole(ri resolvedItem) textRole {
 	if ri.Kind == KindImportantPhrase {
 		return textRoleImportantPhrase
+	}
+	if ri.Kind == KindLowerThird {
+		return textRoleLowerThird
+	}
+	switch semanticTextMotionTarget(ri.Item, ri.Kind) {
+	case "date":
+		return textRoleDate
+	case "metric":
+		return textRoleMetric
 	}
 	if ri.Kind == KindTimelineDate {
 		return textRoleDate
@@ -60,14 +79,77 @@ func resolveTextRole(ri resolvedItem) textRole {
 	return textRolePhrase
 }
 
-// resolveTextSpec lowers one resolved semantic text item into the spec the
-// text compiler lowers. It owns every semantic choice the compiler used to
-// rediscover inline: phrase wrap discipline, preset family layout, the
-// important-phrase entry/exit policy and the metric/date explicit-size fit
-// override. The compiler only formats and lowers what lands here.
-func buildResolvedTextSpec(ri resolvedItem, src *semanticPlan) (resolvedTextSpec, error) {
+// resolveTextSpec dispatches to the semantic-role resolvers. Every resolver
+// returns the same fully resolved input for the one shared text lowering.
+func resolveTextSpec(ri resolvedItem, src *semanticPlan) (resolvedTextSpec, error) {
+	switch resolveTextRole(ri) {
+	case textRoleImportantPhrase:
+		return resolveImportantPhraseTextSpec(ri, src)
+	case textRoleMetric:
+		return resolveMetricTextSpec(ri, src)
+	case textRoleDate:
+		return resolveDateTextSpec(ri, src)
+	case textRoleLowerThird:
+		return resolveLowerThirdTextSpec(ri, src)
+	default:
+		return resolvePhraseTextSpec(ri, src)
+	}
+}
+
+func resolvePhraseTextSpec(ri resolvedItem, src *semanticPlan) (resolvedTextSpec, error) {
+	spec, lines, err := resolveTextSpecBase(ri, src)
+	if err != nil {
+		return resolvedTextSpec{}, err
+	}
+	spec.StylePolicy = textRolePhrase
+	return resolveTextSpecGeometry(ri, src, spec, lines), nil
+}
+
+func resolveImportantPhraseTextSpec(ri resolvedItem, src *semanticPlan) (resolvedTextSpec, error) {
+	spec, lines, err := resolveTextSpecBase(ri, src)
+	if err != nil {
+		return resolvedTextSpec{}, err
+	}
+	spec.StylePolicy = textRoleImportantPhrase
+	spec.EntryExit = true
+	return resolveTextSpecGeometry(ri, src, spec, lines), nil
+}
+
+func resolveMetricTextSpec(ri resolvedItem, src *semanticPlan) (resolvedTextSpec, error) {
+	spec, lines, err := resolveTextSpecBase(ri, src)
+	if err != nil {
+		return resolvedTextSpec{}, err
+	}
+	spec.StylePolicy = textRoleMetric
+	spec.FitPolicy = resolvedTextFitPolicy(ri, textRoleMetric)
+	return resolveTextSpecGeometry(ri, src, spec, lines), nil
+}
+
+func resolveDateTextSpec(ri resolvedItem, src *semanticPlan) (resolvedTextSpec, error) {
+	spec, lines, err := resolveTextSpecBase(ri, src)
+	if err != nil {
+		return resolvedTextSpec{}, err
+	}
+	spec.StylePolicy = textRoleDate
+	spec.FitPolicy = resolvedTextFitPolicy(ri, textRoleDate)
+	return resolveTextSpecGeometry(ri, src, spec, lines), nil
+}
+
+func resolveLowerThirdTextSpec(ri resolvedItem, src *semanticPlan) (resolvedTextSpec, error) {
+	spec, lines, err := resolveTextSpecBase(ri, src)
+	if err != nil {
+		return resolvedTextSpec{}, err
+	}
+	spec.StylePolicy = textRoleLowerThird
+	return resolveTextSpecGeometry(ri, src, spec, lines), nil
+}
+
+// resolveTextSpecBase handles role-neutral text validation, wrapping, motion
+// inputs and preset typography. The role resolvers above then add their own
+// semantics before the shared geometry resolver finishes the spec.
+func resolveTextSpecBase(ri resolvedItem, src *semanticPlan) (resolvedTextSpec, int, error) {
 	if strings.TrimSpace(ri.Item.Text) == "" {
-		return resolvedTextSpec{}, fmt.Errorf("overlay: item %q requires text (PipelineGen owns the displayed text)", ri.Item.ID)
+		return resolvedTextSpec{}, 0, fmt.Errorf("overlay: item %q requires text (PipelineGen owns the displayed text)", ri.Item.ID)
 	}
 	wrapped, lines := wrapPhraseAt25(ri.Item.Text)
 	spec := resolvedTextSpec{
@@ -76,29 +158,25 @@ func buildResolvedTextSpec(ri resolvedItem, src *semanticPlan) (resolvedTextSpec
 		MotionParams: ri.Item.MotionParams,
 		StyleParams:  ri.Params,
 		MotionTarget: semanticTextMotionTarget(ri.Item, ri.Kind),
-		EntryExit:    resolveTextRole(ri) == textRoleImportantPhrase,
-		StylePolicy:  resolveTextRole(ri),
-		FitPolicy:    resolvedTextFitPolicy(ri),
 	}
 	// Preset style and family layout travel with the spec; the compiler never
 	// re-derives them from a template lookup.
 	if ri.Preset.ID != "" {
 		style, err := resolvedTextPresetStyle(ri.Preset, src.Language)
 		if err != nil {
-			return resolvedTextSpec{}, err
+			return resolvedTextSpec{}, 0, err
 		}
 		spec.Style = style
 		spec.PresetID = ri.Preset.ID
 		spec.PresetDef = ri.Preset
 	}
-	if spec.MotionID == "" && spec.PresetID == "phrase_default" && len(strings.Fields(spec.Text)) <= 5 {
-		// Keep the preset's typography and layout, but do not let its legacy
-		// animation silently fill an empty ChrononTemplate short-phrase slot.
-		spec.PresetID = ""
-		spec.PresetDef = PresetDefinition{}
-	}
-	// Position is the canvas centre the engine reads for text layers; without
-	// an explicit centre the default text layout owns the placement.
+	return spec, lines, nil
+}
+
+// resolveTextSpecGeometry resolves the common position and box after each role
+// has attached its fit policy. Explicit runtime geometry wins over preset
+// layout, then the canonical text canvas.
+func resolveTextSpecGeometry(ri resolvedItem, src *semanticPlan, spec resolvedTextSpec, lines int) resolvedTextSpec {
 	posX, hasPosX := spec.StyleParams["position_x"].(float64)
 	posY, hasPosY := spec.StyleParams["position_y"].(float64)
 	switch {
@@ -113,8 +191,6 @@ func buildResolvedTextSpec(ri resolvedItem, src *semanticPlan) (resolvedTextSpec
 			spec.Position[1] = posY
 		}
 	}
-	// Box: explicit runtime size wins, then the preset family layout, then the
-	// canonical text canvas.
 	if width, ok := numericValue(spec.StyleParams["width"]); ok && width > 0 {
 		spec.BoxWidth = int(width)
 	}
@@ -133,8 +209,6 @@ func buildResolvedTextSpec(ri resolvedItem, src *semanticPlan) (resolvedTextSpec
 			spec.BoxHeight = ri.Preset.Layout.BoxHeight
 		}
 	}
-	// Grow the box when the wrap produced more lines than the preset's
-	// canonical height can hold, so centred lines are never clipped.
 	if spec.FitPolicy == "none" {
 		if requestedSize, ok := numericValue(spec.StyleParams["font_size_px"]); ok && requestedSize > 0 {
 			minimumHeight := int(requestedSize*1.7) + 32
@@ -152,35 +226,19 @@ func buildResolvedTextSpec(ri resolvedItem, src *semanticPlan) (resolvedTextSpec
 			spec.BoxHeight = needed
 		}
 	}
-	return spec, nil
+	return spec
 }
 
 // resolvedTextFitPolicy resolves data-style no-shrink behavior before text
 // compilation. The compiler receives only the decision, not semantic item kind.
-func resolvedTextFitPolicy(ri resolvedItem) string {
-	if ri.Kind != KindTimelineDate && ri.Kind != KindMetricStat && ri.Kind != KindNumber {
+func resolvedTextFitPolicy(ri resolvedItem, role textRole) string {
+	if role != textRoleDate && role != textRoleMetric {
 		return ""
 	}
 	if requestedSize, ok := numericValue(ri.Params["font_size_px"]); ok && requestedSize > 0 {
 		return "none"
 	}
 	return ""
-}
-
-// applyResolvedTextSpecStyle seeds the spec with the item's preset style and
-// definition when it carries one; the compiler never re-derives them.
-func applyResolvedTextSpecStyle(spec *resolvedTextSpec, ri resolvedItem, src *semanticPlan) error {
-	if ri.Preset.ID == "" {
-		return nil
-	}
-	style, err := resolvedTextPresetStyle(ri.Preset, src.Language)
-	if err != nil {
-		return err
-	}
-	spec.Style = style
-	spec.PresetID = ri.Preset.ID
-	spec.PresetDef = ri.Preset
-	return nil
 }
 
 // compileResolvedText lowers a resolved text spec into one text layer. The
@@ -205,11 +263,23 @@ func compileResolvedText(layerID string, start, end int64, spec resolvedTextSpec
 	// The role owns the base treatment. The spec's explicit choices (runtime
 	// override fill/font) always win over the role default.
 	applyTextRoleBaseStyle(spec.StylePolicy, layer.Style, resolvedTextFontSize(spec), spec.OverrideFill)
+	if spec.MinFontSize > 0 {
+		layer.Style.MinFontSize = spec.MinFontSize
+	}
+	if spec.MaxFontSize > 0 {
+		layer.Style.MaxFontSize = spec.MaxFontSize
+	}
+	applyResolvedTextRoleOverrides(layer.Style, spec.RoleOverrides)
 	applyResolvedTextFont(&layer, spec)
-	layer.BoxWidth = spec.BoxWidth
-	layer.BoxHeight = spec.BoxHeight
-	layer.Size = []float64{float64(spec.BoxWidth), float64(spec.BoxHeight)}
-	layer.Position = spec.Position
+	if !spec.OmitBox {
+		layer.BoxWidth = spec.BoxWidth
+		layer.BoxHeight = spec.BoxHeight
+	}
+	layer.Size = append([]float64(nil), spec.Size...)
+	if len(layer.Size) != 2 {
+		layer.Size = []float64{float64(spec.BoxWidth), float64(spec.BoxHeight)}
+	}
+	layer.Position = append([]float64(nil), spec.Position...)
 	applyResolvedTextFitPolicy(&layer, spec)
 	var animation *LayerAnimation
 	if spec.MotionID != "" {
@@ -237,6 +307,57 @@ func compileResolvedText(layerID string, start, end int64, spec resolvedTextSpec
 	}
 	applyMotionRouting(&layer, animation)
 	return layer, nil
+}
+
+func applyResolvedTextRoleOverrides(style, overrides *LayerStyle) {
+	if style == nil || overrides == nil {
+		return
+	}
+	if overrides.Stroke != nil {
+		style.Stroke = cloneLayerStyleStroke(overrides.Stroke)
+	}
+	if overrides.Shadow != nil {
+		style.Shadow = cloneLayerStyleShadow(overrides.Shadow)
+	}
+	if overrides.Glow != nil {
+		style.Glow = cloneLayerStyleGlow(overrides.Glow)
+	}
+	if overrides.Background != nil {
+		style.Background = cloneLayerStyleBackground(overrides.Background)
+	}
+}
+
+func cloneLayerStyleStroke(source *LayerStroke) *LayerStroke {
+	if source == nil {
+		return nil
+	}
+	return &LayerStroke{Color: source.Color, Width: source.Width}
+}
+
+func cloneLayerStyleShadow(source *LayerShadow) *LayerShadow {
+	if source == nil {
+		return nil
+	}
+	return &LayerShadow{Color: source.Color, Opacity: source.Opacity, Blur: source.Blur, Offset: append([]float64(nil), source.Offset...)}
+}
+
+func cloneLayerStyleGlow(source *LayerGlow) *LayerGlow {
+	if source == nil {
+		return nil
+	}
+	return &LayerGlow{Color: source.Color, Radius: source.Radius, Intensity: source.Intensity}
+}
+
+func cloneLayerStyleBackground(source *LayerBackground) *LayerBackground {
+	if source == nil {
+		return nil
+	}
+	var opacity *float64
+	if source.Opacity != nil {
+		value := *source.Opacity
+		opacity = &value
+	}
+	return &LayerBackground{Color: source.Color, Opacity: opacity, Radius: source.Radius, Padding: append([]float64(nil), source.Padding...)}
 }
 
 // resolvedTextFontSize is the role style's base size: an explicitly resolved

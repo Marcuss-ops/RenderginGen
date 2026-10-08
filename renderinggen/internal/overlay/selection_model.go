@@ -633,30 +633,6 @@ func runtimeCompositionLayouts() []RuntimeCompositionLayout {
 	return layouts
 }
 
-// runtimeMapLayouts declares every map layout and what the lowering supports.
-// Route has a closed local raster/path lowering. Stops and callout remain
-// explicitly unavailable until their distinct presentation/lifetime contracts exist.
-// mapLayoutCatalog is the map-primitive catalog the runtime picker projects:
-// one entry per primitive the map compiler owns (basemap, pins, labels,
-// attribution, camera, route) plus the declared-but-unsupported primitives a
-// future V4 slice implements. Data, not code: extending the map system means
-// extending this table, and runtimeMapLayouts serves a copy so callers can
-// never mutate the catalog through the returned slice.
-var mapLayoutCatalog = []RuntimeMapLayout{
-	{ID: "basemap", CompositionID: "one_map", Supported: true, Description: "Full-canvas georeferenced raster plate.", ProjectedMotionTargets: []string{"map_view"}},
-	{ID: "pins", CompositionID: "one_map", Supported: true, Description: "One grounded shape layer per declared place.", ProjectedMotionTargets: []string{"map_view"}},
-	{ID: "pin_labels", CompositionID: "one_map", Supported: true, Description: "One text layer per pin, placed clear of the pin and its neighbours.", ProjectedMotionTargets: []string{"map_view"}},
-	{ID: "attribution", CompositionID: "one_map", Supported: true, Description: "Provider-required credit carried by its own text layer.", ProjectedMotionTargets: []string{}},
-	{ID: "camera_fly_to", CompositionID: "one_map", Supported: true, Description: "Continues the map plate through camera_move or Natural Earth fly_to_feature resolution instead of a static motion.", ProjectedMotionTargets: []string{"map_view"}},
-	{ID: "route", CompositionID: "one_map", Supported: true, Description: "A great-circle path between grounded WGS84 stops, projected into the certified local raster and revealed with the native trim-path operator.", ProjectedMotionTargets: []string{"map_view"}},
-	{ID: "stops", CompositionID: "one_map", Supported: false, Description: "An ordered sequence of itinerary stops.", ProjectedMotionTargets: []string{}, UnavailableReason: "no lowering exists for this map layout yet"},
-	{ID: "callout", CompositionID: "one_map", Supported: false, Description: "A connected label box anchored to a place.", ProjectedMotionTargets: []string{}, UnavailableReason: "no lowering exists for this map layout yet"},
-}
-
-func runtimeMapLayouts() []RuntimeMapLayout {
-	return append([]RuntimeMapLayout(nil), mapLayoutCatalog...)
-}
-
 // runtimeBackgroundSources projects the background composition catalog — both
 // supported and declared-but-unsupported sources — so the picker shows every
 // source with its catalog-declared availability instead of a parallel list.

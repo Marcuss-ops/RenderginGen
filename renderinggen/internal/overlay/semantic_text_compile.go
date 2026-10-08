@@ -7,11 +7,8 @@ package overlay
 // mandatory: PipelineGen owns the displayed text and RenderingGen never
 // invents one (there is no entity_ref fallback).
 func compileTextLayer(ri resolvedItem, src *semanticPlan, layerID string) (Layer, error) {
-	spec, err := buildResolvedTextSpec(ri, src)
+	spec, err := resolveTextSpec(ri, src)
 	if err != nil {
-		return Layer{}, err
-	}
-	if err := applyResolvedTextSpecStyle(&spec, ri, src); err != nil {
 		return Layer{}, err
 	}
 	return compileResolvedText(layerID, ri.Start, ri.End, spec)

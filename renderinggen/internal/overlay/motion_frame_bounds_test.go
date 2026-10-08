@@ -87,6 +87,12 @@ func TestEveryCatalogMotionKeepsAllKeyframesInsideLayerDuration(t *testing.T) {
 		if err != nil {
 			t.Fatalf("resolve %q: %v", id, err)
 		}
+		if _, deprecated := motion.Registry.DeprecationInfo(id); deprecated {
+			// Deprecated entries remain discoverable for deterministic catalog
+			// metadata, but plan lowering must reject them; current registered
+			// motions are covered by this duration-bound conformance probe.
+			continue
+		}
 		declarative, ok := plugin.(motion.DeclarativePlugin)
 		if !ok {
 			t.Fatalf("motion %q is not declarative; catalog-wide bounds test cannot inspect its authored windows", id)
