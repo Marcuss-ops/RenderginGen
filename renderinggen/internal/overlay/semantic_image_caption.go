@@ -11,6 +11,8 @@ import (
 )
 
 func compileImageCaptionLayer(parent resolvedItem, src *semanticPlan, child semanticItem, caption string, image *Layer, childID string, role textRole) (Layer, error) {
+	captionMotionPlanID, captionMotionVideoID, captionMotionItemID = src.PlanID, src.VideoID, parent.Item.ID
+	defer func() { captionMotionPlanID, captionMotionVideoID, captionMotionItemID = "", "", "" }()
 	if len(image.Size) < 2 || image.Size[0] <= 0 || image.Size[1] <= 0 {
 		return Layer{}, fmt.Errorf("overlay: item %q image caption has no positive image geometry", parent.Item.ID)
 	}
@@ -38,14 +40,13 @@ func compileImageCaptionLayer(parent resolvedItem, src *semanticPlan, child sema
 	if width < 1 {
 		width = 1
 	}
-	captionItem := parent.Item
-	captionItem.ID = parent.Item.ID + ":" + childID + ":caption"
-	captionItem.Text = caption
-	// Caption semantics are resolved here rather than masquerading as a
-	// PERSON_DEFAULT/phrase_default phrase. This lets entity and editorial
-	// image captions enter the same text lowering path without inventing an
-	// entity template or inheriting phrase-specific layout/motion policy.
+	captionLayerID := parent.Item.ID + ":" + childID + ":caption"
+	// Caption semantics resolve directly to a role-aware text spec, without
+	// borrowing a phrase template, preset, or phrase-specific motion policy.
 	captionMotion := EntityCaptionMotionID(child.CaptionMotionID)
+	if !motionAdmitsTarget(captionMotion, "caption") {
+		captionMotion = entityCaptionMotionPool[styleHash("caption_motion_fallback", captionMotionPlanID, captionMotionVideoID, captionMotionItemID, uint64(len(entityCaptionMotionPool)))]
+	}
 	if !motionAdmitsTarget(captionMotion, "caption") {
 		return Layer{}, fmt.Errorf("overlay: item %q caption motion %q is not supported for text captions", parent.Item.ID, captionMotion)
 	}
@@ -76,19 +77,16 @@ func compileImageCaptionLayer(parent resolvedItem, src *semanticPlan, child sema
 	}
 	captionSpec := resolvedTextSpec{
 		Text: caption, BoxWidth: width, BoxHeight: int(captionBounds.Height),
+		Size:     []float64{captionBounds.Width, captionBounds.Height},
 		Position: []float64{positionX, positionY}, Style: &LayerStyle{Font: OfficialFontPathForLanguage(src.Language)},
 		MotionID: captionMotion, MotionParams: motionParams,
 		StyleParams: styleParams, MotionTarget: "caption", StylePolicy: role,
 		FontSize: captionBounds.FontSize, OverrideFill: overrideFill,
 	}
-	captionLayer, err := compileResolvedText(captionItem.ID, image.StartFrame, image.StartFrame+image.DurationFrames, captionSpec)
+	captionLayer, err := compileResolvedText(captionLayerID, image.StartFrame, image.StartFrame+image.DurationFrames, captionSpec)
 	if err != nil {
-		return Layer{}, fmt.Errorf("overlay: entity image caption %q: %w", captionItem.ID, err)
+		return Layer{}, fmt.Errorf("overlay: entity image caption %q: %w", captionLayerID, err)
 	}
-	captionLayer.BoxWidth = width
-	captionLayer.BoxHeight = int(captionBounds.Height)
-	captionLayer.Size = []float64{captionBounds.Width, captionBounds.Height}
-	captionLayer.Position = []float64{captionBounds.CenterX, captionBounds.CenterY}
 	captionLayer.CaptionForImageID = image.ID
 	captionLayer.CaptionLayout = child.CaptionLayout
 	return captionLayer, nil

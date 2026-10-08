@@ -49,6 +49,10 @@
       "required": ["id", "targets_declared"],
       "properties": {
         "id": { "type": "string", "minLength": 1 },
+        "map_renderer": { "enum": ["dark_map", "opencv"] },
+        "map_id": { "type": "string", "minLength": 1 },
+        "map_animation": { "type": "string", "minLength": 1 },
+        "map_flag_country_code": { "type": "string", "pattern": "^[A-Z]{2}$", "description": "ISO 3166-1 alpha-2 key for the bundled country flag atlas." },
         "deprecated": { "type": "boolean" },
         "remove_after": { "type": "string", "minLength": 1 },
         "deprecation_note": { "type": "string", "minLength": 1 },

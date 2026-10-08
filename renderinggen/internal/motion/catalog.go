@@ -23,6 +23,7 @@ import (
 	_ "embed"
 	"encoding/json"
 	"fmt"
+	"reflect"
 	"sort"
 	"strings"
 	"sync"
@@ -174,6 +175,9 @@ func parseCanonical(raw []byte) (Catalog, error) {
 		}
 		motionIDs[definition.ID] = struct{}{}
 	}
+	if err := validateMapRendererPairs(catalog.Motions); err != nil {
+		return Catalog{}, err
+	}
 
 	imagePresets := make(map[string]struct{})
 	for family, ids := range catalog.OverlayPresets {
@@ -222,6 +226,42 @@ func parseCanonical(raw []byte) (Catalog, error) {
 	}
 
 	return catalog, nil
+}
+
+// validateMapRendererPairs keeps each authored country/action available from
+// both selectable map renderers with identical camera/reveal timing.
+func validateMapRendererPairs(motions []MotionDefinition) error {
+	type pair struct {
+		members map[string]MotionDefinition
+	}
+	pairs := make(map[string]*pair)
+	for _, definition := range motions {
+		if definition.MapRenderer == "" {
+			continue
+		}
+		key := definition.MapID + "/" + definition.MapAnimation
+		if pairs[key] == nil {
+			pairs[key] = &pair{members: make(map[string]MotionDefinition)}
+		}
+		if _, duplicate := pairs[key].members[definition.MapRenderer]; duplicate {
+			return fmt.Errorf("motion: map option %q repeats renderer %q", key, definition.MapRenderer)
+		}
+		pairs[key].members[definition.MapRenderer] = definition
+	}
+	if len(pairs) != 5 {
+		return fmt.Errorf("motion: paired map renderer catalog has %d map/animation combinations, expected 5", len(pairs))
+	}
+	for key, current := range pairs {
+		if len(current.members) != 2 {
+			return fmt.Errorf("motion: map option %q must have both dark_map and opencv renderers", key)
+		}
+		dark, hasDark := current.members["dark_map"]
+		opencv, hasOpenCV := current.members["opencv"]
+		if !hasDark || !hasOpenCV || !reflect.DeepEqual(dark.Tracks, opencv.Tracks) || dark.DurationBounds == nil || opencv.DurationBounds == nil || *dark.DurationBounds != *opencv.DurationBounds {
+			return fmt.Errorf("motion: map option %q renderers must share identical tracks and duration", key)
+		}
+	}
+	return nil
 }
 
 // OverlayPresetIDs returns the canonical overlay preset ids for one family
@@ -322,6 +362,14 @@ func init() {
 	for _, definition := range catalog.Motions {
 		if err := Registry.Register(definition.ID, DeclarativePlugin{Definition: definition}); err != nil {
 			panic(err)
+		}
+		if definition.Deprecated {
+			if err := Registry.MarkDeprecated(Deprecation{
+				MotionID: definition.ID, RemoveAfter: definition.RemoveAfter,
+				Reason: definition.DeprecationNote, Replacement: definition.ReplacementMotionID,
+			}); err != nil {
+				panic(err)
+			}
 		}
 	}
 	if err := registerShortPhraseStyles(Registry); err != nil {

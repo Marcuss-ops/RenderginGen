@@ -7,6 +7,7 @@ import (
 	"sort"
 	"sync"
 
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/countryflags"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/motion"
 	motioncert "github.com/Marcuss-ops/RenderingGen/renderinggen/motion-certification"
 	previewassets "github.com/Marcuss-ops/RenderingGen/renderinggen/motion-preview"
@@ -40,10 +41,14 @@ type RuntimeMotionPreview struct {
 // catalog when declared; a missing target list is reported as undeclared and
 // does not make the motion selectable for a target.
 type RuntimeMotionOption struct {
-	ID              string `json:"id"`
-	Deprecated      bool   `json:"deprecated,omitempty"`
-	RemoveAfter     string `json:"remove_after,omitempty"`
-	DeprecationNote string `json:"deprecation_note,omitempty"`
+	ID                 string `json:"id"`
+	MapRenderer        string `json:"map_renderer,omitempty"`
+	MapID              string `json:"map_id,omitempty"`
+	MapAnimation       string `json:"map_animation,omitempty"`
+	MapFlagCountryCode string `json:"map_flag_country_code,omitempty"`
+	Deprecated         bool   `json:"deprecated,omitempty"`
+	RemoveAfter        string `json:"remove_after,omitempty"`
+	DeprecationNote    string `json:"deprecation_note,omitempty"`
 
 	Family          string                     `json:"family,omitempty"`
 	Targets         []string                   `json:"targets,omitempty"`
@@ -139,6 +144,14 @@ func runtimeMotionCatalog() ([]RuntimeMotionOption, map[string]*motion.MotionDef
 		if err == nil && definition != nil {
 			definitions[id] = definition
 			option.Family = definition.Category
+			option.MapRenderer = definition.MapRenderer
+			option.MapID = definition.MapID
+			option.MapAnimation = definition.MapAnimation
+			if definition.MapID != "" {
+				if flag, ok := countryflags.LookupByName(definition.MapID); ok {
+					option.MapFlagCountryCode = flag.CountryCode
+				}
+			}
 			option.Targets = append([]string(nil), definition.Targets...)
 			option.TargetsDeclared = definition.Targets != nil
 			option.EnterFrames = definition.Enter

@@ -40,6 +40,7 @@ type resolvedItem struct {
 	// Preset and ImagePreset are the resolved official definitions.
 	Preset      PresetDefinition
 	ImagePreset PresetDefinition
+	Map         *resolvedMap
 }
 
 func compileSemantic(raw []byte) (*Plan, []Asset, Stats, []string, error) {
@@ -159,8 +160,8 @@ func compileSemantic(raw []byte) (*Plan, []Asset, Stats, []string, error) {
 		}
 	}
 
-	// Resolve named map targets before map-contract validation so the existing
-	// camera_move/LOD admission path remains the single authority for fly-to.
+	// Resolve named map targets before map-contract admission; the validated
+	// camera_move/LOD declaration remains the single authority for fly-to.
 	if err := resolveMapFeatureMoves(&src); err != nil {
 		return nil, nil, Stats{}, nil, err
 	}
@@ -325,7 +326,7 @@ func compileSemantic(raw []byte) (*Plan, []Asset, Stats, []string, error) {
 	var entityCameraMotionID string
 	var entityCameraMotionItemID string
 	for _, ri := range resolved {
-		if isEntityKind(ri.Kind) && ri.Item.EntityStyleID != "" {
+		if (isEntityKind(ri.Kind) || isImageKind(ri.Kind)) && ri.Item.EntityStyleID != "" {
 			if style, ok := ResolveEntityStyle(ri.Item.EntityStyleID, src.PlanID, src.VideoID, ri.Item.ID); ok && style.CameraMotionID != "" {
 				if entityCameraMotionID != "" {
 					return nil, nil, Stats{}, nil, fmt.Errorf("overlay: camera motion on entity item %q conflicts with camera motion on entity item %q; only one scene camera controller is allowed per plan", ri.Item.ID, entityCameraMotionItemID)
@@ -337,10 +338,10 @@ func compileSemantic(raw []byte) (*Plan, []Asset, Stats, []string, error) {
 		if entityCameraMotionID != "" && cameraMove != nil {
 			return nil, nil, Stats{}, nil, fmt.Errorf("overlay: entity item %q camera motion conflicts with map item %q scene camera move", ri.Item.ID, cameraMapItemID)
 		}
-		if ri.Item.Map != nil && ri.Item.Map.CameraMove != nil && entityCameraMotionID != "" {
+		if ri.Map != nil && ri.Map.Camera != nil && entityCameraMotionID != "" {
 			return nil, nil, Stats{}, nil, fmt.Errorf("overlay: map item %q scene camera move conflicts with entity item %q camera motion", ri.Item.ID, entityCameraMotionItemID)
 		}
-		if ri.Item.Map != nil && ri.Item.Map.CameraMove != nil && cameraMove != nil {
+		if ri.Map != nil && ri.Map.Camera != nil && cameraMove != nil {
 			return nil, nil, Stats{}, nil, fmt.Errorf("overlay: map item %q camera move conflicts with map item %q; only one scene camera controller is allowed per plan", ri.Item.ID, cameraMapItemID)
 		}
 		layers, err := compileItem(ri, &src, registry)
@@ -348,8 +349,8 @@ func compileSemantic(raw []byte) (*Plan, []Asset, Stats, []string, error) {
 			return nil, nil, Stats{}, nil, err
 		}
 
-		if ri.Item.Map != nil && ri.Item.Map.CameraMove != nil {
-			move := *ri.Item.Map.CameraMove
+		if ri.Map != nil && ri.Map.Camera != nil {
+			move := *ri.Map.Camera
 			cameraMove = &move
 			cameraMapItemID = ri.Item.ID
 			cameraStartFrame, cameraEndFrame = ri.Start, ri.End
@@ -628,8 +629,12 @@ func resolveSemanticItems(src *semanticPlan) ([]resolvedItem, error) {
 			if _, ok := ResolveEntityStyle(item.EntityStyleID, src.PlanID, src.VideoID, item.ID); !ok {
 				return nil, fmt.Errorf("overlay: item %q has unsupported entity_style_id %q", item.ID, item.EntityStyleID)
 			}
-			if !isEntityKind(kind) {
-				return nil, fmt.Errorf("overlay: item %q entity_style_id is only valid for entity items", item.ID)
+			behavior := behaviorOf(kind)
+			if behavior != behaviorEntity && behavior != behaviorImage {
+				return nil, fmt.Errorf("overlay: item %q entity_style_id is only valid for entity or image items", item.ID)
+			}
+			if len(item.ImageLayers) > 0 {
+				return nil, fmt.Errorf("overlay: item %q entity_style_id does not support composite image_layers", item.ID)
 			}
 			if len(item.Assets) == 0 || strings.TrimSpace(item.EntityCaption) == "" {
 				return nil, fmt.Errorf("overlay: item %q entity_style_id %q requires an image and entity_caption", item.ID, item.EntityStyleID)
@@ -642,6 +647,7 @@ func resolveSemanticItems(src *semanticPlan) ([]resolvedItem, error) {
 		if err := validateMapContract(item, kind, src.Width, src.Height); err != nil {
 			return nil, err
 		}
+		var resolvedMapSpec *resolvedMap
 		// The resolved kind is authoritative for the preset family too, so an
 		// unknown template paired with an explicit image kind still validates
 		// against the image catalog. Registered DATE/METRIC presentation kinds
@@ -659,7 +665,7 @@ func resolveSemanticItems(src *semanticPlan) ([]resolvedItem, error) {
 		for k, v := range item.Style {
 			params[k] = v
 		}
-		ri := resolvedItem{Item: item, Spec: spec, Kind: kind, Params: params, Start: start, End: end}
+		ri := resolvedItem{Item: item, Spec: spec, Kind: kind, Params: params, Start: start, End: end, Map: resolvedMapSpec}
 
 		if isImageKind(kind) && len(item.Assets) == 0 && len(item.ImageLayers) == 0 {
 			return nil, fmt.Errorf("overlay: image template %q item %q requires asset_refs", item.Template, item.ID)
@@ -682,7 +688,14 @@ func resolveSemanticItems(src *semanticPlan) ([]resolvedItem, error) {
 		if err := validateTextRuntimeOverrides(params, item.ID, kind, preset, len(item.Assets) > 0, strings.TrimSpace(item.EntityCaption) != ""); err != nil {
 			return nil, err
 		}
-		if isEntityKind(kind) && len(item.Assets) > 0 {
+		if isMapKind(kind) {
+			resolvedMapSpec, err = resolveMap(item.Map, item.Assets, src.Width, src.Height, end-start)
+			if err != nil {
+				return nil, fmt.Errorf("overlay: map item %q resolve: %w", item.ID, err)
+			}
+			ri.Map = resolvedMapSpec
+		}
+		if (isEntityKind(kind) || (isImageKind(kind) && item.EntityStyleID != "")) && len(item.Assets) > 0 {
 			if imagePreset := strings.TrimSpace(item.ImagePresetID); imagePreset != "" {
 				def, err := resolveOfficialPreset(imagePreset, string(PresetImage))
 				if err != nil {
@@ -709,6 +722,11 @@ func compileItem(ri resolvedItem, src *semanticPlan, registry *assetRegistry) ([
 		return compileImageItem(ri, src, registry)
 	case isEntityKind(ri.Kind) && len(ri.Item.Assets) > 0:
 		return compileEntityCard(ri, src, registry)
+	case isImageKind(ri.Kind) && ri.Item.EntityStyleID != "" && len(ri.Item.Assets) > 0:
+		if ri.Item.ImagePresetID == "" {
+			return nil, fmt.Errorf("overlay: entity image item %q with entity_style_id requires image_preset_id", ri.Item.ID)
+		}
+		return compileEntityCard(ri, src, registry)
 	case isVideoKind(ri.Kind):
 		layer, err := compileVideoOverlayLayer(ri, src, registry)
 		if err != nil {
@@ -724,7 +742,10 @@ func compileItem(ri resolvedItem, src *semanticPlan, registry *assetRegistry) ([
 		}
 		return []Layer{layer}, nil
 	case isMapKind(ri.Kind):
-		return compileMapLayers(ri, src, registry)
+		if ri.Map == nil {
+			return nil, fmt.Errorf("overlay: map item %q was not resolved before compile", ri.Item.ID)
+		}
+		return compileResolvedMapLayers(ri, src, registry, ri.Map)
 	default:
 		layer, err := compileTextLayer(ri, src, ri.Item.ID)
 		if err != nil {

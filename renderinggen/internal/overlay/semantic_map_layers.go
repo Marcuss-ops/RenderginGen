@@ -1,7 +1,6 @@
-// semantic_map_layers.go owns the lowering half of the map subsystem:
-// it turns a VALIDATED map contract into the renderable layers Chronon
-// executes (basemap plate, grounded pins, pin labels, attribution). All
-// admission rules stay in semantic_map.go; this file only draws.
+// semantic_map_layers.go owns map lowering: it turns a resolved map into the
+// renderable layers Chronon executes (basemap plate, grounded pins, pin labels,
+// attribution). Contract admission and geographic resolution happen upstream.
 package overlay
 
 import (
@@ -11,43 +10,32 @@ import (
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/geo"
 )
 
-// compileMapLayers lowers a validated map item to its renderable layers: one
+// compileResolvedMapLayers lowers a resolved map to renderable layers: one
 // static plate or ordered LODs, grounded pins and labels, and visible credit.
-func compileMapLayers(ri resolvedItem, src *semanticPlan, registry *assetRegistry) ([]Layer, error) {
-	// resolveSemanticItems owns map-contract validation for every item before
-	// lowering. Keep this function focused on turning that validated contract
-	// into render layers instead of revalidating the same map contract twice.
-	m := ri.Item.Map
+func compileResolvedMapLayers(ri resolvedItem, src *semanticPlan, registry *assetRegistry, resolved *resolvedMap) ([]Layer, error) {
 	duration := ri.End - ri.Start
-	window := geo.CenteredOn(m.Center.Latitude, m.Center.Longitude, m.Zoom, m.Width, m.Height)
-	layers := make([]Layer, 0, 1+2*len(m.Pins)+1)
-	var mapAnimation *LayerAnimation
-	if m.MotionID != "" {
-		animation, err := imageMotionAnimation(m.MotionID, nil, duration, 0, ri.Item.ID, "map_view")
-		if err != nil {
-			return nil, fmt.Errorf("overlay: map item %q motion %q: %w", ri.Item.ID, m.MotionID, err)
-		}
-		mapAnimation = animation
-	}
+	layers := make([]Layer, 0, 1+2*len(resolved.Pins)+1)
+	mapAnimation := resolved.Motion
+	var err error
 	var basemap Layer
-	if m.CameraMove == nil {
+	if resolved.Camera == nil {
 		basemap = Layer{
 			ID: mapBasemapLayerID(ri.Item.ID), Type: "image",
-			Asset:    registry.Path(ri.Item.Assets[0].ID),
-			BoxWidth: m.Width, BoxHeight: m.Height, MapRasterWidth: m.Width, MapRasterHeight: m.Height,
-			Size: []float64{float64(m.Width), float64(m.Height)}, Fit: FitStretch,
+			Asset:    registry.Path(resolved.StaticAssetID),
+			BoxWidth: resolved.RasterWidth, BoxHeight: resolved.RasterHeight, MapRasterWidth: resolved.RasterWidth, MapRasterHeight: resolved.RasterHeight,
+			Size: []float64{float64(resolved.RasterWidth), float64(resolved.RasterHeight)}, Fit: FitStretch,
 			StartFrame: ri.Start, DurationFrames: duration,
-			Scale: []float64{float64(src.Width) / float64(m.Width), float64(src.Height) / float64(m.Height)},
+			Scale: []float64{float64(src.Width) / float64(resolved.RasterWidth), float64(src.Height) / float64(resolved.RasterHeight)},
 		}
 	} else {
 		// Keep one certified base plate on the continuous Web-Mercator plane
 		// for the whole move. Crossfading independent raster planes produces
 		// visible rectangles on the native Vulkan path; a single opaque plate
 		// lets the camera animate without LOD switching or flicker.
-		move := m.CameraMove
+		move := resolved.Camera
 		originX, originY := geo.LatLonToGlobalPixel(move.From.Latitude, move.From.Longitude, int(move.StartZoom))
 		worldSize := geo.MercatorTileSize * math.Pow(2, move.StartZoom)
-		lod := m.LODs[0]
+		lod := resolved.LODs[0]
 		centerX, centerY := geo.LatLonToGlobalPixel(lod.Center.Latitude, lod.Center.Longitude, int(move.StartZoom))
 		scale := math.Pow(2, move.StartZoom-float64(lod.Zoom))
 		basemap = Layer{
@@ -63,63 +51,76 @@ func compileMapLayers(ri resolvedItem, src *semanticPlan, registry *assetRegistr
 			StartFrame: ri.Start, DurationFrames: duration,
 		}
 	}
-	// Both static plates and camera-moved plates receive their declared
-	// map_view treatment. Before this was shared, the camera_move branch skipped
-	// map_image_v1 entirely, leaving every newly authored map motion inert on
-	// the runtime path that generated maps use most often.
+	// Both static plates and camera-moved plates receive their pre-resolved
+	// map_view treatment, with map and pin layers sharing the same recipe.
 	applyMotionRouting(&basemap, mapAnimation)
 	layers = append(layers, basemap)
-	if len(m.Routes) > 0 {
-		routeLayers, err := compileMapRoutes(ri.Item.ID, m.Routes, m.CameraMove.From, int(m.CameraMove.StartZoom),
+	for _, route := range resolved.Routes {
+		routeLayers, err := compileMapRoutes(ri.Item.ID, []SemanticMapRoute{route.Contract}, route.Origin, route.Zoom,
 			src.Width, src.Height, ri.Start, duration)
 		if err != nil {
-			return nil, fmt.Errorf("overlay: map item %q routes: %w", ri.Item.ID, err)
+			return nil, fmt.Errorf("overlay: map item %q route %q: %w", ri.Item.ID, route.Contract.ID, err)
 		}
 		layers = append(layers, routeLayers...)
 	}
-	font := OfficialFontPathForLanguage(src.Language)
-	labelPlacements, err := resolveMapLabelPlacements(m.Pins, window, src.Width, src.Height)
-	if err != nil {
-		return nil, fmt.Errorf("overlay: map item %q label layout: %w", ri.Item.ID, err)
-	}
-	for _, pin := range m.Pins {
-		x, y := window.ToRaster(pin.Latitude, pin.Longitude)
-		marker, err := mapPinLayer(ri, src, pin, x, y, duration)
+	for _, resolvedPin := range resolved.Pins {
+		pin := resolvedPin.Contract
+		// Reveal the point after the camera settles, then the title slightly
+		// later, matching the runtime V1 sequence: zoom, point, name.
+		pinDelay := duration * 3 / 5
+		markerRI := ri
+		markerRI.Start += pinDelay
+		marker, err := mapPinLayer(markerRI, src, pin, resolvedPin.RasterX, resolvedPin.RasterY, duration-pinDelay)
 		if err != nil {
 			return nil, err
 		}
-		label := mapPinLabelLayer(ri, src, pin, font, x, y, duration)
-		labelTopLeft := labelPlacements[pin.ID]
-		label.Position = canvasBoxPosition("text", labelTopLeft[0], labelTopLeft[1], label.Size[0], label.Size[1], src.Width, src.Height)
-		if mapAnimation != nil {
-			applyMotionRouting(&marker, mapPinMotion(mapAnimation, marker.Position))
-			applyMotionRouting(&label, mapPinMotion(mapAnimation, label.Position))
+		labelRI := ri
+		labelDelay := duration * 7 / 10
+		labelRI.Start += labelDelay
+		label, err := resolveMapPinLabel(labelRI, src, resolvedPin, duration-labelDelay)
+		if err != nil {
+			return nil, err
 		}
-		if m.CameraMove != nil {
-			worldX, worldY := mapWorldPoint(pin.Latitude, pin.Longitude, m.Zoom, m.CameraMove.From)
+		pinAnimation := resolvedPin.Motion
+		if pinAnimation == nil {
+			pinAnimation = mapAnimation
+		}
+		if pinAnimation != nil {
+			applyMotionRouting(&marker, mapPinMotion(pinAnimation, marker.Position))
+			applyMotionRouting(&label, mapPinMotion(pinAnimation, label.Position))
+		}
+		if resolved.Camera != nil {
+			worldX, worldY := mapWorldPoint(pin.Latitude, pin.Longitude, resolved.Zoom, resolved.Camera.From)
 			marker.Enable3D = true
 			marker.Position = []float64{worldX + float64(src.Width)/2, worldY + float64(src.Height)/2, 0}
 			label.Enable3D = true
-			pinRasterX, pinRasterY := window.ToRaster(pin.Latitude, pin.Longitude)
-			labelCenterX := labelTopLeft[0] + label.Size[0]/2
-			labelCenterY := labelTopLeft[1] + label.Size[1]/2
+			labelRasterX, labelRasterY := resolvedPin.RasterX, resolvedPin.RasterY
+			labelCenterX := resolvedPin.LabelTopLeft[0] + resolvedPin.LabelWidth/2
+			labelCenterY := resolvedPin.LabelTopLeft[1] + resolvedPin.LabelHeight/2
 			label.Position = []float64{
-				worldX + float64(src.Width)/2 + labelCenterX - pinRasterX,
-				worldY + float64(src.Height)/2 - (labelCenterY - pinRasterY), 0,
+				worldX + float64(src.Width)/2 + labelCenterX - labelRasterX,
+				worldY + float64(src.Height)/2 - (labelCenterY - labelRasterY), 0,
 			}
 		}
 		layers = append(layers, marker, label)
 	}
-	credit := mapAttributionLayer(ri, src, font, duration)
-	if m.CameraMove != nil {
+	credit, err := resolveMapAttribution(ri, src, resolved.Attribution, duration)
+	if err != nil {
+		return nil, err
+	}
+	if resolved.Camera != nil {
 		credit.ScreenSpace = true
 	}
 	layers = append(layers, credit)
 	return layers, nil
 }
 
-func mapPinLabelLayer(ri resolvedItem, src *semanticPlan, pin SemanticMapPin, font string, x, y float64, duration int64) Layer {
+func resolveMapPinLabel(ri resolvedItem, src *semanticPlan, resolvedPin resolvedMapPin, duration int64) (Layer, error) {
+	pin := resolvedPin.Contract
+	topLeft := resolvedPin.LabelTopLeft
+	width, height := resolvedPin.LabelWidth, resolvedPin.LabelHeight
 	scale := mapTypographyScale(src.Width, src.Height)
+	font := OfficialFontPathForLanguage(src.Language)
 	fontSize, minFontSize, maxFontSize, fill := mapPinLabelFontPX*scale, mapPinLabelMinFontPX*scale, mapPinLabelFontPX*scale, pin.Color
 	if pin.LabelStyle != nil {
 		style := pin.LabelStyle
@@ -133,64 +134,84 @@ func mapPinLabelLayer(ri resolvedItem, src *semanticPlan, pin SemanticMapPin, fo
 			fill = style.Fill
 		}
 	}
-	width, height := mapPinLabelDimensions(pin, src.Width, src.Height)
-	candidates := mapPinLabelCandidates(pin, x, y, width, height)
-	boxX, boxY := candidates[0][0], candidates[0][1]
-	if len(pin.LabelOffsetPX) != 2 {
-		boxX = x - width/2
-		boxY = y + pin.RadiusPX + mapPinLabelGapPX
+	styleParams := map[string]any{
+		"position_x": topLeft[0] + width/2,
+		"position_y": topLeft[1] + height/2,
 	}
-	boxX = clampMapBox(boxX, float64(src.Width)-width)
-	boxY = clampMapBox(boxY, float64(src.Height)-height)
-	labelStyle := mapTextStyle(textRoleMapLabel, font, fontSize, minFontSize, fill)
-	labelStyle.MaxFontSize = maxFontSize
+	captionStyle := &LayerStyle{Font: font}
+	roleOverrides := &LayerStyle{}
 	if pin.LabelStyle != nil {
-		applyMapTextEffects(labelStyle, pin.LabelStyle)
+		if pin.LabelStyle.FontSizePX != nil {
+			styleParams["font_size_px"] = fontSize
+		}
+		roleOverrides.Stroke = cloneLayerStroke(pin.LabelStyle.Stroke)
+		roleOverrides.Shadow = cloneLayerShadow(pin.LabelStyle.Shadow)
+		roleOverrides.Glow = cloneLayerGlow(pin.LabelStyle.Glow)
+		roleOverrides.Background = cloneLayerBackground(pin.LabelStyle.Background)
 	}
-	return Layer{ID: mapPinLabelLayerID(ri.Item.ID, pin.ID), Type: "text", Text: pin.Label,
-		Size: []float64{width, height}, Position: canvasBoxPosition("text", boxX, boxY, width, height, src.Width, src.Height),
-		StartFrame: ri.Start, DurationFrames: duration,
-		Style: labelStyle}
+	spec := resolvedTextSpec{
+		Text: pin.Label, Size: []float64{width, height}, OmitBox: true,
+		Position: canvasBoxPosition("text", topLeft[0], topLeft[1], width, height, src.Width, src.Height),
+		Style:    captionStyle, RoleOverrides: roleOverrides, StyleParams: styleParams, MotionTarget: "text", StylePolicy: textRoleMapLabel,
+		FontSize: fontSize, MinFontSize: minFontSize, MaxFontSize: maxFontSize, OverrideFill: fill,
+	}
+	layer, err := compileResolvedText(mapPinLabelLayerID(ri.Item.ID, pin.ID), ri.Start, ri.Start+duration, spec)
+	if err != nil {
+		return Layer{}, fmt.Errorf("overlay: map item %q pin %q label: %w", ri.Item.ID, pin.ID, err)
+	}
+	return layer, nil
 }
 
-func applyMapTextEffects(style *LayerStyle, overrides *SemanticMapTextStyle) {
-	if overrides.Stroke != nil {
-		style.Stroke = &LayerStroke{Color: overrides.Stroke.Color, Width: overrides.Stroke.Width}
+func cloneLayerStroke(source *semanticMapTextStroke) *LayerStroke {
+	if source == nil {
+		return nil
 	}
-	if overrides.Shadow != nil {
-		style.Shadow = &LayerShadow{Color: overrides.Shadow.Color, Opacity: overrides.Shadow.Opacity,
-			Blur: overrides.Shadow.Blur, Offset: append([]float64(nil), overrides.Shadow.Offset...)}
-	}
-	if overrides.Glow != nil {
-		style.Glow = &LayerGlow{Color: overrides.Glow.Color, Radius: overrides.Glow.Radius, Intensity: overrides.Glow.Intensity}
-	}
-	if overrides.Background != nil {
-		opacity := overrides.Background.Opacity
-		style.Background = &LayerBackground{Color: overrides.Background.Color, Opacity: &opacity,
-			Radius: overrides.Background.Radius, Padding: append([]float64(nil), overrides.Background.Padding...)}
-	}
+	return &LayerStroke{Color: source.Color, Width: source.Width}
 }
 
-func mapAttributionLayer(ri resolvedItem, src *semanticPlan, font string, duration int64) Layer {
+func cloneLayerShadow(source *semanticMapTextShadow) *LayerShadow {
+	if source == nil {
+		return nil
+	}
+	return &LayerShadow{Color: source.Color, Opacity: source.Opacity, Blur: source.Blur, Offset: append([]float64(nil), source.Offset...)}
+}
+
+func cloneLayerGlow(source *semanticMapTextGlow) *LayerGlow {
+	if source == nil {
+		return nil
+	}
+	return &LayerGlow{Color: source.Color, Radius: source.Radius, Intensity: source.Intensity}
+}
+
+func cloneLayerBackground(source *semanticMapTextPlate) *LayerBackground {
+	if source == nil {
+		return nil
+	}
+	opacity := source.Opacity
+	return &LayerBackground{Color: source.Color, Opacity: &opacity, Radius: source.Radius, Padding: append([]float64(nil), source.Padding...)}
+}
+
+func resolveMapAttribution(ri resolvedItem, src *semanticPlan, attribution string, duration int64) (Layer, error) {
 	width, height := math.Min(mapAttributionWidth, float64(src.Width)), math.Min(mapAttributionHeight, float64(src.Height))
 	boxX := clampMapBox(mapAttributionMargin, float64(src.Width)-width)
 	boxY := clampMapBox(float64(src.Height)-mapAttributionMargin-height, float64(src.Height)-height)
 	scale := mapTypographyScale(src.Width, src.Height)
-	return Layer{ID: mapAttributionLayerID(ri.Item.ID), Type: "text", Text: ri.Item.Map.Attribution,
-		Size: []float64{width, height}, Position: canvasBoxPosition("text", boxX, boxY, width, height, src.Width, src.Height),
-		StartFrame: ri.Start, DurationFrames: duration,
-		Style: mapTextStyle(textRoleMapAttribution, font, mapAttributionFontPX*scale, mapAttributionMinFont*scale, "#FFFFFF")}
-}
-
-// mapTextStyle asks the shared text system for a map plate's base style. It is a
-// thin call rather than a second style builder on purpose: the map decides
-// WHERE a plate goes, how big its box is and how plates avoid each other, while
-// the text system decides what a map plate looks like (text_role.go). The
-// previous shape built the shadow and fit policy inline, which is how a
-// subsystem that is supposed to own geometry quietly becomes a second text
-// engine.
-func mapTextStyle(role textRole, font string, size, minSize float64, fill string) *LayerStyle {
-	return mapTextPlateStyle(role, font, size, minSize, fill)
+	spec := resolvedTextSpec{
+		Text: attribution, Size: []float64{width, height}, OmitBox: true,
+		Position:    canvasBoxPosition("text", boxX, boxY, width, height, src.Width, src.Height),
+		Style:       &LayerStyle{Font: OfficialFontPathForLanguage(src.Language)},
+		StyleParams: map[string]any{}, MotionTarget: "text", StylePolicy: textRoleMapAttribution,
+		FontSize: mapAttributionFontPX * scale,
+	}
+	// Role base styles supply fit and shadow policy; retain the contract's
+	// authored range, including its smaller shrink floor.
+	spec.MinFontSize = mapAttributionMinFont * scale
+	spec.MaxFontSize = mapAttributionFontPX * scale
+	layer, err := compileResolvedText(mapAttributionLayerID(ri.Item.ID), ri.Start, ri.Start+duration, spec)
+	if err != nil {
+		return Layer{}, fmt.Errorf("overlay: map item %q attribution: %w", ri.Item.ID, err)
+	}
+	return layer, nil
 }
 
 // mapPinMotion applies the basemap's image recipe to each projected pin and

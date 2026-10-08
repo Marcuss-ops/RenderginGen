@@ -176,6 +176,7 @@
       "accents": [],
       "font_size": 0.0,
       "light": false,
+      "white_background": false,
       "emphasis": [],
       "exit": "reverse",
       "decor": null,
@@ -250,6 +251,7 @@
       "accents": [],
       "font_size": 0.0,
       "light": true,
+      "white_background": false,
       "emphasis": [],
       "exit": "wipe",
       "decor": "star_bumper",
@@ -323,6 +325,7 @@
       "accents": [],
       "font_size": 76.0,
       "light": false,
+      "white_background": false,
       "emphasis": [
         1,
         3
@@ -413,6 +416,7 @@
       "accents": [],
       "font_size": 0.0,
       "light": false,
+      "white_background": false,
       "emphasis": [],
       "exit": "reverse",
       "decor": null,
@@ -500,6 +504,7 @@
       "accents": [],
       "font_size": 0.0,
       "light": false,
+      "white_background": false,
       "emphasis": [],
       "exit": "wipe",
       "decor": null,
@@ -577,6 +582,7 @@
       "accents": [],
       "font_size": 0.0,
       "light": false,
+      "white_background": false,
       "emphasis": [],
       "exit": "wipe",
       "decor": null,
@@ -636,6 +642,7 @@
       "accents": [],
       "font_size": 0.0,
       "light": true,
+      "white_background": false,
       "emphasis": [],
       "exit": "scatter",
       "decor": "star_bumper",
@@ -723,6 +730,7 @@
       "accents": [],
       "font_size": 0.0,
       "light": false,
+      "white_background": false,
       "emphasis": [],
       "exit": "reverse",
       "decor": null,
@@ -810,6 +818,7 @@
       "accents": [],
       "font_size": 0.0,
       "light": false,
+      "white_background": false,
       "emphasis": [
         2
       ],
@@ -885,6 +894,7 @@
       "accents": [],
       "font_size": 0.0,
       "light": false,
+      "white_background": false,
       "emphasis": [],
       "exit": "forward",
       "decor": null,
@@ -958,6 +968,7 @@
       "accents": [],
       "font_size": 0.0,
       "light": false,
+      "white_background": false,
       "emphasis": [
         1
       ],
@@ -1033,6 +1044,7 @@
       "accents": [],
       "font_size": 0.0,
       "light": false,
+      "white_background": false,
       "emphasis": [],
       "exit": "wipe",
       "decor": null,
@@ -1173,6 +1185,7 @@
       "accents": [],
       "font_size": 104.0,
       "light": false,
+      "white_background": false,
       "emphasis": [],
       "exit": "reverse",
       "decor": null,
@@ -1317,6 +1330,7 @@
       "accents": [],
       "font_size": 88.0,
       "light": true,
+      "white_background": false,
       "emphasis": [],
       "exit": "reverse",
       "decor": null,
@@ -1459,6 +1473,7 @@
       "accents": [],
       "font_size": 86.0,
       "light": false,
+      "white_background": false,
       "emphasis": [],
       "exit": "reverse",
       "decor": null,
@@ -1601,6 +1616,7 @@
       "accents": [],
       "font_size": 96.0,
       "light": false,
+      "white_background": false,
       "emphasis": [],
       "exit": "reverse",
       "decor": null,
@@ -1803,6 +1819,7 @@
       ],
       "font_size": 104.0,
       "light": false,
+      "white_background": false,
       "emphasis": [],
       "exit": "reverse",
       "decor": null,
@@ -1985,6 +2002,7 @@
       ],
       "font_size": 96.0,
       "light": false,
+      "white_background": false,
       "emphasis": [],
       "exit": "reverse",
       "decor": null,
@@ -2137,6 +2155,7 @@
       "accents": [],
       "font_size": 92.0,
       "light": false,
+      "white_background": false,
       "emphasis": [],
       "exit": "wipe",
       "decor": null,
@@ -2308,6 +2327,7 @@
       "accents": [],
       "font_size": 96.0,
       "light": true,
+      "white_background": false,
       "emphasis": [
         2
       ],
@@ -2411,6 +2431,7 @@
       "accents": [],
       "font_size": 132.0,
       "light": false,
+      "white_background": false,
       "emphasis": [],
       "exit": "reverse",
       "decor": null,
@@ -2607,6 +2628,7 @@
       ],
       "font_size": 100.0,
       "light": false,
+      "white_background": false,
       "emphasis": [],
       "exit": "reverse",
       "decor": null,
@@ -2741,6 +2763,7 @@
       "accents": [],
       "font_size": 106.0,
       "light": false,
+      "white_background": false,
       "emphasis": [],
       "exit": "reverse",
       "decor": null,
@@ -2875,6 +2898,7 @@
       "accents": [],
       "font_size": 108.0,
       "light": false,
+      "white_background": false,
       "emphasis": [],
       "exit": "reverse",
       "decor": null,
@@ -3009,6 +3033,7 @@
       "accents": [],
       "font_size": 106.0,
       "light": false,
+      "white_background": false,
       "emphasis": [],
       "exit": "reverse",
       "decor": null,
@@ -3230,6 +3255,7 @@
       "accents": [],
       "font_size": 100.0,
       "light": false,
+      "white_background": false,
       "emphasis": [],
       "exit": "reverse",
       "decor": null,
@@ -3364,6 +3390,7 @@
       "accents": [],
       "font_size": 112.0,
       "light": false,
+      "white_background": false,
       "emphasis": [],
       "exit": "forward",
       "decor": null,
@@ -3668,6 +3695,7 @@
       "accents": [],
       "font_size": 126.0,
       "light": false,
+      "white_background": false,
       "emphasis": [],
       "exit": "reverse",
       "decor": null,
@@ -3739,6 +3767,7 @@
       "accents": [],
       "font_size": 88.0,
       "light": false,
+      "white_background": false,
       "emphasis": [],
       "exit": "reverse",
       "decor": null,
@@ -3855,6 +3884,7 @@
       "accents": [],
       "font_size": 128.0,
       "light": false,
+      "white_background": false,
       "emphasis": [],
       "exit": "reverse",
       "decor": null,
@@ -4358,6 +4388,7 @@
       "accents": [],
       "font_size": 98.0,
       "light": false,
+      "white_background": false,
       "emphasis": [],
       "exit": "reverse",
       "decor": null,
@@ -4554,6 +4585,7 @@
       ],
       "font_size": 96.0,
       "light": false,
+      "white_background": false,
       "emphasis": [],
       "exit": "reverse",
       "decor": null,
@@ -4708,6 +4740,7 @@
       "accents": [],
       "font_size": 118.0,
       "light": false,
+      "white_background": false,
       "emphasis": [],
       "exit": "reverse",
       "decor": null,
@@ -4802,6 +4835,7 @@
       "accents": [],
       "font_size": 144.0,
       "light": false,
+      "white_background": false,
       "emphasis": [],
       "exit": "reverse",
       "decor": null,
@@ -4948,6 +4982,7 @@
       "accents": [],
       "font_size": 126.0,
       "light": false,
+      "white_background": false,
       "emphasis": [],
       "exit": "reverse",
       "decor": null,
@@ -5265,6 +5300,7 @@
       "accents": [],
       "font_size": 260.0,
       "light": false,
+      "white_background": false,
       "emphasis": [],
       "exit": "reverse",
       "decor": null,
@@ -5377,6 +5413,7 @@
       "accents": [],
       "font_size": 110.0,
       "light": false,
+      "white_background": false,
       "emphasis": [],
       "exit": "reverse",
       "decor": null,
@@ -5516,6 +5553,7 @@
       "accents": [],
       "font_size": 118.0,
       "light": false,
+      "white_background": false,
       "emphasis": [],
       "exit": "reverse",
       "decor": null,
@@ -5659,6 +5697,7 @@
       "accents": [],
       "font_size": 114.0,
       "light": false,
+      "white_background": false,
       "emphasis": [],
       "exit": "reverse",
       "decor": null,
@@ -5760,6 +5799,7 @@
       "accents": [],
       "font_size": 122.0,
       "light": false,
+      "white_background": false,
       "emphasis": [],
       "exit": "reverse",
       "decor": null,
@@ -6187,6 +6227,7 @@
       "accents": [],
       "font_size": 108.0,
       "light": false,
+      "white_background": false,
       "emphasis": [],
       "exit": "reverse",
       "decor": null,
@@ -6343,6 +6384,7 @@
       "accents": [],
       "font_size": 108.0,
       "light": false,
+      "white_background": false,
       "emphasis": [],
       "exit": "reverse",
       "decor": null,
@@ -6455,6 +6497,7 @@
       "accents": [],
       "font_size": 108.0,
       "light": false,
+      "white_background": false,
       "emphasis": [],
       "exit": "reverse",
       "decor": null,
@@ -6613,6 +6656,7 @@
       ],
       "font_size": 120.0,
       "light": false,
+      "white_background": false,
       "emphasis": [],
       "exit": "reverse",
       "decor": null,
@@ -6857,6 +6901,7 @@
       ],
       "font_size": 116.0,
       "light": false,
+      "white_background": false,
       "emphasis": [],
       "exit": "reverse",
       "decor": null,
@@ -7015,6 +7060,7 @@
       "accents": [],
       "font_size": 112.0,
       "light": false,
+      "white_background": false,
       "emphasis": [],
       "exit": "reverse",
       "decor": null,
@@ -7221,10 +7267,423 @@
       ],
       "font_size": 118.0,
       "light": false,
+      "white_background": false,
       "emphasis": [],
       "exit": "reverse",
       "decor": null,
       "adaptation_note": "A native accent bar and soft glyph reveal stand in for the mouse-lit Three.js SDF shader; mouse following, shape variations and WebGL rendering are not represented.",
+      "timing": {
+        "min_frames": 195,
+        "max_frames": 210,
+        "in_frames": 90,
+        "hold_frames": 105,
+        "out_frames": 15
+      }
+    },
+    {
+      "id": "short_phrase_editorial_claude_prompt_response",
+      "family": "editorial",
+      "subcategory": "kinetic_reveal",
+      "targets": [
+        "short_phrase",
+        "caption"
+      ],
+      "title": "Prompt / Response",
+      "phrase": "Build with intent",
+      "enter": 90,
+      "word_count": 3,
+      "selector": {
+        "unit": "word",
+        "order": "forward",
+        "window": "band"
+      },
+      "tracks": [
+        {
+          "property": "position_y",
+          "easing": "in_out_cubic",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 28.0
+            },
+            {
+              "frame": 24,
+              "value": 0.0
+            },
+            {
+              "frame": 42,
+              "value": 0.0
+            },
+            {
+              "frame": 78,
+              "value": -8.0
+            },
+            {
+              "frame": 102,
+              "value": 0.0
+            },
+            {
+              "frame": 120,
+              "value": 0.0
+            }
+          ]
+        },
+        {
+          "property": "opacity",
+          "easing": "linear",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.0
+            },
+            {
+              "frame": 90,
+              "value": 1.0
+            },
+            {
+              "frame": 120,
+              "value": 1.0
+            }
+          ]
+        }
+      ],
+      "text_animators": [
+        {
+          "selector": {
+            "unit": "word",
+            "order": "forward",
+            "window": "band"
+          },
+          "properties": [
+            {
+              "property": "position_y",
+              "easing": "out_cubic",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 16.0
+                },
+                {
+                  "frame": 24,
+                  "value": 0.0
+                }
+              ]
+            },
+            {
+              "property": "opacity",
+              "easing": "linear",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0.0
+                },
+                {
+                  "frame": 12,
+                  "value": 1.0
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "text_overlays": [],
+      "accents": [],
+      "font_size": 112.0,
+      "light": false,
+      "white_background": true,
+      "emphasis": [
+        2
+      ],
+      "exit": "reverse",
+      "decor": null,
+      "adaptation_note": "",
+      "timing": {
+        "min_frames": 195,
+        "max_frames": 210,
+        "in_frames": 90,
+        "hold_frames": 105,
+        "out_frames": 15
+      }
+    },
+    {
+      "id": "short_phrase_editorial_claude_diff_patch",
+      "family": "editorial",
+      "subcategory": "kinetic_reveal",
+      "targets": [
+        "short_phrase",
+        "caption"
+      ],
+      "title": "Diff / Patch",
+      "phrase": "Make. Review. Ship.",
+      "enter": 90,
+      "word_count": 3,
+      "selector": {
+        "unit": "word",
+        "order": "forward",
+        "window": "band"
+      },
+      "tracks": [
+        {
+          "property": "scale",
+          "easing": "out_cubic",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.9850000143051147
+            },
+            {
+              "frame": 18,
+              "value": 1.0119999647140503
+            },
+            {
+              "frame": 26,
+              "value": 1.0
+            }
+          ]
+        },
+        {
+          "property": "opacity",
+          "easing": "linear",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.0
+            },
+            {
+              "frame": 90,
+              "value": 1.0
+            },
+            {
+              "frame": 120,
+              "value": 1.0
+            }
+          ]
+        },
+        {
+          "property": "position_x",
+          "easing": "in_out_cubic",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": -22.0
+            },
+            {
+              "frame": 26,
+              "value": 0.0
+            },
+            {
+              "frame": 42,
+              "value": 0.0
+            },
+            {
+              "frame": 78,
+              "value": 8.0
+            },
+            {
+              "frame": 102,
+              "value": 0.0
+            },
+            {
+              "frame": 120,
+              "value": 0.0
+            }
+          ]
+        }
+      ],
+      "text_animators": [
+        {
+          "selector": {
+            "unit": "word",
+            "order": "forward",
+            "window": "band"
+          },
+          "properties": [
+            {
+              "property": "position_y",
+              "easing": "out_cubic",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 12.0
+                },
+                {
+                  "frame": 26,
+                  "value": 0.0
+                }
+              ]
+            },
+            {
+              "property": "opacity",
+              "easing": "linear",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0.18000000715255737
+                },
+                {
+                  "frame": 26,
+                  "value": 1.0
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "selector": {
+            "unit": "word",
+            "order": "forward",
+            "window": "pick:2:3"
+          },
+          "properties": [
+            {
+              "property": "fill_orange",
+              "easing": "linear",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 1.0
+                },
+                {
+                  "frame": 26,
+                  "value": 1.0
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "text_overlays": [],
+      "accents": [],
+      "font_size": 104.0,
+      "light": false,
+      "white_background": true,
+      "emphasis": [],
+      "exit": "reverse",
+      "decor": null,
+      "adaptation_note": "",
+      "timing": {
+        "min_frames": 195,
+        "max_frames": 210,
+        "in_frames": 90,
+        "hold_frames": 105,
+        "out_frames": 15
+      }
+    },
+    {
+      "id": "short_phrase_editorial_claude_terminal_focus",
+      "family": "editorial",
+      "subcategory": "kinetic_reveal",
+      "targets": [
+        "short_phrase",
+        "caption"
+      ],
+      "title": "Terminal Focus",
+      "phrase": "npx chronon render",
+      "enter": 90,
+      "word_count": 3,
+      "selector": {
+        "unit": "glyph",
+        "order": "forward",
+        "window": "reveal_soft"
+      },
+      "tracks": [
+        {
+          "property": "position_x",
+          "easing": "in_out_cubic",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 20.0
+            },
+            {
+              "frame": 30,
+              "value": 0.0
+            },
+            {
+              "frame": 42,
+              "value": 0.0
+            },
+            {
+              "frame": 78,
+              "value": -6.0
+            },
+            {
+              "frame": 102,
+              "value": 0.0
+            },
+            {
+              "frame": 120,
+              "value": 0.0
+            }
+          ]
+        },
+        {
+          "property": "opacity",
+          "easing": "linear",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.0
+            },
+            {
+              "frame": 90,
+              "value": 1.0
+            },
+            {
+              "frame": 120,
+              "value": 1.0
+            }
+          ]
+        }
+      ],
+      "text_animators": [
+        {
+          "selector": {
+            "unit": "glyph",
+            "order": "forward",
+            "window": "reveal_soft"
+          },
+          "properties": [
+            {
+              "property": "opacity",
+              "easing": "linear",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0.0
+                },
+                {
+                  "frame": 30,
+                  "value": 0.0
+                }
+              ]
+            },
+            {
+              "property": "tracking",
+              "easing": "out_cubic",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 5.0
+                },
+                {
+                  "frame": 30,
+                  "value": 0.0
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "text_overlays": [],
+      "accents": [],
+      "font_size": 110.0,
+      "light": false,
+      "white_background": true,
+      "emphasis": [],
+      "exit": "reverse",
+      "decor": null,
+      "adaptation_note": "",
       "timing": {
         "min_frames": 195,
         "max_frames": 210,
@@ -7244,7 +7703,8 @@
       "short_phrase_product_scramble_reveal",
       "short_phrase_product_strikethrough_replace",
       "short_phrase_product_per_word_rise",
-      "short_phrase_product_fold_text"
+      "short_phrase_product_fold_text",
+      "short_phrase_editorial_claude_terminal_focus"
     ],
     "2": [
       "short_phrase_character_tracking_reveal",
@@ -7253,6 +7713,8 @@
       "short_phrase_editorial_tracking_close",
       "short_phrase_editorial_underline_draw",
       "short_phrase_editorial_baseline_rise",
+      "short_phrase_editorial_claude_diff_patch",
+      "short_phrase_editorial_claude_prompt_response",
       "short_phrase_product_blur_out_up",
       "short_phrase_product_kinetic_center_build",
       "short_phrase_product_perspective_marquee",
@@ -7274,6 +7736,8 @@
       "short_phrase_editorial_tracking_close",
       "short_phrase_editorial_underline_draw",
       "short_phrase_editorial_baseline_rise",
+      "short_phrase_editorial_claude_diff_patch",
+      "short_phrase_editorial_claude_prompt_response",
       "short_phrase_product_blur_out_up",
       "short_phrase_product_kinetic_center_build",
       "short_phrase_product_perspective_marquee",

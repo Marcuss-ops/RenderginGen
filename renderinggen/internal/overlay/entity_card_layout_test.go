@@ -2,6 +2,7 @@ package overlay
 
 import (
 	"encoding/json"
+	"fmt"
 	"math"
 	"strings"
 	"testing"
@@ -291,8 +292,31 @@ func TestEntityCardResolverUnit(t *testing.T) {
 }
 
 func TestEntityCaptionDefaultMotionFromCatalog(t *testing.T) {
-	if got := EntityCaptionMotionID(""); got != "trump_entity_text_01" {
-		t.Fatalf("default caption motion = %q", got)
+	captionMotionPlanID, captionMotionVideoID, captionMotionItemID = "plan-default", "video-default", "portrait"
+	defer func() { captionMotionPlanID, captionMotionVideoID, captionMotionItemID = "", "", "" }()
+	got := EntityCaptionMotionID("")
+	found := false
+	for _, id := range entityCaptionMotionPool {
+		if id == got {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("default caption motion = %q, want a certified caption-pool id", got)
+	}
+	if second := EntityCaptionMotionID(""); second != got {
+		t.Fatalf("caption motion default is not deterministic: %q vs %q", got, second)
+	}
+	var distinct int
+	seen := map[string]struct{}{}
+	for itemID := 0; itemID < 64; itemID++ {
+		captionMotionItemID = fmt.Sprintf("portrait-%d", itemID)
+		seen[EntityCaptionMotionID("")] = struct{}{}
+	}
+	distinct = len(seen)
+	if distinct < 4 {
+		t.Fatalf("caption motion default reached only %d distinct catalog ids in 64 items, want wide pool rotation", distinct)
 	}
 	if got := EntityCaptionMotionID("text_word_stagger"); got != "text_word_stagger" {
 		t.Fatalf("requested caption motion = %q", got)

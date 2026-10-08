@@ -80,8 +80,8 @@ func TestPresentationMotionInventoryAndSemanticWiring(t *testing.T) {
 			total++
 		}
 	}
-	if total != 50 {
-		t.Fatalf("presentation inventory contains %d motions, want 50", total)
+	if total != 70 {
+		t.Fatalf("presentation inventory contains %d motions, want 70 (metric_v1 20 + date_v1 20 + entity_card_v1 10 + metric_didone_v1 10 + date_didone_v1 10)", total)
 	}
 }
 

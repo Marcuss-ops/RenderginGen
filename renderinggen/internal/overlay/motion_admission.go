@@ -15,6 +15,17 @@ type resolvedMotion struct {
 }
 
 func resolveRegisteredMotion(id string) (*resolvedMotion, error) {
+	if _, deprecated := motion.Registry.DeprecationInfo(id); deprecated {
+		plugin, err := motion.Registry.Resolve(id)
+		if err != nil || plugin == nil {
+			return nil, err
+		}
+		if declarative, ok := plugin.(motion.DeclarativePlugin); ok {
+			definition := declarative.Definition
+			return &resolvedMotion{plugin: plugin, definition: &definition}, nil
+		}
+		return &resolvedMotion{plugin: plugin}, nil
+	}
 	plugin, err := motion.Registry.Resolve(id)
 	if err != nil || plugin == nil {
 		return nil, err

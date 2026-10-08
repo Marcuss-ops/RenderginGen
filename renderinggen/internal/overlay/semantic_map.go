@@ -154,9 +154,6 @@ func validateMapContract(item semanticItem, kind ItemKind, canvasWidth, canvasHe
 		}
 		seen[pin.ID] = struct{}{}
 	}
-	if _, err := resolveMapLabelPlacements(m.Pins, window, canvasWidth, canvasHeight); err != nil {
-		return fmt.Errorf("overlay: map item %q: %w", item.ID, err)
-	}
 	return nil
 }
 

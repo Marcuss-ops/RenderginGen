@@ -1,0 +1,21 @@
+{
+  "schema": "renderinggen.vram-calibration-suite.v1",
+  "_note": "INPUT matrix for the calibration suite (TICKET-DAEMON-JOB-LIFECYCLE section 5), not evidence. Successor of vram_calibration_suite_2026-09-17.json: adds the 4K overlay shape, whose concrete chronon.render-plan.v2 now exists in Chronon3d/tools/fixtures. Plan paths are relative to THIS FILE's directory. repeat >= 3 is the ticket floor. DirectYUV is not a plan property; it must be certified from telemetry.",
+  "shapes": [
+    {
+      "label": "overlay-only-1080p",
+      "plan": "../../phrase_overlay_v3/03_editorial_push_in_1920x1080_24fps_5s_render_plan.json",
+      "repeat": 3
+    },
+    {
+      "label": "video-source-1080p",
+      "plan": "../../phrase_preset_videos/phrase_01_lower_third_safe_plan.json",
+      "repeat": 3
+    },
+    {
+      "label": "overlay-only-4k",
+      "plan": "../../../Chronon3d/tools/fixtures/vram-calibration-4k-overlay.plan.json",
+      "repeat": 3
+    }
+  ]
+}

@@ -33,18 +33,19 @@ type shortPhraseAnimator struct {
 }
 
 type shortPhraseRecipe struct {
-	ID            string                `json:"id"`
-	Family        string                `json:"family"`
-	Subcategory   string                `json:"subcategory"`
-	Targets       []string              `json:"targets"`
-	Title         string                `json:"title"`
-	Enter         int                   `json:"enter"`
-	Exit          string                `json:"exit"`
-	Tracks        []TrackDefinition     `json:"tracks"`
-	Light         bool                  `json:"light"`
-	Selector      shortPhraseSelector   `json:"selector"`
-	TextAnimators []shortPhraseAnimator `json:"text_animators"`
-	Timing        struct {
+	ID              string                `json:"id"`
+	Family          string                `json:"family"`
+	Subcategory     string                `json:"subcategory"`
+	Targets         []string              `json:"targets"`
+	Title           string                `json:"title"`
+	Enter           int                   `json:"enter"`
+	Exit            string                `json:"exit"`
+	Tracks          []TrackDefinition     `json:"tracks"`
+	Light           bool                  `json:"light"`
+	WhiteBackground bool                  `json:"white_background"`
+	Selector        shortPhraseSelector   `json:"selector"`
+	TextAnimators   []shortPhraseAnimator `json:"text_animators"`
+	Timing          struct {
 		ExitFrames int `json:"out_frames"`
 	} `json:"timing"`
 }
@@ -97,7 +98,7 @@ func shortPhraseMotionDefinition(recipe shortPhraseRecipe) MotionDefinition {
 		selector := shortPhraseSelectorDefinition(animator.Selector)
 		properties := make([]TrackDefinition, len(animator.Properties))
 		for propertyIndex, track := range animator.Properties {
-			properties[propertyIndex] = lowerShortPhraseColorTrack(track, recipe.Light)
+			properties[propertyIndex] = lowerShortPhraseColorTrack(track, recipe.Light || recipe.WhiteBackground)
 		}
 		definition.TextAnimators = append(definition.TextAnimators, TextAnimatorDefinition{
 			ID:         fmt.Sprintf("%s_animator_%d", recipe.ID, index),
@@ -108,14 +109,16 @@ func shortPhraseMotionDefinition(recipe shortPhraseRecipe) MotionDefinition {
 	return definition
 }
 
-// ChrononTemplate authors short-phrase color mixes as scalar fill_blue and
-// fill_gray tracks. The renderer contract uses native animated RGBA fill_color
-// tracks, so project the authoring shorthand at the catalog boundary.
+// ChrononTemplate authors short-phrase color mixes as scalar fill_blue,
+// fill_gray and fill_orange tracks. The renderer contract uses native animated
+// RGBA fill_color tracks, so project the authoring shorthand at the catalog boundary.
 func lowerShortPhraseColorTrack(track TrackDefinition, light bool) TrackDefinition {
 	var target [4]float64
 	switch track.Property {
 	case "fill_blue":
 		target = [4]float64{0.30, 0.55, 1, 1}
+	case "fill_orange":
+		target = [4]float64{1, 0.38, 0.12, 1}
 	case "fill_gray":
 		gray := 0.40
 		if light {

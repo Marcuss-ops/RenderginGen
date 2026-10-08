@@ -59,7 +59,7 @@ func compileImageItem(ri resolvedItem, src *semanticPlan, registry *assetRegistr
 			}
 			if caption := strings.TrimSpace(ri.Item.EntityCaption); caption != "" {
 				imageIndex := premiumImageLayerIndex(layers)
-				captionLayer, err := compileImageCaptionLayer(ri, src, ri.Item, caption, &layers[imageIndex], "entity", textRoleImageCaption)
+				captionLayer, err := compileEntityCaptionLayer(ri, src, ri.Item, caption, &layers[imageIndex], "entity")
 				if err != nil {
 					return nil, err
 				}
@@ -73,7 +73,7 @@ func compileImageItem(ri resolvedItem, src *semanticPlan, registry *assetRegistr
 		}
 		if caption := strings.TrimSpace(ri.Item.EntityCaption); caption != "" {
 			imageIndex := premiumImageLayerIndex(layers)
-			captionLayer, err := compileImageCaptionLayer(ri, src, ri.Item, caption, &layers[imageIndex], "entity", textRoleImageCaption)
+			captionLayer, err := compileEntityCaptionLayer(ri, src, ri.Item, caption, &layers[imageIndex], "entity")
 			if err != nil {
 				return nil, err
 			}

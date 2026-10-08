@@ -384,7 +384,7 @@ func cameraMapPlan() map[string]any {
 func TestGeoreferencedFlyToCompilesNativeCameraAndOfflineLODs(t *testing.T) {
 	plan := cameraMapPlan()
 	item := plan["items"].([]any)[0].(map[string]any)
-	item["map"].(map[string]any)["motion_id"] = "map_image_brazil_glow_reveal"
+	item["map"].(map[string]any)["motion_id"] = "map_image_dark_map_italy_radar_lock"
 	result, err := compileMapTestPlan(t, plan)
 	if err != nil {
 		t.Fatal(err)
