@@ -2,8 +2,11 @@ package service
 
 import (
 	"context"
-	"github.com/Marcuss-ops/RenderingGen/queue/internal/model"
+	"fmt"
 	"time"
+
+	"github.com/Marcuss-ops/RenderingGen/queue/internal/model"
+	"github.com/Marcuss-ops/RenderingGen/queue/internal/repository"
 )
 
 // Rendered marks a running job as rendered: the artifact is durably stored but
@@ -24,6 +27,21 @@ func (s *Service) Rendered(ctx context.Context, id, workerID string, artifact mo
 // Fail marks a running job failed (requeue or permanent fail).
 func (s *Service) Fail(ctx context.Context, id, workerID, reason string) error {
 	if err := s.repo.Fail(ctx, id, workerID, reason); err != nil {
+		return err
+	}
+	s.observePending(ctx)
+	s.notify.Notify()
+	return nil
+}
+
+// FailPermanently records a non-retryable failure as terminal, without
+// consuming the ordinary attempt retry budget.
+func (s *Service) FailPermanently(ctx context.Context, id, workerID, reason string) error {
+	permanentRepo, ok := s.repo.(repository.PermanentFailureRepository)
+	if !ok {
+		return fmt.Errorf("permanent failure transition is not supported by repository")
+	}
+	if err := permanentRepo.FailPermanently(ctx, id, workerID, reason); err != nil {
 		return err
 	}
 	s.observePending(ctx)

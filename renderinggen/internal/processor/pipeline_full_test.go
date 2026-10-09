@@ -15,6 +15,7 @@ import (
 	"testing"
 
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/artifactdb"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/metricnames"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/queue"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/storage"
 )
@@ -129,19 +130,14 @@ func TestProcessPreservesRawTimingSidecarReference(t *testing.T) {
 	}
 
 	const rawTiming = `{
+	  "schema":"chronon3d.frame-timing.v3",
+	  "version":3,
+	  "job":{"daemon_admission_wait_ms":12.5},
 	  "exclusive_wall_timeline":{"startup_ms":565.0,"prepare_ms":1120.0,"render_loop_ms":2932.0,"process_wall_ms":5304.0},
 	  "frame_times_ms":[{"frame":0,"wall_duration_ms":0.59},{"frame":1,"wall_duration_ms":0.62}]
 	}`
-	// The bounded telemetry summary sidecar (observability ownership, Phase
-	// 10) is the ONLY document the worker ingests: schema-typed, bounded, no
-	// per-frame arrays.
-	const boundedSummary = `{
-	  "schema": "chronon3d.render-telemetry-summary.v1",
-	  "version": 1,
-	  "summary": {"render_loop_fps": 60.0},
-	  "job": {"process_wall_ms": 5304.0, "gpu": {"nvenc_frames": 150}},
-	  "outcome": {"status": "ok"}
-	}`
+	// The canonical v3 timing sidecar carries the bounded telemetry sections
+	// and the producer-independent engine admission wait in its job block.
 	renderer.write = func(path string) error {
 		if err := os.WriteFile(path, []byte("output-bytes"), 0o644); err != nil {
 			return err
@@ -149,7 +145,7 @@ func TestProcessPreservesRawTimingSidecarReference(t *testing.T) {
 		if err := os.WriteFile(path+".timing.json", []byte(rawTiming), 0o644); err != nil {
 			return err
 		}
-		return os.WriteFile(path+".telemetry-summary.json", []byte(boundedSummary), 0o644)
+		return nil
 	}
 
 	artifact, err := proc.Process(context.Background(), validJob())
@@ -174,14 +170,33 @@ func TestProcessPreservesRawTimingSidecarReference(t *testing.T) {
 	}
 	// The ledger telemetry is the BOUNDED summary document verbatim — never
 	// the raw per-frame profile and never a mutated copy of it.
-	if string(artifact.ChrononTelemetry) != boundedSummary {
-		t.Fatalf("bounded ledger telemetry = %s, want the summary document verbatim", artifact.ChrononTelemetry)
+	var bounded map[string]json.RawMessage
+	if err := json.Unmarshal(artifact.ChrononTelemetry, &bounded); err != nil {
+		t.Fatalf("decode bounded ledger telemetry: %v", err)
+	}
+	if string(bounded["schema"]) != `"chronon3d.frame-timing.v3"` || !strings.Contains(string(artifact.ChrononTelemetry), `"daemon_admission_wait_ms":12.5`) {
+		t.Fatalf("bounded ledger telemetry lost the v3 schema/admission field: %s", artifact.ChrononTelemetry)
 	}
 	if strings.Contains(string(artifact.ChrononTelemetry), "frame_times_ms") {
 		t.Fatalf("bounded ledger telemetry must never inline the per-frame array: %s", artifact.ChrononTelemetry)
 	}
-	if artifact.Metrics["chronon_summary_render_loop_fps"] != 60.0 {
-		t.Fatalf("documented summary metric missing: %+v", artifact.Metrics)
+	if artifact.Metrics[metricnames.ChrononReceiptDaemonAdmissionWaitMS] != 12.5 {
+		t.Fatalf("Chronon engine admission metric = %v, want 12.5 (all metrics: %+v)", artifact.Metrics[metricnames.ChrononReceiptDaemonAdmissionWaitMS], artifact.Metrics)
+	}
+
+	if _, present := artifact.Metrics[metricnames.DaemonAdmissionWaitMS]; present {
+		t.Fatalf("Chronon daemon wait must not overwrite/populate the producer queue-wait metric: %+v", artifact.Metrics)
+	}
+	producerTimedJob := validJob()
+	producerTimedJob.DaemonAdmissionWaitMS = 7.25
+	producerMetrics := map[string]float64{}
+	mergeTelemetrySummaryMetrics(producerMetrics, json.RawMessage(rawTiming))
+	producerMetrics[metricnames.DaemonAdmissionWaitMS] = producerTimedJob.DaemonAdmissionWaitMS
+	if producerMetrics[metricnames.DaemonAdmissionWaitMS] != 7.25 || producerMetrics[metricnames.ChrononReceiptDaemonAdmissionWaitMS] != 12.5 {
+		t.Fatalf("producer and engine admission waits must remain distinct: %+v", producerMetrics)
+	}
+	if _, ok := metricnames.Unit(metricnames.ChrononReceiptDaemonAdmissionWaitMS); !ok {
+		t.Fatalf("engine admission metric %q is not declared", metricnames.ChrononReceiptDaemonAdmissionWaitMS)
 	}
 
 	// The raw bytes (WITH the per-frame array) are fetchable from the store by

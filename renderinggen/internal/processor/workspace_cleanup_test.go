@@ -37,6 +37,10 @@ func TestCleanupWorkspaceReportsFailures(t *testing.T) {
 	if err != nil {
 		t.Fatalf("workspace.New: %v", err)
 	}
+	secondWS, err := workspace.New(root, "job-2")
+	if err != nil {
+		t.Fatalf("workspace.New(second): %v", err)
+	}
 	if err := os.Chmod(root, 0o500); err != nil {
 		t.Fatalf("chmod: %v", err)
 	}
@@ -46,8 +50,9 @@ func TestCleanupWorkspaceReportsFailures(t *testing.T) {
 	if got == nil || got[metricnames.WorkspaceCleanupFailures] != 1 {
 		t.Fatalf("want %s=1 after one failure, got %v", metricnames.WorkspaceCleanupFailures, got)
 	}
-	// The counter is cumulative, not a latch.
-	proc.cleanupWorkspace(ws, "job-1")
+	// A failed owner continues holding its flock even if Cleanup is called a
+	// second time; use a second workspace to check the cumulative process count.
+	proc.cleanupWorkspace(secondWS, "job-2")
 	if got := proc.Degradations(); got[metricnames.WorkspaceCleanupFailures] != 2 {
 		t.Fatalf("want cumulative %s=2, got %v", metricnames.WorkspaceCleanupFailures, got)
 	}

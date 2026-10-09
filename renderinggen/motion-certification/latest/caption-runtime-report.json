@@ -1,0 +1,114 @@
+{
+  "generated_at_utc": "2026-10-09T13:44:00Z",
+  "backend": "vulkan",
+  "hardware_encoder": "nvenc",
+  "encoder_backend": "native",
+  "gpu_hot_path_mode": "require_gpu_native",
+  "motions": [
+    {
+      "motion_id": "text_depth_in",
+      "status": "passed",
+      "duration_seconds": 2.0
+    },
+    {
+      "motion_id": "text_fade_up",
+      "status": "passed",
+      "duration_seconds": 2.0
+    },
+    {
+      "motion_id": "text_scale_punch",
+      "status": "passed",
+      "duration_seconds": 2.0
+    },
+    {
+      "motion_id": "text_word_rise",
+      "status": "passed",
+      "duration_seconds": 2.0
+    },
+    {
+      "motion_id": "text_word_stagger",
+      "status": "passed",
+      "duration_seconds": 2.0
+    },
+    {
+      "motion_id": "text_yaw_in",
+      "status": "passed",
+      "duration_seconds": 2.0
+    },
+    {
+      "motion_id": "trump_entity_text_01",
+      "status": "passed",
+      "duration_seconds": 2.0
+    },
+    {
+      "motion_id": "trump_entity_text_02",
+      "status": "passed",
+      "duration_seconds": 2.0
+    },
+    {
+      "motion_id": "trump_entity_text_03",
+      "status": "passed",
+      "duration_seconds": 2.0
+    },
+    {
+      "motion_id": "trump_entity_text_04",
+      "status": "passed",
+      "duration_seconds": 2.0
+    },
+    {
+      "motion_id": "trump_entity_text_05",
+      "status": "passed",
+      "duration_seconds": 2.0
+    },
+    {
+      "motion_id": "trump_entity_text_06",
+      "status": "passed",
+      "duration_seconds": 2.0
+    },
+    {
+      "motion_id": "trump_entity_text_07",
+      "status": "passed",
+      "duration_seconds": 2.0
+    },
+    {
+      "motion_id": "trump_entity_text_08",
+      "status": "passed",
+      "duration_seconds": 2.0
+    },
+    {
+      "motion_id": "trump_entity_text_09",
+      "status": "passed",
+      "duration_seconds": 2.0
+    },
+    {
+      "motion_id": "trump_entity_text_10",
+      "status": "passed",
+      "duration_seconds": 2.0
+    },
+    {
+      "motion_id": "trump_entity_text_11",
+      "status": "passed",
+      "duration_seconds": 2.0
+    },
+    {
+      "motion_id": "trump_entity_text_12",
+      "status": "passed",
+      "duration_seconds": 2.0
+    },
+    {
+      "motion_id": "trump_entity_text_13",
+      "status": "passed",
+      "duration_seconds": 2.0
+    },
+    {
+      "motion_id": "trump_entity_text_14",
+      "status": "passed",
+      "duration_seconds": 2.0
+    },
+    {
+      "motion_id": "trump_entity_text_15",
+      "status": "passed",
+      "duration_seconds": 2.0
+    }
+  ]
+}

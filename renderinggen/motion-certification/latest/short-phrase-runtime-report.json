@@ -1,0 +1,249 @@
+{
+  "generated_at_utc": "2026-10-09T15:01:39Z",
+  "backend": "vulkan",
+  "hardware_encoder": "nvenc",
+  "encoder_backend": "native",
+  "gpu_hot_path_mode": "require_gpu_native",
+  "motions": [
+    {
+      "motion_id": "short_phrase_character_cascade_shapes",
+      "status": "passed",
+      "duration_seconds": 1.753271335
+    },
+    {
+      "motion_id": "short_phrase_character_tracking_reveal",
+      "status": "passed",
+      "duration_seconds": 1.889532702
+    },
+    {
+      "motion_id": "short_phrase_character_write_on",
+      "status": "passed",
+      "duration_seconds": 1.769751201
+    },
+    {
+      "motion_id": "short_phrase_editorial_baseline_rise",
+      "status": "passed",
+      "duration_seconds": 1.650526653
+    },
+    {
+      "motion_id": "short_phrase_editorial_claude_diff_patch",
+      "status": "passed",
+      "duration_seconds": 1.6891349450000002
+    },
+    {
+      "motion_id": "short_phrase_editorial_claude_prompt_response",
+      "status": "passed",
+      "duration_seconds": 1.737179126
+    },
+    {
+      "motion_id": "short_phrase_editorial_claude_terminal_focus",
+      "status": "passed",
+      "duration_seconds": 1.7862894360000001
+    },
+    {
+      "motion_id": "short_phrase_editorial_contrast_sweep",
+      "status": "passed",
+      "duration_seconds": 1.7427785089999999
+    },
+    {
+      "motion_id": "short_phrase_editorial_focus_resolve",
+      "status": "passed",
+      "duration_seconds": 1.865979337
+    },
+    {
+      "motion_id": "short_phrase_editorial_glyph_curtain",
+      "status": "passed",
+      "duration_seconds": 1.6698174049999999
+    },
+    {
+      "motion_id": "short_phrase_editorial_lift_and_rule",
+      "status": "passed",
+      "duration_seconds": 1.7157052350000002
+    },
+    {
+      "motion_id": "short_phrase_editorial_quiet_zoom",
+      "status": "passed",
+      "duration_seconds": 1.728695976
+    },
+    {
+      "motion_id": "short_phrase_editorial_rule_handoff",
+      "status": "passed",
+      "duration_seconds": 1.737399485
+    },
+    {
+      "motion_id": "short_phrase_editorial_side_glide",
+      "status": "passed",
+      "duration_seconds": 1.735125439
+    },
+    {
+      "motion_id": "short_phrase_editorial_tracking_close",
+      "status": "passed",
+      "duration_seconds": 1.678042909
+    },
+    {
+      "motion_id": "short_phrase_editorial_underline_draw",
+      "status": "passed",
+      "duration_seconds": 1.8374946030000001
+    },
+    {
+      "motion_id": "short_phrase_phrase_build_focus",
+      "status": "passed",
+      "duration_seconds": 1.724960921
+    },
+    {
+      "motion_id": "short_phrase_product_blur_out_up",
+      "status": "passed",
+      "duration_seconds": 1.719763071
+    },
+    {
+      "motion_id": "short_phrase_product_bottom_up_letters",
+      "status": "passed",
+      "duration_seconds": 1.691971089
+    },
+    {
+      "motion_id": "short_phrase_product_chromatic_fringe_title",
+      "status": "passed",
+      "duration_seconds": 1.6736658169999998
+    },
+    {
+      "motion_id": "short_phrase_product_decrypted_text",
+      "status": "passed",
+      "duration_seconds": 1.721257031
+    },
+    {
+      "motion_id": "short_phrase_product_focus_blur_resolve",
+      "status": "passed",
+      "duration_seconds": 1.7275350010000001
+    },
+    {
+      "motion_id": "short_phrase_product_fold_text",
+      "status": "passed",
+      "duration_seconds": 1.7473776509999999
+    },
+    {
+      "motion_id": "short_phrase_product_glare_hover",
+      "status": "passed",
+      "duration_seconds": 1.7019766760000001
+    },
+    {
+      "motion_id": "short_phrase_product_glow_cursor",
+      "status": "passed",
+      "duration_seconds": 1.7135436880000001
+    },
+    {
+      "motion_id": "short_phrase_product_gradual_blur",
+      "status": "passed",
+      "duration_seconds": 1.711247764
+    },
+    {
+      "motion_id": "short_phrase_product_kinetic_center_build",
+      "status": "passed",
+      "duration_seconds": 1.9638605390000001
+    },
+    {
+      "motion_id": "short_phrase_product_line_by_line_slide",
+      "status": "passed",
+      "duration_seconds": 1.899294497
+    },
+    {
+      "motion_id": "short_phrase_product_masked_heading",
+      "status": "passed",
+      "duration_seconds": 1.778352116
+    },
+    {
+      "motion_id": "short_phrase_product_per_word_rise",
+      "status": "passed",
+      "duration_seconds": 1.710874863
+    },
+    {
+      "motion_id": "short_phrase_product_perspective_marquee",
+      "status": "passed",
+      "duration_seconds": 1.690418106
+    },
+    {
+      "motion_id": "short_phrase_product_scan_band",
+      "status": "passed",
+      "duration_seconds": 1.7012342
+    },
+    {
+      "motion_id": "short_phrase_product_scramble_reveal",
+      "status": "passed",
+      "duration_seconds": 1.667051227
+    },
+    {
+      "motion_id": "short_phrase_product_scrambled_text",
+      "status": "passed",
+      "duration_seconds": 1.728445986
+    },
+    {
+      "motion_id": "short_phrase_product_scroll_reveal",
+      "status": "passed",
+      "duration_seconds": 1.739774085
+    },
+    {
+      "motion_id": "short_phrase_product_shape_blur",
+      "status": "passed",
+      "duration_seconds": 1.698480976
+    },
+    {
+      "motion_id": "short_phrase_product_strikethrough_replace",
+      "status": "passed",
+      "duration_seconds": 1.650074151
+    },
+    {
+      "motion_id": "short_phrase_product_text_match_cut",
+      "status": "passed",
+      "duration_seconds": 1.696036961
+    },
+    {
+      "motion_id": "short_phrase_product_text_shimmer",
+      "status": "passed",
+      "duration_seconds": 1.781445974
+    },
+    {
+      "motion_id": "short_phrase_product_weight_wave",
+      "status": "passed",
+      "duration_seconds": 1.760566311
+    },
+    {
+      "motion_id": "short_phrase_scale_settle_word",
+      "status": "passed",
+      "duration_seconds": 1.704321308
+    },
+    {
+      "motion_id": "short_phrase_semantic_chain_curve",
+      "status": "passed",
+      "duration_seconds": 1.728754479
+    },
+    {
+      "motion_id": "short_phrase_semantic_two_line",
+      "status": "passed",
+      "duration_seconds": 1.726221077
+    },
+    {
+      "motion_id": "short_phrase_shape_phrase_wipe",
+      "status": "passed",
+      "duration_seconds": 1.671941093
+    },
+    {
+      "motion_id": "short_phrase_simple_progressive_phrase",
+      "status": "passed",
+      "duration_seconds": 1.6918386829999998
+    },
+    {
+      "motion_id": "short_phrase_single_word_swap",
+      "status": "passed",
+      "duration_seconds": 1.6764128600000001
+    },
+    {
+      "motion_id": "short_phrase_word_cascade_sentence",
+      "status": "passed",
+      "duration_seconds": 1.742708556
+    },
+    {
+      "motion_id": "short_phrase_word_mask_sequence",
+      "status": "passed",
+      "duration_seconds": 1.64449068
+    }
+  ]
+}

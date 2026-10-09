@@ -38,7 +38,9 @@ const (
 	// unmeasured cost of a backlogged batch (the lane is the serialization
 	// point), and the reason a bigger pipeline_workers count does not raise
 	// throughput on its own.
-	GPULaneWaitUS = "gpu_lane_wait_us"
+	GPULaneWaitUS                       = "gpu_lane_wait_us"
+	DaemonAdmissionWaitMS               = "daemon_admission_wait_ms"                 // producer-supplied queue wait
+	ChrononReceiptDaemonAdmissionWaitMS = "chronon_receipt_daemon_admission_wait_ms" // Chronon daemon admission wait
 
 	// Detailed sub-phase timings inside PrepareJob.
 	PrepareTotalUS        = "prepare_total_us"
@@ -225,7 +227,9 @@ var vocab = map[string]string{
 	OverlayCompileMS: UnitMS, AssetMaterializeMS: UnitMS, PlanMS: UnitMS,
 	SubtitleBurnMS: UnitMS, RenderMS: UnitMS, ProbeMS: UnitMS, SHA256MS: UnitMS,
 	ObjectStoreUploadMS: UnitMS, PublishMS: UnitMS, DrivePublishMS: UnitMS,
-	TotalMS: UnitMS, GPULaneWaitMS: UnitMS,
+	TotalMS: UnitMS, GPULaneWaitMS: UnitMS, DaemonAdmissionWaitMS: UnitMS,
+	ChrononReceiptDaemonAdmissionWaitMS: UnitMS,
+
 	PrepareTotalMS: UnitMS, PrepareMaterializeMS: UnitMS, PrepareSceneCompileMS: UnitMS,
 	PrepareAssetResolveMS: UnitMS, PrepareBurnMS: UnitMS, PrepareMarshalMS: UnitMS,
 	PreparePrefetchMS: UnitMS,

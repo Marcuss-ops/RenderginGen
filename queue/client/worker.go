@@ -164,6 +164,11 @@ func (c *Client) Fail(ctx context.Context, id, workerID, reason string) error {
 	return c.report(ctx, id, workerID, "fail", map[string]string{"reason": reason})
 }
 
+// FailPermanently reports a non-retryable failure, bypassing max_attempts.
+func (c *Client) FailPermanently(ctx context.Context, id, workerID, reason string) error {
+	return c.report(ctx, id, workerID, "fail-permanent", map[string]string{"reason": reason})
+}
+
 // Rendered reports a job whose render completed and was durably stored, but
 // whose external publication (Drive) failed. The job stays claimable for a
 // publication-only retry.

@@ -257,6 +257,11 @@ func TelemetryMetrics(raw json.RawMessage) map[string]float64 {
 	// encoder backpressure (native path).
 	project("chronon_job_encoder_backpressure_wait_ms", "job", "encoder",
 		"backpressure_wait_ms")
+	// Daemon admission is engine-owned execution latency, distinct from the
+	// producer's queue measurement with the same raw field name. It comes from
+	// the bounded frame-timing sidecar's job object, not the media receipt's
+	// post-render verification timing_ms block.
+	project("chronon_receipt_daemon_admission_wait_ms", "job", "daemon_admission_wait_ms")
 	return out
 }
 

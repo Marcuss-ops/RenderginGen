@@ -564,6 +564,9 @@ type AnimationTrack struct {
 	Property  string              `json:"property,omitempty"`
 	Keyframes []AnimationKeyframe `json:"keyframes"`
 	Easing    string              `json:"easing,omitempty"`
+	// Component identifies a catalog-owned shape/text component track and is
+	// transient compiler metadata; the Chronon wire remains just the track.
+	Component string `json:"-"`
 }
 
 type AnimationKeyframe struct {
@@ -624,17 +627,18 @@ type Layer struct {
 	Masks             []LayerMask             `json:"masks,omitempty"`
 	// These transient relations keep premium frame geometry aligned when the
 	// processor resolves an entity image's final source-aspect size.
-	PremiumParentImageID  string    `json:"-"`
-	PremiumParentSize     []float64 `json:"-"`
-	PremiumSizeScale      []float64 `json:"-"`
-	PremiumPositionOffset []float64 `json:"-"`
-	PremiumRadiusScale    float64   `json:"-"`
-	PremiumZOffset        float64   `json:"-"`
-	PremiumShapeKind      string    `json:"-"`
-	PremiumPathKind       string    `json:"-"`
-	PremiumCanvasSize     bool      `json:"-"`
-	PremiumSyncTransform  bool      `json:"-"`
-	PremiumWipeMask       bool      `json:"-"`
+	PremiumParentImageID    string    `json:"-"`
+	PremiumParentSize       []float64 `json:"-"`
+	PremiumSizeScale        []float64 `json:"-"`
+	PremiumPositionOffset   []float64 `json:"-"`
+	PremiumRadiusScale      float64   `json:"-"`
+	PremiumZOffset          float64   `json:"-"`
+	PremiumShapeKind        string    `json:"-"`
+	PremiumPathKind         string    `json:"-"`
+	PremiumCanvasSize       bool      `json:"-"`
+	PremiumSyncTransform    bool      `json:"-"`
+	PremiumAbsolutePosition bool      `json:"-"`
+	PremiumWipeMask         bool      `json:"-"`
 	// FrameStroke is transient compiler metadata expanded to a native shape
 	// layer after the media layer is compiled; it never crosses the Chronon wire.
 	FrameStroke *LayerStroke `json:"-"`
@@ -728,7 +732,7 @@ type LayerMask struct {
 // LayerMaskParameterTrack is one scalar mask parameter animation. Values are
 // layer-relative frames like every other track.
 type LayerMaskParameterTrack struct {
-	Property  string              `json:"property"`
+	Property  string              `json:"property,omitempty"`
 	Keyframes []AnimationKeyframe `json:"keyframes"`
 	Easing    string              `json:"easing,omitempty"`
 }

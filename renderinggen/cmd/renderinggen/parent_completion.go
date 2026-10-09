@@ -6,15 +6,13 @@ import (
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/workerlog"
 )
 
-// tryFinalizeParent is intentionally best-effort: a child completion can be
-// observed before its siblings, so an incomplete parent is normal. The
-// finalizer itself performs the second children read and atomic claim, which
-// makes concurrent attempts and worker restarts safe.
-//
-// It stays SYNCHRONOUS on the post pool, deliberately. A child completion is the
-// only trigger for parent finalization in this worker — there is no periodic
-// sweep that would adopt a detached attempt — so detaching it would let one
-// failed attempt strand the parent until an unrelated event re-triggered it.
+// tryFinalizeParent is the low-latency, synchronous trigger after a child is
+// completed. An incomplete parent is normal while sibling work is outstanding;
+// the finalizer performs the children read and atomic claim so concurrent
+// triggers and worker restarts are safe. A periodic RecoverableParents sweep
+// independently retries missed triggers and expired finalizer leases; it runs
+// at the configured ClaimLongPoll interval, so lease recovery is bounded by
+// that sweep cadence rather than immediate at lease expiry.
 // What it does NOT do is pay for the child family twice: the finalizer derives
 // the expected frame range from the same read it validates
 // (ParentFinalizer.FinalizeFromChildren), so a completed chunk no longer issues

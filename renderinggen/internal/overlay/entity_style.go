@@ -4,8 +4,6 @@ import (
 	"crypto/sha256"
 	"encoding/binary"
 	"strings"
-
-	motioncert "github.com/Marcuss-ops/RenderingGen/renderinggen/motion-certification"
 )
 
 // typewriterCaptionPrefix identifies the typewriter caption class: the only
@@ -500,31 +498,6 @@ func (reg *entityStyleRegistryType) query(tags []string) []int {
 	return result
 }
 
-// entityCardRuntimeImageMotion lets a requested motion reach the renderer
-// untouched unless a recorded strict-GPU run named it as failed: the embedded
-// motioncert snapshot is the evidence, not a remembered allowlist. A recorded
-// failure falls back to a motion the strict Vulkan/NVENC lane certified,
-// deterministically seeded by the caller (the caller logs the swap). An
-// unverified motion passes through — the runtime lane decides its fate — so
-// the entity surface exposes the full catalog again instead of the two canary
-// motions that survived the old allowlist.
-func entityCardRuntimeImageMotion(requested, seed string) string {
-	if strings.TrimSpace(requested) == "" {
-		return requested
-	}
-	snapshot, err := certificationSnapshot()
-	if err != nil {
-		// No readable evidence: pass the request through rather than silently
-		// substituting a motion the producer never asked for.
-		return requested
-	}
-	if snapshot.Status(requested).Status != motioncert.StatusFailed {
-		return requested
-	}
-	certified := [...]string{"image_border_draw_in", "image_border_expand"}
-	return certified[styleHash("entity_gpu_image_motion", seed, "", "", uint64(len(certified)))]
-}
-
 var entityStyleAliases = map[string]string{
 	"center_top":         "01_entity_pitch_lift_text_below",
 	"vertical_editorial": "02_entity_yaw_flip_text_below",
@@ -651,10 +624,8 @@ func ResolveEntityStyle(styleID, planID, videoID, itemID string) (entityStyleVar
 // while keeping the scene camera opt-in: only the "camera" selectors carry a
 // CameraMotionID, every other selector class clears it so a plain card cannot
 // hijack the plan's single scene camera controller. Image and caption motions
-// are left exactly as authored — Chronon's strict GPU lane executes them (the
-// 2.5D image family was rendered and frame-verified on vulkan_native), and a
-// motion a recorded strict-GPU run failed is swapped by
-// entityCardRuntimeImageMotion at the compile sites.
+// are left exactly as authored. The motion ID selected by a producer or style
+// must reach Chronon unchanged so strict GPU failures remain visible.
 func makeEntityStyleRuntimeSafe(style entityStyleVariant) entityStyleVariant {
 	style.CameraMotionID = ""
 	return style

@@ -5,13 +5,14 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"github.com/Marcuss-ops/RenderingGen/queue/internal/model"
-	"github.com/Marcuss-ops/RenderingGen/queue/internal/repository/memory"
-	"github.com/Marcuss-ops/RenderingGen/queue/internal/service"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
+
+	"github.com/Marcuss-ops/RenderingGen/queue/internal/model"
+	"github.com/Marcuss-ops/RenderingGen/queue/internal/repository/memory"
+	"github.com/Marcuss-ops/RenderingGen/queue/internal/service"
 )
 
 func newServer(t *testing.T) *httptest.Server {
@@ -31,6 +32,36 @@ func post(t *testing.T, url, body string) *http.Response {
 	}
 	t.Cleanup(func() { resp.Body.Close() })
 	return resp
+}
+
+func TestFailPermanentlyMakesJobTerminal(t *testing.T) {
+	ts := newServer(t)
+	resp := post(t, ts.URL+"/jobs", `{"id":"drive-terminal","render_plan":{},"assets":[]}`)
+	if resp.StatusCode != http.StatusCreated {
+		t.Fatalf("submit: status=%d", resp.StatusCode)
+	}
+	resp = post(t, ts.URL+"/jobs/claim", `{"worker":"worker-1"}`)
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("claim: status=%d", resp.StatusCode)
+	}
+	resp.Body.Close()
+	resp = post(t, ts.URL+"/jobs/drive-terminal/fail-permanent", `{"worker":"worker-1","data":{"reason":"Drive publisher unavailable"}}`)
+	if resp.StatusCode != http.StatusNoContent {
+		t.Fatalf("permanent fail: status=%d", resp.StatusCode)
+	}
+	resp.Body.Close()
+	resp, err := http.Get(ts.URL + "/jobs/drive-terminal")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.Body.Close()
+	var job map[string]any
+	if err := json.NewDecoder(resp.Body).Decode(&job); err != nil {
+		t.Fatal(err)
+	}
+	if job["state"] != string(model.StateFailed) || job["fail_reason"] != "Drive publisher unavailable" {
+		t.Fatalf("job state/reason=%v/%v, want failed/permanent reason", job["state"], job["fail_reason"])
+	}
 }
 
 func TestSubmitClaimCompleteFlow(t *testing.T) {
@@ -69,6 +100,20 @@ func TestSubmitClaimCompleteFlow(t *testing.T) {
 	resp = post(t, ts.URL+"/jobs/job-1/complete", `{"worker":"w1","data":{"storage_key":"sha-job-1","artifact_hash":"sha-job-1","size_bytes":1,"content_type":"video/mp4"}}`)
 	if resp.StatusCode != http.StatusNoContent {
 		t.Fatalf("complete: want 204, got %d", resp.StatusCode)
+	}
+}
+
+func TestSubmitRejectsInvalidPublicationMetadata(t *testing.T) {
+	ts := newServer(t)
+	for _, body := range []string{
+		`{"id":"bad-policy","publication_policy":"publish_everywhere"}`,
+		`{"id":"negative-wait","daemon_admission_wait_ms":-1}`,
+		`{"id":"nan-wait","daemon_admission_wait_ms":1e999}`,
+	} {
+		resp := post(t, ts.URL+"/jobs", body)
+		if resp.StatusCode != http.StatusBadRequest {
+			t.Errorf("submit %s: status=%d, want 400", body, resp.StatusCode)
+		}
 	}
 }
 

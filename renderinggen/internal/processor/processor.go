@@ -308,7 +308,7 @@ func (p *Processor) Process(ctx context.Context, job *queue.Job) (queue.Artifact
 	if err != nil {
 		return queue.Artifact{}, err
 	}
-	return p.Publish(ctx, job.ID, job.JobType, artifact)
+	return p.Publish(ctx, job.ID, job.JobType, job.PublicationPolicy, artifact)
 }
 
 // Render runs the render pipeline — validate, compile, materialize, plan.json,

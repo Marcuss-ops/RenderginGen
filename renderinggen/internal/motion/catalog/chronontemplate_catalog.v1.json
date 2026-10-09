@@ -36010,6 +36010,2138 @@
         }
       ],
       "text_animators": []
+    },
+    {
+      "id": "phrase_red_underline_sweep",
+      "category": "phrase_highlight_v1",
+      "targets": [
+        "text",
+        "phrase",
+        "important_phrase"
+      ],
+      "unit": "layer",
+      "enter": 78,
+      "exit": 9,
+      "render_safe": true,
+      "tracks": [
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.0
+            },
+            {
+              "frame": 22,
+              "value": 1.0
+            },
+            {
+              "frame": 78,
+              "value": 1.0
+            }
+          ],
+          "easing": "linear"
+        }
+      ],
+      "layer_components": [
+        {
+          "id": "underline",
+          "type": "shape",
+          "shape": "rect",
+          "placement": "before_image",
+          "absolute_position": false,
+          "absolute_radius": false,
+          "size_scale": [
+            0.7708333134651184,
+            0.006481481250375509
+          ],
+          "position_offset": [
+            0.0,
+            0.0
+          ],
+          "position_scale": [
+            0.5,
+            0.5962963104248047
+          ],
+          "radius_scale": 3.5,
+          "fill": [
+            1.0,
+            0.062745101749897,
+            0.0941176488995552,
+            1.0
+          ],
+          "opacity": 1.0,
+          "tracks": [
+            {
+              "property": "scale_x",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0.009999999776482582
+                },
+                {
+                  "frame": 32,
+                  "value": 0.009999999776482582
+                },
+                {
+                  "frame": 62,
+                  "value": 1.0
+                },
+                {
+                  "frame": 78,
+                  "value": 1.0
+                }
+              ],
+              "easing": "linear"
+            },
+            {
+              "property": "position_x",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": -740.0
+                },
+                {
+                  "frame": 32,
+                  "value": -740.0
+                },
+                {
+                  "frame": 62,
+                  "value": 0.0
+                },
+                {
+                  "frame": 78,
+                  "value": 0.0
+                }
+              ],
+              "easing": "linear"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "phrase_warm_marker_sweep",
+      "category": "phrase_highlight_v1",
+      "targets": [
+        "text",
+        "phrase",
+        "important_phrase"
+      ],
+      "unit": "layer",
+      "enter": 78,
+      "exit": 9,
+      "render_safe": true,
+      "tracks": [
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.0
+            },
+            {
+              "frame": 22,
+              "value": 1.0
+            },
+            {
+              "frame": 78,
+              "value": 1.0
+            }
+          ],
+          "easing": "linear"
+        }
+      ],
+      "layer_components": [
+        {
+          "id": "marker",
+          "type": "shape",
+          "shape": "rect",
+          "placement": "before_image",
+          "absolute_position": false,
+          "absolute_radius": false,
+          "size_scale": [
+            0.7395833134651184,
+            0.02222222276031971
+          ],
+          "position_offset": [
+            0.0,
+            0.0
+          ],
+          "position_scale": [
+            0.5,
+            0.6009259223937988
+          ],
+          "radius_scale": 12.0,
+          "fill": [
+            0.9137254953384399,
+            0.7137255072593689,
+            0.41960784792900085,
+            1.0
+          ],
+          "opacity": 0.6200000047683716,
+          "tracks": [
+            {
+              "property": "scale_x",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0.009999999776482582
+                },
+                {
+                  "frame": 38,
+                  "value": 0.009999999776482582
+                },
+                {
+                  "frame": 68,
+                  "value": 1.0
+                },
+                {
+                  "frame": 78,
+                  "value": 1.0
+                }
+              ],
+              "easing": "linear"
+            },
+            {
+              "property": "position_x",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": -710.0
+                },
+                {
+                  "frame": 38,
+                  "value": -710.0
+                },
+                {
+                  "frame": 68,
+                  "value": 0.0
+                },
+                {
+                  "frame": 78,
+                  "value": 0.0
+                }
+              ],
+              "easing": "linear"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "phrase_center_out_underline",
+      "category": "phrase_highlight_v1",
+      "targets": [
+        "text",
+        "phrase",
+        "important_phrase"
+      ],
+      "unit": "layer",
+      "enter": 78,
+      "exit": 9,
+      "render_safe": true,
+      "tracks": [
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.0
+            },
+            {
+              "frame": 22,
+              "value": 1.0
+            },
+            {
+              "frame": 78,
+              "value": 1.0
+            }
+          ],
+          "easing": "linear"
+        }
+      ],
+      "layer_components": [
+        {
+          "id": "center_rule",
+          "type": "shape",
+          "shape": "rect",
+          "placement": "before_image",
+          "absolute_position": false,
+          "absolute_radius": false,
+          "size_scale": [
+            0.65625,
+            0.0055555556900799274
+          ],
+          "position_offset": [
+            0.0,
+            0.0
+          ],
+          "position_scale": [
+            0.5,
+            0.5962963104248047
+          ],
+          "radius_scale": 3.0,
+          "fill": [
+            0.9686274528503418,
+            0.9607843160629272,
+            0.9450980424880981,
+            1.0
+          ],
+          "opacity": 0.8999999761581421,
+          "tracks": [
+            {
+              "property": "scale_x",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0.009999999776482582
+                },
+                {
+                  "frame": 42,
+                  "value": 1.0
+                },
+                {
+                  "frame": 78,
+                  "value": 1.0
+                }
+              ],
+              "easing": "out_cubic"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "phrase_double_rule",
+      "category": "phrase_highlight_v1",
+      "targets": [
+        "text",
+        "phrase",
+        "important_phrase"
+      ],
+      "unit": "layer",
+      "enter": 78,
+      "exit": 9,
+      "render_safe": true,
+      "tracks": [
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.0
+            },
+            {
+              "frame": 22,
+              "value": 1.0
+            },
+            {
+              "frame": 78,
+              "value": 1.0
+            }
+          ],
+          "easing": "linear"
+        }
+      ],
+      "layer_components": [
+        {
+          "id": "upper_rule",
+          "type": "shape",
+          "shape": "rect",
+          "placement": "before_image",
+          "absolute_position": false,
+          "absolute_radius": false,
+          "size_scale": [
+            0.78125,
+            0.004629629664123058
+          ],
+          "position_offset": [
+            0.0,
+            0.0
+          ],
+          "position_scale": [
+            0.5,
+            0.5916666984558105
+          ],
+          "radius_scale": 2.5,
+          "fill": [
+            1.0,
+            0.062745101749897,
+            0.0941176488995552,
+            1.0
+          ],
+          "opacity": 0.949999988079071,
+          "tracks": [
+            {
+              "property": "scale_x",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0.009999999776482582
+                },
+                {
+                  "frame": 30,
+                  "value": 0.009999999776482582
+                },
+                {
+                  "frame": 58,
+                  "value": 1.0
+                },
+                {
+                  "frame": 78,
+                  "value": 1.0
+                }
+              ],
+              "easing": "linear"
+            },
+            {
+              "property": "position_x",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": -750.0
+                },
+                {
+                  "frame": 30,
+                  "value": -750.0
+                },
+                {
+                  "frame": 58,
+                  "value": 0.0
+                },
+                {
+                  "frame": 78,
+                  "value": 0.0
+                }
+              ],
+              "easing": "linear"
+            }
+          ]
+        },
+        {
+          "id": "lower_rule",
+          "type": "shape",
+          "shape": "rect",
+          "placement": "before_image",
+          "absolute_position": false,
+          "absolute_radius": false,
+          "size_scale": [
+            0.6875,
+            0.0027777778450399637
+          ],
+          "position_offset": [
+            0.0,
+            0.0
+          ],
+          "position_scale": [
+            0.5,
+            0.604629635810852
+          ],
+          "radius_scale": 1.5,
+          "fill": [
+            0.9686274528503418,
+            0.9607843160629272,
+            0.9450980424880981,
+            1.0
+          ],
+          "opacity": 0.7200000286102295,
+          "tracks": [
+            {
+              "property": "scale_x",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0.009999999776482582
+                },
+                {
+                  "frame": 43,
+                  "value": 0.009999999776482582
+                },
+                {
+                  "frame": 72,
+                  "value": 1.0
+                },
+                {
+                  "frame": 78,
+                  "value": 1.0
+                }
+              ],
+              "easing": "linear"
+            },
+            {
+              "property": "position_x",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": -660.0
+                },
+                {
+                  "frame": 43,
+                  "value": -660.0
+                },
+                {
+                  "frame": 72,
+                  "value": 0.0
+                },
+                {
+                  "frame": 78,
+                  "value": 0.0
+                }
+              ],
+              "easing": "linear"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "phrase_delayed_accent",
+      "category": "phrase_highlight_v1",
+      "targets": [
+        "text",
+        "phrase",
+        "important_phrase"
+      ],
+      "unit": "layer",
+      "enter": 88,
+      "exit": 9,
+      "render_safe": true,
+      "tracks": [
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.0
+            },
+            {
+              "frame": 22,
+              "value": 1.0
+            },
+            {
+              "frame": 88,
+              "value": 1.0
+            }
+          ],
+          "easing": "linear"
+        }
+      ],
+      "layer_components": [
+        {
+          "id": "late_rule",
+          "type": "shape",
+          "shape": "rect",
+          "placement": "before_image",
+          "absolute_position": false,
+          "absolute_radius": false,
+          "size_scale": [
+            0.8020833134651184,
+            0.008333333767950535
+          ],
+          "position_offset": [
+            0.0,
+            0.0
+          ],
+          "position_scale": [
+            0.5,
+            0.5962963104248047
+          ],
+          "radius_scale": 4.5,
+          "fill": [
+            0.8509804010391235,
+            0.29019609093666077,
+            0.2705882489681244,
+            1.0
+          ],
+          "opacity": 0.8999999761581421,
+          "tracks": [
+            {
+              "property": "scale_x",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0.009999999776482582
+                },
+                {
+                  "frame": 54,
+                  "value": 0.009999999776482582
+                },
+                {
+                  "frame": 77,
+                  "value": 1.0
+                },
+                {
+                  "frame": 78,
+                  "value": 1.0
+                }
+              ],
+              "easing": "linear"
+            },
+            {
+              "property": "position_x",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": -770.0
+                },
+                {
+                  "frame": 54,
+                  "value": -770.0
+                },
+                {
+                  "frame": 77,
+                  "value": 0.0
+                },
+                {
+                  "frame": 78,
+                  "value": 0.0
+                }
+              ],
+              "easing": "linear"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "phrase_soft_pulse",
+      "category": "phrase_highlight_v1",
+      "targets": [
+        "text",
+        "phrase",
+        "important_phrase"
+      ],
+      "unit": "layer",
+      "enter": 78,
+      "exit": 9,
+      "render_safe": true,
+      "tracks": [
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.0
+            },
+            {
+              "frame": 22,
+              "value": 1.0
+            },
+            {
+              "frame": 78,
+              "value": 1.0
+            }
+          ],
+          "easing": "linear"
+        }
+      ],
+      "layer_components": [
+        {
+          "id": "soft_marker",
+          "type": "shape",
+          "shape": "rect",
+          "placement": "before_image",
+          "absolute_position": false,
+          "absolute_radius": false,
+          "size_scale": [
+            0.7708333134651184,
+            0.025925925001502037
+          ],
+          "position_offset": [
+            0.0,
+            0.0
+          ],
+          "position_scale": [
+            0.5,
+            0.6018518209457397
+          ],
+          "radius_scale": 0.0,
+          "fill": [
+            0.7882353067398071,
+            0.5098039507865906,
+            0.3333333432674408,
+            1.0
+          ],
+          "opacity": 0.4399999976158142,
+          "tracks": [
+            {
+              "property": "scale_x",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0.9399999976158142
+                },
+                {
+                  "frame": 34,
+                  "value": 1.0
+                },
+                {
+                  "frame": 78,
+                  "value": 1.0
+                }
+              ],
+              "easing": "out_cubic"
+            },
+            {
+              "property": "opacity",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0.0
+                },
+                {
+                  "frame": 38,
+                  "value": 0.4399999976158142
+                },
+                {
+                  "frame": 50,
+                  "value": 0.2800000011920929
+                },
+                {
+                  "frame": 64,
+                  "value": 0.4399999976158142
+                },
+                {
+                  "frame": 78,
+                  "value": 0.4399999976158142
+                }
+              ],
+              "easing": "in_out_sine"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "phrase_short_keyword_rule",
+      "category": "phrase_highlight_v1",
+      "targets": [
+        "text",
+        "phrase",
+        "important_phrase"
+      ],
+      "unit": "layer",
+      "enter": 78,
+      "exit": 9,
+      "render_safe": true,
+      "tracks": [
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.0
+            },
+            {
+              "frame": 22,
+              "value": 1.0
+            },
+            {
+              "frame": 78,
+              "value": 1.0
+            }
+          ],
+          "easing": "linear"
+        }
+      ],
+      "layer_components": [
+        {
+          "id": "keyword_rule",
+          "type": "shape",
+          "shape": "rect",
+          "placement": "before_image",
+          "absolute_position": false,
+          "absolute_radius": false,
+          "size_scale": [
+            0.28125,
+            0.007407407276332378
+          ],
+          "position_offset": [
+            0.0,
+            0.0
+          ],
+          "position_scale": [
+            0.5,
+            0.5962963104248047
+          ],
+          "radius_scale": 4.0,
+          "fill": [
+            1.0,
+            0.062745101749897,
+            0.0941176488995552,
+            1.0
+          ],
+          "opacity": 1.0,
+          "tracks": [
+            {
+              "property": "scale_x",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0.009999999776482582
+                },
+                {
+                  "frame": 36,
+                  "value": 0.009999999776482582
+                },
+                {
+                  "frame": 60,
+                  "value": 1.0
+                },
+                {
+                  "frame": 78,
+                  "value": 1.0
+                }
+              ],
+              "easing": "linear"
+            },
+            {
+              "property": "position_x",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": -270.0
+                },
+                {
+                  "frame": 36,
+                  "value": -270.0
+                },
+                {
+                  "frame": 60,
+                  "value": 0.0
+                },
+                {
+                  "frame": 78,
+                  "value": 0.0
+                }
+              ],
+              "easing": "linear"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "phrase_staggered_lines",
+      "category": "phrase_highlight_v1",
+      "targets": [
+        "text",
+        "phrase",
+        "important_phrase"
+      ],
+      "unit": "layer",
+      "enter": 78,
+      "exit": 9,
+      "render_safe": true,
+      "tracks": [
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.0
+            },
+            {
+              "frame": 22,
+              "value": 1.0
+            },
+            {
+              "frame": 78,
+              "value": 1.0
+            }
+          ],
+          "easing": "linear"
+        }
+      ],
+      "layer_components": [
+        {
+          "id": "first_accent",
+          "type": "shape",
+          "shape": "rect",
+          "placement": "before_image",
+          "absolute_position": false,
+          "absolute_radius": false,
+          "size_scale": [
+            0.5833333134651184,
+            0.01666666753590107
+          ],
+          "position_offset": [
+            0.0,
+            0.0
+          ],
+          "position_scale": [
+            0.5,
+            0.5935184955596924
+          ],
+          "radius_scale": 9.0,
+          "fill": [
+            0.9137254953384399,
+            0.7137255072593689,
+            0.41960784792900085,
+            1.0
+          ],
+          "opacity": 0.6800000071525574,
+          "tracks": [
+            {
+              "property": "scale_x",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0.009999999776482582
+                },
+                {
+                  "frame": 32,
+                  "value": 0.009999999776482582
+                },
+                {
+                  "frame": 57,
+                  "value": 1.0
+                },
+                {
+                  "frame": 78,
+                  "value": 1.0
+                }
+              ],
+              "easing": "linear"
+            },
+            {
+              "property": "position_x",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": -560.0
+                },
+                {
+                  "frame": 32,
+                  "value": -560.0
+                },
+                {
+                  "frame": 57,
+                  "value": 0.0
+                },
+                {
+                  "frame": 78,
+                  "value": 0.0
+                }
+              ],
+              "easing": "linear"
+            }
+          ]
+        },
+        {
+          "id": "second_accent",
+          "type": "shape",
+          "shape": "rect",
+          "placement": "before_image",
+          "absolute_position": false,
+          "absolute_radius": false,
+          "size_scale": [
+            0.3958333432674408,
+            0.004629629664123058
+          ],
+          "position_offset": [
+            0.0,
+            0.0
+          ],
+          "position_scale": [
+            0.5,
+            0.6083333492279053
+          ],
+          "radius_scale": 2.5,
+          "fill": [
+            1.0,
+            0.062745101749897,
+            0.0941176488995552,
+            1.0
+          ],
+          "opacity": 1.0,
+          "tracks": [
+            {
+              "property": "scale_x",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0.009999999776482582
+                },
+                {
+                  "frame": 48,
+                  "value": 0.009999999776482582
+                },
+                {
+                  "frame": 72,
+                  "value": 1.0
+                },
+                {
+                  "frame": 78,
+                  "value": 1.0
+                }
+              ],
+              "easing": "linear"
+            },
+            {
+              "property": "position_x",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": -380.0
+                },
+                {
+                  "frame": 48,
+                  "value": -380.0
+                },
+                {
+                  "frame": 72,
+                  "value": 0.0
+                },
+                {
+                  "frame": 78,
+                  "value": 0.0
+                }
+              ],
+              "easing": "linear"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "phrase_ivory_underline",
+      "category": "phrase_highlight_v1",
+      "targets": [
+        "text",
+        "phrase",
+        "important_phrase"
+      ],
+      "unit": "layer",
+      "enter": 78,
+      "exit": 9,
+      "render_safe": true,
+      "tracks": [
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.0
+            },
+            {
+              "frame": 22,
+              "value": 1.0
+            },
+            {
+              "frame": 78,
+              "value": 1.0
+            }
+          ],
+          "easing": "linear"
+        }
+      ],
+      "layer_components": [
+        {
+          "id": "ivory_rule",
+          "type": "shape",
+          "shape": "rect",
+          "placement": "before_image",
+          "absolute_position": false,
+          "absolute_radius": false,
+          "size_scale": [
+            0.71875,
+            0.004629629664123058
+          ],
+          "position_offset": [
+            0.0,
+            0.0
+          ],
+          "position_scale": [
+            0.5,
+            0.5962963104248047
+          ],
+          "radius_scale": 2.5,
+          "fill": [
+            0.9686274528503418,
+            0.9607843160629272,
+            0.9450980424880981,
+            1.0
+          ],
+          "opacity": 0.8999999761581421,
+          "tracks": [
+            {
+              "property": "scale_x",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0.009999999776482582
+                },
+                {
+                  "frame": 34,
+                  "value": 0.009999999776482582
+                },
+                {
+                  "frame": 64,
+                  "value": 1.0
+                },
+                {
+                  "frame": 78,
+                  "value": 1.0
+                }
+              ],
+              "easing": "linear"
+            },
+            {
+              "property": "position_x",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": -690.0
+                },
+                {
+                  "frame": 34,
+                  "value": -690.0
+                },
+                {
+                  "frame": 64,
+                  "value": 0.0
+                },
+                {
+                  "frame": 78,
+                  "value": 0.0
+                }
+              ],
+              "easing": "linear"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "phrase_red_marker_pulse",
+      "category": "phrase_highlight_v1",
+      "targets": [
+        "text",
+        "phrase",
+        "important_phrase"
+      ],
+      "unit": "layer",
+      "enter": 78,
+      "exit": 9,
+      "render_safe": true,
+      "tracks": [
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.0
+            },
+            {
+              "frame": 22,
+              "value": 1.0
+            },
+            {
+              "frame": 78,
+              "value": 1.0
+            }
+          ],
+          "easing": "linear"
+        }
+      ],
+      "layer_components": [
+        {
+          "id": "red_marker",
+          "type": "shape",
+          "shape": "rect",
+          "placement": "before_image",
+          "absolute_position": false,
+          "absolute_radius": false,
+          "size_scale": [
+            0.7604166865348816,
+            0.020370369777083397
+          ],
+          "position_offset": [
+            0.0,
+            0.0
+          ],
+          "position_scale": [
+            0.5,
+            0.6009259223937988
+          ],
+          "radius_scale": 0.0,
+          "fill": [
+            0.6627451181411743,
+            0.16862745583057404,
+            0.1764705926179886,
+            1.0
+          ],
+          "opacity": 0.6499999761581421,
+          "tracks": [
+            {
+              "property": "scale_x",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0.8199999928474426
+                },
+                {
+                  "frame": 36,
+                  "value": 1.0
+                },
+                {
+                  "frame": 54,
+                  "value": 0.9599999785423279
+                },
+                {
+                  "frame": 78,
+                  "value": 1.0
+                }
+              ],
+              "easing": "out_cubic"
+            },
+            {
+              "property": "opacity",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0.0
+                },
+                {
+                  "frame": 30,
+                  "value": 0.6499999761581421
+                },
+                {
+                  "frame": 44,
+                  "value": 0.3799999952316284
+                },
+                {
+                  "frame": 58,
+                  "value": 0.6499999761581421
+                },
+                {
+                  "frame": 78,
+                  "value": 0.6499999761581421
+                }
+              ],
+              "easing": "in_out_sine"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "phrase_offset_double_rule",
+      "category": "phrase_highlight_v1",
+      "targets": [
+        "text",
+        "phrase",
+        "important_phrase"
+      ],
+      "unit": "layer",
+      "enter": 78,
+      "exit": 9,
+      "render_safe": true,
+      "tracks": [
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.0
+            },
+            {
+              "frame": 22,
+              "value": 1.0
+            },
+            {
+              "frame": 78,
+              "value": 1.0
+            }
+          ],
+          "easing": "linear"
+        }
+      ],
+      "layer_components": [
+        {
+          "id": "long_rule",
+          "type": "shape",
+          "shape": "rect",
+          "placement": "before_image",
+          "absolute_position": false,
+          "absolute_radius": false,
+          "size_scale": [
+            0.7395833134651184,
+            0.004629629664123058
+          ],
+          "position_offset": [
+            0.0,
+            0.0
+          ],
+          "position_scale": [
+            0.5,
+            0.5935184955596924
+          ],
+          "radius_scale": 2.5,
+          "fill": [
+            1.0,
+            0.062745101749897,
+            0.0941176488995552,
+            1.0
+          ],
+          "opacity": 1.0,
+          "tracks": [
+            {
+              "property": "scale_x",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0.009999999776482582
+                },
+                {
+                  "frame": 30,
+                  "value": 0.009999999776482582
+                },
+                {
+                  "frame": 56,
+                  "value": 1.0
+                },
+                {
+                  "frame": 78,
+                  "value": 1.0
+                }
+              ],
+              "easing": "linear"
+            },
+            {
+              "property": "position_x",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": -710.0
+                },
+                {
+                  "frame": 30,
+                  "value": -710.0
+                },
+                {
+                  "frame": 56,
+                  "value": 0.0
+                },
+                {
+                  "frame": 78,
+                  "value": 0.0
+                }
+              ],
+              "easing": "linear"
+            }
+          ]
+        },
+        {
+          "id": "short_rule",
+          "type": "shape",
+          "shape": "rect",
+          "placement": "before_image",
+          "absolute_position": false,
+          "absolute_radius": false,
+          "size_scale": [
+            0.4375,
+            0.003703703638166189
+          ],
+          "position_offset": [
+            0.0,
+            0.0
+          ],
+          "position_scale": [
+            0.5,
+            0.6064814925193787
+          ],
+          "radius_scale": 2.0,
+          "fill": [
+            0.9137254953384399,
+            0.7137255072593689,
+            0.41960784792900085,
+            1.0
+          ],
+          "opacity": 0.8999999761581421,
+          "tracks": [
+            {
+              "property": "scale_x",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0.009999999776482582
+                },
+                {
+                  "frame": 47,
+                  "value": 0.009999999776482582
+                },
+                {
+                  "frame": 73,
+                  "value": 1.0
+                },
+                {
+                  "frame": 78,
+                  "value": 1.0
+                }
+              ],
+              "easing": "linear"
+            },
+            {
+              "property": "position_x",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": -420.0
+                },
+                {
+                  "frame": 47,
+                  "value": -420.0
+                },
+                {
+                  "frame": 73,
+                  "value": 0.0
+                },
+                {
+                  "frame": 78,
+                  "value": 0.0
+                }
+              ],
+              "easing": "linear"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "phrase_gold_draw_on",
+      "category": "phrase_highlight_v1",
+      "targets": [
+        "text",
+        "phrase",
+        "important_phrase"
+      ],
+      "unit": "layer",
+      "enter": 88,
+      "exit": 9,
+      "render_safe": true,
+      "tracks": [
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.0
+            },
+            {
+              "frame": 22,
+              "value": 1.0
+            },
+            {
+              "frame": 88,
+              "value": 1.0
+            }
+          ],
+          "easing": "linear"
+        }
+      ],
+      "layer_components": [
+        {
+          "id": "gold_draw",
+          "type": "shape",
+          "shape": "rect",
+          "placement": "before_image",
+          "absolute_position": false,
+          "absolute_radius": false,
+          "size_scale": [
+            0.7708333134651184,
+            0.007407407276332378
+          ],
+          "position_offset": [
+            0.0,
+            0.0
+          ],
+          "position_scale": [
+            0.5,
+            0.5962963104248047
+          ],
+          "radius_scale": 4.0,
+          "fill": [
+            0.8352941274642944,
+            0.6509804129600525,
+            0.364705890417099,
+            1.0
+          ],
+          "opacity": 0.9200000166893005,
+          "tracks": [
+            {
+              "property": "scale_x",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0.009999999776482582
+                },
+                {
+                  "frame": 48,
+                  "value": 0.009999999776482582
+                },
+                {
+                  "frame": 76,
+                  "value": 1.0
+                },
+                {
+                  "frame": 78,
+                  "value": 1.0
+                }
+              ],
+              "easing": "linear"
+            },
+            {
+              "property": "position_x",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": -740.0
+                },
+                {
+                  "frame": 48,
+                  "value": -740.0
+                },
+                {
+                  "frame": 76,
+                  "value": 0.0
+                },
+                {
+                  "frame": 78,
+                  "value": 0.0
+                }
+              ],
+              "easing": "linear"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "phrase_center_dash",
+      "category": "phrase_highlight_v1",
+      "targets": [
+        "text",
+        "phrase",
+        "important_phrase"
+      ],
+      "unit": "layer",
+      "enter": 78,
+      "exit": 9,
+      "render_safe": true,
+      "tracks": [
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.0
+            },
+            {
+              "frame": 22,
+              "value": 1.0
+            },
+            {
+              "frame": 78,
+              "value": 1.0
+            }
+          ],
+          "easing": "linear"
+        }
+      ],
+      "layer_components": [
+        {
+          "id": "center_dash",
+          "type": "shape",
+          "shape": "rect",
+          "placement": "before_image",
+          "absolute_position": false,
+          "absolute_radius": false,
+          "size_scale": [
+            0.2447916716337204,
+            0.006481481250375509
+          ],
+          "position_offset": [
+            0.0,
+            0.0
+          ],
+          "position_scale": [
+            0.5,
+            0.5962963104248047
+          ],
+          "radius_scale": 3.5,
+          "fill": [
+            1.0,
+            0.062745101749897,
+            0.0941176488995552,
+            1.0
+          ],
+          "opacity": 1.0,
+          "tracks": [
+            {
+              "property": "scale_x",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0.009999999776482582
+                },
+                {
+                  "frame": 30,
+                  "value": 1.0
+                },
+                {
+                  "frame": 78,
+                  "value": 1.0
+                }
+              ],
+              "easing": "out_cubic"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "phrase_triple_editorial_rule",
+      "category": "phrase_highlight_v1",
+      "targets": [
+        "text",
+        "phrase",
+        "important_phrase"
+      ],
+      "unit": "layer",
+      "enter": 80,
+      "exit": 9,
+      "render_safe": true,
+      "tracks": [
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.0
+            },
+            {
+              "frame": 22,
+              "value": 1.0
+            },
+            {
+              "frame": 80,
+              "value": 1.0
+            }
+          ],
+          "easing": "linear"
+        }
+      ],
+      "layer_components": [
+        {
+          "id": "rule_top",
+          "type": "shape",
+          "shape": "rect",
+          "placement": "before_image",
+          "absolute_position": false,
+          "absolute_radius": false,
+          "size_scale": [
+            0.6458333134651184,
+            0.0027777778450399637
+          ],
+          "position_offset": [
+            0.0,
+            0.0
+          ],
+          "position_scale": [
+            0.5,
+            0.5898147821426392
+          ],
+          "radius_scale": 1.5,
+          "fill": [
+            0.9137254953384399,
+            0.7137255072593689,
+            0.41960784792900085,
+            1.0
+          ],
+          "opacity": 0.7200000286102295,
+          "tracks": [
+            {
+              "property": "scale_x",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0.009999999776482582
+                },
+                {
+                  "frame": 28,
+                  "value": 0.009999999776482582
+                },
+                {
+                  "frame": 54,
+                  "value": 1.0
+                },
+                {
+                  "frame": 78,
+                  "value": 1.0
+                }
+              ],
+              "easing": "linear"
+            },
+            {
+              "property": "position_x",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": -620.0
+                },
+                {
+                  "frame": 28,
+                  "value": -620.0
+                },
+                {
+                  "frame": 54,
+                  "value": 0.0
+                },
+                {
+                  "frame": 78,
+                  "value": 0.0
+                }
+              ],
+              "easing": "linear"
+            }
+          ]
+        },
+        {
+          "id": "rule_main",
+          "type": "shape",
+          "shape": "rect",
+          "placement": "before_image",
+          "absolute_position": false,
+          "absolute_radius": false,
+          "size_scale": [
+            0.78125,
+            0.006481481250375509
+          ],
+          "position_offset": [
+            0.0,
+            0.0
+          ],
+          "position_scale": [
+            0.5,
+            0.5972222089767456
+          ],
+          "radius_scale": 3.5,
+          "fill": [
+            1.0,
+            0.062745101749897,
+            0.0941176488995552,
+            1.0
+          ],
+          "opacity": 1.0,
+          "tracks": [
+            {
+              "property": "scale_x",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0.009999999776482582
+                },
+                {
+                  "frame": 38,
+                  "value": 0.009999999776482582
+                },
+                {
+                  "frame": 64,
+                  "value": 1.0
+                },
+                {
+                  "frame": 78,
+                  "value": 1.0
+                }
+              ],
+              "easing": "linear"
+            },
+            {
+              "property": "position_x",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": -750.0
+                },
+                {
+                  "frame": 38,
+                  "value": -750.0
+                },
+                {
+                  "frame": 64,
+                  "value": 0.0
+                },
+                {
+                  "frame": 78,
+                  "value": 0.0
+                }
+              ],
+              "easing": "linear"
+            }
+          ]
+        },
+        {
+          "id": "rule_bottom",
+          "type": "shape",
+          "shape": "rect",
+          "placement": "before_image",
+          "absolute_position": false,
+          "absolute_radius": false,
+          "size_scale": [
+            0.5104166865348816,
+            0.0027777778450399637
+          ],
+          "position_offset": [
+            0.0,
+            0.0
+          ],
+          "position_scale": [
+            0.5,
+            0.6074073910713196
+          ],
+          "radius_scale": 1.5,
+          "fill": [
+            0.9686274528503418,
+            0.9607843160629272,
+            0.9450980424880981,
+            1.0
+          ],
+          "opacity": 0.6200000047683716,
+          "tracks": [
+            {
+              "property": "scale_x",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0.009999999776482582
+                },
+                {
+                  "frame": 52,
+                  "value": 0.009999999776482582
+                },
+                {
+                  "frame": 78,
+                  "value": 1.0
+                },
+                {
+                  "frame": 79,
+                  "value": 1.0
+                }
+              ],
+              "easing": "linear"
+            },
+            {
+              "property": "position_x",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": -490.0
+                },
+                {
+                  "frame": 52,
+                  "value": -490.0
+                },
+                {
+                  "frame": 78,
+                  "value": 0.0
+                },
+                {
+                  "frame": 79,
+                  "value": 0.0
+                }
+              ],
+              "easing": "linear"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "phrase_split_marker",
+      "category": "phrase_highlight_v1",
+      "targets": [
+        "text",
+        "phrase",
+        "important_phrase"
+      ],
+      "unit": "layer",
+      "enter": 78,
+      "exit": 9,
+      "render_safe": true,
+      "tracks": [
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.0
+            },
+            {
+              "frame": 22,
+              "value": 1.0
+            },
+            {
+              "frame": 78,
+              "value": 1.0
+            }
+          ],
+          "easing": "linear"
+        }
+      ],
+      "layer_components": [
+        {
+          "id": "left_marker",
+          "type": "shape",
+          "shape": "rect",
+          "placement": "before_image",
+          "absolute_position": false,
+          "absolute_radius": false,
+          "size_scale": [
+            0.34375,
+            0.01666666753590107
+          ],
+          "position_offset": [
+            0.0,
+            0.0
+          ],
+          "position_scale": [
+            0.5,
+            0.6000000238418579
+          ],
+          "radius_scale": 9.0,
+          "fill": [
+            0.7882353067398071,
+            0.5098039507865906,
+            0.3333333432674408,
+            1.0
+          ],
+          "opacity": 0.6499999761581421,
+          "tracks": [
+            {
+              "property": "scale_x",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0.009999999776482582
+                },
+                {
+                  "frame": 28,
+                  "value": 0.009999999776482582
+                },
+                {
+                  "frame": 52,
+                  "value": 1.0
+                },
+                {
+                  "frame": 78,
+                  "value": 1.0
+                }
+              ],
+              "easing": "linear"
+            },
+            {
+              "property": "position_x",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": -330.0
+                },
+                {
+                  "frame": 28,
+                  "value": -330.0
+                },
+                {
+                  "frame": 52,
+                  "value": 0.0
+                },
+                {
+                  "frame": 78,
+                  "value": 0.0
+                }
+              ],
+              "easing": "linear"
+            }
+          ]
+        },
+        {
+          "id": "right_marker",
+          "type": "shape",
+          "shape": "rect",
+          "placement": "before_image",
+          "absolute_position": false,
+          "absolute_radius": false,
+          "size_scale": [
+            0.34375,
+            0.01666666753590107
+          ],
+          "position_offset": [
+            0.0,
+            0.0
+          ],
+          "position_scale": [
+            0.5,
+            0.6000000238418579
+          ],
+          "radius_scale": 0.0,
+          "fill": [
+            0.7882353067398071,
+            0.5098039507865906,
+            0.3333333432674408,
+            1.0
+          ],
+          "opacity": 0.6499999761581421,
+          "tracks": [
+            {
+              "property": "scale_x",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0.009999999776482582
+                },
+                {
+                  "frame": 43,
+                  "value": 1.0
+                },
+                {
+                  "frame": 78,
+                  "value": 1.0
+                }
+              ],
+              "easing": "out_cubic"
+            },
+            {
+              "property": "position_x",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 330.0
+                },
+                {
+                  "frame": 43,
+                  "value": 0.0
+                },
+                {
+                  "frame": 78,
+                  "value": 0.0
+                }
+              ],
+              "easing": "out_cubic"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "phrase_slow_reveal",
+      "category": "phrase_highlight_v1",
+      "targets": [
+        "text",
+        "phrase",
+        "important_phrase"
+      ],
+      "unit": "layer",
+      "enter": 88,
+      "exit": 9,
+      "render_safe": true,
+      "tracks": [
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.0
+            },
+            {
+              "frame": 22,
+              "value": 1.0
+            },
+            {
+              "frame": 88,
+              "value": 1.0
+            }
+          ],
+          "easing": "linear"
+        }
+      ],
+      "layer_components": [
+        {
+          "id": "slow_rule",
+          "type": "shape",
+          "shape": "rect",
+          "placement": "before_image",
+          "absolute_position": false,
+          "absolute_radius": false,
+          "size_scale": [
+            0.78125,
+            0.004629629664123058
+          ],
+          "position_offset": [
+            0.0,
+            0.0
+          ],
+          "position_scale": [
+            0.5,
+            0.5962963104248047
+          ],
+          "radius_scale": 2.5,
+          "fill": [
+            1.0,
+            0.062745101749897,
+            0.0941176488995552,
+            1.0
+          ],
+          "opacity": 0.8799999952316284,
+          "tracks": [
+            {
+              "property": "scale_x",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0.009999999776482582
+                },
+                {
+                  "frame": 46,
+                  "value": 0.009999999776482582
+                },
+                {
+                  "frame": 78,
+                  "value": 1.0
+                },
+                {
+                  "frame": 79,
+                  "value": 1.0
+                }
+              ],
+              "easing": "linear"
+            },
+            {
+              "property": "position_x",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": -750.0
+                },
+                {
+                  "frame": 46,
+                  "value": -750.0
+                },
+                {
+                  "frame": 78,
+                  "value": 0.0
+                },
+                {
+                  "frame": 79,
+                  "value": 0.0
+                }
+              ],
+              "easing": "linear"
+            }
+          ]
+        }
+      ]
     }
   ],
   "overlay_presets": {
@@ -36068,6 +38200,27 @@
     "phrase_motion_pool": [
       "kinetic_keyword_lock",
       "masked_vertical_lift",
+      "phrase_apple_clean_07_slide_up_soft",
+      "phrase_apple_clean_08_slide_up_spring",
+      "phrase_apple_clean_09_slide_down_catch",
+      "phrase_apple_clean_10_slide_from_right_apple",
+      "phrase_apple_clean_11_slide_left_ease",
+      "phrase_apple_clean_12_slide_diagonal_pop",
+      "phrase_apple_clean_13_scale_soft_pop",
+      "phrase_apple_clean_14_scale_bounce_clean",
+      "phrase_apple_clean_16_scale_line_build",
+      "phrase_apple_clean_17_scale_in_place",
+      "phrase_apple_clean_18_scale_card_tilt",
+      "phrase_apple_clean_19_tracking_tighten",
+      "phrase_apple_clean_20_tracking_spread_clean",
+      "phrase_apple_clean_21_tracking_magnetic",
+      "phrase_apple_clean_22_tracking_word_focus",
+      "phrase_apple_clean_24_tracking_soft_kinetic",
+      "phrase_apple_clean_25_opacity_soft_reveal",
+      "phrase_apple_clean_26_opacity_depth_push",
+      "phrase_apple_clean_27_opacity_parallax",
+      "phrase_apple_clean_28_opacity_cinematic",
+      "phrase_apple_clean_30_opacity_clean_apple",
       "precision_word_stagger",
       "typewriter_clean",
       "typewriter_glitch",
@@ -36091,7 +38244,23 @@
       "apple_vertical_glyph_lift",
       "apple_line_sweep",
       "apple_hero_statement",
-      "apple_cinematic_exit"
+      "apple_cinematic_exit",
+      "phrase_red_underline_sweep",
+      "phrase_warm_marker_sweep",
+      "phrase_center_out_underline",
+      "phrase_double_rule",
+      "phrase_delayed_accent",
+      "phrase_soft_pulse",
+      "phrase_short_keyword_rule",
+      "phrase_staggered_lines",
+      "phrase_ivory_underline",
+      "phrase_red_marker_pulse",
+      "phrase_offset_double_rule",
+      "phrase_gold_draw_on",
+      "phrase_center_dash",
+      "phrase_triple_editorial_rule",
+      "phrase_split_marker",
+      "phrase_slow_reveal"
     ]
   }
 }

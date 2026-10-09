@@ -97,8 +97,8 @@ func TestEntityCaptionEmitsImageAndCaptionWithSharedLifetime(t *testing.T) {
 	if caption.Style.Shadow == nil || caption.Style.Shadow.Blur < 6 || caption.Style.Shadow.Opacity < 0.6 {
 		t.Fatalf("caption shadow = %+v; want a soft cinematic separation from footage", caption.Style.Shadow)
 	}
-	if caption.Style.Glow == nil || caption.Style.Glow.Color != "#F8F5EA" || caption.Style.Glow.Radius < 10 || caption.Style.Glow.Intensity <= 0 || caption.Style.Glow.Intensity > 0.35 {
-		t.Fatalf("caption glow = %+v; want a restrained warm halo", caption.Style.Glow)
+	if caption.Style.Glow != nil {
+		t.Fatalf("caption glow = %+v; want no full-frame GPU halo", caption.Style.Glow)
 	}
 }
 

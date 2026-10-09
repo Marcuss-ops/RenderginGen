@@ -49,13 +49,14 @@ func animationForResolvedMotionTarget(id string, resolved *resolvedMotion, param
 // motionWindows is deliberately small and bounded: producers may tune the
 // readable timing window, but they cannot use motion_params to inject a new
 // animation contract. Values are frame counts at the plan's frame rate. Zero
-// uses the catalog entrance default; for exit_frames, explicit zero disables
-// the outro. Positive overrides must be integers in [1, 240].
+// uses the catalog entrance default; an omitted exit_frames keeps the preset or
+// catalog exit, while explicit zero disables it. Positive overrides must be
+// integers in [1, 240].
 func motionWindows(params map[string]any, presetExit int) (enter, exit int, err error) {
-	// A generated overlay is a reusable clip and must not animate away before
-	// its scheduled end. Keep the preset/catalog exit available only when the
-	// producer explicitly supplies a positive exit_frames value.
-	exit = -1
+	// The preset/catalog owns the default exit window. A producer can override
+	// it explicitly, and zero disables the exit without dropping the default
+	// value when the field is omitted.
+	exit = presetExit
 	if params == nil {
 		return 0, exit, nil
 	}
@@ -72,7 +73,6 @@ func motionWindows(params map[string]any, presetExit int) (enter, exit int, err 
 			exit = -1
 		}
 	}
-	_ = presetExit // retained in the signature for existing lowering call sites
 	return enter, exit, nil
 }
 

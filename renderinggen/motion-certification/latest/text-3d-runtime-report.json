@@ -1,0 +1,59 @@
+{
+  "generated_at_utc": "2026-10-09T14:46:53Z",
+  "backend": "vulkan",
+  "hardware_encoder": "nvenc",
+  "encoder_backend": "native",
+  "gpu_hot_path_mode": "require_gpu_native",
+  "motions": [
+    {
+      "motion_id": "text_3d_camera_push",
+      "status": "passed",
+      "duration_seconds": 2.7701445
+    },
+    {
+      "motion_id": "text_3d_double_axis_reveal",
+      "status": "passed",
+      "duration_seconds": 2.1253493900000002
+    },
+    {
+      "motion_id": "text_3d_orbit_lock",
+      "status": "passed",
+      "duration_seconds": 1.7321032669999998
+    },
+    {
+      "motion_id": "text_3d_perspective_drop",
+      "status": "passed",
+      "duration_seconds": 1.6766157160000001
+    },
+    {
+      "motion_id": "text_3d_pitch_lift",
+      "status": "passed",
+      "duration_seconds": 1.756810687
+    },
+    {
+      "motion_id": "text_3d_roll_depth",
+      "status": "passed",
+      "duration_seconds": 1.7060707750000002
+    },
+    {
+      "motion_id": "text_3d_tilt_rise",
+      "status": "passed",
+      "duration_seconds": 1.858447612
+    },
+    {
+      "motion_id": "text_3d_word_cascade",
+      "status": "passed",
+      "duration_seconds": 1.936254269
+    },
+    {
+      "motion_id": "text_3d_yaw_flip_in",
+      "status": "passed",
+      "duration_seconds": 1.7561668510000001
+    },
+    {
+      "motion_id": "text_3d_yaw_sweep",
+      "status": "passed",
+      "duration_seconds": 1.6768975529999999
+    }
+  ]
+}

@@ -36,6 +36,8 @@ func TestCatalogCategoriesKeepMotionsIndependentAndComplete(t *testing.T) {
 	categoryCounts := map[string]int{
 		"typewriter": 10, "typewriter_modern_v1": 15, "apple_v2": 42,
 		"apple_v3": 16, "phrase_apple_clean_v1": 30, "apple_phrase_v1": 15,
+		"phrase_highlight_v1": 16,
+
 		"brush_v1": 23, "text_3d_v1": 10, "trump_entity_text_v1": 15, "web": 14,
 	}
 	for category, count := range categoryCounts {
@@ -46,8 +48,19 @@ func TestCatalogCategoriesKeepMotionsIndependentAndComplete(t *testing.T) {
 	if ids := Registry.ShortPhraseStyleIDs(); len(ids) != 48 {
 		t.Errorf("short phrase catalog has %d motions, want 48", len(ids))
 	}
-	if ids := Registry.PhraseAnimationIDs(); len(ids) != 146 {
-		t.Errorf("phrase planning pool has %d motions, want 146", len(ids))
+	if ids := Registry.PhraseAnimationIDs(); len(ids) != 162 {
+		t.Errorf("phrase planning pool has %d motions, want 162", len(ids))
+	}
+	appleClean := Registry.CategoryMotionIDs("phrase_apple_clean_v1")
+	pool := Registry.PhraseAnimationIDs()
+	poolSet := make(map[string]struct{}, len(pool))
+	for _, id := range pool {
+		poolSet[id] = struct{}{}
+	}
+	for _, id := range appleClean {
+		if _, ok := poolSet[id]; !ok {
+			t.Errorf("phrase planning pool omits Apple-clean motion %q", id)
+		}
 	}
 	for _, property := range []string{"rotation_z", "scale_z"} {
 		if motionHas3D(MotionDefinition{Tracks: []TrackDefinition{{Property: property}}}) {
@@ -185,8 +198,8 @@ func TestApplePhrasePackIsInTheCanonicalPoolAndHasNoPerGlyphBlur(t *testing.T) {
 	}
 	pool := make(map[string]bool)
 	phrasePool := PhraseMotionPool()
-	if len(phrasePool) != 26 {
-		t.Fatalf("GPU phrase motion pool has %d entries, want 26", len(phrasePool))
+	if len(phrasePool) != 63 {
+		t.Fatalf("GPU phrase motion pool has %d entries, want 63", len(phrasePool))
 	}
 	for _, id := range phrasePool {
 		pool[id] = true
@@ -206,8 +219,32 @@ func TestApplePhrasePackIsInTheCanonicalPoolAndHasNoPerGlyphBlur(t *testing.T) {
 			}
 		}
 	}
-	if pool["typewriter_neon"] {
-		t.Error("typewriter_neon with per-glyph blur must not be in the GPU-native pool")
+	for _, id := range []string{"typewriter_neon", "typewriter_blur_focus"} {
+		if pool[id] {
+			t.Errorf("%s with per-glyph blur must not be in the GPU-native pool", id)
+		}
+	}
+	for _, id := range Registry.CategoryMotionIDs("phrase_apple_clean_v1") {
+		plugin, err := Registry.Resolve(id)
+		if err != nil {
+			t.Errorf("Apple-clean motion %q does not resolve: %v", id, err)
+			continue
+		}
+		definition := plugin.(DeclarativePlugin).Definition
+		hasPerUnitBlur := false
+		for _, animator := range definition.TextAnimators {
+			for _, property := range animator.Properties {
+				hasPerUnitBlur = hasPerUnitBlur || property.Property == "blur"
+			}
+		}
+		if pool[id] == hasPerUnitBlur {
+			t.Errorf("Apple-clean motion %q pool membership=%v, per-unit blur=%v; only GPU-native no-blur recipes belong in the selection pool", id, pool[id], hasPerUnitBlur)
+		}
+	}
+	for _, id := range Registry.CategoryMotionIDs("phrase_highlight_v1") {
+		if !pool[id] {
+			t.Errorf("GPU phrase motion pool omits highlight ID %q", id)
+		}
 	}
 	for _, id := range want {
 		plugin, err := Registry.Resolve(id)

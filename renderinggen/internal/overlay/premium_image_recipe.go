@@ -229,7 +229,7 @@ func normalizedPremiumComponents(src *semanticPlan, image Layer, layers []Layer)
 		if len(layer.Position) < 2 {
 			layer.Position = []float64{0, 0}
 		}
-		if len(image.Position) >= 2 {
+		if !layer.PremiumAbsolutePosition && len(image.Position) >= 2 {
 			layer.Position[0] = image.Position[0]
 			layer.Position[1] = image.Position[1]
 			if len(layer.PremiumPositionOffset) == 2 {
@@ -300,6 +300,12 @@ func compilePremiumComponent(src *semanticPlan, image Layer, definition motion.M
 		position[0] += component.PositionOffset[0]
 		position[1] += component.PositionOffset[1]
 	}
+	if len(component.PositionScale) == 2 {
+		position = []float64{float64(src.Width) * component.PositionScale[0], float64(src.Height) * component.PositionScale[1]}
+	}
+	if component.AbsolutePosition && len(component.PositionOffset) == 2 {
+		position = []float64{component.PositionOffset[0], component.PositionOffset[1]}
+	}
 	if component.ZOffset != 0 || component.SyncTransform && image.Enable3D {
 		position = append(position, component.ZOffset)
 	}
@@ -315,7 +321,8 @@ func compilePremiumComponent(src *semanticPlan, image Layer, definition motion.M
 		PremiumPositionOffset: append([]float64(nil), component.PositionOffset...),
 		PremiumRadiusScale:    component.RadiusScale, PremiumZOffset: component.ZOffset,
 		PremiumShapeKind: component.Shape, PremiumPathKind: component.PathKind,
-		PremiumCanvasSize: component.CanvasSize, PremiumSyncTransform: component.SyncTransform}
+		PremiumCanvasSize: component.CanvasSize, PremiumSyncTransform: component.SyncTransform,
+		PremiumAbsolutePosition: component.AbsolutePosition}
 	if component.Type == "color" {
 		layer.Color = append([]float64(nil), component.Fill...)
 	}
@@ -349,7 +356,10 @@ func compilePremiumComponent(src *semanticPlan, image Layer, definition motion.M
 		}
 		switch shapeType {
 		case "rounded_rect":
-			shape.Radius = image.Radius * component.RadiusScale
+			shape.Radius = component.RadiusScale
+			if !component.AbsoluteRadius {
+				shape.Radius *= image.Radius
+			}
 			if shape.Radius <= 0 {
 				shape.Radius = image.Radius
 			}
@@ -358,7 +368,10 @@ func compilePremiumComponent(src *semanticPlan, image Layer, definition motion.M
 			case "arrow", "scribble", "check", "ellipse", "corner_marks", "cross", "double_line", "wave", "underline", "underline_double", "underline_wave":
 				shape.Path = brushPath(component.PathKind, width, height)
 			case "rounded_rect":
-				radius := image.Radius * component.RadiusScale
+				radius := component.RadiusScale
+				if !component.AbsoluteRadius {
+					radius *= image.Radius
+				}
 				if radius == 0 {
 					radius = image.Radius
 				}

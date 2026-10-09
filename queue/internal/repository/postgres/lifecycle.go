@@ -77,6 +77,48 @@ func (r *Repository) Fail(ctx context.Context, id, workerID, reason string) erro
 	return tx.Commit()
 }
 
+// FailPermanently marks a running job terminally failed regardless of its
+// normal retry budget. It is reserved for non-retryable failures such as a
+// missing required publisher configuration.
+func (r *Repository) FailPermanently(ctx context.Context, id, workerID, reason string) error {
+	ctx, cancel := r.opContext(ctx)
+	defer cancel()
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	var attemptCount int
+	if err := tx.QueryRowContext(ctx, `
+		SELECT attempt_count FROM render_jobs
+		WHERE id = $1 AND state = `+stateLiteral(model.StateRunning)+` AND current_worker_id = $2
+		FOR UPDATE`, id, workerID).Scan(&attemptCount); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return fmt.Errorf("job %s is not running or not owned by %s", id, workerID)
+		}
+		return err
+	}
+	attempt, err := runningAttemptID(ctx, tx, id)
+	if err != nil {
+		return err
+	}
+	if err := finishAttempt(ctx, tx, attempt, attemptStatusFailed, "", reason); err != nil {
+		return err
+	}
+	if _, err := tx.ExecContext(ctx, `
+		UPDATE render_jobs
+		SET state = `+stateLiteral(model.StateFailed)+`, failed_at = now(), error_message = $2,
+		    current_worker_id = NULL, lease_until = NULL
+		WHERE id = $1`, id, reason); err != nil {
+		return err
+	}
+	if err := recordEvent(ctx, tx, eventJobFailed, id, attempt, workerID, map[string]any{"reason": reason, "permanent": true}); err != nil {
+		return err
+	}
+	return tx.Commit()
+}
+
 // Renew extends the lease for a running job owned by workerID.
 func (r *Repository) Renew(ctx context.Context, id, workerID string) error {
 	ctx, cancel := r.opContext(ctx)

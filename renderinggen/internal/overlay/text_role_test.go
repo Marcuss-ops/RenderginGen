@@ -70,8 +70,8 @@ func TestTextRoleEntityCaptionOwnsTheNameplateTreatment(t *testing.T) {
 	if style.Shadow == nil || style.Shadow.Opacity != 0.78 || style.Shadow.Blur != 9 {
 		t.Errorf("shadow = %+v, want the soft drop shadow", style.Shadow)
 	}
-	if style.Glow == nil || style.Glow.Color != "#F8F5EA" || style.Glow.Radius != 14 || style.Glow.Intensity != 0.24 {
-		t.Errorf("glow = %+v, want the warm halo", style.Glow)
+	if style.Glow != nil {
+		t.Errorf("glow = %+v, want no full-frame GPU halo", style.Glow)
 	}
 	if style.Background != nil {
 		t.Errorf("background = %+v, want nil (strict GPU cannot execute text cards)", style.Background)
@@ -82,7 +82,7 @@ func TestTextRoleEntityCaptionOwnsTheNameplateTreatment(t *testing.T) {
 	if custom.Fill != "#AABBCC" {
 		t.Errorf("explicit fill = %q, want the caller override to win", custom.Fill)
 	}
-	if custom.Stroke == nil || custom.Shadow == nil || custom.Glow == nil {
-		t.Error("explicit fill must not drop the keyline/shadow/glow treatment")
+	if custom.Stroke == nil || custom.Shadow == nil {
+		t.Error("explicit fill must not drop the keyline/shadow treatment")
 	}
 }

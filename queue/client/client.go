@@ -19,6 +19,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math"
 	"net"
 	"net/http"
 	"net/url"
@@ -63,7 +64,11 @@ func AllStates() []State {
 // JobType constants are the canonical job-type vocabulary carried in the
 // renderinggen.job.v1 envelope.
 const (
-	JobTypeRenderSegment  = "render_segment"
+	PublicationObjectStoreOnly     = "object_store_only"
+	PublicationObjectStoreAndDrive = "object_store_and_drive"
+
+	JobTypeRenderSegment = "render_segment"
+
 	JobTypeOverlayPrepare = "overlay.prepare"
 	JobTypeOverlayRender  = "overlay.render"
 	// JobTypeOverlayImport validates and records an MP4 produced by a trusted
@@ -78,6 +83,38 @@ const JobSchemaV1 = "renderinggen.job"
 
 // JobSchemaVersionV1 is the version of the renderinggen.job.v1 envelope.
 const JobSchemaVersionV1 = 1
+
+// ValidateJobID checks the shared queue/filesystem identity boundary. IDs are
+// restricted to safe ASCII filename characters; producer scopes use colon or
+// dash separators rather than filesystem path separators.
+func ValidateJobMetadata(job Job) error {
+	switch job.PublicationPolicy {
+	case "", PublicationObjectStoreOnly, PublicationObjectStoreAndDrive:
+	default:
+		return fmt.Errorf("unsupported publication_policy %q", job.PublicationPolicy)
+	}
+	if math.IsNaN(job.DaemonAdmissionWaitMS) || math.IsInf(job.DaemonAdmissionWaitMS, 0) || job.DaemonAdmissionWaitMS < 0 {
+		return fmt.Errorf("daemon_admission_wait_ms must be a finite non-negative number")
+	}
+	return nil
+}
+
+func ValidateJobID(id string) error {
+	if id == "." || id == ".." {
+		return fmt.Errorf("job id %q is a traversal component", id)
+	}
+	if len(id) == 0 || len(id) > 256 {
+		return fmt.Errorf("job id must contain 1..256 bytes")
+	}
+	for i := 0; i < len(id); i++ {
+		c := id[i]
+		if !((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') ||
+			(c >= '0' && c <= '9') || c == '-' || c == '_' || c == '.' || c == ':') {
+			return fmt.Errorf("job id %q contains unsupported character %q", id, c)
+		}
+	}
+	return nil
+}
 
 // CertifiedProfileVeloxH2641080p30V1 is the profile_id of the ONE certified
 // copy-ready overlay artifact downstream assemblers select on (see
@@ -231,14 +268,16 @@ type FrameRange struct {
 }
 
 type Job struct {
-	ID             string      `json:"id"`
-	Schema         string      `json:"schema,omitempty"`
-	Version        int         `json:"version,omitempty"`
-	IdempotencyKey string      `json:"idempotency_key,omitempty"`
-	JobType        string      `json:"job_type,omitempty"`
-	ParentJobID    string      `json:"parent_job_id,omitempty"`
-	ChunkIndex     int         `json:"chunk_index,omitempty"`
-	FrameRange     *FrameRange `json:"frame_range,omitempty"`
+	ID                    string      `json:"id"`
+	Schema                string      `json:"schema,omitempty"`
+	Version               int         `json:"version,omitempty"`
+	IdempotencyKey        string      `json:"idempotency_key,omitempty"`
+	JobType               string      `json:"job_type,omitempty"`
+	PublicationPolicy     string      `json:"publication_policy,omitempty"`
+	DaemonAdmissionWaitMS float64     `json:"daemon_admission_wait_ms,omitempty"`
+	ParentJobID           string      `json:"parent_job_id,omitempty"`
+	ChunkIndex            int         `json:"chunk_index,omitempty"`
+	FrameRange            *FrameRange `json:"frame_range,omitempty"`
 
 	// NotBefore defers the job: when set to a future time the queue stores it
 	// but NO worker can claim it until the time is due. Omitted or a past time
@@ -415,6 +454,28 @@ func (c *Client) Cancel(ctx context.Context, id string) error {
 		raw, _ := io.ReadAll(resp.Body)
 		return fmt.Errorf("queue cancel: HTTP %d: %s", resp.StatusCode, strings.TrimSpace(string(raw)))
 	}
+}
+
+// RecoverableParents returns assembly anchors that still need finalization.
+func (c *Client) RecoverableParents(ctx context.Context) ([]string, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.baseURL+"/jobs/finalization/recoverable", nil)
+	if err != nil {
+		return nil, err
+	}
+	resp, err := c.http.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		raw, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("queue recoverable parents: HTTP %d: %s", resp.StatusCode, strings.TrimSpace(string(raw)))
+	}
+	var ids []string
+	if err := json.NewDecoder(resp.Body).Decode(&ids); err != nil {
+		return nil, err
+	}
+	return ids, nil
 }
 
 // Children returns a parent's child chunks in chunk order.

@@ -69,6 +69,9 @@ func AttemptStatuses() []AttemptStatus {
 }
 
 const (
+	PublicationObjectStoreOnly     = client.PublicationObjectStoreOnly
+	PublicationObjectStoreAndDrive = client.PublicationObjectStoreAndDrive
+
 	JobTypeRenderSegment  = client.JobTypeRenderSegment
 	JobTypeOverlayPrepare = client.JobTypeOverlayPrepare
 	JobTypeOverlayRender  = client.JobTypeOverlayRender
@@ -93,6 +96,17 @@ type FrameRange = client.FrameRange
 // for frame_range/chunk_index invariants (U6): both memory and postgres
 // repositories must call this instead of duplicating inline checks.
 func ValidateChunk(job Job) error {
+	if err := client.ValidateJobMetadata(job); err != nil {
+		return err
+	}
+	if err := client.ValidateJobID(job.ID); err != nil {
+		return fmt.Errorf("invalid job id: %w", err)
+	}
+	if job.ParentJobID != "" {
+		if err := client.ValidateJobID(job.ParentJobID); err != nil {
+			return fmt.Errorf("invalid parent job id: %w", err)
+		}
+	}
 	if job.FrameRange != nil && (job.FrameRange.Start < 0 || job.FrameRange.End <= job.FrameRange.Start) {
 		return fmt.Errorf("invalid frame_range for job %s", job.ID)
 	}

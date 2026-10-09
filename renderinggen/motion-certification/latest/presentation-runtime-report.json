@@ -1,0 +1,359 @@
+{
+  "generated_at_utc": "2026-10-09T13:30:00Z",
+  "backend": "vulkan",
+  "hardware_encoder": "nvenc",
+  "encoder_backend": "native",
+  "gpu_hot_path_mode": "require_gpu_native",
+  "motions": [
+    {
+      "motion_id": "date_bracket_draw",
+      "status": "passed",
+      "duration_seconds": 2.0
+    },
+    {
+      "motion_id": "date_calendar_drop",
+      "status": "passed",
+      "duration_seconds": 2.0
+    },
+    {
+      "motion_id": "date_calendar_flip",
+      "status": "passed",
+      "duration_seconds": 2.0
+    },
+    {
+      "motion_id": "date_chronology_focus",
+      "status": "passed",
+      "duration_seconds": 2.0
+    },
+    {
+      "motion_id": "date_didone_archive_fade",
+      "status": "passed",
+      "duration_seconds": 2.0
+    },
+    {
+      "motion_id": "date_didone_chronicle_rise",
+      "status": "passed",
+      "duration_seconds": 2.0
+    },
+    {
+      "motion_id": "date_didone_era_settle",
+      "status": "passed",
+      "duration_seconds": 2.0
+    },
+    {
+      "motion_id": "date_didone_fade_tracking",
+      "status": "passed",
+      "duration_seconds": 2.0
+    },
+    {
+      "motion_id": "date_didone_focus_hold",
+      "status": "passed",
+      "duration_seconds": 2.0
+    },
+    {
+      "motion_id": "date_didone_margin_wipe",
+      "status": "passed",
+      "duration_seconds": 2.0
+    },
+    {
+      "motion_id": "date_didone_rule_draw",
+      "status": "passed",
+      "duration_seconds": 2.0
+    },
+    {
+      "motion_id": "date_didone_stamp_drop",
+      "status": "passed",
+      "duration_seconds": 2.0
+    },
+    {
+      "motion_id": "date_didone_underline_hold",
+      "status": "passed",
+      "duration_seconds": 2.0
+    },
+    {
+      "motion_id": "date_didone_year_slide",
+      "status": "passed",
+      "duration_seconds": 2.0
+    },
+    {
+      "motion_id": "date_digit_flip",
+      "status": "passed",
+      "duration_seconds": 2.0
+    },
+    {
+      "motion_id": "date_era_zoom",
+      "status": "passed",
+      "duration_seconds": 2.0
+    },
+    {
+      "motion_id": "date_fade_rise",
+      "status": "passed",
+      "duration_seconds": 2.0
+    },
+    {
+      "motion_id": "date_history_stack",
+      "status": "passed",
+      "duration_seconds": 2.0
+    },
+    {
+      "motion_id": "date_marker_drop",
+      "status": "passed",
+      "duration_seconds": 2.0
+    },
+    {
+      "motion_id": "date_marker_pop",
+      "status": "passed",
+      "duration_seconds": 2.0
+    },
+    {
+      "motion_id": "date_month_wipe",
+      "status": "passed",
+      "duration_seconds": 2.0
+    },
+    {
+      "motion_id": "date_page_turn",
+      "status": "passed",
+      "duration_seconds": 2.0
+    },
+    {
+      "motion_id": "date_range_draw",
+      "status": "passed",
+      "duration_seconds": 2.0
+    },
+    {
+      "motion_id": "date_segment_stagger",
+      "status": "passed",
+      "duration_seconds": 2.0
+    },
+    {
+      "motion_id": "date_split_year",
+      "status": "passed",
+      "duration_seconds": 2.0
+    },
+    {
+      "motion_id": "date_stamp_reveal",
+      "status": "passed",
+      "duration_seconds": 2.0
+    },
+    {
+      "motion_id": "date_timeline_sweep",
+      "status": "passed",
+      "duration_seconds": 2.0
+    },
+    {
+      "motion_id": "date_timeline_tick",
+      "status": "passed",
+      "duration_seconds": 2.0
+    },
+    {
+      "motion_id": "date_underline_focus",
+      "status": "passed",
+      "duration_seconds": 2.0
+    },
+    {
+      "motion_id": "date_year_count",
+      "status": "passed",
+      "duration_seconds": 2.0
+    },
+    {
+      "motion_id": "entity_border_then_caption",
+      "status": "passed",
+      "duration_seconds": 2.0
+    },
+    {
+      "motion_id": "entity_caption_rise",
+      "status": "passed",
+      "duration_seconds": 2.0
+    },
+    {
+      "motion_id": "entity_depth_caption",
+      "status": "passed",
+      "duration_seconds": 2.0
+    },
+    {
+      "motion_id": "entity_focus_frame",
+      "status": "passed",
+      "duration_seconds": 2.0
+    },
+    {
+      "motion_id": "entity_glow_focus",
+      "status": "passed",
+      "duration_seconds": 2.0
+    },
+    {
+      "motion_id": "entity_name_pill",
+      "status": "passed",
+      "duration_seconds": 2.0
+    },
+    {
+      "motion_id": "entity_name_underline",
+      "status": "passed",
+      "duration_seconds": 2.0
+    },
+    {
+      "motion_id": "entity_parallax_caption",
+      "status": "passed",
+      "duration_seconds": 2.0
+    },
+    {
+      "motion_id": "entity_split_side",
+      "status": "passed",
+      "duration_seconds": 2.0
+    },
+    {
+      "motion_id": "entity_yaw_caption",
+      "status": "passed",
+      "duration_seconds": 2.0
+    },
+    {
+      "motion_id": "metric_arc_sweep",
+      "status": "passed",
+      "duration_seconds": 2.0
+    },
+    {
+      "motion_id": "metric_bar_grow",
+      "status": "passed",
+      "duration_seconds": 2.0
+    },
+    {
+      "motion_id": "metric_before_after",
+      "status": "passed",
+      "duration_seconds": 2.0
+    },
+    {
+      "motion_id": "metric_bounce_settle",
+      "status": "passed",
+      "duration_seconds": 2.0
+    },
+    {
+      "motion_id": "metric_compare_wipe",
+      "status": "passed",
+      "duration_seconds": 2.0
+    },
+    {
+      "motion_id": "metric_count_flip",
+      "status": "passed",
+      "duration_seconds": 2.0
+    },
+    {
+      "motion_id": "metric_counter_rise",
+      "status": "passed",
+      "duration_seconds": 2.0
+    },
+    {
+      "motion_id": "metric_counter_scale_settle",
+      "status": "passed",
+      "duration_seconds": 2.0
+    },
+    {
+      "motion_id": "metric_debt_flip",
+      "status": "passed",
+      "duration_seconds": 2.0
+    },
+    {
+      "motion_id": "metric_delta_reveal",
+      "status": "passed",
+      "duration_seconds": 2.0
+    },
+    {
+      "motion_id": "metric_didone_column_rise",
+      "status": "passed",
+      "duration_seconds": 2.0
+    },
+    {
+      "motion_id": "metric_didone_drop_in",
+      "status": "passed",
+      "duration_seconds": 2.0
+    },
+    {
+      "motion_id": "metric_didone_focus_pull",
+      "status": "passed",
+      "duration_seconds": 2.0
+    },
+    {
+      "motion_id": "metric_didone_hairline_rise",
+      "status": "passed",
+      "duration_seconds": 2.0
+    },
+    {
+      "motion_id": "metric_didone_hold_breathe",
+      "status": "passed",
+      "duration_seconds": 2.0
+    },
+    {
+      "motion_id": "metric_didone_ink_settle",
+      "status": "passed",
+      "duration_seconds": 2.0
+    },
+    {
+      "motion_id": "metric_didone_numeral_settle",
+      "status": "passed",
+      "duration_seconds": 2.0
+    },
+    {
+      "motion_id": "metric_didone_rule_wipe",
+      "status": "passed",
+      "duration_seconds": 2.0
+    },
+    {
+      "motion_id": "metric_didone_side_slide",
+      "status": "passed",
+      "duration_seconds": 2.0
+    },
+    {
+      "motion_id": "metric_didone_tracking_open",
+      "status": "passed",
+      "duration_seconds": 2.0
+    },
+    {
+      "motion_id": "metric_digit_cascade",
+      "status": "passed",
+      "duration_seconds": 2.0
+    },
+    {
+      "motion_id": "metric_digits_stagger",
+      "status": "passed",
+      "duration_seconds": 2.0
+    },
+    {
+      "motion_id": "metric_focus_punch",
+      "status": "passed",
+      "duration_seconds": 2.0
+    },
+    {
+      "motion_id": "metric_multi_stat_focus",
+      "status": "passed",
+      "duration_seconds": 2.0
+    },
+    {
+      "motion_id": "metric_odometer_vertical",
+      "status": "passed",
+      "duration_seconds": 2.0
+    },
+    {
+      "motion_id": "metric_pulse_hold",
+      "status": "passed",
+      "duration_seconds": 2.0
+    },
+    {
+      "motion_id": "metric_ribbon_unfold",
+      "status": "passed",
+      "duration_seconds": 2.0
+    },
+    {
+      "motion_id": "metric_ring_draw",
+      "status": "passed",
+      "duration_seconds": 2.0
+    },
+    {
+      "motion_id": "metric_slide_left",
+      "status": "passed",
+      "duration_seconds": 2.0
+    },
+    {
+      "motion_id": "metric_split_odometer",
+      "status": "passed",
+      "duration_seconds": 2.0
+    }
+  ]
+}

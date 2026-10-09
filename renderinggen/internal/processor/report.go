@@ -2,6 +2,7 @@ package processor
 
 import (
 	"context"
+	"errors"
 
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/queue"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/workerlog"
@@ -9,12 +10,13 @@ import (
 
 // ReportQueue is the queue surface the worker's terminal-report helpers need.
 // *queue.Client satisfies it; tests substitute a fake. Keeping the dependency
-// minimal (three methods) is what lets ReportFailure/ReportComplete live here
-// next to the rest of the job state machine instead of in cmd/renderinggen.
+// minimal lets the terminal-report helpers live here next to the job state
+// machine instead of in cmd/renderinggen.
 type ReportQueue interface {
 	Complete(ctx context.Context, id string, artifact queue.Artifact) error
 	Rendered(ctx context.Context, id, reason string, artifact queue.Artifact) error
 	Fail(ctx context.Context, id, reason string) error
+	FailPermanently(ctx context.Context, id, reason string) error
 }
 
 // hasDurableArtifact is the single "the artifact bytes are already in the
@@ -39,6 +41,12 @@ func ReportFailure(ctx context.Context, q ReportQueue, job *queue.Job, err error
 	// Observed at the report funnel, so a future worker pool cannot complete or
 	// fail jobs without the worker's own metric surface seeing it.
 	noteJobOutcome(JobOutcomeFailed)
+	if errors.Is(err, ErrDrivePublicationPermanent) {
+		if reportErr := q.FailPermanently(ctx, job.ID, err.Error()); reportErr != nil {
+			jobLog.Warnf("report fail: %v", reportErr)
+		}
+		return
+	}
 	if hasDurableArtifact(job.Artifact) {
 		if reportErr := q.Rendered(ctx, job.ID, err.Error(), *job.Artifact); reportErr != nil {
 			jobLog.Warnf("report rendered: %v", reportErr)
@@ -62,6 +70,12 @@ func ReportFailureWithArtifact(ctx context.Context, q ReportQueue, id string, ar
 	jobLog := workerlog.ByJobID(id)
 	jobLog.Errorf("failed: %v", err)
 	noteJobOutcome(JobOutcomeFailed)
+	if errors.Is(err, ErrDrivePublicationPermanent) {
+		if reportErr := q.FailPermanently(ctx, id, err.Error()); reportErr != nil {
+			jobLog.Warnf("report permanent fail: %v", reportErr)
+		}
+		return
+	}
 	if !hasDurableArtifact(&artifact) {
 		if reportErr := q.Fail(ctx, id, err.Error()); reportErr != nil {
 			jobLog.Warnf("report fail: %v", reportErr)

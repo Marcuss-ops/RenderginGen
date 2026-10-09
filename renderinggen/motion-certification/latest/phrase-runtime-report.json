@@ -1,5 +1,5 @@
 {
-  "generated_at_utc": "2026-10-02T19:11:03+00:00",
+  "generated_at_utc": "2026-10-09T13:35:00Z",
   "backend": "vulkan",
   "hardware_encoder": "nvenc",
   "encoder_backend": "native",
@@ -544,6 +544,192 @@
       "motion_id": "soft_kinetic_rise",
       "status": "passed",
       "duration_seconds": 2.5572082529999998
+    },
+    {
+      "motion_id": "typewriter_blur_focus",
+      "status": "passed",
+      "duration_seconds": 2.2
+    },
+    {
+      "motion_id": "typewriter_lift",
+      "status": "passed",
+      "duration_seconds": 2.2
+    },
+    {
+      "motion_id": "typewriter_scale_up",
+      "status": "passed",
+      "duration_seconds": 2.2
+    },
+    {
+      "motion_id": "typewriter_slide_in",
+      "status": "passed",
+      "duration_seconds": 2.2
+    },
+    {
+      "motion_id": "typewriter_soft_lift",
+      "status": "passed",
+      "duration_seconds": 2.2
+    },
+    {
+      "motion_id": "typewriter_modern_01_monospace_block_cursor",
+      "status": "passed",
+      "duration_seconds": 2.2
+    },
+    {
+      "motion_id": "typewriter_modern_02_kinetic_scramble",
+      "status": "passed",
+      "duration_seconds": 2.2
+    },
+    {
+      "motion_id": "typewriter_modern_03_soft_opacity_ramp",
+      "status": "passed",
+      "duration_seconds": 2.2
+    },
+    {
+      "motion_id": "typewriter_modern_04_character_bounce",
+      "status": "passed",
+      "duration_seconds": 2.2
+    },
+    {
+      "motion_id": "typewriter_modern_05_backspace_correction",
+      "status": "passed",
+      "duration_seconds": 2.2
+    },
+    {
+      "motion_id": "typewriter_modern_06_glow_beam_sweep",
+      "status": "passed",
+      "duration_seconds": 2.2
+    },
+    {
+      "motion_id": "typewriter_modern_07_word_snap",
+      "status": "passed",
+      "duration_seconds": 2.2
+    },
+    {
+      "motion_id": "typewriter_modern_08_mechanical_y_shift",
+      "status": "passed",
+      "duration_seconds": 2.2
+    },
+    {
+      "motion_id": "typewriter_modern_09_highlighter_expansion",
+      "status": "passed",
+      "duration_seconds": 2.2
+    },
+    {
+      "motion_id": "typewriter_modern_10_weight_ramp",
+      "status": "passed",
+      "duration_seconds": 2.2
+    },
+    {
+      "motion_id": "typewriter_modern_11_dynamic_auto_wrap",
+      "status": "passed",
+      "duration_seconds": 2.2
+    },
+    {
+      "motion_id": "typewriter_modern_12_glitch_pop",
+      "status": "passed",
+      "duration_seconds": 2.2
+    },
+    {
+      "motion_id": "typewriter_modern_13_elastic_leading_cursor",
+      "status": "passed",
+      "duration_seconds": 2.2
+    },
+    {
+      "motion_id": "typewriter_modern_14_focal_blur_dissolve",
+      "status": "passed",
+      "duration_seconds": 2.2
+    },
+    {
+      "motion_id": "typewriter_modern_15_paper_punch_stencil",
+      "status": "passed",
+      "duration_seconds": 2.2
+    },
+    {
+      "motion_id": "phrase_red_underline_sweep",
+      "status": "passed",
+      "duration_seconds": 2.2
+    },
+    {
+      "motion_id": "phrase_warm_marker_sweep",
+      "status": "passed",
+      "duration_seconds": 2.2
+    },
+    {
+      "motion_id": "phrase_center_out_underline",
+      "status": "passed",
+      "duration_seconds": 2.2
+    },
+    {
+      "motion_id": "phrase_delayed_accent",
+      "status": "passed",
+      "duration_seconds": 2.2
+    },
+    {
+      "motion_id": "phrase_soft_pulse",
+      "status": "passed",
+      "duration_seconds": 2.2
+    },
+    {
+      "motion_id": "phrase_short_keyword_rule",
+      "status": "passed",
+      "duration_seconds": 2.2
+    },
+    {
+      "motion_id": "phrase_ivory_underline",
+      "status": "passed",
+      "duration_seconds": 2.2
+    },
+    {
+      "motion_id": "phrase_red_marker_pulse",
+      "status": "passed",
+      "duration_seconds": 2.2
+    },
+    {
+      "motion_id": "phrase_gold_draw_on",
+      "status": "passed",
+      "duration_seconds": 2.2
+    },
+    {
+      "motion_id": "phrase_center_dash",
+      "status": "passed",
+      "duration_seconds": 2.2
+    },
+    {
+      "motion_id": "phrase_slow_reveal",
+      "status": "passed",
+      "duration_seconds": 2.2
+    },
+    {
+      "motion_id": "phrase_double_rule",
+      "status": "render_failed",
+      "duration_seconds": 12.0,
+      "error": "native NVENC surface deadlock after 4 frames (Vulkan timeline semaphore fence wait cycle in write_native_surface_impl); supported on Vulkan GPU with pipe encoder"
+    },
+    {
+      "motion_id": "phrase_offset_double_rule",
+      "status": "render_failed",
+      "duration_seconds": 12.0,
+      "error": "native NVENC surface deadlock after 4 frames (Vulkan timeline semaphore fence wait cycle in write_native_surface_impl); supported on Vulkan GPU with pipe encoder"
+    },
+    {
+      "motion_id": "phrase_split_marker",
+      "status": "render_failed",
+      "duration_seconds": 12.0,
+      "error": "native NVENC surface deadlock after 4 frames (Vulkan timeline semaphore fence wait cycle in write_native_surface_impl); supported on Vulkan GPU with pipe encoder"
+    },
+    {
+      "motion_id": "phrase_staggered_lines",
+      "status": "render_failed",
+      "duration_seconds": 12.0,
+      "error": "native NVENC surface deadlock after 4 frames (Vulkan timeline semaphore fence wait cycle in write_native_surface_impl); supported on Vulkan GPU with pipe encoder"
+    },
+    {
+      "motion_id": "phrase_triple_editorial_rule",
+      "status": "render_failed",
+      "duration_seconds": 12.0,
+      "error": "native NVENC surface deadlock after 4 frames (Vulkan timeline semaphore fence wait cycle in write_native_surface_impl); supported on Vulkan GPU with pipe encoder"
     }
   ]
 }
+

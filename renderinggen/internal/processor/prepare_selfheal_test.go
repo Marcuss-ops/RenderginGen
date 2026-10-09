@@ -44,8 +44,14 @@ func TestPrepareJobFailsClosedWhenLeaseCannotBeEstablished(t *testing.T) {
 	// ENOTDIR/EISDIR no matter the process umask or uid. The workspace tree
 	// stays writable, so the fail-closed Cleanup() can still remove it.
 	jobDir := filepath.Join(proc.jobsRoot, job.ID)
-	if _, err := workspace.New(proc.jobsRoot, job.ID); err != nil {
+	seed, err := workspace.New(proc.jobsRoot, job.ID)
+	if err != nil {
 		t.Fatalf("seed workspace: %v", err)
+	}
+	// The seeded owner is only used to create the marker blocker; release its
+	// process lock before PrepareJob tries to become the job's real owner.
+	if err := seed.Cleanup(); err != nil {
+		t.Fatalf("release seed workspace: %v", err)
 	}
 	if err := os.MkdirAll(filepath.Join(jobDir, ".lease_until", "occupied"), 0o755); err != nil {
 		t.Fatalf("plant blocking .lease_until dir: %v", err)

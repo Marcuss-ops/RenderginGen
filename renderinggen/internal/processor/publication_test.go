@@ -2,6 +2,7 @@ package processor
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/queue"
@@ -31,18 +32,31 @@ func TestResolvePublicationPolicy(t *testing.T) {
 	}
 }
 
-// TestPublishWithoutDriveCapabilityIsStoreOnly verifies the capability
-// constraint: with no configured Drive publisher the artifact is returned
-// unchanged even when the resolved policy asks for Drive — the config only
-// declares what the worker CAN do, never what a job SHOULD do.
-func TestPublishWithoutDriveCapabilityIsStoreOnly(t *testing.T) {
+// TestPublishWithoutDriveCapabilityFailsClosed verifies a required Drive
+// destination cannot be silently skipped or reported successful.
+func TestPublishWithoutDriveCapabilityFailsClosed(t *testing.T) {
 	proc, _, _ := newProcessor(t)
 	artifact := queue.Artifact{StorageKey: "k", ArtifactHash: "h"}
-	published, err := proc.Publish(context.Background(), "job-1", queue.JobTypeRenderSegment, artifact)
-	if err != nil {
-		t.Fatalf("publish without capability: %v", err)
+	published, err := proc.Publish(context.Background(), "job-1", queue.JobTypeRenderSegment, string(PublicationObjectStoreAndDrive), artifact)
+	if !errors.Is(err, ErrDrivePublicationPermanent) {
+		t.Fatalf("publish without required capability error = %v, want ErrDrivePublicationPermanent", err)
 	}
 	if published.DriveFileID != "" || published.DriveLink != "" {
 		t.Fatalf("publish without capability must not reach Drive: %+v", published)
+	}
+	if published.Metrics["publication_drive_skipped_no_capability"] != 1 {
+		t.Fatalf("missing-capability metric = %v, want 1", published.Metrics)
+	}
+}
+
+func TestPublishWithoutDriveCapabilityAllowsExplicitStoreOnly(t *testing.T) {
+	proc, _, _ := newProcessor(t)
+	artifact := queue.Artifact{StorageKey: "k", ArtifactHash: "h"}
+	published, err := proc.Publish(context.Background(), "job-1", queue.JobTypeRenderSegment, string(PublicationObjectStoreOnly), artifact)
+	if err != nil {
+		t.Fatalf("store-only publication should not require Drive: %v", err)
+	}
+	if published.Metrics["publication_drive_skipped_by_policy"] != 1 {
+		t.Fatalf("store-only policy metric missing: %v", published.Metrics)
 	}
 }

@@ -31,6 +31,9 @@ func TestMotionWindowsRejectsInvalidRuntimeTimingOverrides(t *testing.T) {
 }
 
 func TestMotionWindowsExposeRuntimeFrameControlsWithoutClosingPluginParams(t *testing.T) {
+	if enter, exit, err := motionWindows(nil, 12); err != nil || enter != 0 || exit != 12 {
+		t.Fatalf("omitted overrides should preserve preset windows, got %d/%d err=%v", enter, exit, err)
+	}
 	enter, exit, err := motionWindows(map[string]any{
 		"enter_frames":           1,
 		"exit_frames":            240,
@@ -44,8 +47,8 @@ func TestMotionWindowsExposeRuntimeFrameControlsWithoutClosingPluginParams(t *te
 		t.Fatalf("runtime windows = %d/%d, want 1/240", enter, exit)
 	}
 	enter, exit, err = motionWindows(map[string]any{"enter_frames": 0, "exit_frames": 0}, 12)
-	if err != nil || enter != 0 || exit != 12 {
-		t.Fatalf("zero should retain catalog/preset windows, got %d/%d, err=%v", enter, exit, err)
+	if err != nil || enter != 0 || exit != -1 {
+		t.Fatalf("zero enter should keep catalog value and zero exit should disable outro, got %d/%d, err=%v", enter, exit, err)
 	}
 }
 

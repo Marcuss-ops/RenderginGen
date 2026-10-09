@@ -3,8 +3,11 @@ package overlay
 import (
 	"fmt"
 	"math"
+	"sort"
 	"strings"
 	"unicode/utf8"
+
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/motion"
 )
 
 // EntityCardLayoutResolver resolves the geometry of an entity card — image
@@ -289,45 +292,89 @@ func captionLinesWidth(lines []string, fontSize float64) float64 {
 	return width
 }
 
-// entityCaptionMotionPool is the certified caption-motion pool an unstyled
+// entityCaptionMotionPool is the canonical caption-motion pool an unstyled
 // producer item rotates through instead of the legacy single hardcoded
 // fallback: authored text treatments, the typewriter families and the
 // trump_entity_text_01..15 catalog recipes. Every id is registered in the
 // motion catalog and admits the "caption" target.
-var entityCaptionMotionPool = []string{
-	"text_depth_in",
-	"text_fade_up",
-	"text_scale_punch",
-	"text_word_rise",
-	"text_word_stagger",
-	"text_yaw_in",
-	"typewriter_blur_focus",
-	"typewriter_clean",
-	"typewriter_lift",
-	"typewriter_neon",
-	"typewriter_pop",
-	"typewriter_scale_up",
-	"typewriter_slide_in",
-	"typewriter_soft_lift",
-	"typewriter_tracking",
-	"typewriter_modern_01_monospace_block_cursor",
-	"typewriter_modern_02_kinetic_scramble",
-	"typewriter_modern_03_soft_opacity_ramp",
-	"typewriter_modern_04_character_bounce",
-	"typewriter_modern_05_backspace_correction",
-	"typewriter_modern_06_glow_beam_sweep",
-	"typewriter_modern_07_word_snap",
-	"typewriter_modern_08_mechanical_y_shift",
-	"typewriter_modern_09_highlighter_expansion",
-	"typewriter_modern_10_weight_ramp",
-	"typewriter_modern_13_elastic_leading_cursor",
-	"typewriter_modern_14_focal_blur_dissolve",
-	"typewriter_modern_15_paper_punch_stencil",
-	"trump_entity_text_01", "trump_entity_text_02", "trump_entity_text_03",
-	"trump_entity_text_04", "trump_entity_text_05", "trump_entity_text_06",
-	"trump_entity_text_07", "trump_entity_text_08", "trump_entity_text_09",
-	"trump_entity_text_10", "trump_entity_text_11", "trump_entity_text_12",
-	"trump_entity_text_13", "trump_entity_text_14", "trump_entity_text_15",
+var entityCaptionMotionPool = selectableEntityCaptionMotions()
+
+func selectableEntityCaptionMotions() []string {
+	var candidates []string
+	for _, category := range []string{"entity_caption_v1", "trump_entity_text_v1", "typewriter", "typewriter_glitch", "typewriter_modern_v1", "entity_card_v1"} {
+		candidates = append(candidates, motion.Registry.SelectableCategoryMotionIDs(category)...)
+	}
+	pool := candidates[:0]
+	for _, id := range candidates {
+		// Presentation recipes can admit caption by tag yet only contain image
+		// tracks; shared selection excludes them from standalone caption IDs.
+		if entityCaptionMotionSelectable(id) {
+			pool = append(pool, id)
+		}
+	}
+	for _, style := range premiumEntityStyles {
+		if entityCaptionMotionSelectable(style.CaptionMotionID) {
+			pool = append(pool, style.CaptionMotionID)
+		}
+	}
+	pool = compactMotionIDsAfterSort(pool)
+	return pool
+}
+
+func entityCaptionMotionSelectable(id string) bool {
+	definition, err := resolveMotionDefinition(id)
+	return err == nil && motionDefinitionAdmitsTarget(definition, "caption") &&
+		definitionHasCaptionAnimation(definition)
+}
+
+func motionDefinitionAdmitsTargetForID(id, target string) bool {
+	definition, err := resolveMotionDefinition(id)
+	if err != nil || !motionDefinitionAdmitsTarget(definition, target) {
+		return false
+	}
+	if target != "caption" {
+		return true
+	}
+	return definitionHasCaptionAnimation(definition)
+}
+
+func compactMotionIDsAfterSort(ids []string) []string {
+	sort.Strings(ids)
+	return compactMotionIDs(ids)
+}
+
+func definitionHasCaptionAnimation(definition *motion.MotionDefinition) bool {
+	if definition == nil {
+		return false
+	}
+	if len(definition.TextAnimators) > 0 {
+		for _, animator := range definition.TextAnimators {
+			if len(animator.Properties) > 0 {
+				return true
+			}
+		}
+	}
+	for _, track := range definition.Tracks {
+		if track.Property != "" && len(track.Keyframes) > 0 {
+			return true
+		}
+	}
+	return false
+}
+
+func compactMotionIDs(ids []string) []string {
+	if len(ids) < 2 {
+		return ids
+	}
+	write := 1
+	for read := 1; read < len(ids); read++ {
+		if ids[read] == ids[write-1] {
+			continue
+		}
+		ids[write] = ids[read]
+		write++
+	}
+	return ids[:write]
 }
 
 // EntityCaptionMotionID returns the caption's motion id. A requested id is

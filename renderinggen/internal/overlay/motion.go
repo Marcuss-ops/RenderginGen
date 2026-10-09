@@ -492,8 +492,8 @@ func fromTextMotionDefinitions(src []motion.TextAnimatorDefinition, duration int
 			if endFrame < 1 {
 				endFrame = 1
 			}
-			selector.Start = &AnimationTrack{Property: "start", Keyframes: []AnimationKeyframe{{Frame: 0, Value: *definition.Selector.RangeStart}, {Frame: endFrame, Value: *definition.Selector.RangeStart}}}
-			selector.End = &AnimationTrack{Property: "end", Keyframes: []AnimationKeyframe{{Frame: 0, Value: *definition.Selector.RangeEnd}, {Frame: endFrame, Value: *definition.Selector.RangeEnd}}}
+			selector.Start = &AnimationTrack{Keyframes: []AnimationKeyframe{{Frame: 0, Value: *definition.Selector.RangeStart}, {Frame: endFrame, Value: *definition.Selector.RangeStart}}}
+			selector.End = &AnimationTrack{Keyframes: []AnimationKeyframe{{Frame: 0, Value: *definition.Selector.RangeEnd}, {Frame: endFrame, Value: *definition.Selector.RangeEnd}}}
 		}
 		if definition.Selector.Kind == "" {
 			selector.Unit = "glyph"

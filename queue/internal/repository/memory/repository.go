@@ -51,10 +51,11 @@ type Repository struct {
 
 // Compile-time check that Repository satisfies the repository contracts.
 var (
-	_ repository.JobRepository         = (*Repository)(nil)
-	_ repository.WorkerRepository      = (*Repository)(nil)
-	_ repository.IdempotencyRepository = (*Repository)(nil)
-	_ repository.BatchRepository       = (*Repository)(nil)
+	_ repository.JobRepository              = (*Repository)(nil)
+	_ repository.WorkerRepository           = (*Repository)(nil)
+	_ repository.IdempotencyRepository      = (*Repository)(nil)
+	_ repository.BatchRepository            = (*Repository)(nil)
+	_ repository.PermanentFailureRepository = (*Repository)(nil)
 )
 
 // New creates a queue with the given lease duration and max attempts per job.
@@ -181,6 +182,21 @@ func (s *Repository) SubmitBatch(_ context.Context, jobs []model.Job) error {
 		}
 	}
 	return nil
+}
+
+// RecoverableParents returns parent IDs with child jobs that can be adopted or retried.
+func (s *Repository) RecoverableParents(_ context.Context) ([]string, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	ids := make([]string, 0)
+	for id, children := range s.children {
+		job := s.jobs[id]
+		if len(children) > 0 && job != nil && (job.State == model.StatePending || job.State == model.StateFinalizing) {
+			ids = append(ids, id)
+		}
+	}
+	sort.Strings(ids)
+	return ids, nil
 }
 
 // Claim atomically claims the oldest pending job for a worker and returns it
@@ -403,6 +419,22 @@ func (s *Repository) Fail(_ context.Context, id, workerID, reason string) error 
 	// Mirror PostgreSQL: requeued jobs hold no lease until the next claim.
 	job.LeaseUntil = time.Time{}
 	s.order = append(s.order, id)
+	return nil
+}
+
+// FailPermanently marks a running job terminally failed, regardless of the
+// normal max-attempt retry budget. It is reserved for non-retryable failures.
+func (s *Repository) FailPermanently(_ context.Context, id, workerID, reason string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	job, err := s.runningJob(id, workerID)
+	if err != nil {
+		return err
+	}
+	job.State = model.StateFailed
+	job.FailReason = reason
+	job.Worker = ""
+	job.LeaseUntil = time.Time{}
 	return nil
 }
 

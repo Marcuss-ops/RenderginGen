@@ -17,6 +17,7 @@ func TestMergeTelemetrySummaryMetricsProjectsDocumentedSubset(t *testing.T) {
 	  "version": 1,
 	  "summary": {"render_loop_fps": 29.2, "end_to_end_fps": 28.9, "p95_frame_ms": 41.2, "frames_over_budget": 3},
 	  "job": {
+	    "daemon_admission_wait_ms": 12.5,
 	    "process_wall_ms": 5304.0, "render_loop_wall_ms": 2932.0, "mux_finalize_ms": 88.1,
 	    "gpu": {"nvenc_frames": 450, "vulkan_frames": 450, "software_fallback_nodes": 0,
 	            "cpu_readback_frames": 0, "gpu_readback_bytes": 0, "gpu_upload_bytes": 2048,
@@ -33,6 +34,7 @@ func TestMergeTelemetrySummaryMetricsProjectsDocumentedSubset(t *testing.T) {
 		"chronon_summary_end_to_end_fps":           28.9,
 		"chronon_summary_p95_frame_ms":             41.2,
 		"chronon_summary_frames_over_budget":       3,
+		"chronon_receipt_daemon_admission_wait_ms": 12.5,
 		"chronon_job_process_wall_ms":              5304.0,
 		"chronon_job_render_loop_wall_ms":          2932.0,
 		"chronon_job_mux_finalize_ms":              88.1,

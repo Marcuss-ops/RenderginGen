@@ -1,0 +1,26 @@
+{
+  "plan_id": "overlay-timeline-smoke",
+  "language": "en",
+  "width": 1280,
+  "height": 720,
+  "fps": 24,
+  "background": {"kind": "color", "color": [0.08, 0.08, 0.08, 1]},
+  "overlays": [
+    {"id": "frase-1", "kind": "important_phrase", "template_id": "IMPORTANT_PHRASE",
+     "preset_id": "phrase_default", "motion_id": "apple_phrase_v2",
+     "text": "QUESTO CAMBIA TUTTO", "duration_ms": 2000},
+    {"id": "frase-2", "kind": "important_phrase", "template_id": "IMPORTANT_PHRASE",
+     "preset_id": "phrase_default", "motion_id": "kinetic_split_word",
+     "text": "LA STORIA CONTINUA", "duration_ms": 2000},
+    {"id": "data-1", "kind": "timeline_date", "template_id": "TIMELINE_DATE_CARD",
+     "preset_id": "phrase_default", "motion_id": "date_timeline_sweep",
+     "text": "13 September 2026", "duration_ms": 3000},
+    {"id": "metric-1", "kind": "metric_stat", "template_id": "METRIC_STAT_CARD",
+     "preset_id": "phrase_default", "motion_id": "metric_count_flip",
+     "text": "700 VIDEO", "duration_ms": 3000},
+    {"id": "immagine-1", "kind": "entity_image", "template_id": "IMAGE_OVERLAY",
+     "preset_id": "image_scale_in", "motion_id": "image_yaw_reveal",
+     "asset": "assets/semantic/smoke-plate.png", "duration_ms": 3000,
+     "params": {"width": 620.0, "height": 760.0}}
+  ]
+}

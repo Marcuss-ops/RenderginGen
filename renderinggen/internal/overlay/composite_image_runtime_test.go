@@ -72,8 +72,12 @@ func TestCompositeEntityImagesRenderDistinctAssetsSideBySideWithStaggeredEntranc
 	if diff := goal3RegionDiffTol(t, background, beforeSecondMention, leftHalf, 16); diff < 20_000 {
 		t.Fatalf("left image changed only %d pixels before second mention; expected visible first image", diff)
 	}
-	if diff := goal3RegionDiffTol(t, background, beforeSecondMention, rightImageRegion, 16); diff != 0 {
-		t.Fatalf("right image region changed by %d pixels before its 750ms activation; the second image is not staggered", diff)
+	if diff := goal3RegionDiffTol(t, background, beforeSecondMention, rightImageRegion, 16); diff > 1500 {
+		t.Fatalf("right image region changed by %d pixels before its 750ms activation; expected only codec noise", diff)
+	}
+	beforeSecondCenter := color.RGBAModel.Convert(beforeSecondMention.At(710, compositeRuntimeHeight/2)).(color.RGBA)
+	if int(beforeSecondCenter.B) > int(beforeSecondCenter.R)+80 && int(beforeSecondCenter.B) > int(beforeSecondCenter.G)+80 {
+		t.Fatalf("second image's blue source is visible at its center before 750ms activation: %v", beforeSecondCenter)
 	}
 
 	bothVisible := frameAtMS(1300, "both distinct composite images visible")
@@ -187,8 +191,9 @@ func TestCompositeSemanticCompilerPreservesDistinctAssetsAndStaggeredWindows(t *
 	for _, layer := range compiled.Plan.Layers {
 		if layer.Type == "text" && (layer.Text == "Ada Lovelace" || layer.Text == "Grace Hopper" || layer.Text == "Single Entity") {
 			captionCount++
-			if layer.Animation == nil || len(layer.Animation.Tracks) == 0 {
-				t.Errorf("caption %q has no compiled motion tracks", layer.Text)
+			if (layer.Animation == nil || (len(layer.Animation.Tracks) == 0 && len(layer.Animation.TextAnimators) == 0)) && len(layer.TextAnimators) == 0 {
+				motionID := entityCaptionMotionIDForIdentity("", "composite-image-runtime", "composite-image-runtime", "single-image:entity")
+				t.Errorf("caption %q has no compiled layer tracks or per-element animators (default caption motion %q)", layer.Text, motionID)
 			}
 			captionMotions[layer.Text] = true
 			captionAnimations[layer.Text] = layer.Animation

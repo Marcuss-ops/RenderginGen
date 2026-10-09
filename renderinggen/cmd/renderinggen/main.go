@@ -269,6 +269,7 @@ func main() {
 			filepath.Join(cfg.Workspace.Root, "parents"),
 		)
 		log.Printf("parent finalizer: enabled (Chronon assembler, output=%q)", filepath.Join(cfg.Workspace.Root, "parents"))
+		go runParentFinalizationRecovery(ctx, queueClient, parentFinalizer, timings.ClaimLongPoll)
 	}
 
 	// 3f. Overlay catalog: the motion vocabulary and the preset ids this worker

@@ -153,6 +153,13 @@ func TestReadMediaReceiptTiming(t *testing.T) {
 		t.Fatalf("ReadMediaReceipt: %v", err)
 	}
 	metrics := receipt.ReceiptTimingMetrics()
+	chrononWait := TelemetryMetrics(json.RawMessage(`{"schema":"chronon3d.frame-timing.v3","job":{"daemon_admission_wait_ms":12.5}}`))
+	if got := chrononWait["chronon_receipt_daemon_admission_wait_ms"]; got != 12.5 {
+		t.Errorf("Chronon daemon admission wait = %v, want 12.5", got)
+	}
+	if got := chrononWait["chronon_job_daemon_admission_wait_ms"]; got != 0 {
+		t.Errorf("producer-supplied daemon wait must not be projected from the sidecar under the job-metric name, got %v", got)
+	}
 	if got := metrics["chronon_receipt_sha256_ms"]; got != 9.5 {
 		t.Errorf("sha256_ms = %v, want 9.5", got)
 	}

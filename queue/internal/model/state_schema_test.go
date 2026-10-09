@@ -59,6 +59,20 @@ func sortedStrings(in []string) []string {
 // list exactly the same states. Without this test, adding a state to Go but
 // not to SQL (or vice versa) is a silent runtime failure that only surfaces
 // when a job transition is rejected by the database.
+func TestJobPublicationMetadataMigrationExists(t *testing.T) {
+	t.Helper()
+	raw, err := migrations.FS.ReadFile("029_job_publication_metadata.sql")
+	if err != nil {
+		t.Fatalf("read publication metadata migration: %v", err)
+	}
+	sql := string(raw)
+	for _, required := range []string{"publication_policy TEXT NOT NULL DEFAULT ''", "daemon_admission_wait_ms DOUBLE PRECISION NOT NULL DEFAULT 0", "daemon_admission_wait_nonnegative"} {
+		if !strings.Contains(sql, required) {
+			t.Errorf("publication metadata migration missing %q", required)
+		}
+	}
+}
+
 func TestJobStateVocabularyMatchesSQLConstraint(t *testing.T) {
 	want := make([]string, 0, 8)
 	for _, s := range States() {

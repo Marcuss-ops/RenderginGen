@@ -7,8 +7,8 @@ package overlay
 import (
 	"fmt"
 	"image"
-	"log"
 	"os"
+	"sort"
 	"strings"
 
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/motion"
@@ -182,23 +182,20 @@ func compileSingleImageLayerResolved(ri resolvedItem, src *semanticPlan, assetPa
 	layer.ID = imageLayerID(layerID)
 	layer.StartFrame, layer.DurationFrames = start, end-start
 	applyPresetDefinition(&layer, preset)
-	if motionID != "" {
-		var err error
-		// Runtime entity imagery passes every motion through except one a
-		// recorded strict-GPU run failed: the embedded motioncert snapshot is
-		// the evidence (several premium recipes still fail the native lane with
-		// an encoder-side error), so the gate replaces only recorded failures.
-		if ri.Kind == KindEntityImage && len(ri.Item.ImageLayers) == 0 {
-			safeMotionID := entityCardRuntimeImageMotion(motionID, ri.Item.ID)
-			if safeMotionID != motionID {
-				log.Printf("overlay: entity image item %q: strict-GPU-failed motion %q replaced by certified motion %q", ri.Item.ID, motionID, safeMotionID)
-				motionID = safeMotionID
-				resolved, err = resolveRegisteredMotion(motionID)
-				if err != nil {
-					return Layer{}, err
-				}
+	if motionID == "" && preset.ID != "" {
+		motionID = runtimeDefaultImageMotionID(src, layerID)
+		if motionID != "" {
+			var err error
+			resolved, err = resolveRegisteredMotion(motionID)
+			if err != nil {
+				return Layer{}, fmt.Errorf("overlay: default image motion %q: %w", motionID, err)
 			}
 		}
+	}
+	if motionID != "" {
+		var err error
+		// Keep the selected motion ID intact. Replacing a failed GPU motion with
+		// a different recipe concealed unsupported runtime behavior.
 		animation, err := imageMotionAnimationResolved(motionID, motionParams, end-start, preset.Motion.Exit, layerID, "image", resolved)
 		if err != nil {
 			return Layer{}, err
@@ -240,6 +237,40 @@ func compileSingleImageLayerResolved(ri resolvedItem, src *semanticPlan, assetPa
 		return Layer{}, fmt.Errorf("overlay: image item %q: %w", ri.Item.ID, err)
 	}
 	return layer, nil
+}
+
+// runtimeDefaultImageMotionIDs is the canonical-catalog projection used when
+// an image omits motion_id. Keep this automatic pool to the single-image
+// families; recipe families (premium accents, stacks, captions) remain explicit
+// choices because they require extra geometry or assets. IDs are sorted so
+// selection is stable across builds.
+var runtimeDefaultImageMotionIDs = func() []string {
+	var ids []string
+	for _, family := range []string{"overlay_v3_image", "image_25d_clean_v1", "editorial_image_v1"} {
+		ids = append(ids, motion.Registry.SelectableCategoryMotionIDs(family)...)
+	}
+	sort.Strings(ids)
+	unique := ids[:0]
+	for _, id := range ids {
+		if len(unique) == 0 || unique[len(unique)-1] != id {
+			unique = append(unique, id)
+		}
+	}
+	return unique
+}()
+
+// runtimeDefaultImageMotionID returns a deterministic but video/item-specific
+// choice. Explicit motion_id and animation_policies are handled before this
+// fallback, and therefore remain authoritative.
+func runtimeDefaultImageMotionID(src *semanticPlan, itemID string) string {
+	return runtimeDefaultImageMotionIDFor(runtimeDefaultImageMotionIDs, src, itemID)
+}
+
+func runtimeDefaultImageMotionIDFor(pool []string, src *semanticPlan, itemID string) string {
+	if len(pool) == 0 || src == nil {
+		return ""
+	}
+	return pool[styleHash("runtime_default_image_motion", src.PlanID, src.VideoID, itemID, uint64(len(pool)))]
 }
 
 func motionDefinitionRequires3D(resolved *resolvedMotion) bool {

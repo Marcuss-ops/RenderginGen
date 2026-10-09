@@ -63,6 +63,29 @@ func (s *Server) fail(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
+func (s *Server) failPermanently(w http.ResponseWriter, r *http.Request) {
+	id := parseJobID(r)
+	var req struct {
+		Worker string `json:"worker"`
+		Data   struct {
+			Reason string `json:"reason"`
+		} `json:"data"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, fmt.Sprintf("invalid request body: %v", err), http.StatusBadRequest)
+		return
+	}
+	if req.Worker == "" || req.Data.Reason == "" {
+		http.Error(w, "worker and failure reason are required", http.StatusBadRequest)
+		return
+	}
+	if err := s.svc.FailPermanently(r.Context(), id, req.Worker, req.Data.Reason); err != nil {
+		http.Error(w, err.Error(), http.StatusConflict)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
 func (s *Server) retry(w http.ResponseWriter, r *http.Request) {
 	id := parseJobID(r)
 	if err := s.svc.Retry(r.Context(), id); err != nil {

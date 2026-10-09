@@ -140,6 +140,10 @@ func (s *Service) Children(ctx context.Context, parentID string) ([]*model.Job, 
 	return s.repo.Children(ctx, parentID)
 }
 
+func (s *Service) RecoverableParents(ctx context.Context) ([]string, error) {
+	return s.repo.RecoverableParents(ctx)
+}
+
 // ByParent returns every job submitted under one parent_job_id (the run-scoped
 // read: "what did this run enqueue?"), in submission order.
 func (s *Service) ByParent(ctx context.Context, parentID string) ([]*model.Job, error) {
