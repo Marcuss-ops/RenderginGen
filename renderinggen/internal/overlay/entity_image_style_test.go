@@ -83,12 +83,8 @@ func TestEntityImageStyleRandomReachesAll25AppleSpatialStyles(t *testing.T) {
 	}
 }
 
-func TestEntityImageStyleBadgeEmitsBadgeLayer(t *testing.T) {
-	// Sample with the badge tag query until both badge colors have appeared,
-	// proving the runtime yellow/red alternation is wired through the
-	// image-kind path too.
-	sawYellow, sawRed := false, false
-	for i := 0; i < 64 && !(sawYellow && sawRed); i++ {
+func TestEntityImageStyleBadgeKeepsCaptionWithoutGPUShape(t *testing.T) {
+	for i := 0; i < 8; i++ {
 		planID := "entity-style-badge-" + jsonInt(i)
 		raw := []byte(strings.Replace(string(styledEntityImagePlan(t, planID, "badge")),
 			"\"entity_style_id\":\"badge\"", "\"entity_style_id\":\"badge\"", 1))
@@ -96,24 +92,18 @@ func TestEntityImageStyleBadgeEmitsBadgeLayer(t *testing.T) {
 		if err != nil {
 			t.Fatalf("CompileSemantic badge plan %q: %v", planID, err)
 		}
-		var badgeFound bool
+		var captionFound bool
 		for _, layer := range result.Plan.Layers {
-			if layer.ID == "portrait:entity_badge" && layer.Shape != nil {
-				badgeFound = true
-				switch layer.Shape.Fill {
-				case "#FFDE00":
-					sawYellow = true
-				case "#EB1E2D":
-					sawRed = true
-				}
+			if layer.Type == "text" {
+				captionFound = true
+			}
+			if layer.ID == "portrait:entity_badge" {
+				t.Fatalf("badge style emitted a GPU shape")
 			}
 		}
-		if !badgeFound {
-			t.Fatalf("badge plan %q produced no badge layer", planID)
+		if !captionFound {
+			t.Fatalf("badge plan %q lost its entity caption", planID)
 		}
-	}
-	if !sawYellow || !sawRed {
-		t.Fatalf("badge runtime alternation incomplete: yellow=%v red=%v", sawYellow, sawRed)
 	}
 }
 

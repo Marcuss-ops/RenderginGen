@@ -16,12 +16,13 @@ import (
 //     FORBIDS this artifact (`timing_sidecar_v2_is_the_only_schema`), so a
 //     current engine never writes it; it is still read when a legacy engine
 //     produces it.
-//   * `<output>.timing.json` (chronon3d.frame-timing.v2) — the canonical
+//   * `<output>.timing.json` (chronon3d.frame-timing.v3, with v2 accepted for
+//     older workers) — the canonical
 //     single telemetry artifact of the current engine. It carries the bounded
 //     summary INLINE (`summary` + `job` sections, the same field paths the
 //     legacy summary used) alongside the unbounded per-frame array.
 //
-// This file ingests whichever the engine produced. From the v2 sidecar it
+// This file ingests whichever the engine produced. From the v2/v3 sidecar it
 // takes ONLY the bounded `schema`/`version`/`summary`/`job` sections — the
 // per-frame array never enters the ledger — and it re-derives nothing: every
 // value is Chronon's own, transported verbatim. Independently, the processor
@@ -35,9 +36,15 @@ const TelemetrySummarySchema = "chronon3d.render-telemetry-summary.v1"
 // TelemetrySummarySuffix is the file suffix of the bounded summary sidecar.
 const TelemetrySummarySuffix = ".telemetry-summary.json"
 
-// TimingSidecarSchemaV2 is the schema of Chronon's canonical frame-timing
-// sidecar (`<output>.timing.json`) — the engine's ONLY telemetry artifact.
+// TimingSidecarSchemaV2 and V3 are the accepted schemas of Chronon's canonical
+// frame-timing sidecar (`<output>.timing.json`). V3 adds telemetry sections;
+// the bounded `schema`/`version`/`summary`/`job` projection used below is stable.
 const TimingSidecarSchemaV2 = "chronon3d.frame-timing.v2"
+const TimingSidecarSchemaV3 = "chronon3d.frame-timing.v3"
+
+func isTimingSidecarSchema(schema string) bool {
+	return schema == TimingSidecarSchemaV2 || schema == TimingSidecarSchemaV3
+}
 
 // TimingSidecarSuffix is the file suffix of the frame-timing sidecar.
 const TimingSidecarSuffix = ".timing.json"
@@ -71,7 +78,7 @@ func ReadTelemetrySummary(outputPath string) (json.RawMessage, error) {
 	return nil, fmt.Errorf("%v; %v", legacyErr, sidecarErr)
 }
 
-// ReadTimingSidecarTelemetry reads Chronon's v2 frame-timing sidecar from an
+// ReadTimingSidecarTelemetry reads Chronon's v2/v3 frame-timing sidecar from an
 // explicit path and returns its BOUNDED telemetry projection: the engine's own
 // schema/version/summary/job sections, verbatim, with the unbounded per-frame
 // array deliberately dropped. A document that is not the v2 schema, or that
@@ -84,14 +91,14 @@ func ReadTimingSidecarTelemetry(path string) (json.RawMessage, error) {
 	return BoundTimingSidecar(data)
 }
 
-// BoundTimingSidecar projects the raw v2 frame-timing document onto its BOUNDED
+// BoundTimingSidecar projects the raw v2/v3 frame-timing document onto its BOUNDED
 // telemetry sections (`schema`/`version`/`summary`/`job`), dropping the
 // unbounded per-frame array. It is the SINGLE owner of that projection: the
 // ledger ingest (ReadTimingSidecarTelemetry) and the worker's execution-path
 // cross-check (DecodeExecutionFacts) both call it, so a caller that hands the
 // whole sidecar to either one can never get a different bounding than the other.
 //
-// The document is rejected unless it IS the v2 schema and carries the `job`
+// The document is rejected unless it IS a supported timing schema and carries the `job`
 // section (the certification surface).
 func BoundTimingSidecar(data []byte) (json.RawMessage, error) {
 	var doc map[string]json.RawMessage
@@ -104,9 +111,8 @@ func BoundTimingSidecar(data []byte) (json.RawMessage, error) {
 	if err := json.Unmarshal(data, &header); err != nil {
 		return nil, fmt.Errorf("chronon timing sidecar: decode schema: %w", err)
 	}
-	if header.Schema != TimingSidecarSchemaV2 {
-		return nil, fmt.Errorf("chronon timing sidecar: schema %q, want %q",
-			header.Schema, TimingSidecarSchemaV2)
+	if !isTimingSidecarSchema(header.Schema) {
+		return nil, fmt.Errorf("chronon timing sidecar: unsupported schema %q", header.Schema)
 	}
 	bounded := make(map[string]json.RawMessage, len(boundedTimingSections))
 	for _, section := range boundedTimingSections {
@@ -115,7 +121,7 @@ func BoundTimingSidecar(data []byte) (json.RawMessage, error) {
 		}
 	}
 	if _, ok := bounded["job"]; !ok {
-		return nil, fmt.Errorf("chronon timing sidecar: v2 document carries no job section")
+		return nil, fmt.Errorf("chronon timing sidecar: %s document carries no job section", header.Schema)
 	}
 	out, err := json.Marshal(bounded)
 	if err != nil {
@@ -180,9 +186,8 @@ func DecodeNativeTelemetry(raw json.RawMessage) (NativeTelemetry, error) {
 	if err := json.Unmarshal(raw, &telemetry); err != nil {
 		return telemetry, fmt.Errorf("chronon telemetry summary: decode: %w", err)
 	}
-	if telemetry.Schema != TelemetrySummarySchema && telemetry.Schema != TimingSidecarSchemaV2 {
-		return telemetry, fmt.Errorf("chronon telemetry summary: schema %q, want %q or %q",
-			telemetry.Schema, TelemetrySummarySchema, TimingSidecarSchemaV2)
+	if telemetry.Schema != TelemetrySummarySchema && !isTimingSidecarSchema(telemetry.Schema) {
+		return telemetry, fmt.Errorf("chronon telemetry summary: unsupported schema %q", telemetry.Schema)
 	}
 	return telemetry, nil
 }

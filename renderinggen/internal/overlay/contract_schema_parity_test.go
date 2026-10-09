@@ -48,6 +48,7 @@ func TestContractSchemaMatchesCompilerStructs(t *testing.T) {
 		{"plan.items[].frame.stroke", "#/properties/items/items/properties/frame/properties/stroke", semanticFrameStroke{}},
 		{"plan.items[].metric", "#/$defs/metric_data", SemanticMetricData{}},
 		{"plan.items[].date", "#/$defs/date_data", SemanticDateData{}},
+		{"plan.items[].sound_effect", "#/properties/items/items/properties/sound_effect", SemanticOverlaySFX{}},
 		{"plan.items[].map", "#/properties/items/items/properties/map", SemanticMap{}},
 		{"plan.items[].map.center", "#/$defs/map_point", SemanticMapPoint{}},
 		{"plan.items[].map.pins[]", "#/properties/items/items/properties/map/properties/pins/items", SemanticMapPin{}},

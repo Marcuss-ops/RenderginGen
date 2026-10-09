@@ -64,7 +64,7 @@ type ExecutionFacts struct {
 //
 //   - chronon3d.render-telemetry-summary.v1 — the historical bounded summary,
 //     decoded as-is.
-//   - chronon3d.frame-timing.v2 — the CURRENT engine's ONLY telemetry artifact.
+//   - chronon3d.frame-timing.v2/v3 — the engine's canonical telemetry artifact.
 //     It carries the same bounded sections (`summary` + `job`, the same field
 //     paths) INLINE next to an unbounded per-frame array, so it is bounded by
 //     BoundTimingSidecar — the same projection the ledger ingest uses — before
@@ -88,7 +88,7 @@ func DecodeExecutionFacts(raw json.RawMessage) (ExecutionFacts, error) {
 	switch header.Schema {
 	case TelemetrySummarySchema:
 		// Decode the bounded summary verbatim.
-	case TimingSidecarSchemaV2:
+	case TimingSidecarSchemaV2, TimingSidecarSchemaV3:
 		bounded, err := BoundTimingSidecar(raw)
 		if err != nil {
 			return facts, fmt.Errorf("chronon execution facts: %w", err)

@@ -37,7 +37,7 @@ func RenderPlanWireVersion(plan *Plan) (string, int) {
 	if plan == nil {
 		return RenderPlanSchemaV2, RenderPlanVersionV2
 	}
-	if plan.CameraAnimation != nil || plan.Camera != nil && len(plan.Layers) > 0 {
+	if plan.CameraAnimation != nil || plan.Camera != nil && len(plan.Layers) > 0 || plan.Audio != nil {
 		return RenderPlanSchemaV3, RenderPlanVersionV3
 	}
 	for _, layer := range plan.Layers {
@@ -72,6 +72,7 @@ type Plan struct {
 	CameraAnimation *CameraAnimation `json:"camera_animation,omitempty"`
 	Canvas          Canvas           `json:"canvas"`
 	Layers          []Layer          `json:"layers"`
+	Audio           *AudioMixPlan    `json:"audio,omitempty"`
 	Output          Output           `json:"output"`
 }
 
@@ -171,6 +172,9 @@ type semanticPlan struct {
 	Fingerprint     string          `json:"fingerprint,omitempty"`      // producer metadata
 	Source          *semanticSource `json:"source,omitempty"`
 	ForegroundScale int             `json:"foreground_scale_percent,omitempty"`
+	// EntityVariationSeed salts entity style sampling. Empty keeps the
+	// plan_id-derived choice, so existing plans compile unchanged.
+	EntityVariationSeed string `json:"entity_variation_seed,omitempty"`
 	// SourceFrame is the optional card treatment of the source clip (border
 	// frame + drop shadow + rounded corners + on-edge stroke). An unresolvable
 	// declaration is a compile error instead of a silently dropped style block.
@@ -351,6 +355,17 @@ type semanticItem struct {
 	// item's data target in validateSemanticDataBlocks.
 	Metric *SemanticMetricData `json:"metric"`
 	Date   *SemanticDateData   `json:"date"`
+	// SoundEffect attaches one already-selected audio asset to this image's
+	// first visible frame. Selection remains producer-owned; the worker only
+	// resolves the content-addressed asset and lowers its timing into Chronon.
+	SoundEffect *SemanticOverlaySFX `json:"sound_effect,omitempty"`
+}
+
+type SemanticOverlaySFX struct {
+	AssetRef      SemanticAssetRef `json:"asset_ref"`
+	StartOffsetMS int64            `json:"start_offset_ms,omitempty"`
+	DurationMS    int64            `json:"duration_ms,omitempty"`
+	GainDB        *float64         `json:"gain_db,omitempty"`
 }
 
 // SemanticMap is the worker mirror of the georeferenced map declaration.
@@ -505,6 +520,22 @@ type Audio struct {
 	Codec      string `json:"codec,omitempty"`
 	SampleRate int    `json:"sample_rate,omitempty"`
 	Channels   int    `json:"channels,omitempty"`
+}
+
+// AudioMixPlan is the concrete Chronon audio bus emitted for image-bound SFX.
+// Optional/legacy overlay plans omit it and preserve their existing audio path.
+type AudioMixPlan struct {
+	Clips []AudioClipPlan `json:"clips"`
+}
+
+type AudioClipPlan struct {
+	ID      string  `json:"id"`
+	Asset   string  `json:"asset"`
+	Start   int64   `json:"start"`
+	ClipIn  int64   `json:"clip_in,omitempty"`
+	ClipOut int64   `json:"clip_out,omitempty"`
+	GainDB  float64 `json:"gain_db"`
+	Role    string  `json:"role"`
 }
 
 type Canvas struct {

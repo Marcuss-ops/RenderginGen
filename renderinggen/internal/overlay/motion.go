@@ -62,6 +62,10 @@ func lowerResolvedMotion(id string, resolved *resolvedMotion, enter, exit int, p
 		return nil, fmt.Errorf("overlay: item %q motion %q is not supported for target %q", itemID, id, target)
 	}
 	plugin := resolved.plugin
+	disableExit := exit < 0
+	if disableExit {
+		exit = 0
+	}
 	// The caller's windows win (an official preset owns its own entrance and
 	// exit); a producer-selected motion_id supplies only the exit fallback, so
 	// the motion's registered windows fill the gaps.
@@ -71,7 +75,7 @@ func lowerResolvedMotion(id string, resolved *resolvedMotion, enter, exit int, p
 		if enter <= 0 {
 			enter = definition.Enter
 		}
-		if exit <= 0 {
+		if exit <= 0 && !disableExit {
 			exit = definition.Exit
 		}
 	}

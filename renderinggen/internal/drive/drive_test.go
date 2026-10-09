@@ -10,6 +10,7 @@ import (
 	"strings"
 	"testing"
 
+	"golang.org/x/oauth2"
 	gdrive "google.golang.org/api/drive/v3"
 	"google.golang.org/api/option"
 )
@@ -346,5 +347,85 @@ func TestMockEnsureFolderRejectsMissingArguments(t *testing.T) {
 	}
 	if _, err := m.EnsureFolder(context.Background(), "", "boxe"); err == nil || !strings.Contains(err.Error(), "parent folder id is required") {
 		t.Fatalf("blank parent: err = %v, want a parent failure", err)
+	}
+}
+
+// TestGooglePublishUsesPrecomputedMD5 pins that a caller-supplied digest is the
+// one the provider checksum is compared against: Publish must not re-hash when
+// it is given, so a wrong digest is reported as a mismatch.
+func TestGooglePublishUsesPrecomputedMD5(t *testing.T) {
+	g := driveStub(t, `{"id":"file-6","size":"3","md5Checksum":"`+abcMD5+`"}`)
+	_, err := g.Publish(context.Background(), PublishRequest{
+		Name: "x.mp4", Path: writeABC(t), ContentType: "video/mp4",
+		PrecomputedMD5: strings.Repeat("0", 32)})
+	if err == nil || !strings.Contains(err.Error(), "md5") {
+		t.Fatalf("want md5 mismatch against the precomputed digest, got %v", err)
+	}
+}
+
+// TestFileDigestsComputesBothDigestsInOneRead pins the content address: the
+// SHA-256 and MD5 of "abc" are the well-known vectors, and the byte count is
+// returned alongside them.
+func TestFileDigestsComputesBothDigestsInOneRead(t *testing.T) {
+	sha, md, size, err := FileDigests(writeABC(t))
+	if err != nil {
+		t.Fatalf("FileDigests: %v", err)
+	}
+	const abcSHA = "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
+	if sha != abcSHA {
+		t.Fatalf("sha256 = %s, want %s", sha, abcSHA)
+	}
+	if md != abcMD5 {
+		t.Fatalf("md5 = %s, want %s", md, abcMD5)
+	}
+	if size != 3 {
+		t.Fatalf("size = %d, want 3", size)
+	}
+}
+
+// staticTokenSource always returns the token it was given, so the persistence
+// policy can be driven from the test.
+type staticTokenSource struct{ tok *oauth2.Token }
+
+func (s *staticTokenSource) Token() (*oauth2.Token, error) { return s.tok, nil }
+
+// TestRefreshingTokenSourceWritesOnlyWhenTheAccessTokenChanges pins the
+// persistence policy: Token() runs on every Drive request, so an unchanged token
+// must not rewrite the file, while a newly issued one must be saved.
+func TestRefreshingTokenSourceWritesOnlyWhenTheAccessTokenChanges(t *testing.T) {
+	tokenFile := filepath.Join(t.TempDir(), "token.json")
+	if err := os.WriteFile(tokenFile, []byte("sentinel"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	src := &refreshingTokenSource{
+		source:    &staticTokenSource{tok: &oauth2.Token{AccessToken: "a1"}},
+		tokenFile: tokenFile,
+		persisted: "a1",
+	}
+	if _, err := src.Token(); err != nil {
+		t.Fatal(err)
+	}
+	if got, _ := os.ReadFile(tokenFile); string(got) != "sentinel" {
+		t.Fatalf("unchanged token rewrote the file: %q", got)
+	}
+
+	src.source = &staticTokenSource{tok: &oauth2.Token{AccessToken: "a2"}}
+	if _, err := src.Token(); err != nil {
+		t.Fatal(err)
+	}
+	got, _ := os.ReadFile(tokenFile)
+	if !strings.Contains(string(got), `"access_token":"a2"`) {
+		t.Fatalf("a refreshed token was not persisted: %s", got)
+	}
+}
+
+// TestEscapeDriveQueryEscapesBackslashBeforeQuotes pins the query escape: a
+// backslash and a quote must both be escaped, and the backslash must not be
+// escaped twice.
+func TestEscapeDriveQueryEscapesBackslashBeforeQuotes(t *testing.T) {
+	got := escapeDriveQuery(`it's a \ b`)
+	const want = `it\'s a \\ b`
+	if got != want {
+		t.Fatalf("escapeDriveQuery = %s, want %s", got, want)
 	}
 }

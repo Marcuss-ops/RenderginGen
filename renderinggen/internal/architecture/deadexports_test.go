@@ -71,6 +71,7 @@ var deadExportModules = []string{"renderinggen", "queue", "objectstore"}
 var deadExportExceptions = map[string]string{
 	"ShortPhraseStyles": "public motion-picker API consumed by the external RenderingGen service contract",
 	"DefaultRegistry":   "public loader API used by consumers that provide ChrononTemplate Natural Earth data outside this checkout",
+	"PNG":               "runtime country-flag asset loader consumed by PipelineGen outside the RenderingGen module",
 }
 
 // stdlibInterfaceMethods maps a standard-library interface to the method it

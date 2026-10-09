@@ -4,8 +4,8 @@
 // identity. The bounded document is either the legacy summary
 // (`<output>.telemetry-summary.json`, chronon3d.render-telemetry-summary.v1) or
 // the current engine's frame-timing sidecar (`<output>.timing.json`,
-// chronon3d.frame-timing.v2) reduces to its inline summary/job sections — the
-// v2 sidecar became the engine's SINGLE telemetry artifact, and the v2 summary
+// chronon3d.frame-timing.v2/v3) reduces to its inline summary/job sections —
+// the timing sidecar became the engine's SINGLE telemetry artifact, and its summary
 // publishes the very same job/gpu counters under the same paths. The gate
 // never reads the per-frame array (opaque artifact), so it cannot drift from
 // the bounded contract (observability ownership, Phase 10).
@@ -57,24 +57,29 @@ func requireNativeVulkan(outputPath string, expectedFrames int) error {
 		return fmt.Errorf("surface_handoff_path=%q, want vulkan_copy or direct", doc.Job.SurfaceHandoffPath)
 	}
 	if expectedFrames > 0 {
-		if doc.Job.GPU.NVENCFrames == nil || *doc.Job.GPU.NVENCFrames != int64(expectedFrames) {
+		// Chronon keeps one warm renderer alive across jobs, so these telemetry
+		// counters are process-cumulative rather than scoped to this output.
+		// The media receipt/output verifier owns the clip's exact frame count;
+		// here require enough native GPU frames to cover this clip while the
+		// backend, no-fallback, and no-readback checks above certify the path.
+		if doc.Job.GPU.NVENCFrames == nil || *doc.Job.GPU.NVENCFrames < int64(expectedFrames) {
 			if doc.Job.GPU.NVENCFrames == nil {
 				return fmt.Errorf("nvenc_frames missing, want %d", expectedFrames)
 			}
-			return fmt.Errorf("nvenc_frames=%d, want %d", *doc.Job.GPU.NVENCFrames, expectedFrames)
+			return fmt.Errorf("nvenc_frames=%d, want at least %d", *doc.Job.GPU.NVENCFrames, expectedFrames)
 		}
 		if directYUV {
-			if doc.Job.GPU.NativeSurfaceFrames == nil || *doc.Job.GPU.NativeSurfaceFrames != int64(expectedFrames) {
+			if doc.Job.GPU.NativeSurfaceFrames == nil || *doc.Job.GPU.NativeSurfaceFrames < int64(expectedFrames) {
 				if doc.Job.GPU.NativeSurfaceFrames == nil {
 					return fmt.Errorf("gpu_native_surface_frames missing, want %d", expectedFrames)
 				}
 				return fmt.Errorf("gpu_native_surface_frames=%d, want %d", *doc.Job.GPU.NativeSurfaceFrames, expectedFrames)
 			}
-		} else if doc.Job.GPU.VulkanFrames == nil || *doc.Job.GPU.VulkanFrames != int64(expectedFrames) {
+		} else if doc.Job.GPU.VulkanFrames == nil || *doc.Job.GPU.VulkanFrames < int64(expectedFrames) {
 			if doc.Job.GPU.VulkanFrames == nil {
 				return fmt.Errorf("vulkan_frames missing, want %d", expectedFrames)
 			}
-			return fmt.Errorf("vulkan_frames=%d, want %d", *doc.Job.GPU.VulkanFrames, expectedFrames)
+			return fmt.Errorf("vulkan_frames=%d, want at least %d", *doc.Job.GPU.VulkanFrames, expectedFrames)
 		}
 	}
 	// Presence of Chronon's media receipt is owned by chronon.ReadReceiptPresence

@@ -29,7 +29,6 @@ import (
 	"strings"
 
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/drive"
-	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/hashio"
 )
 
 type uploadResult struct {
@@ -42,13 +41,16 @@ type uploadResult struct {
 // the single publication primitive of this CLI so the invariant is testable
 // without a real Drive account.
 func uploadAndVerify(ctx context.Context, publisher drive.Publisher, req drive.PublishRequest, expectedSHA string) (uploadResult, error) {
-	digest, size, err := hashio.File(req.Path)
+	// One read of the file yields both digests: SHA-256 is the content address
+	// checked here, MD5 is what Drive reports and what Publish verifies against.
+	digest, md5Hex, size, err := drive.FileDigests(req.Path)
 	if err != nil {
 		return uploadResult{}, fmt.Errorf("drive-upload: hash %s: %w", req.Path, err)
 	}
 	if expectedSHA != "" && !strings.EqualFold(digest, expectedSHA) {
 		return uploadResult{}, fmt.Errorf("drive-upload: sha256 mismatch for %s: computed %s, expected %s", req.Path, digest, expectedSHA)
 	}
+	req.PrecomputedMD5 = md5Hex
 	res, err := publisher.Publish(ctx, req)
 	if err != nil {
 		return uploadResult{}, err

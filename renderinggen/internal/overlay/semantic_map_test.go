@@ -88,9 +88,17 @@ func TestGeoreferencedMapCompilesGroundedLayers(t *testing.T) {
 	if label.Type != "text" || label.Text != "Target" || credit.Type != "text" || credit.Text != "Map data supplied by operator" {
 		t.Fatalf("map label/attribution layers are incomplete: label=%+v credit=%+v", label, credit)
 	}
+	// Pins and labels are a staged reveal: they start after the basemap (the
+	// camera settles first) but every layer leaves the canvas on the same frame
+	// as the basemap. The invariant is that nothing starts early and everything
+	// ends together, not that every layer starts on frame 0.
+	baseEnd := basemap.StartFrame + basemap.DurationFrames
 	for _, layer := range result.Plan.Layers {
-		if layer.StartFrame != basemap.StartFrame || layer.DurationFrames != basemap.DurationFrames {
-			t.Fatalf("map layer %q does not share the basemap lifetime", layer.ID)
+		if layer.StartFrame < basemap.StartFrame {
+			t.Fatalf("map layer %q starts before the basemap (%d < %d)", layer.ID, layer.StartFrame, basemap.StartFrame)
+		}
+		if layer.StartFrame+layer.DurationFrames != baseEnd {
+			t.Fatalf("map layer %q ends at frame %d, basemap ends at %d", layer.ID, layer.StartFrame+layer.DurationFrames, baseEnd)
 		}
 	}
 }

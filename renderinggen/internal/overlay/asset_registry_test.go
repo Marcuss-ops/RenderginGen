@@ -35,6 +35,11 @@ func TestSemanticAssetPathStripsQuery(t *testing.T) {
 			"assets/semantic/classic1.mp4",
 		},
 		{
+			"audio mp4 falls back to m4a",
+			SemanticAssetRef{ID: "cue", SHA256: hash64("audio"), URL: "https://cdn.example/signed", MediaType: "audio/mp4"},
+			"assets/semantic/cue.m4a",
+		},
+		{
 			"assets/ prefix passes through",
 			SemanticAssetRef{ID: "bg", SHA256: hash64("d"), URL: "assets/backgrounds/night.mp4"},
 			"assets/backgrounds/night.mp4",
