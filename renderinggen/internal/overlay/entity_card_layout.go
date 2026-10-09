@@ -289,15 +289,6 @@ func captionLinesWidth(lines []string, fontSize float64) float64 {
 	return width
 }
 
-// captionMotionPlanID / captionMotionVideoID / captionMotionItemID carry the
-// owning item's identity into EntityCaptionMotionID so the pool rotation is
-// deterministic per (plan, video, item) — exactly like the entity-style
-// styleHash sampler. The caption compiler sets them for the duration of one
-// lower; they are unset otherwise.
-var (
-	captionMotionPlanID, captionMotionVideoID, captionMotionItemID string
-)
-
 // entityCaptionMotionPool is the certified caption-motion pool an unstyled
 // producer item rotates through instead of the legacy single hardcoded
 // fallback: authored text treatments, the typewriter families and the
@@ -319,6 +310,19 @@ var entityCaptionMotionPool = []string{
 	"typewriter_slide_in",
 	"typewriter_soft_lift",
 	"typewriter_tracking",
+	"typewriter_modern_01_monospace_block_cursor",
+	"typewriter_modern_02_kinetic_scramble",
+	"typewriter_modern_03_soft_opacity_ramp",
+	"typewriter_modern_04_character_bounce",
+	"typewriter_modern_05_backspace_correction",
+	"typewriter_modern_06_glow_beam_sweep",
+	"typewriter_modern_07_word_snap",
+	"typewriter_modern_08_mechanical_y_shift",
+	"typewriter_modern_09_highlighter_expansion",
+	"typewriter_modern_10_weight_ramp",
+	"typewriter_modern_13_elastic_leading_cursor",
+	"typewriter_modern_14_focal_blur_dissolve",
+	"typewriter_modern_15_paper_punch_stencil",
 	"trump_entity_text_01", "trump_entity_text_02", "trump_entity_text_03",
 	"trump_entity_text_04", "trump_entity_text_05", "trump_entity_text_06",
 	"trump_entity_text_07", "trump_entity_text_08", "trump_entity_text_09",
@@ -328,11 +332,18 @@ var entityCaptionMotionPool = []string{
 
 // EntityCaptionMotionID returns the caption's motion id. A requested id is
 // authoritative. Empty resolves one catalog motion deterministically from the
-// (plan, video, item) identity: the caption rotates through the FULL certified
-// pool instead of always falling back to trump_entity_text_01.
+// (plan, video, item) identity. The automatic selector can now use the full
+// compatible generic + modern typewriter + entity-text caption pool.
 func EntityCaptionMotionID(requested string) string {
+	return entityCaptionMotionIDForIdentity(requested, "", "", "")
+}
+
+// entityCaptionMotionIDForIdentity keeps selection request-local: using package
+// globals here would let concurrent plan compilations overwrite each other's
+// seeds and make caption choices nondeterministic.
+func entityCaptionMotionIDForIdentity(requested, planID, videoID, itemID string) string {
 	if requested != "" {
 		return requested
 	}
-	return entityCaptionMotionPool[styleHash("caption_motion", captionMotionPlanID, captionMotionVideoID, captionMotionItemID, uint64(len(entityCaptionMotionPool)))]
+	return entityCaptionMotionPool[styleHash("caption_motion", planID, videoID, itemID, uint64(len(entityCaptionMotionPool)))]
 }

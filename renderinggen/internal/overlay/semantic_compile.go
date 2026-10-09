@@ -150,6 +150,27 @@ func compileSemantic(raw []byte) (*Plan, []Asset, Stats, []string, error) {
 		}
 		plan.Layers = append(plan.Layers, layer)
 	}
+	// Named map targets are producer-level inputs to item resolution, so resolve
+	// them before the one authoritative semantic-item pass.
+	if err := resolveMapFeatureMoves(&src); err != nil {
+		return nil, nil, Stats{}, nil, err
+	}
+	// Resolve every item once before lowering any item-specific assets. The
+	// resolved kind and frame window are authoritative for SFX eligibility and
+	// placement (template aliases and frame quantization included).
+	resolved, err := resolveSemanticItems(&src)
+	if err != nil {
+		return nil, nil, Stats{}, nil, err
+	}
+	resolvedByID := make(map[string]resolvedItem, len(resolved))
+	for _, item := range resolved {
+		resolvedByID[item.Item.ID] = item
+	}
+	type pendingSFX struct {
+		clip            AudioClipPlan
+		visibleEndFrame int64
+	}
+	var pendingSFXClips []pendingSFX
 	// Pre-register every item asset so collisions fail before any layer is
 	// emitted (the registry is the single owner of the id → path mapping).
 	for _, item := range src.Items {
@@ -158,20 +179,66 @@ func compileSemantic(raw []byte) (*Plan, []Asset, Stats, []string, error) {
 				return nil, nil, Stats{}, nil, fmt.Errorf("overlay: item %q asset: %w", item.ID, err)
 			}
 		}
+		if sfx := item.SoundEffect; sfx != nil {
+			resolvedItem, ok := resolvedByID[item.ID]
+			if !ok || !isImageKind(resolvedItem.Kind) {
+				return nil, nil, Stats{}, nil, fmt.Errorf("overlay: item %q sound_effect is only valid on an image overlay", item.ID)
+			}
+			if sfx.StartOffsetMS < 0 || sfx.DurationMS <= 0 {
+				return nil, nil, Stats{}, nil, fmt.Errorf("overlay: item %q sound_effect requires non-negative start_offset_ms and positive duration_ms", item.ID)
+			}
+			if sfx.GainDB != nil && (math.IsNaN(*sfx.GainDB) || math.IsInf(*sfx.GainDB, 0) || *sfx.GainDB < -96 || *sfx.GainDB > 24) {
+				return nil, nil, Stats{}, nil, fmt.Errorf("overlay: item %q sound_effect gain_db must be finite and in [-96,24]", item.ID)
+			}
+			visibleStartOffsetMS := int64(0)
+			visibleEndOffsetMS := item.EndMS - item.StartMS
+			if len(item.ImageLayers) > 0 {
+				firstLayer := item.ImageLayers[0]
+				for _, layer := range item.ImageLayers[1:] {
+					if layer.StartMS < firstLayer.StartMS || layer.StartMS == firstLayer.StartMS && layer.EndMS > firstLayer.EndMS {
+						firstLayer = layer
+					}
+				}
+				visibleStartOffsetMS = firstLayer.StartMS
+				visibleEndOffsetMS = firstLayer.EndMS
+				if visibleEndOffsetMS > item.EndMS-item.StartMS {
+					visibleEndOffsetMS = item.EndMS - item.StartMS
+				}
+				if sfx.StartOffsetMS != visibleStartOffsetMS {
+					return nil, nil, Stats{}, nil, fmt.Errorf("overlay: item %q composite sound_effect must start at first visible image layer (%dms)", item.ID, visibleStartOffsetMS)
+				}
+			} else if sfx.StartOffsetMS != 0 {
+				return nil, nil, Stats{}, nil, fmt.Errorf("overlay: item %q sound_effect start_offset_ms must be zero for a single-layer image", item.ID)
+			}
+			visibleDurationMS := visibleEndOffsetMS - visibleStartOffsetMS
+			if visibleDurationMS <= 0 || sfx.DurationMS > visibleDurationMS {
+				return nil, nil, Stats{}, nil, fmt.Errorf("overlay: item %q sound_effect exceeds its first visible image window", item.ID)
+			}
+			if strings.TrimSpace(sfx.AssetRef.MediaType) != "audio/mp4" {
+				return nil, nil, Stats{}, nil, fmt.Errorf("overlay: item %q sound_effect asset must declare media_type audio/mp4", item.ID)
+			}
+			path, err := registry.Register(sfx.AssetRef)
+			if err != nil {
+				return nil, nil, Stats{}, nil, fmt.Errorf("overlay: item %q sound_effect asset: %w", item.ID, err)
+			}
+			startOffsetFrame, visibleDurationEndFrame := msFrames(visibleStartOffsetMS, visibleEndOffsetMS, int64(src.FPSNum), int64(src.FPSDen))
+			startFrame := resolvedItem.Start + startOffsetFrame
+			visibleEndFrame := resolvedItem.Start + visibleDurationEndFrame
+			_, clipOut := msFrames(0, sfx.DurationMS, int64(src.FPSNum), int64(src.FPSDen))
+			if startFrame < 0 || visibleEndFrame <= startFrame || clipOut <= 0 {
+				return nil, nil, Stats{}, nil, fmt.Errorf("overlay: item %q sound_effect timing collapses to no frames", item.ID)
+			}
+			gain := -18.0
+			if sfx.GainDB != nil {
+				gain = *sfx.GainDB
+			}
+			pendingSFXClips = append(pendingSFXClips, pendingSFX{
+				clip:            AudioClipPlan{ID: "overlay-sfx-" + item.ID, Asset: path, Start: startFrame, ClipOut: clipOut, GainDB: gain, Role: "sfx"},
+				visibleEndFrame: visibleEndFrame,
+			})
+		}
 	}
 
-	// Resolve named map targets before map-contract admission; the validated
-	// camera_move/LOD declaration remains the single authority for fly-to.
-	if err := resolveMapFeatureMoves(&src); err != nil {
-		return nil, nil, Stats{}, nil, err
-	}
-	// Resolve every item ONCE through the template registry: kind validation,
-	// preset resolution and timing. Both the per-kind compilers and the ledger
-	// read this resolution, so they can never disagree.
-	resolved, err := resolveSemanticItems(&src)
-	if err != nil {
-		return nil, nil, Stats{}, nil, err
-	}
 	// Templates that resolved to no registry row are reported, not swallowed:
 	// they still compile as preset-less primitives, but the caller can see the
 	// fall-through (see CompileResult.UnknownTemplates).
@@ -327,7 +394,7 @@ func compileSemantic(raw []byte) (*Plan, []Asset, Stats, []string, error) {
 	var entityCameraMotionItemID string
 	for _, ri := range resolved {
 		if (isEntityKind(ri.Kind) || isImageKind(ri.Kind)) && ri.Item.EntityStyleID != "" {
-			if style, ok := ResolveEntityStyle(ri.Item.EntityStyleID, src.PlanID, src.VideoID, ri.Item.ID); ok && style.CameraMotionID != "" {
+			if style, ok := ResolveEntityStyle(ri.Item.EntityStyleID, src.entityStyleSampleKey(), src.VideoID, ri.Item.ID); ok && style.CameraMotionID != "" {
 				if entityCameraMotionID != "" {
 					return nil, nil, Stats{}, nil, fmt.Errorf("overlay: camera motion on entity item %q conflicts with camera motion on entity item %q; only one scene camera controller is allowed per plan", ri.Item.ID, entityCameraMotionItemID)
 				}
@@ -534,6 +601,26 @@ func compileSemantic(raw []byte) (*Plan, []Asset, Stats, []string, error) {
 	if plan.Canvas.DurationFrames <= 0 {
 		return nil, nil, Stats{}, nil, fmt.Errorf("overlay: semantic plan duration is zero — provide duration_ms or at least one item with end_ms > 0")
 	}
+	for _, pending := range pendingSFXClips {
+		clip := pending.clip
+		availableFrames := plan.Canvas.DurationFrames - clip.Start
+		visibleFrames := pending.visibleEndFrame - clip.Start
+		if availableFrames < visibleFrames {
+			visibleFrames = availableFrames
+		}
+		if visibleFrames < clip.ClipOut {
+			clip.ClipOut = visibleFrames
+		}
+		if clip.ClipOut <= 0 || clip.Start >= plan.Canvas.DurationFrames {
+			// The item's first image frame lies outside the finalized canvas;
+			// there is no audible cue to emit for an invisible image.
+			continue
+		}
+		if plan.Audio == nil {
+			plan.Audio = &AudioMixPlan{}
+		}
+		plan.Audio.Clips = append(plan.Audio.Clips, clip)
+	}
 
 	plan.Schema, plan.Version = RenderPlanWireVersion(&plan)
 
@@ -626,7 +713,7 @@ func resolveSemanticItems(src *semanticPlan) ([]resolvedItem, error) {
 			return nil, err
 		}
 		if item.EntityStyleID != "" {
-			if _, ok := ResolveEntityStyle(item.EntityStyleID, src.PlanID, src.VideoID, item.ID); !ok {
+			if _, ok := ResolveEntityStyle(item.EntityStyleID, src.entityStyleSampleKey(), src.VideoID, item.ID); !ok {
 				return nil, fmt.Errorf("overlay: item %q has unsupported entity_style_id %q", item.ID, item.EntityStyleID)
 			}
 			behavior := behaviorOf(kind)
@@ -878,15 +965,21 @@ func compileEntityCard(ri resolvedItem, src *semanticPlan, registry *assetRegist
 		imageMotionOverride := ri.Item.MotionID
 		captionMotionOverride := ri.Item.CaptionMotionID
 		captionMotionParams := ri.Item.CaptionMotionParams
-		style, ok := ResolveEntityStyle(ri.Item.EntityStyleID, src.PlanID, src.VideoID, ri.Item.ID)
+		style, ok := ResolveEntityStyle(ri.Item.EntityStyleID, src.entityStyleSampleKey(), src.VideoID, ri.Item.ID)
 		if !ok {
-			style = entityStyleRegistry.sample(entityStyleRegistry.query(nil), "", src.PlanID, src.VideoID, ri.Item.ID)
+			style = entityStyleRegistry.sample(entityStyleRegistry.query(nil), "", src.entityStyleSampleKey(), src.VideoID, ri.Item.ID)
 		}
+		// Layout, colour, image motion and caption motion all stay exactly as
+		// the style (or the producer override) declares them: the entity surface
+		// hands the catalog back to Chronon instead of collapsing it onto the
+		// two-motion canary set. The only substitution left is evidence-based:
+		// a motion a recorded strict-GPU run failed falls back to a certified
+		// one, and the call sites log that swap.
 		currentStyle = style
 		hasStyle = true
-		ri.Item.MotionID = style.ImageMotionID
+		ri.Item.MotionID = entityCardRuntimeImageMotion(style.ImageMotionID, style.ID)
 		if imageMotionOverride != "" {
-			ri.Item.MotionID = imageMotionOverride
+			ri.Item.MotionID = entityCardRuntimeImageMotion(imageMotionOverride, style.ID)
 		}
 		ri.Item.CaptionMotionID = style.CaptionMotionID
 		if captionMotionOverride != "" {
@@ -964,33 +1057,6 @@ func compileEntityCard(ri resolvedItem, src *semanticPlan, registry *assetRegist
 		}
 		if premium != nil && len(premium.ImageRecipe.CaptionTracks) > 0 {
 			premiumLayerActive(&captionLayer, premiumTracks(*premium, premium.ImageRecipe.CaptionTracks, captionLayer.DurationFrames))
-		}
-		if hasStyle && currentStyle.IsBadge && currentStyle.BadgeColor != "" {
-			badgeWidth := captionLayer.Size[0] + 56.0
-			if badgeWidth < 300.0 {
-				badgeWidth = 300.0
-			}
-			badgeHeight := captionLayer.Size[1] + 16.0
-			if badgeHeight < 64.0 {
-				badgeHeight = 64.0
-			}
-			badgeLayer := Layer{
-				ID:             ri.Item.ID + ":entity_badge",
-				Type:           "shape",
-				Position:       []float64{captionLayer.Position[0], captionLayer.Position[1]},
-				Size:           []float64{badgeWidth, badgeHeight},
-				StartFrame:     captionLayer.StartFrame,
-				DurationFrames: captionLayer.DurationFrames,
-				Shape: &LayerShape{
-					Type:         "rect",
-					Fill:         currentStyle.BadgeColor,
-					CornerRadius: []float64{24, 24, 24, 24},
-				},
-			}
-			if captionLayer.Animation != nil {
-				badgeLayer.Animation = captionLayer.Animation
-			}
-			layers = append(layers, badgeLayer)
 		}
 		layers = append(layers, captionLayer)
 	}

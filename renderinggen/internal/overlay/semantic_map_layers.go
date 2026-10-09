@@ -63,21 +63,44 @@ func compileResolvedMapLayers(ri resolvedItem, src *semanticPlan, registry *asse
 		}
 		layers = append(layers, routeLayers...)
 	}
-	for _, resolvedPin := range resolved.Pins {
+	// Let the camera settle first, then give each grounded point an exclusive
+	// window. When several locations share a short spoken span, showing every
+	// marker together makes the map unreadable; each marker and its label now
+	// leave before the next point enters.
+	pinCount := max(int64(1), int64(len(resolved.Pins)))
+	pinPhaseStart := duration / 5
+	if resolved.Camera != nil {
+		pinPhaseStart = duration * 2 / 5
+		twoSeconds := int64(src.FPSNum) * 2 / int64(src.FPSDen)
+		if twoSeconds > 0 && pinPhaseStart > twoSeconds {
+			pinPhaseStart = twoSeconds
+		}
+	}
+	pinPhaseDuration := duration - pinPhaseStart
+	perPinFrames := pinPhaseDuration / pinCount
+	if perPinFrames < 1 {
+		perPinFrames = 1
+	}
+	for pinIndex, resolvedPin := range resolved.Pins {
 		pin := resolvedPin.Contract
-		// Reveal the point after the camera settles, then the title slightly
-		// later, matching the runtime V1 sequence: zoom, point, name.
-		pinDelay := duration * 3 / 5
+		pinDelay := pinPhaseStart + int64(pinIndex)*perPinFrames
+		pinEnd := pinDelay + perPinFrames
+		if pinIndex == len(resolved.Pins)-1 || pinEnd > duration {
+			pinEnd = duration
+		}
+		if pinEnd <= pinDelay {
+			pinEnd = min(duration, pinDelay+1)
+		}
 		markerRI := ri
 		markerRI.Start += pinDelay
-		marker, err := mapPinLayer(markerRI, src, pin, resolvedPin.RasterX, resolvedPin.RasterY, duration-pinDelay)
+		marker, err := mapPinLayer(markerRI, src, pin, resolvedPin.RasterX, resolvedPin.RasterY, pinEnd-pinDelay)
 		if err != nil {
 			return nil, err
 		}
 		labelRI := ri
-		labelDelay := duration * 7 / 10
+		labelDelay := pinDelay + max(int64(1), (pinEnd-pinDelay)/5)
 		labelRI.Start += labelDelay
-		label, err := resolveMapPinLabel(labelRI, src, resolvedPin, duration-labelDelay)
+		label, err := resolveMapPinLabel(labelRI, src, resolvedPin, pinEnd-labelDelay)
 		if err != nil {
 			return nil, err
 		}
@@ -284,9 +307,12 @@ func mapWorldPoint(latitude, longitude float64, zoom int, origin SemanticMapPoin
 // longer borrow the text glyph "O"; the white ring is the shape's stroke.
 func mapPinLayer(ri resolvedItem, src *semanticPlan, pin SemanticMapPin, x, y float64, duration int64) (Layer, error) {
 	size := 2 * pin.RadiusPX
-	// validateMapPin already admitted only #RRGGBB, so this parse cannot fail;
-	// the error branch keeps the lowering fail-closed anyway.
-	rgb, err := parseHexColor(pin.Color)
+	// Map pins use a renderer-owned luminous accent. Plans have historically
+	// supplied black (or near-black) here, which disappears against the dark
+	// basemap and reads as an unfinished placeholder. Keep the map marker
+	// legible and consistent regardless of generated plan colors.
+	const mapPinAccent = "#FFD166"
+	rgb, err := parseHexColor(mapPinAccent)
 	if err != nil {
 		return Layer{}, fmt.Errorf("overlay: map item %q pin %q color: %w", ri.Item.ID, pin.ID, err)
 	}
@@ -295,6 +321,7 @@ func mapPinLayer(ri resolvedItem, src *semanticPlan, pin SemanticMapPin, x, y fl
 		Size:       []float64{size, size},
 		Position:   canvasBoxPosition("shape", x-pin.RadiusPX, y-pin.RadiusPX, size, size, src.Width, src.Height),
 		StartFrame: ri.Start, DurationFrames: duration,
+		Style: &LayerStyle{Glow: &LayerGlow{Color: mapPinAccent, Radius: 18, Intensity: 0.72}},
 		Shape: &LayerShape{Type: "ellipse", Fill: rgb,
 			Stroke: &LayerStroke{Color: mapPinStrokeColor, Width: mapPinStrokeWidthPX}},
 	}, nil

@@ -13,9 +13,8 @@ import (
 )
 
 // animationForMotion lowers a producer-selected motion_id through the shared
-// spine (see lowerMotion). presetExit is the selected preset's own exit window:
-// a producer that overrides only the entrance still gets an out instead of a
-// hard cut. The motion's registered windows fill in whatever the caller omits.
+// spine (see lowerMotion). Semantic clips hold their resolved pose until the
+// clip boundary; an exit is opt-in through motion_params.exit_frames.
 func animationForMotion(id string, params map[string]any, textValue string, duration int64, presetExit int, phraseFloor ...bool) (*LayerAnimation, error) {
 	isPhrase := len(phraseFloor) > 0 && phraseFloor[0]
 	return animationForMotionTarget(id, params, textValue, duration, presetExit, "", "", isPhrase)
@@ -50,10 +49,13 @@ func animationForResolvedMotionTarget(id string, resolved *resolvedMotion, param
 // motionWindows is deliberately small and bounded: producers may tune the
 // readable timing window, but they cannot use motion_params to inject a new
 // animation contract. Values are frame counts at the plan's frame rate. Zero
-// keeps the catalog/preset window; every other supplied value must be an
-// integer in [1, 240] so a typo cannot silently disable a requested override.
+// uses the catalog entrance default; for exit_frames, explicit zero disables
+// the outro. Positive overrides must be integers in [1, 240].
 func motionWindows(params map[string]any, presetExit int) (enter, exit int, err error) {
-	exit = presetExit
+	// A generated overlay is a reusable clip and must not animate away before
+	// its scheduled end. Keep the preset/catalog exit available only when the
+	// producer explicitly supplies a positive exit_frames value.
+	exit = -1
 	if params == nil {
 		return 0, exit, nil
 	}
@@ -63,9 +65,14 @@ func motionWindows(params map[string]any, presetExit int) (enter, exit int, err 
 	}
 	if exitOverride, err := motionFrameParam(params, "exit_frames"); err != nil {
 		return 0, 0, err
-	} else if exitOverride > 0 {
-		exit = exitOverride
+	} else if _, present := params["exit_frames"]; present {
+		if exitOverride > 0 {
+			exit = exitOverride
+		} else {
+			exit = -1
+		}
 	}
+	_ = presetExit // retained in the signature for existing lowering call sites
 	return enter, exit, nil
 }
 

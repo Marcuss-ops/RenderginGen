@@ -89,22 +89,35 @@ RenderingGen compila il piano semantico, non è un secondo renderer. Il registry
 contiene **20 `ItemKind`**, **29 template**, **10 preset ufficiali** (2 testo +
 8 immagini) e **6 comportamenti di compilazione** (testo, entità, immagine,
 video, shape, mappa). Sono conteggi di livelli diversi: kind/template/preset non
-sono sinonimi di “sezione”. Il registry motion contiene **397 ID**: 374 dal
-catalogo ChrononTemplate incorporato e 23 stili brevi selezionabili dal catalogo
-Short Phrases. Il catalogo C++ contiene 47 ricette; due dichiarano `targets: null`
-perché usano `rotation` negli animator, non ancora abbassabile dal renderer.
+sono sinonimi di “sezione”. **Conteggio verificato il 2026-10-08** con
+`go run ./cmd/motion-catalog`: il runtime espone **452 motion ID**, **25 famiglie
+selezionabili** e **21 use case**. È una vista compilata: 404 definizioni sono
+nell’artefatto ChrononTemplate incorporato e 48 stili brevi arrivano dal catalogo
+Short Phrases, che ha uno schema distinto. Il file sorgente JSON di
+ChrononTemplate contiene 319 motion; l’emitter aggiunge le ricette possedute dai
+pack C++ e i cataloghi metric/date/entity. Usa il catalogo runtime, non vecchi
+conteggi nel piano cleanup, per leggere la disponibilità corrente.
 
-Le famiglie si sovrappongono per progetto: non sommare i numeri come se fossero
-animazioni uniche. Le famiglie principali esposte dall’API sono **11**: `phrase`
-146, `short_phrase_style` 23, `typewriter` 10, `typewriter_modern_v1` 15,
-`classic_apple` 42, `modern_apple` 61, `brush_v1` 23, `text_3d_v1` 10,
-`trump_entity_text_v1` 15, `web` 14 e `3d` 74. Inventari dedicati e
-potenzialmente sovrapposti: immagini **52** (10 Overlay V3 + 8 2.5D + 14
-Editorial Image V1 + 20 Premium), mappe **10**, didascalie entità generiche **6**,
-metriche/date/entità **20/20/10**. Per pianificare le prime sezioni editoriali,
-le categorie sopra sono il livello corretto; per verificare l’effettiva
-certificazione GPU va consultato il report runtime separato, che può coprire
-meno ID di quelli registrati.
+Le famiglie, i target e gli use case si sovrappongono: i numeri non vanno sommati
+come se fossero motion uniche. Per il picker attuale: **mappe = 14 motion
+compatibili** (`map_image_v1`: 10 scelte specifiche, cioè 5 trattamenti × 2
+renderer, più 4 motion immagine centrate condivise); **immagini = 134** motion
+ammesse dal target runtime; **caption = 240** motion compatibili. Sono criteri
+di compatibilità del runtime, non la somma degli inventari editoriali storici.
+La famiglia dedicata `entity_card_v1` ha **10** motion; il pool generico delle
+immagini di entità riusa invece il pool immagine.
+
+Le composizioni selezionabili sono distinte dalle motion: immagini da 1 a 5,
+immagini con testo da 1 a 5 (da una a N caption), `one_map` e `two_maps`. Le
+cinque motion map obsolete restano registrate per la compatibilità del catalogo,
+ma non sono selezionabili; le 10 mappe correnti specifiche sono abbinate per
+renderer e hanno durata fissa di 150 frame. Il picker runtime ammette 14 opzioni
+compatibili, mentre il producer automatico usa un sottoinsieme sicuro di 4 motion
+centrate, ruotandole deterministicamente tra mappe. Il pool automatico delle
+caption comprende 43 motion compatibili; senza `caption_motion_id`, la scelta è
+stabile per piano/video/layer-caption e differisce tra layer distinti. Per la
+certificazione GPU consultare il report runtime separato: la registrazione non
+implica che ogni ID sia stato certificato.
 
 ## Motion and preset catalog (owned by ChrononTemplate)
 
@@ -135,17 +148,17 @@ one animated preset (`phrase_default`) plus `static_text_smoke`; text animation
 is selected independently with `motion_id`.
 
 The public motion family API keeps motion selection independent from preset
-styles. Its **current runtime counts** are documented in
-[Organizzazione editoriale](#organizzazione-editoriale-sezioni-classi-e-renderer)
-above; family counts overlap (for example, `phrase` includes motions exposed by
-named text subfamilies). `phrase` combines text animation groups; it does not
-define a second set of motions. Brush recipes selected on phrases emit their
-native stroked-path layers beside the text. The image motion inventory is 52
-motions across `overlay_v3_image` (10), `image_25d_clean_v1` (8),
-`editorial_image_v1` (14), and `image_premium_v1` (20). The legacy
-`ImageOverlayMotionIDs()` deliberately remains exactly the first 18 ids; those
-are a compatibility/certification matrix, not the complete current image
-inventory. `web` now has 14 catalog motions; it is not empty.
+styles. The current picker/use-case counts are listed in
+[Organizzazione editoriale](#organizzazione-editoriale-sezioni-classi-e-renderer);
+the counts are target-compatible projections and can overlap. `phrase` combines
+text animation groups; it does not define another set of motions. Brush recipes
+selected on phrases emit native stroked-path layers beside the text. A narrower
+editorial image inventory contains 52 IDs across `overlay_v3_image` (10),
+`image_25d_clean_v1` (8), `editorial_image_v1` (14), and `image_premium_v1` (20).
+That 52 is not the runtime image target count: additional safe families (such
+as brush, paint, web, and light-leak treatments) make 134 image-target-compatible
+IDs in the current runtime. The legacy `ImageOverlayMotionIDs()` is still only
+the 18-ID compatibility pool. `web` has 14 catalog motions.
 
 The separate `image_premium_v1` family adds 20 `image_recipe` motions without
 expanding that legacy matrix. They lower to Chronon render-plan v3 primitives
@@ -153,8 +166,10 @@ expanding that legacy matrix. They lower to Chronon render-plan v3 primitives
 trim, gradient fills, path masks, 2.5D transforms, captions, and active/inactive
 selection for legacy multi-layer compositions). This is still the regular Chronon3D renderer; there
 is no premium-specific renderer. The compiled runtime animation catalog reports
-the live groups: the image total is 52 (18 legacy + 14 Editorial Image V1
-+ 20 premium). Use `ImagePremiumV1MotionIDs()` for only the 20 premium ids, or
+the live groups: the editorial image inventory is 52 (18 legacy + 14 Editorial
+Image V1 + 20 premium), while 134 motions currently admit the generic image
+target. Use
+`ImagePremiumV1MotionIDs()` for only the 20 premium ids, or
 `ImageOverlayMotionIDs()` when a caller specifically needs the unchanged
 legacy 18. The premium ids are `image_glow_depth_in`, `image_border_draw_in`,
 `image_soft_yaw_glow`, `image_tilt_frame_in`, `image_frame_scale_reveal`,
@@ -205,8 +220,8 @@ certification.
 The checked runtime snapshot in `renderinggen/motion-certification/latest/`
 contains 108 phrase render logs and 20 software image logs; this is historical
 certification evidence, **not** a count of all motions currently registered
-(397 total, including 146 in the current `phrase` family). Do not infer GPU
-certification for newly registered IDs from those older logs. Set
+(452 total). Do not infer GPU certification for newly registered IDs from
+those older logs. Set
 `RENDERINGGEN_GPU_CERT_FAMILY=phrase` or `image` to run the current selected
 inventory; set `RENDERINGGEN_GPU_CERT_MOTION=<id>` to isolate a single motion.
 `RENDERINGGEN_GPU_CERT_OUTPUT_DIR` preserves the compiled plan, prepared

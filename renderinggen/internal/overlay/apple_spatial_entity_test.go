@@ -3,6 +3,7 @@ package overlay
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 	"testing"
 )
 
@@ -48,21 +49,20 @@ func TestAll25AppleSpatialEntityStylesCompile(t *testing.T) {
 				t.Fatalf("style %s: expected at least 2 layers, got %d", styleRef, len(result.Plan.Layers))
 			}
 
-			// Group 4 (16..20) must compile a badge layer
+			// Group 4 (16..20) keeps the entity caption without a separate
+			// GPU badge shape, which can poison Vulkan during image-card export.
 			if i >= 16 && i <= 20 {
-				foundBadge := false
+				foundCaption := false
 				for _, layer := range result.Plan.Layers {
-					if layer.Type == "shape" && layer.Shape != nil && layer.Shape.Type == "rect" {
-						foundBadge = true
-						// Verify badge color is either yellow or red
-						fillStr, _ := layer.Shape.Fill.(string)
-						if fillStr != "#FFDE00" && fillStr != "#EB1E2D" {
-							t.Fatalf("style %s badge fill = %q, want yellow (#FFDE00) or red (#EB1E2D)", styleRef, fillStr)
-						}
+					if layer.Type == "text" {
+						foundCaption = true
+					}
+					if strings.HasSuffix(layer.ID, ":entity_badge") {
+						t.Fatalf("style %s emitted unsupported entity badge shape", styleRef)
 					}
 				}
-				if !foundBadge {
-					t.Fatalf("style %s is Group 4 badge but no badge shape layer was compiled", styleRef)
+				if !foundCaption {
+					t.Fatalf("style %s has no entity caption", styleRef)
 				}
 			}
 

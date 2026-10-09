@@ -15,6 +15,7 @@ package drive
 import (
 	"context"
 	"crypto/md5"
+	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -40,6 +41,11 @@ type PublishRequest struct {
 	Path         string
 	ParentFolder string // Drive folder ID to place the file into (optional)
 	Subfolder    string // deterministic child folder name under ParentFolder (optional)
+	// PrecomputedMD5 is the lowercase hex MD5 of Path, when the caller has
+	// already hashed the file in the same pass as its SHA-256. Publish then
+	// skips re-reading the file for the digest. It must describe Path exactly:
+	// the provider checksum is compared against it. Empty means Publish hashes.
+	PrecomputedMD5 string
 	// UploadProgress is called after each resumable chunk. It must be cheap;
 	// the callback runs on the Drive upload path and must not block rendering.
 	UploadProgress func(uploaded, total int64)
@@ -101,6 +107,11 @@ type Google struct {
 	parentFolder string
 	resumable    bool
 	chunkBytes   int
+	// folderMu serialises find-or-create. Drive has no atomic create-if-absent,
+	// so two concurrent publications into a new subfolder would both list
+	// "not found" and both create it. Holding this across list+create makes
+	// the second caller see the first one's folder.
+	folderMu sync.Mutex
 }
 
 // Options carries the publisher settings that are deployment choices rather
@@ -178,7 +189,7 @@ func NewGoogleOAuthWithOptions(ctx context.Context, credentialsFile, tokenFile, 
 	if err != nil {
 		return nil, fmt.Errorf("drive: read token %s: %w", tokenFile, err)
 	}
-	src := &refreshingTokenSource{source: cfg.TokenSource(ctx, tok), tokenFile: tokenFile}
+	src := &refreshingTokenSource{source: cfg.TokenSource(ctx, tok), tokenFile: tokenFile, persisted: tok.AccessToken}
 	svc, err := gdrive.NewService(ctx, option.WithHTTPClient(oauth2.NewClient(ctx, src)))
 	if err != nil {
 		return nil, fmt.Errorf("drive: create service: %w", err)
@@ -223,6 +234,10 @@ type refreshingTokenSource struct {
 	source    oauth2.TokenSource
 	tokenFile string
 	mu        sync.Mutex
+	// persisted is the access token last written to tokenFile (or loaded from
+	// it). Token() is called on every Drive request, so the file is rewritten
+	// only when the provider actually issued a new access token.
+	persisted string
 }
 
 func (r *refreshingTokenSource) Token() (*oauth2.Token, error) {
@@ -233,7 +248,7 @@ func (r *refreshingTokenSource) Token() (*oauth2.Token, error) {
 	if err != nil {
 		return nil, err
 	}
-	if r.tokenFile != "" {
+	if r.tokenFile != "" && tok.AccessToken != r.persisted {
 		b, err := json.Marshal(tok)
 		if err != nil {
 			log.Printf("drive: persist refreshed token to %s: marshal: %v", r.tokenFile, err)
@@ -242,6 +257,8 @@ func (r *refreshingTokenSource) Token() (*oauth2.Token, error) {
 			// auth dance; the in-process refresh still works, so this is a
 			// durable-observability warning, not a failure.
 			log.Printf("drive: persist refreshed token to %s: %v", r.tokenFile, err)
+		} else {
+			r.persisted = tok.AccessToken
 		}
 	}
 	return tok, nil
@@ -283,9 +300,24 @@ func (g *Google) Publish(ctx context.Context, req PublishRequest) (Result, error
 	// size + md5Checksum for the stored object, so this local digest makes the
 	// provider's answer falsifiable: a truncated or corrupted upload is caught
 	// here instead of being silently recorded as a successful publication.
-	localMD5, err := fileMD5(input)
-	if err != nil {
-		return Result{}, fmt.Errorf("drive: md5 %s: %w", req.Path, err)
+	localMD5 := req.PrecomputedMD5
+	if localMD5 == "" {
+		localMD5, err = fileMD5(input)
+		if err != nil {
+			return Result{}, fmt.Errorf("drive: md5 %s: %w", req.Path, err)
+		}
+	}
+	// A retry after a lost response must not create a second copy. If a file
+	// with the same name, in the same folder, with the same bytes already exists,
+	// that is the publication: reuse it.
+	if parent != "" {
+		existing, found, err := g.findExisting(ctx, parent, req.Name, localMD5)
+		if err != nil {
+			return Result{}, err
+		}
+		if found {
+			return existing, nil
+		}
 	}
 	create := g.service.Files.Create(file).
 		Fields("id", "webViewLink", "parents", "size", "mimeType", "md5Checksum")
@@ -337,6 +369,24 @@ func (g *Google) Publish(ctx context.Context, req PublishRequest) (Result, error
 		SizeBytes: size, MD5Checksum: res.Md5Checksum}, nil
 }
 
+// FileDigests reads path once and returns its SHA-256 (the content address) and
+// MD5 (the provider's checksum scheme), plus the byte count. Hashing both in one
+// pass means a caller that needs both does not read a large render twice.
+func FileDigests(path string) (sha256Hex, md5Hex string, size int64, err error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return "", "", 0, err
+	}
+	defer f.Close()
+	sha := sha256.New()
+	md := md5.New()
+	size, err = io.Copy(io.MultiWriter(sha, md), f)
+	if err != nil {
+		return "", "", 0, err
+	}
+	return hex.EncodeToString(sha.Sum(nil)), hex.EncodeToString(md.Sum(nil)), size, nil
+}
+
 // fileMD5 streams an open file through MD5 and rewinds it, so the uploader can
 // consume the very same handle afterwards.
 func fileMD5(f *os.File) (string, error) {
@@ -348,6 +398,31 @@ func fileMD5(f *os.File) (string, error) {
 		return "", err
 	}
 	return hex.EncodeToString(hasher.Sum(nil)), nil
+}
+
+// findExisting looks for a non-folder file named name directly under parent whose
+// provider checksum equals md5. Drive v3 cannot search by md5Checksum, so the
+// candidates are listed by name and parent and the checksum is compared here.
+func (g *Google) findExisting(ctx context.Context, parent, name, md5 string) (Result, bool, error) {
+	q := fmt.Sprintf("name='%s' and '%s' in parents and trashed=false and mimeType!='application/vnd.google-apps.folder'",
+		escapeDriveQuery(name), escapeDriveQuery(parent))
+	list, err := g.service.Files.List().Q(q).
+		Fields("files(id,name,webViewLink,parents,size,md5Checksum)").PageSize(10).Context(ctx).Do()
+	if err != nil {
+		return Result{}, false, fmt.Errorf("drive: find existing %s: %w", name, err)
+	}
+	for _, f := range list.Files {
+		if f.Name != name || f.Id == "" || !strings.EqualFold(f.Md5Checksum, md5) {
+			continue
+		}
+		link := f.WebViewLink
+		if link == "" {
+			link = "https://drive.google.com/file/d/" + f.Id + "/view"
+		}
+		return Result{FileID: f.Id, WebViewLink: link, ParentFolder: parent,
+			SizeBytes: f.Size, MD5Checksum: f.Md5Checksum}, true, nil
+	}
+	return Result{}, false, nil
 }
 
 // EnsureFolder returns the id of the folder `name` under parentFolderID,
@@ -375,6 +450,8 @@ func (g *Google) EnsureFolder(ctx context.Context, parentFolderID, name string) 
 }
 
 func (g *Google) ensureFolder(ctx context.Context, parent, name string) (string, error) {
+	g.folderMu.Lock()
+	defer g.folderMu.Unlock()
 	q := fmt.Sprintf("mimeType='application/vnd.google-apps.folder' and trashed=false and name='%s' and '%s' in parents", escapeDriveQuery(name), escapeDriveQuery(parent))
 	list, err := g.service.Files.List().Q(q).Fields("files(id,name,parents)").PageSize(10).Context(ctx).Do()
 	if err != nil {
@@ -395,6 +472,11 @@ func (g *Google) ensureFolder(ctx context.Context, parent, name string) (string,
 	return f.Id, nil
 }
 
+// escapeDriveQuery makes a value safe inside a single-quoted Drive query string.
+// Backslash must be escaped first, otherwise the escape added for quotes would
+// itself be re-escaped.
 func escapeDriveQuery(s string) string {
-	return strings.ReplaceAll(s, "'", "\\'")
+	return driveQueryEscaper.Replace(s)
 }
+
+var driveQueryEscaper = strings.NewReplacer(`\`, `\\`, `'`, `\'`)

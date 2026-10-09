@@ -1,6 +1,9 @@
 package overlay
 
-import "testing"
+import (
+	"encoding/json"
+	"testing"
+)
 
 // The registry replaces the removed index groups: every composition class must
 // be reachable as a derived-tag query with the historic membership counts.
@@ -80,6 +83,96 @@ func TestEntityStyleRegistrySelectorsSampleDeterministically(t *testing.T) {
 	below, _ := ResolveEntityStyle("testo_sotto", planID, videoID, itemID)
 	if below.CaptionLayout != "below" && below.ImageSide != "center" {
 		t.Fatalf("testo_sotto sampled %q outside the below class", below.ID)
+	}
+}
+
+// Entity styles hand the catalog's own motions to Chronon: the scene camera
+// stays opt-in (only the camera selectors carry one) and no image/caption
+// motion is rewritten on the way out. enable_3d must agree with the tracks
+// that actually reached the layer. The strict GPU lane executes the 2.5D
+// image family — this was verified by rendering such a card on
+// vulkan_native; recorded strict-GPU failures are swapped by
+// entityCardRuntimeImageMotion instead of a blanket 2D downgrade.
+func TestRuntimeEntityStyleSelectorsKeepCatalogMotions(t *testing.T) {
+	for _, selector := range []string{"", "random", "premium_random_v1", "testo_sotto", "below", "side", "badge", "typewriter"} {
+		style, ok := ResolveEntityStyle(selector, "garlasco-plan", "garlasco-video", "chiara-poggi")
+		if !ok {
+			t.Fatalf("runtime selector %q did not resolve", selector)
+		}
+		if style.CameraMotionID != "" {
+			t.Fatalf("runtime selector %q hijacked the scene camera: %+v", selector, style)
+		}
+		catalog, ok := entityStyleByID(style.ID)
+		if !ok {
+			t.Fatalf("selector %q sampled unknown style %q", selector, style.ID)
+		}
+		if style.ImageMotionID != catalog.ImageMotionID || style.CaptionMotionID != catalog.CaptionMotionID {
+			t.Fatalf("selector %q rewrote style motions: image %q -> %q, caption %q -> %q",
+				selector, catalog.ImageMotionID, style.ImageMotionID, catalog.CaptionMotionID, style.CaptionMotionID)
+		}
+	}
+
+	item := map[string]any{
+		"id": "runtime-portrait", "entity_id": "person:chiara-poggi", "kind": "entity_card", "template_id": "PERSON",
+		"preset_id": "phrase_default", "image_preset_id": "image_scale_in",
+		"entity_caption": "Chiara Poggi", "entity_style_id": "random",
+		"text": "Chiara Poggi", "start_ms": 0, "end_ms": 5000, "duration_ms": 5000,
+		"asset_refs": []any{map[string]any{
+			"asset_id": "chiara", "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+			"url": "https://example.test/chiara.jpg", "media_type": "image/jpeg",
+		}},
+	}
+	raw, err := json.Marshal(map[string]any{
+		"schema_version": SemanticSchema, "plan_id": "garlasco-runtime-style",
+		"video_id": "garlasco-runtime-style", "width": 1920, "height": 1080,
+		"fps_num": 24, "fps_den": 1, "items": []any{item},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	compiled, err := CompileSemantic(raw)
+	if err != nil {
+		t.Fatalf("compile runtime-selected entity style: %v", err)
+	}
+	if len(compiled.Plan.Layers) < 2 {
+		t.Fatalf("runtime entity style produced %d layers, want image and caption", len(compiled.Plan.Layers))
+	}
+	for _, layer := range compiled.Plan.Layers {
+		if layer.Animation != nil && layerUses3D(layer.Animation) && !layer.Enable3D {
+			t.Errorf("runtime entity layer %q lowers 3D tracks without enable_3d: %+v", layer.ID, layer.Animation)
+		}
+		if layer.Enable3D && layer.Animation != nil && !layerUses3D(layer.Animation) && len(layer.TextAnimators) == 0 {
+			t.Errorf("runtime entity layer %q enables the 3D path without 3D tracks: %+v", layer.ID, layer.Animation)
+		}
+	}
+}
+
+// A producer-named motion reaches the renderer exactly as declared: the
+// entity image keeps image_tilt_settle's camera-backed tracks with enable_3d
+// derived from them, and the explicit caption motion stays on its layer
+// instead of collapsing to text_fade_up. Only a motion the recorded
+// strict-GPU run failed would be swapped by entityCardRuntimeImageMotion.
+func TestRuntimeEntityImageKeepsExplicit3DMotions(t *testing.T) {
+	raw := []byte(`{"schema_version":"renderinggen.overlay-plan.v1","plan_id":"runtime-2d","video_id":"runtime-2d","width":1920,"height":1080,"fps_num":24,"fps_den":1,"items":[{"id":"portrait","entity_id":"person:chiara-poggi","kind":"entity_image","template_id":"image_popup","preset_id":"image_slide_right","motion_id":"image_tilt_settle","entity_caption":"Chiara Poggi","caption_motion_id":"trump_entity_text_15","start_ms":0,"end_ms":5000,"asset_refs":[{"asset_id":"chiara","sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","url":"https://example.test/chiara.jpg","media_type":"image/jpeg"}]}]}`)
+	compiled, err := CompileSemantic(raw)
+	if err != nil {
+		t.Fatalf("compile runtime entity image with explicit 3D motions: %v", err)
+	}
+	if len(compiled.Plan.Layers) != 2 {
+		t.Fatalf("runtime entity produced %d layers, want image and caption", len(compiled.Plan.Layers))
+	}
+	image, caption := compiled.Plan.Layers[0], compiled.Plan.Layers[1]
+	if image.ID != "portrait:image" || image.Animation == nil {
+		t.Fatalf("entity image layer = %+v, want portrait:image with tracks", image)
+	}
+	if !layerUses3D(image.Animation) || !image.Enable3D {
+		t.Fatalf("explicit motion image_tilt_settle did not reach the entity image as 3D tracks with enable_3d: tracks=%+v enable3d=%v", image.Animation.Tracks, image.Enable3D)
+	}
+	if caption.ID == image.ID {
+		t.Fatalf("caption layer collapsed onto the image layer: %+v", caption)
+	}
+	if caption.TextAnimators == nil && caption.Animation == nil {
+		t.Fatalf("explicit caption motion trump_entity_text_15 reached no animation: %+v", caption)
 	}
 }
 

@@ -207,6 +207,7 @@
       }
     },
     "foreground_scale_percent": { "type": "integer", "minimum": 1, "maximum": 100 },
+    "entity_variation_seed": { "type": "string", "maxLength": 128, "description": "Optional producer-supplied salt for entity_style_id sampling. Empty keeps the plan_id-derived selection; a different value re-samples every entity style deterministically." },
     "source_frame": {
       "type": "object",
       "additionalProperties": false,
@@ -562,6 +563,17 @@
               { "if": { "required": ["routes"] }, "then": { "required": ["camera_move", "lods"] } },
               { "not": { "required": ["fly_to_feature", "camera_move"] } }
             ]
+          },
+          "sound_effect": {
+            "type": "object", "additionalProperties": false,
+            "required": ["asset_ref", "duration_ms"],
+            "description": "Optional producer-selected cue mixed on the independent SFX bus at the first visible image frame. The worker never selects a cue.",
+            "properties": {
+              "asset_ref": { "$ref": "#/properties/items/items/properties/asset_refs/items" },
+              "start_offset_ms": { "type": "integer", "minimum": 0 },
+              "duration_ms": { "type": "integer", "minimum": 1 },
+              "gain_db": { "type": "number", "minimum": -96, "maximum": 24 }
+            }
           },
           "metric": { "$ref": "#/$defs/metric_data" },
           "date": { "$ref": "#/$defs/date_data" },

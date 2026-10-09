@@ -11,8 +11,16 @@ import (
 )
 
 func compileImageCaptionLayer(parent resolvedItem, src *semanticPlan, child semanticItem, caption string, image *Layer, childID string, role textRole) (Layer, error) {
-	captionMotionPlanID, captionMotionVideoID, captionMotionItemID = src.PlanID, src.VideoID, parent.Item.ID
-	defer func() { captionMotionPlanID, captionMotionVideoID, captionMotionItemID = "", "", "" }()
+	captionIdentity := parent.Item.ID + ":" + childID
+	captionMotion := ""
+	if child.CaptionMotionID != "" {
+		captionMotion = EntityCaptionMotionID(child.CaptionMotionID)
+	} else {
+		captionMotion = entityCaptionMotionIDForIdentity("", src.PlanID, src.VideoID, captionIdentity)
+	}
+	// A 3D caption motion is kept as declared: the text lowering derives
+	// enable_3d from the animators it emits, so Chronon receives the camera-
+	// backed caption exactly as the producer asked for it.
 	if len(image.Size) < 2 || image.Size[0] <= 0 || image.Size[1] <= 0 {
 		return Layer{}, fmt.Errorf("overlay: item %q image caption has no positive image geometry", parent.Item.ID)
 	}
@@ -43,9 +51,8 @@ func compileImageCaptionLayer(parent resolvedItem, src *semanticPlan, child sema
 	captionLayerID := parent.Item.ID + ":" + childID + ":caption"
 	// Caption semantics resolve directly to a role-aware text spec, without
 	// borrowing a phrase template, preset, or phrase-specific motion policy.
-	captionMotion := EntityCaptionMotionID(child.CaptionMotionID)
 	if !motionAdmitsTarget(captionMotion, "caption") {
-		captionMotion = entityCaptionMotionPool[styleHash("caption_motion_fallback", captionMotionPlanID, captionMotionVideoID, captionMotionItemID, uint64(len(entityCaptionMotionPool)))]
+		captionMotion = entityCaptionMotionIDForIdentity("", src.PlanID, src.VideoID, captionIdentity)
 	}
 	if !motionAdmitsTarget(captionMotion, "caption") {
 		return Layer{}, fmt.Errorf("overlay: item %q caption motion %q is not supported for text captions", parent.Item.ID, captionMotion)

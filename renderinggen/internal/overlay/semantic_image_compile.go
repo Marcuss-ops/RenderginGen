@@ -7,6 +7,7 @@ package overlay
 import (
 	"fmt"
 	"image"
+	"log"
 	"os"
 	"strings"
 
@@ -182,6 +183,22 @@ func compileSingleImageLayerResolved(ri resolvedItem, src *semanticPlan, assetPa
 	layer.StartFrame, layer.DurationFrames = start, end-start
 	applyPresetDefinition(&layer, preset)
 	if motionID != "" {
+		var err error
+		// Runtime entity imagery passes every motion through except one a
+		// recorded strict-GPU run failed: the embedded motioncert snapshot is
+		// the evidence (several premium recipes still fail the native lane with
+		// an encoder-side error), so the gate replaces only recorded failures.
+		if ri.Kind == KindEntityImage && len(ri.Item.ImageLayers) == 0 {
+			safeMotionID := entityCardRuntimeImageMotion(motionID, ri.Item.ID)
+			if safeMotionID != motionID {
+				log.Printf("overlay: entity image item %q: strict-GPU-failed motion %q replaced by certified motion %q", ri.Item.ID, motionID, safeMotionID)
+				motionID = safeMotionID
+				resolved, err = resolveRegisteredMotion(motionID)
+				if err != nil {
+					return Layer{}, err
+				}
+			}
+		}
 		animation, err := imageMotionAnimationResolved(motionID, motionParams, end-start, preset.Motion.Exit, layerID, "image", resolved)
 		if err != nil {
 			return Layer{}, err
@@ -223,6 +240,29 @@ func compileSingleImageLayerResolved(ri resolvedItem, src *semanticPlan, assetPa
 		return Layer{}, fmt.Errorf("overlay: image item %q: %w", ri.Item.ID, err)
 	}
 	return layer, nil
+}
+
+func motionDefinitionRequires3D(resolved *resolvedMotion) bool {
+	if resolved == nil || resolved.definition == nil {
+		return false
+	}
+	d := resolved.definition
+	if d.Requires3D != nil && *d.Requires3D {
+		return true
+	}
+	for _, track := range d.Tracks {
+		if motion.IsCameraBacked3DProperty(track.Property) {
+			return true
+		}
+	}
+	for _, animator := range d.TextAnimators {
+		for _, track := range animator.Properties {
+			if motion.IsCameraBacked3DProperty(track.Property) {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // FitEntityImageLayerToAsset matches an entity image's bounded contain box to

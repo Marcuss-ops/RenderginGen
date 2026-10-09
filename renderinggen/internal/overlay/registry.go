@@ -264,6 +264,11 @@ func isEntityKind(kind ItemKind) bool { return behaviorOf(kind) == behaviorEntit
 // therefore requires an asset ref.
 func isImageKind(kind ItemKind) bool { return behaviorOf(kind) == behaviorImage }
 
+func isImageOrVideoKind(kind ItemKind) bool {
+	behavior := behaviorOf(kind)
+	return behavior == behaviorImage || behavior == behaviorVideo
+}
+
 // isVideoKind reports whether a kind lowers to a timed video layer (a
 // pre-rendered overlay segment) and therefore requires an asset ref.
 func isVideoKind(kind ItemKind) bool { return behaviorOf(kind) == behaviorVideo }

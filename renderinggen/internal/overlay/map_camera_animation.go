@@ -9,9 +9,13 @@ func compileMapCamera(plan *Plan, move SemanticMapCameraMove, startFrame, endFra
 	if startFrame < 0 || endFrame <= startFrame || endFrame > plan.Canvas.DurationFrames || endFrame > maxCameraMoveFrames {
 		return fmt.Errorf("overlay: camera map frame window must be within the plan and at most %d frames", maxCameraMoveFrames)
 	}
-	// Finish the camera push before the marker and title are revealed. The
-	// final camera keyframe then holds for the remainder of the map shot.
-	cameraEnd := startFrame + (endFrame-startFrame)*3/5
+	// Keep the fly-to in a dedicated opening beat. The final camera keyframe
+	// then holds while each grounded point gets its own readable reveal slot.
+	cameraEnd := startFrame + (endFrame-startFrame)*2/5
+	twoSeconds := int64(fpsNum) * 2 / int64(fpsDen)
+	if twoSeconds > 0 && cameraEnd > startFrame+twoSeconds {
+		cameraEnd = startFrame + twoSeconds
+	}
 	if cameraEnd <= startFrame {
 		cameraEnd = endFrame
 	}
