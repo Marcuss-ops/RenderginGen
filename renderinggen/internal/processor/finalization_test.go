@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/chronon"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/drive"
@@ -34,8 +35,9 @@ func (q *finalizerQueue) ClaimFinalization(context.Context, string) (*queue.Job,
 		return nil, false, nil
 	}
 	q.claimed = true
-	return &queue.Job{ID: "parent"}, true, nil
+	return &queue.Job{ID: "parent", Lease: time.Hour}, true, nil
 }
+func (q *finalizerQueue) Renew(context.Context, string) error { return nil }
 func (q *finalizerQueue) Complete(_ context.Context, _ string, artifact queue.Artifact) error {
 	q.completed = &artifact
 	return nil

@@ -7,25 +7,30 @@
 //	└── output/result.mp4   (render output)
 //
 // MaterializePaths is the single asset resolver/materializer: it pulls each
-// asset through the L1/L2/L3 cache (via a path resolver func) and links it to
-// the logical path declared by the job, so the render_plan's source/asset
+// asset through the L1/L2/L3 cache (via a path resolver func) and materializes
+// it at the logical path declared by the job, so the render_plan's source/asset
 // references resolve inside the assets root. Media never round-trips through
-// a Go byte slice; the resolver hands back a local file the workspace can
-// hard-link (or stream-copy across filesystems).
+// a Go byte slice; the resolver hands back a local file that is streamed into
+// an atomically installed file beneath the pinned workspace root.
 package workspace
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
 	"syscall"
 	"time"
 
+	queueclient "github.com/Marcuss-ops/RenderingGen/queue/client"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/queue"
 )
 
@@ -39,35 +44,220 @@ type ResolvedAsset struct {
 // PathResolver is the zero-copy asset resolution surface used by production.
 type PathResolver func(ctx context.Context, asset queue.AssetRef) (ResolvedAsset, error)
 
+var errWorkspaceBusy = errors.New("workspace: already owned by another worker")
+
 // Workspace is a per-job directory tree prepared for a render.
 type Workspace struct {
 	root      string
 	assetsDir string
 	outputDir string
+	jobsFS    *os.Root
+	fsRoot    *os.Root
+	lockFile  *os.File
 }
 
 // New creates the job workspace directory tree under jobsRoot.
 func New(jobsRoot, jobID string) (*Workspace, error) {
-	if jobID == "" {
-		return nil, fmt.Errorf("workspace: job id is required")
+	if err := queueclient.ValidateJobID(jobID); err != nil {
+		return nil, fmt.Errorf("workspace: invalid job id: %w", err)
 	}
-	root := filepath.Join(jobsRoot, jobID)
+	if err := os.MkdirAll(jobsRoot, 0o755); err != nil {
+		return nil, fmt.Errorf("workspace: create jobs root: %w", err)
+	}
+	canonicalJobsRoot, err := filepath.EvalSymlinks(jobsRoot)
+	if err != nil {
+		return nil, fmt.Errorf("workspace: resolve jobs root: %w", err)
+	}
+	jobsFS, err := os.OpenRoot(canonicalJobsRoot)
+	if err != nil {
+		return nil, fmt.Errorf("workspace: open jobs root: %w", err)
+	}
+	closeJobsRoot := true
+	defer func() {
+		if closeJobsRoot {
+			_ = jobsFS.Close()
+		}
+	}()
+	// The directory entry is created or checked relative to an open jobs-root
+	// handle. Opening the per-job root and comparing its file identity with the
+	// entry pins subsequent operations to that directory even if the pathname
+	// is concurrently renamed or replaced. This and os.Root prevent escaping
+	// through symlinks outside the pinned root. Advisory locks coordinate
+	// cooperating workers and the stale sweeper; they do not defend against a
+	// privileged process that ignores locks and replaces jobsRoot itself.
+
+	if err := jobsFS.Mkdir(jobID, 0o755); err != nil && !errors.Is(err, os.ErrExist) {
+		return nil, fmt.Errorf("workspace: create job root: %w", err)
+	}
+	lockFile, err := acquireWorkspaceLock(jobsFS, jobID)
+	if err != nil {
+		return nil, err
+	}
+	lockOwned := true
+	defer func() {
+		if lockOwned {
+			_ = removeWorkspaceLock(jobsFS, jobID, lockFile, true)
+		}
+	}()
+	entryInfo, err := jobsFS.Lstat(jobID)
+	if err != nil {
+		return nil, fmt.Errorf("workspace: stat job root: %w", err)
+	}
+	if !entryInfo.IsDir() || entryInfo.Mode()&os.ModeSymlink != 0 {
+		return nil, fmt.Errorf("workspace: job root %q is not a real directory", jobID)
+	}
+	fsRoot, err := jobsFS.OpenRoot(jobID)
+	if err != nil {
+		return nil, fmt.Errorf("workspace: open job root: %w", err)
+	}
+	rootInfo, err := fsRoot.Stat(".")
+	if err != nil {
+		_ = fsRoot.Close()
+		return nil, fmt.Errorf("workspace: stat opened job root: %w", err)
+	}
+	if !os.SameFile(entryInfo, rootInfo) {
+		_ = fsRoot.Close()
+		return nil, fmt.Errorf("workspace: job root changed while opening")
+	}
+	root := filepath.Join(canonicalJobsRoot, jobID)
 	w := &Workspace{
 		root:      root,
 		assetsDir: filepath.Join(root, "assets"),
 		outputDir: filepath.Join(root, "output"),
+		jobsFS:    jobsFS,
+		fsRoot:    fsRoot,
+		lockFile:  lockFile,
 	}
-	for _, dir := range []string{w.assetsDir, w.outputDir} {
-		if err := os.MkdirAll(dir, 0o755); err != nil {
+	for _, dir := range []string{"assets", "output"} {
+		if err := fsRoot.MkdirAll(dir, 0o755); err != nil {
+			_ = fsRoot.Close()
 			return nil, fmt.Errorf("workspace: create %s: %w", dir, err)
 		}
 	}
+	closeJobsRoot = false
+	lockOwned = false
 	// The per-job output directory must be writable by the native Chronon
 	// daemon user when it differs from the worker user. 0o775 + a shared
 	// group is the deployment contract; world-writable trees are never
 	// created. When the deployment cannot provide a shared group, run the
 	// daemon under the same user — do not widen permissions instead.
 	return w, nil
+}
+
+// acquireWorkspaceLock opens one collision-resistant lock file per job while
+// holding the short-lived registry lock. The registry coordinates lock-file
+// creation/unlink so a new owner can never lock a newly created inode while a
+// previous owner still holds the unlinked inode. The file remains only while
+// its workspace is active or until the stale sweeper reaps a crashed owner.
+func openWorkspaceLock(root *os.Root, jobID string) (*os.File, error) {
+	name := workspaceLockName(jobID)
+	file, err := root.OpenFile(name, os.O_CREATE|os.O_EXCL|os.O_RDWR, 0o600)
+	if errors.Is(err, os.ErrExist) {
+		file, err = root.OpenFile(name, os.O_RDWR, 0)
+	}
+	if err != nil {
+		return nil, fmt.Errorf("workspace: open per-job lock: %w", err)
+	}
+	return file, nil
+}
+
+func acquireWorkspaceLock(root *os.Root, jobID string) (*os.File, error) {
+	registry, err := acquireLockRegistry(root)
+	if err != nil {
+		return nil, err
+	}
+	file, err := openWorkspaceLock(root, jobID)
+	if err != nil {
+		_ = unlockWorkspaceSlot(registry)
+		_ = registry.Close()
+		return nil, err
+	}
+	locked, err := lockWorkspaceSlot(file, true)
+	_ = unlockWorkspaceSlot(registry)
+	_ = registry.Close()
+	if err != nil {
+		_ = file.Close()
+		return nil, fmt.Errorf("workspace: lock per-job lock: %w", err)
+	}
+	if !locked {
+		_ = file.Close()
+		return nil, fmt.Errorf("%w: %q", errWorkspaceBusy, jobID)
+	}
+	return file, nil
+}
+
+func acquireLockRegistry(root *os.Root) (*os.File, error) {
+	file, err := root.OpenFile(".workspace-lock-registry", os.O_CREATE|os.O_RDWR, 0o600)
+	if err != nil {
+		return nil, fmt.Errorf("workspace: open lock registry: %w", err)
+	}
+	if _, err := lockWorkspaceSlot(file, false); err != nil {
+		_ = file.Close()
+		return nil, fmt.Errorf("workspace: lock registry: %w", err)
+	}
+	return file, nil
+}
+
+func workspaceLockName(jobID string) string {
+	digest := sha256.Sum256([]byte(jobID))
+	return ".workspace-lock-" + hex.EncodeToString(digest[:])
+}
+
+func removeWorkspaceLock(root *os.Root, jobID string, lockFile *os.File, removeEntry bool) error {
+	registry, err := acquireLockRegistry(root)
+	if err != nil {
+		return err
+	}
+	var removeErr error
+	if removeEntry {
+		removeErr = root.Remove(workspaceLockName(jobID))
+	}
+	unlockErr := unlockWorkspaceSlot(lockFile)
+	closeLockErr := lockFile.Close()
+	registryUnlockErr := unlockWorkspaceSlot(registry)
+	registryCloseErr := registry.Close()
+	for _, candidate := range []error{removeErr, unlockErr, closeLockErr, registryUnlockErr, registryCloseErr} {
+		if candidate != nil && !errors.Is(candidate, os.ErrNotExist) {
+			return candidate
+		}
+	}
+	return nil
+}
+
+// ensurePathContained requires child to be a strict lexical descendant of root.
+func ensurePathContained(root, child string) error {
+	rel, err := filepath.Rel(root, child)
+	if err != nil || rel == "." || rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) || filepath.IsAbs(rel) {
+		return fmt.Errorf("workspace path %q escapes jobs root %q", child, root)
+	}
+	return nil
+}
+
+// rejectSymlinkComponents refuses every existing symlink between root and
+// child; it is called before creation so MkdirAll cannot follow one outward.
+func rejectSymlinkComponents(root, child string) error {
+	if err := ensurePathContained(root, child); err != nil {
+		return err
+	}
+	rel, _ := filepath.Rel(root, child)
+	current := root
+	for _, part := range strings.Split(rel, string(filepath.Separator)) {
+		current = filepath.Join(current, part)
+		info, err := os.Lstat(current)
+		if os.IsNotExist(err) {
+			continue
+		}
+		if err != nil {
+			return err
+		}
+		if info.Mode()&os.ModeSymlink != 0 {
+			return fmt.Errorf("workspace path component %q is a symlink", current)
+		}
+		if !info.IsDir() {
+			return fmt.Errorf("workspace path component %q is not a directory", current)
+		}
+	}
+	return nil
 }
 
 // Root returns the workspace root directory.
@@ -85,6 +275,26 @@ func (w *Workspace) assetsRoot() string { return w.assetsDir }
 // OutputPath returns the path for a rendered output file.
 func (w *Workspace) OutputPath(name string) string {
 	return filepath.Join(w.outputDir, name)
+}
+
+// OpenOutput creates an output file through the pinned workspace root. It
+// prevents callers from following a replaced output-directory symlink.
+func (w *Workspace) OpenOutput(name string) (*os.File, error) {
+	if w == nil || w.fsRoot == nil {
+		return nil, errors.New("workspace: output open on closed workspace")
+	}
+	clean := filepath.Clean(name)
+	if filepath.IsAbs(clean) || clean == "." || clean == ".." || strings.HasPrefix(clean, ".."+string(filepath.Separator)) {
+		return nil, fmt.Errorf("workspace: invalid output name %q", name)
+	}
+	rel := filepath.ToSlash(filepath.Join("output", clean))
+	dir := filepath.ToSlash(filepath.Dir(filepath.FromSlash(rel)))
+	if dir != "." {
+		if err := w.fsRoot.MkdirAll(dir, 0o755); err != nil {
+			return nil, err
+		}
+	}
+	return w.fsRoot.OpenFile(rel, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0o644)
 }
 
 // AssetPath returns a validated workspace path for a declared logical asset.
@@ -106,20 +316,31 @@ func (w *Workspace) PreparedPackagePath() string {
 	return filepath.Join(w.root, "prepared.json")
 }
 
-// WritePlan writes the render plan document to plan.json.
+// WritePlan writes the render plan document to plan.json through the pinned
+// workspace root, so a swapped pathname cannot redirect the write elsewhere.
 func (w *Workspace) WritePlan(plan []byte) error {
-	return os.WriteFile(w.PlanPath(), plan, 0o644)
+	if w == nil || w.fsRoot == nil {
+		return errors.New("workspace: write plan on closed workspace")
+	}
+	return w.fsRoot.WriteFile("plan.json", plan, 0o644)
 }
 
-// WritePreparedPackage writes the immutable overlay preparation sidecar.
+// WritePreparedPackage writes the immutable overlay preparation sidecar through
+// the pinned workspace root.
 func (w *Workspace) WritePreparedPackage(pkg []byte) error {
-	return os.WriteFile(w.PreparedPackagePath(), pkg, 0o644)
+	if w == nil || w.fsRoot == nil {
+		return errors.New("workspace: write prepared package on closed workspace")
+	}
+	return w.fsRoot.WriteFile("prepared.json", pkg, 0o644)
 }
 
 // MaterializePaths resolves every asset to a local file and hard-links it into
 // the workspace. A streaming copy is used only when the cache and workspace
 // are on different filesystems.
 func (w *Workspace) MaterializePaths(ctx context.Context, resolve PathResolver, assets []queue.AssetRef) error {
+	if w == nil || w.fsRoot == nil {
+		return errors.New("workspace: materialize on closed workspace")
+	}
 	if len(assets) == 0 {
 		return nil
 	}
@@ -169,91 +390,77 @@ func (w *Workspace) materializeOne(ctx context.Context, resolve PathResolver, a 
 	if resolved.LocalPath == "" {
 		return fmt.Errorf("workspace: resolver returned an empty local path for %s", a.Hash)
 	}
-	if err := os.MkdirAll(filepath.Dir(dst), 0o755); err != nil {
-		return fmt.Errorf("workspace: mkdir %s: %w", filepath.Dir(dst), err)
+	rel, err := filepath.Rel(w.root, dst)
+	if err != nil || rel == "." || rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
+		return fmt.Errorf("workspace: materialized path %q is outside job root", dst)
 	}
-	if resolved.LocalPath != dst {
-		// Idempotent materialization: an existing destination from a previous
-		// attempt is replaced atomically (link to a temp sibling + rename), so
-		// a retried job never sees a half-installed asset.
-		if _, statErr := os.Lstat(dst); statErr == nil {
-			_ = os.Remove(dst)
-		}
-		if err := os.Link(resolved.LocalPath, dst); err != nil {
-			if isCrossDevice(err) {
-				// Source and destination live on different filesystems: fall
-				// back to a streaming copy into a temp file + atomic rename.
-				if copyErr := copyFile(ctx, resolved.LocalPath, dst); copyErr != nil {
-					return copyErr
-				}
-			} else if !os.IsExist(err) {
-				return fmt.Errorf("workspace: link %s: %w", dst, err)
-			}
+	rel = filepath.ToSlash(rel)
+	dir := filepath.ToSlash(filepath.Dir(filepath.FromSlash(rel)))
+	if dir != "." {
+		if err := w.fsRoot.MkdirAll(dir, 0o755); err != nil {
+			return fmt.Errorf("workspace: mkdir %s: %w", dir, err)
 		}
 	}
-	// The worker and the native Chronon daemon may run as different users.
-	// Temp/cache files are commonly created as 0600; make the immutable
-	// materialized view readable by the daemon without making it writable.
-	if err := os.Chmod(dst, 0o644); err != nil {
-		return fmt.Errorf("workspace: chmod %s: %w", dst, err)
+	if resolved.LocalPath == dst {
+		return nil
+	}
+	// Rooted temp creation and rename prevent a swapped assets directory or
+	// destination symlink from redirecting materialization outside the job.
+	if err := copyFileRooted(ctx, w.fsRoot, resolved.LocalPath, rel); err != nil {
+		return err
 	}
 	return nil
 }
 
-// isCrossDevice is the single expression of the cross-filesystem decision
-// (link fails with EXDEV when the cache and the workspace live on different
-// mounts). Every materialization path funnels through it so a future change
-// to the fallback policy is made in exactly one place.
-func isCrossDevice(err error) bool {
-	return errors.Is(err, syscall.EXDEV)
-}
-
-// copyBufPool recycles the copy buffer of the cross-filesystem fallback. That
-// path runs once per asset that lives on a different mount from the workspace,
-// so a per-call buffer allocation is pure steady-state garbage; the pool keeps
-// it at zero after the first asset. The buffer is larger than io.Copy's
-// built-in 32 KiB because these are video-sized assets.
-var copyBufPool = sync.Pool{
-	New: func() any {
-		buf := make([]byte, 256*1024)
-		return &buf
-	},
-}
-
-func copyFile(ctx context.Context, source, dst string) error {
+// copyFileRooted streams from the external cache into an exclusive temporary
+// file beneath the pinned workspace root, then atomically installs it.
+func copyFileRooted(ctx context.Context, root *os.Root, source, dst string) error {
 	input, err := os.Open(source)
 	if err != nil {
-		return fmt.Errorf("workspace: open %s: %w", source, err)
+		return fmt.Errorf("workspace: open source %s: %w", source, err)
 	}
 	defer input.Close()
-	tmp, err := os.CreateTemp(filepath.Dir(dst), ".materialize-*")
-	if err != nil {
-		return err
+	dir := filepath.ToSlash(filepath.Dir(filepath.FromSlash(dst)))
+	if dir == "." {
+		dir = ""
 	}
-	tmpPath := tmp.Name()
-	defer os.Remove(tmpPath)
+	name := ".materialize-" + strconv.FormatInt(time.Now().UnixNano(), 10)
+	if dir != "" {
+		name = dir + "/" + name
+	}
+	tmp, err := root.OpenFile(name, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o644)
+	if err != nil {
+		return fmt.Errorf("workspace: create rooted temp: %w", err)
+	}
+	defer root.Remove(name)
 	buf := copyBufPool.Get().(*[]byte)
 	_, copyErr := io.CopyBuffer(tmp, input, *buf)
 	copyBufPool.Put(buf)
 	if copyErr != nil {
 		_ = tmp.Close()
-		return copyErr
+		return fmt.Errorf("workspace: copy %s: %w", dst, copyErr)
 	}
 	if err := tmp.Close(); err != nil {
-		return err
+		return fmt.Errorf("workspace: close temp: %w", err)
 	}
 	select {
 	case <-ctx.Done():
 		return ctx.Err()
 	default:
 	}
-	if err := os.Rename(tmpPath, dst); err != nil {
+	if err := root.Rename(name, dst); err != nil {
 		return fmt.Errorf("workspace: install %s: %w", dst, err)
 	}
-	if err := os.Chmod(dst, 0o644); err != nil {
-		return fmt.Errorf("workspace: chmod %s: %w", dst, err)
-	}
 	return nil
+}
+
+// copyBufPool recycles the streaming materialization buffer. It is larger
+// than io.Copy's built-in 32 KiB because these are video-sized assets.
+var copyBufPool = sync.Pool{
+	New: func() any {
+		buf := make([]byte, 256*1024)
+		return &buf
+	},
 }
 
 // assetPath validates a logical path and joins it under the assets root.
@@ -270,28 +477,45 @@ func (w *Workspace) assetPath(logical string) (string, error) {
 	// refs such as `videos/base.mp4` are still relative to the workspace's
 	// assets directory. Supporting both here keeps one materialization rule at
 	// the RenderingGen boundary.
+	var candidate string
 	if clean == "assets" || strings.HasPrefix(clean, "assets"+string(filepath.Separator)) {
-		return filepath.Join(w.root, clean), nil
+		candidate = filepath.Join(w.root, clean)
+	} else {
+		candidate = filepath.Join(w.assetsDir, clean)
 	}
-	return filepath.Join(w.assetsDir, clean), nil
+	if err := ensurePathContained(w.root, candidate); err != nil {
+		return "", fmt.Errorf("workspace: logical_path %q escapes the workspace", logical)
+	}
+	return candidate, nil
 }
 
-// CleanupStale removes old workspace directories. A workspace is considered
-// active when it contains a lease marker whose timestamp is still valid (see
-// WriteLease); any other directory older than olderThan is swept. Workers
-// write/refresh the marker for the whole lifetime of a claimed job, so a
-// long render that writes nothing to its workspace can never be swept.
+// CleanupStale removes old workspace directories. A valid lease marker protects
+// active work; a process lock independently protects live owners even if the
+// marker is missing, stale, or being refreshed. Lock entries are removed only
+// while the global lock registry and the per-job exclusive lock are both held.
+// These advisory locks require cooperating processes and a filesystem that
+// implements Linux flock semantics; do not share jobsRoot over a filesystem
+// with different lock guarantees.
 func CleanupStale(root string, olderThan time.Duration) error {
-	entries, err := os.ReadDir(root)
+	canonicalRoot, err := filepath.EvalSymlinks(root)
 	if err != nil {
 		if os.IsNotExist(err) {
 			return nil
 		}
 		return err
 	}
+	rootFS, err := os.OpenRoot(canonicalRoot)
+	if err != nil {
+		return err
+	}
+	defer rootFS.Close()
+	entries, err := fs.ReadDir(rootFS.FS(), ".")
+	if err != nil {
+		return err
+	}
 	cutoff := time.Now().Add(-olderThan)
 	for _, entry := range entries {
-		if !entry.IsDir() {
+		if !entry.IsDir() || entry.Type()&os.ModeSymlink != 0 {
 			continue
 		}
 		if strings.HasPrefix(entry.Name(), ".") {
@@ -301,33 +525,140 @@ func CleanupStale(root string, olderThan time.Duration) error {
 			// not depend on journald, and it is not a leaked scratch tree.
 			continue
 		}
-		path := filepath.Join(root, entry.Name())
-		info, err := entry.Info()
+		path := filepath.Join(canonicalRoot, entry.Name())
+		info, err := rootFS.Lstat(entry.Name())
 		if err != nil {
 			return err
 		}
-		if info.ModTime().After(cutoff) {
+		if !info.IsDir() || info.Mode()&os.ModeSymlink != 0 || info.ModTime().After(cutoff) {
 			continue
 		}
-		leasePath := filepath.Join(path, leaseMarkerName)
-		if raw, readErr := os.ReadFile(leasePath); readErr == nil {
-			if lease, parseErr := time.Parse(time.RFC3339Nano, strings.TrimSpace(string(raw))); parseErr == nil && lease.After(time.Now()) {
+		jobFS, openErr := rootFS.OpenRoot(entry.Name())
+		if openErr != nil {
+			// The candidate may have been replaced after Lstat. Never follow it
+			// through its pathname; safely skip entries that are no longer dirs.
+			if errors.Is(openErr, os.ErrNotExist) || errors.Is(openErr, syscall.ENOTDIR) {
+				continue
+			}
+			return fmt.Errorf("workspace: open stale candidate: %w", openErr)
+		}
+		registry, registryErr := acquireLockRegistry(rootFS)
+		if registryErr != nil {
+			_ = jobFS.Close()
+			return registryErr
+		}
+		lockFile, lockErr := openWorkspaceLock(rootFS, entry.Name())
+		if lockErr != nil {
+			_ = unlockWorkspaceSlot(registry)
+			_ = registry.Close()
+			_ = jobFS.Close()
+			return fmt.Errorf("workspace: open stale candidate lock: %w", lockErr)
+		}
+		locked, lockErr := lockWorkspaceSlot(lockFile, true)
+		if lockErr != nil {
+			_ = lockFile.Close()
+			_ = unlockWorkspaceSlot(registry)
+			_ = registry.Close()
+			_ = jobFS.Close()
+			return fmt.Errorf("workspace: lock stale candidate: %w", lockErr)
+		}
+		if !locked {
+			_ = lockFile.Close()
+			_ = unlockWorkspaceSlot(registry)
+			_ = registry.Close()
+			_ = jobFS.Close()
+			continue
+		}
+		leaseRaw, leaseReadErr := jobFS.ReadFile(leaseMarkerName)
+		_ = jobFS.Close()
+		if leaseReadErr == nil {
+			if lease, parseErr := time.Parse(time.RFC3339Nano, strings.TrimSpace(string(leaseRaw))); parseErr == nil && lease.After(time.Now()) {
+				_ = unlockWorkspaceSlot(lockFile)
+				_ = lockFile.Close()
+				_ = unlockWorkspaceSlot(registry)
+				_ = registry.Close()
 				continue
 			}
 		}
-		if err := os.RemoveAll(path); err != nil {
+		if err := rootFS.RemoveAll(entry.Name()); err != nil {
+			_ = unlockWorkspaceSlot(lockFile)
+			_ = lockFile.Close()
+			_ = unlockWorkspaceSlot(registry)
+			_ = registry.Close()
 			return fmt.Errorf("workspace: remove stale %s: %w", path, err)
 		}
+		if err := rootFS.Remove(workspaceLockName(entry.Name())); err != nil && !os.IsNotExist(err) {
+			_ = unlockWorkspaceSlot(lockFile)
+			_ = lockFile.Close()
+			_ = unlockWorkspaceSlot(registry)
+			_ = registry.Close()
+			return fmt.Errorf("workspace: remove stale lock for %s: %w", path, err)
+		}
+		_ = unlockWorkspaceSlot(lockFile)
+		_ = lockFile.Close()
+		_ = unlockWorkspaceSlot(registry)
+		_ = registry.Close()
 	}
 	return nil
 }
 
-// Cleanup removes the workspace directory tree.
+// Cleanup removes the workspace directory tree while holding its per-job lock.
 func (w *Workspace) Cleanup() error {
-	if err := os.RemoveAll(w.root); err != nil {
-		return fmt.Errorf("workspace: cleanup %s: %w", w.root, err)
+	if w == nil {
+		return nil
 	}
-	return nil
+	if w.fsRoot == nil && w.jobsFS == nil && w.lockFile == nil {
+		return nil
+	}
+	var cleanupErr error
+	if w.jobsFS != nil && w.lockFile != nil {
+		registry, err := acquireLockRegistry(w.jobsFS)
+		if err != nil {
+			cleanupErr = err
+		} else {
+			if err := w.jobsFS.RemoveAll(filepath.Base(w.root)); err != nil && !os.IsNotExist(err) {
+				cleanupErr = fmt.Errorf("workspace: cleanup %s: %w", w.root, err)
+			}
+			if cleanupErr == nil {
+				if err := w.jobsFS.Remove(workspaceLockName(filepath.Base(w.root))); err != nil && !os.IsNotExist(err) {
+					cleanupErr = fmt.Errorf("workspace: remove per-job lock entry: %w", err)
+				}
+			}
+			_ = unlockWorkspaceSlot(registry)
+			_ = registry.Close()
+		}
+
+	} else if w.jobsFS != nil {
+		if err := w.jobsFS.RemoveAll(filepath.Base(w.root)); err != nil && !os.IsNotExist(err) {
+			cleanupErr = fmt.Errorf("workspace: cleanup %s: %w", w.root, err)
+		}
+	}
+	if w.fsRoot != nil {
+		if err := w.fsRoot.Close(); err != nil && cleanupErr == nil {
+			cleanupErr = fmt.Errorf("workspace: close workspace root: %w", err)
+		}
+		w.fsRoot = nil
+	}
+	if w.lockFile != nil {
+		// Keep a failed cleanup's per-job lock held: otherwise a retry would
+		// reopen the surviving directory without the original ownership guard.
+		if cleanupErr == nil {
+			if err := unlockWorkspaceSlot(w.lockFile); err != nil {
+				cleanupErr = fmt.Errorf("workspace: unlock workspace: %w", err)
+			} else if err := w.lockFile.Close(); err != nil {
+				cleanupErr = fmt.Errorf("workspace: close workspace lock: %w", err)
+			} else {
+				w.lockFile = nil
+			}
+		}
+	}
+	if w.jobsFS != nil {
+		if err := w.jobsFS.Close(); err != nil && cleanupErr == nil {
+			cleanupErr = fmt.Errorf("workspace: close jobs root: %w", err)
+		}
+		w.jobsFS = nil
+	}
+	return cleanupErr
 }
 
 // leaseMarkerName is the per-workspace liveness marker CleanupStale reads.
@@ -338,12 +669,15 @@ func (w *Workspace) Cleanup() error {
 const leaseMarkerName = ".lease_until"
 
 // WriteLease writes/updates the workspace liveness marker with the given
-// expiry. Until that instant, CleanupStale must never remove this workspace.
+// expiry. It complements, but does not replace, the per-job advisory process lock.
 func (w *Workspace) WriteLease(until time.Time) error {
 	if w == nil {
 		return nil
 	}
-	if err := os.WriteFile(filepath.Join(w.root, leaseMarkerName), []byte(until.UTC().Format(time.RFC3339Nano)), 0o644); err != nil {
+	if w.fsRoot == nil {
+		return errors.New("workspace: lease on closed workspace")
+	}
+	if err := w.fsRoot.WriteFile(leaseMarkerName, []byte(until.UTC().Format(time.RFC3339Nano)), 0o644); err != nil {
 		return fmt.Errorf("workspace: write lease marker %s: %w", w.root, err)
 	}
 	return nil

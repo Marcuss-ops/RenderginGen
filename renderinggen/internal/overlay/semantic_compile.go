@@ -862,7 +862,12 @@ func compileTextVisualAccentLayers(ri resolvedItem, src *semanticPlan, text Laye
 		}
 	}
 	var layers []Layer
-	if definition == nil || definition.Category != "brush_v1" {
+	if definition != nil && definition.Category == "phrase_highlight_v1" {
+		layers, err = compilePhraseHighlightComponents(src, text, *definition)
+		if err != nil {
+			return nil, err
+		}
+	} else if definition == nil || definition.Category != "brush_v1" {
 		layers = []Layer{text}
 	} else {
 		if !motionDefinitionAdmitsTarget(definition, "text") {
@@ -970,16 +975,13 @@ func compileEntityCard(ri resolvedItem, src *semanticPlan, registry *assetRegist
 			style = entityStyleRegistry.sample(entityStyleRegistry.query(nil), "", src.entityStyleSampleKey(), src.VideoID, ri.Item.ID)
 		}
 		// Layout, colour, image motion and caption motion all stay exactly as
-		// the style (or the producer override) declares them: the entity surface
-		// hands the catalog back to Chronon instead of collapsing it onto the
-		// two-motion canary set. The only substitution left is evidence-based:
-		// a motion a recorded strict-GPU run failed falls back to a certified
-		// one, and the call sites log that swap.
+		// the style (or the producer override) declares them. The selected
+		// catalog motion reaches Chronon unchanged so GPU failures stay visible.
 		currentStyle = style
 		hasStyle = true
-		ri.Item.MotionID = entityCardRuntimeImageMotion(style.ImageMotionID, style.ID)
+		ri.Item.MotionID = style.ImageMotionID
 		if imageMotionOverride != "" {
-			ri.Item.MotionID = entityCardRuntimeImageMotion(imageMotionOverride, style.ID)
+			ri.Item.MotionID = imageMotionOverride
 		}
 		ri.Item.CaptionMotionID = style.CaptionMotionID
 		if captionMotionOverride != "" {
@@ -1004,6 +1006,9 @@ func compileEntityCard(ri resolvedItem, src *semanticPlan, registry *assetRegist
 		}
 		ri.Params["position_x"] = x
 		ri.Params["position_y"] = 0.0
+	}
+	if ri.Item.MotionID == "" && ri.ImagePreset.ID != "" {
+		ri.Item.MotionID = runtimeDefaultImageMotionID(src, ri.Item.ID)
 	}
 	resolvedImageMotion, err := resolveRegisteredMotion(ri.Item.MotionID)
 	if err != nil {

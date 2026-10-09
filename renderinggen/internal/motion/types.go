@@ -3,6 +3,7 @@ package motion
 import (
 	"encoding/json"
 	"fmt"
+	"math"
 )
 
 import "github.com/Marcuss-ops/RenderingGen/renderinggen/countryflags"
@@ -85,14 +86,17 @@ type ImageMotionComponent struct {
 	PathKind          string                       `json:"path_kind,omitempty"`
 	Placement         string                       `json:"placement,omitempty"`
 	CanvasSize        bool                         `json:"canvas_size,omitempty"`
+	AbsolutePosition  bool                         `json:"absolute_position,omitempty"`
+	AbsoluteRadius    bool                         `json:"absolute_radius,omitempty"`
 	SyncTransform     bool                         `json:"sync_transform,omitempty"`
 	SizeScale         []float64                    `json:"size_scale,omitempty"`
 	PositionOffset    []float64                    `json:"position_offset,omitempty"`
+	PositionScale     []float64                    `json:"position_scale,omitempty"`
 	ZOffset           float64                      `json:"z_offset,omitempty"`
 	RadiusScale       float64                      `json:"radius_scale,omitempty"`
 	Fill              []float64                    `json:"fill,omitempty"`
-	Gradient          *ImageMotionGradient         `json:"gradient,omitempty"`
 	Stroke            *ImageMotionStroke           `json:"stroke,omitempty"`
+	Gradient          *ImageMotionGradient         `json:"gradient,omitempty"`
 	Opacity           *float64                     `json:"opacity,omitempty"`
 	Tracks            []TrackDefinition            `json:"tracks,omitempty"`
 	Effects           []ImageMotionEffect          `json:"effects,omitempty"`
@@ -241,6 +245,7 @@ type MotionDefinition struct {
 	Exit                int                      `json:"exit,omitempty"`
 	Tracks              []TrackDefinition        `json:"tracks,omitempty"`
 	TextAnimators       []TextAnimatorDefinition `json:"text_animators,omitempty"`
+	LayerComponents     []ImageMotionComponent   `json:"layer_components,omitempty"`
 	Selector            SelectorDefinition       `json:"selector,omitempty"`
 	Stagger             StaggerDefinition        `json:"stagger,omitempty"`
 	ImageRecipe         *ImageMotionRecipe       `json:"image_recipe,omitempty"`
@@ -288,6 +293,75 @@ func ValidateDefinition(d MotionDefinition) error {
 	}
 	if err := validateImagePremiumV1(d); err != nil {
 		return err
+	}
+	if d.Category == "phrase_highlight_v1" {
+		if d.Unit != "layer" || d.Enter <= 0 || d.Exit < 0 || d.DurationBounds != nil ||
+			d.ImageRecipe != nil || len(d.Tracks) == 0 || len(d.LayerComponents) == 0 || len(d.Targets) == 0 ||
+			!containsMotionString(d.Targets, "text") || !containsMotionString(d.Targets, "phrase") ||
+			!containsMotionString(d.Targets, "important_phrase") {
+			return fmt.Errorf("motion %q: phrase_highlight_v1 requires a layer entrance and native layer components", d.ID)
+		}
+		componentIDs := make(map[string]struct{}, len(d.LayerComponents))
+		for _, component := range d.LayerComponents {
+			if component.ID == "" {
+				return fmt.Errorf("motion %q: phrase highlight component id is empty", d.ID)
+			}
+			if _, duplicate := componentIDs[component.ID]; duplicate {
+				return fmt.Errorf("motion %q: phrase highlight repeats component id %q", d.ID, component.ID)
+			}
+			componentIDs[component.ID] = struct{}{}
+			if component.ID == "" || component.Type != "shape" || component.Shape != "rect" ||
+				component.Placement != "before_image" || component.AbsoluteRadius ||
+				len(component.SizeScale) != 2 || len(component.Fill) != 4 ||
+				(!component.AbsolutePosition && len(component.PositionScale) != 2) ||
+				(component.AbsolutePosition && len(component.PositionOffset) != 2) ||
+				component.Opacity == nil || *component.Opacity <= 0 || *component.Opacity > 1 || len(component.Tracks) == 0 {
+				return fmt.Errorf("motion %q: phrase highlight component %q has incomplete native shape data", d.ID, component.ID)
+			}
+			if component.Stroke != nil && (component.Stroke.Color == "" || component.Stroke.Width <= 0 ||
+				math.IsNaN(component.Stroke.Width) || math.IsInf(component.Stroke.Width, 0)) {
+				return fmt.Errorf("motion %q: phrase highlight component %q has invalid native stroke data", d.ID, component.ID)
+			}
+			invalidRelativePosition := !component.AbsolutePosition &&
+				(len(component.PositionScale) != 2 || component.PositionScale[0] < 0 || component.PositionScale[0] > 1 ||
+					component.PositionScale[1] < 0 || component.PositionScale[1] > 1)
+			if component.AbsolutePosition && (len(component.PositionScale) > 0 || len(component.PositionOffset) != 2) {
+				return fmt.Errorf("motion %q: phrase highlight component %q with absolute position must carry position_offset, not position_scale", d.ID, component.ID)
+			}
+			if component.SizeScale[0] <= 0 || component.SizeScale[1] <= 0 || component.RadiusScale < 0 ||
+				invalidRelativePosition || !finiteMotionValues(component.SizeScale) ||
+				!finiteMotionValues(component.PositionOffset) || !finiteMotionValues(component.PositionScale) ||
+				math.IsNaN(component.RadiusScale) || math.IsInf(component.RadiusScale, 0) {
+				return fmt.Errorf("motion %q: phrase highlight component %q has invalid geometry", d.ID, component.ID)
+			}
+			for _, value := range component.Fill {
+				if value < 0 || value > 1 || math.IsNaN(value) || math.IsInf(value, 0) {
+					return fmt.Errorf("motion %q: phrase highlight component %q has invalid RGBA", d.ID, component.ID)
+				}
+			}
+			seenProperties := make(map[string]struct{}, len(component.Tracks))
+			for _, track := range component.Tracks {
+				if err := validateTrackDefinition(d.ID, "component "+component.ID, track); err != nil {
+					return err
+				}
+				switch track.Property {
+				case "scale_x", "position_x", "opacity":
+				default:
+					return fmt.Errorf("motion %q: phrase highlight component %q uses unsupported property %q", d.ID, component.ID, track.Property)
+				}
+				if _, duplicate := seenProperties[track.Property]; duplicate {
+					return fmt.Errorf("motion %q: phrase highlight component %q repeats property %q", d.ID, component.ID, track.Property)
+				}
+				seenProperties[track.Property] = struct{}{}
+				if track.Property == "scale_x" {
+					for _, key := range track.Keyframes {
+						if _, ok := positiveMotionScalar(key.Value); !ok {
+							return fmt.Errorf("motion %q: phrase highlight component %q scale_x keyframes must be positive finite scalars", d.ID, component.ID)
+						}
+					}
+				}
+			}
+		}
 	}
 	if err := validateEditorialV1Family(d); err != nil {
 		return err
@@ -544,6 +618,32 @@ func validateVisualAccentsFieldMask(d MotionDefinition, field ImageMotionFieldDe
 		return fmt.Errorf("motion %q: paint_v1 field operator chain exceeds 8", d.ID)
 	}
 	return nil
+}
+
+func finiteMotionValues(values []float64) bool {
+	for _, value := range values {
+		if math.IsNaN(value) || math.IsInf(value, 0) {
+			return false
+		}
+	}
+	return true
+}
+
+func positiveMotionScalar(value any) (float64, bool) {
+	var scalar float64
+	switch number := value.(type) {
+	case float64:
+		scalar = number
+	case float32:
+		scalar = float64(number)
+	case int:
+		scalar = float64(number)
+	case int64:
+		scalar = float64(number)
+	default:
+		return 0, false
+	}
+	return scalar, scalar > 0 && !math.IsNaN(scalar) && !math.IsInf(scalar, 0)
 }
 
 func validateTrackDefinition(motionID, owner string, t TrackDefinition) error {

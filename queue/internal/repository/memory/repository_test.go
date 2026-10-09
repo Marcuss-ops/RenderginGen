@@ -17,6 +17,32 @@ func submit(t *testing.T, s *Repository, id string) {
 	}
 }
 
+func TestQueuePublicationMetadataRoundTrips(t *testing.T) {
+	ctx := context.Background()
+	repo := New(time.Minute, 3)
+	job := model.Job{
+		ID: "metadata-job", PublicationPolicy: model.PublicationObjectStoreAndDrive,
+		DaemonAdmissionWaitMS: 4.25, RenderPlan: json.RawMessage(`{"n":1}`),
+	}
+	if err := repo.Submit(ctx, job); err != nil {
+		t.Fatal(err)
+	}
+	got, err := repo.Get(ctx, job.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.PublicationPolicy != job.PublicationPolicy || got.DaemonAdmissionWaitMS != job.DaemonAdmissionWaitMS {
+		t.Fatalf("GET metadata = %q/%.2f, want %q/%.2f", got.PublicationPolicy, got.DaemonAdmissionWaitMS, job.PublicationPolicy, job.DaemonAdmissionWaitMS)
+	}
+	claimed, _, err := repo.Claim(ctx, "worker")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if claimed.PublicationPolicy != job.PublicationPolicy || claimed.DaemonAdmissionWaitMS != job.DaemonAdmissionWaitMS {
+		t.Fatalf("claim metadata = %q/%.2f, want %q/%.2f", claimed.PublicationPolicy, claimed.DaemonAdmissionWaitMS, job.PublicationPolicy, job.DaemonAdmissionWaitMS)
+	}
+}
+
 func TestClaimIsFIFOAndExclusive(t *testing.T) {
 	s := New(30*time.Second, 3)
 	submit(t, s, "job-1")
@@ -256,6 +282,27 @@ func TestFailRequeuesUntilMaxAttempts(t *testing.T) {
 	stats := s.Stats(context.Background())
 	if stats.Failed != 1 || stats.Pending != 0 {
 		t.Fatalf("want 1 failed, 0 pending; got %+v", stats)
+	}
+}
+
+func TestFailPermanentlyBypassesRetryBudget(t *testing.T) {
+	s := New(30*time.Second, 3)
+	submit(t, s, "drive-required")
+	if _, _, err := s.Claim(context.Background(), "worker-1"); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.FailPermanently(context.Background(), "drive-required", "worker-1", "Drive publisher unavailable"); err != nil {
+		t.Fatal(err)
+	}
+	job, err := s.Get(context.Background(), "drive-required")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if job.State != model.StateFailed || job.FailReason != "Drive publisher unavailable" {
+		t.Fatalf("job state/reason = %s/%q, want failed/permanent reason", job.State, job.FailReason)
+	}
+	if stats := s.Stats(context.Background()); stats.Failed != 1 || stats.Pending != 0 {
+		t.Fatalf("stats = %+v, want terminal failed and not pending", stats)
 	}
 }
 

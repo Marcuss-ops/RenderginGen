@@ -92,7 +92,7 @@ func runPrepPool(ctx context.Context, q *queue.Client, proc *processor.Processor
 			artifact := *job.Artifact
 			artifact.Metrics = nil
 			pubErr := withLeaseVoid(ctx, job, q, timings, func(jobCtx context.Context) error {
-				published, publishErr := proc.Publish(jobCtx, job.ID, job.JobType, artifact)
+				published, publishErr := proc.Publish(jobCtx, job.ID, job.JobType, job.PublicationPolicy, artifact)
 				if publishErr != nil {
 					return publishErr
 				}
@@ -122,7 +122,7 @@ func runPrepPool(ctx context.Context, q *queue.Client, proc *processor.Processor
 				continue
 			}
 			published, publishErr := withLease(ctx, job, q, timings, func(jobCtx context.Context) (queue.Artifact, error) {
-				return proc.Publish(jobCtx, job.ID, job.JobType, artifact)
+				return proc.Publish(jobCtx, job.ID, job.JobType, job.PublicationPolicy, artifact)
 			})
 			if publishErr != nil {
 				processor.ReportFailureWithArtifact(ctx, q, job.ID, artifact, publishErr)
@@ -304,7 +304,7 @@ func runPostPool(ctx context.Context, q *queue.Client, proc *processor.Processor
 				// Rendering stops as soon as the artifact is durable in object
 				// storage; Drive publication is part of this pool, not the GPU
 				// lane's critical path.
-				artifact, finalizeErr = proc.Publish(jobCtx, job.ID, job.JobType, artifact)
+				artifact, finalizeErr = proc.Publish(jobCtx, job.ID, job.JobType, job.PublicationPolicy, artifact)
 				return finalizeErr
 			})
 			if err != nil {

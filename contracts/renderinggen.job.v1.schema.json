@@ -10,7 +10,9 @@
     "id": {
       "type": "string",
       "minLength": 1,
-      "description": "Job identifier, e.g. video-983 (one per segment)."
+      "maxLength": 256,
+      "pattern": "^[A-Za-z0-9_.:-]+$",
+      "description": "Job identifier, 1–256 bytes, using safe ASCII filename characters. Producer scopes use colon or dash separators."
     },
     "schema": {
       "const": "renderinggen.job",
@@ -19,6 +21,18 @@
     "version": {
       "const": 1,
       "description": "Envelope schema version."
+    },
+    "publication_policy": {
+      "type": "string",
+      "enum": ["object_store_only", "object_store_and_drive"],
+      "default": "object_store_only",
+      "description": "Optional external delivery policy. Omitted jobs remain object-store-only; object_store_and_drive asks the worker to publish the artifact to its configured Drive destination."
+    },
+    "daemon_admission_wait_ms": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1.7976931348623157e+308,
+      "description": "Optional Chronon daemon-side admission delay in milliseconds. Worker-owned value copied into artifact metrics; not part of gpu_lane_wait."
     },
     "render_plan": {
       "$ref": "https://renderinggen.dev/schemas/overlay-plan.v1.schema.json",

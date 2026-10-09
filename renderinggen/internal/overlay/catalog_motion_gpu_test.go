@@ -6,6 +6,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"image"
 	"image/color"
@@ -50,7 +51,7 @@ func TestEveryPresentationMotionExecutesOnTheStrictGPU(t *testing.T) {
 	if err != nil {
 		t.Fatalf("resolve GPU certification output directory: %v", err)
 	}
-	certified := make([]certifiedMotion, 0, 50)
+	certified := make([]certifiedMotion, 0, 70)
 
 	for _, familyID := range motion.Registry.PresentationFamilyIDs() {
 		for _, id := range motion.Registry.PresentationMotionIDs(familyID) {
@@ -66,9 +67,9 @@ func TestEveryPresentationMotionExecutesOnTheStrictGPU(t *testing.T) {
 					"text": "2026 59.99", "start_ms": 0, "end_ms": 2000,
 				}
 				switch familyID {
-				case "metric_v1":
+				case "metric_v1", "metric_didone_v1":
 					item["kind"] = string(KindMetricStat)
-				case "date_v1":
+				case "date_v1", "date_didone_v1":
 					item["kind"] = string(KindTimelineDate)
 				case "entity_card_v1":
 					item["kind"] = string(KindEntityCard)
@@ -158,6 +159,9 @@ func TestEveryPresentationMotionExecutesOnTheStrictGPU(t *testing.T) {
 					t.Fatalf("strict GPU output for %s: codec=%s size=%dx%d frames=%d; want h264 1280x720 48 frames",
 						id, stream.CodecName, stream.Width, stream.Height, frames)
 				}
+				if err := verifyCatalogMotionOutput(videoPath, 1280, 720, true); err != nil {
+					t.Fatalf("verify presentation GPU output %s: %v", id, err)
+				}
 				file, err := os.Open(videoPath)
 				if err != nil {
 					t.Fatalf("open certified output %s: %v", videoPath, err)
@@ -180,8 +184,8 @@ func TestEveryPresentationMotionExecutesOnTheStrictGPU(t *testing.T) {
 			}
 		}
 	}
-	if len(certified) != 50 {
-		t.Fatalf("GPU certification produced %d verified outputs, want 50", len(certified))
+	if len(certified) != 70 {
+		t.Fatalf("GPU certification produced %d verified outputs, want 70", len(certified))
 	}
 	manifest := struct {
 		SchemaVersion string            `json:"schema_version"`
@@ -220,6 +224,9 @@ func TestEveryCallableCatalogMotionExecutesOnTheStrictGPU(t *testing.T) {
 		}
 	}
 	imageBytes := motionCanaryJPEG(t, color.RGBA{R: 32, G: 160, B: 220, A: 255})
+	if err := os.MkdirAll(filepath.Join(assetsRoot, "assets", "semantic"), 0o755); err != nil {
+		t.Fatal(err)
+	}
 	if err := os.WriteFile(filepath.Join(assetsRoot, "assets", "semantic", certificationAssetID+".jpg"), imageBytes, 0o644); err != nil {
 		t.Fatal(err)
 	}
@@ -231,23 +238,54 @@ func TestEveryCallableCatalogMotionExecutesOnTheStrictGPU(t *testing.T) {
 	stackImageSHA := hex.EncodeToString(stackImageDigest[:])
 
 	var items []map[string]any
+	entityCaptionIDs := motion.Registry.SelectableCategoryMotionIDs("entity_caption_v1")
+	trumpEntityCaptionIDs := motion.Registry.SelectableCategoryMotionIDs("trump_entity_text_v1")
+	typewriterCaptionIDs := motion.Registry.SelectableCategoryMotionIDs("typewriter")
+	typewriterGlitchCaptionIDs := motion.Registry.SelectableCategoryMotionIDs("typewriter_glitch")
+	modernTypewriterCaptionIDs := motion.Registry.SelectableCategoryMotionIDs("typewriter_modern_v1")
+	entityPresentationIDs := motion.Registry.PresentationMotionIDs("entity_card_v1")
+	entityCaptionStart := 0
 	phraseIDs := make([]string, 0, 128)
-	for _, category := range []string{"typewriter", "typewriter_modern_v1", "apple_v2", "apple_v3", "phrase_apple_clean_v1", "apple_phrase_v1"} {
+	captionMotionIDs := append([]string(nil), entityCaptionIDs...)
+	captionMotionIDs = append(captionMotionIDs, trumpEntityCaptionIDs...)
+	captionMotionIDs = append(captionMotionIDs, typewriterCaptionIDs...)
+	captionMotionIDs = append(captionMotionIDs, typewriterGlitchCaptionIDs...)
+	captionMotionIDs = append(captionMotionIDs, modernTypewriterCaptionIDs...)
+	captionMotionIDs = append(captionMotionIDs, entityPresentationIDs...)
+	for i, id := range captionMotionIDs {
+		item := map[string]any{
+			"id": fmt.Sprintf("entity-caption-%03d", i), "kind": string(KindEntityCard), "template_id": "PERSON",
+			"preset_id": PhraseDefaultPresetID, "image_preset_id": "image_scale_in",
+			"caption_motion_id": id,
+			"entity_caption":    "GPU ENTITY CAPTION CANARY", "text": "GPU ENTITY CAPTION CANARY",
+			"entity_id": "entity:gpu-caption-canary", "start_ms": 0, "end_ms": 2000, "duration_ms": 2000,
+			"asset_refs": []map[string]any{{"asset_id": certificationAssetID, "sha256": imageSHA,
+				"url": "assets/semantic/" + certificationAssetID + ".jpg", "media_type": "image/jpeg"}},
+		}
+		items = append(items, item)
+	}
+	entityCaptionCount := len(items)
+	phraseStart := entityCaptionCount
+	for _, category := range []string{"typewriter", "typewriter_modern_v1", "apple_v2", "apple_v3", "phrase_apple_clean_v1", "apple_phrase_v1", "phrase_highlight_v1", "text_3d_v1", "short_phrase_style"} {
 		phraseIDs = append(phraseIDs, motion.Registry.CategoryMotionIDs(category)...)
 	}
-	if len(phraseIDs) != 128 {
-		t.Fatalf("phrase family inventory has %d IDs, want 128", len(phraseIDs))
+	if len(phraseIDs) != 202 {
+		t.Fatalf("phrase family inventory has %d IDs, want 202", len(phraseIDs))
 	}
 	for i, id := range phraseIDs {
 		items = append(items, map[string]any{
 			"id": fmt.Sprintf("phrase-%03d", i), "kind": "important_phrase", "template_id": "IMPORTANT_PHRASE",
-			"preset_id": PhraseDefaultPresetID, "motion_id": id, "motion_params": map[string]any{"enter_frames": 36},
+			"motion_id": id, "preset_id": PhraseDefaultPresetID, "motion_params": map[string]any{"enter_frames": 36},
 			"text": "MOTION CATALOG GPU CANARY", "start_ms": 0, "end_ms": 2000,
 		})
 	}
-	imageIDs := motion.Registry.CategoryMotionIDs("image_premium_v1")
-	if len(imageIDs) != 20 {
-		t.Fatalf("premium image motion inventory has %d IDs, want 20", len(imageIDs))
+	imageCategories := []string{"image_premium_v1", "editorial_image_v1", "image_25d_clean_v1", "overlay_v3_image", "web", "web_rect_v1", "paint_v1", "light_leak_v1", "brush_v1"}
+	imageIDs := make([]string, 0, 125)
+	for _, cat := range imageCategories {
+		imageIDs = append(imageIDs, motion.Registry.CategoryMotionIDs(cat)...)
+	}
+	if len(imageIDs) != 125 {
+		t.Fatalf("image motion inventory has %d IDs, want 125", len(imageIDs))
 	}
 	for i, id := range imageIDs {
 		item := map[string]any{
@@ -256,7 +294,7 @@ func TestEveryCallableCatalogMotionExecutesOnTheStrictGPU(t *testing.T) {
 			"entity_caption": "GPU motion canary",
 			"asset_refs": []map[string]any{{
 				"asset_id": certificationAssetID, "sha256": imageSHA,
-				"url": "https://example.test/certification.jpg", "media_type": "image/jpeg",
+				"url": "assets/semantic/" + certificationAssetID + ".jpg", "media_type": "image/jpeg",
 			}},
 		}
 		if id == "image_stack_focus" {
@@ -269,8 +307,7 @@ func TestEveryCallableCatalogMotionExecutesOnTheStrictGPU(t *testing.T) {
 				{"id": "front", "asset_id": certificationAssetID, "start_ms": 0, "end_ms": 2000, "preset_id": ImageMotionCorpusPresetID},
 			}
 			item["asset_refs"] = append(item["asset_refs"].([]map[string]any), map[string]any{
-				"asset_id": "certification_image_back", "sha256": stackImageSHA,
-				"url": "https://example.test/certification.jpg", "media_type": "image/jpeg",
+				"asset_id": "certification_image_back", "sha256": stackImageSHA, "url": "assets/semantic/certification_image_back.jpg", "media_type": "image/jpeg",
 			})
 			item["image_layers"].([]map[string]any)[0]["asset_id"] = "certification_image_back"
 			// A composited item owns its caption on the image layer, never on the
@@ -334,17 +371,68 @@ func TestEveryCallableCatalogMotionExecutesOnTheStrictGPU(t *testing.T) {
 	switch familyFilter {
 	case "":
 	case "phrase":
-		items = items[:len(phraseIDs)]
+		items = items[phraseStart : phraseStart+len(phraseIDs)]
 	case "image":
-		items = items[len(phraseIDs):]
-		phraseIDs = nil
+		items = items[entityCaptionCount+len(phraseIDs):]
+	case "editorial_image":
+		start := entityCaptionCount + len(phraseIDs) + 20
+		items = items[start : start+14]
+	case "image_25d":
+		start := entityCaptionCount + len(phraseIDs) + 20 + 14
+		items = items[start : start+8]
+	case "overlay_v3_image":
+		start := entityCaptionCount + len(phraseIDs) + 20 + 14 + 8
+		items = items[start : start+10]
+	case "web":
+		start := entityCaptionCount + len(phraseIDs) + 20 + 14 + 8 + 10
+		items = items[start : start+14]
+	case "web_rect":
+		start := entityCaptionCount + len(phraseIDs) + 20 + 14 + 8 + 10 + 14
+		items = items[start : start+12]
+	case "paint":
+		start := entityCaptionCount + len(phraseIDs) + 20 + 14 + 8 + 10 + 14 + 12
+		items = items[start : start+12]
+	case "light_leak":
+		start := entityCaptionCount + len(phraseIDs) + 20 + 14 + 8 + 10 + 14 + 12 + 12
+		items = items[start : start+12]
+	case "brush":
+		start := entityCaptionCount + len(phraseIDs) + 20 + 14 + 8 + 10 + 14 + 12 + 12 + 12
+		items = items[start : start+23]
+	case "text_3d":
+		start := phraseStart + 144
+		items = items[start : start+10]
+	case "short_phrase_style":
+		start := phraseStart + 154
+		items = items[start : start+48]
+	case "entity_caption":
+		items = items[entityCaptionStart:entityCaptionCount]
 	default:
-		t.Fatalf("RENDERINGGEN_GPU_CERT_FAMILY=%q, want phrase or image", familyFilter)
+		t.Fatalf("RENDERINGGEN_GPU_CERT_FAMILY=%q, want phrase, image, editorial_image, image_25d, overlay_v3_image, web, web_rect, paint, light_leak, brush, text_3d, short_phrase_style or entity_caption", familyFilter)
+	}
+	if strings.TrimSpace(os.Getenv("RENDERINGGEN_GPU_CERT_MULTI_ACCENT_ONLY")) == "1" {
+		if familyFilter != "phrase" {
+			t.Fatalf("RENDERINGGEN_GPU_CERT_MULTI_ACCENT_ONLY requires family=phrase, got %q", familyFilter)
+		}
+		filtered := items[:0]
+		for _, item := range items {
+			id := item["motion_id"].(string)
+			plugin, err := motion.Registry.Resolve(id)
+			if err != nil {
+				t.Fatalf("resolve motion %q for multi-accent certification: %v", id, err)
+			}
+			if len(plugin.(motion.DeclarativePlugin).Definition.LayerComponents) > 1 {
+				filtered = append(filtered, item)
+			}
+		}
+		items = filtered
+		if len(items) != 5 {
+			t.Fatalf("multi-accent certification selected %d motions, want 5", len(items))
+		}
 	}
 	if motionFilter != "" {
 		filtered := items[:0]
 		for _, item := range items {
-			if item["motion_id"] == motionFilter {
+			if item["motion_id"] == motionFilter || item["caption_motion_id"] == motionFilter {
 				filtered = append(filtered, item)
 			}
 		}
@@ -369,7 +457,11 @@ func TestEveryCallableCatalogMotionExecutesOnTheStrictGPU(t *testing.T) {
 		batchItems := items[start:end]
 		ids := make([]string, len(batchItems))
 		for i, item := range batchItems {
-			ids[i] = item["motion_id"].(string)
+			if id, ok := item["motion_id"].(string); ok && id != "" {
+				ids[i] = id
+			} else {
+				ids[i] = item["caption_motion_id"].(string)
+			}
 		}
 		canvasWidth, canvasHeight := 1280, 720
 		if backend == "software" {
@@ -381,9 +473,7 @@ func TestEveryCallableCatalogMotionExecutesOnTheStrictGPU(t *testing.T) {
 			"video_id":       "motion-catalog-canary", "width": canvasWidth, "height": canvasHeight, "fps_num": 24, "fps_den": 1,
 			"items": batchItems,
 		}
-		if start < len(phraseIDs) {
-			planDocument["background"] = map[string]any{"kind": "color", "color": []float64{0.08, 0.08, 0.08, 1}}
-		}
+		planDocument["background"] = map[string]any{"kind": "color", "color": []float64{0.08, 0.08, 0.08, 1}}
 		raw, err := json.Marshal(planDocument)
 		if err != nil {
 			t.Fatal(err)
@@ -401,11 +491,18 @@ func TestEveryCallableCatalogMotionExecutesOnTheStrictGPU(t *testing.T) {
 			start = end
 			continue
 		}
-		if start < len(phraseIDs) && len(compiled.Plan.Layers) != len(batchItems)+1 {
-			t.Fatalf("compiled %d layers for phrase motions %v, want background + %d overlays", len(compiled.Plan.Layers), ids, len(batchItems))
+		if batchItems[0]["kind"] == "important_phrase" && len(compiled.Plan.Layers) < 2 {
+			t.Fatalf("compiled %d layers for phrase motion %v, want background and phrase layer", len(compiled.Plan.Layers), ids)
 		}
-		if start >= len(phraseIDs) && len(compiled.Plan.Layers) < 2 {
-			t.Fatalf("compiled %d layers for image motions %v, want a background and rendered image layers", len(compiled.Plan.Layers), ids)
+		if batchItems[0]["kind"] == "image" && len(compiled.Plan.Layers) < 2 {
+			t.Fatalf("compiled %d layers for image motion %v, want background and rendered image layers", len(compiled.Plan.Layers), ids)
+		}
+		if batchItems[0]["kind"] == string(KindEntityCard) {
+			captionLayerIndex := len(compiled.Plan.Layers) - 1
+			captionLayer := compiled.Plan.Layers[captionLayerIndex]
+			if captionLayerIndex < 1 || captionLayer.Type != "text" || !layerHasAnimation(captionLayer) {
+				t.Fatalf("entity-caption motion %v did not compile image + animated caption layers: %+v", ids, compiled.Plan.Layers)
+			}
 		}
 		outDir := t.TempDir()
 		if preserveInputs {
@@ -432,7 +529,11 @@ func TestEveryCallableCatalogMotionExecutesOnTheStrictGPU(t *testing.T) {
 		if err := os.WriteFile(preparedPath, preparedBytes, 0o600); err != nil {
 			t.Fatal(err)
 		}
-		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
+		cmdTimeout := 3 * time.Minute
+		if encoderBackend == "native" && isMultiAccentMotion(ids[0]) {
+			cmdTimeout = 12 * time.Second
+		}
+		ctx, cancel := context.WithTimeout(context.Background(), cmdTimeout)
 		renderStarted := time.Now()
 		cmd := exec.CommandContext(ctx, bin, "render", "--plan", planPath, "--prepared-package", preparedPath,
 			"--assets-root", assetsRoot, "--backend", backend, "--hardware", hardware, "--encoder-backend", encoderBackend,
@@ -445,7 +546,11 @@ func TestEveryCallableCatalogMotionExecutesOnTheStrictGPU(t *testing.T) {
 			_ = os.WriteFile(filepath.Join(outDir, "render.log"), output, 0o644)
 		}
 		if renderErr != nil {
-			results = append(results, motionResult{MotionID: ids[0], Status: "render_failed", DurationS: duration, Error: renderErr.Error()})
+			errStr := renderErr.Error()
+			if encoderBackend == "native" && isMultiAccentMotion(ids[0]) && errors.Is(ctx.Err(), context.DeadlineExceeded) {
+				errStr = fmt.Sprintf("strict native render exceeded %s: %v", cmdTimeout, ctx.Err())
+			}
+			results = append(results, motionResult{MotionID: ids[0], Status: "render_failed", DurationS: duration, Error: errStr})
 			writeReport()
 			t.Errorf("strict GPU render rejected catalog motion %v: %v", ids, renderErr)
 			start = end
@@ -458,10 +563,80 @@ func TestEveryCallableCatalogMotionExecutesOnTheStrictGPU(t *testing.T) {
 			start = end
 			continue
 		}
+		if err := verifyCatalogMotionOutput(videoPath, canvasWidth, canvasHeight,
+			backend == "vulkan" && hardware == "nvenc" && encoderBackend == "native" && gpuHotPathMode == "require_gpu_native"); err != nil {
+			results = append(results, motionResult{MotionID: ids[0], Status: "verification_failed", DurationS: duration, Error: err.Error()})
+			writeReport()
+			t.Errorf("verify rendered catalog motion %v: %v", ids, err)
+			start = end
+			continue
+		}
 		results = append(results, motionResult{MotionID: ids[0], Status: "passed", DurationS: duration})
 		writeReport()
 		start = end
 	}
+}
+
+// A successful process and an existing path are not certification: decode the
+// whole video and prove that the strict run did not silently use CPU pixels.
+func verifyCatalogMotionOutput(path string, width, height int, strict bool) error {
+	probeBytes, err := exec.Command("ffprobe", "-v", "error", "-select_streams", "v:0",
+		"-count_frames", "-show_entries", "stream=codec_name,width,height,nb_read_frames", "-of", "json", path).Output()
+	if err != nil {
+		return fmt.Errorf("decode MP4 with ffprobe: %w", err)
+	}
+	var probe struct {
+		Streams []struct {
+			Codec  string `json:"codec_name"`
+			Width  int    `json:"width"`
+			Height int    `json:"height"`
+			Frames string `json:"nb_read_frames"`
+		} `json:"streams"`
+	}
+	if err := json.Unmarshal(probeBytes, &probe); err != nil {
+		return fmt.Errorf("parse ffprobe output: %w", err)
+	}
+	if len(probe.Streams) != 1 {
+		return fmt.Errorf("expected one video stream, got %d", len(probe.Streams))
+	}
+	stream := probe.Streams[0]
+	if stream.Codec != "h264" || stream.Width != width || stream.Height != height || stream.Frames != "48" {
+		return fmt.Errorf("output is %s %dx%d %s frames, want h264 %dx%d 48 frames",
+			stream.Codec, stream.Width, stream.Height, stream.Frames, width, height)
+	}
+	if !strict {
+		return nil
+	}
+	sidecarBytes, err := os.ReadFile(path + ".timing.json")
+	if err != nil {
+		return fmt.Errorf("read strict GPU telemetry: %w", err)
+	}
+	var sidecar struct {
+		Job struct {
+			GPU map[string]json.RawMessage `json:"gpu"`
+		} `json:"job"`
+	}
+	if err := json.Unmarshal(sidecarBytes, &sidecar); err != nil {
+		return fmt.Errorf("parse strict GPU telemetry: %w", err)
+	}
+	for key, want := range map[string]string{"effective_backend": "vulkan", "encoder_backend": "nvenc"} {
+		var got string
+		if err := json.Unmarshal(sidecar.Job.GPU[key], &got); err != nil || got != want {
+			return fmt.Errorf("GPU telemetry %s=%q, want %q (parse error: %v)", key, got, want, err)
+		}
+	}
+	for key, want := range map[string]int64{
+		"gpu_native_surface_frames": 48, "gpu_native_encode_frames": 48,
+		"cpu_pixel_readback_bytes": 0, "gpu_readback_bytes": 0,
+		"software_fallback_nodes": 0, "software_encode_frames": 0,
+		"encoder_staging_copy_bytes": 0,
+	} {
+		var got int64
+		if err := json.Unmarshal(sidecar.Job.GPU[key], &got); err != nil || got != want {
+			return fmt.Errorf("GPU telemetry %s=%d, want %d (parse error: %v)", key, got, want, err)
+		}
+	}
+	return nil
 }
 
 func motionCanaryJPEG(t *testing.T, base color.RGBA) []byte {
@@ -479,4 +654,13 @@ func motionCanaryJPEG(t *testing.T, base color.RGBA) []byte {
 		t.Fatalf("encode GPU motion canary image: %v", err)
 	}
 	return buf.Bytes()
+}
+
+func isMultiAccentMotion(id string) bool {
+	plugin, err := motion.Registry.Resolve(id)
+	if err != nil {
+		return false
+	}
+	dec, ok := plugin.(motion.DeclarativePlugin)
+	return ok && len(dec.Definition.LayerComponents) > 1
 }

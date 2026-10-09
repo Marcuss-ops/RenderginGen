@@ -1,0 +1,59 @@
+{
+  "generated_at_utc": "2026-10-09T14:45:12Z",
+  "backend": "vulkan",
+  "hardware_encoder": "nvenc",
+  "encoder_backend": "native",
+  "gpu_hot_path_mode": "require_gpu_native",
+  "motions": [
+    {
+      "motion_id": "image_card_push",
+      "status": "passed",
+      "duration_seconds": 1.924518089
+    },
+    {
+      "motion_id": "image_diagonal_sweep",
+      "status": "passed",
+      "duration_seconds": 1.620127372
+    },
+    {
+      "motion_id": "image_fade_reveal",
+      "status": "passed",
+      "duration_seconds": 1.635509518
+    },
+    {
+      "motion_id": "image_focus_reveal",
+      "status": "passed",
+      "duration_seconds": 1.543238193
+    },
+    {
+      "motion_id": "image_parallax_depth_reveal",
+      "status": "passed",
+      "duration_seconds": 1.8108639370000001
+    },
+    {
+      "motion_id": "image_scale_reveal",
+      "status": "passed",
+      "duration_seconds": 1.7436261910000002
+    },
+    {
+      "motion_id": "image_slide_left_reveal",
+      "status": "passed",
+      "duration_seconds": 1.7388163730000001
+    },
+    {
+      "motion_id": "image_slide_right_reveal",
+      "status": "passed",
+      "duration_seconds": 1.597484197
+    },
+    {
+      "motion_id": "image_soft_focus_reveal",
+      "status": "passed",
+      "duration_seconds": 1.6751214060000001
+    },
+    {
+      "motion_id": "image_tilt_settle",
+      "status": "passed",
+      "duration_seconds": 2.168836483
+    }
+  ]
+}

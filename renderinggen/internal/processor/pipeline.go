@@ -63,6 +63,9 @@ type PreparedJob struct {
 func (p *Processor) PrepareJob(ctx context.Context, job *queue.Job) (*PreparedJob, error) {
 	totalStart := time.Now()
 	metrics := make(map[string]float64, 8)
+	if job != nil && job.DaemonAdmissionWaitMS > 0 {
+		metrics[metricnames.DaemonAdmissionWaitMS] = job.DaemonAdmissionWaitMS
+	}
 	record := func(phase string, start time.Time) {
 		us := float64(time.Since(start).Microseconds())
 		metrics[phase+"_ms"] = us / 1000

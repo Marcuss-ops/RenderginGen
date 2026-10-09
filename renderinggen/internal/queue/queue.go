@@ -171,9 +171,14 @@ func (c *Client) Complete(ctx context.Context, id string, artifact Artifact) err
 	return c.q.Complete(ctx, id, c.workerID, artifact)
 }
 
-// Fail reports a job that could not be rendered.
+// Fail reports a job that could not be rendered, applying the normal retry budget.
 func (c *Client) Fail(ctx context.Context, id, reason string) error {
 	return c.q.Fail(ctx, id, c.workerID, reason)
+}
+
+// FailPermanently records a non-retryable configuration error as terminal.
+func (c *Client) FailPermanently(ctx context.Context, id, reason string) error {
+	return c.q.FailPermanently(ctx, id, c.workerID, reason)
 }
 
 // Rendered reports a job whose render completed and was durably stored, but
@@ -187,6 +192,12 @@ func (c *Client) Rendered(ctx context.Context, id, reason string, artifact Artif
 // render. It fails if the job expired and was requeued to another worker.
 func (c *Client) Renew(ctx context.Context, id string) error {
 	return c.q.Renew(ctx, id, c.workerID)
+}
+
+// RecoverableParents lists parents that still own child jobs, for the periodic
+// finalization recovery sweep after a worker's final trigger was lost.
+func (c *Client) RecoverableParents(ctx context.Context) ([]string, error) {
+	return c.q.RecoverableParents(ctx)
 }
 
 // ReportProgress records live render progress (last frame position) for a

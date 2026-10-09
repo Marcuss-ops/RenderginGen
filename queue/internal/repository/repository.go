@@ -74,6 +74,8 @@ type JobRepository interface {
 
 	// ClaimFinalization atomically claims a parent whose children are ready.
 	ClaimFinalization(ctx context.Context, parentJobID, workerID string) (*model.Job, bool, error)
+	// RecoverableParents returns parent IDs that own children and are pending or finalizing after lease recovery.
+	RecoverableParents(ctx context.Context) ([]string, error)
 
 	// Complete marks a running job as completed and records the rendered
 	// artifact. The service layer rejects incomplete artifact metadata before
@@ -127,4 +129,11 @@ type IdempotencyRepository interface {
 // it before the children exist and render the full plan a second time.
 type BatchRepository interface {
 	SubmitBatch(ctx context.Context, jobs []model.Job) error
+}
+
+// PermanentFailureRepository exposes an explicit terminal-failure transition
+// for non-retryable job/configuration errors. Ordinary Fail retains the
+// retry-attempt policy.
+type PermanentFailureRepository interface {
+	FailPermanently(ctx context.Context, id, workerID, reason string) error
 }

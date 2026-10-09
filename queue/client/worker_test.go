@@ -107,6 +107,28 @@ func TestFailSendsReason(t *testing.T) {
 	}
 }
 
+func TestFailPermanentlyUsesTerminalEndpoint(t *testing.T) {
+	var got map[string]any
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/jobs/job-1/fail-permanent" || r.Method != http.MethodPost {
+			t.Fatalf("request = %s %s, want permanent-fail endpoint", r.Method, r.URL.Path)
+		}
+		if err := json.NewDecoder(r.Body).Decode(&got); err != nil {
+			t.Fatal(err)
+		}
+		w.WriteHeader(http.StatusNoContent)
+	}))
+	defer srv.Close()
+
+	if err := New(srv.URL).FailPermanently(context.Background(), "job-1", "w1", "Drive unavailable"); err != nil {
+		t.Fatal(err)
+	}
+	data, ok := got["data"].(map[string]any)
+	if !ok || data["reason"] != "Drive unavailable" {
+		t.Fatalf("body = %v", got)
+	}
+}
+
 func TestRenewSendsWorker(t *testing.T) {
 	var calls int32
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

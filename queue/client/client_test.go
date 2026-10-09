@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"math"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -115,6 +116,29 @@ func TestCancelTerminalConflict(t *testing.T) {
 	c := New(srv.URL)
 	if err := c.Cancel(context.Background(), "done"); err == nil {
 		t.Fatal("expected conflict on completed job")
+	}
+}
+
+func TestValidateJobMetadata(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		job  Job
+		want bool
+	}{
+		{name: "empty defaults", job: Job{}},
+		{name: "store only", job: Job{PublicationPolicy: PublicationObjectStoreOnly}},
+		{name: "drive", job: Job{PublicationPolicy: PublicationObjectStoreAndDrive}},
+		{name: "unknown policy", job: Job{PublicationPolicy: "publish_everywhere"}, want: true},
+		{name: "negative delay", job: Job{DaemonAdmissionWaitMS: -1}, want: true},
+		{name: "infinite delay", job: Job{DaemonAdmissionWaitMS: math.Inf(1)}, want: true},
+		{name: "nan delay", job: Job{DaemonAdmissionWaitMS: math.NaN()}, want: true},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			err := ValidateJobMetadata(test.job)
+			if (err != nil) != test.want {
+				t.Fatalf("ValidateJobMetadata(%+v) err=%v, want error=%t", test.job, err, test.want)
+			}
+		})
 	}
 }
 

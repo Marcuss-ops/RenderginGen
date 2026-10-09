@@ -39,6 +39,13 @@ func TestJobEnvelopeContractFile(t *testing.T) {
 				Ref   string            `json:"$ref"`
 				AnyOf []json.RawMessage `json:"anyOf"`
 			} `json:"render_plan"`
+			PublicationPolicy struct {
+				Enum []string `json:"enum"`
+			} `json:"publication_policy"`
+			DaemonAdmissionWaitMS struct {
+				Minimum float64 `json:"minimum"`
+				Maximum float64 `json:"maximum"`
+			} `json:"daemon_admission_wait_ms"`
 		} `json:"properties"`
 	}
 	if err := json.Unmarshal(raw, &doc); err != nil {
@@ -50,6 +57,12 @@ func TestJobEnvelopeContractFile(t *testing.T) {
 	}
 	if got := doc.Properties.Version.Const; got != JobSchemaVersionV1 {
 		t.Errorf("contract version.const = %d, want %d (queue/client owns the value)", got, JobSchemaVersionV1)
+	}
+	if !containsString(doc.Properties.PublicationPolicy.Enum, PublicationObjectStoreOnly) || !containsString(doc.Properties.PublicationPolicy.Enum, PublicationObjectStoreAndDrive) {
+		t.Errorf("publication_policy enum = %v, want both supported policy constants", doc.Properties.PublicationPolicy.Enum)
+	}
+	if doc.Properties.DaemonAdmissionWaitMS.Minimum != 0 || doc.Properties.DaemonAdmissionWaitMS.Maximum <= 0 {
+		t.Errorf("daemon_admission_wait_ms bounds = [%v,%v], want finite non-negative range", doc.Properties.DaemonAdmissionWaitMS.Minimum, doc.Properties.DaemonAdmissionWaitMS.Maximum)
 	}
 	for _, field := range []string{"id", "schema", "version", "render_plan", "assets"} {
 		if !containsString(doc.Required, field) {

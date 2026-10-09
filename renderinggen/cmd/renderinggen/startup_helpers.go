@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/config"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/processor"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/queue"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/workerlog"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/workspace"
@@ -41,10 +42,9 @@ func pruneJobLogs(cfg *config.Config) {
 
 // startWorkspaceCleanup reaps workspaces left behind by a crashed worker
 // run: without this the jobs root (often /dev/shm, i.e. RAM) grows
-// unboundedly. Active workspaces carry a lease marker (written at
-// PrepareJob, refreshed by the GPU lane while rendering) and are skipped;
-// anything older than pipeline.workspace_stale_after without a valid marker is
-// removed. Parent artifacts have their own cleanup (see
+// unboundedly. A valid lease marker OR an active process lock protects a live
+// workspace; only unlocked candidates older than pipeline.workspace_stale_after
+// without a valid marker are removed. Parent artifacts have their own cleanup (see
 // ParentFinalizer.Finalize).
 func startWorkspaceCleanup(ctx context.Context, root string, timings config.PipelineConfig) {
 	ticker := time.NewTicker(timings.WorkspaceSweepInterval)
@@ -56,6 +56,33 @@ func startWorkspaceCleanup(ctx context.Context, root string, timings config.Pipe
 		case <-ticker.C:
 			if err := workspace.CleanupStale(root, timings.WorkspaceStaleAfter); err != nil {
 				log.Printf("workspace stale cleanup: %v", err)
+			}
+		}
+	}
+}
+
+// runParentFinalizationRecovery is the retry path for missed child-completion
+// triggers and expired finalizer leases. It polls at interval (the worker passes
+// ClaimLongPoll), so an expired lease becomes eligible for adoption on a later
+// sweep, not synchronously at the expiration instant.
+func runParentFinalizationRecovery(ctx context.Context, q *queue.Client, finalizer *processor.ParentFinalizer, interval time.Duration) {
+	if interval <= 0 {
+		interval = 30 * time.Second
+	}
+	ticker := time.NewTicker(interval)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			ids, err := q.RecoverableParents(ctx)
+			if err != nil {
+				log.Printf("parent finalization recovery list: %v", err)
+				continue
+			}
+			for _, id := range ids {
+				tryFinalizeParent(ctx, finalizer, id)
 			}
 		}
 	}

@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/chronon"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/drive"
@@ -20,6 +21,7 @@ type ParentQueue interface {
 	ClaimFinalization(context.Context, string) (*queue.Job, bool, error)
 	Children(context.Context, string) ([]*queue.Job, error)
 	Complete(context.Context, string, queue.Artifact) error
+	Renew(context.Context, string) error
 }
 
 type ParentFinalizer struct {
@@ -94,7 +96,7 @@ func (f *ParentFinalizer) finalize(ctx context.Context, parentID string, start, 
 	if err := queue.ValidateChildren(children, start, end); err != nil {
 		return false, queue.Artifact{}, err
 	}
-	_, claimed, err := f.queue.ClaimFinalization(ctx, parentID)
+	claimedJob, claimed, err := f.queue.ClaimFinalization(ctx, parentID)
 	if err != nil || !claimed {
 		return false, queue.Artifact{}, err
 	}
@@ -104,6 +106,32 @@ func (f *ParentFinalizer) finalize(ctx context.Context, parentID string, start, 
 	}
 	if err := queue.ValidateChildren(children, start, end); err != nil {
 		return false, queue.Artifact{}, err
+	}
+	workCtx, cancel := context.WithCancel(ctx)
+	defer cancel()
+	if claimedJob != nil && claimedJob.Lease > 0 {
+		interval := claimedJob.Lease / 2
+		if interval <= 0 {
+			interval = time.Second
+		}
+		renewDone := make(chan struct{})
+		go func() {
+			defer close(renewDone)
+			ticker := time.NewTicker(interval)
+			defer ticker.Stop()
+			for {
+				select {
+				case <-workCtx.Done():
+					return
+				case <-ticker.C:
+					if err := f.queue.Renew(workCtx, parentID); err != nil {
+						cancel()
+						return
+					}
+				}
+			}
+		}()
+		defer func() { cancel(); <-renewDone }()
 	}
 	if f.assembler == nil {
 		return false, queue.Artifact{}, fmt.Errorf("parent finalizer: assembler is required")
@@ -116,7 +144,7 @@ func (f *ParentFinalizer) finalize(ctx context.Context, parentID string, start, 
 	}
 	inputs := make([]string, 0, len(children))
 	for _, child := range children {
-		path, _, err := f.store.LocalPath(ctx, child.Artifact.StorageKey)
+		path, _, err := f.store.LocalPath(workCtx, child.Artifact.StorageKey)
 		if err != nil {
 			return false, queue.Artifact{}, fmt.Errorf("chunk %d local path: %w", child.ChunkIndex, err)
 		}
@@ -133,7 +161,7 @@ func (f *ParentFinalizer) finalize(ctx context.Context, parentID string, start, 
 			log.Printf("parent %s: remove staging output %s: %v", parentID, output, err)
 		}
 	}()
-	if err := f.assembler.Assemble(ctx, chronon.AssembleRequest{Inputs: inputs, Output: output}); err != nil {
+	if err := f.assembler.Assemble(workCtx, chronon.AssembleRequest{Inputs: inputs, Output: output}); err != nil {
 		return false, queue.Artifact{}, err
 	}
 	artifact, err := artifactFromFile(output)
@@ -141,7 +169,7 @@ func (f *ParentFinalizer) finalize(ctx context.Context, parentID string, start, 
 		return false, queue.Artifact{}, err
 	}
 	if f.store != nil {
-		if err := f.store.PutFile(ctx, artifact.ArtifactHash, output); err != nil {
+		if err := f.store.PutFile(workCtx, artifact.ArtifactHash, output); err != nil {
 			return false, queue.Artifact{}, err
 		}
 	}
@@ -152,13 +180,16 @@ func (f *ParentFinalizer) finalize(ctx context.Context, parentID string, start, 
 		// size. The historical direct drive.Publisher.Publish call here was the
 		// only publication in the worker without that invariant and without a
 		// resolvable policy (audit P0-3).
-		published, err := publishAndVerify(ctx, f.store, f.publisher, parentID+".mp4", artifact)
+		published, err := publishAndVerify(workCtx, f.store, f.publisher, parentID+".mp4", artifact)
 		if err != nil {
 			return false, queue.Artifact{}, err
 		}
 		artifact.DriveFileID, artifact.DriveLink = published.FileID, published.WebViewLink
 	}
-	if err := f.queue.Complete(ctx, parentID, artifact); err != nil {
+	if err := workCtx.Err(); err != nil {
+		return false, queue.Artifact{}, err
+	}
+	if err := f.queue.Complete(workCtx, parentID, artifact); err != nil {
 		return false, queue.Artifact{}, err
 	}
 	return true, artifact, nil

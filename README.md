@@ -569,6 +569,40 @@ The script never restates a window or a frame number — it reads the
 descriptor — and leaves the MP4 plus one still per act under
 `out/vidrush-scenario-<date>/` for human inspection.
 
+### Overlay timeline: N overlay consecutivi in UN solo MP4 (cmd/overlay-timeline)
+
+Il batch emette un job (e quindi un MP4) per overlay; il renderer invece non
+lo richiede. `cmd/overlay-timeline` è il builder generico che fonde N overlay
+in sequenza in UN solo plan multi-item — un solo render, un solo MP4 — con la
+stessa regola armoniosa certificata da `vidrush-scenario`:
+
+- **Concatenazione stretta**: l'overlay k+1 inizia sul frame in cui finisce
+  l'overlay k (opzionale `gap_ms` uniforme, quantizzato a frame interi).
+- **Timing naturale per item**: ogni riga dichiara la propria `duration_ms`;
+  le entrate/exit non si accordano a mano. Il compilatore (`motion.go` +
+  `motion_timing.go`) dimensiona l'entrata (1/3 della vita per le frasi) e la
+  exit speculare (`appendExitTracks`) DENTRO la finestra di ogni item, quindi
+  nessuna animazione viene forzata né trascina l'overlay precedente nel
+  successivo.
+- **Fail-closed in build**: ogni riga passa per lo stesso decoder e compilatore
+  del worker (`renderbatch.BuildPlan`), quindi kind/preset/motion/font
+  sconosciuti falliscono prima del render.
+
+Input (JSON, ordine di riproduzione): `kind`, `template_id`, `preset_id`,
+`motion_id`, `text`/`entity_id`/`entity_caption`, `asset`, `params`,
+`image_layers` composite, `map` georeferenziata, `duration_ms`. Output:
+`semantic_plan.json`, `render_plan.json` e `timeline.json` (finestre ms/frame
+di ogni overlay, per la verifica senza rifare il render).
+
+```sh
+go run ./cmd/overlay-timeline \
+  -timeline cmd/overlay-timeline/testdata/timeline-smoke.json \
+  -out-dir /tmp/overlay-timeline-out -assets-root /percorso/assets
+```
+
+Per renderizzare il plan prodotto usare `chronon3d_cli render --plan
+render_plan.json` (o il canale queue/batch come per gli altri job).
+
 ## Health
 
 `GET /health` returns versioned metadata:

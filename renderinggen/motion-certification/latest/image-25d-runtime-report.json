@@ -1,0 +1,49 @@
+{
+  "generated_at_utc": "2026-10-09T14:44:13Z",
+  "backend": "vulkan",
+  "hardware_encoder": "nvenc",
+  "encoder_backend": "native",
+  "gpu_hot_path_mode": "require_gpu_native",
+  "motions": [
+    {
+      "motion_id": "image_25d_blur_focus_in",
+      "status": "passed",
+      "duration_seconds": 1.9483335990000001
+    },
+    {
+      "motion_id": "image_25d_blur_scale_in",
+      "status": "passed",
+      "duration_seconds": 1.780746711
+    },
+    {
+      "motion_id": "image_25d_card_swing",
+      "status": "passed",
+      "duration_seconds": 1.698475476
+    },
+    {
+      "motion_id": "image_25d_depth_float_in",
+      "status": "passed",
+      "duration_seconds": 1.648662793
+    },
+    {
+      "motion_id": "image_25d_pitch_lift",
+      "status": "passed",
+      "duration_seconds": 1.661624372
+    },
+    {
+      "motion_id": "image_25d_pop_z_bounce",
+      "status": "passed",
+      "duration_seconds": 1.6242853350000002
+    },
+    {
+      "motion_id": "image_25d_swipe_3d",
+      "status": "passed",
+      "duration_seconds": 1.616955617
+    },
+    {
+      "motion_id": "image_25d_yaw_flip_in",
+      "status": "passed",
+      "duration_seconds": 1.904384557
+    }
+  ]
+}

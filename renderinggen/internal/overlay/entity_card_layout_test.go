@@ -6,6 +6,8 @@ import (
 	"math"
 	"strings"
 	"testing"
+
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/motion"
 )
 
 // entityCardPlan builds a semantic plan with one entity_card item carrying an
@@ -153,6 +155,122 @@ func TestEntityCaptionMotionCompiles(t *testing.T) {
 		caption := layers[1]
 		if caption.Animation == nil || len(caption.Animation.Tracks) == 0 {
 			t.Fatalf("caption motion %q lowered no animation tracks", motionID)
+		}
+	}
+}
+
+func TestEverySelectableEntityCaptionMotionLowersToCaptionAnimation(t *testing.T) {
+	seen := map[string]bool{}
+	for _, id := range entityCaptionMotionPool {
+		if seen[id] {
+			t.Fatalf("caption catalog contains duplicate motion %q", id)
+		}
+		seen[id] = true
+		definition, err := resolveMotionDefinition(id)
+		if err != nil || definition == nil || !motionDefinitionAdmitsTarget(definition, "caption") {
+			t.Fatalf("caption motion %q is not resolvable for caption target: definition=%+v err=%v", id, definition, err)
+		}
+		layers := entityCardPlan(t, "Ada Lovelace", id, false)
+		if len(layers) != 2 || layers[1].Type != "text" {
+			t.Fatalf("entity card motion %q compiled layers=%+v, want image+caption", id, layers)
+		}
+		caption := layers[1]
+		if !layerHasAnimation(caption) {
+			t.Fatalf("entity caption motion %q lowered no layer tracks or text animators", id)
+		}
+		wire, err := json.Marshal(caption)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var emitted struct {
+			Animation     *LayerAnimation `json:"animation"`
+			TextAnimators []TextAnimator  `json:"text_animators"`
+		}
+		if err := json.Unmarshal(wire, &emitted); err != nil {
+			t.Fatal(err)
+		}
+		if !wireHasAnimation(emitted.Animation, emitted.TextAnimators) {
+			t.Fatalf("entity caption motion %q lost animation on Chronon wire: %s", id, wire)
+		}
+	}
+}
+
+func layerHasAnimation(layer Layer) bool {
+	return layer.Animation != nil && (len(layer.Animation.Tracks) > 0 || len(layer.Animation.TextAnimators) > 0) || len(layer.TextAnimators) > 0
+}
+
+func wireHasAnimation(animation *LayerAnimation, animators []TextAnimator) bool {
+	return animation != nil && (len(animation.Tracks) > 0 || len(animation.TextAnimators) > 0) || len(animators) > 0
+}
+
+func TestEveryEntityPresentationMotionLowersToCaptionAnimation(t *testing.T) {
+	ids := motion.Registry.PresentationMotionIDs("entity_card_v1")
+	if len(ids) != 10 {
+		t.Fatalf("entity_card_v1 catalog has %d motions, want 10", len(ids))
+	}
+	for _, motionID := range ids {
+		t.Run(motionID, func(t *testing.T) {
+			layers := entityCardPlan(t, "Ada Lovelace", motionID, false)
+			if len(layers) != 2 || layers[1].Type != "text" {
+				t.Fatalf("entity card motion %q compiled layers=%+v, want image+caption", motionID, layers)
+			}
+			caption := layers[1]
+			if !layerHasAnimation(caption) {
+				t.Fatalf("entity-card motion %q has no lowered caption tracks or text animators", motionID)
+			}
+			if definition, err := resolveMotionDefinition(motionID); err != nil || definition == nil || !motionDefinitionAdmitsTarget(definition, "caption") {
+				t.Fatalf("entity-card caption motion %q not admitted: definition=%+v err=%v", motionID, definition, err)
+			}
+			wire, err := json.Marshal(layers[1])
+			if err != nil {
+				t.Fatal(err)
+			}
+			var emitted struct {
+				Animation     *LayerAnimation `json:"animation"`
+				TextAnimators []TextAnimator  `json:"text_animators"`
+			}
+			if err := json.Unmarshal(wire, &emitted); err != nil {
+				t.Fatal(err)
+			}
+			if !wireHasAnimation(emitted.Animation, emitted.TextAnimators) {
+				t.Fatalf("entity caption motion %q lost tracks/animators on Chronon wire: %s", motionID, wire)
+			}
+		})
+	}
+}
+
+func TestEntityCaptionPickerMatchesRuntimeCaptionSelection(t *testing.T) {
+	want := make(map[string]bool)
+	for _, category := range []string{"entity_caption_v1", "trump_entity_text_v1", "typewriter", "typewriter_glitch", "typewriter_modern_v1", "entity_card_v1"} {
+		for _, id := range motion.Registry.SelectableCategoryMotionIDs(category) {
+			if entityCaptionMotionSelectable(id) {
+				want[id] = true
+			}
+		}
+	}
+	for _, style := range premiumEntityStyles {
+		if entityCaptionMotionSelectable(style.CaptionMotionID) {
+			want[style.CaptionMotionID] = true
+		}
+	}
+	got := make(map[string]bool, len(entityCaptionMotionPool))
+	for _, id := range entityCaptionMotionPool {
+		got[id] = true
+	}
+	if len(got) != len(entityCaptionMotionPool) {
+		t.Fatal("caption picker contains duplicate motion ids")
+	}
+	if len(got) != len(want) {
+		t.Fatalf("caption picker has %d ids, shared runtime predicate expects %d", len(got), len(want))
+	}
+	for id := range want {
+		if !got[id] {
+			t.Errorf("runtime-selectable caption motion %q is missing from picker", id)
+		}
+	}
+	for id := range got {
+		if !want[id] {
+			t.Errorf("caption picker motion %q is rejected by runtime selection", id)
 		}
 	}
 }

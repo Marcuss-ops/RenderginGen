@@ -48,7 +48,7 @@ func TestImage25DCleanV1CatalogLowersLayerOnlyWithCatalogExit(t *testing.T) {
 			t.Fatalf("resolve image motion %s: %v", id, err)
 		}
 		definition := plugin.(motion.DeclarativePlugin).Definition
-		animation, err := animationForMotion(id, nil, "", 240, 0)
+		animation, err := animationForMotion(id, nil, "", 240, definition.Exit)
 		if err != nil {
 			t.Fatalf("image motion %s: %v", id, err)
 		}
@@ -383,7 +383,7 @@ func TestCompositeEntityImageLayerCountsTwoThroughFiveCompile(t *testing.T) {
 				if caption.CaptionForImageID != image.ID {
 					t.Errorf("caption %q links to image %q, want %q", caption.ID, caption.CaptionForImageID, image.ID)
 				}
-				if caption.Style == nil || caption.Style.Fill != "#F8F5EA" || caption.Style.Stroke == nil || caption.Style.Shadow == nil || caption.Style.Glow == nil {
+				if caption.Style == nil || caption.Style.Fill != "#F8F5EA" || caption.Style.Stroke == nil || caption.Style.Shadow == nil {
 					t.Errorf("image caption %q did not lower through the shared caption role style: %+v", caption.ID, caption.Style)
 				}
 				if caption.StartFrame != image.StartFrame || caption.DurationFrames != image.DurationFrames {
@@ -576,11 +576,11 @@ func TestImageCompositionIDValidatesImageAndCaptionCounts(t *testing.T) {
 
 func TestEveryPhraseFamilyMotionReachesTheChrononRenderPlan(t *testing.T) {
 	var ids []string
-	for _, category := range []string{"typewriter", "typewriter_modern_v1", "apple_v2", "apple_v3", "phrase_apple_clean_v1", "apple_phrase_v1"} {
+	for _, category := range []string{"typewriter", "typewriter_modern_v1", "apple_v2", "apple_v3", "phrase_apple_clean_v1", "apple_phrase_v1", "phrase_highlight_v1"} {
 		ids = append(ids, motion.Registry.CategoryMotionIDs(category)...)
 	}
-	if len(ids) != 128 {
-		t.Fatalf("registered phrase family motions = %d, want 128", len(ids))
+	if len(ids) != 144 {
+		t.Fatalf("registered phrase family motions = %d, want 144", len(ids))
 	}
 	seen := make(map[string]bool, len(ids))
 	for _, id := range ids {
@@ -598,10 +598,18 @@ func TestEveryPhraseFamilyMotionReachesTheChrononRenderPlan(t *testing.T) {
 			if strings.HasPrefix(id, "typewriter_") {
 				wantLayers = 2 // text layer plus synchronized runtime cursor
 			}
+			if definitionPlugin, err := motion.Registry.Resolve(id); err == nil {
+				definition := definitionPlugin.(motion.DeclarativePlugin).Definition
+				wantLayers += len(definition.LayerComponents)
+			}
 			if len(result.Plan.Layers) != wantLayers {
 				t.Fatalf("phrase motion %q compiled to %d layers, want %d", id, len(result.Plan.Layers), wantLayers)
 			}
-			layer := result.Plan.Layers[0]
+			layerIndex := 0
+			if strings.HasPrefix(id, "phrase_") {
+				layerIndex = len(result.Plan.Layers) - 1
+			}
+			layer := result.Plan.Layers[layerIndex]
 			// Ogni 25 caratteri a capo correttamente: the compiled text is
 			// word-wrapped, never word-cut, each line <=25 runes. The test
 			// fixture's 30-char phrase must wrap to two centered lines.

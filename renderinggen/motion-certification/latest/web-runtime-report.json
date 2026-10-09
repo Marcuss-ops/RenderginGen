@@ -1,0 +1,79 @@
+{
+  "generated_at_utc": "2026-10-09T14:48:27Z",
+  "backend": "vulkan",
+  "hardware_encoder": "nvenc",
+  "encoder_backend": "native",
+  "gpu_hot_path_mode": "require_gpu_native",
+  "motions": [
+    {
+      "motion_id": "web_browser_depth_dolly",
+      "status": "passed",
+      "duration_seconds": 2.696238706
+    },
+    {
+      "motion_id": "web_browser_depth_in",
+      "status": "passed",
+      "duration_seconds": 2.17714185
+    },
+    {
+      "motion_id": "web_browser_focus_pulse",
+      "status": "passed",
+      "duration_seconds": 2.344596525
+    },
+    {
+      "motion_id": "web_browser_parallax",
+      "status": "passed",
+      "duration_seconds": 2.088720862
+    },
+    {
+      "motion_id": "web_browser_scroll_focus",
+      "status": "passed",
+      "duration_seconds": 1.922230328
+    },
+    {
+      "motion_id": "web_browser_stack_fan",
+      "status": "passed",
+      "duration_seconds": 1.872199344
+    },
+    {
+      "motion_id": "web_browser_tilt_in",
+      "status": "passed",
+      "duration_seconds": 1.862360411
+    },
+    {
+      "motion_id": "web_browser_zoom_in",
+      "status": "passed",
+      "duration_seconds": 1.875492676
+    },
+    {
+      "motion_id": "web_card_flip_y",
+      "status": "passed",
+      "duration_seconds": 1.755673207
+    },
+    {
+      "motion_id": "web_card_scale_pop",
+      "status": "passed",
+      "duration_seconds": 1.643279084
+    },
+    {
+      "motion_id": "web_card_slide_left",
+      "status": "passed",
+      "duration_seconds": 1.789416589
+    },
+    {
+      "motion_id": "web_card_slide_up",
+      "status": "passed",
+      "duration_seconds": 2.018867748
+    },
+    {
+      "motion_id": "web_cursor_focus",
+      "status": "passed",
+      "duration_seconds": 1.760488654
+    },
+    {
+      "motion_id": "web_section_spotlight",
+      "status": "passed",
+      "duration_seconds": 2.367219827
+    }
+  ]
+}

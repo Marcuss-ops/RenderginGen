@@ -6,6 +6,7 @@ package processor
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync/atomic"
 	"time"
@@ -18,6 +19,17 @@ import (
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/workerlog"
 )
 
+// ErrDriveCapabilityUnavailable identifies a job that explicitly requires
+// worker-owned Drive delivery but this worker has no configured publisher.
+// Callers must report this as a terminal configuration failure, not complete
+// or endlessly retry an artifact that cannot be delivered.
+var ErrDriveCapabilityUnavailable = errors.New("processor: required Drive publication capability is unavailable")
+
+// ErrDrivePublicationPermanent marks a failure that must not enter the
+// rendered/publication-retry state. Missing worker capability cannot be
+// repaired by another attempt on this worker.
+var ErrDrivePublicationPermanent = fmt.Errorf("%w: permanent configuration error", ErrDriveCapabilityUnavailable)
+
 // Publish is the single publisher seam for a queue-served job. It consults
 // ONLY the canonical PublicationPolicyResolver: a resolved object-store-only
 // job (every queue render segment today; the submitter owns Drive delivery)
@@ -26,22 +38,24 @@ import (
 // double upload. A job whose submitter declared object_store_and_drive is
 // uploaded through publishToDrive, which carries the SHA-256 chain
 // invariants. When no Drive publisher is configured (the capability is
-// absent) the artifact is returned unchanged regardless of the resolved
-// policy.
-func (p *Processor) Publish(ctx context.Context, jobID, jobType string, artifact queue.Artifact) (queue.Artifact, error) {
-	policy := ResolvePublicationPolicy("", jobType)
+// absent) a store-only artifact is returned unchanged. A requested Drive
+// delivery without a configured capability is a permanent configuration
+// failure; transient errors from an available uploader remain retryable.
+func (p *Processor) Publish(ctx context.Context, jobID, jobType, declaredPolicy string, artifact queue.Artifact) (queue.Artifact, error) {
+	policy := ResolvePublicationPolicy(declaredPolicy, jobType)
 	if artifact.Metrics == nil {
 		artifact.Metrics = map[string]float64{}
 	}
 	if p.drive == nil {
-		// Capability absent: even a declared object_store_and_drive job is
-		// served store-only. The publisher state is authoritative for what
-		// the worker CAN do; the resolver is authoritative for what it SHOULD
-		// do. Make the skip observable so declared intent degradation is
-		// visible in metrics.
+		// Store-only jobs do not require Drive. Explicit Drive intent without
+		// the capability is an error and must not be reported as completed.
 		if policy == PublicationObjectStoreAndDrive {
 			artifact.Metrics[metricnames.PublicationDriveSkippedCapability] = 1
-			workerlog.ByJobID(jobID).Warnf("drive publication skipped (policy %s but no drive capability)", policy)
+			workerlog.ByJobID(jobID).Errorf("required Drive publication unavailable (policy %s but no drive capability)", policy)
+			return artifact, ErrDrivePublicationPermanent
+		}
+		if policy != PublicationObjectStoreAndDrive {
+			artifact.Metrics[metricnames.PublicationDriveSkippedPolicy] = 1
 		}
 		return artifact, nil
 	}
@@ -119,7 +133,10 @@ func publishAndVerify(ctx context.Context, store *storage.Client, publisher driv
 // this only after the resolver returned object_store_and_drive (see Publish).
 func (p *Processor) publishToDrive(ctx context.Context, jobID string, artifact queue.Artifact) (queue.Artifact, error) {
 	if p.drive == nil {
-		return artifact, nil
+		return artifact, ErrDrivePublicationPermanent
+	}
+	if p.store == nil {
+		return artifact, fmt.Errorf("%w: artifact store is unavailable", ErrDrivePublicationPermanent)
 	}
 	published, err := publishAndVerify(ctx, p.store, p.drive, jobID+".mp4", artifact)
 	if err != nil {

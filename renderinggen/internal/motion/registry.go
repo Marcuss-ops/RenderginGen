@@ -168,7 +168,7 @@ func (r *RegistryType) Categories() []string {
 // not an omission. TestPhrasePoolClassificationIsExhaustive fails when a new
 // catalog category appears in neither list.
 var phrasePlanningCategories = [...]string{
-	"typewriter", "apple_v2", "apple_v3", "phrase_apple_clean_v1", "apple_phrase_v1", "brush_v1", "text_3d_v1",
+	"typewriter", "apple_v2", "apple_v3", "phrase_apple_clean_v1", "apple_phrase_v1", "phrase_highlight_v1", "brush_v1", "text_3d_v1",
 }
 
 // previewGatedCategories are selectable through the runtime catalog but stay

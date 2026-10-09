@@ -74,9 +74,12 @@ func applyTextRoleBaseStyle(role textRole, style *LayerStyle, fontSize float64, 
 		style.MaxFontSize = 0
 		style.Stroke = &LayerStroke{Color: "#111827", Width: 2.0}
 		style.Shadow = &LayerShadow{Color: "#000000", Opacity: 0.78, Blur: 9, Offset: []float64{0, 3}}
-		// A low intensity warm halo adds a current editorial finish without
-		// washing out the letterforms or competing with the portrait.
-		style.Glow = &LayerGlow{Color: "#F8F5EA", Radius: 14, Intensity: 0.24}
+		// Keep this shared caption style free of a full-frame glow pass. The
+		// strict Vulkan path renders each animated text frame at output size;
+		// the halo's separable blur saturated the RTX A4000 and triggered Xid
+		// 109 before the frame ring drained. The dark keyline and shadow retain
+		// contrast while premium image motions can still author local glow layers.
+		style.Glow = nil
 		// Avoid text background cards here: the native Vulkan text path
 		// lowers those to a text_card node that the strict GPU backend
 		// cannot execute.

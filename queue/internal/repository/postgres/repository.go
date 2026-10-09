@@ -143,10 +143,10 @@ func (r *Repository) Submit(ctx context.Context, job model.Job) error {
 	defer tx.Rollback()
 
 	res, err := tx.ExecContext(ctx, `
-		INSERT INTO render_jobs (id, job_type, job_schema, job_schema_version, render_plan, input_manifest, max_attempts, idempotency_key, parent_job_id, chunk_index, frame_range, not_before)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, NULLIF($8, ''), NULLIF($9, ''), $10, $11, $12)
+		INSERT INTO render_jobs (id, job_type, job_schema, job_schema_version, render_plan, input_manifest, max_attempts, idempotency_key, parent_job_id, chunk_index, frame_range, not_before, publication_policy, daemon_admission_wait_ms)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, NULLIF($8, ''), NULLIF($9, ''), $10, $11, $12, $13, $14)
 		ON CONFLICT (id) DO NOTHING`,
-		job.ID, nonEmptyJobType(job.JobType), schema, version, plan, manifest, r.maxAttempts, job.IdempotencyKey, job.ParentJobID, job.ChunkIndex, job.FrameRange, job.NotBefore)
+		job.ID, nonEmptyJobType(job.JobType), schema, version, plan, manifest, r.maxAttempts, job.IdempotencyKey, job.ParentJobID, job.ChunkIndex, job.FrameRange, job.NotBefore, job.PublicationPolicy, job.DaemonAdmissionWaitMS)
 	if err != nil {
 		return err
 	}
@@ -210,10 +210,10 @@ func (r *Repository) SubmitBatch(ctx context.Context, jobs []model.Job) error {
 			return fmt.Errorf("input_manifest: %w", err)
 		}
 		res, err := tx.ExecContext(ctx, `
-			INSERT INTO render_jobs (id, job_type, job_schema, job_schema_version, render_plan, input_manifest, max_attempts, idempotency_key, parent_job_id, chunk_index, frame_range, not_before)
-			VALUES ($1, $2, $3, $4, $5, $6, $7, NULLIF($8, ''), NULLIF($9, ''), $10, $11, $12)
+			INSERT INTO render_jobs (id, job_type, job_schema, job_schema_version, render_plan, input_manifest, max_attempts, idempotency_key, parent_job_id, chunk_index, frame_range, not_before, publication_policy, daemon_admission_wait_ms)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, NULLIF($8, ''), NULLIF($9, ''), $10, $11, $12, $13, $14)
 			ON CONFLICT (id) DO NOTHING`,
-			job.ID, nonEmptyJobType(job.JobType), schema, version, plan, manifest, r.maxAttempts, job.IdempotencyKey, job.ParentJobID, job.ChunkIndex, job.FrameRange, job.NotBefore)
+			job.ID, nonEmptyJobType(job.JobType), schema, version, plan, manifest, r.maxAttempts, job.IdempotencyKey, job.ParentJobID, job.ChunkIndex, job.FrameRange, job.NotBefore, job.PublicationPolicy, job.DaemonAdmissionWaitMS)
 		if err != nil {
 			return err
 		}
@@ -266,6 +266,28 @@ func (r *Repository) SubmitIdempotent(ctx context.Context, job model.Job) (*mode
 
 // Claim atomically claims the longest-waiting pending job for a worker,
 // holding it under a lease. It returns nil when no job is pending.
+func (r *Repository) RecoverableParents(ctx context.Context) ([]string, error) {
+	ctx, cancel := r.opContext(ctx)
+	defer cancel()
+	rows, err := r.db.QueryContext(ctx, `SELECT parent.id FROM render_jobs AS parent
+		WHERE parent.state IN `+stateIn(model.StatePending, model.StateFinalizing)+`
+		AND EXISTS (SELECT 1 FROM render_jobs child WHERE child.parent_job_id = parent.id)
+		ORDER BY parent.queued_at ASC`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	ids := make([]string, 0)
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		ids = append(ids, id)
+	}
+	return ids, rows.Err()
+}
+
 func (r *Repository) Claim(ctx context.Context, workerID string) (*model.Job, time.Duration, error) {
 	return r.ClaimState(ctx, workerID, "")
 }
@@ -283,18 +305,20 @@ func (r *Repository) ClaimState(ctx context.Context, workerID string, state mode
 	leaseUntil := now.Add(r.lease)
 
 	var (
-		id          string
-		jobType     string
-		schema      string
-		version     sql.NullInt64
-		plan        []byte
-		manifest    []byte
-		attempts    int
-		queuedAt    time.Time
-		artifactID  sql.NullString
-		parentJobID sql.NullString
-		chunkIndex  int
-		frameRange  []byte
+		id                    string
+		jobType               string
+		publicationPolicy     string
+		daemonAdmissionWaitMS float64
+		schema                string
+		version               sql.NullInt64
+		plan                  []byte
+		manifest              []byte
+		attempts              int
+		queuedAt              time.Time
+		artifactID            sql.NullString
+		parentJobID           sql.NullString
+		chunkIndex            int
+		frameRange            []byte
 	)
 	// The claimable vocabulary is owned by model.ClaimableStates(), so adding
 	// a claimable state updates this query instead of leaving a hand-typed
@@ -313,7 +337,7 @@ func (r *Repository) ClaimState(ctx context.Context, workerID string, state mode
 	// keeps the rule structural — no producer has to remember to flag a
 	// parent, and a parent submitted without children stays ordinary work.
 	err = tx.QueryRowContext(ctx, `
-		SELECT id, job_type, job_schema, job_schema_version, render_plan, input_manifest, attempt_count, queued_at, artifact_id, parent_job_id, chunk_index, frame_range
+		SELECT id, job_type, publication_policy, daemon_admission_wait_ms, job_schema, job_schema_version, render_plan, input_manifest, attempt_count, queued_at, artifact_id, parent_job_id, chunk_index, frame_range
 		FROM render_jobs
 		WHERE `+stateFilter+`
 		  AND (not_before IS NULL OR not_before <= $1)
@@ -322,7 +346,7 @@ func (r *Repository) ClaimState(ctx context.Context, workerID string, state mode
 		      WHERE child.parent_job_id = render_jobs.id)
 		ORDER BY queued_at ASC
 		FOR UPDATE SKIP LOCKED
-		LIMIT 1`, now).Scan(&id, &jobType, &schema, &version, &plan, &manifest, &attempts, &queuedAt, &artifactID, &parentJobID, &chunkIndex, &frameRange)
+		LIMIT 1`, now).Scan(&id, &jobType, &publicationPolicy, &daemonAdmissionWaitMS, &schema, &version, &plan, &manifest, &attempts, &queuedAt, &artifactID, &parentJobID, &chunkIndex, &frameRange)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, 0, nil
 	}
@@ -375,20 +399,22 @@ func (r *Repository) ClaimState(ctx context.Context, workerID string, state mode
 	}
 
 	job := &model.Job{ID: id,
-		ParentJobID: parentJobID.String,
-		ChunkIndex:  chunkIndex,
-		FrameRange:  frameRangeVal,
-		JobType:     jobType,
-		Schema:      schema,
-		Version:     schemaVersion(version),
-		RenderPlan:  json.RawMessage(plan),
-		Assets:      assetsVal,
-		State:       model.StateRunning,
-		Worker:      workerID,
-		Attempts:    attemptNumber,
-		QueuedAt:    queuedAt,
-		StartedAt:   now,
-		LeaseUntil:  leaseUntil,
+		ParentJobID:           parentJobID.String,
+		ChunkIndex:            chunkIndex,
+		FrameRange:            frameRangeVal,
+		JobType:               jobType,
+		PublicationPolicy:     publicationPolicy,
+		DaemonAdmissionWaitMS: daemonAdmissionWaitMS,
+		Schema:                schema,
+		Version:               schemaVersion(version),
+		RenderPlan:            json.RawMessage(plan),
+		Assets:                assetsVal,
+		State:                 model.StateRunning,
+		Worker:                workerID,
+		Attempts:              attemptNumber,
+		QueuedAt:              queuedAt,
+		StartedAt:             now,
+		LeaseUntil:            leaseUntil,
 	}
 	// A job re-claimed from the rendered state carries its already-stored
 	// artifact so the worker can skip rendering and only retry publication.
@@ -432,7 +458,7 @@ func (r *Repository) Get(ctx context.Context, id string) (*model.Job, error) {
 		pWorker        sql.NullString
 	)
 	err := r.db.QueryRowContext(ctx, `
-		SELECT id, state, job_type, job_schema, job_schema_version, render_plan,
+		SELECT id, state, job_type, publication_policy, daemon_admission_wait_ms, job_schema, job_schema_version, render_plan,
 		       input_manifest, attempt_count,
 		       current_worker_id, queued_at, started_at, completed_at,
 		       lease_until, error_message, artifact_id, idempotency_key,
@@ -440,7 +466,7 @@ func (r *Repository) Get(ctx context.Context, id string) (*model.Job, error) {
 		       progress_frames_done, progress_total_frames, progress_last_frame_at, progress_worker
 		FROM render_jobs
 		WHERE id = $1`, id).Scan(
-		&job.ID, &state, &job.JobType, &schema, &version, &plan,
+		&job.ID, &state, &job.JobType, &job.PublicationPolicy, &job.DaemonAdmissionWaitMS, &schema, &version, &plan,
 		&manifest, &job.Attempts,
 		&worker, &queuedAt, &startedAt, &completedAt,
 		&leaseUntil, &errorMsg, &artifactID, &idempotencyKey,

@@ -182,6 +182,8 @@ func shortPhraseSelectorDefinition(selector shortPhraseSelector) SelectorDefinit
 				definition.RangeStart, definition.RangeEnd = &start, &end
 			}
 		}
+	} else if selector.Window == "reveal" || selector.Window == "reveal_soft" || selector.Window == "band" {
+		definition.Stagger = 1
 	}
 	return definition
 }

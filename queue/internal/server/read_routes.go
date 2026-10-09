@@ -38,6 +38,15 @@ func (s *Server) listByParent(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, jobs)
 }
 
+func (s *Server) recoverableParents(w http.ResponseWriter, r *http.Request) {
+	ids, err := s.svc.RecoverableParents(r.Context())
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	writeJSON(w, http.StatusOK, ids)
+}
+
 func (s *Server) children(w http.ResponseWriter, r *http.Request) {
 	jobs, err := s.svc.Children(r.Context(), parseJobID(r))
 	if err != nil {

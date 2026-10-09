@@ -5,9 +5,11 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"net/http"
+
+	"github.com/Marcuss-ops/RenderingGen/queue/client"
 	"github.com/Marcuss-ops/RenderingGen/queue/internal/model"
 	"github.com/Marcuss-ops/RenderingGen/queue/internal/repository"
-	"net/http"
 )
 
 func (s *Server) submitBatch(w http.ResponseWriter, r *http.Request) {
@@ -22,6 +24,16 @@ func (s *Server) submitBatch(w http.ResponseWriter, r *http.Request) {
 	if len(req.Jobs) == 0 {
 		http.Error(w, "jobs is required", http.StatusBadRequest)
 		return
+	}
+	for _, job := range req.Jobs {
+		if err := client.ValidateJobID(job.ID); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		if err := client.ValidateJobMetadata(job); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
 	}
 	if err := s.svc.SubmitBatch(r.Context(), req.Jobs); err != nil {
 		if errors.Is(err, repository.ErrJobExists) {
@@ -50,6 +62,14 @@ func (s *Server) submit(w http.ResponseWriter, r *http.Request) {
 	}
 	if job.ID == "" {
 		job.ID = newID()
+	}
+	if err := client.ValidateJobID(job.ID); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	if err := client.ValidateJobMetadata(job); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
 	}
 	canonical, created, err := s.svc.SubmitIdempotent(r.Context(), job)
 	if err != nil {

@@ -1,0 +1,124 @@
+{
+  "generated_at_utc": "2026-10-09T15:08:35Z",
+  "backend": "vulkan",
+  "hardware_encoder": "nvenc",
+  "encoder_backend": "native",
+  "gpu_hot_path_mode": "require_gpu_native",
+  "motions": [
+    {
+      "motion_id": "brush_arrow_point",
+      "status": "passed",
+      "duration_seconds": 1.767135372
+    },
+    {
+      "motion_id": "brush_chalk_reveal",
+      "status": "passed",
+      "duration_seconds": 1.94189094
+    },
+    {
+      "motion_id": "brush_check_mark",
+      "status": "passed",
+      "duration_seconds": 1.736815811
+    },
+    {
+      "motion_id": "brush_circle_focus",
+      "status": "passed",
+      "duration_seconds": 1.745435531
+    },
+    {
+      "motion_id": "brush_corner_accent",
+      "status": "passed",
+      "duration_seconds": 1.987345269
+    },
+    {
+      "motion_id": "brush_cross_out",
+      "status": "passed",
+      "duration_seconds": 1.993438577
+    },
+    {
+      "motion_id": "brush_double_underline",
+      "status": "passed",
+      "duration_seconds": 1.7613527260000001
+    },
+    {
+      "motion_id": "brush_dynamic_underline",
+      "status": "passed",
+      "duration_seconds": 1.8004861779999999
+    },
+    {
+      "motion_id": "brush_marker_highlight",
+      "status": "passed",
+      "duration_seconds": 1.86202319
+    },
+    {
+      "motion_id": "brush_pencil_circle",
+      "status": "passed",
+      "duration_seconds": 1.694374465
+    },
+    {
+      "motion_id": "brush_phrase_arrow_point",
+      "status": "passed",
+      "duration_seconds": 1.7122601309999999
+    },
+    {
+      "motion_id": "brush_phrase_circle_focus",
+      "status": "passed",
+      "duration_seconds": 1.741468458
+    },
+    {
+      "motion_id": "brush_phrase_gold_marker",
+      "status": "passed",
+      "duration_seconds": 1.75643699
+    },
+    {
+      "motion_id": "brush_phrase_lower_rule",
+      "status": "passed",
+      "duration_seconds": 1.844078111
+    },
+    {
+      "motion_id": "brush_phrase_red_brush_underline",
+      "status": "passed",
+      "duration_seconds": 1.698748959
+    },
+    {
+      "motion_id": "brush_phrase_red_endpoint_rule",
+      "status": "passed",
+      "duration_seconds": 1.73776109
+    },
+    {
+      "motion_id": "brush_phrase_red_underline",
+      "status": "passed",
+      "duration_seconds": 1.698748546
+    },
+    {
+      "motion_id": "brush_phrase_signature_flourish",
+      "status": "passed",
+      "duration_seconds": 1.707226205
+    },
+    {
+      "motion_id": "brush_phrase_white_double_underline",
+      "status": "passed",
+      "duration_seconds": 1.706083756
+    },
+    {
+      "motion_id": "brush_phrase_white_light_sweep",
+      "status": "passed",
+      "duration_seconds": 1.735719631
+    },
+    {
+      "motion_id": "brush_phrase_white_underline",
+      "status": "passed",
+      "duration_seconds": 1.813890505
+    },
+    {
+      "motion_id": "brush_scribble_frame",
+      "status": "passed",
+      "duration_seconds": 1.803414986
+    },
+    {
+      "motion_id": "brush_signature_sweep",
+      "status": "passed",
+      "duration_seconds": 1.7506710060000001
+    }
+  ]
+}

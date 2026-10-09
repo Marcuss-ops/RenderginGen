@@ -286,6 +286,31 @@ func TestAnimationPolicyUsesDeclaredTargets(t *testing.T) {
 	if !motionAdmitsTarget("image_fade_reveal", "map_view") {
 		t.Error("centered image overlay with canonical map_view target was not admitted")
 	}
+	for _, tags := range [][]string{
+		{"caption", "metric"}, {"metric", "caption"},
+		{"caption", "date"}, {"date", "caption"},
+		{"text", "metric"}, {"metric", "text"},
+		{"text", "date"}, {"date", "text"},
+		{"entity", "metric"}, {"metric", "entity"},
+		{"entity", "date"}, {"date", "entity"},
+		{"phrase", "metric"}, {"metric", "phrase"},
+		{"phrase", "date"}, {"date", "phrase"},
+	} {
+		definition := &motion.MotionDefinition{Targets: tags}
+		for _, target := range []string{"caption", "text", "entity", "phrase"} {
+			if motionDefinitionAdmitsTarget(definition, target) {
+				t.Errorf("motion with conflicting specialized tags %v admitted for %s", tags, target)
+			}
+		}
+	}
+	for _, tags := range [][]string{{"caption"}, {"text"}, {"phrase"}, {"entity"}} {
+		definition := &motion.MotionDefinition{Targets: tags}
+		for _, target := range []string{"caption", "text", "entity", "phrase"} {
+			if !motionDefinitionAdmitsTarget(definition, target) {
+				t.Errorf("compatible tags %v were rejected for %s", tags, target)
+			}
+		}
+	}
 	options, definitions := runtimeMotionCatalog()
 	var shortUseCase RuntimeAnimationUseCase
 	for _, useCase := range runtimeAnimationUseCases(options, definitions) {

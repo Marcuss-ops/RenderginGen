@@ -2,6 +2,8 @@ package processor
 
 import (
 	"context"
+	"errors"
+	"strings"
 	"testing"
 
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/queue"
@@ -14,6 +16,7 @@ type fakeReportQueue struct {
 	completed []queue.Artifact
 	rendered  []queue.Artifact
 	failed    []string
+	permanent []string
 
 	completeErr error
 	renderedErr error
@@ -25,6 +28,11 @@ func (f *fakeReportQueue) Complete(_ context.Context, _ string, artifact queue.A
 		return f.completeErr
 	}
 	f.completed = append(f.completed, artifact)
+	return nil
+}
+
+func (f *fakeReportQueue) FailPermanently(_ context.Context, _ string, reason string) error {
+	f.permanent = append(f.permanent, reason)
 	return nil
 }
 
@@ -130,6 +138,30 @@ func TestReportFailureWithDurableArtifact(t *testing.T) {
 	}
 }
 
+func TestReportPermanentDriveFailureOnClaimedRenderedJob(t *testing.T) {
+	artifact := durableArtifact("sha-abc")
+	job := &queue.Job{ID: "job-drive-required", Artifact: &artifact}
+	q := &fakeReportQueue{}
+
+	ReportFailure(context.Background(), q, job, ErrDrivePublicationPermanent)
+
+	if len(q.permanent) != 1 || len(q.rendered) != 0 || len(q.failed) != 0 {
+		t.Fatalf("claimed Rendered permanent failure reports: permanent=%d rendered=%d failed=%d; want only permanent", len(q.permanent), len(q.rendered), len(q.failed))
+	}
+}
+
+func TestReportTransientDriveFailureOnClaimedRenderedJobStaysRetryable(t *testing.T) {
+	artifact := durableArtifact("sha-abc")
+	job := &queue.Job{ID: "job-drive-retry", Artifact: &artifact}
+	q := &fakeReportQueue{}
+
+	ReportFailure(context.Background(), q, job, errors.New("processor: drive publish: temporary network failure"))
+
+	if len(q.rendered) != 1 || q.rendered[0].StorageKey != artifact.StorageKey || len(q.permanent) != 0 || len(q.failed) != 0 {
+		t.Fatalf("transient Drive failure reports: permanent=%d rendered=%+v failed=%d; want durable Rendered retry", len(q.permanent), q.rendered, len(q.failed))
+	}
+}
+
 // TestReportFailureWithoutArtifact: a failure on a job that never rendered
 // (no artifact) is a plain render failure.
 func TestReportFailureWithoutArtifact(t *testing.T) {
@@ -149,6 +181,17 @@ func TestReportFailureWithoutArtifact(t *testing.T) {
 // claimed job: a late publication failure on durable bytes -> Rendered, and a
 // pre-durable failure -> Fail.
 func TestReportFailureWithArtifactSeparate(t *testing.T) {
+	t.Run("permanent Drive configuration -> failed, not retryable rendered", func(t *testing.T) {
+		q := &fakeReportQueue{}
+		artifact := durableArtifact("sha-abc")
+		ReportFailureWithArtifact(context.Background(), q, "job-drive-required", artifact, ErrDrivePublicationPermanent)
+		if len(q.permanent) != 1 || len(q.failed) != 0 || len(q.rendered) != 0 {
+			t.Fatalf("permanent=%d failed=%d rendered=%d, want permanent=1 only", len(q.permanent), len(q.failed), len(q.rendered))
+		}
+		if !strings.Contains(q.permanent[0], "Drive") {
+			t.Fatalf("failure reason %q must explain unavailable Drive publication", q.permanent[0])
+		}
+	})
 	t.Run("durable -> rendered", func(t *testing.T) {
 		q := &fakeReportQueue{}
 		ReportFailureWithArtifact(context.Background(), q, "job-1", durableArtifact("sha-abc"), context.DeadlineExceeded)

@@ -1,0 +1,69 @@
+{
+  "generated_at_utc": "2026-10-09T15:07:04Z",
+  "backend": "vulkan",
+  "hardware_encoder": "nvenc",
+  "encoder_backend": "native",
+  "gpu_hot_path_mode": "require_gpu_native",
+  "motions": [
+    {
+      "motion_id": "paint_blob_reveal",
+      "status": "passed",
+      "duration_seconds": 1.968424443
+    },
+    {
+      "motion_id": "paint_brush_wipe",
+      "status": "passed",
+      "duration_seconds": 1.8723659019999999
+    },
+    {
+      "motion_id": "paint_color_swipe",
+      "status": "passed",
+      "duration_seconds": 1.929425527
+    },
+    {
+      "motion_id": "paint_dry_brush_reveal",
+      "status": "passed",
+      "duration_seconds": 1.781928221
+    },
+    {
+      "motion_id": "paint_duotone_overlay",
+      "status": "passed",
+      "duration_seconds": 1.7225909000000001
+    },
+    {
+      "motion_id": "paint_edge_crawl",
+      "status": "passed",
+      "duration_seconds": 1.744065738
+    },
+    {
+      "motion_id": "paint_ink_spread",
+      "status": "passed",
+      "duration_seconds": 1.971924049
+    },
+    {
+      "motion_id": "paint_mask_morph",
+      "status": "passed",
+      "duration_seconds": 1.702634154
+    },
+    {
+      "motion_id": "paint_multi_blob_merge",
+      "status": "passed",
+      "duration_seconds": 1.734629564
+    },
+    {
+      "motion_id": "paint_peel_reveal",
+      "status": "passed",
+      "duration_seconds": 1.705216652
+    },
+    {
+      "motion_id": "paint_splash_focus",
+      "status": "passed",
+      "duration_seconds": 1.722806386
+    },
+    {
+      "motion_id": "paint_wave_fill",
+      "status": "passed",
+      "duration_seconds": 1.828246053
+    }
+  ]
+}

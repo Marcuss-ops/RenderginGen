@@ -151,11 +151,19 @@ type targetAdmissionRule struct {
 var targetAdmissionRules = map[string]targetAdmissionRule{
 	"important_phrase": {
 		deny:  []string{"metric", "date", "entity"},
-		admit: []string{"text", "phrase", "short_phrase", "caption"},
+		admit: []string{"text", "phrase", "short_phrase", "caption", "important_phrase"},
 	},
 	"text": {
 		deny:  []string{"metric", "date"},
 		admit: []string{"text", "phrase", "short_phrase", "caption", "entity"},
+	},
+	"entity": {
+		deny:  []string{"metric", "date"},
+		admit: []string{"entity", "caption", "text", "phrase"},
+	},
+	"phrase": {
+		deny:  []string{"metric", "date"},
+		admit: []string{"phrase", "text", "caption", "entity"},
 	},
 	"caption": {custom: captionTargetAdmits},
 	"image":   {admit: []string{"image"}},
@@ -169,17 +177,17 @@ var targetAdmissionRules = map[string]targetAdmissionRule{
 	}},
 }
 
-// captionTargetAdmits preserves the historical evaluation order: an explicit
-// caption tag always admits (even alongside tags another target would
-// deny), metric/date deny, then the text-family admits.
+// captionTargetAdmits checks conflicting specialized tags before any caption
+// allow tag. A catalog entry that declares both caption and metric/date is
+// ambiguous and must not bypass the specialized-target exclusion.
 func captionTargetAdmits(definition *motion.MotionDefinition) bool {
-	if containsString(definition.Targets, "caption") {
-		return true
-	}
 	if containsString(definition.Targets, "metric") || containsString(definition.Targets, "date") {
 		return false
 	}
-	return containsString(definition.Targets, "text") || containsString(definition.Targets, "phrase") || containsString(definition.Targets, "entity")
+	return containsString(definition.Targets, "caption") ||
+		containsString(definition.Targets, "text") ||
+		containsString(definition.Targets, "phrase") ||
+		containsString(definition.Targets, "entity")
 }
 
 func motionDefinitionAdmitsTarget(definition *motion.MotionDefinition, target string) bool {

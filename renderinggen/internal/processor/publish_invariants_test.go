@@ -65,7 +65,7 @@ func TestPublishSkipsDriveForQueueJobs(t *testing.T) {
 		t.Fatalf("render: %v", err)
 	}
 	for _, jobType := range []string{queue.JobTypeRenderSegment, queue.JobTypeOverlayRender, queue.JobTypeOverlayPrepare} {
-		published, err := proc.Publish(context.Background(), validJob().ID, jobType, artifact)
+		published, err := proc.Publish(context.Background(), validJob().ID, jobType, string(PublicationObjectStoreOnly), artifact)
 		if err != nil {
 			t.Fatalf("publish (%s): %v", jobType, err)
 		}

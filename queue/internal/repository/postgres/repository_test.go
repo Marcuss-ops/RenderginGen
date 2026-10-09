@@ -51,7 +51,7 @@ func newRepo(t *testing.T, lease time.Duration, maxAttempts int) *Repository {
 
 func TestChunkMetadataRoundTripsThroughGetAndClaim(t *testing.T) {
 	r := newRepo(t, 30*time.Second, 3)
-	job := model.Job{ID: "parent-001-chunk-2", ParentJobID: "parent-001", ChunkIndex: 2, FrameRange: &model.FrameRange{Start: 240, End: 360}, RenderPlan: []byte(`{"schema":"chronon.render-plan.v2","version":2}`)}
+	job := model.Job{ID: "parent-001-chunk-2", ParentJobID: "parent-001", ChunkIndex: 2, FrameRange: &model.FrameRange{Start: 240, End: 360}, PublicationPolicy: model.PublicationObjectStoreAndDrive, DaemonAdmissionWaitMS: 12.5, RenderPlan: []byte(`{"schema":"chronon.render-plan.v2","version":2}`)}
 	if err := r.Submit(context.Background(), job); err != nil {
 		t.Fatal(err)
 	}
@@ -60,11 +60,13 @@ func TestChunkMetadataRoundTripsThroughGetAndClaim(t *testing.T) {
 		t.Fatal(err)
 	}
 	assertChunkMetadata(t, got)
+	assertPublicationMetadata(t, got)
 	claimed, _, err := r.Claim(context.Background(), "worker-1")
 	if err != nil {
 		t.Fatal(err)
 	}
 	assertChunkMetadata(t, claimed)
+	assertPublicationMetadata(t, claimed)
 	if err := r.Fail(context.Background(), job.ID, "worker-1", "retry"); err != nil {
 		t.Fatal(err)
 	}
@@ -73,6 +75,13 @@ func TestChunkMetadataRoundTripsThroughGetAndClaim(t *testing.T) {
 		t.Fatal(err)
 	}
 	assertChunkMetadata(t, again)
+}
+
+func assertPublicationMetadata(t *testing.T, job *model.Job) {
+	t.Helper()
+	if job == nil || job.PublicationPolicy != model.PublicationObjectStoreAndDrive || job.DaemonAdmissionWaitMS != 12.5 {
+		t.Fatalf("publication metadata = %+v, want policy=%q admission_wait_ms=12.5", job, model.PublicationObjectStoreAndDrive)
+	}
 }
 
 func assertChunkMetadata(t *testing.T, job *model.Job) {

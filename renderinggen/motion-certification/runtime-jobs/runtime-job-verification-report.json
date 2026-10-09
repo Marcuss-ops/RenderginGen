@@ -1,0 +1,23 @@
+{
+  "job_name": "runtime-job-composite",
+  "status": "passed",
+  "backend": "vulkan",
+  "hardware_encoder": "nvenc",
+  "encoder_backend": "native",
+  "hot_path_mode": "require_gpu_native",
+  "video_path": "/tmp/runtime_job_gpu/runtime_job_composite.mp4",
+  "file_size_bytes": 586948,
+  "render_duration_sec": 4.023246038,
+  "fps": 24,
+  "total_frames": 240,
+  "width": 1280,
+  "height": 720,
+  "codec": "h264",
+  "overlays": [
+    "phrase_apple_clean_01 (important_phrase)",
+    "short_phrase_character_cascade_shapes (short_phrase_style)",
+    "editorial_image_lift_shadow (editorial_image_v1)",
+    "brush_arrow_point (brush_v1)",
+    "text_3d_camera_push (text_3d_v1)"
+  ]
+}
