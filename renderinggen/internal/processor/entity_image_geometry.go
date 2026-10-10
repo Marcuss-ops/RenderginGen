@@ -10,24 +10,33 @@ import (
 // fitEntityImageLayersToAssets runs after workspace materialization so image
 // metadata is read from the verified, content-addressed bytes rather than a
 // logical path that does not exist during semantic compilation.
-func fitEntityImageLayersToAssets(root string, plan *overlay.Plan) error {
+//
+// It reports whether it changed the plan. A fitted image box changes the layer
+// size and its premium components' sizes, and those sizes are part of the
+// prepared package's asset/text preparation identity — so the caller rebuilds
+// the package from the final plan exactly when this reports true, instead of
+// guessing both ways (rebuilding on every job, or shipping a sidecar that
+// describes the pre-fit geometry).
+func fitEntityImageLayersToAssets(root string, plan *overlay.Plan) (bool, error) {
 	if plan == nil {
-		return nil
+		return false, nil
 	}
+	changed := false
 	for i := range plan.Layers {
 		layer := &plan.Layers[i]
 		if !layer.EntityImage {
 			continue
 		}
+		changed = true
 		assetPath := filepath.Join(root, filepath.FromSlash(layer.Asset))
 		if err := overlay.FitEntityImageLayerToAsset(layer, assetPath); err != nil {
-			return fmt.Errorf("processor: fit entity image layer %q to source aspect: %w", layer.ID, err)
+			return false, fmt.Errorf("processor: fit entity image layer %q to source aspect: %w", layer.ID, err)
 		}
 		if err := overlay.ResizePremiumImageMask(layer); err != nil {
-			return fmt.Errorf("processor: resize premium image mask for %q: %w", layer.ID, err)
+			return false, fmt.Errorf("processor: resize premium image mask for %q: %w", layer.ID, err)
 		}
 		if err := alignEntityCaptionToFittedImage(plan, layer); err != nil {
-			return fmt.Errorf("processor: align entity caption for %q: %w", layer.ID, err)
+			return false, fmt.Errorf("processor: align entity caption for %q: %w", layer.ID, err)
 		}
 		layer.EntityImage = false
 		for j := range plan.Layers {
@@ -68,9 +77,9 @@ func fitEntityImageLayersToAssets(root string, plan *overlay.Plan) error {
 		}
 	}
 	if err := overlay.ValidateEntityCaptionCollisions(plan.Layers); err != nil {
-		return fmt.Errorf("processor: fitted entity caption layout: %w", err)
+		return false, fmt.Errorf("processor: fitted entity caption layout: %w", err)
 	}
-	return nil
+	return changed, nil
 }
 
 // alignEntityCaptionToFittedImage recomputes caption anchoring after the image

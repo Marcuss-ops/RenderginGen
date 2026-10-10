@@ -856,7 +856,8 @@ func TestBackgroundShapeZBelowImage(t *testing.T) {
 			{
 				"id": "content-image",
 				"kind": "image",
-				"template_id": "image_clean",
+				"template_id": "IMAGE_OVERLAY",
+				"preset_id": "image_fade_in",
 				"start_ms": 0, "end_ms": 5000,
 				"asset_refs": [{"asset_id": "img1", "sha256": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef", "url": "file://dummy.png"}],
 				"params": {"source_width": 800, "source_height": 600}
@@ -1291,7 +1292,8 @@ func TestExistingImageBackgroundUnchanged(t *testing.T) {
 			{
 				"id": "existing-img",
 				"kind": "image",
-				"template_id": "image_clean",
+				"template_id": "IMAGE_OVERLAY",
+				"preset_id": "image_fade_in",
 				"start_ms": 0, "end_ms": 2000,
 				"asset_refs": [{"asset_id": "a1", "sha256": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef", "url": "file://dummy.png"}],
 				"params": {"source_width": 1920, "source_height": 1080}
@@ -1324,7 +1326,8 @@ func TestExistingOverlayPlansStillCompile(t *testing.T) {
 			{
 				"id": "t1",
 				"kind": "entity_image",
-				"template_id": "image_clean",
+				"template_id": "IMAGE_OVERLAY",
+				"preset_id": "image_fade_in",
 				"start_ms": 0, "end_ms": 1000,
 				"asset_refs": [{"asset_id": "img1", "sha256": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef", "url": "file://entity.png"}],
 				"params": {"source_width": 400, "source_height": 300}

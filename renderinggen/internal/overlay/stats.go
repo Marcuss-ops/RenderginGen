@@ -40,12 +40,13 @@ type CompileResult struct {
 	// the same compile pass. It is the worker's handoff to prepare/upload code;
 	// it must not be rebuilt in the frame loop.
 	Prepared PreparedPackage
-	// UnknownTemplates lists the item template_ids that resolved to no registry
-	// row, sorted and de-duplicated. They still compile (as preset-less text
-	// primitives) so historical documents keep rendering, but the fall-through
-	// is reported instead of silent: a renamed producer template or a dropped
-	// compatibility alias shows up here rather than as an invisible visual
-	// downgrade. Empty for a fully registered plan.
+	// UnknownTemplates lists the item template_ids the compile pass classified
+	// as resolving to no registry row, sorted and de-duplicated. It is EMPTY for
+	// every plan the compiler accepts: resolveSemanticItems rejects a non-empty
+	// template_id that matches no registry row and no legacy alias, so an
+	// unknown template is an error rather than a silent downgrade to a
+	// preset-less primitive. The field survives as the compile pass's honest
+	// classification and as the worker's prepare-boundary belt.
 	UnknownTemplates []string
 }
 

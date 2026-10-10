@@ -3,7 +3,10 @@ worker:
   pipeline_workers: 3
   # Match PipelineGen's certified RENDERINGGEN_GPU_SLOTS=3 admission contract.
   # The daemon serializes GPU execution; these lanes keep CPU prep/post work
-  # pipelined without claiming extra daemon execution capacity.
+  # pipelined without claiming extra daemon execution capacity. If
+  # p50(renderinggen_worker_lane_wait_seconds) ever dominates p50(render),
+  # add a daemon socket to chronon.socket_paths or lower gpu_lanes — raising
+  # gpu_lanes against one daemon only grows the wait.
   gpu_lanes: 3
 queue:
   endpoint: http://127.0.0.1:8081

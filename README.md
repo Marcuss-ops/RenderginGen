@@ -318,6 +318,34 @@ The two projects are versioned independently:
 - `RenderingGen` — worker orchestration (queue, storage, workspace)
 - `Chronon3d` — render engine, consumed as a pinned runtime image
 
+## Worker tuning: cache reuse and lane/daemon parity
+
+Two knobs decide most of a worker's steady-state cost; both are documented where
+they are set (`renderinggen/config.yaml`, `infra/native/*.yaml`) and pinned by
+tests.
+
+**Content-addressed asset reuse (`artifact_store.l1_max_bytes` /
+`l2_max_bytes`).** L1 is the small-object RAM cache; L2 is the on-disk,
+content-addressed mirror every materialization resolves through
+(`LocalPath`: L2 first, L1 second, L3 last). Both are CAPS enforced by LRU
+eviction — a value too small is not a correctness error, it re-fetches from L3;
+a value large enough for the GPU working set (background videos + portrait
+plates) is what makes a repeated asset set free on later jobs. Defaults: 512 MiB
+/ 40 GiB; `0` = unbounded. The contract is pinned by
+`TestPrepareReusesContentAddressedAssetAcrossJobsFromL2` (two jobs, same sha256
+set → exactly one L3 fetch, second served from L2).
+
+**Multiple daemons (`chronon.socket_paths`).** `gpu_lanes` above what the
+daemon can execute concurrently does not add throughput; it only grows the
+prep→GPU rendezvous wait. Two ways to reach the multi-session baseline: lower
+`gpu_lanes`, or list one socket per daemon in `chronon.socket_paths` so the
+lanes spread round-robin over N daemons (each socket lane capped at
+`ceil(gpu_lanes/sockets)`; `socket_path` keeps the historical one-daemon shape).
+Read the decision off `renderinggen_worker_lane_wait_seconds` against the
+`render` phase histogram: while p50(lane wait) stays well below p50(render),
+lanes are not the bottleneck; once it dominates, add daemons or lower
+`gpu_lanes`. The worker logs this rule at startup (`lane/daemon parity: ...`).
+
 ## Images
 
 - `renderinggen-worker:<version>` — `FROM chronon3d-runtime:<version>` + Go binary + config

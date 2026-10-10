@@ -63,44 +63,20 @@ func compileResolvedMapLayers(ri resolvedItem, src *semanticPlan, registry *asse
 		}
 		layers = append(layers, routeLayers...)
 	}
-	// Let the camera settle first, then give each grounded point an exclusive
-	// window. When several locations share a short spoken span, showing every
-	// marker together makes the map unreadable; each marker and its label now
-	// leave before the next point enters.
-	pinCount := max(int64(1), int64(len(resolved.Pins)))
-	pinPhaseStart := duration / 5
-	if resolved.Camera != nil {
-		pinPhaseStart = duration * 2 / 5
-		twoSeconds := int64(src.FPSNum) * 2 / int64(src.FPSDen)
-		if twoSeconds > 0 && pinPhaseStart > twoSeconds {
-			pinPhaseStart = twoSeconds
-		}
-	}
-	pinPhaseDuration := duration - pinPhaseStart
-	perPinFrames := pinPhaseDuration / pinCount
-	if perPinFrames < 1 {
-		perPinFrames = 1
-	}
-	for pinIndex, resolvedPin := range resolved.Pins {
+	// Every grounded point shares the basemap lifetime: the flight is one shot,
+	// not a sequence of reveals. Staggered entrances and exclusive windows
+	// were tried (delayed reveal, then one marker at a time) and reverted:
+	// markers that pop in late or leave mid-flight read as a glitch on the
+	// certified look, and the golden canary pins the full-lifetime plate
+	// (TestGoldenMapFlyoverCanary). Re-time the pins only by re-baselining
+	// that golden deliberately, never by drifting the lowering.
+	for _, resolvedPin := range resolved.Pins {
 		pin := resolvedPin.Contract
-		pinDelay := pinPhaseStart + int64(pinIndex)*perPinFrames
-		pinEnd := pinDelay + perPinFrames
-		if pinIndex == len(resolved.Pins)-1 || pinEnd > duration {
-			pinEnd = duration
-		}
-		if pinEnd <= pinDelay {
-			pinEnd = min(duration, pinDelay+1)
-		}
-		markerRI := ri
-		markerRI.Start += pinDelay
-		marker, err := mapPinLayer(markerRI, src, pin, resolvedPin.RasterX, resolvedPin.RasterY, pinEnd-pinDelay)
+		marker, err := mapPinLayer(ri, src, pin, resolvedPin.RasterX, resolvedPin.RasterY, duration)
 		if err != nil {
 			return nil, err
 		}
-		labelRI := ri
-		labelDelay := pinDelay + max(int64(1), (pinEnd-pinDelay)/5)
-		labelRI.Start += labelDelay
-		label, err := resolveMapPinLabel(labelRI, src, resolvedPin, pinEnd-labelDelay)
+		label, err := resolveMapPinLabel(ri, src, resolvedPin, duration)
 		if err != nil {
 			return nil, err
 		}

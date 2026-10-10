@@ -48,8 +48,8 @@ func TestCatalogCategoriesKeepMotionsIndependentAndComplete(t *testing.T) {
 	if ids := Registry.ShortPhraseStyleIDs(); len(ids) != 48 {
 		t.Errorf("short phrase catalog has %d motions, want 48", len(ids))
 	}
-	if ids := Registry.PhraseAnimationIDs(); len(ids) != 162 {
-		t.Errorf("phrase planning pool has %d motions, want 162", len(ids))
+	if ids := Registry.PhraseAnimationIDs(); len(ids) != 163 {
+		t.Errorf("phrase planning pool has %d motions, want 163", len(ids))
 	}
 	appleClean := Registry.CategoryMotionIDs("phrase_apple_clean_v1")
 	pool := Registry.PhraseAnimationIDs()
@@ -198,8 +198,8 @@ func TestApplePhrasePackIsInTheCanonicalPoolAndHasNoPerGlyphBlur(t *testing.T) {
 	}
 	pool := make(map[string]bool)
 	phrasePool := PhraseMotionPool()
-	if len(phrasePool) != 63 {
-		t.Fatalf("GPU phrase motion pool has %d entries, want 63", len(phrasePool))
+	if len(phrasePool) != 64 {
+		t.Fatalf("GPU phrase motion pool has %d entries, want 64", len(phrasePool))
 	}
 	for _, id := range phrasePool {
 		pool[id] = true

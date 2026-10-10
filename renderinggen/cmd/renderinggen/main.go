@@ -122,9 +122,21 @@ func main() {
 			chrononVersion = v
 		}
 	}
+	renderSockets := cfg.Chronon.RenderSockets()
 	if cfg.Chronon.Mode == "ipc" {
-		ipc := chronon.NewIPCClient(cfg.Chronon.SocketPath)
-		renderer = ipc
+		// Renders spread round-robin over every configured daemon socket
+		// (chronon.socket_paths; a single socket_path keeps the historical
+		// one-daemon shape), so gpu_lanes > 1 across N sockets is N daemons
+		// rendering concurrently instead of one daemon queueing every lane.
+		// Assembly and asset warm-up are serialized parent-side operations and
+		// stay on the first socket — spreading them would buy nothing and would
+		// make the parent's ordering depend on which daemon answered.
+		spread, spreadErr := chronon.SpreadAcrossSockets(renderSockets, cfg.Worker.GPULanes)
+		if spreadErr != nil {
+			log.Fatalf("chronon: %v", spreadErr)
+		}
+		ipc := chronon.NewIPCClient(renderSockets[0])
+		renderer = spread
 		assembler = ipc
 		assetPrefetcher = ipc
 	} else {
@@ -253,6 +265,7 @@ func main() {
 			ProgressTracker:      progressTracker,
 			PhaseHook:            workerMetrics.PhaseHook(),
 			GPUGapHook:           workerMetrics.GPUGapHook(),
+			LaneWaitHook:         workerMetrics.LaneWaitHook(),
 		},
 	)
 	log.Printf("chronon report telemetry: %t, strict_native_backend: %t, encode_preset: %q, pipe_pixfmt: %q", cfg.Chronon.Report, cfg.Chronon.StrictNative(), cfg.Chronon.EncodePreset, cfg.Chronon.PipePixFmt)
@@ -357,6 +370,7 @@ func main() {
 		numWorkers = 1
 	}
 
+	log.Printf("worker %s ready: %s", cfg.Worker.ID, config.LaneParityGuidance(gpuLanes, cfg.Chronon.Mode, renderSockets))
 	log.Printf("worker %s ready: renderinggen=%s chronon=%s schema=%d pipeline_workers=%d gpu_lanes=%d log_level=%s log_format=%s per_job_logs=%s",
 		cfg.Worker.ID, version.RenderingGen, chrononVersion, version.OverlaySchema, numWorkers, gpuLanes,
 		cfg.Logging.Level, cfg.Logging.Format, workerlog.DurableJobLogDir(cfg.Workspace.Root))

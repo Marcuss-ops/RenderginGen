@@ -98,6 +98,11 @@ type Processor struct {
 	// See gpu_gap_hook.go.
 	gpuGapHook func(gap time.Duration)
 
+	// laneWaitHook, when set, receives each job's prep→GPU rendezvous wait
+	// (the same interval RecordGPULaneWait writes to gpu_lane_wait_ms/us).
+	// It lets the worker expose the wait distribution without re-measuring it.
+	laneWaitHook func(wait time.Duration)
+
 	// cleanupFailures counts workspaces that could not be removed. Workspace
 	// cleanup is fail-open by design (a render must never fail because its
 	// scratch directory survived), but the jobs root is frequently tmpfs, so a
@@ -128,6 +133,13 @@ type Options struct {
 	// GPUGapHook receives the wall-clock gap between consecutive GPU renders on
 	// this processor (the duty-cycle KPI behind gpu_gap_us). nil disables it.
 	GPUGapHook func(gap time.Duration)
+
+	// LaneWaitHook receives each job's prep→GPU rendezvous wait (the same
+	// interval RecordGPULaneWait writes to gpu_lane_wait_ms/us). nil disables
+	// it. It exists so the worker's Prometheus surface can observe the wait
+	// without re-measuring it: the pools call ObserveLaneWait once per GPU
+	// admission with the already-measured duration.
+	LaneWaitHook func(wait time.Duration)
 
 	// WorkspaceLeaseTTL is the validity window the per-job workspace liveness
 	// marker is written with. Zero keeps defaultWorkspaceLeaseTTL.
@@ -207,6 +219,7 @@ func NewWithOptions(jobsRoot, backend, chrononVersion, storeURL string, store *s
 		assetPrefetcher:      opts.AssetPrefetcher,
 		phaseHook:            opts.PhaseHook,
 		gpuGapHook:           opts.GPUGapHook,
+		laneWaitHook:         opts.LaneWaitHook,
 		report:               opts.Report,
 		hardwareEncoder:      opts.HardwareEncoder,
 		encoderBackend:       opts.EncoderBackend,
@@ -234,6 +247,16 @@ func (p *Processor) workspaceLeaseDuration() time.Duration {
 		return p.workspaceLeaseTTL
 	}
 	return defaultWorkspaceLeaseTTL
+}
+
+// ObserveLaneWait forwards one already-measured prep→GPU rendezvous wait to
+// the configured hook. Nil-safe: an unwired processor simply records the wait
+// on the job metrics (via RecordGPULaneWait) without a Prometheus feed.
+func (p *Processor) ObserveLaneWait(wait time.Duration) {
+	if p == nil || p.laneWaitHook == nil {
+		return
+	}
+	p.laneWaitHook(wait)
 }
 
 func (p *Processor) recordPhase(phase string, start time.Time) {

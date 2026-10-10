@@ -9,8 +9,8 @@ import (
 
 func TestPhraseHighlightCatalogMotionsCompileWithAllAccents(t *testing.T) {
 	ids := motion.Registry.CategoryMotionIDs("phrase_highlight_v1")
-	if len(ids) != 16 {
-		t.Fatalf("phrase highlight catalog has %d IDs, want 16", len(ids))
+	if len(ids) != 17 {
+		t.Fatalf("phrase highlight catalog has %d IDs, want 17", len(ids))
 	}
 	multiAccentMotions := 0
 	for _, id := range ids {

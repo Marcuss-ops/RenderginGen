@@ -239,9 +239,10 @@ func compileSemantic(raw []byte) (*Plan, []Asset, Stats, []string, error) {
 		}
 	}
 
-	// Templates that resolved to no registry row are reported, not swallowed:
-	// they still compile as preset-less primitives, but the caller can see the
-	// fall-through (see CompileResult.UnknownTemplates).
+	// Every resolved item passed the fail-closed template gate above, so this
+	// list is empty for any plan that reaches here. It is COMPUTED rather than
+	// assumed so CompileResult.UnknownTemplates keeps being a projection of what
+	// was actually resolved — the day the gate is relaxed, the field says so.
 	unknown := unknownTemplates(resolved)
 
 	// Source clip — lowers to a full-canvas video layer. When foreground_scale

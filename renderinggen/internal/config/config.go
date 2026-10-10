@@ -182,16 +182,24 @@ const (
 )
 
 type ChrononConfig struct {
-	Profile              string `yaml:"profile"` // software-cli | gpu-vulkan-native
-	Backend              string `yaml:"backend"`
-	Home                 string `yaml:"home"`
-	Binary               string `yaml:"binary"`      // explicit chronon3d_cli path
-	Mode                 string `yaml:"mode"`        // "cli" (default) | "ipc"
-	SocketPath           string `yaml:"socket_path"` // unix socket when Mode == "ipc"
-	NativeOutputProfiles bool   `yaml:"native_output_profiles"`
-	Report               bool   `yaml:"report"`
-	HardwareEncoder      string `yaml:"hardware_encoder"`
-	EncoderBackend       string `yaml:"encoder_backend"`
+	Profile    string `yaml:"profile"` // software-cli | gpu-vulkan-native
+	Backend    string `yaml:"backend"`
+	Home       string `yaml:"home"`
+	Binary     string `yaml:"binary"`      // explicit chronon3d_cli path
+	Mode       string `yaml:"mode"`        // "cli" (default) | "ipc"
+	SocketPath string `yaml:"socket_path"` // unix socket when Mode == "ipc"
+	// SocketPaths lists ONE unix socket per daemon when Mode == "ipc": renders
+	// spread round-robin over them (see chronon.SpreadAcrossSockets), so
+	// gpu_lanes > 1 across N sockets means N daemons rendering concurrently
+	// instead of one daemon queueing every lane. It is the "add a daemon" half
+	// of the lane/daemon parity rule: raising gpu_lanes against a single daemon
+	// only grows gpu_lane_wait_ms. When set it takes precedence over the single
+	// SocketPath (which is then left empty, since the worker never dials it).
+	SocketPaths          []string `yaml:"socket_paths"`
+	NativeOutputProfiles bool     `yaml:"native_output_profiles"`
+	Report               bool     `yaml:"report"`
+	HardwareEncoder      string   `yaml:"hardware_encoder"`
+	EncoderBackend       string   `yaml:"encoder_backend"`
 	// EncodePreset is the explicit FFmpeg NVENC preset passed to Chronon for
 	// native GPU jobs (e.g. "p2" for the throughput tier). Empty preserves the
 	// engine default; the worker never invents a preset when none is set.
@@ -365,7 +373,11 @@ func applyDefaults(c *Config) {
 	if c.Chronon.Mode == "" {
 		c.Chronon.Mode = "cli"
 	}
-	if c.Chronon.SocketPath == "" {
+	// The default names the historical single-daemon socket. A worker given an
+	// explicit socket_paths list must not also carry a socket it never dials:
+	// an operator reading the effective config would otherwise see a daemon
+	// that does not exist in the deployment.
+	if c.Chronon.SocketPath == "" && len(c.Chronon.SocketPaths) == 0 {
 		c.Chronon.SocketPath = "/var/run/chronon3d/chronon.sock"
 	}
 	if c.ArtifactStore.LocalCacheDir == "" {
@@ -380,12 +392,19 @@ func applyDefaults(c *Config) {
 	if c.Drive.Mode == "" {
 		c.Drive.Mode = "google"
 	}
-	// Cache budgets: the historical wiring constants, now overridable.
+	// Cache budgets: the historical wiring constants, now overridable. The
+	// defaults were raised because the L2 budget is what decides whether a
+	// repeated asset set is served from the content-addressed local mirror or
+	// re-fetched from the object store on every job, and a GPU worker's working
+	// set (background videos + portrait plates) crosses the old 10 GiB within a
+	// handful of jobs. Both budgets are CAPS enforced by LRU eviction, so a
+	// larger value costs idle disk, never correctness: an object that does not
+	// fit is still fetched on demand.
 	if c.ArtifactStore.L1MaxBytes == 0 {
-		c.ArtifactStore.L1MaxBytes = 256 << 20 // 256 MiB small-object RAM cache
+		c.ArtifactStore.L1MaxBytes = 512 << 20 // 512 MiB small-object RAM cache
 	}
 	if c.ArtifactStore.L2MaxBytes == 0 {
-		c.ArtifactStore.L2MaxBytes = 10 << 30 // 10 GiB NVMe cache
+		c.ArtifactStore.L2MaxBytes = 40 << 30 // 40 GiB NVMe cache
 	}
 	// Certification tools. The bare command name preserves the historical
 	// PATH lookup, so an unspecified deployment behaves exactly as before.
@@ -506,8 +525,23 @@ func (c *Config) validate() error {
 	default:
 		return fmt.Errorf("chronon.encoder_backend must be empty, %q or %q, got %q", "native", "pipe", c.Chronon.EncoderBackend)
 	}
-	if c.Chronon.Mode == "ipc" && c.Chronon.SocketPath == "" {
-		return fmt.Errorf("chronon mode=ipc requires chronon.socket_path")
+	// The ipc transport needs at least one daemon socket. socket_paths is the
+	// multi-daemon shape and is validated entry by entry: a blank or repeated
+	// entry would make the worker spread lanes over a socket that is not a
+	// daemon, which silently halves throughput instead of failing at load.
+	seenSockets := make(map[string]struct{}, len(c.Chronon.SocketPaths))
+	for _, socket := range c.Chronon.SocketPaths {
+		trimmed := strings.TrimSpace(socket)
+		if trimmed == "" {
+			return fmt.Errorf("chronon.socket_paths must not contain an empty socket path")
+		}
+		if _, duplicate := seenSockets[trimmed]; duplicate {
+			return fmt.Errorf("chronon.socket_paths repeats socket %q; each socket is one daemon", trimmed)
+		}
+		seenSockets[trimmed] = struct{}{}
+	}
+	if c.Chronon.Mode == "ipc" && c.Chronon.SocketPath == "" && len(c.Chronon.SocketPaths) == 0 {
+		return fmt.Errorf("chronon mode=ipc requires chronon.socket_path or chronon.socket_paths")
 	}
 	// encode_preset reaches the native NVENC encoder as --encode-preset, so a
 	// mistyped preset must fail at config load instead of on the first GPU
