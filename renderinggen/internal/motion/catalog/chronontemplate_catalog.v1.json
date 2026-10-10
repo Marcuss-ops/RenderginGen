@@ -31090,7 +31090,7 @@
           {
             "id": "one_sided_accent_edge",
             "type": "shape",
-            "shape": "rect",
+            "shape": "rounded_rect",
             "placement": "before_image",
             "size_scale": [
               1.0,

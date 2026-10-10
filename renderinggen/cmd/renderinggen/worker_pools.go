@@ -220,7 +220,9 @@ func runGPULane(ctx context.Context, q *queue.Client, proc *processor.Processor,
 			// write the map after the rendezvous send has handed ownership to
 			// this lane.
 			if !p.laneWaitStarted.IsZero() {
-				processor.RecordGPULaneWait(p.prepared, time.Since(p.laneWaitStarted))
+				wait := time.Since(p.laneWaitStarted)
+				processor.RecordGPULaneWait(p.prepared, wait)
+				proc.ObserveLaneWait(wait)
 			}
 			// Chronon is the long-running stage. Keep the queue lease alive
 			// while it renders; renewing only during prepare/post would let a

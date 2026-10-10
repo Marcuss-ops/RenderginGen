@@ -94,15 +94,16 @@ func (p *Processor) PrepareJob(ctx context.Context, job *queue.Job) (*PreparedJo
 	}
 	record(metricnames.PrepareSceneCompileStem, compileStart)
 	stats, plan, compiledAssets, preparedPackage := result.Stats, result.Plan, result.Assets, result.Prepared
-	// A template_id that resolved to no registry row is NOT an error (historical
-	// documents and the compatibility aliases must keep rendering), but it must
-	// never be invisible either: it is exactly the shape of a producer rename or
-	// a dropped alias, both of which degrade the overlay to a preset-less text
-	// primitive. The compile pass already classified it — this is the worker's
-	// single observable projection of that fact.
+	// UnknownTemplates is empty for every plan the compiler accepts: a non-empty
+	// template_id that resolves to no registry row and no legacy alias is
+	// REJECTED by resolveSemanticItems, not lowered as a preset-less primitive.
+	// This check is the belt to that suspenders, so a future relaxation of the
+	// compiler's gate can never become a rendered downgrade — a template_id the
+	// compile pass could not place is a prepare-boundary failure, before any
+	// workspace, download, font stage or GPU lane is spent.
 	if len(result.UnknownTemplates) > 0 {
 		metrics[metricnames.UnknownTemplates] = float64(len(result.UnknownTemplates))
-		workerlog.ByJobID(job.ID).Warnf("%d item template_id(s) resolved to no registry row and were compiled as preset-less primitives: %s",
+		return nil, fmt.Errorf("processor: %d item template_id(s) resolved to no registry row and must not be rendered: %s",
 			len(result.UnknownTemplates), strings.Join(result.UnknownTemplates, ", "))
 	}
 	// The chunk contract is validated against the plan that will actually be
@@ -203,17 +204,23 @@ func (p *Processor) PrepareJob(ctx context.Context, job *queue.Job) (*PreparedJo
 	}
 	if len(renamed) > 0 {
 		// Image sniffing may normalize a producer extension (for example
-		// .jpeg to .jpg). The concrete plan now points at the renamed path;
-		// rebuild the prepared sidecar from that same plan so Chronon's strict
-		// package-to-layer validation sees identical logical paths.
-		preparedPackage, err = overlay.PreparePackage(plan, preparedPackage.Language, finalPreparedAssets(compiledAssets, renamed))
-		if err != nil {
-			return nil, fmt.Errorf("processor: rebuild prepared overlay package after image path normalization: %w", err)
-		}
+		// .jpeg to .jpg), so the concrete plan now points at the renamed path
+		// and the compiler's package describes the old one.
+		workerlog.ByJobID(job.ID).Infof("normalized %d image asset extension(s) to match the verified bytes", len(renamed))
 	}
-	if err := fitEntityImageLayersToAssets(ws.Root(), plan); err != nil {
+	// Everything from here to the package build can change what the prepared
+	// sidecar must contain: the normalized asset path, an entity image's fitted
+	// size (part of the preparation identity) and the burned subtitle layers.
+	// The mutations are RECORDED and the package is rebuilt exactly ONCE from
+	// the final plan. The historical shape rebuilt it after the renames and
+	// again after the burn, so a job that did both paid for two full builds and
+	// the sidecar in between described a plan state no frame ever rendered.
+	packageStale := len(renamed) > 0
+	fitChanged, err := fitEntityImageLayersToAssets(ws.Root(), plan)
+	if err != nil {
 		return nil, err
 	}
+	packageStale = packageStale || fitChanged
 	if err := validateMapRasterAssets(ws.Root(), plan); err != nil {
 		return nil, err
 	}
@@ -285,14 +292,11 @@ func (p *Processor) PrepareJob(ctx context.Context, job *queue.Job) (*PreparedJo
 		if burnErr != nil {
 			return nil, burnErr
 		}
-		// Burn-in appends concrete Chronon text layers after CompileSemantic
-		// created the initial package. Rebuild the immutable sidecar from the
-		// final plan so its overlay bindings remain 1:1 with plan.Layers; the
-		// Chronon boundary validates this relationship before GPU compilation.
-		preparedPackage, err = overlay.PreparePackage(plan, preparedPackage.Language, finalPreparedAssets(compiledAssets, renamed))
-		if err != nil {
-			return nil, fmt.Errorf("processor: rebuild prepared overlay package after subtitle burn: %w", err)
-		}
+		// Burn-in appends concrete Chronon text layers to the plan, so the
+		// sidecar must be rebuilt from the final plan: its overlay bindings have
+		// to stay 1:1 with plan.Layers, which the Chronon boundary validates
+		// before GPU compilation. The single rebuild below does it once.
+		packageStale = true
 		record(metricnames.PrepareBurnStem, burnStart)
 		metrics[metricnames.SubtitleBurnUS] = float64(time.Since(burnStart).Microseconds())
 		metrics[metricnames.SubtitleBurnMS] = metrics[metricnames.SubtitleBurnUS] / 1000
@@ -301,6 +305,13 @@ func (p *Processor) PrepareJob(ctx context.Context, job *queue.Job) (*PreparedJo
 		// as empty or degenerate).
 		metrics[metricnames.SubtitleLayers] = float64(subtitleCount)
 		workerlog.ByJobID(job.ID).Infof("lowered %d ASS cues into Chronon GPU text layers", subtitleCount)
+	}
+
+	if packageStale {
+		preparedPackage, err = overlay.PreparePackage(plan, preparedPackage.Language, finalPreparedAssets(compiledAssets, renamed))
+		if err != nil {
+			return nil, fmt.Errorf("processor: rebuild prepared overlay package from the final plan: %w", err)
+		}
 	}
 
 	phaseStart = time.Now()

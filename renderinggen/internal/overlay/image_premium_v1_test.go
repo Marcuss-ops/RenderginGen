@@ -38,8 +38,8 @@ func premiumImagePlan(id, extra string) []byte {
 
 func TestImagePremiumV1EveryRecipeLowersToNativeV3(t *testing.T) {
 	ids := motion.Registry.CategoryMotionIDs("image_premium_v1")
-	if len(ids) != 20 {
-		t.Fatalf("premium catalog has %d ids, want 20: %v", len(ids), ids)
+	if len(ids) != 21 {
+		t.Fatalf("premium catalog has %d ids, want 21: %v", len(ids), ids)
 	}
 	for _, id := range ids {
 		t.Run(id, func(t *testing.T) {

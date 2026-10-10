@@ -37,14 +37,14 @@ func TestRuntimeJobCompositeExecutionOnStrictVulkanGPU(t *testing.T) {
 			"id": "phrase-apple-01", "kind": "important_phrase", "template_id": "IMPORTANT_PHRASE",
 			"preset_id": PhraseDefaultPresetID, "motion_id": "phrase_apple_clean_07_slide_up_soft",
 			"motion_params": map[string]any{"enter_frames": 24},
-			"text": "VELOX EDITING GPU RUNTIME", "start_ms": 0, "end_ms": 2000,
+			"text":          "VELOX EDITING GPU RUNTIME", "start_ms": 0, "end_ms": 2000,
 		},
 		// 2. Short Phrase Style with Cascade (2000 - 4000ms)
 		map[string]any{
 			"id": "short-phrase-cascade", "kind": "important_phrase", "template_id": "IMPORTANT_PHRASE",
 			"preset_id": PhraseDefaultPresetID, "motion_id": "short_phrase_character_cascade_shapes",
 			"motion_params": map[string]any{"enter_frames": 24},
-			"text": "CHARACTER CASCADE ACTIVE", "start_ms": 2000, "end_ms": 4000,
+			"text":          "CHARACTER CASCADE ACTIVE", "start_ms": 2000, "end_ms": 4000,
 		},
 		// 3. Editorial Image (4000 - 6000ms)
 		map[string]any{
@@ -73,7 +73,7 @@ func TestRuntimeJobCompositeExecutionOnStrictVulkanGPU(t *testing.T) {
 			"id": "text-3d-push", "kind": "important_phrase", "template_id": "IMPORTANT_PHRASE",
 			"preset_id": PhraseDefaultPresetID, "motion_id": "text_3d_camera_push",
 			"motion_params": map[string]any{"enter_frames": 24},
-			"text": "3D CAMERA GPU PIPELINE", "start_ms": 8000, "end_ms": 10000,
+			"text":          "3D CAMERA GPU PIPELINE", "start_ms": 8000, "end_ms": 10000,
 		},
 	}
 

@@ -19,9 +19,13 @@ artifact_store:
   local_cache_dir: /var/lib/renderinggen/cache
   # Cache budgets. These used to be compile-time constants in the worker wiring;
   # rebalance them for the host (more RAM -> raise l1_max_bytes, more NVMe ->
-  # raise l2_max_bytes). 0 means unbounded.
-  l1_max_bytes: 268435456 # 256 MiB small-object RAM cache
-  l2_max_bytes: 10737418240 # 10 GiB NVMe cache
+  # raise l2_max_bytes) and lower them on a small host. Both are CAPS enforced
+  # by LRU eviction, so the cost of a large value is idle disk, never
+  # correctness. l2_max_bytes is the one that decides whether a repeated asset
+  # set is reused from the content-addressed local mirror instead of being
+  # re-fetched per job. 0 means unbounded.
+  l1_max_bytes: 536870912 # 512 MiB small-object RAM cache
+  l2_max_bytes: 42949672960 # 40 GiB NVMe cache
 
 # DB artifact ledger (optional): every rendered job writes one ArtifactRecord
 # (hash, probe facts, semantic counters, per-phase metrics) to a local SQLite
@@ -41,6 +45,9 @@ chronon:
   # Warm render shell: render through the persistent Chronon daemon started
   # by worker-entrypoint.sh (caches alive across jobs).
   mode: ipc
+  # One socket per daemon. List more sockets in socket_paths to spread
+  # gpu_lanes round-robin over several daemons; lanes beyond the daemon's
+  # execution concurrency only grow renderinggen_worker_lane_wait_seconds.
   socket_path: /var/run/chronon3d/chronon.sock
   encode_preset: p1
   pipe_pixfmt: nv12

@@ -43,10 +43,11 @@ const (
 // Metrics is the worker's collector set. A nil *Metrics is safe: every method
 // tolerates it, so an unwired worker keeps running exactly as it did.
 type Metrics struct {
-	outcomesTotal *prometheus.CounterVec
-	phaseSecond   *prometheus.HistogramVec
-	gpuGapSecond  prometheus.Histogram
-	registry      *prometheus.Registry
+	outcomesTotal  *prometheus.CounterVec
+	phaseSecond    *prometheus.HistogramVec
+	gpuGapSecond   prometheus.Histogram
+	laneWaitSecond prometheus.Histogram
+	registry       *prometheus.Registry
 }
 
 // PhaseBuckets covers a phase from ~50 ms to ~2 min. Render phases on the
@@ -61,6 +62,13 @@ var PhaseBuckets = []float64{0.05, 0.1, 0.25, 0.5, 1, 2, 5, 10, 20, 30, 60, 120}
 // jobs. The question the series answers is "is the GPU waiting, and on what?",
 // so it must resolve both ends of that range.
 var GPUGapBuckets = []float64{0.0005, 0.001, 0.005, 0.01, 0.05, 0.1, 0.25, 0.5, 1, 2, 5, 10, 30, 60}
+
+// LaneWaitBuckets covers the prep→GPU rendezvous wait: from an uncontended
+// handoff (tens of ms) to a backlogged batch (minutes). The decision "do more
+// GPU lanes help" is read off this distribution against render_ms: when p50
+// lane wait dominates p50 render, lanes exceed what the Chronon daemon can run
+// concurrently and adding lanes only grows the wait.
+var LaneWaitBuckets = []float64{0.01, 0.05, 0.1, 0.5, 1, 2, 5, 10, 20, 30, 60, 120, 300, 600}
 
 // New builds the collector set. It uses a dedicated registry rather than the
 // process default, so the worker's series cannot be polluted by (or pollute) an
@@ -90,8 +98,15 @@ func New() *Metrics {
 			Help:      "GPU duty-cycle gap between the end of one render and the start of the next on a worker lane, as measured by the processor's gpu_gap_us KPI.",
 			Buckets:   GPUGapBuckets,
 		}),
+		laneWaitSecond: prometheus.NewHistogram(prometheus.HistogramOpts{
+			Namespace: Namespace,
+			Subsystem: "worker",
+			Name:      "lane_wait_seconds",
+			Help:      "Prep-to-GPU rendezvous wait per job (gpu_lane_wait_ms): how long a fully prepared job blocked for a free GPU lane. Compare p50 against render_ms before changing gpu_lanes.",
+			Buckets:   LaneWaitBuckets,
+		}),
 	}
-	reg.MustRegister(m.outcomesTotal, m.phaseSecond, m.gpuGapSecond)
+	reg.MustRegister(m.outcomesTotal, m.phaseSecond, m.gpuGapSecond, m.laneWaitSecond)
 	reg.MustRegister(prometheus.NewGoCollector())
 	return m
 }
@@ -145,6 +160,23 @@ func (m *Metrics) ObserveGPUGap(gap time.Duration) {
 		gap = 0
 	}
 	m.gpuGapSecond.Observe(gap.Seconds())
+}
+
+// ObserveLaneWait records one prep→GPU rendezvous wait. Negative values are
+// clamped to 0: a negative wait is clock skew, not a shorter queue.
+func (m *Metrics) ObserveLaneWait(wait time.Duration) {
+	if m == nil {
+		return
+	}
+	if wait < 0 {
+		wait = 0
+	}
+	m.laneWaitSecond.Observe(wait.Seconds())
+}
+
+// LaneWaitHook adapts ObserveLaneWait to processor.Options.LaneWaitHook.
+func (m *Metrics) LaneWaitHook() func(wait time.Duration) {
+	return func(wait time.Duration) { m.ObserveLaneWait(wait) }
 }
 
 // PhaseHook adapts ObservePhase to processor.Options.PhaseHook, so the worker's

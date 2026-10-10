@@ -32,8 +32,12 @@ func TestFitEntityImageLayersToMaterializedAssetRemovesMatteGeometry(t *testing.
 		BoxWidth: 480, BoxHeight: 480, Size: []float64{480, 480}, Fit: overlay.FitContain,
 		EntityImage: true,
 	}}}
-	if err := fitEntityImageLayersToAssets(root, plan); err != nil {
+	changed, err := fitEntityImageLayersToAssets(root, plan)
+	if err != nil {
 		t.Fatal(err)
+	}
+	if !changed {
+		t.Fatal("fitting an entity image must report that the plan changed: the prepared package is invalidated by the new geometry")
 	}
 	layer := plan.Layers[0]
 	if layer.BoxWidth != 480 || layer.BoxHeight != 270 || layer.Size[0] != 480 || layer.Size[1] != 270 {
@@ -75,7 +79,7 @@ func TestFitEntityImageLayersToAssetsRejectsCaptionCollisionAfterAspectFit(t *te
 			{ID: "b:caption", Type: "text", Text: "Second", Position: []float64{640, 600}, Size: []float64{300, 80}, CaptionForImageID: "b:image", StartFrame: 0, DurationFrames: 120},
 		},
 	}
-	if err := fitEntityImageLayersToAssets(root, plan); err == nil {
+	if _, err := fitEntityImageLayersToAssets(root, plan); err == nil {
 		t.Fatal("caption overlap after materialized aspect-ratio fitting was accepted")
 	}
 	if err := overlay.ValidateEntityCaptionCollisions(plan.Layers); err == nil {
@@ -117,7 +121,7 @@ func TestFitEntityImageResizesLinkedPremiumFrameAndMorphMask(t *testing.T) {
 		Shape: &overlay.LayerShape{Type: "path", Path: []overlay.LayerPathCommand{{Type: "move_to", Point: []float64{0, 0}}}},
 	}
 	plan := &overlay.Plan{Canvas: overlay.Canvas{Width: 1280, Height: 720}, Layers: []overlay.Layer{imageLayer, frame}}
-	if err := fitEntityImageLayersToAssets(root, plan); err != nil {
+	if _, err := fitEntityImageLayersToAssets(root, plan); err != nil {
 		t.Fatal(err)
 	}
 	gotImage, gotFrame := plan.Layers[0], plan.Layers[1]

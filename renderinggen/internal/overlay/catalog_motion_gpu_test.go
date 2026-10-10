@@ -269,8 +269,8 @@ func TestEveryCallableCatalogMotionExecutesOnTheStrictGPU(t *testing.T) {
 	for _, category := range []string{"typewriter", "typewriter_modern_v1", "apple_v2", "apple_v3", "phrase_apple_clean_v1", "apple_phrase_v1", "phrase_highlight_v1", "text_3d_v1", "short_phrase_style"} {
 		phraseIDs = append(phraseIDs, motion.Registry.CategoryMotionIDs(category)...)
 	}
-	if len(phraseIDs) != 202 {
-		t.Fatalf("phrase family inventory has %d IDs, want 202", len(phraseIDs))
+	if len(phraseIDs) != 203 {
+		t.Fatalf("phrase family inventory has %d IDs, want 203", len(phraseIDs))
 	}
 	for i, id := range phraseIDs {
 		items = append(items, map[string]any{
@@ -280,12 +280,12 @@ func TestEveryCallableCatalogMotionExecutesOnTheStrictGPU(t *testing.T) {
 		})
 	}
 	imageCategories := []string{"image_premium_v1", "editorial_image_v1", "image_25d_clean_v1", "overlay_v3_image", "web", "web_rect_v1", "paint_v1", "light_leak_v1", "brush_v1"}
-	imageIDs := make([]string, 0, 125)
+	imageIDs := make([]string, 0, 126)
 	for _, cat := range imageCategories {
 		imageIDs = append(imageIDs, motion.Registry.CategoryMotionIDs(cat)...)
 	}
-	if len(imageIDs) != 125 {
-		t.Fatalf("image motion inventory has %d IDs, want 125", len(imageIDs))
+	if len(imageIDs) != 126 {
+		t.Fatalf("image motion inventory has %d IDs, want 126", len(imageIDs))
 	}
 	for i, id := range imageIDs {
 		item := map[string]any{
@@ -375,28 +375,28 @@ func TestEveryCallableCatalogMotionExecutesOnTheStrictGPU(t *testing.T) {
 	case "image":
 		items = items[entityCaptionCount+len(phraseIDs):]
 	case "editorial_image":
-		start := entityCaptionCount + len(phraseIDs) + 20
+		start := entityCaptionCount + len(phraseIDs) + 21
 		items = items[start : start+14]
 	case "image_25d":
-		start := entityCaptionCount + len(phraseIDs) + 20 + 14
+		start := entityCaptionCount + len(phraseIDs) + 21 + 14
 		items = items[start : start+8]
 	case "overlay_v3_image":
-		start := entityCaptionCount + len(phraseIDs) + 20 + 14 + 8
+		start := entityCaptionCount + len(phraseIDs) + 21 + 14 + 8
 		items = items[start : start+10]
 	case "web":
-		start := entityCaptionCount + len(phraseIDs) + 20 + 14 + 8 + 10
+		start := entityCaptionCount + len(phraseIDs) + 21 + 14 + 8 + 10
 		items = items[start : start+14]
 	case "web_rect":
-		start := entityCaptionCount + len(phraseIDs) + 20 + 14 + 8 + 10 + 14
+		start := entityCaptionCount + len(phraseIDs) + 21 + 14 + 8 + 10 + 14
 		items = items[start : start+12]
 	case "paint":
-		start := entityCaptionCount + len(phraseIDs) + 20 + 14 + 8 + 10 + 14 + 12
+		start := entityCaptionCount + len(phraseIDs) + 21 + 14 + 8 + 10 + 14 + 12
 		items = items[start : start+12]
 	case "light_leak":
-		start := entityCaptionCount + len(phraseIDs) + 20 + 14 + 8 + 10 + 14 + 12 + 12
+		start := entityCaptionCount + len(phraseIDs) + 21 + 14 + 8 + 10 + 14 + 12 + 12
 		items = items[start : start+12]
 	case "brush":
-		start := entityCaptionCount + len(phraseIDs) + 20 + 14 + 8 + 10 + 14 + 12 + 12 + 12
+		start := entityCaptionCount + len(phraseIDs) + 21 + 14 + 8 + 10 + 14 + 12 + 12 + 12
 		items = items[start : start+23]
 	case "text_3d":
 		start := phraseStart + 144
@@ -430,14 +430,26 @@ func TestEveryCallableCatalogMotionExecutesOnTheStrictGPU(t *testing.T) {
 		}
 	}
 	if motionFilter != "" {
-		filtered := items[:0]
+		// Comma-separated batch form (session-proof reruns): each listed ID
+		// must match exactly one motion; order is preserved.
+		wanted := strings.Split(motionFilter, ",")
+		byID := make(map[string]map[string]any, len(items))
 		for _, item := range items {
-			if item["motion_id"] == motionFilter || item["caption_motion_id"] == motionFilter {
-				filtered = append(filtered, item)
+			if id, ok := item["motion_id"].(string); ok && id != "" {
+				byID[id] = item
+			}
+			if id, ok := item["caption_motion_id"].(string); ok && id != "" {
+				byID[id] = item
 			}
 		}
-		if len(filtered) != 1 {
-			t.Fatalf("RENDERINGGEN_GPU_CERT_MOTION=%q matched %d motions", motionFilter, len(filtered))
+		filtered := make([]map[string]any, 0, len(wanted))
+		for _, id := range wanted {
+			id = strings.TrimSpace(id)
+			item, ok := byID[id]
+			if !ok {
+				t.Fatalf("RENDERINGGEN_GPU_CERT_MOTION=%q matched no motion for %q", motionFilter, id)
+			}
+			filtered = append(filtered, item)
 		}
 		items = filtered
 		if items[0]["kind"] == "image" {

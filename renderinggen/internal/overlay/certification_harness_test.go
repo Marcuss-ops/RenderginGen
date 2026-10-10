@@ -167,11 +167,11 @@ func certificationAssetsRoot(t *testing.T) string {
 	source := certificationSourceRoot(t)
 	fixtures := map[string]string{
 		"assets/semantic/" + certificationAssetID + ".jpg": "gerard_butler.jpg",
-		officialFontPath: "Poppins-Bold.ttf",
-		"assets/fonts/Bricolage-Grotesque.ttf":     "Bricolage-Grotesque.ttf",
+		officialFontPath:                          "Poppins-Bold.ttf",
+		"assets/fonts/Bricolage-Grotesque.ttf":    "Bricolage-Grotesque.ttf",
 		"assets/fonts/PlayfairDisplay-Italic.ttf": "PlayfairDisplay-Italic.ttf",
-		"assets/fonts/Inter.ttf":                   "Inter.ttf",
-		officialCyrillicFontPath:                   "DejaVuSans.ttf",
+		"assets/fonts/Inter.ttf":                  "Inter.ttf",
+		officialCyrillicFontPath:                  "DejaVuSans.ttf",
 	}
 	root := t.TempDir()
 	for logicalPath, fixture := range fixtures {

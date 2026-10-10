@@ -26,10 +26,10 @@ func TestSettingsDefaults(t *testing.T) {
 	if err != nil {
 		t.Fatalf("load: %v", err)
 	}
-	if got, want := cfg.ArtifactStore.L1MaxBytes, int64(256<<20); got != want {
+	if got, want := cfg.ArtifactStore.L1MaxBytes, int64(512<<20); got != want {
 		t.Errorf("artifact_store.l1_max_bytes default = %d, want %d", got, want)
 	}
-	if got, want := cfg.ArtifactStore.L2MaxBytes, int64(10<<30); got != want {
+	if got, want := cfg.ArtifactStore.L2MaxBytes, int64(40<<30); got != want {
 		t.Errorf("artifact_store.l2_max_bytes default = %d, want %d", got, want)
 	}
 	if got, want := cfg.Media.FFprobeBinary, "ffprobe"; got != want {

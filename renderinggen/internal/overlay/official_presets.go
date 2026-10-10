@@ -74,6 +74,7 @@ type MotionDefinition = motion.MotionDefinition
 var runtimeFontsByFamily = map[string]string{
 	"poppins":                 "assets/fonts/Poppins-Bold.ttf",
 	"inter":                   "assets/fonts/Inter.ttf",
+	"inter_bold":              "assets/fonts/Inter-Bold.ttf",
 	"dejavu_sans":             officialCyrillicFontPath,
 	"bricolage_grotesque":     "assets/fonts/Bricolage-Grotesque.ttf",
 	"playfair_display_italic": "assets/fonts/PlayfairDisplay-Italic.ttf",

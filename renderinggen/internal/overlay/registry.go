@@ -85,13 +85,12 @@ type TemplateSpec struct {
 	// ID is the template_id verbatim (registry keys are normalized upper).
 	ID string
 	// Registered reports whether the template_id resolved to a registry row
-	// (true) or fell through to the unknown primitive (false). An unknown
-	// template still compiles — the historical documents and the alias path
-	// must keep working — but the fall-through is no longer silent: the compile
-	// pass reports it (CompileResult.UnknownTemplates) and the worker records it
-	// as a metric. Without that, a producer rename (or the deletion of a
-	// compatibility alias) degraded every affected entity to a bare text
-	// primitive with no error anywhere.
+	// (true) or to no row at all (false). Only an EMPTY template_id reaches the
+	// compiler unregistered: a non-empty template_id that matches no row and no
+	// legacy alias is rejected by resolveSemanticItems, and compatibility
+	// travels exclusively through legacyTemplateAliases, so Registered=false on
+	// a named template is a producer bug the compiler fails closed on. The flag
+	// is still what unknownTemplates() reads to classify whatever it is given.
 	Registered bool
 	// Kind is the semantic behaviour this template lowers through.
 	Kind ItemKind
