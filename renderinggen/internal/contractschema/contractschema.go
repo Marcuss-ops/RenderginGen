@@ -1,10 +1,10 @@
 // Package contractschema is the single reader of the checked-in contract JSON
 // Schemas for the RenderingGen test suites.
 //
-// Three suites assert that a Go struct and a published schema declare the same
-// fields — internal/overlay (renderinggen.overlay-plan.v1),
-// internal/renderbatch (the same document's asset_refs entry) and
-// internal/batch (renderinggen.batch-multilingual.v1). Each one had grown its
+// Two suites assert that a Go struct and a published schema declare the same
+// fields — internal/overlay (renderinggen.overlay-plan.v1) and
+// internal/renderbatch (the same document's asset_refs entry).
+// Each one had grown its
 // own JSON-pointer walker, its own struct-tag reader and its own set
 // difference, so "compare the schema with the struct" was implemented three
 // times with three subtly different behaviours (one skipped fields tagged "-",

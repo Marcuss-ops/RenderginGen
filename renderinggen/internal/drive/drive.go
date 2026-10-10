@@ -138,15 +138,8 @@ func chunkBytesFor(configured int64) int {
 	return int(configured)
 }
 
-// NewGoogle builds a Drive publisher from a service-account JSON credentials
-// file. The file is created at the artifact's parent folder unless parentFolder
-// is empty. Upload chunking uses the publisher default; use
-// NewGoogleWithOptions to configure it.
-func NewGoogle(ctx context.Context, credentialsFile, parentFolder string) (*Google, error) {
-	return NewGoogleWithOptions(ctx, credentialsFile, parentFolder, Options{})
-}
-
-// NewGoogleWithOptions is NewGoogle with explicit publisher settings.
+// NewGoogleWithOptions builds a Drive publisher from a service-account JSON
+// credentials file with explicit publisher settings.
 func NewGoogleWithOptions(ctx context.Context, credentialsFile, parentFolder string, opts Options) (*Google, error) {
 	b, err := os.ReadFile(credentialsFile)
 	if err != nil {
