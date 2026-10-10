@@ -87,9 +87,25 @@ type Catalog struct {
 	Templates          []CatalogTemplate   `json:"templates"`
 	Final3DPresets     []CatalogPreset     `json:"final3d_presets"`
 	EntityPresentation json.RawMessage     `json:"entity_presentation"`
+	AnimationSections  json.RawMessage     `json:"animation_sections"`
 	Motions            []MotionDefinition  `json:"motions"`
 	OverlayPresets     map[string][]string `json:"overlay_presets"`
 	Selections         CatalogSelections   `json:"selections"`
+}
+
+// AnimationSection describes a user-facing family label and the stable preset
+// ids it contains. ChrononTemplate owns these labels in its canonical catalog.
+type AnimationSection struct {
+	ID          string   `json:"id"`
+	Name        string   `json:"name"`
+	Description string   `json:"description,omitempty"`
+	MotionIDs   []string `json:"motion_ids"`
+}
+
+type animationSectionsDocument struct {
+	Schema   string             `json:"schema"`
+	Version  int                `json:"version"`
+	Sections []AnimationSection `json:"sections"`
 }
 
 var (
@@ -104,6 +120,16 @@ var (
 func Canonical() (Catalog, error) {
 	canonicalOnce.Do(func() { canonicalValue, canonicalError = loadCanonical() })
 	return canonicalValue, canonicalError
+}
+
+// AnimationSectionList returns the named sections authored in ChrononTemplate.
+func (c Catalog) AnimationSectionList() []AnimationSection {
+	var parsed animationSectionsDocument
+	if err := json.Unmarshal(c.AnimationSections, &parsed); err != nil ||
+		parsed.Schema != "chronontemplate.animation-sections.v1" || parsed.Version != 1 {
+		return nil
+	}
+	return append([]AnimationSection(nil), parsed.Sections...)
 }
 
 func loadCanonical() (Catalog, error) {

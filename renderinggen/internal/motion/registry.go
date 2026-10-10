@@ -189,6 +189,7 @@ var phrasePoolExcludedCategories = map[string]string{
 	"entity_card_v1":       "entity-card family selected through entity surfaces, not the legacy phrase pool",
 	"metric_v1":            "metric family selected through the metric_stat composition, not the legacy phrase pool",
 	"date_v1":              "date family selected through the timeline_date composition, not the legacy phrase pool",
+	"histograms_data_v1":   "histograms and data visualizations are selected through the dedicated data section",
 	"metric_didone_v1":     "Didone metric family selected through the metric_stat composition, not the legacy phrase pool",
 	"date_didone_v1":       "Didone date family selected through the timeline_date composition, not the legacy phrase pool",
 	"image_25d_clean_v1":   "image-surface family, never a phrase-planning family",

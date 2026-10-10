@@ -12,6 +12,7 @@ var expectedImagePremiumV1 = []string{
 	"image_focus_breath", "image_roll_depth_in", "image_card_flip_soft",
 	"image_border_expand", "image_glow_ring_expand", "image_caption_frame_combo",
 	"image_spotlight_focus", "image_stack_focus",
+	"image_one_sided_rounded_accent",
 }
 
 func TestImagePremiumV1InventoryIsExactAndSeparate(t *testing.T) {

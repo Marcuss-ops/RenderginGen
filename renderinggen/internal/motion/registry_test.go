@@ -36,7 +36,7 @@ func TestCatalogCategoriesKeepMotionsIndependentAndComplete(t *testing.T) {
 	categoryCounts := map[string]int{
 		"typewriter": 10, "typewriter_modern_v1": 15, "apple_v2": 42,
 		"apple_v3": 16, "phrase_apple_clean_v1": 30, "apple_phrase_v1": 15,
-		"phrase_highlight_v1": 16,
+		"phrase_highlight_v1": 17,
 
 		"brush_v1": 23, "text_3d_v1": 10, "trump_entity_text_v1": 15, "web": 14,
 	}
