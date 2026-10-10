@@ -48,6 +48,10 @@ func materializeBuiltinFonts(root string, plan *overlay.Plan) error {
 			for _, bundle := range []string{
 				filepath.Join(ancestor, "renderinggen", "out", "editorial_v1"),
 				filepath.Join(ancestor, "out", "editorial_v1"),
+				// Shipped module assets are the last resort: the out/
+				// bundles above are gitignored render artifacts, so a fresh
+				// checkout has no other source for official preset fonts.
+				filepath.Join(ancestor, "renderinggen"),
 			} {
 				candidate := filepath.Join(bundle, filepath.FromSlash(font))
 				if info, statErr := os.Stat(candidate); statErr == nil && info.Mode().IsRegular() {

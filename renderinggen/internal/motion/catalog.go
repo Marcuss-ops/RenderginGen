@@ -93,21 +93,6 @@ type Catalog struct {
 	Selections         CatalogSelections   `json:"selections"`
 }
 
-// AnimationSection describes a user-facing family label and the stable preset
-// ids it contains. ChrononTemplate owns these labels in its canonical catalog.
-type AnimationSection struct {
-	ID          string   `json:"id"`
-	Name        string   `json:"name"`
-	Description string   `json:"description,omitempty"`
-	MotionIDs   []string `json:"motion_ids"`
-}
-
-type animationSectionsDocument struct {
-	Schema   string             `json:"schema"`
-	Version  int                `json:"version"`
-	Sections []AnimationSection `json:"sections"`
-}
-
 var (
 	canonicalOnce  sync.Once
 	canonicalValue Catalog
@@ -120,16 +105,6 @@ var (
 func Canonical() (Catalog, error) {
 	canonicalOnce.Do(func() { canonicalValue, canonicalError = loadCanonical() })
 	return canonicalValue, canonicalError
-}
-
-// AnimationSectionList returns the named sections authored in ChrononTemplate.
-func (c Catalog) AnimationSectionList() []AnimationSection {
-	var parsed animationSectionsDocument
-	if err := json.Unmarshal(c.AnimationSections, &parsed); err != nil ||
-		parsed.Schema != "chronontemplate.animation-sections.v1" || parsed.Version != 1 {
-		return nil
-	}
-	return append([]AnimationSection(nil), parsed.Sections...)
 }
 
 func loadCanonical() (Catalog, error) {
@@ -306,17 +281,6 @@ func OverlayPresetIDs(family string) []string {
 	return ids
 }
 
-// PhraseMotions returns the corpus phrase-motion selection: one motion id per
-// phrase overlay, in the order the catalog pairs them.
-func PhraseMotions() []string {
-	catalog, err := Canonical()
-	if err != nil {
-		return nil
-	}
-	ids := make([]string, 0, len(catalog.Selections.TysonPhraseMotions))
-	return append(ids, catalog.Selections.TysonPhraseMotions...)
-}
-
 // PhraseMotionPool returns the catalog-owned set of GPU-native entrance motions
 // eligible for deterministic phrase selection.
 func PhraseMotionPool() []string {
@@ -325,25 +289,6 @@ func PhraseMotionPool() []string {
 		return nil
 	}
 	return append([]string(nil), catalog.Selections.PhraseMotionPool...)
-}
-
-// PhraseOverlays returns the multilingual phrase-overlay rows (overlay id plus
-// the motion it renders through) in the order the catalog declares them.
-func PhraseOverlays() []CatalogPhraseOverlay {
-	catalog, err := Canonical()
-	if err != nil {
-		return nil
-	}
-	return append([]CatalogPhraseOverlay(nil), catalog.Selections.MatrixPhraseOverlays...)
-}
-
-// ImageOverlays returns the image-overlay matrix selection, in catalog order.
-func ImageOverlays() []string {
-	catalog, err := Canonical()
-	if err != nil {
-		return nil
-	}
-	return append([]string(nil), catalog.Selections.MatrixImageOverlays...)
 }
 
 func validatePresetMaterial(preset CatalogPreset) error {

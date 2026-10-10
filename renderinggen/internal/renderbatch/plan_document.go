@@ -21,15 +21,6 @@ import (
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/overlay"
 )
 
-// Chronon plan contract the renderer consumes. It is the ONE concrete schema a
-// compiled plan may declare, so a compiler that starts emitting a different
-// version fails at prepare time instead of producing a file the renderer
-// silently rejects.
-const (
-	ChrononPlanSchema   = overlay.RenderPlanSchemaV2
-	ChrononPlanSchemaV3 = overlay.RenderPlanSchemaV3
-)
-
 // PlanSpec is a caller-supplied semantic plan to build and compile.
 type PlanSpec struct {
 	PlanID string
