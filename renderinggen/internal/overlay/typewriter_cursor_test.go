@@ -37,12 +37,17 @@ func TestCompileTypewriterCursorLeavesFinalSpace(t *testing.T) {
 	}
 }
 
-func TestModernTypewriterSelectsBricolageAndHonorsExplicitFontOverride(t *testing.T) {
+// SSOT typography (typography_ssot.go): no motion branch may change the
+// font. The modern typewriter default is the house face (poppins), like
+// every other animation; the payload selects Bricolage explicitly via
+// params.font_family when it wants it.
+func TestModernTypewriterHonorsPayloadFontOverMotionDefault(t *testing.T) {
 	for _, tc := range []struct {
 		name, params, want string
 	}{
-		{"modern default", `{}`, "assets/fonts/Bricolage-Grotesque.ttf"},
+		{"modern default", `{}`, "assets/fonts/Poppins-Bold.ttf"},
 		{"explicit Inter override", `{"font_family":"inter"}`, "assets/fonts/Inter.ttf"},
+		{"explicit Bricolage override", `{"font_family":"bricolage_grotesque"}`, "assets/fonts/Bricolage-Grotesque.ttf"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			plan := `{"schema_version":"renderinggen.overlay-plan.v1","plan_id":"modern-typewriter-font","video_id":"v","width":1920,"height":1080,"fps_num":24,"fps_den":1,"items":[{"id":"phrase","kind":"important_phrase","template_id":"IMPORTANT_PHRASE","preset_id":"phrase_default","motion_id":"typewriter_modern_01_monospace_block_cursor","text":"30 SEP 2026","params":` + tc.params + `,"start_ms":0,"end_ms":3000}]}`

@@ -80,6 +80,11 @@ var runtimeFontsByFamily = map[string]string{
 	"playfair_display_italic": "assets/fonts/PlayfairDisplay-Italic.ttf",
 }
 
+// ModernTypewriterDefaultFontFamily is the single source of truth for the
+// typeface the modern typewriter motions fall back to when the plan carries
+// no explicit font_family. It must stay a key of runtimeFontsByFamily.
+const ModernTypewriterDefaultFontFamily = "bricolage_grotesque"
+
 // runtimeFontPath resolves a closed runtime font-family ID to its workspace
 // asset path. Unknown names never become arbitrary filesystem paths.
 func runtimeFontPath(family string) (string, bool) {

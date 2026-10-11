@@ -339,8 +339,12 @@ type semanticItem struct {
 	CaptionColor      string `json:"caption_color,omitempty"`
 	StartMS           int64  `json:"start_ms"`
 	EndMS             int64  `json:"end_ms"`
-	// DurationMS is producer-owned timing metadata. It is validated against
-	// end_ms-start_ms at the semantic boundary and is not emitted to Chronon.
+	// StartUS/DurationUS are the canonical producer timeline. When both are
+	// present they own frame conversion; start_ms/end_ms remain a validated
+	// compatibility projection for older readers and duration_ms remains an
+	// optional legacy projection.
+	StartUS    *int64 `json:"start_us,omitempty"`
+	DurationUS *int64 `json:"duration_us,omitempty"`
 	DurationMS *int64 `json:"duration_ms,omitempty"`
 	// Frame is the optional card treatment of this item's video overlay.
 	Frame       *semanticSourceFrame `json:"frame,omitempty"`

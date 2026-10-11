@@ -261,8 +261,8 @@ func compileResolvedText(layerID string, start, end int64, spec resolvedTextSpec
 		layer.Style = &LayerStyle{}
 	}
 	// The role owns the base treatment. The spec's explicit choices (runtime
-	// override fill/font) always win over the role default.
-	applyTextRoleBaseStyle(spec.StylePolicy, layer.Style, resolvedTextFontSize(spec), spec.OverrideFill)
+	// override fill/font/glow/stroke/shadow) always win over the role default.
+	applyTextRoleBaseStyle(spec.StylePolicy, layer.Style, resolvedTextFontSize(spec), spec.OverrideFill, spec.StyleParams)
 	if spec.MinFontSize > 0 {
 		layer.Style.MinFontSize = spec.MinFontSize
 	}

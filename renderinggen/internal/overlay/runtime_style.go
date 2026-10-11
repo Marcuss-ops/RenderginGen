@@ -17,20 +17,21 @@ const (
 // deterministically. font_family names a bundled family, while glow_size and
 // stroke_size are pixel dimensions. Zero explicitly disables that effect.
 func validateTextRuntimeOverrides(params map[string]any, itemID string, kind ItemKind, presetID string, hasImage, hasEntityCaption bool) error {
-	captionedEntityImage := kind == KindEntityImage && hasImage && hasEntityCaption
+	captionedEntityImage := (isEntityKind(kind) || isImageKind(kind)) && hasImage && hasEntityCaption
 	if isShapeKind(kind) || isImageKind(kind) || isVideoKind(kind) || (isEntityKind(kind) && hasImage) {
 		for _, key := range runtimeTextStyleKeys {
 			value, exists := params[key]
 			if !exists {
 				continue
 			}
-			if key == "font_family" && captionedEntityImage {
-				family, ok := value.(string)
-				if !ok {
-					return fmt.Errorf("overlay: item %q params.font_family must be a string family id", itemID)
-				}
-				if _, ok := runtimeFontPath(family); !ok {
-					return fmt.Errorf("overlay: item %q params.font_family %q is unsupported", itemID, family)
+			// A captioned entity image carries the payload's text style for
+			// its caption layer: every runtime text key is legal here and
+			// validated with the same rules as a text layer, so the
+			// payload's font, glow, stroke, size and shadow reach the
+			// caption instead of falling back to preset constants.
+			if captionedEntityImage {
+				if err := validateRuntimeTextStyleKey(key, value, itemID); err != nil {
+					return err
 				}
 				continue
 			}
@@ -48,39 +49,50 @@ func validateTextRuntimeOverrides(params map[string]any, itemID string, kind Ite
 		if presetID == "" {
 			return fmt.Errorf("overlay: item %q runtime override %q requires a text preset", itemID, key)
 		}
-		switch key {
-		case "font_family":
-			family, ok := value.(string)
-			if !ok {
-				return fmt.Errorf("overlay: item %q params.font_family must be a string family id", itemID)
-			}
-			if _, ok := runtimeFontPath(family); !ok {
-				return fmt.Errorf("overlay: item %q params.font_family %q is unsupported (supported: %s)", itemID, family, strings.Join(runtimeFontFamilies(), ", "))
-			}
-		case "glow_size":
-			if _, err := boundedRuntimeSize(value, key, maxRuntimeGlowSize); err != nil {
+		if err := validateRuntimeTextStyleKey(key, value, itemID); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// validateRuntimeTextStyleKey is the single validator for one runtime text
+// override value. Text layers and captioned entity images share it so the
+// payload's font, glow, stroke, size and shadow obey one contract wherever
+// a caption can render them.
+func validateRuntimeTextStyleKey(key string, value any, itemID string) error {
+	switch key {
+	case "font_family":
+		family, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("overlay: item %q params.font_family must be a string family id", itemID)
+		}
+		if _, ok := runtimeFontPath(family); !ok {
+			return fmt.Errorf("overlay: item %q params.font_family %q is unsupported (supported: %s)", itemID, family, strings.Join(runtimeFontFamilies(), ", "))
+		}
+	case "glow_size":
+		if _, err := boundedRuntimeSize(value, key, maxRuntimeGlowSize); err != nil {
+			return fmt.Errorf("overlay: item %q %w", itemID, err)
+		}
+	case "stroke_size":
+		if _, err := boundedRuntimeSize(value, key, maxRuntimeStrokeSize); err != nil {
+			return fmt.Errorf("overlay: item %q %w", itemID, err)
+		}
+	case "font_size_px":
+		if n, ok := value.(float64); !ok || math.IsNaN(n) || math.IsInf(n, 0) || n <= 0 || n > maxRuntimeFontSize {
+			return fmt.Errorf("overlay: item %q params.font_size_px must be greater than 0 and at most %g pixels", itemID, maxRuntimeFontSize)
+		}
+	case "shadow_blur_px", "shadow_offset_x_px", "shadow_offset_y_px":
+		if key == "shadow_blur_px" {
+			if _, err := boundedRuntimeSize(value, key, maxRuntimeShadowSize); err != nil {
 				return fmt.Errorf("overlay: item %q %w", itemID, err)
 			}
-		case "stroke_size":
-			if _, err := boundedRuntimeSize(value, key, maxRuntimeStrokeSize); err != nil {
-				return fmt.Errorf("overlay: item %q %w", itemID, err)
-			}
-		case "font_size_px":
-			if n, ok := value.(float64); !ok || math.IsNaN(n) || math.IsInf(n, 0) || n <= 0 || n > maxRuntimeFontSize {
-				return fmt.Errorf("overlay: item %q params.font_size_px must be greater than 0 and at most %g pixels", itemID, maxRuntimeFontSize)
-			}
-		case "shadow_blur_px", "shadow_offset_x_px", "shadow_offset_y_px":
-			if key == "shadow_blur_px" {
-				if _, err := boundedRuntimeSize(value, key, maxRuntimeShadowSize); err != nil {
-					return fmt.Errorf("overlay: item %q %w", itemID, err)
-				}
-			} else if n, ok := value.(float64); !ok || math.IsNaN(n) || math.IsInf(n, 0) || math.Abs(n) > maxRuntimeShadowSize {
-				return fmt.Errorf("overlay: item %q params.%s must be between -%g and %g pixels", itemID, key, maxRuntimeShadowSize, maxRuntimeShadowSize)
-			}
-		case "shadow_opacity":
-			if _, err := boundedRuntimeSize(value, key, 1); err != nil {
-				return fmt.Errorf("overlay: item %q %w", itemID, err)
-			}
+		} else if n, ok := value.(float64); !ok || math.IsNaN(n) || math.IsInf(n, 0) || math.Abs(n) > maxRuntimeShadowSize {
+			return fmt.Errorf("overlay: item %q params.%s must be between -%g and %g pixels", itemID, key, maxRuntimeShadowSize, maxRuntimeShadowSize)
+		}
+	case "shadow_opacity":
+		if _, err := boundedRuntimeSize(value, key, 1); err != nil {
+			return fmt.Errorf("overlay: item %q %w", itemID, err)
 		}
 	}
 	return nil

@@ -15,6 +15,12 @@ import (
 // RenderingGen only validates the shape here. It does not invent font, layout,
 // color, camera or animation values.
 func validateTextElementContract(item semanticItem) error {
+	// Chain items carry their content per segment (each validated on its
+	// own below); the item-level text is only a legacy mirror and is
+	// empty for map-only chains.
+	if isChainKind(ItemKind(strings.ToLower(strings.TrimSpace(item.Kind)))) {
+		return nil
+	}
 	templateID := strings.TrimSpace(item.Template)
 	styleID := strings.TrimSpace(item.StyleID)
 	text := strings.TrimSpace(item.Text)

@@ -112,6 +112,20 @@ func validateTextMotion(animators []TextAnimator, id string) error {
 	return nil
 }
 
+func itemFrames(item semanticItem, fpsNum, fpsDen int64) (int64, int64) {
+	if item.StartUS != nil && item.DurationUS != nil {
+		return usFrames(*item.StartUS, *item.StartUS+*item.DurationUS, fpsNum, fpsDen)
+	}
+	return msFrames(item.StartMS, item.EndMS, fpsNum, fpsDen)
+}
+
+func usFrames(startUS, endUS, fpsNum, fpsDen int64) (int64, int64) {
+	frameAtUS := func(us int64) int64 {
+		return int64(math.Round(float64(us) * float64(fpsNum) / float64(fpsDen) / 1_000_000))
+	}
+	return frameAtUS(startUS), frameAtUS(endUS)
+}
+
 func msFrames(start, end, fpsNum, fpsDen int64) (int64, int64) {
 	// Millisecond endpoints are quantized independently to the nearest frame
 	// boundary. Rounding the start down and the end up expands every non-aligned

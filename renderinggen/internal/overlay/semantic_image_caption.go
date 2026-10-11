@@ -64,10 +64,18 @@ func compileImageCaptionLayer(parent resolvedItem, src *semanticPlan, child sema
 		"position_y":   positionY,
 		"font_size_px": captionBounds.FontSize,
 	}
-	// A run-level font_family is the explicit runtime style choice. Preserve
-	// the entity preset's typeface only when the caller did not choose one.
-	if family, ok := parent.Params["font_family"].(string); ok && strings.TrimSpace(family) != "" {
-		styleParams["font_family"] = strings.TrimSpace(family)
+	// Run-level runtime text style is the explicit payload choice. Thread the
+	// payload's look (font, glow, stroke, shadow) onto the caption layer so
+	// entity captions render the same style as phrases; the caption's
+	// geometry-resolved font_size_px stays untouched. Fall back to the
+	// entity preset's typeface only when the caller did not choose one.
+	for _, key := range runtimeTextStyleKeys {
+		if key == "font_size_px" {
+			continue
+		}
+		if value, ok := parent.Params[key]; ok {
+			styleParams[key] = value
+		}
 	}
 	if _, present := styleParams["font_family"]; !present && strings.TrimSpace(child.CaptionFontFamily) != "" {
 		styleParams["font_family"] = strings.TrimSpace(child.CaptionFontFamily)

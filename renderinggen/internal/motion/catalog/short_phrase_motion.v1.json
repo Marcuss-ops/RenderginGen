@@ -177,6 +177,7 @@
       "font_size": 0.0,
       "light": false,
       "white_background": false,
+      "paper_background": false,
       "emphasis": [],
       "exit": "reverse",
       "decor": null,
@@ -252,6 +253,7 @@
       "font_size": 0.0,
       "light": true,
       "white_background": false,
+      "paper_background": false,
       "emphasis": [],
       "exit": "wipe",
       "decor": "star_bumper",
@@ -326,6 +328,7 @@
       "font_size": 76.0,
       "light": false,
       "white_background": false,
+      "paper_background": false,
       "emphasis": [
         1,
         3
@@ -417,6 +420,7 @@
       "font_size": 0.0,
       "light": false,
       "white_background": false,
+      "paper_background": false,
       "emphasis": [],
       "exit": "reverse",
       "decor": null,
@@ -505,6 +509,7 @@
       "font_size": 0.0,
       "light": false,
       "white_background": false,
+      "paper_background": false,
       "emphasis": [],
       "exit": "wipe",
       "decor": null,
@@ -583,6 +588,7 @@
       "font_size": 0.0,
       "light": false,
       "white_background": false,
+      "paper_background": false,
       "emphasis": [],
       "exit": "wipe",
       "decor": null,
@@ -643,6 +649,7 @@
       "font_size": 0.0,
       "light": true,
       "white_background": false,
+      "paper_background": false,
       "emphasis": [],
       "exit": "scatter",
       "decor": "star_bumper",
@@ -731,6 +738,7 @@
       "font_size": 0.0,
       "light": false,
       "white_background": false,
+      "paper_background": false,
       "emphasis": [],
       "exit": "reverse",
       "decor": null,
@@ -819,6 +827,7 @@
       "font_size": 0.0,
       "light": false,
       "white_background": false,
+      "paper_background": false,
       "emphasis": [
         2
       ],
@@ -895,6 +904,7 @@
       "font_size": 0.0,
       "light": false,
       "white_background": false,
+      "paper_background": false,
       "emphasis": [],
       "exit": "forward",
       "decor": null,
@@ -969,6 +979,7 @@
       "font_size": 0.0,
       "light": false,
       "white_background": false,
+      "paper_background": false,
       "emphasis": [
         1
       ],
@@ -1045,6 +1056,7 @@
       "font_size": 0.0,
       "light": false,
       "white_background": false,
+      "paper_background": false,
       "emphasis": [],
       "exit": "wipe",
       "decor": null,
@@ -1186,6 +1198,7 @@
       "font_size": 104.0,
       "light": false,
       "white_background": false,
+      "paper_background": false,
       "emphasis": [],
       "exit": "reverse",
       "decor": null,
@@ -1331,6 +1344,7 @@
       "font_size": 88.0,
       "light": true,
       "white_background": false,
+      "paper_background": false,
       "emphasis": [],
       "exit": "reverse",
       "decor": null,
@@ -1474,6 +1488,7 @@
       "font_size": 86.0,
       "light": false,
       "white_background": false,
+      "paper_background": false,
       "emphasis": [],
       "exit": "reverse",
       "decor": null,
@@ -1617,6 +1632,7 @@
       "font_size": 96.0,
       "light": false,
       "white_background": false,
+      "paper_background": false,
       "emphasis": [],
       "exit": "reverse",
       "decor": null,
@@ -1820,6 +1836,7 @@
       "font_size": 104.0,
       "light": false,
       "white_background": false,
+      "paper_background": false,
       "emphasis": [],
       "exit": "reverse",
       "decor": null,
@@ -2003,6 +2020,7 @@
       "font_size": 96.0,
       "light": false,
       "white_background": false,
+      "paper_background": false,
       "emphasis": [],
       "exit": "reverse",
       "decor": null,
@@ -2156,6 +2174,7 @@
       "font_size": 92.0,
       "light": false,
       "white_background": false,
+      "paper_background": false,
       "emphasis": [],
       "exit": "wipe",
       "decor": null,
@@ -2328,6 +2347,7 @@
       "font_size": 96.0,
       "light": true,
       "white_background": false,
+      "paper_background": false,
       "emphasis": [
         2
       ],
@@ -2432,6 +2452,7 @@
       "font_size": 132.0,
       "light": false,
       "white_background": false,
+      "paper_background": false,
       "emphasis": [],
       "exit": "reverse",
       "decor": null,
@@ -2629,6 +2650,7 @@
       "font_size": 100.0,
       "light": false,
       "white_background": false,
+      "paper_background": false,
       "emphasis": [],
       "exit": "reverse",
       "decor": null,
@@ -2764,6 +2786,7 @@
       "font_size": 106.0,
       "light": false,
       "white_background": false,
+      "paper_background": false,
       "emphasis": [],
       "exit": "reverse",
       "decor": null,
@@ -2899,6 +2922,7 @@
       "font_size": 108.0,
       "light": false,
       "white_background": false,
+      "paper_background": false,
       "emphasis": [],
       "exit": "reverse",
       "decor": null,
@@ -3034,6 +3058,7 @@
       "font_size": 106.0,
       "light": false,
       "white_background": false,
+      "paper_background": false,
       "emphasis": [],
       "exit": "reverse",
       "decor": null,
@@ -3256,6 +3281,7 @@
       "font_size": 100.0,
       "light": false,
       "white_background": false,
+      "paper_background": false,
       "emphasis": [],
       "exit": "reverse",
       "decor": null,
@@ -3391,6 +3417,7 @@
       "font_size": 112.0,
       "light": false,
       "white_background": false,
+      "paper_background": false,
       "emphasis": [],
       "exit": "forward",
       "decor": null,
@@ -3696,6 +3723,7 @@
       "font_size": 126.0,
       "light": false,
       "white_background": false,
+      "paper_background": false,
       "emphasis": [],
       "exit": "reverse",
       "decor": null,
@@ -3768,6 +3796,7 @@
       "font_size": 88.0,
       "light": false,
       "white_background": false,
+      "paper_background": false,
       "emphasis": [],
       "exit": "reverse",
       "decor": null,
@@ -3885,6 +3914,7 @@
       "font_size": 128.0,
       "light": false,
       "white_background": false,
+      "paper_background": false,
       "emphasis": [],
       "exit": "reverse",
       "decor": null,
@@ -4389,6 +4419,7 @@
       "font_size": 98.0,
       "light": false,
       "white_background": false,
+      "paper_background": false,
       "emphasis": [],
       "exit": "reverse",
       "decor": null,
@@ -4586,6 +4617,7 @@
       "font_size": 96.0,
       "light": false,
       "white_background": false,
+      "paper_background": false,
       "emphasis": [],
       "exit": "reverse",
       "decor": null,
@@ -4741,6 +4773,7 @@
       "font_size": 118.0,
       "light": false,
       "white_background": false,
+      "paper_background": false,
       "emphasis": [],
       "exit": "reverse",
       "decor": null,
@@ -4836,6 +4869,7 @@
       "font_size": 144.0,
       "light": false,
       "white_background": false,
+      "paper_background": false,
       "emphasis": [],
       "exit": "reverse",
       "decor": null,
@@ -4983,6 +5017,7 @@
       "font_size": 126.0,
       "light": false,
       "white_background": false,
+      "paper_background": false,
       "emphasis": [],
       "exit": "reverse",
       "decor": null,
@@ -5301,6 +5336,7 @@
       "font_size": 260.0,
       "light": false,
       "white_background": false,
+      "paper_background": false,
       "emphasis": [],
       "exit": "reverse",
       "decor": null,
@@ -5414,6 +5450,7 @@
       "font_size": 110.0,
       "light": false,
       "white_background": false,
+      "paper_background": false,
       "emphasis": [],
       "exit": "reverse",
       "decor": null,
@@ -5554,6 +5591,7 @@
       "font_size": 118.0,
       "light": false,
       "white_background": false,
+      "paper_background": false,
       "emphasis": [],
       "exit": "reverse",
       "decor": null,
@@ -5698,6 +5736,7 @@
       "font_size": 114.0,
       "light": false,
       "white_background": false,
+      "paper_background": false,
       "emphasis": [],
       "exit": "reverse",
       "decor": null,
@@ -5800,6 +5839,7 @@
       "font_size": 122.0,
       "light": false,
       "white_background": false,
+      "paper_background": false,
       "emphasis": [],
       "exit": "reverse",
       "decor": null,
@@ -6228,6 +6268,7 @@
       "font_size": 108.0,
       "light": false,
       "white_background": false,
+      "paper_background": false,
       "emphasis": [],
       "exit": "reverse",
       "decor": null,
@@ -6385,6 +6426,7 @@
       "font_size": 108.0,
       "light": false,
       "white_background": false,
+      "paper_background": false,
       "emphasis": [],
       "exit": "reverse",
       "decor": null,
@@ -6498,6 +6540,7 @@
       "font_size": 108.0,
       "light": false,
       "white_background": false,
+      "paper_background": false,
       "emphasis": [],
       "exit": "reverse",
       "decor": null,
@@ -6657,6 +6700,7 @@
       "font_size": 120.0,
       "light": false,
       "white_background": false,
+      "paper_background": false,
       "emphasis": [],
       "exit": "reverse",
       "decor": null,
@@ -6902,6 +6946,7 @@
       "font_size": 116.0,
       "light": false,
       "white_background": false,
+      "paper_background": false,
       "emphasis": [],
       "exit": "reverse",
       "decor": null,
@@ -7061,6 +7106,7 @@
       "font_size": 112.0,
       "light": false,
       "white_background": false,
+      "paper_background": false,
       "emphasis": [],
       "exit": "reverse",
       "decor": null,
@@ -7268,6 +7314,7 @@
       "font_size": 118.0,
       "light": false,
       "white_background": false,
+      "paper_background": false,
       "emphasis": [],
       "exit": "reverse",
       "decor": null,
@@ -7391,6 +7438,7 @@
       "font_size": 112.0,
       "light": false,
       "white_background": true,
+      "paper_background": false,
       "emphasis": [
         2
       ],
@@ -7557,6 +7605,7 @@
       "font_size": 104.0,
       "light": false,
       "white_background": true,
+      "paper_background": false,
       "emphasis": [],
       "exit": "reverse",
       "decor": null,
@@ -7680,6 +7729,163 @@
       "font_size": 110.0,
       "light": false,
       "white_background": true,
+      "paper_background": false,
+      "emphasis": [],
+      "exit": "reverse",
+      "decor": null,
+      "adaptation_note": "",
+      "timing": {
+        "min_frames": 195,
+        "max_frames": 210,
+        "in_frames": 90,
+        "hold_frames": 105,
+        "out_frames": 15
+      }
+    },
+    {
+      "id": "short_phrase_editorial_paper_title_card",
+      "family": "editorial",
+      "subcategory": "kinetic_reveal",
+      "targets": [
+        "short_phrase"
+      ],
+      "title": "Paper Title Card",
+      "phrase": "Every detail matters",
+      "enter": 12,
+      "word_count": 3,
+      "selector": {
+        "unit": "layer",
+        "order": "forward",
+        "window": "full"
+      },
+      "tracks": [
+        {
+          "property": "opacity",
+          "easing": "linear",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.0
+            },
+            {
+              "frame": 12,
+              "value": 1.0
+            }
+          ]
+        },
+        {
+          "property": "blur",
+          "easing": "out_cubic",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 10.0
+            },
+            {
+              "frame": 12,
+              "value": 0.0
+            }
+          ]
+        },
+        {
+          "property": "position_y",
+          "easing": "out_cubic",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 12.0
+            },
+            {
+              "frame": 12,
+              "value": 0.0
+            }
+          ]
+        }
+      ],
+      "text_animators": [],
+      "text_overlays": [
+        {
+          "id": "shadow_ambient",
+          "text": "Every detail matters",
+          "fill": "#000000",
+          "offset_x": 0.0,
+          "offset_y": 6.0,
+          "opacity": 1.0,
+          "tracks": [
+            {
+              "property": "opacity",
+              "easing": "linear",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0.0
+                },
+                {
+                  "frame": 12,
+                  "value": 0.25
+                }
+              ]
+            },
+            {
+              "property": "position_y",
+              "easing": "out_cubic",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 12.0
+                },
+                {
+                  "frame": 12,
+                  "value": 0.0
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "shadow_contact",
+          "text": "Every detail matters",
+          "fill": "#000000",
+          "offset_x": 0.0,
+          "offset_y": 2.0,
+          "opacity": 1.0,
+          "tracks": [
+            {
+              "property": "opacity",
+              "easing": "linear",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0.0
+                },
+                {
+                  "frame": 12,
+                  "value": 0.25
+                }
+              ]
+            },
+            {
+              "property": "position_y",
+              "easing": "out_cubic",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 12.0
+                },
+                {
+                  "frame": 12,
+                  "value": 0.0
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "accents": [],
+      "font_size": 120.0,
+      "light": false,
+      "white_background": false,
+      "paper_background": true,
       "emphasis": [],
       "exit": "reverse",
       "decor": null,
@@ -7704,7 +7910,8 @@
       "short_phrase_product_strikethrough_replace",
       "short_phrase_product_per_word_rise",
       "short_phrase_product_fold_text",
-      "short_phrase_editorial_claude_terminal_focus"
+      "short_phrase_editorial_claude_terminal_focus",
+      "short_phrase_editorial_paper_title_card"
     ],
     "2": [
       "short_phrase_character_tracking_reveal",
@@ -7727,7 +7934,8 @@
       "short_phrase_product_glare_hover",
       "short_phrase_product_glow_cursor",
       "short_phrase_product_gradual_blur",
-      "short_phrase_product_shape_blur"
+      "short_phrase_product_shape_blur",
+      "short_phrase_editorial_paper_title_card"
     ],
     "3": [
       "short_phrase_character_tracking_reveal",
@@ -7750,7 +7958,8 @@
       "short_phrase_product_glare_hover",
       "short_phrase_product_glow_cursor",
       "short_phrase_product_gradual_blur",
-      "short_phrase_product_shape_blur"
+      "short_phrase_product_shape_blur",
+      "short_phrase_editorial_paper_title_card"
     ],
     "4": [
       "short_phrase_word_cascade_sentence",
