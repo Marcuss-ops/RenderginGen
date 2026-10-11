@@ -2569,18 +2569,14 @@
                 "easing": "out_cubic"
               },
               {
-                "property": "position_z",
+                "property": "position_y",
                 "keyframes": [
                   {
                     "frame": 0,
-                    "value": -55
+                    "value": 18
                   },
                   {
-                    "frame": 28,
-                    "value": -12
-                  },
-                  {
-                    "frame": 52,
+                    "frame": 30,
                     "value": 0
                   },
                   {
@@ -34448,11 +34444,11 @@
       },
       "required_properties": [
         "opacity",
-        "position_z"
+        "position_y"
       ],
       "render_safe": true,
-      "requires_3d": true,
-      "requires_camera": true,
+      "requires_3d": false,
+      "requires_camera": false,
       "seeded": false,
       "enter": 48,
       "tracks": [
@@ -34475,18 +34471,14 @@
           "easing": "out_cubic"
         },
         {
-          "property": "position_z",
+          "property": "position_y",
           "keyframes": [
             {
               "frame": 0,
-              "value": -55
+              "value": 18
             },
             {
-              "frame": 28,
-              "value": -12
-            },
-            {
-              "frame": 52,
+              "frame": 30,
               "value": 0
             },
             {
