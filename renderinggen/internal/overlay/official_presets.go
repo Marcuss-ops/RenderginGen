@@ -87,6 +87,25 @@ func runtimeFontPath(family string) (string, bool) {
 	return path, ok
 }
 
+// RuntimeFontAssets returns every font asset a plan can reference, in stable
+// order: the resolver's own paths plus the preset default. It exists so the
+// worker's font staging step can be certified against the SAME list the
+// resolver can produce — a family the resolver offers but the bundle cannot
+// stage used to fail a live render at materialization with "missing from the
+// editorial_v1 bundle". Callers get a snapshot; the resolver stays the owner.
+func RuntimeFontAssets() []string {
+	assets := map[string]struct{}{officialFontPath: {}, officialCyrillicFontPath: {}}
+	for _, path := range runtimeFontsByFamily {
+		assets[path] = struct{}{}
+	}
+	list := make([]string, 0, len(assets))
+	for asset := range assets {
+		list = append(list, asset)
+	}
+	sort.Strings(list)
+	return list
+}
+
 // runtimeFontFamilies returns the resolver's supported IDs in stable order for
 // diagnostics. The list is derived, not maintained beside the resolver.
 func runtimeFontFamilies() []string {

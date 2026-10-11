@@ -16,6 +16,13 @@ import (
 // validateSemanticImageLayers uses the kind already resolved for this item so
 // composition checks cannot reinterpret its template independently.
 func validateSemanticImageLayers(item semanticItem, kind ItemKind) error {
+	// Chain items carry one merged asset list for N segments and no
+	// image_layers; each segment is validated against its own asset at
+	// lowering time (see chain_compile.go), so the single/multi-asset rules
+	// below do not apply to them.
+	if isChainKind(kind) {
+		return nil
+	}
 	if len(item.ImageLayers) == 0 {
 		if len(item.Assets) > 1 {
 			switch behaviorOf(kind) {
