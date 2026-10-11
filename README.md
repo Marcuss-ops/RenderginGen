@@ -22,6 +22,18 @@ Docker:  PostgreSQL:5432 + objectstore:9000
 RenderingGen never knows about the provider (Runpod, local, ...). It only
 receives config: queue endpoint, artifact store, Chronon backend, GPU device.
 
+Typography/overlay ownership is split by boundary, not duplicated: PipelineGen's
+`script.OverlayStyleSpec` and supported-family contract are canonical for the
+request; its font asset map binds every selectable ID to a path+SHA and stages
+only referenced families; the `renderinggen.overlay-plan.v1` schema is the wire
+contract; RenderingGen validates and lowers that plan through one runtime font
+resolver and one text-style lowering path. Chronon owns rasterization, not an
+independent family-selection policy. Image captions are separate linked text
+layers emitted once by RenderingGen; composition/entity styles supply geometry,
+motion and fallback color, not a competing font source. Cross-boundary parity
+is pinned by PipelineGen's `TestCanonicalFontAssetsParity` and RenderingGen's
+schema/runtime font and caption precedence tests.
+
 Workers **pull** jobs from the central queue (claim -> render -> complete/fail);
 they are never pushed HTTP requests directly.
 
@@ -244,16 +256,23 @@ catalog emitters -> RenderingGen embedded artifacts. Run
 its `--check` mode verifies both copies. Never edit generated embedded catalogs
 by hand.
 
-Text item `params` (or the item-level `style` override) may additionally set
-`font_family` to `poppins`, `inter`, or `dejavu_sans`, `glow_size` in `[0,256]`
-pixels, `stroke_size` in `[0,64]` pixels, `font_size_px` in `(0,512]`, and
+Text item `params` (or the item-level `style` override) may set `font_family`
+to any of the six closed runtime families: `poppins`, `inter`, `inter_bold`,
+`dejavu_sans`, `playfair_display_italic`, and `bricolage_grotesque`. `glow_size`
+is `[0,256]` pixels, `stroke_size` `[0,64]`, `font_size_px` `(0,512]`, and
 `shadow_blur_px`, `shadow_opacity`, `shadow_offset_x_px`, and
-`shadow_offset_y_px` in `[0,256]`, `[0,1]`, and `[-256,256]` pixels for each
+`shadow_offset_y_px` are `[0,256]`, `[0,1]`, and `[-256,256]` pixels for each
 offset. Zero disables glow/stroke; shadow opacity zero disables the shadow.
-All font assets must be declared and materialized by the job; the batch
-builder includes the three bundled families. A local `style` value takes
-precedence over the same key in `params`, and both override the preset defaults.
-
+Every selected font asset must be declared and materialized by the job; the
+worker's bundle preflight rejects a plan whose asset bundle omits any font the
+compiled plan needs. A local
+`style` value takes precedence over the same key in `params`, and both override
+the preset defaults. For text in an image caption, the canonical item/child
+`params.font_family` wins over the legacy `caption_font_family`; if absent, the
+child legacy value is used, then the language-aware default. Run-level
+`overlay_style` is projected into image/entity captions by PipelineGen before
+the plan is sealed. Entity composition styles own layout, motion, and fallback
+color, not typeface or explicit payload style.
 Refresh both embedded artifacts after a ChrononTemplate motion catalog change:
 
 ```sh

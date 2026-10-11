@@ -16,6 +16,37 @@ const (
 // validateTextRuntimeOverrides accepts only controls the compiler can lower
 // deterministically. font_family names a bundled family, while glow_size and
 // stroke_size are pixel dimensions. Zero explicitly disables that effect.
+func validateChildCaptionStyles(item semanticItem) error {
+	for _, child := range item.ImageLayers {
+		if strings.TrimSpace(child.Caption) == "" {
+			continue
+		}
+		if strings.TrimSpace(child.CaptionFontFamily) != "" {
+			if _, ok := runtimeFontPath(strings.TrimSpace(child.CaptionFontFamily)); !ok {
+				return fmt.Errorf("overlay: item %q image layer %q caption_font_family %q is unsupported (supported: %s)", item.ID, child.ID, child.CaptionFontFamily, strings.Join(runtimeFontFamilies(), ", "))
+			}
+		}
+		if color := strings.TrimSpace(child.CaptionColor); color != "" {
+			if _, err := parseHexColor(color); err != nil {
+				return fmt.Errorf("overlay: item %q image layer %q caption_color: %w", item.ID, child.ID, err)
+			}
+		}
+	}
+	return nil
+}
+
+func itemHasCaption(item semanticItem) bool {
+	if strings.TrimSpace(item.EntityCaption) != "" {
+		return true
+	}
+	for _, child := range item.ImageLayers {
+		if strings.TrimSpace(child.Caption) != "" {
+			return true
+		}
+	}
+	return false
+}
+
 func validateTextRuntimeOverrides(params map[string]any, itemID string, kind ItemKind, presetID string, hasImage, hasEntityCaption bool) error {
 	captionedEntityImage := (isEntityKind(kind) || isImageKind(kind)) && hasImage && hasEntityCaption
 	if isShapeKind(kind) || isImageKind(kind) || isVideoKind(kind) || (isEntityKind(kind) && hasImage) {

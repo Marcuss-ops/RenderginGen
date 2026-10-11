@@ -785,7 +785,10 @@ func resolveSemanticItems(src *semanticPlan) ([]resolvedItem, error) {
 			}
 			ri.Preset = def
 		}
-		if err := validateTextRuntimeOverrides(params, item.ID, kind, preset, len(item.Assets) > 0, strings.TrimSpace(item.EntityCaption) != ""); err != nil {
+		if err := validateChildCaptionStyles(item); err != nil {
+			return nil, err
+		}
+		if err := validateTextRuntimeOverrides(params, item.ID, kind, preset, len(item.Assets) > 0, itemHasCaption(item)); err != nil {
 			return nil, err
 		}
 		if isMapKind(kind) {
@@ -1008,9 +1011,6 @@ func compileEntityCard(ri resolvedItem, src *semanticPlan, registry *assetRegist
 		// style can never silently retype or recolor a caption the
 		// producer set (the old unconditional CaptionColor overwrite made
 		// every render diverge per sampled style).
-		if strings.TrimSpace(ri.Item.CaptionFontFamily) == "" {
-			ri.Item.CaptionFontFamily = style.CaptionFontFamily
-		}
 		if strings.TrimSpace(ri.Item.CaptionColor) == "" {
 			ri.Item.CaptionColor = style.CaptionColor
 		}

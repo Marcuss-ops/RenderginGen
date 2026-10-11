@@ -129,6 +129,8 @@ func compileImageItem(ri resolvedItem, src *semanticPlan, registry *assetRegistr
 		childItem.EntityCaption = ""
 		childItem.CaptionMotionID = child.CaptionMotionID
 		childItem.CaptionMotionParams = child.CaptionMotionParams
+		childItem.CaptionFontFamily = child.CaptionFontFamily
+		childItem.CaptionColor = child.CaptionColor
 		childItem.Frame = child.Frame
 		childItem.StartMS, childItem.EndMS = child.StartMS, child.EndMS
 		childItem.Params = params
