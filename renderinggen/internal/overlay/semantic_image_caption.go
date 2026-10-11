@@ -68,19 +68,62 @@ func compileImageCaptionLayer(parent resolvedItem, src *semanticPlan, child sema
 	// payload's look (font, glow, stroke, shadow) onto the caption layer so
 	// entity captions render the same style as phrases; the caption's
 	// geometry-resolved font_size_px stays untouched. Fall back to the
-	// entity preset's typeface only when the caller did not choose one.
+	// language-level fallback supplies the family when the caller did not
+	// choose one. Entity composition presets never own a typeface.
 	for _, key := range runtimeTextStyleKeys {
 		if key == "font_size_px" {
 			continue
 		}
+		if value, ok := child.Params[key]; ok {
+			styleParams[key] = value
+		}
+		// Parent runtime style is the canonical payload choice for every
+		// caption in the image recipe. Child animation/preset data supplies
+		// defaults only; it cannot silently change typography between renders.
 		if value, ok := parent.Params[key]; ok {
 			styleParams[key] = value
 		}
 	}
-	if _, present := styleParams["font_family"]; !present && strings.TrimSpace(child.CaptionFontFamily) != "" {
-		styleParams["font_family"] = strings.TrimSpace(child.CaptionFontFamily)
+	mergeStyle := func(value map[string]any) {
+		if current, currentOK := styleParams["style"].(map[string]any); currentOK {
+			merged := make(map[string]any, len(current)+len(value))
+			for key, entry := range current {
+				merged[key] = entry
+			}
+			for key, entry := range value {
+				merged[key] = entry
+			}
+			styleParams["style"] = merged
+		} else {
+			styleParams["style"] = value
+		}
 	}
-	overrideFill := strings.TrimSpace(child.CaptionColor)
+	if value, ok := child.Params["style"].(map[string]any); ok {
+		mergeStyle(value)
+	}
+	if value, ok := parent.Params["style"].(map[string]any); ok {
+		mergeStyle(value)
+	}
+	if family := strings.TrimSpace(child.CaptionFontFamily); family != "" {
+		if _, parentChoice := parent.Params["font_family"]; !parentChoice {
+			styleParams["font_family"] = family
+		}
+	}
+	overrideFill := ""
+	if style, ok := child.Params["style"].(map[string]any); ok {
+		if fill, ok := style["fill"].(string); ok {
+			overrideFill = strings.TrimSpace(fill)
+		}
+	}
+	if style, ok := parent.Params["style"].(map[string]any); ok {
+		if fill, ok := style["fill"].(string); ok {
+			overrideFill = strings.TrimSpace(fill)
+		}
+	}
+	if overrideFill == "" {
+		overrideFill = strings.TrimSpace(child.CaptionColor)
+	}
+
 	if overrideFill != "" {
 		if _, err := parseHexColor(overrideFill); err != nil {
 			return Layer{}, fmt.Errorf("overlay: item %q caption color: %w", parent.Item.ID, err)

@@ -5,16 +5,12 @@ import (
 	"testing"
 )
 
-// SSOT: payload font_family wins for entity captions; without a choice the
-// caption falls back to the house face (poppins), the same as phrases.
+// SSOT: the canonical params.font_family reaches entity captions.
 func TestTypographySSOTEntityCaptionFont(t *testing.T) {
-	if DefaultEntityCaptionFontFamily != TypographyDefaultFontFamily {
-		t.Fatalf("DefaultEntityCaptionFontFamily = %q, want SSOT %q", DefaultEntityCaptionFontFamily, TypographyDefaultFontFamily)
-	}
 	// Explicit payload choice reaches the caption layer.
 	raw := `{"schema_version":"renderinggen.overlay-plan.v1","plan_id":"ssot-font","video_id":"v","width":1920,"height":1080,"fps_num":24,"fps_den":1,` +
 		`"items":[{"id":"ent","kind":"entity_card","entity_id":"person:ada","template_id":"PERSON","preset_id":"phrase_default","image_preset_id":"image_fade_in","entity_style_id":"random",` +
-		`"text":"Ada Lovelace","entity_caption":"Ada Lovelace","caption_font_family":"inter","params":{"glow_size":10,"stroke_size":4},"start_ms":0,"end_ms":2000,"duration_ms":2000,` +
+		`"text":"Ada Lovelace","entity_caption":"Ada Lovelace","params":{"font_family":"inter","glow_size":10,"stroke_size":4},"start_ms":0,"end_ms":2000,"duration_ms":2000,` +
 		`"asset_refs":[{"asset_id":"img","sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","url":"https://example.test/i.png","media_type":"image/png"}]}]}`
 	result, err := CompileSemantic([]byte(raw))
 	if err != nil {

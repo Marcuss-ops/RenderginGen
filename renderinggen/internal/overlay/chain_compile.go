@@ -260,8 +260,11 @@ func compileChainItem(ri resolvedItem, src *semanticPlan, registry *assetRegistr
 			}
 			segRI.Preset = def
 		}
+		if err := validateChildCaptionStyles(segItem); err != nil {
+			return nil, fmt.Errorf("overlay: chain item %q segment %d: %w", ri.Item.ID, n, err)
+		}
 		segHasImage := len(segItem.Assets) > 0
-		segHasCaption := strings.TrimSpace(segItem.EntityCaption) != ""
+		segHasCaption := itemHasCaption(segItem)
 		segParams = segParamsForKind(segParams, segKind, segHasImage, segHasCaption)
 		if err := validateTextRuntimeOverrides(segParams, segID, segKind, segRI.PresetID, segHasImage, segHasCaption); err != nil {
 			return nil, fmt.Errorf("overlay: chain item %q segment %d: %w", ri.Item.ID, n, err)

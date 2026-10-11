@@ -1115,7 +1115,7 @@
               "playfair_display_italic",
               "bricolage_grotesque"
             ],
-            "description": "Optional bundled font family for an entity caption."
+            "description": "Legacy bundled font fallback for an entity caption; params.font_family is canonical when present."
           },
           "caption_color": {
             "type": "string",
@@ -1144,8 +1144,7 @@
                   "grid",
                   "dot_grid",
                   "device_frame",
-                  "world_map",
-                  "chart"
+                  "world_map"
                 ]
               },
               "width": {
@@ -1337,37 +1336,17 @@
               "chrome": {
                 "type": "boolean"
               },
-              "chart": {
-                "type": "object",
-                "additionalProperties": false,
-                "properties": {
-                  "chart_type": {
-                    "type": "string"
-                  },
-                  "type": {
-                    "type": "string"
-                  },
-                  "data": {
-                    "type": "array",
-                    "items": {
-                      "type": "number"
-                    }
-                  },
-                  "colors": {
-                    "type": "array",
-                    "items": {
-                      "oneOf": [
-                        {
-                          "$ref": "#/$defs/rgba"
-                        },
-                        {
-                          "type": "string",
-                          "pattern": "^#[0-9A-Fa-f]{6}([0-9A-Fa-f]{2})?$"
-                        }
-                      ]
-                    }
-                  }
-                }
+              "chart_card": {
+                "type": "boolean",
+                "description": "Marker for a lowered chart label card (native text_phrase). Grouped with chart_bar items via chart_group_id; never a shape.chart pseudo-shape."
+              },
+              "chart_bar": {
+                "type": "boolean",
+                "description": "Marker for a lowered chart bar (native shape rect). Structural; pruned if its chart_card is absent."
+              },
+              "chart_group_id": {
+                "type": "string",
+                "description": "Atomic grouping key linking one chart_card label to its chart_bar rects."
               },
               "font_family": {
                 "enum": [
@@ -2051,6 +2030,16 @@
                 "caption_motion_params": {
                   "type": "object",
                   "description": "Optional motion parameters for this child caption, independent of image motion."
+                },
+                "caption_font_family": {
+                  "type": "string",
+                  "enum": ["poppins", "inter", "inter_bold", "dejavu_sans", "playfair_display_italic", "bricolage_grotesque"],
+                  "description": "Legacy bundled font fallback for this child caption; params.font_family is canonical when present."
+                },
+                "caption_color": {
+                  "type": "string",
+                  "pattern": "^#[0-9A-Fa-f]{6}$",
+                  "description": "Optional explicit fill color for this child caption; overrides entity-style defaults."
                 },
                 "params": {
                   "type": "object"

@@ -513,6 +513,8 @@ type SemanticImageLayer struct {
 	Caption             string               `json:"caption,omitempty"`
 	CaptionMotionID     string               `json:"caption_motion_id,omitempty"`
 	CaptionMotionParams map[string]any       `json:"caption_motion_params,omitempty"`
+	CaptionFontFamily   string               `json:"caption_font_family,omitempty"`
+	CaptionColor        string               `json:"caption_color,omitempty"`
 	Params              map[string]any       `json:"params"`
 	Frame               *semanticSourceFrame `json:"frame,omitempty"`
 }

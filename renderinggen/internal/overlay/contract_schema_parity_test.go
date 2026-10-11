@@ -42,6 +42,7 @@ func TestContractSchemaMatchesCompilerStructs(t *testing.T) {
 		{"plan.items[]", "#/properties/items/items", semanticItem{}},
 		{"plan.items[].asset_refs[]", "#/properties/items/items/properties/asset_refs/items", SemanticAssetRef{}},
 		{"plan.items[].image_layers[]", "#/properties/items/items/properties/image_layers/items", SemanticImageLayer{}},
+		{"plan.items[].image_layers[].frame", "#/properties/items/items/properties/image_layers/items/properties/frame", semanticSourceFrame{}},
 		{"plan.items[].frame", "#/properties/items/items/properties/frame", semanticSourceFrame{}},
 		{"plan.items[].frame.border", "#/properties/items/items/properties/frame/properties/border", semanticFrameBorder{}},
 		{"plan.items[].frame.shadow", "#/properties/items/items/properties/frame/properties/shadow", semanticFrameShadow{}},
