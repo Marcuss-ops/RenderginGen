@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"math"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -253,8 +255,11 @@ func TestApplyTextRuntimeOverridesFailsClosedOnMalformedControls(t *testing.T) {
 	}); err != nil {
 		t.Fatalf("well-formed controls were rejected: %v", err)
 	}
+	// A supplied glow_size is an affirmative visual request, so the lowered halo
+	// is the documented legible treatment (radius = requested size, restrained
+	// intensity, white face) rather than the preset's nearly invisible .25 halo.
 	if layer.Style.Font != "assets/fonts/Inter.ttf" || layer.Style.FontSize != 84 ||
-		layer.Style.Glow == nil || layer.Style.Glow.Radius != 18 || layer.Style.Glow.Intensity != 0.75 || layer.Style.Glow.Color != "#FFB020" || layer.Style.Stroke == nil || layer.Style.Stroke.Width != 4 ||
+		layer.Style.Glow == nil || layer.Style.Glow.Radius != 18 || layer.Style.Glow.Intensity != 0.4 || layer.Style.Glow.Color != "#FFFFFF" || layer.Style.Stroke == nil || layer.Style.Stroke.Width != 4 ||
 		layer.Style.Shadow == nil || layer.Style.Shadow.Blur != 6 || layer.Style.Shadow.Opacity != 0.5 ||
 		len(layer.Style.Shadow.Offset) != 2 || layer.Style.Shadow.Offset[0] != -2 || layer.Style.Shadow.Offset[1] != 3 {
 		t.Fatalf("lowered style = %+v", layer.Style)
@@ -328,5 +333,36 @@ func TestRuntimeStyleOverridesReachTheSerializedPlan(t *testing.T) {
 	}
 	if len(shadow.Style.Shadow.Offset) != 2 || shadow.Style.Shadow.Offset[0] != -3 || shadow.Style.Shadow.Offset[1] != 7 {
 		t.Fatalf("serialized shadow offset = %v", shadow.Style.Shadow.Offset)
+	}
+}
+
+// TestRuntimeStyleInterBoldIsSelectableAndRenderable pins the family the pipeline
+// payload contract advertises (ScriptGenerateRequest.overlay_style.font_family)
+// and that a live job failed on: an override naming inter_bold must (a) be listed
+// as supported by the runtime resolver, (b) lower to the Inter Bold asset in the
+// compiled plan, and (c) point at a font that is actually present in the
+// workspace. A resolver that rejects it turns an authored payload into a failed
+// render; a resolver that accepts a missing asset turns it into a failed render
+// too, one stage later.
+func TestRuntimeStyleInterBoldIsSelectableAndRenderable(t *testing.T) {
+	supported := false
+	for _, family := range runtimeFontFamilies() {
+		if family == "inter_bold" {
+			supported = true
+		}
+	}
+	if !supported {
+		t.Fatalf("runtime font families = %v, want inter_bold among them", runtimeFontFamilies())
+	}
+	layer, err := compileRuntimeStylePlan(t, `{"font_family":"inter_bold"}`, `{}`)
+	if err != nil {
+		t.Fatalf("inter_bold override was rejected: %v", err)
+	}
+	if layer.Style == nil || layer.Style.Font != "assets/fonts/Inter-Bold.ttf" {
+		t.Fatalf("lowered Inter Bold override = %+v", layer.Style)
+	}
+	asset := filepath.Join("..", "..", filepath.FromSlash(layer.Style.Font))
+	if _, err := os.Stat(asset); err != nil {
+		t.Fatalf("the Inter Bold asset a plan points at is missing: %v", err)
 	}
 }

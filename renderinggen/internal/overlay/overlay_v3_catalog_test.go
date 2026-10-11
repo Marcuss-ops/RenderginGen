@@ -692,8 +692,13 @@ func TestRuntimeStyleOverrideSchemaContract(t *testing.T) {
 		t.Run(pointer, func(t *testing.T) {
 			properties := contractschema.At(t, schema, pointer)["properties"].(map[string]any)
 			font := properties["font_family"].(map[string]any)["enum"].([]any)
-			if len(font) != 4 || font[0] != "poppins" || font[1] != "inter" || font[2] != "dejavu_sans" || font[3] != "playfair_display_italic" {
-				t.Errorf("font_family enum = %v, want [poppins inter dejavu_sans playfair_display_italic]", font)
+			// Inter Bold joined the selectable set: the pipeline's payload contract
+			// (ScriptGenerateRequest.overlay_style.font_family) advertises it and
+			// runtimeFontsByFamily resolves it, so a plan built by the pipeline may
+			// legitimately carry it. Bricolage stays internal — it is selected by the
+			// modern typewriter lowering and is deliberately absent here.
+			if len(font) != 5 || font[0] != "poppins" || font[1] != "inter" || font[2] != "inter_bold" || font[3] != "dejavu_sans" || font[4] != "playfair_display_italic" {
+				t.Errorf("font_family enum = %v, want [poppins inter inter_bold dejavu_sans playfair_display_italic]", font)
 			}
 			// The schema's documented control set and the validator's key set are
 			// the same set, in both spellings. Pinning only the keys that happened

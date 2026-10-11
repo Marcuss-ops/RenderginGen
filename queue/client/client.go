@@ -25,6 +25,8 @@ import (
 	"net/url"
 	"strings"
 	"time"
+	"unicode"
+	"unicode/utf8"
 )
 
 // ErrJobExists is returned by Submit when the job ID was already submitted.
@@ -99,6 +101,19 @@ func ValidateJobMetadata(job Job) error {
 	return nil
 }
 
+// ValidateJobID checks the shared queue/filesystem identity boundary. An id
+// must survive being used as ONE filename component (the worker's workspace
+// directory, its per-job logs, its artifact keys), so the rule bans what is
+// dangerous there — path separators, control characters, traversal components,
+// symbols — rather than what is merely non-ASCII. Producer scopes use colon or
+// dash separators, never a filesystem path separator.
+//
+// Letters, digits and combining marks are accepted in any script: an id is
+// derived from authored text, and an Italian phrase legitimately carries
+// "comunità". Rejecting the accented letter failed an otherwise valid render
+// job at workspace materialization, after the plan had been compiled. Marks are
+// admitted with their base letter; NFC and NFD spellings still name DIFFERENT
+// jobs, exactly as two spellings of any other id do.
 func ValidateJobID(id string) error {
 	if id == "." || id == ".." {
 		return fmt.Errorf("job id %q is a traversal component", id)
@@ -106,12 +121,24 @@ func ValidateJobID(id string) error {
 	if len(id) == 0 || len(id) > 256 {
 		return fmt.Errorf("job id must contain 1..256 bytes")
 	}
-	for i := 0; i < len(id); i++ {
+	for i := 0; i < len(id); {
 		c := id[i]
-		if !((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') ||
-			(c >= '0' && c <= '9') || c == '-' || c == '_' || c == '.' || c == ':') {
-			return fmt.Errorf("job id %q contains unsupported character %q", id, c)
+		if c < utf8.RuneSelf {
+			if !((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') ||
+				(c >= '0' && c <= '9') || c == '-' || c == '_' || c == '.' || c == ':') {
+				return fmt.Errorf("job id %q contains unsupported character %q", id, c)
+			}
+			i++
+			continue
 		}
+		r, size := utf8.DecodeRuneInString(id[i:])
+		if r == utf8.RuneError && size <= 1 {
+			return fmt.Errorf("job id %q is not valid UTF-8", id)
+		}
+		if !unicode.IsLetter(r) && !unicode.IsDigit(r) && !unicode.IsMark(r) {
+			return fmt.Errorf("job id %q contains unsupported character %q", id, r)
+		}
+		i += size
 	}
 	return nil
 }

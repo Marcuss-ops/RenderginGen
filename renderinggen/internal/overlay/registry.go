@@ -163,6 +163,13 @@ var templateRegistry = map[string]TemplateSpec{
 	// plate carries its own pixels and the producer owns the georeference, so
 	// there is nothing for a visual preset to decide.
 	"MAP": {Kind: KindMap, Stat: overlayStatImage},
+
+	// Multi-Animation Runtime chains: one fused item carrying N concatenated
+	// segment motions in Params["chain_segments"]. Preset-less on purpose —
+	// each segment re-resolves its own preset — so a chain never fails on the
+	// item-level preset while its segments are fully specified.
+	"PHRASE_CHAIN": {Kind: KindImportantPhrase, Family: PresetText, Stat: overlayStatPhrase},
+	"IMAGE_CHAIN":  {Kind: KindImagePopup, Family: PresetImage, Stat: overlayStatImage},
 }
 
 // legacyTemplateAliases resolve the migrated organization/place spellings ONCE
@@ -218,7 +225,7 @@ func behaviorOf(kind ItemKind) kindBehavior {
 	switch kind {
 	case KindEntityCard, KindOrganization, KindLocation, KindConcept:
 		return behaviorEntity
-	case KindEntityImage, KindImagePopup, KindProduct, KindLogo, KindLightLeak, ItemKind("image"):
+	case KindEntityImage, KindImagePopup, KindProduct, KindLogo, KindLightLeak, ItemKind("image"), ItemKind("image_chain"):
 		return behaviorImage
 	case KindVideoOverlay, ItemKind("video"), ItemKind("rendered_overlay"):
 		return behaviorVideo

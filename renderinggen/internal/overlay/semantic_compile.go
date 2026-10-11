@@ -806,6 +806,8 @@ func resolveSemanticItems(src *semanticPlan) ([]resolvedItem, error) {
 // image asset.
 func compileItem(ri resolvedItem, src *semanticPlan, registry *assetRegistry) ([]Layer, error) {
 	switch {
+	case isChainKind(ri.Kind):
+		return compileChainItem(ri, src, registry)
 	case isEntityKind(ri.Kind) && len(ri.Item.ImageLayers) > 0:
 		return compileImageItem(ri, src, registry)
 	case isEntityKind(ri.Kind) && len(ri.Item.Assets) > 0:

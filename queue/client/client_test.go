@@ -267,3 +267,38 @@ func TestWaitContextCancel(t *testing.T) {
 		t.Fatalf("want context cancellation, got %v", err)
 	}
 }
+
+// TestValidateJobIDAcceptsAuthoredTextAndRejectsUnsafeComponents pins the
+// production failure this rule must not repeat: an overlay job id derived from
+// an Italian phrase ("...la comunità local...") was rejected as an unsupported
+// character at workspace materialization, failing a render job whose plan had
+// already been compiled and paid for. An id is opaque text that becomes ONE
+// filename component, so non-ASCII letters are legal while separators, control
+// characters, symbols and traversal components stay banned.
+func TestValidateJobIDAcceptsAuthoredTextAndRejectsUnsafeComponents(t *testing.T) {
+	valid := []string{
+		"job-1",
+		"run_abc:item:000:masked-upward-reveal__x__phrase__01",
+		"isometric-3d-fold__l-evento-scosse-profondamente-la-comunità-local__phrase__01",
+		"Ünïcödé-123",
+		"日本語-01",
+		"e\u0301-1", // decomposed accent: mark admitted with its base letter
+	}
+	for _, id := range valid {
+		if err := ValidateJobID(id); err != nil {
+			t.Errorf("ValidateJobID(%q) = %v, want nil", id, err)
+		}
+	}
+	invalid := []string{
+		"", ".", "..",
+		"a/b", "a\\b", "a b", "a\nb", "a\tb", "a\x00b",
+		"a😀b", // symbol, not a letter
+		string([]byte{0xff, 0xfe}),
+		strings.Repeat("a", 257),
+	}
+	for _, id := range invalid {
+		if err := ValidateJobID(id); err == nil {
+			t.Errorf("ValidateJobID(%q) = nil, want a rejection", id)
+		}
+	}
+}
