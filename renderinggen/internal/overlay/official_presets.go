@@ -78,6 +78,8 @@ var runtimeFontsByFamily = map[string]string{
 	"dejavu_sans":             officialCyrillicFontPath,
 	"bricolage_grotesque":     "assets/fonts/Bricolage-Grotesque.ttf",
 	"playfair_display_italic": "assets/fonts/PlayfairDisplay-Italic.ttf",
+	"oswald":                  "assets/fonts/Oswald.ttf",
+	"abril_fatface":           "assets/fonts/AbrilFatface-Regular.ttf",
 }
 
 // ModernTypewriterDefaultFontFamily is the single source of truth for the

@@ -699,8 +699,8 @@ func TestRuntimeStyleOverrideSchemaContract(t *testing.T) {
 			// directly (the modern typewriter lowering only uses it as the
 			// fallback when the plan carries no explicit family), so the
 			// schema, the validator and the bundle must all admit it.
-			if len(font) != 6 || font[0] != "poppins" || font[1] != "inter" || font[2] != "inter_bold" || font[3] != "dejavu_sans" || font[4] != "playfair_display_italic" || font[5] != "bricolage_grotesque" {
-				t.Errorf("font_family enum = %v, want [poppins inter inter_bold dejavu_sans playfair_display_italic bricolage_grotesque]", font)
+			if len(font) != 8 || font[0] != "poppins" || font[1] != "inter" || font[2] != "inter_bold" || font[3] != "dejavu_sans" || font[4] != "playfair_display_italic" || font[5] != "bricolage_grotesque" || font[6] != "oswald" || font[7] != "abril_fatface" {
+				t.Errorf("font_family enum = %v, want [poppins inter inter_bold dejavu_sans playfair_display_italic bricolage_grotesque oswald abril_fatface]", font)
 			}
 			// The schema's documented control set and the validator's key set are
 			// the same set, in both spellings. Pinning only the keys that happened

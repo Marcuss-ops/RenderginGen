@@ -63,6 +63,12 @@ const (
 	// preset-less text primitive whose behaviour follows the generic text
 	// lowering. The producer's kind (when present) is authoritative for it.
 	KindPrimitive ItemKind = "primitive"
+	// KindEntityGroup is a multi-entity composite: 2..5 image members laid
+	// out in deterministic canvas slots (duo/trio/quad/penta, selectable via
+	// params.group_layout). Each member keeps its own asset, preset, motion
+	// and caption; the group only owns slot geometry. Preset-less and
+	// family-less like MAP: members resolve their own presets.
+	KindEntityGroup ItemKind = "entity_group"
 )
 
 // overlayStatKind is the artifact-ledger bucket a template is counted as.
@@ -164,6 +170,9 @@ var templateRegistry = map[string]TemplateSpec{
 	// there is nothing for a visual preset to decide.
 	"MAP": {Kind: KindMap, Stat: overlayStatImage},
 
+	// Multi-entity groups — simultaneous entity/image members in slots.
+	"ENTITY_GROUP": {Kind: KindEntityGroup, Stat: overlayStatImage},
+
 	// Multi-Animation Runtime chains: one fused item carrying N concatenated
 	// segment motions in Params["chain_segments"]. Preset-less on purpose —
 	// each segment re-resolves its own preset — so a chain never fails on the
@@ -218,6 +227,7 @@ const (
 	behaviorImage
 	behaviorVideo
 	behaviorShape
+	behaviorGroup
 	behaviorMap
 )
 
@@ -235,6 +245,8 @@ func behaviorOf(kind ItemKind) kindBehavior {
 		return behaviorShape
 	case KindMap:
 		return behaviorMap
+	case KindEntityGroup:
+		return behaviorGroup
 	default:
 		return behaviorText
 	}
@@ -283,6 +295,10 @@ func isVideoKind(kind ItemKind) bool { return behaviorOf(kind) == behaviorVideo 
 
 // isShapeKind reports whether a kind lowers to a procedural shape layer.
 func isShapeKind(kind ItemKind) bool { return behaviorOf(kind) == behaviorShape }
+
+// isGroupKind reports whether a kind lowers through the multi-entity slot
+// layout (members keep their own image lowering).
+func isGroupKind(kind ItemKind) bool { return behaviorOf(kind) == behaviorGroup }
 
 // isMapKind reports whether a kind lowers to the georeferenced map layer set.
 func isMapKind(kind ItemKind) bool { return behaviorOf(kind) == behaviorMap }
