@@ -1301,12 +1301,21 @@
                 "maximum": 1
               },
               "position": {
-                "type": "array",
-                "minItems": 2,
-                "maxItems": 2,
-                "items": {
-                  "type": "number"
-                }
+                "description": "Either the [x, y] canvas point a shape item occupies (shape items must use this form), or the semantic placement string a text/image item asks for (e.g. center, lower_third), which RenderingGen resolves to geometry.",
+                "oneOf": [
+                  {
+                    "type": "array",
+                    "minItems": 2,
+                    "maxItems": 2,
+                    "items": {
+                      "type": "number"
+                    }
+                  },
+                  {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                ]
               },
               "rotation_degrees": {
                 "type": "number"
