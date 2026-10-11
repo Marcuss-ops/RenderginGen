@@ -174,7 +174,9 @@
             "inter_bold",
             "dejavu_sans",
             "playfair_display_italic",
-            "bricolage_grotesque"
+            "bricolage_grotesque",
+            "oswald",
+            "abril_fatface"
           ]
         },
         "font_size_px": {
@@ -1364,7 +1366,9 @@
                   "inter_bold",
                   "dejavu_sans",
                   "playfair_display_italic",
-            "bricolage_grotesque"
+            "bricolage_grotesque",
+            "oswald",
+            "abril_fatface"
                 ]
               },
               "font_size_px": {
@@ -1416,7 +1420,9 @@
                   "inter_bold",
                   "dejavu_sans",
                   "playfair_display_italic",
-            "bricolage_grotesque"
+            "bricolage_grotesque",
+            "oswald",
+            "abril_fatface"
                 ]
               },
               "font_size_px": {
@@ -2042,7 +2048,7 @@
                 },
                 "caption_font_family": {
                   "type": "string",
-                  "enum": ["poppins", "inter", "inter_bold", "dejavu_sans", "playfair_display_italic", "bricolage_grotesque"],
+                  "enum": ["poppins", "inter", "inter_bold", "dejavu_sans", "playfair_display_italic", "bricolage_grotesque", "oswald", "abril_fatface"],
                   "description": "Legacy bundled font fallback for this child caption; params.font_family is canonical when present."
                 },
                 "caption_color": {

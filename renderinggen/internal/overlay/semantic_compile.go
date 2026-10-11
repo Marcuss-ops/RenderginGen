@@ -823,6 +823,8 @@ func compileItem(ri resolvedItem, src *semanticPlan, registry *assetRegistry) ([
 	switch {
 	case isChainKind(ri.Kind):
 		return compileChainItem(ri, src, registry)
+	case isGroupKind(ri.Kind):
+		return compileEntityGroup(ri, src, registry)
 	case isEntityKind(ri.Kind) && len(ri.Item.ImageLayers) > 0:
 		return compileImageItem(ri, src, registry)
 	case isEntityKind(ri.Kind) && len(ri.Item.Assets) > 0:

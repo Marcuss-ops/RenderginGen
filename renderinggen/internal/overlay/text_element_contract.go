@@ -48,7 +48,7 @@ func validateTextElementContract(item semanticItem) error {
 	// attribution, which the map block owns (see semantic_map.go), so an empty
 	// item text is not a missing-content error for them.
 	switch behavior {
-	case behaviorImage, behaviorVideo, behaviorShape, behaviorMap:
+	case behaviorImage, behaviorVideo, behaviorShape, behaviorMap, behaviorGroup:
 	default:
 		if text == "" {
 			return fmt.Errorf("overlay: item %q requires text (RenderingGen owns content; templates do not provide phrases)", item.ID)

@@ -101,6 +101,26 @@ func compileImageItem(ri resolvedItem, src *semanticPlan, registry *assetRegistr
 			}
 		}
 	}
+	return compileCompositeImageLayers(ri, src, registry)
+}
+
+// compileCompositeImageLayers lowers every image_layers child through the
+// shared single-layer path: independent asset, preset, motion, caption and
+// explicit position params per child. Entity groups reuse it after applying
+// slot defaults, so composite and group members can never drift apart.
+func compileCompositeImageLayers(ri resolvedItem, src *semanticPlan, registry *assetRegistry) ([]Layer, error) {
+	resolvedImageMotion, err := resolveRegisteredMotion(ri.Item.MotionID)
+	if err != nil {
+		return nil, fmt.Errorf("overlay: image motion %q: %w", ri.Item.MotionID, err)
+	}
+	var imageRecipe *motion.MotionDefinition
+	if resolvedImageMotion != nil {
+		imageRecipe = resolvedImageMotion.definition
+	}
+	if imageRecipe == nil || imageRecipe.ImageRecipe == nil {
+		imageRecipe = nil
+	}
+	premium := premiumImageRecipeDefinition(imageRecipe)
 	assets := make(map[string]string, len(ri.Item.Assets))
 	for _, ref := range ri.Item.Assets {
 		assets[ref.ID] = registry.Path(ref.ID)
