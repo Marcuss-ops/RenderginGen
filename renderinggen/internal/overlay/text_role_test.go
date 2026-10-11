@@ -57,7 +57,7 @@ func TestRemainingTextRolesResolveIntoSharedSpec(t *testing.T) {
 // to patch field by field, so the migration is byte-identical.
 func TestTextRoleEntityCaptionOwnsTheNameplateTreatment(t *testing.T) {
 	style := &LayerStyle{}
-	applyTextRoleBaseStyle(textRoleEntityCaption, style, 42, "")
+	applyTextRoleBaseStyle(textRoleEntityCaption, style, 42, "", nil)
 	if style.Fill != "#F8F5EA" {
 		t.Errorf("default fill = %q, want the warm-white nameplate", style.Fill)
 	}
@@ -78,11 +78,33 @@ func TestTextRoleEntityCaptionOwnsTheNameplateTreatment(t *testing.T) {
 	}
 
 	custom := &LayerStyle{}
-	applyTextRoleBaseStyle(textRoleEntityCaption, custom, 30, "#AABBCC")
+	applyTextRoleBaseStyle(textRoleEntityCaption, custom, 30, "#AABBCC", nil)
 	if custom.Fill != "#AABBCC" {
 		t.Errorf("explicit fill = %q, want the caller override to win", custom.Fill)
 	}
 	if custom.Stroke == nil || custom.Shadow == nil {
 		t.Error("explicit fill must not drop the keyline/shadow treatment")
+	}
+}
+
+// TestTextRoleEntityCaptionYieldsToPayloadLook pins the single-source
+// guarantee: when the plan explicitly chose stroke, shadow or glow, the
+// role base must not clobber that choice with its own constants.
+func TestTextRoleEntityCaptionYieldsToPayloadLook(t *testing.T) {
+	style := &LayerStyle{
+		Stroke: &LayerStroke{Color: "#111827", Width: 5},
+		Shadow: &LayerShadow{Color: "#000000", Opacity: 0.6, Blur: 12, Offset: []float64{-3, 7}},
+		Glow:   &LayerGlow{Radius: 28.5, Intensity: 0.4, Color: "#FFFFFF"},
+	}
+	runtimeStyle := map[string]any{"stroke_size": 5.0, "shadow_blur_px": 12.0, "shadow_opacity": 0.6, "glow_size": 28.5}
+	applyTextRoleBaseStyle(textRoleEntityCaption, style, 42, "", runtimeStyle)
+	if style.Stroke == nil || style.Stroke.Width != 5 {
+		t.Errorf("stroke = %+v, want the payload choice preserved", style.Stroke)
+	}
+	if style.Shadow == nil || style.Shadow.Blur != 12 || style.Shadow.Opacity != 0.6 {
+		t.Errorf("shadow = %+v, want the payload choice preserved", style.Shadow)
+	}
+	if style.Glow == nil || style.Glow.Radius != 28.5 {
+		t.Errorf("glow = %+v, want the payload choice preserved", style.Glow)
 	}
 }

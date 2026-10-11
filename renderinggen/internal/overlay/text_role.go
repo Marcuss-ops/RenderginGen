@@ -35,6 +35,22 @@ const (
 	mapTextPlateFitMode       = "shrink_only"
 )
 
+// Shared caption treatment. Entity and editorial image captions render over
+// moving footage: one dark keyline plus one soft drop shadow, no glow pass
+// (the halo's separable blur saturated the RTX A4000 on the strict Vulkan
+// path). These are the single source of truth for that treatment — the role
+// resolver is the only writer, so tuning caption legibility is one edit here.
+const (
+	captionKeylineColor   = "#111827"
+	captionKeylineWidth   = 2.0
+	captionShadowColor    = "#000000"
+	captionShadowOpacity  = 0.78
+	captionShadowBlur     = 9.0
+	captionShadowOffsetX  = 0.0
+	captionShadowOffsetY  = 3.0
+	captionForegroundFill = "#F8F5EA"
+)
+
 // applyTextRoleBaseStyle owns a role's base treatment: the fill, keyline,
 // shadow, glow, fit and background-card policy that used to be patched field by
 // field inside the image compiler after compileTextLayer returned, or built
@@ -42,7 +58,12 @@ const (
 // validation stay with the caller: an explicit fill wins over the role default,
 // exactly as the compiler's override block used to. Migrated call-sites render
 // byte-identical layers.
-func applyTextRoleBaseStyle(role textRole, style *LayerStyle, fontSize float64, fill string) {
+//
+// runtimeStyle carries the plan's explicit runtime style keys
+// (font_family, glow_size, stroke_size, shadow_*, …). A key present there is
+// the payload's choice and the role default must not clobber it — the
+// single guarantee that every animation renders the payload's look.
+func applyTextRoleBaseStyle(role textRole, style *LayerStyle, fontSize float64, fill string, runtimeStyle map[string]any) {
 	switch role {
 	case textRolePhrase, textRoleImportantPhrase, textRoleLowerThird:
 		// Phrase recipes can arrive without their authored fill in the runtime
@@ -63,7 +84,7 @@ func applyTextRoleBaseStyle(role textRole, style *LayerStyle, fontSize float64, 
 		// over moving footage. Entity and editorial image captions share this
 		// policy while retaining distinct semantic roles for future resolvers.
 		if fill == "" {
-			fill = "#F8F5EA"
+			fill = captionForegroundFill
 		}
 		style.Fill = fill
 		style.FontSize = fontSize
@@ -72,14 +93,25 @@ func applyTextRoleBaseStyle(role textRole, style *LayerStyle, fontSize float64, 
 		// fit_mode=none (Chronon correctly rejects that contradictory payload).
 		style.MinFontSize = 0
 		style.MaxFontSize = 0
-		style.Stroke = &LayerStroke{Color: "#111827", Width: 2.0}
-		style.Shadow = &LayerShadow{Color: "#000000", Opacity: 0.78, Blur: 9, Offset: []float64{0, 3}}
-		// Keep this shared caption style free of a full-frame glow pass. The
-		// strict Vulkan path renders each animated text frame at output size;
-		// the halo's separable blur saturated the RTX A4000 and triggered Xid
-		// 109 before the frame ring drained. The dark keyline and shadow retain
-		// contrast while premium image motions can still author local glow layers.
-		style.Glow = nil
+		// The payload's explicit look always wins: only seed the role
+		// treatment for effects the plan did not choose. Without this guard
+		// the role base runs after applyTextRuntimeOverrides and would
+		// silently replace the payload's stroke, shadow and glow.
+		if _, chosen := runtimeStyle["stroke_size"]; !chosen {
+			style.Stroke = &LayerStroke{Color: captionKeylineColor, Width: captionKeylineWidth}
+		}
+		if !hasRuntimeShadowKey(runtimeStyle) {
+			style.Shadow = &LayerShadow{Color: captionShadowColor, Opacity: captionShadowOpacity, Blur: captionShadowBlur, Offset: []float64{captionShadowOffsetX, captionShadowOffsetY}}
+		}
+		// The default stays glow-free: on the strict Vulkan path each
+		// animated text frame renders at output size, and a full-frame
+		// halo's separable blur saturated the RTX A4000 (Xid 109). An
+		// explicit payload glow_size overrides this default — the
+		// producer chose the halo knowingly, and applyTextRuntimeOverrides
+		// already lowered it above.
+		if _, chosen := runtimeStyle["glow_size"]; !chosen {
+			style.Glow = nil
+		}
 		// Avoid text background cards here: the native Vulkan text path
 		// lowers those to a text_card node that the strict GPU backend
 		// cannot execute.
@@ -108,4 +140,15 @@ func applyTextRoleBaseStyle(role textRole, style *LayerStyle, fontSize float64, 
 	default:
 		// Unrecognized roles keep the preset style untouched.
 	}
+}
+
+// hasRuntimeShadowKey reports whether the plan explicitly chose any shadow
+// control for this layer.
+func hasRuntimeShadowKey(runtimeStyle map[string]any) bool {
+	for _, key := range []string{"shadow_blur_px", "shadow_opacity", "shadow_offset_x_px", "shadow_offset_y_px"} {
+		if _, chosen := runtimeStyle[key]; chosen {
+			return true
+		}
+	}
+	return false
 }

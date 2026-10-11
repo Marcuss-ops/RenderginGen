@@ -37,7 +37,34 @@ func (i *semanticItem) UnmarshalJSON(data []byte) error {
 
 	*i = semanticItem(decoded)
 
-	if i.DurationMS != nil {
+	// The producer (PipelineGen OverlayItem) declares start_us/duration_us
+	// with omitempty: a zero StartUS is dropped from the wire, and a zero
+	// DurationUS marks the legacy millisecond path with fallback to
+	// StartMs/EndMs. Default instead of rejecting so timeline-start items
+	// (start_us=0) and legacy-ms items keep decoding.
+	if i.StartUS == nil && i.DurationUS != nil {
+		zero := int64(0)
+		i.StartUS = &zero
+	}
+	if i.StartUS != nil && i.DurationUS == nil {
+		i.DurationUS = nil
+		i.StartUS = nil
+	}
+	if i.StartUS != nil {
+		if *i.StartUS < 0 || *i.DurationUS <= 0 || *i.StartUS > int64(^uint64(0)>>1)-*i.DurationUS {
+			return fmt.Errorf("overlay: item %q has invalid start_us/duration_us", i.ID)
+		}
+		endUS := *i.StartUS + *i.DurationUS
+		if endUS > int64(^uint64(0)>>1)-999 {
+			return fmt.Errorf("overlay: item %q end_us overflows millisecond projection", i.ID)
+		}
+		if i.StartMS != *i.StartUS/1000 || i.EndMS != (endUS+999)/1000 {
+			return fmt.Errorf("overlay: item %q start_ms/end_ms diverge from start_us/duration_us", i.ID)
+		}
+		if i.DurationMS != nil && *i.DurationMS != (endUS+999)/1000-*i.StartUS/1000 {
+			return fmt.Errorf("overlay: item %q duration_ms %d diverges from canonical microsecond projection", i.ID, *i.DurationMS)
+		}
+	} else if i.DurationMS != nil {
 		if *i.DurationMS <= 0 {
 			return fmt.Errorf("overlay: item %q duration_ms must be positive", i.ID)
 		}
@@ -87,8 +114,8 @@ func (i *semanticItem) UnmarshalJSON(data []byte) error {
 	if strings.TrimSpace(i.Text) == "" {
 		return fmt.Errorf("overlay: entity item %q requires text from PipelineGen", i.ID)
 	}
-	if i.DurationMS == nil {
-		return fmt.Errorf("overlay: entity item %q requires duration_ms from PipelineGen", i.ID)
+	if i.DurationMS == nil && i.DurationUS == nil {
+		return fmt.Errorf("overlay: entity item %q requires duration_ms or duration_us from PipelineGen", i.ID)
 	}
 	if len(i.Assets) > 0 && strings.TrimSpace(i.ImagePresetID) == "" {
 		return fmt.Errorf("overlay: entity item %q with image requires image_preset_id from PipelineGen", i.ID)

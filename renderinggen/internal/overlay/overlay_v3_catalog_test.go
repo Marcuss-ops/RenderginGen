@@ -695,10 +695,12 @@ func TestRuntimeStyleOverrideSchemaContract(t *testing.T) {
 			// Inter Bold joined the selectable set: the pipeline's payload contract
 			// (ScriptGenerateRequest.overlay_style.font_family) advertises it and
 			// runtimeFontsByFamily resolves it, so a plan built by the pipeline may
-			// legitimately carry it. Bricolage stays internal — it is selected by the
-			// modern typewriter lowering and is deliberately absent here.
-			if len(font) != 5 || font[0] != "poppins" || font[1] != "inter" || font[2] != "inter_bold" || font[3] != "dejavu_sans" || font[4] != "playfair_display_italic" {
-				t.Errorf("font_family enum = %v, want [poppins inter inter_bold dejavu_sans playfair_display_italic]", font)
+			// legitimately carry it. Bricolage joined too: payloads select it
+			// directly (the modern typewriter lowering only uses it as the
+			// fallback when the plan carries no explicit family), so the
+			// schema, the validator and the bundle must all admit it.
+			if len(font) != 6 || font[0] != "poppins" || font[1] != "inter" || font[2] != "inter_bold" || font[3] != "dejavu_sans" || font[4] != "playfair_display_italic" || font[5] != "bricolage_grotesque" {
+				t.Errorf("font_family enum = %v, want [poppins inter inter_bold dejavu_sans playfair_display_italic bricolage_grotesque]", font)
 			}
 			// The schema's documented control set and the validator's key set are
 			// the same set, in both spellings. Pinning only the keys that happened

@@ -45,8 +45,8 @@ func TestCatalogCategoriesKeepMotionsIndependentAndComplete(t *testing.T) {
 			t.Errorf("%s category has %d motions, want %d", category, len(ids), count)
 		}
 	}
-	if ids := Registry.ShortPhraseStyleIDs(); len(ids) != 48 {
-		t.Errorf("short phrase catalog has %d motions, want 48", len(ids))
+	if ids := Registry.ShortPhraseStyleIDs(); len(ids) != 49 {
+		t.Errorf("short phrase catalog has %d motions, want 49", len(ids))
 	}
 	if ids := Registry.PhraseAnimationIDs(); len(ids) != 163 {
 		t.Errorf("phrase planning pool has %d motions, want 163", len(ids))

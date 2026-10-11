@@ -681,16 +681,34 @@ func resolveMapFeatureMoves(src *semanticPlan) error {
 	return nil
 }
 
+// mergeSemanticParams resolves the plan's explicit style precedence once:
+// Params is the runtime base; Style overrides matching keys. Chain segments
+// use this same helper so their standalone and fused lowering is identical.
+func mergeSemanticParams(params, style map[string]any) map[string]any {
+	merged := make(map[string]any, len(params)+len(style))
+	for key, value := range params {
+		merged[key] = value
+	}
+	for key, value := range style {
+		merged[key] = value
+	}
+	return merged
+}
+
 func resolveSemanticItems(src *semanticPlan) ([]resolvedItem, error) {
 	out := make([]resolvedItem, 0, len(src.Items))
 	for _, item := range src.Items {
-		start, end := msFrames(item.StartMS, item.EndMS, int64(src.FPSNum), int64(src.FPSDen))
+		start, end := itemFrames(item, int64(src.FPSNum), int64(src.FPSDen))
+		startUS, endUS := item.StartMS*1000, item.EndMS*1000
+		if item.StartUS != nil && item.DurationUS != nil {
+			startUS, endUS = *item.StartUS, *item.StartUS+*item.DurationUS
+		}
 		if item.ID == "" || item.StartMS < 0 || item.EndMS <= item.StartMS {
 			return nil, fmt.Errorf("overlay: invalid semantic item %q", item.ID)
 		}
 		if end <= start {
-			return nil, fmt.Errorf("overlay: item %q window [%d,%d) ms collapses to no frames at %d/%d fps",
-				item.ID, item.StartMS, item.EndMS, src.FPSNum, src.FPSDen)
+			return nil, fmt.Errorf("overlay: item %q window [%d,%d) us collapses to no frames at %d/%d fps",
+				item.ID, startUS, endUS, src.FPSNum, src.FPSDen)
 		}
 		if err := validateTextElementContract(item); err != nil {
 			return nil, err
@@ -746,13 +764,7 @@ func resolveSemanticItems(src *semanticPlan) ([]resolvedItem, error) {
 		} else if spec.Kind == KindPrimitive || kind == KindNumber || kind == KindMetricStat || kind == KindTimelineDate {
 			spec.Family = PresetText
 		}
-		params := make(map[string]any, len(item.Params)+len(item.Style))
-		for k, v := range item.Params {
-			params[k] = v
-		}
-		for k, v := range item.Style {
-			params[k] = v
-		}
+		params := mergeSemanticParams(item.Params, item.Style)
 		ri := resolvedItem{Item: item, Spec: spec, Kind: kind, Params: params, Start: start, End: end, Map: resolvedMapSpec}
 
 		if isImageKind(kind) && len(item.Assets) == 0 && len(item.ImageLayers) == 0 {
@@ -853,17 +865,14 @@ func compileTextVisualAccentLayers(ri resolvedItem, src *semanticPlan, text Laye
 	if err != nil {
 		return nil, err
 	}
-	if definition != nil && definition.Category == "typewriter_modern_v1" && text.Style != nil {
-		// These date/number animations mirror the modern Short Phrases previews.
-		// Respect a producer's explicit font override, but otherwise use the
-		// bundled Bricolage face rather than the generic phrase preset default.
-		if _, explicit := ri.Params["font_family"]; !explicit {
-			// Resolve the internal modern-typewriter default through the same
-			// font registry as explicit family overrides; keep its asset path
-			// out of this lowering branch.
-			text.Style.Font, _ = runtimeFontPath("bricolage_grotesque")
-		}
-	}
+	// SSOT typography (typography_ssot.go): no motion branch may change the
+	// font. The payload's font_family (or the preset/language default) owns
+	// the face for every animation, including typewriter_modern_v1 — the old
+	// Bricolage force-override made the same payload render a different
+	// typeface per motion. ModernTypewriterDefaultFontFamily stays as the
+	// documented constant for callers that explicitly opt into it via
+	// params.font_family, but it is never forced here.
+	_ = ModernTypewriterDefaultFontFamily
 	var layers []Layer
 	if definition != nil && definition.Category == "phrase_highlight_v1" {
 		layers, err = compilePhraseHighlightComponents(src, text, *definition)
@@ -992,8 +1001,22 @@ func compileEntityCard(ri resolvedItem, src *semanticPlan, registry *assetRegist
 		}
 		ri.Item.CaptionMotionParams = captionMotionParams
 		ri.Item.CaptionLayout = style.CaptionLayout
-		ri.Item.CaptionFontFamily = style.CaptionFontFamily
-		ri.Item.CaptionColor = style.CaptionColor
+		// SSOT typography (typography_ssot.go): the payload's explicit
+		// typeface/color/layout always win over the preset default — same
+		// precedence as the motion overrides above. The preset default only
+		// fills in when the plan carries no choice, so selecting an entity
+		// style can never silently retype or recolor a caption the
+		// producer set (the old unconditional CaptionColor overwrite made
+		// every render diverge per sampled style).
+		if strings.TrimSpace(ri.Item.CaptionFontFamily) == "" {
+			ri.Item.CaptionFontFamily = style.CaptionFontFamily
+		}
+		if strings.TrimSpace(ri.Item.CaptionColor) == "" {
+			ri.Item.CaptionColor = style.CaptionColor
+		}
+		if strings.TrimSpace(ri.Item.CaptionLayout) == "" {
+			ri.Item.CaptionLayout = style.CaptionLayout
+		}
 		// Place the runtime portrait in one of two balanced columns, or center it
 		// for below-caption layouts.
 		x := 0.0

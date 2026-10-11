@@ -170,6 +170,8 @@ var templateRegistry = map[string]TemplateSpec{
 	// item-level preset while its segments are fully specified.
 	"PHRASE_CHAIN": {Kind: KindImportantPhrase, Family: PresetText, Stat: overlayStatPhrase},
 	"IMAGE_CHAIN":  {Kind: KindImagePopup, Family: PresetImage, Stat: overlayStatImage},
+	"MIXED_CHAIN":  {Kind: KindPrimitive, Stat: overlayStatPhrase},
+	"MAP_CHAIN":    {Kind: KindPrimitive, Stat: overlayStatImage},
 }
 
 // legacyTemplateAliases resolve the migrated organization/place spellings ONCE

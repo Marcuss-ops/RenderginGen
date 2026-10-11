@@ -64,6 +64,25 @@ trap 'rm -f "$emitted" "$short_phrase_emitted"' EXIT
 "$build_dir/chronontemplate_emit_catalog" >"$emitted"
 "$build_dir/chronontemplate_emit_short_phrase_catalog" >"$short_phrase_emitted"
 
+# overlay_presets is intentionally present in both the authoring document and
+# the emitted runtime document. Keep that contract explicit: the full-document
+# comparison below protects the embedded copy, while this check catches an
+# emitter that silently drops or rewrites the author-owned preset catalog.
+python3 - "$template_dir/catalog/motion_catalog.v1.json" "$emitted" <<'PY'
+import json
+import sys
+
+with open(sys.argv[1], encoding="utf-8") as source_file:
+    source = json.load(source_file)
+with open(sys.argv[2], encoding="utf-8") as emitted_file:
+    emitted = json.load(emitted_file)
+if source.get("overlay_presets") != emitted.get("overlay_presets"):
+    raise SystemExit(
+        "sync_motion_catalog: overlay_presets differs between motion_catalog.v1.json "
+        "and emitted chronontemplate_catalog.v1.json"
+    )
+PY
+
 # Compare parsed documents, not bytes: the emitter owns the format and a
 # whitespace-only difference is not drift.
 normalize() {

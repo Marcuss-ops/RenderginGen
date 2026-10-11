@@ -173,7 +173,8 @@
             "inter",
             "inter_bold",
             "dejavu_sans",
-            "playfair_display_italic"
+            "playfair_display_italic",
+            "bricolage_grotesque"
           ]
         },
         "font_size_px": {
@@ -1030,6 +1031,16 @@
             "type": "integer",
             "exclusiveMinimum": 0
           },
+          "start_us": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Canonical integer-microsecond item start. When present it must be paired with duration_us and match the start_ms/end_ms projection."
+          },
+          "duration_us": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Canonical integer-microsecond item duration. When present it must be paired with start_us; the worker derives frame endpoints directly from these values."
+          },
           "duration_ms": {
             "type": "integer",
             "minimum": 1,
@@ -1099,8 +1110,10 @@
             "enum": [
               "poppins",
               "inter",
+              "inter_bold",
               "dejavu_sans",
-              "playfair_display_italic"
+              "playfair_display_italic",
+              "bricolage_grotesque"
             ],
             "description": "Optional bundled font family for an entity caption."
           },
@@ -1362,7 +1375,8 @@
                   "inter",
                   "inter_bold",
                   "dejavu_sans",
-                  "playfair_display_italic"
+                  "playfair_display_italic",
+            "bricolage_grotesque"
                 ]
               },
               "font_size_px": {
@@ -1413,7 +1427,8 @@
                   "inter",
                   "inter_bold",
                   "dejavu_sans",
-                  "playfair_display_italic"
+                  "playfair_display_italic",
+            "bricolage_grotesque"
                 ]
               },
               "font_size_px": {
