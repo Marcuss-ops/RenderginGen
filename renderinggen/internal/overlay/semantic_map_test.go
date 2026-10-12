@@ -103,6 +103,57 @@ func TestGeoreferencedMapCompilesGroundedLayers(t *testing.T) {
 	}
 }
 
+func TestMapTextUsesRunTypographyUnlessPinOverridesIt(t *testing.T) {
+	plan := georeferencedMapPlan(0, 0)
+	item := plan["items"].([]any)[0].(map[string]any)
+	item["params"] = map[string]any{
+		"font_family": "bricolage_grotesque", "font_size_px": 82.0,
+		"glow_size": 10.0, "stroke_size": 2.0,
+		"shadow_blur_px": 14.0, "shadow_opacity": 0.7,
+		"shadow_offset_x_px": 0.0, "shadow_offset_y_px": 4.0,
+	}
+	result, err := compileMapTestPlan(t, plan)
+	if err != nil {
+		t.Fatalf("compile map with run typography: %v", err)
+	}
+	wantFont, ok := runtimeFontPath("bricolage_grotesque")
+	if !ok {
+		t.Fatal("test font is not registered")
+	}
+	for _, index := range []int{2, 3} { // pin label and attribution
+		style := result.Plan.Layers[index].Style
+		if style.Font != wantFont {
+			t.Errorf("%s font = %q, want run font %q", result.Plan.Layers[index].ID, style.Font, wantFont)
+		}
+		if style.Glow == nil || style.Glow.Radius != 10 {
+			t.Errorf("%s glow = %+v, want run glow radius 10", result.Plan.Layers[index].ID, style.Glow)
+		}
+		if style.Stroke == nil || style.Stroke.Width != 2 {
+			t.Errorf("%s stroke = %+v, want run stroke width 2", result.Plan.Layers[index].ID, style.Stroke)
+		}
+		if style.Shadow == nil || style.Shadow.Blur != 14 || style.Shadow.Opacity != 0.7 || !reflect.DeepEqual(style.Shadow.Offset, []float64{0, 4}) {
+			t.Errorf("%s shadow = %+v, want the run shadow", result.Plan.Layers[index].ID, style.Shadow)
+		}
+	}
+
+	// A per-pin map label remains an explicit child-level choice and wins for
+	// that pin only; the attribution continues to use the shared run font.
+	mapSpec := item["map"].(map[string]any)
+	pin := mapSpec["pins"].([]any)[0].(map[string]any)
+	pin["label_style"] = map[string]any{"font_family": "inter"}
+	result, err = compileMapTestPlan(t, plan)
+	if err != nil {
+		t.Fatalf("compile map with explicit pin font: %v", err)
+	}
+	wantPinFont, _ := runtimeFontPath("inter")
+	if result.Plan.Layers[2].Style.Font != wantPinFont {
+		t.Errorf("explicit pin font = %q, want %q", result.Plan.Layers[2].Style.Font, wantPinFont)
+	}
+	if result.Plan.Layers[3].Style.Font != wantFont {
+		t.Errorf("attribution font = %q, want shared run font %q", result.Plan.Layers[3].Style.Font, wantFont)
+	}
+}
+
 func TestGeoreferencedMapRejectsPinOutsideCertifiedWindow(t *testing.T) {
 	_, err := compileMapTestPlan(t, georeferencedMapPlan(48.8566, 2.3522))
 	if err == nil || !strings.Contains(err.Error(), "falls outside the basemap window") {

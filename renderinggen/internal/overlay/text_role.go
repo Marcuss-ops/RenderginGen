@@ -131,11 +131,13 @@ func applyTextRoleBaseStyle(role textRole, style *LayerStyle, fontSize float64, 
 		style.MinFontSize = fontSize
 		style.MaxFontSize = fontSize
 		style.FitMode = mapTextPlateFitMode
-		style.Shadow = &LayerShadow{
-			Color:   mapTextPlateShadowColor,
-			Opacity: mapTextPlateShadowOpacity,
-			Blur:    mapTextPlateShadowBlur,
-			Offset:  []float64{0, 2},
+		if !hasRuntimeShadowKey(runtimeStyle) {
+			style.Shadow = &LayerShadow{
+				Color:   mapTextPlateShadowColor,
+				Opacity: mapTextPlateShadowOpacity,
+				Blur:    mapTextPlateShadowBlur,
+				Offset:  []float64{0, 2},
+			}
 		}
 	default:
 		// Unrecognized roles keep the preset style untouched.

@@ -72,6 +72,20 @@ func validateTextRuntimeOverrides(params map[string]any, itemID string, kind Ite
 		}
 		return nil
 	}
+	// A semantic map lowers to one or more text layers (pin labels and
+	// attribution) alongside its basemap. Its run-level text style is therefore
+	// valid even though the map itself has no text preset; map roles provide
+	// their own geometry and fallback styling.
+	if isMapKind(kind) {
+		for _, key := range runtimeTextStyleKeys {
+			if value, exists := params[key]; exists {
+				if err := validateRuntimeTextStyleKey(key, value, itemID); err != nil {
+					return err
+				}
+			}
+		}
+		return nil
+	}
 	for _, key := range runtimeTextStyleKeys {
 		value, exists := params[key]
 		if !exists {

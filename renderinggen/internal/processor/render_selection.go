@@ -34,16 +34,21 @@ func planHasVisualOverlay(plan *overlay.Plan) bool {
 	for _, layer := range plan.Layers {
 		if layer.Type == "video" {
 			videoLayers++
+			// The compiled source clip is the only video that can be passed
+			// directly to NVENC. A video background or video overlay is an
+			// authored visual layer and requires composition even when it is
+			// the plan's only layer (for example a generated map movie).
+			if layer.ID != "" && layer.ID != "source" {
+				return true
+			}
 			continue
 		}
 		if layer.Type != "" && layer.Type != "video" {
 			return true
 		}
 	}
-	// DirectYUV can feed one decoded source straight to NVENC. Two video
-	// layers require a compositor (for example clip-render's background plus
-	// foreground); otherwise Chronon may select DirectYUV and reject the
-	// second source at frame zero.
+	// Keep support for legacy plans without a source id: multiple videos
+	// still necessarily require composition.
 	return videoLayers > 1
 }
 
@@ -52,7 +57,7 @@ func planHasVideoSource(plan *overlay.Plan) bool {
 		return false
 	}
 	for _, layer := range plan.Layers {
-		if layer.Type == "video" {
+		if layer.Type == "video" && (layer.ID == "" || layer.ID == "source") {
 			return true
 		}
 	}
