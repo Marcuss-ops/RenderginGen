@@ -2,8 +2,11 @@ package overlay
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 	"unicode/utf8"
+
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/motion"
 )
 
 type animationPolicySelector struct {
@@ -16,7 +19,7 @@ type animationPolicySelector struct {
 func resolveAnimationPolicies(src *semanticPlan) error {
 	policies := make(map[animationPolicySelector]semanticAnimationPolicy, len(src.AnimationPolicies))
 	for index, policy := range src.AnimationPolicies {
-		if policy.Target != "important_phrase" && policy.Target != "image" && policy.Target != "caption" {
+		if policy.Target != "important_phrase" && policy.Target != "image" && policy.Target != "caption" && policy.Target != "date" && policy.Target != "metric" {
 			return fmt.Errorf("overlay: animation_policies[%d] has unsupported target %q", index, policy.Target)
 		}
 		// validateAnimationGroupIDs first: a subgroup_id without group_id is a
@@ -27,11 +30,14 @@ func resolveAnimationPolicies(src *semanticPlan) error {
 		if policy.GroupID == "" {
 			return fmt.Errorf("overlay: animation_policies[%d] requires group_id", index)
 		}
-		if strings.TrimSpace(policy.MotionID) == "" || strings.TrimSpace(policy.MotionID) != policy.MotionID {
-			return fmt.Errorf("overlay: animation_policies[%d] requires a trimmed motion_id", index)
+		if strings.TrimSpace(policy.MotionID) != policy.MotionID {
+			return fmt.Errorf("overlay: animation_policies[%d] motion_id must be trimmed", index)
 		}
-		if !motionAdmitsTarget(policy.MotionID, policy.Target) {
+		if policy.MotionID != "" && !motionAdmitsTarget(policy.MotionID, policy.Target) {
 			return fmt.Errorf("overlay: animation_policies[%d] motion %q is not supported for target %q", index, policy.MotionID, policy.Target)
+		}
+		if policy.MotionID == "" && len(policy.MotionParams) > 0 {
+			return fmt.Errorf("overlay: animation_policies[%d] motion_params requires motion_id", index)
 		}
 		if _, _, err := motionWindows(policy.MotionParams, 0); err != nil {
 			return fmt.Errorf("overlay: animation_policies[%d]: %w", index, err)
@@ -55,14 +61,26 @@ func resolveAnimationPolicies(src *semanticPlan) error {
 		}
 		if isTextLikeKind(kind) && len(item.Assets) == 0 && len(item.ImageLayers) == 0 && item.MotionID == "" {
 			if policy, ok := selectAnimationPolicy(policies, "important_phrase", item.GroupID, item.SubgroupID); ok {
-				item.MotionID = policy.MotionID
-				item.MotionParams = cloneMotionParams(policy.MotionParams)
+				item.MotionID, item.MotionParams = resolvePolicyMotion(src, policy, "important_phrase", item.GroupID, item.SubgroupID)
+			}
+		}
+		if item.MotionID == "" {
+			target := ""
+			switch item.Template {
+			case "TIMELINE_DATE_CARD":
+				target = "date"
+			case "METRIC_STAT_CARD":
+				target = "metric"
+			}
+			if target != "" {
+				if policy, ok := selectAnimationPolicy(policies, target, item.GroupID, item.SubgroupID); ok {
+					item.MotionID, item.MotionParams = resolvePolicyMotion(src, policy, target, item.GroupID, item.SubgroupID)
+				}
 			}
 		}
 		if strings.TrimSpace(item.EntityCaption) != "" && item.CaptionMotionID == "" {
 			if policy, ok := selectAnimationPolicy(policies, "caption", item.GroupID, item.SubgroupID); ok {
-				item.CaptionMotionID = policy.MotionID
-				item.CaptionMotionParams = cloneMotionParams(policy.MotionParams)
+				item.CaptionMotionID, item.CaptionMotionParams = resolvePolicyMotion(src, policy, "caption", item.GroupID, item.SubgroupID)
 			}
 		}
 		if strings.TrimSpace(item.EntityCaption) != "" && item.CaptionMotionID != "" && !motionAdmitsTarget(item.CaptionMotionID, "caption") {
@@ -70,9 +88,8 @@ func resolveAnimationPolicies(src *semanticPlan) error {
 		}
 		if len(item.ImageLayers) > 0 {
 			if item.MotionID == "" {
-				if policy, ok := selectAnimationPolicy(policies, "image", item.GroupID, item.SubgroupID); ok && animationUsesMultiImageRecipe(policy.MotionID) {
-					item.MotionID = policy.MotionID
-					item.MotionParams = cloneMotionParams(policy.MotionParams)
+				if policy, ok := selectAnimationPolicy(policies, "image", item.GroupID, item.SubgroupID); ok && policy.MotionID != "" && animationUsesMultiImageRecipe(policy.MotionID) {
+					item.MotionID, item.MotionParams = resolvePolicyMotion(src, policy, "image", item.GroupID, item.SubgroupID)
 				}
 			}
 			multiImageMotion := animationUsesMultiImageRecipe(item.MotionID)
@@ -90,15 +107,13 @@ func resolveAnimationPolicies(src *semanticPlan) error {
 					return fmt.Errorf("overlay: item %q image layer %q: %w", item.ID, child.ID, err)
 				}
 				if child.MotionID == "" && !multiImageMotion {
-					if policy, ok := selectAnimationPolicy(policies, "image", child.GroupID, child.SubgroupID); ok && !animationUsesMultiImageRecipe(policy.MotionID) {
-						child.MotionID = policy.MotionID
-						child.MotionParams = cloneMotionParams(policy.MotionParams)
+					if policy, ok := selectAnimationPolicy(policies, "image", child.GroupID, child.SubgroupID); ok && (policy.MotionID == "" || !animationUsesMultiImageRecipe(policy.MotionID)) {
+						child.MotionID, child.MotionParams = resolvePolicyMotion(src, policy, "image", child.GroupID, child.SubgroupID)
 					}
 				}
 				if strings.TrimSpace(child.Caption) != "" && child.CaptionMotionID == "" {
 					if policy, ok := selectAnimationPolicy(policies, "caption", child.GroupID, child.SubgroupID); ok {
-						child.CaptionMotionID = policy.MotionID
-						child.CaptionMotionParams = cloneMotionParams(policy.MotionParams)
+						child.CaptionMotionID, child.CaptionMotionParams = resolvePolicyMotion(src, policy, "caption", child.GroupID, child.SubgroupID)
 					}
 				}
 				if strings.TrimSpace(child.Caption) != "" && child.CaptionMotionID != "" && !motionAdmitsTarget(child.CaptionMotionID, "caption") {
@@ -110,8 +125,7 @@ func resolveAnimationPolicies(src *semanticPlan) error {
 
 		if len(item.ImageLayers) == 0 && item.MotionID == "" && len(item.Assets) > 0 && (isImageKind(kind) || isEntityKind(kind)) {
 			if policy, ok := selectAnimationPolicy(policies, "image", item.GroupID, item.SubgroupID); ok {
-				item.MotionID = policy.MotionID
-				item.MotionParams = cloneMotionParams(policy.MotionParams)
+				item.MotionID, item.MotionParams = resolvePolicyMotion(src, policy, "image", item.GroupID, item.SubgroupID)
 			}
 		}
 	}
@@ -145,6 +159,49 @@ func selectAnimationPolicy(policies map[animationPolicySelector]semanticAnimatio
 	}
 	policy, ok := policies[animationPolicySelector{target, groupID, ""}]
 	return policy, ok
+}
+
+// resolvePolicyMotion maps an explicit group policy verbatim, or selects the
+// same deterministic catalog motion for every item in an implicitly-random
+// group. The selector includes subgroup_id so sibling overrides get
+// independent choices while members of each subgroup stay consistent.
+func resolvePolicyMotion(src *semanticPlan, policy semanticAnimationPolicy, target, groupID, subgroupID string) (string, map[string]any) {
+	if policy.MotionID != "" {
+		return policy.MotionID, cloneMotionParams(policy.MotionParams)
+	}
+	// A group-level policy shares one choice across all member subgroups; an
+	// explicitly declared subgroup gets its own stable choice.
+	if policy.SubgroupID != "" {
+		subgroupID = policy.SubgroupID
+	} else {
+		subgroupID = ""
+	}
+	motionID := runtimeDefaultGroupMotionID(src, target, groupID, subgroupID)
+	return motionID, nil
+}
+
+func runtimeDefaultGroupMotionID(src *semanticPlan, target, groupID, subgroupID string) string {
+	if src == nil {
+		return ""
+	}
+	var pool []string
+	switch target {
+	case "important_phrase":
+		pool = append([]string(nil), motion.Registry.PhraseAnimationIDs()...)
+	case "image":
+		pool = append([]string(nil), runtimeDefaultImageMotionIDs...)
+	case "caption":
+		pool = append([]string(nil), runtimeDefaultCaptionMotionIDs...)
+	case "date":
+		pool = motion.Registry.PresentationMotionIDs("date_v1")
+	case "metric":
+		pool = motion.Registry.PresentationMotionIDs("metric_v1")
+	}
+	if len(pool) == 0 {
+		return ""
+	}
+	sort.Strings(pool)
+	return pool[styleHash("runtime_default_group_motion", src.PlanID, src.VideoID, target+"\x00"+groupID+"\x00"+subgroupID, uint64(len(pool)))]
 }
 
 func cloneMotionParams(params map[string]any) map[string]any {

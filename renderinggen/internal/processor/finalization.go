@@ -70,9 +70,46 @@ func (f *ParentFinalizer) FinalizeFromChildren(ctx context.Context, parentID str
 	}
 	start, end, ok := childFrameRange(children)
 	if !ok {
-		return false, queue.Artifact{}, fmt.Errorf("parent finalizer: child family of %s has no frame range to assemble", parentID)
+		if len(children) == 0 || allChildrenUnranged(children) {
+			// ParentJobID also correlates ordinary render jobs with a PipelineGen
+			// run. Those families are published by their submitter and are not
+			// packet-copy chunk assemblies. Treat them as not-applicable instead
+			// of claiming the parent and logging a false "no frame range" error.
+			return false, queue.Artifact{}, nil
+		}
+		return false, queue.Artifact{}, fmt.Errorf("parent finalizer: child family of %s has no complete frame range to assemble", parentID)
 	}
 	return f.finalize(ctx, parentID, start, end, children)
+}
+
+func allChildrenUnranged(children []*queue.Job) bool {
+	if len(children) == 0 {
+		return true
+	}
+	for _, child := range children {
+		if child == nil || child.FrameRange != nil {
+			return false
+		}
+	}
+	return true
+}
+
+// childFrameRange returns the half-open [start, end) frame range a child family
+// spans, or false when the family is empty or a boundary child carries no frame
+// range. It deliberately takes the family as an argument: the range is only
+// meaningful relative to the read it came from.
+func childFrameRange(children []*queue.Job) (int64, int64, bool) {
+	if len(children) == 0 {
+		return 0, 0, false
+	}
+	first, last := children[0], children[len(children)-1]
+	if first == nil || last == nil || first.FrameRange == nil || last.FrameRange == nil {
+		return 0, 0, false
+	}
+	return first.FrameRange.Start, last.FrameRange.End, true
+}
+
+// finalize runs the finalization protocol against an already-read pre-claim
 }
 
 // childFrameRange returns the half-open [start, end) frame range a child family

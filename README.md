@@ -101,14 +101,15 @@ RenderingGen compila il piano semantico, non è un secondo renderer. Il registry
 contiene **20 `ItemKind`**, **29 template**, **10 preset ufficiali** (2 testo +
 8 immagini) e **6 comportamenti di compilazione** (testo, entità, immagine,
 video, shape, mappa). Sono conteggi di livelli diversi: kind/template/preset non
-sono sinonimi di “sezione”. **Conteggio verificato il 2026-10-08** con
-`go run ./cmd/motion-catalog`: il runtime espone **452 motion ID**, **25 famiglie
-selezionabili** e **21 use case**. È una vista compilata: 404 definizioni sono
-nell’artefatto ChrononTemplate incorporato e 48 stili brevi arrivano dal catalogo
-Short Phrases, che ha uno schema distinto. Il file sorgente JSON di
-ChrononTemplate contiene 319 motion; l’emitter aggiunge le ricette possedute dai
-pack C++ e i cataloghi metric/date/entity. Usa il catalogo runtime, non vecchi
-conteggi nel piano cleanup, per leggere la disponibilità corrente.
+sono sinonimi di “sezione”. **Conteggio verificato il 2026-10-12** con
+`go run ./cmd/motion-catalog`: il runtime espone **481 motion ID**, **27 famiglie
+selezionabili** e **21 use case**. È una vista compilata: include l’artefatto
+ChrononTemplate incorporato, i pack C++ e i cataloghi metric/date/entity.
+Generala al momento del consumo per leggere la disponibilità corrente; i
+conteggi precedenti non descrivono più il registry compilato.
+
+Il comando scrive il catalogo su stdout; `go run ./cmd/motion-catalog -output
+catalog.json` lo salva su file.
 
 Le famiglie, i target e gli use case si sovrappongono: i numeri non vanno sommati
 come se fossero motion uniche. Per il picker attuale: **mappe = 14 motion
@@ -257,8 +258,9 @@ its `--check` mode verifies both copies. Never edit generated embedded catalogs
 by hand.
 
 Text item `params` (or the item-level `style` override) may set `font_family`
-to any of the six closed runtime families: `poppins`, `inter`, `inter_bold`,
-`dejavu_sans`, `playfair_display_italic`, and `bricolage_grotesque`. `glow_size`
+to any of the eight closed runtime families: `poppins`, `inter`, `inter_bold`,
+`dejavu_sans`, `playfair_display_italic`, `bricolage_grotesque`, `oswald`, and
+`abril_fatface`. `glow_size`
 is `[0,256]` pixels, `stroke_size` `[0,64]`, `font_size_px` `(0,512]`, and
 `shadow_blur_px`, `shadow_opacity`, `shadow_offset_x_px`, and
 `shadow_offset_y_px` are `[0,256]`, `[0,1]`, and `[-256,256]` pixels for each

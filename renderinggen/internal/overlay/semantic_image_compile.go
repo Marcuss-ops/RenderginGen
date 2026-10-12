@@ -42,6 +42,27 @@ func compileImageItem(ri resolvedItem, src *semanticPlan, registry *assetRegistr
 	if isMultiImageRecipe(visualAccents) {
 		return nil, fmt.Errorf("overlay: motion %q requires multiple image_layers", visualAccents.ID)
 	}
+	if ri.Kind == KindLightLeak && len(ri.Item.Assets) == 0 && len(ri.Item.ImageLayers) == 0 {
+		if visualAccents == nil || visualAccents.Category != "light_leak_v1" {
+			return nil, fmt.Errorf("overlay: assetless light leak item %q requires a light_leak_v1 motion", ri.Item.ID)
+		}
+		opacity := 0.0
+		base := Layer{ID: ri.Item.ID + "__transparent_surface", Type: "image", Position: []float64{0, 0}, Size: []float64{float64(src.Width), float64(src.Height)}, Fit: "contain", StartFrame: ri.Start, DurationFrames: ri.End - ri.Start, Opacity: &opacity}
+		layers, err := compileVisualAccentsImageLayers(ri, src, base, visualAccents)
+		if err != nil {
+			return nil, err
+		}
+		out := make([]Layer, 0, len(layers)-1)
+		for _, layer := range layers {
+			if layer.ID != base.ID {
+				out = append(out, layer)
+			}
+		}
+		if len(out) == 0 {
+			return nil, fmt.Errorf("overlay: light leak item %q produced no glow layers", ri.Item.ID)
+		}
+		return out, nil
+	}
 	if len(ri.Item.ImageLayers) == 0 {
 		if len(ri.Item.Assets) == 0 {
 			return nil, fmt.Errorf("overlay: image template %q item %q requires asset_refs", ri.Item.Template, ri.Item.ID)
@@ -254,8 +275,19 @@ func compileSingleImageLayerResolved(ri resolvedItem, src *semanticPlan, assetPa
 	if ri.Kind == KindEntityImage {
 		layer.Fit = FitContain
 		layer.EntityImage = true
+	} else if fit, ok := ri.Params["fit"].(string); ok && (fit == "cover" || fit == "contain" || fit == "fill") {
+		// Bounded payloads choose how pixels fill the authored box; the
+		// default contain path is preserved when the key is absent.
+		layer.Fit = fit
 	}
-	if err := applyFrameTreatment(&layer, ri.Item.Frame); err != nil {
+	// Bounded clips the card inside its authored box (the renderer already
+	// clips to Size/Radius); validation owns the contract, lowering only
+	// keeps the authored fit instead of falling back to a preset default.
+	if bounded, ok := ri.Params["bounded"].(bool); ok && bounded && layer.Fit == "" {
+		layer.Fit = FitContain
+	}
+	frame := frameFromImageParams(ri.Params, ri.Item.Frame)
+	if err := applyFrameTreatment(&layer, frame); err != nil {
 		return Layer{}, fmt.Errorf("overlay: image item %q: %w", ri.Item.ID, err)
 	}
 	return layer, nil
@@ -284,6 +316,17 @@ var runtimeDefaultImageMotionIDs = func() []string {
 // runtimeDefaultImageMotionID returns a deterministic but video/item-specific
 // choice. Explicit motion_id and animation_policies are handled before this
 // fallback, and therefore remain authoritative.
+var runtimeDefaultCaptionMotionIDs = func() []string {
+	var ids []string
+	for _, id := range motion.Registry.List() {
+		if motionAdmitsTarget(id, "caption") {
+			ids = append(ids, id)
+		}
+	}
+	sort.Strings(ids)
+	return ids
+}()
+
 func runtimeDefaultImageMotionID(src *semanticPlan, itemID string) string {
 	return runtimeDefaultImageMotionIDFor(runtimeDefaultImageMotionIDs, src, itemID)
 }

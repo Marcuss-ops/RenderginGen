@@ -50,7 +50,16 @@ func itemHasCaption(item semanticItem) bool {
 func validateTextRuntimeOverrides(params map[string]any, itemID string, kind ItemKind, presetID string, hasImage, hasEntityCaption bool) error {
 	captionedEntityImage := (isEntityKind(kind) || isImageKind(kind)) && hasImage && hasEntityCaption
 	if isShapeKind(kind) || isImageKind(kind) || isVideoKind(kind) || (isEntityKind(kind) && hasImage) {
+		imageKeys := make(map[string]bool, len(runtimeImageStyleKeys))
+		for _, key := range runtimeImageStyleKeys {
+			imageKeys[key] = true
+		}
 		for _, key := range runtimeTextStyleKeys {
+			if imageKeys[key] {
+				// Shared name (shadow_opacity): the image validator owns it
+				// on media layers, so it is not a text-layer trespass.
+				continue
+			}
 			value, exists := params[key]
 			if !exists {
 				continue
@@ -69,6 +78,9 @@ func validateTextRuntimeOverrides(params map[string]any, itemID string, kind Ite
 			if exists {
 				return fmt.Errorf("overlay: item %q cannot apply text runtime override %q to a non-text layer", itemID, key)
 			}
+		}
+		if err := validateImageRuntimeOverrides(params, itemID); err != nil {
+			return err
 		}
 		return nil
 	}
@@ -139,6 +151,23 @@ func validateRuntimeTextStyleKey(key string, value any, itemID string) error {
 		if _, err := boundedRuntimeSize(value, key, 1); err != nil {
 			return fmt.Errorf("overlay: item %q %w", itemID, err)
 		}
+	case "cursor_color":
+		color, ok := value.(string)
+		if !ok || !isHexColor(color) {
+			return fmt.Errorf("overlay: item %q params.cursor_color must be #RRGGBB", itemID)
+		}
+	case "cursor_width_px":
+		if _, err := boundedRuntimeSize(value, key, maxRuntimeStrokeSize); err != nil {
+			return fmt.Errorf("overlay: item %q %w", itemID, err)
+		}
+	case "cursor_height_px":
+		if _, err := boundedRuntimeSize(value, key, maxRuntimeShadowSize); err != nil {
+			return fmt.Errorf("overlay: item %q %w", itemID, err)
+		}
+	case "cursor_blink":
+		if _, ok := value.(bool); !ok {
+			return fmt.Errorf("overlay: item %q params.cursor_blink must be a boolean", itemID)
+		}
 	}
 	return nil
 }
@@ -146,6 +175,93 @@ func validateRuntimeTextStyleKey(key string, value any, itemID string) error {
 var runtimeTextStyleKeys = []string{
 	"font_family", "font_size_px", "glow_size", "stroke_size",
 	"shadow_blur_px", "shadow_opacity", "shadow_offset_x_px", "shadow_offset_y_px",
+	"cursor_color", "cursor_width_px", "cursor_height_px", "cursor_blink",
+}
+
+// runtimeImageStyleKeys are the flat image-card overrides PipelineGen emits
+// (overlay_style.image.* trimmed of its image_ prefix). Geometry and fit ride
+// the layer directly; border/stroke/shadow ride the card Frame, with flat
+// keys acting as overrides when no Frame block is present.
+var runtimeImageStyleKeys = []string{
+	"width", "height", "position_x", "position_y", "radius",
+	"bounded", "fit",
+	"border_width", "border_color", "border_radius",
+	"stroke_width", "stroke_color",
+	"shadow_enabled", "shadow_color", "shadow_opacity", "shadow_blur",
+	"shadow_offset_x", "shadow_offset_y",
+}
+
+func validateImageRuntimeOverrides(params map[string]any, itemID string) error {
+	for _, key := range runtimeImageStyleKeys {
+		value, exists := params[key]
+		if !exists {
+			continue
+		}
+		if err := validateRuntimeImageStyleKey(key, value, itemID); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func validateRuntimeImageStyleKey(key string, value any, itemID string) error {
+	switch key {
+	case "width", "height":
+		n, ok := numericValue(value)
+		if !ok || n <= 0 || n > 8192 {
+			return fmt.Errorf("overlay: item %q params.%s must be between 1 and 8192 pixels", itemID, key)
+		}
+	case "position_x", "position_y":
+		n, ok := numericValue(value)
+		if !ok || math.IsNaN(n) || math.IsInf(n, 0) || math.Abs(n) > 8192 {
+			return fmt.Errorf("overlay: item %q params.%s must be within ±8192 pixels", itemID, key)
+		}
+	case "radius", "border_radius":
+		n, ok := numericValue(value)
+		if !ok || math.IsNaN(n) || math.IsInf(n, 0) || n < 0 || n > maxFrameRadius {
+			return fmt.Errorf("overlay: item %q params.%s must be within [0,%g]", itemID, key, maxFrameRadius)
+		}
+	case "border_width":
+		n, ok := numericValue(value)
+		if !ok || math.IsNaN(n) || math.IsInf(n, 0) || n < 0 || n > maxFrameBorderWidth {
+			return fmt.Errorf("overlay: item %q params.%s must be within [0,%g]", itemID, key, maxFrameBorderWidth)
+		}
+	case "stroke_width":
+		n, ok := numericValue(value)
+		if !ok || math.IsNaN(n) || math.IsInf(n, 0) || n < 0 || n > maxFrameStrokeWidth {
+			return fmt.Errorf("overlay: item %q params.%s must be within [0,%g]", itemID, key, maxFrameStrokeWidth)
+		}
+	case "border_color", "stroke_color", "shadow_color":
+		color, ok := value.(string)
+		if !ok || !isHexColor(color) {
+			return fmt.Errorf("overlay: item %q params.%s must be #RRGGBB", itemID, key)
+		}
+	case "bounded", "shadow_enabled":
+		if _, ok := value.(bool); !ok {
+			return fmt.Errorf("overlay: item %q params.%s must be a boolean", itemID, key)
+		}
+	case "fit":
+		fit, ok := value.(string)
+		if !ok || (fit != "cover" && fit != "contain" && fit != "fill") {
+			return fmt.Errorf("overlay: item %q params.fit must be cover, contain or fill", itemID)
+		}
+	case "shadow_opacity":
+		n, ok := numericValue(value)
+		if !ok || math.IsNaN(n) || math.IsInf(n, 0) || n < 0 || n > 1 {
+			return fmt.Errorf("overlay: item %q params.shadow_opacity must be within [0,1]", itemID)
+		}
+	case "shadow_blur":
+		n, ok := numericValue(value)
+		if !ok || math.IsNaN(n) || math.IsInf(n, 0) || n < 0 || n > maxFrameShadowBlur {
+			return fmt.Errorf("overlay: item %q params.shadow_blur must be within [0,%g]", itemID, maxFrameShadowBlur)
+		}
+	case "shadow_offset_x", "shadow_offset_y":
+		n, ok := numericValue(value)
+		if !ok || math.IsNaN(n) || math.IsInf(n, 0) || math.Abs(n) > maxFrameShadowOffset {
+			return fmt.Errorf("overlay: item %q params.%s must be within ±%g", itemID, key, maxFrameShadowOffset)
+		}
+	}
+	return nil
 }
 
 func boundedRuntimeSize(value any, key string, maximum float64) (float64, error) {

@@ -183,9 +183,12 @@ func TestRuntimeTextStyleOverridesRejectImageLayers(t *testing.T) {
 		{"glow_size", `10`},
 		{"stroke_size", `4`},
 		{"shadow_blur_px", `12`},
-		{"shadow_opacity", `0.6`},
 		{"shadow_offset_x_px", `-3`},
 		{"shadow_offset_y_px", `7`},
+		{"cursor_color", `"#FF3355"`},
+		{"cursor_width_px", `6`},
+		{"cursor_height_px", `72`},
+		{"cursor_blink", `true`},
 	} {
 		covered[override.key] = true
 		t.Run(override.key, func(t *testing.T) {
@@ -195,7 +198,13 @@ func TestRuntimeTextStyleOverridesRejectImageLayers(t *testing.T) {
 			}
 		})
 	}
+	imageKeys := map[string]bool{"shadow_opacity": true}
 	for _, key := range runtimeTextStyleKeys {
+		if imageKeys[key] {
+			// Shared with the image validator (flat shadow_opacity); its
+			// image-layer coverage lives in TestRuntimeImageFlatOverridesValidate.
+				continue
+		}
 		if !covered[key] {
 			t.Errorf("runtime control %q is not exercised against a non-text layer", key)
 		}
@@ -364,5 +373,45 @@ func TestRuntimeStyleInterBoldIsSelectableAndRenderable(t *testing.T) {
 	asset := filepath.Join("..", "..", filepath.FromSlash(layer.Style.Font))
 	if _, err := os.Stat(asset); err != nil {
 		t.Fatalf("the Inter Bold asset a plan points at is missing: %v", err)
+	}
+}
+
+func TestRuntimeCursorOverridesValidateAndLower(t *testing.T) {
+	for _, tc := range []struct{ name, params, want string }{
+		{"bad-color", `{"cursor_color":"red"}`, "cursor_color"},
+		{"bad-width", `{"cursor_width_px":-1}`, "cursor_width_px"},
+		{"oversized-width", `{"cursor_width_px":65}`, "cursor_width_px"},
+		{"oversized-height", `{"cursor_height_px":257}`, "cursor_height_px"},
+		{"bad-blink", `{"cursor_blink":"yes"}`, "cursor_blink"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			if _, err := compileRuntimeStylePlan(t, tc.params, `{}`); err == nil || !strings.Contains(err.Error(), tc.want) {
+				t.Fatalf("error = %v, want %q", err, tc.want)
+			}
+		})
+	}
+}
+
+func TestRuntimeImageFlatOverridesValidate(t *testing.T) {
+	imagePlan := func(params string) error {
+		raw := []byte(`{"schema_version":"renderinggen.overlay-plan.v1","plan_id":"runtime-image","video_id":"v","width":1920,"height":1080,"fps_num":24,"fps_den":1,"items":[{"id":"image","kind":"image","template_id":"IMAGE_OVERLAY","preset_id":"image_fade_in","params":` + params + `,"start_ms":0,"end_ms":3000,"asset_refs":[{"asset_id":"image","sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","url":"https://example.test/image.png","media_type":"image/png"}]}]}`)
+		_, err := CompileSemantic(raw)
+		return err
+	}
+	for _, tc := range []struct{ name, params, want string }{
+		{"bad-fit", `{"fit":"stretch"}`, "fit"},
+		{"bad-border-color", `{"border_color":"red"}`, "border_color"},
+		{"bad-border-width", `{"border_width":-1}`, "border_width"},
+		{"bad-shadow-opacity", `{"shadow_opacity":2}`, "shadow_opacity"},
+		{"bad-bounded", `{"bounded":"yes"}`, "bounded"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			if err := imagePlan(tc.params); err == nil || !strings.Contains(err.Error(), tc.want) {
+				t.Fatalf("error = %v, want %q", err, tc.want)
+			}
+		})
+	}
+	if err := imagePlan(`{"bounded":true,"fit":"cover","border_width":6,"border_color":"#38BDF8","shadow_opacity":0.7,"shadow_blur":10}`); err != nil {
+		t.Fatalf("well-formed image overrides were rejected: %v", err)
 	}
 }

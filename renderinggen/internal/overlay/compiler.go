@@ -202,7 +202,7 @@ type semanticAnimationPolicy struct {
 	Target       string         `json:"target"`
 	GroupID      string         `json:"group_id"`
 	SubgroupID   string         `json:"subgroup_id,omitempty"`
-	MotionID     string         `json:"motion_id"`
+	MotionID     string         `json:"motion_id,omitempty"`
 	MotionParams map[string]any `json:"motion_params,omitempty"`
 }
 

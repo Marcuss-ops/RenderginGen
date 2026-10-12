@@ -156,6 +156,10 @@ func TestFinalizeFromChildrenRejectsAFamilyWithoutARange(t *testing.T) {
 		"boundary child without a frame range": {
 			{ID: "c0", ChunkIndex: 0, State: queue.StateCompleted, Artifact: &queue.Artifact{StorageKey: "chunk-a"}},
 		},
+		"mixed ranged and unranged children": {
+			{ID: "c0", ChunkIndex: 0, FrameRange: &queue.FrameRange{Start: 0, End: 10}, State: queue.StateCompleted, Artifact: copySafeChunkArtifact("chunk-a")},
+			{ID: "c1", ChunkIndex: 1, State: queue.StateCompleted, Artifact: copySafeChunkArtifact("chunk-b")},
+		},
 	}
 	for name, children := range cases {
 		t.Run(name, func(t *testing.T) {
@@ -171,5 +175,19 @@ func TestFinalizeFromChildrenRejectsAFamilyWithoutARange(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestFinalizeFromChildrenIgnoresUnrangedCorrelationChildren(t *testing.T) {
+	q := &finalizerQueue{children: []*queue.Job{
+		{ID: "ordinary-render-child", ChunkIndex: 0, State: queue.StateCompleted, Artifact: &queue.Artifact{StorageKey: "artifact"}},
+	}}
+	f := NewParentFinalizer(q, nil, nil, nil, "worker", t.TempDir())
+	finalized, _, err := f.FinalizeFromChildren(context.Background(), "pipeline-run-parent")
+	if err != nil || finalized {
+		t.Fatalf("unranged run-correlation family: finalized=%t err=%v, want not-applicable without error", finalized, err)
+	}
+	if q.claimed {
+		t.Fatal("ordinary correlated render jobs must not claim the parent finalization lease")
 	}
 }
