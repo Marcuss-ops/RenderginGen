@@ -137,6 +137,19 @@ func resolveMapPinLabel(ri resolvedItem, src *semanticPlan, resolvedPin resolved
 		"position_x": topLeft[0] + width/2,
 		"position_y": topLeft[1] + height/2,
 	}
+	// Map labels and attribution are text too: start from the same effective
+	// run/item typography as every other overlay, then let the pin's explicit
+	// label_style override its own font/effects below. Geometry remains owned by
+	// this map compiler and cannot be displaced by run-level position params.
+	styleParams = mergeSemanticParams(ri.Params, styleParams)
+	if pin.LabelStyle != nil {
+		if pin.LabelStyle.FontFamily != "" {
+			styleParams["font_family"] = pin.LabelStyle.FontFamily
+		}
+		if pin.LabelStyle.FontSizePX != nil {
+			styleParams["font_size_px"] = *pin.LabelStyle.FontSizePX * scale
+		}
+	}
 	captionStyle := &LayerStyle{Font: font}
 	roleOverrides := &LayerStyle{}
 	if pin.LabelStyle != nil {
@@ -199,7 +212,7 @@ func resolveMapAttribution(ri resolvedItem, src *semanticPlan, attribution strin
 		Text: attribution, Size: []float64{width, height}, OmitBox: true,
 		Position:    canvasBoxPosition("text", boxX, boxY, width, height, src.Width, src.Height),
 		Style:       &LayerStyle{Font: OfficialFontPathForLanguage(src.Language)},
-		StyleParams: map[string]any{}, MotionTarget: "text", StylePolicy: textRoleMapAttribution,
+		StyleParams: ri.Params, MotionTarget: "text", StylePolicy: textRoleMapAttribution,
 		FontSize: mapAttributionFontPX * scale, OverrideFill: "#F8F5EA",
 	}
 	// Role base styles supply fit and shadow policy; retain the contract's

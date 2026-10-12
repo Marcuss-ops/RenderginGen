@@ -52,6 +52,20 @@ func TestHasVisualOverlayDistinguishesVideoOnlyFromAuthoredComposition(t *testin
 	if !planHasVisualOverlay(&overlay.Plan{Layers: []overlay.Layer{{Type: "image"}}}) {
 		t.Fatal("image-only plan must report an authored overlay")
 	}
+	backgroundOnly := &overlay.Plan{Layers: []overlay.Layer{{ID: "background", Type: "video"}}}
+	if !planHasVisualOverlay(backgroundOnly) {
+		t.Fatal("video background without a source clip must report an authored composition")
+	}
+	if planHasVideoSource(backgroundOnly) {
+		t.Fatal("video background must not be reported as the source clip")
+	}
+	sourceAndBackground := &overlay.Plan{Layers: []overlay.Layer{{ID: "source", Type: "video"}, {ID: "background", Type: "video"}}}
+	if !planHasVisualOverlay(sourceAndBackground) || !planHasVideoSource(sourceAndBackground) {
+		t.Fatal("source plus video background must report both source and composition")
+	}
+	if planHasVisualOverlay(&overlay.Plan{Layers: []overlay.Layer{{ID: "source", Type: "video"}}}) {
+		t.Fatal("source-only plan must not report an authored overlay")
+	}
 }
 
 // TestRunGPUReportsDutyCycleGapToHook pins the gpu_gap_hook contract: the value
