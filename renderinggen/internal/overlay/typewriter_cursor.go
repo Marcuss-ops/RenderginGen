@@ -77,6 +77,29 @@ func compileTypewriterCursor(ri resolvedItem, src *semanticPlan, text Layer) (La
 			radius: .022 * fontSize, fill: []float64{.48, .78, .82, 1},
 		}
 	}
+	// Runtime payload overrides (overlay_style.cursor.*): chosen color, pixel
+	// geometry (width = thickness, height = pixel size) and blink. Explicit
+	// zero width hides the caret; otherwise the motion-authored style stays.
+	if color, ok := ri.Params["cursor_color"].(string); ok && isHexColor(color) {
+		if fill, err := parseHexColor(color); err == nil {
+			style.fill = []float64{fill[0], fill[1], fill[2], 1}
+		}
+	}
+	if width, hasWidth, err := runtimeNumber(ri.Params, "cursor_width_px"); err == nil && hasWidth {
+		if width == 0 {
+			return Layer{}, false
+		}
+		style.width = width
+	}
+	if height, hasHeight, err := runtimeNumber(ri.Params, "cursor_height_px"); err == nil && hasHeight {
+		if height > 0 {
+			style.height = height
+		}
+	}
+	cursorBlink := isTimelineDate
+	if blink, ok := ri.Params["cursor_blink"].(bool); ok {
+		cursorBlink = blink
+	}
 	var sweep *AnimationTrack
 	for _, animator := range text.TextAnimators {
 		for i := range animator.Selectors {
@@ -171,9 +194,10 @@ func compileTypewriterCursor(ri resolvedItem, src *semanticPlan, text Layer) (La
 			}
 		}
 	}
-	if isTimelineDate {
+	if cursorBlink {
 		// Let the caret blink briefly after the last glyph, then disappear while
-		// the date remains on screen.
+		// the phrase remains on screen. Timeline dates always blink; other
+		// motions blink only when the payload opts in via cursor_blink.
 		last := sweep.Keyframes[len(sweep.Keyframes)-1].Frame
 		tracks = append(tracks, AnimationTrack{Property: "opacity", Keyframes: []AnimationKeyframe{
 			{Frame: 0, Value: 1},

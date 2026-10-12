@@ -26,6 +26,8 @@ import (
 // images and maps lower through their own compilers.
 type chainSegment struct {
 	Text                string               `json:"text"`
+	GroupID             string               `json:"group_id,omitempty"`
+	SubgroupID          string               `json:"subgroup_id,omitempty"`
 	MotionID            string               `json:"motion_id"`
 	PresetID            string               `json:"preset_id"`
 	ImagePresetID       string               `json:"image_preset_id"`
@@ -123,6 +125,8 @@ func segRIItem(seg chainSegment, chain semanticItem) semanticItem {
 		}
 	}
 	item.Kind = segKind
+	item.GroupID = seg.GroupID
+	item.SubgroupID = seg.SubgroupID
 	item.Template = segTemplate
 	item.Text = seg.Text
 	item.MotionID = seg.MotionID

@@ -26,6 +26,58 @@ func compileAnimationPolicyFixture(t *testing.T, policies []any, items []any) (C
 	return CompileSemantic(raw)
 }
 
+func TestAnimationPolicyMissingMotionSelectsOneStableRandomChoicePerGroup(t *testing.T) {
+	policies := []any{map[string]any{"target": "important_phrase", "group_id": "launch"}}
+	items := []any{
+		map[string]any{"id": "first", "kind": "important_phrase", "template_id": "IMPORTANT_PHRASE", "preset_id": PhraseDefaultPresetID, "group_id": "launch", "text": "First phrase", "start_ms": 0, "end_ms": 3000},
+		map[string]any{"id": "second", "kind": "important_phrase", "template_id": "IMPORTANT_PHRASE", "preset_id": PhraseDefaultPresetID, "group_id": "launch", "text": "Second phrase", "start_ms": 0, "end_ms": 3000},
+		map[string]any{"id": "untouched", "kind": "important_phrase", "template_id": "IMPORTANT_PHRASE", "preset_id": PhraseDefaultPresetID, "group_id": "other", "text": "Untouched phrase", "start_ms": 0, "end_ms": 3000},
+	}
+	first, err := compileAnimationPolicyFixture(t, policies, items)
+	if err != nil {
+		t.Fatalf("compile implicit random group policy: %v", err)
+	}
+	second, err := compileAnimationPolicyFixture(t, policies, items)
+	if err != nil {
+		t.Fatalf("retry implicit random group policy: %v", err)
+	}
+	motionFor := func(result CompileResult, id string) string {
+		for _, layer := range result.Plan.Layers {
+			if layer.ID == id && layer.Animation != nil && len(layer.Animation.TextAnimators) > 0 {
+				return layer.Animation.TextAnimators[0].ID
+			}
+		}
+		return ""
+	}
+	firstMotion, secondMotion := motionFor(first, "first"), motionFor(first, "second")
+	if firstMotion == "" || firstMotion != secondMotion || firstMotion != motionFor(second, "first") {
+		t.Fatalf("declared group must have one retry-stable random motion: %q %q %q", firstMotion, secondMotion, motionFor(second, "first"))
+	}
+	if motionFor(first, "untouched") != motionFor(second, "untouched") {
+		t.Fatalf("undeclared group must keep stable existing default, first=%q second=%q", motionFor(first, "untouched"), motionFor(second, "untouched"))
+	}
+	if motionFor(first, "untouched") == firstMotion {
+		t.Fatalf("undeclared group should retain its item-specific automatic motion, group=%q item=%q", firstMotion, motionFor(first, "untouched"))
+	}
+}
+
+func TestAnimationPolicyMissingMotionSelectsOneStableRandomChoicePerSubgroup(t *testing.T) {
+	policies := []any{
+		map[string]any{"target": "important_phrase", "group_id": "launch", "subgroup_id": "hero"},
+	}
+	items := []any{
+		map[string]any{"id": "hero-a", "kind": "important_phrase", "template_id": "IMPORTANT_PHRASE", "preset_id": PhraseDefaultPresetID, "group_id": "launch", "subgroup_id": "hero", "text": "Hero one", "start_ms": 0, "end_ms": 3000},
+		map[string]any{"id": "hero-b", "kind": "important_phrase", "template_id": "IMPORTANT_PHRASE", "preset_id": PhraseDefaultPresetID, "group_id": "launch", "subgroup_id": "hero", "text": "Hero two", "start_ms": 0, "end_ms": 3000},
+	}
+	result, err := compileAnimationPolicyFixture(t, policies, items)
+	if err != nil {
+		t.Fatalf("compile implicit random subgroup policy: %v", err)
+	}
+	if len(result.Plan.Layers) != 2 || result.Plan.Layers[0].Animation == nil || result.Plan.Layers[1].Animation == nil || len(result.Plan.Layers[0].Animation.TextAnimators) == 0 || len(result.Plan.Layers[1].Animation.TextAnimators) == 0 || result.Plan.Layers[0].Animation.TextAnimators[0].ID != result.Plan.Layers[1].Animation.TextAnimators[0].ID {
+		t.Fatalf("subgroup members did not share their selected motion: %+v", result.Plan.Layers)
+	}
+}
+
 func TestAnimationPoliciesApplyGroupSubgroupAndExplicitPrecedence(t *testing.T) {
 	policies := []any{
 		map[string]any{"target": "important_phrase", "group_id": "launch", "motion_id": "text_fade_up"},
@@ -57,6 +109,29 @@ func TestAnimationPoliciesApplyGroupSubgroupAndExplicitPrecedence(t *testing.T) 
 	}
 	if len(layers["explicit-override"].TextAnimators) == 0 {
 		t.Fatal("explicit text_word_rise did not take precedence over subgroup policy")
+	}
+}
+
+func TestAnimationPoliciesRouteDateAndMetricPresentationGroups(t *testing.T) {
+	policies := []any{
+		map[string]any{"target": "date", "group_id": "timeline", "motion_id": "date_timeline_sweep"},
+		map[string]any{"target": "metric", "group_id": "timeline", "motion_id": "metric_counter_rise"},
+	}
+	items := []any{
+		map[string]any{"id": "date", "kind": "number", "template_id": "TIMELINE_DATE_CARD", "preset_id": PhraseDefaultPresetID, "group_id": "timeline", "subgroup_id": "date", "text": "March 5, 2026", "start_ms": 0, "end_ms": 3000},
+		map[string]any{"id": "metric", "kind": "number", "template_id": "METRIC_STAT_CARD", "preset_id": PhraseDefaultPresetID, "group_id": "timeline", "subgroup_id": "metric", "text": "59.99", "start_ms": 3000, "end_ms": 6000},
+	}
+	result, err := compileAnimationPolicyFixture(t, policies, items)
+	if err != nil {
+		t.Fatalf("compile date/metric policies: %v", err)
+	}
+	if len(result.Plan.Layers) != 2 {
+		t.Fatalf("layers = %d, want two presentation targets", len(result.Plan.Layers))
+	}
+	for _, layer := range result.Plan.Layers {
+		if layer.Animation == nil || (len(layer.Animation.Tracks) == 0 && len(layer.TextAnimators) == 0) {
+			t.Errorf("%s policy did not lower to an animation: %+v", layer.ID, layer)
+		}
 	}
 }
 
@@ -197,6 +272,7 @@ func TestAnimationPoliciesRejectInvalidSelectorsAndMotionTargets(t *testing.T) {
 	}{
 		{name: "unsupported target", policies: []any{map[string]any{"target": "camera", "group_id": "g", "motion_id": "text_fade_up"}}, want: "unsupported target"},
 		{name: "unknown motion", policies: []any{map[string]any{"target": "image", "group_id": "g", "motion_id": "not_a_motion"}}, want: "not supported"},
+		{name: "params without motion", policies: []any{map[string]any{"target": "caption", "group_id": "g", "motion_params": map[string]any{"enter_frames": 2}}}, want: "motion_params requires motion_id"},
 		{name: "mismatched motion target", policies: []any{map[string]any{"target": "image", "group_id": "g", "motion_id": "text_fade_up"}}, want: "not supported"},
 		{name: "subgroup without group", policies: []any{map[string]any{"target": "caption", "subgroup_id": "child", "motion_id": "text_fade_up"}}, want: "subgroup_id requires group_id"},
 		{name: "invalid timing parameter", policies: []any{map[string]any{"target": "caption", "group_id": "g", "motion_id": "text_fade_up", "motion_params": map[string]any{"enter_frames": 1.5}}}, want: "motion_params.enter_frames"},

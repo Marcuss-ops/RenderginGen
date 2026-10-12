@@ -767,8 +767,11 @@ func resolveSemanticItems(src *semanticPlan) ([]resolvedItem, error) {
 		params := mergeSemanticParams(item.Params, item.Style)
 		ri := resolvedItem{Item: item, Spec: spec, Kind: kind, Params: params, Start: start, End: end, Map: resolvedMapSpec}
 
-		if isImageKind(kind) && len(item.Assets) == 0 && len(item.ImageLayers) == 0 {
+		if isImageKind(kind) && kind != KindLightLeak && len(item.Assets) == 0 && len(item.ImageLayers) == 0 {
 			return nil, fmt.Errorf("overlay: image template %q item %q requires asset_refs", item.Template, item.ID)
+		}
+		if kind == KindLightLeak && strings.TrimSpace(item.MotionID) == "" {
+			return nil, fmt.Errorf("overlay: light leak item %q requires a certified lightleak motion_id", item.ID)
 		}
 		if isVideoKind(kind) && len(item.Assets) == 0 {
 			return nil, fmt.Errorf("overlay: video overlay template %q item %q requires asset_refs", item.Template, item.ID)

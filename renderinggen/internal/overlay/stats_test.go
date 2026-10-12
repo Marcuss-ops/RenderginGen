@@ -17,7 +17,7 @@ func TestStatsComeFromTheSingleCompilePass(t *testing.T) {
         {"id":"e","kind":"number","template_id":"NUMBER","preset_id":"phrase_default","text":"42","start_ms":0,"end_ms":1000},
         {"id":"f","kind":"entity_image","template_id":"IMAGE_OVERLAY","preset_id":"image_focus_in","start_ms":0,"end_ms":1000,
          "asset_refs":[{"asset_id":"a","sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","url":"https://store.example/a.png","media_type":"image/png"}]},
-        {"id":"g","kind":"light_leak","template_id":"LIGHT_LEAK","start_ms":0,"end_ms":1000,
+        {"id":"g","kind":"light_leak","template_id":"LIGHT_LEAK","motion_id":"lightleak_horizontal_sweep","start_ms":0,"end_ms":1000,
          "asset_refs":[{"asset_id":"l","sha256":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","url":"https://store.example/l.mp4","media_type":"video/mp4"}]}
       ]
     }`)

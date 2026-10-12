@@ -119,6 +119,102 @@ func applyFrameTreatment(layer *Layer, frame *semanticSourceFrame) error {
 	return nil
 }
 
+// frameFromImageParams synthesizes a card Frame from the flat image runtime
+// overrides PipelineGen emits (overlay_style.image.* trimmed of its image_
+// prefix). An explicit Frame block stays authoritative; flat keys fill only
+// the fields the Frame leaves empty, so payloads can tune border width/color,
+// stroke, shadow (color/opacity/blur/offsets) and clip radius without
+// resending the whole card declaration. Bounded/fit/positions are geometry
+// and ride the image layer directly, not the Frame.
+func frameFromImageParams(params map[string]any, existing *semanticSourceFrame) *semanticSourceFrame {
+	if len(params) == 0 {
+		return existing
+	}
+	has := func(key string) bool {
+		_, ok := params[key]
+		return ok
+	}
+	needsFrame := existing != nil
+	for _, key := range []string{"border_width", "border_color", "border_radius", "stroke_width", "stroke_color", "shadow_enabled", "shadow_color", "shadow_opacity", "shadow_blur", "shadow_offset_x", "shadow_offset_y", "radius"} {
+		if has(key) {
+			needsFrame = true
+			break
+		}
+	}
+	if !needsFrame {
+		return existing
+	}
+	out := &semanticSourceFrame{}
+	if existing != nil {
+		*out = *existing
+	}
+	if width, ok := numericValue(params["border_width"]); ok || has("border_color") || has("border_radius") {
+		if out.Border == nil {
+			out.Border = &semanticFrameBorder{}
+		}
+		if w, ok := numericValue(params["border_width"]); ok {
+			out.Border.WidthPX = w
+		}
+		_ = width
+		if color, ok := params["border_color"].(string); ok && color != "" {
+			out.Border.Color = color
+		}
+		if radius, ok := numericValue(params["border_radius"]); ok {
+			out.Border.RadiusPX = radius
+		}
+		if out.Border.Color == "" {
+			out.Border.Color = "#111827"
+		}
+	}
+	if _, ok := numericValue(params["stroke_width"]); ok || has("stroke_color") {
+		if out.Stroke == nil {
+			out.Stroke = &semanticFrameStroke{}
+		}
+		if w, ok := numericValue(params["stroke_width"]); ok {
+			out.Stroke.WidthPX = w
+		}
+		if color, ok := params["stroke_color"].(string); ok && color != "" {
+			out.Stroke.Color = color
+		}
+		if out.Stroke.Color == "" {
+			out.Stroke.Color = "#FFFFFF"
+		}
+	}
+	if has("shadow_enabled") || has("shadow_color") || has("shadow_opacity") || has("shadow_blur") || has("shadow_offset_x") || has("shadow_offset_y") {
+		if out.Shadow == nil {
+			out.Shadow = &semanticFrameShadow{Color: "#000000"}
+		}
+		if enabled, ok := params["shadow_enabled"].(bool); ok && !enabled {
+			return &semanticSourceFrame{ClipRadiusPX: out.ClipRadiusPX, Border: out.Border, Stroke: out.Stroke}
+		}
+		if color, ok := params["shadow_color"].(string); ok && color != "" {
+			out.Shadow.Color = color
+		}
+		if opacity, ok := numericValue(params["shadow_opacity"]); ok {
+			out.Shadow.Opacity = opacity
+		}
+		if blur, ok := numericValue(params["shadow_blur"]); ok {
+			out.Shadow.BlurPX = blur
+		}
+		if offsetX, ok := numericValue(params["shadow_offset_x"]); ok {
+			out.Shadow.OffsetXP = offsetX
+		}
+		if offsetY, ok := numericValue(params["shadow_offset_y"]); ok {
+			out.Shadow.OffsetYP = offsetY
+		}
+		if out.Shadow.Color == "" {
+			out.Shadow.Color = "#000000"
+		}
+	}
+	if radius, ok := numericValue(params["radius"]); ok && out.ClipRadiusPX == 0 {
+		out.ClipRadiusPX = radius
+	}
+	if out.Border == nil && out.Shadow == nil && out.Stroke == nil && out.ClipRadiusPX == 0 {
+		return existing
+	}
+	return out
+}
+
 // compileMediaStrokeLayer expands transient frame-stroke metadata into a
 // Chronon rounded-rectangle path which sits above its media layer. Its fill is
 // transparent, while the visible line follows the same radius as the clip.

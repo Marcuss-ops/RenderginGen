@@ -126,11 +126,6 @@
       "duration_seconds": 1.7019766760000001
     },
     {
-      "motion_id": "short_phrase_product_glow_cursor",
-      "status": "passed",
-      "duration_seconds": 1.7135436880000001
-    },
-    {
       "motion_id": "short_phrase_product_gradual_blur",
       "status": "passed",
       "duration_seconds": 1.711247764
@@ -159,11 +154,6 @@
       "motion_id": "short_phrase_product_perspective_marquee",
       "status": "passed",
       "duration_seconds": 1.690418106
-    },
-    {
-      "motion_id": "short_phrase_product_scan_band",
-      "status": "passed",
-      "duration_seconds": 1.7012342
     },
     {
       "motion_id": "short_phrase_product_scramble_reveal",

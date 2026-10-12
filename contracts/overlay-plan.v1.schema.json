@@ -20,15 +20,16 @@
       "additionalProperties": false,
       "required": [
         "target",
-        "group_id",
-        "motion_id"
+        "group_id"
       ],
       "properties": {
         "target": {
           "enum": [
             "important_phrase",
             "image",
-            "caption"
+            "caption",
+            "date",
+            "metric"
           ]
         },
         "group_id": {
@@ -43,7 +44,7 @@
         },
         "motion_id": {
           "type": "string",
-          "minLength": 1
+          "description": "Optional certified motion choice. Omission or an empty value selects one deterministic random motion for the declared group/subgroup."
         },
         "motion_params": {
           "type": "object",
@@ -60,6 +61,18 @@
           "then": {
             "required": [
               "group_id"
+            ]
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "motion_params"
+            ]
+          },
+          "then": {
+            "required": [
+              "motion_id"
             ]
           }
         }
@@ -1359,6 +1372,27 @@
                 "type": "string",
                 "description": "Atomic grouping key linking one chart_card label to its chart_bar rects."
               },
+              "cursor_blink": {
+                "type": "boolean",
+                "description": "When true the caret blinks after the last glyph (overlay_style.cursor.blink)."
+              },
+              "cursor_color": {
+                "type": "string",
+                "pattern": "^#[0-9a-fA-F]{6}$",
+                "description": "Runtime typewriter caret color selected by overlay_style.cursor.color."
+              },
+              "cursor_height_px": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 256,
+                "description": "Runtime caret pixel height (overlay_style.cursor.height)."
+              },
+              "cursor_width_px": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 64,
+                "description": "Runtime caret thickness in output pixels (overlay_style.cursor.width); 0 hides the caret."
+              },
               "font_family": {
                 "enum": [
                   "poppins",
@@ -1413,6 +1447,27 @@
             "type": "object",
             "description": "Optional item-local runtime visual overrides; takes precedence over params for matching controls.",
             "properties": {
+              "cursor_blink": {
+                "type": "boolean",
+                "description": "When true the caret blinks after the last glyph (overlay_style.cursor.blink)."
+              },
+              "cursor_color": {
+                "type": "string",
+                "pattern": "^#[0-9a-fA-F]{6}$",
+                "description": "Runtime typewriter caret color selected by overlay_style.cursor.color."
+              },
+              "cursor_height_px": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 256,
+                "description": "Runtime caret pixel height (overlay_style.cursor.height)."
+              },
+              "cursor_width_px": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 64,
+                "description": "Runtime caret thickness in output pixels (overlay_style.cursor.width); 0 hides the caret."
+              },
               "font_family": {
                 "enum": [
                   "poppins",

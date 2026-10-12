@@ -636,6 +636,10 @@ func easingValue(easing string, t float64) (float64, error) {
 			return 4 * t * t * t, nil
 		}
 		return 1 - math.Pow(-2*t+2, 3)/2, nil
+	case "in_sine":
+		return 1 - math.Cos(t*math.Pi/2), nil
+	case "out_sine":
+		return math.Sin(t * math.Pi / 2), nil
 	case "in_out_sine":
 		return -(math.Cos(math.Pi*t) - 1) / 2, nil
 	case "out_expo":
