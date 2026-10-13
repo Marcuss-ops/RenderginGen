@@ -361,12 +361,14 @@ func animationForPreset(d PresetDefinition, text string, duration int64, phraseF
 	return lowerMotion(d.Motion.ID, d.Motion.Enter, d.Motion.Exit, nil, text, duration, isPhrase)
 }
 
-// withPhraseEntryExit adds a visible layer fade around the phrase's selected
+// withPhraseEntryExit adds a visible layer fade-in for the phrase's selected
 // text motion. The catalog MotionID owns the phrase-specific entrance; this
-// shared envelope makes entry and exit explicit for every important phrase,
-// including text-only selector motions that have no layer tracks of their
-// own. Existing opacity tracks are replaced so two curves cannot fight over
-// the same layer property.
+// shared envelope makes entry explicit for every important phrase, including
+// text-only selector motions that have no layer tracks of their own.
+// Existing opacity tracks are replaced so two curves cannot fight over the
+// same layer property. There is deliberately NO exit fade: the phrase holds
+// settled until the clip ends and cuts hard, so the mirrored exit tracks can
+// never dwell on the authoring gray.
 func withPhraseEntryExit(animation *LayerAnimation, duration int64) *LayerAnimation {
 	if duration < 3 {
 		return animation
@@ -382,10 +384,6 @@ func withPhraseEntryExit(animation *LayerAnimation, duration int64) *LayerAnimat
 		transitionFrames = 1
 	}
 	enterEnd := transitionFrames
-	exitStart := duration - transitionFrames - 1
-	if exitStart < enterEnd {
-		exitStart = enterEnd
-	}
 	tracks := animation.Tracks[:0]
 	for _, track := range animation.Tracks {
 		if track.Property != "opacity" {
@@ -395,11 +393,8 @@ func withPhraseEntryExit(animation *LayerAnimation, duration int64) *LayerAnimat
 	keyframes := []AnimationKeyframe{
 		{Frame: 0, Value: 0.0},
 		{Frame: enterEnd, Value: 1.0},
+		{Frame: lastValidFrame(duration), Value: 1.0},
 	}
-	if exitStart > enterEnd {
-		keyframes = append(keyframes, AnimationKeyframe{Frame: exitStart, Value: 1.0})
-	}
-	keyframes = append(keyframes, AnimationKeyframe{Frame: lastValidFrame(duration), Value: 0.0})
 	tracks = append(tracks, AnimationTrack{Property: "opacity", Easing: "linear", Keyframes: keyframes})
 	animation.Tracks = tracks
 	return animation

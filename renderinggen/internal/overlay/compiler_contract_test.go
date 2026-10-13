@@ -76,14 +76,13 @@ func TestCompileSemanticTextMotionProducesAnimatorContract(t *testing.T) {
 			break
 		}
 	}
-	if opacity == nil || len(opacity.Keyframes) != 4 {
-		t.Fatalf("phrase opacity animation = %+v, want entry, hold and exit keyframes", compiled.Layers[0].Animation.Tracks)
+	if opacity == nil || len(opacity.Keyframes) != 3 {
+		t.Fatalf("phrase opacity animation = %+v, want entry and hold keyframes with no exit fade", compiled.Layers[0].Animation.Tracks)
 	}
 	if opacity.Keyframes[0].Frame != 0 || opacity.Keyframes[0].Value != 0.0 ||
 		opacity.Keyframes[1].Frame != 8 || opacity.Keyframes[1].Value != 1.0 ||
-		opacity.Keyframes[2].Frame != 39 || opacity.Keyframes[2].Value != 1.0 ||
-		opacity.Keyframes[3].Frame != 47 || opacity.Keyframes[3].Value != 0.0 {
-		t.Fatalf("phrase entry/exit curve = %+v, want fade-in, hold, fade-out over 48 frames", opacity.Keyframes)
+		opacity.Keyframes[2].Frame != 47 || opacity.Keyframes[2].Value != 1.0 {
+		t.Fatalf("phrase entry curve = %+v, want fade-in then hold at 1.0 over 48 frames", opacity.Keyframes)
 	}
 }
 
@@ -103,8 +102,8 @@ func TestCompileSemanticPhraseMotionReplacesExistingOpacityWithEntryExit(t *test
 			continue
 		}
 		opacityTracks++
-		if len(track.Keyframes) != 4 || track.Keyframes[0].Value != 0.0 || track.Keyframes[1].Value != 1.0 || track.Keyframes[2].Value != 1.0 || track.Keyframes[3].Value != 0.0 {
-			t.Fatalf("phrase opacity curve = %+v, want one fade-in/hold/fade-out curve", track.Keyframes)
+		if len(track.Keyframes) != 3 || track.Keyframes[0].Value != 0.0 || track.Keyframes[1].Value != 1.0 || track.Keyframes[2].Value != 1.0 {
+			t.Fatalf("phrase opacity curve = %+v, want one fade-in/hold curve with no exit fade", track.Keyframes)
 		}
 	}
 	if opacityTracks != 1 {
