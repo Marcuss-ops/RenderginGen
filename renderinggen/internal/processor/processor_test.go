@@ -111,6 +111,37 @@ func TestRunGPUReportsDutyCycleGapToHook(t *testing.T) {
 	}
 }
 
+func TestStrictNativeBackendRejectsRecoverableGPUFailureWithoutSoftwareRetry(t *testing.T) {
+	proc, _, renderer := newProcessorWith(t, Options{StrictNativeBackend: true})
+	proc.backend = "vulkan"
+	proc.hardwareEncoder = "nvenc"
+	renderer.err = errors.New("Vulkan device lost during vkWaitForFences(CUDA export slot)")
+	ws, err := workspace.New(proc.jobsRoot, "strict-device-loss")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer ws.Cleanup()
+	prepared := &PreparedJob{
+		Job:        &queue.Job{ID: "strict-device-loss"},
+		Workspace:  ws,
+		OutputPath: filepath.Join(ws.Root(), "rendered.mp4"),
+		Plan: &overlay.Plan{
+			Canvas: overlay.Canvas{Width: 1280, Height: 720, FPSNum: 30, FPSDen: 1, DurationFrames: 30},
+			Layers: []overlay.Layer{{ID: "source", Type: "video"}},
+		},
+		Metrics: map[string]float64{},
+	}
+	if err := proc.RunGPU(context.Background(), prepared); err == nil {
+		t.Fatal("strict native execution must fail closed on Vulkan device loss")
+	}
+	if renderer.calls != 1 {
+		t.Fatalf("renderer calls=%d, want only the native attempt (no software retry)", renderer.calls)
+	}
+	if _, err := os.Stat(prepared.OutputPath); !os.IsNotExist(err) {
+		t.Fatalf("strict failed render unexpectedly produced publishable output: stat err=%v", err)
+	}
+}
+
 func TestRunGPUImageTextCompositionUsesChrononGPUPipeContract(t *testing.T) {
 	proc, _, renderer := newProcessorWith(t, Options{StrictNativeBackend: true})
 	proc.backend = "vulkan"

@@ -119,6 +119,11 @@ func validateTextRuntimeOverrides(params map[string]any, itemID string, kind Ite
 // a caption can render them.
 func validateRuntimeTextStyleKey(key string, value any, itemID string) error {
 	switch key {
+	case "fill", "glow_color":
+		color, ok := value.(string)
+		if !ok || !isHexColor(color) {
+			return fmt.Errorf("overlay: item %q params.%s must be #RRGGBB", itemID, key)
+		}
 	case "font_family":
 		family, ok := value.(string)
 		if !ok {
@@ -173,7 +178,7 @@ func validateRuntimeTextStyleKey(key string, value any, itemID string) error {
 }
 
 var runtimeTextStyleKeys = []string{
-	"font_family", "font_size_px", "glow_size", "stroke_size",
+	"font_family", "font_size_px", "fill", "glow_size", "glow_color", "stroke_size",
 	"shadow_blur_px", "shadow_opacity", "shadow_offset_x_px", "shadow_offset_y_px",
 	"cursor_color", "cursor_width_px", "cursor_height_px", "cursor_blink",
 }
@@ -312,6 +317,23 @@ func applyTextRuntimeOverrides(layer *Layer, params map[string]any) error {
 		}
 	}
 	hasFont := fontPath != ""
+	fill := ""
+	if value, exists := params["fill"]; exists {
+		color, ok := value.(string)
+		if !ok || !isHexColor(color) {
+			return fmt.Errorf("params.fill must be #RRGGBB")
+		}
+		fill = color
+	}
+	glowColor := ""
+	hasGlowColor := false
+	if value, exists := params["glow_color"]; exists {
+		color, ok := value.(string)
+		if !ok || !isHexColor(color) {
+			return fmt.Errorf("params.glow_color must be #RRGGBB")
+		}
+		glowColor, hasGlowColor = color, true
+	}
 	glowSize, hasGlow, err := runtimeNumber(params, "glow_size")
 	if err != nil {
 		return err
@@ -341,7 +363,7 @@ func applyTextRuntimeOverrides(layer *Layer, params map[string]any) error {
 		return err
 	}
 	hasShadow := hasShadowBlur || hasShadowOpacity || hasShadowOffsetX || hasShadowOffsetY
-	if !hasFont && !hasGlow && !hasStroke && !hasFontSize && !hasShadow {
+	if !hasFont && fill == "" && !hasGlow && !hasGlowColor && !hasStroke && !hasFontSize && !hasShadow {
 		return nil
 	}
 	if layer.Style == nil {
@@ -349,6 +371,9 @@ func applyTextRuntimeOverrides(layer *Layer, params map[string]any) error {
 	}
 	if hasFont {
 		layer.Style.Font = fontPath
+	}
+	if fill != "" {
+		layer.Style.Fill = fill
 	}
 	if hasFontSize {
 		layer.Style.FontSize = fontSize
@@ -375,6 +400,11 @@ func applyTextRuntimeOverrides(layer *Layer, params map[string]any) error {
 			glow := LayerGlow{Radius: glowSize, Intensity: 0.4, Color: "#FFFFFF"}
 			layer.Style.Glow = &glow
 		}
+	}
+	if hasGlowColor && layer.Style.Glow != nil {
+		glow := *layer.Style.Glow
+		glow.Color = glowColor
+		layer.Style.Glow = &glow
 	}
 	if hasStroke {
 		if strokeSize == 0 {

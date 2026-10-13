@@ -74,6 +74,38 @@ func TestWaitTerminalFallsBackWhenRouteAbsent(t *testing.T) {
 	}
 }
 
+func TestWaitTerminalFallsBackAfterTransientWaitFailure(t *testing.T) {
+	var gets int
+	mux := http.NewServeMux()
+	mux.HandleFunc("GET /jobs/job-1/wait", func(w http.ResponseWriter, _ *http.Request) {
+		http.Error(w, "temporarily unavailable", http.StatusServiceUnavailable)
+	})
+	mux.HandleFunc("GET /jobs/job-1", func(w http.ResponseWriter, _ *http.Request) {
+		gets++
+		state := StateRunning
+		if gets > 1 {
+			state = StateCompleted
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(Job{ID: "job-1", State: state})
+	})
+	ts := httptest.NewServer(mux)
+	t.Cleanup(ts.Close)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	job, err := New(ts.URL).WaitTerminal(ctx, "job-1")
+	if err != nil {
+		t.Fatalf("wait after transient long-poll failure: %v", err)
+	}
+	if job.State != StateCompleted {
+		t.Fatalf("state = %q, want completed", job.State)
+	}
+	if gets < 2 {
+		t.Fatalf("status fallback reads = %d, want at least 2", gets)
+	}
+}
+
 func TestWaitTerminalUnknownJobIsNotFound(t *testing.T) {
 	ts := waitServer(t, StateCompleted, true)
 	c := New(ts.URL)

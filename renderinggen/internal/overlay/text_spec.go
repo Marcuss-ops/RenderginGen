@@ -159,6 +159,9 @@ func resolveTextSpecBase(ri resolvedItem, src *semanticPlan) (resolvedTextSpec, 
 		StyleParams:  ri.Params,
 		MotionTarget: semanticTextMotionTarget(ri.Item, ri.Kind),
 	}
+	if fill, ok := ri.Params["fill"].(string); ok {
+		spec.OverrideFill = strings.TrimSpace(fill)
+	}
 	// Preset style and family layout travel with the spec; the compiler never
 	// re-derives them from a template lookup.
 	if ri.Preset.ID != "" {

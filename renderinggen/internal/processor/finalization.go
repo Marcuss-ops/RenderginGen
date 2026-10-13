@@ -56,13 +56,9 @@ func (f *ParentFinalizer) Finalize(ctx context.Context, parentID string, start, 
 }
 
 // FinalizeFromChildren is the worker's completion-path entry point. The
-// expected frame range is a property of the child family, so learning it meant
-// reading the family and then handing the finalizer bounds it immediately
-// re-read anyway — one duplicate Children() round-trip per completed chunk on
-// the post-processing path. Deriving the range here, from the same read that is
-// validated, removes that round-trip without changing the contract: the range
-// the pre-claim read validates against is still the range the observed family
-// spans.
+// expected frame range is derived from the family read and validated again
+// after the atomic claim. Families with no ranges are ordinary run-correlation
+// children, not assembly input; mixed or partial ranges remain errors.
 func (f *ParentFinalizer) FinalizeFromChildren(ctx context.Context, parentID string) (bool, queue.Artifact, error) {
 	children, err := f.queue.Children(ctx, parentID)
 	if err != nil {
@@ -92,24 +88,6 @@ func allChildrenUnranged(children []*queue.Job) bool {
 		}
 	}
 	return true
-}
-
-// childFrameRange returns the half-open [start, end) frame range a child family
-// spans, or false when the family is empty or a boundary child carries no frame
-// range. It deliberately takes the family as an argument: the range is only
-// meaningful relative to the read it came from.
-func childFrameRange(children []*queue.Job) (int64, int64, bool) {
-	if len(children) == 0 {
-		return 0, 0, false
-	}
-	first, last := children[0], children[len(children)-1]
-	if first == nil || last == nil || first.FrameRange == nil || last.FrameRange == nil {
-		return 0, 0, false
-	}
-	return first.FrameRange.Start, last.FrameRange.End, true
-}
-
-// finalize runs the finalization protocol against an already-read pre-claim
 }
 
 // childFrameRange returns the half-open [start, end) frame range a child family
