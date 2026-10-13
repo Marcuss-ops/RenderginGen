@@ -120,6 +120,9 @@ func applyTextRoleBaseStyle(role textRole, style *LayerStyle, fontSize float64, 
 		// Data roles keep the catalog/runtime seeded style intact; the resolver
 		// may supply a no-shrink fit policy and larger box, but semantic data
 		// does not receive phrase or caption nameplate effects.
+		if fill != "" {
+			style.Fill = fill
+		}
 	case textRoleMapLabel, textRoleMapAttribution:
 		// Legibility over a basemap comes from a shrink-only fit plus a soft
 		// drop shadow. The fill is supplied by the caller — a pin's contract

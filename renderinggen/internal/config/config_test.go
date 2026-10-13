@@ -163,6 +163,55 @@ chronon:
 	}
 }
 
+func TestStrictNativeBackendRejectsSoftwareEncoderAndPipeRouteWithoutProfile(t *testing.T) {
+	base := `
+queue:
+  endpoint: http://queue:8081
+artifact_store:
+  endpoint: http://store:9000
+chronon:
+  backend: vulkan
+  mode: ipc
+  socket_path: /run/chronon3d/chronon.sock
+  hardware_encoder: nvenc
+  encoder_backend: native
+  strict_native_backend: true
+  %s
+`
+	for _, invalidSetting := range []string{
+		"hardware_encoder: none",
+		"encoder_backend: pipe",
+	} {
+		t.Run(invalidSetting, func(t *testing.T) {
+			if _, err := Load(writeConfig(t, fmt.Sprintf(base, invalidSetting))); err == nil {
+				t.Fatalf("strict native configuration accepted %q; it must not silently select a software-compatible route", invalidSetting)
+			}
+		})
+	}
+}
+
+func TestGPUVulkanNativeProfileRejectsSoftwareEncoderAndPipeRoute(t *testing.T) {
+	base := `
+queue:
+  endpoint: http://queue:8081
+artifact_store:
+  endpoint: http://store:9000
+chronon:
+  profile: gpu-vulkan-native
+  %s
+`
+	for _, invalidSetting := range []string{
+		"hardware_encoder: none",
+		"encoder_backend: pipe",
+	} {
+		t.Run(invalidSetting, func(t *testing.T) {
+			if _, err := Load(writeConfig(t, fmt.Sprintf(base, invalidSetting))); err == nil {
+				t.Fatalf("native profile accepted %q; it must not silently select a software-compatible route", invalidSetting)
+			}
+		})
+	}
+}
+
 func TestPerBatchVulkanPipeNVENCConfigDoesNotRequireStrictNative(t *testing.T) {
 	path := writeConfig(t, `
 queue:
@@ -235,13 +284,18 @@ artifact_store:
 			want: false,
 		},
 		{
-			name: "explicit strict flag without profile",
+			name: "explicit strict native configuration without named profile",
 			yaml: `
 queue:
   endpoint: http://q
 artifact_store:
   endpoint: http://s
 chronon:
+  backend: vulkan
+  mode: ipc
+  socket_path: /run/chronon3d/chronon.sock
+  hardware_encoder: nvenc
+  encoder_backend: native
   strict_native_backend: true
 `,
 			want: true,

@@ -64,7 +64,19 @@ func (c *Client) WaitTerminal(ctx context.Context, id string) (Job, error) {
 		case errors.Is(err, errWaitRouteUnsupported):
 			return c.Wait(ctx, id, waitFallbackInterval)
 		case err != nil:
-			return Job{}, err
+			// A long-poll request can fail transiently while the job itself is
+			// still healthy (for example, when the queue is under load and the
+			// wait handler misses its response-header deadline). Do not fail the
+			// producer run and orphan a render that is still executing. The
+			// status endpoint is independent of the parked wait request, so use
+			// the established polling path for the rest of this wait.
+			if ctx.Err() != nil {
+				return Job{}, ctx.Err()
+			}
+			if errors.Is(err, ErrNotFound) {
+				return Job{}, err
+			}
+			return c.Wait(ctx, id, waitFallbackInterval)
 		}
 		if IsTerminalState(job.State) {
 			return job, nil

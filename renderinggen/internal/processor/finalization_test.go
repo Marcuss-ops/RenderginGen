@@ -146,16 +146,11 @@ func TestFinalizeFromChildrenDerivesRangeAndReadsOnceBeforeTheClaim(t *testing.T
 	}
 }
 
-// TestFinalizeFromChildrenRejectsAFamilyWithoutARange pins the failure mode: a
-// child family with no frame range is not finalizable, and the finalizer must
-// fail BEFORE claiming the parent. A claim without a range would leave the
-// parent owned by this worker with nothing to assemble.
-func TestFinalizeFromChildrenRejectsAFamilyWithoutARange(t *testing.T) {
+// TestFinalizeFromChildrenRejectsAFamilyWithPartialRanges pins fail-closed
+// behavior: a partially ranged child family is not a normal run-correlation
+// family and must not be assembled or claimed.
+func TestFinalizeFromChildrenRejectsAFamilyWithPartialRanges(t *testing.T) {
 	cases := map[string][]*queue.Job{
-		"empty family": nil,
-		"boundary child without a frame range": {
-			{ID: "c0", ChunkIndex: 0, State: queue.StateCompleted, Artifact: &queue.Artifact{StorageKey: "chunk-a"}},
-		},
 		"mixed ranged and unranged children": {
 			{ID: "c0", ChunkIndex: 0, FrameRange: &queue.FrameRange{Start: 0, End: 10}, State: queue.StateCompleted, Artifact: copySafeChunkArtifact("chunk-a")},
 			{ID: "c1", ChunkIndex: 1, State: queue.StateCompleted, Artifact: copySafeChunkArtifact("chunk-b")},

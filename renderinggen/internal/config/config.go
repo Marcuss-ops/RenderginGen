@@ -494,18 +494,18 @@ func (c *Config) validate() error {
 	if c.Chronon.Profile != "" && c.Chronon.Profile != ProfileGPUVulkanNative && c.Chronon.Profile != ProfileSoftwareCLI {
 		return fmt.Errorf("chronon.profile must be %s or %s", ProfileGPUVulkanNative, ProfileSoftwareCLI)
 	}
-	if c.Chronon.Profile == ProfileGPUVulkanNative {
+	if c.Chronon.StrictNative() {
 		if c.Chronon.Backend != "vulkan" {
-			return fmt.Errorf("%s requires chronon backend=vulkan", ProfileGPUVulkanNative)
+			return fmt.Errorf("strict native backend requires chronon.backend=vulkan")
 		}
 		if c.Chronon.HardwareEncoder != chronon.DefaultHardwareEncoder {
-			return fmt.Errorf("%s requires chronon.hardware_encoder=%s", ProfileGPUVulkanNative, chronon.DefaultHardwareEncoder)
+			return fmt.Errorf("strict native backend requires chronon.hardware_encoder=%s", chronon.DefaultHardwareEncoder)
 		}
 		if c.Chronon.Mode != "ipc" {
-			return fmt.Errorf("%s requires chronon.mode=ipc (CLI mode disallowed for production GPU profile)", ProfileGPUVulkanNative)
+			return fmt.Errorf("strict native backend requires chronon.mode=ipc")
 		}
 		if c.Chronon.EncoderBackend != "" && c.Chronon.EncoderBackend != "native" {
-			return fmt.Errorf("%s requires chronon.encoder_backend=native", ProfileGPUVulkanNative)
+			return fmt.Errorf("strict native backend requires chronon.encoder_backend=native")
 		}
 	}
 	// hardware_encoder reaches the CLI as --hardware on every GPU-required
