@@ -38,36 +38,36 @@ func TestDeprecatedMotionIsVisibleButNotSelectable(t *testing.T) {
 	if option.RemoveAfter == "" || option.DeprecationNote == "" {
 		t.Fatalf("deprecated diagnostic state missing: %+v", option)
 	}
-	if motion.Registry.Selectable("typewriter_modern_01_monospace_block_cursor") != true {
+	if motion.Registry.Selectable("apple_focus_rise") != true {
 		t.Fatal("isolated deprecation must not modify the production registry")
 	}
 }
 
 func TestDeprecatedMotionHasDeterministicSemanticCompileError(t *testing.T) {
-	id := "typewriter_modern_01_monospace_block_cursor"
+	id := "apple_focus_rise"
 	reason := "fixture retired with no compatibility window"
 	registry := motion.Registry
 	motion.Registry = motion.NewRegistry()
 	defer func() { motion.Registry = registry }()
 	if err := motion.Registry.Register(id, motion.DeclarativePlugin{Definition: motion.MotionDefinition{
-		ID: id, Category: "typewriter_modern_v1", Targets: []string{"short_phrase", "text"},
+		ID: id, Category: "apple_v2", Targets: []string{"short_phrase", "text"},
 	}}); err != nil {
 		t.Fatal(err)
 	}
-	if err := motion.Registry.Register("typewriter_modern_02_kinetic_scramble", motion.DeclarativePlugin{Definition: motion.MotionDefinition{
-		ID: "typewriter_modern_02_kinetic_scramble", Category: "typewriter_modern_v1", Targets: []string{"short_phrase", "text"},
+	if err := motion.Registry.Register("apple_soft_scale", motion.DeclarativePlugin{Definition: motion.MotionDefinition{
+		ID: "apple_soft_scale", Category: "apple_v2", Targets: []string{"short_phrase", "text"},
 	}}); err != nil {
 		t.Fatal(err)
 	}
 	if err := motion.Registry.MarkDeprecated(motion.Deprecation{
 		MotionID: id, RemoveAfter: "2099-01-01", Reason: reason,
-		Replacement: "typewriter_modern_02_kinetic_scramble",
+		Replacement: "apple_soft_scale",
 	}); err != nil {
 		t.Fatal(err)
 	}
 	// Immediate policy: a deprecated ID fails compilation even though its
 	// remove_after lies in the future. There is no grace window to test.
-	raw := []byte(`{"schema_version":"renderinggen.overlay-plan.v1","plan_id":"retired-motion","video_id":"fixture","width":1280,"height":720,"fps_num":24,"fps_den":1,"items":[{"id":"phrase","kind":"important_phrase","template_id":"IMPORTANT_PHRASE","preset_id":"phrase_default","motion_id":"typewriter_modern_01_monospace_block_cursor","text":"Fixture","start_ms":0,"end_ms":3000}]}`)
+	raw := []byte(`{"schema_version":"renderinggen.overlay-plan.v1","plan_id":"retired-motion","video_id":"fixture","width":1280,"height":720,"fps_num":24,"fps_den":1,"items":[{"id":"phrase","kind":"important_phrase","template_id":"IMPORTANT_PHRASE","preset_id":"phrase_default","motion_id":"apple_focus_rise","text":"Fixture","start_ms":0,"end_ms":3000}]}`)
 	_, firstErr := CompileSemantic(raw)
 	_, secondErr := CompileSemantic(raw)
 	if firstErr == nil || secondErr == nil {

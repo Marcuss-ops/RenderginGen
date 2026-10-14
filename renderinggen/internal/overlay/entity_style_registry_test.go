@@ -16,11 +16,10 @@ import (
 // be reachable as a derived-tag query with the historic membership counts.
 func TestEntityStyleRegistryTagQueries(t *testing.T) {
 	cases := map[string]int{
-		"below":      20,
-		"badge":      5,
-		"camera":     5,
-		"side":       5,
-		"typewriter": 5,
+		"below":  20,
+		"badge":  5,
+		"camera": 5,
+		"side":   5,
 	}
 	for tag, want := range cases {
 		got := entityStyleRegistry.query(entityStyleQuery{tag})
@@ -46,11 +45,6 @@ func TestEntityStyleRegistryTagQueries(t *testing.T) {
 				if style.CaptionLayout != "left" && style.CaptionLayout != "right" {
 					t.Fatalf("tag side matched style %q with caption layout %q", style.ID, style.CaptionLayout)
 				}
-			case "typewriter":
-				id := style.CaptionMotionID
-				if len(id) < len(typewriterCaptionPrefix) || id[:len(typewriterCaptionPrefix)] != typewriterCaptionPrefix {
-					t.Fatalf("tag typewriter matched style %q with caption motion %q", style.ID, id)
-				}
 			}
 		}
 	}
@@ -69,7 +63,7 @@ func TestEntityStyleRegistryTagQueries(t *testing.T) {
 // sampling salt, and sampling is deterministic for the identity tuple.
 func TestEntityStyleRegistrySelectorsSampleDeterministically(t *testing.T) {
 	planID, videoID, itemID := "plan-reg", "video-reg", "item-reg"
-	for _, selector := range []string{"", "random", "premium_random_v1", "testo_sotto", "below", "premium_below_random_v1", "caption_below", "badge", "badge_random", "camera", "camera_random", "side", "side_random", "typewriter", "typewriter_random"} {
+	for _, selector := range []string{"", "random", "premium_random_v1", "testo_sotto", "below", "premium_below_random_v1", "caption_below", "badge", "badge_random", "camera", "camera_random", "side", "side_random"} {
 		first, ok := ResolveEntityStyle(selector, planID, videoID, itemID)
 		if !ok {
 			t.Fatalf("selector %q did not resolve", selector)
@@ -101,7 +95,7 @@ func TestEntityStyleRegistrySelectorsSampleDeterministically(t *testing.T) {
 // vulkan_native. A failed strict-GPU motion must remain named in the plan
 // until the runtime itself supports it; the compiler must not swap recipes.
 func TestRuntimeEntityStyleSelectorsKeepCatalogMotions(t *testing.T) {
-	for _, selector := range []string{"", "random", "premium_random_v1", "testo_sotto", "below", "side", "badge", "typewriter"} {
+	for _, selector := range []string{"", "random", "premium_random_v1", "testo_sotto", "below", "side", "badge"} {
 		style, ok := ResolveEntityStyle(selector, "garlasco-plan", "garlasco-video", "chiara-poggi")
 		if !ok {
 			t.Fatalf("runtime selector %q did not resolve", selector)
@@ -232,7 +226,7 @@ func compactStrings(values []string) []string {
 
 func TestEntityCaptionMotionsAreCatalogBackedAndVariedByIdentity(t *testing.T) {
 	var want []string
-	for _, category := range []string{"entity_caption_v1", "trump_entity_text_v1", "typewriter", "typewriter_glitch", "typewriter_modern_v1", "entity_card_v1"} {
+	for _, category := range []string{"entity_caption_v1", "trump_entity_text_v1", "entity_card_v1"} {
 		want = append(want, motion.Registry.SelectableCategoryMotionIDs(category)...)
 	}
 	filtered := want[:0]

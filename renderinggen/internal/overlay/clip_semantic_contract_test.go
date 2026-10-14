@@ -1,6 +1,7 @@
 package overlay
 
 import (
+	"encoding/json"
 	"testing"
 )
 
@@ -77,6 +78,93 @@ func clipSemanticFixture() []byte {
 // TestClipSemanticContractFull is the killer test for the complete clip render
 // bridge: ClipRenderPlanV1 → renderinggen.overlay-plan.v1 → chronon.render-plan.v2.
 // It verifies every required property of the compiled Chronon plan.
+func TestClipSemanticContractGlobalEffectsLowerToChronon(t *testing.T) {
+	raw := []byte(`{"schema_version":"renderinggen.overlay-plan.v1","plan_id":"fx","video_id":"clip","width":1280,"height":720,"fps_num":30,"fps_den":1,"duration_ms":3000,"source":{"asset_id":"clip","sha256":"` + clipTestSHA + `"},"clip_effects":[{"type":"glitch","amount":0.5,"seed":7}],"clip_grid":{"spacing_px":64,"line_width_px":1,"color":"#33CCDD","opacity":0.2},"items":[]}`)
+	result, err := CompileSemantic(raw)
+	if err != nil {
+		t.Fatalf("compile global effects: %v", err)
+	}
+	if result.Plan.Schema != RenderPlanSchemaV3 {
+		t.Fatalf("adjustment effects require v3, got %s", result.Plan.Schema)
+	}
+	var adjustment, grid Layer
+	for _, layer := range result.Plan.Layers {
+		if layer.ID == "clip__adjustment" {
+			adjustment = layer
+		}
+		if layer.ID == "clip__grid" {
+			grid = layer
+		}
+	}
+	if adjustment.Type != "adjustment" || len(adjustment.Effects) != 3 || adjustment.Effects[0].Type != "wave_warp" || adjustment.Effects[1].Type != "chromatic_aberration" || adjustment.Effects[2].Type != "noise" {
+		t.Fatalf("glitch must lower into adjustment stack: %+v", adjustment)
+	}
+	if grid.Type != "shape" || grid.Shape == nil || grid.Shape.Type != "grid" || grid.Opacity == nil || *grid.Opacity != 0.2 {
+		t.Fatalf("grid overlay was not compiled: %+v", grid)
+	}
+	if len(grid.Position) != 2 || grid.Position[0] != 0 || grid.Position[1] != 0 {
+		t.Fatalf("full-frame grid must be centered on the canvas; position=%v", grid.Position)
+	}
+	if grid.Shape.GridLineWidth != 1 || grid.Shape.Stroke == nil || grid.Shape.Stroke.Width != 1 || grid.Shape.Stroke.Color != "#33CCDD" {
+		t.Fatalf("grid spacing, line width and color must all survive lowering: %+v", grid.Shape)
+	}
+	for _, layer := range result.Plan.Layers {
+		if layer.ID == "clip__adjustment" && (layer.StartFrame != 0 || layer.DurationFrames != 0 || layer.Shape != nil || len(layer.Effects) == 0) {
+			t.Fatalf("adjustment layer must be effect-only and leave its time window unset: %+v", layer)
+		}
+	}
+	wire, err := result.Plan.Marshal()
+	if err != nil {
+		t.Fatalf("marshal Chronon v3 plan: %v", err)
+	}
+	var document struct {
+		Layers []map[string]any `json:"layers"`
+	}
+	if err := json.Unmarshal(wire, &document); err != nil {
+		t.Fatalf("decode Chronon wire: %v", err)
+	}
+	found := false
+	for _, layer := range document.Layers {
+		if layer["id"] == "clip__adjustment" {
+			found = true
+			if layer["type"] != "adjustment" {
+				t.Fatalf("Chronon adjustment type lost: %v", layer)
+			}
+		}
+	}
+	if !found {
+		t.Fatalf("Chronon wire has no clip adjustment: %s", wire)
+	}
+	var gridWire struct {
+		Layers []struct {
+			ID       string    `json:"id"`
+			Position []float64 `json:"position"`
+			Shape    struct {
+				Spacing float64 `json:"spacing"`
+				Stroke  struct {
+					Color string  `json:"color"`
+					Width float64 `json:"width"`
+				} `json:"stroke"`
+			} `json:"shape"`
+		} `json:"layers"`
+	}
+	if err := json.Unmarshal(wire, &gridWire); err != nil {
+		t.Fatalf("decode grid wire fields: %v", err)
+	}
+	foundGrid := false
+	for _, layer := range gridWire.Layers {
+		if layer.ID == "clip__grid" {
+			foundGrid = true
+			if len(layer.Position) != 2 || layer.Position[0] != 0 || layer.Position[1] != 0 || layer.Shape.Spacing != 64 || layer.Shape.Stroke.Width != 1 || layer.Shape.Stroke.Color != "#33CCDD" {
+				t.Fatalf("grid wire is not full-frame or lost style: %+v", layer)
+			}
+		}
+	}
+	if !foundGrid {
+		t.Fatalf("Chronon wire has no grid shape: %s", wire)
+	}
+}
+
 func TestClipSemanticContractFull(t *testing.T) {
 	raw := clipSemanticFixture()
 

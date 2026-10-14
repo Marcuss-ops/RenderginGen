@@ -6,14 +6,9 @@
 // hardcoded "verified-by-storage-key" in the sha256 field, which made the pass
 // line unfalsifiable.
 //
-// Why it is not folded into the worker. The worker's publication path is the
-// job pipeline, which needs a claimed job, a workspace and a render; a
-// late-arriving artifact, a re-publish after a queue incident, or a check on a
-// credential rotation all need to push ONE file with no job involved. Both paths
-// share the publisher (internal/drive), the content-address rule and the byte
-// accounting, so this command is an operator entry point onto the same
-// invariants rather than a second implementation of them — which is what the
-// earlier subprocess-based upload was, and why the worker no longer calls it.
+// It is also the operator entry point for late-arriving artifacts and
+// credential-rotation checks that have no worker job context. It uses the
+// same publisher, content-address rule, and byte accounting as the worker.
 //
 // It never invents credentials: -credentials, -token and -folder are required,
 // with no defaults pointing at a checked-in file.

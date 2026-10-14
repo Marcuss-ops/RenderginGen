@@ -450,6 +450,24 @@ func compileSemantic(raw []byte) (*Plan, []Asset, Stats, []string, error) {
 		}
 	}
 
+	// The grid is an ordinary full-frame shape and therefore participates in
+	// the composite before the optional final adjustment stack.
+	if src.ClipGrid != nil {
+		grid, err := compileClipGrid(src.ClipGrid, src.Width, src.Height, plan.Canvas.DurationFrames)
+		if err != nil {
+			return nil, nil, Stats{}, nil, err
+		}
+		plan.Layers = append(plan.Layers, grid)
+	}
+	// Adjustment layers consume the composite from every preceding layer.
+	if len(src.ClipEffects) > 0 {
+		effects, err := resolveClipEffects(src.ClipEffects)
+		if err != nil {
+			return nil, nil, Stats{}, nil, err
+		}
+		plan.Layers = append(plan.Layers, Layer{ID: "clip__adjustment", Type: "adjustment", Effects: effects})
+	}
+
 	if cameraMove != nil {
 		if err := compileMapCamera(&plan, *cameraMove, cameraStartFrame, cameraEndFrame, src.FPSNum, src.FPSDen); err != nil {
 			return nil, nil, Stats{}, nil, err
@@ -473,112 +491,10 @@ func compileSemantic(raw []byte) (*Plan, []Asset, Stats, []string, error) {
 			Zoom:     1.0,
 		}
 		var tracks []CameraTrack
-		switch entityCameraMotionID {
-		case "camera_dolly_push":
-			tracks = []CameraTrack{
-				{
-					Property: "camera_position_z",
-					Easing:   "out_cubic",
-					Keyframes: []AnimationKeyframe{
-						{Frame: 0, Value: -1700.0},
-						{Frame: 65, Value: -1400.0},
-						{Frame: 89, Value: -1400.0},
-					},
-				},
-			}
-		case "camera_orbit_yaw":
-			tracks = []CameraTrack{
-				{
-					Property: "camera_rotation_y",
-					Easing:   "out_cubic",
-					Keyframes: []AnimationKeyframe{
-						{Frame: 0, Value: 12.0},
-						{Frame: 55, Value: 0.0},
-						{Frame: 89, Value: 0.0},
-					},
-				},
-				{
-					Property: "camera_position_x",
-					Easing:   "out_cubic",
-					Keyframes: []AnimationKeyframe{
-						{Frame: 0, Value: cx + 160.0},
-						{Frame: 55, Value: cx},
-						{Frame: 89, Value: cx},
-					},
-				},
-			}
-		case "camera_crane_rise":
-			tracks = []CameraTrack{
-				{
-					Property: "camera_position_y",
-					Easing:   "out_cubic",
-					Keyframes: []AnimationKeyframe{
-						{Frame: 0, Value: cy + 120.0},
-						{Frame: 55, Value: cy},
-						{Frame: 89, Value: cy},
-					},
-				},
-				{
-					Property: "camera_rotation_x",
-					Easing:   "out_cubic",
-					Keyframes: []AnimationKeyframe{
-						{Frame: 0, Value: -4.0},
-						{Frame: 55, Value: 0.0},
-						{Frame: 89, Value: 0.0},
-					},
-				},
-			}
-		case "camera_dutch_spatial":
-			tracks = []CameraTrack{
-				{
-					Property: "camera_rotation_z",
-					Easing:   "out_cubic",
-					Keyframes: []AnimationKeyframe{
-						{Frame: 0, Value: -3.5},
-						{Frame: 50, Value: 0.0},
-						{Frame: 89, Value: 0.0},
-					},
-				},
-				{
-					Property: "camera_position_z",
-					Easing:   "out_cubic",
-					Keyframes: []AnimationKeyframe{
-						{Frame: 0, Value: -1560.0},
-						{Frame: 50, Value: -1400.0},
-						{Frame: 89, Value: -1400.0},
-					},
-				},
-			}
-		case "camera_flyby_parallax":
-			tracks = []CameraTrack{
-				{
-					Property: "camera_position_x",
-					Easing:   "out_cubic",
-					Keyframes: []AnimationKeyframe{
-						{Frame: 0, Value: cx - 110.0},
-						{Frame: 60, Value: cx},
-						{Frame: 89, Value: cx},
-					},
-				},
-				{
-					Property: "camera_rotation_y",
-					Easing:   "out_cubic",
-					Keyframes: []AnimationKeyframe{
-						{Frame: 0, Value: -8.5},
-						{Frame: 60, Value: 0.0},
-						{Frame: 89, Value: 0.0},
-					},
-				},
-				{
-					Property: "camera_position_z",
-					Easing:   "out_cubic",
-					Keyframes: []AnimationKeyframe{
-						{Frame: 0, Value: -1600.0},
-						{Frame: 60, Value: -1400.0},
-						{Frame: 89, Value: -1400.0},
-					},
-				},
-			}
+		var err error
+		tracks, err = entityCameraTracks(entityCameraMotionID, cx, cy)
+		if err != nil {
+			return nil, nil, Stats{}, nil, err
 		}
 		if len(tracks) > 0 {
 			plan.CameraAnimation = &CameraAnimation{Tracks: tracks}
@@ -598,6 +514,9 @@ func compileSemantic(raw []byte) (*Plan, []Asset, Stats, []string, error) {
 	}
 	// Patch subtitle and watermark layers — they span the full clip.
 	for i := range plan.Layers {
+		if plan.Layers[i].ID == "clip__grid" {
+			plan.Layers[i].DurationFrames = plan.Canvas.DurationFrames
+		}
 		if plan.Layers[i].DurationFrames == 0 {
 			switch plan.Layers[i].ID {
 			case "subtitles", "watermark":
@@ -857,6 +776,16 @@ func compileItem(ri resolvedItem, src *semanticPlan, registry *assetRegistry) ([
 		if err != nil {
 			return nil, err
 		}
+		if ri.Item.MotionID != "" {
+			if !isChartBarItem(ri) {
+				return nil, fmt.Errorf("overlay: data visualization motion %q is only supported on chart_bar shapes", ri.Item.MotionID)
+			}
+			animation, err := animationForMotionTarget(ri.Item.MotionID, ri.Item.MotionParams, "", layer.DurationFrames, 0, ri.Item.ID, "data", false)
+			if err != nil {
+				return nil, err
+			}
+			applyMotionRouting(&layer, animation)
+		}
 		return []Layer{layer}, nil
 	case isMapKind(ri.Kind):
 		if ri.Map == nil {
@@ -882,19 +811,12 @@ func compileTextVisualAccentLayers(ri resolvedItem, src *semanticPlan, text Laye
 	}
 	// SSOT typography (typography_ssot.go): no motion branch may change the
 	// font. The payload's font_family (or the preset/language default) owns
-	// the face for every animation, including typewriter_modern_v1 — the old
-	// Bricolage force-override made the same payload render a different
-	// typeface per motion. ModernTypewriterDefaultFontFamily stays as the
-	// documented constant for callers that explicitly opt into it via
+	// the face for every animation. ModernTypewriterDefaultFontFamily stays
+	// as the documented constant for callers that explicitly opt into it via
 	// params.font_family, but it is never forced here.
 	_ = ModernTypewriterDefaultFontFamily
 	var layers []Layer
-	if definition != nil && definition.Category == "phrase_highlight_v1" {
-		layers, err = compilePhraseHighlightComponents(src, text, *definition)
-		if err != nil {
-			return nil, err
-		}
-	} else if definition == nil || definition.Category != "brush_v1" {
+	if definition == nil || definition.Category != "brush_v1" {
 		layers = []Layer{text}
 	} else {
 		if !motionDefinitionAdmitsTarget(definition, "text") {
@@ -933,9 +855,6 @@ func compileTextVisualAccentLayers(ri resolvedItem, src *semanticPlan, text Laye
 				break
 			}
 		}
-	}
-	if cursor, ok := compileTypewriterCursor(ri, src, text); ok {
-		layers = append(layers, cursor)
 	}
 	return layers, nil
 }

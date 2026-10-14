@@ -112,6 +112,11 @@ func alignEntityCaptionToFittedImage(plan *overlay.Plan, image *overlay.Layer) e
 			caption.Style.FontSize = layout.CaptionBounds.FontSize
 			caption.Style.MinFontSize = layout.CaptionBounds.FontSize
 			caption.Style.MaxFontSize = layout.CaptionBounds.FontSize
+			// The pinned size is also the fit interval's floor and ceiling. Chronon
+			// rejects font size limits without a non-none fit mode, so the interval
+			// must travel with shrink_only (min == max renders the pinned size
+			// verbatim); emitting the limits alone failed every fitted entity card.
+			caption.Style.FitMode = overlay.FitModeShrinkOnly
 		}
 		return nil
 	}

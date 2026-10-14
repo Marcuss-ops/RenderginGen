@@ -26,6 +26,25 @@ func compileAnimationPolicyFixture(t *testing.T, policies []any, items []any) (C
 	return CompileSemantic(raw)
 }
 
+// loweredMotionFingerprint identifies the selected motion behind a lowered
+// text layer: the per-unit animator id when the motion carries one, else the
+// lowered layer tracks. The implicit random fallback may select a track-only
+// motion (no per-unit animators), so comparing animator ids alone would read
+// two identical selections as different.
+func loweredMotionFingerprint(layer Layer) string {
+	if layer.Animation == nil {
+		return ""
+	}
+	if len(layer.Animation.TextAnimators) > 0 {
+		return "animator:" + layer.Animation.TextAnimators[0].ID
+	}
+	raw, err := json.Marshal(layer.Animation.Tracks)
+	if err != nil || len(layer.Animation.Tracks) == 0 {
+		return ""
+	}
+	return "tracks:" + string(raw)
+}
+
 func TestAnimationPolicyMissingMotionSelectsOneStableRandomChoicePerGroup(t *testing.T) {
 	policies := []any{map[string]any{"target": "important_phrase", "group_id": "launch"}}
 	items := []any{
@@ -43,8 +62,8 @@ func TestAnimationPolicyMissingMotionSelectsOneStableRandomChoicePerGroup(t *tes
 	}
 	motionFor := func(result CompileResult, id string) string {
 		for _, layer := range result.Plan.Layers {
-			if layer.ID == id && layer.Animation != nil && len(layer.Animation.TextAnimators) > 0 {
-				return layer.Animation.TextAnimators[0].ID
+			if layer.ID == id && layer.Animation != nil {
+				return loweredMotionFingerprint(layer)
 			}
 		}
 		return ""
@@ -73,15 +92,26 @@ func TestAnimationPolicyMissingMotionSelectsOneStableRandomChoicePerSubgroup(t *
 	if err != nil {
 		t.Fatalf("compile implicit random subgroup policy: %v", err)
 	}
-	if len(result.Plan.Layers) != 2 || result.Plan.Layers[0].Animation == nil || result.Plan.Layers[1].Animation == nil || len(result.Plan.Layers[0].Animation.TextAnimators) == 0 || len(result.Plan.Layers[1].Animation.TextAnimators) == 0 || result.Plan.Layers[0].Animation.TextAnimators[0].ID != result.Plan.Layers[1].Animation.TextAnimators[0].ID {
-		t.Fatalf("subgroup members did not share their selected motion: %+v", result.Plan.Layers)
+	byID := make(map[string]Layer, len(result.Plan.Layers))
+	for _, layer := range result.Plan.Layers {
+		if layer.Type == "text" {
+			byID[layer.ID] = layer
+		}
+	}
+	a, okA := byID["hero-a"]
+	b, okB := byID["hero-b"]
+	if !okA || !okB || a.Animation == nil || b.Animation == nil {
+		t.Fatalf("subgroup members did not lower to animated text layers: %+v", result.Plan.Layers)
+	}
+	if fa, fb := loweredMotionFingerprint(a), loweredMotionFingerprint(b); fa == "" || fa != fb {
+		t.Fatalf("subgroup members did not share their selected motion: %q vs %q", fa, fb)
 	}
 }
 
 func TestAnimationPoliciesApplyGroupSubgroupAndExplicitPrecedence(t *testing.T) {
 	policies := []any{
 		map[string]any{"target": "important_phrase", "group_id": "launch", "motion_id": "text_fade_up"},
-		map[string]any{"target": "important_phrase", "group_id": "launch", "subgroup_id": "hero", "motion_id": "typewriter_clean"},
+		map[string]any{"target": "important_phrase", "group_id": "launch", "subgroup_id": "hero", "motion_id": "text_word_stagger"},
 	}
 	items := []any{
 		map[string]any{"id": "group-default", "kind": "important_phrase", "template_id": "IMPORTANT_PHRASE", "preset_id": PhraseDefaultPresetID, "group_id": "launch", "text": "Group default", "start_ms": 0, "end_ms": 3000},
@@ -105,7 +135,7 @@ func TestAnimationPoliciesApplyGroupSubgroupAndExplicitPrecedence(t *testing.T) 
 		t.Fatal("group policy text_fade_up did not select an animation")
 	}
 	if len(layers["subgroup-default"].TextAnimators) == 0 {
-		t.Fatal("subgroup policy typewriter_clean did not override its group policy")
+		t.Fatal("subgroup policy text_word_stagger did not override its group policy")
 	}
 	if len(layers["explicit-override"].TextAnimators) == 0 {
 		t.Fatal("explicit text_word_rise did not take precedence over subgroup policy")
@@ -252,15 +282,15 @@ func TestAnimationPolicyPhraseUsesCanonicalTextTargets(t *testing.T) {
 		t.Fatalf("declared text target should be accepted: %v", err)
 	}
 
-	catalogPhrase := []any{map[string]any{"target": "important_phrase", "group_id": "g", "motion_id": "typewriter_clean"}}
+	catalogPhrase := []any{map[string]any{"target": "important_phrase", "group_id": "g", "motion_id": "apple_focus_rise"}}
 	if _, err := compileAnimationPolicyFixture(t, catalogPhrase, []any{
 		map[string]any{"id": "phrase", "kind": "important_phrase", "template_id": "IMPORTANT_PHRASE", "preset_id": PhraseDefaultPresetID, "group_id": "g", "text": "Catalog target", "start_ms": 0, "end_ms": 3000},
 	}); err != nil {
 		t.Fatalf("catalog-declared text target should be accepted: %v", err)
 	}
-	definition, err := resolveMotionDefinition("typewriter_clean")
+	definition, err := resolveMotionDefinition("apple_focus_rise")
 	if err != nil || definition == nil || !containsString(definition.Targets, "text") {
-		t.Fatalf("typewriter_clean must declare its text target in the canonical catalog: definition=%+v err=%v", definition, err)
+		t.Fatalf("apple_focus_rise must declare its text target in the canonical catalog: definition=%+v err=%v", definition, err)
 	}
 }
 

@@ -418,6 +418,9 @@ func backgroundCompositionFor(id string) *backgroundCompositionDefinition {
 // to no zone of this model; the empty string keeps them out of the picker zones
 // without inventing a seventh area.
 func runtimeUseCaseZone(id string) string {
+	if id == "data_visualization" {
+		return ZoneData
+	}
 	if id == "entities" {
 		return ZoneImagesWithText
 	}
@@ -432,7 +435,7 @@ func runtimeUseCaseZone(id string) string {
 	if definition := backgroundCompositionFor(id); definition != nil {
 		return definition.Zone
 	}
-	if dataCompositionFor(id) != nil {
+	if dataCompositionTarget(id) != "" {
 		return ZoneData
 	}
 	return ""
@@ -516,7 +519,7 @@ func runtimeZones() []RuntimeZone {
 		},
 		{
 			ID: ZoneData, Label: "Dati",
-			Description:    "Metric and date/timeline text compositions with their own motion families.",
+			Description:    "Metric, date/timeline and chart compositions with their own motion families.",
 			Status:         zoneStatusAvailable,
 			CompositionIDs: dataCompositionIDs(),
 		},

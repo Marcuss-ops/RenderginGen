@@ -108,7 +108,7 @@ func TestRuntimeStyleOverrideValidation(t *testing.T) {
 }
 
 func TestRuntimeStyleOverridesIgnoreMotionParamsAndKeepStylePrecedence(t *testing.T) {
-	const plan = `{"schema_version":"renderinggen.overlay-plan.v1","plan_id":"runtime-style-motion-params","video_id":"v","width":1920,"height":1080,"fps_num":24,"fps_den":1,"items":[{"id":"phrase","kind":"important_phrase","template_id":"IMPORTANT_PHRASE","preset_id":"phrase_default","motion_id":"typewriter_clean","text":"Motion params stay separate","motion_params":{"enter_frames":24,"glow_size":999},"params":{"glow_size":10,"position_x":50},"style":{"glow_size":20},"start_ms":0,"end_ms":3000}]}`
+	const plan = `{"schema_version":"renderinggen.overlay-plan.v1","plan_id":"runtime-style-motion-params","video_id":"v","width":1920,"height":1080,"fps_num":24,"fps_den":1,"items":[{"id":"phrase","kind":"important_phrase","template_id":"IMPORTANT_PHRASE","preset_id":"phrase_default","motion_id":"apple_focus_rise","text":"Motion params stay separate","motion_params":{"enter_frames":24,"glow_size":999},"params":{"glow_size":10,"position_x":50},"style":{"glow_size":20},"start_ms":0,"end_ms":3000}]}`
 	result, err := CompileSemantic([]byte(plan))
 	if err != nil {
 		t.Fatal(err)

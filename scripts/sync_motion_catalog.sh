@@ -32,6 +32,10 @@ target="renderinggen/internal/motion/catalog/chronontemplate_catalog.v1.json"
 embedded="$repo_root/$target"
 short_phrase_target="renderinggen/internal/motion/catalog/short_phrase_motion.v1.json"
 short_phrase_embedded="$repo_root/$short_phrase_target"
+# ChrononTemplate's own style-catalog readers (Python tools, rgb tests) read this
+# aggregate, so it is a generated copy of the same emitted bytes, never a
+# hand-maintained second source.
+template_aggregate="$template_dir/catalog/chronontemplate_catalog.v1.json"
 
 check_only=0
 case "${1:-}" in
@@ -106,11 +110,22 @@ if [[ "$check_only" == "1" ]]; then
         echo "sync_motion_catalog: $short_phrase_target is stale; run $0 to refresh it" >&2
         exit 1
     fi
+    # Parity gate: the ChrononTemplate aggregate is generated from the same
+    # emitter output, so it must be byte-identical to the embedded copy.
+    if [[ ! -f "$template_aggregate" ]]; then
+        echo "sync_motion_catalog: ChrononTemplate aggregate is missing; run $0" >&2
+        exit 1
+    fi
+    if ! cmp -s "$template_aggregate" "$emitted"; then
+        echo "sync_motion_catalog: ChrononTemplate aggregate differs from the emitted catalog; run $0" >&2
+        exit 1
+    fi
     echo "sync_motion_catalog: both embedded motion catalogs are in sync with $template_dir"
     exit 0
 fi
 
 mkdir -p "$(dirname "$embedded")"
 cp "$emitted" "$embedded"
+cp "$emitted" "$template_aggregate"
 cp "$short_phrase_emitted" "$short_phrase_embedded"
-echo "sync_motion_catalog: wrote $target and $short_phrase_target"
+echo "sync_motion_catalog: wrote $target, $template_aggregate and $short_phrase_target"

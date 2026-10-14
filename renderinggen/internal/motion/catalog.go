@@ -91,6 +91,22 @@ type Catalog struct {
 	Motions            []MotionDefinition  `json:"motions"`
 	OverlayPresets     map[string][]string `json:"overlay_presets"`
 	Selections         CatalogSelections   `json:"selections"`
+	EntityCameraTracks map[string][]CatalogCameraTrack `json:"entity_camera_tracks"`
+}
+
+// CatalogCameraKeyframe is one camera keyframe. When Center is "x" or "y",
+// Value is an offset added to the canvas centre on that axis at render time.
+type CatalogCameraKeyframe struct {
+	Frame  int64   `json:"frame"`
+	Value  float64 `json:"value"`
+	Center string  `json:"center"`
+}
+
+// CatalogCameraTrack is one animated camera property of an entity camera motion.
+type CatalogCameraTrack struct {
+	Property  string                  `json:"property"`
+	Easing    string                  `json:"easing"`
+	Keyframes []CatalogCameraKeyframe `json:"keyframes"`
 }
 
 var (

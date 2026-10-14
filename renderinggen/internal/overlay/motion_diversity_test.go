@@ -17,8 +17,8 @@ func TestMixedSemanticPlanPreservesMotionDiversityThroughChrononLowering(t *test
 	phraseMotions := []string{
 		"risograph_offset_print",
 		"editorial_line_build",
-		"typewriter_glitch",
-		"typewriter_modern_02_kinetic_scramble",
+		"apple_focus_rise",
+		"phrase_apple_clean_07_slide_up_soft",
 		"shutter_blade_reveal",
 	}
 	imageMotions := []string{
@@ -68,7 +68,7 @@ func TestMixedSemanticPlanPreservesMotionDiversityThroughChrononLowering(t *test
 	if err != nil {
 		t.Fatalf("compile mixed semantic plan: %v", err)
 	}
-	wantLayers := len(items) + 2 // the two typewriter phrase motions add synchronized cursor shapes
+	wantLayers := len(items)
 	if len(compiled.Plan.Layers) != wantLayers {
 		t.Fatalf("compiled %d layers, want %d semantic/text-cursor layers", len(compiled.Plan.Layers), wantLayers)
 	}

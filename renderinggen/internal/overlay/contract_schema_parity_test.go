@@ -3,6 +3,7 @@ package overlay
 import (
 	"encoding/json"
 	"reflect"
+	"sort"
 	"strings"
 	"testing"
 
@@ -32,6 +33,7 @@ func TestContractSchemaMatchesCompilerStructs(t *testing.T) {
 		{"plan.animation_policies[]", "#/$defs/animation_policy", semanticAnimationPolicy{}},
 		{"plan.source", "#/properties/source", semanticSource{}},
 		{"plan.source_frame", "#/properties/source_frame", semanticSourceFrame{}},
+		{"plan.clip_grid", "#/$defs/clip_grid", semanticClipGrid{}},
 		{"plan.source_frame.border", "#/properties/source_frame/properties/border", semanticFrameBorder{}},
 		{"plan.source_frame.shadow", "#/properties/source_frame/properties/shadow", semanticFrameShadow{}},
 		{"plan.source_frame.stroke", "#/properties/source_frame/properties/stroke", semanticFrameStroke{}},
@@ -75,6 +77,39 @@ func TestContractSchemaMatchesCompilerStructs(t *testing.T) {
 			}
 		})
 	}
+	t.Run("plan.clip_effects[]", func(t *testing.T) {
+		definition := contractschema.At(t, schema, "#/$defs/clip_effects/items")
+		variants, ok := definition["oneOf"].([]any)
+		if !ok || len(variants) == 0 {
+			t.Fatal("clip effect schema declares no variants")
+		}
+		union := make(map[string]any)
+		for i, rawVariant := range variants {
+			variant, ok := rawVariant.(map[string]any)
+			if !ok {
+				t.Fatalf("clip effect variant %d is not an object", i)
+			}
+			properties, ok := variant["properties"].(map[string]any)
+			if !ok {
+				t.Fatalf("clip effect variant %d declares no properties", i)
+			}
+			for name := range properties {
+				union[name] = nil
+			}
+		}
+		want := make([]string, 0, len(union))
+		for name := range union {
+			want = append(want, name)
+		}
+		sort.Strings(want)
+		got := contractschema.JSONFieldNames(semanticClipEffect{})
+		if missing := contractschema.Difference(want, got); len(missing) > 0 {
+			t.Errorf("clip effect schema declares %v, but Go does not decode them", missing)
+		}
+		if extra := contractschema.Difference(got, want); len(extra) > 0 {
+			t.Errorf("clip effect Go decoder accepts %v, but schema forbids them", extra)
+		}
+	})
 }
 
 // TestDataBlockSchemaRequiresTheDeclaredFields pins the two required lists the

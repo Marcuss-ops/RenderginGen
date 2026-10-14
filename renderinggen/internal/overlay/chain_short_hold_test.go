@@ -14,10 +14,10 @@ func TestChainShortPhraseSegmentsKeepVisibleEntrance(t *testing.T) {
 	raw := []byte(`{"schema_version":"renderinggen.overlay-plan.v1","plan_id":"chain-short-hold","video_id":"v","width":1280,"height":720,"fps_num":24,"fps_den":1,` +
 		`"items":[{"id":"s1:chain-text:0","scene_id":"s1","kind":"phrase_chain","template_id":"PHRASE_CHAIN","preset_id":"phrase_default",` +
 		`"text":"alpha","start_ms":0,"end_ms":5400,"params":{"chain_camera":"fly_under_fade","chain_count":2,"chain_gap_us":400000,` +
-		`"chain_motions":["short_phrase_scale_settle_word","short_phrase_character_tracking_reveal"],` +
+		`"chain_motions":["short_phrase_character_tracking_reveal","short_phrase_editorial_quiet_zoom"],` +
 		`"chain_segments":[` +
-		`{"text":"alpha","motion_id":"short_phrase_scale_settle_word","preset_id":"phrase_default","template_id":"IMPORTANT_PHRASE","kind":"text_phrase","start_us":0,"duration_us":2500000},` +
-		`{"text":"beta gamma","motion_id":"short_phrase_character_tracking_reveal","preset_id":"phrase_default","template_id":"IMPORTANT_PHRASE","kind":"text_phrase","start_us":2900000,"duration_us":2500000}` +
+		`{"text":"alpha","motion_id":"short_phrase_character_tracking_reveal","preset_id":"phrase_default","template_id":"IMPORTANT_PHRASE","kind":"text_phrase","start_us":0,"duration_us":2500000},` +
+		`{"text":"beta gamma","motion_id":"short_phrase_editorial_quiet_zoom","preset_id":"phrase_default","template_id":"IMPORTANT_PHRASE","kind":"text_phrase","start_us":2900000,"duration_us":2500000}` +
 		`]}}]}`)
 	result, err := CompileSemantic(raw)
 	if err != nil {

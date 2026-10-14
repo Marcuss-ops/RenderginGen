@@ -1,10 +1,12 @@
 package processor
 
 import (
+	"encoding/json"
 	"image"
 	"image/png"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/overlay"
@@ -48,6 +50,75 @@ func TestFitEntityImageLayersToMaterializedAssetRemovesMatteGeometry(t *testing.
 	}
 	if layer.Fit != overlay.FitCover {
 		t.Fatalf("entity image fit = %q, want cover to remove contain matte", layer.Fit)
+	}
+}
+
+// TestFitEntityImageCaptionPinsChrononFitContract certifies the decoded-plan
+// contract for a fitted entity card: the alignment pass pins the caption's
+// resolved size as BOTH fit limits, and Chronon rejects font size limits that
+// travel without a non-none fit mode ("text font size limits require a
+// non-none fit_mode"). The emitted style must therefore declare shrink_only,
+// otherwise every entity card with a caption fails at plan preparation.
+func TestFitEntityImageCaptionPinsChrononFitContract(t *testing.T) {
+	root := t.TempDir()
+	assetPath := filepath.Join(root, "assets", "semantic", "photo.png")
+	if err := os.MkdirAll(filepath.Dir(assetPath), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	f, err := os.Create(assetPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := png.Encode(f, image.NewRGBA(image.Rect(0, 0, 1600, 900))); err != nil {
+		f.Close()
+		t.Fatal(err)
+	}
+	if err := f.Close(); err != nil {
+		t.Fatal(err)
+	}
+	plan := &overlay.Plan{
+		Canvas: overlay.Canvas{Width: 1920, Height: 1080},
+		Layers: []overlay.Layer{
+			{
+				ID: "portrait:image", Type: "image", Asset: "assets/semantic/photo.png",
+				BoxWidth: 480, BoxHeight: 480, Size: []float64{480, 480}, Fit: overlay.FitContain,
+				EntityImage: true, Position: []float64{0, 0}, StartFrame: 0, DurationFrames: 120,
+			},
+			{
+				ID: "portrait:caption", Type: "text", Text: "Friuli Venezia Giulia",
+				Style:    &overlay.LayerStyle{Font: "assets/fonts/Poppins-Bold.ttf", FontSize: 42, Fill: "#F8F5EA"},
+				Position: []float64{0, 300}, Size: []float64{300, 80},
+				CaptionForImageID: "portrait:image", CaptionLayout: "below",
+				StartFrame: 0, DurationFrames: 120,
+			},
+		},
+	}
+	if _, err := fitEntityImageLayersToAssets(root, plan); err != nil {
+		t.Fatal(err)
+	}
+	caption := plan.Layers[1]
+	if caption.Style == nil {
+		t.Fatal("fit pass dropped the caption style")
+	}
+	if caption.Style.MinFontSize <= 0 || caption.Style.MaxFontSize != caption.Style.MinFontSize {
+		t.Fatalf("caption fit limits = %v/%v, want the pinned size as both limits (font %v)",
+			caption.Style.MinFontSize, caption.Style.MaxFontSize, caption.Style.FontSize)
+	}
+	if caption.Style.MinFontSize != caption.Style.FontSize {
+		t.Fatalf("caption limits %v do not pin the resolved size %v", caption.Style.MinFontSize, caption.Style.FontSize)
+	}
+	if caption.Style.FitMode != overlay.FitModeShrinkOnly {
+		t.Fatalf("caption fit_mode = %q with limits %v/%v, want %q: Chronon rejects limits without a non-none fit mode",
+			caption.Style.FitMode, caption.Style.MinFontSize, caption.Style.MaxFontSize, overlay.FitModeShrinkOnly)
+	}
+	raw, err := json.Marshal(caption)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{"\"fit_mode\":\"shrink_only\"", "\"min_font_size\"", "\"max_font_size\""} {
+		if !strings.Contains(string(raw), want) {
+			t.Fatalf("emitted caption layer is missing %s: %s", want, raw)
+		}
 	}
 }
 

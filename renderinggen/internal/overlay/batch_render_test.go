@@ -15,7 +15,7 @@ func TestBatchRender_InspectCompiledPlans(t *testing.T) {
 		text     string
 	}{
 		{"01_kinetic_split_word", "phrase_default", "kinetic_split_word", "KINETIC PERFORMANCE"},
-		{"01_typewriter_clean", "phrase_default", "typewriter_clean", "EVERY PIXEL MATTERS"},
+		{"01_apple_focus_rise", "phrase_default", "apple_focus_rise", "EVERY PIXEL MATTERS"},
 	}
 
 	for _, tc := range cases {

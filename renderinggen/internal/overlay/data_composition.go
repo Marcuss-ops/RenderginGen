@@ -1,5 +1,7 @@
 package overlay
 
+import "github.com/Marcuss-ops/RenderingGen/renderinggen/internal/motion"
+
 // dataCompositionDefinition owns the picker-facing contract for the semantic
 // metric and date compositions. The fields below are enforced by the compiler:
 // overlay-plan.v1 carries a typed metric/date block, the Go mirror and the
@@ -63,9 +65,19 @@ func dataCompositionFor(id string) *dataCompositionDefinition {
 }
 
 func dataCompositionIDs() []string {
-	ids := make([]string, len(dataCompositionCatalog))
-	for index, definition := range dataCompositionCatalog {
-		ids[index] = definition.ID
+	ids := make([]string, 0, len(dataCompositionCatalog)+1)
+	for _, definition := range dataCompositionCatalog {
+		ids = append(ids, definition.ID)
+	}
+	return append(ids, "data_visualization")
+}
+
+func dataVisualizationIDs() []string {
+	ids := make([]string, 0)
+	for _, id := range motion.Registry.CategoryMotionIDs("histograms_data_v1") {
+		if motionAdmitsTarget(id, "data") {
+			ids = append(ids, id)
+		}
 	}
 	return ids
 }
@@ -73,6 +85,9 @@ func dataCompositionIDs() []string {
 func dataCompositionTarget(id string) string {
 	if definition := dataCompositionFor(id); definition != nil {
 		return definition.MotionTarget
+	}
+	if id == "data_visualization" {
+		return "data"
 	}
 	return ""
 }
