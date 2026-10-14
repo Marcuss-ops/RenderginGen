@@ -168,14 +168,15 @@ func (r *RegistryType) Categories() []string {
 // not an omission. TestPhrasePoolClassificationIsExhaustive fails when a new
 // catalog category appears in neither list.
 var phrasePlanningCategories = [...]string{
-	"typewriter", "apple_v2", "apple_v3", "phrase_apple_clean_v1", "apple_phrase_v1", "phrase_highlight_v1", "brush_v1", "text_3d_v1",
+	"apple_v2", "apple_v3", "phrase_apple_clean_v1", "apple_phrase_v1", "brush_v1", "text_3d_v1",
 }
 
 // previewGatedCategories are selectable through the runtime catalog but stay
-// out of the seeded legacy pool: reason documents why.
-var previewGatedCategories = map[string]string{
-	"typewriter_modern_v1": "separately selectable preview category, exposed independently through CategoryMotionIDs",
-}
+// out of the seeded legacy pool: reason documents why. (Currently empty: the
+// former typewriter_modern_v1 preview category was retired with the rest of
+// the typewriter/highlight families, so nothing is gated anymore. The map
+// stays because the exhaustive classification test iterates it.)
+var previewGatedCategories = map[string]string{}
 
 // phrasePoolExcludedCategories admit planning-relevant targets but are
 // deliberately out of the seeded pool: each has its own selection surface.
@@ -184,6 +185,7 @@ var previewGatedCategories = map[string]string{
 // silently.
 var phrasePoolExcludedCategories = map[string]string{
 	"short_phrase_style":   "selected through the short-phrase style catalog, not the legacy phrase pool",
+	"generic_motion_v1":    "generic primitive motions (fade, slide, bounce) are not phrase-planning families",
 	"trump_entity_text_v1": "entity-text family selected through entity surfaces, not the legacy phrase pool",
 	"entity_caption_v1":    "caption family selected through the caption use case, not the legacy phrase pool",
 	"entity_card_v1":       "entity-card family selected through entity surfaces, not the legacy phrase pool",
@@ -204,9 +206,7 @@ var phrasePoolExcludedCategories = map[string]string{
 }
 
 // PhraseAnimationIDs returns every motion in the established phrase-planning
-// families, in stable order. The separately selectable typewriter_modern_v1
-// preview category stays out of the seeded legacy pool; the runtime catalog
-// exposes it independently through CategoryMotionIDs.
+// families, in stable order.
 func (r *RegistryType) PhraseAnimationIDs() []string {
 	ids := make([]string, 0)
 	for _, category := range phrasePlanningCategories {

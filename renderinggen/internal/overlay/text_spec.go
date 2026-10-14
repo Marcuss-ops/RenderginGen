@@ -284,6 +284,9 @@ func compileResolvedText(layerID string, start, end int64, spec resolvedTextSpec
 	}
 	layer.Position = append([]float64(nil), spec.Position...)
 	applyResolvedTextFitPolicy(&layer, spec)
+	// No text layer leaves the compiler with an illegal fit interval: the
+	// limits/fit-mode pairing is a render-plan contract, not a caller detail.
+	enforceTextFitContract(layer.Style)
 	var animation *LayerAnimation
 	if spec.MotionID != "" {
 		// The preset's exit window is the fallback for a motion that declares
@@ -403,6 +406,23 @@ func applyResolvedTextFitPolicy(layer *Layer, spec resolvedTextSpec) {
 		layer.Style.FitMode = "none"
 		layer.Style.MinFontSize = 0
 		layer.Style.MaxFontSize = 0
+	}
+}
+
+// enforceTextFitContract keeps every compiled text layer decodable by Chronon:
+// font size limits are only valid together with a non-none fit mode (see the
+// decoder's "text font size limits require a non-none fit_mode"). A style that
+// pins an interval without naming a mode means bounded shrink-to-fit, which is
+// exactly shrink_only; a style with no limits is left untouched.
+func enforceTextFitContract(style *LayerStyle) {
+	if style == nil {
+		return
+	}
+	if style.MinFontSize <= 0 && style.MaxFontSize <= 0 {
+		return
+	}
+	if style.FitMode == "" || style.FitMode == "none" {
+		style.FitMode = FitModeShrinkOnly
 	}
 }
 

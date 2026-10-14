@@ -1,8 +1,10 @@
 package motion
 
 import (
+	"encoding/json"
 	"fmt"
 	"sort"
+	"strings"
 	"testing"
 )
 
@@ -34,22 +36,22 @@ func TestCatalogCategoriesKeepMotionsIndependentAndComplete(t *testing.T) {
 	// This registry exposes authored categories directly. Semantic groupings
 	// such as modern_apple belong to the runtime catalog, not a second alias map.
 	categoryCounts := map[string]int{
-		"typewriter": 10, "typewriter_modern_v1": 15, "apple_v2": 42,
+		"apple_v2": 42,
 		"apple_v3": 16, "phrase_apple_clean_v1": 30, "apple_phrase_v1": 15,
-		"phrase_highlight_v1": 17,
 
 		"brush_v1": 23, "text_3d_v1": 10, "trump_entity_text_v1": 15, "web": 14,
+		"generic_motion_v1": 30,
 	}
 	for category, count := range categoryCounts {
 		if ids := Registry.CategoryMotionIDs(category); len(ids) != count {
 			t.Errorf("%s category has %d motions, want %d", category, len(ids), count)
 		}
 	}
-	if ids := Registry.ShortPhraseStyleIDs(); len(ids) != 47 {
-		t.Errorf("short phrase catalog has %d motions, want 47", len(ids))
+	if ids := Registry.ShortPhraseStyleIDs(); len(ids) != 26 {
+		t.Errorf("short phrase runtime registry has %d motions, want 26", len(ids))
 	}
-	if ids := Registry.PhraseAnimationIDs(); len(ids) != 163 {
-		t.Errorf("phrase planning pool has %d motions, want 163", len(ids))
+	if ids := Registry.PhraseAnimationIDs(); len(ids) != 136 {
+		t.Errorf("phrase planning pool has %d motions, want 136", len(ids))
 	}
 	appleClean := Registry.CategoryMotionIDs("phrase_apple_clean_v1")
 	pool := Registry.PhraseAnimationIDs()
@@ -198,8 +200,8 @@ func TestApplePhrasePackIsInTheCanonicalPoolAndHasNoPerGlyphBlur(t *testing.T) {
 	}
 	pool := make(map[string]bool)
 	phrasePool := PhraseMotionPool()
-	if len(phrasePool) != 64 {
-		t.Fatalf("GPU phrase motion pool has %d entries, want 64", len(phrasePool))
+	if len(phrasePool) != 39 {
+		t.Fatalf("GPU phrase motion pool has %d entries, want 39", len(phrasePool))
 	}
 	for _, id := range phrasePool {
 		pool[id] = true
@@ -219,11 +221,6 @@ func TestApplePhrasePackIsInTheCanonicalPoolAndHasNoPerGlyphBlur(t *testing.T) {
 			}
 		}
 	}
-	for _, id := range []string{"typewriter_neon", "typewriter_blur_focus"} {
-		if pool[id] {
-			t.Errorf("%s with per-glyph blur must not be in the GPU-native pool", id)
-		}
-	}
 	for _, id := range Registry.CategoryMotionIDs("phrase_apple_clean_v1") {
 		plugin, err := Registry.Resolve(id)
 		if err != nil {
@@ -239,11 +236,6 @@ func TestApplePhrasePackIsInTheCanonicalPoolAndHasNoPerGlyphBlur(t *testing.T) {
 		}
 		if pool[id] == hasPerUnitBlur {
 			t.Errorf("Apple-clean motion %q pool membership=%v, per-unit blur=%v; only GPU-native no-blur recipes belong in the selection pool", id, pool[id], hasPerUnitBlur)
-		}
-	}
-	for _, id := range Registry.CategoryMotionIDs("phrase_highlight_v1") {
-		if !pool[id] {
-			t.Errorf("GPU phrase motion pool omits highlight ID %q", id)
 		}
 	}
 	for _, id := range want {
@@ -333,31 +325,64 @@ func TestShortPhraseColorShorthandLowersToNativeRGBA(t *testing.T) {
 	}
 }
 
-func TestClaudeInspiredShortPhrasePaletteLowersToBlackAndOrange(t *testing.T) {
-	id := "short_phrase_editorial_claude_diff_patch"
-	plugin, err := Registry.Resolve(id)
-	if err != nil {
-		t.Fatalf("resolve %s: %v", id, err)
+func TestRetiredShortPhraseIDsAreAbsentFromRegistry(t *testing.T) {
+	retired := []string{
+		"short_phrase_editorial_claude_diff_patch",
+		"short_phrase_editorial_claude_prompt_response",
+		"short_phrase_editorial_lift_and_rule",
+		"short_phrase_editorial_rule_handoff",
+		"short_phrase_editorial_underline_draw",
+		"short_phrase_phrase_build_focus",
+		"short_phrase_product_decrypted_text",
+		"short_phrase_product_fold_text",
+		"short_phrase_product_glare_hover",
+		"short_phrase_product_line_by_line_slide",
+		"short_phrase_product_scramble_reveal",
+		"short_phrase_product_shape_blur",
+		"short_phrase_product_warp_text",
+		"short_phrase_product_weight_wave",
+		"short_phrase_scale_settle_word",
+		"short_phrase_semantic_chain_curve",
+		"short_phrase_semantic_two_line",
+		"short_phrase_simple_progressive_phrase",
+		"short_phrase_single_word_swap",
+		"short_phrase_word_cascade_sentence",
+		"short_phrase_word_mask_sequence",
+		"short_phrase_character_write_on",
+		"short_phrase_editorial_paper_title_card",
+		"short_phrase_typewriter",
 	}
-	definition := plugin.(DeclarativePlugin).Definition
-	if definition.Category != "short_phrase_style" {
-		t.Fatalf("category = %q, want short_phrase_style", definition.Category)
+	registered := make(map[string]bool)
+	for _, id := range Registry.ShortPhraseStyleIDs() {
+		registered[id] = true
 	}
-	if len(definition.TextAnimators) != 2 {
-		t.Fatalf("%s animators = %d, want 2 (word entrance + orange selection)", id, len(definition.TextAnimators))
+	for _, id := range retired {
+		if registered[id] {
+			t.Errorf("retired ID %q remains in the short-phrase registry", id)
+		}
+		if _, err := Registry.Resolve(id); err == nil {
+			t.Errorf("retired ID %q still resolves", id)
+		}
 	}
-	orange := definition.TextAnimators[1].Properties[0]
-	if orange.Property != "fill_color" || len(orange.Keyframes) == 0 {
-		t.Fatalf("orange accent lowered to %+v, want animated fill_color", orange)
+	var catalog shortPhraseCatalog
+	if err := json.Unmarshal(shortPhraseCatalogJSON, &catalog); err != nil {
+		t.Fatalf("decode canonical short-phrase catalog: %v", err)
 	}
-	got, ok := orange.Keyframes[0].Value.([]float64)
-	if !ok || len(got) != 4 {
-		t.Fatalf("orange value = %#v, want RGBA", orange.Keyframes[0].Value)
-	}
-	want := []float64{1, 0.38, 0.12, 1}
-	for channel := range want {
-		if got[channel] != want[channel] {
-			t.Fatalf("orange channel %d = %v, want %v", channel, got[channel], want[channel])
+	for _, recipe := range catalog.Recipes {
+		if !strings.HasPrefix(recipe.ID, "short_phrase_") {
+			t.Errorf("unexpected non-short ID %q in short phrase catalog", recipe.ID)
+		}
+		if recipe.RuntimeEnabled == nil {
+			t.Errorf("canonical recipe %q does not declare runtime_enabled", recipe.ID)
+			continue
+		}
+		if *recipe.RuntimeEnabled != registered[recipe.ID] {
+			t.Errorf("canonical recipe %q runtime_enabled=%v, registered=%v", recipe.ID, *recipe.RuntimeEnabled, registered[recipe.ID])
+		}
+		if !*recipe.RuntimeEnabled {
+			if _, err := Registry.Resolve(recipe.ID); err == nil {
+				t.Errorf("runtime-disabled recipe %q was registered", recipe.ID)
+			}
 		}
 	}
 }

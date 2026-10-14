@@ -57,10 +57,10 @@ func TestTypographySSOTCaptionColorRespectsPayload(t *testing.T) {
 	t.Fatal("no caption layer found")
 }
 
-// SSOT: typewriter motions never force Bricolage; payload/preset default wins.
-func TestTypographySSOTTypewriterKeepsPayloadFont(t *testing.T) {
+// SSOT: phrase motions never force Bricolage; payload/preset default wins.
+func TestTypographySSOTPhraseKeepsPayloadFont(t *testing.T) {
 	raw := `{"schema_version":"renderinggen.overlay-plan.v1","plan_id":"ssot-tw","video_id":"v","width":1920,"height":1080,"fps_num":24,"fps_den":1,` +
-		`"items":[{"id":"phrase","kind":"important_phrase","template_id":"IMPORTANT_PHRASE","preset_id":"phrase_default","motion_id":"typewriter_clean",` +
+		`"items":[{"id":"phrase","kind":"important_phrase","template_id":"IMPORTANT_PHRASE","preset_id":"phrase_default","motion_id":"apple_focus_rise",` +
 		`"text":"Hello world","start_ms":0,"end_ms":3000}]}`
 	result, err := CompileSemantic([]byte(raw))
 	if err != nil {
@@ -71,6 +71,6 @@ func TestTypographySSOTTypewriterKeepsPayloadFont(t *testing.T) {
 		t.Fatal("no style")
 	}
 	if strings.Contains(layer.Style.Font, "Bricolage") {
-		t.Fatalf("typewriter forced Bricolage without payload choice: %q", layer.Style.Font)
+		t.Fatalf("phrase motion forced Bricolage without payload choice: %q", layer.Style.Font)
 	}
 }

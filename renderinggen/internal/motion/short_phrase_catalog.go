@@ -34,6 +34,7 @@ type shortPhraseAnimator struct {
 
 type shortPhraseRecipe struct {
 	ID              string                `json:"id"`
+	RuntimeEnabled  *bool                 `json:"runtime_enabled"`
 	Family          string                `json:"family"`
 	Subcategory     string                `json:"subcategory"`
 	Targets         []string              `json:"targets"`
@@ -67,23 +68,29 @@ func readShortPhraseStyles() ([]shortPhraseRecipe, error) {
 	}
 	var recipes []shortPhraseRecipe
 	seen := map[string]bool{}
+	allIDs := make(map[string]bool, len(catalog.Recipes))
 	for _, recipe := range catalog.Recipes {
-		if !containsMotionString(recipe.Targets, "short_phrase") {
+		if recipe.ID == "" || allIDs[recipe.ID] {
+			return nil, fmt.Errorf("motion: invalid or duplicate short phrase recipe %q", recipe.ID)
+		}
+		allIDs[recipe.ID] = true
+		if recipe.RuntimeEnabled == nil {
+			return nil, fmt.Errorf("motion: short phrase recipe %q must declare runtime_enabled", recipe.ID)
+		}
+		if !*recipe.RuntimeEnabled {
 			continue
 		}
-		if recipe.ID == "" || seen[recipe.ID] || recipe.Enter <= 0 {
+		if !containsMotionString(recipe.Targets, "short_phrase") {
+			return nil, fmt.Errorf("motion: runtime-enabled short phrase recipe %q must declare short_phrase target", recipe.ID)
+		}
+		if seen[recipe.ID] || recipe.Enter <= 0 {
 			return nil, fmt.Errorf("motion: invalid or duplicate short phrase style %q", recipe.ID)
 		}
-		seen[recipe.ID] = true
-		recipes = append(recipes, recipe)
-	}
-	for _, recipe := range recipes {
 		if !containsMotionString(recipe.Targets, "short_phrase") {
 			return nil, fmt.Errorf("motion: short phrase style %q must declare short_phrase target", recipe.ID)
 		}
-		if len(recipe.TextAnimators) > 0 && !containsMotionString(recipe.Targets, "caption") {
-			return nil, fmt.Errorf("motion: short phrase style %q with text animators must declare caption target", recipe.ID)
-		}
+		seen[recipe.ID] = true
+		recipes = append(recipes, recipe)
 	}
 	return recipes, nil
 }

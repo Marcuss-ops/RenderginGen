@@ -169,6 +169,7 @@ var targetAdmissionRules = map[string]targetAdmissionRule{
 	"image":   {admit: []string{"image"}},
 	"metric":  {admit: []string{"metric"}},
 	"date":    {admit: []string{"date"}},
+	"data":    {admit: []string{"data"}},
 	"short_phrase": {
 		admit: []string{"short_phrase"},
 	},

@@ -17,6 +17,14 @@ func isSupportedShapeType(t string) bool {
 	return ok
 }
 
+func isChartBarItem(item resolvedItem) bool {
+	if item.Kind != KindShape || item.Params == nil {
+		return false
+	}
+	marked, ok := item.Params["chart_bar"].(bool)
+	return ok && marked
+}
+
 // EffectRegistry is the closed vocabulary accepted by shape layers. It is
 // intentionally private: external mutation would turn validation into a
 // bypass around Chronon's effect contract.
@@ -625,6 +633,5 @@ func resolveShape(ri resolvedItem, src *semanticPlan) (Layer, error) {
 		}
 		layer.Opacity = &op
 	}
-
 	return layer, nil
 }

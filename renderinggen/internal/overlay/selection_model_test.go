@@ -60,7 +60,7 @@ func TestSelectionModelPublishesTheSixProductZones(t *testing.T) {
 			t.Errorf("background composition %q zone = %q, want its catalog zone %q", definition.ID, owner[definition.ID], definition.Zone)
 		}
 	}
-	for _, id := range []string{"metric_stat", "timeline_date"} {
+	for _, id := range []string{"metric_stat", "timeline_date", "data_visualization"} {
 		if owner[id] != ZoneData {
 			t.Errorf("data composition %q zone = %q, want %q", id, owner[id], ZoneData)
 		}

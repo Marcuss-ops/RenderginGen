@@ -53,7 +53,7 @@ func TestMotionWindowsExposeRuntimeFrameControlsWithoutClosingPluginParams(t *te
 }
 
 func TestCompileImportantPhraseRejectsInvalidRuntimeTiming(t *testing.T) {
-	raw := []byte(`{"schema_version":"renderinggen.overlay-plan.v1","plan_id":"bad-phrase-timing","video_id":"v","width":1280,"height":720,"fps_num":24,"fps_den":1,"items":[{"id":"phrase","kind":"important_phrase","template_id":"IMPORTANT_PHRASE","preset_id":"phrase_default","motion_id":"typewriter_clean","motion_params":{"enter_frames":"fast"},"text":"Runtime timing stays explicit","start_ms":0,"end_ms":3000}]}`)
+	raw := []byte(`{"schema_version":"renderinggen.overlay-plan.v1","plan_id":"bad-phrase-timing","video_id":"v","width":1280,"height":720,"fps_num":24,"fps_den":1,"items":[{"id":"phrase","kind":"important_phrase","template_id":"IMPORTANT_PHRASE","preset_id":"phrase_default","motion_id":"apple_focus_rise","motion_params":{"enter_frames":"fast"},"text":"Runtime timing stays explicit","start_ms":0,"end_ms":3000}]}`)
 	if _, err := CompileSemantic(raw); err == nil || !strings.Contains(err.Error(), "motion_params.enter_frames") {
 		t.Fatalf("invalid phrase motion timing was not rejected clearly: %v", err)
 	}
@@ -188,12 +188,12 @@ func TestPhraseMotionTracksReachTheProportionalEntranceFloor(t *testing.T) {
 
 func TestPhrasePreviewAnimationRunsForOneThirdOfTheWindow(t *testing.T) {
 	// The 4.5s preview (108 frames) animates for exactly 36 frames.
-	animation, err := lowerMotion("typewriter_clean", 42, 100, nil, "OLHA ISSO!", 108, true)
+	animation, err := lowerMotion("text_word_rise", 42, 100, nil, "OLHA ISSO!", 108, true)
 	if err != nil {
-		t.Fatalf("lower typewriter_clean preview: %v", err)
+		t.Fatalf("lower text_word_rise preview: %v", err)
 	}
 	if len(animation.TextAnimators) == 0 || animation.TextAnimators[0].Selectors[0].Start == nil {
-		t.Fatalf("typewriter_clean has no selector sweep: %+v", animation.TextAnimators)
+		t.Fatalf("text_word_rise has no selector sweep: %+v", animation.TextAnimators)
 	}
 	sweep := animation.TextAnimators[0].Selectors[0].Start
 	// Selector animation is baked per-frame; 36 frames span frame 0..35.
@@ -217,7 +217,7 @@ func TestPhrasePreviewAnimationRunsForOneThirdOfTheWindow(t *testing.T) {
 		}
 	}
 	// Non-phrase motions retain their authored entrance window.
-	nonPhrase, err := lowerMotion("typewriter_clean", 42, 12, nil, "OLHA ISSO!", 108, false)
+	nonPhrase, err := lowerMotion("text_word_rise", 42, 12, nil, "OLHA ISSO!", 108, false)
 	if err != nil {
 		t.Fatalf("lower non-phrase: %v", err)
 	}

@@ -6,10 +6,6 @@ import (
 	"strings"
 )
 
-// typewriterCaptionPrefix identifies the typewriter caption class: the only
-// caption-motion alias class the entity registry needs to tag separately.
-const typewriterCaptionPrefix = "typewriter"
-
 // entityStyleVariant contains only composition choices. Image pixels, caption
 // text and the plan's background remain producer supplied at runtime.
 type entityStyleVariant struct {
@@ -30,7 +26,7 @@ type entityStyleVariant struct {
 // premiumEntityStyles defines the 25 official Apple-style entity card compositions:
 // Group 1 (01-05): 3D Entrances (Pitch / Yaw / Pop / Swing / Depth) + Centered Text Below
 // Group 2 (06-10): 3D Entrances (Swipe / Orbit / Tilt / Dolly / Drift) + Side-by-Side Text
-// Group 3 (11-15): 3D Entrances + Typewriter / Cyber / Editorial / Code / Dolly Characters Below
+// Group 3 (11-15): 3D Entrances + Text Treatments Below (the retired typewriter caption family was repointed to entity_caption_v1 text treatments; style IDs and names stay stable)
 // Group 4 (16-20): Highlighting Badges (Runtime Yellow/Red randomized) + Text Below
 // Group 5 (21-25): 3D Camera Movements (Dolly / Orbit / Crane / Dutch / Flyby) + Text Below
 var premiumEntityStyles = [...]entityStyleVariant{
@@ -148,14 +144,14 @@ var premiumEntityStyles = [...]entityStyleVariant{
 		ImageSide:       "left",
 	},
 
-	// --- GROUP 3: Typewriter / Computer Characters Text Below ---
+	// --- GROUP 3: Text Treatments Below (formerly typewriter captions) ---
 	{
 		ID:              "11_entity_typewriter_classic",
 		Name:            "Apple Spatial Typewriter Classic",
 		LegacyReference: "11",
 		Group:           3,
 		ImageMotionID:   "image_25d_pitch_lift",
-		CaptionMotionID: "typewriter_clean",
+		CaptionMotionID: "text_word_rise",
 		CaptionLayout:   "below",
 		CaptionColor:    "#FFFFFF",
 		ImageSide:       "center",
@@ -166,7 +162,7 @@ var premiumEntityStyles = [...]entityStyleVariant{
 		LegacyReference: "12",
 		Group:           3,
 		ImageMotionID:   "image_25d_pop_z_bounce",
-		CaptionMotionID: "typewriter_neon",
+		CaptionMotionID: "text_scale_punch",
 		CaptionLayout:   "below",
 		CaptionColor:    "#00F0FF",
 		ImageSide:       "center",
@@ -177,7 +173,7 @@ var premiumEntityStyles = [...]entityStyleVariant{
 		LegacyReference: "13",
 		Group:           3,
 		ImageMotionID:   "image_25d_yaw_flip_in",
-		CaptionMotionID: "typewriter_soft_lift",
+		CaptionMotionID: "text_fade_up",
 		CaptionLayout:   "below",
 		CaptionColor:    "#F5E6C8",
 		ImageSide:       "center",
@@ -188,7 +184,7 @@ var premiumEntityStyles = [...]entityStyleVariant{
 		LegacyReference: "14",
 		Group:           3,
 		ImageMotionID:   "image_25d_pitch_lift",
-		CaptionMotionID: "typewriter_glitch",
+		CaptionMotionID: "text_depth_in",
 		CaptionLayout:   "below",
 		CaptionColor:    "#50FA7B",
 		ImageSide:       "center",
@@ -199,7 +195,7 @@ var premiumEntityStyles = [...]entityStyleVariant{
 		LegacyReference: "15",
 		Group:           3,
 		ImageMotionID:   "image_25d_depth_float_in",
-		CaptionMotionID: "typewriter_tracking",
+		CaptionMotionID: "text_word_stagger",
 		CaptionLayout:   "below",
 		CaptionColor:    "#FFFFFF",
 		ImageSide:       "center",
@@ -337,9 +333,8 @@ var premiumEntityStyles = [...]entityStyleVariant{
 
 // entityStyleTags derives every tag of a variant from its composition fields:
 // no parallel index classification exists. A tag is either an inherent part of
-// the composition (layout side, badge, camera controller) or an alias class of
-// the caption motion (typewriter). Producers can query the registry by tag
-// instead of by hard-coded index groups.
+// the composition (layout side, badge, camera controller). Producers can
+// query the registry by tag instead of by hard-coded index groups.
 func entityStyleTags(style entityStyleVariant) []string {
 	var tags []string
 	seen := map[string]struct{}{}
@@ -355,8 +350,7 @@ func entityStyleTags(style entityStyleVariant) []string {
 		tags = append(tags, tag)
 	}
 	const (
-		tagBadge      = "badge"
-		tagTypewriter = "typewriter"
+		tagBadge = "badge"
 	)
 	switch style.CaptionLayout {
 	case "below":
@@ -375,11 +369,6 @@ func entityStyleTags(style entityStyleVariant) []string {
 	}
 	if style.IsBadge {
 		add(tagBadge)
-	}
-	if strings.HasPrefix(style.CaptionMotionID, typewriterCaptionPrefix) {
-		// Typewriter recipes are their own composition class in the catalog:
-		// tag the caption-motion family the style actually uses.
-		add(tagTypewriter)
 	}
 	return tags
 }
@@ -569,13 +558,11 @@ var entityTagSelectors = map[string]entityStyleQuery{
 	"camera_random":           {"camera"},
 	"side":                    {"side"},
 	"side_random":             {"side"},
-	"typewriter":              {"typewriter"},
-	"typewriter_random":       {"typewriter"},
 }
 
 // ResolveEntityStyle maps a user or producer style selector to an entity
 // variant. Selector words "premium_random_v1", "testo_sotto", "badge",
-// "camera", "side", "typewriter" (and their _random aliases) resolve as tag
+// "camera", "side" (and their _random aliases) resolve as tag
 // queries over the registry; everything else is a lookup by ID, name, slug,
 // reference number, or motion id.
 func ResolveEntityStyle(styleID, planID, videoID, itemID string) (entityStyleVariant, bool) {

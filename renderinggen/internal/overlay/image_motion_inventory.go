@@ -274,6 +274,12 @@ func runtimeAnimationUseCases(allOptions []RuntimeMotionOption, definitions map[
 			MotionIDs: groups.forTarget(definition.MotionTarget),
 		})
 	}
+	useCases = append(useCases, RuntimeAnimationUseCase{
+		ID: "data_visualization", ItemKinds: []string{string(KindShape)},
+		Cardinality: "one chart with animated bars",
+		Description: "Data motion is selected per producer-lowered chart bar; only chart_bar shape items may use this family.",
+		MotionIDs:   dataVisualizationIDs(),
+	})
 	// The product zone is derived from the composition owners, never declared
 	// twice: a use case added without a zone would show up as unzoned instead of
 	// silently landing in someone else's picker area.

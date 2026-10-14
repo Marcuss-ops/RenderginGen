@@ -32,7 +32,7 @@ const (
 	mapTextPlateShadowColor   = "#000000"
 	mapTextPlateShadowOpacity = 0.75
 	mapTextPlateShadowBlur    = 6.0
-	mapTextPlateFitMode       = "shrink_only"
+	mapTextPlateFitMode       = FitModeShrinkOnly
 )
 
 // Shared caption treatment. Entity and editorial image captions render over

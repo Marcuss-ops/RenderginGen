@@ -23,7 +23,7 @@ func TestDeprecationKeepsLegacyResolveButRemovesPickerSelection(t *testing.T) {
 	if err := registry.MarkDeprecated(deprecation); err != nil {
 		t.Fatal(err)
 	}
-	if got := Registry.Selectable("typewriter_modern_01_monospace_block_cursor"); got != true {
+	if got := Registry.Selectable("apple_focus_rise"); got != true {
 		t.Fatal("fixture-only isolated deprecation contaminated the production registry")
 	}
 	if got := registry.SelectableCategoryMotionIDs("fixture"); len(got) != 1 || got[0] != "replacement_motion" {

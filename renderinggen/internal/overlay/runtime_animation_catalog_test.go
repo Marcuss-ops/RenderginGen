@@ -74,7 +74,7 @@ func TestRuntimeAnimationUseCasesSeparateCountedCompositions(t *testing.T) {
 		"important_phrase", "short_important_phrase", "single_image", "image_double", "image_triplet", "image_four", "image_five",
 		"single_image_with_text", "image_double_with_text", "image_triplet_with_text", "image_four_with_text", "image_five_with_text",
 		"one_map", "two_maps", "background_color", "background_image", "background_video",
-		"entities", "entity_caption", "metric_stat", "timeline_date",
+		"entities", "entity_caption", "metric_stat", "timeline_date", "data_visualization",
 	} {
 		if _, ok := byID[id]; !ok {
 			t.Errorf("runtime use case %q missing", id)
@@ -148,8 +148,25 @@ func TestRuntimeAnimationUseCasesSeparateCountedCompositions(t *testing.T) {
 			t.Errorf("legacy stack recipe %q leaked into the single-image category", id)
 		}
 	}
+	for _, useCase := range useCases {
+		if containsString(useCase.MotionIDs, "image_stack_focus") {
+			t.Errorf("image_stack_focus entered picker %q without a dedicated multi-image picker contract", useCase.ID)
+		}
+	}
 	if len(byID["one_map"].MotionIDs) == 0 {
 		t.Fatal("one_map should expose its existing dedicated map family")
+	}
+	if got := len(byID["data_visualization"].MotionIDs); got != 10 {
+		t.Fatalf("data_visualization exposes %d motions, want all 10 authored histogram/data motions", got)
+	}
+	for _, motionID := range byID["data_visualization"].MotionIDs {
+		definition, err := resolveMotionDefinition(motionID)
+		if err != nil || definition == nil || definition.Category != "histograms_data_v1" || !motionAdmitsTarget(motionID, "data") {
+			t.Errorf("data_visualization motion %q is not a resolvable histograms_data_v1 motion: definition=%+v err=%v", motionID, definition, err)
+		}
+		if containsString(byID["metric_stat"].MotionIDs, motionID) || containsString(byID["timeline_date"].MotionIDs, motionID) {
+			t.Errorf("chart motion %q leaked into metric/date card motion pickers", motionID)
+		}
 	}
 	for kind, id := range map[string]string{
 		"color": "background_color", "image": "background_image", "video": "background_video",
@@ -216,6 +233,72 @@ func TestRuntimeAnimationUseCasesSeparateCountedCompositions(t *testing.T) {
 	}
 }
 
+func TestGenericLayerMotionsAreSelectableForTextAndImages(t *testing.T) {
+	options, definitions := runtimeMotionCatalog()
+	useCases := runtimeAnimationUseCases(options, definitions)
+	useCaseByID := make(map[string]RuntimeAnimationUseCase, len(useCases))
+	for _, useCase := range useCases {
+		useCaseByID[useCase.ID] = useCase
+	}
+	phraseIDs := useCaseByID["important_phrase"].MotionIDs
+	imageIDs := useCaseByID["single_image"].MotionIDs
+
+	layerMotionCount := 0
+	for _, id := range motion.Registry.CategoryMotionIDs("generic_motion_v1") {
+		definition, err := resolveMotionDefinition(id)
+		if err != nil || definition == nil {
+			t.Fatalf("generic motion %q did not resolve: %v", id, err)
+		}
+		if definition.Unit != "layer" {
+			continue
+		}
+		layerMotionCount++
+		for _, target := range []string{"text", "image"} {
+			if !containsString(definition.Targets, target) || !motionAdmitsTarget(id, target) {
+				t.Errorf("generic layer motion %q does not declare/admit target %q: %v", id, target, definition.Targets)
+			}
+		}
+		if !containsString(phraseIDs, id) {
+			t.Errorf("generic layer motion %q is missing from the important_phrase use case", id)
+		}
+		if !containsString(imageIDs, id) {
+			t.Errorf("generic layer motion %q is missing from the single_image use case", id)
+		}
+		for _, target := range []string{"metric", "date", "map_view"} {
+			if motionAdmitsTarget(id, target) {
+				t.Errorf("generic layer motion %q was incorrectly admitted for specialized target %q", id, target)
+			}
+		}
+	}
+	if layerMotionCount != 21 {
+		t.Fatalf("generic layer motion count = %d, want 21", layerMotionCount)
+	}
+}
+
+func TestDataMotionsAnimateOnlyProducerLoweredChartBars(t *testing.T) {
+	bar := `{"id":"bar","kind":"shape","template_id":"SHAPE","motion_id":"data_histogram_stagger_up","text":"","start_ms":0,"end_ms":3000,"params":{"shape":"rect","chart_bar":true,"chart_group_id":"chart","width":120,"height":240,"position":[100,100],"fill":[0.2,0.7,0.9,1]}}`
+	raw := []byte(`{"schema_version":"renderinggen.overlay-plan.v1","plan_id":"data-motion","video_id":"data-motion","width":1280,"height":720,"fps_num":24,"fps_den":1,"items":[` + bar + `]}`)
+	result, err := CompileSemantic(raw)
+	if err != nil {
+		t.Fatalf("data motion on a producer-lowered chart bar should compile: %v", err)
+	}
+	var animated bool
+	for _, layer := range result.Plan.Layers {
+		if layer.ID == "bar" && layer.Animation != nil && len(layer.Animation.Tracks) > 0 {
+			animated = true
+		}
+	}
+	if !animated {
+		t.Fatalf("chart bar did not receive its data motion tracks: %+v", result.Plan.Layers)
+	}
+
+	ordinary := strings.Replace(bar, `,"chart_bar":true,"chart_group_id":"chart"`, "", 1)
+	ordinaryPlan := []byte(`{"schema_version":"renderinggen.overlay-plan.v1","plan_id":"ordinary-shape-motion","video_id":"ordinary-shape-motion","width":1280,"height":720,"fps_num":24,"fps_den":1,"items":[` + ordinary + `]}`)
+	if _, err := CompileSemantic(ordinaryPlan); err == nil || !strings.Contains(err.Error(), "only supported on chart_bar shapes") {
+		t.Fatalf("data motion on an ordinary shape = %v, want chart_bar-only diagnostic", err)
+	}
+}
+
 func TestRuntimeMotionCatalogKeepsUndeclaredTargetsUnselectable(t *testing.T) {
 	options, _ := runtimeMotionCatalog()
 	for _, option := range options {
@@ -233,7 +316,7 @@ func TestRuntimeMotionCatalogKeepsUndeclaredTargetsUnselectable(t *testing.T) {
 			if len(option.Targets) != 0 {
 				t.Fatalf("motion %q has undeclared targets but exposes %v", option.ID, option.Targets)
 			}
-			for _, target := range []string{"important_phrase", "short_phrase", "caption", "image", "map_view", "metric", "date"} {
+			for _, target := range []string{"important_phrase", "short_phrase", "caption", "image", "map_view", "metric", "date", "data"} {
 				if motionAdmitsTarget(option.ID, target) {
 					t.Errorf("motion %q without declared targets was admitted for %q", option.ID, target)
 				}
@@ -250,8 +333,8 @@ func TestAnimationPolicyUsesDeclaredTargets(t *testing.T) {
 	}{
 		{target: "important_phrase", id: "text_fade_up", want: true},
 		{target: "important_phrase", id: "image_focus_reveal", want: false},
-		{target: "important_phrase", id: "typewriter_clean", want: true},
-		{target: "important_phrase", id: "typewriter_modern_01_monospace_block_cursor", want: true},
+		{target: "important_phrase", id: "apple_focus_rise", want: true},
+		{target: "important_phrase", id: "phrase_apple_clean_07_slide_up_soft", want: true},
 		{target: "important_phrase", id: "blur_focus_in", want: true},
 		{target: "image", id: "image_focus_reveal", want: true},
 		{target: "image", id: "text_fade_up", want: false},
@@ -271,7 +354,10 @@ func TestAnimationPolicyUsesDeclaredTargets(t *testing.T) {
 		{target: "metric", id: "date_timeline_sweep", want: false},
 		{target: "date", id: "date_timeline_sweep", want: true},
 		{target: "date", id: "metric_counter_rise", want: false},
-		{target: "short_phrase", id: "typewriter_modern_01_monospace_block_cursor", want: true},
+		{target: "data", id: "data_histogram_stagger_up", want: true},
+		{target: "data", id: "metric_counter_rise", want: false},
+		{target: "data", id: "map_middle_east_oil_focus", want: false},
+		{target: "short_phrase", id: "short_phrase_burst", want: true},
 	} {
 		if got := motionAdmitsTarget(tc.id, tc.target); got != tc.want {
 			t.Errorf("motionAdmitsTarget(%q, %q) = %v, want %v", tc.id, tc.target, got, tc.want)
@@ -285,6 +371,9 @@ func TestAnimationPolicyUsesDeclaredTargets(t *testing.T) {
 	}
 	if !motionAdmitsTarget("image_fade_reveal", "map_view") {
 		t.Error("centered image overlay with canonical map_view target was not admitted")
+	}
+	if motionAdmitsTarget("map_middle_east_oil_focus", "map_view") {
+		t.Error("pan/zoom editorial map motion must stay out of the georeferenced viewport picker")
 	}
 	for _, tags := range [][]string{
 		{"caption", "metric"}, {"metric", "caption"},

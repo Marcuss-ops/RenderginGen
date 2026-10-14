@@ -50,6 +50,8 @@ const (
 	// background video layers, so a clip carrying an overlay is encoded once
 	// instead of being re-encoded by a post-render compositor pass.
 	KindVideoOverlay ItemKind = "video_overlay"
+	// KindAdjustment is an ordered clip-wide adjustment stack.
+	KindAdjustment ItemKind = "adjustment"
 	// KindShape lowers to a procedural shape layer (rect, rounded_rect, grid,
 	// dot_grid, device_frame, world_map, etc.) with optional layer effects.
 	KindShape ItemKind = "shape"
@@ -239,7 +241,7 @@ func behaviorOf(kind ItemKind) kindBehavior {
 		return behaviorEntity
 	case KindEntityImage, KindImagePopup, KindProduct, KindLogo, KindLightLeak, ItemKind("image"), ItemKind("image_chain"):
 		return behaviorImage
-	case KindVideoOverlay, ItemKind("video"), ItemKind("rendered_overlay"):
+	case KindVideoOverlay, KindAdjustment, ItemKind("video"), ItemKind("rendered_overlay"):
 		return behaviorVideo
 	case KindShape:
 		return behaviorShape

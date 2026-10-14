@@ -32,9 +32,9 @@ func TestCertificationSnapshotParsesTheCheckedInReports(t *testing.T) {
 	}
 
 	// A recorded pass travels as passed, with the report that recorded it.
-	passed := snapshot.Status("typewriter_clean")
+	passed := snapshot.Status("apple_focus_rise")
 	if passed.Status != motioncert.StatusPassed || passed.Report == "" || passed.GeneratedAt == "" {
-		t.Errorf("typewriter_clean status = %+v, want a passed entry naming its report", passed)
+		t.Errorf("apple_focus_rise status = %+v, want a passed entry naming its report", passed)
 	}
 
 	// Newest report wins. image_parallax_frame is passed by the software image
@@ -95,8 +95,8 @@ func TestSelectionModelPublishesCertificationState(t *testing.T) {
 	if got := byID["image_parallax_frame"].Certification; got.Status != motioncert.StatusFailed {
 		t.Errorf("serialized image_parallax_frame certification = %+v, want failed", got)
 	}
-	if got := byID["typewriter_clean"].Certification; got.Status != motioncert.StatusPassed {
-		t.Errorf("serialized typewriter_clean certification = %+v, want passed", got)
+	if got := byID["apple_focus_rise"].Certification; got.Status != motioncert.StatusPassed {
+		t.Errorf("serialized apple_focus_rise certification = %+v, want passed", got)
 	}
 	// At least one registered motion must serialize as unverified: the reports
 	// cover a fraction of the registry, and the uncovered rest must not look

@@ -595,6 +595,211 @@
         }
       ]
     },
+    "clip_effects": {
+          "type": "array",
+          "maxItems": 12,
+          "items": {
+                "oneOf": [
+                      {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": [
+                                  "type",
+                                  "amount"
+                            ],
+                            "properties": {
+                                  "type": {
+                                        "const": "glitch"
+                                  },
+                                  "amount": {
+                                        "type": "number",
+                                        "minimum": 0,
+                                        "maximum": 1
+                                  },
+                                  "seed": {
+                                        "type": "integer",
+                                        "minimum": 0,
+                                        "maximum": 4294967295
+                                  }
+                            }
+                      },
+                      {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": [
+                                  "type",
+                                  "amount",
+                                  "wavelength"
+                            ],
+                            "properties": {
+                                  "type": {
+                                        "const": "scanlines"
+                                  },
+                                  "amount": {
+                                        "type": "number",
+                                        "minimum": 0,
+                                        "maximum": 0.25
+                                  },
+                                  "wavelength": {
+                                        "type": "number",
+                                        "minimum": 0.002,
+                                        "maximum": 1
+                                  }
+                            }
+                      },
+                      {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": [
+                                  "type",
+                                  "block_size"
+                            ],
+                            "properties": {
+                                  "type": {
+                                        "const": "mosaic"
+                                  },
+                                  "block_size": {
+                                        "type": "integer",
+                                        "minimum": 1,
+                                        "maximum": 512
+                                  }
+                            }
+                      },
+                      {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": [
+                                  "type",
+                                  "amount"
+                            ],
+                            "properties": {
+                                  "type": {
+                                        "const": "chromatic_aberration"
+                                  },
+                                  "amount": {
+                                        "type": "number",
+                                        "minimum": -128,
+                                        "maximum": 128
+                                  }
+                            }
+                      },
+                      {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": [
+                                  "type",
+                                  "size",
+                                  "angle",
+                                  "amount"
+                            ],
+                            "properties": {
+                                  "type": {
+                                        "const": "halftone"
+                                  },
+                                  "size": {
+                                        "type": "integer",
+                                        "minimum": 1,
+                                        "maximum": 128
+                                  },
+                                  "angle": {
+                                        "type": "number",
+                                        "minimum": -3600,
+                                        "maximum": 3600
+                                  },
+                                  "amount": {
+                                        "type": "number",
+                                        "minimum": 0,
+                                        "maximum": 1
+                                  }
+                            }
+                      },
+                      {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": [
+                                  "type",
+                                  "amount",
+                                  "radius",
+                                  "softness"
+                            ],
+                            "properties": {
+                                  "type": {
+                                        "const": "vignette"
+                                  },
+                                  "amount": {
+                                        "type": "number",
+                                        "minimum": 0,
+                                        "maximum": 1
+                                  },
+                                  "radius": {
+                                        "type": "number",
+                                        "minimum": 0,
+                                        "maximum": 1
+                                  },
+                                  "softness": {
+                                        "type": "number",
+                                        "minimum": 0,
+                                        "maximum": 1
+                                  }
+                            }
+                      },
+                      {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": [
+                                  "type",
+                                  "radius"
+                            ],
+                            "properties": {
+                                  "type": {
+                                        "const": "gaussian_blur"
+                                  },
+                                  "radius": {
+                                        "type": "number",
+                                        "minimum": 0,
+                                        "maximum": 256
+                                  }
+                            }
+                      },
+                      {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": [
+                                  "type",
+                                  "amount",
+                                  "size"
+                            ],
+                            "properties": {
+                                  "type": {
+                                        "const": "noise"
+                                  },
+                                  "amount": {
+                                        "type": "number",
+                                        "minimum": 0,
+                                        "maximum": 1
+                                  },
+                                  "size": {
+                                        "type": "integer",
+                                        "minimum": 1,
+                                        "maximum": 256
+                                  },
+                                  "seed": {
+                                        "type": "integer",
+                                        "minimum": 0,
+                                        "maximum": 4294967295
+                                  },
+                                  "animated": {
+                                        "type": "boolean"
+                                  }
+                            }
+                      }
+                ]
+          }
+    },
+    "clip_grid": {"type": "object", "additionalProperties": false,
+      "required": ["spacing_px", "line_width_px", "color", "opacity"],
+      "properties": {"spacing_px": {"type": "number", "minimum": 4, "maximum": 512}, "line_width_px": {"type": "number", "minimum": 0.25, "maximum": 32}, "color": {"type": "string", "pattern": "^#[0-9A-Fa-f]{6}$"}, "opacity": {"type": "number", "minimum": 0, "maximum": 1}}
+    },
     "layer_effect": {
       "type": "object",
       "additionalProperties": false,
@@ -866,6 +1071,8 @@
         }
       }
     },
+    "clip_effects": {"$ref": "#/$defs/clip_effects"},
+    "clip_grid": {"$ref": "#/$defs/clip_grid"},
     "background": {
       "type": "object",
       "additionalProperties": false,

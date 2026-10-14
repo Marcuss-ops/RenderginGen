@@ -241,7 +241,7 @@ func TestEveryEntityPresentationMotionLowersToCaptionAnimation(t *testing.T) {
 
 func TestEntityCaptionPickerMatchesRuntimeCaptionSelection(t *testing.T) {
 	want := make(map[string]bool)
-	for _, category := range []string{"entity_caption_v1", "trump_entity_text_v1", "typewriter", "typewriter_glitch", "typewriter_modern_v1", "entity_card_v1"} {
+	for _, category := range []string{"entity_caption_v1", "trump_entity_text_v1", "entity_card_v1"} {
 		for _, id := range motion.Registry.SelectableCategoryMotionIDs(category) {
 			if entityCaptionMotionSelectable(id) {
 				want[id] = true

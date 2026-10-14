@@ -41,6 +41,9 @@ func RenderPlanWireVersion(plan *Plan) (string, int) {
 		return RenderPlanSchemaV3, RenderPlanVersionV3
 	}
 	for _, layer := range plan.Layers {
+		if layer.Type == "adjustment" {
+			return RenderPlanSchemaV3, RenderPlanVersionV3
+		}
 		if layer.Type == "shape" || layer.Shape != nil || layer.FrameStroke != nil || layer.ScreenSpace ||
 			len(layer.Effects) > 0 || len(layer.EffectParamTracks) > 0 || layer.Parent != "" ||
 			layer.TransitionIn != nil || len(layer.Masks) > 0 || layerAnimationNeedsV3(layer.Animation) {
@@ -179,6 +182,8 @@ type semanticPlan struct {
 	// frame + drop shadow + rounded corners + on-edge stroke). An unresolvable
 	// declaration is a compile error instead of a silently dropped style block.
 	SourceFrame *semanticSourceFrame `json:"source_frame,omitempty"`
+	ClipEffects []semanticClipEffect `json:"clip_effects,omitempty"`
+	ClipGrid    *semanticClipGrid    `json:"clip_grid,omitempty"`
 	Width       int                  `json:"width"`
 	Height      int                  `json:"height"`
 	FPSNum      int                  `json:"fps_num"`
@@ -204,6 +209,26 @@ type semanticAnimationPolicy struct {
 	SubgroupID   string         `json:"subgroup_id,omitempty"`
 	MotionID     string         `json:"motion_id,omitempty"`
 	MotionParams map[string]any `json:"motion_params,omitempty"`
+}
+
+type semanticClipGrid struct {
+	SpacingPX   float64 `json:"spacing_px"`
+	LineWidthPX float64 `json:"line_width_px"`
+	Color       string  `json:"color"`
+	Opacity     float64 `json:"opacity"`
+}
+
+type semanticClipEffect struct {
+	Type       string   `json:"type"`
+	Amount     *float64 `json:"amount,omitempty"`
+	Radius     *float64 `json:"radius,omitempty"`
+	Softness   *float64 `json:"softness,omitempty"`
+	BlockSize  *int     `json:"block_size,omitempty"`
+	Size       *int     `json:"size,omitempty"`
+	Angle      *float64 `json:"angle,omitempty"`
+	Wavelength *float64 `json:"wavelength,omitempty"`
+	Seed       *uint32  `json:"seed,omitempty"`
+	Animated   *bool    `json:"animated,omitempty"`
 }
 
 type semanticSource struct {
@@ -834,6 +859,18 @@ type LayerLight struct {
 	Color     string  `json:"color"`
 	Intensity float64 `json:"intensity"`
 }
+
+// Text fit modes are part of the Chronon render-plan contract: a layer that
+// declares min_font_size/max_font_size must also declare a non-none fit mode,
+// otherwise plan preparation rejects the payload before any frame is drawn
+// ("text font size limits require a non-none fit_mode"). Producers that pin a
+// fit interval spell the mode from here so the vocabulary has one owner.
+const (
+	// FitModeShrinkOnly lets the layout engine shrink bounded text down to
+	// min_font_size and never grow past max_font_size. With min == max the
+	// pinned size renders verbatim.
+	FitModeShrinkOnly = "shrink_only"
+)
 
 type LayerStyle struct {
 	Font        string           `json:"font,omitempty"`

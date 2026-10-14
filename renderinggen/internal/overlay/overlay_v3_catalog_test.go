@@ -576,11 +576,11 @@ func TestImageCompositionIDValidatesImageAndCaptionCounts(t *testing.T) {
 
 func TestEveryPhraseFamilyMotionReachesTheChrononRenderPlan(t *testing.T) {
 	var ids []string
-	for _, category := range []string{"typewriter", "typewriter_modern_v1", "apple_v2", "apple_v3", "phrase_apple_clean_v1", "apple_phrase_v1", "phrase_highlight_v1"} {
+	for _, category := range []string{"apple_v2", "apple_v3", "phrase_apple_clean_v1", "apple_phrase_v1"} {
 		ids = append(ids, motion.Registry.CategoryMotionIDs(category)...)
 	}
-	if len(ids) != 145 {
-		t.Fatalf("registered phrase family motions = %d, want 145", len(ids))
+	if len(ids) != 103 {
+		t.Fatalf("registered phrase family motions = %d, want 103", len(ids))
 	}
 	seen := make(map[string]bool, len(ids))
 	for _, id := range ids {
@@ -595,9 +595,6 @@ func TestEveryPhraseFamilyMotionReachesTheChrononRenderPlan(t *testing.T) {
 				t.Fatalf("compile phrase motion %q: %v", id, err)
 			}
 			wantLayers := 1
-			if strings.HasPrefix(id, "typewriter_") {
-				wantLayers = 2 // text layer plus synchronized runtime cursor
-			}
 			if definitionPlugin, err := motion.Registry.Resolve(id); err == nil {
 				definition := definitionPlugin.(motion.DeclarativePlugin).Definition
 				wantLayers += len(definition.LayerComponents)
@@ -664,18 +661,6 @@ func TestPhraseDefaultAndMotionFamilyRemainIndependent(t *testing.T) {
 	if _, err := ResolveOfficialPreset(PhraseDefaultPresetID); err != nil {
 		t.Fatal(err)
 	}
-	if got := len(motion.Registry.CategoryMotionIDs("typewriter")); got != 10 {
-		t.Fatalf("typewriter family has %d motions, want 10", got)
-	}
-	if got := len(motion.Registry.CategoryMotionIDs("typewriter_modern_v1")); got != 15 {
-		t.Fatalf("modern typewriter family has %d motions, want 15", got)
-	}
-	for _, id := range motion.Registry.CategoryMotionIDs("typewriter_modern_v1") {
-		animation, err := animationForMotion(id, nil, "18 MAY 2026", 150, 0)
-		if err != nil || animation == nil || len(animation.Tracks) == 0 || len(animation.TextAnimators) == 0 {
-			t.Fatalf("modern typewriter %q is not runtime-renderable: animation=%+v error=%v", id, animation, err)
-		}
-	}
 	// Editorial Visual Motion V1 grows the certified web vocabulary to 14:
 	// web_cursor_focus and web_section_spotlight joined the family.
 	if got := len(motion.Registry.CategoryMotionIDs("web")); got != 14 {
@@ -696,9 +681,8 @@ func TestRuntimeStyleOverrideSchemaContract(t *testing.T) {
 			// (ScriptGenerateRequest.overlay_style.font_family) advertises it and
 			// runtimeFontsByFamily resolves it, so a plan built by the pipeline may
 			// legitimately carry it. Bricolage joined too: payloads select it
-			// directly (the modern typewriter lowering only uses it as the
-			// fallback when the plan carries no explicit family), so the
-			// schema, the validator and the bundle must all admit it.
+			// directly via params.font_family, so the schema, the validator
+			// and the bundle must all admit it.
 			if len(font) != 8 || font[0] != "poppins" || font[1] != "inter" || font[2] != "inter_bold" || font[3] != "dejavu_sans" || font[4] != "playfair_display_italic" || font[5] != "bricolage_grotesque" || font[6] != "oswald" || font[7] != "abril_fatface" {
 				t.Errorf("font_family enum = %v, want [poppins inter inter_bold dejavu_sans playfair_display_italic bricolage_grotesque oswald abril_fatface]", font)
 			}

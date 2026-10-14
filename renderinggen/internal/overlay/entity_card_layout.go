@@ -294,14 +294,14 @@ func captionLinesWidth(lines []string, fontSize float64) float64 {
 
 // entityCaptionMotionPool is the canonical caption-motion pool an unstyled
 // producer item rotates through instead of the legacy single hardcoded
-// fallback: authored text treatments, the typewriter families and the
+// fallback: authored text treatments and the
 // trump_entity_text_01..15 catalog recipes. Every id is registered in the
 // motion catalog and admits the "caption" target.
 var entityCaptionMotionPool = selectableEntityCaptionMotions()
 
 func selectableEntityCaptionMotions() []string {
 	var candidates []string
-	for _, category := range []string{"entity_caption_v1", "trump_entity_text_v1", "typewriter", "typewriter_glitch", "typewriter_modern_v1", "entity_card_v1"} {
+	for _, category := range []string{"entity_caption_v1", "trump_entity_text_v1", "entity_card_v1"} {
 		candidates = append(candidates, motion.Registry.SelectableCategoryMotionIDs(category)...)
 	}
 	pool := candidates[:0]

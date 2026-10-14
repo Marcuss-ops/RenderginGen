@@ -240,17 +240,11 @@ func TestEveryCallableCatalogMotionExecutesOnTheStrictGPU(t *testing.T) {
 	var items []map[string]any
 	entityCaptionIDs := motion.Registry.SelectableCategoryMotionIDs("entity_caption_v1")
 	trumpEntityCaptionIDs := motion.Registry.SelectableCategoryMotionIDs("trump_entity_text_v1")
-	typewriterCaptionIDs := motion.Registry.SelectableCategoryMotionIDs("typewriter")
-	typewriterGlitchCaptionIDs := motion.Registry.SelectableCategoryMotionIDs("typewriter_glitch")
-	modernTypewriterCaptionIDs := motion.Registry.SelectableCategoryMotionIDs("typewriter_modern_v1")
 	entityPresentationIDs := motion.Registry.PresentationMotionIDs("entity_card_v1")
 	entityCaptionStart := 0
 	phraseIDs := make([]string, 0, 128)
 	captionMotionIDs := append([]string(nil), entityCaptionIDs...)
 	captionMotionIDs = append(captionMotionIDs, trumpEntityCaptionIDs...)
-	captionMotionIDs = append(captionMotionIDs, typewriterCaptionIDs...)
-	captionMotionIDs = append(captionMotionIDs, typewriterGlitchCaptionIDs...)
-	captionMotionIDs = append(captionMotionIDs, modernTypewriterCaptionIDs...)
 	captionMotionIDs = append(captionMotionIDs, entityPresentationIDs...)
 	for i, id := range captionMotionIDs {
 		item := map[string]any{
@@ -266,11 +260,11 @@ func TestEveryCallableCatalogMotionExecutesOnTheStrictGPU(t *testing.T) {
 	}
 	entityCaptionCount := len(items)
 	phraseStart := entityCaptionCount
-	for _, category := range []string{"typewriter", "typewriter_modern_v1", "apple_v2", "apple_v3", "phrase_apple_clean_v1", "apple_phrase_v1", "phrase_highlight_v1", "text_3d_v1", "short_phrase_style"} {
+	for _, category := range []string{"apple_v2", "apple_v3", "phrase_apple_clean_v1", "apple_phrase_v1", "text_3d_v1", "short_phrase_style"} {
 		phraseIDs = append(phraseIDs, motion.Registry.CategoryMotionIDs(category)...)
 	}
-	if len(phraseIDs) != 203 {
-		t.Fatalf("phrase family inventory has %d IDs, want 203", len(phraseIDs))
+	if len(phraseIDs) != 139 {
+		t.Fatalf("phrase family inventory has %d IDs, want 139", len(phraseIDs))
 	}
 	for i, id := range phraseIDs {
 		items = append(items, map[string]any{
@@ -399,35 +393,15 @@ func TestEveryCallableCatalogMotionExecutesOnTheStrictGPU(t *testing.T) {
 		start := entityCaptionCount + len(phraseIDs) + 21 + 14 + 8 + 10 + 14 + 12 + 12 + 12
 		items = items[start : start+23]
 	case "text_3d":
-		start := phraseStart + 144
+		start := phraseStart + 103
 		items = items[start : start+10]
 	case "short_phrase_style":
-		start := phraseStart + 154
-		items = items[start : start+48]
+		start := phraseStart + 113
+		items = items[start : start+26]
 	case "entity_caption":
 		items = items[entityCaptionStart:entityCaptionCount]
 	default:
 		t.Fatalf("RENDERINGGEN_GPU_CERT_FAMILY=%q, want phrase, image, editorial_image, image_25d, overlay_v3_image, web, web_rect, paint, light_leak, brush, text_3d, short_phrase_style or entity_caption", familyFilter)
-	}
-	if strings.TrimSpace(os.Getenv("RENDERINGGEN_GPU_CERT_MULTI_ACCENT_ONLY")) == "1" {
-		if familyFilter != "phrase" {
-			t.Fatalf("RENDERINGGEN_GPU_CERT_MULTI_ACCENT_ONLY requires family=phrase, got %q", familyFilter)
-		}
-		filtered := items[:0]
-		for _, item := range items {
-			id := item["motion_id"].(string)
-			plugin, err := motion.Registry.Resolve(id)
-			if err != nil {
-				t.Fatalf("resolve motion %q for multi-accent certification: %v", id, err)
-			}
-			if len(plugin.(motion.DeclarativePlugin).Definition.LayerComponents) > 1 {
-				filtered = append(filtered, item)
-			}
-		}
-		items = filtered
-		if len(items) != 5 {
-			t.Fatalf("multi-accent certification selected %d motions, want 5", len(items))
-		}
 	}
 	if motionFilter != "" {
 		// Comma-separated batch form (session-proof reruns): each listed ID
