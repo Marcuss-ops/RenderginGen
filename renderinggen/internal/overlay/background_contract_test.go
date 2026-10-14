@@ -159,3 +159,32 @@ func TestBackgroundColorKeepsNoFitContract(t *testing.T) {
 		t.Fatalf("color background fit = %q, want empty (no plate to fit)", got)
 	}
 }
+
+// TestBackgroundPlateIsTopLeftAnchored pins the renderer contract every
+// full-canvas plate depends on: color/image/video backgrounds carry an
+// explicit top-left position. A missing position is measured by the renderer
+// as a canvas-center offset, which shrinks the plate to the top-left quadrant
+// and leaves the rest of the frame on the black clear color (a declared white
+// canvas rendered black corners on the standalone entity portrait).
+func TestBackgroundPlateIsTopLeftAnchored(t *testing.T) {
+	plans := map[string]string{
+		"color": fmt.Sprintf(`{"kind":"color","color":%s}`, certificationBackgroundRGBA),
+		"image": backgroundAssetJSON("image", "assets/semantic/bg-plate/background.png", "image/png"),
+		"video": backgroundAssetJSON("video", "assets/semantic/bg-plate/background.mp4", "video/mp4"),
+	}
+	for kind, background := range plans {
+		t.Run(kind, func(t *testing.T) {
+			result, err := CompileSemantic([]byte(backgroundOnlyPlanJSON(background)))
+			if err != nil {
+				t.Fatalf("compile %s background: %v", kind, err)
+			}
+			layer := result.Plan.Layers[0]
+			if len(layer.Position) != 2 || layer.Position[0] != 0 || layer.Position[1] != 0 {
+				t.Fatalf("%s background position = %v, want [0 0] (top-left anchored full canvas)", kind, layer.Position)
+			}
+			if len(layer.Size) != 2 || layer.Size[0] != 1920 || layer.Size[1] != 1080 {
+				t.Fatalf("%s background size = %v, want the canvas geometry", kind, layer.Size)
+			}
+		})
+	}
+}

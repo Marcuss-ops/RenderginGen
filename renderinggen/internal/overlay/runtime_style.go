@@ -60,6 +60,14 @@ func validateTextRuntimeOverrides(params map[string]any, itemID string, kind Ite
 				// on media layers, so it is not a text-layer trespass.
 				continue
 			}
+			if key == "fill" && isShapeKind(kind) {
+				// Shape layers own `fill` natively (rect/bar color as an
+				// RGBA array or hex string, validated by the shape
+				// compiler via parseRGBA). It is geometry, not a text
+				// face-color override, so the text trespass gate must not
+				// reject producer chart bars carrying it.
+				continue
+			}
 			value, exists := params[key]
 			if !exists {
 				continue

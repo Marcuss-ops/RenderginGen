@@ -167,6 +167,18 @@ func TestCompileMapChainExpandsMapSegments(t *testing.T) {
 		rawPlan, _ := json.Marshal(result.Plan)
 		t.Fatalf("want map layers for both segments, got %d: %s", len(result.Plan.Layers), rawPlan)
 	}
+	foundSecond := false
+	for _, layer := range result.Plan.Layers {
+		if strings.Contains(layer.ID, "seg1") {
+			foundSecond = true
+			if layer.TransitionIn != nil {
+				t.Fatalf("map segment must use its camera motion without fly-under transition: %+v", layer.TransitionIn)
+			}
+		}
+	}
+	if !foundSecond {
+		t.Fatalf("second map segment layers not found: %+v", result.Plan.Layers)
+	}
 }
 
 // A chain whose segments escape the item window fails closed instead of

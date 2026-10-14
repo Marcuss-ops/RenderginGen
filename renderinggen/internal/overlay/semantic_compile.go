@@ -118,9 +118,16 @@ func compileSemantic(raw []byte) (*Plan, []Asset, Stats, []string, error) {
 				return nil, nil, Stats{}, nil, fmt.Errorf("overlay: background asset: %w", err)
 			}
 		}
+		// Color/image/video background plates are top-left anchored: the
+		// renderer measures a missing position as a canvas-center offset,
+		// which shrinks a full-canvas plate to the top-left quadrant and
+		// leaves the rest of the frame on the black clear color (the
+		// standalone entity-image portrait rendered black corners on a
+		// declared white canvas for exactly this reason).
 		layer := Layer{ID: "background", Type: layerKind, BoxWidth: src.Width, BoxHeight: src.Height,
-			Size: []float64{float64(src.Width), float64(src.Height)},
-			Fit:  bg.Fit, StartFrame: 0}
+			Size:     []float64{float64(src.Width), float64(src.Height)},
+			Position: []float64{0, 0},
+			Fit:      bg.Fit, StartFrame: 0}
 		if layerKind != "color" {
 			// One gate for the background fit: validated against the closed set
 			// the render contract honours, defaulted to the deterministic

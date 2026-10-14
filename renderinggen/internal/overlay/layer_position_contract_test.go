@@ -2,6 +2,7 @@ package overlay
 
 import (
 	"math"
+	"strconv"
 	"testing"
 )
 
@@ -79,5 +80,41 @@ func TestBurnedCuePositionLandsBottomCenter(t *testing.T) {
 	}
 	if math.Abs(resolvedX-canvasW/2) > 1 {
 		t.Fatalf("bottom_center cue centre x = %.0f is not horizontally centred", resolvedX)
+	}
+}
+
+// TestEditorialBulletPositionIsHonoredInAbsoluteCoords pins the PipelineGen
+// bullet/title contract end to end: the planner writes absolute canvas pixels
+// (W/2 horizontally, H*0.18 for bullets, H*0.28 for titles on 1080p) and the
+// worker must carry them verbatim onto the text layer — the engine subtracts
+// canvas/2 itself, so emitting a centre offset here would throw the card half
+// a canvas off, exactly like the burned-cue P0 above.
+func TestEditorialBulletPositionIsHonoredInAbsoluteCoords(t *testing.T) {
+	compile := func(role string, posY float64) []float64 {
+		t.Helper()
+		raw := []byte(`{"schema_version":"renderinggen.overlay-plan.v1","plan_id":"bullet-pos","video_id":"v","width":1920,"height":1080,"fps_num":24,"fps_den":1,` +
+			`"items":[{"id":"b","kind":"text_phrase","template_id":"IMPORTANT_PHRASE","preset_id":"phrase_default","text":"Crollo margini",` +
+			`"start_ms":0,"end_ms":3000,"params":{"position":"center","position_x":960,"position_y":` +
+			strconv.FormatFloat(posY, 'f', 1, 64) + `,"style":"headline","editorial_role":"` + role + `"}}]}`)
+		result, err := CompileSemantic(raw)
+		if err != nil {
+			t.Fatalf("compile %s: %v", role, err)
+		}
+		return result.Plan.Layers[0].Position
+	}
+	bullet := compile("scene_bullet", 194.4)
+	if len(bullet) != 2 || bullet[0] != 960 || bullet[1] != 194.4 {
+		t.Fatalf("bullet position = %v, want the planner's absolute coords [960 194.4]", bullet)
+	}
+	title := compile("scene_title", 302.4)
+	if len(title) != 2 || title[0] != 960 || title[1] != 302.4 {
+		t.Fatalf("title position = %v, want the planner's absolute coords [960 302.4]", title)
+	}
+	// Neither may collapse onto the canvas-centre default: that would mean
+	// the explicit coordinates were dropped.
+	for _, pos := range [][]float64{bullet, title} {
+		if pos[1] == 540 {
+			t.Errorf("editorial position %v fell back to canvas centre; explicit coords were dropped", pos)
+		}
 	}
 }
