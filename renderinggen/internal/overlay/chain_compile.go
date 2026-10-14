@@ -192,6 +192,12 @@ func segParamsForKind(chainParams map[string]any, segKind ItemKind, hasImage, ha
 		if captionedEntityImage {
 			continue
 		}
+		if key == "fill" && isShapeKind(segKind) {
+			// Shape segments own `fill` as geometry (bar/rect color),
+			// mirroring validateTextRuntimeOverrides: stripping it here
+			// would silently drop a shape's color on mixed chains.
+			continue
+		}
 		delete(filtered, key)
 	}
 	return filtered
@@ -302,7 +308,10 @@ func compileChainItem(ri resolvedItem, src *semanticPlan, registry *assetRegistr
 		// stamp is safe on every execution path. The fade is clamped to
 		// the segment length so short segments still decode (the daemon
 		// clamps degenerate windows to a single-frame cut itself).
-		if n > 0 {
+		// A map's own camera_move is its entrance animation. Applying the
+		// generic fly-under transition to its georeferenced layers compounds
+		// a second camera movement and makes the map smear/double during entry.
+		if n > 0 && !isMapKind(segKind) {
 			fadeFrames := int64(12)
 			if fps := int64(src.FPSNum); fps > 0 && int64(src.FPSDen) > 0 {
 				fadeFrames = fps * 12 / 24 / int64(src.FPSDen)

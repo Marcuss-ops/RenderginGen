@@ -1415,6 +1415,11 @@
                 "minimum": 0,
                 "maximum": 256
               },
+              "glow_color": {
+                "type": "string",
+                "pattern": "^#[0-9a-fA-F]{6}$",
+                "description": "Runtime text glow color selected by overlay_style.glow.color; applies alongside glow_size."
+              },
               "stroke_size": {
                 "type": "number",
                 "minimum": 0,
@@ -1485,10 +1490,20 @@
                 "exclusiveMinimum": 0,
                 "maximum": 512
               },
+              "fill": {
+                "type": "string",
+                "pattern": "^#[0-9a-fA-F]{6}$",
+                "description": "Runtime text face color; takes precedence over params for matching controls."
+              },
               "glow_size": {
                 "type": "number",
                 "minimum": 0,
                 "maximum": 256
+              },
+              "glow_color": {
+                "type": "string",
+                "pattern": "^#[0-9a-fA-F]{6}$",
+                "description": "Runtime text glow color selected by overlay_style.glow.color; applies alongside glow_size."
               },
               "stroke_size": {
                 "type": "number",

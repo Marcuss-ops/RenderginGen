@@ -180,7 +180,9 @@ func TestRuntimeTextStyleOverridesRejectImageLayers(t *testing.T) {
 	}{
 		{"font_family", `"inter"`},
 		{"font_size_px", `84`},
+		{"fill", `"#FFFFFF"`},
 		{"glow_size", `10`},
+		{"glow_color", `"#FF3355"`},
 		{"stroke_size", `4`},
 		{"shadow_blur_px", `12`},
 		{"shadow_offset_x_px", `-3`},
