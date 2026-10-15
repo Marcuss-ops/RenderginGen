@@ -80,13 +80,39 @@ type Plan struct {
 }
 
 type CameraPlan struct {
-	Type     string     `json:"type"`
-	Position [3]float64 `json:"position"`
-	Rotation [3]float64 `json:"rotation_deg"`
-	FOVDeg   float64    `json:"fov_deg"`
-	Near     float64    `json:"near"`
-	Far      float64    `json:"far"`
-	Zoom     float64    `json:"zoom,omitempty"`
+	Type string `json:"type"`
+	// Node is the AE rig: one_node aims by rotation only, two_node locks
+	// aim on Target (point of interest). Omitted means one_node.
+	Node       string      `json:"node,omitempty"`
+	Position   [3]float64  `json:"position"`
+	Rotation   [3]float64  `json:"rotation_deg"`
+	Target     *[3]float64 `json:"target,omitempty"`
+	TargetName string      `json:"target_name,omitempty"`
+	FOVDeg     float64     `json:"fov_deg"`
+	Near       float64     `json:"near"`
+	Far        float64     `json:"far"`
+	Zoom       float64     `json:"zoom,omitempty"`
+	// FocalMM is the physical lens in mm on the 36x24 gate (AE 24/28/35/
+	// 50/85 family). Zero means "not authored": FOVDeg wins.
+	FocalMM float64 `json:"focal_length_mm,omitempty"`
+	// FStop is the physical aperture as f/N. Zero means "not authored".
+	FStop float64 `json:"f_stop,omitempty"`
+	// IrisBlades shapes bokeh. Zero means circular.
+	IrisBlades int        `json:"iris_blades,omitempty"`
+	DOF        *CameraDOF `json:"dof,omitempty"`
+}
+
+// CameraDOF is the wire depth-of-field block. Enabled selects the legacy
+// blur-per-unit path; an authored FStop additionally selects the physical
+// lens model in the renderer.
+type CameraDOF struct {
+	Enabled       bool    `json:"enabled"`
+	FocusDistance float64 `json:"focus_distance,omitempty"`
+	Aperture      float64 `json:"aperture,omitempty"`
+	MaxBlur       float64 `json:"max_blur,omitempty"`
+	FStop         float64 `json:"f_stop,omitempty"`
+	IrisBlades    int     `json:"iris_blades,omitempty"`
+	HighlightGain float64 `json:"highlight_gain,omitempty"`
 }
 
 type CameraAnimation struct {
@@ -192,6 +218,7 @@ type semanticPlan struct {
 	// canvas duration before items are processed; items can only extend it.
 	// Required when items is empty (clip render without entity overlays).
 	DurationMS        int64                     `json:"duration_ms,omitempty"`
+	SceneCamera       *SemanticSceneCamera      `json:"scene_camera,omitempty"`
 	OutputProfileID   string                    `json:"output_profile_id"`
 	MediaContract     string                    `json:"media_contract,omitempty"` // producer media metadata
 	Background        *semanticBackground       `json:"background,omitempty"`
@@ -212,10 +239,12 @@ type semanticAnimationPolicy struct {
 }
 
 type semanticClipGrid struct {
-	SpacingPX   float64 `json:"spacing_px"`
-	LineWidthPX float64 `json:"line_width_px"`
-	Color       string  `json:"color"`
-	Opacity     float64 `json:"opacity"`
+	Style       string   `json:"style,omitempty"`
+	SpacingPX   float64  `json:"spacing_px"`
+	LineWidthPX *float64 `json:"line_width_px,omitempty"`
+	DotRadiusPX *float64 `json:"dot_radius_px,omitempty"`
+	Color       string   `json:"color"`
+	Opacity     float64  `json:"opacity"`
 }
 
 type semanticClipEffect struct {
@@ -229,6 +258,11 @@ type semanticClipEffect struct {
 	Wavelength *float64 `json:"wavelength,omitempty"`
 	Seed       *uint32  `json:"seed,omitempty"`
 	Animated   *bool    `json:"animated,omitempty"`
+	Intensity  *float64 `json:"intensity,omitempty"`
+	Curvature  *float64 `json:"curvature,omitempty"`
+	Scale      *float64 `json:"scale,omitempty"`
+	Threshold  *float64 `json:"threshold,omitempty"`
+	Speed      *float64 `json:"speed,omitempty"`
 }
 
 type semanticSource struct {
@@ -606,14 +640,15 @@ type AnimationKeyframe struct {
 }
 
 type Layer struct {
-	ID        string    `json:"id"`
-	Type      string    `json:"type"`
-	Asset     string    `json:"asset,omitempty"`
-	Source    string    `json:"source,omitempty"`
-	Color     []float64 `json:"color,omitempty"`
-	Text      string    `json:"text,omitempty"`
-	BoxWidth  int       `json:"-"`
-	BoxHeight int       `json:"-"`
+	ID        string           `json:"id"`
+	Type      string           `json:"type"`
+	Asset     string           `json:"asset,omitempty"`
+	Source    string           `json:"source,omitempty"`
+	Color     []float64        `json:"color,omitempty"`
+	Text      string           `json:"text,omitempty"`
+	TextSpans []map[string]any `json:"spans,omitempty"`
+	BoxWidth  int              `json:"-"`
+	BoxHeight int              `json:"-"`
 	// MapRaster dimensions are transient verification metadata. The processor
 	// compares the staged PNG's decoded dimensions to this georeferenced size.
 	MapRasterWidth  int       `json:"-"`
@@ -902,6 +937,7 @@ type LayerStroke struct {
 }
 type TextSelector struct {
 	ID             string          `json:"id,omitempty"`
+	SemanticID     string          `json:"semantic_id,omitempty"`
 	Unit           string          `json:"unit,omitempty"`
 	Shape          string          `json:"shape,omitempty"`
 	Order          string          `json:"order,omitempty"`

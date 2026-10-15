@@ -35239,6 +35239,565 @@
         }
       ],
       "text_animators": []
+    },
+    {
+      "id": "phrase_highlight_soft_marker",
+      "category": "documentary_highlighting_v1",
+      "targets": [
+        "text"
+      ],
+      "unit": "layer",
+      "duration_bounds": {
+        "minimum_frames": 20,
+        "maximum_frames": 240
+      },
+      "render_safe": true,
+      "requires_3d": false,
+      "requires_camera": false,
+      "enter": 36,
+      "exit": 0,
+      "tracks": [],
+      "text_animators": []
+    },
+    {
+      "id": "phrase_highlight_archive_yellow",
+      "category": "documentary_highlighting_v1",
+      "targets": [
+        "text"
+      ],
+      "unit": "layer",
+      "duration_bounds": {
+        "minimum_frames": 20,
+        "maximum_frames": 240
+      },
+      "render_safe": true,
+      "requires_3d": false,
+      "requires_camera": false,
+      "enter": 36,
+      "exit": 0,
+      "tracks": [],
+      "text_animators": []
+    },
+    {
+      "id": "phrase_highlight_evidence_red",
+      "category": "documentary_highlighting_v1",
+      "targets": [
+        "text"
+      ],
+      "unit": "layer",
+      "duration_bounds": {
+        "minimum_frames": 20,
+        "maximum_frames": 240
+      },
+      "render_safe": true,
+      "requires_3d": false,
+      "requires_camera": false,
+      "enter": 36,
+      "exit": 0,
+      "tracks": [],
+      "text_animators": []
+    },
+    {
+      "id": "phrase_highlight_phrase_focus",
+      "category": "documentary_highlighting_v1",
+      "targets": [
+        "text"
+      ],
+      "unit": "layer",
+      "duration_bounds": {
+        "minimum_frames": 20,
+        "maximum_frames": 240
+      },
+      "render_safe": true,
+      "requires_3d": false,
+      "requires_camera": false,
+      "enter": 36,
+      "exit": 0,
+      "tracks": [],
+      "text_animators": []
+    },
+    {
+      "id": "phrase_highlight_document_scan",
+      "category": "documentary_highlighting_v1",
+      "targets": [
+        "text"
+      ],
+      "unit": "layer",
+      "duration_bounds": {
+        "minimum_frames": 20,
+        "maximum_frames": 240
+      },
+      "render_safe": true,
+      "requires_3d": false,
+      "requires_camera": false,
+      "enter": 36,
+      "exit": 0,
+      "tracks": [],
+      "text_animators": []
+    },
+    {
+      "id": "doc_01_yellow_marker_sweep",
+      "category": "documentary_highlighting_v1",
+      "targets": [
+        "text"
+      ],
+      "unit": "layer",
+      "duration_bounds": {
+        "minimum_frames": 20,
+        "maximum_frames": 240
+      },
+      "render_safe": true,
+      "requires_3d": false,
+      "requires_camera": false,
+      "enter": 36,
+      "exit": 0,
+      "tracks": [],
+      "text_animators": []
+    },
+    {
+      "id": "doc_02_multiline_stagger_highlight",
+      "category": "documentary_highlighting_v1",
+      "targets": [
+        "text"
+      ],
+      "unit": "layer",
+      "duration_bounds": {
+        "minimum_frames": 20,
+        "maximum_frames": 240
+      },
+      "render_safe": true,
+      "requires_3d": false,
+      "requires_camera": false,
+      "enter": 36,
+      "exit": 0,
+      "tracks": [],
+      "text_animators": []
+    },
+    {
+      "id": "doc_03_documentary_quote_marker",
+      "category": "documentary_highlighting_v1",
+      "targets": [
+        "text"
+      ],
+      "unit": "layer",
+      "duration_bounds": {
+        "minimum_frames": 20,
+        "maximum_frames": 240
+      },
+      "render_safe": true,
+      "requires_3d": false,
+      "requires_camera": false,
+      "enter": 36,
+      "exit": 0,
+      "tracks": [],
+      "text_animators": []
+    },
+    {
+      "id": "doc_04_archival_source_highlight",
+      "category": "documentary_highlighting_v1",
+      "targets": [
+        "text"
+      ],
+      "unit": "layer",
+      "duration_bounds": {
+        "minimum_frames": 20,
+        "maximum_frames": 240
+      },
+      "render_safe": true,
+      "requires_3d": false,
+      "requires_camera": false,
+      "enter": 36,
+      "exit": 0,
+      "tracks": [
+        {
+          "property": "scale",
+          "easing": "out_cubic",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 1.0
+            },
+            {
+              "frame": 60,
+              "value": 1.045
+            }
+          ]
+        }
+      ],
+      "text_animators": []
+    },
+    {
+      "id": "doc_05_selective_phrase_tracking",
+      "category": "documentary_highlighting_v1",
+      "targets": [
+        "text"
+      ],
+      "unit": "layer",
+      "duration_bounds": {
+        "minimum_frames": 20,
+        "maximum_frames": 240
+      },
+      "render_safe": true,
+      "requires_3d": false,
+      "requires_camera": false,
+      "enter": 36,
+      "exit": 0,
+      "tracks": [
+        {
+          "property": "position_x",
+          "easing": "in_out_sine",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": -25.0
+            },
+            {
+              "frame": 60,
+              "value": 25.0
+            }
+          ]
+        }
+      ],
+      "text_animators": []
+    },
+    {
+      "id": "doc_06_red_keyword_punch",
+      "category": "documentary_highlighting_v1",
+      "targets": [
+        "text"
+      ],
+      "unit": "layer",
+      "duration_bounds": {
+        "minimum_frames": 20,
+        "maximum_frames": 240
+      },
+      "render_safe": true,
+      "requires_3d": false,
+      "requires_camera": false,
+      "enter": 36,
+      "exit": 0,
+      "tracks": [
+        {
+          "property": "scale",
+          "easing": "out_cubic",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.94
+            },
+            {
+              "frame": 18,
+              "value": 0.94
+            },
+            {
+              "frame": 30,
+              "value": 1.04
+            },
+            {
+              "frame": 42,
+              "value": 1.0
+            }
+          ]
+        }
+      ],
+      "text_animators": []
+    },
+    {
+      "id": "doc_07_word_impact_reveal",
+      "category": "documentary_highlighting_v1",
+      "targets": [
+        "text"
+      ],
+      "unit": "layer",
+      "duration_bounds": {
+        "minimum_frames": 20,
+        "maximum_frames": 240
+      },
+      "render_safe": true,
+      "requires_3d": false,
+      "requires_camera": false,
+      "enter": 36,
+      "exit": 0,
+      "tracks": [],
+      "text_animators": [
+        {
+          "id": "documentary-word-impact",
+          "selector": {
+            "kind": "word",
+            "order": "forward",
+            "shape": "square",
+            "stagger": 2
+          },
+          "properties": [
+            {
+              "property": "opacity",
+              "easing": "out_cubic",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0.0
+                },
+                {
+                  "frame": 30,
+                  "value": 1.0
+                }
+              ]
+            },
+            {
+              "property": "scale",
+              "easing": "out_back",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0.82
+                },
+                {
+                  "frame": 30,
+                  "value": 1.0
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "doc_08_mixed_font_emphasis",
+      "category": "documentary_highlighting_v1",
+      "targets": [
+        "text"
+      ],
+      "unit": "layer",
+      "duration_bounds": {
+        "minimum_frames": 20,
+        "maximum_frames": 240
+      },
+      "render_safe": true,
+      "requires_3d": false,
+      "requires_camera": false,
+      "enter": 36,
+      "exit": 0,
+      "tracks": [
+        {
+          "property": "position_y",
+          "easing": "out_cubic",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 14.0
+            },
+            {
+              "frame": 28,
+              "value": 0.0
+            }
+          ]
+        }
+      ],
+      "text_animators": []
+    },
+    {
+      "id": "doc_09_cinematic_underline_draw",
+      "category": "documentary_highlighting_v1",
+      "targets": [
+        "text"
+      ],
+      "unit": "layer",
+      "duration_bounds": {
+        "minimum_frames": 20,
+        "maximum_frames": 240
+      },
+      "render_safe": true,
+      "requires_3d": false,
+      "requires_camera": false,
+      "enter": 36,
+      "exit": 0,
+      "tracks": [],
+      "text_animators": []
+    },
+    {
+      "id": "doc_10_selective_contrast_focus",
+      "category": "documentary_highlighting_v1",
+      "targets": [
+        "text"
+      ],
+      "unit": "layer",
+      "duration_bounds": {
+        "minimum_frames": 20,
+        "maximum_frames": 240
+      },
+      "render_safe": true,
+      "requires_3d": false,
+      "requires_camera": false,
+      "enter": 36,
+      "exit": 0,
+      "tracks": [],
+      "text_animators": []
+    },
+    {
+      "id": "doc_11_headline_cinematic_zoom",
+      "category": "documentary_highlighting_v1",
+      "targets": [
+        "text"
+      ],
+      "unit": "layer",
+      "duration_bounds": {
+        "minimum_frames": 20,
+        "maximum_frames": 240
+      },
+      "render_safe": true,
+      "requires_3d": false,
+      "requires_camera": false,
+      "enter": 36,
+      "exit": 0,
+      "tracks": [
+        {
+          "property": "scale",
+          "easing": "out_cubic",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 1.0
+            },
+            {
+              "frame": 40,
+              "value": 1.08
+            }
+          ]
+        }
+      ],
+      "text_animators": []
+    },
+    {
+      "id": "doc_12_quote_line_by_line_reveal",
+      "category": "documentary_highlighting_v1",
+      "targets": [
+        "text"
+      ],
+      "unit": "layer",
+      "duration_bounds": {
+        "minimum_frames": 20,
+        "maximum_frames": 240
+      },
+      "render_safe": true,
+      "requires_3d": false,
+      "requires_camera": false,
+      "enter": 36,
+      "exit": 0,
+      "tracks": [],
+      "text_animators": [
+        {
+          "id": "documentary-line-reveal",
+          "selector": {
+            "kind": "line",
+            "order": "forward",
+            "shape": "square",
+            "stagger": 8
+          },
+          "properties": [
+            {
+              "property": "opacity",
+              "easing": "out_cubic",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0.0
+                },
+                {
+                  "frame": 40,
+                  "value": 1.0
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "doc_13_analog_scanner_highlight",
+      "category": "documentary_highlighting_v1",
+      "targets": [
+        "text"
+      ],
+      "unit": "layer",
+      "duration_bounds": {
+        "minimum_frames": 20,
+        "maximum_frames": 240
+      },
+      "render_safe": true,
+      "requires_3d": false,
+      "requires_camera": false,
+      "enter": 36,
+      "exit": 0,
+      "tracks": [
+        {
+          "property": "scale",
+          "easing": "in_out_sine",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 1.0
+            },
+            {
+              "frame": 60,
+              "value": 1.03
+            }
+          ]
+        }
+      ],
+      "text_animators": []
+    },
+    {
+      "id": "doc_14_dual_highlight_sequence",
+      "category": "documentary_highlighting_v1",
+      "targets": [
+        "text"
+      ],
+      "unit": "layer",
+      "duration_bounds": {
+        "minimum_frames": 20,
+        "maximum_frames": 240
+      },
+      "render_safe": true,
+      "requires_3d": false,
+      "requires_camera": false,
+      "enter": 36,
+      "exit": 0,
+      "tracks": [],
+      "text_animators": []
+    },
+    {
+      "id": "doc_15_documentary_source_focus",
+      "category": "documentary_highlighting_v1",
+      "targets": [
+        "text"
+      ],
+      "unit": "layer",
+      "duration_bounds": {
+        "minimum_frames": 20,
+        "maximum_frames": 240
+      },
+      "render_safe": true,
+      "requires_3d": false,
+      "requires_camera": false,
+      "enter": 36,
+      "exit": 0,
+      "tracks": [
+        {
+          "property": "position_y",
+          "easing": "out_cubic",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 10.0
+            },
+            {
+              "frame": 24,
+              "value": 0.0
+            }
+          ]
+        }
+      ],
+      "text_animators": []
     }
   ],
   "overlay_presets": {

@@ -6,16 +6,16 @@ const (
 	cameraPrecedenceRule       = "at most one scene camera controller per plan; a map camera_move and an entity camera style are the same controller slot and cannot both claim it"
 )
 
-// Scene camera status vocabulary. Closure decision (GOAL-2): the whole-scene
-// camera is explicitly OUT OF SCOPE for RenderingGen — no canonical family,
-// no lowering, no selectable IDs, no movement contract. The destination is
-// published as unsupported/fail-closed so no consumer can invent a choice,
-// and the speculative 5-movement plan was removed as unimplemented complexity.
+// Scene camera status vocabulary. The whole-scene camera is implemented via
+// the plan-level scene_camera block: an AE-style one_node/two_node rig over
+// Z-stacked scenes, lowered by compileSceneCamera (null-chain rig) plus
+// Depth-style disperse groups. Unknown rig/move/layer references still fail
+// closed so no consumer can invent a choice.
 const (
 	cameraDestinationImplemented = "implemented"
 	cameraDestinationUnsupported = "unsupported"
 	cameraSceneTarget            = "scene"
-	cameraSceneUnavailableReason = "whole-scene camera is out of scope: no canonical motion family is planned and no lowering exists, so no scene camera ID is selectable"
+	cameraSceneSupport           = "plan-level scene_camera: AE one_node/two_node rig (null-chain lowering) with lens presets, DOF and depth disperse groups"
 )
 
 // RuntimeCameraMovement is one declared movement of the camera roll contract:
@@ -47,16 +47,36 @@ type RuntimeCameraDestination struct {
 	Movements               []RuntimeCameraMovement `json:"movements,omitempty"`
 }
 
-// runtimeCameraDestinations separates the destinations the runtime implements
-// from the scene camera, which is closed as unsupported (see const block).
+// runtimeCameraDestinations separates the destinations the runtime implements.
+// The scene destination is implemented by the scene_camera rig contract.
 func runtimeCameraDestinations() []RuntimeCameraDestination {
 	return []RuntimeCameraDestination{
 		{
 			ID: "scene", Description: "Camera over the whole scene or source clip.",
-			Status:                  cameraDestinationUnsupported,
-			RuntimeSupport:          cameraSceneUnavailableReason,
+			Status:                  cameraDestinationImplemented,
+			RuntimeSupport:          cameraSceneSupport,
 			MotionTarget:            cameraSceneTarget,
 			RequiresProductDecision: false,
+			Movements: []RuntimeCameraMovement{
+				{
+					ID: "scene_dolly_through", Description: "Dolly along Z through disperse-stacked scenes with POI lock (two_node).",
+					Direction: "depth_offset_parameter", DurationBounds: "rig start_ms/end_ms per null",
+					CropBounds: "canvas", InitialPose: "rig base position", FinalPose: "base plus summed null offsets",
+					Supported: true,
+				},
+				{
+					ID: "scene_lateral_handoff", Description: "Lateral X sweep across parked off-frame scenes, overlapped handoff between nulls.",
+					Direction: "lateral_offset_parameter", DurationBounds: "rig start_ms/end_ms per null",
+					CropBounds: "canvas", InitialPose: "rig base position", FinalPose: "base plus summed null offsets",
+					Supported: true,
+				},
+				{
+					ID: "scene_crane_reveal", Description: "Vertical Y crane move revealing the scene stack.",
+					Direction: "vertical_offset_parameter", DurationBounds: "rig start_ms/end_ms per null",
+					CropBounds: "canvas", InitialPose: "rig base position", FinalPose: "base plus summed null offsets",
+					Supported: true,
+				},
+			},
 		},
 		{
 			ID: "image", Description: "Camera over a single image layer.",

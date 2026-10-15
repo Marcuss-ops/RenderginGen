@@ -260,11 +260,19 @@ func TestEveryCallableCatalogMotionExecutesOnTheStrictGPU(t *testing.T) {
 	}
 	entityCaptionCount := len(items)
 	phraseStart := entityCaptionCount
-	for _, category := range []string{"apple_v2", "apple_v3", "phrase_apple_clean_v1", "apple_phrase_v1", "text_3d_v1", "short_phrase_style"} {
+	for _, category := range []string{"apple_v2", "apple_v3", "phrase_apple_clean_v1", "apple_phrase_v1", "text_3d_v1", "short_phrase_style", "documentary_highlighting_v1"} {
 		phraseIDs = append(phraseIDs, motion.Registry.CategoryMotionIDs(category)...)
 	}
-	if len(phraseIDs) != 139 {
-		t.Fatalf("phrase family inventory has %d IDs, want 139", len(phraseIDs))
+	// Phrase Brush recipes use the text layer's measured bounds and compile
+	// companion strokes. Certify them through the important_phrase target too,
+	// rather than only through the image-target catalog pass below.
+	for _, id := range motion.Registry.CategoryMotionIDs("brush_v1") {
+		if strings.HasPrefix(id, "brush_phrase_") {
+			phraseIDs = append(phraseIDs, id)
+		}
+	}
+	if len(phraseIDs) != 170 {
+		t.Fatalf("phrase family inventory has %d IDs, want 170 including phrase Brush and the 15 native documentary presets", len(phraseIDs))
 	}
 	for i, id := range phraseIDs {
 		items = append(items, map[string]any{

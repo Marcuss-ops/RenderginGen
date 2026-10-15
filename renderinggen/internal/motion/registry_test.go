@@ -28,7 +28,8 @@ var (
 		"position": true, "position_x": true, "position_y": true,
 		"scale": true, "scale_x": true, "scale_y": true,
 		"opacity": true, "blur": true, "tracking": true,
-		"fill_color": true,
+		"fill_color":       true,
+		"background_color": true,
 	}
 )
 
@@ -39,7 +40,7 @@ func TestCatalogCategoriesKeepMotionsIndependentAndComplete(t *testing.T) {
 		"apple_v2": 42,
 		"apple_v3": 16, "phrase_apple_clean_v1": 30, "apple_phrase_v1": 15,
 
-		"brush_v1": 23, "text_3d_v1": 10, "trump_entity_text_v1": 15, "web": 14,
+		"brush_v1": 23, "text_3d_v1": 10, "documentary_highlighting_v1": 20, "trump_entity_text_v1": 15, "web": 14,
 		"generic_motion_v1": 30,
 	}
 	for category, count := range categoryCounts {
@@ -50,8 +51,8 @@ func TestCatalogCategoriesKeepMotionsIndependentAndComplete(t *testing.T) {
 	if ids := Registry.ShortPhraseStyleIDs(); len(ids) != 26 {
 		t.Errorf("short phrase runtime registry has %d motions, want 26", len(ids))
 	}
-	if ids := Registry.PhraseAnimationIDs(); len(ids) != 136 {
-		t.Errorf("phrase planning pool has %d motions, want 136", len(ids))
+	if ids := Registry.PhraseAnimationIDs(); len(ids) != 156 {
+		t.Errorf("phrase planning pool has %d motions, want 156", len(ids))
 	}
 	appleClean := Registry.CategoryMotionIDs("phrase_apple_clean_v1")
 	pool := Registry.PhraseAnimationIDs()

@@ -792,13 +792,135 @@
                                         "type": "boolean"
                                   }
                             }
+                      },
+                      {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": [
+                                  "type",
+                                  "radius",
+                                  "intensity"
+                            ],
+                            "properties": {
+                                  "type": {
+                                        "const": "glow"
+                                  },
+                                  "radius": {
+                                        "type": "number",
+                                        "minimum": 0,
+                                        "maximum": 256
+                                  },
+                                  "intensity": {
+                                        "type": "number",
+                                        "minimum": 0,
+                                        "maximum": 4
+                                  }
+                            }
+                      },
+                      {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": [
+                                  "type",
+                                  "radius",
+                                  "intensity"
+                            ],
+                            "properties": {
+                                  "type": {
+                                        "const": "bloom"
+                                  },
+                                  "radius": {
+                                        "type": "number",
+                                        "minimum": 0,
+                                        "maximum": 256
+                                  },
+                                  "intensity": {
+                                        "type": "number",
+                                        "minimum": 0,
+                                        "maximum": 4
+                                  },
+                                  "threshold": {
+                                        "type": "number",
+                                        "minimum": 0,
+                                        "maximum": 1
+                                  }
+                            }
+                      },
+                      {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": [
+                                  "type",
+                                  "curvature"
+                            ],
+                            "properties": {
+                                  "type": {
+                                        "const": "lens_distortion"
+                                  },
+                                  "curvature": {
+                                        "type": "number",
+                                        "minimum": -1,
+                                        "maximum": 1
+                                  },
+                                  "scale": {
+                                        "type": "number",
+                                        "minimum": 0.1,
+                                        "maximum": 4
+                                  }
+                            }
+                      },
+                      {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": [
+                                  "type",
+                                  "amount"
+                            ],
+                            "properties": {
+                                  "type": {
+                                        "const": "sharpen"
+                                  },
+                                  "amount": {
+                                        "type": "number",
+                                        "minimum": 0,
+                                        "maximum": 10
+                                  }
+                            }
+                      },
+                      {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": [
+                                  "type",
+                                  "intensity"
+                            ],
+                            "properties": {
+                                  "type": {
+                                        "const": "banded_grain"
+                                  },
+                                  "intensity": {
+                                        "type": "number",
+                                        "minimum": 0,
+                                        "maximum": 4
+                                  },
+                                  "speed": {
+                                        "type": "number",
+                                        "minimum": -1000,
+                                        "maximum": 1000
+                                  },
+                                  "seed": {
+                                        "type": "integer",
+                                        "minimum": 0,
+                                        "maximum": 4294967295
+                                  }
+                            }
                       }
                 ]
           }
     },
     "clip_grid": {"type": "object", "additionalProperties": false,
-      "required": ["spacing_px", "line_width_px", "color", "opacity"],
-      "properties": {"spacing_px": {"type": "number", "minimum": 4, "maximum": 512}, "line_width_px": {"type": "number", "minimum": 0.25, "maximum": 32}, "color": {"type": "string", "pattern": "^#[0-9A-Fa-f]{6}$"}, "opacity": {"type": "number", "minimum": 0, "maximum": 1}}
+      "required": ["spacing_px", "color", "opacity"],
+      "properties": {"style": {"type": "string", "enum": ["lines", "dots", "dot_grid"]}, "spacing_px": {"type": "number", "minimum": 4, "maximum": 512}, "line_width_px": {"type": "number", "minimum": 0.25, "maximum": 32}, "dot_radius_px": {"type": "number", "minimum": 0.5, "maximum": 64}, "color": {"type": "string", "pattern": "^#[0-9A-Fa-f]{6}$"}, "opacity": {"type": "number", "minimum": 0, "maximum": 1}}
     },
     "layer_effect": {
       "type": "object",
@@ -876,6 +998,65 @@
           "maximum": 1
         }
       }
+    },
+    "scene_camera": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Whole-scene AE-style camera: one_node aims by rotation only, two_node locks aim on target. Rig segments are chained 3D nulls (one position offset each); depth_groups fan named layers out in Z Depth-script style.",
+      "properties": {
+        "node": {"enum": ["one_node", "two_node"]},
+        "target": {"type": "array", "minItems": 3, "maxItems": 3, "items": {"type": "number"}},
+        "lens_preset_mm": {"enum": [24, 28, 35, 50, 85]},
+        "focal_length_mm": {"type": "number", "minimum": 12, "maximum": 200},
+        "fov_deg": {"type": "number", "minimum": 10, "maximum": 120},
+        "f_stop": {"type": "number", "minimum": 0.7, "maximum": 32},
+        "iris_blades": {"type": "integer", "minimum": 0, "maximum": 12},
+        "base_position": {"type": "array", "minItems": 3, "maxItems": 3, "items": {"type": "number"}},
+        "dof": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": {"type": "boolean"},
+            "focus_distance": {"type": "number", "exclusiveMinimum": 0, "maximum": 10000000},
+            "aperture": {"type": "number", "minimum": 0, "maximum": 1},
+            "max_blur": {"type": "number", "minimum": 0, "maximum": 256},
+            "f_stop": {"type": "number", "minimum": 0.7, "maximum": 32},
+            "iris_blades": {"type": "integer", "minimum": 0, "maximum": 12},
+            "highlight_gain": {"type": "number", "minimum": 0, "maximum": 8}
+          }
+        },
+        "rig": {
+          "type": "array",
+          "maxItems": 64,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "start_ms", "end_ms", "offset"],
+            "properties": {
+              "id": {"type": "string", "minLength": 1, "maxLength": 128},
+              "start_ms": {"type": "integer", "minimum": 0},
+              "end_ms": {"type": "integer", "minimum": 1},
+              "offset": {"type": "array", "minItems": 3, "maxItems": 3, "items": {"type": "number"}},
+              "overlap_ms": {"type": "integer", "minimum": 0}
+            }
+          }
+        },
+        "depth_groups": {
+          "type": "array",
+          "maxItems": 64,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["layer_ids", "base_z", "spacing"],
+            "properties": {
+              "layer_ids": {"type": "array", "minItems": 1, "maxItems": 256, "items": {"type": "string", "minLength": 1}},
+              "base_z": {"type": "number"},
+              "spacing": {"type": "number"},
+              "apparent_scale": {"type": "boolean"}
+            }
+          }
+        }
+      }
     }
   },
   "properties": {
@@ -889,6 +1070,10 @@
         "$ref": "#/$defs/animation_policy"
       },
       "description": "Runtime animation defaults selected by group/subgroup and target. Exact subgroup rules override group rules; item/layer motion ids override both."
+    },
+    "scene_camera": {
+      "$ref": "#/$defs/scene_camera",
+      "description": "Optional whole-scene camera. Claims the single scene camera controller slot: it conflicts with entity camera motion and map camera moves."
     },
     "map_composition_id": {
       "type": "string",
