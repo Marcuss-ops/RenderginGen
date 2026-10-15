@@ -16,10 +16,10 @@ import (
 // be reachable as a derived-tag query with the historic membership counts.
 func TestEntityStyleRegistryTagQueries(t *testing.T) {
 	cases := map[string]int{
-		"below":  20,
+		"below":  15,
 		"badge":  5,
 		"camera": 5,
-		"side":   5,
+		"side":   4,
 	}
 	for tag, want := range cases {
 		got := entityStyleRegistry.query(entityStyleQuery{tag})
@@ -231,6 +231,9 @@ func TestEntityCaptionMotionsAreCatalogBackedAndVariedByIdentity(t *testing.T) {
 	}
 	filtered := want[:0]
 	for _, id := range want {
+		if _, retired := retiredEntityCaptionMotions[id]; retired {
+			continue
+		}
 		definition, err := resolveMotionDefinition(id)
 		if err == nil && motionDefinitionAdmitsTarget(definition, "caption") && definitionHasCaptionAnimation(definition) {
 			filtered = append(filtered, id)
@@ -245,8 +248,8 @@ func TestEntityCaptionMotionsAreCatalogBackedAndVariedByIdentity(t *testing.T) {
 	if !reflect.DeepEqual(pool, want) {
 		t.Fatalf("runtime entity-caption pool differs from selectable catalog: got %v want %v", pool, want)
 	}
-	if len(pool) < 20 {
-		t.Fatalf("entity caption pool has %d motions, want broad catalog coverage", len(pool))
+	if len(pool) < 12 {
+		t.Fatalf("entity caption pool has %d motions, want one per distinct behaviour (>=12)", len(pool))
 	}
 	choose := func(planID, videoID, itemID string) string {
 		return entityCaptionMotionIDForIdentity("", planID, videoID, itemID)

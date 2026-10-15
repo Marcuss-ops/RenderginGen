@@ -48,6 +48,7 @@ func compileDocumentaryPhraseMotion(ri resolvedItem, src *semanticPlan, text Lay
 		text.Style.Fill = "#A9ADB3"
 	}
 	var markers []Layer
+	var emphasis []Layer
 	for index, target := range targets {
 		if target.start < 0 || target.end > len(text.Text) || target.start >= target.end {
 			continue
@@ -55,12 +56,11 @@ func compileDocumentaryPhraseMotion(ri resolvedItem, src *semanticPlan, text Lay
 		semanticID := fmt.Sprintf("%s-target-%d", id, index+1)
 		span := map[string]any{"start": target.start, "end": target.end, "semantic_id": semanticID}
 		color := documentaryTextColor(id)
+		if id == "doc_08_mixed_font_emphasis" && lightSolidBackground(src.Background) {
+			color = backgroundHex(src.Background.Color)
+		}
 		if color != "" {
 			span["style"] = map[string]any{"color": color}
-		} else if id != "doc_09_cinematic_underline_draw" && id != "doc_07_word_impact_reveal" {
-			span["style"] = map[string]any{"highlight": map[string]any{
-				"background": documentaryHighlightColor(id), "padding_em": 0.10, "radius_em": documentaryRadius(id),
-			}}
 		}
 		if id == "doc_08_mixed_font_emphasis" {
 			style, _ := span["style"].(map[string]any)
@@ -74,42 +74,11 @@ func compileDocumentaryPhraseMotion(ri resolvedItem, src *semanticPlan, text Lay
 		if documentaryNeedsMarker(id) {
 			markers = append(markers, documentaryMarker(text, src, id, target, index)...)
 		}
+		if id == "doc_08_mixed_font_emphasis" && lightSolidBackground(src.Background) {
+			emphasis = append(emphasis, documentaryMixedFontLayer(text, src, target, index))
+		}
 	}
-	if text.Animation == nil {
-		text.Animation = &LayerAnimation{}
-	}
-	switch id {
-	case "doc_04_archival_source_highlight":
-		text.Animation.Tracks = append(text.Animation.Tracks, scaleTrack(text.DurationFrames, 1.0, 1.045))
-	case "doc_05_selective_phrase_tracking":
-		text.Animation.Tracks = append(text.Animation.Tracks, AnimationTrack{Property: "position_x", Easing: "in_out_sine", Keyframes: []AnimationKeyframe{{Frame: 0, Value: -25.0}, {Frame: text.DurationFrames / 2, Value: 0.0}, {Frame: text.DurationFrames, Value: 25.0}}})
-	case "doc_08_mixed_font_emphasis":
-		text.Animation.Tracks = append(text.Animation.Tracks, AnimationTrack{Property: "position_y", Easing: "out_cubic", Keyframes: []AnimationKeyframe{{Frame: 0, Value: 14.0}, {Frame: 28, Value: 0.0}}})
-	case "doc_11_headline_cinematic_zoom":
-		text.Animation.Tracks = append(text.Animation.Tracks, scaleTrack(text.DurationFrames, 1.0, 1.08))
-	case "doc_13_analog_scanner_highlight":
-		text.Animation.Tracks = append(text.Animation.Tracks, scaleTrack(text.DurationFrames, 1.0, 1.03))
-	case "doc_15_documentary_source_focus":
-		text.Animation.Tracks = append(text.Animation.Tracks, AnimationTrack{Property: "position_y", Easing: "out_cubic", Keyframes: []AnimationKeyframe{{Frame: 0, Value: 10.0}, {Frame: 24, Value: 0.0}}})
-	}
-	if id == "doc_07_word_impact_reveal" {
-		text.TextAnimators = append(text.TextAnimators, TextAnimator{
-			ID:        "documentary-word-impact",
-			Selectors: []TextSelector{{Unit: "word", Order: "forward", Shape: "square", Start: &AnimationTrack{Keyframes: []AnimationKeyframe{{Frame: 0, Value: 0.0}, {Frame: 38, Value: 100.0}}}}},
-			Properties: []AnimationTrack{
-				{Property: "opacity", Easing: "out_cubic", Keyframes: []AnimationKeyframe{{Frame: 0, Value: 0.0}, {Frame: 30, Value: 1.0}}},
-				{Property: "scale", Easing: "out_back", Keyframes: []AnimationKeyframe{{Frame: 0, Value: 0.82}, {Frame: 30, Value: 1.0}}},
-			},
-		})
-	}
-	if id == "doc_12_quote_line_by_line_reveal" {
-		text.TextAnimators = append(text.TextAnimators, TextAnimator{
-			ID:         "documentary-line-reveal",
-			Selectors:  []TextSelector{{Unit: "line", Order: "forward", Shape: "square", Start: &AnimationTrack{Keyframes: []AnimationKeyframe{{Frame: 0, Value: 0.0}, {Frame: 60, Value: 100.0}}}}},
-			Properties: []AnimationTrack{{Property: "opacity", Easing: "out_cubic", Keyframes: []AnimationKeyframe{{Frame: 0, Value: 0.0}, {Frame: 55, Value: 1.0}}}},
-		})
-	}
-	return append(markers, text), nil
+	return append(append(markers, text), emphasis...), nil
 }
 
 var documentaryMotionIDs = map[string]struct{}{
@@ -210,13 +179,56 @@ func significantWordRanges(text string) []documentaryTarget {
 func documentaryTextColor(id string) string {
 	switch id {
 	case "doc_06_red_keyword_punch":
-		return "#DC2626"
+		return "#FFFFFF"
 	case "doc_10_selective_contrast_focus":
 		return "#111827"
 	case "doc_08_mixed_font_emphasis":
-		return "#B7791F"
+		return "#D97706"
 	default:
 		return ""
+	}
+}
+
+func lightSolidBackground(background *semanticBackground) bool {
+	if background == nil || background.Kind != "color" || len(background.Color) < 3 {
+		return false
+	}
+	return background.Color[0] >= 0.92 && background.Color[1] >= 0.92 && background.Color[2] >= 0.92
+}
+
+func backgroundHex(color []float64) string {
+	if len(color) < 3 {
+		return "#FFFFFF"
+	}
+	return fmt.Sprintf("#%02X%02X%02X", int(math.Round(color[0]*255)), int(math.Round(color[1]*255)), int(math.Round(color[2]*255)))
+}
+
+func documentaryMixedFontLayer(text Layer, src *semanticPlan, target documentaryTarget, index int) Layer {
+	lineStart := strings.LastIndex(text.Text[:target.start], "\n") + 1
+	lineEnd := len(text.Text)
+	if n := strings.Index(text.Text[target.end:], "\n"); n >= 0 {
+		lineEnd = target.end + n
+	}
+	line := text.Text[lineStart:lineEnd]
+	prefix := text.Text[lineStart:target.start]
+	value := text.Text[target.start:target.end]
+	fontSize := text.Style.FontSize
+	if fontSize <= 0 {
+		fontSize = 72
+	}
+	lineWidth := documentaryAdvance(line, fontSize)
+	valueWidth := documentaryAdvance(value, fontSize)
+	x := -lineWidth/2 + documentaryAdvance(prefix, fontSize) + valueWidth/2
+	width := valueWidth + fontSize*0.35
+	lineCount := strings.Count(text.Text, "\n") + 1
+	y := text.Position[1] + (float64(target.line)-(float64(lineCount)-1)/2)*fontSize*1.3
+	return Layer{
+		ID: fmt.Sprintf("%s-mixed-font-%d", text.ID, index+1), Type: "text", Text: value,
+		Size: []float64{width, fontSize * 1.5}, Position: []float64{text.Position[0] + x, y},
+		StartFrame: text.StartFrame, DurationFrames: text.DurationFrames, ScreenSpace: true,
+		Style: &LayerStyle{Font: "assets/fonts/Inter-Bold.ttf", FontSize: fontSize * 1.04, Fill: "#202020",
+			FitMode: FitModeShrinkOnly, MinFontSize: fontSize * 1.04, MaxFontSize: fontSize * 1.04},
+		Animation: &LayerAnimation{Tracks: []AnimationTrack{{Property: "opacity", Easing: "linear", Keyframes: []AnimationKeyframe{{Frame: 0, Value: 0.0}, {Frame: 8, Value: 1.0}}}}},
 	}
 }
 
@@ -235,13 +247,6 @@ func documentaryHighlightColor(id string) string {
 	default:
 		return "#FFE600"
 	}
-}
-
-func documentaryRadius(id string) float64 {
-	if id == "doc_09_cinematic_underline_draw" || id == "doc_13_analog_scanner_highlight" {
-		return 0.01
-	}
-	return 0.04
 }
 
 func documentaryNeedsMarker(id string) bool {
@@ -347,7 +352,3 @@ func documentaryRGB(hex string) []float64 {
 }
 
 func floatPointer(v float64) *float64 { return &v }
-
-func scaleTrack(duration int64, from, to float64) AnimationTrack {
-	return AnimationTrack{Property: "scale", Easing: "out_cubic", Keyframes: []AnimationKeyframe{{Frame: 0, Value: from}, {Frame: duration / 2, Value: to}, {Frame: duration, Value: to}}}
-}

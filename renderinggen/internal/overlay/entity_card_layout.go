@@ -299,6 +299,23 @@ func captionLinesWidth(lines []string, fontSize float64) float64 {
 // motion catalog and admits the "caption" target.
 var entityCaptionMotionPool = selectableEntityCaptionMotions()
 
+// retiredEntityCaptionMotions are caption motions removed from the automatic
+// picker because another motion in the pool performs the same visual move
+// (same animated properties and direction, values within a few pixels or a
+// few hundredths of a scale). They stay registered and resolvable so saved
+// plans that name them still compile; they are simply never chosen for new
+// items. Entity-card recipes that promise a pill/underline/frame/glow are
+// retired too: their catalog tracks only animate opacity and scale, so no
+// such shape is ever drawn.
+var retiredEntityCaptionMotions = map[string]struct{}{
+	"entity_yaw_caption": {}, "entity_parallax_caption": {}, "entity_name_underline": {},
+	"entity_name_pill": {}, "entity_border_then_caption": {}, "entity_glow_focus": {},
+	"entity_focus_frame": {}, "text_depth_in": {}, "text_fade_up": {}, "text_word_stagger": {},
+	"trump_entity_text_01": {}, "trump_entity_text_02": {}, "trump_entity_text_03": {},
+	"trump_entity_text_05": {}, "trump_entity_text_06": {}, "trump_entity_text_07": {},
+	"trump_entity_text_14": {}, "trump_entity_text_15": {},
+}
+
 func selectableEntityCaptionMotions() []string {
 	var candidates []string
 	for _, category := range []string{"entity_caption_v1", "trump_entity_text_v1", "entity_card_v1"} {
@@ -306,6 +323,9 @@ func selectableEntityCaptionMotions() []string {
 	}
 	pool := candidates[:0]
 	for _, id := range candidates {
+		if _, retired := retiredEntityCaptionMotions[id]; retired {
+			continue
+		}
 		// Presentation recipes can admit caption by tag yet only contain image
 		// tracks; shared selection excludes them from standalone caption IDs.
 		if entityCaptionMotionSelectable(id) {

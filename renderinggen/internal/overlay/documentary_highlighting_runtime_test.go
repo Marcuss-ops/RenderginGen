@@ -39,7 +39,7 @@ func TestDocumentaryPhraseHighlightingLowersSemanticSpans(t *testing.T) {
 	for _, id := range ids {
 		t.Run(id, func(t *testing.T) {
 			phraseText := phraseByID[id]
-			raw := []byte(fmt.Sprintf(`{"schema_version":"renderinggen.overlay-plan.v1","plan_id":"highlight-%[1]s","video_id":"v","width":1280,"height":720,"fps_num":24,"fps_den":1,"items":[{"id":"phrase","kind":"important_phrase","template_id":"IMPORTANT_PHRASE","preset_id":"phrase_default","motion_id":%[2]q,"text":%[3]q,"start_ms":0,"end_ms":5000}]}`, id, id, phraseText))
+			raw := []byte(fmt.Sprintf(`{"schema_version":"renderinggen.overlay-plan.v1","plan_id":"highlight-%[1]s","video_id":"v","width":1280,"height":720,"fps_num":24,"fps_den":1,"background":{"kind":"color","color":[1,1,1,1]},"items":[{"id":"phrase","kind":"important_phrase","template_id":"IMPORTANT_PHRASE","preset_id":"phrase_default","motion_id":%[2]q,"text":%[3]q,"start_ms":0,"end_ms":5000}]}`, id, id, phraseText))
 			result, err := CompileSemantic(raw)
 			if err != nil {
 				t.Fatalf("compile %q: %v", id, err)
@@ -54,10 +54,17 @@ func TestDocumentaryPhraseHighlightingLowersSemanticSpans(t *testing.T) {
 			if phrase == nil || len(phrase.TextSpans) == 0 || phrase.Animation == nil || len(phrase.Animation.Tracks) == 0 {
 				t.Fatalf("%q did not lower exact target spans and a phrase entrance: %+v", id, phrase)
 			}
+			if id == "doc_14_dual_highlight_sequence" && len(phrase.TextSpans) != 2 {
+				t.Fatalf("dual highlight lowered %d target spans, want 2", len(phrase.TextSpans))
+			}
 			markerCount := 0
+			mixedFontCount := 0
 			for _, layer := range result.Plan.Layers {
 				if strings.HasPrefix(layer.ID, "phrase-marker-") && layer.Type == "shape" && layer.Animation != nil {
 					markerCount++
+				}
+				if strings.HasPrefix(layer.ID, "phrase-mixed-font-") && layer.Style != nil && strings.Contains(layer.Style.Font, "Inter-Bold.ttf") {
+					mixedFontCount++
 				}
 			}
 			if id != "doc_07_word_impact_reveal" && markerCount == 0 {
@@ -68,6 +75,9 @@ func TestDocumentaryPhraseHighlightingLowersSemanticSpans(t *testing.T) {
 			}
 			if id == "doc_12_quote_line_by_line_reveal" && len(phrase.TextAnimators) == 0 {
 				t.Fatal("line reveal did not lower its line animator")
+			}
+			if id == "doc_08_mixed_font_emphasis" && mixedFontCount != 1 {
+				t.Fatalf("mixed-font emphasis lowered %d alternate font layers, want 1", mixedFontCount)
 			}
 			wire, err := result.Plan.Marshal()
 			if err != nil {
