@@ -26,7 +26,9 @@ type entityStyleVariant struct {
 // premiumEntityStyles defines the 25 official Apple-style entity card compositions:
 // Group 1 (01-05): 3D Entrances (Pitch / Yaw / Pop / Swing / Depth) + Centered Text Below
 // Group 2 (06-10): 3D Entrances (Swipe / Orbit / Tilt / Dolly / Drift) + Side-by-Side Text
-// Group 3 (11-15): 3D Entrances + Text Treatments Below (the retired typewriter caption family was repointed to entity_caption_v1 text treatments; style IDs and names stay stable)
+// Former Group 3 (11-15) and style 10 were exact or near duplicates of styles 01, 02, 03, 05
+// and 06 (same image motion, layout and caption) and were removed; their IDs and numbers
+// still resolve through entityStyleAliases.
 // Group 4 (16-20): Highlighting Badges (Runtime Yellow/Red randomized) + Text Below
 // Group 5 (21-25): 3D Camera Movements (Dolly / Orbit / Crane / Dutch / Flyby) + Text Below
 var premiumEntityStyles = [...]entityStyleVariant{
@@ -48,7 +50,7 @@ var premiumEntityStyles = [...]entityStyleVariant{
 		LegacyReference: "02",
 		Group:           1,
 		ImageMotionID:   "image_25d_yaw_flip_in",
-		CaptionMotionID: "text_fade_up",
+		CaptionMotionID: "entity_caption_rise",
 		CaptionLayout:   "below",
 		CaptionColor:    "#FFFFFF",
 		ImageSide:       "center",
@@ -81,7 +83,7 @@ var premiumEntityStyles = [...]entityStyleVariant{
 		LegacyReference: "05",
 		Group:           1,
 		ImageMotionID:   "image_25d_depth_float_in",
-		CaptionMotionID: "text_word_stagger",
+		CaptionMotionID: "text_word_rise",
 		CaptionLayout:   "below",
 		CaptionColor:    "#FFFFFF",
 		ImageSide:       "center",
@@ -105,7 +107,7 @@ var premiumEntityStyles = [...]entityStyleVariant{
 		LegacyReference: "07",
 		Group:           2,
 		ImageMotionID:   "image_25d_yaw_flip_in",
-		CaptionMotionID: "text_word_stagger",
+		CaptionMotionID: "text_word_rise",
 		CaptionLayout:   "left",
 		CaptionColor:    "#FFFFFF",
 		ImageSide:       "right",
@@ -116,7 +118,7 @@ var premiumEntityStyles = [...]entityStyleVariant{
 		LegacyReference: "08",
 		Group:           2,
 		ImageMotionID:   "image_25d_pitch_lift",
-		CaptionMotionID: "text_fade_up",
+		CaptionMotionID: "entity_caption_rise",
 		CaptionLayout:   "right",
 		CaptionColor:    "#FFFFFF",
 		ImageSide:       "left",
@@ -132,74 +134,8 @@ var premiumEntityStyles = [...]entityStyleVariant{
 		CaptionColor:    "#FFFFFF",
 		ImageSide:       "right",
 	},
-	{
-		ID:              "10_entity_parallax_drift_text_right",
-		Name:            "Apple Spatial Parallax Drift Right",
-		LegacyReference: "10",
-		Group:           2,
-		ImageMotionID:   "image_25d_swipe_3d",
-		CaptionMotionID: "text_scale_punch",
-		CaptionLayout:   "right",
-		CaptionColor:    "#FFFFFF",
-		ImageSide:       "left",
-	},
 
 	// --- GROUP 3: Text Treatments Below (formerly typewriter captions) ---
-	{
-		ID:              "11_entity_typewriter_classic",
-		Name:            "Apple Spatial Typewriter Classic",
-		LegacyReference: "11",
-		Group:           3,
-		ImageMotionID:   "image_25d_pitch_lift",
-		CaptionMotionID: "text_word_rise",
-		CaptionLayout:   "below",
-		CaptionColor:    "#FFFFFF",
-		ImageSide:       "center",
-	},
-	{
-		ID:              "12_entity_terminal_cyber",
-		Name:            "Apple Spatial Terminal Cyber",
-		LegacyReference: "12",
-		Group:           3,
-		ImageMotionID:   "image_25d_pop_z_bounce",
-		CaptionMotionID: "text_scale_punch",
-		CaptionLayout:   "below",
-		CaptionColor:    "#00F0FF",
-		ImageSide:       "center",
-	},
-	{
-		ID:              "13_entity_typewriter_editorial_gold",
-		Name:            "Apple Spatial Typewriter Gold",
-		LegacyReference: "13",
-		Group:           3,
-		ImageMotionID:   "image_25d_yaw_flip_in",
-		CaptionMotionID: "text_fade_up",
-		CaptionLayout:   "below",
-		CaptionColor:    "#F5E6C8",
-		ImageSide:       "center",
-	},
-	{
-		ID:              "14_entity_code_prompt_reveal",
-		Name:            "Apple Spatial Code Prompt",
-		LegacyReference: "14",
-		Group:           3,
-		ImageMotionID:   "image_25d_pitch_lift",
-		CaptionMotionID: "text_depth_in",
-		CaptionLayout:   "below",
-		CaptionColor:    "#50FA7B",
-		ImageSide:       "center",
-	},
-	{
-		ID:              "15_entity_typewriter_dolly_breath",
-		Name:            "Apple Spatial Typewriter Breath",
-		LegacyReference: "15",
-		Group:           3,
-		ImageMotionID:   "image_25d_depth_float_in",
-		CaptionMotionID: "text_word_stagger",
-		CaptionLayout:   "below",
-		CaptionColor:    "#FFFFFF",
-		ImageSide:       "center",
-	},
 
 	// --- GROUP 4: Highlighting Badges (Runtime Yellow/Red randomized) ---
 	{
@@ -234,7 +170,7 @@ var premiumEntityStyles = [...]entityStyleVariant{
 		LegacyReference: "18",
 		Group:           4,
 		ImageMotionID:   "image_25d_yaw_flip_in",
-		CaptionMotionID: "text_fade_up",
+		CaptionMotionID: "entity_caption_rise",
 		CaptionLayout:   "below",
 		CaptionColor:    "#0A0B0E",
 		ImageSide:       "center",
@@ -260,7 +196,7 @@ var premiumEntityStyles = [...]entityStyleVariant{
 		LegacyReference: "20",
 		Group:           4,
 		ImageMotionID:   "image_25d_depth_float_in",
-		CaptionMotionID: "text_word_stagger",
+		CaptionMotionID: "text_word_rise",
 		CaptionLayout:   "below",
 		CaptionColor:    "#0A0B0E",
 		ImageSide:       "center",
@@ -275,7 +211,7 @@ var premiumEntityStyles = [...]entityStyleVariant{
 		LegacyReference: "21",
 		Group:           5,
 		ImageMotionID:   "image_25d_depth_float_in",
-		CaptionMotionID: "text_fade_up",
+		CaptionMotionID: "entity_caption_rise",
 		CaptionLayout:   "below",
 		CaptionColor:    "#FFFFFF",
 		ImageSide:       "center",
@@ -465,6 +401,15 @@ var entityStyleAliases = map[string]string{
 	"center_top":         "01_entity_pitch_lift_text_below",
 	"vertical_editorial": "02_entity_yaw_flip_text_below",
 	"centered_signature": "05_entity_depth_float_text_below",
+
+	// Styles removed as exact or near duplicates keep resolving to the
+	// surviving style with the same image motion, layout and caption.
+	"10": "06_entity_swipe_text_right", "10_entity_parallax_drift_text_right": "06_entity_swipe_text_right",
+	"11": "01_entity_pitch_lift_text_below", "11_entity_typewriter_classic": "01_entity_pitch_lift_text_below",
+	"12": "03_entity_pop_bounce_text_below", "12_entity_terminal_cyber": "03_entity_pop_bounce_text_below",
+	"13": "02_entity_yaw_flip_text_below", "13_entity_typewriter_editorial_gold": "02_entity_yaw_flip_text_below",
+	"14": "01_entity_pitch_lift_text_below", "14_entity_code_prompt_reveal": "01_entity_pitch_lift_text_below",
+	"15": "05_entity_depth_float_text_below", "15_entity_typewriter_dolly_breath": "05_entity_depth_float_text_below",
 }
 
 func entityStyleByID(id string) (entityStyleVariant, bool) {

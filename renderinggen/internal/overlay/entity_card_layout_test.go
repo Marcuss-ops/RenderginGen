@@ -243,12 +243,18 @@ func TestEntityCaptionPickerMatchesRuntimeCaptionSelection(t *testing.T) {
 	want := make(map[string]bool)
 	for _, category := range []string{"entity_caption_v1", "trump_entity_text_v1", "entity_card_v1"} {
 		for _, id := range motion.Registry.SelectableCategoryMotionIDs(category) {
+			if _, retired := retiredEntityCaptionMotions[id]; retired {
+				continue
+			}
 			if entityCaptionMotionSelectable(id) {
 				want[id] = true
 			}
 		}
 	}
 	for _, style := range premiumEntityStyles {
+		if _, retired := retiredEntityCaptionMotions[style.CaptionMotionID]; retired {
+			t.Fatalf("style %q uses retired caption motion %q", style.ID, style.CaptionMotionID)
+		}
 		if entityCaptionMotionSelectable(style.CaptionMotionID) {
 			want[style.CaptionMotionID] = true
 		}

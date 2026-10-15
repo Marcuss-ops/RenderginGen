@@ -35410,7 +35410,7 @@
       "exit": 0,
       "tracks": [
         {
-          "property": "scale",
+          "property": "scale_x",
           "easing": "out_cubic",
           "keyframes": [
             {
@@ -35531,7 +35531,7 @@
           "properties": [
             {
               "property": "opacity",
-              "easing": "out_cubic",
+              "easing": "linear",
               "keyframes": [
                 {
                   "frame": 0,
@@ -35545,7 +35545,7 @@
             },
             {
               "property": "scale",
-              "easing": "out_back",
+              "easing": "linear",
               "keyframes": [
                 {
                   "frame": 0,
@@ -35651,7 +35651,7 @@
       "exit": 0,
       "tracks": [
         {
-          "property": "scale",
+          "property": "scale_x",
           "easing": "out_cubic",
           "keyframes": [
             {
@@ -35696,7 +35696,7 @@
           "properties": [
             {
               "property": "opacity",
-              "easing": "out_cubic",
+              "easing": "linear",
               "keyframes": [
                 {
                   "frame": 0,
@@ -35730,7 +35730,7 @@
       "exit": 0,
       "tracks": [
         {
-          "property": "scale",
+          "property": "scale_x",
           "easing": "in_out_sine",
           "keyframes": [
             {

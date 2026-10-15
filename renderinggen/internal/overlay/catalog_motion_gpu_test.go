@@ -467,7 +467,11 @@ func TestEveryCallableCatalogMotionExecutesOnTheStrictGPU(t *testing.T) {
 			"video_id":       "motion-catalog-canary", "width": canvasWidth, "height": canvasHeight, "fps_num": 24, "fps_den": 1,
 			"items": batchItems,
 		}
-		planDocument["background"] = map[string]any{"kind": "color", "color": []float64{0.08, 0.08, 0.08, 1}}
+		backgroundColor := []float64{0.08, 0.08, 0.08, 1}
+		if ids[0] == "doc_08_mixed_font_emphasis" {
+			backgroundColor = []float64{1, 1, 1, 1}
+		}
+		planDocument["background"] = map[string]any{"kind": "color", "color": backgroundColor}
 		raw, err := json.Marshal(planDocument)
 		if err != nil {
 			t.Fatal(err)
@@ -487,6 +491,15 @@ func TestEveryCallableCatalogMotionExecutesOnTheStrictGPU(t *testing.T) {
 		}
 		if batchItems[0]["kind"] == "important_phrase" && len(compiled.Plan.Layers) < 2 {
 			t.Fatalf("compiled %d layers for phrase motion %v, want background and phrase layer", len(compiled.Plan.Layers), ids)
+		}
+		if ids[0] == "doc_08_mixed_font_emphasis" {
+			foundAlternateFont := false
+			for _, layer := range compiled.Plan.Layers {
+				foundAlternateFont = foundAlternateFont || layer.Style != nil && layer.Style.Font == "assets/fonts/Inter-Bold.ttf"
+			}
+			if !foundAlternateFont {
+				t.Fatal("mixed-font documentary motion did not emit the alternate Inter font layer on white background")
+			}
 		}
 		if batchItems[0]["kind"] == "image" && len(compiled.Plan.Layers) < 2 {
 			t.Fatalf("compiled %d layers for image motion %v, want background and rendered image layers", len(compiled.Plan.Layers), ids)
