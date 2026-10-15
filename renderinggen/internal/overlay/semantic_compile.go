@@ -123,11 +123,13 @@ func compileSemantic(raw []byte) (*Plan, []Asset, Stats, []string, error) {
 		// which shrinks a full-canvas plate to the top-left quadrant and
 		// leaves the rest of the frame on the black clear color (the
 		// standalone entity-image portrait rendered black corners on a
-		// declared white canvas for exactly this reason).
+		// declared white canvas for exactly this reason). Keep the plate in
+		// screen space as well: when any text layer enables the 2.5D camera,
+		// the background must not enter the projected layer/depth bin.
 		layer := Layer{ID: "background", Type: layerKind, BoxWidth: src.Width, BoxHeight: src.Height,
 			Size:     []float64{float64(src.Width), float64(src.Height)},
-			Position: []float64{0, 0},
-			Fit:      bg.Fit, StartFrame: 0}
+			Position: []float64{0, 0}, ScreenSpace: true,
+			Fit: bg.Fit, StartFrame: 0}
 		if layerKind != "color" {
 			// One gate for the background fit: validated against the closed set
 			// the render contract honours, defaulted to the deterministic
@@ -400,6 +402,11 @@ func compileSemantic(raw []byte) (*Plan, []Asset, Stats, []string, error) {
 	var cameraMapItemID string
 	var entityCameraMotionID string
 	var entityCameraMotionItemID string
+	// The plan-level whole-scene camera is the third controller kind. It is
+	// validated up front so a malformed rig fails before any layer work.
+	if err := validateSceneCamera(src.SceneCamera); err != nil {
+		return nil, nil, Stats{}, nil, err
+	}
 	for _, ri := range resolved {
 		if (isEntityKind(ri.Kind) || isImageKind(ri.Kind)) && ri.Item.EntityStyleID != "" {
 			if style, ok := ResolveEntityStyle(ri.Item.EntityStyleID, src.entityStyleSampleKey(), src.VideoID, ri.Item.ID); ok && style.CameraMotionID != "" {
@@ -412,6 +419,12 @@ func compileSemantic(raw []byte) (*Plan, []Asset, Stats, []string, error) {
 		}
 		if entityCameraMotionID != "" && cameraMove != nil {
 			return nil, nil, Stats{}, nil, fmt.Errorf("overlay: entity item %q camera motion conflicts with map item %q scene camera move", ri.Item.ID, cameraMapItemID)
+		}
+		if src.SceneCamera != nil && entityCameraMotionID != "" {
+			return nil, nil, Stats{}, nil, fmt.Errorf("overlay: scene_camera conflicts with camera motion on entity item %q; only one scene camera controller is allowed per plan", entityCameraMotionItemID)
+		}
+		if src.SceneCamera != nil && cameraMove != nil {
+			return nil, nil, Stats{}, nil, fmt.Errorf("overlay: scene_camera conflicts with scene camera move on map item %q; only one scene camera controller is allowed per plan", cameraMapItemID)
 		}
 		if ri.Map != nil && ri.Map.Camera != nil && entityCameraMotionID != "" {
 			return nil, nil, Stats{}, nil, fmt.Errorf("overlay: map item %q scene camera move conflicts with entity item %q camera motion", ri.Item.ID, entityCameraMotionItemID)
@@ -468,6 +481,28 @@ func compileSemantic(raw []byte) (*Plan, []Asset, Stats, []string, error) {
 		plan.Layers = append(plan.Layers, Layer{ID: "clip__adjustment", Type: "adjustment", Effects: effects})
 	}
 
+	// Post-loop single-controller guard: the in-loop checks above catch
+	// conflicts as soon as the second claimant resolves, but a map camera on
+	// the final item would otherwise slip through with no later iteration.
+	if src.SceneCamera != nil && entityCameraMotionID != "" {
+		return nil, nil, Stats{}, nil, fmt.Errorf("overlay: scene_camera conflicts with camera motion on entity item %q; only one scene camera controller is allowed per plan", entityCameraMotionItemID)
+	}
+	if src.SceneCamera != nil && cameraMove != nil {
+		return nil, nil, Stats{}, nil, fmt.Errorf("overlay: scene_camera conflicts with scene camera move on map item %q; only one scene camera controller is allowed per plan", cameraMapItemID)
+	}
+	if src.SceneCamera != nil && plan.Camera == nil {
+		cam, anim, err := compileSceneCamera(src.SceneCamera, src.Width, src.Height, int64(src.FPSNum), int64(src.FPSDen), -1400.0)
+		if err != nil {
+			return nil, nil, Stats{}, nil, err
+		}
+		plan.Camera = cam
+		plan.CameraAnimation = anim
+		if len(src.SceneCamera.DepthGroups) > 0 {
+			if err := applyDepthGroups(plan.Layers, src.SceneCamera.DepthGroups, -1400.0); err != nil {
+				return nil, nil, Stats{}, nil, err
+			}
+		}
+	}
 	if cameraMove != nil {
 		if err := compileMapCamera(&plan, *cameraMove, cameraStartFrame, cameraEndFrame, src.FPSNum, src.FPSDen); err != nil {
 			return nil, nil, Stats{}, nil, err
@@ -809,6 +844,9 @@ func compileTextVisualAccentLayers(ri resolvedItem, src *semanticPlan, text Laye
 	if err != nil {
 		return nil, err
 	}
+	if definition != nil && definition.Category == "documentary_highlighting_v1" {
+		return compileDocumentaryPhraseMotion(ri, src, text, definition.ID)
+	}
 	// SSOT typography (typography_ssot.go): no motion branch may change the
 	// font. The payload's font_family (or the preset/language default) owns
 	// the face for every animation. ModernTypewriterDefaultFontFamily stays
@@ -857,6 +895,18 @@ func compileTextVisualAccentLayers(ri resolvedItem, src *semanticPlan, text Laye
 		}
 	}
 	return layers, nil
+}
+
+func documentaryPhraseHighlightColor(motionID string) (string, bool) {
+	colors := map[string]string{
+		"phrase_highlight_soft_marker":    "#EBCB684D",
+		"phrase_highlight_archive_yellow": "#D8B85A52",
+		"phrase_highlight_evidence_red":   "#B85C4B3D",
+		"phrase_highlight_phrase_focus":   "#78AFA552",
+		"phrase_highlight_document_scan":  "#8397B545",
+	}
+	color, ok := colors[motionID]
+	return color, ok
 }
 
 func brushTextAnchor(text Layer, src *semanticPlan) Layer {

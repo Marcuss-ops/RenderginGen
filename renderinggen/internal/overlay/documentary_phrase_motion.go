@@ -1,0 +1,353 @@
+package overlay
+
+import (
+	"fmt"
+	"math"
+	"strings"
+	"unicode"
+	"unicode/utf8"
+)
+
+// Documentary Highlighting motions are phrase-relative. Text byte ranges are
+// exact; their marker shapes are laid out against the same wrapped lines as
+// the text layer and use a lightweight Playfair advance model for geometry.
+// The renderer owns glyph shaping; these shapes only provide the colored ink
+// plate and are padded slightly so antialiased glyph edges remain covered.
+type documentaryTarget struct {
+	start  int
+	end    int
+	line   int
+	prefix string
+	value  string
+}
+
+var documentaryNeedles = map[string][][]string{
+	"doc_01_yellow_marker_sweep":       {{"condanna"}, {"decisione"}},
+	"doc_03_documentary_quote_marker":  {{"contestare gli accertamenti"}, {"consulenze tecniche"}},
+	"doc_04_archival_source_highlight": {{"atti ufficiali depositati"}, {"atti ufficiali"}},
+	"doc_05_selective_phrase_tracking": {{"valutazioni tecniche contrapposte"}, {"tecniche contrapposte"}},
+	"doc_06_red_keyword_punch":         {{"responsabilità"}, {"responsabilita"}},
+	"doc_08_mixed_font_emphasis":       {{"sentenze definitive"}, {"indagini ancora aperte"}},
+	"doc_09_cinematic_underline_draw":  {{"ulteriori integrazioni"}, {"archiviazione"}},
+	"doc_10_selective_contrast_focus":  {{"metodi e ai suoi limiti"}, {"limiti"}},
+	"doc_11_headline_cinematic_zoom":   {{"presunzione di innocenza"}, {"sentenza definitiva"}},
+	"doc_13_analog_scanner_highlight":  {{"fatti e interpretazioni"}, {"interpretazioni"}},
+	"doc_14_dual_highlight_sequence":   {{"fatti"}, {"interpretazioni"}},
+	"doc_15_documentary_source_focus":  {{"fonti verificabili"}, {"fonti"}},
+}
+
+func compileDocumentaryPhraseMotion(ri resolvedItem, src *semanticPlan, text Layer, id string) ([]Layer, error) {
+	if text.Text == "" || text.Style == nil || len(text.Position) != 2 {
+		return nil, fmt.Errorf("overlay: documentary motion %q requires resolved phrase text geometry", id)
+	}
+	if _, ok := documentaryMotionIDs[id]; !ok {
+		return nil, fmt.Errorf("overlay: unsupported documentary phrase motion %q", id)
+	}
+	targets := documentaryTargets(text.Text, id)
+	if id == "doc_10_selective_contrast_focus" {
+		text.Style.Fill = "#A9ADB3"
+	}
+	var markers []Layer
+	for index, target := range targets {
+		if target.start < 0 || target.end > len(text.Text) || target.start >= target.end {
+			continue
+		}
+		semanticID := fmt.Sprintf("%s-target-%d", id, index+1)
+		span := map[string]any{"start": target.start, "end": target.end, "semantic_id": semanticID}
+		color := documentaryTextColor(id)
+		if color != "" {
+			span["style"] = map[string]any{"color": color}
+		} else if id != "doc_09_cinematic_underline_draw" && id != "doc_07_word_impact_reveal" {
+			span["style"] = map[string]any{"highlight": map[string]any{
+				"background": documentaryHighlightColor(id), "padding_em": 0.10, "radius_em": documentaryRadius(id),
+			}}
+		}
+		if id == "doc_08_mixed_font_emphasis" {
+			style, _ := span["style"].(map[string]any)
+			if style == nil {
+				style = map[string]any{}
+				span["style"] = style
+			}
+			style["font_size_mult"] = 1.04
+		}
+		text.TextSpans = append(text.TextSpans, span)
+		if documentaryNeedsMarker(id) {
+			markers = append(markers, documentaryMarker(text, src, id, target, index)...)
+		}
+	}
+	if text.Animation == nil {
+		text.Animation = &LayerAnimation{}
+	}
+	switch id {
+	case "doc_04_archival_source_highlight":
+		text.Animation.Tracks = append(text.Animation.Tracks, scaleTrack(text.DurationFrames, 1.0, 1.045))
+	case "doc_05_selective_phrase_tracking":
+		text.Animation.Tracks = append(text.Animation.Tracks, AnimationTrack{Property: "position_x", Easing: "in_out_sine", Keyframes: []AnimationKeyframe{{Frame: 0, Value: -25.0}, {Frame: text.DurationFrames / 2, Value: 0.0}, {Frame: text.DurationFrames, Value: 25.0}}})
+	case "doc_08_mixed_font_emphasis":
+		text.Animation.Tracks = append(text.Animation.Tracks, AnimationTrack{Property: "position_y", Easing: "out_cubic", Keyframes: []AnimationKeyframe{{Frame: 0, Value: 14.0}, {Frame: 28, Value: 0.0}}})
+	case "doc_11_headline_cinematic_zoom":
+		text.Animation.Tracks = append(text.Animation.Tracks, scaleTrack(text.DurationFrames, 1.0, 1.08))
+	case "doc_13_analog_scanner_highlight":
+		text.Animation.Tracks = append(text.Animation.Tracks, scaleTrack(text.DurationFrames, 1.0, 1.03))
+	case "doc_15_documentary_source_focus":
+		text.Animation.Tracks = append(text.Animation.Tracks, AnimationTrack{Property: "position_y", Easing: "out_cubic", Keyframes: []AnimationKeyframe{{Frame: 0, Value: 10.0}, {Frame: 24, Value: 0.0}}})
+	}
+	if id == "doc_07_word_impact_reveal" {
+		text.TextAnimators = append(text.TextAnimators, TextAnimator{
+			ID:        "documentary-word-impact",
+			Selectors: []TextSelector{{Unit: "word", Order: "forward", Shape: "square", Start: &AnimationTrack{Keyframes: []AnimationKeyframe{{Frame: 0, Value: 0.0}, {Frame: 38, Value: 100.0}}}}},
+			Properties: []AnimationTrack{
+				{Property: "opacity", Easing: "out_cubic", Keyframes: []AnimationKeyframe{{Frame: 0, Value: 0.0}, {Frame: 30, Value: 1.0}}},
+				{Property: "scale", Easing: "out_back", Keyframes: []AnimationKeyframe{{Frame: 0, Value: 0.82}, {Frame: 30, Value: 1.0}}},
+			},
+		})
+	}
+	if id == "doc_12_quote_line_by_line_reveal" {
+		text.TextAnimators = append(text.TextAnimators, TextAnimator{
+			ID:         "documentary-line-reveal",
+			Selectors:  []TextSelector{{Unit: "line", Order: "forward", Shape: "square", Start: &AnimationTrack{Keyframes: []AnimationKeyframe{{Frame: 0, Value: 0.0}, {Frame: 60, Value: 100.0}}}}},
+			Properties: []AnimationTrack{{Property: "opacity", Easing: "out_cubic", Keyframes: []AnimationKeyframe{{Frame: 0, Value: 0.0}, {Frame: 55, Value: 1.0}}}},
+		})
+	}
+	return append(markers, text), nil
+}
+
+var documentaryMotionIDs = map[string]struct{}{
+	"doc_01_yellow_marker_sweep": {}, "doc_02_multiline_stagger_highlight": {}, "doc_03_documentary_quote_marker": {},
+	"doc_04_archival_source_highlight": {}, "doc_05_selective_phrase_tracking": {}, "doc_06_red_keyword_punch": {},
+	"doc_07_word_impact_reveal": {}, "doc_08_mixed_font_emphasis": {}, "doc_09_cinematic_underline_draw": {},
+	"doc_10_selective_contrast_focus": {}, "doc_11_headline_cinematic_zoom": {}, "doc_12_quote_line_by_line_reveal": {},
+	"doc_13_analog_scanner_highlight": {}, "doc_14_dual_highlight_sequence": {}, "doc_15_documentary_source_focus": {},
+}
+
+func documentaryTargets(text, id string) []documentaryTarget {
+	if id == "doc_02_multiline_stagger_highlight" || id == "doc_12_quote_line_by_line_reveal" {
+		var out []documentaryTarget
+		at := 0
+		for lineIndex, line := range strings.Split(text, "\n") {
+			if strings.TrimSpace(line) != "" {
+				out = append(out, documentaryTarget{start: at, end: at + len(line), line: lineIndex, value: line})
+			}
+			at += len(line) + 1
+		}
+		return out
+	}
+
+	if needles, ok := documentaryNeedles[id]; ok {
+		for _, alternatives := range needles {
+			for _, needle := range alternatives {
+				at := strings.Index(strings.ToLower(text), strings.ToLower(needle))
+				if at >= 0 {
+					if id != "doc_14_dual_highlight_sequence" {
+						return []documentaryTarget{targetAt(text, at, at+len(needle))}
+					}
+					first := targetAt(text, at, at+len(needle))
+					secondAt := strings.LastIndex(strings.ToLower(text), "interpretazioni")
+					if secondAt > at {
+						return []documentaryTarget{first, targetAt(text, secondAt, secondAt+len("interpretazioni"))}
+					}
+					return []documentaryTarget{first}
+				}
+			}
+		}
+	}
+
+	// Arbitrary long copy still gets a meaningful, deterministic target. Pick
+	// the final one or two non-stopword tokens, retaining exact UTF-8 offsets.
+	words := significantWordRanges(text)
+	if len(words) == 0 {
+		return nil
+	}
+	if id == "doc_14_dual_highlight_sequence" && len(words) > 1 {
+		return []documentaryTarget{words[0], words[len(words)-1]}
+	}
+	last := words[len(words)-1]
+	if len(words) > 1 && id != "doc_06_red_keyword_punch" && id != "doc_10_selective_contrast_focus" {
+		prev := words[len(words)-2]
+		if prev.line == last.line && strings.TrimSpace(text[prev.end:last.start]) == "" {
+			last.start = prev.start
+		}
+	}
+	return []documentaryTarget{last}
+}
+
+func targetAt(text string, start, end int) documentaryTarget {
+	line := strings.Count(text[:start], "\n")
+	lineStart := strings.LastIndex(text[:start], "\n") + 1
+	return documentaryTarget{start: start, end: end, line: line, prefix: text[lineStart:start], value: text[start:end]}
+}
+
+func significantWordRanges(text string) []documentaryTarget {
+	stop := map[string]bool{"la": true, "le": true, "il": true, "lo": true, "gli": true, "i": true, "e": true, "o": true, "a": true, "di": true, "da": true, "in": true, "con": true, "per": true, "che": true, "non": true, "va": true, "nel": true, "nella": true, "alla": true, "ogni": true}
+	var out []documentaryTarget
+	line := 0
+	for i := 0; i < len(text); {
+		if text[i] == '\n' {
+			line++
+			i++
+			continue
+		}
+		if !unicode.IsLetter(rune(text[i])) && text[i] < utf8.RuneSelf {
+			i++
+			continue
+		}
+		start := i
+		for i < len(text) {
+			r, size := utf8.DecodeRuneInString(text[i:])
+			if !unicode.IsLetter(r) && !unicode.IsNumber(r) && r != '\'' && r != '’' {
+				break
+			}
+			i += size
+		}
+		word := strings.ToLower(text[start:i])
+		if !stop[word] {
+			out = append(out, documentaryTarget{start: start, end: i, line: line, value: text[start:i]})
+		}
+	}
+	return out
+}
+
+func documentaryTextColor(id string) string {
+	switch id {
+	case "doc_06_red_keyword_punch":
+		return "#DC2626"
+	case "doc_10_selective_contrast_focus":
+		return "#111827"
+	case "doc_08_mixed_font_emphasis":
+		return "#B7791F"
+	default:
+		return ""
+	}
+}
+
+func documentaryHighlightColor(id string) string {
+	switch id {
+	case "doc_06_red_keyword_punch":
+		return "#DC2626"
+	case "doc_15_documentary_source_focus":
+		return "#06B6D4"
+	case "doc_10_selective_contrast_focus":
+		return "#38BDF8"
+	case "doc_08_mixed_font_emphasis":
+		return "#D97706"
+	case "doc_13_analog_scanner_highlight":
+		return "#FFE600"
+	default:
+		return "#FFE600"
+	}
+}
+
+func documentaryRadius(id string) float64 {
+	if id == "doc_09_cinematic_underline_draw" || id == "doc_13_analog_scanner_highlight" {
+		return 0.01
+	}
+	return 0.04
+}
+
+func documentaryNeedsMarker(id string) bool {
+	switch id {
+	case "doc_01_yellow_marker_sweep", "doc_02_multiline_stagger_highlight", "doc_03_documentary_quote_marker",
+		"doc_04_archival_source_highlight", "doc_05_selective_phrase_tracking", "doc_06_red_keyword_punch", "doc_08_mixed_font_emphasis",
+		"doc_09_cinematic_underline_draw", "doc_10_selective_contrast_focus", "doc_11_headline_cinematic_zoom",
+		"doc_12_quote_line_by_line_reveal", "doc_13_analog_scanner_highlight", "doc_14_dual_highlight_sequence",
+		"doc_15_documentary_source_focus":
+		return true
+	default:
+		return false
+	}
+}
+
+func documentaryMarker(text Layer, src *semanticPlan, id string, target documentaryTarget, index int) []Layer {
+	fontSize := text.Style.FontSize
+	if fontSize <= 0 {
+		fontSize = 72
+	}
+	lineText := text.Text
+	lineStart := strings.LastIndex(lineText[:target.start], "\n") + 1
+	lineEnd := len(lineText)
+	if n := strings.Index(lineText[target.end:], "\n"); n >= 0 {
+		lineEnd = target.end + n
+	}
+	line := lineText[lineStart:lineEnd]
+	prefix := lineText[lineStart:target.start]
+	value := lineText[target.start:target.end]
+	if id == "doc_02_multiline_stagger_highlight" || id == "doc_12_quote_line_by_line_reveal" {
+		prefix, value = "", line
+	}
+	lineAdvance := documentaryAdvance(line, fontSize)
+	prefixAdvance := documentaryAdvance(prefix, fontSize)
+	valueAdvance := documentaryAdvance(value, fontSize)
+	width := math.Max(fontSize*1.6, valueAdvance+fontSize*0.20)
+	if id == "doc_02_multiline_stagger_highlight" || id == "doc_12_quote_line_by_line_reveal" {
+		width = lineAdvance + fontSize*0.20
+	}
+	if width > float64(src.Width-64) {
+		width = float64(src.Width - 64)
+	}
+	lineCount := strings.Count(text.Text, "\n") + 1
+	lineHeight := fontSize * 1.3
+	y := text.Position[1] + (float64(target.line)-(float64(lineCount)-1)/2)*lineHeight
+	markerHeight := fontSize * 0.72
+	markerColor := documentaryRGB(documentaryHighlightColor(id))
+	if id == "doc_09_cinematic_underline_draw" {
+		markerColor = []float64{0.16, 0.20, 0.25, 0.96}
+		markerHeight = math.Max(3, fontSize*0.035)
+		y += fontSize * 0.54
+	}
+	x := -lineAdvance/2 + prefixAdvance + valueAdvance/2
+	if id == "doc_02_multiline_stagger_highlight" || id == "doc_12_quote_line_by_line_reveal" {
+		x = 0
+	}
+	enter := int64(36)
+	if id == "doc_02_multiline_stagger_highlight" || id == "doc_12_quote_line_by_line_reveal" {
+		enter = 20 + int64(index)*18
+	}
+	if duration := text.DurationFrames; enter > duration/2 {
+		enter = duration / 2
+	}
+	marker := Layer{
+		ID: fmt.Sprintf("%s-marker-%d", text.ID, index+1), Type: "shape",
+		Size: []float64{width, markerHeight}, Position: []float64{text.Position[0] + x, y},
+		StartFrame: text.StartFrame, DurationFrames: text.DurationFrames, ScreenSpace: true,
+		Opacity: floatPointer(0.88), Shape: &LayerShape{Type: "rounded_rect", Fill: markerColor, Radius: math.Min(fontSize*0.06, markerHeight/2)},
+		Animation: &LayerAnimation{Tracks: []AnimationTrack{
+			{Property: "scale_x", Easing: "out_cubic", Keyframes: []AnimationKeyframe{{Frame: 0, Value: 0.01}, {Frame: enter, Value: 1.0}}},
+			{Property: "position_x", Easing: "out_cubic", Keyframes: []AnimationKeyframe{{Frame: 0, Value: -width * 0.495}, {Frame: enter, Value: 0.0}}},
+		}},
+	}
+	return []Layer{marker}
+}
+
+func documentaryAdvance(text string, fontSize float64) float64 {
+	units := 0.0
+	for _, r := range text {
+		switch {
+		case unicode.IsSpace(r):
+			units += 0.30
+		case strings.ContainsRune("ilI.,:;!'|", r):
+			units += 0.30
+		case strings.ContainsRune("MW@%&", r):
+			units += 0.86
+		case unicode.IsPunct(r):
+			units += 0.36
+		default:
+			units += 0.53
+		}
+	}
+	return units * fontSize
+}
+
+func documentaryRGB(hex string) []float64 {
+	if len(hex) != 7 || hex[0] != '#' {
+		return []float64{1, 0.9, 0, 0.88}
+	}
+	var r, g, b int
+	_, _ = fmt.Sscanf(hex[1:], "%02x%02x%02x", &r, &g, &b)
+	return []float64{float64(r) / 255, float64(g) / 255, float64(b) / 255, 0.88}
+}
+
+func floatPointer(v float64) *float64 { return &v }
+
+func scaleTrack(duration int64, from, to float64) AnimationTrack {
+	return AnimationTrack{Property: "scale", Easing: "out_cubic", Keyframes: []AnimationKeyframe{{Frame: 0, Value: from}, {Frame: duration / 2, Value: to}, {Frame: duration, Value: to}}}
+}

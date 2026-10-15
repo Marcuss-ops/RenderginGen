@@ -332,10 +332,16 @@ func TestSelectionModelCameraDestinationsSeparateImplementedFromBlocked(t *testi
 			t.Errorf("camera destination %q requires a decision but reports %q", destination.ID, destination.Status)
 		}
 	}
-	// GOAL-2 closure: whole-scene camera is out of scope — published as
-	// unsupported with no movement contract (fail-closed, no selectable IDs).
-	if scene := byID["scene"]; scene.RequiresProductDecision || scene.Status != cameraDestinationUnsupported || len(scene.Movements) != 0 {
-		t.Errorf("scene camera must report unsupported with no movements: %+v", scene)
+	// Whole-scene camera has a plan-level rig implementation and publishes
+	// only movements supported by the current runtime contract.
+	if scene := byID["scene"]; scene.RequiresProductDecision || scene.Status != "implemented" || scene.MotionTarget != "scene" || len(scene.Movements) == 0 {
+		t.Errorf("scene camera must report its implemented movement contract: %+v", scene)
+	} else {
+		for _, movement := range scene.Movements {
+			if !movement.Supported || movement.UnavailableReason != "" {
+				t.Errorf("scene camera movement %q is published as implemented but unavailable: %+v", movement.ID, movement)
+			}
+		}
 	}
 	if image := byID["image"]; image.Status != "implemented" || image.MotionTarget != "image" {
 		t.Errorf("image camera destination = %+v", image)

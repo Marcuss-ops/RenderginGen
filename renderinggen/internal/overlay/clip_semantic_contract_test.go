@@ -165,6 +165,60 @@ func TestClipSemanticContractGlobalEffectsLowerToChronon(t *testing.T) {
 	}
 }
 
+func TestClipSemanticContractModernEffectsAndDotGridLowerToChronon(t *testing.T) {
+	raw := []byte(`{
+		"schema_version": "renderinggen.overlay-plan.v1",
+		"plan_id": "fx_modern",
+		"video_id": "clip",
+		"width": 1920,
+		"height": 1080,
+		"fps_num": 30,
+		"fps_den": 1,
+		"duration_ms": 3000,
+		"source": {"asset_id": "clip", "sha256": "` + clipTestSHA + `"},
+		"clip_effects": [
+			{"type": "glow", "radius": 24, "intensity": 1.2},
+			{"type": "bloom", "radius": 32, "intensity": 0.9, "threshold": 0.7},
+			{"type": "lens_distortion", "curvature": 0.12, "scale": 1.04},
+			{"type": "sharpen", "amount": 1.5},
+			{"type": "banded_grain", "intensity": 0.5, "speed": 2.0, "seed": 99}
+		],
+		"clip_grid": {
+			"style": "dots",
+			"spacing_px": 48,
+			"dot_radius_px": 2.5,
+			"color": "#38BDF8",
+			"opacity": 0.35
+		},
+		"items": []
+	}`)
+	result, err := CompileSemantic(raw)
+	if err != nil {
+		t.Fatalf("compile modern effects and dot grid: %v", err)
+	}
+	var adjustment, grid Layer
+	for _, layer := range result.Plan.Layers {
+		if layer.ID == "clip__adjustment" {
+			adjustment = layer
+		}
+		if layer.ID == "clip__grid" {
+			grid = layer
+		}
+	}
+	if adjustment.Type != "adjustment" || len(adjustment.Effects) != 5 {
+		t.Fatalf("expected 5 adjustment effects, got: %+v", adjustment)
+	}
+	if adjustment.Effects[0].Type != "glow" || adjustment.Effects[1].Type != "bloom" || adjustment.Effects[2].Type != "lens_distortion" || adjustment.Effects[3].Type != "sharpen" || adjustment.Effects[4].Type != "banded_grain" {
+		t.Fatalf("unexpected adjustment effect sequence: %+v", adjustment.Effects)
+	}
+	if grid.Type != "shape" || grid.Shape == nil || grid.Shape.Type != "dot_grid" {
+		t.Fatalf("expected dot_grid shape, got: %+v", grid)
+	}
+	if grid.Shape.GridSpacing != 48 || grid.Shape.DotRadius != 2.5 {
+		t.Fatalf("dot_grid params mismatch: spacing=%v dot_radius=%v", grid.Shape.GridSpacing, grid.Shape.DotRadius)
+	}
+}
+
 func TestClipSemanticContractFull(t *testing.T) {
 	raw := clipSemanticFixture()
 
@@ -177,13 +231,13 @@ func TestClipSemanticContractFull(t *testing.T) {
 
 	// Decode compiled Chronon plan.
 	plan := compiled
-	if plan.Schema != "chronon.render-plan.v2" {
-		t.Errorf("Chronon schema v2 FAIL: schema = %q, want chronon.render-plan.v2", plan.Schema)
+	if plan.Schema != "chronon.render-plan.v3" {
+		t.Errorf("Chronon schema v3 FAIL: schema = %q, want chronon.render-plan.v3", plan.Schema)
 	}
-	if plan.Version != 2 {
-		t.Errorf("Chronon schema v2 FAIL: version = %d, want 2", plan.Version)
+	if plan.Version != 3 {
+		t.Errorf("Chronon schema v3 FAIL: version = %d, want 3", plan.Version)
 	}
-	t.Log("Chronon schema v2              PASS")
+	t.Log("Chronon schema v3              PASS")
 
 	// Verify layers by ID.
 	layerByID := map[string]Layer{}
@@ -256,7 +310,7 @@ func TestClipSemanticContractFull(t *testing.T) {
 	}
 
 	// --- subtitle representation ---
-	// Chronon v2 has no subtitle layer; sidecar subtitles remain in the
+	// Chronon v3 has no subtitle layer; sidecar subtitles remain in the
 	// published asset manifest for the downstream mux/publish step.
 	if _, ok := layerByID["subtitles"]; ok {
 		t.Error("subtitle representation FAIL: unsupported subtitle layer emitted")
@@ -272,7 +326,7 @@ func TestClipSemanticContractFull(t *testing.T) {
 
 	// --- audio representation ---
 	// The audio policy is typed metadata on the plan (json:"-"), never
-	// serialized into Chronon's v2 output document.
+	// serialized into Chronon's v3 output document.
 	if plan.Output.Audio != nil {
 		t.Logf("audio representation           PASS (typed worker policy: mode=%s codec=%s)", plan.Output.Audio.Mode, plan.Output.Audio.Codec)
 	} else {

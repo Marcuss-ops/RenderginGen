@@ -107,6 +107,21 @@ func resolveClipEffects(raw []semanticClipEffect) ([]LayerEffect, error) {
 		if spec.Animated != nil {
 			params["animated"] = *spec.Animated
 		}
+		if spec.Intensity != nil {
+			params["intensity"] = *spec.Intensity
+		}
+		if spec.Curvature != nil {
+			params["curvature"] = *spec.Curvature
+		}
+		if spec.Scale != nil {
+			params["scale"] = *spec.Scale
+		}
+		if spec.Threshold != nil {
+			params["threshold"] = *spec.Threshold
+		}
+		if spec.Speed != nil {
+			params["speed"] = *spec.Speed
+		}
 		if typ == "" {
 			return nil, fmt.Errorf("overlay: clip effect %d requires a type", i)
 		}
@@ -114,6 +129,8 @@ func resolveClipEffects(raw []semanticClipEffect) ([]LayerEffect, error) {
 			"amount": spec.Amount != nil, "radius": spec.Radius != nil, "softness": spec.Softness != nil,
 			"block_size": spec.BlockSize != nil, "size": spec.Size != nil, "angle": spec.Angle != nil,
 			"wavelength": spec.Wavelength != nil, "seed": spec.Seed != nil, "animated": spec.Animated != nil,
+			"intensity": spec.Intensity != nil, "curvature": spec.Curvature != nil, "scale": spec.Scale != nil,
+			"threshold": spec.Threshold != nil, "speed": spec.Speed != nil,
 		}
 		allowed := map[string]bool{}
 		switch typ {
@@ -133,6 +150,16 @@ func resolveClipEffects(raw []semanticClipEffect) ([]LayerEffect, error) {
 			allowed["radius"] = true
 		case "noise":
 			allowed["amount"], allowed["size"], allowed["seed"], allowed["animated"] = true, true, true, true
+		case "glow":
+			allowed["radius"], allowed["intensity"] = true, true
+		case "bloom":
+			allowed["radius"], allowed["intensity"], allowed["threshold"] = true, true, true
+		case "lens_distortion":
+			allowed["curvature"], allowed["scale"] = true, true
+		case "sharpen":
+			allowed["amount"] = true
+		case "banded_grain":
+			allowed["intensity"], allowed["speed"], allowed["seed"] = true, true, true
 		default:
 			return nil, fmt.Errorf("overlay: unsupported clip effect type %q", typ)
 		}
@@ -220,22 +247,134 @@ func resolveClipEffects(raw []semanticClipEffect) ([]LayerEffect, error) {
 				return nil, fmt.Errorf("overlay: noise parameters are outside supported bounds")
 			}
 		}
+		if typ == "glow" {
+			radius, r := toFloat(params["radius"])
+			intensity, i := toFloat(params["intensity"])
+			if r != nil || i != nil || !finite(radius) || !finite(intensity) || radius < 0 || radius > 256 || intensity < 0 || intensity > 4 {
+				return nil, fmt.Errorf("overlay: glow parameters must be radius in [0,256] and intensity in [0,4]")
+			}
+			params = map[string]any{"radius": radius, "intensity": intensity}
+		}
+		if typ == "bloom" {
+			radius, r := toFloat(params["radius"])
+			intensity, i := toFloat(params["intensity"])
+			if r != nil || i != nil || !finite(radius) || !finite(intensity) || radius < 0 || radius > 256 || intensity < 0 || intensity > 4 {
+				return nil, fmt.Errorf("overlay: bloom parameters must be radius in [0,256] and intensity in [0,4]")
+			}
+			threshold := 0.8
+			if rawT, exists := params["threshold"]; exists {
+				t, te := toFloat(rawT)
+				if te != nil || !finite(t) || t < 0 || t > 1 {
+					return nil, fmt.Errorf("overlay: bloom threshold must be in [0,1]")
+				}
+				threshold = t
+			}
+			params = map[string]any{"radius": radius, "intensity": intensity, "threshold": threshold}
+		}
+		if typ == "lens_distortion" {
+			curv, c := toFloat(params["curvature"])
+			if c != nil || !finite(curv) || curv < -1 || curv > 1 {
+				return nil, fmt.Errorf("overlay: lens_distortion curvature must be in [-1,1]")
+			}
+			scale := 1.0
+			if rawS, exists := params["scale"]; exists {
+				s, se := toFloat(rawS)
+				if se != nil || !finite(s) || s < 0.1 || s > 4 {
+					return nil, fmt.Errorf("overlay: lens_distortion scale must be in [0.1,4]")
+				}
+				scale = s
+			}
+			params = map[string]any{"curvature": curv, "scale": scale}
+		}
+		if typ == "sharpen" {
+			amount, a := toFloat(params["amount"])
+			if a != nil || !finite(amount) || amount < 0 || amount > 10 {
+				return nil, fmt.Errorf("overlay: sharpen amount must be in [0,10]")
+			}
+			params = map[string]any{"amount": amount}
+		}
+		if typ == "banded_grain" {
+			intensity, ie := toFloat(params["intensity"])
+			if ie != nil || !finite(intensity) || intensity < 0 || intensity > 4 {
+				return nil, fmt.Errorf("overlay: banded_grain intensity must be in [0,4]")
+			}
+			speed := 0.0
+			if rawSp, exists := params["speed"]; exists {
+				sp, spe := toFloat(rawSp)
+				if spe != nil || !finite(sp) || sp < -1000 || sp > 1000 {
+					return nil, fmt.Errorf("overlay: banded_grain speed must be in [-1000,1000]")
+				}
+				speed = sp
+			}
+			seed := uint32(0)
+			if rawSeed, exists := params["seed"]; exists {
+				sd, sde := toInt(rawSeed)
+				if sde == nil && sd >= 0 {
+					seed = uint32(sd)
+				}
+			}
+			params = map[string]any{"intensity": intensity, "speed": speed, "seed": seed}
+		}
 		out = append(out, LayerEffect{Type: typ, Params: params})
 	}
 	return out, nil
 }
 
 func compileClipGrid(grid *semanticClipGrid, width, height int, duration int64) (Layer, error) {
-	if grid == nil || !finite(grid.SpacingPX) || grid.SpacingPX < 4 || grid.SpacingPX > 512 || !finite(grid.LineWidthPX) || grid.LineWidthPX < 0.25 || grid.LineWidthPX > 32 || !finite(grid.Opacity) || grid.Opacity < 0 || grid.Opacity > 1 {
+	if grid == nil || !finite(grid.SpacingPX) || grid.SpacingPX < 4 || grid.SpacingPX > 512 || !finite(grid.Opacity) || grid.Opacity < 0 || grid.Opacity > 1 {
 		return Layer{}, fmt.Errorf("overlay: clip_grid parameters are outside supported bounds")
 	}
-	if _, err := parseHexColor(grid.Color); err != nil {
+	hexColor, err := parseHexColor(grid.Color)
+	if err != nil {
 		return Layer{}, fmt.Errorf("overlay: clip_grid color must be #RRGGBB: %w", err)
 	}
 	opacity := grid.Opacity
-	// Non-text Chronon positions are offsets from canvas centre, so a full-frame
-	// shape is centered at [0,0], not top-left anchored there.
-	return Layer{ID: "clip__grid", Type: "shape", StartFrame: 0, DurationFrames: duration, Size: []float64{float64(width), float64(height)}, Position: []float64{0, 0}, ScreenSpace: true, Opacity: &opacity, Shape: &LayerShape{Type: "grid", GridSpacing: grid.SpacingPX, GridLineWidth: grid.LineWidthPX, Stroke: &LayerStroke{Color: grid.Color, Width: grid.LineWidthPX}}}, nil
+	isDots := grid.Style == "dots" || grid.Style == "dot_grid"
+	if isDots {
+		dotRadius := 2.0
+		if grid.DotRadiusPX != nil && *grid.DotRadiusPX > 0 {
+			if !finite(*grid.DotRadiusPX) || *grid.DotRadiusPX < 0.5 || *grid.DotRadiusPX > 64 {
+				return Layer{}, fmt.Errorf("overlay: clip_grid dot_radius_px must be in [0.5,64]")
+			}
+			dotRadius = *grid.DotRadiusPX
+		}
+		return Layer{
+			ID:             "clip__grid",
+			Type:           "shape",
+			StartFrame:     0,
+			DurationFrames: duration,
+			Size:           []float64{float64(width), float64(height)},
+			Position:       []float64{0, 0},
+			ScreenSpace:    true,
+			Opacity:        &opacity,
+			Shape: &LayerShape{
+				Type:        "dot_grid",
+				GridSpacing: grid.SpacingPX,
+				DotRadius:   dotRadius,
+				Fill:        hexColor,
+			},
+		}, nil
+	}
+	if grid.LineWidthPX == nil || !finite(*grid.LineWidthPX) || *grid.LineWidthPX < 0.25 || *grid.LineWidthPX > 32 {
+		return Layer{}, fmt.Errorf("overlay: clip_grid line_width_px must be in [0.25,32]")
+	}
+	lineWidth := *grid.LineWidthPX
+	return Layer{
+		ID:             "clip__grid",
+		Type:           "shape",
+		StartFrame:     0,
+		DurationFrames: duration,
+		Size:           []float64{float64(width), float64(height)},
+		Position:       []float64{0, 0},
+		ScreenSpace:    true,
+		Opacity:        &opacity,
+		Shape: &LayerShape{
+			Type:          "grid",
+			GridSpacing:   grid.SpacingPX,
+			GridLineWidth: lineWidth,
+			Stroke:        &LayerStroke{Color: grid.Color, Width: lineWidth},
+		},
+	}, nil
 }
 
 func resolveLayerEffects(raw any, itemID string) ([]LayerEffect, error) {

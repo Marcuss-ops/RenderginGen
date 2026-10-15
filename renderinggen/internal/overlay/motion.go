@@ -479,7 +479,8 @@ func fromTextMotionDefinitions(src []motion.TextAnimatorDefinition, duration int
 	for _, definition := range src {
 		selector := TextSelector{
 			ID: definition.ID + "_selector", Unit: definition.Selector.Kind,
-			Shape: definition.Selector.Shape, Order: definition.Selector.Order, Combine: "replace",
+			SemanticID: definition.Selector.SemanticID,
+			Shape:      definition.Selector.Shape, Order: definition.Selector.Order, Combine: "replace",
 			ExcludeSpaces: true,
 		}
 		if definition.Selector.RangeStart != nil && definition.Selector.RangeEnd != nil {
