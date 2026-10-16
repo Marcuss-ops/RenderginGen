@@ -137,3 +137,48 @@ func histogramSamples(t *testing.T, m *metrics.Metrics, name string) uint64 {
 	}
 	return 0
 }
+
+// TestOldestPendingGaugeTracksHeadAge pins the head-of-line backlog gauge the
+// audit added: with a non-empty queue it must report a positive age, and it
+// reads the same Stats snapshot as jobs_pending (no second scan of the jobs
+// table on the refresh path).
+func TestOldestPendingGaugeTracksHeadAge(t *testing.T) {
+	svc := New(memory.New(30*time.Second, 3))
+	m := metrics.New()
+	svc.SetMetrics(m)
+	ctx := context.Background()
+
+	if err := svc.Submit(ctx, model.Job{ID: "job-old"}); err != nil {
+		t.Fatal(err)
+	}
+	if err := svc.Submit(ctx, model.Job{ID: "job-new"}); err != nil {
+		t.Fatal(err)
+	}
+	time.Sleep(60 * time.Millisecond)
+	svc.RefreshPendingGauge()
+	if age := testutil.ToFloat64(m.OldestPending); age < 0.04 {
+		t.Fatalf("oldest_pending with a non-empty queue: want >= 0.04s, got %v", age)
+	}
+	if got := testutil.ToFloat64(m.JobsPending); got != 2 {
+		t.Fatalf("jobs_pending: want 2, got %v", got)
+	}
+
+	// A completed queue drains the age signal to zero: an autoscaler must be
+	// able to distinguish "empty" from "stuck at a positive age".
+	if _, _, err := svc.Claim(context.Background(), "w1"); err != nil {
+		t.Fatal(err)
+	}
+	if _, _, err := svc.Claim(context.Background(), "w2"); err != nil {
+		t.Fatal(err)
+	}
+	if err := svc.Complete(ctx, "job-old", "w1", model.Artifact{StorageKey: "sha", ArtifactHash: "sha", SizeBytes: 1, ContentType: "video/mp4"}); err != nil {
+		t.Fatal(err)
+	}
+	if err := svc.Complete(ctx, "job-new", "w2", model.Artifact{StorageKey: "sha", ArtifactHash: "sha", SizeBytes: 1, ContentType: "video/mp4"}); err != nil {
+		t.Fatal(err)
+	}
+	svc.RefreshPendingGauge()
+	if age := testutil.ToFloat64(m.OldestPending); age != 0 {
+		t.Fatalf("oldest_pending on an empty queue: want 0, got %v", age)
+	}
+}

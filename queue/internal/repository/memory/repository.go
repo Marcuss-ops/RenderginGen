@@ -641,10 +641,16 @@ func (s *Repository) Stats(_ context.Context) model.Stats {
 	defer s.mu.RUnlock()
 
 	stats := model.Stats{}
+	var oldestPending time.Time
+	sawPending := false
 	for _, job := range s.jobs {
 		switch job.State {
 		case model.StatePending:
 			stats.Pending++
+			if !sawPending || job.QueuedAt.Before(oldestPending) {
+				oldestPending = job.QueuedAt
+				sawPending = true
+			}
 		case model.StateRunning:
 			stats.Running++
 		case model.StateCompleted:
@@ -658,6 +664,9 @@ func (s *Repository) Stats(_ context.Context) model.Stats {
 	// are not render work; the gauge exists for autoscaling render capacity.
 	stats.Ok = true
 	stats.Depth = stats.Pending
+	if sawPending && !oldestPending.IsZero() {
+		stats.OldestPendingSeconds = time.Since(oldestPending).Seconds()
+	}
 	return stats
 }
 

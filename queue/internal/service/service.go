@@ -304,7 +304,12 @@ func (s *Service) observePendingThrottled(ctx context.Context, force bool) {
 	s.pendingGaugeLast = time.Now()
 	s.pendingGaugeMu.Unlock()
 
-	s.metrics.JobsPending.Set(float64(s.repo.Stats(ctx).Pending))
+	stats := s.repo.Stats(ctx)
+	s.metrics.JobsPending.Set(float64(stats.Pending))
+	// Same snapshot, same refresh cadence: the head-of-line age is the
+	// backlog signal Depth alone cannot give an autoscaler, and reading it
+	// here costs nothing beyond the already-issued COUNT(*) FILTER scan.
+	s.metrics.OldestPending.Set(stats.OldestPendingSeconds)
 }
 
 // RefreshPendingGauge forces an immediate, unthrottled pending-gauge refresh.

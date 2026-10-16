@@ -4,8 +4,8 @@
 package overlay
 
 import (
-	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/clampx"
 	"fmt"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/clampx"
 	"math"
 
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/geo"

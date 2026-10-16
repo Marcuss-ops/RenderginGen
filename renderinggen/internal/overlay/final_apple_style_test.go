@@ -16,7 +16,11 @@ import (
 // TestFinal_AppleStyleSemanticLowering verifies that all three checked-in
 // Apple style fixtures (crime, discovery, young) lower from their
 // renderinggen.overlay-plan.v1 semantic representation into complete and
-// valid chronon.render-plan.v2 plans.
+// valid render plans carrying the wire identity their features select.
+// The background plate lowers with the screen-space flag, so these plans
+// select chronon.render-plan.v3 at the wire level (pinned by
+// plan_wire_test.go); the assertion below is contract-driven instead of a
+// hardcoded version, so a feature-driven schema bump stays verifiable.
 func TestFinal_AppleStyleSemanticLowering(t *testing.T) {
 	stylesDir := appleStylesDir(t)
 	profiles := []string{"crime", "discovery", "young"}
@@ -44,8 +48,9 @@ func TestFinal_AppleStyleSemanticLowering(t *testing.T) {
 			if plan == nil {
 				t.Fatal("compiled plan is nil")
 			}
-			if plan.Schema != "chronon.render-plan.v2" || plan.Version != 2 {
-				t.Fatalf("expected chronon.render-plan.v2 v2, got %s v%d", plan.Schema, plan.Version)
+			wantSchema, wantVersion := RenderPlanWireVersion(plan)
+			if plan.Schema != wantSchema || plan.Version != wantVersion {
+				t.Fatalf("plan wire identity %s v%d does not match the features-selected contract %s v%d", plan.Schema, plan.Version, wantSchema, wantVersion)
 			}
 			if plan.Canvas.DurationFrames != 360 { // 12000 ms @ 30fps = 360 frames
 				t.Errorf("duration_frames = %d, want 360 (12s @ 30fps)", plan.Canvas.DurationFrames)
