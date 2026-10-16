@@ -6,11 +6,11 @@ package processor
 
 import (
 	"fmt"
-	"log"
 	"strings"
 
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/chronon"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/metricnames"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/workerlog"
 )
 
 type renderVerifyLevel string
@@ -23,6 +23,11 @@ const (
 	renderVerifyFast    renderVerifyLevel = chronon.ReceiptVerifyFast
 	renderVerifyNormal  renderVerifyLevel = chronon.ReceiptVerifyNormal
 	renderVerifyCertify renderVerifyLevel = chronon.ReceiptVerifyCertify
+	// renderVerifyStrict is the fail-closed opt-in: like certify it rejects
+	// any unverifiable artifact instead of tolerating it. It exists for
+	// operators who want the certify failure semantics without the
+	// certify decode cost vocabulary (same fail-closed rule, explicit name).
+	renderVerifyStrict renderVerifyLevel = "strict"
 )
 
 // receiptVerifyLevel is the SINGLE verification-policy authority on the
@@ -46,6 +51,8 @@ func (p *Processor) receiptVerifyLevel() renderVerifyLevel {
 		return renderVerifyNormal
 	case renderVerifyCertify:
 		return renderVerifyCertify
+	case renderVerifyStrict:
+		return renderVerifyStrict
 	default:
 		return renderVerifyFast
 	}
@@ -64,21 +71,25 @@ func (p *Processor) receiptVerifyLevel() renderVerifyLevel {
 // The identity half of the gate is not optional and not policy-blind: it runs
 // here, for every policy, and the store phase consumes its verdict. See
 // receipt_identity.go.
-func (p *Processor) enforceReceiptVerificationDirect(receipt chronon.MediaReceipt, err error, metrics map[string]float64) error {
+func (p *Processor) enforceReceiptVerificationDirect(receipt chronon.MediaReceipt, err error, metrics map[string]float64, jobIDParts ...string) error {
 	policy := p.receiptVerifyLevel()
+	jobID := ""
+	if len(jobIDParts) > 0 {
+		jobID = jobIDParts[0]
+	}
 	if err != nil {
 		if policy == renderVerifyFast {
-			// Fast never promises a decode; the output is certified by the
-			// in-process encoder/muxer success and the probe validation below.
-			// The tolerance is deliberate (fail-open by policy), but it must
-			// not be invisible: a Chronon that silently stopped writing
-			// receipts would otherwise leave zero trace. Record the absence on
-			// the artifact metrics so "receipt verified" and "receipt absent"
-			// are distinguishable in the ledger.
+			// Fast fail-open is BY DESIGN: fast never promises a decode, the
+			// output is certified by the in-process encoder/muxer success
+			// plus the probe validation below. The tolerance is deliberate,
+			// but it must not be invisible: a Chronon that silently stopped
+			// writing receipts would otherwise leave zero trace. Record the
+			// absence on the artifact metrics so "receipt verified" and
+			// "receipt absent" are distinguishable in the ledger.
 			if metrics != nil {
 				metrics[metricnames.ChrononReceiptMissing] = 1
 			}
-			log.Printf("[processor WARN] policy=%s but Chronon media receipt is unavailable (tolerated, hash identity falls back to re-read): %v", policy, err)
+			workerlog.ByJobID(jobID).Warnf("policy=%s but Chronon media receipt is unavailable (tolerated fail-open by design, hash identity falls back to re-read): %v", policy, err)
 			return nil
 		}
 		return fmt.Errorf("processor: canonical verification did not run (policy=%s): %w", policy, err)

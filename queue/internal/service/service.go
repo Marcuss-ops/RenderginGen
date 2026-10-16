@@ -185,7 +185,10 @@ func (s *Service) WaitAndClaim(ctx context.Context, workerID string, state model
 	if workerID == "" {
 		return nil, 0, fmt.Errorf("worker id is required")
 	}
-	if maxWait <= 0 {
+	if maxWait < 0 {
+		return nil, 0, fmt.Errorf("max wait must be >= 0")
+	}
+	if maxWait == 0 {
 		maxWait = 25 * time.Second
 	}
 	job, lease, err := s.ClaimState(ctx, workerID, state)
@@ -201,11 +204,17 @@ func (s *Service) WaitAndClaim(ctx context.Context, workerID string, state model
 	// worker stays responsive the moment work actually appears.
 	pollDelay := time.Second
 	const maxPollDelay = 10 * time.Second
+	// Reused poll timer: time.After in this loop would allocate and leak a
+	// timer per backoff step until it fires.
+	pollTimer := time.NewTimer(pollDelay)
+	defer pollTimer.Stop()
 	for {
 		select {
 		case <-ctx.Done():
+			s.notify.Forget(wake)
 			return nil, 0, ctx.Err()
 		case <-deadline.C:
+			s.notify.Forget(wake)
 			return nil, 0, nil
 		case <-wake:
 			job, lease, err := s.ClaimState(ctx, workerID, state)
@@ -216,18 +225,29 @@ func (s *Service) WaitAndClaim(ctx context.Context, workerID string, state model
 			// waiting at the fresh backoff.
 			wake = s.notify.Done()
 			pollDelay = time.Second
-		case <-time.After(pollDelay):
+			if !pollTimer.Stop() {
+				select {
+				case <-pollTimer.C:
+				default:
+				}
+			}
+			pollTimer.Reset(pollDelay)
+		case <-pollTimer.C:
 			// Bounded fallback re-poll so a missed wake-up cannot stall a
 			// worker until the deadline. Back off after every empty poll;
-			// the deadline timer bounds the total wait regardless.
+			// the deadline timer bounds the total wait regardless. The
+			// re-poll is also the timeout fallback for single-wake: a waiter
+			// whose wake was consumed by a competitor is re-driven here.
 			job, lease, err := s.ClaimState(ctx, workerID, state)
 			if err != nil || job != nil {
+				s.notify.Forget(wake)
 				return job, lease, err
 			}
 			pollDelay *= 2
 			if pollDelay > maxPollDelay {
 				pollDelay = maxPollDelay
 			}
+			pollTimer.Reset(pollDelay)
 		}
 	}
 }

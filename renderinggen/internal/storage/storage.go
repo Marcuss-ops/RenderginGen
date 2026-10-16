@@ -78,6 +78,10 @@ type CacheStats struct {
 	// an L3 fetch, so a non-zero value here means the on-disk cache is not
 	// doing its job even though the hit counters look like ordinary misses.
 	L2ReadErrors int64
+	// L2Corrupt counts the subset of L2ReadErrors caused by permission/I-O
+	// degradation or non-regular entries (EACCES/corruption), as opposed to
+	// any other non-absent failure. A miss is normal; a corrupt L2 is not.
+	L2Corrupt int64
 }
 
 // Stats returns the cumulative resolution counters since the client was
@@ -90,6 +94,7 @@ func (c *Client) Stats() CacheStats {
 		L3Fetches:    c.l3Fetches.Load(),
 		L2PutErrors:  c.l2PutErrors.Load(),
 		L2ReadErrors: c.l2.readErrors.Load(),
+		L2Corrupt:    c.l2.corruptErrors.Load(),
 	}
 }
 
@@ -276,9 +281,21 @@ func (c *Client) LocalPath(ctx context.Context, hash string) (string, int64, err
 			os.Remove(path)
 			return "", 0, err
 		}
+		// Flush before handing the path out: callers treat the returned path
+		// as durable (E4), so page-cache-only bytes must not be reported good.
+		if err := file.Sync(); err != nil {
+			file.Close()
+			os.Remove(path)
+			return "", 0, err
+		}
 		if err := file.Close(); err != nil {
 			os.Remove(path)
 			return "", 0, err
+		}
+		// Verify-read: an empty/short write must never be reported durable.
+		if info, serr := os.Stat(path); serr != nil || info.Size() != int64(len(data)) {
+			os.Remove(path)
+			return "", 0, fmt.Errorf("storage: local-path verify failed for %s", path)
 		}
 		return path, int64(len(data)), nil
 	}

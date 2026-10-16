@@ -24,6 +24,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
 	"sync"
@@ -346,14 +347,27 @@ func (w *Workspace) MaterializePaths(ctx context.Context, resolve PathResolver, 
 	}
 	workCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
-	jobs := make(chan queue.AssetRef)
+	// Adaptive pool: never more workers than assets, never more than the
+	// historical ceiling of 4, and never more than the host can run. The
+	// channel is buffered to workerCount so the send loop below never blocks
+	// on a worker that is busy copying while another is free — without the
+	// buffer a single slow asset serializes dispatch behind the send.
+	// firstErr keeps the FIRST failure (via errOnce) so the caller sees the
+	// root cause, not the last racing worker's error.
+	workerCount := len(assets)
+	if workerCount > 4 {
+		workerCount = 4
+	}
+	if ncpu := runtime.NumCPU(); workerCount > ncpu {
+		workerCount = ncpu
+	}
+	if workerCount < 1 {
+		workerCount = 1
+	}
+	jobs := make(chan queue.AssetRef, workerCount)
 	var wg sync.WaitGroup
 	var firstErr error
 	var errOnce sync.Once
-	workerCount := 4
-	if len(assets) < workerCount {
-		workerCount = len(assets)
-	}
 	for i := 0; i < workerCount; i++ {
 		wg.Add(1)
 		go func() {
@@ -439,6 +453,11 @@ func copyFileRooted(ctx context.Context, root *os.Root, source, dst string) erro
 	if copyErr != nil {
 		_ = tmp.Close()
 		return fmt.Errorf("workspace: copy %s: %w", dst, copyErr)
+	}
+	// Flush before rename so the installed file is durable, not just page-cache.
+	if err := tmp.Sync(); err != nil {
+		_ = tmp.Close()
+		return fmt.Errorf("workspace: sync temp: %w", err)
 	}
 	if err := tmp.Close(); err != nil {
 		return fmt.Errorf("workspace: close temp: %w", err)

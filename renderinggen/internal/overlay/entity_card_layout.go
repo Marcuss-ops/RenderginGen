@@ -121,6 +121,13 @@ func ResolveEntityCardLayout(canvasWidth, canvasHeight int, imageRect EntityCard
 // side column. "left" and "right" are relative to the image; callers choose
 // the image's canvas position to switch portrait sides without changing text.
 func ResolveEntityCardLayoutAt(canvasWidth, canvasHeight int, imageRect EntityCardImageBounds, caption, mode string) (EntityCardLayout, error) {
+	return ResolveEntityCardLayoutAtSize(canvasWidth, canvasHeight, imageRect, caption, mode, entityCaptionMaxFontPX)
+}
+
+// ResolveEntityCardLayoutAtSize resolves an entity label using the shared
+// runtime typography size as its upper bound; the available safe area still
+// determines any necessary wrapping or reduction.
+func ResolveEntityCardLayoutAtSize(canvasWidth, canvasHeight int, imageRect EntityCardImageBounds, caption, mode string, requestedFontSize float64) (EntityCardLayout, error) {
 	if canvasWidth <= 0 || canvasHeight <= 0 {
 		return EntityCardLayout{}, fmt.Errorf("overlay: entity card layout needs a positive canvas, got %dx%d", canvasWidth, canvasHeight)
 	}
@@ -167,7 +174,10 @@ func ResolveEntityCardLayoutAt(canvasWidth, canvasHeight int, imageRect EntityCa
 		}
 		wrapped, lineCount := wrapPhraseAt25(caption)
 		lines := strings.Split(wrapped, "\n")
-		fontSize := entityCaptionMaxFontPX
+		fontSize := requestedFontSize
+		if fontSize <= 0 {
+			fontSize = entityCaptionMaxFontPX
+		}
 		width := captionLinesWidth(lines, fontSize)
 		for width > available && fontSize > entityCaptionMinFontPX {
 			fontSize -= 1
@@ -188,7 +198,10 @@ func ResolveEntityCardLayoutAt(canvasWidth, canvasHeight int, imageRect EntityCa
 	wrapped, lineCount := wrapPhraseAt25(caption)
 	lines := strings.Split(wrapped, "\n")
 	maxWidth := safe.Right - safe.Left
-	fontSize := entityCaptionMaxFontPX
+	fontSize := requestedFontSize
+	if fontSize <= 0 {
+		fontSize = entityCaptionMaxFontPX
+	}
 	bottomLimit := float64(canvasHeight) - entityCaptionSafeMarginPX
 	minimumImageTop := math.Min(imageRect.Top(), entityCaptionSafeMarginPX)
 	maxCaptionHeight := bottomLimit - minimumImageTop - imageRect.Height - entityCaptionMarginPX

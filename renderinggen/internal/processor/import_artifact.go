@@ -149,7 +149,10 @@ func (p *Processor) ImportOverlayArtifact(ctx context.Context, job *queue.Job) (
 		return queue.Artifact{}, fmt.Errorf("processor: imported MP4 sha256 %s does not match request %s", sha, request.SourceSHA256)
 	}
 	probeStarted := time.Now()
-	probe, err := media.ProbeFile(ctx, localPath)
+	// The content hash is verified above, so it is the probe cache key:
+	// re-importing identical bytes reuses the certified facts (including the
+	// closed-GOP verdict) instead of re-running up to 3 ffprobe processes.
+	probe, err := media.ProbeFileCached(ctx, sha, localPath)
 	if err != nil {
 		return queue.Artifact{}, fmt.Errorf("processor: probe imported map MP4: %w", err)
 	}

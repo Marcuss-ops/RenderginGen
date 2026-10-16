@@ -2,6 +2,7 @@ package motion
 
 import (
 	"math"
+	"slices"
 )
 
 func finiteMotionValue(value float64) bool {
@@ -91,12 +92,7 @@ func finiteMotionValueTree(value any) bool {
 }
 
 func containsMotionString(values []string, wanted string) bool {
-	for _, value := range values {
-		if value == wanted {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(values, wanted)
 }
 
 func validMotionHexColor(value string) bool {

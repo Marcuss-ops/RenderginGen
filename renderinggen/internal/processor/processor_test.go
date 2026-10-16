@@ -468,10 +468,11 @@ func (c *countingPrefetcher) PrefetchAsset(_ context.Context, _ string) error {
 }
 
 // TestPrefetchWarmAssetsIsGloballyBounded pins the process-wide concurrency
-// ceiling: ten video assets must all be attempted, but never more than four
+// ceiling plus the per-job video cap: ten video assets select at most
+// prefetchMaxVideos (6) warm-ups, attempted with never more than four
 // concurrently, no matter how video-heavy a single job is.
 func TestPrefetchWarmAssetsIsGloballyBounded(t *testing.T) {
-	prefetcher := &countingPrefetcher{done: make(chan struct{}), total: 10}
+	prefetcher := &countingPrefetcher{done: make(chan struct{}), total: prefetchMaxVideos}
 	proc := &Processor{assetPrefetcher: prefetcher}
 	assets := make([]queue.AssetRef, 0, 10)
 	for i := 0; i < 10; i++ {
@@ -494,8 +495,8 @@ func TestPrefetchWarmAssetsIsGloballyBounded(t *testing.T) {
 	}
 	prefetcher.mu.Lock()
 	defer prefetcher.mu.Unlock()
-	if prefetcher.count != 10 {
-		t.Fatalf("attempted %d warm-ups, want 10", prefetcher.count)
+	if prefetcher.count != prefetchMaxVideos {
+		t.Fatalf("attempted %d warm-ups, want %d (per-job video cap)", prefetcher.count, prefetchMaxVideos)
 	}
 	if prefetcher.peak > 4 {
 		t.Fatalf("peak concurrency %d exceeds the bound of 4", prefetcher.peak)

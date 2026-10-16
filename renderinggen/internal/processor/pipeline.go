@@ -378,34 +378,44 @@ func (p *Processor) PrepareJob(ctx context.Context, job *queue.Job) (*PreparedJo
 }
 
 // prefetchWarmAssets primes Chronon's persistent image/video cache from the
-// already verified workspace. The background and at most three image assets
-// are selected deterministically, preserving every asset in the plan while
-// bounding warm-up work on high-cardinality scenes.
+// already verified workspace. At most prefetchMaxImages image assets and at
+// most prefetchMaxVideos video assets are selected deterministically,
+// bounding warm-up work on high-cardinality scenes while still warming the
+// assets the render will most likely need first.
 //
 // The requests are issued CONCURRENTLY and NOT awaited. A warm-up failure is
 // diagnostic only (the materialized files remain authoritative for Render), yet
 // the previous shape blocked the prepare stage on up to four IPC round-trips:
 // an optional cache warm-up was charged to the prepare→GPU handoff — the very
 // interval RecordGPULaneWait exists to measure — and it delayed the lane from
-// starting on a job whose render did not depend on it. Each request is bounded
-// by the IPC client's own service timeout, so the detached goroutines cannot
-// accumulate.
-// prefetchInflight bounds warm-up concurrency process-wide. Selection above
-// caps images but not videos, so one video-heavy job used to fan out one
-// detached goroutine per asset with no global limit; at high throughput those
-// accumulate against the daemon faster than it drains them. Four in flight
+// starting on a job whose render did not depend on it.
+//
+// Lifetime: every detached warm-up runs under a child of the prepare ctx
+// with prefetchTimeout. A cancelled prepare (lost lease, shutdown) therefore
+// cancels the in-flight warm-ups; no WithoutCancel orphan survives the job.
+// Each request is additionally bounded by the IPC client's own service
+// timeout, so the detached goroutines cannot accumulate.
+//
+// prefetchInflight bounds warm-up concurrency process-wide. Four in flight
 // keeps the warm-up ahead of the render without a thundering herd. The
-// semaphore is acquired inside the detached goroutine, so the bound never
-// blocks the prepare stage it serves.
+// semaphore is acquired inside the detached goroutine (or the goroutine
+// exits on ctx cancellation), so the bound never blocks the prepare stage
+// it serves.
+const (
+	prefetchMaxImages = 3
+	prefetchMaxVideos = 6
+	prefetchTimeout   = 30 * time.Second
+)
+
 var prefetchInflight = make(chan struct{}, 4)
 
 func (p *Processor) prefetchWarmAssets(ctx context.Context, jobID, root string, assets []queue.AssetRef) {
 	if p == nil || p.assetPrefetcher == nil {
 		return
 	}
-	selected := make([]string, 0, 4)
-	seen := make(map[string]struct{}, 4)
-	images := 0
+	selected := make([]string, 0, prefetchMaxImages+prefetchMaxVideos)
+	seen := make(map[string]struct{}, prefetchMaxImages+prefetchMaxVideos)
+	images, videos := 0, 0
 	for _, asset := range assets {
 		ext := strings.ToLower(filepath.Ext(asset.LogicalPath))
 		isVideo := ext == ".mp4" || ext == ".mov" || ext == ".webm"
@@ -414,28 +424,47 @@ func (p *Processor) prefetchWarmAssets(ctx context.Context, jobID, root string, 
 			continue
 		}
 		if isImage {
-			if images >= 3 {
+			if images >= prefetchMaxImages {
 				continue
 			}
 			images++
+		} else {
+			if videos >= prefetchMaxVideos {
+				continue
+			}
+			videos++
 		}
 		path := filepath.Join(root, filepath.FromSlash(asset.LogicalPath))
 		if _, ok := seen[path]; ok {
+			// Duplicate path counted above but selected once: the caps stay
+			// on distinct assets examined, the warm-up stays deduplicated.
+			if isImage {
+				images--
+			} else {
+				videos--
+			}
 			continue
 		}
 		seen[path] = struct{}{}
 		selected = append(selected, path)
 	}
-	// context.WithoutCancel detaches the warm-up from the prepare deadline so a
-	// cancelled prepare (lost lease, shutdown) does not abort a cache write into
-	// Chronon's own process while still keeping the request bounded by the IPC
-	// client's service timeout.
-	warmCtx := context.WithoutCancel(ctx)
+	// Lifetime is bound to the prepare context: each detached warm-up gets a
+	// child ctx with prefetchTimeout, so a cancelled prepare (lost lease,
+	// shutdown) cancels the in-flight warm-ups instead of leaving orphaned
+	// WithoutCancel goroutines writing into Chronon after the job is gone.
+	// Fire-and-forget is preserved: the bound lives inside the goroutines, so
+	// this function never blocks the prepare→GPU handoff.
 	for _, path := range selected {
 		path := path
 		go func() {
-			prefetchInflight <- struct{}{}
-			defer func() { <-prefetchInflight }()
+			select {
+			case prefetchInflight <- struct{}{}:
+				defer func() { <-prefetchInflight }()
+			case <-ctx.Done():
+				return
+			}
+			warmCtx, cancel := context.WithTimeout(ctx, prefetchTimeout)
+			defer cancel()
 			if err := p.assetPrefetcher.PrefetchAsset(warmCtx, path); err != nil {
 				workerlog.ByJobID(jobID).Infof("chronon asset warm-up skipped: path=%s err=%v", path, err)
 				return

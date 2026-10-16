@@ -15,6 +15,7 @@
 package memory
 
 import (
+	"container/list"
 	"context"
 	"fmt"
 	"github.com/Marcuss-ops/RenderingGen/queue/internal/model"
@@ -28,12 +29,16 @@ import (
 //
 // mu is a RWMutex: the read-only projections (Get, Children, Stats) take it
 // shared, so a dashboard polling the queue cannot serialize the claim path. The
-// mutating transitions hold it exclusively.
+// mutating transitions hold it exclusively. ClaimState snapshots its FIFO
+// candidates under RLock and only takes the write lock for the CAS
+// (re-validate + claim + O(1) list removal), so concurrent claims contend on a
+// short critical section instead of a full scan+memmove.
 type Repository struct {
 	mu          sync.RWMutex
 	jobs        map[string]*model.Job
 	artifacts   map[string]model.Artifact
-	order       []string          // FIFO order of pending job IDs
+	order       *list.List // FIFO queue of pending job IDs (string elements); O(1) removal, no memmove
+	orderIdx    map[string]*list.Element
 	idem        map[string]string // idempotency key -> job ID (mirrors the postgres unique index)
 	workers     map[string]model.Worker
 	lease       time.Duration
@@ -63,11 +68,31 @@ func New(lease time.Duration, maxAttempts int) *Repository {
 	return &Repository{
 		jobs:        make(map[string]*model.Job),
 		artifacts:   make(map[string]model.Artifact),
+		order:       list.New(),
+		orderIdx:    make(map[string]*list.Element),
 		idem:        make(map[string]string),
 		workers:     make(map[string]model.Worker),
 		children:    make(map[string]map[string]struct{}),
 		lease:       lease,
 		maxAttempts: maxAttempts,
+	}
+}
+
+// appendOrderLocked enqueues id at the FIFO tail. The caller holds s.mu for
+// writing. Removal is O(1) via orderIdx, so the claim path never pays a slice
+// memmove.
+func (s *Repository) appendOrderLocked(id string) {
+	el := s.order.PushBack(id)
+	s.orderIdx[id] = el
+}
+
+// removeOrderLocked unlinks id's queue element in O(1). Stale duplicates (e.g.
+// a cancelled job left in the queue) are skipped by the claim predicate, so
+// removing the indexed element is sufficient.
+func (s *Repository) removeOrderLocked(id string) {
+	if el, ok := s.orderIdx[id]; ok {
+		s.order.Remove(el)
+		delete(s.orderIdx, id)
 	}
 }
 
@@ -114,7 +139,7 @@ func (s *Repository) SubmitIdempotent(_ context.Context, job model.Job) (*model.
 	job.State, job.CreatedAt, job.QueuedAt = model.StatePending, now, now
 	s.jobs[job.ID] = &job
 	s.indexChildLocked(job)
-	s.order = append(s.order, job.ID)
+	s.appendOrderLocked(job.ID)
 	if job.IdempotencyKey != "" {
 		s.idem[job.IdempotencyKey] = job.ID
 	}
@@ -141,7 +166,7 @@ func (s *Repository) Submit(_ context.Context, job model.Job) error {
 	job.QueuedAt = now
 	s.jobs[job.ID] = &job
 	s.indexChildLocked(job)
-	s.order = append(s.order, job.ID)
+	s.appendOrderLocked(job.ID)
 	return nil
 }
 
@@ -176,7 +201,7 @@ func (s *Repository) SubmitBatch(_ context.Context, jobs []model.Job) error {
 		copy := job
 		s.jobs[job.ID] = &copy
 		s.indexChildLocked(copy)
-		s.order = append(s.order, job.ID)
+		s.appendOrderLocked(job.ID)
 		if job.IdempotencyKey != "" {
 			s.idem[job.IdempotencyKey] = job.ID
 		}
@@ -206,11 +231,31 @@ func (s *Repository) Claim(ctx context.Context, workerID string) (*model.Job, ti
 }
 
 func (s *Repository) ClaimState(_ context.Context, workerID string, state model.State) (*model.Job, time.Duration, error) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
+	// Phase 1 (shared lock): snapshot the FIFO candidate IDs in order.
+	// Preallocate to the queue length so the snapshot is a single alloc.
+	// Job rows are NOT copied here beyond their IDs: the predicate is
+	// re-validated under the write lock (CAS), so a concurrent transition
+	// between snapshot and claim cannot hand out a stale job.
+	s.mu.RLock()
+	candidates := make([]string, 0, s.order.Len())
+	for el := s.order.Front(); el != nil; el = el.Next() {
+		if id, ok := el.Value.(string); ok {
+			candidates = append(candidates, id)
+		}
+	}
+	s.mu.RUnlock()
 
 	now := time.Now()
-	for i, id := range s.order {
+	// Phase 2 (exclusive lock, short): CAS the first still-claimable
+	// candidate in FIFO order. FIFO + the assembly-anchor rule are enforced
+	// here on live state, so the snapshot ordering is the claim ordering.
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for _, id := range candidates {
+		// Skip entries already unlinked by a concurrent claim (stale snapshot).
+		if _, ok := s.orderIdx[id]; !ok {
+			continue
+		}
 		job := s.jobs[id]
 		if job == nil || (state != "" && job.State != state) ||
 			(state == "" && !model.IsClaimable(job.State)) {
@@ -229,7 +274,49 @@ func (s *Repository) ClaimState(_ context.Context, workerID string, state model.
 		if s.hasChildrenLocked(id) {
 			continue
 		}
-		s.order = append(s.order[:i], s.order[i+1:]...)
+		s.removeOrderLocked(id)
+		job.State = model.StateRunning
+		job.Worker = workerID
+		job.Attempts++
+		job.StartedAt = now
+		job.LeaseUntil = job.StartedAt.Add(s.lease)
+		if artifact, ok := s.artifacts[id]; ok {
+			copy := artifact
+			job.Artifact = &copy
+		}
+		return job, s.lease, nil
+	}
+	// Snapshot missed a job submitted concurrently between RUnlock and Lock
+	// (tail growth). One live scan under the already-held write lock closes
+	// the race without another lock round-trip; it runs only when the
+	// snapshot found nothing claimable.
+	for el := s.order.Front(); el != nil; el = el.Next() {
+		id, ok := el.Value.(string)
+		if !ok {
+			continue
+		}
+		claimed := false
+		for _, c := range candidates {
+			if c == id {
+				claimed = true
+				break
+			}
+		}
+		if claimed {
+			continue
+		}
+		job := s.jobs[id]
+		if job == nil || (state != "" && job.State != state) ||
+			(state == "" && !model.IsClaimable(job.State)) {
+			continue
+		}
+		if job.NotBefore != nil && job.NotBefore.After(now) {
+			continue
+		}
+		if s.hasChildrenLocked(id) {
+			continue
+		}
+		s.removeOrderLocked(id)
 		job.State = model.StateRunning
 		job.Worker = workerID
 		job.Attempts++
@@ -394,7 +481,7 @@ func (s *Repository) Rendered(_ context.Context, id, workerID string, artifact m
 	// again through an explicit (re)claim, never through lease expiry.
 	job.LeaseUntil = time.Time{}
 	s.artifacts[id] = artifact
-	s.order = append(s.order, id)
+	s.appendOrderLocked(id)
 	return nil
 }
 
@@ -418,7 +505,7 @@ func (s *Repository) Fail(_ context.Context, id, workerID, reason string) error 
 	job.QueuedAt = time.Now()
 	// Mirror PostgreSQL: requeued jobs hold no lease until the next claim.
 	job.LeaseUntil = time.Time{}
-	s.order = append(s.order, id)
+	s.appendOrderLocked(id)
 	return nil
 }
 
@@ -469,7 +556,7 @@ func (s *Repository) Retry(_ context.Context, id string) error {
 	job.QueuedAt = time.Now()
 	job.LeaseUntil = time.Time{}
 	job.Progress = nil
-	s.order = append(s.order, id)
+	s.appendOrderLocked(id)
 	return nil
 }
 
@@ -539,7 +626,7 @@ func (s *Repository) RequeueExpired(_ context.Context, now time.Time) (int, erro
 			job.State = model.StatePending
 			job.Worker = ""
 			job.QueuedAt = time.Now()
-			s.order = append(s.order, job.ID)
+			s.appendOrderLocked(job.ID)
 		}
 		n++
 	}

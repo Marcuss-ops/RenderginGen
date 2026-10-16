@@ -81,8 +81,8 @@ func outputSize(path string) (int64, error) {
 // It exists so the two decisions cannot disagree — the receipt gate and the
 // identity rule are one function with one policy value, and the store phase
 // consumes the verdict instead of recomputing part of it.
-func (p *Processor) verifyArtifactReceipt(outputPath string, receipt chronon.MediaReceipt, receiptErr error, metrics map[string]float64) (receiptOutcome, error) {
-	if err := p.enforceReceiptVerificationDirect(receipt, receiptErr, metrics); err != nil {
+func (p *Processor) verifyArtifactReceipt(outputPath string, receipt chronon.MediaReceipt, receiptErr error, metrics map[string]float64, jobIDParts ...string) (receiptOutcome, error) {
+	if err := p.enforceReceiptVerificationDirect(receipt, receiptErr, metrics, jobIDParts...); err != nil {
 		return receiptOutcome{}, err
 	}
 	identity, err := p.resolveArtifactIdentity(outputPath, receipt, receiptErr, metrics)

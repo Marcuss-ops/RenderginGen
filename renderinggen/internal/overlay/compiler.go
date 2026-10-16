@@ -379,10 +379,11 @@ type semanticItem struct {
 	// MotionID selects an animation independently of PresetID (visual style).
 	// MotionParams carries that catalog plugin's open parameter set; the
 	// compiler additionally validates shared enter_frames/exit_frames controls.
-	MotionID      string         `json:"motion_id"`
-	MotionParams  map[string]any `json:"motion_params"`
-	Text          string         `json:"text"`
-	EntityCaption string         `json:"entity_caption,omitempty"`
+	MotionID       string         `json:"motion_id"`
+	CameraMotionID string         `json:"camera_motion_id,omitempty"`
+	MotionParams   map[string]any `json:"motion_params"`
+	Text           string         `json:"text"`
+	EntityCaption  string         `json:"entity_caption,omitempty"`
 	// CaptionMotionID is the optional motion override for the entity caption
 	// layer. CaptionMotionParams remain independent from the image motion.
 	CaptionMotionID     string         `json:"caption_motion_id,omitempty"`
@@ -566,6 +567,8 @@ type SemanticImageLayer struct {
 	AssetID             string               `json:"asset_id"`
 	StartMS             int64                `json:"start_ms"`
 	EndMS               int64                `json:"end_ms"`
+	CaptionStartMS      int64                `json:"caption_start_ms,omitempty"`
+	CaptionEndMS        int64                `json:"caption_end_ms,omitempty"`
 	PresetID            string               `json:"preset_id"`
 	MotionID            string               `json:"motion_id"`
 	MotionParams        map[string]any       `json:"motion_params"`
@@ -574,6 +577,7 @@ type SemanticImageLayer struct {
 	CaptionMotionParams map[string]any       `json:"caption_motion_params,omitempty"`
 	CaptionFontFamily   string               `json:"caption_font_family,omitempty"`
 	CaptionColor        string               `json:"caption_color,omitempty"`
+	CaptionLayout       string               `json:"caption_layout,omitempty"`
 	Params              map[string]any       `json:"params"`
 	Frame               *semanticSourceFrame `json:"frame,omitempty"`
 }

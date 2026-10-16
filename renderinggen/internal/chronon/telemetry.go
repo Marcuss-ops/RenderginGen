@@ -166,6 +166,7 @@ type NativeTelemetry struct {
 			FallbackNodes        *int64 `json:"software_fallback_nodes"`
 			CPUReadbackFrames    *int64 `json:"cpu_readback_frames"`
 			SoftwareEncodeFrames *int64 `json:"software_encode_frames"`
+			VideoPipeFallback    *int64 `json:"video_pipe_fallback_frames"`
 			NVENCFrames          *int64 `json:"nvenc_frames"`
 			VulkanFrames         *int64 `json:"vulkan_frames"`
 			NativeSurfaceFrames  *int64 `json:"gpu_native_surface_frames"`

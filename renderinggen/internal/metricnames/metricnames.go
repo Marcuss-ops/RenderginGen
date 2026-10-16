@@ -171,6 +171,13 @@ const (
 	ReceiptIdentityUnusable   = "receipt_identity_unusable"
 	ReceiptSizeMismatch       = "receipt_size_mismatch"
 
+	// L2CacheCorrupt counts L2 lookups that failed with a permission or I/O
+	// error (EACCES/EIO) or hit a non-regular/truncated entry: a real
+	// degradation, not an ordinary miss. A miss is normal (L3 is the source
+	// of truth); a corrupt/unreadable L2 must be visible on its own counter
+	// so a broken cache directory cannot hide behind the miss rate.
+	L2CacheCorrupt = "l2_cache_corrupt"
+
 	// Producer-import verification facts and timings. Import jobs never emit
 	// Chronon render/encode metrics because they do not invoke Chronon.
 	ImportVerified   = "import_verified"
@@ -249,6 +256,7 @@ var vocab = map[string]string{
 	ReceiptIdentityUnverified: UnitCount, ReceiptIdentityMismatch: UnitCount,
 	ReceiptIdentityUnusable: UnitCount, ReceiptSizeMismatch: UnitCount,
 	ImportVerified: UnitCount, ImportIdentityUS: UnitUS, ImportTotalUS: UnitUS,
+	L2CacheCorrupt: UnitCount,
 
 	EntityCount: UnitCount, ImportantPhraseCount: UnitCount, ImportantWordCount: UnitCount,
 	ImageCount: UnitCount, LightLeakCount: UnitCount, InputBytes: UnitBytes,

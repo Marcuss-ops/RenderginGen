@@ -1,6 +1,10 @@
 package overlay
 
-import "math"
+import (
+	"math"
+
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/clampx"
+)
 
 func RoundedPremiumRectPath(width, height, radius float64) []LayerPathCommand {
 	return roundedRectPath(width, height, radius)
@@ -8,7 +12,7 @@ func RoundedPremiumRectPath(width, height, radius float64) []LayerPathCommand {
 
 func roundedRectPath(width, height, radius float64) []LayerPathCommand {
 	x0, x1, y0, y1 := -width/2, width/2, -height/2, height/2
-	r := math.Max(0, math.Min(radius, math.Min(width, height)/2))
+	r := clampx.Float(radius, math.Min(width, height)/2)
 	k := 0.5522847498 * r
 	return []LayerPathCommand{
 		{Type: "move_to", Point: []float64{x0 + r, y0}},

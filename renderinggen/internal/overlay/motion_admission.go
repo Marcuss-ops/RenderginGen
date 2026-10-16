@@ -237,6 +237,9 @@ func semanticTextMotionTarget(item semanticItem, kind ItemKind) string {
 func centeredMapMotion(definition motion.MotionDefinition) bool {
 	// Map applicability comes from the canonical catalog. This track restriction
 	// prevents pins and labels from drifting relative to the raster.
+	// NOTE: map_middle_east_oil_focus carries map_view + position_x/y tracks, so
+	// this predicate excludes it from the georeferenced picker by design; it is
+	// not a selectable map motion (see TestAnimationPolicyUsesDeclaredTargets).
 	if !containsString(definition.Targets, "map_view") || len(definition.Tracks) == 0 {
 		return false
 	}

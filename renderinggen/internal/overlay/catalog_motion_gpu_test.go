@@ -67,9 +67,9 @@ func TestEveryPresentationMotionExecutesOnTheStrictGPU(t *testing.T) {
 					"text": "2026 59.99", "start_ms": 0, "end_ms": 2000,
 				}
 				switch familyID {
-				case "metric_v1", "metric_didone_v1":
+				case "metric_v1", "metric_didone_v1", "metric_typewriter_v1":
 					item["kind"] = string(KindMetricStat)
-				case "date_v1", "date_didone_v1":
+				case "date_v1", "date_didone_v1", "date_typewriter_v1":
 					item["kind"] = string(KindTimelineDate)
 				case "entity_card_v1":
 					item["kind"] = string(KindEntityCard)

@@ -4,6 +4,7 @@
 package overlay
 
 import (
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/clampx"
 	"fmt"
 	"math"
 
@@ -107,9 +108,9 @@ func compileResolvedMapLayers(ri resolvedItem, src *semanticPlan, registry *asse
 	if err != nil {
 		return nil, err
 	}
-	if resolved.Camera != nil {
-		credit.ScreenSpace = true
-	}
+	// Attribution is HUD, not map-plane content: it stays screen-space on both
+	// static plates and camera moves so the credit never drifts with the flight.
+	credit.ScreenSpace = true
 	layers = append(layers, credit)
 	return layers, nil
 }
@@ -262,16 +263,7 @@ func mapPinMotion(source *LayerAnimation, position []float64) *LayerAnimation {
 }
 
 func clampMapBox(value, limit float64) float64 {
-	if limit < 0 {
-		limit = 0
-	}
-	if value < 0 {
-		return 0
-	}
-	if value > limit {
-		return limit
-	}
-	return value
+	return clampx.Float(value, limit)
 }
 
 func wrapMapPlaneDelta(value, worldSize float64) float64 {
@@ -296,12 +288,11 @@ func mapWorldPoint(latitude, longitude float64, zoom int, origin SemanticMapPoin
 // longer borrow the text glyph "O"; the white ring is the shape's stroke.
 func mapPinLayer(ri resolvedItem, src *semanticPlan, pin SemanticMapPin, x, y float64, duration int64) (Layer, error) {
 	size := 2 * pin.RadiusPX
-	// Map pins use a renderer-owned luminous accent. Plans have historically
-	// supplied black (or near-black) here, which disappears against the dark
-	// basemap and reads as an unfinished placeholder. Keep the map marker
-	// legible and consistent regardless of generated plan colors.
+	// The pin fill honors the contract color (validated #RRGGBB upstream); the
+	// luminous halo stays renderer-owned so dark fills remain legible on the
+	// dark basemap without silently replacing the producer's color.
 	const mapPinAccent = "#FFD166"
-	rgb, err := parseHexColor(mapPinAccent)
+	rgb, err := parseHexColor(pin.Color)
 	if err != nil {
 		return Layer{}, fmt.Errorf("overlay: map item %q pin %q color: %w", ri.Item.ID, pin.ID, err)
 	}

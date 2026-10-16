@@ -10,10 +10,23 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
+	"sync"
 )
 
 const imageSniffBytes = 512
+
+// sniffBufPool recycles the 512-byte image-signature buffers used by
+// readFileHead. Normalization sniffs every image layer in the plan, so a
+// fresh 512-byte allocation per asset is pure GC pressure for bytes that
+// live only for the two header checks below.
+var sniffBufPool = sync.Pool{
+	New: func() any {
+		buf := make([]byte, imageSniffBytes)
+		return &buf
+	},
+}
 
 // normalizeMaterializedImagePaths makes the concrete Chronon path agree with
 // the bytes that were actually downloaded. Some providers publish a JPEG
@@ -77,11 +90,23 @@ func normalizeMaterializedImagePaths(root string, plan *overlay.Plan) (map[strin
 // only DecodeConfig can confirm that the bytes have the georeferenced size.
 // This runs after materialization and path normalization, before plan.json or
 // Chronon, and never performs network access.
+// rasterCheck is one deduplicated raster validation unit: the first layer
+// that referenced the asset (for error attribution) plus its declared size.
+type rasterCheck struct {
+	layerID string
+	asset   string
+	width   int
+	height  int
+}
+
 func validateMapRasterAssets(root string, plan *overlay.Plan) error {
 	if plan == nil {
 		return fmt.Errorf("processor: map raster validation requires a render plan")
 	}
+	// Metadata gate first, serially: incomplete verification metadata is a
+	// producer bug that must fail before any file I/O is spent.
 	seen := make(map[string]struct{})
+	checks := make([]rasterCheck, 0, len(plan.Layers))
 	for _, layer := range plan.Layers {
 		if layer.MapRasterWidth <= 0 && layer.MapRasterHeight <= 0 {
 			continue
@@ -93,25 +118,70 @@ func validateMapRasterAssets(root string, plan *overlay.Plan) error {
 			continue
 		}
 		seen[layer.Asset] = struct{}{}
-		path := filepath.Join(root, filepath.FromSlash(layer.Asset))
-		file, err := os.Open(path)
-		if err != nil {
-			return fmt.Errorf("processor: map raster layer %q asset %q: %w", layer.ID, layer.Asset, err)
-		}
-		config, format, decodeErr := image.DecodeConfig(file)
-		closeErr := file.Close()
-		if decodeErr != nil {
-			return fmt.Errorf("processor: map raster layer %q asset %q is not a decodable PNG: %w", layer.ID, layer.Asset, decodeErr)
-		}
-		if closeErr != nil {
-			return fmt.Errorf("processor: close map raster layer %q asset %q: %w", layer.ID, layer.Asset, closeErr)
-		}
-		fullResolution := config.Width == layer.MapRasterWidth && config.Height == layer.MapRasterHeight
-		halfResolution := config.Width*2 == layer.MapRasterWidth && config.Height*2 == layer.MapRasterHeight
-		if format != "png" || (!fullResolution && !halfResolution) {
-			return fmt.Errorf("processor: map raster layer %q declares %dx%d but staged %s is %dx%d",
-				layer.ID, layer.MapRasterWidth, layer.MapRasterHeight, format, config.Width, config.Height)
-		}
+		checks = append(checks, rasterCheck{layerID: layer.ID, asset: layer.Asset, width: layer.MapRasterWidth, height: layer.MapRasterHeight})
+	}
+	if len(checks) == 0 {
+		return nil
+	}
+	// DecodeConfig only reads the image header, but it still opens and reads
+	// a file per raster: validate concurrently (I/O-bound) on an adaptive
+	// worker pool instead of serially. The first failure wins via errOnce so
+	// the caller sees the root cause, not the last racing worker's error.
+	workers := len(checks)
+	if workers > 4 {
+		workers = 4
+	}
+	if ncpu := runtime.NumCPU(); workers > ncpu {
+		workers = ncpu
+	}
+	if workers < 1 {
+		workers = 1
+	}
+	jobs := make(chan rasterCheck, workers)
+	var wg sync.WaitGroup
+	var firstErr error
+	var errOnce sync.Once
+	for i := 0; i < workers; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for c := range jobs {
+				if err := validateOneMapRaster(root, c); err != nil {
+					errOnce.Do(func() { firstErr = err })
+				}
+			}
+		}()
+	}
+	for _, c := range checks {
+		jobs <- c
+	}
+	close(jobs)
+	wg.Wait()
+	return firstErr
+}
+
+// validateOneMapRaster checks the staged bytes of a single compiled map
+// raster against its georeferenced size. Only DecodeConfig runs (header,
+// never a full decode) and no network access is performed.
+func validateOneMapRaster(root string, c rasterCheck) error {
+	path := filepath.Join(root, filepath.FromSlash(c.asset))
+	file, err := os.Open(path)
+	if err != nil {
+		return fmt.Errorf("processor: map raster layer %q asset %q: %w", c.layerID, c.asset, err)
+	}
+	config, format, decodeErr := image.DecodeConfig(file)
+	closeErr := file.Close()
+	if decodeErr != nil {
+		return fmt.Errorf("processor: map raster layer %q asset %q is not a decodable PNG: %w", c.layerID, c.asset, decodeErr)
+	}
+	if closeErr != nil {
+		return fmt.Errorf("processor: close map raster layer %q asset %q: %w", c.layerID, c.asset, closeErr)
+	}
+	fullResolution := config.Width == c.width && config.Height == c.height
+	halfResolution := config.Width*2 == c.width && config.Height*2 == c.height
+	if format != "png" || (!fullResolution && !halfResolution) {
+		return fmt.Errorf("processor: map raster layer %q declares %dx%d but staged %s is %dx%d",
+			c.layerID, c.width, c.height, format, config.Width, config.Height)
 	}
 	return nil
 }

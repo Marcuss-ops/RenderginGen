@@ -386,9 +386,12 @@ func TestCompileSemanticEntityImagePopupKeepsPresetMotionAndCenters(t *testing.T
 // emit must lower to a CENTERED image layer that keeps that preset's own
 // official motion. RenderingGen never invents a preset, a layer or a track: the
 // lowered animation must be exactly animationForDefinition(preset).
+// Decorative presets (modern_rounded_pop, bottom_card_rise) are certified but
+// explicit-only on the producer side; they keep lowering support here without
+// belonging to the automatic set below.
 func TestCompileSemanticEntityImageKeepsEveryGeneratedPresetMotion(t *testing.T) {
 	// Keep in lockstep with PipelineGen's imagePresetCandidates.
-	generated := []string{"image_fast_fade", "image_slide_left", "image_slide_right", "bottom_card_rise"}
+	generated := []string{"image_fast_fade", "image_slide_left", "image_slide_right"}
 	for _, presetID := range generated {
 		t.Run(presetID, func(t *testing.T) {
 			raw := []byte(fmt.Sprintf(`{

@@ -1,0 +1,591 @@
+{
+  "schema": "velox.entity-visual-sequence.v1",
+  "version": 1,
+  "source_catalog": "ChrononTemplate/catalog/camera_motion_pack.v1.json",
+  "policy": {
+    "group_gap_ms": 5000,
+    "max_images_per_group": 6,
+    "camera_intensity": "subtle",
+    "camera_intensity_factor": 0.5,
+    "reveal_mode": "staggered_anchor",
+    "hold_previous_images": true,
+    "hold_ms_per_entity": 1500,
+    "travel_ms_between_entities": 500,
+    "image_viewport_aspect_ratio": "9:16",
+    "horizontal_image_fit": "contain"
+  },
+  "layout": {
+    "duo": [
+      [
+        -0.25,
+        0
+      ],
+      [
+        0.25,
+        0
+      ]
+    ],
+    "trio": [
+      [
+        -0.29,
+        0
+      ],
+      [
+        0,
+        0
+      ],
+      [
+        0.29,
+        0
+      ]
+    ],
+    "quad": [
+      [
+        -0.28,
+        -0.25
+      ],
+      [
+        0.28,
+        -0.25
+      ],
+      [
+        0.28,
+        0.25
+      ],
+      [
+        -0.28,
+        0.25
+      ]
+    ],
+    "penta": [
+      [
+        -0.28,
+        -0.25
+      ],
+      [
+        0,
+        -0.25
+      ],
+      [
+        0.28,
+        -0.25
+      ],
+      [
+        0.28,
+        0.25
+      ],
+      [
+        -0.28,
+        0.25
+      ]
+    ],
+    "hexa": [
+      [
+        -0.28,
+        -0.25
+      ],
+      [
+        0,
+        -0.25
+      ],
+      [
+        0.28,
+        -0.25
+      ],
+      [
+        0.28,
+        0.25
+      ],
+      [
+        0,
+        0.25
+      ],
+      [
+        -0.28,
+        0.25
+      ]
+    ]
+  },
+  "camera_recipes": [
+    {
+      "id": "camera_motion_ken_burns_in",
+      "family": "photo_documentary",
+      "duration_frames": 120,
+      "distance": {
+        "start": 1.0700000524520874,
+        "mid": -1000.0,
+        "mid_at": 0.5,
+        "end": 0.9100000262260437
+      },
+      "lateral": {
+        "x_start": -0.04500000178813934,
+        "x_mid": -1000.0,
+        "x_end": 0.054999999701976776,
+        "y_start": 0.03500000014901161,
+        "y_mid": -1000.0,
+        "y_end": -0.029999999329447746,
+        "pos_mid_at": 0.5
+      },
+      "travel_window": {
+        "start": 0.0,
+        "end": 1.0
+      },
+      "angles_deg": {
+        "yaw_start": 0.0,
+        "yaw_end": 0.0,
+        "pitch_start": 0.0,
+        "pitch_end": 0.0,
+        "roll_start": 0.0,
+        "roll_peak": -1000.0,
+        "roll_end": 0.0
+      },
+      "focus_pct": {
+        "start": -1.0,
+        "end": -1.0
+      },
+      "easing": "cinematic",
+      "requirements": {
+        "dof": false,
+        "planes_25d": false,
+        "multi_plane": false,
+        "two_shot": false,
+        "occluder": false,
+        "high_energy": false
+      },
+      "cut_at": 0.5,
+      "snap_in": false
+    },
+    {
+      "id": "camera_motion_ken_burns_out",
+      "family": "photo_documentary",
+      "duration_frames": 120,
+      "distance": {
+        "start": 0.8999999761581421,
+        "mid": -1000.0,
+        "mid_at": 0.5,
+        "end": 1.0700000524520874
+      },
+      "lateral": {
+        "x_start": 0.03500000014901161,
+        "x_mid": -1000.0,
+        "x_end": -0.03999999910593033,
+        "y_start": -0.03999999910593033,
+        "y_mid": -1000.0,
+        "y_end": 0.029999999329447746,
+        "pos_mid_at": 0.5
+      },
+      "travel_window": {
+        "start": 0.0,
+        "end": 1.0
+      },
+      "angles_deg": {
+        "yaw_start": 0.0,
+        "yaw_end": 0.0,
+        "pitch_start": 0.0,
+        "pitch_end": 0.0,
+        "roll_start": 0.0,
+        "roll_peak": -1000.0,
+        "roll_end": 0.0
+      },
+      "focus_pct": {
+        "start": -1.0,
+        "end": -1.0
+      },
+      "easing": "cinematic",
+      "requirements": {
+        "dof": false,
+        "planes_25d": false,
+        "multi_plane": false,
+        "two_shot": false,
+        "occluder": false,
+        "high_energy": false
+      },
+      "cut_at": 0.5,
+      "snap_in": false
+    },
+    {
+      "id": "camera_motion_portrait_upward_track",
+      "family": "photo_documentary",
+      "duration_frames": 85,
+      "distance": {
+        "start": 0.9300000071525574,
+        "mid": -1000.0,
+        "mid_at": 0.5,
+        "end": 0.9399999976158142
+      },
+      "lateral": {
+        "x_start": 0.0,
+        "x_mid": -1000.0,
+        "x_end": 0.0,
+        "y_start": 0.20000000298023224,
+        "y_mid": -1000.0,
+        "y_end": -0.07999999821186066,
+        "pos_mid_at": 0.5
+      },
+      "travel_window": {
+        "start": 0.0,
+        "end": 1.0
+      },
+      "angles_deg": {
+        "yaw_start": 0.0,
+        "yaw_end": 0.0,
+        "pitch_start": 0.0,
+        "pitch_end": 0.0,
+        "roll_start": 0.0,
+        "roll_peak": -1000.0,
+        "roll_end": 0.0
+      },
+      "focus_pct": {
+        "start": -1.0,
+        "end": -1.0
+      },
+      "easing": "smooth",
+      "requirements": {
+        "dof": false,
+        "planes_25d": false,
+        "multi_plane": false,
+        "two_shot": false,
+        "occluder": false,
+        "high_energy": false
+      },
+      "cut_at": 0.5,
+      "snap_in": false
+    },
+    {
+      "id": "camera_motion_portrait_downward_track",
+      "family": "photo_documentary",
+      "duration_frames": 85,
+      "distance": {
+        "start": 0.949999988079071,
+        "mid": -1000.0,
+        "mid_at": 0.5,
+        "end": 0.949999988079071
+      },
+      "lateral": {
+        "x_start": 0.0,
+        "x_mid": -1000.0,
+        "x_end": 0.0,
+        "y_start": -0.14000000059604645,
+        "y_mid": -1000.0,
+        "y_end": 0.14000000059604645,
+        "pos_mid_at": 0.5
+      },
+      "travel_window": {
+        "start": 0.0,
+        "end": 1.0
+      },
+      "angles_deg": {
+        "yaw_start": 0.0,
+        "yaw_end": 0.0,
+        "pitch_start": 0.0,
+        "pitch_end": 0.0,
+        "roll_start": 0.0,
+        "roll_peak": -1000.0,
+        "roll_end": 0.0
+      },
+      "focus_pct": {
+        "start": -1.0,
+        "end": -1.0
+      },
+      "easing": "smooth",
+      "requirements": {
+        "dof": false,
+        "planes_25d": false,
+        "multi_plane": false,
+        "two_shot": false,
+        "occluder": false,
+        "high_energy": false
+      },
+      "cut_at": 0.5,
+      "snap_in": false
+    },
+    {
+      "id": "camera_motion_photo_reveal_left",
+      "family": "photo_documentary",
+      "duration_frames": 70,
+      "distance": {
+        "start": 0.8999999761581421,
+        "mid": -1000.0,
+        "mid_at": 0.5,
+        "end": 0.9399999976158142
+      },
+      "lateral": {
+        "x_start": 0.18000000715255737,
+        "x_mid": -1000.0,
+        "x_end": -0.10000000149011612,
+        "y_start": 0.0,
+        "y_mid": -1000.0,
+        "y_end": 0.0,
+        "pos_mid_at": 0.5
+      },
+      "travel_window": {
+        "start": 0.0,
+        "end": 1.0
+      },
+      "angles_deg": {
+        "yaw_start": 0.0,
+        "yaw_end": 0.0,
+        "pitch_start": 0.0,
+        "pitch_end": 0.0,
+        "roll_start": 0.0,
+        "roll_peak": -1000.0,
+        "roll_end": 0.0
+      },
+      "focus_pct": {
+        "start": -1.0,
+        "end": -1.0
+      },
+      "easing": "smooth",
+      "requirements": {
+        "dof": false,
+        "planes_25d": false,
+        "multi_plane": false,
+        "two_shot": false,
+        "occluder": false,
+        "high_energy": false
+      },
+      "cut_at": 0.5,
+      "snap_in": false
+    },
+    {
+      "id": "camera_motion_photo_reveal_right",
+      "family": "photo_documentary",
+      "duration_frames": 70,
+      "distance": {
+        "start": 0.8999999761581421,
+        "mid": -1000.0,
+        "mid_at": 0.5,
+        "end": 0.9399999976158142
+      },
+      "lateral": {
+        "x_start": -0.18000000715255737,
+        "x_mid": -1000.0,
+        "x_end": 0.10000000149011612,
+        "y_start": 0.0,
+        "y_mid": -1000.0,
+        "y_end": 0.0,
+        "pos_mid_at": 0.5
+      },
+      "travel_window": {
+        "start": 0.0,
+        "end": 1.0
+      },
+      "angles_deg": {
+        "yaw_start": 0.0,
+        "yaw_end": 0.0,
+        "pitch_start": 0.0,
+        "pitch_end": 0.0,
+        "roll_start": 0.0,
+        "roll_peak": -1000.0,
+        "roll_end": 0.0
+      },
+      "focus_pct": {
+        "start": -1.0,
+        "end": -1.0
+      },
+      "easing": "smooth",
+      "requirements": {
+        "dof": false,
+        "planes_25d": false,
+        "multi_plane": false,
+        "two_shot": false,
+        "occluder": false,
+        "high_energy": false
+      },
+      "cut_at": 0.5,
+      "snap_in": false
+    },
+    {
+      "id": "camera_motion_low_angle_photo_reveal",
+      "family": "photo_documentary",
+      "duration_frames": 72,
+      "distance": {
+        "start": 1.100000023841858,
+        "mid": -1000.0,
+        "mid_at": 0.5,
+        "end": 0.9800000190734863
+      },
+      "lateral": {
+        "x_start": 0.0,
+        "x_mid": -1000.0,
+        "x_end": 0.0,
+        "y_start": 0.12999999523162842,
+        "y_mid": -1000.0,
+        "y_end": 0.0,
+        "pos_mid_at": 0.5
+      },
+      "travel_window": {
+        "start": 0.0,
+        "end": 1.0
+      },
+      "angles_deg": {
+        "yaw_start": 0.0,
+        "yaw_end": 0.0,
+        "pitch_start": 5.0,
+        "pitch_end": 0.0,
+        "roll_start": 0.0,
+        "roll_peak": -1000.0,
+        "roll_end": 0.0
+      },
+      "focus_pct": {
+        "start": -1.0,
+        "end": -1.0
+      },
+      "easing": "gentle_out",
+      "requirements": {
+        "dof": false,
+        "planes_25d": true,
+        "multi_plane": false,
+        "two_shot": false,
+        "occluder": false,
+        "high_energy": false
+      },
+      "cut_at": 0.5,
+      "snap_in": false
+    },
+    {
+      "id": "camera_motion_portrait_hero_arc",
+      "family": "photo_documentary",
+      "duration_frames": 100,
+      "distance": {
+        "start": 1.0199999809265137,
+        "mid": 0.9700000286102295,
+        "mid_at": 0.5,
+        "end": 1.0399999618530273
+      },
+      "lateral": {
+        "x_start": -0.10999999940395355,
+        "x_mid": 0.0,
+        "x_end": 0.10000000149011612,
+        "y_start": 0.0,
+        "y_mid": -1000.0,
+        "y_end": 0.0,
+        "pos_mid_at": 0.5
+      },
+      "travel_window": {
+        "start": 0.0,
+        "end": 1.0
+      },
+      "angles_deg": {
+        "yaw_start": -5.0,
+        "yaw_end": 5.0,
+        "pitch_start": 0.0,
+        "pitch_end": 0.0,
+        "roll_start": 0.0,
+        "roll_peak": -1000.0,
+        "roll_end": 0.0
+      },
+      "focus_pct": {
+        "start": -1.0,
+        "end": -1.0
+      },
+      "easing": "smooth",
+      "requirements": {
+        "dof": false,
+        "planes_25d": true,
+        "multi_plane": false,
+        "two_shot": false,
+        "occluder": false,
+        "high_energy": false
+      },
+      "cut_at": 0.5,
+      "snap_in": false
+    },
+    {
+      "id": "camera_motion_documentary_parallax",
+      "family": "photo_documentary",
+      "duration_frames": 105,
+      "distance": {
+        "start": 1.0199999809265137,
+        "mid": -1000.0,
+        "mid_at": 0.5,
+        "end": 0.9800000190734863
+      },
+      "lateral": {
+        "x_start": -0.10000000149011612,
+        "x_mid": -1000.0,
+        "x_end": 0.10000000149011612,
+        "y_start": 0.0,
+        "y_mid": -1000.0,
+        "y_end": 0.0,
+        "pos_mid_at": 0.5
+      },
+      "travel_window": {
+        "start": 0.0,
+        "end": 1.0
+      },
+      "angles_deg": {
+        "yaw_start": 0.0,
+        "yaw_end": 0.0,
+        "pitch_start": 0.0,
+        "pitch_end": 0.0,
+        "roll_start": 0.0,
+        "roll_peak": -1000.0,
+        "roll_end": 0.0
+      },
+      "focus_pct": {
+        "start": -1.0,
+        "end": -1.0
+      },
+      "easing": "smooth",
+      "requirements": {
+        "dof": false,
+        "planes_25d": false,
+        "multi_plane": true,
+        "two_shot": false,
+        "occluder": false,
+        "high_energy": false
+      },
+      "cut_at": 0.5,
+      "snap_in": false
+    },
+    {
+      "id": "camera_motion_photo_rack_focus",
+      "family": "photo_documentary",
+      "duration_frames": 78,
+      "distance": {
+        "start": 1.0,
+        "mid": -1000.0,
+        "mid_at": 0.5,
+        "end": 1.0
+      },
+      "lateral": {
+        "x_start": 0.0,
+        "x_mid": -1000.0,
+        "x_end": 0.0,
+        "y_start": 0.0,
+        "y_mid": -1000.0,
+        "y_end": 0.0,
+        "pos_mid_at": 0.5
+      },
+      "travel_window": {
+        "start": 0.0,
+        "end": 1.0
+      },
+      "angles_deg": {
+        "yaw_start": 0.0,
+        "yaw_end": 0.0,
+        "pitch_start": 0.0,
+        "pitch_end": 0.0,
+        "roll_start": 0.0,
+        "roll_peak": -1000.0,
+        "roll_end": 0.0
+      },
+      "focus_pct": {
+        "start": 95.0,
+        "end": 10.0
+      },
+      "easing": "smooth",
+      "requirements": {
+        "dof": true,
+        "planes_25d": false,
+        "multi_plane": false,
+        "two_shot": false,
+        "occluder": false,
+        "high_energy": false
+      },
+      "cut_at": 0.5,
+      "snap_in": false
+    }
+  ]
+}

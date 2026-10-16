@@ -194,13 +194,15 @@ func (c *countingRenderer) Render(context.Context, RenderRequest) error {
 }
 
 // TestDaemonPoolSpreadsJobsRoundRobin pins the routing policy and the ownership
-// reporting the shutdown path depends on.
+// reporting the shutdown path depends on. Idle lanes keep the historical
+// rotation (the least-loaded scan starts at a round-robin offset); under
+// load the busiest lane sheds jobs to its idle peers.
 func TestDaemonPoolSpreadsJobsRoundRobin(t *testing.T) {
 	first, second := &countingRenderer{}, &countingRenderer{}
 	pool := &DaemonPool{
 		// Only the socket paths and lanes matter for routing.
 		handles: []daemonHandle{{socketPath: "/run/a.0"}, {socketPath: "/run/a.1"}}, // unowned: no cmd, no exit
-		lanes:   []Renderer{first, second},
+		lanes:   []pooledLane{{renderer: first}, {renderer: second}},
 	}
 	for i := 0; i < 5; i++ {
 		if err := pool.Render(context.Background(), RenderRequest{}); err != nil {

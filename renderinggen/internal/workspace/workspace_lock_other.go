@@ -78,3 +78,17 @@ func reclaimStaleMarker(marker string) bool {
 	_ = os.Remove(stale)
 	return true
 }
+//go:build !linux && !darwin && !dragonfly && !freebsd && !netbsd && !openbsd && !windows
+
+package workspace
+
+import "os"
+
+// processExists conservatively treats a marker as live when the platform has
+// no portable process-presence probe in this package. This may defer cleanup,
+// but never reclaims a marker owned by a live process based on guesswork.
+func processExists(pid int) bool {
+	return pid > 0 && pid == os.Getpid()
+}
+
+// NOTE(workspace-lock): workspace_lock_fallback.go and workspace_lock_other.go share the identical exotic-GOOS build tag by design — neither compiles alone. Keep them in sync on rename; linux/darwin/windows use their own files.

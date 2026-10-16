@@ -34,6 +34,12 @@ func (s *Server) submitBatch(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
+		// Fail-at-ingress: validate the job.v1 envelope before touching the
+		// store, so a malformed producer payload never becomes a stored job.
+		if err := client.ValidateJobEnvelope(job); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
 	}
 	if err := s.svc.SubmitBatch(r.Context(), req.Jobs); err != nil {
 		if errors.Is(err, repository.ErrJobExists) {
@@ -61,13 +67,24 @@ func (s *Server) submit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if job.ID == "" {
-		job.ID = newID()
+		id, err := newID()
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		job.ID = id
 	}
 	if err := client.ValidateJobID(job.ID); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	if err := client.ValidateJobMetadata(job); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	// Fail-at-ingress, before SubmitIdempotent: an invalid envelope must be a
+	// 400, never a stored job and never an idempotent replay.
+	if err := client.ValidateJobEnvelope(job); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -91,8 +108,14 @@ func (s *Server) submit(w http.ResponseWriter, r *http.Request) {
 	}
 	writeJSON(w, status, map[string]string{"id": canonical.ID})
 }
-func newID() string {
+func newID() (string, error) {
 	b := make([]byte, 8)
-	_, _ = rand.Read(b)
-	return "job-" + hex.EncodeToString(b)
+	if _, err := rand.Read(b); err != nil {
+		// Retry once: a weak fallback ID would break the idempotency and
+		// uniqueness contract, so fail instead of returning weak bytes.
+		if _, err := rand.Read(b); err != nil {
+			return "", errors.New("generate job id: entropy source unavailable")
+		}
+	}
+	return "job-" + hex.EncodeToString(b), nil
 }

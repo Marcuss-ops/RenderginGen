@@ -41,6 +41,7 @@ type chainSegment struct {
 	CaptionLayout       string               `json:"caption_layout"`
 	CaptionColor        string               `json:"caption_color"`
 	EntityStyleID       string               `json:"entity_style_id"`
+	CameraMotionID      string               `json:"camera_motion_id"`
 	StartUS             int64                `json:"start_us"`
 	DurationUS          int64                `json:"duration_us"`
 	MotionParams        map[string]any       `json:"motion_params"`
@@ -141,6 +142,7 @@ func segRIItem(seg chainSegment, chain semanticItem) semanticItem {
 	item.CaptionLayout = seg.CaptionLayout
 	item.CaptionColor = seg.CaptionColor
 	item.EntityStyleID = seg.EntityStyleID
+	item.CameraMotionID = seg.CameraMotionID
 	item.ImageLayers = append([]SemanticImageLayer(nil), seg.ImageLayers...)
 	item.Frame = seg.Frame
 	item.Params = seg.Params
@@ -167,6 +169,23 @@ func segRIItem(seg chainSegment, chain semanticItem) semanticItem {
 		item.Assets = nil
 	}
 	return item
+}
+
+func chainSequenceCamera(ri resolvedItem, fpsNum, fpsDen int) (string, semanticItem, int64, int64, bool) {
+	segments, err := decodeChainSegments(ri.Params, ri.Item.ID)
+	if err != nil {
+		return "", semanticItem{}, 0, 0, false
+	}
+	for _, segment := range segments {
+		if segment.CameraMotionID == "" || len(segment.ImageLayers) < 2 || segment.DurationUS <= 0 {
+			continue
+		}
+		startUS := segment.StartUS
+		endUS := startUS + segment.DurationUS
+		startFrame, endFrame := usFrames(startUS, endUS, int64(fpsNum), int64(fpsDen))
+		return segment.CameraMotionID, segRIItem(segment, ri.Item), startFrame, endFrame, true
+	}
+	return "", semanticItem{}, 0, 0, false
 }
 
 // segParamsForKind scopes the chain-level params to one segment. A mixed

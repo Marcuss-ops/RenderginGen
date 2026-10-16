@@ -1,5 +1,5 @@
 // daemon_pool.go owns the warm-daemon pool: it starts N Chronon daemons (one
-// render socket each), spreads render jobs across them round-robin, waits for
+// render socket each), spreads render jobs across them least-loaded, waits for
 // each one to actually SERVE, and shuts down only the daemons this process
 // started.
 //
@@ -132,11 +132,23 @@ func (e *daemonExit) wait() error {
 	return e.err
 }
 
+// pooledLane is one daemon lane plus its least-loaded routing state.
+// inflight counts Renders currently executing (or queued inside the lane's
+// LimitConcurrency gate) on this lane. It is incremented BEFORE the inner
+// Render runs and decremented after, so concurrent Render calls observe each
+// other's load and the pool routes to the lane with the fewest in-flight
+// jobs instead of blind round-robin (which piles consecutive jobs on a slow
+// daemon while a fast one idles).
+type pooledLane struct {
+	renderer Renderer
+	inflight atomic.Int64
+}
+
 // DaemonPool spreads render jobs across warm daemons and owns the ones it
 // started. It implements Renderer.
 type DaemonPool struct {
 	handles []daemonHandle
-	lanes   []Renderer
+	lanes   []pooledLane
 	next    atomic.Uint64
 
 	shutdownOnce sync.Once
@@ -167,7 +179,7 @@ func StartDaemonPool(ctx context.Context, opts DaemonOptions) (*DaemonPool, erro
 		return nil, fmt.Errorf("chronon daemon pool: create socket directory: %w", err)
 	}
 
-	pool := &DaemonPool{handles: make([]daemonHandle, 0, count), lanes: make([]Renderer, 0, count)}
+	pool := &DaemonPool{handles: make([]daemonHandle, 0, count), lanes: make([]pooledLane, 0, count)}
 	for i := 0; i < count; i++ {
 		socketPath := fmt.Sprintf("%s.%d", opts.SocketBase, i)
 		info, statErr := os.Lstat(socketPath)
@@ -181,7 +193,7 @@ func StartDaemonPool(ctx context.Context, opts DaemonOptions) (*DaemonPool, erro
 				return nil, fmt.Errorf("chronon daemon pool: existing socket %s is not serving: %w", socketPath, err)
 			}
 			pool.handles = append(pool.handles, daemonHandle{socketPath: socketPath})
-			pool.lanes = append(pool.lanes, LimitConcurrency(NewIPCClient(socketPath), opts.LanesPerDaemon))
+			pool.lanes = append(pool.lanes, pooledLane{renderer: LimitConcurrency(NewIPCClient(socketPath), opts.LanesPerDaemon)})
 			continue
 		}
 		if !os.IsNotExist(statErr) {
@@ -194,19 +206,38 @@ func StartDaemonPool(ctx context.Context, opts DaemonOptions) (*DaemonPool, erro
 			return nil, err
 		}
 		pool.handles = append(pool.handles, handle)
-		pool.lanes = append(pool.lanes, LimitConcurrency(NewIPCClient(socketPath), opts.LanesPerDaemon))
+		pool.lanes = append(pool.lanes, pooledLane{renderer: LimitConcurrency(NewIPCClient(socketPath), opts.LanesPerDaemon)})
 	}
 	return pool, nil
 }
 
-// Render spreads jobs round-robin. A lane that is mid-render only queues the
-// next job assigned to it instead of stalling the whole pool.
+// Render routes to the least-loaded lane. The scan starts at a round-robin
+// offset (so N idle lanes still spread evenly and the sequential case keeps
+// the historical rotation), but the winner is the lane with the fewest
+// in-flight renders; ties keep the rotation order. The counter is held for
+// the whole inner Render (including time queued in the lane's
+// LimitConcurrency gate), so a lane stuck on a slow job sheds the next jobs
+// to its idle peers instead of receiving every Nth job regardless of load.
 func (p *DaemonPool) Render(ctx context.Context, req RenderRequest) error {
 	if len(p.lanes) == 0 {
 		return fmt.Errorf("chronon daemon pool has no lanes")
 	}
-	index := p.next.Add(1) - 1
-	return p.lanes[index%uint64(len(p.lanes))].Render(ctx, req)
+	start := p.next.Add(1) - 1
+	best := -1
+	var bestLoad int64
+	for i := 0; i < len(p.lanes); i++ {
+		idx := int((start + uint64(i)) % uint64(len(p.lanes)))
+		load := p.lanes[idx].inflight.Load()
+		if best < 0 || load < bestLoad {
+			best, bestLoad = idx, load
+			if load == 0 {
+				break // cannot do better than idle; keep rotation order
+			}
+		}
+	}
+	p.lanes[best].inflight.Add(1)
+	defer p.lanes[best].inflight.Add(-1)
+	return p.lanes[best].renderer.Render(ctx, req)
 }
 
 // Sockets returns the sockets the pool renders through, in order.

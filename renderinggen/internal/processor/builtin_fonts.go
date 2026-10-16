@@ -82,10 +82,11 @@ func materializeBuiltinFonts(root string, plan *overlay.Plan) error {
 			return fmt.Errorf("processor: stage bundled font %q: %w", font, err)
 		}
 		_, copyErr := io.Copy(out, in)
+		syncErr := out.Sync()
 		closeOutErr, closeInErr := out.Close(), in.Close()
-		if copyErr != nil || closeOutErr != nil || closeInErr != nil {
+		if copyErr != nil || syncErr != nil || closeOutErr != nil || closeInErr != nil {
 			_ = os.Remove(target)
-			return fmt.Errorf("processor: copy bundled font %q: %v", font, errors.Join(copyErr, closeOutErr, closeInErr))
+			return fmt.Errorf("processor: copy bundled font %q: %v", font, errors.Join(copyErr, syncErr, closeOutErr, closeInErr))
 		}
 	}
 	return nil

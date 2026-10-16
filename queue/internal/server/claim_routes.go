@@ -5,10 +5,41 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"strings"
 	"time"
 
+	"github.com/Marcuss-ops/RenderingGen/queue/client"
 	"github.com/Marcuss-ops/RenderingGen/queue/internal/model"
 )
+
+// validClaimState reports whether s is a known job state in the canonical
+// wire vocabulary (client.AllStates). Unknown strings are producer typos and
+// must be rejected at ingress instead of silently matching nothing.
+func validClaimState(s string) bool {
+	if s == "" {
+		return true
+	}
+	for _, known := range client.AllStates() {
+		if string(known) == s {
+			return true
+		}
+	}
+	return false
+}
+
+// claimStateErrorIsBadRequest reports whether a ClaimState/WaitAndClaim error
+// is a producer input error (unknown state, missing worker) rather than a
+// storage failure, so the server can return 400 instead of 500.
+func claimStateErrorIsBadRequest(err error) bool {
+	if err == nil {
+		return false
+	}
+	msg := err.Error()
+	return strings.Contains(msg, "unsupported claim state") ||
+		strings.Contains(msg, "worker id is required") ||
+		strings.Contains(msg, "max wait") ||
+		strings.Contains(msg, "max_wait")
+}
 
 // claim is the thin polling endpoint. With wait_ms==0 it is a single atomic
 // ClaimState; with wait_ms>0 it delegates to the single Notifier-backed
@@ -24,9 +55,21 @@ func (s *Server) claim(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+	if !validClaimState(req.State) {
+		http.Error(w, "unknown state "+req.State, http.StatusBadRequest)
+		return
+	}
+	if req.WaitMS < 0 {
+		http.Error(w, "wait_ms must be >= 0", http.StatusBadRequest)
+		return
+	}
 
 	job, lease, err := s.svc.ClaimState(r.Context(), req.Worker, model.State(req.State))
 	if err != nil {
+		if claimStateErrorIsBadRequest(err) {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -43,6 +86,10 @@ func (s *Server) claim(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			if r.Context().Err() != nil {
 				return // client disconnected; nothing to write
+			}
+			if claimStateErrorIsBadRequest(err) {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
 			}
 			if errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled) {
 				w.WriteHeader(http.StatusNoContent)
@@ -78,11 +125,23 @@ func (s *Server) claimWait(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+	if !validClaimState(req.State) {
+		http.Error(w, "unknown state "+req.State, http.StatusBadRequest)
+		return
+	}
+	if req.MaxWaitMs < 0 {
+		http.Error(w, "max_wait_ms must be >= 0", http.StatusBadRequest)
+		return
+	}
 	maxWait := time.Duration(req.MaxWaitMs) * time.Millisecond
 	ctx, cancel := context.WithTimeout(r.Context(), maxWait+5*time.Second)
 	defer cancel()
 	job, lease, err := s.svc.WaitAndClaim(ctx, req.Worker, model.State(req.State), maxWait)
 	if err != nil {
+		if claimStateErrorIsBadRequest(err) {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
 		if errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled) {
 			w.WriteHeader(http.StatusNoContent)
 			return

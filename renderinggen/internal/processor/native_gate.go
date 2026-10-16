@@ -47,11 +47,23 @@ func requireNativeVulkan(outputPath string, expectedFrames int) error {
 	if doc.Job.GPU.EncoderBackend != "nvenc" {
 		return fmt.Errorf("encoder_backend=%q, want nvenc", doc.Job.GPU.EncoderBackend)
 	}
-	if doc.Job.GPU.CPUReadbackFrames != nil && *doc.Job.GPU.CPUReadbackFrames > 0 {
+	if doc.Job.GPU.CPUReadbackFrames == nil {
+		return fmt.Errorf("cpu_readback_frames missing, want 0")
+	}
+	if *doc.Job.GPU.CPUReadbackFrames > 0 {
 		return fmt.Errorf("cpu_readback_frames=%d, want 0", *doc.Job.GPU.CPUReadbackFrames)
 	}
-	if doc.Job.GPU.SoftwareEncodeFrames != nil && *doc.Job.GPU.SoftwareEncodeFrames > 0 {
+	if doc.Job.GPU.SoftwareEncodeFrames == nil {
+		return fmt.Errorf("software_encode_frames missing, want 0")
+	}
+	if *doc.Job.GPU.SoftwareEncodeFrames > 0 {
 		return fmt.Errorf("software_encode_frames=%d, want 0", *doc.Job.GPU.SoftwareEncodeFrames)
+	}
+	if doc.Job.GPU.VideoPipeFallback == nil {
+		return fmt.Errorf("video_pipe_fallback_frames missing, want 0")
+	}
+	if *doc.Job.GPU.VideoPipeFallback > 0 {
+		return fmt.Errorf("video_pipe_fallback_frames=%d, want 0", *doc.Job.GPU.VideoPipeFallback)
 	}
 	if doc.Job.SurfaceHandoffPath != "vulkan_copy" && doc.Job.SurfaceHandoffPath != "direct" {
 		return fmt.Errorf("surface_handoff_path=%q, want vulkan_copy or direct", doc.Job.SurfaceHandoffPath)

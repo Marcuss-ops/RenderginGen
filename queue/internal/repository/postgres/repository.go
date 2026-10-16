@@ -18,6 +18,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
+	"sync/atomic"
 	"time"
 
 	"github.com/Marcuss-ops/RenderingGen/queue/internal/model"
@@ -28,11 +30,34 @@ import (
 // render SEGMENT (a full chronon.render-plan), not a single overlay.
 const defaultJobType = model.JobTypeRenderSegment
 
-func nonEmptyJobType(jobType string) string {
+// emptyJobTypeTotal counts jobs whose empty job_type was normalized to
+// render_segment. It is the metric behind the normalization warning: the
+// default is observable instead of silent.
+var emptyJobTypeTotal atomic.Int64
+
+// EmptyJobTypeNormalizedTotal reports how many submits normalized an empty
+// job_type to the default. It exists for tests and diagnostics.
+func EmptyJobTypeNormalizedTotal() int64 { return emptyJobTypeTotal.Load() }
+
+// normalizeJobType maps the producer-supplied job type to the stored value.
+// An empty type is normalized to render_segment with a warning plus a metric
+// increment (never silently again); a known type passes through; anything
+// else is rejected instead of being silently coerced to the default.
+func normalizeJobType(jobType string) (string, error) {
 	if jobType == "" {
-		return defaultJobType
+		log.Printf("queue: warning: empty job_type normalized to %q", defaultJobType)
+		emptyJobTypeTotal.Add(1)
+		return defaultJobType, nil
 	}
-	return jobType
+	switch jobType {
+	case model.JobTypeRenderSegment,
+		model.JobTypeOverlayPrepare,
+		model.JobTypeOverlayRender,
+		model.JobTypeOverlayImport:
+		return jobType, nil
+	default:
+		return "", fmt.Errorf("unknown job_type %q", jobType)
+	}
 }
 
 // defaultOpTimeout bounds EVERY statement/transaction the repository issues.
@@ -133,6 +158,10 @@ func (r *Repository) Submit(ctx context.Context, job model.Job) error {
 	if err != nil {
 		return fmt.Errorf("input_manifest: %w", err)
 	}
+	jobType, err := normalizeJobType(job.JobType)
+	if err != nil {
+		return err
+	}
 
 	ctx, cancel := r.opContext(ctx)
 	defer cancel()
@@ -146,7 +175,7 @@ func (r *Repository) Submit(ctx context.Context, job model.Job) error {
 		INSERT INTO render_jobs (id, job_type, job_schema, job_schema_version, render_plan, input_manifest, max_attempts, idempotency_key, parent_job_id, chunk_index, frame_range, not_before, publication_policy, daemon_admission_wait_ms)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, NULLIF($8, ''), NULLIF($9, ''), $10, $11, $12, $13, $14)
 		ON CONFLICT (id) DO NOTHING`,
-		job.ID, nonEmptyJobType(job.JobType), schema, version, plan, manifest, r.maxAttempts, job.IdempotencyKey, job.ParentJobID, job.ChunkIndex, job.FrameRange, job.NotBefore, job.PublicationPolicy, job.DaemonAdmissionWaitMS)
+		job.ID, jobType, schema, version, plan, manifest, r.maxAttempts, job.IdempotencyKey, job.ParentJobID, job.ChunkIndex, job.FrameRange, job.NotBefore, job.PublicationPolicy, job.DaemonAdmissionWaitMS)
 	if err != nil {
 		return err
 	}
@@ -184,6 +213,9 @@ func (r *Repository) SubmitBatch(ctx context.Context, jobs []model.Job) error {
 		if err := model.ValidateChunk(job); err != nil {
 			return err
 		}
+		if _, err := normalizeJobType(job.JobType); err != nil {
+			return err
+		}
 	}
 	ctx, cancel := r.opContext(ctx)
 	defer cancel()
@@ -209,11 +241,15 @@ func (r *Repository) SubmitBatch(ctx context.Context, jobs []model.Job) error {
 		if err != nil {
 			return fmt.Errorf("input_manifest: %w", err)
 		}
+		jobType, err := normalizeJobType(job.JobType)
+		if err != nil {
+			return err
+		}
 		res, err := tx.ExecContext(ctx, `
 			INSERT INTO render_jobs (id, job_type, job_schema, job_schema_version, render_plan, input_manifest, max_attempts, idempotency_key, parent_job_id, chunk_index, frame_range, not_before, publication_policy, daemon_admission_wait_ms)
 			VALUES ($1, $2, $3, $4, $5, $6, $7, NULLIF($8, ''), NULLIF($9, ''), $10, $11, $12, $13, $14)
 			ON CONFLICT (id) DO NOTHING`,
-			job.ID, nonEmptyJobType(job.JobType), schema, version, plan, manifest, r.maxAttempts, job.IdempotencyKey, job.ParentJobID, job.ChunkIndex, job.FrameRange, job.NotBefore, job.PublicationPolicy, job.DaemonAdmissionWaitMS)
+			job.ID, jobType, schema, version, plan, manifest, r.maxAttempts, job.IdempotencyKey, job.ParentJobID, job.ChunkIndex, job.FrameRange, job.NotBefore, job.PublicationPolicy, job.DaemonAdmissionWaitMS)
 		if err != nil {
 			return err
 		}

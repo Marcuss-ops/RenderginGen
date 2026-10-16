@@ -402,12 +402,25 @@ func compileSemantic(raw []byte) (*Plan, []Asset, Stats, []string, error) {
 	var cameraMapItemID string
 	var entityCameraMotionID string
 	var entityCameraMotionItemID string
+	var sequenceCameraMotionID string
+	var sequenceCameraStart, sequenceCameraEnd int64
+	var sequenceCameraItem semanticItem
 	// The plan-level whole-scene camera is the third controller kind. It is
 	// validated up front so a malformed rig fails before any layer work.
 	if err := validateSceneCamera(src.SceneCamera); err != nil {
 		return nil, nil, Stats{}, nil, err
 	}
 	for _, ri := range resolved {
+		if sequenceCameraMotionID == "" && ri.Item.CameraMotionID != "" {
+			sequenceCameraMotionID = ri.Item.CameraMotionID
+			sequenceCameraStart, sequenceCameraEnd = ri.Start, ri.End
+			sequenceCameraItem = ri.Item
+		} else if sequenceCameraMotionID == "" && isChainKind(ri.Kind) {
+			if motionID, item, start, end, ok := chainSequenceCamera(ri, src.FPSNum, src.FPSDen); ok {
+				sequenceCameraMotionID, sequenceCameraItem = motionID, item
+				sequenceCameraStart, sequenceCameraEnd = start, end
+			}
+		}
 		if (isEntityKind(ri.Kind) || isImageKind(ri.Kind)) && ri.Item.EntityStyleID != "" {
 			if style, ok := ResolveEntityStyle(ri.Item.EntityStyleID, src.entityStyleSampleKey(), src.VideoID, ri.Item.ID); ok && style.CameraMotionID != "" {
 				if entityCameraMotionID != "" {
@@ -534,6 +547,11 @@ func compileSemantic(raw []byte) (*Plan, []Asset, Stats, []string, error) {
 		if len(tracks) > 0 {
 			plan.CameraAnimation = &CameraAnimation{Tracks: tracks}
 		}
+	}
+
+	if sequenceCameraMotionID != "" && src.SceneCamera == nil && cameraMove == nil && entityCameraMotionID == "" && plan.CameraAnimation == nil {
+		plan.Camera = &CameraPlan{Type: "perspective", Position: [3]float64{0, 0, -1400}, Rotation: [3]float64{}, FOVDeg: 55, Near: 1, Far: 5000, Zoom: 1}
+		plan.CameraAnimation = &CameraAnimation{Tracks: entitySequenceCameraTracks(sequenceCameraItem, sequenceCameraStart, sequenceCameraEnd, src.Width, src.Height, src.FPSNum, src.FPSDen)}
 	}
 
 	// Patch background duration to match the final canvas duration.
@@ -752,7 +770,13 @@ func resolveSemanticItems(src *semanticPlan) ([]resolvedItem, error) {
 		if err := validateChildCaptionStyles(item); err != nil {
 			return nil, err
 		}
-		if err := validateTextRuntimeOverrides(params, item.ID, kind, preset, len(item.Assets) > 0, itemHasCaption(item)); err != nil {
+		hasCaption := itemHasCaption(item)
+		if item.CameraMotionID != "" && len(item.ImageLayers) > 0 {
+			// Camera sequences render each child's caption beside its portrait;
+			// the group itself intentionally has no aggregate EntityCaption.
+			hasCaption = true
+		}
+		if err := validateTextRuntimeOverrides(params, item.ID, kind, preset, len(item.Assets) > 0, hasCaption); err != nil {
 			return nil, err
 		}
 		if isMapKind(kind) {

@@ -182,7 +182,7 @@ func (p *Processor) FinalizeJob(ctx context.Context, prepared *PreparedJob) (que
 	// identity decision, so a hash that does not match the bytes is rejected at
 	// every policy that promises proof instead of becoming the artifact's
 	// permanent content address.
-	outcome, err := p.verifyArtifactReceipt(outputPath, receipt, receiptErr, metrics)
+	outcome, err := p.verifyArtifactReceipt(outputPath, receipt, receiptErr, metrics, job.ID)
 	if err != nil {
 		return queue.Artifact{}, err
 	}

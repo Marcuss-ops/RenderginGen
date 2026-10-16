@@ -140,3 +140,22 @@ func TestEntityGroupRejectsContractViolations(t *testing.T) {
 		t.Errorf("CompileSemantic(undeclared asset) succeeded, want fail-closed")
 	}
 }
+
+// TestEntityGroupAcceptsFiveMembersAtCeiling proves the 2..5 ceiling is
+// inclusive: five members compile to the penta layout, the same maximum the
+// PipelineGen grouping emits (maxEntityImageGroup = 5).
+func TestEntityGroupAcceptsFiveMembersAtCeiling(t *testing.T) {
+	ids := []string{"a", "b", "c", "d", "e"}
+	assets := make([]any, 0, len(ids))
+	members := make([]any, 0, len(ids))
+	for _, id := range ids {
+		assets = append(assets, map[string]any{"asset_id": id, "sha256": strings.Repeat(id, 64), "url": "https://store.example/" + id + ".png", "media_type": "image/png"})
+		members = append(members, map[string]any{"id": id, "asset_id": id, "start_ms": 0, "end_ms": 5000, "preset_id": "image_scale_in", "caption": id})
+	}
+	plan := groupTestPlan(nil, members)
+	plan["items"].([]any)[0].(map[string]any)["asset_refs"] = assets
+	result := compileGroupPlan(t, plan)
+	if len(result.Plan.Layers) < len(ids) {
+		t.Fatalf("five-member group lowered %d layers, want at least %d", len(result.Plan.Layers), len(ids))
+	}
+}

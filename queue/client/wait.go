@@ -133,6 +133,8 @@ func (c *Client) Wait(ctx context.Context, id string, interval time.Duration) (J
 		interval = time.Second
 	}
 	backoff := interval
+	backoffTimer := time.NewTimer(backoff)
+	defer backoffTimer.Stop()
 	for {
 		job, err := c.Get(ctx, id)
 		if err == nil && IsTerminalState(job.State) {
@@ -144,7 +146,7 @@ func (c *Client) Wait(ctx context.Context, id string, interval time.Duration) (J
 		select {
 		case <-ctx.Done():
 			return Job{}, ctx.Err()
-		case <-time.After(backoff):
+		case <-backoffTimer.C:
 		}
 		if backoff < time.Second {
 			backoff *= 2
@@ -152,5 +154,6 @@ func (c *Client) Wait(ctx context.Context, id string, interval time.Duration) (J
 				backoff = time.Second
 			}
 		}
+		backoffTimer.Reset(backoff)
 	}
 }

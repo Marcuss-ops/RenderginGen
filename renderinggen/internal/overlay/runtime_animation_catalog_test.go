@@ -184,8 +184,8 @@ func TestRuntimeAnimationUseCasesSeparateCountedCompositions(t *testing.T) {
 		target   string
 		families []string
 	}{
-		"metric_stat":   {"metric", []string{"metric_v1", "metric_didone_v1"}},
-		"timeline_date": {"date", []string{"date_v1", "date_didone_v1"}},
+		"metric_stat":   {"metric", []string{"metric_v1", "metric_didone_v1", "metric_typewriter_v1"}},
+		"timeline_date": {"date", []string{"date_v1", "date_didone_v1", "date_typewriter_v1"}},
 	} {
 		target := targetAndFamilies.target
 		allowed := map[string]bool{}
