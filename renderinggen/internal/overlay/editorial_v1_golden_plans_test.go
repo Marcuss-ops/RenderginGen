@@ -738,7 +738,13 @@ func TestGoldenPlansSchemaInvariant(t *testing.T) {
 	if err := json.Unmarshal(wire, &probe); err != nil {
 		t.Fatal(err)
 	}
-	if probe.Schema != "chronon.render-plan.v2" || probe.Version != 2 {
-		t.Fatalf("golden plan schema = %q v%d", probe.Schema, probe.Version)
+	// L'assertion segue il contratto del wire version selector
+	// (RenderPlanWireVersion) invece di un numero fissato
+	// arbitrariamente: il lowering della piastra di background abilita
+	// screen-space, quindi il piano seleziona v3 a livello di wire
+	// (pinned da plan_wire_test.go).
+	wantSchema, wantVersion := RenderPlanWireVersion(result.Plan)
+	if probe.Schema != wantSchema || probe.Version != wantVersion {
+		t.Fatalf("golden plan schema = %q v%d, want %q v%d", probe.Schema, probe.Version, wantSchema, wantVersion)
 	}
 }

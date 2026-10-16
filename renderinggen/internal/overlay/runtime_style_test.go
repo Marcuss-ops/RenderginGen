@@ -205,7 +205,7 @@ func TestRuntimeTextStyleOverridesRejectImageLayers(t *testing.T) {
 		if imageKeys[key] {
 			// Shared with the image validator (flat shadow_opacity); its
 			// image-layer coverage lives in TestRuntimeImageFlatOverridesValidate.
-				continue
+			continue
 		}
 		if !covered[key] {
 			t.Errorf("runtime control %q is not exercised against a non-text layer", key)

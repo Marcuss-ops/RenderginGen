@@ -22,6 +22,9 @@ type Metrics struct {
 	QueueWait      prometheus.Histogram
 	LeaseExpired   prometheus.Counter
 	WorkersReady   prometheus.Gauge
+	// OldestPending exposes the head-of-line age signal Depth cannot show:
+	// a flat pending count with a rising value means the queue tail is
+	// stagnant (claim capacity gone or a head job blocking FIFO).
 	// WorkersDegraded/WorkersStale expose the heartbeat-age warning bands
 	// between "ready" and "offline". They exist so a fleet that is slowly
 	// losing its workers is visible BEFORE it has none: a worker whose
@@ -32,6 +35,7 @@ type Metrics struct {
 	WorkersDegraded prometheus.Gauge
 	WorkersStale    prometheus.Gauge
 	WorkersOffline  prometheus.Gauge
+	OldestPending   prometheus.Gauge
 }
 
 // New constructs a Metrics with its own registry and registers all collectors.
@@ -72,9 +76,13 @@ func New() *Metrics {
 			Name: "renderinggen_workers_offline",
 			Help: "Number of rendering workers whose heartbeat is outside the staleness window (or absent).",
 		}),
+		OldestPending: prometheus.NewGauge(prometheus.GaugeOpts{
+			Name: "renderinggen_oldest_pending_seconds",
+			Help: "Age of the oldest still-pending job, measured from queued_at. Zero when the queue is empty. Rising with a flat jobs_pending means the head of the queue is stuck.",
+		}),
 	}
 	m.registry.MustRegister(m.JobsPending, m.RenderDuration, m.QueueWait, m.LeaseExpired,
-		m.WorkersReady, m.WorkersDegraded, m.WorkersStale, m.WorkersOffline)
+		m.WorkersReady, m.WorkersDegraded, m.WorkersStale, m.WorkersOffline, m.OldestPending)
 	return m
 }
 

@@ -55,9 +55,9 @@ type diskCache struct {
 	// degradation that used to be indistinguishable from a miss (no counter,
 	// no log), so a broken L2 could silently turn every job into an L3 fetch
 	// while the hit-rate dashboards just showed misses.
-	readErrors atomic.Int64
+	readErrors    atomic.Int64
 	corruptErrors atomic.Int64 // EACCES/EIO/non-regular entries: degradation, not a miss
-	lastErrLog atomic.Int64 // unix nanos of the last degradation log (rate limit)
+	lastErrLog    atomic.Int64 // unix nanos of the last degradation log (rate limit)
 }
 
 type cacheEntry struct {

@@ -376,6 +376,14 @@ type Stats struct {
 	Completed int `json:"completed"`
 	Failed    int `json:"failed"`
 	Depth     int `json:"depth"`
+	// OldestPendingSeconds is the age of the oldest still-pending job, in
+	// seconds, measured from its queued_at. A rising value with a flat Depth
+	// is the backlog-age signal an autoscaler cannot derive from Depth alone:
+	// the queue tail is stagnant (claim capacity gone or a head job blocking
+	// FIFO) while the depth number looks healthy. Zero when the queue is
+	// empty and, like every field here, zero on a failed snapshot (Ok=false),
+	// so consumers already ignoring collapsed snapshots ignore it too.
+	OldestPendingSeconds float64 `json:"oldest_pending_seconds,omitempty"`
 	// Ok reports whether the snapshot came from a successful store query. A
 	// failed snapshot is all-zeros with Ok=false, so a consumer can tell
 	// "queue is empty" from "store unavailable". The server has always emitted

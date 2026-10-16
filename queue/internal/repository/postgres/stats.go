@@ -20,8 +20,10 @@ func (r *Repository) Stats(ctx context.Context) model.Stats {
 			COALESCE(count(*) FILTER (WHERE state = `+stateLiteral(model.StatePending)+`), 0),
 			COALESCE(count(*) FILTER (WHERE state = `+stateLiteral(model.StateRunning)+`), 0),
 			COALESCE(count(*) FILTER (WHERE state = `+stateLiteral(model.StateCompleted)+`), 0),
-			COALESCE(count(*) FILTER (WHERE state = `+stateLiteral(model.StateFailed)+`), 0)
-		FROM render_jobs`).Scan(&stats.Pending, &stats.Running, &stats.Completed, &stats.Failed)
+			COALESCE(count(*) FILTER (WHERE state = `+stateLiteral(model.StateFailed)+`), 0),
+			COALESCE(EXTRACT(epoch FROM now() - min(queued_at)
+					FILTER (WHERE state = `+stateLiteral(model.StatePending)+` AND queued_at IS NOT NULL AND queued_at <> 'epoch'::timestamptz)), 0)
+		FROM render_jobs`).Scan(&stats.Pending, &stats.Running, &stats.Completed, &stats.Failed, &stats.OldestPendingSeconds)
 	if err != nil {
 		log.Printf("queue stats query failed: %v", err)
 		stats.Ok = false

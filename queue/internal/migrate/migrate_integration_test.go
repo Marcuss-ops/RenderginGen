@@ -7,6 +7,8 @@ import (
 	"testing"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
+
+	"github.com/Marcuss-ops/RenderingGen/queue/migrations"
 )
 
 // TestApplyAgainstPostgres applies the migrations to a real database and
@@ -64,7 +66,14 @@ func TestApplyAgainstPostgres(t *testing.T) {
 	if err := db.QueryRowContext(ctx, `SELECT count(*) FROM schema_migrations`).Scan(&count); err != nil {
 		t.Fatal(err)
 	}
-	if count != 8 {
-		t.Errorf("want 8 applied migrations, got %d", count)
+	// Derive the expected count from the embedded migration list instead of
+	// hardcoding it: a new migration file must not require editing this test
+	// (the schema itself is what the assertions above pin).
+	names, err := migrations.Names()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if count != len(names) {
+		t.Errorf("want %d applied migrations, got %d", len(names), count)
 	}
 }

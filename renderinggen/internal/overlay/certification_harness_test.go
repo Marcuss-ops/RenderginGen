@@ -171,7 +171,7 @@ func certificationAssetsRoot(t *testing.T) string {
 		"assets/fonts/Bricolage-Grotesque.ttf":    "Bricolage-Grotesque.ttf",
 		"assets/fonts/PlayfairDisplay-Italic.ttf": "PlayfairDisplay-Italic.ttf",
 		"assets/fonts/Inter.ttf":                  "Inter.ttf",
-		"assets/fonts/Inter-Bold.ttf":              "Inter-Bold.ttf",
+		"assets/fonts/Inter-Bold.ttf":             "Inter-Bold.ttf",
 		officialCyrillicFontPath:                  "DejaVuSans.ttf",
 	}
 	root := t.TempDir()
