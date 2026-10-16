@@ -55,6 +55,13 @@ func (d *renderFailureDiagnostics) snapshot() string {
 	return strings.Join(d.lines, " | ")
 }
 
+// scanBufPool recycles the 64KiB scanner buffers (two per render): allocating
+// them fresh on every job showed up as steady GC churn on long workers.
+var scanBufPool = sync.Pool{New: func() any {
+	buf := make([]byte, 64*1024)
+	return &buf
+}}
+
 // scanRenderOutput forwards each complete output line to onLine and returns
 // the terminal scanner error (nil on EOF). The scanner buffer starts at 64
 // KiB and grows up to maxRenderOutputLine, so ordinary multi-KiB log lines are
@@ -62,7 +69,11 @@ func (d *renderFailureDiagnostics) snapshot() string {
 // 64 KiB default.
 func scanRenderOutput(r io.Reader, onLine func(string)) error {
 	scanner := bufio.NewScanner(r)
-	scanner.Buffer(make([]byte, 64*1024), maxRenderOutputLine)
+	// Reuse 64KiB buffers from a pool instead of allocating two per render
+	// (stdout+stderr): the hot frame loop otherwise pays GC on every job.
+	bufPtr := scanBufPool.Get().(*[]byte)
+	defer scanBufPool.Put(bufPtr)
+	scanner.Buffer(*bufPtr, maxRenderOutputLine)
 	for scanner.Scan() {
 		onLine(scanner.Text())
 	}

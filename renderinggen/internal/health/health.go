@@ -3,6 +3,7 @@
 package health
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"net/http"
@@ -94,7 +95,6 @@ func (s *Server) SetMetricsHandler(h http.Handler) {
 }
 
 func (s *Server) handle(w http.ResponseWriter, _ *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
 	info := s.info
 	if s.queueStatus != nil {
 		if st := s.queueStatus(); st != "" {
@@ -104,7 +104,16 @@ func (s *Server) handle(w http.ResponseWriter, _ *http.Request) {
 	if s.degradations != nil {
 		info.Degradations = s.degradations()
 	}
-	_ = json.NewEncoder(w).Encode(info)
+	// Encode into a buffer BEFORE touching the status line: writing the
+	// header first and then failing Encode would emit a 200 with a truncated
+	// body. A marshal failure is a 500 with no body written yet.
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(info); err != nil {
+		http.Error(w, "health encode failed", http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	_, _ = w.Write(buf.Bytes())
 }
 
 // handleProgress serves the current render progress. When no render is in

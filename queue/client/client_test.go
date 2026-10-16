@@ -147,7 +147,7 @@ func TestSubmitSuccess(t *testing.T) {
 	defer srv.Close()
 
 	c := New(srv.URL)
-	if err := c.Submit(context.Background(), Job{ID: "job-1", RenderPlan: []byte(`{"n":1}`)}); err != nil {
+	if err := c.Submit(context.Background(), Job{ID: "job-1", Schema: JobSchemaV1, Version: JobSchemaVersionV1, RenderPlan: []byte(`{"n":1}`), Assets: []AssetRef{}}); err != nil {
 		t.Fatalf("submit: %v", err)
 	}
 }
@@ -157,7 +157,7 @@ func TestSubmitDuplicate(t *testing.T) {
 	defer srv.Close()
 
 	c := New(srv.URL)
-	err := c.Submit(context.Background(), Job{ID: "dup"})
+	err := c.Submit(context.Background(), Job{ID: "dup", Schema: JobSchemaV1, Version: JobSchemaVersionV1, RenderPlan: []byte(`{"n":1}`), Assets: []AssetRef{}})
 	if err == nil || !errors.Is(err, ErrJobExists) {
 		t.Fatalf("want ErrJobExists, got %v", err)
 	}
@@ -168,7 +168,7 @@ func TestSubmitError(t *testing.T) {
 	defer srv.Close()
 
 	c := New(srv.URL)
-	if err := c.Submit(context.Background(), Job{ID: "boom"}); err == nil {
+	if err := c.Submit(context.Background(), Job{ID: "boom", Schema: JobSchemaV1, Version: JobSchemaVersionV1, RenderPlan: []byte(`{"n":1}`), Assets: []AssetRef{}}); err == nil {
 		t.Fatal("expected error on 400")
 	}
 }
@@ -178,7 +178,7 @@ func TestSubmitServerErrorIsNotJobExists(t *testing.T) {
 	defer srv.Close()
 
 	c := New(srv.URL)
-	err := c.Submit(context.Background(), Job{ID: "internal"})
+	err := c.Submit(context.Background(), Job{ID: "internal", Schema: JobSchemaV1, Version: JobSchemaVersionV1, RenderPlan: []byte(`{"n":1}`), Assets: []AssetRef{}})
 	if err == nil {
 		t.Fatal("expected error on 500")
 	}

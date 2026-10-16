@@ -86,6 +86,36 @@ const JobSchemaV1 = "renderinggen.job"
 // JobSchemaVersionV1 is the version of the renderinggen.job.v1 envelope.
 const JobSchemaVersionV1 = 1
 
+// ValidateJobEnvelope checks the renderinggen.job.v1 envelope fields WHEN
+// PRESENT at the ingress boundary (fail-at-ingress for malformed data): a
+// non-empty schema must be renderinggen.job, a non-zero version must be 1, a
+// present render_plan must be valid JSON, and every asset entry must carry a
+// hash and a logical path. Absent fields are allowed: the queue also accepts
+// minimal jobs (see the server batch/claim tests), and the worker-side
+// processor/validator.go enforces the full envelope after claim. It does not
+// check ID or publication metadata (ValidateJobID/ValidateJobMetadata own
+// those).
+func ValidateJobEnvelope(job Job) error {
+	if job.Schema != "" && job.Schema != JobSchemaV1 {
+		return fmt.Errorf("unsupported job schema %q (want %q)", job.Schema, JobSchemaV1)
+	}
+	if job.Version != 0 && job.Version != JobSchemaVersionV1 {
+		return fmt.Errorf("unsupported job schema version %d (want %d)", job.Version, JobSchemaVersionV1)
+	}
+	if len(job.RenderPlan) > 0 && !json.Valid(job.RenderPlan) {
+		return fmt.Errorf("render_plan is not valid JSON")
+	}
+	for i, a := range job.Assets {
+		if a.Hash == "" {
+			return fmt.Errorf("assets[%d]: hash is required", i)
+		}
+		if a.LogicalPath == "" {
+			return fmt.Errorf("assets[%d]: logical_path is required", i)
+		}
+	}
+	return nil
+}
+
 // ValidateJobID checks the shared queue/filesystem identity boundary. IDs are
 // restricted to safe ASCII filename characters; producer scopes use colon or
 // dash separators rather than filesystem path separators.
@@ -394,6 +424,9 @@ func newQueueHTTPClient() *http.Client {
 // Submit enqueues a job. A 409 (job already exists) is translated to
 // ErrJobExists so callers can treat replays as idempotent.
 func (c *Client) Submit(ctx context.Context, job Job) error {
+	if err := ValidateJobEnvelope(job); err != nil {
+		return err
+	}
 	body, err := json.Marshal(job)
 	if err != nil {
 		return fmt.Errorf("queue submit marshal: %w", err)
@@ -427,6 +460,11 @@ func (c *Client) Submit(ctx context.Context, job Job) error {
 func (c *Client) SubmitBatch(ctx context.Context, jobs []Job) error {
 	if len(jobs) == 0 {
 		return errors.New("queue submit batch: jobs are required")
+	}
+	for i, job := range jobs {
+		if err := ValidateJobEnvelope(job); err != nil {
+			return fmt.Errorf("queue submit batch: jobs[%d]: %w", i, err)
+		}
 	}
 	body, err := json.Marshal(struct {
 		Jobs []Job `json:"jobs"`

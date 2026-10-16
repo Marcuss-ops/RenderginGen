@@ -1,6 +1,7 @@
 package overlay
 
 import (
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/clampx"
 	"fmt"
 	"math"
 
@@ -108,7 +109,7 @@ func compileVisualAccentsFieldMask(image Layer, mask *motion.ImageMaskDefinition
 		if !ok {
 			return LayerMask{}, fmt.Errorf("overlay: image layer %q paint mask progress keyframe %d is not scalar", image.ID, i)
 		}
-		progress = math.Max(0, math.Min(1, progress))
+		progress = clampx.Unit(progress)
 		expansionKeys[i] = AnimationKeyframe{Frame: keyframe.Frame, Value: -(fieldSwing + feather) * (1 - progress)}
 		opacityKeys[i] = AnimationKeyframe{Frame: keyframe.Frame, Value: progress}
 	}

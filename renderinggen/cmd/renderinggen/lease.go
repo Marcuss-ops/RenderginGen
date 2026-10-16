@@ -6,6 +6,7 @@ package main
 import (
 	"context"
 	"errors"
+	"math/rand"
 	"time"
 
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/config"
@@ -16,12 +17,25 @@ import (
 // sleepCtx sleeps for d or until ctx is cancelled; reports whether the sleep
 // completed.
 func sleepCtx(ctx context.Context, d time.Duration) bool {
+	t := time.NewTimer(d)
+	defer t.Stop()
 	select {
 	case <-ctx.Done():
 		return false
-	case <-time.After(d):
+	case <-t.C:
 		return true
 	}
+}
+
+// jitter20 spreads a backoff by ±20% so a fleet of workers restarting together
+// does not retry the queue in lockstep (thundering herd).
+func jitter20(d time.Duration) time.Duration {
+	if d <= 0 {
+		return d
+	}
+	delta := d / 5
+	j := (rand.Int63n(int64(2*delta+1)) - int64(delta))
+	return d + time.Duration(j)
 }
 
 // withLeaseVoid runs fn while renewing the job's lease in the background.
@@ -90,11 +104,14 @@ func renewWithRetry(ctx context.Context, jobID string, q *queue.Client, interval
 		if attempt >= maxAttempts || ctx.Err() != nil {
 			return false
 		}
-		workerlog.ByJobID(jobID).Warnf("lease renew attempt %d/%d failed, retrying: %v", attempt, maxAttempts, err)
+		wait := jitter20(backoff)
+		workerlog.ByJobID(jobID).Warnf("lease renew attempt %d/%d failed, retrying in %s: %v", attempt, maxAttempts, wait, err)
+		timer := time.NewTimer(wait)
 		select {
 		case <-ctx.Done():
+			timer.Stop()
 			return false
-		case <-time.After(backoff):
+		case <-timer.C:
 		}
 		backoff *= 2
 		if backoff >= interval {

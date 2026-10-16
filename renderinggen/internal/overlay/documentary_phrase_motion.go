@@ -44,11 +44,12 @@ func compileDocumentaryPhraseMotion(ri resolvedItem, src *semanticPlan, text Lay
 		return nil, fmt.Errorf("overlay: unsupported documentary phrase motion %q", id)
 	}
 	targets := documentaryTargets(text.Text, id)
-	if id == "doc_10_selective_contrast_focus" {
-		text.Style.Fill = "#A9ADB3"
-	}
+	// Keep phrase color owned by the selected visual style. In particular, a
+	// highlight motion must never fade the underlying copy to grey: the marker
+	// is the emphasis and the type remains solid black (or the caller's color).
 	var markers []Layer
 	var emphasis []Layer
+	text.Style.Fill = "#000000"
 	for index, target := range targets {
 		if target.start < 0 || target.end > len(text.Text) || target.start >= target.end {
 			continue
@@ -74,6 +75,8 @@ func compileDocumentaryPhraseMotion(ri resolvedItem, src *semanticPlan, text Lay
 		if documentaryNeedsMarker(id) {
 			markers = append(markers, documentaryMarker(text, src, id, target, index)...)
 		}
+		// doc_08 is catalog-pinned (documentary_highlighting_runtime_test):
+		// the alternate Inter-Bold layer is the emphasis, one per target.
 		if id == "doc_08_mixed_font_emphasis" && lightSolidBackground(src.Background) {
 			emphasis = append(emphasis, documentaryMixedFontLayer(text, src, target, index))
 		}
@@ -121,23 +124,18 @@ func documentaryTargets(text, id string) []documentaryTarget {
 		}
 	}
 
-	// Arbitrary long copy still gets a meaningful, deterministic target. Pick
-	// the final one or two non-stopword tokens, retaining exact UTF-8 offsets.
-	words := significantWordRanges(text)
-	if len(words) == 0 {
-		return nil
-	}
-	if id == "doc_14_dual_highlight_sequence" && len(words) > 1 {
-		return []documentaryTarget{words[0], words[len(words)-1]}
-	}
-	last := words[len(words)-1]
-	if len(words) > 1 && id != "doc_06_red_keyword_punch" && id != "doc_10_selective_contrast_focus" {
-		prev := words[len(words)-2]
-		if prev.line == last.line && strings.TrimSpace(text[prev.end:last.start]) == "" {
-			last.start = prev.start
+	// If a motion's preferred wording is absent, emphasize the actual phrase as
+	// a whole. Guessing the last token made the marker appear on arbitrary words
+	// unrelated to the motion's intended emphasis.
+	var out []documentaryTarget
+	at := 0
+	for _, line := range strings.Split(text, "\n") {
+		if strings.TrimSpace(line) != "" {
+			out = append(out, targetAt(text, at, at+len(line)))
 		}
+		at += len(line) + 1
 	}
-	return []documentaryTarget{last}
+	return out
 }
 
 func targetAt(text string, start, end int) documentaryTarget {
@@ -254,7 +252,7 @@ func documentaryNeedsMarker(id string) bool {
 	case "doc_01_yellow_marker_sweep", "doc_02_multiline_stagger_highlight", "doc_03_documentary_quote_marker",
 		"doc_04_archival_source_highlight", "doc_05_selective_phrase_tracking", "doc_06_red_keyword_punch", "doc_08_mixed_font_emphasis",
 		"doc_09_cinematic_underline_draw", "doc_10_selective_contrast_focus", "doc_11_headline_cinematic_zoom",
-		"doc_12_quote_line_by_line_reveal", "doc_13_analog_scanner_highlight", "doc_14_dual_highlight_sequence",
+		"doc_07_word_impact_reveal", "doc_12_quote_line_by_line_reveal", "doc_13_analog_scanner_highlight", "doc_14_dual_highlight_sequence",
 		"doc_15_documentary_source_focus":
 		return true
 	default:
@@ -290,7 +288,9 @@ func documentaryMarker(text Layer, src *semanticPlan, id string, target document
 		width = float64(src.Width - 64)
 	}
 	lineCount := strings.Count(text.Text, "\n") + 1
-	lineHeight := fontSize * 1.3
+	// Match the text compiler's wrapped phrase layout. The previous 1.3 factor
+	// placed successive plates farther apart than the rendered Playfair lines.
+	lineHeight := fontSize * 1.12
 	y := text.Position[1] + (float64(target.line)-(float64(lineCount)-1)/2)*lineHeight
 	markerHeight := fontSize * 0.72
 	markerColor := documentaryRGB(documentaryHighlightColor(id))
@@ -328,15 +328,15 @@ func documentaryAdvance(text string, fontSize float64) float64 {
 	for _, r := range text {
 		switch {
 		case unicode.IsSpace(r):
-			units += 0.30
+			units += 0.22
 		case strings.ContainsRune("ilI.,:;!'|", r):
-			units += 0.30
+			units += 0.20
 		case strings.ContainsRune("MW@%&", r):
-			units += 0.86
+			units += 0.58
 		case unicode.IsPunct(r):
-			units += 0.36
+			units += 0.23
 		default:
-			units += 0.53
+			units += 0.34
 		}
 	}
 	return units * fontSize

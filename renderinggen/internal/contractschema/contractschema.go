@@ -23,6 +23,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"runtime"
+	"slices"
 	"sort"
 	"strings"
 	"testing"
@@ -139,12 +140,8 @@ func Difference(a, b []string) []string {
 	return out
 }
 
-// Contains reports whether list holds want.
+// Contains reports whether list holds want (single primitive: use
+// slices.Contains everywhere instead of reimplementing the loop).
 func Contains(list []string, want string) bool {
-	for _, value := range list {
-		if value == want {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(list, want)
 }

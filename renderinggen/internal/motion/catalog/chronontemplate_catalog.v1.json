@@ -3498,6 +3498,896 @@
             ]
           }
         ]
+      },
+      {
+        "id": "metric_typewriter_v1",
+        "supported_template": "metric_stat_card",
+        "supported_content": [
+          "text",
+          "metric"
+        ],
+        "duration_bounds": {
+          "minimum_frames": 24,
+          "maximum_frames": 240
+        },
+        "render_safe": true,
+        "seeded": false,
+        "presets": [
+          {
+            "id": "metric_typewriter_stepped_reveal",
+            "tracks": [
+              {
+                "property": "opacity",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0
+                  },
+                  {
+                    "frame": 8,
+                    "value": 0.25
+                  },
+                  {
+                    "frame": 14,
+                    "value": 0.5
+                  },
+                  {
+                    "frame": 20,
+                    "value": 0.75
+                  },
+                  {
+                    "frame": 26,
+                    "value": 1
+                  },
+                  {
+                    "frame": 72,
+                    "value": 1
+                  }
+                ],
+                "easing": "linear"
+              },
+              {
+                "property": "position_x",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 10
+                  },
+                  {
+                    "frame": 26,
+                    "value": 0
+                  },
+                  {
+                    "frame": 72,
+                    "value": 0
+                  }
+                ],
+                "easing": "out_cubic"
+              }
+            ]
+          },
+          {
+            "id": "metric_typewriter_cursor_in",
+            "tracks": [
+              {
+                "property": "opacity",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0
+                  },
+                  {
+                    "frame": 6,
+                    "value": 1
+                  },
+                  {
+                    "frame": 12,
+                    "value": 0.3
+                  },
+                  {
+                    "frame": 18,
+                    "value": 1
+                  },
+                  {
+                    "frame": 72,
+                    "value": 1
+                  }
+                ],
+                "easing": "linear"
+              }
+            ]
+          },
+          {
+            "id": "metric_typewriter_digit_tick",
+            "tracks": [
+              {
+                "property": "opacity",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0
+                  },
+                  {
+                    "frame": 10,
+                    "value": 1
+                  },
+                  {
+                    "frame": 72,
+                    "value": 1
+                  }
+                ],
+                "easing": "linear"
+              },
+              {
+                "property": "scale",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 1.06
+                  },
+                  {
+                    "frame": 12,
+                    "value": 1
+                  },
+                  {
+                    "frame": 72,
+                    "value": 1
+                  }
+                ],
+                "easing": "out_cubic"
+              }
+            ]
+          },
+          {
+            "id": "metric_typewriter_carriage_slide",
+            "tracks": [
+              {
+                "property": "opacity",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0
+                  },
+                  {
+                    "frame": 12,
+                    "value": 1
+                  },
+                  {
+                    "frame": 72,
+                    "value": 1
+                  }
+                ],
+                "easing": "linear"
+              },
+              {
+                "property": "position_x",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": -24
+                  },
+                  {
+                    "frame": 30,
+                    "value": 0
+                  },
+                  {
+                    "frame": 72,
+                    "value": 0
+                  }
+                ],
+                "easing": "out_cubic"
+              }
+            ]
+          },
+          {
+            "id": "metric_typewriter_backspace_settle",
+            "tracks": [
+              {
+                "property": "opacity",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 1
+                  },
+                  {
+                    "frame": 10,
+                    "value": 0.6
+                  },
+                  {
+                    "frame": 20,
+                    "value": 1
+                  },
+                  {
+                    "frame": 72,
+                    "value": 1
+                  }
+                ],
+                "easing": "linear"
+              },
+              {
+                "property": "scale",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 1.03
+                  },
+                  {
+                    "frame": 24,
+                    "value": 1
+                  },
+                  {
+                    "frame": 72,
+                    "value": 1
+                  }
+                ],
+                "easing": "out_cubic"
+              }
+            ]
+          },
+          {
+            "id": "metric_typewriter_line_feed",
+            "tracks": [
+              {
+                "property": "opacity",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0
+                  },
+                  {
+                    "frame": 14,
+                    "value": 1
+                  },
+                  {
+                    "frame": 72,
+                    "value": 1
+                  }
+                ],
+                "easing": "linear"
+              },
+              {
+                "property": "position_y",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": -18
+                  },
+                  {
+                    "frame": 24,
+                    "value": 0
+                  },
+                  {
+                    "frame": 72,
+                    "value": 0
+                  }
+                ],
+                "easing": "out_cubic"
+              }
+            ]
+          },
+          {
+            "id": "metric_typewriter_ribbon_strike",
+            "tracks": [
+              {
+                "property": "opacity",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0
+                  },
+                  {
+                    "frame": 6,
+                    "value": 1
+                  },
+                  {
+                    "frame": 72,
+                    "value": 1
+                  }
+                ],
+                "easing": "linear"
+              },
+              {
+                "property": "scale_x",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0.02
+                  },
+                  {
+                    "frame": 28,
+                    "value": 1
+                  },
+                  {
+                    "frame": 72,
+                    "value": 1
+                  }
+                ],
+                "easing": "out_cubic"
+              }
+            ]
+          },
+          {
+            "id": "metric_typewriter_letter_drop",
+            "tracks": [
+              {
+                "property": "opacity",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0
+                  },
+                  {
+                    "frame": 12,
+                    "value": 0.5
+                  },
+                  {
+                    "frame": 24,
+                    "value": 1
+                  },
+                  {
+                    "frame": 72,
+                    "value": 1
+                  }
+                ],
+                "easing": "linear"
+              },
+              {
+                "property": "position_y",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 16
+                  },
+                  {
+                    "frame": 36,
+                    "value": 0
+                  },
+                  {
+                    "frame": 72,
+                    "value": 0
+                  }
+                ],
+                "easing": "out_cubic"
+              }
+            ]
+          },
+          {
+            "id": "metric_typewriter_ink_stamp",
+            "tracks": [
+              {
+                "property": "opacity",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0
+                  },
+                  {
+                    "frame": 8,
+                    "value": 1
+                  },
+                  {
+                    "frame": 72,
+                    "value": 1
+                  }
+                ],
+                "easing": "linear"
+              },
+              {
+                "property": "scale",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 1.18
+                  },
+                  {
+                    "frame": 18,
+                    "value": 0.97
+                  },
+                  {
+                    "frame": 30,
+                    "value": 1
+                  },
+                  {
+                    "frame": 72,
+                    "value": 1
+                  }
+                ],
+                "easing": "out_cubic"
+              }
+            ]
+          },
+          {
+            "id": "metric_typewriter_key_strike",
+            "tracks": [
+              {
+                "property": "opacity",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0
+                  },
+                  {
+                    "frame": 14,
+                    "value": 1
+                  },
+                  {
+                    "frame": 72,
+                    "value": 1
+                  }
+                ],
+                "easing": "linear"
+              },
+              {
+                "property": "rotation_x",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": -40
+                  },
+                  {
+                    "frame": 34,
+                    "value": 0
+                  },
+                  {
+                    "frame": 72,
+                    "value": 0
+                  }
+                ],
+                "easing": "out_cubic"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "date_typewriter_v1",
+        "supported_template": "timeline_date_card",
+        "supported_content": [
+          "text",
+          "date"
+        ],
+        "duration_bounds": {
+          "minimum_frames": 24,
+          "maximum_frames": 240
+        },
+        "render_safe": true,
+        "seeded": false,
+        "presets": [
+          {
+            "id": "date_typewriter_year_type",
+            "tracks": [
+              {
+                "property": "opacity",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0
+                  },
+                  {
+                    "frame": 8,
+                    "value": 0.25
+                  },
+                  {
+                    "frame": 14,
+                    "value": 0.5
+                  },
+                  {
+                    "frame": 20,
+                    "value": 0.75
+                  },
+                  {
+                    "frame": 26,
+                    "value": 1
+                  },
+                  {
+                    "frame": 72,
+                    "value": 1
+                  }
+                ],
+                "easing": "linear"
+              },
+              {
+                "property": "position_x",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 10
+                  },
+                  {
+                    "frame": 26,
+                    "value": 0
+                  },
+                  {
+                    "frame": 72,
+                    "value": 0
+                  }
+                ],
+                "easing": "out_cubic"
+              }
+            ]
+          },
+          {
+            "id": "date_typewriter_day_stamp",
+            "tracks": [
+              {
+                "property": "opacity",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0
+                  },
+                  {
+                    "frame": 8,
+                    "value": 1
+                  },
+                  {
+                    "frame": 72,
+                    "value": 1
+                  }
+                ],
+                "easing": "linear"
+              },
+              {
+                "property": "scale",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 1.1
+                  },
+                  {
+                    "frame": 16,
+                    "value": 1
+                  },
+                  {
+                    "frame": 72,
+                    "value": 1
+                  }
+                ],
+                "easing": "out_cubic"
+              }
+            ]
+          },
+          {
+            "id": "date_typewriter_month_strike",
+            "tracks": [
+              {
+                "property": "opacity",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0
+                  },
+                  {
+                    "frame": 6,
+                    "value": 1
+                  },
+                  {
+                    "frame": 72,
+                    "value": 1
+                  }
+                ],
+                "easing": "linear"
+              },
+              {
+                "property": "scale_x",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0.02
+                  },
+                  {
+                    "frame": 26,
+                    "value": 1
+                  },
+                  {
+                    "frame": 72,
+                    "value": 1
+                  }
+                ],
+                "easing": "out_cubic"
+              }
+            ]
+          },
+          {
+            "id": "date_typewriter_era_carriage",
+            "tracks": [
+              {
+                "property": "opacity",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0
+                  },
+                  {
+                    "frame": 12,
+                    "value": 1
+                  },
+                  {
+                    "frame": 72,
+                    "value": 1
+                  }
+                ],
+                "easing": "linear"
+              },
+              {
+                "property": "position_x",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": -24
+                  },
+                  {
+                    "frame": 30,
+                    "value": 0
+                  },
+                  {
+                    "frame": 72,
+                    "value": 0
+                  }
+                ],
+                "easing": "out_cubic"
+              }
+            ]
+          },
+          {
+            "id": "date_typewriter_range_type",
+            "tracks": [
+              {
+                "property": "opacity",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0
+                  },
+                  {
+                    "frame": 10,
+                    "value": 1
+                  },
+                  {
+                    "frame": 72,
+                    "value": 1
+                  }
+                ],
+                "easing": "linear"
+              },
+              {
+                "property": "scale_x",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0.05
+                  },
+                  {
+                    "frame": 34,
+                    "value": 1
+                  },
+                  {
+                    "frame": 72,
+                    "value": 1
+                  }
+                ],
+                "easing": "out_cubic"
+              }
+            ]
+          },
+          {
+            "id": "date_typewriter_bracket_tap",
+            "tracks": [
+              {
+                "property": "opacity",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 1
+                  },
+                  {
+                    "frame": 10,
+                    "value": 0.6
+                  },
+                  {
+                    "frame": 20,
+                    "value": 1
+                  },
+                  {
+                    "frame": 72,
+                    "value": 1
+                  }
+                ],
+                "easing": "linear"
+              },
+              {
+                "property": "scale",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 1.03
+                  },
+                  {
+                    "frame": 24,
+                    "value": 1
+                  },
+                  {
+                    "frame": 72,
+                    "value": 1
+                  }
+                ],
+                "easing": "out_cubic"
+              }
+            ]
+          },
+          {
+            "id": "date_typewriter_timeline_feed",
+            "tracks": [
+              {
+                "property": "opacity",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0
+                  },
+                  {
+                    "frame": 14,
+                    "value": 1
+                  },
+                  {
+                    "frame": 72,
+                    "value": 1
+                  }
+                ],
+                "easing": "linear"
+              },
+              {
+                "property": "position_y",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": -18
+                  },
+                  {
+                    "frame": 24,
+                    "value": 0
+                  },
+                  {
+                    "frame": 72,
+                    "value": 0
+                  }
+                ],
+                "easing": "out_cubic"
+              }
+            ]
+          },
+          {
+            "id": "date_typewriter_underline_key",
+            "tracks": [
+              {
+                "property": "opacity",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0
+                  },
+                  {
+                    "frame": 6,
+                    "value": 1
+                  },
+                  {
+                    "frame": 72,
+                    "value": 1
+                  }
+                ],
+                "easing": "linear"
+              },
+              {
+                "property": "scale_x",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0.02
+                  },
+                  {
+                    "frame": 28,
+                    "value": 1
+                  },
+                  {
+                    "frame": 72,
+                    "value": 1
+                  }
+                ],
+                "easing": "out_cubic"
+              }
+            ]
+          },
+          {
+            "id": "date_typewriter_margin_return",
+            "tracks": [
+              {
+                "property": "opacity",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0
+                  },
+                  {
+                    "frame": 12,
+                    "value": 0.5
+                  },
+                  {
+                    "frame": 24,
+                    "value": 1
+                  },
+                  {
+                    "frame": 72,
+                    "value": 1
+                  }
+                ],
+                "easing": "linear"
+              },
+              {
+                "property": "position_y",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 16
+                  },
+                  {
+                    "frame": 36,
+                    "value": 0
+                  },
+                  {
+                    "frame": 72,
+                    "value": 0
+                  }
+                ],
+                "easing": "out_cubic"
+              }
+            ]
+          },
+          {
+            "id": "date_typewriter_ink_stamp",
+            "tracks": [
+              {
+                "property": "opacity",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0
+                  },
+                  {
+                    "frame": 8,
+                    "value": 1
+                  },
+                  {
+                    "frame": 72,
+                    "value": 1
+                  }
+                ],
+                "easing": "linear"
+              },
+              {
+                "property": "scale",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 1.18
+                  },
+                  {
+                    "frame": 18,
+                    "value": 0.97
+                  },
+                  {
+                    "frame": 30,
+                    "value": 1
+                  },
+                  {
+                    "frame": 72,
+                    "value": 1
+                  }
+                ],
+                "easing": "out_cubic"
+              }
+            ]
+          }
+        ]
       }
     ]
   },
@@ -29383,6 +30273,565 @@
       }
     },
     {
+      "id": "phrase_highlight_soft_marker",
+      "category": "documentary_highlighting_v1",
+      "targets": [
+        "text"
+      ],
+      "unit": "layer",
+      "duration_bounds": {
+        "minimum_frames": 20,
+        "maximum_frames": 240
+      },
+      "render_safe": true,
+      "requires_3d": false,
+      "requires_camera": false,
+      "enter": 36,
+      "exit": 0,
+      "tracks": [],
+      "text_animators": []
+    },
+    {
+      "id": "phrase_highlight_archive_yellow",
+      "category": "documentary_highlighting_v1",
+      "targets": [
+        "text"
+      ],
+      "unit": "layer",
+      "duration_bounds": {
+        "minimum_frames": 20,
+        "maximum_frames": 240
+      },
+      "render_safe": true,
+      "requires_3d": false,
+      "requires_camera": false,
+      "enter": 36,
+      "exit": 0,
+      "tracks": [],
+      "text_animators": []
+    },
+    {
+      "id": "phrase_highlight_evidence_red",
+      "category": "documentary_highlighting_v1",
+      "targets": [
+        "text"
+      ],
+      "unit": "layer",
+      "duration_bounds": {
+        "minimum_frames": 20,
+        "maximum_frames": 240
+      },
+      "render_safe": true,
+      "requires_3d": false,
+      "requires_camera": false,
+      "enter": 36,
+      "exit": 0,
+      "tracks": [],
+      "text_animators": []
+    },
+    {
+      "id": "phrase_highlight_phrase_focus",
+      "category": "documentary_highlighting_v1",
+      "targets": [
+        "text"
+      ],
+      "unit": "layer",
+      "duration_bounds": {
+        "minimum_frames": 20,
+        "maximum_frames": 240
+      },
+      "render_safe": true,
+      "requires_3d": false,
+      "requires_camera": false,
+      "enter": 36,
+      "exit": 0,
+      "tracks": [],
+      "text_animators": []
+    },
+    {
+      "id": "phrase_highlight_document_scan",
+      "category": "documentary_highlighting_v1",
+      "targets": [
+        "text"
+      ],
+      "unit": "layer",
+      "duration_bounds": {
+        "minimum_frames": 20,
+        "maximum_frames": 240
+      },
+      "render_safe": true,
+      "requires_3d": false,
+      "requires_camera": false,
+      "enter": 36,
+      "exit": 0,
+      "tracks": [],
+      "text_animators": []
+    },
+    {
+      "id": "doc_01_yellow_marker_sweep",
+      "category": "documentary_highlighting_v1",
+      "targets": [
+        "text"
+      ],
+      "unit": "layer",
+      "duration_bounds": {
+        "minimum_frames": 20,
+        "maximum_frames": 240
+      },
+      "render_safe": true,
+      "requires_3d": false,
+      "requires_camera": false,
+      "enter": 36,
+      "exit": 0,
+      "tracks": [],
+      "text_animators": []
+    },
+    {
+      "id": "doc_02_multiline_stagger_highlight",
+      "category": "documentary_highlighting_v1",
+      "targets": [
+        "text"
+      ],
+      "unit": "layer",
+      "duration_bounds": {
+        "minimum_frames": 20,
+        "maximum_frames": 240
+      },
+      "render_safe": true,
+      "requires_3d": false,
+      "requires_camera": false,
+      "enter": 36,
+      "exit": 0,
+      "tracks": [],
+      "text_animators": []
+    },
+    {
+      "id": "doc_03_documentary_quote_marker",
+      "category": "documentary_highlighting_v1",
+      "targets": [
+        "text"
+      ],
+      "unit": "layer",
+      "duration_bounds": {
+        "minimum_frames": 20,
+        "maximum_frames": 240
+      },
+      "render_safe": true,
+      "requires_3d": false,
+      "requires_camera": false,
+      "enter": 36,
+      "exit": 0,
+      "tracks": [],
+      "text_animators": []
+    },
+    {
+      "id": "doc_04_archival_source_highlight",
+      "category": "documentary_highlighting_v1",
+      "targets": [
+        "text"
+      ],
+      "unit": "layer",
+      "duration_bounds": {
+        "minimum_frames": 20,
+        "maximum_frames": 240
+      },
+      "render_safe": true,
+      "requires_3d": false,
+      "requires_camera": false,
+      "enter": 36,
+      "exit": 0,
+      "tracks": [
+        {
+          "property": "scale_x",
+          "easing": "out_cubic",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 1.0
+            },
+            {
+              "frame": 60,
+              "value": 1.045
+            }
+          ]
+        }
+      ],
+      "text_animators": []
+    },
+    {
+      "id": "doc_05_selective_phrase_tracking",
+      "category": "documentary_highlighting_v1",
+      "targets": [
+        "text"
+      ],
+      "unit": "layer",
+      "duration_bounds": {
+        "minimum_frames": 20,
+        "maximum_frames": 240
+      },
+      "render_safe": true,
+      "requires_3d": false,
+      "requires_camera": false,
+      "enter": 36,
+      "exit": 0,
+      "tracks": [
+        {
+          "property": "position_x",
+          "easing": "in_out_sine",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": -25.0
+            },
+            {
+              "frame": 60,
+              "value": 25.0
+            }
+          ]
+        }
+      ],
+      "text_animators": []
+    },
+    {
+      "id": "doc_06_red_keyword_punch",
+      "category": "documentary_highlighting_v1",
+      "targets": [
+        "text"
+      ],
+      "unit": "layer",
+      "duration_bounds": {
+        "minimum_frames": 20,
+        "maximum_frames": 240
+      },
+      "render_safe": true,
+      "requires_3d": false,
+      "requires_camera": false,
+      "enter": 36,
+      "exit": 0,
+      "tracks": [
+        {
+          "property": "scale",
+          "easing": "out_cubic",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.94
+            },
+            {
+              "frame": 18,
+              "value": 0.94
+            },
+            {
+              "frame": 30,
+              "value": 1.04
+            },
+            {
+              "frame": 42,
+              "value": 1.0
+            }
+          ]
+        }
+      ],
+      "text_animators": []
+    },
+    {
+      "id": "doc_07_word_impact_reveal",
+      "category": "documentary_highlighting_v1",
+      "targets": [
+        "text"
+      ],
+      "unit": "layer",
+      "duration_bounds": {
+        "minimum_frames": 20,
+        "maximum_frames": 240
+      },
+      "render_safe": true,
+      "requires_3d": false,
+      "requires_camera": false,
+      "enter": 36,
+      "exit": 0,
+      "tracks": [],
+      "text_animators": [
+        {
+          "id": "documentary-word-impact",
+          "selector": {
+            "kind": "word",
+            "order": "forward",
+            "shape": "square",
+            "stagger": 2
+          },
+          "properties": [
+            {
+              "property": "opacity",
+              "easing": "linear",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0.0
+                },
+                {
+                  "frame": 30,
+                  "value": 1.0
+                }
+              ]
+            },
+            {
+              "property": "scale",
+              "easing": "linear",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0.82
+                },
+                {
+                  "frame": 30,
+                  "value": 1.0
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "doc_08_mixed_font_emphasis",
+      "category": "documentary_highlighting_v1",
+      "targets": [
+        "text"
+      ],
+      "unit": "layer",
+      "duration_bounds": {
+        "minimum_frames": 20,
+        "maximum_frames": 240
+      },
+      "render_safe": true,
+      "requires_3d": false,
+      "requires_camera": false,
+      "enter": 36,
+      "exit": 0,
+      "tracks": [
+        {
+          "property": "position_y",
+          "easing": "out_cubic",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 14.0
+            },
+            {
+              "frame": 28,
+              "value": 0.0
+            }
+          ]
+        }
+      ],
+      "text_animators": []
+    },
+    {
+      "id": "doc_09_cinematic_underline_draw",
+      "category": "documentary_highlighting_v1",
+      "targets": [
+        "text"
+      ],
+      "unit": "layer",
+      "duration_bounds": {
+        "minimum_frames": 20,
+        "maximum_frames": 240
+      },
+      "render_safe": true,
+      "requires_3d": false,
+      "requires_camera": false,
+      "enter": 36,
+      "exit": 0,
+      "tracks": [],
+      "text_animators": []
+    },
+    {
+      "id": "doc_10_selective_contrast_focus",
+      "category": "documentary_highlighting_v1",
+      "targets": [
+        "text"
+      ],
+      "unit": "layer",
+      "duration_bounds": {
+        "minimum_frames": 20,
+        "maximum_frames": 240
+      },
+      "render_safe": true,
+      "requires_3d": false,
+      "requires_camera": false,
+      "enter": 36,
+      "exit": 0,
+      "tracks": [],
+      "text_animators": []
+    },
+    {
+      "id": "doc_11_headline_cinematic_zoom",
+      "category": "documentary_highlighting_v1",
+      "targets": [
+        "text"
+      ],
+      "unit": "layer",
+      "duration_bounds": {
+        "minimum_frames": 20,
+        "maximum_frames": 240
+      },
+      "render_safe": true,
+      "requires_3d": false,
+      "requires_camera": false,
+      "enter": 36,
+      "exit": 0,
+      "tracks": [
+        {
+          "property": "scale_x",
+          "easing": "out_cubic",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 1.0
+            },
+            {
+              "frame": 40,
+              "value": 1.08
+            }
+          ]
+        }
+      ],
+      "text_animators": []
+    },
+    {
+      "id": "doc_12_quote_line_by_line_reveal",
+      "category": "documentary_highlighting_v1",
+      "targets": [
+        "text"
+      ],
+      "unit": "layer",
+      "duration_bounds": {
+        "minimum_frames": 20,
+        "maximum_frames": 240
+      },
+      "render_safe": true,
+      "requires_3d": false,
+      "requires_camera": false,
+      "enter": 36,
+      "exit": 0,
+      "tracks": [],
+      "text_animators": [
+        {
+          "id": "documentary-line-reveal",
+          "selector": {
+            "kind": "line",
+            "order": "forward",
+            "shape": "square",
+            "stagger": 8
+          },
+          "properties": [
+            {
+              "property": "opacity",
+              "easing": "linear",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0.0
+                },
+                {
+                  "frame": 40,
+                  "value": 1.0
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "doc_13_analog_scanner_highlight",
+      "category": "documentary_highlighting_v1",
+      "targets": [
+        "text"
+      ],
+      "unit": "layer",
+      "duration_bounds": {
+        "minimum_frames": 20,
+        "maximum_frames": 240
+      },
+      "render_safe": true,
+      "requires_3d": false,
+      "requires_camera": false,
+      "enter": 36,
+      "exit": 0,
+      "tracks": [
+        {
+          "property": "scale_x",
+          "easing": "in_out_sine",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 1.0
+            },
+            {
+              "frame": 60,
+              "value": 1.03
+            }
+          ]
+        }
+      ],
+      "text_animators": []
+    },
+    {
+      "id": "doc_14_dual_highlight_sequence",
+      "category": "documentary_highlighting_v1",
+      "targets": [
+        "text"
+      ],
+      "unit": "layer",
+      "duration_bounds": {
+        "minimum_frames": 20,
+        "maximum_frames": 240
+      },
+      "render_safe": true,
+      "requires_3d": false,
+      "requires_camera": false,
+      "enter": 36,
+      "exit": 0,
+      "tracks": [],
+      "text_animators": []
+    },
+    {
+      "id": "doc_15_documentary_source_focus",
+      "category": "documentary_highlighting_v1",
+      "targets": [
+        "text"
+      ],
+      "unit": "layer",
+      "duration_bounds": {
+        "minimum_frames": 20,
+        "maximum_frames": 240
+      },
+      "render_safe": true,
+      "requires_3d": false,
+      "requires_camera": false,
+      "enter": 36,
+      "exit": 0,
+      "tracks": [
+        {
+          "property": "position_y",
+          "easing": "out_cubic",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 10.0
+            },
+            {
+              "frame": 24,
+              "value": 0.0
+            }
+          ]
+        }
+      ],
+      "text_animators": []
+    },
+    {
       "id": "metric_counter_rise",
       "category": "metric_v1",
       "supported_template": "metric_stat_card",
@@ -34284,6 +35733,1343 @@
       ]
     },
     {
+      "id": "metric_typewriter_stepped_reveal",
+      "category": "metric_typewriter_v1",
+      "supported_template": "metric_stat_card",
+      "targets": [
+        "text",
+        "metric"
+      ],
+      "supported_content": [
+        "text",
+        "metric"
+      ],
+      "unit": "layer",
+      "duration_bounds": {
+        "minimum_frames": 24,
+        "maximum_frames": 240
+      },
+      "required_properties": [
+        "opacity",
+        "position_x"
+      ],
+      "render_safe": true,
+      "requires_3d": false,
+      "requires_camera": false,
+      "seeded": false,
+      "enter": 48,
+      "tracks": [
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 8,
+              "value": 0.25
+            },
+            {
+              "frame": 14,
+              "value": 0.5
+            },
+            {
+              "frame": 20,
+              "value": 0.75
+            },
+            {
+              "frame": 26,
+              "value": 1
+            },
+            {
+              "frame": 72,
+              "value": 1
+            }
+          ],
+          "easing": "linear"
+        },
+        {
+          "property": "position_x",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 10
+            },
+            {
+              "frame": 26,
+              "value": 0
+            },
+            {
+              "frame": 72,
+              "value": 0
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ]
+    },
+    {
+      "id": "metric_typewriter_cursor_in",
+      "category": "metric_typewriter_v1",
+      "supported_template": "metric_stat_card",
+      "targets": [
+        "text",
+        "metric"
+      ],
+      "supported_content": [
+        "text",
+        "metric"
+      ],
+      "unit": "layer",
+      "duration_bounds": {
+        "minimum_frames": 24,
+        "maximum_frames": 240
+      },
+      "required_properties": [
+        "opacity"
+      ],
+      "render_safe": true,
+      "requires_3d": false,
+      "requires_camera": false,
+      "seeded": false,
+      "enter": 48,
+      "tracks": [
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 6,
+              "value": 1
+            },
+            {
+              "frame": 12,
+              "value": 0.3
+            },
+            {
+              "frame": 18,
+              "value": 1
+            },
+            {
+              "frame": 72,
+              "value": 1
+            }
+          ],
+          "easing": "linear"
+        }
+      ]
+    },
+    {
+      "id": "metric_typewriter_digit_tick",
+      "category": "metric_typewriter_v1",
+      "supported_template": "metric_stat_card",
+      "targets": [
+        "text",
+        "metric"
+      ],
+      "supported_content": [
+        "text",
+        "metric"
+      ],
+      "unit": "layer",
+      "duration_bounds": {
+        "minimum_frames": 24,
+        "maximum_frames": 240
+      },
+      "required_properties": [
+        "opacity",
+        "scale"
+      ],
+      "render_safe": true,
+      "requires_3d": false,
+      "requires_camera": false,
+      "seeded": false,
+      "enter": 48,
+      "tracks": [
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 10,
+              "value": 1
+            },
+            {
+              "frame": 72,
+              "value": 1
+            }
+          ],
+          "easing": "linear"
+        },
+        {
+          "property": "scale",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 1.06
+            },
+            {
+              "frame": 12,
+              "value": 1
+            },
+            {
+              "frame": 72,
+              "value": 1
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ]
+    },
+    {
+      "id": "metric_typewriter_carriage_slide",
+      "category": "metric_typewriter_v1",
+      "supported_template": "metric_stat_card",
+      "targets": [
+        "text",
+        "metric"
+      ],
+      "supported_content": [
+        "text",
+        "metric"
+      ],
+      "unit": "layer",
+      "duration_bounds": {
+        "minimum_frames": 24,
+        "maximum_frames": 240
+      },
+      "required_properties": [
+        "opacity",
+        "position_x"
+      ],
+      "render_safe": true,
+      "requires_3d": false,
+      "requires_camera": false,
+      "seeded": false,
+      "enter": 48,
+      "tracks": [
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 12,
+              "value": 1
+            },
+            {
+              "frame": 72,
+              "value": 1
+            }
+          ],
+          "easing": "linear"
+        },
+        {
+          "property": "position_x",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": -24
+            },
+            {
+              "frame": 30,
+              "value": 0
+            },
+            {
+              "frame": 72,
+              "value": 0
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ]
+    },
+    {
+      "id": "metric_typewriter_backspace_settle",
+      "category": "metric_typewriter_v1",
+      "supported_template": "metric_stat_card",
+      "targets": [
+        "text",
+        "metric"
+      ],
+      "supported_content": [
+        "text",
+        "metric"
+      ],
+      "unit": "layer",
+      "duration_bounds": {
+        "minimum_frames": 24,
+        "maximum_frames": 240
+      },
+      "required_properties": [
+        "opacity",
+        "scale"
+      ],
+      "render_safe": true,
+      "requires_3d": false,
+      "requires_camera": false,
+      "seeded": false,
+      "enter": 48,
+      "tracks": [
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 1
+            },
+            {
+              "frame": 10,
+              "value": 0.6
+            },
+            {
+              "frame": 20,
+              "value": 1
+            },
+            {
+              "frame": 72,
+              "value": 1
+            }
+          ],
+          "easing": "linear"
+        },
+        {
+          "property": "scale",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 1.03
+            },
+            {
+              "frame": 24,
+              "value": 1
+            },
+            {
+              "frame": 72,
+              "value": 1
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ]
+    },
+    {
+      "id": "metric_typewriter_line_feed",
+      "category": "metric_typewriter_v1",
+      "supported_template": "metric_stat_card",
+      "targets": [
+        "text",
+        "metric"
+      ],
+      "supported_content": [
+        "text",
+        "metric"
+      ],
+      "unit": "layer",
+      "duration_bounds": {
+        "minimum_frames": 24,
+        "maximum_frames": 240
+      },
+      "required_properties": [
+        "opacity",
+        "position_y"
+      ],
+      "render_safe": true,
+      "requires_3d": false,
+      "requires_camera": false,
+      "seeded": false,
+      "enter": 48,
+      "tracks": [
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 14,
+              "value": 1
+            },
+            {
+              "frame": 72,
+              "value": 1
+            }
+          ],
+          "easing": "linear"
+        },
+        {
+          "property": "position_y",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": -18
+            },
+            {
+              "frame": 24,
+              "value": 0
+            },
+            {
+              "frame": 72,
+              "value": 0
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ]
+    },
+    {
+      "id": "metric_typewriter_ribbon_strike",
+      "category": "metric_typewriter_v1",
+      "supported_template": "metric_stat_card",
+      "targets": [
+        "text",
+        "metric"
+      ],
+      "supported_content": [
+        "text",
+        "metric"
+      ],
+      "unit": "layer",
+      "duration_bounds": {
+        "minimum_frames": 24,
+        "maximum_frames": 240
+      },
+      "required_properties": [
+        "opacity",
+        "scale_x"
+      ],
+      "render_safe": true,
+      "requires_3d": false,
+      "requires_camera": false,
+      "seeded": false,
+      "enter": 48,
+      "tracks": [
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 6,
+              "value": 1
+            },
+            {
+              "frame": 72,
+              "value": 1
+            }
+          ],
+          "easing": "linear"
+        },
+        {
+          "property": "scale_x",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.02
+            },
+            {
+              "frame": 28,
+              "value": 1
+            },
+            {
+              "frame": 72,
+              "value": 1
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ]
+    },
+    {
+      "id": "metric_typewriter_letter_drop",
+      "category": "metric_typewriter_v1",
+      "supported_template": "metric_stat_card",
+      "targets": [
+        "text",
+        "metric"
+      ],
+      "supported_content": [
+        "text",
+        "metric"
+      ],
+      "unit": "layer",
+      "duration_bounds": {
+        "minimum_frames": 24,
+        "maximum_frames": 240
+      },
+      "required_properties": [
+        "opacity",
+        "position_y"
+      ],
+      "render_safe": true,
+      "requires_3d": false,
+      "requires_camera": false,
+      "seeded": false,
+      "enter": 48,
+      "tracks": [
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 12,
+              "value": 0.5
+            },
+            {
+              "frame": 24,
+              "value": 1
+            },
+            {
+              "frame": 72,
+              "value": 1
+            }
+          ],
+          "easing": "linear"
+        },
+        {
+          "property": "position_y",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 16
+            },
+            {
+              "frame": 36,
+              "value": 0
+            },
+            {
+              "frame": 72,
+              "value": 0
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ]
+    },
+    {
+      "id": "metric_typewriter_ink_stamp",
+      "category": "metric_typewriter_v1",
+      "supported_template": "metric_stat_card",
+      "targets": [
+        "text",
+        "metric"
+      ],
+      "supported_content": [
+        "text",
+        "metric"
+      ],
+      "unit": "layer",
+      "duration_bounds": {
+        "minimum_frames": 24,
+        "maximum_frames": 240
+      },
+      "required_properties": [
+        "opacity",
+        "scale"
+      ],
+      "render_safe": true,
+      "requires_3d": false,
+      "requires_camera": false,
+      "seeded": false,
+      "enter": 48,
+      "tracks": [
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 8,
+              "value": 1
+            },
+            {
+              "frame": 72,
+              "value": 1
+            }
+          ],
+          "easing": "linear"
+        },
+        {
+          "property": "scale",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 1.18
+            },
+            {
+              "frame": 18,
+              "value": 0.97
+            },
+            {
+              "frame": 30,
+              "value": 1
+            },
+            {
+              "frame": 72,
+              "value": 1
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ]
+    },
+    {
+      "id": "metric_typewriter_key_strike",
+      "category": "metric_typewriter_v1",
+      "supported_template": "metric_stat_card",
+      "targets": [
+        "text",
+        "metric"
+      ],
+      "supported_content": [
+        "text",
+        "metric"
+      ],
+      "unit": "layer",
+      "duration_bounds": {
+        "minimum_frames": 24,
+        "maximum_frames": 240
+      },
+      "required_properties": [
+        "opacity",
+        "rotation_x"
+      ],
+      "render_safe": true,
+      "requires_3d": true,
+      "requires_camera": true,
+      "seeded": false,
+      "enter": 48,
+      "tracks": [
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 14,
+              "value": 1
+            },
+            {
+              "frame": 72,
+              "value": 1
+            }
+          ],
+          "easing": "linear"
+        },
+        {
+          "property": "rotation_x",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": -40
+            },
+            {
+              "frame": 34,
+              "value": 0
+            },
+            {
+              "frame": 72,
+              "value": 0
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ]
+    },
+    {
+      "id": "date_typewriter_year_type",
+      "category": "date_typewriter_v1",
+      "supported_template": "timeline_date_card",
+      "targets": [
+        "text",
+        "date"
+      ],
+      "supported_content": [
+        "text",
+        "date"
+      ],
+      "unit": "layer",
+      "duration_bounds": {
+        "minimum_frames": 24,
+        "maximum_frames": 240
+      },
+      "required_properties": [
+        "opacity",
+        "position_x"
+      ],
+      "render_safe": true,
+      "requires_3d": false,
+      "requires_camera": false,
+      "seeded": false,
+      "enter": 48,
+      "tracks": [
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 8,
+              "value": 0.25
+            },
+            {
+              "frame": 14,
+              "value": 0.5
+            },
+            {
+              "frame": 20,
+              "value": 0.75
+            },
+            {
+              "frame": 26,
+              "value": 1
+            },
+            {
+              "frame": 72,
+              "value": 1
+            }
+          ],
+          "easing": "linear"
+        },
+        {
+          "property": "position_x",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 10
+            },
+            {
+              "frame": 26,
+              "value": 0
+            },
+            {
+              "frame": 72,
+              "value": 0
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ]
+    },
+    {
+      "id": "date_typewriter_day_stamp",
+      "category": "date_typewriter_v1",
+      "supported_template": "timeline_date_card",
+      "targets": [
+        "text",
+        "date"
+      ],
+      "supported_content": [
+        "text",
+        "date"
+      ],
+      "unit": "layer",
+      "duration_bounds": {
+        "minimum_frames": 24,
+        "maximum_frames": 240
+      },
+      "required_properties": [
+        "opacity",
+        "scale"
+      ],
+      "render_safe": true,
+      "requires_3d": false,
+      "requires_camera": false,
+      "seeded": false,
+      "enter": 48,
+      "tracks": [
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 8,
+              "value": 1
+            },
+            {
+              "frame": 72,
+              "value": 1
+            }
+          ],
+          "easing": "linear"
+        },
+        {
+          "property": "scale",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 1.1
+            },
+            {
+              "frame": 16,
+              "value": 1
+            },
+            {
+              "frame": 72,
+              "value": 1
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ]
+    },
+    {
+      "id": "date_typewriter_month_strike",
+      "category": "date_typewriter_v1",
+      "supported_template": "timeline_date_card",
+      "targets": [
+        "text",
+        "date"
+      ],
+      "supported_content": [
+        "text",
+        "date"
+      ],
+      "unit": "layer",
+      "duration_bounds": {
+        "minimum_frames": 24,
+        "maximum_frames": 240
+      },
+      "required_properties": [
+        "opacity",
+        "scale_x"
+      ],
+      "render_safe": true,
+      "requires_3d": false,
+      "requires_camera": false,
+      "seeded": false,
+      "enter": 48,
+      "tracks": [
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 6,
+              "value": 1
+            },
+            {
+              "frame": 72,
+              "value": 1
+            }
+          ],
+          "easing": "linear"
+        },
+        {
+          "property": "scale_x",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.02
+            },
+            {
+              "frame": 26,
+              "value": 1
+            },
+            {
+              "frame": 72,
+              "value": 1
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ]
+    },
+    {
+      "id": "date_typewriter_era_carriage",
+      "category": "date_typewriter_v1",
+      "supported_template": "timeline_date_card",
+      "targets": [
+        "text",
+        "date"
+      ],
+      "supported_content": [
+        "text",
+        "date"
+      ],
+      "unit": "layer",
+      "duration_bounds": {
+        "minimum_frames": 24,
+        "maximum_frames": 240
+      },
+      "required_properties": [
+        "opacity",
+        "position_x"
+      ],
+      "render_safe": true,
+      "requires_3d": false,
+      "requires_camera": false,
+      "seeded": false,
+      "enter": 48,
+      "tracks": [
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 12,
+              "value": 1
+            },
+            {
+              "frame": 72,
+              "value": 1
+            }
+          ],
+          "easing": "linear"
+        },
+        {
+          "property": "position_x",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": -24
+            },
+            {
+              "frame": 30,
+              "value": 0
+            },
+            {
+              "frame": 72,
+              "value": 0
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ]
+    },
+    {
+      "id": "date_typewriter_range_type",
+      "category": "date_typewriter_v1",
+      "supported_template": "timeline_date_card",
+      "targets": [
+        "text",
+        "date"
+      ],
+      "supported_content": [
+        "text",
+        "date"
+      ],
+      "unit": "layer",
+      "duration_bounds": {
+        "minimum_frames": 24,
+        "maximum_frames": 240
+      },
+      "required_properties": [
+        "opacity",
+        "scale_x"
+      ],
+      "render_safe": true,
+      "requires_3d": false,
+      "requires_camera": false,
+      "seeded": false,
+      "enter": 48,
+      "tracks": [
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 10,
+              "value": 1
+            },
+            {
+              "frame": 72,
+              "value": 1
+            }
+          ],
+          "easing": "linear"
+        },
+        {
+          "property": "scale_x",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.05
+            },
+            {
+              "frame": 34,
+              "value": 1
+            },
+            {
+              "frame": 72,
+              "value": 1
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ]
+    },
+    {
+      "id": "date_typewriter_bracket_tap",
+      "category": "date_typewriter_v1",
+      "supported_template": "timeline_date_card",
+      "targets": [
+        "text",
+        "date"
+      ],
+      "supported_content": [
+        "text",
+        "date"
+      ],
+      "unit": "layer",
+      "duration_bounds": {
+        "minimum_frames": 24,
+        "maximum_frames": 240
+      },
+      "required_properties": [
+        "opacity",
+        "scale"
+      ],
+      "render_safe": true,
+      "requires_3d": false,
+      "requires_camera": false,
+      "seeded": false,
+      "enter": 48,
+      "tracks": [
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 1
+            },
+            {
+              "frame": 10,
+              "value": 0.6
+            },
+            {
+              "frame": 20,
+              "value": 1
+            },
+            {
+              "frame": 72,
+              "value": 1
+            }
+          ],
+          "easing": "linear"
+        },
+        {
+          "property": "scale",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 1.03
+            },
+            {
+              "frame": 24,
+              "value": 1
+            },
+            {
+              "frame": 72,
+              "value": 1
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ]
+    },
+    {
+      "id": "date_typewriter_timeline_feed",
+      "category": "date_typewriter_v1",
+      "supported_template": "timeline_date_card",
+      "targets": [
+        "text",
+        "date"
+      ],
+      "supported_content": [
+        "text",
+        "date"
+      ],
+      "unit": "layer",
+      "duration_bounds": {
+        "minimum_frames": 24,
+        "maximum_frames": 240
+      },
+      "required_properties": [
+        "opacity",
+        "position_y"
+      ],
+      "render_safe": true,
+      "requires_3d": false,
+      "requires_camera": false,
+      "seeded": false,
+      "enter": 48,
+      "tracks": [
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 14,
+              "value": 1
+            },
+            {
+              "frame": 72,
+              "value": 1
+            }
+          ],
+          "easing": "linear"
+        },
+        {
+          "property": "position_y",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": -18
+            },
+            {
+              "frame": 24,
+              "value": 0
+            },
+            {
+              "frame": 72,
+              "value": 0
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ]
+    },
+    {
+      "id": "date_typewriter_underline_key",
+      "category": "date_typewriter_v1",
+      "supported_template": "timeline_date_card",
+      "targets": [
+        "text",
+        "date"
+      ],
+      "supported_content": [
+        "text",
+        "date"
+      ],
+      "unit": "layer",
+      "duration_bounds": {
+        "minimum_frames": 24,
+        "maximum_frames": 240
+      },
+      "required_properties": [
+        "opacity",
+        "scale_x"
+      ],
+      "render_safe": true,
+      "requires_3d": false,
+      "requires_camera": false,
+      "seeded": false,
+      "enter": 48,
+      "tracks": [
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 6,
+              "value": 1
+            },
+            {
+              "frame": 72,
+              "value": 1
+            }
+          ],
+          "easing": "linear"
+        },
+        {
+          "property": "scale_x",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.02
+            },
+            {
+              "frame": 28,
+              "value": 1
+            },
+            {
+              "frame": 72,
+              "value": 1
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ]
+    },
+    {
+      "id": "date_typewriter_margin_return",
+      "category": "date_typewriter_v1",
+      "supported_template": "timeline_date_card",
+      "targets": [
+        "text",
+        "date"
+      ],
+      "supported_content": [
+        "text",
+        "date"
+      ],
+      "unit": "layer",
+      "duration_bounds": {
+        "minimum_frames": 24,
+        "maximum_frames": 240
+      },
+      "required_properties": [
+        "opacity",
+        "position_y"
+      ],
+      "render_safe": true,
+      "requires_3d": false,
+      "requires_camera": false,
+      "seeded": false,
+      "enter": 48,
+      "tracks": [
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 12,
+              "value": 0.5
+            },
+            {
+              "frame": 24,
+              "value": 1
+            },
+            {
+              "frame": 72,
+              "value": 1
+            }
+          ],
+          "easing": "linear"
+        },
+        {
+          "property": "position_y",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 16
+            },
+            {
+              "frame": 36,
+              "value": 0
+            },
+            {
+              "frame": 72,
+              "value": 0
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ]
+    },
+    {
+      "id": "date_typewriter_ink_stamp",
+      "category": "date_typewriter_v1",
+      "supported_template": "timeline_date_card",
+      "targets": [
+        "text",
+        "date"
+      ],
+      "supported_content": [
+        "text",
+        "date"
+      ],
+      "unit": "layer",
+      "duration_bounds": {
+        "minimum_frames": 24,
+        "maximum_frames": 240
+      },
+      "required_properties": [
+        "opacity",
+        "scale"
+      ],
+      "render_safe": true,
+      "requires_3d": false,
+      "requires_camera": false,
+      "seeded": false,
+      "enter": 48,
+      "tracks": [
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 8,
+              "value": 1
+            },
+            {
+              "frame": 72,
+              "value": 1
+            }
+          ],
+          "easing": "linear"
+        },
+        {
+          "property": "scale",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 1.18
+            },
+            {
+              "frame": 18,
+              "value": 0.97
+            },
+            {
+              "frame": 30,
+              "value": 1
+            },
+            {
+              "frame": 72,
+              "value": 1
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ]
+    },
+    {
       "id": "apple_focus_rise",
       "category": "apple_phrase_v1",
       "targets": [
@@ -35236,565 +38022,6 @@
             }
           ],
           "easing": "out_cubic"
-        }
-      ],
-      "text_animators": []
-    },
-    {
-      "id": "phrase_highlight_soft_marker",
-      "category": "documentary_highlighting_v1",
-      "targets": [
-        "text"
-      ],
-      "unit": "layer",
-      "duration_bounds": {
-        "minimum_frames": 20,
-        "maximum_frames": 240
-      },
-      "render_safe": true,
-      "requires_3d": false,
-      "requires_camera": false,
-      "enter": 36,
-      "exit": 0,
-      "tracks": [],
-      "text_animators": []
-    },
-    {
-      "id": "phrase_highlight_archive_yellow",
-      "category": "documentary_highlighting_v1",
-      "targets": [
-        "text"
-      ],
-      "unit": "layer",
-      "duration_bounds": {
-        "minimum_frames": 20,
-        "maximum_frames": 240
-      },
-      "render_safe": true,
-      "requires_3d": false,
-      "requires_camera": false,
-      "enter": 36,
-      "exit": 0,
-      "tracks": [],
-      "text_animators": []
-    },
-    {
-      "id": "phrase_highlight_evidence_red",
-      "category": "documentary_highlighting_v1",
-      "targets": [
-        "text"
-      ],
-      "unit": "layer",
-      "duration_bounds": {
-        "minimum_frames": 20,
-        "maximum_frames": 240
-      },
-      "render_safe": true,
-      "requires_3d": false,
-      "requires_camera": false,
-      "enter": 36,
-      "exit": 0,
-      "tracks": [],
-      "text_animators": []
-    },
-    {
-      "id": "phrase_highlight_phrase_focus",
-      "category": "documentary_highlighting_v1",
-      "targets": [
-        "text"
-      ],
-      "unit": "layer",
-      "duration_bounds": {
-        "minimum_frames": 20,
-        "maximum_frames": 240
-      },
-      "render_safe": true,
-      "requires_3d": false,
-      "requires_camera": false,
-      "enter": 36,
-      "exit": 0,
-      "tracks": [],
-      "text_animators": []
-    },
-    {
-      "id": "phrase_highlight_document_scan",
-      "category": "documentary_highlighting_v1",
-      "targets": [
-        "text"
-      ],
-      "unit": "layer",
-      "duration_bounds": {
-        "minimum_frames": 20,
-        "maximum_frames": 240
-      },
-      "render_safe": true,
-      "requires_3d": false,
-      "requires_camera": false,
-      "enter": 36,
-      "exit": 0,
-      "tracks": [],
-      "text_animators": []
-    },
-    {
-      "id": "doc_01_yellow_marker_sweep",
-      "category": "documentary_highlighting_v1",
-      "targets": [
-        "text"
-      ],
-      "unit": "layer",
-      "duration_bounds": {
-        "minimum_frames": 20,
-        "maximum_frames": 240
-      },
-      "render_safe": true,
-      "requires_3d": false,
-      "requires_camera": false,
-      "enter": 36,
-      "exit": 0,
-      "tracks": [],
-      "text_animators": []
-    },
-    {
-      "id": "doc_02_multiline_stagger_highlight",
-      "category": "documentary_highlighting_v1",
-      "targets": [
-        "text"
-      ],
-      "unit": "layer",
-      "duration_bounds": {
-        "minimum_frames": 20,
-        "maximum_frames": 240
-      },
-      "render_safe": true,
-      "requires_3d": false,
-      "requires_camera": false,
-      "enter": 36,
-      "exit": 0,
-      "tracks": [],
-      "text_animators": []
-    },
-    {
-      "id": "doc_03_documentary_quote_marker",
-      "category": "documentary_highlighting_v1",
-      "targets": [
-        "text"
-      ],
-      "unit": "layer",
-      "duration_bounds": {
-        "minimum_frames": 20,
-        "maximum_frames": 240
-      },
-      "render_safe": true,
-      "requires_3d": false,
-      "requires_camera": false,
-      "enter": 36,
-      "exit": 0,
-      "tracks": [],
-      "text_animators": []
-    },
-    {
-      "id": "doc_04_archival_source_highlight",
-      "category": "documentary_highlighting_v1",
-      "targets": [
-        "text"
-      ],
-      "unit": "layer",
-      "duration_bounds": {
-        "minimum_frames": 20,
-        "maximum_frames": 240
-      },
-      "render_safe": true,
-      "requires_3d": false,
-      "requires_camera": false,
-      "enter": 36,
-      "exit": 0,
-      "tracks": [
-        {
-          "property": "scale_x",
-          "easing": "out_cubic",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 1.0
-            },
-            {
-              "frame": 60,
-              "value": 1.045
-            }
-          ]
-        }
-      ],
-      "text_animators": []
-    },
-    {
-      "id": "doc_05_selective_phrase_tracking",
-      "category": "documentary_highlighting_v1",
-      "targets": [
-        "text"
-      ],
-      "unit": "layer",
-      "duration_bounds": {
-        "minimum_frames": 20,
-        "maximum_frames": 240
-      },
-      "render_safe": true,
-      "requires_3d": false,
-      "requires_camera": false,
-      "enter": 36,
-      "exit": 0,
-      "tracks": [
-        {
-          "property": "position_x",
-          "easing": "in_out_sine",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": -25.0
-            },
-            {
-              "frame": 60,
-              "value": 25.0
-            }
-          ]
-        }
-      ],
-      "text_animators": []
-    },
-    {
-      "id": "doc_06_red_keyword_punch",
-      "category": "documentary_highlighting_v1",
-      "targets": [
-        "text"
-      ],
-      "unit": "layer",
-      "duration_bounds": {
-        "minimum_frames": 20,
-        "maximum_frames": 240
-      },
-      "render_safe": true,
-      "requires_3d": false,
-      "requires_camera": false,
-      "enter": 36,
-      "exit": 0,
-      "tracks": [
-        {
-          "property": "scale",
-          "easing": "out_cubic",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 0.94
-            },
-            {
-              "frame": 18,
-              "value": 0.94
-            },
-            {
-              "frame": 30,
-              "value": 1.04
-            },
-            {
-              "frame": 42,
-              "value": 1.0
-            }
-          ]
-        }
-      ],
-      "text_animators": []
-    },
-    {
-      "id": "doc_07_word_impact_reveal",
-      "category": "documentary_highlighting_v1",
-      "targets": [
-        "text"
-      ],
-      "unit": "layer",
-      "duration_bounds": {
-        "minimum_frames": 20,
-        "maximum_frames": 240
-      },
-      "render_safe": true,
-      "requires_3d": false,
-      "requires_camera": false,
-      "enter": 36,
-      "exit": 0,
-      "tracks": [],
-      "text_animators": [
-        {
-          "id": "documentary-word-impact",
-          "selector": {
-            "kind": "word",
-            "order": "forward",
-            "shape": "square",
-            "stagger": 2
-          },
-          "properties": [
-            {
-              "property": "opacity",
-              "easing": "linear",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 0.0
-                },
-                {
-                  "frame": 30,
-                  "value": 1.0
-                }
-              ]
-            },
-            {
-              "property": "scale",
-              "easing": "linear",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 0.82
-                },
-                {
-                  "frame": 30,
-                  "value": 1.0
-                }
-              ]
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "id": "doc_08_mixed_font_emphasis",
-      "category": "documentary_highlighting_v1",
-      "targets": [
-        "text"
-      ],
-      "unit": "layer",
-      "duration_bounds": {
-        "minimum_frames": 20,
-        "maximum_frames": 240
-      },
-      "render_safe": true,
-      "requires_3d": false,
-      "requires_camera": false,
-      "enter": 36,
-      "exit": 0,
-      "tracks": [
-        {
-          "property": "position_y",
-          "easing": "out_cubic",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 14.0
-            },
-            {
-              "frame": 28,
-              "value": 0.0
-            }
-          ]
-        }
-      ],
-      "text_animators": []
-    },
-    {
-      "id": "doc_09_cinematic_underline_draw",
-      "category": "documentary_highlighting_v1",
-      "targets": [
-        "text"
-      ],
-      "unit": "layer",
-      "duration_bounds": {
-        "minimum_frames": 20,
-        "maximum_frames": 240
-      },
-      "render_safe": true,
-      "requires_3d": false,
-      "requires_camera": false,
-      "enter": 36,
-      "exit": 0,
-      "tracks": [],
-      "text_animators": []
-    },
-    {
-      "id": "doc_10_selective_contrast_focus",
-      "category": "documentary_highlighting_v1",
-      "targets": [
-        "text"
-      ],
-      "unit": "layer",
-      "duration_bounds": {
-        "minimum_frames": 20,
-        "maximum_frames": 240
-      },
-      "render_safe": true,
-      "requires_3d": false,
-      "requires_camera": false,
-      "enter": 36,
-      "exit": 0,
-      "tracks": [],
-      "text_animators": []
-    },
-    {
-      "id": "doc_11_headline_cinematic_zoom",
-      "category": "documentary_highlighting_v1",
-      "targets": [
-        "text"
-      ],
-      "unit": "layer",
-      "duration_bounds": {
-        "minimum_frames": 20,
-        "maximum_frames": 240
-      },
-      "render_safe": true,
-      "requires_3d": false,
-      "requires_camera": false,
-      "enter": 36,
-      "exit": 0,
-      "tracks": [
-        {
-          "property": "scale_x",
-          "easing": "out_cubic",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 1.0
-            },
-            {
-              "frame": 40,
-              "value": 1.08
-            }
-          ]
-        }
-      ],
-      "text_animators": []
-    },
-    {
-      "id": "doc_12_quote_line_by_line_reveal",
-      "category": "documentary_highlighting_v1",
-      "targets": [
-        "text"
-      ],
-      "unit": "layer",
-      "duration_bounds": {
-        "minimum_frames": 20,
-        "maximum_frames": 240
-      },
-      "render_safe": true,
-      "requires_3d": false,
-      "requires_camera": false,
-      "enter": 36,
-      "exit": 0,
-      "tracks": [],
-      "text_animators": [
-        {
-          "id": "documentary-line-reveal",
-          "selector": {
-            "kind": "line",
-            "order": "forward",
-            "shape": "square",
-            "stagger": 8
-          },
-          "properties": [
-            {
-              "property": "opacity",
-              "easing": "linear",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 0.0
-                },
-                {
-                  "frame": 40,
-                  "value": 1.0
-                }
-              ]
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "id": "doc_13_analog_scanner_highlight",
-      "category": "documentary_highlighting_v1",
-      "targets": [
-        "text"
-      ],
-      "unit": "layer",
-      "duration_bounds": {
-        "minimum_frames": 20,
-        "maximum_frames": 240
-      },
-      "render_safe": true,
-      "requires_3d": false,
-      "requires_camera": false,
-      "enter": 36,
-      "exit": 0,
-      "tracks": [
-        {
-          "property": "scale_x",
-          "easing": "in_out_sine",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 1.0
-            },
-            {
-              "frame": 60,
-              "value": 1.03
-            }
-          ]
-        }
-      ],
-      "text_animators": []
-    },
-    {
-      "id": "doc_14_dual_highlight_sequence",
-      "category": "documentary_highlighting_v1",
-      "targets": [
-        "text"
-      ],
-      "unit": "layer",
-      "duration_bounds": {
-        "minimum_frames": 20,
-        "maximum_frames": 240
-      },
-      "render_safe": true,
-      "requires_3d": false,
-      "requires_camera": false,
-      "enter": 36,
-      "exit": 0,
-      "tracks": [],
-      "text_animators": []
-    },
-    {
-      "id": "doc_15_documentary_source_focus",
-      "category": "documentary_highlighting_v1",
-      "targets": [
-        "text"
-      ],
-      "unit": "layer",
-      "duration_bounds": {
-        "minimum_frames": 20,
-        "maximum_frames": 240
-      },
-      "render_safe": true,
-      "requires_3d": false,
-      "requires_camera": false,
-      "enter": 36,
-      "exit": 0,
-      "tracks": [
-        {
-          "property": "position_y",
-          "easing": "out_cubic",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 10.0
-            },
-            {
-              "frame": 24,
-              "value": 0.0
-            }
-          ]
         }
       ],
       "text_animators": []

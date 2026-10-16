@@ -88,7 +88,11 @@ func (s *Service) RequeueExpired(ctx context.Context, now time.Time) (int, error
 	if n > 0 && s.metrics != nil {
 		s.metrics.LeaseExpired.Add(float64(n))
 	}
-	if n > 0 {
+	if n > 1 {
+		// Multi-job path: n jobs became claimable at once, so wake every
+		// parked waiter instead of one (a single wake would under-notify).
+		s.notify.Broadcast()
+	} else if n > 0 {
 		s.notify.Notify()
 	}
 	s.observePending(ctx)

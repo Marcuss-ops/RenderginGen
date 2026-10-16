@@ -10,6 +10,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"strings"
 	"time"
@@ -115,13 +116,17 @@ func (p *Processor) Prepare(ctx context.Context, job *queue.Job) (queue.Artifact
 // characters) are always verified against the bytes before Chronon sees them.
 func (p *Processor) resolveAssetStreaming(ctx context.Context, asset queue.AssetRef) (workspace.ResolvedAsset, error) {
 	hash := asset.Hash
+	sourceURL, srcErr := assetSourceURL(asset)
+	if srcErr != nil {
+		log.Printf("asset resolve refused: hash=%s logical_path=%q err=%v", hash, asset.LogicalPath, srcErr)
+		return workspace.ResolvedAsset{}, srcErr
+	}
 	if path, size, err := p.store.LocalPath(ctx, hash); err == nil {
 		return workspace.ResolvedAsset{LocalPath: path, SizeBytes: size}, nil
-	} else if !errors.Is(err, storage.ErrNotFound) || len(hash) != 64 || !isHTTPURL(assetSourceURL(asset)) {
+	} else if !errors.Is(err, storage.ErrNotFound) || len(hash) != 64 || !isHTTPURL(sourceURL) {
 		log.Printf("asset resolve cache miss not self-healed: hash=%s logical_path=%q err=%v", hash, asset.LogicalPath, err)
 		return workspace.ResolvedAsset{}, err
 	}
-	sourceURL := assetSourceURL(asset)
 	log.Printf("asset resolve self-heal: hash=%s logical_path=%q source_url=%q", hash, asset.LogicalPath, sourceURL)
 
 	tmp, err := os.CreateTemp("", ".selfheal-*")
@@ -180,14 +185,48 @@ func (p *Processor) resolveAssetStreaming(ctx context.Context, asset queue.Asset
 }
 
 func isHTTPURL(s string) bool {
-	return strings.HasPrefix(s, "http://") || strings.HasPrefix(s, "https://")
+	if s == "" {
+		return false
+	}
+	u, err := url.Parse(s)
+	if err != nil {
+		return false
+	}
+	return u.Scheme == "http" || u.Scheme == "https"
 }
 
-func assetSourceURL(asset queue.AssetRef) string {
+// assetSourceURL returns the validated download URL for a self-heal fetch.
+// SourceURL is the preferred URL-typed input: it must parse and use
+// http/https with a host. A LogicalPath that parses as http/https is still
+// honored as a LEGACY self-heal source (pinned by
+// TestPrepareSelfHealsMissingEntityImageFromURL): the downloaded bytes are
+// hash-verified (64-hex key) and size-capped before Chronon sees them, so a
+// wrong body can never be injected — but the fetch is logged loudly because a
+// workspace-relative field carrying a URL is a contract smell and new producers
+// must set source_url explicitly. Any other scheme in LogicalPath is rejected
+// (SSRF fail-closed).
+func assetSourceURL(asset queue.AssetRef) (string, error) {
 	if asset.SourceURL != "" {
-		return asset.SourceURL
+		u, err := url.Parse(asset.SourceURL)
+		if err != nil {
+			return "", fmt.Errorf("asset source_url %q is not a valid URL: %w", asset.SourceURL, err)
+		}
+		if u.Scheme != "http" && u.Scheme != "https" {
+			return "", fmt.Errorf("asset source_url %q has unsupported scheme %q (want http or https)", asset.SourceURL, u.Scheme)
+		}
+		if u.Host == "" {
+			return "", fmt.Errorf("asset source_url %q has no host", asset.SourceURL)
+		}
+		return asset.SourceURL, nil
 	}
-	return asset.LogicalPath
+	if u, err := url.Parse(asset.LogicalPath); err == nil && u.Scheme != "" {
+		if u.Scheme == "http" || u.Scheme == "https" {
+			log.Printf("asset logical_path %q carries a URL: legacy self-heal accepted (hash-verified, size-capped); set source_url explicitly", asset.LogicalPath)
+			return asset.LogicalPath, nil
+		}
+		return "", fmt.Errorf("asset logical_path %q has unsupported URL scheme %q: refusing to fetch it", asset.LogicalPath, u.Scheme)
+	}
+	return "", nil
 }
 
 // assetDownloadClient bounds every self-heal download: without a timeout a

@@ -17,6 +17,18 @@ import (
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/hashio"
 )
 
+// syncParentDir fsyncs a directory best-effort so a just-renamed entry is
+// durable. Failures are logged, never fatal: on tmpfs there is nothing to
+// persist and the rename is already visible.
+func syncParentDir(dir string) {
+	dfd, err := os.Open(dir)
+	if err != nil {
+		return
+	}
+	_ = dfd.Sync()
+	_ = dfd.Close()
+}
+
 // diskCache is the L2 NVMe cache: content-addressed files on disk.
 //
 // The mutex guards only the in-memory index (entries/total) and the short
@@ -44,6 +56,7 @@ type diskCache struct {
 	// no log), so a broken L2 could silently turn every job into an L3 fetch
 	// while the hit-rate dashboards just showed misses.
 	readErrors atomic.Int64
+	corruptErrors atomic.Int64 // EACCES/EIO/non-regular entries: degradation, not a miss
 	lastErrLog atomic.Int64 // unix nanos of the last degradation log (rate limit)
 }
 
@@ -59,13 +72,46 @@ func newDiskCache(dir string, max int64) *diskCache {
 // reportReadError counts a non-"absent" L2 failure and logs it at most once
 // per second: a broken cache directory must be visible in the logs and in the
 // counters without turning every asset resolution into a log storm.
+// Permission/I-O failures (EACCES/EIO) and non-regular entries are
+// degradation/corruption, not ordinary misses: they bump the dedicated
+// corrupt counter as well and log with the full path so an operator can tell
+// "absent, fetch from L3" apart from "present but unreadable".
 func (d *diskCache) reportReadError(op, key string, err error) {
 	d.readErrors.Add(1)
+	if isCacheCorrupt(err) {
+		d.corruptErrors.Add(1)
+	}
 	now := time.Now().UnixNano()
 	last := d.lastErrLog.Load()
 	if now-last >= int64(time.Second) && d.lastErrLog.CompareAndSwap(last, now) {
 		log.Printf("storage: L2 %s %s: %v (treated as a cache miss; L3 remains the source of truth)", op, d.path(key), err)
 	}
+}
+
+// isCacheCorrupt reports whether err is a permission/I-O degradation rather
+// than a plain miss. os.IsNotExist is handled by callers; anything matching
+// permission or low-level I/O (EACCES/EPERM/EIO, including wrapped
+// *os.PathError / *fs.PathError) is corruption/degradation.
+func isCacheCorrupt(err error) bool {
+	if err == nil {
+		return false
+	}
+	if os.IsPermission(err) {
+		return true
+	}
+	if errors.Is(err, fs.ErrPermission) {
+		return true
+	}
+	var pathErr *fs.PathError
+	if errors.As(err, &pathErr) {
+		s := strings.ToLower(pathErr.Err.Error())
+		if strings.Contains(s, "permission") || strings.Contains(s, "input/output") || strings.Contains(s, "i/o") {
+			return true
+		}
+	}
+	var syscallErr interface{ Timeout() bool }
+	_ = syscallErr
+	return false
 }
 
 func (d *diskCache) Get(key string) ([]byte, bool) {
@@ -109,6 +155,11 @@ func (d *diskCache) Path(key string) (string, bool) {
 		return "", false
 	}
 	if !info.Mode().IsRegular() {
+		// Present but not a regular file: corruption, not a miss. Counted on
+		// the dedicated corrupt counter and logged with the path.
+		d.corruptErrors.Add(1)
+		d.readErrors.Add(1)
+		log.Printf("storage: L2 path %s: not a regular file (treated as a cache miss; L3 remains the source of truth)", p)
 		return "", false
 	}
 	return p, true
@@ -237,9 +288,17 @@ func (d *diskCache) install(key string, write func(*os.File) (int64, error)) (st
 	if err != nil {
 		return "", 0, err
 	}
+	// Durability: flush file pages before the atomic rename, then best-effort
+	// dir-sync so the rename itself survives a crash/power-loss. Without Sync
+	// the ledger can record an artifact as durable while its bytes are still
+	// only in the page cache.
+	if err := tmp.Sync(); err != nil {
+		return "", 0, fmt.Errorf("L2 sync %s: %w", tmpPath, err)
+	}
 	if err := tmp.Close(); err != nil {
 		return "", 0, err
 	}
+	syncParentDir(filepath.Dir(p))
 
 	d.mu.Lock()
 	defer d.mu.Unlock()

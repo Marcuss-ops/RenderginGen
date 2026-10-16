@@ -11,7 +11,67 @@ import (
 	"os/exec"
 	"strconv"
 	"strings"
+	"sync"
 )
+
+// probeCacheMaxEntries bounds the StorageKey probe cache. ProbeResult values
+// are small (a few hundred bytes of scalars), so 256 entries stay in the low
+// hundreds of KiB; beyond the cap one arbitrary entry is evicted, which only
+// costs a re-probe, never correctness (content-addressed keys are immutable).
+const probeCacheMaxEntries = 256
+
+// probeCache memoizes certified ProbeResults by artifact StorageKey (content
+// hash). The same bytes probed twice — chunk finalize then parent assembly,
+// or a re-import of identical source bytes — must not pay 2-3 ffprobe
+// processes again: the bytes are immutable under a content hash, so the
+// certified facts are immutable too.
+//
+// Closed-GOP gate unchanged: the cached value INCLUDES the closed_gop
+// verdict (ClosedGOP, ClosedGOPUncertifiable, KeyframeInterval) produced by
+// probeClosedGOP's packet-table scan. The cache never synthesizes or skips
+// that gate — a hit returns the exact verdict the scan produced, and a miss
+// still runs the scan. Only the redundant ffprobe re-executions are avoided.
+var (
+	probeCacheMu sync.Mutex
+	probeCache   = make(map[string]ProbeResult, probeCacheMaxEntries)
+)
+
+// ProbeFileCached returns the cached probe for storageKey, or probes path and
+// caches the result. An empty storageKey bypasses the cache (the caller has
+// no content identity yet, e.g. an output not yet hashed). A failed probe is
+// never cached, so a transient ffprobe error does not poison later renders of
+// the same bytes.
+func ProbeFileCached(ctx context.Context, storageKey, path string) (ProbeResult, error) {
+	if storageKey != "" {
+		probeCacheMu.Lock()
+		cached, ok := probeCache[storageKey]
+		probeCacheMu.Unlock()
+		if ok {
+			return cached, nil
+		}
+	}
+	result, err := ProbeFile(ctx, path)
+	if err != nil || storageKey == "" {
+		return result, err
+	}
+	probeCacheMu.Lock()
+	if len(probeCache) >= probeCacheMaxEntries {
+		for k := range probeCache {
+			delete(probeCache, k)
+			break
+		}
+	}
+	probeCache[storageKey] = result
+	probeCacheMu.Unlock()
+	return result, nil
+}
+
+// clearProbeCache drops all cached probe results. Tests only (same package).
+func clearProbeCache() {
+	probeCacheMu.Lock()
+	defer probeCacheMu.Unlock()
+	probeCache = make(map[string]ProbeResult, probeCacheMaxEntries)
+}
 
 // ProbeResult is the stable media surface needed to certify a rendered
 // artifact. It is intentionally derived from ffprobe, never from Chronon's
@@ -154,6 +214,19 @@ func firstFrameOfStream(frames []probeFrame, streamIndex int) (probeFrame, bool)
 }
 
 func ProbeFile(ctx context.Context, path string) (ProbeResult, error) {
+	return probeFile(ctx, path, 0)
+}
+
+// probeFile is the single probe implementation. knownFrameCount carries a
+// frame count the caller already certified (e.g. the producer-declared count
+// an import just verified, or the receipt's count): when the main ffprobe
+// document reports no nb_frames AND a known count exists, the known count is
+// used instead of spawning the -count_frames fallback process (a full
+// frame-count scan of the whole file). FrameCount==0 with no known count
+// keeps the historical fallback. The closed-GOP packet-table scan below is
+// NOT gated on FrameCount — the gate is invariant whether the count came
+// from ffprobe, the caller, or the fallback.
+func probeFile(ctx context.Context, path string, knownFrameCount int) (ProbeResult, error) {
 	// ONE ffprobe invocation certifies both halves of the probe: the
 	// stream/format facts AND the first-frame keyframe check. The keyframe check
 	// used to be a second process doing its own open and read of the same file;
@@ -257,9 +330,13 @@ func ProbeFile(ctx context.Context, path string) (ProbeResult, error) {
 		log.Printf("media: ffprobe %s: first-frame keyframe probe returned no frame (first_frame_keyframe=false)", path)
 	}
 
-	// MP4 normally exposes nb_frames in the stream metadata above. Keep an
-	// exact fallback for containers that do not, but pay the full frame-count
-	// scan only in that exceptional case instead of on every render.
+	// MP4 normally exposes nb_frames in the stream metadata above. When it
+	// does not, prefer the caller's already-certified count over a second
+	// ffprobe process, and pay the full frame-count scan only when neither
+	// exists — instead of on every render.
+	if result.FrameCount == 0 && knownFrameCount > 0 {
+		result.FrameCount = knownFrameCount
+	}
 	if result.FrameCount == 0 {
 		countCmd := exec.CommandContext(ctx, ffprobeBinary(), "-v", "error", "-count_frames", "-select_streams", "v:0",
 			"-show_entries", "stream=nb_read_frames", "-of", "default=nokey=1:noprint_wrappers=1", path)

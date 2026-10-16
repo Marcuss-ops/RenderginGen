@@ -147,7 +147,7 @@ func compileCompositeImageLayers(ri resolvedItem, src *semanticPlan, registry *a
 		assets[ref.ID] = registry.Path(ref.ID)
 	}
 	layers := make([]Layer, 0, len(ri.Item.ImageLayers)*2)
-	for _, child := range ri.Item.ImageLayers {
+	for index, child := range ri.Item.ImageLayers {
 		assetPath, ok := assets[child.AssetID]
 		if !ok {
 			return nil, fmt.Errorf("overlay: composite image item %q layer %q references undeclared asset %q", ri.Item.ID, child.ID, child.AssetID)
@@ -162,6 +162,9 @@ func compileCompositeImageLayers(ri resolvedItem, src *semanticPlan, registry *a
 		if params == nil {
 			params = map[string]any{}
 		}
+		if ri.Item.CameraMotionID != "" {
+			params = sequenceImageLayoutParams(params, src, index)
+		}
 		childItem := ri.Item
 		childItem.ID = ri.Item.ID + ":" + child.ID
 		childItem.PresetID = child.PresetID
@@ -172,23 +175,79 @@ func compileCompositeImageLayers(ri resolvedItem, src *semanticPlan, registry *a
 		childItem.CaptionMotionParams = child.CaptionMotionParams
 		childItem.CaptionFontFamily = child.CaptionFontFamily
 		childItem.CaptionColor = child.CaptionColor
+		childItem.CaptionLayout = child.CaptionLayout
 		childItem.Frame = child.Frame
 		childItem.StartMS, childItem.EndMS = child.StartMS, child.EndMS
 		childItem.Params = params
+		if ri.Item.CameraMotionID != "" {
+			childItem.CaptionLayout = "below"
+			// Camera sequences use a clean photo surface. Rounded masks and
+			// decorative preset frames can cover the portrait while the camera
+			// moves, so leave that treatment to the source image itself.
+			childItem.Frame = nil
+		}
 		childResolved := ri
 		childResolved.Item = childItem
 		childResolved.Params = params
-		childResolved.Start, childResolved.End = start, end
-		layer, err := compileSingleImageLayer(childResolved, src, assetPath, preset, child.MotionID, child.MotionParams, start, end, ri.Item.ID+":"+child.ID)
+		imageStart, imageEnd := start, end
+		if ri.Item.CameraMotionID != "" {
+			// Every portrait is present before the camera arrives. Avoid separate
+			// entrance animations that can reveal a caption ahead of its photo.
+			imageStart, imageEnd = ri.Start, ri.End
+		}
+		childResolved.Start, childResolved.End = imageStart, imageEnd
+		layer, err := compileSingleImageLayer(childResolved, src, assetPath, preset, child.MotionID, child.MotionParams, imageStart, imageEnd, ri.Item.ID+":"+child.ID)
 		if err != nil {
 			return nil, err
 		}
-		// Keep camera-backed 2.5D tracks as authored. Image geometry and
-		// motion are independent contract inputs; Enable3D is derived by the
-		// shared motion-routing helper above.
-		decorated, err := compilePremiumImageLayers(childResolved, src, layer, premium)
-		if err != nil {
-			return nil, err
+		decorated := []Layer{layer}
+		if ri.Item.CameraMotionID == "" {
+			decorated, err = compilePremiumImageLayers(childResolved, src, layer, premium)
+			if err != nil {
+				return nil, err
+			}
+		}
+		// Camera sequences use the portrait viewport as a clean crop, without
+		// inherited decorative masks or side-fill effects.
+		if ri.Item.CameraMotionID != "" && len(decorated) > 0 {
+			imageIndex := premiumImageLayerIndex(decorated)
+			imageLayer := &decorated[imageIndex]
+			// Presets supply a default box, but camera-sequence dimensions belong
+			// to the sequence layout. Reapply them after preset/premium lowering so
+			// a preset cannot silently shrink a full-frame portrait back to 480px.
+			if width, ok := numericValue(params["width"]); ok && width > 0 {
+				imageLayer.BoxWidth = int(width)
+			}
+			if height, ok := numericValue(params["height"]); ok && height > 0 {
+				imageLayer.BoxHeight = int(height)
+			}
+			imageLayer.Size = []float64{float64(imageLayer.BoxWidth), float64(imageLayer.BoxHeight)}
+			imageLayer.EntityImage = false
+			imageLayer.Fit = FitCover
+			// An image preset can add rounded corners after the sequence layout
+			// has cleared its frame. Camera sequences use the full rectangular
+			// photo surface, so do not let preset radius leak into the crop.
+			imageLayer.Radius = 0
+			imageLayer.Masks = nil
+			// The camera sequence should stay on the native GPU path. The default
+			// image drop shadow currently dispatches through the software effect
+			// fallback, so omit it for these clean editorial photo cards.
+			if imageLayer.Style != nil {
+				imageLayer.Style.Shadow = nil
+				imageLayer.Style.Glow = nil
+			}
+			imageLayer.Position = []float64{float64(index * src.Width), 0}
+		}
+		// Sequence camera tracks only affect world-space layers. Composite
+		// portraits are normally 2D HUD overlays, and image motion lowering can
+		// reset Enable3D. Apply the sequence rig after lowering so every image
+		// component follows the scene camera.
+		if ri.Item.CameraMotionID != "" {
+			for i := range decorated {
+				decorated[i].Animation = nil
+				decorated[i].TextAnimators = nil
+				decorated[i].Enable3D = true
+			}
 		}
 		layers = append(layers, decorated...)
 		if caption := strings.TrimSpace(child.Caption); caption != "" {
@@ -197,6 +256,47 @@ func compileCompositeImageLayers(ri resolvedItem, src *semanticPlan, registry *a
 			if err != nil {
 				return nil, err
 			}
+			if ri.Item.CameraMotionID != "" {
+				// Caption layout reserves vertical space by nudging its linked
+				// image. Camera sequences keep the portrait centered and position
+				// the caption independently in screen space.
+				decorated[imageIndex].Position = []float64{float64(index * src.Width), 0}
+				layerIndex := len(layers) - len(decorated) + imageIndex
+				layers[layerIndex].Position = append([]float64(nil), decorated[imageIndex].Position...)
+				captionStart, captionEnd := start, end
+				// Keep the label attached to the image while the camera is settled.
+				// During the pan, clear the old name; reveal the next name once the
+				// camera reaches its portrait. The caption itself is screen-space so
+				// it stays directly below the centered subject as the camera travels.
+				if index+1 < len(ri.Item.ImageLayers) {
+					nextStart, _ := msFrames(ri.Item.ImageLayers[index+1].StartMS, ri.Item.ImageLayers[index+1].StartMS, int64(src.FPSNum), int64(src.FPSDen))
+					_, travel := msFrames(0, sequenceTravelMS, int64(src.FPSNum), int64(src.FPSDen))
+					panStart := ri.Start + nextStart - travel
+					if panStart < captionEnd {
+						captionEnd = panStart
+					}
+				}
+				captionLayer.StartFrame = captionStart
+				captionLayer.DurationFrames = max(int64(1), captionEnd-captionStart)
+				captionLayer.Animation = nil
+				captionLayer.TextAnimators = nil
+				captionLayer.Enable3D = false
+				// Chronon TEXT layers carry absolute top-left-origin box centers. The
+				// caption is screen-space during a sequence pan, so pin it to the
+				// absolute canvas center and keep the resolved below-image
+				// vertical position converted back to absolute coordinates.
+				// (Image layers use center offsets; text layers do not.)
+				captionY := 0.0
+				if len(captionLayer.Position) > 1 {
+					captionY = captionLayer.Position[1]
+				}
+				captionLayer.Position = []float64{float64(src.Width) / 2, captionY + float64(src.Height)/2}
+			} else if child.CaptionEndMS > 0 {
+				captionStart, _ := msFrames(child.CaptionStartMS, child.CaptionStartMS, int64(src.FPSNum), int64(src.FPSDen))
+				captionEnd, _ := msFrames(child.CaptionEndMS, child.CaptionEndMS, int64(src.FPSNum), int64(src.FPSDen))
+				captionLayer.StartFrame = ri.Start + captionStart
+				captionLayer.DurationFrames = max(int64(1), captionEnd-captionStart)
+			}
 			if premium != nil && len(premium.ImageRecipe.CaptionTracks) > 0 {
 				premiumLayerActive(&captionLayer, premiumTracks(*premium, premium.ImageRecipe.CaptionTracks, captionLayer.DurationFrames))
 			}
@@ -204,6 +304,27 @@ func compileCompositeImageLayers(ri resolvedItem, src *semanticPlan, registry *a
 		}
 	}
 	return layers, nil
+}
+
+// sequenceImageLayoutParams gives each image a portrait viewport. Cover crops
+// landscape padding so baked-in blurred side bands cannot dominate the photo.
+func sequenceImageLayoutParams(params map[string]any, src *semanticPlan, index int) map[string]any {
+	if src == nil || src.Width <= 0 || src.Height <= 0 {
+		return params
+	}
+	result := make(map[string]any, len(params)+5)
+	for key, value := range params {
+		result[key] = value
+	}
+	// Fill most of the frame so portraits remain the visual focus. The reserved
+	// lower margin still gives the screen-space caption room beneath the image.
+	portraitHeight := float64(src.Height) * sequencePortraitHeightRatio
+	result["width"] = int(portraitHeight * 0.73)
+	result["height"] = int(portraitHeight)
+	result["position_x"] = float64(index * src.Width)
+	result["position_y"] = 0.0
+	result["fit"] = "cover"
+	return result
 }
 
 // compileSingleImageLayer is shared by standalone images and composite
@@ -225,7 +346,11 @@ func compileSingleImageLayerResolved(ri resolvedItem, src *semanticPlan, assetPa
 	layer.ID = imageLayerID(layerID)
 	layer.StartFrame, layer.DurationFrames = start, end-start
 	applyPresetDefinition(&layer, preset)
-	if motionID == "" && preset.ID != "" {
+	sequenceStatic := ri.Item.CameraMotionID != ""
+	if sequenceStatic {
+		motionID, motionParams, resolved = "", nil, nil
+	}
+	if motionID == "" && preset.ID != "" && !sequenceStatic {
 		motionID = runtimeDefaultImageMotionID(src, layerID)
 		if motionID != "" {
 			var err error
@@ -246,7 +371,7 @@ func compileSingleImageLayerResolved(ri resolvedItem, src *semanticPlan, assetPa
 		// Explicit image motion_id is authoritative for both entity and generic
 		// images; 2.5D recipes are no longer silently discarded for portraits.
 		applyMotionRouting(&layer, animation)
-	} else if preset.ID != "" {
+	} else if preset.ID != "" && !sequenceStatic {
 		animation, err := animationForPreset(preset, "", end-start)
 		if err != nil {
 			return Layer{}, err

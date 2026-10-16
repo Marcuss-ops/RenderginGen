@@ -27,8 +27,24 @@ func compileImageCaptionLayer(parent resolvedItem, src *semanticPlan, child sema
 	// The resolver owns the geometry: image bottom_center + margin anchor,
 	// safe-area clamping and long-name font fitting all happen there. The
 	// lowering below only writes the resolver's answer into the layer.
-	imageBounds := EntityCardImageBoundsFromCenter(src.Width, src.Height, image.Position, image.Size[0], image.Size[1])
-	layout, err := ResolveEntityCardLayoutAt(src.Width, src.Height, imageBounds, caption, child.CaptionLayout)
+	layoutPosition := image.Position
+	sequenceOffsetX, sequenceOffsetY := 0.0, 0.0
+	if parent.Item.CameraMotionID != "" {
+		// Resolve the label in the local viewport, then translate it back to the
+		// portrait's world position so the camera carries the pair together.
+		if len(image.Position) >= 2 {
+			sequenceOffsetX, sequenceOffsetY = image.Position[0], image.Position[1]
+		}
+		layoutPosition = []float64{0, 0}
+	}
+	imageBounds := EntityCardImageBoundsFromCenter(src.Width, src.Height, layoutPosition, image.Size[0], image.Size[1])
+	requestedFontSize := 0.0
+	if parent.Item.CameraMotionID != "" {
+		if value, ok := numericValue(parent.Params["font_size_px"]); ok {
+			requestedFontSize = value
+		}
+	}
+	layout, err := ResolveEntityCardLayoutAtSize(src.Width, src.Height, imageBounds, caption, child.CaptionLayout, requestedFontSize)
 	if err != nil {
 		return Layer{}, fmt.Errorf("overlay: item %q entity caption layout: %w", parent.Item.ID, err)
 	}
@@ -59,6 +75,10 @@ func compileImageCaptionLayer(parent resolvedItem, src *semanticPlan, child sema
 	}
 	positionX := captionBounds.CenterX
 	positionY := captionBounds.CenterY
+	if parent.Item.CameraMotionID != "" {
+		positionX += sequenceOffsetX - float64(src.Width)/2
+		positionY += sequenceOffsetY - float64(src.Height)/2
+	}
 	styleParams := map[string]any{
 		"position_x":   positionX,
 		"position_y":   positionY,
@@ -105,7 +125,9 @@ func compileImageCaptionLayer(parent resolvedItem, src *semanticPlan, child sema
 		mergeStyle(value)
 	}
 	if family := strings.TrimSpace(child.CaptionFontFamily); family != "" {
-		if _, parentChoice := parent.Params["font_family"]; !parentChoice {
+		if parent.Item.CameraMotionID != "" {
+			styleParams["font_family"] = family
+		} else if _, parentChoice := parent.Params["font_family"]; !parentChoice {
 			styleParams["font_family"] = family
 		}
 	}

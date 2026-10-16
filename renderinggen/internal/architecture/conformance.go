@@ -20,6 +20,7 @@
 package architecture
 
 import (
+	"errors"
 	"fmt"
 	"io/fs"
 	"os"
@@ -426,13 +427,22 @@ func ScanTargets(targets []Target) ([]Violation, error) {
 func scanTarget(t Target) ([]Violation, error) {
 	rules := Rules()
 	var out []Violation
+	var walkErrs []error
 
 	err := filepath.WalkDir(t.Dir, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
+			// Never swallow WalkDir errors (EACCES, broken symlink, I/O):
+			// collect them and keep scanning so one unreadable entry
+			// cannot silently narrow the gate; they are returned below.
+			walkErrs = append(walkErrs, fmt.Errorf("walk %s: %w", path, err))
+			if d != nil && d.IsDir() {
+				return filepath.SkipDir
+			}
 			return nil
 		}
 		rel, relErr := filepath.Rel(t.Dir, path)
 		if relErr != nil {
+			walkErrs = append(walkErrs, fmt.Errorf("rel %s: %w", path, relErr))
 			return nil
 		}
 		relSlash := filepath.ToSlash(rel)
@@ -453,7 +463,11 @@ func scanTarget(t Target) ([]Violation, error) {
 			return nil
 		}
 		info, statErr := d.Info()
-		if statErr != nil || info.Size() > maxFileBytes {
+		if statErr != nil {
+			walkErrs = append(walkErrs, fmt.Errorf("stat %s: %w", path, statErr))
+			return nil
+		}
+		if info.Size() > maxFileBytes {
 			return nil
 		}
 		if !scannedFile(d.Name()) {
@@ -469,6 +483,7 @@ func scanTarget(t Target) ([]Violation, error) {
 		}
 		data, readErr := os.ReadFile(path)
 		if readErr != nil {
+			walkErrs = append(walkErrs, fmt.Errorf("read %s: %w", path, readErr))
 			return nil
 		}
 		textRules := make([]rule, 0, len(rules))
@@ -497,6 +512,9 @@ func scanTarget(t Target) ([]Violation, error) {
 	})
 	if err != nil {
 		return nil, err
+	}
+	if len(walkErrs) > 0 {
+		return nil, errors.Join(walkErrs...)
 	}
 	return out, nil
 }

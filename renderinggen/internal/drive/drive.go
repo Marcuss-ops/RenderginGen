@@ -234,24 +234,36 @@ type refreshingTokenSource struct {
 }
 
 func (r *refreshingTokenSource) Token() (*oauth2.Token, error) {
+	// Fast path outside the lock is not possible with the stdlib TokenSource
+	// contract (no Expiry peek without calling), so keep the refresh call
+	// serialized but move ALL file I/O out of the critical section: compute
+	// what to persist under lock, write best-effort after unlock. Token() is
+	// called on every Drive request, so this keeps a slow disk from blocking
+	// all concurrent uploads.
 	r.mu.Lock()
-	defer r.mu.Unlock()
-
 	tok, err := r.source.Token()
+	needsPersist := err == nil && r.tokenFile != "" && tok.AccessToken != r.persisted
+	var toWrite []byte
+	if needsPersist {
+		b, merr := json.Marshal(tok)
+		if merr != nil {
+			log.Printf("drive: persist refreshed token to %s: marshal: %v", r.tokenFile, merr)
+			needsPersist = false
+		} else {
+			toWrite = b
+		}
+	}
+	r.mu.Unlock()
 	if err != nil {
 		return nil, err
 	}
-	if r.tokenFile != "" && tok.AccessToken != r.persisted {
-		b, err := json.Marshal(tok)
-		if err != nil {
-			log.Printf("drive: persist refreshed token to %s: marshal: %v", r.tokenFile, err)
-		} else if err := os.WriteFile(r.tokenFile, b, 0o600); err != nil {
-			// A read-only mount or perms break means every restart does a fresh
-			// auth dance; the in-process refresh still works, so this is a
-			// durable-observability warning, not a failure.
-			log.Printf("drive: persist refreshed token to %s: %v", r.tokenFile, err)
+	if needsPersist {
+		if werr := os.WriteFile(r.tokenFile, toWrite, 0o600); werr != nil {
+			log.Printf("drive: persist refreshed token to %s: %v", r.tokenFile, werr)
 		} else {
+			r.mu.Lock()
 			r.persisted = tok.AccessToken
+			r.mu.Unlock()
 		}
 	}
 	return tok, nil
@@ -365,6 +377,8 @@ func (g *Google) Publish(ctx context.Context, req PublishRequest) (Result, error
 // FileDigests reads path once and returns its SHA-256 (the content address) and
 // MD5 (the provider's checksum scheme), plus the byte count. Hashing both in one
 // pass means a caller that needs both does not read a large render twice.
+// NOTE: dual-hash is intentional here (not via hashio.Copy which is SHA-256
+// only); fileMD5 below reuses the same single-pass idiom for an open handle.
 func FileDigests(path string) (sha256Hex, md5Hex string, size int64, err error) {
 	f, err := os.Open(path)
 	if err != nil {
@@ -443,8 +457,37 @@ func (g *Google) EnsureFolder(ctx context.Context, parentFolderID, name string) 
 }
 
 func (g *Google) ensureFolder(ctx context.Context, parent, name string) (string, error) {
+	// Double-checked locking: the lookup is a read that can run without
+	// holding folderMu, so concurrent publishes for DIFFERENT folders do not
+	// serialize on HTTP. Only the create path takes the lock with a re-check,
+	// so two racers for the SAME folder still create at most one (the loser
+	// re-reads and reuses the winner's id).
+	if id, err := g.findFolder(ctx, parent, name); err == nil && id != "" {
+		return id, nil
+	}
 	g.folderMu.Lock()
 	defer g.folderMu.Unlock()
+	if id, err := g.findFolder(ctx, parent, name); err == nil && id != "" {
+		return id, nil
+	}
+	f, err := g.service.Files.Create(&gdrive.File{
+		Name: name, MimeType: "application/vnd.google-apps.folder", Parents: []string{parent},
+	}).Fields("id,parents").Context(ctx).Do()
+	if err != nil {
+		// A racing create on another worker/replica can return 409: re-list
+		// once before failing so we reuse the winner instead of erroring.
+		if id, lerr := g.findFolder(ctx, parent, name); lerr == nil && id != "" {
+			return id, nil
+		}
+		return "", fmt.Errorf("drive: create subfolder %s: %w", name, err)
+	}
+	if f.Id == "" {
+		return "", fmt.Errorf("drive: create subfolder %s returned empty id", name)
+	}
+	return f.Id, nil
+}
+
+func (g *Google) findFolder(ctx context.Context, parent, name string) (string, error) {
 	q := fmt.Sprintf("mimeType='application/vnd.google-apps.folder' and trashed=false and name='%s' and '%s' in parents", escapeDriveQuery(name), escapeDriveQuery(parent))
 	list, err := g.service.Files.List().Q(q).Fields("files(id,name,parents)").PageSize(10).Context(ctx).Do()
 	if err != nil {
@@ -453,16 +496,7 @@ func (g *Google) ensureFolder(ctx context.Context, parent, name string) (string,
 	if len(list.Files) > 0 && list.Files[0].Id != "" {
 		return list.Files[0].Id, nil
 	}
-	f, err := g.service.Files.Create(&gdrive.File{
-		Name: name, MimeType: "application/vnd.google-apps.folder", Parents: []string{parent},
-	}).Fields("id,parents").Context(ctx).Do()
-	if err != nil {
-		return "", fmt.Errorf("drive: create subfolder %s: %w", name, err)
-	}
-	if f.Id == "" {
-		return "", fmt.Errorf("drive: create subfolder %s returned empty id", name)
-	}
-	return f.Id, nil
+	return "", nil
 }
 
 // escapeDriveQuery makes a value safe inside a single-quoted Drive query string.

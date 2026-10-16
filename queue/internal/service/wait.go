@@ -67,6 +67,10 @@ func (s *Service) WaitState(ctx context.Context, id string, maxWait time.Duratio
 	defer deadline.Stop()
 	wake := s.notify.Done()
 	pollDelay := waitPollFloor
+	// Reused poll timer: time.After in this loop would allocate and leak a
+	// timer per iteration until GC.
+	pollTimer := time.NewTimer(pollDelay)
+	defer pollTimer.Stop()
 	for {
 		select {
 		case <-ctx.Done():
@@ -80,11 +84,19 @@ func (s *Service) WaitState(ctx context.Context, id string, maxWait time.Duratio
 			// floor so the waiter stays responsive.
 			wake = s.notify.Done()
 			pollDelay = waitPollFloor
-		case <-time.After(pollDelay):
+			if !pollTimer.Stop() {
+				select {
+				case <-pollTimer.C:
+				default:
+				}
+			}
+			pollTimer.Reset(pollDelay)
+		case <-pollTimer.C:
 			pollDelay *= 2
 			if pollDelay > waitPollCeiling {
 				pollDelay = waitPollCeiling
 			}
+			pollTimer.Reset(pollDelay)
 		}
 		job, err = s.repo.Get(ctx, id)
 		if err != nil {

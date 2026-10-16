@@ -128,7 +128,9 @@ func TestResolvedScanScopeIsExplicit(t *testing.T) {
 	for _, target := range siblings {
 		_ = filepath.WalkDir(target.Dir, func(path string, d os.DirEntry, err error) error {
 			if err != nil {
-				return nil
+				// Test census walk: propagate I/O errors instead of
+				// silently narrowing the carrier set (mirrors scanTarget).
+				return err
 			}
 			rel, relErr := filepath.Rel(target.Dir, path)
 			if relErr != nil {

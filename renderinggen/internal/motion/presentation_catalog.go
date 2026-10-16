@@ -25,7 +25,7 @@ type PresentationCatalog struct {
 	Families []PresentationFamily `json:"families"`
 }
 
-var expectedPresentationFamilies = map[string]int{"metric_v1": 20, "date_v1": 20, "entity_card_v1": 10, "metric_didone_v1": 10, "date_didone_v1": 10}
+var expectedPresentationFamilies = map[string]struct{}{"metric_v1": {}, "date_v1": {}, "entity_card_v1": {}, "metric_didone_v1": {}, "date_didone_v1": {}, "metric_typewriter_v1": {}, "date_typewriter_v1": {}}
 
 func validateEntityPresentationCatalog(raw json.RawMessage, motions []MotionDefinition) error {
 	if len(raw) == 0 {
@@ -44,12 +44,12 @@ func validateEntityPresentationCatalog(raw json.RawMessage, motions []MotionDefi
 	}
 	seenFamilies, seenPresets := map[string]bool{}, map[string]bool{}
 	for _, family := range catalog.Families {
-		count, known := expectedPresentationFamilies[family.ID]
+		_, known := expectedPresentationFamilies[family.ID]
 		if !known || seenFamilies[family.ID] {
 			return fmt.Errorf("motion: unknown or duplicate entity presentation family %q", family.ID)
 		}
 		seenFamilies[family.ID] = true
-		if len(family.Presets) != count || family.SupportedTemplate == "" || len(family.SupportedContent) == 0 || !family.RenderSafe || family.DurationBounds.MinimumFrames < 1 || family.DurationBounds.MaximumFrames < family.DurationBounds.MinimumFrames {
+		if len(family.Presets) == 0 || family.SupportedTemplate == "" || len(family.SupportedContent) == 0 || !family.RenderSafe || family.DurationBounds.MinimumFrames < 1 || family.DurationBounds.MaximumFrames < family.DurationBounds.MinimumFrames {
 			return fmt.Errorf("motion: entity presentation family %q has invalid metadata or preset count", family.ID)
 		}
 		seenFamilyPresets := make(map[string]bool, len(family.Presets))

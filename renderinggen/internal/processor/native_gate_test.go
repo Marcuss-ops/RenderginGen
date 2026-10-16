@@ -12,7 +12,7 @@ import (
 // still certify — from the sidecar's bounded summary/job sections.
 func TestRequireNativeVulkanCertifiesFromV2TimingSidecar(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "result.mp4")
-	sidecar := `{"schema":"chronon3d.frame-timing.v2","version":2,"summary":{"render_loop_fps":29.2},"job":{"execution_path":"full_graph_native","surface_handoff_path":"direct","gpu":{"effective_backend":"vulkan","encoder_backend":"nvenc","software_fallback_nodes":0,"cpu_readback_frames":0,"software_encode_frames":0,"nvenc_frames":1,"vulkan_frames":1,"gpu_native_surface_frames":0},"text":{"shaping_ms":1.5}},"frame_times_ms":[{"frame":0}]}`
+	sidecar := `{"schema":"chronon3d.frame-timing.v2","version":2,"summary":{"render_loop_fps":29.2},"job":{"execution_path":"full_graph_native","surface_handoff_path":"direct","gpu":{"effective_backend":"vulkan","encoder_backend":"nvenc","software_fallback_nodes":0,"cpu_readback_frames":0,"software_encode_frames":0,"video_pipe_fallback_frames":0,"nvenc_frames":1,"vulkan_frames":1,"gpu_native_surface_frames":0},"text":{"shaping_ms":1.5}},"frame_times_ms":[{"frame":0}]}`
 	if err := os.WriteFile(path+".timing.json", []byte(sidecar), 0o600); err != nil {
 		t.Fatal(err)
 	}
@@ -24,7 +24,7 @@ func TestRequireNativeVulkanCertifiesFromV2TimingSidecar(t *testing.T) {
 	}
 
 	// The same sidecar reporting a software fallback must still fail closed.
-	degraded := `{"schema":"chronon3d.frame-timing.v2","job":{"surface_handoff_path":"direct","gpu":{"effective_backend":"vulkan","encoder_backend":"nvenc","software_fallback_nodes":3,"cpu_readback_frames":0,"software_encode_frames":0,"nvenc_frames":1,"vulkan_frames":1}}}`
+	degraded := `{"schema":"chronon3d.frame-timing.v2","job":{"surface_handoff_path":"direct","gpu":{"effective_backend":"vulkan","encoder_backend":"nvenc","software_fallback_nodes":3,"cpu_readback_frames":0,"software_encode_frames":0,"video_pipe_fallback_frames":0,"nvenc_frames":1,"vulkan_frames":1}}}`
 	if err := os.WriteFile(path+".timing.json", []byte(degraded), 0o600); err != nil {
 		t.Fatal(err)
 	}
@@ -50,8 +50,10 @@ func TestRequireNativeVulkan(t *testing.T) {
 		body string
 		want bool
 	}{
-		{"native", `{"schema":"` + summarySchema + `","job":{"surface_handoff_path":"vulkan_copy","gpu":{"effective_backend":"vulkan","encoder_backend":"nvenc","software_fallback_nodes":0,"cpu_readback_frames":0,"software_encode_frames":0,"nvenc_frames":1,"vulkan_frames":1}}}`, true},
-		{"direct_yuv", `{"schema":"` + summarySchema + `","job":{"execution_path":"direct_yuv","surface_handoff_path":"direct","gpu":{"effective_backend":"unknown","encoder_backend":"nvenc","software_fallback_nodes":0,"cpu_readback_frames":0,"software_encode_frames":0,"nvenc_frames":1,"gpu_native_surface_frames":1,"vulkan_frames":0}}}`, true},
+		{"native", `{"schema":"` + summarySchema + `","job":{"surface_handoff_path":"vulkan_copy","gpu":{"effective_backend":"vulkan","encoder_backend":"nvenc","software_fallback_nodes":0,"cpu_readback_frames":0,"software_encode_frames":0,"video_pipe_fallback_frames":0,"nvenc_frames":1,"vulkan_frames":1}}}`, true},
+		{"direct_yuv", `{"schema":"` + summarySchema + `","job":{"execution_path":"direct_yuv","surface_handoff_path":"direct","gpu":{"effective_backend":"unknown","encoder_backend":"nvenc","software_fallback_nodes":0,"cpu_readback_frames":0,"software_encode_frames":0,"video_pipe_fallback_frames":0,"nvenc_frames":1,"gpu_native_surface_frames":1,"vulkan_frames":0}}}`, true},
+		{"pipe fallback", `{"schema":"` + summarySchema + `","job":{"surface_handoff_path":"direct","gpu":{"effective_backend":"vulkan","encoder_backend":"nvenc","software_fallback_nodes":0,"cpu_readback_frames":0,"software_encode_frames":0,"video_pipe_fallback_frames":1,"nvenc_frames":1,"vulkan_frames":1}}}`, false},
+		{"missing fallback counter", `{"schema":"` + summarySchema + `","job":{"surface_handoff_path":"direct","gpu":{"effective_backend":"vulkan","encoder_backend":"nvenc","software_fallback_nodes":0,"cpu_readback_frames":0,"software_encode_frames":0,"nvenc_frames":1,"vulkan_frames":1}}}`, false},
 		{"hybrid", `{"schema":"` + summarySchema + `","job":{"gpu":{"effective_backend":"hybrid","software_fallback_nodes":2}}}`, false},
 		{"missing receipt field", `{"schema":"` + summarySchema + `","job":{"gpu":{"software_fallback_nodes":0}}}`, false},
 	}

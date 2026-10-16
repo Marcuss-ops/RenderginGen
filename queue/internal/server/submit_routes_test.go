@@ -68,7 +68,14 @@ func TestParseJobIDSupportsSingleAndParentLanguageRoutes(t *testing.T) {
 }
 
 func TestNewIDHasExpectedPrefixAndUniqueHexPayload(t *testing.T) {
-	first, second := newID(), newID()
+	first, err := newID()
+	if err != nil {
+		t.Fatalf("newID: %v", err)
+	}
+	second, err := newID()
+	if err != nil {
+		t.Fatalf("newID: %v", err)
+	}
 	if !strings.HasPrefix(first, "job-") || len(first) != len("job-")+16 {
 		t.Fatalf("generated id = %q, want job- plus 16 hex characters", first)
 	}

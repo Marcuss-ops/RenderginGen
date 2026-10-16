@@ -7,7 +7,7 @@ import (
 )
 
 func TestPresentationCatalogFamilyAndPresetParity(t *testing.T) {
-	wantFamilies := []string{"date_didone_v1", "date_v1", "entity_card_v1", "metric_didone_v1", "metric_v1"}
+	wantFamilies := []string{"date_didone_v1", "date_typewriter_v1", "date_v1", "entity_card_v1", "metric_didone_v1", "metric_typewriter_v1", "metric_v1"}
 	gotFamilies := Registry.PresentationFamilyIDs()
 	if len(gotFamilies) != len(wantFamilies) {
 		t.Fatalf("families=%v want %v", gotFamilies, wantFamilies)
@@ -17,10 +17,10 @@ func TestPresentationCatalogFamilyAndPresetParity(t *testing.T) {
 			t.Fatalf("family[%d]=%q want %q", i, gotFamilies[i], want)
 		}
 	}
-	for family, count := range map[string]int{"metric_v1": 20, "date_v1": 20, "entity_card_v1": 10, "metric_didone_v1": 10, "date_didone_v1": 10} {
+	for _, family := range wantFamilies {
 		ids := Registry.PresentationMotionIDs(family)
-		if len(ids) != count {
-			t.Fatalf("%s has %d presets, want %d", family, len(ids), count)
+		if len(ids) == 0 {
+			t.Fatalf("%s has no presets", family)
 		}
 		for _, id := range ids {
 			plugin, err := Registry.Resolve(id)

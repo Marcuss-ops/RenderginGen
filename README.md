@@ -76,10 +76,10 @@ raggruppamento per chi crea il video; non è un renderer, né implica un nuovo
 |---|---|---|
 | Entità con testo + 1 immagine | `entity_card` con un asset e caption | Un’unica entità genera ritratto e didascalia animata; non è un composito. |
 | Immagine singola | `entity_image` con un asset | Una scheda immagine indipendente, senza caption obbligatoria. |
-| Immagini x2, x3, x4, x5… | `entity_image` con `image_layers` | Una voce semantica, almeno 2 layer/assets e motion indipendente per layer; il contratto non impone un massimo. x2–x5 sono gli scenari di esempio già presenti. |
+| Immagini x2, x3, x4, x5… | `entity_image` con `image_layers` | Una voce semantica, da 2 a 5 layer/assets (limite di schema `maxItems: 5` e di compilazione) con motion indipendente per layer. Un gruppo `entity_group` segue lo stesso limite 2..5; sei membri vengono rifiutati. |
 | Frasi importanti | `important_phrase` | Frasi editoriali, con stile testo separato dall’animazione. |
-| Frasi importanti brevi | `important_phrase` + stile/motion breve | 14 stili `short_phrase_style`; la famiglia `typewriter_modern_v1` aggiunge 15 animazioni, catalogate separatamente. |
-| Numeri, metriche e date | `number`, `metric_stat`, `timeline_date` | Le famiglie disponibili sono 20 motion `metric_v1` e 20 `date_v1`; `entity_card_v1` ha altri 10 motion per schede entità. |
+| Frasi importanti brevi | `important_phrase` + stile/motion breve | 26 stili `short_phrase_style` (picker `short_important_phrase`, disgiunto da `important_phrase`); nessuna famiglia `typewriter_modern_v1` nel catalogo live (26 famiglie totali). |
+| Numeri, metriche e date | `number`, `metric_stat`, `timeline_date` | Picker live: 30 motion metric (`metric_v1` 20 + `metric_didone_v1` 10), 31 motion date (`date_v1` 21 + `date_didone_v1` 10); `entity_card_v1` ha altri 10 motion per schede entità. |
 | Mappe | `map` | Cinque animazioni (`radar_lock`, `archipelago_chain`, `continental_laser`, `industrial_nodes`, `desert_pipeline`) disponibili sia con renderer Dark Map sia OpenCV; le dieci opzioni condividono tempi e keyframe. Le motion precedenti restano nel catalogo come deprecate e non sono più selezionabili né risolvibili. |
 | Altri elementi | `important_word`, `quote`, entità testuali, `product`, `logo`, `shape`, `video_overlay`, ecc. | Rimangono classi supportate dal compilatore; non vanno mescolate alle sezioni principali dell’editor. |
 
@@ -101,9 +101,9 @@ RenderingGen compila il piano semantico, non è un secondo renderer. Il registry
 contiene **20 `ItemKind`**, **29 template**, **10 preset ufficiali** (2 testo +
 8 immagini) e **6 comportamenti di compilazione** (testo, entità, immagine,
 video, shape, mappa). Sono conteggi di livelli diversi: kind/template/preset non
-sono sinonimi di “sezione”. **Conteggio verificato il 2026-10-12** con
-`go run ./cmd/motion-catalog`: il runtime espone **481 motion ID**, **27 famiglie
-selezionabili** e **21 use case**. È una vista compilata: include l’artefatto
+sono sinonimi di “sezione”. **Conteggio verificato il 2026-10-16** con
+`go run ./cmd/motion-catalog`: il runtime espone **438 motion ID**, **26 famiglie
+selezionabili** e **22 use case**. È una vista compilata: include l’artefatto
 ChrononTemplate incorporato, i pack C++ e i cataloghi metric/date/entity.
 Generala al momento del consumo per leggere la disponibilità corrente; i
 conteggi precedenti non descrivono più il registry compilato.
@@ -114,20 +114,22 @@ catalog.json` lo salva su file.
 Le famiglie, i target e gli use case si sovrappongono: i numeri non vanno sommati
 come se fossero motion uniche. Per il picker attuale: **mappe = 14 motion
 compatibili** (`map_image_v1`: 10 scelte specifiche, cioè 5 trattamenti × 2
-renderer, più 4 motion immagine centrate condivise); **immagini = 134** motion
-ammesse dal target runtime; **caption = 240** motion compatibili. Sono criteri
+renderer, più 4 motion immagine centrate condivise); **immagini = 156** motion
+ammesse dal target runtime; **caption = 238** motion compatibili. Sono criteri
 di compatibilità del runtime, non la somma degli inventari editoriali storici.
 La famiglia dedicata `entity_card_v1` ha **10** motion; il pool generico delle
 immagini di entità riusa invece il pool immagine.
 
 Le composizioni selezionabili sono distinte dalle motion: immagini da 1 a 5,
 immagini con testo da 1 a 5 (da una a N caption), `one_map` e `two_maps`. Le
-cinque motion map obsolete restano registrate per la compatibilità del catalogo,
+dieci motion map obsolete restano registrate per la compatibilità del catalogo,
 ma non sono selezionabili; le 10 mappe correnti specifiche sono abbinate per
-renderer e hanno durata fissa di 150 frame. Il picker runtime ammette 14 opzioni
-compatibili, mentre il producer automatico usa un sottoinsieme sicuro di 4 motion
+renderer e hanno durata fissa di 150 frame. Il registry contiene una undicesima
+`map_image_v1` non deprecata (`map_middle_east_oil_focus`) esclusa dal picker
+georeferenziato dalla regola track `centeredMapMotion`, quindi il picker resta a
+14 opzioni. Il producer automatico usa un sottoinsieme sicuro di 4 motion
 centrate, ruotandole deterministicamente tra mappe. Il pool automatico delle
-caption comprende 43 motion compatibili; senza `caption_motion_id`, la scelta è
+caption comprende 238 motion compatibili con il target `caption`; senza `caption_motion_id`, la scelta è
 stabile per piano/video/layer-caption e differisce tra layer distinti. Per la
 certificazione GPU consultare il report runtime separato: la registrazione non
 implica che ogni ID sia stato certificato.
@@ -166,10 +168,10 @@ styles. The current picker/use-case counts are listed in
 the counts are target-compatible projections and can overlap. `phrase` combines
 text animation groups; it does not define another set of motions. Brush recipes
 selected on phrases emit native stroked-path layers beside the text. A narrower
-editorial image inventory contains 52 IDs across `overlay_v3_image` (10),
-`image_25d_clean_v1` (8), `editorial_image_v1` (14), and `image_premium_v1` (20).
-That 52 is not the runtime image target count: additional safe families (such
-as brush, paint, web, and light-leak treatments) make 134 image-target-compatible
+editorial image inventory contains 53 IDs across `overlay_v3_image` (10),
+`image_25d_clean_v1` (8), `editorial_image_v1` (14), and `image_premium_v1` (21).
+That 53 is not the runtime image target count: additional safe families (such
+as brush, paint, web, and light-leak treatments) make 156 image-target-compatible
 IDs in the current runtime. The legacy `ImageOverlayMotionIDs()` is still only
 the 18-ID compatibility pool. `web` has 14 catalog motions.
 
@@ -179,8 +181,8 @@ expanding that legacy matrix. They lower to Chronon render-plan v3 primitives
 trim, gradient fills, path masks, 2.5D transforms, captions, and active/inactive
 selection for legacy multi-layer compositions). This is still the regular Chronon3D renderer; there
 is no premium-specific renderer. The compiled runtime animation catalog reports
-the live groups: the editorial image inventory is 52 (18 legacy + 14 Editorial
-Image V1 + 20 premium), while 134 motions currently admit the generic image
+the live groups: the editorial image inventory is 53 (18 legacy + 14 Editorial
+Image V1 + 21 premium), while 156 motions currently admit the generic image
 target. Use
 `ImagePremiumV1MotionIDs()` for only the 20 premium ids, or
 `ImageOverlayMotionIDs()` when a caller specifically needs the unchanged
@@ -233,7 +235,7 @@ certification.
 The checked runtime snapshot in `renderinggen/motion-certification/latest/`
 contains 108 phrase render logs and 20 software image logs; this is historical
 certification evidence, **not** a count of all motions currently registered
-(452 total). Do not infer GPU certification for newly registered IDs from
+(438 total). Do not infer GPU certification for newly registered IDs from
 those older logs. Set
 `RENDERINGGEN_GPU_CERT_FAMILY=phrase` or `image` to run the current selected
 inventory; set `RENDERINGGEN_GPU_CERT_MOTION=<id>` to isolate a single motion.
