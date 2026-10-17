@@ -279,11 +279,12 @@ jobs:
           RUNTIME="ghcr.io/marcuss-ops/chronon3d-runtime:${{ env.CHRONON_RUNTIME_VERSION }}"
           if docker manifest inspect "$RUNTIME" >/dev/null 2>&1; then
             echo "Using published runtime image: $RUNTIME"
+            docker manifest inspect "$RUNTIME" | python3 -c "import json,sys; print('runtime digest:', json.load(sys.stdin).get('config',{}).get('digest','(index)'))"
           else
-            echo "Published runtime image not reachable; building from Chronon3d source"
-            git clone --depth 1 https://github.com/Marcuss-ops/Chronon3d.git /tmp/chronon3d
-            docker build -f /tmp/chronon3d/docker/chronon-runtime/Dockerfile \
-              -t "$RUNTIME" /tmp/chronon3d
+            echo "Published runtime image not reachable: $RUNTIME" >&2
+            echo "DEP-02: release builds must use the immutable published runtime digest, never an unpinned 'git clone --depth 1 main' fallback." >&2
+            echo "Publish chronon3d-runtime:${{ env.CHRONON_RUNTIME_VERSION }} from Chronon3d CI (runtime.yml) or set CHRONON_RUNTIME_VERSION to a published tag." >&2
+            exit 1
           fi
 
       - name: Boot the E2E stack

@@ -2,12 +2,15 @@
 package main
 
 import (
+	"context"
 	"crypto/subtle"
 	"flag"
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/Marcuss-ops/RenderingGen/objectstore/internal/buildinfo"
@@ -97,16 +100,41 @@ func main() {
 		log.Printf("object store auth: disabled (set OBJECTSTORE_TOKEN to require a bearer token)")
 	}
 
+	shutdownTimeout := 25 * time.Second
+	if v := strings.TrimSpace(os.Getenv("OBJECTSTORE_SHUTDOWN_TIMEOUT")); v != "" {
+		if d, err := time.ParseDuration(v); err == nil && d > 0 {
+			shutdownTimeout = d
+		}
+	}
 	log.Printf("object store listening on %s (data-dir=%s)", *addr, *dataDir)
 	server := &http.Server{
 		Addr:              *addr,
 		Handler:           handler,
 		ReadHeaderTimeout: 10 * time.Second,
-		ReadTimeout:       10 * time.Minute, // large artifact uploads
-		WriteTimeout:      10 * time.Minute, // large artifact downloads
+		ReadTimeout:       10 * time.Minute,
+		WriteTimeout:      10 * time.Minute,
 		IdleTimeout:       120 * time.Second,
 	}
-	if err := server.ListenAndServe(); err != nil {
-		log.Fatal(err)
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+	errCh := make(chan error, 1)
+	go func() {
+		errCh <- server.ListenAndServe()
+	}()
+	select {
+	case <-ctx.Done():
+		log.Printf("object store shutting down: draining in-flight PUT/GET")
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
+		defer cancel()
+		if err := server.Shutdown(shutdownCtx); err != nil {
+			log.Fatalf("object store shutdown: %v", err)
+		}
+	if err := <-errCh; err != nil && err != http.ErrServerClosed {
+			log.Fatalf("object store: %v", err)
+		}
+	case err := <-errCh:
+		if err != nil && err != http.ErrServerClosed {
+			log.Fatal(err)
+		}
 	}
 }
