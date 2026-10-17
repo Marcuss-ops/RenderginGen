@@ -129,7 +129,7 @@ func main() {
 		if err := server.Shutdown(shutdownCtx); err != nil {
 			log.Fatalf("object store shutdown: %v", err)
 		}
-	if err := <-errCh; err != nil && err != http.ErrServerClosed {
+		if err := <-errCh; err != nil && err != http.ErrServerClosed {
 			log.Fatalf("object store: %v", err)
 		}
 	case err := <-errCh:
