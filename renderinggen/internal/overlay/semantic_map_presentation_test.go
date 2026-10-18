@@ -47,6 +47,26 @@ func TestMapPresentationParamsAreAdmitted(t *testing.T) {
 	}
 }
 
+// TestMapPinTimingEscapingWindowFailsClosed proves the shared invariant
+// pin.start+duration<=map.duration is enforced at the compile boundary with
+// no silent repair (PipelineGen prevents, RenderingGen rejects).
+func TestMapPinTimingEscapingWindowFailsClosed(t *testing.T) {
+	dur := int64(2_000_000)
+	start := int64(0)
+	item := presentationMapItem(map[string]any{
+		"map_pin_timing": map[string]any{
+			"city:rome": map[string]any{"start_us": float64(1_500_000), "duration_us": float64(1_000_000)},
+		},
+	})
+	item.StartUS = &start
+	item.DurationUS = &dur
+	item.StartMS = 0
+	item.EndMS = 2000
+	if err := validateMapContract(item, KindMap, 1280, 720); err == nil {
+		t.Fatal("pin escaping map window must fail closed")
+	}
+}
+
 // TestMapPresentationParamsFailClosed proves the worker rejects a map
 // presentation it cannot render — an unknown composition, a schedule for an
 // undeclared pin, or an incoherent group identity — instead of ignoring it.

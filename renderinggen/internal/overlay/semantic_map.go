@@ -221,6 +221,19 @@ func validateMapPresentationParams(item semanticItem) error {
 			if !startOK || !durationOK || startUS < 0 || durationUS <= 0 {
 				return fmt.Errorf("overlay: map item %q map_pin_timing[%q] requires start_us >= 0 and duration_us > 0", item.ID, pinID)
 			}
+			// Same invariant as PipelineGen ValidateMapPinTiming: a pin must end
+			// inside its own map window. Overflow-safe, no silent clamping;
+			// PipelineGen prevents this, RenderingGen rejects it. When the
+			// item carries no duration (legacy millisecond path unset),
+			// there is no window to enforce — skip rather than rejecting
+			// a well-formed pin schedule.
+			mapDurationUS := item.EndMS*1000 - item.StartMS*1000
+			if item.StartUS != nil && item.DurationUS != nil {
+				mapDurationUS = *item.DurationUS
+			}
+			if mapDurationUS > 0 && (startUS > float64(mapDurationUS) || durationUS > float64(mapDurationUS) || startUS+durationUS > float64(mapDurationUS)) {
+				return fmt.Errorf("overlay: map item %q map_pin_timing[%q] escapes the map window: start_us=%v duration_us=%v map_duration_us=%d", item.ID, pinID, startUS, durationUS, mapDurationUS)
+			}
 		}
 	}
 	if raw, present := params["map_group"]; present {

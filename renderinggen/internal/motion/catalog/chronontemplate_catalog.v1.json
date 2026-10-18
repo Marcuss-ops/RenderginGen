@@ -40637,6 +40637,887 @@
         }
       ],
       "text_animators": []
+    },
+    {
+      "id": "duo_soft_bloom_rise",
+      "category": "image_group_v1",
+      "supported_template": "image_popup",
+      "targets": [
+        "image_group"
+      ],
+      "supported_content": [
+        "image"
+      ],
+      "unit": "group",
+      "seeded": true,
+      "duration_bounds": {
+        "minimum_frames": 24,
+        "maximum_frames": 240
+      },
+      "required_properties": [
+        "position_x",
+        "position_y",
+        "scale",
+        "opacity"
+      ],
+      "render_safe": true,
+      "requires_3d": false,
+      "requires_camera": false,
+      "enter": 36,
+      "exit": 8,
+      "group_recipe": {
+        "image_count": 2,
+        "layout": "duo",
+        "description": "soft bloom rise, left leads 4 frames",
+        "member_tracks": [
+          {
+            "tracks": [
+              {
+                "property": "position_x",
+                "easing": "out_cubic",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0.0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 0.0
+                  }
+                ]
+              },
+              {
+                "property": "position_y",
+                "easing": "out_cubic",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 46.0
+                  },
+                  {
+                    "frame": 30,
+                    "value": 0.0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 0.0
+                  }
+                ]
+              },
+              {
+                "property": "scale",
+                "easing": "in_out_sine",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0.94
+                  },
+                  {
+                    "frame": 36,
+                    "value": 1.0
+                  }
+                ]
+              },
+              {
+                "property": "opacity",
+                "easing": "out_cubic",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0.0
+                  },
+                  {
+                    "frame": 24,
+                    "value": 1.0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 1.0
+                  }
+                ]
+              }
+            ],
+            "member_index": 0
+          },
+          {
+            "tracks": [
+              {
+                "property": "position_x",
+                "easing": "out_cubic",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0.0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 0.0
+                  }
+                ]
+              },
+              {
+                "property": "position_y",
+                "easing": "out_cubic",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 46.0
+                  },
+                  {
+                    "frame": 4,
+                    "value": 46.0
+                  },
+                  {
+                    "frame": 34,
+                    "value": 0.0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 0.0
+                  }
+                ]
+              },
+              {
+                "property": "scale",
+                "easing": "in_out_sine",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0.94
+                  },
+                  {
+                    "frame": 4,
+                    "value": 0.94
+                  },
+                  {
+                    "frame": 36,
+                    "value": 1.0
+                  }
+                ]
+              },
+              {
+                "property": "opacity",
+                "easing": "out_cubic",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0.0
+                  },
+                  {
+                    "frame": 4,
+                    "value": 0.0
+                  },
+                  {
+                    "frame": 28,
+                    "value": 1.0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 1.0
+                  }
+                ]
+              }
+            ],
+            "member_index": 1
+          }
+        ]
+      }
+    },
+    {
+      "id": "duo_soft_drift_settle",
+      "category": "image_group_v1",
+      "supported_template": "image_popup",
+      "targets": [
+        "image_group"
+      ],
+      "supported_content": [
+        "image"
+      ],
+      "unit": "group",
+      "seeded": true,
+      "duration_bounds": {
+        "minimum_frames": 24,
+        "maximum_frames": 240
+      },
+      "required_properties": [
+        "position_x",
+        "position_y",
+        "scale",
+        "opacity"
+      ],
+      "render_safe": true,
+      "requires_3d": false,
+      "requires_camera": false,
+      "enter": 36,
+      "exit": 8,
+      "group_recipe": {
+        "image_count": 2,
+        "layout": "duo",
+        "description": "slow lateral drift inward from 64px",
+        "member_tracks": [
+          {
+            "tracks": [
+              {
+                "property": "position_x",
+                "easing": "out_cubic",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": -64.0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 0.0
+                  }
+                ]
+              },
+              {
+                "property": "position_y",
+                "easing": "out_cubic",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0.0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 0.0
+                  }
+                ]
+              },
+              {
+                "property": "scale",
+                "easing": "in_out_sine",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0.94
+                  },
+                  {
+                    "frame": 36,
+                    "value": 1.0
+                  }
+                ]
+              },
+              {
+                "property": "opacity",
+                "easing": "out_cubic",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0.0
+                  },
+                  {
+                    "frame": 26,
+                    "value": 1.0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 1.0
+                  }
+                ]
+              }
+            ],
+            "member_index": 0
+          },
+          {
+            "tracks": [
+              {
+                "property": "position_x",
+                "easing": "out_cubic",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 64.0
+                  },
+                  {
+                    "frame": 4,
+                    "value": 64.0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 0.0
+                  }
+                ]
+              },
+              {
+                "property": "position_y",
+                "easing": "out_cubic",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0.0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 0.0
+                  }
+                ]
+              },
+              {
+                "property": "scale",
+                "easing": "in_out_sine",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0.94
+                  },
+                  {
+                    "frame": 4,
+                    "value": 0.94
+                  },
+                  {
+                    "frame": 36,
+                    "value": 1.0
+                  }
+                ]
+              },
+              {
+                "property": "opacity",
+                "easing": "out_cubic",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0.0
+                  },
+                  {
+                    "frame": 4,
+                    "value": 0.0
+                  },
+                  {
+                    "frame": 30,
+                    "value": 1.0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 1.0
+                  }
+                ]
+              }
+            ],
+            "member_index": 1
+          }
+        ]
+      }
+    },
+    {
+      "id": "duo_soft_cross_bloom",
+      "category": "image_group_v1",
+      "supported_template": "image_popup",
+      "targets": [
+        "image_group"
+      ],
+      "supported_content": [
+        "image"
+      ],
+      "unit": "group",
+      "seeded": true,
+      "duration_bounds": {
+        "minimum_frames": 24,
+        "maximum_frames": 240
+      },
+      "required_properties": [
+        "position_x",
+        "position_y",
+        "scale",
+        "opacity"
+      ],
+      "render_safe": true,
+      "requires_3d": false,
+      "requires_camera": false,
+      "enter": 36,
+      "exit": 8,
+      "group_recipe": {
+        "image_count": 2,
+        "layout": "duo",
+        "description": "simultaneous soft bloom from 0.90",
+        "member_tracks": [
+          {
+            "tracks": [
+              {
+                "property": "position_x",
+                "easing": "out_cubic",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0.0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 0.0
+                  }
+                ]
+              },
+              {
+                "property": "position_y",
+                "easing": "out_cubic",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0.0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 0.0
+                  }
+                ]
+              },
+              {
+                "property": "scale",
+                "easing": "in_out_sine",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0.9
+                  },
+                  {
+                    "frame": 36,
+                    "value": 1.0
+                  }
+                ]
+              },
+              {
+                "property": "opacity",
+                "easing": "out_cubic",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0.0
+                  },
+                  {
+                    "frame": 24,
+                    "value": 1.0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 1.0
+                  }
+                ]
+              }
+            ],
+            "member_index": 0
+          },
+          {
+            "tracks": [
+              {
+                "property": "position_x",
+                "easing": "out_cubic",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0.0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 0.0
+                  }
+                ]
+              },
+              {
+                "property": "position_y",
+                "easing": "out_cubic",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0.0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 0.0
+                  }
+                ]
+              },
+              {
+                "property": "scale",
+                "easing": "in_out_sine",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0.9
+                  },
+                  {
+                    "frame": 36,
+                    "value": 1.0
+                  }
+                ]
+              },
+              {
+                "property": "opacity",
+                "easing": "out_cubic",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0.0
+                  },
+                  {
+                    "frame": 4,
+                    "value": 0.0
+                  },
+                  {
+                    "frame": 28,
+                    "value": 1.0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 1.0
+                  }
+                ]
+              }
+            ],
+            "member_index": 1
+          }
+        ]
+      }
+    },
+    {
+      "id": "duo_soft_breathe_hold",
+      "category": "image_group_v1",
+      "supported_template": "image_popup",
+      "targets": [
+        "image_group"
+      ],
+      "supported_content": [
+        "image"
+      ],
+      "unit": "group",
+      "seeded": true,
+      "duration_bounds": {
+        "minimum_frames": 24,
+        "maximum_frames": 240
+      },
+      "required_properties": [
+        "position_x",
+        "position_y",
+        "scale",
+        "opacity"
+      ],
+      "render_safe": true,
+      "requires_3d": false,
+      "requires_camera": false,
+      "enter": 36,
+      "exit": 8,
+      "group_recipe": {
+        "image_count": 2,
+        "layout": "duo",
+        "description": "joint fade with calm settle",
+        "member_tracks": [
+          {
+            "tracks": [
+              {
+                "property": "position_x",
+                "easing": "out_cubic",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0.0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 0.0
+                  }
+                ]
+              },
+              {
+                "property": "position_y",
+                "easing": "out_cubic",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0.0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 0.0
+                  }
+                ]
+              },
+              {
+                "property": "scale",
+                "easing": "in_out_sine",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0.96
+                  },
+                  {
+                    "frame": 36,
+                    "value": 1.0
+                  }
+                ]
+              },
+              {
+                "property": "opacity",
+                "easing": "out_cubic",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0.0
+                  },
+                  {
+                    "frame": 30,
+                    "value": 1.0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 1.0
+                  }
+                ]
+              }
+            ],
+            "member_index": 0
+          },
+          {
+            "tracks": [
+              {
+                "property": "position_x",
+                "easing": "out_cubic",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0.0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 0.0
+                  }
+                ]
+              },
+              {
+                "property": "position_y",
+                "easing": "out_cubic",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0.0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 0.0
+                  }
+                ]
+              },
+              {
+                "property": "scale",
+                "easing": "in_out_sine",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0.96
+                  },
+                  {
+                    "frame": 36,
+                    "value": 1.0
+                  }
+                ]
+              },
+              {
+                "property": "opacity",
+                "easing": "out_cubic",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0.0
+                  },
+                  {
+                    "frame": 30,
+                    "value": 1.0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 1.0
+                  }
+                ]
+              }
+            ],
+            "member_index": 1
+          }
+        ]
+      }
+    },
+    {
+      "id": "duo_soft_stagger_glow",
+      "category": "image_group_v1",
+      "supported_template": "image_popup",
+      "targets": [
+        "image_group"
+      ],
+      "supported_content": [
+        "image"
+      ],
+      "unit": "group",
+      "seeded": true,
+      "duration_bounds": {
+        "minimum_frames": 24,
+        "maximum_frames": 240
+      },
+      "required_properties": [
+        "position_x",
+        "position_y",
+        "scale",
+        "opacity"
+      ],
+      "render_safe": true,
+      "requires_3d": false,
+      "requires_camera": false,
+      "enter": 36,
+      "exit": 8,
+      "group_recipe": {
+        "image_count": 2,
+        "layout": "duo",
+        "description": "staggered opacity-led entrances",
+        "member_tracks": [
+          {
+            "tracks": [
+              {
+                "property": "position_x",
+                "easing": "out_cubic",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0.0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 0.0
+                  }
+                ]
+              },
+              {
+                "property": "position_y",
+                "easing": "out_cubic",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 24.0
+                  },
+                  {
+                    "frame": 20,
+                    "value": 0.0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 0.0
+                  }
+                ]
+              },
+              {
+                "property": "scale",
+                "easing": "in_out_sine",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0.95
+                  },
+                  {
+                    "frame": 36,
+                    "value": 1.0
+                  }
+                ]
+              },
+              {
+                "property": "opacity",
+                "easing": "out_cubic",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0.0
+                  },
+                  {
+                    "frame": 20,
+                    "value": 1.0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 1.0
+                  }
+                ]
+              }
+            ],
+            "member_index": 0
+          },
+          {
+            "tracks": [
+              {
+                "property": "position_x",
+                "easing": "out_cubic",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0.0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 0.0
+                  }
+                ]
+              },
+              {
+                "property": "position_y",
+                "easing": "out_cubic",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 24.0
+                  },
+                  {
+                    "frame": 10,
+                    "value": 24.0
+                  },
+                  {
+                    "frame": 30,
+                    "value": 0.0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 0.0
+                  }
+                ]
+              },
+              {
+                "property": "scale",
+                "easing": "in_out_sine",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0.95
+                  },
+                  {
+                    "frame": 10,
+                    "value": 0.95
+                  },
+                  {
+                    "frame": 36,
+                    "value": 1.0
+                  }
+                ]
+              },
+              {
+                "property": "opacity",
+                "easing": "out_cubic",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0.0
+                  },
+                  {
+                    "frame": 10,
+                    "value": 0.0
+                  },
+                  {
+                    "frame": 30,
+                    "value": 1.0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 1.0
+                  }
+                ]
+              }
+            ],
+            "member_index": 1
+          }
+        ]
+      }
     }
   ],
   "overlay_presets": {

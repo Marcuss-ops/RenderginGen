@@ -1070,6 +1070,13 @@ func compileEntityCard(ri resolvedItem, src *semanticPlan, registry *assetRegist
 		y, _ := numericValue(ri.Params["position_y"])
 		img.Position = []float64{x, y}
 	}
+	// Entities with text own a portrait card: a non-vertical box is covered
+	// into the supported portrait (same height and center), so the caption
+	// compiled from its bounds follows automatically. Vertical images pass
+	// through untouched.
+	if strings.TrimSpace(ri.Item.EntityCaption) != "" {
+		autoFitEntityPortrait(&img)
+	}
 	if err := applyFrameTreatment(&img, ri.Item.Frame); err != nil {
 		return nil, fmt.Errorf("overlay: entity image item %q: %w", ri.Item.ID, err)
 	}
