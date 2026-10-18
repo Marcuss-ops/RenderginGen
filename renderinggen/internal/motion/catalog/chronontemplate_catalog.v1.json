@@ -30834,6 +30834,2616 @@
       "text_animators": []
     },
     {
+      "id": "duo_split_reveal",
+      "category": "image_group_v1",
+      "supported_template": "image_popup",
+      "targets": [
+        "image_group"
+      ],
+      "supported_content": [
+        "image"
+      ],
+      "unit": "group",
+      "seeded": true,
+      "duration_bounds": {
+        "minimum_frames": 24,
+        "maximum_frames": 240
+      },
+      "required_properties": [
+        "position_x",
+        "position_y",
+        "scale",
+        "opacity"
+      ],
+      "render_safe": true,
+      "requires_3d": false,
+      "requires_camera": false,
+      "enter": 36,
+      "exit": 8,
+      "group_recipe": {
+        "image_count": 2,
+        "layout": "duo",
+        "description": "split reveal",
+        "member_tracks": [
+          {
+            "member_index": 0,
+            "tracks": [
+              {
+                "property": "position_x",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 150
+                  },
+                  {
+                    "frame": 16,
+                    "value": 0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 0
+                  }
+                ],
+                "easing": "out_cubic"
+              },
+              {
+                "property": "position_y",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0
+                  },
+                  {
+                    "frame": 16,
+                    "value": 0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 0
+                  }
+                ],
+                "easing": "out_cubic"
+              },
+              {
+                "property": "scale",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0.88
+                  },
+                  {
+                    "frame": 18,
+                    "value": 1.0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 1.0
+                  }
+                ],
+                "easing": "out_cubic"
+              },
+              {
+                "property": "opacity",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0
+                  },
+                  {
+                    "frame": 12,
+                    "value": 1
+                  },
+                  {
+                    "frame": 36,
+                    "value": 1
+                  }
+                ],
+                "easing": "out_cubic"
+              }
+            ]
+          },
+          {
+            "member_index": 1,
+            "tracks": [
+              {
+                "property": "position_x",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": -150
+                  },
+                  {
+                    "frame": 19,
+                    "value": 0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 0
+                  }
+                ],
+                "easing": "out_cubic"
+              },
+              {
+                "property": "position_y",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0
+                  },
+                  {
+                    "frame": 19,
+                    "value": 0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 0
+                  }
+                ],
+                "easing": "out_cubic"
+              },
+              {
+                "property": "scale",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0.88
+                  },
+                  {
+                    "frame": 21,
+                    "value": 1.0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 1.0
+                  }
+                ],
+                "easing": "out_cubic"
+              },
+              {
+                "property": "opacity",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0
+                  },
+                  {
+                    "frame": 15,
+                    "value": 1
+                  },
+                  {
+                    "frame": 36,
+                    "value": 1
+                  }
+                ],
+                "easing": "out_cubic"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "duo_cross_focus",
+      "category": "image_group_v1",
+      "supported_template": "image_popup",
+      "targets": [
+        "image_group"
+      ],
+      "supported_content": [
+        "image"
+      ],
+      "unit": "group",
+      "seeded": true,
+      "duration_bounds": {
+        "minimum_frames": 24,
+        "maximum_frames": 240
+      },
+      "required_properties": [
+        "position_x",
+        "position_y",
+        "scale",
+        "opacity"
+      ],
+      "render_safe": true,
+      "requires_3d": false,
+      "requires_camera": false,
+      "enter": 36,
+      "exit": 8,
+      "group_recipe": {
+        "image_count": 2,
+        "layout": "duo",
+        "description": "cross focus",
+        "member_tracks": [
+          {
+            "member_index": 0,
+            "tracks": [
+              {
+                "property": "position_x",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 0
+                  }
+                ],
+                "easing": "out_cubic"
+              },
+              {
+                "property": "position_y",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 0
+                  }
+                ],
+                "easing": "out_cubic"
+              },
+              {
+                "property": "scale",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0.96
+                  },
+                  {
+                    "frame": 6,
+                    "value": 1.0
+                  },
+                  {
+                    "frame": 11,
+                    "value": 1.04
+                  },
+                  {
+                    "frame": 36,
+                    "value": 1.0
+                  }
+                ],
+                "easing": "out_cubic"
+              },
+              {
+                "property": "opacity",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0.0
+                  },
+                  {
+                    "frame": 12,
+                    "value": 1.0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 1
+                  }
+                ],
+                "easing": "out_cubic"
+              }
+            ]
+          },
+          {
+            "member_index": 1,
+            "tracks": [
+              {
+                "property": "position_x",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 0
+                  }
+                ],
+                "easing": "out_cubic"
+              },
+              {
+                "property": "position_y",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 0
+                  }
+                ],
+                "easing": "out_cubic"
+              },
+              {
+                "property": "scale",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0.96
+                  },
+                  {
+                    "frame": 6,
+                    "value": 1.0
+                  },
+                  {
+                    "frame": 11,
+                    "value": 1.04
+                  },
+                  {
+                    "frame": 36,
+                    "value": 1.0
+                  }
+                ],
+                "easing": "out_cubic"
+              },
+              {
+                "property": "opacity",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0.0
+                  },
+                  {
+                    "frame": 15,
+                    "value": 1.0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 1
+                  }
+                ],
+                "easing": "out_cubic"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "trio_fan_reveal",
+      "category": "image_group_v1",
+      "supported_template": "image_popup",
+      "targets": [
+        "image_group"
+      ],
+      "supported_content": [
+        "image"
+      ],
+      "unit": "group",
+      "seeded": true,
+      "duration_bounds": {
+        "minimum_frames": 24,
+        "maximum_frames": 240
+      },
+      "required_properties": [
+        "position_x",
+        "position_y",
+        "scale",
+        "opacity"
+      ],
+      "render_safe": true,
+      "requires_3d": false,
+      "requires_camera": false,
+      "enter": 36,
+      "exit": 8,
+      "group_recipe": {
+        "image_count": 3,
+        "layout": "trio",
+        "description": "fan reveal",
+        "member_tracks": [
+          {
+            "member_index": 0,
+            "tracks": [
+              {
+                "property": "position_x",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 150
+                  },
+                  {
+                    "frame": 16,
+                    "value": 0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 0
+                  }
+                ],
+                "easing": "out_cubic"
+              },
+              {
+                "property": "position_y",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0
+                  },
+                  {
+                    "frame": 16,
+                    "value": 0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 0
+                  }
+                ],
+                "easing": "out_cubic"
+              },
+              {
+                "property": "scale",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0.88
+                  },
+                  {
+                    "frame": 18,
+                    "value": 1.0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 1.0
+                  }
+                ],
+                "easing": "out_cubic"
+              },
+              {
+                "property": "opacity",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0
+                  },
+                  {
+                    "frame": 12,
+                    "value": 1
+                  },
+                  {
+                    "frame": 36,
+                    "value": 1
+                  }
+                ],
+                "easing": "out_cubic"
+              }
+            ]
+          },
+          {
+            "member_index": 1,
+            "tracks": [
+              {
+                "property": "position_x",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0
+                  },
+                  {
+                    "frame": 19,
+                    "value": 0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 0
+                  }
+                ],
+                "easing": "out_cubic"
+              },
+              {
+                "property": "position_y",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0
+                  },
+                  {
+                    "frame": 19,
+                    "value": 0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 0
+                  }
+                ],
+                "easing": "out_cubic"
+              },
+              {
+                "property": "scale",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0.88
+                  },
+                  {
+                    "frame": 21,
+                    "value": 1.0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 1.0
+                  }
+                ],
+                "easing": "out_cubic"
+              },
+              {
+                "property": "opacity",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0
+                  },
+                  {
+                    "frame": 15,
+                    "value": 1
+                  },
+                  {
+                    "frame": 36,
+                    "value": 1
+                  }
+                ],
+                "easing": "out_cubic"
+              }
+            ]
+          },
+          {
+            "member_index": 2,
+            "tracks": [
+              {
+                "property": "position_x",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": -150
+                  },
+                  {
+                    "frame": 22,
+                    "value": 0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 0
+                  }
+                ],
+                "easing": "out_cubic"
+              },
+              {
+                "property": "position_y",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0
+                  },
+                  {
+                    "frame": 22,
+                    "value": 0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 0
+                  }
+                ],
+                "easing": "out_cubic"
+              },
+              {
+                "property": "scale",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0.88
+                  },
+                  {
+                    "frame": 24,
+                    "value": 1.0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 1.0
+                  }
+                ],
+                "easing": "out_cubic"
+              },
+              {
+                "property": "opacity",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0
+                  },
+                  {
+                    "frame": 18,
+                    "value": 1
+                  },
+                  {
+                    "frame": 36,
+                    "value": 1
+                  }
+                ],
+                "easing": "out_cubic"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "trio_center_priority",
+      "category": "image_group_v1",
+      "supported_template": "image_popup",
+      "targets": [
+        "image_group"
+      ],
+      "supported_content": [
+        "image"
+      ],
+      "unit": "group",
+      "seeded": true,
+      "duration_bounds": {
+        "minimum_frames": 24,
+        "maximum_frames": 240
+      },
+      "required_properties": [
+        "position_x",
+        "position_y",
+        "scale",
+        "opacity"
+      ],
+      "render_safe": true,
+      "requires_3d": false,
+      "requires_camera": false,
+      "enter": 36,
+      "exit": 8,
+      "group_recipe": {
+        "image_count": 3,
+        "layout": "trio",
+        "description": "center priority",
+        "member_tracks": [
+          {
+            "member_index": 0,
+            "tracks": [
+              {
+                "property": "position_x",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": -55
+                  },
+                  {
+                    "frame": 18,
+                    "value": 0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 0
+                  }
+                ],
+                "easing": "out_cubic"
+              },
+              {
+                "property": "position_y",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 45
+                  },
+                  {
+                    "frame": 18,
+                    "value": 0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 0
+                  }
+                ],
+                "easing": "out_cubic"
+              },
+              {
+                "property": "scale",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0.84
+                  },
+                  {
+                    "frame": 18,
+                    "value": 1.0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 1.0
+                  }
+                ],
+                "easing": "out_cubic"
+              },
+              {
+                "property": "opacity",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0
+                  },
+                  {
+                    "frame": 12,
+                    "value": 1
+                  },
+                  {
+                    "frame": 36,
+                    "value": 1
+                  }
+                ],
+                "easing": "out_cubic"
+              }
+            ]
+          },
+          {
+            "member_index": 1,
+            "tracks": [
+              {
+                "property": "position_x",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0
+                  },
+                  {
+                    "frame": 21,
+                    "value": 0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 0
+                  }
+                ],
+                "easing": "out_cubic"
+              },
+              {
+                "property": "position_y",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 45
+                  },
+                  {
+                    "frame": 21,
+                    "value": 0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 0
+                  }
+                ],
+                "easing": "out_cubic"
+              },
+              {
+                "property": "scale",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0.84
+                  },
+                  {
+                    "frame": 21,
+                    "value": 1.0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 1.0
+                  }
+                ],
+                "easing": "out_cubic"
+              },
+              {
+                "property": "opacity",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0
+                  },
+                  {
+                    "frame": 15,
+                    "value": 1
+                  },
+                  {
+                    "frame": 36,
+                    "value": 1
+                  }
+                ],
+                "easing": "out_cubic"
+              }
+            ]
+          },
+          {
+            "member_index": 2,
+            "tracks": [
+              {
+                "property": "position_x",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 55
+                  },
+                  {
+                    "frame": 24,
+                    "value": 0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 0
+                  }
+                ],
+                "easing": "out_cubic"
+              },
+              {
+                "property": "position_y",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 45
+                  },
+                  {
+                    "frame": 24,
+                    "value": 0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 0
+                  }
+                ],
+                "easing": "out_cubic"
+              },
+              {
+                "property": "scale",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0.84
+                  },
+                  {
+                    "frame": 24,
+                    "value": 1.0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 1.0
+                  }
+                ],
+                "easing": "out_cubic"
+              },
+              {
+                "property": "opacity",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0
+                  },
+                  {
+                    "frame": 18,
+                    "value": 1
+                  },
+                  {
+                    "frame": 36,
+                    "value": 1
+                  }
+                ],
+                "easing": "out_cubic"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "quad_grid_assemble",
+      "category": "image_group_v1",
+      "supported_template": "image_popup",
+      "targets": [
+        "image_group"
+      ],
+      "supported_content": [
+        "image"
+      ],
+      "unit": "group",
+      "seeded": true,
+      "duration_bounds": {
+        "minimum_frames": 24,
+        "maximum_frames": 240
+      },
+      "required_properties": [
+        "position_x",
+        "position_y",
+        "scale",
+        "opacity"
+      ],
+      "render_safe": true,
+      "requires_3d": false,
+      "requires_camera": false,
+      "enter": 36,
+      "exit": 8,
+      "group_recipe": {
+        "image_count": 4,
+        "layout": "quad",
+        "description": "grid assemble",
+        "member_tracks": [
+          {
+            "member_index": 0,
+            "tracks": [
+              {
+                "property": "position_x",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 150
+                  },
+                  {
+                    "frame": 16,
+                    "value": 0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 0
+                  }
+                ],
+                "easing": "out_cubic"
+              },
+              {
+                "property": "position_y",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 100
+                  },
+                  {
+                    "frame": 16,
+                    "value": 0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 0
+                  }
+                ],
+                "easing": "out_cubic"
+              },
+              {
+                "property": "scale",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0.88
+                  },
+                  {
+                    "frame": 18,
+                    "value": 1.0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 1.0
+                  }
+                ],
+                "easing": "out_cubic"
+              },
+              {
+                "property": "opacity",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0
+                  },
+                  {
+                    "frame": 12,
+                    "value": 1
+                  },
+                  {
+                    "frame": 36,
+                    "value": 1
+                  }
+                ],
+                "easing": "out_cubic"
+              }
+            ]
+          },
+          {
+            "member_index": 1,
+            "tracks": [
+              {
+                "property": "position_x",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": -150
+                  },
+                  {
+                    "frame": 19,
+                    "value": 0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 0
+                  }
+                ],
+                "easing": "out_cubic"
+              },
+              {
+                "property": "position_y",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 100
+                  },
+                  {
+                    "frame": 19,
+                    "value": 0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 0
+                  }
+                ],
+                "easing": "out_cubic"
+              },
+              {
+                "property": "scale",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0.88
+                  },
+                  {
+                    "frame": 21,
+                    "value": 1.0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 1.0
+                  }
+                ],
+                "easing": "out_cubic"
+              },
+              {
+                "property": "opacity",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0
+                  },
+                  {
+                    "frame": 15,
+                    "value": 1
+                  },
+                  {
+                    "frame": 36,
+                    "value": 1
+                  }
+                ],
+                "easing": "out_cubic"
+              }
+            ]
+          },
+          {
+            "member_index": 2,
+            "tracks": [
+              {
+                "property": "position_x",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 150
+                  },
+                  {
+                    "frame": 22,
+                    "value": 0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 0
+                  }
+                ],
+                "easing": "out_cubic"
+              },
+              {
+                "property": "position_y",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": -100
+                  },
+                  {
+                    "frame": 22,
+                    "value": 0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 0
+                  }
+                ],
+                "easing": "out_cubic"
+              },
+              {
+                "property": "scale",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0.88
+                  },
+                  {
+                    "frame": 24,
+                    "value": 1.0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 1.0
+                  }
+                ],
+                "easing": "out_cubic"
+              },
+              {
+                "property": "opacity",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0
+                  },
+                  {
+                    "frame": 18,
+                    "value": 1
+                  },
+                  {
+                    "frame": 36,
+                    "value": 1
+                  }
+                ],
+                "easing": "out_cubic"
+              }
+            ]
+          },
+          {
+            "member_index": 3,
+            "tracks": [
+              {
+                "property": "position_x",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": -150
+                  },
+                  {
+                    "frame": 24,
+                    "value": 0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 0
+                  }
+                ],
+                "easing": "out_cubic"
+              },
+              {
+                "property": "position_y",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": -100
+                  },
+                  {
+                    "frame": 24,
+                    "value": 0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 0
+                  }
+                ],
+                "easing": "out_cubic"
+              },
+              {
+                "property": "scale",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0.88
+                  },
+                  {
+                    "frame": 24,
+                    "value": 1.0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 1.0
+                  }
+                ],
+                "easing": "out_cubic"
+              },
+              {
+                "property": "opacity",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0
+                  },
+                  {
+                    "frame": 20,
+                    "value": 1
+                  },
+                  {
+                    "frame": 36,
+                    "value": 1
+                  }
+                ],
+                "easing": "out_cubic"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "quad_corner_converge",
+      "category": "image_group_v1",
+      "supported_template": "image_popup",
+      "targets": [
+        "image_group"
+      ],
+      "supported_content": [
+        "image"
+      ],
+      "unit": "group",
+      "seeded": true,
+      "duration_bounds": {
+        "minimum_frames": 24,
+        "maximum_frames": 240
+      },
+      "required_properties": [
+        "position_x",
+        "position_y",
+        "scale",
+        "opacity"
+      ],
+      "render_safe": true,
+      "requires_3d": false,
+      "requires_camera": false,
+      "enter": 36,
+      "exit": 8,
+      "group_recipe": {
+        "image_count": 4,
+        "layout": "quad",
+        "description": "corner converge",
+        "member_tracks": [
+          {
+            "member_index": 0,
+            "tracks": [
+              {
+                "property": "position_x",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": -55
+                  },
+                  {
+                    "frame": 18,
+                    "value": 0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 0
+                  }
+                ],
+                "easing": "out_cubic"
+              },
+              {
+                "property": "position_y",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": -10
+                  },
+                  {
+                    "frame": 18,
+                    "value": 0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 0
+                  }
+                ],
+                "easing": "out_cubic"
+              },
+              {
+                "property": "scale",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0.84
+                  },
+                  {
+                    "frame": 18,
+                    "value": 1.0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 1.0
+                  }
+                ],
+                "easing": "out_cubic"
+              },
+              {
+                "property": "opacity",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0
+                  },
+                  {
+                    "frame": 12,
+                    "value": 1
+                  },
+                  {
+                    "frame": 36,
+                    "value": 1
+                  }
+                ],
+                "easing": "out_cubic"
+              },
+              {
+                "property": "rotation_z",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": -0.04
+                  },
+                  {
+                    "frame": 18,
+                    "value": 0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 0
+                  }
+                ],
+                "easing": "out_cubic"
+              }
+            ]
+          },
+          {
+            "member_index": 1,
+            "tracks": [
+              {
+                "property": "position_x",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 55
+                  },
+                  {
+                    "frame": 21,
+                    "value": 0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 0
+                  }
+                ],
+                "easing": "out_cubic"
+              },
+              {
+                "property": "position_y",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": -10
+                  },
+                  {
+                    "frame": 21,
+                    "value": 0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 0
+                  }
+                ],
+                "easing": "out_cubic"
+              },
+              {
+                "property": "scale",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0.84
+                  },
+                  {
+                    "frame": 21,
+                    "value": 1.0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 1.0
+                  }
+                ],
+                "easing": "out_cubic"
+              },
+              {
+                "property": "opacity",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0
+                  },
+                  {
+                    "frame": 15,
+                    "value": 1
+                  },
+                  {
+                    "frame": 36,
+                    "value": 1
+                  }
+                ],
+                "easing": "out_cubic"
+              },
+              {
+                "property": "rotation_z",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0.04
+                  },
+                  {
+                    "frame": 18,
+                    "value": 0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 0
+                  }
+                ],
+                "easing": "out_cubic"
+              }
+            ]
+          },
+          {
+            "member_index": 2,
+            "tracks": [
+              {
+                "property": "position_x",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": -55
+                  },
+                  {
+                    "frame": 24,
+                    "value": 0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 0
+                  }
+                ],
+                "easing": "out_cubic"
+              },
+              {
+                "property": "position_y",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 100
+                  },
+                  {
+                    "frame": 24,
+                    "value": 0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 0
+                  }
+                ],
+                "easing": "out_cubic"
+              },
+              {
+                "property": "scale",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0.84
+                  },
+                  {
+                    "frame": 24,
+                    "value": 1.0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 1.0
+                  }
+                ],
+                "easing": "out_cubic"
+              },
+              {
+                "property": "opacity",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0
+                  },
+                  {
+                    "frame": 18,
+                    "value": 1
+                  },
+                  {
+                    "frame": 36,
+                    "value": 1
+                  }
+                ],
+                "easing": "out_cubic"
+              },
+              {
+                "property": "rotation_z",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": -0.04
+                  },
+                  {
+                    "frame": 18,
+                    "value": 0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 0
+                  }
+                ],
+                "easing": "out_cubic"
+              }
+            ]
+          },
+          {
+            "member_index": 3,
+            "tracks": [
+              {
+                "property": "position_x",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 55
+                  },
+                  {
+                    "frame": 24,
+                    "value": 0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 0
+                  }
+                ],
+                "easing": "out_cubic"
+              },
+              {
+                "property": "position_y",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 100
+                  },
+                  {
+                    "frame": 24,
+                    "value": 0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 0
+                  }
+                ],
+                "easing": "out_cubic"
+              },
+              {
+                "property": "scale",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0.84
+                  },
+                  {
+                    "frame": 24,
+                    "value": 1.0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 1.0
+                  }
+                ],
+                "easing": "out_cubic"
+              },
+              {
+                "property": "opacity",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0
+                  },
+                  {
+                    "frame": 20,
+                    "value": 1
+                  },
+                  {
+                    "frame": 36,
+                    "value": 1
+                  }
+                ],
+                "easing": "out_cubic"
+              },
+              {
+                "property": "rotation_z",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0.04
+                  },
+                  {
+                    "frame": 18,
+                    "value": 0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 0
+                  }
+                ],
+                "easing": "out_cubic"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "penta_hero_plus_four",
+      "category": "image_group_v1",
+      "supported_template": "image_popup",
+      "targets": [
+        "image_group"
+      ],
+      "supported_content": [
+        "image"
+      ],
+      "unit": "group",
+      "seeded": true,
+      "duration_bounds": {
+        "minimum_frames": 24,
+        "maximum_frames": 240
+      },
+      "required_properties": [
+        "position_x",
+        "position_y",
+        "scale",
+        "opacity"
+      ],
+      "render_safe": true,
+      "requires_3d": false,
+      "requires_camera": false,
+      "enter": 36,
+      "exit": 8,
+      "group_recipe": {
+        "image_count": 5,
+        "layout": "penta",
+        "description": "hero plus four",
+        "member_tracks": [
+          {
+            "member_index": 0,
+            "tracks": [
+              {
+                "property": "position_x",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0
+                  },
+                  {
+                    "frame": 16,
+                    "value": 0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 0
+                  }
+                ],
+                "easing": "out_cubic"
+              },
+              {
+                "property": "position_y",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0
+                  },
+                  {
+                    "frame": 16,
+                    "value": 0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 0
+                  }
+                ],
+                "easing": "out_cubic"
+              },
+              {
+                "property": "scale",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0.88
+                  },
+                  {
+                    "frame": 18,
+                    "value": 1.03
+                  },
+                  {
+                    "frame": 36,
+                    "value": 1.0
+                  }
+                ],
+                "easing": "out_cubic"
+              },
+              {
+                "property": "opacity",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0
+                  },
+                  {
+                    "frame": 12,
+                    "value": 1
+                  },
+                  {
+                    "frame": 36,
+                    "value": 1
+                  }
+                ],
+                "easing": "out_cubic"
+              },
+              {
+                "property": "rotation_z",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0.0
+                  },
+                  {
+                    "frame": 18,
+                    "value": 0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 0
+                  }
+                ],
+                "easing": "out_cubic"
+              }
+            ]
+          },
+          {
+            "member_index": 1,
+            "tracks": [
+              {
+                "property": "position_x",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 150
+                  },
+                  {
+                    "frame": 18,
+                    "value": 0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 0
+                  }
+                ],
+                "easing": "out_cubic"
+              },
+              {
+                "property": "position_y",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 100
+                  },
+                  {
+                    "frame": 18,
+                    "value": 0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 0
+                  }
+                ],
+                "easing": "out_cubic"
+              },
+              {
+                "property": "scale",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0.88
+                  },
+                  {
+                    "frame": 20,
+                    "value": 1.0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 1.0
+                  }
+                ],
+                "easing": "out_cubic"
+              },
+              {
+                "property": "opacity",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0
+                  },
+                  {
+                    "frame": 14,
+                    "value": 1
+                  },
+                  {
+                    "frame": 36,
+                    "value": 1
+                  }
+                ],
+                "easing": "out_cubic"
+              },
+              {
+                "property": "rotation_z",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": -0.035
+                  },
+                  {
+                    "frame": 18,
+                    "value": 0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 0
+                  }
+                ],
+                "easing": "out_cubic"
+              }
+            ]
+          },
+          {
+            "member_index": 2,
+            "tracks": [
+              {
+                "property": "position_x",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": -150
+                  },
+                  {
+                    "frame": 20,
+                    "value": 0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 0
+                  }
+                ],
+                "easing": "out_cubic"
+              },
+              {
+                "property": "position_y",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 100
+                  },
+                  {
+                    "frame": 20,
+                    "value": 0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 0
+                  }
+                ],
+                "easing": "out_cubic"
+              },
+              {
+                "property": "scale",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0.88
+                  },
+                  {
+                    "frame": 22,
+                    "value": 1.0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 1.0
+                  }
+                ],
+                "easing": "out_cubic"
+              },
+              {
+                "property": "opacity",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0
+                  },
+                  {
+                    "frame": 16,
+                    "value": 1
+                  },
+                  {
+                    "frame": 36,
+                    "value": 1
+                  }
+                ],
+                "easing": "out_cubic"
+              },
+              {
+                "property": "rotation_z",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0.035
+                  },
+                  {
+                    "frame": 18,
+                    "value": 0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 0
+                  }
+                ],
+                "easing": "out_cubic"
+              }
+            ]
+          },
+          {
+            "member_index": 3,
+            "tracks": [
+              {
+                "property": "position_x",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 150
+                  },
+                  {
+                    "frame": 22,
+                    "value": 0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 0
+                  }
+                ],
+                "easing": "out_cubic"
+              },
+              {
+                "property": "position_y",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": -100
+                  },
+                  {
+                    "frame": 22,
+                    "value": 0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 0
+                  }
+                ],
+                "easing": "out_cubic"
+              },
+              {
+                "property": "scale",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0.88
+                  },
+                  {
+                    "frame": 24,
+                    "value": 1.0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 1.0
+                  }
+                ],
+                "easing": "out_cubic"
+              },
+              {
+                "property": "opacity",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0
+                  },
+                  {
+                    "frame": 18,
+                    "value": 1
+                  },
+                  {
+                    "frame": 36,
+                    "value": 1
+                  }
+                ],
+                "easing": "out_cubic"
+              },
+              {
+                "property": "rotation_z",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": -0.035
+                  },
+                  {
+                    "frame": 18,
+                    "value": 0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 0
+                  }
+                ],
+                "easing": "out_cubic"
+              }
+            ]
+          },
+          {
+            "member_index": 4,
+            "tracks": [
+              {
+                "property": "position_x",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": -150
+                  },
+                  {
+                    "frame": 24,
+                    "value": 0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 0
+                  }
+                ],
+                "easing": "out_cubic"
+              },
+              {
+                "property": "position_y",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": -100
+                  },
+                  {
+                    "frame": 24,
+                    "value": 0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 0
+                  }
+                ],
+                "easing": "out_cubic"
+              },
+              {
+                "property": "scale",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0.88
+                  },
+                  {
+                    "frame": 24,
+                    "value": 1.0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 1.0
+                  }
+                ],
+                "easing": "out_cubic"
+              },
+              {
+                "property": "opacity",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0
+                  },
+                  {
+                    "frame": 20,
+                    "value": 1
+                  },
+                  {
+                    "frame": 36,
+                    "value": 1
+                  }
+                ],
+                "easing": "out_cubic"
+              },
+              {
+                "property": "rotation_z",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0.035
+                  },
+                  {
+                    "frame": 18,
+                    "value": 0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 0
+                  }
+                ],
+                "easing": "out_cubic"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "penta_priority_cycle",
+      "category": "image_group_v1",
+      "supported_template": "image_popup",
+      "targets": [
+        "image_group"
+      ],
+      "supported_content": [
+        "image"
+      ],
+      "unit": "group",
+      "seeded": true,
+      "duration_bounds": {
+        "minimum_frames": 24,
+        "maximum_frames": 240
+      },
+      "required_properties": [
+        "position_x",
+        "position_y",
+        "scale",
+        "opacity"
+      ],
+      "render_safe": true,
+      "requires_3d": false,
+      "requires_camera": false,
+      "enter": 36,
+      "exit": 8,
+      "group_recipe": {
+        "image_count": 5,
+        "layout": "penta",
+        "description": "priority cycle",
+        "member_tracks": [
+          {
+            "member_index": 0,
+            "tracks": [
+              {
+                "property": "position_x",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0
+                  },
+                  {
+                    "frame": 20,
+                    "value": 0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 0
+                  }
+                ],
+                "easing": "out_cubic"
+              },
+              {
+                "property": "position_y",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": -36.0
+                  },
+                  {
+                    "frame": 15,
+                    "value": 12.0
+                  },
+                  {
+                    "frame": 30,
+                    "value": 0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 0
+                  }
+                ],
+                "easing": "out_cubic"
+              },
+              {
+                "property": "scale",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0.92
+                  },
+                  {
+                    "frame": 18,
+                    "value": 1.0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 1.0
+                  }
+                ],
+                "easing": "out_cubic"
+              },
+              {
+                "property": "opacity",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0
+                  },
+                  {
+                    "frame": 12,
+                    "value": 1
+                  },
+                  {
+                    "frame": 36,
+                    "value": 1
+                  }
+                ],
+                "easing": "out_cubic"
+              }
+            ]
+          },
+          {
+            "member_index": 1,
+            "tracks": [
+              {
+                "property": "position_x",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 35
+                  },
+                  {
+                    "frame": 20,
+                    "value": -8
+                  },
+                  {
+                    "frame": 36,
+                    "value": 0
+                  }
+                ],
+                "easing": "out_cubic"
+              },
+              {
+                "property": "position_y",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": -18.0
+                  },
+                  {
+                    "frame": 15,
+                    "value": 6.0
+                  },
+                  {
+                    "frame": 30,
+                    "value": 0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 0
+                  }
+                ],
+                "easing": "out_cubic"
+              },
+              {
+                "property": "scale",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0.92
+                  },
+                  {
+                    "frame": 18,
+                    "value": 1.0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 1.0
+                  }
+                ],
+                "easing": "out_cubic"
+              },
+              {
+                "property": "opacity",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0
+                  },
+                  {
+                    "frame": 14,
+                    "value": 1
+                  },
+                  {
+                    "frame": 36,
+                    "value": 1
+                  }
+                ],
+                "easing": "out_cubic"
+              }
+            ]
+          },
+          {
+            "member_index": 2,
+            "tracks": [
+              {
+                "property": "position_x",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": -35
+                  },
+                  {
+                    "frame": 20,
+                    "value": 8
+                  },
+                  {
+                    "frame": 36,
+                    "value": 0
+                  }
+                ],
+                "easing": "out_cubic"
+              },
+              {
+                "property": "position_y",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0.0
+                  },
+                  {
+                    "frame": 15,
+                    "value": -0.0
+                  },
+                  {
+                    "frame": 30,
+                    "value": 0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 0
+                  }
+                ],
+                "easing": "out_cubic"
+              },
+              {
+                "property": "scale",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0.92
+                  },
+                  {
+                    "frame": 18,
+                    "value": 1.02
+                  },
+                  {
+                    "frame": 36,
+                    "value": 1.0
+                  }
+                ],
+                "easing": "out_cubic"
+              },
+              {
+                "property": "opacity",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0
+                  },
+                  {
+                    "frame": 16,
+                    "value": 1
+                  },
+                  {
+                    "frame": 36,
+                    "value": 1
+                  }
+                ],
+                "easing": "out_cubic"
+              }
+            ]
+          },
+          {
+            "member_index": 3,
+            "tracks": [
+              {
+                "property": "position_x",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 35
+                  },
+                  {
+                    "frame": 20,
+                    "value": -8
+                  },
+                  {
+                    "frame": 36,
+                    "value": 0
+                  }
+                ],
+                "easing": "out_cubic"
+              },
+              {
+                "property": "position_y",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 18.0
+                  },
+                  {
+                    "frame": 15,
+                    "value": -6.0
+                  },
+                  {
+                    "frame": 30,
+                    "value": 0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 0
+                  }
+                ],
+                "easing": "out_cubic"
+              },
+              {
+                "property": "scale",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0.92
+                  },
+                  {
+                    "frame": 18,
+                    "value": 1.0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 1.0
+                  }
+                ],
+                "easing": "out_cubic"
+              },
+              {
+                "property": "opacity",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0
+                  },
+                  {
+                    "frame": 18,
+                    "value": 1
+                  },
+                  {
+                    "frame": 36,
+                    "value": 1
+                  }
+                ],
+                "easing": "out_cubic"
+              }
+            ]
+          },
+          {
+            "member_index": 4,
+            "tracks": [
+              {
+                "property": "position_x",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": -35
+                  },
+                  {
+                    "frame": 20,
+                    "value": 8
+                  },
+                  {
+                    "frame": 36,
+                    "value": 0
+                  }
+                ],
+                "easing": "out_cubic"
+              },
+              {
+                "property": "position_y",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 36.0
+                  },
+                  {
+                    "frame": 15,
+                    "value": -12.0
+                  },
+                  {
+                    "frame": 30,
+                    "value": 0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 0
+                  }
+                ],
+                "easing": "out_cubic"
+              },
+              {
+                "property": "scale",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0.92
+                  },
+                  {
+                    "frame": 18,
+                    "value": 1.0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 1.0
+                  }
+                ],
+                "easing": "out_cubic"
+              },
+              {
+                "property": "opacity",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0
+                  },
+                  {
+                    "frame": 18,
+                    "value": 1
+                  },
+                  {
+                    "frame": 36,
+                    "value": 1
+                  }
+                ],
+                "easing": "out_cubic"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
       "id": "metric_counter_rise",
       "category": "metric_v1",
       "supported_template": "metric_stat_card",

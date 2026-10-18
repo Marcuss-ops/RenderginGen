@@ -59,6 +59,15 @@ func resolveAnimationPolicies(src *semanticPlan) error {
 		if err != nil {
 			return err
 		}
+		if len(item.ImageLayers) > 0 && item.GroupMotionID != "" {
+			if item.MotionID != "" && item.MotionID != item.GroupMotionID {
+				return fmt.Errorf("overlay: item %q motion_id %q conflicts with group_motion_id %q", item.ID, item.MotionID, item.GroupMotionID)
+			}
+			if !animationUsesGroupRecipe(item.GroupMotionID) {
+				return fmt.Errorf("overlay: item %q group_motion_id %q is not a certified multi-image motion", item.ID, item.GroupMotionID)
+			}
+			item.MotionID = item.GroupMotionID
+		}
 		if isTextLikeKind(kind) && len(item.Assets) == 0 && len(item.ImageLayers) == 0 && item.MotionID == "" {
 			if policy, ok := selectAnimationPolicy(policies, "important_phrase", item.GroupID, item.SubgroupID); ok {
 				item.MotionID, item.MotionParams = resolvePolicyMotion(src, policy, "important_phrase", item.GroupID, item.SubgroupID)
@@ -226,4 +235,11 @@ func isTextLikeKind(kind ItemKind) bool {
 func animationUsesMultiImageRecipe(id string) bool {
 	definition, err := resolveMotionDefinition(id)
 	return err == nil && isMultiImageRecipe(definition)
+}
+
+// animationUsesGroupRecipe accepts only certified image_group_v1 choreographies,
+// which carry a GroupRecipe rather than an ImageRecipe stack.
+func animationUsesGroupRecipe(id string) bool {
+	definition, err := resolveMotionDefinition(id)
+	return err == nil && isImageGroupRecipe(definition)
 }

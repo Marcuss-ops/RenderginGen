@@ -412,7 +412,11 @@ type semanticItem struct {
 	Style       map[string]any       `json:"style"`
 	Assets      []SemanticAssetRef   `json:"asset_refs"`
 	ImageLayers []SemanticImageLayer `json:"image_layers"`
-	Map         *SemanticMap         `json:"map"`
+	// GroupMotionID is the single certified choreography of a composite image
+	// group, chosen once by PipelineGen. It is pinned to MotionID before any
+	// animation policy runs, so no later step can replace it.
+	GroupMotionID string       `json:"group_motion_id,omitempty"`
+	Map           *SemanticMap `json:"map"`
 	// Metric/Date carry the optional structured payload of the two data
 	// compositions. They are typed so strict decoding plus schema parity cannot
 	// silently discard a declared value, and they are validated against the

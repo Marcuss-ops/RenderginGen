@@ -154,7 +154,93 @@ func validateMapContract(item semanticItem, kind ItemKind, canvasWidth, canvasHe
 		}
 		seen[pin.ID] = struct{}{}
 	}
+	return validateMapPresentationParams(item)
+}
+
+// Certified runtime map presentation catalogs. A map item may carry its
+// RESOLVED presentation (composition family, camera, label treatment, backend,
+// group identity and the voiceover's per-pin schedule) in params; the worker
+// validates those declarations instead of silently ignoring them, so a
+// composition the renderer cannot draw is a compile error, never a blank map.
+var (
+	certifiedMapCompositions = map[string]bool{
+		"region_zoom": true, "pulse_marker": true, "spotlight": true,
+		"ed_saudi_base": true, "ed_iran_glow": true, "ed_yemen_fill": true,
+		"ed_yemen_markers": true, "ed_hormuz_routes": true, "ed_mocha_tactical": true,
+	}
+	certifiedMapCameraAnimations = map[string]bool{"slow_approach": true}
+	certifiedMapLabelAnimations  = map[string]bool{"none": true}
+	certifiedMapBackends         = map[string]bool{"native": true, "python": true}
+	certifiedMapGroupStrategies  = map[string]bool{"tour": true, "multi_pin": true}
+)
+
+// validateMapPresentationParams admits the new certified map presentation
+// contract on map items. Every field is optional (absent = legacy behaviour);
+// present fields must be internally consistent — per-pin timing may only
+// reference declared pins, and a group identity must be coherent.
+func validateMapPresentationParams(item semanticItem) error {
+	params := item.Params
+	if params == nil {
+		return nil
+	}
+	for key, certified := range map[string]map[string]bool{
+		"map_animation":        certifiedMapCompositions,
+		"map_camera_animation": certifiedMapCameraAnimations,
+		"map_label_animation":  certifiedMapLabelAnimations,
+		"map_backend":          certifiedMapBackends,
+		"map_group_strategy":   certifiedMapGroupStrategies,
+	} {
+		raw, present := params[key]
+		if !present {
+			continue
+		}
+		value, ok := raw.(string)
+		if !ok || value == "" || !certified[value] {
+			return fmt.Errorf("overlay: map item %q declares unsupported %s %v", item.ID, key, raw)
+		}
+	}
+	pinIDs := make(map[string]bool, len(item.Map.Pins))
+	for _, pin := range item.Map.Pins {
+		pinIDs[pin.ID] = true
+	}
+	if raw, present := params["map_pin_timing"]; present {
+		timing, ok := raw.(map[string]any)
+		if !ok {
+			return fmt.Errorf("overlay: map item %q map_pin_timing must be an object keyed by pin id", item.ID)
+		}
+		for pinID, rawEntry := range timing {
+			if !pinIDs[pinID] {
+				return fmt.Errorf("overlay: map item %q map_pin_timing references undeclared pin %q", item.ID, pinID)
+			}
+			entry, ok := rawEntry.(map[string]any)
+			if !ok {
+				return fmt.Errorf("overlay: map item %q map_pin_timing[%q] must be an object", item.ID, pinID)
+			}
+			startUS, startOK := mapParamNumber(entry, "start_us")
+			durationUS, durationOK := mapParamNumber(entry, "duration_us")
+			if !startOK || !durationOK || startUS < 0 || durationUS <= 0 {
+				return fmt.Errorf("overlay: map item %q map_pin_timing[%q] requires start_us >= 0 and duration_us > 0", item.ID, pinID)
+			}
+		}
+	}
+	if raw, present := params["map_group"]; present {
+		group, ok := raw.(map[string]any)
+		if !ok {
+			return fmt.Errorf("overlay: map item %q map_group must be an object", item.ID)
+		}
+		index, indexOK := mapParamNumber(group, "index")
+		count, countOK := mapParamNumber(group, "count")
+		size, sizeOK := mapParamNumber(group, "size")
+		if !indexOK || !countOK || !sizeOK || index < 1 || count < 1 || index > count || size < 1 {
+			return fmt.Errorf("overlay: map item %q map_group requires 1 <= index <= count and size >= 1", item.ID)
+		}
+	}
 	return nil
+}
+
+func mapParamNumber(entry map[string]any, key string) (float64, bool) {
+	value, ok := entry[key].(float64)
+	return value, ok
 }
 
 func validateMapAttribution(attribution string) error {
