@@ -15,6 +15,93 @@ func premiumImageRecipeDefinition(definition *motion.MotionDefinition) *motion.M
 	return definition
 }
 
+func imageGroupRecipeDefinition(definition *motion.MotionDefinition) *motion.MotionDefinition {
+	if definition == nil || definition.GroupRecipe == nil || definition.Category != "image_group_v1" {
+		return nil
+	}
+	return definition
+}
+
+func isImageGroupRecipe(definition *motion.MotionDefinition) bool {
+	return imageGroupRecipeDefinition(definition) != nil
+}
+
+func compileImageGroupRecipe(ri resolvedItem, src *semanticPlan, registry *assetRegistry, definition *motion.MotionDefinition) ([]Layer, error) {
+	recipe := definition.GroupRecipe
+	count := len(ri.Item.ImageLayers)
+	if err := recipe.Validate(); err != nil {
+		return nil, fmt.Errorf("overlay: motion %q has invalid group recipe: %w", definition.ID, err)
+	}
+	if !recipe.SupportsCount(count) {
+		return nil, fmt.Errorf("overlay: motion %q supports %d image layers, got %d", definition.ID, recipe.ImageCount, count)
+	}
+	assets := make(map[string]string, len(ri.Item.Assets))
+	for _, ref := range ri.Item.Assets {
+		assets[ref.ID] = registry.Path(ref.ID)
+	}
+	output := make([]Layer, 0, count*2)
+	for index, child := range ri.Item.ImageLayers {
+		assetPath, ok := assets[child.AssetID]
+		if !ok {
+			return nil, fmt.Errorf("overlay: group image layer %q references undeclared asset %q", child.ID, child.AssetID)
+		}
+		preset, err := resolveOfficialPreset(child.PresetID, string(PresetImage))
+		if err != nil {
+			return nil, fmt.Errorf("overlay: group image layer %q: %w", child.ID, err)
+		}
+		startOffset, endOffset := msFrames(child.StartMS, child.EndMS, int64(src.FPSNum), int64(src.FPSDen))
+		childItem := ri.Item
+		childItem.ID = ri.Item.ID + ":" + child.ID
+		childItem.PresetID = child.PresetID
+		childItem.MotionID = ""
+		childItem.MotionParams = nil
+		childItem.EntityCaption = ""
+		childItem.CaptionMotionID = child.CaptionMotionID
+		childItem.CaptionMotionParams = child.CaptionMotionParams
+		childItem.Frame = child.Frame
+		childItem.Params = child.Params
+		childResolved := ri
+		childResolved.Item, childResolved.Params = childItem, child.Params
+		childResolved.Start, childResolved.End = ri.Start+startOffset, ri.Start+endOffset
+		image, err := compileSingleImageLayer(childResolved, src, assetPath, preset, "", nil, childResolved.Start, childResolved.End, childResolved.Item.ID)
+		if err != nil {
+			return nil, err
+		}
+		if err := validatePremiumImageDuration(*definition, image.DurationFrames); err != nil {
+			return nil, err
+		}
+		animation := premiumTracks(*definition, recipe.TracksForMember(index), image.DurationFrames)
+		premiumLayerActive(&image, animation)
+		if hasPositionZ(animation) {
+			image.Enable3D = true
+		}
+		if err := applyFrameTreatment(&image, child.Frame); err != nil {
+			return nil, fmt.Errorf("overlay: group motion %q layer %q: %w", definition.ID, child.ID, err)
+		}
+		output = append(output, image)
+		if caption := strings.TrimSpace(child.Caption); caption != "" {
+			captionLayer, err := compileImageCaptionLayer(ri, src, childItem, caption, &image, child.ID, textRoleImageCaption)
+			if err != nil {
+				return nil, err
+			}
+			output = append(output, captionLayer)
+		}
+	}
+	return output, nil
+}
+
+func hasPositionZ(animation *LayerAnimation) bool {
+	if animation == nil {
+		return false
+	}
+	for _, track := range animation.Tracks {
+		if motion.IsCameraBacked3DProperty(track.Property) {
+			return true
+		}
+	}
+	return false
+}
+
 func isMultiImageRecipe(definition *motion.MotionDefinition) bool {
 	return definition != nil && definition.ImageRecipe != nil && definition.ImageRecipe.Stack
 }
@@ -524,6 +611,9 @@ func compilePremiumImageLayers(ri resolvedItem, src *semanticPlan, image Layer, 
 func compilePremiumMultiImageRecipe(ri resolvedItem, src *semanticPlan, registry *assetRegistry, definition *motion.MotionDefinition) ([]Layer, error) {
 	if len(ri.Item.ImageLayers) < 2 {
 		return nil, fmt.Errorf("overlay: motion %q requires at least two image_layers", definition.ID)
+	}
+	if definition.ImageRecipe == nil || !definition.ImageRecipe.Stack {
+		return nil, fmt.Errorf("overlay: motion %q is not a legacy multi-image stack recipe", definition.ID)
 	}
 	activeID, err := requiredImageLayerID(ri.Item.MotionParams, definition.ImageRecipe.ActiveLayerParam, definition.ID)
 	if err != nil {

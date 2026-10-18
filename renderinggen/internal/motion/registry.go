@@ -196,6 +196,7 @@ var phrasePoolExcludedCategories = map[string]string{
 	"date_didone_v1":       "Didone date family selected through the timeline_date composition, not the legacy phrase pool",
 	"metric_typewriter_v1": "typewriter metric family selected through the metric_stat composition, not the legacy phrase pool",
 	"date_typewriter_v1":   "typewriter date family selected through the timeline_date composition, not the legacy phrase pool",
+	"image_group_v1":       "multi-image group choreographies are selected once per group through the image.group.count_N registry, not the legacy phrase pool",
 	"image_25d_clean_v1":   "image-surface family, never a phrase-planning family",
 	"editorial_image_v1":   "image-surface family, never a phrase-planning family",
 	"image_premium_v1":     "image-surface family, never a phrase-planning family",

@@ -31,8 +31,12 @@ func compileImageItem(ri resolvedItem, src *semanticPlan, registry *assetRegistr
 	if resolvedImageMotion != nil {
 		imageRecipe = resolvedImageMotion.definition
 	}
-	if imageRecipe == nil || imageRecipe.ImageRecipe == nil {
+	if imageRecipe == nil || imageRecipe.ImageRecipe == nil && imageRecipe.GroupRecipe == nil {
 		imageRecipe = nil
+	}
+	groupRecipe := imageGroupRecipeDefinition(imageRecipe)
+	if groupRecipe != nil && (len(ri.Item.ImageLayers) == 0 || !isImageKind(ri.Kind)) {
+		return nil, fmt.Errorf("overlay: group motion %q requires an image item with image_layers", groupRecipe.ID)
 	}
 	premium := premiumImageRecipeDefinition(imageRecipe)
 	if isMultiImageRecipe(imageRecipe) && premium == nil {
@@ -41,6 +45,9 @@ func compileImageItem(ri resolvedItem, src *semanticPlan, registry *assetRegistr
 	visualAccents := visualAccentsRecipeDefinition(imageRecipe)
 	if isMultiImageRecipe(visualAccents) {
 		return nil, fmt.Errorf("overlay: motion %q requires multiple image_layers", visualAccents.ID)
+	}
+	if visualAccents != nil && visualAccents.GroupRecipe != nil {
+		return nil, fmt.Errorf("overlay: visual accents cannot be used as image group recipes")
 	}
 	if ri.Kind == KindLightLeak && len(ri.Item.Assets) == 0 && len(ri.Item.ImageLayers) == 0 {
 		if visualAccents == nil || visualAccents.Category != "light_leak_v1" {
@@ -108,6 +115,12 @@ func compileImageItem(ri resolvedItem, src *semanticPlan, registry *assetRegistr
 			return nil, fmt.Errorf("overlay: motion %q requires entity_caption", premium.ID)
 		}
 		return layers, nil
+	}
+	if groupRecipe != nil {
+		if len(ri.Item.ImageLayers) != len(groupRecipe.GroupRecipe.MemberTracks) {
+			return nil, fmt.Errorf("overlay: motion %q supports %d image layers, got %d", groupRecipe.ID, len(groupRecipe.GroupRecipe.MemberTracks), len(ri.Item.ImageLayers))
+		}
+		return compileImageGroupRecipe(ri, src, registry, groupRecipe)
 	}
 	if isMultiImageRecipe(premium) {
 		if !motionDefinitionAdmitsTarget(premium, "image") {

@@ -68,8 +68,7 @@ type DurationBounds struct {
 // primitives rather than a second motion renderer.
 // ImageMotionRecipe describes renderer-neutral additions around one image
 // layer. Its components lower to ordinary Chronon image/shape/color layers;
-// masks, path operators and effect parameter tracks remain native render-plan
-// primitives rather than a second motion renderer.
+// masks, path operators and effect parameter tracks remain native render-plan// primitives rather than a second motion renderer.
 type ImageMotionRecipe struct {
 	RequireCaption   bool                   `json:"require_caption,omitempty"`
 	Stack            bool                   `json:"stack,omitempty"`
@@ -78,6 +77,113 @@ type ImageMotionRecipe struct {
 	CaptionTracks    []TrackDefinition      `json:"caption_tracks,omitempty"`
 	Mask             *ImageMaskDefinition   `json:"mask,omitempty"`
 	Components       []ImageMotionComponent `json:"components,omitempty"`
+}
+
+type GroupMotionRecipe struct {
+	ImageCount   int                    `json:"image_count"`
+	Layout       string                 `json:"layout"`
+	Description  string                 `json:"description,omitempty"`
+	MemberTracks []GroupMemberTrackSpec `json:"member_tracks"`
+}
+
+type GroupMemberTrackSpec struct {
+	MemberIndex int               `json:"member_index"`
+	Tracks      []TrackDefinition `json:"tracks"`
+}
+
+func (r *GroupMotionRecipe) SupportsCount(count int) bool {
+	return r != nil && count == r.ImageCount
+}
+
+func (r *GroupMotionRecipe) TracksForMember(index int) []TrackDefinition {
+	if r == nil || index < 0 || index >= len(r.MemberTracks) || r.MemberTracks[index].MemberIndex != index {
+		return nil
+	}
+	return r.MemberTracks[index].Tracks
+}
+
+func (r *GroupMotionRecipe) Has3DTracks() bool {
+	if r == nil {
+		return false
+	}
+	for _, member := range r.MemberTracks {
+		for _, track := range member.Tracks {
+			if IsCameraBacked3DProperty(track.Property) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func (r *GroupMotionRecipe) ValidateRestingPose() error {
+	if err := r.Validate(); err != nil {
+		return err
+	}
+	for _, member := range r.MemberTracks {
+		for _, track := range member.Tracks {
+			value, ok := motionNumericValue(track.Keyframes[len(track.Keyframes)-1].Value)
+			if !ok {
+				return fmt.Errorf("group recipe track %q has non-numeric resting value", track.Property)
+			}
+			switch track.Property {
+			case "position_x", "position_y", "position_z", "rotation_z":
+				if value != 0 {
+					return fmt.Errorf("group recipe track %q must rest at 0", track.Property)
+				}
+			case "scale", "scale_x", "scale_y", "opacity":
+				if value != 1 {
+					return fmt.Errorf("group recipe track %q must rest at 1", track.Property)
+				}
+			}
+		}
+	}
+	return nil
+}
+
+func (r *GroupMotionRecipe) Validate() error {
+	if r == nil || r.ImageCount < 2 || r.ImageCount > 5 || len(r.MemberTracks) != r.ImageCount {
+		return fmt.Errorf("group recipe requires 2..5 member track sets matching image_count")
+	}
+	wantLayout := map[int]string{2: "duo", 3: "trio", 4: "quad", 5: "penta"}[r.ImageCount]
+	if r.Layout != wantLayout {
+		return fmt.Errorf("group recipe layout %q does not match %d image members", r.Layout, r.ImageCount)
+	}
+	if len(r.MemberTracks) == 0 || len(r.MemberTracks[0].Tracks) == 0 {
+		return fmt.Errorf("group recipe requires non-empty member tracks")
+	}
+	wantProperties := make([]string, len(r.MemberTracks[0].Tracks))
+	for trackIndex, track := range r.MemberTracks[0].Tracks {
+		wantProperties[trackIndex] = track.Property
+	}
+	for index, member := range r.MemberTracks {
+		if member.MemberIndex != index || len(member.Tracks) != len(wantProperties) {
+			return fmt.Errorf("group recipe member_tracks must be complete and ordered")
+		}
+		seen := make(map[string]bool, len(member.Tracks))
+		for trackIndex, track := range member.Tracks {
+			if track.Property != wantProperties[trackIndex] || seen[track.Property] {
+				return fmt.Errorf("group recipe member %d has a different or duplicate track schema", index)
+			}
+			seen[track.Property] = true
+			if err := validateTrackDefinition("group recipe", "member track", track); err != nil {
+				return err
+			}
+			if track.Property != "position_x" && track.Property != "position_y" && track.Property != "position_z" && track.Property != "scale" && track.Property != "scale_x" && track.Property != "scale_y" && track.Property != "rotation_z" && track.Property != "opacity" {
+				return fmt.Errorf("group recipe has unsupported member property %q", track.Property)
+			}
+		}
+	}
+	for _, property := range []string{"position_x", "position_y", "scale", "opacity"} {
+		found := false
+		for _, track := range r.MemberTracks[0].Tracks {
+			found = found || track.Property == property
+		}
+		if !found {
+			return fmt.Errorf("group recipe is missing required member property %q", property)
+		}
+	}
+	return nil
 }
 
 type ImageMotionComponent struct {
@@ -250,6 +356,7 @@ type MotionDefinition struct {
 	Selector            SelectorDefinition       `json:"selector,omitempty"`
 	Stagger             StaggerDefinition        `json:"stagger,omitempty"`
 	ImageRecipe         *ImageMotionRecipe       `json:"image_recipe,omitempty"`
+	GroupRecipe         *GroupMotionRecipe       `json:"group_recipe,omitempty"`
 }
 
 type MotionPlugin interface {
@@ -293,6 +400,9 @@ func ValidateDefinition(d MotionDefinition) error {
 		}
 	}
 	if err := validateImagePremiumV1(d); err != nil {
+		return err
+	}
+	if err := validateImageGroupV1(d); err != nil {
 		return err
 	}
 	if err := validateEditorialV1Family(d); err != nil {
