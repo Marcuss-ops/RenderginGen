@@ -78,6 +78,13 @@ func compileImageGroupRecipe(ri resolvedItem, src *semanticPlan, registry *asset
 		if err := applyFrameTreatment(&image, child.Frame); err != nil {
 			return nil, fmt.Errorf("overlay: group motion %q layer %q: %w", definition.ID, child.ID, err)
 		}
+		// Nearby images share one supported card slot per member: a member
+		// that did not arrive vertical is covered into its slot so the
+		// pair always renders side by side. Members already on their slot
+		// are untouched, keeping certified renders bit-stable.
+		if _, err := autoFitGroupMember(src, &image, count, index); err != nil {
+			return nil, err
+		}
 		output = append(output, image)
 		if caption := strings.TrimSpace(child.Caption); caption != "" {
 			captionLayer, err := compileImageCaptionLayer(ri, src, childItem, caption, &image, child.ID, textRoleImageCaption)
