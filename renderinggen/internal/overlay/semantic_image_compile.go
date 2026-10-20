@@ -14,7 +14,10 @@ import (
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/motion"
 )
 
-func compileImageItem(ri resolvedItem, src *semanticPlan, registry *assetRegistry) ([]Layer, error) {
+// compileImageItemCore is the pure recipe/motion lowering of one image item.
+// The runtime effect decoration is applied by the compileImageItem wrapper in
+// semantic_image_effects.go; keep this function effect-stack agnostic.
+func compileImageItemCore(ri resolvedItem, src *semanticPlan, registry *assetRegistry) ([]Layer, error) {
 	// Item-level controls apply only to the standalone image or to a catalog
 	// recipe that coordinates multiple image layers. Ordinary composite children own their
 	// independent motion_params and are validated in compileSingleImageLayer.

@@ -1,0 +1,171 @@
+{
+ "frame": 20,
+ "inner_box": [
+  245,
+  115,
+  395,
+  245
+ ],
+ "scenarios": {
+  "control": {
+   "inner_mean_rgb": [
+    195.0,
+    118.0,
+    33.0
+   ],
+   "inner_std_lum": 0.0,
+   "corner_over_center_lum": 1.0,
+   "halo_mean_rgb": [
+    8.0,
+    12.0,
+    16.0
+   ]
+  },
+  "film_edge_matte": {
+   "inner_mean_rgb": [
+    140.8,
+    84.0,
+    27.3
+   ],
+   "inner_std_lum": 0.09,
+   "corner_over_center_lum": 1.0,
+   "halo_mean_rgb": [
+    8.0,
+    12.0,
+    16.0
+   ],
+   "mean_abs_lum_diff_vs_control": 36.8,
+   "pixels_over_2": 19500
+  },
+  "film_grain": {
+   "inner_mean_rgb": [
+    228.9,
+    138.4,
+    34.3
+   ],
+   "inner_std_lum": 6.17,
+   "corner_over_center_lum": 1.0,
+   "halo_mean_rgb": [
+    44.5,
+    32.7,
+    19.3
+   ],
+   "mean_abs_lum_diff_vs_control": 22.28,
+   "pixels_over_2": 19500
+  },
+  "film_halation": {
+   "inner_mean_rgb": [
+    228.0,
+    139.0,
+    39.0
+   ],
+   "inner_std_lum": 0.0,
+   "corner_over_center_lum": 1.0,
+   "halo_mean_rgb": [
+    8.0,
+    12.0,
+    16.0
+   ],
+   "mean_abs_lum_diff_vs_control": 22.88,
+   "pixels_over_2": 19500
+  },
+  "defocused_bokeh": {
+   "inner_mean_rgb": [
+    228.0,
+    139.0,
+    39.0
+   ],
+   "inner_std_lum": 0.0,
+   "corner_over_center_lum": 1.0,
+   "halo_mean_rgb": [
+    219.9,
+    133.8,
+    37.8
+   ],
+   "mean_abs_lum_diff_vs_control": 22.88,
+   "pixels_over_2": 19500
+  }
+ },
+ "pipeline_probe_draws": [
+  {
+   "decoration": "film_edge_matte",
+   "effects": [
+    {
+     "params": {
+      "amount": 0.3,
+      "radius": 0.95,
+      "softness": 0.35
+     },
+     "type": "vignette"
+    }
+   ],
+   "enabled": true,
+   "plan_id": "demo-a"
+  },
+  {
+   "decoration": "light_leak",
+   "enabled": false,
+   "plan_id": "demo-b"
+  },
+  {
+   "decoration": "defocused_bokeh",
+   "effects": [
+    {
+     "params": {
+      "radius": 5
+     },
+     "type": "gaussian_blur"
+    }
+   ],
+   "enabled": true,
+   "plan_id": "demo-c"
+  },
+  {
+   "decoration": "exposure_flicker",
+   "enabled": false,
+   "plan_id": "demo-d"
+  },
+  {
+   "decoration": "light_rays",
+   "enabled": false,
+   "plan_id": "demo-e"
+  },
+  {
+   "decoration": "film_grain",
+   "effects": [
+    {
+     "params": {
+      "amount": 0.06,
+      "animated": true,
+      "color_mode": "rgb",
+      "seed": 3000127940,
+      "size": 1
+     },
+     "type": "noise"
+    }
+   ],
+   "enabled": true,
+   "plan_id": "demo-f"
+  },
+  {
+   "decoration": "exposure_flicker",
+   "enabled": false,
+   "plan_id": "demo-g"
+  },
+  {
+   "decoration": "film_halation",
+   "effects": [
+    {
+     "params": {
+      "intensity": 0.22,
+      "radius": 55,
+      "threshold": 0.5
+     },
+     "type": "bloom"
+    }
+   ],
+   "enabled": true,
+   "plan_id": "demo-h"
+  }
+ ]
+}

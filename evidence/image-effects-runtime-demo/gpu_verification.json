@@ -1,0 +1,104 @@
+{
+ "environment": {
+  "gpu": "NVIDIA RTX A4000",
+  "driver": "595.99.02",
+  "cuda": "13.2",
+  "vulkan_instance": "1.3.204",
+  "vulkan_device": "NVIDIA RTX A4000 (DISCRETE_GPU)"
+ },
+ "build": {
+  "tree": "Chronon3d/build/chronon/linux-video-release",
+  "flags": {
+   "CHRONON3D_ENABLE_VULKAN": "ON",
+   "CHRONON3D_ENABLE_CUDA_INTEROP": "ON"
+  },
+  "action": "incremental rebuild + relink of chronon3d_cli (targets 1/5..4/5)"
+ },
+ "gpu_vs_software_parity_frame20": {
+  "control": {
+   "sw": [
+    195.0,
+    118.0,
+    33.0
+   ],
+   "gpu": [
+    0,
+    0,
+    0
+   ],
+   "verdict": "BROKEN on vulkan (photo renders black)"
+  },
+  "film_edge_matte": {
+   "sw": [
+    140.8,
+    84.0,
+    27.3
+   ],
+   "gpu": [
+    0,
+    0,
+    0
+   ],
+   "verdict": "BROKEN on vulkan"
+  },
+  "film_grain": {
+   "sw": [
+    228.9,
+    138.4,
+    34.3
+   ],
+   "gpu": [
+    229.0,
+    138.4,
+    34.3
+   ],
+   "verdict": "PARITY exact (std 6.17 vs 6.16)"
+  },
+  "film_halation": {
+   "sw": [
+    228.0,
+    139.0,
+    39.0
+   ],
+   "gpu": [
+    8,
+    12,
+    16
+   ],
+   "verdict": "BROKEN on vulkan (photo missing)"
+  },
+  "defocused_bokeh": {
+   "sw": [
+    228.0,
+    139.0,
+    39.0
+   ],
+   "gpu": [
+    8,
+    12,
+    16
+   ],
+   "verdict": "BROKEN on vulkan (photo missing)"
+  }
+ },
+ "isolation_matrix_vulkan": {
+  "static image, no tracks": "renders correctly (228,139,39)",
+  "static layer opacity 0.5, no tracks": "renders correctly (167,100,29)",
+  "constant scale track 1.05 (all-equal keys)": "renders correctly (228,139,39)",
+  "animated scale track (1.18->1), frame 20": "BLACK (0,0,0); frame 60 (value 1.0) renders correctly",
+  "animated opacity track (0->1), frames 18-20": "BLACK (0,0,0); frame 60 (value 1.0) renders correctly",
+  "animated tracks + noise effect (film_grain)": "renders correctly incl. grain (generate-family effect composites fine)",
+  "animated tracks + vignette/sharpen": "BLACK source (effect operates on black)",
+  "animated tracks + bloom/gaussian_blur": "photo invisible (effect of empty source)",
+  "backend auto (production default)": "reproduces the black-frame bug at frame 20",
+  "backend software": "all cases render correctly"
+ },
+ "root_cause_hypothesis": "Chronon3D Vulkan backend: an image layer whose ANIMATED track evaluates to a non-identity value (opacity != 1 or scale != 1) at a given frame renders black/empty at that frame; frames where the evaluated value is exactly identity render correctly. Static values (layer opacity field, constant-equal tracks) take a different path and render fine. The noise generate-family effect is the exception: it composites source+grain correctly even during animation. The encoder is excluded (the correct and broken renders share the same native h264 encoder). Software backend is unaffected \u2014 this is Vulkan-lane specific and reproduces with --backend auto.",
+ "repro": [
+  "chronon3d_cli render --plan render_control.json --assets-root <root> --backend vulkan --encoder-backend native -o out.mp4  # frame 20 = black",
+  "chronon3d_cli render --plan iso_const_scale.json ...  # frame 20 = correct",
+  "chronon3d_cli render --plan iso_opacity_only.json ...  # frames 18-20 black, frame 60 correct",
+  "same plans with --backend software render correctly"
+ ],
+ "note": "PipelineGen/RenderingGen deliverables unaffected: identical plan JSON renders correctly on software; the discrepancy is inside Chronon3D's Vulkan compositor for animated layers."
+}

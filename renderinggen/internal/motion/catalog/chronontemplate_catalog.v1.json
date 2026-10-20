@@ -71,6 +71,22 @@
         "kind": "emissive",
         "emissive_strength": 4.5
       }
+    },
+    {
+      "id": "table_sidelight_orbit",
+      "name": "table_sidelight_orbit",
+      "material": {
+        "kind": "lambert",
+        "emissive_strength": 0.0
+      }
+    },
+    {
+      "id": "table_paper_push_in",
+      "name": "table_paper_push_in",
+      "material": {
+        "kind": "lambert",
+        "emissive_strength": 0.0
+      }
     }
   ],
   "native_phrase_style": {
