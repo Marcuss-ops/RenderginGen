@@ -10,19 +10,18 @@
 //	                                                └──▶ Stats
 //
 // The kind is the semantic SSOT: PipelineGen decides WHAT the item is, the
-// template registry validates it, and each kind has exactly one compiler below.
+// template registry validates it, and each kind has exactly one compiler —
+// dispatched by compileItem below and owned by the sibling
+// semantic_*_compile.go / semantic_text_accents.go files.
 package overlay
 
 import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"math"
 	"strings"
-	"unicode/utf8"
 
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/geofeatures"
-	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/motion"
 )
 
 // resolvedItem is RenderingGen's canonical internal representation of one
@@ -196,11 +195,16 @@ func compileSemantic(raw []byte) (*Plan, []Asset, Stats, []string, error) {
 			if sfx.StartOffsetMS < 0 || sfx.DurationMS <= 0 {
 				return nil, nil, Stats{}, nil, fmt.Errorf("overlay: item %q sound_effect requires non-negative start_offset_ms and positive duration_ms", item.ID)
 			}
-			if sfx.GainDB != nil && (math.IsNaN(*sfx.GainDB) || math.IsInf(*sfx.GainDB, 0) || *sfx.GainDB < -96 || *sfx.GainDB > 24) {
+			if sfx.GainDB != nil && (!finite(*sfx.GainDB) || *sfx.GainDB < -96 || *sfx.GainDB > 24) {
 				return nil, nil, Stats{}, nil, fmt.Errorf("overlay: item %q sound_effect gain_db must be finite and in [-96,24]", item.ID)
 			}
+			// The item window is canonical microseconds; the millisecond
+			// projection is only a compatibility mirror and must not decide
+			// whether a cue fits. Child image layers still carry milliseconds,
+			// which imageLayerWindowUS projects exactly once.
+			itemStartUS, itemEndUS := itemWindowUS(item)
 			visibleStartOffsetMS := int64(0)
-			visibleEndOffsetMS := item.EndMS - item.StartMS
+			visibleEndOffsetUS := itemEndUS - itemStartUS
 			if len(item.ImageLayers) > 0 {
 				firstLayer := item.ImageLayers[0]
 				for _, layer := range item.ImageLayers[1:] {
@@ -209,9 +213,9 @@ func compileSemantic(raw []byte) (*Plan, []Asset, Stats, []string, error) {
 					}
 				}
 				visibleStartOffsetMS = firstLayer.StartMS
-				visibleEndOffsetMS = firstLayer.EndMS
-				if visibleEndOffsetMS > item.EndMS-item.StartMS {
-					visibleEndOffsetMS = item.EndMS - item.StartMS
+				_, visibleEndOffsetUS = imageLayerWindowUS(firstLayer)
+				if visibleEndOffsetUS > itemEndUS-itemStartUS {
+					visibleEndOffsetUS = itemEndUS - itemStartUS
 				}
 				if sfx.StartOffsetMS != visibleStartOffsetMS {
 					return nil, nil, Stats{}, nil, fmt.Errorf("overlay: item %q composite sound_effect must start at first visible image layer (%dms)", item.ID, visibleStartOffsetMS)
@@ -219,8 +223,11 @@ func compileSemantic(raw []byte) (*Plan, []Asset, Stats, []string, error) {
 			} else if sfx.StartOffsetMS != 0 {
 				return nil, nil, Stats{}, nil, fmt.Errorf("overlay: item %q sound_effect start_offset_ms must be zero for a single-layer image", item.ID)
 			}
-			visibleDurationMS := visibleEndOffsetMS - visibleStartOffsetMS
-			if visibleDurationMS <= 0 || sfx.DurationMS > visibleDurationMS {
+			visibleStartOffsetUS := visibleStartOffsetMS * 1000
+			visibleDurationUS := visibleEndOffsetUS - visibleStartOffsetUS
+			// Compare the cue against the exact canonical window. The shortened
+			// first check keeps the multiplication below overflow-safe.
+			if visibleDurationUS <= 0 || sfx.DurationMS > visibleDurationUS/1000 || sfx.DurationMS*1000 > visibleDurationUS {
 				return nil, nil, Stats{}, nil, fmt.Errorf("overlay: item %q sound_effect exceeds its first visible image window", item.ID)
 			}
 			if strings.TrimSpace(sfx.AssetRef.MediaType) != "audio/mp4" {
@@ -230,7 +237,7 @@ func compileSemantic(raw []byte) (*Plan, []Asset, Stats, []string, error) {
 			if err != nil {
 				return nil, nil, Stats{}, nil, fmt.Errorf("overlay: item %q sound_effect asset: %w", item.ID, err)
 			}
-			startOffsetFrame, visibleDurationEndFrame := msFrames(visibleStartOffsetMS, visibleEndOffsetMS, int64(src.FPSNum), int64(src.FPSDen))
+			startOffsetFrame, visibleDurationEndFrame := usFrames(visibleStartOffsetUS, visibleEndOffsetUS, int64(src.FPSNum), int64(src.FPSDen))
 			startFrame := resolvedItem.Start + startOffsetFrame
 			visibleEndFrame := resolvedItem.Start + visibleDurationEndFrame
 			_, clipOut := msFrames(0, sfx.DurationMS, int64(src.FPSNum), int64(src.FPSDen))
@@ -397,65 +404,22 @@ func compileSemantic(raw []byte) (*Plan, []Asset, Stats, []string, error) {
 	// Item overlay layers — one compile per resolved kind, counters from the
 	// same pass.
 	var stats Stats
-	var cameraMove *SemanticMapCameraMove
-	var cameraStartFrame, cameraEndFrame int64
-	var cameraMapItemID string
-	var entityCameraMotionID string
-	var entityCameraMotionItemID string
-	var sequenceCameraMotionID string
-	var sequenceCameraStart, sequenceCameraEnd int64
-	var sequenceCameraItem semanticItem
-	// The plan-level whole-scene camera is the third controller kind. It is
-	// validated up front so a malformed rig fails before any layer work.
+	cameras := cameraControllerSet{scene: src.SceneCamera}
+	// The plan-level whole-scene camera is validated up front so a malformed
+	// rig fails before any layer work. Cross-controller conflicts are decided
+	// after the loop, once every item has been observed.
 	if err := validateSceneCamera(src.SceneCamera); err != nil {
 		return nil, nil, Stats{}, nil, err
 	}
 	for _, ri := range resolved {
-		if sequenceCameraMotionID == "" && ri.Item.CameraMotionID != "" {
-			sequenceCameraMotionID = ri.Item.CameraMotionID
-			sequenceCameraStart, sequenceCameraEnd = ri.Start, ri.End
-			sequenceCameraItem = ri.Item
-		} else if sequenceCameraMotionID == "" && isChainKind(ri.Kind) {
-			if motionID, item, start, end, ok := chainSequenceCamera(ri, src.FPSNum, src.FPSDen); ok {
-				sequenceCameraMotionID, sequenceCameraItem = motionID, item
-				sequenceCameraStart, sequenceCameraEnd = start, end
-			}
-		}
-		if (isEntityKind(ri.Kind) || isImageKind(ri.Kind)) && ri.Item.EntityStyleID != "" {
-			if style, ok := ResolveEntityStyle(ri.Item.EntityStyleID, src.entityStyleSampleKey(), src.VideoID, ri.Item.ID); ok && style.CameraMotionID != "" {
-				if entityCameraMotionID != "" {
-					return nil, nil, Stats{}, nil, fmt.Errorf("overlay: camera motion on entity item %q conflicts with camera motion on entity item %q; only one scene camera controller is allowed per plan", ri.Item.ID, entityCameraMotionItemID)
-				}
-				entityCameraMotionID = style.CameraMotionID
-				entityCameraMotionItemID = ri.Item.ID
-			}
-		}
-		if entityCameraMotionID != "" && cameraMove != nil {
-			return nil, nil, Stats{}, nil, fmt.Errorf("overlay: entity item %q camera motion conflicts with map item %q scene camera move", ri.Item.ID, cameraMapItemID)
-		}
-		if src.SceneCamera != nil && entityCameraMotionID != "" {
-			return nil, nil, Stats{}, nil, fmt.Errorf("overlay: scene_camera conflicts with camera motion on entity item %q; only one scene camera controller is allowed per plan", entityCameraMotionItemID)
-		}
-		if src.SceneCamera != nil && cameraMove != nil {
-			return nil, nil, Stats{}, nil, fmt.Errorf("overlay: scene_camera conflicts with scene camera move on map item %q; only one scene camera controller is allowed per plan", cameraMapItemID)
-		}
-		if ri.Map != nil && ri.Map.Camera != nil && entityCameraMotionID != "" {
-			return nil, nil, Stats{}, nil, fmt.Errorf("overlay: map item %q scene camera move conflicts with entity item %q camera motion", ri.Item.ID, entityCameraMotionItemID)
-		}
-		if ri.Map != nil && ri.Map.Camera != nil && cameraMove != nil {
-			return nil, nil, Stats{}, nil, fmt.Errorf("overlay: map item %q camera move conflicts with map item %q; only one scene camera controller is allowed per plan", ri.Item.ID, cameraMapItemID)
+		if err := cameras.observe(ri, &src); err != nil {
+			return nil, nil, Stats{}, nil, err
 		}
 		layers, err := compileItem(ri, &src, registry)
 		if err != nil {
 			return nil, nil, Stats{}, nil, err
 		}
 
-		if ri.Map != nil && ri.Map.Camera != nil {
-			move := *ri.Map.Camera
-			cameraMove = &move
-			cameraMapItemID = ri.Item.ID
-			cameraStartFrame, cameraEndFrame = ri.Start, ri.End
-		}
 		for _, layer := range layers {
 			// A premium image motion can expand one item into several linked
 			// layers. Attach a clip stroke to the actual image layer only.
@@ -494,64 +458,11 @@ func compileSemantic(raw []byte) (*Plan, []Asset, Stats, []string, error) {
 		plan.Layers = append(plan.Layers, Layer{ID: "clip__adjustment", Type: "adjustment", Effects: effects})
 	}
 
-	// Post-loop single-controller guard: the in-loop checks above catch
-	// conflicts as soon as the second claimant resolves, but a map camera on
-	// the final item would otherwise slip through with no later iteration.
-	if src.SceneCamera != nil && entityCameraMotionID != "" {
-		return nil, nil, Stats{}, nil, fmt.Errorf("overlay: scene_camera conflicts with camera motion on entity item %q; only one scene camera controller is allowed per plan", entityCameraMotionItemID)
-	}
-	if src.SceneCamera != nil && cameraMove != nil {
-		return nil, nil, Stats{}, nil, fmt.Errorf("overlay: scene_camera conflicts with scene camera move on map item %q; only one scene camera controller is allowed per plan", cameraMapItemID)
-	}
-	if src.SceneCamera != nil && plan.Camera == nil {
-		cam, anim, err := compileSceneCamera(src.SceneCamera, src.Width, src.Height, int64(src.FPSNum), int64(src.FPSDen), -1400.0)
-		if err != nil {
-			return nil, nil, Stats{}, nil, err
-		}
-		plan.Camera = cam
-		plan.CameraAnimation = anim
-		if len(src.SceneCamera.DepthGroups) > 0 {
-			if err := applyDepthGroups(plan.Layers, src.SceneCamera.DepthGroups, -1400.0); err != nil {
-				return nil, nil, Stats{}, nil, err
-			}
-		}
-	}
-	if cameraMove != nil {
-		if err := compileMapCamera(&plan, *cameraMove, cameraStartFrame, cameraEndFrame, src.FPSNum, src.FPSDen); err != nil {
-			return nil, nil, Stats{}, nil, err
-		}
-		for i := range plan.Layers {
-			if strings.HasPrefix(plan.Layers[i].ID, cameraMapItemID+":map_") {
-				plan.Layers[i].StartFrame = cameraStartFrame
-				plan.Layers[i].DurationFrames = cameraEndFrame - cameraStartFrame
-			}
-		}
-	} else if entityCameraMotionID != "" && plan.Camera == nil {
-		cx := float64(src.Width) / 2
-		cy := float64(src.Height) / 2
-		plan.Camera = &CameraPlan{
-			Type:     "perspective",
-			Position: [3]float64{cx, cy, -1400.0},
-			Rotation: [3]float64{0, 0, 0},
-			FOVDeg:   55.0,
-			Near:     1.0,
-			Far:      5000.0,
-			Zoom:     1.0,
-		}
-		var tracks []CameraTrack
-		var err error
-		tracks, err = entityCameraTracks(entityCameraMotionID, cx, cy)
-		if err != nil {
-			return nil, nil, Stats{}, nil, err
-		}
-		if len(tracks) > 0 {
-			plan.CameraAnimation = &CameraAnimation{Tracks: tracks}
-		}
-	}
-
-	if sequenceCameraMotionID != "" && src.SceneCamera == nil && cameraMove == nil && entityCameraMotionID == "" && plan.CameraAnimation == nil {
-		plan.Camera = &CameraPlan{Type: "perspective", Position: [3]float64{0, 0, -1400}, Rotation: [3]float64{}, FOVDeg: 55, Near: 1, Far: 5000, Zoom: 1}
-		plan.CameraAnimation = &CameraAnimation{Tracks: entitySequenceCameraTracks(sequenceCameraItem, sequenceCameraStart, sequenceCameraEnd, src.Width, src.Height, src.FPSNum, src.FPSDen)}
+	// Resolve the single camera authority after the loop: every controller is
+	// known, so a map camera or an entity camera on the final item cannot slip
+	// through and the verdict does not depend on item order.
+	if err := cameras.apply(&plan, &src); err != nil {
+		return nil, nil, Stats{}, nil, err
 	}
 
 	// Patch background duration to match the final canvas duration.
@@ -602,6 +513,9 @@ func compileSemantic(raw []byte) (*Plan, []Asset, Stats, []string, error) {
 		plan.Audio.Clips = append(plan.Audio.Clips, clip)
 	}
 
+	if err := bakeResolvedCameraSamples(&plan); err != nil {
+		return nil, nil, Stats{}, nil, err
+	}
 	plan.Schema, plan.Version = RenderPlanWireVersion(&plan)
 
 	// Stable asset order (the registry sorts) keeps prepared-plan
@@ -732,7 +646,6 @@ func resolveSemanticItems(src *semanticPlan) ([]resolvedItem, error) {
 		if err := validateMapContract(item, kind, src.Width, src.Height); err != nil {
 			return nil, err
 		}
-		var resolvedMapSpec *resolvedMap
 		// The resolved kind is authoritative for the preset family too, so an
 		// unknown template paired with an explicit image kind still validates
 		// against the image catalog. Registered DATE/METRIC presentation kinds
@@ -744,7 +657,7 @@ func resolveSemanticItems(src *semanticPlan) ([]resolvedItem, error) {
 			spec.Family = PresetText
 		}
 		params := mergeSemanticParams(item.Params, item.Style)
-		ri := resolvedItem{Item: item, Spec: spec, Kind: kind, Params: params, Start: start, End: end, Map: resolvedMapSpec}
+		ri := resolvedItem{Item: item, Spec: spec, Kind: kind, Params: params, Start: start, End: end}
 
 		if isImageKind(kind) && kind != KindLightLeak && len(item.Assets) == 0 && len(item.ImageLayers) == 0 {
 			return nil, fmt.Errorf("overlay: image template %q item %q requires asset_refs", item.Template, item.ID)
@@ -780,11 +693,11 @@ func resolveSemanticItems(src *semanticPlan) ([]resolvedItem, error) {
 			return nil, err
 		}
 		if isMapKind(kind) {
-			resolvedMapSpec, err = resolveMap(item.Map, item.Assets, src.Width, src.Height, end-start)
+			mapSpec, err := resolveMap(item.Map, item.Assets, src.Width, src.Height, end-start)
 			if err != nil {
 				return nil, fmt.Errorf("overlay: map item %q resolve: %w", item.ID, err)
 			}
-			ri.Map = resolvedMapSpec
+			ri.Map = mapSpec
 		}
 		if (isEntityKind(kind) || (isImageKind(kind) && item.EntityStyleID != "")) && len(item.Assets) > 0 {
 			if imagePreset := strings.TrimSpace(item.ImagePresetID); imagePreset != "" {
@@ -812,16 +725,28 @@ func compileItem(ri resolvedItem, src *semanticPlan, registry *assetRegistry) ([
 	case isChainKind(ri.Kind):
 		return compileChainItem(ri, src, registry)
 	case isGroupKind(ri.Kind):
-		return compileEntityGroup(ri, src, registry)
+		layers, err := compileEntityGroup(ri, src, registry)
+		if err != nil {
+			return nil, err
+		}
+		return applyImageItemEffects(ri, layers)
 	case isEntityKind(ri.Kind) && len(ri.Item.ImageLayers) > 0:
 		return compileImageItem(ri, src, registry)
 	case isEntityKind(ri.Kind) && len(ri.Item.Assets) > 0:
-		return compileEntityCard(ri, src, registry)
+		layers, err := compileEntityCard(ri, src, registry)
+		if err != nil {
+			return nil, err
+		}
+		return applyImageItemEffects(ri, layers)
 	case isImageKind(ri.Kind) && ri.Item.EntityStyleID != "" && len(ri.Item.Assets) > 0:
 		if ri.Item.ImagePresetID == "" {
 			return nil, fmt.Errorf("overlay: entity image item %q with entity_style_id requires image_preset_id", ri.Item.ID)
 		}
-		return compileEntityCard(ri, src, registry)
+		layers, err := compileEntityCard(ri, src, registry)
+		if err != nil {
+			return nil, err
+		}
+		return applyImageItemEffects(ri, layers)
 	case isVideoKind(ri.Kind):
 		layer, err := compileVideoOverlayLayer(ri, src, registry)
 		if err != nil {
@@ -858,376 +783,4 @@ func compileItem(ri resolvedItem, src *semanticPlan, registry *assetRegistry) ([
 		}
 		return compileTextVisualAccentLayers(ri, src, layer)
 	}
-}
-
-// Brush motions target text as well as images. Their recipe components must be
-// emitted beside the phrase layer; the ordinary text motion lowering only
-// consumes tracks and would otherwise silently omit the authored brush stroke.
-func compileTextVisualAccentLayers(ri resolvedItem, src *semanticPlan, text Layer) ([]Layer, error) {
-	definition, err := resolveMotionDefinition(ri.Item.MotionID)
-	if err != nil {
-		return nil, err
-	}
-	if definition != nil && definition.Category == "documentary_highlighting_v1" {
-		return compileDocumentaryPhraseMotion(ri, src, text, definition.ID)
-	}
-	// SSOT typography (typography_ssot.go): no motion branch may change the
-	// font. The payload's font_family (or the preset/language default) owns
-	// the face for every animation. ModernTypewriterDefaultFontFamily stays
-	// as the documented constant for callers that explicitly opt into it via
-	// params.font_family, but it is never forced here.
-	_ = ModernTypewriterDefaultFontFamily
-	var layers []Layer
-	if definition == nil || definition.Category != "brush_v1" {
-		layers = []Layer{text}
-	} else {
-		if !motionDefinitionAdmitsTarget(definition, "text") {
-			return nil, fmt.Errorf("overlay: brush motion %q does not target text", definition.ID)
-		}
-		// Brush paths for phrases use the visible text block as their local
-		// coordinate system. Phrase text layers span the full canvas so long
-		// copy can wrap; using that entire box for a circle or underline makes
-		// short phrases look lost and long phrases run edge-to-edge.
-		textAnchor := brushTextAnchor(text, src)
-		textDefinition := *definition
-		if definition.ImageRecipe != nil {
-			recipe := *definition.ImageRecipe
-			recipe.Components = append([]motion.ImageMotionComponent(nil), definition.ImageRecipe.Components...)
-			for i := range recipe.Components {
-				switch recipe.Components[i].PathKind {
-				case "line":
-					if definition.ID != "brush_marker_highlight" {
-						recipe.Components[i].PathKind = "underline"
-					}
-				case "double_line":
-					recipe.Components[i].PathKind = "underline_double"
-				case "wave":
-					recipe.Components[i].PathKind = "underline_wave"
-				}
-			}
-			textDefinition.ImageRecipe = &recipe
-		}
-		layers, err = compileVisualAccentsComponents(src, textAnchor, textDefinition)
-		if err != nil {
-			return nil, err
-		}
-		for i := range layers {
-			if layers[i].ID == textAnchor.ID {
-				layers[i] = text
-				break
-			}
-		}
-	}
-	return layers, nil
-}
-
-func documentaryPhraseHighlightColor(motionID string) (string, bool) {
-	colors := map[string]string{
-		"phrase_highlight_soft_marker":    "#EBCB684D",
-		"phrase_highlight_archive_yellow": "#D8B85A52",
-		"phrase_highlight_evidence_red":   "#B85C4B3D",
-		"phrase_highlight_phrase_focus":   "#78AFA552",
-		"phrase_highlight_document_scan":  "#8397B545",
-	}
-	color, ok := colors[motionID]
-	return color, ok
-}
-
-func brushTextAnchor(text Layer, src *semanticPlan) Layer {
-	anchor := text
-	fontSize := 72.0
-	if text.Style != nil && text.Style.FontSize > 0 {
-		fontSize = text.Style.FontSize
-	}
-	maxUnits := 0.0
-	lineCount := 0
-	for _, line := range strings.Split(text.Text, "\n") {
-		lineCount++
-		units := 0.0
-		for _, r := range line {
-			switch {
-			case r == ' ':
-				units += 0.31
-			case strings.ContainsRune("ilI.,:;!'|", r):
-				units += 0.30
-			case strings.ContainsRune("MW@%&", r):
-				units += 0.83
-			case r >= '0' && r <= '9':
-				units += 0.56
-			default:
-				units += 0.55
-			}
-		}
-		if units > maxUnits {
-			maxUnits = units
-		}
-	}
-	width := maxUnits*fontSize + fontSize*1.05
-	minWidth := fontSize * 3
-	maxWidth := float64(src.Width - 96)
-	if width < minWidth {
-		width = minWidth
-	}
-	if width > maxWidth {
-		width = maxWidth
-	}
-	height := math.Max(fontSize*1.5, float64(lineCount)*fontSize*1.3+16)
-	maxHeight := float64(src.Height - 96)
-	if height > maxHeight {
-		height = maxHeight
-	}
-	anchor.Size = []float64{width, height}
-	return anchor
-}
-
-// compileEntityCard lowers a portrait and its optional entity caption. The
-// image preset owns the portrait geometry and motion; position_x/position_y
-// can move the portrait so caption_layout can use the opposite side.
-func compileEntityCard(ri resolvedItem, src *semanticPlan, registry *assetRegistry) ([]Layer, error) {
-	var currentStyle entityStyleVariant
-	var hasStyle bool
-	if ri.Item.EntityStyleID != "" {
-		imageMotionOverride := ri.Item.MotionID
-		captionMotionOverride := ri.Item.CaptionMotionID
-		captionMotionParams := ri.Item.CaptionMotionParams
-		style, ok := ResolveEntityStyle(ri.Item.EntityStyleID, src.entityStyleSampleKey(), src.VideoID, ri.Item.ID)
-		if !ok {
-			style = entityStyleRegistry.sample(entityStyleRegistry.query(nil), "", src.entityStyleSampleKey(), src.VideoID, ri.Item.ID)
-		}
-		// Layout, colour, image motion and caption motion all stay exactly as
-		// the style (or the producer override) declares them. The selected
-		// catalog motion reaches Chronon unchanged so GPU failures stay visible.
-		currentStyle = style
-		hasStyle = true
-		ri.Item.MotionID = style.ImageMotionID
-		if imageMotionOverride != "" {
-			ri.Item.MotionID = imageMotionOverride
-		}
-		ri.Item.CaptionMotionID = style.CaptionMotionID
-		if captionMotionOverride != "" {
-			ri.Item.CaptionMotionID = captionMotionOverride
-		}
-		ri.Item.CaptionMotionParams = captionMotionParams
-		ri.Item.CaptionLayout = style.CaptionLayout
-		// SSOT typography (typography_ssot.go): the payload's explicit
-		// typeface/color/layout always win over the preset default — same
-		// precedence as the motion overrides above. The preset default only
-		// fills in when the plan carries no choice, so selecting an entity
-		// style can never silently retype or recolor a caption the
-		// producer set (the old unconditional CaptionColor overwrite made
-		// every render diverge per sampled style).
-		if strings.TrimSpace(ri.Item.CaptionColor) == "" {
-			ri.Item.CaptionColor = style.CaptionColor
-		}
-		if strings.TrimSpace(ri.Item.CaptionLayout) == "" {
-			ri.Item.CaptionLayout = style.CaptionLayout
-		}
-		// Place the runtime portrait in one of two balanced columns, or center it
-		// for below-caption layouts.
-		x := 0.0
-		switch style.ImageSide {
-		case "left":
-			x = -float64(src.Width) * 0.25
-		case "right":
-			x = float64(src.Width) * 0.25
-		case "center", "below":
-			x = 0.0
-		default:
-			return nil, fmt.Errorf("overlay: entity style %q has unsupported image side %q", style.Name, style.ImageSide)
-		}
-		ri.Params["position_x"] = x
-		ri.Params["position_y"] = 0.0
-	}
-	if ri.Item.MotionID == "" && ri.ImagePreset.ID != "" {
-		ri.Item.MotionID = runtimeDefaultImageMotionID(src, ri.Item.ID)
-	}
-	resolvedImageMotion, err := resolveRegisteredMotion(ri.Item.MotionID)
-	if err != nil {
-		return nil, fmt.Errorf("overlay: entity image motion %q: %w", ri.Item.MotionID, err)
-	}
-	img := imageLayer(ri, registry.Path(ri.Item.Assets[0].ID))
-	if hasStyle && currentStyle.CameraMotionID != "" {
-		img.Enable3D = true
-	}
-	if ri.ImagePreset.ID != "" {
-		applyPresetDefinition(&img, ri.ImagePreset)
-		var imgAnimation *LayerAnimation
-		if ri.Item.MotionID != "" {
-			imgAnimation, err = imageMotionAnimationResolved(ri.Item.MotionID, ri.Item.MotionParams, ri.End-ri.Start, ri.ImagePreset.Motion.Exit, ri.Item.ID, "image", resolvedImageMotion)
-		} else {
-			imgAnimation, err = animationForPreset(ri.ImagePreset, "", ri.End-ri.Start)
-		}
-		if err != nil {
-			return nil, err
-		}
-		applyMotionRouting(&img, imgAnimation)
-		// Keep the source portrait uncropped; an explicit position lets the
-		// producer place it on either side while the preset retains its size.
-		img.Position = []float64{0, 0}
-		img.Fit = FitContain
-	}
-	if x, ok := numericValue(ri.Params["position_x"]); ok {
-		y, _ := numericValue(ri.Params["position_y"])
-		img.Position = []float64{x, y}
-	}
-	// Entities with text own a portrait card: a non-vertical box is covered
-	// into the supported portrait (same height and center), so the caption
-	// compiled from its bounds follows automatically. Vertical images pass
-	// through untouched.
-	if strings.TrimSpace(ri.Item.EntityCaption) != "" {
-		autoFitEntityPortrait(&img)
-	}
-	if err := applyFrameTreatment(&img, ri.Item.Frame); err != nil {
-		return nil, fmt.Errorf("overlay: entity image item %q: %w", ri.Item.ID, err)
-	}
-	if ri.Item.MotionID != "" && ri.ImagePreset.ID == "" {
-		return nil, fmt.Errorf("overlay: entity image item %q with motion_id requires image_preset_id", ri.Item.ID)
-	}
-	var premium *motion.MotionDefinition
-	if resolvedImageMotion != nil {
-		premium = premiumImageRecipeDefinition(resolvedImageMotion.definition)
-	}
-	layers, err := compilePremiumImageLayers(ri, src, img, premium)
-	if err != nil {
-		return nil, err
-	}
-	if caption := strings.TrimSpace(ri.Item.EntityCaption); caption != "" {
-		imageIndex := premiumImageLayerIndex(layers)
-		captionItem := ri.Item
-		captionLayer, err := compileEntityCaptionLayer(ri, src, captionItem, caption, &layers[imageIndex], "entity")
-		if err != nil {
-			return nil, err
-		}
-		if premium != nil && len(premium.ImageRecipe.CaptionTracks) > 0 {
-			premiumLayerActive(&captionLayer, premiumTracks(*premium, premium.ImageRecipe.CaptionTracks, captionLayer.DurationFrames))
-		}
-		layers = append(layers, captionLayer)
-	}
-	if premium != nil && premium.ImageRecipe.RequireCaption && strings.TrimSpace(ri.Item.EntityCaption) == "" {
-		return nil, fmt.Errorf("overlay: motion %q requires entity_caption", premium.ID)
-	}
-	return layers, nil
-}
-
-// compileVideoOverlayLayer lowers a rendered video overlay to a TIMED video
-// layer inside the same render pass. It is the single-pass replacement for
-// compositing a pre-rendered segment with a post-render transcoder:
-//
-//   - Source is the overlay segment's content-addressed path (video layers
-//     carry `source`, exactly like the source clip and the background);
-//   - StartFrame/DurationFrames come from the item's start_ms/end_ms, and
-//     Chronon's VideoNode samples the segment at (frame - layer_start), so
-//     the segment's first frame lands on the declared start frame and the
-//     layer is composited only inside its window;
-//   - the layer is appended AFTER the source layer, so its z-order places the
-//     overlay over the clip.
-//
-// Geometry is full-canvas "cover" by default (the producer renders the
-// segment at the output contract), overridable via params.fit. Fail-closed:
-// a video overlay without an asset is rejected during resolution.
-func compileVideoOverlayLayer(ri resolvedItem, src *semanticPlan, registry *assetRegistry) (Layer, error) {
-	if len(ri.Item.Assets) == 0 {
-		return Layer{}, fmt.Errorf("overlay: video overlay template %q item %q requires asset_refs", ri.Item.Template, ri.Item.ID)
-	}
-	fit := stringParam(ri.Params, "fit", FitCover)
-	if !isSupportedFit(fit) {
-		// The same closed vocabulary as the background; only the message names
-		// the item, because this is the only place a per-item fit is validated.
-		return Layer{}, fmt.Errorf("overlay: video overlay item %q has unsupported fit %q (supported: %s)", ri.Item.ID, fit, supportedFits)
-	}
-	layer := Layer{
-		ID:             overlayLayerID(ri.Item.ID),
-		Type:           "video",
-		Source:         registry.Path(ri.Item.Assets[0].ID),
-		Size:           []float64{float64(src.Width), float64(src.Height)},
-		Fit:            fit,
-		StartFrame:     ri.Start,
-		DurationFrames: ri.End - ri.Start,
-	}
-	if opacity, ok := ri.Params["opacity"].(float64); ok {
-		if opacity < 0 || opacity > 1 {
-			return Layer{}, fmt.Errorf("overlay: video overlay item %q has opacity %v outside [0,1]", ri.Item.ID, opacity)
-		}
-		layer.Opacity = &opacity
-	}
-	// scale_percent insets a full-canvas overlay segment so its declared frame
-	// is actually visible. It uses the same centred transform contract as the
-	// source clip's foreground_scale_percent (which is the only place the
-	// modular resolver's implicit canvas-centre shift is cancelled).
-	if raw, exists := ri.Params["scale_percent"]; exists {
-		percent, ok := numericValue(raw)
-		if !ok || percent <= 0 || percent > 100 {
-			return Layer{}, fmt.Errorf("overlay: video overlay item %q has scale_percent outside (0,100]", ri.Item.ID)
-		}
-		if percent < 100 {
-			layer.Position = []float64{-float64(src.Width) * 0.5, -float64(src.Height) * 0.5}
-			layer.Scale = []float64{percent / 100, percent / 100}
-		}
-	}
-	if err := applyFrameTreatment(&layer, ri.Item.Frame); err != nil {
-		return Layer{}, fmt.Errorf("overlay: item %q: %w", ri.Item.ID, err)
-	}
-	return layer, nil
-}
-
-const phraseWrapCols = 25
-const phraseLineHeight = 132
-
-func wrapPhraseAt25(text string) (string, int) {
-	if utf8.RuneCountInString(strings.TrimSpace(text)) <= phraseWrapCols {
-		return strings.TrimSpace(text), 1
-	}
-	// Respect existing hard breaks: each paragraph is wrapped independently
-	// so an authored manuale \n is never collapsed.
-	paragraphs := strings.Split(text, "\n")
-	var out []string
-	for _, para := range paragraphs {
-		trimmed := strings.TrimSpace(para)
-		if trimmed == "" {
-			out = append(out, "")
-			continue
-		}
-		words := strings.Fields(trimmed)
-		if len(words) == 0 {
-			continue
-		}
-		var cur strings.Builder
-		curLen := 0
-		for idx, word := range words {
-			wLen := utf8.RuneCountInString(word)
-			if curLen == 0 {
-				cur.WriteString(word)
-				curLen = wLen
-			} else if curLen+1+wLen <= phraseWrapCols {
-				cur.WriteString(" ")
-				cur.WriteString(word)
-				curLen += 1 + wLen
-			} else {
-				out = append(out, cur.String())
-				cur.Reset()
-				cur.WriteString(word)
-				curLen = wLen
-			}
-			if idx == len(words)-1 {
-				out = append(out, cur.String())
-			}
-		}
-	}
-	if len(out) == 0 {
-		return strings.TrimSpace(text), 1
-	}
-	lineCount := len(out)
-	// Drop a leading/trailing empty produced by borderline splits.
-	for len(out) > 0 && strings.TrimSpace(out[0]) == "" {
-		out = out[1:]
-		lineCount--
-	}
-	for len(out) > 0 && strings.TrimSpace(out[len(out)-1]) == "" {
-		out = out[:len(out)-1]
-		lineCount--
-	}
-	if lineCount <= 0 {
-		return strings.TrimSpace(text), 1
-	}
-	return strings.Join(out, "\n"), lineCount
 }

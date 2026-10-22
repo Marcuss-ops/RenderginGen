@@ -75,7 +75,8 @@ func TestSetRuntime_FeedsIdentity(t *testing.T) {
 func TestDigest_IsFieldSensitive(t *testing.T) {
 	base := Identity{Version: "1.0.0", GitCommitFull: "abcdef012345", BinarySHA256: "aa", ConfigPath: "/etc/a.yaml"}
 
-	if base.Digest() != base.Digest() {
+	first, second := base.Digest(), base.Digest()
+	if first != second {
 		t.Error("digest must be deterministic")
 	}
 	changed := base

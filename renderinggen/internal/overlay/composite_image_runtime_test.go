@@ -33,32 +33,7 @@ func TestCompositeEntityImagesRenderDistinctAssetsSideBySideWithStaggeredEntranc
 		t.Skipf("ffmpeg not available for composite pixel checks: %v", err)
 	}
 	assetsRoot, compiled := compileDistinctCompositePlan(t)
-
-	videoPath := filepath.Join(t.TempDir(), "composite-images.mp4")
-	compiled.Plan.Output.Path = videoPath
-	planPath := filepath.Join(t.TempDir(), "composite-images-plan.json")
-	planBytes, err := json.Marshal(compiled.Plan)
-	if err != nil {
-		t.Fatalf("marshal Chronon plan: %v", err)
-	}
-	if err := os.WriteFile(planPath, planBytes, 0o600); err != nil {
-		t.Fatalf("write Chronon plan: %v", err)
-	}
-	ctx, cancel := context.WithTimeout(context.Background(), 8*time.Minute)
-	defer cancel()
-	cmd := exec.CommandContext(ctx, bin,
-		"render", "--plan", planPath, "--assets-root", assetsRoot,
-		"--backend", "software", "--encoder-backend", "pipe",
-		"--hardware", "none", "--gpu-hot-path-mode", "auto",
-		"--encode-preset", "ultrafast", "-o", videoPath)
-	cmd.Dir = assetsRoot
-	if output, err := cmd.CombinedOutput(); err != nil {
-		t.Fatalf("Chronon composite render failed: %v\n%s", err, tailBytes(output))
-	}
-	if _, err := os.Stat(videoPath); err != nil {
-		t.Fatalf("Chronon render returned success without output: %v", err)
-	}
-	decodeFully(t, videoPath)
+	videoPath := renderCompositePlanWithChronon(t, bin, assetsRoot, compiled, "composite-images")
 
 	background := goal3DecodePNG(t, goal3FramePNG(t, videoPath, 0), "composite background baseline")
 	leftHalf := image.Rect(0, 0, compositeRuntimeWidth/2, compositeRuntimeHeight)
@@ -92,6 +67,98 @@ func TestCompositeEntityImagesRenderDistinctAssetsSideBySideWithStaggeredEntranc
 	assertBrightCaptionPixels(t, bothVisible, image.Rect(100, 390, 400, 510), "left entity name")
 	assertBrightCaptionPixels(t, bothVisible, image.Rect(560, 390, 860, 510), "right entity name")
 	assertBrightCaptionPixels(t, bothVisible, image.Rect(380, 190, 580, 285), "single-image entity name")
+}
+
+// TestCompositeEntityImagesRenderDistinctAssetsSideBySideAtFullHD runs the
+// same semantic entity-image composition through Chronon at the requested
+// 1920x1080 canvas, then verifies both distinct assets in decoded video pixels.
+func TestCompositeEntityImagesRenderDistinctAssetsSideBySideAtFullHD(t *testing.T) {
+	bin := chrononBinFor(t)
+	if _, err := exec.LookPath("ffmpeg"); err != nil {
+		t.Skipf("ffmpeg not available for composite pixel checks: %v", err)
+	}
+	const width, height = 1920, 1080
+	assetsRoot, compiled := compileDistinctCompositePlanAt(t, width, height)
+	if compiled.Plan.Canvas.Width != width || compiled.Plan.Canvas.Height != height {
+		t.Fatalf("compiled canvas = %dx%d, want %dx%d", compiled.Plan.Canvas.Width, compiled.Plan.Canvas.Height, width, height)
+	}
+	videoPath := renderCompositePlanWithChronon(t, bin, assetsRoot, compiled, "composite-images-fullhd")
+
+	background := goal3DecodePNG(t, goal3FramePNG(t, videoPath, 0), "Full HD composite background baseline")
+	if got := background.Bounds().Size(); got != image.Pt(width, height) {
+		t.Fatalf("decoded Full HD frame size = %dx%d, want %dx%d", got.X, got.Y, width, height)
+	}
+	frameAtMS := func(ms int64, label string) image.Image {
+		t.Helper()
+		frameIndex := int(ms * compositeRuntimeFPS / 1000)
+		return goal3DecodePNG(t, goal3FramePNG(t, videoPath, frameIndex), label)
+	}
+	leftCenter := image.Point{X: width/2 - 460, Y: height / 2}
+	rightCenter := image.Point{X: width/2 + 460, Y: height / 2}
+	leftRegion := image.Rect(0, 180, width/2, 900)
+	rightRegion := image.Rect(width/2, 180, width, 900)
+
+	beforeSecondMention := frameAtMS(300, "Full HD first entity image before second mention")
+	if diff := goal3RegionDiffTol(t, background, beforeSecondMention, leftRegion, 16); diff < 80_000 {
+		t.Fatalf("Full HD left region changed only %d pixels before second mention; Ada image should be visible", diff)
+	}
+	if diff := goal3RegionDiffTol(t, background, beforeSecondMention, rightRegion, 16); diff > 5_000 {
+		t.Fatalf("Full HD right region changed by %d pixels before Grace's 750ms activation; expected only codec noise", diff)
+	}
+	beforeSecondCenter := color.RGBAModel.Convert(beforeSecondMention.At(rightCenter.X, rightCenter.Y)).(color.RGBA)
+	if int(beforeSecondCenter.B) > int(beforeSecondCenter.R)+80 && int(beforeSecondCenter.B) > int(beforeSecondCenter.G)+80 {
+		t.Fatalf("Grace's blue source is visible at %v before her 750ms activation: %v", rightCenter, beforeSecondCenter)
+	}
+
+	bothVisible := frameAtMS(1300, "both distinct Full HD entity images visible")
+	for label, region := range map[string]image.Rectangle{"Ada": leftRegion, "Grace": rightRegion} {
+		if diff := goal3RegionDiffTol(t, background, bothVisible, region, 16); diff < 80_000 {
+			t.Fatalf("Full HD %s region changed only %d pixels when both entity images should be visible", label, diff)
+		}
+	}
+	assertCompositeImageColor(t, bothVisible, leftCenter, color.RGBA{R: 220, G: 30, B: 30, A: 255}, "Full HD Ada Lovelace image")
+	assertCompositeImageColor(t, bothVisible, rightCenter, color.RGBA{R: 20, G: 80, B: 230, A: 255}, "Full HD Grace Hopper image")
+}
+
+const compositeRuntimeRenderTimeout = 8 * time.Minute
+
+func renderCompositePlanWithChronon(t *testing.T, bin, assetsRoot string, compiled CompileResult, filename string) string {
+	t.Helper()
+	workDir := t.TempDir()
+	videoPath := filepath.Join(workDir, filename+".mp4")
+	compiled.Plan.Output.Path = videoPath
+	planPath := filepath.Join(workDir, filename+"-plan.json")
+	planBytes, err := json.Marshal(compiled.Plan)
+	if err != nil {
+		t.Fatalf("marshal Chronon plan: %v", err)
+	}
+	if err := os.WriteFile(planPath, planBytes, 0o600); err != nil {
+		t.Fatalf("write Chronon plan: %v", err)
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), compositeRuntimeRenderTimeout)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, bin,
+		"render", "--plan", planPath, "--assets-root", assetsRoot,
+		"--backend", "software", "--encoder-backend", "pipe",
+		"--hardware", "none", "--gpu-hot-path-mode", "auto",
+		"--encode-preset", "ultrafast", "-o", videoPath)
+	cmd.Dir = assetsRoot
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		if ctx.Err() != nil {
+			t.Fatalf("Chronon composite render exceeded %s (%v): %v\n%s", compositeRuntimeRenderTimeout, ctx.Err(), err, tailBytes(output))
+		}
+		t.Fatalf("Chronon composite render failed: %v\n%s", err, tailBytes(output))
+	}
+	info, err := os.Stat(videoPath)
+	if err != nil {
+		t.Fatalf("Chronon render returned success without output: %v", err)
+	}
+	if !info.Mode().IsRegular() || info.Size() == 0 {
+		t.Fatalf("Chronon render output %q is not a non-empty regular file (mode=%s size=%d)", videoPath, info.Mode(), info.Size())
+	}
+	decodeFully(t, videoPath)
+	return videoPath
 }
 
 func assertBrightCaptionPixels(t *testing.T, frame image.Image, region image.Rectangle, label string) {
@@ -212,6 +279,17 @@ func TestCompositeSemanticCompilerPreservesDistinctAssetsAndStaggeredWindows(t *
 
 func compileDistinctCompositePlan(t *testing.T) (string, CompileResult) {
 	t.Helper()
+	return compileDistinctCompositePlanAt(t, compositeRuntimeWidth, compositeRuntimeHeight)
+}
+
+func compileDistinctCompositePlanAt(t *testing.T, width, height int) (string, CompileResult) {
+	t.Helper()
+	imageScale := width / compositeRuntimeWidth
+	if imageScale < 1 {
+		imageScale = 1
+	}
+	entityOffset := 230 * imageScale
+	imageWidth, imageHeight := 250*imageScale, 230*imageScale
 	assetsRoot := compositeRuntimeAssetsRoot(t)
 	leftSHA := fixtureSHA256(t, filepath.Join(assetsRoot, "assets", "semantic", "image-left.png"))
 	rightSHA := fixtureSHA256(t, filepath.Join(assetsRoot, "assets", "semantic", "image-right.png"))
@@ -232,8 +310,8 @@ func compileDistinctCompositePlan(t *testing.T) (string, CompileResult) {
 				{"asset_id":"image-right","sha256":%q,"url":"https://fixtures.example/image-right.png","media_type":"image/png"}
 			],
 			"image_layers":[
-				{"id":"image-left","asset_id":"image-left","start_ms":0,"end_ms":2000,"preset_id":"image_focus_in","motion_id":"image_focus_reveal","motion_params":{"enter_frames":8},"caption":"Ada Lovelace","caption_motion_id":"text_word_rise","params":{"width":250,"height":230,"position_x":-230,"position_y":0,"fit":"contain"}},
-				{"id":"image-right","asset_id":"image-right","start_ms":750,"end_ms":3000,"preset_id":"image_focus_in","motion_id":"image_scale_reveal","motion_params":{"enter_frames":8},"caption":"Grace Hopper","caption_motion_id":"text_word_stagger","params":{"width":250,"height":230,"position_x":230,"position_y":0,"fit":"contain"}}
+			{"id":"image-left","asset_id":"image-left","start_ms":0,"end_ms":2000,"preset_id":"image_focus_in","motion_id":"image_focus_reveal","motion_params":{"enter_frames":8},"caption":"Ada Lovelace","caption_motion_id":"text_word_rise","params":{"width":%d,"height":%d,"position_x":-%d,"position_y":0,"fit":"contain"}},
+			{"id":"image-right","asset_id":"image-right","start_ms":750,"end_ms":3000,"preset_id":"image_focus_in","motion_id":"image_scale_reveal","motion_params":{"enter_frames":8},"caption":"Grace Hopper","caption_motion_id":"text_word_stagger","params":{"width":%d,"height":%d,"position_x":%d,"position_y":0,"fit":"contain"}}
 			]
 		},{
 			"id":"single-image","kind":"entity_image","template_id":"image_popup","preset_id":"image_focus_in",
@@ -241,7 +319,7 @@ func compileDistinctCompositePlan(t *testing.T) (string, CompileResult) {
 			"asset_refs":[{"asset_id":"image-single","sha256":%q,"url":"https://fixtures.example/image-single.png","media_type":"image/png"}],
 			"params":{"width":160,"height":140,"position_x":0,"position_y":-150,"fit":"contain"}
 		}]
-	}`, compositeRuntimeWidth, compositeRuntimeHeight, compositeRuntimeFPS, compositeRuntimeEndMS, compositeRuntimeEndMS, compositeRuntimeEndMS, leftSHA, rightSHA, compositeRuntimeEndMS, compositeRuntimeEndMS, singleSHA))
+	}`, width, height, compositeRuntimeFPS, compositeRuntimeEndMS, compositeRuntimeEndMS, compositeRuntimeEndMS, leftSHA, rightSHA, imageWidth, imageHeight, entityOffset, imageWidth, imageHeight, entityOffset, compositeRuntimeEndMS, compositeRuntimeEndMS, singleSHA))
 	compiled, err := CompileSemantic(raw)
 	if err != nil {
 		t.Fatalf("compile composite semantic plan: %v", err)
@@ -266,7 +344,7 @@ func compileDistinctCompositePlan(t *testing.T) (string, CompileResult) {
 	if left.StartFrame != 0 || right.StartFrame != compositeRuntimeFPS*750/1000 {
 		t.Fatalf("composite child starts = %d/%d, want 0/%d", left.StartFrame, right.StartFrame, compositeRuntimeFPS*750/1000)
 	}
-	if len(left.Position) != 2 || left.Position[0] != -230 || len(right.Position) != 2 || right.Position[0] != 230 {
+	if len(left.Position) != 2 || left.Position[0] != float64(-entityOffset) || len(right.Position) != 2 || right.Position[0] != float64(entityOffset) {
 		t.Fatalf("composite child positions = %v / %v", left.Position, right.Position)
 	}
 	if left.Animation == nil || right.Animation == nil || len(left.Animation.Tracks) == 0 || len(right.Animation.Tracks) == 0 {

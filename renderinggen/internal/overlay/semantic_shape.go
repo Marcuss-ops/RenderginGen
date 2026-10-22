@@ -25,24 +25,6 @@ func isChartBarItem(item resolvedItem) bool {
 	return ok && marked
 }
 
-// EffectRegistry is the closed vocabulary accepted by shape layers. It is
-// intentionally private: external mutation would turn validation into a
-// bypass around Chronon's effect contract.
-var effectRegistry = map[string]struct{}{
-	"noise": {}, "fractal_noise": {}, "vignette": {}, "gaussian_blur": {},
-	"drop_shadow": {}, "bloom": {}, "glow": {}, "light_rays": {},
-	"threshold": {}, "mosaic": {}, "lut_3d": {}, "echo": {}, "keying": {},
-	"chromatic_aberration": {}, "halftone": {}, "directional_blur": {},
-	"radial_blur": {}, "sharpen": {}, "turbulent_displace": {}, "wave_warp": {},
-	"ripple": {}, "displacement_map": {}, "corner_pin": {}, "twirl": {},
-	"bulge": {}, "mesh_warp": {}, "catalog": {},
-}
-
-func isSupportedEffectType(t string) bool {
-	_, ok := effectRegistry[t]
-	return ok
-}
-
 func finite(value float64) bool { return !math.IsNaN(value) && !math.IsInf(value, 0) }
 
 func validateRGBA(color []float64) error {
@@ -122,6 +104,28 @@ func firstParam(m map[string]any, keys ...string) (any, bool) {
 	return nil, false
 }
 
+// optionalShapeNumber reads the first present key and validates one numeric
+// shape parameter. max=+Inf means "finite only" (and min=0 adds the usual
+// non-negative wording); every bounded field reports the same interval format.
+func optionalShapeNumber(params map[string]any, itemID, name string, min, max float64, keys ...string) (float64, bool, error) {
+	raw, ok := firstParam(params, keys...)
+	if !ok {
+		return 0, false, nil
+	}
+	value, err := toFloat(raw)
+	if err != nil || !finite(value) || value < min || value > max {
+		switch {
+		case math.IsInf(max, 1) && min == 0:
+			return 0, true, fmt.Errorf("overlay: item %q shape.%s must be non-negative and finite", itemID, name)
+		case math.IsInf(max, 1):
+			return 0, true, fmt.Errorf("overlay: item %q shape.%s must be finite", itemID, name)
+		default:
+			return 0, true, fmt.Errorf("overlay: item %q shape.%s %v must be in [%g, %g]", itemID, name, raw, min, max)
+		}
+	}
+	return value, true, nil
+}
+
 // resolveShape is the one lowering boundary for shape items: semantic params
 // enter here, are validated fail-closed, and leave as the normalized Chronon
 // layer representation.
@@ -189,7 +193,7 @@ func resolveShape(ri resolvedItem, src *semanticPlan) (Layer, error) {
 		if err != nil {
 			return Layer{}, fmt.Errorf("overlay: item %q shape.position must contain two finite numbers: %w", ri.Item.ID, err)
 		}
-		if math.IsNaN(p[0]) || math.IsNaN(p[1]) || math.IsInf(p[0], 0) || math.IsInf(p[1], 0) {
+		if !finite(p[0]) || !finite(p[1]) {
 			return Layer{}, fmt.Errorf("overlay: item %q shape.position must contain two finite numbers", ri.Item.ID)
 		}
 		pos = p
@@ -208,75 +212,51 @@ func resolveShape(ri resolvedItem, src *semanticPlan) (Layer, error) {
 		shape.Points = pts
 	}
 
-	if rotRaw, ok := firstParam(ri.Params, "rotation_degrees", "rotation", "shape_rotation_deg"); ok {
-		rot, err := toFloat(rotRaw)
-		if err != nil || math.IsNaN(rot) || math.IsInf(rot, 0) {
-			return Layer{}, fmt.Errorf("overlay: item %q shape.rotation_degrees must be finite", ri.Item.ID)
-		}
+	if rot, ok, err := optionalShapeNumber(ri.Params, ri.Item.ID, "rotation_degrees", math.Inf(-1), math.Inf(1), "rotation_degrees", "rotation", "shape_rotation_deg"); err != nil {
+		return Layer{}, err
+	} else if ok {
 		shape.RotationDeg = rot
 	}
-
-	if irRaw, ok := ri.Params["inner_radius_ratio"]; ok {
-		ir, err := toFloat(irRaw)
-		if err != nil || ir < 0.05 || ir > 0.95 || math.IsNaN(ir) || math.IsInf(ir, 0) {
-			return Layer{}, fmt.Errorf("overlay: item %q shape.inner_radius_ratio %v must be in [0.05, 0.95]", ri.Item.ID, irRaw)
-		}
+	if ir, ok, err := optionalShapeNumber(ri.Params, ri.Item.ID, "inner_radius_ratio", 0.05, 0.95, "inner_radius_ratio"); err != nil {
+		return Layer{}, err
+	} else if ok {
 		shape.InnerRadius = ir
 	}
-	if spRaw, ok := firstParam(ri.Params, "grid_spacing", "spacing"); ok {
-		sp, err := toFloat(spRaw)
-		if err != nil || sp < 4.0 || sp > 512.0 || math.IsNaN(sp) || math.IsInf(sp, 0) {
-			return Layer{}, fmt.Errorf("overlay: item %q shape.grid_spacing %v must be in [4, 512]", ri.Item.ID, spRaw)
-		}
+	if sp, ok, err := optionalShapeNumber(ri.Params, ri.Item.ID, "grid_spacing", 4, 512, "grid_spacing", "spacing"); err != nil {
+		return Layer{}, err
+	} else if ok {
 		shape.GridSpacing = sp
 	}
-
-	if lwRaw, ok := firstParam(ri.Params, "grid_line_width", "line_width"); ok {
-		lw, err := toFloat(lwRaw)
-		if err != nil || lw < 0.25 || lw > 32.0 || math.IsNaN(lw) || math.IsInf(lw, 0) {
-			return Layer{}, fmt.Errorf("overlay: item %q shape.grid_line_width %v must be in [0.25, 32]", ri.Item.ID, lwRaw)
-		}
+	if lw, ok, err := optionalShapeNumber(ri.Params, ri.Item.ID, "grid_line_width", 0.25, 32, "grid_line_width", "line_width"); err != nil {
+		return Layer{}, err
+	} else if ok {
 		shape.GridLineWidth = lw
 	}
-
-	if drRaw, ok := firstParam(ri.Params, "dot_radius", "dotRadius"); ok {
-		dr, err := toFloat(drRaw)
-		if err != nil || dr < 0.5 || dr > 64.0 || math.IsNaN(dr) || math.IsInf(dr, 0) {
-			return Layer{}, fmt.Errorf("overlay: item %q shape.dot_radius %v must be in [0.5, 64]", ri.Item.ID, drRaw)
-		}
+	if dr, ok, err := optionalShapeNumber(ri.Params, ri.Item.ID, "dot_radius", 0.5, 64, "dot_radius", "dotRadius"); err != nil {
+		return Layer{}, err
+	} else if ok {
 		shape.DotRadius = dr
 	}
-
-	if aStartRaw, ok := firstParam(ri.Params, "arc_start_deg", "start_deg"); ok {
-		st, err := toFloat(aStartRaw)
-		if err != nil || math.IsNaN(st) || math.IsInf(st, 0) {
-			return Layer{}, fmt.Errorf("overlay: item %q shape.arc_start_deg must be finite", ri.Item.ID)
-		}
+	if st, ok, err := optionalShapeNumber(ri.Params, ri.Item.ID, "arc_start_deg", math.Inf(-1), math.Inf(1), "arc_start_deg", "start_deg"); err != nil {
+		return Layer{}, err
+	} else if ok {
 		shape.ArcStartDeg = st
 	}
-
-	if aSweepRaw, ok := firstParam(ri.Params, "arc_sweep_deg", "sweep_deg"); ok {
-		sw, err := toFloat(aSweepRaw)
-		if err != nil || sw < 1.0 || sw > 359.9 || math.IsNaN(sw) || math.IsInf(sw, 0) {
-			return Layer{}, fmt.Errorf("overlay: item %q shape.arc_sweep_deg %v must be in [1, 359.9]", ri.Item.ID, aSweepRaw)
-		}
+	if sw, ok, err := optionalShapeNumber(ri.Params, ri.Item.ID, "arc_sweep_deg", 1, 359.9, "arc_sweep_deg", "sweep_deg"); err != nil {
+		return Layer{}, err
+	} else if ok {
 		shape.ArcSweepDeg = sw
 	}
-
-	if aThickRaw, ok := firstParam(ri.Params, "arc_thickness", "thickness"); ok {
-		th, err := toFloat(aThickRaw)
-		if err != nil || th < 0 || th > 10000.0 || math.IsNaN(th) || math.IsInf(th, 0) {
-			return Layer{}, fmt.Errorf("overlay: item %q shape.arc_thickness %v must be in [0, 10000]", ri.Item.ID, aThickRaw)
-		}
+	if th, ok, err := optionalShapeNumber(ri.Params, ri.Item.ID, "arc_thickness", 0, 10000, "arc_thickness", "thickness"); err != nil {
+		return Layer{}, err
+	} else if ok {
 		shape.ArcThickness = th
 	}
 
 	maxRad := math.Min(width, height) * 0.5
-	if radRaw, ok := ri.Params["radius"]; ok {
-		rad, err := toFloat(radRaw)
-		if err != nil || rad < 0 || math.IsNaN(rad) || math.IsInf(rad, 0) {
-			return Layer{}, fmt.Errorf("overlay: item %q shape.radius must be non-negative", ri.Item.ID)
-		}
+	if rad, ok, err := optionalShapeNumber(ri.Params, ri.Item.ID, "radius", 0, math.Inf(1), "radius"); err != nil {
+		return Layer{}, err
+	} else if ok {
 		if shapeType == "rounded_rect" && rad > maxRad {
 			return Layer{}, fmt.Errorf("overlay: item %q rounded_rect radius %v exceeds half the smaller dimension %v", ri.Item.ID, rad, maxRad)
 		}
@@ -289,7 +269,7 @@ func resolveShape(ri resolvedItem, src *semanticPlan) (Layer, error) {
 			return Layer{}, fmt.Errorf("overlay: item %q shape.corner_radius must contain [tl, tr, br, bl]: %w", ri.Item.ID, err)
 		}
 		for i, c := range cr {
-			if c < 0 || c > maxRad || math.IsNaN(c) || math.IsInf(c, 0) {
+			if c < 0 || c > maxRad || !finite(c) {
 				return Layer{}, fmt.Errorf("overlay: item %q corner_radius[%d]=%v outside [0, %v]", ri.Item.ID, i, c, maxRad)
 			}
 		}
@@ -354,11 +334,9 @@ func resolveShape(ri resolvedItem, src *semanticPlan) (Layer, error) {
 			center = c
 		}
 		zoom := 1.0
-		if zRaw, ok := srcMap["zoom"]; ok {
-			z, err := toFloat(zRaw)
-			if err != nil || z < 1.0 || z > 8.0 || math.IsNaN(z) {
-				return Layer{}, fmt.Errorf("overlay: item %q world_map zoom %v must be in [1, 8]", ri.Item.ID, zRaw)
-			}
+		if z, ok, err := optionalShapeNumber(srcMap, ri.Item.ID, "zoom", 1, 8, "zoom"); err != nil {
+			return Layer{}, err
+		} else if ok {
 			zoom = z
 		}
 		var highlight []string
@@ -449,7 +427,7 @@ func resolveShape(ri resolvedItem, src *semanticPlan) (Layer, error) {
 		}{{[]string{"arrow_head_length", "head_length"}, &shape.ArrowHeadLength, "arrow_head_length"}, {[]string{"arrow_head_width", "head_width"}, &shape.ArrowHeadWidth, "arrow_head_width"}, {[]string{"arrow_shaft_width", "shaft_width"}, &shape.ArrowShaftWidth, "arrow_shaft_width"}} {
 			if raw, ok := firstParam(ri.Params, item.keys...); ok {
 				value, err := toFloat(raw)
-				if err != nil || value <= 0 || math.IsNaN(value) || math.IsInf(value, 0) {
+				if err != nil || value <= 0 || !finite(value) {
 					return Layer{}, fmt.Errorf("overlay: item %q shape.%s must be positive and finite", ri.Item.ID, item.name)
 				}
 				*item.dst = value
@@ -495,7 +473,7 @@ func resolveShape(ri resolvedItem, src *semanticPlan) (Layer, error) {
 			}
 			for _, value := range dRaw {
 				f, err := toFloat(value)
-				if err != nil || math.IsNaN(f) || math.IsInf(f, 0) {
+				if err != nil || !finite(f) {
 					return Layer{}, fmt.Errorf("overlay: item %q chart data values must be finite numbers", ri.Item.ID)
 				}
 				data = append(data, f)
@@ -579,7 +557,7 @@ func resolveShape(ri resolvedItem, src *semanticPlan) (Layer, error) {
 		w := 1.0
 		if wRaw, exists := strokeRaw["width"]; exists {
 			wf, err := toFloat(wRaw)
-			if err != nil || wf < 0 || math.IsNaN(wf) || math.IsInf(wf, 0) {
+			if err != nil || wf < 0 || !finite(wf) {
 				return Layer{}, fmt.Errorf("overlay: item %q shape.stroke.width must be a non-negative finite number", ri.Item.ID)
 			}
 			w = wf
@@ -626,11 +604,9 @@ func resolveShape(ri resolvedItem, src *semanticPlan) (Layer, error) {
 	if err := validateShapeContract(shape, width, height, ri.Item.ID); err != nil {
 		return Layer{}, err
 	}
-	if opRaw, ok := ri.Params["opacity"]; ok {
-		op, err := toFloat(opRaw)
-		if err != nil || op < 0 || op > 1 || math.IsNaN(op) || math.IsInf(op, 0) {
-			return Layer{}, fmt.Errorf("overlay: item %q shape.opacity must be finite and in [0, 1]", ri.Item.ID)
-		}
+	if op, ok, err := optionalShapeNumber(ri.Params, ri.Item.ID, "opacity", 0, 1, "opacity"); err != nil {
+		return Layer{}, err
+	} else if ok {
 		layer.Opacity = &op
 	}
 	return layer, nil

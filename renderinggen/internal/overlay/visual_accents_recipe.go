@@ -2,9 +2,8 @@ package overlay
 
 import (
 	"fmt"
-	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/clampx"
-	"math"
 
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/clampx"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/motion"
 )
 
@@ -73,7 +72,7 @@ func compileVisualAccentsFieldMask(image Layer, mask *motion.ImageMaskDefinition
 		return LayerMask{}, fmt.Errorf("overlay: image layer %q field operator chain exceeds 8", image.ID)
 	}
 	feather := mask.Feather
-	if feather < 0 || math.IsNaN(feather) || math.IsInf(feather, 0) {
+	if feather < 0 || !finite(feather) {
 		return LayerMask{}, fmt.Errorf("overlay: image layer %q mask feather %v is invalid", image.ID, feather)
 	}
 	layerField := map[string]any{
@@ -100,7 +99,7 @@ func compileVisualAccentsFieldMask(image Layer, mask *motion.ImageMaskDefinition
 	// to neutral 0, while opacity finishes the coverage from 0 to 1. Field
 	// masks reject a morph animation by contract, so progress maps here —
 	// the renderer clamps and smoothsteps both parameters per frame.
-	animation := premiumPathAnimation(mask.Progress, duration, authoredEnter)
+	animation := premiumNativePathAnimation(mask.Progress, duration, authoredEnter)
 	expansionKeys := make([]AnimationKeyframe, len(animation.Keyframes))
 	opacityKeys := make([]AnimationKeyframe, len(animation.Keyframes))
 	const fieldSwing = 2.0 // field values live in [0,1]; swing covers any warp overshoot

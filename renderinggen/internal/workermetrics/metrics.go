@@ -23,6 +23,7 @@ import (
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/collectors"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
@@ -107,7 +108,7 @@ func New() *Metrics {
 		}),
 	}
 	reg.MustRegister(m.outcomesTotal, m.phaseSecond, m.gpuGapSecond, m.laneWaitSecond)
-	reg.MustRegister(prometheus.NewGoCollector())
+	reg.MustRegister(collectors.NewGoCollector())
 	return m
 }
 

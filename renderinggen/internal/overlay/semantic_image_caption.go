@@ -67,10 +67,10 @@ func compileImageCaptionLayer(parent resolvedItem, src *semanticPlan, child sema
 	captionLayerID := parent.Item.ID + ":" + childID + ":caption"
 	// Caption semantics resolve directly to a role-aware text spec, without
 	// borrowing a phrase template, preset, or phrase-specific motion policy.
-	if !motionAdmitsTarget(captionMotion, "caption") {
+	if !motionAdmitsTarget(captionMotion, TargetCaption) {
 		captionMotion = entityCaptionMotionIDForIdentity("", src.PlanID, src.VideoID, captionIdentity)
 	}
-	if !motionAdmitsTarget(captionMotion, "caption") {
+	if !motionAdmitsTarget(captionMotion, TargetCaption) {
 		return Layer{}, fmt.Errorf("overlay: item %q caption motion %q is not supported for text captions", parent.Item.ID, captionMotion)
 	}
 	positionX := captionBounds.CenterX
@@ -160,7 +160,7 @@ func compileImageCaptionLayer(parent resolvedItem, src *semanticPlan, child sema
 		Size:     []float64{captionBounds.Width, captionBounds.Height},
 		Position: []float64{positionX, positionY}, Style: &LayerStyle{Font: OfficialFontPathForLanguage(src.Language)},
 		MotionID: captionMotion, MotionParams: motionParams,
-		StyleParams: styleParams, MotionTarget: "caption", StylePolicy: role,
+		StyleParams: styleParams, MotionTarget: TargetCaption, StylePolicy: role,
 		FontSize: captionBounds.FontSize, OverrideFill: overrideFill,
 	}
 	captionLayer, err := compileResolvedText(captionLayerID, image.StartFrame, image.StartFrame+image.DurationFrames, captionSpec)

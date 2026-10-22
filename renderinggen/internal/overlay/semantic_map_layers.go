@@ -157,15 +157,15 @@ func resolveMapPinLabel(ri resolvedItem, src *semanticPlan, resolvedPin resolved
 		if pin.LabelStyle.FontSizePX != nil {
 			styleParams["font_size_px"] = fontSize
 		}
-		roleOverrides.Stroke = cloneLayerStroke(pin.LabelStyle.Stroke)
-		roleOverrides.Shadow = cloneLayerShadow(pin.LabelStyle.Shadow)
-		roleOverrides.Glow = cloneLayerGlow(pin.LabelStyle.Glow)
+		roleOverrides.Stroke = cloneLayerStyleStroke(pin.LabelStyle.Stroke)
+		roleOverrides.Shadow = cloneLayerStyleShadow(pin.LabelStyle.Shadow)
+		roleOverrides.Glow = cloneLayerStyleGlow(pin.LabelStyle.Glow)
 		roleOverrides.Background = cloneLayerBackground(pin.LabelStyle.Background)
 	}
 	spec := resolvedTextSpec{
 		Text: pin.Label, Size: []float64{width, height}, OmitBox: true,
 		Position: canvasBoxPosition("text", topLeft[0], topLeft[1], width, height, src.Width, src.Height),
-		Style:    captionStyle, RoleOverrides: roleOverrides, StyleParams: styleParams, MotionTarget: "text", StylePolicy: textRoleMapLabel,
+		Style:    captionStyle, RoleOverrides: roleOverrides, StyleParams: styleParams, MotionTarget: TargetText, StylePolicy: textRoleMapLabel,
 		FontSize: fontSize, MinFontSize: minFontSize, MaxFontSize: maxFontSize, OverrideFill: fill,
 	}
 	layer, err := compileResolvedText(mapPinLabelLayerID(ri.Item.ID, pin.ID), ri.Start, ri.Start+duration, spec)
@@ -173,27 +173,6 @@ func resolveMapPinLabel(ri resolvedItem, src *semanticPlan, resolvedPin resolved
 		return Layer{}, fmt.Errorf("overlay: map item %q pin %q label: %w", ri.Item.ID, pin.ID, err)
 	}
 	return layer, nil
-}
-
-func cloneLayerStroke(source *semanticMapTextStroke) *LayerStroke {
-	if source == nil {
-		return nil
-	}
-	return &LayerStroke{Color: source.Color, Width: source.Width}
-}
-
-func cloneLayerShadow(source *semanticMapTextShadow) *LayerShadow {
-	if source == nil {
-		return nil
-	}
-	return &LayerShadow{Color: source.Color, Opacity: source.Opacity, Blur: source.Blur, Offset: append([]float64(nil), source.Offset...)}
-}
-
-func cloneLayerGlow(source *semanticMapTextGlow) *LayerGlow {
-	if source == nil {
-		return nil
-	}
-	return &LayerGlow{Color: source.Color, Radius: source.Radius, Intensity: source.Intensity}
 }
 
 func cloneLayerBackground(source *semanticMapTextPlate) *LayerBackground {
@@ -213,7 +192,7 @@ func resolveMapAttribution(ri resolvedItem, src *semanticPlan, attribution strin
 		Text: attribution, Size: []float64{width, height}, OmitBox: true,
 		Position:    canvasBoxPosition("text", boxX, boxY, width, height, src.Width, src.Height),
 		Style:       &LayerStyle{Font: OfficialFontPathForLanguage(src.Language)},
-		StyleParams: ri.Params, MotionTarget: "text", StylePolicy: textRoleMapAttribution,
+		StyleParams: ri.Params, MotionTarget: TargetText, StylePolicy: textRoleMapAttribution,
 		FontSize: mapAttributionFontPX * scale, OverrideFill: "#F8F5EA",
 	}
 	// Role base styles supply fit and shadow policy; retain the contract's

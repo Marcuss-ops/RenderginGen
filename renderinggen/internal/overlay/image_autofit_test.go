@@ -2,6 +2,7 @@ package overlay
 
 import (
 	"fmt"
+	"strings"
 	"testing"
 )
 
@@ -115,6 +116,34 @@ func TestAutoFitEntityPortraitCoversLandscape(t *testing.T) {
 func duoSoftGroupPlan(motionID string) []byte {
 	return []byte(fmt.Sprintf(`{"schema_version":"renderinggen.overlay-plan.v1","plan_id":"duo-soft-%s","video_id":"v","width":1920,"height":1080,"fps_num":24,"fps_den":1,"items":[{"id":"duo","kind":"image","template_id":"image_popup","group_motion_id":%q,"start_ms":0,"end_ms":5000,"asset_refs":[{"asset_id":"left","sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","url":"https://example.test/left.png"},{"asset_id":"right","sha256":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","url":"https://example.test/right.png"}],"image_layers":[{"id":"left","asset_id":"left","start_ms":0,"end_ms":5000,"preset_id":"image_focus_in"},{"id":"right","asset_id":"right","start_ms":0,"end_ms":5000,"preset_id":"image_focus_in"}]}]}`,
 		motionID, motionID))
+}
+
+// TestImageGroupRecipePropagatesCaptionStyle proves group-recipe children keep
+// the per-child caption font/color/layout overrides, exactly like composite
+// children. These fields were silently dropped before the shared resolver.
+func TestImageGroupRecipePropagatesCaptionStyle(t *testing.T) {
+	plan := string(duoSoftGroupPlan("duo_soft_bloom_rise"))
+	plan = strings.ReplaceAll(plan, `"preset_id":"image_focus_in"`, `"preset_id":"image_focus_in","caption":"Ada","caption_color":"#FFAA33","caption_layout":"below"`)
+	result, err := CompileSemantic([]byte(plan))
+	if err != nil {
+		t.Fatalf("compile: %v", err)
+	}
+	var captions int
+	for _, layer := range result.Plan.Layers {
+		if layer.CaptionForImageID == "" {
+			continue
+		}
+		captions++
+		if layer.CaptionLayout != "below" {
+			t.Errorf("caption layout = %q, want below", layer.CaptionLayout)
+		}
+		if layer.Style == nil || layer.Style.Fill != "#FFAA33" {
+			t.Errorf("caption fill = %+v, want #FFAA33", layer.Style)
+		}
+	}
+	if captions != 2 {
+		t.Fatalf("caption layers = %d, want 2", captions)
+	}
 }
 
 // TestDuoSoftMotionsCompileToSideBySideCards is the runtime proof: two

@@ -3,10 +3,9 @@ package motion
 import (
 	"encoding/json"
 	"fmt"
-	"math"
-)
 
-import "github.com/Marcuss-ops/RenderingGen/renderinggen/countryflags"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/countryflags"
+)
 
 type Params map[string]any
 
@@ -459,24 +458,18 @@ func ValidateDefinition(d MotionDefinition) error {
 	return nil
 }
 
-// validateTrackDefinition protects the renderer boundary, where an empty or
-// malformed track otherwise becomes a late render-plan failure. All authored
-// tracks are layer-relative, so they must begin at frame zero and use strictly
-// increasing frame numbers. A separate pack-level gate checks that the
-// authored value curves are actually varying where a reveal is expected; this
-// structural check keeps malformed timelines from reaching the renderer.
-// validateEditorialV1Family enforces the Editorial Visual Motion V1 contract
-// on the two families the milestone certifies: an editorial image entrance
-// settles exactly (scale/opacity rest at 1, camera-backed transforms rest at
-// the neutral 0), and a text 3D motion always carries camera-backed motion.
-// Scoped to the V1 categories so the legacy families keep their historical
-// freedoms while every new motion is born under the stricter gate.
-// validateTrackDefinition protects the renderer boundary, where an empty or
-// malformed track otherwise becomes a late render-plan failure. All authored
-// tracks are layer-relative, so they must begin at frame zero and use strictly
-// increasing frame numbers. A separate pack-level gate checks that the
-// authored value curves are actually varying where a reveal is expected; this
-// structural check keeps malformed timelines from reaching the renderer.
+// validateV1Metadata enforces the metadata every V1 family must declare:
+// duration bounds and render_safe. Family-specific rules follow it.
+func validateV1Metadata(d MotionDefinition) error {
+	if d.DurationBounds == nil || d.DurationBounds.MinimumFrames < 1 || d.DurationBounds.MaximumFrames < d.DurationBounds.MinimumFrames {
+		return fmt.Errorf("motion %q: %s duration_bounds are invalid", d.ID, d.Category)
+	}
+	if d.RenderSafe == nil || !*d.RenderSafe {
+		return fmt.Errorf("motion %q: %s motions must declare render_safe", d.ID, d.Category)
+	}
+	return nil
+}
+
 // validateEditorialV1Family enforces the Editorial Visual Motion V1 contract
 // on the two families the milestone certifies: an editorial image entrance
 // settles exactly (scale/opacity rest at 1, camera-backed transforms rest at
@@ -487,11 +480,8 @@ func validateEditorialV1Family(d MotionDefinition) error {
 	if d.Category != "editorial_image_v1" && d.Category != "text_3d_v1" {
 		return nil
 	}
-	if d.DurationBounds == nil || d.DurationBounds.MinimumFrames < 1 || d.DurationBounds.MaximumFrames < d.DurationBounds.MinimumFrames {
-		return fmt.Errorf("motion %q: %s duration_bounds are invalid", d.ID, d.Category)
-	}
-	if d.RenderSafe == nil || !*d.RenderSafe {
-		return fmt.Errorf("motion %q: %s motions must declare render_safe", d.ID, d.Category)
+	if err := validateV1Metadata(d); err != nil {
+		return err
 	}
 	has3D := false
 	for _, track := range d.Tracks {
@@ -525,10 +515,6 @@ func validateEditorialV1Family(d MotionDefinition) error {
 // entrance ends at the authored resting value, so opacity and scale return
 // to 1 and camera-backed transforms return to the neutral 0 — a motion that
 // rests elsewhere leaves every rendered card subtly rotated or faded.
-// validateV1RestingTrack pins the final resting pose of one V1 track: an
-// entrance ends at the authored resting value, so opacity and scale return
-// to 1 and camera-backed transforms return to the neutral 0 — a motion that
-// rests elsewhere leaves every rendered card subtly rotated or faded.
 func validateV1RestingTrack(d MotionDefinition, owner string, t TrackDefinition) error {
 	if len(t.Keyframes) < 2 {
 		return fmt.Errorf("motion %q: %s needs at least two keyframes", d.ID, owner)
@@ -558,22 +544,12 @@ func validateV1RestingTrack(d MotionDefinition, owner string, t TrackDefinition)
 // are stroked paths, web cards are rounded panels, paint reveals are field
 // masks, light leaks are additive glow plates. A wrong shape in a family is a
 // catalog authoring bug and fails closed here, before it can reach a render.
-// validateVisualAccentsV1Family enforces the Visual Accents V1 contract on the
-// four official families: V1 metadata completeness (duration bounds, render
-// safety, 3D/camera truthfulness) and, for the families that lower through the
-// image recipe, exactly the recipe shapes each family admits — brush traits
-// are stroked paths, web cards are rounded panels, paint reveals are field
-// masks, light leaks are additive glow plates. A wrong shape in a family is a
-// catalog authoring bug and fails closed here, before it can reach a render.
 func validateVisualAccentsV1Family(d MotionDefinition) error {
 	if !VisualAccentsV1CategoriesContains(d.Category) {
 		return nil
 	}
-	if d.DurationBounds == nil || d.DurationBounds.MinimumFrames < 1 || d.DurationBounds.MaximumFrames < d.DurationBounds.MinimumFrames {
-		return fmt.Errorf("motion %q: %s duration_bounds are invalid", d.ID, d.Category)
-	}
-	if d.RenderSafe == nil || !*d.RenderSafe {
-		return fmt.Errorf("motion %q: %s motions must declare render_safe", d.ID, d.Category)
+	if err := validateV1Metadata(d); err != nil {
+		return err
 	}
 	if d.Unit != "layer" || d.Enter <= 0 || d.Exit < 0 {
 		return fmt.Errorf("motion %q: %s motions must be layer motions with positive enter", d.ID, d.Category)
@@ -649,9 +625,6 @@ func validateVisualAccentsV1Family(d MotionDefinition) error {
 // validateVisualAccentsFieldMask bounds the field recipes the paint family may
 // author: bounded frequency and feather, a bounded operator chain, and a
 // progress track that starts closed and ends open.
-// validateVisualAccentsFieldMask bounds the field recipes the paint family may
-// author: bounded frequency and feather, a bounded operator chain, and a
-// progress track that starts closed and ends open.
 func validateVisualAccentsFieldMask(d MotionDefinition, field ImageMotionFieldDefinition) error {
 	if field.Frequency <= 0 || field.Frequency > 4096 {
 		return fmt.Errorf("motion %q: paint_v1 field frequency must be in (0, 4096]", d.ID)
@@ -662,32 +635,12 @@ func validateVisualAccentsFieldMask(d MotionDefinition, field ImageMotionFieldDe
 	return nil
 }
 
-func finiteMotionValues(values []float64) bool {
-	for _, value := range values {
-		if math.IsNaN(value) || math.IsInf(value, 0) {
-			return false
-		}
-	}
-	return true
-}
-
-func positiveMotionScalar(value any) (float64, bool) {
-	var scalar float64
-	switch number := value.(type) {
-	case float64:
-		scalar = number
-	case float32:
-		scalar = float64(number)
-	case int:
-		scalar = float64(number)
-	case int64:
-		scalar = float64(number)
-	default:
-		return 0, false
-	}
-	return scalar, scalar > 0 && !math.IsNaN(scalar) && !math.IsInf(scalar, 0)
-}
-
+// validateTrackDefinition protects the renderer boundary, where an empty or
+// malformed track otherwise becomes a late render-plan failure. All authored
+// tracks are layer-relative, so they must begin at frame zero and use strictly
+// increasing frame numbers. A separate pack-level gate checks that the
+// authored value curves are actually varying where a reveal is expected; this
+// structural check keeps malformed timelines from reaching the renderer.
 func validateTrackDefinition(motionID, owner string, t TrackDefinition) error {
 	if t.Property == "" || len(t.Keyframes) < 2 {
 		return fmt.Errorf("motion %q: %s requires a property and at least two keyframes", motionID, owner)

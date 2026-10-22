@@ -149,7 +149,7 @@ func validateRuntimeTextStyleKey(key string, value any, itemID string) error {
 			return fmt.Errorf("overlay: item %q %w", itemID, err)
 		}
 	case "font_size_px":
-		if n, ok := value.(float64); !ok || math.IsNaN(n) || math.IsInf(n, 0) || n <= 0 || n > maxRuntimeFontSize {
+		if n, ok := value.(float64); !ok || !finite(n) || n <= 0 || n > maxRuntimeFontSize {
 			return fmt.Errorf("overlay: item %q params.font_size_px must be greater than 0 and at most %g pixels", itemID, maxRuntimeFontSize)
 		}
 	case "shadow_blur_px", "shadow_offset_x_px", "shadow_offset_y_px":
@@ -157,7 +157,7 @@ func validateRuntimeTextStyleKey(key string, value any, itemID string) error {
 			if _, err := boundedRuntimeSize(value, key, maxRuntimeShadowSize); err != nil {
 				return fmt.Errorf("overlay: item %q %w", itemID, err)
 			}
-		} else if n, ok := value.(float64); !ok || math.IsNaN(n) || math.IsInf(n, 0) || math.Abs(n) > maxRuntimeShadowSize {
+		} else if n, ok := value.(float64); !ok || !finite(n) || math.Abs(n) > maxRuntimeShadowSize {
 			return fmt.Errorf("overlay: item %q params.%s must be between -%g and %g pixels", itemID, key, maxRuntimeShadowSize, maxRuntimeShadowSize)
 		}
 	case "shadow_opacity":
@@ -226,22 +226,22 @@ func validateRuntimeImageStyleKey(key string, value any, itemID string) error {
 		}
 	case "position_x", "position_y":
 		n, ok := numericValue(value)
-		if !ok || math.IsNaN(n) || math.IsInf(n, 0) || math.Abs(n) > 8192 {
+		if !ok || !finite(n) || math.Abs(n) > 8192 {
 			return fmt.Errorf("overlay: item %q params.%s must be within ±8192 pixels", itemID, key)
 		}
 	case "radius", "border_radius":
 		n, ok := numericValue(value)
-		if !ok || math.IsNaN(n) || math.IsInf(n, 0) || n < 0 || n > maxFrameRadius {
+		if !ok || !finite(n) || n < 0 || n > maxFrameRadius {
 			return fmt.Errorf("overlay: item %q params.%s must be within [0,%g]", itemID, key, maxFrameRadius)
 		}
 	case "border_width":
 		n, ok := numericValue(value)
-		if !ok || math.IsNaN(n) || math.IsInf(n, 0) || n < 0 || n > maxFrameBorderWidth {
+		if !ok || !finite(n) || n < 0 || n > maxFrameBorderWidth {
 			return fmt.Errorf("overlay: item %q params.%s must be within [0,%g]", itemID, key, maxFrameBorderWidth)
 		}
 	case "stroke_width":
 		n, ok := numericValue(value)
-		if !ok || math.IsNaN(n) || math.IsInf(n, 0) || n < 0 || n > maxFrameStrokeWidth {
+		if !ok || !finite(n) || n < 0 || n > maxFrameStrokeWidth {
 			return fmt.Errorf("overlay: item %q params.%s must be within [0,%g]", itemID, key, maxFrameStrokeWidth)
 		}
 	case "border_color", "stroke_color", "shadow_color":
@@ -260,17 +260,17 @@ func validateRuntimeImageStyleKey(key string, value any, itemID string) error {
 		}
 	case "shadow_opacity":
 		n, ok := numericValue(value)
-		if !ok || math.IsNaN(n) || math.IsInf(n, 0) || n < 0 || n > 1 {
+		if !ok || !finite(n) || n < 0 || n > 1 {
 			return fmt.Errorf("overlay: item %q params.shadow_opacity must be within [0,1]", itemID)
 		}
 	case "shadow_blur":
 		n, ok := numericValue(value)
-		if !ok || math.IsNaN(n) || math.IsInf(n, 0) || n < 0 || n > maxFrameShadowBlur {
+		if !ok || !finite(n) || n < 0 || n > maxFrameShadowBlur {
 			return fmt.Errorf("overlay: item %q params.shadow_blur must be within [0,%g]", itemID, maxFrameShadowBlur)
 		}
 	case "shadow_offset_x", "shadow_offset_y":
 		n, ok := numericValue(value)
-		if !ok || math.IsNaN(n) || math.IsInf(n, 0) || math.Abs(n) > maxFrameShadowOffset {
+		if !ok || !finite(n) || math.Abs(n) > maxFrameShadowOffset {
 			return fmt.Errorf("overlay: item %q params.%s must be within ±%g", itemID, key, maxFrameShadowOffset)
 		}
 	}
@@ -282,7 +282,7 @@ func boundedRuntimeSize(value any, key string, maximum float64) (float64, error)
 	if !ok {
 		return 0, fmt.Errorf("params.%s must be a number", key)
 	}
-	if math.IsNaN(size) || math.IsInf(size, 0) || size < 0 || size > maximum {
+	if !finite(size) || size < 0 || size > maximum {
 		return 0, fmt.Errorf("params.%s must be between 0 and %g pixels", key, maximum)
 	}
 	return size, nil
@@ -302,7 +302,7 @@ func runtimeNumber(params map[string]any, key string) (float64, bool, error) {
 		return 0, false, nil
 	}
 	number, ok := value.(float64)
-	if !ok || math.IsNaN(number) || math.IsInf(number, 0) {
+	if !ok || !finite(number) {
 		return 0, true, fmt.Errorf("params.%s must be a finite number", key)
 	}
 	return number, true, nil

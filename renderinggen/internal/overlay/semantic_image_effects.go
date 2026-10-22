@@ -14,15 +14,30 @@ import (
 
 // compileImageItem lowers one semantic image item and then decorates its base
 // image layers with the item's runtime effects. The core lowering is
-// compileImageItemCore; this wrapper is the single place the runtime effect
-// stack is applied so every image path (standalone, composite, group, premium)
-// shares it.
+// compileImageItemCore; compileItem routes entity cards, entity groups and
+// composite recipes through the same applyImageItemEffects step, so an item's
+// declared stack can never be skipped because of the path that lowered it.
 func compileImageItem(ri resolvedItem, src *semanticPlan, registry *assetRegistry) ([]Layer, error) {
 	layers, err := compileImageItemCore(ri, src, registry)
 	if err != nil {
 		return nil, err
 	}
 	return applyImageItemEffects(ri, layers)
+}
+
+// decorateImageLayerWithItemEffects applies the item's runtime effect stack to
+// one freshly lowered image layer, leaving effect-free items untouched. Recipe
+// members call it for their own params.effects so a per-child stack is honoured
+// exactly like a composite child's.
+func decorateImageLayerWithItemEffects(ri resolvedItem, layer Layer) (Layer, error) {
+	if _, declared := ri.Params["effects"]; !declared {
+		return layer, nil
+	}
+	layers, err := applyImageItemEffects(ri, []Layer{layer})
+	if err != nil {
+		return Layer{}, err
+	}
+	return layers[0], nil
 }
 
 // applyImageItemEffects lowers item-level params.effects onto each base image

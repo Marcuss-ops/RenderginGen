@@ -309,7 +309,14 @@ func clampAnimationTrack(track *AnimationTrack, duration int64) {
 	// same frame (for example an entrance endpoint and a later settled hold).
 	// Chronon requires unique frames; keep the last authored value when that
 	// happens so the settled state wins at the collapsed boundary.
-	if len(track.Keyframes) < 2 {
+	coalesceDuplicateFrames(track)
+}
+
+// coalesceDuplicateFrames collapses keyframes that land on the same frame,
+// keeping the LAST authored value so a settled state wins at a collapsed
+// boundary. Chronon rejects duplicate frames, so every clamp pass must end here.
+func coalesceDuplicateFrames(track *AnimationTrack) {
+	if track == nil || len(track.Keyframes) < 2 {
 		return
 	}
 	unique := track.Keyframes[:0]
@@ -337,18 +344,7 @@ func clampTextSelectorTracks(selector *TextSelector, duration int64) {
 	// that Chronon's strict decoder rejects). Coalesce to the LAST value so
 	// the sweep keeps its settled 100 semantics instead of restarting.
 	for _, track := range []*AnimationTrack{selector.Start, selector.End, selector.Offset, selector.Amount} {
-		if track == nil || len(track.Keyframes) < 2 {
-			continue
-		}
-		unique := track.Keyframes[:0]
-		for _, keyframe := range track.Keyframes {
-			if len(unique) > 0 && unique[len(unique)-1].Frame == keyframe.Frame {
-				unique[len(unique)-1] = keyframe
-				continue
-			}
-			unique = append(unique, keyframe)
-		}
-		track.Keyframes = unique
+		coalesceDuplicateFrames(track)
 	}
 }
 
@@ -632,6 +628,8 @@ func easingValue(easing string, t float64) (float64, error) {
 			return 4 * t * t * t, nil
 		}
 		return 1 - math.Pow(-2*t+2, 3)/2, nil
+	case "smoothstep":
+		return t * t * (3 - 2*t), nil
 	case "in_sine":
 		return 1 - math.Cos(t*math.Pi/2), nil
 	case "out_sine":

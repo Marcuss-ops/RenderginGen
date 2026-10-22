@@ -79,68 +79,23 @@ func resolveTextRole(ri resolvedItem) textRole {
 	return textRolePhrase
 }
 
-// resolveTextSpec dispatches to the semantic-role resolvers. Every resolver
-// returns the same fully resolved input for the one shared text lowering.
+// resolveTextSpec resolves the role's base spec and applies the only two
+// role-specific decisions: important phrases own an entry/exit pair, while the
+// metric and date roles pin their no-shrink fit policy. Geometry and lowering
+// stay shared, so a new role is one switch arm instead of a parallel resolver.
 func resolveTextSpec(ri resolvedItem, src *semanticPlan) (resolvedTextSpec, error) {
-	switch resolveTextRole(ri) {
+	role := resolveTextRole(ri)
+	spec, lines, err := resolveTextSpecBase(ri, src)
+	if err != nil {
+		return resolvedTextSpec{}, err
+	}
+	spec.StylePolicy = role
+	switch role {
 	case textRoleImportantPhrase:
-		return resolveImportantPhraseTextSpec(ri, src)
-	case textRoleMetric:
-		return resolveMetricTextSpec(ri, src)
-	case textRoleDate:
-		return resolveDateTextSpec(ri, src)
-	case textRoleLowerThird:
-		return resolveLowerThirdTextSpec(ri, src)
-	default:
-		return resolvePhraseTextSpec(ri, src)
+		spec.EntryExit = true
+	case textRoleMetric, textRoleDate:
+		spec.FitPolicy = resolvedTextFitPolicy(ri, role)
 	}
-}
-
-func resolvePhraseTextSpec(ri resolvedItem, src *semanticPlan) (resolvedTextSpec, error) {
-	spec, lines, err := resolveTextSpecBase(ri, src)
-	if err != nil {
-		return resolvedTextSpec{}, err
-	}
-	spec.StylePolicy = textRolePhrase
-	return resolveTextSpecGeometry(ri, src, spec, lines), nil
-}
-
-func resolveImportantPhraseTextSpec(ri resolvedItem, src *semanticPlan) (resolvedTextSpec, error) {
-	spec, lines, err := resolveTextSpecBase(ri, src)
-	if err != nil {
-		return resolvedTextSpec{}, err
-	}
-	spec.StylePolicy = textRoleImportantPhrase
-	spec.EntryExit = true
-	return resolveTextSpecGeometry(ri, src, spec, lines), nil
-}
-
-func resolveMetricTextSpec(ri resolvedItem, src *semanticPlan) (resolvedTextSpec, error) {
-	spec, lines, err := resolveTextSpecBase(ri, src)
-	if err != nil {
-		return resolvedTextSpec{}, err
-	}
-	spec.StylePolicy = textRoleMetric
-	spec.FitPolicy = resolvedTextFitPolicy(ri, textRoleMetric)
-	return resolveTextSpecGeometry(ri, src, spec, lines), nil
-}
-
-func resolveDateTextSpec(ri resolvedItem, src *semanticPlan) (resolvedTextSpec, error) {
-	spec, lines, err := resolveTextSpecBase(ri, src)
-	if err != nil {
-		return resolvedTextSpec{}, err
-	}
-	spec.StylePolicy = textRoleDate
-	spec.FitPolicy = resolvedTextFitPolicy(ri, textRoleDate)
-	return resolveTextSpecGeometry(ri, src, spec, lines), nil
-}
-
-func resolveLowerThirdTextSpec(ri resolvedItem, src *semanticPlan) (resolvedTextSpec, error) {
-	spec, lines, err := resolveTextSpecBase(ri, src)
-	if err != nil {
-		return resolvedTextSpec{}, err
-	}
-	spec.StylePolicy = textRoleLowerThird
 	return resolveTextSpecGeometry(ri, src, spec, lines), nil
 }
 

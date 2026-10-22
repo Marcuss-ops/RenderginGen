@@ -356,24 +356,13 @@ func selectableEntityCaptionMotions() []string {
 
 func entityCaptionMotionSelectable(id string) bool {
 	definition, err := resolveMotionDefinition(id)
-	return err == nil && motionDefinitionAdmitsTarget(definition, "caption") &&
+	return err == nil && motionDefinitionAdmitsTarget(definition, TargetCaption) &&
 		definitionHasCaptionAnimation(definition)
-}
-
-func motionDefinitionAdmitsTargetForID(id, target string) bool {
-	definition, err := resolveMotionDefinition(id)
-	if err != nil || !motionDefinitionAdmitsTarget(definition, target) {
-		return false
-	}
-	if target != "caption" {
-		return true
-	}
-	return definitionHasCaptionAnimation(definition)
 }
 
 func compactMotionIDsAfterSort(ids []string) []string {
 	sort.Strings(ids)
-	return compactMotionIDs(ids)
+	return motion.CompactMotionIDs(ids)
 }
 
 func definitionHasCaptionAnimation(definition *motion.MotionDefinition) bool {
@@ -393,21 +382,6 @@ func definitionHasCaptionAnimation(definition *motion.MotionDefinition) bool {
 		}
 	}
 	return false
-}
-
-func compactMotionIDs(ids []string) []string {
-	if len(ids) < 2 {
-		return ids
-	}
-	write := 1
-	for read := 1; read < len(ids); read++ {
-		if ids[read] == ids[write-1] {
-			continue
-		}
-		ids[write] = ids[read]
-		write++
-	}
-	return ids[:write]
 }
 
 // EntityCaptionMotionID returns the caption's motion id. A requested id is

@@ -105,7 +105,7 @@ func validateMapContract(item semanticItem, kind ItemKind, canvasWidth, canvasHe
 	if m.Width > maxMapRasterWidth || m.Height > maxMapRasterHeight {
 		return fmt.Errorf("overlay: map item %q raster %dx%d exceeds the contract maximum %dx%d", item.ID, m.Width, m.Height, maxMapRasterWidth, maxMapRasterHeight)
 	}
-	if strings.TrimSpace(m.MotionID) != "" && !motionAdmitsTarget(m.MotionID, "map_view") {
+	if strings.TrimSpace(m.MotionID) != "" && !motionAdmitsTarget(m.MotionID, TargetMapView) {
 		return fmt.Errorf("overlay: map item %q motion %q is not a registered centered image motion", item.ID, m.MotionID)
 	}
 	if err := validateMapPoint(m.Center.Latitude, m.Center.Longitude); err != nil {
@@ -292,7 +292,7 @@ func validateMapPin(pin SemanticMapPin, index int, window geo.Window) error {
 			return err
 		}
 	}
-	if math.IsNaN(pin.RadiusPX) || math.IsInf(pin.RadiusPX, 0) || pin.RadiusPX <= 0 || pin.RadiusPX > 128 {
+	if !finite(pin.RadiusPX) || pin.RadiusPX <= 0 || pin.RadiusPX > 128 {
 		return fmt.Errorf("pin[%d] radius_px %v must be finite and within (0,128]", index, pin.RadiusPX)
 	}
 	if err := validateMapPoint(pin.Latitude, pin.Longitude); err != nil {
@@ -346,10 +346,10 @@ func validateMapTextStyle(style *SemanticMapTextStyle, index int) error {
 }
 
 func validateMapPoint(latitude, longitude float64) error {
-	if math.IsNaN(latitude) || math.IsInf(latitude, 0) || latitude < -90 || latitude > 90 {
+	if !finite(latitude) || latitude < -90 || latitude > 90 {
 		return fmt.Errorf("latitude %v is outside [-90,90]", latitude)
 	}
-	if math.IsNaN(longitude) || math.IsInf(longitude, 0) || longitude < -180 || longitude > 180 {
+	if !finite(longitude) || longitude < -180 || longitude > 180 {
 		return fmt.Errorf("longitude %v is outside [-180,180]", longitude)
 	}
 	return nil
@@ -395,7 +395,7 @@ func validateMapLODs(item semanticItem, canvasWidth, canvasHeight int) error {
 		}
 	}
 	for name, value := range map[string]float64{"start_zoom": move.StartZoom, "end_zoom": move.EndZoom, "start_tilt_deg": move.StartTiltDeg, "end_tilt_deg": move.EndTiltDeg, "bearing_deg": move.BearingDeg} {
-		if math.IsNaN(value) || math.IsInf(value, 0) {
+		if !finite(value) {
 			return fmt.Errorf("overlay: map item %q camera %s must be finite", item.ID, name)
 		}
 	}

@@ -489,18 +489,27 @@ func TestGeoreferencedFlyToCompilesNativeCameraAndOfflineLODs(t *testing.T) {
 	}
 }
 
-func TestSceneCameraRejectsMultipleControllers(t *testing.T) {
-	entity := map[string]any{
-		"id": "camera-portrait", "entity_id": "person:ada", "kind": "entity_card",
+// cameraMapItem is the map-camera item shared by the conflict cases.
+func cameraMapItem() any { return cameraMapPlan()["items"].([]any)[0] }
+
+// cameraEntityItem builds the captioned entity card whose style selects a
+// scene camera. style="badge" keeps the same card without the camera authority.
+func cameraEntityItem(id, entityID, style string) map[string]any {
+	return map[string]any{
+		"id": id, "entity_id": entityID, "kind": "entity_card",
 		"template_id": "PERSON", "preset_id": PhraseDefaultPresetID, "text": "Ada Lovelace",
 		"image_preset_id": "image_scale_in", "entity_caption": "Ada Lovelace",
-		"entity_style_id": "camera", "start_ms": 0, "end_ms": 3000, "duration_ms": 3000,
+		"entity_style_id": style, "start_ms": 0, "end_ms": 3000, "duration_ms": 3000,
 		"asset_refs": []any{map[string]any{
 			"asset_id": "portrait", "sha256": strings.Repeat("d", 64),
 			"url": "assets/semantic/portrait.png", "media_type": "image/png",
 		}},
 	}
-	mapCamera := cameraMapPlan()["items"].([]any)[0].(map[string]any)
+}
+
+func TestSceneCameraRejectsMultipleControllers(t *testing.T) {
+	entity := cameraEntityItem("camera-portrait", "person:ada", "camera")
+	mapCamera := cameraMapItem().(map[string]any)
 	secondMapCamera := make(map[string]any, len(mapCamera))
 	for key, value := range mapCamera {
 		secondMapCamera[key] = value
@@ -511,18 +520,10 @@ func TestSceneCameraRejectsMultipleControllers(t *testing.T) {
 		items []any
 		want  string
 	}{
-		{name: "map camera then entity camera", items: []any{cameraMapPlan()["items"].([]any)[0], entity}, want: "camera motion conflicts with map item"},
-		{name: "entity camera then map camera", items: []any{entity, cameraMapPlan()["items"].([]any)[0]}, want: "scene camera move conflicts with entity item"},
+		{name: "map camera then entity camera", items: []any{cameraMapItem(), entity}, want: "camera motion conflicts with map item"},
+		{name: "entity camera then map camera", items: []any{entity, cameraMapItem()}, want: "camera motion conflicts with map item"},
 		{name: "two map camera controllers", items: []any{mapCamera, secondMapCamera}, want: "only one scene camera controller"},
-		{name: "two entity camera controllers", items: []any{entity, func() map[string]any {
-			duplicate := make(map[string]any, len(entity))
-			for key, value := range entity {
-				duplicate[key] = value
-			}
-			duplicate["id"] = "camera-portrait-2"
-			duplicate["entity_id"] = "person:grace"
-			return duplicate
-		}()}, want: "only one scene camera controller"},
+		{name: "two entity camera controllers", items: []any{entity, cameraEntityItem("camera-portrait-2", "person:grace", "camera")}, want: "only one scene camera controller"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			plan := map[string]any{
@@ -541,22 +542,46 @@ func TestSceneCameraRejectsMultipleControllers(t *testing.T) {
 	}
 }
 
-func TestMapCameraAllowsEntityStyleWithoutCameraMotion(t *testing.T) {
-	entity := map[string]any{
-		"id": "badge-portrait", "entity_id": "person:ada", "kind": "entity_card",
-		"template_id": "PERSON", "preset_id": PhraseDefaultPresetID, "text": "Ada Lovelace",
-		"image_preset_id": "image_scale_in", "entity_caption": "Ada Lovelace",
-		"entity_style_id": "badge", "start_ms": 0, "end_ms": 3000, "duration_ms": 3000,
-		"asset_refs": []any{map[string]any{
-			"asset_id": "portrait", "sha256": strings.Repeat("d", 64),
-			"url": "assets/semantic/portrait.png", "media_type": "image/png",
-		}},
+// TestCameraControllerConflictIsOrderIndependent pins the post-loop policy: a
+// plan with a map camera and an entity-style camera is rejected identically
+// whichever item comes first. In-loop conflict checks made that depend on item
+// order and could silently let the last controller win.
+func TestCameraControllerConflictIsOrderIndependent(t *testing.T) {
+	entity := cameraEntityItem("camera-portrait", "person:ada", "camera")
+	mapItem := cameraMapItem()
+	compile := func(items []any) string {
+		plan := map[string]any{
+			"schema_version": "renderinggen.overlay-plan.v1", "plan_id": "camera-order",
+			"video_id": "camera-order", "width": 1280, "height": 720,
+			"fps_num": 24, "fps_den": 1, "items": items,
+		}
+		raw, err := json.Marshal(plan)
+		if err != nil {
+			t.Fatal(err)
+		}
+		_, err = CompileSemantic(raw)
+		if err == nil {
+			return ""
+		}
+		return err.Error()
 	}
+	forward := compile([]any{mapItem, entity})
+	reverse := compile([]any{entity, mapItem})
+	if forward == "" {
+		t.Fatal("map camera followed by entity camera compiled, want conflict")
+	}
+	if forward != reverse {
+		t.Fatalf("conflict depends on item order:\n  map-first:    %s\n  entity-first: %s", forward, reverse)
+	}
+}
+
+func TestMapCameraAllowsEntityStyleWithoutCameraMotion(t *testing.T) {
+	entity := cameraEntityItem("badge-portrait", "person:ada", "badge")
 	plan := map[string]any{
 		"schema_version": "renderinggen.overlay-plan.v1", "plan_id": "camera-compatible",
 		"video_id": "camera-compatible", "width": 1280, "height": 720,
 		"fps_num": 24, "fps_den": 1,
-		"items": []any{cameraMapPlan()["items"].([]any)[0], entity},
+		"items": []any{cameraMapItem(), entity},
 	}
 	raw, err := json.Marshal(plan)
 	if err != nil {

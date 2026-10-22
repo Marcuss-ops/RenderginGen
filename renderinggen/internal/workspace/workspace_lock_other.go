@@ -55,30 +55,6 @@ func unlockWorkspaceSlot(file *os.File) error {
 	return os.Remove(marker)
 }
 
-func reclaimStaleMarker(marker string) bool {
-	data, err := os.ReadFile(marker)
-	if err != nil {
-		return false
-	}
-	fields := strings.Fields(string(data))
-	if len(fields) != 2 {
-		return false
-	}
-	pid, err := strconv.Atoi(fields[0])
-	if err != nil || pid <= 0 {
-		return false
-	}
-	if processExists(pid) {
-		return false
-	}
-	stale := marker + ".stale-" + strconv.FormatInt(time.Now().UnixNano(), 10)
-	if err := os.Rename(marker, stale); err != nil {
-		return false
-	}
-	_ = os.Remove(stale)
-	return true
-}
-
 // processExists conservatively treats a marker as live when the platform has
 // no portable process-presence probe in this package. This may defer cleanup,
 // but never reclaims a marker owned by a live process based on guesswork.
@@ -86,4 +62,6 @@ func processExists(pid int) bool {
 	return pid > 0 && pid == os.Getpid()
 }
 
-// NOTE(workspace-lock): workspace_lock_fallback.go and workspace_lock_other.go share the identical exotic-GOOS build tag by design — neither compiles alone. Keep them in sync on rename; linux/darwin/windows use their own files.
+// NOTE(workspace-lock): reclaimStaleMarker lives in workspace_lock_marker.go,
+// compiled for this fallback and for windows by the same build constraint. Keep
+// that constraint in sync with this file; linux/darwin use their own lock path.

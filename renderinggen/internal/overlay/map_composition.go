@@ -12,12 +12,12 @@ type mapCompositionDefinition struct {
 
 var mapCompositionCatalog = []mapCompositionDefinition{
 	{
-		ID: "one_map", Zone: ZoneMaps, MotionTarget: "map_view",
+		ID: "one_map", Zone: ZoneMaps, MotionTarget: TargetMapView,
 		Description: "Static maps use the centered map motion family; camera fly-to maps use camera_move.",
 		MapCount:    1,
 	},
 	{
-		ID: "two_maps", Zone: ZoneMaps, MotionTarget: "map_view",
+		ID: "two_maps", Zone: ZoneMaps, MotionTarget: TargetMapView,
 		Description: "Two georeferenced maps; each plate keeps its own viewport and selects its own map motion.",
 		MapCount:    2,
 	},

@@ -26,6 +26,21 @@ func isImageGroupRecipe(definition *motion.MotionDefinition) bool {
 	return imageGroupRecipeDefinition(definition) != nil
 }
 
+// compileStaticImageChild resolves one image_layers child and compiles its base
+// layer with no per-child motion. Group and legacy multi-image recipes both
+// start from this shape before applying their own tracks.
+func compileStaticImageChild(ri resolvedItem, src *semanticPlan, assets map[string]string, child SemanticImageLayer, index int) (resolvedItem, Layer, error) {
+	childResolved, assetPath, preset, err := resolveImageChild(ri, assets, child, src, imageChildOptions{staticMotion: true, index: index})
+	if err != nil {
+		return resolvedItem{}, Layer{}, err
+	}
+	image, err := compileSingleImageLayer(childResolved, src, assetPath, preset, "", nil, childResolved.Start, childResolved.End, childResolved.Item.ID)
+	if err != nil {
+		return resolvedItem{}, Layer{}, err
+	}
+	return childResolved, image, nil
+}
+
 func compileImageGroupRecipe(ri resolvedItem, src *semanticPlan, registry *assetRegistry, definition *motion.MotionDefinition) ([]Layer, error) {
 	recipe := definition.GroupRecipe
 	count := len(ri.Item.ImageLayers)
@@ -35,35 +50,10 @@ func compileImageGroupRecipe(ri resolvedItem, src *semanticPlan, registry *asset
 	if !recipe.SupportsCount(count) {
 		return nil, fmt.Errorf("overlay: motion %q supports %d image layers, got %d", definition.ID, recipe.ImageCount, count)
 	}
-	assets := make(map[string]string, len(ri.Item.Assets))
-	for _, ref := range ri.Item.Assets {
-		assets[ref.ID] = registry.Path(ref.ID)
-	}
+	assets := resolveAssetPaths(registry, ri.Item.Assets)
 	output := make([]Layer, 0, count*2)
 	for index, child := range ri.Item.ImageLayers {
-		assetPath, ok := assets[child.AssetID]
-		if !ok {
-			return nil, fmt.Errorf("overlay: group image layer %q references undeclared asset %q", child.ID, child.AssetID)
-		}
-		preset, err := resolveOfficialPreset(child.PresetID, string(PresetImage))
-		if err != nil {
-			return nil, fmt.Errorf("overlay: group image layer %q: %w", child.ID, err)
-		}
-		startOffset, endOffset := msFrames(child.StartMS, child.EndMS, int64(src.FPSNum), int64(src.FPSDen))
-		childItem := ri.Item
-		childItem.ID = ri.Item.ID + ":" + child.ID
-		childItem.PresetID = child.PresetID
-		childItem.MotionID = ""
-		childItem.MotionParams = nil
-		childItem.EntityCaption = ""
-		childItem.CaptionMotionID = child.CaptionMotionID
-		childItem.CaptionMotionParams = child.CaptionMotionParams
-		childItem.Frame = child.Frame
-		childItem.Params = child.Params
-		childResolved := ri
-		childResolved.Item, childResolved.Params = childItem, child.Params
-		childResolved.Start, childResolved.End = ri.Start+startOffset, ri.Start+endOffset
-		image, err := compileSingleImageLayer(childResolved, src, assetPath, preset, "", nil, childResolved.Start, childResolved.End, childResolved.Item.ID)
+		childResolved, image, err := compileStaticImageChild(ri, src, assets, child, index)
 		if err != nil {
 			return nil, err
 		}
@@ -72,7 +62,7 @@ func compileImageGroupRecipe(ri resolvedItem, src *semanticPlan, registry *asset
 		}
 		animation := premiumTracks(*definition, recipe.TracksForMember(index), image.DurationFrames)
 		premiumLayerActive(&image, animation)
-		if hasPositionZ(animation) {
+		if animationUses3D(animation) {
 			image.Enable3D = true
 		}
 		if err := applyFrameTreatment(&image, child.Frame); err != nil {
@@ -85,9 +75,13 @@ func compileImageGroupRecipe(ri resolvedItem, src *semanticPlan, registry *asset
 		if _, err := autoFitGroupMember(src, &image, count, index); err != nil {
 			return nil, err
 		}
+		image, err = decorateImageLayerWithItemEffects(childResolved, image)
+		if err != nil {
+			return nil, err
+		}
 		output = append(output, image)
 		if caption := strings.TrimSpace(child.Caption); caption != "" {
-			captionLayer, err := compileImageCaptionLayer(ri, src, childItem, caption, &image, child.ID, textRoleImageCaption)
+			captionLayer, err := compileImageCaptionLayer(ri, src, childResolved.Item, caption, &image, child.ID, textRoleImageCaption)
 			if err != nil {
 				return nil, err
 			}
@@ -95,18 +89,6 @@ func compileImageGroupRecipe(ri resolvedItem, src *semanticPlan, registry *asset
 		}
 	}
 	return output, nil
-}
-
-func hasPositionZ(animation *LayerAnimation) bool {
-	if animation == nil {
-		return false
-	}
-	for _, track := range animation.Tracks {
-		if motion.IsCameraBacked3DProperty(track.Property) {
-			return true
-		}
-	}
-	return false
 }
 
 func isMultiImageRecipe(definition *motion.MotionDefinition) bool {
@@ -149,6 +131,13 @@ func imageMotionAnimationResolved(id string, params map[string]any, duration int
 }
 
 func premiumTracks(definition motion.MotionDefinition, tracks []motion.TrackDefinition, duration int64) *LayerAnimation {
+	return premiumTracksWithExit(definition, tracks, duration, definition.Exit)
+}
+
+// premiumTracksWithExit is the single converter for catalog tracks. Image and
+// component tracks differ only in whether the definition's exit is part of the
+// retime window, so they share one conversion instead of two near-copies.
+func premiumTracksWithExit(definition motion.MotionDefinition, tracks []motion.TrackDefinition, duration int64, exit int) *LayerAnimation {
 	if len(tracks) == 0 {
 		return nil
 	}
@@ -160,7 +149,7 @@ func premiumTracks(definition motion.MotionDefinition, tracks []motion.TrackDefi
 		}
 		converted = append(converted, AnimationTrack{Property: track.Property, Keyframes: keys, Easing: track.Easing})
 	}
-	entrance := entranceFrames(definition.Enter, definition.Exit, duration, false)
+	entrance := entranceFrames(definition.Enter, exit, duration, false)
 	converted = retimeMotionTracks(converted, entrance, int64(definition.Enter))
 	return &LayerAnimation{Tracks: converted}
 }
@@ -209,24 +198,8 @@ func ResizePremiumImageMask(layer *Layer) error {
 	return nil
 }
 
-func retimePremiumNativeTrack(track motion.TrackDefinition, duration, authoredEnter int64) *LayerPathAnimation {
-	return premiumNativePathAnimation(track, duration, authoredEnter)
-}
-
 func premiumComponentTracks(definition motion.MotionDefinition, tracks []motion.TrackDefinition, duration int64) *LayerAnimation {
-	if len(tracks) == 0 {
-		return nil
-	}
-	converted := make([]AnimationTrack, 0, len(tracks))
-	for _, track := range tracks {
-		keys := make([]AnimationKeyframe, len(track.Keyframes))
-		for i, key := range track.Keyframes {
-			keys[i] = AnimationKeyframe{Frame: key.Frame, Value: key.Value}
-		}
-		converted = append(converted, AnimationTrack{Property: track.Property, Keyframes: keys, Easing: track.Easing})
-	}
-	entrance := entranceFrames(definition.Enter, 0, duration, false)
-	return &LayerAnimation{Tracks: retimeMotionTracks(converted, entrance, int64(definition.Enter))}
+	return premiumTracksWithExit(definition, tracks, duration, 0)
 }
 
 func premiumLayerActive(layer *Layer, animation *LayerAnimation) bool {
@@ -253,10 +226,6 @@ func imageRecipeEffectID(kind string) string {
 	}
 }
 
-func premiumPathAnimation(track motion.TrackDefinition, duration, authoredEnter int64) *LayerPathAnimation {
-	return premiumNativePathAnimation(track, duration, authoredEnter)
-}
-
 // SyncPremiumComponentTransform mirrors an image's transform onto a linked
 // frame component while preserving the component's authored Z offset.
 func SyncPremiumComponentTransform(image, component *Layer) {
@@ -273,20 +242,11 @@ func SyncPremiumComponentTransform(image, component *Layer) {
 	component.Animation = premiumAnimationWithZOffset(image.Animation, component.PremiumZOffset)
 }
 
-// numericValue extracts a supported scalar from a keyframe or semantic parameter.
+// numericValue extracts a supported scalar from a keyframe or semantic
+// parameter. The conversion is owned by the motion package so catalog keyframes
+// and overlay parameters accept exactly the same numeric types.
 func numericValue(value any) (float64, bool) {
-	switch number := value.(type) {
-	case float64:
-		return number, true
-	case float32:
-		return float64(number), true
-	case int:
-		return float64(number), true
-	case int64:
-		return float64(number), true
-	default:
-		return 0, false
-	}
+	return motion.NumericValue(value)
 }
 
 func premiumAnimationWithZOffset(source *LayerAnimation, zOffset float64) *LayerAnimation {
@@ -336,7 +296,7 @@ func normalizedPremiumComponents(src *semanticPlan, image Layer, layers []Layer)
 		} else if len(layer.PremiumParentSize) == 2 {
 			layer.Size = append([]float64(nil), layer.PremiumParentSize...)
 		}
-		if layer.PremiumPathKind == "rounded_rect" && layer.Shape != nil {
+		if layer.PremiumPathKind == PathKindRoundedRect && layer.Shape != nil {
 			radius := image.Radius * layer.PremiumRadiusScale
 			if radius == 0 {
 				radius = image.Radius
@@ -368,7 +328,7 @@ func compilePremiumMask(image Layer, definition motion.ImageMaskDefinition, dura
 	w, h := image.Size[0], image.Size[1]
 	from := premiumWipeMaskPath(w, h, false)
 	to := premiumWipeMaskPath(w, h, true)
-	animation := premiumPathAnimation(definition.Progress, duration, authoredEnter)
+	animation := premiumNativePathAnimation(definition.Progress, duration, authoredEnter)
 	mask := LayerMask{Type: "path", Mode: "add", Feather: definition.Feather,
 		Path: from, TargetPath: to, Animation: animation}
 	return mask, nil
@@ -458,26 +418,18 @@ func compilePremiumComponent(src *semanticPlan, image Layer, definition motion.M
 				shape.Radius = image.Radius
 			}
 		case "path":
-			switch component.PathKind {
-			case "arrow", "scribble", "check", "ellipse", "corner_marks", "cross", "double_line", "wave", "underline", "underline_double", "underline_wave":
-				shape.Path = brushPath(component.PathKind, width, height)
-			case "rounded_rect":
-				radius := component.RadiusScale
-				if !component.AbsoluteRadius {
-					radius *= image.Radius
-				}
-				if radius == 0 {
-					radius = image.Radius
-				}
-				shape.Path = roundedRectPath(width, height, radius)
-			case "line":
-				shape.Path = []LayerPathCommand{
-					{Type: "move_to", Point: []float64{-width / 2, 0}},
-					{Type: "line_to", Point: []float64{width / 2, 0}},
-				}
-			default:
+			radius := component.RadiusScale
+			if !component.AbsoluteRadius {
+				radius *= image.Radius
+			}
+			if radius == 0 {
+				radius = image.Radius
+			}
+			path, ok := componentPath(component.PathKind, width, height, radius)
+			if !ok {
 				return Layer{}, fmt.Errorf("overlay: motion %q component %q has unsupported path_kind %q", definition.ID, component.ID, component.PathKind)
 			}
+			shape.Path = path
 		}
 		if component.Stroke != nil {
 			shape.Stroke = &LayerStroke{Color: component.Stroke.Color, Width: component.Stroke.Width}
@@ -485,7 +437,7 @@ func compilePremiumComponent(src *semanticPlan, image Layer, definition motion.M
 		if component.Trim != nil {
 			shape.Operators = []LayerPathOperator{{Kind: "trim", Params: LayerTrimParams{
 				Start: component.Trim.Start, End: component.Trim.End,
-				Animation: premiumPathAnimation(component.Trim.Animation, image.DurationFrames, int64(definition.Enter))}}}
+				Animation: premiumNativePathAnimation(component.Trim.Animation, image.DurationFrames, int64(definition.Enter))}}}
 		}
 		layer.Shape = shape
 	}
@@ -521,7 +473,7 @@ func compilePremiumComponent(src *semanticPlan, image Layer, definition motion.M
 	}
 
 	for _, track := range component.EffectParamTracks {
-		animation := retimePremiumNativeTrack(track.Track, image.DurationFrames, int64(definition.Enter))
+		animation := premiumNativePathAnimation(track.Track, image.DurationFrames, int64(definition.Enter))
 		layer.EffectParamTracks = append(layer.EffectParamTracks, LayerEffectParamTrack{
 			EffectID: track.EffectID, Param: track.Param, Keyframes: animation.Keyframes, Easing: animation.Easing})
 	}
@@ -626,36 +578,15 @@ func compilePremiumMultiImageRecipe(ri resolvedItem, src *semanticPlan, registry
 	if err != nil {
 		return nil, err
 	}
-	assets := make(map[string]string, len(ri.Item.Assets))
-	for _, ref := range ri.Item.Assets {
-		assets[ref.ID] = registry.Path(ref.ID)
-	}
+	assets := resolveAssetPaths(registry, ri.Item.Assets)
 	var output []Layer
 	activeFound := false
-	for _, child := range ri.Item.ImageLayers {
-		assetPath, ok := assets[child.AssetID]
-		if !ok {
-			return nil, fmt.Errorf("overlay: image layer %q references undeclared asset %q", child.ID, child.AssetID)
-		}
-		preset, err := resolveOfficialPreset(child.PresetID, string(PresetImage))
+	for index, child := range ri.Item.ImageLayers {
+		childResolved, image, err := compileStaticImageChild(ri, src, assets, child, index)
 		if err != nil {
 			return nil, err
 		}
-		startOffset, endOffset := msFrames(child.StartMS, child.EndMS, int64(src.FPSNum), int64(src.FPSDen))
-		childItem := ri.Item
-		childItem.ID = ri.Item.ID + ":" + child.ID
-		childItem.PresetID = child.PresetID
-		childItem.MotionID = ""
-		childItem.MotionParams = nil
-		childItem.EntityCaption = ""
-		childItem.CaptionMotionID = child.CaptionMotionID
-		childItem.CaptionMotionParams = child.CaptionMotionParams
-		childItem.Frame = child.Frame
-		childItem.Params = child.Params
-		childResolved := ri
-		childResolved.Item, childResolved.Params = childItem, child.Params
-		childResolved.Start, childResolved.End = ri.Start+startOffset, ri.Start+endOffset
-		image, err := compileSingleImageLayer(childResolved, src, assetPath, preset, "", nil, childResolved.Start, childResolved.End, childResolved.Item.ID)
+		image, err = decorateImageLayerWithItemEffects(childResolved, image)
 		if err != nil {
 			return nil, err
 		}
@@ -677,7 +608,7 @@ func compilePremiumMultiImageRecipe(ri resolvedItem, src *semanticPlan, registry
 			decorated = normalizedPremiumComponents(src, image, decorated)
 		}
 		if caption := strings.TrimSpace(child.Caption); caption != "" {
-			captionLayer, err := compileImageCaptionLayer(ri, src, childItem, caption, &decorated[premiumImageLayerIndex(decorated)], child.ID, textRoleImageCaption)
+			captionLayer, err := compileImageCaptionLayer(ri, src, childResolved.Item, caption, &decorated[premiumImageLayerIndex(decorated)], child.ID, textRoleImageCaption)
 			if err != nil {
 				return nil, err
 			}

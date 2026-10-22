@@ -77,8 +77,8 @@ func entitySequenceCameraTracks(item semanticItem, startFrame, endFrame int64, c
 		yKeys = append(yKeys, AnimationKeyframe{Frame: endFrame, Value: lastY})
 	}
 	return []CameraTrack{
-		{Property: "camera_position_x", Easing: "in_out_cubic", Keyframes: dedupeSequenceKeys(xKeys)},
-		{Property: "camera_position_y", Easing: "in_out_cubic", Keyframes: dedupeSequenceKeys(yKeys)},
+		{Property: "camera_position_x", Easing: "in_out_cubic", Keyframes: dedupeKeys(xKeys)},
+		{Property: "camera_position_y", Easing: "in_out_cubic", Keyframes: dedupeKeys(yKeys)},
 	}
 }
 
@@ -95,19 +95,4 @@ func sequenceNumber(value any) float64 {
 	default:
 		return 0
 	}
-}
-
-func dedupeSequenceKeys(keys []AnimationKeyframe) []AnimationKeyframe {
-	if len(keys) < 2 {
-		return keys
-	}
-	out := make([]AnimationKeyframe, 0, len(keys))
-	for _, key := range keys {
-		if len(out) > 0 && out[len(out)-1].Frame == key.Frame {
-			out[len(out)-1] = key
-			continue
-		}
-		out = append(out, key)
-	}
-	return out
 }

@@ -145,7 +145,7 @@ func NewGoogleWithOptions(ctx context.Context, credentialsFile, parentFolder str
 	if err != nil {
 		return nil, fmt.Errorf("drive: read credentials %s: %w", credentialsFile, err)
 	}
-	creds, err := google.CredentialsFromJSON(ctx, b, gdrive.DriveFileScope)
+	creds, err := google.CredentialsFromJSONWithType(ctx, b, google.ServiceAccount, gdrive.DriveFileScope)
 	if err != nil {
 		return nil, fmt.Errorf("drive: parse service-account credentials: %w", err)
 	}

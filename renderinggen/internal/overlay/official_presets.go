@@ -229,7 +229,7 @@ func ValidateCatalogParity() error {
 			definition.Exit != 12 || len(definition.Tracks) == 0 || len(definition.TextAnimators) != 0 {
 			return fmt.Errorf("overlay: image motion %q violates the clean 2.5D layer contract", id)
 		}
-		if !motionDefinitionAdmitsTarget(&definition, "image") {
+		if !motionDefinitionAdmitsTarget(&definition, TargetImage) {
 			return fmt.Errorf("overlay: image motion %q does not declare the image target", id)
 		}
 	}
@@ -280,9 +280,9 @@ func resolveOfficialPreset(id, kind string) (PresetDefinition, error) {
 	if id == "" {
 		return PresetDefinition{}, nil
 	}
-	d, ok := officialPresets[id]
-	if !ok {
-		return PresetDefinition{}, fmt.Errorf("overlay: unsupported RenderingGen official preset %q", id)
+	d, err := ResolveOfficialPreset(id)
+	if err != nil {
+		return PresetDefinition{}, err
 	}
 	kind = strings.ToLower(strings.TrimSpace(kind))
 	if kind != string(d.Family) {

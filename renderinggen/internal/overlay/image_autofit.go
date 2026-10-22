@@ -89,7 +89,7 @@ func autoFitLayerToSlot(src *semanticPlan, layer *Layer, slot ImageSlot) bool {
 	sy := float64(src.Height) / 1080.0
 	wantSize := []float64{slot.Width * sx, slot.Height * sy}
 	wantPosition := []float64{slot.CenterX * sx, slot.CenterY * sy}
-	if layerSizeMatchesSlot(layer, wantSize) && layerPositionMatchesSlot(layer, wantPosition) && layer.Fit == FitCover {
+	if floatsMatchSlot(layer.Size, wantSize) && floatsMatchSlot(layer.Position, wantPosition) && layer.Fit == FitCover {
 		return false
 	}
 	layer.Size = wantSize
@@ -98,18 +98,11 @@ func autoFitLayerToSlot(src *semanticPlan, layer *Layer, slot ImageSlot) bool {
 	return true
 }
 
-func layerSizeMatchesSlot(layer *Layer, want []float64) bool {
-	if len(layer.Size) < 2 || len(want) < 2 {
+func floatsMatchSlot(got, want []float64) bool {
+	if len(got) < 2 || len(want) < 2 {
 		return false
 	}
-	return math.Abs(layer.Size[0]-want[0]) < 0.5 && math.Abs(layer.Size[1]-want[1]) < 0.5
-}
-
-func layerPositionMatchesSlot(layer *Layer, want []float64) bool {
-	if len(layer.Position) < 2 || len(want) < 2 {
-		return false
-	}
-	return math.Abs(layer.Position[0]-want[0]) < 0.5 && math.Abs(layer.Position[1]-want[1]) < 0.5
+	return math.Abs(got[0]-want[0]) < 0.5 && math.Abs(got[1]-want[1]) < 0.5
 }
 
 // autoFitGroupMember fits one composite image-group member into its recipe
@@ -122,15 +115,17 @@ func autoFitGroupMember(src *semanticPlan, layer *Layer, count, index int) (bool
 	return autoFitLayerToSlot(src, layer, slot), nil
 }
 
-// autoFitEntityPortrait covers a non-vertical entity card image into the
+// autoFitEntityPortrait covers a LANDSCAPE entity card image into the
 // supported portrait box, keeping its height and center: the caption
-// compiled from its bounds follows automatically. Already-vertical images
-// are returned untouched.
+// compiled from its bounds follows automatically. Vertical and square boxes
+// are already caption-safe and are returned untouched — a square box the
+// producer declared (box_width == box_height) is a producer decision, not a
+// landscape box to be rescued into the portrait ratio.
 func autoFitEntityPortrait(layer *Layer) bool {
 	if layer == nil || len(layer.Size) < 2 || layer.Size[0] <= 0 || layer.Size[1] <= 0 {
 		return false
 	}
-	if layer.Size[0] < layer.Size[1] {
+	if layer.Size[0] <= layer.Size[1] {
 		return false
 	}
 	layer.Size = []float64{layer.Size[1] * entityPortraitRatio, layer.Size[1]}

@@ -13,13 +13,23 @@ type animationPolicySelector struct {
 	target, groupID, subgroupID string
 }
 
+// policyTargets is the closed set of motion targets an animation policy may
+// name. Declared here, next to the policy resolution that enforces it.
+var policyTargets = map[string]struct{}{
+	TargetImportantPhrase: {},
+	TargetImage:           {},
+	TargetCaption:         {},
+	TargetDate:            {},
+	TargetMetric:          {},
+}
+
 // resolveAnimationPolicies expands plan-level animation defaults onto semantic
 // instances before the ordinary per-kind lowering. Subgroup rules take
 // precedence over group rules; explicit item/child motion ids always win.
 func resolveAnimationPolicies(src *semanticPlan) error {
 	policies := make(map[animationPolicySelector]semanticAnimationPolicy, len(src.AnimationPolicies))
 	for index, policy := range src.AnimationPolicies {
-		if policy.Target != "important_phrase" && policy.Target != "image" && policy.Target != "caption" && policy.Target != "date" && policy.Target != "metric" {
+		if _, ok := policyTargets[policy.Target]; !ok {
 			return fmt.Errorf("overlay: animation_policies[%d] has unsupported target %q", index, policy.Target)
 		}
 		// validateAnimationGroupIDs first: a subgroup_id without group_id is a
@@ -69,18 +79,17 @@ func resolveAnimationPolicies(src *semanticPlan) error {
 			item.MotionID = item.GroupMotionID
 		}
 		if isTextLikeKind(kind) && len(item.Assets) == 0 && len(item.ImageLayers) == 0 && item.MotionID == "" {
-			if policy, ok := selectAnimationPolicy(policies, "important_phrase", item.GroupID, item.SubgroupID); ok {
-				item.MotionID, item.MotionParams = resolvePolicyMotion(src, policy, "important_phrase", item.GroupID, item.SubgroupID)
+			if policy, ok := selectAnimationPolicy(policies, TargetImportantPhrase, item.GroupID, item.SubgroupID); ok {
+				item.MotionID, item.MotionParams = resolvePolicyMotion(src, policy, TargetImportantPhrase, item.GroupID, item.SubgroupID)
 			}
 		}
 		if item.MotionID == "" {
-			target := ""
-			switch item.Template {
-			case "TIMELINE_DATE_CARD":
-				target = "date"
-			case "METRIC_STAT_CARD":
-				target = "metric"
-			}
+			// The specialized motion target is a fact about the item's
+			// template, owned by the template registry (TemplateSpec.
+			// MotionTarget). This replaces the historical switch that
+			// compared item.Template with the named literals — the very
+			// classification the entity_template_inference rule forbids.
+			target := templateSpecFor(item.Template).MotionTarget
 			if target != "" {
 				if policy, ok := selectAnimationPolicy(policies, target, item.GroupID, item.SubgroupID); ok {
 					item.MotionID, item.MotionParams = resolvePolicyMotion(src, policy, target, item.GroupID, item.SubgroupID)
@@ -88,17 +97,17 @@ func resolveAnimationPolicies(src *semanticPlan) error {
 			}
 		}
 		if strings.TrimSpace(item.EntityCaption) != "" && item.CaptionMotionID == "" {
-			if policy, ok := selectAnimationPolicy(policies, "caption", item.GroupID, item.SubgroupID); ok {
-				item.CaptionMotionID, item.CaptionMotionParams = resolvePolicyMotion(src, policy, "caption", item.GroupID, item.SubgroupID)
+			if policy, ok := selectAnimationPolicy(policies, TargetCaption, item.GroupID, item.SubgroupID); ok {
+				item.CaptionMotionID, item.CaptionMotionParams = resolvePolicyMotion(src, policy, TargetCaption, item.GroupID, item.SubgroupID)
 			}
 		}
-		if strings.TrimSpace(item.EntityCaption) != "" && item.CaptionMotionID != "" && !motionAdmitsTarget(item.CaptionMotionID, "caption") {
+		if strings.TrimSpace(item.EntityCaption) != "" && item.CaptionMotionID != "" && !motionAdmitsTarget(item.CaptionMotionID, TargetCaption) {
 			return fmt.Errorf("overlay: item %q caption motion %q is not supported for text captions", item.ID, item.CaptionMotionID)
 		}
 		if len(item.ImageLayers) > 0 {
 			if item.MotionID == "" {
-				if policy, ok := selectAnimationPolicy(policies, "image", item.GroupID, item.SubgroupID); ok && policy.MotionID != "" && animationUsesMultiImageRecipe(policy.MotionID) {
-					item.MotionID, item.MotionParams = resolvePolicyMotion(src, policy, "image", item.GroupID, item.SubgroupID)
+				if policy, ok := selectAnimationPolicy(policies, TargetImage, item.GroupID, item.SubgroupID); ok && policy.MotionID != "" && animationUsesMultiImageRecipe(policy.MotionID) {
+					item.MotionID, item.MotionParams = resolvePolicyMotion(src, policy, TargetImage, item.GroupID, item.SubgroupID)
 				}
 			}
 			multiImageMotion := animationUsesMultiImageRecipe(item.MotionID)
@@ -116,16 +125,16 @@ func resolveAnimationPolicies(src *semanticPlan) error {
 					return fmt.Errorf("overlay: item %q image layer %q: %w", item.ID, child.ID, err)
 				}
 				if child.MotionID == "" && !multiImageMotion {
-					if policy, ok := selectAnimationPolicy(policies, "image", child.GroupID, child.SubgroupID); ok && (policy.MotionID == "" || !animationUsesMultiImageRecipe(policy.MotionID)) {
-						child.MotionID, child.MotionParams = resolvePolicyMotion(src, policy, "image", child.GroupID, child.SubgroupID)
+					if policy, ok := selectAnimationPolicy(policies, TargetImage, child.GroupID, child.SubgroupID); ok && (policy.MotionID == "" || !animationUsesMultiImageRecipe(policy.MotionID)) {
+						child.MotionID, child.MotionParams = resolvePolicyMotion(src, policy, TargetImage, child.GroupID, child.SubgroupID)
 					}
 				}
 				if strings.TrimSpace(child.Caption) != "" && child.CaptionMotionID == "" {
-					if policy, ok := selectAnimationPolicy(policies, "caption", child.GroupID, child.SubgroupID); ok {
-						child.CaptionMotionID, child.CaptionMotionParams = resolvePolicyMotion(src, policy, "caption", child.GroupID, child.SubgroupID)
+					if policy, ok := selectAnimationPolicy(policies, TargetCaption, child.GroupID, child.SubgroupID); ok {
+						child.CaptionMotionID, child.CaptionMotionParams = resolvePolicyMotion(src, policy, TargetCaption, child.GroupID, child.SubgroupID)
 					}
 				}
-				if strings.TrimSpace(child.Caption) != "" && child.CaptionMotionID != "" && !motionAdmitsTarget(child.CaptionMotionID, "caption") {
+				if strings.TrimSpace(child.Caption) != "" && child.CaptionMotionID != "" && !motionAdmitsTarget(child.CaptionMotionID, TargetCaption) {
 					return fmt.Errorf("overlay: item %q image layer %q caption motion %q is not supported for text captions", item.ID, child.ID, child.CaptionMotionID)
 				}
 			}
@@ -133,8 +142,8 @@ func resolveAnimationPolicies(src *semanticPlan) error {
 		}
 
 		if len(item.ImageLayers) == 0 && item.MotionID == "" && len(item.Assets) > 0 && (isImageKind(kind) || isEntityKind(kind)) {
-			if policy, ok := selectAnimationPolicy(policies, "image", item.GroupID, item.SubgroupID); ok {
-				item.MotionID, item.MotionParams = resolvePolicyMotion(src, policy, "image", item.GroupID, item.SubgroupID)
+			if policy, ok := selectAnimationPolicy(policies, TargetImage, item.GroupID, item.SubgroupID); ok {
+				item.MotionID, item.MotionParams = resolvePolicyMotion(src, policy, TargetImage, item.GroupID, item.SubgroupID)
 			}
 		}
 	}
@@ -182,8 +191,6 @@ func resolvePolicyMotion(src *semanticPlan, policy semanticAnimationPolicy, targ
 	// explicitly declared subgroup gets its own stable choice.
 	if policy.SubgroupID != "" {
 		subgroupID = policy.SubgroupID
-	} else {
-		subgroupID = ""
 	}
 	motionID := runtimeDefaultGroupMotionID(src, target, groupID, subgroupID)
 	return motionID, nil
@@ -195,15 +202,15 @@ func runtimeDefaultGroupMotionID(src *semanticPlan, target, groupID, subgroupID 
 	}
 	var pool []string
 	switch target {
-	case "important_phrase":
+	case TargetImportantPhrase:
 		pool = append([]string(nil), motion.Registry.PhraseAnimationIDs()...)
-	case "image":
+	case TargetImage:
 		pool = append([]string(nil), runtimeDefaultImageMotionIDs...)
-	case "caption":
+	case TargetCaption:
 		pool = append([]string(nil), runtimeDefaultCaptionMotionIDs...)
-	case "date":
+	case TargetDate:
 		pool = motion.Registry.PresentationMotionIDs("date_v1")
-	case "metric":
+	case TargetMetric:
 		pool = motion.Registry.PresentationMotionIDs("metric_v1")
 	}
 	if len(pool) == 0 {

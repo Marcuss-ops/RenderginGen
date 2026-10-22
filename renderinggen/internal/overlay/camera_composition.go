@@ -82,13 +82,13 @@ func runtimeCameraDestinations() []RuntimeCameraDestination {
 			ID: "image", Description: "Camera over a single image layer.",
 			Status:         cameraDestinationImplemented,
 			RuntimeSupport: "five entity card camera styles selected by entity_style_id",
-			MotionTarget:   "image",
+			MotionTarget:   TargetImage,
 		},
 		{
 			ID: "map", Description: "Camera over a georeferenced map viewport.",
 			Status:         cameraDestinationImplemented,
 			RuntimeSupport: "map camera_move fly-to with keyframed center and zoom",
-			MotionTarget:   "map_view",
+			MotionTarget:   TargetMapView,
 		},
 	}
 }

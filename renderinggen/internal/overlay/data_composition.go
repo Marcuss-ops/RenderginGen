@@ -10,11 +10,11 @@ import "github.com/Marcuss-ops/RenderingGen/renderinggen/internal/motion"
 // itself stays optional so a plan that transports only the displayed text keeps
 // compiling.
 const (
-	// dataMetricTarget / dataDateTarget are the canonical motion targets of the
-	// two data compositions. The compiler's block validation and the catalog
-	// below read this single declaration.
-	dataMetricTarget = "metric"
-	dataDateTarget   = "date"
+	// dataMetricTarget / dataDateTarget name the two data compositions'
+	// targets. The spellings live once in motion_admission.go's canonical
+	// target vocabulary; these are references to it, not second declarations.
+	dataMetricTarget = TargetMetric
+	dataDateTarget   = TargetDate
 	// dataPrecisionLimit / dataOrderingLimit are the published bounds of the
 	// two numeric payload fields; the JSON Schema pins the same values.
 	dataPrecisionLimit = 12
@@ -32,8 +32,8 @@ type dataCompositionDefinition struct {
 
 var dataCompositionCatalog = []dataCompositionDefinition{
 	{
-		ID: "metric_stat", Kind: KindMetricStat, Cardinality: "one metric",
-		Description: "Metric motion selected independently from text styling.", MotionTarget: dataMetricTarget,
+		ID: string(KindMetricStat), Kind: KindMetricStat, Cardinality: "one metric",
+		Description: "Metric motion selected independently from text styling.", MotionTarget: TargetMetric,
 		Fields: []RuntimeDataField{
 			{Name: "value", Required: true, Enforced: true, Description: "The measured number as displayed."},
 			{Name: "unit", Required: true, Enforced: true, Description: "The unit suffix the value is shown with."},
@@ -43,8 +43,8 @@ var dataCompositionCatalog = []dataCompositionDefinition{
 		},
 	},
 	{
-		ID: "timeline_date", Kind: KindTimelineDate, Cardinality: "one date or timeline event",
-		Description: "Date and timeline motion selected independently from text styling.", MotionTarget: dataDateTarget,
+		ID: string(KindTimelineDate), Kind: KindTimelineDate, Cardinality: "one date or timeline event",
+		Description: "Date and timeline motion selected independently from text styling.", MotionTarget: TargetDate,
 		Fields: []RuntimeDataField{
 			{Name: "value", Required: true, Enforced: true, Description: "The date or instant shown."},
 			{Name: "end", Enforced: true, Description: "Interval end; absent means a single date."},
@@ -75,7 +75,7 @@ func dataCompositionIDs() []string {
 func dataVisualizationIDs() []string {
 	ids := make([]string, 0)
 	for _, id := range motion.Registry.CategoryMotionIDs("histograms_data_v1") {
-		if motionAdmitsTarget(id, "data") {
+		if motionAdmitsTarget(id, TargetData) {
 			ids = append(ids, id)
 		}
 	}
@@ -87,7 +87,7 @@ func dataCompositionTarget(id string) string {
 		return definition.MotionTarget
 	}
 	if id == "data_visualization" {
-		return "data"
+		return TargetData
 	}
 	return ""
 }

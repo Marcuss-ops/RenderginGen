@@ -101,6 +101,28 @@ func TestCompositeImageRuntimeEffectsDecorateEveryChild(t *testing.T) {
 // TestImageItemWithoutRuntimeEffectsStaysEffectFree pins the compatibility
 // contract: items that request no runtime decoration compile byte-identical to
 // the pre-feature output (no synthetic effect stack).
+func TestCompositeChildrenKeepIndependentRuntimeEffects(t *testing.T) {
+	raw := []byte(fmt.Sprintf(`{"schema_version":"renderinggen.overlay-plan.v1","plan_id":"image-effects-independent","video_id":"v","width":1280,"height":720,"fps_num":24,"fps_den":1,"items":[{"id":"fx-duo","kind":"image","template_id":"image_popup","preset_id":"image_focus_in","start_ms":0,"end_ms":5000,"asset_refs":[%s,%s],"image_layers":[{"id":"left","asset_id":"effect-photo","start_ms":0,"end_ms":5000,"preset_id":"image_focus_in","params":{"width":250,"height":230,"position_x":-300,"position_y":0,"effects":[{"type":"glow","params":{"radius":120,"intensity":0.2}}]}},{"id":"right","asset_id":"effect-photo-2","start_ms":0,"end_ms":5000,"preset_id":"image_focus_in","params":{"width":250,"height":230,"position_x":300,"position_y":0,"effects":[{"type":"noise","params":{"amount":0.06,"size":1,"seed":7,"animated":true,"color_mode":"rgb"}}]}}]}]}`,
+		imageEffectsAssetRef, imageEffectsSecondAssetRef))
+	result, err := CompileSemantic(raw)
+	if err != nil {
+		t.Fatalf("compile independent composite image effects: %v", err)
+	}
+	want := map[string]string{"fx-duo:left:image": "glow", "fx-duo:right:image": "noise"}
+	for id, effectType := range want {
+		var found *Layer
+		for index := range result.Plan.Layers {
+			if result.Plan.Layers[index].ID == id {
+				found = &result.Plan.Layers[index]
+				break
+			}
+		}
+		if found == nil || len(found.Effects) != 1 || found.Effects[0].Type != effectType {
+			t.Fatalf("layer %q = %+v, want its independent %s effect", id, found, effectType)
+		}
+	}
+}
+
 func TestImageItemWithoutRuntimeEffectsStaysEffectFree(t *testing.T) {
 	result, err := CompileSemantic(imageEffectsPlan(`,"params":{"width":640,"height":360}`))
 	if err != nil {

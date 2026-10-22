@@ -198,7 +198,7 @@ func TestBackgroundReadmeQuotesOnlyManifestFacts(t *testing.T) {
 		fmt.Sprintf("%d×%d", manifest.Canvas.Width, manifest.Canvas.Height),
 		fmt.Sprintf("%d fps", manifest.Canvas.FPS),
 		fmt.Sprintf("%d seconds", manifest.DurationSeconds),
-		fmt.Sprintf("zero audio streams"),
+		"zero audio streams",
 	}
 	for _, want := range invariants {
 		if !strings.Contains(text, want) {

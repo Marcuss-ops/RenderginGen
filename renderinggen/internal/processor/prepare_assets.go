@@ -2,8 +2,6 @@ package processor
 
 import (
 	"fmt"
-	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/media"
-	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/overlay"
 	"image"
 	_ "image/jpeg"
 	_ "image/png"
@@ -13,20 +11,12 @@ import (
 	"runtime"
 	"strings"
 	"sync"
+
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/media"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/overlay"
 )
 
 const imageSniffBytes = 512
-
-// sniffBufPool recycles the 512-byte image-signature buffers used by
-// readFileHead. Normalization sniffs every image layer in the plan, so a
-// fresh 512-byte allocation per asset is pure GC pressure for bytes that
-// live only for the two header checks below.
-var sniffBufPool = sync.Pool{
-	New: func() any {
-		buf := make([]byte, imageSniffBytes)
-		return &buf
-	},
-}
 
 // normalizeMaterializedImagePaths makes the concrete Chronon path agree with
 // the bytes that were actually downloaded. Some providers publish a JPEG

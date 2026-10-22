@@ -12,13 +12,9 @@ func mapCameraKeyframes(move *SemanticMapCameraMove, startFrame, endFrame int64)
 	deltaX := wrapMapPlaneDelta(destinationX-originX, worldSize)
 	deltaY := -(destinationY - originY)
 	zoomFactor := math.Pow(2, move.EndZoom-move.StartZoom)
-	base := &CameraPlan{Type: "orthographic", Position: [3]float64{0, 0, -1000}, Rotation: [3]float64{move.StartTiltDeg, 0, move.BearingDeg}, FOVDeg: 50, Near: 1, Far: 10000000, Zoom: 1}
+	base := mapCameraPlan(move.StartTiltDeg, move.BearingDeg)
 	keyframes := func(from, to float64) []AnimationKeyframe {
-		keys := []AnimationKeyframe{{Frame: startFrame, Value: from}, {Frame: endFrame, Value: to}}
-		if startFrame > 0 {
-			keys = append([]AnimationKeyframe{{Frame: 0, Value: from}}, keys...)
-		}
-		return keys
+		return heldLinearKeys(startFrame, endFrame, from, to)
 	}
 	tracks := []CameraTrack{
 		{Property: "camera_position_x", Keyframes: keyframes(0, deltaX), Easing: "linear"},

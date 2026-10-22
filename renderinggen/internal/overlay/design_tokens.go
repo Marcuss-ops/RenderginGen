@@ -84,6 +84,37 @@ const (
 	SubtitleTopCenterYFraction = 0.10
 )
 
+// Camera optics. Three lowering paths emit a CameraPlan (the whole-scene rig,
+// the map move, the entity/sequence controllers); the projection and
+// resting-distance values below were numeric literals inline at their use
+// sites in map_camera_tracks.go, scene_camera_rig.go and
+// semantic_camera_controllers.go. The values are unchanged — same discipline
+// as the rest of this file: named once so an implicit camera value is
+// distinguishable from an arbitrary one, and the three paths cannot drift
+// apart on a projection none of them chose.
+const (
+	// CameraDefaultFOVDeg is the field of view of the resting perspective
+	// camera (entity-style and sequence controllers) when no lens is authored.
+	CameraDefaultFOVDeg = 55.0
+	// CameraRestingFOVDeg is the resting field of view of the world-scale
+	// rigs: the whole-scene camera when no lens is authored (the AE default
+	// 50mm preset on the full-frame gate) and the orthographic map camera.
+	CameraRestingFOVDeg = 50.0
+	// CameraDefaultNear is the near plane every emitted camera starts from.
+	CameraDefaultNear = 1.0
+	// CameraDefaultFar is the far plane of a plan-scale stage (the entity and
+	// sequence controllers); CameraWideFar is the far plane of a world-scale
+	// stage (the scene rig and the map plane).
+	CameraDefaultFar = 5000.0
+	CameraWideFar    = 10000000.0
+	// CameraDefaultDistanceZ is the resting perspective camera distance along
+	// -Z when the producer does not author base_position.
+	CameraDefaultDistanceZ = -1400.0
+	// MapCameraDistanceZ is the orthographic map camera's altitude over the
+	// georeferenced plane.
+	MapCameraDistanceZ = -1000.0
+)
+
 // MaxStaggerSweepFrames is the maximum selector keyframe span supported by
 // Chronon's 65,536-keyframe track contract. Phrase selector sweeps use their
 // complete one-third entrance window up to this representational limit; longer

@@ -216,7 +216,7 @@ func (r *RegistryType) PhraseAnimationIDs() []string {
 		ids = append(ids, r.CategoryMotionIDs(category)...)
 	}
 	sort.Strings(ids)
-	return compactMotionIDs(ids)
+	return CompactMotionIDs(ids)
 }
 
 // ImageOverlayMotionIDs returns the complete independently selectable image
@@ -297,7 +297,11 @@ func motionHas3D(definition MotionDefinition) bool {
 	return false
 }
 
-func compactMotionIDs(ids []string) []string {
+// CompactMotionIDs collapses adjacent duplicate ids in place, keeping the
+// slice's order. Categories can list the same motion under several tags, and
+// every consumer wants one entry per id; both this package and the overlay
+// selector use this implementation instead of restating the compaction.
+func CompactMotionIDs(ids []string) []string {
 	if len(ids) < 2 {
 		return ids
 	}

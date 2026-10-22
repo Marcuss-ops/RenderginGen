@@ -206,9 +206,11 @@ func TestCrossRepoRulesAreSiblingScoped(t *testing.T) {
 		"template_alias_lowercase": "rootOnly",
 		"partnn_filename":          "rootOnly",
 		// Scoped to a RenderingGen package by `nodes`.
-		"entity_template_inference":  "packageLocal",
-		"semantic_stats_second_pass": "packageLocal",
-		"legacy_layer_preset_field":  "packageLocal",
+		"entity_template_inference":                "packageLocal",
+		"semantic_stats_second_pass":               "packageLocal",
+		"legacy_layer_preset_field":                "packageLocal",
+		"item_kind_literal_outside_registry":       "packageLocal",
+		"motion_target_literal_outside_vocabulary": "packageLocal",
 		// The boundary violations this repository's CI cannot see on its own.
 		"render_plan_v1_schema":          "crossRepo",
 		"render_plan_unversioned_schema": "crossRepo",

@@ -2,7 +2,6 @@ package overlay
 
 import (
 	"fmt"
-	"math"
 	"strconv"
 	"strings"
 )
@@ -190,7 +189,7 @@ func parseGradient(raw any, itemID string) (*LayerGradient, error) {
 				return nil, fmt.Errorf("overlay: item %q gradient stop color invalid: %w", itemID, err)
 			}
 			pos, err := toFloat(pair[1])
-			if err != nil || pos < 0 || pos > 1 || math.IsNaN(pos) || math.IsInf(pos, 0) {
+			if err != nil || pos < 0 || pos > 1 || !finite(pos) {
 				return nil, fmt.Errorf("overlay: item %q gradient stop position %v must be in [0, 1]", itemID, pair[1])
 			}
 			colorStops = append(colorStops, LayerGradientStop{Position: pos, Color: col})

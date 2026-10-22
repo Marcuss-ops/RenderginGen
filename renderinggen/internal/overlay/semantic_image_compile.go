@@ -17,6 +17,22 @@ import (
 // compileImageItemCore is the pure recipe/motion lowering of one image item.
 // The runtime effect decoration is applied by the compileImageItem wrapper in
 // semantic_image_effects.go; keep this function effect-stack agnostic.
+// entityCaptionLayer builds the caption layer anchored to the image layer of
+// layers, or nil when the item declares no caption. Both image lowering paths
+// share the anchor index and the error path.
+func entityCaptionLayer(ri resolvedItem, src *semanticPlan, layers []Layer) (*Layer, error) {
+	caption := strings.TrimSpace(ri.Item.EntityCaption)
+	if caption == "" {
+		return nil, nil
+	}
+	imageIndex := premiumImageLayerIndex(layers)
+	captionLayer, err := compileEntityCaptionLayer(ri, src, ri.Item, caption, &layers[imageIndex], "entity")
+	if err != nil {
+		return nil, err
+	}
+	return &captionLayer, nil
+}
+
 func compileImageItemCore(ri resolvedItem, src *semanticPlan, registry *assetRegistry) ([]Layer, error) {
 	// Item-level controls apply only to the standalone image or to a catalog
 	// recipe that coordinates multiple image layers. Ordinary composite children own their
@@ -26,16 +42,9 @@ func compileImageItemCore(ri resolvedItem, src *semanticPlan, registry *assetReg
 			return nil, err
 		}
 	}
-	resolvedImageMotion, err := resolveRegisteredMotion(ri.Item.MotionID)
+	resolvedImageMotion, imageRecipe, err := resolveImageRecipeMotion(ri.Item.MotionID, true)
 	if err != nil {
-		return nil, fmt.Errorf("overlay: image motion %q: %w", ri.Item.MotionID, err)
-	}
-	var imageRecipe *motion.MotionDefinition
-	if resolvedImageMotion != nil {
-		imageRecipe = resolvedImageMotion.definition
-	}
-	if imageRecipe == nil || imageRecipe.ImageRecipe == nil && imageRecipe.GroupRecipe == nil {
-		imageRecipe = nil
+		return nil, err
 	}
 	groupRecipe := imageGroupRecipeDefinition(imageRecipe)
 	if groupRecipe != nil && (len(ri.Item.ImageLayers) == 0 || !isImageKind(ri.Kind)) {
@@ -89,13 +98,12 @@ func compileImageItemCore(ri resolvedItem, src *semanticPlan, registry *assetReg
 			if err != nil {
 				return nil, err
 			}
-			if caption := strings.TrimSpace(ri.Item.EntityCaption); caption != "" {
-				imageIndex := premiumImageLayerIndex(layers)
-				captionLayer, err := compileEntityCaptionLayer(ri, src, ri.Item, caption, &layers[imageIndex], "entity")
-				if err != nil {
-					return nil, err
-				}
-				layers = append(layers, captionLayer)
+			captionLayer, err := entityCaptionLayer(ri, src, layers)
+			if err != nil {
+				return nil, err
+			}
+			if captionLayer != nil {
+				layers = append(layers, *captionLayer)
 			}
 			return layers, nil
 		}
@@ -103,16 +111,15 @@ func compileImageItemCore(ri resolvedItem, src *semanticPlan, registry *assetReg
 		if err != nil {
 			return nil, err
 		}
-		if caption := strings.TrimSpace(ri.Item.EntityCaption); caption != "" {
-			imageIndex := premiumImageLayerIndex(layers)
-			captionLayer, err := compileEntityCaptionLayer(ri, src, ri.Item, caption, &layers[imageIndex], "entity")
-			if err != nil {
-				return nil, err
-			}
+		captionLayer, err := entityCaptionLayer(ri, src, layers)
+		if err != nil {
+			return nil, err
+		}
+		if captionLayer != nil {
 			if premium != nil && len(premium.ImageRecipe.CaptionTracks) > 0 {
-				premiumLayerActive(&captionLayer, premiumTracks(*premium, premium.ImageRecipe.CaptionTracks, captionLayer.DurationFrames))
+				premiumLayerActive(captionLayer, premiumTracks(*premium, premium.ImageRecipe.CaptionTracks, captionLayer.DurationFrames))
 			}
-			return append(layers, captionLayer), nil
+			return append(layers, *captionLayer), nil
 		}
 		if premium != nil && premium.ImageRecipe.RequireCaption {
 			return nil, fmt.Errorf("overlay: motion %q requires entity_caption", premium.ID)
@@ -126,8 +133,8 @@ func compileImageItemCore(ri resolvedItem, src *semanticPlan, registry *assetReg
 		return compileImageGroupRecipe(ri, src, registry, groupRecipe)
 	}
 	if isMultiImageRecipe(premium) {
-		if !motionDefinitionAdmitsTarget(premium, "image") {
-			return nil, fmt.Errorf("overlay: item %q motion %q is not supported for target %q", ri.Item.ID, ri.Item.MotionID, "image")
+		if !motionDefinitionAdmitsTarget(premium, TargetImage) {
+			return nil, fmt.Errorf("overlay: item %q motion %q is not supported for target %q", ri.Item.ID, ri.Item.MotionID, TargetImage)
 		}
 		return compilePremiumMultiImageRecipe(ri, src, registry, premium)
 	}
@@ -141,78 +148,60 @@ func compileImageItemCore(ri resolvedItem, src *semanticPlan, registry *assetReg
 	return compileCompositeImageLayers(ri, src, registry)
 }
 
+// resolveImageRecipeMotion resolves the item's registered motion and selects
+// the recipe definition it lowers through. A group recipe counts as an image
+// recipe only when the caller allows it: the composite path deliberately
+// rejects group recipes because its members are lowered by the group compiler.
+func resolveImageRecipeMotion(motionID string, allowGroupRecipe bool) (*resolvedMotion, *motion.MotionDefinition, error) {
+	resolved, err := resolveRegisteredMotion(motionID)
+	if err != nil {
+		return nil, nil, fmt.Errorf("overlay: image motion %q: %w", motionID, err)
+	}
+	if resolved == nil || resolved.definition == nil {
+		return resolved, nil, nil
+	}
+	recipe := resolved.definition
+	if recipe.ImageRecipe != nil || (allowGroupRecipe && recipe.GroupRecipe != nil) {
+		return resolved, recipe, nil
+	}
+	return resolved, nil, nil
+}
+
+// resolveAssetPaths maps asset ids to their registered file paths. Every image
+// lowering path must resolve identically, so the map is built here instead of
+// at each call site.
+func resolveAssetPaths(registry *assetRegistry, refs []SemanticAssetRef) map[string]string {
+	paths := make(map[string]string, len(refs))
+	for _, ref := range refs {
+		paths[ref.ID] = registry.Path(ref.ID)
+	}
+	return paths
+}
+
 // compileCompositeImageLayers lowers every image_layers child through the
 // shared single-layer path: independent asset, preset, motion, caption and
 // explicit position params per child. Entity groups reuse it after applying
 // slot defaults, so composite and group members can never drift apart.
 func compileCompositeImageLayers(ri resolvedItem, src *semanticPlan, registry *assetRegistry) ([]Layer, error) {
-	resolvedImageMotion, err := resolveRegisteredMotion(ri.Item.MotionID)
+	_, imageRecipe, err := resolveImageRecipeMotion(ri.Item.MotionID, false)
 	if err != nil {
-		return nil, fmt.Errorf("overlay: image motion %q: %w", ri.Item.MotionID, err)
-	}
-	var imageRecipe *motion.MotionDefinition
-	if resolvedImageMotion != nil {
-		imageRecipe = resolvedImageMotion.definition
-	}
-	if imageRecipe == nil || imageRecipe.ImageRecipe == nil {
-		imageRecipe = nil
+		return nil, err
 	}
 	premium := premiumImageRecipeDefinition(imageRecipe)
-	assets := make(map[string]string, len(ri.Item.Assets))
-	for _, ref := range ri.Item.Assets {
-		assets[ref.ID] = registry.Path(ref.ID)
-	}
+	assets := resolveAssetPaths(registry, ri.Item.Assets)
+
 	layers := make([]Layer, 0, len(ri.Item.ImageLayers)*2)
 	for index, child := range ri.Item.ImageLayers {
-		assetPath, ok := assets[child.AssetID]
-		if !ok {
-			return nil, fmt.Errorf("overlay: composite image item %q layer %q references undeclared asset %q", ri.Item.ID, child.ID, child.AssetID)
-		}
-		preset, err := resolveOfficialPreset(child.PresetID, string(PresetImage))
+		childResolved, assetPath, preset, err := resolveImageChild(ri, assets, child, src, imageChildOptions{
+			sequence: ri.Item.CameraMotionID != "",
+			index:    index,
+		})
 		if err != nil {
-			return nil, fmt.Errorf("overlay: composite image item %q layer %q: %w", ri.Item.ID, child.ID, err)
+			return nil, err
 		}
-		startOffset, endOffset := msFrames(child.StartMS, child.EndMS, int64(src.FPSNum), int64(src.FPSDen))
-		start, end := ri.Start+startOffset, ri.Start+endOffset
-		params := child.Params
-		if params == nil {
-			params = map[string]any{}
-		}
-		if ri.Item.CameraMotionID != "" {
-			params = sequenceImageLayoutParams(params, src, index)
-		}
-		childItem := ri.Item
-		childItem.ID = ri.Item.ID + ":" + child.ID
-		childItem.PresetID = child.PresetID
-		childItem.MotionID = child.MotionID
-		childItem.MotionParams = child.MotionParams
-		childItem.EntityCaption = ""
-		childItem.CaptionMotionID = child.CaptionMotionID
-		childItem.CaptionMotionParams = child.CaptionMotionParams
-		childItem.CaptionFontFamily = child.CaptionFontFamily
-		childItem.CaptionColor = child.CaptionColor
-		childItem.CaptionLayout = child.CaptionLayout
-		childItem.Frame = child.Frame
-		childItem.StartMS, childItem.EndMS = child.StartMS, child.EndMS
-		childItem.Params = params
-		if ri.Item.CameraMotionID != "" {
-			childItem.CaptionLayout = "below"
-			// Camera sequences use a clean photo surface. Rounded masks and
-			// decorative preset frames can cover the portrait while the camera
-			// moves, so leave that treatment to the source image itself.
-			childItem.Frame = nil
-		}
-		childResolved := ri
-		childResolved.Item = childItem
-		childResolved.Params = params
-		imageStart, imageEnd := start, end
-		if ri.Item.CameraMotionID != "" {
-			// Every portrait is present before the camera arrives. Avoid separate
-			// entrance animations that can reveal a caption ahead of its photo.
-			imageStart, imageEnd = ri.Start, ri.End
-		}
-		childResolved.Start, childResolved.End = imageStart, imageEnd
-		layer, err := compileSingleImageLayer(childResolved, src, assetPath, preset, child.MotionID, child.MotionParams, imageStart, imageEnd, ri.Item.ID+":"+child.ID)
+		params := childResolved.Params
+		imageStart, imageEnd := childResolved.Start, childResolved.End
+		layer, err := compileSingleImageLayer(childResolved, src, assetPath, preset, childResolved.Item.MotionID, childResolved.Item.MotionParams, imageStart, imageEnd, childResolved.Item.ID)
 		if err != nil {
 			return nil, err
 		}
@@ -265,10 +254,16 @@ func compileCompositeImageLayers(ri resolvedItem, src *semanticPlan, registry *a
 				decorated[i].Enable3D = true
 			}
 		}
+		if _, hasChildEffects := params["effects"]; hasChildEffects {
+			decorated, err = applyImageItemEffects(childResolved, decorated)
+			if err != nil {
+				return nil, err
+			}
+		}
 		layers = append(layers, decorated...)
 		if caption := strings.TrimSpace(child.Caption); caption != "" {
 			imageIndex := premiumImageLayerIndex(decorated)
-			captionLayer, err := compileImageCaptionLayer(ri, src, childItem, caption, &decorated[imageIndex], child.ID, textRoleImageCaption)
+			captionLayer, err := compileImageCaptionLayer(ri, src, childResolved.Item, caption, &decorated[imageIndex], child.ID, textRoleImageCaption)
 			if err != nil {
 				return nil, err
 			}
@@ -279,7 +274,7 @@ func compileCompositeImageLayers(ri resolvedItem, src *semanticPlan, registry *a
 				decorated[imageIndex].Position = []float64{float64(index * src.Width), 0}
 				layerIndex := len(layers) - len(decorated) + imageIndex
 				layers[layerIndex].Position = append([]float64(nil), decorated[imageIndex].Position...)
-				captionStart, captionEnd := start, end
+				captionStart, captionEnd := childResolved.Start, childResolved.End
 				// Keep the label attached to the image while the camera is settled.
 				// During the pan, clear the old name; reveal the next name once the
 				// camera reaches its portrait. The caption itself is screen-space so
@@ -362,6 +357,7 @@ func compileSingleImageLayerResolved(ri resolvedItem, src *semanticPlan, assetPa
 	layer.ID = imageLayerID(layerID)
 	layer.StartFrame, layer.DurationFrames = start, end-start
 	applyPresetDefinition(&layer, preset)
+	defaultImageBox(&layer)
 	sequenceStatic := ri.Item.CameraMotionID != ""
 	if sequenceStatic {
 		motionID, motionParams, resolved = "", nil, nil
@@ -380,7 +376,7 @@ func compileSingleImageLayerResolved(ri resolvedItem, src *semanticPlan, assetPa
 		var err error
 		// Keep the selected motion ID intact. Replacing a failed GPU motion with
 		// a different recipe concealed unsupported runtime behavior.
-		animation, err := imageMotionAnimationResolved(motionID, motionParams, end-start, preset.Motion.Exit, layerID, "image", resolved)
+		animation, err := imageMotionAnimationResolved(motionID, motionParams, end-start, preset.Motion.Exit, layerID, TargetImage, resolved)
 		if err != nil {
 			return Layer{}, err
 		}
@@ -460,7 +456,7 @@ var runtimeDefaultImageMotionIDs = func() []string {
 var runtimeDefaultCaptionMotionIDs = func() []string {
 	var ids []string
 	for _, id := range motion.Registry.List() {
-		if motionAdmitsTarget(id, "caption") {
+		if motionAdmitsTarget(id, TargetCaption) {
 			ids = append(ids, id)
 		}
 	}
@@ -477,29 +473,6 @@ func runtimeDefaultImageMotionIDFor(pool []string, src *semanticPlan, itemID str
 		return ""
 	}
 	return pool[styleHash("runtime_default_image_motion", src.PlanID, src.VideoID, itemID, uint64(len(pool)))]
-}
-
-func motionDefinitionRequires3D(resolved *resolvedMotion) bool {
-	if resolved == nil || resolved.definition == nil {
-		return false
-	}
-	d := resolved.definition
-	if d.Requires3D != nil && *d.Requires3D {
-		return true
-	}
-	for _, track := range d.Tracks {
-		if motion.IsCameraBacked3DProperty(track.Property) {
-			return true
-		}
-	}
-	for _, animator := range d.TextAnimators {
-		for _, track := range animator.Properties {
-			if motion.IsCameraBacked3DProperty(track.Property) {
-				return true
-			}
-		}
-	}
-	return false
 }
 
 // FitEntityImageLayerToAsset matches an entity image's bounded contain box to

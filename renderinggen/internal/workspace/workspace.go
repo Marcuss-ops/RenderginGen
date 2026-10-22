@@ -234,33 +234,6 @@ func ensurePathContained(root, child string) error {
 	return nil
 }
 
-// rejectSymlinkComponents refuses every existing symlink between root and
-// child; it is called before creation so MkdirAll cannot follow one outward.
-func rejectSymlinkComponents(root, child string) error {
-	if err := ensurePathContained(root, child); err != nil {
-		return err
-	}
-	rel, _ := filepath.Rel(root, child)
-	current := root
-	for _, part := range strings.Split(rel, string(filepath.Separator)) {
-		current = filepath.Join(current, part)
-		info, err := os.Lstat(current)
-		if os.IsNotExist(err) {
-			continue
-		}
-		if err != nil {
-			return err
-		}
-		if info.Mode()&os.ModeSymlink != 0 {
-			return fmt.Errorf("workspace path component %q is a symlink", current)
-		}
-		if !info.IsDir() {
-			return fmt.Errorf("workspace path component %q is not a directory", current)
-		}
-	}
-	return nil
-}
-
 // Root returns the workspace root directory.
 func (w *Workspace) Root() string { return w.root }
 

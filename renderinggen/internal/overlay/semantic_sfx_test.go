@@ -11,6 +11,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -251,5 +252,51 @@ func TestCompileSemanticSFXRejectsInvalidEligibilityTimingAndGain(t *testing.T) 
 				t.Fatal("invalid SFX semantic input unexpectedly compiled")
 			}
 		})
+	}
+}
+
+// canonicalSFXPlan builds an item whose canonical microsecond window ends at
+// 2_000_400us (2000.4ms) while the millisecond mirror ends at 3001. An SFX of
+// 2001ms fits the mirror but not the canonical window, so only the canonical
+// comparison can reject it.
+func canonicalSFXPlan(t *testing.T, durationMS int, composite bool) []byte {
+	t.Helper()
+	asset := func(id string) string {
+		return `{"asset_id":"` + id + `","sha256":"` + semanticSFXSHA + `","url":"assets/semantic/` + id + `.png","media_type":"image/png"}`
+	}
+	sfx := `{"asset_ref":{"asset_id":"cue","sha256":"` + semanticSFXSHA + `","url":"assets/semantic/cue.m4a","media_type":"audio/mp4"},"start_offset_ms":0,"duration_ms":` + strconv.Itoa(durationMS) + `}`
+	item := `{"id":"photo","kind":"image","template_id":"image_popup","preset_id":"image_focus_in","start_ms":1000,"end_ms":3001,"start_us":1000000,"duration_us":2000400,`
+	if composite {
+		item += `"asset_refs":[` + asset("a") + `,` + asset("b") + `],` +
+			`"image_layers":[` +
+			`{"id":"a","asset_id":"a","start_ms":0,"end_ms":2001,"preset_id":"image_focus_in","params":{"width":100,"height":100}},` +
+			`{"id":"b","asset_id":"b","start_ms":0,"end_ms":2001,"preset_id":"image_focus_in","params":{"width":100,"height":100}}],`
+	} else {
+		item += `"asset_refs":[` + asset("a") + `],"params":{"width":320,"height":240},`
+	}
+	item += `"sound_effect":` + sfx + `}`
+	return []byte(`{"schema_version":"renderinggen.overlay-plan.v1","plan_id":"sfx-canonical","video_id":"v","width":640,"height":360,"fps_num":24,"fps_den":1,"duration_ms":4000,"items":[` + item + `]}`)
+}
+
+func TestSoundEffectUsesCanonicalMicrosecondWindow(t *testing.T) {
+	if _, err := CompileSemantic(canonicalSFXPlan(t, 2001, false)); err == nil || !strings.Contains(err.Error(), "exceeds its first visible image window") {
+		t.Fatalf("2001ms cue against a 2000.4ms item = %v, want a canonical-window rejection", err)
+	}
+	result, err := CompileSemantic(canonicalSFXPlan(t, 2000, false))
+	if err != nil {
+		t.Fatalf("2000ms cue against a 2000.4ms item: %v", err)
+	}
+	if result.Plan.Audio == nil || len(result.Plan.Audio.Clips) != 1 {
+		t.Fatalf("audio clips = %+v, want one", result.Plan.Audio)
+	}
+	clip := result.Plan.Audio.Clips[0]
+	if clip.Start != 24 || clip.ClipOut != 48 {
+		t.Fatalf("clip = %+v, want start frame 24 and 48 source frames", clip)
+	}
+}
+
+func TestCompositeSoundEffectClampsToCanonicalItemWindow(t *testing.T) {
+	if _, err := CompileSemantic(canonicalSFXPlan(t, 2001, true)); err == nil || !strings.Contains(err.Error(), "exceeds its first visible image window") {
+		t.Fatalf("composite 2001ms cue against a 2000.4ms item = %v, want a canonical-window rejection", err)
 	}
 }
