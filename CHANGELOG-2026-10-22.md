@@ -45,7 +45,7 @@ camera construction, split workerlog/semantic compile* (113 file,
 
 ## 3. Lowering semantico ed effetti divisi per responsabilità
 
-- `semantic_compile.go` passa da ~549 righe di diff a un dispatcher snello; il
+- `semantic_compile.go` perde ~549 righe di diff e resta un dispatcher snello; il
   lavoro è distribuito in `semantic_entity_compile.go`,
   `semantic_video_compile.go`, `semantic_text_accents.go` (accenti
   frase/brush: componenti recipe emessi accanto al layer testo e ancora del
