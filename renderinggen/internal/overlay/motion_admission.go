@@ -137,6 +137,26 @@ func motionAdmitsTarget(id, target string) bool {
 	return motionDefinitionAdmitsTarget(definition, target)
 }
 
+// Motion applicability targets — the vocabulary the admission rules, the
+// animation policies and the selection model speak. ONE declaration per
+// spelling, here next to the admission rules that give each target its
+// meaning. Targets whose spelling mirrors an item kind derive from its Kind
+// constant, so the two vocabularies cannot drift apart.
+const (
+	TargetText            = "text"
+	TargetPhrase          = "phrase"
+	TargetShortPhrase     = "short_phrase"
+	TargetCaption         = "caption"
+	TargetImportantPhrase = string(KindImportantPhrase)
+	TargetEntity          = "entity"
+	TargetImage           = string(KindImageSynonym)
+	TargetMetric          = "metric"
+	TargetDate            = "date"
+	TargetData            = "data"
+	TargetMapView         = "map_view"
+	TargetBackground      = "background"
+)
+
 // targetAdmissionRule is the single source for one motion target: which
 // catalog target tags admit a motion and which deny it, evaluated
 // deny-first. Rules that are not pure set membership (ordering-sensitive
@@ -149,31 +169,31 @@ type targetAdmissionRule struct {
 }
 
 var targetAdmissionRules = map[string]targetAdmissionRule{
-	"important_phrase": {
-		deny:  []string{"metric", "date", "entity"},
-		admit: []string{"text", "phrase", "short_phrase", "caption", "important_phrase"},
+	TargetImportantPhrase: {
+		deny:  []string{TargetMetric, TargetDate, TargetEntity},
+		admit: []string{TargetText, TargetPhrase, TargetShortPhrase, TargetCaption, TargetImportantPhrase},
 	},
-	"text": {
-		deny:  []string{"metric", "date"},
-		admit: []string{"text", "phrase", "short_phrase", "caption", "entity"},
+	TargetText: {
+		deny:  []string{TargetMetric, TargetDate},
+		admit: []string{TargetText, TargetPhrase, TargetShortPhrase, TargetCaption, TargetEntity},
 	},
-	"entity": {
-		deny:  []string{"metric", "date"},
-		admit: []string{"entity", "caption", "text", "phrase"},
+	TargetEntity: {
+		deny:  []string{TargetMetric, TargetDate},
+		admit: []string{TargetEntity, TargetCaption, TargetText, TargetPhrase},
 	},
-	"phrase": {
-		deny:  []string{"metric", "date"},
-		admit: []string{"phrase", "text", "caption", "entity"},
+	TargetPhrase: {
+		deny:  []string{TargetMetric, TargetDate},
+		admit: []string{TargetPhrase, TargetText, TargetCaption, TargetEntity},
 	},
-	"caption": {custom: captionTargetAdmits},
-	"image":   {admit: []string{"image"}},
-	"metric":  {admit: []string{"metric"}},
-	"date":    {admit: []string{"date"}},
-	"data":    {admit: []string{"data"}},
-	"short_phrase": {
-		admit: []string{"short_phrase"},
+	TargetCaption: {custom: captionTargetAdmits},
+	TargetImage:   {admit: []string{TargetImage}},
+	TargetMetric:  {admit: []string{TargetMetric}},
+	TargetDate:    {admit: []string{TargetDate}},
+	TargetData:    {admit: []string{TargetData}},
+	TargetShortPhrase: {
+		admit: []string{TargetShortPhrase},
 	},
-	"map_view": {custom: func(definition *motion.MotionDefinition) bool {
+	TargetMapView: {custom: func(definition *motion.MotionDefinition) bool {
 		return centeredMapMotion(*definition)
 	}},
 }
@@ -182,13 +202,13 @@ var targetAdmissionRules = map[string]targetAdmissionRule{
 // allow tag. A catalog entry that declares both caption and metric/date is
 // ambiguous and must not bypass the specialized-target exclusion.
 func captionTargetAdmits(definition *motion.MotionDefinition) bool {
-	if containsString(definition.Targets, "metric") || containsString(definition.Targets, "date") {
+	if containsString(definition.Targets, TargetMetric) || containsString(definition.Targets, TargetDate) {
 		return false
 	}
-	return containsString(definition.Targets, "caption") ||
-		containsString(definition.Targets, "text") ||
-		containsString(definition.Targets, "phrase") ||
-		containsString(definition.Targets, "entity")
+	return containsString(definition.Targets, TargetCaption) ||
+		containsString(definition.Targets, TargetText) ||
+		containsString(definition.Targets, TargetPhrase) ||
+		containsString(definition.Targets, TargetEntity)
 }
 
 func motionDefinitionAdmitsTarget(definition *motion.MotionDefinition, target string) bool {
@@ -219,9 +239,9 @@ func motionDefinitionAdmitsTarget(definition *motion.MotionDefinition, target st
 // items whose template declares no MotionTarget. Anything not listed is a
 // generic text item; adding a kind means adding one map entry.
 var semanticKindMotionTargets = map[ItemKind]string{
-	KindImportantPhrase: "important_phrase",
-	KindMetricStat:      "metric",
-	KindTimelineDate:    "date",
+	KindImportantPhrase: TargetImportantPhrase,
+	KindMetricStat:      TargetMetric,
+	KindTimelineDate:    TargetDate,
 }
 
 func semanticTextMotionTarget(item semanticItem, kind ItemKind) string {
@@ -231,7 +251,7 @@ func semanticTextMotionTarget(item semanticItem, kind ItemKind) string {
 	if target, ok := semanticKindMotionTargets[kind]; ok {
 		return target
 	}
-	return "text"
+	return TargetText
 }
 
 func centeredMapMotion(definition motion.MotionDefinition) bool {
@@ -240,7 +260,7 @@ func centeredMapMotion(definition motion.MotionDefinition) bool {
 	// NOTE: map_middle_east_oil_focus carries map_view + position_x/y tracks, so
 	// this predicate excludes it from the georeferenced picker by design; it is
 	// not a selectable map motion (see TestAnimationPolicyUsesDeclaredTargets).
-	if !containsString(definition.Targets, "map_view") || len(definition.Tracks) == 0 {
+	if !containsString(definition.Targets, TargetMapView) || len(definition.Tracks) == 0 {
 		return false
 	}
 	for _, track := range definition.Tracks {

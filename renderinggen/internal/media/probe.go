@@ -66,13 +66,6 @@ func ProbeFileCached(ctx context.Context, storageKey, path string) (ProbeResult,
 	return result, nil
 }
 
-// clearProbeCache drops all cached probe results. Tests only (same package).
-func clearProbeCache() {
-	probeCacheMu.Lock()
-	defer probeCacheMu.Unlock()
-	probeCache = make(map[string]ProbeResult, probeCacheMaxEntries)
-}
-
 // ProbeResult is the stable media surface needed to certify a rendered
 // artifact. It is intentionally derived from ffprobe, never from Chronon's
 // exit code or the render plan alone.

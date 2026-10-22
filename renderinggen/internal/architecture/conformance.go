@@ -221,6 +221,24 @@ func Rules() []rule {
 			textRe:  mustRe(`(?:Template|templateID|TemplateID|template_id)\s*(?:==|!=)\s*"[^"]+"`),
 		},
 		{
+			id: "item_kind_literal_outside_registry",
+			note: "the distinctive overlay item-kind spellings are declared once, by overlay/registry.go's Kind constants; " +
+				"no other overlay source may spell one literally (write the constant). Tests are excluded because they " +
+				"assert against literal expectations, and the producer's wire enum names the same spellings by contract",
+			nodes:   []string{"renderinggen/internal/overlay"},
+			exclude: []string{"_test.go", "overlay/registry.go"},
+			textRe:  mustRe(`"(?:` + strings.Join(itemKindSpellingFragments, "|") + `)"`),
+		},
+		{
+			id: "motion_target_literal_outside_vocabulary",
+			note: "the distinctive motion-target spellings (map_view, short_phrase) are declared once, by " +
+				"overlay/motion_admission.go's target vocabulary; no other overlay source may spell one literally " +
+				"(write the Target* constant). Same test exclusion as the kind rule",
+			nodes:   []string{"renderinggen/internal/overlay"},
+			exclude: []string{"_test.go", "overlay/motion_admission.go"},
+			textRe:  mustRe(`"(?:map_` + `view|short_` + `phrase)"`),
+		},
+		{
 			id: "semantic_stats_second_pass",
 			note: "stats are produced by the single compile pass; overlay.Stats is constructed only in semantic_compile.go " +
 				"and every consumer reuses CompileResult.Stats",
@@ -257,6 +275,24 @@ func Rules() []rule {
 			textRe: mustRe(`json:"preset"`),
 		},
 	}
+}
+
+// itemKindSpellingFragments assemble the regex alternation of the distinctive
+// item-kind spellings the kind rule bans outside the registry. They are built
+// from fragments for the same reason as the rule patterns above: this very
+// file must not contain every marker it bans. The generic spellings ("image",
+// "map", "number", "text", …) are deliberately NOT listed: they are also
+// layer types, families and wire values, so a textual rule could not tell a
+// kind restatement from an unrelated use — the convention of writing the Kind
+// constant covers those, and the distinctive spellings above catch the drift
+// a review is most likely to miss.
+var itemKindSpellingFragments = []string{
+	"entity_" + "card", "entity_" + "image", "entity_" + "group",
+	"important_" + "phrase", "important_" + "word",
+	"image_" + "popup", "metric_" + "stat", "timeline_" + "date",
+	"light_" + "leak", "video_" + "overlay",
+	"phrase_" + "chain", "image_" + "chain", "mixed_" + "chain", "map_" + "chain",
+	"rendered_" + "overlay",
 }
 
 func mustRe(p string) *regexp.Regexp { return regexp.MustCompile(p) }
@@ -382,27 +418,11 @@ func PathExists(rel string) bool {
 
 // ScanAll scans every Target and returns the deterministic violation set.
 func ScanAll() ([]Violation, error) {
-	var out []Violation
-	for _, t := range Targets() {
-		vs, err := scanTarget(t)
-		if err != nil {
-			return nil, err
-		}
-		out = append(out, vs...)
-	}
-	sort.Slice(out, func(i, j int) bool {
-		if out[i].File != out[j].File {
-			return out[i].File < out[j].File
-		}
-		if out[i].Line != out[j].Line {
-			return out[i].Line < out[j].Line
-		}
-		return out[i].Rule < out[j].Rule
-	})
-	return out, nil
+	return ScanTargets(Targets())
 }
 
-// ScanTargets scans an explicit target list (used by unit tests).
+// ScanTargets scans an explicit target list (used by unit tests and by
+// ScanAll, so the ordering rule exists in one place).
 func ScanTargets(targets []Target) ([]Violation, error) {
 	var out []Violation
 	for _, t := range targets {

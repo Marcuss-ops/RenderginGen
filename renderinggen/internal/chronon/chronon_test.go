@@ -353,9 +353,4 @@ func TestBinaryPathExplicit(t *testing.T) {
 	}
 }
 
-func TestClientImplementsRenderer(t *testing.T) {
-	var r Renderer = &Client{Home: "/opt/chronon3d"}
-	if r == nil {
-		t.Fatal("Client should satisfy Renderer")
-	}
-}
+var _ Renderer = (*Client)(nil)

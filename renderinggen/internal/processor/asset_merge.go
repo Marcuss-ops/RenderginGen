@@ -38,14 +38,11 @@ func mergeAssets(jobAssets []queue.AssetRef, compiled []overlay.Asset) ([]queue.
 				// the legacy alias for callers, and add the canonical path too:
 				// the concrete Chronon plan must always resolve to a materialized
 				// file under its own assets/... reference.
-				if previous, exists := byPath[asset.LogicalPath]; exists {
-					if !strings.EqualFold(previous, asset.Hash) {
-						return nil, fmt.Errorf("processor: logical asset path %q has conflicting hashes", asset.LogicalPath)
-					}
-					continue
+				next, _, err := appendAssetRef(result, byPath, queue.AssetRef{Hash: asset.Hash, LogicalPath: asset.LogicalPath})
+				if err != nil {
+					return nil, err
 				}
-				result = append(result, queue.AssetRef{Hash: asset.Hash, LogicalPath: asset.LogicalPath})
-				byPath[asset.LogicalPath] = asset.Hash
+				result = next
 				continue
 			}
 			if merged.SourceURL == "" && isHTTPURL(merged.LogicalPath) {
@@ -59,15 +56,30 @@ func mergeAssets(jobAssets []queue.AssetRef, compiled []overlay.Asset) ([]queue.
 			byPath[asset.LogicalPath] = asset.Hash
 			continue
 		}
-		if previous, ok := byPath[asset.LogicalPath]; ok {
-			if !strings.EqualFold(previous, asset.Hash) {
-				return nil, fmt.Errorf("processor: logical asset path %q has conflicting hashes", asset.LogicalPath)
-			}
+		next, added, err := appendAssetRef(result, byPath, queue.AssetRef{Hash: asset.Hash, LogicalPath: asset.LogicalPath})
+		if err != nil {
+			return nil, err
+		}
+		result = next
+		if !added {
 			continue
 		}
-		result = append(result, queue.AssetRef{Hash: asset.Hash, LogicalPath: asset.LogicalPath})
-		byPath[asset.LogicalPath] = asset.Hash
 		byHash[strings.ToLower(asset.Hash)] = len(result) - 1
 	}
 	return result, nil
+}
+
+// appendAssetRef records a path-keyed ref unless the path already exists. It
+// reports whether the ref was added; an existing path with a different hash is
+// an error. Both branches that add a canonical path share this rule.
+func appendAssetRef(result []queue.AssetRef, byPath map[string]string, asset queue.AssetRef) ([]queue.AssetRef, bool, error) {
+	if previous, exists := byPath[asset.LogicalPath]; exists {
+		if !strings.EqualFold(previous, asset.Hash) {
+			return result, false, fmt.Errorf("processor: logical asset path %q has conflicting hashes", asset.LogicalPath)
+		}
+		return result, false, nil
+	}
+	result = append(result, asset)
+	byPath[asset.LogicalPath] = asset.Hash
+	return result, true, nil
 }

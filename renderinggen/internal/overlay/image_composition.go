@@ -13,52 +13,52 @@ type imageCompositionDefinition struct {
 
 var imageCompositionCatalog = []imageCompositionDefinition{
 	{
-		ID: "single_image", Zone: ZoneImages, MotionTarget: "image",
+		ID: "single_image", Zone: ZoneImages, MotionTarget: TargetImage,
 		Description: "Shows motions compatible with the single-image target.",
 		Composition: RuntimeAnimationComposition{ImageCount: 1},
 	},
 	{
-		ID: "image_double", Zone: ZoneImages, MotionTarget: "image",
+		ID: "image_double", Zone: ZoneImages, MotionTarget: TargetImage,
 		Description: "Each of the two image layers selects its own image motion and keeps its own timing.",
 		Composition: RuntimeAnimationComposition{ImageCount: 2},
 	},
 	{
-		ID: "image_triplet", Zone: ZoneImages, MotionTarget: "image",
+		ID: "image_triplet", Zone: ZoneImages, MotionTarget: TargetImage,
 		Description: "Each of the three image layers selects its own image motion and keeps its own timing.",
 		Composition: RuntimeAnimationComposition{ImageCount: 3},
 	},
 	{
-		ID: "image_four", Zone: ZoneImages, MotionTarget: "image",
+		ID: "image_four", Zone: ZoneImages, MotionTarget: TargetImage,
 		Description: "Each of the four image layers selects its own image motion and keeps its own timing.",
 		Composition: RuntimeAnimationComposition{ImageCount: 4},
 	},
 	{
-		ID: "image_five", Zone: ZoneImages, MotionTarget: "image",
+		ID: "image_five", Zone: ZoneImages, MotionTarget: TargetImage,
 		Description: "Each of the five image layers selects its own image motion and keeps its own timing.",
 		Composition: RuntimeAnimationComposition{ImageCount: 5},
 	},
 	{
-		ID: "single_image_with_text", Zone: ZoneImagesWithText, MotionTarget: "image",
+		ID: "single_image_with_text", Zone: ZoneImagesWithText, MotionTarget: TargetImage,
 		Description: "One image with its own caption; the image motion is the item motion and the caption motion is selected separately.",
 		Composition: RuntimeAnimationComposition{ImageCount: 1, Caption: &RuntimeCaptionCount{Minimum: 1, Maximum: 1}},
 	},
 	{
-		ID: "image_double_with_text", Zone: ZoneImagesWithText, MotionTarget: "image",
+		ID: "image_double_with_text", Zone: ZoneImagesWithText, MotionTarget: TargetImage,
 		Description: "Each of the two image layers selects its own image motion while every caption selects its own caption motion.",
 		Composition: RuntimeAnimationComposition{ImageCount: 2, Caption: &RuntimeCaptionCount{Minimum: 1, Maximum: 2}},
 	},
 	{
-		ID: "image_triplet_with_text", Zone: ZoneImagesWithText, MotionTarget: "image",
+		ID: "image_triplet_with_text", Zone: ZoneImagesWithText, MotionTarget: TargetImage,
 		Description: "Each of the three image layers selects its own image motion while every caption selects its own caption motion.",
 		Composition: RuntimeAnimationComposition{ImageCount: 3, Caption: &RuntimeCaptionCount{Minimum: 1, Maximum: 3}},
 	},
 	{
-		ID: "image_four_with_text", Zone: ZoneImagesWithText, MotionTarget: "image",
+		ID: "image_four_with_text", Zone: ZoneImagesWithText, MotionTarget: TargetImage,
 		Description: "Each of the four image layers selects its own image motion while every caption selects its own caption motion.",
 		Composition: RuntimeAnimationComposition{ImageCount: 4, Caption: &RuntimeCaptionCount{Minimum: 1, Maximum: 4}},
 	},
 	{
-		ID: "image_five_with_text", Zone: ZoneImagesWithText, MotionTarget: "image",
+		ID: "image_five_with_text", Zone: ZoneImagesWithText, MotionTarget: TargetImage,
 		Description: "Each of the five image layers selects its own image motion while every caption selects its own caption motion.",
 		Composition: RuntimeAnimationComposition{ImageCount: 5, Caption: &RuntimeCaptionCount{Minimum: 1, Maximum: 5}},
 	},

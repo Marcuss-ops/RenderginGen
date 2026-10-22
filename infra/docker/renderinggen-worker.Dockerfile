@@ -38,6 +38,7 @@ COPY renderinggen/config.yaml /etc/renderinggen/config.yaml
 COPY infra/docker/worker-entrypoint.sh /usr/local/bin/worker-entrypoint.sh
 
 ENV CHRONON_HOME=/opt/chronon3d
+ENV CHRONON_CAMERA_PLAN_BAKER=/opt/chronon3d/bin/chronon3d_camera_plan_bake
 
 # The runtime image runs as the non-root `chronon` user. Prepare the worker
 # workspace before dropping privileges so it can create per-job directories

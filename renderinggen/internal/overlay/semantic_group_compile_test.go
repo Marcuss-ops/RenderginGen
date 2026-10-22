@@ -90,6 +90,52 @@ func TestEntityGroupDuoSlotsMembersSideBySide(t *testing.T) {
 	}
 }
 
+// TestEntityGroupUsesCertifiedCardSlots proves every group size lowers to the
+// same certified 1920x1080 card table used by image-group recipes. This is the
+// single slot source: a divergent second table would place the same trio,
+// quad or penta differently depending on which recipe compiled it.
+func TestEntityGroupUsesCertifiedCardSlots(t *testing.T) {
+	all := []string{"a", "b", "c", "d", "e"}
+	for count := 2; count <= 5; count++ {
+		ids := all[:count]
+		assets := make([]any, 0, count)
+		members := make([]any, 0, count)
+		for _, id := range ids {
+			assets = append(assets, map[string]any{"asset_id": id, "sha256": strings.Repeat(id, 64), "url": "https://store.example/" + id + ".png", "media_type": "image/png"})
+			members = append(members, map[string]any{"id": id, "asset_id": id, "start_ms": 0, "end_ms": 5000, "preset_id": "image_scale_in"})
+		}
+		plan := groupTestPlan(nil, members)
+		item := plan["items"].([]any)[0].(map[string]any)
+		item["asset_refs"] = assets
+		result := compileGroupPlan(t, plan)
+		for index, id := range ids {
+			slot, ok := groupMemberSlot(count, index)
+			if !ok {
+				t.Fatalf("groupMemberSlot(%d, %d) missing", count, index)
+			}
+			var found bool
+			for _, layer := range result.Plan.Layers {
+				if layer.Type != "image" || !strings.HasSuffix(layer.ID, ":"+id+":image") {
+					continue
+				}
+				found = true
+				if len(layer.Position) != 2 || layer.Position[0] != slot.CenterX || layer.Position[1] != slot.CenterY {
+					t.Errorf("group of %d member %s position = %v, want [%v %v]", count, id, layer.Position, slot.CenterX, slot.CenterY)
+				}
+				if len(layer.Size) != 2 || layer.Size[0] != slot.Width || layer.Size[1] != slot.Height {
+					t.Errorf("group of %d member %s size = %v, want [%v %v]", count, id, layer.Size, slot.Width, slot.Height)
+				}
+				if layer.Fit != FitCover {
+					t.Errorf("group of %d member %s fit = %q, want %q", count, id, layer.Fit, FitCover)
+				}
+			}
+			if !found {
+				t.Fatalf("group of %d has no image layer for member %s: %+v", count, id, result.Plan.Layers)
+			}
+		}
+	}
+}
+
 // TestEntityGroupExplicitPositionWinsOverSlot proves an authored position_x
 // survives the slot defaults.
 func TestEntityGroupExplicitPositionWinsOverSlot(t *testing.T) {

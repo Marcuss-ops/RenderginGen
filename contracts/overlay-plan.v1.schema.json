@@ -970,6 +970,8 @@
       "properties": {
         "type": {
           "enum": [
+            "archive_print",
+            "vintage_film_projection",
             "noise",
             "fractal_noise",
             "vignette",
@@ -1689,7 +1691,7 @@
           },
           "params": {
             "type": "object",
-            "description": "Per-item runtime controls and motion parameters. Font, shadow, stroke, glow and shape controls are validated by RenderingGen. Shape-only geometry and effects use the shape variant and its closed nested contracts.",
+            "description": "Per-item runtime controls and motion parameters. For image items, effects is the ordered runtime effect stack applied to the image; for composite images, put effects in image_layers[].params.effects to choose a separate stack per image. Font, shadow, stroke, glow and shape controls are validated by RenderingGen.",
             "properties": {
               "shape": {
                 "type": "string",
@@ -2705,7 +2707,18 @@
                   "description": "Optional child caption placement."
                 },
                 "params": {
-                  "type": "object"
+                  "type": "object",
+                  "description": "Per-image runtime controls. effects is an ordered stack of visual effects (for example noise/grain, chromatic_aberration, vignette or glow) applied only to this image layer.",
+                  "properties": {
+                    "effects": {
+                      "type": "array",
+                      "maxItems": 64,
+                      "items": {
+                        "$ref": "#/$defs/layer_effect"
+                      }
+                    }
+                  },
+                  "additionalProperties": true
                 },
                 "frame": {
                   "type": "object",

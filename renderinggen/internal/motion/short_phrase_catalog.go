@@ -141,7 +141,7 @@ func lowerShortPhraseColorTrack(track TrackDefinition, light bool) TrackDefiniti
 	}
 	converted := TrackDefinition{Property: "fill_color", Easing: track.Easing, Keyframes: make([]AnimationKeyframe, 0, len(track.Keyframes))}
 	for _, key := range track.Keyframes {
-		mix, ok := shortPhraseNumericValue(key.Value)
+		mix, ok := NumericValue(key.Value)
 		if !ok {
 			// Leave malformed authoring data untouched so ValidateDefinition
 			// reports it with the motion ID instead of silently changing it.
@@ -162,7 +162,11 @@ func lowerShortPhraseColorTrack(track TrackDefinition, light bool) TrackDefiniti
 	return converted
 }
 
-func shortPhraseNumericValue(value any) (float64, bool) {
+// NumericValue extracts a supported scalar from a keyframe or semantic
+// parameter. Catalog keyframes and overlay parameters must accept exactly the
+// same numeric types, so the conversion is exported once instead of restated
+// per package.
+func NumericValue(value any) (float64, bool) {
 	switch number := value.(type) {
 	case float64:
 		return number, true

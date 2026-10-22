@@ -42,6 +42,8 @@ siblings. Each rule maps to one deleted contract:
 | `template_alias_lowercase` | the lowercase `org_default`/`gpe_default` spellings rendered anywhere but `overlay/registry.go`'s alias table and its tests |
 | `partnn_filename` | `*_partNN.*` manual-splitting files (any scanned carrier, including shell) |
 | `legacy_layer_preset_field` | a bare `json:"preset"` slot on the render-plan layer |
+| `item_kind_literal_outside_registry` | a distinctive overlay item-kind spelling written literally anywhere in `overlay/` but `registry.go` (the Kind constants are the vocabulary; tests are exempt) |
+| `motion_target_literal_outside_vocabulary` | a distinctive motion-target spelling (`map_view`, `short_phrase`) written literally anywhere in `overlay/` but `motion_admission.go`'s target vocabulary (tests are exempt) |
 
 This table is a checked projection of `Rules()`, not an independent copy:
 `TestConformanceDocListsEveryRule` fails if the two rule-id sets differ in
@@ -63,6 +65,18 @@ the mistake and are scoped to where the mistake can be made:
 - `semantic_stats_second_pass` forbids the `Stats{}` literal everywhere in the
   overlay package except the two files that own the counters
   (`stats.go`, `semantic_compile.go`).
+
+The two vocabulary rules protect the same shape of mistake: a decision whose
+spelling is owned in ONE place being restated at a consumer, so the two views
+can drift. Both are scoped to `renderinggen/internal/overlay` non-test sources:
+
+- `item_kind_literal_outside_registry` forbids a distinctive item-kind spelling
+  written literally outside `registry.go`'s Kind constants (the generic
+  spellings are also layer types and wire values, so the constant convention
+  covers them; the distinctive set catches the drift a review misses);
+- `motion_target_literal_outside_vocabulary` does the same for the distinctive
+  motion-target spellings (`map_view`, `short_phrase`) owned by
+  `motion_admission.go`'s target vocabulary.
 
 ### The live legacy aliases
 

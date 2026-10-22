@@ -8,10 +8,10 @@ type textRole string
 
 const (
 	textRolePhrase          textRole = "phrase"
-	textRoleImportantPhrase textRole = "important_phrase"
+	textRoleImportantPhrase textRole = textRole(KindImportantPhrase)
 	textRoleEntityCaption   textRole = "entity_caption"
 	textRoleImageCaption    textRole = "image_caption"
-	textRoleLowerThird      textRole = "lower_third"
+	textRoleLowerThird      textRole = textRole(KindLowerThird)
 	textRoleMetric          textRole = "metric"
 	textRoleDate            textRole = "date"
 	textRoleMapLabel        textRole = "map_label"

@@ -65,7 +65,7 @@ func resolveMap(contract *SemanticMap, assets []SemanticAssetRef, canvasWidth, c
 		var pinMotion *LayerAnimation
 		if contract.MotionID != "" {
 			var err error
-			pinMotion, err = imageMotionAnimation(contract.MotionID, nil, durationFrames, 0, pin.ID, "map_view")
+			pinMotion, err = imageMotionAnimation(contract.MotionID, nil, durationFrames, 0, pin.ID, TargetMapView)
 			if err != nil {
 				return nil, fmt.Errorf("pin %q motion: %w", pin.ID, err)
 			}
@@ -91,7 +91,7 @@ func resolveMap(contract *SemanticMap, assets []SemanticAssetRef, canvasWidth, c
 	var mapMotion *LayerAnimation
 	if contract.MotionID != "" {
 		var err error
-		mapMotion, err = imageMotionAnimation(contract.MotionID, nil, durationFrames, 0, "map", "map_view")
+		mapMotion, err = imageMotionAnimation(contract.MotionID, nil, durationFrames, 0, "map", TargetMapView)
 		if err != nil {
 			return nil, fmt.Errorf("map motion: %w", err)
 		}

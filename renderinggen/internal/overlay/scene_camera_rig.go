@@ -16,16 +16,9 @@ import (
 // sum of the segment offsets, which is exactly what the parented nulls add
 // up to in AE.
 
-// SemanticSceneCameraDOF is the producer-owned depth-of-field block.
-type SemanticSceneCameraDOF struct {
-	Enabled       bool    `json:"enabled,omitempty"`
-	FocusDistance float64 `json:"focus_distance,omitempty"`
-	Aperture      float64 `json:"aperture,omitempty"`
-	MaxBlur       float64 `json:"max_blur,omitempty"`
-	FStop         float64 `json:"f_stop,omitempty"`
-	IrisBlades    int     `json:"iris_blades,omitempty"`
-	HighlightGain float64 `json:"highlight_gain,omitempty"`
-}
+// SemanticSceneCameraDOF is the producer-owned depth-of-field block. It is the
+// same wire shape CameraDOF carries, so the alias keeps one declaration.
+type SemanticSceneCameraDOF = CameraDOF
 
 // SemanticCameraRigSegment is one null of the chain: the camera-space offset
 // the null contributes at the END of its window. The contribution ramps from
@@ -72,8 +65,8 @@ type SemanticSceneCamera struct {
 // contract-level equivalent of an Easy-Eased AE null.
 const aeRigEasing = "smoothstep"
 
-// defaultSceneFOV is the resting field of view when no lens is authored.
-const defaultSceneFOV = 50.0
+// The resting field of view when no lens is authored is the named token
+// CameraRestingFOVDeg (design_tokens.go).
 
 func sceneMsToFrame(ms, fpsNum, fpsDen int64) int64 {
 	if fpsNum <= 0 || fpsDen <= 0 {
@@ -158,7 +151,7 @@ func validateSceneCamera(sc *SemanticSceneCamera) error {
 			return fmt.Errorf("overlay: scene_camera.rig %q needs 0 <= overlap_ms < duration", seg.ID)
 		}
 		for _, v := range seg.Offset {
-			if !isFinite(v) {
+			if !finite(v) {
 				return fmt.Errorf("overlay: scene_camera.rig %q offset must be finite", seg.ID)
 			}
 		}
@@ -167,7 +160,7 @@ func validateSceneCamera(sc *SemanticSceneCamera) error {
 		if len(g.LayerIDs) == 0 {
 			return fmt.Errorf("overlay: scene_camera.depth_groups[%d] needs layer_ids", i)
 		}
-		if !isFinite(g.BaseZ) || !isFinite(g.Spacing) {
+		if !finite(g.BaseZ) || !finite(g.Spacing) {
 			return fmt.Errorf("overlay: scene_camera.depth_groups[%d] base_z/spacing must be finite", i)
 		}
 	}
@@ -257,24 +250,10 @@ func lowerNullRig(rig []SemanticCameraRigSegment, fpsNum, fpsDen int64) ([]Camer
 		tracks = append(tracks, CameraTrack{
 			Property:  props[axis],
 			Easing:    aeRigEasing,
-			Keyframes: dedupeConsecutiveKeys(keys),
+			Keyframes: dedupeKeys(keys),
 		})
 	}
 	return tracks, nil
-}
-
-// dedupeConsecutiveKeys collapses back-to-back duplicate values at the same
-// frame so overlapped handoffs do not emit zero-length holds.
-func dedupeConsecutiveKeys(keys []AnimationKeyframe) []AnimationKeyframe {
-	out := keys[:0]
-	for i, k := range keys {
-		if i > 0 && out[len(out)-1].Frame == k.Frame {
-			out[len(out)-1] = k
-			continue
-		}
-		out = append(out, k)
-	}
-	return out
 }
 
 // sceneCameraFOV resolves the resting field of view: explicit fov_deg wins,
@@ -294,7 +273,7 @@ func sceneCameraFOV(sc *SemanticSceneCamera) (fovDeg, focalMM float64, err error
 		}
 		return fov, focal, nil
 	}
-	return defaultSceneFOV, 0, nil
+	return CameraRestingFOVDeg, 0, nil
 }
 
 // compileSceneCamera lowers the semantic whole-scene camera to the wire
@@ -322,8 +301,8 @@ func compileSceneCamera(sc *SemanticSceneCamera, width, height int, fpsNum, fpsD
 		Position: pos,
 		Rotation: [3]float64{0, 0, 0},
 		FOVDeg:   fov,
-		Near:     1.0,
-		Far:      10000000.0,
+		Near:     CameraDefaultNear,
+		Far:      CameraWideFar,
 		Zoom:     1.0,
 	}
 	if focal != 0 {
@@ -341,15 +320,8 @@ func compileSceneCamera(sc *SemanticSceneCamera, width, height int, fpsNum, fpsD
 	}
 	if dof := sc.DOF; dof != nil && (dof.Enabled || dof.FocusDistance != 0 || dof.Aperture != 0 ||
 		dof.MaxBlur != 0 || dof.FStop != 0 || dof.IrisBlades != 0 || dof.HighlightGain != 0) {
-		cam.DOF = &CameraDOF{
-			Enabled:       dof.Enabled,
-			FocusDistance: dof.FocusDistance,
-			Aperture:      dof.Aperture,
-			MaxBlur:       dof.MaxBlur,
-			FStop:         dof.FStop,
-			IrisBlades:    dof.IrisBlades,
-			HighlightGain: dof.HighlightGain,
-		}
+		dofCopy := *dof
+		cam.DOF = &dofCopy
 	}
 	tracks, err := lowerNullRig(sc.Rig, fpsNum, fpsDen)
 	if err != nil {

@@ -4,10 +4,7 @@ package workspace
 
 import (
 	"os"
-	"strconv"
-	"strings"
 	"sync"
-	"time"
 
 	"golang.org/x/sys/windows"
 )
@@ -79,25 +76,4 @@ func processExists(pid int) bool {
 		return true
 	}
 	return code == workspaceStillActive
-}
-
-func reclaimStaleMarker(marker string) bool {
-	data, err := os.ReadFile(marker)
-	if err != nil {
-		return false
-	}
-	fields := strings.Fields(string(data))
-	if len(fields) != 2 {
-		return false
-	}
-	pid, err := strconv.Atoi(fields[0])
-	if err != nil || pid <= 0 || processExists(pid) {
-		return false
-	}
-	stale := marker + ".stale-" + strconv.FormatInt(time.Now().UnixNano(), 10)
-	if err := os.Rename(marker, stale); err != nil {
-		return false
-	}
-	_ = os.Remove(stale)
-	return true
 }

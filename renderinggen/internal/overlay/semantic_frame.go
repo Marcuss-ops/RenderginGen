@@ -45,7 +45,7 @@ func applyFrameTreatment(layer *Layer, frame *semanticSourceFrame) error {
 	}
 	if frame.Stroke != nil {
 		stroke := frame.Stroke
-		if math.IsNaN(stroke.WidthPX) || math.IsInf(stroke.WidthPX, 0) || stroke.WidthPX < 0 || stroke.WidthPX > maxFrameStrokeWidth {
+		if !finite(stroke.WidthPX) || stroke.WidthPX < 0 || stroke.WidthPX > maxFrameStrokeWidth {
 			return fmt.Errorf("frame stroke width_px must be within [0,%g]", maxFrameStrokeWidth)
 		}
 		if !isHexColor(stroke.Color) {
@@ -53,17 +53,17 @@ func applyFrameTreatment(layer *Layer, frame *semanticSourceFrame) error {
 		}
 	}
 	// Validate clip_radius_px range (same ceiling as border.radius_px).
-	if math.IsNaN(frame.ClipRadiusPX) || math.IsInf(frame.ClipRadiusPX, 0) || frame.ClipRadiusPX < 0 || frame.ClipRadiusPX > maxFrameRadius {
+	if !finite(frame.ClipRadiusPX) || frame.ClipRadiusPX < 0 || frame.ClipRadiusPX > maxFrameRadius {
 		return fmt.Errorf("frame clip_radius_px must be within [0,%g]", maxFrameRadius)
 	}
 	// Start with the standalone clip bounding-box radius.
 	clipRadius := frame.ClipRadiusPX
 	if frame.Border != nil {
 		border := frame.Border
-		if math.IsNaN(border.WidthPX) || math.IsInf(border.WidthPX, 0) || border.WidthPX < 0 || border.WidthPX > maxFrameBorderWidth {
+		if !finite(border.WidthPX) || border.WidthPX < 0 || border.WidthPX > maxFrameBorderWidth {
 			return fmt.Errorf("frame border width_px must be within [0,%g]", maxFrameBorderWidth)
 		}
-		if math.IsNaN(border.RadiusPX) || math.IsInf(border.RadiusPX, 0) || border.RadiusPX < 0 || border.RadiusPX > maxFrameRadius {
+		if !finite(border.RadiusPX) || border.RadiusPX < 0 || border.RadiusPX > maxFrameRadius {
 			return fmt.Errorf("frame border radius_px must be within [0,%g]", maxFrameRadius)
 		}
 		if !isHexColor(border.Color) {
@@ -98,14 +98,14 @@ func applyFrameTreatment(layer *Layer, frame *semanticSourceFrame) error {
 		if !isHexColor(shadow.Color) {
 			return fmt.Errorf("frame shadow color %q must be #RRGGBB", shadow.Color)
 		}
-		if math.IsNaN(shadow.Opacity) || shadow.Opacity < 0 || shadow.Opacity > 1 {
+		if !finite(shadow.Opacity) || shadow.Opacity < 0 || shadow.Opacity > 1 {
 			return fmt.Errorf("frame shadow opacity must be within [0,1]")
 		}
-		if math.IsNaN(shadow.BlurPX) || shadow.BlurPX < 0 || shadow.BlurPX > maxFrameShadowBlur {
+		if !finite(shadow.BlurPX) || shadow.BlurPX < 0 || shadow.BlurPX > maxFrameShadowBlur {
 			return fmt.Errorf("frame shadow blur_px must be within [0,%g]", maxFrameShadowBlur)
 		}
-		if math.IsNaN(shadow.OffsetXP) || math.Abs(shadow.OffsetXP) > maxFrameShadowOffset ||
-			math.IsNaN(shadow.OffsetYP) || math.Abs(shadow.OffsetYP) > maxFrameShadowOffset {
+		if !finite(shadow.OffsetXP) || math.Abs(shadow.OffsetXP) > maxFrameShadowOffset ||
+			!finite(shadow.OffsetYP) || math.Abs(shadow.OffsetYP) > maxFrameShadowOffset {
 			return fmt.Errorf("frame shadow offsets must be within ±%g", maxFrameShadowOffset)
 		}
 		style := ensureLayerStyle(layer)
@@ -229,11 +229,11 @@ func compileMediaStrokeLayer(media Layer, canvasWidth, canvasHeight int) (Layer,
 	if len(media.Scale) >= 2 {
 		scaleX, scaleY = math.Abs(media.Scale[0]), math.Abs(media.Scale[1])
 	}
-	if scaleX <= 0 || scaleY <= 0 || math.IsNaN(scaleX) || math.IsNaN(scaleY) || math.IsInf(scaleX, 0) || math.IsInf(scaleY, 0) {
+	if scaleX <= 0 || scaleY <= 0 || !finite(scaleX) || !finite(scaleY) {
 		return Layer{}, fmt.Errorf("media frame stroke scale must be finite and positive")
 	}
 	width, height := media.Size[0]*scaleX, media.Size[1]*scaleY
-	if math.IsNaN(width) || math.IsInf(width, 0) || math.IsNaN(height) || math.IsInf(height, 0) || width <= 0 || height <= 0 {
+	if !finite(width) || !finite(height) || width <= 0 || height <= 0 {
 		return Layer{}, fmt.Errorf("media frame stroke dimensions must be finite and positive")
 	}
 	strokeWidth := media.FrameStroke.Width
@@ -249,7 +249,7 @@ func compileMediaStrokeLayer(media Layer, canvasWidth, canvasHeight int) (Layer,
 		position[0] += (width - float64(canvasWidth)) * 0.5
 		position[1] += (height - float64(canvasHeight)) * 0.5
 	}
-	if math.IsNaN(strokeWidth) || math.IsInf(strokeWidth, 0) || math.IsNaN(strokeRadius) || math.IsInf(strokeRadius, 0) {
+	if !finite(strokeWidth) || !finite(strokeRadius) {
 		return Layer{}, fmt.Errorf("media frame stroke width/radius must be finite")
 	}
 	style := *media.FrameStroke

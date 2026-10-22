@@ -365,9 +365,7 @@ func parseCollection(reader io.Reader, level Level) ([]parsedFeature, error) {
 				}
 			}
 			if value, ok := optionalPropertyString(feature.Properties, "NAME_ALT"); ok {
-				for _, alias := range strings.Split(value, "|") {
-					aliases = append(aliases, alias)
-				}
+				aliases = append(aliases, strings.Split(value, "|")...)
 			}
 		} else {
 			parentName, err = propertyString(feature.Properties, "admin")

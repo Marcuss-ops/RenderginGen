@@ -446,13 +446,13 @@ func runtimeUseCaseZone(id string) string {
 // authored family still publishes the target that family will use.
 func runtimeCompositionTarget(id string) string {
 	if imageCompositionFor(id) != nil {
-		return "image"
+		return TargetImage
 	}
 	if mapCompositionFor(id) != nil {
-		return "map_view"
+		return TargetMapView
 	}
 	if backgroundCompositionFor(id) != nil {
-		return "background"
+		return TargetBackground
 	}
 	if target := dataCompositionTarget(id); target != "" {
 		return target
@@ -463,10 +463,10 @@ func runtimeCompositionTarget(id string) string {
 // compositionTargetOverrides covers the compositions owned by no count-based
 // catalog: adding one means adding one map entry, never a new switch case.
 var compositionTargetOverrides = map[string]string{
-	"entities":               "image",
-	"entity_caption":         "caption",
-	"important_phrase":       "important_phrase",
-	"short_important_phrase": "short_phrase",
+	"entities":                  TargetImage,
+	"entity_caption":            TargetCaption,
+	string(KindImportantPhrase): TargetImportantPhrase,
+	"short_important_phrase":    TargetShortPhrase,
 }
 
 func runtimeZones() []RuntimeZone {
@@ -583,7 +583,7 @@ func runtimeRequiredCapabilities(target string, requires3D, requiresCamera bool)
 	if requiresCamera {
 		capabilities = append(capabilities, capabilityCamera)
 	}
-	if target == "map_view" {
+	if target == TargetMapView {
 		capabilities = append(capabilities, capabilityGeospatial)
 	}
 	return capabilities

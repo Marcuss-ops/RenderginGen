@@ -5,7 +5,6 @@ import (
 	"math"
 	"strings"
 	"unicode"
-	"unicode/utf8"
 )
 
 // Documentary Highlighting motions are phrase-relative. Text byte ranges are
@@ -142,36 +141,6 @@ func targetAt(text string, start, end int) documentaryTarget {
 	line := strings.Count(text[:start], "\n")
 	lineStart := strings.LastIndex(text[:start], "\n") + 1
 	return documentaryTarget{start: start, end: end, line: line, prefix: text[lineStart:start], value: text[start:end]}
-}
-
-func significantWordRanges(text string) []documentaryTarget {
-	stop := map[string]bool{"la": true, "le": true, "il": true, "lo": true, "gli": true, "i": true, "e": true, "o": true, "a": true, "di": true, "da": true, "in": true, "con": true, "per": true, "che": true, "non": true, "va": true, "nel": true, "nella": true, "alla": true, "ogni": true}
-	var out []documentaryTarget
-	line := 0
-	for i := 0; i < len(text); {
-		if text[i] == '\n' {
-			line++
-			i++
-			continue
-		}
-		if !unicode.IsLetter(rune(text[i])) && text[i] < utf8.RuneSelf {
-			i++
-			continue
-		}
-		start := i
-		for i < len(text) {
-			r, size := utf8.DecodeRuneInString(text[i:])
-			if !unicode.IsLetter(r) && !unicode.IsNumber(r) && r != '\'' && r != '’' {
-				break
-			}
-			i += size
-		}
-		word := strings.ToLower(text[start:i])
-		if !stop[word] {
-			out = append(out, documentaryTarget{start: start, end: i, line: line, value: text[start:i]})
-		}
-	}
-	return out
 }
 
 func documentaryTextColor(id string) string {

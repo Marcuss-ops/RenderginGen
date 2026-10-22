@@ -6,11 +6,11 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"net"
 	"net/http"
 	"strings"
 	"sync"
-	"time"
+
+	queueclient "github.com/Marcuss-ops/RenderingGen/queue/client"
 )
 
 // ErrNotFound is returned when an object is absent from L3.
@@ -107,14 +107,14 @@ type HTTP struct {
 
 // NewHTTP creates an HTTP backend pointing at an object store base URL.
 func NewHTTP(base string) *HTTP {
-	return &HTTP{base: base, client: newLargeObjectHTTPClient()}
+	return &HTTP{base: base, client: queueclient.NewStreamingHTTPClient()}
 }
 
 // NewHTTPWithToken creates an HTTP backend that authenticates every request
 // with the store's shared bearer token. An empty token behaves exactly like
 // NewHTTP (open store, local/dev posture).
 func NewHTTPWithToken(base, token string) *HTTP {
-	return &HTTP{base: base, token: token, client: newLargeObjectHTTPClient()}
+	return &HTTP{base: base, token: token, client: queueclient.NewStreamingHTTPClient()}
 }
 
 // setAuth attaches the bearer credential when one is configured.
@@ -122,33 +122,6 @@ func (h *HTTP) setAuth(req *http.Request) {
 	if h.token != "" {
 		req.Header.Set("Authorization", "Bearer "+h.token)
 	}
-}
-
-// newLargeObjectHTTPClient returns an HTTP client tuned for multi-GB object
-// transfer: there is deliberately NO blanket per-request deadline — FetchReader
-// streams a large artifact into L2 for as long as the caller's context allows,
-// and a fixed 60 s total timeout (the historical shape) killed any transfer on
-// a slower link regardless of progress. Connect/TLS/response-header phases are
-// individually bounded so a hung server still fails fast, and the body streams
-// under the request context every backend method threads through.
-func newLargeObjectHTTPClient() *http.Client {
-	return &http.Client{Transport: &http.Transport{
-		Proxy: http.ProxyFromEnvironment,
-		DialContext: (&net.Dialer{
-			Timeout:   10 * time.Second,
-			KeepAlive: 30 * time.Second,
-		}).DialContext,
-		ForceAttemptHTTP2:     true,
-		MaxIdleConns:          100,
-		MaxIdleConnsPerHost:   8,
-		IdleConnTimeout:       90 * time.Second,
-		TLSHandshakeTimeout:   10 * time.Second,
-		ExpectContinueTimeout: 1 * time.Second,
-		// Headers must arrive promptly once a request is sent; after that the
-		// body read is bounded by ctx (e.g. the queue lease), not by this
-		// client.
-		ResponseHeaderTimeout: 30 * time.Second,
-	}}
 }
 
 func (h *HTTP) FetchReader(ctx context.Context, key string) (io.ReadCloser, int64, error) {

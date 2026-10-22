@@ -38,6 +38,8 @@ func TestRulesDetectEveryMarker(t *testing.T) {
 		{"semantic_stats_second_pass", "renderinggen/internal/overlay/foo.go", `s := Stats{EntityCount: 1}`},
 		{"template_alias_lowercase", "renderinggen/internal/overlay/foo.go", `if templateID == "org_default" {`},
 		{"legacy_layer_preset_field", "x/chronon/plan.go", "Preset string `json:\"preset\"`"},
+		{"item_kind_literal_outside_registry", "renderinggen/internal/overlay/foo.go", `if kind == "entity_card" {`},
+		{"motion_target_literal_outside_vocabulary", "renderinggen/internal/overlay/foo.go", `if admits(id, "map_view") {`},
 	}
 
 	for _, tc := range cases {
@@ -104,6 +106,76 @@ func TestRetargetedRulesRespectTheirExclusions(t *testing.T) {
 			}
 		})
 	}
+}
+
+// TestVocabularySpellingRulesRespectTheirOwners pins the ownership exclusions
+// of the two vocabulary rules: the declaration sites of the kind and
+// motion-target vocabularies stay legal, tests (which assert against literal
+// expectations) stay legal, and the rule's scope is the overlay package — a
+// kind spelling in another package is a wire value, not a restatement.
+func TestVocabularySpellingRulesRespectTheirOwners(t *testing.T) {
+	legal := []struct {
+		name string
+		path string
+		line string
+	}{
+		{"kind vocabulary owner", "renderinggen/internal/overlay/registry.go", `KindEntityCard ItemKind = "entity_card"`},
+		{"target vocabulary owner", "renderinggen/internal/overlay/motion_admission.go", `TargetMapView = "map_view"`},
+		{"overlay test asserts literals", "renderinggen/internal/overlay/plan_test.go", `want := "entity_card"`},
+		{"wire value outside the package", "renderinggen/internal/processor/foo.go", `kind := "entity_card"`},
+	}
+	for _, tc := range legal {
+		t.Run(tc.name, func(t *testing.T) {
+			violations := scanVocabularyRules(t, tc.path, tc.line)
+			for rule := range violations {
+				t.Errorf("%s fired on %q (%s)", rule, tc.line, tc.name)
+			}
+		})
+	}
+
+	illegal := []struct {
+		name string
+		path string
+		line string
+		want string
+	}{
+		{"kind in a consumer", "renderinggen/internal/overlay/compiler.go", `if kind == "entity_card" {`, "item_kind_literal_outside_registry"},
+		{"target in a consumer", "renderinggen/internal/overlay/animation_policy.go", `if target == "map_view" {`, "motion_target_literal_outside_vocabulary"},
+	}
+	for _, tc := range illegal {
+		t.Run(tc.name, func(t *testing.T) {
+			violations := scanVocabularyRules(t, tc.path, tc.line)
+			if !violations[tc.want] {
+				t.Errorf("rule %q did not fire for %q", tc.want, tc.line)
+			}
+		})
+	}
+}
+
+// scanVocabularyRules runs the gate over a one-line file and returns the
+// vocabulary rules that fired on it.
+func scanVocabularyRules(t *testing.T, path, line string) map[string]bool {
+	t.Helper()
+	dir := t.TempDir()
+	full := filepath.Join(dir, filepath.FromSlash(path))
+	if err := os.MkdirAll(filepath.Dir(full), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(full, []byte("package x\n"+line+"\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	got, err := ScanTargets([]Target{{Dir: dir}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	fired := map[string]bool{}
+	for _, v := range got {
+		switch v.Rule {
+		case "item_kind_literal_outside_registry", "motion_target_literal_outside_vocabulary":
+			fired[v.Rule] = true
+		}
+	}
+	return fired
 }
 
 // TestRuleExtensionsAreScanned is the data-driven coherence check between the

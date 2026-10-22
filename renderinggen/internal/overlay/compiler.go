@@ -9,7 +9,11 @@
 // pipeline. Chronon is only the execution engine.
 //
 // File layout: compiler.go owns the public contract types and entry points,
-// semantic_compile.go the semantic→concrete lowering, subtitle_burn.go the
+// semantic_compile.go the semantic→concrete lowering driver (the single
+// resolve → compile pass and the per-kind dispatch), the per-kind compilers in
+// semantic_entity_compile.go / semantic_image_compile.go /
+// semantic_text_compile.go / semantic_group_compile.go /
+// semantic_video_compile.go / semantic_text_accents.go, subtitle_burn.go the
 // ASS subtitle lowering and semantic_helpers.go the preset/motion helpers.
 package overlay
 
@@ -37,7 +41,7 @@ func RenderPlanWireVersion(plan *Plan) (string, int) {
 	if plan == nil {
 		return RenderPlanSchemaV2, RenderPlanVersionV2
 	}
-	if plan.CameraAnimation != nil || plan.Camera != nil && len(plan.Layers) > 0 || plan.Audio != nil {
+	if len(plan.CameraSamples) > 0 || plan.CameraAnimation != nil || plan.Camera != nil && len(plan.Layers) > 0 || plan.Audio != nil {
 		return RenderPlanSchemaV3, RenderPlanVersionV3
 	}
 	for _, layer := range plan.Layers {
@@ -68,11 +72,14 @@ const SemanticSchemaVersion = 1
 // it, the processor mutates it mechanically (asset-path normalization,
 // subtitle burn-in) and it is marshaled exactly once at the Chronon boundary.
 type Plan struct {
-	Schema          string           `json:"schema"`
-	Version         int              `json:"version"`
-	JobID           string           `json:"job_id"`
-	Camera          *CameraPlan      `json:"camera,omitempty"`
-	CameraAnimation *CameraAnimation `json:"camera_animation,omitempty"`
+	Schema        string         `json:"schema"`
+	Version       int            `json:"version"`
+	JobID         string         `json:"job_id"`
+	Camera        *CameraPlan    `json:"camera,omitempty"`
+	CameraSamples []CameraSample `json:"camera_samples,omitempty"`
+	// CameraAnimation is a transient compiler input. It is sampled before the
+	// concrete plan is serialized and must never cross the Chronon wire.
+	CameraAnimation *CameraAnimation `json:"-"`
 	Canvas          Canvas           `json:"canvas"`
 	Layers          []Layer          `json:"layers"`
 	Audio           *AudioMixPlan    `json:"audio,omitempty"`
@@ -117,6 +124,11 @@ type CameraDOF struct {
 
 type CameraAnimation struct {
 	Tracks []CameraTrack `json:"tracks"`
+}
+
+type CameraSample struct {
+	Frame  float64    `json:"frame"`
+	Camera CameraPlan `json:"camera"`
 }
 
 type CameraTrack struct {
@@ -519,23 +531,12 @@ type SemanticMapTextStyle struct {
 	Background *semanticMapTextPlate  `json:"background,omitempty"`
 }
 
-type semanticMapTextStroke struct {
-	Color string  `json:"color"`
-	Width float64 `json:"width"`
-}
-
-type semanticMapTextShadow struct {
-	Color   string    `json:"color"`
-	Opacity float64   `json:"opacity"`
-	Blur    float64   `json:"blur"`
-	Offset  []float64 `json:"offset"`
-}
-
-type semanticMapTextGlow struct {
-	Color     string  `json:"color"`
-	Radius    float64 `json:"radius"`
-	Intensity float64 `json:"intensity"`
-}
+// Map label styling uses the exact wire shapes of the layer style blocks.
+// Aliases keep one declaration per block; a separate near-identical struct was
+// only another place for the JSON field set to drift.
+type semanticMapTextStroke = LayerStroke
+type semanticMapTextShadow = LayerShadow
+type semanticMapTextGlow = LayerGlow
 
 type semanticMapTextPlate struct {
 	Color   string    `json:"color"`

@@ -2,7 +2,6 @@ package overlay
 
 import (
 	"encoding/json"
-	"fmt"
 	"testing"
 
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/motion"
@@ -131,7 +130,7 @@ func TestPresentationTemplateRegistryMatchesCatalog(t *testing.T) {
 		{"metric_stat_card", KindNumber},
 		{"timeline_date_card", KindNumber},
 	} {
-		t.Run(fmt.Sprintf("%s", tc.template), func(t *testing.T) {
+		t.Run(tc.template, func(t *testing.T) {
 			spec := templateSpecFor(tc.template)
 			if !spec.Registered || !spec.RequiresPreset || spec.Kind != tc.kind || spec.Family != PresetText {
 				t.Fatalf("template registry row = %+v", spec)

@@ -54,16 +54,6 @@ type chainSegment struct {
 	Map                 *SemanticMap         `json:"map"`
 }
 
-// isChainKind reports whether a resolved kind is a fused multi-animation
-// chain rather than a standalone item.
-func isChainKind(kind ItemKind) bool {
-	switch ItemKind(strings.ToLower(strings.TrimSpace(string(kind)))) {
-	case ItemKind("phrase_chain"), ItemKind("image_chain"), ItemKind("mixed_chain"), ItemKind("map_chain"):
-		return true
-	}
-	return false
-}
-
 // decodeChainSegments extracts the producer's segment list from the merged
 // params (item.Params + item.Style). Params arrive as map[string]any from
 // JSON, so decode via round-trip instead of assuming concrete Go types — a
@@ -104,22 +94,22 @@ func segRIItem(seg chainSegment, chain semanticItem) semanticItem {
 	if segKind == "" {
 		switch {
 		case seg.Map != nil:
-			segKind = "map"
+			segKind = string(KindMap)
 		case len(seg.Assets) > 0 || strings.TrimSpace(seg.AssetID) != "" || len(seg.ImageLayers) > 0:
-			segKind = "image"
+			segKind = string(KindImageSynonym)
 		default:
-			segKind = "text_phrase"
+			segKind = string(KindTextPhraseSynonym)
 		}
 	}
 	if segTemplate == "" {
-		switch segKind {
-		case "map":
+		switch ItemKind(segKind) {
+		case KindMap:
 			segTemplate = "MAP"
-		case "image", "entity_image", "product", "logo":
+		case KindImageSynonym, KindEntityImage, KindProduct, KindLogo:
 			segTemplate = "IMAGE_OVERLAY"
-		case "entity_card", "organization", "location", "concept", "lower_third":
+		case KindEntityCard, KindOrganization, KindLocation, KindConcept, KindLowerThird:
 			segTemplate = "person_default"
-		case "number":
+		case KindNumber:
 			segTemplate = "NUMBER"
 		default:
 			segTemplate = "IMPORTANT_PHRASE"

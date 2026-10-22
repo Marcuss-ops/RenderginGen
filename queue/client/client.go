@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"io"
 	"math"
-	"net"
 	"net/http"
 	"net/url"
 	"strings"
@@ -408,25 +407,8 @@ func New(baseURL string) *Client {
 		// historical 30 s client timeout silently capped that budget at
 		// min(30s, maxWait+10s). Connect/TLS/response-header phases stay
 		// individually bounded so a hung server fails fast.
-		http: newQueueHTTPClient(),
+		http: NewStreamingHTTPClient(),
 	}
-}
-
-func newQueueHTTPClient() *http.Client {
-	return &http.Client{Transport: &http.Transport{
-		Proxy: http.ProxyFromEnvironment,
-		DialContext: (&net.Dialer{
-			Timeout:   10 * time.Second,
-			KeepAlive: 30 * time.Second,
-		}).DialContext,
-		ForceAttemptHTTP2:     true,
-		MaxIdleConns:          100,
-		MaxIdleConnsPerHost:   8,
-		IdleConnTimeout:       90 * time.Second,
-		TLSHandshakeTimeout:   10 * time.Second,
-		ExpectContinueTimeout: 1 * time.Second,
-		ResponseHeaderTimeout: 30 * time.Second,
-	}}
 }
 
 // Submit enqueues a job. A 409 (job already exists) is translated to
@@ -529,48 +511,38 @@ func (c *Client) Cancel(ctx context.Context, id string) error {
 	}
 }
 
-// RecoverableParents returns assembly anchors that still need finalization.
-func (c *Client) RecoverableParents(ctx context.Context) ([]string, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.baseURL+"/jobs/finalization/recoverable", nil)
+// getJSON is the single GET-and-decode path shared by the read endpoints.
+// The label becomes the error prefix so a failure still names the operation.
+func getJSON[T any](ctx context.Context, c *Client, path, label string) (T, error) {
+	var zero T
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.baseURL+path, nil)
 	if err != nil {
-		return nil, err
+		return zero, fmt.Errorf("queue %s request: %w", label, err)
 	}
 	resp, err := c.http.Do(req)
 	if err != nil {
-		return nil, err
+		return zero, fmt.Errorf("queue %s do: %w", label, err)
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
 		raw, _ := io.ReadAll(resp.Body)
-		return nil, fmt.Errorf("queue recoverable parents: HTTP %d: %s", resp.StatusCode, strings.TrimSpace(string(raw)))
+		return zero, fmt.Errorf("queue %s: HTTP %d: %s", label, resp.StatusCode, strings.TrimSpace(string(raw)))
 	}
-	var ids []string
-	if err := json.NewDecoder(resp.Body).Decode(&ids); err != nil {
-		return nil, err
+	var out T
+	if err := json.NewDecoder(resp.Body).Decode(&out); err != nil {
+		return zero, fmt.Errorf("queue %s decode: %w", label, err)
 	}
-	return ids, nil
+	return out, nil
+}
+
+// RecoverableParents returns assembly anchors that still need finalization.
+func (c *Client) RecoverableParents(ctx context.Context) ([]string, error) {
+	return getJSON[[]string](ctx, c, "/jobs/finalization/recoverable", "recoverable parents")
 }
 
 // Children returns a parent's child chunks in chunk order.
 func (c *Client) Children(ctx context.Context, parentID string) ([]Job, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.baseURL+"/jobs/"+url.PathEscape(parentID)+"/children", nil)
-	if err != nil {
-		return nil, err
-	}
-	resp, err := c.http.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		raw, _ := io.ReadAll(resp.Body)
-		return nil, fmt.Errorf("queue children: HTTP %d: %s", resp.StatusCode, strings.TrimSpace(string(raw)))
-	}
-	var jobs []Job
-	if err := json.NewDecoder(resp.Body).Decode(&jobs); err != nil {
-		return nil, err
-	}
-	return jobs, nil
+	return getJSON[[]Job](ctx, c, "/jobs/"+url.PathEscape(parentID)+"/children", "children")
 }
 
 // Get returns the current state of a job, including its artifact once done.
@@ -603,27 +575,7 @@ func (c *Client) Get(ctx context.Context, id string) (Job, error) {
 
 // Depth returns a snapshot of the queue state.
 func (c *Client) Depth(ctx context.Context) (Stats, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.baseURL+"/jobs/depth", nil)
-	if err != nil {
-		return Stats{}, fmt.Errorf("queue depth request: %w", err)
-	}
-
-	resp, err := c.http.Do(req)
-	if err != nil {
-		return Stats{}, fmt.Errorf("queue depth do: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		raw, _ := io.ReadAll(resp.Body)
-		return Stats{}, fmt.Errorf("queue depth: HTTP %d: %s", resp.StatusCode, strings.TrimSpace(string(raw)))
-	}
-
-	var stats Stats
-	if err := json.NewDecoder(resp.Body).Decode(&stats); err != nil {
-		return Stats{}, fmt.Errorf("queue depth decode: %w", err)
-	}
-	return stats, nil
+	return getJSON[Stats](ctx, c, "/jobs/depth", "depth")
 }
 
 // Health reports whether the queue service is reachable and healthy.

@@ -73,6 +73,31 @@ const (
 	KindEntityGroup ItemKind = "entity_group"
 )
 
+// Producer synonym and fused-chain kind spellings. They are item-kind
+// spellings too — behaviorOf resolves the synonyms and isChainKind resolves the
+// chains — so they are declared here with the canonical kinds. A consumer file
+// that writes ItemKind("image") or "phrase_chain" literally restates this
+// vocabulary; the conformance gate's kind_spelling_outside_owner rule catches it.
+const (
+	// KindImageSynonym is PipelineGen's spelling for image overlays
+	// (IMAGE_OVERLAY/IMAGE_ENTITY templates).
+	KindImageSynonym ItemKind = "image"
+	// KindVideoSynonym is PipelineGen's spelling for video overlays.
+	KindVideoSynonym ItemKind = "video"
+	// KindRenderedOverlaySynonym is the alternate spelling of video overlays
+	// used by older rendered-overlay producers.
+	KindRenderedOverlaySynonym ItemKind = "rendered_overlay"
+	// KindTextPhraseSynonym is PipelineGen's spelling for phrase text
+	// (behaviourally a plain text item).
+	KindTextPhraseSynonym ItemKind = "text_phrase"
+	// KindPhraseChain / KindImageChain / KindMixedChain / KindMapChain are the
+	// fused multi-animation chain kinds isChainKind resolves.
+	KindPhraseChain ItemKind = "phrase_chain"
+	KindImageChain  ItemKind = "image_chain"
+	KindMixedChain  ItemKind = "mixed_chain"
+	KindMapChain    ItemKind = "map_chain"
+)
+
 // overlayStatKind is the artifact-ledger bucket a template is counted as.
 type overlayStatKind uint8
 
@@ -143,8 +168,8 @@ var templateRegistry = map[string]TemplateSpec{
 	// motion_id; phrase_default supplies the independent text styling. They
 	// intentionally share text behavior with the numeric lane so the semantic
 	// number kind and its certified budget remain authoritative.
-	"METRIC_STAT_CARD":   {Kind: KindNumber, RequiresPreset: true, Family: PresetText, MotionTarget: "metric", Stat: overlayStatWord},
-	"TIMELINE_DATE_CARD": {Kind: KindNumber, RequiresPreset: true, Family: PresetText, MotionTarget: "date", Stat: overlayStatWord},
+	"METRIC_STAT_CARD":   {Kind: KindNumber, RequiresPreset: true, Family: PresetText, MotionTarget: TargetMetric, Stat: overlayStatWord},
+	"TIMELINE_DATE_CARD": {Kind: KindNumber, RequiresPreset: true, Family: PresetText, MotionTarget: TargetDate, Stat: overlayStatWord},
 	"ENTITY_CARD_PERSON": {Kind: KindEntityCard, Family: PresetText, Stat: overlayStatEntity},
 
 	// Image overlays.
@@ -239,9 +264,9 @@ func behaviorOf(kind ItemKind) kindBehavior {
 	switch kind {
 	case KindEntityCard, KindOrganization, KindLocation, KindConcept:
 		return behaviorEntity
-	case KindEntityImage, KindImagePopup, KindProduct, KindLogo, KindLightLeak, ItemKind("image"), ItemKind("image_chain"):
+	case KindEntityImage, KindImagePopup, KindProduct, KindLogo, KindLightLeak, KindImageSynonym, KindImageChain:
 		return behaviorImage
-	case KindVideoOverlay, KindAdjustment, ItemKind("video"), ItemKind("rendered_overlay"):
+	case KindVideoOverlay, KindAdjustment, KindVideoSynonym, KindRenderedOverlaySynonym:
 		return behaviorVideo
 	case KindShape:
 		return behaviorShape
@@ -286,11 +311,6 @@ func isEntityKind(kind ItemKind) bool { return behaviorOf(kind) == behaviorEntit
 // therefore requires an asset ref.
 func isImageKind(kind ItemKind) bool { return behaviorOf(kind) == behaviorImage }
 
-func isImageOrVideoKind(kind ItemKind) bool {
-	behavior := behaviorOf(kind)
-	return behavior == behaviorImage || behavior == behaviorVideo
-}
-
 // isVideoKind reports whether a kind lowers to a timed video layer (a
 // pre-rendered overlay segment) and therefore requires an asset ref.
 func isVideoKind(kind ItemKind) bool { return behaviorOf(kind) == behaviorVideo }
@@ -304,3 +324,41 @@ func isGroupKind(kind ItemKind) bool { return behaviorOf(kind) == behaviorGroup 
 
 // isMapKind reports whether a kind lowers to the georeferenced map layer set.
 func isMapKind(kind ItemKind) bool { return behaviorOf(kind) == behaviorMap }
+
+// isChainKind reports whether a resolved kind is a fused multi-animation
+// chain rather than a standalone item. It lives here, next to behaviorOf,
+// because chain-ness is a fact about the kind vocabulary.
+func isChainKind(kind ItemKind) bool {
+	switch ItemKind(strings.ToLower(strings.TrimSpace(string(kind)))) {
+	case KindPhraseChain, KindImageChain, KindMixedChain, KindMapChain:
+		return true
+	}
+	return false
+}
+
+// Kind groupings. These are the subsets the picker/inventory surfaces select
+// by; they were restated as string lists in image_motion_inventory.go. One
+// declaration per grouping, consumed as wire strings through kindStrings.
+var (
+	// imageCompositionKinds are the item kinds selectable in image
+	// compositions. Light leaks are full-frame effects and chains are fused
+	// items, so neither is an image composition member.
+	imageCompositionKinds = []ItemKind{
+		KindEntityImage, KindImageSynonym, KindImagePopup, KindProduct, KindLogo,
+	}
+	// captionCapableKinds are the item kinds whose items may carry a caption.
+	captionCapableKinds = []ItemKind{
+		KindEntityCard, KindOrganization, KindLocation, KindConcept,
+		KindEntityImage, KindImageSynonym, KindImagePopup, KindProduct, KindLogo,
+		KindLightLeak,
+	}
+)
+
+// kindStrings projects kind values to their wire spellings.
+func kindStrings(kinds []ItemKind) []string {
+	out := make([]string, len(kinds))
+	for i, kind := range kinds {
+		out[i] = string(kind)
+	}
+	return out
+}

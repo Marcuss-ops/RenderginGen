@@ -222,14 +222,13 @@ type RuntimeCaptionCount struct {
 
 func runtimeAnimationUseCases(allOptions []RuntimeMotionOption, definitions map[string]*motion.MotionDefinition) []RuntimeAnimationUseCase {
 	groups := collectRuntimeAnimationMotionGroups(allOptions, definitions)
-	imageKinds := []string{"entity_image", "image", "image_popup", "product", "logo"}
-	captionKinds := []string{
-		string(KindEntityCard), string(KindOrganization), string(KindLocation), string(KindConcept),
-		string(KindEntityImage), "image", string(KindImagePopup), string(KindProduct), string(KindLogo), string(KindLightLeak),
-	}
+	imageKinds := kindStrings(imageCompositionKinds)
+	captionKinds := kindStrings(captionCapableKinds)
 	useCases := []RuntimeAnimationUseCase{
-		{ID: "important_phrase", ItemKinds: []string{"important_phrase"}, Cardinality: "one text layer", Description: "Editorial phrase motion; choose a text preset separately.", MotionIDs: groups.phrases},
-		{ID: "short_important_phrase", ItemKinds: []string{"important_phrase"}, Cardinality: "one text layer", Description: "Short-phrase styles and modern typewriter motions; choose a text preset separately.", MotionIDs: groups.shortPhrases},
+		// The two phrase use-case IDs deliberately mirror the item kind's
+		// spelling; deriving it keeps the two vocabularies from drifting.
+		{ID: string(KindImportantPhrase), ItemKinds: []string{string(KindImportantPhrase)}, Cardinality: "one text layer", Description: "Editorial phrase motion; choose a text preset separately.", MotionIDs: groups.phrases},
+		{ID: "short_important_phrase", ItemKinds: []string{string(KindImportantPhrase)}, Cardinality: "one text layer", Description: "Short-phrase styles and modern typewriter motions; choose a text preset separately.", MotionIDs: groups.shortPhrases},
 	}
 	for _, definition := range imageCompositionCatalog {
 		cardinality := imageCompositionCardinality(definition.Composition)
@@ -264,7 +263,7 @@ func runtimeAnimationUseCases(allOptions []RuntimeMotionOption, definitions map[
 		})
 	}
 	useCases = append(useCases,
-		RuntimeAnimationUseCase{ID: "entities", ItemKinds: []string{string(KindEntityCard), string(KindOrganization), string(KindLocation), string(KindConcept), string(KindEntityImage)}, Cardinality: "one image layer per entity", Description: "Entity images rotate through their own bounded image-motion pool; caption styles remain independently selectable.", MotionIDs: groups.forTarget("image")},
+		RuntimeAnimationUseCase{ID: "entities", ItemKinds: []string{string(KindEntityCard), string(KindOrganization), string(KindLocation), string(KindConcept), string(KindEntityImage)}, Cardinality: "one image layer per entity", Description: "Entity images rotate through their own bounded image-motion pool; caption styles remain independently selectable.", MotionIDs: groups.forTarget(TargetImage)},
 		RuntimeAnimationUseCase{ID: "entity_caption", ItemKinds: captionKinds, Cardinality: "one caption per image or composite child", Description: "Caption motion is selected separately from the image motion, independent of whether the image represents an entity.", MotionIDs: groups.captions},
 	)
 	for _, definition := range dataCompositionCatalog {
@@ -314,13 +313,13 @@ type runtimeAnimationMotionGroups struct {
 
 func (groups runtimeAnimationMotionGroups) forTarget(target string) []string {
 	switch target {
-	case "image":
+	case TargetImage:
 		return groups.images
-	case "map_view":
+	case TargetMapView:
 		return groups.maps
-	case "metric":
+	case TargetMetric:
 		return groups.metrics
-	case "date":
+	case TargetDate:
 		return groups.dates
 	default:
 		return nil
@@ -334,27 +333,27 @@ func collectRuntimeAnimationMotionGroups(options []RuntimeMotionOption, definiti
 		if definition == nil || option.Deprecated {
 			continue
 		}
-		shortPhrase := motionDefinitionAdmitsTarget(definition, "short_phrase")
+		shortPhrase := motionDefinitionAdmitsTarget(definition, TargetShortPhrase)
 		if shortPhrase {
 			groups.shortPhrases = append(groups.shortPhrases, option.ID)
 		}
 		// The two picker categories share an item kind but must stay disjoint.
-		if !shortPhrase && motionDefinitionAdmitsTarget(definition, "important_phrase") {
+		if !shortPhrase && motionDefinitionAdmitsTarget(definition, TargetImportantPhrase) {
 			groups.phrases = append(groups.phrases, option.ID)
 		}
-		if motionDefinitionAdmitsTarget(definition, "image") && !isMultiImageRecipe(definition) {
+		if motionDefinitionAdmitsTarget(definition, TargetImage) && !isMultiImageRecipe(definition) {
 			groups.images = append(groups.images, option.ID)
 		}
-		if motionDefinitionAdmitsTarget(definition, "map_view") {
+		if motionDefinitionAdmitsTarget(definition, TargetMapView) {
 			groups.maps = append(groups.maps, option.ID)
 		}
-		if motionDefinitionAdmitsTarget(definition, "caption") {
+		if motionDefinitionAdmitsTarget(definition, TargetCaption) {
 			groups.captions = append(groups.captions, option.ID)
 		}
-		if motionDefinitionAdmitsTarget(definition, "metric") {
+		if motionDefinitionAdmitsTarget(definition, TargetMetric) {
 			groups.metrics = append(groups.metrics, option.ID)
 		}
-		if motionDefinitionAdmitsTarget(definition, "date") {
+		if motionDefinitionAdmitsTarget(definition, TargetDate) {
 			groups.dates = append(groups.dates, option.ID)
 		}
 	}

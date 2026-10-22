@@ -402,7 +402,7 @@ func TestCharacterTrackingRevealMakesGlyphsVisible(t *testing.T) {
 			if len(property.Keyframes) < 2 {
 				t.Fatalf("opacity has %d keyframes, want an entrance", len(property.Keyframes))
 			}
-			last, ok := shortPhraseNumericValue(property.Keyframes[len(property.Keyframes)-1].Value)
+			last, ok := NumericValue(property.Keyframes[len(property.Keyframes)-1].Value)
 			if !ok || last < 0.99 {
 				t.Fatalf("final glyph opacity = %#v, want fully visible", property.Keyframes[len(property.Keyframes)-1].Value)
 			}

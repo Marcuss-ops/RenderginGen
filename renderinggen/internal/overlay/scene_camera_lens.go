@@ -73,7 +73,7 @@ func DisperseDepths(count int, baseZ, spacing float64) ([]float64, error) {
 	if count < 1 {
 		return nil, fmt.Errorf("overlay: disperse needs at least 1 layer, got %d", count)
 	}
-	if !isFinite(baseZ) || !isFinite(spacing) {
+	if !finite(baseZ) || !finite(spacing) {
 		return nil, fmt.Errorf("overlay: disperse base_z/spacing must be finite")
 	}
 	out := make([]float64, count)
@@ -92,12 +92,8 @@ func ScaleToPreserveApparentSize(zOld, zNew float64) (float64, error) {
 	if zOld == 0 || zNew == 0 {
 		return 0, fmt.Errorf("overlay: apparent-size compensation needs nonzero depths, got %v -> %v", zOld, zNew)
 	}
-	if !isFinite(zOld) || !isFinite(zNew) {
+	if !finite(zOld) || !finite(zNew) {
 		return 0, fmt.Errorf("overlay: apparent-size compensation needs finite depths")
 	}
 	return math.Abs(zNew) / math.Abs(zOld), nil
-}
-
-func isFinite(v float64) bool {
-	return !math.IsNaN(v) && !math.IsInf(v, 0)
 }

@@ -31,8 +31,10 @@ package server
 import (
 	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/Marcuss-ops/RenderingGen/objectstore/internal/buildinfo"
 	"github.com/Marcuss-ops/RenderingGen/objectstore/internal/store"
@@ -119,19 +121,29 @@ func (s *Server) verify(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (s *Server) head(w http.ResponseWriter, r *http.Request) {
-	key := r.PathValue("key")
-	reader, size, _, err := s.store.Get(key)
-	if errors.Is(err, store.ErrNotFound) {
+// openObject returns the object reader for key, or writes the mapped failure
+// and reports false. GET and HEAD share one failure contract: an absent object
+// is a 404, a malformed content address is the caller's 400, and anything else
+// is this server's 500.
+func (s *Server) openObject(w http.ResponseWriter, r *http.Request, key string) (io.ReadSeekCloser, int64, time.Time, bool) {
+	reader, size, modTime, err := s.store.Get(key)
+	switch {
+	case errors.Is(err, store.ErrNotFound):
 		http.NotFound(w, r)
-		return
-	}
-	if errors.Is(err, store.ErrInvalidContentAddress) {
+		return nil, 0, time.Time{}, false
+	case errors.Is(err, store.ErrInvalidContentAddress):
 		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-	if err != nil {
+		return nil, 0, time.Time{}, false
+	case err != nil:
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return nil, 0, time.Time{}, false
+	}
+	return reader, size, modTime, true
+}
+
+func (s *Server) head(w http.ResponseWriter, r *http.Request) {
+	reader, size, _, ok := s.openObject(w, r, r.PathValue("key"))
+	if !ok {
 		return
 	}
 	reader.Close()
@@ -181,17 +193,8 @@ func (s *Server) get(w http.ResponseWriter, r *http.Request) {
 	// Stream, never buffer: the backend hands back a seekable reader (a file on
 	// the disk adapter, a byte slice on the in-process one), and a multi-GB
 	// rendered artifact must not become a per-request RAM spike.
-	reader, _, modTime, err := s.store.Get(key)
-	if errors.Is(err, store.ErrNotFound) {
-		http.NotFound(w, r)
-		return
-	}
-	if errors.Is(err, store.ErrInvalidContentAddress) {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	reader, _, modTime, ok := s.openObject(w, r, key)
+	if !ok {
 		return
 	}
 	defer reader.Close()

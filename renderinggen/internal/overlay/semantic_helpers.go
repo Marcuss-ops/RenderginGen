@@ -82,7 +82,7 @@ func motionFrameParam(params map[string]any, name string) (int, error) {
 		return 0, nil
 	}
 	frames, err := toFloat(value)
-	if err != nil || math.IsNaN(frames) || math.IsInf(frames, 0) || math.Trunc(frames) != frames || frames < 0 || frames > 240 {
+	if err != nil || !finite(frames) || math.Trunc(frames) != frames || frames < 0 || frames > 240 {
 		return 0, fmt.Errorf("overlay: motion_params.%s must be an integer in [0, 240] (zero keeps the catalog/preset value)", name)
 	}
 	return int(frames), nil
@@ -117,6 +117,31 @@ func itemFrames(item semanticItem, fpsNum, fpsDen int64) (int64, int64) {
 		return usFrames(*item.StartUS, *item.StartUS+*item.DurationUS, fpsNum, fpsDen)
 	}
 	return msFrames(item.StartMS, item.EndMS, fpsNum, fpsDen)
+}
+
+// itemWindowUS returns the item's canonical [start, end) window in
+// microseconds. Canonical start_us/duration_us wins; legacy millisecond items
+// are projected at 1000us/ms so every downstream calculation reads one unit
+// instead of the rounded millisecond mirror.
+func itemWindowUS(item semanticItem) (int64, int64) {
+	if item.StartUS != nil && item.DurationUS != nil {
+		return *item.StartUS, *item.StartUS + *item.DurationUS
+	}
+	return item.StartMS * 1000, item.EndMS * 1000
+}
+
+// imageLayerWindowUS returns a child layer's declared window in microseconds,
+// relative to its parent item start. Child image layers only carry
+// milliseconds, so this is the single projection point for every recipe.
+func imageLayerWindowUS(layer SemanticImageLayer) (int64, int64) {
+	return layer.StartMS * 1000, layer.EndMS * 1000
+}
+
+// imageLayerFrames converts a child layer window to frames relative to its
+// parent item start.
+func imageLayerFrames(layer SemanticImageLayer, fpsNum, fpsDen int64) (int64, int64) {
+	startUS, endUS := imageLayerWindowUS(layer)
+	return usFrames(startUS, endUS, fpsNum, fpsDen)
 }
 
 func usFrames(startUS, endUS, fpsNum, fpsDen int64) (int64, int64) {
@@ -180,8 +205,25 @@ func validatePreset(p, id, kind string) (string, error) {
 // derives the layer id from the item id ("<id>:image"), including for the
 // image-only entity path.
 func imageLayer(ri resolvedItem, asset string) Layer {
-	w, h := intParam(ri.Params, "width", 320), intParam(ri.Params, "height", 320)
+	// 0 means "not authored": the preset may supply the box, and only after
+	// that does defaultImageBox apply the 320 fallback. A 320 sentinel here
+	// would make the certified penta 320px strip indistinguishable from an
+	// absent width and silently inflate it to the preset's 480px box.
+	w, h := intParam(ri.Params, "width", 0), intParam(ri.Params, "height", 0)
 	return Layer{ID: imageLayerID(ri.Item.ID), Type: "image", Asset: asset, BoxWidth: w, BoxHeight: h, Size: []float64{float64(w), float64(h)}, Fit: stringParam(ri.Params, "fit", "contain"), Radius: float64(intParam(ri.Params, "radius", 0)), StartFrame: ri.Start, DurationFrames: ri.End - ri.Start}
+}
+
+// defaultImageBox applies the fallback card box only when neither the item nor
+// its preset declared one, then keeps the serialized Size in sync with the
+// compiler-only Box fields.
+func defaultImageBox(layer *Layer) {
+	if layer.BoxWidth <= 0 {
+		layer.BoxWidth = 320
+	}
+	if layer.BoxHeight <= 0 {
+		layer.BoxHeight = 320
+	}
+	layer.Size = []float64{float64(layer.BoxWidth), float64(layer.BoxHeight)}
 }
 
 // imageLayerID / overlayLayerID are the only spellings of an item's layer ids.
@@ -195,16 +237,16 @@ func overlayLayerID(itemID string) string { return itemID + ":overlay" }
 
 func applyPresetDefinition(layer *Layer, d PresetDefinition) {
 	if d.Family == PresetImage {
-		if layer.BoxWidth == 320 && d.Layout.BoxWidth > 0 {
+		if layer.BoxWidth <= 0 && d.Layout.BoxWidth > 0 {
 			layer.BoxWidth = d.Layout.BoxWidth
 		}
-		if layer.BoxHeight == 320 && d.Layout.BoxHeight > 0 {
+		if layer.BoxHeight <= 0 && d.Layout.BoxHeight > 0 {
 			layer.BoxHeight = d.Layout.BoxHeight
 		}
 		// BoxWidth/BoxHeight are compiler-only layout inputs, while Size is
 		// the serialized Chronon geometry. Keep them synchronized when an
 		// official image preset supplies its dimensions; otherwise Chronon
-		// receives the stale 320x320 fallback and the image card geometry can
+		// receives the stale zero/unset box and the image card geometry can
 		// diverge from the resolved layout.
 		if len(layer.Size) >= 2 {
 			layer.Size[0] = float64(layer.BoxWidth)
