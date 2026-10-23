@@ -89,11 +89,14 @@ func (p *Processor) RunGPU(ctx context.Context, prepared *PreparedJob) error {
 		// what the CLI is asked to run with.
 		HardwareEncoder: p.hardwareEncoder,
 		EncoderBackend:  p.encoderBackend,
-		// Canonical verification: the worker resolves the policy (single
-		// authority, pipeline.receipt_verify) and requests it explicitly from
-		// Chronon; Chronon verifies and records what actually ran in the
-		// receipt, which FinalizeJob enforces.
-		ReceiptVerify: string(p.receiptVerifyLevel()),
+		// Canonical verification: the worker resolves the ENFORCEMENT policy
+		// (single authority, pipeline.receipt_verify) and asks Chronon for the
+		// matching wire tier (chrononReceiptRequest). Under normal the request
+		// is the fast tier: the promised full decode runs in the worker's post
+		// pool (enforceDecodableOutput), never on the render lane. Chronon
+		// records what it actually ran in the receipt, which FinalizeJob
+		// enforces.
+		ReceiptVerify: p.chrononReceiptRequest(),
 		Requirements: chronon.ExecutionRequirements{
 			Backend:     renderBackend,
 			GPURequired: gpuRequired,

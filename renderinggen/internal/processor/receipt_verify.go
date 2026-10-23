@@ -1,14 +1,32 @@
 // receipt_verify.go owns the single output-verification policy authority on
-// the worker: the policy is resolved once (fast/normal/certify), requested
-// explicitly from Chronon and enforced from Chronon's receipt — never
-// duplicated by a second worker-side decode.
+// the worker: the policy is resolved once (fast/normal/certify/strict) and
+// split into two explicit halves at the Chronon boundary —
+//
+//		enforcement  what the worker demands of the artifact: the receipt gate,
+//	            the identity rule and, under a decode-promising policy, one
+//	            complete decode of the output
+//		request      the wire tier the worker asks Chronon to run (fast | certify)
+//
+// The split exists so a decode never sits on the GPU lane's critical path.
+// Chronon verifies an already-finished render while still holding the render
+// device, so asking it for the full-decode tier keeps a lane busy decoding an
+// output that is already rendered. Under normal the worker therefore requests
+// the FAST tier and owns the promised decode itself — in the post pool
+// (enforceDecodableOutput), where it overlaps the next render instead of
+// blocking it. The receipt records what Chronon actually ran
+// (verification.resolved_policy); the worker records what IT ran
+// (worker_decode_verified). Exactly one complete decode happens per artifact:
+// Chronon's when the receipt proves it, the worker's otherwise.
 package processor
 
 import (
+	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/chronon"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/media"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/metricnames"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/workerlog"
 )
@@ -31,10 +49,12 @@ const (
 )
 
 // receiptVerifyLevel is the SINGLE verification-policy authority on the
-// worker. fast (the production default) verifies container/stream metadata
-// without re-decoding the freshly muxed output; normal performs one complete
-// decode; certify is the explicit correctness mode used by CI/golden
-// benchmarks.
+// worker. fast verifies container/stream metadata without re-decoding the
+// freshly muxed output; normal promises one complete decode — performed by
+// the worker's post-lane gate (enforceDecodableOutput) whenever the receipt
+// proves no in-daemon decode ran; certify is the explicit correctness mode
+// used by CI/golden benchmarks and keeps Chronon's in-daemon decode as
+// independent evidence.
 //
 // The value comes from configuration (pipeline.receipt_verify, and through the
 // aliased RENDERINGGEN_RECEIPT_VERIFY), never from a read inside this package:
@@ -42,9 +62,9 @@ const (
 // the worker and its Chronon subprocess cannot run different policies. config
 // validates the accepted spellings at load, so anything else reaching here is a
 // caller that built a Processor directly — which gets the fast default rather
-// than an invented policy. The resolved level is forwarded explicitly to the CLI
-// (chronon.RenderRequest.ReceiptVerify -> CHRONON_RECEIPT_VERIFY on the
-// subprocess env) by RunGPU.
+// than an invented policy. The ENFORCEMENT level is what the gates below apply;
+// the wire tier Chronon is asked for is a separate, explicit mapping
+// (chrononReceiptRequest), never this value forwarded verbatim.
 func (p *Processor) receiptVerifyLevel() renderVerifyLevel {
 	switch p.receiptVerify {
 	case renderVerifyNormal:
@@ -58,10 +78,102 @@ func (p *Processor) receiptVerifyLevel() renderVerifyLevel {
 	}
 }
 
+// chrononReceiptRequest maps the enforcement policy onto the wire tier the
+// worker asks Chronon to run (chronon.RenderRequest.ReceiptVerify ->
+// CHRONON_RECEIPT_VERIFY on the CLI env, receipt_verify on the daemon IPC).
+// It is deliberately NOT the policy forwarded verbatim:
+//
+//   - normal requests fast. The promised full decode is performed by the
+//     worker's post-lane gate (enforceDecodableOutput), so the render lane is
+//     never held for a decode of an output that is already rendered. The
+//     receipt then honestly records that Chronon ran the fast tier.
+//   - certify requests certify. CI and golden certification keep Chronon's
+//     in-daemon decode as independent evidence — speed is not the constraint
+//     there, and the worker gate still backstops a receipt that proves no
+//     decode.
+//   - fast requests fast: no decode is promised anywhere.
+//   - strict requests fast: the wire vocabulary has no strict tier (fast,
+//     normal, certify), and strict is documented as the fail-closed rule
+//     WITHOUT the certify decode cost. Forwarding the worker-only spelling
+//     leaked a non-wire value at the daemon.
+func (p *Processor) chrononReceiptRequest() string {
+	if p.receiptVerifyLevel() == renderVerifyCertify {
+		return chronon.ReceiptVerifyCertify
+	}
+	return chronon.ReceiptVerifyFast
+}
+
+// validateDecode is the full-decode tool behind the worker's post-lane gate,
+// wrapped in a variable so the gate's decision logic is testable without
+// spawning ffmpeg per case. It resolves its binary through the same media
+// configuration as every other tool call (media.Configure).
+var validateDecode = media.ValidateDecode
+
+// enforceDecodableOutput makes good on the decode promise of the enforcement
+// policy, OFF the render lane: it runs in the post pool, inside FinalizeJob,
+// after the render device has already been released to the next job.
+//
+// Exactly one complete decode per artifact. When the receipt PROVES Chronon
+// decoded the output in-daemon (receiptProvesDecode), there is nothing to
+// repeat — the receipt gate above already required that receipt to pass.
+// Otherwise (the fast tier was resolved: under normal that is the expected
+// case, because the worker requested it to keep the lane free) the worker runs
+// the same full-decode gate itself before the bytes can be stored or
+// published. A decode failure rejects the artifact exactly like a failing
+// receipt check: nothing is published from a bitstream that does not decode.
+//
+// fast and strict promise no decode at all and never pay for one here.
+func (p *Processor) enforceDecodableOutput(ctx context.Context, outputPath string, receipt chronon.MediaReceipt, receiptErr error, metrics map[string]float64, jobIDParts ...string) error {
+	switch p.receiptVerifyLevel() {
+	case renderVerifyNormal, renderVerifyCertify:
+	default:
+		return nil
+	}
+	if receiptErr == nil && receiptProvesDecode(receipt) {
+		return nil
+	}
+	jobID := ""
+	if len(jobIDParts) > 0 {
+		jobID = jobIDParts[0]
+	}
+	start := time.Now()
+	err := validateDecode(ctx, outputPath)
+	elapsedUS := float64(time.Since(start).Microseconds())
+	if metrics != nil {
+		metrics[metricnames.WorkerDecodeUS] = elapsedUS
+		metrics[metricnames.WorkerDecodeMS] = elapsedUS / 1000
+	}
+	if err != nil {
+		return fmt.Errorf("processor: full-decode verification failed (policy=%s, worker post-lane gate): %w", p.receiptVerifyLevel(), err)
+	}
+	if metrics != nil {
+		metrics[metricnames.WorkerDecodeVerified] = 1
+	}
+	workerlog.ByJobID(jobID).Infof("post-lane decode gate passed (policy=%s, worker-decoded in %.0fms): the receipt proved no in-daemon decode", p.receiptVerifyLevel(), elapsedUS/1000)
+	return nil
+}
+
+// receiptProvesDecode reports whether the receipt is evidence that a complete
+// decode of the output ran inside Chronon. The resolved policy is the
+// contract (normal/certify decode, fast does not); the granular decode check
+// covers receipts that ran the check without naming a decode-promising tier.
+func receiptProvesDecode(receipt chronon.MediaReceipt) bool {
+	if strings.EqualFold(strings.TrimSpace(receipt.Verification.Decode), "pass") {
+		return true
+	}
+	switch strings.ToLower(strings.TrimSpace(receipt.ResolvedVerificationPolicy())) {
+	case chronon.ReceiptVerifyNormal, chronon.ReceiptVerifyCertify:
+		return true
+	default:
+		return false
+	}
+}
+
 // enforceReceiptVerificationDirect makes the worker enforce — never duplicate —
 // Chronon's canonical output verification. Under normal/certify the receipt
-// is mandatory evidence: Chronon promised a full decode there, and a missing
-// receipt means the canonical verifier did not run, so the artifact is
+// is mandatory evidence: it is the render's canonical record (identity claim,
+// media facts and the verification that actually ran), and a missing receipt
+// means the canonical verifier did not run at all, so the artifact is
 // rejected (fail closed) rather than silently accepted on the worker's own
 // probe. Under fast a missing receipt is tolerated: the gate is the
 // encoder/muxer success plus the profile/overlay probe validation below. When

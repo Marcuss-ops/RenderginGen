@@ -79,11 +79,16 @@ pipeline:
   workspace_lease_ttl: 2h
   lease_renew_attempts: 3 # renewal retries per tick before aborting the job
   lease_renew_backoff: 2s # first retry delay (doubles, capped at lease/2)
-  # Output-verification policy the worker requests from Chronon and enforces
-  # from its receipt: normal decodes every rendered output completely; this
-  # catches corrupt overlay tail frames before an MP4 is published | fast | certify.
-  # config rejects any other spelling at load: silently running fast because of
-  # a typo would mean an operator asked for proof and did not get it.
+  # Output-verification policy the worker enforces on every rendered output:
+  # normal promises ONE complete decode of each artifact and catches corrupt
+  # overlay tail frames before an MP4 is published. The decode runs OFF the
+  # render lane: the worker asks Chronon for the fast tier (no in-daemon
+  # decode) and the post-pool gate performs the decode whenever the receipt
+  # cannot prove Chronon already did (internal/processor/receipt_verify.go).
+  # fast promises no decode; certify keeps Chronon's in-daemon decode for
+  # CI/golden. config rejects any other spelling at load: silently running
+  # fast because of a typo would mean an operator asked for proof and did not
+  # get it.
   receipt_verify: normal
   # Sampled ffmpeg visual gate for jobs whose plan carries an authored overlay.
   # Off by default: it costs an extra decode of the finished output.

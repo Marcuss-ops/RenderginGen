@@ -20,14 +20,20 @@ import "strings"
 
 // Phase timings, in microseconds, of the staged render pipeline.
 const (
-	OverlayCompileUS    = "overlay_compile_us"
-	AssetMaterializeUS  = "asset_materialize_us"
-	PlanUS              = "plan_us"
-	SubtitleBurnUS      = "subtitle_burn_us"
-	ChrononRenderUS     = "chronon_render_us"
-	RenderUS            = "render_us" // alias of ChrononRenderUS on the artifact metrics map
-	ProbeUS             = "probe_us"
-	SHA256US            = "sha256_us"
+	OverlayCompileUS   = "overlay_compile_us"
+	AssetMaterializeUS = "asset_materialize_us"
+	PlanUS             = "plan_us"
+	SubtitleBurnUS     = "subtitle_burn_us"
+	ChrononRenderUS    = "chronon_render_us"
+	RenderUS           = "render_us" // alias of ChrononRenderUS on the artifact metrics map
+	ProbeUS            = "probe_us"
+	SHA256US           = "sha256_us"
+	// WorkerDecodeUS is the worker's OWN full-decode gate (the post-lane half
+	// of the verification policy): under a policy that promises one complete
+	// decode, the worker decodes the output in the post pool whenever Chronon's
+	// receipt cannot prove Chronon already decoded it in-daemon. The decode is
+	// therefore never on the GPU lane's critical path and never runs twice.
+	WorkerDecodeUS      = "worker_decode_us"
 	ObjectStoreUploadUS = "objectstore_upload_us"
 	PublishUS           = "publish_us"
 	DriveUploadUS       = "drive_upload_us"
@@ -62,6 +68,7 @@ const (
 	RenderMS            = "render_ms"
 	ProbeMS             = "probe_ms"
 	SHA256MS            = "sha256_ms"
+	WorkerDecodeMS      = "worker_decode_ms"
 	ObjectStoreUploadMS = "objectstore_upload_ms"
 	PublishMS           = "publish_ms"
 	DrivePublishMS      = "drive_publish_ms"
@@ -171,6 +178,14 @@ const (
 	ReceiptIdentityUnusable   = "receipt_identity_unusable"
 	ReceiptSizeMismatch       = "receipt_size_mismatch"
 
+	// WorkerDecodeVerified counts an artifact whose promised full decode was
+	// performed by the WORKER's post-lane gate (and passed). Its absence under
+	// normal/certify means the receipt proved Chronon ran the decode in-daemon;
+	// under fast/strict no decode is promised at all. Together with
+	// chronon_receipt_verification_policy it makes "who decoded this output"
+	// answerable from the ledger alone.
+	WorkerDecodeVerified = "worker_decode_verified"
+
 	// L2CacheCorrupt counts L2 lookups that failed with a permission or I/O
 	// error (EACCES/EIO) or hit a non-regular/truncated entry: a real
 	// degradation, not an ordinary miss. A miss is normal (L3 is the source
@@ -224,7 +239,7 @@ const (
 var vocab = map[string]string{
 	OverlayCompileUS: UnitUS, AssetMaterializeUS: UnitUS, PlanUS: UnitUS,
 	SubtitleBurnUS: UnitUS, ChrononRenderUS: UnitUS, RenderUS: UnitUS,
-	ProbeUS: UnitUS, SHA256US: UnitUS, ObjectStoreUploadUS: UnitUS,
+	ProbeUS: UnitUS, SHA256US: UnitUS, WorkerDecodeUS: UnitUS, ObjectStoreUploadUS: UnitUS,
 	PublishUS: UnitUS, DriveUploadUS: UnitUS, TotalUS: UnitUS, GPUGapUS: UnitUS,
 	GPULaneWaitUS:  UnitUS,
 	PrepareTotalUS: UnitUS, PrepareMaterializeUS: UnitUS, PrepareSceneCompileUS: UnitUS,
@@ -233,6 +248,7 @@ var vocab = map[string]string{
 
 	OverlayCompileMS: UnitMS, AssetMaterializeMS: UnitMS, PlanMS: UnitMS,
 	SubtitleBurnMS: UnitMS, RenderMS: UnitMS, ProbeMS: UnitMS, SHA256MS: UnitMS,
+	WorkerDecodeMS:      UnitMS,
 	ObjectStoreUploadMS: UnitMS, PublishMS: UnitMS, DrivePublishMS: UnitMS,
 	TotalMS: UnitMS, GPULaneWaitMS: UnitMS, DaemonAdmissionWaitMS: UnitMS,
 	ChrononReceiptDaemonAdmissionWaitMS: UnitMS,
@@ -255,7 +271,8 @@ var vocab = map[string]string{
 	CompositionPredictionDivergence: UnitCount, CompositionPredictionUnverifiable: UnitCount,
 	ReceiptIdentityUnverified: UnitCount, ReceiptIdentityMismatch: UnitCount,
 	ReceiptIdentityUnusable: UnitCount, ReceiptSizeMismatch: UnitCount,
-	ImportVerified: UnitCount, ImportIdentityUS: UnitUS, ImportTotalUS: UnitUS,
+	WorkerDecodeVerified: UnitCount,
+	ImportVerified:       UnitCount, ImportIdentityUS: UnitUS, ImportTotalUS: UnitUS,
 	L2CacheCorrupt: UnitCount,
 
 	EntityCount: UnitCount, ImportantPhraseCount: UnitCount, ImportantWordCount: UnitCount,
