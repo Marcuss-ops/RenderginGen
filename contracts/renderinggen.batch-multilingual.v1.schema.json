@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://renderinggen.dev/schemas/renderinggen.batch-multilingual.v1.schema.json",
+  "title": "RenderingGen Multilingual Batch Manifest V1",
+  "description": "Strategy-A batch master: one base video pass rendered once, then one overlay-only pass per language. The base job carries the shared background/source and entity geometry; each language job carries only the localized text/overlay plan and binds to the base artifact by its content hash. This halves-to-two-thirds GPU cost versus rendering each language from scratch: entities and background are rendered once and reused.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "batch_id", "base", "languages"],
+  "properties": {
+    "schema_version": { "const": "renderinggen.batch-multilingual.v1" },
+    "batch_id": { "type": "string", "minLength": 1, "description": "Batch identifier scoping every derived job ID and idempotency key." },
+    "base": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "render_plan"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "description": "Logical base job ID within the batch." },
+        "render_plan": { "type": "object", "description": "Semantic renderinggen.overlay-plan.v1 for the base pass (background/source video, shared entities; no language text)." },
+        "assets": { "type": "array", "items": { "$ref": "#/$defs/asset" } }
+      }
+    },
+    "languages": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["language", "render_plan"],
+        "properties": {
+          "language": { "type": "string", "minLength": 1, "description": "BCP-47 tag (en, it, es...). Unique within the manifest." },
+          "base_job_id": { "type": "string", "description": "Must equal the base entry's id when present (cross-checked at expansion)." },
+          "render_plan": { "type": "object", "description": "Language-specific semantic overlay-plan.v1 (localized strings and timings)." },
+          "assets": { "type": "array", "items": { "$ref": "#/$defs/asset" }, "description": "Language-specific assets (localized ASS tracks, fonts, audio)." },
+          "audio_source_asset": { "$ref": "#/$defs/asset", "description": "Localized voiceover audio muxed onto the base video during the overlay pass." }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "asset": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["hash", "logical_path"],
+      "properties": {
+        "hash": { "type": "string", "minLength": 1, "description": "SHA-256 of the asset bytes in the artifact store." },
+        "logical_path": { "type": "string", "minLength": 1, "description": "Workspace-relative materialization path the render_plan references." },
+        "source_url": { "type": "string", "format": "uri", "description": "Optional durable HTTP(S) self-heal location." }
+      }
+    }
+  }
+}

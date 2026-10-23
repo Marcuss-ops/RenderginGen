@@ -1,6 +1,7 @@
 package processor
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
@@ -235,7 +236,7 @@ func TestVerifyArtifactReceiptAppliesBothVerdicts(t *testing.T) {
 		receipt, receiptErr := readReceipt(t, path)
 
 		p := &Processor{receiptVerify: renderVerifyLevel("normal")}
-		if _, err := p.verifyArtifactReceipt(path, receipt, receiptErr, map[string]float64{}); err == nil {
+		if _, err := p.verifyArtifactReceipt(context.Background(), path, receipt, receiptErr, map[string]float64{}); err == nil {
 			t.Fatal("the gate must reject a receipt whose digest does not match the bytes")
 		}
 	})
@@ -260,7 +261,7 @@ func TestVerifyArtifactReceiptAppliesBothVerdicts(t *testing.T) {
 
 		p := &Processor{receiptVerify: renderVerifyLevel("normal")}
 		metrics := map[string]float64{}
-		if _, err := p.verifyArtifactReceipt(path, receipt, receiptErr, metrics); err == nil {
+		if _, err := p.verifyArtifactReceipt(context.Background(), path, receipt, receiptErr, metrics); err == nil {
 			t.Fatal("a failing receipt verdict must reject the artifact")
 		}
 		if metrics[metricnames.ReceiptIdentityUnverified] != 0 {
@@ -278,7 +279,7 @@ func TestVerifyArtifactReceiptAppliesBothVerdicts(t *testing.T) {
 		receipt, receiptErr := readReceipt(t, path)
 
 		p := &Processor{receiptVerify: renderVerifyLevel("normal")}
-		outcome, err := p.verifyArtifactReceipt(path, receipt, receiptErr, map[string]float64{})
+		outcome, err := p.verifyArtifactReceipt(context.Background(), path, receipt, receiptErr, map[string]float64{})
 		if err != nil {
 			t.Fatalf("gate: %v", err)
 		}

@@ -171,18 +171,20 @@ func (p *Processor) FinalizeJob(ctx context.Context, prepared *PreparedJob) (que
 		}
 		probe = &probed
 	}
-	// Media decodability is verified by Chronon — the canonical verifier of
-	// the artifact Chronon itself produced — inside its receipt
-	// (normal/certify run the full decode passes there; fast skips re-decode
-	// by design). RenderingGen requests the policy and enforces the receipt
-	// result; it never re-decodes the output a second time. This runs for
+	// Media decodability is verified EXACTLY ONCE per artifact and never on
+	// the render lane. Under a policy that promises a full decode (normal),
+	// the worker asks Chronon for the fast tier and runs the decode itself
+	// here in the post pool whenever the receipt cannot prove Chronon already
+	// decoded the output (receipt_verify.go, enforceDecodableOutput); the
+	// decode therefore overlaps the next render instead of holding a GPU lane
+	// for a second per item. fast/strict promise no decode. This runs for
 	// every finalized job, independent of overlay/profile probing.
-	// One gate, two verdicts: the receipt policy AND the artifact's byte
-	// identity. The store phase below consumes both rather than repeating the
-	// identity decision, so a hash that does not match the bytes is rejected at
-	// every policy that promises proof instead of becoming the artifact's
-	// permanent content address.
-	outcome, err := p.verifyArtifactReceipt(outputPath, receipt, receiptErr, metrics, job.ID)
+	// One gate, three verdicts: the receipt policy, the promised decode AND
+	// the artifact's byte identity. The store phase below consumes them rather
+	// than repeating any decision, so a hash that does not match the bytes —
+	// or a bitstream that does not decode — is rejected before the artifact is
+	// stored or published.
+	outcome, err := p.verifyArtifactReceipt(ctx, outputPath, receipt, receiptErr, metrics, job.ID)
 	if err != nil {
 		return queue.Artifact{}, err
 	}
