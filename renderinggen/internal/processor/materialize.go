@@ -165,7 +165,11 @@ func (p *Processor) resolveAssetStreaming(ctx context.Context, asset queue.Asset
 	}
 	if !strings.EqualFold(digest, hash) {
 		log.Printf("asset self-heal hash mismatch: requested=%s got=%s source_url=%q", hash, digest, sourceURL)
-		return workspace.ResolvedAsset{}, fmt.Errorf("asset hash mismatch on URL download: requested %s, got %s", hash, digest)
+		// Deterministic: the same URL returns the same wrong bytes, and the
+		// content address was promised by the producer. Typed so the terminal
+		// report fails the item permanently instead of re-rendering it.
+		return workspace.ResolvedAsset{}, fmt.Errorf("%w: asset %s: URL download from %s hashed to %s",
+			ErrAssetContentMismatch, hash, sourceURL, digest)
 	}
 	if reader, openErr := os.Open(tmpPath); openErr != nil {
 		return workspace.ResolvedAsset{}, openErr

@@ -131,8 +131,8 @@ func TestReadTimingSidecarTelemetryRejectsForeignSchemas(t *testing.T) {
 // TestReadMediaReceiptTiming verifies the worker parses Chronon's receipt
 // timing_ms (the policy-controlled verification phases) and projects the
 // measured phases onto the chronon_receipt_* metric namespace, omitting the
-// decode phase that Chronon skips under the default fast policy (-1 sentinel)
-// so reports never see a fabricated decode measurement.
+// decode phase that Chronon skips under the default fast policy (null = not
+// measured) so reports never see a fabricated decode measurement.
 func TestReadMediaReceiptTiming(t *testing.T) {
 	dir := t.TempDir()
 	output := filepath.Join(dir, "out.mp4")
@@ -145,7 +145,7 @@ func TestReadMediaReceiptTiming(t *testing.T) {
 	write(".receipt.json", `{
 	  "schema": "chronon3d.render-receipt.v1",
 	  "output": {"bytes": 12345, "sha256": "abc123"},
-	  "timing_ms": {"sha256_ms": 9.5, "probe_ms": 41.25, "decode_ms": -1.0, "total_ms": 52.0}
+	  "timing_ms": {"sha256_ms": 9.5, "ffprobe_ms": 41.25, "decode_ms": null, "total_ms": 52.0}
 	}`)
 
 	receipt, err := ReadMediaReceipt(output)
@@ -170,7 +170,7 @@ func TestReadMediaReceiptTiming(t *testing.T) {
 		t.Errorf("total_ms = %v, want 52.0", got)
 	}
 	if _, present := metrics["chronon_receipt_decode_ms"]; present {
-		t.Errorf("decode_ms present (%v), want omitted for the fast-policy -1 sentinel", metrics["chronon_receipt_decode_ms"])
+		t.Errorf("decode_ms present (%v), want omitted for the fast-policy null", metrics["chronon_receipt_decode_ms"])
 	}
 
 	// Certify/normal policy measured a real decode + count-frames pass: both
@@ -179,7 +179,7 @@ func TestReadMediaReceiptTiming(t *testing.T) {
 	  "schema": "chronon3d.render-receipt.v1",
 	  "output": {"bytes": 12345, "sha256": "abc123"},
 	  "verification": {"requested_policy": "certify", "resolved_policy": "certify", "status": "pass"},
-	  "timing_ms": {"sha256_ms": 9.5, "probe_ms": 240.0, "count_frames_ms": 780.5, "decode_ms": 3100.75, "total_ms": 4140.0}
+	  "timing_ms": {"sha256_ms": 9.5, "ffprobe_ms": 240.0, "count_frames_ms": 780.5, "decode_ms": 3100.75, "total_ms": 4140.0}
 	}`)
 	receipt, err = ReadMediaReceipt(output)
 	if err != nil {
@@ -211,7 +211,7 @@ func TestReadMediaReceiptFastLabelsPolicy(t *testing.T) {
 	  "schema": "chronon3d.render-receipt.v1",
 	  "output": {"bytes": 12345, "sha256": "abc123"},
 	  "verification": {"requested_policy": "", "resolved_policy": "fast", "status": "pass"},
-	  "timing_ms": {"sha256_ms": 9.5, "probe_ms": 41.25, "count_frames_ms": -1.0, "decode_ms": -1.0, "total_ms": 52.0}
+	  "timing_ms": {"sha256_ms": 9.5, "ffprobe_ms": 41.25, "count_frames_ms": null, "decode_ms": null, "total_ms": 52.0}
 	}`
 	if err := os.WriteFile(output+".receipt.json", []byte(fixture), 0o600); err != nil {
 		t.Fatalf("write fixture: %v", err)
@@ -224,7 +224,7 @@ func TestReadMediaReceiptFastLabelsPolicy(t *testing.T) {
 	if got := vmetrics["chronon_receipt_verification_policy"]; got != 1 {
 		t.Errorf("verification_policy = %v, want 1 (fast)", got)
 	}
-	// Decode/count-frames never ran under fast: the -1 sentinels are omitted.
+	// Decode/count-frames never ran under fast: the null phases are omitted.
 	metrics := receipt.ReceiptTimingMetrics()
 	for _, absent := range []string{"chronon_receipt_decode_ms", "chronon_receipt_count_frames_ms"} {
 		if _, present := metrics[absent]; present {
@@ -233,11 +233,13 @@ func TestReadMediaReceiptFastLabelsPolicy(t *testing.T) {
 	}
 }
 
-// TestReadMediaReceiptLegacyCountFramesAbsent pins the schema-upgrade
-// boundary: a receipt written before count_frames_ms existed has no such key;
-// it must decode to the -1 "did not run" sentinel (never a fabricated 0 ms
-// measurement) and therefore project nothing.
-func TestReadMediaReceiptLegacyCountFramesAbsent(t *testing.T) {
+// TestReadMediaReceiptLegacyNormalization pins the schema-upgrade boundary:
+// a receipt written before the timing lexicon used a -1 "did not run"
+// sentinel, named the ffprobe phase `probe_ms`, and (before count_frames_ms
+// existed) omitted that key entirely. All three legacy shapes normalize to
+// nil "not measured" (never a fabricated 0 ms measurement) and project
+// nothing — while the legacy probe key still fills the ffprobe phase.
+func TestReadMediaReceiptLegacyNormalization(t *testing.T) {
 	dir := t.TempDir()
 	output := filepath.Join(dir, "out.mp4")
 	fixture := `{
@@ -252,11 +254,21 @@ func TestReadMediaReceiptLegacyCountFramesAbsent(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ReadMediaReceipt: %v", err)
 	}
-	if receipt.Timing.CountFramesMS != -1 {
-		t.Errorf("CountFramesMS = %v, want -1 for a pre-schema receipt", receipt.Timing.CountFramesMS)
+	if receipt.Timing.CountFramesMS != nil {
+		t.Errorf("CountFramesMS = %v, want nil for a pre-schema receipt", *receipt.Timing.CountFramesMS)
 	}
-	if _, present := receipt.ReceiptTimingMetrics()["chronon_receipt_count_frames_ms"]; present {
+	if receipt.Timing.DecodeMS != nil {
+		t.Errorf("DecodeMS = %v, want nil for the legacy -1 sentinel", *receipt.Timing.DecodeMS)
+	}
+	if receipt.Timing.FFProbeMS == nil || *receipt.Timing.FFProbeMS != 41.25 {
+		t.Errorf("FFProbeMS = %v, want 41.25 from the legacy probe_ms key", receipt.Timing.FFProbeMS)
+	}
+	metrics := receipt.ReceiptTimingMetrics()
+	if _, present := metrics["chronon_receipt_count_frames_ms"]; present {
 		t.Errorf("count_frames_ms projected from a legacy receipt without the key")
+	}
+	if _, present := metrics["chronon_receipt_decode_ms"]; present {
+		t.Errorf("decode_ms projected from the legacy -1 sentinel")
 	}
 }
 
