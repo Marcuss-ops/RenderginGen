@@ -27,15 +27,17 @@ type PresetDefinition struct {
 }
 
 type PresetStyle struct {
-	FontFamily  string
-	FontSize    float64
-	TextFitMode string
-	MinFontSize float64
-	MaxFontSize float64
-	Fill        []float64
-	Stroke      *StyleStroke
-	Shadow      *StyleShadow
-	Glow        *StyleGlow
+	FontFamily    string
+	UsePresetFont bool
+	FontSize      float64
+	TextFitMode   string
+	MinFontSize   float64
+	MaxFontSize   float64
+	Fill          []float64
+	Stroke        *StyleStroke
+	Shadow        *StyleShadow
+	Glow          *StyleGlow
+	Background    *LayerBackground
 }
 
 type StyleStroke struct {
@@ -78,6 +80,7 @@ var runtimeFontsByFamily = map[string]string{
 	"dejavu_sans":             officialCyrillicFontPath,
 	"bricolage_grotesque":     "assets/fonts/Bricolage-Grotesque.ttf",
 	"playfair_display_italic": "assets/fonts/PlayfairDisplay-Italic.ttf",
+	"playfair_display":        "assets/fonts/PlayfairDisplay.ttf",
 	"oswald":                  "assets/fonts/Oswald.ttf",
 	"abril_fatface":           "assets/fonts/AbrilFatface-Regular.ttf",
 }
@@ -166,6 +169,7 @@ var officialPresets = map[string]PresetDefinition{
 	// Static text remains a small smoke/E2E preset beside the sole phrase style.
 	StaticTextSmokePresetID: makePreset(StaticTextSmokePresetID, staticTextSmokeSpec()),
 	PhraseDefaultPresetID:   phraseDefaultPreset(),
+	"classic_phrase":        classicPhrasePreset(),
 
 	ImageMotionCorpusPresetID: makePreset(ImageMotionCorpusPresetID, imageSpec("image_right", "image_focus_reveal")),
 	"image_fade_in":           makePreset("image_fade_in", imageSpec("image_right", "image_fade_reveal")),

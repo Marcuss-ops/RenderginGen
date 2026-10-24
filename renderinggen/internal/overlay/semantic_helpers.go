@@ -261,6 +261,11 @@ func applyPresetDefinition(layer *Layer, d PresetDefinition) {
 		return
 	}
 	font := d.Style.FontFamily
+	if d.Style.UsePresetFont {
+		if resolved, ok := runtimeFontPath(d.Style.FontFamily); ok {
+			font = resolved
+		}
+	}
 	if layer.Style != nil && layer.Style.Font != "" {
 		// Prepared fixtures may use a workspace-relative alias (for example
 		// fonts/Poppins-Bold.ttf). Preserve it while still applying the
@@ -287,6 +292,11 @@ func applyPresetDefinition(layer *Layer, d PresetDefinition) {
 		layer.Style.Glow = &LayerGlow{
 			Radius: g.Radius, Intensity: g.Intensity, Color: g.Color,
 		}
+	}
+	if d.Style.Background != nil && layer.Style.Background == nil {
+		bg := *d.Style.Background
+		bg.Padding = append([]float64(nil), d.Style.Background.Padding...)
+		layer.Style.Background = &bg
 	}
 }
 

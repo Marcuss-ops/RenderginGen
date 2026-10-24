@@ -10,6 +10,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/metricnames"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/overlay"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/queue"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/storage"
@@ -62,6 +63,9 @@ func TestPrepareJobRebuildsThePreparedPackageFromTheFinalPlan(t *testing.T) {
 		t.Fatalf("prepare: %v", err)
 	}
 	defer func() { _ = prepared.Workspace.Cleanup() }()
+	if prepared.Metrics[metricnames.OverlayItemCount] != 1 || prepared.Metrics[metricnames.OverlayRenderBatch] != 0 {
+		t.Fatalf("single-item render metrics = %+v", prepared.Metrics)
+	}
 
 	// The plan (and therefore the sidecar) must point at the bytes that are
 	// actually on disk: the producer declared .png while publishing JPEG.
@@ -106,5 +110,29 @@ func TestPrepareJobRebuildsThePreparedPackageFromTheFinalPlan(t *testing.T) {
 	}
 	if _, err := os.Stat(assetPath); err != nil {
 		t.Fatalf("sidecar asset %q is not in the workspace: %v", pkg.Assets[0].LogicalPath, err)
+	}
+}
+
+func TestPrepareJobRecordsMultiItemBatchCardinality(t *testing.T) {
+	proc, _, _ := newProcessorWith(t, Options{})
+	job := &queue.Job{
+		ID: "batch-cardinality-1", Schema: queue.JobSchemaV1, Version: queue.JobSchemaVersionV1,
+		RenderPlan: json.RawMessage(`{
+          "schema_version":"renderinggen.overlay-plan.v1",
+          "plan_id":"batch-cardinality-1","video_id":"batch-cardinality-1",
+          "width":1280,"height":720,"fps_num":30,"fps_den":1,
+          "items":[
+            {"id":"phrase-1","template_id":"IMPORTANT_PHRASE","preset_id":"phrase_default","text":"Hello one","start_ms":0,"end_ms":1000},
+            {"id":"phrase-2","template_id":"IMPORTANT_PHRASE","preset_id":"phrase_default","text":"Hello two","start_ms":500,"end_ms":1500}
+          ]
+        }`),
+	}
+	prepared, err := proc.PrepareJob(context.Background(), job)
+	if err != nil {
+		t.Fatalf("prepare composite batch: %v", err)
+	}
+	defer func() { _ = prepared.Workspace.Cleanup() }()
+	if prepared.Metrics[metricnames.OverlayItemCount] != 2 || prepared.Metrics[metricnames.OverlayRenderBatch] != 1 {
+		t.Fatalf("multi-item batch metrics = %+v", prepared.Metrics)
 	}
 }

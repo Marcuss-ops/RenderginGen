@@ -101,3 +101,33 @@ func TestDocumentaryPhraseHighlightingLowersSemanticSpans(t *testing.T) {
 		})
 	}
 }
+
+func TestCatalogPhraseHighlightAliasesLowerTheirDocumentaryRecipes(t *testing.T) {
+	for alias, canonical := range documentaryPhraseAliases {
+		t.Run(alias, func(t *testing.T) {
+			phrase := "La decisione richiede fatti e interpretazioni, e nessuna responsabilita va presunta."
+			raw := []byte(fmt.Sprintf(`{"schema_version":"renderinggen.overlay-plan.v1","plan_id":"alias-%[1]s","video_id":"v","width":1280,"height":720,"fps_num":24,"fps_den":1,"background":{"kind":"color","color":[1,1,1,1]},"items":[{"id":"phrase","kind":"important_phrase","template_id":"IMPORTANT_PHRASE","preset_id":"phrase_default","motion_id":%[2]q,"text":%[3]q,"start_ms":0,"end_ms":5000}]}`, alias, alias, phrase))
+			result, err := CompileSemantic(raw)
+			if err != nil {
+				t.Fatalf("compile catalog alias: %v", err)
+			}
+			var phraseLayer *Layer
+			markers := 0
+			for i := range result.Plan.Layers {
+				layer := &result.Plan.Layers[i]
+				if layer.ID == "phrase" && layer.Type == "text" {
+					phraseLayer = layer
+				}
+				if strings.HasPrefix(layer.ID, "phrase-marker-") {
+					markers++
+				}
+			}
+			if phraseLayer == nil || len(phraseLayer.TextSpans) == 0 || markers == 0 {
+				t.Fatalf("%s -> %s did not produce semantic emphasis and marker: phrase=%+v markers=%d", alias, canonical, phraseLayer, markers)
+			}
+			if canonical == "doc_06_red_keyword_punch" && phraseLayer.TextSpans[0]["style"] == nil {
+				t.Fatalf("%s did not apply the canonical red-punch text style", alias)
+			}
+		})
+	}
+}

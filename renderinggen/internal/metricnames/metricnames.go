@@ -203,6 +203,8 @@ const (
 // Ledger facts mirrored into the local artifact database (counts, bytes and
 // media facts the mirror projects as numbers).
 const (
+	OverlayItemCount     = "overlay_item_count"
+	OverlayRenderBatch   = "overlay_render_batch"
 	EntityCount          = "entity_count"
 	ImportantPhraseCount = "important_phrase_count"
 	ImportantWordCount   = "important_word_count"
@@ -275,6 +277,7 @@ var vocab = map[string]string{
 	ImportVerified:       UnitCount, ImportIdentityUS: UnitUS, ImportTotalUS: UnitUS,
 	L2CacheCorrupt: UnitCount,
 
+	OverlayItemCount: UnitCount, OverlayRenderBatch: UnitCount,
 	EntityCount: UnitCount, ImportantPhraseCount: UnitCount, ImportantWordCount: UnitCount,
 	ImageCount: UnitCount, LightLeakCount: UnitCount, InputBytes: UnitBytes,
 	OutputBytes: UnitBytes, FrameCount: UnitCount, DurationUS: UnitUS,

@@ -16460,6 +16460,420 @@
       ]
     },
     {
+      "id": "classic_playfair_baseline_rise",
+      "category": "apple_v2",
+      "targets": [
+        "text",
+        "phrase"
+      ],
+      "unit": "line",
+      "enter": 72,
+      "tracks": [
+        {
+          "property": "position_y",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 40.0
+            },
+            {
+              "frame": 26,
+              "value": 0.0
+            }
+          ],
+          "easing": "out_cubic"
+        },
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.0
+            },
+            {
+              "frame": 16,
+              "value": 1.0
+            }
+          ],
+          "easing": "linear"
+        }
+      ],
+      "text_animators": [
+        {
+          "selector": {
+            "kind": "line",
+            "shape": "square",
+            "order": "forward",
+            "stagger": 1
+          },
+          "properties": [
+            {
+              "property": "position_y",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 32.0
+                },
+                {
+                  "frame": 22,
+                  "value": 0.0
+                }
+              ],
+              "easing": "out_cubic"
+            },
+            {
+              "property": "opacity",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0.0
+                },
+                {
+                  "frame": 20,
+                  "value": 1.0
+                }
+              ],
+              "easing": "linear"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "classic_playfair_tracking_close",
+      "category": "apple_v2",
+      "targets": [
+        "text",
+        "phrase"
+      ],
+      "unit": "glyph",
+      "enter": 72,
+      "tracks": [
+        {
+          "property": "scale",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.99
+            },
+            {
+              "frame": 40,
+              "value": 1.0
+            }
+          ],
+          "easing": "out_cubic"
+        },
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.0
+            },
+            {
+              "frame": 18,
+              "value": 1.0
+            }
+          ],
+          "easing": "linear"
+        }
+      ],
+      "text_animators": [
+        {
+          "selector": {
+            "kind": "glyph",
+            "shape": "smooth",
+            "order": "forward",
+            "stagger": 1
+          },
+          "properties": [
+            {
+              "property": "tracking",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 16.0
+                },
+                {
+                  "frame": 44,
+                  "value": 0.0
+                }
+              ],
+              "easing": "out_cubic"
+            },
+            {
+              "property": "opacity",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0.0
+                },
+                {
+                  "frame": 18,
+                  "value": 1.0
+                }
+              ],
+              "easing": "linear"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "classic_playfair_focus_resolve",
+      "category": "apple_v2",
+      "targets": [
+        "text",
+        "phrase"
+      ],
+      "unit": "glyph",
+      "enter": 72,
+      "tracks": [
+        {
+          "property": "scale",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 1.02
+            },
+            {
+              "frame": 34,
+              "value": 1.0
+            }
+          ],
+          "easing": "out_cubic"
+        },
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.0
+            },
+            {
+              "frame": 16,
+              "value": 1.0
+            }
+          ],
+          "easing": "linear"
+        }
+      ],
+      "text_animators": [
+        {
+          "selector": {
+            "kind": "glyph",
+            "shape": "smooth",
+            "order": "forward",
+            "stagger": 1
+          },
+          "properties": [
+            {
+              "property": "blur",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 14.0
+                },
+                {
+                  "frame": 34,
+                  "value": 0.0
+                }
+              ],
+              "easing": "out_cubic"
+            },
+            {
+              "property": "opacity",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0.0
+                },
+                {
+                  "frame": 24,
+                  "value": 1.0
+                }
+              ],
+              "easing": "linear"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "classic_playfair_quiet_zoom",
+      "category": "apple_v2",
+      "targets": [
+        "text",
+        "phrase"
+      ],
+      "unit": "line",
+      "enter": 72,
+      "tracks": [
+        {
+          "property": "scale",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.955
+            },
+            {
+              "frame": 36,
+              "value": 1.0
+            }
+          ],
+          "easing": "out_cubic"
+        },
+        {
+          "property": "blur",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 8.0
+            },
+            {
+              "frame": 30,
+              "value": 0.0
+            }
+          ],
+          "easing": "out_cubic"
+        },
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.0
+            },
+            {
+              "frame": 22,
+              "value": 1.0
+            }
+          ],
+          "easing": "linear"
+        }
+      ],
+      "text_animators": [
+        {
+          "selector": {
+            "kind": "line",
+            "shape": "square",
+            "order": "forward",
+            "stagger": 1
+          },
+          "properties": [
+            {
+              "property": "position_y",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 10.0
+                },
+                {
+                  "frame": 28,
+                  "value": 0.0
+                }
+              ],
+              "easing": "out_cubic"
+            },
+            {
+              "property": "opacity",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0.0
+                },
+                {
+                  "frame": 22,
+                  "value": 1.0
+                }
+              ],
+              "easing": "linear"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "classic_playfair_glyph_curtain",
+      "category": "apple_v2",
+      "targets": [
+        "text",
+        "phrase"
+      ],
+      "unit": "glyph",
+      "enter": 72,
+      "tracks": [
+        {
+          "property": "position_y",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 22.0
+            },
+            {
+              "frame": 30,
+              "value": 0.0
+            }
+          ],
+          "easing": "out_cubic"
+        },
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.0
+            },
+            {
+              "frame": 18,
+              "value": 1.0
+            }
+          ],
+          "easing": "linear"
+        }
+      ],
+      "text_animators": [
+        {
+          "selector": {
+            "kind": "glyph",
+            "shape": "smooth",
+            "order": "forward",
+            "stagger": 1
+          },
+          "properties": [
+            {
+              "property": "position_y",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 34.0
+                },
+                {
+                  "frame": 26,
+                  "value": 0.0
+                }
+              ],
+              "easing": "out_cubic"
+            },
+            {
+              "property": "opacity",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0.0
+                },
+                {
+                  "frame": 22,
+                  "value": 1.0
+                }
+              ],
+              "easing": "linear"
+            }
+          ]
+        }
+      ]
+    },
+    {
       "id": "micro_tracker_kerning_compression",
       "category": "apple_v2",
       "targets": [
@@ -41548,6 +41962,7 @@
       "modern_rounded_pop"
     ],
     "text": [
+      "classic_phrase",
       "phrase_default",
       "static_text_smoke"
     ]
