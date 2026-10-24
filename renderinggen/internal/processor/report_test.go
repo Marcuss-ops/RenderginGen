@@ -3,10 +3,12 @@ package processor
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
 	"testing"
 
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/queue"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/storage"
 )
 
 // fakeReportQueue records the terminal reports a worker issues and can be
@@ -159,6 +161,61 @@ func TestReportTransientDriveFailureOnClaimedRenderedJobStaysRetryable(t *testin
 
 	if len(q.rendered) != 1 || q.rendered[0].StorageKey != artifact.StorageKey || len(q.permanent) != 0 || len(q.failed) != 0 {
 		t.Fatalf("transient Drive failure reports: permanent=%d rendered=%+v failed=%d; want durable Rendered retry", len(q.permanent), q.rendered, len(q.failed))
+	}
+}
+
+// TestReportContentAddressRejectedIsPermanent covers both terminal-report
+// shapes: when the object store PROVED the bytes do not hash to the address
+// (HTTP 400/422), retrying the item re-sends the same wrong bytes. It must be
+// reported with FailPermanently instead of the retryable Fail (or, worse, the
+// durable-artifact Rendered path that keeps a broken payload alive).
+func TestReportContentAddressRejectedIsPermanent(t *testing.T) {
+	err := fmt.Errorf("stage self-healed asset deadbeef: %w: store deadbeef: key deadbeef, content cafebabe",
+		storage.ErrContentAddressRejected)
+
+	t.Run("claimed job with durable artifact", func(t *testing.T) {
+		artifact := durableArtifact("sha-abc")
+		job := &queue.Job{ID: "job-bad-address", Artifact: &artifact}
+		q := &fakeReportQueue{}
+		ReportFailure(context.Background(), q, job, err)
+		if len(q.permanent) != 1 || len(q.failed) != 0 || len(q.rendered) != 0 {
+			t.Fatalf("permanent=%d failed=%d rendered=%d, want only permanent", len(q.permanent), len(q.failed), len(q.rendered))
+		}
+		if !strings.Contains(q.permanent[0], "deadbeef") {
+			t.Fatalf("permanent reason %q must name the rejected address", q.permanent[0])
+		}
+	})
+
+	t.Run("post pool with separate artifact", func(t *testing.T) {
+		q := &fakeReportQueue{}
+		ReportFailureWithArtifact(context.Background(), q, "job-bad-address", durableArtifact("sha-abc"), err)
+		if len(q.permanent) != 1 || len(q.failed) != 0 || len(q.rendered) != 0 {
+			t.Fatalf("permanent=%d failed=%d rendered=%d, want only permanent", len(q.permanent), len(q.failed), len(q.rendered))
+		}
+	})
+
+	t.Run("typed self-heal hash mismatch", func(t *testing.T) {
+		q := &fakeReportQueue{}
+		mismatch := fmt.Errorf("%w: asset deadbeef: URL download hashed to cafebabe", ErrAssetContentMismatch)
+		ReportFailure(context.Background(), q, &queue.Job{ID: "job-bad-bytes"}, mismatch)
+		if len(q.permanent) != 1 || len(q.failed) != 0 {
+			t.Fatalf("permanent=%d failed=%d, want only permanent", len(q.permanent), len(q.failed))
+		}
+	})
+}
+
+// TestReportTransientStoreFailureStaysRetryable is the anti-overreach guard:
+// an object store that is merely unavailable (5xx / transport) is still a
+// retryable render failure, even when the artifact is durable.
+func TestReportTransientStoreFailureStaysRetryable(t *testing.T) {
+	artifact := durableArtifact("sha-abc")
+	job := &queue.Job{ID: "job-store-5xx", Artifact: &artifact}
+	q := &fakeReportQueue{}
+
+	ReportFailure(context.Background(), q, job, errors.New("store deadbeef: unexpected status 503"))
+
+	if len(q.permanent) != 0 || len(q.failed) != 0 || len(q.rendered) != 1 {
+		t.Fatalf("permanent=%d failed=%d rendered=%d, want the durable Rendered retry", len(q.permanent), len(q.failed), len(q.rendered))
 	}
 }
 

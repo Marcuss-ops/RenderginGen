@@ -2,7 +2,6 @@ package processor
 
 import (
 	"context"
-	"errors"
 
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/queue"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/workerlog"
@@ -41,7 +40,7 @@ func ReportFailure(ctx context.Context, q ReportQueue, job *queue.Job, err error
 	// Observed at the report funnel, so a future worker pool cannot complete or
 	// fail jobs without the worker's own metric surface seeing it.
 	noteJobOutcome(JobOutcomeFailed)
-	if errors.Is(err, ErrDrivePublicationPermanent) {
+	if isPermanentFailure(err) {
 		if reportErr := q.FailPermanently(ctx, job.ID, err.Error()); reportErr != nil {
 			jobLog.Warnf("report fail: %v", reportErr)
 		}
@@ -70,7 +69,7 @@ func ReportFailureWithArtifact(ctx context.Context, q ReportQueue, id string, ar
 	jobLog := workerlog.ByJobID(id)
 	jobLog.Errorf("failed: %v", err)
 	noteJobOutcome(JobOutcomeFailed)
-	if errors.Is(err, ErrDrivePublicationPermanent) {
+	if isPermanentFailure(err) {
 		if reportErr := q.FailPermanently(ctx, id, err.Error()); reportErr != nil {
 			jobLog.Warnf("report permanent fail: %v", reportErr)
 		}

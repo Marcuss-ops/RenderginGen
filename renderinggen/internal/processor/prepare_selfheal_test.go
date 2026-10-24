@@ -6,6 +6,7 @@ package processor
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -199,8 +200,12 @@ func TestPrepareSelfHealRejectsHashMismatch(t *testing.T) {
       "intents":[{"template_id":"person_default","timing_state":"PENDING"}]
     }`)
 
-	if _, err := proc.Prepare(context.Background(), job); err == nil {
+	_, err := proc.Prepare(context.Background(), job)
+	if err == nil {
 		t.Fatal("prepare must fail when the URL bytes do not match the declared hash")
+	}
+	if !errors.Is(err, ErrAssetContentMismatch) {
+		t.Fatalf("prepare error = %v, want the typed ErrAssetContentMismatch so the item is not retried", err)
 	}
 	if _, err := store.Get(context.Background(), wantHash); err == nil {
 		t.Fatal("wrong bytes must never be staged into L3")

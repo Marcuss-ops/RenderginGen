@@ -279,8 +279,9 @@ const MediaReceiptSuffix = ".receipt.json"
 // so the worker can verify identity without re-reading the rendered file.
 // The timing_ms block carries the measured post-render verification phases
 // (policy-controlled: under the default "fast" policy decode_ms and
-// count_frames_ms are -1 and no full re-decode of the freshly muxed output
-// happens). The verification block records the policy Chronon was asked to
+// count_frames_ms are null — not measured — and no full re-decode of the
+// freshly muxed output happens). The verification block records the policy
+// Chronon was asked to
 // run (requested_policy) and the level it actually ran (resolved_policy)
 // plus the aggregate pass/fail status, so consumers never infer the executed
 // policy from the presence/absence of decode timings.
@@ -306,12 +307,18 @@ type MediaReceipt struct {
 		FPS         string `json:"fps"`
 		Audio       string `json:"audio"`
 	} `json:"verification"`
+	// Timing lexicon (mirrors Chronon3d's render_receipt.hpp): every value is
+	// milliseconds as a float under a `*_ms` key, and a phase that did not
+	// run is JSON null — never a fabricated 0 and never the retired -1
+	// sentinel. The pointers make "not measured" explicit; ReadMediaReceipt
+	// normalizes legacy -1 receipts and the pre-lexicon `probe_ms` key so
+	// every consumer sees one convention.
 	Timing struct {
-		SHA256MS      float64 `json:"sha256_ms"`
-		ProbeMS       float64 `json:"probe_ms"`
-		CountFramesMS float64 `json:"count_frames_ms"`
-		DecodeMS      float64 `json:"decode_ms"`
-		TotalMS       float64 `json:"total_ms"`
+		SHA256MS      *float64 `json:"sha256_ms"`
+		FFProbeMS     *float64 `json:"ffprobe_ms"`
+		CountFramesMS *float64 `json:"count_frames_ms"`
+		DecodeMS      *float64 `json:"decode_ms"`
+		TotalMS       *float64 `json:"total_ms"`
 	} `json:"timing_ms"`
 	Media struct {
 		Container          string  `json:"container"`
@@ -408,18 +415,20 @@ func (r MediaReceipt) VerificationFailures() []string {
 // onto the artifact metrics namespace with the chronon_receipt_ prefix, so
 // PipelineGen's per-clip reports can attribute the post-render receipt cost
 // (probe, optional decode/SHA-256, total) instead of hiding it inside the
-// render wall. Chronon uses -1.0 as the sentinel for a phase that did not
-// run (e.g. decode_ms under the default fast policy); a sentinel phase is
-// omitted, never reported as a fabricated measurement.
+// render wall. A phase that did not run is null on the receipt (older
+// binaries wrote a -1 sentinel); either way it is omitted, never reported as
+// a fabricated measurement. The ffprobe phase keeps the historical
+// `chronon_receipt_probe_ms` metric name although the receipt key is now
+// `ffprobe_ms` (timing lexicon: one name per phase on the wire).
 func (r MediaReceipt) ReceiptTimingMetrics() map[string]float64 {
 	out := make(map[string]float64, 5)
-	put := func(key string, ms float64) {
-		if ms >= 0 {
-			out[key] = ms
+	put := func(key string, ms *float64) {
+		if ms != nil && *ms >= 0 {
+			out[key] = *ms
 		}
 	}
 	put("chronon_receipt_sha256_ms", r.Timing.SHA256MS)
-	put("chronon_receipt_probe_ms", r.Timing.ProbeMS)
+	put("chronon_receipt_probe_ms", r.Timing.FFProbeMS)
 	put("chronon_receipt_count_frames_ms", r.Timing.CountFramesMS)
 	put("chronon_receipt_decode_ms", r.Timing.DecodeMS)
 	put("chronon_receipt_total_ms", r.Timing.TotalMS)
@@ -520,16 +529,30 @@ func ReadMediaReceipt(outputPath string) (MediaReceipt, error) {
 	if err := json.Unmarshal(data, &receipt); err != nil {
 		return receipt, fmt.Errorf("chronon media receipt: decode: %w", err)
 	}
-	// count_frames_ms joined the schema after sha/probe/decode/total. A
-	// receipt written by an older binary has no such key, which would decode
-	// as a fabricated 0 ms measurement; normalize it to the -1 "did not run"
-	// sentinel so metrics projection stays honest for legacy receipts.
+	// Timing lexicon: a phase that did not run is null. Receipts written by
+	// older binaries used two older conventions — a -1 sentinel and (before
+	// count_frames_ms existed) an omitted key — and named the ffprobe phase
+	// `probe_ms`. Normalize all of them to nil so every consumer sees one
+	// convention and the metrics projection stays honest for legacy receipts.
 	var presence struct {
 		Timing map[string]json.RawMessage `json:"timing_ms"`
 	}
 	_ = json.Unmarshal(data, &presence)
-	if _, present := presence.Timing["count_frames_ms"]; !present {
-		receipt.Timing.CountFramesMS = -1
+	if receipt.Timing.FFProbeMS == nil {
+		if raw, ok := presence.Timing["probe_ms"]; ok {
+			_ = json.Unmarshal(raw, &receipt.Timing.FFProbeMS)
+		}
+	}
+	for _, phase := range []**float64{
+		&receipt.Timing.SHA256MS,
+		&receipt.Timing.FFProbeMS,
+		&receipt.Timing.CountFramesMS,
+		&receipt.Timing.DecodeMS,
+		&receipt.Timing.TotalMS,
+	} {
+		if *phase != nil && **phase < 0 {
+			*phase = nil
+		}
 	}
 	if receipt.Output.SHA256 == "" || receipt.Output.Bytes <= 0 {
 		return receipt, fmt.Errorf("chronon media receipt: missing output identity")
