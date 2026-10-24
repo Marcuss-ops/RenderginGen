@@ -271,8 +271,8 @@ func TestEveryCallableCatalogMotionExecutesOnTheStrictGPU(t *testing.T) {
 			phraseIDs = append(phraseIDs, id)
 		}
 	}
-	if len(phraseIDs) != 170 {
-		t.Fatalf("phrase family inventory has %d IDs, want 170 including phrase Brush and the 15 native documentary presets", len(phraseIDs))
+	if len(phraseIDs) != 175 {
+		t.Fatalf("phrase family inventory has %d IDs, want 175 including phrase Brush and the catalog phrase-highlight aliases", len(phraseIDs))
 	}
 	for i, id := range phraseIDs {
 		items = append(items, map[string]any{

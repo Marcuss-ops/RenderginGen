@@ -31,6 +31,7 @@ type overlayImportEnvelope struct {
 	Producer          string          `json:"producer"`
 	PlanID            string          `json:"plan_id"`
 	VideoID           string          `json:"video_id"`
+	ItemIDs           []string        `json:"item_ids,omitempty"`
 	SourceSHA256      string          `json:"source_sha256"`
 	SourceSizeBytes   int64           `json:"source_size_bytes"`
 	Width             int             `json:"width"`
@@ -58,6 +59,19 @@ func decodeOverlayImport(raw []byte) (overlayImportEnvelope, error) {
 	if request.SchemaVersion != overlayImportSchema || strings.TrimSpace(request.Producer) == "" ||
 		strings.TrimSpace(request.PlanID) == "" || strings.TrimSpace(request.VideoID) == "" {
 		return request, fmt.Errorf("processor: overlay.import schema, producer, plan_id and video_id are required")
+	}
+	if request.Producer == "pipelinegen-map-v2" && len(request.ItemIDs) != 1 {
+		return request, fmt.Errorf("processor: pipelinegen map import requires exactly one item_id")
+	}
+	seenItemIDs := make(map[string]struct{}, len(request.ItemIDs))
+	for _, itemID := range request.ItemIDs {
+		if itemID == "" || itemID != strings.TrimSpace(itemID) {
+			return request, fmt.Errorf("processor: overlay.import item_ids must be non-empty and trimmed")
+		}
+		if _, exists := seenItemIDs[itemID]; exists {
+			return request, fmt.Errorf("processor: overlay.import item_ids must be unique")
+		}
+		seenItemIDs[itemID] = struct{}{}
 	}
 	if len(request.SourceSHA256) != 64 || strings.Trim(request.SourceSHA256, "0123456789abcdef") != "" {
 		return request, fmt.Errorf("processor: overlay.import source_sha256 must be lowercase SHA-256")
@@ -175,6 +189,12 @@ func (p *Processor) ImportOverlayArtifact(ctx context.Context, job *queue.Job) (
 		metricnames.ProbeMS:          float64(probeUS) / 1000,
 		metricnames.ImportVerified:   1,
 	}
+	if len(request.ItemIDs) > 0 {
+		metrics[metricnames.OverlayItemCount] = float64(len(request.ItemIDs))
+		if len(request.ItemIDs) > 1 {
+			metrics[metricnames.OverlayRenderBatch] = 1
+		}
+	}
 	artifact := queue.Artifact{
 		Kind: "overlay_import", StorageKey: sha, ArtifactURL: p.artifactURL(sha), ArtifactHash: sha,
 		ContentType: "video/mp4", SizeBytes: size,
@@ -187,6 +207,7 @@ func (p *Processor) ImportOverlayArtifact(ctx context.Context, job *queue.Job) (
 		Provenance: &queue.ArtifactProvenance{
 			SchemaVersion: overlayImportProvenanceSchema, Protocol: overlayImportSchema,
 			Producer: request.Producer, ImportJobID: job.ID, SourceSHA256: sha, SourceSizeBytes: size,
+			ItemIDs:          append([]string(nil), request.ItemIDs...),
 			IdentityVerified: true, StructureVerified: true, FullDecodeVerified: true,
 			ProducerTelemetry: append(json.RawMessage(nil), request.ProducerTelemetry...),
 		},

@@ -94,6 +94,10 @@ func (p *Processor) PrepareJob(ctx context.Context, job *queue.Job) (*PreparedJo
 	}
 	record(metricnames.PrepareSceneCompileStem, compileStart)
 	stats, plan, compiledAssets, preparedPackage := result.Stats, result.Plan, result.Assets, result.Prepared
+	metrics[metricnames.OverlayItemCount] = float64(stats.SemanticItemCount)
+	if stats.SemanticItemCount > 1 {
+		metrics[metricnames.OverlayRenderBatch] = 1
+	}
 	// UnknownTemplates is empty for every plan the compiler accepts: a non-empty
 	// template_id that resolves to no registry row and no legacy alias is
 	// REJECTED by resolveSemanticItems, not lowered as a preset-less primitive.

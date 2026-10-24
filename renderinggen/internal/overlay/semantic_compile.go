@@ -680,6 +680,9 @@ func resolveSemanticItems(src *semanticPlan) ([]resolvedItem, error) {
 			}
 			ri.Preset = def
 		}
+		if preset == ClassicPhrasePresetID && !isOpaqueWhiteCanvas(src.Background) {
+			return nil, fmt.Errorf("overlay: preset %q requires an opaque white canvas background", preset)
+		}
 		if err := validateChildCaptionStyles(item); err != nil {
 			return nil, err
 		}

@@ -5,6 +5,7 @@
 //
 // Implemented validation keywords: $ref (local JSON pointers), type, const,
 // enum, required, properties, additionalProperties, items, minItems, maxItems,
+// uniqueItems,
 // minimum, maximum, exclusiveMinimum, exclusiveMaximum, minLength, maxLength,
 // pattern, allOf, anyOf, oneOf, not, if/then/else. Annotation-only keywords ($schema,
 // $id, title, description, $comment, default, examples, deprecated, readOnly,
@@ -17,7 +18,7 @@
 // package cannot enforce (a `type` array holding an unknown name, a non-array
 // `enum`, a non-string `pattern`, a `$ref` that is not a string, …). The
 // historical behavior ignored unknown keywords, so a contract written with
-// `pattern`/`maxLength`/`uniqueItems` validated LESS than it claimed and the
+// `pattern`/`maxLength` validated LESS than it claimed and the
 // boundary tests passed anyway — a false guarantee. A schema author now gets a
 // loud, explicit failure instead, and the fix is either to implement the keyword
 // or to remove it from the contract.
@@ -82,7 +83,7 @@ func compilePattern(pattern string) (*regexp.Regexp, error) {
 // contain no subschemas to recurse into.
 var valueKeywords = map[string]bool{
 	"$ref": true, "type": true, "const": true, "enum": true,
-	"required": true, "minItems": true, "maxItems": true,
+	"required": true, "minItems": true, "maxItems": true, "uniqueItems": true,
 	"minimum": true, "maximum": true, "exclusiveMinimum": true, "exclusiveMaximum": true,
 	"minLength": true, "maxLength": true, "pattern": true,
 }
@@ -114,6 +115,11 @@ var subschemaMap = map[string]bool{
 // degrades to "no constraint": `type: ["string","null"]` and `enum: "a"` both
 // used to pass every document, so the gate reported a boundary it never checked.
 func checkValueKeywordShapes(m map[string]any, at string, unsupported *[]string) {
+	if raw, ok := m["uniqueItems"]; ok {
+		if _, isBool := raw.(bool); !isBool {
+			*unsupported = append(*unsupported, at+".uniqueItems (not a boolean)")
+		}
+	}
 	if raw, ok := m["$ref"]; ok {
 		if _, isString := raw.(string); !isString {
 			*unsupported = append(*unsupported, at+".$ref (not a string)")
@@ -410,6 +416,20 @@ func validate(doc any, schema, root map[string]any, path string, refDepth int) e
 			}
 		}
 	case []any:
+		if unique, ok := schema["uniqueItems"].(bool); ok && unique {
+			seen := make(map[string]struct{}, len(d))
+			for i, item := range d {
+				encoded, err := json.Marshal(item)
+				if err != nil {
+					return fmt.Errorf("%s[%d]: encode array item for uniqueItems: %w", path, i, err)
+				}
+				key := string(encoded)
+				if _, duplicate := seen[key]; duplicate {
+					return fmt.Errorf("%s[%d]: duplicate array item violates uniqueItems", path, i)
+				}
+				seen[key] = struct{}{}
+			}
+		}
 		if items, ok := schema["items"].(map[string]any); ok {
 			for i, item := range d {
 				if err := validate(item, items, root, fmt.Sprintf("%s[%d]", path, i), refDepth); err != nil {

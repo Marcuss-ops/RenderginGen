@@ -28,7 +28,6 @@ func TestUnsupportedKeywordsFailClosed(t *testing.T) {
 		schema  string
 		wantSub string
 	}{
-		{"top-level unsupported keyword", `{"type":"object","uniqueItems":true}`, "uniqueItems"},
 		{"nested in properties", `{"type":"object","properties":{"a":{"multipleOf":2}}}`, "multipleOf"},
 		{"nested in items", `{"type":"array","items":{"contains":{"type":"string"}}}`, "contains"},
 		{"nested in $defs", `{"$defs":{"x":{"patternProperties":{}}},"type":"object"}`, "patternProperties"},
@@ -71,15 +70,17 @@ func TestImplementedKeywordsAreEnforced(t *testing.T) {
 		"type":"object",
 		"properties":{
 			"code":{"type":"string","pattern":"^[A-Z]{2}$","maxLength":2},
+			"ids":{"type":"array","uniqueItems":true},
 			"n":{"type":"number","exclusiveMinimum":0,"exclusiveMaximum":10}
 		}
 	}`)
-	if err := ValidateFile([]byte(`{"code":"AB","n":5}`), schema); err != nil {
+	if err := ValidateFile([]byte(`{"code":"AB","ids":["one","two"],"n":5}`), schema); err != nil {
 		t.Fatalf("valid document rejected: %v", err)
 	}
 	cases := map[string]string{
 		"pattern":          `{"code":"ab","n":5}`,
 		"maxLength":        `{"code":"ABC","n":5}`,
+		"uniqueItems":      `{"code":"AB","ids":["same","same"],"n":5}`,
 		"exclusiveMinimum": `{"code":"AB","n":0}`,
 		"exclusiveMaximum": `{"code":"AB","n":10}`,
 	}
@@ -87,6 +88,22 @@ func TestImplementedKeywordsAreEnforced(t *testing.T) {
 		if err := ValidateFile([]byte(doc), schema); err == nil {
 			t.Errorf("%s was not enforced for %s", keyword, doc)
 		}
+	}
+}
+
+func TestUniqueItemsUsesJSONStructuralEquality(t *testing.T) {
+	schema := writeSchema(t, `{"type":"array","uniqueItems":true}`)
+	for _, doc := range []string{`[1,1]`, `[{"a":1,"b":2},{"b":2,"a":1}]`, `[["x"],["x"]]`} {
+		if err := ValidateFile([]byte(doc), schema); err == nil {
+			t.Errorf("duplicate JSON items accepted: %s", doc)
+		}
+	}
+	if err := ValidateFile([]byte(`[1,2,{"a":1}]`), schema); err != nil {
+		t.Fatalf("distinct JSON items rejected: %v", err)
+	}
+	duplicatesAllowed := writeSchema(t, `{"type":"array","uniqueItems":false}`)
+	if err := ValidateFile([]byte(`[1,1]`), duplicatesAllowed); err != nil {
+		t.Fatalf("uniqueItems false rejected duplicates: %v", err)
 	}
 }
 
@@ -198,6 +215,7 @@ func TestKeywordValueShapesFailClosed(t *testing.T) {
 		{"numeric type", `{"type":7}`, "not a string or array of strings"},
 		{"non-string $ref", `{"$ref":7}`, "$ref (not a string)"},
 		{"non-array enum", `{"enum":"a"}`, "enum (not a non-empty array)"},
+		{"non-boolean uniqueItems", `{"type":"array","uniqueItems":"yes"}`, "uniqueItems (not a boolean)"},
 		{"non-array required", `{"required":"a"}`, "required (not an array)"},
 		{"required element not a string", `{"required":[1]}`, "element is not a string"},
 		{"non-string pattern", `{"pattern":7}`, "pattern (not a string)"},

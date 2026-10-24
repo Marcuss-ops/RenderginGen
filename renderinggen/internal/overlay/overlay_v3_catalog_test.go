@@ -579,8 +579,8 @@ func TestEveryPhraseFamilyMotionReachesTheChrononRenderPlan(t *testing.T) {
 	for _, category := range []string{"apple_v2", "apple_v3", "phrase_apple_clean_v1", "apple_phrase_v1"} {
 		ids = append(ids, motion.Registry.CategoryMotionIDs(category)...)
 	}
-	if len(ids) != 103 {
-		t.Fatalf("registered phrase family motions = %d, want 103", len(ids))
+	if len(ids) != 108 {
+		t.Fatalf("registered phrase family motions = %d, want 108", len(ids))
 	}
 	seen := make(map[string]bool, len(ids))
 	for _, id := range ids {
@@ -644,9 +644,9 @@ func layerDurationFrames(t *testing.T, layer Layer) int64 {
 	return layer.DurationFrames
 }
 
-func TestTextPresetCatalogContainsOnlyTheTwoSupportedIDs(t *testing.T) {
+func TestTextPresetCatalogContainsOnlySupportedIDs(t *testing.T) {
 	got := motion.OverlayPresetIDs(string(PresetText))
-	want := []string{PhraseDefaultPresetID, StaticTextSmokePresetID}
+	want := []string{ClassicPhrasePresetID, PhraseDefaultPresetID, StaticTextSmokePresetID}
 	if len(got) != len(want) {
 		t.Fatalf("canonical text presets = %v, want exactly %v", got, want)
 	}

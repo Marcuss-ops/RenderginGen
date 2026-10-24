@@ -10,8 +10,8 @@ import (
 )
 
 func TestOfficialPresetCatalog(t *testing.T) {
-	if got := len(officialPresets); got != 10 {
-		t.Fatalf("official preset count = %d, want 10", got)
+	if got := len(officialPresets); got != 11 {
+		t.Fatalf("official preset count = %d, want 11", got)
 	}
 	textPresets := 0
 	for _, preset := range officialPresets {
@@ -19,8 +19,8 @@ func TestOfficialPresetCatalog(t *testing.T) {
 			textPresets++
 		}
 	}
-	if textPresets != 2 {
-		t.Fatalf("text preset count = %d, want phrase_default + static smoke", textPresets)
+	if textPresets != 3 {
+		t.Fatalf("text preset count = %d, want classic_phrase + phrase_default + static smoke", textPresets)
 	}
 	for id, d := range officialPresets {
 		if id == "" || d.ID != id {
@@ -36,11 +36,45 @@ func TestOfficialPresetCatalog(t *testing.T) {
 		if d.Family == PresetText && (d.Style.FontFamily == "" || d.Style.FontSize <= 0 || len(d.Style.Fill) != 4) {
 			t.Errorf("%s has incomplete text definition: %+v", id, d)
 		}
-		if d.Family == PresetText && !staticSmoke && (d.Style.Stroke == nil || d.Style.Shadow == nil) {
+		if d.Family == PresetText && !staticSmoke && id != ClassicPhrasePresetID && (d.Style.Stroke == nil || d.Style.Shadow == nil) {
 			t.Errorf("%s must carry both stroke and shadow: %+v", id, d.Style)
 		}
 		if d.Family == PresetImage && (d.Layout.BoxWidth <= 0 || d.Layout.BoxHeight <= 0 || d.Layout.Fit == "") {
 			t.Errorf("%s has incomplete image definition: %+v", id, d)
+		}
+	}
+}
+
+func TestClassicPhrasePresetMatchesCatalogTypography(t *testing.T) {
+	d, err := ResolveOfficialPreset(ClassicPhrasePresetID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if d.Style.FontFamily != "playfair_display" || !d.Style.UsePresetFont || d.Style.FontSize != 96 || d.Layout.BoxWidth != 1560 || d.Layout.BoxHeight != 780 {
+		t.Fatalf("classic phrase typography/geometry drifted: %+v", d)
+	}
+	if d.Style.Stroke != nil || d.Style.Shadow != nil || d.Style.Glow != nil {
+		t.Fatalf("classic phrase card/effects drifted: %+v", d.Style)
+	}
+	raw := []byte(`{"schema_version":"renderinggen.overlay-plan.v1","plan_id":"classic","video_id":"v","width":1920,"height":1080,"fps_num":30,"fps_den":1,"background":{"kind":"color","color":[1,1,1,1]},"items":[{"id":"phrase","kind":"important_phrase","template_id":"IMPORTANT_PHRASE","preset_id":"classic_phrase","text":"A CLASSIC PHRASE","start_ms":0,"end_ms":3000}]}`)
+	result, err := CompileSemantic(raw)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(result.Plan.Layers) != 2 {
+		t.Fatalf("classic phrase plan layers = %d, want background + text", len(result.Plan.Layers))
+	}
+	layer := result.Plan.Layers[1]
+	if layer.Style == nil || layer.Style.Font != "assets/fonts/PlayfairDisplay.ttf" || layer.Style.Background != nil || layer.Style.Fill != "#0B0B0B" {
+		t.Fatalf("classic phrase was not lowered to its catalog style: %+v", layer.Style)
+	}
+}
+
+func TestClassicPhraseRequiresWhiteOpaqueCanvas(t *testing.T) {
+	for _, background := range []string{"", `,"background":{"kind":"color","color":[0,0,0,1]}`, `,"background":{"kind":"color","color":[1,1,1,0.5]}`, `,"background":{"kind":"video","asset_refs":[{"asset_id":"bg","sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","url":"https://example.test/bg.mp4","media_type":"video/mp4"}]}`} {
+		raw := []byte(`{"schema_version":"renderinggen.overlay-plan.v1","plan_id":"classic-reject","video_id":"v","width":1280,"height":720,"fps_num":24,"fps_den":1` + background + `,"items":[{"id":"phrase","kind":"important_phrase","template_id":"IMPORTANT_PHRASE","preset_id":"classic_phrase","text":"A CLASSIC PHRASE","start_ms":0,"end_ms":3000}]}`)
+		if _, err := CompileSemantic(raw); err == nil {
+			t.Fatalf("classic_phrase accepted non-white canvas background %s", background)
 		}
 	}
 }
@@ -113,13 +147,13 @@ func TestEveryOfficialPresetCompilesAndMaterializes(t *testing.T) {
 		if resolved.ID != id || (!staticSmoke && resolved.Motion.ID == "") {
 			t.Fatalf("%s resolved empty: %+v", id, resolved)
 		}
-		raw := []byte(`{"schema_version":"renderinggen.overlay-plan.v1","plan_id":"canary-` + id + `","video_id":"v","width":1280,"height":720,"fps_num":30,"fps_den":1,"items":[` + item + `]}`)
+		raw := []byte(`{"schema_version":"renderinggen.overlay-plan.v1","plan_id":"canary-` + id + `","video_id":"v","width":1280,"height":720,"fps_num":30,"fps_den":1,"background":{"kind":"color","color":[1,1,1,1]},"items":[` + item + `]}`)
 		result, err := CompileSemantic(raw)
 		if err != nil {
 			t.Fatalf("%s compile: %v", id, err)
 		}
 		compiled := result.Plan
-		if len(compiled.Layers) != 1 {
+		if len(compiled.Layers) != 2 {
 			t.Fatalf("%s was not materially lowered: %+v", id, compiled.Layers)
 		}
 		// Motion is materialized either as layer tracks (fades, slides,
@@ -127,7 +161,16 @@ func TestEveryOfficialPresetCompilesAndMaterializes(t *testing.T) {
 		// their per-glyph/word sweep there) — an animated preset that ships
 		// neither is the "silently static" regression.
 		if !staticSmoke {
-			layer := compiled.Layers[0]
+			var layer *Layer
+			for i := range compiled.Layers {
+				if compiled.Layers[i].ID == "canary" || strings.HasPrefix(compiled.Layers[i].ID, "canary:") {
+					layer = &compiled.Layers[i]
+					break
+				}
+			}
+			if layer == nil {
+				t.Fatalf("%s did not lower its canary item", id)
+			}
 			hasTracks := layer.Animation != nil && len(layer.Animation.Tracks) > 0
 			if !hasTracks && len(layer.TextAnimators) == 0 {
 				t.Fatalf("%s was not materially lowered: %+v", id, layer)

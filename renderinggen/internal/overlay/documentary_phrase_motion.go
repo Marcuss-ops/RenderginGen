@@ -35,14 +35,29 @@ var documentaryNeedles = map[string][][]string{
 	"doc_15_documentary_source_focus":  {{"fonti verificabili"}, {"fonti"}},
 }
 
+// These public phrase_highlight IDs are catalog aliases for the established
+// documentary recipes. Resolve them before applying targeting, color, and
+// marker behavior so both vocabularies produce the same render semantics.
+var documentaryPhraseAliases = map[string]string{
+	"phrase_highlight_soft_marker":    "doc_01_yellow_marker_sweep",
+	"phrase_highlight_archive_yellow": "doc_04_archival_source_highlight",
+	"phrase_highlight_evidence_red":   "doc_06_red_keyword_punch",
+	"phrase_highlight_phrase_focus":   "doc_10_selective_contrast_focus",
+	"phrase_highlight_document_scan":  "doc_13_analog_scanner_highlight",
+}
+
 func compileDocumentaryPhraseMotion(ri resolvedItem, src *semanticPlan, text Layer, id string) ([]Layer, error) {
 	if text.Text == "" || text.Style == nil || len(text.Position) != 2 {
 		return nil, fmt.Errorf("overlay: documentary motion %q requires resolved phrase text geometry", id)
 	}
-	if _, ok := documentaryMotionIDs[id]; !ok {
+	semanticID := id
+	if canonical, ok := documentaryPhraseAliases[id]; ok {
+		semanticID = canonical
+	}
+	if _, ok := documentaryMotionIDs[semanticID]; !ok {
 		return nil, fmt.Errorf("overlay: unsupported documentary phrase motion %q", id)
 	}
-	targets := documentaryTargets(text.Text, id)
+	targets := documentaryTargets(text.Text, semanticID)
 	// Keep phrase color owned by the selected visual style. In particular, a
 	// highlight motion must never fade the underlying copy to grey: the marker
 	// is the emphasis and the type remains solid black (or the caller's color).
@@ -53,16 +68,16 @@ func compileDocumentaryPhraseMotion(ri resolvedItem, src *semanticPlan, text Lay
 		if target.start < 0 || target.end > len(text.Text) || target.start >= target.end {
 			continue
 		}
-		semanticID := fmt.Sprintf("%s-target-%d", id, index+1)
-		span := map[string]any{"start": target.start, "end": target.end, "semantic_id": semanticID}
-		color := documentaryTextColor(id)
-		if id == "doc_08_mixed_font_emphasis" && lightSolidBackground(src.Background) {
+		spanID := fmt.Sprintf("%s-target-%d", id, index+1)
+		span := map[string]any{"start": target.start, "end": target.end, "semantic_id": spanID}
+		color := documentaryTextColor(semanticID)
+		if semanticID == "doc_08_mixed_font_emphasis" && lightSolidBackground(src.Background) {
 			color = backgroundHex(src.Background.Color)
 		}
 		if color != "" {
 			span["style"] = map[string]any{"color": color}
 		}
-		if id == "doc_08_mixed_font_emphasis" {
+		if semanticID == "doc_08_mixed_font_emphasis" {
 			style, _ := span["style"].(map[string]any)
 			if style == nil {
 				style = map[string]any{}
@@ -71,12 +86,12 @@ func compileDocumentaryPhraseMotion(ri resolvedItem, src *semanticPlan, text Lay
 			style["font_size_mult"] = 1.04
 		}
 		text.TextSpans = append(text.TextSpans, span)
-		if documentaryNeedsMarker(id) {
-			markers = append(markers, documentaryMarker(text, src, id, target, index)...)
+		if documentaryNeedsMarker(semanticID) {
+			markers = append(markers, documentaryMarker(text, src, semanticID, target, index)...)
 		}
 		// doc_08 is catalog-pinned (documentary_highlighting_runtime_test):
 		// the alternate Inter-Bold layer is the emphasis, one per target.
-		if id == "doc_08_mixed_font_emphasis" && lightSolidBackground(src.Background) {
+		if semanticID == "doc_08_mixed_font_emphasis" && lightSolidBackground(src.Background) {
 			emphasis = append(emphasis, documentaryMixedFontLayer(text, src, target, index))
 		}
 	}

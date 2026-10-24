@@ -15,6 +15,10 @@ type PresetUsage struct {
 // kind the plan carried and which preset was selected. The worker only counts
 // what PipelineGen already decided — it never re-derives importance.
 type Stats struct {
+	// SemanticItemCount counts accepted semantic overlay items in the same
+	// compiler pass that lowers them. It is intentionally distinct from the
+	// emitted layer count: one editorial item can lower to multiple layers.
+	SemanticItemCount  int `json:"semantic_item_count"`
 	EntityCount        int `json:"entity_count"`
 	ImportantPhraseCnt int `json:"important_phrase_count"`
 	ImportantWordCnt   int `json:"important_word_count"`
@@ -55,6 +59,7 @@ type CompileResult struct {
 // the ledger can never re-derive a kind, preset or preset family that the
 // compiler decided differently.
 func (s *Stats) addResolved(ri resolvedItem) {
+	s.SemanticItemCount++
 	if s.PresetID == "" {
 		s.PresetID = strings.TrimSpace(ri.PresetID)
 	}

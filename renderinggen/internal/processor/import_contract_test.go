@@ -24,7 +24,8 @@ func makeOverlayImportJob(t *testing.T, path, id string) (*queue.Job, []byte) {
 	sum := sha256.Sum256(data)
 	hash := hex.EncodeToString(sum[:])
 	plan := overlayImportEnvelope{
-		SchemaVersion: overlayImportSchema, Producer: "pipelinegen-map-v1", PlanID: "map-plan", VideoID: "video-1",
+		SchemaVersion: overlayImportSchema, Producer: "pipelinegen-map-v2", PlanID: "map-plan", VideoID: "video-1",
+		ItemIDs:      []string{"map-item-1"},
 		SourceSHA256: hash, SourceSizeBytes: int64(len(data)), Width: 1280, Height: 720,
 		FPSNum: 30, FPSDen: 1, DurationUS: 8_000_000, FrameCount: 240,
 		ProducerTelemetry: json.RawMessage(`{"schema":"chronon.dynamic-map-telemetry.v1","renderer_wall_s":1.2}`),
@@ -41,15 +42,23 @@ func makeOverlayImportJob(t *testing.T, path, id string) (*queue.Job, []byte) {
 }
 
 func TestDecodeOverlayImportRejectsUnknownFieldsAndMismatchedIdentity(t *testing.T) {
-	valid := `{"schema_version":"renderinggen.overlay-import.v1","producer":"pipelinegen-map-v1","plan_id":"p","video_id":"v","source_sha256":"` + strings.Repeat("a", 64) + `","source_size_bytes":1,"width":1280,"height":720,"fps_num":30,"fps_den":1,"duration_us":1000000,"frame_count":30}`
+	valid := `{"schema_version":"renderinggen.overlay-import.v1","producer":"pipelinegen-map-v2","plan_id":"p","video_id":"v","item_ids":["map-1"],"source_sha256":"` + strings.Repeat("a", 64) + `","source_size_bytes":1,"width":1280,"height":720,"fps_num":30,"fps_den":1,"duration_us":1000000,"frame_count":30}`
 	if _, err := decodeOverlayImport([]byte(valid)); err != nil {
 		t.Fatalf("valid import contract rejected: %v", err)
+	}
+	legacy := strings.Replace(valid, "pipelinegen-map-v2", "pipelinegen-map-v1", 1)
+	legacy = strings.Replace(legacy, `,"item_ids":["map-1"]`, "", 1)
+	if _, err := decodeOverlayImport([]byte(legacy)); err != nil {
+		t.Fatalf("queued v1 map import must remain restart/deploy compatible: %v", err)
 	}
 	for _, tc := range []struct{ name, raw string }{
 		{"unknown field", strings.TrimSuffix(valid, "}") + `,"not_in_schema":true}`},
 		{"trailing JSON", valid + ` {}`},
 		{"uppercase hash", strings.Replace(valid, strings.Repeat("a", 64), strings.Repeat("A", 64), 1)},
 		{"missing decode identity", strings.Replace(valid, `"frame_count":30`, `"frame_count":0`, 1)},
+		{"missing map item identity", strings.Replace(valid, `,"item_ids":["map-1"]`, "", 1)},
+		{"duplicate map item identity", strings.Replace(valid, `"item_ids":["map-1"]`, `"item_ids":["map-1","map-1"]`, 1)},
+		{"untrimmed map item identity", strings.Replace(valid, `"item_ids":["map-1"]`, `"item_ids":[" map-1 "]`, 1)},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			if _, err := decodeOverlayImport([]byte(tc.raw)); err == nil {
@@ -102,8 +111,14 @@ func TestImportOverlayArtifactIsByteIdenticalAndDoesNotInvokeChronon(t *testing.
 	if artifact.OutputFacts == nil || artifact.OutputFacts.Width != 1280 || artifact.FrameCount == 0 {
 		t.Fatalf("import lacks structural output certification: %+v", artifact.OutputFacts)
 	}
-	if artifact.Provenance == nil || !artifact.Provenance.IdentityVerified || !artifact.Provenance.StructureVerified || !artifact.Provenance.FullDecodeVerified || artifact.Provenance.Producer != "pipelinegen-map-v1" {
+	if artifact.Provenance == nil || !artifact.Provenance.IdentityVerified || !artifact.Provenance.StructureVerified || !artifact.Provenance.FullDecodeVerified || artifact.Provenance.Producer != "pipelinegen-map-v2" {
 		t.Fatalf("import provenance incomplete: %+v", artifact.Provenance)
+	}
+	if len(artifact.Provenance.ItemIDs) != 1 || artifact.Provenance.ItemIDs[0] != "map-item-1" {
+		t.Fatalf("import provenance lost semantic item identity: %+v", artifact.Provenance)
+	}
+	if artifact.Metrics["overlay_item_count"] != 1 || artifact.Metrics["overlay_render_batch"] != 0 {
+		t.Fatalf("import semantic metrics = %+v", artifact.Metrics)
 	}
 	if _, ok := artifact.Metrics["render_ms"]; ok {
 		t.Fatalf("CPU import fabricated Chronon render timing: %v", artifact.Metrics)

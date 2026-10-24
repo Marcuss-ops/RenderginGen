@@ -221,6 +221,12 @@ func compileResolvedText(layerID string, start, end int64, spec resolvedTextSpec
 	// The role owns the base treatment. The spec's explicit choices (runtime
 	// override fill/font/glow/stroke/shadow) always win over the role default.
 	applyTextRoleBaseStyle(spec.StylePolicy, layer.Style, resolvedTextFontSize(spec), spec.OverrideFill, spec.StyleParams)
+	if spec.PresetDef.ID == ClassicPhrasePresetID {
+		// This preset opts into its catalog fill and GPU-supported shape-card
+		// lowering; the generic phrase role's fallback fill must not overwrite it.
+		layer.Style.Fill = rgbaHex(spec.PresetDef.Style.Fill)
+		layer.Style.Background = nil
+	}
 	if spec.MinFontSize > 0 {
 		layer.Style.MinFontSize = spec.MinFontSize
 	}
@@ -396,7 +402,15 @@ func resolvedTextPresetStyle(d PresetDefinition, language string) (*LayerStyle, 
 	}
 	// Runtime style overrides may have carried a workspace-relative alias;
 	// the official language font is the resolver's canonical choice.
-	style.Font = OfficialFontPathForLanguage(language)
+	if d.Style.UsePresetFont {
+		fontPath, ok := runtimeFontPath(d.Style.FontFamily)
+		if !ok {
+			return nil, fmt.Errorf("overlay: preset %q references unknown font family %q", d.ID, d.Style.FontFamily)
+		}
+		style.Font = fontPath
+	} else {
+		style.Font = OfficialFontPathForLanguage(language)
+	}
 	if d.Style.Stroke != nil {
 		stroke := d.Style.Stroke
 		style.Stroke = &LayerStroke{Color: stroke.Color, Width: stroke.Width}
@@ -408,6 +422,11 @@ func resolvedTextPresetStyle(d PresetDefinition, language string) (*LayerStyle, 
 	if d.Style.Glow != nil {
 		g := d.Style.Glow
 		style.Glow = &LayerGlow{Radius: g.Radius, Intensity: g.Intensity, Color: g.Color}
+	}
+	if d.Style.Background != nil {
+		bg := *d.Style.Background
+		bg.Padding = append([]float64(nil), d.Style.Background.Padding...)
+		style.Background = &bg
 	}
 	return style, nil
 }

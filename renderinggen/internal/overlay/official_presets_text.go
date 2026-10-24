@@ -10,6 +10,7 @@ const (
 	StaticTextSmokePresetID = "static_text_smoke"
 	// PhraseDefaultPresetID is the sole official animated phrase preset.
 	PhraseDefaultPresetID = "phrase_default"
+	ClassicPhrasePresetID = "classic_phrase"
 )
 
 // officialFontPath is the canonical default font. Plans may select another
@@ -49,4 +50,27 @@ func phraseDefaultPreset() PresetDefinition {
 	// the white phrase and reads as a sticker after video encoding.
 	d.Style.Stroke = &StyleStroke{Color: "#111827", Width: 3.5}
 	return d
+}
+
+func classicPhrasePreset() PresetDefinition {
+	// Mirrors the visible classic phrase treatment. The declared white card is
+	// visually identical to the required white canvas, so the native GPU plan
+	// keeps that canvas as the sole background instead of emitting text_card,
+	// which the Vulkan renderer cannot execute.
+	return PresetDefinition{
+		ID: ClassicPhrasePresetID, Family: PresetText,
+		Style: PresetStyle{
+			FontFamily: "playfair_display", UsePresetFont: true, FontSize: 96,
+			Fill: []float64{11.0 / 255, 11.0 / 255, 11.0 / 255, 1},
+		},
+		Layout: PresetLayout{Anchor: "safe_area", Alignment: "center", BoxWidth: 1560, BoxHeight: 780},
+		Motion: MotionDefinition{ID: "classic_playfair_baseline_rise", Unit: "line", Enter: 72, Exit: 12},
+	}
+}
+
+func isOpaqueWhiteCanvas(background *semanticBackground) bool {
+	if background == nil || background.Kind != "color" || len(background.Color) != 4 {
+		return false
+	}
+	return background.Color[0] == 1 && background.Color[1] == 1 && background.Color[2] == 1 && background.Color[3] == 1
 }

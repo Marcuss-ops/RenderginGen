@@ -109,6 +109,7 @@ func certificationAssetsRoot(t *testing.T) string {
 		officialFontPath:                          "Poppins-Bold.ttf",
 		"assets/fonts/Bricolage-Grotesque.ttf":    "Bricolage-Grotesque.ttf",
 		"assets/fonts/PlayfairDisplay-Italic.ttf": "PlayfairDisplay-Italic.ttf",
+		"assets/fonts/PlayfairDisplay.ttf":        "PlayfairDisplay.ttf",
 		"assets/fonts/Inter.ttf":                  "Inter.ttf",
 		"assets/fonts/Inter-Bold.ttf":             "Inter-Bold.ttf",
 		officialCyrillicFontPath:                  "DejaVuSans.ttf",
@@ -253,10 +254,14 @@ func certificationPlanRaw(def PresetDefinition) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	background := certificationBackgroundRGBA
+	if def.ID == ClassicPhrasePresetID {
+		background = "[1,1,1,1]"
+	}
 	return fmt.Sprintf(
 		`{"schema_version":"renderinggen.overlay-plan.v1","plan_id":%q,"video_id":"certification","width":1920,"height":1080,"fps_num":24,"fps_den":1,`+
 			`"background":{"kind":"color","color":%s},"items":[%s]}`,
-		"certification-"+def.ID, certificationBackgroundRGBA, item), nil
+		"certification-"+def.ID, background, item), nil
 }
 
 // certificationPlan compiles the fixture for one preset through the single
