@@ -130,6 +130,20 @@ func requiresStructuralProbe(job *queue.Job) bool {
 func (p *Processor) FinalizeJob(ctx context.Context, prepared *PreparedJob) (artifact queue.Artifact, err error) {
 	job := prepared.Job
 	metrics := prepared.Metrics
+	// P4 batch superjob: verify every per-item segment independently
+	// (probe/digest/receipt), re-render ONLY a failed segment once, and store
+	// each verified segment under its own content address. The returned batch
+	// receipt ("voci per segmento") rides the artifact's producer telemetry;
+	// the fused whole-timeline clip keeps flowing through the ordinary
+	// single-artifact path below.
+	var segmentEntries []SegmentArtifact
+	if len(prepared.Segments) > 0 {
+		entries, segmentErr := p.finalizeSegments(ctx, prepared)
+		if segmentErr != nil {
+			return queue.Artifact{}, segmentErr
+		}
+		segmentEntries = entries
+	}
 	// The staged upload was handed to THIS phase by RunGPU. storeArtifact
 	// finishes (commits) it after the gates; any earlier return must discard
 	// it, or a rejected job would leave bytes staged under its content
@@ -200,5 +214,5 @@ func (p *Processor) FinalizeJob(ctx context.Context, prepared *PreparedJob) (art
 		return queue.Artifact{}, err
 	}
 	return p.storeArtifact(ctx, job.ID, outputPath, outcome, prepared.TailUpload, plan, metrics, prepared.totalStart, probe, prepared.Stats, prepared.InputBytes,
-		requiresStructuralProbe(job) || metadata.ProfileID != "", prepared.NativeCertified)
+		requiresStructuralProbe(job) || metadata.ProfileID != "", prepared.NativeCertified, segmentEntries)
 }

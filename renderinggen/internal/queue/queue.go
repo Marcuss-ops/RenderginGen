@@ -82,6 +82,7 @@ type Job = queueclient.Job
 // edit. A new artifact field is added once, in queue/client, and every layer
 // compiles against it.
 type Artifact = queueclient.Artifact
+type BatchSegmentFacts = queueclient.BatchSegmentFacts
 type ArtifactProvenance = queueclient.ArtifactProvenance
 
 // OutputFacts is the complete structural certification carried on the

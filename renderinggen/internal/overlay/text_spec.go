@@ -92,7 +92,12 @@ func resolveTextSpec(ri resolvedItem, src *semanticPlan) (resolvedTextSpec, erro
 	spec.StylePolicy = role
 	switch role {
 	case textRoleImportantPhrase:
-		spec.EntryExit = true
+		// Static text is a first-class official preset (used by pixel and
+		// throughput canaries), so the semantic role must not invent an entry
+		// fade when neither the item nor its preset selected any motion.
+		// Animated phrase presets and explicit motion IDs retain the role-owned
+		// entry/exit envelope.
+		spec.EntryExit = spec.MotionID != "" || spec.PresetDef.Motion.ID != ""
 	case textRoleMetric, textRoleDate:
 		spec.FitPolicy = resolvedTextFitPolicy(ri, role)
 	}

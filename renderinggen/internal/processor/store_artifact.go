@@ -27,7 +27,7 @@ import (
 // "DB artifact" step — returning the artifact metadata for queue completion.
 // The pipeline invariant local_sha == objectstore_sha == db_sha is enforced
 // here: the record is keyed by the same hash the object store accepted.
-func (p *Processor) storeArtifact(ctx context.Context, jobID, outputPath string, outcome receiptOutcome, tail *stagedUpload, plan *overlay.Plan, phaseMetrics map[string]float64, totalStart time.Time, probe *media.ProbeResult, stats overlay.Stats, inputBytes int64, copyEligible bool, nativeCertified bool) (queue.Artifact, error) {
+func (p *Processor) storeArtifact(ctx context.Context, jobID, outputPath string, outcome receiptOutcome, tail *stagedUpload, plan *overlay.Plan, phaseMetrics map[string]float64, totalStart time.Time, probe *media.ProbeResult, stats overlay.Stats, inputBytes int64, copyEligible bool, nativeCertified bool, segmentEntries []SegmentArtifact) (queue.Artifact, error) {
 	phaseStart := time.Now()
 	defer func() {
 		phaseMetrics[metricnames.PublishMS] = float64(time.Since(phaseStart).Microseconds()) / 1000
@@ -198,6 +198,17 @@ func (p *Processor) storeArtifact(ctx context.Context, jobID, outputPath string,
 		artifact.FPSNum, artifact.FPSDen = probe.FPSNum, probe.FPSDen
 		artifact.DurationUS = probe.DurationUS
 		artifact.CopyEligible = copyEligible
+	}
+	if len(segmentEntries) > 0 {
+		// P4 batch superjob — "receipt per batch + voci per segmento": the
+		// per-item identities/facts ride the extensible OutputFacts object, so
+		// every segment MP4 stays independently fetchable, verifiable and
+		// retryable. Fail-closed: without certified output facts there is
+		// nowhere honest to publish the per-segment contract.
+		if artifact.OutputFacts == nil {
+			return queue.Artifact{}, fmt.Errorf("processor: segmented batch %s has no certified output facts to carry its %d per-segment entries", jobID, len(segmentEntries))
+		}
+		artifact.OutputFacts.BatchSegments = batchSegmentFacts(segmentEntries)
 	}
 	// Total time must be set before the ledger row is written (the deferred
 	// publish/total metrics above are for the artifact returned to the queue).

@@ -80,7 +80,10 @@ func (p *Processor) RunGPU(ctx context.Context, prepared *PreparedJob) error {
 	// Abort on every error path, so a failed render never installs bytes.
 	var tail *stagedUpload
 	handedOff := false
-	if prepared.FragmentedMP4 && p.store.SupportsStaging() {
+	// The tail-upload lane streams ONE growing file. A segmented (P4) job
+	// produces N per-item outputs and is uploaded per-segment at finalize
+	// instead, so the lane stays off for it.
+	if prepared.FragmentedMP4 && p.store.SupportsStaging() && len(prepared.Segments) == 0 {
 		tail = p.startTailUpload(ctx, job.ID, prepared.OutputPath)
 		// Until ownership moves to the store phase (below), every error path
 		// must discard the pending upload. After hand-off, FinalizeJob owns it.
@@ -155,7 +158,12 @@ func (p *Processor) RunGPU(ctx context.Context, prepared *PreparedJob) error {
 			// tail-upload lane must never diverge.
 			FragmentedMP4: prepared.FragmentedMP4,
 		},
-		TotalFrames: int64(metadata.FrameCount),
+		// P4 batch superjob: the per-item windows ride to the daemon, which
+		// cuts one MP4 per item from this ONE encoder session (forced IDR at
+		// each window start, all muxes finalized after the single EOF).
+		// Empty preserves the single-output path verbatim.
+		OutputSegments: prepared.Segments,
+		TotalFrames:    int64(metadata.FrameCount),
 		Progress: func(progress chronon.RenderProgress) {
 			progressMu.Lock()
 			sawProgress = true
@@ -176,8 +184,13 @@ func (p *Processor) RunGPU(ctx context.Context, prepared *PreparedJob) error {
 			}
 		},
 	}
+	// The P4 single-segment retry re-renders from the exact request this
+	// session used, narrowed to one frame window.
+	prepared.baseRenderRequest = renderRequest
 	if err := p.renderer.Render(ctx, renderRequest); err != nil {
-		if !gpuRequired || p.strictNativeBackend || !softwareRetryableGPUFailure(err) {
+		if !gpuRequired || p.strictNativeBackend || len(renderRequest.OutputSegments) > 0 || !softwareRetryableGPUFailure(err) {
+			// Segmented sessions get no software fallback: the fallback lane
+			// renames ONE output and would silently drop the per-item contract.
 			return fmt.Errorf("processor: render: %w", err)
 		}
 		workerlog.ByJobID(job.ID).Warnf("Vulkan render failed with a recoverable device/capability error; retrying the same plan through the software renderer: %v", err)
@@ -263,7 +276,15 @@ func (p *Processor) RunGPU(ctx context.Context, prepared *PreparedJob) error {
 	if p.strictNativeBackend && hasSourceVideo && !finalComposite {
 		// metadata was computed once at the top of RunGPU from this same plan;
 		// do not re-derive (and shadow) it here.
-		if err := requireNativeVulkan(prepared.OutputPath, metadata.FrameCount); err != nil {
+		if len(prepared.Segments) > 0 {
+			// The timing sidecar certifies the one shared native session. Each
+			// item's receipt/media identity is checked later in FinalizeJob,
+			// where one invalid segment can be retried without rejecting siblings.
+			if err := requireNativeVulkanTelemetry(
+				prepared.OutputPath, metadata.FrameCount); err != nil {
+				return fmt.Errorf("processor: gpu-vulkan-native batch gate: %w", err)
+			}
+		} else if err := requireNativeVulkan(prepared.OutputPath, metadata.FrameCount); err != nil {
 			return fmt.Errorf("processor: gpu-vulkan-native gate: %w", err)
 		}
 		prepared.NativeCertified = true

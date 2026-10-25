@@ -32,3 +32,9 @@ func (r *SerializedRenderer) Render(ctx context.Context, req RenderRequest) erro
 	}
 	return r.inner.Render(ctx, req)
 }
+
+// SupportsOutputSegments forwards the P4 capability to the wrapped lane.
+func (r *SerializedRenderer) SupportsOutputSegments() bool {
+	seg, ok := r.inner.(OutputSegmentRenderer)
+	return ok && seg.SupportsOutputSegments()
+}

@@ -137,7 +137,27 @@ type RenderRequest struct {
 	// against the capabilities of the selected device.
 	Requirements ExecutionRequirements
 	Output       OutputSpec
-	TotalFrames  int64
+	// OutputSegments requests the P4 batch-superjob contract: one MP4 per
+	// item cut from ONE encoder session (frame windows ARE encoder PTS
+	// windows; they must tile [0, TotalFrames) contiguously with unique
+	// output paths). Empty preserves the single-output path. Video-only: it
+	// is mutually exclusive with AudioSourcePath and with an explicit chunk
+	// range, and it is supported on the daemon IPC transport only —
+	// validateRenderRequest enforces the semantics, the transports enforce
+	// their own capability.
+	OutputSegments []OutputSegment
+	TotalFrames    int64
+}
+
+// OutputSegment is one per-item output window of a segmented render: the
+// item's frame interval [StartFrame, EndFrame) is cut out of the shared
+// encoded timeline into its own MP4 with its own identity and retry. Frame
+// units ARE Chronon's encoder PTS units (the codec time base is the output
+// frame rate).
+type OutputSegment struct {
+	OutputPath string `json:"output_path"`
+	StartFrame int64  `json:"start_frame"`
+	EndFrame   int64  `json:"end_frame"` // exclusive
 }
 
 // RenderProgress is emitted when Chronon reports a frame milestone. It is
@@ -191,12 +211,34 @@ type OutputSpec struct {
 	// video-only intermediates — request it; a classic MP4 stays the default
 	// for artifacts that mux source audio.
 	FragmentedMP4 bool `json:"fragmented_mp4,omitempty"`
+	// OutputSegments is the wire spelling of RenderRequest.OutputSegments
+	// (P4 batch superjob). It lives in output_spec like the other output
+	// contract fields; the daemon's closed vocabulary reads it here first and
+	// falls back to the payload root.
+	OutputSegments []OutputSegment `json:"output_segments,omitempty"`
 }
 
 // Renderer renders a RenderRequest.
 type Renderer interface {
 	Render(context.Context, RenderRequest) error
 }
+
+// OutputSegmentRenderer is the transport capability the P4 batch-superjob
+// contract needs: a renderer whose wire can carry per-item output windows
+// (one MP4 per item cut from ONE encoder session). The daemon IPC transport
+// can (RENDER_JOB output_spec.output_segments); the CLI subprocess adapter
+// cannot and refuses such requests explicitly. Wrappers (pools, spreaders,
+// serializers) forward the capability to their lanes so the worker only
+// segments a batch when the transport underneath can honour it.
+type OutputSegmentRenderer interface {
+	Renderer
+	SupportsOutputSegments() bool
+}
+
+// SupportsOutputSegments: the CLI subprocess adapter has no spelling for
+// per-item output windows (see Client.Render), so it declares the capability
+// false and multi-item plans keep the single-output path there.
+func (c *Client) SupportsOutputSegments() bool { return false }
 
 // AssetPrefetcher imports a materialized asset into a persistent renderer's
 // process-local cache. It is deliberately separate from Renderer so CLI
@@ -321,6 +363,14 @@ func (c *Client) Version() string {
 func (c *Client) Render(ctx context.Context, req RenderRequest) error {
 	if err := validateRenderRequest(req); err != nil {
 		return err
+	}
+	if len(req.OutputSegments) > 0 {
+		// Capability boundary: the CLI argument set has no spelling for
+		// per-item output windows (they would have to become N --start/--end
+		// pairs and N -o values with no contract tying them together). The
+		// daemon IPC transport carries them in output_spec; refusing here
+		// beats silently rendering ONE output and calling it a batch.
+		return fmt.Errorf("chronon: output segments are only supported on the daemon IPC transport, not the CLI subprocess adapter")
 	}
 	// The configured value is the single authority (config validates it at
 	// load); the package default covers callers that construct a Client

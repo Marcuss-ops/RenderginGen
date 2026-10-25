@@ -84,6 +84,22 @@ type Plan struct {
 	Layers          []Layer          `json:"layers"`
 	Audio           *AudioMixPlan    `json:"audio,omitempty"`
 	Output          Output           `json:"output"`
+	// ItemWindows is the compile pass's per-semantic-item frame windows
+	// ([StartFrame, EndFrame) in canvas frames), in plan order. It is a
+	// TRANSIENT compiler output — like CameraAnimation it never crosses the
+	// Chronon wire (json:"-") — consumed by the worker's P4 segmented-output
+	// planner (one MP4 per item cut from one encoder session). Populated from
+	// the same resolvedItem pass that lowers the layers, so the windows can
+	// never drift from the items that were actually compiled.
+	ItemWindows []ItemWindow `json:"-"`
+}
+
+// ItemWindow is one semantic item's frame window in canvas frames (half-open,
+// [StartFrame, EndFrame)).
+type ItemWindow struct {
+	ItemID     string
+	StartFrame int64
+	EndFrame   int64
 }
 
 type CameraPlan struct {

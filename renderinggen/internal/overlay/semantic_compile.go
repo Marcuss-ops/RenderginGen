@@ -435,6 +435,10 @@ func compileSemantic(raw []byte) (*Plan, []Asset, Stats, []string, error) {
 		// Stroke shapes require render-plan.v3 even though the semantic item
 		// itself is a media layer.
 		stats.addResolved(ri)
+		// Transient per-item window for the P4 segmented-output planner,
+		// booked from the SAME resolvedItem the layers were lowered from.
+		plan.ItemWindows = append(plan.ItemWindows, ItemWindow{
+			ItemID: ri.Item.ID, StartFrame: ri.Start, EndFrame: ri.End})
 		if ri.End > plan.Canvas.DurationFrames {
 			plan.Canvas.DurationFrames = ri.End
 		}

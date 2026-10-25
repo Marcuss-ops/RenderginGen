@@ -299,6 +299,14 @@ func (c *IPCClient) Assemble(ctx context.Context, req AssembleRequest) error {
 // no call site can forget it, and it never mutates the caller's struct.
 func outputSpecForTransport(req RenderRequest) OutputSpec {
 	spec := req.Output
+	// P4 batch superjob: the per-item windows ride in output_spec like every
+	// other output-contract field (the daemon's closed vocabulary reads them
+	// there first, falling back to the payload root). The request-level
+	// OutputSegments is the single semantic source; the wire copy happens
+	// here so no call site can forget it.
+	if len(req.OutputSegments) > 0 {
+		spec.OutputSegments = req.OutputSegments
+	}
 	selection, ok := resolveNativeEncodeSelection(req)
 	if !ok {
 		return spec
@@ -310,6 +318,10 @@ func outputSpecForTransport(req RenderRequest) OutputSpec {
 	spec.GpuHotPathMode = selection.GpuHotPathMode
 	return spec
 }
+
+// SupportsOutputSegments: the daemon IPC wire carries per-item output windows
+// in output_spec.output_segments (P4 batch superjob).
+func (c *IPCClient) SupportsOutputSegments() bool { return true }
 
 // Render sends a RENDER_JOB command to the daemon and waits for its reply.
 func (c *IPCClient) Render(ctx context.Context, req RenderRequest) error {

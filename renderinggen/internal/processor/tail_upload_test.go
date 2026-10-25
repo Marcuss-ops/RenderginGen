@@ -166,7 +166,7 @@ func TestTailUploadFallbackToPutReaderOnStagedFailure(t *testing.T) {
 	sum := sha256.Sum256(data)
 	artifact, err := p.storeArtifact(context.Background(), "job-fallback", path,
 		receiptOutcome{Identity: artifactIdentity{SHA256: hex.EncodeToString(sum[:]), Source: "test", Proven: true}},
-		upload, nil, map[string]float64{}, time.Now(), nil, overlay.Stats{}, 0, false, false)
+		upload, nil, map[string]float64{}, time.Now(), nil, overlay.Stats{}, 0, false, false, nil)
 	if err != nil {
 		t.Fatalf("storeArtifact with failed staging: %v", err)
 	}
@@ -195,7 +195,7 @@ func TestTailUploadDigestMismatchFailsClosed(t *testing.T) {
 	wrong := sha256.Sum256([]byte("different bytes"))
 	_, err := p.storeArtifact(context.Background(), "job-mismatch", path,
 		receiptOutcome{Identity: artifactIdentity{SHA256: hex.EncodeToString(wrong[:]), Source: "receipt", Proven: true}},
-		upload, nil, map[string]float64{}, time.Now(), nil, overlay.Stats{}, 0, false, false)
+		upload, nil, map[string]float64{}, time.Now(), nil, overlay.Stats{}, 0, false, false, nil)
 	if err == nil {
 		t.Fatal("storeArtifact accepted a staged digest that contradicts the receipt identity")
 	}

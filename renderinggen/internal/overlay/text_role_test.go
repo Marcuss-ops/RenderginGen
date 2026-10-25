@@ -51,6 +51,35 @@ func TestRemainingTextRolesResolveIntoSharedSpec(t *testing.T) {
 	}
 }
 
+func TestImportantPhraseStaticPresetRemainsPixelStatic(t *testing.T) {
+	item := semanticItem{
+		ID: "static-phrase", Kind: string(KindImportantPhrase),
+		Template: "IMPORTANT_PHRASE", Text: "A STATIC PHRASE",
+		StartMS: 0, EndMS: 30000,
+	}
+	preset, err := resolveOfficialPreset(StaticTextSmokePresetID, string(PresetText))
+	if err != nil {
+		t.Fatalf("resolve static phrase preset: %v", err)
+	}
+	ri := resolvedItem{Item: item, Kind: KindImportantPhrase, Preset: preset,
+		PresetID: preset.ID, Start: 0, End: 720}
+	src := &semanticPlan{Width: 1920, Height: 1080}
+	spec, err := resolveTextSpec(ri, src)
+	if err != nil {
+		t.Fatalf("resolve static phrase: %v", err)
+	}
+	if spec.EntryExit {
+		t.Fatal("static_text_smoke must not receive the important-phrase entry/exit envelope")
+	}
+	layer, err := compileTextLayer(ri, src, "static-phrase")
+	if err != nil {
+		t.Fatalf("compile static phrase: %v", err)
+	}
+	if layer.Animation != nil || len(layer.TextAnimators) != 0 {
+		t.Fatalf("static phrase compiled animation: layer animation=%+v text animators=%d", layer.Animation, len(layer.TextAnimators))
+	}
+}
+
 // TestTextRoleEntityCaptionOwnsTheNameplateTreatment pins the V1 seam: the
 // entity-caption base treatment lives in the role resolver, not in the image
 // compiler. Default and explicit fills must match the values the compiler used

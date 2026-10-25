@@ -18,6 +18,19 @@ import (
 )
 
 func requireNativeVulkan(outputPath string, expectedFrames int) error {
+	if err := requireNativeVulkanTelemetry(outputPath, expectedFrames); err != nil {
+		return err
+	}
+	if err := chronon.ReadReceiptPresence(outputPath); err != nil {
+		return fmt.Errorf("missing Chronon media receipt: %w", err)
+	}
+	return nil
+}
+
+// requireNativeVulkanTelemetry certifies the shared native render/encoder
+// session. In a segmented render, each item's own receipt is checked later by
+// verifySegmentOutput and the session anchor has no media artifact receipt.
+func requireNativeVulkanTelemetry(outputPath string, expectedFrames int) error {
 	// Observability ownership (Phase 10): the gate certifies from Chronon's
 	// BOUNDED telemetry document — the legacy summary when the engine wrote
 	// one, else the bounded sections of the v2 frame-timing sidecar. Neither
@@ -94,16 +107,8 @@ func requireNativeVulkan(outputPath string, expectedFrames int) error {
 			return fmt.Errorf("vulkan_frames=%d, want at least %d", *doc.Job.GPU.VulkanFrames, expectedFrames)
 		}
 	}
-	// Presence of Chronon's media receipt is owned by chronon.ReadReceiptPresence
-	// (the single definition of the `<output>.receipt.json` path + validity
-	// rule), so this gate never re-derives the suffix or re-decodes the
-	// document. Only presence is certified here: the receipt's identity and
-	// verification verdicts are consumed by the dedicated receipt gate.
-	if err := chronon.ReadReceiptPresence(outputPath); err != nil {
-		return fmt.Errorf("missing Chronon media receipt: %w", err)
-	}
 	// A composited overlay artifact is intentionally not bitstream-copy
-	// eligible. The output profile owns that policy; this gate certifies only
-	// the GPU execution contract and the presence of Chronon's media receipt.
+	// eligible. The output profile owns that policy; this gate certifies the
+	// GPU execution contract. Receipt identity is checked separately.
 	return nil
 }

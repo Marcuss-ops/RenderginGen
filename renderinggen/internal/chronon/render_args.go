@@ -109,6 +109,9 @@ func resolveNativeEncodeSelection(req RenderRequest) (nativeEncodeSelection, boo
 // but any caller reaching a chronon transport directly would skip that check,
 // so the rule lives here, on the boundary both transports share.
 func validateRenderRequest(req RenderRequest) error {
+	if err := validateOutputSegments(req); err != nil {
+		return err
+	}
 	if !req.RangeEnabled {
 		// Whole-plan render: the coordinates are ignored by design.
 		return nil
@@ -118,6 +121,48 @@ func validateRenderRequest(req RenderRequest) error {
 	}
 	if req.LastFrame < req.FirstFrame {
 		return fmt.Errorf("chronon: invalid frame range: last_frame=%d precedes first_frame=%d (would render the whole plan)", req.LastFrame, req.FirstFrame)
+	}
+	return nil
+}
+
+// validateOutputSegments enforces the P4 segmented-output contract at the
+// boundary both chronon transports share. It mirrors the daemon-side
+// normalize_render_job rules so a malformed window set is refused before it
+// can reach the segmented mux writer mid-export:
+//
+//   - windows tile [0, ·) contiguously with unique non-empty output paths and
+//     end > start (frame units ARE encoder PTS units),
+//   - video-only: no muxed source audio,
+//   - the windows already describe the whole timeline: no explicit chunk
+//     range.
+func validateOutputSegments(req RenderRequest) error {
+	segments := req.OutputSegments
+	if len(segments) == 0 {
+		return nil
+	}
+	seen := make(map[string]struct{}, len(segments))
+	var expected int64
+	for i, segment := range segments {
+		if segment.OutputPath == "" {
+			return fmt.Errorf("chronon: output segment %d has an empty output_path", i)
+		}
+		if _, dup := seen[segment.OutputPath]; dup {
+			return fmt.Errorf("chronon: output segment %d repeats output_path %q", i, segment.OutputPath)
+		}
+		seen[segment.OutputPath] = struct{}{}
+		if segment.StartFrame != expected {
+			return fmt.Errorf("chronon: output segment %d starts at frame %d, want %d (windows must tile the timeline contiguously from frame 0)", i, segment.StartFrame, expected)
+		}
+		if segment.EndFrame <= segment.StartFrame {
+			return fmt.Errorf("chronon: output segment %d has an empty or inverted window [%d,%d)", i, segment.StartFrame, segment.EndFrame)
+		}
+		expected = segment.EndFrame
+	}
+	if req.AudioSourcePath != "" {
+		return fmt.Errorf("chronon: segmented output is video-only: source audio cannot be muxed into per-item segments")
+	}
+	if req.RangeEnabled {
+		return fmt.Errorf("chronon: output segments already describe the full timeline and cannot combine with an explicit frame range")
 	}
 	return nil
 }

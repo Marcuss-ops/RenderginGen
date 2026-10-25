@@ -16,6 +16,12 @@ func TestRequireNativeVulkanCertifiesFromV2TimingSidecar(t *testing.T) {
 	if err := os.WriteFile(path+".timing.json", []byte(sidecar), 0o600); err != nil {
 		t.Fatal(err)
 	}
+	if err := requireNativeVulkanTelemetry(path, 1); err != nil {
+		t.Fatalf("shared native session telemetry should not require an anchor receipt: %v", err)
+	}
+	if err := requireNativeVulkan(path, 1); err == nil {
+		t.Fatal("single-output native gate must still require its media receipt")
+	}
 	if err := os.WriteFile(path+".receipt.json", []byte(`{"copy_eligible":false}`), 0o600); err != nil {
 		t.Fatal(err)
 	}
