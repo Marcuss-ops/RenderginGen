@@ -254,6 +254,10 @@ type renderJobPayload struct {
 type AssembleRequest struct {
 	Inputs []string `json:"input_paths"`
 	Output string   `json:"output_path"`
+	// FragmentedMP4 emits the assembled artifact as a fragmented MP4 (the
+	// overlay-artifact contract: bytes final when appended, streamable while
+	// the mux is open). The chunk segments themselves may be classic MP4.
+	FragmentedMP4 bool `json:"fragmented_mp4,omitempty"`
 }
 
 type Assembler interface {

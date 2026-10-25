@@ -16461,20 +16461,22 @@
     },
     {
       "id": "classic_playfair_baseline_rise",
+      "title": "Classic Baseline Rise",
       "category": "apple_v2",
       "targets": [
         "text",
         "phrase"
       ],
-      "unit": "line",
+      "unit": "word",
       "enter": 72,
+      "exit": 14,
       "tracks": [
         {
           "property": "position_y",
           "keyframes": [
             {
               "frame": 0,
-              "value": 40.0
+              "value": 30.0
             },
             {
               "frame": 26,
@@ -16491,86 +16493,6 @@
               "value": 0.0
             },
             {
-              "frame": 16,
-              "value": 1.0
-            }
-          ],
-          "easing": "linear"
-        }
-      ],
-      "text_animators": [
-        {
-          "selector": {
-            "kind": "line",
-            "shape": "square",
-            "order": "forward",
-            "stagger": 1
-          },
-          "properties": [
-            {
-              "property": "position_y",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 32.0
-                },
-                {
-                  "frame": 22,
-                  "value": 0.0
-                }
-              ],
-              "easing": "out_cubic"
-            },
-            {
-              "property": "opacity",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 0.0
-                },
-                {
-                  "frame": 20,
-                  "value": 1.0
-                }
-              ],
-              "easing": "linear"
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "id": "classic_playfair_tracking_close",
-      "category": "apple_v2",
-      "targets": [
-        "text",
-        "phrase"
-      ],
-      "unit": "glyph",
-      "enter": 72,
-      "tracks": [
-        {
-          "property": "scale",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 0.99
-            },
-            {
-              "frame": 40,
-              "value": 1.0
-            }
-          ],
-          "easing": "out_cubic"
-        },
-        {
-          "property": "opacity",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 0.0
-            },
-            {
               "frame": 18,
               "value": 1.0
             }
@@ -16580,27 +16502,17 @@
       ],
       "text_animators": [
         {
+          "id": "reveal",
           "selector": {
-            "kind": "glyph",
+            "kind": "word",
             "shape": "smooth",
             "order": "forward",
-            "stagger": 1
+            "stagger": 1,
+            "pace": "out_cubic",
+            "delay": 8,
+            "enter": 64
           },
           "properties": [
-            {
-              "property": "tracking",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 16.0
-                },
-                {
-                  "frame": 44,
-                  "value": 0.0
-                }
-              ],
-              "easing": "out_cubic"
-            },
             {
               "property": "opacity",
               "keyframes": [
@@ -16609,35 +16521,38 @@
                   "value": 0.0
                 },
                 {
-                  "frame": 18,
-                  "value": 1.0
+                  "frame": 1,
+                  "value": 0.0
                 }
               ],
               "easing": "linear"
             }
           ]
         }
-      ]
+      ],
+      "render_safe": true
     },
     {
-      "id": "classic_playfair_focus_resolve",
+      "id": "classic_playfair_tracking_close",
+      "title": "Classic Tracking Close",
       "category": "apple_v2",
       "targets": [
         "text",
         "phrase"
       ],
-      "unit": "glyph",
+      "unit": "line",
       "enter": 72,
+      "exit": 14,
       "tracks": [
         {
           "property": "scale",
           "keyframes": [
             {
               "frame": 0,
-              "value": 1.02
+              "value": 1.03
             },
             {
-              "frame": 34,
+              "frame": 46,
               "value": 1.0
             }
           ],
@@ -16651,7 +16566,7 @@
               "value": 0.0
             },
             {
-              "frame": 16,
+              "frame": 20,
               "value": 1.0
             }
           ],
@@ -16660,22 +16575,26 @@
       ],
       "text_animators": [
         {
+          "id": "reveal",
           "selector": {
-            "kind": "glyph",
+            "kind": "line",
             "shape": "smooth",
             "order": "forward",
-            "stagger": 1
+            "stagger": 1,
+            "pace": "in_out_sine",
+            "delay": 4,
+            "enter": 66
           },
           "properties": [
             {
-              "property": "blur",
+              "property": "tracking",
               "keyframes": [
                 {
                   "frame": 0,
                   "value": 14.0
                 },
                 {
-                  "frame": 34,
+                  "frame": 52,
                   "value": 0.0
                 }
               ],
@@ -16689,25 +16608,101 @@
                   "value": 0.0
                 },
                 {
-                  "frame": 24,
-                  "value": 1.0
+                  "frame": 1,
+                  "value": 0.0
                 }
               ],
               "easing": "linear"
             }
           ]
         }
-      ]
+      ],
+      "render_safe": true
     },
     {
-      "id": "classic_playfair_quiet_zoom",
+      "id": "classic_playfair_focus_resolve",
+      "title": "Classic Focus Resolve",
       "category": "apple_v2",
       "targets": [
         "text",
         "phrase"
       ],
-      "unit": "line",
+      "unit": "glyph",
       "enter": 72,
+      "exit": 14,
+      "tracks": [
+        {
+          "property": "scale",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 1.04
+            },
+            {
+              "frame": 44,
+              "value": 1.0
+            }
+          ],
+          "easing": "out_cubic"
+        },
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.0
+            },
+            {
+              "frame": 14,
+              "value": 1.0
+            }
+          ],
+          "easing": "linear"
+        }
+      ],
+      "text_animators": [
+        {
+          "id": "reveal",
+          "selector": {
+            "kind": "glyph",
+            "shape": "smooth",
+            "order": "forward",
+            "stagger": 1,
+            "pace": "out_expo",
+            "delay": 2,
+            "enter": 68
+          },
+          "properties": [
+            {
+              "property": "opacity",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0.0
+                },
+                {
+                  "frame": 1,
+                  "value": 0.0
+                }
+              ],
+              "easing": "linear"
+            }
+          ]
+        }
+      ],
+      "render_safe": true
+    },
+    {
+      "id": "classic_playfair_quiet_zoom",
+      "title": "Classic Quiet Zoom",
+      "category": "apple_v2",
+      "targets": [
+        "text",
+        "phrase"
+      ],
+      "unit": "word",
+      "enter": 72,
+      "exit": 14,
       "tracks": [
         {
           "property": "scale",
@@ -16717,25 +16712,11 @@
               "value": 0.955
             },
             {
-              "frame": 36,
+              "frame": 54,
               "value": 1.0
             }
           ],
-          "easing": "out_cubic"
-        },
-        {
-          "property": "blur",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 8.0
-            },
-            {
-              "frame": 30,
-              "value": 0.0
-            }
-          ],
-          "easing": "out_cubic"
+          "easing": "in_out_cubic"
         },
         {
           "property": "opacity",
@@ -16745,7 +16726,7 @@
               "value": 0.0
             },
             {
-              "frame": 22,
+              "frame": 30,
               "value": 1.0
             }
           ],
@@ -16754,27 +16735,17 @@
       ],
       "text_animators": [
         {
+          "id": "reveal",
           "selector": {
-            "kind": "line",
-            "shape": "square",
+            "kind": "word",
+            "shape": "smooth",
             "order": "forward",
-            "stagger": 1
+            "stagger": 1,
+            "pace": "in_out_cubic",
+            "delay": 18,
+            "enter": 72
           },
           "properties": [
-            {
-              "property": "position_y",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 10.0
-                },
-                {
-                  "frame": 28,
-                  "value": 0.0
-                }
-              ],
-              "easing": "out_cubic"
-            },
             {
               "property": "opacity",
               "keyframes": [
@@ -16783,35 +16754,38 @@
                   "value": 0.0
                 },
                 {
-                  "frame": 22,
-                  "value": 1.0
+                  "frame": 1,
+                  "value": 0.0
                 }
               ],
               "easing": "linear"
             }
           ]
         }
-      ]
+      ],
+      "render_safe": true
     },
     {
       "id": "classic_playfair_glyph_curtain",
+      "title": "Classic Glyph Curtain",
       "category": "apple_v2",
       "targets": [
         "text",
         "phrase"
       ],
-      "unit": "glyph",
+      "unit": "line",
       "enter": 72,
+      "exit": 14,
       "tracks": [
         {
           "property": "position_y",
           "keyframes": [
             {
               "frame": 0,
-              "value": 22.0
+              "value": -26.0
             },
             {
-              "frame": 30,
+              "frame": 24,
               "value": 0.0
             }
           ],
@@ -16825,7 +16799,7 @@
               "value": 0.0
             },
             {
-              "frame": 18,
+              "frame": 12,
               "value": 1.0
             }
           ],
@@ -16834,27 +16808,17 @@
       ],
       "text_animators": [
         {
+          "id": "reveal",
           "selector": {
-            "kind": "glyph",
-            "shape": "smooth",
+            "kind": "line",
+            "shape": "square",
             "order": "forward",
-            "stagger": 1
+            "stagger": 1,
+            "pace": "out_cubic",
+            "delay": 0,
+            "enter": 48
           },
           "properties": [
-            {
-              "property": "position_y",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 34.0
-                },
-                {
-                  "frame": 26,
-                  "value": 0.0
-                }
-              ],
-              "easing": "out_cubic"
-            },
             {
               "property": "opacity",
               "keyframes": [
@@ -16863,15 +16827,16 @@
                   "value": 0.0
                 },
                 {
-                  "frame": 22,
-                  "value": 1.0
+                  "frame": 1,
+                  "value": 0.0
                 }
               ],
               "easing": "linear"
             }
           ]
         }
-      ]
+      ],
+      "render_safe": true
     },
     {
       "id": "micro_tracker_kerning_compression",
@@ -34753,6 +34718,736 @@
           }
         ]
       }
+    },
+    {
+      "id": "classic_playfair_word_lift",
+      "title": "Classic Word Lift",
+      "category": "apple_v2",
+      "targets": [
+        "text",
+        "phrase"
+      ],
+      "unit": "word",
+      "enter": 72,
+      "exit": 14,
+      "tracks": [
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.0
+            },
+            {
+              "frame": 10,
+              "value": 1.0
+            }
+          ],
+          "easing": "linear"
+        }
+      ],
+      "text_animators": [
+        {
+          "id": "reveal",
+          "selector": {
+            "kind": "word",
+            "shape": "smooth",
+            "order": "forward",
+            "stagger": 1,
+            "pace": "out_cubic",
+            "delay": 2,
+            "enter": 66
+          },
+          "properties": [
+            {
+              "property": "position_y",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 20.0
+                },
+                {
+                  "frame": 64,
+                  "value": 0.0
+                }
+              ],
+              "easing": "out_cubic"
+            },
+            {
+              "property": "opacity",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0.0
+                },
+                {
+                  "frame": 1,
+                  "value": 0.0
+                }
+              ],
+              "easing": "linear"
+            }
+          ]
+        }
+      ],
+      "render_safe": true
+    },
+    {
+      "id": "classic_playfair_line_float",
+      "title": "Classic Line Float",
+      "category": "apple_v2",
+      "targets": [
+        "text",
+        "phrase"
+      ],
+      "unit": "line",
+      "enter": 72,
+      "exit": 14,
+      "tracks": [
+        {
+          "property": "position_y",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": -14.0
+            },
+            {
+              "frame": 36,
+              "value": 0.0
+            }
+          ],
+          "easing": "out_cubic"
+        },
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.0
+            },
+            {
+              "frame": 20,
+              "value": 1.0
+            }
+          ],
+          "easing": "linear"
+        }
+      ],
+      "text_animators": [
+        {
+          "id": "reveal",
+          "selector": {
+            "kind": "line",
+            "shape": "smooth",
+            "order": "forward",
+            "stagger": 1,
+            "pace": "in_out_sine",
+            "delay": 10,
+            "enter": 72
+          },
+          "properties": [
+            {
+              "property": "opacity",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0.0
+                },
+                {
+                  "frame": 1,
+                  "value": 0.0
+                }
+              ],
+              "easing": "linear"
+            }
+          ]
+        }
+      ],
+      "render_safe": true
+    },
+    {
+      "id": "classic_playfair_soft_push_in",
+      "title": "Classic Soft Push In",
+      "category": "apple_v2",
+      "targets": [
+        "text",
+        "phrase"
+      ],
+      "unit": "word",
+      "enter": 72,
+      "exit": 14,
+      "tracks": [
+        {
+          "property": "scale",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 1.06
+            },
+            {
+              "frame": 46,
+              "value": 1.0
+            }
+          ],
+          "easing": "in_out_cubic"
+        },
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.0
+            },
+            {
+              "frame": 18,
+              "value": 1.0
+            }
+          ],
+          "easing": "linear"
+        }
+      ],
+      "text_animators": [
+        {
+          "id": "reveal",
+          "selector": {
+            "kind": "word",
+            "shape": "smooth",
+            "order": "forward",
+            "stagger": 1,
+            "pace": "out_cubic",
+            "delay": 14,
+            "enter": 72
+          },
+          "properties": [
+            {
+              "property": "opacity",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0.0
+                },
+                {
+                  "frame": 1,
+                  "value": 0.0
+                }
+              ],
+              "easing": "linear"
+            }
+          ]
+        }
+      ],
+      "render_safe": true
+    },
+    {
+      "id": "classic_playfair_hero_settle",
+      "title": "Classic Hero Settle",
+      "category": "apple_v2",
+      "targets": [
+        "text",
+        "phrase"
+      ],
+      "unit": "line",
+      "enter": 72,
+      "exit": 14,
+      "tracks": [
+        {
+          "property": "scale",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.94
+            },
+            {
+              "frame": 40,
+              "value": 1.0
+            }
+          ],
+          "easing": "out_cubic"
+        },
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.0
+            },
+            {
+              "frame": 16,
+              "value": 1.0
+            }
+          ],
+          "easing": "linear"
+        }
+      ],
+      "text_animators": [
+        {
+          "id": "reveal",
+          "selector": {
+            "kind": "line",
+            "shape": "smooth",
+            "order": "forward",
+            "stagger": 1,
+            "pace": "out_cubic",
+            "delay": 8,
+            "enter": 72
+          },
+          "properties": [
+            {
+              "property": "opacity",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0.0
+                },
+                {
+                  "frame": 1,
+                  "value": 0.0
+                }
+              ],
+              "easing": "linear"
+            }
+          ]
+        }
+      ],
+      "render_safe": true
+    },
+    {
+      "id": "classic_playfair_depth_push",
+      "title": "Classic Depth Push",
+      "category": "apple_v2",
+      "targets": [
+        "text",
+        "phrase"
+      ],
+      "unit": "line",
+      "enter": 72,
+      "exit": 14,
+      "tracks": [
+        {
+          "property": "scale",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 1.12
+            },
+            {
+              "frame": 50,
+              "value": 1.0
+            }
+          ],
+          "easing": "out_cubic"
+        },
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.0
+            },
+            {
+              "frame": 22,
+              "value": 1.0
+            }
+          ],
+          "easing": "linear"
+        }
+      ],
+      "text_animators": [
+        {
+          "id": "reveal",
+          "selector": {
+            "kind": "line",
+            "shape": "smooth",
+            "order": "forward",
+            "stagger": 1,
+            "pace": "out_quad",
+            "delay": 6,
+            "enter": 70
+          },
+          "properties": [
+            {
+              "property": "opacity",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0.0
+                },
+                {
+                  "frame": 1,
+                  "value": 0.0
+                }
+              ],
+              "easing": "linear"
+            }
+          ]
+        }
+      ],
+      "render_safe": true
+    },
+    {
+      "id": "classic_playfair_tracking_open",
+      "title": "Classic Tracking Open",
+      "category": "apple_v2",
+      "targets": [
+        "text",
+        "phrase"
+      ],
+      "unit": "word",
+      "enter": 72,
+      "exit": 14,
+      "tracks": [
+        {
+          "property": "scale",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 1.02
+            },
+            {
+              "frame": 40,
+              "value": 1.0
+            }
+          ],
+          "easing": "out_cubic"
+        },
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.0
+            },
+            {
+              "frame": 14,
+              "value": 1.0
+            }
+          ],
+          "easing": "linear"
+        }
+      ],
+      "text_animators": [
+        {
+          "id": "reveal",
+          "selector": {
+            "kind": "word",
+            "shape": "smooth",
+            "order": "forward",
+            "stagger": 1,
+            "pace": "out_expo",
+            "delay": 4,
+            "enter": 68
+          },
+          "properties": [
+            {
+              "property": "tracking",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 10.0
+                },
+                {
+                  "frame": 60,
+                  "value": 0.0
+                }
+              ],
+              "easing": "out_cubic"
+            },
+            {
+              "property": "opacity",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0.0
+                },
+                {
+                  "frame": 1,
+                  "value": 0.0
+                }
+              ],
+              "easing": "linear"
+            }
+          ]
+        }
+      ],
+      "render_safe": true
+    },
+    {
+      "id": "classic_playfair_glyph_glide",
+      "title": "Classic Glyph Glide",
+      "category": "apple_v2",
+      "targets": [
+        "text",
+        "phrase"
+      ],
+      "unit": "glyph",
+      "enter": 72,
+      "exit": 14,
+      "tracks": [
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.0
+            },
+            {
+              "frame": 12,
+              "value": 1.0
+            }
+          ],
+          "easing": "linear"
+        }
+      ],
+      "text_animators": [
+        {
+          "id": "reveal",
+          "selector": {
+            "kind": "glyph",
+            "shape": "smooth",
+            "order": "forward",
+            "stagger": 1,
+            "pace": "in_out_sine",
+            "delay": 0,
+            "enter": 58
+          },
+          "properties": [
+            {
+              "property": "position_x",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 20.0
+                },
+                {
+                  "frame": 66,
+                  "value": 0.0
+                }
+              ],
+              "easing": "out_cubic"
+            },
+            {
+              "property": "opacity",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0.0
+                },
+                {
+                  "frame": 1,
+                  "value": 0.0
+                }
+              ],
+              "easing": "linear"
+            }
+          ]
+        }
+      ],
+      "render_safe": true
+    },
+    {
+      "id": "classic_playfair_letter_tick",
+      "title": "Classic Letter Tick",
+      "category": "apple_v2",
+      "targets": [
+        "text",
+        "phrase"
+      ],
+      "unit": "glyph",
+      "enter": 72,
+      "exit": 14,
+      "tracks": [
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.0
+            },
+            {
+              "frame": 8,
+              "value": 1.0
+            }
+          ],
+          "easing": "linear"
+        }
+      ],
+      "text_animators": [
+        {
+          "id": "reveal",
+          "selector": {
+            "kind": "glyph",
+            "shape": "square",
+            "order": "forward",
+            "stagger": 1,
+            "pace": "linear",
+            "delay": 0,
+            "enter": 54
+          },
+          "properties": [
+            {
+              "property": "opacity",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0.0
+                },
+                {
+                  "frame": 1,
+                  "value": 0.0
+                }
+              ],
+              "easing": "linear"
+            }
+          ]
+        }
+      ],
+      "render_safe": true
+    },
+    {
+      "id": "classic_playfair_breath_in",
+      "title": "Classic Breath In",
+      "category": "apple_v2",
+      "targets": [
+        "text",
+        "phrase"
+      ],
+      "unit": "glyph",
+      "enter": 72,
+      "exit": 14,
+      "tracks": [
+        {
+          "property": "scale",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.98
+            },
+            {
+              "frame": 56,
+              "value": 1.0
+            }
+          ],
+          "easing": "in_out_cubic"
+        },
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.0
+            },
+            {
+              "frame": 34,
+              "value": 1.0
+            }
+          ],
+          "easing": "linear"
+        }
+      ],
+      "text_animators": [
+        {
+          "id": "reveal",
+          "selector": {
+            "kind": "glyph",
+            "shape": "smooth",
+            "order": "forward",
+            "stagger": 1,
+            "pace": "in_out_expo",
+            "delay": 20,
+            "enter": 72
+          },
+          "properties": [
+            {
+              "property": "opacity",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0.0
+                },
+                {
+                  "frame": 1,
+                  "value": 0.0
+                }
+              ],
+              "easing": "linear"
+            }
+          ]
+        }
+      ],
+      "render_safe": true
+    },
+    {
+      "id": "classic_playfair_quiet_dissolve",
+      "title": "Classic Quiet Dissolve",
+      "category": "apple_v2",
+      "targets": [
+        "text",
+        "phrase"
+      ],
+      "unit": "word",
+      "enter": 72,
+      "exit": 14,
+      "tracks": [
+        {
+          "property": "position_y",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 8.0
+            },
+            {
+              "frame": 40,
+              "value": 0.0
+            }
+          ],
+          "easing": "in_out_cubic"
+        },
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.0
+            },
+            {
+              "frame": 36,
+              "value": 1.0
+            }
+          ],
+          "easing": "linear"
+        }
+      ],
+      "text_animators": [
+        {
+          "id": "reveal",
+          "selector": {
+            "kind": "word",
+            "shape": "smooth",
+            "order": "forward",
+            "stagger": 1,
+            "pace": "in_out_sine",
+            "delay": 26,
+            "enter": 72
+          },
+          "properties": [
+            {
+              "property": "opacity",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0.0
+                },
+                {
+                  "frame": 1,
+                  "value": 0.0
+                }
+              ],
+              "easing": "linear"
+            }
+          ]
+        }
+      ],
+      "render_safe": true
     },
     {
       "id": "metric_counter_rise",

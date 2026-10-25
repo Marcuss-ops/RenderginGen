@@ -106,6 +106,104 @@ func TestSpreadCapsConcurrencyPerSocket(t *testing.T) {
 	}
 }
 
+// heldLane blocks its first render until release closes, so a test can make
+// one lane genuinely busy while the policy routes around it.
+type heldLane struct {
+	release chan struct{}
+	calls   atomic.Int64
+}
+
+func (l *heldLane) Render(context.Context, RenderRequest) error {
+	l.calls.Add(1)
+	<-l.release
+	return nil
+}
+
+// waitCalls polls until the lane has been assigned n renders.
+func waitCalls(t *testing.T, lane *recordingLane, n int64) {
+	t.Helper()
+	deadline := time.Now().Add(2 * time.Second)
+	for time.Now().Before(deadline) {
+		if lane.calls.Load() >= n {
+			return
+		}
+		time.Sleep(time.Millisecond)
+	}
+	t.Fatalf("lane never reached %d assignments (has %d)", n, lane.calls.Load())
+}
+
+// TestSpreadAvoidsBusyLanes pins the load-aware half of the policy: while lane
+// 0 is mid-render, assignments must go to idle lanes even though the
+// historical round-robin cursor would point back at lane 0.
+func TestSpreadAvoidsBusyLanes(t *testing.T) {
+	held := &heldLane{release: make(chan struct{})}
+	lanes := []*recordingLane{{id: 1}, {id: 2}}
+	spread := spreadAcrossLanes([]Renderer{held, lanes[0], lanes[1]})
+
+	// Occupy lane 0 (the cursor's first target) with a blocked render.
+	done := make(chan error, 1)
+	go func() { done <- spread.Render(context.Background(), RenderRequest{}) }()
+	deadline := time.Now().Add(2 * time.Second)
+	for held.calls.Load() != 1 {
+		if !time.Now().Before(deadline) {
+			t.Fatal("held lane was never assigned the first render")
+		}
+		time.Sleep(time.Millisecond)
+	}
+	// Allow the assignment's atomic bookkeeping to settle before asserting
+	// the NEXT pick routes around lane 0.
+	time.Sleep(20 * time.Millisecond)
+
+	// Render 2 must skip lane 0 instead of queueing behind it.
+	if err := spread.Render(context.Background(), RenderRequest{}); err != nil {
+		t.Fatalf("render 2: %v", err)
+	}
+	if got := lanes[0].calls.Load(); got != 1 {
+		t.Fatalf("lane 1 served %d renders, want 1 while lane 0 is busy", got)
+	}
+	// Render 3 takes the remaining idle lane.
+	if err := spread.Render(context.Background(), RenderRequest{}); err != nil {
+		t.Fatalf("render 3: %v", err)
+	}
+	if got := lanes[1].calls.Load(); got != 1 {
+		t.Fatalf("lane 2 served %d renders, want 1 while lane 0 is busy", got)
+	}
+	if held.calls.Load() != 1 {
+		t.Fatalf("busy lane 0 was double-assigned: %d renders", held.calls.Load())
+	}
+
+	close(held.release)
+	select {
+	case err := <-done:
+		if err != nil {
+			t.Fatalf("held render: %v", err)
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("held render did not drain")
+	}
+}
+
+// TestSpreadEvenWhenIdle pins the fairness half: with nothing in flight the
+// cursored min-scan still rotates assignment evenly across the lanes.
+func TestSpreadEvenWhenIdle(t *testing.T) {
+	lanes := []*recordingLane{{id: 0}, {id: 1}, {id: 2}}
+	renderers := make([]Renderer, 0, len(lanes))
+	for _, lane := range lanes {
+		renderers = append(renderers, lane)
+	}
+	spread := spreadAcrossLanes(renderers)
+	for i := 0; i < 9; i++ {
+		if err := spread.Render(context.Background(), RenderRequest{}); err != nil {
+			t.Fatalf("render %d: %v", i, err)
+		}
+	}
+	for _, lane := range lanes {
+		if got := lane.calls.Load(); got != 3 {
+			t.Errorf("lane %d served %d renders, want 3", lane.id, got)
+		}
+	}
+}
+
 // TestSpreadAcrossLanesWithoutLanes: a spread with nothing to spread over is an
 // error, never a nil dereference or a silently dropped render.
 func TestSpreadAcrossLanesWithoutLanes(t *testing.T) {

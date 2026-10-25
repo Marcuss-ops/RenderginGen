@@ -180,6 +180,12 @@ func renderArgs(req RenderRequest) []string {
 	if req.Output.PipePixFmt != "" {
 		args = append(args, "--pipe-pixfmt", req.Output.PipePixFmt)
 	}
+	if req.Output.FragmentedMP4 {
+		// Fragmented MP4 (moof/mdat fragments, no start-of-file backpatch):
+		// the artifact bytes are final when appended, so the upload lane can
+		// stream them while the mux is still open.
+		args = append(args, "--fragmented-mp4")
+	}
 	if req.AudioSourcePath != "" {
 		// Chronon's native A/V mux path uses --gop-source for the source audio
 		// stream. The worker passes an absolute workspace path, so the CLI can

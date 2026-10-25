@@ -30,6 +30,10 @@ import (
 type Memory struct {
 	mu      sync.RWMutex
 	objects map[string]memoryObject
+	// pending holds the staging workspace (session → bytes + computed digest);
+	// it is never visible to Get/Head — staging is a private workspace, not a
+	// second addressing scheme. Guarded by the same mu as objects.
+	pending map[string]memoryPending
 }
 
 type memoryObject struct {

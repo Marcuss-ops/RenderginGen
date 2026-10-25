@@ -579,8 +579,8 @@ func TestEveryPhraseFamilyMotionReachesTheChrononRenderPlan(t *testing.T) {
 	for _, category := range []string{"apple_v2", "apple_v3", "phrase_apple_clean_v1", "apple_phrase_v1"} {
 		ids = append(ids, motion.Registry.CategoryMotionIDs(category)...)
 	}
-	if len(ids) != 108 {
-		t.Fatalf("registered phrase family motions = %d, want 108", len(ids))
+	if len(ids) != 118 {
+		t.Fatalf("registered phrase family motions = %d, want 118", len(ids))
 	}
 	seen := make(map[string]bool, len(ids))
 	for _, id := range ids {

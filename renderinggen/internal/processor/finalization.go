@@ -176,7 +176,22 @@ func (f *ParentFinalizer) finalize(ctx context.Context, parentID string, start, 
 			log.Printf("parent %s: remove staging output %s: %v", parentID, output, err)
 		}
 	}()
-	if err := f.assembler.Assemble(workCtx, chronon.AssembleRequest{Inputs: inputs, Output: output}); err != nil {
+	// Overlay-artifact contract: a SILENT parent (no child segment carries an
+	// audio stream) is assembled as a fragmented MP4 — bytes final when
+	// appended, streamable/uploadable while the mux is open. A parent that
+	// carries source audio keeps the classic MP4. Audio is never synthesized
+	// here: the canonical final audio enters exactly once at the final master
+	// (Rust `mux_audio_copy`).
+	fragmented := true
+	for _, child := range children {
+		if child.Artifact.AudioStreams > 0 {
+			fragmented = false
+			break
+		}
+	}
+	if err := f.assembler.Assemble(workCtx, chronon.AssembleRequest{
+		Inputs: inputs, Output: output, FragmentedMP4: fragmented,
+	}); err != nil {
 		return false, queue.Artifact{}, err
 	}
 	artifact, err := artifactFromFile(output)
