@@ -157,6 +157,13 @@ type DaemonPool struct {
 // Compile-time check that DaemonPool satisfies Renderer.
 var _ Renderer = (*DaemonPool)(nil)
 
+// SupportsOutputSegments: every lane is a warm Chronon daemon on the IPC
+// transport, which carries per-item output windows (P4 batch superjob).
+func (p *DaemonPool) SupportsOutputSegments() bool { return true }
+
+// Compile-time check that DaemonPool satisfies OutputSegmentRenderer.
+var _ OutputSegmentRenderer = (*DaemonPool)(nil)
+
 // StartDaemonPool ensures Count daemons serve SocketBase.0..Count-1.
 //
 // A socket is reused and left UNOWNED only after it answers STATUS; stale or

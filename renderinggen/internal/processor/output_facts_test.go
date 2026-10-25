@@ -121,6 +121,11 @@ func TestOutputFactsFromProbeFillsEveryDeclaredField(t *testing.T) {
 	fv := reflect.ValueOf(*facts)
 	ft := fv.Type()
 	for i := 0; i < ft.NumField(); i++ {
+		if ft.Field(i).Name == "BatchSegments" {
+			// This is batch metadata, derived from per-segment verification in
+			// finalizeSegments; a single media probe cannot populate it.
+			continue
+		}
 		if fv.Field(i).IsZero() {
 			t.Errorf("queue.OutputFacts.%s is never filled by outputFactsFromProbe: the probe certifies it and the projection drops it", ft.Field(i).Name)
 		}

@@ -115,6 +115,18 @@ type spreadRenderer struct {
 // Compile-time check that spreadRenderer satisfies Renderer.
 var _ Renderer = (*spreadRenderer)(nil)
 
+// SupportsOutputSegments: the P4 segmented batch is ONE request on ONE lane,
+// so the spread can carry it exactly when every lane underneath can.
+func (s *spreadRenderer) SupportsOutputSegments() bool {
+	for _, lane := range s.lanes {
+		seg, ok := lane.(OutputSegmentRenderer)
+		if !ok || !seg.SupportsOutputSegments() {
+			return false
+		}
+	}
+	return len(s.lanes) > 0
+}
+
 func (s *spreadRenderer) Render(ctx context.Context, req RenderRequest) error {
 	if len(s.lanes) == 0 {
 		return fmt.Errorf("chronon socket spread has no lanes")

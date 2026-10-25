@@ -25,6 +25,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/chronon"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/metricnames"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/overlay"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/queue"
@@ -64,7 +65,20 @@ type PreparedJob struct {
 	// nil when the artifact was not fragmented or the store cannot stage. It
 	// is set at RunGPU's commit point and consumed by storeArtifact.
 	TailUpload *stagedUpload
-	totalStart time.Time
+	// Segments is the P4 batch-superjob segmentation: one MP4 per semantic
+	// item cut from ONE encoder session (the job's OutputPath doubles as the
+	// session's whole-timeline mirror, so the fused clip keeps its ordinary
+	// artifact contract). Empty (the default) preserves the single-output
+	// path. SegmentItemIDs is parallel to Segments and names the owning
+	// semantic item of each window.
+	Segments       []chronon.OutputSegment
+	SegmentItemIDs []string
+	// baseRenderRequest is the request RunGPU actually submitted (minus
+	// per-item windows): the P4 single-segment retry re-renders ONE failed
+	// segment from this exact request narrowed to its frame window, so the
+	// retry can never drift from the session it repairs.
+	baseRenderRequest chronon.RenderRequest
+	totalStart        time.Time
 }
 
 // PrepareJob runs the CPU-bound preparation half of the render pipeline:
@@ -360,6 +374,27 @@ func (p *Processor) PrepareJob(ctx context.Context, job *queue.Job) (*PreparedJo
 	record(metricnames.PlanStem, phaseStart)
 	audioPath, warnInert := audioSourcePathFromPlan(plan, ws.Root())
 	audioTargetSampleRate := audioTargetSampleRateFromPlan(plan)
+	// P4 batch superjob: a multi-item plan whose semantic item windows TILE
+	// the canvas becomes ONE render session with one MP4 per item (the job's
+	// OutputPath doubles as the session's whole-timeline mirror, so the fused
+	// clip keeps its ordinary artifact contract). The trigger is deliberately
+	// narrow — a transport that can carry per-item windows, whole-plan renders
+	// only, no muxed source audio, no final-job composite — and everything
+	// else keeps the historical single-output behavior unchanged.
+	var segments []chronon.OutputSegment
+	var segmentItemIDs []string
+	if job.FrameRange == nil && audioPath == "" && !isFinalJobComposite(job) {
+		if segRenderer, ok := p.renderer.(chronon.OutputSegmentRenderer); ok && segRenderer.SupportsOutputSegments() {
+			if segmentPlan, tileable := planSegmentOutputs(
+				plan.ItemWindows, plan.Canvas.DurationFrames,
+				filepath.Dir(ws.OutputPath("result.mp4"))); tileable {
+				segments, segmentItemIDs = segmentPlan.Segments, segmentPlan.ItemIDs
+				workerlog.ByJobID(job.ID).Infof(
+					"P4 segmented output: %d semantic item windows tile the canvas — one session, %d per-item MP4s + the fused whole-timeline clip",
+					len(segmentItemIDs), len(segments))
+			}
+		}
+	}
 	if warnInert {
 		metrics[metricnames.AudioInertParams] = 1
 		if plan.Output.Audio != nil && !audioModeCopyOnly(plan.Output.Audio.Mode) {
@@ -392,6 +427,8 @@ func (p *Processor) PrepareJob(ctx context.Context, job *queue.Job) (*PreparedJo
 		// while appended — the container and the tail-upload lane must never
 		// diverge, or the lane would stream a file whose header is backpatched.
 		FragmentedMP4: audioPath == "",
+		Segments:      segments,
+		SegmentItemIDs: segmentItemIDs,
 		totalStart:    totalStart,
 	}, nil
 }
