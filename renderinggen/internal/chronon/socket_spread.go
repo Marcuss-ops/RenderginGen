@@ -80,14 +80,36 @@ func SpreadAcrossSockets(sockets []string, totalLanes int) (Renderer, error) {
 // Renderer factory kept separate from the socket plumbing so the spreading
 // policy is testable with fake lanes instead of real daemons.
 func spreadAcrossLanes(lanes []Renderer) Renderer {
-	return &spreadRenderer{lanes: lanes}
+	s := &spreadRenderer{lanes: lanes}
+	s.inflight = make([]atomic.Int64, len(lanes))
+	return s
 }
 
-// spreadRenderer distributes renders round-robin over independent lanes. A lane
-// that is mid-render only queues the next job assigned to it.
+// spreadRenderer distributes renders over independent lanes least-loaded, not
+// round-robin blindly. A lane that is mid-render (or already has queued work)
+// receives no further assignment, so the per-socket queue never grows behind a
+// customer while another socket idles.
+//
+// WHY NOT ROUND-ROBIN
+// -------------------
+// Blind rotation assigns the NEXT lane purely by call order. With heterogeneous
+// service times (phrase items ~2 s, map-backed items tens of seconds on a cold
+// plate) one bad sequence parks two long renders behind the same lane while
+// the other runs dry: the 2026-10-22 golden v16/v18 windows showed a single
+// late map item stretching the wall ~40–60 s past every other item's finish.
+// Least-loaded assignment bounds the worst case: no lane can be handed a
+// second job before an unassigned lane has taken one.
+//
+// The pick is a lock-free min scan with a CAS increment, so concurrent callers
+// cannot double-assign a lane past what its counter says (the increment is
+// visible before Render is called), and a lost race simply re-scans.
 type spreadRenderer struct {
 	lanes []Renderer
-	next  atomic.Uint64
+	// inflight is the number of renders assigned to each lane that have not
+	// returned yet — mid-render plus waiting for that lane's own concurrency
+	// cap. The index mirrors lanes.
+	inflight []atomic.Int64
+	next     atomic.Uint64
 }
 
 // Compile-time check that spreadRenderer satisfies Renderer.
@@ -97,6 +119,27 @@ func (s *spreadRenderer) Render(ctx context.Context, req RenderRequest) error {
 	if len(s.lanes) == 0 {
 		return fmt.Errorf("chronon socket spread has no lanes")
 	}
-	index := s.next.Add(1) - 1
-	return s.lanes[index%uint64(len(s.lanes))].Render(ctx, req)
+	slot := s.next.Add(1) - 1
+	// Least-loaded scan, starting the sweep at the round-robin cursor so an
+	// idle pool still spreads evenly instead of piling on lane 0.
+	const noLane = -1
+	lane := noLane
+	for {
+		best := noLane
+		bestLoad := int64(^uint64(0) >> 1) // max int64
+		for offset := range s.lanes {
+			index := int((slot + uint64(offset)) % uint64(len(s.lanes)))
+			if load := s.inflight[index].Load(); load < bestLoad {
+				best, bestLoad = index, load
+			}
+		}
+		// Claim the slot on the chosen lane. If another caller claimed the
+		// same free slot first, rescan: the claim must be exact, not best effort.
+		if s.inflight[best].CompareAndSwap(bestLoad, bestLoad+1) {
+			lane = best
+			break
+		}
+	}
+	defer s.inflight[lane].Add(-1)
+	return s.lanes[lane].Render(ctx, req)
 }

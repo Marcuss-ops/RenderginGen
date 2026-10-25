@@ -37,7 +37,7 @@ func TestCatalogCategoriesKeepMotionsIndependentAndComplete(t *testing.T) {
 	// This registry exposes authored categories directly. Semantic groupings
 	// such as modern_apple belong to the runtime catalog, not a second alias map.
 	categoryCounts := map[string]int{
-		"apple_v2": 47,
+		"apple_v2": 57,
 		"apple_v3": 16, "phrase_apple_clean_v1": 30, "apple_phrase_v1": 15,
 
 		"brush_v1": 23, "text_3d_v1": 10, "documentary_highlighting_v1": 20, "trump_entity_text_v1": 15, "web": 14,
@@ -51,8 +51,8 @@ func TestCatalogCategoriesKeepMotionsIndependentAndComplete(t *testing.T) {
 	if ids := Registry.ShortPhraseStyleIDs(); len(ids) != 26 {
 		t.Errorf("short phrase runtime registry has %d motions, want 26", len(ids))
 	}
-	if ids := Registry.PhraseAnimationIDs(); len(ids) != 161 {
-		t.Errorf("phrase planning pool has %d motions, want 161", len(ids))
+	if ids := Registry.PhraseAnimationIDs(); len(ids) != 171 {
+		t.Errorf("phrase planning pool has %d motions, want 171", len(ids))
 	}
 	appleClean := Registry.CategoryMotionIDs("phrase_apple_clean_v1")
 	pool := Registry.PhraseAnimationIDs()
@@ -541,10 +541,10 @@ func TestAppleV2MotionsAreComplete(t *testing.T) {
 	// The count is pinned so a definition that is added to a family file but
 	// never reaches the registry (a missing familyMotions() entry in the init)
 	// fails here instead of silently shrinking the published catalog.
-	// 16 classic apple_v2 motions + 26 modern v3 phrase motions.
+	// 15 Classic Apple long-phrase motions + 42 legacy Apple V2 phrase motions.
 	ids := Registry.CategoryMotionIDs("apple_v2")
-	if len(ids) != 47 {
-		t.Fatalf("Apple V2 motion count = %d, want 47", len(ids))
+	if len(ids) != 57 {
+		t.Fatalf("Apple V2 motion count = %d, want 57", len(ids))
 	}
 	seen := make(map[string]bool, len(ids))
 	for _, id := range ids {

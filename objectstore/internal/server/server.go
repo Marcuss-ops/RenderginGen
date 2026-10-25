@@ -6,6 +6,9 @@
 //	GET  /objects/{key}        -> 200 body | 400 malformed content address | 404
 //	HEAD /objects/{key}        -> 200 | 400 malformed content address | 404
 //	GET  /objects/{key}/verify -> 200 (verified) | 400 | 404 | 409 (stored bytes contradict the address)
+//	PUT    /objects/staging/{session}          -> 201 {session, sha256, size_bytes} (streaming pending write)
+//	POST   /objects/staging/{session}/finalize -> 201 {ok, key} | 400 | 404 | 422
+//	DELETE /objects/staging/{session}          -> 204 (idempotent abort)
 //	GET  /health               -> 200 {"status", "store", "build"}
 //
 // {key} is a content address, not a name: it must be the lowercase SHA-256 hex
@@ -80,6 +83,13 @@ func (s *Server) Handler() http.Handler {
 	// answer from the directory entry alone) so the expensive check is always
 	// an explicit request, never a surprise on the hot read path.
 	mux.HandleFunc("GET /objects/{key}/verify", s.verify)
+	// Staging: the streaming pending-write flow for producers whose bytes are
+	// final while they are appended (fragmented MP4 overlay artifacts). The
+	// visible tree keeps the exact same content-addressing invariant; staging
+	// is a private workspace. See server_staging.go.
+	mux.HandleFunc("PUT /objects/staging/{session}", s.putStaging)
+	mux.HandleFunc("POST /objects/staging/{session}/finalize", s.finalizeStaging)
+	mux.HandleFunc("DELETE /objects/staging/{session}", s.abortStaging)
 	mux.HandleFunc("GET /health", s.health)
 	return mux
 }

@@ -205,17 +205,25 @@ func TestStoreExposesNoUnverifiedWritePath(t *testing.T) {
 	}
 	sort.Strings(methods)
 
-	want := []string{"Capabilities", "Get", "Open", "Put", "PutReader", "Scan", "Verify"}
+	want := []string{"Capabilities", "Get", "Open", "Put", "PutReader", "Scan", "StagingAbort", "StagingFinalize", "StagingWrite", "Verify"}
 	if !reflect.DeepEqual(methods, want) {
 		t.Fatalf("exported *store.Store methods = %v, want %v; a NEW method must be classified as read-only, or verify the content address if it installs bytes", methods, want)
 	}
 
-	// The installers are exactly the two verified write methods. Without this,
+	// The installers are exactly the verified write methods: they are the only
+	// ones that make bytes visible under a content address, and each verifies
+	// the digest before doing so (StagingFinalize verifies the ASSERTED digest
+	// against the one computed while streaming StagingWrite). Without this,
 	// the exhaustive list above would still pass if someone swapped a read-only
 	// helper for an installer of the same arity.
-	installers := map[string]bool{"Put": true, "PutReader": true}
+	installers := map[string]bool{"Put": true, "PutReader": true, "StagingFinalize": true}
+	// stagingPending writes only the PRIVATE staging workspace (session-keyed
+	// pending bytes, never addressable through Open/Get): StagingWrite is a
+	// write method that installs nothing under a content address, and
+	// StagingAbort only discards pending bytes.
+	stagingPending := map[string]bool{"StagingWrite": true, "StagingAbort": true}
 	for _, name := range methods {
-		if installers[name] {
+		if installers[name] || stagingPending[name] {
 			continue
 		}
 		if strings.Contains(strings.ToLower(name), "put") || strings.Contains(strings.ToLower(name), "write") || strings.Contains(strings.ToLower(name), "store") {

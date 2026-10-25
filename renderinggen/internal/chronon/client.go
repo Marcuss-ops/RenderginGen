@@ -184,6 +184,13 @@ type OutputSpec struct {
 	HardwareEncoder string `json:"hardware_encoder,omitempty"`
 	EncoderBackend  string `json:"encoder_backend,omitempty"`
 	GpuHotPathMode  string `json:"gpu_hot_path_mode,omitempty"`
+	// FragmentedMP4 requests a FRAGMENTED MP4 (moof/mdat fragments, no
+	// start-of-file backpatch) for the output container. The artifact bytes
+	// are final the moment they are appended, so the upload lane can stream
+	// and hash them while the mux is still open. Overlay artifacts — silent,
+	// video-only intermediates — request it; a classic MP4 stays the default
+	// for artifacts that mux source audio.
+	FragmentedMP4 bool `json:"fragmented_mp4,omitempty"`
 }
 
 // Renderer renders a RenderRequest.

@@ -27,7 +27,7 @@ import (
 // "DB artifact" step — returning the artifact metadata for queue completion.
 // The pipeline invariant local_sha == objectstore_sha == db_sha is enforced
 // here: the record is keyed by the same hash the object store accepted.
-func (p *Processor) storeArtifact(ctx context.Context, jobID, outputPath string, outcome receiptOutcome, plan *overlay.Plan, phaseMetrics map[string]float64, totalStart time.Time, probe *media.ProbeResult, stats overlay.Stats, inputBytes int64, copyEligible bool, nativeCertified bool) (queue.Artifact, error) {
+func (p *Processor) storeArtifact(ctx context.Context, jobID, outputPath string, outcome receiptOutcome, tail *stagedUpload, plan *overlay.Plan, phaseMetrics map[string]float64, totalStart time.Time, probe *media.ProbeResult, stats overlay.Stats, inputBytes int64, copyEligible bool, nativeCertified bool) (queue.Artifact, error) {
 	phaseStart := time.Now()
 	defer func() {
 		phaseMetrics[metricnames.PublishMS] = float64(time.Since(phaseStart).Microseconds()) / 1000
@@ -53,26 +53,61 @@ func (p *Processor) storeArtifact(ctx context.Context, jobID, outputPath string,
 	// Either way the invariant local_sha == objectstore_sha == db_sha holds, and
 	// the ledger says which case it was.
 	var hash string
-	shaStart := time.Now()
-	if outcome.Identity.SHA256 != "" {
-		hash = outcome.Identity.SHA256
-		workerlog.ByJobID(jobID).Infof("artifact identity %s (proven=%t, bytes=%d)", outcome.Identity.Source, outcome.Identity.Proven, fileInfo.Size())
-	} else {
-		// No receipt (or an unreadable/unusable one): identity must be proven by
-		// re-reading the output. This costs a full SHA-256 pass on the critical
-		// path, so it is recorded — otherwise the spike is visible only as an
-		// unexplained sha256_ms and the degradation stays unattributable. The
-		// gate has already recorded WHY it could not resolve the address.
-		workerlog.ByJobID(jobID).Warnf("hashing output directly (%s)", outcome.Identity.Source)
-		digest, _, verifyErr := hashio.File(outputPath)
-		if verifyErr != nil {
-			return queue.Artifact{}, fmt.Errorf("processor: hash output %s: %w", outputPath, verifyErr)
+	staged := false
+	if tail != nil {
+		// The tail-upload lane streamed the bytes WHILE the mux appended them
+		// and the store computed their SHA-256 from the same stream. The
+		// verification gates above have already passed, so THIS is the commit
+		// point for the bytes: finishing the stream lets the upload drain and
+		// finalize. Before this line a failing gate discarded the pending
+		// bytes (Abort) and nothing was ever installed — the same
+		// verify-before-install posture as the classic path, just overlapping
+		// the transport with the render.
+		tail.Finish()
+		stagedSHA, streamedSize, err := tail.Wait()
+		if err != nil {
+			// Transport failure: the pending bytes were discarded and nothing
+			// is installed, so the classic hash-then-PUT path can still publish
+			// the same file. An optimization failing must not fail a render.
+			workerlog.ByJobID(jobID).Warnf("staged upload failed; falling back to hash-then-PUT: %v", err)
+			tail = nil
+		} else if streamedSize != fileInfo.Size() {
+			return queue.Artifact{}, fmt.Errorf("processor: staged upload streamed %d bytes but %s is %d bytes: the file changed under the upload", streamedSize, outputPath, fileInfo.Size())
+		} else if outcome.Identity.SHA256 != "" && outcome.Identity.SHA256 != stagedSHA {
+			// A receipt naming different bytes than the stream is exactly the
+			// corruption this pipeline must fail closed on.
+			return queue.Artifact{}, fmt.Errorf("processor: staged upload digest %s does not match the %s identity %s: the stream and the receipt describe different bytes", stagedSHA, outcome.Identity.Source, outcome.Identity.SHA256)
+		} else {
+			hash, staged = stagedSHA, true
+			// The digest was computed FROM THE STREAM by both endpoints and
+			// asserted at finalize: no pre-upload hash pass, so sha256_us is
+			// zero by construction — the hashing rode inside the upload.
+			workerlog.ByJobID(jobID).Infof("artifact identity from the staged upload stream (bytes=%d, upload=%.0fms)", streamedSize, tail.Duration().Seconds()*1000)
 		}
-		hash = digest
 	}
-	shaUS := float64(time.Since(shaStart).Microseconds())
-	phaseMetrics[metricnames.SHA256US] = shaUS
-	phaseMetrics[metricnames.SHA256MS] = shaUS / 1000
+	if !staged {
+		shaStart := time.Now()
+		if outcome.Identity.SHA256 != "" {
+			hash = outcome.Identity.SHA256
+			workerlog.ByJobID(jobID).Infof("artifact identity %s (proven=%t, bytes=%d)", outcome.Identity.Source, outcome.Identity.Proven, fileInfo.Size())
+		} else {
+			// No receipt (or an unreadable/unusable one): identity must be proven
+			// by re-reading the output. This costs a full SHA-256 pass on the
+			// critical path, so it is recorded — otherwise the spike is visible
+			// only as an unexplained sha256_ms and the degradation stays
+			// unattributable. The gate has already recorded WHY it could not
+			// resolve the address.
+			workerlog.ByJobID(jobID).Warnf("hashing output directly (%s)", outcome.Identity.Source)
+			digest, _, verifyErr := hashio.File(outputPath)
+			if verifyErr != nil {
+				return queue.Artifact{}, fmt.Errorf("processor: hash output %s: %w", outputPath, verifyErr)
+			}
+			hash = digest
+		}
+		shaUS := float64(time.Since(shaStart).Microseconds())
+		phaseMetrics[metricnames.SHA256US] = shaUS
+		phaseMetrics[metricnames.SHA256MS] = shaUS / 1000
+	}
 	// Surface Chronon's own receipt-verification phases (probe / optional
 	// decode / count_frames / sha256 / total, policy-controlled by the
 	// resolved verification policy) on the artifact so per-clip reports can
@@ -90,20 +125,31 @@ func (p *Processor) storeArtifact(ctx context.Context, jobID, outputPath string,
 		}
 	}
 	putStart := time.Now()
-	output, err := os.Open(outputPath)
-	if err != nil {
-		return queue.Artifact{}, fmt.Errorf("processor: open output for upload %s: %w", outputPath, err)
+	if staged {
+		// The bytes are already in the store under `hash` (installed by the
+		// staged finalize). The recorded cost is the upload's own wall time —
+		// which ran CONCURRENTLY with the render; the residual drain this phase
+		// paid is already inside publish_ms. That gap is the overlap the lane
+		// exists for (tail-upload gate: encode×upload overlap).
+		putUS := float64(tail.Duration().Microseconds())
+		phaseMetrics[metricnames.ObjectStoreUploadUS] = putUS
+		phaseMetrics[metricnames.ObjectStoreUploadMS] = putUS / 1000
+	} else {
+		output, err := os.Open(outputPath)
+		if err != nil {
+			return queue.Artifact{}, fmt.Errorf("processor: open output for upload %s: %w", outputPath, err)
+		}
+		if err := p.store.PutReader(ctx, hash, output, fileInfo.Size()); err != nil {
+			output.Close()
+			return queue.Artifact{}, fmt.Errorf("processor: publish artifact: %w", err)
+		}
+		if err := output.Close(); err != nil {
+			return queue.Artifact{}, fmt.Errorf("processor: close output after upload %s: %w", outputPath, err)
+		}
+		putUS := float64(time.Since(putStart).Microseconds())
+		phaseMetrics[metricnames.ObjectStoreUploadUS] = putUS
+		phaseMetrics[metricnames.ObjectStoreUploadMS] = putUS / 1000
 	}
-	if err := p.store.PutReader(ctx, hash, output, fileInfo.Size()); err != nil {
-		output.Close()
-		return queue.Artifact{}, fmt.Errorf("processor: publish artifact: %w", err)
-	}
-	if err := output.Close(); err != nil {
-		return queue.Artifact{}, fmt.Errorf("processor: close output after upload %s: %w", outputPath, err)
-	}
-	putUS := float64(time.Since(putStart).Microseconds())
-	phaseMetrics[metricnames.ObjectStoreUploadUS] = putUS
-	phaseMetrics[metricnames.ObjectStoreUploadMS] = putUS / 1000
 	metadata := planMetadataOf(plan)
 	artifact := queue.Artifact{
 		Kind:           "segment",

@@ -73,6 +73,23 @@ func (p *Processor) RunGPU(ctx context.Context, prepared *PreparedJob) error {
 	var lastProgress chronon.RenderProgress
 	sawProgress := false
 	var lastProgressLogAt time.Time
+	// Tail upload: a fragmented overlay artifact's bytes are final while
+	// appended, so the object-store upload starts HERE — before the render —
+	// and tails the output file while the mux writes it. Commit semantics are
+	// the render's: Finish at the point the output can no longer change,
+	// Abort on every error path, so a failed render never installs bytes.
+	var tail *stagedUpload
+	handedOff := false
+	if prepared.FragmentedMP4 && p.store.SupportsStaging() {
+		tail = p.startTailUpload(ctx, job.ID, prepared.OutputPath)
+		// Until ownership moves to the store phase (below), every error path
+		// must discard the pending upload. After hand-off, FinalizeJob owns it.
+		defer func() {
+			if !handedOff {
+				tail.Abort()
+			}
+		}()
+	}
 	renderRequest := chronon.RenderRequest{
 		PlanPath:            prepared.Workspace.PlanPath(),
 		PreparedPackagePath: prepared.Workspace.PreparedPackagePath(),
@@ -128,6 +145,15 @@ func (p *Processor) RunGPU(ctx context.Context, prepared *PreparedJob) error {
 			FPSNum:     uint32(metadata.FPSNum),
 			FPSDen:     uint32(metadata.FPSDen),
 			PipePixFmt: p.pipePixFmt,
+			// Overlay artifacts are SILENT video-only intermediates (audio is
+			// mastered once by the final Rust audio render, `mux_audio_copy`,
+			// never inside an overlay): they carry no master audio, so they get
+			// the fragmented MP4 container whose bytes are final when appended
+			// (streamable upload while the mux is open). An artifact that muxes
+			// source audio keeps the classic MP4. The flag is resolved ONCE at
+			// PrepareJob (PreparedJob.FragmentedMP4): the container and the
+			// tail-upload lane must never diverge.
+			FragmentedMP4: prepared.FragmentedMP4,
 		},
 		TotalFrames: int64(metadata.FrameCount),
 		Progress: func(progress chronon.RenderProgress) {
@@ -241,6 +267,15 @@ func (p *Processor) RunGPU(ctx context.Context, prepared *PreparedJob) error {
 			return fmt.Errorf("processor: gpu-vulkan-native gate: %w", err)
 		}
 		prepared.NativeCertified = true
+	}
+	// Hand-off point: the output is final (render succeeded, software-fallback
+	// rename done, native gate passed), but the bytes are NOT committed yet —
+	// the store phase finishes the stream (and thus the install) only after
+	// the verification gates have passed, so a gate that fails closed discards
+	// the pending upload instead of installing bytes for a rejected job.
+	if tail != nil {
+		prepared.TailUpload = tail
+		handedOff = true
 	}
 	return nil
 }

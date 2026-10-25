@@ -54,7 +54,17 @@ type PreparedJob struct {
 	// may use the GPU compositor, but their host-frame pipe handoff is not the
 	// native-surface contract.
 	NativeCertified bool
-	totalStart      time.Time
+	// FragmentedMP4 mirrors the OutputSpec flag RunGPU renders with: the
+	// artifact is a silent video-only intermediate whose bytes are final while
+	// appended. It is the gate for the tail-upload lane (a classic MP4's
+	// backpatched header would invalidate a streaming hash, so it must never
+	// be uploaded from a growing file).
+	FragmentedMP4 bool
+	// TailUpload is the streaming upload RunGPU started for this job's output,
+	// nil when the artifact was not fragmented or the store cannot stage. It
+	// is set at RunGPU's commit point and consumed by storeArtifact.
+	TailUpload *stagedUpload
+	totalStart time.Time
 }
 
 // PrepareJob runs the CPU-bound preparation half of the render pipeline:
@@ -377,7 +387,12 @@ func (p *Processor) PrepareJob(ctx context.Context, job *queue.Job) (*PreparedJo
 		OutputPath:            ws.OutputPath("result.mp4"),
 		AudioSourcePath:       audioPath,
 		AudioTargetSampleRate: audioTargetSampleRate,
-		totalStart:            totalStart,
+		// Same condition as the OutputSpec flag in RunGPU: a SILENT artifact
+		// (no source audio to mux) is the fragmented MP4 whose bytes are final
+		// while appended — the container and the tail-upload lane must never
+		// diverge, or the lane would stream a file whose header is backpatched.
+		FragmentedMP4: audioPath == "",
+		totalStart:    totalStart,
 	}, nil
 }
 

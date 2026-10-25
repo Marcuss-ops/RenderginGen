@@ -127,9 +127,20 @@ func requiresStructuralProbe(job *queue.Job) bool {
 // FinalizeJob runs the CPU-bound post half of the render pipeline: validation
 // probes, output hashing (Chronon receipt first), object-store upload and the
 // artifact ledger row.
-func (p *Processor) FinalizeJob(ctx context.Context, prepared *PreparedJob) (queue.Artifact, error) {
+func (p *Processor) FinalizeJob(ctx context.Context, prepared *PreparedJob) (artifact queue.Artifact, err error) {
 	job := prepared.Job
 	metrics := prepared.Metrics
+	// The staged upload was handed to THIS phase by RunGPU. storeArtifact
+	// finishes (commits) it after the gates; any earlier return must discard
+	// it, or a rejected job would leave bytes staged under its content
+	// address. Abort is a no-op once the stream is committed.
+	if prepared.TailUpload != nil {
+		defer func() {
+			if err != nil {
+				prepared.TailUpload.Abort()
+			}
+		}()
+	}
 	outputPath := prepared.OutputPath
 	plan := prepared.Plan
 	metadata := planMetadataOf(plan)
@@ -188,6 +199,6 @@ func (p *Processor) FinalizeJob(ctx context.Context, prepared *PreparedJob) (que
 	if err != nil {
 		return queue.Artifact{}, err
 	}
-	return p.storeArtifact(ctx, job.ID, outputPath, outcome, plan, metrics, prepared.totalStart, probe, prepared.Stats, prepared.InputBytes,
+	return p.storeArtifact(ctx, job.ID, outputPath, outcome, prepared.TailUpload, plan, metrics, prepared.totalStart, probe, prepared.Stats, prepared.InputBytes,
 		requiresStructuralProbe(job) || metadata.ProfileID != "", prepared.NativeCertified)
 }
