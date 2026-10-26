@@ -39,6 +39,11 @@ COPY infra/docker/worker-entrypoint.sh /usr/local/bin/worker-entrypoint.sh
 
 ENV CHRONON_HOME=/opt/chronon3d
 ENV CHRONON_CAMERA_PLAN_BAKER=/opt/chronon3d/bin/chronon3d_camera_plan_bake
+# The map lane: the native dynamic-map renderer of ChrononPlugin ships inside
+# the Chronon3d runtime base image (single lane since the Python renderer's
+# retirement). PipelineGen resolves the renderer through these two variables.
+ENV VELOX_MAP_NATIVE_RENDERER_PATH=/opt/chrononmaps/bin/maps_dynamic_map_render
+ENV CHRONON_MAPS_CATALOG_DIR=/opt/chrononmaps/share/chrononplugin/maps-catalog
 
 # The runtime image runs as the non-root `chronon` user. Prepare the worker
 # workspace before dropping privileges so it can create per-job directories

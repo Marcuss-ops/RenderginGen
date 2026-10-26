@@ -34,7 +34,7 @@ func TestMapPresentationParamsAreAdmitted(t *testing.T) {
 		"map_animation":        "pulse_marker",
 		"map_camera_animation": "slow_approach",
 		"map_label_animation":  "none",
-		"map_backend":          "python",
+		"map_backend":          "dynamic",
 		"map_group_strategy":   "multi_pin",
 		"map_group":            map[string]any{"index": float64(1), "count": float64(2), "size": float64(2)},
 		"map_pin_timing": map[string]any{
@@ -76,6 +76,10 @@ func TestMapPresentationParamsFailClosed(t *testing.T) {
 		"unknown camera":      {"map_camera_animation": "hyper_spin"},
 		"unknown backend":     {"map_backend": "wgpu"},
 		"unknown strategy":    {"map_group_strategy": "yolo"},
+		// The Python renderer is retired (TICKET-MAPS-NATIVE-PORT fase 7):
+		// a stale plan may not claim it in new work, or it would compile
+		// against a renderer that no longer exists.
+		"retired python backend": {"map_backend": "python"},
 		"timing for undeclared pin": {
 			"map_pin_timing": map[string]any{"city:berlin": map[string]any{"start_us": float64(0), "duration_us": float64(1)}},
 		},
