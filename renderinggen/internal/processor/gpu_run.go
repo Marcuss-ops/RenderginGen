@@ -117,6 +117,9 @@ func (p *Processor) RunGPU(ctx context.Context, prepared *PreparedJob) error {
 		// records what it actually ran in the receipt, which FinalizeJob
 		// enforces.
 		ReceiptVerify: p.chrononReceiptRequest(),
+		LaneTiming: func(idle time.Duration) {
+			prepared.Metrics[metricnames.DaemonLaneIdleUS] = float64(idle.Microseconds())
+		},
 		Requirements: chronon.ExecutionRequirements{
 			Backend:     renderBackend,
 			GPURequired: gpuRequired,

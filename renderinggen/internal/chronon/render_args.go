@@ -164,6 +164,23 @@ func validateOutputSegments(req RenderRequest) error {
 	if req.RangeEnabled {
 		return fmt.Errorf("chronon: output segments already describe the full timeline and cannot combine with an explicit frame range")
 	}
+	// The per-item windows are cut by the NATIVE encoder's segmented mux
+	// writer (one still-open codec, N independent muxes). Every other lane
+	// (the external FFmpeg pipe encoder) writes exactly one container and
+	// DROPS the windows: the render then reports success with zero per-item
+	// outputs and the caller pays N single-item re-renders believing it ran
+	// one batch session. The daemon resolves an unstamped request to that
+	// same pipe lane (resolve_canonical_execution_parameters: no explicit
+	// native lane ⇒ pipe), so "no encoder selection" is NOT a safe default
+	// here — a segmented request must carry the native lane EXPLICITLY.
+	selection, ok := resolveNativeEncodeSelection(req)
+	if !ok || selection.EncoderBackend != "native" {
+		lane := "no encoder lane (the daemon would resolve the pipe encoder)"
+		if ok {
+			lane = "the " + selection.EncoderBackend + " encoder lane"
+		}
+		return fmt.Errorf("chronon: segmented output requires an explicit native encoder lane; this request resolves to %s, which cannot carry per-item output windows", lane)
+	}
 	return nil
 }
 

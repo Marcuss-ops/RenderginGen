@@ -133,6 +133,9 @@ type RenderRequest struct {
 	// renderer reports a frame position. It is invoked from the output
 	// streaming goroutines and must be cheap and concurrency-safe.
 	Progress func(RenderProgress)
+	// LaneTiming is called inside the selected lane's admission boundary;
+	// unlike processor-wide gaps it excludes time queued behind that lane.
+	LaneTiming func(idle time.Duration)
 	// Requirements are semantic and backend-neutral. Chronon resolves them
 	// against the capabilities of the selected device.
 	Requirements ExecutionRequirements

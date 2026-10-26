@@ -18,10 +18,13 @@ func segWindow(path string, start, end int64) OutputSegment {
 // window set is refused at the transport boundary so it can never reach the
 // segmented mux writer mid-export.
 func TestValidateOutputSegmentsRequiresTheWholeTimelineToTile(t *testing.T) {
-	valid := RenderRequest{OutputSegments: []OutputSegment{
-		segWindow("segment-000.mp4", 0, 8),
-		segWindow("segment-001.mp4", 8, 24),
-	}}
+	valid := RenderRequest{
+		OutputSegments: []OutputSegment{
+			segWindow("segment-000.mp4", 0, 8),
+			segWindow("segment-001.mp4", 8, 24),
+		},
+		Requirements: ExecutionRequirements{GPURequired: true},
+	}
 	if err := validateOutputSegments(valid); err != nil {
 		t.Fatalf("valid tiling rejected: %v", err)
 	}
@@ -30,7 +33,10 @@ func TestValidateOutputSegmentsRequiresTheWholeTimelineToTile(t *testing.T) {
 	if err := validateOutputSegments(RenderRequest{}); err != nil {
 		t.Fatalf("empty segment set rejected: %v", err)
 	}
-	if err := validateOutputSegments(RenderRequest{OutputSegments: []OutputSegment{segWindow("a.mp4", 0, 24)}}); err != nil {
+	if err := validateOutputSegments(RenderRequest{
+		OutputSegments: []OutputSegment{segWindow("a.mp4", 0, 24)},
+		Requirements:   ExecutionRequirements{GPURequired: true},
+	}); err != nil {
 		t.Fatalf("single-segment tiling rejected: %v", err)
 	}
 
@@ -99,8 +105,7 @@ func TestValidateOutputSegmentsRequiresTheWholeTimelineToTile(t *testing.T) {
 				AudioSourcePath: "master.wav",
 			},
 			want: "video-only",
-		},
-		{
+		}, {
 			name: "explicit chunk range",
 			req: RenderRequest{
 				OutputSegments: []OutputSegment{segWindow("a.mp4", 0, 24)},
@@ -109,6 +114,30 @@ func TestValidateOutputSegmentsRequiresTheWholeTimelineToTile(t *testing.T) {
 				LastFrame:      7,
 			},
 			want: "explicit frame range",
+		},
+		{
+			// Software rendering resolves to the external pipe encoder, which
+			// writes one container and DROPS the per-item windows. Accepting the
+			// request would report a successful batch with zero segments.
+			name: "software rendering resolves to the pipe encoder",
+			req: RenderRequest{
+				OutputSegments: []OutputSegment{segWindow("a.mp4", 0, 24)},
+				Requirements: ExecutionRequirements{
+					Backend: "software", CompositionRequired: true,
+				},
+			},
+			want: "native encoder lane",
+		},
+		{
+			// No requirements ⇒ no encoder selection on the wire ⇒ the daemon
+			// resolves the pipe lane itself (resolve_canonical_execution_
+			// parameters: no explicit native lane is pipe). This is exactly the
+			// shape that rendered one mirror and ZERO segments live.
+			name: "no encoder lane declared",
+			req: RenderRequest{
+				OutputSegments: []OutputSegment{segWindow("a.mp4", 0, 24)},
+			},
+			want: "native encoder lane",
 		},
 	}
 	for _, tc := range cases {
@@ -121,6 +150,16 @@ func TestValidateOutputSegmentsRequiresTheWholeTimelineToTile(t *testing.T) {
 				t.Fatalf("error %q does not mention %q", err, tc.want)
 			}
 		})
+	}
+	// The lane that OWNS the segmented mux writer stays accepted: refusing the
+	// GPU/native combination would reject the production P4 contract itself.
+	for _, tc := range []RenderRequest{
+		{OutputSegments: []OutputSegment{segWindow("a.mp4", 0, 24)}, Requirements: ExecutionRequirements{GPURequired: true}},
+		{OutputSegments: []OutputSegment{segWindow("a.mp4", 0, 24)}, Requirements: ExecutionRequirements{Backend: "vulkan", CompositionRequired: true}},
+	} {
+		if err := validateOutputSegments(tc); err != nil {
+			t.Fatalf("native-lane segmented request refused: %v", err)
+		}
 	}
 }
 
@@ -205,7 +244,12 @@ func TestSegmentedOutputCapabilityPerTransport(t *testing.T) {
 // TestClientRefusesSegmentedOutputOnTheCLITransport: refusing beats silently
 // rendering ONE output and calling it a batch.
 func TestClientRefusesSegmentedOutputOnTheCLITransport(t *testing.T) {
-	req := RenderRequest{OutputSegments: []OutputSegment{segWindow("a.mp4", 0, 8), segWindow("b.mp4", 8, 16)}}
+	// A native-lane request (the lane that owns the segmented mux writer):
+	// the refusal this test pins is the TRANSPORT's, not the encoder lane's.
+	req := RenderRequest{
+		OutputSegments: []OutputSegment{segWindow("a.mp4", 0, 8), segWindow("b.mp4", 8, 16)},
+		Requirements:   ExecutionRequirements{GPURequired: true},
+	}
 	err := (&Client{}).Render(context.Background(), req)
 	if err == nil || !strings.Contains(err.Error(), "only supported on the daemon IPC transport") {
 		t.Fatalf("CLI adapter accepted segmented output: %v", err)

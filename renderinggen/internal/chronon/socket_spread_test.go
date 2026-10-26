@@ -20,6 +20,31 @@ func (l *recordingLane) Render(context.Context, RenderRequest) error {
 	return nil
 }
 
+func TestSerializedLaneIdleTimingIsLocalAndAfterAdmission(t *testing.T) {
+	first := LimitConcurrency(&recordingLane{}, 1).(*SerializedRenderer)
+	second := LimitConcurrency(&recordingLane{}, 1).(*SerializedRenderer)
+	first.lastEnd = time.Now().Add(-time.Second)
+	second.lastEnd = time.Now().Add(-3 * time.Second)
+	var firstGap, secondGap time.Duration
+	if err := first.Render(context.Background(), RenderRequest{LaneTiming: func(d time.Duration) { firstGap = d }}); err != nil {
+		t.Fatal(err)
+	}
+	if err := second.Render(context.Background(), RenderRequest{LaneTiming: func(d time.Duration) { secondGap = d }}); err != nil {
+		t.Fatal(err)
+	}
+	if firstGap < time.Second || firstGap > 2*time.Second || secondGap < 3*time.Second {
+		t.Fatalf("cross-lane contamination: %v/%v", firstGap, secondGap)
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	first.lane <- struct{}{}
+	cancel()
+	called := false
+	if err := first.Render(ctx, RenderRequest{LaneTiming: func(time.Duration) { called = true }}); err == nil || called {
+		t.Fatalf("cancelled admission emitted timing: %v/%v", err, called)
+	}
+	<-first.lane
+}
+
 // TestSpreadAcrossLanesRoundRobinsInOrder pins the distribution: consecutive
 // renders rotate over the lanes, so N sockets each receive ~1/N of the work
 // instead of all of it landing on the first socket.

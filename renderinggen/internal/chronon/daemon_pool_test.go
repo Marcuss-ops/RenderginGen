@@ -224,6 +224,30 @@ func TestDaemonPoolSpreadsJobsRoundRobin(t *testing.T) {
 	pool.Shutdown(context.Background()) // idempotent
 }
 
+func TestDaemonPoolAvoidsBusyLane(t *testing.T) {
+	held := &heldLane{release: make(chan struct{})}
+	defer close(held.release)
+	idle := &recordingLane{}
+	pool := &DaemonPool{lanes: []pooledLane{{renderer: held}, {renderer: idle}}}
+	done := make(chan error, 1)
+	go func() { done <- pool.Render(context.Background(), RenderRequest{}) }()
+	deadline := time.Now().Add(2 * time.Second)
+	for held.calls.Load() == 0 {
+		if time.Now().After(deadline) {
+			t.Fatal("first lane not admitted")
+		}
+		time.Sleep(time.Millisecond)
+	}
+	for i := 0; i < 100; i++ {
+		if err := pool.Render(context.Background(), RenderRequest{}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if idle.calls.Load() != 100 || held.calls.Load() != 1 {
+		t.Fatalf("busy daemon received additional work: idle=%d busy=%d", idle.calls.Load(), held.calls.Load())
+	}
+}
+
 // TestStartDaemonPoolReusesServedSocket pins that only an answering daemon is
 // reused unowned; a file or stale socket path must never pass readiness.
 func TestStartDaemonPoolReusesServedSocket(t *testing.T) {

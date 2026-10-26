@@ -12,6 +12,7 @@ import (
 	"context"
 	"fmt"
 	"os/exec"
+	"strconv"
 	"strings"
 )
 
@@ -21,6 +22,26 @@ import (
 // ffmpeg is invoked at "-v error" so its diagnostics are the error's body — the
 // decode error names the stream, timestamp and reason, which is what makes the
 // failure actionable in a batch log.
+// CountDecodedFrames scans the complete video stream rather than trusting
+// nb_frames in the container header. Decoder diagnostics are fatal even when
+// ffprobe returns zero: a partial decode must never certify a segment window.
+func CountDecodedFrames(ctx context.Context, path string) (int, error) {
+	cmd := exec.CommandContext(ctx, ffprobeBinary(), "-v", "error", "-count_frames",
+		"-select_streams", "v:0", "-show_entries", "stream=nb_read_frames",
+		"-of", "default=nokey=1:noprint_wrappers=1", path)
+	var diagnostics strings.Builder
+	cmd.Stderr = &diagnostics
+	out, err := cmd.Output()
+	if err != nil || diagnostics.Len() > 0 {
+		return 0, fmt.Errorf("media: count decoded frames %s: error=%v diagnostics=%s", path, err, strings.TrimSpace(diagnostics.String()))
+	}
+	count, err := strconv.Atoi(strings.TrimSpace(string(out)))
+	if err != nil || count <= 0 {
+		return 0, fmt.Errorf("media: invalid decoded frame count %q for %s", strings.TrimSpace(string(out)), path)
+	}
+	return count, nil
+}
+
 func ValidateDecode(ctx context.Context, path string) error {
 	out, err := exec.CommandContext(ctx, ffmpegBinary(), "-v", "error", "-i", path, "-f", "null", "-").CombinedOutput()
 	if err != nil {

@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"testing"
+	"time"
 
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/chronon"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/hashio"
@@ -157,6 +158,121 @@ func TestRetrySegmentRendersOnlyItsWindow(t *testing.T) {
 	err := proc.retrySegment(context.Background(), prepared, segment)
 	if err == nil {
 		t.Fatal("retry render error swallowed")
+	}
+}
+
+func TestFinalizeJobPublishesMirrorAndIndependentSegments(t *testing.T) {
+	proc, store, _ := newProcessor(t)
+	dir := t.TempDir()
+	mirror := filepath.Join(dir, "mirror.mp4")
+	writeSegmentMP4(t, mirror, 16)
+	first, second := segmentOutputPath(dir, 0), segmentOutputPath(dir, 1)
+	writeSegmentMP4(t, first, 8)
+	writeSegmentMP4(t, second, 8)
+	prepared := &PreparedJob{
+		Job:        &queue.Job{ID: "multi-output", JobType: queue.JobTypeOverlayRender},
+		Plan:       &overlay.Plan{Canvas: overlay.Canvas{Width: 64, Height: 48, FPSNum: 10, FPSDen: 1, DurationFrames: 16}},
+		OutputPath: mirror, Metrics: map[string]float64{}, totalStart: time.Now(),
+		Segments:       []chronon.OutputSegment{{OutputPath: first, StartFrame: 0, EndFrame: 8}, {OutputPath: second, StartFrame: 8, EndFrame: 16}},
+		SegmentItemIDs: []string{"first", "second"},
+	}
+	artifact, err := proc.FinalizeJob(context.Background(), prepared)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if artifact.OutputFacts == nil || len(artifact.OutputFacts.BatchSegments) != 2 || artifact.FrameCount != 16 {
+		t.Fatalf("incomplete multi-output artifact: %+v", artifact)
+	}
+	for _, segment := range artifact.OutputFacts.BatchSegments {
+		if segment.ArtifactURL == "" || segment.OutputFacts == nil || segment.OutputFacts.FPSNum != 10 || segment.FrameCount != 8 {
+			t.Fatalf("segment not independently usable: %+v", segment)
+		}
+		if _, err := store.Get(context.Background(), segment.SHA256); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, err := store.Get(context.Background(), artifact.ArtifactHash); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestFinalizeSegmentsRejectsAmbiguousItemIdentities(t *testing.T) {
+	proc, _, renderer := newProcessor(t)
+	for _, ids := range [][]string{nil, {"a"}, {"a", "a"}, {"a", ""}} {
+		prepared := &PreparedJob{
+			Job: &queue.Job{ID: "identity-test"}, Metrics: map[string]float64{},
+			Segments:       []chronon.OutputSegment{{OutputPath: "a"}, {OutputPath: "b"}},
+			SegmentItemIDs: ids,
+		}
+		if _, err := proc.finalizeSegments(context.Background(), prepared); err == nil {
+			t.Fatalf("ambiguous identities accepted: %v", ids)
+		}
+	}
+	if renderer.calls != 0 {
+		t.Fatal("identity preflight must precede retries")
+	}
+}
+
+func TestVerifySegmentOutputRejectsWindowAndCanvasDrift(t *testing.T) {
+	proc, _, _ := newProcessor(t)
+	path := filepath.Join(t.TempDir(), "segment.mp4")
+	writeSegmentMP4(t, path, 8)
+	segment := chronon.OutputSegment{OutputPath: path, StartFrame: 8, EndFrame: 16}
+	metadata := planMetadata{Width: 64, Height: 48, FPSNum: 10, FPSDen: 1}
+	if _, err := proc.verifySegmentOutput(context.Background(), "test", "item", segment, map[string]float64{}, metadata); err != nil {
+		t.Fatal(err)
+	}
+	for _, tc := range []struct {
+		name     string
+		metadata planMetadata
+		end      int64
+	}{
+		{"wrong frames", metadata, 17},
+		{"empty window", metadata, 8},
+		{"wrong canvas", planMetadata{Width: 128, Height: 48, FPSNum: 10, FPSDen: 1}, 16},
+		{"wrong fps", planMetadata{Width: 64, Height: 48, FPSNum: 20, FPSDen: 1}, 16},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			request := segment
+			request.EndFrame = tc.end
+			if _, err := proc.verifySegmentOutput(context.Background(), "test", "item", request, map[string]float64{}, tc.metadata); err == nil {
+				t.Fatal("invalid segment accepted")
+			}
+		})
+	}
+}
+
+func TestFinalizeSegmentsPreservesLaterSiblingsAfterRetryFailure(t *testing.T) {
+	proc, store, renderer := newProcessor(t)
+	dir := t.TempDir()
+	good := segmentOutputPath(dir, 1)
+	writeSegmentMP4(t, good, 8)
+	before, _, err := hashio.File(good)
+	if err != nil {
+		t.Fatal(err)
+	}
+	renderer.err = context.DeadlineExceeded
+	prepared := &PreparedJob{
+		Job: &queue.Job{ID: "partial"}, Metrics: map[string]float64{},
+		Segments: []chronon.OutputSegment{
+			{OutputPath: segmentOutputPath(dir, 0), StartFrame: 0, EndFrame: 8},
+			{OutputPath: good, StartFrame: 8, EndFrame: 16},
+		},
+		SegmentItemIDs: []string{"failed", "valid"},
+	}
+	entries, err := proc.finalizeSegments(context.Background(), prepared)
+	if err == nil {
+		t.Fatal("batch with exhausted retry accepted")
+	}
+	if len(entries) != 1 || entries[0].ItemID != "valid" || renderer.calls != 1 {
+		t.Fatalf("partial checkpoint = %+v, renders=%d", entries, renderer.calls)
+	}
+	after, _, err := hashio.File(good)
+	if err != nil || after != before {
+		t.Fatalf("valid sibling changed: %v", err)
+	}
+	if _, err := store.Get(context.Background(), before); err != nil {
+		t.Fatalf("later valid sibling was not checkpointed: %v", err)
 	}
 }
 

@@ -140,9 +140,12 @@ func (p *Processor) PrepareJob(ctx context.Context, job *queue.Job) (*PreparedJo
 	if err := validateFrameRange(job, plan); err != nil {
 		return nil, err
 	}
-	compileUS := float64(time.Since(totalStart).Microseconds())
-	metrics[metricnames.OverlayCompileUS] = compileUS
-	metrics[metricnames.OverlayCompileMS] = compileUS / 1000
+	// The compile half is one declared phase pair (overlay_compile_us/_ms,
+	// the artifact ledger's columns) AND one Prometheus phase series: the same
+	// record() that writes both spellings also feeds the worker's phase
+	// histogram, so overlay_compile can never be visible in the ledger but
+	// missing from `renderinggen_worker_phase_duration_seconds`.
+	record(metricnames.OverlayCompileStem, totalStart)
 	assets, err := mergeAssets(job.Assets, compiledAssets)
 	if err != nil {
 		return nil, err

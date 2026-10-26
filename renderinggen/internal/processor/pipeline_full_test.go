@@ -20,7 +20,7 @@ import (
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/storage"
 )
 
-func testImagePNG(t *testing.T, width, height int) []byte {
+func testImagePNG(t testing.TB, width, height int) []byte {
 	t.Helper()
 	var buf bytes.Buffer
 	if err := png.Encode(&buf, image.NewRGBA(image.Rect(0, 0, width, height))); err != nil {

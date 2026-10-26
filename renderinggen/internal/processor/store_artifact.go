@@ -107,6 +107,10 @@ func (p *Processor) storeArtifact(ctx context.Context, jobID, outputPath string,
 		shaUS := float64(time.Since(shaStart).Microseconds())
 		phaseMetrics[metricnames.SHA256US] = shaUS
 		phaseMetrics[metricnames.SHA256MS] = shaUS / 1000
+		// The same pass is observed on the worker's phase histogram: a
+		// sha256 spike is then attributable from /metrics without waiting
+		// for an artifact-ledger query.
+		p.recordPhase(metricnames.SHA256Stem, shaStart)
 	}
 	// Surface Chronon's own receipt-verification phases (probe / optional
 	// decode / count_frames / sha256 / total, policy-controlled by the
