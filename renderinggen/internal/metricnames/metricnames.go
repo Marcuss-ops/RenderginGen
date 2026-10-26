@@ -39,6 +39,7 @@ const (
 	DriveUploadUS       = "drive_upload_us"
 	TotalUS             = "total_us"
 	GPUGapUS            = "gpu_gap_us"
+	DaemonLaneIdleUS    = "daemon_lane_idle_us"
 	// GPULaneWaitUS is the prep→GPU rendezvous wait: how long a fully
 	// prepared job blocked waiting for a free GPU lane. It is the dominant
 	// unmeasured cost of a backlogged batch (the lane is the serialization
@@ -243,8 +244,9 @@ var vocab = map[string]string{
 	SubtitleBurnUS: UnitUS, ChrononRenderUS: UnitUS, RenderUS: UnitUS,
 	ProbeUS: UnitUS, SHA256US: UnitUS, WorkerDecodeUS: UnitUS, ObjectStoreUploadUS: UnitUS,
 	PublishUS: UnitUS, DriveUploadUS: UnitUS, TotalUS: UnitUS, GPUGapUS: UnitUS,
-	GPULaneWaitUS:  UnitUS,
-	PrepareTotalUS: UnitUS, PrepareMaterializeUS: UnitUS, PrepareSceneCompileUS: UnitUS,
+	DaemonLaneIdleUS: UnitUS,
+	GPULaneWaitUS:    UnitUS,
+	PrepareTotalUS:   UnitUS, PrepareMaterializeUS: UnitUS, PrepareSceneCompileUS: UnitUS,
 	PrepareAssetResolveUS: UnitUS, PrepareBurnUS: UnitUS, PrepareMarshalUS: UnitUS,
 	PreparePrefetchUS: UnitUS,
 

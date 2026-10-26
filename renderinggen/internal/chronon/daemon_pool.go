@@ -231,18 +231,23 @@ func (p *DaemonPool) Render(ctx context.Context, req RenderRequest) error {
 	}
 	start := p.next.Add(1) - 1
 	best := -1
-	var bestLoad int64
-	for i := 0; i < len(p.lanes); i++ {
-		idx := int((start + uint64(i)) % uint64(len(p.lanes)))
-		load := p.lanes[idx].inflight.Load()
-		if best < 0 || load < bestLoad {
-			best, bestLoad = idx, load
-			if load == 0 {
-				break // cannot do better than idle; keep rotation order
+	for {
+		best = -1
+		var bestLoad int64
+		for i := 0; i < len(p.lanes); i++ {
+			idx := int((start + uint64(i)) % uint64(len(p.lanes)))
+			load := p.lanes[idx].inflight.Load()
+			if best < 0 || load < bestLoad {
+				best, bestLoad = idx, load
 			}
 		}
+		// Scan and reservation must agree: another caller can claim the
+		// observed idle lane before this one. Rescan rather than pile work
+		// behind it while another daemon is idle.
+		if p.lanes[best].inflight.CompareAndSwap(bestLoad, bestLoad+1) {
+			break
+		}
 	}
-	p.lanes[best].inflight.Add(1)
 	defer p.lanes[best].inflight.Add(-1)
 	return p.lanes[best].renderer.Render(ctx, req)
 }

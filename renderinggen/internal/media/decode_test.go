@@ -42,6 +42,31 @@ func TestValidateDecodeRejectsAnUndecodableFile(t *testing.T) {
 	}
 }
 
+func TestCountDecodedFrames(t *testing.T) {
+	if _, err := exec.LookPath("ffprobe"); err != nil {
+		t.Fatal(err)
+	}
+	count, err := CountDecodedFrames(context.Background(), goldenFixture(t, "background.mp4"))
+	if err != nil || count <= 0 {
+		t.Fatalf("full scan = %d, %v", count, err)
+	}
+	if _, err := CountDecodedFrames(context.Background(), filepath.Join(t.TempDir(), "missing.mp4")); err == nil {
+		t.Fatal("missing stream accepted")
+	}
+}
+
+func TestCountDecodedFramesRejectsDecoderDiagnostics(t *testing.T) {
+	t.Cleanup(func() { Configure(Binaries{}) })
+	tool := filepath.Join(t.TempDir(), "ffprobe")
+	if err := os.WriteFile(tool, []byte("#!/bin/sh\nprintf '8\\n'\nprintf 'corrupt frame\\n' >&2\n"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	Configure(Binaries{FFprobe: tool})
+	if _, err := CountDecodedFrames(context.Background(), "damaged.mp4"); err == nil || !strings.Contains(err.Error(), "corrupt frame") {
+		t.Fatalf("decoder diagnostics accepted: %v", err)
+	}
+}
+
 // TestValidateDecodeReportsTheConfiguredBinary pins that the gate resolves its
 // tool through the same single point as the probe: pointing it at a binary that
 // cannot exist turns every call into a failure instead of silently falling back

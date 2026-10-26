@@ -273,14 +273,14 @@ func (f *fakeRenderer) Render(_ context.Context, req chronon.RenderRequest) erro
 	return nil
 }
 
-func newProcessor(t *testing.T) (*Processor, *storage.Client, *fakeRenderer) {
+func newProcessor(t testing.TB) (*Processor, *storage.Client, *fakeRenderer) {
 	t.Helper()
 	return newProcessorWith(t, Options{})
 }
 
 // newProcessorWith builds the same fixture with an explicit configuration, so a
 // test states the knobs it needs once instead of composing a run of setters.
-func newProcessorWith(t *testing.T, opts Options) (*Processor, *storage.Client, *fakeRenderer) {
+func newProcessorWith(t testing.TB, opts Options) (*Processor, *storage.Client, *fakeRenderer) {
 	t.Helper()
 	store := storage.New(storage.NewMemory(), storage.Options{})
 	renderer := &fakeRenderer{}

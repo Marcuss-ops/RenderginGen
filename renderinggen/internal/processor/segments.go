@@ -20,12 +20,14 @@ package processor
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/chronon"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/hashio"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/media"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/overlay"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/queue"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/workerlog"
@@ -86,15 +88,20 @@ func segmentOutputPath(outputDir string, index int) string {
 // per batch + voci per segmento"), so every MP4 stays independently
 // fetchable, verifiable and retryable.
 type SegmentArtifact struct {
-	ItemID     string `json:"item_id"`
-	OutputPath string `json:"output_path"`
-	SHA256     string `json:"sha256"`
-	SizeBytes  int64  `json:"size_bytes"`
-	FrameCount int    `json:"frame_count,omitempty"`
-	DurationUS int64  `json:"duration_us,omitempty"`
-	Width      int    `json:"width,omitempty"`
-	Height     int    `json:"height,omitempty"`
-	Retried    bool   `json:"retried,omitempty"`
+	ArtifactURL        string
+	OutputFacts        *queue.OutputFacts
+	FirstFrameKeyframe bool
+	ClosedGOP          bool
+	CopyEligible       bool
+	ItemID             string `json:"item_id"`
+	OutputPath         string `json:"output_path"`
+	SHA256             string `json:"sha256"`
+	SizeBytes          int64  `json:"size_bytes"`
+	FrameCount         int    `json:"frame_count,omitempty"`
+	DurationUS         int64  `json:"duration_us,omitempty"`
+	Width              int    `json:"width,omitempty"`
+	Height             int    `json:"height,omitempty"`
+	Retried            bool   `json:"retried,omitempty"`
 }
 
 // finalizeSegments runs the per-segment verification cycle of the P4 batch
@@ -114,23 +121,36 @@ func (p *Processor) finalizeSegments(ctx context.Context, prepared *PreparedJob)
 	segments := prepared.Segments
 	itemIDs := prepared.SegmentItemIDs
 
-	entries := make([]SegmentArtifact, 0, len(segments))
-	for i, segment := range segments {
-		itemID := ""
-		if i < len(itemIDs) {
-			itemID = itemIDs[i]
+	if len(segments) != len(itemIDs) {
+		return nil, fmt.Errorf("processor: segment/item identity count mismatch: %d/%d", len(segments), len(itemIDs))
+	}
+	seen := make(map[string]bool, len(itemIDs))
+	for _, id := range itemIDs {
+		if id == "" || seen[id] {
+			return nil, fmt.Errorf("processor: empty or duplicate segment item identity %q", id)
 		}
-		entry, err := p.verifySegmentOutput(ctx, job.ID, itemID, segment, metrics)
+		seen[id] = true
+	}
+	entries := make([]SegmentArtifact, 0, len(segments))
+	var failures []error
+	for i, segment := range segments {
+		itemID := itemIDs[i]
+		entry, err := p.verifySegmentOutput(ctx, job.ID, itemID, segment, metrics, planMetadataOf(prepared.Plan))
 		if err != nil {
 			// Idempotent per-segment retry: one failed segment must not
 			// invalidate the batch or the segments that already verified.
+			if ctx.Err() != nil {
+				return entries, ctx.Err()
+			}
 			workerlog.ByJobID(job.ID).Warnf("segment %d (%s) failed verification (%v); re-rendering only this segment", i, itemID, err)
 			if retryErr := p.retrySegment(ctx, prepared, segment); retryErr != nil {
-				return nil, fmt.Errorf("processor: segment %d (%s) failed verification (%v) and its single-segment retry failed: %w", i, itemID, err, retryErr)
+				failures = append(failures, fmt.Errorf("processor: segment %d (%s) failed verification (%v) and its single-segment retry failed: %w", i, itemID, err, retryErr))
+				continue
 			}
-			entry, err = p.verifySegmentOutput(ctx, job.ID, itemID, segment, metrics)
+			entry, err = p.verifySegmentOutput(ctx, job.ID, itemID, segment, metrics, planMetadataOf(prepared.Plan))
 			if err != nil {
-				return nil, fmt.Errorf("processor: segment %d (%s) still fails verification after its single-segment retry: %w", i, itemID, err)
+				failures = append(failures, fmt.Errorf("processor: segment %d (%s) still fails verification after its single-segment retry: %w", i, itemID, err))
+				continue
 			}
 			entry.Retried = true
 		}
@@ -141,7 +161,10 @@ func (p *Processor) finalizeSegments(ctx context.Context, prepared *PreparedJob)
 		}
 		entries = append(entries, entry)
 	}
-	return entries, nil
+	// Preserve every valid sibling in the content store even when one item
+	// exhausts its retry. The batch still fails closed; partial success is
+	// never advertised as a complete artifact.
+	return entries, errors.Join(failures...)
 }
 
 // batchSegmentFacts projects the worker's verified segment entries onto the
@@ -153,14 +176,17 @@ func batchSegmentFacts(entries []SegmentArtifact) []queue.BatchSegmentFacts {
 	facts := make([]queue.BatchSegmentFacts, 0, len(entries))
 	for _, entry := range entries {
 		facts = append(facts, queue.BatchSegmentFacts{
-			ItemID:     entry.ItemID,
-			SHA256:     entry.SHA256,
-			SizeBytes:  entry.SizeBytes,
-			FrameCount: entry.FrameCount,
-			DurationUS: entry.DurationUS,
-			Width:      entry.Width,
-			Height:     entry.Height,
-			Retried:    entry.Retried,
+			ArtifactURL: entry.ArtifactURL, OutputFacts: entry.OutputFacts,
+			FirstFrameKeyframe: entry.FirstFrameKeyframe, ClosedGOP: entry.ClosedGOP,
+			CopyEligible: entry.CopyEligible,
+			ItemID:       entry.ItemID,
+			SHA256:       entry.SHA256,
+			SizeBytes:    entry.SizeBytes,
+			FrameCount:   entry.FrameCount,
+			DurationUS:   entry.DurationUS,
+			Width:        entry.Width,
+			Height:       entry.Height,
+			Retried:      entry.Retried,
 		})
 	}
 	return facts
@@ -170,7 +196,7 @@ func batchSegmentFacts(entries []SegmentArtifact) []queue.BatchSegmentFacts {
 // ("probe/digest per segmento"): the canonical receipt-identity gate (the same
 // gate the single-output path runs) plus a structural probe. It returns the
 // segment's independent identity on success.
-func (p *Processor) verifySegmentOutput(ctx context.Context, jobID, itemID string, segment chronon.OutputSegment, metrics map[string]float64) (SegmentArtifact, error) {
+func (p *Processor) verifySegmentOutput(ctx context.Context, jobID, itemID string, segment chronon.OutputSegment, metrics map[string]float64, metadata planMetadata) (SegmentArtifact, error) {
 	receipt, receiptErr := chronon.ReadMediaReceipt(segment.OutputPath)
 	outcome, err := p.verifyArtifactReceipt(ctx, segment.OutputPath, receipt, receiptErr, metrics, jobID)
 	if err != nil {
@@ -203,9 +229,46 @@ func (p *Processor) verifySegmentOutput(ctx context.Context, jobID, itemID strin
 	if source != probeSourceReceipt {
 		workerlog.ByJobID(jobID).Warnf("segment %s: media facts came from %s (no canonical receipt)", segment.OutputPath, source)
 	}
-	if expected := segment.EndFrame - segment.StartFrame; expected > 0 && probed.FrameCount > 0 && probed.FrameCount != int(expected) {
+	// Certify receipts already carry the full-scan count. Fast receipts and
+	// metadata-only probes do not prove how many frames actually decode.
+	if receiptErr != nil || receipt.Timing.CountFramesMS == nil || receipt.Verification.FrameCount != "pass" {
+		count, err := media.CountDecodedFrames(ctx, segment.OutputPath)
+		if err != nil {
+			return SegmentArtifact{}, err
+		}
+		probed.FrameCount = count
+	}
+	if expected := segment.EndFrame - segment.StartFrame; expected <= 0 || probed.FrameCount != int(expected) {
 		return SegmentArtifact{}, fmt.Errorf("processor: segment %s decoded %d frames, want %d (its declared window)", segment.OutputPath, probed.FrameCount, expected)
 	}
+	if err := probed.ValidateOverlay(metadata.Width, metadata.Height, metadata.FPSNum, metadata.FPSDen); err != nil {
+		return SegmentArtifact{}, fmt.Errorf("processor: segment media contract: %w", err)
+	}
+	if !probed.FirstFrameKeyframe || probed.StartPTS != 0 {
+		return SegmentArtifact{}, fmt.Errorf("processor: segment must start at PTS zero on a keyframe")
+	}
+	if metadata.FPSNum > 0 && metadata.FPSDen > 0 {
+		expectedUS := (segment.EndFrame - segment.StartFrame) * 1_000_000 * int64(metadata.FPSDen) / int64(metadata.FPSNum)
+		// MP4 movie duration uses millisecond ticks even when the video
+		// track time base is finer. Permit that rounding, not a whole frame.
+		if delta := probed.DurationUS - expectedUS; delta < -1000 || delta > 1000 {
+			return SegmentArtifact{}, fmt.Errorf("processor: segment duration %d us, want %d us", probed.DurationUS, expectedUS)
+		}
+	}
+	if metadata.ProfileID != "" {
+		profile, err := media.ResolveProfile(metadata.ProfileID)
+		if err != nil {
+			return SegmentArtifact{}, err
+		}
+		if err := profile.ValidateProbe(probed); err != nil {
+			return SegmentArtifact{}, fmt.Errorf("processor: segment profile certification: %w", err)
+		}
+	}
+	entry.ArtifactURL = p.artifactURL(entry.SHA256)
+	entry.OutputFacts = outputFactsFromProbe(&probed)
+	entry.FirstFrameKeyframe = probed.FirstFrameKeyframe
+	entry.ClosedGOP = probed.ClosedGOP
+	entry.CopyEligible = metadata.ProfileID != "" && !probed.ClosedGOPUncertifiable && probed.ClosedGOP
 	entry.FrameCount = probed.FrameCount
 	entry.DurationUS = probed.DurationUS
 	entry.Width = probed.Width
