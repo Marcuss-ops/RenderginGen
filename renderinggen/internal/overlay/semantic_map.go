@@ -170,8 +170,15 @@ var (
 	}
 	certifiedMapCameraAnimations = map[string]bool{"slow_approach": true}
 	certifiedMapLabelAnimations  = map[string]bool{"none": true}
-	certifiedMapBackends         = map[string]bool{"native": true, "python": true}
-	certifiedMapGroupStrategies  = map[string]bool{"tour": true, "multi_pin": true}
+	// certifiedMapBackends: "dynamic" is the native dynamic map renderer of
+	// ChrononPlugin (the single map lane since the Python renderer's
+	// retirement, TICKET-MAPS-NATIVE-PORT fase 7), "native" is the Chronon
+	// map-compiler plate path. The retired "python" backend is REJECTED in
+	// new work — accepting it would let a stale plan claim a renderer that no
+	// longer exists; legacy artifacts that already carried it are only ever
+	// imported as inert video (overlay.import).
+	certifiedMapBackends        = map[string]bool{"native": true, "dynamic": true}
+	certifiedMapGroupStrategies = map[string]bool{"tour": true, "multi_pin": true}
 )
 
 // validateMapPresentationParams admits the new certified map presentation
