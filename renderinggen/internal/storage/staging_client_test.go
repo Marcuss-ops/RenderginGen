@@ -16,12 +16,12 @@ import (
 // receives exactly like the real store (so a client/store digest mismatch is
 // expressible) and records the finalize assertion.
 type stagingFake struct {
-	body            []byte
-	finalizeSHA     string
-	finalizeCalled  bool
-	reportedDigest  string // when set, overrides the digest reported at write
-	uploadStatus    int
-	finalizeStatus  int
+	body           []byte
+	finalizeSHA    string
+	finalizeCalled bool
+	reportedDigest string // when set, overrides the digest reported at write
+	uploadStatus   int
+	finalizeStatus int
 }
 
 func (f *stagingFake) handler() http.Handler {

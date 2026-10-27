@@ -22,6 +22,12 @@ ExecStart=/usr/local/bin/renderinggen --config /etc/renderinggen/renderinggen-b.
 Restart=on-failure
 RestartSec=2
 LimitNOFILE=65536
+# Go runtime memory policy — same contract as renderinggen-worker.service
+# (pinned by renderinggen/internal/architecture/conformance_runtime_env_test.go):
+# GOMEMLIMIT is the soft cap that turns a pathological job into GC pressure
+# instead of an OOM kill; GOGC=100 stays at Go's default next to it. Raise
+# GOMEMLIMIT together with artifact_store.l1_max_bytes in renderinggen-b.yaml.
+Environment=GOGC=100 GOMEMLIMIT=4GiB
 
 [Install]
 WantedBy=multi-user.target

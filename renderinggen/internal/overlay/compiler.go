@@ -175,38 +175,57 @@ func newPlan(jobID string, width, height, fpsNum, fpsDen int, duration int64) *P
 //
 // It returns the typed plan so downstream stages (asset-path normalization,
 // subtitle burn, metadata extraction, backend gating) mutate ONE in-memory
-// object instead of re-decoding JSON; marshal exactly once at the Chronon
-// boundary via Plan.Marshal.
+// object instead of re-decoding JSON; the raw document is decoded exactly once
+// (decodeSemanticPlan) and the plan is marshaled exactly once at the Chronon
+// boundary via Plan.Marshal. The subtitle contract rides on the result
+// (CompileResult.Subtitle / ResolveSubtitleStyle) so the prepare path never
+// re-reads the raw bytes after this call.
 //
 // Fail-closed: the compiler is the single owner of the semantic→concrete
 // lowering. Byte-for-byte pass-through of an untyped document bypasses
 // validation and style resolution, so anything that is not the semantic
 // overlay-plan contract is rejected instead of executed.
 func CompileSemantic(raw []byte) (CompileResult, error) {
-	var probe struct {
-		SchemaVersion string `json:"schema_version"`
+	src, err := decodeSemanticPlan(raw)
+	if err != nil {
+		// Error path only: the historical probes (invalid-JSON check, then
+		// schema check) ran BEFORE the strict decode and their precedence is
+		// part of the observable contract. They are reproduced here so the
+		// success path pays exactly one decode of the document.
+		var probe struct {
+			SchemaVersion string `json:"schema_version"`
+		}
+		if perr := json.Unmarshal(raw, &probe); perr != nil {
+			return CompileResult{}, fmt.Errorf("overlay: decode plan: %w", perr)
+		}
+		if probe.SchemaVersion != SemanticSchema {
+			return CompileResult{}, fmt.Errorf("overlay: unsupported plan schema %q (semantic %q is the only accepted contract)", probe.SchemaVersion, SemanticSchema)
+		}
+		return CompileResult{}, fmt.Errorf("overlay: decode semantic plan: %w", err)
 	}
-	if err := json.Unmarshal(raw, &probe); err != nil {
-		return CompileResult{}, fmt.Errorf("overlay: decode plan: %w", err)
+	if src.SchemaVersion != SemanticSchema {
+		return CompileResult{}, fmt.Errorf("overlay: unsupported plan schema %q (semantic %q is the only accepted contract)", src.SchemaVersion, SemanticSchema)
 	}
-	if probe.SchemaVersion != SemanticSchema {
-		return CompileResult{}, fmt.Errorf("overlay: unsupported plan schema %q (semantic %q is the only accepted contract)", probe.SchemaVersion, SemanticSchema)
-	}
-	plan, assets, stats, unknown, err := compileSemantic(raw)
+	plan, assets, stats, unknown, err := compileSemanticDecoded(&src)
 	if err != nil {
 		return CompileResult{}, err
 	}
-	var metadata struct {
-		Language string `json:"language"`
-	}
-	if err := json.Unmarshal(raw, &metadata); err != nil {
-		return CompileResult{}, fmt.Errorf("overlay: decode plan metadata: %w", err)
-	}
-	prepared, err := buildPreparedPackage(plan, metadata.Language, assets)
+	// The metadata probe (top-level language) is the same field the strict
+	// decode already read; a separate lenient decode could never fail after
+	// the strict one succeeded, so its value is taken from the decoded plan.
+	prepared, err := buildPreparedPackage(plan, src.Language, assets)
 	if err != nil {
 		return CompileResult{}, err
 	}
-	return CompileResult{Plan: plan, Assets: assets, Stats: stats, Prepared: prepared, UnknownTemplates: unknown}, nil
+	hash, burn, present := subtitleAssetFrom(src.Subtitles)
+	return CompileResult{
+		Plan: plan, Assets: assets, Stats: stats, Prepared: prepared,
+		UnknownTemplates: unknown,
+		Subtitle:         SubtitleRef{Hash: hash, Burn: burn, Present: present},
+		subtitleStyleRaw: src.Subtitles.styleMap(),
+		subtitleWidth:    src.Width,
+		subtitleHeight:   src.Height,
+	}, nil
 }
 
 // The struct fields below are the compiler's projection of

@@ -52,6 +52,27 @@ type CompileResult struct {
 	// preset-less primitive. The field survives as the compile pass's honest
 	// classification and as the worker's prepare-boundary belt.
 	UnknownTemplates []string
+	// Subtitle is the plan's subtitle burn contract, extracted from the SAME
+	// decode pass that lowered the plan. The processor reads it instead of
+	// re-decoding the raw document through SubtitleAsset.
+	Subtitle SubtitleRef
+	// subtitleStyleRaw/canvas carry everything ResolveSubtitleStyle needs.
+	// Resolution is deferred (not done at compile) so its error timing matches
+	// the historical SubtitleStyleAsset call site: only a burn-mode plan ever
+	// resolves a style, and a plan whose style block is malformed but whose
+	// subtitles are not burned must keep compiling.
+	subtitleStyleRaw map[string]any
+	subtitleWidth    int
+	subtitleHeight   int
+}
+
+// ResolveSubtitleStyle resolves the plan's typed subtitle style into the
+// concrete Chronon style + safe-area box used by BurnASSIntoPlanTyped. It is
+// the compile-result view of SubtitleStyleAsset: same resolution (the single
+// visual style resolver), same errors, without decoding the raw document
+// again.
+func (r CompileResult) ResolveSubtitleStyle() (*LayerStyle, SubtitleStyleBox, error) {
+	return subtitleStyleFrom(r.subtitleStyleRaw, r.subtitleWidth, r.subtitleHeight)
 }
 
 // addResolved books one item of a compile pass: the counters' only entry point

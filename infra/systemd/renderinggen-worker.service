@@ -16,6 +16,19 @@ ExecStart=/usr/local/bin/renderinggen --config /etc/renderinggen/renderinggen.ya
 Restart=on-failure
 RestartSec=2
 LimitNOFILE=65536
+# Go runtime memory policy (pinned by
+# renderinggen/internal/architecture/conformance_runtime_env_test.go).
+# GOMEMLIMIT is a SOFT cap: below it the GC keeps its normal pacing, near it
+# the runtime ramps the GC instead of growing the heap — so a pathological job
+# degrades into GC pressure instead of an OOM kill on the GPU host. 4GiB
+# covers the default 512MiB L1 RAM cache (artifact_store.l1_max_bytes) plus
+# per-job plan/staging bytes, the probe cache and upload buffers. Operators
+# who raise l1_max_bytes (or run with 0 = unbounded) must raise this too.
+# GOGC=100 is Go's default, kept explicit next to the cap on purpose: with
+# GOMEMLIMIT set the soft cap alone bounds the heap, so the GC percentage
+# stays at its throughput-friendly default and tuning one knob never hides
+# the other.
+Environment=GOGC=100 GOMEMLIMIT=4GiB
 
 [Install]
 WantedBy=multi-user.target

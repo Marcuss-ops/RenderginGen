@@ -17,13 +17,33 @@ import (
 	"encoding/hex"
 	"io"
 	"os"
+	"sync"
 )
+
+// copyBufPool backs Copy's io.CopyBuffer. This is the worker's ONE streaming
+// scratch buffer: every materialization, output verification and
+// parent-assembly hash streams through here, so pooling the scratch once is
+// enough to keep io.Copy's per-call 32KiB allocation off the GC during batch
+// jobs (one streamed copy per materialized asset). The buffer is only used
+// when neither side implements the optimized io.Copy fast paths (WriterTo /
+// ReadFrom), which is exactly the plain-reader case it is sized for.64KiB is
+// twice io.Copy's default scratch: bigger reads for video-sized assets,
+// still small next to the caches (L1 is 512MiB by default) at one buffer per
+// in-flight copy.
+var copyBufPool = sync.Pool{
+	New: func() any {
+		buf := make([]byte, 64*1024)
+		return &buf
+	},
+}
 
 // Copy copies r into w while computing the SHA-256 of the copied bytes,
 // returning the hex digest and the total byte count (constant memory).
 func Copy(r io.Reader, w io.Writer) (digest string, size int64, err error) {
 	hasher := sha256.New()
-	size, err = io.Copy(io.MultiWriter(w, hasher), r)
+	bufp := copyBufPool.Get().(*[]byte)
+	defer copyBufPool.Put(bufp)
+	size, err = io.CopyBuffer(io.MultiWriter(w, hasher), r, *bufp)
 	if err != nil {
 		return "", size, err
 	}
