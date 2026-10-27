@@ -42,29 +42,52 @@ type resolvedItem struct {
 	Map         *resolvedMap
 }
 
-func compileSemantic(raw []byte) (*Plan, []Asset, Stats, []string, error) {
+// decodeSemanticPlan performs the ONE strict decode of a semantic overlay
+// plan. The published contract declares additionalProperties:false at every
+// level, and the field set is pinned to the schema by
+// contract_schema_parity_test.go. A key outside that set is a producer bug
+// (usually a rename) that must fail loudly here instead of being dropped —
+// the historical permissive decode silently discarded project_id,
+// renderer_version and fingerprint on every job.
+//
+// The error is returned UNWRAPPED so each entry point can apply its own
+// historical error taxonomy on top (see CompileSemantic's error path).
+func decodeSemanticPlan(raw []byte) (semanticPlan, error) {
 	var src semanticPlan
-	// Strict decode: the published contract declares additionalProperties:false
-	// at every level, and the field set is pinned to the schema by
-	// contract_schema_parity_test.go. A key outside that set is a producer bug
-	// (usually a rename) that must fail loudly here instead of being dropped —
-	// the historical permissive decode silently discarded project_id,
-	// renderer_version and fingerprint on every job.
 	decoder := json.NewDecoder(bytes.NewReader(raw))
 	decoder.DisallowUnknownFields()
 	if err := decoder.Decode(&src); err != nil {
+		return semanticPlan{}, err
+	}
+	return src, nil
+}
+
+// compileSemantic is the internal one-shot entry (decode + lower). The
+// processor's hot path goes through CompileSemantic, which decodes the raw
+// document exactly once and hands the decoded plan to compileSemanticDecoded.
+func compileSemantic(raw []byte) (*Plan, []Asset, Stats, []string, error) {
+	src, err := decodeSemanticPlan(raw)
+	if err != nil {
 		return nil, nil, Stats{}, nil, fmt.Errorf("overlay: decode semantic plan: %w", err)
 	}
+	return compileSemanticDecoded(&src)
+}
+
+// compileSemanticDecoded lowers an ALREADY-decoded semantic plan. It is the
+// single semantic overlay-plan.v1 → concrete render-plan.v2 lowering; the
+// decode happens once upstream so the prepare path never re-reads the raw
+// document.
+func compileSemanticDecoded(src *semanticPlan) (*Plan, []Asset, Stats, []string, error) {
 	if src.PlanID == "" || src.VideoID == "" || src.Width <= 0 || src.Height <= 0 || src.FPSNum <= 0 || src.FPSDen <= 0 {
 		return nil, nil, Stats{}, nil, fmt.Errorf("overlay: semantic plan requires plan_id, video_id and positive canvas/fps")
 	}
-	if err := resolveAnimationPolicies(&src); err != nil {
+	if err := resolveAnimationPolicies(src); err != nil {
 		return nil, nil, Stats{}, nil, err
 	}
 	// Retirement is checked after the policies are expanded, so a motion that
 	// arrives through a plan-level default is rejected exactly like an explicit
 	// motion_id instead of only when the item names it directly.
-	if err := validateDeprecatedMotions(&src); err != nil {
+	if err := validateDeprecatedMotions(src); err != nil {
 		return nil, nil, Stats{}, nil, err
 	}
 	// A plan must have at least one renderable primitive: a source clip, a
@@ -160,13 +183,13 @@ func compileSemantic(raw []byte) (*Plan, []Asset, Stats, []string, error) {
 	}
 	// Named map targets are producer-level inputs to item resolution, so resolve
 	// them before the one authoritative semantic-item pass.
-	if err := resolveMapFeatureMoves(&src); err != nil {
+	if err := resolveMapFeatureMoves(src); err != nil {
 		return nil, nil, Stats{}, nil, err
 	}
 	// Resolve every item once before lowering any item-specific assets. The
 	// resolved kind and frame window are authoritative for SFX eligibility and
 	// placement (template aliases and frame quantization included).
-	resolved, err := resolveSemanticItems(&src)
+	resolved, err := resolveSemanticItems(src)
 	if err != nil {
 		return nil, nil, Stats{}, nil, err
 	}
@@ -412,10 +435,10 @@ func compileSemantic(raw []byte) (*Plan, []Asset, Stats, []string, error) {
 		return nil, nil, Stats{}, nil, err
 	}
 	for _, ri := range resolved {
-		if err := cameras.observe(ri, &src); err != nil {
+		if err := cameras.observe(ri, src); err != nil {
 			return nil, nil, Stats{}, nil, err
 		}
-		layers, err := compileItem(ri, &src, registry)
+		layers, err := compileItem(ri, src, registry)
 		if err != nil {
 			return nil, nil, Stats{}, nil, err
 		}
@@ -465,7 +488,7 @@ func compileSemantic(raw []byte) (*Plan, []Asset, Stats, []string, error) {
 	// Resolve the single camera authority after the loop: every controller is
 	// known, so a map camera or an entity camera on the final item cannot slip
 	// through and the verdict does not depend on item order.
-	if err := cameras.apply(&plan, &src); err != nil {
+	if err := cameras.apply(&plan, src); err != nil {
 		return nil, nil, Stats{}, nil, err
 	}
 

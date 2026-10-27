@@ -26,6 +26,14 @@ KillSignal=SIGTERM
 TimeoutStopSec=40
 Restart=on-failure
 RestartSec=2
+# Go runtime memory policy (pinned by
+# renderinggen/internal/architecture/conformance_runtime_env_test.go). The
+# queue's heap is request-shaped (submit bodies are bounded by
+# maxSubmitBytes), so a 1GiB soft cap is generous; it exists only to turn a
+# pathological submit into GC pressure instead of an OOM. GOGC=100 is Go's
+# default, kept explicit next to the cap (see renderinggen-worker.service for
+# the full rationale).
+Environment=GOGC=100 GOMEMLIMIT=1GiB
 
 [Install]
 WantedBy=multi-user.target

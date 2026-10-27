@@ -67,8 +67,9 @@ func TestFinal_AllOfficialPresetsCovered(t *testing.T) {
 
 // TestFinal_CompileEveryPreset compiles every registry preset through the
 // real semantic contract and asserts the plan Chronon receives: 1080p 24fps
-// canvas, a Pale Olive background layer, exactly one entity layer, correct
-// timeline window, and valid animation tracks.
+// canvas, the preset's declared background layer (Pale Olive — or the white
+// canvas for classic_phrase, see certificationBackgroundFor), exactly one
+// entity layer, correct timeline window, and valid animation tracks.
 func TestFinal_CompileEveryPreset(t *testing.T) {
 	for _, id := range OfficialPresetIDs() {
 		t.Run(id, func(t *testing.T) {
@@ -98,10 +99,10 @@ func TestFinal_CompileEveryPreset(t *testing.T) {
 			if bg.Type != "color" || bg.ID != "background" {
 				t.Errorf("layer 0 = %s/%s, want color/background", bg.Type, bg.ID)
 			}
-			want := []float64{238.0 / 255, 241.0 / 255, 231.0 / 255, 1}
+			want := certificationBackgroundFor(id)
 			for i, c := range want {
 				if bg.Color[i] != c {
-					t.Errorf("bg.Color[%d]=%v, want %v (Pale Olive)", i, bg.Color[i], c)
+					t.Errorf("bg.Color[%d]=%v, want %v (declared background for %s)", i, bg.Color[i], c, id)
 				}
 			}
 			if bg.StartFrame != 0 || bg.DurationFrames != certificationDurationFrames {

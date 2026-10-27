@@ -369,6 +369,26 @@ Read the decision off `renderinggen_worker_lane_wait_seconds` against the
 lanes are not the bottleneck; once it dominates, add daemons or lower
 `gpu_lanes`. The worker logs this rule at startup (`lane/daemon parity: ...`).
 
+## Go runtime memory policy (GOGC / GOMEMLIMIT)
+
+The native units pin the Go GC policy in `infra/systemd/*.service`
+(`Environment=GOGC=100 GOMEMLIMIT=...`), where the rationale lives next to the
+values:
+
+- **Workers** (`renderinggen-worker*.service`): `GOMEMLIMIT=4GiB` — a soft cap
+  that turns a pathological job into GC pressure instead of an OOM kill on the
+  GPU host. It covers the default 512 MiB L1 RAM cache
+  (`artifact_store.l1_max_bytes`) plus per-job plan/staging bytes, the probe
+  cache and upload buffers. Raise it together with `l1_max_bytes` (especially
+  with `0` = unbounded).
+- **Queue** (`renderinggen-queue.service`): `GOMEMLIMIT=1GiB` — the heap is
+  request-shaped (submit bodies are bounded by `maxSubmitBytes`).
+
+`GOGC=100` (Go's default) is kept explicit next to each cap so the two knobs
+are always reviewed together. The contract is pinned by
+`renderinggen/internal/architecture/conformance_runtime_env_test.go`: a unit
+that drops either line fails `make test-unit`.
+
 ## Images
 
 - `renderinggen-worker:<version>` — `FROM chronon3d-runtime:<version>` + Go binary + config

@@ -204,9 +204,15 @@ const insertJobSQL = `
 		VALUES ($1, $2, $3, $4, $5, $6, $7, NULLIF($8, ''), NULLIF($9, ''), $10, $11, $12, $13, $14)
 		ON CONFLICT (id) DO NOTHING`
 
-// insertJobRow inserts one job and records its creation event inside tx.
+// insertJobRowOnly inserts one job row without its creation event.
 // ON CONFLICT DO NOTHING makes the duplicate id the idempotency signal.
-func (r *Repository) insertJobRow(ctx context.Context, tx *sql.Tx, job model.Job) error {
+//
+// Splitting the row from the event lets SubmitBatch stage N JOB_CREATED rows
+// and flush them with ONE multi-row INSERT (recordEvents) at the end of the
+// transaction, instead of one statement per job. Submit and SubmitBatch keep
+// producing byte-identical rows: the event VALUES are the same, only the
+// statement shape differs.
+func (r *Repository) insertJobRowOnly(ctx context.Context, tx *sql.Tx, job model.Job) error {
 	row, err := prepareJobRow(job)
 	if err != nil {
 		return err
@@ -222,6 +228,14 @@ func (r *Repository) insertJobRow(ctx context.Context, tx *sql.Tx, job model.Job
 	}
 	if n == 0 {
 		return fmt.Errorf("%w: job %s", repository.ErrJobExists, job.ID)
+	}
+	return nil
+}
+
+// insertJobRow inserts one job and records its creation event inside tx.
+func (r *Repository) insertJobRow(ctx context.Context, tx *sql.Tx, job model.Job) error {
+	if err := r.insertJobRowOnly(ctx, tx, job); err != nil {
+		return err
 	}
 	return recordEvent(ctx, tx, eventJobCreated, job.ID, "", "", nil)
 }
@@ -258,12 +272,18 @@ func (r *Repository) SubmitBatch(ctx context.Context, jobs []model.Job) error {
 	ctx, cancel := r.opContext(ctx)
 	defer cancel()
 	return r.withTx(ctx, func(ctx context.Context, tx *sql.Tx) error {
+		// One creation event per job, flushed as a single multi-row INSERT:
+		// a batch submit pays one event statement instead of one per job. The
+		// persisted rows are identical to the per-job path (same VALUES, same
+		// BIGSERIAL order = jobs order).
+		events := make([]eventRow, 0, len(jobs))
 		for _, job := range jobs {
-			if err := r.insertJobRow(ctx, tx, job); err != nil {
+			if err := r.insertJobRowOnly(ctx, tx, job); err != nil {
 				return err
 			}
+			events = append(events, eventRow{eventType: eventJobCreated, jobID: job.ID})
 		}
-		return nil
+		return recordEvents(ctx, tx, events)
 	})
 }
 

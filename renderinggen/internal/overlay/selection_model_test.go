@@ -288,7 +288,7 @@ func TestSelectionModelBackgroundSourcesMatchCompilerAdmission(t *testing.T) {
 	}
 
 	plans := map[string]string{
-		"color":     fmt.Sprintf(`{"kind":"color","color":%s}`, certificationBackgroundRGBA),
+		"color":     fmt.Sprintf(`{"kind":"color","color":%s}`, certificationBackgroundJSON("")),
 		"image":     backgroundAssetJSON("image", "assets/semantic/bg-plate/background.png", "image/png"),
 		"video":     backgroundAssetJSON("video", "assets/semantic/bg-plate/background.mp4", "video/mp4"),
 		"gradient":  `{"kind":"gradient"}`,

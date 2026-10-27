@@ -217,10 +217,40 @@ const (
 	certificationEndMS   = int64(5208)
 )
 
-// certificationBackgroundRGBA is the Pale Olive Classic background, the color
-// layer contract that keeps a compositor backend from rendering branded
-// content as black.
-const certificationBackgroundRGBA = "[0.9333333333333333,0.9450980392156862,0.9058823529411765,1]"
+// certificationBackgroundFor is the ONE owner of the certification fixture's
+// background color, shared by the fixture builder (what the plan declares) and
+// the compile assertions (what the plan must lower to), so the two can never
+// drift again.
+//
+// Default is the Pale Olive Classic background, the color layer contract that
+// keeps a compositor backend from rendering branded content as black.
+// classic_phrase is the documented exception: its declared white card is
+// visually identical to the required white canvas, so the native GPU plan
+// keeps that canvas as the sole background instead of emitting text_card,
+// which the Vulkan renderer cannot execute (see classicPhrasePreset).
+func certificationBackgroundFor(presetID string) []float64 {
+	if presetID == ClassicPhrasePresetID {
+		return []float64{1, 1, 1, 1}
+	}
+	return []float64{238.0 / 255, 241.0 / 255, 231.0 / 255, 1}
+}
+
+// certificationBackgroundJSON renders the declared background color as the
+// JSON array fixture plans embed, derived from the same owner as the compile
+// assertions.
+func certificationBackgroundJSON(presetID string) string {
+	raw, err := json.Marshal(certificationBackgroundFor(presetID))
+	if err != nil {
+		panic(err) // unreachable for []float64
+	}
+	return string(raw)
+}
+
+// certificationBackgroundRGBA is the JSON array of the DEFAULT (Pale Olive)
+// certification background, kept as the named fixture constant many probe
+// plans use. It is DERIVED from certificationBackgroundFor so the constant and
+// the compile assertions can never drift.
+var certificationBackgroundRGBA = certificationBackgroundJSON("")
 
 // certificationAssetID/SHA identify the single fixture image every
 // certification plan references. At runtime the harness materializes the real
@@ -254,14 +284,10 @@ func certificationPlanRaw(def PresetDefinition) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	background := certificationBackgroundRGBA
-	if def.ID == ClassicPhrasePresetID {
-		background = "[1,1,1,1]"
-	}
 	return fmt.Sprintf(
 		`{"schema_version":"renderinggen.overlay-plan.v1","plan_id":%q,"video_id":"certification","width":1920,"height":1080,"fps_num":24,"fps_den":1,`+
 			`"background":{"kind":"color","color":%s},"items":[%s]}`,
-		"certification-"+def.ID, background, item), nil
+		"certification-"+def.ID, certificationBackgroundJSON(def.ID), item), nil
 }
 
 // certificationPlan compiles the fixture for one preset through the single

@@ -285,12 +285,14 @@ func (p *Processor) PrepareJob(ctx context.Context, job *queue.Job) (*PreparedJo
 	// Burn verified ASS subtitles into Chronon text layers before the plan is
 	// written. This keeps subtitles in the Vulkan composition and avoids a
 	// second full-file ffmpeg encode after NVENC has finished.
-	if subtitleHash, burn, ok, subtitleErr := overlay.SubtitleAsset(job.RenderPlan); subtitleErr != nil {
-		return nil, subtitleErr
-	} else if ok && burn {
+	//
+	// The subtitle contract rides on the compile result (extracted by the SAME
+	// decode pass that lowered the plan), so the raw semantic document is
+	// never re-read on the prepare path.
+	if sub := result.Subtitle; sub.Present && sub.Burn {
 		var subtitlePath, fontPath string
 		for _, asset := range assets {
-			if strings.EqualFold(asset.Hash, subtitleHash) {
+			if strings.EqualFold(asset.Hash, sub.Hash) {
 				subtitlePath = filepath.Join(ws.Root(), asset.LogicalPath)
 			}
 			if ext := strings.ToLower(filepath.Ext(asset.LogicalPath)); ext == ".ttf" || ext == ".otf" {
@@ -300,7 +302,7 @@ func (p *Processor) PrepareJob(ctx context.Context, job *queue.Job) (*PreparedJo
 			}
 		}
 		if subtitlePath == "" {
-			return nil, fmt.Errorf("processor: burn subtitles asset %s was not materialized", subtitleHash)
+			return nil, fmt.Errorf("processor: burn subtitles asset %s was not materialized", sub.Hash)
 		}
 		if fontPath == "" {
 			return nil, fmt.Errorf("processor: burn subtitles requires a materialized .ttf or .otf font")
@@ -311,8 +313,9 @@ func (p *Processor) PrepareJob(ctx context.Context, job *queue.Job) (*PreparedJo
 			return nil, fmt.Errorf("processor: read subtitles %s: %w", subtitlePath, readErr)
 		}
 		// Style + safe-area box are resolved from the plan's typed subtitle
-		// block (SubtitleStyleAsset). The processor never invents typography.
-		burnStyle, burnBox, styleErr := overlay.SubtitleStyleAsset(job.RenderPlan)
+		// block (ResolveSubtitleStyle, the compile-result view of
+		// SubtitleStyleAsset). The processor never invents typography.
+		burnStyle, burnBox, styleErr := result.ResolveSubtitleStyle()
 		if styleErr != nil {
 			return nil, styleErr
 		}
@@ -429,10 +432,10 @@ func (p *Processor) PrepareJob(ctx context.Context, job *queue.Job) (*PreparedJo
 		// (no source audio to mux) is the fragmented MP4 whose bytes are final
 		// while appended — the container and the tail-upload lane must never
 		// diverge, or the lane would stream a file whose header is backpatched.
-		FragmentedMP4: audioPath == "",
-		Segments:      segments,
+		FragmentedMP4:  audioPath == "",
+		Segments:       segments,
 		SegmentItemIDs: segmentItemIDs,
-		totalStart:    totalStart,
+		totalStart:     totalStart,
 	}, nil
 }
 

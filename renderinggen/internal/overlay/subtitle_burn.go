@@ -16,16 +16,37 @@ import (
 // SubtitleAsset returns the content hash and burn policy declared by a
 // semantic overlay plan. It is used after materialization, when the worker can
 // safely read the verified subtitle bytes and lower them into Chronon layers.
+//
+// Standalone entry point: the processor's hot path does not decode the raw
+// document again — CompileSemantic extracts the same contract into
+// CompileResult.Subtitle through the shared subtitleAssetFrom.
 func SubtitleAsset(raw []byte) (hash string, burn bool, ok bool, err error) {
 	var src semanticPlan
 	if err := json.Unmarshal(raw, &src); err != nil {
 		return "", false, false, fmt.Errorf("overlay: decode subtitle contract: %w", err)
 	}
-	if src.Subtitles == nil || len(src.Subtitles.AssetRefs) == 0 {
-		return "", false, false, nil
+	hash, burn, ok = subtitleAssetFrom(src.Subtitles)
+	return hash, burn, ok, nil
+}
+
+// subtitleAssetFrom extracts the burn policy from an already-decoded plan.
+// One owner: SubtitleAsset and CompileSemantic both route through it, so the
+// two can never disagree about what "present" and "burn" mean.
+func subtitleAssetFrom(subs *semanticSubtitles) (hash string, burn bool, ok bool) {
+	if subs == nil || len(subs.AssetRefs) == 0 {
+		return "", false, false
 	}
-	ref := src.Subtitles.AssetRefs[0]
-	return strings.ToLower(ref.SHA256), strings.EqualFold(strings.TrimSpace(src.Subtitles.Mode), "burn"), true, nil
+	ref := subs.AssetRefs[0]
+	return strings.ToLower(ref.SHA256), strings.EqualFold(strings.TrimSpace(subs.Mode), "burn"), true
+}
+
+// styleMap is the nil-safe style accessor used when a compile result carries
+// the decoded subtitle block forward without resolving it yet.
+func (s *semanticSubtitles) styleMap() map[string]any {
+	if s == nil {
+		return nil
+	}
+	return s.Style
 }
 
 // SubtitleStyleAsset resolves the plan's typed subtitle style into the
@@ -34,6 +55,10 @@ func SubtitleAsset(raw []byte) (hash string, burn bool, ok bool, err error) {
 // resolver (parseStyleBlock + subtitleLayerStyle), so a burn-mode plan
 // without a fully declared style is rejected fail-closed — the compiler
 // never substitutes its own typography.
+//
+// Standalone entry point: the processor's hot path resolves through
+// CompileResult.ResolveSubtitleStyle, which shares the subtitleStyleFrom core
+// without decoding the raw document again.
 func SubtitleStyleAsset(raw []byte) (*LayerStyle, SubtitleStyleBox, error) {
 	var doc struct {
 		Canvas struct {
@@ -48,10 +73,34 @@ func SubtitleStyleAsset(raw []byte) (*LayerStyle, SubtitleStyleBox, error) {
 	if err := json.Unmarshal(raw, &src); err != nil {
 		return nil, SubtitleStyleBox{}, fmt.Errorf("overlay: decode subtitle style contract: %w", err)
 	}
-	if src.Subtitles == nil || src.Subtitles.Style == nil {
+	width, height := src.Width, src.Height
+	if width <= 0 || height <= 0 {
+		width, height = doc.Canvas.Width, doc.Canvas.Height
+	}
+	return subtitleStyleFrom(src.Subtitles.styleMap(), width, height)
+}
+
+// SubtitleRef is the content-addressed subtitle declaration of a semantic
+// plan: what the burn pass needs to locate the verified ASS bytes and to know
+// whether it must run at all.
+type SubtitleRef struct {
+	// Hash is the lowercase SHA-256 of the plan's first subtitle asset ref.
+	Hash string
+	// Burn is true when the plan's subtitle mode is "burn" (case-insensitive).
+	Burn bool
+	// Present is true when the plan declares at least one subtitle asset ref.
+	Present bool
+}
+
+// subtitleStyleFrom is the shared resolution core: typed style block →
+// concrete Chronon style + safe-area box. The canvas is passed in because the
+// two entry points source it differently (strict plan fields vs the tolerant
+// canvas fallback of the standalone API).
+func subtitleStyleFrom(styleRaw map[string]any, width, height int) (*LayerStyle, SubtitleStyleBox, error) {
+	if styleRaw == nil {
 		return nil, SubtitleStyleBox{}, nil
 	}
-	block, err := parseStyleBlock(src.Subtitles.Style)
+	block, err := parseStyleBlock(styleRaw)
 	if err != nil {
 		return nil, SubtitleStyleBox{}, err
 	}
@@ -61,10 +110,6 @@ func SubtitleStyleAsset(raw []byte) (*LayerStyle, SubtitleStyleBox, error) {
 	}
 	if block.Position == "" {
 		return nil, SubtitleStyleBox{}, fmt.Errorf("overlay: subtitle style must declare position (placement is owned by PipelineGen)")
-	}
-	width, height := src.Width, src.Height
-	if width <= 0 || height <= 0 {
-		width, height = doc.Canvas.Width, doc.Canvas.Height
 	}
 	if width <= 0 || height <= 0 {
 		return nil, SubtitleStyleBox{}, fmt.Errorf("overlay: subtitle burn requires a canvas")
