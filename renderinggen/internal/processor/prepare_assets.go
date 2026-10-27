@@ -1,6 +1,7 @@
 package processor
 
 import (
+	"bytes"
 	"fmt"
 	"image"
 	_ "image/jpeg"
@@ -59,7 +60,30 @@ func normalizeMaterializedImagePaths(root string, plan *overlay.Plan) (map[strin
 		newAsset := strings.TrimSuffix(layer.Asset, filepath.Ext(layer.Asset)) + ext
 		newPath := filepath.Join(root, filepath.FromSlash(newAsset))
 		if _, err := os.Lstat(newPath); err == nil {
-			return nil, fmt.Errorf("image asset %s rename target already exists: %s", layer.Asset, newAsset)
+			// A retry re-materializes the producer's original name into the same
+			// job workspace, where a previous attempt may already have produced
+			// the normalized target from these same verified bytes (assets are
+			// content-verified, so a legitimate re-materialization is
+			// byte-identical). Adopt that target — drop the stale source and
+			// record the rename — instead of failing the retry. A target with
+			// DIFFERENT bytes is a genuine name collision and keeps failing
+			// closed below.
+			same, cmpErr := sameFileContent(path, newPath)
+			if cmpErr != nil {
+				return nil, fmt.Errorf("image asset %s compare rename target %s: %w", layer.Asset, newAsset, cmpErr)
+			}
+			if !same {
+				return nil, fmt.Errorf("image asset %s rename target already exists: %s", layer.Asset, newAsset)
+			}
+			if err := os.Remove(path); err != nil {
+				return nil, fmt.Errorf("image asset %s remove retry leftover source: %w", layer.Asset, err)
+			}
+			if renamed == nil {
+				renamed = make(map[string]string)
+			}
+			renamed[newAsset] = layer.Asset
+			layer.Asset = newAsset
+			continue
 		} else if !os.IsNotExist(err) {
 			return nil, fmt.Errorf("image asset %s inspect rename target %s: %w", layer.Asset, newAsset, err)
 		}
@@ -73,6 +97,33 @@ func normalizeMaterializedImagePaths(root string, plan *overlay.Plan) (map[strin
 		layer.Asset = newAsset
 	}
 	return renamed, nil
+}
+
+// sameFileContent reports whether a and b hold the same bytes. It is the
+// tie-breaker between a retry leftover (the same verified download already
+// normalized by an earlier attempt — safe to adopt) and a genuine rename
+// collision (different bytes claiming one name — must fail closed).
+func sameFileContent(a, b string) (bool, error) {
+	sa, err := os.Stat(a)
+	if err != nil {
+		return false, err
+	}
+	sb, err := os.Stat(b)
+	if err != nil {
+		return false, err
+	}
+	if sa.Size() != sb.Size() {
+		return false, nil
+	}
+	da, err := os.ReadFile(a)
+	if err != nil {
+		return false, err
+	}
+	db, err := os.ReadFile(b)
+	if err != nil {
+		return false, err
+	}
+	return bytes.Equal(da, db), nil
 }
 
 // validateMapRasterAssets checks the actual staged PNG bytes for every compiled

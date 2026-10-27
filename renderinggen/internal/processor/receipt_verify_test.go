@@ -124,6 +124,21 @@ func stubValidateDecode(t *testing.T, err error) *int {
 	return &calls
 }
 
+// stubValidateDecodeSampled replaces the worker's sampled decode tool for one
+// test and returns a call counter — the seam that makes the sample tier's
+// escalation decision testable without spawning ffmpeg per case.
+func stubValidateDecodeSampled(t *testing.T, err error) *int {
+	t.Helper()
+	original := validateDecodeSampled
+	t.Cleanup(func() { validateDecodeSampled = original })
+	calls := 0
+	validateDecodeSampled = func(context.Context, string) error {
+		calls++
+		return err
+	}
+	return &calls
+}
+
 // TestChrononReceiptRequestDefersTheDecodeUnderNormal pins the wire mapping:
 // under normal the worker owns the promised decode (post-lane), so Chronon is
 // asked for the fast tier and the render lane never pays the decode. certify
@@ -134,6 +149,7 @@ func TestChrononReceiptRequestDefersTheDecodeUnderNormal(t *testing.T) {
 		"":                  chronon.ReceiptVerifyFast,
 		renderVerifyFast:    chronon.ReceiptVerifyFast,
 		renderVerifyNormal:  chronon.ReceiptVerifyFast,
+		renderVerifySample:  chronon.ReceiptVerifyFast,
 		renderVerifyCertify: chronon.ReceiptVerifyCertify,
 		renderVerifyStrict:  chronon.ReceiptVerifyFast,
 	}
@@ -217,6 +233,124 @@ func TestWorkerDecodeFailureRejectsTheArtifact(t *testing.T) {
 	p := &Processor{receiptVerify: renderVerifyLevel("normal")}
 	if _, err := p.verifyArtifactReceipt(context.Background(), path, receipt, receiptErr, map[string]float64{}); err == nil {
 		t.Fatal("a decode failure must reject the artifact before it is stored or published")
+	}
+}
+
+// TestSamplePolicyRunsTheSampledDecodeAndSkipsTheCompleteDecode pins the
+// sample tier's fast path: the worker verifies the artifact with the SAMPLED
+// decode only, records that it did, and never pays for a complete decode.
+func TestSamplePolicyRunsTheSampledDecodeAndSkipsTheCompleteDecode(t *testing.T) {
+	path, _ := writeOutput(t, "rendered bytes")
+	writeTierReceipt(t, path, chronon.ReceiptVerifyFast, "skip")
+	receipt, receiptErr := readReceipt(t, path)
+
+	sampleCalls := stubValidateDecodeSampled(t, nil)
+	fullCalls := stubValidateDecode(t, nil)
+	metrics := map[string]float64{}
+	p := &Processor{receiptVerify: renderVerifySample}
+	if _, err := p.verifyArtifactReceipt(context.Background(), path, receipt, receiptErr, metrics); err != nil {
+		t.Fatalf("artifact must pass when the sampled decode passes: %v", err)
+	}
+	if *sampleCalls != 1 {
+		t.Fatalf("the sampled decode ran %d times, want exactly 1", *sampleCalls)
+	}
+	if *fullCalls != 0 {
+		t.Fatalf("a clean sample must not escalate to a complete decode, ran %d", *fullCalls)
+	}
+	if metrics[metricnames.WorkerDecodeSampled] != 1 {
+		t.Fatalf("want %s=1, got %v", metricnames.WorkerDecodeSampled, metrics)
+	}
+	if metrics[metricnames.WorkerDecodeEscalated] != 0 {
+		t.Fatalf("a clean sample must not record an escalation: %v", metrics)
+	}
+	if metrics[metricnames.WorkerDecodeVerified] != 1 {
+		t.Fatalf("want %s=1, got %v", metricnames.WorkerDecodeVerified, metrics)
+	}
+}
+
+// TestSamplePolicyEscalatesToTheCompleteDecodeWhenTheSampleFails pins the
+// fail-closed half of the budget trade: a failing sample is never a verdict —
+// the complete decode runs and IS the verdict, and the escalation is recorded.
+func TestSamplePolicyEscalatesToTheCompleteDecodeWhenTheSampleFails(t *testing.T) {
+	path, _ := writeOutput(t, "rendered bytes")
+	writeTierReceipt(t, path, chronon.ReceiptVerifyFast, "skip")
+	receipt, receiptErr := readReceipt(t, path)
+
+	sampleCalls := stubValidateDecodeSampled(t, fmt.Errorf("ffmpeg: damaged packet run"))
+	fullCalls := stubValidateDecode(t, nil)
+	metrics := map[string]float64{}
+	p := &Processor{receiptVerify: renderVerifySample}
+	if _, err := p.verifyArtifactReceipt(context.Background(), path, receipt, receiptErr, metrics); err != nil {
+		t.Fatalf("a failing sample must escalate, not reject: %v", err)
+	}
+	if *sampleCalls != 1 || *fullCalls != 1 {
+		t.Fatalf("escalation must run the complete decode exactly once: sample=%d full=%d", *sampleCalls, *fullCalls)
+	}
+	if metrics[metricnames.WorkerDecodeEscalated] != 1 {
+		t.Fatalf("want %s=1, got %v", metricnames.WorkerDecodeEscalated, metrics)
+	}
+	if metrics[metricnames.WorkerDecodeSampled] != 0 {
+		t.Fatalf("a failed sample must not record %s: %v", metricnames.WorkerDecodeSampled, metrics)
+	}
+	if metrics[metricnames.WorkerDecodeVerified] != 1 {
+		t.Fatalf("the escalated complete decode passed and must be recorded as verified: %v", metrics)
+	}
+}
+
+// TestSamplePolicyRejectsOnlyWhenTheEscalatedDecodeFails pins the rejection
+// direction: the artifact is rejected exactly when the COMPLETE decode fails.
+func TestSamplePolicyRejectsOnlyWhenTheEscalatedDecodeFails(t *testing.T) {
+	path, _ := writeOutput(t, "rendered bytes")
+	writeTierReceipt(t, path, chronon.ReceiptVerifyFast, "skip")
+	receipt, receiptErr := readReceipt(t, path)
+
+	stubValidateDecodeSampled(t, fmt.Errorf("ffmpeg: damaged packet run"))
+	stubValidateDecode(t, fmt.Errorf("ffmpeg: corrupt tail frames"))
+	p := &Processor{receiptVerify: renderVerifySample}
+	if _, err := p.verifyArtifactReceipt(context.Background(), path, receipt, receiptErr, map[string]float64{}); err == nil {
+		t.Fatal("a bitstream that fails the complete decode must be rejected")
+	}
+}
+
+// TestSamplePolicySkipsAnyDecodeTheReceiptProves pins that sample honours the
+// same "exactly one decode" rule as normal: a receipt that proves an in-daemon
+// decode leaves nothing for the worker to verify.
+func TestSamplePolicySkipsAnyDecodeTheReceiptProves(t *testing.T) {
+	path, _ := writeOutput(t, "rendered bytes")
+	writeTierReceipt(t, path, chronon.ReceiptVerifyNormal, "pass")
+	receipt, receiptErr := readReceipt(t, path)
+
+	sampleCalls := stubValidateDecodeSampled(t, nil)
+	fullCalls := stubValidateDecode(t, nil)
+	p := &Processor{receiptVerify: renderVerifySample}
+	if _, err := p.verifyArtifactReceipt(context.Background(), path, receipt, receiptErr, map[string]float64{}); err != nil {
+		t.Fatalf("policy sample: %v", err)
+	}
+	if *sampleCalls != 0 || *fullCalls != 0 {
+		t.Fatalf("the receipt proved an in-daemon decode but the worker decoded again: sample=%d full=%d", *sampleCalls, *fullCalls)
+	}
+}
+
+// TestSamplePolicyVerifiesARealArtifact exercises the sample tier end to end
+// with the real ffmpeg tool: a real artifact passes without escalation.
+func TestSamplePolicyVerifiesARealArtifact(t *testing.T) {
+	if _, err := exec.LookPath("ffmpeg"); err != nil {
+		t.Skipf("ffmpeg not installed: %v", err)
+	}
+	dir := t.TempDir()
+	good := filepath.Join(dir, "good.mp4")
+	if out, err := exec.Command("ffmpeg", "-v", "error", "-f", "lavfi", "-i", "color=c=black:s=64x64:d=1", "-c:v", "mpeg4", "-y", good).CombinedOutput(); err != nil {
+		t.Fatalf("generate fixture: %v: %s", err, out)
+	}
+	writeTierReceipt(t, good, chronon.ReceiptVerifyFast, "skip")
+	receipt, receiptErr := readReceipt(t, good)
+	metrics := map[string]float64{}
+	p := &Processor{receiptVerify: renderVerifySample}
+	if _, err := p.verifyArtifactReceipt(context.Background(), good, receipt, receiptErr, metrics); err != nil {
+		t.Fatalf("a real decodable artifact must pass the sampled gate: %v", err)
+	}
+	if metrics[metricnames.WorkerDecodeEscalated] != 0 {
+		t.Fatalf("a real artifact must not escalate: %v", metrics)
 	}
 }
 

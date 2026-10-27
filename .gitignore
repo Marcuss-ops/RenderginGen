@@ -131,3 +131,6 @@ __pycache__/
 # artifact class. /mike_tyson_overlay_test/output/ is already ignored above,
 # but preset_overlays_v1/renders/ was not, so a gallery re-run re-added mp4.
 /mike_tyson_overlay_test/preset_overlays_v1/renders/
+
+# Local P4 verification logs (2026-10-27): operator scratch, never source.
+renderinggen/.p4-*.log

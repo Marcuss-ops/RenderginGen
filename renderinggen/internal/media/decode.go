@@ -53,3 +53,45 @@ func ValidateDecode(ctx context.Context, path string) error {
 	}
 	return nil
 }
+
+// ValidateDecodeSampled is the budget-conscious sibling of ValidateDecode,
+// behind the sampled verification tier: instead of reconstructing every frame
+// it proves the artifact is real, well-formed media at three deterministic
+// points. For a freshly muxed output whose container facts, identity and
+// encoder/muxer success are already verified elsewhere, this is the coverage
+// that catches the realistic corruption modes (a truncated write, a damaged
+// packet run, a header that lies) at a fraction of the decode cost.
+//
+// The three passes, each a separate ffmpeg run:
+//
+//  1. whole-bitstream traversal with -skip_frame nokey: every packet is
+//     parsed and every I-frame decoded, so truncation or damage ANYWHERE in
+//     the file surfaces without paying for P/B reconstruction;
+//  2. head: a short complete decode from the start, exercising the reference
+//     chain a real player would;
+//  3. tail: a complete decode of the final window (-sseof) to EOF — the place
+//     where an incomplete write hides.
+//
+// -xerror turns any decode error into a non-zero exit, so the verdict is the
+// exit code and nothing weaker. A failure here is NOT a rejection verdict: the
+// post-lane gate escalates to ValidateDecode (a complete decode) before
+// rejecting, which is what makes it safe for this gate to be strict.
+func ValidateDecodeSampled(ctx context.Context, path string) error {
+	passes := [][]string{
+		{"-skip_frame", "nokey", "-i", path, "-f", "null", "-"},
+		{"-i", path, "-t", "0.5", "-f", "null", "-"},
+		{"-sseof", "-0.5", "-i", path, "-f", "null", "-"},
+	}
+	for _, pass := range passes {
+		args := append([]string{"-v", "error", "-xerror"}, pass...)
+		out, err := exec.CommandContext(ctx, ffmpegBinary(), args...).CombinedOutput()
+		if err != nil {
+			detail := strings.TrimSpace(string(out))
+			if detail == "" {
+				return fmt.Errorf("media: sampled decode %s (%s): %w", path, strings.Join(pass, " "), err)
+			}
+			return fmt.Errorf("media: sampled decode %s (%s): %w: %s", path, strings.Join(pass, " "), err, detail)
+		}
+	}
+	return nil
+}

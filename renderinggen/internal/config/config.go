@@ -635,9 +635,9 @@ func (p PipelineConfig) validate() error {
 	// degrading an unknown value to fast would mean an operator who asked for
 	// proof ran without it.
 	switch p.ReceiptVerify {
-	case "", "fast", "normal", "certify":
+	case "", "fast", "normal", "sample", "certify":
 	default:
-		return fmt.Errorf("pipeline.receipt_verify %q must be one of \"\" (fast), fast, normal, certify", p.ReceiptVerify)
+		return fmt.Errorf("pipeline.receipt_verify %q must be one of \"\" (fast), fast, normal, sample, certify", p.ReceiptVerify)
 	}
 	return nil
 }

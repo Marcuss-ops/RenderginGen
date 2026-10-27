@@ -331,13 +331,24 @@ func TestConcurrentLeasesDoNotShareState(t *testing.T) {
 			if i%2 == 1 {
 				id = "lost"
 			}
+			// A kept job models ordinary work and returns once it is done. A
+			// lost job can only finish through the cancelled job context, so
+			// its safety window is generous: the assertion must observe the
+			// CONTRACT (a definitive lease loss cancels the work), never the
+			// scheduler's timing. With a 60 ms window the full-suite run could
+			// starve the 10 ms renewal ticker past the window and flip the
+			// outcome (observed 2026-10-26: job 5 returned nil under load).
+			work := 60 * time.Millisecond
+			if id == "lost" {
+				work = 10 * time.Second
+			}
 			job := &queue.Job{ID: id, JobType: queue.JobTypeOverlayRender, Lease: 20 * time.Millisecond}
 			results[i] = withLeaseVoid(context.Background(), job, q, timingsFor(2, time.Millisecond),
 				func(jobCtx context.Context) error {
 					select {
 					case <-jobCtx.Done():
 						return jobCtx.Err()
-					case <-time.After(60 * time.Millisecond):
+					case <-time.After(work):
 						return nil
 					}
 				})

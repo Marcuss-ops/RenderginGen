@@ -538,13 +538,23 @@ func makeEntityStyleRuntimeSafe(style entityStyleVariant) entityStyleVariant {
 }
 
 // entityStyleSampleKey is the plan-level identity fed to the entity sampler.
-// With no entity_variation_seed it is exactly plan_id, so existing selections
-// are unchanged; a producer seed re-samples every style deterministically.
+// It is the plan's STABLE creative identity — the producer project, falling
+// back to the plan id — and never the run identity: plan ids are per-run
+// (run_f…), so sampling on them re-rolls every "random" entity style on every
+// retry and rerun. That changes the look of an unchanged video AND destroys
+// content-addressed render reuse, because the render key covers the sampled
+// style: the same item rendered twice produced two keys and two renders. A
+// producer who wants fresh styles asks for them explicitly, through
+// entity_variation_seed (which re-samples deterministically, as before).
 func (src *semanticPlan) entityStyleSampleKey() string {
-	if seed := strings.TrimSpace(src.EntityVariationSeed); seed != "" {
-		return src.PlanID + "\x00entity_variation_seed\x00" + seed
+	base := strings.TrimSpace(src.ProjectID)
+	if base == "" {
+		base = strings.TrimSpace(src.PlanID)
 	}
-	return src.PlanID
+	if seed := strings.TrimSpace(src.EntityVariationSeed); seed != "" {
+		return base + "\x00entity_variation_seed\x00" + seed
+	}
+	return base
 }
 
 // styleDomain is the sampling salt shared by all tag selectors: the selector
