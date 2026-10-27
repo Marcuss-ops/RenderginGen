@@ -1,7 +1,11 @@
 package processor
 
 import (
+	"bytes"
 	"context"
+	"crypto/sha256"
+	"encoding/json"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -19,6 +23,9 @@ type finalizerQueue struct {
 	children  []*queue.Job
 	claimed   bool
 	completed *queue.Artifact
+	// claimResult, when set, is the claimed parent job returned by the claim
+	// (carrying the anchor's RenderPlan — the audio-aware assembly input).
+	claimResult *queue.Job
 	// events records the protocol order — every child-family read and the
 	// claim — so a test can assert how many reads the completion path costs and
 	// that the claim sits between them.
@@ -35,6 +42,9 @@ func (q *finalizerQueue) ClaimFinalization(context.Context, string) (*queue.Job,
 		return nil, false, nil
 	}
 	q.claimed = true
+	if q.claimResult != nil {
+		return q.claimResult, true, nil
+	}
 	return &queue.Job{ID: "parent", Lease: time.Hour}, true, nil
 }
 func (q *finalizerQueue) Renew(context.Context, string) error { return nil }
@@ -184,5 +194,116 @@ func TestFinalizeFromChildrenIgnoresUnrangedCorrelationChildren(t *testing.T) {
 	}
 	if q.claimed {
 		t.Fatal("ordinary correlated render jobs must not claim the parent finalization lease")
+	}
+}
+
+// recordingAssembler captures the assembly request while still materialising
+// the output file the artifact probe reads afterwards.
+type recordingAssembler struct {
+	finalizerAssembler
+	got []chronon.AssembleRequest
+}
+
+func (r *recordingAssembler) Assemble(ctx context.Context, req chronon.AssembleRequest) error {
+	r.got = append(r.got, req)
+	return r.finalizerAssembler.Assemble(ctx, req)
+}
+
+// anchorPlanJSON builds the anchor's semantic plan document — the FULL
+// mapping (audio block + source asset), which is what the chunk producer
+// submits for the anchor while children carry the video-only mapping.
+func anchorPlanJSON(sourceHash string, withAudio bool) json.RawMessage {
+	audio := ""
+	if withAudio {
+		audio = `,"audio":{"mode":"copy_if_compatible","codec":"aac","sample_rate":48000,"channels":2}`
+	}
+	return json.RawMessage(fmt.Sprintf(
+		`{"schema_version":"renderinggen.overlay-plan.v1","plan_id":"chunk-parent","video_id":"source-asset-001","width":1920,"height":1080,"fps_num":24,"fps_den":1,"output_profile_id":"VELOX_ASSEMBLY_READY_V1","duration_ms":2000,"source":{"asset_id":"source-asset-001","path":"assets/semantic/source-asset-001/source.mp4","sha256":%q},"items":[]%s}`,
+		sourceHash, audio))
+}
+
+func audioAwareFamily(t *testing.T, withAudio bool) (*finalizerQueue, *storage.Client, []byte, string) {
+	t.Helper()
+	ctx := context.Background()
+	store := storage.New(storage.NewMemory(), storage.Options{L2Dir: t.TempDir()})
+	sourceBytes := []byte("source-media-with-audio-stream")
+	sourceHash := fmt.Sprintf("%x", sha256.Sum256(sourceBytes))
+	if err := store.Put(ctx, sourceHash, sourceBytes); err != nil {
+		t.Fatal(err)
+	}
+	for _, key := range []string{"chunk-a", "chunk-b"} {
+		if err := store.Put(ctx, key, []byte(key)); err != nil {
+			t.Fatal(err)
+		}
+	}
+	children := []*queue.Job{
+		{ID: "c0", ChunkIndex: 0, FrameRange: &queue.FrameRange{Start: 0, End: 10}, State: queue.StateCompleted, Artifact: copySafeChunkArtifact("chunk-a")},
+		{ID: "c1", ChunkIndex: 1, FrameRange: &queue.FrameRange{Start: 10, End: 20}, State: queue.StateCompleted, Artifact: copySafeChunkArtifact("chunk-b")},
+	}
+	q := &finalizerQueue{children: children, claimResult: &queue.Job{
+		ID: "parent", Lease: time.Hour, RenderPlan: anchorPlanJSON(sourceHash, withAudio),
+	}}
+	return q, store, sourceBytes, sourceHash
+}
+
+// TestParentFinalizerMuxesSourceAudioOnce pins the audio-aware assembly
+// contract: the family anchor is the SINGLE audio owner. Children are
+// video-only (silent segments), the anchor's plan document carries the audio
+// block + source asset, so the finalizer resolves the source through the
+// store and hands the assembler exactly ONE audio mux request over the
+// concatenated video. The parent keeps the classic MP4 because it carries
+// audio.
+func TestParentFinalizerMuxesSourceAudioOnce(t *testing.T) {
+	q, store, sourceBytes, _ := audioAwareFamily(t, true)
+	rec := &recordingAssembler{}
+	f := NewParentFinalizer(q, store, rec, nil, "worker", t.TempDir())
+	finalized, _, err := f.Finalize(context.Background(), "parent", 0, 20)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !finalized {
+		t.Fatal("family must finalize")
+	}
+	if len(rec.got) != 1 {
+		t.Fatalf("assembler calls = %d, want 1 (the source stream is muxed exactly once)", len(rec.got))
+	}
+	req := rec.got[0]
+	if req.AudioSourcePath == "" {
+		t.Fatal("anchor must mux the source audio over the assembled video")
+	}
+	if req.AudioTargetSampleRate != 48000 {
+		t.Fatalf("audio target sample rate = %d, want 48000 (the plan's declared rate)", req.AudioTargetSampleRate)
+	}
+	if req.FragmentedMP4 {
+		t.Fatal("an audio-bearing parent keeps the classic MP4")
+	}
+	if data, err := os.ReadFile(req.AudioSourcePath); err != nil || !bytes.Equal(data, sourceBytes) {
+		t.Fatalf("audio source must be the hash-verified store materialisation: %v", err)
+	}
+}
+
+// TestParentFinalizerSilentAnchorStaysFragmented pins the no-audio lane: a
+// plan document with no audio block leaves the family silent and fragmented
+// (bytes final when appended), with no audio mux request at all.
+func TestParentFinalizerSilentAnchorStaysFragmented(t *testing.T) {
+	q, store, _, _ := audioAwareFamily(t, false)
+	rec := &recordingAssembler{}
+	f := NewParentFinalizer(q, store, rec, nil, "worker", t.TempDir())
+	finalized, _, err := f.Finalize(context.Background(), "parent", 0, 20)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !finalized {
+		t.Fatal("family must finalize")
+	}
+	if len(rec.got) != 1 {
+		t.Fatalf("assembler calls = %d, want 1", len(rec.got))
+	}
+	req := rec.got[0]
+	if req.AudioSourcePath != "" || req.AudioTargetSampleRate != 0 {
+		t.Fatalf("silent family must carry no audio mux request: %+v", req)
+	}
+	if !req.FragmentedMP4 {
+		t.Fatal("a silent parent is assembled as a fragmented MP4")
 	}
 }
