@@ -82,3 +82,51 @@ func TestValidateDecodeReportsTheConfiguredBinary(t *testing.T) {
 		t.Fatalf("error %q does not name the configured binary", err)
 	}
 }
+
+// TestValidateDecodeSampledAcceptsARealArtifact pins the pass direction of the
+// sampled gate on the checked-in fixture: real media passes all three
+// deterministic passes (keyframe traversal, head, tail).
+func TestValidateDecodeSampledAcceptsARealArtifact(t *testing.T) {
+	if _, err := exec.LookPath("ffmpeg"); err != nil {
+		t.Skipf("ffmpeg not installed: %v", err)
+	}
+	path := goldenFixture(t, "background.mp4")
+	if err := ValidateDecodeSampled(context.Background(), path); err != nil {
+		t.Fatalf("a decodable artifact must pass the sampled gate: %v", err)
+	}
+}
+
+// TestValidateDecodeSampledRejectsAnUndecodableFile pins the fail direction:
+// anything that is not media fails the sampled gate, and a missing file fails
+// rather than passing vacuously.
+func TestValidateDecodeSampledRejectsAnUndecodableFile(t *testing.T) {
+	if _, err := exec.LookPath("ffmpeg"); err != nil {
+		t.Skipf("ffmpeg not installed: %v", err)
+	}
+	dir := t.TempDir()
+	notMedia := filepath.Join(dir, "not-media.mp4")
+	if err := os.WriteFile(notMedia, []byte("this is not an MP4"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := ValidateDecodeSampled(context.Background(), notMedia); err == nil {
+		t.Fatal("a file that is not media must fail the sampled decode gate")
+	}
+	if err := ValidateDecodeSampled(context.Background(), filepath.Join(dir, "absent.mp4")); err == nil {
+		t.Fatal("a missing file must fail the sampled decode gate")
+	}
+}
+
+// TestValidateDecodeSampledReportsTheConfiguredBinary pins the same tool seam
+// as the complete decode: the gate resolves its binary through media.Configure
+// and never silently falls back to PATH.
+func TestValidateDecodeSampledReportsTheConfiguredBinary(t *testing.T) {
+	t.Cleanup(func() { Configure(Binaries{}) })
+	Configure(Binaries{FFmpeg: "/nonexistent/ffmpeg-for-test"})
+	err := ValidateDecodeSampled(context.Background(), "whatever.mp4")
+	if err == nil {
+		t.Fatal("a configured-but-absent binary must fail the gate")
+	}
+	if !strings.Contains(err.Error(), "ffmpeg-for-test") {
+		t.Fatalf("error %q does not name the configured binary", err)
+	}
+}

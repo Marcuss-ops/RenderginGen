@@ -100,7 +100,7 @@ func yamlScalar(value string) string {
 // cannot resolve is rejected at load. Silently degrading an unrecognized value to
 // fast would mean an operator who asked for proof ran without it.
 func TestReceiptVerifyMustBeAKnownPolicy(t *testing.T) {
-	for _, value := range []string{"", "fast", "normal", "certify"} {
+	for _, value := range []string{"", "fast", "normal", "sample", "certify"} {
 		doc := minimalConfig + "pipeline:\n  receipt_verify: " + yamlScalar(value) + "\n"
 		if _, err := Load(writeConfig(t, doc)); err != nil {
 			t.Errorf("receipt_verify %q must be accepted: %v", value, err)

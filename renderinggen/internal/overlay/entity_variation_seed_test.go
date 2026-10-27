@@ -51,3 +51,37 @@ func TestEntityVariationSeedResamplesStyles(t *testing.T) {
 		t.Fatal("a variation seed must change at least one entity style choice across 64 items")
 	}
 }
+
+// TestEntityStyleSampleKeyIgnoresRunIdentity pins the retry-idempotence rule:
+// plan ids are per-run, so the sampler must key on the plan's stable creative
+// identity (the producer project) — or every retry re-rolls the "random"
+// entity styles, changing the look of an unchanged video and defeating the
+// content-addressed render cache, whose render keys cover the sampled style.
+func TestEntityStyleSampleKeyIgnoresRunIdentity(t *testing.T) {
+	first := &semanticPlan{PlanID: "run-111", ProjectID: "project-1"}
+	retry := &semanticPlan{PlanID: "run-222", ProjectID: "project-1"}
+	if first.entityStyleSampleKey() != retry.entityStyleSampleKey() {
+		t.Fatalf("the same project must sample identically across runs: %q vs %q",
+			first.entityStyleSampleKey(), retry.entityStyleSampleKey())
+	}
+	other := &semanticPlan{PlanID: "run-333", ProjectID: "project-2"}
+	if first.entityStyleSampleKey() == other.entityStyleSampleKey() {
+		t.Fatal("different projects must sample differently")
+	}
+	// No project: the plan id is the fallback identity (historic behaviour).
+	noProjectA := &semanticPlan{PlanID: "run-111"}
+	noProjectB := &semanticPlan{PlanID: "run-222"}
+	if noProjectA.entityStyleSampleKey() == noProjectB.entityStyleSampleKey() {
+		t.Fatal("without a project, distinct plan ids must still sample differently")
+	}
+	// The explicit re-roll knob keeps working: a seed changes the key, and the
+	// same project+seed samples identically across runs.
+	seededRetry := &semanticPlan{PlanID: "run-222", ProjectID: "project-1", EntityVariationSeed: "roll-1"}
+	if first.entityStyleSampleKey() == seededRetry.entityStyleSampleKey() {
+		t.Fatal("an explicit seed must change the sampling key")
+	}
+	seededRetry2 := &semanticPlan{PlanID: "run-333", ProjectID: "project-1", EntityVariationSeed: "roll-1"}
+	if seededRetry.entityStyleSampleKey() != seededRetry2.entityStyleSampleKey() {
+		t.Fatal("the same project and seed must sample identically across runs")
+	}
+}

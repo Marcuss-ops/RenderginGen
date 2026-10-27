@@ -294,6 +294,45 @@ func TestNormalizeMaterializedImagePathsRejectsRenameCollision(t *testing.T) {
 	}
 }
 
+// TestNormalizeMaterializedImagePathsAdoptsRetryLeftoverRename is the retry
+// half of the rename contract: a job attempt that already produced the
+// normalized target leaves it behind in the shared job workspace, and the next
+// attempt re-materializes the producer's original name beside it. The bytes are
+// content-verified, so the leftover is the same download renamed by an earlier
+// attempt — the pass must adopt it (drop the stale source, record the rename,
+// rewrite the plan) instead of failing the retry with "rename target already
+// exists".
+func TestNormalizeMaterializedImagePathsAdoptsRetryLeftoverRename(t *testing.T) {
+	root := t.TempDir()
+	writeAsset(t, root, "assets/photo.png", imageFixtures[".jpg"])
+	writeAsset(t, root, "assets/photo.jpg", imageFixtures[".jpg"])
+	plan := imagePlan("assets/photo.png")
+
+	renamed, err := normalizeMaterializedImagePaths(root, plan)
+	if err != nil {
+		t.Fatalf("normalize with retry leftover: %v", err)
+	}
+	if got := renamed["assets/photo.jpg"]; got != "assets/photo.png" {
+		t.Fatalf("rename map = %v, want assets/photo.jpg → assets/photo.png", renamed)
+	}
+	if got := plan.Layers[0].Asset; got != "assets/photo.jpg" {
+		t.Fatalf("plan asset = %q, want the adopted path assets/photo.jpg", got)
+	}
+	if paths := assetPaths(t, root); len(paths) != 1 || paths[0] != "assets/photo.jpg" {
+		t.Fatalf("workspace files = %v, want only the adopted assets/photo.jpg", paths)
+	}
+
+	// A second pass over the adopted plan is a no-op: the extension matches
+	// the bytes, so nothing is renamed again.
+	again, err := normalizeMaterializedImagePaths(root, plan)
+	if err != nil {
+		t.Fatalf("re-normalize adopted plan: %v", err)
+	}
+	if len(again) != 0 {
+		t.Fatalf("second pass renamed = %v, want none", again)
+	}
+}
+
 func TestNormalizeMaterializedImagePathsDoesNotLoseEarlierRenameOnLaterFailure(t *testing.T) {
 	root := t.TempDir()
 	writeAsset(t, root, "assets/first.png", imageFixtures[".jpg"])

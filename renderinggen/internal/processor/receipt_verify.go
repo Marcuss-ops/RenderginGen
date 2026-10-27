@@ -4,7 +4,8 @@
 //
 //		enforcement  what the worker demands of the artifact: the receipt gate,
 //	            the identity rule and, under a decode-promising policy, one
-//	            complete decode of the output
+//	            complete decode of the output (or, under the sample tier, a
+//	            sampled decode that escalates to the complete one)
 //		request      the wire tier the worker asks Chronon to run (fast | certify)
 //
 // The split exists so a decode never sits on the GPU lane's critical path.
@@ -15,8 +16,12 @@
 // (enforceDecodableOutput), where it overlaps the next render instead of
 // blocking it. The receipt records what Chronon actually ran
 // (verification.resolved_policy); the worker records what IT ran
-// (worker_decode_verified). Exactly one complete decode happens per artifact:
-// Chronon's when the receipt proves it, the worker's otherwise.
+// (worker_decode_verified, plus worker_decode_sampled/worker_decode_escalated
+// under the sample tier). Exactly one complete decode happens per artifact:
+// Chronon's when the receipt proves it, the worker's otherwise. The sample
+// tier is the explicit budget trade: it never PROMISES a complete decode — it
+// promises a sampled verification that escalates to the complete decode on
+// any doubt, so its verdict is never weaker than the decode it replaced.
 package processor
 
 import (
@@ -38,8 +43,16 @@ type renderVerifyLevel string
 // (queue, reports, an operator's config) sees. Declaring them once there keeps
 // the worker's policy authority and the daemon boundary from drifting apart.
 const (
-	renderVerifyFast    renderVerifyLevel = chronon.ReceiptVerifyFast
-	renderVerifyNormal  renderVerifyLevel = chronon.ReceiptVerifyNormal
+	renderVerifyFast   renderVerifyLevel = chronon.ReceiptVerifyFast
+	renderVerifyNormal renderVerifyLevel = chronon.ReceiptVerifyNormal
+	// renderVerifySample is the budget tier: like normal it promises worker-side
+	// verification of the freshly muxed output, but a SAMPLED decode (three
+	// deterministic passes: whole-bitstream keyframe traversal, head, tail)
+	// instead of a complete reconstruction. A sample failure escalates to the
+	// complete decode before any verdict, so an artifact can only be rejected
+	// by failing the complete decode — never by failing a sample. It is a
+	// worker-only spelling like strict: the wire tier it requests is fast.
+	renderVerifySample  renderVerifyLevel = "sample"
 	renderVerifyCertify renderVerifyLevel = chronon.ReceiptVerifyCertify
 	// renderVerifyStrict is the fail-closed opt-in: like certify it rejects
 	// any unverifiable artifact instead of tolerating it. It exists for
@@ -69,6 +82,8 @@ func (p *Processor) receiptVerifyLevel() renderVerifyLevel {
 	switch p.receiptVerify {
 	case renderVerifyNormal:
 		return renderVerifyNormal
+	case renderVerifySample:
+		return renderVerifySample
 	case renderVerifyCertify:
 		return renderVerifyCertify
 	case renderVerifyStrict:
@@ -91,6 +106,9 @@ func (p *Processor) receiptVerifyLevel() renderVerifyLevel {
 //     in-daemon decode as independent evidence — speed is not the constraint
 //     there, and the worker gate still backstops a receipt that proves no
 //     decode.
+//   - sample requests fast: the sampled verification is worker-owned for the
+//     same reason as normal's complete decode — the render lane must not be
+//     held for a check of an output that is already rendered.
 //   - fast requests fast: no decode is promised anywhere.
 //   - strict requests fast: the wire vocabulary has no strict tier (fast,
 //     normal, certify), and strict is documented as the fail-closed rule
@@ -109,23 +127,37 @@ func (p *Processor) chrononReceiptRequest() string {
 // configuration as every other tool call (media.Configure).
 var validateDecode = media.ValidateDecode
 
+// validateDecodeSampled is the sampled-decode tool behind the sample tier,
+// wrapped in a variable for the same reason: the escalation decision is
+// testable without spawning ffmpeg per case.
+var validateDecodeSampled = media.ValidateDecodeSampled
+
 // enforceDecodableOutput makes good on the decode promise of the enforcement
 // policy, OFF the render lane: it runs in the post pool, inside FinalizeJob,
 // after the render device has already been released to the next job.
 //
-// Exactly one complete decode per artifact. When the receipt PROVES Chronon
-// decoded the output in-daemon (receiptProvesDecode), there is nothing to
-// repeat — the receipt gate above already required that receipt to pass.
-// Otherwise (the fast tier was resolved: under normal that is the expected
-// case, because the worker requested it to keep the lane free) the worker runs
-// the same full-decode gate itself before the bytes can be stored or
-// published. A decode failure rejects the artifact exactly like a failing
-// receipt check: nothing is published from a bitstream that does not decode.
+// Under normal/certify: exactly one complete decode per artifact. When the
+// receipt PROVES Chronon decoded the output in-daemon (receiptProvesDecode),
+// there is nothing to repeat — the receipt gate above already required that
+// receipt to pass. Otherwise (the fast tier was resolved: under normal that is
+// the expected case, because the worker requested it to keep the lane free)
+// the worker runs the same full-decode gate itself before the bytes can be
+// stored or published. A decode failure rejects the artifact exactly like a
+// failing receipt check: nothing is published from a bitstream that does not
+// decode.
+//
+// Under sample: the same placement and the same fail-closed posture, but the
+// worker's own check is the sampled decode (media.ValidateDecodeSampled —
+// three deterministic passes) instead of a complete reconstruction. A sample
+// failure is never a verdict: it escalates to the complete decode, and only
+// that complete decode can reject the artifact. The escalation is recorded
+// (worker_decode_escalated) so the budget spent is visible in the ledger.
 //
 // fast and strict promise no decode at all and never pay for one here.
 func (p *Processor) enforceDecodableOutput(ctx context.Context, outputPath string, receipt chronon.MediaReceipt, receiptErr error, metrics map[string]float64, jobIDParts ...string) error {
-	switch p.receiptVerifyLevel() {
-	case renderVerifyNormal, renderVerifyCertify:
+	policy := p.receiptVerifyLevel()
+	switch policy {
+	case renderVerifySample, renderVerifyNormal, renderVerifyCertify:
 	default:
 		return nil
 	}
@@ -136,20 +168,40 @@ func (p *Processor) enforceDecodableOutput(ctx context.Context, outputPath strin
 	if len(jobIDParts) > 0 {
 		jobID = jobIDParts[0]
 	}
+	decodeUS := float64(0)
+	if policy == renderVerifySample {
+		start := time.Now()
+		sampleErr := validateDecodeSampled(ctx, outputPath)
+		decodeUS += float64(time.Since(start).Microseconds())
+		if sampleErr == nil {
+			if metrics != nil {
+				metrics[metricnames.WorkerDecodeUS] = decodeUS
+				metrics[metricnames.WorkerDecodeMS] = decodeUS / 1000
+				metrics[metricnames.WorkerDecodeSampled] = 1
+				metrics[metricnames.WorkerDecodeVerified] = 1
+			}
+			workerlog.ByJobID(jobID).Infof("post-lane sampled decode gate passed (policy=%s, worker-sampled in %.0fms): no complete decode needed", policy, decodeUS/1000)
+			return nil
+		}
+		if metrics != nil {
+			metrics[metricnames.WorkerDecodeEscalated] = 1
+		}
+		workerlog.ByJobID(jobID).Warnf("post-lane sampled decode failed (policy=%s), escalating to the complete decode: %v", policy, sampleErr)
+	}
 	start := time.Now()
 	err := validateDecode(ctx, outputPath)
-	elapsedUS := float64(time.Since(start).Microseconds())
+	decodeUS += float64(time.Since(start).Microseconds())
 	if metrics != nil {
-		metrics[metricnames.WorkerDecodeUS] = elapsedUS
-		metrics[metricnames.WorkerDecodeMS] = elapsedUS / 1000
+		metrics[metricnames.WorkerDecodeUS] = decodeUS
+		metrics[metricnames.WorkerDecodeMS] = decodeUS / 1000
 	}
 	if err != nil {
-		return fmt.Errorf("processor: full-decode verification failed (policy=%s, worker post-lane gate): %w", p.receiptVerifyLevel(), err)
+		return fmt.Errorf("processor: full-decode verification failed (policy=%s, worker post-lane gate): %w", policy, err)
 	}
 	if metrics != nil {
 		metrics[metricnames.WorkerDecodeVerified] = 1
 	}
-	workerlog.ByJobID(jobID).Infof("post-lane decode gate passed (policy=%s, worker-decoded in %.0fms): the receipt proved no in-daemon decode", p.receiptVerifyLevel(), elapsedUS/1000)
+	workerlog.ByJobID(jobID).Infof("post-lane decode gate passed (policy=%s, worker-decoded in %.0fms): the receipt proved no in-daemon decode", policy, decodeUS/1000)
 	return nil
 }
 

@@ -187,6 +187,17 @@ const (
 	// answerable from the ledger alone.
 	WorkerDecodeVerified = "worker_decode_verified"
 
+	// WorkerDecodeSampled counts an artifact whose sampled decode passes
+	// cleanly (the sample tier's fast path: no complete decode was needed).
+	WorkerDecodeSampled = "worker_decode_sampled"
+
+	// WorkerDecodeEscalated counts an artifact whose sampled decode failed
+	// and was therefore escalated to the complete decode before any verdict.
+	// The complete decode is the verdict: an artifact can only be rejected by
+	// failing it, so this metric tracks the budget spent on escalation, not a
+	// failure.
+	WorkerDecodeEscalated = "worker_decode_escalated"
+
 	// L2CacheCorrupt counts L2 lookups that failed with a permission or I/O
 	// error (EACCES/EIO) or hit a non-regular/truncated entry: a real
 	// degradation, not an ordinary miss. A miss is normal (L3 is the source
@@ -275,8 +286,10 @@ var vocab = map[string]string{
 	CompositionPredictionDivergence: UnitCount, CompositionPredictionUnverifiable: UnitCount,
 	ReceiptIdentityUnverified: UnitCount, ReceiptIdentityMismatch: UnitCount,
 	ReceiptIdentityUnusable: UnitCount, ReceiptSizeMismatch: UnitCount,
-	WorkerDecodeVerified: UnitCount,
-	ImportVerified:       UnitCount, ImportIdentityUS: UnitUS, ImportTotalUS: UnitUS,
+	WorkerDecodeVerified:  UnitCount,
+	WorkerDecodeSampled:   UnitCount,
+	WorkerDecodeEscalated: UnitCount,
+	ImportVerified:        UnitCount, ImportIdentityUS: UnitUS, ImportTotalUS: UnitUS,
 	L2CacheCorrupt: UnitCount,
 
 	OverlayItemCount: UnitCount, OverlayRenderBatch: UnitCount,
