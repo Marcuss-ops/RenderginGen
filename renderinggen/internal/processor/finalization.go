@@ -10,6 +10,7 @@ import (
 
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/chronon"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/drive"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/overlay"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/queue"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/storage"
 )
@@ -177,11 +178,15 @@ func (f *ParentFinalizer) finalize(ctx context.Context, parentID string, start, 
 		}
 	}()
 	// Overlay-artifact contract: a SILENT parent (no child segment carries an
-	// audio stream) is assembled as a fragmented MP4 — bytes final when
-	// appended, streamable/uploadable while the mux is open. A parent that
-	// carries source audio keeps the classic MP4. Audio is never synthesized
-	// here: the canonical final audio enters exactly once at the final master
-	// (Rust `mux_audio_copy`).
+	// audio stream and the anchor plan declares no audio) is assembled as a
+	// fragmented MP4 — bytes final when appended, streamable/uploadable while
+	// the mux is open. A parent that carries source audio keeps the classic
+	// MP4. AUDIO-AWARE ASSEMBLY: the family anchor is the single audio owner —
+	// the source stream is copied exactly once over the concatenated
+	// video-only children, so audio is never synthesized, never duplicated and
+	// never cut at a chunk boundary. The canonical final master audio stays
+	// where it always was: exactly once at the final master (Rust
+	// `mux_audio_copy`).
 	fragmented := true
 	for _, child := range children {
 		if child.Artifact.AudioStreams > 0 {
@@ -189,9 +194,27 @@ func (f *ParentFinalizer) finalize(ctx context.Context, parentID string, start, 
 			break
 		}
 	}
-	if err := f.assembler.Assemble(workCtx, chronon.AssembleRequest{
-		Inputs: inputs, Output: output, FragmentedMP4: fragmented,
-	}); err != nil {
+	audio, err := anchorAudioSource(claimedJob)
+	if err != nil {
+		return false, queue.Artifact{}, err
+	}
+	assembleReq := chronon.AssembleRequest{Inputs: inputs, Output: output, FragmentedMP4: fragmented}
+	if audio.want {
+		if f.store == nil {
+			return false, queue.Artifact{}, fmt.Errorf("parent finalizer: anchor declares source audio but no store is wired to materialise it")
+		}
+		audioPath, _, err := f.store.LocalPath(workCtx, audio.sourceHash)
+		if err != nil {
+			return false, queue.Artifact{}, fmt.Errorf("parent finalizer: anchor audio source: %w", err)
+		}
+		assembleReq.AudioSourcePath = audioPath
+		assembleReq.AudioTargetSampleRate = audio.targetSampleRate
+		// An audio-bearing parent keeps the classic MP4 whatever the children
+		// report: the moov backpatch happens here, and the tail-upload lane
+		// must never stream a file whose header is still open.
+		assembleReq.FragmentedMP4 = false
+	}
+	if err := f.assembler.Assemble(workCtx, assembleReq); err != nil {
 		return false, queue.Artifact{}, err
 	}
 	artifact, err := artifactFromFile(output)
@@ -223,4 +246,54 @@ func (f *ParentFinalizer) finalize(ctx context.Context, parentID string, start, 
 		return false, queue.Artifact{}, err
 	}
 	return true, artifact, nil
+}
+
+// anchorAudio is the family anchor's single source-audio mux request, derived
+// from the anchor's semantic plan document — the FULL mapping the producer
+// submits for the anchor (children carry the video-only mapping).
+type anchorAudio struct {
+	sourceHash       string
+	targetSampleRate int
+	want             bool
+}
+
+// anchorAudioSource is the SINGLE typed authority for the finalizer's audio
+// mux. It reads the anchor plan through overlay.CompileSemantic — the same
+// compiler the render path uses — so the audio policy (Plan.Output.Audio) and
+// the source asset (the layer with id "source", matched against the compile's
+// content-addressed asset list) are interpreted exactly once and exactly the
+// way a single-job render interprets them.
+//
+// Fail-closed: an undecodable plan, an audio declaration with no source
+// layer, or a source layer whose asset is missing from the compile is an
+// error — never a silently silent parent that would break the clip artifact
+// contract. A plan that declares NO audio legitimately returns want=false:
+// the family stays silent and fragmented.
+func anchorAudioSource(job *queue.Job) (anchorAudio, error) {
+	if job == nil || len(job.RenderPlan) == 0 {
+		return anchorAudio{}, nil
+	}
+	result, err := overlay.CompileSemantic(job.RenderPlan)
+	if err != nil {
+		return anchorAudio{}, fmt.Errorf("parent finalizer: compile anchor plan: %w", err)
+	}
+	if result.Plan == nil || result.Plan.Output.Audio == nil || result.Plan.Output.Audio.Mode == "" {
+		return anchorAudio{}, nil
+	}
+	for _, layer := range result.Plan.Layers {
+		if layer.ID != "source" || layer.Source == "" {
+			continue
+		}
+		for _, asset := range result.Assets {
+			if asset.LogicalPath == layer.Source {
+				return anchorAudio{
+					sourceHash:       asset.Hash,
+					targetSampleRate: result.Plan.Output.Audio.SampleRate,
+					want:             true,
+				}, nil
+			}
+		}
+		return anchorAudio{}, fmt.Errorf("parent finalizer: anchor declares source audio but source asset %q is not in the compile asset set", layer.Source)
+	}
+	return anchorAudio{}, fmt.Errorf("parent finalizer: anchor declares source audio but the plan has no source layer to mux from")
 }

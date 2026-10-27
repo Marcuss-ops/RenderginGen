@@ -258,6 +258,20 @@ type AssembleRequest struct {
 	// overlay-artifact contract: bytes final when appended, streamable while
 	// the mux is open). The chunk segments themselves may be classic MP4.
 	FragmentedMP4 bool `json:"fragmented_mp4,omitempty"`
+	// AudioSourcePath optionally muxes the source media's audio stream into
+	// the assembled artifact — AUDIO-AWARE CHUNK ASSEMBLY: the family anchor is
+	// the single audio owner over the concatenated video-only children, so the
+	// source stream is copied exactly once and audio packet boundaries never
+	// meet a window boundary. Semantics mirror RenderRequest.AudioSourcePath
+	// exactly: the whole stream is copied verbatim (no transcode) and rebased
+	// to PTS 0, so the assembled parent is what a single-job render of the
+	// same plan would have produced.
+	AudioSourcePath string `json:"audio_source_path,omitempty"`
+	// AudioTargetSampleRate optionally resamples the OUTPUT audio stream to
+	// the declared rate (0 keeps the source rate verbatim). Mirrors
+	// RenderRequest.AudioTargetSampleRate: a positive value equal to the
+	// source rate stays on the byte-identical copy path.
+	AudioTargetSampleRate int `json:"audio_target_sample_rate,omitempty"`
 }
 
 type Assembler interface {
