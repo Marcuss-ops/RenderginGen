@@ -31,8 +31,10 @@ func presentationMapItem(params map[string]any) semanticItem {
 // certified map presentation contract on map items.
 func TestMapPresentationParamsAreAdmitted(t *testing.T) {
 	item := presentationMapItem(map[string]any{
-		"map_animation":        "pulse_marker",
-		"map_camera_animation": "slow_approach",
+		// ChrononPlugin's native documentary vocabulary is the single source
+		// of truth for this field (maps-renderer-catalog.v1.json).
+		"map_animation":        "thermal_heatmap_overlay",
+		"map_camera_animation": "exponential_dive",
 		"map_label_animation":  "none",
 		"map_backend":          "dynamic",
 		"map_group_strategy":   "multi_pin",
@@ -73,9 +75,13 @@ func TestMapPinTimingEscapingWindowFailsClosed(t *testing.T) {
 func TestMapPresentationParamsFailClosed(t *testing.T) {
 	cases := map[string]map[string]any{
 		"unknown composition": {"map_animation": "radar_lock"},
-		"unknown camera":      {"map_camera_animation": "hyper_spin"},
-		"unknown backend":     {"map_backend": "wgpu"},
-		"unknown strategy":    {"map_group_strategy": "yolo"},
+		// The retired Python renderer's composition families are not native
+		// ChrononPlugin compositions; a stale plan must fail closed by name.
+		"retired python composition":    {"map_animation": "region_zoom"},
+		"retired editorial composition": {"map_animation": "ed_saudi_base"},
+		"unknown camera":                {"map_camera_animation": "hyper_spin"},
+		"unknown backend":               {"map_backend": "wgpu"},
+		"unknown strategy":              {"map_group_strategy": "yolo"},
 		// The Python renderer is retired (TICKET-MAPS-NATIVE-PORT fase 7):
 		// a stale plan may not claim it in new work, or it would compile
 		// against a renderer that no longer exists.
