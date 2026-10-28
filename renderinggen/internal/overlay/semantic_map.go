@@ -163,13 +163,11 @@ func validateMapContract(item semanticItem, kind ItemKind, canvasWidth, canvasHe
 // validates those declarations instead of silently ignoring them, so a
 // composition the renderer cannot draw is a compile error, never a blank map.
 var (
-	certifiedMapCompositions = map[string]bool{
-		"region_zoom": true, "pulse_marker": true, "spotlight": true,
-		"ed_saudi_base": true, "ed_iran_glow": true, "ed_yemen_fill": true,
-		"ed_yemen_markers": true, "ed_hormuz_routes": true, "ed_mocha_tactical": true,
-	}
-	certifiedMapCameraAnimations = map[string]bool{"slow_approach": true}
-	certifiedMapLabelAnimations  = map[string]bool{"none": true}
+	// certifiedMapCompositions / certifiedMapCameraAnimations /
+	// certifiedMapLabelAnimations are projected from the ChrononPlugin
+	// renderer catalog (see maps_renderer_catalog.go); this file does not
+	// redeclare the map vocabulary.
+
 	// certifiedMapBackends: "dynamic" is the native dynamic map renderer of
 	// ChrononPlugin (the single map lane since the Python renderer's
 	// retirement, TICKET-MAPS-NATIVE-PORT fase 7), "native" is the Chronon
