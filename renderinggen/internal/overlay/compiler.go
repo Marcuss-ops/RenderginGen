@@ -557,6 +557,7 @@ type SemanticMapPin struct {
 }
 
 type SemanticMapTextStyle struct {
+	Preset     string                 `json:"preset,omitempty"`
 	FontFamily string                 `json:"font_family,omitempty"`
 	FontSizePX *float64               `json:"font_size_px,omitempty"`
 	Fill       string                 `json:"fill,omitempty"`

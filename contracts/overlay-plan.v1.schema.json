@@ -180,6 +180,27 @@
       "type": "object",
       "additionalProperties": false,
       "properties": {
+        "preset": {
+          "type": "string",
+          "enum": [
+            "saffron_serif",
+            "ice_serif",
+            "coral_sans",
+            "cyan_glow",
+            "mint_sans",
+            "amber_condensed",
+            "fatface_coral",
+            "poppins_placard",
+            "outlined_editorial",
+            "night_cyan",
+            "rose_display",
+            "lime_locator",
+            "slate_minimal",
+            "orange_oswald",
+            "royal_glass"
+          ],
+          "description": "Named preset for geographic pin labels; individual style fields may override preset defaults."
+        },
         "font_family": {
           "enum": [
             "poppins",
@@ -2483,7 +2504,7 @@
                     },
                     "label_style": {
                       "$ref": "#/$defs/map_text_style",
-                      "description": "Optional per-label typography/effects. Omit to retain the map's stable readable default."
+                      "description": "Optional per-label typography/effects or a named geographic tag preset. Use label_style.preset to select one of the 15 shared presets; individual fields may override its defaults. Omit to retain the map's stable readable default."
                     },
                     "label_offset_px": {
                       "type": "array",
