@@ -13,16 +13,9 @@ import (
 func TestChrononPluginMapsCatalogOwnsTheMapVocabulary(t *testing.T) {
 	for _, id := range []string{
 		"route_line",
-		"satellite_dive_lock",
-		"crime_scene_radar",
 		"multi_leg_flight",
-		"territory_polygon_wipe",
-		"cell_tower_triangulation",
-		"thermal_heatmap_overlay",
-		"night_vision_infrared",
-		"missile_arc_ballistic",
-		"great_circle_polar_route",
-		"cinematic_anchor_pitch_tilt",
+		"territory_glow_reveal",
+		"area_glow_pulse",
 	} {
 		if !certifiedMapCompositions[id] {
 			t.Errorf("ChrononPlugin map composition %q is not admitted", id)
@@ -31,6 +24,10 @@ func TestChrononPluginMapsCatalogOwnsTheMapVocabulary(t *testing.T) {
 	for _, retired := range []string{
 		"region_zoom", "pulse_marker", "spotlight",
 		"ed_saudi_base", "ed_iran_glow", "ed_yemen_fill",
+		"satellite_dive_lock", "crime_scene_radar", "territory_polygon_wipe",
+		"cell_tower_triangulation", "thermal_heatmap_overlay",
+		"night_vision_infrared", "missile_arc_ballistic",
+		"great_circle_polar_route", "cinematic_anchor_pitch_tilt",
 	} {
 		if certifiedMapCompositions[retired] {
 			t.Errorf("retired Python map composition %q is still admitted", retired)
