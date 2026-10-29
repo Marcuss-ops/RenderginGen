@@ -310,6 +310,11 @@ func validateMapPin(pin SemanticMapPin, index int, window geo.Window) error {
 }
 
 func validateMapTextStyle(style *SemanticMapTextStyle, index int) error {
+	if style.Preset != "" {
+		if _, ok := geographicTagStylePreset(style.Preset); !ok {
+			return fmt.Errorf("pin[%d] label_style.preset %q is unsupported", index, style.Preset)
+		}
+	}
 	if style.FontFamily != "" {
 		if _, ok := runtimeFontPath(style.FontFamily); !ok {
 			return fmt.Errorf("pin[%d] label_style.font_family %q is unsupported", index, style.FontFamily)

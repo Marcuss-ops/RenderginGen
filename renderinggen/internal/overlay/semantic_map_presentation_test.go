@@ -33,7 +33,7 @@ func TestMapPresentationParamsAreAdmitted(t *testing.T) {
 	item := presentationMapItem(map[string]any{
 		// ChrononPlugin's native documentary vocabulary is the single source
 		// of truth for this field (maps-renderer-catalog.v1.json).
-		"map_animation":        "thermal_heatmap_overlay",
+		"map_animation":        "radar_location_reveal",
 		"map_camera_animation": "exponential_dive",
 		"map_label_animation":  "none",
 		"map_backend":          "dynamic",

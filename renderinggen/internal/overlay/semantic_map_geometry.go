@@ -72,14 +72,15 @@ func mapTypographyScale(canvasW, canvasH int) float64 {
 // mapPinLabelDimensions derives the map-owned box from label content, canvas
 // scale, and optional background padding; it does not choose text appearance.
 func mapPinLabelDimensions(pin SemanticMapPin, canvasW, canvasH int) (float64, float64) {
+	labelStyle := resolveGeographicTagStyle(pin.LabelStyle)
 	fontSize := mapPinLabelFontPX
-	if pin.LabelStyle != nil && pin.LabelStyle.FontSizePX != nil {
-		fontSize = *pin.LabelStyle.FontSizePX
+	if labelStyle != nil && labelStyle.FontSizePX != nil {
+		fontSize = *labelStyle.FontSizePX
 	}
 	scale := mapTypographyScale(canvasW, canvasH)
 	width := math.Max(96*scale, float64(utf8.RuneCountInString(pin.Label))*fontSize*scale*0.68+24*scale)
 	height := math.Max(mapPinLabelHeightPX*scale, fontSize*scale*1.6)
-	if plate := pin.LabelStyle; plate != nil && plate.Background != nil && len(plate.Background.Padding) == 2 {
+	if plate := labelStyle; plate != nil && plate.Background != nil && len(plate.Background.Padding) == 2 {
 		width += 2 * plate.Background.Padding[0] * scale
 		height += 2 * plate.Background.Padding[1] * scale
 	}

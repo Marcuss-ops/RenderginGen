@@ -117,13 +117,14 @@ func compileResolvedMapLayers(ri resolvedItem, src *semanticPlan, registry *asse
 
 func resolveMapPinLabel(ri resolvedItem, src *semanticPlan, resolvedPin resolvedMapPin, duration int64) (Layer, error) {
 	pin := resolvedPin.Contract
+	labelStyle := resolveGeographicTagStyle(pin.LabelStyle)
 	topLeft := resolvedPin.LabelTopLeft
 	width, height := resolvedPin.LabelWidth, resolvedPin.LabelHeight
 	scale := mapTypographyScale(src.Width, src.Height)
 	font := OfficialFontPathForLanguage(src.Language)
 	fontSize, minFontSize, maxFontSize, fill := mapPinLabelFontPX*scale, mapPinLabelMinFontPX*scale, mapPinLabelFontPX*scale, pin.Color
-	if pin.LabelStyle != nil {
-		style := pin.LabelStyle
+	if labelStyle != nil {
+		style := labelStyle
 		if style.FontFamily != "" {
 			font, _ = runtimeFontPath(style.FontFamily)
 		}
@@ -143,24 +144,24 @@ func resolveMapPinLabel(ri resolvedItem, src *semanticPlan, resolvedPin resolved
 	// label_style override its own font/effects below. Geometry remains owned by
 	// this map compiler and cannot be displaced by run-level position params.
 	styleParams = mergeSemanticParams(ri.Params, styleParams)
-	if pin.LabelStyle != nil {
-		if pin.LabelStyle.FontFamily != "" {
-			styleParams["font_family"] = pin.LabelStyle.FontFamily
+	if labelStyle != nil {
+		if labelStyle.FontFamily != "" {
+			styleParams["font_family"] = labelStyle.FontFamily
 		}
-		if pin.LabelStyle.FontSizePX != nil {
-			styleParams["font_size_px"] = *pin.LabelStyle.FontSizePX * scale
+		if labelStyle.FontSizePX != nil {
+			styleParams["font_size_px"] = *labelStyle.FontSizePX * scale
 		}
 	}
 	captionStyle := &LayerStyle{Font: font}
 	roleOverrides := &LayerStyle{}
-	if pin.LabelStyle != nil {
-		if pin.LabelStyle.FontSizePX != nil {
+	if labelStyle != nil {
+		if labelStyle.FontSizePX != nil {
 			styleParams["font_size_px"] = fontSize
 		}
-		roleOverrides.Stroke = cloneLayerStyleStroke(pin.LabelStyle.Stroke)
-		roleOverrides.Shadow = cloneLayerStyleShadow(pin.LabelStyle.Shadow)
-		roleOverrides.Glow = cloneLayerStyleGlow(pin.LabelStyle.Glow)
-		roleOverrides.Background = cloneLayerBackground(pin.LabelStyle.Background)
+		roleOverrides.Stroke = cloneLayerStyleStroke(labelStyle.Stroke)
+		roleOverrides.Shadow = cloneLayerStyleShadow(labelStyle.Shadow)
+		roleOverrides.Glow = cloneLayerStyleGlow(labelStyle.Glow)
+		roleOverrides.Background = cloneLayerBackground(labelStyle.Background)
 	}
 	spec := resolvedTextSpec{
 		Text: pin.Label, Size: []float64{width, height}, OmitBox: true,
