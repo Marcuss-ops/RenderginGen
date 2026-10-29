@@ -3,12 +3,19 @@ package main
 
 import (
 	"context"
+	"crypto/hmac"
+	"crypto/sha256"
 	"crypto/subtle"
+	"crypto/tls"
+	"encoding/hex"
 	"flag"
+	"fmt"
 	"log"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
 	"strings"
 	"syscall"
 	"time"
@@ -29,6 +36,39 @@ func authMiddleware(token string, next http.Handler) http.Handler {
 		if len(auth) > len(prefix) && strings.HasPrefix(auth, prefix) &&
 			subtle.ConstantTimeCompare([]byte(auth[len(prefix):]), []byte(token)) == 1 {
 			next.ServeHTTP(w, r)
+			return
+		}
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+	})
+}
+
+// publicReadMiddleware permits time-limited, content-addressed GETs for
+// workers. Uploads, staging, health and HEAD still require the private bearer
+// token. The signature is HMAC-SHA256("GET\\n/<path>\\n<expires>") so the
+// URL grants access to exactly one immutable object and method.
+func publicReadMiddleware(token, signingSecret string, next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		auth := r.Header.Get("Authorization")
+		const prefix = "Bearer "
+		if token != "" && len(auth) > len(prefix) && strings.HasPrefix(auth, prefix) &&
+			subtle.ConstantTimeCompare([]byte(auth[len(prefix):]), []byte(token)) == 1 {
+			next.ServeHTTP(w, r)
+			return
+		}
+		if r.Method == http.MethodGet && strings.HasPrefix(r.URL.Path, "/objects/") && signingSecret != "" {
+			expiresRaw := r.URL.Query().Get("expires")
+			expires, err := strconv.ParseInt(expiresRaw, 10, 64)
+			sig, decodeErr := hex.DecodeString(r.URL.Query().Get("sig"))
+			if err == nil && decodeErr == nil && expires >= time.Now().Unix() && expires <= time.Now().Add(30*24*time.Hour).Unix() {
+				message := fmt.Sprintf("GET\n%s\n%d", r.URL.Path, expires)
+				mac := hmac.New(sha256.New, []byte(signingSecret))
+				_, _ = mac.Write([]byte(message))
+				if hmac.Equal(sig, mac.Sum(nil)) {
+					next.ServeHTTP(w, r)
+					return
+				}
+			}
+			http.Error(w, "invalid or expired signed object URL", http.StatusUnauthorized)
 			return
 		}
 		http.Error(w, "unauthorized", http.StatusUnauthorized)
@@ -93,11 +133,56 @@ func main() {
 	srv := server.New(st)
 	srv.SetBuildInfo(buildinfo.Current)
 	var handler http.Handler = srv.Handler()
-	if token := os.Getenv("OBJECTSTORE_TOKEN"); token != "" {
-		handler = authMiddleware(token, handler)
-		log.Printf("object store auth: enabled (OBJECTSTORE_TOKEN)")
+	token := os.Getenv("OBJECTSTORE_TOKEN")
+	signingSecret := os.Getenv("OBJECTSTORE_SIGNING_SECRET")
+	if signingSecret != "" && len(signingSecret) < 32 {
+		log.Fatal("OBJECTSTORE_SIGNING_SECRET must contain at least 32 characters")
+	}
+	if signingSecret != "" && token == "" {
+		log.Fatal("OBJECTSTORE_TOKEN is required when signed public reads are enabled")
+	}
+	if token != "" || signingSecret != "" {
+		handler = publicReadMiddleware(token, signingSecret, handler)
+		if token != "" {
+			log.Printf("object store private API auth: enabled (OBJECTSTORE_TOKEN)")
+		} else {
+			log.Printf("object store private API auth: disabled (set OBJECTSTORE_TOKEN)")
+		}
+		if signingSecret != "" {
+			log.Printf("object store signed public GET: enabled (OBJECTSTORE_SIGNING_SECRET)")
+		} else {
+			log.Printf("object store signed public GET: disabled (set OBJECTSTORE_SIGNING_SECRET)")
+		}
 	} else {
-		log.Printf("object store auth: disabled (set OBJECTSTORE_TOKEN to require a bearer token)")
+		log.Printf("object store auth: disabled (local/dev posture)")
+	}
+	var secureServer *http.Server
+	var secureListener net.Listener
+	if tlsAddr := strings.TrimSpace(os.Getenv("OBJECTSTORE_TLS_ADDR")); tlsAddr != "" {
+		certFile := strings.TrimSpace(os.Getenv("OBJECTSTORE_TLS_CERT_FILE"))
+		keyFile := strings.TrimSpace(os.Getenv("OBJECTSTORE_TLS_KEY_FILE"))
+		if certFile == "" || keyFile == "" {
+			log.Fatal("OBJECTSTORE_TLS_ADDR requires OBJECTSTORE_TLS_CERT_FILE and OBJECTSTORE_TLS_KEY_FILE")
+		}
+		certificate, err := tls.LoadX509KeyPair(certFile, keyFile)
+		if err != nil {
+			log.Fatalf("load object store TLS certificate: %v", err)
+		}
+		secureListener, err = net.Listen("tcp", tlsAddr)
+		if err != nil {
+			log.Fatalf("listen for object store HTTPS on %s: %v", tlsAddr, err)
+		}
+		secureServer = &http.Server{
+			Addr: tlsAddr, Handler: handler, ReadHeaderTimeout: 10 * time.Second,
+			ReadTimeout: 10 * time.Minute, WriteTimeout: 10 * time.Minute, IdleTimeout: 120 * time.Second,
+			TLSConfig: &tls.Config{Certificates: []tls.Certificate{certificate}, MinVersion: tls.VersionTLS12},
+		}
+		go func() {
+			log.Printf("object store HTTPS listening on %s", tlsAddr)
+			if err := secureServer.Serve(tls.NewListener(secureListener, secureServer.TLSConfig)); err != nil && err != http.ErrServerClosed {
+				log.Printf("object store HTTPS listener: %v", err)
+			}
+		}()
 	}
 
 	shutdownTimeout := 25 * time.Second
@@ -126,6 +211,11 @@ func main() {
 		log.Printf("object store shutting down: draining in-flight PUT/GET")
 		shutdownCtx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
 		defer cancel()
+		if secureServer != nil {
+			if err := secureServer.Shutdown(shutdownCtx); err != nil {
+				log.Fatalf("object store HTTPS shutdown: %v", err)
+			}
+		}
 		if err := server.Shutdown(shutdownCtx); err != nil {
 			log.Fatalf("object store shutdown: %v", err)
 		}

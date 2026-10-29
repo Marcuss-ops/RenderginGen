@@ -1,0 +1,12 @@
+services:
+  objectstore:
+    ports:
+      - "0.0.0.0:443:9443"
+    env_file:
+      - /etc/pipelinegen/objectstore.env
+    environment:
+      OBJECTSTORE_TLS_ADDR: ":9443"
+      OBJECTSTORE_TLS_CERT_FILE: /etc/letsencrypt/live/77.93.152.122/fullchain.pem
+      OBJECTSTORE_TLS_KEY_FILE: /etc/letsencrypt/live/77.93.152.122/privkey.pem
+    volumes:
+      - /etc/letsencrypt:/etc/letsencrypt:ro
