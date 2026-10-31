@@ -65,8 +65,14 @@ func compileEntityCard(ri resolvedItem, src *semanticPlan, registry *assetRegist
 		default:
 			return nil, fmt.Errorf("overlay: entity style %q has unsupported image side %q", style.Name, style.ImageSide)
 		}
-		ri.Params["position_x"] = x
-		ri.Params["position_y"] = 0.0
+		// Entity style supplies the default editorial column, while an explicit
+		// producer position (for example to clear a concurrent date card) wins.
+		if _, explicit := numericValue(ri.Params["position_x"]); !explicit {
+			ri.Params["position_x"] = x
+		}
+		if _, explicit := numericValue(ri.Params["position_y"]); !explicit {
+			ri.Params["position_y"] = 0.0
+		}
 	}
 	if ri.Item.MotionID == "" && ri.ImagePreset.ID != "" {
 		ri.Item.MotionID = runtimeDefaultImageMotionID(src, ri.Item.ID)
