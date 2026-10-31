@@ -66,6 +66,24 @@ func TestEntityImageStyleRandomCompilesAndKeepsCaption(t *testing.T) {
 	}
 }
 
+func TestEntityImageStylePreservesExplicitProducerPosition(t *testing.T) {
+	raw := styledEntityImagePlan(t, "entity-image-explicit-position", "01_entity_pitch_lift_text_below")
+	plan := strings.Replace(string(raw), `"entity_style_id":"01_entity_pitch_lift_text_below"`, `"entity_style_id":"01_entity_pitch_lift_text_below","params":{"position_x":-720,"position_y":0}`, 1)
+	result, err := CompileSemantic([]byte(plan))
+	if err != nil {
+		t.Fatalf("CompileSemantic with explicit entity position: %v", err)
+	}
+	for _, layer := range result.Plan.Layers {
+		if layer.Type == "image" {
+			if len(layer.Position) < 2 || layer.Position[0] != -720 || layer.Position[1] != 0 {
+				t.Fatalf("explicit producer position was overridden by entity style: %v", layer.Position)
+			}
+			return
+		}
+	}
+	t.Fatal("styled entity plan emitted no portrait image")
+}
+
 func TestEntityImageStyleRandomReachesAll25AppleSpatialStyles(t *testing.T) {
 	seen := map[string]struct{}{}
 	for i := 0; i < 256; i++ {
