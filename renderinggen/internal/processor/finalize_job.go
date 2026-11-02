@@ -39,8 +39,15 @@ const (
 // ffprobe per job (~250 ms measured) is pure waste on the hot path. The fallback
 // is not dead code — it is what keeps the worker correct for a renderer that did
 // not write a receipt — but it must never be the normal path.
+//
+// A canonical media block is not sufficient by itself: a packed scene composite
+// reports frame_count=-1 because its frames are addressed through manifest
+// windows, and -1 is not a count. The artifact's frame count is the fact the
+// downstream window certificate needs, so a receipt that omits it is treated
+// like a receipt that cannot describe the media and the bytes are probed ONCE.
+// Normal renders still take the receipt path, unchanged.
 func probeFactsForFinalize(ctx context.Context, receipt chronon.MediaReceipt, receiptErr error, outputPath string) (media.ProbeResult, probeSource, error) {
-	if receiptErr == nil && receipt.HasCanonicalMedia() {
+	if receiptErr == nil && receipt.HasCanonicalMedia() && receipt.Media.FrameCount > 0 {
 		return probeResultFromReceipt(receipt), probeSourceReceipt, nil
 	}
 	probed, err := media.ProbeFile(ctx, outputPath)

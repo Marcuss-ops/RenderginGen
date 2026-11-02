@@ -275,3 +275,105 @@ func TestUnknownProfileFailsClosed(t *testing.T) {
 		t.Fatal("expected unknown profile error")
 	}
 }
+
+// overlayVideoOnlyProbe is the measured ffprobe fact set of the final job's
+// opaque overlay artifact (`b1486eecefc5f09c…`, r64/r65, 1607 frames,
+// 66,958333 s, inspected 2026-11-02). Every field is a fact copied from the
+// artifact, not an assumption: the test that consumes it is what makes the
+// profile a certificate instead of a claim.
+func overlayVideoOnlyProbe() ProbeResult {
+	return ProbeResult{
+		Container:          "mov,mp4,m4a,3gp,3g2,mj2",
+		DurationUS:         66_958_333,
+		Width:              1920,
+		Height:             1080,
+		FPSNum:             24,
+		FPSDen:             1,
+		PixelFormat:        "yuv420p",
+		VideoCodec:         "h264",
+		CodecProfile:       "High",
+		VideoLevel:         "4.0",
+		FrameCount:         1607,
+		FirstFrameKeyframe: true,
+		HasVideo:           true,
+		VideoStreams:       1,
+		SARNum:             1,
+		SARDen:             1,
+		ColorRange:         "tv",
+		ColorSpace:         "bt709",
+		// The encoder tags the transfer as sRGB; V1 declares bt709. The
+		// overlay profile must not pin either value (see overlayVideoOnlyProfile).
+		ColorTransfer:    "iec61966-2-1",
+		ColorPrimaries:   "bt709",
+		StartPTS:         0,
+		KeyframeInterval: 48,
+		ClosedGOP:        true,
+		HasAudio:         false,
+		AudioStreams:     0,
+	}
+}
+
+// TestOverlayVideoOnlyProfileCertifiesTheMeasuredArtifact pins both halves of
+// the decision: the video-only profile accepts the real video-only artifact,
+// and V1 still refuses it (V1 requires one audio stream), so the two profiles
+// cannot collapse into one permissive gate.
+func TestOverlayVideoOnlyProfileCertifiesTheMeasuredArtifact(t *testing.T) {
+	profile, err := ResolveProfile(ProfileVeloxOverlayVideoOnlyV1)
+	if err != nil {
+		t.Fatalf("overlay profile must be registered: %v", err)
+	}
+	if !profile.RequireNoAudio || profile.AudioStreams != 0 {
+		t.Fatalf("the overlay profile must require a silent artifact: %+v", profile)
+	}
+	if profile.VideoLevel != "4.0" || profile.KeyframeInterval != 48 || !profile.RequireClosedGOP {
+		t.Fatalf("video-only profile lost the copy facts: %+v", profile)
+	}
+	if err := profile.ValidateProbe(overlayVideoOnlyProbe()); err != nil {
+		t.Fatalf("the measured overlay artifact must be certified: %v", err)
+	}
+
+	assembly, err := ResolveProfile(ProfileVeloxAssemblyReadyV1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := assembly.ValidateProbe(overlayVideoOnlyProbe()); err == nil {
+		t.Fatal("V1 must keep refusing a video-only artifact: assigning it would be a false certificate")
+	}
+}
+
+// TestOverlayVideoOnlyProfileFailsClosedOnAudioAndCopyDrift keeps the profile
+// honest about the facts it does claim: an audio track, a different GOP or a
+// non-zero start PTS is not this artifact's contract.
+func TestOverlayVideoOnlyProfileFailsClosedOnAudioAndCopyDrift(t *testing.T) {
+	profile, err := ResolveProfile(ProfileVeloxOverlayVideoOnlyV1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	cases := map[string]func(*ProbeResult){
+		"audio stream":  func(probe *ProbeResult) { probe.AudioStreams = 1; probe.HasAudio = true },
+		"open GOP":      func(probe *ProbeResult) { probe.ClosedGOP = false },
+		"GOP drift":     func(probe *ProbeResult) { probe.KeyframeInterval = 60 },
+		"start PTS":     func(probe *ProbeResult) { probe.StartPTS = 1 },
+		"colour space":  func(probe *ProbeResult) { probe.ColorSpace = "bt601" },
+		"level":         func(probe *ProbeResult) { probe.VideoLevel = "4.1" },
+		"frame count 0": func(probe *ProbeResult) { probe.FrameCount = 0 },
+	}
+	for name, mutate := range cases {
+		probe := overlayVideoOnlyProbe()
+		mutate(&probe)
+		if err := profile.ValidateProbe(probe); err == nil {
+			t.Fatalf("%s drift must be refused", name)
+		}
+	}
+
+	// Colour transfer stays UNPINNED on purpose: the measured artifact reports
+	// the sRGB tag in a bt709 pipeline, and pinning either value would encode a
+	// decision nobody made.
+	for _, transfer := range []string{"bt709", "iec61966-2-1", ""} {
+		probe := overlayVideoOnlyProbe()
+		probe.ColorTransfer = transfer
+		if err := profile.ValidateProbe(probe); err != nil {
+			t.Fatalf("colour transfer %q must stay unpinned: %v", transfer, err)
+		}
+	}
+}
