@@ -198,8 +198,9 @@ func assemblyReadyProfile() OutputProfile {
 // SAR 1:1, tv/bt709, 34 keyframes at GOP 48, first packet IDR at pts 0,
 // one video stream and ZERO audio streams.
 //
-// Two dimensions the assembly-ready profile pins are deliberately NOT pinned
-// here, because pinning either would be a false certificate for this artifact:
+// Three dimensions the assembly-ready profile pins are deliberately NOT pinned
+// here, because pinning any of them would make the certificate unsatisfiable or
+// false:
 //
 //   - colour transfer: the artifact reports `iec61966-2-1` (the sRGB transfer
 //     tag the encoder attaches), while V1 declares bt709. Both are real; the
@@ -207,6 +208,16 @@ func assemblyReadyProfile() OutputProfile {
 //     primaries (measured tv/bt709/bt709) and leaves transfer unpinned.
 //   - video timebase: the muxer emits 1/12288; the consumer accepts it and
 //     remuxes, so the producer does not pin it (same rule as V1).
+//   - closed GOP: the cadence rule needs at least three keyframes (two full GOP
+//     intervals) to prove anything, and the fused batch set is 72–306 frames
+//     (3,0–12,75 s, measured on r80/r82); its two shortest windows (72 and 84
+//     frames) carry a single interval. Requiring the proof made the profile
+//     reject real, correct batches at finalize (`closed GOP not certified`,
+//     r79). The consumer's census derives
+//     closed GOP from the artifact's own packet table and remains the copy gate,
+//     so the producer certifies only what every artifact can prove: the first
+//     frame is IDR and, WHEN a cadence is observable, it is exactly 48 frames.
+//     A short artifact therefore has no cadence claim, not a false one.
 //
 // Audio: this is the whole point of the profile — RequireNoAudio and
 // AudioStreams: 0, with no audio codec/sample-rate pins, because there is no
@@ -223,7 +234,6 @@ func overlayVideoOnlyProfile() OutputProfile {
 		Container:           "mp4",
 		RequireNoAudio:      true,
 		RequireKeyframe:     true,
-		RequireClosedGOP:    true,
 		KeyframeInterval:    48,
 		SARNum:              1,
 		SARDen:              1,
