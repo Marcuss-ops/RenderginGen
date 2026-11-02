@@ -99,6 +99,16 @@ const (
 	// Failing closed is the intended state — accepting 4.0 for a V2 plan would
 	// advertise a contract nobody verified.
 	ProfileVeloxAssemblyReadyV2 = "VELOX_ASSEMBLY_READY_V2"
+	// ProfileVeloxOverlayVideoOnlyV1 is the certification profile for the
+	// opaque overlay compositions the final job renders (a packed manifest
+	// timeline or a source composition): H.264 High 4.0, 1920x1080@24,
+	// yuv420p, closed GOP 48, first frame IDR, start PTS 0 — and NO audio.
+	//
+	// It exists because VELOX_ASSEMBLY_READY_V1 pins AudioStreams: 1, so
+	// declaring V1 on a video-only artifact would be a certificate nobody
+	// can honour. The overlay artifact is not an assembly-ready clip; it is
+	// a certified input to the assembler, and it says so.
+	ProfileVeloxOverlayVideoOnlyV1 = "VELOX_OVERLAY_VIDEO_ONLY_V1"
 	// ProfileVeloxH2641080p30V1 is the certified copy-ready profile id. It is
 	// owned by the wire contract (queue/client) because the artifact's
 	// profile_id is what downstream assemblers select on; this registry aliases
@@ -181,7 +191,58 @@ func assemblyReadyProfile() OutputProfile {
 	}
 }
 
+// overlayVideoOnlyProfile returns the measured stream identity of the final
+// job's opaque overlay artifact (packed manifest timeline). Provenance:
+// `b1486eecefc5f09c…` (r64/r65, 1607 frames, 66,958333 s) inspected with
+// ffprobe on 2026-11-02: h264 High 4.0 1920x1080 yuv420p 24 fps, has_b_frames=0,
+// SAR 1:1, tv/bt709, 34 keyframes at GOP 48, first packet IDR at pts 0,
+// one video stream and ZERO audio streams.
+//
+// Two dimensions the assembly-ready profile pins are deliberately NOT pinned
+// here, because pinning either would be a false certificate for this artifact:
+//
+//   - colour transfer: the artifact reports `iec61966-2-1` (the sRGB transfer
+//     tag the encoder attaches), while V1 declares bt709. Both are real; the
+//     renderer does not own that tag today, so this profile pins range/space/
+//     primaries (measured tv/bt709/bt709) and leaves transfer unpinned.
+//   - video timebase: the muxer emits 1/12288; the consumer accepts it and
+//     remuxes, so the producer does not pin it (same rule as V1).
+//
+// Audio: this is the whole point of the profile — RequireNoAudio and
+// AudioStreams: 0, with no audio codec/sample-rate pins, because there is no
+// audio track to describe.
+func overlayVideoOnlyProfile() OutputProfile {
+	return OutputProfile{
+		Width:               1920,
+		Height:              1080,
+		FPSNum:              24,
+		FPSDen:              1,
+		Codec:               "h264",
+		CodecProfile:        "High",
+		PixelFormat:         "yuv420p",
+		Container:           "mp4",
+		RequireNoAudio:      true,
+		RequireKeyframe:     true,
+		RequireClosedGOP:    true,
+		KeyframeInterval:    48,
+		SARNum:              1,
+		SARDen:              1,
+		ColorRange:          "tv",
+		ColorSpace:          "bt709",
+		ColorPrimaries:      "bt709",
+		RequireStartPTSZero: true,
+		VideoStreams:        1,
+		AudioStreams:        0,
+	}
+}
+
 var profiles = map[string]OutputProfile{
+	ProfileVeloxOverlayVideoOnlyV1: func() OutputProfile {
+		p := overlayVideoOnlyProfile()
+		p.ID = ProfileVeloxOverlayVideoOnlyV1
+		p.VideoLevel = "4.0"
+		return p
+	}(),
 	ProfileVeloxAssemblyReadyV1: func() OutputProfile {
 		p := assemblyReadyProfile()
 		p.ID = ProfileVeloxAssemblyReadyV1

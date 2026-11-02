@@ -36,6 +36,28 @@ func TestProbeFactsPreferTheCanonicalReceipt(t *testing.T) {
 	}
 }
 
+// TestProbeFactsProbeLocallyWhenReceiptOmitsFrameCount pins the exception to the
+// receipt preference: a canonical media block whose frame_count is -1 (a packed
+// scene composite) does not answer the question the window certificate asks.
+// The worker must inspect the bytes once instead of publishing an unknown count.
+// The missing file proves the local branch was actually taken.
+func TestProbeFactsProbeLocallyWhenReceiptOmitsFrameCount(t *testing.T) {
+	missing := filepath.Join(t.TempDir(), "packed-composite.mp4")
+	receipt := canonicalReceipt()
+	receipt.Media.FrameCount = -1
+
+	_, source, err := probeFactsForFinalize(context.Background(), receipt, nil, missing)
+	if source != probeSourceLocalProbe {
+		t.Fatalf("probe source = %q, want %q for an unknown frame count", source, probeSourceLocalProbe)
+	}
+	if err == nil {
+		t.Fatal("an unknown receipt frame count must trigger a local probe; a missing file must fail")
+	}
+	if !strings.Contains(err.Error(), "ffprobe") {
+		t.Fatalf("error = %v, want an ffprobe failure", err)
+	}
+}
+
 // TestProbeFactsFallBackToALocalProbe pins the other half: the fallback is real
 // and it is the ONLY path that inspects the artifact (the audit/debug route), so
 // a renderer that stops writing receipts cannot silently produce uncertified
