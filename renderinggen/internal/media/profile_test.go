@@ -325,8 +325,14 @@ func TestOverlayVideoOnlyProfileCertifiesTheMeasuredArtifact(t *testing.T) {
 	if !profile.RequireNoAudio || profile.AudioStreams != 0 {
 		t.Fatalf("the overlay profile must require a silent artifact: %+v", profile)
 	}
-	if profile.VideoLevel != "4.0" || profile.KeyframeInterval != 48 || !profile.RequireClosedGOP {
+	if profile.VideoLevel != "4.0" || profile.KeyframeInterval != 48 {
 		t.Fatalf("video-only profile lost the copy facts: %+v", profile)
+	}
+	// Closed GOP is certified by the CONSUMER's census, which sees the whole
+	// artifact's packet table. The producer cannot require it: see
+	// TestOverlayVideoOnlyProfileCertifiesShortBatchWindows.
+	if profile.RequireClosedGOP {
+		t.Fatalf("the overlay profile must not require a closed-GOP proof: short batches cannot provide one: %+v", profile)
 	}
 	if err := profile.ValidateProbe(overlayVideoOnlyProbe()); err != nil {
 		t.Fatalf("the measured overlay artifact must be certified: %v", err)
@@ -351,7 +357,6 @@ func TestOverlayVideoOnlyProfileFailsClosedOnAudioAndCopyDrift(t *testing.T) {
 	}
 	cases := map[string]func(*ProbeResult){
 		"audio stream":  func(probe *ProbeResult) { probe.AudioStreams = 1; probe.HasAudio = true },
-		"open GOP":      func(probe *ProbeResult) { probe.ClosedGOP = false },
 		"GOP drift":     func(probe *ProbeResult) { probe.KeyframeInterval = 60 },
 		"start PTS":     func(probe *ProbeResult) { probe.StartPTS = 1 },
 		"colour space":  func(probe *ProbeResult) { probe.ColorSpace = "bt601" },
@@ -375,5 +380,53 @@ func TestOverlayVideoOnlyProfileFailsClosedOnAudioAndCopyDrift(t *testing.T) {
 		if err := profile.ValidateProbe(probe); err != nil {
 			t.Fatalf("colour transfer %q must stay unpinned: %v", transfer, err)
 		}
+	}
+
+	// Closed GOP stays UNPINNED on purpose: the proof needs two full cadence
+	// intervals, and a fused batch window can be shorter than one. An open-GOP
+	// probe that still shows the 48-frame cadence is therefore certified here —
+	// the consumer census, not the producer, refuses to copy it.
+	open := overlayVideoOnlyProbe()
+	open.ClosedGOP = false
+	open.ClosedGOPUncertifiable = true
+	if err := profile.ValidateProbe(open); err != nil {
+		t.Fatalf("closed GOP must stay unpinned at finalize: %v", err)
+	}
+}
+
+// TestOverlayVideoOnlyProfileCertifiesShortBatchWindows is the regression test
+// for the r79 failure (`closed GOP not certified`). The batch set of the r78
+// payload is made of windows from 0.54 s to 8 s (13 to 192 frames; measured
+// from the batch manifests), so most artifacts carry at most two keyframes and
+// CANNOT prove a cadence. Requiring the proof at finalize rejected real,
+// correct batches. The profile must certify them and still fail closed on the
+// facts a short window can prove (first frame IDR, start PTS, geometry, audio,
+// and an observable cadence drift).
+func TestOverlayVideoOnlyProfileCertifiesShortBatchWindows(t *testing.T) {
+	profile, err := ResolveProfile(ProfileVeloxOverlayVideoOnlyV1)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	short := overlayVideoOnlyProbe()
+	short.DurationUS = 791_666 // 19 frames at 24 fps
+	short.FrameCount = 19
+	short.KeyframeInterval = 0 // no cadence observable in a single GOP
+	short.ClosedGOP = false
+	short.ClosedGOPUncertifiable = true
+	if err := profile.ValidateProbe(short); err != nil {
+		t.Fatalf("a short batch window must certify: %v", err)
+	}
+
+	notIDR := short
+	notIDR.FirstFrameKeyframe = false
+	if err := profile.ValidateProbe(notIDR); err == nil {
+		t.Fatal("a short window whose first frame is not IDR must be refused")
+	}
+
+	drifted := short
+	drifted.KeyframeInterval = 60
+	if err := profile.ValidateProbe(drifted); err == nil {
+		t.Fatal("an observable cadence drift must still be refused")
 	}
 }
