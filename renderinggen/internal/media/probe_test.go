@@ -2,6 +2,8 @@ package media
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -68,6 +70,22 @@ func TestProbeFileKeyframeSurvivesASecondStream(t *testing.T) {
 	}
 	if !result.FirstFrameKeyframe {
 		t.Fatal("a second (audio) stream must not change the video stream's first-frame verdict")
+	}
+}
+
+// TestHashFFprobeExtradataHashesDecodedBytes pins the identity shared with the
+// Go producer and the Rust assembler: ffprobe's offset-prefixed, ASCII-annotated
+// hex dump must be decoded before hashing. Hashing the text would make every
+// correct input fail the avcC gate.
+func TestHashFFprobeExtradataHashesDecodedBytes(t *testing.T) {
+	dump := "\n00000000: 0164 0028  .d.(\n"
+	sum := sha256.Sum256([]byte{0x01, 0x64, 0x00, 0x28})
+	want := hex.EncodeToString(sum[:])
+	if got := hashFFprobeExtradata(dump); got != want {
+		t.Fatalf("extradata hash = %q, want %q", got, want)
+	}
+	if got := hashFFprobeExtradata(""); got != "" {
+		t.Fatalf("empty dump hash = %q, want empty", got)
 	}
 }
 

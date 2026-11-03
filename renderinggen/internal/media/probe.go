@@ -5,6 +5,8 @@ package media
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -93,6 +95,10 @@ type ProbeResult struct {
 	// VideoLevel is the H.264/H.265 level as a dotted string ("4.1"), derived
 	// from ffprobe's integer level field. Empty when ffprobe did not report it.
 	VideoLevel string
+	// CodecConfigSHA256 fingerprints the exact AVCDecoderConfigurationRecord
+	// (SPS/PPS) that packet-copy muxing carries between MP4 segments. Empty means
+	// ffprobe did not expose extradata, which cannot satisfy a profile that pins it.
+	CodecConfigSHA256 string
 	// VideoTimeBaseNum/Den and AudioTimeBaseNum/Den are the exact stream
 	// timebases (ffprobe time_base), compared by cross-multiplication.
 	VideoTimeBaseNum int
@@ -160,6 +166,7 @@ type ffprobeDocument struct {
 		Rate              string `json:"r_frame_rate"`
 		Profile           string `json:"profile"`
 		Level             int    `json:"level"`
+		Extradata         string `json:"extradata"`
 		NbFrames          string `json:"nb_frames"`
 		TimeBase          string `json:"time_base"`
 		SampleAspectRatio string `json:"sample_aspect_ratio"`
@@ -229,7 +236,7 @@ func probeFile(ctx context.Context, path string, knownFrameCount int) (ProbeResu
 	cmd := exec.CommandContext(ctx, ffprobeBinary(), "-v", "error",
 		"-show_streams", "-show_format",
 		"-read_intervals", "%+#1", "-show_entries", "frame=key_frame,stream_index",
-		"-of", "json", path)
+		"-show_data", "-of", "json", path)
 	out, err := cmd.Output()
 	if err != nil {
 		return ProbeResult{}, fmt.Errorf("ffprobe %s: %w", path, err)
@@ -274,6 +281,7 @@ func probeFile(ctx context.Context, path string, knownFrameCount int) (ProbeResu
 		result.VideoCodec = stream.CodecName
 		result.CodecProfile = stream.Profile
 		result.VideoLevel = levelString(stream.Level)
+		result.CodecConfigSHA256 = hashFFprobeExtradata(stream.Extradata)
 		if n, err := strconv.Atoi(stream.NbFrames); err == nil {
 			result.FrameCount = n
 		}
@@ -383,4 +391,40 @@ func levelString(level int) string {
 		return ""
 	}
 	return strconv.Itoa(level/10) + "." + strconv.Itoa(level%10)
+}
+
+// hashFFprobeExtradata decodes ffprobe's offset-prefixed hex dump and hashes
+// the exact avcC bytes (including SPS/PPS). The printable ASCII column is
+// excluded. A missing or malformed dump returns empty and cannot satisfy a
+// profile that pins the codec configuration.
+func hashFFprobeExtradata(dump string) string {
+	if strings.TrimSpace(dump) == "" {
+		return ""
+	}
+	var raw []byte
+	for _, line := range strings.Split(dump, "\n") {
+		_, payload, ok := strings.Cut(line, ":")
+		if !ok {
+			continue
+		}
+		payload = strings.TrimLeft(payload, " ")
+		if ascii := strings.Index(payload, "  "); ascii >= 0 {
+			payload = payload[:ascii]
+		}
+		for _, word := range strings.Fields(payload) {
+			if len(word) != 2 && len(word) != 4 {
+				return ""
+			}
+			decoded, err := hex.DecodeString(word)
+			if err != nil {
+				return ""
+			}
+			raw = append(raw, decoded...)
+		}
+	}
+	if len(raw) == 0 {
+		return ""
+	}
+	sum := sha256.Sum256(raw)
+	return hex.EncodeToString(sum[:])
 }

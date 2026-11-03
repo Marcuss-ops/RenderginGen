@@ -106,6 +106,7 @@ func canonicalReceipt() chronon.MediaReceipt {
 	receipt.Media.HasVideo = true
 	receipt.Media.Container = "mp4"
 	receipt.Media.VideoCodec = "h264"
+	receipt.Media.CodecProfile = "High"
 	receipt.Media.PixelFormat = "yuv420p"
 	receipt.Media.Width = 1920
 	receipt.Media.Height = 1080

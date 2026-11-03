@@ -144,6 +144,7 @@ func assemblyProbe() ProbeResult {
 		PixelFormat:        "yuv420p",
 		VideoCodec:         "h264",
 		CodecProfile:       "High",
+		CodecConfigSHA256:  "7201ce80a2b2b32a0c1a89501851099f267c1767d59ff799db744f72032aae5a",
 		VideoLevel:         "4.0",
 		FrameCount:         120,
 		FirstFrameKeyframe: true,

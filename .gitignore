@@ -134,3 +134,6 @@ __pycache__/
 
 # Local P4 verification logs (2026-10-27): operator scratch, never source.
 renderinggen/.p4-*.log
+
+# Local benchmark binary (2026-11-03): build artifact, not source.
+renderinggen/chunk-overlap-bench
