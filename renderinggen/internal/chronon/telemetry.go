@@ -1,6 +1,7 @@
 package chronon
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -123,6 +124,51 @@ func BoundTimingSidecar(data []byte) (json.RawMessage, error) {
 	if _, ok := bounded["job"]; !ok {
 		return nil, fmt.Errorf("chronon timing sidecar: %s document carries no job section", header.Schema)
 	}
+	// New P0 sidecars explicitly identify the evaluator. Older artifacts have
+	// no evaluation_mode and remain readable for historical job ingestion.
+	var contract struct {
+		Job struct {
+			EvaluationMode json.RawMessage            `json:"evaluation_mode"`
+			CPU            map[string]json.RawMessage `json:"cpu_breakdown"`
+		} `json:"job"`
+	}
+	if err := json.Unmarshal(data, &contract); err != nil {
+		return nil, fmt.Errorf("chronon timing sidecar: decode evaluation contract: %w", err)
+	}
+	if len(contract.Job.EvaluationMode) > 0 {
+		var mode string
+		if bytes.Equal(bytes.TrimSpace(contract.Job.EvaluationMode), []byte("null")) ||
+			json.Unmarshal(contract.Job.EvaluationMode, &mode) != nil || mode == "" {
+			return nil, fmt.Errorf("chronon timing sidecar: evaluation_mode must be a non-empty string")
+		}
+		timeline := contract.Job.CPU["timeline_eval_ms"]
+		programSample := contract.Job.CPU["program_sample_ms"]
+		switch mode {
+		case "compiled_program":
+			if len(timeline) > 0 && !bytes.Equal(bytes.TrimSpace(timeline), []byte("null")) {
+				return nil, fmt.Errorf("chronon timing sidecar: compiled_program must not report timeline_eval_ms")
+			}
+			var sampleMS float64
+			if len(programSample) == 0 || bytes.Equal(bytes.TrimSpace(programSample), []byte("null")) ||
+				json.Unmarshal(programSample, &sampleMS) != nil {
+				return nil, fmt.Errorf("chronon timing sidecar: compiled_program requires program_sample_ms")
+			}
+		case "compiled_composition":
+			var value float64
+			if len(timeline) == 0 || bytes.Equal(bytes.TrimSpace(timeline), []byte("null")) || json.Unmarshal(timeline, &value) != nil {
+				return nil, fmt.Errorf("chronon timing sidecar: compiled_composition requires numeric timeline_eval_ms")
+			}
+		case "direct_yuv":
+			if len(timeline) > 0 && !bytes.Equal(bytes.TrimSpace(timeline), []byte("null")) {
+				return nil, fmt.Errorf("chronon timing sidecar: direct_yuv must not report timeline_eval_ms")
+			}
+			if len(programSample) > 0 && !bytes.Equal(bytes.TrimSpace(programSample), []byte("null")) {
+				return nil, fmt.Errorf("chronon timing sidecar: direct_yuv must not report program_sample_ms")
+			}
+		default:
+			return nil, fmt.Errorf("chronon timing sidecar: unsupported evaluation_mode %q", mode)
+		}
+	}
 	out, err := json.Marshal(bounded)
 	if err != nil {
 		return nil, fmt.Errorf("chronon timing sidecar: bound sections: %w", err)
@@ -241,6 +287,10 @@ func TelemetryMetrics(raw json.RawMessage) map[string]float64 {
 		"output_finalize_ms", "validation_ms", "ffprobe_ms", "sha256_ms",
 		"sidecar_report_ms"} {
 		project("chronon_job_"+key, "job", key)
+	}
+	project("chronon_job_cpu_program_sample_ms", "job", "cpu_breakdown", "program_sample_ms")
+	for _, key := range []string{"scene_materialize_ms", "scene_materialize_count", "scene_materialize_cache_hits"} {
+		project("chronon_job_prepare_"+key, "job", "prepare", key)
 	}
 	// GPU counters / waits (zero-copy + native gates consume these names).
 	for _, key := range []string{"software_fallback_nodes", "cpu_readback_frames",
