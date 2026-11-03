@@ -33,8 +33,8 @@ func TestGoldenSemanticOverlayJobV1Compiles(t *testing.T) {
 		t.Fatalf("compile semantic golden: %v", err)
 	}
 	compiled, assets := result.Plan, result.Assets
-	if compiled == nil || compiled.Schema != "chronon.render-plan.v2" {
-		t.Fatalf("golden must lower to a concrete v2 plan, got %+v", compiled)
+	if compiled == nil || compiled.Schema != "chronon.render-plan.v3" {
+		t.Fatalf("golden must lower to a concrete v3 plan, got %+v", compiled)
 	}
 	if len(assets) != 1 {
 		t.Fatalf("compiled assets = %d, want 1 (background)", len(assets))
@@ -66,7 +66,7 @@ func TestGoldenSemanticOverlayJobV1Compiles(t *testing.T) {
 	if err := json.Unmarshal(compiledBytes, &concrete); err != nil {
 		t.Fatalf("decode compiled plan: %v", err)
 	}
-	if concrete.Schema != "chronon.render-plan.v2" || concrete.Version != 2 {
+	if concrete.Schema != "chronon.render-plan.v3" || concrete.Version != 3 {
 		t.Fatalf("compiled plan = %s/%d", concrete.Schema, concrete.Version)
 	}
 	if concrete.Canvas.DurationFrames != 150 {
@@ -89,7 +89,7 @@ func TestGoldenSemanticOverlayJobV1Compiles(t *testing.T) {
 // capturingRenderer wraps the real Chronon client so the test can inspect the
 // compiled plan.json the worker wrote before delegating to chronon3d_cli. It
 // proves the semantic golden really goes through CompileSemantic: the plan
-// handed to the renderer must be the concrete chronon.render-plan.v2, never
+// handed to the renderer must be the concrete chronon.render-plan.v3, never
 // the PipelineGen overlay-plan.v1.
 type capturingRenderer struct {
 	chronon.Renderer

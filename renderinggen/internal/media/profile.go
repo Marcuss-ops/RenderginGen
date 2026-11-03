@@ -30,6 +30,10 @@ type OutputProfile struct {
 	// CodecProfile is the CANONICAL profile value declared by the VeloxEditing
 	// assembly contract this profile mirrors, in ffprobe casing ("High").
 	CodecProfile string
+	// CodecConfigSHA256 pins the exact AVCDecoderConfigurationRecord
+	// (SPS/PPS) when this artifact will be joined to other packet-copied MP4s.
+	// Empty leaves the codec parameter-set family unpinned.
+	CodecConfigSHA256 string
 	// AcceptedCodecProfiles is intentionally empty for assembly-ready output.
 	// Every newly produced asset must have the same codec profile as the
 	// canonical assembly contract; accepting Main alongside High made overlays
@@ -109,6 +113,12 @@ const (
 	// can honour. The overlay artifact is not an assembly-ready clip; it is
 	// a certified input to the assembler, and it says so.
 	ProfileVeloxOverlayVideoOnlyV1 = "VELOX_OVERLAY_VIDEO_ONLY_V1"
+	// V2 is the new overlay SOURCE lane. It deliberately does not pin the
+	// avcC: the final-job fragment producer re-encodes any source whose
+	// parameter sets are not canonical. V1 remains registered for old
+	// artifacts, but new renders use V2 so cached V1 bytes cannot be reused
+	// under the new lane.
+	ProfileVeloxOverlayVideoOnlyV2 = "VELOX_OVERLAY_VIDEO_ONLY_V2"
 	// ProfileVeloxH2641080p30V1 is the certified copy-ready profile id. It is
 	// owned by the wire contract (queue/client) because the artifact's
 	// profile_id is what downstream assemblers select on; this registry aliases
@@ -164,12 +174,16 @@ const (
 // those three are properties of the renderer rather than of the source.
 func assemblyReadyProfile() OutputProfile {
 	return OutputProfile{
-		Width:               1920,
-		Height:              1080,
-		FPSNum:              24,
-		FPSDen:              1,
-		Codec:               "h264",
-		CodecProfile:        "High",
+		Width:        1920,
+		Height:       1080,
+		FPSNum:       24,
+		FPSDen:       1,
+		Codec:        "h264",
+		CodecProfile: "High",
+		// The exact avcC (SPS/PPS) identity of the canonical assembly lane.
+		// A High 4.0 profile with a different SPS/PPS is not packet-copy
+		// compatible: concat -c copy writes only the first segment's avcC.
+		CodecConfigSHA256:   "7201ce80a2b2b32a0c1a89501851099f267c1767d59ff799db744f72032aae5a",
 		PixelFormat:         "yuv420p",
 		Container:           "mp4",
 		RequireNoAudio:      false,
@@ -253,6 +267,18 @@ var profiles = map[string]OutputProfile{
 		p.VideoLevel = "4.0"
 		return p
 	}(),
+	ProfileVeloxOverlayVideoOnlyV2: func() OutputProfile {
+		p := overlayVideoOnlyProfile()
+		p.ID = ProfileVeloxOverlayVideoOnlyV2
+		p.VideoLevel = "4.0"
+		// This profile certifies the overlay SOURCE artifact, not an assembly
+		// segment. It deliberately leaves CodecConfigSHA256 unpinned: the
+		// fragment producer re-encodes any source whose avcC is not canonical,
+		// and the copy/assembly gates compare the actual bytes. Pinning a
+		// source hash here would reject every overlay the renderer legitimately
+		// produces with a different encoder session.
+		return p
+	}(),
 	ProfileVeloxAssemblyReadyV1: func() OutputProfile {
 		p := assemblyReadyProfile()
 		p.ID = ProfileVeloxAssemblyReadyV1
@@ -324,6 +350,9 @@ func (p OutputProfile) ValidateProbe(probe ProbeResult) error {
 	}
 	if p.VideoLevel != "" && probe.VideoLevel != "" && probe.VideoLevel != p.VideoLevel {
 		return fmt.Errorf("profile %s: video level %q, want %q", p.ID, probe.VideoLevel, p.VideoLevel)
+	}
+	if p.CodecConfigSHA256 != "" && probe.CodecConfigSHA256 != p.CodecConfigSHA256 {
+		return fmt.Errorf("profile %s: SPS/PPS fingerprint %q, want %q", p.ID, probe.CodecConfigSHA256, p.CodecConfigSHA256)
 	}
 	if p.RequireNoAudio && probe.AudioStreams != 0 {
 		return fmt.Errorf("profile %s: audio streams=%d, want 0", p.ID, probe.AudioStreams)

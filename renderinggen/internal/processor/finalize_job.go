@@ -40,14 +40,13 @@ const (
 // is not dead code — it is what keeps the worker correct for a renderer that did
 // not write a receipt — but it must never be the normal path.
 //
-// A canonical media block is not sufficient by itself: a packed scene composite
-// reports frame_count=-1 because its frames are addressed through manifest
-// windows, and -1 is not a count. The artifact's frame count is the fact the
-// downstream window certificate needs, so a receipt that omits it is treated
-// like a receipt that cannot describe the media and the bytes are probed ONCE.
-// Normal renders still take the receipt path, unchanged.
+// A canonical media block is not sufficient by itself: packed composites can
+// omit their frame count, and older/native encoder paths can omit codec_profile
+// while still reporting dimensions. A required structural fact missing from
+// the receipt makes it incomplete; probe the bytes once rather than treating an
+// empty receipt field as a media property and rejecting a valid artifact.
 func probeFactsForFinalize(ctx context.Context, receipt chronon.MediaReceipt, receiptErr error, outputPath string) (media.ProbeResult, probeSource, error) {
-	if receiptErr == nil && receipt.HasCanonicalMedia() && receipt.Media.FrameCount > 0 {
+	if receiptErr == nil && receipt.HasCanonicalMedia() && receipt.Media.FrameCount > 0 && receipt.Media.CodecProfile != "" {
 		return probeResultFromReceipt(receipt), probeSourceReceipt, nil
 	}
 	probed, err := media.ProbeFile(ctx, outputPath)
@@ -120,6 +119,21 @@ func probeResultFromReceipt(r chronon.MediaReceipt) media.ProbeResult {
 	}
 }
 
+// ensureCodecConfigProbe fills the one fact a receipt cannot carry when the
+// selected profile pins the avcC. The receipt path is still preferred for
+// every other dimension; only this exact identity pays one local ffprobe.
+func ensureCodecConfigProbe(ctx context.Context, path string, probe *media.ProbeResult, profile media.OutputProfile) error {
+	if profile.CodecConfigSHA256 == "" || probe.CodecConfigSHA256 != "" {
+		return nil
+	}
+	reprobed, err := media.ProbeFile(ctx, path)
+	if err != nil {
+		return err
+	}
+	*probe = reprobed
+	return nil
+}
+
 // requiresStructuralProbe decides which finalized jobs are structurally probed.
 // overlay.render jobs are probed because their media contract is validated from
 // the probe; jobs carrying a profile_id because the output profile is validated
@@ -187,6 +201,9 @@ func (p *Processor) FinalizeJob(ctx context.Context, prepared *PreparedJob) (art
 			profile, err := media.ResolveProfile(metadata.ProfileID)
 			if err != nil {
 				return queue.Artifact{}, fmt.Errorf("processor: output profile: %w", err)
+			}
+			if err := ensureCodecConfigProbe(ctx, outputPath, &probed, profile); err != nil {
+				return queue.Artifact{}, fmt.Errorf("processor: avcC probe: %w", err)
 			}
 			if err := profile.ValidateProbe(probed); err != nil {
 				return queue.Artifact{}, fmt.Errorf("processor: output profile certification: %w", err)

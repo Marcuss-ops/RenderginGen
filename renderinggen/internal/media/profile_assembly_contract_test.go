@@ -13,9 +13,10 @@ package media
 // silently (the historical state: RenderingGen said "Main", the contract said
 // "high", and nothing noticed).
 //
-// Like the other cross-repo boundary contracts in this module, the test SKIPS
-// when the workspace siblings are absent (a standalone RenderingGen checkout):
-// a skip is visible, a false pass is not.
+// Like the other cross-repo boundary contracts in this module, the test FAILS
+// when the workspace siblings are absent. A standalone RenderingGen checkout
+// must opt out explicitly with VELOX_ALLOW_STANDALONE_CONTRACT=1: a silent
+// skip would let the two contracts drift with a green suite.
 
 import (
 	"os"
@@ -231,6 +232,24 @@ func TestAssemblyReadyProfilesMirrorVeloxContract(t *testing.T) {
 			}
 			if got, want := profile.VideoLevel, contractString(t, contract, "VideoLevel"); got != want {
 				t.Errorf("VideoLevel = %q, contract declares %q", got, want)
+			}
+			canonicalSource, err := os.ReadFile(filepath.Join(root, "refactored", "internal", "kernel", "media", "assembly_contract.go"))
+			if err != nil {
+				// This is the cross-repo avcC gate, not an optional fixture: a
+				// silent skip lets RenderingGen diverge from the refactored SSOT
+				// with a green suite. A standalone checkout must opt out
+				// explicitly.
+				if os.Getenv("VELOX_ALLOW_STANDALONE_CONTRACT") == "1" {
+					t.Skipf("standalone checkout: VeloxEditing assembly contract not readable: %v", err)
+				}
+				t.Fatalf("VeloxEditing assembly contract not readable: %v (set VELOX_ALLOW_STANDALONE_CONTRACT=1 only for a standalone checkout)", err)
+			}
+			canonicalHash := regexp.MustCompile(`CanonicalVideoExtradataSHA256\s*=\s*"([0-9a-f]{64})"`).FindSubmatch(canonicalSource)
+			if canonicalHash == nil {
+				t.Fatal("assembly contract does not declare CanonicalVideoExtradataSHA256")
+			}
+			if profile.CodecConfigSHA256 != string(canonicalHash[1]) {
+				t.Errorf("CodecConfigSHA256 = %q, contract declares %q", profile.CodecConfigSHA256, canonicalHash[1])
 			}
 			if got, want := profile.KeyframeInterval, contractInt(t, contract, "KeyframeInterval"); got != want {
 				t.Errorf("KeyframeInterval = %d, contract declares %d", got, want)

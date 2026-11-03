@@ -339,6 +339,9 @@ func (p *Processor) verifySegmentOutput(ctx context.Context, jobID, itemID strin
 		if err != nil {
 			return SegmentArtifact{}, err
 		}
+		if err := ensureCodecConfigProbe(ctx, segment.OutputPath, &probed, profile); err != nil {
+			return SegmentArtifact{}, fmt.Errorf("processor: segment avcC probe: %w", err)
+		}
 		if err := profile.ValidateProbe(probed); err != nil {
 			return SegmentArtifact{}, fmt.Errorf("processor: segment profile certification: %w", err)
 		}

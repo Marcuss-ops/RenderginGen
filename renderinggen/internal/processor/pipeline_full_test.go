@@ -277,7 +277,7 @@ func TestProcessExecutesSemanticOverlayPlan(t *testing.T) {
 	}
 
 	// plan.json is the CONCRETE Chronon plan, never the semantic contract.
-	if string(capturedPlan) == "" || !strings.Contains(string(capturedPlan), `"schema":"chronon.render-plan.v2"`) {
+	if string(capturedPlan) == "" || !strings.Contains(string(capturedPlan), `"schema":"chronon.render-plan.v3"`) {
 		t.Fatalf("plan.json is not the compiled concrete plan: %s", capturedPlan)
 	}
 	if strings.Contains(string(capturedPlan), "renderinggen.overlay-plan.v1") {
