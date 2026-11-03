@@ -212,7 +212,11 @@ func compileResolvedText(layerID string, start, end int64, spec resolvedTextSpec
 	if strings.TrimSpace(spec.Text) == "" {
 		return Layer{}, fmt.Errorf("overlay: text spec %q requires text (PipelineGen owns the displayed text)", layerID)
 	}
-	layer := Layer{ID: layerID, Type: "text", Text: spec.Text, StartFrame: start, DurationFrames: end - start}
+	// Timeline typography is authored in canvas/screen coordinates. Keep it in
+	// the same screen-space compositing domain as the overlay background so a
+	// scene camera cannot project it behind the opaque background plate.
+	layer := Layer{ID: layerID, Type: "text", Text: spec.Text, StartFrame: start,
+		DurationFrames: end - start, ScreenSpace: true}
 	if spec.Style != nil {
 		seeded := *spec.Style
 		layer.Style = &seeded

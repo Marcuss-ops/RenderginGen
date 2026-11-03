@@ -2,6 +2,7 @@ package processor
 
 import (
 	"context"
+	"fmt"
 	"os/exec"
 	"path/filepath"
 	"strconv"
@@ -273,6 +274,61 @@ func TestFinalizeSegmentsPreservesLaterSiblingsAfterRetryFailure(t *testing.T) {
 	}
 	if _, err := store.Get(context.Background(), before); err != nil {
 		t.Fatalf("later valid sibling was not checkpointed: %v", err)
+	}
+}
+
+// TestFinalizeSegmentsKeepsPlanOrderUnderConcurrency pins the pool's contract:
+// independent segments are verified and published at once, but the receipt is
+// still assembled in plan order, every segment keeps its own content address,
+// and the per-segment metric gauges (collected on a lane-private map) land in
+// the job's metrics map.
+func TestFinalizeSegmentsKeepsPlanOrderUnderConcurrency(t *testing.T) {
+	if _, err := exec.LookPath("ffmpeg"); err != nil {
+		t.Skipf("ffmpeg not available: %v", err)
+	}
+	if _, err := exec.LookPath("ffprobe"); err != nil {
+		t.Skipf("ffprobe not available: %v", err)
+	}
+	proc, store, renderer := newProcessor(t)
+	dir := t.TempDir()
+	const count = 6
+	segments := make([]chronon.OutputSegment, 0, count)
+	itemIDs := make([]string, 0, count)
+	for i := 0; i < count; i++ {
+		path := segmentOutputPath(dir, i)
+		writeSegmentMP4(t, path, 8)
+		segments = append(segments, chronon.OutputSegment{OutputPath: path, StartFrame: int64(i * 8), EndFrame: int64((i + 1) * 8)})
+		itemIDs = append(itemIDs, fmt.Sprintf("item-%02d", i))
+	}
+	prepared := &PreparedJob{
+		Job:            &queue.Job{ID: "parallel-segments"},
+		Metrics:        map[string]float64{},
+		Segments:       segments,
+		SegmentItemIDs: itemIDs,
+	}
+	entries, err := proc.finalizeSegments(context.Background(), prepared)
+	if err != nil {
+		t.Fatalf("finalize segments: %v", err)
+	}
+	if len(entries) != count {
+		t.Fatalf("entries = %d, want %d", len(entries), count)
+	}
+	if renderer.calls != 0 {
+		t.Fatalf("verified segments must not re-render, got %d renders", renderer.calls)
+	}
+	for i, entry := range entries {
+		if entry.ItemID != itemIDs[i] {
+			t.Fatalf("entry %d = %q, want the plan order %q", i, entry.ItemID, itemIDs[i])
+		}
+		if entry.OutputPath != segments[i].OutputPath {
+			t.Fatalf("entry %d path = %q, want %q", i, entry.OutputPath, segments[i].OutputPath)
+		}
+		if _, err := store.Get(context.Background(), entry.SHA256); err != nil {
+			t.Fatalf("segment %d not published under its own address: %v", i, err)
+		}
+	}
+	if len(prepared.Metrics) == 0 {
+		t.Fatal("per-segment verification metrics were not merged into the job metrics")
 	}
 }
 
