@@ -24,6 +24,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sync"
 
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/chronon"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/hashio"
@@ -109,14 +110,33 @@ type SegmentArtifact struct {
 // structural probe + decoded-frame count against its declared window),
 // re-render ONLY a failed segment once (idempotent single-segment retry — the
 // other segments and the session outputs are never touched), and store every
-// verified segment under its own content address.
+// verified segment under its own content address. The independent segments run
+// on a bounded pool; the receipt is still assembled in plan order.
 //
 // The returned entries become the batch artifact's per-segment facts
 // (OutputFacts.BatchSegments — "receipt per batch + voci per segmento"). The
 // batch's own fused clip (the session's mirror output) keeps flowing through
 // the ordinary single-artifact path untouched.
+// segmentVerifyConcurrency bounds how many segments are verified and published
+// at once. Verification shells out to ffprobe/ffmpeg and publication uploads,
+// so this is a resource bound on a host that also has to keep rendering: the
+// pool shortens the post-render tail of a large batch without letting one batch
+// monopolise the box. Plan order is NOT a property of the pool — entries are
+// assembled at their plan index below.
+const segmentVerifyConcurrency = 4
+
+// segmentOutcome is one segment's verdict kept at its plan index, so the pool
+// may finish out of order without reordering the batch receipt.
+type segmentOutcome struct {
+	entry   SegmentArtifact
+	metrics map[string]float64
+	// err is a segment verdict (its own failure, after its one retry).
+	err error
+	// fatal is a batch-level failure: a store error or a cancelled context.
+	fatal error
+}
+
 func (p *Processor) finalizeSegments(ctx context.Context, prepared *PreparedJob) ([]SegmentArtifact, error) {
-	job := prepared.Job
 	metrics := prepared.Metrics
 	segments := prepared.Segments
 	itemIDs := prepared.SegmentItemIDs
@@ -131,40 +151,99 @@ func (p *Processor) finalizeSegments(ctx context.Context, prepared *PreparedJob)
 		}
 		seen[id] = true
 	}
+
+	metadata := planMetadataOf(prepared.Plan)
+	outcomes := make([]segmentOutcome, len(segments))
+	// Re-renders stay one at a time: the renderer is a single execution domain,
+	// so a retry must never turn a batch into N concurrent render requests. The
+	// verification around it is independent per segment and runs on the pool.
+	var retryMu sync.Mutex
+	workers := len(segments)
+	if workers > segmentVerifyConcurrency {
+		workers = segmentVerifyConcurrency
+	}
+	work := make(chan int)
+	var wg sync.WaitGroup
+	for lane := 0; lane < workers; lane++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for index := range work {
+				outcomes[index] = p.finalizeSegment(ctx, prepared, index, metadata, &retryMu)
+			}
+		}()
+	}
+	for index := range segments {
+		work <- index
+	}
+	close(work)
+	wg.Wait()
+
 	entries := make([]SegmentArtifact, 0, len(segments))
 	var failures []error
-	for i, segment := range segments {
-		itemID := itemIDs[i]
-		entry, err := p.verifySegmentOutput(ctx, job.ID, itemID, segment, metrics, planMetadataOf(prepared.Plan))
-		if err != nil {
-			// Idempotent per-segment retry: one failed segment must not
-			// invalidate the batch or the segments that already verified.
-			if ctx.Err() != nil {
-				return entries, ctx.Err()
+	// Assemble in plan order, whatever order the workers finished in.
+	for _, outcome := range outcomes {
+		if metrics != nil {
+			for name, value := range outcome.metrics {
+				metrics[name] = value
 			}
-			workerlog.ByJobID(job.ID).Warnf("segment %d (%s) failed verification (%v); re-rendering only this segment", i, itemID, err)
-			if retryErr := p.retrySegment(ctx, prepared, segment); retryErr != nil {
-				failures = append(failures, fmt.Errorf("processor: segment %d (%s) failed verification (%v) and its single-segment retry failed: %w", i, itemID, err, retryErr))
-				continue
-			}
-			entry, err = p.verifySegmentOutput(ctx, job.ID, itemID, segment, metrics, planMetadataOf(prepared.Plan))
-			if err != nil {
-				failures = append(failures, fmt.Errorf("processor: segment %d (%s) still fails verification after its single-segment retry: %w", i, itemID, err))
-				continue
-			}
-			entry.Retried = true
 		}
-		// Independent identity: every segment is stored under its own content
-		// address, exactly like the single-output path stores its artifact.
-		if err := p.storeSegment(ctx, job.ID, entry); err != nil {
-			return nil, err
+		if outcome.fatal != nil {
+			// A store failure or a cancelled context is the batch's own error,
+			// not a segment verdict: it keeps the sequential loop's semantics.
+			if ctx.Err() != nil || errors.Is(outcome.fatal, context.Canceled) || errors.Is(outcome.fatal, context.DeadlineExceeded) {
+				return entries, outcome.fatal
+			}
+			return nil, outcome.fatal
 		}
-		entries = append(entries, entry)
+		if outcome.err != nil {
+			failures = append(failures, outcome.err)
+			continue
+		}
+		entries = append(entries, outcome.entry)
 	}
 	// Preserve every valid sibling in the content store even when one item
 	// exhausts its retry. The batch still fails closed; partial success is
 	// never advertised as a complete artifact.
 	return entries, errors.Join(failures...)
+}
+
+// finalizeSegment runs the per-segment cycle for ONE plan index: verify, retry
+// once (serialized), re-verify and publish under its own content address. Every
+// segment owns its metric map, because verification writes gauges into it and
+// two lanes must never share one map.
+func (p *Processor) finalizeSegment(ctx context.Context, prepared *PreparedJob, index int, metadata planMetadata, retryMu *sync.Mutex) segmentOutcome {
+	jobID := prepared.Job.ID
+	segment := prepared.Segments[index]
+	itemID := prepared.SegmentItemIDs[index]
+	metrics := make(map[string]float64)
+
+	entry, err := p.verifySegmentOutput(ctx, jobID, itemID, segment, metrics, metadata)
+	if err != nil {
+		// Idempotent per-segment retry: one failed segment must not invalidate
+		// the batch or the segments that already verified.
+		if ctxErr := ctx.Err(); ctxErr != nil {
+			return segmentOutcome{metrics: metrics, fatal: ctxErr}
+		}
+		workerlog.ByJobID(jobID).Warnf("segment %d (%s) failed verification (%v); re-rendering only this segment", index, itemID, err)
+		retryMu.Lock()
+		retryErr := p.retrySegment(ctx, prepared, segment)
+		retryMu.Unlock()
+		if retryErr != nil {
+			return segmentOutcome{metrics: metrics, err: fmt.Errorf("processor: segment %d (%s) failed verification (%v) and its single-segment retry failed: %w", index, itemID, err, retryErr)}
+		}
+		entry, err = p.verifySegmentOutput(ctx, jobID, itemID, segment, metrics, metadata)
+		if err != nil {
+			return segmentOutcome{metrics: metrics, err: fmt.Errorf("processor: segment %d (%s) still fails verification after its single-segment retry: %w", index, itemID, err)}
+		}
+		entry.Retried = true
+	}
+	// Independent identity: every segment is stored under its own content
+	// address, exactly like the single-output path stores its artifact.
+	if err := p.storeSegment(ctx, jobID, entry); err != nil {
+		return segmentOutcome{metrics: metrics, fatal: err}
+	}
+	return segmentOutcome{entry: entry, metrics: metrics}
 }
 
 // batchSegmentFacts projects the worker's verified segment entries onto the
