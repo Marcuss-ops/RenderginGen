@@ -133,6 +133,46 @@ func TestReadTimingSidecarTelemetryRejectsForeignSchemas(t *testing.T) {
 // measured phases onto the chronon_receipt_* metric namespace, omitting the
 // decode phase that Chronon skips under the default fast policy (null = not
 // measured) so reports never see a fabricated decode measurement.
+func TestBoundTimingSidecarEvaluationContract(t *testing.T) {
+	tests := []struct {
+		name    string
+		job     string
+		wantErr bool
+	}{
+		{"compiled program", `{"evaluation_mode":"compiled_program","cpu_breakdown":{"timeline_eval_ms":null,"program_sample_ms":1.2}}`, false},
+		{"compiled composition", `{"evaluation_mode":"compiled_composition","cpu_breakdown":{"timeline_eval_ms":4.2}}`, false},
+		{"direct yuv", `{"evaluation_mode":"direct_yuv","cpu_breakdown":{"timeline_eval_ms":null,"program_sample_ms":null}}`, false},
+		{"program rejects timeline number", `{"evaluation_mode":"compiled_program","cpu_breakdown":{"timeline_eval_ms":0,"program_sample_ms":1}}`, true},
+		{"program requires sample", `{"evaluation_mode":"compiled_program","cpu_breakdown":{"timeline_eval_ms":null}}`, true},
+		{"composition requires timeline", `{"evaluation_mode":"compiled_composition","cpu_breakdown":{"timeline_eval_ms":null}}`, true},
+		{"legacy accepted", `{}`, false},
+		{"new mode cannot be null", `{"evaluation_mode":null}`, true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			body := `{"schema":"chronon3d.frame-timing.v3","job":` + tt.job + `}`
+			_, err := BoundTimingSidecar([]byte(body))
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("BoundTimingSidecar error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestTelemetryMetricsProjectsEvaluationCosts(t *testing.T) {
+	metrics := TelemetryMetrics(json.RawMessage(`{"job":{"cpu_breakdown":{"program_sample_ms":2.5},"prepare":{"scene_materialize_ms":3.5,"scene_materialize_count":4,"scene_materialize_cache_hits":5}}}`))
+	for key, want := range map[string]float64{
+		"chronon_job_cpu_program_sample_ms":                2.5,
+		"chronon_job_prepare_scene_materialize_ms":         3.5,
+		"chronon_job_prepare_scene_materialize_count":      4,
+		"chronon_job_prepare_scene_materialize_cache_hits": 5,
+	} {
+		if got := metrics[key]; got != want {
+			t.Errorf("%s = %v, want %v", key, got, want)
+		}
+	}
+}
+
 func TestReadMediaReceiptTiming(t *testing.T) {
 	dir := t.TempDir()
 	output := filepath.Join(dir, "out.mp4")
