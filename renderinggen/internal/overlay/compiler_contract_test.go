@@ -130,9 +130,7 @@ func TestCompileSemanticTextUsesExplicitCanvasLocalBox(t *testing.T) {
 	if len(layer.Size) != 2 || layer.Size[0] != 1920 || layer.Size[1] != 260 {
 		t.Fatalf("text local box = %#v, want [1920 260]", layer.Size)
 	}
-	// A text layer's plan position is its centre in absolute canvas
-	// coordinates; the engine subtracts canvas/2 itself, so the canonical
-	// centred text on 1920x1080 is [960, 540].
+	// Chronon subtracts half a canvas before positioning the text layer.
 	if len(layer.Position) != 2 || layer.Position[0] != 960 || layer.Position[1] != 540 {
 		t.Fatalf("centered text position = %#v, want [960 540]", layer.Position)
 	}

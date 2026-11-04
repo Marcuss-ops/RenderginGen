@@ -21,6 +21,10 @@ type resolvedTextSpec struct {
 	// OmitBox keeps legacy role specs whose wire contract carries Size only.
 	OmitBox bool
 	Style   *LayerStyle
+	// Alignment is the resolved preset layout alignment. It stays separate
+	// from typography so the shared text lowering can preserve the preset's
+	// box layout when building the renderer style.
+	Alignment string
 	// RoleOverrides carries role-specific caller effects resolved before
 	// lowering; the text compiler applies them after the shared role defaults.
 	RoleOverrides *LayerStyle
@@ -129,7 +133,14 @@ func resolveTextSpecBase(ri resolvedItem, src *semanticPlan) (resolvedTextSpec, 
 		if err != nil {
 			return resolvedTextSpec{}, 0, err
 		}
+		// A white outer glow on the white overlay plate covers the glyphs.
+		// It is useful on dark footage but obscures this preset's text on the
+		// light documentary canvas, so leave the fill and stroke unobstructed.
+		if lightSolidBackground(src.Background) && style.Glow != nil && isWhiteOverlayColor(style.Glow.Color) {
+			style.Glow = nil
+		}
 		spec.Style = style
+		spec.Alignment = ri.Preset.Layout.Alignment
 		spec.PresetID = ri.Preset.ID
 		spec.PresetDef = ri.Preset
 	}
@@ -142,18 +153,6 @@ func resolveTextSpecBase(ri resolvedItem, src *semanticPlan) (resolvedTextSpec, 
 func resolveTextSpecGeometry(ri resolvedItem, src *semanticPlan, spec resolvedTextSpec, lines int) resolvedTextSpec {
 	posX, hasPosX := spec.StyleParams["position_x"].(float64)
 	posY, hasPosY := spec.StyleParams["position_y"].(float64)
-	switch {
-	case hasPosX && hasPosY:
-		spec.Position = []float64{posX, posY}
-	default:
-		spec.Position = resolveTextLayout(src.Width, src.Height)
-		if hasPosX {
-			spec.Position[0] = posX
-		}
-		if hasPosY {
-			spec.Position[1] = posY
-		}
-	}
 	if width, ok := numericValue(spec.StyleParams["width"]); ok && width > 0 {
 		spec.BoxWidth = int(width)
 	}
@@ -189,6 +188,13 @@ func resolveTextSpecGeometry(ri resolvedItem, src *semanticPlan, spec resolvedTe
 			spec.BoxHeight = needed
 		}
 	}
+	spec.Position = resolveTextLayout(src.Width, src.Height)
+	if hasPosX {
+		spec.Position[0] += posX
+	}
+	if hasPosY {
+		spec.Position[1] += posY
+	}
 	return spec
 }
 
@@ -219,6 +225,9 @@ func compileResolvedText(layerID string, start, end int64, spec resolvedTextSpec
 		DurationFrames: end - start, ScreenSpace: true}
 	if spec.Style != nil {
 		seeded := *spec.Style
+		if strings.TrimSpace(seeded.TextAlign) == "" {
+			seeded.TextAlign = spec.Alignment
+		}
 		layer.Style = &seeded
 	}
 	if err := applyTextRuntimeOverrides(&layer, spec.StyleParams); err != nil {
@@ -438,4 +447,10 @@ func resolvedTextPresetStyle(d PresetDefinition, language string) (*LayerStyle, 
 		style.Background = &bg
 	}
 	return style, nil
+}
+
+func isWhiteOverlayColor(value string) bool {
+	value = strings.ToLower(strings.TrimSpace(value))
+	return value == "#fff" || value == "#ffffff" || value == "white" ||
+		value == "rgba(255,255,255,1)" || value == "rgba(255, 255, 255, 1)"
 }

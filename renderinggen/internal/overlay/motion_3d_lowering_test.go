@@ -115,6 +115,53 @@ func TestApplyMotionRoutingTransportsBothHalves(t *testing.T) {
 	}
 }
 
+// TestScreenSpaceTextRetainsFlatAnimation pins the fix for the blanket reset:
+// screen-space text must keep its fades, slides, scales and per-unit animators,
+// while camera-backed tracks are dropped because the overlay canvas has no
+// scene camera to project through.
+func TestScreenSpaceTextRetainsFlatAnimation(t *testing.T) {
+	layer := Layer{Type: "text", ScreenSpace: true}
+	animation := &LayerAnimation{
+		Tracks: []AnimationTrack{
+			{Property: "opacity"},
+			{Property: "position_y"},
+			{Property: "rotation_x"},
+			{Property: "position_z"},
+		},
+		TextAnimators: []TextAnimator{
+			{ID: "reveal", Properties: []AnimationTrack{{Property: "position_y"}, {Property: "blur"}, {Property: "rotation_y"}}},
+			{ID: "camera", Properties: []AnimationTrack{{Property: "position_z"}}},
+		},
+	}
+	applyMotionRouting(&layer, animation)
+	if layer.Enable3D {
+		t.Fatal("screen-space text opted into the camera-backed path")
+	}
+	if layer.Animation == nil {
+		t.Fatal("screen-space text lost its flat layer animation")
+	}
+	if len(layer.Animation.Tracks) != 2 {
+		t.Fatalf("flat tracks = %d, want opacity and position_y", len(layer.Animation.Tracks))
+	}
+	for _, track := range layer.Animation.Tracks {
+		if motion.IsCameraBacked3DProperty(track.Property) {
+			t.Errorf("camera-backed track %q survived", track.Property)
+		}
+	}
+	if len(layer.TextAnimators) != 1 {
+		t.Fatalf("text animators = %d, want the reveal animator only", len(layer.TextAnimators))
+	}
+	if len(layer.TextAnimators[0].Properties) != 2 {
+		t.Fatalf("reveal properties = %d, want position_y and blur", len(layer.TextAnimators[0].Properties))
+	}
+
+	all3D := Layer{Type: "text", ScreenSpace: true}
+	applyMotionRouting(&all3D, &LayerAnimation{Tracks: []AnimationTrack{{Property: "position_z"}}})
+	if all3D.Animation != nil || all3D.Enable3D {
+		t.Fatalf("an all-3D screen-space animation must lower to static, got %+v", all3D)
+	}
+}
+
 // TestCameraBacked3DPropertyIsTheSingleAuthority keeps the producer's property
 // list in one place. overlay's routing delegates to motion, so the registry's
 // 3d family and the compiler's enable_3d can only disagree with Chronon if this

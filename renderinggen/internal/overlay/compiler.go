@@ -956,6 +956,7 @@ type LayerStyle struct {
 	Font        string           `json:"font,omitempty"`
 	FontSize    float64          `json:"font_size,omitempty"`
 	Fill        string           `json:"fill,omitempty"`
+	TextAlign   string           `json:"text_align,omitempty"`
 	FitMode     string           `json:"fit_mode,omitempty"`
 	MinFontSize float64          `json:"min_font_size,omitempty"`
 	MaxFontSize float64          `json:"max_font_size,omitempty"`
