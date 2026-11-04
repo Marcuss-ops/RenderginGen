@@ -458,6 +458,18 @@ func applyMotionRouting(layer *Layer, animation *LayerAnimation) {
 	if animation == nil {
 		return
 	}
+	if layer.Type == "text" && layer.ScreenSpace {
+		// Screen-space text is placed as a complete, centred canvas box. Keep
+		// its in-plane choreography (opacity, 2D position/scale/rotation and
+		// per-word/glyph animators), but drop camera-backed tracks: the overlay
+		// canvas has no scene camera, so a position_z or rotation_x/y track
+		// would either shift the box or be rejected by Chronon's 3D decoder.
+		animation = screenSpaceTextAnimation(animation)
+		layer.Enable3D = false
+		if animation == nil {
+			return
+		}
+	}
 	// Preserve a 3D requirement established by the layer's own geometry (for
 	// example a georeferenced map plane with camera_move) while adding any 3D
 	// requirement carried by this animation.
@@ -468,6 +480,39 @@ func applyMotionRouting(layer *Layer, animation *LayerAnimation) {
 	if len(animation.TextAnimators) > 0 {
 		layer.TextAnimators = animation.TextAnimators
 	}
+}
+
+// screenSpaceTextAnimation keeps the animation that can be evaluated on the
+// flat overlay canvas and removes only the camera-backed half. The previous
+// blanket reset made every screen-space text static (including pure fades and
+// word reveals), while Chronon's placement resolver already owns the canvas
+// centre for this layer kind.
+func screenSpaceTextAnimation(animation *LayerAnimation) *LayerAnimation {
+	if animation == nil {
+		return nil
+	}
+	filtered := &LayerAnimation{}
+	for _, track := range animation.Tracks {
+		if !motion.IsCameraBacked3DProperty(track.Property) {
+			filtered.Tracks = append(filtered.Tracks, track)
+		}
+	}
+	for _, animator := range animation.TextAnimators {
+		kept := animator
+		kept.Properties = nil
+		for _, track := range animator.Properties {
+			if !motion.IsCameraBacked3DProperty(track.Property) {
+				kept.Properties = append(kept.Properties, track)
+			}
+		}
+		if len(kept.Properties) > 0 {
+			filtered.TextAnimators = append(filtered.TextAnimators, kept)
+		}
+	}
+	if len(filtered.Tracks) == 0 && len(filtered.TextAnimators) == 0 {
+		return nil
+	}
+	return filtered
 }
 
 func fromTextMotionDefinitions(src []motion.TextAnimatorDefinition, duration int64) ([]TextAnimator, error) {
@@ -700,18 +745,9 @@ func resolveImageLayout(l PresetLayout, boxWidth, boxHeight, canvasWidth, canvas
 	}
 }
 
-// resolveTextLayout is the canonical text layer position: the canvas centre, in
-// ABSOLUTE canvas coordinates.
-//
-// The engine (render_plan_compiler_animation.cpp:apply_layer_primitives) treats
-// a text layer's position as the absolute canvas coordinate of the layer centre
-// and subtracts canvas/2 itself, so the canonical centred text is [w/2, h/2],
-// not [0,0]. [0,0] under that contract is the canvas corner — which is where
-// every plan that declared a style but no authored placement used to land.
-//
-// The canvas is an argument because the value depends on it. An earlier
-// signature accepted five arguments and discarded all of them, promising a
-// resolution the function did not perform.
+// resolveTextLayout returns the absolute canvas coordinate of a centered text
+// layer. Chronon converts it to a center-relative LayerBuilder position by
+// subtracting half the canvas, so the canvas midpoint is [w/2,h/2].
 func resolveTextLayout(canvasW, canvasH int) []float64 {
 	return []float64{float64(canvasW) / 2, float64(canvasH) / 2}
 }

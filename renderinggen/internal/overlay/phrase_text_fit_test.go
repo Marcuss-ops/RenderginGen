@@ -54,7 +54,7 @@ func TestPhrasePresetUsesShrinkOnlyTextFit(t *testing.T) {
 		t.Fatalf("phrase fit box = %dx%d (%v), want 1920x280 for two wrapped lines", layer.BoxWidth, layer.BoxHeight, layer.Size)
 	}
 	if len(layer.Position) != 2 || layer.Position[0] != 960 || layer.Position[1] != 540 {
-		t.Fatalf("phrase position after wrap = %v, want centred [960 540]", layer.Position)
+		t.Fatalf("phrase position after wrap = %v, want centred transform [960 540]", layer.Position)
 	}
 	wire, err := json.Marshal(layer)
 	if err != nil {

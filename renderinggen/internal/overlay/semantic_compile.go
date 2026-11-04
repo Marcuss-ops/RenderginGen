@@ -117,70 +117,14 @@ func compileSemanticDecoded(src *semanticPlan) (*Plan, []Asset, Stats, []string,
 			SampleRate: src.Audio.SampleRate, Channels: src.Audio.Channels,
 		}
 	}
-	if bg := src.Background; bg != nil {
-		kind := strings.ToLower(strings.TrimSpace(bg.Kind))
-		// blur_cover is a clip-render-specific fit hint; store it as "video"
-		// type in the layer with the fit preserved.
-		layerKind := kind
-		if kind == "blur_cover" {
-			layerKind = "video"
-		}
-		if layerKind != "color" && layerKind != "image" && layerKind != "video" {
-			return nil, nil, Stats{}, nil, fmt.Errorf("overlay: unsupported background kind %q", bg.Kind)
-		}
-		if layerKind == "color" {
-			if len(bg.Color) != 4 {
-				return nil, nil, Stats{}, nil, fmt.Errorf("overlay: background color requires RGBA[4]")
-			}
-		} else if len(bg.AssetRefs) == 0 {
-			return nil, nil, Stats{}, nil, fmt.Errorf("overlay: %s background requires asset_refs", kind)
-		}
-		for _, ref := range bg.AssetRefs {
-			if _, err := registry.Register(ref); err != nil {
-				return nil, nil, Stats{}, nil, fmt.Errorf("overlay: background asset: %w", err)
-			}
-		}
-		// Color/image/video background plates are top-left anchored: the
-		// renderer measures a missing position as a canvas-center offset,
-		// which shrinks a full-canvas plate to the top-left quadrant and
-		// leaves the rest of the frame on the black clear color (the
-		// standalone entity-image portrait rendered black corners on a
-		// declared white canvas for exactly this reason). Keep the plate in
-		// screen space as well: when any text layer enables the 2.5D camera,
-		// the background must not enter the projected layer/depth bin.
-		layer := Layer{ID: "background", Type: layerKind, BoxWidth: src.Width, BoxHeight: src.Height,
-			Size:     []float64{float64(src.Width), float64(src.Height)},
-			Position: []float64{0, 0}, ScreenSpace: true,
-			Fit: bg.Fit, StartFrame: 0}
-		if layerKind != "color" {
-			// One gate for the background fit: validated against the closed set
-			// the render contract honours, defaulted to the deterministic
-			// crop-to-fill, never silently downgraded.
-			fit, err := resolveBackgroundFit(bg.Fit)
-			if err != nil {
-				return nil, nil, Stats{}, nil, err
-			}
-			layer.Fit = fit
-		}
-		if bg.Opacity != nil {
-			// Declared opacity (including an explicit 0) is carried verbatim as
-			// a pointer so the wire cannot lose the "invisible" contract.
-			opacity := *bg.Opacity
-			layer.Opacity = &opacity
-		}
-		if layerKind == "color" {
-			layer.Color = append([]float64(nil), bg.Color...)
-		} else {
-			ref := bg.AssetRefs[0]
-			if layerKind == "video" {
-				layer.Source = registry.Path(ref.ID)
-			} else {
-				layer.Asset = registry.Path(ref.ID)
-			}
-			layer.Loop = bg.Loop
-		}
-		plan.Layers = append(plan.Layers, layer)
+	bgLayer, bgPresent, err := compileBackgroundLayer(src, registry)
+	if err != nil {
+		return nil, nil, Stats{}, nil, err
 	}
+	if bgPresent {
+		plan.Layers = append(plan.Layers, bgLayer)
+	}
+
 	// Named map targets are producer-level inputs to item resolution, so resolve
 	// them before the one authoritative semantic-item pass.
 	if err := resolveMapFeatureMoves(src); err != nil {
@@ -215,66 +159,12 @@ func compileSemanticDecoded(src *semanticPlan) (*Plan, []Asset, Stats, []string,
 			if !ok || !isImageKind(resolvedItem.Kind) {
 				return nil, nil, Stats{}, nil, fmt.Errorf("overlay: item %q sound_effect is only valid on an image overlay", item.ID)
 			}
-			if sfx.StartOffsetMS < 0 || sfx.DurationMS <= 0 {
-				return nil, nil, Stats{}, nil, fmt.Errorf("overlay: item %q sound_effect requires non-negative start_offset_ms and positive duration_ms", item.ID)
-			}
-			if sfx.GainDB != nil && (!finite(*sfx.GainDB) || *sfx.GainDB < -96 || *sfx.GainDB > 24) {
-				return nil, nil, Stats{}, nil, fmt.Errorf("overlay: item %q sound_effect gain_db must be finite and in [-96,24]", item.ID)
-			}
-			// The item window is canonical microseconds; the millisecond
-			// projection is only a compatibility mirror and must not decide
-			// whether a cue fits. Child image layers still carry milliseconds,
-			// which imageLayerWindowUS projects exactly once.
-			itemStartUS, itemEndUS := itemWindowUS(item)
-			visibleStartOffsetMS := int64(0)
-			visibleEndOffsetUS := itemEndUS - itemStartUS
-			if len(item.ImageLayers) > 0 {
-				firstLayer := item.ImageLayers[0]
-				for _, layer := range item.ImageLayers[1:] {
-					if layer.StartMS < firstLayer.StartMS || layer.StartMS == firstLayer.StartMS && layer.EndMS > firstLayer.EndMS {
-						firstLayer = layer
-					}
-				}
-				visibleStartOffsetMS = firstLayer.StartMS
-				_, visibleEndOffsetUS = imageLayerWindowUS(firstLayer)
-				if visibleEndOffsetUS > itemEndUS-itemStartUS {
-					visibleEndOffsetUS = itemEndUS - itemStartUS
-				}
-				if sfx.StartOffsetMS != visibleStartOffsetMS {
-					return nil, nil, Stats{}, nil, fmt.Errorf("overlay: item %q composite sound_effect must start at first visible image layer (%dms)", item.ID, visibleStartOffsetMS)
-				}
-			} else if sfx.StartOffsetMS != 0 {
-				return nil, nil, Stats{}, nil, fmt.Errorf("overlay: item %q sound_effect start_offset_ms must be zero for a single-layer image", item.ID)
-			}
-			visibleStartOffsetUS := visibleStartOffsetMS * 1000
-			visibleDurationUS := visibleEndOffsetUS - visibleStartOffsetUS
-			// Compare the cue against the exact canonical window. The shortened
-			// first check keeps the multiplication below overflow-safe.
-			if visibleDurationUS <= 0 || sfx.DurationMS > visibleDurationUS/1000 || sfx.DurationMS*1000 > visibleDurationUS {
-				return nil, nil, Stats{}, nil, fmt.Errorf("overlay: item %q sound_effect exceeds its first visible image window", item.ID)
-			}
-			if strings.TrimSpace(sfx.AssetRef.MediaType) != "audio/mp4" {
-				return nil, nil, Stats{}, nil, fmt.Errorf("overlay: item %q sound_effect asset must declare media_type audio/mp4", item.ID)
-			}
-			path, err := registry.Register(sfx.AssetRef)
+			clip, visibleEndFrame, err := resolveSoundEffectCue(item, resolvedItem, src, registry)
 			if err != nil {
-				return nil, nil, Stats{}, nil, fmt.Errorf("overlay: item %q sound_effect asset: %w", item.ID, err)
+				return nil, nil, Stats{}, nil, err
 			}
-			startOffsetFrame, visibleDurationEndFrame := usFrames(visibleStartOffsetUS, visibleEndOffsetUS, int64(src.FPSNum), int64(src.FPSDen))
-			startFrame := resolvedItem.Start + startOffsetFrame
-			visibleEndFrame := resolvedItem.Start + visibleDurationEndFrame
-			_, clipOut := msFrames(0, sfx.DurationMS, int64(src.FPSNum), int64(src.FPSDen))
-			if startFrame < 0 || visibleEndFrame <= startFrame || clipOut <= 0 {
-				return nil, nil, Stats{}, nil, fmt.Errorf("overlay: item %q sound_effect timing collapses to no frames", item.ID)
-			}
-			gain := -18.0
-			if sfx.GainDB != nil {
-				gain = *sfx.GainDB
-			}
-			pendingSFXClips = append(pendingSFXClips, pendingSFX{
-				clip:            AudioClipPlan{ID: "overlay-sfx-" + item.ID, Asset: path, Start: startFrame, ClipOut: clipOut, GainDB: gain, Role: "sfx"},
-				visibleEndFrame: visibleEndFrame,
-			})
+			pendingSFXClips = append(pendingSFXClips, pendingSFX{clip: clip, visibleEndFrame: visibleEndFrame})
+
 		}
 	}
 
@@ -359,68 +249,11 @@ func compileSemanticDecoded(src *semanticPlan) (*Plan, []Asset, Stats, []string,
 	// Geometry and style come ONLY from the plan's typed blocks: font size,
 	// color, shadow (style), position + margin_px (layout). Unknown or missing
 	// values are compile errors, never silent fallbacks.
-	if wm := src.Watermark; wm != nil {
-		font := ""
-		if wm.FontRef != nil {
-			registered, err := registry.Register(*wm.FontRef)
-			if err != nil {
-				return nil, nil, Stats{}, nil, fmt.Errorf("overlay: watermark font asset: %w", err)
-			}
-			font = registered
-		}
-		if font == "" && wm.Text != "" {
-			return nil, nil, Stats{}, nil, fmt.Errorf("overlay: text watermark requires font_ref")
-		}
-		wmStyle, err := parseStyleBlock(wm.Style)
-		if err != nil {
-			return nil, nil, Stats{}, nil, err
-		}
-		style, err := watermarkLayerStyle(wmStyle, font)
-		if err != nil {
-			return nil, nil, Stats{}, nil, err
-		}
-		margin, err := watermarkMargin(wm.MarginPX)
-		if err != nil {
-			return nil, nil, Stats{}, nil, err
-		}
-		// Position AND size come back from the one geometry resolver: the box
-		// the position was computed against is the box the layer declares.
-		position, size, err := resolveWatermarkGeometry(wm.Position, src.Width, src.Height, margin, wmStyle)
-		if err != nil {
-			return nil, nil, Stats{}, nil, err
-		}
-		wmLayer := Layer{ID: "watermark", StartFrame: 0, DurationFrames: plan.Canvas.DurationFrames,
-			Style: style, Size: size}
-		if wm.Opacity != nil {
-			// Same contract as the background: opacity 0 is a declared value,
-			// not an absent key.
-			opacity := *wm.Opacity
-			wmLayer.Opacity = &opacity
-		}
-		if wm.Text != "" && len(wm.AssetRefs) == 0 {
-			// Text-only watermark.
-			wmLayer.Type = "text"
-			wmLayer.Text = wm.Text
-		} else if len(wm.AssetRefs) > 0 {
-			registered, err := registry.Register(wm.AssetRefs[0])
-			if err != nil {
-				return nil, nil, Stats{}, nil, fmt.Errorf("overlay: watermark asset: %w", err)
-			}
-			wmLayer.Type = "image"
-			wmLayer.Asset = registered
-			wmLayer.Fit = FitContain
-			if wm.Text != "" {
-				wmLayer.Text = wm.Text
-			}
-		} else {
-			return nil, nil, Stats{}, nil, fmt.Errorf("overlay: watermark requires text or asset_refs")
-		}
-		// resolveWatermarkGeometry returns the box's absolute canvas top-left;
-		// the plan's position field needs the per-type form, so the conversion
-		// happens exactly once, after the layer type is known. A text watermark
-		// takes the absolute centre, an image watermark the canvas-centre offset.
-		wmLayer.Position = canvasBoxPosition(wmLayer.Type,
-			position[0], position[1], size[0], size[1], src.Width, src.Height)
+	wmLayer, wmPresent, err := compileWatermarkLayer(src, registry, plan.Canvas.DurationFrames)
+	if err != nil {
+		return nil, nil, Stats{}, nil, err
+	}
+	if wmPresent {
 		plan.Layers = append(plan.Layers, wmLayer)
 	}
 
@@ -434,55 +267,14 @@ func compileSemanticDecoded(src *semanticPlan) (*Plan, []Asset, Stats, []string,
 	if err := validateSceneCamera(src.SceneCamera); err != nil {
 		return nil, nil, Stats{}, nil, err
 	}
-	for _, ri := range resolved {
-		if err := cameras.observe(ri, src); err != nil {
-			return nil, nil, Stats{}, nil, err
-		}
-		layers, err := compileItem(ri, src, registry)
-		if err != nil {
-			return nil, nil, Stats{}, nil, err
-		}
-
-		for _, layer := range layers {
-			// A premium image motion can expand one item into several linked
-			// layers. Attach a clip stroke to the actual image layer only.
-			plan.Layers = append(plan.Layers, layer)
-			if layer.FrameStroke != nil && layer.Type != "shape" {
-				strokeLayer, err := compileMediaStrokeLayer(layer, src.Width, src.Height)
-				if err != nil {
-					return nil, nil, Stats{}, nil, fmt.Errorf("overlay: item %q: %w", ri.Item.ID, err)
-				}
-				plan.Layers = append(plan.Layers, strokeLayer)
-			}
-		}
-		// Stroke shapes require render-plan.v3 even though the semantic item
-		// itself is a media layer.
-		stats.addResolved(ri)
-		// Transient per-item window for the P4 segmented-output planner,
-		// booked from the SAME resolvedItem the layers were lowered from.
-		plan.ItemWindows = append(plan.ItemWindows, ItemWindow{
-			ItemID: ri.Item.ID, StartFrame: ri.Start, EndFrame: ri.End})
-		if ri.End > plan.Canvas.DurationFrames {
-			plan.Canvas.DurationFrames = ri.End
-		}
+	if err := appendResolvedItemLayers(&plan, resolved, src, registry, &cameras, &stats); err != nil {
+		return nil, nil, Stats{}, nil, err
 	}
 
 	// The grid is an ordinary full-frame shape and therefore participates in
 	// the composite before the optional final adjustment stack.
-	if src.ClipGrid != nil {
-		grid, err := compileClipGrid(src.ClipGrid, src.Width, src.Height, plan.Canvas.DurationFrames)
-		if err != nil {
-			return nil, nil, Stats{}, nil, err
-		}
-		plan.Layers = append(plan.Layers, grid)
-	}
-	// Adjustment layers consume the composite from every preceding layer.
-	if len(src.ClipEffects) > 0 {
-		effects, err := resolveClipEffects(src.ClipEffects)
-		if err != nil {
-			return nil, nil, Stats{}, nil, err
-		}
-		plan.Layers = append(plan.Layers, Layer{ID: "clip__adjustment", Type: "adjustment", Effects: effects})
+	if err := appendFullFrameStages(&plan, src); err != nil {
+		return nil, nil, Stats{}, nil, err
 	}
 
 	// Resolve the single camera authority after the loop: every controller is
@@ -492,30 +284,7 @@ func compileSemanticDecoded(src *semanticPlan) (*Plan, []Asset, Stats, []string,
 		return nil, nil, Stats{}, nil, err
 	}
 
-	// Patch background duration to match the final canvas duration.
-	if len(plan.Layers) > 0 && plan.Layers[0].ID == "background" {
-		plan.Layers[0].DurationFrames = plan.Canvas.DurationFrames
-	}
-	// Patch source layer duration — it spans the full clip.
-	if sourceLayerIndex >= 0 {
-		plan.Layers[sourceLayerIndex].DurationFrames = plan.Canvas.DurationFrames
-		if sourceLayerIndex+1 < len(plan.Layers) && plan.Layers[sourceLayerIndex+1].ID == "source__stroke" {
-			plan.Layers[sourceLayerIndex+1].DurationFrames = plan.Canvas.DurationFrames
-		}
-	}
-	// Patch subtitle and watermark layers — they span the full clip.
-	for i := range plan.Layers {
-		if plan.Layers[i].ID == "clip__grid" {
-			plan.Layers[i].DurationFrames = plan.Canvas.DurationFrames
-		}
-		if plan.Layers[i].DurationFrames == 0 {
-			switch plan.Layers[i].ID {
-			case "subtitles", "watermark":
-				plan.Layers[i].DurationFrames = plan.Canvas.DurationFrames
-			}
-		}
-	}
-
+	finalizeLayerDurations(&plan, sourceLayerIndex)
 	if plan.Canvas.DurationFrames <= 0 {
 		return nil, nil, Stats{}, nil, fmt.Errorf("overlay: semantic plan duration is zero — provide duration_ms or at least one item with end_ms > 0")
 	}

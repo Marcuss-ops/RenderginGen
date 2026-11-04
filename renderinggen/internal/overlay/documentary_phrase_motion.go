@@ -296,7 +296,10 @@ func documentaryMarker(text Layer, src *semanticPlan, id string, target document
 	}
 	marker := Layer{
 		ID: fmt.Sprintf("%s-marker-%d", text.ID, index+1), Type: "shape",
-		Size: []float64{width, markerHeight}, Position: []float64{text.Position[0] + x, y},
+		// Shape positions are consumed in center-relative screen coordinates.
+		// The text layout above is measured in absolute canvas pixels, so
+		// convert the marker once here before it enters the render plan.
+		Size: []float64{width, markerHeight}, Position: []float64{text.Position[0] + x - float64(src.Width)/2, y - float64(src.Height)/2},
 		StartFrame: text.StartFrame, DurationFrames: text.DurationFrames, ScreenSpace: true,
 		Opacity: floatPointer(0.88), Shape: &LayerShape{Type: "rounded_rect", Fill: markerColor, Radius: math.Min(fontSize*0.06, markerHeight/2)},
 		Animation: &LayerAnimation{Tracks: []AnimationTrack{

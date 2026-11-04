@@ -23,9 +23,11 @@ var policyTargets = map[string]struct{}{
 	TargetMetric:          {},
 }
 
-// resolveAnimationPolicies expands plan-level animation defaults onto semantic
-// instances before the ordinary per-kind lowering. Subgroup rules take
-// precedence over group rules; explicit item/child motion ids always win.
+// resolveAnimationPolicies expands historical plan-level animation defaults
+// onto semantic instances before the ordinary per-kind lowering. PipelineGen
+// no longer emits them (the pre-v2 contract is retired); this remains for old
+// plans. Subgroup rules take precedence over group rules; explicit item/child
+// motion ids always win.
 func resolveAnimationPolicies(src *semanticPlan) error {
 	policies := make(map[animationPolicySelector]semanticAnimationPolicy, len(src.AnimationPolicies))
 	for index, policy := range src.AnimationPolicies {
