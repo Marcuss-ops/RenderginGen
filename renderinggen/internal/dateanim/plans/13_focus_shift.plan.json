@@ -1,0 +1,356 @@
+{
+  "schema": "chronon.render-plan.v3",
+  "version": 3,
+  "job_id": "date_animation_13_focus_shift",
+  "canvas": {
+    "width": 1920,
+    "height": 1080,
+    "fps_num": 24,
+    "fps_den": 1,
+    "duration_frames": 240
+  },
+  "layers": [
+    {
+      "id": "bg",
+      "type": "color",
+      "color": [
+        0.96,
+        0.95,
+        0.93,
+        1.0
+      ],
+      "size": [
+        1920,
+        1080
+      ],
+      "position": [
+        0,
+        0
+      ],
+      "start_frame": 0,
+      "duration_frames": 240
+    },
+    {
+      "id": "focus_date_0",
+      "type": "text",
+      "text": "1948",
+      "size": [
+        500,
+        160
+      ],
+      "position": [
+        540.0,
+        470
+      ],
+      "start_frame": 0,
+      "duration_frames": 240,
+      "style": {
+        "font": "assets/fonts/PlayfairDisplay.ttf",
+        "font_size": 72,
+        "min_font_size": 72,
+        "max_font_size": 72,
+        "fit_mode": "shrink_only",
+        "fill": "#262521"
+      },
+      "animation": {
+        "tracks": [
+          {
+            "property": "opacity",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 1.0
+              },
+              {
+                "frame": 48,
+                "value": 1.0
+              },
+              {
+                "frame": 60,
+                "value": 0.22
+              },
+              {
+                "frame": 239,
+                "value": 0.22
+              }
+            ],
+            "easing": "in_out_cubic"
+          },
+          {
+            "property": "scale",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 1.25
+              },
+              {
+                "frame": 48,
+                "value": 1.25
+              },
+              {
+                "frame": 60,
+                "value": 0.85
+              },
+              {
+                "frame": 239,
+                "value": 0.85
+              }
+            ],
+            "easing": "in_out_cubic"
+          }
+        ]
+      }
+    },
+    {
+      "id": "focus_date_1",
+      "type": "text",
+      "text": "1969",
+      "size": [
+        500,
+        160
+      ],
+      "position": [
+        820.0,
+        470
+      ],
+      "start_frame": 0,
+      "duration_frames": 240,
+      "style": {
+        "font": "assets/fonts/PlayfairDisplay.ttf",
+        "font_size": 72,
+        "min_font_size": 72,
+        "max_font_size": 72,
+        "fit_mode": "shrink_only",
+        "fill": "#262521"
+      },
+      "animation": {
+        "tracks": [
+          {
+            "property": "opacity",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 0.22
+              },
+              {
+                "frame": 48,
+                "value": 0.22
+              },
+              {
+                "frame": 60,
+                "value": 1.0
+              },
+              {
+                "frame": 120,
+                "value": 1.0
+              },
+              {
+                "frame": 132,
+                "value": 0.22
+              },
+              {
+                "frame": 239,
+                "value": 0.22
+              }
+            ],
+            "easing": "in_out_cubic"
+          },
+          {
+            "property": "scale",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 0.85
+              },
+              {
+                "frame": 48,
+                "value": 0.85
+              },
+              {
+                "frame": 60,
+                "value": 1.25
+              },
+              {
+                "frame": 120,
+                "value": 1.25
+              },
+              {
+                "frame": 132,
+                "value": 0.85
+              },
+              {
+                "frame": 239,
+                "value": 0.85
+              }
+            ],
+            "easing": "in_out_cubic"
+          }
+        ]
+      }
+    },
+    {
+      "id": "focus_date_2",
+      "type": "text",
+      "text": "1998",
+      "size": [
+        500,
+        160
+      ],
+      "position": [
+        1100.0,
+        470
+      ],
+      "start_frame": 0,
+      "duration_frames": 240,
+      "style": {
+        "font": "assets/fonts/PlayfairDisplay.ttf",
+        "font_size": 72,
+        "min_font_size": 72,
+        "max_font_size": 72,
+        "fit_mode": "shrink_only",
+        "fill": "#262521"
+      },
+      "animation": {
+        "tracks": [
+          {
+            "property": "opacity",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 0.22
+              },
+              {
+                "frame": 120,
+                "value": 0.22
+              },
+              {
+                "frame": 132,
+                "value": 1.0
+              },
+              {
+                "frame": 192,
+                "value": 1.0
+              },
+              {
+                "frame": 204,
+                "value": 0.22
+              },
+              {
+                "frame": 239,
+                "value": 0.22
+              }
+            ],
+            "easing": "in_out_cubic"
+          },
+          {
+            "property": "scale",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 0.85
+              },
+              {
+                "frame": 120,
+                "value": 0.85
+              },
+              {
+                "frame": 132,
+                "value": 1.25
+              },
+              {
+                "frame": 192,
+                "value": 1.25
+              },
+              {
+                "frame": 204,
+                "value": 0.85
+              },
+              {
+                "frame": 239,
+                "value": 0.85
+              }
+            ],
+            "easing": "in_out_cubic"
+          }
+        ]
+      }
+    },
+    {
+      "id": "focus_date_3",
+      "type": "text",
+      "text": "2026",
+      "size": [
+        500,
+        160
+      ],
+      "position": [
+        1380.0,
+        470
+      ],
+      "start_frame": 0,
+      "duration_frames": 240,
+      "style": {
+        "font": "assets/fonts/PlayfairDisplay.ttf",
+        "font_size": 72,
+        "min_font_size": 72,
+        "max_font_size": 72,
+        "fit_mode": "shrink_only",
+        "fill": "#262521"
+      },
+      "animation": {
+        "tracks": [
+          {
+            "property": "opacity",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 0.22
+              },
+              {
+                "frame": 192,
+                "value": 0.22
+              },
+              {
+                "frame": 204,
+                "value": 1.0
+              },
+              {
+                "frame": 239,
+                "value": 1.0
+              }
+            ],
+            "easing": "in_out_cubic"
+          },
+          {
+            "property": "scale",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 0.85
+              },
+              {
+                "frame": 192,
+                "value": 0.85
+              },
+              {
+                "frame": 204,
+                "value": 1.25
+              },
+              {
+                "frame": 239,
+                "value": 1.25
+              }
+            ],
+            "easing": "in_out_cubic"
+          }
+        ]
+      }
+    }
+  ],
+  "output": {
+    "path": "13_focus_shift.mp4",
+    "format": "mp4",
+    "codec": "h264",
+    "crf": 14
+  }
+}

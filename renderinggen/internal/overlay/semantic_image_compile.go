@@ -145,7 +145,17 @@ func compileImageItemCore(ri resolvedItem, src *semanticPlan, registry *assetReg
 			}
 		}
 	}
-	return compileCompositeImageLayers(ri, src, registry)
+	// A new plan always names one group choreography. Reaching this point with
+	// that field set means the certified recipe is missing: refuse the plan
+	// instead of silently lowering children through the legacy per-child path
+	// (which would either animate a second owner or render a static group).
+	if strings.TrimSpace(ri.Item.GroupMotionID) != "" {
+		return nil, fmt.Errorf("overlay: item %q group_motion_id %q has no certified group recipe; legacy per-child replay refused", ri.Item.ID, ri.Item.GroupMotionID)
+	}
+	// Legacy replay path: a sealed plan with no group_motion_id keeps its
+	// per-child motion_id. New plans always carry group_motion_id, so they
+	// never reach this branch and cannot have two animation owners.
+	return compileLegacyCompositeImageLayers(ri, src, registry)
 }
 
 // resolveImageRecipeMotion resolves the item's registered motion and selects
@@ -178,11 +188,11 @@ func resolveAssetPaths(registry *assetRegistry, refs []SemanticAssetRef) map[str
 	return paths
 }
 
-// compileCompositeImageLayers lowers every image_layers child through the
-// shared single-layer path: independent asset, preset, motion, caption and
-// explicit position params per child. Entity groups reuse it after applying
-// slot defaults, so composite and group members can never drift apart.
-func compileCompositeImageLayers(ri resolvedItem, src *semanticPlan, registry *assetRegistry) ([]Layer, error) {
+// compileLegacyCompositeImageLayers is the replay path for sealed plans that
+// predate group_motion_id. It lowers every image_layers child through the
+// shared single-layer path with its own motion. New producer plans always use
+// compileImageGroupRecipe through the parent group_motion_id.
+func compileLegacyCompositeImageLayers(ri resolvedItem, src *semanticPlan, registry *assetRegistry) ([]Layer, error) {
 	_, imageRecipe, err := resolveImageRecipeMotion(ri.Item.MotionID, false)
 	if err != nil {
 		return nil, err

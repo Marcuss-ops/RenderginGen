@@ -104,6 +104,11 @@ func compileResolvedMapLayers(ri resolvedItem, src *semanticPlan, registry *asse
 		}
 		layers = append(layers, marker, label)
 	}
+	fxLayers, err := compileMapFxLayers(ri, src, resolved, duration)
+	if err != nil {
+		return nil, err
+	}
+	layers = append(layers, fxLayers...)
 	credit, err := resolveMapAttribution(ri, src, resolved.Attribution, duration)
 	if err != nil {
 		return nil, err

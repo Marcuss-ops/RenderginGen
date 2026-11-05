@@ -1,0 +1,611 @@
+{
+  "schema": "chronon.render-plan.v3",
+  "version": 3,
+  "job_id": "date_odometer_4dates",
+  "canvas": {
+    "width": 1920,
+    "height": 1080,
+    "fps_num": 30,
+    "fps_den": 1,
+    "duration_frames": 320
+  },
+  "layers": [
+    {
+      "id": "bg",
+      "type": "color",
+      "color": [
+        0.96,
+        0.95,
+        0.93,
+        1.0
+      ],
+      "size": [
+        1920,
+        1080
+      ],
+      "position": [
+        0,
+        0
+      ],
+      "start_frame": 0,
+      "duration_frames": 320
+    },
+    {
+      "id": "prefix_19",
+      "type": "text",
+      "text": "19",
+      "size": [
+        600,
+        300
+      ],
+      "position": [
+        850,
+        470
+      ],
+      "start_frame": 0,
+      "duration_frames": 320,
+      "style": {
+        "font": "assets/fonts/PlayfairDisplay.ttf",
+        "font_size": 230,
+        "min_font_size": 230,
+        "max_font_size": 230,
+        "fit_mode": "shrink_only",
+        "fill": "#262521"
+      },
+      "animation": {
+        "tracks": [
+          {
+            "property": "position_y",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 0.0
+              },
+              {
+                "frame": 220,
+                "value": 0.0
+              },
+              {
+                "frame": 248,
+                "value": -380.0
+              },
+              {
+                "frame": 319,
+                "value": -380.0
+              }
+            ],
+            "easing": "in_out_cubic"
+          }
+        ]
+      }
+    },
+    {
+      "id": "prefix_20",
+      "type": "text",
+      "text": "20",
+      "size": [
+        600,
+        300
+      ],
+      "position": [
+        850,
+        850
+      ],
+      "start_frame": 0,
+      "duration_frames": 320,
+      "style": {
+        "font": "assets/fonts/PlayfairDisplay.ttf",
+        "font_size": 230,
+        "min_font_size": 230,
+        "max_font_size": 230,
+        "fit_mode": "shrink_only",
+        "fill": "#262521"
+      },
+      "animation": {
+        "tracks": [
+          {
+            "property": "position_y",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 0.0
+              },
+              {
+                "frame": 220,
+                "value": 0.0
+              },
+              {
+                "frame": 248,
+                "value": -380.0
+              },
+              {
+                "frame": 319,
+                "value": -380.0
+              }
+            ],
+            "easing": "in_out_cubic"
+          }
+        ]
+      }
+    },
+    {
+      "id": "suffix_0",
+      "type": "text",
+      "text": "48",
+      "size": [
+        600,
+        300
+      ],
+      "position": [
+        1070,
+        470
+      ],
+      "start_frame": 0,
+      "duration_frames": 320,
+      "style": {
+        "font": "assets/fonts/PlayfairDisplay.ttf",
+        "font_size": 230,
+        "min_font_size": 230,
+        "max_font_size": 230,
+        "fit_mode": "shrink_only",
+        "fill": "#262521"
+      },
+      "animation": {
+        "tracks": [
+          {
+            "property": "position_y",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 0.0
+              },
+              {
+                "frame": 60,
+                "value": 0.0
+              },
+              {
+                "frame": 88,
+                "value": -380.0
+              },
+              {
+                "frame": 140,
+                "value": -380.0
+              },
+              {
+                "frame": 168,
+                "value": -760.0
+              },
+              {
+                "frame": 220,
+                "value": -760.0
+              },
+              {
+                "frame": 248,
+                "value": -1140.0
+              },
+              {
+                "frame": 319,
+                "value": -1140.0
+              }
+            ],
+            "easing": "in_out_cubic"
+          }
+        ]
+      }
+    },
+    {
+      "id": "suffix_1",
+      "type": "text",
+      "text": "69",
+      "size": [
+        600,
+        300
+      ],
+      "position": [
+        1070,
+        850
+      ],
+      "start_frame": 0,
+      "duration_frames": 320,
+      "style": {
+        "font": "assets/fonts/PlayfairDisplay.ttf",
+        "font_size": 230,
+        "min_font_size": 230,
+        "max_font_size": 230,
+        "fit_mode": "shrink_only",
+        "fill": "#262521"
+      },
+      "animation": {
+        "tracks": [
+          {
+            "property": "position_y",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 0.0
+              },
+              {
+                "frame": 60,
+                "value": 0.0
+              },
+              {
+                "frame": 88,
+                "value": -380.0
+              },
+              {
+                "frame": 140,
+                "value": -380.0
+              },
+              {
+                "frame": 168,
+                "value": -760.0
+              },
+              {
+                "frame": 220,
+                "value": -760.0
+              },
+              {
+                "frame": 248,
+                "value": -1140.0
+              },
+              {
+                "frame": 319,
+                "value": -1140.0
+              }
+            ],
+            "easing": "in_out_cubic"
+          }
+        ]
+      }
+    },
+    {
+      "id": "suffix_2",
+      "type": "text",
+      "text": "98",
+      "size": [
+        600,
+        300
+      ],
+      "position": [
+        1070,
+        1230
+      ],
+      "start_frame": 0,
+      "duration_frames": 320,
+      "style": {
+        "font": "assets/fonts/PlayfairDisplay.ttf",
+        "font_size": 230,
+        "min_font_size": 230,
+        "max_font_size": 230,
+        "fit_mode": "shrink_only",
+        "fill": "#262521"
+      },
+      "animation": {
+        "tracks": [
+          {
+            "property": "position_y",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 0.0
+              },
+              {
+                "frame": 60,
+                "value": 0.0
+              },
+              {
+                "frame": 88,
+                "value": -380.0
+              },
+              {
+                "frame": 140,
+                "value": -380.0
+              },
+              {
+                "frame": 168,
+                "value": -760.0
+              },
+              {
+                "frame": 220,
+                "value": -760.0
+              },
+              {
+                "frame": 248,
+                "value": -1140.0
+              },
+              {
+                "frame": 319,
+                "value": -1140.0
+              }
+            ],
+            "easing": "in_out_cubic"
+          }
+        ]
+      }
+    },
+    {
+      "id": "suffix_3",
+      "type": "text",
+      "text": "26",
+      "size": [
+        600,
+        300
+      ],
+      "position": [
+        1070,
+        1610
+      ],
+      "start_frame": 0,
+      "duration_frames": 320,
+      "style": {
+        "font": "assets/fonts/PlayfairDisplay.ttf",
+        "font_size": 230,
+        "min_font_size": 230,
+        "max_font_size": 230,
+        "fit_mode": "shrink_only",
+        "fill": "#262521"
+      },
+      "animation": {
+        "tracks": [
+          {
+            "property": "position_y",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 0.0
+              },
+              {
+                "frame": 60,
+                "value": 0.0
+              },
+              {
+                "frame": 88,
+                "value": -380.0
+              },
+              {
+                "frame": 140,
+                "value": -380.0
+              },
+              {
+                "frame": 168,
+                "value": -760.0
+              },
+              {
+                "frame": 220,
+                "value": -760.0
+              },
+              {
+                "frame": 248,
+                "value": -1140.0
+              },
+              {
+                "frame": 319,
+                "value": -1140.0
+              }
+            ],
+            "easing": "in_out_cubic"
+          }
+        ]
+      }
+    },
+    {
+      "id": "slot_cover_top",
+      "type": "color",
+      "color": [
+        0.96,
+        0.95,
+        0.93,
+        1.0
+      ],
+      "size": [
+        1920,
+        300
+      ],
+      "position": [
+        0,
+        -390
+      ],
+      "start_frame": 0,
+      "duration_frames": 320
+    },
+    {
+      "id": "slot_cover_bottom",
+      "type": "color",
+      "color": [
+        0.96,
+        0.95,
+        0.93,
+        1.0
+      ],
+      "size": [
+        1920,
+        380
+      ],
+      "position": [
+        0,
+        350
+      ],
+      "start_frame": 0,
+      "duration_frames": 320
+    },
+    {
+      "id": "rail",
+      "type": "color",
+      "color": [
+        0.72,
+        0.7,
+        0.66,
+        1.0
+      ],
+      "size": [
+        1000,
+        2
+      ],
+      "position": [
+        0,
+        280
+      ],
+      "start_frame": 0,
+      "duration_frames": 320
+    },
+    {
+      "id": "axis_0",
+      "type": "text",
+      "text": "1948",
+      "size": [
+        240,
+        40
+      ],
+      "position": [
+        540.0,
+        886
+      ],
+      "start_frame": 0,
+      "duration_frames": 320,
+      "style": {
+        "font": "assets/fonts/PlayfairDisplay.ttf",
+        "font_size": 26,
+        "min_font_size": 26,
+        "max_font_size": 26,
+        "fit_mode": "shrink_only",
+        "fill": "#66625B"
+      }
+    },
+    {
+      "id": "axis_1",
+      "type": "text",
+      "text": "1969",
+      "size": [
+        240,
+        40
+      ],
+      "position": [
+        820.0,
+        886
+      ],
+      "start_frame": 0,
+      "duration_frames": 320,
+      "style": {
+        "font": "assets/fonts/PlayfairDisplay.ttf",
+        "font_size": 26,
+        "min_font_size": 26,
+        "max_font_size": 26,
+        "fit_mode": "shrink_only",
+        "fill": "#66625B"
+      }
+    },
+    {
+      "id": "axis_2",
+      "type": "text",
+      "text": "1998",
+      "size": [
+        240,
+        40
+      ],
+      "position": [
+        1100.0,
+        886
+      ],
+      "start_frame": 0,
+      "duration_frames": 320,
+      "style": {
+        "font": "assets/fonts/PlayfairDisplay.ttf",
+        "font_size": 26,
+        "min_font_size": 26,
+        "max_font_size": 26,
+        "fit_mode": "shrink_only",
+        "fill": "#66625B"
+      }
+    },
+    {
+      "id": "axis_3",
+      "type": "text",
+      "text": "2026",
+      "size": [
+        240,
+        40
+      ],
+      "position": [
+        1380.0,
+        886
+      ],
+      "start_frame": 0,
+      "duration_frames": 320,
+      "style": {
+        "font": "assets/fonts/PlayfairDisplay.ttf",
+        "font_size": 26,
+        "min_font_size": 26,
+        "max_font_size": 26,
+        "fit_mode": "shrink_only",
+        "fill": "#66625B"
+      }
+    },
+    {
+      "id": "active_underline",
+      "type": "color",
+      "color": [
+        0.784,
+        0.333,
+        0.239,
+        1.0
+      ],
+      "size": [
+        160,
+        2
+      ],
+      "position": [
+        -420.0,
+        375
+      ],
+      "start_frame": 0,
+      "duration_frames": 320,
+      "animation": {
+        "tracks": [
+          {
+            "property": "position_x",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 0.0
+              },
+              {
+                "frame": 60,
+                "value": 0.0
+              },
+              {
+                "frame": 88,
+                "value": 280.0
+              },
+              {
+                "frame": 140,
+                "value": 280.0
+              },
+              {
+                "frame": 168,
+                "value": 560.0
+              },
+              {
+                "frame": 220,
+                "value": 560.0
+              },
+              {
+                "frame": 248,
+                "value": 840.0
+              },
+              {
+                "frame": 319,
+                "value": 840.0
+              }
+            ],
+            "easing": "in_out_cubic"
+          }
+        ]
+      }
+    }
+  ],
+  "output": {
+    "path": "odometer_4dates.mp4",
+    "format": "mp4",
+    "codec": "h264"
+  }
+}

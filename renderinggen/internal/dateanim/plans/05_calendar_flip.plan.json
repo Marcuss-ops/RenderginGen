@@ -1,0 +1,1352 @@
+{
+  "schema": "chronon.render-plan.v3",
+  "version": 3,
+  "job_id": "date_animation_05_calendar_flip",
+  "canvas": {
+    "width": 1920,
+    "height": 1080,
+    "fps_num": 24,
+    "fps_den": 1,
+    "duration_frames": 240
+  },
+  "layers": [
+    {
+      "id": "bg",
+      "type": "color",
+      "color": [
+        0.96,
+        0.95,
+        0.93,
+        1.0
+      ],
+      "size": [
+        1920,
+        1080
+      ],
+      "position": [
+        0,
+        0
+      ],
+      "start_frame": 0,
+      "duration_frames": 240
+    },
+    {
+      "id": "cal_0_0",
+      "type": "text",
+      "text": "1",
+      "size": [
+        180,
+        300
+      ],
+      "position": [
+        780,
+        470.0
+      ],
+      "start_frame": 0,
+      "duration_frames": 240,
+      "style": {
+        "font": "assets/fonts/PlayfairDisplay.ttf",
+        "font_size": 230,
+        "min_font_size": 230,
+        "max_font_size": 230,
+        "fit_mode": "shrink_only",
+        "fill": "#262521"
+      },
+      "animation": {
+        "tracks": [
+          {
+            "property": "opacity",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 1.0
+              },
+              {
+                "frame": 48,
+                "value": 1.0
+              },
+              {
+                "frame": 60,
+                "value": 0.0
+              },
+              {
+                "frame": 239,
+                "value": 0.0
+              }
+            ],
+            "easing": "in_out_cubic"
+          },
+          {
+            "property": "scale_y",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 0.62
+              },
+              {
+                "frame": 6,
+                "value": 1.0
+              },
+              {
+                "frame": 48,
+                "value": 1.0
+              },
+              {
+                "frame": 56,
+                "value": 0.62
+              },
+              {
+                "frame": 239,
+                "value": 0.62
+              }
+            ],
+            "easing": "out_cubic"
+          }
+        ]
+      }
+    },
+    {
+      "id": "cal_0_1",
+      "type": "text",
+      "text": "9",
+      "size": [
+        180,
+        300
+      ],
+      "position": [
+        900,
+        470.0
+      ],
+      "start_frame": 0,
+      "duration_frames": 240,
+      "style": {
+        "font": "assets/fonts/PlayfairDisplay.ttf",
+        "font_size": 230,
+        "min_font_size": 230,
+        "max_font_size": 230,
+        "fit_mode": "shrink_only",
+        "fill": "#262521"
+      },
+      "animation": {
+        "tracks": [
+          {
+            "property": "opacity",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 1.0
+              },
+              {
+                "frame": 48,
+                "value": 1.0
+              },
+              {
+                "frame": 60,
+                "value": 0.0
+              },
+              {
+                "frame": 239,
+                "value": 0.0
+              }
+            ],
+            "easing": "in_out_cubic"
+          },
+          {
+            "property": "scale_y",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 0.62
+              },
+              {
+                "frame": 6,
+                "value": 1.0
+              },
+              {
+                "frame": 48,
+                "value": 1.0
+              },
+              {
+                "frame": 56,
+                "value": 0.62
+              },
+              {
+                "frame": 239,
+                "value": 0.62
+              }
+            ],
+            "easing": "out_cubic"
+          }
+        ]
+      }
+    },
+    {
+      "id": "cal_0_2",
+      "type": "text",
+      "text": "4",
+      "size": [
+        180,
+        300
+      ],
+      "position": [
+        1020,
+        470.0
+      ],
+      "start_frame": 0,
+      "duration_frames": 240,
+      "style": {
+        "font": "assets/fonts/PlayfairDisplay.ttf",
+        "font_size": 230,
+        "min_font_size": 230,
+        "max_font_size": 230,
+        "fit_mode": "shrink_only",
+        "fill": "#262521"
+      },
+      "animation": {
+        "tracks": [
+          {
+            "property": "opacity",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 1.0
+              },
+              {
+                "frame": 48,
+                "value": 1.0
+              },
+              {
+                "frame": 60,
+                "value": 0.0
+              },
+              {
+                "frame": 239,
+                "value": 0.0
+              }
+            ],
+            "easing": "in_out_cubic"
+          },
+          {
+            "property": "scale_y",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 0.62
+              },
+              {
+                "frame": 6,
+                "value": 1.0
+              },
+              {
+                "frame": 48,
+                "value": 1.0
+              },
+              {
+                "frame": 56,
+                "value": 0.62
+              },
+              {
+                "frame": 239,
+                "value": 0.62
+              }
+            ],
+            "easing": "out_cubic"
+          }
+        ]
+      }
+    },
+    {
+      "id": "cal_0_3",
+      "type": "text",
+      "text": "8",
+      "size": [
+        180,
+        300
+      ],
+      "position": [
+        1140,
+        470.0
+      ],
+      "start_frame": 0,
+      "duration_frames": 240,
+      "style": {
+        "font": "assets/fonts/PlayfairDisplay.ttf",
+        "font_size": 230,
+        "min_font_size": 230,
+        "max_font_size": 230,
+        "fit_mode": "shrink_only",
+        "fill": "#262521"
+      },
+      "animation": {
+        "tracks": [
+          {
+            "property": "opacity",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 1.0
+              },
+              {
+                "frame": 48,
+                "value": 1.0
+              },
+              {
+                "frame": 60,
+                "value": 0.0
+              },
+              {
+                "frame": 239,
+                "value": 0.0
+              }
+            ],
+            "easing": "in_out_cubic"
+          },
+          {
+            "property": "scale_y",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 0.62
+              },
+              {
+                "frame": 6,
+                "value": 1.0
+              },
+              {
+                "frame": 48,
+                "value": 1.0
+              },
+              {
+                "frame": 56,
+                "value": 0.62
+              },
+              {
+                "frame": 239,
+                "value": 0.62
+              }
+            ],
+            "easing": "out_cubic"
+          }
+        ]
+      }
+    },
+    {
+      "id": "cal_1_0",
+      "type": "text",
+      "text": "1",
+      "size": [
+        180,
+        300
+      ],
+      "position": [
+        780,
+        470.0
+      ],
+      "start_frame": 0,
+      "duration_frames": 240,
+      "style": {
+        "font": "assets/fonts/PlayfairDisplay.ttf",
+        "font_size": 230,
+        "min_font_size": 230,
+        "max_font_size": 230,
+        "fit_mode": "shrink_only",
+        "fill": "#262521"
+      },
+      "animation": {
+        "tracks": [
+          {
+            "property": "opacity",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 0.0
+              },
+              {
+                "frame": 48,
+                "value": 0.0
+              },
+              {
+                "frame": 60,
+                "value": 1.0
+              },
+              {
+                "frame": 120,
+                "value": 1.0
+              },
+              {
+                "frame": 132,
+                "value": 0.0
+              },
+              {
+                "frame": 239,
+                "value": 0.0
+              }
+            ],
+            "easing": "in_out_cubic"
+          },
+          {
+            "property": "scale_y",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 0.62
+              },
+              {
+                "frame": 48,
+                "value": 0.62
+              },
+              {
+                "frame": 60,
+                "value": 0.62
+              },
+              {
+                "frame": 66,
+                "value": 1.0
+              },
+              {
+                "frame": 120,
+                "value": 1.0
+              },
+              {
+                "frame": 128,
+                "value": 0.62
+              },
+              {
+                "frame": 239,
+                "value": 0.62
+              }
+            ],
+            "easing": "out_cubic"
+          }
+        ]
+      }
+    },
+    {
+      "id": "cal_1_1",
+      "type": "text",
+      "text": "9",
+      "size": [
+        180,
+        300
+      ],
+      "position": [
+        900,
+        470.0
+      ],
+      "start_frame": 0,
+      "duration_frames": 240,
+      "style": {
+        "font": "assets/fonts/PlayfairDisplay.ttf",
+        "font_size": 230,
+        "min_font_size": 230,
+        "max_font_size": 230,
+        "fit_mode": "shrink_only",
+        "fill": "#262521"
+      },
+      "animation": {
+        "tracks": [
+          {
+            "property": "opacity",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 0.0
+              },
+              {
+                "frame": 48,
+                "value": 0.0
+              },
+              {
+                "frame": 60,
+                "value": 1.0
+              },
+              {
+                "frame": 120,
+                "value": 1.0
+              },
+              {
+                "frame": 132,
+                "value": 0.0
+              },
+              {
+                "frame": 239,
+                "value": 0.0
+              }
+            ],
+            "easing": "in_out_cubic"
+          },
+          {
+            "property": "scale_y",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 0.62
+              },
+              {
+                "frame": 48,
+                "value": 0.62
+              },
+              {
+                "frame": 60,
+                "value": 0.62
+              },
+              {
+                "frame": 66,
+                "value": 1.0
+              },
+              {
+                "frame": 120,
+                "value": 1.0
+              },
+              {
+                "frame": 128,
+                "value": 0.62
+              },
+              {
+                "frame": 239,
+                "value": 0.62
+              }
+            ],
+            "easing": "out_cubic"
+          }
+        ]
+      }
+    },
+    {
+      "id": "cal_1_2",
+      "type": "text",
+      "text": "6",
+      "size": [
+        180,
+        300
+      ],
+      "position": [
+        1020,
+        470.0
+      ],
+      "start_frame": 0,
+      "duration_frames": 240,
+      "style": {
+        "font": "assets/fonts/PlayfairDisplay.ttf",
+        "font_size": 230,
+        "min_font_size": 230,
+        "max_font_size": 230,
+        "fit_mode": "shrink_only",
+        "fill": "#262521"
+      },
+      "animation": {
+        "tracks": [
+          {
+            "property": "opacity",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 0.0
+              },
+              {
+                "frame": 48,
+                "value": 0.0
+              },
+              {
+                "frame": 60,
+                "value": 1.0
+              },
+              {
+                "frame": 120,
+                "value": 1.0
+              },
+              {
+                "frame": 132,
+                "value": 0.0
+              },
+              {
+                "frame": 239,
+                "value": 0.0
+              }
+            ],
+            "easing": "in_out_cubic"
+          },
+          {
+            "property": "scale_y",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 0.62
+              },
+              {
+                "frame": 48,
+                "value": 0.62
+              },
+              {
+                "frame": 60,
+                "value": 0.62
+              },
+              {
+                "frame": 66,
+                "value": 1.0
+              },
+              {
+                "frame": 120,
+                "value": 1.0
+              },
+              {
+                "frame": 128,
+                "value": 0.62
+              },
+              {
+                "frame": 239,
+                "value": 0.62
+              }
+            ],
+            "easing": "out_cubic"
+          }
+        ]
+      }
+    },
+    {
+      "id": "cal_1_3",
+      "type": "text",
+      "text": "9",
+      "size": [
+        180,
+        300
+      ],
+      "position": [
+        1140,
+        470.0
+      ],
+      "start_frame": 0,
+      "duration_frames": 240,
+      "style": {
+        "font": "assets/fonts/PlayfairDisplay.ttf",
+        "font_size": 230,
+        "min_font_size": 230,
+        "max_font_size": 230,
+        "fit_mode": "shrink_only",
+        "fill": "#262521"
+      },
+      "animation": {
+        "tracks": [
+          {
+            "property": "opacity",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 0.0
+              },
+              {
+                "frame": 48,
+                "value": 0.0
+              },
+              {
+                "frame": 60,
+                "value": 1.0
+              },
+              {
+                "frame": 120,
+                "value": 1.0
+              },
+              {
+                "frame": 132,
+                "value": 0.0
+              },
+              {
+                "frame": 239,
+                "value": 0.0
+              }
+            ],
+            "easing": "in_out_cubic"
+          },
+          {
+            "property": "scale_y",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 0.62
+              },
+              {
+                "frame": 48,
+                "value": 0.62
+              },
+              {
+                "frame": 60,
+                "value": 0.62
+              },
+              {
+                "frame": 66,
+                "value": 1.0
+              },
+              {
+                "frame": 120,
+                "value": 1.0
+              },
+              {
+                "frame": 128,
+                "value": 0.62
+              },
+              {
+                "frame": 239,
+                "value": 0.62
+              }
+            ],
+            "easing": "out_cubic"
+          }
+        ]
+      }
+    },
+    {
+      "id": "cal_2_0",
+      "type": "text",
+      "text": "1",
+      "size": [
+        180,
+        300
+      ],
+      "position": [
+        780,
+        470.0
+      ],
+      "start_frame": 0,
+      "duration_frames": 240,
+      "style": {
+        "font": "assets/fonts/PlayfairDisplay.ttf",
+        "font_size": 230,
+        "min_font_size": 230,
+        "max_font_size": 230,
+        "fit_mode": "shrink_only",
+        "fill": "#262521"
+      },
+      "animation": {
+        "tracks": [
+          {
+            "property": "opacity",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 0.0
+              },
+              {
+                "frame": 120,
+                "value": 0.0
+              },
+              {
+                "frame": 132,
+                "value": 1.0
+              },
+              {
+                "frame": 192,
+                "value": 1.0
+              },
+              {
+                "frame": 204,
+                "value": 0.0
+              },
+              {
+                "frame": 239,
+                "value": 0.0
+              }
+            ],
+            "easing": "in_out_cubic"
+          },
+          {
+            "property": "scale_y",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 0.62
+              },
+              {
+                "frame": 120,
+                "value": 0.62
+              },
+              {
+                "frame": 132,
+                "value": 0.62
+              },
+              {
+                "frame": 138,
+                "value": 1.0
+              },
+              {
+                "frame": 192,
+                "value": 1.0
+              },
+              {
+                "frame": 200,
+                "value": 0.62
+              },
+              {
+                "frame": 239,
+                "value": 0.62
+              }
+            ],
+            "easing": "out_cubic"
+          }
+        ]
+      }
+    },
+    {
+      "id": "cal_2_1",
+      "type": "text",
+      "text": "9",
+      "size": [
+        180,
+        300
+      ],
+      "position": [
+        900,
+        470.0
+      ],
+      "start_frame": 0,
+      "duration_frames": 240,
+      "style": {
+        "font": "assets/fonts/PlayfairDisplay.ttf",
+        "font_size": 230,
+        "min_font_size": 230,
+        "max_font_size": 230,
+        "fit_mode": "shrink_only",
+        "fill": "#262521"
+      },
+      "animation": {
+        "tracks": [
+          {
+            "property": "opacity",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 0.0
+              },
+              {
+                "frame": 120,
+                "value": 0.0
+              },
+              {
+                "frame": 132,
+                "value": 1.0
+              },
+              {
+                "frame": 192,
+                "value": 1.0
+              },
+              {
+                "frame": 204,
+                "value": 0.0
+              },
+              {
+                "frame": 239,
+                "value": 0.0
+              }
+            ],
+            "easing": "in_out_cubic"
+          },
+          {
+            "property": "scale_y",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 0.62
+              },
+              {
+                "frame": 120,
+                "value": 0.62
+              },
+              {
+                "frame": 132,
+                "value": 0.62
+              },
+              {
+                "frame": 138,
+                "value": 1.0
+              },
+              {
+                "frame": 192,
+                "value": 1.0
+              },
+              {
+                "frame": 200,
+                "value": 0.62
+              },
+              {
+                "frame": 239,
+                "value": 0.62
+              }
+            ],
+            "easing": "out_cubic"
+          }
+        ]
+      }
+    },
+    {
+      "id": "cal_2_2",
+      "type": "text",
+      "text": "9",
+      "size": [
+        180,
+        300
+      ],
+      "position": [
+        1020,
+        470.0
+      ],
+      "start_frame": 0,
+      "duration_frames": 240,
+      "style": {
+        "font": "assets/fonts/PlayfairDisplay.ttf",
+        "font_size": 230,
+        "min_font_size": 230,
+        "max_font_size": 230,
+        "fit_mode": "shrink_only",
+        "fill": "#262521"
+      },
+      "animation": {
+        "tracks": [
+          {
+            "property": "opacity",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 0.0
+              },
+              {
+                "frame": 120,
+                "value": 0.0
+              },
+              {
+                "frame": 132,
+                "value": 1.0
+              },
+              {
+                "frame": 192,
+                "value": 1.0
+              },
+              {
+                "frame": 204,
+                "value": 0.0
+              },
+              {
+                "frame": 239,
+                "value": 0.0
+              }
+            ],
+            "easing": "in_out_cubic"
+          },
+          {
+            "property": "scale_y",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 0.62
+              },
+              {
+                "frame": 120,
+                "value": 0.62
+              },
+              {
+                "frame": 132,
+                "value": 0.62
+              },
+              {
+                "frame": 138,
+                "value": 1.0
+              },
+              {
+                "frame": 192,
+                "value": 1.0
+              },
+              {
+                "frame": 200,
+                "value": 0.62
+              },
+              {
+                "frame": 239,
+                "value": 0.62
+              }
+            ],
+            "easing": "out_cubic"
+          }
+        ]
+      }
+    },
+    {
+      "id": "cal_2_3",
+      "type": "text",
+      "text": "8",
+      "size": [
+        180,
+        300
+      ],
+      "position": [
+        1140,
+        470.0
+      ],
+      "start_frame": 0,
+      "duration_frames": 240,
+      "style": {
+        "font": "assets/fonts/PlayfairDisplay.ttf",
+        "font_size": 230,
+        "min_font_size": 230,
+        "max_font_size": 230,
+        "fit_mode": "shrink_only",
+        "fill": "#262521"
+      },
+      "animation": {
+        "tracks": [
+          {
+            "property": "opacity",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 0.0
+              },
+              {
+                "frame": 120,
+                "value": 0.0
+              },
+              {
+                "frame": 132,
+                "value": 1.0
+              },
+              {
+                "frame": 192,
+                "value": 1.0
+              },
+              {
+                "frame": 204,
+                "value": 0.0
+              },
+              {
+                "frame": 239,
+                "value": 0.0
+              }
+            ],
+            "easing": "in_out_cubic"
+          },
+          {
+            "property": "scale_y",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 0.62
+              },
+              {
+                "frame": 120,
+                "value": 0.62
+              },
+              {
+                "frame": 132,
+                "value": 0.62
+              },
+              {
+                "frame": 138,
+                "value": 1.0
+              },
+              {
+                "frame": 192,
+                "value": 1.0
+              },
+              {
+                "frame": 200,
+                "value": 0.62
+              },
+              {
+                "frame": 239,
+                "value": 0.62
+              }
+            ],
+            "easing": "out_cubic"
+          }
+        ]
+      }
+    },
+    {
+      "id": "cal_3_0",
+      "type": "text",
+      "text": "2",
+      "size": [
+        180,
+        300
+      ],
+      "position": [
+        780,
+        470.0
+      ],
+      "start_frame": 0,
+      "duration_frames": 240,
+      "style": {
+        "font": "assets/fonts/PlayfairDisplay.ttf",
+        "font_size": 230,
+        "min_font_size": 230,
+        "max_font_size": 230,
+        "fit_mode": "shrink_only",
+        "fill": "#262521"
+      },
+      "animation": {
+        "tracks": [
+          {
+            "property": "opacity",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 0.0
+              },
+              {
+                "frame": 192,
+                "value": 0.0
+              },
+              {
+                "frame": 204,
+                "value": 1.0
+              },
+              {
+                "frame": 239,
+                "value": 1.0
+              }
+            ],
+            "easing": "in_out_cubic"
+          },
+          {
+            "property": "scale_y",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 0.62
+              },
+              {
+                "frame": 204,
+                "value": 0.62
+              },
+              {
+                "frame": 210,
+                "value": 1.0
+              },
+              {
+                "frame": 239,
+                "value": 1.0
+              }
+            ],
+            "easing": "out_cubic"
+          }
+        ]
+      }
+    },
+    {
+      "id": "cal_3_1",
+      "type": "text",
+      "text": "0",
+      "size": [
+        180,
+        300
+      ],
+      "position": [
+        900,
+        470.0
+      ],
+      "start_frame": 0,
+      "duration_frames": 240,
+      "style": {
+        "font": "assets/fonts/PlayfairDisplay.ttf",
+        "font_size": 230,
+        "min_font_size": 230,
+        "max_font_size": 230,
+        "fit_mode": "shrink_only",
+        "fill": "#262521"
+      },
+      "animation": {
+        "tracks": [
+          {
+            "property": "opacity",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 0.0
+              },
+              {
+                "frame": 192,
+                "value": 0.0
+              },
+              {
+                "frame": 204,
+                "value": 1.0
+              },
+              {
+                "frame": 239,
+                "value": 1.0
+              }
+            ],
+            "easing": "in_out_cubic"
+          },
+          {
+            "property": "scale_y",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 0.62
+              },
+              {
+                "frame": 204,
+                "value": 0.62
+              },
+              {
+                "frame": 210,
+                "value": 1.0
+              },
+              {
+                "frame": 239,
+                "value": 1.0
+              }
+            ],
+            "easing": "out_cubic"
+          }
+        ]
+      }
+    },
+    {
+      "id": "cal_3_2",
+      "type": "text",
+      "text": "2",
+      "size": [
+        180,
+        300
+      ],
+      "position": [
+        1020,
+        470.0
+      ],
+      "start_frame": 0,
+      "duration_frames": 240,
+      "style": {
+        "font": "assets/fonts/PlayfairDisplay.ttf",
+        "font_size": 230,
+        "min_font_size": 230,
+        "max_font_size": 230,
+        "fit_mode": "shrink_only",
+        "fill": "#262521"
+      },
+      "animation": {
+        "tracks": [
+          {
+            "property": "opacity",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 0.0
+              },
+              {
+                "frame": 192,
+                "value": 0.0
+              },
+              {
+                "frame": 204,
+                "value": 1.0
+              },
+              {
+                "frame": 239,
+                "value": 1.0
+              }
+            ],
+            "easing": "in_out_cubic"
+          },
+          {
+            "property": "scale_y",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 0.62
+              },
+              {
+                "frame": 204,
+                "value": 0.62
+              },
+              {
+                "frame": 210,
+                "value": 1.0
+              },
+              {
+                "frame": 239,
+                "value": 1.0
+              }
+            ],
+            "easing": "out_cubic"
+          }
+        ]
+      }
+    },
+    {
+      "id": "cal_3_3",
+      "type": "text",
+      "text": "6",
+      "size": [
+        180,
+        300
+      ],
+      "position": [
+        1140,
+        470.0
+      ],
+      "start_frame": 0,
+      "duration_frames": 240,
+      "style": {
+        "font": "assets/fonts/PlayfairDisplay.ttf",
+        "font_size": 230,
+        "min_font_size": 230,
+        "max_font_size": 230,
+        "fit_mode": "shrink_only",
+        "fill": "#262521"
+      },
+      "animation": {
+        "tracks": [
+          {
+            "property": "opacity",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 0.0
+              },
+              {
+                "frame": 192,
+                "value": 0.0
+              },
+              {
+                "frame": 204,
+                "value": 1.0
+              },
+              {
+                "frame": 239,
+                "value": 1.0
+              }
+            ],
+            "easing": "in_out_cubic"
+          },
+          {
+            "property": "scale_y",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 0.62
+              },
+              {
+                "frame": 204,
+                "value": 0.62
+              },
+              {
+                "frame": 210,
+                "value": 1.0
+              },
+              {
+                "frame": 239,
+                "value": 1.0
+              }
+            ],
+            "easing": "out_cubic"
+          }
+        ]
+      }
+    }
+  ],
+  "output": {
+    "path": "05_calendar_flip.mp4",
+    "format": "mp4",
+    "codec": "h264",
+    "crf": 14
+  }
+}

@@ -1,0 +1,672 @@
+{
+  "schema": "chronon.render-plan.v3",
+  "version": 3,
+  "job_id": "date_animation_07_split_date",
+  "canvas": {
+    "width": 1920,
+    "height": 1080,
+    "fps_num": 24,
+    "fps_den": 1,
+    "duration_frames": 240
+  },
+  "layers": [
+    {
+      "id": "bg",
+      "type": "color",
+      "color": [
+        0.96,
+        0.95,
+        0.93,
+        1.0
+      ],
+      "size": [
+        1920,
+        1080
+      ],
+      "position": [
+        0,
+        0
+      ],
+      "start_frame": 0,
+      "duration_frames": 240
+    },
+    {
+      "id": "split_p_0",
+      "type": "text",
+      "text": "19",
+      "size": [
+        400,
+        300
+      ],
+      "position": [
+        800,
+        470.0
+      ],
+      "start_frame": 0,
+      "duration_frames": 240,
+      "style": {
+        "font": "assets/fonts/PlayfairDisplay.ttf",
+        "font_size": 230,
+        "min_font_size": 230,
+        "max_font_size": 230,
+        "fit_mode": "shrink_only",
+        "fill": "#262521"
+      },
+      "animation": {
+        "tracks": [
+          {
+            "property": "position_x",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 0.0
+              },
+              {
+                "frame": 48,
+                "value": 0.0
+              },
+              {
+                "frame": 60,
+                "value": -30.0
+              },
+              {
+                "frame": 239,
+                "value": -30.0
+              }
+            ],
+            "easing": "in_out_cubic"
+          },
+          {
+            "property": "opacity",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 1.0
+              },
+              {
+                "frame": 48,
+                "value": 1.0
+              },
+              {
+                "frame": 60,
+                "value": 0.0
+              },
+              {
+                "frame": 239,
+                "value": 0.0
+              }
+            ],
+            "easing": "in_out_cubic"
+          }
+        ]
+      }
+    },
+    {
+      "id": "split_s_0",
+      "type": "text",
+      "text": "48",
+      "size": [
+        400,
+        300
+      ],
+      "position": [
+        1120,
+        470.0
+      ],
+      "start_frame": 0,
+      "duration_frames": 240,
+      "style": {
+        "font": "assets/fonts/PlayfairDisplay.ttf",
+        "font_size": 230,
+        "min_font_size": 230,
+        "max_font_size": 230,
+        "fit_mode": "shrink_only",
+        "fill": "#262521"
+      },
+      "animation": {
+        "tracks": [
+          {
+            "property": "position_x",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 0.0
+              },
+              {
+                "frame": 48,
+                "value": 0.0
+              },
+              {
+                "frame": 60,
+                "value": 30.0
+              },
+              {
+                "frame": 239,
+                "value": 30.0
+              }
+            ],
+            "easing": "in_out_cubic"
+          },
+          {
+            "property": "opacity",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 1.0
+              },
+              {
+                "frame": 48,
+                "value": 1.0
+              },
+              {
+                "frame": 60,
+                "value": 0.0
+              },
+              {
+                "frame": 239,
+                "value": 0.0
+              }
+            ],
+            "easing": "in_out_cubic"
+          }
+        ]
+      }
+    },
+    {
+      "id": "split_p_1",
+      "type": "text",
+      "text": "19",
+      "size": [
+        400,
+        300
+      ],
+      "position": [
+        800,
+        470.0
+      ],
+      "start_frame": 0,
+      "duration_frames": 240,
+      "style": {
+        "font": "assets/fonts/PlayfairDisplay.ttf",
+        "font_size": 230,
+        "min_font_size": 230,
+        "max_font_size": 230,
+        "fit_mode": "shrink_only",
+        "fill": "#262521"
+      },
+      "animation": {
+        "tracks": [
+          {
+            "property": "position_x",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 30.0
+              },
+              {
+                "frame": 48,
+                "value": 30.0
+              },
+              {
+                "frame": 60,
+                "value": 0.0
+              },
+              {
+                "frame": 120,
+                "value": 0.0
+              },
+              {
+                "frame": 132,
+                "value": -30.0
+              },
+              {
+                "frame": 239,
+                "value": -30.0
+              }
+            ],
+            "easing": "in_out_cubic"
+          },
+          {
+            "property": "opacity",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 0.0
+              },
+              {
+                "frame": 48,
+                "value": 0.0
+              },
+              {
+                "frame": 60,
+                "value": 1.0
+              },
+              {
+                "frame": 120,
+                "value": 1.0
+              },
+              {
+                "frame": 132,
+                "value": 0.0
+              },
+              {
+                "frame": 239,
+                "value": 0.0
+              }
+            ],
+            "easing": "in_out_cubic"
+          }
+        ]
+      }
+    },
+    {
+      "id": "split_s_1",
+      "type": "text",
+      "text": "69",
+      "size": [
+        400,
+        300
+      ],
+      "position": [
+        1120,
+        470.0
+      ],
+      "start_frame": 0,
+      "duration_frames": 240,
+      "style": {
+        "font": "assets/fonts/PlayfairDisplay.ttf",
+        "font_size": 230,
+        "min_font_size": 230,
+        "max_font_size": 230,
+        "fit_mode": "shrink_only",
+        "fill": "#262521"
+      },
+      "animation": {
+        "tracks": [
+          {
+            "property": "position_x",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": -30.0
+              },
+              {
+                "frame": 48,
+                "value": -30.0
+              },
+              {
+                "frame": 60,
+                "value": 0.0
+              },
+              {
+                "frame": 120,
+                "value": 0.0
+              },
+              {
+                "frame": 132,
+                "value": 30.0
+              },
+              {
+                "frame": 239,
+                "value": 30.0
+              }
+            ],
+            "easing": "in_out_cubic"
+          },
+          {
+            "property": "opacity",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 0.0
+              },
+              {
+                "frame": 48,
+                "value": 0.0
+              },
+              {
+                "frame": 60,
+                "value": 1.0
+              },
+              {
+                "frame": 120,
+                "value": 1.0
+              },
+              {
+                "frame": 132,
+                "value": 0.0
+              },
+              {
+                "frame": 239,
+                "value": 0.0
+              }
+            ],
+            "easing": "in_out_cubic"
+          }
+        ]
+      }
+    },
+    {
+      "id": "split_p_2",
+      "type": "text",
+      "text": "19",
+      "size": [
+        400,
+        300
+      ],
+      "position": [
+        800,
+        470.0
+      ],
+      "start_frame": 0,
+      "duration_frames": 240,
+      "style": {
+        "font": "assets/fonts/PlayfairDisplay.ttf",
+        "font_size": 230,
+        "min_font_size": 230,
+        "max_font_size": 230,
+        "fit_mode": "shrink_only",
+        "fill": "#262521"
+      },
+      "animation": {
+        "tracks": [
+          {
+            "property": "position_x",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 30.0
+              },
+              {
+                "frame": 48,
+                "value": 30.0
+              },
+              {
+                "frame": 60,
+                "value": 0.0
+              },
+              {
+                "frame": 120,
+                "value": 0.0
+              },
+              {
+                "frame": 132,
+                "value": -30.0
+              },
+              {
+                "frame": 239,
+                "value": -30.0
+              }
+            ],
+            "easing": "in_out_cubic"
+          },
+          {
+            "property": "opacity",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 0.0
+              },
+              {
+                "frame": 120,
+                "value": 0.0
+              },
+              {
+                "frame": 132,
+                "value": 1.0
+              },
+              {
+                "frame": 192,
+                "value": 1.0
+              },
+              {
+                "frame": 204,
+                "value": 0.0
+              },
+              {
+                "frame": 239,
+                "value": 0.0
+              }
+            ],
+            "easing": "in_out_cubic"
+          }
+        ]
+      }
+    },
+    {
+      "id": "split_s_2",
+      "type": "text",
+      "text": "98",
+      "size": [
+        400,
+        300
+      ],
+      "position": [
+        1120,
+        470.0
+      ],
+      "start_frame": 0,
+      "duration_frames": 240,
+      "style": {
+        "font": "assets/fonts/PlayfairDisplay.ttf",
+        "font_size": 230,
+        "min_font_size": 230,
+        "max_font_size": 230,
+        "fit_mode": "shrink_only",
+        "fill": "#262521"
+      },
+      "animation": {
+        "tracks": [
+          {
+            "property": "position_x",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": -30.0
+              },
+              {
+                "frame": 48,
+                "value": -30.0
+              },
+              {
+                "frame": 60,
+                "value": 0.0
+              },
+              {
+                "frame": 120,
+                "value": 0.0
+              },
+              {
+                "frame": 132,
+                "value": 30.0
+              },
+              {
+                "frame": 239,
+                "value": 30.0
+              }
+            ],
+            "easing": "in_out_cubic"
+          },
+          {
+            "property": "opacity",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 0.0
+              },
+              {
+                "frame": 120,
+                "value": 0.0
+              },
+              {
+                "frame": 132,
+                "value": 1.0
+              },
+              {
+                "frame": 192,
+                "value": 1.0
+              },
+              {
+                "frame": 204,
+                "value": 0.0
+              },
+              {
+                "frame": 239,
+                "value": 0.0
+              }
+            ],
+            "easing": "in_out_cubic"
+          }
+        ]
+      }
+    },
+    {
+      "id": "split_p_3",
+      "type": "text",
+      "text": "20",
+      "size": [
+        400,
+        300
+      ],
+      "position": [
+        800,
+        470.0
+      ],
+      "start_frame": 0,
+      "duration_frames": 240,
+      "style": {
+        "font": "assets/fonts/PlayfairDisplay.ttf",
+        "font_size": 230,
+        "min_font_size": 230,
+        "max_font_size": 230,
+        "fit_mode": "shrink_only",
+        "fill": "#262521"
+      },
+      "animation": {
+        "tracks": [
+          {
+            "property": "position_x",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 30.0
+              },
+              {
+                "frame": 192,
+                "value": 30.0
+              },
+              {
+                "frame": 204,
+                "value": 0.0
+              },
+              {
+                "frame": 239,
+                "value": 0.0
+              }
+            ],
+            "easing": "in_out_cubic"
+          },
+          {
+            "property": "opacity",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 0.0
+              },
+              {
+                "frame": 192,
+                "value": 0.0
+              },
+              {
+                "frame": 204,
+                "value": 1.0
+              },
+              {
+                "frame": 239,
+                "value": 1.0
+              }
+            ],
+            "easing": "in_out_cubic"
+          }
+        ]
+      }
+    },
+    {
+      "id": "split_s_3",
+      "type": "text",
+      "text": "26",
+      "size": [
+        400,
+        300
+      ],
+      "position": [
+        1120,
+        470.0
+      ],
+      "start_frame": 0,
+      "duration_frames": 240,
+      "style": {
+        "font": "assets/fonts/PlayfairDisplay.ttf",
+        "font_size": 230,
+        "min_font_size": 230,
+        "max_font_size": 230,
+        "fit_mode": "shrink_only",
+        "fill": "#262521"
+      },
+      "animation": {
+        "tracks": [
+          {
+            "property": "position_x",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": -30.0
+              },
+              {
+                "frame": 192,
+                "value": -30.0
+              },
+              {
+                "frame": 204,
+                "value": 0.0
+              },
+              {
+                "frame": 239,
+                "value": 0.0
+              }
+            ],
+            "easing": "in_out_cubic"
+          },
+          {
+            "property": "opacity",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 0.0
+              },
+              {
+                "frame": 192,
+                "value": 0.0
+              },
+              {
+                "frame": 204,
+                "value": 1.0
+              },
+              {
+                "frame": 239,
+                "value": 1.0
+              }
+            ],
+            "easing": "in_out_cubic"
+          }
+        ]
+      }
+    }
+  ],
+  "output": {
+    "path": "07_split_date.mp4",
+    "format": "mp4",
+    "codec": "h264",
+    "crf": 14
+  }
+}

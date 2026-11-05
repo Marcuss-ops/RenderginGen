@@ -1,0 +1,426 @@
+{
+  "schema": "chronon.render-plan.v3",
+  "version": 3,
+  "job_id": "date_animation_09_moving_point",
+  "canvas": {
+    "width": 1920,
+    "height": 1080,
+    "fps_num": 24,
+    "fps_den": 1,
+    "duration_frames": 240
+  },
+  "layers": [
+    {
+      "id": "bg",
+      "type": "color",
+      "color": [
+        0.96,
+        0.95,
+        0.93,
+        1.0
+      ],
+      "size": [
+        1920,
+        1080
+      ],
+      "position": [
+        0,
+        0
+      ],
+      "start_frame": 0,
+      "duration_frames": 240
+    },
+    {
+      "id": "date_0",
+      "type": "text",
+      "text": "1948",
+      "size": [
+        1200,
+        300
+      ],
+      "position": [
+        960,
+        470.0
+      ],
+      "start_frame": 0,
+      "duration_frames": 240,
+      "style": {
+        "font": "assets/fonts/PlayfairDisplay.ttf",
+        "font_size": 230,
+        "min_font_size": 230,
+        "max_font_size": 230,
+        "fit_mode": "shrink_only",
+        "fill": "#262521"
+      },
+      "animation": {
+        "tracks": [
+          {
+            "property": "opacity",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 1.0
+              },
+              {
+                "frame": 48,
+                "value": 1.0
+              },
+              {
+                "frame": 60,
+                "value": 0.0
+              },
+              {
+                "frame": 239,
+                "value": 0.0
+              }
+            ],
+            "easing": "in_out_cubic"
+          }
+        ]
+      }
+    },
+    {
+      "id": "date_1",
+      "type": "text",
+      "text": "1969",
+      "size": [
+        1200,
+        300
+      ],
+      "position": [
+        960,
+        470.0
+      ],
+      "start_frame": 0,
+      "duration_frames": 240,
+      "style": {
+        "font": "assets/fonts/PlayfairDisplay.ttf",
+        "font_size": 230,
+        "min_font_size": 230,
+        "max_font_size": 230,
+        "fit_mode": "shrink_only",
+        "fill": "#262521"
+      },
+      "animation": {
+        "tracks": [
+          {
+            "property": "opacity",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 0.0
+              },
+              {
+                "frame": 48,
+                "value": 0.0
+              },
+              {
+                "frame": 60,
+                "value": 1.0
+              },
+              {
+                "frame": 120,
+                "value": 1.0
+              },
+              {
+                "frame": 132,
+                "value": 0.0
+              },
+              {
+                "frame": 239,
+                "value": 0.0
+              }
+            ],
+            "easing": "in_out_cubic"
+          }
+        ]
+      }
+    },
+    {
+      "id": "date_2",
+      "type": "text",
+      "text": "1998",
+      "size": [
+        1200,
+        300
+      ],
+      "position": [
+        960,
+        470.0
+      ],
+      "start_frame": 0,
+      "duration_frames": 240,
+      "style": {
+        "font": "assets/fonts/PlayfairDisplay.ttf",
+        "font_size": 230,
+        "min_font_size": 230,
+        "max_font_size": 230,
+        "fit_mode": "shrink_only",
+        "fill": "#262521"
+      },
+      "animation": {
+        "tracks": [
+          {
+            "property": "opacity",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 0.0
+              },
+              {
+                "frame": 120,
+                "value": 0.0
+              },
+              {
+                "frame": 132,
+                "value": 1.0
+              },
+              {
+                "frame": 192,
+                "value": 1.0
+              },
+              {
+                "frame": 204,
+                "value": 0.0
+              },
+              {
+                "frame": 239,
+                "value": 0.0
+              }
+            ],
+            "easing": "in_out_cubic"
+          }
+        ]
+      }
+    },
+    {
+      "id": "date_3",
+      "type": "text",
+      "text": "2026",
+      "size": [
+        1200,
+        300
+      ],
+      "position": [
+        960,
+        470.0
+      ],
+      "start_frame": 0,
+      "duration_frames": 240,
+      "style": {
+        "font": "assets/fonts/PlayfairDisplay.ttf",
+        "font_size": 230,
+        "min_font_size": 230,
+        "max_font_size": 230,
+        "fit_mode": "shrink_only",
+        "fill": "#262521"
+      },
+      "animation": {
+        "tracks": [
+          {
+            "property": "opacity",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 0.0
+              },
+              {
+                "frame": 192,
+                "value": 0.0
+              },
+              {
+                "frame": 204,
+                "value": 1.0
+              },
+              {
+                "frame": 239,
+                "value": 1.0
+              }
+            ],
+            "easing": "in_out_cubic"
+          }
+        ]
+      }
+    },
+    {
+      "id": "rail",
+      "type": "color",
+      "color": [
+        0.72,
+        0.7,
+        0.66,
+        1.0
+      ],
+      "size": [
+        1000,
+        2
+      ],
+      "position": [
+        0,
+        280.0
+      ],
+      "start_frame": 0,
+      "duration_frames": 240
+    },
+    {
+      "id": "axis_0",
+      "type": "text",
+      "text": "1948",
+      "size": [
+        240,
+        40
+      ],
+      "position": [
+        540.0,
+        886.0
+      ],
+      "start_frame": 0,
+      "duration_frames": 240,
+      "style": {
+        "font": "assets/fonts/PlayfairDisplay.ttf",
+        "font_size": 26,
+        "min_font_size": 26,
+        "max_font_size": 26,
+        "fit_mode": "shrink_only",
+        "fill": "#66625B"
+      }
+    },
+    {
+      "id": "axis_1",
+      "type": "text",
+      "text": "1969",
+      "size": [
+        240,
+        40
+      ],
+      "position": [
+        820.0,
+        886.0
+      ],
+      "start_frame": 0,
+      "duration_frames": 240,
+      "style": {
+        "font": "assets/fonts/PlayfairDisplay.ttf",
+        "font_size": 26,
+        "min_font_size": 26,
+        "max_font_size": 26,
+        "fit_mode": "shrink_only",
+        "fill": "#66625B"
+      }
+    },
+    {
+      "id": "axis_2",
+      "type": "text",
+      "text": "1998",
+      "size": [
+        240,
+        40
+      ],
+      "position": [
+        1100.0,
+        886.0
+      ],
+      "start_frame": 0,
+      "duration_frames": 240,
+      "style": {
+        "font": "assets/fonts/PlayfairDisplay.ttf",
+        "font_size": 26,
+        "min_font_size": 26,
+        "max_font_size": 26,
+        "fit_mode": "shrink_only",
+        "fill": "#66625B"
+      }
+    },
+    {
+      "id": "axis_3",
+      "type": "text",
+      "text": "2026",
+      "size": [
+        240,
+        40
+      ],
+      "position": [
+        1380.0,
+        886.0
+      ],
+      "start_frame": 0,
+      "duration_frames": 240,
+      "style": {
+        "font": "assets/fonts/PlayfairDisplay.ttf",
+        "font_size": 26,
+        "min_font_size": 26,
+        "max_font_size": 26,
+        "fit_mode": "shrink_only",
+        "fill": "#66625B"
+      }
+    },
+    {
+      "id": "point_tick",
+      "type": "color",
+      "color": [
+        0.784,
+        0.333,
+        0.239,
+        1.0
+      ],
+      "size": [
+        2,
+        18
+      ],
+      "position": [
+        -420.0,
+        280.0
+      ],
+      "start_frame": 0,
+      "duration_frames": 240,
+      "animation": {
+        "tracks": [
+          {
+            "property": "position_x",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 0.0
+              },
+              {
+                "frame": 48,
+                "value": 0.0
+              },
+              {
+                "frame": 60,
+                "value": 280.0
+              },
+              {
+                "frame": 120,
+                "value": 280.0
+              },
+              {
+                "frame": 132,
+                "value": 560.0
+              },
+              {
+                "frame": 192,
+                "value": 560.0
+              },
+              {
+                "frame": 204,
+                "value": 840.0
+              },
+              {
+                "frame": 239,
+                "value": 840.0
+              }
+            ],
+            "easing": "in_out_cubic"
+          }
+        ]
+      }
+    }
+  ],
+  "output": {
+    "path": "09_moving_point.mp4",
+    "format": "mp4",
+    "codec": "h264",
+    "crf": 14
+  }
+}

@@ -177,6 +177,16 @@ var (
 	// imported as inert video (overlay.import).
 	certifiedMapBackends        = map[string]bool{"native": true, "dynamic": true}
 	certifiedMapGroupStrategies = map[string]bool{"tour": true, "multi_pin": true}
+	// certifiedMapFx is the lightweight, primitive-only lane authored by
+	// ChrononTemplate's MapFxPack. It is intentionally separate from the
+	// ChrononPlugin GPU catalog: these four treatments need no map renderer,
+	// only ellipses, rectangles and trimmed paths.
+	certifiedMapFx = map[string]bool{
+		"area_glow_pulse":        true,
+		"radar_location_reveal":  true,
+		"light_beam_drop":        true,
+		"city_network_expansion": true,
+	}
 )
 
 // validateMapPresentationParams admits the new certified map presentation
@@ -194,6 +204,7 @@ func validateMapPresentationParams(item semanticItem) error {
 		"map_label_animation":  certifiedMapLabelAnimations,
 		"map_backend":          certifiedMapBackends,
 		"map_group_strategy":   certifiedMapGroupStrategies,
+		"map_fx":               certifiedMapFx,
 	} {
 		raw, present := params[key]
 		if !present {
@@ -202,6 +213,23 @@ func validateMapPresentationParams(item semanticItem) error {
 		value, ok := raw.(string)
 		if !ok || value == "" || !certified[value] {
 			return fmt.Errorf("overlay: map item %q declares unsupported %s %v", item.ID, key, raw)
+		}
+	}
+	if raw, present := params["map_fx"]; present {
+		fx, _ := raw.(string)
+		if _, also := params["map_animation"]; also {
+			return fmt.Errorf("overlay: map item %q declares both map_fx and map_animation; choose one map treatment", item.ID)
+		}
+		if item.Map.CameraMove != nil {
+			return fmt.Errorf("overlay: map item %q map_fx %q requires a static map (camera_move is not supported)", item.ID, fx)
+		}
+		pins := len(item.Map.Pins)
+		if fx == "city_network_expansion" {
+			if pins < 2 || pins > 8 {
+				return fmt.Errorf("overlay: map item %q map_fx %q requires 2..8 pins, got %d", item.ID, fx, pins)
+			}
+		} else if pins != 1 {
+			return fmt.Errorf("overlay: map item %q map_fx %q requires exactly one pin, got %d", item.ID, fx, pins)
 		}
 	}
 	pinIDs := make(map[string]bool, len(item.Map.Pins))

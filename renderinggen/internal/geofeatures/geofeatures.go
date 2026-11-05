@@ -67,6 +67,7 @@ type Registry struct {
 	byName   map[string][]string
 	aliases  map[string][]string
 	children map[string][]string
+	rings    map[string][][][2]float64
 }
 
 // LoadNaturalEarth reads the Admin-0 country collection and zero or more
@@ -80,6 +81,7 @@ func LoadNaturalEarth(countries io.Reader, admin1 ...io.Reader) (*Registry, erro
 	registry := &Registry{
 		byID: make(map[string]Feature), byName: make(map[string][]string),
 		aliases: make(map[string][]string), children: make(map[string][]string),
+		rings: make(map[string][][][2]float64),
 	}
 	world := parsedFeature{Feature: Feature{
 		ID: WorldID, Type: "world", Name: "World", Bounds: Bounds{West: -180, South: -90, East: 180, North: 90}, Centroid: [2]float64{0, 0},
@@ -265,6 +267,7 @@ func (r *Registry) add(parsed parsedFeature, parent *Feature) error {
 		r.children[parent.ID] = append(r.children[parent.ID], feature.ID)
 	}
 	r.byID[feature.ID] = clone(feature)
+	r.rings[feature.ID] = parsed.rings
 	for _, alias := range parsed.aliases {
 		key := normalize(alias)
 		if key == "" {
@@ -288,6 +291,7 @@ type parsedFeature struct {
 	Feature
 	aliases    []string
 	parentName string
+	rings      [][][2]float64
 }
 
 type featureCollection struct {
@@ -380,9 +384,13 @@ func parseCollection(reader io.Reader, level Level) ([]parsedFeature, error) {
 		if err != nil {
 			return nil, fmt.Errorf("feature[%d] %q geometry: %w", index, name, err)
 		}
+		rings, err := geometryOuterRings(feature.Geometry)
+		if err != nil {
+			return nil, fmt.Errorf("feature[%d] %q geometry: %w", index, name, err)
+		}
 		out = append(out, parsedFeature{
 			Feature: Feature{ID: id, Type: level, Name: strings.TrimSpace(name), Bounds: bounds, Centroid: centroid},
-			aliases: aliases, parentName: parentName,
+			aliases: aliases, parentName: parentName, rings: rings,
 		})
 	}
 	return out, nil
@@ -471,6 +479,59 @@ func geometryBoundsAndCentroid(raw json.RawMessage) (Bounds, [2]float64, error) 
 		return Bounds{}, [2]float64{}, fmt.Errorf("computed centroid is invalid")
 	}
 	return bounds, [2]float64{centroidLon, centroidLat}, nil
+}
+
+// Rings returns the outer rings of a feature's Polygon/MultiPolygon geometry in
+// WGS84 [lon, lat] order. Holes are not returned: the tactical fill draws one
+// filled territory per outer ring. The caller owns the returned slice.
+func (r *Registry) Rings(id string) ([][][2]float64, error) {
+	if r == nil {
+		return nil, fmt.Errorf("geofeatures: nil registry")
+	}
+	rings, ok := r.rings[id]
+	if !ok {
+		return nil, fmt.Errorf("%w: id %q", ErrNotFound, id)
+	}
+	out := make([][][2]float64, len(rings))
+	for i, ring := range rings {
+		out[i] = append([][2]float64(nil), ring...)
+	}
+	return out, nil
+}
+
+// geometryOuterRings decodes the same geometry as geometryBoundsAndCentroid and
+// keeps each polygon's outer ring. Every ring has already been validated as a
+// closed WGS84 loop with non-zero area.
+func geometryOuterRings(raw json.RawMessage) ([][][2]float64, error) {
+	var geometry rawGeometry
+	decoder := json.NewDecoder(bytes.NewReader(raw))
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(&geometry); err != nil {
+		return nil, fmt.Errorf("decode geometry: %w", err)
+	}
+	var polygons [][][][2]float64
+	switch geometry.Type {
+	case "Polygon":
+		var coordinates [][][2]float64
+		if err := json.Unmarshal(geometry.Coordinates, &coordinates); err != nil {
+			return nil, fmt.Errorf("decode Polygon coordinates: %w", err)
+		}
+		polygons = append(polygons, coordinates)
+	case "MultiPolygon":
+		if err := json.Unmarshal(geometry.Coordinates, &polygons); err != nil {
+			return nil, fmt.Errorf("decode MultiPolygon coordinates: %w", err)
+		}
+	default:
+		return nil, fmt.Errorf("unsupported geometry type %q (Polygon and MultiPolygon required)", geometry.Type)
+	}
+	rings := make([][][2]float64, 0, len(polygons))
+	for index, polygon := range polygons {
+		if len(polygon) == 0 || len(polygon[0]) < 4 {
+			return nil, fmt.Errorf("polygon[%d] has no drawable outer ring", index)
+		}
+		rings = append(rings, append([][2]float64(nil), polygon[0]...))
+	}
+	return rings, nil
 }
 
 func ringCentroidSums(xs []float64, ring [][2]float64) (area2, cx6, cy6 float64) {

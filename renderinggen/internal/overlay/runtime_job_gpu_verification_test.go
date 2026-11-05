@@ -39,12 +39,12 @@ func TestRuntimeJobCompositeExecutionOnStrictVulkanGPU(t *testing.T) {
 			"motion_params": map[string]any{"enter_frames": 24},
 			"text":          "VELOX EDITING GPU RUNTIME", "start_ms": 0, "end_ms": 2000,
 		},
-		// 2. Short Phrase Style with Cascade (2000 - 4000ms)
+		// 2. Short Phrase Style with Wipe (2000 - 4000ms)
 		map[string]any{
 			"id": "short-phrase-cascade", "kind": "important_phrase", "template_id": "IMPORTANT_PHRASE",
-			"preset_id": PhraseDefaultPresetID, "motion_id": "short_phrase_character_cascade_shapes",
+			"preset_id": PhraseDefaultPresetID, "motion_id": "short_phrase_shape_phrase_wipe",
 			"motion_params": map[string]any{"enter_frames": 24},
-			"text":          "CHARACTER CASCADE ACTIVE", "start_ms": 2000, "end_ms": 4000,
+			"text":          "SHAPE PHRASE WIPE ACTIVE", "start_ms": 2000, "end_ms": 4000,
 		},
 		// 3. Editorial Image (4000 - 6000ms)
 		map[string]any{
@@ -223,7 +223,7 @@ func TestRuntimeJobCompositeExecutionOnStrictVulkanGPU(t *testing.T) {
 		Codec:           stream.CodecName,
 		Overlays: []string{
 			"phrase_apple_clean_01 (important_phrase)",
-			"short_phrase_character_cascade_shapes (short_phrase_style)",
+			"short_phrase_shape_phrase_wipe (short_phrase_style)",
 			"editorial_image_lift_shadow (editorial_image_v1)",
 			"brush_arrow_point (brush_v1)",
 			"text_3d_camera_push (text_3d_v1)",

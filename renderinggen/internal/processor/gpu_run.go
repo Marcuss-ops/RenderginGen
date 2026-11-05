@@ -127,8 +127,10 @@ func (p *Processor) RunGPU(ctx context.Context, prepared *PreparedJob) error {
 			// Their authored layers can start after frame zero, so Chronon must
 			// classify and execute the complete Vulkan graph instead of selecting
 			// DirectYUV from a frame that has no active overlay yet. Ordinary jobs
-			// retain the configured fallback policy.
-			CPUFallbackAllowed: !p.strictNativeBackend,
+			// retain the configured fallback policy, except a source-only plan:
+			// it has no authored overlay that could start later, and DirectYUV
+			// preserves the complete source timeline under the strict profile.
+			CPUFallbackAllowed: !p.strictNativeBackend || (hasSourceVideo && !compositionRequired),
 			// This is a semantic composition requirement, not a backend/path
 			// selection. Chronon classifies the compiled program after this
 			// request crosses the boundary.

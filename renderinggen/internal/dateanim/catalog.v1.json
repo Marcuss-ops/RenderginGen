@@ -1,0 +1,131 @@
+{
+  "schema": "renderinggen.date-animation-catalog.v1",
+  "version": 1,
+  "source": "ChrononTemplate/golden_plans/date_animation_catalog/catalog.json",
+  "labels": false,
+  "selection": {
+    "strategy": "stable_random",
+    "salt": "date_animation_style",
+    "minimum_dates": 2,
+    "single_date_style": "01_timeline_progress"
+  },
+  "styles": [
+    {
+      "id": "01_timeline_progress",
+      "title": "Timeline progressiva",
+      "font_size": 230,
+      "fps": 24,
+      "frames": 240,
+      "plan": "golden_plans/date_animation_catalog/01_timeline_progress/01_timeline_progress.plan.json",
+      "video": "renders/date_animation_catalog/01_timeline_progress.mp4"
+    },
+    {
+      "id": "02_year_morph",
+      "title": "Year Morph",
+      "font_size": 230,
+      "fps": 24,
+      "frames": 240,
+      "plan": "golden_plans/date_animation_catalog/02_year_morph/02_year_morph.plan.json",
+      "video": "renders/date_animation_catalog/02_year_morph.mp4"
+    },
+    {
+      "id": "03_vertical_timeline",
+      "title": "Timeline verticale",
+      "font_size": 230,
+      "fps": 24,
+      "frames": 240,
+      "plan": "golden_plans/date_animation_catalog/03_vertical_timeline/03_vertical_timeline.plan.json",
+      "video": "renders/date_animation_catalog/03_vertical_timeline.mp4"
+    },
+    {
+      "id": "04_animated_underline",
+      "title": "Sottolineatura animata",
+      "font_size": 230,
+      "fps": 24,
+      "frames": 240,
+      "plan": "golden_plans/date_animation_catalog/04_animated_underline/04_animated_underline.plan.json",
+      "video": "renders/date_animation_catalog/04_animated_underline.mp4"
+    },
+    {
+      "id": "05_calendar_flip",
+      "title": "Calendario essenziale",
+      "font_size": 230,
+      "fps": 24,
+      "frames": 240,
+      "plan": "golden_plans/date_animation_catalog/05_calendar_flip/05_calendar_flip.plan.json",
+      "video": "renders/date_animation_catalog/05_calendar_flip.mp4"
+    },
+    {
+      "id": "06_date_stack",
+      "title": "Date Stack",
+      "font_size": 190,
+      "fps": 24,
+      "frames": 240,
+      "plan": "golden_plans/date_animation_catalog/06_date_stack/06_date_stack.plan.json",
+      "video": "renders/date_animation_catalog/06_date_stack.mp4"
+    },
+    {
+      "id": "07_split_date",
+      "title": "Split Date",
+      "font_size": 230,
+      "fps": 24,
+      "frames": 240,
+      "plan": "golden_plans/date_animation_catalog/07_split_date/07_split_date.plan.json",
+      "video": "renders/date_animation_catalog/07_split_date.mp4"
+    },
+    {
+      "id": "08_crossfade",
+      "title": "Crossfade cronologico",
+      "font_size": 230,
+      "fps": 24,
+      "frames": 240,
+      "plan": "golden_plans/date_animation_catalog/08_crossfade/08_crossfade.plan.json",
+      "video": "renders/date_animation_catalog/08_crossfade.mp4"
+    },
+    {
+      "id": "09_moving_point",
+      "title": "Punto che avanza",
+      "font_size": 230,
+      "fps": 24,
+      "frames": 240,
+      "plan": "golden_plans/date_animation_catalog/09_moving_point/09_moving_point.plan.json",
+      "video": "renders/date_animation_catalog/09_moving_point.mp4"
+    },
+    {
+      "id": "10_documentary_fade",
+      "title": "Documentary Fade",
+      "font_size": 230,
+      "fps": 24,
+      "frames": 240,
+      "plan": "golden_plans/date_animation_catalog/10_documentary_fade/10_documentary_fade.plan.json",
+      "video": "renders/date_animation_catalog/10_documentary_fade.mp4"
+    },
+    {
+      "id": "11_date_bridge",
+      "title": "Date Bridge",
+      "font_size": 200,
+      "fps": 24,
+      "frames": 240,
+      "plan": "golden_plans/date_animation_catalog/11_date_bridge/11_date_bridge.plan.json",
+      "video": "renders/date_animation_catalog/11_date_bridge.mp4"
+    },
+    {
+      "id": "12_rolling_year",
+      "title": "Rolling Year",
+      "font_size": 230,
+      "fps": 30,
+      "frames": 320,
+      "plan": "golden_plans/date_odometer_4dates/odometer_4dates.plan.json",
+      "video": "renders/date_odometer_4dates/odometer_4dates.mp4"
+    },
+    {
+      "id": "13_focus_shift",
+      "title": "Focus Shift",
+      "font_size": 72,
+      "fps": 24,
+      "frames": 240,
+      "plan": "golden_plans/date_animation_catalog/13_focus_shift/13_focus_shift.plan.json",
+      "video": "renders/date_animation_catalog/13_focus_shift.mp4"
+    }
+  ]
+}

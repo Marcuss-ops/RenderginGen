@@ -77,6 +77,57 @@ func TestProbeFileKeyframeSurvivesASecondStream(t *testing.T) {
 // Go producer and the Rust assembler: ffprobe's offset-prefixed, ASCII-annotated
 // hex dump must be decoded before hashing. Hashing the text would make every
 // correct input fail the avcC gate.
+// TestProbeFileWithKnownFrameCountSkipsTheCountScan pins the optimization that
+// removes a full -count_frames decode from finalized overlays: the render plan
+// already certified the frame count, so a fragmented MP4 that omits nb_frames
+// must use that number instead of scanning the whole file. The fake ffprobe
+// records any invocation carrying -count_frames: a known count must leave the
+// marker absent, while the same file probed without one must create it — which
+// proves the fallback is real and the test exercises the branch.
+func TestProbeFileWithKnownFrameCountSkipsTheCountScan(t *testing.T) {
+	dir := t.TempDir()
+	marker := filepath.Join(dir, "count-scan-ran")
+	script := filepath.Join(dir, "ffprobe")
+	body := `#!/bin/sh
+case "$*" in
+  *-count_frames*)
+    : > "` + marker + `"
+    echo 120
+    exit 0
+    ;;
+  *-show_packets*)
+    printf '%s' '{"packets":[]}'
+    exit 0
+    ;;
+ esac
+printf '%s' '{"streams":[{"index":0,"codec_type":"video","codec_name":"h264","profile":"High","width":1920,"height":1080,"pix_fmt":"yuv420p","r_frame_rate":"24/1","time_base":"1/24","sample_aspect_ratio":"1:1","nb_frames":"0"}],"format":{"format_name":"mp4","duration":"5.000000"},"frames":[{"key_frame":1,"stream_index":0}]}'
+`
+	if err := os.WriteFile(script, []byte(body), 0o755); err != nil {
+		t.Fatalf("write fake ffprobe: %v", err)
+	}
+	Configure(Binaries{FFprobe: script})
+	t.Cleanup(func() { Configure(Binaries{}) })
+
+	got, err := ProbeFileWithKnownFrameCount(context.Background(), "ignored.mp4", 120)
+	if err != nil {
+		t.Fatalf("probe with known count: %v", err)
+	}
+	if got.FrameCount != 120 {
+		t.Fatalf("frame count = %d, want the certified 120", got.FrameCount)
+	}
+	if _, err := os.Stat(marker); err == nil {
+		t.Fatal("a certified frame count must not spawn the -count_frames scan")
+	}
+
+	// Control: without the known count the same document forces the fallback.
+	if _, err := ProbeFile(context.Background(), "ignored.mp4"); err != nil {
+		t.Fatalf("probe without known count: %v", err)
+	}
+	if _, err := os.Stat(marker); err != nil {
+		t.Fatal("without a known count the -count_frames fallback must run")
+	}
+}
+
 func TestHashFFprobeExtradataHashesDecodedBytes(t *testing.T) {
 	dump := "\n00000000: 0164 0028  .d.(\n"
 	sum := sha256.Sum256([]byte{0x01, 0x64, 0x00, 0x28})
