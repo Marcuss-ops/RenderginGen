@@ -16,7 +16,19 @@ JOB_FILE="${2:-/tmp/chronon-clip-job.json}"
 OUTPUT="${3:-/tmp/chronon-clip-output.mp4}"
 QUEUE_URL="${QUEUE_URL:-http://localhost:8081}"
 STORE_URL="${STORE_URL:-http://localhost:9000}"
+# The local object store is bearer-protected; use the same token the worker
+# receives. An unset token keeps the open-store local/dev behavior.
+STORE_TOKEN="${STORE_TOKEN:-${OBJECTSTORE_TOKEN:-${RENDERINGGEN_ARTIFACT_STORE_TOKEN:-}}}"
+export STORE_TOKEN
 JOB_ID="${JOB_ID:-clip-recreate-$(date +%s)}"
+
+store_curl() {
+  if [[ -n "${STORE_TOKEN}" ]]; then
+    curl -H "Authorization: Bearer ${STORE_TOKEN}" "$@"
+  else
+    curl "$@"
+  fi
+}
 
 command -v ffprobe >/dev/null || { echo "ERROR: ffprobe is required" >&2; exit 1; }
 command -v python3 >/dev/null || { echo "ERROR: python3 is required" >&2; exit 1; }
@@ -48,7 +60,7 @@ job = {
     "id": job_id,
     "schema": "renderinggen.job",
     "version": 1,
-    "job_type": "clip.render",
+    "job_type": "render_segment",
     "render_plan": {
         "schema_version": "renderinggen.overlay-plan.v1",
         "plan_id": job_id,
@@ -79,7 +91,7 @@ if [[ "${SUBMIT:-0}" != "1" ]]; then
   exit 0
 fi
 
-curl -fsS -X PUT --data-binary @"$INPUT" \
+store_curl -fsS -X PUT --data-binary @"$INPUT" \
   -H 'Content-Type: video/mp4' "$STORE_URL/objects/$SOURCE_HASH" >/dev/null
 curl -fsS -X POST "$QUEUE_URL/jobs" \
   -H 'Content-Type: application/json' --data-binary @"$JOB_FILE" >/dev/null
@@ -96,7 +108,7 @@ done
 [[ "${STATE:-}" == completed ]] || { echo "ERROR: timed out waiting for $JOB_ID" >&2; exit 1; }
 
 python3 - "$BODY" "$STORE_URL" "$OUTPUT" "$PROBE" <<'PY'
-import json, subprocess, sys
+import json, os, subprocess, sys
 body = json.loads(sys.argv[1])
 store = sys.argv[2]
 output = sys.argv[3]
@@ -105,18 +117,26 @@ artifact = body.get("artifact") or {}
 if not artifact.get("chronon_version"):
     raise SystemExit("ERROR: completed artifact has no Chronon provenance")
 url = store.rstrip("/") + "/objects/" + artifact["artifact_hash"]
+curl = ["curl", "-fsS"]
+token = os.environ.get("STORE_TOKEN", "")
+if token:
+    curl += ["-H", f"Authorization: Bearer {token}"]
 with open(output, "wb") as f:
-    subprocess.run(["curl", "-fsS", url], stdout=f, check=True)
+    subprocess.run(curl + [url], stdout=f, check=True)
 got = json.loads(subprocess.check_output([
-    "ffprobe", "-v", "error", "-select_streams", "v:0",
-    "-show_entries", "stream=width,height,r_frame_rate,nb_frames",
+    "ffprobe", "-v", "error", "-count_frames", "-select_streams", "v:0",
+    "-show_entries", "stream=width,height,r_frame_rate,nb_frames,nb_read_frames",
     "-show_entries", "format=duration", "-of", "json", output]))
 want = source_probe
 ws, gs = want["streams"][0], got["streams"][0]
-for key in ("width", "height", "r_frame_rate", "nb_frames"):
+for key in ("width", "height", "r_frame_rate"):
     if str(ws.get(key)) != str(gs.get(key)):
         raise SystemExit(f"ERROR: {key} changed: source={ws.get(key)} output={gs.get(key)}")
+want_frames = ws.get("nb_frames") or ws.get("nb_read_frames")
+got_frames = gs.get("nb_frames") or gs.get("nb_read_frames")
+if str(want_frames) != str(got_frames):
+    raise SystemExit(f"ERROR: frame_count changed: source={want_frames} output={got_frames}")
 if abs(float(want["format"]["duration"]) - float(got["format"]["duration"])) > 0.05:
     raise SystemExit("ERROR: output duration drift exceeds 50 ms")
-print(f"PASS: Chronon {artifact['chronon_version']} output={output} timing and frame count match")
+print(f"PASS: Chronon {artifact['chronon_version']} output={output} timing and frame count match ({got_frames} frames)")
 PY

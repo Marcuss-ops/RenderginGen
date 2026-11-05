@@ -301,7 +301,14 @@ func (p *Processor) verifySegmentOutput(ctx context.Context, jobID, itemID strin
 		return SegmentArtifact{}, fmt.Errorf("processor: stat segment %s: %w", segment.OutputPath, err)
 	}
 	entry.SizeBytes = info.Size()
-	probed, source, probeErr := probeFactsForFinalize(ctx, receipt, receiptErr, segment.OutputPath)
+	// The segment's window is its certified frame count. Pass it to the probe so
+	// a container without nb_frames does not run a full -count_frames scan before
+	// the explicit decoded-count gate below (which still validates the bytes).
+	knownFrameCount := 0
+	if expected := segment.EndFrame - segment.StartFrame; expected > 0 {
+		knownFrameCount = int(expected)
+	}
+	probed, source, probeErr := probeFactsForFinalize(ctx, receipt, receiptErr, segment.OutputPath, knownFrameCount)
 	if probeErr != nil {
 		return SegmentArtifact{}, fmt.Errorf("processor: segment probe: %w", probeErr)
 	}

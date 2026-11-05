@@ -83,5 +83,5 @@ func compileEntityGroup(ri resolvedItem, src *semanticPlan, registry *assetRegis
 		}
 		grouped.Item.ImageLayers[i].Params = params
 	}
-	return compileCompositeImageLayers(grouped, src, registry)
+	return compileLegacyCompositeImageLayers(grouped, src, registry)
 }

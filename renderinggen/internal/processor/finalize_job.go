@@ -45,15 +45,37 @@ const (
 // while still reporting dimensions. A required structural fact missing from
 // the receipt makes it incomplete; probe the bytes once rather than treating an
 // empty receipt field as a media property and rejecting a valid artifact.
-func probeFactsForFinalize(ctx context.Context, receipt chronon.MediaReceipt, receiptErr error, outputPath string) (media.ProbeResult, probeSource, error) {
+func probeFactsForFinalize(ctx context.Context, receipt chronon.MediaReceipt, receiptErr error, outputPath string, knownFrameCount int) (media.ProbeResult, probeSource, error) {
 	if receiptErr == nil && receipt.HasCanonicalMedia() && receipt.Media.FrameCount > 0 && receipt.Media.CodecProfile != "" {
 		return probeResultFromReceipt(receipt), probeSourceReceipt, nil
 	}
-	probed, err := media.ProbeFile(ctx, outputPath)
+	probed, err := media.ProbeFileWithKnownFrameCount(ctx, outputPath, knownFrameCount)
 	if err != nil {
 		return media.ProbeResult{}, probeSourceLocalProbe, err
 	}
 	return probed, probeSourceLocalProbe, nil
+}
+
+// knownFrameCountForPlan returns the frame count the render plan already
+// certifies, clamped to "not reported" for a missing or negative duration. The
+// count is a producer fact: the plan was validated before the GPU lane and the
+// renderer emits exactly its canvas duration.
+func knownFrameCountForPlan(durationFrames int64) int {
+	if durationFrames <= 0 {
+		return 0
+	}
+	return int(durationFrames)
+}
+
+// knownFrameCountForProbe selects the certified count for the artifact the
+// finalizer is about to probe. A chunk is its declared half-open window
+// [Start, End); a whole output is the canvas duration. Using the canvas count
+// for a chunk would store a frame count the bytes do not have.
+func knownFrameCountForProbe(canvasFrames int64, frameRange *queue.FrameRange) int {
+	if frameRange != nil {
+		return knownFrameCountForPlan(frameRange.End - frameRange.Start)
+	}
+	return knownFrameCountForPlan(canvasFrames)
 }
 
 // probeResultFromReceipt maps Chronon's canonical media receipt facts into a media.ProbeResult,
@@ -183,7 +205,16 @@ func (p *Processor) FinalizeJob(ctx context.Context, prepared *PreparedJob) (art
 	var probe *media.ProbeResult
 	if requiresStructuralProbe(job) || metadata.ProfileID != "" {
 		probeStart := time.Now()
-		probed, source, err := probeFactsForFinalize(ctx, receipt, receiptErr, outputPath)
+		// The plan already certifies how many frames this render should contain.
+		// Hand that count to the probe so a fragmented MP4 without nb_frames does
+		// not pay a full -count_frames decode to re-derive it. The stream facts and
+		// the closed-GOP cadence are still measured from the bytes.
+		canvasFrames := int64(0)
+		if plan != nil {
+			canvasFrames = plan.Canvas.DurationFrames
+		}
+		knownFrameCount := knownFrameCountForProbe(canvasFrames, job.FrameRange)
+		probed, source, err := probeFactsForFinalize(ctx, receipt, receiptErr, outputPath, knownFrameCount)
 		if err != nil {
 			return queue.Artifact{}, fmt.Errorf("processor: overlay ffprobe: %w", err)
 		}

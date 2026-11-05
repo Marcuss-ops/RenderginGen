@@ -48,8 +48,8 @@ func TestCatalogCategoriesKeepMotionsIndependentAndComplete(t *testing.T) {
 			t.Errorf("%s category has %d motions, want %d", category, len(ids), count)
 		}
 	}
-	if ids := Registry.ShortPhraseStyleIDs(); len(ids) != 26 {
-		t.Errorf("short phrase runtime registry has %d motions, want 26", len(ids))
+	if ids := Registry.ShortPhraseStyleIDs(); len(ids) != 13 {
+		t.Errorf("short phrase runtime registry has %d motions, want 13", len(ids))
 	}
 	if ids := Registry.PhraseAnimationIDs(); len(ids) != 171 {
 		t.Errorf("phrase planning pool has %d motions, want 171", len(ids))
@@ -352,6 +352,19 @@ func TestRetiredShortPhraseIDsAreAbsentFromRegistry(t *testing.T) {
 		"short_phrase_character_write_on",
 		"short_phrase_editorial_paper_title_card",
 		"short_phrase_typewriter",
+		"short_phrase_character_tracking_reveal",
+		"short_phrase_character_cascade_shapes",
+		"short_phrase_editorial_tracking_close",
+		"short_phrase_editorial_glyph_curtain",
+		"short_phrase_editorial_quiet_zoom",
+		"short_phrase_product_blur_out_up",
+		"short_phrase_product_bottom_up_letters",
+		"short_phrase_product_focus_blur_resolve",
+		"short_phrase_product_text_match_cut",
+		"short_phrase_product_text_shimmer",
+		"short_phrase_product_masked_heading",
+		"short_phrase_product_scrambled_text",
+		"short_phrase_product_gradual_blur",
 	}
 	registered := make(map[string]bool)
 	for _, id := range Registry.ShortPhraseStyleIDs() {
@@ -388,8 +401,8 @@ func TestRetiredShortPhraseIDsAreAbsentFromRegistry(t *testing.T) {
 	}
 }
 
-func TestCharacterTrackingRevealMakesGlyphsVisible(t *testing.T) {
-	plugin, err := Registry.Resolve("short_phrase_character_tracking_reveal")
+func TestBurstRevealMakesGlyphsVisible(t *testing.T) {
+	plugin, err := Registry.Resolve("short_phrase_burst")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -409,7 +422,7 @@ func TestCharacterTrackingRevealMakesGlyphsVisible(t *testing.T) {
 			return
 		}
 	}
-	t.Fatal("character tracking reveal has no glyph opacity track")
+	t.Fatal("burst reveal has no glyph opacity track")
 }
 
 // TestAppleV2PhraseFamilyKeepsTheFamilyContract pins the invariants the Apple

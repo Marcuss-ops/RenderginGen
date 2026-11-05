@@ -137,3 +137,7 @@ renderinggen/.p4-*.log
 
 # Local benchmark binary (2026-11-03): build artifact, not source.
 renderinggen/chunk-overlap-bench
+
+# Locally built helper binary (2026-11-05): compiled output with debug_info,
+# rebuilt from the Go sources; never committed.
+renderinggen/drive-upload

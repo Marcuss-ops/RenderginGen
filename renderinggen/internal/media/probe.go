@@ -217,6 +217,20 @@ func ProbeFile(ctx context.Context, path string) (ProbeResult, error) {
 	return probeFile(ctx, path, 0)
 }
 
+// ProbeFileWithKnownFrameCount probes path while reusing a frame count the
+// caller has already certified (the render plan's canvas duration, or an
+// import's producer-declared count). A fragmented MP4 commonly omits
+// nb_frames; without the known count probeFile falls back to a -count_frames
+// pass that decodes the WHOLE artifact (seconds on a long overlay) just to
+// re-derive a number the producer already fixed. The stream facts and the
+// closed-GOP verdict are still measured from the bytes, never assumed.
+func ProbeFileWithKnownFrameCount(ctx context.Context, path string, knownFrameCount int) (ProbeResult, error) {
+	if knownFrameCount < 0 {
+		knownFrameCount = 0
+	}
+	return probeFile(ctx, path, knownFrameCount)
+}
+
 // probeFile is the single probe implementation. knownFrameCount carries a
 // frame count the caller already certified (e.g. the producer-declared count
 // an import just verified, or the receipt's count): when the main ffprobe

@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/chronon"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/queue"
 )
 
 // TestProbeFactsPreferTheCanonicalReceipt pins the rule that removes the
@@ -21,7 +22,7 @@ func TestProbeFactsPreferTheCanonicalReceipt(t *testing.T) {
 	missing := filepath.Join(t.TempDir(), "not-rendered.mp4")
 	receipt := canonicalReceipt()
 
-	probed, source, err := probeFactsForFinalize(context.Background(), receipt, nil, missing)
+	probed, source, err := probeFactsForFinalize(context.Background(), receipt, nil, missing, 0)
 	if err != nil {
 		t.Fatalf("a canonical receipt must describe the media without touching the file: %v", err)
 	}
@@ -46,7 +47,7 @@ func TestProbeFactsProbeLocallyWhenReceiptOmitsFrameCount(t *testing.T) {
 	receipt := canonicalReceipt()
 	receipt.Media.FrameCount = -1
 
-	_, source, err := probeFactsForFinalize(context.Background(), receipt, nil, missing)
+	_, source, err := probeFactsForFinalize(context.Background(), receipt, nil, missing, 0)
 	if source != probeSourceLocalProbe {
 		t.Fatalf("probe source = %q, want %q for an unknown frame count", source, probeSourceLocalProbe)
 	}
@@ -81,7 +82,7 @@ func TestProbeFactsFallBackToALocalProbe(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			_, source, err := probeFactsForFinalize(context.Background(), tc.receipt, tc.err, missing)
+			_, source, err := probeFactsForFinalize(context.Background(), tc.receipt, tc.err, missing, 0)
 			if source != probeSourceLocalProbe {
 				t.Fatalf("probe source = %q, want %q", source, probeSourceLocalProbe)
 			}
@@ -90,6 +91,49 @@ func TestProbeFactsFallBackToALocalProbe(t *testing.T) {
 			}
 			if !strings.Contains(err.Error(), "ffprobe") {
 				t.Fatalf("error = %v, want an ffprobe failure", err)
+			}
+		})
+	}
+}
+
+// TestKnownFrameCountComesFromTheRenderPlan pins the input of the probe reuse:
+// the plan's canvas duration is the certified count, and an absent/negative
+// duration is "not reported" (0), never a fake count.
+func TestKnownFrameCountComesFromTheRenderPlan(t *testing.T) {
+	cases := []struct {
+		frames int64
+		want   int
+	}{
+		{120, 120},
+		{0, 0},
+		{-1, 0},
+	}
+	for _, tc := range cases {
+		if got := knownFrameCountForPlan(tc.frames); got != tc.want {
+			t.Fatalf("knownFrameCountForPlan(%d) = %d, want %d", tc.frames, got, tc.want)
+		}
+	}
+}
+
+// TestKnownFrameCountUsesTheChunkWindow pins the artifact identity: a chunk is
+// probed as its declared [Start, End) window, never as the whole canvas. Passing
+// the canvas count here would store a frame count the bytes do not have.
+func TestKnownFrameCountUsesTheChunkWindow(t *testing.T) {
+	cases := []struct {
+		name         string
+		canvasFrames int64
+		frameRange   *queue.FrameRange
+		want         int
+	}{
+		{"whole output", 2880, nil, 2880},
+		{"interior chunk", 2880, &queue.FrameRange{Start: 24, End: 72}, 48},
+		{"empty chunk", 2880, &queue.FrameRange{Start: 90, End: 90}, 0},
+		{"missing plan", 0, nil, 0},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := knownFrameCountForProbe(tc.canvasFrames, tc.frameRange); got != tc.want {
+				t.Fatalf("knownFrameCountForProbe(%d, %+v) = %d, want %d", tc.canvasFrames, tc.frameRange, got, tc.want)
 			}
 		})
 	}

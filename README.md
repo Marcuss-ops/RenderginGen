@@ -134,6 +134,87 @@ stabile per piano/video/layer-caption e differisce tra layer distinti. Per la
 certificazione GPU consultare il report runtime separato: la registrazione non
 implica che ogni ID sia stato certificato.
 
+## Date animation catalog (multi-date sequences)
+
+`renderinggen/internal/dateanim` carries the 13 approved complete date
+animations used when a plan contains more than one date. The styles are the
+clean Playfair/cream set (no labels under the years); `14_mask_reveal` and
+`15_archival_chronology` are intentionally absent. The catalog fixes each
+style's authoring font size so selecting a style never changes typography.
+
+One date uses `01_timeline_progress` for selection compatibility; the
+multi-date materializer intentionally requires at least two dates, because a
+single date belongs to the ordinary `timeline_date` overlay. Two or more dates
+use a stable random choice over all 13 styles, seeded by plan, video, group and
+the date values: retries keep the same cut, while different sequences can get
+different styles. The odometer style needs at most one century transition; if
+the chosen sequence cannot satisfy that, materialization falls back to
+`01_timeline_progress` instead of failing the render. The selector is data-only;
+the visual plans remain owned by ChrononTemplate.
+
+The CLI can take the date sequence directly or extract the four-digit years
+from editorial text. Text extraction preserves first-seen order, drops
+duplicates and does not match video resolutions such as `1920x1080`; a text
+without a year is rejected instead of falling back to the sample dates.
+
+Selecting is not the end of the path. `-plan-out` rewrites the chosen style's
+authoring plan with the real dates, and `-render` runs that plan through the
+real Chronon3d renderer. Two, three and four dates are supported: unused slots
+are removed and the last date holds to the end. The plans are embedded from
+ChrononTemplate's approved golden plans, so the command also works without a
+sibling checkout at runtime (the checkout is still needed for the fonts during
+rendering, via `-assets-root` or `CHRONON_TEMPLATE_ROOT`). A text with more than
+four dates is rejected instead of silently dropping one.
+
+```sh
+cd renderinggen
+go run ./cmd/date-animation -list
+go run ./cmd/date-animation -dates 1948,1969,1998,2026 -plan-id p -video-id v
+go run ./cmd/date-animation -text "Nel 1948 nasce; nel 1969 cambia; nel 1998 arriva il lancio; nel 2026 il presente." -plan-id p -video-id v
+
+# Concrete plan with the real dates (no sample 1948/1969/1998/2026)
+go run ./cmd/date-animation -text "Nel 2007 parte; nel 2013 cresce; nel 2017 cambia; nel 2024 si chiude." \
+  -plan-id garlasco -video-id ep01 -plan-out /tmp/date.plan.json
+
+# Same selection, rendered to MP4
+go run ./cmd/date-animation -text "Nel 2007 parte; nel 2013 cresce; nel 2017 cambia; nel 2024 si chiude." \
+  -plan-id garlasco -video-id ep01 -plan-out /tmp/date.plan.json -render /tmp/date.mp4
+```
+
+The produced MP4 is a full-frame 1920×1080 clip. To put it into a RenderingGen
+job, upload it as an asset and reference it from a full-frame `video_overlay`
+item; the worker then treats it like any other materialized video asset. The
+renderer path is also covered by the opt-in test
+`TestRenderMaterializedDateAnimation` (`RENDERINGGEN_DATE_ANIM_E2E=1`,
+`CHRONON_BIN`, `CHRONON_TEMPLATE_ROOT`).
+
+### Tactical territory fill from a place name
+
+`cmd/map-tactical-fill` joins the Natural Earth registry to ChrononTemplate's
+native `TacticalFillPack`: it resolves a place, reads the feature's outer rings,
+projects them into the canvas territory box (Web Mercator, the same window
+formula as the map plates), writes the
+`chronontemplate.tactical-fill-sample.v1` document and runs
+`chronontemplate_emit_tactical_fill`.
+
+```sh
+cd renderinggen
+go run ./cmd/map-tactical-fill -place "Israel" -out-dir /tmp/tactical/israel
+go run ./cmd/map-tactical-fill -place "admin1:india:gujarat" -title "GUJARAT" -out-dir /tmp/tactical/gujarat
+
+# Lower and render in one step
+go run ./cmd/map-tactical-fill -place "country:ISR" -out-dir /tmp/tactical/israel \
+  -render /tmp/tactical/israel.mp4 -assets-root ../../ChrononTemplate
+```
+
+The emitter is resolved from `-emit`, `CHRONONTEMPLATE_EMIT_TACTICAL_FILL`, or
+the adjacent `ChrononTemplate/build` tree. RenderingGen owns the projection and
+the polygon source; ChrononTemplate only draws rings that are already in canvas
+space. Holes are not modelled: every outer ring becomes a filled territory, and
+the left third of the canvas stays free for the place name. The plan is the
+contract; pixel certification of the native shape render lane is tracked
+separately from plan generation.
+
 ## Motion and preset catalog (owned by ChrononTemplate)
 
 RenderingGen does not own the phrase/motion/preset vocabulary. ChrononTemplate

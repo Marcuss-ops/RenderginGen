@@ -263,7 +263,7 @@ func runtimeAnimationUseCases(allOptions []RuntimeMotionOption, definitions map[
 		})
 	}
 	useCases = append(useCases,
-		RuntimeAnimationUseCase{ID: "entities", ItemKinds: []string{string(KindEntityCard), string(KindOrganization), string(KindLocation), string(KindConcept), string(KindEntityImage)}, Cardinality: "one image layer per entity", Description: "Entity images rotate through their own bounded image-motion pool; caption styles remain independently selectable.", MotionIDs: groups.forTarget(TargetImage)},
+		RuntimeAnimationUseCase{ID: "entities", ItemKinds: []string{string(KindEntityCard), string(KindOrganization), string(KindLocation), string(KindConcept), string(KindEntityImage)}, Cardinality: "one image layer per entity", Description: "Entity images rotate through the same image-motion family as plain images; caption styles remain independently selectable.", MotionIDs: groups.forTarget(TargetImage)},
 		RuntimeAnimationUseCase{ID: "entity_caption", ItemKinds: captionKinds, Cardinality: "one caption per image or composite child", Description: "Caption motion is selected separately from the image motion, independent of whether the image represents an entity.", MotionIDs: groups.captions},
 	)
 	for _, definition := range dataCompositionCatalog {

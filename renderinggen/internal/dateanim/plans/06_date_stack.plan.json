@@ -1,0 +1,770 @@
+{
+  "schema": "chronon.render-plan.v3",
+  "version": 3,
+  "job_id": "date_animation_06_date_stack",
+  "canvas": {
+    "width": 1920,
+    "height": 1080,
+    "fps_num": 24,
+    "fps_den": 1,
+    "duration_frames": 240
+  },
+  "layers": [
+    {
+      "id": "bg",
+      "type": "color",
+      "color": [
+        0.96,
+        0.95,
+        0.93,
+        1.0
+      ],
+      "size": [
+        1920,
+        1080
+      ],
+      "position": [
+        0,
+        0
+      ],
+      "start_frame": 0,
+      "duration_frames": 240
+    },
+    {
+      "id": "date_0",
+      "type": "text",
+      "text": "1948",
+      "size": [
+        700,
+        300
+      ],
+      "position": [
+        1280,
+        450
+      ],
+      "start_frame": 0,
+      "duration_frames": 240,
+      "style": {
+        "font": "assets/fonts/PlayfairDisplay.ttf",
+        "font_size": 190,
+        "min_font_size": 190,
+        "max_font_size": 190,
+        "fit_mode": "shrink_only",
+        "fill": "#262521"
+      },
+      "animation": {
+        "tracks": [
+          {
+            "property": "opacity",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 1.0
+              },
+              {
+                "frame": 48,
+                "value": 1.0
+              },
+              {
+                "frame": 60,
+                "value": 0.0
+              },
+              {
+                "frame": 239,
+                "value": 0.0
+              }
+            ],
+            "easing": "in_out_cubic"
+          }
+        ]
+      }
+    },
+    {
+      "id": "date_1",
+      "type": "text",
+      "text": "1969",
+      "size": [
+        700,
+        300
+      ],
+      "position": [
+        1280,
+        450
+      ],
+      "start_frame": 0,
+      "duration_frames": 240,
+      "style": {
+        "font": "assets/fonts/PlayfairDisplay.ttf",
+        "font_size": 190,
+        "min_font_size": 190,
+        "max_font_size": 190,
+        "fit_mode": "shrink_only",
+        "fill": "#262521"
+      },
+      "animation": {
+        "tracks": [
+          {
+            "property": "opacity",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 0.0
+              },
+              {
+                "frame": 48,
+                "value": 0.0
+              },
+              {
+                "frame": 60,
+                "value": 1.0
+              },
+              {
+                "frame": 120,
+                "value": 1.0
+              },
+              {
+                "frame": 132,
+                "value": 0.0
+              },
+              {
+                "frame": 239,
+                "value": 0.0
+              }
+            ],
+            "easing": "in_out_cubic"
+          }
+        ]
+      }
+    },
+    {
+      "id": "date_2",
+      "type": "text",
+      "text": "1998",
+      "size": [
+        700,
+        300
+      ],
+      "position": [
+        1280,
+        450
+      ],
+      "start_frame": 0,
+      "duration_frames": 240,
+      "style": {
+        "font": "assets/fonts/PlayfairDisplay.ttf",
+        "font_size": 190,
+        "min_font_size": 190,
+        "max_font_size": 190,
+        "fit_mode": "shrink_only",
+        "fill": "#262521"
+      },
+      "animation": {
+        "tracks": [
+          {
+            "property": "opacity",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 0.0
+              },
+              {
+                "frame": 120,
+                "value": 0.0
+              },
+              {
+                "frame": 132,
+                "value": 1.0
+              },
+              {
+                "frame": 192,
+                "value": 1.0
+              },
+              {
+                "frame": 204,
+                "value": 0.0
+              },
+              {
+                "frame": 239,
+                "value": 0.0
+              }
+            ],
+            "easing": "in_out_cubic"
+          }
+        ]
+      }
+    },
+    {
+      "id": "date_3",
+      "type": "text",
+      "text": "2026",
+      "size": [
+        700,
+        300
+      ],
+      "position": [
+        1280,
+        450
+      ],
+      "start_frame": 0,
+      "duration_frames": 240,
+      "style": {
+        "font": "assets/fonts/PlayfairDisplay.ttf",
+        "font_size": 190,
+        "min_font_size": 190,
+        "max_font_size": 190,
+        "fit_mode": "shrink_only",
+        "fill": "#262521"
+      },
+      "animation": {
+        "tracks": [
+          {
+            "property": "opacity",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 0.0
+              },
+              {
+                "frame": 192,
+                "value": 0.0
+              },
+              {
+                "frame": 204,
+                "value": 1.0
+              },
+              {
+                "frame": 239,
+                "value": 1.0
+              }
+            ],
+            "easing": "in_out_cubic"
+          }
+        ]
+      }
+    },
+    {
+      "id": "stack_row_0",
+      "type": "text",
+      "text": "1948",
+      "size": [
+        560,
+        50
+      ],
+      "position": [
+        630,
+        330
+      ],
+      "start_frame": 0,
+      "duration_frames": 240,
+      "style": {
+        "font": "assets/fonts/PlayfairDisplay.ttf",
+        "font_size": 30,
+        "min_font_size": 30,
+        "max_font_size": 30,
+        "fit_mode": "shrink_only",
+        "fill": "#66625B"
+      },
+      "animation": {
+        "tracks": [
+          {
+            "property": "position_y",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 12.0
+              },
+              {
+                "frame": 16,
+                "value": 0.0
+              },
+              {
+                "frame": 239,
+                "value": 0.0
+              }
+            ],
+            "easing": "out_cubic"
+          },
+          {
+            "property": "opacity",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 0.0
+              },
+              {
+                "frame": 12,
+                "value": 0.62
+              },
+              {
+                "frame": 239,
+                "value": 0.62
+              }
+            ],
+            "easing": "out_cubic"
+          }
+        ]
+      }
+    },
+    {
+      "id": "stack_active_0",
+      "type": "text",
+      "text": "1948",
+      "size": [
+        560,
+        50
+      ],
+      "position": [
+        630,
+        330
+      ],
+      "start_frame": 0,
+      "duration_frames": 240,
+      "style": {
+        "font": "assets/fonts/PlayfairDisplay.ttf",
+        "font_size": 30,
+        "min_font_size": 30,
+        "max_font_size": 30,
+        "fit_mode": "shrink_only",
+        "fill": "#C8553D"
+      },
+      "animation": {
+        "tracks": [
+          {
+            "property": "opacity",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 1.0
+              },
+              {
+                "frame": 48,
+                "value": 1.0
+              },
+              {
+                "frame": 60,
+                "value": 0.0
+              },
+              {
+                "frame": 239,
+                "value": 0.0
+              }
+            ],
+            "easing": "in_out_cubic"
+          }
+        ]
+      }
+    },
+    {
+      "id": "stack_row_1",
+      "type": "text",
+      "text": "1969",
+      "size": [
+        560,
+        50
+      ],
+      "position": [
+        630,
+        450
+      ],
+      "start_frame": 0,
+      "duration_frames": 240,
+      "style": {
+        "font": "assets/fonts/PlayfairDisplay.ttf",
+        "font_size": 30,
+        "min_font_size": 30,
+        "max_font_size": 30,
+        "fit_mode": "shrink_only",
+        "fill": "#66625B"
+      },
+      "animation": {
+        "tracks": [
+          {
+            "property": "position_y",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 12.0
+              },
+              {
+                "frame": 20,
+                "value": 0.0
+              },
+              {
+                "frame": 239,
+                "value": 0.0
+              }
+            ],
+            "easing": "out_cubic"
+          },
+          {
+            "property": "opacity",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 0.0
+              },
+              {
+                "frame": 16,
+                "value": 0.62
+              },
+              {
+                "frame": 239,
+                "value": 0.62
+              }
+            ],
+            "easing": "out_cubic"
+          }
+        ]
+      }
+    },
+    {
+      "id": "stack_active_1",
+      "type": "text",
+      "text": "1969",
+      "size": [
+        560,
+        50
+      ],
+      "position": [
+        630,
+        450
+      ],
+      "start_frame": 0,
+      "duration_frames": 240,
+      "style": {
+        "font": "assets/fonts/PlayfairDisplay.ttf",
+        "font_size": 30,
+        "min_font_size": 30,
+        "max_font_size": 30,
+        "fit_mode": "shrink_only",
+        "fill": "#C8553D"
+      },
+      "animation": {
+        "tracks": [
+          {
+            "property": "opacity",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 0.0
+              },
+              {
+                "frame": 48,
+                "value": 0.0
+              },
+              {
+                "frame": 60,
+                "value": 1.0
+              },
+              {
+                "frame": 120,
+                "value": 1.0
+              },
+              {
+                "frame": 132,
+                "value": 0.0
+              },
+              {
+                "frame": 239,
+                "value": 0.0
+              }
+            ],
+            "easing": "in_out_cubic"
+          }
+        ]
+      }
+    },
+    {
+      "id": "stack_row_2",
+      "type": "text",
+      "text": "1998",
+      "size": [
+        560,
+        50
+      ],
+      "position": [
+        630,
+        570
+      ],
+      "start_frame": 0,
+      "duration_frames": 240,
+      "style": {
+        "font": "assets/fonts/PlayfairDisplay.ttf",
+        "font_size": 30,
+        "min_font_size": 30,
+        "max_font_size": 30,
+        "fit_mode": "shrink_only",
+        "fill": "#66625B"
+      },
+      "animation": {
+        "tracks": [
+          {
+            "property": "position_y",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 12.0
+              },
+              {
+                "frame": 24,
+                "value": 0.0
+              },
+              {
+                "frame": 239,
+                "value": 0.0
+              }
+            ],
+            "easing": "out_cubic"
+          },
+          {
+            "property": "opacity",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 0.0
+              },
+              {
+                "frame": 20,
+                "value": 0.62
+              },
+              {
+                "frame": 239,
+                "value": 0.62
+              }
+            ],
+            "easing": "out_cubic"
+          }
+        ]
+      }
+    },
+    {
+      "id": "stack_active_2",
+      "type": "text",
+      "text": "1998",
+      "size": [
+        560,
+        50
+      ],
+      "position": [
+        630,
+        570
+      ],
+      "start_frame": 0,
+      "duration_frames": 240,
+      "style": {
+        "font": "assets/fonts/PlayfairDisplay.ttf",
+        "font_size": 30,
+        "min_font_size": 30,
+        "max_font_size": 30,
+        "fit_mode": "shrink_only",
+        "fill": "#C8553D"
+      },
+      "animation": {
+        "tracks": [
+          {
+            "property": "opacity",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 0.0
+              },
+              {
+                "frame": 120,
+                "value": 0.0
+              },
+              {
+                "frame": 132,
+                "value": 1.0
+              },
+              {
+                "frame": 192,
+                "value": 1.0
+              },
+              {
+                "frame": 204,
+                "value": 0.0
+              },
+              {
+                "frame": 239,
+                "value": 0.0
+              }
+            ],
+            "easing": "in_out_cubic"
+          }
+        ]
+      }
+    },
+    {
+      "id": "stack_row_3",
+      "type": "text",
+      "text": "2026",
+      "size": [
+        560,
+        50
+      ],
+      "position": [
+        630,
+        690
+      ],
+      "start_frame": 0,
+      "duration_frames": 240,
+      "style": {
+        "font": "assets/fonts/PlayfairDisplay.ttf",
+        "font_size": 30,
+        "min_font_size": 30,
+        "max_font_size": 30,
+        "fit_mode": "shrink_only",
+        "fill": "#66625B"
+      },
+      "animation": {
+        "tracks": [
+          {
+            "property": "position_y",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 12.0
+              },
+              {
+                "frame": 28,
+                "value": 0.0
+              },
+              {
+                "frame": 239,
+                "value": 0.0
+              }
+            ],
+            "easing": "out_cubic"
+          },
+          {
+            "property": "opacity",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 0.0
+              },
+              {
+                "frame": 24,
+                "value": 0.62
+              },
+              {
+                "frame": 239,
+                "value": 0.62
+              }
+            ],
+            "easing": "out_cubic"
+          }
+        ]
+      }
+    },
+    {
+      "id": "stack_active_3",
+      "type": "text",
+      "text": "2026",
+      "size": [
+        560,
+        50
+      ],
+      "position": [
+        630,
+        690
+      ],
+      "start_frame": 0,
+      "duration_frames": 240,
+      "style": {
+        "font": "assets/fonts/PlayfairDisplay.ttf",
+        "font_size": 30,
+        "min_font_size": 30,
+        "max_font_size": 30,
+        "fit_mode": "shrink_only",
+        "fill": "#C8553D"
+      },
+      "animation": {
+        "tracks": [
+          {
+            "property": "opacity",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 0.0
+              },
+              {
+                "frame": 192,
+                "value": 0.0
+              },
+              {
+                "frame": 204,
+                "value": 1.0
+              },
+              {
+                "frame": 239,
+                "value": 1.0
+              }
+            ],
+            "easing": "in_out_cubic"
+          }
+        ]
+      }
+    },
+    {
+      "id": "stack_marker",
+      "type": "color",
+      "color": [
+        0.784,
+        0.333,
+        0.239,
+        1.0
+      ],
+      "size": [
+        2,
+        40
+      ],
+      "position": [
+        -610,
+        -210
+      ],
+      "start_frame": 0,
+      "duration_frames": 240,
+      "animation": {
+        "tracks": [
+          {
+            "property": "position_y",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 0.0
+              },
+              {
+                "frame": 60,
+                "value": 0.0
+              },
+              {
+                "frame": 132,
+                "value": 120.0
+              },
+              {
+                "frame": 192,
+                "value": 240.0
+              },
+              {
+                "frame": 204,
+                "value": 360.0
+              },
+              {
+                "frame": 239,
+                "value": 360.0
+              }
+            ],
+            "easing": "in_out_cubic"
+          }
+        ]
+      }
+    }
+  ],
+  "output": {
+    "path": "06_date_stack.mp4",
+    "format": "mp4",
+    "codec": "h264",
+    "crf": 14
+  }
+}

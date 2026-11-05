@@ -602,17 +602,19 @@ type SemanticAssetRef struct {
 // caption lowers to a separate text layer linked internally to this image ID;
 // it shares the child's time window and may select its own motion.
 type SemanticImageLayer struct {
-	ID                  string               `json:"id"`
-	GroupID             string               `json:"group_id,omitempty"`
-	SubgroupID          string               `json:"subgroup_id,omitempty"`
-	AssetID             string               `json:"asset_id"`
-	StartMS             int64                `json:"start_ms"`
-	EndMS               int64                `json:"end_ms"`
-	CaptionStartMS      int64                `json:"caption_start_ms,omitempty"`
-	CaptionEndMS        int64                `json:"caption_end_ms,omitempty"`
-	PresetID            string               `json:"preset_id"`
-	MotionID            string               `json:"motion_id"`
-	MotionParams        map[string]any       `json:"motion_params"`
+	ID             string `json:"id"`
+	GroupID        string `json:"group_id,omitempty"`
+	SubgroupID     string `json:"subgroup_id,omitempty"`
+	AssetID        string `json:"asset_id"`
+	StartMS        int64  `json:"start_ms"`
+	EndMS          int64  `json:"end_ms"`
+	CaptionStartMS int64  `json:"caption_start_ms,omitempty"`
+	CaptionEndMS   int64  `json:"caption_end_ms,omitempty"`
+	PresetID       string `json:"preset_id"`
+	// MotionID/MotionParams are legacy-only for composites. New plans leave
+	// them empty because the parent GroupMotionID owns the choreography.
+	MotionID            string               `json:"motion_id,omitempty"`
+	MotionParams        map[string]any       `json:"motion_params,omitempty"`
 	Caption             string               `json:"caption,omitempty"`
 	CaptionMotionID     string               `json:"caption_motion_id,omitempty"`
 	CaptionMotionParams map[string]any       `json:"caption_motion_params,omitempty"`
