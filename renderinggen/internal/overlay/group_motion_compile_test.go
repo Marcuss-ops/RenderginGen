@@ -1,6 +1,12 @@
 package overlay
 
-import "testing"
+import (
+	"fmt"
+	"strings"
+	"testing"
+
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/motion"
+)
 
 // A new composite carries one group_motion_id and motion-free children. The
 // compiler must lower the whole group through the group recipe: if it fell back
@@ -76,5 +82,74 @@ func TestLegacyCompositeStillCompilesPerChildMotion(t *testing.T) {
 	}
 	if imageLayers != 2 {
 		t.Fatalf("legacy image layers = %d, want 2", imageLayers)
+	}
+}
+
+func TestReusableGroupAnimationWorksForDifferentImageCounts(t *testing.T) {
+	for _, count := range []int{2, 3, 5} {
+		var assets, layers []string
+		for index := 0; index < count; index++ {
+			id := fmt.Sprintf("image_%d", index)
+			assets = append(assets, fmt.Sprintf(`{"asset_id":%q,"sha256":%q,"url":%q,"media_type":"image/png"}`, id, strings.Repeat("a", 64), "assets/semantic/"+id+".png"))
+			layers = append(layers, fmt.Sprintf(`{"id":%q,"asset_id":%q,"start_ms":0,"end_ms":5000,"preset_id":"image_focus_in","motion_id":""}`, id, id))
+		}
+		raw := fmt.Sprintf(`{
+			"schema_version":"renderinggen.overlay-plan.v1","plan_id":"reusable-%d","video_id":"reusable-%d",
+			"width":640,"height":360,"fps_num":24,"fps_den":1,"duration_ms":5000,
+			"items":[{"id":"group","kind":"entity_image","template_id":"image_popup","preset_id":"image_focus_in",
+			"composition_id":"multiple_images","group_motion_id":"image_group_slide_right","start_ms":0,"end_ms":5000,
+			"asset_refs":[%s],"image_layers":[%s]}]}`, count, count, strings.Join(assets, ","), strings.Join(layers, ","))
+		result, err := CompileSemantic([]byte(raw))
+		if err != nil {
+			t.Fatalf("compile reusable transition with %d images: %v", count, err)
+		}
+		images := 0
+		var reference []AnimationTrack
+		for _, layer := range result.Plan.Layers {
+			if layer.Type != "image" {
+				continue
+			}
+			images++
+			if layer.Animation == nil || len(layer.Animation.Tracks) != 4 {
+				t.Fatalf("group size %d layer %q has no reusable transition tracks: %+v", count, layer.ID, layer.Animation)
+			}
+			if reference == nil {
+				reference = layer.Animation.Tracks
+			} else if fmt.Sprint(reference) != fmt.Sprint(layer.Animation.Tracks) {
+				t.Errorf("group size %d changed the selected motion across members", count)
+			}
+		}
+		if images != count {
+			t.Errorf("group size %d rendered %d image layers", count, images)
+		}
+	}
+}
+
+func TestAllReusableImageAnimationsCompileForOneImage(t *testing.T) {
+	ids := motion.ReusableImageGroupMotionIDs()
+	if len(ids) != 14 {
+		t.Fatalf("reusable image-group inventory has %d motions, want 14: %v", len(ids), ids)
+	}
+	for _, id := range ids {
+		raw := fmt.Sprintf(`{
+			"schema_version":"renderinggen.overlay-plan.v1","plan_id":"single-%s","video_id":"single-%s",
+			"width":640,"height":360,"fps_num":24,"fps_den":1,"duration_ms":2000,
+			"items":[{"id":"image","kind":"image","template_id":"image_popup","preset_id":"image_focus_in",
+			"composition_id":"single_image","motion_id":%q,"start_ms":0,"end_ms":2000,
+			"asset_refs":[{"asset_id":"image","sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+			"url":"assets/semantic/image.png","media_type":"image/png"}]}]}`, id, id, id)
+		result, err := CompileSemantic([]byte(raw))
+		if err != nil {
+			t.Fatalf("compile %s for one image: %v", id, err)
+		}
+		var animated bool
+		for _, layer := range result.Plan.Layers {
+			if layer.Type == "image" && layer.Animation != nil && len(layer.Animation.Tracks) == 4 {
+				animated = true
+			}
+		}
+		if !animated {
+			t.Errorf("%s did not compile its four image tracks for a single image", id)
+		}
 	}
 }

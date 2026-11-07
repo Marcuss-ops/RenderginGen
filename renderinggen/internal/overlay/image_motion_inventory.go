@@ -210,14 +210,53 @@ type RuntimeAnimationUseCase struct {
 // Captions is nil for image-only compositions and a bounded count for
 // image-with-text compositions; Maps is used by map compositions.
 type RuntimeAnimationComposition struct {
-	ImageCount int                  `json:"image_count,omitempty"`
-	Caption    *RuntimeCaptionCount `json:"caption_count,omitempty"`
-	MapCount   int                  `json:"map_count,omitempty"`
+	ImageCount      int                  `json:"image_count,omitempty"`
+	ImageCountRange *RuntimeCountRange   `json:"image_count_range,omitempty"`
+	Caption         *RuntimeCaptionCount `json:"caption_count,omitempty"`
+	MapCount        int                  `json:"map_count,omitempty"`
+}
+
+type RuntimeCountRange struct {
+	Minimum int `json:"minimum"`
+	Maximum int `json:"maximum"`
 }
 
 type RuntimeCaptionCount struct {
 	Minimum int `json:"minimum"`
 	Maximum int `json:"maximum"`
+}
+
+// bulletPointMotionIDs is the curated bullet-point picker. The first block is
+// type-on / per-glyph, the second Apple-style entrances, the third marker and
+// highlight recipes. A bullet is still an IMPORTANT_PHRASE item; only its
+// picker is separate.
+func bulletPointMotionIDs() []string {
+	return []string{
+		// Type-on / per-glyph.
+		"air_rise_type_on",
+		"apple_precision_type",
+		"apple_tracking_reveal",
+		"classic_playfair_letter_tick",
+		"classic_playfair_glyph_glide",
+		// Apple-style entrances.
+		"apple_spread_rise",
+		"phrase_apple_clean_08_slide_up_spring",
+		"phrase_apple_clean_13_scale_soft_pop",
+		"phrase_apple_clean_30_opacity_clean_apple",
+		"phrase_apple_clean_02_blur_focus_snap",
+		"phrase_apple_clean_24_tracking_soft_kinetic",
+		// Marker / highlight.
+		"doc_01_yellow_marker_sweep",
+		"doc_02_multiline_stagger_highlight",
+		"doc_03_documentary_quote_marker",
+		"doc_09_cinematic_underline_draw",
+		"phrase_highlight_soft_marker",
+		"phrase_highlight_evidence_red",
+		"doc_04_archival_source_highlight",
+		"doc_06_red_keyword_punch",
+		"doc_08_mixed_font_emphasis",
+		"doc_13_analog_scanner_highlight",
+	}
 }
 
 func runtimeAnimationUseCases(allOptions []RuntimeMotionOption, definitions map[string]*motion.MotionDefinition) []RuntimeAnimationUseCase {
@@ -229,6 +268,7 @@ func runtimeAnimationUseCases(allOptions []RuntimeMotionOption, definitions map[
 		// spelling; deriving it keeps the two vocabularies from drifting.
 		{ID: string(KindImportantPhrase), ItemKinds: []string{string(KindImportantPhrase)}, Cardinality: "one text layer", Description: "Editorial phrase motion; choose a text preset separately.", MotionIDs: groups.phrases},
 		{ID: "short_important_phrase", ItemKinds: []string{string(KindImportantPhrase)}, Cardinality: "one text layer", Description: "Short-phrase styles and modern typewriter motions; choose a text preset separately.", MotionIDs: groups.shortPhrases},
+		{ID: "bullet_point", ItemKinds: []string{string(KindImportantPhrase)}, Cardinality: "one bullet line", Description: "Typewriter and Apple-style keyword-highlight reveals for bullet lines; choose a text preset separately.", MotionIDs: bulletPointMotionIDs()},
 	}
 	for _, definition := range imageCompositionCatalog {
 		cardinality := imageCompositionCardinality(definition.Composition)
@@ -305,6 +345,7 @@ type runtimeAnimationMotionGroups struct {
 	shortPhrases []string
 	phrases      []string
 	images       []string
+	imageGroups  []string
 	maps         []string
 	captions     []string
 	metrics      []string
@@ -315,6 +356,8 @@ func (groups runtimeAnimationMotionGroups) forTarget(target string) []string {
 	switch target {
 	case TargetImage:
 		return groups.images
+	case TargetImageGroup:
+		return groups.imageGroups
 	case TargetMapView:
 		return groups.maps
 	case TargetMetric:
@@ -341,8 +384,15 @@ func collectRuntimeAnimationMotionGroups(options []RuntimeMotionOption, definiti
 		if !shortPhrase && motionDefinitionAdmitsTarget(definition, TargetImportantPhrase) {
 			groups.phrases = append(groups.phrases, option.ID)
 		}
-		if motionDefinitionAdmitsTarget(definition, TargetImage) && !isMultiImageRecipe(definition) {
+		// The image picker is intentionally curated to the same fourteen reusable
+		// transitions for single images and image groups. Legacy and one-off
+		// image catalog rows remain resolvable for existing plans, but are not
+		// offered as new choices.
+		if motionDefinitionAdmitsTarget(definition, TargetImage) && isReusableImageGroupRecipe(definition) {
 			groups.images = append(groups.images, option.ID)
+		}
+		if isReusableImageGroupRecipe(definition) {
+			groups.imageGroups = append(groups.imageGroups, option.ID)
 		}
 		if motionDefinitionAdmitsTarget(definition, TargetMapView) {
 			groups.maps = append(groups.maps, option.ID)
@@ -369,6 +419,10 @@ type RuntimeAnimationCatalog struct {
 	Families      []string                  `json:"families"`
 	Motions       []RuntimeMotionOption     `json:"motions"`
 	UseCases      []RuntimeAnimationUseCase `json:"use_cases"`
+	// GroupChoreographies publishes the heterogeneous animation-group
+	// choreographies and their per-role motion pools. The preview is data-only:
+	// selecting a group still happens through the plan contract, not the catalog.
+	GroupChoreographies []RuntimeAnimationGroupChoreography `json:"group_choreographies"`
 	// SelectionModel is the compiled picker model: zones, the compatibility
 	// matrix, the layout constraints, the map layouts, the background sources,
 	// the camera destinations and the declared metric/date fields.
@@ -382,11 +436,12 @@ func CompiledRuntimeAnimationCatalog() RuntimeAnimationCatalog {
 	families := runtimeMotionFamilies(options)
 	useCases := runtimeAnimationUseCases(options, definitions)
 	return RuntimeAnimationCatalog{
-		SchemaVersion:  1,
-		Families:       runtimeMotionFamilyIDs(families),
-		Motions:        options,
-		UseCases:       useCases,
-		SelectionModel: runtimeSelectionModel(useCases, definitions),
+		SchemaVersion:       1,
+		Families:            runtimeMotionFamilyIDs(families),
+		Motions:             options,
+		UseCases:            useCases,
+		GroupChoreographies: runtimeAnimationGroupChoreographies(),
+		SelectionModel:      runtimeSelectionModel(useCases, definitions),
 	}
 }
 

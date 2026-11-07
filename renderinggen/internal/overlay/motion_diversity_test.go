@@ -18,7 +18,7 @@ func TestMixedSemanticPlanPreservesMotionDiversityThroughChrononLowering(t *test
 		"risograph_offset_print",
 		"editorial_line_build",
 		"apple_focus_rise",
-		"phrase_apple_clean_07_slide_up_soft",
+		"phrase_apple_clean_01_blur_soft_reveal",
 		"shutter_blade_reveal",
 	}
 	imageMotions := []string{

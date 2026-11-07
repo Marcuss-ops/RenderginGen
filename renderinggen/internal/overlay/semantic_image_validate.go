@@ -89,7 +89,11 @@ func validateImageComposition(item semanticItem, kind ItemKind) error {
 	if len(item.ImageLayers) > 0 {
 		imageCount = len(item.ImageLayers)
 	}
-	if imageCount != composition.ImageCount {
+	if composition.ImageCountRange != nil {
+		if imageCount < composition.ImageCountRange.Minimum || imageCount > composition.ImageCountRange.Maximum {
+			return fmt.Errorf("overlay: item %q composition_id %q requires between %d and %d images, got %d", item.ID, item.CompositionID, composition.ImageCountRange.Minimum, composition.ImageCountRange.Maximum, imageCount)
+		}
+	} else if imageCount != composition.ImageCount {
 		return fmt.Errorf("overlay: item %q composition_id %q requires %d images, got %d", item.ID, item.CompositionID, composition.ImageCount, imageCount)
 	}
 	captionCount := 0

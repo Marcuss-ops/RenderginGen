@@ -1,5 +1,7 @@
 package overlay
 
+import "strings"
+
 // imageCompositionDefinition is the canonical semantic composition record.
 // The picker publishes it and the compiler validates composition_id against
 // the same table.
@@ -18,24 +20,9 @@ var imageCompositionCatalog = []imageCompositionDefinition{
 		Composition: RuntimeAnimationComposition{ImageCount: 1},
 	},
 	{
-		ID: "image_double", Zone: ZoneImages, MotionTarget: TargetImage,
-		Description: "Each of the two image layers selects its own image motion and keeps its own timing.",
-		Composition: RuntimeAnimationComposition{ImageCount: 2},
-	},
-	{
-		ID: "image_triplet", Zone: ZoneImages, MotionTarget: TargetImage,
-		Description: "Each of the three image layers selects its own image motion and keeps its own timing.",
-		Composition: RuntimeAnimationComposition{ImageCount: 3},
-	},
-	{
-		ID: "image_four", Zone: ZoneImages, MotionTarget: TargetImage,
-		Description: "Each of the four image layers selects its own image motion and keeps its own timing.",
-		Composition: RuntimeAnimationComposition{ImageCount: 4},
-	},
-	{
-		ID: "image_five", Zone: ZoneImages, MotionTarget: TargetImage,
-		Description: "Each of the five image layers selects its own image motion and keeps its own timing.",
-		Composition: RuntimeAnimationComposition{ImageCount: 5},
+		ID: "multiple_images", Zone: ZoneImages, MotionTarget: TargetImageGroup,
+		Description: "One animation is selected for the image group and reused for each image layer, regardless of group size.",
+		Composition: RuntimeAnimationComposition{ImageCountRange: &RuntimeCountRange{Minimum: 2, Maximum: 5}},
 	},
 	{
 		ID: "single_image_with_text", Zone: ZoneImagesWithText, MotionTarget: TargetImage,
@@ -43,25 +30,18 @@ var imageCompositionCatalog = []imageCompositionDefinition{
 		Composition: RuntimeAnimationComposition{ImageCount: 1, Caption: &RuntimeCaptionCount{Minimum: 1, Maximum: 1}},
 	},
 	{
-		ID: "image_double_with_text", Zone: ZoneImagesWithText, MotionTarget: TargetImage,
-		Description: "Each of the two image layers selects its own image motion while every caption selects its own caption motion.",
-		Composition: RuntimeAnimationComposition{ImageCount: 2, Caption: &RuntimeCaptionCount{Minimum: 1, Maximum: 2}},
+		ID: "multiple_images_with_text", Zone: ZoneImagesWithText, MotionTarget: TargetImageGroup,
+		Description: "One animation is selected for the image group and reused for each image layer; captions keep independent motion.",
+		Composition: RuntimeAnimationComposition{ImageCountRange: &RuntimeCountRange{Minimum: 2, Maximum: 5}, Caption: &RuntimeCaptionCount{Minimum: 1, Maximum: 5}},
 	},
-	{
-		ID: "image_triplet_with_text", Zone: ZoneImagesWithText, MotionTarget: TargetImage,
-		Description: "Each of the three image layers selects its own image motion while every caption selects its own caption motion.",
-		Composition: RuntimeAnimationComposition{ImageCount: 3, Caption: &RuntimeCaptionCount{Minimum: 1, Maximum: 3}},
-	},
-	{
-		ID: "image_four_with_text", Zone: ZoneImagesWithText, MotionTarget: TargetImage,
-		Description: "Each of the four image layers selects its own image motion while every caption selects its own caption motion.",
-		Composition: RuntimeAnimationComposition{ImageCount: 4, Caption: &RuntimeCaptionCount{Minimum: 1, Maximum: 4}},
-	},
-	{
-		ID: "image_five_with_text", Zone: ZoneImagesWithText, MotionTarget: TargetImage,
-		Description: "Each of the five image layers selects its own image motion while every caption selects its own caption motion.",
-		Composition: RuntimeAnimationComposition{ImageCount: 5, Caption: &RuntimeCaptionCount{Minimum: 1, Maximum: 5}},
-	},
+}
+
+// legacyImageCompositionAliases keep sealed jobs replayable while the picker
+// publishes only count-independent multi-image choices.
+var legacyImageCompositionAliases = map[string]int{
+	"image_double": 2, "image_triplet": 3, "image_four": 4, "image_five": 5,
+	"image_double_with_text": 2, "image_triplet_with_text": 3,
+	"image_four_with_text": 4, "image_five_with_text": 5,
 }
 
 // captionTextLimitLines is the published dense-layout rule for a composition
@@ -86,6 +66,13 @@ func imageCompositionFor(id string) *RuntimeAnimationComposition {
 			return cloneRuntimeAnimationComposition(definition.Composition)
 		}
 	}
+	if count, ok := legacyImageCompositionAliases[id]; ok {
+		composition := RuntimeAnimationComposition{ImageCount: count}
+		if strings.HasSuffix(id, "_with_text") {
+			composition.Caption = &RuntimeCaptionCount{Minimum: 1, Maximum: count}
+		}
+		return &composition
+	}
 	return nil
 }
 
@@ -94,6 +81,9 @@ func maxImageCompositionCount() int {
 	for _, definition := range imageCompositionCatalog {
 		if definition.Composition.ImageCount > maximum {
 			maximum = definition.Composition.ImageCount
+		}
+		if definition.Composition.ImageCountRange != nil && definition.Composition.ImageCountRange.Maximum > maximum {
+			maximum = definition.Composition.ImageCountRange.Maximum
 		}
 	}
 	return maximum

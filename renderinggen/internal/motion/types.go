@@ -79,10 +79,11 @@ type ImageMotionRecipe struct {
 }
 
 type GroupMotionRecipe struct {
-	ImageCount   int                    `json:"image_count"`
-	Layout       string                 `json:"layout"`
-	Description  string                 `json:"description,omitempty"`
-	MemberTracks []GroupMemberTrackSpec `json:"member_tracks"`
+	ImageCount        int                    `json:"image_count,omitempty"`
+	Layout            string                 `json:"layout"`
+	ApplyToAllMembers bool                   `json:"apply_to_all_members,omitempty"`
+	Description       string                 `json:"description,omitempty"`
+	MemberTracks      []GroupMemberTrackSpec `json:"member_tracks"`
 }
 
 type GroupMemberTrackSpec struct {
@@ -91,11 +92,26 @@ type GroupMemberTrackSpec struct {
 }
 
 func (r *GroupMotionRecipe) SupportsCount(count int) bool {
-	return r != nil && count == r.ImageCount
+	if r == nil || count < 2 || count > 5 {
+		return false
+	}
+	if r.ApplyToAllMembers {
+		return true
+	}
+	return count == r.ImageCount
 }
 
 func (r *GroupMotionRecipe) TracksForMember(index int) []TrackDefinition {
-	if r == nil || index < 0 || index >= len(r.MemberTracks) || r.MemberTracks[index].MemberIndex != index {
+	if r == nil || index < 0 {
+		return nil
+	}
+	if r.ApplyToAllMembers {
+		if len(r.MemberTracks) != 1 || r.MemberTracks[0].MemberIndex != 0 {
+			return nil
+		}
+		return r.MemberTracks[0].Tracks
+	}
+	if index >= len(r.MemberTracks) || r.MemberTracks[index].MemberIndex != index {
 		return nil
 	}
 	return r.MemberTracks[index].Tracks
@@ -141,12 +157,21 @@ func (r *GroupMotionRecipe) ValidateRestingPose() error {
 }
 
 func (r *GroupMotionRecipe) Validate() error {
-	if r == nil || r.ImageCount < 2 || r.ImageCount > 5 || len(r.MemberTracks) != r.ImageCount {
+	if r == nil {
+		return fmt.Errorf("group recipe is required")
+	}
+	if r.ApplyToAllMembers {
+		if r.ImageCount != 0 || r.Layout != "sequence" || len(r.MemberTracks) != 1 || r.MemberTracks[0].MemberIndex != 0 {
+			return fmt.Errorf("generic group recipe requires layout sequence and one reusable member track set")
+		}
+	} else if r.ImageCount < 2 || r.ImageCount > 5 || len(r.MemberTracks) != r.ImageCount {
 		return fmt.Errorf("group recipe requires 2..5 member track sets matching image_count")
 	}
-	wantLayout := map[int]string{2: "duo", 3: "trio", 4: "quad", 5: "penta"}[r.ImageCount]
-	if r.Layout != wantLayout {
-		return fmt.Errorf("group recipe layout %q does not match %d image members", r.Layout, r.ImageCount)
+	if !r.ApplyToAllMembers {
+		wantLayout := map[int]string{2: "duo", 3: "trio", 4: "quad", 5: "penta"}[r.ImageCount]
+		if r.Layout != wantLayout {
+			return fmt.Errorf("group recipe layout %q does not match %d image members", r.Layout, r.ImageCount)
+		}
 	}
 	if len(r.MemberTracks) == 0 || len(r.MemberTracks[0].Tracks) == 0 {
 		return fmt.Errorf("group recipe requires non-empty member tracks")

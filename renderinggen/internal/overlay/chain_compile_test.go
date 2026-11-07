@@ -12,10 +12,10 @@ import (
 func TestCompilePhraseChainExpandsSegments(t *testing.T) {
 	raw := []byte(`{"schema_version":"renderinggen.overlay-plan.v1","plan_id":"chain-test","video_id":"v","width":1280,"height":720,"fps_num":24,"fps_den":1,"items":[{
 		"id":"chain-1","kind":"phrase_chain","template_id":"PHRASE_CHAIN","preset_id":"phrase_default",
-		"motion_id":"phrase_apple_clean_07_slide_up_soft","text":"FIRST",
+		"motion_id":"phrase_apple_clean_01_blur_soft_reveal","text":"FIRST",
 		"start_ms":0,"end_ms":4000,
 		"params":{"chain_camera":"fly_under_fade","chain_count":2,"chain_segments":[
-			{"text":"FIRST","motion_id":"phrase_apple_clean_07_slide_up_soft","preset_id":"phrase_default","template_id":"IMPORTANT_PHRASE","kind":"text_phrase","start_us":0,"duration_us":2000000},
+			{"text":"FIRST","motion_id":"phrase_apple_clean_01_blur_soft_reveal","preset_id":"phrase_default","template_id":"IMPORTANT_PHRASE","kind":"text_phrase","start_us":0,"duration_us":2000000},
 			{"text":"SECOND","motion_id":"soft_edge_spotlight_dissolve","preset_id":"phrase_default","template_id":"IMPORTANT_PHRASE","kind":"text_phrase","start_us":2000000,"duration_us":2000000}
 		]}
 	}]}`)
@@ -85,12 +85,12 @@ func TestSemanticItemFramesUseCanonicalMicrosecondsWhenPresent(t *testing.T) {
 func TestCompileMixedChainExpandsImageAndText(t *testing.T) {
 	raw := []byte(`{"schema_version":"renderinggen.overlay-plan.v1","plan_id":"chain-mixed","video_id":"v","width":1280,"height":720,"fps_num":24,"fps_den":1,"items":[{
 		"id":"chain-mixed-1","kind":"mixed_chain","template_id":"MIXED_CHAIN","preset_id":"phrase_default",
-		"motion_id":"phrase_apple_clean_07_slide_up_soft","text":"LA FRASE",
+		"motion_id":"phrase_apple_clean_01_blur_soft_reveal","text":"LA FRASE",
 		"start_ms":10000,"end_ms":15000,
 		"asset_refs":[{"asset_id":"img-1","url":"https://example/img.jpg","sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","media_type":"image/jpeg"}],
 		"params":{"chain_camera":"fly_under_fade","chain_count":2,"chain_segments":[
 			{"text":"","motion_id":"image_focus_reveal","preset_id":"image_scale_in","template_id":"IMAGE_OVERLAY","kind":"image","start_us":10000000,"duration_us":5000000,"asset_id":"img-1"},
-			{"text":"LA FRASE","motion_id":"phrase_apple_clean_07_slide_up_soft","preset_id":"phrase_default","template_id":"IMPORTANT_PHRASE","kind":"text_phrase","start_us":12000000,"duration_us":3000000}
+			{"text":"LA FRASE","motion_id":"phrase_apple_clean_01_blur_soft_reveal","preset_id":"phrase_default","template_id":"IMPORTANT_PHRASE","kind":"text_phrase","start_us":12000000,"duration_us":3000000}
 		]}
 	}]}`)
 	result, err := CompileSemantic(raw)
@@ -119,11 +119,11 @@ func TestCompileMixedChainExpandsImageAndText(t *testing.T) {
 func TestCompileMixedChainExpandsNumberSegment(t *testing.T) {
 	raw := []byte(`{"schema_version":"renderinggen.overlay-plan.v1","plan_id":"chain-number","video_id":"v","width":1280,"height":720,"fps_num":24,"fps_den":1,"items":[{
 		"id":"chain-num-1","kind":"mixed_chain","template_id":"MIXED_CHAIN","preset_id":"phrase_default",
-		"motion_id":"phrase_apple_clean_07_slide_up_soft","text":"FIRST",
+		"motion_id":"phrase_apple_clean_01_blur_soft_reveal","text":"FIRST",
 		"start_ms":0,"end_ms":4000,
 		"params":{"chain_camera":"fly_under_fade","chain_count":2,"chain_segments":[
-			{"text":"FIRST","motion_id":"phrase_apple_clean_07_slide_up_soft","preset_id":"phrase_default","template_id":"IMPORTANT_PHRASE","kind":"text_phrase","start_us":0,"duration_us":2000000},
-			{"text":"42","motion_id":"phrase_apple_clean_07_slide_up_soft","preset_id":"phrase_default","template_id":"NUMBER","kind":"number","start_us":2000000,"duration_us":2000000}
+			{"text":"FIRST","motion_id":"phrase_apple_clean_01_blur_soft_reveal","preset_id":"phrase_default","template_id":"IMPORTANT_PHRASE","kind":"text_phrase","start_us":0,"duration_us":2000000},
+			{"text":"42","motion_id":"phrase_apple_clean_01_blur_soft_reveal","preset_id":"phrase_default","template_id":"NUMBER","kind":"number","start_us":2000000,"duration_us":2000000}
 		]}
 	}]}`)
 	result, err := CompileSemantic(raw)
@@ -186,10 +186,10 @@ func TestCompileMapChainExpandsMapSegments(t *testing.T) {
 func TestCompilePhraseChainRejectsEscapingSegment(t *testing.T) {
 	raw := []byte(`{"schema_version":"renderinggen.overlay-plan.v1","plan_id":"chain-bad","video_id":"v","width":1280,"height":720,"fps_num":24,"fps_den":1,"items":[{
 		"id":"chain-1","kind":"phrase_chain","template_id":"PHRASE_CHAIN","preset_id":"phrase_default",
-		"motion_id":"phrase_apple_clean_07_slide_up_soft","text":"FIRST",
+		"motion_id":"phrase_apple_clean_01_blur_soft_reveal","text":"FIRST",
 		"start_ms":0,"end_ms":2000,
 		"params":{"chain_segments":[
-			{"text":"FIRST","motion_id":"phrase_apple_clean_07_slide_up_soft","preset_id":"phrase_default","start_us":0,"duration_us":2000000},
+			{"text":"FIRST","motion_id":"phrase_apple_clean_01_blur_soft_reveal","preset_id":"phrase_default","start_us":0,"duration_us":2000000},
 			{"text":"LATE","motion_id":"soft_edge_spotlight_dissolve","preset_id":"phrase_default","start_us":5000000,"duration_us":2000000}
 		]}
 	}]}`)
@@ -206,11 +206,11 @@ func TestCompilePhraseChainRejectsEscapingSegment(t *testing.T) {
 func TestCompileMixedChainTextFirstDropsOverridesOnImage(t *testing.T) {
 	raw := []byte(`{"schema_version":"renderinggen.overlay-plan.v1","plan_id":"chain-mixed-text-first","video_id":"v","width":1280,"height":720,"fps_num":24,"fps_den":1,"items":[{
 		"id":"chain-mixed-tf-1","kind":"mixed_chain","template_id":"MIXED_CHAIN","preset_id":"phrase_default",
-		"motion_id":"phrase_apple_clean_07_slide_up_soft","text":"presunzione di innocenza",
+		"motion_id":"phrase_apple_clean_01_blur_soft_reveal","text":"presunzione di innocenza",
 		"start_ms":10000,"end_ms":16000,
 		"asset_refs":[{"asset_id":"img-1","url":"https://example/img.jpg","sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","media_type":"image/jpeg"}],
 		"params":{"chain_camera":"fly_under_fade","chain_count":2,"font_size_px":82,"glow_size":10,"stroke_size":2,"chain_segments":[
-			{"text":"presunzione di innocenza","motion_id":"phrase_apple_clean_07_slide_up_soft","preset_id":"phrase_default","template_id":"IMPORTANT_PHRASE","kind":"text_phrase","start_us":10000000,"duration_us":3000000},
+			{"text":"presunzione di innocenza","motion_id":"phrase_apple_clean_01_blur_soft_reveal","preset_id":"phrase_default","template_id":"IMPORTANT_PHRASE","kind":"text_phrase","start_us":10000000,"duration_us":3000000},
 			{"text":"","motion_id":"image_focus_reveal","preset_id":"image_scale_in","template_id":"IMAGE_OVERLAY","kind":"image","start_us":13000000,"duration_us":3000000,"asset_id":"img-1"}
 		]}
 	}]}`)

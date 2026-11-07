@@ -38,7 +38,7 @@ func TestCatalogCategoriesKeepMotionsIndependentAndComplete(t *testing.T) {
 	// such as modern_apple belong to the runtime catalog, not a second alias map.
 	categoryCounts := map[string]int{
 		"apple_v2": 57,
-		"apple_v3": 16, "phrase_apple_clean_v1": 30, "apple_phrase_v1": 15,
+		"apple_v3": 16, "phrase_apple_clean_v1": 20, "apple_phrase_v1": 15,
 
 		"brush_v1": 23, "text_3d_v1": 10, "documentary_highlighting_v1": 20, "trump_entity_text_v1": 15, "web": 14,
 		"generic_motion_v1": 30,
@@ -51,8 +51,8 @@ func TestCatalogCategoriesKeepMotionsIndependentAndComplete(t *testing.T) {
 	if ids := Registry.ShortPhraseStyleIDs(); len(ids) != 13 {
 		t.Errorf("short phrase runtime registry has %d motions, want 13", len(ids))
 	}
-	if ids := Registry.PhraseAnimationIDs(); len(ids) != 171 {
-		t.Errorf("phrase planning pool has %d motions, want 171", len(ids))
+	if ids := Registry.PhraseAnimationIDs(); len(ids) != 161 {
+		t.Errorf("phrase planning pool has %d motions, want 161", len(ids))
 	}
 	appleClean := Registry.CategoryMotionIDs("phrase_apple_clean_v1")
 	pool := Registry.PhraseAnimationIDs()
@@ -201,8 +201,8 @@ func TestApplePhrasePackIsInTheCanonicalPoolAndHasNoPerGlyphBlur(t *testing.T) {
 	}
 	pool := make(map[string]bool)
 	phrasePool := PhraseMotionPool()
-	if len(phrasePool) != 39 {
-		t.Fatalf("GPU phrase motion pool has %d entries, want 39", len(phrasePool))
+	if len(phrasePool) != 31 {
+		t.Fatalf("GPU phrase motion pool has %d entries, want 31", len(phrasePool))
 	}
 	for _, id := range phrasePool {
 		pool[id] = true
@@ -365,6 +365,8 @@ func TestRetiredShortPhraseIDsAreAbsentFromRegistry(t *testing.T) {
 		"short_phrase_product_masked_heading",
 		"short_phrase_product_scrambled_text",
 		"short_phrase_product_gradual_blur",
+		"short_phrase_editorial_baseline_rise",
+		"short_phrase_editorial_side_glide",
 	}
 	registered := make(map[string]bool)
 	for _, id := range Registry.ShortPhraseStyleIDs() {

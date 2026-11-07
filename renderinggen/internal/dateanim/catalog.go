@@ -12,7 +12,6 @@ import (
 	"embed"
 	"encoding/json"
 	"fmt"
-	"sort"
 	"strings"
 )
 
@@ -105,21 +104,6 @@ func Load() (Catalog, error) {
 	}
 	cached = &catalog
 	return catalog, nil
-}
-
-// StyleIDs returns the closed style IDs in sorted order. Callers use this list
-// for pickers and for the stable selector; it is never inferred from filenames.
-func StyleIDs() []string {
-	catalog, err := Load()
-	if err != nil {
-		return nil
-	}
-	ids := make([]string, 0, len(catalog.Styles))
-	for _, style := range catalog.Styles {
-		ids = append(ids, style.ID)
-	}
-	sort.Strings(ids)
-	return ids
 }
 
 // StyleByID returns one catalog style by its stable ID.

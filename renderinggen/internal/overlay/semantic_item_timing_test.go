@@ -27,7 +27,7 @@ func TestSemanticItemDecodesLegacyMillisecondPath(t *testing.T) {
 	// Wire shape of a legacy-ms item: neither start_us nor duration_us.
 	raw := []byte(`{"schema_version":"renderinggen.overlay-plan.v1","plan_id":"timing-legacy","video_id":"v","width":1920,"height":1080,"fps_num":24,"fps_den":1,"items":[{` +
 		`"id":"phrase-legacy","kind":"important_phrase","template_id":"IMPORTANT_PHRASE","preset_id":"phrase_default",` +
-		`"motion_id":"phrase_apple_clean_07_slide_up_soft","text":"30 SEP 2026","start_ms":1000,"end_ms":4000` +
+		`"motion_id":"phrase_apple_clean_01_blur_soft_reveal","text":"30 SEP 2026","start_ms":1000,"end_ms":4000` +
 		`}]}`)
 	if _, err := CompileSemantic(raw); err != nil {
 		t.Fatalf("legacy millisecond item must decode: %v", err)

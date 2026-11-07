@@ -1,12 +1,16 @@
 package overlay
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 )
 
 func imageCompositionCardinality(composition RuntimeAnimationComposition) string {
 	cardinality := countedLabel(composition.ImageCount, "image", "images")
+	if composition.ImageCountRange != nil {
+		cardinality = fmt.Sprintf("%d to %d images", composition.ImageCountRange.Minimum, composition.ImageCountRange.Maximum)
+	}
 	if composition.Caption != nil {
 		cardinality += " with text"
 	}

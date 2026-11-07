@@ -84,25 +84,25 @@ func compileBenchItems() []any {
 // round-trip left on the per-item compile path).
 func compileBenchChainItems() []any {
 	segments := []any{
-		map[string]any{"text": "SEG ONE", "motion_id": "phrase_apple_clean_07_slide_up_soft",
+		map[string]any{"text": "SEG ONE", "motion_id": "phrase_apple_clean_01_blur_soft_reveal",
 			"preset_id": "phrase_default", "template_id": "IMPORTANT_PHRASE",
 			"kind": "text_phrase", "start_us": 0, "duration_us": 1600000},
 		map[string]any{"text": "SEG TWO", "motion_id": "soft_edge_spotlight_dissolve",
 			"preset_id": "phrase_default", "template_id": "IMPORTANT_PHRASE",
 			"kind": "text_phrase", "start_us": 1600000, "duration_us": 1600000},
-		map[string]any{"text": "SEG THREE", "motion_id": "phrase_apple_clean_07_slide_up_soft",
+		map[string]any{"text": "SEG THREE", "motion_id": "phrase_apple_clean_01_blur_soft_reveal",
 			"preset_id": "phrase_default", "template_id": "IMPORTANT_PHRASE",
 			"kind": "text_phrase", "start_us": 3200000, "duration_us": 1600000},
 		map[string]any{"text": "SEG FOUR", "motion_id": "soft_edge_spotlight_dissolve",
 			"preset_id": "phrase_default", "template_id": "IMPORTANT_PHRASE",
 			"kind": "text_phrase", "start_us": 4800000, "duration_us": 1600000},
-		map[string]any{"text": "SEG FIVE", "motion_id": "phrase_apple_clean_07_slide_up_soft",
+		map[string]any{"text": "SEG FIVE", "motion_id": "phrase_apple_clean_01_blur_soft_reveal",
 			"preset_id": "phrase_default", "template_id": "IMPORTANT_PHRASE",
 			"kind": "text_phrase", "start_us": 6400000, "duration_us": 1600000},
 	}
 	return []any{
 		map[string]any{"id": "chain-bench", "kind": "phrase_chain", "template_id": "PHRASE_CHAIN",
-			"preset_id": "phrase_default", "motion_id": "phrase_apple_clean_07_slide_up_soft",
+			"preset_id": "phrase_default", "motion_id": "phrase_apple_clean_01_blur_soft_reveal",
 			"text": "FIRST", "start_ms": 0, "end_ms": 8000,
 			"params": map[string]any{"chain_camera": "fly_under_fade", "chain_count": 5,
 				"chain_segments": segments}},

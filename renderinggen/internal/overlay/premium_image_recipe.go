@@ -26,6 +26,11 @@ func isImageGroupRecipe(definition *motion.MotionDefinition) bool {
 	return imageGroupRecipeDefinition(definition) != nil
 }
 
+func isReusableImageGroupRecipe(definition *motion.MotionDefinition) bool {
+	recipe := imageGroupRecipeDefinition(definition)
+	return recipe != nil && recipe.GroupRecipe.ApplyToAllMembers
+}
+
 // compileStaticImageChild resolves one image_layers child and compiles its base
 // layer with no per-child motion. Group and legacy multi-image recipes both
 // start from this shape before applying their own tracks.
@@ -42,6 +47,9 @@ func compileStaticImageChild(ri resolvedItem, src *semanticPlan, assets map[stri
 }
 
 func compileImageGroupRecipe(ri resolvedItem, src *semanticPlan, registry *assetRegistry, definition *motion.MotionDefinition) ([]Layer, error) {
+	if isCameraPanGroup(definition) {
+		return compileCameraPanGroup(ri, src, registry, definition)
+	}
 	recipe := definition.GroupRecipe
 	count := len(ri.Item.ImageLayers)
 	if err := recipe.Validate(); err != nil {
@@ -68,12 +76,13 @@ func compileImageGroupRecipe(ri resolvedItem, src *semanticPlan, registry *asset
 		if err := applyFrameTreatment(&image, child.Frame); err != nil {
 			return nil, fmt.Errorf("overlay: group motion %q layer %q: %w", definition.ID, child.ID, err)
 		}
-		// Nearby images share one supported card slot per member: a member
-		// that did not arrive vertical is covered into its slot so the
-		// pair always renders side by side. Members already on their slot
-		// are untouched, keeping certified renders bit-stable.
-		if _, err := autoFitGroupMember(src, &image, count, index); err != nil {
-			return nil, err
+		// Layout-bound choreographies fit every member into its card slot.
+		// A reusable group animation keeps each image layer's authored image
+		// bounds and timing, so the same move can be selected for any group size.
+		if !recipe.ApplyToAllMembers {
+			if _, err := autoFitGroupMember(src, &image, count, index); err != nil {
+				return nil, err
+			}
 		}
 		image, err = decorateImageLayerWithItemEffects(childResolved, image)
 		if err != nil {

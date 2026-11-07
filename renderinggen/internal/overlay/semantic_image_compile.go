@@ -47,6 +47,15 @@ func compileImageItemCore(ri resolvedItem, src *semanticPlan, registry *assetReg
 		return nil, err
 	}
 	groupRecipe := imageGroupRecipeDefinition(imageRecipe)
+	if groupRecipe != nil && len(ri.Item.ImageLayers) == 0 && isReusableImageGroupRecipe(groupRecipe) {
+		if !motionDefinitionAdmitsTarget(groupRecipe, TargetImage) {
+			return nil, fmt.Errorf("overlay: motion %q is not supported for a single image", groupRecipe.ID)
+		}
+		// The same authored tracks serve a one-image item directly and are
+		// reused from group_recipe for multiple-image compositions.
+		groupRecipe = nil
+		imageRecipe = nil
+	}
 	if groupRecipe != nil && (len(ri.Item.ImageLayers) == 0 || !isImageKind(ri.Kind)) {
 		return nil, fmt.Errorf("overlay: group motion %q requires an image item with image_layers", groupRecipe.ID)
 	}
@@ -127,8 +136,8 @@ func compileImageItemCore(ri resolvedItem, src *semanticPlan, registry *assetReg
 		return layers, nil
 	}
 	if groupRecipe != nil {
-		if len(ri.Item.ImageLayers) != len(groupRecipe.GroupRecipe.MemberTracks) {
-			return nil, fmt.Errorf("overlay: motion %q supports %d image layers, got %d", groupRecipe.ID, len(groupRecipe.GroupRecipe.MemberTracks), len(ri.Item.ImageLayers))
+		if !groupRecipe.GroupRecipe.SupportsCount(len(ri.Item.ImageLayers)) {
+			return nil, fmt.Errorf("overlay: motion %q does not support %d image layers", groupRecipe.ID, len(ri.Item.ImageLayers))
 		}
 		return compileImageGroupRecipe(ri, src, registry, groupRecipe)
 	}
@@ -443,13 +452,16 @@ func compileSingleImageLayerResolved(ri resolvedItem, src *semanticPlan, assetPa
 // runtimeDefaultImageMotionIDs is the canonical-catalog projection used when
 // an image omits motion_id. Keep this automatic pool to the single-image
 // families; recipe families (premium accents, stacks, captions) remain explicit
-// choices because they require extra geometry or assets. IDs are sorted so
-// selection is stable across builds.
+// choices because they require extra geometry or assets. The camera-pan family
+// is the one group recipe admitted here: all four directions support a single
+// image and settle at the neutral pose. IDs are sorted so selection is stable
+// across builds.
 var runtimeDefaultImageMotionIDs = func() []string {
 	var ids []string
 	for _, family := range []string{"overlay_v3_image", "image_25d_clean_v1", "editorial_image_v1"} {
 		ids = append(ids, motion.Registry.SelectableCategoryMotionIDs(family)...)
 	}
+	ids = append(ids, cameraPanMotionIDs...)
 	sort.Strings(ids)
 	unique := ids[:0]
 	for _, id := range ids {

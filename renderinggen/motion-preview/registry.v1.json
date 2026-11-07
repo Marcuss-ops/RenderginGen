@@ -2501,18 +2501,6 @@
       "artifact": "out/web_phrase_gallery/manifest.json"
     },
     {
-      "motion_id": "phrase_apple_clean_07_slide_up_soft",
-      "artifact": "out/web_phrase_gallery/manifest.json"
-    },
-    {
-      "motion_id": "phrase_apple_clean_09_slide_down_catch",
-      "artifact": "out/web_phrase_gallery/manifest.json"
-    },
-    {
-      "motion_id": "phrase_apple_clean_10_slide_from_right_apple",
-      "artifact": "out/web_phrase_gallery/manifest.json"
-    },
-    {
       "motion_id": "phrase_apple_clean_13_scale_soft_pop",
       "artifact": "out/web_phrase_gallery/manifest.json"
     },

@@ -18447,192 +18447,6 @@
       "stagger": {}
     },
     {
-      "id": "phrase_apple_clean_06_blur_gravity",
-      "category": "phrase_apple_clean_v1",
-      "targets": [
-        "text",
-        "phrase"
-      ],
-      "unit": "glyph",
-      "enter": 60,
-      "exit": 12,
-      "tracks": [
-        {
-          "property": "position_y",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 28
-            },
-            {
-              "frame": 36,
-              "value": -4
-            },
-            {
-              "frame": 60,
-              "value": 0
-            }
-          ],
-          "easing": "out_cubic"
-        },
-        {
-          "property": "opacity",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 0
-            },
-            {
-              "frame": 20,
-              "value": 1
-            }
-          ],
-          "easing": "out_cubic"
-        }
-      ],
-      "text_animators": [
-        {
-          "id": "phrase_apple_clean_06_blur_gravity_text",
-          "selector": {
-            "kind": "glyph",
-            "shape": "square",
-            "order": "forward",
-            "stagger": 1
-          },
-          "properties": [
-            {
-              "property": "position_y",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 16
-                },
-                {
-                  "frame": 60,
-                  "value": 0
-                }
-              ],
-              "easing": "out_cubic"
-            },
-            {
-              "property": "blur",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 10
-                },
-                {
-                  "frame": 48,
-                  "value": 0
-                }
-              ],
-              "easing": "out_cubic"
-            },
-            {
-              "property": "opacity",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 0
-                },
-                {
-                  "frame": 18,
-                  "value": 1
-                }
-              ],
-              "easing": "out_cubic"
-            }
-          ]
-        }
-      ],
-      "selector": {},
-      "stagger": {}
-    },
-    {
-      "id": "phrase_apple_clean_07_slide_up_soft",
-      "category": "phrase_apple_clean_v1",
-      "targets": [
-        "text",
-        "phrase"
-      ],
-      "unit": "glyph",
-      "enter": 60,
-      "exit": 12,
-      "tracks": [
-        {
-          "property": "position_y",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 32
-            },
-            {
-              "frame": 60,
-              "value": 0
-            }
-          ],
-          "easing": "out_cubic"
-        },
-        {
-          "property": "opacity",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 0
-            },
-            {
-              "frame": 22,
-              "value": 1
-            }
-          ],
-          "easing": "out_cubic"
-        }
-      ],
-      "text_animators": [
-        {
-          "id": "phrase_apple_clean_07_slide_up_soft_text",
-          "selector": {
-            "kind": "glyph",
-            "shape": "smooth",
-            "order": "forward",
-            "stagger": 1
-          },
-          "properties": [
-            {
-              "property": "position_y",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 20
-                },
-                {
-                  "frame": 60,
-                  "value": 0
-                }
-              ],
-              "easing": "out_cubic"
-            },
-            {
-              "property": "opacity",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 0
-                },
-                {
-                  "frame": 18,
-                  "value": 1
-                }
-              ],
-              "easing": "out_cubic"
-            }
-          ]
-        }
-      ],
-      "selector": {},
-      "stagger": {}
-    },
-    {
       "id": "phrase_apple_clean_08_slide_up_spring",
       "category": "phrase_apple_clean_v1",
       "targets": [
@@ -18721,280 +18535,6 @@
                 }
               ],
               "easing": "out_back"
-            },
-            {
-              "property": "opacity",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 0
-                },
-                {
-                  "frame": 16,
-                  "value": 1
-                }
-              ],
-              "easing": "out_cubic"
-            }
-          ]
-        }
-      ],
-      "selector": {},
-      "stagger": {}
-    },
-    {
-      "id": "phrase_apple_clean_09_slide_down_catch",
-      "category": "phrase_apple_clean_v1",
-      "targets": [
-        "text",
-        "phrase"
-      ],
-      "unit": "glyph",
-      "enter": 60,
-      "exit": 12,
-      "tracks": [
-        {
-          "property": "position_y",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": -24
-            },
-            {
-              "frame": 18,
-              "value": 4
-            },
-            {
-              "frame": 60,
-              "value": 0
-            }
-          ],
-          "easing": "out_cubic"
-        },
-        {
-          "property": "opacity",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 0
-            },
-            {
-              "frame": 16,
-              "value": 1
-            }
-          ],
-          "easing": "out_cubic"
-        }
-      ],
-      "text_animators": [
-        {
-          "id": "phrase_apple_clean_09_slide_down_catch_text",
-          "selector": {
-            "kind": "glyph",
-            "shape": "square",
-            "order": "forward",
-            "stagger": 1
-          },
-          "properties": [
-            {
-              "property": "position_y",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": -18
-                },
-                {
-                  "frame": 18,
-                  "value": 3
-                },
-                {
-                  "frame": 60,
-                  "value": 0
-                }
-              ],
-              "easing": "out_cubic"
-            },
-            {
-              "property": "opacity",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 0
-                },
-                {
-                  "frame": 14,
-                  "value": 1
-                }
-              ],
-              "easing": "out_cubic"
-            }
-          ]
-        }
-      ],
-      "selector": {},
-      "stagger": {}
-    },
-    {
-      "id": "phrase_apple_clean_10_slide_from_right_apple",
-      "category": "phrase_apple_clean_v1",
-      "targets": [
-        "text",
-        "phrase"
-      ],
-      "unit": "glyph",
-      "enter": 60,
-      "exit": 12,
-      "tracks": [
-        {
-          "property": "position_x",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 36
-            },
-            {
-              "frame": 60,
-              "value": 0
-            }
-          ],
-          "easing": "out_cubic"
-        },
-        {
-          "property": "rotation_z",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 1
-            },
-            {
-              "frame": 60,
-              "value": 0
-            }
-          ],
-          "easing": "out_cubic"
-        },
-        {
-          "property": "opacity",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 0
-            },
-            {
-              "frame": 20,
-              "value": 1
-            }
-          ],
-          "easing": "out_cubic"
-        }
-      ],
-      "text_animators": [
-        {
-          "id": "phrase_apple_clean_10_slide_from_right_apple_text",
-          "selector": {
-            "kind": "glyph",
-            "shape": "smooth",
-            "order": "forward",
-            "stagger": 1
-          },
-          "properties": [
-            {
-              "property": "position_x",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 22
-                },
-                {
-                  "frame": 60,
-                  "value": 0
-                }
-              ],
-              "easing": "out_cubic"
-            },
-            {
-              "property": "opacity",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 0
-                },
-                {
-                  "frame": 18,
-                  "value": 1
-                }
-              ],
-              "easing": "out_cubic"
-            }
-          ]
-        }
-      ],
-      "selector": {},
-      "stagger": {}
-    },
-    {
-      "id": "phrase_apple_clean_11_slide_left_ease",
-      "category": "phrase_apple_clean_v1",
-      "targets": [
-        "text",
-        "phrase"
-      ],
-      "unit": "glyph",
-      "enter": 60,
-      "exit": 12,
-      "tracks": [
-        {
-          "property": "position_x",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": -32
-            },
-            {
-              "frame": 60,
-              "value": 0
-            }
-          ],
-          "easing": "out_cubic"
-        },
-        {
-          "property": "opacity",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 0
-            },
-            {
-              "frame": 20,
-              "value": 1
-            }
-          ],
-          "easing": "out_cubic"
-        }
-      ],
-      "text_animators": [
-        {
-          "id": "phrase_apple_clean_11_slide_left_ease_text",
-          "selector": {
-            "kind": "glyph",
-            "shape": "smooth",
-            "order": "forward",
-            "stagger": 1
-          },
-          "properties": [
-            {
-              "property": "position_x",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": -16
-                },
-                {
-                  "frame": 60,
-                  "value": 0
-                }
-              ],
-              "easing": "out_cubic"
             },
             {
               "property": "opacity",
@@ -19195,102 +18735,6 @@
                 },
                 {
                   "frame": 18,
-                  "value": 1
-                }
-              ],
-              "easing": "out_cubic"
-            }
-          ]
-        }
-      ],
-      "selector": {},
-      "stagger": {}
-    },
-    {
-      "id": "phrase_apple_clean_14_scale_bounce_clean",
-      "category": "phrase_apple_clean_v1",
-      "targets": [
-        "text",
-        "phrase"
-      ],
-      "unit": "glyph",
-      "enter": 60,
-      "exit": 12,
-      "tracks": [
-        {
-          "property": "scale",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 0.84
-            },
-            {
-              "frame": 28,
-              "value": 1.06
-            },
-            {
-              "frame": 42,
-              "value": 0.98
-            },
-            {
-              "frame": 60,
-              "value": 1
-            }
-          ],
-          "easing": "out_back"
-        },
-        {
-          "property": "opacity",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 0
-            },
-            {
-              "frame": 20,
-              "value": 1
-            }
-          ],
-          "easing": "out_cubic"
-        }
-      ],
-      "text_animators": [
-        {
-          "id": "phrase_apple_clean_14_scale_bounce_clean_text",
-          "selector": {
-            "kind": "glyph",
-            "shape": "square",
-            "order": "forward",
-            "stagger": 1
-          },
-          "properties": [
-            {
-              "property": "scale",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 0.92
-                },
-                {
-                  "frame": 28,
-                  "value": 1.04
-                },
-                {
-                  "frame": 60,
-                  "value": 1
-                }
-              ],
-              "easing": "out_cubic"
-            },
-            {
-              "property": "opacity",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 0
-                },
-                {
-                  "frame": 16,
                   "value": 1
                 }
               ],
@@ -19739,364 +19183,6 @@
                 },
                 {
                   "frame": 18,
-                  "value": 1
-                }
-              ],
-              "easing": "out_cubic"
-            }
-          ]
-        }
-      ],
-      "selector": {},
-      "stagger": {}
-    },
-    {
-      "id": "phrase_apple_clean_20_tracking_spread_clean",
-      "category": "phrase_apple_clean_v1",
-      "targets": [
-        "text",
-        "phrase"
-      ],
-      "unit": "glyph",
-      "enter": 60,
-      "exit": 12,
-      "tracks": [
-        {
-          "property": "opacity",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 0
-            },
-            {
-              "frame": 20,
-              "value": 1
-            }
-          ],
-          "easing": "out_cubic"
-        }
-      ],
-      "text_animators": [
-        {
-          "id": "phrase_apple_clean_20_tracking_spread_clean_text",
-          "selector": {
-            "kind": "glyph",
-            "shape": "square",
-            "order": "forward",
-            "stagger": 1
-          },
-          "properties": [
-            {
-              "property": "tracking",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": -4
-                },
-                {
-                  "frame": 28,
-                  "value": 3
-                },
-                {
-                  "frame": 60,
-                  "value": 0
-                }
-              ],
-              "easing": "out_cubic"
-            },
-            {
-              "property": "opacity",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 0
-                },
-                {
-                  "frame": 16,
-                  "value": 1
-                }
-              ],
-              "easing": "out_cubic"
-            }
-          ]
-        }
-      ],
-      "selector": {},
-      "stagger": {}
-    },
-    {
-      "id": "phrase_apple_clean_21_tracking_magnetic",
-      "category": "phrase_apple_clean_v1",
-      "targets": [
-        "text",
-        "phrase"
-      ],
-      "unit": "glyph",
-      "enter": 60,
-      "exit": 12,
-      "tracks": [
-        {
-          "property": "position_y",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 8
-            },
-            {
-              "frame": 60,
-              "value": 0
-            }
-          ],
-          "easing": "out_cubic"
-        },
-        {
-          "property": "opacity",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 0
-            },
-            {
-              "frame": 20,
-              "value": 1
-            }
-          ],
-          "easing": "out_cubic"
-        }
-      ],
-      "text_animators": [
-        {
-          "id": "phrase_apple_clean_21_tracking_magnetic_text",
-          "selector": {
-            "kind": "glyph",
-            "shape": "smooth",
-            "order": "forward",
-            "stagger": 1
-          },
-          "properties": [
-            {
-              "property": "tracking",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 10
-                },
-                {
-                  "frame": 36,
-                  "value": -1
-                },
-                {
-                  "frame": 60,
-                  "value": 0
-                }
-              ],
-              "easing": "out_cubic"
-            },
-            {
-              "property": "opacity",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 0
-                },
-                {
-                  "frame": 18,
-                  "value": 1
-                }
-              ],
-              "easing": "out_cubic"
-            }
-          ]
-        }
-      ],
-      "selector": {},
-      "stagger": {}
-    },
-    {
-      "id": "phrase_apple_clean_22_tracking_word_focus",
-      "category": "phrase_apple_clean_v1",
-      "targets": [
-        "text",
-        "phrase"
-      ],
-      "unit": "glyph",
-      "enter": 60,
-      "exit": 12,
-      "tracks": [
-        {
-          "property": "scale",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 0.98
-            },
-            {
-              "frame": 60,
-              "value": 1
-            }
-          ],
-          "easing": "out_cubic"
-        },
-        {
-          "property": "opacity",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 0
-            },
-            {
-              "frame": 20,
-              "value": 1
-            }
-          ],
-          "easing": "out_cubic"
-        }
-      ],
-      "text_animators": [
-        {
-          "id": "phrase_apple_clean_22_tracking_word_focus_text",
-          "selector": {
-            "kind": "glyph",
-            "shape": "smooth",
-            "order": "forward",
-            "stagger": 1
-          },
-          "properties": [
-            {
-              "property": "tracking",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 8
-                },
-                {
-                  "frame": 60,
-                  "value": 0
-                }
-              ],
-              "easing": "out_cubic"
-            },
-            {
-              "property": "scale",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 1.02
-                },
-                {
-                  "frame": 60,
-                  "value": 1
-                }
-              ],
-              "easing": "out_cubic"
-            },
-            {
-              "property": "opacity",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 0
-                },
-                {
-                  "frame": 18,
-                  "value": 1
-                }
-              ],
-              "easing": "out_cubic"
-            }
-          ]
-        }
-      ],
-      "selector": {},
-      "stagger": {}
-    },
-    {
-      "id": "phrase_apple_clean_23_tracking_precision_lock",
-      "category": "phrase_apple_clean_v1",
-      "targets": [
-        "text",
-        "phrase"
-      ],
-      "unit": "glyph",
-      "enter": 60,
-      "exit": 12,
-      "tracks": [
-        {
-          "property": "opacity",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 0
-            },
-            {
-              "frame": 18,
-              "value": 1
-            }
-          ],
-          "easing": "out_cubic"
-        },
-        {
-          "property": "scale",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 1.01
-            },
-            {
-              "frame": 60,
-              "value": 1
-            }
-          ],
-          "easing": "out_cubic"
-        }
-      ],
-      "text_animators": [
-        {
-          "id": "phrase_apple_clean_23_tracking_precision_lock_text",
-          "selector": {
-            "kind": "glyph",
-            "shape": "square",
-            "order": "forward",
-            "stagger": 1
-          },
-          "properties": [
-            {
-              "property": "tracking",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 6
-                },
-                {
-                  "frame": 60,
-                  "value": 0
-                }
-              ],
-              "easing": "out_cubic"
-            },
-            {
-              "property": "blur",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 4
-                },
-                {
-                  "frame": 40,
-                  "value": 0
-                }
-              ],
-              "easing": "out_cubic"
-            },
-            {
-              "property": "opacity",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 0
-                },
-                {
-                  "frame": 16,
                   "value": 1
                 }
               ],
@@ -38302,6 +37388,2670 @@
       "render_safe": true
     },
     {
+      "id": "image_group_slide_right",
+      "category": "image_group_v1",
+      "supported_template": "image_popup",
+      "targets": [
+        "image_group",
+        "image"
+      ],
+      "supported_content": [
+        "image"
+      ],
+      "unit": "group",
+      "seeded": true,
+      "duration_bounds": {
+        "minimum_frames": 24,
+        "maximum_frames": 240
+      },
+      "required_properties": [
+        "position_x",
+        "position_y",
+        "scale",
+        "opacity"
+      ],
+      "render_safe": true,
+      "requires_3d": false,
+      "requires_camera": false,
+      "enter": 36,
+      "exit": 8,
+      "group_recipe": {
+        "layout": "sequence",
+        "apply_to_all_members": true,
+        "description": "reusable soft image-group transition",
+        "member_tracks": [
+          {
+            "member_index": 0,
+            "tracks": [
+              {
+                "property": "position_x",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": -72
+                  },
+                  {
+                    "frame": 18,
+                    "value": 0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 0
+                  }
+                ],
+                "easing": "in_out_sine"
+              },
+              {
+                "property": "position_y",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0
+                  },
+                  {
+                    "frame": 18,
+                    "value": 0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 0
+                  }
+                ],
+                "easing": "in_out_sine"
+              },
+              {
+                "property": "scale",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0.985
+                  },
+                  {
+                    "frame": 18,
+                    "value": 1.0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 1.0
+                  }
+                ],
+                "easing": "in_out_sine"
+              },
+              {
+                "property": "opacity",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0
+                  },
+                  {
+                    "frame": 24,
+                    "value": 1
+                  },
+                  {
+                    "frame": 36,
+                    "value": 1
+                  }
+                ],
+                "easing": "in_out_sine"
+              }
+            ]
+          }
+        ]
+      },
+      "text_animators": [],
+      "tracks": [
+        {
+          "property": "position_x",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": -72
+            },
+            {
+              "frame": 18,
+              "value": 0
+            },
+            {
+              "frame": 36,
+              "value": 0
+            }
+          ],
+          "easing": "in_out_sine"
+        },
+        {
+          "property": "position_y",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 18,
+              "value": 0
+            },
+            {
+              "frame": 36,
+              "value": 0
+            }
+          ],
+          "easing": "in_out_sine"
+        },
+        {
+          "property": "scale",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.985
+            },
+            {
+              "frame": 18,
+              "value": 1.0
+            },
+            {
+              "frame": 36,
+              "value": 1.0
+            }
+          ],
+          "easing": "in_out_sine"
+        },
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 24,
+              "value": 1
+            },
+            {
+              "frame": 36,
+              "value": 1
+            }
+          ],
+          "easing": "in_out_sine"
+        }
+      ]
+    },
+    {
+      "id": "image_group_slide_left",
+      "category": "image_group_v1",
+      "supported_template": "image_popup",
+      "targets": [
+        "image_group",
+        "image"
+      ],
+      "supported_content": [
+        "image"
+      ],
+      "unit": "group",
+      "seeded": true,
+      "duration_bounds": {
+        "minimum_frames": 24,
+        "maximum_frames": 240
+      },
+      "required_properties": [
+        "position_x",
+        "position_y",
+        "scale",
+        "opacity"
+      ],
+      "render_safe": true,
+      "requires_3d": false,
+      "requires_camera": false,
+      "enter": 36,
+      "exit": 8,
+      "group_recipe": {
+        "layout": "sequence",
+        "apply_to_all_members": true,
+        "description": "reusable soft image-group transition",
+        "member_tracks": [
+          {
+            "member_index": 0,
+            "tracks": [
+              {
+                "property": "position_x",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 72
+                  },
+                  {
+                    "frame": 18,
+                    "value": 0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 0
+                  }
+                ],
+                "easing": "in_out_sine"
+              },
+              {
+                "property": "position_y",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0
+                  },
+                  {
+                    "frame": 18,
+                    "value": 0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 0
+                  }
+                ],
+                "easing": "in_out_sine"
+              },
+              {
+                "property": "scale",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0.985
+                  },
+                  {
+                    "frame": 18,
+                    "value": 1.0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 1.0
+                  }
+                ],
+                "easing": "in_out_sine"
+              },
+              {
+                "property": "opacity",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0
+                  },
+                  {
+                    "frame": 24,
+                    "value": 1
+                  },
+                  {
+                    "frame": 36,
+                    "value": 1
+                  }
+                ],
+                "easing": "in_out_sine"
+              }
+            ]
+          }
+        ]
+      },
+      "text_animators": [],
+      "tracks": [
+        {
+          "property": "position_x",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 72
+            },
+            {
+              "frame": 18,
+              "value": 0
+            },
+            {
+              "frame": 36,
+              "value": 0
+            }
+          ],
+          "easing": "in_out_sine"
+        },
+        {
+          "property": "position_y",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 18,
+              "value": 0
+            },
+            {
+              "frame": 36,
+              "value": 0
+            }
+          ],
+          "easing": "in_out_sine"
+        },
+        {
+          "property": "scale",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.985
+            },
+            {
+              "frame": 18,
+              "value": 1.0
+            },
+            {
+              "frame": 36,
+              "value": 1.0
+            }
+          ],
+          "easing": "in_out_sine"
+        },
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 24,
+              "value": 1
+            },
+            {
+              "frame": 36,
+              "value": 1
+            }
+          ],
+          "easing": "in_out_sine"
+        }
+      ]
+    },
+    {
+      "id": "image_group_slide_in",
+      "category": "image_group_v1",
+      "supported_template": "image_popup",
+      "targets": [
+        "image_group",
+        "image"
+      ],
+      "supported_content": [
+        "image"
+      ],
+      "unit": "group",
+      "seeded": true,
+      "duration_bounds": {
+        "minimum_frames": 24,
+        "maximum_frames": 240
+      },
+      "required_properties": [
+        "position_x",
+        "position_y",
+        "scale",
+        "opacity"
+      ],
+      "render_safe": true,
+      "requires_3d": false,
+      "requires_camera": false,
+      "enter": 36,
+      "exit": 8,
+      "group_recipe": {
+        "layout": "sequence",
+        "apply_to_all_members": true,
+        "description": "reusable soft image-group transition",
+        "member_tracks": [
+          {
+            "member_index": 0,
+            "tracks": [
+              {
+                "property": "position_x",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0
+                  },
+                  {
+                    "frame": 18,
+                    "value": 0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 0
+                  }
+                ],
+                "easing": "in_out_sine"
+              },
+              {
+                "property": "position_y",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 18
+                  },
+                  {
+                    "frame": 18,
+                    "value": 0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 0
+                  }
+                ],
+                "easing": "in_out_sine"
+              },
+              {
+                "property": "scale",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0.975
+                  },
+                  {
+                    "frame": 18,
+                    "value": 0.995
+                  },
+                  {
+                    "frame": 36,
+                    "value": 1.0
+                  }
+                ],
+                "easing": "in_out_sine"
+              },
+              {
+                "property": "opacity",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0
+                  },
+                  {
+                    "frame": 24,
+                    "value": 1
+                  },
+                  {
+                    "frame": 36,
+                    "value": 1
+                  }
+                ],
+                "easing": "in_out_sine"
+              }
+            ]
+          }
+        ]
+      },
+      "text_animators": [],
+      "tracks": [
+        {
+          "property": "position_x",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 18,
+              "value": 0
+            },
+            {
+              "frame": 36,
+              "value": 0
+            }
+          ],
+          "easing": "in_out_sine"
+        },
+        {
+          "property": "position_y",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 18
+            },
+            {
+              "frame": 18,
+              "value": 0
+            },
+            {
+              "frame": 36,
+              "value": 0
+            }
+          ],
+          "easing": "in_out_sine"
+        },
+        {
+          "property": "scale",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.975
+            },
+            {
+              "frame": 18,
+              "value": 0.995
+            },
+            {
+              "frame": 36,
+              "value": 1.0
+            }
+          ],
+          "easing": "in_out_sine"
+        },
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 24,
+              "value": 1
+            },
+            {
+              "frame": 36,
+              "value": 1
+            }
+          ],
+          "easing": "in_out_sine"
+        }
+      ]
+    },
+    {
+      "id": "image_group_slide_down",
+      "category": "image_group_v1",
+      "supported_template": "image_popup",
+      "targets": [
+        "image_group",
+        "image"
+      ],
+      "supported_content": [
+        "image"
+      ],
+      "unit": "group",
+      "seeded": true,
+      "duration_bounds": {
+        "minimum_frames": 24,
+        "maximum_frames": 240
+      },
+      "required_properties": [
+        "position_x",
+        "position_y",
+        "scale",
+        "opacity"
+      ],
+      "render_safe": true,
+      "requires_3d": false,
+      "requires_camera": false,
+      "enter": 36,
+      "exit": 8,
+      "group_recipe": {
+        "layout": "sequence",
+        "apply_to_all_members": true,
+        "description": "reusable soft image-group transition",
+        "member_tracks": [
+          {
+            "member_index": 0,
+            "tracks": [
+              {
+                "property": "position_x",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0
+                  },
+                  {
+                    "frame": 18,
+                    "value": 0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 0
+                  }
+                ],
+                "easing": "in_out_sine"
+              },
+              {
+                "property": "position_y",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": -60
+                  },
+                  {
+                    "frame": 18,
+                    "value": 0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 0
+                  }
+                ],
+                "easing": "in_out_sine"
+              },
+              {
+                "property": "scale",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0.99
+                  },
+                  {
+                    "frame": 18,
+                    "value": 1.0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 1.0
+                  }
+                ],
+                "easing": "in_out_sine"
+              },
+              {
+                "property": "opacity",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0
+                  },
+                  {
+                    "frame": 24,
+                    "value": 1
+                  },
+                  {
+                    "frame": 36,
+                    "value": 1
+                  }
+                ],
+                "easing": "in_out_sine"
+              }
+            ]
+          }
+        ]
+      },
+      "text_animators": [],
+      "tracks": [
+        {
+          "property": "position_x",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 18,
+              "value": 0
+            },
+            {
+              "frame": 36,
+              "value": 0
+            }
+          ],
+          "easing": "in_out_sine"
+        },
+        {
+          "property": "position_y",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": -60
+            },
+            {
+              "frame": 18,
+              "value": 0
+            },
+            {
+              "frame": 36,
+              "value": 0
+            }
+          ],
+          "easing": "in_out_sine"
+        },
+        {
+          "property": "scale",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.99
+            },
+            {
+              "frame": 18,
+              "value": 1.0
+            },
+            {
+              "frame": 36,
+              "value": 1.0
+            }
+          ],
+          "easing": "in_out_sine"
+        },
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 24,
+              "value": 1
+            },
+            {
+              "frame": 36,
+              "value": 1
+            }
+          ],
+          "easing": "in_out_sine"
+        }
+      ]
+    },
+    {
+      "id": "image_group_slide_up",
+      "category": "image_group_v1",
+      "supported_template": "image_popup",
+      "targets": [
+        "image_group",
+        "image"
+      ],
+      "supported_content": [
+        "image"
+      ],
+      "unit": "group",
+      "seeded": true,
+      "duration_bounds": {
+        "minimum_frames": 24,
+        "maximum_frames": 240
+      },
+      "required_properties": [
+        "position_x",
+        "position_y",
+        "scale",
+        "opacity"
+      ],
+      "render_safe": true,
+      "requires_3d": false,
+      "requires_camera": false,
+      "enter": 36,
+      "exit": 8,
+      "group_recipe": {
+        "layout": "sequence",
+        "apply_to_all_members": true,
+        "description": "reusable soft image-group transition",
+        "member_tracks": [
+          {
+            "member_index": 0,
+            "tracks": [
+              {
+                "property": "position_x",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0
+                  },
+                  {
+                    "frame": 18,
+                    "value": 0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 0
+                  }
+                ],
+                "easing": "in_out_sine"
+              },
+              {
+                "property": "position_y",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 60
+                  },
+                  {
+                    "frame": 18,
+                    "value": 0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 0
+                  }
+                ],
+                "easing": "in_out_sine"
+              },
+              {
+                "property": "scale",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0.99
+                  },
+                  {
+                    "frame": 18,
+                    "value": 1.0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 1.0
+                  }
+                ],
+                "easing": "in_out_sine"
+              },
+              {
+                "property": "opacity",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0
+                  },
+                  {
+                    "frame": 24,
+                    "value": 1
+                  },
+                  {
+                    "frame": 36,
+                    "value": 1
+                  }
+                ],
+                "easing": "in_out_sine"
+              }
+            ]
+          }
+        ]
+      },
+      "text_animators": [],
+      "tracks": [
+        {
+          "property": "position_x",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 18,
+              "value": 0
+            },
+            {
+              "frame": 36,
+              "value": 0
+            }
+          ],
+          "easing": "in_out_sine"
+        },
+        {
+          "property": "position_y",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 60
+            },
+            {
+              "frame": 18,
+              "value": 0
+            },
+            {
+              "frame": 36,
+              "value": 0
+            }
+          ],
+          "easing": "in_out_sine"
+        },
+        {
+          "property": "scale",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.99
+            },
+            {
+              "frame": 18,
+              "value": 1.0
+            },
+            {
+              "frame": 36,
+              "value": 1.0
+            }
+          ],
+          "easing": "in_out_sine"
+        },
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 24,
+              "value": 1
+            },
+            {
+              "frame": 36,
+              "value": 1
+            }
+          ],
+          "easing": "in_out_sine"
+        }
+      ]
+    },
+    {
+      "id": "image_group_soft_fade",
+      "category": "image_group_v1",
+      "supported_template": "image_popup",
+      "targets": [
+        "image_group",
+        "image"
+      ],
+      "supported_content": [
+        "image"
+      ],
+      "unit": "group",
+      "seeded": true,
+      "duration_bounds": {
+        "minimum_frames": 24,
+        "maximum_frames": 240
+      },
+      "required_properties": [
+        "position_x",
+        "position_y",
+        "scale",
+        "opacity"
+      ],
+      "render_safe": true,
+      "requires_3d": false,
+      "requires_camera": false,
+      "enter": 36,
+      "exit": 8,
+      "group_recipe": {
+        "layout": "sequence",
+        "apply_to_all_members": true,
+        "description": "premium image group fade with a soft, even reveal",
+        "member_tracks": [
+          {
+            "member_index": 0,
+            "tracks": [
+              {
+                "property": "position_x",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0
+                  },
+                  {
+                    "frame": 20,
+                    "value": 0
+                  },
+                  {
+                    "frame": 32,
+                    "value": 0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 0
+                  }
+                ],
+                "easing": "in_out_sine"
+              },
+              {
+                "property": "position_y",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0
+                  },
+                  {
+                    "frame": 20,
+                    "value": 0
+                  },
+                  {
+                    "frame": 32,
+                    "value": 0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 0
+                  }
+                ],
+                "easing": "in_out_sine"
+              },
+              {
+                "property": "scale",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 1
+                  },
+                  {
+                    "frame": 20,
+                    "value": 1
+                  },
+                  {
+                    "frame": 32,
+                    "value": 1
+                  },
+                  {
+                    "frame": 36,
+                    "value": 1
+                  }
+                ],
+                "easing": "in_out_sine"
+              },
+              {
+                "property": "opacity",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0
+                  },
+                  {
+                    "frame": 20,
+                    "value": 1
+                  },
+                  {
+                    "frame": 32,
+                    "value": 1
+                  },
+                  {
+                    "frame": 36,
+                    "value": 1
+                  }
+                ],
+                "easing": "in_out_sine"
+              }
+            ]
+          }
+        ]
+      },
+      "text_animators": [],
+      "tracks": [
+        {
+          "property": "position_x",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 20,
+              "value": 0
+            },
+            {
+              "frame": 32,
+              "value": 0
+            },
+            {
+              "frame": 36,
+              "value": 0
+            }
+          ],
+          "easing": "in_out_sine"
+        },
+        {
+          "property": "position_y",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 20,
+              "value": 0
+            },
+            {
+              "frame": 32,
+              "value": 0
+            },
+            {
+              "frame": 36,
+              "value": 0
+            }
+          ],
+          "easing": "in_out_sine"
+        },
+        {
+          "property": "scale",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 1
+            },
+            {
+              "frame": 20,
+              "value": 1
+            },
+            {
+              "frame": 32,
+              "value": 1
+            },
+            {
+              "frame": 36,
+              "value": 1
+            }
+          ],
+          "easing": "in_out_sine"
+        },
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 20,
+              "value": 1
+            },
+            {
+              "frame": 32,
+              "value": 1
+            },
+            {
+              "frame": 36,
+              "value": 1
+            }
+          ],
+          "easing": "in_out_sine"
+        }
+      ]
+    },
+    {
+      "id": "image_group_gentle_zoom",
+      "category": "image_group_v1",
+      "supported_template": "image_popup",
+      "targets": [
+        "image_group",
+        "image"
+      ],
+      "supported_content": [
+        "image"
+      ],
+      "unit": "group",
+      "seeded": true,
+      "duration_bounds": {
+        "minimum_frames": 24,
+        "maximum_frames": 240
+      },
+      "required_properties": [
+        "position_x",
+        "position_y",
+        "scale",
+        "opacity"
+      ],
+      "render_safe": true,
+      "requires_3d": false,
+      "requires_camera": false,
+      "enter": 36,
+      "exit": 8,
+      "group_recipe": {
+        "layout": "sequence",
+        "apply_to_all_members": true,
+        "description": "premium image group reveal with a restrained zoom and settle",
+        "member_tracks": [
+          {
+            "member_index": 0,
+            "tracks": [
+              {
+                "property": "position_x",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0
+                  },
+                  {
+                    "frame": 20,
+                    "value": 0
+                  },
+                  {
+                    "frame": 32,
+                    "value": 0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 0
+                  }
+                ],
+                "easing": "in_out_sine"
+              },
+              {
+                "property": "position_y",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0
+                  },
+                  {
+                    "frame": 20,
+                    "value": 0
+                  },
+                  {
+                    "frame": 32,
+                    "value": 0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 0
+                  }
+                ],
+                "easing": "in_out_sine"
+              },
+              {
+                "property": "scale",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0.965
+                  },
+                  {
+                    "frame": 20,
+                    "value": 1.015
+                  },
+                  {
+                    "frame": 32,
+                    "value": 1
+                  },
+                  {
+                    "frame": 36,
+                    "value": 1
+                  }
+                ],
+                "easing": "in_out_sine"
+              },
+              {
+                "property": "opacity",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0
+                  },
+                  {
+                    "frame": 20,
+                    "value": 1
+                  },
+                  {
+                    "frame": 32,
+                    "value": 1
+                  },
+                  {
+                    "frame": 36,
+                    "value": 1
+                  }
+                ],
+                "easing": "in_out_sine"
+              }
+            ]
+          }
+        ]
+      },
+      "text_animators": [],
+      "tracks": [
+        {
+          "property": "position_x",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 20,
+              "value": 0
+            },
+            {
+              "frame": 32,
+              "value": 0
+            },
+            {
+              "frame": 36,
+              "value": 0
+            }
+          ],
+          "easing": "in_out_sine"
+        },
+        {
+          "property": "position_y",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 20,
+              "value": 0
+            },
+            {
+              "frame": 32,
+              "value": 0
+            },
+            {
+              "frame": 36,
+              "value": 0
+            }
+          ],
+          "easing": "in_out_sine"
+        },
+        {
+          "property": "scale",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.965
+            },
+            {
+              "frame": 20,
+              "value": 1.015
+            },
+            {
+              "frame": 32,
+              "value": 1
+            },
+            {
+              "frame": 36,
+              "value": 1
+            }
+          ],
+          "easing": "in_out_sine"
+        },
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 20,
+              "value": 1
+            },
+            {
+              "frame": 32,
+              "value": 1
+            },
+            {
+              "frame": 36,
+              "value": 1
+            }
+          ],
+          "easing": "in_out_sine"
+        }
+      ]
+    },
+    {
+      "id": "image_group_soft_lift",
+      "category": "image_group_v1",
+      "supported_template": "image_popup",
+      "targets": [
+        "image_group",
+        "image"
+      ],
+      "supported_content": [
+        "image"
+      ],
+      "unit": "group",
+      "seeded": true,
+      "duration_bounds": {
+        "minimum_frames": 24,
+        "maximum_frames": 240
+      },
+      "required_properties": [
+        "position_x",
+        "position_y",
+        "scale",
+        "opacity"
+      ],
+      "render_safe": true,
+      "requires_3d": false,
+      "requires_camera": false,
+      "enter": 36,
+      "exit": 8,
+      "group_recipe": {
+        "layout": "sequence",
+        "apply_to_all_members": true,
+        "description": "premium image group lift with a delicate fade",
+        "member_tracks": [
+          {
+            "member_index": 0,
+            "tracks": [
+              {
+                "property": "position_x",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0
+                  },
+                  {
+                    "frame": 20,
+                    "value": 0
+                  },
+                  {
+                    "frame": 32,
+                    "value": 0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 0
+                  }
+                ],
+                "easing": "in_out_sine"
+              },
+              {
+                "property": "position_y",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 18
+                  },
+                  {
+                    "frame": 20,
+                    "value": -1
+                  },
+                  {
+                    "frame": 32,
+                    "value": 0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 0
+                  }
+                ],
+                "easing": "in_out_sine"
+              },
+              {
+                "property": "scale",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0.99
+                  },
+                  {
+                    "frame": 20,
+                    "value": 1.005
+                  },
+                  {
+                    "frame": 32,
+                    "value": 1
+                  },
+                  {
+                    "frame": 36,
+                    "value": 1
+                  }
+                ],
+                "easing": "in_out_sine"
+              },
+              {
+                "property": "opacity",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0
+                  },
+                  {
+                    "frame": 20,
+                    "value": 1
+                  },
+                  {
+                    "frame": 32,
+                    "value": 1
+                  },
+                  {
+                    "frame": 36,
+                    "value": 1
+                  }
+                ],
+                "easing": "in_out_sine"
+              }
+            ]
+          }
+        ]
+      },
+      "text_animators": [],
+      "tracks": [
+        {
+          "property": "position_x",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 20,
+              "value": 0
+            },
+            {
+              "frame": 32,
+              "value": 0
+            },
+            {
+              "frame": 36,
+              "value": 0
+            }
+          ],
+          "easing": "in_out_sine"
+        },
+        {
+          "property": "position_y",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 18
+            },
+            {
+              "frame": 20,
+              "value": -1
+            },
+            {
+              "frame": 32,
+              "value": 0
+            },
+            {
+              "frame": 36,
+              "value": 0
+            }
+          ],
+          "easing": "in_out_sine"
+        },
+        {
+          "property": "scale",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.99
+            },
+            {
+              "frame": 20,
+              "value": 1.005
+            },
+            {
+              "frame": 32,
+              "value": 1
+            },
+            {
+              "frame": 36,
+              "value": 1
+            }
+          ],
+          "easing": "in_out_sine"
+        },
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 20,
+              "value": 1
+            },
+            {
+              "frame": 32,
+              "value": 1
+            },
+            {
+              "frame": 36,
+              "value": 1
+            }
+          ],
+          "easing": "in_out_sine"
+        }
+      ]
+    },
+    {
+      "id": "image_group_diagonal_drift",
+      "category": "image_group_v1",
+      "supported_template": "image_popup",
+      "targets": [
+        "image_group",
+        "image"
+      ],
+      "supported_content": [
+        "image"
+      ],
+      "unit": "group",
+      "seeded": true,
+      "duration_bounds": {
+        "minimum_frames": 24,
+        "maximum_frames": 240
+      },
+      "required_properties": [
+        "position_x",
+        "position_y",
+        "scale",
+        "opacity"
+      ],
+      "render_safe": true,
+      "requires_3d": false,
+      "requires_camera": false,
+      "enter": 36,
+      "exit": 8,
+      "group_recipe": {
+        "layout": "sequence",
+        "apply_to_all_members": true,
+        "description": "premium image group diagonal drift with a gentle settle",
+        "member_tracks": [
+          {
+            "member_index": 0,
+            "tracks": [
+              {
+                "property": "position_x",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 18
+                  },
+                  {
+                    "frame": 20,
+                    "value": 0
+                  },
+                  {
+                    "frame": 32,
+                    "value": 0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 0
+                  }
+                ],
+                "easing": "in_out_sine"
+              },
+              {
+                "property": "position_y",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 12
+                  },
+                  {
+                    "frame": 20,
+                    "value": 0
+                  },
+                  {
+                    "frame": 32,
+                    "value": 0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 0
+                  }
+                ],
+                "easing": "in_out_sine"
+              },
+              {
+                "property": "scale",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0.99
+                  },
+                  {
+                    "frame": 20,
+                    "value": 1.005
+                  },
+                  {
+                    "frame": 32,
+                    "value": 1
+                  },
+                  {
+                    "frame": 36,
+                    "value": 1
+                  }
+                ],
+                "easing": "in_out_sine"
+              },
+              {
+                "property": "opacity",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0
+                  },
+                  {
+                    "frame": 20,
+                    "value": 1
+                  },
+                  {
+                    "frame": 32,
+                    "value": 1
+                  },
+                  {
+                    "frame": 36,
+                    "value": 1
+                  }
+                ],
+                "easing": "in_out_sine"
+              }
+            ]
+          }
+        ]
+      },
+      "text_animators": [],
+      "tracks": [
+        {
+          "property": "position_x",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 18
+            },
+            {
+              "frame": 20,
+              "value": 0
+            },
+            {
+              "frame": 32,
+              "value": 0
+            },
+            {
+              "frame": 36,
+              "value": 0
+            }
+          ],
+          "easing": "in_out_sine"
+        },
+        {
+          "property": "position_y",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 12
+            },
+            {
+              "frame": 20,
+              "value": 0
+            },
+            {
+              "frame": 32,
+              "value": 0
+            },
+            {
+              "frame": 36,
+              "value": 0
+            }
+          ],
+          "easing": "in_out_sine"
+        },
+        {
+          "property": "scale",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.99
+            },
+            {
+              "frame": 20,
+              "value": 1.005
+            },
+            {
+              "frame": 32,
+              "value": 1
+            },
+            {
+              "frame": 36,
+              "value": 1
+            }
+          ],
+          "easing": "in_out_sine"
+        },
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 20,
+              "value": 1
+            },
+            {
+              "frame": 32,
+              "value": 1
+            },
+            {
+              "frame": 36,
+              "value": 1
+            }
+          ],
+          "easing": "in_out_sine"
+        }
+      ]
+    },
+    {
+      "id": "image_group_depth_settle",
+      "category": "image_group_v1",
+      "supported_template": "image_popup",
+      "targets": [
+        "image_group",
+        "image"
+      ],
+      "supported_content": [
+        "image"
+      ],
+      "unit": "group",
+      "seeded": true,
+      "duration_bounds": {
+        "minimum_frames": 24,
+        "maximum_frames": 240
+      },
+      "required_properties": [
+        "position_x",
+        "position_y",
+        "scale",
+        "opacity"
+      ],
+      "render_safe": true,
+      "requires_3d": false,
+      "requires_camera": false,
+      "enter": 36,
+      "exit": 8,
+      "group_recipe": {
+        "layout": "sequence",
+        "apply_to_all_members": true,
+        "description": "premium image group depth-like scale settle and soft reveal",
+        "member_tracks": [
+          {
+            "member_index": 0,
+            "tracks": [
+              {
+                "property": "position_x",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0
+                  },
+                  {
+                    "frame": 20,
+                    "value": 0
+                  },
+                  {
+                    "frame": 32,
+                    "value": 0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 0
+                  }
+                ],
+                "easing": "in_out_sine"
+              },
+              {
+                "property": "position_y",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 6
+                  },
+                  {
+                    "frame": 20,
+                    "value": -2
+                  },
+                  {
+                    "frame": 32,
+                    "value": 0
+                  },
+                  {
+                    "frame": 36,
+                    "value": 0
+                  }
+                ],
+                "easing": "in_out_sine"
+              },
+              {
+                "property": "scale",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 1.03
+                  },
+                  {
+                    "frame": 20,
+                    "value": 1.006
+                  },
+                  {
+                    "frame": 32,
+                    "value": 1
+                  },
+                  {
+                    "frame": 36,
+                    "value": 1
+                  }
+                ],
+                "easing": "in_out_sine"
+              },
+              {
+                "property": "opacity",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0
+                  },
+                  {
+                    "frame": 20,
+                    "value": 1
+                  },
+                  {
+                    "frame": 32,
+                    "value": 1
+                  },
+                  {
+                    "frame": 36,
+                    "value": 1
+                  }
+                ],
+                "easing": "in_out_sine"
+              }
+            ]
+          }
+        ]
+      },
+      "text_animators": [],
+      "tracks": [
+        {
+          "property": "position_x",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 20,
+              "value": 0
+            },
+            {
+              "frame": 32,
+              "value": 0
+            },
+            {
+              "frame": 36,
+              "value": 0
+            }
+          ],
+          "easing": "in_out_sine"
+        },
+        {
+          "property": "position_y",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 6
+            },
+            {
+              "frame": 20,
+              "value": -2
+            },
+            {
+              "frame": 32,
+              "value": 0
+            },
+            {
+              "frame": 36,
+              "value": 0
+            }
+          ],
+          "easing": "in_out_sine"
+        },
+        {
+          "property": "scale",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 1.03
+            },
+            {
+              "frame": 20,
+              "value": 1.006
+            },
+            {
+              "frame": 32,
+              "value": 1
+            },
+            {
+              "frame": 36,
+              "value": 1
+            }
+          ],
+          "easing": "in_out_sine"
+        },
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 20,
+              "value": 1
+            },
+            {
+              "frame": 32,
+              "value": 1
+            },
+            {
+              "frame": 36,
+              "value": 1
+            }
+          ],
+          "easing": "in_out_sine"
+        }
+      ]
+    },
+    {
+      "id": "image_group_camera_pan_right",
+      "category": "image_group_v1",
+      "supported_template": "image_popup",
+      "targets": [
+        "image_group",
+        "image"
+      ],
+      "supported_content": [
+        "image"
+      ],
+      "unit": "group",
+      "seeded": true,
+      "duration_bounds": {
+        "minimum_frames": 24,
+        "maximum_frames": 360
+      },
+      "required_properties": [
+        "position_x",
+        "position_y",
+        "scale",
+        "opacity"
+      ],
+      "render_safe": true,
+      "requires_3d": false,
+      "requires_camera": false,
+      "enter": 60,
+      "exit": 8,
+      "group_recipe": {
+        "layout": "sequence",
+        "apply_to_all_members": true,
+        "description": "slow rightward camera pan with a gentle push-in across a horizontal image strip",
+        "member_tracks": [
+          {
+            "member_index": 0,
+            "tracks": [
+              {
+                "property": "position_x",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0.0
+                  },
+                  {
+                    "frame": 60,
+                    "value": 0.0
+                  }
+                ],
+                "easing": "in_out_sine"
+              },
+              {
+                "property": "position_y",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0.0
+                  },
+                  {
+                    "frame": 60,
+                    "value": 0.0
+                  }
+                ],
+                "easing": "in_out_sine"
+              },
+              {
+                "property": "scale",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 1.0
+                  },
+                  {
+                    "frame": 60,
+                    "value": 1.0
+                  }
+                ],
+                "easing": "in_out_sine"
+              },
+              {
+                "property": "opacity",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 1.0
+                  },
+                  {
+                    "frame": 60,
+                    "value": 1.0
+                  }
+                ],
+                "easing": "in_out_sine"
+              }
+            ]
+          }
+        ]
+      },
+      "text_animators": [],
+      "tracks": [
+        {
+          "property": "position_x",
+          "easing": "in_out_sine",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 140.0
+            },
+            {
+              "frame": 60,
+              "value": 0.0
+            }
+          ]
+        },
+        {
+          "property": "position_y",
+          "easing": "in_out_sine",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.0
+            },
+            {
+              "frame": 60,
+              "value": 0.0
+            }
+          ]
+        },
+        {
+          "property": "scale",
+          "easing": "in_out_sine",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 1.06
+            },
+            {
+              "frame": 60,
+              "value": 1.0
+            }
+          ]
+        },
+        {
+          "property": "opacity",
+          "easing": "in_out_sine",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.0
+            },
+            {
+              "frame": 30,
+              "value": 1.0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "image_group_camera_pan_left",
+      "category": "image_group_v1",
+      "supported_template": "image_popup",
+      "targets": [
+        "image_group",
+        "image"
+      ],
+      "supported_content": [
+        "image"
+      ],
+      "unit": "group",
+      "seeded": true,
+      "duration_bounds": {
+        "minimum_frames": 24,
+        "maximum_frames": 360
+      },
+      "required_properties": [
+        "position_x",
+        "position_y",
+        "scale",
+        "opacity"
+      ],
+      "render_safe": true,
+      "requires_3d": false,
+      "requires_camera": false,
+      "enter": 60,
+      "exit": 8,
+      "group_recipe": {
+        "layout": "sequence",
+        "apply_to_all_members": true,
+        "description": "slow leftward camera pan with a gentle push-in across a horizontal image strip",
+        "member_tracks": [
+          {
+            "member_index": 0,
+            "tracks": [
+              {
+                "property": "position_x",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0.0
+                  },
+                  {
+                    "frame": 60,
+                    "value": 0.0
+                  }
+                ],
+                "easing": "in_out_sine"
+              },
+              {
+                "property": "position_y",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0.0
+                  },
+                  {
+                    "frame": 60,
+                    "value": 0.0
+                  }
+                ],
+                "easing": "in_out_sine"
+              },
+              {
+                "property": "scale",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 1.0
+                  },
+                  {
+                    "frame": 60,
+                    "value": 1.0
+                  }
+                ],
+                "easing": "in_out_sine"
+              },
+              {
+                "property": "opacity",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 1.0
+                  },
+                  {
+                    "frame": 60,
+                    "value": 1.0
+                  }
+                ],
+                "easing": "in_out_sine"
+              }
+            ]
+          }
+        ]
+      },
+      "text_animators": [],
+      "tracks": [
+        {
+          "property": "position_x",
+          "easing": "in_out_sine",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": -140.0
+            },
+            {
+              "frame": 60,
+              "value": 0.0
+            }
+          ]
+        },
+        {
+          "property": "position_y",
+          "easing": "in_out_sine",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.0
+            },
+            {
+              "frame": 60,
+              "value": 0.0
+            }
+          ]
+        },
+        {
+          "property": "scale",
+          "easing": "in_out_sine",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 1.06
+            },
+            {
+              "frame": 60,
+              "value": 1.0
+            }
+          ]
+        },
+        {
+          "property": "opacity",
+          "easing": "in_out_sine",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.0
+            },
+            {
+              "frame": 30,
+              "value": 1.0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "image_group_camera_pan_down",
+      "category": "image_group_v1",
+      "supported_template": "image_popup",
+      "targets": [
+        "image_group",
+        "image"
+      ],
+      "supported_content": [
+        "image"
+      ],
+      "unit": "group",
+      "seeded": true,
+      "duration_bounds": {
+        "minimum_frames": 24,
+        "maximum_frames": 360
+      },
+      "required_properties": [
+        "position_x",
+        "position_y",
+        "scale",
+        "opacity"
+      ],
+      "render_safe": true,
+      "requires_3d": false,
+      "requires_camera": false,
+      "enter": 60,
+      "exit": 8,
+      "group_recipe": {
+        "layout": "sequence",
+        "apply_to_all_members": true,
+        "description": "slow downward camera pan with a gentle push-in across a vertical image strip",
+        "member_tracks": [
+          {
+            "member_index": 0,
+            "tracks": [
+              {
+                "property": "position_x",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0.0
+                  },
+                  {
+                    "frame": 60,
+                    "value": 0.0
+                  }
+                ],
+                "easing": "in_out_sine"
+              },
+              {
+                "property": "position_y",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0.0
+                  },
+                  {
+                    "frame": 60,
+                    "value": 0.0
+                  }
+                ],
+                "easing": "in_out_sine"
+              },
+              {
+                "property": "scale",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 1.0
+                  },
+                  {
+                    "frame": 60,
+                    "value": 1.0
+                  }
+                ],
+                "easing": "in_out_sine"
+              },
+              {
+                "property": "opacity",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 1.0
+                  },
+                  {
+                    "frame": 60,
+                    "value": 1.0
+                  }
+                ],
+                "easing": "in_out_sine"
+              }
+            ]
+          }
+        ]
+      },
+      "text_animators": [],
+      "tracks": [
+        {
+          "property": "position_x",
+          "easing": "in_out_sine",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.0
+            },
+            {
+              "frame": 60,
+              "value": 0.0
+            }
+          ]
+        },
+        {
+          "property": "position_y",
+          "easing": "in_out_sine",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 140.0
+            },
+            {
+              "frame": 60,
+              "value": 0.0
+            }
+          ]
+        },
+        {
+          "property": "scale",
+          "easing": "in_out_sine",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 1.06
+            },
+            {
+              "frame": 60,
+              "value": 1.0
+            }
+          ]
+        },
+        {
+          "property": "opacity",
+          "easing": "in_out_sine",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.0
+            },
+            {
+              "frame": 30,
+              "value": 1.0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "image_group_camera_pan_up",
+      "category": "image_group_v1",
+      "supported_template": "image_popup",
+      "targets": [
+        "image_group",
+        "image"
+      ],
+      "supported_content": [
+        "image"
+      ],
+      "unit": "group",
+      "seeded": true,
+      "duration_bounds": {
+        "minimum_frames": 24,
+        "maximum_frames": 360
+      },
+      "required_properties": [
+        "position_x",
+        "position_y",
+        "scale",
+        "opacity"
+      ],
+      "render_safe": true,
+      "requires_3d": false,
+      "requires_camera": false,
+      "enter": 60,
+      "exit": 8,
+      "group_recipe": {
+        "layout": "sequence",
+        "apply_to_all_members": true,
+        "description": "slow upward camera pan with a gentle push-in across a vertical image strip",
+        "member_tracks": [
+          {
+            "member_index": 0,
+            "tracks": [
+              {
+                "property": "position_x",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0.0
+                  },
+                  {
+                    "frame": 60,
+                    "value": 0.0
+                  }
+                ],
+                "easing": "in_out_sine"
+              },
+              {
+                "property": "position_y",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0.0
+                  },
+                  {
+                    "frame": 60,
+                    "value": 0.0
+                  }
+                ],
+                "easing": "in_out_sine"
+              },
+              {
+                "property": "scale",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 1.0
+                  },
+                  {
+                    "frame": 60,
+                    "value": 1.0
+                  }
+                ],
+                "easing": "in_out_sine"
+              },
+              {
+                "property": "opacity",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 1.0
+                  },
+                  {
+                    "frame": 60,
+                    "value": 1.0
+                  }
+                ],
+                "easing": "in_out_sine"
+              }
+            ]
+          }
+        ]
+      },
+      "text_animators": [],
+      "tracks": [
+        {
+          "property": "position_x",
+          "easing": "in_out_sine",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.0
+            },
+            {
+              "frame": 60,
+              "value": 0.0
+            }
+          ]
+        },
+        {
+          "property": "position_y",
+          "easing": "in_out_sine",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": -140.0
+            },
+            {
+              "frame": 60,
+              "value": 0.0
+            }
+          ]
+        },
+        {
+          "property": "scale",
+          "easing": "in_out_sine",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 1.06
+            },
+            {
+              "frame": 60,
+              "value": 1.0
+            }
+          ]
+        },
+        {
+          "property": "opacity",
+          "easing": "in_out_sine",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.0
+            },
+            {
+              "frame": 30,
+              "value": 1.0
+            }
+          ]
+        }
+      ]
+    },
+    {
       "id": "metric_counter_rise",
       "category": "metric_v1",
       "supported_template": "metric_stat_card",
@@ -45554,21 +47304,13 @@
     "phrase_motion_pool": [
       "kinetic_keyword_lock",
       "masked_vertical_lift",
-      "phrase_apple_clean_07_slide_up_soft",
       "phrase_apple_clean_08_slide_up_spring",
-      "phrase_apple_clean_09_slide_down_catch",
-      "phrase_apple_clean_10_slide_from_right_apple",
-      "phrase_apple_clean_11_slide_left_ease",
       "phrase_apple_clean_12_slide_diagonal_pop",
       "phrase_apple_clean_13_scale_soft_pop",
-      "phrase_apple_clean_14_scale_bounce_clean",
       "phrase_apple_clean_16_scale_line_build",
       "phrase_apple_clean_17_scale_in_place",
       "phrase_apple_clean_18_scale_card_tilt",
       "phrase_apple_clean_19_tracking_tighten",
-      "phrase_apple_clean_20_tracking_spread_clean",
-      "phrase_apple_clean_21_tracking_magnetic",
-      "phrase_apple_clean_22_tracking_word_focus",
       "phrase_apple_clean_24_tracking_soft_kinetic",
       "phrase_apple_clean_25_opacity_soft_reveal",
       "phrase_apple_clean_26_opacity_depth_push",

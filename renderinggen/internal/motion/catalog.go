@@ -350,6 +350,11 @@ func init() {
 		if err := Registry.Register(definition.ID, DeclarativePlugin{Definition: definition}); err != nil {
 			panic(err)
 		}
+	}
+	// Replacements can be declared after the retired motion they replace in
+	// the canonical catalog. Register the complete vocabulary before applying
+	// retirement metadata so catalog order cannot make a valid replacement fail.
+	for _, definition := range catalog.Motions {
 		if definition.Deprecated {
 			if err := Registry.MarkDeprecated(Deprecation{
 				MotionID: definition.ID, RemoveAfter: definition.RemoveAfter,

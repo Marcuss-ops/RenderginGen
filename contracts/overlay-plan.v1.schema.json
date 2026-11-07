@@ -78,6 +78,115 @@
         }
       ]
     },
+    "animation_group": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "start_ms",
+        "end_ms",
+        "members"
+      ],
+      "description": "One heterogeneous animation group. The group owns the shared timeline and the motion of every member; a member that already carries a motion is rejected.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "start_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "end_ms": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "choreography_id": {
+          "enum": [
+            "sequence_v1"
+          ],
+          "description": "Group choreography. Omission selects sequence_v1: members enter in array order."
+        },
+        "params": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "stagger_frames": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 240,
+              "description": "Frames between consecutive member entrances. Omission or zero starts every member together."
+            }
+          }
+        },
+        "members": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 8,
+          "items": {
+            "$ref": "#/$defs/animation_group_member"
+          }
+        }
+      }
+    },
+    "animation_group_member": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "item_id",
+        "role"
+      ],
+      "properties": {
+        "item_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "role": {
+          "enum": [
+            "image",
+            "important_phrase",
+            "caption",
+            "date",
+            "metric"
+          ]
+        },
+        "motion_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Optional explicit certified motion. Omission selects one stable motion for this role across the whole group."
+        },
+        "motion_params": {
+          "type": "object",
+          "description": "Open motion parameters; requires motion_id."
+        },
+        "offset_ms": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Member start relative to the group start. Omission uses index * stagger_frames."
+        },
+        "end_offset_ms": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Member end relative to the group start. Omission holds the member to the group end."
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "required": [
+              "motion_params"
+            ]
+          },
+          "then": {
+            "required": [
+              "motion_id"
+            ]
+          }
+        }
+      ]
+    },
     "rgba": {
       "type": "array",
       "minItems": 3,
@@ -1244,6 +1353,14 @@
         "$ref": "#/$defs/animation_policy"
       },
       "description": "Runtime animation defaults selected by group/subgroup and target. Exact subgroup rules override group rules; item/layer motion ids override both."
+    },
+    "animation_groups": {
+      "type": "array",
+      "maxItems": 64,
+      "items": {
+        "$ref": "#/$defs/animation_group"
+      },
+      "description": "Heterogeneous animation groups. Each group owns one shared timeline and one motion per role across phrases, images, captions and metric/date cards. Members must not carry their own motion."
     },
     "scene_camera": {
       "$ref": "#/$defs/scene_camera",
@@ -2623,7 +2740,7 @@
           "group_motion_id": {
             "type": "string",
             "minLength": 1,
-            "description": "Single certified choreography of a composite image group (image_layers). Chosen once by PipelineGen from image.group.count_N candidates; RenderingGen lowers the whole group with it and must not replace it."
+            "description": "One certified image-group animation selected once for the complete image_layers group. A reusable group animation applies the same motion to every member regardless of image count."
           },
           "image_layers": {
             "type": "array",

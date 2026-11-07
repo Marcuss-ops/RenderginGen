@@ -103,6 +103,10 @@ func TestSelectionModelLayoutsCoverEveryImageComposition(t *testing.T) {
 			wantActive = compositionActiveLayerMulti
 			wantScope = compositionMotionScopePerLayer
 		}
+		if definition.Composition.ImageCountRange != nil {
+			wantActive = compositionActiveLayerGroup
+			wantScope = "shared_per_group"
+		}
 		if layout.ActiveLayer != wantActive {
 			t.Errorf("composition %q active_layer = %q, want %q", definition.ID, layout.ActiveLayer, wantActive)
 		}
@@ -184,8 +188,7 @@ func TestSelectionModelCompatibilityMatrixMatchesTheCatalog(t *testing.T) {
 	// layer or per plate; only the plan-owned background sources still have no
 	// family of their own, and they must stay unavailable with a reason.
 	for _, id := range []string{
-		"image_double", "image_triplet", "image_four", "image_five",
-		"single_image_with_text", "image_double_with_text", "image_triplet_with_text", "image_four_with_text", "image_five_with_text",
+		"multiple_images", "multiple_images_with_text", "single_image_with_text",
 		"two_maps",
 	} {
 		entry, ok := byComposition[id]
@@ -196,6 +199,9 @@ func TestSelectionModelCompatibilityMatrixMatchesTheCatalog(t *testing.T) {
 		if !entry.Available || entry.MotionCount == 0 {
 			t.Errorf("composition %q must expose the admitted motions of its own target: %+v", id, entry)
 		}
+	}
+	if entry := byComposition["multiple_images"]; entry.MotionCount != 14 || !entry.Available {
+		t.Errorf("multiple_images must expose the fourteen shared group animations: %+v", entry)
 	}
 	for _, id := range []string{"background_color", "background_image", "background_video"} {
 		if entry := byComposition[id]; entry.Available || entry.MotionCount != 0 {
