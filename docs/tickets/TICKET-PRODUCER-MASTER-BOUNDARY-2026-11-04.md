@@ -265,6 +265,53 @@ Questa modalità **non produce video**: gli artefatti del run sono `script.json`
 
 Evidenza r59d: `ops/jobs/garlasco_editorial_e2e_20261030/r59d-20261107-localonly.generate.json`, `r59d-20261107-localonly-run.out`, `r59d-20261107-localonly-submit-poll.log`, `r59d-20261107-localonly-job-full.json`, `r59d-20261107-localonly.done`.
 
+### Audit 2026-11-07 — divergenza bitstream H.264: chiusura lato Producer
+
+Chiuso in questo workspace (PipelineGen + BrainRust):
+
+- `pipelinegen-muscles/src/encoder.rs` fissa ora l'intero lane canonico: `-refs 1`, `-bf 0`, `-g/-keyint_min 48` (dal profilo), `-sc_threshold 0`, `+cgop`, `-level:v 4.0`, VUI bt709/tv e `-video_track_timescale 90000`. Prima il timebase era `1/12288` a 24 fps: stesso avcC, timestamp diversi.
+- `pipelinegen-muscles/src/probe.rs::validate_output` rifiuta un output tagliato che non sia High 4.0, refs 1, senza B-frame, `1/90000`, SAR 1:1, bt709/tv: un artefatto in cache prodotto dal vecchio lane viene scartato e ricodificato.
+- `kernel/media/avc_extradata.go` è l'unico lettore dell'avcC; `VerifyCanonicalVideoExtradata` confronta lo SHA-256 esatto. `video_processor_cut.go` lo applica a ogni clip stock prima della pubblicazione e richiede libx264 + preset veryfast.
+- Il profilo è versionato (`CanonicalVideoProfileRevision`) e entra nella chiave di cache dei frammenti (`finalJobFragmentFormatVersion=11`); la cache overlay usa già `BitstreamLane`.
+
+Verifica locale: `go test ./internal/kernel/media` (include il join `-c copy` di due frammenti, 96 frame, decode completa senza errori), `go test ./internal/platform/media/rustexec`, `cargo test -p pipelinegen-muscles --lib encoder::tests` e `extradata_tests`. L'avcC misurato su ffmpeg 4.4.2/libx264 è `7201ce80…ae5a`, 49 byte, identico al contratto.
+
+Verifica overlay/clip/stock sui media reali (2026-11-07):
+
+- Overlay `e2e_cert/T02`: 8/8 con avcC non canonico, High 4.0, refs 1, timebase `1/12288` (un file con B-frame=2). Sono sorgenti: il preparer le ricodifica, non le copia.
+- Clip `e2e_cert/T03/clips-r3` e `clips-r13`: 34/34 con avcC non canonico, High 4.0, refs 1, `1/12288`. Stessa lane sorgente.
+- Cache frammenti Producer (`data/final-job-fragments`, 2.698 file): 40/40 campioni con avcC canonico e `1/90000`; nessuna deriva.
+- Stock workspace (`data/stock`, 663 file): 60/60 campioni High 4.1 / `1/12288`. Il nuovo `validate_output` Rust e il gate avcC Go li scartano, quindi vengono ricodificati invece di essere riusati.
+- Un overlay T02 e una clip T03 normalizzati con gli argomenti canonici producono l'avcC atteso; il loro join `-c copy` conserva il bitstream e si decodifica senza errori.
+- `Chronon3d/src/media/video/encode/native_av_sink.cpp` fissa già High/40, refs 1, B-frame 0, closed GOP, SAR 1:1 e VUI bt709/tv; non fissa il track timescale (da qui `1/12288`). Resta una lane sorgente, non un input packet-copy: la ricodifica canonica avviene nel Producer.
+- Il cutter stock usa davvero il gate: `render.NewConfiguredCutterWithExecutionConfig` restituisce `rustexec.VideoProcessor.Cut`, e `derivePlacement` verifica l'avcC del remux prima di pubblicare.
+
+### Matrice di accettazione — audit H.264 (2026-11-07)
+
+| Criterio | Stato | Evidenza |
+|---|---|---|
+| Encoder Rust unico: High 4.0, refs 1, B=0, closed GOP 48, bt709/tv, `-video_track_timescale 90000` | PASS | `BrainRust/pipelinegen-muscles/src/encoder.rs`; `cargo test -p pipelinegen-muscles --lib` |
+| Gate avcC esatto su ogni pubblicazione (frammento, clip stock, remux) | PASS | `kernel/media/avc_extradata.go`; `TestVerifyCanonicalVideoExtradata`; `TestCanonicalFragmentsJoinAndDecode` |
+| Cutter stock: codec/preset non canonico rifiutato prima dell'encode | PASS | `TestCutRefusesANonCanonicalEncoderBeforeEncoding`; `TestCutRefusesANonCanonicalPresetBeforeEncoding` |
+| Cutter stock: output con avcC non canonico rifiutato dopo l'encode | PASS | `TestCutRejectsANonCanonicalBitstream` |
+| Composition root stock: la factory restituisce il cutter gated, nessun bypass | PASS | `TestConfiguredCutterKeepsTheCanonicalEncoderGate` |
+| Cache frammenti: revisione encoder nella work identity | PASS | `CanonicalVideoProfileRevision` + `finalJobFragmentFormatVersion=11`; `TestCanonicalVideoProfileRevisionIsPinned` |
+| Overlay/clip: source non canonico ricodificato sul delivery identity | PASS | `TestFinalJobSegmentPreparerEncodesOneAssemblyReadyFragment` (source non canonico → avcC canonico, `1/90000`) |
+| Source `1/12288`: copia certificata riscritta a `1/90000` | PASS | `TestFinalJobCensusAcceptsX264TimeBase` |
+| Media reali: overlay 8/8, clip 34/34, stock 60/60 campioni, cache 40/40 canonica | PASS | misure 2026-11-07 sopra |
+| Master: muxer `media_packet_muxer.cpp`, `video_trimmer.go`, `segment_execution.cpp`, `canonical_video_profile.cpp`, cache stock | BLOCKED | codice non presente nel workspace; patch points elencati sotto |
+| Film end-to-end con decode attraverso ogni giunzione Master | BLOCKED | richiede Master + worker + Drive; nessun job r59 ha prodotto MP4 |
+| Chronon `native_av_sink` track timescale 90000 | NON-GOAL motivato | overlay/clip sono sorgenti; l'avcC resta non canonico e il Producer ricodifica. Forzare il timescale non renderebbe l'artefatto packet-copy e cambierebbe i byte dei render |
+
+Residui Master (fuori da questo workspace, non modificabili qui):
+
+- `DataServer/internal/assets/video_trimmer.go::canonicalVideoEncodeArgs` non fissa `-refs 1`, `-preset`, VUI colore e timescale; `matchesCanonicalStockVideo` non confronta l'avcC.
+- `RemoteCodex/native/video-engine-cpp/src/services/media_packet_muxer.cpp` azzera `extradata`, `profile` e `level` della firma dopo il primo segmento; `segment_execution.cpp` confronta l'extradata solo se entrambe le firme la contengono.
+- `canonical_video_profile.cpp::mediaSignatureFromCanonicalProfile` lascia vuoto `extradata`.
+- `materializeDriveStockWindow` non include la revisione encoder nella chiave: i frammenti già prodotti vanno invalidati, non riusati.
+
+Finché questi quattro punti non sono corretti e non esiste un test di decode attraverso ogni giunzione prodotto dal Master, l'accettazione completa del film resta `BLOCKED` lato Master, non lato Producer.
+
 ### Residui esterni non chiudibili nel repo
 
 - Master 51: accettazione/ricodifica delle finestre stock parziali (r58) e delle 43 finestre da overlay osservate in r59c. Il Producer può allineare le scene ai file interi, ma non può tagliare stock senza violare il confine; inoltre la FINALIZE r59c è andata in timeout a 45 s con root Master 502.
