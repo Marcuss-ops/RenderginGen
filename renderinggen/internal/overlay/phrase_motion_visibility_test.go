@@ -20,7 +20,7 @@ func TestPhraseSlideMotionChangesRenderedPixels(t *testing.T) {
 		t.Skipf("ffmpeg not available for pixel check: %v", err)
 	}
 	assetsRoot := certificationAssetsRoot(t)
-	raw := []byte(`{"schema_version":"renderinggen.overlay-plan.v1","plan_id":"phrase-slide-visibility","video_id":"v","width":640,"height":360,"fps_num":24,"fps_den":1,"background":{"kind":"color","color":[0.08,0.08,0.08,1]},"items":[{"id":"phrase","kind":"important_phrase","template_id":"IMPORTANT_PHRASE","preset_id":"phrase_default","motion_id":"phrase_apple_clean_07_slide_up_soft","motion_params":{"enter_frames":16},"text":"MOTION VISIBILITY","start_ms":0,"end_ms":1500}]}`)
+	raw := []byte(`{"schema_version":"renderinggen.overlay-plan.v1","plan_id":"phrase-slide-visibility","video_id":"v","width":640,"height":360,"fps_num":24,"fps_den":1,"background":{"kind":"color","color":[0.08,0.08,0.08,1]},"items":[{"id":"phrase","kind":"important_phrase","template_id":"IMPORTANT_PHRASE","preset_id":"phrase_default","motion_id":"phrase_apple_clean_01_blur_soft_reveal","motion_params":{"enter_frames":16},"text":"MOTION VISIBILITY","start_ms":0,"end_ms":1500}]}`)
 	result, err := CompileSemantic(raw)
 	if err != nil {
 		t.Fatalf("compile phrase motion plan: %v", err)

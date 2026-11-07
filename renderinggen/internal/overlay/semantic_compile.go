@@ -84,6 +84,13 @@ func compileSemanticDecoded(src *semanticPlan) (*Plan, []Asset, Stats, []string,
 	if err := resolveAnimationPolicies(src); err != nil {
 		return nil, nil, Stats{}, nil, err
 	}
+	// Animation groups are the V2 owner: they resolve after the legacy policy
+	// selector so the two generations cannot silently stack, and before the
+	// retirement/item passes so their selected motions and windows are the ones
+	// actually validated and lowered.
+	if err := resolveAnimationGroups(src); err != nil {
+		return nil, nil, Stats{}, nil, err
+	}
 	// Retirement is checked after the policies are expanded, so a motion that
 	// arrives through a plan-level default is rejected exactly like an explicit
 	// motion_id instead of only when the item names it directly.

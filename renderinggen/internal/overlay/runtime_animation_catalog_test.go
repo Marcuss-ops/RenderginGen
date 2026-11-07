@@ -3,6 +3,7 @@ package overlay
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -52,6 +53,61 @@ func TestRuntimeMotionCatalogIsCompleteStableAndDefensive(t *testing.T) {
 	}
 }
 
+func TestBulletPointPickerUsesTypewriterAndAppleHighlightMotions(t *testing.T) {
+	options, definitions := runtimeMotionCatalog()
+	useCases := runtimeAnimationUseCases(options, definitions)
+	var bullet *RuntimeAnimationUseCase
+	for index := range useCases {
+		if useCases[index].ID == "bullet_point" {
+			bullet = &useCases[index]
+			break
+		}
+	}
+	if bullet == nil {
+		t.Fatal("bullet_point use case is missing")
+	}
+	if !containsString(bullet.ItemKinds, string(KindImportantPhrase)) {
+		t.Fatalf("bullet_point item kinds = %v, want IMPORTANT_PHRASE", bullet.ItemKinds)
+	}
+	for _, id := range []string{
+		"air_rise_type_on",
+		"apple_precision_type",
+		"apple_tracking_reveal",
+		"classic_playfair_letter_tick",
+		"classic_playfair_glyph_glide",
+		"apple_spread_rise",
+		"phrase_apple_clean_08_slide_up_spring",
+		"phrase_apple_clean_13_scale_soft_pop",
+		"phrase_apple_clean_30_opacity_clean_apple",
+		"phrase_apple_clean_02_blur_focus_snap",
+		"phrase_apple_clean_24_tracking_soft_kinetic",
+		"doc_01_yellow_marker_sweep",
+		"doc_02_multiline_stagger_highlight",
+		"doc_03_documentary_quote_marker",
+		"doc_09_cinematic_underline_draw",
+		"phrase_highlight_soft_marker",
+		"phrase_highlight_evidence_red",
+		"doc_04_archival_source_highlight",
+		"doc_06_red_keyword_punch",
+		"doc_08_mixed_font_emphasis",
+		"doc_13_analog_scanner_highlight",
+	} {
+		if !containsString(bullet.MotionIDs, id) {
+			t.Errorf("bullet_point picker is missing %q", id)
+		}
+	}
+	for _, id := range bullet.MotionIDs {
+		if !motionDefinitionAdmitsTarget(definitions[id], TargetImportantPhrase) {
+			t.Errorf("bullet_point motion %q does not admit the important_phrase target", id)
+		}
+	}
+	for _, id := range []string{"bullet_slide_left", "bullet_slide_right", "bullet_camera_orbit", "bullet_blur_focus"} {
+		if containsString(bullet.MotionIDs, id) {
+			t.Errorf("rejected reveal motion %q leaked back into the bullet_point picker", id)
+		}
+	}
+}
+
 func TestRuntimeAnimationUseCasesSeparateCountedCompositions(t *testing.T) {
 	options, definitions := runtimeMotionCatalog()
 	useCases := runtimeAnimationUseCases(options, definitions)
@@ -71,8 +127,8 @@ func TestRuntimeAnimationUseCasesSeparateCountedCompositions(t *testing.T) {
 		}
 	}
 	for _, id := range []string{
-		"important_phrase", "short_important_phrase", "single_image", "image_double", "image_triplet", "image_four", "image_five",
-		"single_image_with_text", "image_double_with_text", "image_triplet_with_text", "image_four_with_text", "image_five_with_text",
+		"important_phrase", "short_important_phrase", "bullet_point", "single_image", "multiple_images",
+		"single_image_with_text", "multiple_images_with_text",
 		"one_map", "two_maps", "background_color", "background_image", "background_video",
 		"entities", "entity_caption", "metric_stat", "timeline_date", "data_visualization",
 	} {
@@ -93,8 +149,7 @@ func TestRuntimeAnimationUseCasesSeparateCountedCompositions(t *testing.T) {
 	// plan-owned background sources are the only use cases with no family, and
 	// they must keep serializing as an explicit null.
 	for _, id := range []string{
-		"image_double", "image_triplet", "image_four", "image_five",
-		"single_image_with_text", "image_double_with_text", "image_triplet_with_text", "image_four_with_text", "image_five_with_text",
+		"multiple_images", "multiple_images_with_text",
 		"two_maps",
 	} {
 		if len(byID[id].MotionIDs) == 0 {
@@ -106,16 +161,13 @@ func TestRuntimeAnimationUseCasesSeparateCountedCompositions(t *testing.T) {
 			t.Errorf("use case %q must serialize as null until it has a dedicated family; got %v", id, byID[id].MotionIDs)
 		}
 	}
-	if byID["single_image"].Cardinality != "one image" || byID["image_double"].Cardinality != "two images" || byID["one_map"].Cardinality != "one map" || byID["two_maps"].Cardinality != "two maps" {
-		t.Fatalf("image/map cardinalities unclear: single=%q double=%q one_map=%q two_maps=%q", byID["single_image"].Cardinality, byID["image_double"].Cardinality, byID["one_map"].Cardinality, byID["two_maps"].Cardinality)
+	if byID["single_image"].Cardinality != "one image" || byID["multiple_images"].Cardinality != "2 to 5 images" || byID["one_map"].Cardinality != "one map" || byID["two_maps"].Cardinality != "two maps" {
+		t.Fatalf("image/map cardinalities unclear: single=%q multiple=%q one_map=%q two_maps=%q", byID["single_image"].Cardinality, byID["multiple_images"].Cardinality, byID["one_map"].Cardinality, byID["two_maps"].Cardinality)
 	}
 	if !strings.Contains(byID["single_image"].Description, "single-image target") {
 		t.Errorf("single_image description must describe target compatibility, got %q", byID["single_image"].Description)
 	}
-	for id, count := range map[string]int{
-		"single_image": 1, "image_double": 2, "image_triplet": 3, "image_four": 4, "image_five": 5,
-		"single_image_with_text": 1, "image_double_with_text": 2, "image_triplet_with_text": 3, "image_four_with_text": 4, "image_five_with_text": 5,
-	} {
+	for id, count := range map[string]int{"single_image": 1, "single_image_with_text": 1} {
 		composition := byID[id].Composition
 		if composition == nil || composition.ImageCount != count || composition.MapCount != 0 {
 			t.Errorf("use case %q composition = %+v, want image_count=%d", id, composition, count)
@@ -138,6 +190,24 @@ func TestRuntimeAnimationUseCasesSeparateCountedCompositions(t *testing.T) {
 		}
 		if byID[id].Cardinality != cardinality {
 			t.Errorf("use case %q cardinality = %q, want %q", id, byID[id].Cardinality, cardinality)
+		}
+	}
+	for _, id := range []string{"multiple_images", "multiple_images_with_text"} {
+		composition := byID[id].Composition
+		if composition == nil || composition.ImageCountRange == nil || composition.ImageCountRange.Minimum != 2 || composition.ImageCountRange.Maximum != 5 {
+			t.Errorf("use case %q must publish a shared 2..5 image range: %+v", id, composition)
+		}
+		if id == "multiple_images_with_text" && (composition.Caption == nil || composition.Caption.Minimum != 1 || composition.Caption.Maximum != 5) {
+			t.Errorf("multiple image captions have incorrect bounds: %+v", composition.Caption)
+		}
+	}
+	wantGroupMotions := motion.ReusableImageGroupMotionIDs()
+	if len(wantGroupMotions) != 14 {
+		t.Fatalf("reusable image-group inventory has %d motions, want 14: %v", len(wantGroupMotions), wantGroupMotions)
+	}
+	for _, id := range []string{"single_image", "single_image_with_text", "multiple_images", "multiple_images_with_text", "entities"} {
+		if got := byID[id].MotionIDs; fmt.Sprint(got) != fmt.Sprint(wantGroupMotions) {
+			t.Errorf("%s must expose exactly the fourteen reusable transitions, got %v", id, got)
 		}
 	}
 	if byID["one_map"].Composition == nil || byID["one_map"].Composition.MapCount != 1 || byID["two_maps"].Composition == nil || byID["two_maps"].Composition.MapCount != 2 {
@@ -233,7 +303,7 @@ func TestRuntimeAnimationUseCasesSeparateCountedCompositions(t *testing.T) {
 	}
 }
 
-func TestGenericLayerMotionsAreSelectableForTextAndImages(t *testing.T) {
+func TestGenericLayerMotionsKeepTheImagePickerCurated(t *testing.T) {
 	options, definitions := runtimeMotionCatalog()
 	useCases := runtimeAnimationUseCases(options, definitions)
 	useCaseByID := make(map[string]RuntimeAnimationUseCase, len(useCases))
@@ -261,8 +331,8 @@ func TestGenericLayerMotionsAreSelectableForTextAndImages(t *testing.T) {
 		if !containsString(phraseIDs, id) {
 			t.Errorf("generic layer motion %q is missing from the important_phrase use case", id)
 		}
-		if !containsString(imageIDs, id) {
-			t.Errorf("generic layer motion %q is missing from the single_image use case", id)
+		if containsString(imageIDs, id) {
+			t.Errorf("unselected generic motion %q entered the curated image picker", id)
 		}
 		for _, target := range []string{"metric", "date", "map_view"} {
 			if motionAdmitsTarget(id, target) {
@@ -272,6 +342,9 @@ func TestGenericLayerMotionsAreSelectableForTextAndImages(t *testing.T) {
 	}
 	if layerMotionCount != 21 {
 		t.Fatalf("generic layer motion count = %d, want 21", layerMotionCount)
+	}
+	if len(imageIDs) != 14 {
+		t.Fatalf("single_image picker exposes %d animations, want the curated 14", len(imageIDs))
 	}
 }
 
@@ -334,7 +407,7 @@ func TestAnimationPolicyUsesDeclaredTargets(t *testing.T) {
 		{target: "important_phrase", id: "text_fade_up", want: true},
 		{target: "important_phrase", id: "image_focus_reveal", want: false},
 		{target: "important_phrase", id: "apple_focus_rise", want: true},
-		{target: "important_phrase", id: "phrase_apple_clean_07_slide_up_soft", want: true},
+		{target: "important_phrase", id: "phrase_apple_clean_01_blur_soft_reveal", want: true},
 		{target: "important_phrase", id: "blur_focus_in", want: true},
 		{target: "image", id: "image_focus_reveal", want: true},
 		{target: "image", id: "text_fade_up", want: false},
@@ -528,7 +601,7 @@ func TestCompiledRuntimeAnimationCatalogIsDeterministicAndConsumable(t *testing.
 	if !strings.Contains(first.String(), `"id": "background_video"`) || !strings.Contains(first.String(), `"motion_ids": null`) {
 		t.Fatal("compiled picker catalog must represent an unimplemented composition family as explicit null")
 	}
-	if !strings.Contains(first.String(), `"image_count": 5`) || !strings.Contains(first.String(), `"caption_count"`) || !strings.Contains(first.String(), `"map_count": 2`) {
+	if !strings.Contains(first.String(), `"image_count_range"`) || !strings.Contains(first.String(), `"caption_count"`) || !strings.Contains(first.String(), `"map_count": 2`) {
 		t.Fatal("compiled picker catalog omitted structured image/caption/map cardinality")
 	}
 	_, source, _, ok := runtime.Caller(0)

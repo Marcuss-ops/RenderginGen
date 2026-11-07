@@ -35,7 +35,7 @@ func TestRuntimeJobCompositeExecutionOnStrictVulkanGPU(t *testing.T) {
 		// 1. Apple Clean Phrase (0 - 2000ms)
 		map[string]any{
 			"id": "phrase-apple-01", "kind": "important_phrase", "template_id": "IMPORTANT_PHRASE",
-			"preset_id": PhraseDefaultPresetID, "motion_id": "phrase_apple_clean_07_slide_up_soft",
+			"preset_id": PhraseDefaultPresetID, "motion_id": "phrase_apple_clean_01_blur_soft_reveal",
 			"motion_params": map[string]any{"enter_frames": 24},
 			"text":          "VELOX EDITING GPU RUNTIME", "start_ms": 0, "end_ms": 2000,
 		},

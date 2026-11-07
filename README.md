@@ -134,6 +134,38 @@ stabile per piano/video/layer-caption e differisce tra layer distinti. Per la
 certificazione GPU consultare il report runtime separato: la registrazione non
 implica che ogni ID sia stato certificato.
 
+## Heterogeneous animation groups
+
+`animation_groups` is the V2 owner for a mixed set of 2..8 existing items. A
+group owns one shared timeline and one motion per role (`image`,
+`important_phrase`, `caption`, `date`, `metric`); members must not already set
+`motion_id`, `caption_motion_id` or `group_motion_id`, and an item may belong to
+only one group. `sequence_v1` is the only choreography: members enter in array
+order, `params.stagger_frames` (0..240) spaces consecutive entrances, and
+`offset_ms` / `end_offset_ms` can override a member's window relative to the
+group. Without `motion_id`, the compiler chooses one stable motion per role and
+group, filtered by the role's certified pool, actual 3D/camera tracks and a
+neutral final rest pose. Timing is applied to the existing item, then the
+normal per-kind lowering runs unchanged; legacy plans without
+`animation_groups` are untouched.
+
+```json
+"animation_groups": [{
+  "id": "scene-1", "start_ms": 0, "end_ms": 4000,
+  "choreography_id": "sequence_v1",
+  "params": {"stagger_frames": 4},
+  "members": [
+    {"item_id": "headline", "role": "important_phrase"},
+    {"item_id": "portrait", "role": "image"},
+    {"item_id": "date", "role": "date"}
+  ]
+}]
+```
+
+The runtime catalog publishes the choreography and role pools under
+`group_choreographies`; the opt-in canary is
+`TestAnimationGroupHeterogeneousRenderCanary` (`CHRONON_BIN`).
+
 ## Date animation catalog (multi-date sequences)
 
 `renderinggen/internal/dateanim` carries the 13 approved complete date
@@ -232,6 +264,30 @@ ChrononTemplate/tools/short_phrases/emit_short_phrase_catalog.cpp
                  ▼
 renderinggen/internal/motion/catalog/short_phrase_motion.v1.json       ← embedded
 ```
+
+### Motion ownership
+
+Each layer has exactly one owner; everything below it is a derived projection.
+Do not add a parallel id list in a consumer or edit an embedded catalog by hand.
+
+| Layer | Single owner | Rule |
+| --- | --- | --- |
+| Phrase/motion/preset vocabulary | `ChrononTemplate/catalog/motion_catalog.v1.json` plus the C++ recipe definitions | Authored data and C++ emitters; every id resolves from here. |
+| Multi-image certification | `MultiImagePack.cpp::reusableMotions()` | One table carries id, direction and entrance. `multiImageMotionIds()`, `isMultiImageMotion()` and `beatsFor()` derive from it. |
+| Camera-pan runtime semantics | `image_group_camera_pan.go::cameraPanDirections` | One table; `cameraPanSpecs` and `cameraPanMotionIDs` are derived at init. |
+| Go reusable image-group membership | `motion.ReusableImageGroupMotionIDs()` | Derives the reusable `image_group_v1` set from the embedded catalog; pickers and tests must not restate it. |
+| Count-specific image-group choreographies | `ChrononTemplate/catalog/motion_catalog.v1.json` (`image_group_v1`, `apply_to_all_members=false`) | 21 rows: 9 duo, 4 trio, 4 quad, 4 penta. Historical replay only; not in `reusableMotions()` and not offered by the picker. |
+| Refactored planner pools | `refactored/internal/capabilities/overlays/preset_selection.go` for the curated selection; `ChrononTemplate` owns every id | Pools select from the canonical catalog; they never define a second vocabulary. Parity and retirement tests fail on unknown or removed ids. |
+| Short-phrase recipes | `ShortPhraseRecipes.def` + the C++ `ShortPhrasePack` definitions | 14 recipes, 13 runtime-enabled. Emitted by `chronontemplate_emit_short_phrase_catalog`; never hand-trim the embedded artifact. |
+| Embedded catalogs | `renderinggen/internal/motion/catalog/*.json` | Generated only by `scripts/sync_motion_catalog.sh`; `--check` is the parity gate. |
+
+The 21 count-specific rows are deliberately outside the C++ reusable table: the
+emitter permits them for saved-plan replay, while a reusable `image_group_*` row
+missing C++ certification fails the emit. The `refactored` pools are curated
+subsets — some are generated from the canonical animation registry, others are
+explicit lists — and
+`refactored/internal/capabilities/overlays/motion_catalog_parity_test.go::TestMotionPoolsAreCanonicalSubsets`
+plus the short-phrase parity/retirement tests are the drift gate.
 
 The embedded artifact is the only source the worker reads: `internal/motion`
 registers every motion from it and fails closed at startup if it cannot be read

@@ -41,6 +41,14 @@ Renew the certificate through the host's certificate manager and restart the
 Objectstore after renewal so Go reloads the certificate. A renewal hook can
 run `docker compose -f docker-compose.yaml -f docker-compose.objectstore-public.yaml restart objectstore`.
 
+## Creator configuration
+
+The Creator needs `OBJECTSTORE_PUBLIC_URL` to publish the fragments it produces;
+it has no direct-source mode and no source-host allowlist of its own. The
+worker-side allowlist remains a deployment fact: it must accept the host in
+`OBJECTSTORE_PUBLIC_URL`, and a mismatch is diagnosed from the worker's prefetch
+log rather than guessed by the Producer.
+
 ## Worker path
 
 The worker accepts direct HTTPS sources only for its exact source-host

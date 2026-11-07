@@ -10,9 +10,35 @@
     "families": { "type": "array", "items": { "type": "string", "minLength": 1 } },
     "motions": { "type": "array", "items": { "$ref": "#/$defs/motion" } },
     "use_cases": { "type": "array", "items": { "$ref": "#/$defs/use_case" } },
+    "group_choreographies": { "type": "array", "items": { "$ref": "#/$defs/animation_group_choreography" } },
     "selection_model": { "$ref": "#/$defs/selection_model" }
   },
   "$defs": {
+    "animation_group_choreography": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "description", "owner", "selection", "minimum_members", "maximum_members", "roles"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "description": { "type": "string", "minLength": 1 },
+        "owner": { "const": "animation_group" },
+        "selection": { "const": "stable_random_per_role" },
+        "minimum_members": { "type": "integer", "minimum": 2, "maximum": 8 },
+        "maximum_members": { "type": "integer", "minimum": 2, "maximum": 8 },
+        "roles": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/animation_group_role" } }
+      }
+    },
+    "animation_group_role": {
+      "type": "object", "additionalProperties": false,
+      "required": ["role", "motion_target", "motion_count", "motion_ids", "requires_3d", "requires_camera"],
+      "properties": {
+        "role": { "enum": ["image", "important_phrase", "caption", "date", "metric"] },
+        "motion_target": { "type": "string", "minLength": 1 },
+        "motion_count": { "type": "integer", "minimum": 1 },
+        "motion_ids": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 1 } },
+        "requires_3d": { "type": "boolean" },
+        "requires_camera": { "type": "boolean" }
+      }
+    },
     "caption_count": {
       "type": "object", "additionalProperties": false,
       "required": ["minimum", "maximum"],
@@ -25,15 +51,24 @@
       "type": "object", "additionalProperties": false,
       "properties": {
         "image_count": { "type": "integer", "minimum": 1, "maximum": 5 },
+        "image_count_range": {
+          "type": "object", "additionalProperties": false,
+          "required": ["minimum", "maximum"],
+          "properties": {
+            "minimum": { "type": "integer", "minimum": 2, "maximum": 5 },
+            "maximum": { "type": "integer", "minimum": 2, "maximum": 5 }
+          }
+        },
         "caption_count": { "$ref": "#/$defs/caption_count" },
         "map_count": { "type": "integer", "minimum": 1, "maximum": 2 }
       },
       "oneOf": [
-        { "required": ["image_count"], "not": { "required": ["map_count"] } },
-        { "required": ["map_count"], "not": { "required": ["image_count"] } }
+        { "required": ["image_count"], "not": { "anyOf": [{ "required": ["image_count_range"] }, { "required": ["map_count"] }] } },
+        { "required": ["image_count_range"], "not": { "anyOf": [{ "required": ["image_count"] }, { "required": ["map_count"] }] } },
+        { "required": ["map_count"], "not": { "anyOf": [{ "required": ["image_count"] }, { "required": ["image_count_range"] }] } }
       ],
       "allOf": [
-        { "if": { "required": ["caption_count"] }, "then": { "required": ["image_count"] } }
+        { "if": { "required": ["caption_count"] }, "then": { "anyOf": [{ "required": ["image_count"] }, { "required": ["image_count_range"] }] } }
       ]
     },
     "duration_bounds": {
@@ -157,7 +192,7 @@
         "layer_order": { "type": "string", "minLength": 1 },
         "active_layer": { "type": "string", "minLength": 1 },
         "missing_asset_behavior": { "type": "string", "minLength": 1 },
-        "motion_scope": { "enum": ["item", "per_layer"] },
+        "motion_scope": { "enum": ["item", "per_layer", "shared_per_group"] },
         "max_captions": { "type": "integer", "minimum": 1, "maximum": 5 },
         "caption_motion_scope": { "enum": ["per_caption"] },
         "caption_entry_order": { "type": "string", "minLength": 1 },

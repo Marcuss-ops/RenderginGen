@@ -9,13 +9,17 @@ func validateImageGroupV1(d MotionDefinition) error {
 		}
 		return nil
 	}
+	validTargets := len(d.Targets) == 1 && d.Targets[0] == "image_group"
+	if d.GroupRecipe != nil && d.GroupRecipe.ApplyToAllMembers && len(d.Targets) == 2 &&
+		containsMotionString(d.Targets, "image_group") && containsMotionString(d.Targets, "image") {
+		validTargets = true
+	}
 	if d.GroupRecipe == nil || d.Unit != "group" || d.SupportedTemplate != "image_popup" ||
 		d.RenderSafe == nil || !*d.RenderSafe || d.Requires3D == nil || d.RequiresCamera == nil ||
 		d.DurationBounds == nil || d.DurationBounds.MinimumFrames < 1 ||
 		d.DurationBounds.MaximumFrames < d.DurationBounds.MinimumFrames || d.Enter <= 0 ||
 		int64(d.Enter) > d.DurationBounds.MaximumFrames || d.Exit < 0 ||
-		int64(d.Exit) >= d.DurationBounds.MinimumFrames || len(d.Targets) != 1 ||
-		d.Targets[0] != "image_group" || len(d.SupportedContent) != 1 ||
+		int64(d.Exit) >= d.DurationBounds.MinimumFrames || !validTargets || len(d.SupportedContent) != 1 ||
 		d.SupportedContent[0] != "image" {
 		return fmt.Errorf("motion %q: image_group_v1 requires a render-safe group recipe, target and duration metadata", d.ID)
 	}

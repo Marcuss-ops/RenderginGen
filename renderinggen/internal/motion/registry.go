@@ -196,7 +196,7 @@ var phrasePoolExcludedCategories = map[string]string{
 	"date_didone_v1":       "Didone date family selected through the timeline_date composition, not the legacy phrase pool",
 	"metric_typewriter_v1": "typewriter metric family selected through the metric_stat composition, not the legacy phrase pool",
 	"date_typewriter_v1":   "typewriter date family selected through the timeline_date composition, not the legacy phrase pool",
-	"image_group_v1":       "multi-image group choreographies are selected once per group through the image.group.count_N registry, not the legacy phrase pool",
+	"image_group_v1":       "reusable multi-image transitions are selected once per group and apply to every member regardless of image count",
 	"image_25d_clean_v1":   "image-surface family, never a phrase-planning family",
 	"editorial_image_v1":   "image-surface family, never a phrase-planning family",
 	"image_premium_v1":     "image-surface family, never a phrase-planning family",
@@ -263,6 +263,29 @@ func (r *RegistryType) CategoryMotionIDs(category string) []string {
 			ids = append(ids, id)
 		}
 	}
+	return ids
+}
+
+// ReusableImageGroupMotionIDs is the Go-side projection of the catalog's
+// reusable image-group recipes. The embedded catalog remains the data owner;
+// callers derive membership from it instead of maintaining a parallel list.
+func ReusableImageGroupMotionIDs() []string {
+	ids := make([]string, 0, 14)
+	for _, id := range Registry.CategoryMotionIDs("image_group_v1") {
+		plugin, err := Registry.Resolve(id)
+		if err != nil {
+			continue
+		}
+		declarative, ok := plugin.(DeclarativePlugin)
+		if !ok {
+			continue
+		}
+		recipe := declarative.Definition.GroupRecipe
+		if recipe != nil && recipe.ApplyToAllMembers {
+			ids = append(ids, id)
+		}
+	}
+	sort.Strings(ids)
 	return ids
 }
 

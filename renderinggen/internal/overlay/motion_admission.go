@@ -150,6 +150,7 @@ const (
 	TargetImportantPhrase = string(KindImportantPhrase)
 	TargetEntity          = "entity"
 	TargetImage           = string(KindImageSynonym)
+	TargetImageGroup      = "image_group"
 	TargetMetric          = "metric"
 	TargetDate            = "date"
 	TargetData            = "data"
@@ -185,11 +186,12 @@ var targetAdmissionRules = map[string]targetAdmissionRule{
 		deny:  []string{TargetMetric, TargetDate},
 		admit: []string{TargetPhrase, TargetText, TargetCaption, TargetEntity},
 	},
-	TargetCaption: {custom: captionTargetAdmits},
-	TargetImage:   {admit: []string{TargetImage}},
-	TargetMetric:  {admit: []string{TargetMetric}},
-	TargetDate:    {admit: []string{TargetDate}},
-	TargetData:    {admit: []string{TargetData}},
+	TargetCaption:    {custom: captionTargetAdmits},
+	TargetImage:      {admit: []string{TargetImage}},
+	TargetImageGroup: {admit: []string{TargetImageGroup}},
+	TargetMetric:     {admit: []string{TargetMetric}},
+	TargetDate:       {admit: []string{TargetDate}},
+	TargetData:       {admit: []string{TargetData}},
 	TargetShortPhrase: {
 		admit: []string{TargetShortPhrase},
 	},

@@ -275,6 +275,7 @@ type semanticPlan struct {
 	MapCompositionID  string                    `json:"map_composition_id,omitempty"`
 	Items             []semanticItem            `json:"items"`
 	AnimationPolicies []semanticAnimationPolicy `json:"animation_policies,omitempty"`
+	AnimationGroups   []semanticAnimationGroup  `json:"animation_groups,omitempty"`
 }
 
 type semanticAnimationPolicy struct {
@@ -283,6 +284,28 @@ type semanticAnimationPolicy struct {
 	SubgroupID   string         `json:"subgroup_id,omitempty"`
 	MotionID     string         `json:"motion_id,omitempty"`
 	MotionParams map[string]any `json:"motion_params,omitempty"`
+}
+
+// semanticAnimationGroup is the V2 heterogeneous animation owner. Members may
+// mix important phrases, images, captions and metric/date cards; the group owns
+// their shared timeline and one motion per role, while the ordinary per-kind
+// lowering still produces the layers.
+type semanticAnimationGroup struct {
+	ID             string                         `json:"id"`
+	StartMS        int64                          `json:"start_ms"`
+	EndMS          int64                          `json:"end_ms"`
+	ChoreographyID string                         `json:"choreography_id,omitempty"`
+	Params         map[string]any                 `json:"params,omitempty"`
+	Members        []semanticAnimationGroupMember `json:"members"`
+}
+
+type semanticAnimationGroupMember struct {
+	ItemID       string         `json:"item_id"`
+	Role         string         `json:"role"`
+	MotionID     string         `json:"motion_id,omitempty"`
+	MotionParams map[string]any `json:"motion_params,omitempty"`
+	OffsetMS     *int64         `json:"offset_ms,omitempty"`
+	EndOffsetMS  *int64         `json:"end_offset_ms,omitempty"`
 }
 
 type semanticClipGrid struct {

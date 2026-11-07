@@ -188,12 +188,17 @@ func resolveTextSpecGeometry(ri resolvedItem, src *semanticPlan, spec resolvedTe
 			spec.BoxHeight = needed
 		}
 	}
+	// Text layers carry canvas-absolute centres (the engine subtracts canvas/2
+	// itself), unlike image layers whose position is centre-relative. Runtime
+	// geometry is therefore an absolute override, not an offset from the
+	// default centre: adding it here moved every authored caption and title by
+	// half a canvas.
 	spec.Position = resolveTextLayout(src.Width, src.Height)
 	if hasPosX {
-		spec.Position[0] += posX
+		spec.Position[0] = posX
 	}
 	if hasPosY {
-		spec.Position[1] += posY
+		spec.Position[1] = posY
 	}
 	return spec
 }
@@ -289,6 +294,14 @@ func compileResolvedText(layerID string, start, end int64, spec resolvedTextSpec
 	}
 	if spec.EntryExit {
 		animation = withPhraseEntryExit(animation, layer.DurationFrames)
+	}
+	// A camera-backed motion cannot be honoured on the flat overlay canvas.
+	// Keep the default screen-space text path for 2D choreography, but lift a
+	// text layer into scene space when its own tracks need the 3D path; the
+	// catalog's requires_3d and the emitted enable_3d then describe the same
+	// layer instead of contradicting each other.
+	if layer.ScreenSpace && layerUses3D(animation) {
+		layer.ScreenSpace = false
 	}
 	applyMotionRouting(&layer, animation)
 	return layer, nil

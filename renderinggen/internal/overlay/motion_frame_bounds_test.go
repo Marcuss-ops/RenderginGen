@@ -168,7 +168,7 @@ func TestPhraseEntranceUsesExactlyOneThirdDurationAndFitsExit(t *testing.T) {
 }
 
 func TestPhraseMotionTracksReachTheProportionalEntranceFloor(t *testing.T) {
-	animation, err := lowerMotion("phrase_apple_clean_07_slide_up_soft", 60, 12, nil, "SIX WORD PHRASE FIT CHECK", 288, true)
+	animation, err := lowerMotion("phrase_apple_clean_01_blur_soft_reveal", 60, 12, nil, "SIX WORD PHRASE FIT CHECK", 288, true)
 	if err != nil {
 		t.Fatalf("lower phrase motion: %v", err)
 	}
@@ -227,7 +227,7 @@ func TestPhrasePreviewAnimationRunsForOneThirdOfTheWindow(t *testing.T) {
 }
 
 func TestCompileSemanticKeepsLongPhraseWindowAndOneThirdEntrance(t *testing.T) {
-	raw := []byte(`{"schema_version":"renderinggen.overlay-plan.v1","plan_id":"long-phrase-one-third","video_id":"v","width":1920,"height":1080,"fps_num":24,"fps_den":1,"items":[{"id":"phrase","kind":"important_phrase","template_id":"IMPORTANT_PHRASE","preset_id":"phrase_default","motion_id":"phrase_apple_clean_07_slide_up_soft","motion_params":{"enter_frames":64},"text":"A LONG IMPORTANT PHRASE STAYS FOR ITS FULL SPOKEN WINDOW","start_ms":500,"end_ms":8500}]}`)
+	raw := []byte(`{"schema_version":"renderinggen.overlay-plan.v1","plan_id":"long-phrase-one-third","video_id":"v","width":1920,"height":1080,"fps_num":24,"fps_den":1,"items":[{"id":"phrase","kind":"important_phrase","template_id":"IMPORTANT_PHRASE","preset_id":"phrase_default","motion_id":"phrase_apple_clean_01_blur_soft_reveal","motion_params":{"enter_frames":64},"text":"A LONG IMPORTANT PHRASE STAYS FOR ITS FULL SPOKEN WINDOW","start_ms":500,"end_ms":8500}]}`)
 	result, err := CompileSemantic(raw)
 	if err != nil {
 		t.Fatalf("compile long phrase: %v", err)

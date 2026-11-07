@@ -75,6 +75,7 @@ const (
 	// motion_params.active_layer_id.
 	compositionActiveLayerSingle = "implicit"
 	compositionActiveLayerMulti  = "producer_selected_active_layer_id"
+	compositionActiveLayerGroup  = "all_members"
 	// compositionMissingAsset: a layer whose asset_ref is not declared fails
 	// the whole compile instead of being dropped or substituted.
 	compositionMissingAsset = "fail_closed"
@@ -465,8 +466,11 @@ func runtimeCompositionTarget(id string) string {
 var compositionTargetOverrides = map[string]string{
 	"entities":                  TargetImage,
 	"entity_caption":            TargetCaption,
+	"multiple_images":           TargetImageGroup,
+	"multiple_images_with_text": TargetImageGroup,
 	string(KindImportantPhrase): TargetImportantPhrase,
 	"short_important_phrase":    TargetShortPhrase,
+	"bullet_point":              TargetImportantPhrase,
 }
 
 func runtimeZones() []RuntimeZone {
@@ -495,13 +499,13 @@ func runtimeZones() []RuntimeZone {
 	return []RuntimeZone{
 		{
 			ID: ZoneImages, Label: "Immagini",
-			Description:    "Single and counted image compositions without text.",
+			Description:    "Single images and multiple-image groups whose chosen animation is shared across image counts.",
 			Status:         zoneStatusAvailable,
 			CompositionIDs: images,
 		},
 		{
 			ID: ZoneImagesWithText, Label: "Immagini con testo",
-			Description:    "Counted image compositions whose captions are owned by their image layer.",
+			Description:    "Image compositions whose captions are owned by their image layer; group animation is shared across image counts.",
 			Status:         zoneStatusAvailable,
 			CompositionIDs: imagesWithText,
 		},
@@ -604,6 +608,9 @@ func runtimeCompositionLayouts() []RuntimeCompositionLayout {
 	layouts := make([]RuntimeCompositionLayout, 0, len(imageCompositionCatalog))
 	for _, definition := range imageCompositionCatalog {
 		count := definition.Composition.ImageCount
+		if definition.Composition.ImageCountRange != nil {
+			count = definition.Composition.ImageCountRange.Minimum
+		}
 		activeLayer := compositionActiveLayerSingle
 		if count > 1 {
 			activeLayer = compositionActiveLayerMulti
@@ -623,6 +630,10 @@ func runtimeCompositionLayouts() []RuntimeCompositionLayout {
 		}
 		if count > 1 {
 			layout.MotionScope = compositionMotionScopePerLayer
+		}
+		if definition.Composition.ImageCountRange != nil {
+			layout.ActiveLayer = compositionActiveLayerGroup
+			layout.MotionScope = "shared_per_group"
 		}
 		if definition.Composition.Caption != nil {
 			layout.MaxCaptions = definition.Composition.Caption.Maximum
