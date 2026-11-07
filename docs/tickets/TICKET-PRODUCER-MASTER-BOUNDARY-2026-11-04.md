@@ -5,6 +5,8 @@
 - **Contesto:** job editoriale Garlasco da 20 minuti, run r10–r37
 - **Stato:** r37 chiuso con MP4 verificato (2026-11-04 21:16). **2026-11-05 — decisione finale:** il video finale è sempre e solo remoto; il Producer prepara i frammenti (stock incluso), l'audio finale e il piano immutabile, poi li invia all'assembler. Nessun render finale locale. I workaround direct-source (gate strict, preflight/allowlist host, boundary receipt) sono stati rimossi perché il worker `video.assemble.copy.v1` è copy-only e non può accettare sorgenti dirette.
 
+> **Aggiornamento 2026-11-07 — prevale su ogni sezione storica:** lo stock non viene mai processato in locale prima del submit. Il Producer invia solo il riferimento Drive + metadata salvati dalla `stockpipeline`; il Master remoto scarica e processa. Le sezioni che descrivono download, probe, taglio o pubblicazione stock locale sono storiche e superate. Dettaglio in fondo al ticket.
+
 ## Aggiornamento richiesto — stock Drive diretto (2026-11-05)
 
 La decisione di mantenere il download stock nel Producer è superata: per i final job il Producer deve inviare il riferimento Drive e metadata già salvati dalla `stockpipeline`, senza scaricare, sondare, calcolare hash o pubblicare byte stock. Clip/overlay/audio prodotti dal Producer continuano a viaggiare come asset HTTPS. La pipeline stock resta attiva per acquisire, modificare e salvare lo stock.
@@ -18,11 +20,11 @@ Il video finale è **sempre e solo remoto**. Il Producer non deve:
 - creare, concatenare o pubblicare un video finale in locale;
 - caricare i byte stock originali sul Master/Objectstore.
 
-Il Producer fa la sua parte: render overlay, TTS/voce, audio finale certificato, taglio dei frammenti di timeline (stock incluso) e **un unico piano immutabile** (`compiled_render_plan_json` + SHA-256). I frammenti sono pubblicati via HTTPS Objectstore e l'assembler remoto li concatena con `video.assemble.copy.v1`; lo stock originale resta read-only e non attraversa il confine.
+Il Producer fa la sua parte: render overlay, TTS/voce, audio finale certificato, taglio dei **soli frammenti proprietari** (clip/overlay) e **un unico piano immutabile** (`compiled_render_plan_json` + SHA-256). I frammenti sono pubblicati via HTTPS Objectstore e l'assembler remoto li concatena con `video.assemble.copy.v1`; lo stock originale resta remoto e non attraversa il confine. **Dal 2026-11-07 il taglio stock non è più un contributo del Producer.**
 
 Questa è la decisione del 2026-11-05 dopo il confronto con il worker 51: l'executor disponibile è copy-only e non accetta sorgenti dirette, quindi un piano di sole sorgenti non è realizzabile. I workaround introdotti per simulare quel confine (gate strict, preflight/allowlist host, boundary receipt) sono stati rimossi: non spetta al Producer fingere una capacità che il worker non ha.
 
-Residuo noto: la risoluzione stock resta in sola lettura (download Drive, probe, SHA) perché il piano deve dichiarare durata e identità della sorgente; il preparer legge il file locale verificato e pubblica solo il frammento derivato. Il download dello stock è quindi l'unico tratto locale, non un upload.
+**Superato il 2026-11-07.** La risoluzione stock non scarica più i byte: legge la media registry e i metadata Drive, e il preparer non riceve mai `role=stock`. Il piano dichiara durata e identità già salvate dalla `stockpipeline`; il download e il taglio avvengono solo nel Master.
 
 ## Esito r37 — storico pre-fix (2026-11-04; superato dall'esito finale sotto)
 
@@ -81,7 +83,9 @@ workaround direct-source sono stati rimossi dal codice.
 - Il Producer invia piano immutabile + frammenti/overlay/audio; il worker remoto
   assembla e pubblica l'artefatto finale.
 
-### Stock sola lettura — CHIUSO
+### Stock sola lettura — storico (superato il 2026-11-07)
+
+> Questa sezione descrive il vecchio contratto con `local_source_path`/`local_only` ed è stata superata: dal 2026-11-07 il Producer non riceve né usa path stock locali.
 
 - `resolveFinalJobStockAsset` non pubblica i byte stock originali quando il preparer è configurato: restituisce `local_source_path` + `local_only`, con SHA-256, size e durata già certificati.
 - `stagedSource` verifica size e SHA-256 del file Creator-local e lo usa direttamente: nessun download, nessuna copia, nessun upload dell'originale. Il file sostituito o manomesso è rifiutato.
@@ -168,7 +172,7 @@ Correzione applicata:
 
 ## Criteri di accettazione
 
-- [x] **Stock originale sola lettura:** nessun upload dei byte stock verso il Master/Objectstore nel percorso finale; il preparer consuma il file Creator-local verificato. Chiuso il 2026-11-05.
+- [x] **Stock metadata-only:** il Producer invia solo riferimento Drive + metadata salvati; nessun download, probe, hash, taglio, encode o upload stock prima del submit. Chiuso il 2026-11-07.
 - [x] **Video finale solo remoto:** il Producer prepara i frammenti (stock incluso), l'audio e il piano; non crea, concatena o pubblica il film. Chiuso il 2026-11-05 con la rimozione del flusso locale e con i test di confine.
 - [x] **Nessun workaround direct-source:** rimossi gate strict, preflight/allowlist host e boundary receipt. Chiuso il 2026-11-05.
 - [x] MP4 finale r37 prodotto e verificato (SHA-256, size e durata coerenti con l'artefatto remoto).
@@ -184,3 +188,101 @@ Correzione applicata:
 
 - Durata 20:00 esatta (dopo il taglio pause R31 misura 18:45,584): è una scelta editoriale, non un bug.
 - Deploy standard bloccato da ICU 72 su host ICU 70 e migrazione 271: attrito di ambiente, tracciato a parte.
+
+## 2026-11-07 — stock metadata-only e finestre whole-file (r39-r59)
+
+Questa sezione prevale sulle precedenti. Il confine richiesto è: **nessun download, probe, hash, taglio, encode o upload di stock nel Producer prima del submit**. Il Producer risolve solo il riferimento Drive e i metadata già salvati dalla `stockpipeline`; il Master remoto scarica e processa lo stock. `prepareFinalJobVideoSegments` non chiama mai il preparer per `role=stock` e cancella `local_path`/`local_source_path`/`local_only` dal riferimento.
+
+### Correzioni codice
+
+- `finalJobStockPlanner.sceneClips`: niente più taglio parziale. Seleziona solo file interi; preferisce la durata esatta e altrimenti compone la scena con file interi che sommano esattamente alla durata canonica. Se non esiste una composizione, fallisce prima del submit. Cursore deterministico.
+- `finalJobPlanBaseSegments`: rimossi `finalJobFrameCeilDurationUS` e il padding 4.979→5.000 ms. La durata stock è quella salvata; una scena stock di durata diversa dal file viene rifiutata.
+- `alignFinalJobCompiledPlanAssetIDs`: legge anche `duration_ms` (i riferimenti stock non hanno `duration_us`); non allunga più l'asset alla finestra del piano. Una finestra oltre la durata salvata viene rifiutata.
+- `prepareFinalJobVideoSegments`: controllo locale `source_in_us + source_duration_us <= asset.duration_us` prima di qualsiasi lavoro; stock pass-through invariato.
+- Test aggiornati: planner whole-file, rifiuto scena 5 s su file 4.979 s, rifiuto finestra fuori bounds, accettazione file intero 4.979 s/119 frame, payload con file interi.
+
+### Errori r39-r59
+
+| Run | Errore | Stato 2026-11-07 |
+| --- | --- | --- |
+| r39/r39 retry | registry entry assente; worker cache `cached asset not found` | codice fail-fast; dati/runtime esterni |
+| r40/r41/r43 | `manifest binding is not exact` | già corretto lato Producer (un asset per placement); verificare il Master |
+| r42 | `m2m_auth_failure` / M2M key lookup | esterno |
+| r44 | `signal: killed` | runtime |
+| r45 | piano senza sorgente Drive | payload |
+| r46/r47/r49 | 28119/28122, 119/120 | chiuso: durata esatta, niente padding, rifiuto locale del frame inventato |
+| r50/r52 | `/run/chronon3d/chronon.sock` assente | runtime |
+| r53-r55 | `source_range_out_of_bounds` 5.000.000 su 4.979.000 | chiuso: niente padding + `duration_ms` |
+| r56 | `stock_window_not_packet_copyable` | codice Producer chiuso: nessuna finestra parziale. **Il vincolo whole-file del Master rende però incomponibili le durate TTS arbitrarie** (vedi r59b). |
+| r58 | `output does not start with a keyframe` | **aperto lato Master**: una finestra stock parziale (es. base tagliata da un overlay) deve iniziare su un keyframe o essere ricodificata. Il Producer non può sondare/keyframare senza processare lo stock. |
+| r59 | payload pronto, mai inviato | superato da r59b |
+| r59b | `stock folder 1hqta… cannot fill the remaining 4624ms with whole files` | **risolto lato Producer**: scene stock allineate al multiplo del file (`end_ms=5000`) prima del compile audio; r59c supera il planner con 228 file interi. |
+| r59c | `remote FINALIZE ... context deadline exceeded` (45 s) | **blocco Master**: il piano contiene 43 finestre stock parziali da overlay (r56/r58); FINALIZE in timeout e root Master 502. Nessun MP4. |
+
+### r59b — retry con pool normalizzato (2026-11-07)
+
+Job `job_1794033724475358199_2e277b9f`, payload `r59b-20261107-normalized.generate.json`, pool `1hqtaNHno5GHTlGyL9qPHwjn6OZExUD7N` (240 file, tutti 5000 ms). Script, traduzione e voiceover sono passati (audio finale 1.171.750 ms); il job si è fermato in `PUBLISHING_DOCUMENTS`:
+
+```text
+remote final job: stock folder 1hqtaNHno5GHTlGyL9qPHwjn6OZExUD7N
+cannot fill the remaining 4624ms with whole files;
+no partial stock windows are allowed
+```
+
+Il planner scomponeva ogni scena stock in file interi da 5000 ms; una scena con durata ≡ 4624 (mod 5000) lasciava una coda che nessun file intero poteva riempire.
+
+**Correzione applicata (r59c):** `alignFinalJobStockSceneDurations` arrotonda ogni scena stock al multiplo della durata file dichiarata dal binding (`start_ms/end_ms` → `StockBinding.DurationMs`) prima del compile audio. La VO certificata mantiene la propria `source_duration_us`; il renderer riempie la coda con silenzio. Il binding r59c dichiara `end_ms=5000`; il planner ha composto 228 file interi da 5000 ms e il piano è passato con durata 1.184.970 ms. La correzione è coperta da test su proiezione audio, `ResolvedScenes` e timeline.
+
+Il limite residuo non è più il multiplo di 5: nel piano r59c restano **43 segmenti stock parziali su 237** creati dagli overlay che sostituiscono una finestra della base stock (es. `segment-0002` 75 frame/3.125 s, `segment-0004` 13 frame/0.541 s su file da 5 s). Il Master rifiuta queste finestre (r56) o richiede keyframe/ricodifica (r58). Il Producer non può ridurle senza tagliare stock in locale (vietato) o rinunciare agli overlay. Serve una decisione Master:
+
+1. **Master (raccomandato):** accettare una finestra parziale (`source_in_us=0` o offset keyframe) e ricodificarla/tagliarla. È l'unico punto che può trasformare byte stock senza violare il confine Producer.
+2. **Stockpipeline:** produrre file interi che coincidano con le finestre overlay; richiede di processare stock dopo il TTS, contro il confine.
+
+r59c ha superato il planner e ha creato il job Master `job_8fd5618188c7c918`; la FINALIZE è fallita con `context deadline exceeded` sul client a 45 s, mentre la radice del Master risponde 502. Il piano contiene le 43 finestre parziali sopra, quindi anche con un timeout più lungo la validazione Master va verificata.
+
+Evidenza r59b: `ops/jobs/garlasco_editorial_e2e_20261030/r59b-20261107-normalized-job-full.json`, `r59b-20261107-normalized-poll2.log`, `r59b-20261107-normalized.done`. Evidenza r59c: `r59c-20261107-stock-aligned-job-full.json`, `r59c-20261107-stock-aligned-poll2.log`, `r59c-20261107-stock-aligned.done`, piano in `/tmp/final-job-debug/compiled-plan.json`. Nessun MP4 è stato prodotto; entrambi i job sono in dead letter queue con `retry_count=0`.
+
+### r59d — misura locale senza Master (2026-11-07)
+
+Stesso payload di r59c con `final_job=false` (job `job_1794037623992876736_67de02d2`, `SUCCEEDED`): misura la preparazione locale senza il confine remoto. Submit→termine 148 s; `created_at`→`updated_at` 132,1 s.
+
+| Stage (critical path) | Tempo | Quota wall |
+|---|---:|---:|
+| `audio_compile` | 62,2 s | 47,1% |
+| ├ `aac_encode` | 47,4 s | 35,9% |
+| ├ `mix` | 7,3 s | 5,5% |
+| `generate` (script LLM) | 43,6 s | 33,0% |
+| `overlay_render` | 27,4 s | 20,7% |
+| `prepare_join` (`semantic_wait`) | 24,2 s | 18,3% |
+| `scene_analysis` | 6,7 s | 5,1% |
+| sovrapposizione fra stage | 33,9 s | — |
+
+Le due voci che dominano sono l'encode AAC del master (1.171,746 s di audio in 47,4 s, ~24,7× realtime) e la generazione dello script. `prepare_join` non è lavoro proprio: 24,2 s su 24,2 s sono `semantic_wait`, cioè l'attesa dei batch overlay contati in `overlay_render` (da cui la sovrapposizione).
+
+r59c (`final_job=true`) sullo stesso payload: 232 s totali, di cui `remote_final_job` 111,8 s (52,8%) e stage locali `audio_compile` 51,5 s, `generate` 29,3 s, `prepare_join` 18,4 s, `overlay_render` 21,7 s. Il local-only toglie quindi ~80 s al confine remoto, non al lavoro locale.
+
+Questa modalità **non produce video**: gli artefatti del run sono `script.json` e `final_audio.m4a` (AAC-LC 48 kHz stereo, 1.171,746 s, 28.660.686 byte, verificato con `ffprobe`). Nessun MP4 esiste, quindi nessun MP4 è verificato.
+
+Evidenza r59d: `ops/jobs/garlasco_editorial_e2e_20261030/r59d-20261107-localonly.generate.json`, `r59d-20261107-localonly-run.out`, `r59d-20261107-localonly-submit-poll.log`, `r59d-20261107-localonly-job-full.json`, `r59d-20261107-localonly.done`.
+
+### Residui esterni non chiudibili nel repo
+
+- Master 51: accettazione/ricodifica delle finestre stock parziali (r58) e delle 43 finestre da overlay osservate in r59c. Il Producer può allineare le scene ai file interi, ma non può tagliare stock senza violare il confine; inoltre la FINALIZE r59c è andata in timeout a 45 s con root Master 502.
+- Media registry: popolare le entry per ogni Drive file; altrimenti errore esplicito `run the stockpipeline first`.
+- Worker cache: invalidare/ricostruire le entry mancanti.
+- Chronon daemon: socket attivo prima del submit.
+- M2M key/quota: health e autorizzazione del Master.
+
+### Verifica eseguita
+
+```text
+go test ./internal/capabilities/scripts -run 'FinalJob' -count=1   PASS
+go test ./internal/app/wiring -run 'FinalJob' -count=1             PASS
+go test ./internal/capabilities/scripts -count=1                   PASS
+```
+
+La prima esecuzione della suite completa ha incontrato un flake di timing in `TestSceneTextReady_TTSDoesNotWaitForAnalysis` (non correlato); il test isolato è passato 3/3 e la suite completa è passata alla riesecuzione.
+
+Retry r59b: servizio sano, job accettato e arrivato al voiceover, poi fallito nel planner stock come sopra. Il fail-fast ha evitato l'invio al Master di un piano incompleto.
+
+Retry r59c: servizio ricostruito con l'allineamento (`build` 2026-11-07T06:54Z), planner superato con 228 file interi da 5000 ms e piano da 1.184.970 ms. Job Master `job_8fd5618188c7c918` creato; FINALIZE in timeout a 45 s, root Master 502. Nessun MP4 è stato prodotto o verificato.
