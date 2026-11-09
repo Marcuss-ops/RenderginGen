@@ -1,0 +1,186 @@
+[2026-11-08 11:57:16.701] [info] [video] Auto-selecting yuv420p pipe pixel format for 1920x1080 output
+[2026-11-08 11:57:16.702] [info] [video] execution plan resolved (reason: render_graph_default); decode=2 composite=3 encode=2 interop=0 handoff=3 codec=3
+[2026-11-08 11:57:16.731] [info] [video-runtime] created persistent runtime for device 0 (CUDA ordinal 0)
+[2026-11-08 11:57:16.731] [info] [video] encoder feed capability: host_frame=true direct_yuv=false native_surface=false
+[libx264 @ 0x55b0c1e92a00] using cpu capabilities: MMX2 SSE2Fast SSSE3 SSE4.2 AVX
+[libx264 @ 0x55b0c1e92a00] profile High, level 5.0, 4:2:0, 8-bit
+[libx264 @ 0x55b0c1e92a00] 264 - core 164 r3108 31e19f9 vcpkg - H.264/MPEG-4 AVC codec - Copyleft 2003-2023 - http://www.videolan.org/x264.html - options: cabac=1 ref=5 deblock=1:0:0 analyse=0x3:0x113 me=hex subme=8 psy=1 psy_rd=1.00:0.00 mixed_ref=1 me_range=16 chroma_me=1 trellis=2 8x8dct=1 cqm=0 deadzone=21,11 fast_pskip=1 chroma_qp_offset=-2 threads=2 lookahead_threads=1 sliced_threads=0 nr=0 decimate=1 interlaced=0 bluray_compat=0 constrained_intra=0 bframes=0 weightp=2 keyint=60 keyint_min=6 scenecut=40 intra_refresh=0 rc_lookahead=50 rc=crf mbtree=1 crf=16.0 qcomp=0.60 qpmin=0 qpmax=69 qpstep=4 ip_ratio=1.40 aq=1:1.00
+[2026-11-08 11:57:16.737] [info] [native_av] encoder bitstream contract: codec=27 profile=100 level=-99 pix_fmt=0 parameter_sets=42 materialized=true
+[2026-11-08 11:57:16.737] [info] [native_av] Opened native encoder: 1920x1080 @ 30fps, codec=libx264, rc=crf, preset=slow, output='RenderingGen/hdr_bokeh_focus_pull_20261108/probe_shape_diag.partial.mp4'
+[2026-11-08 11:57:17.175] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 11:57:17.176] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 11:57:18.074] [info] [video]   1/1 frames
+[2026-11-08 11:57:18.075] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 11:57:18.075] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 11:57:18.126] [info] [native-slot-diag] frame=0 node_id=0 name=Clear physical_slot=0 slot_ptr=0x55b0c443b210 inputs=[]
+[2026-11-08 11:57:18.128] [info] [native-graph-node-diag] frame=0 node_id=0 node=Clear kind=Output surface=2 cpu=true opaque=false size=1920x1080
+[2026-11-08 11:57:18.128] [info] [native-slot-diag] frame=0 node_id=1 name=fill physical_slot=4294967295 slot_ptr=0x0 inputs=[]
+[2026-11-08 11:57:18.156] [info] [native-source-diag] frame=0 node=fill shape_type=1 surface=4 cpu=true opaque=false size=1920x1080
+[2026-11-08 11:57:18.156] [info] [native-graph-node-diag] frame=0 node_id=1 node=fill kind=Source surface=4 cpu=true opaque=false size=1920x1080
+[2026-11-08 11:57:18.156] [info] [native-slot-diag] frame=0 node_id=3 name=hdr_bokeh_field_multi physical_slot=1 slot_ptr=0x55b0c443b240 inputs=[]
+[2026-11-08 11:57:18.253] [info] [multi-shape-diag] node=hdr_bokeh_field_multi item=1 shape=bokeh_00 opacity=1 basis=(1000,0|0,1000) translate=(1459762.5,658160.2) w=(0,0,1010.0001)
+[2026-11-08 11:57:18.253] [info] [native-circle-diag] node=bokeh_00 stage=enter surface=6 opacity=1 color=(9.5,5.8,2.4,1) basis=(1000,0|0,1000) translate=(1459762.5,658160.2) w=(0,0,1010.0001)
+[2026-11-08 11:57:18.253] [info] [native-circle-diag] node=bokeh_00 stage=reject-transform surface=6 opacity=1 color=(9.5,5.8,2.4,1) basis=(1000,0|0,1000) translate=(1459762.5,658160.2) w=(0,0,1010.0001)
+[2026-11-08 11:57:18.286] [info] [multi-shape-diag] node=hdr_bokeh_field_multi item=2 shape=bokeh_01 opacity=1 basis=(1000,0|0,1000) translate=(246789.31,677368.5) w=(0,0,1010.0001)
+[2026-11-08 11:57:18.286] [info] [native-circle-diag] node=bokeh_01 stage=enter surface=6 opacity=1 color=(2.2,5.4,11,1) basis=(1000,0|0,1000) translate=(246789.31,677368.5) w=(0,0,1010.0001)
+[2026-11-08 11:57:18.286] [info] [native-circle-diag] node=bokeh_01 stage=reject-transform surface=6 opacity=1 color=(2.2,5.4,11,1) basis=(1000,0|0,1000) translate=(246789.31,677368.5) w=(0,0,1010.0001)
+[2026-11-08 11:57:18.320] [info] [multi-shape-diag] node=hdr_bokeh_field_multi item=3 shape=bokeh_02 opacity=1 basis=(1000,0|0,1000) translate=(1220055.5,246727.72) w=(0,0,1010.0001)
+[2026-11-08 11:57:18.320] [info] [native-circle-diag] node=bokeh_02 stage=enter surface=6 opacity=1 color=(8.4,2.6,6.6,1) basis=(1000,0|0,1000) translate=(1220055.5,246727.72) w=(0,0,1010.0001)
+[2026-11-08 11:57:18.320] [info] [native-circle-diag] node=bokeh_02 stage=reject-transform surface=6 opacity=1 color=(8.4,2.6,6.6,1) basis=(1000,0|0,1000) translate=(1220055.5,246727.72) w=(0,0,1010.0001)
+[2026-11-08 11:57:18.353] [info] [multi-shape-diag] node=hdr_bokeh_field_multi item=4 shape=bokeh_03 opacity=1 basis=(1000,0|0,1000) translate=(1145976.2,952482.6) w=(0,0,1010.0001)
+[2026-11-08 11:57:18.353] [info] [native-circle-diag] node=bokeh_03 stage=enter surface=6 opacity=1 color=(12,10.5,8,1) basis=(1000,0|0,1000) translate=(1145976.2,952482.6) w=(0,0,1010.0001)
+[2026-11-08 11:57:18.353] [info] [native-circle-diag] node=bokeh_03 stage=reject-transform surface=6 opacity=1 color=(12,10.5,8,1) basis=(1000,0|0,1000) translate=(1145976.2,952482.6) w=(0,0,1010.0001)
+[2026-11-08 11:57:18.384] [info] [multi-shape-diag] node=hdr_bokeh_field_multi item=5 shape=bokeh_04 opacity=1 basis=(1000,0|0,1000) translate=(461108.94,356834.78) w=(0,0,1010.0001)
+[2026-11-08 11:57:18.384] [info] [native-circle-diag] node=bokeh_04 stage=enter surface=6 opacity=1 color=(1.8,8.8,5.2,1) basis=(1000,0|0,1000) translate=(461108.94,356834.78) w=(0,0,1010.0001)
+[2026-11-08 11:57:18.384] [info] [native-circle-diag] node=bokeh_04 stage=reject-transform surface=6 opacity=1 color=(1.8,8.8,5.2,1) basis=(1000,0|0,1000) translate=(461108.94,356834.78) w=(0,0,1010.0001)
+[2026-11-08 11:57:18.417] [info] [multi-shape-diag] node=hdr_bokeh_field_multi item=6 shape=bokeh_05 opacity=1 basis=(1000,0|0,1000) translate=(1766174.8,458580.44) w=(0,0,1010.0001)
+[2026-11-08 11:57:18.417] [info] [native-circle-diag] node=bokeh_05 stage=enter surface=6 opacity=1 color=(4.6,3.2,10,1) basis=(1000,0|0,1000) translate=(1766174.8,458580.44) w=(0,0,1010.0001)
+[2026-11-08 11:57:18.417] [info] [native-circle-diag] node=bokeh_05 stage=reject-transform surface=6 opacity=1 color=(4.6,3.2,10,1) basis=(1000,0|0,1000) translate=(1766174.8,458580.44) w=(0,0,1010.0001)
+[2026-11-08 11:57:18.450] [info] [multi-shape-diag] node=hdr_bokeh_field_multi item=7 shape=bokeh_06 opacity=1 basis=(1000,0|0,1000) translate=(565300.06,809317.4) w=(0,0,1010.0001)
+[2026-11-08 11:57:18.450] [info] [native-circle-diag] node=bokeh_06 stage=enter surface=6 opacity=1 color=(9.5,5.8,2.4,1) basis=(1000,0|0,1000) translate=(565300.06,809317.4) w=(0,0,1010.0001)
+[2026-11-08 11:57:18.450] [info] [native-circle-diag] node=bokeh_06 stage=reject-transform surface=6 opacity=1 color=(9.5,5.8,2.4,1) basis=(1000,0|0,1000) translate=(565300.06,809317.4) w=(0,0,1010.0001)
+[2026-11-08 11:57:18.486] [info] [multi-shape-diag] node=hdr_bokeh_field_multi item=8 shape=bokeh_07 opacity=1 basis=(1000,0|0,1000) translate=(881036.1,47491.28) w=(0,0,1010.0001)
+[2026-11-08 11:57:18.486] [info] [native-circle-diag] node=bokeh_07 stage=enter surface=6 opacity=1 color=(2.2,5.4,11,1) basis=(1000,0|0,1000) translate=(881036.1,47491.28) w=(0,0,1010.0001)
+[2026-11-08 11:57:18.486] [info] [native-circle-diag] node=bokeh_07 stage=reject-transform surface=6 opacity=1 color=(2.2,5.4,11,1) basis=(1000,0|0,1000) translate=(881036.1,47491.28) w=(0,0,1010.0001)
+[2026-11-08 11:57:18.521] [info] [multi-shape-diag] node=hdr_bokeh_field_multi item=9 shape=bokeh_08 opacity=1 basis=(1000,0|0,1000) translate=(1449203.6,794419.25) w=(0,0,1010.0001)
+[2026-11-08 11:57:18.521] [info] [native-circle-diag] node=bokeh_08 stage=enter surface=6 opacity=1 color=(8.4,2.6,6.6,1) basis=(1000,0|0,1000) translate=(1449203.6,794419.25) w=(0,0,1010.0001)
+[2026-11-08 11:57:18.521] [info] [native-circle-diag] node=bokeh_08 stage=reject-transform surface=6 opacity=1 color=(8.4,2.6,6.6,1) basis=(1000,0|0,1000) translate=(1449203.6,794419.25) w=(0,0,1010.0001)
+[2026-11-08 11:57:18.555] [info] [multi-shape-diag] node=hdr_bokeh_field_multi item=10 shape=bokeh_09 opacity=1 basis=(1000,0|0,1000) translate=(78332.125,530679.1) w=(0,0,1010.0001)
+[2026-11-08 11:57:18.556] [info] [native-circle-diag] node=bokeh_09 stage=enter surface=6 opacity=1 color=(12,10.5,8,1) basis=(1000,0|0,1000) translate=(78332.125,530679.1) w=(0,0,1010.0001)
+[2026-11-08 11:57:18.556] [info] [native-circle-diag] node=bokeh_09 stage=reject-transform surface=6 opacity=1 color=(12,10.5,8,1) basis=(1000,0|0,1000) translate=(78332.125,530679.1) w=(0,0,1010.0001)
+[2026-11-08 11:57:18.589] [info] [multi-shape-diag] node=hdr_bokeh_field_multi item=11 shape=bokeh_10 opacity=1 basis=(1000,0|0,1000) translate=(1469012.2,268318.06) w=(0,0,1010.0001)
+[2026-11-08 11:57:18.589] [info] [native-circle-diag] node=bokeh_10 stage=enter surface=6 opacity=1 color=(1.8,8.8,5.2,1) basis=(1000,0|0,1000) translate=(1469012.2,268318.06) w=(0,0,1010.0001)
+[2026-11-08 11:57:18.589] [info] [native-circle-diag] node=bokeh_10 stage=reject-transform surface=6 opacity=1 color=(1.8,8.8,5.2,1) basis=(1000,0|0,1000) translate=(1469012.2,268318.06) w=(0,0,1010.0001)
+[2026-11-08 11:57:18.622] [info] [multi-shape-diag] node=hdr_bokeh_field_multi item=12 shape=bokeh_11 opacity=1 basis=(1000,0|0,1000) translate=(860630.5,1034535.2) w=(0,0,1010.0001)
+[2026-11-08 11:57:18.622] [info] [native-circle-diag] node=bokeh_11 stage=enter surface=6 opacity=1 color=(4.6,3.2,10,1) basis=(1000,0|0,1000) translate=(860630.5,1034535.2) w=(0,0,1010.0001)
+[2026-11-08 11:57:18.622] [info] [native-circle-diag] node=bokeh_11 stage=reject-transform surface=6 opacity=1 color=(4.6,3.2,10,1) basis=(1000,0|0,1000) translate=(860630.5,1034535.2) w=(0,0,1010.0001)
+[2026-11-08 11:57:18.653] [info] [multi-shape-diag] node=hdr_bokeh_field_multi item=13 shape=bokeh_12 opacity=1 basis=(1000,0|0,1000) translate=(528519.2,214747.78) w=(0,0,1010.0001)
+[2026-11-08 11:57:18.653] [info] [native-circle-diag] node=bokeh_12 stage=enter surface=6 opacity=1 color=(9.5,5.8,2.4,1) basis=(1000,0|0,1000) translate=(528519.2,214747.78) w=(0,0,1010.0001)
+[2026-11-08 11:57:18.653] [info] [native-circle-diag] node=bokeh_12 stage=reject-transform surface=6 opacity=1 color=(9.5,5.8,2.4,1) basis=(1000,0|0,1000) translate=(528519.2,214747.78) w=(0,0,1010.0001)
+[2026-11-08 11:57:18.686] [info] [multi-shape-diag] node=hdr_bokeh_field_multi item=14 shape=bokeh_13 opacity=1 basis=(1000,0|0,1000) translate=(1487665.2,590107.25) w=(0,0,1010.0001)
+[2026-11-08 11:57:18.686] [info] [native-circle-diag] node=bokeh_13 stage=enter surface=6 opacity=1 color=(2.2,5.4,11,1) basis=(1000,0|0,1000) translate=(1487665.2,590107.25) w=(0,0,1010.0001)
+[2026-11-08 11:57:18.686] [info] [native-circle-diag] node=bokeh_13 stage=reject-transform surface=6 opacity=1 color=(2.2,5.4,11,1) basis=(1000,0|0,1000) translate=(1487665.2,590107.25) w=(0,0,1010.0001)
+[2026-11-08 11:57:18.720] [info] [multi-shape-diag] node=hdr_bokeh_field_multi item=15 shape=bokeh_14 opacity=1 basis=(1000,0|0,1000) translate=(312287,754578.25) w=(0,0,1010.0001)
+[2026-11-08 11:57:18.720] [info] [native-circle-diag] node=bokeh_14 stage=enter surface=6 opacity=1 color=(8.4,2.6,6.6,1) basis=(1000,0|0,1000) translate=(312287,754578.25) w=(0,0,1010.0001)
+[2026-11-08 11:57:18.721] [info] [native-circle-diag] node=bokeh_14 stage=reject-transform surface=6 opacity=1 color=(8.4,2.6,6.6,1) basis=(1000,0|0,1000) translate=(312287,754578.25) w=(0,0,1010.0001)
+[2026-11-08 11:57:18.754] [info] [multi-shape-diag] node=hdr_bokeh_field_multi item=16 shape=bokeh_15 opacity=1 basis=(1000,0|0,1000) translate=(1100437.9,215638.47) w=(0,0,1010.0001)
+[2026-11-08 11:57:18.754] [info] [native-circle-diag] node=bokeh_15 stage=enter surface=6 opacity=1 color=(12,10.5,8,1) basis=(1000,0|0,1000) translate=(1100437.9,215638.47) w=(0,0,1010.0001)
+[2026-11-08 11:57:18.754] [info] [native-circle-diag] node=bokeh_15 stage=reject-transform surface=6 opacity=1 color=(12,10.5,8,1) basis=(1000,0|0,1000) translate=(1100437.9,215638.47) w=(0,0,1010.0001)
+[2026-11-08 11:57:18.786] [info] [multi-shape-diag] node=hdr_bokeh_field_multi item=17 shape=bokeh_16 opacity=1 basis=(1000,0|0,1000) translate=(1321460.5,935086.9) w=(0,0,1010.0001)
+[2026-11-08 11:57:18.786] [info] [native-circle-diag] node=bokeh_16 stage=enter surface=6 opacity=1 color=(1.8,8.8,5.2,1) basis=(1000,0|0,1000) translate=(1321460.5,935086.9) w=(0,0,1010.0001)
+[2026-11-08 11:57:18.786] [info] [native-circle-diag] node=bokeh_16 stage=reject-transform surface=6 opacity=1 color=(1.8,8.8,5.2,1) basis=(1000,0|0,1000) translate=(1321460.5,935086.9) w=(0,0,1010.0001)
+[2026-11-08 11:57:18.820] [info] [multi-shape-diag] node=hdr_bokeh_field_multi item=18 shape=bokeh_17 opacity=1 basis=(1000,0|0,1000) translate=(397281.56,416427.53) w=(0,0,1010.0001)
+[2026-11-08 11:57:18.820] [info] [native-circle-diag] node=bokeh_17 stage=enter surface=6 opacity=1 color=(4.6,3.2,10,1) basis=(1000,0|0,1000) translate=(397281.56,416427.53) w=(0,0,1010.0001)
+[2026-11-08 11:57:18.820] [info] [native-circle-diag] node=bokeh_17 stage=reject-transform surface=6 opacity=1 color=(4.6,3.2,10,1) basis=(1000,0|0,1000) translate=(397281.56,416427.53) w=(0,0,1010.0001)
+[2026-11-08 11:57:18.854] [info] [multi-shape-diag] node=hdr_bokeh_field_multi item=19 shape=bokeh_18 opacity=1 basis=(1000,0|0,1000) translate=(1712717.8,357382.75) w=(0,0,1010.0001)
+[2026-11-08 11:57:18.854] [info] [native-circle-diag] node=bokeh_18 stage=enter surface=6 opacity=1 color=(9.5,5.8,2.4,1) basis=(1000,0|0,1000) translate=(1712717.8,357382.75) w=(0,0,1010.0001)
+[2026-11-08 11:57:18.854] [info] [native-circle-diag] node=bokeh_18 stage=reject-transform surface=6 opacity=1 color=(9.5,5.8,2.4,1) basis=(1000,0|0,1000) translate=(1712717.8,357382.75) w=(0,0,1010.0001)
+[2026-11-08 11:57:18.886] [info] [multi-shape-diag] node=hdr_bokeh_field_multi item=20 shape=bokeh_19 opacity=1 basis=(1000,0|0,1000) translate=(675706.8,844187.06) w=(0,0,1010.0001)
+[2026-11-08 11:57:18.886] [info] [native-circle-diag] node=bokeh_19 stage=enter surface=6 opacity=1 color=(2.2,5.4,11,1) basis=(1000,0|0,1000) translate=(675706.8,844187.06) w=(0,0,1010.0001)
+[2026-11-08 11:57:18.886] [info] [native-circle-diag] node=bokeh_19 stage=reject-transform surface=6 opacity=1 color=(2.2,5.4,11,1) basis=(1000,0|0,1000) translate=(675706.8,844187.06) w=(0,0,1010.0001)
+[2026-11-08 11:57:18.919] [info] [multi-shape-diag] node=hdr_bokeh_field_multi item=21 shape=bokeh_20 opacity=1 basis=(1000,0|0,1000) translate=(717245.44,83202.84) w=(0,0,1010.0001)
+[2026-11-08 11:57:18.919] [info] [native-circle-diag] node=bokeh_20 stage=enter surface=6 opacity=1 color=(8.4,2.6,6.6,1) basis=(1000,0|0,1000) translate=(717245.44,83202.84) w=(0,0,1010.0001)
+[2026-11-08 11:57:18.919] [info] [native-circle-diag] node=bokeh_20 stage=reject-transform surface=6 opacity=1 color=(8.4,2.6,6.6,1) basis=(1000,0|0,1000) translate=(717245.44,83202.84) w=(0,0,1010.0001)
+[2026-11-08 11:57:18.953] [info] [multi-shape-diag] node=hdr_bokeh_field_multi item=22 shape=bokeh_21 opacity=1 basis=(1000,0|0,1000) translate=(1529365,724464.8) w=(0,0,1010.0001)
+[2026-11-08 11:57:18.953] [info] [native-circle-diag] node=bokeh_21 stage=enter surface=6 opacity=1 color=(12,10.5,8,1) basis=(1000,0|0,1000) translate=(1529365,724464.8) w=(0,0,1010.0001)
+[2026-11-08 11:57:18.953] [info] [native-circle-diag] node=bokeh_21 stage=reject-transform surface=6 opacity=1 color=(12,10.5,8,1) basis=(1000,0|0,1000) translate=(1529365,724464.8) w=(0,0,1010.0001)
+[2026-11-08 11:57:18.988] [info] [multi-shape-diag] node=hdr_bokeh_field_multi item=23 shape=bokeh_22 opacity=1 basis=(1000,0|0,1000) translate=(91763.69,631655.5) w=(0,0,1010.0001)
+[2026-11-08 11:57:18.988] [info] [native-circle-diag] node=bokeh_22 stage=enter surface=6 opacity=1 color=(1.8,8.8,5.2,1) basis=(1000,0|0,1000) translate=(91763.69,631655.5) w=(0,0,1010.0001)
+[2026-11-08 11:57:18.988] [info] [native-circle-diag] node=bokeh_22 stage=reject-transform surface=6 opacity=1 color=(1.8,8.8,5.2,1) basis=(1000,0|0,1000) translate=(91763.69,631655.5) w=(0,0,1010.0001)
+[2026-11-08 11:57:19.022] [info] [multi-shape-diag] node=hdr_bokeh_field_multi item=24 shape=bokeh_23 opacity=1 basis=(1000,0|0,1000) translate=(1351830.6,206656.75) w=(0,0,1010.0001)
+[2026-11-08 11:57:19.022] [info] [native-circle-diag] node=bokeh_23 stage=enter surface=6 opacity=1 color=(4.6,3.2,10,1) basis=(1000,0|0,1000) translate=(1351830.6,206656.75) w=(0,0,1010.0001)
+[2026-11-08 11:57:19.022] [info] [native-circle-diag] node=bokeh_23 stage=reject-transform surface=6 opacity=1 color=(4.6,3.2,10,1) basis=(1000,0|0,1000) translate=(1351830.6,206656.75) w=(0,0,1010.0001)
+[2026-11-08 11:57:19.056] [info] [multi-shape-diag] node=hdr_bokeh_field_multi item=25 shape=bokeh_24 opacity=1 basis=(1000,0|0,1000) translate=(1074093.8,1049689.4) w=(0,0,1010.0001)
+[2026-11-08 11:57:19.056] [info] [native-circle-diag] node=bokeh_24 stage=enter surface=6 opacity=1 color=(9.5,5.8,2.4,1) basis=(1000,0|0,1000) translate=(1074093.8,1049689.4) w=(0,0,1010.0001)
+[2026-11-08 11:57:19.056] [info] [native-circle-diag] node=bokeh_24 stage=reject-transform surface=6 opacity=1 color=(9.5,5.8,2.4,1) basis=(1000,0|0,1000) translate=(1074093.8,1049689.4) w=(0,0,1010.0001)
+[2026-11-08 11:57:19.087] [info] [multi-shape-diag] node=hdr_bokeh_field_multi item=26 shape=bokeh_25 opacity=1 basis=(1000,0|0,1000) translate=(408881.38,269513.1) w=(0,0,1010.0001)
+[2026-11-08 11:57:19.087] [info] [native-circle-diag] node=bokeh_25 stage=enter surface=6 opacity=1 color=(2.2,5.4,11,1) basis=(1000,0|0,1000) translate=(408881.38,269513.1) w=(0,0,1010.0001)
+[2026-11-08 11:57:19.087] [info] [native-circle-diag] node=bokeh_25 stage=reject-transform surface=6 opacity=1 color=(2.2,5.4,11,1) basis=(1000,0|0,1000) translate=(408881.38,269513.1) w=(0,0,1010.0001)
+[2026-11-08 11:57:19.119] [info] [multi-shape-diag] node=hdr_bokeh_field_multi item=27 shape=bokeh_26 opacity=1 basis=(1000,0|0,1000) translate=(1490910.8,519479.72) w=(0,0,1010.0001)
+[2026-11-08 11:57:19.119] [info] [native-circle-diag] node=bokeh_26 stage=enter surface=6 opacity=1 color=(8.4,2.6,6.6,1) basis=(1000,0|0,1000) translate=(1490910.8,519479.72) w=(0,0,1010.0001)
+[2026-11-08 11:57:19.119] [info] [native-circle-diag] node=bokeh_26 stage=reject-transform surface=6 opacity=1 color=(8.4,2.6,6.6,1) basis=(1000,0|0,1000) translate=(1490910.8,519479.72) w=(0,0,1010.0001)
+[2026-11-08 11:57:19.152] [info] [multi-shape-diag] node=hdr_bokeh_field_multi item=28 shape=bokeh_27 opacity=1 basis=(1000,0|0,1000) translate=(407702,821284.4) w=(0,0,1010.0001)
+[2026-11-08 11:57:19.152] [info] [native-circle-diag] node=bokeh_27 stage=enter surface=6 opacity=1 color=(12,10.5,8,1) basis=(1000,0|0,1000) translate=(407702,821284.4) w=(0,0,1010.0001)
+[2026-11-08 11:57:19.152] [info] [native-circle-diag] node=bokeh_27 stage=reject-transform surface=6 opacity=1 color=(12,10.5,8,1) basis=(1000,0|0,1000) translate=(407702,821284.4) w=(0,0,1010.0001)
+[2026-11-08 11:57:19.186] [info] [multi-shape-diag] node=hdr_bokeh_field_multi item=29 shape=bokeh_28 opacity=1 basis=(1000,0|0,1000) translate=(995713,220929.1) w=(0,0,1010.0001)
+[2026-11-08 11:57:19.186] [info] [native-circle-diag] node=bokeh_28 stage=enter surface=6 opacity=1 color=(1.8,8.8,5.2,1) basis=(1000,0|0,1000) translate=(995713,220929.1) w=(0,0,1010.0001)
+[2026-11-08 11:57:19.186] [info] [native-circle-diag] node=bokeh_28 stage=reject-transform surface=6 opacity=1 color=(1.8,8.8,5.2,1) basis=(1000,0|0,1000) translate=(995713,220929.1) w=(0,0,1010.0001)
+[2026-11-08 11:57:19.217] [info] [multi-shape-diag] node=hdr_bokeh_field_multi item=30 shape=bokeh_29 opacity=1 basis=(1000,0|0,1000) translate=(1458299.4,877279.1) w=(0,0,1010.0001)
+[2026-11-08 11:57:19.217] [info] [native-circle-diag] node=bokeh_29 stage=enter surface=6 opacity=1 color=(4.6,3.2,10,1) basis=(1000,0|0,1000) translate=(1458299.4,877279.1) w=(0,0,1010.0001)
+[2026-11-08 11:57:19.217] [info] [native-circle-diag] node=bokeh_29 stage=reject-transform surface=6 opacity=1 color=(4.6,3.2,10,1) basis=(1000,0|0,1000) translate=(1458299.4,877279.1) w=(0,0,1010.0001)
+[2026-11-08 11:57:19.249] [info] [native-graph-node-diag] frame=0 node_id=3 node=hdr_bokeh_field_multi kind=Source surface=6 cpu=true opaque=false size=1920x1080
+[2026-11-08 11:57:19.249] [info] [native-slot-diag] frame=0 node_id=6 name=title physical_slot=4294967295 slot_ptr=0x0 inputs=[]
+[2026-11-08 11:57:19.284] [info] [native-textrun-diag] node=title shape=true surface=7 cpu=true opacity=1
+[2026-11-08 11:57:19.285] [info] chronon3d::vulkan text batch formats: dst_image.format=109 atlas_image.format=44 atlas_encoding=2 (shader contract: dst rgba32f, atlas rgba8)
+[2026-11-08 11:57:19.285] [info] [native-graph-node-diag] frame=0 node_id=6 node=title kind=TextRun surface=8 cpu=true opaque=false size=1920x1080
+[2026-11-08 11:57:19.285] [info] [native-slot-diag] frame=0 node_id=8 name=subtitle physical_slot=4294967295 slot_ptr=0x0 inputs=[]
+[2026-11-08 11:57:19.323] [info] [native-textrun-diag] node=subtitle shape=true surface=9 cpu=true opacity=1
+[2026-11-08 11:57:19.325] [info] [native-graph-node-diag] frame=0 node_id=8 node=subtitle kind=TextRun surface=10 cpu=true opaque=false size=1920x1080
+[2026-11-08 11:57:19.325] [info] [temp-lifetime] frame=0 after_level=0 live=[0,1,3,6,8,] retired=[]
+[2026-11-08 11:57:19.325] [info] [exec-level-diag] frame=0 level=0 nodes=5 input_ms=0.001 dispatch_ms=1199.123 fb_release_ms=0.002
+[2026-11-08 11:57:19.325] [info] [graph-edge] frame=0 level=1 consumer_id=2 input_index=0 producer_id=0 producer_level=0
+[2026-11-08 11:57:19.325] [info] [graph-edge] frame=0 level=1 consumer_id=2 input_index=1 producer_id=1 producer_level=0
+[2026-11-08 11:57:19.325] [info] [graph-edge] frame=0 level=1 consumer_id=4 input_index=0 producer_id=3 producer_level=0
+[2026-11-08 11:57:19.325] [info] [native-slot-diag] frame=0 node_id=2 name=Composite physical_slot=4294967295 slot_ptr=0x0 inputs=[2,4]
+[2026-11-08 11:57:19.611] [info] [native-graph-node-diag] frame=0 node_id=2 node=Composite kind=Composite surface=2 cpu=true opaque=false size=1920x1080
+[2026-11-08 11:57:19.611] [info] [native-slot-diag] frame=0 node_id=4 name=EffectStack physical_slot=4294967295 slot_ptr=0x0 inputs=[6]
+[2026-11-08 11:57:19.611] [info] [native-effect-stack-diag] name=EffectStack effects=1 inputs=1 input_surface=6 input_cpu=true
+[2026-11-08 11:57:19.612] [info] [native-graph-node-diag] frame=0 node_id=4 node=EffectStack kind=Effect surface=19 cpu=false opaque=false size=1920x1080
+[2026-11-08 11:57:19.612] [info] [temp-lifetime] frame=0 after_level=1 live=[2,4,6,8,] retired=[0,1,3,]
+[2026-11-08 11:57:19.612] [info] [exec-level-diag] frame=0 level=1 nodes=2 input_ms=0.020 dispatch_ms=286.912 fb_release_ms=0.015
+[2026-11-08 11:57:19.612] [info] [graph-edge] frame=0 level=2 consumer_id=5 input_index=0 producer_id=2 producer_level=1
+[2026-11-08 11:57:19.612] [info] [graph-edge] frame=0 level=2 consumer_id=5 input_index=1 producer_id=4 producer_level=1
+[2026-11-08 11:57:19.612] [info] [native-slot-diag] frame=0 node_id=5 name=Composite physical_slot=0 slot_ptr=0x55b0c443b210 inputs=[2,19]
+[2026-11-08 11:57:19.744] [info] [native-graph-node-diag] frame=0 node_id=5 node=Composite kind=Composite surface=2 cpu=true opaque=false size=1920x1080
+[2026-11-08 11:57:19.744] [info] [temp-lifetime] frame=0 after_level=2 live=[5,6,8,] retired=[2,4,]
+[2026-11-08 11:57:19.745] [info] [exec-level-diag] frame=0 level=2 nodes=1 input_ms=0.014 dispatch_ms=132.045 fb_release_ms=0.009
+[2026-11-08 11:57:19.745] [info] [graph-edge] frame=0 level=3 consumer_id=7 input_index=0 producer_id=5 producer_level=2
+[2026-11-08 11:57:19.745] [info] [graph-edge] frame=0 level=3 consumer_id=7 input_index=1 producer_id=6 producer_level=0
+[2026-11-08 11:57:19.745] [info] [native-slot-diag] frame=0 node_id=7 name=Composite physical_slot=4294967295 slot_ptr=0x0 inputs=[2,8]
+[2026-11-08 11:57:19.795] [info] [native-graph-node-diag] frame=0 node_id=7 node=Composite kind=Composite surface=2 cpu=true opaque=false size=1920x1080
+[2026-11-08 11:57:19.795] [info] [temp-lifetime] frame=0 after_level=3 live=[7,8,] retired=[5,6,]
+[2026-11-08 11:57:19.795] [info] [exec-level-diag] frame=0 level=3 nodes=1 input_ms=0.015 dispatch_ms=50.353 fb_release_ms=0.010
+[2026-11-08 11:57:19.795] [info] [graph-edge] frame=0 level=4 consumer_id=9 input_index=0 producer_id=7 producer_level=3
+[2026-11-08 11:57:19.795] [info] [graph-edge] frame=0 level=4 consumer_id=9 input_index=1 producer_id=8 producer_level=0
+[2026-11-08 11:57:19.795] [info] [native-slot-diag] frame=0 node_id=9 name=Composite physical_slot=4294967295 slot_ptr=0x0 inputs=[2,10]
+[2026-11-08 11:57:19.808] [info] [native-graph-node-diag] frame=0 node_id=9 node=Composite kind=Composite surface=2 cpu=true opaque=false size=1920x1080
+[2026-11-08 11:57:19.808] [info] [temp-lifetime] frame=0 after_level=4 live=[9,] retired=[7,8,]
+[2026-11-08 11:57:19.809] [info] [exec-level-diag] frame=0 level=4 nodes=1 input_ms=0.023 dispatch_ms=13.486 fb_release_ms=0.009
+[2026-11-08 11:57:19.939] [info] [video] Exporting via Arena-backed SIMD pipeline
+[2026-11-08 11:57:19.980] [info] [native_av] tone-map=aces exposure=1 frame=0 max_linear_luma=0.9999 max_mapped_luma=0.8038
+[2026-11-08 11:57:20.017] [info] [video] writer join complete
+[2026-11-08 11:57:20.017] [info] [drain-debug] start drain, capacity=6
+[2026-11-08 11:57:20.017] [info] [drain-debug] reap done, busy_count=0
+[2026-11-08 11:57:20.017] [info] [video] trimming framebuffer pool
+[2026-11-08 11:57:20.038] [info] [video] Released framebuffer pool — memory trimmed
+[2026-11-08 11:57:20.038] [info] [video] frame-loop cleanup complete
+[2026-11-08 11:57:20.038] [info] [video] Encoder write blocked duration: 0.00 ms
+[2026-11-08 11:57:20.038] [info] [video_diag] conversion_and_copy_duration_ms: 24 ms
+[2026-11-08 11:57:20.038] [info] [video_diag] conversion_bytes_written=0 encoder_staging_copy_bytes=0 encoder_slot_reuses=0
+[2026-11-08 11:57:20.038] [info] [native_av] close: sending encoder flush
+[2026-11-08 11:57:20.129] [info] [native_av] close: encoder flush accepted
+[2026-11-08 11:57:20.129] [info] [native_av] close: packets drained=true
+[2026-11-08 11:57:20.129] [info] [native_av] close: finalizing mux session
+[2026-11-08 11:57:20.129] [info] [native_av] close: mux session finalized
+[2026-11-08 11:57:20.129] [info] [native_av] Closed native encoder — 1 frames accepted, encoder_packets=1 mux_packets=1 packet_pts=0..0, YUV cache: 0 hits / 1 misses
+[2026-11-08 11:57:20.129] [info] [native_av] native-surface timings — hwframe_pool_ms=0.0 c2v_prepare_ms=0.0 encode_drain_ms=0.0 send_ms=6.7 submit_counter_ms=0.0 backpressure_ms=0.0
+[2026-11-08 11:57:20.129] [info] [video_native] convert=24.24ms  send_frame=6.70ms  backpressure=0.00ms  flush=90.94ms  receive_packet=0.02ms  mux_write=0.05ms  trailer=0.19ms
+[2026-11-08 11:57:20.131] [info] [video] render_ms=1864.71 encode_ms=192.23 writer_encode_ms=76.12 wall_ms=3429.54 nvml_stop_ms=0.23
+[2026-11-08 11:57:20.131] [info] [video] FFmpeg queue wait duration: 0.00 ms
+[2026-11-08 11:57:20.140] [info] [video] copy_eligible=true sha256=9ece929ea3373cff2321b6d43a2a42cee93d6dcea2812f08d5b9273c6f934e15
+[2026-11-08 11:57:20.141] [info] [video] Wrote RenderingGen/hdr_bokeh_focus_pull_20261108/probe_shape_diag.mp4
+[2026-11-08 11:57:20.141] [info] [startup-profile] total=476.04ms logger=0.03ms cli_bootstrap=2.67ms cli_parse=nullms composition=0.13ms plan_read=nullms json_parse=nullms plan_decode_validate=nullms asset_resolve=nullms plan_compile=nullms unaccounted=116.68ms
+[2026-11-08 11:57:20.142] [info] [video] Wrote exact per-frame timing sidecar: RenderingGen/hdr_bokeh_focus_pull_20261108/probe_shape_diag.mp4.timing.json
+[libx264 @ 0x55b0c1e92a00] frame I:1     Avg QP:13.20  size:  4951
+[libx264 @ 0x55b0c1e92a00] mb I  I16..4:  2.6% 96.3%  1.1%
+[libx264 @ 0x55b0c1e92a00] 8x8 transform intra:96.3%
+[libx264 @ 0x55b0c1e92a00] coded y,uvDC,uvAC intra: 3.8% 3.2% 0.0%
+[libx264 @ 0x55b0c1e92a00] i16 v,h,dc,p: 13% 86%  1%  0%
+[libx264 @ 0x55b0c1e92a00] i8 v,h,dc,ddl,ddr,vr,hd,vl,hu: 22% 74%  2%  0%  0%  0%  0%  0%  0%
+[libx264 @ 0x55b0c1e92a00] i4 v,h,dc,ddl,ddr,vr,hd,vl,hu: 23% 52%  3%  4%  6%  2%  5%  2%  3%
+[libx264 @ 0x55b0c1e92a00] i8c dc,h,v,p: 94%  4%  2%  0%
+[libx264 @ 0x55b0c1e92a00] kb/s:1188.24
+[2026-11-08 11:57:20.145] [info] [INFO] job-lifecycle: slot_pool_close_ms=0.0 surface_release_ms=0.0
+[2026-11-08 11:57:20.312] [info] [INFO] job-lifecycle: queue_close_ms=0.0 writer_join_ms=0.0 encoder_reset_ms=3.1 decoder_reset_ms=0.0 full_graph_reset_ms=167.2 sink_ctx_reset_ms=0.0 device_runtime_reset_ms=0.0 device_reservation_reset_ms=0.0
+[2026-11-08 11:57:20.313] [info] [INFO] job-lifecycle: sidecar_write_ms=1.2 session_teardown_ms=170.7
+[2026-11-08 11:57:20.320] [info] [INFO] job-lifecycle: post_sidecar_to_receipt_ms=178.2

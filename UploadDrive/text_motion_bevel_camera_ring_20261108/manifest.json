@@ -1,0 +1,223 @@
+{
+  "schema": "chronontemplate.text-motion-bevel-camera-ring.v1",
+  "date": "2026-11-08",
+  "canvas": {
+    "width": 1920,
+    "height": 1080,
+    "fps": 30,
+    "max_seconds": 10.0
+  },
+  "stack": {
+    "camera_ring": "64 samples, elliptical mask, per-pixel jitter",
+    "bevel": "light.sdf_bevel (bevel + rim + contact shadow)",
+    "grain": "generate.noise",
+    "backend": "vulkan / nvenc"
+  },
+  "drive": {
+    "folder_id": "1J_xUGo_bchzXDIGqSX04CU44c_Dm3SxS",
+    "folder_url": "https://drive.google.com/drive/u/1/folders/1J_xUGo_bchzXDIGqSX04CU44c_Dm3SxS",
+    "subfolder": "Text Motion Bevel & Camera Ring 1080p"
+  },
+  "clips": [
+    {
+      "id": "01_glyph_drop",
+      "label": "OGNI DETTAGLIO",
+      "note": "Per-glyph drop con blur, rotazione e tracking che si chiude; bevel e camera ring.",
+      "text": "OGNI DETTAGLIO",
+      "font": "PlayfairDisplay-Bold.ttf",
+      "font_size": 138.0,
+      "fill": "#F4EEE1",
+      "frames": 300,
+      "duration_s": 10.0,
+      "plan": "plans/01_glyph_drop.plan.json",
+      "mp4": "mp4/01_glyph_drop.mp4",
+      "background_rgb": [
+        0.008,
+        0.006,
+        0.004
+      ],
+      "width": 1920,
+      "height": 1080,
+      "fps": "30/1",
+      "bytes": 5316434,
+      "sha256": "b5c50937f04a2000d7f282d73e3a4171dd6beb2ad175227fd90c48bc2f30755b",
+      "verified": true,
+      "verified_at": "2026-11-08T20:14:07",
+      "foreground_ratio": 0.023317,
+      "foreground_ratios": [
+        0.022049,
+        0.023317,
+        0.023686
+      ],
+      "stills": [
+        "stills/01_glyph_drop_early.png",
+        "stills/01_glyph_drop_mid.png",
+        "stills/01_glyph_drop_late.png"
+      ],
+      "uploaded": true,
+      "drive_id": "1b3MjFjC9DDtHCOPhee-QQriT17ZPq3XF",
+      "drive_url": "https://drive.google.com/file/d/1b3MjFjC9DDtHCOPhee-QQriT17ZPq3XF/view?usp=drivesdk",
+      "drive_name": "TEXT_MOTION_01_OGNI_DETTAGLIO_1920x1080_10s.mp4"
+    },
+    {
+      "id": "02_word_focus",
+      "label": "LA STORIA PRENDE FORMA",
+      "note": "Focus per parola: blur e micro-rise in sequenza, poi tenuta pulita.",
+      "text": "LA STORIA PRENDE FORMA",
+      "font": "Inter-Bold.ttf",
+      "font_size": 124.0,
+      "fill": "#DDF8FF",
+      "frames": 240,
+      "duration_s": 8.0,
+      "plan": "plans/02_word_focus.plan.json",
+      "mp4": "mp4/02_word_focus.mp4",
+      "background_rgb": [
+        0.002,
+        0.01,
+        0.016
+      ],
+      "width": 1920,
+      "height": 1080,
+      "fps": "30/1",
+      "bytes": 4627205,
+      "sha256": "c5a314485a0db11f065d701f144f9cbb1907e2414e9127c497b35f7cfc553928",
+      "verified": true,
+      "verified_at": "2026-11-08T20:14:33",
+      "foreground_ratio": 0.037587,
+      "foreground_ratios": [
+        0.034855,
+        0.037587,
+        0.038552
+      ],
+      "stills": [
+        "stills/02_word_focus_early.png",
+        "stills/02_word_focus_mid.png",
+        "stills/02_word_focus_late.png"
+      ],
+      "uploaded": true,
+      "drive_id": "1fqazlGnLUfzlanByeSBn4Aj75qdZ4X1t",
+      "drive_url": "https://drive.google.com/file/d/1fqazlGnLUfzlanByeSBn4Aj75qdZ4X1t/view?usp=drivesdk",
+      "drive_name": "TEXT_MOTION_02_LA_STORIA_PRENDE_FORMA_1920x1080_8s.mp4"
+    },
+    {
+      "id": "03_tracking_collapse",
+      "label": "CHRONON",
+      "note": "Tracking largo che collassa, scala e opacità per glicfo.",
+      "text": "CHRONON",
+      "font": "SF-Pro-Display-Semibold.otf",
+      "font_size": 176.0,
+      "fill": "#E9FFF8",
+      "frames": 210,
+      "duration_s": 7.0,
+      "plan": "plans/03_tracking_collapse.plan.json",
+      "mp4": "mp4/03_tracking_collapse.mp4",
+      "background_rgb": [
+        0.003,
+        0.024,
+        0.016
+      ],
+      "width": 1920,
+      "height": 1080,
+      "fps": "30/1",
+      "bytes": 4418351,
+      "sha256": "41e35f969bf861973b195b1021dfb960c10296c45c5a64bf699eb0b68b5a86a2",
+      "verified": true,
+      "verified_at": "2026-11-08T20:14:54",
+      "foreground_ratio": 0.02481,
+      "foreground_ratios": [
+        0.022776,
+        0.02481,
+        0.025165
+      ],
+      "stills": [
+        "stills/03_tracking_collapse_early.png",
+        "stills/03_tracking_collapse_mid.png",
+        "stills/03_tracking_collapse_late.png"
+      ],
+      "uploaded": true,
+      "drive_id": "1CdxjV57Hw0k4GCepiU1JyQn7lhr0GvYQ",
+      "drive_url": "https://drive.google.com/file/d/1CdxjV57Hw0k4GCepiU1JyQn7lhr0GvYQ/view?usp=drivesdk",
+      "drive_name": "TEXT_MOTION_03_CHRONON_1920x1080_7s.mp4"
+    },
+    {
+      "id": "04_line_unfold",
+      "label": "MEMORIA / IN MOVIMENTO",
+      "note": "Due righe che si aprono verticalmente con blur, in cascata.",
+      "text": "MEMORIA\nIN MOVIMENTO",
+      "font": "BodoniModa-BoldItalic.ttf",
+      "font_size": 132.0,
+      "fill": "#EADFCB",
+      "frames": 240,
+      "duration_s": 8.0,
+      "plan": "plans/04_line_unfold.plan.json",
+      "mp4": "mp4/04_line_unfold.mp4",
+      "background_rgb": [
+        0.02,
+        0.004,
+        0.045
+      ],
+      "width": 1920,
+      "height": 1080,
+      "fps": "30/1",
+      "bytes": 4503241,
+      "sha256": "0e296d4e7f6bded5036d116dec5e3eed3da5c790ceee161463da78b0705ceb59",
+      "verified": true,
+      "verified_at": "2026-11-08T20:15:21",
+      "foreground_ratio": 0.035233,
+      "foreground_ratios": [
+        0.032339,
+        0.035233,
+        0.035813
+      ],
+      "stills": [
+        "stills/04_line_unfold_early.png",
+        "stills/04_line_unfold_mid.png",
+        "stills/04_line_unfold_late.png"
+      ],
+      "uploaded": true,
+      "drive_id": "1_bAD-8ZXQpWczhqabpZSnefgkHGi3SIj",
+      "drive_url": "https://drive.google.com/file/d/1_bAD-8ZXQpWczhqabpZSnefgkHGi3SIj/view?usp=drivesdk",
+      "drive_name": "TEXT_MOTION_04_MEMORIA_IN_MOVIMENTO_1920x1080_8s.mp4"
+    },
+    {
+      "id": "05_glyph_spin",
+      "label": "SEI MECCANICHE",
+      "note": "Rotazione e scala per glicfo dal centro, con blur in ingresso.",
+      "text": "SEI MECCANICHE",
+      "font": "DMSans-Bold.ttf",
+      "font_size": 136.0,
+      "fill": "#6FFFE9",
+      "frames": 270,
+      "duration_s": 9.0,
+      "plan": "plans/05_glyph_spin.plan.json",
+      "mp4": "mp4/05_glyph_spin.mp4",
+      "background_rgb": [
+        0.005,
+        0.012,
+        0.03
+      ],
+      "width": 1920,
+      "height": 1080,
+      "fps": "30/1",
+      "bytes": 5218353,
+      "sha256": "8bb9086e946f3d665b54a5e742cd7c90cbafb601703357d17d51416e84ee5eb2",
+      "verified": true,
+      "verified_at": "2026-11-08T20:15:47",
+      "foreground_ratio": 0.026002,
+      "foreground_ratios": [
+        0.024414,
+        0.026002,
+        0.026554
+      ],
+      "stills": [
+        "stills/05_glyph_spin_early.png",
+        "stills/05_glyph_spin_mid.png",
+        "stills/05_glyph_spin_late.png"
+      ],
+      "uploaded": true,
+      "drive_id": "1ptyzGirNUjAMB3xZu0Qo1u6YKPNDpSCX",
+      "drive_url": "https://drive.google.com/file/d/1ptyzGirNUjAMB3xZu0Qo1u6YKPNDpSCX/view?usp=drivesdk",
+      "drive_name": "TEXT_MOTION_05_SEI_MECCANICHE_1920x1080_9s.mp4"
+    }
+  ]
+}

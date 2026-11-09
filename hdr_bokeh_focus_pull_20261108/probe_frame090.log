@@ -1,0 +1,29 @@
+[2026-11-08 12:09:40.128] [info] [video] Auto-selecting yuv420p pipe pixel format for 1920x1080 output
+[2026-11-08 12:09:40.129] [info] [video] execution plan resolved (reason: render_graph_default); decode=2 composite=3 encode=2 interop=0 handoff=3 codec=3
+[2026-11-08 12:09:40.167] [info] [video-runtime] created persistent runtime for device 0 (CUDA ordinal 0)
+[2026-11-08 12:09:40.167] [info] [video] encoder feed capability: host_frame=true direct_yuv=false native_surface=false
+[libx264 @ 0x560b0c395080] using cpu capabilities: MMX2 SSE2Fast SSSE3 SSE4.2 AVX
+[libx264 @ 0x560b0c395080] profile High, level 5.0, 4:2:0, 8-bit
+[libx264 @ 0x560b0c395080] 264 - core 164 r3108 31e19f9 vcpkg - H.264/MPEG-4 AVC codec - Copyleft 2003-2023 - http://www.videolan.org/x264.html - options: cabac=1 ref=5 deblock=1:0:0 analyse=0x3:0x113 me=hex subme=8 psy=1 psy_rd=1.00:0.00 mixed_ref=1 me_range=16 chroma_me=1 trellis=2 8x8dct=1 cqm=0 deadzone=21,11 fast_pskip=1 chroma_qp_offset=-2 threads=2 lookahead_threads=1 sliced_threads=0 nr=0 decimate=1 interlaced=0 bluray_compat=0 constrained_intra=0 bframes=0 weightp=2 keyint=60 keyint_min=6 scenecut=40 intra_refresh=0 rc_lookahead=50 rc=crf mbtree=1 crf=16.0 qcomp=0.60 qpmin=0 qpmax=69 qpstep=4 ip_ratio=1.40 aq=1:1.00
+[2026-11-08 12:09:40.171] [info] [native_av] encoder bitstream contract: codec=27 profile=100 level=-99 pix_fmt=0 parameter_sets=42 materialized=true
+[2026-11-08 12:09:40.172] [info] [native_av] Opened native encoder: 1920x1080 @ 30fps, codec=libx264, rc=crf, preset=slow, output='RenderingGen/hdr_bokeh_focus_pull_20261108/probe_frame090.partial.mp4'
+[2026-11-08 12:09:40.529] [error] [backend] selection failed: preference=gpu code=2 message=backend factory failed for vulkan: Vulkan vkCreateDevice failed with VkResult=-3
+[2026-11-08 12:09:40.532] [info] [native_av] close: sending encoder flush
+[2026-11-08 12:09:40.534] [info] [native_av] close: encoder flush accepted
+[2026-11-08 12:09:40.534] [info] [native_av] close: packets drained=true
+[2026-11-08 12:09:40.534] [info] [native_av] close: finalizing mux session
+[2026-11-08 12:09:40.534] [info] [native_av] close: mux session finalized
+[2026-11-08 12:09:40.534] [info] [native_av] Closed native encoder — 0 frames accepted, encoder_packets=0 mux_packets=0 packet_pts=-1..-1, YUV cache: 0 hits / 0 misses
+[2026-11-08 12:09:40.534] [info] [native_av] native-surface timings — hwframe_pool_ms=0.0 c2v_prepare_ms=0.0 encode_drain_ms=0.0 send_ms=0.0 submit_counter_ms=0.0 backpressure_ms=0.0
+[2026-11-08 12:09:40.535] [info] [INFO] job-lifecycle: slot_pool_close_ms=0.0 surface_release_ms=0.0
+[2026-11-08 12:09:40.540] [info] [INFO] job-lifecycle: queue_close_ms=0.0 writer_join_ms=0.0 encoder_reset_ms=2.4 decoder_reset_ms=0.0 full_graph_reset_ms=5.1 sink_ctx_reset_ms=0.0 device_runtime_reset_ms=0.0 device_reservation_reset_ms=0.0
+RENDER_EXECUTION_FAILURE
+
+Composition: HdrBokehFocusPull
+Frame: 90
+
+Details:
+BackendFailed: video export for composition 'HdrBokehFocusPull' threw: backend selection failed: backend factory failed for vulkan: Vulkan vkCreateDevice failed with VkResult=-3
+
+Fix:
+Inspect the failing layer and the detailed backend message above.

@@ -1,0 +1,81 @@
+[2026-11-08 11:59:37.151] [info] [video] Auto-selecting yuv420p pipe pixel format for 1920x1080 output
+[2026-11-08 11:59:37.152] [info] [video] execution plan resolved (reason: render_graph_default); decode=2 composite=3 encode=2 interop=0 handoff=3 codec=3
+[2026-11-08 11:59:37.183] [info] [video-runtime] created persistent runtime for device 0 (CUDA ordinal 0)
+[2026-11-08 11:59:37.183] [info] [video] encoder feed capability: host_frame=true direct_yuv=false native_surface=false
+[libx264 @ 0x55ad741d3a00] using cpu capabilities: MMX2 SSE2Fast SSSE3 SSE4.2 AVX
+[libx264 @ 0x55ad741d3a00] profile High, level 5.0, 4:2:0, 8-bit
+[libx264 @ 0x55ad741d3a00] 264 - core 164 r3108 31e19f9 vcpkg - H.264/MPEG-4 AVC codec - Copyleft 2003-2023 - http://www.videolan.org/x264.html - options: cabac=1 ref=5 deblock=1:0:0 analyse=0x3:0x113 me=hex subme=8 psy=1 psy_rd=1.00:0.00 mixed_ref=1 me_range=16 chroma_me=1 trellis=2 8x8dct=1 cqm=0 deadzone=21,11 fast_pskip=1 chroma_qp_offset=-2 threads=2 lookahead_threads=1 sliced_threads=0 nr=0 decimate=1 interlaced=0 bluray_compat=0 constrained_intra=0 bframes=0 weightp=2 keyint=60 keyint_min=6 scenecut=40 intra_refresh=0 rc_lookahead=50 rc=crf mbtree=1 crf=16.0 qcomp=0.60 qpmin=0 qpmax=69 qpstep=4 ip_ratio=1.40 aq=1:1.00
+[2026-11-08 11:59:37.189] [info] [native_av] encoder bitstream contract: codec=27 profile=100 level=-99 pix_fmt=0 parameter_sets=42 materialized=true
+[2026-11-08 11:59:37.189] [info] [native_av] Opened native encoder: 1920x1080 @ 30fps, codec=libx264, rc=crf, preset=slow, output='RenderingGen/hdr_bokeh_focus_pull_20261108/probe_fix_snapshot.partial.mp4'
+[2026-11-08 11:59:37.728] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 11:59:37.730] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 11:59:38.706] [info] [video]   1/1 frames
+[2026-11-08 11:59:38.707] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 11:59:38.707] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 11:59:39.849] [info] chronon3d::vulkan text batch formats: dst_image.format=109 atlas_image.format=44 atlas_encoding=2 (shader contract: dst rgba32f, atlas rgba8)
+[2026-11-08 11:59:39.906] [info] [temp-lifetime] frame=0 after_level=0 live=[0,1,3,6,8,] retired=[]
+[2026-11-08 11:59:39.906] [info] [exec-level-diag] frame=0 level=0 nodes=5 input_ms=0.001 dispatch_ms=1149.882 fb_release_ms=0.002
+[2026-11-08 11:59:39.906] [info] [graph-edge] frame=0 level=1 consumer_id=2 input_index=0 producer_id=0 producer_level=0
+[2026-11-08 11:59:39.906] [info] [graph-edge] frame=0 level=1 consumer_id=2 input_index=1 producer_id=1 producer_level=0
+[2026-11-08 11:59:39.906] [info] [graph-edge] frame=0 level=1 consumer_id=4 input_index=0 producer_id=3 producer_level=0
+[2026-11-08 11:59:40.246] [info] [temp-lifetime] frame=0 after_level=1 live=[2,4,6,8,] retired=[0,1,3,]
+[2026-11-08 11:59:40.246] [info] [exec-level-diag] frame=0 level=1 nodes=2 input_ms=0.020 dispatch_ms=339.851 fb_release_ms=0.015
+[2026-11-08 11:59:40.246] [info] [graph-edge] frame=0 level=2 consumer_id=5 input_index=0 producer_id=2 producer_level=1
+[2026-11-08 11:59:40.246] [info] [graph-edge] frame=0 level=2 consumer_id=5 input_index=1 producer_id=4 producer_level=1
+[2026-11-08 11:59:40.421] [info] [temp-lifetime] frame=0 after_level=2 live=[5,6,8,] retired=[2,4,]
+[2026-11-08 11:59:40.421] [info] [exec-level-diag] frame=0 level=2 nodes=1 input_ms=0.014 dispatch_ms=175.104 fb_release_ms=0.010
+[2026-11-08 11:59:40.421] [info] [graph-edge] frame=0 level=3 consumer_id=7 input_index=0 producer_id=5 producer_level=2
+[2026-11-08 11:59:40.421] [info] [graph-edge] frame=0 level=3 consumer_id=7 input_index=1 producer_id=6 producer_level=0
+[2026-11-08 11:59:40.491] [info] [temp-lifetime] frame=0 after_level=3 live=[7,8,] retired=[5,6,]
+[2026-11-08 11:59:40.491] [info] [exec-level-diag] frame=0 level=3 nodes=1 input_ms=0.014 dispatch_ms=69.842 fb_release_ms=0.011
+[2026-11-08 11:59:40.491] [info] [graph-edge] frame=0 level=4 consumer_id=9 input_index=0 producer_id=7 producer_level=3
+[2026-11-08 11:59:40.491] [info] [graph-edge] frame=0 level=4 consumer_id=9 input_index=1 producer_id=8 producer_level=0
+[2026-11-08 11:59:40.503] [info] [temp-lifetime] frame=0 after_level=4 live=[9,] retired=[7,8,]
+[2026-11-08 11:59:40.503] [info] [exec-level-diag] frame=0 level=4 nodes=1 input_ms=0.014 dispatch_ms=11.863 fb_release_ms=0.010
+[2026-11-08 11:59:40.621] [info] [native-content-diag] frame=0 node_id=0 node=Clear source_handle=2 handle=3 extent=1920x1080 rgb_mean=0 max=0 nonzero=0/6220800
+[2026-11-08 11:59:40.680] [info] [native-content-diag] frame=0 node_id=1 node=fill source_handle=5 handle=7 extent=1920x1080 rgb_mean=0.0006836743736083751 max=0.001006192 nonzero=6105420/6220800
+[2026-11-08 11:59:40.717] [info] [native-content-diag] frame=0 node_id=3 node=hdr_bokeh_field_multi source_handle=8 handle=9 extent=1920x1080 rgb_mean=0 max=0 nonzero=0/6220800
+[2026-11-08 11:59:40.752] [info] [native-content-diag] frame=0 node_id=6 node=title source_handle=11 handle=12 extent=1920x1080 rgb_mean=0.020889489359170614 max=1 nonzero=134025/6220800
+[2026-11-08 11:59:40.788] [info] [native-content-diag] frame=0 node_id=8 node=subtitle source_handle=14 handle=15 extent=1920x1080 rgb_mean=0.0015689382769374384 max=1 nonzero=13977/6220800
+[2026-11-08 11:59:40.825] [info] [native-content-diag] frame=0 node_id=2 node=Composite source_handle=2 handle=23 extent=1920x1080 rgb_mean=0.0006848919543083884 max=0.0010061923 nonzero=6220800/6220800
+[2026-11-08 11:59:40.860] [info] [native-content-diag] frame=0 node_id=4 node=EffectStack source_handle=25 handle=26 extent=1920x1080 rgb_mean=0 max=0 nonzero=0/6220800
+[2026-11-08 11:59:40.898] [info] [native-content-diag] frame=0 node_id=5 node=Composite source_handle=2 handle=31 extent=1920x1080 rgb_mean=0.0006848919543083884 max=0.0010061923 nonzero=6220800/6220800
+[2026-11-08 11:59:40.932] [info] [native-content-diag] frame=0 node_id=7 node=Composite source_handle=2 handle=36 extent=1920x1080 rgb_mean=0.021492219381010143 max=0.9999457 nonzero=6220800/6220800
+[2026-11-08 11:59:40.970] [info] [native-content-diag] frame=0 node_id=9 node=Composite source_handle=2 handle=41 extent=1920x1080 rgb_mean=0.023042911985318076 max=0.9999457 nonzero=6220800/6220800
+[2026-11-08 11:59:40.976] [error] [backend] native output synchronization failed: Vulkan download references an uninitialized surface
+[2026-11-08 11:59:40.991] [info] [video] Exporting via Arena-backed SIMD pipeline
+[2026-11-08 11:59:41.029] [info] [native_av] tone-map=aces exposure=1 frame=0 max_linear_luma=0.0000 max_mapped_luma=0.0000
+[2026-11-08 11:59:41.066] [info] [video] writer join complete
+[2026-11-08 11:59:41.066] [info] [drain-debug] start drain, capacity=6
+[2026-11-08 11:59:41.066] [info] [drain-debug] reap done, busy_count=0
+[2026-11-08 11:59:41.066] [info] [video] trimming framebuffer pool
+[2026-11-08 11:59:41.082] [info] [video] Released framebuffer pool — memory trimmed
+[2026-11-08 11:59:41.082] [info] [video] frame-loop cleanup complete
+[2026-11-08 11:59:41.082] [info] [video] Encoder write blocked duration: 0.00 ms
+[2026-11-08 11:59:41.082] [info] [video_diag] conversion_and_copy_duration_ms: 23 ms
+[2026-11-08 11:59:41.082] [info] [video_diag] conversion_bytes_written=0 encoder_staging_copy_bytes=0 encoder_slot_reuses=0
+[2026-11-08 11:59:41.082] [info] [native_av] close: sending encoder flush
+[2026-11-08 11:59:41.139] [info] [native_av] close: encoder flush accepted
+[2026-11-08 11:59:41.139] [info] [native_av] close: packets drained=true
+[2026-11-08 11:59:41.139] [info] [native_av] close: finalizing mux session
+[2026-11-08 11:59:41.139] [info] [native_av] close: mux session finalized
+[2026-11-08 11:59:41.139] [info] [native_av] Closed native encoder — 1 frames accepted, encoder_packets=1 mux_packets=1 packet_pts=0..0, YUV cache: 0 hits / 1 misses
+[2026-11-08 11:59:41.139] [info] [native_av] native-surface timings — hwframe_pool_ms=0.0 c2v_prepare_ms=0.0 encode_drain_ms=0.0 send_ms=6.7 submit_counter_ms=0.0 backpressure_ms=0.0
+[2026-11-08 11:59:41.139] [info] [video_native] convert=23.64ms  send_frame=6.65ms  backpressure=0.00ms  flush=56.54ms  receive_packet=0.02ms  mux_write=0.04ms  trailer=0.16ms
+[2026-11-08 11:59:41.141] [info] [video] render_ms=2284.32 encode_ms=150.48 writer_encode_ms=72.94 wall_ms=3989.15 nvml_stop_ms=0.20
+[2026-11-08 11:59:41.141] [info] [video] FFmpeg queue wait duration: 0.00 ms
+[2026-11-08 11:59:41.147] [info] [video] copy_eligible=true sha256=c6ccf8850958cd8e0fbfcf3dcf3b4ad083ef5384c560988174d80cd1d67b03eb
+[2026-11-08 11:59:41.147] [info] [video] Wrote RenderingGen/hdr_bokeh_focus_pull_20261108/probe_fix_snapshot.mp4
+[2026-11-08 11:59:41.147] [info] [startup-profile] total=579.51ms logger=0.03ms cli_bootstrap=3.07ms cli_parse=nullms composition=0.12ms plan_read=nullms json_parse=nullms plan_decode_validate=nullms asset_resolve=nullms plan_compile=nullms unaccounted=133.59ms
+[2026-11-08 11:59:41.148] [info] [video] Wrote exact per-frame timing sidecar: RenderingGen/hdr_bokeh_focus_pull_20261108/probe_fix_snapshot.mp4.timing.json
+[libx264 @ 0x55ad741d3a00] frame I:1     Avg QP: 7.00  size:   422
+[libx264 @ 0x55ad741d3a00] mb I  I16..4: 100.0%  0.0%  0.0%
+[libx264 @ 0x55ad741d3a00] 8x8 transform intra:0.0%
+[libx264 @ 0x55ad741d3a00] coded y,uvDC,uvAC intra: 0.0% 0.0% 0.0%
+[libx264 @ 0x55ad741d3a00] i16 v,h,dc,p: 99%  0%  1%  0%
+[libx264 @ 0x55ad741d3a00] i8c dc,h,v,p: 100%  0%  0%  0%
+[libx264 @ 0x55ad741d3a00] kb/s:101.28
+[2026-11-08 11:59:41.152] [info] [INFO] job-lifecycle: slot_pool_close_ms=0.0 surface_release_ms=0.0
+[2026-11-08 11:59:41.297] [info] [INFO] job-lifecycle: queue_close_ms=0.0 writer_join_ms=0.0 encoder_reset_ms=3.5 decoder_reset_ms=0.0 full_graph_reset_ms=145.7 sink_ctx_reset_ms=0.0 device_runtime_reset_ms=0.0 device_reservation_reset_ms=0.0
+[2026-11-08 11:59:41.298] [info] [INFO] job-lifecycle: sidecar_write_ms=1.1 session_teardown_ms=150.0
+[2026-11-08 11:59:41.305] [info] [INFO] job-lifecycle: post_sidecar_to_receipt_ms=157.1

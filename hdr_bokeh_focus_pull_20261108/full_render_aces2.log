@@ -1,0 +1,468 @@
+[2026-11-08 12:06:16.742] [info] [video] Auto-selecting yuv420p pipe pixel format for 1920x1080 output
+[2026-11-08 12:06:16.743] [info] [video] execution plan resolved (reason: render_graph_default); decode=2 composite=3 encode=2 interop=0 handoff=3 codec=3
+[2026-11-08 12:06:16.774] [info] [video-runtime] created persistent runtime for device 0 (CUDA ordinal 0)
+[2026-11-08 12:06:16.774] [info] [video] encoder feed capability: host_frame=true direct_yuv=false native_surface=false
+[libx264 @ 0x55af9d944f80] using cpu capabilities: MMX2 SSE2Fast SSSE3 SSE4.2 AVX
+[libx264 @ 0x55af9d944f80] profile High, level 5.0, 4:2:0, 8-bit
+[libx264 @ 0x55af9d944f80] 264 - core 164 r3108 31e19f9 vcpkg - H.264/MPEG-4 AVC codec - Copyleft 2003-2023 - http://www.videolan.org/x264.html - options: cabac=1 ref=5 deblock=1:0:0 analyse=0x3:0x113 me=hex subme=8 psy=1 psy_rd=1.00:0.00 mixed_ref=1 me_range=16 chroma_me=1 trellis=2 8x8dct=1 cqm=0 deadzone=21,11 fast_pskip=1 chroma_qp_offset=-2 threads=2 lookahead_threads=1 sliced_threads=0 nr=0 decimate=1 interlaced=0 bluray_compat=0 constrained_intra=0 bframes=0 weightp=2 keyint=60 keyint_min=6 scenecut=40 intra_refresh=0 rc_lookahead=50 rc=crf mbtree=1 crf=16.0 qcomp=0.60 qpmin=0 qpmax=69 qpstep=4 ip_ratio=1.40 aq=1:1.00
+[2026-11-08 12:06:16.779] [info] [native_av] encoder bitstream contract: codec=27 profile=100 level=-99 pix_fmt=0 parameter_sets=42 materialized=true
+[2026-11-08 12:06:16.779] [info] [native_av] Opened native encoder: 1920x1080 @ 30fps, codec=libx264, rc=crf, preset=slow, output='RenderingGen/hdr_bokeh_focus_pull_20261108/hdr_bokeh_focus_pull_aces_1080p30.partial.mp4'
+[2026-11-08 12:06:17.208] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:17.209] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:17.953] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:17.953] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:18.094] [info] chronon3d::vulkan text batch formats: dst_image.format=109 atlas_image.format=44 atlas_encoding=2 (shader contract: dst rgba32f, atlas rgba8)
+[2026-11-08 12:06:18.124] [info] [temp-lifetime] frame=0 after_level=0 live=[0,1,3,6,8,] retired=[]
+[2026-11-08 12:06:18.124] [info] [exec-level-diag] frame=0 level=0 nodes=5 input_ms=0.001 dispatch_ms=119.090 fb_release_ms=0.002
+[2026-11-08 12:06:18.124] [info] [graph-edge] frame=0 level=1 consumer_id=2 input_index=0 producer_id=0 producer_level=0
+[2026-11-08 12:06:18.124] [info] [graph-edge] frame=0 level=1 consumer_id=2 input_index=1 producer_id=1 producer_level=0
+[2026-11-08 12:06:18.124] [info] [graph-edge] frame=0 level=1 consumer_id=4 input_index=0 producer_id=3 producer_level=0
+[2026-11-08 12:06:18.697] [info] [temp-lifetime] frame=0 after_level=1 live=[2,4,6,8,] retired=[0,1,3,]
+[2026-11-08 12:06:18.697] [info] [exec-level-diag] frame=0 level=1 nodes=2 input_ms=0.021 dispatch_ms=573.624 fb_release_ms=0.014
+[2026-11-08 12:06:18.697] [info] [graph-edge] frame=0 level=2 consumer_id=5 input_index=0 producer_id=2 producer_level=1
+[2026-11-08 12:06:18.697] [info] [graph-edge] frame=0 level=2 consumer_id=5 input_index=1 producer_id=4 producer_level=1
+[2026-11-08 12:06:18.895] [info] [temp-lifetime] frame=0 after_level=2 live=[5,6,8,] retired=[2,4,]
+[2026-11-08 12:06:18.895] [info] [exec-level-diag] frame=0 level=2 nodes=1 input_ms=0.014 dispatch_ms=197.648 fb_release_ms=0.007
+[2026-11-08 12:06:18.895] [info] [graph-edge] frame=0 level=3 consumer_id=7 input_index=0 producer_id=5 producer_level=2
+[2026-11-08 12:06:18.895] [info] [graph-edge] frame=0 level=3 consumer_id=7 input_index=1 producer_id=6 producer_level=0
+[2026-11-08 12:06:18.989] [info] [temp-lifetime] frame=0 after_level=3 live=[7,8,] retired=[5,6,]
+[2026-11-08 12:06:18.989] [info] [exec-level-diag] frame=0 level=3 nodes=1 input_ms=0.015 dispatch_ms=93.968 fb_release_ms=0.007
+[2026-11-08 12:06:18.989] [info] [graph-edge] frame=0 level=4 consumer_id=9 input_index=0 producer_id=7 producer_level=3
+[2026-11-08 12:06:18.989] [info] [graph-edge] frame=0 level=4 consumer_id=9 input_index=1 producer_id=8 producer_level=0
+[2026-11-08 12:06:19.001] [info] [temp-lifetime] frame=0 after_level=4 live=[9,] retired=[7,8,]
+[2026-11-08 12:06:19.001] [info] [exec-level-diag] frame=0 level=4 nodes=1 input_ms=0.017 dispatch_ms=11.516 fb_release_ms=0.007
+[2026-11-08 12:06:19.131] [info] [video] Exporting via Arena-backed SIMD pipeline
+[2026-11-08 12:06:19.131] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:19.132] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:19.167] [info] [temp-lifetime] frame=1 after_level=0 live=[0,1,3,6,8,] retired=[]
+[2026-11-08 12:06:19.167] [info] [exec-level-diag] frame=1 level=0 nodes=5 input_ms=0.001 dispatch_ms=34.401 fb_release_ms=0.001
+[2026-11-08 12:06:19.167] [info] [graph-edge] frame=1 level=1 consumer_id=2 input_index=0 producer_id=0 producer_level=0
+[2026-11-08 12:06:19.167] [info] [graph-edge] frame=1 level=1 consumer_id=2 input_index=1 producer_id=1 producer_level=0
+[2026-11-08 12:06:19.167] [info] [graph-edge] frame=1 level=1 consumer_id=4 input_index=0 producer_id=3 producer_level=0
+[2026-11-08 12:06:19.174] [info] [native_av] tone-map=aces exposure=1 frame=0 max_linear_luma=30.2331 max_mapped_luma=1.0000
+[2026-11-08 12:06:19.662] [info] [temp-lifetime] frame=1 after_level=1 live=[2,4,6,8,] retired=[0,1,3,]
+[2026-11-08 12:06:19.662] [info] [exec-level-diag] frame=1 level=1 nodes=2 input_ms=0.021 dispatch_ms=494.336 fb_release_ms=0.011
+[2026-11-08 12:06:19.662] [info] [graph-edge] frame=1 level=2 consumer_id=5 input_index=0 producer_id=2 producer_level=1
+[2026-11-08 12:06:19.662] [info] [graph-edge] frame=1 level=2 consumer_id=5 input_index=1 producer_id=4 producer_level=1
+[2026-11-08 12:06:19.796] [info] [temp-lifetime] frame=1 after_level=2 live=[5,6,8,] retired=[2,4,]
+[2026-11-08 12:06:19.796] [info] [exec-level-diag] frame=1 level=2 nodes=1 input_ms=0.015 dispatch_ms=134.034 fb_release_ms=0.016
+[2026-11-08 12:06:19.796] [info] [graph-edge] frame=1 level=3 consumer_id=7 input_index=0 producer_id=5 producer_level=2
+[2026-11-08 12:06:19.796] [info] [graph-edge] frame=1 level=3 consumer_id=7 input_index=1 producer_id=6 producer_level=0
+[2026-11-08 12:06:20.203] [info] [temp-lifetime] frame=1 after_level=3 live=[7,8,] retired=[5,6,]
+[2026-11-08 12:06:20.203] [info] [exec-level-diag] frame=1 level=3 nodes=1 input_ms=0.015 dispatch_ms=406.754 fb_release_ms=0.009
+[2026-11-08 12:06:20.203] [info] [graph-edge] frame=1 level=4 consumer_id=9 input_index=0 producer_id=7 producer_level=3
+[2026-11-08 12:06:20.203] [info] [graph-edge] frame=1 level=4 consumer_id=9 input_index=1 producer_id=8 producer_level=0
+[2026-11-08 12:06:20.216] [info] [temp-lifetime] frame=1 after_level=4 live=[9,] retired=[7,8,]
+[2026-11-08 12:06:20.216] [info] [exec-level-diag] frame=1 level=4 nodes=1 input_ms=0.016 dispatch_ms=12.935 fb_release_ms=0.008
+[2026-11-08 12:06:20.336] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:20.336] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:20.371] [info] [temp-lifetime] frame=2 after_level=0 live=[0,1,3,6,8,] retired=[]
+[2026-11-08 12:06:20.371] [info] [exec-level-diag] frame=2 level=0 nodes=5 input_ms=0.001 dispatch_ms=33.453 fb_release_ms=0.002
+[2026-11-08 12:06:20.371] [info] [graph-edge] frame=2 level=1 consumer_id=2 input_index=0 producer_id=0 producer_level=0
+[2026-11-08 12:06:20.371] [info] [graph-edge] frame=2 level=1 consumer_id=2 input_index=1 producer_id=1 producer_level=0
+[2026-11-08 12:06:20.371] [info] [graph-edge] frame=2 level=1 consumer_id=4 input_index=0 producer_id=3 producer_level=0
+[2026-11-08 12:06:20.483] [info] [temp-lifetime] frame=2 after_level=1 live=[2,4,6,8,] retired=[0,1,3,]
+[2026-11-08 12:06:20.483] [info] [exec-level-diag] frame=2 level=1 nodes=2 input_ms=0.046 dispatch_ms=111.986 fb_release_ms=0.011
+[2026-11-08 12:06:20.483] [info] [graph-edge] frame=2 level=2 consumer_id=5 input_index=0 producer_id=2 producer_level=1
+[2026-11-08 12:06:20.483] [info] [graph-edge] frame=2 level=2 consumer_id=5 input_index=1 producer_id=4 producer_level=1
+[2026-11-08 12:06:20.502] [info] [temp-lifetime] frame=2 after_level=2 live=[5,6,8,] retired=[2,4,]
+[2026-11-08 12:06:20.502] [info] [exec-level-diag] frame=2 level=2 nodes=1 input_ms=0.014 dispatch_ms=18.622 fb_release_ms=0.009
+[2026-11-08 12:06:20.502] [info] [graph-edge] frame=2 level=3 consumer_id=7 input_index=0 producer_id=5 producer_level=2
+[2026-11-08 12:06:20.502] [info] [graph-edge] frame=2 level=3 consumer_id=7 input_index=1 producer_id=6 producer_level=0
+[2026-11-08 12:06:20.513] [info] [temp-lifetime] frame=2 after_level=3 live=[7,8,] retired=[5,6,]
+[2026-11-08 12:06:20.513] [info] [exec-level-diag] frame=2 level=3 nodes=1 input_ms=0.015 dispatch_ms=11.543 fb_release_ms=0.009
+[2026-11-08 12:06:20.513] [info] [graph-edge] frame=2 level=4 consumer_id=9 input_index=0 producer_id=7 producer_level=3
+[2026-11-08 12:06:20.513] [info] [graph-edge] frame=2 level=4 consumer_id=9 input_index=1 producer_id=8 producer_level=0
+[2026-11-08 12:06:20.525] [info] [temp-lifetime] frame=2 after_level=4 live=[9,] retired=[7,8,]
+[2026-11-08 12:06:20.525] [info] [exec-level-diag] frame=2 level=4 nodes=1 input_ms=0.015 dispatch_ms=11.585 fb_release_ms=0.009
+[2026-11-08 12:06:20.643] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:20.644] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:20.956] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:20.956] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:21.268] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:21.268] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:21.574] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:21.575] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:21.922] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:21.922] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:22.236] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:22.237] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:22.550] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:22.550] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:22.862] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:22.863] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:23.187] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:23.188] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:23.502] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:23.503] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:23.822] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:23.823] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:24.139] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:24.140] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:24.470] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:24.470] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:24.789] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:24.790] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:25.132] [info] [video]   18/180 frames
+[2026-11-08 12:06:25.132] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:25.132] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:25.453] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:25.453] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:25.761] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:25.761] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:26.065] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:26.065] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:26.361] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:26.362] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:26.678] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:26.678] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:27.001] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:27.001] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:27.341] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:27.341] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:27.647] [info] [vulkan-lifecycle] frame=25 vram_bytes=522027008 live_surfaces=10 surface_bindings=2 registry_live_handles=178 physical_images=10 deferred_releases=0 vma_allocations=79 surfaces_created=703 surfaces_released=701 queue_packages=1 execution_slots_busy=0 command_batch_active=false
+[2026-11-08 12:06:27.647] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:27.648] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:27.960] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:27.961] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:28.293] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:28.293] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:28.655] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:28.655] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:28.976] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:28.976] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:29.378] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:29.379] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:29.776] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:29.776] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:29.811] [info] [native_av] tone-map=aces exposure=1 frame=30 max_linear_luma=71.3102 max_mapped_luma=1.0000
+[2026-11-08 12:06:30.078] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:30.078] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:30.410] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:30.410] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:30.709] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:30.710] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:31.017] [info] [video]   36/180 frames
+[2026-11-08 12:06:31.017] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:31.017] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:31.331] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:31.331] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:31.626] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:31.626] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:31.915] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:31.915] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:32.204] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:32.204] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:32.510] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:32.511] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:32.825] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:32.826] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:33.136] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:33.136] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:33.434] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:33.434] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:33.732] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:33.733] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:34.024] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:34.024] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:34.319] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:34.319] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:34.622] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:34.622] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:34.922] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:34.923] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:35.211] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:35.212] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:35.507] [info] [vulkan-lifecycle] frame=50 vram_bytes=522027008 live_surfaces=10 surface_bindings=2 registry_live_handles=353 physical_images=10 deferred_releases=0 vma_allocations=79 surfaces_created=1403 surfaces_released=1401 queue_packages=1 execution_slots_busy=0 command_batch_active=false
+[2026-11-08 12:06:35.508] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:35.508] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:35.809] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:35.810] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:36.110] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:36.110] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:36.406] [info] [video]   54/180 frames
+[2026-11-08 12:06:36.407] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:36.407] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:36.718] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:36.718] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:37.046] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:37.046] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:37.346] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:37.346] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:37.692] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:37.693] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:38.040] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:38.040] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:38.397] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:38.397] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:38.744] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:38.744] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:39.085] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:39.085] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:39.121] [info] [native_av] tone-map=aces exposure=1 frame=60 max_linear_luma=95.6477 max_mapped_luma=1.0000
+[2026-11-08 12:06:39.365] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:39.366] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:39.667] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:39.667] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:39.946] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:39.946] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:40.125] [info] [exec-fb-diag] resetting temp[5] took 3.977 ms
+[2026-11-08 12:06:40.239] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:40.239] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:40.515] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:40.515] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:40.810] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:40.810] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:41.089] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:41.089] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:41.389] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:41.389] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:41.666] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:41.666] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:41.910] [info] [video]   72/180 frames
+[2026-11-08 12:06:41.911] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:41.911] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:42.162] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:42.163] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:42.421] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:42.422] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:42.673] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:42.674] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:43.037] [info] [vulkan-lifecycle] frame=75 vram_bytes=522027008 live_surfaces=10 surface_bindings=2 registry_live_handles=528 physical_images=10 deferred_releases=0 vma_allocations=79 surfaces_created=2039 surfaces_released=2037 queue_packages=1 execution_slots_busy=0 command_batch_active=false
+[2026-11-08 12:06:43.038] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:43.038] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:43.354] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:43.354] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:43.531] [info] [exec-fb-diag] resetting temp[2] took 0.911 ms
+[2026-11-08 12:06:43.656] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:43.656] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:43.955] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:43.956] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:44.248] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:44.249] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:44.535] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:44.536] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:44.719] [info] [exec-fb-diag] resetting temp[7] took 3.033 ms
+[2026-11-08 12:06:44.821] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:44.821] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:45.109] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:45.109] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:45.414] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:45.414] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:45.705] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:45.706] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:46.009] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:46.009] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:46.298] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:46.299] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:46.591] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:46.591] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:46.895] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:46.895] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:47.212] [info] [video]   90/180 frames
+[2026-11-08 12:06:47.212] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:47.213] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:47.506] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:47.506] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:47.791] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:47.792] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:47.826] [info] [native_av] tone-map=aces exposure=1 frame=90 max_linear_luma=144.0528 max_mapped_luma=1.0000
+[2026-11-08 12:06:48.081] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:48.082] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:48.364] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:48.365] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:48.655] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:48.655] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:48.946] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:48.946] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:49.262] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:49.262] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:49.551] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:49.552] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:49.855] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:49.855] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:50.153] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:50.153] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:50.451] [info] [vulkan-lifecycle] frame=100 vram_bytes=522027008 live_surfaces=10 surface_bindings=2 registry_live_handles=703 physical_images=10 deferred_releases=0 vma_allocations=79 surfaces_created=2739 surfaces_released=2737 queue_packages=1 execution_slots_busy=0 command_batch_active=false
+[2026-11-08 12:06:50.451] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:50.452] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:50.746] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:50.747] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:51.042] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:51.042] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:51.350] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:51.350] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:51.637] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:51.637] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:51.931] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:51.932] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:52.223] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:52.223] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:52.482] [info] [video]   108/180 frames
+[2026-11-08 12:06:52.482] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:52.483] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:52.785] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:52.786] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:53.050] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:53.050] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:53.349] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:53.350] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:53.652] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:53.653] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:53.968] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:53.968] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:54.259] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:54.259] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:54.549] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:54.549] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:54.840] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:54.840] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:55.132] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:55.132] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:55.414] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:55.414] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:55.697] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:55.697] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:56.174] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:56.174] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:56.644] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:56.644] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:57.156] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:57.156] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:57.190] [info] [native_av] tone-map=aces exposure=1 frame=120 max_linear_luma=194.0686 max_mapped_luma=1.0000
+[2026-11-08 12:06:57.595] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:57.596] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:58.029] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:58.029] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:58.499] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:58.499] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:58.871] [info] [vulkan-lifecycle] frame=125 vram_bytes=522027008 live_surfaces=10 surface_bindings=2 registry_live_handles=878 physical_images=10 deferred_releases=0 vma_allocations=79 surfaces_created=3375 surfaces_released=3373 queue_packages=1 execution_slots_busy=0 command_batch_active=false
+[2026-11-08 12:06:58.871] [info] [video]   126/180 frames
+[2026-11-08 12:06:58.871] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:58.871] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:59.269] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:59.269] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:59.765] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:06:59.765] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:07:00.142] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:07:00.142] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:07:00.661] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:07:00.661] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:07:01.232] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:07:01.232] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:07:01.825] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:07:01.826] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:07:02.299] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:07:02.300] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:07:02.678] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:07:02.678] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:07:03.042] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:07:03.042] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:07:03.455] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:07:03.455] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:07:03.872] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:07:03.873] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:07:04.303] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:07:04.303] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:07:04.724] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:07:04.724] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:07:05.115] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:07:05.115] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:07:05.503] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:07:05.504] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:07:05.884] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:07:05.884] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:07:06.298] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:07:06.299] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:07:06.691] [info] [video]   144/180 frames
+[2026-11-08 12:07:06.692] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:07:06.692] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:07:07.070] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:07:07.070] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:07:07.435] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:07:07.436] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:07:07.811] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:07:07.811] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:07:08.170] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:07:08.170] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:07:08.507] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:07:08.507] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:07:08.855] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:07:08.855] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:07:09.209] [info] [vulkan-lifecycle] frame=150 vram_bytes=522027008 live_surfaces=10 surface_bindings=2 registry_live_handles=1053 physical_images=10 deferred_releases=0 vma_allocations=79 surfaces_created=4075 surfaces_released=4073 queue_packages=1 execution_slots_busy=0 command_batch_active=false
+[2026-11-08 12:07:09.209] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:07:09.210] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:07:09.547] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:07:09.547] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:07:09.587] [info] [native_av] tone-map=aces exposure=1 frame=150 max_linear_luma=64.9365 max_mapped_luma=1.0000
+[2026-11-08 12:07:09.888] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:07:09.888] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:07:10.254] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:07:10.254] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:07:10.590] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:07:10.591] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:07:10.958] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:07:10.959] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:07:11.308] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:07:11.308] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:07:11.670] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:07:11.670] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:07:12.022] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:07:12.022] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:07:12.420] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:07:12.420] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:07:12.850] [error] [native-surface] empty create failed for 1920x1080: VulkanMemoryManager: vmaCreateImage failed with VkResult=-2
+[2026-11-08 12:07:12.850] [error] [executor] frame 159 failed: node 'LayerDoF' error [ExecutionFailure] failed to materialize Vulkan layer DOF surfaces
+[2026-11-08 12:07:12.850] [error] [tile-exec] frame 159 single-pass execution failed (executor returned null — check frame_error for details)
+[2026-11-08 12:07:12.938] [error] [video] Failed to render frame 159
+[2026-11-08 12:07:12.939] [info] [video] writer join complete
+[2026-11-08 12:07:12.939] [info] [drain-debug] start drain, capacity=6
+[2026-11-08 12:07:12.939] [info] [drain-debug] reap done, busy_count=0
+[2026-11-08 12:07:12.939] [info] [video] trimming framebuffer pool
+[2026-11-08 12:07:12.974] [info] [video] Released framebuffer pool — memory trimmed
+[2026-11-08 12:07:12.974] [info] [video] frame-loop cleanup complete
+[2026-11-08 12:07:12.974] [info] [video] Encoder write blocked duration: 0.00 ms
+[2026-11-08 12:07:12.974] [info] [video_diag] conversion_and_copy_duration_ms: 2361 ms
+[2026-11-08 12:07:12.974] [info] [video_diag] conversion_bytes_written=0 encoder_staging_copy_bytes=0 encoder_slot_reuses=0
+[2026-11-08 12:07:12.977] [info] [native_av] close: sending encoder flush
+[2026-11-08 12:07:13.021] [info] [native_av] close: encoder flush accepted
+[2026-11-08 12:07:16.793] [info] [native_av] close: packets drained=true
+[2026-11-08 12:07:16.793] [info] [native_av] close: finalizing mux session
+[2026-11-08 12:07:16.793] [info] [native_av] close: mux session finalized
+[2026-11-08 12:07:16.793] [info] [native_av] Closed native encoder — 159 frames accepted, encoder_packets=159 mux_packets=159 packet_pts=0..158, YUV cache: 0 hits / 159 misses
+[2026-11-08 12:07:16.793] [info] [native_av] native-surface timings — hwframe_pool_ms=0.0 c2v_prepare_ms=0.0 encode_drain_ms=0.0 send_ms=7320.0 submit_counter_ms=0.0 backpressure_ms=166.7
+[2026-11-08 12:07:16.793] [info] [video_native] convert=2434.45ms  send_frame=7319.99ms  backpressure=166.68ms  flush=3818.88ms  receive_packet=3930.12ms  mux_write=10.25ms  trailer=0.69ms
+[2026-11-08 12:07:16.793] [warning] [vulkan] GPU timing completion has no telemetry frame: frame=159 slot=3
+[2026-11-08 12:07:16.797] [info] [video] render_ms=54985.97 encode_ms=3858.49 writer_encode_ms=17239.55 wall_ms=60054.07 nvml_stop_ms=0.12
+[2026-11-08 12:07:16.797] [info] [video] FFmpeg queue wait duration: 0.44 ms
+[2026-11-08 12:07:16.797] [error] [video] Export incomplete: cancelled=false render_failed=true writer_error=false exception=false
+[2026-11-08 12:07:16.798] [info] [startup-profile] total=467.50ms logger=0.03ms cli_bootstrap=2.39ms cli_parse=nullms composition=0.07ms plan_read=nullms json_parse=nullms plan_decode_validate=nullms asset_resolve=nullms plan_compile=nullms unaccounted=109.16ms
+[2026-11-08 12:07:16.818] [info] [video] Wrote exact per-frame timing sidecar: RenderingGen/hdr_bokeh_focus_pull_20261108/hdr_bokeh_focus_pull_aces_1080p30.mp4.timing.json
+[libx264 @ 0x55af9d944f80] frame I:5     Avg QP: 5.78  size: 54397
+[libx264 @ 0x55af9d944f80] frame P:154   Avg QP:20.73  size: 12468
+[libx264 @ 0x55af9d944f80] mb I  I16..4: 76.3% 15.1%  8.6%
+[libx264 @ 0x55af9d944f80] mb P  I16..4:  0.7%  1.4%  0.1%  P16..4:  9.2%  4.1%  2.4%  0.0%  0.0%    skip:82.1%
+[libx264 @ 0x55af9d944f80] 8x8 transform intra:34.9% inter:35.7%
+[libx264 @ 0x55af9d944f80] coded y,uvDC,uvAC intra: 7.1% 14.7% 11.2% inter: 3.2% 7.2% 4.6%
+[libx264 @ 0x55af9d944f80] i16 v,h,dc,p: 88% 11%  1%  1%
+[libx264 @ 0x55af9d944f80] i8 v,h,dc,ddl,ddr,vr,hd,vl,hu: 29%  7% 54%  1%  2%  2%  2%  1%  2%
+[libx264 @ 0x55af9d944f80] i4 v,h,dc,ddl,ddr,vr,hd,vl,hu: 22% 16% 31%  5%  6%  5%  5%  5%  5%
+[libx264 @ 0x55af9d944f80] i8c dc,h,v,p: 74% 11% 13%  2%
+[libx264 @ 0x55af9d944f80] Weighted P-Frames: Y:0.0% UV:0.0%
+[libx264 @ 0x55af9d944f80] ref P L0: 70.4%  7.6% 11.4%  5.0%  3.4%  2.4%
+[libx264 @ 0x55af9d944f80] kb/s:3308.71
+[2026-11-08 12:07:16.827] [info] [INFO] job-lifecycle: slot_pool_close_ms=0.0 surface_release_ms=0.0
+[2026-11-08 12:07:17.063] [info] [INFO] job-lifecycle: queue_close_ms=0.0 writer_join_ms=0.0 encoder_reset_ms=5.8 decoder_reset_ms=0.0 full_graph_reset_ms=236.3 sink_ctx_reset_ms=0.0 device_runtime_reset_ms=0.0 device_reservation_reset_ms=0.0
+[2026-11-08 12:07:17.069] [info] [INFO] job-lifecycle: sidecar_write_ms=23.1 session_teardown_ms=247.4
+VIDEO_ENCODER_FAILED
+
+Composition: HdrBokehFocusPull
+Frame: 0
+Asset: RenderingGen/hdr_bokeh_focus_pull_20261108/hdr_bokeh_focus_pull_aces_1080p30.mp4
+
+Details:
+EncoderFailed: video encoder failed for composition 'HdrBokehFocusPull' using codec 'auto' output 'RenderingGen/hdr_bokeh_focus_pull_20261108/hdr_bokeh_focus_pull_aces_1080p30.mp4'
+
+Fix:
+Use an available codec/encoder and verify FFmpeg configuration
+before retrying the video render.

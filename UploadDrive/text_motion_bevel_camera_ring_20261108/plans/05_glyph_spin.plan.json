@@ -1,0 +1,385 @@
+{
+  "schema": "chronon.render-plan.v3",
+  "version": 3,
+  "job_id": "text_motion_05_glyph_spin_bevel_camera_ring",
+  "canvas": {
+    "width": 1920,
+    "height": 1080,
+    "fps_num": 30,
+    "fps_den": 1,
+    "duration_frames": 270
+  },
+  "layers": [
+    {
+      "id": "backdrop",
+      "type": "color",
+      "color": [
+        0.005,
+        0.012,
+        0.03,
+        1.0
+      ],
+      "size": [
+        1920,
+        1080
+      ],
+      "position": [
+        0,
+        0
+      ],
+      "start_frame": 0,
+      "duration_frames": 270,
+      "effects": [
+        {
+          "type": "vignette",
+          "radius": 0.68,
+          "softness": 0.7,
+          "amount": 0.32,
+          "color": [
+            0,
+            0,
+            0,
+            1
+          ]
+        }
+      ]
+    },
+    {
+      "id": "05_glyph_spin_title",
+      "type": "text",
+      "text": "SEI MECCANICHE",
+      "size": [
+        1920,
+        1080
+      ],
+      "position": [
+        960.0,
+        540.0
+      ],
+      "start_frame": 0,
+      "duration_frames": 270,
+      "style": {
+        "font": "assets/fonts/DMSans-Bold.ttf",
+        "font_size": 136.0,
+        "fill": "#6FFFE9",
+        "text_align": "center"
+      },
+      "effects": [
+        {
+          "type": "camera_ring",
+          "center": [
+            0.5,
+            0.5
+          ],
+          "axis_scale": [
+            1.85,
+            0.72
+          ],
+          "inner_radius": 0.1,
+          "outer_radius": 0.61,
+          "max_blur_radius": 0.03,
+          "chroma_dispersion": 0.016,
+          "anamorphic_stretch": 1.45,
+          "samples": 64
+        },
+        {
+          "type": "catalog",
+          "effect_id": "light.sdf_bevel",
+          "params": [
+            {
+              "param": "bevel_width",
+              "value": 16.0
+            },
+            {
+              "param": "bevel_height",
+              "value": 12.0
+            },
+            {
+              "param": "rim_width",
+              "value": 3.0
+            },
+            {
+              "param": "rim_intensity",
+              "value": 0.75
+            },
+            {
+              "param": "highlight",
+              "value": 0.65
+            },
+            {
+              "param": "shade",
+              "value": 0.42
+            },
+            {
+              "param": "light_angle",
+              "value": -135.0
+            },
+            {
+              "param": "light_elevation",
+              "value": 38.0
+            },
+            {
+              "param": "shadow_distance",
+              "value": 12.0
+            },
+            {
+              "param": "shadow_softness",
+              "value": 6.0
+            },
+            {
+              "param": "shadow_opacity",
+              "value": 0.75
+            }
+          ]
+        }
+      ],
+      "animation": {
+        "tracks": [
+          {
+            "property": "opacity",
+            "easing": "linear",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 0.0
+              },
+              {
+                "frame": 10,
+                "value": 1.0
+              },
+              {
+                "frame": 269,
+                "value": 1.0
+              }
+            ]
+          },
+          {
+            "property": "scale",
+            "easing": "out_cubic",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": [
+                  0.94,
+                  0.94
+                ]
+              },
+              {
+                "frame": 90,
+                "value": [
+                  1.0,
+                  1.0
+                ]
+              },
+              {
+                "frame": 269,
+                "value": [
+                  1.015,
+                  1.015
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "text_animators": [
+        {
+          "id": "hide_unrevealed",
+          "selectors": [
+            {
+              "unit": "glyph",
+              "shape": "square",
+              "order": "forward",
+              "combine": "replace",
+              "exclude_spaces": true,
+              "start": {
+                "easing": "linear",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0.0
+                  },
+                  {
+                    "frame": 32,
+                    "value": 100.0
+                  },
+                  {
+                    "frame": 269,
+                    "value": 100.0
+                  }
+                ]
+              },
+              "end": {
+                "easing": "linear",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 100.0
+                  }
+                ]
+              }
+            }
+          ],
+          "properties": [
+            {
+              "property": "opacity",
+              "easing": "linear",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0.0
+                },
+                {
+                  "frame": 269,
+                  "value": 0.0
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "spin_from_center",
+          "selectors": [
+            {
+              "unit": "glyph",
+              "shape": "smooth",
+              "order": "from_center",
+              "combine": "replace",
+              "exclude_spaces": true,
+              "start": {
+                "easing": "linear",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0.0
+                  },
+                  {
+                    "frame": 32,
+                    "value": 100.0
+                  },
+                  {
+                    "frame": 269,
+                    "value": 100.0
+                  }
+                ]
+              },
+              "end": {
+                "easing": "linear",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 100.0
+                  }
+                ]
+              }
+            }
+          ],
+          "properties": [
+            {
+              "property": "rotation",
+              "easing": "linear",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": -90.0
+                },
+                {
+                  "frame": 40,
+                  "value": 0.0
+                },
+                {
+                  "frame": 269,
+                  "value": 0.0
+                }
+              ]
+            },
+            {
+              "property": "scale",
+              "easing": "linear",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": [
+                    0.6,
+                    0.6
+                  ]
+                },
+                {
+                  "frame": 40,
+                  "value": [
+                    1.0,
+                    1.0
+                  ]
+                },
+                {
+                  "frame": 269,
+                  "value": [
+                    1.0,
+                    1.0
+                  ]
+                }
+              ]
+            },
+            {
+              "property": "blur",
+              "easing": "linear",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 12.0
+                },
+                {
+                  "frame": 42,
+                  "value": 0.0
+                },
+                {
+                  "frame": 269,
+                  "value": 0.0
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "film_grain",
+      "type": "color",
+      "color": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "size": [
+        1920,
+        1080
+      ],
+      "position": [
+        0,
+        0
+      ],
+      "start_frame": 0,
+      "duration_frames": 270,
+      "opacity": 0.006,
+      "blend_mode": "screen",
+      "effects": [
+        {
+          "type": "catalog",
+          "effect_id": "generate.noise",
+          "params": [
+            {
+              "param": "amount",
+              "value": 0.85
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "output": {
+    "path": "05_glyph_spin.mp4",
+    "format": "mp4",
+    "codec": "h264"
+  }
+}

@@ -1,0 +1,143 @@
+{
+  "schema": "chronontemplate.camera-ring-text-v2-series.v1",
+  "generator": "chronontemplate_emit_camera_ring_text_v2_series",
+  "canvas": {
+    "width": 1920,
+    "height": 1080,
+    "fps": 30
+  },
+  "clips": [
+    {
+      "id": "07_ogni_dettaglio",
+      "index": 7,
+      "slug": "Ogni_Dettaglio",
+      "label": "ogni dettaglio conta",
+      "note": "SF Pro Semibold · blu notte · camera ring largo",
+      "reference": "Chronon3d/docs/evidence/camera-ring-text-drive-20261108/camera_ring_text_01_*_v2.mp4",
+      "text": "ogni dettaglio conta",
+      "font": "SF-Pro-Display-Semibold.otf",
+      "font_size": 132,
+      "fill": "#DDF8FF",
+      "background_rgb": [
+        0.002,
+        0.01,
+        0.016
+      ],
+      "frames": 300,
+      "duration_s": 10,
+      "plan": "plans/07_Ogni_Dettaglio.plan.json",
+      "mp4": "mp4/CameraRing_Text_07_Ogni_Dettaglio_1920x1080_10s_v2.mp4",
+      "drive_name": "CameraRing_Text_07_Ogni_Dettaglio_1920x1080_10s_v2.mp4"
+    },
+    {
+      "id": "08_centro_nitido",
+      "index": 8,
+      "slug": "Centro_Nitido",
+      "label": "centro nitido, bordi morbidi",
+      "note": "DM Sans Bold · rosso cupo · bordo caldo",
+      "reference": "Chronon3d/docs/evidence/camera-ring-text-drive-20261108/camera_ring_text_02_*_v2.mp4",
+      "text": "centro nitido, bordi morbidi",
+      "font": "DMSans-Bold.ttf",
+      "font_size": 132,
+      "fill": "#FFE7CF",
+      "background_rgb": [
+        0.026,
+        0.004,
+        0.01
+      ],
+      "frames": 240,
+      "duration_s": 8,
+      "plan": "plans/08_Centro_Nitido.plan.json",
+      "mp4": "mp4/CameraRing_Text_08_Centro_Nitido_1920x1080_8s_v2.mp4",
+      "drive_name": "CameraRing_Text_08_Centro_Nitido_1920x1080_8s_v2.mp4"
+    },
+    {
+      "id": "09_ogni_dettaglio_a_fuoco",
+      "index": 9,
+      "slug": "Ogni_Dettaglio_A_Fuoco",
+      "label": "ogni dettaglio a fuoco",
+      "note": "SF Pro Bold · verde profondo · fuoco stretto",
+      "reference": "Chronon3d/docs/evidence/camera-ring-text-drive-20261108/camera_ring_text_03_*_v2.mp4",
+      "text": "ogni dettaglio a fuoco",
+      "font": "SF-Pro-Display-Bold.otf",
+      "font_size": 132,
+      "fill": "#E9FFF8",
+      "background_rgb": [
+        0.003,
+        0.024,
+        0.016
+      ],
+      "frames": 180,
+      "duration_s": 6,
+      "plan": "plans/09_Ogni_Dettaglio_A_Fuoco.plan.json",
+      "mp4": "mp4/CameraRing_Text_09_Ogni_Dettaglio_A_Fuoco_1920x1080_6s_v2.mp4",
+      "drive_name": "CameraRing_Text_09_Ogni_Dettaglio_A_Fuoco_1920x1080_6s_v2.mp4"
+    },
+    {
+      "id": "10_resta_ancora",
+      "index": 10,
+      "slug": "Resta_Ancora",
+      "label": "resta ancora un po'",
+      "note": "Playfair italico · ambra calda · alone morbido",
+      "reference": "Chronon3d/docs/evidence/camera-ring-text-drive-20261108/camera_ring_text_04_*_v2.mp4",
+      "text": "resta ancora un po'",
+      "font": "PlayfairDisplay-MediumItalic.ttf",
+      "font_size": 132,
+      "fill": "#F4C98B",
+      "background_rgb": [
+        0.06,
+        0.032,
+        0.016
+      ],
+      "frames": 240,
+      "duration_s": 8,
+      "plan": "plans/10_Resta_Ancora.plan.json",
+      "mp4": "mp4/CameraRing_Text_10_Resta_Ancora_1920x1080_8s_v2.mp4",
+      "drive_name": "CameraRing_Text_10_Resta_Ancora_1920x1080_8s_v2.mp4"
+    },
+    {
+      "id": "11_guardala_due_volte",
+      "index": 11,
+      "slug": "Guardala_Due_Volte",
+      "label": "guardala due volte",
+      "note": "DM Sans Bold · viola · cromia alta",
+      "reference": "Chronon3d/docs/evidence/camera-ring-text-drive-20261108/camera_ring_text_05_*_v2.mp4",
+      "text": "guardala due volte",
+      "font": "DMSans-Bold.ttf",
+      "font_size": 132,
+      "fill": "#6FFFE9",
+      "background_rgb": [
+        0.02,
+        0.004,
+        0.045
+      ],
+      "frames": 180,
+      "duration_s": 6,
+      "plan": "plans/11_Guardala_Due_Volte.plan.json",
+      "mp4": "mp4/CameraRing_Text_11_Guardala_Due_Volte_1920x1080_6s_v2.mp4",
+      "drive_name": "CameraRing_Text_11_Guardala_Due_Volte_1920x1080_6s_v2.mp4"
+    },
+    {
+      "id": "12_pulito_preciso",
+      "index": 12,
+      "slug": "Pulito_Preciso",
+      "label": "pulito. preciso. a fuoco.",
+      "note": "SF Pro Semibold · blu freddo · pulito e centrato",
+      "reference": "Chronon3d/docs/evidence/camera-ring-text-drive-20261108/camera_ring_text_06_*_v2.mp4",
+      "text": "pulito. preciso. a fuoco.",
+      "font": "SF-Pro-Display-Semibold.otf",
+      "font_size": 132,
+      "fill": "#EAF4FF",
+      "background_rgb": [
+        0.01,
+        0.028,
+        0.048
+      ],
+      "frames": 210,
+      "duration_s": 7,
+      "plan": "plans/12_Pulito_Preciso.plan.json",
+      "mp4": "mp4/CameraRing_Text_12_Pulito_Preciso_1920x1080_7s_v2.mp4",
+      "drive_name": "CameraRing_Text_12_Pulito_Preciso_1920x1080_7s_v2.mp4"
+    }
+  ]
+}

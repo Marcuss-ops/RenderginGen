@@ -122,6 +122,42 @@ func TestParentFinalizerStoresPublishesAndCompletes(t *testing.T) {
 //
 // A third read means the duplicate round-trip is back; a derived range that
 // disagrees with the family's own span would assemble the wrong window.
+// TestParentFinalizerPublishesThroughTheStagedLane covers the single-pass
+// parent publication: when the backend exposes staging, the finished parent is
+// uploaded and hashed in one read instead of artifactFromFile + PutFile.
+func TestParentFinalizerPublishesThroughTheStagedLane(t *testing.T) {
+	ctx := context.Background()
+	backend := newStagingMem()
+	store := storage.New(backend, storage.Options{L2Dir: t.TempDir()})
+	if err := store.Put(ctx, "chunk-a", []byte("A")); err != nil {
+		t.Fatal(err)
+	}
+	if err := store.Put(ctx, "chunk-b", []byte("B")); err != nil {
+		t.Fatal(err)
+	}
+	children := []*queue.Job{
+		{ID: "c0", ChunkIndex: 0, FrameRange: &queue.FrameRange{Start: 0, End: 10}, State: queue.StateCompleted, Artifact: copySafeChunkArtifact("chunk-a")},
+		{ID: "c1", ChunkIndex: 1, FrameRange: &queue.FrameRange{Start: 10, End: 20}, State: queue.StateCompleted, Artifact: copySafeChunkArtifact("chunk-b")},
+	}
+	q := &finalizerQueue{children: children}
+	f := NewParentFinalizer(q, store, finalizerAssembler{}, nil, "worker", t.TempDir())
+
+	finalized, artifact, err := f.Finalize(ctx, "parent-staged", 0, 20)
+	if err != nil {
+		t.Fatalf("finalize: %v", err)
+	}
+	if !finalized || q.completed == nil || artifact.SizeBytes != 2 || artifact.StorageKey == "" {
+		t.Fatalf("finalized=%t completed=%+v artifact=%+v", finalized, q.completed, artifact)
+	}
+	backend.mu.Lock()
+	uploads := backend.uploads
+	finalizedSessions := len(backend.finalized)
+	backend.mu.Unlock()
+	if uploads != 1 || finalizedSessions != 1 {
+		t.Fatalf("staged parent uploads=%d finalized=%d, want 1 and 1", uploads, finalizedSessions)
+	}
+}
+
 func TestFinalizeFromChildrenDerivesRangeAndReadsOnceBeforeTheClaim(t *testing.T) {
 	ctx := context.Background()
 	store := storage.New(storage.NewMemory(), storage.Options{L2Dir: t.TempDir()})

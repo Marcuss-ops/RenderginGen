@@ -16,6 +16,7 @@ import (
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/metricnames"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/overlay"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/queue"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/storage"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/workerlog"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/workspace"
 )
@@ -152,9 +153,28 @@ func (p *Processor) ImportOverlayArtifact(ctx context.Context, job *queue.Job) (
 		return queue.Artifact{}, err
 	}
 	identityStarted := time.Now()
-	sha, size, err := hashio.File(localPath)
-	if err != nil {
-		return queue.Artifact{}, fmt.Errorf("processor: hash imported map MP4: %w", err)
+	sha := ""
+	var size int64
+	staged := false
+	if p.store != nil {
+		stagedSHA, stagedSize, stageErr := p.store.PutStagedFile(ctx, stagingSessionID(job.ID+"-import:"+asset.LogicalPath), localPath)
+		switch {
+		case stageErr == nil:
+			sha, size, staged = stagedSHA, stagedSize, true
+			workerlog.ByJobID(job.ID).Infof("imported map identity from the staged upload stream (bytes=%d)", stagedSize)
+		case errors.Is(stageErr, storage.ErrStagingUnsupported):
+			// Memory/test backends keep the classic hash-then-PUT path.
+		default:
+			// A failed optimization must not fail an import whose bytes are
+			// intact: the classic path re-reads and publishes the same file.
+			workerlog.ByJobID(job.ID).Warnf("import staged upload failed; falling back to hash-then-PUT: %v", stageErr)
+		}
+	}
+	if !staged {
+		sha, size, err = hashio.File(localPath)
+		if err != nil {
+			return queue.Artifact{}, fmt.Errorf("processor: hash imported map MP4: %w", err)
+		}
 	}
 	if size != request.SourceSizeBytes {
 		return queue.Artifact{}, fmt.Errorf("processor: imported MP4 size %d does not match request %d", size, request.SourceSizeBytes)
@@ -213,10 +233,14 @@ func (p *Processor) ImportOverlayArtifact(ctx context.Context, job *queue.Job) (
 		},
 	}
 	// PipelineGen's worker already staged these exact bytes under their content
-	// address. PutFile verifies the content-addressed L3 write and warms L2;
-	// there is no re-encode or byte transformation on this path.
-	if err := p.store.PutFile(ctx, sha, localPath); err != nil {
-		return queue.Artifact{}, fmt.Errorf("processor: persist imported artifact: %w", err)
+	// address. The staged path removed the separate hash read (upload and hash
+	// share one pass) and warmed L2; the classic fallback verifies the
+	// content-addressed L3 write and warms L2 itself. There is no re-encode or
+	// byte transformation on either path.
+	if !staged {
+		if err := p.store.PutFile(ctx, sha, localPath); err != nil {
+			return queue.Artifact{}, fmt.Errorf("processor: persist imported artifact: %w", err)
+		}
 	}
 	metrics[metricnames.ImportTotalUS] = float64(time.Since(started).Microseconds())
 	if p.recorder != nil {

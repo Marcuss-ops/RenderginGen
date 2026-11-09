@@ -77,7 +77,8 @@ func TestImportOverlayArtifactIsByteIdenticalAndDoesNotInvokeChronon(t *testing.
 	}
 	fixture := filepath.Join("..", "..", "..", "testdata", "golden", "background.mp4")
 	job, expected := makeOverlayImportJob(t, fixture, "map-import-e2e")
-	store := storage.New(storage.NewMemory(), storage.Options{L2Dir: t.TempDir()})
+	backend := newStagingMem()
+	store := storage.New(backend, storage.Options{L2Dir: t.TempDir()})
 	// Stage the exact producer MP4 as PipelineGen does before queue submission.
 	if err := store.Put(context.Background(), job.Assets[0].Hash, expected); err != nil {
 		t.Fatal(err)
@@ -125,6 +126,12 @@ func TestImportOverlayArtifactIsByteIdenticalAndDoesNotInvokeChronon(t *testing.
 	}
 	if _, ok := artifact.Metrics["encode_ms"]; ok {
 		t.Fatalf("CPU import fabricated Chronon encode timing: %v", artifact.Metrics)
+	}
+	backend.mu.Lock()
+	uploads := backend.uploads
+	backend.mu.Unlock()
+	if uploads != 1 {
+		t.Fatalf("import staged uploads = %d, want exactly 1", uploads)
 	}
 }
 

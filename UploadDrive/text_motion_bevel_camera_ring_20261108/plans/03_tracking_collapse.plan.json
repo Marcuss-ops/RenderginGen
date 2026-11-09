@@ -1,0 +1,331 @@
+{
+  "schema": "chronon.render-plan.v3",
+  "version": 3,
+  "job_id": "text_motion_03_tracking_collapse_bevel_camera_ring",
+  "canvas": {
+    "width": 1920,
+    "height": 1080,
+    "fps_num": 30,
+    "fps_den": 1,
+    "duration_frames": 210
+  },
+  "layers": [
+    {
+      "id": "backdrop",
+      "type": "color",
+      "color": [
+        0.003,
+        0.024,
+        0.016,
+        1.0
+      ],
+      "size": [
+        1920,
+        1080
+      ],
+      "position": [
+        0,
+        0
+      ],
+      "start_frame": 0,
+      "duration_frames": 210,
+      "effects": [
+        {
+          "type": "vignette",
+          "radius": 0.68,
+          "softness": 0.7,
+          "amount": 0.32,
+          "color": [
+            0,
+            0,
+            0,
+            1
+          ]
+        }
+      ]
+    },
+    {
+      "id": "03_tracking_collapse_title",
+      "type": "text",
+      "text": "CHRONON",
+      "size": [
+        1920,
+        1080
+      ],
+      "position": [
+        960.0,
+        540.0
+      ],
+      "start_frame": 0,
+      "duration_frames": 210,
+      "style": {
+        "font": "assets/fonts/SF-Pro-Display-Semibold.otf",
+        "font_size": 176.0,
+        "fill": "#E9FFF8",
+        "text_align": "center"
+      },
+      "effects": [
+        {
+          "type": "camera_ring",
+          "center": [
+            0.5,
+            0.5
+          ],
+          "axis_scale": [
+            1.85,
+            0.72
+          ],
+          "inner_radius": 0.1,
+          "outer_radius": 0.61,
+          "max_blur_radius": 0.022,
+          "chroma_dispersion": 0.008,
+          "anamorphic_stretch": 0.9,
+          "samples": 64
+        },
+        {
+          "type": "catalog",
+          "effect_id": "light.sdf_bevel",
+          "params": [
+            {
+              "param": "bevel_width",
+              "value": 16.0
+            },
+            {
+              "param": "bevel_height",
+              "value": 12.0
+            },
+            {
+              "param": "rim_width",
+              "value": 3.0
+            },
+            {
+              "param": "rim_intensity",
+              "value": 0.75
+            },
+            {
+              "param": "highlight",
+              "value": 0.65
+            },
+            {
+              "param": "shade",
+              "value": 0.42
+            },
+            {
+              "param": "light_angle",
+              "value": -135.0
+            },
+            {
+              "param": "light_elevation",
+              "value": 38.0
+            },
+            {
+              "param": "shadow_distance",
+              "value": 12.0
+            },
+            {
+              "param": "shadow_softness",
+              "value": 6.0
+            },
+            {
+              "param": "shadow_opacity",
+              "value": 0.75
+            }
+          ]
+        }
+      ],
+      "animation": {
+        "tracks": [
+          {
+            "property": "opacity",
+            "easing": "linear",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 0.0
+              },
+              {
+                "frame": 10,
+                "value": 1.0
+              },
+              {
+                "frame": 209,
+                "value": 1.0
+              }
+            ]
+          },
+          {
+            "property": "scale",
+            "easing": "out_cubic",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": [
+                  0.94,
+                  0.94
+                ]
+              },
+              {
+                "frame": 90,
+                "value": [
+                  1.0,
+                  1.0
+                ]
+              },
+              {
+                "frame": 209,
+                "value": [
+                  1.015,
+                  1.015
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "text_animators": [
+        {
+          "id": "tracking_collapse",
+          "selectors": [
+            {
+              "unit": "glyph",
+              "shape": "ramp_up",
+              "order": "forward",
+              "combine": "replace",
+              "exclude_spaces": true,
+              "start": {
+                "easing": "linear",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0.0
+                  },
+                  {
+                    "frame": 28,
+                    "value": 100.0
+                  },
+                  {
+                    "frame": 209,
+                    "value": 100.0
+                  }
+                ]
+              },
+              "end": {
+                "easing": "linear",
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 100.0
+                  }
+                ]
+              }
+            }
+          ],
+          "properties": [
+            {
+              "property": "tracking",
+              "easing": "linear",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 32.0
+                },
+                {
+                  "frame": 52,
+                  "value": 0.0
+                },
+                {
+                  "frame": 209,
+                  "value": 0.0
+                }
+              ]
+            },
+            {
+              "property": "scale",
+              "easing": "linear",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": [
+                    0.9,
+                    0.9
+                  ]
+                },
+                {
+                  "frame": 34,
+                  "value": [
+                    1.0,
+                    1.0
+                  ]
+                },
+                {
+                  "frame": 209,
+                  "value": [
+                    1.0,
+                    1.0
+                  ]
+                }
+              ]
+            },
+            {
+              "property": "opacity",
+              "easing": "linear",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0.0
+                },
+                {
+                  "frame": 22,
+                  "value": 1.0
+                },
+                {
+                  "frame": 209,
+                  "value": 1.0
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "film_grain",
+      "type": "color",
+      "color": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "size": [
+        1920,
+        1080
+      ],
+      "position": [
+        0,
+        0
+      ],
+      "start_frame": 0,
+      "duration_frames": 210,
+      "opacity": 0.006,
+      "blend_mode": "screen",
+      "effects": [
+        {
+          "type": "catalog",
+          "effect_id": "generate.noise",
+          "params": [
+            {
+              "param": "amount",
+              "value": 0.85
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "output": {
+    "path": "03_tracking_collapse.mp4",
+    "format": "mp4",
+    "codec": "h264"
+  }
+}

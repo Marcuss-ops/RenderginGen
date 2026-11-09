@@ -1,0 +1,39 @@
+[2026-11-08 11:36:51.601] [warning] pixel truth: the image output lane (still / PNG sequence) is not a pixel-truth surface — it does not compose the text layers and does not vary per frame or per backend (TICKET-TEXT-QUALITY-V2 P0-0b). For pre-encode truth use `--video-sink raw`, or measure the decoded frame of the encoded output.
+[2026-11-08 11:36:52.021] [info] [job] lane=vulkan_native encoder=auto 1920x1080 @ 30/1
+[2026-11-08 11:36:52.057] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 11:36:52.061] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 11:36:52.506] [info] Rendering HdrBokehFocusPull [0 -> 0 step 1]...
+[2026-11-08 11:36:52.506] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 11:36:52.507] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 11:36:53.827] [info] chronon3d::vulkan text batch formats: dst_image.format=109 atlas_image.format=44 atlas_encoding=2 (shader contract: dst rgba32f, atlas rgba8)
+[2026-11-08 11:36:53.861] [info] [temp-lifetime] frame=0 after_level=0 live=[0,1,3,6,8,] retired=[]
+[2026-11-08 11:36:53.861] [info] [exec-level-diag] frame=0 level=0 nodes=5 input_ms=0.002 dispatch_ms=1170.633 fb_release_ms=0.002
+[2026-11-08 11:36:53.861] [info] [graph-edge] frame=0 level=1 consumer_id=2 input_index=0 producer_id=0 producer_level=0
+[2026-11-08 11:36:53.861] [info] [graph-edge] frame=0 level=1 consumer_id=2 input_index=1 producer_id=1 producer_level=0
+[2026-11-08 11:36:53.861] [info] [graph-edge] frame=0 level=1 consumer_id=4 input_index=0 producer_id=3 producer_level=0
+[2026-11-08 11:36:54.088] [info] [temp-lifetime] frame=0 after_level=1 live=[2,4,6,8,] retired=[0,1,3,]
+[2026-11-08 11:36:54.088] [info] [exec-level-diag] frame=0 level=1 nodes=2 input_ms=0.025 dispatch_ms=227.000 fb_release_ms=0.012
+[2026-11-08 11:36:54.088] [info] [graph-edge] frame=0 level=2 consumer_id=5 input_index=0 producer_id=2 producer_level=1
+[2026-11-08 11:36:54.088] [info] [graph-edge] frame=0 level=2 consumer_id=5 input_index=1 producer_id=4 producer_level=1
+[2026-11-08 11:36:54.110] [info] [temp-lifetime] frame=0 after_level=2 live=[5,6,8,] retired=[2,4,]
+[2026-11-08 11:36:54.110] [info] [exec-level-diag] frame=0 level=2 nodes=1 input_ms=0.015 dispatch_ms=21.310 fb_release_ms=0.010
+[2026-11-08 11:36:54.110] [info] [graph-edge] frame=0 level=3 consumer_id=7 input_index=0 producer_id=5 producer_level=2
+[2026-11-08 11:36:54.110] [info] [graph-edge] frame=0 level=3 consumer_id=7 input_index=1 producer_id=6 producer_level=0
+[2026-11-08 11:36:54.125] [info] [temp-lifetime] frame=0 after_level=3 live=[7,8,] retired=[5,6,]
+[2026-11-08 11:36:54.125] [info] [exec-level-diag] frame=0 level=3 nodes=1 input_ms=0.016 dispatch_ms=14.639 fb_release_ms=0.010
+[2026-11-08 11:36:54.125] [info] [graph-edge] frame=0 level=4 consumer_id=9 input_index=0 producer_id=7 producer_level=3
+[2026-11-08 11:36:54.125] [info] [graph-edge] frame=0 level=4 consumer_id=9 input_index=1 producer_id=8 producer_level=0
+[2026-11-08 11:36:54.146] [info] [temp-lifetime] frame=0 after_level=4 live=[9,] retired=[7,8,]
+[2026-11-08 11:36:54.146] [info] [exec-level-diag] frame=0 level=4 nodes=1 input_ms=0.015 dispatch_ms=20.867 fb_release_ms=0.009
+[2026-11-08 11:36:54.318] [info] [still] tone-map=aces exposure=1 frame=0 max_linear_luma=0.9999 max_mapped_luma=0.8038
+[2026-11-08 11:36:55.232] [info] Frame 0 saved to RenderingGen/hdr_bokeh_focus_pull_20261108/hdr_bokeh_focus_pull_aces_f000.png
+[2026-11-08 11:36:55.238] [info] Render complete.
+[2026-11-08 11:36:55.238] [info] 
+┌──── Cache Snapshot ------------------------------------------------
+│ Nodes                hits=0        miss=0        evict=0    size=0      weight=       0 B  cap=      2.0 GB  hit_rate=0.0%
+│ hot-path             hash=       0.0us lock=       0.0us lru=       0.0us loader=       0.0us contention=0
+├──── Totals ------------------------------------------------
+│ 1 domains            hits=0        miss=0        evict=0    size=0      weight=       0 B  cap=      2.0 GB  hit_rate=0.0%
+│ hot-path             hash=       0.0us lock=       0.0us lru=       0.0us loader=       0.0us contention=0
+└-------------------------------------------------------------------------------
+
