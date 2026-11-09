@@ -1,0 +1,221 @@
+{
+  "schema": "chronon.broadcast-six-test.drive-delivery.v1",
+  "date": "2026-11-08",
+  "tested_at": "2026-11-08",
+  "notes": "Six-test broadcast evidence bundle: README, report, canary/hierarchy MP4s and PNGs, 4K/720p fixtures and logs. Rendered with Vulkan on RTX A4000.",
+  "parent_folder_id": "1J_xUGo_bchzXDIGqSX04CU44c_Dm3SxS",
+  "drive_folder_id": "16hS3jLAs8XzffRIDAp_Cuw7kDhAvwtVt",
+  "drive_folder_url": "https://drive.google.com/drive/folders/16hS3jLAs8XzffRIDAp_Cuw7kDhAvwtVt",
+  "logs_folder_id": "17rXt4roUUVj2BFMMvS15fi4c5x1x0oMI",
+  "file_count": 23,
+  "files": [
+    {
+      "local_path": "Chronon3d/docs/evidence/broadcast-six-test-20261108/README.md",
+      "name": "README.md",
+      "drive_file_id": "1CNHUt_DJ7ybDqduHAzTZS7Tr7OZfS6YB",
+      "drive_url": "https://drive.google.com/file/d/1CNHUt_DJ7ybDqduHAzTZS7Tr7OZfS6YB/view?usp=drivesdk",
+      "drive_parent_id": "16hS3jLAs8XzffRIDAp_Cuw7kDhAvwtVt",
+      "sha256": "c7009ee28c1ffdece59d8992e869bb686d6f00730517c6313343a9ea0fb10f01",
+      "bytes": 7789
+    },
+    {
+      "local_path": "Chronon3d/docs/evidence/broadcast-six-test-20261108/broadcast_canary.plan.json",
+      "name": "broadcast_canary.plan.json",
+      "drive_file_id": "1VV26N3X6XRntu-Hi-810usi99mqIac1A",
+      "drive_url": "https://drive.google.com/file/d/1VV26N3X6XRntu-Hi-810usi99mqIac1A/view?usp=drivesdk",
+      "drive_parent_id": "16hS3jLAs8XzffRIDAp_Cuw7kDhAvwtVt",
+      "sha256": "a4406531fff01b3671ef631a3905f9c488525be96df4f631b4f30e0dc6bde9dc",
+      "bytes": 13366
+    },
+    {
+      "local_path": "Chronon3d/docs/evidence/broadcast-six-test-20261108/broadcast_canary_1080p.mp4",
+      "name": "broadcast_canary_1080p.mp4",
+      "drive_file_id": "1_No61R-2IGKfZ5oJtFXioT_HSYXZPM-F",
+      "drive_url": "https://drive.google.com/file/d/1_No61R-2IGKfZ5oJtFXioT_HSYXZPM-F/view?usp=drivesdk",
+      "drive_parent_id": "16hS3jLAs8XzffRIDAp_Cuw7kDhAvwtVt",
+      "sha256": "a936f88d8291e91b537dde4ba07626698fb3f7301fc5719463758753dc33a0b7",
+      "bytes": 901025
+    },
+    {
+      "local_path": "Chronon3d/docs/evidence/broadcast-six-test-20261108/broadcast_canary_morph.svg",
+      "name": "broadcast_canary_morph.svg",
+      "drive_file_id": "1JbpcjwAhtbSq5iCWSPVo1xDd-xl-jEzr",
+      "drive_url": "https://drive.google.com/file/d/1JbpcjwAhtbSq5iCWSPVo1xDd-xl-jEzr/view?usp=drivesdk",
+      "drive_parent_id": "16hS3jLAs8XzffRIDAp_Cuw7kDhAvwtVt",
+      "sha256": "a3733711fb130e8b56e98615acfd765e4c98a2a1ee224335096b88f281e59d87",
+      "bytes": 1057
+    },
+    {
+      "local_path": "Chronon3d/docs/evidence/broadcast-six-test-20261108/broadcast_hierarchy_60fps.mp4",
+      "name": "broadcast_hierarchy_60fps.mp4",
+      "drive_file_id": "1qg6Ywo4N_Xj0PjU8YGJNCPDau6dTLLbS",
+      "drive_url": "https://drive.google.com/file/d/1qg6Ywo4N_Xj0PjU8YGJNCPDau6dTLLbS/view?usp=drivesdk",
+      "drive_parent_id": "16hS3jLAs8XzffRIDAp_Cuw7kDhAvwtVt",
+      "sha256": "6702d2d72875fd3c5c47ef85b2387f7a69beb286af016bb36f187d5887dada0f",
+      "bytes": 15045
+    },
+    {
+      "local_path": "Chronon3d/docs/evidence/broadcast-six-test-20261108/broadcast_hierarchy_60fps.plan.json",
+      "name": "broadcast_hierarchy_60fps.plan.json",
+      "drive_file_id": "1WmQNnnnc9RKH-VmIDf0PK5Tppv1y1mWl",
+      "drive_url": "https://drive.google.com/file/d/1WmQNnnnc9RKH-VmIDf0PK5Tppv1y1mWl/view?usp=drivesdk",
+      "drive_parent_id": "16hS3jLAs8XzffRIDAp_Cuw7kDhAvwtVt",
+      "sha256": "05dd45c5c696e0a1f44866150d46399787a48ccd6a1946f2690dc26d674c5315",
+      "bytes": 6134
+    },
+    {
+      "local_path": "Chronon3d/docs/evidence/broadcast-six-test-20261108/camera_ring_audit.json",
+      "name": "camera_ring_audit.json",
+      "drive_file_id": "1hklnk9nj7rYzQ0iReFhGL3Koplp2bT6J",
+      "drive_url": "https://drive.google.com/file/d/1hklnk9nj7rYzQ0iReFhGL3Koplp2bT6J/view?usp=drivesdk",
+      "drive_parent_id": "16hS3jLAs8XzffRIDAp_Cuw7kDhAvwtVt",
+      "sha256": "fffe80525ce9ab019a5cbe08d51b65b50e4808837802a1084d715006b34b75bc",
+      "bytes": 8896
+    },
+    {
+      "local_path": "Chronon3d/docs/evidence/broadcast-six-test-20261108/canary_frame_090.png",
+      "name": "canary_frame_090.png",
+      "drive_file_id": "1c1gQTngPuLz6c3n8X-MvBx6ozVtZGSW2",
+      "drive_url": "https://drive.google.com/file/d/1c1gQTngPuLz6c3n8X-MvBx6ozVtZGSW2/view?usp=drivesdk",
+      "drive_parent_id": "16hS3jLAs8XzffRIDAp_Cuw7kDhAvwtVt",
+      "sha256": "b2d18a8442683c771100bcfa0e576c04a6600ec0139611340de7c32cf7b51d25",
+      "bytes": 3759454
+    },
+    {
+      "local_path": "Chronon3d/docs/evidence/broadcast-six-test-20261108/hierarchy_frame_040.png",
+      "name": "hierarchy_frame_040.png",
+      "drive_file_id": "1Yt2wXKev36XSlmb2oi49mNRRCxh6TEAo",
+      "drive_url": "https://drive.google.com/file/d/1Yt2wXKev36XSlmb2oi49mNRRCxh6TEAo/view?usp=drivesdk",
+      "drive_parent_id": "16hS3jLAs8XzffRIDAp_Cuw7kDhAvwtVt",
+      "sha256": "7ebddd885632e2bdfa7e168ed4c94dea02d08f74df5a1c44aa8e5ed05afa0226",
+      "bytes": 3633
+    },
+    {
+      "local_path": "Chronon3d/docs/evidence/broadcast-six-test-20261108/logs/render_canary.log",
+      "name": "render_canary.log",
+      "drive_file_id": "1MyskSmbXH-fSbgVKzQ_MPWyyQ8PD8HBn",
+      "drive_url": "https://drive.google.com/file/d/1MyskSmbXH-fSbgVKzQ_MPWyyQ8PD8HBn/view?usp=drivesdk",
+      "drive_parent_id": "17rXt4roUUVj2BFMMvS15fi4c5x1x0oMI",
+      "sha256": "25a98f978fbae2bb8ee2bb9c0d30126ad97d3b67451425e040e807d13c1ab804",
+      "bytes": 11360
+    },
+    {
+      "local_path": "Chronon3d/docs/evidence/broadcast-six-test-20261108/logs/render_hierarchy.log",
+      "name": "render_hierarchy.log",
+      "drive_file_id": "1azSmZv6n1odeF3TrCRpwVnLaM8givIT_",
+      "drive_url": "https://drive.google.com/file/d/1azSmZv6n1odeF3TrCRpwVnLaM8givIT_/view?usp=drivesdk",
+      "drive_parent_id": "17rXt4roUUVj2BFMMvS15fi4c5x1x0oMI",
+      "sha256": "6005906023fe9ed67ef5a1375e3d06d75cb1d7079f3b926cd4fa76568d102066",
+      "bytes": 11584
+    },
+    {
+      "local_path": "Chronon3d/docs/evidence/broadcast-six-test-20261108/logs/render_subpixel_4k.log",
+      "name": "render_subpixel_4k.log",
+      "drive_file_id": "1NhQ6iI3a7HP9fjyZ_STFdfzRlwMnxQLu",
+      "drive_url": "https://drive.google.com/file/d/1NhQ6iI3a7HP9fjyZ_STFdfzRlwMnxQLu/view?usp=drivesdk",
+      "drive_parent_id": "17rXt4roUUVj2BFMMvS15fi4c5x1x0oMI",
+      "sha256": "195126f494a0045f221b8788620c24afc9fb59d81c765b6c000f8ee7f3922328",
+      "bytes": 17287
+    },
+    {
+      "local_path": "Chronon3d/docs/evidence/broadcast-six-test-20261108/logs/render_subpixel_720.log",
+      "name": "render_subpixel_720.log",
+      "drive_file_id": "1ppk8qnfru4ikOwVG1DRQZSpOhlfbc7Za",
+      "drive_url": "https://drive.google.com/file/d/1ppk8qnfru4ikOwVG1DRQZSpOhlfbc7Za/view?usp=drivesdk",
+      "drive_parent_id": "17rXt4roUUVj2BFMMvS15fi4c5x1x0oMI",
+      "sha256": "c5cbda9676f2cb67eda4d6e7ebed891893417dbb83dd295f63b485a5fc87b268",
+      "bytes": 17269
+    },
+    {
+      "local_path": "Chronon3d/docs/evidence/broadcast-six-test-20261108/report.json",
+      "name": "report.json",
+      "drive_file_id": "1pNDyOM49bYiwUsDelB-qQrGEdxQtFFXN",
+      "drive_url": "https://drive.google.com/file/d/1pNDyOM49bYiwUsDelB-qQrGEdxQtFFXN/view?usp=drivesdk",
+      "drive_parent_id": "16hS3jLAs8XzffRIDAp_Cuw7kDhAvwtVt",
+      "sha256": "2e5f050c9cff0136ed5b5e03de829abf1c96042a2c2d138ad06446523fe79dd0",
+      "bytes": 13374
+    },
+    {
+      "local_path": "Chronon3d/docs/evidence/broadcast-six-test-20261108/run_evidence.sh",
+      "name": "run_evidence.sh",
+      "drive_file_id": "1OKahl0jaqnudwUChTUhXph3IM6HS89Hp",
+      "drive_url": "https://drive.google.com/file/d/1OKahl0jaqnudwUChTUhXph3IM6HS89Hp/view?usp=drivesdk",
+      "drive_parent_id": "16hS3jLAs8XzffRIDAp_Cuw7kDhAvwtVt",
+      "sha256": "838b2f0c27b0fa2441d9b34697b8b992f013a3ea6a48c3944e905f219f6481b9",
+      "bytes": 4609
+    },
+    {
+      "local_path": "Chronon3d/docs/evidence/broadcast-six-test-20261108/subpixel_4k.mp4",
+      "name": "subpixel_4k.mp4",
+      "drive_file_id": "1V3lR3mKiTvc9rM-CYeDAgjwB06gn_Zyp",
+      "drive_url": "https://drive.google.com/file/d/1V3lR3mKiTvc9rM-CYeDAgjwB06gn_Zyp/view?usp=drivesdk",
+      "drive_parent_id": "16hS3jLAs8XzffRIDAp_Cuw7kDhAvwtVt",
+      "sha256": "0ca0b6301204477ae658c2bcfccfbcc66d4eaf35fe6be05ff6aaf238de356373",
+      "bytes": 12253
+    },
+    {
+      "local_path": "Chronon3d/docs/evidence/broadcast-six-test-20261108/subpixel_4k.plan.json",
+      "name": "subpixel_4k.plan.json",
+      "drive_file_id": "1ZRt48xFuY18he29FXVwXBlu_ykwIjX5i",
+      "drive_url": "https://drive.google.com/file/d/1ZRt48xFuY18he29FXVwXBlu_ykwIjX5i/view?usp=drivesdk",
+      "drive_parent_id": "16hS3jLAs8XzffRIDAp_Cuw7kDhAvwtVt",
+      "sha256": "ba13f02396204fbefa4058b1f5942db93b78f804e82cd1368618ee9de47fe5e6",
+      "bytes": 4117
+    },
+    {
+      "local_path": "Chronon3d/docs/evidence/broadcast-six-test-20261108/subpixel_4k_line_frame_015.png",
+      "name": "subpixel_4k_line_frame_015.png",
+      "drive_file_id": "1JnZZh2GszGEC8IhSZjH88CwoZzAzgBXz",
+      "drive_url": "https://drive.google.com/file/d/1JnZZh2GszGEC8IhSZjH88CwoZzAzgBXz/view?usp=drivesdk",
+      "drive_parent_id": "16hS3jLAs8XzffRIDAp_Cuw7kDhAvwtVt",
+      "sha256": "7f72a1dd3544a59ee5b308d1f3f9b174be817de14983db821ba7163482845eba",
+      "bytes": 1006
+    },
+    {
+      "local_path": "Chronon3d/docs/evidence/broadcast-six-test-20261108/subpixel_4k_seam_frame_015.png",
+      "name": "subpixel_4k_seam_frame_015.png",
+      "drive_file_id": "1MDusFrNYT8gBfx3Idunr2EHUa0MY1FYy",
+      "drive_url": "https://drive.google.com/file/d/1MDusFrNYT8gBfx3Idunr2EHUa0MY1FYy/view?usp=drivesdk",
+      "drive_parent_id": "16hS3jLAs8XzffRIDAp_Cuw7kDhAvwtVt",
+      "sha256": "77650c465d66ec3997ab9dde07caf021a19894524d910add00711e4aa35e7c57",
+      "bytes": 1101
+    },
+    {
+      "local_path": "Chronon3d/docs/evidence/broadcast-six-test-20261108/subpixel_720.mp4",
+      "name": "subpixel_720.mp4",
+      "drive_file_id": "1aVOx9WOueW72dPC74MmbqkakAsub0ZkH",
+      "drive_url": "https://drive.google.com/file/d/1aVOx9WOueW72dPC74MmbqkakAsub0ZkH/view?usp=drivesdk",
+      "drive_parent_id": "16hS3jLAs8XzffRIDAp_Cuw7kDhAvwtVt",
+      "sha256": "18b4c6b29d544871d30adbb04d2860c399ab38181bf0deab9895433ad65b7248",
+      "bytes": 4447
+    },
+    {
+      "local_path": "Chronon3d/docs/evidence/broadcast-six-test-20261108/subpixel_720.plan.json",
+      "name": "subpixel_720.plan.json",
+      "drive_file_id": "1RPLBToB2h8IB52uFr0z_cvQduKq8J4Op",
+      "drive_url": "https://drive.google.com/file/d/1RPLBToB2h8IB52uFr0z_cvQduKq8J4Op/view?usp=drivesdk",
+      "drive_parent_id": "16hS3jLAs8XzffRIDAp_Cuw7kDhAvwtVt",
+      "sha256": "83bd1cc8c6123296d06b561337694f5840de4638bded2556e56cc31cfdadb19b",
+      "bytes": 4147
+    },
+    {
+      "local_path": "Chronon3d/docs/evidence/broadcast-six-test-20261108/subpixel_720_line_frame_015.png",
+      "name": "subpixel_720_line_frame_015.png",
+      "drive_file_id": "1FMtcEOH06Yhfp5Y_dqw3VGvSEr09GITJ",
+      "drive_url": "https://drive.google.com/file/d/1FMtcEOH06Yhfp5Y_dqw3VGvSEr09GITJ/view?usp=drivesdk",
+      "drive_parent_id": "16hS3jLAs8XzffRIDAp_Cuw7kDhAvwtVt",
+      "sha256": "9f6bfc8fd80219b593570e5d93b4d5171cd68ebd97e12080d7ce4d8705d7f8b8",
+      "bytes": 301
+    },
+    {
+      "local_path": "Chronon3d/docs/evidence/broadcast-six-test-20261108/subpixel_720_seam_frame_015.png",
+      "name": "subpixel_720_seam_frame_015.png",
+      "drive_file_id": "1oLAxH1DzGXiX7cGAq-q9UF9Yor1qJk92",
+      "drive_url": "https://drive.google.com/file/d/1oLAxH1DzGXiX7cGAq-q9UF9Yor1qJk92/view?usp=drivesdk",
+      "drive_parent_id": "16hS3jLAs8XzffRIDAp_Cuw7kDhAvwtVt",
+      "sha256": "99d1ea05358abd03b6c1de39417e6764453f3e58d50f230711db0ffd5a63c582",
+      "bytes": 163
+    }
+  ],
+  "manifest_note": "This manifest was uploaded after the evidence files; its own Drive ID is not listed here."
+}

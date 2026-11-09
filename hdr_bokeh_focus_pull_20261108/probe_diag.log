@@ -1,0 +1,130 @@
+[2026-11-08 11:45:17.127] [info] [video] Auto-selecting yuv420p pipe pixel format for 1920x1080 output
+[2026-11-08 11:45:17.127] [info] [video] execution plan resolved (reason: render_graph_default); decode=2 composite=3 encode=2 interop=0 handoff=3 codec=3
+[2026-11-08 11:45:17.157] [info] [video-runtime] created persistent runtime for device 0 (CUDA ordinal 0)
+[2026-11-08 11:45:17.157] [info] [video] encoder feed capability: host_frame=true direct_yuv=false native_surface=false
+[libx264 @ 0x562d2b2090c0] using cpu capabilities: MMX2 SSE2Fast SSSE3 SSE4.2 AVX
+[libx264 @ 0x562d2b2090c0] profile High, level 5.0, 4:2:0, 8-bit
+[libx264 @ 0x562d2b2090c0] 264 - core 164 r3108 31e19f9 vcpkg - H.264/MPEG-4 AVC codec - Copyleft 2003-2023 - http://www.videolan.org/x264.html - options: cabac=1 ref=5 deblock=1:0:0 analyse=0x3:0x113 me=hex subme=8 psy=1 psy_rd=1.00:0.00 mixed_ref=1 me_range=16 chroma_me=1 trellis=2 8x8dct=1 cqm=0 deadzone=21,11 fast_pskip=1 chroma_qp_offset=-2 threads=2 lookahead_threads=1 sliced_threads=0 nr=0 decimate=1 interlaced=0 bluray_compat=0 constrained_intra=0 bframes=0 weightp=2 keyint=60 keyint_min=6 scenecut=40 intra_refresh=0 rc_lookahead=50 rc=crf mbtree=1 crf=16.0 qcomp=0.60 qpmin=0 qpmax=69 qpstep=4 ip_ratio=1.40 aq=1:1.00
+[2026-11-08 11:45:17.162] [info] [native_av] encoder bitstream contract: codec=27 profile=100 level=-99 pix_fmt=0 parameter_sets=42 materialized=true
+[2026-11-08 11:45:17.162] [info] [native_av] Opened native encoder: 1920x1080 @ 30fps, codec=libx264, rc=crf, preset=slow, output='RenderingGen/hdr_bokeh_focus_pull_20261108/probe_diag.partial.mp4'
+[2026-11-08 11:45:17.643] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 11:45:17.645] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 11:45:18.531] [info] [video]   1/1 frames
+[2026-11-08 11:45:18.532] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 11:45:18.532] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 11:45:18.533] [info] [layer_pipe] frame=0 layer='background' active=true visible=true from=0 duration=-1
+[2026-11-08 11:45:18.533] [info] [cull_check] frame=0 layer='background' is_culled=false reason='' bbox=[0, 0, 1920, 1080]
+[2026-11-08 11:45:18.533] [info] [append_layer_pipe] frame=0 layer='background' item_vis=true layer_vis=true anim_op_td=false opacity=1
+[2026-11-08 11:45:18.533] [info] [append_layer_pipe] layer='background' layer_output=1 current=0
+[2026-11-08 11:45:18.533] [info] [append_layer_pipe] after composite current=2
+[2026-11-08 11:45:18.533] [info] [layer_pipe] frame=0 layer='hdr_bokeh_field' active=true visible=true from=0 duration=-1
+[2026-11-08 11:45:18.533] [info] [cull_check] frame=0 layer='hdr_bokeh_field' is_culled=false reason='' bbox=[0, 0, 1920, 1080]
+[2026-11-08 11:45:18.533] [info] [append_layer_pipe] frame=0 layer='hdr_bokeh_field' item_vis=true layer_vis=true anim_op_td=false opacity=1
+[2026-11-08 11:45:18.533] [info] [append_layer_pipe] layer='hdr_bokeh_field' layer_output=4 current=2
+[2026-11-08 11:45:18.533] [info] [append_layer_pipe] after composite current=5
+[2026-11-08 11:45:18.533] [info] [layer_pipe] frame=0 layer='title' active=true visible=true from=0 duration=-1
+[2026-11-08 11:45:18.533] [info] [cull_check] frame=0 layer='title' is_culled=false reason='' bbox=[0, 0, 1920, 1080]
+[2026-11-08 11:45:18.533] [info] [append_layer_pipe] frame=0 layer='title' item_vis=true layer_vis=true anim_op_td=false opacity=1
+[2026-11-08 11:45:18.533] [info] [source-pass] layer='title' routed to TextRunNode glyphs=5
+[2026-11-08 11:45:18.533] [info] [append_layer_pipe] layer='title' layer_output=6 current=5
+[2026-11-08 11:45:18.533] [info] [append_layer_pipe] after composite current=7
+[2026-11-08 11:45:18.533] [info] [layer_pipe] frame=0 layer='subtitle' active=true visible=true from=0 duration=-1
+[2026-11-08 11:45:18.533] [info] [cull_check] frame=0 layer='subtitle' is_culled=false reason='' bbox=[0, 0, 1920, 1080]
+[2026-11-08 11:45:18.533] [info] [append_layer_pipe] frame=0 layer='subtitle' item_vis=true layer_vis=true anim_op_td=false opacity=1
+[2026-11-08 11:45:18.533] [info] [source-pass] layer='subtitle' routed to TextRunNode glyphs=33
+[2026-11-08 11:45:18.533] [info] [append_layer_pipe] layer='subtitle' layer_output=8 current=7
+[2026-11-08 11:45:18.533] [info] [append_layer_pipe] after composite current=9
+[2026-11-08 11:45:18.533] [info] [graph-preflight] label='HdrBokehFocusPull' frame=0 size=1920x1080
+===== Graph Preflight Report =====
+Nodes: 10
+Warnings: 1
+Peak Memory: 160.34 MB
+Total Complexity: 146
+Cache Score: 70%
+Total Fill Rate: 16747820 pixels
+
+Node                    Kind        predicted_bbox          intersection            vis_ratio visibility      dirty cachedMemory        Complexity  
+------------------------------------------------------------------------------------------------------------------------------------------------------
+Clear                   Output      [0,0,1920,1080]         [0,0,1920,1080]         1.00      FULLY_VISIBLE   YES   no    31.64 MB      2           
+    * Dirty: Node is frame-dependent (animated parameters or time-varying input)
+fill                    Source      [0,-5,1920,1085]        [0,0,1920,1080]         1.00      FULLY_VISIBLE   no    YES   31.93 MB      2           
+Composite               Composite   [0,0,1920,1080]         [0,0,1920,1080]         1.00      FULLY_VISIBLE   YES   no    31.64 MB      2           
+    * Dirty: Input node 'Clear' is dirty because: [Node is frame-dependent (animated parameters or time-varying input)]
+hdr_bokeh_field_multi   Source      [0,-5,1920,1085]        [0,0,1920,1080]         1.00      FULLY_VISIBLE   YES   no    31.93 MB      122         
+    * Dirty: Node is frame-dependent (animated parameters or time-varying input)
+EffectStack             Effect      [0,0,1920,1080]         [0,0,1920,1080]         1.00      FULLY_VISIBLE   YES   no    31.64 MB      10          
+    * Dirty: Input node 'hdr_bokeh_field_multi' is dirty because: [Node is frame-dependent (animated parameters or time-varying input)]
+Composite               Composite   [0,0,1920,1080]         [0,0,1920,1080]         1.00      FULLY_VISIBLE   YES   no    31.64 MB      2           
+    * Dirty: Node is frame-dependent (animated parameters or time-varying input)
+    * Dirty: Input node 'Composite' is dirty because: [Input node 'Clear' is dirty because: [Node is frame-dependent (animated parameters or time-varying input)]]
+    * Dirty: Input node 'EffectStack' is dirty because: [Input node 'hdr_bokeh_field_multi' is dirty because: [Node is frame-dependent (animated parameters or time-varying input)]]
+title                   TextRun     [667,442,1253,582]      [667,442,1253,582]      1.00      FULLY_VISIBLE   no    YES   1.25 MB       1           
+Composite               Composite   [0,0,1920,1080]         [0,0,1920,1080]         1.00      FULLY_VISIBLE   YES   no    31.64 MB      2           
+    * Dirty: Input node 'Composite' is dirty because: [Node is frame-dependent (animated parameters or time-varying input)]
+subtitle                TextRun     [639,628,1282,688]      [639,628,1282,688]      1.00      FULLY_VISIBLE   no    YES   602.81 KB     1           
+Composite               Composite   [0,0,1920,1080]         [0,0,1920,1080]         1.00      FULLY_VISIBLE   YES   no    31.64 MB      2           
+    * Dirty: Input node 'Composite' is dirty because: [Input node 'Composite' is dirty because: [Node is frame-dependent (animated parameters or time-varying input)]]
+
+--- WARNINGS ---
+  [WARN] EXCESSIVE_OVERDRAW: Found 8 full-screen nodes overlapping. Consider baking static background layers to avoid excessive fill-rate overhead.
+
+[2026-11-08 11:45:19.784] [info] chronon3d::vulkan text batch formats: dst_image.format=109 atlas_image.format=44 atlas_encoding=2 (shader contract: dst rgba32f, atlas rgba8)
+[2026-11-08 11:45:19.832] [info] [temp-lifetime] frame=0 after_level=0 live=[0,1,3,6,8,] retired=[]
+[2026-11-08 11:45:19.832] [info] [exec-level-diag] frame=0 level=0 nodes=5 input_ms=0.001 dispatch_ms=1241.011 fb_release_ms=0.011
+[2026-11-08 11:45:19.832] [info] [graph-edge] frame=0 level=1 consumer_id=2 input_index=0 producer_id=0 producer_level=0
+[2026-11-08 11:45:19.832] [info] [graph-edge] frame=0 level=1 consumer_id=2 input_index=1 producer_id=1 producer_level=0
+[2026-11-08 11:45:19.832] [info] [graph-edge] frame=0 level=1 consumer_id=4 input_index=0 producer_id=3 producer_level=0
+[2026-11-08 11:45:20.120] [info] [temp-lifetime] frame=0 after_level=1 live=[2,4,6,8,] retired=[0,1,3,]
+[2026-11-08 11:45:20.120] [info] [exec-level-diag] frame=0 level=1 nodes=2 input_ms=0.020 dispatch_ms=287.500 fb_release_ms=0.014
+[2026-11-08 11:45:20.120] [info] [graph-edge] frame=0 level=2 consumer_id=5 input_index=0 producer_id=2 producer_level=1
+[2026-11-08 11:45:20.120] [info] [graph-edge] frame=0 level=2 consumer_id=5 input_index=1 producer_id=4 producer_level=1
+[2026-11-08 11:45:20.248] [info] [temp-lifetime] frame=0 after_level=2 live=[5,6,8,] retired=[2,4,]
+[2026-11-08 11:45:20.248] [info] [exec-level-diag] frame=0 level=2 nodes=1 input_ms=0.015 dispatch_ms=127.978 fb_release_ms=0.008
+[2026-11-08 11:45:20.248] [info] [graph-edge] frame=0 level=3 consumer_id=7 input_index=0 producer_id=5 producer_level=2
+[2026-11-08 11:45:20.248] [info] [graph-edge] frame=0 level=3 consumer_id=7 input_index=1 producer_id=6 producer_level=0
+[2026-11-08 11:45:20.300] [info] [temp-lifetime] frame=0 after_level=3 live=[7,8,] retired=[5,6,]
+[2026-11-08 11:45:20.300] [info] [exec-level-diag] frame=0 level=3 nodes=1 input_ms=0.015 dispatch_ms=52.638 fb_release_ms=0.009
+[2026-11-08 11:45:20.300] [info] [graph-edge] frame=0 level=4 consumer_id=9 input_index=0 producer_id=7 producer_level=3
+[2026-11-08 11:45:20.300] [info] [graph-edge] frame=0 level=4 consumer_id=9 input_index=1 producer_id=8 producer_level=0
+[2026-11-08 11:45:20.313] [info] [temp-lifetime] frame=0 after_level=4 live=[9,] retired=[7,8,]
+[2026-11-08 11:45:20.313] [info] [exec-level-diag] frame=0 level=4 nodes=1 input_ms=0.016 dispatch_ms=12.797 fb_release_ms=0.008
+[2026-11-08 11:45:20.447] [info] [video] Exporting via Arena-backed SIMD pipeline
+[2026-11-08 11:45:20.487] [info] [native_av] tone-map=aces exposure=1 frame=0 max_linear_luma=0.9999 max_mapped_luma=0.8038
+[2026-11-08 11:45:20.525] [info] [video] writer join complete
+[2026-11-08 11:45:20.525] [info] [drain-debug] start drain, capacity=6
+[2026-11-08 11:45:20.525] [info] [drain-debug] reap done, busy_count=0
+[2026-11-08 11:45:20.525] [info] [video] trimming framebuffer pool
+[2026-11-08 11:45:20.551] [info] [video] Released framebuffer pool — memory trimmed
+[2026-11-08 11:45:20.551] [info] [video] frame-loop cleanup complete
+[2026-11-08 11:45:20.551] [info] [video] Encoder write blocked duration: 0.00 ms
+[2026-11-08 11:45:20.551] [info] [video_diag] conversion_and_copy_duration_ms: 23 ms
+[2026-11-08 11:45:20.551] [info] [video_diag] conversion_bytes_written=0 encoder_staging_copy_bytes=0 encoder_slot_reuses=0
+[2026-11-08 11:45:20.551] [info] [native_av] close: sending encoder flush
+[2026-11-08 11:45:20.630] [info] [native_av] close: encoder flush accepted
+[2026-11-08 11:45:20.630] [info] [native_av] close: packets drained=true
+[2026-11-08 11:45:20.630] [info] [native_av] close: finalizing mux session
+[2026-11-08 11:45:20.630] [info] [native_av] close: mux session finalized
+[2026-11-08 11:45:20.630] [info] [native_av] Closed native encoder — 1 frames accepted, encoder_packets=1 mux_packets=1 packet_pts=0..0, YUV cache: 0 hits / 1 misses
+[2026-11-08 11:45:20.630] [info] [native_av] native-surface timings — hwframe_pool_ms=0.0 c2v_prepare_ms=0.0 encode_drain_ms=0.0 send_ms=6.9 submit_counter_ms=0.0 backpressure_ms=0.0
+[2026-11-08 11:45:20.630] [info] [video_native] convert=23.93ms  send_frame=6.93ms  backpressure=0.00ms  flush=79.55ms  receive_packet=0.01ms  mux_write=0.05ms  trailer=0.29ms
+[2026-11-08 11:45:20.633] [info] [video] render_ms=1915.82 encode_ms=185.92 writer_encode_ms=76.58 wall_ms=3505.42 nvml_stop_ms=0.19
+[2026-11-08 11:45:20.633] [info] [video] FFmpeg queue wait duration: 0.01 ms
+[2026-11-08 11:45:20.643] [info] [video] copy_eligible=true sha256=9ece929ea3373cff2321b6d43a2a42cee93d6dcea2812f08d5b9273c6f934e15
+[2026-11-08 11:45:20.643] [info] [video] Wrote RenderingGen/hdr_bokeh_focus_pull_20261108/probe_diag.mp4
+[2026-11-08 11:45:20.643] [info] [startup-profile] total=518.69ms logger=0.04ms cli_bootstrap=3.10ms cli_parse=nullms composition=0.11ms plan_read=nullms json_parse=nullms plan_decode_validate=nullms asset_resolve=nullms plan_compile=nullms unaccounted=125.90ms
+[2026-11-08 11:45:20.644] [info] [video] Wrote exact per-frame timing sidecar: RenderingGen/hdr_bokeh_focus_pull_20261108/probe_diag.mp4.timing.json
+[libx264 @ 0x562d2b2090c0] frame I:1     Avg QP:13.20  size:  4951
+[libx264 @ 0x562d2b2090c0] mb I  I16..4:  2.6% 96.3%  1.1%
+[libx264 @ 0x562d2b2090c0] 8x8 transform intra:96.3%
+[libx264 @ 0x562d2b2090c0] coded y,uvDC,uvAC intra: 3.8% 3.2% 0.0%
+[libx264 @ 0x562d2b2090c0] i16 v,h,dc,p: 13% 86%  1%  0%
+[libx264 @ 0x562d2b2090c0] i8 v,h,dc,ddl,ddr,vr,hd,vl,hu: 22% 74%  2%  0%  0%  0%  0%  0%  0%
+[libx264 @ 0x562d2b2090c0] i4 v,h,dc,ddl,ddr,vr,hd,vl,hu: 23% 52%  3%  4%  6%  2%  5%  2%  3%
+[libx264 @ 0x562d2b2090c0] i8c dc,h,v,p: 94%  4%  2%  0%
+[libx264 @ 0x562d2b2090c0] kb/s:1188.24
+[2026-11-08 11:45:20.648] [info] [INFO] job-lifecycle: slot_pool_close_ms=0.0 surface_release_ms=0.0
+[2026-11-08 11:45:20.816] [info] [INFO] job-lifecycle: queue_close_ms=0.0 writer_join_ms=0.0 encoder_reset_ms=3.7 decoder_reset_ms=0.0 full_graph_reset_ms=168.1 sink_ctx_reset_ms=0.0 device_runtime_reset_ms=0.0 device_reservation_reset_ms=0.0
+[2026-11-08 11:45:20.816] [info] [INFO] job-lifecycle: sidecar_write_ms=1.2 session_teardown_ms=172.1
+[2026-11-08 11:45:20.825] [info] receipt: RenderingGen/hdr_bokeh_focus_pull_20261108/probe_diag.mp4.receipt.json verification=fast copy_eligible=true
+[2026-11-08 11:45:20.825] [info] [INFO] job-lifecycle: receipt_build_verify_ms=0.1 receipt_file_write_ms=0.5
+[2026-11-08 11:45:20.825] [info] [INFO] job-lifecycle: post_sidecar_to_receipt_ms=181.0

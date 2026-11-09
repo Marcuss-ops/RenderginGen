@@ -1,0 +1,106 @@
+[2026-11-08 11:41:49.760] [info] [video] Auto-selecting yuv420p pipe pixel format for 1920x1080 output
+[2026-11-08 11:41:49.761] [info] [video] execution plan resolved (reason: render_graph_default); decode=2 composite=3 encode=2 interop=0 handoff=3 codec=3
+[2026-11-08 11:41:49.791] [info] [video-runtime] created persistent runtime for device 0 (CUDA ordinal 0)
+[2026-11-08 11:41:49.791] [info] [video] encoder feed capability: host_frame=true direct_yuv=false native_surface=false
+[libx264 @ 0x559171583f00] using cpu capabilities: MMX2 SSE2Fast SSSE3 SSE4.2 AVX
+[libx264 @ 0x559171583f00] profile High, level 5.0, 4:2:0, 8-bit
+[libx264 @ 0x559171583f00] 264 - core 164 r3108 31e19f9 vcpkg - H.264/MPEG-4 AVC codec - Copyleft 2003-2023 - http://www.videolan.org/x264.html - options: cabac=1 ref=5 deblock=1:0:0 analyse=0x3:0x113 me=hex subme=8 psy=1 psy_rd=1.00:0.00 mixed_ref=1 me_range=16 chroma_me=1 trellis=2 8x8dct=1 cqm=0 deadzone=21,11 fast_pskip=1 chroma_qp_offset=-2 threads=2 lookahead_threads=1 sliced_threads=0 nr=0 decimate=1 interlaced=0 bluray_compat=0 constrained_intra=0 bframes=0 weightp=2 keyint=60 keyint_min=6 scenecut=40 intra_refresh=0 rc_lookahead=50 rc=crf mbtree=1 crf=16.0 qcomp=0.60 qpmin=0 qpmax=69 qpstep=4 ip_ratio=1.40 aq=1:1.00
+[2026-11-08 11:41:49.797] [info] [native_av] encoder bitstream contract: codec=27 profile=100 level=-99 pix_fmt=0 parameter_sets=42 materialized=true
+[2026-11-08 11:41:49.797] [info] [native_av] Opened native encoder: 1920x1080 @ 30fps, codec=libx264, rc=crf, preset=slow, output='RenderingGen/hdr_bokeh_focus_pull_20261108/probe_software_aces_f000.partial.mp4'
+[2026-11-08 11:41:49.955] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 11:41:49.957] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 11:41:50.402] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 11:41:50.402] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 11:41:50.531] [info] [temp-lifetime] frame=0 after_level=0 live=[0,1,3,6,8,] retired=[]
+[2026-11-08 11:41:50.531] [info] [exec-level-diag] frame=0 level=0 nodes=5 input_ms=0.002 dispatch_ms=71.304 fb_release_ms=0.002
+[2026-11-08 11:41:50.531] [info] [graph-edge] frame=0 level=1 consumer_id=2 input_index=0 producer_id=0 producer_level=0
+[2026-11-08 11:41:50.531] [info] [graph-edge] frame=0 level=1 consumer_id=2 input_index=1 producer_id=1 producer_level=0
+[2026-11-08 11:41:50.531] [info] [graph-edge] frame=0 level=1 consumer_id=4 input_index=0 producer_id=3 producer_level=0
+[2026-11-08 11:41:50.537] [warning] [dof-provenance] switching to mixed residency at composite=1 surface=1920x1080 cpu_authoritative=true gpu_handle=0 depth=1010.00 radius=18.00
+[2026-11-08 11:43:01.148] [info] [temp-lifetime] frame=0 after_level=1 live=[2,4,6,8,] retired=[0,1,3,]
+[2026-11-08 11:43:01.148] [info] [exec-level-diag] frame=0 level=1 nodes=2 input_ms=0.026 dispatch_ms=70616.348 fb_release_ms=0.019
+[2026-11-08 11:43:01.148] [info] [graph-edge] frame=0 level=2 consumer_id=5 input_index=0 producer_id=2 producer_level=1
+[2026-11-08 11:43:01.148] [info] [graph-edge] frame=0 level=2 consumer_id=5 input_index=1 producer_id=4 producer_level=1
+[2026-11-08 11:43:01.331] [info] [temp-lifetime] frame=0 after_level=2 live=[5,6,8,] retired=[2,4,]
+[2026-11-08 11:43:01.331] [info] [exec-level-diag] frame=0 level=2 nodes=1 input_ms=0.019 dispatch_ms=182.461 fb_release_ms=0.025
+[2026-11-08 11:43:01.331] [info] [graph-edge] frame=0 level=3 consumer_id=7 input_index=0 producer_id=5 producer_level=2
+[2026-11-08 11:43:01.331] [info] [graph-edge] frame=0 level=3 consumer_id=7 input_index=1 producer_id=6 producer_level=0
+[2026-11-08 11:43:01.356] [info] [temp-lifetime] frame=0 after_level=3 live=[7,8,] retired=[5,6,]
+[2026-11-08 11:43:01.356] [info] [exec-level-diag] frame=0 level=3 nodes=1 input_ms=0.017 dispatch_ms=24.561 fb_release_ms=0.022
+[2026-11-08 11:43:01.356] [info] [graph-edge] frame=0 level=4 consumer_id=9 input_index=0 producer_id=7 producer_level=3
+[2026-11-08 11:43:01.356] [info] [graph-edge] frame=0 level=4 consumer_id=9 input_index=1 producer_id=8 producer_level=0
+[2026-11-08 11:43:01.367] [info] [temp-lifetime] frame=0 after_level=4 live=[9,] retired=[7,8,]
+[2026-11-08 11:43:01.367] [info] [exec-level-diag] frame=0 level=4 nodes=1 input_ms=0.019 dispatch_ms=10.862 fb_release_ms=0.020
+[2026-11-08 11:43:01.367] [info] [graph-edge] frame=0 level=5 consumer_id=10 input_index=0 producer_id=9 producer_level=4
+[2026-11-08 11:43:01.925] [info] [temp-lifetime] frame=0 after_level=5 live=[10,] retired=[9,]
+[2026-11-08 11:43:01.925] [info] [exec-level-diag] frame=0 level=5 nodes=1 input_ms=0.012 dispatch_ms=558.503 fb_release_ms=0.027
+[2026-11-08 11:43:02.147] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 11:43:02.148] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 11:43:02.338] [info] [pool-warm] Pre-allocated 4 canvas buffers (1920x1152 bucket) at startup
+[2026-11-08 11:43:02.461] [info] [pool-warm] Pre-allocated 3 buffers (text-bbox+glow-pad) bucket 1920x1024 at startup
+[2026-11-08 11:43:02.503] [info] [pool-warm] Pre-allocated 3 buffers (downsample-half) bucket 1024x640 at startup
+[2026-11-08 11:43:02.518] [info] [pool-warm] Pre-allocated 3 buffers (downsample-quarter) bucket 512x384 at startup
+[2026-11-08 11:43:02.544] [info] [video]   1/1 frames
+[2026-11-08 11:43:02.544] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 11:43:02.545] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 11:43:02.582] [info] [temp-lifetime] frame=0 after_level=0 live=[0,1,3,6,8,] retired=[]
+[2026-11-08 11:43:02.582] [info] [exec-level-diag] frame=0 level=0 nodes=5 input_ms=0.002 dispatch_ms=33.881 fb_release_ms=0.008
+[2026-11-08 11:43:02.582] [info] [graph-edge] frame=0 level=1 consumer_id=2 input_index=0 producer_id=0 producer_level=0
+[2026-11-08 11:43:02.582] [info] [graph-edge] frame=0 level=1 consumer_id=2 input_index=1 producer_id=1 producer_level=0
+[2026-11-08 11:43:02.582] [info] [graph-edge] frame=0 level=1 consumer_id=4 input_index=0 producer_id=3 producer_level=0
+[2026-11-08 11:43:02.587] [warning] [dof-provenance] switching to mixed residency at composite=1 surface=1920x1080 cpu_authoritative=true gpu_handle=0 depth=1010.00 radius=18.00
+[2026-11-08 11:44:11.430] [info] [temp-lifetime] frame=0 after_level=1 live=[2,4,6,8,] retired=[0,1,3,]
+[2026-11-08 11:44:11.430] [info] [exec-level-diag] frame=0 level=1 nodes=2 input_ms=0.046 dispatch_ms=68847.565 fb_release_ms=0.037
+[2026-11-08 11:44:11.430] [info] [graph-edge] frame=0 level=2 consumer_id=5 input_index=0 producer_id=2 producer_level=1
+[2026-11-08 11:44:11.430] [info] [graph-edge] frame=0 level=2 consumer_id=5 input_index=1 producer_id=4 producer_level=1
+[2026-11-08 11:44:11.627] [info] [temp-lifetime] frame=0 after_level=2 live=[5,6,8,] retired=[2,4,]
+[2026-11-08 11:44:11.627] [info] [exec-level-diag] frame=0 level=2 nodes=1 input_ms=0.021 dispatch_ms=196.897 fb_release_ms=0.030
+[2026-11-08 11:44:11.627] [info] [graph-edge] frame=0 level=3 consumer_id=7 input_index=0 producer_id=5 producer_level=2
+[2026-11-08 11:44:11.627] [info] [graph-edge] frame=0 level=3 consumer_id=7 input_index=1 producer_id=6 producer_level=0
+[2026-11-08 11:44:11.663] [info] [temp-lifetime] frame=0 after_level=3 live=[7,8,] retired=[5,6,]
+[2026-11-08 11:44:11.663] [info] [exec-level-diag] frame=0 level=3 nodes=1 input_ms=0.017 dispatch_ms=35.920 fb_release_ms=0.023
+[2026-11-08 11:44:11.663] [info] [graph-edge] frame=0 level=4 consumer_id=9 input_index=0 producer_id=7 producer_level=3
+[2026-11-08 11:44:11.663] [info] [graph-edge] frame=0 level=4 consumer_id=9 input_index=1 producer_id=8 producer_level=0
+[2026-11-08 11:44:11.683] [info] [temp-lifetime] frame=0 after_level=4 live=[9,] retired=[7,8,]
+[2026-11-08 11:44:11.683] [info] [exec-level-diag] frame=0 level=4 nodes=1 input_ms=0.057 dispatch_ms=19.601 fb_release_ms=0.029
+[2026-11-08 11:44:11.683] [info] [graph-edge] frame=0 level=5 consumer_id=10 input_index=0 producer_id=9 producer_level=4
+[2026-11-08 11:44:12.070] [info] [temp-lifetime] frame=0 after_level=5 live=[10,] retired=[9,]
+[2026-11-08 11:44:12.070] [info] [exec-level-diag] frame=0 level=5 nodes=1 input_ms=0.012 dispatch_ms=387.597 fb_release_ms=0.022
+[2026-11-08 11:44:12.199] [info] [video] Exporting via Arena-backed SIMD pipeline
+[2026-11-08 11:44:12.257] [info] [native_av] tone-map=aces exposure=1 frame=0 max_linear_luma=29.7192 max_mapped_luma=1.0000
+[2026-11-08 11:44:12.317] [info] [video] writer join complete
+[2026-11-08 11:44:12.317] [info] [drain-debug] start drain, capacity=6
+[2026-11-08 11:44:12.317] [info] [drain-debug] reap done, busy_count=0
+[2026-11-08 11:44:12.317] [info] [video] trimming framebuffer pool
+[2026-11-08 11:44:12.352] [info] [video] Released framebuffer pool — memory trimmed
+[2026-11-08 11:44:12.352] [info] [video] frame-loop cleanup complete
+[2026-11-08 11:44:12.352] [info] [video] Encoder write blocked duration: 0.00 ms
+[2026-11-08 11:44:12.352] [info] [video_diag] conversion_and_copy_duration_ms: 40 ms
+[2026-11-08 11:44:12.352] [info] [video_diag] conversion_bytes_written=0 encoder_staging_copy_bytes=0 encoder_slot_reuses=0
+[2026-11-08 11:44:12.352] [info] [native_av] close: sending encoder flush
+[2026-11-08 11:44:12.475] [info] [native_av] close: encoder flush accepted
+[2026-11-08 11:44:12.475] [info] [native_av] close: packets drained=true
+[2026-11-08 11:44:12.475] [info] [native_av] close: finalizing mux session
+[2026-11-08 11:44:12.476] [info] [native_av] close: mux session finalized
+[2026-11-08 11:44:12.476] [info] [native_av] Closed native encoder — 1 frames accepted, encoder_packets=1 mux_packets=1 packet_pts=0..0, YUV cache: 0 hits / 1 misses
+[2026-11-08 11:44:12.476] [info] [native_av] native-surface timings — hwframe_pool_ms=0.0 c2v_prepare_ms=0.0 encode_drain_ms=0.0 send_ms=13.0 submit_counter_ms=0.0 backpressure_ms=0.0
+[2026-11-08 11:44:12.476] [info] [video_native] convert=40.21ms  send_frame=12.99ms  backpressure=0.00ms  flush=123.59ms  receive_packet=0.03ms  mux_write=0.49ms  trailer=0.58ms
+[2026-11-08 11:44:12.476] [info] [video] render_ms=69654.59 encode_ms=277.82 writer_encode_ms=116.93 wall_ms=142715.49 nvml_stop_ms=0.26
+[2026-11-08 11:44:12.476] [info] [video] FFmpeg queue wait duration: 0.02 ms
+[2026-11-08 11:44:12.493] [info] [video] copy_eligible=true sha256=ae797c835f61e2540477456685107a51d7ed8fac505bea2ef1dfbff8aa891a04
+[2026-11-08 11:44:12.493] [info] [video] Wrote RenderingGen/hdr_bokeh_focus_pull_20261108/probe_software_aces_f000.mp4
+[2026-11-08 11:44:12.493] [info] [startup-profile] total=197.07ms logger=0.04ms cli_bootstrap=3.65ms cli_parse=nullms composition=0.10ms plan_read=nullms json_parse=nullms plan_decode_validate=nullms asset_resolve=nullms plan_compile=nullms unaccounted=134.05ms
+[2026-11-08 11:44:12.494] [info] [video] Wrote exact per-frame timing sidecar: RenderingGen/hdr_bokeh_focus_pull_20261108/probe_software_aces_f000.mp4.timing.json
+[libx264 @ 0x559171583f00] frame I:1     Avg QP:18.96  size: 36767
+[libx264 @ 0x559171583f00] mb I  I16..4:  3.1% 95.4%  1.5%
+[libx264 @ 0x559171583f00] 8x8 transform intra:95.4%
+[libx264 @ 0x559171583f00] coded y,uvDC,uvAC intra: 19.4% 29.6% 26.5%
+[libx264 @ 0x559171583f00] i16 v,h,dc,p: 19% 47%  3% 32%
+[libx264 @ 0x559171583f00] i8 v,h,dc,ddl,ddr,vr,hd,vl,hu: 50% 16% 16%  3%  3%  3%  4%  3%  2%
+[libx264 @ 0x559171583f00] i4 v,h,dc,ddl,ddr,vr,hd,vl,hu: 25% 16% 10%  8% 15%  9% 11%  3%  4%
+[libx264 @ 0x559171583f00] i8c dc,h,v,p: 76% 10%  7%  8%
+[libx264 @ 0x559171583f00] kb/s:8824.08
+[2026-11-08 11:44:12.498] [info] [INFO] job-lifecycle: slot_pool_close_ms=0.0 surface_release_ms=0.0
+[2026-11-08 11:44:12.570] [info] [INFO] job-lifecycle: queue_close_ms=0.0 writer_join_ms=0.0 encoder_reset_ms=3.6 decoder_reset_ms=0.0 full_graph_reset_ms=71.8 sink_ctx_reset_ms=0.0 device_runtime_reset_ms=0.0 device_reservation_reset_ms=0.0
+[2026-11-08 11:44:12.570] [info] [INFO] job-lifecycle: sidecar_write_ms=1.1 session_teardown_ms=75.7
+[2026-11-08 11:44:12.582] [info] [INFO] job-lifecycle: post_sidecar_to_receipt_ms=87.3

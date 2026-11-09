@@ -1,0 +1,203 @@
+[2026-11-08 12:48:31.834] [info] [video] Auto-selecting yuv420p pipe pixel format for 1920x1080 output
+[2026-11-08 12:48:31.834] [info] [video] execution plan resolved (reason: render_graph_default); decode=2 composite=3 encode=2 interop=0 handoff=3 codec=3
+[2026-11-08 12:48:31.856] [info] [video-runtime] created persistent runtime for device 0 (CUDA ordinal 0)
+[2026-11-08 12:48:31.856] [info] [video] encoder feed capability: host_frame=true direct_yuv=false native_surface=false
+[libx264 @ 0x564dd9606d80] using cpu capabilities: MMX2 SSE2Fast SSSE3 SSE4.2 AVX
+[libx264 @ 0x564dd9606d80] profile High, level 5.0, 4:2:0, 8-bit
+[libx264 @ 0x564dd9606d80] 264 - core 164 r3108 31e19f9 vcpkg - H.264/MPEG-4 AVC codec - Copyleft 2003-2023 - http://www.videolan.org/x264.html - options: cabac=1 ref=5 deblock=1:0:0 analyse=0x3:0x113 me=hex subme=8 psy=1 psy_rd=1.00:0.00 mixed_ref=1 me_range=16 chroma_me=1 trellis=2 8x8dct=1 cqm=0 deadzone=21,11 fast_pskip=1 chroma_qp_offset=-2 threads=2 lookahead_threads=1 sliced_threads=0 nr=0 decimate=1 interlaced=0 bluray_compat=0 constrained_intra=0 bframes=0 weightp=2 keyint=60 keyint_min=6 scenecut=40 intra_refresh=0 rc_lookahead=50 rc=crf mbtree=1 crf=16.0 qcomp=0.60 qpmin=0 qpmax=69 qpstep=4 ip_ratio=1.40 aq=1:1.00
+[2026-11-08 12:48:31.860] [info] [native_av] encoder bitstream contract: codec=27 profile=100 level=-99 pix_fmt=0 parameter_sets=42 materialized=true
+[2026-11-08 12:48:31.861] [info] [native_av] Opened native encoder: 1920x1080 @ 30fps, codec=libx264, rc=crf, preset=slow, output='probe_vram_40.partial.mp4'
+[2026-11-08 12:48:32.313] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:48:32.316] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:48:33.295] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:48:33.295] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:48:33.424] [info] chronon3d::vulkan text batch formats: dst_image.format=109 atlas_image.format=44 atlas_encoding=2 (shader contract: dst rgba32f, atlas rgba8)
+[2026-11-08 12:48:33.451] [info] [temp-lifetime] frame=0 after_level=0 live=[0,1,3,6,8,] retired=[]
+[2026-11-08 12:48:33.451] [info] [exec-level-diag] frame=0 level=0 nodes=5 input_ms=0.001 dispatch_ms=110.738 fb_release_ms=0.001
+[2026-11-08 12:48:33.451] [info] [graph-edge] frame=0 level=1 consumer_id=2 input_index=0 producer_id=0 producer_level=0
+[2026-11-08 12:48:33.451] [info] [graph-edge] frame=0 level=1 consumer_id=2 input_index=1 producer_id=1 producer_level=0
+[2026-11-08 12:48:33.451] [info] [graph-edge] frame=0 level=1 consumer_id=4 input_index=0 producer_id=3 producer_level=0
+[2026-11-08 12:48:33.632] [info] [temp-lifetime] frame=0 after_level=1 live=[2,4,6,8,] retired=[0,1,3,]
+[2026-11-08 12:48:33.632] [info] [exec-level-diag] frame=0 level=1 nodes=2 input_ms=0.021 dispatch_ms=180.988 fb_release_ms=0.012
+[2026-11-08 12:48:33.632] [info] [graph-edge] frame=0 level=2 consumer_id=5 input_index=0 producer_id=2 producer_level=1
+[2026-11-08 12:48:33.632] [info] [graph-edge] frame=0 level=2 consumer_id=5 input_index=1 producer_id=4 producer_level=1
+[2026-11-08 12:48:33.711] [info] [temp-lifetime] frame=0 after_level=2 live=[5,6,8,] retired=[2,4,]
+[2026-11-08 12:48:33.711] [info] [exec-level-diag] frame=0 level=2 nodes=1 input_ms=0.015 dispatch_ms=78.430 fb_release_ms=0.006
+[2026-11-08 12:48:33.711] [info] [graph-edge] frame=0 level=3 consumer_id=7 input_index=0 producer_id=5 producer_level=2
+[2026-11-08 12:48:33.711] [info] [graph-edge] frame=0 level=3 consumer_id=7 input_index=1 producer_id=6 producer_level=0
+[2026-11-08 12:48:33.780] [info] [temp-lifetime] frame=0 after_level=3 live=[7,8,] retired=[5,6,]
+[2026-11-08 12:48:33.780] [info] [exec-level-diag] frame=0 level=3 nodes=1 input_ms=0.016 dispatch_ms=69.255 fb_release_ms=0.007
+[2026-11-08 12:48:33.780] [info] [graph-edge] frame=0 level=4 consumer_id=9 input_index=0 producer_id=7 producer_level=3
+[2026-11-08 12:48:33.780] [info] [graph-edge] frame=0 level=4 consumer_id=9 input_index=1 producer_id=8 producer_level=0
+[2026-11-08 12:48:33.791] [info] [temp-lifetime] frame=0 after_level=4 live=[9,] retired=[7,8,]
+[2026-11-08 12:48:33.791] [info] [exec-level-diag] frame=0 level=4 nodes=1 input_ms=0.018 dispatch_ms=10.613 fb_release_ms=0.007
+[2026-11-08 12:48:33.927] [info] [video] Exporting via Arena-backed SIMD pipeline
+[2026-11-08 12:48:33.927] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:48:33.927] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:48:33.963] [info] [temp-lifetime] frame=1 after_level=0 live=[0,1,3,6,8,] retired=[]
+[2026-11-08 12:48:33.963] [info] [exec-level-diag] frame=1 level=0 nodes=5 input_ms=0.001 dispatch_ms=34.800 fb_release_ms=0.001
+[2026-11-08 12:48:33.963] [info] [graph-edge] frame=1 level=1 consumer_id=2 input_index=0 producer_id=0 producer_level=0
+[2026-11-08 12:48:33.963] [info] [graph-edge] frame=1 level=1 consumer_id=2 input_index=1 producer_id=1 producer_level=0
+[2026-11-08 12:48:33.963] [info] [graph-edge] frame=1 level=1 consumer_id=4 input_index=0 producer_id=3 producer_level=0
+[2026-11-08 12:48:33.964] [info] [native_av] tone-map=aces exposure=1 frame=0 max_linear_luma=30.2331 max_mapped_luma=1.0000
+[2026-11-08 12:48:34.376] [info] [temp-lifetime] frame=1 after_level=1 live=[2,4,6,8,] retired=[0,1,3,]
+[2026-11-08 12:48:34.376] [info] [exec-level-diag] frame=1 level=1 nodes=2 input_ms=0.021 dispatch_ms=412.182 fb_release_ms=0.010
+[2026-11-08 12:48:34.376] [info] [graph-edge] frame=1 level=2 consumer_id=5 input_index=0 producer_id=2 producer_level=1
+[2026-11-08 12:48:34.376] [info] [graph-edge] frame=1 level=2 consumer_id=5 input_index=1 producer_id=4 producer_level=1
+[2026-11-08 12:48:34.563] [info] [temp-lifetime] frame=1 after_level=2 live=[5,6,8,] retired=[2,4,]
+[2026-11-08 12:48:34.563] [info] [exec-level-diag] frame=1 level=2 nodes=1 input_ms=0.016 dispatch_ms=186.966 fb_release_ms=0.014
+[2026-11-08 12:48:34.563] [info] [graph-edge] frame=1 level=3 consumer_id=7 input_index=0 producer_id=5 producer_level=2
+[2026-11-08 12:48:34.563] [info] [graph-edge] frame=1 level=3 consumer_id=7 input_index=1 producer_id=6 producer_level=0
+[2026-11-08 12:48:34.723] [info] [temp-lifetime] frame=1 after_level=3 live=[7,8,] retired=[5,6,]
+[2026-11-08 12:48:34.723] [info] [exec-level-diag] frame=1 level=3 nodes=1 input_ms=0.015 dispatch_ms=160.407 fb_release_ms=0.007
+[2026-11-08 12:48:34.723] [info] [graph-edge] frame=1 level=4 consumer_id=9 input_index=0 producer_id=7 producer_level=3
+[2026-11-08 12:48:34.723] [info] [graph-edge] frame=1 level=4 consumer_id=9 input_index=1 producer_id=8 producer_level=0
+[2026-11-08 12:48:34.734] [info] [temp-lifetime] frame=1 after_level=4 live=[9,] retired=[7,8,]
+[2026-11-08 12:48:34.734] [info] [exec-level-diag] frame=1 level=4 nodes=1 input_ms=0.015 dispatch_ms=10.769 fb_release_ms=0.008
+[2026-11-08 12:48:34.847] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:48:34.847] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:48:34.881] [info] [temp-lifetime] frame=2 after_level=0 live=[0,1,3,6,8,] retired=[]
+[2026-11-08 12:48:34.881] [info] [exec-level-diag] frame=2 level=0 nodes=5 input_ms=0.001 dispatch_ms=32.620 fb_release_ms=0.001
+[2026-11-08 12:48:34.881] [info] [graph-edge] frame=2 level=1 consumer_id=2 input_index=0 producer_id=0 producer_level=0
+[2026-11-08 12:48:34.881] [info] [graph-edge] frame=2 level=1 consumer_id=2 input_index=1 producer_id=1 producer_level=0
+[2026-11-08 12:48:34.881] [info] [graph-edge] frame=2 level=1 consumer_id=4 input_index=0 producer_id=3 producer_level=0
+[2026-11-08 12:48:35.050] [info] [temp-lifetime] frame=2 after_level=1 live=[2,4,6,8,] retired=[0,1,3,]
+[2026-11-08 12:48:35.050] [info] [exec-level-diag] frame=2 level=1 nodes=2 input_ms=0.048 dispatch_ms=169.188 fb_release_ms=0.010
+[2026-11-08 12:48:35.050] [info] [graph-edge] frame=2 level=2 consumer_id=5 input_index=0 producer_id=2 producer_level=1
+[2026-11-08 12:48:35.050] [info] [graph-edge] frame=2 level=2 consumer_id=5 input_index=1 producer_id=4 producer_level=1
+[2026-11-08 12:48:35.067] [info] [temp-lifetime] frame=2 after_level=2 live=[5,6,8,] retired=[2,4,]
+[2026-11-08 12:48:35.067] [info] [exec-level-diag] frame=2 level=2 nodes=1 input_ms=0.015 dispatch_ms=16.639 fb_release_ms=0.008
+[2026-11-08 12:48:35.067] [info] [graph-edge] frame=2 level=3 consumer_id=7 input_index=0 producer_id=5 producer_level=2
+[2026-11-08 12:48:35.067] [info] [graph-edge] frame=2 level=3 consumer_id=7 input_index=1 producer_id=6 producer_level=0
+[2026-11-08 12:48:35.078] [info] [temp-lifetime] frame=2 after_level=3 live=[7,8,] retired=[5,6,]
+[2026-11-08 12:48:35.078] [info] [exec-level-diag] frame=2 level=3 nodes=1 input_ms=0.015 dispatch_ms=10.995 fb_release_ms=0.008
+[2026-11-08 12:48:35.078] [info] [graph-edge] frame=2 level=4 consumer_id=9 input_index=0 producer_id=7 producer_level=3
+[2026-11-08 12:48:35.078] [info] [graph-edge] frame=2 level=4 consumer_id=9 input_index=1 producer_id=8 producer_level=0
+[2026-11-08 12:48:35.088] [info] [temp-lifetime] frame=2 after_level=4 live=[9,] retired=[7,8,]
+[2026-11-08 12:48:35.088] [info] [exec-level-diag] frame=2 level=4 nodes=1 input_ms=0.016 dispatch_ms=10.405 fb_release_ms=0.008
+[2026-11-08 12:48:35.202] [info] [video]   4/40 frames
+[2026-11-08 12:48:35.203] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:48:35.203] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:48:35.565] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:48:35.565] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:48:35.961] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:48:35.962] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:48:36.297] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:48:36.297] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:48:36.639] [info] [video]   8/40 frames
+[2026-11-08 12:48:36.640] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:48:36.640] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:48:36.980] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:48:36.980] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:48:37.272] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:48:37.273] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:48:37.561] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:48:37.561] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:48:37.851] [info] [video]   12/40 frames
+[2026-11-08 12:48:37.851] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:48:37.851] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:48:38.144] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:48:38.144] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:48:38.440] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:48:38.440] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:48:38.737] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:48:38.737] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:48:39.022] [info] [video]   16/40 frames
+[2026-11-08 12:48:39.023] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:48:39.023] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:48:39.326] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:48:39.326] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:48:39.652] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:48:39.653] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:48:40.014] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:48:40.015] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:48:40.391] [info] [video]   20/40 frames
+[2026-11-08 12:48:40.391] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:48:40.392] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:48:40.745] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:48:40.745] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:48:41.101] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:48:41.101] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:48:41.440] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:48:41.440] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:48:41.776] [info] [video]   24/40 frames
+[2026-11-08 12:48:41.776] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:48:41.777] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:48:42.115] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:48:42.115] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:48:42.455] [info] [vulkan-lifecycle] frame=25 vram_bytes=522027008 live_surfaces=10 surface_bindings=2 registry_live_handles=178 physical_images=10 deferred_releases=0 vma_allocations=79 surfaces_created=703 surfaces_released=701 queue_packages=1 execution_slots_busy=0 command_batch_active=false
+[2026-11-08 12:48:42.456] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:48:42.456] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:48:42.799] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:48:42.799] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:48:43.156] [info] [video]   28/40 frames
+[2026-11-08 12:48:43.157] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:48:43.157] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:48:43.565] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:48:43.565] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:48:43.876] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:48:43.877] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:48:44.171] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:48:44.171] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:48:44.459] [info] [video]   32/40 frames
+[2026-11-08 12:48:44.460] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:48:44.460] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:48:44.496] [info] [native_av] tone-map=aces exposure=1 frame=30 max_linear_luma=71.3102 max_mapped_luma=1.0000
+[2026-11-08 12:48:44.740] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:48:44.740] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:48:45.025] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:48:45.026] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:48:45.307] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:48:45.307] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:48:45.584] [info] [video]   36/40 frames
+[2026-11-08 12:48:45.585] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:48:45.585] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:48:45.863] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:48:45.864] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:48:46.166] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:48:46.166] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:48:46.468] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:48:46.468] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:48:46.761] [info] [video]   40/40 frames
+[2026-11-08 12:48:46.761] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:48:46.762] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-08 12:48:47.112] [info] [video] writer join complete
+[2026-11-08 12:48:47.112] [info] [drain-debug] start drain, capacity=6
+[2026-11-08 12:48:47.112] [info] [drain-debug] reap done, busy_count=0
+[2026-11-08 12:48:47.112] [info] [video] trimming framebuffer pool
+[2026-11-08 12:48:47.132] [info] [video] Released framebuffer pool — memory trimmed
+[2026-11-08 12:48:47.132] [info] [video] frame-loop cleanup complete
+[2026-11-08 12:48:47.132] [info] [video] Encoder write blocked duration: 0.00 ms
+[2026-11-08 12:48:47.132] [info] [video_diag] conversion_and_copy_duration_ms: 645 ms
+[2026-11-08 12:48:47.132] [info] [video_diag] conversion_bytes_written=0 encoder_staging_copy_bytes=0 encoder_slot_reuses=0
+[2026-11-08 12:48:47.132] [info] [native_av] close: sending encoder flush
+[2026-11-08 12:48:47.507] [info] [native_av] close: encoder flush accepted
+[2026-11-08 12:48:49.844] [info] [native_av] close: packets drained=true
+[2026-11-08 12:48:49.844] [info] [native_av] close: finalizing mux session
+[2026-11-08 12:48:49.844] [info] [native_av] close: mux session finalized
+[2026-11-08 12:48:49.844] [info] [native_av] Closed native encoder — 40 frames accepted, encoder_packets=40 mux_packets=40 packet_pts=0..39, YUV cache: 0 hits / 40 misses
+[2026-11-08 12:48:49.844] [info] [native_av] native-surface timings — hwframe_pool_ms=0.0 c2v_prepare_ms=0.0 encode_drain_ms=0.0 send_ms=298.1 submit_counter_ms=0.0 backpressure_ms=0.0
+[2026-11-08 12:48:49.844] [info] [video_native] convert=663.10ms  send_frame=298.14ms  backpressure=0.00ms  flush=2711.86ms  receive_packet=2334.27ms  mux_write=2.13ms  trailer=0.56ms
+[2026-11-08 12:48:49.847] [info] [video] render_ms=13755.46 encode_ms=2797.28 writer_encode_ms=2733.83 wall_ms=18012.73 nvml_stop_ms=0.16
+[2026-11-08 12:48:49.847] [info] [video] FFmpeg queue wait duration: 0.12 ms
+[2026-11-08 12:48:49.864] [info] [video] copy_eligible=true sha256=c228edbfa6e70cce49f02f54f8b9a0dfc61ef80beb3cc87f1065924466d9ccf4
+[2026-11-08 12:48:49.864] [info] [video] Wrote probe_vram_40.mp4
+[2026-11-08 12:48:49.864] [info] [startup-profile] total=482.17ms logger=0.05ms cli_bootstrap=3.42ms cli_parse=nullms composition=0.17ms plan_read=nullms json_parse=nullms plan_decode_validate=nullms asset_resolve=nullms plan_compile=nullms unaccounted=97.63ms
+[2026-11-08 12:48:49.869] [info] [video] Wrote exact per-frame timing sidecar: probe_vram_40.mp4.timing.json
+[libx264 @ 0x564dd9606d80] frame I:1     Avg QP:13.84  size: 50676
+[libx264 @ 0x564dd9606d80] frame P:39    Avg QP:20.83  size:  6676
+[libx264 @ 0x564dd9606d80] mb I  I16..4: 36.4% 52.9% 10.7%
+[libx264 @ 0x564dd9606d80] mb P  I16..4:  0.4%  1.6%  0.1%  P16..4: 10.4%  4.0%  2.1%  0.0%  0.0%    skip:81.5%
+[libx264 @ 0x564dd9606d80] 8x8 transform intra:64.8% inter:44.2%
+[libx264 @ 0x564dd9606d80] coded y,uvDC,uvAC intra: 8.8% 20.1% 14.8% inter: 1.1% 6.4% 2.6%
+[libx264 @ 0x564dd9606d80] i16 v,h,dc,p: 82% 15%  1%  2%
+[libx264 @ 0x564dd9606d80] i8 v,h,dc,ddl,ddr,vr,hd,vl,hu: 42%  9% 40%  1%  2%  2%  2%  1%  1%
+[libx264 @ 0x564dd9606d80] i4 v,h,dc,ddl,ddr,vr,hd,vl,hu: 25% 20% 20%  5%  8%  6%  7%  4%  4%
+[libx264 @ 0x564dd9606d80] i8c dc,h,v,p: 62% 14% 21%  3%
+[libx264 @ 0x564dd9606d80] Weighted P-Frames: Y:0.0% UV:0.0%
+[libx264 @ 0x564dd9606d80] ref P L0: 68.7%  2.5% 14.4%  6.2%  4.7%  3.5%
+[libx264 @ 0x564dd9606d80] kb/s:1866.33
+[2026-11-08 12:48:49.901] [info] [INFO] job-lifecycle: slot_pool_close_ms=0.0 surface_release_ms=0.0
+[2026-11-08 12:48:50.067] [info] [INFO] job-lifecycle: queue_close_ms=0.0 writer_join_ms=0.0 encoder_reset_ms=31.0 decoder_reset_ms=0.0 full_graph_reset_ms=166.4 sink_ctx_reset_ms=0.0 device_runtime_reset_ms=0.0 device_reservation_reset_ms=0.0
+[2026-11-08 12:48:50.067] [info] [INFO] job-lifecycle: sidecar_write_ms=5.7 session_teardown_ms=197.6
+[2026-11-08 12:48:50.074] [info] [INFO] job-lifecycle: post_sidecar_to_receipt_ms=204.6

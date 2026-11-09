@@ -8,6 +8,8 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -138,5 +140,45 @@ func TestStoreStagedRequiresSession(t *testing.T) {
 	client, _ := newStagedClient(t, fake)
 	if _, _, err := client.StoreStaged(context.Background(), "  ", strings.NewReader("x")); err == nil {
 		t.Fatal("StoreStaged accepted an empty session id")
+	}
+}
+
+// TestPutStagedFileStreamsHashesAndWarmsL2 pins the single-pass file entry
+// point: the source is read once for the upload, the digest comes from that
+// stream, and the just-uploaded identity is installed into L2 without a second
+// source read.
+func TestPutStagedFileStreamsHashesAndWarmsL2(t *testing.T) {
+	fake := &stagingFake{}
+	httpClient, _ := newStagedClient(t, fake)
+	l2Dir := t.TempDir()
+	client := New(httpClient, Options{L2Dir: l2Dir})
+
+	body := []byte("finished artifact bytes")
+	path := filepath.Join(t.TempDir(), "artifact.mp4")
+	if err := os.WriteFile(path, body, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	sha, size, err := client.PutStagedFile(context.Background(), "file-1", path)
+	if err != nil {
+		t.Fatalf("PutStagedFile: %v", err)
+	}
+	want := sha256.Sum256(body)
+	wantSHA := hex.EncodeToString(want[:])
+	if sha != wantSHA || size != int64(len(body)) {
+		t.Fatalf("identity = %s/%d, want %s/%d", sha, size, wantSHA, len(body))
+	}
+	if !fake.finalizeCalled || fake.finalizeSHA != wantSHA {
+		t.Fatalf("finalize assertion = %q (called=%v), want %q", fake.finalizeSHA, fake.finalizeCalled, wantSHA)
+	}
+	cachedPath, ok := client.l2.Path(sha)
+	if !ok {
+		t.Fatal("L2 was not warmed from the staged file")
+	}
+	cached, err := os.ReadFile(cachedPath)
+	if err != nil {
+		t.Fatalf("read warmed L2 object: %v", err)
+	}
+	if string(cached) != string(body) {
+		t.Fatalf("L2 bytes = %q, want %q", string(cached), string(body))
 	}
 }

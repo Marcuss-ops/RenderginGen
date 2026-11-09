@@ -1,0 +1,29 @@
+{
+  "date": "2026-11-08",
+  "version": 1,
+  "effect": "blur.camera_ring (64 tap) + ACES output tone map",
+  "notes": "Single-process 180-frame render. Scene-linear HDR emitters, CameraRing 64-tap golden-angle with per-pixel jitter, lateral focus pull, real ACES tone map at the output boundary. Supersedes the two-segment concat, which is kept for provenance.",
+  "drive_folder_id": "1J_xUGo_bchzXDIGqSX04CU44c_Dm3SxS",
+  "drive_folder_url": "https://drive.google.com/drive/u/1/folders/1J_xUGo_bchzXDIGqSX04CU44c_Dm3SxS",
+  "clips": [
+    {
+      "name": "HDR_Bokeh_Focus_Pull_1920x1080_6s.mp4",
+      "local_path": "RenderingGen/hdr_bokeh_focus_pull_20261108/hdr_bokeh_focus_pull_aces_1080p30.mp4",
+      "staged_path": "RenderingGen/UploadDrive/hdr_bokeh_focus_pull_20261108/HDR_Bokeh_Focus_Pull_1920x1080_6s.mp4",
+      "drive_file_id": "12tlS7g2t6GRaGajsChb8tgUeIC5EON4p",
+      "drive_url": "https://drive.google.com/file/d/12tlS7g2t6GRaGajsChb8tgUeIC5EON4p/view?usp=drivesdk",
+      "drive_parent_id": "1J_xUGo_bchzXDIGqSX04CU44c_Dm3SxS",
+      "width": 1920,
+      "height": 1080,
+      "fps": 30.0,
+      "duration_seconds": 6.0,
+      "frames": 180,
+      "bytes": 2391744,
+      "sha256": "f84800c83dfb6a113de3ea26a4b81528a82433b13bb8d6f41cd480b239d17f9a",
+      "render_processes": 1,
+      "tone_map": "aces",
+      "max_linear_luma": 194.0686,
+      "max_mapped_luma": 1.0
+    }
+  ]
+}

@@ -1,0 +1,131 @@
+{
+  "schema": "chronon.render-plan.v2",
+  "version": 2,
+  "job_id": "typography_06_didot_luxury",
+  "canvas": {
+    "width": 1920,
+    "height": 1080,
+    "fps_num": 30,
+    "fps_den": 1,
+    "duration_frames": 240
+  },
+  "layers": [
+    {
+      "id": "background",
+      "type": "color",
+      "color": [
+        0.050980392156862744,
+        0.043137254901960784,
+        0.03529411764705882,
+        1.0
+      ],
+      "size": [
+        1920,
+        1080
+      ],
+      "position": [
+        0,
+        0
+      ],
+      "start_frame": 0,
+      "duration_frames": 240
+    },
+    {
+      "id": "phrase",
+      "type": "text",
+      "text": "Le menti che hanno cambiato il mondo",
+      "size": [
+        1840.0,
+        480.0
+      ],
+      "position": [
+        960.0,
+        540.0
+      ],
+      "style": {
+        "font": "assets/fonts/Didot-Italic.ttf",
+        "font_size": 103.8,
+        "fill": "#EADFCB",
+        "text_align": "center",
+        "stroke": {
+          "color": "#000000",
+          "width": 0
+        },
+        "glow": {
+          "color": "#FFF4DE",
+          "radius": 20.0,
+          "intensity": 0.08
+        }
+      },
+      "start_frame": 0,
+      "duration_frames": 240,
+      "animation": {
+        "tracks": [
+          {
+            "property": "opacity",
+            "easing": "linear",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 0.0
+              },
+              {
+                "frame": 28,
+                "value": 1.0
+              },
+              {
+                "frame": 223,
+                "value": 1.0
+              },
+              {
+                "frame": 239,
+                "value": 0.0
+              }
+            ]
+          },
+          {
+            "property": "position_y",
+            "easing": "out_cubic",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 18.0
+              },
+              {
+                "frame": 48,
+                "value": 0.0
+              },
+              {
+                "frame": 239,
+                "value": 0.0
+              }
+            ]
+          },
+          {
+            "property": "scale",
+            "easing": "out_cubic",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 0.988
+              },
+              {
+                "frame": 52,
+                "value": 1.0
+              },
+              {
+                "frame": 239,
+                "value": 1.0
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "output": {
+    "path": "06_didot_luxury.mp4",
+    "format": "mp4",
+    "codec": "h264"
+  }
+}

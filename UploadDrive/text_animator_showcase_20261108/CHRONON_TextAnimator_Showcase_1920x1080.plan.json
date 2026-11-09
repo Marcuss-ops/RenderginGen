@@ -1,0 +1,296 @@
+{
+  "schema": "chronon.render-plan.v3",
+  "version": 3,
+  "job_id": "chronon_text_animator_showcase_20261108",
+  "canvas": {
+    "width": 1920,
+    "height": 1080,
+    "fps_num": 30,
+    "fps_den": 1,
+    "duration_frames": 180
+  },
+  "layers": [
+    {
+      "id": "background",
+      "type": "color",
+      "color": [0.008, 0.012, 0.028, 1.0],
+      "size": [1920, 1080],
+      "position": [0, 0],
+      "start_frame": 0,
+      "duration_frames": 180
+    },
+    {
+      "id": "title",
+      "type": "text",
+      "text": "CHRONON 3D",
+      "size": [1800, 300],
+      "position": [960, 300],
+      "start_frame": 0,
+      "duration_frames": 180,
+      "style": {
+        "font": "assets/fonts/Inter-Bold.ttf",
+        "font_size": 166,
+        "fill": "#FFFFFF",
+        "text_align": "center"
+      },
+      "animation": {
+        "tracks": [
+          {
+            "property": "opacity",
+            "easing": "out_cubic",
+            "keyframes": [
+              {"frame": 0, "value": 0.0},
+              {"frame": 24, "value": 1.0},
+              {"frame": 179, "value": 1.0}
+            ]
+          },
+          {
+            "property": "scale",
+            "easing": "out_cubic",
+            "keyframes": [
+              {"frame": 0, "value": 0.94},
+              {"frame": 30, "value": 1.0},
+              {"frame": 179, "value": 1.0}
+            ]
+          }
+        ]
+      },
+      "text_animators": [
+        {
+          "id": "per_glyph_paint",
+          "selectors": [
+            {
+              "unit": "glyph",
+              "shape": "square",
+              "start": {"keyframes": [{"frame": 0, "value": 0}]},
+              "end": {"keyframes": [{"frame": 0, "value": 100}]},
+              "amount": {"keyframes": [{"frame": 0, "value": 100}]},
+              "exclude_spaces": false
+            }
+          ],
+          "properties": [
+            {
+              "property": "glyph_gradient_start_color",
+              "keyframes": [
+                {"frame": 0, "value": [1.0, 0.08, 0.55, 1.0]},
+                {"frame": 70, "value": [1.0, 0.55, 0.08, 1.0]},
+                {"frame": 179, "value": [0.25, 0.85, 1.0, 1.0]}
+              ]
+            },
+            {
+              "property": "glyph_gradient_end_color",
+              "keyframes": [
+                {"frame": 0, "value": [0.05, 0.85, 1.0, 1.0]},
+                {"frame": 80, "value": [0.75, 0.20, 1.0, 1.0]},
+                {"frame": 179, "value": [1.0, 0.20, 0.55, 1.0]}
+              ]
+            },
+            {
+              "property": "glyph_gradient_angle",
+              "keyframes": [
+                {"frame": 0, "value": 0.0},
+                {"frame": 179, "value": 90.0}
+              ]
+            },
+            {
+              "property": "glyph_shadow_color",
+              "keyframes": [{"frame": 0, "value": [0.0, 0.55, 1.0, 1.0]}]
+            },
+            {
+              "property": "glyph_shadow_offset",
+              "keyframes": [{"frame": 0, "value": [12.0, 16.0]}]
+            },
+            {
+              "property": "glyph_shadow_blur",
+              "keyframes": [{"frame": 0, "value": 18.0}]
+            },
+            {
+              "property": "glyph_shadow_opacity",
+              "keyframes": [{"frame": 0, "value": 0.48}]
+            },
+            {
+              "property": "glyph_glow_color",
+              "keyframes": [{"frame": 0, "value": [0.20, 0.90, 1.0, 1.0]}]
+            },
+            {
+              "property": "glyph_glow_radius",
+              "keyframes": [{"frame": 0, "value": 26.0}]
+            },
+            {
+              "property": "glyph_glow_intensity",
+              "keyframes": [
+                {"frame": 0, "value": 0.22},
+                {"frame": 55, "value": 0.60},
+                {"frame": 110, "value": 0.32},
+                {"frame": 179, "value": 0.52}
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "subtitle",
+      "type": "text",
+      "text": "PER-GLYPH SHADOW  •  GLOW  •  GRADIENT",
+      "size": [1800, 120],
+      "position": [960, 535],
+      "start_frame": 0,
+      "duration_frames": 180,
+      "style": {
+        "font": "assets/fonts/Inter-Bold.ttf",
+        "font_size": 48,
+        "fill": "#DFF8FF",
+        "text_align": "center"
+      },
+      "animation": {
+        "tracks": [
+          {
+            "property": "opacity",
+            "easing": "out_cubic",
+            "keyframes": [
+              {"frame": 0, "value": 0.0},
+              {"frame": 34, "value": 1.0},
+              {"frame": 179, "value": 1.0}
+            ]
+          }
+        ]
+      },
+      "text_animators": [
+        {
+          "id": "subtitle_paint",
+          "selectors": [
+            {
+              "unit": "glyph",
+              "shape": "square",
+              "start": {"keyframes": [{"frame": 0, "value": 0}]},
+              "end": {"keyframes": [{"frame": 0, "value": 100}]},
+              "amount": {"keyframes": [{"frame": 0, "value": 100}]},
+              "exclude_spaces": false
+            }
+          ],
+          "properties": [
+            {
+              "property": "glyph_gradient_start_color",
+              "keyframes": [{"frame": 0, "value": [0.40, 0.95, 1.0, 1.0]}]
+            },
+            {
+              "property": "glyph_gradient_end_color",
+              "keyframes": [{"frame": 0, "value": [0.35, 0.45, 1.0, 1.0]}]
+            },
+            {
+              "property": "glyph_gradient_angle",
+              "keyframes": [{"frame": 0, "value": 90.0}]
+            },
+            {
+              "property": "glyph_glow_color",
+              "keyframes": [{"frame": 0, "value": [0.25, 0.80, 1.0, 1.0]}]
+            },
+            {
+              "property": "glyph_glow_radius",
+              "keyframes": [{"frame": 0, "value": 10.0}]
+            },
+            {
+              "property": "glyph_glow_intensity",
+              "keyframes": [{"frame": 0, "value": 0.35}]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "reflow",
+      "type": "text",
+      "text": "REFLOW WORD SPACING",
+      "size": [780, 180],
+      "position": [960, 715],
+      "start_frame": 0,
+      "duration_frames": 180,
+      "style": {
+        "font": "assets/fonts/Inter-Bold.ttf",
+        "font_size": 58,
+        "fill": "#FFD166",
+        "text_align": "center"
+      },
+      "animation": {
+        "tracks": [
+          {
+            "property": "opacity",
+            "easing": "out_cubic",
+            "keyframes": [
+              {"frame": 0, "value": 0.0},
+              {"frame": 40, "value": 1.0},
+              {"frame": 179, "value": 1.0}
+            ]
+          }
+        ]
+      },
+      "text_animators": [
+        {
+          "id": "live_reflow",
+          "selectors": [
+            {
+              "unit": "word",
+              "shape": "square",
+              "start": {"keyframes": [{"frame": 0, "value": 0}]},
+              "end": {"keyframes": [{"frame": 0, "value": 100}]},
+              "amount": {"keyframes": [{"frame": 0, "value": 100}]},
+              "exclude_spaces": false
+            }
+          ],
+          "properties": [
+            {
+              "property": "reflow_word_spacing",
+              "keyframes": [
+                {"frame": 0, "value": 0.0},
+                {"frame": 170, "value": 120.0}
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "caret_line",
+      "type": "text",
+      "text": "CARET",
+      "size": [520, 120],
+      "position": [960, 880],
+      "start_frame": 0,
+      "duration_frames": 180,
+      "style": {
+        "font": "assets/fonts/Inter-Bold.ttf",
+        "font_size": 64,
+        "fill": "#FFFFFF",
+        "text_align": "center",
+        "text_caret": {
+          "byte_index": 5,
+          "width": 4.0,
+          "height": 72.0,
+          "color": "#7DF9FF",
+          "opacity": 1.0,
+          "blink_period_frames": 15,
+          "blink_duty": 0.62
+        }
+      },
+      "animation": {
+        "tracks": [
+          {
+            "property": "opacity",
+            "easing": "out_cubic",
+            "keyframes": [
+              {"frame": 0, "value": 0.0},
+              {"frame": 48, "value": 1.0},
+              {"frame": 179, "value": 1.0}
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "output": {
+    "path": "CHRONON_TextAnimator_Showcase_1920x1080.mp4",
+    "format": "mp4",
+    "codec": "h264"
+  }
+}

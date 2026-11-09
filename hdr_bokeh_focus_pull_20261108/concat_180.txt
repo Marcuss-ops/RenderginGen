@@ -1,0 +1,2 @@
+file '/home/pierone/src/go-master/projects/Pyt/VeloxEditing/RenderingGen/hdr_bokeh_focus_pull_20261108/seg1_f000-089.mp4'
+file '/home/pierone/src/go-master/projects/Pyt/VeloxEditing/RenderingGen/hdr_bokeh_focus_pull_20261108/seg2_f090-179.mp4'

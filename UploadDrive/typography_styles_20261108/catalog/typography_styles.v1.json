@@ -1,0 +1,470 @@
+{
+  "schema": "chronontemplate.typography-styles.v1",
+  "title": "Elegant phrase typography — runtime Font / Shadow / Glow",
+  "description": "Pre-saved phrase looks for 1920x1080 video. A preset is a complete combination; font, shadow and glow can each be replaced at runtime without editing the plan.",
+  "canvas": {
+    "width": 1920,
+    "height": 1080,
+    "fps": 30,
+    "duration_frames": 240
+  },
+  "default_phrase": "Le menti che hanno cambiato il mondo",
+  "defaults": {
+    "box": [1840, 480],
+    "text_align": "center"
+  },
+  "fonts": {
+    "playfair_display": {
+      "family": "Playfair Display",
+      "path": "assets/fonts/PlayfairDisplay.ttf",
+      "category": "didone_serif"
+    },
+    "playfair_display_bold": {
+      "family": "Playfair Display Bold",
+      "path": "assets/fonts/PlayfairDisplay-Bold.ttf",
+      "category": "didone_serif"
+    },
+    "playfair_display_italic": {
+      "family": "Playfair Display Italic",
+      "path": "assets/fonts/PlayfairDisplay-Italic.ttf",
+      "category": "didone_serif"
+    },
+    "bodoni_moda": {
+      "family": "Bodoni Moda",
+      "path": "assets/fonts/BodoniModa-Regular.ttf",
+      "category": "didone_serif"
+    },
+    "bodoni_moda_bold_italic": {
+      "family": "Bodoni Moda Bold Italic",
+      "path": "assets/fonts/BodoniModa-BoldItalic.ttf",
+      "category": "didone_serif"
+    },
+    "didot_italic": {
+      "family": "Didot Italic",
+      "path": "assets/fonts/Didot-Italic.ttf",
+      "category": "didone_serif"
+    },
+    "dm_serif_display": {
+      "family": "DM Serif Display",
+      "path": "assets/fonts/DM-Serif-Display.ttf",
+      "category": "editorial_serif"
+    },
+    "dm_serif_display_italic": {
+      "family": "DM Serif Display Italic",
+      "path": "assets/fonts/DM-Serif-Display-Italic.ttf",
+      "category": "editorial_serif"
+    },
+    "libre_bodoni_italic": {
+      "family": "Libre Bodoni Italic",
+      "path": "assets/fonts/LibreBodoni-Italic.ttf",
+      "category": "editorial_serif"
+    },
+    "abril_fatface": {
+      "family": "Abril Fatface",
+      "path": "assets/fonts/AbrilFatface-Regular.ttf",
+      "category": "poster_serif"
+    },
+    "montserrat_extra_bold": {
+      "family": "Montserrat ExtraBold",
+      "path": "assets/fonts/Montserrat-ExtraBold.ttf",
+      "category": "broadcast_sans"
+    },
+    "inter_medium": {
+      "family": "Inter Medium",
+      "path": "assets/fonts/Inter-Medium.ttf",
+      "category": "broadcast_sans"
+    },
+    "inter_light": {
+      "family": "Inter Light",
+      "path": "assets/fonts/Inter-Light.ttf",
+      "category": "broadcast_sans"
+    },
+    "manrope": {
+      "family": "Manrope",
+      "path": "assets/fonts/Manrope.ttf",
+      "category": "broadcast_sans"
+    },
+    "sf_pro_light": {
+      "family": "SF Pro Display Light",
+      "path": "assets/fonts/SF-Pro-Display-Light.otf",
+      "category": "broadcast_sans"
+    },
+    "space_grotesk": {
+      "family": "Space Grotesk",
+      "path": "assets/fonts/Space-Grotesk.ttf",
+      "category": "modern_sans"
+    },
+    "sora": {
+      "family": "Sora",
+      "path": "assets/fonts/Sora.ttf",
+      "category": "modern_sans"
+    },
+    "oswald_medium": {
+      "family": "Oswald Medium",
+      "path": "assets/fonts/Oswald-Medium.ttf",
+      "category": "condensed_sans"
+    },
+    "bricolage_grotesque": {
+      "family": "Bricolage Grotesque",
+      "path": "assets/fonts/Bricolage-Grotesque.ttf",
+      "category": "modern_sans"
+    },
+    "urbanist": {
+      "family": "Urbanist",
+      "path": "assets/fonts/Urbanist.ttf",
+      "category": "modern_sans"
+    }
+  },
+  "shadows": {
+    "none": {
+      "label": "Nessuna ombra",
+      "color": "#000000",
+      "opacity": 0.0,
+      "blur": 0.0,
+      "offset": [0.0, 0.0]
+    },
+    "ink_whisper": {
+      "label": "Ombra inchiostro lieve",
+      "color": "#000000",
+      "opacity": 0.10,
+      "blur": 12.0,
+      "offset": [0.0, 2.0]
+    },
+    "ink_soft": {
+      "label": "Ombra inchiostro morbida",
+      "color": "#000000",
+      "opacity": 0.16,
+      "blur": 18.0,
+      "offset": [0.0, 3.0]
+    },
+    "ink_editorial": {
+      "label": "Ombra editoriale netta",
+      "color": "#000000",
+      "opacity": 0.22,
+      "blur": 9.0,
+      "offset": [2.0, 3.0]
+    },
+    "warm_paper": {
+      "label": "Ombra carta calda",
+      "color": "#2A2118",
+      "opacity": 0.13,
+      "blur": 14.0,
+      "offset": [0.0, 2.0]
+    },
+    "noir_soft": {
+      "label": "Ombra noir profonda",
+      "color": "#000000",
+      "opacity": 0.34,
+      "blur": 26.0,
+      "offset": [0.0, 6.0]
+    }
+  },
+  "glows": {
+    "none": {
+      "label": "Nessun glow",
+      "color": "#000000",
+      "radius": 0.0,
+      "intensity": 0.0
+    },
+    "ink_halo": {
+      "label": "Alone inchiostro",
+      "color": "#000000",
+      "radius": 18.0,
+      "intensity": 0.08
+    },
+    "ink_halo_soft": {
+      "label": "Alone inchiostro morbido",
+      "color": "#000000",
+      "radius": 26.0,
+      "intensity": 0.05
+    },
+    "champagne_glow": {
+      "label": "Glow champagne",
+      "color": "#D8B36A",
+      "radius": 22.0,
+      "intensity": 0.08
+    },
+    "gold_glow": {
+      "label": "Glow oro",
+      "color": "#C9A45C",
+      "radius": 24.0,
+      "intensity": 0.10
+    },
+    "warm_white": {
+      "label": "Glow bianco caldo",
+      "color": "#FFF4DE",
+      "radius": 20.0,
+      "intensity": 0.08
+    },
+    "white_halo": {
+      "label": "Alone bianco",
+      "color": "#FFFFFF",
+      "radius": 20.0,
+      "intensity": 0.07
+    },
+    "cyan_glow": {
+      "label": "Glow ciano",
+      "color": "#49D6E8",
+      "radius": 22.0,
+      "intensity": 0.10
+    },
+    "blue_glow": {
+      "label": "Glow blu",
+      "color": "#5A8DEE",
+      "radius": 22.0,
+      "intensity": 0.09
+    },
+    "amber_glow": {
+      "label": "Glow ambra",
+      "color": "#E0A85A",
+      "radius": 20.0,
+      "intensity": 0.09
+    }
+  },
+  "families": [
+    {
+      "id": "editoriale_didone",
+      "label": "Editoriale Didone",
+      "description": "Playfair, Bodoni e Didot: il registro classico da documentario."
+    },
+    {
+      "id": "serif_moderno",
+      "label": "Serif moderno",
+      "description": "Serif contemporanei, dal taglio editoriale al manifesto."
+    },
+    {
+      "id": "sans_broadcast",
+      "label": "Sans broadcast",
+      "description": "Sans leggibili e autorevoli per titoli e lower third."
+    },
+    {
+      "id": "sans_moderno",
+      "label": "Sans moderno",
+      "description": "Grotesk e condensati per un taglio più contemporaneo."
+    }
+  ],
+  "presets": [
+    {
+      "id": "01_playfair_base_attuale",
+      "label": "Playfair · bianco e nero (base attuale)",
+      "family": "editoriale_didone",
+      "font": "playfair_display",
+      "font_size": 94,
+      "fill": "#000000",
+      "background": "#FFFFFF",
+      "shadow": "none",
+      "glow": "ink_halo",
+      "note": "La combinazione usata oggi: Playfair nero su bianco con alone nero."
+    },
+    {
+      "id": "02_playfair_carta",
+      "label": "Playfair · inchiostro su carta",
+      "family": "editoriale_didone",
+      "font": "playfair_display",
+      "font_size": 94,
+      "fill": "#0B0B0B",
+      "background": "#F5F1E8",
+      "shadow": "ink_soft",
+      "glow": "ink_halo_soft",
+      "note": "La base attuale raffinata: carta calda, ombra corta, alone quasi invisibile."
+    },
+    {
+      "id": "03_playfair_noir_oro",
+      "label": "Playfair Bold · avorio e oro",
+      "family": "editoriale_didone",
+      "font": "playfair_display_bold",
+      "font_size": 96,
+      "fill": "#F4EEE1",
+      "background": "#0A0A0B",
+      "shadow": "none",
+      "glow": "champagne_glow"
+    },
+    {
+      "id": "04_bodoni_carta",
+      "label": "Bodoni Moda · carta pregiata",
+      "family": "editoriale_didone",
+      "font": "bodoni_moda",
+      "font_size": 98,
+      "fill": "#17130E",
+      "background": "#EFE8DA",
+      "shadow": "ink_editorial",
+      "glow": "none"
+    },
+    {
+      "id": "05_bodoni_oro_noir",
+      "label": "Bodoni corsivo · oro su noir",
+      "family": "editoriale_didone",
+      "font": "bodoni_moda_bold_italic",
+      "font_size": 102,
+      "fill": "#E4C185",
+      "background": "#08090C",
+      "shadow": "noir_soft",
+      "glow": "gold_glow"
+    },
+    {
+      "id": "06_didot_luxury",
+      "label": "Didot corsivo · lusso quieto",
+      "family": "serif_moderno",
+      "font": "didot_italic",
+      "font_size": 108,
+      "fill": "#EADFCB",
+      "background": "#0D0B09",
+      "shadow": "none",
+      "glow": "warm_white"
+    },
+    {
+      "id": "07_dm_serif_editoriale",
+      "label": "DM Serif · editoriale",
+      "family": "serif_moderno",
+      "font": "dm_serif_display",
+      "font_size": 96,
+      "fill": "#171512",
+      "background": "#F3EFE6",
+      "shadow": "ink_editorial",
+      "glow": "none"
+    },
+    {
+      "id": "08_dm_serif_cinema",
+      "label": "DM Serif corsivo · cinema",
+      "family": "serif_moderno",
+      "font": "dm_serif_display_italic",
+      "font_size": 104,
+      "fill": "#F3EBDD",
+      "background": "#101418",
+      "shadow": "noir_soft",
+      "glow": "white_halo"
+    },
+    {
+      "id": "09_libre_bodoni_cipria",
+      "label": "Libre Bodoni · carta cipria",
+      "family": "serif_moderno",
+      "font": "libre_bodoni_italic",
+      "font_size": 100,
+      "fill": "#2B1D1A",
+      "background": "#F2E7E1",
+      "shadow": "warm_paper",
+      "glow": "none"
+    },
+    {
+      "id": "10_abril_manifesto",
+      "label": "Abril Fatface · manifesto",
+      "family": "serif_moderno",
+      "font": "abril_fatface",
+      "font_size": 104,
+      "fill": "#0A0A0A",
+      "background": "#E9E4D8",
+      "shadow": "ink_editorial",
+      "glow": "none"
+    },
+    {
+      "id": "11_montserrat_broadcast",
+      "label": "Montserrat · broadcast",
+      "family": "sans_broadcast",
+      "font": "montserrat_extra_bold",
+      "font_size": 88,
+      "fill": "#FFFFFF",
+      "background": "#0B0B0B",
+      "shadow": "noir_soft",
+      "glow": "white_halo"
+    },
+    {
+      "id": "12_inter_pulito",
+      "label": "Inter Medium · pulito su carta",
+      "family": "sans_broadcast",
+      "font": "inter_medium",
+      "font_size": 88,
+      "fill": "#111111",
+      "background": "#FAF7F0",
+      "shadow": "ink_whisper",
+      "glow": "none"
+    },
+    {
+      "id": "13_inter_cinema",
+      "label": "Inter Light · cinema scuro",
+      "family": "sans_broadcast",
+      "font": "inter_light",
+      "font_size": 92,
+      "fill": "#F5F5F2",
+      "background": "#111315",
+      "shadow": "none",
+      "glow": "white_halo"
+    },
+    {
+      "id": "14_manrope_quieto",
+      "label": "Manrope · quieto",
+      "family": "sans_broadcast",
+      "font": "manrope",
+      "font_size": 90,
+      "fill": "#1A1A1A",
+      "background": "#F1EEE7",
+      "shadow": "ink_soft",
+      "glow": "none"
+    },
+    {
+      "id": "15_sf_pro_galleria",
+      "label": "SF Pro Light · galleria",
+      "family": "sans_broadcast",
+      "font": "sf_pro_light",
+      "font_size": 92,
+      "fill": "#141414",
+      "background": "#F6F3EC",
+      "shadow": "none",
+      "glow": "none"
+    },
+    {
+      "id": "16_space_grotesk_tech",
+      "label": "Space Grotesk · tech",
+      "family": "sans_moderno",
+      "font": "space_grotesk",
+      "font_size": 88,
+      "fill": "#EAFBFF",
+      "background": "#071016",
+      "shadow": "none",
+      "glow": "cyan_glow"
+    },
+    {
+      "id": "17_sora_blue_hour",
+      "label": "Sora · blue hour",
+      "family": "sans_moderno",
+      "font": "sora",
+      "font_size": 90,
+      "fill": "#F4F7FF",
+      "background": "#0B1422",
+      "shadow": "noir_soft",
+      "glow": "blue_glow"
+    },
+    {
+      "id": "18_oswald_condensato",
+      "label": "Oswald · condensato",
+      "family": "sans_moderno",
+      "font": "oswald_medium",
+      "font_size": 102,
+      "fill": "#101010",
+      "background": "#EDE9DF",
+      "shadow": "ink_editorial",
+      "glow": "none"
+    },
+    {
+      "id": "19_bricolage_ambra",
+      "label": "Bricolage · ambra",
+      "family": "sans_moderno",
+      "font": "bricolage_grotesque",
+      "font_size": 92,
+      "fill": "#FFFDF7",
+      "background": "#191512",
+      "shadow": "noir_soft",
+      "glow": "amber_glow"
+    },
+    {
+      "id": "20_urbanist_notturna",
+      "label": "Urbanist · galleria notturna",
+      "family": "sans_moderno",
+      "font": "urbanist",
+      "font_size": 90,
+      "fill": "#F2EEE6",
+      "background": "#12100E",
+      "shadow": "none",
+      "glow": "warm_white"
+    }
+  ]
+}

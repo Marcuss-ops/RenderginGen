@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"strings"
 )
 
@@ -45,6 +46,49 @@ func (c *Client) PutStaged(ctx context.Context, session string, r io.Reader) (st
 		return "", 0, ErrStagingUnsupported
 	}
 	return uploader.StoreStaged(ctx, session, r)
+}
+
+// PutStagedFile publishes a finished local file without a separate pre-upload
+// hash pass: the bytes stream to the staging route while their SHA-256 is
+// computed and the store verifies the same address server-side. It replaces the
+// artifactFromFile + PutFile pair, whose first read existed only to learn the
+// address before the upload. The L2 warm below still copies the source into the
+// cache (three passes become two; the cache population is not eliminated).
+// Callers that already hold an identity compare it to the return value and keep
+// their fail-closed contract.
+func (c *Client) PutStagedFile(ctx context.Context, session, source string) (string, int64, error) {
+	file, err := os.Open(source)
+	if err != nil {
+		return "", 0, err
+	}
+	info, err := file.Stat()
+	if err != nil {
+		_ = file.Close()
+		return "", 0, err
+	}
+	if !info.Mode().IsRegular() {
+		_ = file.Close()
+		return "", 0, fmt.Errorf("storage: staged source %s is not a regular file", source)
+	}
+	sha, size, streamErr := c.PutStaged(ctx, session, file)
+	closeErr := file.Close()
+	if streamErr != nil {
+		return "", 0, streamErr
+	}
+	if closeErr != nil {
+		return "", 0, closeErr
+	}
+	if size != info.Size() {
+		return "", 0, fmt.Errorf("storage: staged upload streamed %d bytes but %s was %d bytes: the file changed under the upload", size, source, info.Size())
+	}
+	// L3 is already the source of truth. Warming L2 still matters because the
+	// immediate parent publication resolves the object through the local cache.
+	if c.l2 != nil && c.l2.dir != "" {
+		if _, _, err := c.l2.PutFile(sha, source); err != nil {
+			return "", 0, fmt.Errorf("storage: warm L2 for staged object %s: %w", sha, err)
+		}
+	}
+	return sha, size, nil
 }
 
 // StagedUploader is the optional streaming-staging extension of the writer

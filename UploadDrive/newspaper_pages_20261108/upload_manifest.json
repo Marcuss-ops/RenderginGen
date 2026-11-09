@@ -1,0 +1,111 @@
+{
+  "schema": "chronon.newspaper-pages.drive-delivery.v1",
+  "date": "2026-11-08",
+  "spec": "1920x1080, 30fps, H.264, <=10s per video",
+  "parent_folder_id": "1J_xUGo_bchzXDIGqSX04CU44c_Dm3SxS",
+  "drive_subfolder": "Newspaper_Pages_1920x1080",
+  "drive_folder_url": "https://drive.google.com/drive/folders/1J_xUGo_bchzXDIGqSX04CU44c_Dm3SxS",
+  "file_count": 11,
+  "files": [
+    {
+      "name": "00_contact_sheet_1920x1080.png",
+      "local_path": "RenderingGen/UploadDrive/newspaper_pages_20261108/00_contact_sheet_1920x1080.png",
+      "drive_file_id": "17-B0nAKzszVBVcB68LW2aT4kplUBWSp1",
+      "drive_url": "https://drive.google.com/file/d/17-B0nAKzszVBVcB68LW2aT4kplUBWSp1/view?usp=drivesdk",
+      "drive_parent_id": "1kA2E2hcHpa1VjyRZytDNohGv_ySUxpF4",
+      "sha256": "9bcb95f5231232547a7185648272addc9a8e5c53e636d643704237bc9dbbe190",
+      "bytes": 1047864
+    },
+    {
+      "name": "01_newspaper_front_page_1920x1080_6s.mp4",
+      "local_path": "RenderingGen/UploadDrive/newspaper_pages_20261108/01_newspaper_front_page_1920x1080_6s.mp4",
+      "drive_file_id": "1Q3qIo6dKDcxjn2UBownFN7uZOpWozK5e",
+      "drive_url": "https://drive.google.com/file/d/1Q3qIo6dKDcxjn2UBownFN7uZOpWozK5e/view?usp=drivesdk",
+      "drive_parent_id": "1kA2E2hcHpa1VjyRZytDNohGv_ySUxpF4",
+      "sha256": "31041a3f3ed614e6a6fc277fa65af83dfeb8111cd9be8ad2fe8b5ae5b94d7882",
+      "bytes": 1190703
+    },
+    {
+      "name": "01_newspaper_front_page_1920x1080_6s_still.png",
+      "local_path": "RenderingGen/UploadDrive/newspaper_pages_20261108/01_newspaper_front_page_1920x1080_6s_still.png",
+      "drive_file_id": "1mAOXXdvpRnNL2wDO2Q-trLsiXA7yWeFa",
+      "drive_url": "https://drive.google.com/file/d/1mAOXXdvpRnNL2wDO2Q-trLsiXA7yWeFa/view?usp=drivesdk",
+      "drive_parent_id": "1kA2E2hcHpa1VjyRZytDNohGv_ySUxpF4",
+      "sha256": "30c4f2342003fcdd37abeb90f20e09538b6eff94ae71d81927cd906418f03058",
+      "bytes": 1120650
+    },
+    {
+      "name": "02_newspaper_dossier_1920x1080_5s.mp4",
+      "local_path": "RenderingGen/UploadDrive/newspaper_pages_20261108/02_newspaper_dossier_1920x1080_5s.mp4",
+      "drive_file_id": "1rKHe32BjBcr5w3CZSPU3c9UNGQFoLUye",
+      "drive_url": "https://drive.google.com/file/d/1rKHe32BjBcr5w3CZSPU3c9UNGQFoLUye/view?usp=drivesdk",
+      "drive_parent_id": "1kA2E2hcHpa1VjyRZytDNohGv_ySUxpF4",
+      "sha256": "e1a15deedfb2b32182000389c5a50b46cc2a9ba23eec410be2b7213dbff3504a",
+      "bytes": 693024
+    },
+    {
+      "name": "02_newspaper_dossier_1920x1080_5s_still.png",
+      "local_path": "RenderingGen/UploadDrive/newspaper_pages_20261108/02_newspaper_dossier_1920x1080_5s_still.png",
+      "drive_file_id": "1G0ILSE4aFeZ_Z83cSINaf0o3LfhqPT6M",
+      "drive_url": "https://drive.google.com/file/d/1G0ILSE4aFeZ_Z83cSINaf0o3LfhqPT6M/view?usp=drivesdk",
+      "drive_parent_id": "1kA2E2hcHpa1VjyRZytDNohGv_ySUxpF4",
+      "sha256": "2a444db6d722178ddba42b2fa7bfa8833a7b4422cbede186f4ff163a1bd43a3a",
+      "bytes": 849822
+    },
+    {
+      "name": "03_newspaper_highlighter_1920x1080_5s.mp4",
+      "local_path": "RenderingGen/UploadDrive/newspaper_pages_20261108/03_newspaper_highlighter_1920x1080_5s.mp4",
+      "drive_file_id": "1HqFfaqKt-mj2cw6y30aeedCAxoflqOe5",
+      "drive_url": "https://drive.google.com/file/d/1HqFfaqKt-mj2cw6y30aeedCAxoflqOe5/view?usp=drivesdk",
+      "drive_parent_id": "1kA2E2hcHpa1VjyRZytDNohGv_ySUxpF4",
+      "sha256": "476f2257fa0b5f953180f1ab90766b6f52cf14053d2c0f8e6d30399d074564cf",
+      "bytes": 702733
+    },
+    {
+      "name": "03_newspaper_highlighter_1920x1080_5s_still.png",
+      "local_path": "RenderingGen/UploadDrive/newspaper_pages_20261108/03_newspaper_highlighter_1920x1080_5s_still.png",
+      "drive_file_id": "1x_-RZWLcYLvfUdwJDLVybmB2eF3oMFyc",
+      "drive_url": "https://drive.google.com/file/d/1x_-RZWLcYLvfUdwJDLVybmB2eF3oMFyc/view?usp=drivesdk",
+      "drive_parent_id": "1kA2E2hcHpa1VjyRZytDNohGv_ySUxpF4",
+      "sha256": "b83e6929eea0a55a5b7faab1e217dca61f595deab4e96ce839638694a63c62f7",
+      "bytes": 940893
+    },
+    {
+      "name": "04_newspaper_memo_1920x1080_5s.mp4",
+      "local_path": "RenderingGen/UploadDrive/newspaper_pages_20261108/04_newspaper_memo_1920x1080_5s.mp4",
+      "drive_file_id": "1t1J1nYpT9Ri1k7DrH197ClIcLilvd4if",
+      "drive_url": "https://drive.google.com/file/d/1t1J1nYpT9Ri1k7DrH197ClIcLilvd4if/view?usp=drivesdk",
+      "drive_parent_id": "1kA2E2hcHpa1VjyRZytDNohGv_ySUxpF4",
+      "sha256": "8ec50940623d01f3a8c9ef870b2c1b3999714f3c3f7fc8476b49f226ebfdfb62",
+      "bytes": 587537
+    },
+    {
+      "name": "04_newspaper_memo_1920x1080_5s_still.png",
+      "local_path": "RenderingGen/UploadDrive/newspaper_pages_20261108/04_newspaper_memo_1920x1080_5s_still.png",
+      "drive_file_id": "1oXtrkM9ccALOoXQz63M1t-R5_tbeX8lw",
+      "drive_url": "https://drive.google.com/file/d/1oXtrkM9ccALOoXQz63M1t-R5_tbeX8lw/view?usp=drivesdk",
+      "drive_parent_id": "1kA2E2hcHpa1VjyRZytDNohGv_ySUxpF4",
+      "sha256": "d5bc89414f3fc70c1c536f023171d6a0475fc19a2ed5818b4faf4125638e6602",
+      "bytes": 749418
+    },
+    {
+      "name": "README.md",
+      "local_path": "RenderingGen/UploadDrive/newspaper_pages_20261108/README.md",
+      "drive_file_id": "10uuXSzml-UNp_Ei2T80Gvfx5033dH1j_",
+      "drive_url": "https://drive.google.com/file/d/10uuXSzml-UNp_Ei2T80Gvfx5033dH1j_/view?usp=drivesdk",
+      "drive_parent_id": "1kA2E2hcHpa1VjyRZytDNohGv_ySUxpF4",
+      "sha256": "51d33b1286f774ed04de538a7ae67b690426bfbb0c6b4bda022c0b1bb817caaa",
+      "bytes": 1104
+    },
+    {
+      "name": "verification.tsv",
+      "local_path": "RenderingGen/UploadDrive/newspaper_pages_20261108/verification.tsv",
+      "drive_file_id": "1_ei50cp9Ki8qYhGjvQnlkkct-I8MtfGF",
+      "drive_url": "https://drive.google.com/file/d/1_ei50cp9Ki8qYhGjvQnlkkct-I8MtfGF/view?usp=drivesdk",
+      "drive_parent_id": "1kA2E2hcHpa1VjyRZytDNohGv_ySUxpF4",
+      "sha256": "2d0df44291cc6e0881ce60f0c07cb01c18dff3fe415e25e9e627a9453b278db4",
+      "bytes": 193
+    }
+  ],
+  "manifest_note": "This manifest was uploaded after the media files; its own Drive ID is not listed here."
+}

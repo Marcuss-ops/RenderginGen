@@ -1,0 +1,1044 @@
+{
+  "schema": "chronontemplate.typography-gallery.v1",
+  "date": "2026-11-08",
+  "catalog": "ChrononTemplate/catalog/typography_styles.v1.json",
+  "title": "Elegant phrase typography — runtime Font / Shadow / Glow",
+  "canvas": {
+    "width": 1920,
+    "height": 1080,
+    "fps": 30,
+    "duration_frames": 240
+  },
+  "drive": {
+    "folder_id": "1J_xUGo_bchzXDIGqSX04CU44c_Dm3SxS",
+    "folder_url": "https://drive.google.com/drive/u/1/folders/1J_xUGo_bchzXDIGqSX04CU44c_Dm3SxS",
+    "subfolder": "Typography Styles V1 1080p"
+  },
+  "entries": [
+    {
+      "id": "01_playfair_base_attuale",
+      "label": "Playfair · bianco e nero (base attuale)",
+      "note": "La combinazione usata oggi: Playfair nero su bianco con alone nero.",
+      "family": "editoriale_didone",
+      "family_label": "Editoriale Didone",
+      "text": "Le menti che hanno cambiato il mondo",
+      "duration_s": 8.0,
+      "frames": 240,
+      "plan": "plans/01_playfair_base_attuale.plan.json",
+      "mp4": "mp4/01_playfair_base_attuale.mp4",
+      "still": "stills/01_playfair_base_attuale.png",
+      "style": {
+        "font": "playfair_display",
+        "font_family": "Playfair Display",
+        "font_path": "assets/fonts/PlayfairDisplay.ttf",
+        "font_size": 94.0,
+        "fill": "#000000",
+        "background": "#FFFFFF",
+        "shadow": "none",
+        "glow": "ink_halo"
+      },
+      "requested_font_size": 94.0,
+      "shadow": {
+        "color": "#000000",
+        "opacity": 0.0,
+        "blur": 0.0,
+        "offset": [
+          0.0,
+          0.0
+        ]
+      },
+      "glow": {
+        "color": "#000000",
+        "radius": 18.0,
+        "intensity": 0.08
+      },
+      "width": 1920,
+      "height": 1080,
+      "fps": "30/1",
+      "sha256": "99dbd4b56e3a955dde4f808b6ade7bb373d7d624aabcae5f414a344a77cc0d32",
+      "bytes": 652231,
+      "verified": true,
+      "verified_at": "2026-11-08T16:16:16",
+      "foreground_ratio": 0.013667,
+      "uploaded": true,
+      "drive_id": "1168ElmUaR6uyGb-73tQlyVqEdEDIVZK_",
+      "drive_url": "https://drive.google.com/file/d/1168ElmUaR6uyGb-73tQlyVqEdEDIVZK_/view?usp=drivesdk",
+      "drive_name": "TYPOGRAPHY_01_PLAYFAIR_BASE_ATTUALE_1920x1080.mp4"
+    },
+    {
+      "id": "02_playfair_carta",
+      "label": "Playfair · inchiostro su carta",
+      "note": "La base attuale raffinata: carta calda, ombra corta, alone quasi invisibile.",
+      "family": "editoriale_didone",
+      "family_label": "Editoriale Didone",
+      "text": "Le menti che hanno cambiato il mondo",
+      "duration_s": 8.0,
+      "frames": 240,
+      "plan": "plans/02_playfair_carta.plan.json",
+      "mp4": "mp4/02_playfair_carta.mp4",
+      "still": "stills/02_playfair_carta.png",
+      "style": {
+        "font": "playfair_display",
+        "font_family": "Playfair Display",
+        "font_path": "assets/fonts/PlayfairDisplay.ttf",
+        "font_size": 94.0,
+        "fill": "#0B0B0B",
+        "background": "#F5F1E8",
+        "shadow": "ink_soft",
+        "glow": "ink_halo_soft"
+      },
+      "requested_font_size": 94.0,
+      "shadow": {
+        "color": "#000000",
+        "opacity": 0.16,
+        "blur": 18.0,
+        "offset": [
+          0.0,
+          3.0
+        ]
+      },
+      "glow": {
+        "color": "#000000",
+        "radius": 26.0,
+        "intensity": 0.05
+      },
+      "width": 1920,
+      "height": 1080,
+      "fps": "30/1",
+      "sha256": "b2d879c0fb0954c275541c3136e3ff771dfa40f83aa060e3f800d6becab9242b",
+      "bytes": 652805,
+      "verified": true,
+      "verified_at": "2026-11-08T16:16:17",
+      "foreground_ratio": 0.014118,
+      "uploaded": true,
+      "drive_id": "1suUoWrZyriO7c5FPHvhGMxrO0GdLo17H",
+      "drive_url": "https://drive.google.com/file/d/1suUoWrZyriO7c5FPHvhGMxrO0GdLo17H/view?usp=drivesdk",
+      "drive_name": "TYPOGRAPHY_02_PLAYFAIR_CARTA_1920x1080.mp4"
+    },
+    {
+      "id": "03_playfair_noir_oro",
+      "label": "Playfair Bold · avorio e oro",
+      "note": "",
+      "family": "editoriale_didone",
+      "family_label": "Editoriale Didone",
+      "text": "Le menti che hanno cambiato il mondo",
+      "duration_s": 8.0,
+      "frames": 240,
+      "plan": "plans/03_playfair_noir_oro.plan.json",
+      "mp4": "mp4/03_playfair_noir_oro.mp4",
+      "still": "stills/03_playfair_noir_oro.png",
+      "style": {
+        "font": "playfair_display_bold",
+        "font_family": "Playfair Display Bold",
+        "font_path": "assets/fonts/PlayfairDisplay-Bold.ttf",
+        "font_size": 92.8,
+        "fill": "#F4EEE1",
+        "background": "#0A0A0B",
+        "shadow": "none",
+        "glow": "champagne_glow"
+      },
+      "requested_font_size": 96.0,
+      "shadow": {
+        "color": "#000000",
+        "opacity": 0.0,
+        "blur": 0.0,
+        "offset": [
+          0.0,
+          0.0
+        ]
+      },
+      "glow": {
+        "color": "#D8B36A",
+        "radius": 22.0,
+        "intensity": 0.08
+      },
+      "width": 1920,
+      "height": 1080,
+      "fps": "30/1",
+      "sha256": "17141dfe923538cda40843192f337eb3e846c157b006705ec4a94cdf6ecdcdd8",
+      "bytes": 787616,
+      "verified": true,
+      "verified_at": "2026-11-08T16:16:18",
+      "foreground_ratio": 0.020836,
+      "uploaded": true,
+      "drive_id": "19qcMwRIucjr7YOLyhjmOyhHitLnnyMq4",
+      "drive_url": "https://drive.google.com/file/d/19qcMwRIucjr7YOLyhjmOyhHitLnnyMq4/view?usp=drivesdk",
+      "drive_name": "TYPOGRAPHY_03_PLAYFAIR_NOIR_ORO_1920x1080.mp4"
+    },
+    {
+      "id": "04_bodoni_carta",
+      "label": "Bodoni Moda · carta pregiata",
+      "note": "",
+      "family": "editoriale_didone",
+      "family_label": "Editoriale Didone",
+      "text": "Le menti che hanno cambiato il mondo",
+      "duration_s": 8.0,
+      "frames": 240,
+      "plan": "plans/04_bodoni_carta.plan.json",
+      "mp4": "mp4/04_bodoni_carta.mp4",
+      "still": "stills/04_bodoni_carta.png",
+      "style": {
+        "font": "bodoni_moda",
+        "font_family": "Bodoni Moda",
+        "font_path": "assets/fonts/BodoniModa-Regular.ttf",
+        "font_size": 93.1,
+        "fill": "#17130E",
+        "background": "#EFE8DA",
+        "shadow": "ink_editorial",
+        "glow": "none"
+      },
+      "requested_font_size": 98.0,
+      "shadow": {
+        "color": "#000000",
+        "opacity": 0.22,
+        "blur": 9.0,
+        "offset": [
+          2.0,
+          3.0
+        ]
+      },
+      "glow": {
+        "color": "#000000",
+        "radius": 0.0,
+        "intensity": 0.0
+      },
+      "width": 1920,
+      "height": 1080,
+      "fps": "30/1",
+      "sha256": "28f1b115bdb44a92d82530ebc056e83250439a980c6e943a3e05977a2b1899b5",
+      "bytes": 563054,
+      "verified": true,
+      "verified_at": "2026-11-08T16:16:19",
+      "foreground_ratio": 0.012303,
+      "uploaded": true,
+      "drive_id": "1rtwQN1gBDhYCq5GA4Hu7pqimz4nN8y62",
+      "drive_url": "https://drive.google.com/file/d/1rtwQN1gBDhYCq5GA4Hu7pqimz4nN8y62/view?usp=drivesdk",
+      "drive_name": "TYPOGRAPHY_04_BODONI_CARTA_1920x1080.mp4"
+    },
+    {
+      "id": "05_bodoni_oro_noir",
+      "label": "Bodoni corsivo · oro su noir",
+      "note": "",
+      "family": "editoriale_didone",
+      "family_label": "Editoriale Didone",
+      "text": "Le menti che hanno cambiato il mondo",
+      "duration_s": 8.0,
+      "frames": 240,
+      "plan": "plans/05_bodoni_oro_noir.plan.json",
+      "mp4": "mp4/05_bodoni_oro_noir.mp4",
+      "still": "stills/05_bodoni_oro_noir.png",
+      "style": {
+        "font": "bodoni_moda_bold_italic",
+        "font_family": "Bodoni Moda Bold Italic",
+        "font_path": "assets/fonts/BodoniModa-BoldItalic.ttf",
+        "font_size": 95.7,
+        "fill": "#E4C185",
+        "background": "#08090C",
+        "shadow": "noir_soft",
+        "glow": "gold_glow"
+      },
+      "requested_font_size": 102.0,
+      "shadow": {
+        "color": "#000000",
+        "opacity": 0.34,
+        "blur": 26.0,
+        "offset": [
+          0.0,
+          6.0
+        ]
+      },
+      "glow": {
+        "color": "#C9A45C",
+        "radius": 24.0,
+        "intensity": 0.1
+      },
+      "width": 1920,
+      "height": 1080,
+      "fps": "30/1",
+      "sha256": "6a2bde2ee8e8500f78413376e1e7506147d208599d37f48d7691bab1f06cfd39",
+      "bytes": 771682,
+      "verified": true,
+      "verified_at": "2026-11-08T16:16:20",
+      "foreground_ratio": 0.017089,
+      "uploaded": true,
+      "drive_id": "1WbX_42G3v7WF5uuOpmPvzv2VerMPLQPc",
+      "drive_url": "https://drive.google.com/file/d/1WbX_42G3v7WF5uuOpmPvzv2VerMPLQPc/view?usp=drivesdk",
+      "drive_name": "TYPOGRAPHY_05_BODONI_ORO_NOIR_1920x1080.mp4"
+    },
+    {
+      "id": "06_didot_luxury",
+      "label": "Didot corsivo · lusso quieto",
+      "note": "",
+      "family": "serif_moderno",
+      "family_label": "Serif moderno",
+      "text": "Le menti che hanno cambiato il mondo",
+      "duration_s": 8.0,
+      "frames": 240,
+      "plan": "plans/06_didot_luxury.plan.json",
+      "mp4": "mp4/06_didot_luxury.mp4",
+      "still": "stills/06_didot_luxury.png",
+      "style": {
+        "font": "didot_italic",
+        "font_family": "Didot Italic",
+        "font_path": "assets/fonts/Didot-Italic.ttf",
+        "font_size": 103.8,
+        "fill": "#EADFCB",
+        "background": "#0D0B09",
+        "shadow": "none",
+        "glow": "warm_white"
+      },
+      "requested_font_size": 108.0,
+      "shadow": {
+        "color": "#000000",
+        "opacity": 0.0,
+        "blur": 0.0,
+        "offset": [
+          0.0,
+          0.0
+        ]
+      },
+      "glow": {
+        "color": "#FFF4DE",
+        "radius": 20.0,
+        "intensity": 0.08
+      },
+      "width": 1920,
+      "height": 1080,
+      "fps": "30/1",
+      "sha256": "378df32951214507bfb001623b8212943a16cd4a8b22f24a1c60d32bcbbb3af4",
+      "bytes": 810680,
+      "verified": true,
+      "verified_at": "2026-11-08T16:16:21",
+      "foreground_ratio": 0.011838,
+      "uploaded": true,
+      "drive_id": "1HmdSn-2KY-wordBOr3EJ7ZhCCRKvGNdn",
+      "drive_url": "https://drive.google.com/file/d/1HmdSn-2KY-wordBOr3EJ7ZhCCRKvGNdn/view?usp=drivesdk",
+      "drive_name": "TYPOGRAPHY_06_DIDOT_LUXURY_1920x1080.mp4"
+    },
+    {
+      "id": "07_dm_serif_editoriale",
+      "label": "DM Serif · editoriale",
+      "note": "",
+      "family": "serif_moderno",
+      "family_label": "Serif moderno",
+      "text": "Le menti che hanno cambiato il mondo",
+      "duration_s": 8.0,
+      "frames": 240,
+      "plan": "plans/07_dm_serif_editoriale.plan.json",
+      "mp4": "mp4/07_dm_serif_editoriale.mp4",
+      "still": "stills/07_dm_serif_editoriale.png",
+      "style": {
+        "font": "dm_serif_display",
+        "font_family": "DM Serif Display",
+        "font_path": "assets/fonts/DM-Serif-Display.ttf",
+        "font_size": 96.0,
+        "fill": "#171512",
+        "background": "#F3EFE6",
+        "shadow": "ink_editorial",
+        "glow": "none"
+      },
+      "requested_font_size": 96.0,
+      "shadow": {
+        "color": "#000000",
+        "opacity": 0.22,
+        "blur": 9.0,
+        "offset": [
+          2.0,
+          3.0
+        ]
+      },
+      "glow": {
+        "color": "#000000",
+        "radius": 0.0,
+        "intensity": 0.0
+      },
+      "width": 1920,
+      "height": 1080,
+      "fps": "30/1",
+      "sha256": "8ef823fe146578ff012191067ca45182db388b78085d29b643cb7ba4b66bfb10",
+      "bytes": 629780,
+      "verified": true,
+      "verified_at": "2026-11-08T16:16:23",
+      "foreground_ratio": 0.019111,
+      "uploaded": true,
+      "drive_id": "1M0e8zoYACXZxvCwSXruqhSxyi544jxGP",
+      "drive_url": "https://drive.google.com/file/d/1M0e8zoYACXZxvCwSXruqhSxyi544jxGP/view?usp=drivesdk",
+      "drive_name": "TYPOGRAPHY_07_DM_SERIF_EDITORIALE_1920x1080.mp4"
+    },
+    {
+      "id": "08_dm_serif_cinema",
+      "label": "DM Serif corsivo · cinema",
+      "note": "",
+      "family": "serif_moderno",
+      "family_label": "Serif moderno",
+      "text": "Le menti che hanno cambiato il mondo",
+      "duration_s": 8.0,
+      "frames": 240,
+      "plan": "plans/08_dm_serif_cinema.plan.json",
+      "mp4": "mp4/08_dm_serif_cinema.mp4",
+      "still": "stills/08_dm_serif_cinema.png",
+      "style": {
+        "font": "dm_serif_display_italic",
+        "font_family": "DM Serif Display Italic",
+        "font_path": "assets/fonts/DM-Serif-Display-Italic.ttf",
+        "font_size": 100.4,
+        "fill": "#F3EBDD",
+        "background": "#101418",
+        "shadow": "noir_soft",
+        "glow": "white_halo"
+      },
+      "requested_font_size": 104.0,
+      "shadow": {
+        "color": "#000000",
+        "opacity": 0.34,
+        "blur": 26.0,
+        "offset": [
+          0.0,
+          6.0
+        ]
+      },
+      "glow": {
+        "color": "#FFFFFF",
+        "radius": 20.0,
+        "intensity": 0.07
+      },
+      "width": 1920,
+      "height": 1080,
+      "fps": "30/1",
+      "sha256": "fd415cd19de9ef46ddfabf83f2379dbf6ed8f25962d8acf2778e02d4d643c4d2",
+      "bytes": 842629,
+      "verified": true,
+      "verified_at": "2026-11-08T16:16:24",
+      "foreground_ratio": 0.019627,
+      "uploaded": true,
+      "drive_id": "1iwlIyYWkYwv0RAluxbgsh-2ivitfYnLi",
+      "drive_url": "https://drive.google.com/file/d/1iwlIyYWkYwv0RAluxbgsh-2ivitfYnLi/view?usp=drivesdk",
+      "drive_name": "TYPOGRAPHY_08_DM_SERIF_CINEMA_1920x1080.mp4"
+    },
+    {
+      "id": "09_libre_bodoni_cipria",
+      "label": "Libre Bodoni · carta cipria",
+      "note": "",
+      "family": "serif_moderno",
+      "family_label": "Serif moderno",
+      "text": "Le menti che hanno cambiato il mondo",
+      "duration_s": 8.0,
+      "frames": 240,
+      "plan": "plans/09_libre_bodoni_cipria.plan.json",
+      "mp4": "mp4/09_libre_bodoni_cipria.mp4",
+      "still": "stills/09_libre_bodoni_cipria.png",
+      "style": {
+        "font": "libre_bodoni_italic",
+        "font_family": "Libre Bodoni Italic",
+        "font_path": "assets/fonts/LibreBodoni-Italic.ttf",
+        "font_size": 99.2,
+        "fill": "#2B1D1A",
+        "background": "#F2E7E1",
+        "shadow": "warm_paper",
+        "glow": "none"
+      },
+      "requested_font_size": 100.0,
+      "shadow": {
+        "color": "#2A2118",
+        "opacity": 0.13,
+        "blur": 14.0,
+        "offset": [
+          0.0,
+          2.0
+        ]
+      },
+      "glow": {
+        "color": "#000000",
+        "radius": 0.0,
+        "intensity": 0.0
+      },
+      "width": 1920,
+      "height": 1080,
+      "fps": "30/1",
+      "sha256": "f36f536cc1b6725fc13dbb19c4c292293552913e7858585081241de29ec2cf25",
+      "bytes": 690192,
+      "verified": true,
+      "verified_at": "2026-11-08T16:16:25",
+      "foreground_ratio": 0.015726,
+      "uploaded": true,
+      "drive_id": "1wNO26ow1ScqMj8nC2TNgh_W4draZgaiu",
+      "drive_url": "https://drive.google.com/file/d/1wNO26ow1ScqMj8nC2TNgh_W4draZgaiu/view?usp=drivesdk",
+      "drive_name": "TYPOGRAPHY_09_LIBRE_BODONI_CIPRIA_1920x1080.mp4"
+    },
+    {
+      "id": "10_abril_manifesto",
+      "label": "Abril Fatface · manifesto",
+      "note": "",
+      "family": "serif_moderno",
+      "family_label": "Serif moderno",
+      "text": "Le menti che hanno cambiato il mondo",
+      "duration_s": 8.0,
+      "frames": 240,
+      "plan": "plans/10_abril_manifesto.plan.json",
+      "mp4": "mp4/10_abril_manifesto.mp4",
+      "still": "stills/10_abril_manifesto.png",
+      "style": {
+        "font": "abril_fatface",
+        "font_family": "Abril Fatface",
+        "font_path": "assets/fonts/AbrilFatface-Regular.ttf",
+        "font_size": 94.3,
+        "fill": "#0A0A0A",
+        "background": "#E9E4D8",
+        "shadow": "ink_editorial",
+        "glow": "none"
+      },
+      "requested_font_size": 104.0,
+      "shadow": {
+        "color": "#000000",
+        "opacity": 0.22,
+        "blur": 9.0,
+        "offset": [
+          2.0,
+          3.0
+        ]
+      },
+      "glow": {
+        "color": "#000000",
+        "radius": 0.0,
+        "intensity": 0.0
+      },
+      "width": 1920,
+      "height": 1080,
+      "fps": "30/1",
+      "sha256": "6ac112f6f8ea5ed5a734d0f5d7d4116968759fe6451412ba28b71fccc92d9865",
+      "bytes": 607930,
+      "verified": true,
+      "verified_at": "2026-11-08T16:16:26",
+      "foreground_ratio": 0.02346,
+      "uploaded": true,
+      "drive_id": "1ljzYrIfXERt5zZ8AO1ai8ZnYb4Issl0y",
+      "drive_url": "https://drive.google.com/file/d/1ljzYrIfXERt5zZ8AO1ai8ZnYb4Issl0y/view?usp=drivesdk",
+      "drive_name": "TYPOGRAPHY_10_ABRIL_MANIFESTO_1920x1080.mp4"
+    },
+    {
+      "id": "11_montserrat_broadcast",
+      "label": "Montserrat · broadcast",
+      "note": "",
+      "family": "sans_broadcast",
+      "family_label": "Sans broadcast",
+      "text": "Le menti che hanno cambiato il mondo",
+      "duration_s": 8.0,
+      "frames": 240,
+      "plan": "plans/11_montserrat_broadcast.plan.json",
+      "mp4": "mp4/11_montserrat_broadcast.mp4",
+      "still": "stills/11_montserrat_broadcast.png",
+      "style": {
+        "font": "montserrat_extra_bold",
+        "font_family": "Montserrat ExtraBold",
+        "font_path": "assets/fonts/Montserrat-ExtraBold.ttf",
+        "font_size": 79.2,
+        "fill": "#FFFFFF",
+        "background": "#0B0B0B",
+        "shadow": "noir_soft",
+        "glow": "white_halo"
+      },
+      "requested_font_size": 88.0,
+      "shadow": {
+        "color": "#000000",
+        "opacity": 0.34,
+        "blur": 26.0,
+        "offset": [
+          0.0,
+          6.0
+        ]
+      },
+      "glow": {
+        "color": "#FFFFFF",
+        "radius": 20.0,
+        "intensity": 0.07
+      },
+      "width": 1920,
+      "height": 1080,
+      "fps": "30/1",
+      "sha256": "36af60a33801401abe71cd0a5825d4f35d251f2b8249c5f0cd89f5ef8b009c1b",
+      "bytes": 680065,
+      "verified": true,
+      "verified_at": "2026-11-08T16:16:27",
+      "foreground_ratio": 0.025105,
+      "uploaded": true,
+      "drive_id": "1YnUsRAe4XtDhdfNDOapBk_038XOim3b7",
+      "drive_url": "https://drive.google.com/file/d/1YnUsRAe4XtDhdfNDOapBk_038XOim3b7/view?usp=drivesdk",
+      "drive_name": "TYPOGRAPHY_11_MONTSERRAT_BROADCAST_1920x1080.mp4"
+    },
+    {
+      "id": "12_inter_pulito",
+      "label": "Inter Medium · pulito su carta",
+      "note": "",
+      "family": "sans_broadcast",
+      "family_label": "Sans broadcast",
+      "text": "Le menti che hanno cambiato il mondo",
+      "duration_s": 8.0,
+      "frames": 240,
+      "plan": "plans/12_inter_pulito.plan.json",
+      "mp4": "mp4/12_inter_pulito.mp4",
+      "still": "stills/12_inter_pulito.png",
+      "style": {
+        "font": "inter_medium",
+        "font_family": "Inter Medium",
+        "font_path": "assets/fonts/Inter-Medium.ttf",
+        "font_size": 88.0,
+        "fill": "#111111",
+        "background": "#FAF7F0",
+        "shadow": "ink_whisper",
+        "glow": "none"
+      },
+      "requested_font_size": 88.0,
+      "shadow": {
+        "color": "#000000",
+        "opacity": 0.1,
+        "blur": 12.0,
+        "offset": [
+          0.0,
+          2.0
+        ]
+      },
+      "glow": {
+        "color": "#000000",
+        "radius": 0.0,
+        "intensity": 0.0
+      },
+      "width": 1920,
+      "height": 1080,
+      "fps": "30/1",
+      "sha256": "b632951fb11d3f33e8475040746b16af645fad925d40be129e091d32e489f6d8",
+      "bytes": 617156,
+      "verified": true,
+      "verified_at": "2026-11-08T16:16:28",
+      "foreground_ratio": 0.016275,
+      "uploaded": true,
+      "drive_id": "1hHr2z87S8t1wq8dXF2j-y96bwWphka6a",
+      "drive_url": "https://drive.google.com/file/d/1hHr2z87S8t1wq8dXF2j-y96bwWphka6a/view?usp=drivesdk",
+      "drive_name": "TYPOGRAPHY_12_INTER_PULITO_1920x1080.mp4"
+    },
+    {
+      "id": "13_inter_cinema",
+      "label": "Inter Light · cinema scuro",
+      "note": "",
+      "family": "sans_broadcast",
+      "family_label": "Sans broadcast",
+      "text": "Le menti che hanno cambiato il mondo",
+      "duration_s": 8.0,
+      "frames": 240,
+      "plan": "plans/13_inter_cinema.plan.json",
+      "mp4": "mp4/13_inter_cinema.mp4",
+      "still": "stills/13_inter_cinema.png",
+      "style": {
+        "font": "inter_light",
+        "font_family": "Inter Light",
+        "font_path": "assets/fonts/Inter-Light.ttf",
+        "font_size": 91.9,
+        "fill": "#F5F5F2",
+        "background": "#111315",
+        "shadow": "none",
+        "glow": "white_halo"
+      },
+      "requested_font_size": 92.0,
+      "shadow": {
+        "color": "#000000",
+        "opacity": 0.0,
+        "blur": 0.0,
+        "offset": [
+          0.0,
+          0.0
+        ]
+      },
+      "glow": {
+        "color": "#FFFFFF",
+        "radius": 20.0,
+        "intensity": 0.07
+      },
+      "width": 1920,
+      "height": 1080,
+      "fps": "30/1",
+      "sha256": "6ad1fec50ce06a0549fb908a4817a3dae34558b9c779218787ce0a05c6a1c746",
+      "bytes": 700939,
+      "verified": true,
+      "verified_at": "2026-11-08T16:16:29",
+      "foreground_ratio": 0.012885,
+      "uploaded": true,
+      "drive_id": "14dnBai7Z-VFdXV5C3f-p2uYwdEdViqp-",
+      "drive_url": "https://drive.google.com/file/d/14dnBai7Z-VFdXV5C3f-p2uYwdEdViqp-/view?usp=drivesdk",
+      "drive_name": "TYPOGRAPHY_13_INTER_CINEMA_1920x1080.mp4"
+    },
+    {
+      "id": "14_manrope_quieto",
+      "label": "Manrope · quieto",
+      "note": "",
+      "family": "sans_broadcast",
+      "family_label": "Sans broadcast",
+      "text": "Le menti che hanno cambiato il mondo",
+      "duration_s": 8.0,
+      "frames": 240,
+      "plan": "plans/14_manrope_quieto.plan.json",
+      "mp4": "mp4/14_manrope_quieto.mp4",
+      "still": "stills/14_manrope_quieto.png",
+      "style": {
+        "font": "manrope",
+        "font_family": "Manrope",
+        "font_path": "assets/fonts/Manrope.ttf",
+        "font_size": 90.0,
+        "fill": "#1A1A1A",
+        "background": "#F1EEE7",
+        "shadow": "ink_soft",
+        "glow": "none"
+      },
+      "requested_font_size": 90.0,
+      "shadow": {
+        "color": "#000000",
+        "opacity": 0.16,
+        "blur": 18.0,
+        "offset": [
+          0.0,
+          3.0
+        ]
+      },
+      "glow": {
+        "color": "#000000",
+        "radius": 0.0,
+        "intensity": 0.0
+      },
+      "width": 1920,
+      "height": 1080,
+      "fps": "30/1",
+      "sha256": "97bbb89127a0110b54821dbc2a710b64804a453869f035dc41f62f0f830b5e89",
+      "bytes": 536989,
+      "verified": true,
+      "verified_at": "2026-11-08T16:16:30",
+      "foreground_ratio": 0.008577,
+      "uploaded": true,
+      "drive_id": "1XEmHXIaEcFkE4mqjQviuWR4Aq5oG7cLv",
+      "drive_url": "https://drive.google.com/file/d/1XEmHXIaEcFkE4mqjQviuWR4Aq5oG7cLv/view?usp=drivesdk",
+      "drive_name": "TYPOGRAPHY_14_MANROPE_QUIETO_1920x1080.mp4"
+    },
+    {
+      "id": "15_sf_pro_galleria",
+      "label": "SF Pro Light · galleria",
+      "note": "",
+      "family": "sans_broadcast",
+      "family_label": "Sans broadcast",
+      "text": "Le menti che hanno cambiato il mondo",
+      "duration_s": 8.0,
+      "frames": 240,
+      "plan": "plans/15_sf_pro_galleria.plan.json",
+      "mp4": "mp4/15_sf_pro_galleria.mp4",
+      "still": "stills/15_sf_pro_galleria.png",
+      "style": {
+        "font": "sf_pro_light",
+        "font_family": "SF Pro Display Light",
+        "font_path": "assets/fonts/SF-Pro-Display-Light.otf",
+        "font_size": 92.0,
+        "fill": "#141414",
+        "background": "#F6F3EC",
+        "shadow": "none",
+        "glow": "none"
+      },
+      "requested_font_size": 92.0,
+      "shadow": {
+        "color": "#000000",
+        "opacity": 0.0,
+        "blur": 0.0,
+        "offset": [
+          0.0,
+          0.0
+        ]
+      },
+      "glow": {
+        "color": "#000000",
+        "radius": 0.0,
+        "intensity": 0.0
+      },
+      "width": 1920,
+      "height": 1080,
+      "fps": "30/1",
+      "sha256": "611fc22563c074a3ca51004d962631dc2609a6a8d680ae889681dd4b3b499f67",
+      "bytes": 547922,
+      "verified": true,
+      "verified_at": "2026-11-08T16:16:32",
+      "foreground_ratio": 0.010704,
+      "uploaded": true,
+      "drive_id": "1rp4fi2R5jelDaTS7mYTX6fjgxOan69Yi",
+      "drive_url": "https://drive.google.com/file/d/1rp4fi2R5jelDaTS7mYTX6fjgxOan69Yi/view?usp=drivesdk",
+      "drive_name": "TYPOGRAPHY_15_SF_PRO_GALLERIA_1920x1080.mp4"
+    },
+    {
+      "id": "16_space_grotesk_tech",
+      "label": "Space Grotesk · tech",
+      "note": "",
+      "family": "sans_moderno",
+      "family_label": "Sans moderno",
+      "text": "Le menti che hanno cambiato il mondo",
+      "duration_s": 8.0,
+      "frames": 240,
+      "plan": "plans/16_space_grotesk_tech.plan.json",
+      "mp4": "mp4/16_space_grotesk_tech.mp4",
+      "still": "stills/16_space_grotesk_tech.png",
+      "style": {
+        "font": "space_grotesk",
+        "font_family": "Space Grotesk",
+        "font_path": "assets/fonts/Space-Grotesk.ttf",
+        "font_size": 88.0,
+        "fill": "#EAFBFF",
+        "background": "#071016",
+        "shadow": "none",
+        "glow": "cyan_glow"
+      },
+      "requested_font_size": 88.0,
+      "shadow": {
+        "color": "#000000",
+        "opacity": 0.0,
+        "blur": 0.0,
+        "offset": [
+          0.0,
+          0.0
+        ]
+      },
+      "glow": {
+        "color": "#49D6E8",
+        "radius": 22.0,
+        "intensity": 0.1
+      },
+      "width": 1920,
+      "height": 1080,
+      "fps": "30/1",
+      "sha256": "fd80d21afc887188153de0155d005a9c67758bdb9b57cf95da5079f8469b06b4",
+      "bytes": 715630,
+      "verified": true,
+      "verified_at": "2026-11-08T16:16:33",
+      "foreground_ratio": 0.010791,
+      "uploaded": true,
+      "drive_id": "1X95xQnaJmcc54FHIR1W-manoQqYRJCQE",
+      "drive_url": "https://drive.google.com/file/d/1X95xQnaJmcc54FHIR1W-manoQqYRJCQE/view?usp=drivesdk",
+      "drive_name": "TYPOGRAPHY_16_SPACE_GROTESK_TECH_1920x1080.mp4"
+    },
+    {
+      "id": "17_sora_blue_hour",
+      "label": "Sora · blue hour",
+      "note": "",
+      "family": "sans_moderno",
+      "family_label": "Sans moderno",
+      "text": "Le menti che hanno cambiato il mondo",
+      "duration_s": 8.0,
+      "frames": 240,
+      "plan": "plans/17_sora_blue_hour.plan.json",
+      "mp4": "mp4/17_sora_blue_hour.mp4",
+      "still": "stills/17_sora_blue_hour.png",
+      "style": {
+        "font": "sora",
+        "font_family": "Sora",
+        "font_path": "assets/fonts/Sora.ttf",
+        "font_size": 84.6,
+        "fill": "#F4F7FF",
+        "background": "#0B1422",
+        "shadow": "noir_soft",
+        "glow": "blue_glow"
+      },
+      "requested_font_size": 90.0,
+      "shadow": {
+        "color": "#000000",
+        "opacity": 0.34,
+        "blur": 26.0,
+        "offset": [
+          0.0,
+          6.0
+        ]
+      },
+      "glow": {
+        "color": "#5A8DEE",
+        "radius": 22.0,
+        "intensity": 0.09
+      },
+      "width": 1920,
+      "height": 1080,
+      "fps": "30/1",
+      "sha256": "febef205ae996b850776fa2adbc0527fcbd18ed15aa149ca5bd9750389e30d98",
+      "bytes": 750355,
+      "verified": true,
+      "verified_at": "2026-11-08T16:16:34",
+      "foreground_ratio": 0.015128,
+      "uploaded": true,
+      "drive_id": "1ZVzelOotOoqK0KwT1lue15KlTv5b0GOJ",
+      "drive_url": "https://drive.google.com/file/d/1ZVzelOotOoqK0KwT1lue15KlTv5b0GOJ/view?usp=drivesdk",
+      "drive_name": "TYPOGRAPHY_17_SORA_BLUE_HOUR_1920x1080.mp4"
+    },
+    {
+      "id": "18_oswald_condensato",
+      "label": "Oswald · condensato",
+      "note": "",
+      "family": "sans_moderno",
+      "family_label": "Sans moderno",
+      "text": "Le menti che hanno cambiato il mondo",
+      "duration_s": 8.0,
+      "frames": 240,
+      "plan": "plans/18_oswald_condensato.plan.json",
+      "mp4": "mp4/18_oswald_condensato.mp4",
+      "still": "stills/18_oswald_condensato.png",
+      "style": {
+        "font": "oswald_medium",
+        "font_family": "Oswald Medium",
+        "font_path": "assets/fonts/Oswald-Medium.ttf",
+        "font_size": 102.0,
+        "fill": "#101010",
+        "background": "#EDE9DF",
+        "shadow": "ink_editorial",
+        "glow": "none"
+      },
+      "requested_font_size": 102.0,
+      "shadow": {
+        "color": "#000000",
+        "opacity": 0.22,
+        "blur": 9.0,
+        "offset": [
+          2.0,
+          3.0
+        ]
+      },
+      "glow": {
+        "color": "#000000",
+        "radius": 0.0,
+        "intensity": 0.0
+      },
+      "width": 1920,
+      "height": 1080,
+      "fps": "30/1",
+      "sha256": "e16c7cc3bfe5afd11f82f6e0bce27e9192e5ca08339a6da28c708034c703b395",
+      "bytes": 563518,
+      "verified": true,
+      "verified_at": "2026-11-08T16:16:36",
+      "foreground_ratio": 0.025405,
+      "uploaded": true,
+      "drive_id": "153l2eJUZIXArJkjw775s-RjDJi9pVZun",
+      "drive_url": "https://drive.google.com/file/d/153l2eJUZIXArJkjw775s-RjDJi9pVZun/view?usp=drivesdk",
+      "drive_name": "TYPOGRAPHY_18_OSWALD_CONDENSATO_1920x1080.mp4"
+    },
+    {
+      "id": "19_bricolage_ambra",
+      "label": "Bricolage · ambra",
+      "note": "",
+      "family": "sans_moderno",
+      "family_label": "Sans moderno",
+      "text": "Le menti che hanno cambiato il mondo",
+      "duration_s": 8.0,
+      "frames": 240,
+      "plan": "plans/19_bricolage_ambra.plan.json",
+      "mp4": "mp4/19_bricolage_ambra.mp4",
+      "still": "stills/19_bricolage_ambra.png",
+      "style": {
+        "font": "bricolage_grotesque",
+        "font_family": "Bricolage Grotesque",
+        "font_path": "assets/fonts/Bricolage-Grotesque.ttf",
+        "font_size": 92.0,
+        "fill": "#FFFDF7",
+        "background": "#191512",
+        "shadow": "noir_soft",
+        "glow": "amber_glow"
+      },
+      "requested_font_size": 92.0,
+      "shadow": {
+        "color": "#000000",
+        "opacity": 0.34,
+        "blur": 26.0,
+        "offset": [
+          0.0,
+          6.0
+        ]
+      },
+      "glow": {
+        "color": "#E0A85A",
+        "radius": 20.0,
+        "intensity": 0.09
+      },
+      "width": 1920,
+      "height": 1080,
+      "fps": "30/1",
+      "sha256": "b91a133e36068b5a56e50eef4f624f2efce9260c9dd89b5118d7436e81ba8f85",
+      "bytes": 777358,
+      "verified": true,
+      "verified_at": "2026-11-08T16:16:37",
+      "foreground_ratio": 0.024691,
+      "uploaded": true,
+      "drive_id": "1e1n0kzuvYtjBXg2pomPL76UkLk44ymCD",
+      "drive_url": "https://drive.google.com/file/d/1e1n0kzuvYtjBXg2pomPL76UkLk44ymCD/view?usp=drivesdk",
+      "drive_name": "TYPOGRAPHY_19_BRICOLAGE_AMBRA_1920x1080.mp4"
+    },
+    {
+      "id": "20_urbanist_notturna",
+      "label": "Urbanist · galleria notturna",
+      "note": "",
+      "family": "sans_moderno",
+      "family_label": "Sans moderno",
+      "text": "Le menti che hanno cambiato il mondo",
+      "duration_s": 8.0,
+      "frames": 240,
+      "plan": "plans/20_urbanist_notturna.plan.json",
+      "mp4": "mp4/20_urbanist_notturna.mp4",
+      "still": "stills/20_urbanist_notturna.png",
+      "style": {
+        "font": "urbanist",
+        "font_family": "Urbanist",
+        "font_path": "assets/fonts/Urbanist.ttf",
+        "font_size": 90.0,
+        "fill": "#F2EEE6",
+        "background": "#12100E",
+        "shadow": "none",
+        "glow": "warm_white"
+      },
+      "requested_font_size": 90.0,
+      "shadow": {
+        "color": "#000000",
+        "opacity": 0.0,
+        "blur": 0.0,
+        "offset": [
+          0.0,
+          0.0
+        ]
+      },
+      "glow": {
+        "color": "#FFF4DE",
+        "radius": 20.0,
+        "intensity": 0.08
+      },
+      "width": 1920,
+      "height": 1080,
+      "fps": "30/1",
+      "sha256": "6d4ae4f283375769f5c9f6d3ef1bb70833e420aca37a983a7b68352f5e6fd696",
+      "bytes": 669350,
+      "verified": true,
+      "verified_at": "2026-11-08T16:16:38",
+      "foreground_ratio": 0.012973,
+      "uploaded": true,
+      "drive_id": "1-UJv9BwVOt8yz-j1T7qFzZNv4jxeEV-U",
+      "drive_url": "https://drive.google.com/file/d/1-UJv9BwVOt8yz-j1T7qFzZNv4jxeEV-U/view?usp=drivesdk",
+      "drive_name": "TYPOGRAPHY_20_URBANIST_NOTTURNA_1920x1080.mp4"
+    }
+  ],
+  "contact_sheet": {
+    "path": "TYPOGRAPHY_STYLES_contact_sheet_1920x1080.png",
+    "bytes": 387656,
+    "sha256": "70dff3867c8728024d40b0e1805c340be05a19e7a6e6016f0326b2be7e702f74",
+    "width": 1920,
+    "height": 1880,
+    "entries": 20
+  },
+  "uploads": {
+    "TYPOGRAPHY_STYLES_contact_sheet_1920x1080.png": {
+      "id": "1XHM7PVXYJUMAzj4vkVjZVqZThwyr4ecR",
+      "link": "https://drive.google.com/file/d/1XHM7PVXYJUMAzj4vkVjZVqZThwyr4ecR/view?usp=drivesdk",
+      "uploaded": true
+    },
+    "typography_styles.v1.json": {
+      "id": "1quFpxyPGiljYKEToJ22fAFhfZhyQpBLt",
+      "link": "https://drive.google.com/file/d/1quFpxyPGiljYKEToJ22fAFhfZhyQpBLt/view?usp=drivesdk",
+      "uploaded": true
+    },
+    "TYPOGRAPHY_STYLES_UPLOAD-MANIFEST.md": {
+      "id": "1khAtJ9IOms7LcD9Ag4veZi72AkHInFGx",
+      "link": "https://drive.google.com/file/d/1khAtJ9IOms7LcD9Ag4veZi72AkHInFGx/view?usp=drivesdk",
+      "uploaded": true
+    }
+  }
+}

@@ -217,14 +217,9 @@ func (f *ParentFinalizer) finalize(ctx context.Context, parentID string, start, 
 	if err := f.assembler.Assemble(workCtx, assembleReq); err != nil {
 		return false, queue.Artifact{}, err
 	}
-	artifact, err := artifactFromFile(output)
+	artifact, err := persistParentArtifact(workCtx, f.store, parentID, output)
 	if err != nil {
 		return false, queue.Artifact{}, err
-	}
-	if f.store != nil {
-		if err := f.store.PutFile(workCtx, artifact.ArtifactHash, output); err != nil {
-			return false, queue.Artifact{}, err
-		}
 	}
 	if f.publisher != nil {
 		// The parent is published through the SAME verified path as a segment
