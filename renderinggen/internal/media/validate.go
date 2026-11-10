@@ -5,7 +5,6 @@ package media
 import (
 	"context"
 	"fmt"
-	"os/exec"
 	"strconv"
 	"strings"
 )
@@ -58,17 +57,16 @@ func (p ProbeResult) ValidateVisible(ctx context.Context, path string) error {
 
 	for _, ratio := range sampleRatios {
 		seekSec := durationSec * ratio
-		cmd := exec.CommandContext(ctx, ffmpegBinary(), "-v", "error", "-ss",
+		stdout, _, err := runTool(ctx, ffmpegBinary(), "-v", "error", "-ss",
 			fmt.Sprintf("%.3f", seekSec), "-i", path,
 			"-frames:v", "1", "-vf",
 			"format=gray,signalstats,metadata=print:key=lavfi.signalstats.YMAX:file=-,metadata=print:key=lavfi.signalstats.YAVG:file=-",
 			"-f", "null", "-")
-		out, err := cmd.CombinedOutput()
 		if err != nil {
 			return fmt.Errorf("visibility ffmpeg (seek=%.2fs): %w", seekSec, err)
 		}
 		var sampleYMAX float64
-		for _, line := range strings.Split(string(out), "\n") {
+		for _, line := range strings.Split(string(stdout), "\n") {
 			line = strings.TrimSpace(line)
 			if strings.Contains(line, "lavfi.signalstats.YMAX=") {
 				parts := strings.SplitN(line, "=", 2)

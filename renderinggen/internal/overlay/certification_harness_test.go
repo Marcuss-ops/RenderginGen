@@ -22,6 +22,8 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/testenv"
 )
 
 func tailBytes(b []byte) string {
@@ -36,12 +38,12 @@ func tailBytes(b []byte) string {
 // certification suite (named in the package comment above). Any non-empty
 // value disables it; the value is not interpreted, so a stale "0" cannot
 // silently re-enable GPU work in a context that asked not to do any.
-const skipRuntimeCertificationEnv = "RENDERINGGEN_SKIP_GPU_E2E"
+const skipRuntimeCertificationEnv = testenv.SkipGPUEnv
 
 // engineBinEnv names the native engine binary for the real-engine suites. It is
 // an ENV VAR on purpose: the path is machine-specific and must never be baked
 // into the tests.
-const engineBinEnv = "CHRONON_BIN"
+const engineBinEnv = testenv.ChrononBinEnv
 
 // chrononBinFor returns the real binary or skips the calling test. The binary is
 // never pinned to a machine-specific path and never DISCOVERED: the caller must
@@ -62,17 +64,7 @@ const engineBinEnv = "CHRONON_BIN"
 // must keep working as belt and braces.
 func chrononBinFor(t *testing.T) string {
 	t.Helper()
-	if strings.TrimSpace(os.Getenv(skipRuntimeCertificationEnv)) != "" {
-		t.Skipf("%s is set: the real-engine runtime certification suite is disabled for this run", skipRuntimeCertificationEnv)
-	}
-	bin := strings.TrimSpace(os.Getenv(engineBinEnv))
-	if bin == "" {
-		t.Skipf("the real-engine suites are opt-in: set %s=/path/to/chronon3d_cli to run them (a build discovered beside this repository is no longer accepted, because it made a bare `go test ./...` render video)", engineBinEnv)
-	}
-	if _, err := os.Stat(bin); err != nil {
-		t.Skipf("%s=%s is not available: %v", engineBinEnv, bin, err)
-	}
-	return bin
+	return testenv.RequireChrononOptIn(t)
 }
 
 // certificationSourceRoot is the checked-in fixture directory the runtime

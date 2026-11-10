@@ -1,0 +1,128 @@
+{
+  "canvas": {
+    "duration_frames": 240,
+    "fps_den": 1,
+    "fps_num": 24,
+    "height": 1080,
+    "width": 1920
+  },
+  "job_id": "06_light_motes",
+  "layers": [
+    {
+      "color": [
+        0.01568627543747425,
+        0.019607843831181526,
+        0.03921568766236305,
+        1.0
+      ],
+      "duration_frames": 240,
+      "id": "bg",
+      "position": [
+        960,
+        540
+      ],
+      "screen_space": true,
+      "size": [
+        1920,
+        1080
+      ],
+      "start_frame": 0,
+      "type": "color"
+    },
+    {
+      "duration_frames": 240,
+      "enable_3d": false,
+      "id": "light_motes",
+      "particle_emitter": {
+        "blend_mode": "add",
+        "bokeh": false,
+        "color_ramp": [
+          {
+            "color": [
+              1.0,
+              0.8799999952316284,
+              0.5799999833106995,
+              0.0
+            ],
+            "position": 0.0
+          },
+          {
+            "color": [
+              1.0,
+              0.8799999952316284,
+              0.5799999833106995,
+              0.949999988079071
+            ],
+            "position": 0.11999999731779099
+          },
+          {
+            "color": [
+              1.0,
+              0.7200000286102295,
+              0.30000001192092896,
+              0.75
+            ],
+            "position": 0.8500000238418579
+          },
+          {
+            "color": [
+              1.0,
+              0.7200000286102295,
+              0.30000001192092896,
+              0.0
+            ],
+            "position": 1.0
+          }
+        ],
+        "count": 90,
+        "depth_range": [
+          0.10000000149011612,
+          1.0
+        ],
+        "emitter_size": [
+          1600.0,
+          900.0
+        ],
+        "environment": true,
+        "flow_scale": 0.007000000216066837,
+        "flow_speed": 0.3499999940395355,
+        "flow_strength": 34.0,
+        "gravity": -0.4000000059604645,
+        "lifetime": [
+          4.0,
+          9.0
+        ],
+        "seed": 8429,
+        "size": [
+          0.6000000238418579,
+          2.200000047683716
+        ],
+        "turbulence": 0.0,
+        "twinkle": 0.8500000238418579,
+        "twinkle_speed": 0.8999999761581421,
+        "velocity_max": [
+          2.0,
+          1.0
+        ],
+        "velocity_min": [
+          -2.0,
+          -3.0
+        ]
+      },
+      "position": [
+        0.0,
+        0.0
+      ],
+      "screen_space": true,
+      "start_frame": 0,
+      "type": "particles"
+    }
+  ],
+  "output": {
+    "codec": "h264",
+    "format": "mp4",
+    "path": "06_light_motes.mp4"
+  },
+  "schema": "chronon.render-plan.v3",
+  "version": 3
+}

@@ -1,0 +1,293 @@
+/home/pierone/src/go-master/projects/Pyt/VeloxEditing/Chronon3d/build/chronon/linux-video-release/apps/chronon3d_cli/chronon3d_cli render --plan /home/pierone/src/go-master/projects/Pyt/VeloxEditing/RenderingGen/UploadDrive/socials_structures_20261109/plans/01_x_post.plan.json --assets-root /home/pierone/src/go-master/projects/Pyt/VeloxEditing/Chronon3d --backend vulkan --gpu-hot-path-mode require_gpu_native -o /home/pierone/src/go-master/projects/Pyt/VeloxEditing/RenderingGen/UploadDrive/socials_structures_20261109/mp4/Socials_01_X_Post_1920x1080_8s.mp4
+
+[2026-11-09 09:11:28.941] [info] [asset-profile] kind=3 path=assets/fonts/DejaVuSans.ttf bytes=757076 cache=miss invalidated=0 stat=0.01ms hash=5.84ms hashed_bytes=757076 total=5.93ms
+[2026-11-09 09:11:28.943] [info] [asset-profile] kind=3 path=assets/fonts/Inter-Black.ttf bytes=343804 cache=miss invalidated=0 stat=0.01ms hash=1.91ms hashed_bytes=343804 total=2.05ms
+[2026-11-09 09:11:28.945] [info] [asset-profile] kind=3 path=assets/fonts/Inter-Bold.ttf bytes=146768 cache=miss invalidated=0 stat=0.01ms hash=1.90ms hashed_bytes=146768 total=2.14ms
+[2026-11-09 09:11:28.947] [info] [asset-profile] kind=3 path=assets/fonts/Inter-Regular.ttf bytes=146004 cache=miss invalidated=0 stat=0.01ms hash=1.28ms hashed_bytes=146004 total=1.41ms
+[2026-11-09 09:11:28.947] [info] [asset-digest-cache] hits=0 misses=4 invalidations=0 bytes_hashed=1393652 lookup_ms=0.01 write_ms=0.07 full_hash_ms=10.93
+[2026-11-09 09:11:28.951] [info] [plan-profile] read=0.17ms parse=0.38ms decode=69.65ms resolver=0.05ms compile_validate=16.39ms total=86.66ms
+[2026-11-09 09:11:28.952] [info] [video] Auto-selecting yuv420p pipe pixel format for 1920x1080 output
+[2026-11-09 09:11:28.953] [info] [video] execution plan resolved (reason: gpu_composition_pipe_no_video_source); decode=2 composite=2 encode=2 interop=0 handoff=3 codec=3
+[2026-11-09 09:11:29.006] [info] [video-runtime] created persistent runtime for device 0 (CUDA ordinal 0)
+[2026-11-09 09:11:29.007] [info] [video] encoder feed capability: host_frame=true direct_yuv=false native_surface=false
+[2026-11-09 09:11:29.271] [info] [native_av] CUDA context contract: native=0x555a65b73110 ffmpeg=0x555a65b73110
+[2026-11-09 09:11:29.282] [info] [native_av] NVENC tuning applied: rc=driver-default preset=slow async_depth=4 nvenc_surfaces=8 qp=-1 bitrate=0
+[h264_nvenc @ 0x555a6576fe40] Defined rc_lookahead requires more surfaces, increasing used surfaces 8 -> 34
+[2026-11-09 09:11:29.408] [info] [native_av] encoder bitstream contract: codec=27 profile=100 level=-99 pix_fmt=117 parameter_sets=53 materialized=true
+[2026-11-09 09:11:29.410] [info] [native_av] Opened native encoder: 1920x1080 @ 30fps, codec=h264_nvenc, rc=driver-default, preset=slow, output='/home/pierone/src/go-master/projects/Pyt/VeloxEditing/RenderingGen/UploadDrive/socials_structures_20261109/mp4/Socials_01_X_Post_1920x1080_8s.partial.mp4'
+[2026-11-09 09:11:31.656] [info] [pool-warm] Pre-allocated and pre-imported 6 execution slots (1920x1080) for native NVENC
+[2026-11-09 09:11:31.924] [info] chronon3d::vulkan text batch formats: dst_image.format=109 atlas_image.format=44 atlas_encoding=2 (shader contract: dst rgba32f, atlas rgba8)
+[2026-11-09 09:11:31.950] [info] [temp-lifetime] frame=0 after_level=0 live=[0,1,3,5,7,9,11,13,15,17,19,21,23,25,27,29,31,33,35,] retired=[]
+[2026-11-09 09:11:31.951] [info] [exec-level-diag] frame=0 level=0 nodes=19 input_ms=0.002 dispatch_ms=30.232 fb_release_ms=0.003
+[2026-11-09 09:11:31.951] [info] [graph-edge] frame=0 level=1 consumer_id=2 input_index=0 producer_id=0 producer_level=0
+[2026-11-09 09:11:31.951] [info] [graph-edge] frame=0 level=1 consumer_id=2 input_index=1 producer_id=1 producer_level=0
+[2026-11-09 09:11:31.952] [info] [temp-lifetime] frame=0 after_level=1 live=[2,3,5,7,9,11,13,15,17,19,21,23,25,27,29,31,33,35,] retired=[0,1,]
+[2026-11-09 09:11:31.952] [info] [exec-level-diag] frame=0 level=1 nodes=1 input_ms=0.016 dispatch_ms=0.934 fb_release_ms=0.005
+[2026-11-09 09:11:31.952] [info] [graph-edge] frame=0 level=2 consumer_id=4 input_index=0 producer_id=2 producer_level=1
+[2026-11-09 09:11:31.952] [info] [graph-edge] frame=0 level=2 consumer_id=4 input_index=1 producer_id=3 producer_level=0
+[2026-11-09 09:11:31.952] [info] [temp-lifetime] frame=0 after_level=2 live=[4,5,7,9,11,13,15,17,19,21,23,25,27,29,31,33,35,] retired=[2,3,]
+[2026-11-09 09:11:31.952] [info] [exec-level-diag] frame=0 level=2 nodes=1 input_ms=0.045 dispatch_ms=0.863 fb_release_ms=0.003
+[2026-11-09 09:11:31.952] [info] [graph-edge] frame=0 level=3 consumer_id=6 input_index=0 producer_id=4 producer_level=2
+[2026-11-09 09:11:31.953] [info] [graph-edge] frame=0 level=3 consumer_id=6 input_index=1 producer_id=5 producer_level=0
+[2026-11-09 09:11:31.953] [info] [temp-lifetime] frame=0 after_level=3 live=[6,7,9,11,13,15,17,19,21,23,25,27,29,31,33,35,] retired=[4,5,]
+[2026-11-09 09:11:31.953] [info] [exec-level-diag] frame=0 level=3 nodes=1 input_ms=0.012 dispatch_ms=0.872 fb_release_ms=0.003
+[2026-11-09 09:11:31.953] [info] [graph-edge] frame=0 level=4 consumer_id=8 input_index=0 producer_id=6 producer_level=3
+[2026-11-09 09:11:31.953] [info] [graph-edge] frame=0 level=4 consumer_id=8 input_index=1 producer_id=7 producer_level=0
+[2026-11-09 09:11:31.955] [info] [temp-lifetime] frame=0 after_level=4 live=[8,9,11,13,15,17,19,21,23,25,27,29,31,33,35,] retired=[6,7,]
+[2026-11-09 09:11:31.955] [info] [exec-level-diag] frame=0 level=4 nodes=1 input_ms=0.012 dispatch_ms=1.453 fb_release_ms=0.002
+[2026-11-09 09:11:31.955] [info] [graph-edge] frame=0 level=5 consumer_id=10 input_index=0 producer_id=8 producer_level=4
+[2026-11-09 09:11:31.955] [info] [graph-edge] frame=0 level=5 consumer_id=10 input_index=1 producer_id=9 producer_level=0
+[2026-11-09 09:11:31.956] [info] [temp-lifetime] frame=0 after_level=5 live=[10,11,13,15,17,19,21,23,25,27,29,31,33,35,] retired=[8,9,]
+[2026-11-09 09:11:31.956] [info] [exec-level-diag] frame=0 level=5 nodes=1 input_ms=0.012 dispatch_ms=0.857 fb_release_ms=0.002
+[2026-11-09 09:11:31.956] [info] [graph-edge] frame=0 level=6 consumer_id=12 input_index=0 producer_id=10 producer_level=5
+[2026-11-09 09:11:31.956] [info] [graph-edge] frame=0 level=6 consumer_id=12 input_index=1 producer_id=11 producer_level=0
+[2026-11-09 09:11:31.957] [info] [temp-lifetime] frame=0 after_level=6 live=[12,13,15,17,19,21,23,25,27,29,31,33,35,] retired=[10,11,]
+[2026-11-09 09:11:31.957] [info] [exec-level-diag] frame=0 level=6 nodes=1 input_ms=0.012 dispatch_ms=0.949 fb_release_ms=0.002
+[2026-11-09 09:11:31.957] [info] [graph-edge] frame=0 level=7 consumer_id=14 input_index=0 producer_id=12 producer_level=6
+[2026-11-09 09:11:31.957] [info] [graph-edge] frame=0 level=7 consumer_id=14 input_index=1 producer_id=13 producer_level=0
+[2026-11-09 09:11:31.958] [info] [temp-lifetime] frame=0 after_level=7 live=[14,15,17,19,21,23,25,27,29,31,33,35,] retired=[12,13,]
+[2026-11-09 09:11:31.958] [info] [exec-level-diag] frame=0 level=7 nodes=1 input_ms=0.014 dispatch_ms=0.876 fb_release_ms=0.003
+[2026-11-09 09:11:31.958] [info] [graph-edge] frame=0 level=8 consumer_id=16 input_index=0 producer_id=14 producer_level=7
+[2026-11-09 09:11:31.958] [info] [graph-edge] frame=0 level=8 consumer_id=16 input_index=1 producer_id=15 producer_level=0
+[2026-11-09 09:11:31.959] [info] [temp-lifetime] frame=0 after_level=8 live=[16,17,19,21,23,25,27,29,31,33,35,] retired=[14,15,]
+[2026-11-09 09:11:31.959] [info] [exec-level-diag] frame=0 level=8 nodes=1 input_ms=0.012 dispatch_ms=0.920 fb_release_ms=0.002
+[2026-11-09 09:11:31.959] [info] [graph-edge] frame=0 level=9 consumer_id=18 input_index=0 producer_id=16 producer_level=8
+[2026-11-09 09:11:31.959] [info] [graph-edge] frame=0 level=9 consumer_id=18 input_index=1 producer_id=17 producer_level=0
+[2026-11-09 09:11:31.960] [info] [temp-lifetime] frame=0 after_level=9 live=[18,19,21,23,25,27,29,31,33,35,] retired=[16,17,]
+[2026-11-09 09:11:31.960] [info] [exec-level-diag] frame=0 level=9 nodes=1 input_ms=0.012 dispatch_ms=0.905 fb_release_ms=0.002
+[2026-11-09 09:11:31.960] [info] [graph-edge] frame=0 level=10 consumer_id=20 input_index=0 producer_id=18 producer_level=9
+[2026-11-09 09:11:31.960] [info] [graph-edge] frame=0 level=10 consumer_id=20 input_index=1 producer_id=19 producer_level=0
+[2026-11-09 09:11:31.961] [info] [temp-lifetime] frame=0 after_level=10 live=[20,21,23,25,27,29,31,33,35,] retired=[18,19,]
+[2026-11-09 09:11:31.961] [info] [exec-level-diag] frame=0 level=10 nodes=1 input_ms=0.026 dispatch_ms=0.984 fb_release_ms=0.002
+[2026-11-09 09:11:31.961] [info] [graph-edge] frame=0 level=11 consumer_id=22 input_index=0 producer_id=20 producer_level=10
+[2026-11-09 09:11:31.961] [info] [graph-edge] frame=0 level=11 consumer_id=22 input_index=1 producer_id=21 producer_level=0
+[2026-11-09 09:11:31.962] [info] [temp-lifetime] frame=0 after_level=11 live=[22,23,25,27,29,31,33,35,] retired=[20,21,]
+[2026-11-09 09:11:31.962] [info] [exec-level-diag] frame=0 level=11 nodes=1 input_ms=0.012 dispatch_ms=0.911 fb_release_ms=0.002
+[2026-11-09 09:11:31.962] [info] [graph-edge] frame=0 level=12 consumer_id=24 input_index=0 producer_id=22 producer_level=11
+[2026-11-09 09:11:31.962] [info] [graph-edge] frame=0 level=12 consumer_id=24 input_index=1 producer_id=23 producer_level=0
+[2026-11-09 09:11:31.963] [info] [temp-lifetime] frame=0 after_level=12 live=[24,25,27,29,31,33,35,] retired=[22,23,]
+[2026-11-09 09:11:31.963] [info] [exec-level-diag] frame=0 level=12 nodes=1 input_ms=0.012 dispatch_ms=0.897 fb_release_ms=0.002
+[2026-11-09 09:11:31.963] [info] [graph-edge] frame=0 level=13 consumer_id=26 input_index=0 producer_id=24 producer_level=12
+[2026-11-09 09:11:31.963] [info] [graph-edge] frame=0 level=13 consumer_id=26 input_index=1 producer_id=25 producer_level=0
+[2026-11-09 09:11:31.964] [info] [temp-lifetime] frame=0 after_level=13 live=[26,27,29,31,33,35,] retired=[24,25,]
+[2026-11-09 09:11:31.964] [info] [exec-level-diag] frame=0 level=13 nodes=1 input_ms=0.012 dispatch_ms=0.885 fb_release_ms=0.002
+[2026-11-09 09:11:31.964] [info] [graph-edge] frame=0 level=14 consumer_id=28 input_index=0 producer_id=26 producer_level=13
+[2026-11-09 09:11:31.964] [info] [graph-edge] frame=0 level=14 consumer_id=28 input_index=1 producer_id=27 producer_level=0
+[2026-11-09 09:11:31.964] [info] [temp-lifetime] frame=0 after_level=14 live=[28,29,31,33,35,] retired=[26,27,]
+[2026-11-09 09:11:31.964] [info] [exec-level-diag] frame=0 level=14 nodes=1 input_ms=0.012 dispatch_ms=0.853 fb_release_ms=0.002
+[2026-11-09 09:11:31.964] [info] [graph-edge] frame=0 level=15 consumer_id=30 input_index=0 producer_id=28 producer_level=14
+[2026-11-09 09:11:31.964] [info] [graph-edge] frame=0 level=15 consumer_id=30 input_index=1 producer_id=29 producer_level=0
+[2026-11-09 09:11:31.965] [info] [temp-lifetime] frame=0 after_level=15 live=[30,31,33,35,] retired=[28,29,]
+[2026-11-09 09:11:31.965] [info] [exec-level-diag] frame=0 level=15 nodes=1 input_ms=0.012 dispatch_ms=0.894 fb_release_ms=0.002
+[2026-11-09 09:11:31.965] [info] [graph-edge] frame=0 level=16 consumer_id=32 input_index=0 producer_id=30 producer_level=15
+[2026-11-09 09:11:31.965] [info] [graph-edge] frame=0 level=16 consumer_id=32 input_index=1 producer_id=31 producer_level=0
+[2026-11-09 09:11:31.966] [info] [temp-lifetime] frame=0 after_level=16 live=[32,33,35,] retired=[30,31,]
+[2026-11-09 09:11:31.966] [info] [exec-level-diag] frame=0 level=16 nodes=1 input_ms=0.012 dispatch_ms=0.938 fb_release_ms=0.002
+[2026-11-09 09:11:31.966] [info] [graph-edge] frame=0 level=17 consumer_id=34 input_index=0 producer_id=32 producer_level=16
+[2026-11-09 09:11:31.966] [info] [graph-edge] frame=0 level=17 consumer_id=34 input_index=1 producer_id=33 producer_level=0
+[2026-11-09 09:11:31.967] [info] [temp-lifetime] frame=0 after_level=17 live=[34,35,] retired=[32,33,]
+[2026-11-09 09:11:31.967] [info] [exec-level-diag] frame=0 level=17 nodes=1 input_ms=0.012 dispatch_ms=0.863 fb_release_ms=0.002
+[2026-11-09 09:11:31.967] [info] [graph-edge] frame=0 level=18 consumer_id=36 input_index=0 producer_id=34 producer_level=17
+[2026-11-09 09:11:31.967] [info] [graph-edge] frame=0 level=18 consumer_id=36 input_index=1 producer_id=35 producer_level=0
+[2026-11-09 09:11:31.967] [info] [temp-lifetime] frame=0 after_level=18 live=[36,] retired=[34,35,]
+[2026-11-09 09:11:31.967] [info] [exec-level-diag] frame=0 level=18 nodes=1 input_ms=0.012 dispatch_ms=0.101 fb_release_ms=0.002
+[2026-11-09 09:11:31.968] [info] [video] Exporting via Arena-backed SIMD pipeline
+[2026-11-09 09:11:31.989] [info] [temp-lifetime] frame=1 after_level=0 live=[0,1,3,5,7,9,11,13,15,17,19,21,23,25,27,29,31,33,35,] retired=[]
+[2026-11-09 09:11:31.989] [info] [exec-level-diag] frame=1 level=0 nodes=19 input_ms=0.001 dispatch_ms=20.700 fb_release_ms=0.005
+[2026-11-09 09:11:31.989] [info] [graph-edge] frame=1 level=1 consumer_id=2 input_index=0 producer_id=0 producer_level=0
+[2026-11-09 09:11:31.989] [info] [graph-edge] frame=1 level=1 consumer_id=2 input_index=1 producer_id=1 producer_level=0
+[2026-11-09 09:11:31.990] [info] [temp-lifetime] frame=1 after_level=1 live=[2,3,5,7,9,11,13,15,17,19,21,23,25,27,29,31,33,35,] retired=[0,1,]
+[2026-11-09 09:11:31.990] [info] [exec-level-diag] frame=1 level=1 nodes=1 input_ms=0.015 dispatch_ms=0.966 fb_release_ms=0.004
+[2026-11-09 09:11:31.990] [info] [graph-edge] frame=1 level=2 consumer_id=4 input_index=0 producer_id=2 producer_level=1
+[2026-11-09 09:11:31.990] [info] [graph-edge] frame=1 level=2 consumer_id=4 input_index=1 producer_id=3 producer_level=0
+[2026-11-09 09:11:31.991] [info] [temp-lifetime] frame=1 after_level=2 live=[4,5,7,9,11,13,15,17,19,21,23,25,27,29,31,33,35,] retired=[2,3,]
+[2026-11-09 09:11:31.991] [info] [exec-level-diag] frame=1 level=2 nodes=1 input_ms=0.012 dispatch_ms=0.932 fb_release_ms=0.003
+[2026-11-09 09:11:31.991] [info] [graph-edge] frame=1 level=3 consumer_id=6 input_index=0 producer_id=4 producer_level=2
+[2026-11-09 09:11:31.991] [info] [graph-edge] frame=1 level=3 consumer_id=6 input_index=1 producer_id=5 producer_level=0
+[2026-11-09 09:11:31.992] [info] [temp-lifetime] frame=1 after_level=3 live=[6,7,9,11,13,15,17,19,21,23,25,27,29,31,33,35,] retired=[4,5,]
+[2026-11-09 09:11:31.992] [info] [exec-level-diag] frame=1 level=3 nodes=1 input_ms=0.012 dispatch_ms=0.951 fb_release_ms=0.003
+[2026-11-09 09:11:31.992] [info] [graph-edge] frame=1 level=4 consumer_id=8 input_index=0 producer_id=6 producer_level=3
+[2026-11-09 09:11:31.992] [info] [graph-edge] frame=1 level=4 consumer_id=8 input_index=1 producer_id=7 producer_level=0
+[2026-11-09 09:11:31.993] [info] [temp-lifetime] frame=1 after_level=4 live=[8,9,11,13,15,17,19,21,23,25,27,29,31,33,35,] retired=[6,7,]
+[2026-11-09 09:11:31.993] [info] [exec-level-diag] frame=1 level=4 nodes=1 input_ms=0.012 dispatch_ms=0.955 fb_release_ms=0.003
+[2026-11-09 09:11:31.993] [info] [graph-edge] frame=1 level=5 consumer_id=10 input_index=0 producer_id=8 producer_level=4
+[2026-11-09 09:11:31.993] [info] [graph-edge] frame=1 level=5 consumer_id=10 input_index=1 producer_id=9 producer_level=0
+[2026-11-09 09:11:31.994] [info] [temp-lifetime] frame=1 after_level=5 live=[10,11,13,15,17,19,21,23,25,27,29,31,33,35,] retired=[8,9,]
+[2026-11-09 09:11:31.994] [info] [exec-level-diag] frame=1 level=5 nodes=1 input_ms=0.012 dispatch_ms=0.981 fb_release_ms=0.002
+[2026-11-09 09:11:31.994] [info] [graph-edge] frame=1 level=6 consumer_id=12 input_index=0 producer_id=10 producer_level=5
+[2026-11-09 09:11:31.994] [info] [graph-edge] frame=1 level=6 consumer_id=12 input_index=1 producer_id=11 producer_level=0
+[2026-11-09 09:11:31.995] [info] [temp-lifetime] frame=1 after_level=6 live=[12,13,15,17,19,21,23,25,27,29,31,33,35,] retired=[10,11,]
+[2026-11-09 09:11:31.995] [info] [exec-level-diag] frame=1 level=6 nodes=1 input_ms=0.012 dispatch_ms=0.943 fb_release_ms=0.002
+[2026-11-09 09:11:31.995] [info] [graph-edge] frame=1 level=7 consumer_id=14 input_index=0 producer_id=12 producer_level=6
+[2026-11-09 09:11:31.995] [info] [graph-edge] frame=1 level=7 consumer_id=14 input_index=1 producer_id=13 producer_level=0
+[2026-11-09 09:11:31.996] [info] [temp-lifetime] frame=1 after_level=7 live=[14,15,17,19,21,23,25,27,29,31,33,35,] retired=[12,13,]
+[2026-11-09 09:11:31.996] [info] [exec-level-diag] frame=1 level=7 nodes=1 input_ms=0.012 dispatch_ms=0.955 fb_release_ms=0.003
+[2026-11-09 09:11:31.996] [info] [graph-edge] frame=1 level=8 consumer_id=16 input_index=0 producer_id=14 producer_level=7
+[2026-11-09 09:11:31.997] [info] [graph-edge] frame=1 level=8 consumer_id=16 input_index=1 producer_id=15 producer_level=0
+[2026-11-09 09:11:31.998] [info] [temp-lifetime] frame=1 after_level=8 live=[16,17,19,21,23,25,27,29,31,33,35,] retired=[14,15,]
+[2026-11-09 09:11:31.998] [info] [exec-level-diag] frame=1 level=8 nodes=1 input_ms=0.041 dispatch_ms=1.074 fb_release_ms=0.004
+[2026-11-09 09:11:31.998] [info] [graph-edge] frame=1 level=9 consumer_id=18 input_index=0 producer_id=16 producer_level=8
+[2026-11-09 09:11:31.998] [info] [graph-edge] frame=1 level=9 consumer_id=18 input_index=1 producer_id=17 producer_level=0
+[2026-11-09 09:11:31.999] [info] [temp-lifetime] frame=1 after_level=9 live=[18,19,21,23,25,27,29,31,33,35,] retired=[16,17,]
+[2026-11-09 09:11:31.999] [info] [exec-level-diag] frame=1 level=9 nodes=1 input_ms=0.028 dispatch_ms=1.042 fb_release_ms=0.005
+[2026-11-09 09:11:31.999] [info] [graph-edge] frame=1 level=10 consumer_id=20 input_index=0 producer_id=18 producer_level=9
+[2026-11-09 09:11:31.999] [info] [graph-edge] frame=1 level=10 consumer_id=20 input_index=1 producer_id=19 producer_level=0
+[2026-11-09 09:11:32.000] [info] [temp-lifetime] frame=1 after_level=10 live=[20,21,23,25,27,29,31,33,35,] retired=[18,19,]
+[2026-11-09 09:11:32.000] [info] [exec-level-diag] frame=1 level=10 nodes=1 input_ms=0.027 dispatch_ms=1.049 fb_release_ms=0.003
+[2026-11-09 09:11:32.000] [info] [graph-edge] frame=1 level=11 consumer_id=22 input_index=0 producer_id=20 producer_level=10
+[2026-11-09 09:11:32.000] [info] [graph-edge] frame=1 level=11 consumer_id=22 input_index=1 producer_id=21 producer_level=0
+[2026-11-09 09:11:32.001] [info] [temp-lifetime] frame=1 after_level=11 live=[22,23,25,27,29,31,33,35,] retired=[20,21,]
+[2026-11-09 09:11:32.001] [info] [exec-level-diag] frame=1 level=11 nodes=1 input_ms=0.012 dispatch_ms=1.036 fb_release_ms=0.003
+[2026-11-09 09:11:32.001] [info] [graph-edge] frame=1 level=12 consumer_id=24 input_index=0 producer_id=22 producer_level=11
+[2026-11-09 09:11:32.001] [info] [graph-edge] frame=1 level=12 consumer_id=24 input_index=1 producer_id=23 producer_level=0
+[2026-11-09 09:11:32.002] [info] [temp-lifetime] frame=1 after_level=12 live=[24,25,27,29,31,33,35,] retired=[22,23,]
+[2026-11-09 09:11:32.002] [info] [exec-level-diag] frame=1 level=12 nodes=1 input_ms=0.012 dispatch_ms=1.054 fb_release_ms=0.003
+[2026-11-09 09:11:32.002] [info] [graph-edge] frame=1 level=13 consumer_id=26 input_index=0 producer_id=24 producer_level=12
+[2026-11-09 09:11:32.002] [info] [graph-edge] frame=1 level=13 consumer_id=26 input_index=1 producer_id=25 producer_level=0
+[2026-11-09 09:11:32.005] [info] [temp-lifetime] frame=1 after_level=13 live=[26,27,29,31,33,35,] retired=[24,25,]
+[2026-11-09 09:11:32.005] [info] [exec-level-diag] frame=1 level=13 nodes=1 input_ms=0.014 dispatch_ms=2.780 fb_release_ms=0.007
+[2026-11-09 09:11:32.005] [info] [graph-edge] frame=1 level=14 consumer_id=28 input_index=0 producer_id=26 producer_level=13
+[2026-11-09 09:11:32.005] [info] [graph-edge] frame=1 level=14 consumer_id=28 input_index=1 producer_id=27 producer_level=0
+[2026-11-09 09:11:32.008] [info] [temp-lifetime] frame=1 after_level=14 live=[28,29,31,33,35,] retired=[26,27,]
+[2026-11-09 09:11:32.008] [info] [exec-level-diag] frame=1 level=14 nodes=1 input_ms=0.019 dispatch_ms=2.913 fb_release_ms=0.008
+[2026-11-09 09:11:32.008] [info] [graph-edge] frame=1 level=15 consumer_id=30 input_index=0 producer_id=28 producer_level=14
+[2026-11-09 09:11:32.008] [info] [graph-edge] frame=1 level=15 consumer_id=30 input_index=1 producer_id=29 producer_level=0
+[2026-11-09 09:11:32.010] [info] [temp-lifetime] frame=1 after_level=15 live=[30,31,33,35,] retired=[28,29,]
+[2026-11-09 09:11:32.011] [info] [exec-level-diag] frame=1 level=15 nodes=1 input_ms=0.017 dispatch_ms=2.387 fb_release_ms=0.003
+[2026-11-09 09:11:32.011] [info] [graph-edge] frame=1 level=16 consumer_id=32 input_index=0 producer_id=30 producer_level=15
+[2026-11-09 09:11:32.011] [info] [graph-edge] frame=1 level=16 consumer_id=32 input_index=1 producer_id=31 producer_level=0
+[2026-11-09 09:11:32.013] [info] [temp-lifetime] frame=1 after_level=16 live=[32,33,35,] retired=[30,31,]
+[2026-11-09 09:11:32.013] [info] [exec-level-diag] frame=1 level=16 nodes=1 input_ms=0.104 dispatch_ms=2.341 fb_release_ms=0.006
+[2026-11-09 09:11:32.013] [info] [graph-edge] frame=1 level=17 consumer_id=34 input_index=0 producer_id=32 producer_level=16
+[2026-11-09 09:11:32.013] [info] [graph-edge] frame=1 level=17 consumer_id=34 input_index=1 producer_id=33 producer_level=0
+[2026-11-09 09:11:32.015] [info] [temp-lifetime] frame=1 after_level=17 live=[34,35,] retired=[32,33,]
+[2026-11-09 09:11:32.015] [info] [exec-level-diag] frame=1 level=17 nodes=1 input_ms=0.018 dispatch_ms=2.321 fb_release_ms=0.004
+[2026-11-09 09:11:32.015] [info] [graph-edge] frame=1 level=18 consumer_id=36 input_index=0 producer_id=34 producer_level=17
+[2026-11-09 09:11:32.015] [info] [graph-edge] frame=1 level=18 consumer_id=36 input_index=1 producer_id=35 producer_level=0
+[2026-11-09 09:11:32.016] [info] [temp-lifetime] frame=1 after_level=18 live=[36,] retired=[34,35,]
+[2026-11-09 09:11:32.016] [info] [exec-level-diag] frame=1 level=18 nodes=1 input_ms=0.015 dispatch_ms=0.241 fb_release_ms=0.003
+[2026-11-09 09:11:32.085] [info] [temp-lifetime] frame=2 after_level=0 live=[0,1,3,5,7,9,11,13,15,17,19,21,23,25,27,29,31,33,35,] retired=[]
+[2026-11-09 09:11:32.085] [info] [exec-level-diag] frame=2 level=0 nodes=19 input_ms=0.003 dispatch_ms=31.600 fb_release_ms=0.004
+[2026-11-09 09:11:32.085] [info] [graph-edge] frame=2 level=1 consumer_id=2 input_index=0 producer_id=0 producer_level=0
+[2026-11-09 09:11:32.085] [info] [graph-edge] frame=2 level=1 consumer_id=2 input_index=1 producer_id=1 producer_level=0
+[2026-11-09 09:11:32.087] [info] [temp-lifetime] frame=2 after_level=1 live=[2,3,5,7,9,11,13,15,17,19,21,23,25,27,29,31,33,35,] retired=[0,1,]
+[2026-11-09 09:11:32.087] [info] [exec-level-diag] frame=2 level=1 nodes=1 input_ms=0.017 dispatch_ms=1.555 fb_release_ms=0.006
+[2026-11-09 09:11:32.087] [info] [graph-edge] frame=2 level=2 consumer_id=4 input_index=0 producer_id=2 producer_level=1
+[2026-11-09 09:11:32.087] [info] [graph-edge] frame=2 level=2 consumer_id=4 input_index=1 producer_id=3 producer_level=0
+[2026-11-09 09:11:32.088] [info] [temp-lifetime] frame=2 after_level=2 live=[4,5,7,9,11,13,15,17,19,21,23,25,27,29,31,33,35,] retired=[2,3,]
+[2026-11-09 09:11:32.088] [info] [exec-level-diag] frame=2 level=2 nodes=1 input_ms=0.024 dispatch_ms=1.024 fb_release_ms=0.003
+[2026-11-09 09:11:32.088] [info] [graph-edge] frame=2 level=3 consumer_id=6 input_index=0 producer_id=4 producer_level=2
+[2026-11-09 09:11:32.088] [info] [graph-edge] frame=2 level=3 consumer_id=6 input_index=1 producer_id=5 producer_level=0
+[2026-11-09 09:11:32.090] [info] [temp-lifetime] frame=2 after_level=3 live=[6,7,9,11,13,15,17,19,21,23,25,27,29,31,33,35,] retired=[4,5,]
+[2026-11-09 09:11:32.090] [info] [exec-level-diag] frame=2 level=3 nodes=1 input_ms=0.012 dispatch_ms=1.715 fb_release_ms=0.003
+[2026-11-09 09:11:32.090] [info] [graph-edge] frame=2 level=4 consumer_id=8 input_index=0 producer_id=6 producer_level=3
+[2026-11-09 09:11:32.090] [info] [graph-edge] frame=2 level=4 consumer_id=8 input_index=1 producer_id=7 producer_level=0
+[2026-11-09 09:11:32.091] [info] [temp-lifetime] frame=2 after_level=4 live=[8,9,11,13,15,17,19,21,23,25,27,29,31,33,35,] retired=[6,7,]
+[2026-11-09 09:11:32.091] [info] [exec-level-diag] frame=2 level=4 nodes=1 input_ms=0.012 dispatch_ms=1.053 fb_release_ms=0.003
+[2026-11-09 09:11:32.091] [info] [graph-edge] frame=2 level=5 consumer_id=10 input_index=0 producer_id=8 producer_level=4
+[2026-11-09 09:11:32.091] [info] [graph-edge] frame=2 level=5 consumer_id=10 input_index=1 producer_id=9 producer_level=0
+[2026-11-09 09:11:32.092] [info] [temp-lifetime] frame=2 after_level=5 live=[10,11,13,15,17,19,21,23,25,27,29,31,33,35,] retired=[8,9,]
+[2026-11-09 09:11:32.092] [info] [exec-level-diag] frame=2 level=5 nodes=1 input_ms=0.013 dispatch_ms=0.929 fb_release_ms=0.003
+[2026-11-09 09:11:32.092] [info] [graph-edge] frame=2 level=6 consumer_id=12 input_index=0 producer_id=10 producer_level=5
+[2026-11-09 09:11:32.092] [info] [graph-edge] frame=2 level=6 consumer_id=12 input_index=1 producer_id=11 producer_level=0
+[2026-11-09 09:11:32.093] [info] [temp-lifetime] frame=2 after_level=6 live=[12,13,15,17,19,21,23,25,27,29,31,33,35,] retired=[10,11,]
+[2026-11-09 09:11:32.093] [info] [exec-level-diag] frame=2 level=6 nodes=1 input_ms=0.013 dispatch_ms=0.951 fb_release_ms=0.003
+[2026-11-09 09:11:32.093] [info] [graph-edge] frame=2 level=7 consumer_id=14 input_index=0 producer_id=12 producer_level=6
+[2026-11-09 09:11:32.093] [info] [graph-edge] frame=2 level=7 consumer_id=14 input_index=1 producer_id=13 producer_level=0
+[2026-11-09 09:11:32.094] [info] [temp-lifetime] frame=2 after_level=7 live=[14,15,17,19,21,23,25,27,29,31,33,35,] retired=[12,13,]
+[2026-11-09 09:11:32.094] [info] [exec-level-diag] frame=2 level=7 nodes=1 input_ms=0.012 dispatch_ms=0.892 fb_release_ms=0.003
+[2026-11-09 09:11:32.094] [info] [graph-edge] frame=2 level=8 consumer_id=16 input_index=0 producer_id=14 producer_level=7
+[2026-11-09 09:11:32.094] [info] [graph-edge] frame=2 level=8 consumer_id=16 input_index=1 producer_id=15 producer_level=0
+[2026-11-09 09:11:32.095] [info] [temp-lifetime] frame=2 after_level=8 live=[16,17,19,21,23,25,27,29,31,33,35,] retired=[14,15,]
+[2026-11-09 09:11:32.095] [info] [exec-level-diag] frame=2 level=8 nodes=1 input_ms=0.012 dispatch_ms=0.935 fb_release_ms=0.003
+[2026-11-09 09:11:32.095] [info] [graph-edge] frame=2 level=9 consumer_id=18 input_index=0 producer_id=16 producer_level=8
+[2026-11-09 09:11:32.095] [info] [graph-edge] frame=2 level=9 consumer_id=18 input_index=1 producer_id=17 producer_level=0
+[2026-11-09 09:11:32.096] [info] [temp-lifetime] frame=2 after_level=9 live=[18,19,21,23,25,27,29,31,33,35,] retired=[16,17,]
+[2026-11-09 09:11:32.096] [info] [exec-level-diag] frame=2 level=9 nodes=1 input_ms=0.012 dispatch_ms=1.046 fb_release_ms=0.003
+[2026-11-09 09:11:32.096] [info] [graph-edge] frame=2 level=10 consumer_id=20 input_index=0 producer_id=18 producer_level=9
+[2026-11-09 09:11:32.096] [info] [graph-edge] frame=2 level=10 consumer_id=20 input_index=1 producer_id=19 producer_level=0
+[2026-11-09 09:11:32.097] [info] [temp-lifetime] frame=2 after_level=10 live=[20,21,23,25,27,29,31,33,35,] retired=[18,19,]
+[2026-11-09 09:11:32.097] [info] [exec-level-diag] frame=2 level=10 nodes=1 input_ms=0.012 dispatch_ms=0.923 fb_release_ms=0.003
+[2026-11-09 09:11:32.097] [info] [graph-edge] frame=2 level=11 consumer_id=22 input_index=0 producer_id=20 producer_level=10
+[2026-11-09 09:11:32.097] [info] [graph-edge] frame=2 level=11 consumer_id=22 input_index=1 producer_id=21 producer_level=0
+[2026-11-09 09:11:32.098] [info] [temp-lifetime] frame=2 after_level=11 live=[22,23,25,27,29,31,33,35,] retired=[20,21,]
+[2026-11-09 09:11:32.098] [info] [exec-level-diag] frame=2 level=11 nodes=1 input_ms=0.012 dispatch_ms=0.878 fb_release_ms=0.003
+[2026-11-09 09:11:32.098] [info] [graph-edge] frame=2 level=12 consumer_id=24 input_index=0 producer_id=22 producer_level=11
+[2026-11-09 09:11:32.098] [info] [graph-edge] frame=2 level=12 consumer_id=24 input_index=1 producer_id=23 producer_level=0
+[2026-11-09 09:11:32.099] [info] [temp-lifetime] frame=2 after_level=12 live=[24,25,27,29,31,33,35,] retired=[22,23,]
+[2026-11-09 09:11:32.099] [info] [exec-level-diag] frame=2 level=12 nodes=1 input_ms=0.012 dispatch_ms=0.921 fb_release_ms=0.003
+[2026-11-09 09:11:32.099] [info] [graph-edge] frame=2 level=13 consumer_id=26 input_index=0 producer_id=24 producer_level=12
+[2026-11-09 09:11:32.099] [info] [graph-edge] frame=2 level=13 consumer_id=26 input_index=1 producer_id=25 producer_level=0
+[2026-11-09 09:11:32.100] [info] [temp-lifetime] frame=2 after_level=13 live=[26,27,29,31,33,35,] retired=[24,25,]
+[2026-11-09 09:11:32.100] [info] [exec-level-diag] frame=2 level=13 nodes=1 input_ms=0.012 dispatch_ms=0.929 fb_release_ms=0.003
+[2026-11-09 09:11:32.100] [info] [graph-edge] frame=2 level=14 consumer_id=28 input_index=0 producer_id=26 producer_level=13
+[2026-11-09 09:11:32.100] [info] [graph-edge] frame=2 level=14 consumer_id=28 input_index=1 producer_id=27 producer_level=0
+[2026-11-09 09:11:32.101] [info] [temp-lifetime] frame=2 after_level=14 live=[28,29,31,33,35,] retired=[26,27,]
+[2026-11-09 09:11:32.101] [info] [exec-level-diag] frame=2 level=14 nodes=1 input_ms=0.029 dispatch_ms=0.896 fb_release_ms=0.003
+[2026-11-09 09:11:32.101] [info] [graph-edge] frame=2 level=15 consumer_id=30 input_index=0 producer_id=28 producer_level=14
+[2026-11-09 09:11:32.101] [info] [graph-edge] frame=2 level=15 consumer_id=30 input_index=1 producer_id=29 producer_level=0
+[2026-11-09 09:11:32.102] [info] [temp-lifetime] frame=2 after_level=15 live=[30,31,33,35,] retired=[28,29,]
+[2026-11-09 09:11:32.102] [info] [exec-level-diag] frame=2 level=15 nodes=1 input_ms=0.012 dispatch_ms=1.169 fb_release_ms=0.003
+[2026-11-09 09:11:32.102] [info] [graph-edge] frame=2 level=16 consumer_id=32 input_index=0 producer_id=30 producer_level=15
+[2026-11-09 09:11:32.102] [info] [graph-edge] frame=2 level=16 consumer_id=32 input_index=1 producer_id=31 producer_level=0
+[2026-11-09 09:11:32.103] [info] [temp-lifetime] frame=2 after_level=16 live=[32,33,35,] retired=[30,31,]
+[2026-11-09 09:11:32.103] [info] [exec-level-diag] frame=2 level=16 nodes=1 input_ms=0.037 dispatch_ms=0.994 fb_release_ms=0.003
+[2026-11-09 09:11:32.103] [info] [graph-edge] frame=2 level=17 consumer_id=34 input_index=0 producer_id=32 producer_level=16
+[2026-11-09 09:11:32.103] [info] [graph-edge] frame=2 level=17 consumer_id=34 input_index=1 producer_id=33 producer_level=0
+[2026-11-09 09:11:32.104] [info] [temp-lifetime] frame=2 after_level=17 live=[34,35,] retired=[32,33,]
+[2026-11-09 09:11:32.104] [info] [exec-level-diag] frame=2 level=17 nodes=1 input_ms=0.011 dispatch_ms=0.936 fb_release_ms=0.003
+[2026-11-09 09:11:32.104] [info] [graph-edge] frame=2 level=18 consumer_id=36 input_index=0 producer_id=34 producer_level=17
+[2026-11-09 09:11:32.104] [info] [graph-edge] frame=2 level=18 consumer_id=36 input_index=1 producer_id=35 producer_level=0
+[2026-11-09 09:11:32.104] [info] [temp-lifetime] frame=2 after_level=18 live=[36,] retired=[34,35,]
+[2026-11-09 09:11:32.104] [info] [exec-level-diag] frame=2 level=18 nodes=1 input_ms=0.011 dispatch_ms=0.094 fb_release_ms=0.002
+[2026-11-09 09:11:33.347] [info] [video]   24/240 frames
+[2026-11-09 09:11:33.465] [info] [vulkan-lifecycle] frame=25 vram_bytes=3253043200 live_surfaces=71 surface_bindings=71 registry_live_handles=1607 physical_images=71 deferred_releases=0 vma_allocations=478 surfaces_created=1607 surfaces_released=1536 queue_packages=1 execution_slots_busy=2 command_batch_active=false
+[2026-11-09 09:11:34.790] [info] [video]   48/240 frames
+[2026-11-09 09:11:34.978] [info] [vulkan-lifecycle] frame=50 vram_bytes=1271234560 live_surfaces=15 surface_bindings=7 registry_live_handles=3207 physical_images=15 deferred_releases=0 vma_allocations=457 surfaces_created=3207 surfaces_released=3200 queue_packages=1 execution_slots_busy=2 command_batch_active=false
+[2026-11-09 09:11:36.071] [info] [video]   72/240 frames
+[2026-11-09 09:11:36.277] [info] [vulkan-lifecycle] frame=75 vram_bytes=3521478656 live_surfaces=71 surface_bindings=71 registry_live_handles=4807 physical_images=71 deferred_releases=0 vma_allocations=538 surfaces_created=4807 surfaces_released=4736 queue_packages=1 execution_slots_busy=1 command_batch_active=false
+[2026-11-09 09:11:37.328] [info] [video]   96/240 frames
+[2026-11-09 09:11:37.694] [info] [vulkan-lifecycle] frame=100 vram_bytes=1539670016 live_surfaces=15 surface_bindings=7 registry_live_handles=6407 physical_images=15 deferred_releases=0 vma_allocations=482 surfaces_created=6407 surfaces_released=6400 queue_packages=1 execution_slots_busy=2 command_batch_active=false
+[2026-11-09 09:11:38.762] [info] [video]   120/240 frames
+[2026-11-09 09:11:39.200] [info] [vulkan-lifecycle] frame=125 vram_bytes=3521478656 live_surfaces=71 surface_bindings=71 registry_live_handles=8007 physical_images=71 deferred_releases=0 vma_allocations=538 surfaces_created=8007 surfaces_released=7936 queue_packages=1 execution_slots_busy=2 command_batch_active=false
+[2026-11-09 09:11:40.304] [info] [video]   144/240 frames
+[2026-11-09 09:11:40.750] [info] [vulkan-lifecycle] frame=150 vram_bytes=1539670016 live_surfaces=15 surface_bindings=7 registry_live_handles=9607 physical_images=15 deferred_releases=0 vma_allocations=482 surfaces_created=9607 surfaces_released=9600 queue_packages=1 execution_slots_busy=2 command_batch_active=false
+[2026-11-09 09:11:41.737] [info] [video]   168/240 frames
+[2026-11-09 09:11:42.197] [info] [vulkan-lifecycle] frame=175 vram_bytes=3521478656 live_surfaces=71 surface_bindings=71 registry_live_handles=11207 physical_images=71 deferred_releases=0 vma_allocations=538 surfaces_created=11207 surfaces_released=11136 queue_packages=1 execution_slots_busy=2 command_batch_active=false
+[2026-11-09 09:11:43.114] [info] [video]   192/240 frames
+[2026-11-09 09:11:43.669] [info] [vulkan-lifecycle] frame=200 vram_bytes=1539670016 live_surfaces=15 surface_bindings=7 registry_live_handles=12807 physical_images=15 deferred_releases=0 vma_allocations=482 surfaces_created=12807 surfaces_released=12800 queue_packages=0 execution_slots_busy=2 command_batch_active=false
+[2026-11-09 09:11:44.346] [info] [video]   216/240 frames
+[2026-11-09 09:11:44.803] [info] [vulkan-lifecycle] frame=225 vram_bytes=3521478656 live_surfaces=71 surface_bindings=71 registry_live_handles=14407 physical_images=71 deferred_releases=0 vma_allocations=538 surfaces_created=14407 surfaces_released=14336 queue_packages=1 execution_slots_busy=2 command_batch_active=false
+[2026-11-09 09:11:45.453] [info] [video]   240/240 frames
+[2026-11-09 09:11:45.525] [info] [video] writer join complete
+[2026-11-09 09:11:45.525] [info] [drain-debug] start drain, capacity=6
+[2026-11-09 09:11:45.525] [info] [drain-debug] slot_id=4 has completion, waiting
+[2026-11-09 09:11:45.525] [info] [drain-debug] slot_id=4 wait complete
+[2026-11-09 09:11:45.525] [info] [drain-debug] slot_id=5 has completion, waiting
+[2026-11-09 09:11:45.526] [info] [drain-debug] slot_id=5 wait complete
+[2026-11-09 09:11:45.526] [info] [drain-debug] reap done, busy_count=0
+[2026-11-09 09:11:45.526] [info] [video] trimming framebuffer pool
+[2026-11-09 09:11:45.526] [info] [video] Released framebuffer pool — memory trimmed
+[2026-11-09 09:11:45.526] [info] [video] frame-loop cleanup complete
+[2026-11-09 09:11:45.526] [info] [video] Encoder write blocked duration: 0.00 ms
+[2026-11-09 09:11:45.526] [info] [video_diag] conversion_and_copy_duration_ms: 0 ms
+[2026-11-09 09:11:45.526] [info] [video_diag] conversion_bytes_written=0 encoder_staging_copy_bytes=0 encoder_slot_reuses=0
+[2026-11-09 09:11:45.526] [info] [native_av] close: sending encoder flush
+[2026-11-09 09:11:45.575] [info] [native_av] close: encoder flush accepted
+[2026-11-09 09:11:45.659] [info] [native_av] close: packets drained=true
+[2026-11-09 09:11:45.659] [info] [native_av] close: finalizing mux session
+[2026-11-09 09:11:45.660] [info] [native_av] close: mux session finalized
+[2026-11-09 09:11:45.660] [info] [native_av] Closed native encoder — 240 frames accepted, encoder_packets=240 mux_packets=240 packet_pts=0..239, YUV cache: 0 hits / 0 misses
+[2026-11-09 09:11:45.660] [info] [native_av] native-surface timings — hwframe_pool_ms=31.9 c2v_prepare_ms=16.9 encode_drain_ms=7.9 send_ms=187.3 submit_counter_ms=187.3 backpressure_ms=0.0
+[2026-11-09 09:11:45.660] [info] [video_native] convert=28.71ms  send_frame=187.27ms  backpressure=0.00ms  flush=133.90ms  receive_packet=83.44ms  mux_write=12.39ms  trailer=0.49ms
+[2026-11-09 09:11:45.663] [info] [video] render_ms=13840.11 encode_ms=139.87 writer_encode_ms=323.05 wall_ms=16710.16 nvml_stop_ms=0.16
+[2026-11-09 09:11:45.663] [info] [video] FFmpeg queue wait duration: 2.43 ms
+[2026-11-09 09:11:45.680] [info] [video] copy_eligible=true sha256=66a2402e07d659b8354470a40e4328ae8309cbdcdd43c19580958c43bb9aa774
+[2026-11-09 09:11:45.680] [info] [video] Wrote /home/pierone/src/go-master/projects/Pyt/VeloxEditing/RenderingGen/UploadDrive/socials_structures_20261109/mp4/Socials_01_X_Post_1920x1080_8s.mp4
+[2026-11-09 09:11:45.680] [info] [startup-profile] total=1222.87ms logger=0.04ms cli_bootstrap=2.93ms cli_parse=nullms composition=0.11ms plan_read=0.17ms json_parse=0.38ms plan_decode_validate=69.65ms asset_resolve=0.05ms plan_compile=16.39ms unaccounted=195.49ms
+[2026-11-09 09:11:45.705] [info] [video] Wrote exact per-frame timing sidecar: /home/pierone/src/go-master/projects/Pyt/VeloxEditing/RenderingGen/UploadDrive/socials_structures_20261109/mp4/Socials_01_X_Post_1920x1080_8s.mp4.timing.json
+[2026-11-09 09:11:45.773] [info] [INFO] job-lifecycle: queue_close_ms=0.0 writer_join_ms=0.0 encoder_reset_ms=63.7 decoder_reset_ms=0.0 full_graph_reset_ms=0.0 sink_ctx_reset_ms=0.0 device_runtime_reset_ms=0.0 device_reservation_reset_ms=0.0
+[2026-11-09 09:11:45.774] [info] [INFO] job-lifecycle: sidecar_write_ms=29.3 session_teardown_ms=63.9
+[2026-11-09 09:11:45.781] [info] [INFO] job-lifecycle: post_sidecar_to_receipt_ms=71.3
+[2026-11-09 09:11:45.781] [info] [INFO] job-lifecycle: execute_ms=16828.9 caller_tail_ms=0.0 receipt_deferred=0
+[2026-11-09 09:11:45.781] [info] [INFO] job-lifecycle: slot_pool_close_ms=0.0 surface_release_ms=0.0

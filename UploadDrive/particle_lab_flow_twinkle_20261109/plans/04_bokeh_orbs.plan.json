@@ -1,0 +1,128 @@
+{
+  "canvas": {
+    "duration_frames": 240,
+    "fps_den": 1,
+    "fps_num": 24,
+    "height": 1080,
+    "width": 1920
+  },
+  "job_id": "04_bokeh_orbs",
+  "layers": [
+    {
+      "color": [
+        0.019607843831181526,
+        0.027450980618596077,
+        0.0470588244497776,
+        1.0
+      ],
+      "duration_frames": 240,
+      "id": "bg",
+      "position": [
+        960,
+        540
+      ],
+      "screen_space": true,
+      "size": [
+        1920,
+        1080
+      ],
+      "start_frame": 0,
+      "type": "color"
+    },
+    {
+      "duration_frames": 240,
+      "enable_3d": false,
+      "id": "bokeh_orbs",
+      "particle_emitter": {
+        "blend_mode": "screen",
+        "bokeh": true,
+        "color_ramp": [
+          {
+            "color": [
+              0.949999988079071,
+              0.7200000286102295,
+              0.4000000059604645,
+              0.0
+            ],
+            "position": 0.0
+          },
+          {
+            "color": [
+              0.949999988079071,
+              0.7200000286102295,
+              0.4000000059604645,
+              0.20000000298023224
+            ],
+            "position": 0.20000000298023224
+          },
+          {
+            "color": [
+              0.5199999809265137,
+              0.699999988079071,
+              0.9800000190734863,
+              0.1599999964237213
+            ],
+            "position": 0.699999988079071
+          },
+          {
+            "color": [
+              0.5199999809265137,
+              0.699999988079071,
+              0.9800000190734863,
+              0.0
+            ],
+            "position": 1.0
+          }
+        ],
+        "count": 48,
+        "depth_range": [
+          0.15000000596046448,
+          1.0
+        ],
+        "emitter_size": [
+          2000.0,
+          1200.0
+        ],
+        "environment": true,
+        "flow_scale": 0.003000000026077032,
+        "flow_speed": 0.07999999821186066,
+        "flow_strength": 48.0,
+        "gravity": 0.0,
+        "lifetime": [
+          8.0,
+          16.0
+        ],
+        "seed": 6113,
+        "size": [
+          30.0,
+          110.0
+        ],
+        "turbulence": 0.0,
+        "twinkle": 0.20000000298023224,
+        "twinkle_speed": 0.15000000596046448,
+        "velocity_max": [
+          4.0,
+          3.0
+        ],
+        "velocity_min": [
+          -4.0,
+          -3.0
+        ]
+      },
+      "position": [
+        0.0,
+        0.0
+      ],
+      "screen_space": true,
+      "start_frame": 0,
+      "type": "particles"
+    }
+  ],
+  "output": {
+    "codec": "h264",
+    "format": "mp4",
+    "path": "04_bokeh_orbs.mp4"
+  },
+  "schema": "chronon.render-plan.v3",
+  "version": 3
+}

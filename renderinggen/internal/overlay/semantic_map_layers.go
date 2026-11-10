@@ -170,8 +170,9 @@ func resolveMapPinLabel(ri resolvedItem, src *semanticPlan, resolvedPin resolved
 	}
 	spec := resolvedTextSpec{
 		Text: pin.Label, Size: []float64{width, height}, OmitBox: true,
-		Position: canvasBoxPosition("text", topLeft[0], topLeft[1], width, height, src.Width, src.Height),
-		Style:    captionStyle, RoleOverrides: roleOverrides, StyleParams: styleParams, MotionTarget: TargetText, StylePolicy: textRoleMapLabel,
+		Position:    canvasBoxPosition("text", topLeft[0], topLeft[1], width, height, src.Width, src.Height),
+		CanvasWidth: src.Width, CanvasHeight: src.Height,
+		Style: captionStyle, RoleOverrides: roleOverrides, StyleParams: styleParams, MotionTarget: TargetText, StylePolicy: textRoleMapLabel,
 		FontSize: fontSize, MinFontSize: minFontSize, MaxFontSize: maxFontSize, OverrideFill: fill,
 	}
 	layer, err := compileResolvedText(mapPinLabelLayerID(ri.Item.ID, pin.ID), ri.Start, ri.Start+duration, spec)
@@ -197,6 +198,7 @@ func resolveMapAttribution(ri resolvedItem, src *semanticPlan, attribution strin
 	spec := resolvedTextSpec{
 		Text: attribution, Size: []float64{width, height}, OmitBox: true,
 		Position:    canvasBoxPosition("text", boxX, boxY, width, height, src.Width, src.Height),
+		CanvasWidth: src.Width, CanvasHeight: src.Height,
 		Style:       &LayerStyle{Font: OfficialFontPathForLanguage(src.Language)},
 		StyleParams: ri.Params, MotionTarget: TargetText, StylePolicy: textRoleMapAttribution,
 		FontSize: mapAttributionFontPX * scale, OverrideFill: "#F8F5EA",

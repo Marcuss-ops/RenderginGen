@@ -12,6 +12,7 @@ import (
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/chronon"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/queue"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/storage"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/testenv"
 )
 
 // TestProcessEndToEndCLI runs the full pipeline against the real chronon3d_cli
@@ -28,11 +29,7 @@ import (
 //
 //	CHRONON_HOME=<build>/chronon/linux-video-release go test -run TestProcessEndToEndCLI ./internal/processor/
 func TestProcessEndToEndCLI(t *testing.T) {
-	home := os.Getenv("CHRONON_HOME")
-	if home == "" {
-		home = "/opt/chronon3d"
-	}
-	cli := &chronon.Client{Home: home}
+	cli := &chronon.Client{Home: testenv.ChrononHome(t), BinaryPath: testenv.RequireChronon(t)}
 	if err := cli.Verify(); err != nil {
 		t.Skipf("chronon3d_cli not available: %v", err)
 	}

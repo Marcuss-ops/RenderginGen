@@ -1,0 +1,177 @@
+{
+  "generated": "2026-11-09",
+  "experiment": "Chronon3D Particle Lab - flow/twinkle parity refresh",
+  "resolution": "1920x1080",
+  "fps": "24/1",
+  "frames": 240,
+  "duration_s": 10.0,
+  "renderer": "software reference lane, H.264 CRF 18; Vulkan compute flow/twinkle parity certified",
+  "drive_folder_id": "1J_xUGo_bchzXDIGqSX04CU44c_Dm3SxS",
+  "clips": [
+    {
+      "name": "01_cinematic_dust",
+      "file": "01_cinematic_dust_flow_twinkle_1920x1080_10s.mp4",
+      "width": 1920,
+      "height": 1080,
+      "fps": "24/1",
+      "frames": 240,
+      "duration_s": 10.0,
+      "bytes": 321202,
+      "sha256": "d4f743e6fe96846ecddf7fdc0e0dea9c36b91c3705c96e2beaeceb4b6af2182e",
+      "still_mid": "stills/01_cinematic_dust_5.0.png",
+      "drive": {
+        "file_id": "1IQmpndQF4OLX-zRzM3E8daolShJnyOlN",
+        "link": "https://drive.google.com/file/d/1IQmpndQF4OLX-zRzM3E8daolShJnyOlN/view?usp=drivesdk",
+        "parent": "1tEtkbDZd_zzVgKua4h_jzG4P-dWqv58-",
+        "bytes": 321202
+      }
+    },
+    {
+      "name": "02_embers",
+      "file": "02_embers_flow_twinkle_1920x1080_10s.mp4",
+      "width": 1920,
+      "height": 1080,
+      "fps": "24/1",
+      "frames": 240,
+      "duration_s": 10.0,
+      "bytes": 235901,
+      "sha256": "8d114a5dad7a966761da87faa8e4fdac8ef347d2ff4df03864d293981d20bd6d",
+      "still_mid": "stills/02_embers_5.0.png",
+      "drive": {
+        "file_id": "1RsAqeWTqepbDr_KDpLIbn0v8pUHRg4xI",
+        "link": "https://drive.google.com/file/d/1RsAqeWTqepbDr_KDpLIbn0v8pUHRg4xI/view?usp=drivesdk",
+        "parent": "1tEtkbDZd_zzVgKua4h_jzG4P-dWqv58-",
+        "bytes": 235901
+      }
+    },
+    {
+      "name": "03_ash_fall",
+      "file": "03_ash_fall_flow_twinkle_1920x1080_10s.mp4",
+      "width": 1920,
+      "height": 1080,
+      "fps": "24/1",
+      "frames": 240,
+      "duration_s": 10.0,
+      "bytes": 199532,
+      "sha256": "ba20c4baa51c1093607be69bb595f0ee7496efd0862ce7602636ec037b606237",
+      "still_mid": "stills/03_ash_fall_5.0.png",
+      "drive": {
+        "file_id": "11dv54Nc9MWcLj7-P-Mh1gsGlE5JkNRiS",
+        "link": "https://drive.google.com/file/d/11dv54Nc9MWcLj7-P-Mh1gsGlE5JkNRiS/view?usp=drivesdk",
+        "parent": "1tEtkbDZd_zzVgKua4h_jzG4P-dWqv58-",
+        "bytes": 199532
+      }
+    },
+    {
+      "name": "04_bokeh_orbs",
+      "file": "04_bokeh_orbs_flow_twinkle_1920x1080_10s.mp4",
+      "width": 1920,
+      "height": 1080,
+      "fps": "24/1",
+      "frames": 240,
+      "duration_s": 10.0,
+      "bytes": 239106,
+      "sha256": "aa5a6e40bb0d085068e55e35e071ab135f46043de27442b5074a0ccc01a2519f",
+      "still_mid": "stills/04_bokeh_orbs_5.0.png",
+      "drive": {
+        "file_id": "1EsZa3TdE0FsaI6jftzwHD0r5h9Z6CrDH",
+        "link": "https://drive.google.com/file/d/1EsZa3TdE0FsaI6jftzwHD0r5h9Z6CrDH/view?usp=drivesdk",
+        "parent": "1tEtkbDZd_zzVgKua4h_jzG4P-dWqv58-",
+        "bytes": 239106
+      }
+    },
+    {
+      "name": "05_chalk_burst",
+      "file": "05_chalk_burst_flow_twinkle_1920x1080_10s.mp4",
+      "width": 1920,
+      "height": 1080,
+      "fps": "24/1",
+      "frames": 240,
+      "duration_s": 10.0,
+      "bytes": 508437,
+      "sha256": "e7eae33925ba40ea37a09c20977482eae6a7ebad72d9b623a751db436d8b7290",
+      "still_mid": "stills/05_chalk_burst_5.0.png",
+      "drive": {
+        "file_id": "1BHiYQZMbLUAKQOR15qf29GVa-jeBF8eS",
+        "link": "https://drive.google.com/file/d/1BHiYQZMbLUAKQOR15qf29GVa-jeBF8eS/view?usp=drivesdk",
+        "parent": "1tEtkbDZd_zzVgKua4h_jzG4P-dWqv58-",
+        "bytes": 508437
+      }
+    },
+    {
+      "name": "06_light_motes",
+      "file": "06_light_motes_flow_twinkle_1920x1080_10s.mp4",
+      "width": 1920,
+      "height": 1080,
+      "fps": "24/1",
+      "frames": 240,
+      "duration_s": 10.0,
+      "bytes": 217466,
+      "sha256": "5b3240461915bce0d2749daaa817e82c7b9039d0cc391f824a7cbd58d0b5a3c1",
+      "still_mid": "stills/06_light_motes_5.0.png",
+      "drive": {
+        "file_id": "1e0ugl6itt6j6THe6FTPfw0hc2QMOpbvG",
+        "link": "https://drive.google.com/file/d/1e0ugl6itt6j6THe6FTPfw0hc2QMOpbvG/view?usp=drivesdk",
+        "parent": "1tEtkbDZd_zzVgKua4h_jzG4P-dWqv58-",
+        "bytes": 217466
+      }
+    }
+  ],
+  "parity": {
+    "test_case": "Vulkan GPU particle flow and twinkle match the CPU sampler oracle",
+    "status": "passed",
+    "assertions": 14,
+    "max_abs_difference": 7.98702e-06,
+    "threshold": 0.0002,
+    "cpu_energy": 324.277,
+    "gpu_energy": 324.276,
+    "seconds": 7.5,
+    "seed": 60221,
+    "count": 96,
+    "lifetime_s": [
+      2.0,
+      3.0
+    ],
+    "flow": [
+      7.0,
+      0.045,
+      0.65
+    ],
+    "twinkle": [
+      0.85,
+      1.1
+    ],
+    "environment": true,
+    "log": "parity-vulkan-flow-twinkle.log"
+  },
+  "notes": "Deterministic software re-render of the six Particle Lab flow/twinkle plans; clips are byte-identical to the earlier particle_lab_20261109 set. GPU compute parity is certified separately by the Vulkan registry test.",
+  "drive": {
+    "folder_id": "1tEtkbDZd_zzVgKua4h_jzG4P-dWqv58-",
+    "folder_name": "Chronon3D_Particle_Lab_FlowTwinkle_1920x1080_20261109",
+    "folder_url": "https://drive.google.com/drive/folders/1tEtkbDZd_zzVgKua4h_jzG4P-dWqv58-"
+  },
+  "artifacts": [
+    {
+      "file": "contact_sheet.png",
+      "sha256": "b1e647271008927afff052039fe40f9916aeb7ab48edb99fafc8e1a69d56b638",
+      "bytes": 48093,
+      "drive": {
+        "file_id": "12OvHbPzbHX4-ty6h-5BqFVsN6J3pEykn",
+        "link": "https://drive.google.com/file/d/12OvHbPzbHX4-ty6h-5BqFVsN6J3pEykn/view?usp=drivesdk",
+        "parent": "1tEtkbDZd_zzVgKua4h_jzG4P-dWqv58-",
+        "bytes": 48093
+      }
+    },
+    {
+      "file": "parity-vulkan-flow-twinkle.log",
+      "sha256": "52902d81ba0e7b8ef8808fca49c380889ea0ef67da2f334f81c87769be437654",
+      "bytes": 3786,
+      "drive": {
+        "file_id": "1IwWvLLGoaeWL1GS-tlj6rVE5WF6R3yzE",
+        "link": "https://drive.google.com/file/d/1IwWvLLGoaeWL1GS-tlj6rVE5WF6R3yzE/view?usp=drivesdk",
+        "parent": "1tEtkbDZd_zzVgKua4h_jzG4P-dWqv58-",
+        "bytes": 3786
+      }
+    }
+  ]
+}

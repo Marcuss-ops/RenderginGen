@@ -8,6 +8,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/testenv"
 )
 
 // segmentedPlan is the asset-free smoke plan at `frames` frames. Longer than
@@ -115,7 +117,7 @@ func TestDaemonSegmentedRequestRefusesThePipeLane(t *testing.T) {
 // Gated like every live chronon test: CHRONON_BINARY / CHRONON_HOME, skipped
 // visibly when no binary is installed.
 func TestDaemonRendersOneSessionIntoIndependentSegmentMP4s(t *testing.T) {
-	binary := daemonBinary(t)
+	binary := testenv.RequireChronon(t)
 	const frames, items = 12, 3
 	planPath, assetsRoot, mirror, segments := segmentedSmokeSession(t, frames, items)
 
@@ -193,7 +195,7 @@ func TestDaemonRendersOneSessionIntoIndependentSegmentMP4s(t *testing.T) {
 // the architecture promises: the segmented session must not cost more per
 // item than the sessions it replaces.
 func TestDaemonSegmentedServiceCostIsBelowPerItemSessions(t *testing.T) {
-	binary := daemonBinary(t)
+	binary := testenv.RequireChronon(t)
 	const frames, items = 30, 10
 	planPath, assetsRoot, mirror, segments := segmentedSmokeSession(t, frames, items)
 

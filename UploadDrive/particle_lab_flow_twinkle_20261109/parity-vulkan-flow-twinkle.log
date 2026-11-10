@@ -1,0 +1,52 @@
+[doctest] run with "--help" for options
+===============================================================================
+/home/pierone/src/go-master/projects/Pyt/VeloxEditing/Chronon3d/tests/registry/test_backend_registry_vulkan.cpp:780:
+TEST CASE:  Vulkan GPU particle flow and twinkle match the CPU sampler oracle
+
+/home/pierone/src/go-master/projects/Pyt/VeloxEditing/Chronon3d/tests/registry/test_backend_registry_vulkan.cpp:793: SUCCESS: REQUIRE( backend.create_surface(cpu_destination, canvas).ok() ) is correct!
+  values: REQUIRE( true )
+
+/home/pierone/src/go-master/projects/Pyt/VeloxEditing/Chronon3d/tests/registry/test_backend_registry_vulkan.cpp:794: SUCCESS: REQUIRE( backend.create_surface(gpu_destination, canvas).ok() ) is correct!
+  values: REQUIRE( true )
+
+/home/pierone/src/go-master/projects/Pyt/VeloxEditing/Chronon3d/tests/registry/test_backend_registry_vulkan.cpp:795: SUCCESS: REQUIRE( backend.create_surface(transparent_source, source).ok() ) is correct!
+  values: REQUIRE( true )
+
+/home/pierone/src/go-master/projects/Pyt/VeloxEditing/Chronon3d/tests/registry/test_backend_registry_vulkan.cpp:796: SUCCESS: REQUIRE( backend.initialize_transparent_surface(cpu_destination).ok() ) is correct!
+  values: REQUIRE( true )
+
+/home/pierone/src/go-master/projects/Pyt/VeloxEditing/Chronon3d/tests/registry/test_backend_registry_vulkan.cpp:797: SUCCESS: REQUIRE( backend.initialize_transparent_surface(gpu_destination).ok() ) is correct!
+  values: REQUIRE( true )
+
+/home/pierone/src/go-master/projects/Pyt/VeloxEditing/Chronon3d/tests/registry/test_backend_registry_vulkan.cpp:798: SUCCESS: REQUIRE( backend.initialize_transparent_surface(transparent_source).ok() ) is correct!
+  values: REQUIRE( true )
+
+/home/pierone/src/go-master/projects/Pyt/VeloxEditing/Chronon3d/tests/registry/test_backend_registry_vulkan.cpp:829: SUCCESS: REQUIRE( sampled.ok() ) is correct!
+  values: REQUIRE( true )
+
+/home/pierone/src/go-master/projects/Pyt/VeloxEditing/Chronon3d/tests/registry/test_backend_registry_vulkan.cpp:851: SUCCESS: REQUIRE( backend.execute_layer_batch( cpu_destination, oracle, resources, {}, {}).ok() ) is correct!
+  values: REQUIRE( true )
+
+/home/pierone/src/go-master/projects/Pyt/VeloxEditing/Chronon3d/tests/registry/test_backend_registry_vulkan.cpp:856: SUCCESS: REQUIRE( backend.execute_gpu_particle_batch( gpu_destination, transparent_source, emitter, seconds).ok() ) is correct!
+  values: REQUIRE( true )
+
+/home/pierone/src/go-master/projects/Pyt/VeloxEditing/Chronon3d/tests/registry/test_backend_registry_vulkan.cpp:862: SUCCESS: REQUIRE( backend.download_surface(cpu_destination, cpu_pixels).ok() ) is correct!
+  values: REQUIRE( true )
+
+/home/pierone/src/go-master/projects/Pyt/VeloxEditing/Chronon3d/tests/registry/test_backend_registry_vulkan.cpp:863: SUCCESS: REQUIRE( backend.download_surface(gpu_destination, gpu_pixels).ok() ) is correct!
+  values: REQUIRE( true )
+
+/home/pierone/src/go-master/projects/Pyt/VeloxEditing/Chronon3d/tests/registry/test_backend_registry_vulkan.cpp:874: SUCCESS: CHECK( cpu_energy > 0.0f ) is correct!
+  values: CHECK( 324.277 >  0 )
+
+/home/pierone/src/go-master/projects/Pyt/VeloxEditing/Chronon3d/tests/registry/test_backend_registry_vulkan.cpp:875: SUCCESS: CHECK( gpu_energy > 0.0f ) is correct!
+  values: CHECK( 324.276 >  0 )
+
+/home/pierone/src/go-master/projects/Pyt/VeloxEditing/Chronon3d/tests/registry/test_backend_registry_vulkan.cpp:876: SUCCESS: CHECK( max_difference < 2.0e-4f ) is correct!
+  values: CHECK( 7.98702e-06 <  0.0002 )
+  logged: flow/twinkle max_difference = 7.98702e-06
+
+===============================================================================
+[doctest] test cases:  1 |  1 passed | 0 failed | 136 skipped
+[doctest] assertions: 14 | 14 passed | 0 failed |
+[doctest] Status: SUCCESS!

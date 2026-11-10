@@ -1,0 +1,298 @@
+{
+  "schema": "chronontemplate.camera-ring-text-v3-series.v1",
+  "date": "2026-11-09",
+  "generator": "chronontemplate_emit_camera_ring_text_v3_series",
+  "reference": "Chronon3d/docs/evidence/camera-ring-text-drive-20261108/camera_ring_text_01_calories_v2.mp4",
+  "canvas": {
+    "width": 1920,
+    "height": 1080,
+    "fps": 30
+  },
+  "stack": {
+    "authoring": "C++ RenderPlan V3 emitter (chronontemplate_emit_camera_ring_text_v3_series)",
+    "text": "132 px, phrase-specific face and fill",
+    "camera_ring": "64 tap, elliptical wide mask, bilinear 8px sample grid",
+    "bevel": "none (removed: it reconstructed a sharp glyph edge after the ring blur)",
+    "glow": "three blurred text silhouettes (core + mid + atmospheric) + 2% flicker",
+    "grain": "catalog generate.noise over title, 2 px drift",
+    "motion": "push-in + 2 px lateral drift",
+    "backend": "vulkan / require_gpu_native / nvenc"
+  },
+  "drive": {
+    "folder_id": "1J_xUGo_bchzXDIGqSX04CU44c_Dm3SxS",
+    "folder_url": "https://drive.google.com/drive/u/1/folders/1J_xUGo_bchzXDIGqSX04CU44c_Dm3SxS",
+    "placement": "root"
+  },
+  "clips": [
+    {
+      "id": "07_ogni_dettaglio",
+      "index": 7,
+      "slug": "Ogni_Dettaglio",
+      "label": "ogni dettaglio conta",
+      "note": "SF Pro Semibold · blu notte · glow freddo su due scale",
+      "reference": "Chronon3d/docs/evidence/camera-ring-text-drive-20261108/camera_ring_text_01_*_v2.mp4",
+      "text": "ogni dettaglio conta",
+      "font": "SF-Pro-Display-Semibold.otf",
+      "font_size": 132,
+      "fill": "#F8FCFF",
+      "glow_color": "#7FD4FF",
+      "background_rgb": [
+        0.002,
+        0.01,
+        0.016
+      ],
+      "frames": 300,
+      "duration_s": 10.0,
+      "plan": "plans/07_Ogni_Dettaglio.plan.json",
+      "mp4": "mp4/CameraRing_Text_07_Ogni_Dettaglio_1920x1080_10s_v3.mp4",
+      "drive_name": "CameraRing_Text_07_Ogni_Dettaglio_1920x1080_10s_v3.mp4",
+      "width": 1920,
+      "height": 1080,
+      "fps": "30/1",
+      "bytes": 1734294,
+      "sha256": "2a27339a6eaa890196b1191b1354a9c3398631b2dc6fc7bcc018824b9be7d56f",
+      "verified": true,
+      "verified_at": "2026-11-09T08:37:06",
+      "foreground_ratio": 0.110818,
+      "foreground_ratios": [
+        0.103078,
+        0.110818,
+        0.111935
+      ],
+      "stills": [
+        "stills/07_ogni_dettaglio_early.png",
+        "stills/07_ogni_dettaglio_mid.png",
+        "stills/07_ogni_dettaglio_late.png"
+      ],
+      "uploaded": true,
+      "drive_id": "1zkV_rUEYxtSwXEgaajtkEKujVkLsg0ZN",
+      "drive_url": "https://drive.google.com/file/d/1zkV_rUEYxtSwXEgaajtkEKujVkLsg0ZN/view?usp=drivesdk",
+      "upload_manifest_url": "https://drive.google.com/file/d/1MWx32zkGv9KGssTCeGa-XqPigdNN7TuZ/view?usp=drivesdk"
+    },
+    {
+      "id": "08_centro_nitido",
+      "index": 8,
+      "slug": "Centro_Nitido",
+      "label": "centro nitido, bordi morbidi",
+      "note": "DM Sans Bold · rosso cupo · transizione larga, niente blocchi",
+      "reference": "Chronon3d/docs/evidence/camera-ring-text-drive-20261108/camera_ring_text_02_*_v2.mp4",
+      "text": "centro nitido, bordi morbidi",
+      "font": "DMSans-Bold.ttf",
+      "font_size": 132,
+      "fill": "#FFF6EA",
+      "glow_color": "#FFB36B",
+      "background_rgb": [
+        0.026,
+        0.004,
+        0.01
+      ],
+      "frames": 240,
+      "duration_s": 8.0,
+      "plan": "plans/08_Centro_Nitido.plan.json",
+      "mp4": "mp4/CameraRing_Text_08_Centro_Nitido_1920x1080_8s_v3.mp4",
+      "drive_name": "CameraRing_Text_08_Centro_Nitido_1920x1080_8s_v3.mp4",
+      "width": 1920,
+      "height": 1080,
+      "fps": "30/1",
+      "bytes": 1449024,
+      "sha256": "285733cb3e85ca287a362a4270f1245e1ae12f0af66d38ac2feffc56b32af522",
+      "verified": true,
+      "verified_at": "2026-11-09T08:37:21",
+      "foreground_ratio": 0.148056,
+      "foreground_ratios": [
+        0.13328,
+        0.148056,
+        0.149947
+      ],
+      "stills": [
+        "stills/08_centro_nitido_early.png",
+        "stills/08_centro_nitido_mid.png",
+        "stills/08_centro_nitido_late.png"
+      ],
+      "uploaded": true,
+      "drive_id": "1j2cTFWRZAlAPEhqjo-EnkpdqV8R0NY-T",
+      "drive_url": "https://drive.google.com/file/d/1j2cTFWRZAlAPEhqjo-EnkpdqV8R0NY-T/view?usp=drivesdk",
+      "upload_manifest_url": "https://drive.google.com/file/d/1MWx32zkGv9KGssTCeGa-XqPigdNN7TuZ/view?usp=drivesdk"
+    },
+    {
+      "id": "09_ogni_dettaglio_a_fuoco",
+      "index": 9,
+      "slug": "Ogni_Dettaglio_A_Fuoco",
+      "label": "ogni dettaglio a fuoco",
+      "note": "SF Pro Bold · verde profondo · alone menta e fuoco stretto",
+      "reference": "Chronon3d/docs/evidence/camera-ring-text-drive-20261108/camera_ring_text_03_*_v2.mp4",
+      "text": "ogni dettaglio a fuoco",
+      "font": "SF-Pro-Display-Bold.otf",
+      "font_size": 132,
+      "fill": "#F4FFFB",
+      "glow_color": "#5CFFC9",
+      "background_rgb": [
+        0.003,
+        0.024,
+        0.016
+      ],
+      "frames": 180,
+      "duration_s": 6.0,
+      "plan": "plans/09_Ogni_Dettaglio_A_Fuoco.plan.json",
+      "mp4": "mp4/CameraRing_Text_09_Ogni_Dettaglio_A_Fuoco_1920x1080_6s_v3.mp4",
+      "drive_name": "CameraRing_Text_09_Ogni_Dettaglio_A_Fuoco_1920x1080_6s_v3.mp4",
+      "width": 1920,
+      "height": 1080,
+      "fps": "30/1",
+      "bytes": 1068629,
+      "sha256": "1cb6ec55776a4ba93a76c2fddfbd005cc7faa48d6883a8efdd807abbe43fcc72",
+      "verified": true,
+      "verified_at": "2026-11-09T08:37:34",
+      "foreground_ratio": 0.122487,
+      "foreground_ratios": [
+        0.111605,
+        0.122487,
+        0.124665
+      ],
+      "stills": [
+        "stills/09_ogni_dettaglio_a_fuoco_early.png",
+        "stills/09_ogni_dettaglio_a_fuoco_mid.png",
+        "stills/09_ogni_dettaglio_a_fuoco_late.png"
+      ],
+      "uploaded": true,
+      "drive_id": "11wAwVPUAwQOn_EAlovgwmTI0L8f5F7Te",
+      "drive_url": "https://drive.google.com/file/d/11wAwVPUAwQOn_EAlovgwmTI0L8f5F7Te/view?usp=drivesdk",
+      "upload_manifest_url": "https://drive.google.com/file/d/1MWx32zkGv9KGssTCeGa-XqPigdNN7TuZ/view?usp=drivesdk"
+    },
+    {
+      "id": "10_resta_ancora",
+      "index": 10,
+      "slug": "Resta_Ancora",
+      "label": "resta ancora un po’",
+      "note": "Playfair italico · ambra calda · apostrofo tipografico",
+      "reference": "Chronon3d/docs/evidence/camera-ring-text-drive-20261108/camera_ring_text_04_*_v2.mp4",
+      "text": "resta ancora un po’",
+      "font": "PlayfairDisplay-MediumItalic.ttf",
+      "font_size": 132,
+      "fill": "#F8DDB4",
+      "glow_color": "#FFB35C",
+      "background_rgb": [
+        0.06,
+        0.032,
+        0.016
+      ],
+      "frames": 240,
+      "duration_s": 8.0,
+      "plan": "plans/10_Resta_Ancora.plan.json",
+      "mp4": "mp4/CameraRing_Text_10_Resta_Ancora_1920x1080_8s_v3.mp4",
+      "drive_name": "CameraRing_Text_10_Resta_Ancora_1920x1080_8s_v3.mp4",
+      "width": 1920,
+      "height": 1080,
+      "fps": "30/1",
+      "bytes": 1412235,
+      "sha256": "4f54eedf4d961600defb732094c1056ad8bb5d7a64fc238c2b1c96737cc2908f",
+      "verified": true,
+      "verified_at": "2026-11-09T08:37:49",
+      "foreground_ratio": 0.054083,
+      "foreground_ratios": [
+        0.048211,
+        0.054083,
+        0.054892
+      ],
+      "stills": [
+        "stills/10_resta_ancora_early.png",
+        "stills/10_resta_ancora_mid.png",
+        "stills/10_resta_ancora_late.png"
+      ],
+      "uploaded": true,
+      "drive_id": "1lzpDAmD27y9E_Bi7R2dLcq4vMbDEmVUE",
+      "drive_url": "https://drive.google.com/file/d/1lzpDAmD27y9E_Bi7R2dLcq4vMbDEmVUE/view?usp=drivesdk",
+      "upload_manifest_url": "https://drive.google.com/file/d/1MWx32zkGv9KGssTCeGa-XqPigdNN7TuZ/view?usp=drivesdk"
+    },
+    {
+      "id": "11_guardala_due_volte",
+      "index": 11,
+      "slug": "Guardala_Due_Volte",
+      "label": "guardala due volte",
+      "note": "DM Sans Bold · viola · core bianco, alone ciano",
+      "reference": "Chronon3d/docs/evidence/camera-ring-text-drive-20261108/camera_ring_text_05_*_v2.mp4",
+      "text": "guardala due volte",
+      "font": "DMSans-Bold.ttf",
+      "font_size": 132,
+      "fill": "#FFFFFF",
+      "glow_color": "#3FFFE4",
+      "background_rgb": [
+        0.02,
+        0.004,
+        0.045
+      ],
+      "frames": 180,
+      "duration_s": 6.0,
+      "plan": "plans/11_Guardala_Due_Volte.plan.json",
+      "mp4": "mp4/CameraRing_Text_11_Guardala_Due_Volte_1920x1080_6s_v3.mp4",
+      "drive_name": "CameraRing_Text_11_Guardala_Due_Volte_1920x1080_6s_v3.mp4",
+      "width": 1920,
+      "height": 1080,
+      "fps": "30/1",
+      "bytes": 1084908,
+      "sha256": "204b13344ac33293825a0e2d236c2c190c54d7283b6a376cfd48c55151485d87",
+      "verified": true,
+      "verified_at": "2026-11-09T08:38:05",
+      "foreground_ratio": 0.130352,
+      "foreground_ratios": [
+        0.11832,
+        0.130352,
+        0.132341
+      ],
+      "stills": [
+        "stills/11_guardala_due_volte_early.png",
+        "stills/11_guardala_due_volte_mid.png",
+        "stills/11_guardala_due_volte_late.png"
+      ],
+      "uploaded": true,
+      "drive_id": "1uasaQJnnhubT6bJqe7yvGw_YkxRJuOkL",
+      "drive_url": "https://drive.google.com/file/d/1uasaQJnnhubT6bJqe7yvGw_YkxRJuOkL/view?usp=drivesdk",
+      "upload_manifest_url": "https://drive.google.com/file/d/1MWx32zkGv9KGssTCeGa-XqPigdNN7TuZ/view?usp=drivesdk"
+    },
+    {
+      "id": "12_pulito_preciso",
+      "index": 12,
+      "slug": "Pulito_Preciso",
+      "label": "pulito. preciso. a fuoco.",
+      "note": "SF Pro Semibold · blu freddo · punteggiatura serrata",
+      "reference": "Chronon3d/docs/evidence/camera-ring-text-drive-20261108/camera_ring_text_06_*_v2.mp4",
+      "text": "pulito. preciso. a fuoco.",
+      "font": "SF-Pro-Display-Semibold.otf",
+      "font_size": 132,
+      "fill": "#F7FAFF",
+      "glow_color": "#8CC8FF",
+      "background_rgb": [
+        0.01,
+        0.028,
+        0.048
+      ],
+      "frames": 210,
+      "duration_s": 7.0,
+      "plan": "plans/12_Pulito_Preciso.plan.json",
+      "mp4": "mp4/CameraRing_Text_12_Pulito_Preciso_1920x1080_7s_v3.mp4",
+      "drive_name": "CameraRing_Text_12_Pulito_Preciso_1920x1080_7s_v3.mp4",
+      "width": 1920,
+      "height": 1080,
+      "fps": "30/1",
+      "bytes": 1366949,
+      "sha256": "846424b4f272a90c3ee2039689ffbed805ce79f36dece9445221292660490f16",
+      "verified": true,
+      "verified_at": "2026-11-09T08:38:19",
+      "foreground_ratio": 0.09586,
+      "foreground_ratios": [
+        0.087187,
+        0.09586,
+        0.098584
+      ],
+      "stills": [
+        "stills/12_pulito_preciso_early.png",
+        "stills/12_pulito_preciso_mid.png",
+        "stills/12_pulito_preciso_late.png"
+      ],
+      "uploaded": true,
+      "drive_id": "1_LixDPF9cBbNGVZTCDH5LPsB1jlIYhn2",
+      "drive_url": "https://drive.google.com/file/d/1_LixDPF9cBbNGVZTCDH5LPsB1jlIYhn2/view?usp=drivesdk",
+      "upload_manifest_url": "https://drive.google.com/file/d/1MWx32zkGv9KGssTCeGa-XqPigdNN7TuZ/view?usp=drivesdk"
+    }
+  ]
+}

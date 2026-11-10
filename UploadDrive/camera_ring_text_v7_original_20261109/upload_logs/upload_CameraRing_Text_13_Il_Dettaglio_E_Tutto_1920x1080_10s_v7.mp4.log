@@ -1,0 +1,7 @@
+credentials=/home/pierone/.config/velox/credentials.json
+token=/home/pierone/.config/velox/token.json
+folder=1J_xUGo_bchzXDIGqSX04CU44c_Dm3SxS
+file=/home/pierone/src/go-master/projects/Pyt/VeloxEditing/RenderingGen/UploadDrive/camera_ring_text_v7_original_20261109/mp4/CameraRing_Text_13_Il_Dettaglio_E_Tutto_1920x1080_10s_v7.mp4
+sha256=fbf8797c151d6a25a766b27c5595fa34bc2ab51648d5b5c2584aebb451f74777
+
+DRIVE_UPLOAD_PASS id=11zH1qcojrhdhON5maD9xOf-ucIW5yjR0 link=https://drive.google.com/file/d/11zH1qcojrhdhON5maD9xOf-ucIW5yjR0/view?usp=drivesdk parent=1J_xUGo_bchzXDIGqSX04CU44c_Dm3SxS sha256=fbf8797c151d6a25a766b27c5595fa34bc2ab51648d5b5c2584aebb451f74777 bytes=1762590

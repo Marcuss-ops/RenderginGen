@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/testenv"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -36,9 +37,7 @@ const longPhraseText = "Può contenere una frase intera molto lunga con accenti 
 // Opt-in like every other real-engine test in this package: set CHRONON_BIN.
 func TestLongPhraseRendersEveryWrappedLine(t *testing.T) {
 	bin := chrononBinFor(t)
-	if _, err := exec.LookPath("ffmpeg"); err != nil {
-		t.Skipf("ffmpeg not available for pixel check: %v", err)
-	}
+	testenv.RequireTools(t, "ffmpeg")
 	assetsRoot := certificationAssetsRoot(t)
 
 	raw := []byte(fmt.Sprintf(`{"schema_version":"renderinggen.overlay-plan.v1","plan_id":"phrase-long-lines","video_id":"v","width":1280,"height":720,"fps_num":24,"fps_den":1,"background":{"kind":"color","color":[0.08,0.08,0.08,1]},"items":[{"id":"phrase","kind":"important_phrase","template_id":"IMPORTANT_PHRASE","preset_id":"phrase_default","text":%q,"start_ms":0,"end_ms":4000}]}`, longPhraseText))

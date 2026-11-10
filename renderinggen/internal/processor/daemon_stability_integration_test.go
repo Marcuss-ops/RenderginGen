@@ -16,6 +16,7 @@ import (
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/chronon"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/queue"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/storage"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/testenv"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/workspace"
 )
 
@@ -28,11 +29,7 @@ func TestDaemonVulkanStabilityRecovery(t *testing.T) {
 		t.Skip("set CHRONON_RUN_STABILITY=1 for the Production V1 daemon gate")
 	}
 
-	home := os.Getenv("CHRONON_HOME")
-	if home == "" {
-		home = "/opt/chronon3d"
-	}
-	cli := &chronon.Client{Home: home}
+	cli := &chronon.Client{Home: testenv.ChrononHome(t), BinaryPath: testenv.RequireChronon(t)}
 	if err := cli.Verify(); err != nil {
 		t.Skipf("chronon3d_cli not available: %v", err)
 	}

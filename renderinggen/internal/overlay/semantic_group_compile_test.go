@@ -90,6 +90,28 @@ func TestEntityGroupDuoSlotsMembersSideBySide(t *testing.T) {
 	}
 }
 
+func TestEntityGroupPayloadFrameAppliesPerMemberShadowAndBorder(t *testing.T) {
+	members := groupTestMembers()
+	first := members[0].(map[string]any)
+	first["frame"] = map[string]any{
+		"border": map[string]any{"width_px": 4.0, "color": "#FFFFFF", "radius_px": 20.0},
+		"shadow": map[string]any{"color": "#000000", "opacity": 0.7, "blur_px": 14.0, "offset_x_px": 1.0, "offset_y_px": 6.0},
+	}
+	result := compileGroupPlan(t, groupTestPlan(nil, members))
+	var firstImage *Layer
+	for index := range result.Plan.Layers {
+		if result.Plan.Layers[index].ID == "duo:a:image" {
+			firstImage = &result.Plan.Layers[index]
+		}
+	}
+	if firstImage == nil || firstImage.Style == nil || firstImage.Style.Background == nil || firstImage.Style.Shadow == nil {
+		t.Fatalf("per-member frame did not lower to border and shadow: %+v", result.Plan.Layers)
+	}
+	if firstImage.Style.Background.Color != "#FFFFFF" || firstImage.Style.Shadow.Color != "#000000" || firstImage.Style.Shadow.Blur != 14 || firstImage.Style.Shadow.Offset[1] != 6 {
+		t.Fatalf("per-member frame = %+v", firstImage.Style)
+	}
+}
+
 // TestEntityGroupUsesCertifiedCardSlots proves every group size lowers to the
 // same certified 1920x1080 card table used by image-group recipes. This is the
 // single slot source: a divergent second table would place the same trio,

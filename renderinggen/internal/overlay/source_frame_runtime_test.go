@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/testenv"
 	"image"
 	"image/png"
 	"os"
@@ -21,9 +22,7 @@ import (
 // engine tests, uses the software backend, and never creates a GPU workload.
 func TestSourceFrameRuntimePixels(t *testing.T) {
 	bin := chrononBinFor(t)
-	if _, err := exec.LookPath("ffmpeg"); err != nil {
-		t.Skipf("ffmpeg is required for the one-second source-frame fixture: %v", err)
-	}
+	testenv.RequireTools(t, "ffmpeg")
 
 	assetsRoot := t.TempDir()
 	assetPath := filepath.Join(assetsRoot, "assets", "semantic", "frame-source.mp4")

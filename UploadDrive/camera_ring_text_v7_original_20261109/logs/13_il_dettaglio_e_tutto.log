@@ -1,0 +1,738 @@
+/home/pierone/src/go-master/projects/Pyt/VeloxEditing/Chronon3d/build/chronon/linux-video-release/apps/chronon3d_cli/chronon3d_cli render --plan /home/pierone/src/go-master/projects/Pyt/VeloxEditing/RenderingGen/UploadDrive/camera_ring_text_v7_original_20261109/plans/13_Il_Dettaglio_E_Tutto.plan.json --assets-root /home/pierone/src/go-master/projects/Pyt/VeloxEditing/Chronon3d --backend vulkan --gpu-hot-path-mode require_gpu_native --tone-map aces --exposure 1.0 -o /home/pierone/src/go-master/projects/Pyt/VeloxEditing/RenderingGen/UploadDrive/camera_ring_text_v7_original_20261109/mp4/CameraRing_Text_13_Il_Dettaglio_E_Tutto_1920x1080_10s_v7.mp4
+
+[2026-11-09 18:58:17.262] [info] [asset-profile] kind=3 path=assets/fonts/SF-Pro-Display-Semibold.otf bytes=335964 cache=miss invalidated=0 stat=0.02ms hash=5.59ms hashed_bytes=335964 total=5.69ms
+[2026-11-09 18:58:17.262] [info] [asset-digest-cache] hits=0 misses=1 invalidations=0 bytes_hashed=335964 lookup_ms=0.00 write_ms=0.00 full_hash_ms=5.59
+[2026-11-09 18:58:17.263] [info] [plan-profile] read=0.37ms parse=0.22ms decode=65.76ms resolver=0.39ms compile_validate=6.80ms total=73.55ms
+[2026-11-09 18:58:17.263] [info] [video] Auto-selecting yuv420p pipe pixel format for 1920x1080 output
+[2026-11-09 18:58:17.263] [info] [video] execution plan resolved (reason: gpu_composition_pipe_no_video_source); decode=2 composite=2 encode=2 interop=0 handoff=3 codec=3
+[2026-11-09 18:58:17.289] [info] [video-runtime] created persistent runtime for device 0 (CUDA ordinal 0)
+[2026-11-09 18:58:17.289] [info] [video] encoder feed capability: host_frame=true direct_yuv=false native_surface=false
+[2026-11-09 18:58:17.629] [info] [native_av] CUDA context contract: native=0x55e3a6ad16b0 ffmpeg=0x55e3a6ad16b0
+[2026-11-09 18:58:17.656] [info] [native_av] NVENC tuning applied: rc=driver-default preset=slow async_depth=4 nvenc_surfaces=8 qp=-1 bitrate=0
+[h264_nvenc @ 0x55e3a680c680] Defined rc_lookahead requires more surfaces, increasing used surfaces 8 -> 34
+[2026-11-09 18:58:17.927] [info] [native_av] encoder bitstream contract: codec=27 profile=100 level=-99 pix_fmt=117 parameter_sets=53 materialized=true
+[2026-11-09 18:58:17.934] [info] [native_av] Opened native encoder: 1920x1080 @ 30fps, codec=h264_nvenc, rc=driver-default, preset=slow, output='/home/pierone/src/go-master/projects/Pyt/VeloxEditing/RenderingGen/UploadDrive/camera_ring_text_v7_original_20261109/mp4/CameraRing_Text_13_Il_Dettaglio_E_Tutto_1920x1080_10s_v7.partial.mp4'
+[2026-11-09 18:58:18.684] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-09 18:58:18.695] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-09 18:58:19.042] [info] [pool-warm] Pre-allocated and pre-imported 6 execution slots (1920x1080) for native NVENC
+[2026-11-09 18:58:19.078] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-09 18:58:19.079] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-09 18:58:19.285] [info] chronon3d::vulkan text batch formats: dst_image.format=109 atlas_image.format=44 atlas_encoding=2 (shader contract: dst rgba32f, atlas rgba8)
+[2026-11-09 18:58:19.285] [info] [text-route] frame=0 route=mtsdf
+[2026-11-09 18:58:19.288] [info] [text-route] frame=0 route=mtsdf
+[2026-11-09 18:58:19.288] [info] [temp-lifetime] frame=0 after_level=0 live=[0,1,3,6,9,] retired=[]
+[2026-11-09 18:58:19.288] [info] [exec-level-diag] frame=0 level=0 nodes=5 input_ms=0.001 dispatch_ms=6.580 fb_release_ms=0.001
+[2026-11-09 18:58:19.288] [info] [graph-edge] frame=0 level=1 consumer_id=2 input_index=0 producer_id=0 producer_level=0
+[2026-11-09 18:58:19.288] [info] [graph-edge] frame=0 level=1 consumer_id=2 input_index=1 producer_id=1 producer_level=0
+[2026-11-09 18:58:19.288] [info] [graph-edge] frame=0 level=1 consumer_id=4 input_index=0 producer_id=3 producer_level=0
+[2026-11-09 18:58:19.288] [info] [graph-edge] frame=0 level=1 consumer_id=7 input_index=0 producer_id=6 producer_level=0
+[2026-11-09 18:58:19.288] [info] [graph-edge] frame=0 level=1 consumer_id=10 input_index=0 producer_id=9 producer_level=0
+[2026-11-09 18:58:19.293] [info] [temp-lifetime] frame=0 after_level=1 live=[2,4,7,10,] retired=[0,1,3,6,9,]
+[2026-11-09 18:58:19.293] [info] [exec-level-diag] frame=0 level=1 nodes=4 input_ms=0.064 dispatch_ms=4.354 fb_release_ms=0.004
+[2026-11-09 18:58:19.293] [info] [graph-edge] frame=0 level=2 consumer_id=5 input_index=0 producer_id=2 producer_level=1
+[2026-11-09 18:58:19.293] [info] [graph-edge] frame=0 level=2 consumer_id=5 input_index=1 producer_id=4 producer_level=1
+[2026-11-09 18:58:19.293] [info] [temp-lifetime] frame=0 after_level=2 live=[5,7,10,] retired=[2,4,]
+[2026-11-09 18:58:19.293] [info] [exec-level-diag] frame=0 level=2 nodes=1 input_ms=0.012 dispatch_ms=0.580 fb_release_ms=0.003
+[2026-11-09 18:58:19.293] [info] [graph-edge] frame=0 level=3 consumer_id=8 input_index=0 producer_id=5 producer_level=2
+[2026-11-09 18:58:19.293] [info] [graph-edge] frame=0 level=3 consumer_id=8 input_index=1 producer_id=7 producer_level=1
+[2026-11-09 18:58:19.294] [info] [temp-lifetime] frame=0 after_level=3 live=[8,10,] retired=[5,7,]
+[2026-11-09 18:58:19.294] [info] [exec-level-diag] frame=0 level=3 nodes=1 input_ms=0.023 dispatch_ms=0.503 fb_release_ms=0.002
+[2026-11-09 18:58:19.294] [info] [graph-edge] frame=0 level=4 consumer_id=11 input_index=0 producer_id=8 producer_level=3
+[2026-11-09 18:58:19.294] [info] [graph-edge] frame=0 level=4 consumer_id=11 input_index=1 producer_id=10 producer_level=1
+[2026-11-09 18:58:19.294] [info] [temp-lifetime] frame=0 after_level=4 live=[11,] retired=[8,10,]
+[2026-11-09 18:58:19.294] [info] [exec-level-diag] frame=0 level=4 nodes=1 input_ms=0.012 dispatch_ms=0.069 fb_release_ms=0.001
+[2026-11-09 18:58:19.294] [info] [video] Exporting via Arena-backed SIMD pipeline
+[2026-11-09 18:58:19.297] [info] [text-route] frame=1 route=mtsdf
+[2026-11-09 18:58:19.298] [info] [text-route] frame=1 route=mtsdf
+[2026-11-09 18:58:19.299] [info] [temp-lifetime] frame=1 after_level=0 live=[0,1,3,6,9,] retired=[]
+[2026-11-09 18:58:19.299] [info] [exec-level-diag] frame=1 level=0 nodes=5 input_ms=0.001 dispatch_ms=3.813 fb_release_ms=0.001
+[2026-11-09 18:58:19.299] [info] [graph-edge] frame=1 level=1 consumer_id=2 input_index=0 producer_id=0 producer_level=0
+[2026-11-09 18:58:19.299] [info] [graph-edge] frame=1 level=1 consumer_id=2 input_index=1 producer_id=1 producer_level=0
+[2026-11-09 18:58:19.299] [info] [graph-edge] frame=1 level=1 consumer_id=4 input_index=0 producer_id=3 producer_level=0
+[2026-11-09 18:58:19.299] [info] [graph-edge] frame=1 level=1 consumer_id=7 input_index=0 producer_id=6 producer_level=0
+[2026-11-09 18:58:19.299] [info] [graph-edge] frame=1 level=1 consumer_id=10 input_index=0 producer_id=9 producer_level=0
+[2026-11-09 18:58:19.304] [info] [temp-lifetime] frame=1 after_level=1 live=[2,4,7,10,] retired=[0,1,3,6,9,]
+[2026-11-09 18:58:19.304] [info] [exec-level-diag] frame=1 level=1 nodes=4 input_ms=0.026 dispatch_ms=5.110 fb_release_ms=0.003
+[2026-11-09 18:58:19.304] [info] [graph-edge] frame=1 level=2 consumer_id=5 input_index=0 producer_id=2 producer_level=1
+[2026-11-09 18:58:19.304] [info] [graph-edge] frame=1 level=2 consumer_id=5 input_index=1 producer_id=4 producer_level=1
+[2026-11-09 18:58:19.304] [info] [temp-lifetime] frame=1 after_level=2 live=[5,7,10,] retired=[2,4,]
+[2026-11-09 18:58:19.304] [info] [exec-level-diag] frame=1 level=2 nodes=1 input_ms=0.012 dispatch_ms=0.379 fb_release_ms=0.002
+[2026-11-09 18:58:19.304] [info] [graph-edge] frame=1 level=3 consumer_id=8 input_index=0 producer_id=5 producer_level=2
+[2026-11-09 18:58:19.304] [info] [graph-edge] frame=1 level=3 consumer_id=8 input_index=1 producer_id=7 producer_level=1
+[2026-11-09 18:58:19.305] [info] [temp-lifetime] frame=1 after_level=3 live=[8,10,] retired=[5,7,]
+[2026-11-09 18:58:19.305] [info] [exec-level-diag] frame=1 level=3 nodes=1 input_ms=0.011 dispatch_ms=0.448 fb_release_ms=0.002
+[2026-11-09 18:58:19.305] [info] [graph-edge] frame=1 level=4 consumer_id=11 input_index=0 producer_id=8 producer_level=3
+[2026-11-09 18:58:19.305] [info] [graph-edge] frame=1 level=4 consumer_id=11 input_index=1 producer_id=10 producer_level=1
+[2026-11-09 18:58:19.305] [info] [temp-lifetime] frame=1 after_level=4 live=[11,] retired=[8,10,]
+[2026-11-09 18:58:19.305] [info] [exec-level-diag] frame=1 level=4 nodes=1 input_ms=0.013 dispatch_ms=0.068 fb_release_ms=0.001
+[2026-11-09 18:58:19.320] [info] [text-route] frame=2 route=mtsdf
+[2026-11-09 18:58:19.321] [info] [text-route] frame=2 route=mtsdf
+[2026-11-09 18:58:19.321] [info] [temp-lifetime] frame=2 after_level=0 live=[0,1,3,6,9,] retired=[]
+[2026-11-09 18:58:19.321] [info] [exec-level-diag] frame=2 level=0 nodes=5 input_ms=0.001 dispatch_ms=1.906 fb_release_ms=0.000
+[2026-11-09 18:58:19.321] [info] [graph-edge] frame=2 level=1 consumer_id=2 input_index=0 producer_id=0 producer_level=0
+[2026-11-09 18:58:19.321] [info] [graph-edge] frame=2 level=1 consumer_id=2 input_index=1 producer_id=1 producer_level=0
+[2026-11-09 18:58:19.321] [info] [graph-edge] frame=2 level=1 consumer_id=4 input_index=0 producer_id=3 producer_level=0
+[2026-11-09 18:58:19.321] [info] [graph-edge] frame=2 level=1 consumer_id=7 input_index=0 producer_id=6 producer_level=0
+[2026-11-09 18:58:19.321] [info] [graph-edge] frame=2 level=1 consumer_id=10 input_index=0 producer_id=9 producer_level=0
+[2026-11-09 18:58:19.325] [info] [temp-lifetime] frame=2 after_level=1 live=[2,4,7,10,] retired=[0,1,3,6,9,]
+[2026-11-09 18:58:19.325] [info] [exec-level-diag] frame=2 level=1 nodes=4 input_ms=0.027 dispatch_ms=3.712 fb_release_ms=0.003
+[2026-11-09 18:58:19.325] [info] [graph-edge] frame=2 level=2 consumer_id=5 input_index=0 producer_id=2 producer_level=1
+[2026-11-09 18:58:19.325] [info] [graph-edge] frame=2 level=2 consumer_id=5 input_index=1 producer_id=4 producer_level=1
+[2026-11-09 18:58:19.325] [info] [temp-lifetime] frame=2 after_level=2 live=[5,7,10,] retired=[2,4,]
+[2026-11-09 18:58:19.325] [info] [exec-level-diag] frame=2 level=2 nodes=1 input_ms=0.012 dispatch_ms=0.366 fb_release_ms=0.002
+[2026-11-09 18:58:19.325] [info] [graph-edge] frame=2 level=3 consumer_id=8 input_index=0 producer_id=5 producer_level=2
+[2026-11-09 18:58:19.325] [info] [graph-edge] frame=2 level=3 consumer_id=8 input_index=1 producer_id=7 producer_level=1
+[2026-11-09 18:58:19.326] [info] [temp-lifetime] frame=2 after_level=3 live=[8,10,] retired=[5,7,]
+[2026-11-09 18:58:19.326] [info] [exec-level-diag] frame=2 level=3 nodes=1 input_ms=0.012 dispatch_ms=0.388 fb_release_ms=0.002
+[2026-11-09 18:58:19.326] [info] [graph-edge] frame=2 level=4 consumer_id=11 input_index=0 producer_id=8 producer_level=3
+[2026-11-09 18:58:19.326] [info] [graph-edge] frame=2 level=4 consumer_id=11 input_index=1 producer_id=10 producer_level=1
+[2026-11-09 18:58:19.326] [info] [temp-lifetime] frame=2 after_level=4 live=[11,] retired=[8,10,]
+[2026-11-09 18:58:19.326] [info] [exec-level-diag] frame=2 level=4 nodes=1 input_ms=0.011 dispatch_ms=0.067 fb_release_ms=0.002
+[2026-11-09 18:58:19.329] [info] [text-route] frame=3 route=mtsdf
+[2026-11-09 18:58:19.330] [info] [text-route] frame=3 route=mtsdf
+[2026-11-09 18:58:19.349] [info] [text-route] frame=4 route=mtsdf
+[2026-11-09 18:58:19.352] [info] [text-route] frame=4 route=mtsdf
+[2026-11-09 18:58:19.359] [info] [text-route] frame=5 route=mtsdf
+[2026-11-09 18:58:19.360] [info] [text-route] frame=5 route=mtsdf
+[2026-11-09 18:58:19.382] [info] [text-route] frame=6 route=mtsdf
+[2026-11-09 18:58:19.382] [info] [text-route] frame=6 route=mtsdf
+[2026-11-09 18:58:19.389] [info] [text-route] frame=7 route=mtsdf
+[2026-11-09 18:58:19.390] [info] [text-route] frame=7 route=mtsdf
+[2026-11-09 18:58:19.409] [info] [text-route] frame=8 route=mtsdf
+[2026-11-09 18:58:19.410] [info] [text-route] frame=8 route=mtsdf
+[2026-11-09 18:58:19.417] [info] [text-route] frame=9 route=mtsdf
+[2026-11-09 18:58:19.418] [info] [text-route] frame=9 route=mtsdf
+[2026-11-09 18:58:19.438] [info] [text-route] frame=10 route=mtsdf
+[2026-11-09 18:58:19.438] [info] [text-route] frame=10 route=mtsdf
+[2026-11-09 18:58:19.446] [info] [text-route] frame=11 route=mtsdf
+[2026-11-09 18:58:19.447] [info] [text-route] frame=11 route=mtsdf
+[2026-11-09 18:58:19.465] [info] [text-route] frame=12 route=mtsdf
+[2026-11-09 18:58:19.466] [info] [text-route] frame=12 route=mtsdf
+[2026-11-09 18:58:19.473] [info] [text-route] frame=13 route=mtsdf
+[2026-11-09 18:58:19.474] [info] [text-route] frame=13 route=mtsdf
+[2026-11-09 18:58:19.492] [info] [text-route] frame=14 route=mtsdf
+[2026-11-09 18:58:19.493] [info] [text-route] frame=14 route=mtsdf
+[2026-11-09 18:58:19.499] [info] [text-route] frame=15 route=mtsdf
+[2026-11-09 18:58:19.500] [info] [text-route] frame=15 route=mtsdf
+[2026-11-09 18:58:19.517] [info] [text-route] frame=16 route=mtsdf
+[2026-11-09 18:58:19.517] [info] [text-route] frame=16 route=mtsdf
+[2026-11-09 18:58:19.525] [info] [text-route] frame=17 route=mtsdf
+[2026-11-09 18:58:19.526] [info] [text-route] frame=17 route=mtsdf
+[2026-11-09 18:58:19.542] [info] [text-route] frame=18 route=mtsdf
+[2026-11-09 18:58:19.542] [info] [text-route] frame=18 route=mtsdf
+[2026-11-09 18:58:19.549] [info] [text-route] frame=19 route=mtsdf
+[2026-11-09 18:58:19.550] [info] [text-route] frame=19 route=mtsdf
+[2026-11-09 18:58:19.567] [info] [text-route] frame=20 route=mtsdf
+[2026-11-09 18:58:19.567] [info] [text-route] frame=20 route=mtsdf
+[2026-11-09 18:58:19.574] [info] [text-route] frame=21 route=mtsdf
+[2026-11-09 18:58:19.575] [info] [text-route] frame=21 route=mtsdf
+[2026-11-09 18:58:19.591] [info] [text-route] frame=22 route=mtsdf
+[2026-11-09 18:58:19.591] [info] [text-route] frame=22 route=mtsdf
+[2026-11-09 18:58:19.599] [info] [text-route] frame=23 route=mtsdf
+[2026-11-09 18:58:19.600] [info] [text-route] frame=23 route=mtsdf
+[2026-11-09 18:58:19.616] [info] [text-route] frame=24 route=mtsdf
+[2026-11-09 18:58:19.617] [info] [text-route] frame=24 route=mtsdf
+[2026-11-09 18:58:19.621] [info] [vulkan-lifecycle] frame=25 vram_bytes=1024520192 live_surfaces=30 surface_bindings=29 registry_live_handles=382 physical_images=30 deferred_releases=8 vma_allocations=92 surfaces_created=582 surfaces_released=553 queue_packages=1 execution_slots_busy=2 command_batch_active=false
+[2026-11-09 18:58:19.624] [info] [text-route] frame=25 route=mtsdf
+[2026-11-09 18:58:19.624] [info] [text-route] frame=25 route=mtsdf
+[2026-11-09 18:58:19.641] [info] [text-route] frame=26 route=mtsdf
+[2026-11-09 18:58:19.641] [info] [text-route] frame=26 route=mtsdf
+[2026-11-09 18:58:19.649] [info] [text-route] frame=27 route=mtsdf
+[2026-11-09 18:58:19.650] [info] [text-route] frame=27 route=mtsdf
+[2026-11-09 18:58:19.668] [info] [text-route] frame=28 route=mtsdf
+[2026-11-09 18:58:19.668] [info] [text-route] frame=28 route=mtsdf
+[2026-11-09 18:58:19.674] [info] [video]   30/300 frames
+[2026-11-09 18:58:19.677] [info] [text-route] frame=29 route=mtsdf
+[2026-11-09 18:58:19.677] [info] [text-route] frame=29 route=mtsdf
+[2026-11-09 18:58:19.696] [info] [text-route] frame=30 route=mtsdf
+[2026-11-09 18:58:19.697] [info] [text-route] frame=30 route=mtsdf
+[2026-11-09 18:58:19.705] [info] [text-route] frame=31 route=mtsdf
+[2026-11-09 18:58:19.706] [info] [text-route] frame=31 route=mtsdf
+[2026-11-09 18:58:19.724] [info] [text-route] frame=32 route=mtsdf
+[2026-11-09 18:58:19.724] [info] [text-route] frame=32 route=mtsdf
+[2026-11-09 18:58:19.732] [info] [text-route] frame=33 route=mtsdf
+[2026-11-09 18:58:19.733] [info] [text-route] frame=33 route=mtsdf
+[2026-11-09 18:58:19.754] [info] [text-route] frame=34 route=mtsdf
+[2026-11-09 18:58:19.755] [info] [text-route] frame=34 route=mtsdf
+[2026-11-09 18:58:19.763] [info] [text-route] frame=35 route=mtsdf
+[2026-11-09 18:58:19.764] [info] [text-route] frame=35 route=mtsdf
+[2026-11-09 18:58:19.781] [info] [text-route] frame=36 route=mtsdf
+[2026-11-09 18:58:19.782] [info] [text-route] frame=36 route=mtsdf
+[2026-11-09 18:58:19.789] [info] [text-route] frame=37 route=mtsdf
+[2026-11-09 18:58:19.790] [info] [text-route] frame=37 route=mtsdf
+[2026-11-09 18:58:19.807] [info] [text-route] frame=38 route=mtsdf
+[2026-11-09 18:58:19.807] [info] [text-route] frame=38 route=mtsdf
+[2026-11-09 18:58:19.815] [info] [text-route] frame=39 route=mtsdf
+[2026-11-09 18:58:19.815] [info] [text-route] frame=39 route=mtsdf
+[2026-11-09 18:58:19.833] [info] [text-route] frame=40 route=mtsdf
+[2026-11-09 18:58:19.833] [info] [text-route] frame=40 route=mtsdf
+[2026-11-09 18:58:19.840] [info] [text-route] frame=41 route=mtsdf
+[2026-11-09 18:58:19.841] [info] [text-route] frame=41 route=mtsdf
+[2026-11-09 18:58:19.858] [info] [text-route] frame=42 route=mtsdf
+[2026-11-09 18:58:19.858] [info] [text-route] frame=42 route=mtsdf
+[2026-11-09 18:58:19.865] [info] [text-route] frame=43 route=mtsdf
+[2026-11-09 18:58:19.866] [info] [text-route] frame=43 route=mtsdf
+[2026-11-09 18:58:19.883] [info] [text-route] frame=44 route=mtsdf
+[2026-11-09 18:58:19.883] [info] [text-route] frame=44 route=mtsdf
+[2026-11-09 18:58:19.890] [info] [text-route] frame=45 route=mtsdf
+[2026-11-09 18:58:19.891] [info] [text-route] frame=45 route=mtsdf
+[2026-11-09 18:58:19.907] [info] [text-route] frame=46 route=mtsdf
+[2026-11-09 18:58:19.908] [info] [text-route] frame=46 route=mtsdf
+[2026-11-09 18:58:19.915] [info] [text-route] frame=47 route=mtsdf
+[2026-11-09 18:58:19.915] [info] [text-route] frame=47 route=mtsdf
+[2026-11-09 18:58:19.932] [info] [text-route] frame=48 route=mtsdf
+[2026-11-09 18:58:19.933] [info] [text-route] frame=48 route=mtsdf
+[2026-11-09 18:58:19.939] [info] [text-route] frame=49 route=mtsdf
+[2026-11-09 18:58:19.940] [info] [text-route] frame=49 route=mtsdf
+[2026-11-09 18:58:19.956] [info] [vulkan-lifecycle] frame=50 vram_bytes=734363648 live_surfaces=15 surface_bindings=7 registry_live_handles=757 physical_images=15 deferred_releases=0 vma_allocations=77 surfaces_created=1157 surfaces_released=1150 queue_packages=1 execution_slots_busy=2 command_batch_active=false
+[2026-11-09 18:58:19.957] [info] [text-route] frame=50 route=mtsdf
+[2026-11-09 18:58:19.957] [info] [text-route] frame=50 route=mtsdf
+[2026-11-09 18:58:19.965] [info] [text-route] frame=51 route=mtsdf
+[2026-11-09 18:58:19.965] [info] [text-route] frame=51 route=mtsdf
+[2026-11-09 18:58:19.983] [info] [text-route] frame=52 route=mtsdf
+[2026-11-09 18:58:19.983] [info] [text-route] frame=52 route=mtsdf
+[2026-11-09 18:58:19.991] [info] [text-route] frame=53 route=mtsdf
+[2026-11-09 18:58:19.992] [info] [text-route] frame=53 route=mtsdf
+[2026-11-09 18:58:20.008] [info] [text-route] frame=54 route=mtsdf
+[2026-11-09 18:58:20.009] [info] [text-route] frame=54 route=mtsdf
+[2026-11-09 18:58:20.016] [info] [text-route] frame=55 route=mtsdf
+[2026-11-09 18:58:20.017] [info] [text-route] frame=55 route=mtsdf
+[2026-11-09 18:58:20.033] [info] [text-route] frame=56 route=mtsdf
+[2026-11-09 18:58:20.033] [info] [text-route] frame=56 route=mtsdf
+[2026-11-09 18:58:20.040] [info] [text-route] frame=57 route=mtsdf
+[2026-11-09 18:58:20.041] [info] [text-route] frame=57 route=mtsdf
+[2026-11-09 18:58:20.057] [info] [text-route] frame=58 route=mtsdf
+[2026-11-09 18:58:20.058] [info] [text-route] frame=58 route=mtsdf
+[2026-11-09 18:58:20.062] [info] [video]   60/300 frames
+[2026-11-09 18:58:20.065] [info] [text-route] frame=59 route=mtsdf
+[2026-11-09 18:58:20.065] [info] [text-route] frame=59 route=mtsdf
+[2026-11-09 18:58:20.082] [info] [text-route] frame=60 route=mtsdf
+[2026-11-09 18:58:20.082] [info] [text-route] frame=60 route=mtsdf
+[2026-11-09 18:58:20.089] [info] [text-route] frame=61 route=mtsdf
+[2026-11-09 18:58:20.090] [info] [text-route] frame=61 route=mtsdf
+[2026-11-09 18:58:20.106] [info] [text-route] frame=62 route=mtsdf
+[2026-11-09 18:58:20.106] [info] [text-route] frame=62 route=mtsdf
+[2026-11-09 18:58:20.113] [info] [text-route] frame=63 route=mtsdf
+[2026-11-09 18:58:20.114] [info] [text-route] frame=63 route=mtsdf
+[2026-11-09 18:58:20.130] [info] [text-route] frame=64 route=mtsdf
+[2026-11-09 18:58:20.131] [info] [text-route] frame=64 route=mtsdf
+[2026-11-09 18:58:20.138] [info] [text-route] frame=65 route=mtsdf
+[2026-11-09 18:58:20.139] [info] [text-route] frame=65 route=mtsdf
+[2026-11-09 18:58:20.155] [info] [text-route] frame=66 route=mtsdf
+[2026-11-09 18:58:20.156] [info] [text-route] frame=66 route=mtsdf
+[2026-11-09 18:58:20.163] [info] [text-route] frame=67 route=mtsdf
+[2026-11-09 18:58:20.164] [info] [text-route] frame=67 route=mtsdf
+[2026-11-09 18:58:20.180] [info] [text-route] frame=68 route=mtsdf
+[2026-11-09 18:58:20.180] [info] [text-route] frame=68 route=mtsdf
+[2026-11-09 18:58:20.188] [info] [text-route] frame=69 route=mtsdf
+[2026-11-09 18:58:20.189] [info] [text-route] frame=69 route=mtsdf
+[2026-11-09 18:58:20.206] [info] [text-route] frame=70 route=mtsdf
+[2026-11-09 18:58:20.206] [info] [text-route] frame=70 route=mtsdf
+[2026-11-09 18:58:20.213] [info] [text-route] frame=71 route=mtsdf
+[2026-11-09 18:58:20.214] [info] [text-route] frame=71 route=mtsdf
+[2026-11-09 18:58:20.231] [info] [text-route] frame=72 route=mtsdf
+[2026-11-09 18:58:20.231] [info] [text-route] frame=72 route=mtsdf
+[2026-11-09 18:58:20.238] [info] [text-route] frame=73 route=mtsdf
+[2026-11-09 18:58:20.239] [info] [text-route] frame=73 route=mtsdf
+[2026-11-09 18:58:20.255] [info] [text-route] frame=74 route=mtsdf
+[2026-11-09 18:58:20.255] [info] [text-route] frame=74 route=mtsdf
+[2026-11-09 18:58:20.260] [info] [vulkan-lifecycle] frame=75 vram_bytes=1024520192 live_surfaces=30 surface_bindings=29 registry_live_handles=1132 physical_images=30 deferred_releases=8 vma_allocations=92 surfaces_created=1732 surfaces_released=1703 queue_packages=1 execution_slots_busy=2 command_batch_active=false
+[2026-11-09 18:58:20.262] [info] [text-route] frame=75 route=mtsdf
+[2026-11-09 18:58:20.263] [info] [text-route] frame=75 route=mtsdf
+[2026-11-09 18:58:20.280] [info] [text-route] frame=76 route=mtsdf
+[2026-11-09 18:58:20.281] [info] [text-route] frame=76 route=mtsdf
+[2026-11-09 18:58:20.288] [info] [text-route] frame=77 route=mtsdf
+[2026-11-09 18:58:20.289] [info] [text-route] frame=77 route=mtsdf
+[2026-11-09 18:58:20.306] [info] [text-route] frame=78 route=mtsdf
+[2026-11-09 18:58:20.306] [info] [text-route] frame=78 route=mtsdf
+[2026-11-09 18:58:20.313] [info] [text-route] frame=79 route=mtsdf
+[2026-11-09 18:58:20.314] [info] [text-route] frame=79 route=mtsdf
+[2026-11-09 18:58:20.331] [info] [text-route] frame=80 route=mtsdf
+[2026-11-09 18:58:20.332] [info] [text-route] frame=80 route=mtsdf
+[2026-11-09 18:58:20.339] [info] [text-route] frame=81 route=mtsdf
+[2026-11-09 18:58:20.340] [info] [text-route] frame=81 route=mtsdf
+[2026-11-09 18:58:20.356] [info] [text-route] frame=82 route=mtsdf
+[2026-11-09 18:58:20.356] [info] [text-route] frame=82 route=mtsdf
+[2026-11-09 18:58:20.364] [info] [text-route] frame=83 route=mtsdf
+[2026-11-09 18:58:20.365] [info] [text-route] frame=83 route=mtsdf
+[2026-11-09 18:58:20.381] [info] [text-route] frame=84 route=mtsdf
+[2026-11-09 18:58:20.382] [info] [text-route] frame=84 route=mtsdf
+[2026-11-09 18:58:20.389] [info] [text-route] frame=85 route=mtsdf
+[2026-11-09 18:58:20.391] [info] [text-route] frame=85 route=mtsdf
+[2026-11-09 18:58:20.407] [info] [text-route] frame=86 route=mtsdf
+[2026-11-09 18:58:20.407] [info] [text-route] frame=86 route=mtsdf
+[2026-11-09 18:58:20.415] [info] [text-route] frame=87 route=mtsdf
+[2026-11-09 18:58:20.416] [info] [text-route] frame=87 route=mtsdf
+[2026-11-09 18:58:20.434] [info] [text-route] frame=88 route=mtsdf
+[2026-11-09 18:58:20.434] [info] [text-route] frame=88 route=mtsdf
+[2026-11-09 18:58:20.438] [info] [video]   90/300 frames
+[2026-11-09 18:58:20.441] [info] [text-route] frame=89 route=mtsdf
+[2026-11-09 18:58:20.442] [info] [text-route] frame=89 route=mtsdf
+[2026-11-09 18:58:20.459] [info] [text-route] frame=90 route=mtsdf
+[2026-11-09 18:58:20.460] [info] [text-route] frame=90 route=mtsdf
+[2026-11-09 18:58:20.466] [info] [text-route] frame=91 route=mtsdf
+[2026-11-09 18:58:20.467] [info] [text-route] frame=91 route=mtsdf
+[2026-11-09 18:58:20.483] [info] [text-route] frame=92 route=mtsdf
+[2026-11-09 18:58:20.483] [info] [text-route] frame=92 route=mtsdf
+[2026-11-09 18:58:20.490] [info] [text-route] frame=93 route=mtsdf
+[2026-11-09 18:58:20.491] [info] [text-route] frame=93 route=mtsdf
+[2026-11-09 18:58:20.509] [info] [text-route] frame=94 route=mtsdf
+[2026-11-09 18:58:20.509] [info] [text-route] frame=94 route=mtsdf
+[2026-11-09 18:58:20.516] [info] [text-route] frame=95 route=mtsdf
+[2026-11-09 18:58:20.516] [info] [text-route] frame=95 route=mtsdf
+[2026-11-09 18:58:20.533] [info] [text-route] frame=96 route=mtsdf
+[2026-11-09 18:58:20.534] [info] [text-route] frame=96 route=mtsdf
+[2026-11-09 18:58:20.540] [info] [text-route] frame=97 route=mtsdf
+[2026-11-09 18:58:20.541] [info] [text-route] frame=97 route=mtsdf
+[2026-11-09 18:58:20.558] [info] [text-route] frame=98 route=mtsdf
+[2026-11-09 18:58:20.558] [info] [text-route] frame=98 route=mtsdf
+[2026-11-09 18:58:20.564] [info] [text-route] frame=99 route=mtsdf
+[2026-11-09 18:58:20.565] [info] [text-route] frame=99 route=mtsdf
+[2026-11-09 18:58:20.582] [info] [vulkan-lifecycle] frame=100 vram_bytes=734363648 live_surfaces=15 surface_bindings=7 registry_live_handles=1507 physical_images=15 deferred_releases=0 vma_allocations=77 surfaces_created=2307 surfaces_released=2300 queue_packages=1 execution_slots_busy=2 command_batch_active=false
+[2026-11-09 18:58:20.583] [info] [text-route] frame=100 route=mtsdf
+[2026-11-09 18:58:20.583] [info] [text-route] frame=100 route=mtsdf
+[2026-11-09 18:58:20.589] [info] [text-route] frame=101 route=mtsdf
+[2026-11-09 18:58:20.590] [info] [text-route] frame=101 route=mtsdf
+[2026-11-09 18:58:20.607] [info] [text-route] frame=102 route=mtsdf
+[2026-11-09 18:58:20.608] [info] [text-route] frame=102 route=mtsdf
+[2026-11-09 18:58:20.614] [info] [text-route] frame=103 route=mtsdf
+[2026-11-09 18:58:20.615] [info] [text-route] frame=103 route=mtsdf
+[2026-11-09 18:58:20.633] [info] [text-route] frame=104 route=mtsdf
+[2026-11-09 18:58:20.633] [info] [text-route] frame=104 route=mtsdf
+[2026-11-09 18:58:20.640] [info] [text-route] frame=105 route=mtsdf
+[2026-11-09 18:58:20.641] [info] [text-route] frame=105 route=mtsdf
+[2026-11-09 18:58:20.657] [info] [text-route] frame=106 route=mtsdf
+[2026-11-09 18:58:20.658] [info] [text-route] frame=106 route=mtsdf
+[2026-11-09 18:58:20.664] [info] [text-route] frame=107 route=mtsdf
+[2026-11-09 18:58:20.665] [info] [text-route] frame=107 route=mtsdf
+[2026-11-09 18:58:20.683] [info] [text-route] frame=108 route=mtsdf
+[2026-11-09 18:58:20.683] [info] [text-route] frame=108 route=mtsdf
+[2026-11-09 18:58:20.690] [info] [text-route] frame=109 route=mtsdf
+[2026-11-09 18:58:20.691] [info] [text-route] frame=109 route=mtsdf
+[2026-11-09 18:58:20.707] [info] [text-route] frame=110 route=mtsdf
+[2026-11-09 18:58:20.707] [info] [text-route] frame=110 route=mtsdf
+[2026-11-09 18:58:20.714] [info] [text-route] frame=111 route=mtsdf
+[2026-11-09 18:58:20.715] [info] [text-route] frame=111 route=mtsdf
+[2026-11-09 18:58:20.732] [info] [text-route] frame=112 route=mtsdf
+[2026-11-09 18:58:20.732] [info] [text-route] frame=112 route=mtsdf
+[2026-11-09 18:58:20.738] [info] [text-route] frame=113 route=mtsdf
+[2026-11-09 18:58:20.739] [info] [text-route] frame=113 route=mtsdf
+[2026-11-09 18:58:20.756] [info] [text-route] frame=114 route=mtsdf
+[2026-11-09 18:58:20.756] [info] [text-route] frame=114 route=mtsdf
+[2026-11-09 18:58:20.764] [info] [text-route] frame=115 route=mtsdf
+[2026-11-09 18:58:20.766] [info] [text-route] frame=115 route=mtsdf
+[2026-11-09 18:58:20.784] [info] [text-route] frame=116 route=mtsdf
+[2026-11-09 18:58:20.784] [info] [text-route] frame=116 route=mtsdf
+[2026-11-09 18:58:20.791] [info] [text-route] frame=117 route=mtsdf
+[2026-11-09 18:58:20.792] [info] [text-route] frame=117 route=mtsdf
+[2026-11-09 18:58:20.808] [info] [text-route] frame=118 route=mtsdf
+[2026-11-09 18:58:20.809] [info] [text-route] frame=118 route=mtsdf
+[2026-11-09 18:58:20.813] [info] [video]   120/300 frames
+[2026-11-09 18:58:20.816] [info] [text-route] frame=119 route=mtsdf
+[2026-11-09 18:58:20.817] [info] [text-route] frame=119 route=mtsdf
+[2026-11-09 18:58:20.833] [info] [text-route] frame=120 route=mtsdf
+[2026-11-09 18:58:20.833] [info] [text-route] frame=120 route=mtsdf
+[2026-11-09 18:58:20.840] [info] [text-route] frame=121 route=mtsdf
+[2026-11-09 18:58:20.841] [info] [text-route] frame=121 route=mtsdf
+[2026-11-09 18:58:20.857] [info] [text-route] frame=122 route=mtsdf
+[2026-11-09 18:58:20.858] [info] [text-route] frame=122 route=mtsdf
+[2026-11-09 18:58:20.864] [info] [text-route] frame=123 route=mtsdf
+[2026-11-09 18:58:20.865] [info] [text-route] frame=123 route=mtsdf
+[2026-11-09 18:58:20.882] [info] [text-route] frame=124 route=mtsdf
+[2026-11-09 18:58:20.882] [info] [text-route] frame=124 route=mtsdf
+[2026-11-09 18:58:20.887] [info] [vulkan-lifecycle] frame=125 vram_bytes=1024520192 live_surfaces=30 surface_bindings=29 registry_live_handles=1882 physical_images=30 deferred_releases=8 vma_allocations=92 surfaces_created=2882 surfaces_released=2853 queue_packages=1 execution_slots_busy=2 command_batch_active=false
+[2026-11-09 18:58:20.889] [info] [text-route] frame=125 route=mtsdf
+[2026-11-09 18:58:20.890] [info] [text-route] frame=125 route=mtsdf
+[2026-11-09 18:58:20.907] [info] [text-route] frame=126 route=mtsdf
+[2026-11-09 18:58:20.907] [info] [text-route] frame=126 route=mtsdf
+[2026-11-09 18:58:20.916] [info] [text-route] frame=127 route=mtsdf
+[2026-11-09 18:58:20.917] [info] [text-route] frame=127 route=mtsdf
+[2026-11-09 18:58:20.935] [info] [text-route] frame=128 route=mtsdf
+[2026-11-09 18:58:20.935] [info] [text-route] frame=128 route=mtsdf
+[2026-11-09 18:58:20.942] [info] [text-route] frame=129 route=mtsdf
+[2026-11-09 18:58:20.943] [info] [text-route] frame=129 route=mtsdf
+[2026-11-09 18:58:20.959] [info] [text-route] frame=130 route=mtsdf
+[2026-11-09 18:58:20.959] [info] [text-route] frame=130 route=mtsdf
+[2026-11-09 18:58:20.966] [info] [text-route] frame=131 route=mtsdf
+[2026-11-09 18:58:20.967] [info] [text-route] frame=131 route=mtsdf
+[2026-11-09 18:58:20.983] [info] [text-route] frame=132 route=mtsdf
+[2026-11-09 18:58:20.984] [info] [text-route] frame=132 route=mtsdf
+[2026-11-09 18:58:20.991] [info] [text-route] frame=133 route=mtsdf
+[2026-11-09 18:58:20.991] [info] [text-route] frame=133 route=mtsdf
+[2026-11-09 18:58:21.008] [info] [text-route] frame=134 route=mtsdf
+[2026-11-09 18:58:21.008] [info] [text-route] frame=134 route=mtsdf
+[2026-11-09 18:58:21.014] [info] [text-route] frame=135 route=mtsdf
+[2026-11-09 18:58:21.015] [info] [text-route] frame=135 route=mtsdf
+[2026-11-09 18:58:21.032] [info] [text-route] frame=136 route=mtsdf
+[2026-11-09 18:58:21.032] [info] [text-route] frame=136 route=mtsdf
+[2026-11-09 18:58:21.040] [info] [text-route] frame=137 route=mtsdf
+[2026-11-09 18:58:21.041] [info] [text-route] frame=137 route=mtsdf
+[2026-11-09 18:58:21.058] [info] [text-route] frame=138 route=mtsdf
+[2026-11-09 18:58:21.059] [info] [text-route] frame=138 route=mtsdf
+[2026-11-09 18:58:21.066] [info] [text-route] frame=139 route=mtsdf
+[2026-11-09 18:58:21.067] [info] [text-route] frame=139 route=mtsdf
+[2026-11-09 18:58:21.084] [info] [text-route] frame=140 route=mtsdf
+[2026-11-09 18:58:21.084] [info] [text-route] frame=140 route=mtsdf
+[2026-11-09 18:58:21.092] [info] [text-route] frame=141 route=mtsdf
+[2026-11-09 18:58:21.093] [info] [text-route] frame=141 route=mtsdf
+[2026-11-09 18:58:21.111] [info] [text-route] frame=142 route=mtsdf
+[2026-11-09 18:58:21.111] [info] [text-route] frame=142 route=mtsdf
+[2026-11-09 18:58:21.119] [info] [text-route] frame=143 route=mtsdf
+[2026-11-09 18:58:21.120] [info] [text-route] frame=143 route=mtsdf
+[2026-11-09 18:58:21.137] [info] [text-route] frame=144 route=mtsdf
+[2026-11-09 18:58:21.137] [info] [text-route] frame=144 route=mtsdf
+[2026-11-09 18:58:21.145] [info] [text-route] frame=145 route=mtsdf
+[2026-11-09 18:58:21.145] [info] [text-route] frame=145 route=mtsdf
+[2026-11-09 18:58:21.162] [info] [text-route] frame=146 route=mtsdf
+[2026-11-09 18:58:21.162] [info] [text-route] frame=146 route=mtsdf
+[2026-11-09 18:58:21.170] [info] [text-route] frame=147 route=mtsdf
+[2026-11-09 18:58:21.171] [info] [text-route] frame=147 route=mtsdf
+[2026-11-09 18:58:21.188] [info] [text-route] frame=148 route=mtsdf
+[2026-11-09 18:58:21.190] [info] [text-route] frame=148 route=mtsdf
+[2026-11-09 18:58:21.194] [info] [video]   150/300 frames
+[2026-11-09 18:58:21.197] [info] [text-route] frame=149 route=mtsdf
+[2026-11-09 18:58:21.198] [info] [text-route] frame=149 route=mtsdf
+[2026-11-09 18:58:21.216] [info] [vulkan-lifecycle] frame=150 vram_bytes=734363648 live_surfaces=15 surface_bindings=7 registry_live_handles=2257 physical_images=15 deferred_releases=0 vma_allocations=77 surfaces_created=3457 surfaces_released=3450 queue_packages=1 execution_slots_busy=2 command_batch_active=false
+[2026-11-09 18:58:21.217] [info] [text-route] frame=150 route=mtsdf
+[2026-11-09 18:58:21.217] [info] [text-route] frame=150 route=mtsdf
+[2026-11-09 18:58:21.225] [info] [text-route] frame=151 route=mtsdf
+[2026-11-09 18:58:21.226] [info] [text-route] frame=151 route=mtsdf
+[2026-11-09 18:58:21.244] [info] [text-route] frame=152 route=mtsdf
+[2026-11-09 18:58:21.245] [info] [text-route] frame=152 route=mtsdf
+[2026-11-09 18:58:21.253] [info] [text-route] frame=153 route=mtsdf
+[2026-11-09 18:58:21.254] [info] [text-route] frame=153 route=mtsdf
+[2026-11-09 18:58:21.273] [info] [text-route] frame=154 route=mtsdf
+[2026-11-09 18:58:21.273] [info] [text-route] frame=154 route=mtsdf
+[2026-11-09 18:58:21.281] [info] [text-route] frame=155 route=mtsdf
+[2026-11-09 18:58:21.282] [info] [text-route] frame=155 route=mtsdf
+[2026-11-09 18:58:21.299] [info] [text-route] frame=156 route=mtsdf
+[2026-11-09 18:58:21.299] [info] [text-route] frame=156 route=mtsdf
+[2026-11-09 18:58:21.306] [info] [text-route] frame=157 route=mtsdf
+[2026-11-09 18:58:21.307] [info] [text-route] frame=157 route=mtsdf
+[2026-11-09 18:58:21.324] [info] [text-route] frame=158 route=mtsdf
+[2026-11-09 18:58:21.324] [info] [text-route] frame=158 route=mtsdf
+[2026-11-09 18:58:21.332] [info] [text-route] frame=159 route=mtsdf
+[2026-11-09 18:58:21.333] [info] [text-route] frame=159 route=mtsdf
+[2026-11-09 18:58:21.355] [info] [text-route] frame=160 route=mtsdf
+[2026-11-09 18:58:21.356] [info] [text-route] frame=160 route=mtsdf
+[2026-11-09 18:58:21.363] [info] [text-route] frame=161 route=mtsdf
+[2026-11-09 18:58:21.364] [info] [text-route] frame=161 route=mtsdf
+[2026-11-09 18:58:21.381] [info] [text-route] frame=162 route=mtsdf
+[2026-11-09 18:58:21.381] [info] [text-route] frame=162 route=mtsdf
+[2026-11-09 18:58:21.388] [info] [text-route] frame=163 route=mtsdf
+[2026-11-09 18:58:21.388] [info] [text-route] frame=163 route=mtsdf
+[2026-11-09 18:58:21.405] [info] [text-route] frame=164 route=mtsdf
+[2026-11-09 18:58:21.405] [info] [text-route] frame=164 route=mtsdf
+[2026-11-09 18:58:21.412] [info] [text-route] frame=165 route=mtsdf
+[2026-11-09 18:58:21.413] [info] [text-route] frame=165 route=mtsdf
+[2026-11-09 18:58:21.429] [info] [text-route] frame=166 route=mtsdf
+[2026-11-09 18:58:21.429] [info] [text-route] frame=166 route=mtsdf
+[2026-11-09 18:58:21.436] [info] [text-route] frame=167 route=mtsdf
+[2026-11-09 18:58:21.437] [info] [text-route] frame=167 route=mtsdf
+[2026-11-09 18:58:21.453] [info] [text-route] frame=168 route=mtsdf
+[2026-11-09 18:58:21.454] [info] [text-route] frame=168 route=mtsdf
+[2026-11-09 18:58:21.460] [info] [text-route] frame=169 route=mtsdf
+[2026-11-09 18:58:21.461] [info] [text-route] frame=169 route=mtsdf
+[2026-11-09 18:58:21.478] [info] [text-route] frame=170 route=mtsdf
+[2026-11-09 18:58:21.478] [info] [text-route] frame=170 route=mtsdf
+[2026-11-09 18:58:21.484] [info] [text-route] frame=171 route=mtsdf
+[2026-11-09 18:58:21.485] [info] [text-route] frame=171 route=mtsdf
+[2026-11-09 18:58:21.502] [info] [text-route] frame=172 route=mtsdf
+[2026-11-09 18:58:21.502] [info] [text-route] frame=172 route=mtsdf
+[2026-11-09 18:58:21.509] [info] [text-route] frame=173 route=mtsdf
+[2026-11-09 18:58:21.509] [info] [text-route] frame=173 route=mtsdf
+[2026-11-09 18:58:21.526] [info] [text-route] frame=174 route=mtsdf
+[2026-11-09 18:58:21.526] [info] [text-route] frame=174 route=mtsdf
+[2026-11-09 18:58:21.531] [info] [vulkan-lifecycle] frame=175 vram_bytes=1024520192 live_surfaces=30 surface_bindings=29 registry_live_handles=2632 physical_images=30 deferred_releases=8 vma_allocations=92 surfaces_created=4032 surfaces_released=4003 queue_packages=1 execution_slots_busy=2 command_batch_active=false
+[2026-11-09 18:58:21.533] [info] [text-route] frame=175 route=mtsdf
+[2026-11-09 18:58:21.534] [info] [text-route] frame=175 route=mtsdf
+[2026-11-09 18:58:21.550] [info] [text-route] frame=176 route=mtsdf
+[2026-11-09 18:58:21.550] [info] [text-route] frame=176 route=mtsdf
+[2026-11-09 18:58:21.557] [info] [text-route] frame=177 route=mtsdf
+[2026-11-09 18:58:21.558] [info] [text-route] frame=177 route=mtsdf
+[2026-11-09 18:58:21.574] [info] [text-route] frame=178 route=mtsdf
+[2026-11-09 18:58:21.574] [info] [text-route] frame=178 route=mtsdf
+[2026-11-09 18:58:21.579] [info] [video]   180/300 frames
+[2026-11-09 18:58:21.581] [info] [text-route] frame=179 route=mtsdf
+[2026-11-09 18:58:21.582] [info] [text-route] frame=179 route=mtsdf
+[2026-11-09 18:58:21.598] [info] [text-route] frame=180 route=mtsdf
+[2026-11-09 18:58:21.599] [info] [text-route] frame=180 route=mtsdf
+[2026-11-09 18:58:21.605] [info] [text-route] frame=181 route=mtsdf
+[2026-11-09 18:58:21.606] [info] [text-route] frame=181 route=mtsdf
+[2026-11-09 18:58:21.623] [info] [text-route] frame=182 route=mtsdf
+[2026-11-09 18:58:21.623] [info] [text-route] frame=182 route=mtsdf
+[2026-11-09 18:58:21.630] [info] [text-route] frame=183 route=mtsdf
+[2026-11-09 18:58:21.631] [info] [text-route] frame=183 route=mtsdf
+[2026-11-09 18:58:21.647] [info] [text-route] frame=184 route=mtsdf
+[2026-11-09 18:58:21.647] [info] [text-route] frame=184 route=mtsdf
+[2026-11-09 18:58:21.654] [info] [text-route] frame=185 route=mtsdf
+[2026-11-09 18:58:21.655] [info] [text-route] frame=185 route=mtsdf
+[2026-11-09 18:58:21.672] [info] [text-route] frame=186 route=mtsdf
+[2026-11-09 18:58:21.672] [info] [text-route] frame=186 route=mtsdf
+[2026-11-09 18:58:21.678] [info] [text-route] frame=187 route=mtsdf
+[2026-11-09 18:58:21.679] [info] [text-route] frame=187 route=mtsdf
+[2026-11-09 18:58:21.696] [info] [text-route] frame=188 route=mtsdf
+[2026-11-09 18:58:21.696] [info] [text-route] frame=188 route=mtsdf
+[2026-11-09 18:58:21.702] [info] [text-route] frame=189 route=mtsdf
+[2026-11-09 18:58:21.703] [info] [text-route] frame=189 route=mtsdf
+[2026-11-09 18:58:21.720] [info] [text-route] frame=190 route=mtsdf
+[2026-11-09 18:58:21.720] [info] [text-route] frame=190 route=mtsdf
+[2026-11-09 18:58:21.726] [info] [text-route] frame=191 route=mtsdf
+[2026-11-09 18:58:21.727] [info] [text-route] frame=191 route=mtsdf
+[2026-11-09 18:58:21.744] [info] [text-route] frame=192 route=mtsdf
+[2026-11-09 18:58:21.744] [info] [text-route] frame=192 route=mtsdf
+[2026-11-09 18:58:21.751] [info] [text-route] frame=193 route=mtsdf
+[2026-11-09 18:58:21.751] [info] [text-route] frame=193 route=mtsdf
+[2026-11-09 18:58:21.768] [info] [text-route] frame=194 route=mtsdf
+[2026-11-09 18:58:21.768] [info] [text-route] frame=194 route=mtsdf
+[2026-11-09 18:58:21.775] [info] [text-route] frame=195 route=mtsdf
+[2026-11-09 18:58:21.776] [info] [text-route] frame=195 route=mtsdf
+[2026-11-09 18:58:21.792] [info] [text-route] frame=196 route=mtsdf
+[2026-11-09 18:58:21.793] [info] [text-route] frame=196 route=mtsdf
+[2026-11-09 18:58:21.800] [info] [text-route] frame=197 route=mtsdf
+[2026-11-09 18:58:21.800] [info] [text-route] frame=197 route=mtsdf
+[2026-11-09 18:58:21.817] [info] [text-route] frame=198 route=mtsdf
+[2026-11-09 18:58:21.817] [info] [text-route] frame=198 route=mtsdf
+[2026-11-09 18:58:21.824] [info] [text-route] frame=199 route=mtsdf
+[2026-11-09 18:58:21.825] [info] [text-route] frame=199 route=mtsdf
+[2026-11-09 18:58:21.840] [info] [vulkan-lifecycle] frame=200 vram_bytes=734363648 live_surfaces=15 surface_bindings=7 registry_live_handles=3007 physical_images=15 deferred_releases=0 vma_allocations=77 surfaces_created=4607 surfaces_released=4600 queue_packages=1 execution_slots_busy=2 command_batch_active=false
+[2026-11-09 18:58:21.841] [info] [text-route] frame=200 route=mtsdf
+[2026-11-09 18:58:21.841] [info] [text-route] frame=200 route=mtsdf
+[2026-11-09 18:58:21.848] [info] [text-route] frame=201 route=mtsdf
+[2026-11-09 18:58:21.849] [info] [text-route] frame=201 route=mtsdf
+[2026-11-09 18:58:21.866] [info] [text-route] frame=202 route=mtsdf
+[2026-11-09 18:58:21.866] [info] [text-route] frame=202 route=mtsdf
+[2026-11-09 18:58:21.873] [info] [text-route] frame=203 route=mtsdf
+[2026-11-09 18:58:21.874] [info] [text-route] frame=203 route=mtsdf
+[2026-11-09 18:58:21.890] [info] [text-route] frame=204 route=mtsdf
+[2026-11-09 18:58:21.890] [info] [text-route] frame=204 route=mtsdf
+[2026-11-09 18:58:21.897] [info] [text-route] frame=205 route=mtsdf
+[2026-11-09 18:58:21.898] [info] [text-route] frame=205 route=mtsdf
+[2026-11-09 18:58:21.915] [info] [text-route] frame=206 route=mtsdf
+[2026-11-09 18:58:21.915] [info] [text-route] frame=206 route=mtsdf
+[2026-11-09 18:58:21.922] [info] [text-route] frame=207 route=mtsdf
+[2026-11-09 18:58:21.923] [info] [text-route] frame=207 route=mtsdf
+[2026-11-09 18:58:21.939] [info] [text-route] frame=208 route=mtsdf
+[2026-11-09 18:58:21.939] [info] [text-route] frame=208 route=mtsdf
+[2026-11-09 18:58:21.944] [info] [video]   210/300 frames
+[2026-11-09 18:58:21.946] [info] [text-route] frame=209 route=mtsdf
+[2026-11-09 18:58:21.947] [info] [text-route] frame=209 route=mtsdf
+[2026-11-09 18:58:21.964] [info] [text-route] frame=210 route=mtsdf
+[2026-11-09 18:58:21.964] [info] [text-route] frame=210 route=mtsdf
+[2026-11-09 18:58:21.971] [info] [text-route] frame=211 route=mtsdf
+[2026-11-09 18:58:21.972] [info] [text-route] frame=211 route=mtsdf
+[2026-11-09 18:58:21.989] [info] [text-route] frame=212 route=mtsdf
+[2026-11-09 18:58:21.989] [info] [text-route] frame=212 route=mtsdf
+[2026-11-09 18:58:21.995] [info] [text-route] frame=213 route=mtsdf
+[2026-11-09 18:58:21.996] [info] [text-route] frame=213 route=mtsdf
+[2026-11-09 18:58:22.016] [info] [text-route] frame=214 route=mtsdf
+[2026-11-09 18:58:22.016] [info] [text-route] frame=214 route=mtsdf
+[2026-11-09 18:58:22.023] [info] [text-route] frame=215 route=mtsdf
+[2026-11-09 18:58:22.024] [info] [text-route] frame=215 route=mtsdf
+[2026-11-09 18:58:22.041] [info] [text-route] frame=216 route=mtsdf
+[2026-11-09 18:58:22.041] [info] [text-route] frame=216 route=mtsdf
+[2026-11-09 18:58:22.047] [info] [text-route] frame=217 route=mtsdf
+[2026-11-09 18:58:22.048] [info] [text-route] frame=217 route=mtsdf
+[2026-11-09 18:58:22.065] [info] [text-route] frame=218 route=mtsdf
+[2026-11-09 18:58:22.065] [info] [text-route] frame=218 route=mtsdf
+[2026-11-09 18:58:22.072] [info] [text-route] frame=219 route=mtsdf
+[2026-11-09 18:58:22.072] [info] [text-route] frame=219 route=mtsdf
+[2026-11-09 18:58:22.089] [info] [text-route] frame=220 route=mtsdf
+[2026-11-09 18:58:22.089] [info] [text-route] frame=220 route=mtsdf
+[2026-11-09 18:58:22.096] [info] [text-route] frame=221 route=mtsdf
+[2026-11-09 18:58:22.097] [info] [text-route] frame=221 route=mtsdf
+[2026-11-09 18:58:22.113] [info] [text-route] frame=222 route=mtsdf
+[2026-11-09 18:58:22.113] [info] [text-route] frame=222 route=mtsdf
+[2026-11-09 18:58:22.120] [info] [text-route] frame=223 route=mtsdf
+[2026-11-09 18:58:22.120] [info] [text-route] frame=223 route=mtsdf
+[2026-11-09 18:58:22.137] [info] [text-route] frame=224 route=mtsdf
+[2026-11-09 18:58:22.137] [info] [text-route] frame=224 route=mtsdf
+[2026-11-09 18:58:22.142] [info] [vulkan-lifecycle] frame=225 vram_bytes=1024520192 live_surfaces=30 surface_bindings=29 registry_live_handles=3382 physical_images=30 deferred_releases=8 vma_allocations=92 surfaces_created=5182 surfaces_released=5153 queue_packages=1 execution_slots_busy=2 command_batch_active=false
+[2026-11-09 18:58:22.144] [info] [text-route] frame=225 route=mtsdf
+[2026-11-09 18:58:22.145] [info] [text-route] frame=225 route=mtsdf
+[2026-11-09 18:58:22.161] [info] [text-route] frame=226 route=mtsdf
+[2026-11-09 18:58:22.162] [info] [text-route] frame=226 route=mtsdf
+[2026-11-09 18:58:22.168] [info] [text-route] frame=227 route=mtsdf
+[2026-11-09 18:58:22.169] [info] [text-route] frame=227 route=mtsdf
+[2026-11-09 18:58:22.185] [info] [text-route] frame=228 route=mtsdf
+[2026-11-09 18:58:22.185] [info] [text-route] frame=228 route=mtsdf
+[2026-11-09 18:58:22.192] [info] [text-route] frame=229 route=mtsdf
+[2026-11-09 18:58:22.193] [info] [text-route] frame=229 route=mtsdf
+[2026-11-09 18:58:22.209] [info] [text-route] frame=230 route=mtsdf
+[2026-11-09 18:58:22.209] [info] [text-route] frame=230 route=mtsdf
+[2026-11-09 18:58:22.216] [info] [text-route] frame=231 route=mtsdf
+[2026-11-09 18:58:22.217] [info] [text-route] frame=231 route=mtsdf
+[2026-11-09 18:58:22.233] [info] [text-route] frame=232 route=mtsdf
+[2026-11-09 18:58:22.234] [info] [text-route] frame=232 route=mtsdf
+[2026-11-09 18:58:22.240] [info] [text-route] frame=233 route=mtsdf
+[2026-11-09 18:58:22.241] [info] [text-route] frame=233 route=mtsdf
+[2026-11-09 18:58:22.257] [info] [text-route] frame=234 route=mtsdf
+[2026-11-09 18:58:22.258] [info] [text-route] frame=234 route=mtsdf
+[2026-11-09 18:58:22.264] [info] [text-route] frame=235 route=mtsdf
+[2026-11-09 18:58:22.265] [info] [text-route] frame=235 route=mtsdf
+[2026-11-09 18:58:22.281] [info] [text-route] frame=236 route=mtsdf
+[2026-11-09 18:58:22.282] [info] [text-route] frame=236 route=mtsdf
+[2026-11-09 18:58:22.288] [info] [text-route] frame=237 route=mtsdf
+[2026-11-09 18:58:22.289] [info] [text-route] frame=237 route=mtsdf
+[2026-11-09 18:58:22.306] [info] [text-route] frame=238 route=mtsdf
+[2026-11-09 18:58:22.306] [info] [text-route] frame=238 route=mtsdf
+[2026-11-09 18:58:22.310] [info] [video]   240/300 frames
+[2026-11-09 18:58:22.313] [info] [text-route] frame=239 route=mtsdf
+[2026-11-09 18:58:22.313] [info] [text-route] frame=239 route=mtsdf
+[2026-11-09 18:58:22.330] [info] [text-route] frame=240 route=mtsdf
+[2026-11-09 18:58:22.330] [info] [text-route] frame=240 route=mtsdf
+[2026-11-09 18:58:22.337] [info] [text-route] frame=241 route=mtsdf
+[2026-11-09 18:58:22.337] [info] [text-route] frame=241 route=mtsdf
+[2026-11-09 18:58:22.354] [info] [text-route] frame=242 route=mtsdf
+[2026-11-09 18:58:22.354] [info] [text-route] frame=242 route=mtsdf
+[2026-11-09 18:58:22.361] [info] [text-route] frame=243 route=mtsdf
+[2026-11-09 18:58:22.362] [info] [text-route] frame=243 route=mtsdf
+[2026-11-09 18:58:22.379] [info] [text-route] frame=244 route=mtsdf
+[2026-11-09 18:58:22.379] [info] [text-route] frame=244 route=mtsdf
+[2026-11-09 18:58:22.386] [info] [text-route] frame=245 route=mtsdf
+[2026-11-09 18:58:22.386] [info] [text-route] frame=245 route=mtsdf
+[2026-11-09 18:58:22.403] [info] [text-route] frame=246 route=mtsdf
+[2026-11-09 18:58:22.403] [info] [text-route] frame=246 route=mtsdf
+[2026-11-09 18:58:22.409] [info] [text-route] frame=247 route=mtsdf
+[2026-11-09 18:58:22.410] [info] [text-route] frame=247 route=mtsdf
+[2026-11-09 18:58:22.427] [info] [text-route] frame=248 route=mtsdf
+[2026-11-09 18:58:22.427] [info] [text-route] frame=248 route=mtsdf
+[2026-11-09 18:58:22.434] [info] [text-route] frame=249 route=mtsdf
+[2026-11-09 18:58:22.434] [info] [text-route] frame=249 route=mtsdf
+[2026-11-09 18:58:22.450] [info] [vulkan-lifecycle] frame=250 vram_bytes=734363648 live_surfaces=15 surface_bindings=7 registry_live_handles=3757 physical_images=15 deferred_releases=0 vma_allocations=77 surfaces_created=5757 surfaces_released=5750 queue_packages=1 execution_slots_busy=2 command_batch_active=false
+[2026-11-09 18:58:22.451] [info] [text-route] frame=250 route=mtsdf
+[2026-11-09 18:58:22.451] [info] [text-route] frame=250 route=mtsdf
+[2026-11-09 18:58:22.458] [info] [text-route] frame=251 route=mtsdf
+[2026-11-09 18:58:22.459] [info] [text-route] frame=251 route=mtsdf
+[2026-11-09 18:58:22.475] [info] [text-route] frame=252 route=mtsdf
+[2026-11-09 18:58:22.475] [info] [text-route] frame=252 route=mtsdf
+[2026-11-09 18:58:22.482] [info] [text-route] frame=253 route=mtsdf
+[2026-11-09 18:58:22.483] [info] [text-route] frame=253 route=mtsdf
+[2026-11-09 18:58:22.499] [info] [text-route] frame=254 route=mtsdf
+[2026-11-09 18:58:22.499] [info] [text-route] frame=254 route=mtsdf
+[2026-11-09 18:58:22.506] [info] [text-route] frame=255 route=mtsdf
+[2026-11-09 18:58:22.507] [info] [text-route] frame=255 route=mtsdf
+[2026-11-09 18:58:22.523] [info] [text-route] frame=256 route=mtsdf
+[2026-11-09 18:58:22.524] [info] [text-route] frame=256 route=mtsdf
+[2026-11-09 18:58:22.530] [info] [text-route] frame=257 route=mtsdf
+[2026-11-09 18:58:22.531] [info] [text-route] frame=257 route=mtsdf
+[2026-11-09 18:58:22.548] [info] [text-route] frame=258 route=mtsdf
+[2026-11-09 18:58:22.548] [info] [text-route] frame=258 route=mtsdf
+[2026-11-09 18:58:22.555] [info] [text-route] frame=259 route=mtsdf
+[2026-11-09 18:58:22.556] [info] [text-route] frame=259 route=mtsdf
+[2026-11-09 18:58:22.573] [info] [text-route] frame=260 route=mtsdf
+[2026-11-09 18:58:22.573] [info] [text-route] frame=260 route=mtsdf
+[2026-11-09 18:58:22.580] [info] [text-route] frame=261 route=mtsdf
+[2026-11-09 18:58:22.581] [info] [text-route] frame=261 route=mtsdf
+[2026-11-09 18:58:22.597] [info] [text-route] frame=262 route=mtsdf
+[2026-11-09 18:58:22.598] [info] [text-route] frame=262 route=mtsdf
+[2026-11-09 18:58:22.604] [info] [text-route] frame=263 route=mtsdf
+[2026-11-09 18:58:22.605] [info] [text-route] frame=263 route=mtsdf
+[2026-11-09 18:58:22.622] [info] [text-route] frame=264 route=mtsdf
+[2026-11-09 18:58:22.622] [info] [text-route] frame=264 route=mtsdf
+[2026-11-09 18:58:22.629] [info] [text-route] frame=265 route=mtsdf
+[2026-11-09 18:58:22.630] [info] [text-route] frame=265 route=mtsdf
+[2026-11-09 18:58:22.647] [info] [text-route] frame=266 route=mtsdf
+[2026-11-09 18:58:22.647] [info] [text-route] frame=266 route=mtsdf
+[2026-11-09 18:58:22.655] [info] [text-route] frame=267 route=mtsdf
+[2026-11-09 18:58:22.655] [info] [text-route] frame=267 route=mtsdf
+[2026-11-09 18:58:22.672] [info] [text-route] frame=268 route=mtsdf
+[2026-11-09 18:58:22.673] [info] [text-route] frame=268 route=mtsdf
+[2026-11-09 18:58:22.677] [info] [video]   270/300 frames
+[2026-11-09 18:58:22.679] [info] [text-route] frame=269 route=mtsdf
+[2026-11-09 18:58:22.680] [info] [text-route] frame=269 route=mtsdf
+[2026-11-09 18:58:22.697] [info] [text-route] frame=270 route=mtsdf
+[2026-11-09 18:58:22.697] [info] [text-route] frame=270 route=mtsdf
+[2026-11-09 18:58:22.704] [info] [text-route] frame=271 route=mtsdf
+[2026-11-09 18:58:22.705] [info] [text-route] frame=271 route=mtsdf
+[2026-11-09 18:58:22.722] [info] [text-route] frame=272 route=mtsdf
+[2026-11-09 18:58:22.722] [info] [text-route] frame=272 route=mtsdf
+[2026-11-09 18:58:22.728] [info] [text-route] frame=273 route=mtsdf
+[2026-11-09 18:58:22.729] [info] [text-route] frame=273 route=mtsdf
+[2026-11-09 18:58:22.747] [info] [text-route] frame=274 route=mtsdf
+[2026-11-09 18:58:22.748] [info] [text-route] frame=274 route=mtsdf
+[2026-11-09 18:58:22.752] [info] [vulkan-lifecycle] frame=275 vram_bytes=1024520192 live_surfaces=30 surface_bindings=29 registry_live_handles=4132 physical_images=30 deferred_releases=8 vma_allocations=92 surfaces_created=6332 surfaces_released=6303 queue_packages=1 execution_slots_busy=2 command_batch_active=false
+[2026-11-09 18:58:22.754] [info] [text-route] frame=275 route=mtsdf
+[2026-11-09 18:58:22.755] [info] [text-route] frame=275 route=mtsdf
+[2026-11-09 18:58:22.771] [info] [text-route] frame=276 route=mtsdf
+[2026-11-09 18:58:22.771] [info] [text-route] frame=276 route=mtsdf
+[2026-11-09 18:58:22.778] [info] [text-route] frame=277 route=mtsdf
+[2026-11-09 18:58:22.779] [info] [text-route] frame=277 route=mtsdf
+[2026-11-09 18:58:22.795] [info] [text-route] frame=278 route=mtsdf
+[2026-11-09 18:58:22.796] [info] [text-route] frame=278 route=mtsdf
+[2026-11-09 18:58:22.802] [info] [text-route] frame=279 route=mtsdf
+[2026-11-09 18:58:22.803] [info] [text-route] frame=279 route=mtsdf
+[2026-11-09 18:58:22.820] [info] [text-route] frame=280 route=mtsdf
+[2026-11-09 18:58:22.820] [info] [text-route] frame=280 route=mtsdf
+[2026-11-09 18:58:22.828] [info] [text-route] frame=281 route=mtsdf
+[2026-11-09 18:58:22.829] [info] [text-route] frame=281 route=mtsdf
+[2026-11-09 18:58:22.846] [info] [text-route] frame=282 route=mtsdf
+[2026-11-09 18:58:22.846] [info] [text-route] frame=282 route=mtsdf
+[2026-11-09 18:58:22.854] [info] [text-route] frame=283 route=mtsdf
+[2026-11-09 18:58:22.854] [info] [text-route] frame=283 route=mtsdf
+[2026-11-09 18:58:22.871] [info] [text-route] frame=284 route=mtsdf
+[2026-11-09 18:58:22.871] [info] [text-route] frame=284 route=mtsdf
+[2026-11-09 18:58:22.878] [info] [text-route] frame=285 route=mtsdf
+[2026-11-09 18:58:22.879] [info] [text-route] frame=285 route=mtsdf
+[2026-11-09 18:58:22.896] [info] [text-route] frame=286 route=mtsdf
+[2026-11-09 18:58:22.897] [info] [text-route] frame=286 route=mtsdf
+[2026-11-09 18:58:22.904] [info] [text-route] frame=287 route=mtsdf
+[2026-11-09 18:58:22.905] [info] [text-route] frame=287 route=mtsdf
+[2026-11-09 18:58:22.921] [info] [text-route] frame=288 route=mtsdf
+[2026-11-09 18:58:22.922] [info] [text-route] frame=288 route=mtsdf
+[2026-11-09 18:58:22.929] [info] [text-route] frame=289 route=mtsdf
+[2026-11-09 18:58:22.930] [info] [text-route] frame=289 route=mtsdf
+[2026-11-09 18:58:22.947] [info] [text-route] frame=290 route=mtsdf
+[2026-11-09 18:58:22.947] [info] [text-route] frame=290 route=mtsdf
+[2026-11-09 18:58:22.954] [info] [text-route] frame=291 route=mtsdf
+[2026-11-09 18:58:22.954] [info] [text-route] frame=291 route=mtsdf
+[2026-11-09 18:58:22.972] [info] [text-route] frame=292 route=mtsdf
+[2026-11-09 18:58:22.973] [info] [text-route] frame=292 route=mtsdf
+[2026-11-09 18:58:22.980] [info] [text-route] frame=293 route=mtsdf
+[2026-11-09 18:58:22.981] [info] [text-route] frame=293 route=mtsdf
+[2026-11-09 18:58:23.000] [info] [text-route] frame=294 route=mtsdf
+[2026-11-09 18:58:23.000] [info] [text-route] frame=294 route=mtsdf
+[2026-11-09 18:58:23.008] [info] [text-route] frame=295 route=mtsdf
+[2026-11-09 18:58:23.009] [info] [text-route] frame=295 route=mtsdf
+[2026-11-09 18:58:23.025] [info] [text-route] frame=296 route=mtsdf
+[2026-11-09 18:58:23.026] [info] [text-route] frame=296 route=mtsdf
+[2026-11-09 18:58:23.032] [info] [text-route] frame=297 route=mtsdf
+[2026-11-09 18:58:23.033] [info] [text-route] frame=297 route=mtsdf
+[2026-11-09 18:58:23.050] [info] [text-route] frame=298 route=mtsdf
+[2026-11-09 18:58:23.050] [info] [text-route] frame=298 route=mtsdf
+[2026-11-09 18:58:23.055] [info] [video]   300/300 frames
+[2026-11-09 18:58:23.058] [info] [text-route] frame=299 route=mtsdf
+[2026-11-09 18:58:23.059] [info] [text-route] frame=299 route=mtsdf
+[2026-11-09 18:58:23.074] [info] [vulkan-lifecycle] frame=300 vram_bytes=734363648 live_surfaces=15 surface_bindings=7 registry_live_handles=4507 physical_images=15 deferred_releases=0 vma_allocations=77 surfaces_created=6907 surfaces_released=6900 queue_packages=1 execution_slots_busy=2 command_batch_active=false
+[2026-11-09 18:58:23.076] [info] [video] writer join complete
+[2026-11-09 18:58:23.076] [info] [drain-debug] start drain, capacity=6
+[2026-11-09 18:58:23.076] [info] [drain-debug] slot_id=4 has completion, waiting
+[2026-11-09 18:58:23.076] [info] [drain-debug] slot_id=4 wait complete
+[2026-11-09 18:58:23.076] [info] [drain-debug] slot_id=5 has completion, waiting
+[2026-11-09 18:58:23.077] [info] [drain-debug] slot_id=5 wait complete
+[2026-11-09 18:58:23.077] [info] [drain-debug] reap done, busy_count=0
+[2026-11-09 18:58:23.077] [info] [video] trimming framebuffer pool
+[2026-11-09 18:58:23.077] [info] [video] Released framebuffer pool — memory trimmed
+[2026-11-09 18:58:23.077] [info] [video] frame-loop cleanup complete
+[2026-11-09 18:58:23.077] [info] [video] Encoder write blocked duration: 0.00 ms
+[2026-11-09 18:58:23.077] [info] [video_diag] conversion_and_copy_duration_ms: 0 ms
+[2026-11-09 18:58:23.077] [info] [video_diag] conversion_bytes_written=0 encoder_staging_copy_bytes=0 encoder_slot_reuses=0
+[2026-11-09 18:58:23.077] [info] [native_av] close: sending encoder flush
+[2026-11-09 18:58:23.128] [info] [native_av] close: encoder flush accepted
+[2026-11-09 18:58:23.190] [info] [native_av] close: packets drained=true
+[2026-11-09 18:58:23.190] [info] [native_av] close: finalizing mux session
+[2026-11-09 18:58:23.195] [info] [native_av] close: mux session finalized
+[2026-11-09 18:58:23.195] [info] [native_av] Closed native encoder — 300 frames accepted, encoder_packets=300 mux_packets=300 packet_pts=0..299, YUV cache: 0 hits / 0 misses
+[2026-11-09 18:58:23.195] [info] [native_av] native-surface timings — hwframe_pool_ms=24.8 c2v_prepare_ms=11.3 encode_drain_ms=3.3 send_ms=64.2 submit_counter_ms=64.2 backpressure_ms=0.0
+[2026-11-09 18:58:23.195] [info] [video_native] convert=13.43ms  send_frame=64.18ms  backpressure=0.00ms  flush=118.44ms  receive_packet=61.24ms  mux_write=12.94ms  trailer=5.61ms
+[2026-11-09 18:58:23.197] [info] [video] render_ms=3996.92 encode_ms=122.89 writer_encode_ms=122.72 wall_ms=5934.46 nvml_stop_ms=0.10
+[2026-11-09 18:58:23.197] [info] [video] FFmpeg queue wait duration: 0.62 ms
+[2026-11-09 18:58:23.259] [info] [video] copy_eligible=true sha256=fbf8797c151d6a25a766b27c5595fa34bc2ab51648d5b5c2584aebb451f74777
+[2026-11-09 18:58:23.259] [info] [video] Wrote /home/pierone/src/go-master/projects/Pyt/VeloxEditing/RenderingGen/UploadDrive/camera_ring_text_v7_original_20261109/mp4/CameraRing_Text_13_Il_Dettaglio_E_Tutto_1920x1080_10s_v7.mp4
+[2026-11-09 18:58:23.259] [info] [startup-profile] total=1501.10ms logger=0.67ms cli_bootstrap=9.93ms cli_parse=nullms composition=1.06ms plan_read=0.37ms json_parse=0.22ms plan_decode_validate=65.76ms asset_resolve=0.39ms plan_compile=6.80ms unaccounted=190.78ms
+[2026-11-09 18:58:23.293] [info] [video] Wrote exact per-frame timing sidecar: /home/pierone/src/go-master/projects/Pyt/VeloxEditing/RenderingGen/UploadDrive/camera_ring_text_v7_original_20261109/mp4/CameraRing_Text_13_Il_Dettaglio_E_Tutto_1920x1080_10s_v7.mp4.timing.json
+[2026-11-09 18:58:23.367] [info] [INFO] job-lifecycle: queue_close_ms=0.0 writer_join_ms=0.0 encoder_reset_ms=70.0 decoder_reset_ms=0.0 full_graph_reset_ms=0.0 sink_ctx_reset_ms=0.0 device_runtime_reset_ms=0.0 device_reservation_reset_ms=0.0
+[2026-11-09 18:58:23.367] [info] [INFO] job-lifecycle: sidecar_write_ms=37.3 session_teardown_ms=70.3
+[2026-11-09 18:58:23.374] [info] [INFO] job-lifecycle: post_sidecar_to_receipt_ms=77.5
+[2026-11-09 18:58:23.374] [info] [INFO] job-lifecycle: execute_ms=6111.7 caller_tail_ms=0.0 receipt_deferred=0
+[2026-11-09 18:58:23.374] [info] [INFO] job-lifecycle: slot_pool_close_ms=0.0 surface_release_ms=0.0

@@ -10,7 +10,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"os/exec"
 	"strconv"
 	"strings"
 	"sync"
@@ -247,16 +246,15 @@ func probeFile(ctx context.Context, path string, knownFrameCount int) (ProbeResu
 	// `-read_intervals %+#1` keeps the added section to the first frame of each
 	// stream, so merging removes a whole process from the post-render path
 	// instead of adding work to it.
-	cmd := exec.CommandContext(ctx, ffprobeBinary(), "-v", "error",
+	stdout, _, err := runTool(ctx, ffprobeBinary(), "-v", "error",
 		"-show_streams", "-show_format",
 		"-read_intervals", "%+#1", "-show_entries", "frame=key_frame,stream_index",
 		"-show_data", "-of", "json", path)
-	out, err := cmd.Output()
 	if err != nil {
 		return ProbeResult{}, fmt.Errorf("ffprobe %s: %w", path, err)
 	}
 	var doc ffprobeDocument
-	if err := json.Unmarshal(out, &doc); err != nil {
+	if err := json.Unmarshal(stdout, &doc); err != nil {
 		return ProbeResult{}, fmt.Errorf("ffprobe decode %s: %w", path, err)
 	}
 	result := ProbeResult{Container: doc.Format.FormatName}
@@ -353,9 +351,9 @@ func probeFile(ctx context.Context, path string, knownFrameCount int) (ProbeResu
 		result.FrameCount = knownFrameCount
 	}
 	if result.FrameCount == 0 {
-		countCmd := exec.CommandContext(ctx, ffprobeBinary(), "-v", "error", "-count_frames", "-select_streams", "v:0",
+		countOut, _, err := runTool(ctx, ffprobeBinary(), "-v", "error", "-count_frames", "-select_streams", "v:0",
 			"-show_entries", "stream=nb_read_frames", "-of", "default=nokey=1:noprint_wrappers=1", path)
-		if countOut, err := countCmd.Output(); err == nil {
+		if err == nil {
 			if n, err := strconv.Atoi(strings.TrimSpace(string(countOut))); err == nil {
 				result.FrameCount = n
 			}

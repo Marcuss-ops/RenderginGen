@@ -6,13 +6,13 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/queue"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/storage"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/testenv"
 )
 
 func makeOverlayImportJob(t *testing.T, path, id string) (*queue.Job, []byte) {
@@ -69,12 +69,8 @@ func TestDecodeOverlayImportRejectsUnknownFieldsAndMismatchedIdentity(t *testing
 }
 
 func TestImportOverlayArtifactIsByteIdenticalAndDoesNotInvokeChronon(t *testing.T) {
-	if _, err := exec.LookPath("ffprobe"); err != nil {
-		t.Skipf("ffprobe unavailable: %v", err)
-	}
-	if _, err := exec.LookPath("ffmpeg"); err != nil {
-		t.Skipf("ffmpeg unavailable: %v", err)
-	}
+	testenv.RequireTools(t, "ffprobe")
+	testenv.RequireTools(t, "ffmpeg")
 	fixture := filepath.Join("..", "..", "..", "testdata", "golden", "background.mp4")
 	job, expected := makeOverlayImportJob(t, fixture, "map-import-e2e")
 	backend := newStagingMem()
@@ -136,12 +132,8 @@ func TestImportOverlayArtifactIsByteIdenticalAndDoesNotInvokeChronon(t *testing.
 }
 
 func TestImportOverlayArtifactFailsClosedOnBadIdentity(t *testing.T) {
-	if _, err := exec.LookPath("ffprobe"); err != nil {
-		t.Skipf("ffprobe unavailable: %v", err)
-	}
-	if _, err := exec.LookPath("ffmpeg"); err != nil {
-		t.Skipf("ffmpeg unavailable: %v", err)
-	}
+	testenv.RequireTools(t, "ffprobe")
+	testenv.RequireTools(t, "ffmpeg")
 	fixture := filepath.Join("..", "..", "..", "testdata", "golden", "background.mp4")
 	job, source := makeOverlayImportJob(t, fixture, "map-import-bad-hash")
 	bad := []byte("not-the-producer-bytes")

@@ -1,0 +1,1071 @@
+{
+  "schema": "chronon.render-plan.v3",
+  "version": 3,
+  "job_id": "socials_x_post",
+  "canvas": {
+    "width": 1920,
+    "height": 1080,
+    "fps_num": 30,
+    "fps_den": 1,
+    "duration_frames": 240
+  },
+  "layers": [
+    {
+      "id": "backdrop",
+      "type": "color",
+      "color": [
+        0.03529411764705882,
+        0.050980392156862744,
+        0.07058823529411765,
+        1.0
+      ],
+      "size": [
+        1920,
+        1080
+      ],
+      "position": [
+        0.0,
+        0.0
+      ],
+      "start_frame": 0,
+      "duration_frames": 240,
+      "effects": [
+        {
+          "type": "vignette",
+          "radius": 0.72,
+          "softness": 0.78,
+          "amount": 0.44,
+          "color": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ]
+        }
+      ]
+    },
+    {
+      "id": "chrome_section",
+      "type": "text",
+      "text": "CHRONONPLUGIN / SOCIALS  -  X / POST CARD",
+      "size": [
+        1000.0,
+        28.0
+      ],
+      "position": [
+        580.0,
+        50.0
+      ],
+      "start_frame": 0,
+      "duration_frames": 240,
+      "style": {
+        "font": "assets/fonts/Inter-Bold.ttf",
+        "font_size": 19.0,
+        "fill": "#8B949E",
+        "text_align": "left"
+      }
+    },
+    {
+      "id": "x_card",
+      "type": "shape",
+      "shape": {
+        "type": "rounded_rect",
+        "fill": [
+          0.08235294117647059,
+          0.12549019607843137,
+          0.16862745098039217,
+          1.0
+        ],
+        "radius": 40.0,
+        "stroke": {
+          "color": "#2F3336",
+          "width": 1.5
+        }
+      },
+      "size": [
+        1420.0,
+        820.0
+      ],
+      "position": [
+        0.0,
+        0.0
+      ],
+      "start_frame": 0,
+      "duration_frames": 240,
+      "animation": {
+        "tracks": [
+          {
+            "property": "opacity",
+            "easing": "out_cubic",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 0.0
+              },
+              {
+                "frame": 2,
+                "value": 0.0
+              },
+              {
+                "frame": 14,
+                "value": 1.0
+              }
+            ]
+          },
+          {
+            "property": "position_y",
+            "easing": "out_back",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 38.0
+              },
+              {
+                "frame": 20,
+                "value": 0.0
+              }
+            ]
+          },
+          {
+            "property": "scale",
+            "easing": "out_back",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": [
+                  0.94,
+                  0.94
+                ]
+              },
+              {
+                "frame": 22,
+                "value": [
+                  1.0,
+                  1.0
+                ]
+              },
+              {
+                "frame": 239,
+                "value": [
+                  1.004,
+                  1.004
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "x_avatar",
+      "type": "shape",
+      "shape": {
+        "type": "ellipse",
+        "fill": [
+          0.11372549019607843,
+          0.6078431372549019,
+          0.9411764705882353,
+          1.0
+        ]
+      },
+      "size": [
+        104.0,
+        104.0
+      ],
+      "position": [
+        -528.0,
+        -290.0
+      ],
+      "start_frame": 0,
+      "duration_frames": 240,
+      "animation": {
+        "tracks": [
+          {
+            "property": "opacity",
+            "easing": "out_cubic",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 0.0
+              },
+              {
+                "frame": 12,
+                "value": 0.0
+              },
+              {
+                "frame": 24,
+                "value": 1.0
+              }
+            ]
+          },
+          {
+            "property": "position_y",
+            "easing": "out_back",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 10.0
+              },
+              {
+                "frame": 30,
+                "value": 0.0
+              }
+            ]
+          },
+          {
+            "property": "scale",
+            "easing": "out_back",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": [
+                  0.7,
+                  0.7
+                ]
+              },
+              {
+                "frame": 32,
+                "value": [
+                  1.0,
+                  1.0
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "x_avatar_initial",
+      "type": "text",
+      "text": "C",
+      "size": [
+        104.0,
+        104.0
+      ],
+      "position": [
+        432.0,
+        250.0
+      ],
+      "start_frame": 0,
+      "duration_frames": 240,
+      "style": {
+        "font": "assets/fonts/Inter-Bold.ttf",
+        "font_size": 46.0,
+        "fill": "#FFFFFF",
+        "text_align": "center"
+      },
+      "animation": {
+        "tracks": [
+          {
+            "property": "opacity",
+            "easing": "out_cubic",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 0.0
+              },
+              {
+                "frame": 12,
+                "value": 0.0
+              },
+              {
+                "frame": 24,
+                "value": 1.0
+              }
+            ]
+          },
+          {
+            "property": "position_y",
+            "easing": "out_back",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 8.0
+              },
+              {
+                "frame": 30,
+                "value": 0.0
+              }
+            ]
+          },
+          {
+            "property": "scale",
+            "easing": "out_back",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": [
+                  0.8,
+                  0.8
+                ]
+              },
+              {
+                "frame": 32,
+                "value": [
+                  1.0,
+                  1.0
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "x_display_name",
+      "type": "text",
+      "text": "Chronon3D",
+      "size": [
+        320.0,
+        46.0
+      ],
+      "position": [
+        680.0,
+        227.0
+      ],
+      "start_frame": 0,
+      "duration_frames": 240,
+      "style": {
+        "font": "assets/fonts/Inter-Bold.ttf",
+        "font_size": 36.0,
+        "fill": "#F7F9F9",
+        "text_align": "left"
+      },
+      "animation": {
+        "tracks": [
+          {
+            "property": "opacity",
+            "easing": "out_cubic",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 0.0
+              },
+              {
+                "frame": 16,
+                "value": 0.0
+              },
+              {
+                "frame": 26,
+                "value": 1.0
+              }
+            ]
+          },
+          {
+            "property": "position_y",
+            "easing": "out_cubic",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 14.0
+              },
+              {
+                "frame": 28,
+                "value": 0.0
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "x_verified_check",
+      "type": "text",
+      "text": "✓",
+      "size": [
+        30.0,
+        30.0
+      ],
+      "position": [
+        743.0,
+        229.0
+      ],
+      "start_frame": 0,
+      "duration_frames": 240,
+      "style": {
+        "font": "assets/fonts/DejaVuSans.ttf",
+        "font_size": 20.0,
+        "fill": "#1D9BF0",
+        "text_align": "center"
+      },
+      "animation": {
+        "tracks": [
+          {
+            "property": "opacity",
+            "easing": "out_cubic",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 0.0
+              },
+              {
+                "frame": 22,
+                "value": 0.0
+              },
+              {
+                "frame": 30,
+                "value": 1.0
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "x_handle",
+      "type": "text",
+      "text": "@chronon3d  -  2h",
+      "size": [
+        700.0,
+        34.0
+      ],
+      "position": [
+        870.0,
+        269.0
+      ],
+      "start_frame": 0,
+      "duration_frames": 240,
+      "style": {
+        "font": "assets/fonts/Inter-Regular.ttf",
+        "font_size": 24.0,
+        "fill": "#8B98A5",
+        "text_align": "left"
+      },
+      "animation": {
+        "tracks": [
+          {
+            "property": "opacity",
+            "easing": "out_cubic",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 0.0
+              },
+              {
+                "frame": 20,
+                "value": 0.0
+              },
+              {
+                "frame": 30,
+                "value": 1.0
+              }
+            ]
+          },
+          {
+            "property": "position_y",
+            "easing": "out_cubic",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 14.0
+              },
+              {
+                "frame": 32,
+                "value": 0.0
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "x_body_0",
+      "type": "text",
+      "text": "Le card social ora vivono dentro Chronon3d.",
+      "size": [
+        1160.0,
+        54.0
+      ],
+      "position": [
+        960.0,
+        365.0
+      ],
+      "start_frame": 0,
+      "duration_frames": 240,
+      "style": {
+        "font": "assets/fonts/Inter-Regular.ttf",
+        "font_size": 38.0,
+        "fill": "#F7F9F9",
+        "text_align": "left"
+      },
+      "animation": {
+        "tracks": [
+          {
+            "property": "opacity",
+            "easing": "out_cubic",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 0.0
+              },
+              {
+                "frame": 22,
+                "value": 0.0
+              },
+              {
+                "frame": 32,
+                "value": 1.0
+              }
+            ]
+          },
+          {
+            "property": "position_y",
+            "easing": "out_cubic",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 14.0
+              },
+              {
+                "frame": 34,
+                "value": 0.0
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "x_body_1",
+      "type": "text",
+      "text": "Niente browser, niente screenshot:",
+      "size": [
+        1160.0,
+        54.0
+      ],
+      "position": [
+        960.0,
+        423.0
+      ],
+      "start_frame": 0,
+      "duration_frames": 240,
+      "style": {
+        "font": "assets/fonts/Inter-Regular.ttf",
+        "font_size": 38.0,
+        "fill": "#F7F9F9",
+        "text_align": "left"
+      },
+      "animation": {
+        "tracks": [
+          {
+            "property": "opacity",
+            "easing": "out_cubic",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 0.0
+              },
+              {
+                "frame": 30,
+                "value": 0.0
+              },
+              {
+                "frame": 40,
+                "value": 1.0
+              }
+            ]
+          },
+          {
+            "property": "position_y",
+            "easing": "out_cubic",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 14.0
+              },
+              {
+                "frame": 42,
+                "value": 0.0
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "x_media",
+      "type": "shape",
+      "shape": {
+        "type": "rounded_rect",
+        "fill": [
+          0.0392156862745098,
+          0.08627450980392157,
+          0.12549019607843137,
+          1.0
+        ],
+        "radius": 22.0,
+        "stroke": {
+          "color": "#1F3A4A",
+          "width": 1.5
+        }
+      },
+      "size": [
+        1160.0,
+        216.0
+      ],
+      "position": [
+        0.0,
+        134.0
+      ],
+      "start_frame": 0,
+      "duration_frames": 240,
+      "animation": {
+        "tracks": [
+          {
+            "property": "opacity",
+            "easing": "out_cubic",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 0.0
+              },
+              {
+                "frame": 36,
+                "value": 0.0
+              },
+              {
+                "frame": 48,
+                "value": 1.0
+              }
+            ]
+          },
+          {
+            "property": "position_y",
+            "easing": "out_back",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 20.0
+              },
+              {
+                "frame": 54,
+                "value": 0.0
+              }
+            ]
+          },
+          {
+            "property": "scale",
+            "easing": "out_back",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": [
+                  0.97,
+                  0.97
+                ]
+              },
+              {
+                "frame": 56,
+                "value": [
+                  1.0,
+                  1.0
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "x_media_headline",
+      "type": "text",
+      "text": "SDF - CURVES - SPRINGS",
+      "size": [
+        820.0,
+        56.0
+      ],
+      "position": [
+        822.0,
+        650.0
+      ],
+      "start_frame": 0,
+      "duration_frames": 240,
+      "style": {
+        "font": "assets/fonts/Inter-Black.ttf",
+        "font_size": 46.0,
+        "fill": "#F7F9F9",
+        "text_align": "left"
+      },
+      "animation": {
+        "tracks": [
+          {
+            "property": "opacity",
+            "easing": "out_cubic",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 0.0
+              },
+              {
+                "frame": 46,
+                "value": 0.0
+              },
+              {
+                "frame": 56,
+                "value": 1.0
+              }
+            ]
+          },
+          {
+            "property": "position_y",
+            "easing": "out_cubic",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 14.0
+              },
+              {
+                "frame": 58,
+                "value": 0.0
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "x_media_subline",
+      "type": "text",
+      "text": "un RenderPlan, zero browser",
+      "size": [
+        760.0,
+        30.0
+      ],
+      "position": [
+        792.0,
+        709.0
+      ],
+      "start_frame": 0,
+      "duration_frames": 240,
+      "style": {
+        "font": "assets/fonts/Inter-Regular.ttf",
+        "font_size": 22.0,
+        "fill": "#8FA6B5",
+        "text_align": "left"
+      },
+      "animation": {
+        "tracks": [
+          {
+            "property": "opacity",
+            "easing": "out_cubic",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 0.0
+              },
+              {
+                "frame": 50,
+                "value": 0.0
+              },
+              {
+                "frame": 60,
+                "value": 1.0
+              }
+            ]
+          },
+          {
+            "property": "position_y",
+            "easing": "out_cubic",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 14.0
+              },
+              {
+                "frame": 62,
+                "value": 0.0
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "x_media_play",
+      "type": "shape",
+      "shape": {
+        "type": "ellipse",
+        "fill": [
+          0.11372549019607843,
+          0.6078431372549019,
+          0.9411764705882353,
+          0.18
+        ],
+        "stroke": {
+          "color": "#1D9BF0",
+          "width": 1.5
+        }
+      },
+      "size": [
+        74.0,
+        74.0
+      ],
+      "position": [
+        485.0,
+        129.0
+      ],
+      "start_frame": 0,
+      "duration_frames": 240,
+      "animation": {
+        "tracks": [
+          {
+            "property": "opacity",
+            "easing": "out_cubic",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 0.0
+              },
+              {
+                "frame": 48,
+                "value": 0.0
+              },
+              {
+                "frame": 60,
+                "value": 1.0
+              }
+            ]
+          },
+          {
+            "property": "position_y",
+            "easing": "out_back",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 10.0
+              },
+              {
+                "frame": 66,
+                "value": 0.0
+              }
+            ]
+          },
+          {
+            "property": "scale",
+            "easing": "out_back",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": [
+                  0.7,
+                  0.7
+                ]
+              },
+              {
+                "frame": 68,
+                "value": [
+                  1.0,
+                  1.0
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "x_media_play_glyph",
+      "type": "text",
+      "text": "▶",
+      "size": [
+        74.0,
+        74.0
+      ],
+      "position": [
+        1445.0,
+        669.0
+      ],
+      "start_frame": 0,
+      "duration_frames": 240,
+      "style": {
+        "font": "assets/fonts/DejaVuSans.ttf",
+        "font_size": 24.0,
+        "fill": "#FFFFFF",
+        "text_align": "center"
+      },
+      "animation": {
+        "tracks": [
+          {
+            "property": "opacity",
+            "easing": "out_cubic",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 0.0
+              },
+              {
+                "frame": 52,
+                "value": 0.0
+              },
+              {
+                "frame": 60,
+                "value": 1.0
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "x_media_progress",
+      "type": "shape",
+      "shape": {
+        "type": "rounded_rect",
+        "fill": [
+          0.11372549019607843,
+          0.6078431372549019,
+          0.9411764705882353,
+          1.0
+        ],
+        "radius": 2.0
+      },
+      "size": [
+        560.0,
+        4.0
+      ],
+      "position": [
+        -268.0,
+        208.0
+      ],
+      "start_frame": 0,
+      "duration_frames": 240,
+      "animation": {
+        "tracks": [
+          {
+            "property": "scale_x",
+            "easing": "linear",
+            "keyframes": [
+              {
+                "frame": 58,
+                "value": 0.02
+              },
+              {
+                "frame": 229,
+                "value": 0.74
+              }
+            ]
+          },
+          {
+            "property": "position_x",
+            "easing": "linear",
+            "keyframes": [
+              {
+                "frame": 58,
+                "value": -274.4
+              },
+              {
+                "frame": 229,
+                "value": -72.8
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "x_actions",
+      "type": "text",
+      "text": "○ 128      ↻ 430      ♡ 2.7K      ▱ 48.2K",
+      "size": [
+        1160.0,
+        36.0
+      ],
+      "position": [
+        960.0,
+        860.0
+      ],
+      "start_frame": 0,
+      "duration_frames": 240,
+      "style": {
+        "font": "assets/fonts/DejaVuSans.ttf",
+        "font_size": 25.0,
+        "fill": "#8B98A5",
+        "text_align": "left"
+      },
+      "animation": {
+        "tracks": [
+          {
+            "property": "opacity",
+            "easing": "out_cubic",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 0.0
+              },
+              {
+                "frame": 60,
+                "value": 0.0
+              },
+              {
+                "frame": 70,
+                "value": 1.0
+              }
+            ]
+          },
+          {
+            "property": "position_y",
+            "easing": "out_cubic",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 10.0
+              },
+              {
+                "frame": 72,
+                "value": 0.0
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "end_fade",
+      "type": "color",
+      "color": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "size": [
+        1920,
+        1080
+      ],
+      "position": [
+        0.0,
+        0.0
+      ],
+      "start_frame": 0,
+      "duration_frames": 240,
+      "animation": {
+        "tracks": [
+          {
+            "property": "opacity",
+            "easing": "in_cubic",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 0.0
+              },
+              {
+                "frame": 226,
+                "value": 0.0
+              },
+              {
+                "frame": 239,
+                "value": 0.92
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "output": {
+    "path": "mp4/Socials_01_X_Post_1920x1080_8s.mp4",
+    "format": "mp4",
+    "codec": "h264"
+  }
+}

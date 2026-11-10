@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"testing"
 	"time"
@@ -13,6 +12,7 @@ import (
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/hashio"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/overlay"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/queue"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/testenv"
 )
 
 // segments_live_test.go is the LIVE rung of the P4 per-segment retry contract
@@ -40,25 +40,6 @@ func liveSegmentedPlan(frames int) string {
   ],
   "output": { "path": "result.mp4", "format": "mp4", "codec": "h264" }
 }`, frames)
-}
-
-// liveChrononBinary resolves the chronon3d_cli the live segment tests execute,
-// skipping visibly when no binary is installed (the offline suites stay the
-// gate for the mechanics).
-func liveChrononBinary(t *testing.T) string {
-	t.Helper()
-	if override := os.Getenv("CHRONON_BINARY"); override != "" {
-		return override
-	}
-	home := os.Getenv("CHRONON_HOME")
-	if home == "" {
-		home = "/opt/chronon3d"
-	}
-	binary := (&chronon.Client{Home: home}).Binary()
-	if _, err := os.Stat(binary); err != nil {
-		t.Skipf("chronon3d_cli not available at %s (set CHRONON_HOME or CHRONON_BINARY): %v", binary, err)
-	}
-	return binary
 }
 
 // recordingRenderer counts the renders that reach the live lane and delegates
@@ -91,13 +72,8 @@ func (r *recordingRenderer) Render(ctx context.Context, req chronon.RenderReques
 // Gated like every live chronon test (CHRONON_BINARY / CHRONON_HOME); without
 // a usable binary it skips visibly.
 func TestFinalizeSegmentsLiveInducedRetryRendersOnlyTheFailedSegment(t *testing.T) {
-	if _, err := exec.LookPath("ffmpeg"); err != nil {
-		t.Skipf("ffmpeg not available: %v", err)
-	}
-	if _, err := exec.LookPath("ffprobe"); err != nil {
-		t.Skipf("ffprobe not available: %v", err)
-	}
-	binary := liveChrononBinary(t)
+	testenv.RequireTools(t, "ffmpeg", "ffprobe")
+	binary := testenv.RequireChronon(t)
 
 	const frames, items, failed = 12, 3, 1
 	dir := t.TempDir()

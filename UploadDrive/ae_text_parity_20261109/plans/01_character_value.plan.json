@@ -1,0 +1,447 @@
+{
+  "schema": "chronon.render-plan.v3",
+  "version": 3,
+  "job_id": "ae_text_01_character_value",
+  "canvas": {
+    "width": 1920,
+    "height": 1080,
+    "fps_num": 30,
+    "fps_den": 1,
+    "duration_frames": 180
+  },
+  "layers": [
+    {
+      "id": "backdrop",
+      "type": "color",
+      "color": [
+        0.004,
+        0.008,
+        0.014,
+        1.0
+      ],
+      "size": [
+        1920.0,
+        1080.0
+      ],
+      "position": [
+        0.0,
+        0.0
+      ],
+      "start_frame": 0,
+      "duration_frames": 180
+    },
+    {
+      "id": "title",
+      "type": "text",
+      "text": "CHRONON",
+      "size": [
+        1920.0,
+        1080.0
+      ],
+      "position": [
+        960.0,
+        540.0
+      ],
+      "start_frame": 0,
+      "duration_frames": 180,
+      "style": {
+        "font": "assets/fonts/SF-Pro-Display-Semibold.otf",
+        "font_size": 150.0,
+        "fill": "#F4FAFF"
+      },
+      "animation": {
+        "tracks": [
+          {
+            "property": "opacity",
+            "easing": "out_cubic",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 0.0
+              },
+              {
+                "frame": 12,
+                "value": 1.0
+              },
+              {
+                "frame": 179,
+                "value": 1.0
+              }
+            ]
+          }
+        ]
+      },
+      "text_animators": [
+        {
+          "id": "value_glyph_0",
+          "selectors": [
+            {
+              "unit": "glyph",
+              "shape": "square",
+              "order": "forward",
+              "combine": "replace",
+              "exclude_spaces": true,
+              "start": {
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0.0
+                  }
+                ]
+              },
+              "end": {
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 14.285714285714286
+                  }
+                ]
+              }
+            }
+          ],
+          "properties": [
+            {
+              "property": "character_value",
+              "easing": "linear",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 65
+                },
+                {
+                  "frame": 19,
+                  "value": 65
+                },
+                {
+                  "frame": 20,
+                  "value": 67
+                },
+                {
+                  "frame": 179,
+                  "value": 67
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "value_glyph_1",
+          "selectors": [
+            {
+              "unit": "glyph",
+              "shape": "square",
+              "order": "forward",
+              "combine": "replace",
+              "exclude_spaces": true,
+              "start": {
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 14.285714285714286
+                  }
+                ]
+              },
+              "end": {
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 28.571428571428573
+                  }
+                ]
+              }
+            }
+          ],
+          "properties": [
+            {
+              "property": "character_value",
+              "easing": "linear",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 65
+                },
+                {
+                  "frame": 33,
+                  "value": 65
+                },
+                {
+                  "frame": 34,
+                  "value": 72
+                },
+                {
+                  "frame": 179,
+                  "value": 72
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "value_glyph_2",
+          "selectors": [
+            {
+              "unit": "glyph",
+              "shape": "square",
+              "order": "forward",
+              "combine": "replace",
+              "exclude_spaces": true,
+              "start": {
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 28.571428571428573
+                  }
+                ]
+              },
+              "end": {
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 42.857142857142854
+                  }
+                ]
+              }
+            }
+          ],
+          "properties": [
+            {
+              "property": "character_value",
+              "easing": "linear",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 65
+                },
+                {
+                  "frame": 47,
+                  "value": 65
+                },
+                {
+                  "frame": 48,
+                  "value": 82
+                },
+                {
+                  "frame": 179,
+                  "value": 82
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "value_glyph_3",
+          "selectors": [
+            {
+              "unit": "glyph",
+              "shape": "square",
+              "order": "forward",
+              "combine": "replace",
+              "exclude_spaces": true,
+              "start": {
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 42.857142857142854
+                  }
+                ]
+              },
+              "end": {
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 57.142857142857146
+                  }
+                ]
+              }
+            }
+          ],
+          "properties": [
+            {
+              "property": "character_value",
+              "easing": "linear",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 65
+                },
+                {
+                  "frame": 61,
+                  "value": 65
+                },
+                {
+                  "frame": 62,
+                  "value": 79
+                },
+                {
+                  "frame": 179,
+                  "value": 79
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "value_glyph_4",
+          "selectors": [
+            {
+              "unit": "glyph",
+              "shape": "square",
+              "order": "forward",
+              "combine": "replace",
+              "exclude_spaces": true,
+              "start": {
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 57.142857142857146
+                  }
+                ]
+              },
+              "end": {
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 71.42857142857143
+                  }
+                ]
+              }
+            }
+          ],
+          "properties": [
+            {
+              "property": "character_value",
+              "easing": "linear",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 65
+                },
+                {
+                  "frame": 75,
+                  "value": 65
+                },
+                {
+                  "frame": 76,
+                  "value": 78
+                },
+                {
+                  "frame": 179,
+                  "value": 78
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "value_glyph_5",
+          "selectors": [
+            {
+              "unit": "glyph",
+              "shape": "square",
+              "order": "forward",
+              "combine": "replace",
+              "exclude_spaces": true,
+              "start": {
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 71.42857142857143
+                  }
+                ]
+              },
+              "end": {
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 85.71428571428571
+                  }
+                ]
+              }
+            }
+          ],
+          "properties": [
+            {
+              "property": "character_value",
+              "easing": "linear",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 65
+                },
+                {
+                  "frame": 89,
+                  "value": 65
+                },
+                {
+                  "frame": 90,
+                  "value": 79
+                },
+                {
+                  "frame": 179,
+                  "value": 79
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "value_glyph_6",
+          "selectors": [
+            {
+              "unit": "glyph",
+              "shape": "square",
+              "order": "forward",
+              "combine": "replace",
+              "exclude_spaces": true,
+              "start": {
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 85.71428571428571
+                  }
+                ]
+              },
+              "end": {
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 100.0
+                  }
+                ]
+              }
+            }
+          ],
+          "properties": [
+            {
+              "property": "character_value",
+              "easing": "linear",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 65
+                },
+                {
+                  "frame": 103,
+                  "value": 65
+                },
+                {
+                  "frame": 104,
+                  "value": 78
+                },
+                {
+                  "frame": 179,
+                  "value": 78
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "output": {
+    "path": "ae_text_01_character_value_1920x1080_6s.mp4",
+    "format": "mp4",
+    "codec": "h264"
+  }
+}

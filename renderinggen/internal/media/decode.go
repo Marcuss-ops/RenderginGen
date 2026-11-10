@@ -11,7 +11,6 @@ package media
 import (
 	"context"
 	"fmt"
-	"os/exec"
 	"strconv"
 	"strings"
 )
@@ -26,26 +25,23 @@ import (
 // nb_frames in the container header. Decoder diagnostics are fatal even when
 // ffprobe returns zero: a partial decode must never certify a segment window.
 func CountDecodedFrames(ctx context.Context, path string) (int, error) {
-	cmd := exec.CommandContext(ctx, ffprobeBinary(), "-v", "error", "-count_frames",
+	stdout, stderr, err := runTool(ctx, ffprobeBinary(), "-v", "error", "-count_frames",
 		"-select_streams", "v:0", "-show_entries", "stream=nb_read_frames",
 		"-of", "default=nokey=1:noprint_wrappers=1", path)
-	var diagnostics strings.Builder
-	cmd.Stderr = &diagnostics
-	out, err := cmd.Output()
-	if err != nil || diagnostics.Len() > 0 {
-		return 0, fmt.Errorf("media: count decoded frames %s: error=%v diagnostics=%s", path, err, strings.TrimSpace(diagnostics.String()))
+	if err != nil || len(stderr) > 0 {
+		return 0, fmt.Errorf("media: count decoded frames %s: error=%v diagnostics=%s", path, err, strings.TrimSpace(string(stderr)))
 	}
-	count, err := strconv.Atoi(strings.TrimSpace(string(out)))
+	count, err := strconv.Atoi(strings.TrimSpace(string(stdout)))
 	if err != nil || count <= 0 {
-		return 0, fmt.Errorf("media: invalid decoded frame count %q for %s", strings.TrimSpace(string(out)), path)
+		return 0, fmt.Errorf("media: invalid decoded frame count %q for %s", strings.TrimSpace(string(stdout)), path)
 	}
 	return count, nil
 }
 
 func ValidateDecode(ctx context.Context, path string) error {
-	out, err := exec.CommandContext(ctx, ffmpegBinary(), "-v", "error", "-i", path, "-f", "null", "-").CombinedOutput()
+	stdout, stderr, err := runTool(ctx, ffmpegBinary(), "-v", "error", "-i", path, "-f", "null", "-")
 	if err != nil {
-		detail := strings.TrimSpace(string(out))
+		detail := strings.TrimSpace(string(stdout) + "\n" + string(stderr))
 		if detail == "" {
 			return fmt.Errorf("media: decode %s: %w", path, err)
 		}
@@ -84,9 +80,9 @@ func ValidateDecodeSampled(ctx context.Context, path string) error {
 	}
 	for _, pass := range passes {
 		args := append([]string{"-v", "error", "-xerror"}, pass...)
-		out, err := exec.CommandContext(ctx, ffmpegBinary(), args...).CombinedOutput()
+		stdout, stderr, err := runTool(ctx, ffmpegBinary(), args...)
 		if err != nil {
-			detail := strings.TrimSpace(string(out))
+			detail := strings.TrimSpace(string(stdout) + "\n" + string(stderr))
 			if detail == "" {
 				return fmt.Errorf("media: sampled decode %s (%s): %w", path, strings.Join(pass, " "), err)
 			}

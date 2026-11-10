@@ -1,0 +1,100 @@
+{
+  "schema": "chronon.render-plan.v3",
+  "version": 3,
+  "job_id": "ae_text_04_typewriter",
+  "canvas": {
+    "width": 1920,
+    "height": 1080,
+    "fps_num": 30,
+    "fps_den": 1,
+    "duration_frames": 180
+  },
+  "layers": [
+    {
+      "id": "backdrop",
+      "type": "color",
+      "color": [
+        0.004,
+        0.008,
+        0.014,
+        1.0
+      ],
+      "size": [
+        1920.0,
+        1080.0
+      ],
+      "position": [
+        0.0,
+        0.0
+      ],
+      "start_frame": 0,
+      "duration_frames": 180
+    },
+    {
+      "id": "typewriter",
+      "type": "text",
+      "text": "CHRONON 3D",
+      "size": [
+        1920.0,
+        1080.0
+      ],
+      "position": [
+        960.0,
+        540.0
+      ],
+      "start_frame": 6,
+      "duration_frames": 174,
+      "style": {
+        "font": "assets/fonts/SF-Pro-Display-Semibold.otf",
+        "font_size": 150.0,
+        "fill": "#F4FAFF"
+      },
+      "animation": {
+        "tracks": [
+          {
+            "property": "opacity",
+            "easing": "out_cubic",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 0.0
+              },
+              {
+                "frame": 12,
+                "value": 1.0
+              },
+              {
+                "frame": 179,
+                "value": 1.0
+              }
+            ]
+          }
+        ]
+      },
+      "text_animators": [],
+      "text_transitions": {
+        "keyframes": [
+          {
+            "frame": 0,
+            "text": "",
+            "transition": "typewriter",
+            "typewriter": {
+              "chars_per_frame": 0,
+              "easing": "out_cubic"
+            }
+          },
+          {
+            "frame": 120,
+            "text": "CHRONON 3D",
+            "transition": "cut"
+          }
+        ]
+      }
+    }
+  ],
+  "output": {
+    "path": "ae_text_04_typewriter_1920x1080_6s.mp4",
+    "format": "mp4",
+    "codec": "h264"
+  }
+}

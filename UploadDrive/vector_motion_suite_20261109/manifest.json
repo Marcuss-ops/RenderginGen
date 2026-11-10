@@ -1,0 +1,223 @@
+{
+  "schema": "chronontemplate.vector-motion-suite.v1",
+  "date": "2026-11-09",
+  "generator": "chronontemplate_emit_vector_motion_suite",
+  "canvas": {
+    "width": 1920,
+    "height": 1080,
+    "fps": 30
+  },
+  "stack": {
+    "authoring": "C++ RenderPlan V3 emitter (chronontemplate_emit_vector_motion_suite)",
+    "primitives": "native shape/path, cubic Bezier, trim, glow, ring_segment, rounded_rect, gradients-free fills",
+    "motion": "out_cubic / out_back / out_expo, trim paths, arc-length sampled markers, staggered cascades",
+    "backend": "vulkan / require_gpu_native / h264_nvenc"
+  },
+  "drive": {
+    "folder_id": "1J_xUGo_bchzXDIGqSX04CU44c_Dm3SxS",
+    "folder_url": "https://drive.google.com/drive/u/1/folders/1J_xUGo_bchzXDIGqSX04CU44c_Dm3SxS",
+    "placement": "root"
+  },
+  "clips": [
+    {
+      "id": "01_Tactical_Route",
+      "index": 1,
+      "slug": "Tactical_Route",
+      "label": "Tactical route & HUD",
+      "category": "tactical_map_hud",
+      "note": "OSINT trace: dashed trail, trim-drawn Bezier route, radar pings, converging reticle, coordinate HUD",
+      "background_rgb": [
+        0.0196078431372549,
+        0.03137254901960784,
+        0.050980392156862744
+      ],
+      "frames": 300,
+      "duration_s": 10.0,
+      "plan": "plans/01_Tactical_Route.plan.json",
+      "mp4": "mp4/VectorMotion_01_Tactical_Route_1920x1080_10s_v1.mp4",
+      "drive_name": "VectorMotion_01_Tactical_Route_1920x1080_10s_v1.mp4",
+      "width": 1920,
+      "height": 1080,
+      "fps": "30/1",
+      "bytes": 1356833,
+      "sha256": "07205c3a92ec79397888713a094fc596b2300be52bfb716ce2ca66ff1e8496a2",
+      "verified": true,
+      "verified_at": "2026-11-09T11:18:23",
+      "foreground_ratio": 0.023314,
+      "foreground_ratios": [
+        0.021036,
+        0.023314,
+        0.022923
+      ],
+      "stills": [
+        "stills/01_Tactical_Route_early.png",
+        "stills/01_Tactical_Route_mid.png",
+        "stills/01_Tactical_Route_late.png"
+      ],
+      "uploaded": true,
+      "drive_id": "1RLC1jeT_yMn1ZtEkaibVeHjd2cErG199",
+      "drive_url": "https://drive.google.com/file/d/1RLC1jeT_yMn1ZtEkaibVeHjd2cErG199/view?usp=drivesdk",
+      "upload_manifest_url": "https://drive.google.com/file/d/1z6xGPCVLmuP1P8-zfWhpDbLsSvcPqEc9/view?usp=drivesdk"
+    },
+    {
+      "id": "02_Node_Graph",
+      "index": 2,
+      "slug": "Node_Graph",
+      "label": "Node graph expansion",
+      "category": "network_nodes",
+      "note": "Spring pop center, staggered Bezier edges, cascade nodes and travelling data pulses",
+      "background_rgb": [
+        0.023529411764705882,
+        0.0392156862745098,
+        0.0784313725490196
+      ],
+      "frames": 240,
+      "duration_s": 8.0,
+      "plan": "plans/02_Node_Graph.plan.json",
+      "mp4": "mp4/VectorMotion_02_Node_Graph_1920x1080_8s_v1.mp4",
+      "drive_name": "VectorMotion_02_Node_Graph_1920x1080_8s_v1.mp4",
+      "width": 1920,
+      "height": 1080,
+      "fps": "30/1",
+      "bytes": 1321638,
+      "sha256": "13e39b450295ebee1fe7d327130248dd38d0a44fa6c3b56eb609c1b6b7ebe6dc",
+      "verified": true,
+      "verified_at": "2026-11-09T11:18:26",
+      "foreground_ratio": 0.009242,
+      "foreground_ratios": [
+        0.006749,
+        0.009242,
+        0.010448
+      ],
+      "stills": [
+        "stills/02_Node_Graph_early.png",
+        "stills/02_Node_Graph_mid.png",
+        "stills/02_Node_Graph_late.png"
+      ],
+      "uploaded": true,
+      "drive_id": "1oYDPy-UHkYnQA7tPo8zVdgrkMTZOtgdo",
+      "drive_url": "https://drive.google.com/file/d/1oYDPy-UHkYnQA7tPo8zVdgrkMTZOtgdo/view?usp=drivesdk",
+      "upload_manifest_url": "https://drive.google.com/file/d/1z6xGPCVLmuP1P8-zfWhpDbLsSvcPqEc9/view?usp=drivesdk"
+    },
+    {
+      "id": "03_Validation_Burst",
+      "index": 3,
+      "slug": "Validation_Burst",
+      "label": "Validation burst",
+      "category": "validation_badge",
+      "note": "Trim-drawn ring, check snap with overshoot, radial burst, declassified stamp with screen shake",
+      "background_rgb": [
+        0.0196078431372549,
+        0.03529411764705882,
+        0.047058823529411764
+      ],
+      "frames": 180,
+      "duration_s": 6.0,
+      "plan": "plans/03_Validation_Burst.plan.json",
+      "mp4": "mp4/VectorMotion_03_Validation_Burst_1920x1080_6s_v1.mp4",
+      "drive_name": "VectorMotion_03_Validation_Burst_1920x1080_6s_v1.mp4",
+      "width": 1920,
+      "height": 1080,
+      "fps": "30/1",
+      "bytes": 543542,
+      "sha256": "27fb9087dea7c266316d317b2a98401583d7ddfb81ac0279ee9eec5f4f9b4d5c",
+      "verified": true,
+      "verified_at": "2026-11-09T11:18:27",
+      "foreground_ratio": 0.053426,
+      "foreground_ratios": [
+        0.014401,
+        0.053426,
+        0.024363
+      ],
+      "stills": [
+        "stills/03_Validation_Burst_early.png",
+        "stills/03_Validation_Burst_mid.png",
+        "stills/03_Validation_Burst_late.png"
+      ],
+      "uploaded": true,
+      "drive_id": "1S0KcpIzYOITq5bk_IFg0h2xGQIFxvTef",
+      "drive_url": "https://drive.google.com/file/d/1S0KcpIzYOITq5bk_IFg0h2xGQIFxvTef/view?usp=drivesdk",
+      "upload_manifest_url": "https://drive.google.com/file/d/1z6xGPCVLmuP1P8-zfWhpDbLsSvcPqEc9/view?usp=drivesdk"
+    },
+    {
+      "id": "04_Technical_Callout",
+      "index": 4,
+      "slug": "Technical_Callout",
+      "label": "Technical callout",
+      "category": "callout_annotation",
+      "note": "Two-beat leader line, paper plate, callout card and hand-drawn highlight with multiply blend",
+      "background_rgb": [
+        0.043137254901960784,
+        0.047058823529411764,
+        0.06274509803921569
+      ],
+      "frames": 240,
+      "duration_s": 8.0,
+      "plan": "plans/04_Technical_Callout.plan.json",
+      "mp4": "mp4/VectorMotion_04_Technical_Callout_1920x1080_8s_v1.mp4",
+      "drive_name": "VectorMotion_04_Technical_Callout_1920x1080_8s_v1.mp4",
+      "width": 1920,
+      "height": 1080,
+      "fps": "30/1",
+      "bytes": 263139,
+      "sha256": "525e882ce5b3945869826538acf59cda8de89c64665e18a09120ebff2bc47481",
+      "verified": true,
+      "verified_at": "2026-11-09T11:18:29",
+      "foreground_ratio": 0.234022,
+      "foreground_ratios": [
+        0.229659,
+        0.234022,
+        0.234021
+      ],
+      "stills": [
+        "stills/04_Technical_Callout_early.png",
+        "stills/04_Technical_Callout_mid.png",
+        "stills/04_Technical_Callout_late.png"
+      ],
+      "uploaded": true,
+      "drive_id": "1fezkBv1NWO1jR3H9iP6QIVnZ3WsKsnlQ",
+      "drive_url": "https://drive.google.com/file/d/1fezkBv1NWO1jR3H9iP6QIVnZ3WsKsnlQ/view?usp=drivesdk",
+      "upload_manifest_url": "https://drive.google.com/file/d/1z6xGPCVLmuP1P8-zfWhpDbLsSvcPqEc9/view?usp=drivesdk"
+    },
+    {
+      "id": "05_Wireframe_Logo",
+      "index": 5,
+      "slug": "Wireframe_Logo",
+      "label": "Wireframe to solid logo",
+      "category": "logo_morph",
+      "note": "Trim-drawn hex wireframe, inner C, fill wipe with scan bar, specular sweep and orbit rings",
+      "background_rgb": [
+        0.023529411764705882,
+        0.03529411764705882,
+        0.058823529411764705
+      ],
+      "frames": 240,
+      "duration_s": 8.0,
+      "plan": "plans/05_Wireframe_Logo.plan.json",
+      "mp4": "mp4/VectorMotion_05_Wireframe_Logo_1920x1080_8s_v1.mp4",
+      "drive_name": "VectorMotion_05_Wireframe_Logo_1920x1080_8s_v1.mp4",
+      "width": 1920,
+      "height": 1080,
+      "fps": "30/1",
+      "bytes": 1961026,
+      "sha256": "9f47009226a7e6dfb0a7a1a3c511f5817638b77163e80e970df4c09657292b15",
+      "verified": true,
+      "verified_at": "2026-11-09T11:18:32",
+      "foreground_ratio": 0.0162,
+      "foreground_ratios": [
+        0.015283,
+        0.0162,
+        0.025915
+      ],
+      "stills": [
+        "stills/05_Wireframe_Logo_early.png",
+        "stills/05_Wireframe_Logo_mid.png",
+        "stills/05_Wireframe_Logo_late.png"
+      ],
+      "uploaded": true,
+      "drive_id": "11Ws2CEVvJ2MHFhy_AJmAFkv_BhLrSswE",
+      "drive_url": "https://drive.google.com/file/d/11Ws2CEVvJ2MHFhy_AJmAFkv_BhLrSswE/view?usp=drivesdk",
+      "upload_manifest_url": "https://drive.google.com/file/d/1z6xGPCVLmuP1P8-zfWhpDbLsSvcPqEc9/view?usp=drivesdk"
+    }
+  ]
+}

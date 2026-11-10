@@ -157,9 +157,12 @@ func compileImageCaptionLayer(parent resolvedItem, src *semanticPlan, child sema
 	}
 	captionSpec := resolvedTextSpec{
 		Text: caption, BoxWidth: width, BoxHeight: int(captionBounds.Height),
-		Size:     []float64{captionBounds.Width, captionBounds.Height},
-		Position: []float64{positionX, positionY}, Style: &LayerStyle{Font: OfficialFontPathForLanguage(src.Language)},
-		MotionID: captionMotion, MotionParams: motionParams,
+		Size:         []float64{captionBounds.Width, captionBounds.Height},
+		Position:     []float64{positionX, positionY},
+		CanvasWidth:  src.Width,
+		CanvasHeight: src.Height,
+		Style:        &LayerStyle{Font: OfficialFontPathForLanguage(src.Language)},
+		MotionID:     captionMotion, MotionParams: motionParams,
 		StyleParams: styleParams, MotionTarget: TargetCaption, StylePolicy: role,
 		FontSize: captionBounds.FontSize, OverrideFill: overrideFill,
 	}

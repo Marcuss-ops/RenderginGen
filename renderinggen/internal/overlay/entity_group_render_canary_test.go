@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/testenv"
 	"image"
 	"image/color"
 	"image/png"
@@ -76,12 +77,8 @@ func writeSolidPNG(t *testing.T, path string, c color.RGBA) string {
 // present, so a bare `go test ./...` never renders video.
 func TestEntityGroupAndNewFontsRenderCanary(t *testing.T) {
 	bin := chrononBinFor(t)
-	if _, err := exec.LookPath("ffmpeg"); err != nil {
-		t.Skipf("ffmpeg not available for canary pixel checks: %v", err)
-	}
-	if _, err := exec.LookPath("ffprobe"); err != nil {
-		t.Skipf("ffprobe not available for canary verification: %v", err)
-	}
+	testenv.RequireTools(t, "ffmpeg")
+	testenv.RequireTools(t, "ffprobe")
 	assetsRoot := groupCanaryAssetsRoot(t)
 	shaA := fixtureSHA256(t, filepath.Join(assetsRoot, "assets", "semantic", "member-a.png"))
 	shaB := fixtureSHA256(t, filepath.Join(assetsRoot, "assets", "semantic", "member-b.png"))

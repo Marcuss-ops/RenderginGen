@@ -1,0 +1,416 @@
+/home/pierone/src/go-master/projects/Pyt/VeloxEditing/Chronon3d/build/chronon/linux-video-release/apps/chronon3d_cli/chronon3d_cli render --plan /home/pierone/src/go-master/projects/Pyt/VeloxEditing/RenderingGen/UploadDrive/ae_text_parity_20261109/plans/05_scramble.plan.json --assets-root /home/pierone/src/go-master/projects/Pyt/VeloxEditing/Chronon3d --backend vulkan --gpu-hot-path-mode require_gpu_native --tone-map aces --exposure 1.0 -o /home/pierone/src/go-master/projects/Pyt/VeloxEditing/RenderingGen/UploadDrive/ae_text_parity_20261109/videos/05_scramble_1920x1080_6s.mp4
+
+[2026-11-09 13:51:10.736] [info] [asset-profile] kind=3 path=assets/fonts/SF-Pro-Display-Semibold.otf bytes=335964 cache=miss invalidated=0 stat=0.01ms hash=3.99ms hashed_bytes=335964 total=4.08ms
+[2026-11-09 13:51:10.736] [info] [asset-digest-cache] hits=0 misses=1 invalidations=0 bytes_hashed=335964 lookup_ms=0.00 write_ms=0.01 full_hash_ms=3.99
+[2026-11-09 13:51:10.737] [info] [asset-profile] kind=3 path=assets/fonts/SF-Pro-Display-Semibold.otf bytes=335964 cache=hit invalidated=0 stat=0.01ms hash=0.00ms hashed_bytes=0 total=0.07ms
+[2026-11-09 13:51:10.737] [info] [asset-digest-cache] hits=1 misses=0 invalidations=0 bytes_hashed=0 lookup_ms=0.00 write_ms=0.00 full_hash_ms=0.00
+[2026-11-09 13:51:10.737] [info] [plan-compile-profile] assets=0.14ms fingerprint=0.05ms media_resolution=0.00ms materialize=0.17ms composition_compile=0.06ms compatibility_view=0.00ms total=0.60ms
+[2026-11-09 13:51:10.737] [info] [plan] text-transition plan routed to legacy CompiledComposition
+[2026-11-09 13:51:10.737] [info] [plan-profile] read=0.13ms parse=0.08ms decode=52.52ms resolver=0.03ms compile_validate=5.70ms total=58.47ms
+[2026-11-09 13:51:10.737] [info] [video] Auto-selecting yuv420p pipe pixel format for 1920x1080 output
+[2026-11-09 13:51:10.738] [info] [video] execution plan resolved (reason: required_gpu_native_full_graph); decode=1 composite=2 encode=1 interop=2 handoff=1 codec=3
+[2026-11-09 13:51:10.754] [info] [video-runtime] created persistent runtime for device 0 (CUDA ordinal 0)
+[2026-11-09 13:51:10.754] [info] [video] encoder feed capability: host_frame=false direct_yuv=false native_surface=true
+[2026-11-09 13:51:10.967] [info] [native_av] CUDA context contract: native=0x558f33911760 ffmpeg=0x558f33911760
+[2026-11-09 13:51:10.979] [info] [native_av] NVENC tuning applied: rc=driver-default preset=slow async_depth=4 nvenc_surfaces=8 qp=-1 bitrate=0
+[h264_nvenc @ 0x558f338829c0] Defined rc_lookahead requires more surfaces, increasing used surfaces 8 -> 34
+[2026-11-09 13:51:11.060] [info] [native_av] encoder bitstream contract: codec=27 profile=100 level=-99 pix_fmt=117 parameter_sets=53 materialized=true
+[2026-11-09 13:51:11.061] [info] [native_av] Opened native encoder: 1920x1080 @ 30fps, codec=h264_nvenc, rc=driver-default, preset=slow, output='/home/pierone/src/go-master/projects/Pyt/VeloxEditing/RenderingGen/UploadDrive/ae_text_parity_20261109/videos/05_scramble_1920x1080_6s.partial.mp4'
+[2026-11-09 13:51:11.685] [info] [pool-warm] Pre-allocated and pre-imported 6 execution slots (1920x1080) for native NVENC
+[2026-11-09 13:51:12.036] [info] chronon3d::vulkan text batch formats: dst_image.format=109 atlas_image.format=44 atlas_encoding=2 (shader contract: dst rgba32f, atlas rgba8)
+[2026-11-09 13:51:12.036] [info] [temp-lifetime] frame=0 after_level=0 live=[0,1,3,] retired=[]
+[2026-11-09 13:51:12.036] [info] [exec-level-diag] frame=0 level=0 nodes=3 input_ms=0.002 dispatch_ms=236.097 fb_release_ms=0.002
+[2026-11-09 13:51:12.036] [info] [graph-edge] frame=0 level=1 consumer_id=2 input_index=0 producer_id=0 producer_level=0
+[2026-11-09 13:51:12.036] [info] [graph-edge] frame=0 level=1 consumer_id=2 input_index=1 producer_id=1 producer_level=0
+[2026-11-09 13:51:12.037] [info] [temp-lifetime] frame=0 after_level=1 live=[2,3,] retired=[0,1,]
+[2026-11-09 13:51:12.037] [info] [exec-level-diag] frame=0 level=1 nodes=1 input_ms=0.014 dispatch_ms=0.423 fb_release_ms=0.004
+[2026-11-09 13:51:12.037] [info] [graph-edge] frame=0 level=2 consumer_id=4 input_index=0 producer_id=2 producer_level=1
+[2026-11-09 13:51:12.037] [info] [graph-edge] frame=0 level=2 consumer_id=4 input_index=1 producer_id=3 producer_level=0
+[2026-11-09 13:51:12.037] [info] [temp-lifetime] frame=0 after_level=2 live=[4,] retired=[2,3,]
+[2026-11-09 13:51:12.037] [info] [exec-level-diag] frame=0 level=2 nodes=1 input_ms=0.047 dispatch_ms=0.093 fb_release_ms=0.002
+[2026-11-09 13:51:12.037] [info] [video] Exporting via Arena-backed SIMD pipeline
+[2026-11-09 13:51:12.040] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.040] [error] [font-fallback] Missing glyph for cluster [U+FFFD] at byte offset 0..3 (no font in stack covers all visible codepoints)
+[2026-11-09 13:51:12.043] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.043] [error] [font-fallback] Missing glyph for cluster [U+FFFD] at byte offset 0..3 (no font in stack covers all visible codepoints)
+[2026-11-09 13:51:12.045] [info] [temp-lifetime] frame=1 after_level=0 live=[0,1,3,] retired=[]
+[2026-11-09 13:51:12.045] [info] [exec-level-diag] frame=1 level=0 nodes=3 input_ms=0.001 dispatch_ms=3.746 fb_release_ms=0.001
+[2026-11-09 13:51:12.045] [info] [graph-edge] frame=1 level=1 consumer_id=2 input_index=0 producer_id=0 producer_level=0
+[2026-11-09 13:51:12.045] [info] [graph-edge] frame=1 level=1 consumer_id=2 input_index=1 producer_id=1 producer_level=0
+[2026-11-09 13:51:12.045] [info] [temp-lifetime] frame=1 after_level=1 live=[2,3,] retired=[0,1,]
+[2026-11-09 13:51:12.045] [info] [exec-level-diag] frame=1 level=1 nodes=1 input_ms=0.016 dispatch_ms=0.464 fb_release_ms=0.002
+[2026-11-09 13:51:12.045] [info] [graph-edge] frame=1 level=2 consumer_id=4 input_index=0 producer_id=2 producer_level=1
+[2026-11-09 13:51:12.045] [info] [graph-edge] frame=1 level=2 consumer_id=4 input_index=1 producer_id=3 producer_level=0
+[2026-11-09 13:51:12.045] [info] [temp-lifetime] frame=1 after_level=2 live=[4,] retired=[2,3,]
+[2026-11-09 13:51:12.046] [info] [exec-level-diag] frame=1 level=2 nodes=1 input_ms=0.020 dispatch_ms=0.091 fb_release_ms=0.002
+[2026-11-09 13:51:12.048] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.048] [error] [font-fallback] Missing glyph for cluster [U+FFFD] at byte offset 0..3 (no font in stack covers all visible codepoints)
+[2026-11-09 13:51:12.048] [error] [font-fallback] Missing glyph for cluster [U+FFFD] at byte offset 11..14 (no font in stack covers all visible codepoints)
+[2026-11-09 13:51:12.049] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.049] [error] [font-fallback] Missing glyph for cluster [U+FFFD] at byte offset 0..3 (no font in stack covers all visible codepoints)
+[2026-11-09 13:51:12.049] [error] [font-fallback] Missing glyph for cluster [U+FFFD] at byte offset 11..14 (no font in stack covers all visible codepoints)
+[2026-11-09 13:51:12.065] [info] [temp-lifetime] frame=2 after_level=0 live=[0,1,3,] retired=[]
+[2026-11-09 13:51:12.065] [info] [exec-level-diag] frame=2 level=0 nodes=3 input_ms=0.000 dispatch_ms=16.599 fb_release_ms=0.001
+[2026-11-09 13:51:12.065] [info] [graph-edge] frame=2 level=1 consumer_id=2 input_index=0 producer_id=0 producer_level=0
+[2026-11-09 13:51:12.065] [info] [graph-edge] frame=2 level=1 consumer_id=2 input_index=1 producer_id=1 producer_level=0
+[2026-11-09 13:51:12.065] [info] [temp-lifetime] frame=2 after_level=1 live=[2,3,] retired=[0,1,]
+[2026-11-09 13:51:12.065] [info] [exec-level-diag] frame=2 level=1 nodes=1 input_ms=0.012 dispatch_ms=0.088 fb_release_ms=0.002
+[2026-11-09 13:51:12.065] [info] [graph-edge] frame=2 level=2 consumer_id=4 input_index=0 producer_id=2 producer_level=1
+[2026-11-09 13:51:12.065] [info] [graph-edge] frame=2 level=2 consumer_id=4 input_index=1 producer_id=3 producer_level=0
+[2026-11-09 13:51:12.065] [info] [temp-lifetime] frame=2 after_level=2 live=[4,] retired=[2,3,]
+[2026-11-09 13:51:12.065] [info] [exec-level-diag] frame=2 level=2 nodes=1 input_ms=0.010 dispatch_ms=0.056 fb_release_ms=0.001
+[2026-11-09 13:51:12.068] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.068] [error] [font-fallback] Missing glyph for cluster [U+FFFD] at byte offset 0..3 (no font in stack covers all visible codepoints)
+[2026-11-09 13:51:12.069] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.069] [error] [font-fallback] Missing glyph for cluster [U+FFFD] at byte offset 0..3 (no font in stack covers all visible codepoints)
+[2026-11-09 13:51:12.096] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.097] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.155] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.156] [error] [font-fallback] Missing glyph for cluster [U+FFFD] at byte offset 0..3 (no font in stack covers all visible codepoints)
+[2026-11-09 13:51:12.157] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.157] [error] [font-fallback] Missing glyph for cluster [U+FFFD] at byte offset 0..3 (no font in stack covers all visible codepoints)
+[2026-11-09 13:51:12.180] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.180] [error] [font-fallback] Missing glyph for cluster [U+FFFD] at byte offset 0..3 (no font in stack covers all visible codepoints)
+[2026-11-09 13:51:12.181] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.181] [error] [font-fallback] Missing glyph for cluster [U+FFFD] at byte offset 0..3 (no font in stack covers all visible codepoints)
+[2026-11-09 13:51:12.195] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.196] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.266] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.266] [error] [font-fallback] Missing glyph for cluster [U+FFFD] at byte offset 0..3 (no font in stack covers all visible codepoints)
+[2026-11-09 13:51:12.267] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.267] [error] [font-fallback] Missing glyph for cluster [U+FFFD] at byte offset 0..3 (no font in stack covers all visible codepoints)
+[2026-11-09 13:51:12.327] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.328] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.393] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.395] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.406] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.407] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.417] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.417] [error] [font-fallback] Missing glyph for cluster [U+FFFD] at byte offset 9..12 (no font in stack covers all visible codepoints)
+[2026-11-09 13:51:12.418] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.419] [error] [font-fallback] Missing glyph for cluster [U+FFFD] at byte offset 9..12 (no font in stack covers all visible codepoints)
+[2026-11-09 13:51:12.460] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.460] [error] [font-fallback] Missing glyph for cluster [U+FFFD] at byte offset 3..6 (no font in stack covers all visible codepoints)
+[2026-11-09 13:51:12.461] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.461] [error] [font-fallback] Missing glyph for cluster [U+FFFD] at byte offset 3..6 (no font in stack covers all visible codepoints)
+[2026-11-09 13:51:12.493] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.494] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.496] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.497] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.501] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.501] [error] [font-fallback] Missing glyph for cluster [U+FFFD] at byte offset 3..6 (no font in stack covers all visible codepoints)
+[2026-11-09 13:51:12.502] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.502] [error] [font-fallback] Missing glyph for cluster [U+FFFD] at byte offset 3..6 (no font in stack covers all visible codepoints)
+[2026-11-09 13:51:12.502] [info] [video]   18/180 frames
+[2026-11-09 13:51:12.504] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.505] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.510] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.511] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.513] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.514] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.516] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.517] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.519] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.520] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.525] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.525] [error] [font-fallback] Missing glyph for cluster [U+FFFD] at byte offset 9..12 (no font in stack covers all visible codepoints)
+[2026-11-09 13:51:12.525] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.526] [error] [font-fallback] Missing glyph for cluster [U+FFFD] at byte offset 9..12 (no font in stack covers all visible codepoints)
+[2026-11-09 13:51:12.528] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.528] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.531] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.531] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.532] [info] [vulkan-lifecycle] frame=25 vram_bytes=670924800 live_surfaces=17 surface_bindings=12 registry_live_handles=132 physical_images=17 deferred_releases=0 vma_allocations=49 surfaces_created=132 surfaces_released=120 queue_packages=1 execution_slots_busy=2 command_batch_active=false
+[2026-11-09 13:51:12.533] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.534] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.536] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.537] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.539] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.540] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.542] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.543] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.545] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.546] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.549] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.550] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.553] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.553] [error] [font-fallback] Missing glyph for cluster [U+FFFD] at byte offset 5..8 (no font in stack covers all visible codepoints)
+[2026-11-09 13:51:12.553] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.554] [error] [font-fallback] Missing glyph for cluster [U+FFFD] at byte offset 5..8 (no font in stack covers all visible codepoints)
+[2026-11-09 13:51:12.557] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.558] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.561] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.562] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.566] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.567] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.568] [info] [video]   36/180 frames
+[2026-11-09 13:51:12.570] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.571] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.574] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.574] [error] [font-fallback] Missing glyph for cluster [U+FFFD] at byte offset 5..8 (no font in stack covers all visible codepoints)
+[2026-11-09 13:51:12.575] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.575] [error] [font-fallback] Missing glyph for cluster [U+FFFD] at byte offset 5..8 (no font in stack covers all visible codepoints)
+[2026-11-09 13:51:12.579] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.579] [error] [font-fallback] Missing glyph for cluster [U+FFFD] at byte offset 9..12 (no font in stack covers all visible codepoints)
+[2026-11-09 13:51:12.580] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.580] [error] [font-fallback] Missing glyph for cluster [U+FFFD] at byte offset 9..12 (no font in stack covers all visible codepoints)
+[2026-11-09 13:51:12.583] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.583] [error] [font-fallback] Missing glyph for cluster [U+FFFD] at byte offset 5..8 (no font in stack covers all visible codepoints)
+[2026-11-09 13:51:12.584] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.584] [error] [font-fallback] Missing glyph for cluster [U+FFFD] at byte offset 5..8 (no font in stack covers all visible codepoints)
+[2026-11-09 13:51:12.587] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.588] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.592] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.593] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.597] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.597] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.601] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.601] [error] [font-fallback] Missing glyph for cluster [U+FFFD] at byte offset 5..8 (no font in stack covers all visible codepoints)
+[2026-11-09 13:51:12.602] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.602] [error] [font-fallback] Missing glyph for cluster [U+FFFD] at byte offset 5..8 (no font in stack covers all visible codepoints)
+[2026-11-09 13:51:12.605] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.606] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.610] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.611] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.614] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.615] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.618] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.619] [error] [font-fallback] Missing glyph for cluster [U+FFFD] at byte offset 6..9 (no font in stack covers all visible codepoints)
+[2026-11-09 13:51:12.619] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.619] [error] [font-fallback] Missing glyph for cluster [U+FFFD] at byte offset 6..9 (no font in stack covers all visible codepoints)
+[2026-11-09 13:51:12.624] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.624] [error] [font-fallback] Missing glyph for cluster [U+FFFD] at byte offset 9..12 (no font in stack covers all visible codepoints)
+[2026-11-09 13:51:12.625] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.625] [error] [font-fallback] Missing glyph for cluster [U+FFFD] at byte offset 9..12 (no font in stack covers all visible codepoints)
+[2026-11-09 13:51:12.632] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.632] [error] [font-fallback] Missing glyph for cluster [U+FFFD] at byte offset 8..11 (no font in stack covers all visible codepoints)
+[2026-11-09 13:51:12.633] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.633] [error] [font-fallback] Missing glyph for cluster [U+FFFD] at byte offset 8..11 (no font in stack covers all visible codepoints)
+[2026-11-09 13:51:12.641] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.642] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.643] [info] [vulkan-lifecycle] frame=50 vram_bytes=670924800 live_surfaces=17 surface_bindings=12 registry_live_handles=257 physical_images=17 deferred_releases=0 vma_allocations=49 surfaces_created=257 surfaces_released=245 queue_packages=1 execution_slots_busy=2 command_batch_active=false
+[2026-11-09 13:51:12.645] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.650] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.654] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.659] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.667] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.668] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.668] [info] [video]   54/180 frames
+[2026-11-09 13:51:12.671] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.672] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.676] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.677] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.681] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.682] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.686] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.686] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.690] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.691] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.695] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.696] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.699] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.700] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.704] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.704] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.708] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.709] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.714] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.715] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.718] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.719] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.722] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.723] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.727] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.727] [error] [font-fallback] Missing glyph for cluster [U+FFFD] at byte offset 3..6 (no font in stack covers all visible codepoints)
+[2026-11-09 13:51:12.728] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.728] [error] [font-fallback] Missing glyph for cluster [U+FFFD] at byte offset 3..6 (no font in stack covers all visible codepoints)
+[2026-11-09 13:51:12.732] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.733] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.736] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.737] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.741] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.741] [error] [font-fallback] Missing glyph for cluster [U+FFFD] at byte offset 0..3 (no font in stack covers all visible codepoints)
+[2026-11-09 13:51:12.742] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.742] [error] [font-fallback] Missing glyph for cluster [U+FFFD] at byte offset 0..3 (no font in stack covers all visible codepoints)
+[2026-11-09 13:51:12.745] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.745] [error] [font-fallback] Missing glyph for cluster [U+FFFD] at byte offset 6..9 (no font in stack covers all visible codepoints)
+[2026-11-09 13:51:12.746] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.746] [error] [font-fallback] Missing glyph for cluster [U+FFFD] at byte offset 6..9 (no font in stack covers all visible codepoints)
+[2026-11-09 13:51:12.750] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.750] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.751] [info] [video]   72/180 frames
+[2026-11-09 13:51:12.754] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.755] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.759] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.759] [error] [font-fallback] Missing glyph for cluster [U+FFFD] at byte offset 5..8 (no font in stack covers all visible codepoints)
+[2026-11-09 13:51:12.759] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.760] [error] [font-fallback] Missing glyph for cluster [U+FFFD] at byte offset 5..8 (no font in stack covers all visible codepoints)
+[2026-11-09 13:51:12.764] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.765] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.769] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.770] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.770] [info] [vulkan-lifecycle] frame=75 vram_bytes=670924800 live_surfaces=17 surface_bindings=12 registry_live_handles=382 physical_images=17 deferred_releases=0 vma_allocations=49 surfaces_created=382 surfaces_released=370 queue_packages=1 execution_slots_busy=2 command_batch_active=false
+[2026-11-09 13:51:12.773] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.774] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.777] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.778] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.783] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.783] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.788] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.788] [error] [font-fallback] Missing glyph for cluster [U+FFFD] at byte offset 3..6 (no font in stack covers all visible codepoints)
+[2026-11-09 13:51:12.789] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.789] [error] [font-fallback] Missing glyph for cluster [U+FFFD] at byte offset 3..6 (no font in stack covers all visible codepoints)
+[2026-11-09 13:51:12.792] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.793] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.799] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.799] [error] [font-fallback] Missing glyph for cluster [U+FFFD] at byte offset 3..6 (no font in stack covers all visible codepoints)
+[2026-11-09 13:51:12.800] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.800] [error] [font-fallback] Missing glyph for cluster [U+FFFD] at byte offset 3..6 (no font in stack covers all visible codepoints)
+[2026-11-09 13:51:12.804] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.805] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.814] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.816] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.819] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.820] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.824] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.824] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.828] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.829] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.832] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.833] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.836] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.836] [error] [font-fallback] Missing glyph for cluster [U+FFFD] at byte offset 8..11 (no font in stack covers all visible codepoints)
+[2026-11-09 13:51:12.837] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.837] [error] [font-fallback] Missing glyph for cluster [U+FFFD] at byte offset 8..11 (no font in stack covers all visible codepoints)
+[2026-11-09 13:51:12.840] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.841] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.842] [info] [video]   90/180 frames
+[2026-11-09 13:51:12.845] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.845] [error] [font-fallback] Missing glyph for cluster [U+FFFD] at byte offset 5..8 (no font in stack covers all visible codepoints)
+[2026-11-09 13:51:12.846] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.846] [error] [font-fallback] Missing glyph for cluster [U+FFFD] at byte offset 5..8 (no font in stack covers all visible codepoints)
+[2026-11-09 13:51:12.851] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.851] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.856] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.856] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.861] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.862] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.867] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.867] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.874] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.875] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.879] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.879] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.884] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.884] [error] [font-fallback] Missing glyph for cluster [U+FFFD] at byte offset 6..9 (no font in stack covers all visible codepoints)
+[2026-11-09 13:51:12.884] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.885] [error] [font-fallback] Missing glyph for cluster [U+FFFD] at byte offset 6..9 (no font in stack covers all visible codepoints)
+[2026-11-09 13:51:12.889] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.889] [error] [font-fallback] Missing glyph for cluster [U+FFFD] at byte offset 8..11 (no font in stack covers all visible codepoints)
+[2026-11-09 13:51:12.890] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.890] [error] [font-fallback] Missing glyph for cluster [U+FFFD] at byte offset 8..11 (no font in stack covers all visible codepoints)
+[2026-11-09 13:51:12.895] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.895] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.900] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.900] [error] [font-fallback] Missing glyph for cluster [U+FFFD] at byte offset 1..4 (no font in stack covers all visible codepoints)
+[2026-11-09 13:51:12.901] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.901] [error] [font-fallback] Missing glyph for cluster [U+FFFD] at byte offset 1..4 (no font in stack covers all visible codepoints)
+[2026-11-09 13:51:12.901] [info] [vulkan-lifecycle] frame=100 vram_bytes=670924800 live_surfaces=17 surface_bindings=12 registry_live_handles=507 physical_images=17 deferred_releases=0 vma_allocations=49 surfaces_created=507 surfaces_released=495 queue_packages=1 execution_slots_busy=2 command_batch_active=false
+[2026-11-09 13:51:12.905] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.905] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.909] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.910] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.913] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.913] [error] [font-fallback] Missing glyph for cluster [U+FFFD] at byte offset 3..6 (no font in stack covers all visible codepoints)
+[2026-11-09 13:51:12.914] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.914] [error] [font-fallback] Missing glyph for cluster [U+FFFD] at byte offset 3..6 (no font in stack covers all visible codepoints)
+[2026-11-09 13:51:12.918] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.918] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.922] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.922] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.926] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.926] [error] [font-fallback] Missing glyph for cluster [U+FFFD] at byte offset 9..12 (no font in stack covers all visible codepoints)
+[2026-11-09 13:51:12.927] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.927] [error] [font-fallback] Missing glyph for cluster [U+FFFD] at byte offset 9..12 (no font in stack covers all visible codepoints)
+[2026-11-09 13:51:12.930] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.931] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.931] [info] [video]   108/180 frames
+[2026-11-09 13:51:12.934] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.934] [error] [font-fallback] Missing glyph for cluster [U+FFFD] at byte offset 0..3 (no font in stack covers all visible codepoints)
+[2026-11-09 13:51:12.935] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.935] [error] [font-fallback] Missing glyph for cluster [U+FFFD] at byte offset 0..3 (no font in stack covers all visible codepoints)
+[2026-11-09 13:51:12.939] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.939] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.943] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.944] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.947] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.948] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.952] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.952] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.957] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.958] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.962] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.962] [error] [font-fallback] Missing glyph for cluster [U+FFFD] at byte offset 0..3 (no font in stack covers all visible codepoints)
+[2026-11-09 13:51:12.968] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.968] [error] [font-fallback] Missing glyph for cluster [U+FFFD] at byte offset 0..3 (no font in stack covers all visible codepoints)
+[2026-11-09 13:51:12.972] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.972] [error] [font-fallback] Missing glyph for cluster [U+FFFD] at byte offset 0..3 (no font in stack covers all visible codepoints)
+[2026-11-09 13:51:12.974] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.974] [error] [font-fallback] Missing glyph for cluster [U+FFFD] at byte offset 0..3 (no font in stack covers all visible codepoints)
+[2026-11-09 13:51:12.978] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.978] [error] [font-fallback] Missing glyph for cluster [U+FFFD] at byte offset 0..3 (no font in stack covers all visible codepoints)
+[2026-11-09 13:51:12.986] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.986] [error] [font-fallback] Missing glyph for cluster [U+FFFD] at byte offset 0..3 (no font in stack covers all visible codepoints)
+[2026-11-09 13:51:12.990] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.990] [error] [font-fallback] Missing glyph for cluster [U+FFFD] at byte offset 0..3 (no font in stack covers all visible codepoints)
+[2026-11-09 13:51:12.991] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.991] [error] [font-fallback] Missing glyph for cluster [U+FFFD] at byte offset 0..3 (no font in stack covers all visible codepoints)
+[2026-11-09 13:51:12.994] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.994] [error] [font-fallback] Missing glyph for cluster [U+FFFD] at byte offset 0..3 (no font in stack covers all visible codepoints)
+[2026-11-09 13:51:12.995] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:12.995] [error] [font-fallback] Missing glyph for cluster [U+FFFD] at byte offset 0..3 (no font in stack covers all visible codepoints)
+[2026-11-09 13:51:13.000] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:13.000] [error] [font-fallback] Missing glyph for cluster [U+FFFD] at byte offset 0..3 (no font in stack covers all visible codepoints)
+[2026-11-09 13:51:13.004] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:13.005] [error] [font-fallback] Missing glyph for cluster [U+FFFD] at byte offset 0..3 (no font in stack covers all visible codepoints)
+[2026-11-09 13:51:13.009] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:13.009] [error] [font-fallback] Missing glyph for cluster [U+FFFD] at byte offset 0..3 (no font in stack covers all visible codepoints)
+[2026-11-09 13:51:13.010] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:51:13.010] [error] [font-fallback] Missing glyph for cluster [U+FFFD] at byte offset 0..3 (no font in stack covers all visible codepoints)
+[2026-11-09 13:51:13.027] [info] [vulkan-lifecycle] frame=125 vram_bytes=670924800 live_surfaces=17 surface_bindings=12 registry_live_handles=632 physical_images=17 deferred_releases=0 vma_allocations=49 surfaces_created=632 surfaces_released=620 queue_packages=1 execution_slots_busy=2 command_batch_active=false
+[2026-11-09 13:51:13.027] [info] [video]   126/180 frames
+[2026-11-09 13:51:13.097] [info] [video]   144/180 frames
+[2026-11-09 13:51:13.143] [info] [vulkan-lifecycle] frame=150 vram_bytes=670924800 live_surfaces=17 surface_bindings=12 registry_live_handles=757 physical_images=17 deferred_releases=0 vma_allocations=49 surfaces_created=757 surfaces_released=745 queue_packages=1 execution_slots_busy=2 command_batch_active=false
+[2026-11-09 13:51:13.194] [info] [video]   162/180 frames
+[2026-11-09 13:51:13.241] [info] [vulkan-lifecycle] frame=175 vram_bytes=670924800 live_surfaces=17 surface_bindings=12 registry_live_handles=882 physical_images=17 deferred_releases=0 vma_allocations=49 surfaces_created=882 surfaces_released=870 queue_packages=1 execution_slots_busy=2 command_batch_active=false
+[2026-11-09 13:51:13.260] [info] [video]   180/180 frames
+[2026-11-09 13:51:13.265] [info] [video] writer join complete
+[2026-11-09 13:51:13.265] [info] [drain-debug] start drain, capacity=6
+[2026-11-09 13:51:13.265] [info] [drain-debug] slot_id=4 has completion, waiting
+[2026-11-09 13:51:13.265] [info] [drain-debug] slot_id=4 wait complete
+[2026-11-09 13:51:13.265] [info] [drain-debug] reap done, busy_count=0
+[2026-11-09 13:51:13.265] [info] [video] trimming framebuffer pool
+[2026-11-09 13:51:13.265] [info] [video] Released framebuffer pool — memory trimmed
+[2026-11-09 13:51:13.265] [info] [video] frame-loop cleanup complete
+[2026-11-09 13:51:13.265] [info] [video] Encoder write blocked duration: 0.00 ms
+[2026-11-09 13:51:13.265] [info] [video_diag] conversion_and_copy_duration_ms: 0 ms
+[2026-11-09 13:51:13.265] [info] [video_diag] conversion_bytes_written=0 encoder_staging_copy_bytes=0 encoder_slot_reuses=0
+[2026-11-09 13:51:13.265] [info] [native_av] close: sending encoder flush
+[2026-11-09 13:51:13.327] [info] [native_av] close: encoder flush accepted
+[2026-11-09 13:51:13.396] [info] [native_av] close: packets drained=true
+[2026-11-09 13:51:13.396] [info] [native_av] close: finalizing mux session
+[2026-11-09 13:51:13.397] [info] [native_av] close: mux session finalized
+[2026-11-09 13:51:13.397] [info] [native_av] Closed native encoder — 180 frames accepted, encoder_packets=180 mux_packets=180 packet_pts=0..179, YUV cache: 0 hits / 0 misses
+[2026-11-09 13:51:13.397] [info] [native_av] native-surface timings — hwframe_pool_ms=11.6 c2v_prepare_ms=0.9 encode_drain_ms=2.5 send_ms=103.0 submit_counter_ms=102.9 backpressure_ms=0.0
+[2026-11-09 13:51:13.397] [info] [video_native] convert=10.60ms  send_frame=103.03ms  backpressure=0.00ms  flush=131.57ms  receive_packet=69.04ms  mux_write=5.68ms  trailer=0.69ms
+[2026-11-09 13:51:13.399] [info] [video] render_ms=1553.99 encode_ms=136.05 writer_encode_ms=131.87 wall_ms=2661.51 nvml_stop_ms=0.12
+[2026-11-09 13:51:13.399] [info] [video] FFmpeg queue wait duration: 0.79 ms
+[2026-11-09 13:51:13.424] [info] [video] copy_eligible=true sha256=80a612ea095e5d849df7b341c0dac3ca50fdfe4059766263d7fd4aac44f90ff4
+[2026-11-09 13:51:13.427] [info] [video] Wrote /home/pierone/src/go-master/projects/Pyt/VeloxEditing/RenderingGen/UploadDrive/ae_text_parity_20261109/videos/05_scramble_1920x1080_6s.mp4
+[2026-11-09 13:51:13.428] [info] [startup-profile] total=902.08ms logger=0.04ms cli_bootstrap=2.92ms cli_parse=nullms composition=0.11ms plan_read=0.13ms json_parse=0.08ms plan_decode_validate=52.52ms asset_resolve=0.03ms plan_compile=5.70ms unaccounted=115.06ms
+[2026-11-09 13:51:13.461] [info] [video] Wrote exact per-frame timing sidecar: /home/pierone/src/go-master/projects/Pyt/VeloxEditing/RenderingGen/UploadDrive/ae_text_parity_20261109/videos/05_scramble_1920x1080_6s.mp4.timing.json
+[2026-11-09 13:51:13.556] [info] [INFO] job-lifecycle: queue_close_ms=0.0 writer_join_ms=0.0 encoder_reset_ms=90.6 decoder_reset_ms=0.0 full_graph_reset_ms=0.0 sink_ctx_reset_ms=0.0 device_runtime_reset_ms=0.0 device_reservation_reset_ms=0.0
+[2026-11-09 13:51:13.556] [info] [INFO] job-lifecycle: sidecar_write_ms=37.6 session_teardown_ms=90.8
+[2026-11-09 13:51:13.563] [info] [INFO] job-lifecycle: post_sidecar_to_receipt_ms=97.6
+[2026-11-09 13:51:13.563] [info] [INFO] job-lifecycle: execute_ms=2825.5 caller_tail_ms=0.0 receipt_deferred=0
+[2026-11-09 13:51:13.563] [info] [INFO] job-lifecycle: slot_pool_close_ms=0.0 surface_release_ms=0.0

@@ -7,6 +7,7 @@
 package tacticalfill
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"math"
@@ -14,6 +15,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/geo"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/geofeatures"
@@ -29,6 +31,9 @@ const (
 	// MaxRegions and MaxRingPoints mirror TacticalFillPack's drawable limits.
 	MaxRegions    = 32
 	MaxRingPoints = 4096
+	// DefaultEmitTimeout bounds one emitter invocation. A hung native binary
+	// must not hold the command indefinitely; a caller's shorter deadline wins.
+	DefaultEmitTimeout = 2 * time.Minute
 )
 
 // Box is a fraction-of-canvas rectangle in which the territory is fitted.
@@ -200,16 +205,29 @@ func Write(sample Sample, path string) error {
 }
 
 // Emit runs ChrononTemplate's emitter to lower the sample into a render plan.
-func Emit(emitter, samplePath, planPath string) error {
+// The invocation is bounded by DefaultEmitTimeout and by ctx, whichever
+// deadline is earlier; the child process is killed when either expires.
+func Emit(ctx context.Context, emitter, samplePath, planPath string) error {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	if err := ctx.Err(); err != nil {
+		return fmt.Errorf("tacticalfill: emitter: %w", err)
+	}
 	if emitter == "" {
 		return fmt.Errorf("tacticalfill: emitter binary not found; pass -emit or set CHRONONTEMPLATE_EMIT_TACTICAL_FILL")
 	}
 	if err := os.MkdirAll(filepath.Dir(planPath), 0o755); err != nil {
 		return fmt.Errorf("tacticalfill: create plan directory: %w", err)
 	}
-	command := exec.Command(emitter, planPath, samplePath)
+	ctx, cancel := context.WithTimeout(ctx, DefaultEmitTimeout)
+	defer cancel()
+	command := exec.CommandContext(ctx, emitter, planPath, samplePath)
 	output, err := command.CombinedOutput()
 	if err != nil {
+		if ctxErr := ctx.Err(); ctxErr != nil {
+			return fmt.Errorf("tacticalfill: emitter: %w (%v): %s", ctxErr, err, strings.TrimSpace(string(output)))
+		}
 		return fmt.Errorf("tacticalfill: emitter: %w: %s", err, strings.TrimSpace(string(output)))
 	}
 	return nil

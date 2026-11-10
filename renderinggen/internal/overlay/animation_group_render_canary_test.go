@@ -3,6 +3,7 @@ package overlay
 import (
 	"context"
 	"encoding/json"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/testenv"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -17,12 +18,8 @@ import (
 // present, so a bare `go test ./...` never renders video.
 func TestAnimationGroupHeterogeneousRenderCanary(t *testing.T) {
 	bin := chrononBinFor(t)
-	if _, err := exec.LookPath("ffmpeg"); err != nil {
-		t.Skipf("ffmpeg not available for canary pixel checks: %v", err)
-	}
-	if _, err := exec.LookPath("ffprobe"); err != nil {
-		t.Skipf("ffprobe not available for canary verification: %v", err)
-	}
+	testenv.RequireTools(t, "ffmpeg")
+	testenv.RequireTools(t, "ffprobe")
 	assetsRoot := groupCanaryAssetsRoot(t)
 	imagePath := filepath.Join(assetsRoot, "assets", "semantic", "member-a.png")
 	imageSHA := fixtureSHA256(t, imagePath)

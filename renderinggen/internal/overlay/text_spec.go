@@ -11,10 +11,12 @@ import (
 // preset family or item kind. This is the seam that keeps phrases, entity
 // captions and map labels from growing back into per-kind text engines.
 type resolvedTextSpec struct {
-	Text      string
-	BoxWidth  int
-	BoxHeight int
-	Position  []float64
+	Text         string
+	BoxWidth     int
+	BoxHeight    int
+	Position     []float64
+	CanvasWidth  int
+	CanvasHeight int
 	// Size preserves fractional role-resolved geometry where the layer's
 	// renderer size is more precise than the integer text box dimensions.
 	Size []float64
@@ -151,6 +153,8 @@ func resolveTextSpecBase(ri resolvedItem, src *semanticPlan) (resolvedTextSpec, 
 // has attached its fit policy. Explicit runtime geometry wins over preset
 // layout, then the canonical text canvas.
 func resolveTextSpecGeometry(ri resolvedItem, src *semanticPlan, spec resolvedTextSpec, lines int) resolvedTextSpec {
+	spec.CanvasWidth = src.Width
+	spec.CanvasHeight = src.Height
 	posX, hasPosX := spec.StyleParams["position_x"].(float64)
 	posY, hasPosY := spec.StyleParams["position_y"].(float64)
 	if width, ok := numericValue(spec.StyleParams["width"]); ok && width > 0 {
@@ -302,6 +306,15 @@ func compileResolvedText(layerID string, start, end int64, spec resolvedTextSpec
 	// layer instead of contradicting each other.
 	if layer.ScreenSpace && layerUses3D(animation) {
 		layer.ScreenSpace = false
+		// Text geometry is authored in canvas-absolute coordinates, while the
+		// scene-space transform consumed by the 3D motion path is relative to
+		// the canvas centre. Convert the base position at this domain boundary
+		// or a centred phrase (960,540 on a 1920x1080 canvas) is displaced to
+		// the upper-left when Chronon applies the 3D transform.
+		if len(layer.Position) >= 2 && spec.CanvasWidth > 0 && spec.CanvasHeight > 0 {
+			layer.Position[0] -= float64(spec.CanvasWidth) / 2
+			layer.Position[1] -= float64(spec.CanvasHeight) / 2
+		}
 	}
 	applyMotionRouting(&layer, animation)
 	return layer, nil

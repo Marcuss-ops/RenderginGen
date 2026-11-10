@@ -1,0 +1,76 @@
+[2026-11-09 09:17:39.420] [info] [plan-profile] read=0.11ms parse=0.08ms decode=57.53ms resolver=0.00ms compile_validate=2.23ms total=59.97ms
+[2026-11-09 09:17:39.420] [info] [video] Auto-selecting yuv420p pipe pixel format for 1920x1080 output
+[2026-11-09 09:17:39.420] [info] [video] execution plan resolved (reason: render_graph_default); decode=2 composite=3 encode=2 interop=0 handoff=3 codec=3
+[2026-11-09 09:17:39.443] [info] [video-runtime] created persistent runtime for device 0 (CUDA ordinal 0)
+[2026-11-09 09:17:39.443] [info] [video] Using in-process FFmpeg sink via VideoSinkEncoderAdapter
+[2026-11-09 09:17:39.443] [info] [video] encoder feed capability: host_frame=true direct_yuv=false native_surface=false
+[libx264 @ 0x564829a08800] using SAR=1/1
+[libx264 @ 0x564829a08800] using cpu capabilities: MMX2 SSE2Fast SSSE3 SSE4.2 AVX
+[libx264 @ 0x564829a08800] profile High, level 4.0, 4:2:0, 8-bit
+[2026-11-09 09:17:39.467] [info] [video_adapter] Opened ffmpeg-pipe sink: 1920x1080 @ 24/1fps, format=yuv420p, codec=h264
+[2026-11-09 09:17:39.843] [info] [temp-lifetime] frame=0 after_level=0 live=[0,1,3,] retired=[]
+[2026-11-09 09:17:39.844] [info] [exec-level-diag] frame=0 level=0 nodes=3 input_ms=0.001 dispatch_ms=41.978 fb_release_ms=0.002
+[2026-11-09 09:17:39.844] [info] [graph-edge] frame=0 level=1 consumer_id=2 input_index=0 producer_id=0 producer_level=0
+[2026-11-09 09:17:39.844] [info] [graph-edge] frame=0 level=1 consumer_id=2 input_index=1 producer_id=1 producer_level=0
+[2026-11-09 09:17:39.882] [info] [temp-lifetime] frame=0 after_level=1 live=[2,3,] retired=[0,1,]
+[2026-11-09 09:17:39.882] [info] [exec-level-diag] frame=0 level=1 nodes=1 input_ms=0.016 dispatch_ms=38.188 fb_release_ms=0.007
+[2026-11-09 09:17:39.882] [info] [graph-edge] frame=0 level=2 consumer_id=4 input_index=0 producer_id=2 producer_level=1
+[2026-11-09 09:17:39.882] [info] [graph-edge] frame=0 level=2 consumer_id=4 input_index=1 producer_id=3 producer_level=0
+[2026-11-09 09:17:39.917] [info] [temp-lifetime] frame=0 after_level=2 live=[4,] retired=[2,3,]
+[2026-11-09 09:17:39.917] [info] [exec-level-diag] frame=0 level=2 nodes=1 input_ms=0.014 dispatch_ms=35.513 fb_release_ms=0.015
+[2026-11-09 09:17:40.065] [info] [pool-warm] Pre-allocated 4 canvas buffers (1920x1152 bucket) at startup
+[2026-11-09 09:17:40.161] [info] [pool-warm] Pre-allocated 3 buffers (text-bbox+glow-pad) bucket 1920x1024 at startup
+[2026-11-09 09:17:40.189] [info] [pool-warm] Pre-allocated 3 buffers (downsample-half) bucket 1024x640 at startup
+[2026-11-09 09:17:40.197] [info] [pool-warm] Pre-allocated 3 buffers (downsample-quarter) bucket 512x384 at startup
+[2026-11-09 09:17:40.235] [info] [temp-lifetime] frame=0 after_level=0 live=[0,1,3,] retired=[]
+[2026-11-09 09:17:40.235] [info] [exec-level-diag] frame=0 level=0 nodes=3 input_ms=0.001 dispatch_ms=13.858 fb_release_ms=0.002
+[2026-11-09 09:17:40.235] [info] [graph-edge] frame=0 level=1 consumer_id=2 input_index=0 producer_id=0 producer_level=0
+[2026-11-09 09:17:40.235] [info] [graph-edge] frame=0 level=1 consumer_id=2 input_index=1 producer_id=1 producer_level=0
+[2026-11-09 09:17:40.245] [info] [temp-lifetime] frame=0 after_level=1 live=[2,3,] retired=[0,1,]
+[2026-11-09 09:17:40.245] [info] [exec-level-diag] frame=0 level=1 nodes=1 input_ms=0.016 dispatch_ms=9.274 fb_release_ms=0.009
+[2026-11-09 09:17:40.245] [info] [graph-edge] frame=0 level=2 consumer_id=4 input_index=0 producer_id=2 producer_level=1
+[2026-11-09 09:17:40.245] [info] [graph-edge] frame=0 level=2 consumer_id=4 input_index=1 producer_id=3 producer_level=0
+[2026-11-09 09:17:40.254] [info] [temp-lifetime] frame=0 after_level=2 live=[4,] retired=[2,3,]
+[2026-11-09 09:17:40.254] [info] [exec-level-diag] frame=0 level=2 nodes=1 input_ms=0.013 dispatch_ms=9.120 fb_release_ms=0.013
+[2026-11-09 09:17:40.254] [info] [video] Exporting via Arena-backed SIMD pipeline
+[2026-11-09 09:17:40.722] [info] [video]   24/240 frames
+[2026-11-09 09:17:41.310] [info] [video]   48/240 frames
+[2026-11-09 09:17:41.945] [info] [video]   72/240 frames
+[2026-11-09 09:17:42.439] [info] [video]   96/240 frames
+[2026-11-09 09:17:42.867] [info] [video]   120/240 frames
+[2026-11-09 09:17:43.283] [info] [video]   144/240 frames
+[2026-11-09 09:17:43.780] [info] [video]   168/240 frames
+[2026-11-09 09:17:44.206] [info] [video]   192/240 frames
+[2026-11-09 09:17:44.656] [info] [video]   216/240 frames
+[2026-11-09 09:17:45.114] [info] [video]   240/240 frames
+[2026-11-09 09:17:45.216] [info] [video] writer join complete
+[2026-11-09 09:17:45.216] [info] [drain-debug] start drain, capacity=6
+[2026-11-09 09:17:45.216] [info] [drain-debug] reap done, busy_count=0
+[2026-11-09 09:17:45.216] [info] [video] trimming framebuffer pool
+[2026-11-09 09:17:45.258] [info] [video] Released framebuffer pool — memory trimmed
+[2026-11-09 09:17:45.258] [info] [video] frame-loop cleanup complete
+[2026-11-09 09:17:45.258] [info] [video] Encoder write blocked duration: 1457.11 ms
+[2026-11-09 09:17:45.258] [info] [video_diag] conversion_and_copy_duration_ms: 3365 ms
+[2026-11-09 09:17:45.258] [info] [video_diag] conversion_bytes_written=746496000 encoder_staging_copy_bytes=0 encoder_slot_reuses=236
+[libx264 @ 0x564829a08800] frame I:5     Avg QP: 3.60  size:   592
+[libx264 @ 0x564829a08800] frame P:235   Avg QP: 6.01  size:    70
+[libx264 @ 0x564829a08800] mb I  I16..4: 100.0%  0.0%  0.0%
+[libx264 @ 0x564829a08800] mb P  I16..4:  0.0%  0.0%  0.0%  P16..4:  0.0%  0.0%  0.0%  0.0%  0.0%    skip:100.0%
+[libx264 @ 0x564829a08800] 8x8 transform intra:0.0%
+[libx264 @ 0x564829a08800] coded y,uvDC,uvAC intra: 0.0% 0.0% 0.0% inter: 0.0% 0.0% 0.0%
+[libx264 @ 0x564829a08800] i16 v,h,dc,p: 99%  0%  1%  0%
+[libx264 @ 0x564829a08800] i8c dc,h,v,p: 100%  0%  0%  0%
+[libx264 @ 0x564829a08800] Weighted P-Frames: Y:0.0% UV:0.0%
+[libx264 @ 0x564829a08800] kb/s:15.53
+[2026-11-09 09:17:45.652] [info] [video_adapter] Closed sink — 240 frames written, write_blocked=1457.11ms, close=394.52ms
+[2026-11-09 09:17:45.652] [info] [video] render_ms=4914.08 encode_ms=517.43 writer_encode_ms=4952.52 wall_ms=6231.99 nvml_stop_ms=0.17
+[2026-11-09 09:17:45.652] [info] [video] FFmpeg queue wait duration: 0.83 ms
+[2026-11-09 09:17:45.665] [info] [video] copy_eligible=true sha256=f1d805faabe1ca14c94d90d1c6f49a2bb46e7c3289940a8cfd1dd8ecdc4e17f8
+[2026-11-09 09:17:45.666] [info] [video] Wrote RenderingGen/UploadDrive/particle_lab_20261109/01_cinematic_dust_1920x1080_10s.mp4
+[2026-11-09 09:17:45.666] [info] [startup-profile] total=248.49ms logger=0.04ms cli_bootstrap=3.62ms cli_parse=nullms composition=0.13ms plan_read=0.11ms json_parse=0.08ms plan_decode_validate=57.53ms asset_resolve=0.00ms plan_compile=2.23ms unaccounted=138.67ms
+[2026-11-09 09:17:45.692] [info] [video] Wrote exact per-frame timing sidecar: RenderingGen/UploadDrive/particle_lab_20261109/01_cinematic_dust_1920x1080_10s.mp4.timing.json
+[2026-11-09 09:17:45.697] [info] [INFO] job-lifecycle: slot_pool_close_ms=0.0 surface_release_ms=0.0
+[2026-11-09 09:17:45.750] [info] [INFO] job-lifecycle: queue_close_ms=0.0 writer_join_ms=0.0 encoder_reset_ms=2.1 decoder_reset_ms=0.0 full_graph_reset_ms=52.2 sink_ctx_reset_ms=0.0 device_runtime_reset_ms=0.0 device_reservation_reset_ms=0.0
+[2026-11-09 09:17:45.750] [info] [INFO] job-lifecycle: sidecar_write_ms=29.5 session_teardown_ms=54.6
+[2026-11-09 09:17:45.761] [info] [INFO] job-lifecycle: post_sidecar_to_receipt_ms=65.9
+[2026-11-09 09:17:45.761] [info] [INFO] job-lifecycle: execute_ms=6340.8 caller_tail_ms=0.0 receipt_deferred=0

@@ -1,0 +1,63 @@
+{
+  "schema": "chrononplugin.socials-showcase.v1",
+  "generator": "chrononplugin_emit_socials_showcase",
+  "canvas": {
+    "width": 1920,
+    "height": 1080,
+    "fps": 30
+  },
+  "stack": {
+    "authoring": "C++ RenderPlan V3 social layouts",
+    "surfaces": "native SDF rounded_rect / ellipse layers (18-layer budget)",
+    "motion": "opacity, position, scale, rotation_z, progress tracks",
+    "typography": "native Inter text + DejaVu symbol glyphs",
+    "backend": "vulkan / require_gpu_native / nvenc"
+  },
+  "drive": {
+    "folder_id": "1J_xUGo_bchzXDIGqSX04CU44c_Dm3SxS",
+    "folder_url": "https://drive.google.com/drive/u/1/folders/1J_xUGo_bchzXDIGqSX04CU44c_Dm3SxS",
+    "placement": "root"
+  },
+  "clips": [
+    {
+      "id": "x_post",
+      "platform": "x",
+      "label": "X / post card",
+      "plan": "plans/01_x_post.plan.json",
+      "mp4": "mp4/Socials_01_X_Post_1920x1080_8s.mp4",
+      "drive_name": "Socials_01_X_Post_1920x1080_8s.mp4",
+      "frames": 240,
+      "duration_s": 8
+    },
+    {
+      "id": "reddit_thread",
+      "platform": "reddit",
+      "label": "Reddit / thread cascade",
+      "plan": "plans/02_reddit_thread.plan.json",
+      "mp4": "mp4/Socials_02_Reddit_Thread_1920x1080_8s.mp4",
+      "drive_name": "Socials_02_Reddit_Thread_1920x1080_8s.mp4",
+      "frames": 240,
+      "duration_s": 8
+    },
+    {
+      "id": "youtube_comment",
+      "platform": "youtube",
+      "label": "YouTube / comment highlight",
+      "plan": "plans/03_youtube_comment.plan.json",
+      "mp4": "mp4/Socials_03_YouTube_Comment_1920x1080_8s.mp4",
+      "drive_name": "Socials_03_YouTube_Comment_1920x1080_8s.mp4",
+      "frames": 240,
+      "duration_s": 8
+    },
+    {
+      "id": "tiktok_overlay",
+      "platform": "tiktok",
+      "label": "TikTok / vertical overlay",
+      "plan": "plans/04_tiktok_overlay.plan.json",
+      "mp4": "mp4/Socials_04_TikTok_Overlay_1920x1080_8s.mp4",
+      "drive_name": "Socials_04_TikTok_Overlay_1920x1080_8s.mp4",
+      "frames": 240,
+      "duration_s": 8
+    }
+  ]
+}

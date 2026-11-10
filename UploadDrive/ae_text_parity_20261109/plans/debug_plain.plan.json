@@ -1,0 +1,73 @@
+{
+  "schema": "chronon.render-plan.v3",
+  "version": 3,
+  "job_id": "debug_plain",
+  "canvas": {
+    "width": 1920,
+    "height": 1080,
+    "fps_num": 30,
+    "fps_den": 1,
+    "duration_frames": 1
+  },
+  "layers": [
+    {
+      "id": "backdrop",
+      "type": "color",
+      "color": [
+        0.004,
+        0.008,
+        0.014,
+        1.0
+      ],
+      "size": [
+        1920.0,
+        1080.0
+      ],
+      "position": [
+        0.0,
+        0.0
+      ],
+      "start_frame": 0,
+      "duration_frames": 1
+    },
+    {
+      "id": "title",
+      "type": "text",
+      "text": "CENTRA",
+      "size": [
+        1920.0,
+        1080.0
+      ],
+      "position": [
+        960.0,
+        540.0
+      ],
+      "start_frame": 0,
+      "duration_frames": 1,
+      "style": {
+        "font": "assets/fonts/SF-Pro-Display-Semibold.otf",
+        "font_size": 150,
+        "fill": "#F4FAFF"
+      },
+      "animation": {
+        "tracks": [
+          {
+            "property": "opacity",
+            "easing": "linear",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 1.0
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "output": {
+    "path": "debug_plain.mp4",
+    "format": "mp4",
+    "codec": "h264"
+  }
+}

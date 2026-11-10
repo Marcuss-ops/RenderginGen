@@ -1,10 +1,15 @@
 package tacticalfill
 
 import (
+	"context"
+	"errors"
 	"math"
 	"os"
+	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/geofeatures"
 )
@@ -116,4 +121,61 @@ func TestSlug(t *testing.T) {
 	if got := Slug("  Côte d'Ivoire  "); got != "c-te-d-ivoire" {
 		t.Fatalf("Slug = %q", got)
 	}
+}
+
+func TestEmitRunsTheEmitterWithPlanAndSamplePaths(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("the fake emitter is a POSIX shell script")
+	}
+	capture := filepath.Join(t.TempDir(), "args.txt")
+	emitter := writeEmitter(t, "#!/bin/sh\nprintf '%s\\n%s\\n' \"$1\" \"$2\" > \"$TACTICALFILL_CAPTURE\"\n")
+	t.Setenv("TACTICALFILL_CAPTURE", capture)
+	sample := filepath.Join(t.TempDir(), "place.sample.json")
+	plan := filepath.Join(t.TempDir(), "nested", "place.plan.json")
+
+	if err := Emit(context.Background(), emitter, sample, plan); err != nil {
+		t.Fatalf("Emit: %v", err)
+	}
+	raw, err := os.ReadFile(capture)
+	if err != nil {
+		t.Fatalf("read captured args: %v", err)
+	}
+	lines := strings.Split(strings.TrimSpace(string(raw)), "\n")
+	if len(lines) != 2 || lines[0] != plan || lines[1] != sample {
+		t.Fatalf("emitter args = %q, want [%s %s]", lines, plan, sample)
+	}
+	if info, err := os.Stat(filepath.Dir(plan)); err != nil || !info.IsDir() {
+		t.Fatalf("plan directory was not created: %v", err)
+	}
+}
+
+func TestEmitCancelsAHangingEmitter(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("the fake emitter is a POSIX shell script")
+	}
+	emitter := writeEmitter(t, "#!/bin/sh\nexec sleep 30\n")
+	ctx, cancel := context.WithTimeout(context.Background(), 150*time.Millisecond)
+	defer cancel()
+	start := time.Now()
+	err := Emit(ctx, emitter,
+		filepath.Join(t.TempDir(), "place.sample.json"),
+		filepath.Join(t.TempDir(), "place.plan.json"))
+	if err == nil {
+		t.Fatal("Emit reported success for a hanging emitter")
+	}
+	if !errors.Is(err, context.DeadlineExceeded) {
+		t.Fatalf("Emit error = %v, want context.DeadlineExceeded", err)
+	}
+	if elapsed := time.Since(start); elapsed > 5*time.Second {
+		t.Fatalf("Emit took %v; the child process was not killed", elapsed)
+	}
+}
+
+func writeEmitter(t *testing.T, body string) string {
+	t.Helper()
+	path := filepath.Join(t.TempDir(), "emitter.sh")
+	if err := os.WriteFile(path, []byte(body), 0o755); err != nil {
+		t.Fatalf("write emitter: %v", err)
+	}
+	return path
 }

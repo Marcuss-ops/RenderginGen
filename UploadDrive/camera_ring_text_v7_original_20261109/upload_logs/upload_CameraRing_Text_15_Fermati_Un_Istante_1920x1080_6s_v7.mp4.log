@@ -1,0 +1,7 @@
+credentials=/home/pierone/.config/velox/credentials.json
+token=/home/pierone/.config/velox/token.json
+folder=1J_xUGo_bchzXDIGqSX04CU44c_Dm3SxS
+file=/home/pierone/src/go-master/projects/Pyt/VeloxEditing/RenderingGen/UploadDrive/camera_ring_text_v7_original_20261109/mp4/CameraRing_Text_15_Fermati_Un_Istante_1920x1080_6s_v7.mp4
+sha256=34c32faef3dd6803a705a1b4b8e6d4571addebef181f3f97a92bfcefbd8507b3
+
+DRIVE_UPLOAD_PASS id=1c4rw3K2DHxnh2USm07fgJ7kyMuDqMY6d link=https://drive.google.com/file/d/1c4rw3K2DHxnh2USm07fgJ7kyMuDqMY6d/view?usp=drivesdk parent=1J_xUGo_bchzXDIGqSX04CU44c_Dm3SxS sha256=34c32faef3dd6803a705a1b4b8e6d4571addebef181f3f97a92bfcefbd8507b3 bytes=991518

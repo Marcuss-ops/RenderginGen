@@ -1,0 +1,128 @@
+{
+  "canvas": {
+    "duration_frames": 240,
+    "fps_den": 1,
+    "fps_num": 24,
+    "height": 1080,
+    "width": 1920
+  },
+  "job_id": "03_ash_fall",
+  "layers": [
+    {
+      "color": [
+        0.04313725605607033,
+        0.0470588244497776,
+        0.05882352963089943,
+        1.0
+      ],
+      "duration_frames": 240,
+      "id": "bg",
+      "position": [
+        960,
+        540
+      ],
+      "screen_space": true,
+      "size": [
+        1920,
+        1080
+      ],
+      "start_frame": 0,
+      "type": "color"
+    },
+    {
+      "duration_frames": 240,
+      "enable_3d": false,
+      "id": "ash_fall",
+      "particle_emitter": {
+        "blend_mode": "screen",
+        "bokeh": true,
+        "color_ramp": [
+          {
+            "color": [
+              0.699999988079071,
+              0.7200000286102295,
+              0.7599999904632568,
+              0.0
+            ],
+            "position": 0.0
+          },
+          {
+            "color": [
+              0.699999988079071,
+              0.7200000286102295,
+              0.7599999904632568,
+              0.3199999928474426
+            ],
+            "position": 0.15000000596046448
+          },
+          {
+            "color": [
+              0.8199999928474426,
+              0.8299999833106995,
+              0.8600000143051147,
+              0.25999999046325684
+            ],
+            "position": 0.8500000238418579
+          },
+          {
+            "color": [
+              0.8199999928474426,
+              0.8299999833106995,
+              0.8600000143051147,
+              0.0
+            ],
+            "position": 1.0
+          }
+        ],
+        "count": 240,
+        "depth_range": [
+          0.30000001192092896,
+          1.0
+        ],
+        "emitter_size": [
+          2200.0,
+          180.0
+        ],
+        "environment": true,
+        "flow_scale": 0.004999999888241291,
+        "flow_speed": 0.11999999731779099,
+        "flow_strength": 22.0,
+        "gravity": 2.0,
+        "lifetime": [
+          5.0,
+          11.0
+        ],
+        "seed": 4073,
+        "size": [
+          1.0,
+          5.0
+        ],
+        "turbulence": 0.0,
+        "twinkle": 0.25,
+        "twinkle_speed": 0.30000001192092896,
+        "velocity_max": [
+          14.0,
+          55.0
+        ],
+        "velocity_min": [
+          -14.0,
+          18.0
+        ]
+      },
+      "position": [
+        0.0,
+        -470.0
+      ],
+      "screen_space": true,
+      "start_frame": 0,
+      "type": "particles"
+    }
+  ],
+  "output": {
+    "codec": "h264",
+    "format": "mp4",
+    "path": "03_ash_fall.mp4"
+  },
+  "schema": "chronon.render-plan.v3",
+  "version": 3
+}
