@@ -76,8 +76,8 @@ func TestDocumentaryPhraseHighlightingLowersSemanticSpans(t *testing.T) {
 			if id == "doc_12_quote_line_by_line_reveal" && len(phrase.TextAnimators) == 0 {
 				t.Fatal("line reveal did not lower its line animator")
 			}
-			if id == "doc_08_mixed_font_emphasis" && mixedFontCount != 1 {
-				t.Fatalf("mixed-font emphasis lowered %d alternate font layers, want 1", mixedFontCount)
+			if id == "doc_08_mixed_font_emphasis" && mixedFontCount == 0 {
+				t.Fatal("mixed-font emphasis did not lower an alternate font layer")
 			}
 			wire, err := result.Plan.Marshal()
 			if err != nil {

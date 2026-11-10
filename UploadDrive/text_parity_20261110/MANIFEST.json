@@ -1,0 +1,234 @@
+{
+  "schema": "chronon.text-parity-subpixel.drive-delivery.v1",
+  "date": "2026-11-10",
+  "notes": "T0-01 text pixel-parity corpus at 1920x1080. Each case is one point of the frozen corpus; latin_basic and fractional also have a software-reference render for the integer scratch-surface origin fix. Clips are 2-4 seconds.",
+  "canvas": {
+    "width": 1920,
+    "height": 1080,
+    "fps": "30/1"
+  },
+  "cli": "Chronon3d/build/chronon/linux-video-release/apps/chronon3d_cli/chronon3d_cli",
+  "cli_sha256": "177d88c7cea74d7c02292dc2272a57711c13228607712fdf813c10c72c873e4f",
+  "cases": [
+    {
+      "id": "latin_basic",
+      "number": 1,
+      "backend": "vulkan",
+      "plan": "plans/01_latin_basic.plan.json",
+      "plan_sha256": "6e234fa85a633192205658af791289a29d55a42ad7c9d82050e00b991872df51",
+      "video": "videos/01_latin_basic_1920x1080_3s.mp4",
+      "video_sha256": "5e6a9461fd2dcf1cb441fb425b1b924de8a240eba248a7e6bc6d766e01440203",
+      "bytes": 34443,
+      "width": 1920,
+      "height": 1080,
+      "fps": "30/1",
+      "frames": 90,
+      "duration_s": 3.0,
+      "render_seconds": 2.991,
+      "log": "logs/01_latin_basic_1920x1080_3s.log",
+      "stills": [
+        "stills/01_latin_basic_1920x1080_3s_early.png",
+        "stills/01_latin_basic_1920x1080_3s_mid.png",
+        "stills/01_latin_basic_1920x1080_3s_late.png"
+      ]
+    },
+    {
+      "id": "latin_basic",
+      "number": 1,
+      "backend": "software",
+      "plan": "plans/01_latin_basic.plan.json",
+      "plan_sha256": "6e234fa85a633192205658af791289a29d55a42ad7c9d82050e00b991872df51",
+      "video": "videos/01_latin_basic_1920x1080_3s_software.mp4",
+      "video_sha256": "a4f7766ae411679906f36631514d3d192c82a136fb215ff78ec0c52770ad4944",
+      "bytes": 29429,
+      "width": 1920,
+      "height": 1080,
+      "fps": "30/1",
+      "frames": 90,
+      "duration_s": 3.0,
+      "render_seconds": 5.643,
+      "log": "logs/01_latin_basic_1920x1080_3s_software.log",
+      "stills": [
+        "stills/01_latin_basic_1920x1080_3s_software_early.png",
+        "stills/01_latin_basic_1920x1080_3s_software_mid.png",
+        "stills/01_latin_basic_1920x1080_3s_software_late.png"
+      ]
+    },
+    {
+      "id": "exact_3d",
+      "number": 2,
+      "backend": "vulkan",
+      "plan": "plans/02_exact_3d.plan.json",
+      "plan_sha256": "d2c9923d8366b24673e96574d231cab16572710af3af670d38e0a78873143bee",
+      "video": "videos/02_exact_3d_1920x1080_4s.mp4",
+      "video_sha256": "f397b2cfd7e752c3429dff720c2718fb3279ecfef4e409b42ca64d305865aa0a",
+      "bytes": 1629309,
+      "width": 1920,
+      "height": 1080,
+      "fps": "30/1",
+      "frames": 120,
+      "duration_s": 4.0,
+      "render_seconds": 14.951,
+      "log": "logs/02_exact_3d_1920x1080_4s.log",
+      "stills": [
+        "stills/02_exact_3d_1920x1080_4s_early.png",
+        "stills/02_exact_3d_1920x1080_4s_mid.png",
+        "stills/02_exact_3d_1920x1080_4s_late.png"
+      ]
+    },
+    {
+      "id": "effects",
+      "number": 3,
+      "backend": "vulkan",
+      "plan": "plans/03_effects.plan.json",
+      "plan_sha256": "de9ac97dff6285ef1659ca60e3cca79eaf223c4eba62202a2c9ab9e5d14acab7",
+      "video": "videos/03_effects_1920x1080_2.03333s.mp4",
+      "video_sha256": "91ad553886519a16b154f2093e138e750c191d88d0fd24c9fd7f2f7ba81b68b3",
+      "bytes": 230009,
+      "width": 1920,
+      "height": 1080,
+      "fps": "30/1",
+      "frames": 61,
+      "duration_s": 2.033333333333333,
+      "render_seconds": 2.412,
+      "log": "logs/03_effects_1920x1080_2.03333s.log",
+      "stills": [
+        "stills/03_effects_1920x1080_2.03333s_early.png",
+        "stills/03_effects_1920x1080_2.03333s_mid.png",
+        "stills/03_effects_1920x1080_2.03333s_late.png"
+      ]
+    },
+    {
+      "id": "multi_shadow",
+      "number": 4,
+      "backend": "vulkan",
+      "plan": "plans/04_multi_shadow.plan.json",
+      "plan_sha256": "49c020535ecd0f241f5e99673e8f94c74781e1616a6741cc7a0762ce11cba795",
+      "video": "videos/04_multi_shadow_1920x1080_3s.mp4",
+      "video_sha256": "895cdeff7cf033ecaeb067b62831d3b1b4739d85cb0d5dc191e8474cd4932916",
+      "bytes": 105639,
+      "width": 1920,
+      "height": 1080,
+      "fps": "30/1",
+      "frames": 90,
+      "duration_s": 3.0,
+      "render_seconds": 2.623,
+      "log": "logs/04_multi_shadow_1920x1080_3s.log",
+      "stills": [
+        "stills/04_multi_shadow_1920x1080_3s_early.png",
+        "stills/04_multi_shadow_1920x1080_3s_mid.png",
+        "stills/04_multi_shadow_1920x1080_3s_late.png"
+      ]
+    },
+    {
+      "id": "rtl_caret",
+      "number": 5,
+      "backend": "vulkan",
+      "plan": "plans/05_rtl_caret.plan.json",
+      "plan_sha256": "00d3fce04c4f7c833d19b1d155566588bb1f0bc0c5a18374c2f21df01d116c3a",
+      "video": "videos/05_rtl_caret_1920x1080_3s.mp4",
+      "video_sha256": "87eeba052153a13fc27a5688882d4bb5a64528bea5294232af14c01a245af9a1",
+      "bytes": 38132,
+      "width": 1920,
+      "height": 1080,
+      "fps": "30/1",
+      "frames": 90,
+      "duration_s": 3.0,
+      "render_seconds": 3.907,
+      "log": "logs/05_rtl_caret_1920x1080_3s.log",
+      "stills": [
+        "stills/05_rtl_caret_1920x1080_3s_early.png",
+        "stills/05_rtl_caret_1920x1080_3s_mid.png",
+        "stills/05_rtl_caret_1920x1080_3s_late.png"
+      ]
+    },
+    {
+      "id": "transitions",
+      "number": 6,
+      "backend": "vulkan",
+      "plan": "plans/06_transitions.plan.json",
+      "plan_sha256": "8b64edc1ae14fd21fa51652163db9799fc4b9d5e13ab2d95acb546529062ac75",
+      "video": "videos/06_transitions_1920x1080_2.03333s.mp4",
+      "video_sha256": "fe84db2cff3885b84ae5e84c9fab38716c1e633cbf21be6af815dfd5f3068140",
+      "bytes": 29498,
+      "width": 1920,
+      "height": 1080,
+      "fps": "30/1",
+      "frames": 61,
+      "duration_s": 2.033333333333333,
+      "render_seconds": 2.368,
+      "log": "logs/06_transitions_1920x1080_2.03333s.log",
+      "stills": [
+        "stills/06_transitions_1920x1080_2.03333s_early.png",
+        "stills/06_transitions_1920x1080_2.03333s_mid.png",
+        "stills/06_transitions_1920x1080_2.03333s_late.png"
+      ]
+    },
+    {
+      "id": "fractional",
+      "number": 7,
+      "backend": "vulkan",
+      "plan": "plans/07_fractional.plan.json",
+      "plan_sha256": "594387abbf6dbb8195202af82d9ffcad770b4b0aaa27023eeafcb7ad83e21ef2",
+      "video": "videos/07_fractional_1920x1080_3s.mp4",
+      "video_sha256": "309ea734fd04dc2084d42c7a0e02cde8cbb0de01e1004b8ea0efd1dfde4ae807",
+      "bytes": 118411,
+      "width": 1920,
+      "height": 1080,
+      "fps": "30/1",
+      "frames": 90,
+      "duration_s": 3.0,
+      "render_seconds": 2.546,
+      "log": "logs/07_fractional_1920x1080_3s.log",
+      "stills": [
+        "stills/07_fractional_1920x1080_3s_early.png",
+        "stills/07_fractional_1920x1080_3s_mid.png",
+        "stills/07_fractional_1920x1080_3s_late.png"
+      ]
+    },
+    {
+      "id": "fractional",
+      "number": 7,
+      "backend": "software",
+      "plan": "plans/07_fractional.plan.json",
+      "plan_sha256": "594387abbf6dbb8195202af82d9ffcad770b4b0aaa27023eeafcb7ad83e21ef2",
+      "video": "videos/07_fractional_1920x1080_3s_software.mp4",
+      "video_sha256": "a4c2fe61c3f56abd6272c996f1b56c61ce15065facc7981d9b3dcefd32d1cc98",
+      "bytes": 94763,
+      "width": 1920,
+      "height": 1080,
+      "fps": "30/1",
+      "frames": 90,
+      "duration_s": 3.0,
+      "render_seconds": 6.014,
+      "log": "logs/07_fractional_1920x1080_3s_software.log",
+      "stills": [
+        "stills/07_fractional_1920x1080_3s_software_early.png",
+        "stills/07_fractional_1920x1080_3s_software_mid.png",
+        "stills/07_fractional_1920x1080_3s_software_late.png"
+      ]
+    },
+    {
+      "id": "multipage",
+      "number": 8,
+      "backend": "vulkan",
+      "plan": "plans/08_multipage.plan.json",
+      "plan_sha256": "17763b643cb40f368cb5c31c7ff55196f206ec1a160b595cd6eab9baa8e5185a",
+      "video": "videos/08_multipage_1920x1080_3s.mp4",
+      "video_sha256": "161c858e9552564f8d982140ab99a3e5b4e8bad6dc35cf6524291981a13aedb7",
+      "bytes": 65620,
+      "width": 1920,
+      "height": 1080,
+      "fps": "30/1",
+      "frames": 90,
+      "duration_s": 3.0,
+      "render_seconds": 6.615,
+      "log": "logs/08_multipage_1920x1080_3s.log",
+      "stills": [
+        "stills/08_multipage_1920x1080_3s_early.png",
+        "stills/08_multipage_1920x1080_3s_mid.png",
+        "stills/08_multipage_1920x1080_3s_late.png"
+      ]
+    }
+  ]
+}

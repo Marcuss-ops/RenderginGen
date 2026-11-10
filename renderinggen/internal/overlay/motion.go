@@ -90,9 +90,9 @@ func lowerResolvedMotion(id string, resolved *resolvedMotion, enter, exit int, p
 		entrance = duration
 	}
 	if phraseEntranceFloor && duration > 0 && exit > 0 {
-		// The phrase entrance duration is invariant (one third of its window).
-		// When a caller's exit would overlap it, shorten the exit rather than
-		// stretching or clipping the entrance.
+		// The phrase entrance duration has already been bounded to its authored
+		// window and the short transition cap. When a caller's exit would overlap
+		// it, shorten the exit rather than stretching or clipping the entrance.
 		maxExit := duration - entrance
 		if int64(exit) > maxExit {
 			exit = int(maxExit)

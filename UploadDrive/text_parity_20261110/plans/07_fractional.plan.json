@@ -1,0 +1,69 @@
+{
+  "schema": "chronon.render-plan.v3",
+  "version": 3,
+  "job_id": "text-parity-fractional-1080p",
+  "camera": {
+    "type": "perspective",
+    "position": [
+      0,
+      0,
+      -1000
+    ],
+    "rotation_deg": [
+      0,
+      0,
+      0
+    ],
+    "fov_deg": 20.4074,
+    "near": 1,
+    "far": 10000,
+    "zoom": 1
+  },
+  "canvas": {
+    "width": 1920,
+    "height": 1080,
+    "fps_num": 30,
+    "fps_den": 1,
+    "duration_frames": 90
+  },
+  "output": {
+    "path": "videos/07_fractional_1920x1080_3s.mp4",
+    "format": "mp4",
+    "codec": "h264"
+  },
+  "layers": [
+    {
+      "id": "fractional",
+      "type": "text",
+      "enable_3d": true,
+      "text": "FRACTIONAL",
+      "start_frame": 0,
+      "duration_frames": 90,
+      "position": [
+        960.75,
+        600.75
+      ],
+      "scale": [
+        1.37,
+        1.37,
+        1.0
+      ],
+      "rotation": [
+        0,
+        0,
+        12
+      ],
+      "size": [
+        1200.0,
+        300.0
+      ],
+      "style": {
+        "font": "assets/fonts/Inter-Bold.ttf",
+        "font_size": 120.0,
+        "fill": "#FFFFFF",
+        "quality": "high"
+      },
+      "effects": []
+    }
+  ]
+}

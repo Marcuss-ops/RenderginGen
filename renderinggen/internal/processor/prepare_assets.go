@@ -38,11 +38,21 @@ func normalizeMaterializedImagePaths(root string, plan *overlay.Plan) (map[strin
 		return nil, nil
 	}
 	var renamed map[string]string
+	// Multiple compiled layers can reference the same source (for example a
+	// full-canvas image backdrop and its foreground frame). Keep the path
+	// rewrite by original name so every later layer follows the first layer's
+	// extension normalization.
+	normalizedPaths := make(map[string]string)
 	for i := range plan.Layers {
 		layer := &plan.Layers[i]
 		if layer.Type != "image" || layer.Asset == "" {
 			continue
 		}
+		if normalized, ok := normalizedPaths[layer.Asset]; ok {
+			layer.Asset = normalized
+			continue
+		}
+		originalPath := layer.Asset
 		path := filepath.Join(root, filepath.FromSlash(layer.Asset))
 		head, err := readFileHead(path, imageSniffBytes)
 		if err != nil {
@@ -82,6 +92,7 @@ func normalizeMaterializedImagePaths(root string, plan *overlay.Plan) (map[strin
 				renamed = make(map[string]string)
 			}
 			renamed[newAsset] = layer.Asset
+			normalizedPaths[originalPath] = newAsset
 			layer.Asset = newAsset
 			continue
 		} else if !os.IsNotExist(err) {
@@ -94,6 +105,7 @@ func normalizeMaterializedImagePaths(root string, plan *overlay.Plan) (map[strin
 			renamed = make(map[string]string)
 		}
 		renamed[newAsset] = layer.Asset
+		normalizedPaths[originalPath] = newAsset
 		layer.Asset = newAsset
 	}
 	return renamed, nil

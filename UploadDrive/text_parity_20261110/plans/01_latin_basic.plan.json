@@ -1,0 +1,41 @@
+{
+  "schema": "chronon.render-plan.v3",
+  "version": 3,
+  "job_id": "text-parity-latin-basic-1080p",
+  "canvas": {
+    "width": 1920,
+    "height": 1080,
+    "fps_num": 30,
+    "fps_den": 1,
+    "duration_frames": 90
+  },
+  "output": {
+    "path": "videos/01_latin_basic_1920x1080_3s.mp4",
+    "format": "mp4",
+    "codec": "h264"
+  },
+  "layers": [
+    {
+      "id": "latin_basic",
+      "type": "text",
+      "text": "CHRONON 3D",
+      "start_frame": 0,
+      "duration_frames": 90,
+      "position": [
+        960.0,
+        600.0
+      ],
+      "size": [
+        1920.0,
+        1080.0
+      ],
+      "style": {
+        "font": "assets/fonts/SF-Pro-Display-Semibold.otf",
+        "font_size": 144.0,
+        "fill": "#FFFFFF",
+        "quality": "high"
+      },
+      "effects": []
+    }
+  ]
+}

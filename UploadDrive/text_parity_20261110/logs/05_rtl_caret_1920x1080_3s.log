@@ -1,0 +1,89 @@
+$ /home/pierone/src/go-master/projects/Pyt/VeloxEditing/Chronon3d/build/chronon/linux-video-release/apps/chronon3d_cli/chronon3d_cli render --plan /home/pierone/src/go-master/projects/Pyt/VeloxEditing/RenderingGen/UploadDrive/text_parity_20261110/plans/05_rtl_caret.plan.json --assets-root /home/pierone/src/go-master/projects/Pyt/VeloxEditing/Chronon3d --backend vulkan --profile production --tone-map aces --exposure 1.0 -o /home/pierone/src/go-master/projects/Pyt/VeloxEditing/RenderingGen/UploadDrive/text_parity_20261110/videos/05_rtl_caret_1920x1080_3s.mp4 -v info --gpu-hot-path-mode require_gpu_native
+[2026-11-10 08:37:36.694] [info] [asset-profile] kind=3 path=assets/fonts/Inter-Bold.ttf bytes=146768 cache=miss invalidated=0 stat=0.02ms hash=5.36ms hashed_bytes=146768 total=5.51ms
+[2026-11-10 08:37:36.698] [info] [asset-profile] kind=3 path=assets/fonts/NotoNaskhArabic-Regular.ttf bytes=175792 cache=miss invalidated=0 stat=0.02ms hash=3.13ms hashed_bytes=175792 total=3.30ms
+[2026-11-10 08:37:36.699] [info] [asset-profile] kind=3 path=assets/fonts/NotoSansHebrew-Regular.ttf bytes=26892 cache=miss invalidated=0 stat=0.02ms hash=1.17ms hashed_bytes=26892 total=1.32ms
+[2026-11-10 08:37:36.699] [info] [asset-digest-cache] hits=0 misses=3 invalidations=0 bytes_hashed=349452 lookup_ms=0.01 write_ms=0.02 full_hash_ms=9.65
+[2026-11-10 08:37:36.700] [info] [plan-profile] read=0.71ms parse=0.13ms decode=73.42ms resolver=0.03ms compile_validate=10.76ms total=85.08ms
+[2026-11-10 08:37:36.700] [info] [video] Auto-selecting yuv420p pipe pixel format for 1920x1080 output
+[2026-11-10 08:37:36.700] [info] [video] execution plan resolved (reason: gpu_composition_pipe_no_video_source); decode=2 composite=2 encode=2 interop=0 handoff=3 codec=3
+[2026-11-10 08:37:36.727] [info] [video-runtime] created persistent runtime for device 0 (CUDA ordinal 0)
+[2026-11-10 08:37:36.727] [info] [video] encoder feed capability: host_frame=true direct_yuv=false native_surface=false
+[2026-11-10 08:37:36.988] [info] [native_av] CUDA context contract: native=0x5628b8ef1220 ffmpeg=0x5628b8ef1220
+[2026-11-10 08:37:37.003] [info] [native_av] NVENC tuning applied: rc=driver-default preset=slow async_depth=4 nvenc_surfaces=8 qp=-1 bitrate=0
+[h264_nvenc @ 0x5628b8cc3740] Defined rc_lookahead requires more surfaces, increasing used surfaces 8 -> 34
+[2026-11-10 08:37:37.120] [info] [native_av] encoder bitstream contract: codec=27 profile=100 level=-99 pix_fmt=117 parameter_sets=53 materialized=true
+[2026-11-10 08:37:37.120] [info] [native_av] Opened native encoder: 1920x1080 @ 30fps, codec=h264_nvenc, rc=driver-default, preset=slow, output='/home/pierone/src/go-master/projects/Pyt/VeloxEditing/RenderingGen/UploadDrive/text_parity_20261110/videos/05_rtl_caret_1920x1080_3s.partial.mp4'
+[2026-11-10 08:37:37.723] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-10 08:37:37.725] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-10 08:37:37.726] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-10 08:37:37.726] [error] [font-fallback] Missing glyph for cluster [U+0645] at byte offset 6..8 (no font in stack covers all visible codepoints)
+[2026-11-10 08:37:37.726] [error] [font-fallback] Missing glyph for cluster [U+0631] at byte offset 8..10 (no font in stack covers all visible codepoints)
+[2026-11-10 08:37:37.726] [error] [font-fallback] Missing glyph for cluster [U+062D] at byte offset 10..12 (no font in stack covers all visible codepoints)
+[2026-11-10 08:37:37.726] [error] [font-fallback] Missing glyph for cluster [U+0628] at byte offset 12..14 (no font in stack covers all visible codepoints)
+[2026-11-10 08:37:37.726] [error] [font-fallback] Missing glyph for cluster [U+0627] at byte offset 14..16 (no font in stack covers all visible codepoints)
+[2026-11-10 08:37:39.519] [info] [pool-warm] Pre-allocated and pre-imported 6 execution slots (1920x1080) for native NVENC
+[2026-11-10 08:37:39.556] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-10 08:37:39.556] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-10 08:37:39.557] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-10 08:37:39.557] [error] [font-fallback] Missing glyph for cluster [U+0645] at byte offset 6..8 (no font in stack covers all visible codepoints)
+[2026-11-10 08:37:39.557] [error] [font-fallback] Missing glyph for cluster [U+0631] at byte offset 8..10 (no font in stack covers all visible codepoints)
+[2026-11-10 08:37:39.557] [error] [font-fallback] Missing glyph for cluster [U+062D] at byte offset 10..12 (no font in stack covers all visible codepoints)
+[2026-11-10 08:37:39.557] [error] [font-fallback] Missing glyph for cluster [U+0628] at byte offset 12..14 (no font in stack covers all visible codepoints)
+[2026-11-10 08:37:39.557] [error] [font-fallback] Missing glyph for cluster [U+0627] at byte offset 14..16 (no font in stack covers all visible codepoints)
+[2026-11-10 08:37:39.693] [info] chronon3d::vulkan text batch formats: dst_image.format=109 atlas_image.format=44 atlas_encoding=2 (shader contract: dst rgba32f, atlas rgba8)
+[2026-11-10 08:37:39.693] [info] [text-route] frame=0 route=mtsdf
+[2026-11-10 08:37:39.698] [info] [text-route] frame=0 route=mtsdf
+[2026-11-10 08:37:39.701] [info] [text-route] frame=0 route=mtsdf
+[2026-11-10 08:37:39.701] [info] [temp-lifetime] frame=0 after_level=0 live=[0,1,3,5,] retired=[]
+[2026-11-10 08:37:39.701] [info] [exec-level-diag] frame=0 level=0 nodes=4 input_ms=0.002 dispatch_ms=11.625 fb_release_ms=0.001
+[2026-11-10 08:37:39.701] [info] [graph-edge] frame=0 level=1 consumer_id=2 input_index=0 producer_id=0 producer_level=0
+[2026-11-10 08:37:39.701] [info] [graph-edge] frame=0 level=1 consumer_id=2 input_index=1 producer_id=1 producer_level=0
+[2026-11-10 08:37:39.702] [info] [temp-lifetime] frame=0 after_level=1 live=[2,3,5,] retired=[0,1,]
+[2026-11-10 08:37:39.702] [info] [exec-level-diag] frame=0 level=1 nodes=1 input_ms=0.014 dispatch_ms=0.409 fb_release_ms=0.004
+[2026-11-10 08:37:39.702] [info] [graph-edge] frame=0 level=2 consumer_id=4 input_index=0 producer_id=2 producer_level=1
+[2026-11-10 08:37:39.702] [info] [graph-edge] frame=0 level=2 consumer_id=4 input_index=1 producer_id=3 producer_level=0
+[2026-11-10 08:37:39.702] [info] [temp-lifetime] frame=0 after_level=2 live=[4,5,] retired=[2,3,]
+[2026-11-10 08:37:39.702] [info] [exec-level-diag] frame=0 level=2 nodes=1 input_ms=0.012 dispatch_ms=0.399 fb_release_ms=0.002
+[2026-11-10 08:37:39.702] [info] [graph-edge] frame=0 level=3 consumer_id=6 input_index=0 producer_id=4 producer_level=2
+[2026-11-10 08:37:39.702] [info] [graph-edge] frame=0 level=3 consumer_id=6 input_index=1 producer_id=5 producer_level=0
+[2026-11-10 08:37:39.702] [info] [temp-lifetime] frame=0 after_level=3 live=[6,] retired=[4,5,]
+[2026-11-10 08:37:39.702] [info] [exec-level-diag] frame=0 level=3 nodes=1 input_ms=0.012 dispatch_ms=0.064 fb_release_ms=0.002
+[2026-11-10 08:37:39.702] [info] [video] Exporting via Arena-backed SIMD pipeline
+[2026-11-10 08:37:39.710] [info] [video]   9/90 frames
+[2026-11-10 08:37:39.715] [info] [video]   18/90 frames
+[2026-11-10 08:37:39.716] [info] [video]   27/90 frames
+[2026-11-10 08:37:39.732] [info] [video]   36/90 frames
+[2026-11-10 08:37:39.776] [info] [video]   45/90 frames
+[2026-11-10 08:37:39.819] [info] [video]   54/90 frames
+[2026-11-10 08:37:39.862] [info] [video]   63/90 frames
+[2026-11-10 08:37:39.905] [info] [video]   72/90 frames
+[2026-11-10 08:37:39.949] [info] [video]   81/90 frames
+[2026-11-10 08:37:39.992] [info] [video]   90/90 frames
+[2026-11-10 08:37:40.024] [info] [video] writer join complete
+[2026-11-10 08:37:40.024] [info] [drain-debug] start drain, capacity=6
+[2026-11-10 08:37:40.024] [info] [drain-debug] reap done, busy_count=0
+[2026-11-10 08:37:40.024] [info] [video] trimming framebuffer pool
+[2026-11-10 08:37:40.024] [info] [video] Released framebuffer pool — memory trimmed
+[2026-11-10 08:37:40.024] [info] [video] frame-loop cleanup complete
+[2026-11-10 08:37:40.024] [info] [video] Encoder write blocked duration: 0.00 ms
+[2026-11-10 08:37:40.024] [info] [video_diag] conversion_and_copy_duration_ms: 0 ms
+[2026-11-10 08:37:40.024] [info] [video_diag] conversion_bytes_written=0 encoder_staging_copy_bytes=0 encoder_slot_reuses=0
+[2026-11-10 08:37:40.024] [info] [native_av] close: sending encoder flush
+[2026-11-10 08:37:40.076] [info] [native_av] close: encoder flush accepted
+[2026-11-10 08:37:40.135] [info] [native_av] close: packets drained=true
+[2026-11-10 08:37:40.135] [info] [native_av] close: finalizing mux session
+[2026-11-10 08:37:40.135] [info] [native_av] close: mux session finalized
+[2026-11-10 08:37:40.135] [info] [native_av] Closed native encoder — 90 frames accepted, encoder_packets=90 mux_packets=90 packet_pts=0..89, YUV cache: 0 hits / 0 misses
+[2026-11-10 08:37:40.136] [info] [native_av] native-surface timings — hwframe_pool_ms=0.0 c2v_prepare_ms=0.0 encode_drain_ms=0.0 send_ms=312.1 submit_counter_ms=0.5 backpressure_ms=1.4
+[2026-11-10 08:37:40.136] [info] [video_native] convert=0.18ms  send_frame=312.09ms  backpressure=1.37ms  flush=111.17ms  receive_packet=58.51ms  mux_write=0.82ms  trailer=0.31ms
+[2026-11-10 08:37:40.138] [info] [video] render_ms=441.24 encode_ms=140.95 writer_encode_ms=315.06 wall_ms=3437.58 nvml_stop_ms=0.15
+[2026-11-10 08:37:40.138] [info] [video] FFmpeg queue wait duration: 0.00 ms
+[2026-11-10 08:37:40.148] [info] [video] copy_eligible=true sha256=87eeba052153a13fc27a5688882d4bb5a64528bea5294232af14c01a245af9a1
+[2026-11-10 08:37:40.148] [info] [video] Wrote /home/pierone/src/go-master/projects/Pyt/VeloxEditing/RenderingGen/UploadDrive/text_parity_20261110/videos/05_rtl_caret_1920x1080_3s.mp4
+[2026-11-10 08:37:40.149] [info] [startup-profile] total=1133.67ms logger=0.06ms cli_bootstrap=25.31ms cli_parse=nullms composition=0.14ms plan_read=0.71ms json_parse=0.13ms plan_decode_validate=73.42ms asset_resolve=0.03ms plan_compile=10.76ms unaccounted=162.20ms
+[2026-11-10 08:37:40.156] [info] [video] Wrote exact per-frame timing sidecar: /home/pierone/src/go-master/projects/Pyt/VeloxEditing/RenderingGen/UploadDrive/text_parity_20261110/videos/05_rtl_caret_1920x1080_3s.mp4.timing.json
+[2026-11-10 08:37:40.232] [info] [INFO] job-lifecycle: queue_close_ms=0.0 writer_join_ms=0.0 encoder_reset_ms=74.2 decoder_reset_ms=0.0 full_graph_reset_ms=0.0 sink_ctx_reset_ms=0.0 device_runtime_reset_ms=0.0 device_reservation_reset_ms=0.0
+[2026-11-10 08:37:40.232] [info] [INFO] job-lifecycle: sidecar_write_ms=8.9 session_teardown_ms=74.5
+[2026-11-10 08:37:40.239] [info] [INFO] job-lifecycle: post_sidecar_to_receipt_ms=81.8
+[2026-11-10 08:37:40.239] [info] [INFO] job-lifecycle: execute_ms=3539.6 caller_tail_ms=0.0 receipt_deferred=0
+[2026-11-10 08:37:40.239] [info] [INFO] job-lifecycle: slot_pool_close_ms=0.0 surface_release_ms=0.0

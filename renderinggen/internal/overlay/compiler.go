@@ -210,6 +210,9 @@ func CompileSemantic(raw []byte) (CompileResult, error) {
 	if err != nil {
 		return CompileResult{}, err
 	}
+	if err := ValidateEntityCaptionCollisions(plan.Layers, plan.Canvas.Width, plan.Canvas.Height); err != nil {
+		return CompileResult{}, fmt.Errorf("overlay: %w", err)
+	}
 	// The metadata probe (top-level language) is the same field the strict
 	// decode already read; a separate lenient decode could never fail after
 	// the strict one succeeded, so its value is taken from the decoded plan.

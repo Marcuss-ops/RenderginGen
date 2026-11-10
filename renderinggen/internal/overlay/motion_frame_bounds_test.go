@@ -147,16 +147,16 @@ func TestPhraseEntranceUsesExactlyOneThirdDurationAndFitsExit(t *testing.T) {
 		wantEnter int64
 		phrase    bool
 	}{
-		{name: "twelve seconds at 24fps", authored: 72, exit: 12, duration: 288, wantEnter: 96, phrase: true},
-		{name: "floor rounds up to whole frame", authored: 1, exit: 0, duration: 10, wantEnter: 4, phrase: true},
+		{name: "long phrase is capped at 17 frames", authored: 72, exit: 12, duration: 288, wantEnter: 17, phrase: true},
+		{name: "authored short entrance wins", authored: 1, exit: 0, duration: 10, wantEnter: 1, phrase: true},
 		{name: "non-phrase motions retain authored ceiling", authored: 72, exit: 12, duration: 288, wantEnter: 72, phrase: false},
-		{name: "one third overrides a longer authored window", authored: 110, exit: 12, duration: 288, wantEnter: 96, phrase: true},
-		{name: "exit allows exactly one third", authored: 12, exit: 80, duration: 120, wantEnter: 40, phrase: true},
-		{name: "exit would overlap entrance and is shortened", authored: 12, exit: 100, duration: 120, wantEnter: 40, phrase: true},
-		{name: "exit leaves one frame but phrase keeps one third", authored: 12, exit: 119, duration: 120, wantEnter: 40, phrase: true},
-		{name: "4.5s phrase entrance is one third", authored: 42, exit: 12, duration: 108, wantEnter: 36, phrase: true},
-		{name: "3s phrase entrance is one third", authored: 42, exit: 12, duration: 72, wantEnter: 24, phrase: true},
-		{name: "6s phrase entrance is one third", authored: 42, exit: 12, duration: 144, wantEnter: 48, phrase: true},
+		{name: "long authored entrance is capped", authored: 110, exit: 12, duration: 288, wantEnter: 17, phrase: true},
+		{name: "short authored entrance is preserved", authored: 12, exit: 80, duration: 120, wantEnter: 12, phrase: true},
+		{name: "short entrance leaves room for exit", authored: 12, exit: 100, duration: 120, wantEnter: 12, phrase: true},
+		{name: "short authored entrance is kept before long exit", authored: 12, exit: 119, duration: 120, wantEnter: 12, phrase: true},
+		{name: "4.5s phrase entrance is capped", authored: 42, exit: 12, duration: 108, wantEnter: 17, phrase: true},
+		{name: "3s phrase entrance is capped", authored: 42, exit: 12, duration: 72, wantEnter: 17, phrase: true},
+		{name: "6s phrase entrance is capped", authored: 42, exit: 12, duration: 144, wantEnter: 17, phrase: true},
 		{name: "non-phrase preview retains authored entrance", authored: 42, exit: 12, duration: 108, wantEnter: 42, phrase: false},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -167,7 +167,7 @@ func TestPhraseEntranceUsesExactlyOneThirdDurationAndFitsExit(t *testing.T) {
 	}
 }
 
-func TestPhraseMotionTracksReachTheProportionalEntranceFloor(t *testing.T) {
+func TestPhraseMotionTracksReachTheCappedEntranceWindow(t *testing.T) {
 	animation, err := lowerMotion("phrase_apple_clean_01_blur_soft_reveal", 60, 12, nil, "SIX WORD PHRASE FIT CHECK", 288, true)
 	if err != nil {
 		t.Fatalf("lower phrase motion: %v", err)
@@ -178,16 +178,16 @@ func TestPhraseMotionTracksReachTheProportionalEntranceFloor(t *testing.T) {
 		}
 		foundEntranceEnd := false
 		for _, keyframe := range track.Keyframes {
-			foundEntranceEnd = foundEntranceEnd || keyframe.Frame == 95
+			foundEntranceEnd = foundEntranceEnd || keyframe.Frame == 16
 		}
 		if !foundEntranceEnd {
-			t.Fatalf("phrase %s entrance did not stretch through frame 95 (96 frames): %+v", track.Property, track.Keyframes)
+			t.Fatalf("phrase %s entrance did not settle at frame 16 (17 frames): %+v", track.Property, track.Keyframes)
 		}
 	}
 }
 
-func TestPhrasePreviewAnimationRunsForOneThirdOfTheWindow(t *testing.T) {
-	// The 4.5s preview (108 frames) animates for exactly 36 frames.
+func TestPhrasePreviewAnimationUsesShortEntranceCap(t *testing.T) {
+	// The 4.5s preview (108 frames) animates for at most 17 frames.
 	animation, err := lowerMotion("text_word_rise", 42, 100, nil, "OLHA ISSO!", 108, true)
 	if err != nil {
 		t.Fatalf("lower text_word_rise preview: %v", err)
@@ -196,15 +196,15 @@ func TestPhrasePreviewAnimationRunsForOneThirdOfTheWindow(t *testing.T) {
 		t.Fatalf("text_word_rise has no selector sweep: %+v", animation.TextAnimators)
 	}
 	sweep := animation.TextAnimators[0].Selectors[0].Start
-	// Selector animation is baked per-frame; 36 frames span frame 0..35.
+	// Selector animation is baked per-frame; 17 frames span frame 0..16.
 	if len(sweep.Keyframes) < 2 {
 		t.Fatalf("preview sweep must span the 36-frame window, got %+v", sweep.Keyframes)
 	}
 	lastSweep := sweep.Keyframes[len(sweep.Keyframes)-1]
-	if lastSweep.Frame != 35 || lastSweep.Value != 100.0 || sweep.Keyframes[0].Frame != 0 || sweep.Keyframes[0].Value != 0.0 {
-		t.Fatalf("preview sweep must run 0..35 and settle at 100, got first=%+v last=%+v", sweep.Keyframes[0], lastSweep)
+	if lastSweep.Frame != 16 || lastSweep.Value != 100.0 || sweep.Keyframes[0].Frame != 0 || sweep.Keyframes[0].Value != 0.0 {
+		t.Fatalf("preview sweep must run 0..16 and settle at 100, got first=%+v last=%+v", sweep.Keyframes[0], lastSweep)
 	}
-	// The authored 100-frame exit is shortened to the 72 frames remaining
+	// The authored 100-frame exit is shortened to the 91 frames remaining
 	// after the entrance, so entrance and exit fit the layer without overlap.
 	if animation.Tracks == nil {
 		t.Fatal("phrase entrance/exit layer tracks were not compiled")
@@ -226,7 +226,7 @@ func TestPhrasePreviewAnimationRunsForOneThirdOfTheWindow(t *testing.T) {
 	}
 }
 
-func TestCompileSemanticKeepsLongPhraseWindowAndOneThirdEntrance(t *testing.T) {
+func TestCompileSemanticKeepsLongPhraseWindowAndCapsEntrance(t *testing.T) {
 	raw := []byte(`{"schema_version":"renderinggen.overlay-plan.v1","plan_id":"long-phrase-one-third","video_id":"v","width":1920,"height":1080,"fps_num":24,"fps_den":1,"items":[{"id":"phrase","kind":"important_phrase","template_id":"IMPORTANT_PHRASE","preset_id":"phrase_default","motion_id":"phrase_apple_clean_01_blur_soft_reveal","motion_params":{"enter_frames":64},"text":"A LONG IMPORTANT PHRASE STAYS FOR ITS FULL SPOKEN WINDOW","start_ms":500,"end_ms":8500}]}`)
 	result, err := CompileSemantic(raw)
 	if err != nil {
@@ -242,7 +242,7 @@ func TestCompileSemanticKeepsLongPhraseWindowAndOneThirdEntrance(t *testing.T) {
 	if layer.Animation == nil {
 		t.Fatal("phrase has no layer animation")
 	}
-	wantEntranceEnd := int64(63) // 64 entrance frames: [0,64)
+	wantEntranceEnd := int64(16) // 17 entrance frames: [0,17)
 	for _, track := range layer.Animation.Tracks {
 		if track.Property == "opacity" {
 			continue // shared readability envelope is not the motion entrance
@@ -259,7 +259,7 @@ func TestCompileSemanticKeepsLongPhraseWindowAndOneThirdEntrance(t *testing.T) {
 	}
 }
 
-func TestPhrasePresetWithoutMotionOverrideUsesOneThirdEntrance(t *testing.T) {
+func TestPhrasePresetWithoutMotionOverrideUsesCappedEntrance(t *testing.T) {
 	raw := []byte(`{"schema_version":"renderinggen.overlay-plan.v1","plan_id":"phrase-preset-one-third","video_id":"v","width":1920,"height":1080,"fps_num":24,"fps_den":1,"items":[{"id":"phrase","kind":"important_phrase","template_id":"IMPORTANT_PHRASE","preset_id":"phrase_default","text":"A LONG IMPORTANT PHRASE USES THE PRESET MOTION WINDOW","start_ms":0,"end_ms":8000}]}`)
 	result, err := CompileSemantic(raw)
 	if err != nil {
@@ -278,11 +278,11 @@ func TestPhrasePresetWithoutMotionOverrideUsesOneThirdEntrance(t *testing.T) {
 			continue
 		}
 		for _, keyframe := range track.Keyframes {
-			foundEntranceEnd = foundEntranceEnd || keyframe.Frame == 63
+			foundEntranceEnd = foundEntranceEnd || keyframe.Frame == 16
 		}
 	}
 	if !foundEntranceEnd {
-		t.Fatalf("preset-only phrase entrance did not last exactly 64 frames (one third): %+v", layer.Animation.Tracks)
+		t.Fatalf("preset-only phrase entrance did not last exactly 17 frames: %+v", layer.Animation.Tracks)
 	}
 }
 

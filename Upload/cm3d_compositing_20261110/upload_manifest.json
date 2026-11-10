@@ -1,0 +1,57 @@
+{
+  "schema": "chrononmotion.compositing-showcase.drive.v1",
+  "drive_folder_id": "1J_xUGo_bchzXDIGqSX04CU44c_Dm3SxS",
+  "drive_subfolder": "cm3d_compositing_20261110",
+  "drive_subfolder_id": "16boeD7Rjclnxug_gSqyzM_IslMNDns4m",
+  "drive_subfolder_link": "",
+  "files": [
+    {
+      "file": "01_depth_sort_crossing_1080p.mp4",
+      "bytes": "1800573",
+      "sha256": "37dd8d018119dd7e8329028a68f70b7217dfade75307cd58d6a39ded1b919145",
+      "id": "1U4Qz6tYvjrUqftW06DIUoqd_cSU7USVU",
+      "link": "https://drive.google.com/file/d/1U4Qz6tYvjrUqftW06DIUoqd_cSU7USVU/view?usp=drivesdk",
+      "parent": "16boeD7Rjclnxug_gSqyzM_IslMNDns4m"
+    },
+    {
+      "file": "02_stack_vs_depth_1080p.mp4",
+      "bytes": "2501479",
+      "sha256": "ebe16f7194aa6ef5f1fa9382cf807105cdf7d72339aca6233147095358c377c6",
+      "id": "1NeQ8512h_xfRX8ri0axfyzu7kWz90gdF",
+      "link": "https://drive.google.com/file/d/1NeQ8512h_xfRX8ri0axfyzu7kWz90gdF/view?usp=drivesdk",
+      "parent": "16boeD7Rjclnxug_gSqyzM_IslMNDns4m"
+    },
+    {
+      "file": "03_text_behind_object_1080p.mp4",
+      "bytes": "2005769",
+      "sha256": "fb2b2f573b179ba66d5361354e5030baaac406ff1a7c4b188a0f4dd4d7c15ce3",
+      "id": "193jkb9PrbMY1ZdCVCu7OWpG3DeUXVZRP",
+      "link": "https://drive.google.com/file/d/193jkb9PrbMY1ZdCVCu7OWpG3DeUXVZRP/view?usp=drivesdk",
+      "parent": "16boeD7Rjclnxug_gSqyzM_IslMNDns4m"
+    },
+    {
+      "file": "contact_sheet.png",
+      "bytes": "635984",
+      "sha256": "a41cee048ee057e607a25f8a31d3980d054de705db65274018284ddae6e1685d",
+      "id": "1KJ-wK3q2lPdyvzaYPAkPA8ujxfyY-Rjp",
+      "link": "https://drive.google.com/file/d/1KJ-wK3q2lPdyvzaYPAkPA8ujxfyY-Rjp/view?usp=drivesdk",
+      "parent": "16boeD7Rjclnxug_gSqyzM_IslMNDns4m"
+    },
+    {
+      "file": "showcase.json",
+      "bytes": "81173",
+      "sha256": "1f3c8fba5c9134863d5dbead9eb048d380a01f0d610cf24b88f701f29adeb035",
+      "id": "1w8t4WGYcbYYNuaO5oT6RJR8LCcfVRBXA",
+      "link": "https://drive.google.com/file/d/1w8t4WGYcbYYNuaO5oT6RJR8LCcfVRBXA/view?usp=drivesdk",
+      "parent": "16boeD7Rjclnxug_gSqyzM_IslMNDns4m"
+    },
+    {
+      "file": "videos_manifest.json",
+      "bytes": "967",
+      "sha256": "449b2db9c56efb53fedd664cf2f579bdda435baf5c9eefede9794689fd4f2765",
+      "id": "1XnDT2LzdtU0SpG44CNNZpA_sQGc3hbbf",
+      "link": "https://drive.google.com/file/d/1XnDT2LzdtU0SpG44CNNZpA_sQGc3hbbf/view?usp=drivesdk",
+      "parent": "16boeD7Rjclnxug_gSqyzM_IslMNDns4m"
+    }
+  ]
+}

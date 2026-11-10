@@ -1,0 +1,112 @@
+{
+  "schema": "chronon.render-plan.v3",
+  "version": 3,
+  "job_id": "text-parity-rtl-caret-1080p",
+  "canvas": {
+    "width": 1920,
+    "height": 1080,
+    "fps_num": 30,
+    "fps_den": 1,
+    "duration_frames": 90
+  },
+  "output": {
+    "path": "videos/05_rtl_caret_1920x1080_3s.mp4",
+    "format": "mp4",
+    "codec": "h264"
+  },
+  "layers": [
+    {
+      "id": "arabic",
+      "type": "text",
+      "text": "\u0645\u0631\u062d\u0628\u0627",
+      "start_frame": 0,
+      "duration_frames": 90,
+      "position": [
+        960.0,
+        270.0
+      ],
+      "size": [
+        1920.0,
+        1080.0
+      ],
+      "style": {
+        "font": "assets/fonts/NotoNaskhArabic-Regular.ttf",
+        "font_size": 144.0,
+        "fill": "#FFFFFF",
+        "text_caret": {
+          "byte_index": 0,
+          "width": 6.0,
+          "height": 0,
+          "color": "#00FF00",
+          "opacity": 1,
+          "blink_period_frames": 0,
+          "blink_duty": 0.5
+        },
+        "quality": "high"
+      },
+      "effects": []
+    },
+    {
+      "id": "hebrew",
+      "type": "text",
+      "text": "\u05e9\u05dc\u05d5\u05dd",
+      "start_frame": 0,
+      "duration_frames": 90,
+      "position": [
+        960.0,
+        540.0
+      ],
+      "size": [
+        1920.0,
+        1080.0
+      ],
+      "style": {
+        "font": "assets/fonts/NotoSansHebrew-Regular.ttf",
+        "font_size": 144.0,
+        "fill": "#FFFFFF",
+        "text_caret": {
+          "byte_index": 0,
+          "width": 6.0,
+          "height": 0,
+          "color": "#00FF00",
+          "opacity": 1,
+          "blink_period_frames": 0,
+          "blink_duty": 0.5
+        },
+        "quality": "high"
+      },
+      "effects": []
+    },
+    {
+      "id": "mixed_ltr_rtl",
+      "type": "text",
+      "text": "Hello \u0645\u0631\u062d\u0628\u0627 World",
+      "start_frame": 0,
+      "duration_frames": 90,
+      "position": [
+        960.0,
+        810.0
+      ],
+      "size": [
+        1920.0,
+        1080.0
+      ],
+      "style": {
+        "font": "assets/fonts/Inter-Bold.ttf",
+        "font_size": 96.0,
+        "fill": "#FFFFFF",
+        "text_caret": {
+          "byte_index": 6,
+          "width": 6.0,
+          "height": 0,
+          "color": "#00FF00",
+          "opacity": 1,
+          "blink_period_frames": 0,
+          "blink_duty": 0.5
+        },
+        "quality": "high"
+      },
+      "effects": []
+    }
+  ]
+}
