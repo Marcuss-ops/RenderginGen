@@ -1,0 +1,7 @@
+credentials=/home/pierone/.config/velox/credentials.json
+token=/home/pierone/.config/velox/token.json
+folder=1J_xUGo_bchzXDIGqSX04CU44c_Dm3SxS
+file=/home/pierone/src/go-master/projects/Pyt/VeloxEditing/RenderingGen/UploadDrive/camera_ring_text_v7_original_20261109/UPLOAD-MANIFEST.md
+sha256=1156af7010b309c30ecc738fedc11d0eea38e94bc38ef4dacc45a3eea95b30e7
+
+DRIVE_UPLOAD_PASS id=1NtXHU_EVuc3GDBOlhNBniBbdYhry4JY5 link=https://drive.google.com/file/d/1NtXHU_EVuc3GDBOlhNBniBbdYhry4JY5/view?usp=drivesdk parent=1J_xUGo_bchzXDIGqSX04CU44c_Dm3SxS sha256=1156af7010b309c30ecc738fedc11d0eea38e94bc38ef4dacc45a3eea95b30e7 bytes=1638

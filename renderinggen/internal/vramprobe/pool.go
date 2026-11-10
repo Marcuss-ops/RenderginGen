@@ -45,6 +45,7 @@ import (
 	"time"
 
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/chronon"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/hashio"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/overlay"
 )
 
@@ -799,16 +800,11 @@ func (s *poolSampler) writeSamples(path string) error {
 }
 
 func fileSHA256(path string) string {
-	file, err := os.Open(path)
+	digest, _, err := hashio.File(path)
 	if err != nil {
 		return ""
 	}
-	defer file.Close()
-	digest := sha256.New()
-	if _, err := io.Copy(digest, file); err != nil {
-		return ""
-	}
-	return hex.EncodeToString(digest.Sum(nil))
+	return digest
 }
 
 func firstN(value string, n int) string {

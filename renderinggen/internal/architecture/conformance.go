@@ -501,33 +501,26 @@ func scanTarget(t Target) ([]Violation, error) {
 				out = append(out, Violation{Rule: ru.id, File: fileRel})
 			}
 		}
+		// WalkDir reports a symlink as a non-directory entry and never follows
+		// it. Reading through the link would certify bytes outside the target
+		// root under an in-repo name, which is exactly how a credentials link
+		// can hide a developer home path from this gate. The link target string
+		// is the carrier; scan that, and never os.ReadFile the link.
+		if d.Type()&fs.ModeSymlink != 0 {
+			target, linkErr := os.Readlink(path)
+			if linkErr != nil {
+				walkErrs = append(walkErrs, fmt.Errorf("readlink %s: %w", path, linkErr))
+				return nil
+			}
+			scanText(fileRel, target, rules, &out)
+			return nil
+		}
 		data, readErr := os.ReadFile(path)
 		if readErr != nil {
 			walkErrs = append(walkErrs, fmt.Errorf("read %s: %w", path, readErr))
 			return nil
 		}
-		textRules := make([]rule, 0, len(rules))
-		for _, ru := range rules {
-			if ru.textRe != nil && ru.applies(fileRel) {
-				textRules = append(textRules, ru)
-			}
-		}
-		if len(textRules) == 0 {
-			return nil
-		}
-		for i, line := range strings.Split(string(data), "\n") {
-			matchLine := normalizeForMatch(line)
-			for _, ru := range textRules {
-				if ru.textRe.MatchString(matchLine) {
-					out = append(out, Violation{
-						Rule:    ru.id,
-						File:    fileRel,
-						Line:    i + 1,
-						Snippet: strings.TrimSpace(line),
-					})
-				}
-			}
-		}
+		scanText(fileRel, string(data), rules, &out)
 		return nil
 	})
 	if err != nil {
@@ -537,6 +530,34 @@ func scanTarget(t Target) ([]Violation, error) {
 		return nil, errors.Join(walkErrs...)
 	}
 	return out, nil
+}
+
+// scanText applies every text rule that owns fileRel to one carrier. Symlink
+// targets and regular file contents share this path so a rule cannot detect a
+// marker in a file but miss the same marker in a link target.
+func scanText(fileRel, text string, rules []rule, out *[]Violation) {
+	textRules := make([]rule, 0, len(rules))
+	for _, ru := range rules {
+		if ru.textRe != nil && ru.applies(fileRel) {
+			textRules = append(textRules, ru)
+		}
+	}
+	if len(textRules) == 0 {
+		return
+	}
+	for i, line := range strings.Split(text, "\n") {
+		matchLine := normalizeForMatch(line)
+		for _, ru := range textRules {
+			if ru.textRe.MatchString(matchLine) {
+				*out = append(*out, Violation{
+					Rule:    ru.id,
+					File:    fileRel,
+					Line:    i + 1,
+					Snippet: strings.TrimSpace(line),
+				})
+			}
+		}
+	}
 }
 
 func (r rule) applies(relSlash string) bool {

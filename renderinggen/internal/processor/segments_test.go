@@ -13,6 +13,7 @@ import (
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/hashio"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/overlay"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/queue"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/testenv"
 )
 
 // writeSegmentMP4 writes a real MP4 of `frames` frames at 10 fps into path
@@ -283,12 +284,8 @@ func TestFinalizeSegmentsPreservesLaterSiblingsAfterRetryFailure(t *testing.T) {
 // and the per-segment metric gauges (collected on a lane-private map) land in
 // the job's metrics map.
 func TestFinalizeSegmentsKeepsPlanOrderUnderConcurrency(t *testing.T) {
-	if _, err := exec.LookPath("ffmpeg"); err != nil {
-		t.Skipf("ffmpeg not available: %v", err)
-	}
-	if _, err := exec.LookPath("ffprobe"); err != nil {
-		t.Skipf("ffprobe not available: %v", err)
-	}
+	testenv.RequireTools(t, "ffmpeg")
+	testenv.RequireTools(t, "ffprobe")
 	proc, store, renderer := newProcessor(t)
 	dir := t.TempDir()
 	const count = 6
@@ -338,12 +335,8 @@ func TestFinalizeSegmentsKeepsPlanOrderUnderConcurrency(t *testing.T) {
 // address. A fake session has already written the three per-item MP4s; the
 // middle one is corrupt (4 frames where its window wants 8).
 func TestFinalizeSegmentsRetriesOnlyTheFailedSegment(t *testing.T) {
-	if _, err := exec.LookPath("ffmpeg"); err != nil {
-		t.Skipf("ffmpeg not available: %v", err)
-	}
-	if _, err := exec.LookPath("ffprobe"); err != nil {
-		t.Skipf("ffprobe not available: %v", err)
-	}
+	testenv.RequireTools(t, "ffmpeg")
+	testenv.RequireTools(t, "ffprobe")
 	proc, store, renderer := newProcessor(t)
 	dir := t.TempDir()
 	paths := []string{segmentOutputPath(dir, 0), segmentOutputPath(dir, 1), segmentOutputPath(dir, 2)}

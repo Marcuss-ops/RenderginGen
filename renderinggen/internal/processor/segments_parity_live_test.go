@@ -17,6 +17,7 @@ import (
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/media"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/queue"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/storage"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/testenv"
 )
 
 // segments_parity_live_test.go is the LIVE rung of the P4 per-segment parity
@@ -60,12 +61,8 @@ func rawFrames(t *testing.T, path string, width, height int) [][]byte {
 // finalizer and daemon mux, not a mock assembler. Video-only children cover
 // exact GOP-aligned windows; the anchor must copy the original audio once.
 func TestAudioAwareChunkParentMatchesSingleJob(t *testing.T) {
-	for _, tool := range []string{"ffmpeg", "ffprobe"} {
-		if _, err := exec.LookPath(tool); err != nil {
-			t.Skipf("%s not available: %v", tool, err)
-		}
-	}
-	binary := liveChrononBinary(t)
+	testenv.RequireTools(t, "ffmpeg", "ffprobe")
+	binary := testenv.RequireChronon(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
 	const frames, per, width, height = 360, 180, 320, 180
@@ -223,10 +220,8 @@ func TestAudioAwareChunkParentMatchesSingleJob(t *testing.T) {
 //
 // Gated like every live chronon test (CHRONON_BINARY / CHRONON_HOME).
 func TestSegmentedSessionMatchesIndependentSingleItemRenders(t *testing.T) {
-	if _, err := exec.LookPath("ffmpeg"); err != nil {
-		t.Skipf("ffmpeg not available: %v", err)
-	}
-	binary := liveChrononBinary(t)
+	testenv.RequireTools(t, "ffmpeg")
+	binary := testenv.RequireChronon(t)
 
 	const frames, items = 12, 3
 	const width, height = 320, 180

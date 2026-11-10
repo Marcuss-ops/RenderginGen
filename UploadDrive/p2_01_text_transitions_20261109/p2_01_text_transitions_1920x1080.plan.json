@@ -1,0 +1,191 @@
+{
+  "schema": "chronon.render-plan.v3",
+  "version": 3,
+  "job_id": "p2_01_text_transitions_1920x1080_20261109",
+  "canvas": {
+    "width": 1920,
+    "height": 1080,
+    "fps_num": 30,
+    "fps_den": 1,
+    "duration_frames": 120
+  },
+  "layers": [
+    {
+      "id": "backdrop",
+      "type": "color",
+      "color": [
+        0.004,
+        0.008,
+        0.014,
+        1.0
+      ],
+      "size": [
+        1920.0,
+        1080.0
+      ],
+      "position": [
+        0.0,
+        0.0
+      ],
+      "start_frame": 0,
+      "duration_frames": 120
+    },
+    {
+      "id": "canonical_transition",
+      "type": "text",
+      "text": "TEXT READY",
+      "size": [
+        1920.0,
+        1080.0
+      ],
+      "position": [
+        960.0,
+        307.5
+      ],
+      "start_frame": 4,
+      "duration_frames": 116,
+      "style": {
+        "font": "assets/fonts/SF-Pro-Display-Semibold.otf",
+        "font_size": 129.0,
+        "fill": "#F4FAFF"
+      },
+      "text_transitions": {
+        "keyframes": [
+          {
+            "frame": 0,
+            "text": "TEXT READY",
+            "transition": "dissolve_layouts"
+          },
+          {
+            "frame": 40,
+            "text": "CANONICAL",
+            "transition": "cut"
+          }
+        ]
+      }
+    },
+    {
+      "id": "beyond_89",
+      "type": "text",
+      "text": "BEYOND 89",
+      "size": [
+        1920.0,
+        1080.0
+      ],
+      "position": [
+        960.0,
+        682.5
+      ],
+      "start_frame": 0,
+      "duration_frames": 120,
+      "style": {
+        "font": "assets/fonts/SF-Pro-Display-Semibold.otf",
+        "font_size": 198.0,
+        "fill": "#78E7FF"
+      },
+      "text_animators": [
+        {
+          "id": "exact_3d_sweep",
+          "selectors": [
+            {
+              "unit": "glyph",
+              "shape": "square",
+              "order": "forward",
+              "combine": "replace",
+              "exclude_spaces": true,
+              "start": {
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0.0
+                  }
+                ]
+              },
+              "end": {
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 100.0
+                  }
+                ]
+              },
+              "amount": {
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 100.0
+                  }
+                ]
+              }
+            }
+          ],
+          "properties": [
+            {
+              "property": "rotation",
+              "easing": "linear",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": [
+                    0.0,
+                    0.0,
+                    0.0
+                  ]
+                },
+                {
+                  "frame": 20,
+                  "value": [
+                    0.0,
+                    120.0,
+                    0.0
+                  ]
+                },
+                {
+                  "frame": 70,
+                  "value": [
+                    0.0,
+                    120.0,
+                    0.0
+                  ]
+                },
+                {
+                  "frame": 110,
+                  "value": [
+                    0.0,
+                    0.0,
+                    0.0
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "caption",
+      "type": "text",
+      "text": "P2-01 exact orthographic projection  |  canonical text_transitions",
+      "size": [
+        1920.0,
+        1080.0
+      ],
+      "position": [
+        960.0,
+        967.5
+      ],
+      "start_frame": 0,
+      "duration_frames": 120,
+      "style": {
+        "font": "assets/fonts/Inter-Bold.ttf",
+        "font_size": 36.0,
+        "fill": "#8DA1B4"
+      }
+    }
+  ],
+  "output": {
+    "path": "p2_01_text_transitions_1920x1080.mp4",
+    "format": "mp4",
+    "codec": "h264"
+  }
+}

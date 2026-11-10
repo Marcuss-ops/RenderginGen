@@ -1,0 +1,72 @@
+[2026-11-09 09:20:29.700] [info] [plan-profile] read=0.09ms parse=0.07ms decode=55.00ms resolver=0.00ms compile_validate=2.06ms total=57.25ms
+[2026-11-09 09:20:29.700] [info] [video] Auto-selecting yuv420p pipe pixel format for 1920x1080 output
+[2026-11-09 09:20:29.700] [info] [video] execution plan resolved (reason: gpu_composition_pipe_no_video_source); decode=2 composite=2 encode=2 interop=0 handoff=3 codec=3
+[2026-11-09 09:20:29.731] [info] [video-runtime] created persistent runtime for device 0 (CUDA ordinal 0)
+[2026-11-09 09:20:29.731] [info] [video] Using in-process FFmpeg sink via VideoSinkEncoderAdapter
+[2026-11-09 09:20:29.732] [info] [video] encoder feed capability: host_frame=true direct_yuv=false native_surface=false
+[2026-11-09 09:20:30.182] [info] [video_adapter] Opened ffmpeg-pipe sink: 1920x1080 @ 24/1fps, format=yuv420p, codec=h264_nvenc
+[2026-11-09 09:20:30.911] [info] [temp-lifetime] frame=0 after_level=0 live=[0,1,3,] retired=[]
+[2026-11-09 09:20:30.911] [info] [exec-level-diag] frame=0 level=0 nodes=3 input_ms=0.001 dispatch_ms=10.944 fb_release_ms=0.001
+[2026-11-09 09:20:30.911] [info] [graph-edge] frame=0 level=1 consumer_id=2 input_index=0 producer_id=0 producer_level=0
+[2026-11-09 09:20:30.911] [info] [graph-edge] frame=0 level=1 consumer_id=2 input_index=1 producer_id=1 producer_level=0
+[2026-11-09 09:20:30.912] [info] [temp-lifetime] frame=0 after_level=1 live=[2,3,] retired=[0,1,]
+[2026-11-09 09:20:30.912] [info] [exec-level-diag] frame=0 level=1 nodes=1 input_ms=0.022 dispatch_ms=0.982 fb_release_ms=0.003
+[2026-11-09 09:20:30.912] [info] [graph-edge] frame=0 level=2 consumer_id=4 input_index=0 producer_id=2 producer_level=1
+[2026-11-09 09:20:30.912] [info] [graph-edge] frame=0 level=2 consumer_id=4 input_index=1 producer_id=3 producer_level=0
+[2026-11-09 09:20:30.913] [info] [temp-lifetime] frame=0 after_level=2 live=[4,] retired=[2,3,]
+[2026-11-09 09:20:30.913] [info] [exec-level-diag] frame=0 level=2 nodes=1 input_ms=0.011 dispatch_ms=0.997 fb_release_ms=0.002
+[2026-11-09 09:20:30.913] [error] [video] native video contract violation: frame reached synchronize_native_output without a native encode surface and without retain_native_surface_for_video; refusing silent readback
+[2026-11-09 09:20:30.915] [info] [temp-lifetime] frame=0 after_level=0 live=[0,1,3,] retired=[]
+[2026-11-09 09:20:30.915] [info] [exec-level-diag] frame=0 level=0 nodes=3 input_ms=0.000 dispatch_ms=1.584 fb_release_ms=0.001
+[2026-11-09 09:20:30.915] [info] [graph-edge] frame=0 level=1 consumer_id=2 input_index=0 producer_id=0 producer_level=0
+[2026-11-09 09:20:30.915] [info] [graph-edge] frame=0 level=1 consumer_id=2 input_index=1 producer_id=1 producer_level=0
+[2026-11-09 09:20:30.916] [info] [temp-lifetime] frame=0 after_level=1 live=[2,3,] retired=[0,1,]
+[2026-11-09 09:20:30.916] [info] [exec-level-diag] frame=0 level=1 nodes=1 input_ms=0.011 dispatch_ms=1.016 fb_release_ms=0.002
+[2026-11-09 09:20:30.916] [info] [graph-edge] frame=0 level=2 consumer_id=4 input_index=0 producer_id=2 producer_level=1
+[2026-11-09 09:20:30.916] [info] [graph-edge] frame=0 level=2 consumer_id=4 input_index=1 producer_id=3 producer_level=0
+[2026-11-09 09:20:30.917] [info] [temp-lifetime] frame=0 after_level=2 live=[4,] retired=[2,3,]
+[2026-11-09 09:20:30.917] [info] [exec-level-diag] frame=0 level=2 nodes=1 input_ms=0.011 dispatch_ms=1.034 fb_release_ms=0.002
+[2026-11-09 09:20:30.917] [error] [video] native video contract violation: frame reached synchronize_native_output without a native encode surface and without retain_native_surface_for_video; refusing silent readback
+[2026-11-09 09:20:31.184] [info] [temp-lifetime] frame=0 after_level=0 live=[0,1,3,] retired=[]
+[2026-11-09 09:20:31.184] [info] [exec-level-diag] frame=0 level=0 nodes=3 input_ms=0.002 dispatch_ms=0.513 fb_release_ms=0.001
+[2026-11-09 09:20:31.184] [info] [graph-edge] frame=0 level=1 consumer_id=2 input_index=0 producer_id=0 producer_level=0
+[2026-11-09 09:20:31.184] [info] [graph-edge] frame=0 level=1 consumer_id=2 input_index=1 producer_id=1 producer_level=0
+[2026-11-09 09:20:31.184] [info] [temp-lifetime] frame=0 after_level=1 live=[2,3,] retired=[0,1,]
+[2026-11-09 09:20:31.184] [info] [exec-level-diag] frame=0 level=1 nodes=1 input_ms=0.026 dispatch_ms=0.181 fb_release_ms=0.004
+[2026-11-09 09:20:31.184] [info] [graph-edge] frame=0 level=2 consumer_id=4 input_index=0 producer_id=2 producer_level=1
+[2026-11-09 09:20:31.184] [info] [graph-edge] frame=0 level=2 consumer_id=4 input_index=1 producer_id=3 producer_level=0
+[2026-11-09 09:20:31.184] [info] [temp-lifetime] frame=0 after_level=2 live=[4,] retired=[2,3,]
+[2026-11-09 09:20:31.185] [info] [exec-level-diag] frame=0 level=2 nodes=1 input_ms=0.021 dispatch_ms=0.125 fb_release_ms=0.002
+[2026-11-09 09:20:31.185] [info] [video] Exporting via Arena-backed SIMD pipeline
+[2026-11-09 09:20:31.187] [info] [temp-lifetime] frame=1 after_level=0 live=[0,1,3,] retired=[]
+[2026-11-09 09:20:31.187] [info] [exec-level-diag] frame=1 level=0 nodes=3 input_ms=0.000 dispatch_ms=0.408 fb_release_ms=0.001
+[2026-11-09 09:20:31.187] [info] [graph-edge] frame=1 level=1 consumer_id=2 input_index=0 producer_id=0 producer_level=0
+[2026-11-09 09:20:31.187] [info] [graph-edge] frame=1 level=1 consumer_id=2 input_index=1 producer_id=1 producer_level=0
+[2026-11-09 09:20:31.187] [info] [temp-lifetime] frame=1 after_level=1 live=[2,3,] retired=[0,1,]
+[2026-11-09 09:20:31.187] [info] [exec-level-diag] frame=1 level=1 nodes=1 input_ms=0.023 dispatch_ms=0.206 fb_release_ms=0.002
+[2026-11-09 09:20:31.188] [info] [graph-edge] frame=1 level=2 consumer_id=4 input_index=0 producer_id=2 producer_level=1
+[2026-11-09 09:20:31.188] [info] [graph-edge] frame=1 level=2 consumer_id=4 input_index=1 producer_id=3 producer_level=0
+[2026-11-09 09:20:31.188] [info] [temp-lifetime] frame=1 after_level=2 live=[4,] retired=[2,3,]
+[2026-11-09 09:20:31.188] [info] [exec-level-diag] frame=1 level=2 nodes=1 input_ms=0.021 dispatch_ms=0.126 fb_release_ms=0.002
+[2026-11-09 09:20:31.188] [error] [video] FFmpeg writer failed before frame 1
+[2026-11-09 09:20:31.188] [info] [video] writer join complete
+[2026-11-09 09:20:31.188] [info] [drain-debug] start drain, capacity=6
+[2026-11-09 09:20:31.188] [info] [drain-debug] slot_id=0 has completion, waiting
+[2026-11-09 09:20:31.188] [info] [drain-debug] slot_id=0 wait complete
+[2026-11-09 09:20:31.188] [info] [drain-debug] reap done, busy_count=0
+[2026-11-09 09:20:31.188] [info] [video] trimming framebuffer pool
+[2026-11-09 09:20:31.201] [info] [video] Released framebuffer pool — memory trimmed
+[2026-11-09 09:20:31.201] [info] [video] frame-loop cleanup complete
+[2026-11-09 09:20:31.202] [info] [video] Encoder write blocked duration: 0.00 ms
+[2026-11-09 09:20:31.202] [info] [video_diag] conversion_and_copy_duration_ms: 0 ms
+[2026-11-09 09:20:31.203] [info] [video_diag] conversion_bytes_written=0 encoder_staging_copy_bytes=0 encoder_slot_reuses=0
+[2026-11-09 09:20:31.393] [info] [video_adapter] Closed sink — 0 frames written, write_blocked=0.00ms, close=190.20ms
+[2026-11-09 09:20:31.393] [info] [video] render_ms=6.90 encode_ms=205.27 writer_encode_ms=0.00 wall_ms=1693.04 nvml_stop_ms=0.36
+[2026-11-09 09:20:31.393] [info] [video] FFmpeg queue wait duration: 0.01 ms
+[2026-11-09 09:20:31.393] [error] [video] Export incomplete: cancelled=false render_failed=false writer_error=true exception=false
+[2026-11-09 09:20:31.394] [info] [startup-profile] total=1046.81ms logger=0.06ms cli_bootstrap=3.15ms cli_parse=nullms composition=0.15ms plan_read=0.09ms json_parse=0.07ms plan_decode_validate=55.00ms asset_resolve=0.00ms plan_compile=2.06ms unaccounted=587.49ms
+[2026-11-09 09:20:31.394] [info] [video] Wrote exact per-frame timing sidecar: RenderingGen/UploadDrive/particle_lab_20261109/01_cinematic_dust_vk_1920x1080_10s.mp4.timing.json
+[2026-11-09 09:20:31.397] [info] [INFO] job-lifecycle: slot_pool_close_ms=0.0 surface_release_ms=0.0
+[2026-11-09 09:20:31.525] [info] [INFO] job-lifecycle: queue_close_ms=0.0 writer_join_ms=0.0 encoder_reset_ms=2.5 decoder_reset_ms=0.0 full_graph_reset_ms=127.7 sink_ctx_reset_ms=0.0 device_runtime_reset_ms=0.0 device_reservation_reset_ms=0.0
+[2026-11-09 09:20:31.525] [info] [INFO] job-lifecycle: sidecar_write_ms=1.0 session_teardown_ms=130.5
+[2026-11-09 09:20:31.534] [error] Render plan job failed: EncoderFailed: video encoder failed for composition '01_cinematic_dust' using codec 'h264' output 'RenderingGen/UploadDrive/particle_lab_20261109/01_cinematic_dust_vk_1920x1080_10s.mp4'

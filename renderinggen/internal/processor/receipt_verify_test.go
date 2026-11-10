@@ -12,6 +12,7 @@ import (
 
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/chronon"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/metricnames"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/testenv"
 )
 
 // TestEnforceReceiptVerificationFastRecordsMissingReceipt pins the
@@ -334,9 +335,7 @@ func TestSamplePolicySkipsAnyDecodeTheReceiptProves(t *testing.T) {
 // TestSamplePolicyVerifiesARealArtifact exercises the sample tier end to end
 // with the real ffmpeg tool: a real artifact passes without escalation.
 func TestSamplePolicyVerifiesARealArtifact(t *testing.T) {
-	if _, err := exec.LookPath("ffmpeg"); err != nil {
-		t.Skipf("ffmpeg not installed: %v", err)
-	}
+	testenv.RequireTools(t, "ffmpeg")
 	dir := t.TempDir()
 	good := filepath.Join(dir, "good.mp4")
 	if out, err := exec.Command("ffmpeg", "-v", "error", "-f", "lavfi", "-i", "color=c=black:s=64x64:d=1", "-c:v", "mpeg4", "-y", good).CombinedOutput(); err != nil {
@@ -358,9 +357,7 @@ func TestSamplePolicyVerifiesARealArtifact(t *testing.T) {
 // the real ffmpeg tool: a real artifact passes, and a file that is not media
 // is rejected even though its receipt identity is consistent.
 func TestWorkerDecodeGateDecodesARealArtifact(t *testing.T) {
-	if _, err := exec.LookPath("ffmpeg"); err != nil {
-		t.Skipf("ffmpeg not installed: %v", err)
-	}
+	testenv.RequireTools(t, "ffmpeg")
 	dir := t.TempDir()
 	good := filepath.Join(dir, "good.mp4")
 	if out, err := exec.Command("ffmpeg", "-v", "error", "-f", "lavfi", "-i", "color=c=black:s=64x64:d=0.2", "-c:v", "mpeg4", "-y", good).CombinedOutput(); err != nil {

@@ -1,0 +1,1698 @@
+{
+  "layers": [
+    {
+      "id": "backdrop",
+      "type": "color",
+      "position": [
+        0.0,
+        0.0
+      ],
+      "size": [
+        1920.0,
+        1080.0
+      ],
+      "start_frame": 0,
+      "duration_frames": 240,
+      "opacity": 1.0,
+      "color": [
+        0.043137254901960784,
+        0.047058823529411764,
+        0.06274509803921569,
+        1.0
+      ],
+      "effects": [
+        {
+          "type": "vignette",
+          "radius": 0.7,
+          "softness": 0.72,
+          "amount": 0.34,
+          "color": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ]
+        }
+      ]
+    },
+    {
+      "id": "paper",
+      "type": "shape",
+      "position": [
+        -180.0,
+        30.0
+      ],
+      "size": [
+        760.0,
+        620.0
+      ],
+      "start_frame": 0,
+      "duration_frames": 240,
+      "opacity": 1.0,
+      "shape": {
+        "type": "rounded_rect",
+        "radius": 6.0,
+        "fill": [
+          0.9137254901960784,
+          0.8823529411764706,
+          0.8235294117647058,
+          0.96
+        ],
+        "stroke": {
+          "color": [
+            0.7215686274509804,
+            0.6784313725490196,
+            0.596078431372549,
+            1.0
+          ],
+          "width": 1.0
+        }
+      }
+    },
+    {
+      "id": "paper_header",
+      "type": "text",
+      "position": [
+        630.0,
+        292.0
+      ],
+      "size": [
+        460.0,
+        34.0
+      ],
+      "start_frame": 4,
+      "duration_frames": 236,
+      "opacity": 0.85,
+      "text": "THE RECORD / FILE 1998-14",
+      "style": {
+        "font": "assets/fonts/DejaVuSansMono-Bold.ttf",
+        "font_size": 15.0,
+        "fill": "#5C5448",
+        "text_align": "left",
+        "min_font_size": 15.0,
+        "max_font_size": 15.0,
+        "fit_mode": "shrink_only"
+      }
+    },
+    {
+      "id": "headline",
+      "type": "shape",
+      "position": [
+        -180.0,
+        -180.0
+      ],
+      "size": [
+        700.0,
+        120.0
+      ],
+      "start_frame": 0,
+      "duration_frames": 240,
+      "opacity": 0.82,
+      "shape": {
+        "type": "path",
+        "path": [
+          {
+            "type": "move_to",
+            "point": [
+              -330.0,
+              -28.0
+            ]
+          },
+          {
+            "type": "line_to",
+            "point": [
+              300.0,
+              -28.0
+            ]
+          },
+          {
+            "type": "move_to",
+            "point": [
+              -330.0,
+              16.0
+            ]
+          },
+          {
+            "type": "line_to",
+            "point": [
+              200.0,
+              16.0
+            ]
+          },
+          {
+            "type": "move_to",
+            "point": [
+              -330.0,
+              58.0
+            ]
+          },
+          {
+            "type": "line_to",
+            "point": [
+              90.0,
+              58.0
+            ]
+          }
+        ],
+        "fill": [
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "stroke": {
+          "color": [
+            0.16470588235294117,
+            0.14901960784313725,
+            0.12941176470588237,
+            1.0
+          ],
+          "width": 14.0,
+          "cap": "round",
+          "join": "round"
+        }
+      },
+      "animation": {
+        "tracks": [
+          {
+            "property": "opacity",
+            "easing": "out_cubic",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 0.0
+              },
+              {
+                "frame": 18,
+                "value": 0.82
+              },
+              {
+                "frame": 239,
+                "value": 0.82
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "body_lines",
+      "type": "shape",
+      "position": [
+        -180.0,
+        30.0
+      ],
+      "size": [
+        760.0,
+        620.0
+      ],
+      "start_frame": 0,
+      "duration_frames": 240,
+      "opacity": 0.45,
+      "shape": {
+        "type": "path",
+        "path": [
+          {
+            "type": "move_to",
+            "point": [
+              -330.0,
+              -120.0
+            ]
+          },
+          {
+            "type": "line_to",
+            "point": [
+              330.0,
+              -120.0
+            ]
+          },
+          {
+            "type": "move_to",
+            "point": [
+              -330.0,
+              -96.0
+            ]
+          },
+          {
+            "type": "line_to",
+            "point": [
+              330.0,
+              -96.0
+            ]
+          },
+          {
+            "type": "move_to",
+            "point": [
+              -330.0,
+              -72.0
+            ]
+          },
+          {
+            "type": "line_to",
+            "point": [
+              330.0,
+              -72.0
+            ]
+          },
+          {
+            "type": "move_to",
+            "point": [
+              -330.0,
+              -48.0
+            ]
+          },
+          {
+            "type": "line_to",
+            "point": [
+              330.0,
+              -48.0
+            ]
+          },
+          {
+            "type": "move_to",
+            "point": [
+              -330.0,
+              -24.0
+            ]
+          },
+          {
+            "type": "line_to",
+            "point": [
+              170.0,
+              -24.0
+            ]
+          },
+          {
+            "type": "move_to",
+            "point": [
+              -330.0,
+              0.0
+            ]
+          },
+          {
+            "type": "line_to",
+            "point": [
+              330.0,
+              0.0
+            ]
+          },
+          {
+            "type": "move_to",
+            "point": [
+              -330.0,
+              24.0
+            ]
+          },
+          {
+            "type": "line_to",
+            "point": [
+              330.0,
+              24.0
+            ]
+          },
+          {
+            "type": "move_to",
+            "point": [
+              -330.0,
+              48.0
+            ]
+          },
+          {
+            "type": "line_to",
+            "point": [
+              330.0,
+              48.0
+            ]
+          },
+          {
+            "type": "move_to",
+            "point": [
+              -330.0,
+              72.0
+            ]
+          },
+          {
+            "type": "line_to",
+            "point": [
+              330.0,
+              72.0
+            ]
+          },
+          {
+            "type": "move_to",
+            "point": [
+              -330.0,
+              96.0
+            ]
+          },
+          {
+            "type": "line_to",
+            "point": [
+              170.0,
+              96.0
+            ]
+          },
+          {
+            "type": "move_to",
+            "point": [
+              -330.0,
+              120.0
+            ]
+          },
+          {
+            "type": "line_to",
+            "point": [
+              330.0,
+              120.0
+            ]
+          },
+          {
+            "type": "move_to",
+            "point": [
+              -330.0,
+              144.0
+            ]
+          },
+          {
+            "type": "line_to",
+            "point": [
+              330.0,
+              144.0
+            ]
+          },
+          {
+            "type": "move_to",
+            "point": [
+              -330.0,
+              168.0
+            ]
+          },
+          {
+            "type": "line_to",
+            "point": [
+              330.0,
+              168.0
+            ]
+          }
+        ],
+        "fill": [
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "stroke": {
+          "color": [
+            0.35294117647058826,
+            0.3215686274509804,
+            0.2784313725490196,
+            1.0
+          ],
+          "width": 4.0,
+          "cap": "round",
+          "join": "round"
+        }
+      },
+      "animation": {
+        "tracks": [
+          {
+            "property": "opacity",
+            "easing": "out_cubic",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 0.0
+              },
+              {
+                "frame": 24,
+                "value": 0.45
+              },
+              {
+                "frame": 239,
+                "value": 0.45
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "redaction",
+      "type": "shape",
+      "position": [
+        -260.0,
+        -40.0
+      ],
+      "size": [
+        250.0,
+        22.0
+      ],
+      "start_frame": 10,
+      "duration_frames": 230,
+      "opacity": 1.0,
+      "shape": {
+        "type": "rounded_rect",
+        "radius": 2.0,
+        "fill": [
+          0.0784313725490196,
+          0.07058823529411765,
+          0.06274509803921569,
+          0.92
+        ]
+      }
+    },
+    {
+      "id": "redaction_2",
+      "type": "shape",
+      "position": [
+        -100.0,
+        56.0
+      ],
+      "size": [
+        180.0,
+        22.0
+      ],
+      "start_frame": 16,
+      "duration_frames": 224,
+      "opacity": 1.0,
+      "shape": {
+        "type": "rounded_rect",
+        "radius": 2.0,
+        "fill": [
+          0.0784313725490196,
+          0.07058823529411765,
+          0.06274509803921569,
+          0.92
+        ]
+      }
+    },
+    {
+      "id": "crop_marks",
+      "type": "shape",
+      "position": [
+        -180.0,
+        30.0
+      ],
+      "size": [
+        760.0,
+        620.0
+      ],
+      "start_frame": 0,
+      "duration_frames": 240,
+      "opacity": 0.55,
+      "shape": {
+        "type": "path",
+        "path": [
+          {
+            "type": "move_to",
+            "point": [
+              -380.0,
+              -280.0
+            ]
+          },
+          {
+            "type": "line_to",
+            "point": [
+              -380.0,
+              -240.0
+            ]
+          },
+          {
+            "type": "move_to",
+            "point": [
+              -380.0,
+              -280.0
+            ]
+          },
+          {
+            "type": "line_to",
+            "point": [
+              -340.0,
+              -280.0
+            ]
+          },
+          {
+            "type": "move_to",
+            "point": [
+              380.0,
+              -280.0
+            ]
+          },
+          {
+            "type": "line_to",
+            "point": [
+              380.0,
+              -240.0
+            ]
+          },
+          {
+            "type": "move_to",
+            "point": [
+              380.0,
+              -280.0
+            ]
+          },
+          {
+            "type": "line_to",
+            "point": [
+              340.0,
+              -280.0
+            ]
+          },
+          {
+            "type": "move_to",
+            "point": [
+              380.0,
+              280.0
+            ]
+          },
+          {
+            "type": "line_to",
+            "point": [
+              380.0,
+              240.0
+            ]
+          },
+          {
+            "type": "move_to",
+            "point": [
+              380.0,
+              280.0
+            ]
+          },
+          {
+            "type": "line_to",
+            "point": [
+              340.0,
+              280.0
+            ]
+          },
+          {
+            "type": "move_to",
+            "point": [
+              -380.0,
+              280.0
+            ]
+          },
+          {
+            "type": "line_to",
+            "point": [
+              -380.0,
+              240.0
+            ]
+          },
+          {
+            "type": "move_to",
+            "point": [
+              -380.0,
+              280.0
+            ]
+          },
+          {
+            "type": "line_to",
+            "point": [
+              -340.0,
+              280.0
+            ]
+          }
+        ],
+        "fill": [
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "stroke": {
+          "color": [
+            0.9490196078431372,
+            0.7568627450980392,
+            0.3058823529411765,
+            1.0
+          ],
+          "width": 1.2,
+          "cap": "round",
+          "join": "round"
+        }
+      }
+    },
+    {
+      "id": "anchor_pulse",
+      "type": "shape",
+      "position": [
+        60.0,
+        -140.0
+      ],
+      "size": [
+        90.0,
+        90.0
+      ],
+      "start_frame": 22,
+      "duration_frames": 64,
+      "opacity": 0.8,
+      "shape": {
+        "type": "ellipse",
+        "stroke": {
+          "color": [
+            1.0,
+            0.35294117647058826,
+            0.3058823529411765,
+            1.0
+          ],
+          "width": 2.0
+        }
+      },
+      "animation": {
+        "tracks": [
+          {
+            "property": "scale",
+            "easing": "out_cubic",
+            "keyframes": [
+              {
+                "frame": 22,
+                "value": [
+                  0.3,
+                  0.3
+                ]
+              },
+              {
+                "frame": 74,
+                "value": [
+                  2.6,
+                  2.6
+                ]
+              }
+            ]
+          },
+          {
+            "property": "opacity",
+            "easing": "out_cubic",
+            "keyframes": [
+              {
+                "frame": 22,
+                "value": 0.8
+              },
+              {
+                "frame": 74,
+                "value": 0.0
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "anchor_dot",
+      "type": "shape",
+      "position": [
+        60.0,
+        -140.0
+      ],
+      "size": [
+        12.0,
+        12.0
+      ],
+      "start_frame": 16,
+      "duration_frames": 224,
+      "opacity": 1.0,
+      "shape": {
+        "type": "ellipse",
+        "fill": [
+          1.0,
+          0.35294117647058826,
+          0.3058823529411765,
+          1.0
+        ]
+      },
+      "effects": [
+        {
+          "type": "glow",
+          "radius": 14.0,
+          "intensity": 0.55,
+          "color": [
+            1.0,
+            0.35294117647058826,
+            0.3058823529411765,
+            1.0
+          ]
+        }
+      ]
+    },
+    {
+      "id": "leader_glow",
+      "type": "shape",
+      "position": [
+        0.0,
+        0.0
+      ],
+      "size": [
+        1920.0,
+        1080.0
+      ],
+      "start_frame": 0,
+      "duration_frames": 240,
+      "opacity": 0.22,
+      "shape": {
+        "type": "path",
+        "path": [
+          {
+            "type": "move_to",
+            "point": [
+              60.0,
+              -140.0
+            ]
+          },
+          {
+            "type": "line_to",
+            "point": [
+              160.0,
+              -220.0
+            ]
+          },
+          {
+            "type": "line_to",
+            "point": [
+              310.0,
+              -220.0
+            ]
+          }
+        ],
+        "fill": [
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "stroke": {
+          "color": [
+            0.9490196078431372,
+            0.7568627450980392,
+            0.3058823529411765,
+            1.0
+          ],
+          "width": 9.0,
+          "cap": "round",
+          "join": "round"
+        },
+        "operators": [
+          {
+            "kind": "trim",
+            "params": {
+              "start": 0.0,
+              "end": 1.0,
+              "offset": 0.0,
+              "animation": {
+                "easing": "in_out_cubic",
+                "keyframes": [
+                  {
+                    "frame": 28,
+                    "value": [
+                      0.0,
+                      0.0,
+                      0.0
+                    ]
+                  },
+                  {
+                    "frame": 58,
+                    "value": [
+                      0.0,
+                      0.45,
+                      0.0
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "kind": "trim",
+            "params": {
+              "start": 0.0,
+              "end": 1.0,
+              "offset": 0.0,
+              "animation": {
+                "easing": "in_out_cubic",
+                "keyframes": [
+                  {
+                    "frame": 58,
+                    "value": [
+                      0.0,
+                      0.45,
+                      0.0
+                    ]
+                  },
+                  {
+                    "frame": 82,
+                    "value": [
+                      0.0,
+                      1.0,
+                      0.0
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "blend_mode": "screen"
+    },
+    {
+      "id": "leader",
+      "type": "shape",
+      "position": [
+        0.0,
+        0.0
+      ],
+      "size": [
+        1920.0,
+        1080.0
+      ],
+      "start_frame": 0,
+      "duration_frames": 240,
+      "opacity": 1.0,
+      "shape": {
+        "type": "path",
+        "path": [
+          {
+            "type": "move_to",
+            "point": [
+              60.0,
+              -140.0
+            ]
+          },
+          {
+            "type": "line_to",
+            "point": [
+              160.0,
+              -220.0
+            ]
+          },
+          {
+            "type": "line_to",
+            "point": [
+              310.0,
+              -220.0
+            ]
+          }
+        ],
+        "fill": [
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "stroke": {
+          "color": [
+            1.0,
+            0.8509803921568627,
+            0.5411764705882353,
+            1.0
+          ],
+          "width": 2.4,
+          "cap": "round",
+          "join": "round"
+        },
+        "operators": [
+          {
+            "kind": "trim",
+            "params": {
+              "start": 0.0,
+              "end": 1.0,
+              "offset": 0.0,
+              "animation": {
+                "easing": "in_out_cubic",
+                "keyframes": [
+                  {
+                    "frame": 28,
+                    "value": [
+                      0.0,
+                      0.0,
+                      0.0
+                    ]
+                  },
+                  {
+                    "frame": 58,
+                    "value": [
+                      0.0,
+                      0.45,
+                      0.0
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "kind": "trim",
+            "params": {
+              "start": 0.0,
+              "end": 1.0,
+              "offset": 0.0,
+              "animation": {
+                "easing": "in_out_cubic",
+                "keyframes": [
+                  {
+                    "frame": 58,
+                    "value": [
+                      0.0,
+                      0.45,
+                      0.0
+                    ]
+                  },
+                  {
+                    "frame": 82,
+                    "value": [
+                      0.0,
+                      1.0,
+                      0.0
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "callout_card",
+      "type": "shape",
+      "position": [
+        550.0,
+        -290.0
+      ],
+      "size": [
+        440.0,
+        180.0
+      ],
+      "start_frame": 62,
+      "duration_frames": 178,
+      "opacity": 1.0,
+      "shape": {
+        "type": "rounded_rect",
+        "radius": 6.0,
+        "fill": [
+          0.06666666666666667,
+          0.06274509803921569,
+          0.054901960784313725,
+          0.15
+        ],
+        "stroke": {
+          "color": [
+            0.9490196078431372,
+            0.7568627450980392,
+            0.3058823529411765,
+            1.0
+          ],
+          "width": 1.4
+        }
+      },
+      "animation": {
+        "tracks": [
+          {
+            "property": "opacity",
+            "easing": "out_cubic",
+            "keyframes": [
+              {
+                "frame": 62,
+                "value": 0.0
+              },
+              {
+                "frame": 78,
+                "value": 1.0
+              },
+              {
+                "frame": 239,
+                "value": 1.0
+              }
+            ]
+          },
+          {
+            "property": "position",
+            "easing": "out_cubic",
+            "keyframes": [
+              {
+                "frame": 62,
+                "value": [
+                  550.0,
+                  -278.0
+                ]
+              },
+              {
+                "frame": 82,
+                "value": [
+                  550.0,
+                  -290.0
+                ]
+              },
+              {
+                "frame": 239,
+                "value": [
+                  550.0,
+                  -290.0
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "card_kicker",
+      "type": "text",
+      "position": [
+        1510.0,
+        198.0
+      ],
+      "size": [
+        380.0,
+        30.0
+      ],
+      "start_frame": 70,
+      "duration_frames": 170,
+      "opacity": 1.0,
+      "text": "SOURCE 14",
+      "style": {
+        "font": "assets/fonts/DejaVuSansMono-Bold.ttf",
+        "font_size": 17.0,
+        "fill": "#F2C14E",
+        "text_align": "center",
+        "min_font_size": 17.0,
+        "max_font_size": 17.0,
+        "fit_mode": "shrink_only"
+      }
+    },
+    {
+      "id": "card_title",
+      "type": "text",
+      "position": [
+        1510.0,
+        242.0
+      ],
+      "size": [
+        400.0,
+        44.0
+      ],
+      "start_frame": 74,
+      "duration_frames": 166,
+      "opacity": 1.0,
+      "text": "Archive camera roll",
+      "style": {
+        "font": "assets/fonts/Inter-Bold.ttf",
+        "font_size": 27.0,
+        "fill": "#F7F0E3",
+        "text_align": "center",
+        "min_font_size": 27.0,
+        "max_font_size": 27.0,
+        "fit_mode": "shrink_only"
+      }
+    },
+    {
+      "id": "card_meta",
+      "type": "text",
+      "position": [
+        1510.0,
+        286.0
+      ],
+      "size": [
+        380.0,
+        30.0
+      ],
+      "start_frame": 78,
+      "duration_frames": 162,
+      "opacity": 1.0,
+      "text": "recovered 03:14 UTC",
+      "style": {
+        "font": "assets/fonts/DejaVuSansMono-Bold.ttf",
+        "font_size": 16.0,
+        "fill": "#B9AD9A",
+        "text_align": "center",
+        "min_font_size": 16.0,
+        "max_font_size": 16.0,
+        "fit_mode": "shrink_only"
+      }
+    },
+    {
+      "id": "hand_highlight",
+      "type": "shape",
+      "position": [
+        -180.0,
+        -184.0
+      ],
+      "size": [
+        700.0,
+        260.0
+      ],
+      "start_frame": 0,
+      "duration_frames": 240,
+      "opacity": 0.55,
+      "shape": {
+        "type": "path",
+        "path": [
+          {
+            "type": "move_to",
+            "point": [
+              300.0,
+              0.0
+            ]
+          },
+          {
+            "type": "line_to",
+            "point": [
+              301.0737981867957,
+              10.087937610074473
+            ]
+          },
+          {
+            "type": "line_to",
+            "point": [
+              273.7526600034979,
+              18.5990973861757
+            ]
+          },
+          {
+            "type": "line_to",
+            "point": [
+              292.04189295802547,
+              30.47110610937028
+            ]
+          },
+          {
+            "type": "line_to",
+            "point": [
+              277.47960184843157,
+              39.94857487773999
+            ]
+          },
+          {
+            "type": "line_to",
+            "point": [
+              243.02196012240103,
+              45.820243189270876
+            ]
+          },
+          {
+            "type": "line_to",
+            "point": [
+              235.38798066305574,
+              56.62067075727464
+            ]
+          },
+          {
+            "type": "line_to",
+            "point": [
+              197.65099800566685,
+              60.056041337822556
+            ]
+          },
+          {
+            "type": "line_to",
+            "point": [
+              175.82651794185205,
+              67.70378685317763
+            ]
+          },
+          {
+            "type": "line_to",
+            "point": [
+              160.01438950144058,
+              79.45054173346848
+            ]
+          },
+          {
+            "type": "line_to",
+            "point": [
+              116.29010589945798,
+              77.28268682083204
+            ]
+          },
+          {
+            "type": "line_to",
+            "point": [
+              85.75251416104716,
+              82.11089215208965
+            ]
+          },
+          {
+            "type": "line_to",
+            "point": [
+              52.25821511545039,
+              84.95970538884518
+            ]
+          },
+          {
+            "type": "line_to",
+            "point": [
+              16.519786508853013,
+              81.30835043111948
+            ]
+          },
+          {
+            "type": "line_to",
+            "point": [
+              -18.327284341107898,
+              90.20463169175852
+            ]
+          },
+          {
+            "type": "line_to",
+            "point": [
+              -53.39093986722313,
+              86.80125242570182
+            ]
+          },
+          {
+            "type": "line_to",
+            "point": [
+              -82.83526993207141,
+              79.31753351286808
+            ]
+          },
+          {
+            "type": "line_to",
+            "point": [
+              -121.26158857559165,
+              80.58657527912455
+            ]
+          },
+          {
+            "type": "line_to",
+            "point": [
+              -144.02049800964195,
+              71.50923503343408
+            ]
+          },
+          {
+            "type": "line_to",
+            "point": [
+              -179.00721193432366,
+              68.92854538580526
+            ]
+          },
+          {
+            "type": "line_to",
+            "point": [
+              -219.3470817323209,
+              66.64837284286988
+            ]
+          },
+          {
+            "type": "line_to",
+            "point": [
+              -221.8868511047163,
+              53.37308347851588
+            ]
+          },
+          {
+            "type": "line_to",
+            "point": [
+              -249.4513645456902,
+              47.03246645538606
+            ]
+          },
+          {
+            "type": "line_to",
+            "point": [
+              -268.0981129617897,
+              38.597927447240195
+            ]
+          },
+          {
+            "type": "line_to",
+            "point": [
+              -270.39209932324457,
+              28.21220704386467
+            ]
+          },
+          {
+            "type": "line_to",
+            "point": [
+              -309.650878930324,
+              21.038067183955082
+            ]
+          },
+          {
+            "type": "line_to",
+            "point": [
+              -301.02961220593346,
+              10.086457091275191
+            ]
+          },
+          {
+            "type": "line_to",
+            "point": [
+              -287.1866370101018,
+              1.0082129612139667e-14
+            ]
+          },
+          {
+            "type": "line_to",
+            "point": [
+              -304.00635981625874,
+              -10.186197568044525
+            ]
+          },
+          {
+            "type": "line_to",
+            "point": [
+              -281.41600723318913,
+              -19.119754761440234
+            ]
+          },
+          {
+            "type": "line_to",
+            "point": [
+              -286.13490832579436,
+              -29.854782356322225
+            ]
+          },
+          {
+            "type": "line_to",
+            "point": [
+              -283.6615112888813,
+              -40.83858073951901
+            ]
+          },
+          {
+            "type": "line_to",
+            "point": [
+              -238.64195649628508,
+              -44.994421394329216
+            ]
+          },
+          {
+            "type": "line_to",
+            "point": [
+              -229.1866911330239,
+              -55.12900082679898
+            ]
+          },
+          {
+            "type": "line_to",
+            "point": [
+              -206.0018246401073,
+              -62.5934309519573
+            ]
+          },
+          {
+            "type": "line_to",
+            "point": [
+              -174.10920576342122,
+              -67.04251835369396
+            ]
+          },
+          {
+            "type": "line_to",
+            "point": [
+              -159.75879524761888,
+              -79.32363375979574
+            ]
+          },
+          {
+            "type": "line_to",
+            "point": [
+              -117.96475626543148,
+              -78.39560591886621
+            ]
+          },
+          {
+            "type": "line_to",
+            "point": [
+              -82.18433604706829,
+              -78.69424260935864
+            ]
+          },
+          {
+            "type": "line_to",
+            "point": [
+              -53.32565215879362,
+              -86.69510979412826
+            ]
+          },
+          {
+            "type": "line_to",
+            "point": [
+              -16.91974463897863,
+              -83.27689498734534
+            ]
+          },
+          {
+            "type": "line_to",
+            "point": [
+              17.913138600945246,
+              -88.16625746987408
+            ]
+          },
+          {
+            "type": "line_to",
+            "point": [
+              54.46332154356663,
+              -88.54469565439298
+            ]
+          },
+          {
+            "type": "line_to",
+            "point": [
+              80.9412626584877,
+              -77.50395838334549
+            ]
+          },
+          {
+            "type": "line_to",
+            "point": [
+              119.2438783366835,
+              -79.24566955646975
+            ]
+          },
+          {
+            "type": "line_to",
+            "point": [
+              150.54772063845184,
+              -74.75013965138545
+            ]
+          },
+          {
+            "type": "line_to",
+            "point": [
+              176.11802238715094,
+              -67.8160336010647
+            ]
+          },
+          {
+            "type": "line_to",
+            "point": [
+              218.91637333083534,
+              -66.5175025622987
+            ]
+          },
+          {
+            "type": "line_to",
+            "point": [
+              223.97938739318673,
+              -53.87642612117506
+            ]
+          },
+          {
+            "type": "line_to",
+            "point": [
+              240.07990073595565,
+              -45.26553662490818
+            ]
+          },
+          {
+            "type": "line_to",
+            "point": [
+              276.101601690154,
+              -39.75018500642056
+            ]
+          },
+          {
+            "type": "line_to",
+            "point": [
+              275.11202158012804,
+              -28.704674923937482
+            ]
+          },
+          {
+            "type": "line_to",
+            "point": [
+              301.8173622687321,
+              -20.505848285101877
+            ]
+          },
+          {
+            "type": "line_to",
+            "point": [
+              306.69967988792837,
+              -10.276441372090552
+            ]
+          },
+          {
+            "type": "line_to",
+            "point": [
+              280.0341082088659,
+              -1.9662058124817413e-14
+            ]
+          }
+        ],
+        "fill": [
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "stroke": {
+          "color": [
+            1.0,
+            0.8196078431372549,
+            0.4,
+            1.0
+          ],
+          "width": 14.0,
+          "cap": "round",
+          "join": "round"
+        },
+        "operators": [
+          {
+            "kind": "trim",
+            "params": {
+              "start": 0.0,
+              "end": 1.0,
+              "offset": 0.0,
+              "animation": {
+                "easing": "in_out_cubic",
+                "keyframes": [
+                  {
+                    "frame": 118,
+                    "value": [
+                      0.0,
+                      0.0,
+                      0.0
+                    ]
+                  },
+                  {
+                    "frame": 158,
+                    "value": [
+                      0.0,
+                      1.0,
+                      0.0
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "animation": {
+        "tracks": [
+          {
+            "property": "opacity",
+            "easing": "out_cubic",
+            "keyframes": [
+              {
+                "frame": 118,
+                "value": 0.0
+              },
+              {
+                "frame": 124,
+                "value": 0.58
+              },
+              {
+                "frame": 239,
+                "value": 0.58
+              }
+            ]
+          },
+          {
+            "property": "rotation",
+            "easing": "out_cubic",
+            "keyframes": [
+              {
+                "frame": 118,
+                "value": [
+                  0.0,
+                  0.0,
+                  -1.6
+                ]
+              },
+              {
+                "frame": 239,
+                "value": [
+                  0.0,
+                  0.0,
+                  -1.6
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "top_right",
+      "type": "text",
+      "position": [
+        1700.0,
+        100.0
+      ],
+      "size": [
+        380.0,
+        36.0
+      ],
+      "start_frame": 0,
+      "duration_frames": 240,
+      "opacity": 0.7,
+      "text": "ARCHIVE / 1998",
+      "style": {
+        "font": "assets/fonts/DejaVuSansMono-Bold.ttf",
+        "font_size": 20.0,
+        "fill": "#8A8174",
+        "text_align": "right",
+        "min_font_size": 20.0,
+        "max_font_size": 20.0,
+        "fit_mode": "shrink_only"
+      }
+    },
+    {
+      "id": "caption",
+      "type": "text",
+      "position": [
+        960.0,
+        1004.0
+      ],
+      "size": [
+        820.0,
+        38.0
+      ],
+      "start_frame": 98,
+      "duration_frames": 142,
+      "opacity": 1.0,
+      "text": "FIG. 02 - ORIGIN OF THE TRANSFER",
+      "style": {
+        "font": "assets/fonts/DejaVuSansMono-Bold.ttf",
+        "font_size": 19.0,
+        "fill": "#8A8174",
+        "text_align": "center",
+        "min_font_size": 19.0,
+        "max_font_size": 19.0,
+        "fit_mode": "shrink_only"
+      }
+    }
+  ],
+  "schema": "chronon.render-plan.v3",
+  "version": 3,
+  "job_id": "vector_motion_04_Technical_Callout",
+  "canvas": {
+    "width": 1920,
+    "height": 1080,
+    "fps_num": 30,
+    "fps_den": 1,
+    "duration_frames": 240
+  },
+  "output": {
+    "path": "VectorMotion_04_Technical_Callout_1920x1080_8s_v1.mp4",
+    "format": "mp4",
+    "codec": "h264"
+  }
+}

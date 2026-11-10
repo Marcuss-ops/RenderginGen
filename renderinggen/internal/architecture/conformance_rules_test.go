@@ -12,6 +12,7 @@ package architecture
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 )
@@ -289,6 +290,32 @@ func TestRulesCatchEscapedCarriers(t *testing.T) {
 			}
 		})
 	}
+}
+
+// TestSymlinkCarrierDoesNotFollowItsTarget pins the fix for a gate bypass: a
+// symlink named like a scanned JSON file can point outside the repository. The
+// gate must scan the link target STRING (the carrier it can see) and must never
+// read through the link, which would either hide a home path or leak bytes from
+// outside the workspace under an in-repo name.
+func TestSymlinkCarrierDoesNotFollowItsTarget(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("creating symlinks requires privileges on Windows")
+	}
+	dir := t.TempDir()
+	link := filepath.Join(dir, "cfg.yaml")
+	if err := os.Symlink("/home/dev/.config/velox/credentials.json", link); err != nil {
+		t.Fatal(err)
+	}
+	got, err := ScanTargets([]Target{{Dir: dir}})
+	if err != nil {
+		t.Fatalf("the gate followed the symlink and failed to read its target: %v", err)
+	}
+	for _, violation := range got {
+		if violation.Rule == "hardcoded_home_path" && violation.File == "cfg.yaml" {
+			return
+		}
+	}
+	t.Fatalf("symlink target was not scanned as a carrier: %v", got)
 }
 
 // TestExemptionAllowlistsAreLive is the ghost-entry check the audit asks for:

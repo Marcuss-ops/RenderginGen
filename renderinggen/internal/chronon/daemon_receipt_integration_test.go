@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"testing"
 	"time"
+
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/testenv"
 )
 
 // TestDaemonRenderEmitsMediaReceipt certifies the RECEIPT boundary of the WARM
@@ -27,7 +29,7 @@ import (
 //
 // Without a usable binary the test skips visibly.
 func TestDaemonRenderEmitsMediaReceipt(t *testing.T) {
-	binary := daemonBinary(t)
+	binary := testenv.RequireChronon(t)
 	backend := os.Getenv("CHRONON_DAEMON_BACKEND")
 	if backend == "" {
 		backend = "vulkan"
@@ -72,23 +74,4 @@ func TestDaemonRenderEmitsMediaReceipt(t *testing.T) {
 	}
 
 	assertMediaReceiptCertifies(t, outputPath, "fast")
-}
-
-// daemonBinary resolves the chronon3d_cli the daemon pool must execute. The
-// pool needs a path up front (unlike the CLI client, which can resolve it
-// lazily), so this is the single resolution the daemon transport uses.
-func daemonBinary(t *testing.T) string {
-	t.Helper()
-	if override := os.Getenv("CHRONON_BINARY"); override != "" {
-		return override
-	}
-	home := os.Getenv("CHRONON_HOME")
-	if home == "" {
-		home = "/opt/chronon3d"
-	}
-	binary := (&Client{Home: home}).Binary()
-	if _, err := os.Stat(binary); err != nil {
-		t.Skipf("chronon3d_cli not available at %s (set CHRONON_HOME or CHRONON_BINARY): %v", binary, err)
-	}
-	return binary
 }

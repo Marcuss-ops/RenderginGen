@@ -388,47 +388,17 @@ func extractVideoFramePNG(t *testing.T, path string, frame int) []byte {
 	}
 	return data
 }
+
+// findChrononBin returns the opt-in engine path and the sibling Chronon3d
+// assets root. It used to DISCOVER a build beside this repository, which made a
+// bare certification run execute whatever happened to be checked out. The
+// engine must now be named with CHRONON_BIN; only the assets root is discovered.
 func findChrononBin(t *testing.T) (string, string) {
 	t.Helper()
-	chrononBin := os.Getenv("CHRONON_BIN")
+	chrononBin := chrononBinFor(t)
 	assetsRoot := ""
 	if wsRoot, ok := findWorkspaceRoot("."); ok {
 		assetsRoot = filepath.Join(wsRoot, "Chronon3d")
-		if chrononBin == "" {
-			candidate := filepath.Join(wsRoot, "Chronon3d", "build", "chronon", "linux-video-release", "apps", "chronon3d_cli", "chronon3d_cli")
-			if _, err := os.Stat(candidate); err == nil {
-				chrononBin = candidate
-			}
-		}
-	}
-	if chrononBin == "" {
-		cwd, _ := os.Getwd()
-		candidateDirs := []string{
-			"../../Chronon3d",
-			"../../../Chronon3d",
-			"../Chronon3d",
-		}
-		dir := cwd
-		for i := 0; i < 5; i++ {
-			c := filepath.Join(dir, "Chronon3d")
-			if info, err := os.Stat(c); err == nil && info.IsDir() {
-				candidateDirs = append(candidateDirs, c)
-				break
-			}
-			parent := filepath.Dir(dir)
-			if parent == dir {
-				break
-			}
-			dir = parent
-		}
-		for _, candidateDir := range candidateDirs {
-			candidate := filepath.Join(candidateDir, "build", "chronon", "linux-video-release", "apps", "chronon3d_cli", "chronon3d_cli")
-			if _, err := os.Stat(candidate); err == nil {
-				chrononBin = candidate
-				assetsRoot = candidateDir
-				break
-			}
-		}
 	}
 	return chrononBin, assetsRoot
 }

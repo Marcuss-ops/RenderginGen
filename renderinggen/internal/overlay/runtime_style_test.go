@@ -187,10 +187,6 @@ func TestRuntimeTextStyleOverridesRejectImageLayers(t *testing.T) {
 		{"shadow_blur_px", `12`},
 		{"shadow_offset_x_px", `-3`},
 		{"shadow_offset_y_px", `7`},
-		{"cursor_color", `"#FF3355"`},
-		{"cursor_width_px", `6`},
-		{"cursor_height_px", `72`},
-		{"cursor_blink", `true`},
 	} {
 		covered[override.key] = true
 		t.Run(override.key, func(t *testing.T) {
@@ -378,8 +374,9 @@ func TestRuntimeStyleInterBoldIsSelectableAndRenderable(t *testing.T) {
 	}
 }
 
-func TestRuntimeCursorOverridesValidateAndLower(t *testing.T) {
+func TestRuntimeCursorOverridesFailClosedUntilLowered(t *testing.T) {
 	for _, tc := range []struct{ name, params, want string }{
+		{"valid-but-unsupported", `{"cursor_color":"#FF3355"}`, "not supported"},
 		{"bad-color", `{"cursor_color":"red"}`, "cursor_color"},
 		{"bad-width", `{"cursor_width_px":-1}`, "cursor_width_px"},
 		{"oversized-width", `{"cursor_width_px":65}`, "cursor_width_px"},

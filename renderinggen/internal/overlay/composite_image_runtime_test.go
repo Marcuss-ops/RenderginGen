@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/testenv"
 	"image"
 	"image/color"
 	"image/png"
@@ -29,9 +30,7 @@ const (
 // and that the later image is absent before its own start time, then visible.
 func TestCompositeEntityImagesRenderDistinctAssetsSideBySideWithStaggeredEntrances(t *testing.T) {
 	bin := chrononBinFor(t)
-	if _, err := exec.LookPath("ffmpeg"); err != nil {
-		t.Skipf("ffmpeg not available for composite pixel checks: %v", err)
-	}
+	testenv.RequireTools(t, "ffmpeg")
 	assetsRoot, compiled := compileDistinctCompositePlan(t)
 	videoPath := renderCompositePlanWithChronon(t, bin, assetsRoot, compiled, "composite-images")
 
@@ -74,9 +73,7 @@ func TestCompositeEntityImagesRenderDistinctAssetsSideBySideWithStaggeredEntranc
 // 1920x1080 canvas, then verifies both distinct assets in decoded video pixels.
 func TestCompositeEntityImagesRenderDistinctAssetsSideBySideAtFullHD(t *testing.T) {
 	bin := chrononBinFor(t)
-	if _, err := exec.LookPath("ffmpeg"); err != nil {
-		t.Skipf("ffmpeg not available for composite pixel checks: %v", err)
-	}
+	testenv.RequireTools(t, "ffmpeg")
 	const width, height = 1920, 1080
 	assetsRoot, compiled := compileDistinctCompositePlanAt(t, width, height)
 	if compiled.Plan.Canvas.Width != width || compiled.Plan.Canvas.Height != height {

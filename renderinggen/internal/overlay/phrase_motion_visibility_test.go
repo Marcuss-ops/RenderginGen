@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/testenv"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -16,9 +17,7 @@ import (
 // valid but visually static motion cannot pass merely because tracks exist.
 func TestPhraseSlideMotionChangesRenderedPixels(t *testing.T) {
 	bin := chrononBinFor(t)
-	if _, err := exec.LookPath("ffmpeg"); err != nil {
-		t.Skipf("ffmpeg not available for pixel check: %v", err)
-	}
+	testenv.RequireTools(t, "ffmpeg")
 	assetsRoot := certificationAssetsRoot(t)
 	raw := []byte(`{"schema_version":"renderinggen.overlay-plan.v1","plan_id":"phrase-slide-visibility","video_id":"v","width":640,"height":360,"fps_num":24,"fps_den":1,"background":{"kind":"color","color":[0.08,0.08,0.08,1]},"items":[{"id":"phrase","kind":"important_phrase","template_id":"IMPORTANT_PHRASE","preset_id":"phrase_default","motion_id":"phrase_apple_clean_01_blur_soft_reveal","motion_params":{"enter_frames":16},"text":"MOTION VISIBILITY","start_ms":0,"end_ms":1500}]}`)
 	result, err := CompileSemantic(raw)
@@ -63,9 +62,7 @@ func TestPhraseSlideMotionChangesRenderedPixels(t *testing.T) {
 // changes from a catalog-certified 2.5D motion.
 func TestImage25DMotionChangesRenderedPixels(t *testing.T) {
 	bin := chrononBinFor(t)
-	if _, err := exec.LookPath("ffmpeg"); err != nil {
-		t.Skipf("ffmpeg not available for pixel check: %v", err)
-	}
+	testenv.RequireTools(t, "ffmpeg")
 	assetsRoot := certificationAssetsRoot(t)
 	raw := []byte(fmt.Sprintf(`{"schema_version":"renderinggen.overlay-plan.v1","plan_id":"image-25d-visibility","video_id":"v","width":640,"height":360,"fps_num":24,"fps_den":1,"background":{"kind":"color","color":[0.08,0.08,0.08,1]},"items":[{"id":"image","kind":"image","template_id":"PRODUCT","preset_id":%q,"motion_id":"image_25d_yaw_flip_in","motion_params":{"enter_frames":16},"start_ms":0,"end_ms":3000,"params":{"position":"center"},"asset_refs":[{"asset_id":%q,"sha256":%q,"url":"https://example.test/certification.jpg","media_type":"image/jpeg"}]}]}`, ImageMotionCorpusPresetID, certificationAssetID, certificationAssetSHA))
 	result, err := CompileSemantic(raw)

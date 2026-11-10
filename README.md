@@ -96,6 +96,52 @@ Il campo è opzionale: i piani esistenti senza `composition_id` restano validi.
 Su un composito, la caption va dichiarata sul relativo `image_layers[]`; il
 campo item-level `entity_caption` resta per l’immagine singola.
 
+Per una sola immagine si può chiedere uno sfondo riempitivo ricavato dalla
+stessa foto: `params.image_backdrop` aggiunge dietro al soggetto una copia a
+schermo intero, `cover` e sfocata. Il default è zoom `1.15x` e blur `18 px`;
+il payload può scegliere `zoom` da `1x` a `10x` e `blur_px` da `6` a `48`.
+Questa opzione è rifiutata sui compositi e sui gruppi.
+
+Ombra e contorno sono selezionabili nel payload sia per una foto singola
+(`item.frame`) sia per ogni membro di un composito o gruppo
+(`image_layers[].frame`). `frame` espone `border` (spessore, colore e raggio),
+`shadow` (colore, opacità, blur e offset), `stroke` e `clip_radius_px` per il
+ritaglio arrotondato del bounding box. Le dimensioni e il fit di ciascun box
+restano in `params.width`, `params.height`, `params.fit` e `params.bounded`.
+
+Esempio di foto singola:
+
+```json
+{
+  "params": {"width": 600, "height": 800, "bounded": true, "fit": "contain",
+    "image_backdrop": {"zoom": 1.15, "blur_px": 18}},
+  "frame": {
+    "border": {"width_px": 5, "color": "#FFFFFF", "radius_px": 24},
+    "shadow": {"color": "#000000", "opacity": 0.65, "blur_px": 16,
+      "offset_x_px": 0, "offset_y_px": 6},
+    "clip_radius_px": 19
+  }
+}
+```
+
+Per un composito, spostare `frame` e le dimensioni dentro ciascun elemento di
+`image_layers[]`; `image_backdrop` non è ammesso:
+
+```json
+{"image_layers": [
+  {"id": "left", "asset_id": "photo-a", "start_ms": 0,
+    "end_ms": 5000, "preset_id": "image_focus_in",
+    "params": {"width": 420, "height": 560, "bounded": true, "fit": "contain"},
+    "frame": {"shadow": {"color": "#000000", "opacity": 0.6,
+      "blur_px": 14, "offset_y_px": 5}}},
+  {"id": "right", "asset_id": "photo-b", "start_ms": 0,
+    "end_ms": 5000, "preset_id": "image_focus_in",
+    "params": {"width": 420, "height": 560, "bounded": true, "fit": "contain"},
+    "frame": {"border": {"width_px": 4, "color": "#38BDF8", "radius_px": 20},
+      "stroke": {"width_px": 2, "color": "#FFFFFF"}}}
+]}
+```
+
 **Fotografia runtime verificata:** c’è **1 renderer** (Chronon3D); il worker
 RenderingGen compila il piano semantico, non è un secondo renderer. Il registry
 contiene **20 `ItemKind`**, **29 template**, **10 preset ufficiali** (2 testo +

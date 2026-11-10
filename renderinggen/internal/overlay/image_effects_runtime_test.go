@@ -74,6 +74,53 @@ func TestImageItemRuntimeEffectsFailClosedOnUnsupportedType(t *testing.T) {
 	}
 }
 
+func TestStandaloneImageBackdropUsesSameImageAndCapsZoom(t *testing.T) {
+	extra := `,"params":{"image_backdrop":{"zoom":1.25,"blur_px":20}}`
+	result, err := CompileSemantic(imageEffectsPlan(extra))
+	if err != nil {
+		t.Fatalf("compile standalone image backdrop: %v", err)
+	}
+	if len(result.Plan.Layers) != 2 {
+		t.Fatalf("layers = %+v; want backdrop then foreground image", result.Plan.Layers)
+	}
+	backdrop, foreground := result.Plan.Layers[0], result.Plan.Layers[1]
+	if backdrop.ID != "fx-image:image-backdrop" || backdrop.Asset != foreground.Asset {
+		t.Fatalf("backdrop=%+v foreground=%+v; backdrop must reuse the source image", backdrop, foreground)
+	}
+	if backdrop.Size[0] != 1280 || backdrop.Size[1] != 720 || backdrop.Fit != FitCover || backdrop.Scale[0] != 1.25 || backdrop.Scale[1] != 1.25 {
+		t.Fatalf("backdrop geometry = %+v", backdrop)
+	}
+	if len(backdrop.Effects) != 1 || backdrop.Effects[0].Type != "gaussian_blur" || backdrop.Effects[0].Params["radius"] != float64(20) {
+		t.Fatalf("backdrop effects = %+v", backdrop.Effects)
+	}
+	if len(foreground.Effects) != 0 {
+		t.Fatalf("backdrop processing must not blur the foreground: %+v", foreground.Effects)
+	}
+	if _, err := CompileSemantic(imageEffectsPlan(`,"params":{"image_backdrop":{"zoom":10.01}}`)); err == nil {
+		t.Fatal("backdrop zoom above 10x must fail closed")
+	}
+	composite := []byte(fmt.Sprintf(`{"schema_version":"renderinggen.overlay-plan.v1","plan_id":"image-backdrop-composite","video_id":"v","width":1280,"height":720,"fps_num":24,"fps_den":1,"items":[{"id":"duo","kind":"image","template_id":"image_popup","start_ms":0,"end_ms":5000,"asset_refs":[%s,%s],"image_layers":[{"id":"left","asset_id":"effect-photo","start_ms":0,"end_ms":5000,"preset_id":"image_focus_in"},{"id":"right","asset_id":"effect-photo-2","start_ms":0,"end_ms":5000,"preset_id":"image_focus_in"}],"params":{"image_backdrop":{}}}]}`,
+		imageEffectsAssetRef, imageEffectsSecondAssetRef))
+	if _, err := CompileSemantic(composite); err == nil || !strings.Contains(err.Error(), "standalone image") {
+		t.Fatalf("composite image backdrop error = %v, want standalone-only validation", err)
+	}
+}
+
+func TestImageFramePayloadControlsShadowAndBorder(t *testing.T) {
+	extra := `,"frame":{"border":{"width_px":5,"color":"#38BDF8","radius_px":24},"shadow":{"color":"#101820","opacity":0.6,"blur_px":12,"offset_x_px":2,"offset_y_px":5}}`
+	result, err := CompileSemantic(imageEffectsPlan(extra))
+	if err != nil {
+		t.Fatalf("compile image frame payload: %v", err)
+	}
+	image := result.Plan.Layers[0]
+	if image.Style == nil || image.Style.Background == nil || image.Style.Shadow == nil {
+		t.Fatalf("image frame treatment did not lower to border and shadow: %+v", image)
+	}
+	if image.Style.Background.Color != "#38BDF8" || image.Style.Background.Padding[0] != 5 || image.Style.Shadow.Color != "#101820" || image.Style.Shadow.Blur != 12 || image.Style.Shadow.Offset[1] != 5 {
+		t.Fatalf("lowered frame = %+v", image.Style)
+	}
+}
+
 // TestCompositeImageRuntimeEffectsDecorateEveryChild proves item-level runtime
 // effects decorate every image_layers child surface, not only the first one.
 func TestCompositeImageRuntimeEffectsDecorateEveryChild(t *testing.T) {

@@ -13,7 +13,7 @@
 
 CHRONON_RUNTIME ?= ghcr.io/marcuss-ops/chronon3d-runtime:0.1.0
 
-.PHONY: native-build golden-e2e golden-e2e-runtime golden-e2e-reset golden-e2e-down test-architecture conformance test-gofmt test-unit test-certification test-module-standalone check-gpu-lanes
+.PHONY: native-build golden-e2e golden-e2e-runtime golden-e2e-reset golden-e2e-down test-architecture conformance test-gofmt test-unit test-certification test-module-standalone check-gpu-lanes verify
 
 # check-gpu-lanes — verify profile-specific GPU lane contracts. Native, Docker,
 # and CI profiles intentionally differ; this catches accidental divergence
@@ -130,6 +130,20 @@ test-unit:
 #
 # No engine is required: the compile-level suites run, and the real-engine ones
 # self-skip unless CHRONON_BIN names a built chronon3d_cli.
+# verify — one local command for the checks every change must pass.
+#
+# gofmt and the standalone build run as prerequisites; go vet runs across every
+# module before the unit gate so a type/diagnostic regression is reported once,
+# in its own section, instead of being buried in a long test log. The unit gate
+# already includes the architecture conformance scan.
+verify: test-gofmt test-module-standalone
+	@fail=0; for m in renderinggen queue objectstore; do \
+	  echo "=== go vet: $$m ==="; \
+	  (cd $$m && go vet ./...) || fail=1; \
+	done; \
+	exit $$fail
+	@$(MAKE) test-unit
+
 test-certification:
 	cd renderinggen && go test -tags certification -count=1 ./internal/overlay/
 

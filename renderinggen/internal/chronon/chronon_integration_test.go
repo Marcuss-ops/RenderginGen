@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"testing"
 	"time"
+
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/testenv"
 )
 
 // colorSmokePlan is a minimal, asset-free chronon.render-plan.v2 document: two
@@ -32,11 +34,7 @@ const colorSmokePlan = `{
 // image).
 func cliAvailable(t *testing.T) *Client {
 	t.Helper()
-	home := os.Getenv("CHRONON_HOME")
-	if home == "" {
-		home = "/opt/chronon3d"
-	}
-	cli := &Client{Home: home}
+	cli := &Client{Home: testenv.ChrononHome(t), BinaryPath: testenv.RequireChronon(t)}
 	if err := cli.Verify(); err != nil {
 		t.Skipf("chronon3d_cli not available: %v", err)
 	}

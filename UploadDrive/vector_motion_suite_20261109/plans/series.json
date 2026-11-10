@@ -1,0 +1,106 @@
+{
+  "schema": "chronontemplate.vector-motion-suite.v1",
+  "generator": "chronontemplate_emit_vector_motion_suite",
+  "canvas": {
+    "width": 1920,
+    "height": 1080,
+    "fps": 30
+  },
+  "rules": {
+    "max_frames": 300,
+    "authoring": "C++ RenderPlan V3, native shape/path primitives only",
+    "motion": "no linear entrances; out_cubic/out_back/out_expo and trim paths"
+  },
+  "clips": [
+    {
+      "id": "01_Tactical_Route",
+      "index": 1,
+      "slug": "Tactical_Route",
+      "label": "Tactical route & HUD",
+      "category": "tactical_map_hud",
+      "note": "OSINT trace: dashed trail, trim-drawn Bezier route, radar pings, converging reticle, coordinate HUD",
+      "background_rgb": [
+        0.0196078431372549,
+        0.03137254901960784,
+        0.050980392156862744
+      ],
+      "frames": 300,
+      "duration_s": 10,
+      "plan": "plans/01_Tactical_Route.plan.json",
+      "mp4": "mp4/VectorMotion_01_Tactical_Route_1920x1080_10s_v1.mp4",
+      "drive_name": "VectorMotion_01_Tactical_Route_1920x1080_10s_v1.mp4"
+    },
+    {
+      "id": "02_Node_Graph",
+      "index": 2,
+      "slug": "Node_Graph",
+      "label": "Node graph expansion",
+      "category": "network_nodes",
+      "note": "Spring pop center, staggered Bezier edges, cascade nodes and travelling data pulses",
+      "background_rgb": [
+        0.023529411764705882,
+        0.0392156862745098,
+        0.0784313725490196
+      ],
+      "frames": 240,
+      "duration_s": 8,
+      "plan": "plans/02_Node_Graph.plan.json",
+      "mp4": "mp4/VectorMotion_02_Node_Graph_1920x1080_8s_v1.mp4",
+      "drive_name": "VectorMotion_02_Node_Graph_1920x1080_8s_v1.mp4"
+    },
+    {
+      "id": "03_Validation_Burst",
+      "index": 3,
+      "slug": "Validation_Burst",
+      "label": "Validation burst",
+      "category": "validation_badge",
+      "note": "Trim-drawn ring, check snap with overshoot, radial burst, declassified stamp with screen shake",
+      "background_rgb": [
+        0.0196078431372549,
+        0.03529411764705882,
+        0.047058823529411764
+      ],
+      "frames": 180,
+      "duration_s": 6,
+      "plan": "plans/03_Validation_Burst.plan.json",
+      "mp4": "mp4/VectorMotion_03_Validation_Burst_1920x1080_6s_v1.mp4",
+      "drive_name": "VectorMotion_03_Validation_Burst_1920x1080_6s_v1.mp4"
+    },
+    {
+      "id": "04_Technical_Callout",
+      "index": 4,
+      "slug": "Technical_Callout",
+      "label": "Technical callout",
+      "category": "callout_annotation",
+      "note": "Two-beat leader line, paper plate, callout card and hand-drawn highlight with multiply blend",
+      "background_rgb": [
+        0.043137254901960784,
+        0.047058823529411764,
+        0.06274509803921569
+      ],
+      "frames": 240,
+      "duration_s": 8,
+      "plan": "plans/04_Technical_Callout.plan.json",
+      "mp4": "mp4/VectorMotion_04_Technical_Callout_1920x1080_8s_v1.mp4",
+      "drive_name": "VectorMotion_04_Technical_Callout_1920x1080_8s_v1.mp4"
+    },
+    {
+      "id": "05_Wireframe_Logo",
+      "index": 5,
+      "slug": "Wireframe_Logo",
+      "label": "Wireframe to solid logo",
+      "category": "logo_morph",
+      "note": "Trim-drawn hex wireframe, inner C, fill wipe with scan bar, specular sweep and orbit rings",
+      "background_rgb": [
+        0.023529411764705882,
+        0.03529411764705882,
+        0.058823529411764705
+      ],
+      "frames": 240,
+      "duration_s": 8,
+      "plan": "plans/05_Wireframe_Logo.plan.json",
+      "mp4": "mp4/VectorMotion_05_Wireframe_Logo_1920x1080_8s_v1.mp4",
+      "drive_name": "VectorMotion_05_Wireframe_Logo_1920x1080_8s_v1.mp4"
+    }
+  ]
+}

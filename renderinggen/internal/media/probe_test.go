@@ -4,8 +4,8 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/testenv"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"testing"
 )
@@ -28,9 +28,7 @@ func goldenFixture(t *testing.T, name string) string {
 // reading the same file, which is what this test would fail on if the frames
 // section were dropped from the merged command.
 func TestProbeFileCertifiesFirstFrameKeyframeFromOneInvocation(t *testing.T) {
-	if _, err := exec.LookPath("ffprobe"); err != nil {
-		t.Skipf("ffprobe not installed: %v", err)
-	}
+	testenv.RequireTools(t, "ffprobe")
 	path := goldenFixture(t, "background.mp4")
 
 	result, err := ProbeFile(context.Background(), path)
@@ -56,9 +54,7 @@ func TestProbeFileCertifiesFirstFrameKeyframeFromOneInvocation(t *testing.T) {
 // the frames window cannot be attributed to whichever stream ffprobe happens to
 // report first.
 func TestProbeFileKeyframeSurvivesASecondStream(t *testing.T) {
-	if _, err := exec.LookPath("ffprobe"); err != nil {
-		t.Skipf("ffprobe not installed: %v", err)
-	}
+	testenv.RequireTools(t, "ffprobe")
 	path := goldenFixture(t, "Pale-Olive.mp4")
 
 	result, err := ProbeFile(context.Background(), path)

@@ -8,6 +8,7 @@ import (
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/overlay"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/queue"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/storage"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/testenv"
 	"os"
 	"path/filepath"
 	"testing"
@@ -119,11 +120,7 @@ func (c *capturingRenderer) Render(ctx context.Context, req chronon.RenderReques
 // content-addressed asset_refs, write the concrete plan.json, render with the
 // real CLI and publish the MP4 — one pipeline, no separate renderer.
 func TestProcessGoldenSemanticOverlayJobV1(t *testing.T) {
-	home := os.Getenv("CHRONON_HOME")
-	if home == "" {
-		home = "/opt/chronon3d"
-	}
-	cli := &chronon.Client{Home: home}
+	cli := &chronon.Client{Home: testenv.ChrononHome(t), BinaryPath: testenv.RequireChronon(t)}
 	if err := cli.Verify(); err != nil {
 		t.Skipf("chronon3d_cli not available: %v", err)
 	}

@@ -1,0 +1,128 @@
+{
+  "canvas": {
+    "duration_frames": 240,
+    "fps_den": 1,
+    "fps_num": 24,
+    "height": 1080,
+    "width": 1920
+  },
+  "job_id": "05_chalk_burst",
+  "layers": [
+    {
+      "color": [
+        0.0470588244497776,
+        0.08235294371843338,
+        0.07058823853731155,
+        1.0
+      ],
+      "duration_frames": 240,
+      "id": "bg",
+      "position": [
+        960,
+        540
+      ],
+      "screen_space": true,
+      "size": [
+        1920,
+        1080
+      ],
+      "start_frame": 0,
+      "type": "color"
+    },
+    {
+      "duration_frames": 240,
+      "enable_3d": false,
+      "id": "chalk_burst",
+      "particle_emitter": {
+        "blend_mode": "normal",
+        "bokeh": false,
+        "color_ramp": [
+          {
+            "color": [
+              0.9200000166893005,
+              0.8999999761581421,
+              0.8399999737739563,
+              0.0
+            ],
+            "position": 0.0
+          },
+          {
+            "color": [
+              0.9200000166893005,
+              0.8999999761581421,
+              0.8399999737739563,
+              0.800000011920929
+            ],
+            "position": 0.07999999821186066
+          },
+          {
+            "color": [
+              0.8199999928474426,
+              0.800000011920929,
+              0.7400000095367432,
+              0.3499999940395355
+            ],
+            "position": 0.800000011920929
+          },
+          {
+            "color": [
+              0.8199999928474426,
+              0.800000011920929,
+              0.7400000095367432,
+              0.0
+            ],
+            "position": 1.0
+          }
+        ],
+        "count": 160,
+        "depth_range": [
+          0.0,
+          1.0
+        ],
+        "emitter_size": [
+          260.0,
+          80.0
+        ],
+        "environment": false,
+        "flow_scale": 0.009999999776482582,
+        "flow_speed": 0.6000000238418579,
+        "flow_strength": 6.0,
+        "gravity": 28.0,
+        "lifetime": [
+          0.699999988079071,
+          1.7999999523162842
+        ],
+        "seed": 7319,
+        "size": [
+          0.699999988079071,
+          3.4000000953674316
+        ],
+        "turbulence": 0.0,
+        "twinkle": 0.10000000149011612,
+        "twinkle_speed": 0.5,
+        "velocity_max": [
+          160.0,
+          120.0
+        ],
+        "velocity_min": [
+          -160.0,
+          -130.0
+        ]
+      },
+      "position": [
+        -200.0,
+        20.0
+      ],
+      "screen_space": true,
+      "start_frame": 0,
+      "type": "particles"
+    }
+  ],
+  "output": {
+    "codec": "h264",
+    "format": "mp4",
+    "path": "05_chalk_burst.mp4"
+  },
+  "schema": "chronon.render-plan.v3",
+  "version": 3
+}

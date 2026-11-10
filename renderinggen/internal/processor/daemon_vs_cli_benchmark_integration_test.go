@@ -7,6 +7,7 @@ import (
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/chronon"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/queue"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/storage"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/testenv"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/workspace"
 	"os"
 	"os/exec"
@@ -95,15 +96,11 @@ type chrononTimingSidecar struct {
 // delta between "daemon warm" and "cli warm" is exactly what the warm engine
 // saves. Skips when chronon3d_cli is not installed.
 func TestDaemonVsCLIBenchmarkGoldenOverlay(t *testing.T) {
-	home := os.Getenv("CHRONON_HOME")
-	if home == "" {
-		home = "/opt/chronon3d"
-	}
 	backend := os.Getenv("CHRONON_TEST_BACKEND")
 	if backend == "" {
 		backend = "software"
 	}
-	cli := &chronon.Client{Home: home, Backend: backend}
+	cli := &chronon.Client{Home: testenv.ChrononHome(t), BinaryPath: testenv.RequireChronon(t), Backend: backend}
 	if err := cli.Verify(); err != nil {
 		t.Skipf("chronon3d_cli not available: %v", err)
 	}

@@ -1,0 +1,325 @@
+{
+  "schema": "chronon.render-plan.v3",
+  "version": 3,
+  "job_id": "ae_text_03_anchor_grouping",
+  "canvas": {
+    "width": 1920,
+    "height": 1080,
+    "fps_num": 30,
+    "fps_den": 1,
+    "duration_frames": 180
+  },
+  "layers": [
+    {
+      "id": "backdrop",
+      "type": "color",
+      "color": [
+        0.004,
+        0.008,
+        0.014,
+        1.0
+      ],
+      "size": [
+        1920.0,
+        1080.0
+      ],
+      "position": [
+        0.0,
+        0.0
+      ],
+      "start_frame": 0,
+      "duration_frames": 180
+    },
+    {
+      "id": "title",
+      "type": "text",
+      "text": "PAROLA PER PAROLA",
+      "size": [
+        1920.0,
+        1080.0
+      ],
+      "position": [
+        960.0,
+        540.0
+      ],
+      "start_frame": 0,
+      "duration_frames": 180,
+      "style": {
+        "font": "assets/fonts/SF-Pro-Display-Semibold.otf",
+        "font_size": 128.0,
+        "fill": "#F4FAFF"
+      },
+      "animation": {
+        "tracks": [
+          {
+            "property": "opacity",
+            "easing": "out_cubic",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 0.0
+              },
+              {
+                "frame": 12,
+                "value": 1.0
+              },
+              {
+                "frame": 179,
+                "value": 1.0
+              }
+            ]
+          }
+        ]
+      },
+      "text_animators": [
+        {
+          "id": "word_pivot_pop",
+          "selectors": [
+            {
+              "unit": "word",
+              "shape": "square",
+              "order": "forward",
+              "combine": "replace",
+              "exclude_spaces": true,
+              "start": {
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0.0
+                  },
+                  {
+                    "frame": 49,
+                    "value": 0.0
+                  },
+                  {
+                    "frame": 50,
+                    "value": 36.0
+                  },
+                  {
+                    "frame": 99,
+                    "value": 36.0
+                  },
+                  {
+                    "frame": 100,
+                    "value": 70.0
+                  },
+                  {
+                    "frame": 179,
+                    "value": 70.0
+                  }
+                ]
+              },
+              "end": {
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 30.0
+                  },
+                  {
+                    "frame": 49,
+                    "value": 30.0
+                  },
+                  {
+                    "frame": 50,
+                    "value": 63.0
+                  },
+                  {
+                    "frame": 99,
+                    "value": 63.0
+                  },
+                  {
+                    "frame": 100,
+                    "value": 97.0
+                  },
+                  {
+                    "frame": 179,
+                    "value": 97.0
+                  }
+                ]
+              }
+            }
+          ],
+          "properties": [
+            {
+              "property": "anchor_grouping",
+              "easing": "linear",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 1
+                }
+              ]
+            },
+            {
+              "property": "scale",
+              "easing": "linear",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": [
+                    1.0,
+                    1.0
+                  ]
+                },
+                {
+                  "frame": 25,
+                  "value": [
+                    0.7,
+                    0.7
+                  ]
+                },
+                {
+                  "frame": 49,
+                  "value": [
+                    1.0,
+                    1.0
+                  ]
+                },
+                {
+                  "frame": 50,
+                  "value": [
+                    1.0,
+                    1.0
+                  ]
+                },
+                {
+                  "frame": 75,
+                  "value": [
+                    0.7,
+                    0.7
+                  ]
+                },
+                {
+                  "frame": 99,
+                  "value": [
+                    1.0,
+                    1.0
+                  ]
+                },
+                {
+                  "frame": 100,
+                  "value": [
+                    1.0,
+                    1.0
+                  ]
+                },
+                {
+                  "frame": 125,
+                  "value": [
+                    0.7,
+                    0.7
+                  ]
+                },
+                {
+                  "frame": 149,
+                  "value": [
+                    1.0,
+                    1.0
+                  ]
+                },
+                {
+                  "frame": 179,
+                  "value": [
+                    1.0,
+                    1.0
+                  ]
+                }
+              ]
+            },
+            {
+              "property": "rotation",
+              "easing": "linear",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": [
+                    0.0,
+                    0.0,
+                    0.0
+                  ]
+                },
+                {
+                  "frame": 25,
+                  "value": [
+                    0.0,
+                    0.0,
+                    8.0
+                  ]
+                },
+                {
+                  "frame": 49,
+                  "value": [
+                    0.0,
+                    0.0,
+                    0.0
+                  ]
+                },
+                {
+                  "frame": 50,
+                  "value": [
+                    0.0,
+                    0.0,
+                    0.0
+                  ]
+                },
+                {
+                  "frame": 75,
+                  "value": [
+                    0.0,
+                    0.0,
+                    8.0
+                  ]
+                },
+                {
+                  "frame": 99,
+                  "value": [
+                    0.0,
+                    0.0,
+                    0.0
+                  ]
+                },
+                {
+                  "frame": 100,
+                  "value": [
+                    0.0,
+                    0.0,
+                    0.0
+                  ]
+                },
+                {
+                  "frame": 125,
+                  "value": [
+                    0.0,
+                    0.0,
+                    8.0
+                  ]
+                },
+                {
+                  "frame": 149,
+                  "value": [
+                    0.0,
+                    0.0,
+                    0.0
+                  ]
+                },
+                {
+                  "frame": 179,
+                  "value": [
+                    0.0,
+                    0.0,
+                    0.0
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "output": {
+    "path": "ae_text_03_anchor_grouping_1920x1080_6s.mp4",
+    "format": "mp4",
+    "codec": "h264"
+  }
+}

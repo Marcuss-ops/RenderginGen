@@ -1,0 +1,7 @@
+credentials=/home/pierone/.config/velox/credentials.json
+token=/home/pierone/.config/velox/token.json
+folder=1J_xUGo_bchzXDIGqSX04CU44c_Dm3SxS
+file=/home/pierone/src/go-master/projects/Pyt/VeloxEditing/RenderingGen/UploadDrive/camera_ring_text_v7_original_20261109/mp4/CameraRing_Text_14_La_Luce_Che_Resta_1920x1080_8s_v7.mp4
+sha256=c305ad106a9a8f7144f130fbfc7fe736f0228479c4146c9e2c23f7b2cd8b7241
+
+DRIVE_UPLOAD_PASS id=1CfZdUyQWTbEo3rbepfu9FKLPTcwoKpJ- link=https://drive.google.com/file/d/1CfZdUyQWTbEo3rbepfu9FKLPTcwoKpJ-/view?usp=drivesdk parent=1J_xUGo_bchzXDIGqSX04CU44c_Dm3SxS sha256=c305ad106a9a8f7144f130fbfc7fe736f0228479c4146c9e2c23f7b2cd8b7241 bytes=1473232

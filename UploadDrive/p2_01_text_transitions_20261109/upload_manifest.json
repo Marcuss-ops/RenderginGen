@@ -1,0 +1,98 @@
+{
+  "schema": "chronon.p2-text-transitions.drive-delivery.v1",
+  "date": "2026-11-09",
+  "spec": "1920x1080, 30fps, H.264, <=10s",
+  "parent_folder_id": "1J_xUGo_bchzXDIGqSX04CU44c_Dm3SxS",
+  "drive_subfolder": "P2_01_Text_Transitions_1920x1080",
+  "drive_folder_id": "15ImRtjtTaknnm9Awg84DhKrdM-vpDFF-",
+  "drive_folder_url": "https://drive.google.com/drive/folders/15ImRtjtTaknnm9Awg84DhKrdM-vpDFF-",
+  "source": {
+    "name": "p2_01_text_transitions_720p.mp4",
+    "canvas": [
+      1280,
+      720
+    ],
+    "fps": 30,
+    "frames": 120,
+    "duration_s": 4.0,
+    "sha256": "49a8d95635e689c5b7dd849682c3e3bb0dbaeed3602c146c8ea341013c8243b2"
+  },
+  "delivery": {
+    "name": "p2_01_text_transitions_1920x1080.mp4",
+    "canvas": [
+      1920,
+      1080
+    ],
+    "fps": 30,
+    "frames": 120,
+    "duration_s": 4.0,
+    "codec": "h264",
+    "pixel_format": "yuv420p",
+    "upscale": "lanczos 1.5x",
+    "sha256": "d196fb4fbb16d989906e0962b635a6b25dc6e2dd216b095bfaedc2e1955d961e"
+  },
+  "native_attempt": {
+    "backend": "software",
+    "plan": "p2_01_text_transitions_1920x1080.plan.json",
+    "result": "FAIL at frame 15",
+    "error": "prepare_text_run: invalid or oversized text surface bounds",
+    "note": "The native 1920x1080 plan fails at the 90-degree edge-on rotation of BEYOND 89. The delivered file is a Lanczos upscale of the complete 720p source, not a native raster."
+  },
+  "file_count": 5,
+  "files": [
+    {
+      "name": "p2_01_text_transitions_1920x1080.mp4",
+      "local_path": "RenderingGen/UploadDrive/p2_01_text_transitions_20261109/p2_01_text_transitions_1920x1080.mp4",
+      "sha256": "d196fb4fbb16d989906e0962b635a6b25dc6e2dd216b095bfaedc2e1955d961e",
+      "bytes": 578980,
+      "drive_file_id": "1dFDps720R6KSQtucn7b43pSomkCKfjDn",
+      "drive_url": "https://drive.google.com/file/d/1dFDps720R6KSQtucn7b43pSomkCKfjDn/view?usp=drivesdk",
+      "drive_parent_id": "15ImRtjtTaknnm9Awg84DhKrdM-vpDFF-"
+    },
+    {
+      "name": "contact_1920x1080.png",
+      "local_path": "RenderingGen/UploadDrive/p2_01_text_transitions_20261109/contact_1920x1080.png",
+      "sha256": "7a97b73484b3d6447df9096d12e851dd2fe4367b16e96d9eb34e5214addb4dfa",
+      "bytes": 196821,
+      "drive_file_id": "19rWiILBTfLMipK17sZZ7VjfZECt6e5uo",
+      "drive_url": "https://drive.google.com/file/d/19rWiILBTfLMipK17sZZ7VjfZECt6e5uo/view?usp=drivesdk",
+      "drive_parent_id": "15ImRtjtTaknnm9Awg84DhKrdM-vpDFF-"
+    },
+    {
+      "name": "README.md",
+      "local_path": "RenderingGen/UploadDrive/p2_01_text_transitions_20261109/README.md",
+      "sha256": "3c8bc3956d5567b518adf4436218d45bd12826c76ae0fd71bbbeb93a20ac4edf",
+      "bytes": 1612,
+      "drive_file_id": "1kTqU65YUIxTNzsng9hmQ9-TVKOBh6DhG",
+      "drive_url": "https://drive.google.com/file/d/1kTqU65YUIxTNzsng9hmQ9-TVKOBh6DhG/view?usp=drivesdk",
+      "drive_parent_id": "15ImRtjtTaknnm9Awg84DhKrdM-vpDFF-"
+    },
+    {
+      "name": "upload_1080p.py",
+      "local_path": "RenderingGen/UploadDrive/p2_01_text_transitions_20261109/upload_1080p.py",
+      "sha256": "36f5d657fa1dc05bc9184466b3e98b7d3dc3fa019afc60e59b227bfd313b7c57",
+      "bytes": 4330,
+      "drive_file_id": "1FLSQDkJ_8amITB0dyEwoP7Ch9K70JgcX",
+      "drive_url": "https://drive.google.com/file/d/1FLSQDkJ_8amITB0dyEwoP7Ch9K70JgcX/view?usp=drivesdk",
+      "drive_parent_id": "15ImRtjtTaknnm9Awg84DhKrdM-vpDFF-"
+    },
+    {
+      "name": "p2_01_text_transitions.plan.json",
+      "local_path": "RenderingGen/UploadDrive/p2_01_text_transitions_20261109/p2_01_text_transitions.plan.json",
+      "sha256": "731b571fdbbb4bb54dfdfdda862dbc02bf81f1fad515e19b5b2d8a1e588d7eb1",
+      "bytes": 3513,
+      "drive_file_id": "1ywFYdZAYv5fTMnIhQ82FHyjP_cEaBHLx",
+      "drive_url": "https://drive.google.com/file/d/1ywFYdZAYv5fTMnIhQ82FHyjP_cEaBHLx/view?usp=drivesdk",
+      "drive_parent_id": "15ImRtjtTaknnm9Awg84DhKrdM-vpDFF-"
+    }
+  ],
+  "upload_manifest": {
+    "name": "upload_manifest.json",
+    "local_path": "RenderingGen/UploadDrive/p2_01_text_transitions_20261109/upload_manifest.json",
+    "sha256": "5ace8d7bb18b87e611fc81770d157ad4f8982487698e555bc9687e7590c13686",
+    "bytes": 3884,
+    "drive_file_id": "1TIi5DBtOSsU0EXJVQ8aJiTgESYZSEKKE",
+    "drive_url": "https://drive.google.com/file/d/1TIi5DBtOSsU0EXJVQ8aJiTgESYZSEKKE/view?usp=drivesdk",
+    "drive_parent_id": "15ImRtjtTaknnm9Awg84DhKrdM-vpDFF-"
+  }
+}

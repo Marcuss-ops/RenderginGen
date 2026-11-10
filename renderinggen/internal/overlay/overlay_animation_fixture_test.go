@@ -14,6 +14,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/testenv"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -48,9 +49,7 @@ type overlayFixtureItem struct {
 func TestOverlayAnimationSixSecondFixture(t *testing.T) {
 	bin := chrononBinFor(t)
 	assetsRoot := certificationAssetsRoot(t)
-	if _, err := exec.LookPath("ffmpeg"); err != nil {
-		t.Skipf("ffmpeg not available for pixel gate: %v", err)
-	}
+	testenv.RequireTools(t, "ffmpeg")
 
 	raw := []byte(fmt.Sprintf(`{
 		"schema_version":"renderinggen.overlay-plan.v1",

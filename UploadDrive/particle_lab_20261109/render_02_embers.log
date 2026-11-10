@@ -1,0 +1,1075 @@
+[2026-11-09 09:52:52.670] [info] [plan-compile-profile] assets=0.01ms fingerprint=0.04ms media_resolution=0.00ms materialize=0.01ms composition_compile=0.02ms compatibility_view=0.00ms total=0.25ms
+[2026-11-09 09:52:52.670] [info] [plan] particle plan routed to legacy CompiledComposition
+[2026-11-09 09:52:52.670] [info] [plan-profile] read=0.09ms parse=0.08ms decode=54.54ms resolver=0.00ms compile_validate=2.47ms total=57.20ms
+[2026-11-09 09:52:52.670] [info] [video] Auto-selecting yuv420p pipe pixel format for 1920x1080 output
+[2026-11-09 09:52:52.670] [info] [video] execution plan resolved (reason: render_graph_default); decode=2 composite=3 encode=2 interop=0 handoff=3 codec=3
+[2026-11-09 09:52:52.702] [info] [video-runtime] created persistent runtime for device 0 (CUDA ordinal 0)
+[2026-11-09 09:52:52.702] [info] [video] Using in-process FFmpeg sink via VideoSinkEncoderAdapter
+[2026-11-09 09:52:52.702] [info] [video] encoder feed capability: host_frame=true direct_yuv=false native_surface=false
+[libx264 @ 0x555b29e1a000] using SAR=1/1
+[libx264 @ 0x555b29e1a000] using cpu capabilities: MMX2 SSE2Fast SSSE3 SSE4.2 AVX
+[libx264 @ 0x555b29e1a000] profile High, level 4.0, 4:2:0, 8-bit
+[2026-11-09 09:52:52.728] [info] [video_adapter] Opened ffmpeg-pipe sink: 1920x1080 @ 24/1fps, format=yuv420p, codec=h264
+[2026-11-09 09:52:52.854] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:52.854] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:52.854] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=0.000
+[2026-11-09 09:52:52.854] [info] [particle-debug] p0 pos=(55.26,-21.27) size=1.84 alpha=0.498
+[2026-11-09 09:52:52.994] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:52.994] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:52.994] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=0.000
+[2026-11-09 09:52:52.994] [info] [particle-debug] p0 pos=(55.26,-21.27) size=1.84 alpha=0.498
+[2026-11-09 09:52:53.089] [info] [temp-lifetime] frame=0 after_level=0 live=[0,1,3,] retired=[]
+[2026-11-09 09:52:53.089] [info] [exec-level-diag] frame=0 level=0 nodes=3 input_ms=0.001 dispatch_ms=41.989 fb_release_ms=0.002
+[2026-11-09 09:52:53.089] [info] [graph-edge] frame=0 level=1 consumer_id=2 input_index=0 producer_id=0 producer_level=0
+[2026-11-09 09:52:53.089] [info] [graph-edge] frame=0 level=1 consumer_id=2 input_index=1 producer_id=1 producer_level=0
+[2026-11-09 09:52:53.125] [info] [temp-lifetime] frame=0 after_level=1 live=[2,3,] retired=[0,1,]
+[2026-11-09 09:52:53.125] [info] [exec-level-diag] frame=0 level=1 nodes=1 input_ms=0.015 dispatch_ms=35.656 fb_release_ms=0.008
+[2026-11-09 09:52:53.125] [info] [graph-edge] frame=0 level=2 consumer_id=4 input_index=0 producer_id=2 producer_level=1
+[2026-11-09 09:52:53.125] [info] [graph-edge] frame=0 level=2 consumer_id=4 input_index=1 producer_id=3 producer_level=0
+[2026-11-09 09:52:53.129] [info] [temp-lifetime] frame=0 after_level=2 live=[4,] retired=[2,3,]
+[2026-11-09 09:52:53.129] [info] [exec-level-diag] frame=0 level=2 nodes=1 input_ms=0.026 dispatch_ms=3.417 fb_release_ms=0.013
+[2026-11-09 09:52:53.129] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:53.129] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:53.129] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=0.000
+[2026-11-09 09:52:53.129] [info] [particle-debug] p0 pos=(55.26,-21.27) size=1.84 alpha=0.498
+[2026-11-09 09:52:53.264] [info] [pool-warm] Pre-allocated 4 canvas buffers (1920x1152 bucket) at startup
+[2026-11-09 09:52:53.359] [info] [pool-warm] Pre-allocated 3 buffers (text-bbox+glow-pad) bucket 1920x1024 at startup
+[2026-11-09 09:52:53.386] [info] [pool-warm] Pre-allocated 3 buffers (downsample-half) bucket 1024x640 at startup
+[2026-11-09 09:52:53.393] [info] [pool-warm] Pre-allocated 3 buffers (downsample-quarter) bucket 512x384 at startup
+[2026-11-09 09:52:53.417] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:53.417] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:53.417] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=0.000
+[2026-11-09 09:52:53.417] [info] [particle-debug] p0 pos=(55.26,-21.27) size=1.84 alpha=0.498
+[2026-11-09 09:52:53.434] [info] [temp-lifetime] frame=0 after_level=0 live=[0,1,3,] retired=[]
+[2026-11-09 09:52:53.434] [info] [exec-level-diag] frame=0 level=0 nodes=3 input_ms=0.001 dispatch_ms=14.637 fb_release_ms=0.003
+[2026-11-09 09:52:53.434] [info] [graph-edge] frame=0 level=1 consumer_id=2 input_index=0 producer_id=0 producer_level=0
+[2026-11-09 09:52:53.434] [info] [graph-edge] frame=0 level=1 consumer_id=2 input_index=1 producer_id=1 producer_level=0
+[2026-11-09 09:52:53.443] [info] [temp-lifetime] frame=0 after_level=1 live=[2,3,] retired=[0,1,]
+[2026-11-09 09:52:53.443] [info] [exec-level-diag] frame=0 level=1 nodes=1 input_ms=0.033 dispatch_ms=8.708 fb_release_ms=0.009
+[2026-11-09 09:52:53.443] [info] [graph-edge] frame=0 level=2 consumer_id=4 input_index=0 producer_id=2 producer_level=1
+[2026-11-09 09:52:53.443] [info] [graph-edge] frame=0 level=2 consumer_id=4 input_index=1 producer_id=3 producer_level=0
+[2026-11-09 09:52:53.445] [info] [temp-lifetime] frame=0 after_level=2 live=[4,] retired=[2,3,]
+[2026-11-09 09:52:53.445] [info] [exec-level-diag] frame=0 level=2 nodes=1 input_ms=0.014 dispatch_ms=2.030 fb_release_ms=0.015
+[2026-11-09 09:52:53.445] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:53.445] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:53.445] [info] [video] Exporting via Arena-backed SIMD pipeline
+[2026-11-09 09:52:53.445] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=0.042
+[2026-11-09 09:52:53.446] [info] [particle-debug] p0 pos=(55.19,-22.58) size=1.84 alpha=0.553
+[2026-11-09 09:52:53.459] [info] [temp-lifetime] frame=1 after_level=0 live=[0,1,3,] retired=[]
+[2026-11-09 09:52:53.459] [info] [exec-level-diag] frame=1 level=0 nodes=3 input_ms=0.001 dispatch_ms=11.831 fb_release_ms=0.003
+[2026-11-09 09:52:53.459] [info] [graph-edge] frame=1 level=1 consumer_id=2 input_index=0 producer_id=0 producer_level=0
+[2026-11-09 09:52:53.459] [info] [graph-edge] frame=1 level=1 consumer_id=2 input_index=1 producer_id=1 producer_level=0
+[2026-11-09 09:52:53.469] [info] [temp-lifetime] frame=1 after_level=1 live=[2,3,] retired=[0,1,]
+[2026-11-09 09:52:53.470] [info] [exec-level-diag] frame=1 level=1 nodes=1 input_ms=0.029 dispatch_ms=10.085 fb_release_ms=0.014
+[2026-11-09 09:52:53.470] [info] [graph-edge] frame=1 level=2 consumer_id=4 input_index=0 producer_id=2 producer_level=1
+[2026-11-09 09:52:53.470] [info] [graph-edge] frame=1 level=2 consumer_id=4 input_index=1 producer_id=3 producer_level=0
+[2026-11-09 09:52:53.470] [info] [temp-lifetime] frame=1 after_level=2 live=[4,] retired=[2,3,]
+[2026-11-09 09:52:53.470] [info] [exec-level-diag] frame=1 level=2 nodes=1 input_ms=0.030 dispatch_ms=0.866 fb_release_ms=0.017
+[2026-11-09 09:52:53.471] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:53.471] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:53.471] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=0.083
+[2026-11-09 09:52:53.471] [info] [particle-debug] p0 pos=(55.11,-23.89) size=1.84 alpha=0.587
+[2026-11-09 09:52:53.496] [info] [temp-lifetime] frame=2 after_level=0 live=[0,1,3,] retired=[]
+[2026-11-09 09:52:53.496] [info] [exec-level-diag] frame=2 level=0 nodes=3 input_ms=0.001 dispatch_ms=21.710 fb_release_ms=0.003
+[2026-11-09 09:52:53.496] [info] [graph-edge] frame=2 level=1 consumer_id=2 input_index=0 producer_id=0 producer_level=0
+[2026-11-09 09:52:53.496] [info] [graph-edge] frame=2 level=1 consumer_id=2 input_index=1 producer_id=1 producer_level=0
+[2026-11-09 09:52:53.505] [info] [temp-lifetime] frame=2 after_level=1 live=[2,3,] retired=[0,1,]
+[2026-11-09 09:52:53.505] [info] [exec-level-diag] frame=2 level=1 nodes=1 input_ms=0.015 dispatch_ms=9.026 fb_release_ms=0.007
+[2026-11-09 09:52:53.506] [info] [graph-edge] frame=2 level=2 consumer_id=4 input_index=0 producer_id=2 producer_level=1
+[2026-11-09 09:52:53.506] [info] [graph-edge] frame=2 level=2 consumer_id=4 input_index=1 producer_id=3 producer_level=0
+[2026-11-09 09:52:53.508] [info] [temp-lifetime] frame=2 after_level=2 live=[4,] retired=[2,3,]
+[2026-11-09 09:52:53.508] [info] [exec-level-diag] frame=2 level=2 nodes=1 input_ms=0.042 dispatch_ms=1.952 fb_release_ms=0.017
+[2026-11-09 09:52:53.508] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:53.508] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:53.508] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=0.125
+[2026-11-09 09:52:53.508] [info] [particle-debug] p0 pos=(55.04,-25.23) size=1.84 alpha=0.594
+[2026-11-09 09:52:53.538] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:53.538] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:53.538] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=0.167
+[2026-11-09 09:52:53.538] [info] [particle-debug] p0 pos=(54.96,-26.58) size=1.84 alpha=0.573
+[2026-11-09 09:52:53.565] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:53.565] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:53.565] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=0.208
+[2026-11-09 09:52:53.565] [info] [particle-debug] p0 pos=(54.89,-27.94) size=1.84 alpha=0.527
+[2026-11-09 09:52:53.595] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:53.595] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:53.596] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=0.250
+[2026-11-09 09:52:53.596] [info] [particle-debug] p0 pos=(54.82,-29.32) size=1.84 alpha=0.463
+[2026-11-09 09:52:53.622] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:53.622] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:53.622] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=0.292
+[2026-11-09 09:52:53.622] [info] [particle-debug] p0 pos=(54.75,-30.71) size=1.84 alpha=0.388
+[2026-11-09 09:52:53.651] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:53.651] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:53.651] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=0.333
+[2026-11-09 09:52:53.651] [info] [particle-debug] p0 pos=(54.68,-32.13) size=1.84 alpha=0.312
+[2026-11-09 09:52:53.679] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:53.679] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:53.679] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=0.375
+[2026-11-09 09:52:53.679] [info] [particle-debug] p0 pos=(54.61,-33.55) size=1.84 alpha=0.246
+[2026-11-09 09:52:53.706] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:53.707] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:53.707] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=0.417
+[2026-11-09 09:52:53.707] [info] [particle-debug] p0 pos=(54.55,-35.00) size=1.84 alpha=0.196
+[2026-11-09 09:52:53.734] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:53.734] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:53.734] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=0.458
+[2026-11-09 09:52:53.734] [info] [particle-debug] p0 pos=(54.48,-36.46) size=1.84 alpha=0.169
+[2026-11-09 09:52:53.761] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:53.762] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:53.762] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=0.500
+[2026-11-09 09:52:53.762] [info] [particle-debug] p0 pos=(54.42,-37.93) size=1.84 alpha=0.168
+[2026-11-09 09:52:53.789] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:53.789] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:53.789] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=0.542
+[2026-11-09 09:52:53.789] [info] [particle-debug] p0 pos=(54.35,-39.42) size=1.84 alpha=0.191
+[2026-11-09 09:52:53.818] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:53.818] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:53.818] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=0.583
+[2026-11-09 09:52:53.818] [info] [particle-debug] p0 pos=(54.29,-40.93) size=1.84 alpha=0.235
+[2026-11-09 09:52:53.844] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:53.844] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:53.844] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=0.625
+[2026-11-09 09:52:53.844] [info] [particle-debug] p0 pos=(54.23,-42.46) size=1.84 alpha=0.293
+[2026-11-09 09:52:53.872] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:53.872] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:53.872] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=0.667
+[2026-11-09 09:52:53.872] [info] [particle-debug] p0 pos=(54.16,-44.00) size=1.84 alpha=0.357
+[2026-11-09 09:52:53.898] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:53.898] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:53.898] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=0.708
+[2026-11-09 09:52:53.898] [info] [particle-debug] p0 pos=(54.10,-45.56) size=1.84 alpha=0.418
+[2026-11-09 09:52:53.926] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:53.926] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:53.926] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=0.750
+[2026-11-09 09:52:53.926] [info] [particle-debug] p0 pos=(54.04,-47.14) size=1.84 alpha=0.467
+[2026-11-09 09:52:53.963] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:53.963] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:53.963] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=0.792
+[2026-11-09 09:52:53.963] [info] [particle-debug] p0 pos=(53.98,-48.73) size=1.84 alpha=0.498
+[2026-11-09 09:52:53.993] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:53.993] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:53.994] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=0.833
+[2026-11-09 09:52:53.994] [info] [particle-debug] p0 pos=(53.93,-50.34) size=1.84 alpha=0.495
+[2026-11-09 09:52:54.022] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:54.023] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:54.023] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=0.875
+[2026-11-09 09:52:54.023] [info] [particle-debug] p0 pos=(53.87,-51.96) size=1.84 alpha=0.449
+[2026-11-09 09:52:54.049] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:54.049] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:54.049] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=0.917
+[2026-11-09 09:52:54.049] [info] [particle-debug] p0 pos=(53.81,-53.61) size=1.84 alpha=0.385
+[2026-11-09 09:52:54.079] [info] [video]   24/240 frames
+[2026-11-09 09:52:54.079] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:54.080] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:54.080] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=0.958
+[2026-11-09 09:52:54.080] [info] [particle-debug] p0 pos=(53.75,-55.27) size=1.84 alpha=0.313
+[2026-11-09 09:52:54.108] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:54.108] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:54.108] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=1.000
+[2026-11-09 09:52:54.108] [info] [particle-debug] p0 pos=(53.70,-56.95) size=1.84 alpha=0.241
+[2026-11-09 09:52:54.135] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:54.135] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:54.135] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=1.042
+[2026-11-09 09:52:54.135] [info] [particle-debug] p0 pos=(53.64,-58.64) size=1.84 alpha=0.175
+[2026-11-09 09:52:54.164] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:54.164] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:54.164] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=1.083
+[2026-11-09 09:52:54.164] [info] [particle-debug] p0 pos=(53.59,-60.36) size=1.84 alpha=0.123
+[2026-11-09 09:52:54.194] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:54.194] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:54.194] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=1.125
+[2026-11-09 09:52:54.194] [info] [particle-debug] p0 pos=(53.53,-62.09) size=1.84 alpha=0.085
+[2026-11-09 09:52:54.226] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:54.226] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:54.226] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=1.167
+[2026-11-09 09:52:54.227] [info] [particle-debug] p0 pos=(53.48,-63.84) size=1.84 alpha=0.061
+[2026-11-09 09:52:54.253] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:54.253] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:54.253] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=1.208
+[2026-11-09 09:52:54.253] [info] [particle-debug] p0 pos=(53.43,-65.60) size=1.84 alpha=0.048
+[2026-11-09 09:52:54.281] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:54.281] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:54.281] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=1.250
+[2026-11-09 09:52:54.281] [info] [particle-debug] p0 pos=(53.37,-67.38) size=1.84 alpha=0.042
+[2026-11-09 09:52:54.310] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:54.310] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:54.310] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=1.292
+[2026-11-09 09:52:54.310] [info] [particle-debug] p0 pos=(53.32,-69.18) size=1.84 alpha=0.036
+[2026-11-09 09:52:54.340] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:54.340] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:54.340] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=1.333
+[2026-11-09 09:52:54.340] [info] [particle-debug] p0 pos=(53.27,-71.00) size=1.84 alpha=0.026
+[2026-11-09 09:52:54.370] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:54.370] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:54.370] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=1.375
+[2026-11-09 09:52:54.370] [info] [particle-debug] p0 pos=(53.21,-72.84) size=1.84 alpha=0.007
+[2026-11-09 09:52:54.400] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:54.400] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:54.400] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=1.417
+[2026-11-09 09:52:54.400] [info] [particle-debug] p0 pos=(-109.02,49.01) size=2.65 alpha=0.040
+[2026-11-09 09:52:54.428] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:54.428] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:54.428] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=1.458
+[2026-11-09 09:52:54.428] [info] [particle-debug] p0 pos=(-109.22,47.61) size=2.65 alpha=0.120
+[2026-11-09 09:52:54.458] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:54.458] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:54.458] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=1.500
+[2026-11-09 09:52:54.458] [info] [particle-debug] p0 pos=(-109.43,46.18) size=2.65 alpha=0.239
+[2026-11-09 09:52:54.487] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:54.487] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:54.488] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=1.542
+[2026-11-09 09:52:54.488] [info] [particle-debug] p0 pos=(-109.64,44.75) size=2.65 alpha=0.400
+[2026-11-09 09:52:54.517] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:54.517] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:54.517] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=1.583
+[2026-11-09 09:52:54.517] [info] [particle-debug] p0 pos=(-109.84,43.30) size=2.65 alpha=0.596
+[2026-11-09 09:52:54.547] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:54.547] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:54.547] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=1.625
+[2026-11-09 09:52:54.547] [info] [particle-debug] p0 pos=(-110.05,41.83) size=2.65 alpha=0.772
+[2026-11-09 09:52:54.576] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:54.576] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:54.576] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=1.667
+[2026-11-09 09:52:54.576] [info] [particle-debug] p0 pos=(-110.26,40.35) size=2.65 alpha=0.819
+[2026-11-09 09:52:54.605] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:54.605] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:54.605] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=1.708
+[2026-11-09 09:52:54.605] [info] [particle-debug] p0 pos=(-110.47,38.86) size=2.65 alpha=0.829
+[2026-11-09 09:52:54.633] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:54.633] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:54.634] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=1.750
+[2026-11-09 09:52:54.634] [info] [particle-debug] p0 pos=(-110.68,37.35) size=2.65 alpha=0.800
+[2026-11-09 09:52:54.662] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:54.662] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:54.662] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=1.792
+[2026-11-09 09:52:54.662] [info] [particle-debug] p0 pos=(-110.89,35.83) size=2.65 alpha=0.737
+[2026-11-09 09:52:54.691] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:54.691] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:54.692] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=1.833
+[2026-11-09 09:52:54.692] [info] [particle-debug] p0 pos=(-111.10,34.29) size=2.65 alpha=0.647
+[2026-11-09 09:52:54.719] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:54.719] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:54.719] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=1.875
+[2026-11-09 09:52:54.719] [info] [particle-debug] p0 pos=(-111.31,32.74) size=2.65 alpha=0.543
+[2026-11-09 09:52:54.749] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:54.749] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:54.749] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=1.917
+[2026-11-09 09:52:54.749] [info] [particle-debug] p0 pos=(-111.52,31.17) size=2.65 alpha=0.438
+[2026-11-09 09:52:54.780] [info] [video]   48/240 frames
+[2026-11-09 09:52:54.781] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:54.781] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:54.781] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=1.958
+[2026-11-09 09:52:54.781] [info] [particle-debug] p0 pos=(-111.73,29.59) size=2.65 alpha=0.344
+[2026-11-09 09:52:54.809] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:54.809] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:54.809] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=2.000
+[2026-11-09 09:52:54.809] [info] [particle-debug] p0 pos=(-111.94,27.99) size=2.65 alpha=0.275
+[2026-11-09 09:52:54.839] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:54.839] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:54.839] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=2.042
+[2026-11-09 09:52:54.839] [info] [particle-debug] p0 pos=(-112.15,26.38) size=2.65 alpha=0.238
+[2026-11-09 09:52:54.873] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:54.873] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:54.873] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=2.083
+[2026-11-09 09:52:54.873] [info] [particle-debug] p0 pos=(-112.35,24.75) size=2.65 alpha=0.237
+[2026-11-09 09:52:54.901] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:54.901] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:54.901] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=2.125
+[2026-11-09 09:52:54.901] [info] [particle-debug] p0 pos=(-112.56,23.11) size=2.65 alpha=0.270
+[2026-11-09 09:52:54.931] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:54.931] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:54.931] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=2.167
+[2026-11-09 09:52:54.931] [info] [particle-debug] p0 pos=(-112.77,21.45) size=2.65 alpha=0.334
+[2026-11-09 09:52:54.959] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:54.959] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:54.959] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=2.208
+[2026-11-09 09:52:54.959] [info] [particle-debug] p0 pos=(-112.98,19.78) size=2.65 alpha=0.417
+[2026-11-09 09:52:55.023] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:55.023] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:55.024] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=2.250
+[2026-11-09 09:52:55.024] [info] [particle-debug] p0 pos=(-113.18,18.09) size=2.65 alpha=0.508
+[2026-11-09 09:52:55.054] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:55.054] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:55.055] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=2.292
+[2026-11-09 09:52:55.055] [info] [particle-debug] p0 pos=(-113.39,16.39) size=2.65 alpha=0.595
+[2026-11-09 09:52:55.084] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:55.084] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:55.084] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=2.333
+[2026-11-09 09:52:55.084] [info] [particle-debug] p0 pos=(-113.60,14.67) size=2.65 alpha=0.666
+[2026-11-09 09:52:55.133] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:55.133] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:55.133] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=2.375
+[2026-11-09 09:52:55.133] [info] [particle-debug] p0 pos=(-113.80,12.94) size=2.65 alpha=0.710
+[2026-11-09 09:52:55.165] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:55.165] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:55.165] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=2.417
+[2026-11-09 09:52:55.165] [info] [particle-debug] p0 pos=(-114.00,11.19) size=2.65 alpha=0.723
+[2026-11-09 09:52:55.212] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:55.212] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:55.212] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=2.458
+[2026-11-09 09:52:55.212] [info] [particle-debug] p0 pos=(-114.20,9.42) size=2.65 alpha=0.702
+[2026-11-09 09:52:55.243] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:55.243] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:55.243] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=2.500
+[2026-11-09 09:52:55.243] [info] [particle-debug] p0 pos=(-114.40,7.64) size=2.65 alpha=0.650
+[2026-11-09 09:52:55.278] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:55.278] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:55.278] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=2.542
+[2026-11-09 09:52:55.278] [info] [particle-debug] p0 pos=(-114.60,5.85) size=2.65 alpha=0.574
+[2026-11-09 09:52:55.319] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:55.319] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:55.319] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=2.583
+[2026-11-09 09:52:55.319] [info] [particle-debug] p0 pos=(-114.80,4.04) size=2.65 alpha=0.484
+[2026-11-09 09:52:55.352] [info] [exec-fb-diag] resetting temp[2] took 1.082 ms
+[2026-11-09 09:52:55.352] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:55.352] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:55.352] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=2.625
+[2026-11-09 09:52:55.352] [info] [particle-debug] p0 pos=(-114.99,2.21) size=2.65 alpha=0.391
+[2026-11-09 09:52:55.388] [info] [exec-fb-diag] resetting temp[2] took 2.079 ms
+[2026-11-09 09:52:55.388] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:55.388] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:55.388] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=2.667
+[2026-11-09 09:52:55.388] [info] [particle-debug] p0 pos=(-115.19,0.36) size=2.65 alpha=0.308
+[2026-11-09 09:52:55.424] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:55.424] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:55.424] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=2.708
+[2026-11-09 09:52:55.424] [info] [particle-debug] p0 pos=(-115.38,-1.49) size=2.65 alpha=0.245
+[2026-11-09 09:52:55.454] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:55.454] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:55.454] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=2.750
+[2026-11-09 09:52:55.454] [info] [particle-debug] p0 pos=(-115.57,-3.37) size=2.65 alpha=0.208
+[2026-11-09 09:52:55.495] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:55.495] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:55.496] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=2.792
+[2026-11-09 09:52:55.496] [info] [particle-debug] p0 pos=(-115.76,-5.26) size=2.65 alpha=0.202
+[2026-11-09 09:52:55.535] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:55.535] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:55.535] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=2.833
+[2026-11-09 09:52:55.535] [info] [particle-debug] p0 pos=(-115.94,-7.17) size=2.65 alpha=0.227
+[2026-11-09 09:52:55.566] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:55.566] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:55.566] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=2.875
+[2026-11-09 09:52:55.566] [info] [particle-debug] p0 pos=(-116.12,-9.09) size=2.65 alpha=0.278
+[2026-11-09 09:52:55.595] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:55.595] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:55.595] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=2.917
+[2026-11-09 09:52:55.595] [info] [particle-debug] p0 pos=(-116.31,-11.03) size=2.65 alpha=0.347
+[2026-11-09 09:52:55.637] [info] [video]   72/240 frames
+[2026-11-09 09:52:55.637] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:55.637] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:55.637] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=2.958
+[2026-11-09 09:52:55.637] [info] [particle-debug] p0 pos=(-116.48,-12.98) size=2.65 alpha=0.424
+[2026-11-09 09:52:55.668] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:55.668] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:55.668] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=3.000
+[2026-11-09 09:52:55.668] [info] [particle-debug] p0 pos=(-116.66,-14.95) size=2.65 alpha=0.499
+[2026-11-09 09:52:55.696] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:55.696] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:55.696] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=3.042
+[2026-11-09 09:52:55.696] [info] [particle-debug] p0 pos=(-116.83,-16.94) size=2.65 alpha=0.561
+[2026-11-09 09:52:55.732] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:55.733] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:55.733] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=3.083
+[2026-11-09 09:52:55.733] [info] [particle-debug] p0 pos=(-117.00,-18.94) size=2.65 alpha=0.602
+[2026-11-09 09:52:55.762] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:55.762] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:55.762] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=3.125
+[2026-11-09 09:52:55.762] [info] [particle-debug] p0 pos=(-117.17,-20.96) size=2.65 alpha=0.585
+[2026-11-09 09:52:55.792] [info] [exec-fb-diag] resetting temp[2] took 1.235 ms
+[2026-11-09 09:52:55.793] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:55.793] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:55.793] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=3.167
+[2026-11-09 09:52:55.793] [info] [particle-debug] p0 pos=(-117.33,-22.99) size=2.65 alpha=0.532
+[2026-11-09 09:52:55.821] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:55.821] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:55.821] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=3.208
+[2026-11-09 09:52:55.821] [info] [particle-debug] p0 pos=(-117.49,-25.04) size=2.65 alpha=0.458
+[2026-11-09 09:52:55.852] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:55.852] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:55.852] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=3.250
+[2026-11-09 09:52:55.852] [info] [particle-debug] p0 pos=(-117.65,-27.11) size=2.65 alpha=0.373
+[2026-11-09 09:52:55.888] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:55.888] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:55.888] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=3.292
+[2026-11-09 09:52:55.888] [info] [particle-debug] p0 pos=(-117.81,-29.19) size=2.65 alpha=0.287
+[2026-11-09 09:52:55.920] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:55.920] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:55.920] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=3.333
+[2026-11-09 09:52:55.920] [info] [particle-debug] p0 pos=(-117.96,-31.29) size=2.65 alpha=0.209
+[2026-11-09 09:52:55.949] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:55.949] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:55.950] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=3.375
+[2026-11-09 09:52:55.950] [info] [particle-debug] p0 pos=(-118.11,-33.40) size=2.65 alpha=0.145
+[2026-11-09 09:52:55.981] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:55.981] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:55.981] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=3.417
+[2026-11-09 09:52:55.981] [info] [particle-debug] p0 pos=(-118.25,-35.53) size=2.65 alpha=0.099
+[2026-11-09 09:52:56.038] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:56.039] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:56.039] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=3.458
+[2026-11-09 09:52:56.039] [info] [particle-debug] p0 pos=(-118.39,-37.68) size=2.65 alpha=0.069
+[2026-11-09 09:52:56.069] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:56.069] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:56.069] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=3.500
+[2026-11-09 09:52:56.069] [info] [particle-debug] p0 pos=(-118.53,-39.84) size=2.65 alpha=0.053
+[2026-11-09 09:52:56.096] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:56.096] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:56.097] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=3.542
+[2026-11-09 09:52:56.097] [info] [particle-debug] p0 pos=(-118.66,-42.02) size=2.65 alpha=0.044
+[2026-11-09 09:52:56.126] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:56.127] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:56.127] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=3.583
+[2026-11-09 09:52:56.127] [info] [particle-debug] p0 pos=(-118.79,-44.21) size=2.65 alpha=0.035
+[2026-11-09 09:52:56.167] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:56.168] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:56.168] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=3.625
+[2026-11-09 09:52:56.168] [info] [particle-debug] p0 pos=(-118.92,-46.42) size=2.65 alpha=0.020
+[2026-11-09 09:52:56.203] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:56.203] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:56.203] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=3.667
+[2026-11-09 09:52:56.203] [info] [particle-debug] p0 pos=(-250.78,40.99) size=3.03 alpha=0.018
+[2026-11-09 09:52:56.236] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:56.236] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:56.236] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=3.708
+[2026-11-09 09:52:56.236] [info] [particle-debug] p0 pos=(-251.24,39.93) size=3.03 alpha=0.128
+[2026-11-09 09:52:56.278] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:56.279] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:56.279] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=3.750
+[2026-11-09 09:52:56.279] [info] [particle-debug] p0 pos=(-251.70,38.84) size=3.03 alpha=0.202
+[2026-11-09 09:52:56.312] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:56.312] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:56.312] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=3.792
+[2026-11-09 09:52:56.312] [info] [particle-debug] p0 pos=(-252.15,37.74) size=3.03 alpha=0.239
+[2026-11-09 09:52:56.342] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:56.342] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:56.342] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=3.833
+[2026-11-09 09:52:56.342] [info] [particle-debug] p0 pos=(-252.61,36.62) size=3.03 alpha=0.250
+[2026-11-09 09:52:56.373] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:56.374] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:56.374] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=3.875
+[2026-11-09 09:52:56.374] [info] [particle-debug] p0 pos=(-253.06,35.47) size=3.03 alpha=0.251
+[2026-11-09 09:52:56.404] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:56.404] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:56.404] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=3.917
+[2026-11-09 09:52:56.404] [info] [particle-debug] p0 pos=(-253.51,34.31) size=3.03 alpha=0.234
+[2026-11-09 09:52:56.441] [info] [video]   96/240 frames
+[2026-11-09 09:52:56.441] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:56.441] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:56.441] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=3.958
+[2026-11-09 09:52:56.441] [info] [particle-debug] p0 pos=(-253.96,33.13) size=3.03 alpha=0.237
+[2026-11-09 09:52:56.470] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:56.470] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:56.470] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=4.000
+[2026-11-09 09:52:56.470] [info] [particle-debug] p0 pos=(-254.41,31.93) size=3.03 alpha=0.274
+[2026-11-09 09:52:56.500] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:56.500] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:56.500] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=4.042
+[2026-11-09 09:52:56.500] [info] [particle-debug] p0 pos=(-254.86,30.71) size=3.03 alpha=0.340
+[2026-11-09 09:52:56.527] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:56.527] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:56.527] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=4.083
+[2026-11-09 09:52:56.527] [info] [particle-debug] p0 pos=(-255.30,29.48) size=3.03 alpha=0.424
+[2026-11-09 09:52:56.555] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:56.556] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:56.556] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=4.125
+[2026-11-09 09:52:56.556] [info] [particle-debug] p0 pos=(-255.75,28.22) size=3.03 alpha=0.516
+[2026-11-09 09:52:56.586] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:56.587] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:56.587] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=4.167
+[2026-11-09 09:52:56.587] [info] [particle-debug] p0 pos=(-256.19,26.94) size=3.03 alpha=0.601
+[2026-11-09 09:52:56.621] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:56.621] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:56.621] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=4.208
+[2026-11-09 09:52:56.621] [info] [particle-debug] p0 pos=(-256.63,25.65) size=3.03 alpha=0.669
+[2026-11-09 09:52:56.656] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:56.656] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:56.656] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=4.250
+[2026-11-09 09:52:56.656] [info] [particle-debug] p0 pos=(-257.07,24.33) size=3.03 alpha=0.711
+[2026-11-09 09:52:56.687] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:56.687] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:56.687] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=4.292
+[2026-11-09 09:52:56.687] [info] [particle-debug] p0 pos=(-257.50,23.00) size=3.03 alpha=0.720
+[2026-11-09 09:52:56.719] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:56.719] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:56.719] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=4.333
+[2026-11-09 09:52:56.719] [info] [particle-debug] p0 pos=(-257.94,21.64) size=3.03 alpha=0.696
+[2026-11-09 09:52:56.758] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:56.758] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:56.758] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=4.375
+[2026-11-09 09:52:56.758] [info] [particle-debug] p0 pos=(-258.37,20.27) size=3.03 alpha=0.642
+[2026-11-09 09:52:56.791] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:56.791] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:56.791] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=4.417
+[2026-11-09 09:52:56.791] [info] [particle-debug] p0 pos=(-258.80,18.88) size=3.03 alpha=0.564
+[2026-11-09 09:52:56.835] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:56.835] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:56.835] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=4.458
+[2026-11-09 09:52:56.835] [info] [particle-debug] p0 pos=(-259.23,17.47) size=3.03 alpha=0.474
+[2026-11-09 09:52:56.869] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:56.870] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:56.870] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=4.500
+[2026-11-09 09:52:56.870] [info] [particle-debug] p0 pos=(-259.65,16.04) size=3.03 alpha=0.382
+[2026-11-09 09:52:56.899] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:56.899] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:56.899] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=4.542
+[2026-11-09 09:52:56.899] [info] [particle-debug] p0 pos=(-260.08,14.59) size=3.03 alpha=0.301
+[2026-11-09 09:52:56.934] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:56.934] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:56.935] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=4.583
+[2026-11-09 09:52:56.935] [info] [particle-debug] p0 pos=(-260.50,13.13) size=3.03 alpha=0.240
+[2026-11-09 09:52:56.981] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:56.981] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:56.982] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=4.625
+[2026-11-09 09:52:56.982] [info] [particle-debug] p0 pos=(-260.92,11.64) size=3.03 alpha=0.206
+[2026-11-09 09:52:57.010] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:57.010] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:57.010] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=4.667
+[2026-11-09 09:52:57.010] [info] [particle-debug] p0 pos=(-261.33,10.14) size=3.03 alpha=0.204
+[2026-11-09 09:52:57.041] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:57.041] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:57.041] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=4.708
+[2026-11-09 09:52:57.041] [info] [particle-debug] p0 pos=(-261.75,8.62) size=3.03 alpha=0.232
+[2026-11-09 09:52:57.074] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:57.074] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:57.074] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=4.750
+[2026-11-09 09:52:57.074] [info] [particle-debug] p0 pos=(-262.16,7.07) size=3.03 alpha=0.286
+[2026-11-09 09:52:57.105] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:57.106] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:57.106] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=4.792
+[2026-11-09 09:52:57.106] [info] [particle-debug] p0 pos=(-262.57,5.51) size=3.03 alpha=0.357
+[2026-11-09 09:52:57.148] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:57.149] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:57.149] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=4.833
+[2026-11-09 09:52:57.149] [info] [particle-debug] p0 pos=(-262.98,3.94) size=3.03 alpha=0.436
+[2026-11-09 09:52:57.183] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:57.183] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:57.183] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=4.875
+[2026-11-09 09:52:57.183] [info] [particle-debug] p0 pos=(-263.38,2.34) size=3.03 alpha=0.511
+[2026-11-09 09:52:57.211] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:57.211] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:57.212] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=4.917
+[2026-11-09 09:52:57.212] [info] [particle-debug] p0 pos=(-263.78,0.72) size=3.03 alpha=0.572
+[2026-11-09 09:52:57.246] [info] [video]   120/240 frames
+[2026-11-09 09:52:57.246] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:57.246] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:57.246] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=4.958
+[2026-11-09 09:52:57.246] [info] [particle-debug] p0 pos=(-264.18,-0.91) size=3.03 alpha=0.611
+[2026-11-09 09:52:57.285] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:57.285] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:57.286] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=5.000
+[2026-11-09 09:52:57.286] [info] [particle-debug] p0 pos=(-264.58,-2.56) size=3.03 alpha=0.622
+[2026-11-09 09:52:57.323] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:57.323] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:57.323] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=5.042
+[2026-11-09 09:52:57.323] [info] [particle-debug] p0 pos=(-264.98,-4.23) size=3.03 alpha=0.605
+[2026-11-09 09:52:57.371] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:57.371] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:57.371] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=5.083
+[2026-11-09 09:52:57.371] [info] [particle-debug] p0 pos=(-265.37,-5.91) size=3.03 alpha=0.560
+[2026-11-09 09:52:57.401] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:57.401] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:57.401] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=5.125
+[2026-11-09 09:52:57.401] [info] [particle-debug] p0 pos=(-265.76,-7.62) size=3.03 alpha=0.495
+[2026-11-09 09:52:57.430] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:57.430] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:57.430] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=5.167
+[2026-11-09 09:52:57.430] [info] [particle-debug] p0 pos=(-266.15,-9.34) size=3.03 alpha=0.418
+[2026-11-09 09:52:57.465] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:57.465] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:57.465] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=5.208
+[2026-11-09 09:52:57.465] [info] [particle-debug] p0 pos=(-266.54,-11.08) size=3.03 alpha=0.339
+[2026-11-09 09:52:57.498] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:57.498] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:57.498] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=5.250
+[2026-11-09 09:52:57.498] [info] [particle-debug] p0 pos=(-266.92,-12.84) size=3.03 alpha=0.267
+[2026-11-09 09:52:57.525] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:57.526] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:57.526] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=5.292
+[2026-11-09 09:52:57.526] [info] [particle-debug] p0 pos=(-267.30,-14.61) size=3.03 alpha=0.211
+[2026-11-09 09:52:57.562] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:57.562] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:57.562] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=5.333
+[2026-11-09 09:52:57.562] [info] [particle-debug] p0 pos=(-267.68,-16.40) size=3.03 alpha=0.179
+[2026-11-09 09:52:57.591] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:57.591] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:57.591] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=5.375
+[2026-11-09 09:52:57.591] [info] [particle-debug] p0 pos=(-268.05,-18.21) size=3.03 alpha=0.170
+[2026-11-09 09:52:57.622] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:57.622] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:57.622] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=5.417
+[2026-11-09 09:52:57.622] [info] [particle-debug] p0 pos=(-268.43,-20.03) size=3.03 alpha=0.178
+[2026-11-09 09:52:57.655] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:57.655] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:57.656] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=5.458
+[2026-11-09 09:52:57.656] [info] [particle-debug] p0 pos=(-268.80,-21.87) size=3.03 alpha=0.202
+[2026-11-09 09:52:57.687] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:57.687] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:57.687] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=5.500
+[2026-11-09 09:52:57.687] [info] [particle-debug] p0 pos=(-269.16,-23.73) size=3.03 alpha=0.232
+[2026-11-09 09:52:57.718] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:57.718] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:57.718] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=5.542
+[2026-11-09 09:52:57.718] [info] [particle-debug] p0 pos=(-269.53,-25.61) size=3.03 alpha=0.260
+[2026-11-09 09:52:57.748] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:57.748] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:57.748] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=5.583
+[2026-11-09 09:52:57.748] [info] [particle-debug] p0 pos=(-269.89,-27.50) size=3.03 alpha=0.276
+[2026-11-09 09:52:57.780] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:57.780] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:57.780] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=5.625
+[2026-11-09 09:52:57.780] [info] [particle-debug] p0 pos=(-270.26,-29.40) size=3.03 alpha=0.277
+[2026-11-09 09:52:57.812] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:57.812] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:57.812] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=5.667
+[2026-11-09 09:52:57.812] [info] [particle-debug] p0 pos=(-270.61,-31.32) size=3.03 alpha=0.260
+[2026-11-09 09:52:57.841] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:57.841] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:57.841] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=5.708
+[2026-11-09 09:52:57.841] [info] [particle-debug] p0 pos=(-270.97,-33.26) size=3.03 alpha=0.227
+[2026-11-09 09:52:57.873] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:57.873] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:57.873] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=5.750
+[2026-11-09 09:52:57.873] [info] [particle-debug] p0 pos=(-271.32,-35.22) size=3.03 alpha=0.183
+[2026-11-09 09:52:57.903] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:57.903] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:57.903] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=5.792
+[2026-11-09 09:52:57.903] [info] [particle-debug] p0 pos=(-271.68,-37.18) size=3.03 alpha=0.133
+[2026-11-09 09:52:57.931] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:57.931] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:57.931] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=5.833
+[2026-11-09 09:52:57.931] [info] [particle-debug] p0 pos=(-272.03,-39.17) size=3.03 alpha=0.085
+[2026-11-09 09:52:57.962] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:57.962] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:57.962] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=5.875
+[2026-11-09 09:52:57.962] [info] [particle-debug] p0 pos=(-272.37,-41.17) size=3.03 alpha=0.043
+[2026-11-09 09:52:57.993] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:57.994] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:57.994] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=5.917
+[2026-11-09 09:52:57.994] [info] [particle-debug] p0 pos=(-272.72,-43.18) size=3.03 alpha=0.010
+[2026-11-09 09:52:58.023] [info] [video]   144/240 frames
+[2026-11-09 09:52:58.023] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:58.023] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:58.023] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=5.958
+[2026-11-09 09:52:58.023] [info] [particle-debug] p0 pos=(-257.81,50.11) size=0.76 alpha=0.041
+[2026-11-09 09:52:58.054] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:58.054] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:58.054] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=6.000
+[2026-11-09 09:52:58.054] [info] [particle-debug] p0 pos=(-257.33,48.59) size=0.76 alpha=0.089
+[2026-11-09 09:52:58.081] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:58.081] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:58.081] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=6.042
+[2026-11-09 09:52:58.081] [info] [particle-debug] p0 pos=(-256.86,47.06) size=0.76 alpha=0.122
+[2026-11-09 09:52:58.110] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:58.111] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:58.111] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=6.083
+[2026-11-09 09:52:58.111] [info] [particle-debug] p0 pos=(-256.38,45.52) size=0.76 alpha=0.159
+[2026-11-09 09:52:58.157] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:58.157] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:58.157] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=6.125
+[2026-11-09 09:52:58.157] [info] [particle-debug] p0 pos=(-255.90,43.98) size=0.76 alpha=0.223
+[2026-11-09 09:52:58.187] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:58.187] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:58.187] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=6.167
+[2026-11-09 09:52:58.187] [info] [particle-debug] p0 pos=(-255.42,42.43) size=0.76 alpha=0.323
+[2026-11-09 09:52:58.215] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:58.215] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:58.215] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=6.208
+[2026-11-09 09:52:58.215] [info] [particle-debug] p0 pos=(-254.94,40.87) size=0.76 alpha=0.405
+[2026-11-09 09:52:58.245] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:58.245] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:58.245] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=6.250
+[2026-11-09 09:52:58.245] [info] [particle-debug] p0 pos=(-254.46,39.31) size=0.76 alpha=0.500
+[2026-11-09 09:52:58.271] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:58.271] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:58.271] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=6.292
+[2026-11-09 09:52:58.271] [info] [particle-debug] p0 pos=(-253.98,37.74) size=0.76 alpha=0.596
+[2026-11-09 09:52:58.298] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:58.298] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:58.299] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=6.333
+[2026-11-09 09:52:58.299] [info] [particle-debug] p0 pos=(-253.50,36.16) size=0.76 alpha=0.680
+[2026-11-09 09:52:58.327] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:58.327] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:58.327] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=6.375
+[2026-11-09 09:52:58.327] [info] [particle-debug] p0 pos=(-253.02,34.57) size=0.76 alpha=0.740
+[2026-11-09 09:52:58.354] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:58.354] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:58.354] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=6.417
+[2026-11-09 09:52:58.354] [info] [particle-debug] p0 pos=(-252.54,32.98) size=0.76 alpha=0.768
+[2026-11-09 09:52:58.380] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:58.381] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:58.381] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=6.458
+[2026-11-09 09:52:58.381] [info] [particle-debug] p0 pos=(-252.06,31.38) size=0.76 alpha=0.761
+[2026-11-09 09:52:58.410] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:58.411] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:58.411] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=6.500
+[2026-11-09 09:52:58.411] [info] [particle-debug] p0 pos=(-251.58,29.77) size=0.76 alpha=0.718
+[2026-11-09 09:52:58.442] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:58.442] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:58.442] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=6.542
+[2026-11-09 09:52:58.442] [info] [particle-debug] p0 pos=(-251.10,28.16) size=0.76 alpha=0.647
+[2026-11-09 09:52:58.471] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:58.471] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:58.472] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=6.583
+[2026-11-09 09:52:58.472] [info] [particle-debug] p0 pos=(-250.62,26.53) size=0.76 alpha=0.556
+[2026-11-09 09:52:58.497] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:58.497] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:58.497] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=6.625
+[2026-11-09 09:52:58.497] [info] [particle-debug] p0 pos=(-250.14,24.90) size=0.76 alpha=0.458
+[2026-11-09 09:52:58.525] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:58.526] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:58.526] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=6.667
+[2026-11-09 09:52:58.526] [info] [particle-debug] p0 pos=(-249.66,23.26) size=0.76 alpha=0.364
+[2026-11-09 09:52:58.552] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:58.552] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:58.553] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=6.708
+[2026-11-09 09:52:58.553] [info] [particle-debug] p0 pos=(-249.17,21.62) size=0.76 alpha=0.286
+[2026-11-09 09:52:58.583] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:58.583] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:58.584] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=6.750
+[2026-11-09 09:52:58.584] [info] [particle-debug] p0 pos=(-248.69,19.96) size=0.76 alpha=0.235
+[2026-11-09 09:52:58.612] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:58.612] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:58.613] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=6.792
+[2026-11-09 09:52:58.613] [info] [particle-debug] p0 pos=(-248.21,18.30) size=0.76 alpha=0.215
+[2026-11-09 09:52:58.639] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:58.639] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:58.639] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=6.833
+[2026-11-09 09:52:58.639] [info] [particle-debug] p0 pos=(-247.73,16.63) size=0.76 alpha=0.229
+[2026-11-09 09:52:58.665] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:58.665] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:58.665] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=6.875
+[2026-11-09 09:52:58.665] [info] [particle-debug] p0 pos=(-247.25,14.95) size=0.76 alpha=0.274
+[2026-11-09 09:52:58.694] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:58.694] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:58.694] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=6.917
+[2026-11-09 09:52:58.694] [info] [particle-debug] p0 pos=(-246.77,13.27) size=0.76 alpha=0.342
+[2026-11-09 09:52:58.721] [info] [video]   168/240 frames
+[2026-11-09 09:52:58.721] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:58.721] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:58.721] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=6.958
+[2026-11-09 09:52:58.721] [info] [particle-debug] p0 pos=(-246.29,11.57) size=0.76 alpha=0.423
+[2026-11-09 09:52:58.750] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:58.750] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:58.750] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=7.000
+[2026-11-09 09:52:58.750] [info] [particle-debug] p0 pos=(-245.81,9.87) size=0.76 alpha=0.507
+[2026-11-09 09:52:58.780] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:58.780] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:58.780] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=7.042
+[2026-11-09 09:52:58.780] [info] [particle-debug] p0 pos=(-245.33,8.15) size=0.76 alpha=0.582
+[2026-11-09 09:52:58.808] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:58.808] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:58.808] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=7.083
+[2026-11-09 09:52:58.808] [info] [particle-debug] p0 pos=(-244.85,6.43) size=0.76 alpha=0.636
+[2026-11-09 09:52:58.839] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:58.839] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:58.839] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=7.125
+[2026-11-09 09:52:58.839] [info] [particle-debug] p0 pos=(-244.38,4.70) size=0.76 alpha=0.664
+[2026-11-09 09:52:58.868] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:58.868] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:58.869] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=7.167
+[2026-11-09 09:52:58.869] [info] [particle-debug] p0 pos=(-243.90,2.96) size=0.76 alpha=0.661
+[2026-11-09 09:52:58.897] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:58.897] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:58.897] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=7.208
+[2026-11-09 09:52:58.897] [info] [particle-debug] p0 pos=(-243.42,1.22) size=0.76 alpha=0.628
+[2026-11-09 09:52:58.929] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:58.929] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:58.929] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=7.250
+[2026-11-09 09:52:58.929] [info] [particle-debug] p0 pos=(-242.95,-0.54) size=0.76 alpha=0.569
+[2026-11-09 09:52:58.959] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:58.959] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:58.959] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=7.292
+[2026-11-09 09:52:58.959] [info] [particle-debug] p0 pos=(-242.47,-2.31) size=0.76 alpha=0.492
+[2026-11-09 09:52:59.007] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:59.007] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:59.007] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=7.333
+[2026-11-09 09:52:59.007] [info] [particle-debug] p0 pos=(-241.99,-4.08) size=0.76 alpha=0.406
+[2026-11-09 09:52:59.035] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:59.035] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:59.036] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=7.375
+[2026-11-09 09:52:59.036] [info] [particle-debug] p0 pos=(-241.52,-5.86) size=0.76 alpha=0.324
+[2026-11-09 09:52:59.067] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:59.067] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:59.067] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=7.417
+[2026-11-09 09:52:59.067] [info] [particle-debug] p0 pos=(-241.04,-7.66) size=0.76 alpha=0.254
+[2026-11-09 09:52:59.113] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:59.113] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:59.113] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=7.458
+[2026-11-09 09:52:59.113] [info] [particle-debug] p0 pos=(-240.57,-9.46) size=0.76 alpha=0.206
+[2026-11-09 09:52:59.145] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:59.145] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:59.145] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=7.500
+[2026-11-09 09:52:59.145] [info] [particle-debug] p0 pos=(-240.10,-11.27) size=0.76 alpha=0.185
+[2026-11-09 09:52:59.174] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:59.174] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:59.174] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=7.542
+[2026-11-09 09:52:59.174] [info] [particle-debug] p0 pos=(-239.62,-13.10) size=0.76 alpha=0.193
+[2026-11-09 09:52:59.205] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:59.205] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:59.205] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=7.583
+[2026-11-09 09:52:59.205] [info] [particle-debug] p0 pos=(-239.15,-14.93) size=0.76 alpha=0.227
+[2026-11-09 09:52:59.235] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:59.235] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:59.235] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=7.625
+[2026-11-09 09:52:59.235] [info] [particle-debug] p0 pos=(-238.68,-16.77) size=0.76 alpha=0.282
+[2026-11-09 09:52:59.271] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:59.271] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:59.271] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=7.667
+[2026-11-09 09:52:59.271] [info] [particle-debug] p0 pos=(-238.21,-18.62) size=0.76 alpha=0.336
+[2026-11-09 09:52:59.319] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:59.319] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:59.319] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=7.708
+[2026-11-09 09:52:59.319] [info] [particle-debug] p0 pos=(-237.74,-20.49) size=0.76 alpha=0.377
+[2026-11-09 09:52:59.350] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:59.350] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:59.350] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=7.750
+[2026-11-09 09:52:59.350] [info] [particle-debug] p0 pos=(-237.27,-22.36) size=0.76 alpha=0.402
+[2026-11-09 09:52:59.381] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:59.381] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:59.381] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=7.792
+[2026-11-09 09:52:59.381] [info] [particle-debug] p0 pos=(-236.80,-24.25) size=0.76 alpha=0.406
+[2026-11-09 09:52:59.421] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:59.421] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:59.421] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=7.833
+[2026-11-09 09:52:59.421] [info] [particle-debug] p0 pos=(-236.33,-26.14) size=0.76 alpha=0.387
+[2026-11-09 09:52:59.451] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:59.451] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:59.452] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=7.875
+[2026-11-09 09:52:59.452] [info] [particle-debug] p0 pos=(-235.87,-28.04) size=0.76 alpha=0.348
+[2026-11-09 09:52:59.483] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:59.483] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:59.483] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=7.917
+[2026-11-09 09:52:59.483] [info] [particle-debug] p0 pos=(-235.40,-29.96) size=0.76 alpha=0.294
+[2026-11-09 09:52:59.513] [info] [video]   192/240 frames
+[2026-11-09 09:52:59.513] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:59.513] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:59.513] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=7.958
+[2026-11-09 09:52:59.513] [info] [particle-debug] p0 pos=(-234.93,-31.89) size=0.76 alpha=0.232
+[2026-11-09 09:52:59.543] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:59.543] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:59.543] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=8.000
+[2026-11-09 09:52:59.543] [info] [particle-debug] p0 pos=(-234.47,-33.83) size=0.76 alpha=0.170
+[2026-11-09 09:52:59.572] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:59.573] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:59.573] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=8.042
+[2026-11-09 09:52:59.573] [info] [particle-debug] p0 pos=(-234.00,-35.78) size=0.76 alpha=0.114
+[2026-11-09 09:52:59.605] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:59.605] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:59.605] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=8.083
+[2026-11-09 09:52:59.605] [info] [particle-debug] p0 pos=(-233.54,-37.74) size=0.76 alpha=0.069
+[2026-11-09 09:52:59.634] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:59.634] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:59.634] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=8.125
+[2026-11-09 09:52:59.634] [info] [particle-debug] p0 pos=(-233.08,-39.71) size=0.76 alpha=0.036
+[2026-11-09 09:52:59.665] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:59.665] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:59.665] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=8.167
+[2026-11-09 09:52:59.665] [info] [particle-debug] p0 pos=(-232.61,-41.69) size=0.76 alpha=0.015
+[2026-11-09 09:52:59.692] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:59.692] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:59.692] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=8.208
+[2026-11-09 09:52:59.692] [info] [particle-debug] p0 pos=(317.22,25.58) size=1.63 alpha=0.002
+[2026-11-09 09:52:59.722] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:59.722] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:59.722] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=8.250
+[2026-11-09 09:52:59.722] [info] [particle-debug] p0 pos=(317.55,24.72) size=1.63 alpha=0.101
+[2026-11-09 09:52:59.752] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:59.752] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:59.752] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=8.292
+[2026-11-09 09:52:59.752] [info] [particle-debug] p0 pos=(317.87,23.85) size=1.63 alpha=0.170
+[2026-11-09 09:52:59.782] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:59.782] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:59.782] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=8.333
+[2026-11-09 09:52:59.782] [info] [particle-debug] p0 pos=(318.19,22.97) size=1.63 alpha=0.207
+[2026-11-09 09:52:59.809] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:59.809] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:59.809] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=8.375
+[2026-11-09 09:52:59.809] [info] [particle-debug] p0 pos=(318.51,22.08) size=1.63 alpha=0.219
+[2026-11-09 09:52:59.838] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:59.838] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:59.838] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=8.417
+[2026-11-09 09:52:59.838] [info] [particle-debug] p0 pos=(318.82,21.18) size=1.63 alpha=0.220
+[2026-11-09 09:52:59.866] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:59.866] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:59.866] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=8.458
+[2026-11-09 09:52:59.867] [info] [particle-debug] p0 pos=(319.12,20.27) size=1.63 alpha=0.206
+[2026-11-09 09:52:59.904] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:59.904] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:59.904] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=8.500
+[2026-11-09 09:52:59.904] [info] [particle-debug] p0 pos=(319.42,19.34) size=1.63 alpha=0.204
+[2026-11-09 09:52:59.934] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:59.934] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:59.934] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=8.542
+[2026-11-09 09:52:59.934] [info] [particle-debug] p0 pos=(319.72,18.40) size=1.63 alpha=0.232
+[2026-11-09 09:52:59.965] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:59.965] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:59.965] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=8.583
+[2026-11-09 09:52:59.965] [info] [particle-debug] p0 pos=(320.01,17.45) size=1.63 alpha=0.286
+[2026-11-09 09:52:59.994] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:52:59.995] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:52:59.995] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=8.625
+[2026-11-09 09:52:59.995] [info] [particle-debug] p0 pos=(320.30,16.49) size=1.63 alpha=0.358
+[2026-11-09 09:53:00.027] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:53:00.027] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:53:00.027] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=8.667
+[2026-11-09 09:53:00.027] [info] [particle-debug] p0 pos=(320.58,15.52) size=1.63 alpha=0.438
+[2026-11-09 09:53:00.055] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:53:00.055] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:53:00.055] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=8.708
+[2026-11-09 09:53:00.055] [info] [particle-debug] p0 pos=(320.86,14.53) size=1.63 alpha=0.514
+[2026-11-09 09:53:00.086] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:53:00.086] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:53:00.086] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=8.750
+[2026-11-09 09:53:00.086] [info] [particle-debug] p0 pos=(321.13,13.53) size=1.63 alpha=0.576
+[2026-11-09 09:53:00.116] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:53:00.116] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:53:00.117] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=8.792
+[2026-11-09 09:53:00.117] [info] [particle-debug] p0 pos=(321.40,12.52) size=1.63 alpha=0.616
+[2026-11-09 09:53:00.146] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:53:00.146] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:53:00.146] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=8.833
+[2026-11-09 09:53:00.146] [info] [particle-debug] p0 pos=(321.67,11.50) size=1.63 alpha=0.629
+[2026-11-09 09:53:00.174] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:53:00.175] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:53:00.175] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=8.875
+[2026-11-09 09:53:00.175] [info] [particle-debug] p0 pos=(321.93,10.46) size=1.63 alpha=0.612
+[2026-11-09 09:53:00.205] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:53:00.205] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:53:00.205] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=8.917
+[2026-11-09 09:53:00.205] [info] [particle-debug] p0 pos=(322.19,9.41) size=1.63 alpha=0.568
+[2026-11-09 09:53:00.250] [info] [video]   216/240 frames
+[2026-11-09 09:53:00.250] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:53:00.250] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:53:00.250] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=8.958
+[2026-11-09 09:53:00.250] [info] [particle-debug] p0 pos=(322.45,8.35) size=1.63 alpha=0.503
+[2026-11-09 09:53:00.280] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:53:00.280] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:53:00.280] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=9.000
+[2026-11-09 09:53:00.280] [info] [particle-debug] p0 pos=(322.70,7.27) size=1.63 alpha=0.425
+[2026-11-09 09:53:00.310] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:53:00.310] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:53:00.310] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=9.042
+[2026-11-09 09:53:00.310] [info] [particle-debug] p0 pos=(322.95,6.18) size=1.63 alpha=0.345
+[2026-11-09 09:53:00.342] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:53:00.342] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:53:00.342] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=9.083
+[2026-11-09 09:53:00.342] [info] [particle-debug] p0 pos=(323.19,5.08) size=1.63 alpha=0.272
+[2026-11-09 09:53:00.371] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:53:00.371] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:53:00.371] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=9.125
+[2026-11-09 09:53:00.371] [info] [particle-debug] p0 pos=(323.43,3.96) size=1.63 alpha=0.216
+[2026-11-09 09:53:00.401] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:53:00.401] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:53:00.402] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=9.167
+[2026-11-09 09:53:00.402] [info] [particle-debug] p0 pos=(323.67,2.83) size=1.63 alpha=0.183
+[2026-11-09 09:53:00.430] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:53:00.430] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:53:00.430] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=9.208
+[2026-11-09 09:53:00.430] [info] [particle-debug] p0 pos=(323.91,1.69) size=1.63 alpha=0.177
+[2026-11-09 09:53:00.457] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:53:00.457] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:53:00.457] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=9.250
+[2026-11-09 09:53:00.457] [info] [particle-debug] p0 pos=(324.14,0.53) size=1.63 alpha=0.197
+[2026-11-09 09:53:00.486] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:53:00.486] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:53:00.486] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=9.292
+[2026-11-09 09:53:00.486] [info] [particle-debug] p0 pos=(324.37,-0.65) size=1.63 alpha=0.241
+[2026-11-09 09:53:00.514] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:53:00.514] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:53:00.514] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=9.333
+[2026-11-09 09:53:00.514] [info] [particle-debug] p0 pos=(324.59,-1.83) size=1.63 alpha=0.302
+[2026-11-09 09:53:00.541] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:53:00.541] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:53:00.541] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=9.375
+[2026-11-09 09:53:00.541] [info] [particle-debug] p0 pos=(324.81,-3.04) size=1.63 alpha=0.370
+[2026-11-09 09:53:00.570] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:53:00.570] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:53:00.570] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=9.417
+[2026-11-09 09:53:00.570] [info] [particle-debug] p0 pos=(325.03,-4.25) size=1.63 alpha=0.436
+[2026-11-09 09:53:00.600] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:53:00.600] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:53:00.600] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=9.458
+[2026-11-09 09:53:00.600] [info] [particle-debug] p0 pos=(325.25,-5.48) size=1.63 alpha=0.492
+[2026-11-09 09:53:00.629] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:53:00.629] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:53:00.629] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=9.500
+[2026-11-09 09:53:00.629] [info] [particle-debug] p0 pos=(325.46,-6.73) size=1.63 alpha=0.529
+[2026-11-09 09:53:00.658] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:53:00.658] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:53:00.658] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=9.542
+[2026-11-09 09:53:00.658] [info] [particle-debug] p0 pos=(325.67,-7.99) size=1.63 alpha=0.543
+[2026-11-09 09:53:00.685] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:53:00.685] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:53:00.685] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=9.583
+[2026-11-09 09:53:00.685] [info] [particle-debug] p0 pos=(325.88,-9.27) size=1.63 alpha=0.531
+[2026-11-09 09:53:00.713] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:53:00.713] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:53:00.713] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=9.625
+[2026-11-09 09:53:00.713] [info] [particle-debug] p0 pos=(326.09,-10.56) size=1.63 alpha=0.496
+[2026-11-09 09:53:00.745] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:53:00.746] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:53:00.746] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=9.667
+[2026-11-09 09:53:00.746] [info] [particle-debug] p0 pos=(326.29,-11.86) size=1.63 alpha=0.441
+[2026-11-09 09:53:00.771] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:53:00.771] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:53:00.771] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=9.708
+[2026-11-09 09:53:00.771] [info] [particle-debug] p0 pos=(326.49,-13.19) size=1.63 alpha=0.375
+[2026-11-09 09:53:00.801] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:53:00.801] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:53:00.801] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=9.750
+[2026-11-09 09:53:00.801] [info] [particle-debug] p0 pos=(326.69,-14.52) size=1.63 alpha=0.305
+[2026-11-09 09:53:00.828] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:53:00.828] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:53:00.828] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=9.792
+[2026-11-09 09:53:00.829] [info] [particle-debug] p0 pos=(326.89,-15.87) size=1.63 alpha=0.241
+[2026-11-09 09:53:00.858] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:53:00.859] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:53:00.859] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=9.833
+[2026-11-09 09:53:00.859] [info] [particle-debug] p0 pos=(327.09,-17.24) size=1.63 alpha=0.190
+[2026-11-09 09:53:00.907] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:53:00.907] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:53:00.907] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=9.875
+[2026-11-09 09:53:00.907] [info] [particle-debug] p0 pos=(327.28,-18.63) size=1.63 alpha=0.159
+[2026-11-09 09:53:00.935] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:53:00.936] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:53:00.936] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=9.917
+[2026-11-09 09:53:00.936] [info] [particle-debug] p0 pos=(327.47,-20.03) size=1.63 alpha=0.149
+[2026-11-09 09:53:00.961] [info] [video]   240/240 frames
+[2026-11-09 09:53:00.961] [info] [layer-debug] id='bg' type=3 emitter=false
+[2026-11-09 09:53:00.961] [info] [layer-debug] id='embers' type=5 emitter=true
+[2026-11-09 09:53:00.962] [info] [particle-debug] layer='embers' count=180 sampled=180 seconds=9.958
+[2026-11-09 09:53:00.962] [info] [particle-debug] p0 pos=(327.66,-21.44) size=1.63 alpha=0.153
+[2026-11-09 09:53:01.009] [info] [video] writer join complete
+[2026-11-09 09:53:01.009] [info] [drain-debug] start drain, capacity=6
+[2026-11-09 09:53:01.009] [info] [drain-debug] reap done, busy_count=0
+[2026-11-09 09:53:01.009] [info] [video] trimming framebuffer pool
+[2026-11-09 09:53:01.042] [info] [video] Released framebuffer pool — memory trimmed
+[2026-11-09 09:53:01.042] [info] [video] frame-loop cleanup complete
+[2026-11-09 09:53:01.042] [info] [video] Encoder write blocked duration: 1478.82 ms
+[2026-11-09 09:53:01.042] [info] [video_diag] conversion_and_copy_duration_ms: 3858 ms
+[2026-11-09 09:53:01.042] [info] [video_diag] conversion_bytes_written=746496000 encoder_staging_copy_bytes=0 encoder_slot_reuses=236
+[libx264 @ 0x555b29e1a000] frame I:5     Avg QP: 3.82  size:  2778
+[libx264 @ 0x555b29e1a000] frame P:235   Avg QP: 9.09  size:   937
+[libx264 @ 0x555b29e1a000] mb I  I16..4: 99.3%  0.1%  0.7%
+[libx264 @ 0x555b29e1a000] mb P  I16..4:  0.1%  0.2%  0.0%  P16..4:  1.7%  0.3%  0.1%  0.0%  0.0%    skip:97.6%
+[libx264 @ 0x555b29e1a000] 8x8 transform intra:7.6% inter:1.2%
+[libx264 @ 0x555b29e1a000] coded y,uvDC,uvAC intra: 3.3% 2.9% 2.7% inter: 0.2% 0.4% 0.4%
+[libx264 @ 0x555b29e1a000] i16 v,h,dc,p: 96%  2%  2%  0%
+[libx264 @ 0x555b29e1a000] i8 v,h,dc,ddl,ddr,vr,hd,vl,hu:  2%  4% 92%  0%  0%  0%  0%  0%  1%
+[libx264 @ 0x555b29e1a000] i4 v,h,dc,ddl,ddr,vr,hd,vl,hu:  4%  2% 90%  0%  1%  1%  1%  1%  1%
+[libx264 @ 0x555b29e1a000] i8c dc,h,v,p: 94%  3%  1%  1%
+[libx264 @ 0x555b29e1a000] Weighted P-Frames: Y:2.6% UV:0.0%
+[libx264 @ 0x555b29e1a000] kb/s:187.23
+[2026-11-09 09:53:01.531] [info] [video_adapter] Closed sink — 240 frames written, write_blocked=1478.82ms, close=488.90ms
+[2026-11-09 09:53:01.531] [info] [video] render_ms=7573.27 encode_ms=541.16 writer_encode_ms=5460.97 wall_ms=8860.96 nvml_stop_ms=0.15
+[2026-11-09 09:53:01.531] [info] [video] FFmpeg queue wait duration: 0.76 ms
+[2026-11-09 09:53:01.541] [info] [video] copy_eligible=true sha256=8d114a5dad7a966761da87faa8e4fdac8ef347d2ff4df03864d293981d20bd6d
+[2026-11-09 09:53:01.541] [info] [video] Wrote RenderingGen/UploadDrive/particle_lab_20261109/02_embers_1920x1080_10s.mp4
+[2026-11-09 09:53:01.541] [info] [startup-profile] total=244.23ms logger=0.03ms cli_bootstrap=2.85ms cli_parse=nullms composition=0.09ms plan_read=0.09ms json_parse=0.08ms plan_decode_validate=54.54ms asset_resolve=0.00ms plan_compile=2.47ms unaccounted=141.14ms
+[2026-11-09 09:53:01.565] [info] [video] Wrote exact per-frame timing sidecar: RenderingGen/UploadDrive/particle_lab_20261109/02_embers_1920x1080_10s.mp4.timing.json
+[2026-11-09 09:53:01.572] [info] [INFO] job-lifecycle: slot_pool_close_ms=0.0 surface_release_ms=0.0
+[2026-11-09 09:53:01.616] [info] [INFO] job-lifecycle: queue_close_ms=0.0 writer_join_ms=0.0 encoder_reset_ms=2.5 decoder_reset_ms=0.0 full_graph_reset_ms=44.4 sink_ctx_reset_ms=0.0 device_runtime_reset_ms=0.0 device_reservation_reset_ms=0.0
+[2026-11-09 09:53:01.616] [info] [INFO] job-lifecycle: sidecar_write_ms=28.2 session_teardown_ms=47.2
+[2026-11-09 09:53:01.626] [info] [INFO] job-lifecycle: post_sidecar_to_receipt_ms=56.7
+[2026-11-09 09:53:01.626] [info] [INFO] job-lifecycle: execute_ms=8955.5 caller_tail_ms=0.0 receipt_deferred=0

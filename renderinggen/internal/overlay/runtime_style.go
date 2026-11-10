@@ -48,6 +48,14 @@ func itemHasCaption(item semanticItem) bool {
 }
 
 func validateTextRuntimeOverrides(params map[string]any, itemID string, kind ItemKind, presetID string, hasImage, hasEntityCaption bool) error {
+	// Cursor controls are recognized only so they can fail closed on every item
+	// kind. Chronon has no caret primitive, so accepting them here would validate
+	// a control the renderer cannot draw.
+	for _, key := range runtimeUnsupportedTextStyleKeys {
+		if _, exists := params[key]; exists {
+			return fmt.Errorf("overlay: item %q params.%s is not supported by the Chronon text lowering; remove cursor controls", itemID, key)
+		}
+	}
 	captionedEntityImage := (isEntityKind(kind) || isImageKind(kind)) && hasImage && hasEntityCaption
 	if isShapeKind(kind) || isImageKind(kind) || isVideoKind(kind) || (isEntityKind(kind) && hasImage) {
 		imageKeys := make(map[string]bool, len(runtimeImageStyleKeys))
@@ -121,66 +129,136 @@ func validateTextRuntimeOverrides(params map[string]any, itemID string, kind Ite
 	return nil
 }
 
-// validateRuntimeTextStyleKey is the single validator for one runtime text
-// override value. Text layers and captioned entity images share it so the
-// payload's font, glow, stroke, size and shadow obey one contract wherever
-// a caption can render them.
-func validateRuntimeTextStyleKey(key string, value any, itemID string) error {
-	switch key {
-	case "fill", "glow_color":
-		color, ok := value.(string)
-		if !ok || !isHexColor(color) {
-			return fmt.Errorf("overlay: item %q params.%s must be #RRGGBB", itemID, key)
+// runtimeTextStyle is the typed, validated form of the item-local text
+// controls. The decoder below is the only place that reads these keys: the
+// validator and the lowering must not maintain separate switches, because a
+// key added to one and forgotten in the other becomes a silent no-op.
+type runtimeTextStyle struct {
+	FontPath        string
+	FontSizePX      *float64
+	Fill            *string
+	GlowSize        *float64
+	GlowColor       *string
+	StrokeSize      *float64
+	ShadowBlurPX    *float64
+	ShadowOpacity   *float64
+	ShadowOffsetXPX *float64
+	ShadowOffsetYPX *float64
+}
+
+func (s runtimeTextStyle) empty() bool {
+	return s.FontPath == "" && s.FontSizePX == nil && s.Fill == nil &&
+		s.GlowSize == nil && s.GlowColor == nil && s.StrokeSize == nil &&
+		s.ShadowBlurPX == nil && s.ShadowOpacity == nil &&
+		s.ShadowOffsetXPX == nil && s.ShadowOffsetYPX == nil
+}
+
+// decodeRuntimeTextStyle parses the controls once, for validation and lowering.
+// Any present but malformed value is an error, never a skipped key.
+func decodeRuntimeTextStyle(params map[string]any) (runtimeTextStyle, error) {
+	var style runtimeTextStyle
+	if len(params) == 0 {
+		return style, nil
+	}
+	// Chronon has no caret primitive and the overlay schema's cursor controls
+	// have no lowering. Accepting them here would validate a control that never
+	// reaches the renderer; fail closed until the renderer grows the primitive.
+	for _, key := range runtimeUnsupportedTextStyleKeys {
+		if _, exists := params[key]; exists {
+			return runtimeTextStyle{}, fmt.Errorf("params.%s is not supported by the Chronon text lowering; remove cursor controls", key)
 		}
-	case "font_family":
+	}
+	if value, exists := params["font_family"]; exists {
 		family, ok := value.(string)
 		if !ok {
-			return fmt.Errorf("overlay: item %q params.font_family must be a string family id", itemID)
+			return runtimeTextStyle{}, fmt.Errorf("params.font_family must be a string family id")
 		}
-		if _, ok := runtimeFontPath(family); !ok {
-			return fmt.Errorf("overlay: item %q params.font_family %q is unsupported (supported: %s)", itemID, family, strings.Join(runtimeFontFamilies(), ", "))
+		fontPath, ok := runtimeFontPath(family)
+		if !ok {
+			return runtimeTextStyle{}, fmt.Errorf("params.font_family %q is unsupported (supported: %s)", family, strings.Join(runtimeFontFamilies(), ", "))
 		}
-	case "glow_size":
-		if _, err := boundedRuntimeSize(value, key, maxRuntimeGlowSize); err != nil {
-			return fmt.Errorf("overlay: item %q %w", itemID, err)
+		style.FontPath = fontPath
+	}
+	if value, exists := params["font_size_px"]; exists {
+		n, ok := value.(float64)
+		if !ok || !finite(n) || n <= 0 || n > maxRuntimeFontSize {
+			return runtimeTextStyle{}, fmt.Errorf("params.font_size_px must be greater than 0 and at most %g pixels", maxRuntimeFontSize)
 		}
-	case "stroke_size":
-		if _, err := boundedRuntimeSize(value, key, maxRuntimeStrokeSize); err != nil {
-			return fmt.Errorf("overlay: item %q %w", itemID, err)
+		style.FontSizePX = &n
+	}
+	if value, exists := params["fill"]; exists {
+		color, err := runtimeColor(value, "fill")
+		if err != nil {
+			return runtimeTextStyle{}, err
 		}
-	case "font_size_px":
-		if n, ok := value.(float64); !ok || !finite(n) || n <= 0 || n > maxRuntimeFontSize {
-			return fmt.Errorf("overlay: item %q params.font_size_px must be greater than 0 and at most %g pixels", itemID, maxRuntimeFontSize)
+		style.Fill = &color
+	}
+	if value, exists := params["glow_color"]; exists {
+		color, err := runtimeColor(value, "glow_color")
+		if err != nil {
+			return runtimeTextStyle{}, err
 		}
-	case "shadow_blur_px", "shadow_offset_x_px", "shadow_offset_y_px":
-		if key == "shadow_blur_px" {
-			if _, err := boundedRuntimeSize(value, key, maxRuntimeShadowSize); err != nil {
-				return fmt.Errorf("overlay: item %q %w", itemID, err)
-			}
-		} else if n, ok := value.(float64); !ok || !finite(n) || math.Abs(n) > maxRuntimeShadowSize {
-			return fmt.Errorf("overlay: item %q params.%s must be between -%g and %g pixels", itemID, key, maxRuntimeShadowSize, maxRuntimeShadowSize)
-		}
-	case "shadow_opacity":
-		if _, err := boundedRuntimeSize(value, key, 1); err != nil {
-			return fmt.Errorf("overlay: item %q %w", itemID, err)
-		}
-	case "cursor_color":
-		color, ok := value.(string)
-		if !ok || !isHexColor(color) {
-			return fmt.Errorf("overlay: item %q params.cursor_color must be #RRGGBB", itemID)
-		}
-	case "cursor_width_px":
-		if _, err := boundedRuntimeSize(value, key, maxRuntimeStrokeSize); err != nil {
-			return fmt.Errorf("overlay: item %q %w", itemID, err)
-		}
-	case "cursor_height_px":
-		if _, err := boundedRuntimeSize(value, key, maxRuntimeShadowSize); err != nil {
-			return fmt.Errorf("overlay: item %q %w", itemID, err)
-		}
-	case "cursor_blink":
-		if _, ok := value.(bool); !ok {
-			return fmt.Errorf("overlay: item %q params.cursor_blink must be a boolean", itemID)
-		}
+		style.GlowColor = &color
+	}
+	var err error
+	if style.GlowSize, err = runtimeNumberPointer(params, "glow_size", maxRuntimeGlowSize, "pixels"); err != nil {
+		return runtimeTextStyle{}, err
+	}
+	if style.StrokeSize, err = runtimeNumberPointer(params, "stroke_size", maxRuntimeStrokeSize, "pixels"); err != nil {
+		return runtimeTextStyle{}, err
+	}
+	if style.ShadowBlurPX, err = runtimeNumberPointer(params, "shadow_blur_px", maxRuntimeShadowSize, "pixels"); err != nil {
+		return runtimeTextStyle{}, err
+	}
+	if style.ShadowOpacity, err = runtimeNumberPointer(params, "shadow_opacity", 1, ""); err != nil {
+		return runtimeTextStyle{}, err
+	}
+	if style.ShadowOffsetXPX, err = runtimeSignedNumber(params, "shadow_offset_x_px", maxRuntimeShadowSize); err != nil {
+		return runtimeTextStyle{}, err
+	}
+	if style.ShadowOffsetYPX, err = runtimeSignedNumber(params, "shadow_offset_y_px", maxRuntimeShadowSize); err != nil {
+		return runtimeTextStyle{}, err
+	}
+	return style, nil
+}
+
+func runtimeColor(value any, key string) (string, error) {
+	color, ok := value.(string)
+	if !ok || !isHexColor(color) {
+		return "", fmt.Errorf("params.%s must be #RRGGBB", key)
+	}
+	return color, nil
+}
+
+func runtimeNumberPointer(params map[string]any, key string, maximum float64, unit string) (*float64, error) {
+	value, exists := params[key]
+	if !exists {
+		return nil, nil
+	}
+	number, err := boundedRuntimeNumber(value, key, maximum, unit)
+	if err != nil {
+		return nil, err
+	}
+	return &number, nil
+}
+
+func runtimeSignedNumber(params map[string]any, key string, maximum float64) (*float64, error) {
+	value, exists := params[key]
+	if !exists {
+		return nil, nil
+	}
+	number, ok := value.(float64)
+	if !ok || !finite(number) || math.Abs(number) > maximum {
+		return nil, fmt.Errorf("params.%s must be between -%g and %g pixels", key, maximum, maximum)
+	}
+	return &number, nil
+}
+
+// validateRuntimeTextStyleKey validates one key through the same decoder the
+// lowering uses. Text layers and captioned entity images share it.
+func validateRuntimeTextStyleKey(key string, value any, itemID string) error {
+	if _, err := decodeRuntimeTextStyle(map[string]any{key: value}); err != nil {
+		return fmt.Errorf("overlay: item %q %w", itemID, err)
 	}
 	return nil
 }
@@ -188,6 +266,12 @@ func validateRuntimeTextStyleKey(key string, value any, itemID string) error {
 var runtimeTextStyleKeys = []string{
 	"font_family", "font_size_px", "fill", "glow_size", "glow_color", "stroke_size",
 	"shadow_blur_px", "shadow_opacity", "shadow_offset_x_px", "shadow_offset_y_px",
+}
+
+// runtimeUnsupportedTextStyleKeys are recognized only to reject them. They used
+// to be advertised by the overlay schema and silently ignored by the lowering;
+// Chronon has no caret primitive, so the contract no longer carries them.
+var runtimeUnsupportedTextStyleKeys = []string{
 	"cursor_color", "cursor_width_px", "cursor_height_px", "cursor_blink",
 }
 
@@ -277,113 +361,43 @@ func validateRuntimeImageStyleKey(key string, value any, itemID string) error {
 	return nil
 }
 
-func boundedRuntimeSize(value any, key string, maximum float64) (float64, error) {
-	size, ok := value.(float64)
+func boundedRuntimeNumber(value any, key string, maximum float64, unit string) (float64, error) {
+	number, ok := value.(float64)
 	if !ok {
 		return 0, fmt.Errorf("params.%s must be a number", key)
 	}
-	if !finite(size) || size < 0 || size > maximum {
-		return 0, fmt.Errorf("params.%s must be between 0 and %g pixels", key, maximum)
+	if !finite(number) || number < 0 || number > maximum {
+		if unit == "" {
+			return 0, fmt.Errorf("params.%s must be between 0 and %g", key, maximum)
+		}
+		return 0, fmt.Errorf("params.%s must be between 0 and %g %s", key, maximum, unit)
 	}
-	return size, nil
-}
-
-// runtimeNumber reads one runtime control out of the merged override map.
-//
-// PRESENCE decides whether a control applies, never the outcome of a type
-// assertion: the second return value of a bare `value.(float64)` was used as the
-// "has this control" flag, so a control that was present but not a number
-// vanished from the plan with no error at all — the layer rendered with the
-// preset's own styling and nothing said why. Every control this function reads
-// is therefore either a finite number or a build-time error.
-func runtimeNumber(params map[string]any, key string) (float64, bool, error) {
-	value, exists := params[key]
-	if !exists {
-		return 0, false, nil
-	}
-	number, ok := value.(float64)
-	if !ok || !finite(number) {
-		return 0, true, fmt.Errorf("params.%s must be a finite number", key)
-	}
-	return number, true, nil
+	return number, nil
 }
 
 func applyTextRuntimeOverrides(layer *Layer, params map[string]any) error {
-	if len(params) == 0 {
-		return nil
-	}
-	fontPath := ""
-	if value, exists := params["font_family"]; exists {
-		family, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("params.font_family must be a string family id")
-		}
-		var supported bool
-		fontPath, supported = runtimeFontPath(family)
-		if !supported {
-			return fmt.Errorf("unsupported font family %q", family)
-		}
-	}
-	hasFont := fontPath != ""
-	fill := ""
-	if value, exists := params["fill"]; exists {
-		color, ok := value.(string)
-		if !ok || !isHexColor(color) {
-			return fmt.Errorf("params.fill must be #RRGGBB")
-		}
-		fill = color
-	}
-	glowColor := ""
-	hasGlowColor := false
-	if value, exists := params["glow_color"]; exists {
-		color, ok := value.(string)
-		if !ok || !isHexColor(color) {
-			return fmt.Errorf("params.glow_color must be #RRGGBB")
-		}
-		glowColor, hasGlowColor = color, true
-	}
-	glowSize, hasGlow, err := runtimeNumber(params, "glow_size")
+	style, err := decodeRuntimeTextStyle(params)
 	if err != nil {
 		return err
 	}
-	strokeSize, hasStroke, err := runtimeNumber(params, "stroke_size")
-	if err != nil {
-		return err
-	}
-	fontSize, hasFontSize, err := runtimeNumber(params, "font_size_px")
-	if err != nil {
-		return err
-	}
-	shadowBlur, hasShadowBlur, err := runtimeNumber(params, "shadow_blur_px")
-	if err != nil {
-		return err
-	}
-	shadowOpacity, hasShadowOpacity, err := runtimeNumber(params, "shadow_opacity")
-	if err != nil {
-		return err
-	}
-	shadowOffsetX, hasShadowOffsetX, err := runtimeNumber(params, "shadow_offset_x_px")
-	if err != nil {
-		return err
-	}
-	shadowOffsetY, hasShadowOffsetY, err := runtimeNumber(params, "shadow_offset_y_px")
-	if err != nil {
-		return err
-	}
-	hasShadow := hasShadowBlur || hasShadowOpacity || hasShadowOffsetX || hasShadowOffsetY
-	if !hasFont && fill == "" && !hasGlow && !hasGlowColor && !hasStroke && !hasFontSize && !hasShadow {
+	return applyDecodedTextRuntimeOverrides(layer, style)
+}
+
+func applyDecodedTextRuntimeOverrides(layer *Layer, style runtimeTextStyle) error {
+	if style.empty() {
 		return nil
 	}
 	if layer.Style == nil {
 		return fmt.Errorf("text runtime overrides require a preset style")
 	}
-	if hasFont {
-		layer.Style.Font = fontPath
+	if style.FontPath != "" {
+		layer.Style.Font = style.FontPath
 	}
-	if fill != "" {
-		layer.Style.Fill = fill
+	if style.Fill != nil {
+		layer.Style.Fill = *style.Fill
 	}
-	if hasFontSize {
+	if style.FontSizePX != nil {
+		fontSize := *style.FontSizePX
 		layer.Style.FontSize = fontSize
 		if layer.Style.FitMode != "" && layer.Style.FitMode != "none" {
 			// Keep shrink-only fitting bounded by the runtime-authored size,
@@ -395,7 +409,8 @@ func applyTextRuntimeOverrides(layer *Layer, params map[string]any) error {
 			}
 		}
 	}
-	if hasGlow {
+	if style.GlowSize != nil {
+		glowSize := *style.GlowSize
 		if glowSize == 0 {
 			layer.Style.Glow = nil
 		} else {
@@ -409,12 +424,13 @@ func applyTextRuntimeOverrides(layer *Layer, params map[string]any) error {
 			layer.Style.Glow = &glow
 		}
 	}
-	if hasGlowColor && layer.Style.Glow != nil {
+	if style.GlowColor != nil && layer.Style.Glow != nil {
 		glow := *layer.Style.Glow
-		glow.Color = glowColor
+		glow.Color = *style.GlowColor
 		layer.Style.Glow = &glow
 	}
-	if hasStroke {
+	if style.StrokeSize != nil {
+		strokeSize := *style.StrokeSize
 		if strokeSize == 0 {
 			layer.Style.Stroke = nil
 		} else {
@@ -425,29 +441,31 @@ func applyTextRuntimeOverrides(layer *Layer, params map[string]any) error {
 			layer.Style.Stroke = &LayerStroke{Color: color, Width: strokeSize}
 		}
 	}
+	hasShadow := style.ShadowBlurPX != nil || style.ShadowOpacity != nil ||
+		style.ShadowOffsetXPX != nil || style.ShadowOffsetYPX != nil
 	if hasShadow {
 		shadow := LayerShadow{Color: "#000000", Opacity: 0.8, Blur: 8, Offset: []float64{0, 4}}
 		if layer.Style.Shadow != nil {
 			shadow = *layer.Style.Shadow
 			shadow.Offset = append([]float64(nil), layer.Style.Shadow.Offset...)
 		}
-		if hasShadowBlur {
-			shadow.Blur = shadowBlur
+		if style.ShadowBlurPX != nil {
+			shadow.Blur = *style.ShadowBlurPX
 		}
-		if hasShadowOpacity {
-			shadow.Opacity = shadowOpacity
+		if style.ShadowOpacity != nil {
+			shadow.Opacity = *style.ShadowOpacity
 		}
-		if hasShadowOffsetX {
+		if style.ShadowOffsetXPX != nil {
 			if len(shadow.Offset) < 2 {
 				shadow.Offset = []float64{0, 0}
 			}
-			shadow.Offset[0] = shadowOffsetX
+			shadow.Offset[0] = *style.ShadowOffsetXPX
 		}
-		if hasShadowOffsetY {
+		if style.ShadowOffsetYPX != nil {
 			if len(shadow.Offset) < 2 {
 				shadow.Offset = []float64{0, 0}
 			}
-			shadow.Offset[1] = shadowOffsetY
+			shadow.Offset[1] = *style.ShadowOffsetYPX
 		}
 		// Zero opacity is the documented "disable" switch, the same way a zero
 		// glow/stroke size disables those effects. A shadow at zero opacity

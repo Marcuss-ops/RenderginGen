@@ -2,8 +2,8 @@ package media
 
 import (
 	"context"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/testenv"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -13,9 +13,7 @@ import (
 // fixture, and that the gate uses the CONFIGURED binary (a wrapper path must be
 // honoured here exactly as in the probe paths).
 func TestValidateDecodeAcceptsARealArtifact(t *testing.T) {
-	if _, err := exec.LookPath("ffmpeg"); err != nil {
-		t.Skipf("ffmpeg not installed: %v", err)
-	}
+	testenv.RequireTools(t, "ffmpeg")
 	path := goldenFixture(t, "background.mp4")
 	if err := ValidateDecode(context.Background(), path); err != nil {
 		t.Fatalf("a decodable artifact must pass: %v", err)
@@ -26,9 +24,7 @@ func TestValidateDecodeAcceptsARealArtifact(t *testing.T) {
 // is not media at all must be reported with the tool's own diagnostics, and a
 // missing file must fail rather than pass vacuously.
 func TestValidateDecodeRejectsAnUndecodableFile(t *testing.T) {
-	if _, err := exec.LookPath("ffmpeg"); err != nil {
-		t.Skipf("ffmpeg not installed: %v", err)
-	}
+	testenv.RequireTools(t, "ffmpeg")
 	dir := t.TempDir()
 	notMedia := filepath.Join(dir, "not-media.mp4")
 	if err := os.WriteFile(notMedia, []byte("this is not an MP4"), 0o644); err != nil {
@@ -43,9 +39,7 @@ func TestValidateDecodeRejectsAnUndecodableFile(t *testing.T) {
 }
 
 func TestCountDecodedFrames(t *testing.T) {
-	if _, err := exec.LookPath("ffprobe"); err != nil {
-		t.Fatal(err)
-	}
+	testenv.RequireTools(t, "ffprobe")
 	count, err := CountDecodedFrames(context.Background(), goldenFixture(t, "background.mp4"))
 	if err != nil || count <= 0 {
 		t.Fatalf("full scan = %d, %v", count, err)
@@ -87,9 +81,7 @@ func TestValidateDecodeReportsTheConfiguredBinary(t *testing.T) {
 // sampled gate on the checked-in fixture: real media passes all three
 // deterministic passes (keyframe traversal, head, tail).
 func TestValidateDecodeSampledAcceptsARealArtifact(t *testing.T) {
-	if _, err := exec.LookPath("ffmpeg"); err != nil {
-		t.Skipf("ffmpeg not installed: %v", err)
-	}
+	testenv.RequireTools(t, "ffmpeg")
 	path := goldenFixture(t, "background.mp4")
 	if err := ValidateDecodeSampled(context.Background(), path); err != nil {
 		t.Fatalf("a decodable artifact must pass the sampled gate: %v", err)
@@ -100,9 +92,7 @@ func TestValidateDecodeSampledAcceptsARealArtifact(t *testing.T) {
 // anything that is not media fails the sampled gate, and a missing file fails
 // rather than passing vacuously.
 func TestValidateDecodeSampledRejectsAnUndecodableFile(t *testing.T) {
-	if _, err := exec.LookPath("ffmpeg"); err != nil {
-		t.Skipf("ffmpeg not installed: %v", err)
-	}
+	testenv.RequireTools(t, "ffmpeg")
 	dir := t.TempDir()
 	notMedia := filepath.Join(dir, "not-media.mp4")
 	if err := os.WriteFile(notMedia, []byte("this is not an MP4"), 0o644); err != nil {

@@ -460,6 +460,9 @@ func resolveSemanticItems(src *semanticPlan) ([]resolvedItem, error) {
 			spec.Family = PresetText
 		}
 		params := mergeSemanticParams(item.Params, item.Style)
+		if _, requested := params["image_backdrop"]; requested && !isImageKind(kind) {
+			return nil, fmt.Errorf("overlay: item %q image_backdrop is valid only for image items", item.ID)
+		}
 		ri := resolvedItem{Item: item, Spec: spec, Kind: kind, Params: params, Start: start, End: end}
 
 		if isImageKind(kind) && kind != KindLightLeak && len(item.Assets) == 0 && len(item.ImageLayers) == 0 {

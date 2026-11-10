@@ -1,0 +1,148 @@
+{
+  "schema": "chrononplugin.socials-showcase.v1",
+  "date": "2026-11-09",
+  "generator": "chrononplugin_emit_socials_showcase",
+  "canvas": {
+    "width": 1920,
+    "height": 1080,
+    "fps": 30
+  },
+  "stack": {
+    "authoring": "C++ RenderPlan V3 social layouts",
+    "surfaces": "native SDF rounded_rect / ellipse layers (18-layer budget)",
+    "motion": "opacity, position, scale, rotation_z, progress tracks",
+    "typography": "native Inter text + DejaVu symbol glyphs",
+    "backend": "vulkan / require_gpu_native / nvenc"
+  },
+  "drive": {
+    "folder_id": "1J_xUGo_bchzXDIGqSX04CU44c_Dm3SxS",
+    "folder_url": "https://drive.google.com/drive/u/1/folders/1J_xUGo_bchzXDIGqSX04CU44c_Dm3SxS",
+    "placement": "root"
+  },
+  "clips": [
+    {
+      "id": "x_post",
+      "platform": "x",
+      "label": "X / post card",
+      "plan": "plans/01_x_post.plan.json",
+      "mp4": "mp4/Socials_01_X_Post_1920x1080_8s.mp4",
+      "drive_name": "Socials_01_X_Post_1920x1080_8s.mp4",
+      "frames": 240,
+      "duration_s": 8.0,
+      "width": 1920,
+      "height": 1080,
+      "fps": "30/1",
+      "bytes": 1004343,
+      "sha256": "66a2402e07d659b8354470a40e4328ae8309cbdcdd43c19580958c43bb9aa774",
+      "verified": true,
+      "verified_at": "2026-11-09T09:17:22",
+      "foreground_ratio": 0.023658,
+      "foreground_ratios": [
+        0.013843,
+        0.023658,
+        0.024019
+      ],
+      "stills": [
+        "stills/x_post_early.png",
+        "stills/x_post_mid.png",
+        "stills/x_post_late.png"
+      ],
+      "uploaded": true,
+      "drive_id": "1hOFMeXgU212jIJlxzsjF2JryC7PsSqU2",
+      "drive_url": "https://drive.google.com/file/d/1hOFMeXgU212jIJlxzsjF2JryC7PsSqU2/view?usp=drivesdk"
+    },
+    {
+      "id": "reddit_thread",
+      "platform": "reddit",
+      "label": "Reddit / thread cascade",
+      "plan": "plans/02_reddit_thread.plan.json",
+      "mp4": "mp4/Socials_02_Reddit_Thread_1920x1080_8s.mp4",
+      "drive_name": "Socials_02_Reddit_Thread_1920x1080_8s.mp4",
+      "frames": 240,
+      "duration_s": 8.0,
+      "width": 1920,
+      "height": 1080,
+      "fps": "30/1",
+      "bytes": 935452,
+      "sha256": "bea892754909aa278f3840cd38660cea30e719d5e782f7dec40bffa841f94291",
+      "verified": true,
+      "verified_at": "2026-11-09T09:17:24",
+      "foreground_ratio": 0.01941,
+      "foreground_ratios": [
+        0.014796,
+        0.01941,
+        0.01941
+      ],
+      "stills": [
+        "stills/reddit_thread_early.png",
+        "stills/reddit_thread_mid.png",
+        "stills/reddit_thread_late.png"
+      ],
+      "uploaded": true,
+      "drive_id": "1bkYLpoUDweA-NHAIgPWiZVfMt3ZevSRs",
+      "drive_url": "https://drive.google.com/file/d/1bkYLpoUDweA-NHAIgPWiZVfMt3ZevSRs/view?usp=drivesdk"
+    },
+    {
+      "id": "youtube_comment",
+      "platform": "youtube",
+      "label": "YouTube / comment highlight",
+      "plan": "plans/03_youtube_comment.plan.json",
+      "mp4": "mp4/Socials_03_YouTube_Comment_1920x1080_8s.mp4",
+      "drive_name": "Socials_03_YouTube_Comment_1920x1080_8s.mp4",
+      "frames": 240,
+      "duration_s": 8.0,
+      "width": 1920,
+      "height": 1080,
+      "fps": "30/1",
+      "bytes": 1083784,
+      "sha256": "da48758f339782468e526e6a8d6d73c5a3ff1b2555d921acd55bc50cce752b0b",
+      "verified": true,
+      "verified_at": "2026-11-09T09:17:25",
+      "foreground_ratio": 0.022948,
+      "foreground_ratios": [
+        0.016033,
+        0.022948,
+        0.023497
+      ],
+      "stills": [
+        "stills/youtube_comment_early.png",
+        "stills/youtube_comment_mid.png",
+        "stills/youtube_comment_late.png"
+      ],
+      "uploaded": true,
+      "drive_id": "1z4ajOB8XvlpjEWWhSZiq9pzTjq724NDJ",
+      "drive_url": "https://drive.google.com/file/d/1z4ajOB8XvlpjEWWhSZiq9pzTjq724NDJ/view?usp=drivesdk"
+    },
+    {
+      "id": "tiktok_overlay",
+      "platform": "tiktok",
+      "label": "TikTok / vertical overlay",
+      "plan": "plans/04_tiktok_overlay.plan.json",
+      "mp4": "mp4/Socials_04_TikTok_Overlay_1920x1080_8s.mp4",
+      "drive_name": "Socials_04_TikTok_Overlay_1920x1080_8s.mp4",
+      "frames": 240,
+      "duration_s": 8.0,
+      "width": 1920,
+      "height": 1080,
+      "fps": "30/1",
+      "bytes": 694753,
+      "sha256": "6e0f28232feeb05136cb233b144cb80034b1737384e6199f967a5c1d12d3ede1",
+      "verified": true,
+      "verified_at": "2026-11-09T09:17:27",
+      "foreground_ratio": 0.018365,
+      "foreground_ratios": [
+        0.015643,
+        0.018365,
+        0.015757
+      ],
+      "stills": [
+        "stills/tiktok_overlay_early.png",
+        "stills/tiktok_overlay_mid.png",
+        "stills/tiktok_overlay_late.png"
+      ],
+      "uploaded": true,
+      "drive_id": "1uTLgZwp3MLoizCMHCP2yu-4PzccCORyH",
+      "drive_url": "https://drive.google.com/file/d/1uTLgZwp3MLoizCMHCP2yu-4PzccCORyH/view?usp=drivesdk"
+    }
+  ]
+}

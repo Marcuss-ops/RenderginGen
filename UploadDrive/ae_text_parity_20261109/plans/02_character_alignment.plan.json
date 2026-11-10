@@ -1,0 +1,423 @@
+{
+  "schema": "chronon.render-plan.v3",
+  "version": 3,
+  "job_id": "ae_text_02_character_alignment",
+  "canvas": {
+    "width": 1920,
+    "height": 1080,
+    "fps_num": 30,
+    "fps_den": 1,
+    "duration_frames": 180
+  },
+  "layers": [
+    {
+      "id": "backdrop",
+      "type": "color",
+      "color": [
+        0.004,
+        0.008,
+        0.014,
+        1.0
+      ],
+      "size": [
+        1920.0,
+        1080.0
+      ],
+      "position": [
+        0.0,
+        0.0
+      ],
+      "start_frame": 0,
+      "duration_frames": 180
+    },
+    {
+      "id": "label_left",
+      "type": "text",
+      "text": "LEFT",
+      "size": [
+        1920.0,
+        1080.0
+      ],
+      "position": [
+        250.0,
+        330.0
+      ],
+      "start_frame": 0,
+      "duration_frames": 180,
+      "style": {
+        "font": "assets/fonts/SF-Pro-Display-Semibold.otf",
+        "font_size": 40.0,
+        "fill": "#5E7690"
+      }
+    },
+    {
+      "id": "marker_left",
+      "type": "text",
+      "text": "X                          X",
+      "size": [
+        1920.0,
+        1080.0
+      ],
+      "position": [
+        960.0,
+        330.0
+      ],
+      "start_frame": 0,
+      "duration_frames": 180,
+      "style": {
+        "font": "assets/fonts/SF-Pro-Display-Semibold.otf",
+        "font_size": 110.0,
+        "fill": "#F4FAFF"
+      },
+      "animation": {
+        "tracks": [
+          {
+            "property": "opacity",
+            "easing": "out_cubic",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 0.0
+              },
+              {
+                "frame": 12,
+                "value": 1.0
+              },
+              {
+                "frame": 179,
+                "value": 1.0
+              }
+            ]
+          }
+        ]
+      },
+      "text_animators": [
+        {
+          "id": "alignment_left",
+          "selectors": [
+            {
+              "unit": "glyph",
+              "shape": "square",
+              "order": "forward",
+              "combine": "replace",
+              "exclude_spaces": true,
+              "start": {
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 51.0
+                  }
+                ]
+              },
+              "end": {
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 100.0
+                  }
+                ]
+              },
+              "amount": {
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0.0
+                  },
+                  {
+                    "frame": 20,
+                    "value": 0.0
+                  },
+                  {
+                    "frame": 80,
+                    "value": 100.0
+                  },
+                  {
+                    "frame": 140,
+                    "value": 0.0
+                  },
+                  {
+                    "frame": 179,
+                    "value": 0.0
+                  }
+                ]
+              }
+            }
+          ],
+          "properties": [
+            {
+              "property": "character_alignment",
+              "easing": "linear",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 0
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "label_center",
+      "type": "text",
+      "text": "CENTER",
+      "size": [
+        1920.0,
+        1080.0
+      ],
+      "position": [
+        250.0,
+        540.0
+      ],
+      "start_frame": 0,
+      "duration_frames": 180,
+      "style": {
+        "font": "assets/fonts/SF-Pro-Display-Semibold.otf",
+        "font_size": 40.0,
+        "fill": "#5E7690"
+      }
+    },
+    {
+      "id": "marker_center",
+      "type": "text",
+      "text": "X                          X",
+      "size": [
+        1920.0,
+        1080.0
+      ],
+      "position": [
+        960.0,
+        540.0
+      ],
+      "start_frame": 0,
+      "duration_frames": 180,
+      "style": {
+        "font": "assets/fonts/SF-Pro-Display-Semibold.otf",
+        "font_size": 110.0,
+        "fill": "#F4FAFF"
+      },
+      "animation": {
+        "tracks": [
+          {
+            "property": "opacity",
+            "easing": "out_cubic",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 0.0
+              },
+              {
+                "frame": 12,
+                "value": 1.0
+              },
+              {
+                "frame": 179,
+                "value": 1.0
+              }
+            ]
+          }
+        ]
+      },
+      "text_animators": [
+        {
+          "id": "alignment_center",
+          "selectors": [
+            {
+              "unit": "glyph",
+              "shape": "square",
+              "order": "forward",
+              "combine": "replace",
+              "exclude_spaces": true,
+              "start": {
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0.0
+                  }
+                ]
+              },
+              "end": {
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 49.0
+                  }
+                ]
+              },
+              "amount": {
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0.0
+                  },
+                  {
+                    "frame": 20,
+                    "value": 0.0
+                  },
+                  {
+                    "frame": 80,
+                    "value": 100.0
+                  },
+                  {
+                    "frame": 140,
+                    "value": 0.0
+                  },
+                  {
+                    "frame": 179,
+                    "value": 0.0
+                  }
+                ]
+              }
+            }
+          ],
+          "properties": [
+            {
+              "property": "character_alignment",
+              "easing": "linear",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 1
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "label_right",
+      "type": "text",
+      "text": "RIGHT",
+      "size": [
+        1920.0,
+        1080.0
+      ],
+      "position": [
+        250.0,
+        750.0
+      ],
+      "start_frame": 0,
+      "duration_frames": 180,
+      "style": {
+        "font": "assets/fonts/SF-Pro-Display-Semibold.otf",
+        "font_size": 40.0,
+        "fill": "#5E7690"
+      }
+    },
+    {
+      "id": "marker_right",
+      "type": "text",
+      "text": "X                          X",
+      "size": [
+        1920.0,
+        1080.0
+      ],
+      "position": [
+        960.0,
+        750.0
+      ],
+      "start_frame": 0,
+      "duration_frames": 180,
+      "style": {
+        "font": "assets/fonts/SF-Pro-Display-Semibold.otf",
+        "font_size": 110.0,
+        "fill": "#F4FAFF"
+      },
+      "animation": {
+        "tracks": [
+          {
+            "property": "opacity",
+            "easing": "out_cubic",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 0.0
+              },
+              {
+                "frame": 12,
+                "value": 1.0
+              },
+              {
+                "frame": 179,
+                "value": 1.0
+              }
+            ]
+          }
+        ]
+      },
+      "text_animators": [
+        {
+          "id": "alignment_right",
+          "selectors": [
+            {
+              "unit": "glyph",
+              "shape": "square",
+              "order": "forward",
+              "combine": "replace",
+              "exclude_spaces": true,
+              "start": {
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0.0
+                  }
+                ]
+              },
+              "end": {
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 49.0
+                  }
+                ]
+              },
+              "amount": {
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": 0.0
+                  },
+                  {
+                    "frame": 20,
+                    "value": 0.0
+                  },
+                  {
+                    "frame": 80,
+                    "value": 100.0
+                  },
+                  {
+                    "frame": 140,
+                    "value": 0.0
+                  },
+                  {
+                    "frame": 179,
+                    "value": 0.0
+                  }
+                ]
+              }
+            }
+          ],
+          "properties": [
+            {
+              "property": "character_alignment",
+              "easing": "linear",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 2
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "output": {
+    "path": "ae_text_02_character_alignment_1920x1080_6s.mp4",
+    "format": "mp4",
+    "codec": "h264"
+  }
+}

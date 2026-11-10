@@ -1,0 +1,791 @@
+{
+  "schema": "chronon.render-plan.v3",
+  "version": 3,
+  "job_id": "camera_ring_text_09_ogni_dettaglio_a_fuoco",
+  "canvas": {
+    "width": 1920,
+    "height": 1080,
+    "fps_num": 30,
+    "fps_den": 1,
+    "duration_frames": 180
+  },
+  "layers": [
+    {
+      "id": "backdrop",
+      "type": "color",
+      "color": [
+        0.003,
+        0.024,
+        0.016,
+        1.0
+      ],
+      "size": [
+        1920.0,
+        1080.0
+      ],
+      "position": [
+        0.0,
+        0.0
+      ],
+      "start_frame": 0,
+      "duration_frames": 180,
+      "effects": [
+        {
+          "type": "vignette",
+          "radius": 0.68,
+          "softness": 0.7,
+          "amount": 0.32,
+          "color": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ogni_dettaglio_a_fuoco_title_glow_atmo",
+      "type": "text",
+      "text": "ogni dettaglio a fuoco",
+      "size": [
+        1920.0,
+        1080.0
+      ],
+      "position": [
+        960.0,
+        540.0
+      ],
+      "start_frame": 0,
+      "duration_frames": 180,
+      "blend_mode": "screen",
+      "style": {
+        "font": "assets/fonts/SF-Pro-Display-Bold.otf",
+        "font_size": 132,
+        "fill": "#5CFFC9"
+      },
+      "effects": [
+        {
+          "type": "gaussian_blur",
+          "radius": 88.0
+        }
+      ],
+      "animation": {
+        "tracks": [
+          {
+            "property": "scale",
+            "easing": "bezier",
+            "bezier_curve": [
+              0.35,
+              0.7,
+              0.2,
+              1.0
+            ],
+            "keyframes": [
+              {
+                "frame": 1,
+                "value": [
+                  0.94,
+                  0.94
+                ]
+              },
+              {
+                "frame": 91,
+                "value": [
+                  1.0,
+                  1.0
+                ]
+              },
+              {
+                "frame": 179,
+                "value": [
+                  1.012,
+                  1.012
+                ]
+              }
+            ]
+          },
+          {
+            "property": "position",
+            "easing": "linear",
+            "keyframes": [
+              {
+                "frame": 1,
+                "value": [
+                  960.0,
+                  540.0
+                ]
+              },
+              {
+                "frame": 91,
+                "value": [
+                  960.0,
+                  540.0
+                ]
+              },
+              {
+                "frame": 179,
+                "value": [
+                  962.0,
+                  539.0
+                ]
+              }
+            ]
+          },
+          {
+            "property": "opacity",
+            "easing": "out_cubic",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 0.0
+              },
+              {
+                "frame": 12,
+                "value": 0.33
+              },
+              {
+                "frame": 36,
+                "value": 0.3201
+              },
+              {
+                "frame": 54,
+                "value": 0.33990000000000004
+              },
+              {
+                "frame": 72,
+                "value": 0.32505
+              },
+              {
+                "frame": 90,
+                "value": 0.3366
+              },
+              {
+                "frame": 108,
+                "value": 0.3267
+              },
+              {
+                "frame": 126,
+                "value": 0.33494999999999997
+              },
+              {
+                "frame": 150,
+                "value": 0.32175
+              },
+              {
+                "frame": 174,
+                "value": 0.33825
+              },
+              {
+                "frame": 179,
+                "value": 0.33
+              }
+            ]
+          }
+        ]
+      },
+      "text_animators": [
+        {
+          "id": "tracking_settle",
+          "selectors": [
+            {
+              "unit": "line",
+              "shape": "square",
+              "order": "forward",
+              "combine": "replace",
+              "exclude_spaces": true
+            }
+          ],
+          "properties": [
+            {
+              "property": "tracking",
+              "easing": "linear",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 8.0
+                },
+                {
+                  "frame": 24,
+                  "value": 0.0
+                },
+                {
+                  "frame": 179,
+                  "value": 0.0
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ogni_dettaglio_a_fuoco_title_glow_mid",
+      "type": "text",
+      "text": "ogni dettaglio a fuoco",
+      "size": [
+        1920.0,
+        1080.0
+      ],
+      "position": [
+        960.0,
+        540.0
+      ],
+      "start_frame": 0,
+      "duration_frames": 180,
+      "blend_mode": "screen",
+      "style": {
+        "font": "assets/fonts/SF-Pro-Display-Bold.otf",
+        "font_size": 132,
+        "fill": "#5CFFC9"
+      },
+      "effects": [
+        {
+          "type": "gaussian_blur",
+          "radius": 32.0
+        }
+      ],
+      "animation": {
+        "tracks": [
+          {
+            "property": "scale",
+            "easing": "bezier",
+            "bezier_curve": [
+              0.35,
+              0.7,
+              0.2,
+              1.0
+            ],
+            "keyframes": [
+              {
+                "frame": 1,
+                "value": [
+                  0.94,
+                  0.94
+                ]
+              },
+              {
+                "frame": 91,
+                "value": [
+                  1.0,
+                  1.0
+                ]
+              },
+              {
+                "frame": 179,
+                "value": [
+                  1.012,
+                  1.012
+                ]
+              }
+            ]
+          },
+          {
+            "property": "position",
+            "easing": "linear",
+            "keyframes": [
+              {
+                "frame": 1,
+                "value": [
+                  960.0,
+                  540.0
+                ]
+              },
+              {
+                "frame": 91,
+                "value": [
+                  960.0,
+                  540.0
+                ]
+              },
+              {
+                "frame": 179,
+                "value": [
+                  962.0,
+                  539.0
+                ]
+              }
+            ]
+          },
+          {
+            "property": "opacity",
+            "easing": "out_cubic",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 0.0
+              },
+              {
+                "frame": 12,
+                "value": 0.4675
+              },
+              {
+                "frame": 36,
+                "value": 0.453475
+              },
+              {
+                "frame": 54,
+                "value": 0.48152500000000004
+              },
+              {
+                "frame": 72,
+                "value": 0.4604875
+              },
+              {
+                "frame": 90,
+                "value": 0.47685000000000005
+              },
+              {
+                "frame": 108,
+                "value": 0.46282500000000004
+              },
+              {
+                "frame": 126,
+                "value": 0.4745125
+              },
+              {
+                "frame": 150,
+                "value": 0.4558125
+              },
+              {
+                "frame": 174,
+                "value": 0.4791875
+              },
+              {
+                "frame": 179,
+                "value": 0.4675
+              }
+            ]
+          }
+        ]
+      },
+      "text_animators": [
+        {
+          "id": "tracking_settle",
+          "selectors": [
+            {
+              "unit": "line",
+              "shape": "square",
+              "order": "forward",
+              "combine": "replace",
+              "exclude_spaces": true
+            }
+          ],
+          "properties": [
+            {
+              "property": "tracking",
+              "easing": "linear",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 8.0
+                },
+                {
+                  "frame": 24,
+                  "value": 0.0
+                },
+                {
+                  "frame": 179,
+                  "value": 0.0
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ogni_dettaglio_a_fuoco_title_glow_core",
+      "type": "text",
+      "text": "ogni dettaglio a fuoco",
+      "size": [
+        1920.0,
+        1080.0
+      ],
+      "position": [
+        960.0,
+        540.0
+      ],
+      "start_frame": 0,
+      "duration_frames": 180,
+      "blend_mode": "screen",
+      "style": {
+        "font": "assets/fonts/SF-Pro-Display-Bold.otf",
+        "font_size": 132,
+        "fill": "#5CFFC9"
+      },
+      "effects": [
+        {
+          "type": "gaussian_blur",
+          "radius": 5.76
+        }
+      ],
+      "animation": {
+        "tracks": [
+          {
+            "property": "scale",
+            "easing": "bezier",
+            "bezier_curve": [
+              0.35,
+              0.7,
+              0.2,
+              1.0
+            ],
+            "keyframes": [
+              {
+                "frame": 1,
+                "value": [
+                  0.94,
+                  0.94
+                ]
+              },
+              {
+                "frame": 91,
+                "value": [
+                  1.0,
+                  1.0
+                ]
+              },
+              {
+                "frame": 179,
+                "value": [
+                  1.012,
+                  1.012
+                ]
+              }
+            ]
+          },
+          {
+            "property": "position",
+            "easing": "linear",
+            "keyframes": [
+              {
+                "frame": 1,
+                "value": [
+                  960.0,
+                  540.0
+                ]
+              },
+              {
+                "frame": 91,
+                "value": [
+                  960.0,
+                  540.0
+                ]
+              },
+              {
+                "frame": 179,
+                "value": [
+                  962.0,
+                  539.0
+                ]
+              }
+            ]
+          },
+          {
+            "property": "opacity",
+            "easing": "out_cubic",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 0.0
+              },
+              {
+                "frame": 12,
+                "value": 0.72
+              },
+              {
+                "frame": 36,
+                "value": 0.6983999999999999
+              },
+              {
+                "frame": 54,
+                "value": 0.7416
+              },
+              {
+                "frame": 72,
+                "value": 0.7091999999999999
+              },
+              {
+                "frame": 90,
+                "value": 0.7343999999999999
+              },
+              {
+                "frame": 108,
+                "value": 0.7128
+              },
+              {
+                "frame": 126,
+                "value": 0.7307999999999999
+              },
+              {
+                "frame": 150,
+                "value": 0.702
+              },
+              {
+                "frame": 174,
+                "value": 0.7379999999999999
+              },
+              {
+                "frame": 179,
+                "value": 0.72
+              }
+            ]
+          }
+        ]
+      },
+      "text_animators": [
+        {
+          "id": "tracking_settle",
+          "selectors": [
+            {
+              "unit": "line",
+              "shape": "square",
+              "order": "forward",
+              "combine": "replace",
+              "exclude_spaces": true
+            }
+          ],
+          "properties": [
+            {
+              "property": "tracking",
+              "easing": "linear",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 8.0
+                },
+                {
+                  "frame": 24,
+                  "value": 0.0
+                },
+                {
+                  "frame": 179,
+                  "value": 0.0
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ogni_dettaglio_a_fuoco_title",
+      "type": "text",
+      "text": "ogni dettaglio a fuoco",
+      "size": [
+        1920.0,
+        1080.0
+      ],
+      "position": [
+        960.0,
+        540.0
+      ],
+      "start_frame": 0,
+      "duration_frames": 180,
+      "style": {
+        "font": "assets/fonts/SF-Pro-Display-Bold.otf",
+        "font_size": 132,
+        "fill": "#F4FFFB"
+      },
+      "effects": [
+        {
+          "type": "camera_ring",
+          "center": [
+            0.5,
+            0.5
+          ],
+          "axis_scale": [
+            1.85,
+            0.72
+          ],
+          "inner_radius": 0.12,
+          "outer_radius": 0.66,
+          "max_blur_radius": 0.022,
+          "chroma_dispersion": 0.006,
+          "anamorphic_stretch": 0.92,
+          "samples": 64
+        }
+      ],
+      "animation": {
+        "tracks": [
+          {
+            "property": "scale",
+            "easing": "bezier",
+            "bezier_curve": [
+              0.35,
+              0.7,
+              0.2,
+              1.0
+            ],
+            "keyframes": [
+              {
+                "frame": 1,
+                "value": [
+                  0.94,
+                  0.94
+                ]
+              },
+              {
+                "frame": 91,
+                "value": [
+                  1.0,
+                  1.0
+                ]
+              },
+              {
+                "frame": 179,
+                "value": [
+                  1.012,
+                  1.012
+                ]
+              }
+            ]
+          },
+          {
+            "property": "position",
+            "easing": "linear",
+            "keyframes": [
+              {
+                "frame": 1,
+                "value": [
+                  960.0,
+                  540.0
+                ]
+              },
+              {
+                "frame": 91,
+                "value": [
+                  960.0,
+                  540.0
+                ]
+              },
+              {
+                "frame": 179,
+                "value": [
+                  962.0,
+                  539.0
+                ]
+              }
+            ]
+          },
+          {
+            "property": "opacity",
+            "easing": "out_cubic",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 0.0
+              },
+              {
+                "frame": 12,
+                "value": 1.0
+              },
+              {
+                "frame": 179,
+                "value": 1.0
+              }
+            ]
+          }
+        ]
+      },
+      "text_animators": [
+        {
+          "id": "tracking_settle",
+          "selectors": [
+            {
+              "unit": "line",
+              "shape": "square",
+              "order": "forward",
+              "combine": "replace",
+              "exclude_spaces": true
+            }
+          ],
+          "properties": [
+            {
+              "property": "tracking",
+              "easing": "linear",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 8.0
+                },
+                {
+                  "frame": 24,
+                  "value": 0.0
+                },
+                {
+                  "frame": 179,
+                  "value": 0.0
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "film_grain",
+      "type": "color",
+      "color": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "size": [
+        1940.0,
+        1100.0
+      ],
+      "position": [
+        -10.0,
+        -10.0
+      ],
+      "start_frame": 0,
+      "duration_frames": 180,
+      "opacity": 0.012,
+      "blend_mode": "screen",
+      "effects": [
+        {
+          "type": "catalog",
+          "effect_id": "generate.noise",
+          "params": [
+            {
+              "param": "amount",
+              "value": 0.85
+            }
+          ]
+        }
+      ],
+      "animation": {
+        "tracks": [
+          {
+            "property": "position",
+            "easing": "linear",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": [
+                  -10.0,
+                  -10.0
+                ]
+              },
+              {
+                "frame": 179,
+                "value": [
+                  -8.0,
+                  -11.0
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "output": {
+    "path": "CameraRing_Text_09_Ogni_Dettaglio_A_Fuoco_1920x1080_6s_v3.mp4",
+    "format": "mp4",
+    "codec": "h264"
+  }
+}

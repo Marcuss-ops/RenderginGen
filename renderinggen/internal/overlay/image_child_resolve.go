@@ -30,6 +30,9 @@ func resolveImageChild(ri resolvedItem, assets map[string]string, child Semantic
 	if params == nil {
 		params = map[string]any{}
 	}
+	if _, requested := params["image_backdrop"]; requested {
+		return resolvedItem{}, "", PresetDefinition{}, fmt.Errorf("overlay: image_backdrop is available only on a standalone image item, not image_layers[%q]", child.ID)
+	}
 	if opts.sequence {
 		params = sequenceImageLayoutParams(params, src, opts.index)
 	}

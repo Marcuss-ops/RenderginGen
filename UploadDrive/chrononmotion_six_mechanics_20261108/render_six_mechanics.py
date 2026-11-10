@@ -8,7 +8,6 @@ procedural and deterministic.  Output is H.264/yuv420p, at most 10 seconds.
 from __future__ import annotations
 
 import argparse
-import hashlib
 import json
 import math
 import os
@@ -28,10 +27,20 @@ FPS = 30
 F = 1500.0  # pinhole focal length in pixels for the 2.5D plates
 
 HERE = Path(__file__).resolve().parent
+sys.path.insert(0, str(HERE.parent))
+
+from drive_common import (  # noqa: E402  (path insertion must precede the import)
+    UPLOAD_PASS,
+    config_paths,
+    parse_upload_output,
+    run_upload,
+    sha256_file,
+    stable_seed,
+)
+
 REPO = HERE.parents[2]
 UPLOADER = REPO / "RenderingGen" / "bin" / "drive-upload"
-CREDENTIALS = REPO / "RenderingGen" / "UploadDrive" / "credentials.json"
-TOKEN = REPO / "RenderingGen" / "UploadDrive" / "token.json"
+CREDENTIALS, TOKEN = config_paths()
 DRIVE_FOLDER = "1J_xUGo_bchzXDIGqSX04CU44c_Dm3SxS"
 DRIVE_SUBFOLDER = "ChrononMotion3D_Six_Mechanics_1920x1080"
 
@@ -950,7 +959,7 @@ def encode_clip(name: str, duration: float, fn, a) -> Path:
            "-profile:v", "high", "-level", "4.1", "-movflags", "+faststart",
            str(out)]
     proc = subprocess.Popen(cmd, stdin=subprocess.PIPE, stderr=subprocess.PIPE)
-    rng = np.random.default_rng(abs(hash(name)) % (2 ** 32))
+    rng = np.random.default_rng(stable_seed(name))
     t0 = time.time()
     try:
         for i in range(total):
@@ -969,14 +978,6 @@ def encode_clip(name: str, duration: float, fn, a) -> Path:
     if rc != 0:
         raise RuntimeError(f"ffmpeg failed for {name}: {err[-2000:]}")
     return out
-
-
-def sha256_file(path: Path) -> str:
-    h = hashlib.sha256()
-    with path.open("rb") as f:
-        for chunk in iter(lambda: f.read(1024 * 1024), b""):
-            h.update(chunk)
-    return h.hexdigest()
 
 
 def probe(path: Path) -> dict:
@@ -1053,22 +1054,28 @@ def upload_clips(manifest: dict) -> bool:
     logdir.mkdir(exist_ok=True)
     for entry in manifest["clips"]:
         path = HERE / entry["name"]
-        cmd = [str(UPLOADER), "-credentials", str(CREDENTIALS), "-token", str(TOKEN),
-               "-folder", DRIVE_FOLDER, "-subfolder", DRIVE_SUBFOLDER,
-               "-file", str(path), "-name", entry["name"], "-sha256", entry["sha256"]]
         print(f"[UPLOAD] {entry['name']} ({entry['bytes'] / 1e6:.2f} MB)", flush=True)
-        res = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
-        out = (res.stdout + "\n" + res.stderr).strip()
+        rc, out = run_upload(
+            UPLOADER,
+            path,
+            CREDENTIALS,
+            TOKEN,
+            DRIVE_FOLDER,
+            DRIVE_SUBFOLDER,
+            entry["name"],
+            entry["sha256"],
+            timeout=300,
+        )
         (logdir / f"upload_{entry['name']}.log").write_text(out + "\n")
-        entry["drive_upload_rc"] = res.returncode
-        if res.returncode != 0 or "DRIVE_UPLOAD_PASS" not in out:
-            print(f"[UPLOAD_FAIL] {entry['name']} rc={res.returncode}\n{out[-1500:]}")
+        entry["drive_upload_rc"] = rc
+        if rc != 0 or UPLOAD_PASS not in out:
+            print(f"[UPLOAD_FAIL] {entry['name']} rc={rc}\n{out[-1500:]}")
             return False
-        for token in out.split():
-            if token.startswith("id="):
-                entry["drive_file_id"] = token.split("=", 1)[1]
-            elif token.startswith("link="):
-                entry["drive_url"] = token.split("=", 1)[1]
+        fields = parse_upload_output(out)
+        if fields.get("drive_file_id"):
+            entry["drive_file_id"] = fields["drive_file_id"]
+        if fields.get("drive_url"):
+            entry["drive_url"] = fields["drive_url"]
         print(f"[UPLOAD_PASS] {entry.get('drive_url', '')}", flush=True)
         write_json(HERE / "upload_manifest.json", manifest)
     write_json(HERE / "upload_manifest.json", manifest)

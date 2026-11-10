@@ -7,6 +7,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/testenv"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -1469,9 +1470,7 @@ func TestShapeSoftwareGpuParity(t *testing.T) {
 	if chrononBin == "" {
 		t.Skip("chronon3d_cli binary not found; skipping GPU parity test")
 	}
-	if _, err := exec.LookPath("ffmpeg"); err != nil {
-		t.Skipf("ffmpeg is required to compare decoded renderer output: %v", err)
-	}
+	testenv.RequireTools(t, "ffmpeg")
 
 	res, err := CompileSemantic([]byte(`{
 		"schema_version": "renderinggen.overlay-plan.v1",

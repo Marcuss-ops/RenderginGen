@@ -1,0 +1,447 @@
+{
+  "schema": "chronon.render-plan.v3",
+  "version": 3,
+  "job_id": "camera_ring_text_12_pulito_preciso",
+  "canvas": {
+    "width": 1920,
+    "height": 1080,
+    "fps_num": 30,
+    "fps_den": 1,
+    "duration_frames": 210
+  },
+  "layers": [
+    {
+      "id": "backdrop",
+      "type": "color",
+      "color": [
+        0.01,
+        0.028,
+        0.048,
+        1.0
+      ],
+      "size": [
+        1920.0,
+        1080.0
+      ],
+      "position": [
+        0.0,
+        0.0
+      ],
+      "start_frame": 0,
+      "duration_frames": 210,
+      "effects": [
+        {
+          "type": "vignette",
+          "radius": 0.68,
+          "softness": 0.7,
+          "amount": 0.32,
+          "color": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ]
+        }
+      ]
+    },
+    {
+      "id": "pulito_preciso_title_bloom",
+      "type": "text",
+      "text": "pulito. preciso. a fuoco.",
+      "size": [
+        1920.0,
+        1080.0
+      ],
+      "position": [
+        960.0,
+        540.0
+      ],
+      "start_frame": 0,
+      "duration_frames": 210,
+      "blend_mode": "add",
+      "style": {
+        "font": "assets/fonts/SF-Pro-Display-Semibold.otf",
+        "font_size": 132,
+        "fill": "#8CC8FF"
+      },
+      "effects": [
+        {
+          "type": "bloom",
+          "threshold": 0.52,
+          "radius": 90.0,
+          "intensity": 0.34
+        }
+      ],
+      "animation": {
+        "tracks": [
+          {
+            "property": "scale",
+            "easing": "bezier",
+            "bezier_curve": [
+              0.35,
+              0.7,
+              0.2,
+              1.0
+            ],
+            "keyframes": [
+              {
+                "frame": 1,
+                "value": [
+                  0.94,
+                  0.94
+                ]
+              },
+              {
+                "frame": 91,
+                "value": [
+                  1.0,
+                  1.0
+                ]
+              },
+              {
+                "frame": 209,
+                "value": [
+                  1.012,
+                  1.012
+                ]
+              }
+            ]
+          },
+          {
+            "property": "position",
+            "easing": "linear",
+            "keyframes": [
+              {
+                "frame": 1,
+                "value": [
+                  960.0,
+                  540.0
+                ]
+              },
+              {
+                "frame": 91,
+                "value": [
+                  960.0,
+                  540.0
+                ]
+              },
+              {
+                "frame": 209,
+                "value": [
+                  962.0,
+                  539.0
+                ]
+              }
+            ]
+          },
+          {
+            "property": "opacity",
+            "easing": "out_cubic",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 0.0
+              },
+              {
+                "frame": 12,
+                "value": 0.86
+              },
+              {
+                "frame": 36,
+                "value": 0.8341999999999999
+              },
+              {
+                "frame": 54,
+                "value": 0.8858
+              },
+              {
+                "frame": 72,
+                "value": 0.8471
+              },
+              {
+                "frame": 90,
+                "value": 0.8772
+              },
+              {
+                "frame": 108,
+                "value": 0.8513999999999999
+              },
+              {
+                "frame": 126,
+                "value": 0.8728999999999999
+              },
+              {
+                "frame": 150,
+                "value": 0.8385
+              },
+              {
+                "frame": 174,
+                "value": 0.8815
+              },
+              {
+                "frame": 198,
+                "value": 0.8513999999999999
+              },
+              {
+                "frame": 209,
+                "value": 0.86
+              }
+            ]
+          }
+        ]
+      },
+      "text_animators": [
+        {
+          "id": "tracking_settle",
+          "selectors": [
+            {
+              "unit": "line",
+              "shape": "square",
+              "order": "forward",
+              "combine": "replace",
+              "exclude_spaces": true
+            }
+          ],
+          "properties": [
+            {
+              "property": "tracking",
+              "easing": "linear",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 8.0
+                },
+                {
+                  "frame": 24,
+                  "value": 0.0
+                },
+                {
+                  "frame": 209,
+                  "value": -0.4
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "pulito_preciso_title",
+      "type": "text",
+      "text": "pulito. preciso. a fuoco.",
+      "size": [
+        1920.0,
+        1080.0
+      ],
+      "position": [
+        960.0,
+        540.0
+      ],
+      "start_frame": 0,
+      "duration_frames": 210,
+      "style": {
+        "font": "assets/fonts/SF-Pro-Display-Semibold.otf",
+        "font_size": 132,
+        "fill": "#F7FAFF"
+      },
+      "effects": [
+        {
+          "type": "camera_ring",
+          "center": [
+            0.5,
+            0.5
+          ],
+          "axis_scale": [
+            1.85,
+            0.72
+          ],
+          "inner_radius": 0.102,
+          "outer_radius": 0.561,
+          "max_blur_radius": 0.039599999999999996,
+          "chroma_dispersion": 0.006,
+          "anamorphic_stretch": 0.9,
+          "samples": 64
+        }
+      ],
+      "animation": {
+        "tracks": [
+          {
+            "property": "scale",
+            "easing": "bezier",
+            "bezier_curve": [
+              0.35,
+              0.7,
+              0.2,
+              1.0
+            ],
+            "keyframes": [
+              {
+                "frame": 1,
+                "value": [
+                  0.94,
+                  0.94
+                ]
+              },
+              {
+                "frame": 91,
+                "value": [
+                  1.0,
+                  1.0
+                ]
+              },
+              {
+                "frame": 209,
+                "value": [
+                  1.012,
+                  1.012
+                ]
+              }
+            ]
+          },
+          {
+            "property": "position",
+            "easing": "linear",
+            "keyframes": [
+              {
+                "frame": 1,
+                "value": [
+                  960.0,
+                  540.0
+                ]
+              },
+              {
+                "frame": 91,
+                "value": [
+                  960.0,
+                  540.0
+                ]
+              },
+              {
+                "frame": 209,
+                "value": [
+                  962.0,
+                  539.0
+                ]
+              }
+            ]
+          },
+          {
+            "property": "opacity",
+            "easing": "out_cubic",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": 0.0
+              },
+              {
+                "frame": 12,
+                "value": 1.0
+              },
+              {
+                "frame": 209,
+                "value": 1.0
+              }
+            ]
+          }
+        ]
+      },
+      "text_animators": [
+        {
+          "id": "tracking_settle",
+          "selectors": [
+            {
+              "unit": "line",
+              "shape": "square",
+              "order": "forward",
+              "combine": "replace",
+              "exclude_spaces": true
+            }
+          ],
+          "properties": [
+            {
+              "property": "tracking",
+              "easing": "linear",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": 8.0
+                },
+                {
+                  "frame": 24,
+                  "value": 0.0
+                },
+                {
+                  "frame": 209,
+                  "value": -0.4
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "film_grain",
+      "type": "color",
+      "color": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "size": [
+        1940.0,
+        1100.0
+      ],
+      "position": [
+        -10.0,
+        -10.0
+      ],
+      "start_frame": 0,
+      "duration_frames": 210,
+      "opacity": 0.012,
+      "blend_mode": "screen",
+      "effects": [
+        {
+          "type": "catalog",
+          "effect_id": "generate.noise",
+          "params": [
+            {
+              "param": "amount",
+              "value": 0.85
+            }
+          ]
+        }
+      ],
+      "animation": {
+        "tracks": [
+          {
+            "property": "position",
+            "easing": "linear",
+            "keyframes": [
+              {
+                "frame": 0,
+                "value": [
+                  -10.0,
+                  -10.0
+                ]
+              },
+              {
+                "frame": 209,
+                "value": [
+                  -8.0,
+                  -11.0
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "output": {
+    "path": "CameraRing_Text_12_Pulito_Preciso_1920x1080_7s_v6.mp4",
+    "format": "mp4",
+    "codec": "h264"
+  }
+}

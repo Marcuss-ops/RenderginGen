@@ -1,0 +1,219 @@
+[2026-11-09 08:42:08.757] [info] [asset-profile] kind=3 path=assets/fonts/Inter-Black.ttf bytes=343804 cache=miss invalidated=0 stat=0.01ms hash=4.42ms hashed_bytes=343804 total=4.54ms
+[2026-11-09 08:42:08.758] [info] [asset-profile] kind=3 path=assets/fonts/Inter-Bold.ttf bytes=146768 cache=miss invalidated=0 stat=0.01ms hash=0.74ms hashed_bytes=146768 total=0.82ms
+[2026-11-09 08:42:08.759] [info] [asset-profile] kind=3 path=assets/fonts/Inter-Regular.ttf bytes=146004 cache=miss invalidated=0 stat=0.01ms hash=0.69ms hashed_bytes=146004 total=0.76ms
+[2026-11-09 08:42:08.759] [info] [asset-digest-cache] hits=0 misses=3 invalidations=0 bytes_hashed=636576 lookup_ms=0.00 write_ms=0.02 full_hash_ms=5.84
+[2026-11-09 08:42:08.761] [info] [plan-profile] read=0.25ms parse=0.60ms decode=74.07ms resolver=0.06ms compile_validate=8.01ms total=83.02ms
+[2026-11-09 08:42:08.761] [info] [video] Auto-selecting yuv420p pipe pixel format for 1920x1080 output
+[2026-11-09 08:42:08.761] [info] [video] execution plan resolved (reason: gpu_composition_pipe_no_video_source); decode=2 composite=2 encode=2 interop=0 handoff=3 codec=3
+[2026-11-09 08:42:08.806] [info] [video-runtime] created persistent runtime for device 0 (CUDA ordinal 0)
+[2026-11-09 08:42:08.806] [info] [video] encoder feed capability: host_frame=true direct_yuv=false native_surface=false
+[2026-11-09 08:42:09.042] [info] [native_av] CUDA context contract: native=0x557bc577da30 ffmpeg=0x557bc577da30
+[2026-11-09 08:42:09.052] [info] [native_av] NVENC tuning applied: rc=driver-default preset=slow async_depth=4 nvenc_surfaces=8 qp=-1 bitrate=0
+[h264_nvenc @ 0x557bc55b1180] Defined rc_lookahead requires more surfaces, increasing used surfaces 8 -> 34
+[2026-11-09 08:42:09.135] [info] [native_av] encoder bitstream contract: codec=27 profile=100 level=-99 pix_fmt=117 parameter_sets=53 materialized=true
+[2026-11-09 08:42:09.135] [info] [native_av] Opened native encoder: 1920x1080 @ 30fps, codec=h264_nvenc, rc=driver-default, preset=slow, output='RenderingGen/UploadDrive/socials_structures_20261109/mp4/Socials_01_X_Post_1920x1080_8s.partial.mp4'
+[2026-11-09 08:42:09.614] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-09 08:42:09.616] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-09 08:42:09.617] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-09 08:42:09.618] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-09 08:42:09.618] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-09 08:42:09.619] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-09 08:42:09.619] [error] [font-fallback] Missing glyph for cluster [U+2713] at byte offset 0..3 (no font in stack covers all visible codepoints)
+[2026-11-09 08:42:09.619] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-09 08:42:09.620] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-09 08:42:09.620] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-09 08:42:09.621] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-09 08:42:09.622] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-09 08:42:09.623] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-09 08:42:09.624] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-09 08:42:09.625] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-09 08:42:09.626] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-09 08:42:09.626] [error] [font-fallback] Missing glyph for cluster [U+25B6] at byte offset 0..3 (no font in stack covers all visible codepoints)
+[2026-11-09 08:42:09.626] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-09 08:42:09.626] [error] [font-fallback] Missing glyph for cluster [U+25CB] at byte offset 0..3 (no font in stack covers all visible codepoints)
+[2026-11-09 08:42:09.626] [error] [font-fallback] Missing glyph for cluster [U+21BB] at byte offset 13..16 (no font in stack covers all visible codepoints)
+[2026-11-09 08:42:09.626] [error] [font-fallback] Missing glyph for cluster [U+2661] at byte offset 26..29 (no font in stack covers all visible codepoints)
+[2026-11-09 08:42:09.627] [error] [font-fallback] Missing glyph for cluster [U+25B1] at byte offset 40..43 (no font in stack covers all visible codepoints)
+[2026-11-09 08:42:10.882] [info] [pool-warm] Pre-allocated and pre-imported 6 execution slots (1920x1080) for native NVENC
+[2026-11-09 08:42:10.906] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-09 08:42:10.907] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-09 08:42:10.907] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-09 08:42:10.908] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-09 08:42:10.908] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-09 08:42:10.908] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-09 08:42:10.908] [error] [font-fallback] Missing glyph for cluster [U+2713] at byte offset 0..3 (no font in stack covers all visible codepoints)
+[2026-11-09 08:42:10.908] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-09 08:42:10.909] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-09 08:42:10.909] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-09 08:42:10.910] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-09 08:42:10.910] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-09 08:42:10.911] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-09 08:42:10.911] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-09 08:42:10.912] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-09 08:42:10.912] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-09 08:42:10.912] [error] [font-fallback] Missing glyph for cluster [U+25B6] at byte offset 0..3 (no font in stack covers all visible codepoints)
+[2026-11-09 08:42:10.912] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-09 08:42:10.912] [error] [font-fallback] Missing glyph for cluster [U+25CB] at byte offset 0..3 (no font in stack covers all visible codepoints)
+[2026-11-09 08:42:10.912] [error] [font-fallback] Missing glyph for cluster [U+21BB] at byte offset 13..16 (no font in stack covers all visible codepoints)
+[2026-11-09 08:42:10.913] [error] [font-fallback] Missing glyph for cluster [U+2661] at byte offset 26..29 (no font in stack covers all visible codepoints)
+[2026-11-09 08:42:10.913] [error] [font-fallback] Missing glyph for cluster [U+25B1] at byte offset 40..43 (no font in stack covers all visible codepoints)
+[2026-11-09 08:42:11.016] [info] chronon3d::vulkan text batch formats: dst_image.format=109 atlas_image.format=44 atlas_encoding=2 (shader contract: dst rgba32f, atlas rgba8)
+[2026-11-09 08:42:11.084] [warning] [text-run] native surface path fell back: MTSDF text route has no resident glyphs
+[2026-11-09 08:42:11.084] [error] [text-run] node='text' draw_text_run failed: [UnsupportedCapability] MTSDF text route has no resident glyphs
+[2026-11-09 08:42:11.090] [info] [temp-lifetime] frame=0 after_level=0 live=[0,1,7,9,11,13,15,17,19,21,23,25,27,29,43,51,57,59,63,] retired=[]
+[2026-11-09 08:42:11.090] [info] [exec-level-diag] frame=0 level=0 nodes=30 input_ms=0.002 dispatch_ms=79.365 fb_release_ms=0.003
+[2026-11-09 08:42:11.090] [info] [graph-edge] frame=0 level=1 consumer_id=2 input_index=0 producer_id=0 producer_level=0
+[2026-11-09 08:42:11.090] [info] [graph-edge] frame=0 level=1 consumer_id=2 input_index=1 producer_id=1 producer_level=0
+[2026-11-09 08:42:11.091] [info] [temp-lifetime] frame=0 after_level=1 live=[7,9,11,13,15,17,19,21,23,25,27,29,43,51,57,59,63,] retired=[0,1,]
+[2026-11-09 08:42:11.091] [info] [exec-level-diag] frame=0 level=1 nodes=1 input_ms=0.015 dispatch_ms=0.022 fb_release_ms=0.004
+[2026-11-09 08:42:11.091] [warning] [input-unresolved] frame=0 level=2 consumer_id=4 input_index=0 producer_id=2 producer_level=1
+[2026-11-09 08:42:11.091] [info] [temp-lifetime] frame=0 after_level=2 live=[7,9,11,13,15,17,19,21,23,25,27,29,43,51,57,59,63,] retired=[2,]
+[2026-11-09 08:42:11.091] [info] [exec-level-diag] frame=0 level=2 nodes=1 input_ms=0.007 dispatch_ms=0.025 fb_release_ms=0.001
+[2026-11-09 08:42:11.091] [warning] [input-unresolved] frame=0 level=3 consumer_id=6 input_index=0 producer_id=4 producer_level=2
+[2026-11-09 08:42:11.091] [info] [temp-lifetime] frame=0 after_level=3 live=[7,9,11,13,15,17,19,21,23,25,27,29,43,51,57,59,63,] retired=[4,]
+[2026-11-09 08:42:11.091] [info] [exec-level-diag] frame=0 level=3 nodes=1 input_ms=0.006 dispatch_ms=0.012 fb_release_ms=0.001
+[2026-11-09 08:42:11.091] [warning] [input-unresolved] frame=0 level=4 consumer_id=8 input_index=0 producer_id=6 producer_level=3
+[2026-11-09 08:42:11.091] [info] [graph-edge] frame=0 level=4 consumer_id=8 input_index=1 producer_id=7 producer_level=0
+[2026-11-09 08:42:11.091] [info] [temp-lifetime] frame=0 after_level=4 live=[9,11,13,15,17,19,21,23,25,27,29,43,51,57,59,63,] retired=[6,7,]
+[2026-11-09 08:42:11.091] [info] [exec-level-diag] frame=0 level=4 nodes=1 input_ms=0.011 dispatch_ms=0.013 fb_release_ms=0.004
+[2026-11-09 08:42:11.091] [warning] [input-unresolved] frame=0 level=5 consumer_id=10 input_index=0 producer_id=8 producer_level=4
+[2026-11-09 08:42:11.091] [info] [graph-edge] frame=0 level=5 consumer_id=10 input_index=1 producer_id=9 producer_level=0
+[2026-11-09 08:42:11.091] [info] [temp-lifetime] frame=0 after_level=5 live=[11,13,15,17,19,21,23,25,27,29,43,51,57,59,63,] retired=[8,9,]
+[2026-11-09 08:42:11.091] [info] [exec-level-diag] frame=0 level=5 nodes=1 input_ms=0.011 dispatch_ms=0.013 fb_release_ms=0.001
+[2026-11-09 08:42:11.091] [warning] [input-unresolved] frame=0 level=6 consumer_id=12 input_index=0 producer_id=10 producer_level=5
+[2026-11-09 08:42:11.091] [info] [graph-edge] frame=0 level=6 consumer_id=12 input_index=1 producer_id=11 producer_level=0
+[2026-11-09 08:42:11.091] [info] [temp-lifetime] frame=0 after_level=6 live=[13,15,17,19,21,23,25,27,29,43,51,57,59,63,] retired=[10,11,]
+[2026-11-09 08:42:11.091] [info] [exec-level-diag] frame=0 level=6 nodes=1 input_ms=0.011 dispatch_ms=0.012 fb_release_ms=0.001
+[2026-11-09 08:42:11.091] [warning] [input-unresolved] frame=0 level=7 consumer_id=14 input_index=0 producer_id=12 producer_level=6
+[2026-11-09 08:42:11.091] [info] [graph-edge] frame=0 level=7 consumer_id=14 input_index=1 producer_id=13 producer_level=0
+[2026-11-09 08:42:11.091] [info] [temp-lifetime] frame=0 after_level=7 live=[15,17,19,21,23,25,27,29,43,51,57,59,63,] retired=[12,13,]
+[2026-11-09 08:42:11.091] [info] [exec-level-diag] frame=0 level=7 nodes=1 input_ms=0.011 dispatch_ms=0.015 fb_release_ms=0.002
+[2026-11-09 08:42:11.091] [warning] [input-unresolved] frame=0 level=8 consumer_id=16 input_index=0 producer_id=14 producer_level=7
+[2026-11-09 08:42:11.091] [info] [graph-edge] frame=0 level=8 consumer_id=16 input_index=1 producer_id=15 producer_level=0
+[2026-11-09 08:42:11.091] [info] [temp-lifetime] frame=0 after_level=8 live=[17,19,21,23,25,27,29,43,51,57,59,63,] retired=[14,15,]
+[2026-11-09 08:42:11.091] [info] [exec-level-diag] frame=0 level=8 nodes=1 input_ms=0.010 dispatch_ms=0.013 fb_release_ms=0.001
+[2026-11-09 08:42:11.091] [warning] [input-unresolved] frame=0 level=9 consumer_id=18 input_index=0 producer_id=16 producer_level=8
+[2026-11-09 08:42:11.091] [info] [graph-edge] frame=0 level=9 consumer_id=18 input_index=1 producer_id=17 producer_level=0
+[2026-11-09 08:42:11.091] [info] [temp-lifetime] frame=0 after_level=9 live=[19,21,23,25,27,29,43,51,57,59,63,] retired=[16,17,]
+[2026-11-09 08:42:11.091] [info] [exec-level-diag] frame=0 level=9 nodes=1 input_ms=0.010 dispatch_ms=0.013 fb_release_ms=0.002
+[2026-11-09 08:42:11.091] [warning] [input-unresolved] frame=0 level=10 consumer_id=20 input_index=0 producer_id=18 producer_level=9
+[2026-11-09 08:42:11.091] [info] [graph-edge] frame=0 level=10 consumer_id=20 input_index=1 producer_id=19 producer_level=0
+[2026-11-09 08:42:11.091] [info] [temp-lifetime] frame=0 after_level=10 live=[21,23,25,27,29,43,51,57,59,63,] retired=[18,19,]
+[2026-11-09 08:42:11.091] [info] [exec-level-diag] frame=0 level=10 nodes=1 input_ms=0.011 dispatch_ms=0.012 fb_release_ms=0.001
+[2026-11-09 08:42:11.091] [warning] [input-unresolved] frame=0 level=11 consumer_id=22 input_index=0 producer_id=20 producer_level=10
+[2026-11-09 08:42:11.091] [info] [graph-edge] frame=0 level=11 consumer_id=22 input_index=1 producer_id=21 producer_level=0
+[2026-11-09 08:42:11.091] [info] [temp-lifetime] frame=0 after_level=11 live=[23,25,27,29,43,51,57,59,63,] retired=[20,21,]
+[2026-11-09 08:42:11.091] [info] [exec-level-diag] frame=0 level=11 nodes=1 input_ms=0.011 dispatch_ms=0.021 fb_release_ms=0.001
+[2026-11-09 08:42:11.091] [warning] [input-unresolved] frame=0 level=12 consumer_id=24 input_index=0 producer_id=22 producer_level=11
+[2026-11-09 08:42:11.091] [info] [graph-edge] frame=0 level=12 consumer_id=24 input_index=1 producer_id=23 producer_level=0
+[2026-11-09 08:42:11.091] [info] [temp-lifetime] frame=0 after_level=12 live=[25,27,29,43,51,57,59,63,] retired=[22,23,]
+[2026-11-09 08:42:11.091] [info] [exec-level-diag] frame=0 level=12 nodes=1 input_ms=0.010 dispatch_ms=0.012 fb_release_ms=0.001
+[2026-11-09 08:42:11.091] [warning] [input-unresolved] frame=0 level=13 consumer_id=26 input_index=0 producer_id=24 producer_level=12
+[2026-11-09 08:42:11.091] [info] [graph-edge] frame=0 level=13 consumer_id=26 input_index=1 producer_id=25 producer_level=0
+[2026-11-09 08:42:11.091] [info] [temp-lifetime] frame=0 after_level=13 live=[27,29,43,51,57,59,63,] retired=[24,25,]
+[2026-11-09 08:42:11.091] [info] [exec-level-diag] frame=0 level=13 nodes=1 input_ms=0.011 dispatch_ms=0.012 fb_release_ms=0.001
+[2026-11-09 08:42:11.091] [warning] [input-unresolved] frame=0 level=14 consumer_id=28 input_index=0 producer_id=26 producer_level=13
+[2026-11-09 08:42:11.091] [info] [graph-edge] frame=0 level=14 consumer_id=28 input_index=1 producer_id=27 producer_level=0
+[2026-11-09 08:42:11.091] [info] [temp-lifetime] frame=0 after_level=14 live=[29,43,51,57,59,63,] retired=[26,27,]
+[2026-11-09 08:42:11.091] [info] [exec-level-diag] frame=0 level=14 nodes=1 input_ms=0.010 dispatch_ms=0.012 fb_release_ms=0.001
+[2026-11-09 08:42:11.091] [warning] [input-unresolved] frame=0 level=15 consumer_id=30 input_index=0 producer_id=28 producer_level=14
+[2026-11-09 08:42:11.091] [info] [graph-edge] frame=0 level=15 consumer_id=30 input_index=1 producer_id=29 producer_level=0
+[2026-11-09 08:42:11.091] [info] [temp-lifetime] frame=0 after_level=15 live=[43,51,57,59,63,] retired=[28,29,]
+[2026-11-09 08:42:11.091] [info] [exec-level-diag] frame=0 level=15 nodes=1 input_ms=0.010 dispatch_ms=0.023 fb_release_ms=0.001
+[2026-11-09 08:42:11.091] [warning] [input-unresolved] frame=0 level=16 consumer_id=32 input_index=0 producer_id=30 producer_level=15
+[2026-11-09 08:42:11.091] [warning] [input-unresolved] frame=0 level=16 consumer_id=32 input_index=1 producer_id=31 producer_level=0
+[2026-11-09 08:42:11.091] [info] [temp-lifetime] frame=0 after_level=16 live=[43,51,57,59,63,] retired=[30,31,]
+[2026-11-09 08:42:11.091] [info] [exec-level-diag] frame=0 level=16 nodes=1 input_ms=0.011 dispatch_ms=0.012 fb_release_ms=0.001
+[2026-11-09 08:42:11.091] [warning] [input-unresolved] frame=0 level=17 consumer_id=34 input_index=0 producer_id=32 producer_level=16
+[2026-11-09 08:42:11.091] [warning] [input-unresolved] frame=0 level=17 consumer_id=34 input_index=1 producer_id=33 producer_level=0
+[2026-11-09 08:42:11.091] [info] [temp-lifetime] frame=0 after_level=17 live=[43,51,57,59,63,] retired=[32,33,]
+[2026-11-09 08:42:11.091] [info] [exec-level-diag] frame=0 level=17 nodes=1 input_ms=0.011 dispatch_ms=0.012 fb_release_ms=0.001
+[2026-11-09 08:42:11.091] [warning] [input-unresolved] frame=0 level=18 consumer_id=36 input_index=0 producer_id=34 producer_level=17
+[2026-11-09 08:42:11.091] [warning] [input-unresolved] frame=0 level=18 consumer_id=36 input_index=1 producer_id=35 producer_level=0
+[2026-11-09 08:42:11.091] [info] [temp-lifetime] frame=0 after_level=18 live=[43,51,57,59,63,] retired=[34,35,]
+[2026-11-09 08:42:11.091] [info] [exec-level-diag] frame=0 level=18 nodes=1 input_ms=0.011 dispatch_ms=0.011 fb_release_ms=0.001
+[2026-11-09 08:42:11.091] [warning] [input-unresolved] frame=0 level=19 consumer_id=38 input_index=0 producer_id=36 producer_level=18
+[2026-11-09 08:42:11.091] [warning] [input-unresolved] frame=0 level=19 consumer_id=38 input_index=1 producer_id=37 producer_level=0
+[2026-11-09 08:42:11.091] [info] [temp-lifetime] frame=0 after_level=19 live=[43,51,57,59,63,] retired=[36,37,]
+[2026-11-09 08:42:11.091] [info] [exec-level-diag] frame=0 level=19 nodes=1 input_ms=0.010 dispatch_ms=0.011 fb_release_ms=0.001
+[2026-11-09 08:42:11.091] [warning] [input-unresolved] frame=0 level=20 consumer_id=40 input_index=0 producer_id=38 producer_level=19
+[2026-11-09 08:42:11.091] [warning] [input-unresolved] frame=0 level=20 consumer_id=40 input_index=1 producer_id=39 producer_level=0
+[2026-11-09 08:42:11.091] [info] [temp-lifetime] frame=0 after_level=20 live=[43,51,57,59,63,] retired=[38,39,]
+[2026-11-09 08:42:11.091] [info] [exec-level-diag] frame=0 level=20 nodes=1 input_ms=0.010 dispatch_ms=0.011 fb_release_ms=0.001
+[2026-11-09 08:42:11.091] [warning] [input-unresolved] frame=0 level=21 consumer_id=42 input_index=0 producer_id=40 producer_level=20
+[2026-11-09 08:42:11.091] [warning] [input-unresolved] frame=0 level=21 consumer_id=42 input_index=1 producer_id=41 producer_level=0
+[2026-11-09 08:42:11.091] [info] [temp-lifetime] frame=0 after_level=21 live=[43,51,57,59,63,] retired=[40,41,]
+[2026-11-09 08:42:11.091] [info] [exec-level-diag] frame=0 level=21 nodes=1 input_ms=0.010 dispatch_ms=0.012 fb_release_ms=0.001
+[2026-11-09 08:42:11.091] [warning] [input-unresolved] frame=0 level=22 consumer_id=44 input_index=0 producer_id=42 producer_level=21
+[2026-11-09 08:42:11.091] [info] [graph-edge] frame=0 level=22 consumer_id=44 input_index=1 producer_id=43 producer_level=0
+[2026-11-09 08:42:11.091] [info] [temp-lifetime] frame=0 after_level=22 live=[51,57,59,63,] retired=[42,43,]
+[2026-11-09 08:42:11.091] [info] [exec-level-diag] frame=0 level=22 nodes=1 input_ms=0.010 dispatch_ms=0.012 fb_release_ms=0.001
+[2026-11-09 08:42:11.091] [warning] [input-unresolved] frame=0 level=23 consumer_id=46 input_index=0 producer_id=44 producer_level=22
+[2026-11-09 08:42:11.091] [warning] [input-unresolved] frame=0 level=23 consumer_id=46 input_index=1 producer_id=45 producer_level=0
+[2026-11-09 08:42:11.092] [info] [temp-lifetime] frame=0 after_level=23 live=[51,57,59,63,] retired=[44,45,]
+[2026-11-09 08:42:11.092] [info] [exec-level-diag] frame=0 level=23 nodes=1 input_ms=0.010 dispatch_ms=0.013 fb_release_ms=0.001
+[2026-11-09 08:42:11.092] [warning] [input-unresolved] frame=0 level=24 consumer_id=48 input_index=0 producer_id=46 producer_level=23
+[2026-11-09 08:42:11.092] [warning] [input-unresolved] frame=0 level=24 consumer_id=48 input_index=1 producer_id=47 producer_level=0
+[2026-11-09 08:42:11.092] [info] [temp-lifetime] frame=0 after_level=24 live=[51,57,59,63,] retired=[46,47,]
+[2026-11-09 08:42:11.092] [info] [exec-level-diag] frame=0 level=24 nodes=1 input_ms=0.010 dispatch_ms=0.012 fb_release_ms=0.001
+[2026-11-09 08:42:11.092] [warning] [input-unresolved] frame=0 level=25 consumer_id=50 input_index=0 producer_id=48 producer_level=24
+[2026-11-09 08:42:11.092] [warning] [input-unresolved] frame=0 level=25 consumer_id=50 input_index=1 producer_id=49 producer_level=0
+[2026-11-09 08:42:11.092] [info] [temp-lifetime] frame=0 after_level=25 live=[51,57,59,63,] retired=[48,49,]
+[2026-11-09 08:42:11.092] [info] [exec-level-diag] frame=0 level=25 nodes=1 input_ms=0.011 dispatch_ms=0.017 fb_release_ms=0.001
+[2026-11-09 08:42:11.092] [warning] [input-unresolved] frame=0 level=26 consumer_id=52 input_index=0 producer_id=50 producer_level=25
+[2026-11-09 08:42:11.092] [info] [graph-edge] frame=0 level=26 consumer_id=52 input_index=1 producer_id=51 producer_level=0
+[2026-11-09 08:42:11.092] [info] [temp-lifetime] frame=0 after_level=26 live=[57,59,63,] retired=[50,51,]
+[2026-11-09 08:42:11.092] [info] [exec-level-diag] frame=0 level=26 nodes=1 input_ms=0.010 dispatch_ms=0.021 fb_release_ms=0.001
+[2026-11-09 08:42:11.092] [warning] [input-unresolved] frame=0 level=27 consumer_id=54 input_index=0 producer_id=52 producer_level=26
+[2026-11-09 08:42:11.092] [warning] [input-unresolved] frame=0 level=27 consumer_id=54 input_index=1 producer_id=53 producer_level=0
+[2026-11-09 08:42:11.092] [info] [temp-lifetime] frame=0 after_level=27 live=[57,59,63,] retired=[52,53,]
+[2026-11-09 08:42:11.092] [info] [exec-level-diag] frame=0 level=27 nodes=1 input_ms=0.010 dispatch_ms=0.012 fb_release_ms=0.001
+[2026-11-09 08:42:11.092] [warning] [input-unresolved] frame=0 level=28 consumer_id=56 input_index=0 producer_id=54 producer_level=27
+[2026-11-09 08:42:11.092] [info] [temp-lifetime] frame=0 after_level=28 live=[57,59,63,] retired=[54,]
+[2026-11-09 08:42:11.092] [info] [exec-level-diag] frame=0 level=28 nodes=1 input_ms=0.006 dispatch_ms=0.012 fb_release_ms=0.001
+[2026-11-09 08:42:11.092] [warning] [input-unresolved] frame=0 level=29 consumer_id=58 input_index=0 producer_id=56 producer_level=28
+[2026-11-09 08:42:11.092] [info] [graph-edge] frame=0 level=29 consumer_id=58 input_index=1 producer_id=57 producer_level=0
+[2026-11-09 08:42:11.092] [info] [temp-lifetime] frame=0 after_level=29 live=[59,63,] retired=[56,57,]
+[2026-11-09 08:42:11.092] [info] [exec-level-diag] frame=0 level=29 nodes=1 input_ms=0.010 dispatch_ms=0.012 fb_release_ms=0.001
+[2026-11-09 08:42:11.092] [warning] [input-unresolved] frame=0 level=30 consumer_id=60 input_index=0 producer_id=58 producer_level=29
+[2026-11-09 08:42:11.092] [info] [graph-edge] frame=0 level=30 consumer_id=60 input_index=1 producer_id=59 producer_level=0
+[2026-11-09 08:42:11.092] [info] [temp-lifetime] frame=0 after_level=30 live=[63,] retired=[58,59,]
+[2026-11-09 08:42:11.092] [info] [exec-level-diag] frame=0 level=30 nodes=1 input_ms=0.010 dispatch_ms=0.012 fb_release_ms=0.001
+[2026-11-09 08:42:11.092] [warning] [input-unresolved] frame=0 level=31 consumer_id=62 input_index=0 producer_id=60 producer_level=30
+[2026-11-09 08:42:11.092] [warning] [input-unresolved] frame=0 level=31 consumer_id=62 input_index=1 producer_id=61 producer_level=0
+[2026-11-09 08:42:11.092] [info] [temp-lifetime] frame=0 after_level=31 live=[63,] retired=[60,61,]
+[2026-11-09 08:42:11.092] [info] [exec-level-diag] frame=0 level=31 nodes=1 input_ms=0.021 dispatch_ms=0.013 fb_release_ms=0.001
+[2026-11-09 08:42:11.092] [warning] [input-unresolved] frame=0 level=32 consumer_id=64 input_index=0 producer_id=62 producer_level=31
+[2026-11-09 08:42:11.092] [info] [graph-edge] frame=0 level=32 consumer_id=64 input_index=1 producer_id=63 producer_level=0
+[2026-11-09 08:42:11.092] [info] [temp-lifetime] frame=0 after_level=32 live=[] retired=[62,63,]
+[2026-11-09 08:42:11.092] [info] [exec-level-diag] frame=0 level=32 nodes=1 input_ms=0.010 dispatch_ms=0.018 fb_release_ms=0.001
+[2026-11-09 08:42:11.092] [error] [executor] frame 0 failed: node 'text' error [UnsupportedCapability] MTSDF text route has no resident glyphs
+[2026-11-09 08:42:11.092] [error] [tile-exec] frame 0 single-pass execution failed (executor returned null — check frame_error for details)
+[2026-11-09 08:42:11.092] [error] [backend] native encode copy has no source surface for frame 0
+[2026-11-09 08:42:11.092] [error] [video] Failed to render frame 0
+[2026-11-09 08:42:11.093] [info] [video] writer join complete
+[2026-11-09 08:42:11.093] [info] [drain-debug] start drain, capacity=6
+[2026-11-09 08:42:11.093] [info] [drain-debug] reap done, busy_count=0
+[2026-11-09 08:42:11.093] [info] [video] trimming framebuffer pool
+[2026-11-09 08:42:11.093] [info] [video] Released framebuffer pool — memory trimmed
+[2026-11-09 08:42:11.093] [info] [video] frame-loop cleanup complete
+[2026-11-09 08:42:11.093] [info] [video] Encoder write blocked duration: 0.00 ms
+[2026-11-09 08:42:11.093] [info] [video_diag] conversion_and_copy_duration_ms: 0 ms
+[2026-11-09 08:42:11.093] [info] [video_diag] conversion_bytes_written=0 encoder_staging_copy_bytes=0 encoder_slot_reuses=0
+[2026-11-09 08:42:11.093] [info] [native_av] close: sending encoder flush
+[2026-11-09 08:42:11.093] [info] [native_av] close: encoder flush accepted
+[2026-11-09 08:42:11.093] [info] [native_av] close: packets drained=true
+[2026-11-09 08:42:11.093] [info] [native_av] close: finalizing mux session
+[2026-11-09 08:42:11.094] [info] [native_av] close: mux session finalized
+[2026-11-09 08:42:11.094] [info] [native_av] Closed native encoder — 0 frames accepted, encoder_packets=0 mux_packets=0 packet_pts=-1..-1, YUV cache: 0 hits / 0 misses
+[2026-11-09 08:42:11.094] [info] [native_av] native-surface timings — hwframe_pool_ms=0.0 c2v_prepare_ms=0.0 encode_drain_ms=0.0 send_ms=0.0 submit_counter_ms=0.0 backpressure_ms=0.0
+[2026-11-09 08:42:11.094] [info] [video_native] convert=0.00ms  send_frame=0.00ms  backpressure=0.00ms  flush=0.23ms  receive_packet=0.01ms  mux_write=0.00ms  trailer=0.15ms
+[2026-11-09 08:42:11.098] [warning] [vulkan] GPU timing completion has no telemetry frame: frame=0 slot=0
+[2026-11-09 08:42:11.099] [info] [video] render_ms=187.05 encode_ms=6.79 writer_encode_ms=0.00 wall_ms=2338.07 nvml_stop_ms=0.15
+[2026-11-09 08:42:11.099] [info] [video] FFmpeg queue wait duration: 0.00 ms
+[2026-11-09 08:42:11.099] [error] [video] Export incomplete: cancelled=false render_failed=true writer_error=false exception=false
+[2026-11-09 08:42:11.100] [info] [startup-profile] total=938.74ms logger=0.04ms cli_bootstrap=3.15ms cli_parse=nullms composition=0.18ms plan_read=0.25ms json_parse=0.60ms plan_decode_validate=74.07ms asset_resolve=0.06ms plan_compile=8.01ms unaccounted=133.61ms
+[2026-11-09 08:42:11.190] [info] [INFO] job-lifecycle: queue_close_ms=0.0 writer_join_ms=0.0 encoder_reset_ms=90.1 decoder_reset_ms=0.0 full_graph_reset_ms=0.0 sink_ctx_reset_ms=0.0 device_runtime_reset_ms=0.0 device_reservation_reset_ms=0.0
+[2026-11-09 08:42:11.190] [info] [INFO] job-lifecycle: sidecar_write_ms=0.0 session_teardown_ms=90.3
+[2026-11-09 08:42:11.198] [error] Render plan job failed: EncoderFailed: video encoder failed for composition 'socials_x_post' using codec 'h264' output 'RenderingGen/UploadDrive/socials_structures_20261109/mp4/Socials_01_X_Post_1920x1080_8s.mp4'
+[2026-11-09 08:42:11.198] [info] [INFO] job-lifecycle: slot_pool_close_ms=0.0 surface_release_ms=0.0

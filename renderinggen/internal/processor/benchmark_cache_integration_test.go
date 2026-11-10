@@ -15,6 +15,7 @@ import (
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/overlay"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/queue"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/storage"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/testenv"
 )
 
 // words is the 10-text corpus for the cache benchmark: every job renders the
@@ -131,11 +132,7 @@ func readLastTelemetry(t *testing.T, dir string) telemetryLine {
 // the engine-side render_ms / encode_ms / cache hits-misses from the telemetry
 // JSONL, then prints a table. Skips when chronon3d_cli is not installed.
 func TestBenchmarkCachePromotion10Jobs(t *testing.T) {
-	home := os.Getenv("CHRONON_HOME")
-	if home == "" {
-		home = "/opt/chronon3d"
-	}
-	cli := &chronon.Client{Home: home}
+	cli := &chronon.Client{Home: testenv.ChrononHome(t), BinaryPath: testenv.RequireChronon(t)}
 	if err := cli.Verify(); err != nil {
 		t.Skipf("chronon3d_cli not available: %v", err)
 	}

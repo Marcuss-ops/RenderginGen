@@ -1,0 +1,128 @@
+{
+  "canvas": {
+    "duration_frames": 240,
+    "fps_den": 1,
+    "fps_num": 24,
+    "height": 1080,
+    "width": 1920
+  },
+  "job_id": "01_cinematic_dust",
+  "layers": [
+    {
+      "color": [
+        0.027450980618596077,
+        0.03529411926865578,
+        0.05098039284348488,
+        1.0
+      ],
+      "duration_frames": 240,
+      "id": "bg",
+      "position": [
+        960,
+        540
+      ],
+      "screen_space": true,
+      "size": [
+        1920,
+        1080
+      ],
+      "start_frame": 0,
+      "type": "color"
+    },
+    {
+      "duration_frames": 240,
+      "enable_3d": false,
+      "id": "cinematic_dust",
+      "particle_emitter": {
+        "blend_mode": "screen",
+        "bokeh": true,
+        "color_ramp": [
+          {
+            "color": [
+              0.7400000095367432,
+              0.8199999928474426,
+              0.9599999785423279,
+              0.0
+            ],
+            "position": 0.0
+          },
+          {
+            "color": [
+              0.7400000095367432,
+              0.8199999928474426,
+              0.9599999785423279,
+              0.47999998927116394
+            ],
+            "position": 0.18000000715255737
+          },
+          {
+            "color": [
+              0.9399999976158142,
+              0.8399999737739563,
+              0.6499999761581421,
+              0.550000011920929
+            ],
+            "position": 0.699999988079071
+          },
+          {
+            "color": [
+              0.9399999976158142,
+              0.8399999737739563,
+              0.6499999761581421,
+              0.0
+            ],
+            "position": 1.0
+          }
+        ],
+        "count": 320,
+        "depth_range": [
+          0.20000000298023224,
+          1.0
+        ],
+        "emitter_size": [
+          2200.0,
+          1380.0
+        ],
+        "environment": true,
+        "flow_scale": 0.006000000052154064,
+        "flow_speed": 0.18000000715255737,
+        "flow_strength": 26.0,
+        "gravity": 0.0,
+        "lifetime": [
+          6.0,
+          14.0
+        ],
+        "seed": 9137,
+        "size": [
+          1.2000000476837158,
+          7.5
+        ],
+        "turbulence": 0.0,
+        "twinkle": 0.3499999940395355,
+        "twinkle_speed": 0.2199999988079071,
+        "velocity_max": [
+          7.0,
+          2.0
+        ],
+        "velocity_min": [
+          -7.0,
+          -10.0
+        ]
+      },
+      "position": [
+        0.0,
+        0.0
+      ],
+      "screen_space": true,
+      "start_frame": 0,
+      "type": "particles"
+    }
+  ],
+  "output": {
+    "codec": "h264",
+    "format": "mp4",
+    "path": "01_cinematic_dust.mp4"
+  },
+  "schema": "chronon.render-plan.v3",
+  "version": 3
+}

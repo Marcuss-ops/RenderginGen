@@ -1,0 +1,128 @@
+{
+  "canvas": {
+    "duration_frames": 240,
+    "fps_den": 1,
+    "fps_num": 24,
+    "height": 1080,
+    "width": 1920
+  },
+  "job_id": "02_embers",
+  "layers": [
+    {
+      "color": [
+        0.03921568766236305,
+        0.0235294122248888,
+        0.01568627543747425,
+        1.0
+      ],
+      "duration_frames": 240,
+      "id": "bg",
+      "position": [
+        960,
+        540
+      ],
+      "screen_space": true,
+      "size": [
+        1920,
+        1080
+      ],
+      "start_frame": 0,
+      "type": "color"
+    },
+    {
+      "duration_frames": 240,
+      "enable_3d": false,
+      "id": "embers",
+      "particle_emitter": {
+        "blend_mode": "add",
+        "bokeh": true,
+        "color_ramp": [
+          {
+            "color": [
+              1.0,
+              0.7799999713897705,
+              0.36000001430511475,
+              0.0
+            ],
+            "position": 0.0
+          },
+          {
+            "color": [
+              1.0,
+              0.6200000047683716,
+              0.18000000715255737,
+              0.949999988079071
+            ],
+            "position": 0.10000000149011612
+          },
+          {
+            "color": [
+              1.0,
+              0.30000001192092896,
+              0.05000000074505806,
+              0.699999988079071
+            ],
+            "position": 0.75
+          },
+          {
+            "color": [
+              0.699999988079071,
+              0.10000000149011612,
+              0.019999999552965164,
+              0.0
+            ],
+            "position": 1.0
+          }
+        ],
+        "count": 180,
+        "depth_range": [
+          0.25,
+          1.0
+        ],
+        "emitter_size": [
+          900.0,
+          140.0
+        ],
+        "environment": true,
+        "flow_scale": 0.00800000037997961,
+        "flow_speed": 0.5,
+        "flow_strength": 16.0,
+        "gravity": -6.0,
+        "lifetime": [
+          1.600000023841858,
+          4.199999809265137
+        ],
+        "seed": 2219,
+        "size": [
+          0.699999988079071,
+          3.200000047683716
+        ],
+        "turbulence": 0.0,
+        "twinkle": 0.699999988079071,
+        "twinkle_speed": 1.399999976158142,
+        "velocity_max": [
+          12.0,
+          -14.0
+        ],
+        "velocity_min": [
+          -12.0,
+          -46.0
+        ]
+      },
+      "position": [
+        0.0,
+        390.0
+      ],
+      "screen_space": true,
+      "start_frame": 0,
+      "type": "particles"
+    }
+  ],
+  "output": {
+    "codec": "h264",
+    "format": "mp4",
+    "path": "02_embers.mp4"
+  },
+  "schema": "chronon.render-plan.v3",
+  "version": 3
+}

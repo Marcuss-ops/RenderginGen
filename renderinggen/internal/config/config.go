@@ -25,6 +25,7 @@ import (
 	"time"
 
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/chronon"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/chrononbin"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/workerlog"
 	"gopkg.in/yaml.v3"
 )
@@ -368,7 +369,7 @@ func applyDefaults(c *Config) {
 		c.Chronon.Backend = "software"
 	}
 	if c.Chronon.Home == "" {
-		c.Chronon.Home = "/opt/chronon3d"
+		c.Chronon.Home = chrononbin.DefaultHome
 	}
 	if c.Chronon.Mode == "" {
 		c.Chronon.Mode = "cli"

@@ -5,6 +5,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -73,7 +74,7 @@ func run(args []string, stdout, stderr io.Writer) int {
 		fmt.Fprintln(stderr, "map-tactical-fill: emitter not found; pass -emit or set CHRONONTEMPLATE_EMIT_TACTICAL_FILL")
 		return 1
 	}
-	if err := tacticalfill.Emit(emitter, samplePath, planPath); err != nil {
+	if err := tacticalfill.Emit(context.Background(), emitter, samplePath, planPath); err != nil {
 		fmt.Fprintf(stderr, "map-tactical-fill: %v\n", err)
 		return 1
 	}

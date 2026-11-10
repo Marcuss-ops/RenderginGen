@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/motion"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/testenv"
 )
 
 // imageMotionDistinctFPS is the fixture frame rate: the same 24/1 the rest of
@@ -54,9 +55,7 @@ const imageMotionDistinctFrame = 84
 // passed every structural gate — now really encode different pixels.
 func TestEveryImageMotionRendersADistinctFrame(t *testing.T) {
 	bin := chrononBinFor(t)
-	if _, err := exec.LookPath("ffmpeg"); err != nil {
-		t.Skipf("ffmpeg not available for pixel check: %v", err)
-	}
+	testenv.RequireTools(t, "ffmpeg")
 	// The invariant the frame choice rests on, stated as the two bounds it sits
 	// between: after the longest entrance and before the shortest exit.
 	itemStartFrame := int(certificationStartMS) * imageMotionDistinctFPS / 1000

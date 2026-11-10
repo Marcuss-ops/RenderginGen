@@ -22,6 +22,10 @@ func compileImageItem(ri resolvedItem, src *semanticPlan, registry *assetRegistr
 	if err != nil {
 		return nil, err
 	}
+	layers, err = addSingleImageBackdrop(ri, src, registry, layers)
+	if err != nil {
+		return nil, err
+	}
 	return applyImageItemEffects(ri, layers)
 }
 

@@ -1,0 +1,202 @@
+/home/pierone/src/go-master/projects/Pyt/VeloxEditing/Chronon3d/build/chronon/linux-video-release/apps/chronon3d_cli/chronon3d_cli render --plan /home/pierone/src/go-master/projects/Pyt/VeloxEditing/RenderingGen/UploadDrive/ae_text_parity_20261109/plans/01_character_value.plan.json --assets-root /home/pierone/src/go-master/projects/Pyt/VeloxEditing/Chronon3d --backend vulkan --gpu-hot-path-mode require_gpu_native --tone-map aces --exposure 1.0 -o /home/pierone/src/go-master/projects/Pyt/VeloxEditing/RenderingGen/UploadDrive/ae_text_parity_20261109/videos/01_character_value_1920x1080_6s.mp4
+
+[2026-11-09 13:50:55.273] [info] [asset-profile] kind=3 path=assets/fonts/SF-Pro-Display-Semibold.otf bytes=335964 cache=miss invalidated=0 stat=0.01ms hash=3.78ms hashed_bytes=335964 total=3.86ms
+[2026-11-09 13:50:55.273] [info] [asset-digest-cache] hits=0 misses=1 invalidations=0 bytes_hashed=335964 lookup_ms=0.00 write_ms=0.01 full_hash_ms=3.78
+[2026-11-09 13:50:55.273] [info] [plan-profile] read=0.17ms parse=0.20ms decode=61.27ms resolver=0.04ms compile_validate=4.52ms total=66.21ms
+[2026-11-09 13:50:55.273] [info] [video] Auto-selecting yuv420p pipe pixel format for 1920x1080 output
+[2026-11-09 13:50:55.274] [info] [video] execution plan resolved (reason: gpu_composition_pipe_no_video_source); decode=2 composite=2 encode=2 interop=0 handoff=3 codec=3
+[2026-11-09 13:50:55.305] [info] [video-runtime] created persistent runtime for device 0 (CUDA ordinal 0)
+[2026-11-09 13:50:55.305] [info] [video] encoder feed capability: host_frame=true direct_yuv=false native_surface=false
+[2026-11-09 13:50:55.530] [info] [native_av] CUDA context contract: native=0x55b6d4742750 ffmpeg=0x55b6d4742750
+[2026-11-09 13:50:55.547] [info] [native_av] NVENC tuning applied: rc=driver-default preset=slow async_depth=4 nvenc_surfaces=8 qp=-1 bitrate=0
+[h264_nvenc @ 0x55b6d4949180] Defined rc_lookahead requires more surfaces, increasing used surfaces 8 -> 34
+[2026-11-09 13:50:55.648] [info] [native_av] encoder bitstream contract: codec=27 profile=100 level=-99 pix_fmt=117 parameter_sets=53 materialized=true
+[2026-11-09 13:50:55.649] [info] [native_av] Opened native encoder: 1920x1080 @ 30fps, codec=h264_nvenc, rc=driver-default, preset=slow, output='/home/pierone/src/go-master/projects/Pyt/VeloxEditing/RenderingGen/UploadDrive/ae_text_parity_20261109/videos/01_character_value_1920x1080_6s.partial.mp4'
+[2026-11-09 13:50:56.329] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-09 13:50:56.560] [info] [pool-warm] Pre-allocated and pre-imported 6 execution slots (1920x1080) for native NVENC
+[2026-11-09 13:50:56.583] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-09 13:50:56.675] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:50:56.680] [info] chronon3d::vulkan text batch formats: dst_image.format=109 atlas_image.format=44 atlas_encoding=2 (shader contract: dst rgba32f, atlas rgba8)
+[2026-11-09 13:50:56.680] [info] [temp-lifetime] frame=0 after_level=0 live=[0,1,3,] retired=[]
+[2026-11-09 13:50:56.680] [info] [exec-level-diag] frame=0 level=0 nodes=3 input_ms=0.001 dispatch_ms=6.770 fb_release_ms=0.001
+[2026-11-09 13:50:56.680] [info] [graph-edge] frame=0 level=1 consumer_id=2 input_index=0 producer_id=0 producer_level=0
+[2026-11-09 13:50:56.680] [info] [graph-edge] frame=0 level=1 consumer_id=2 input_index=1 producer_id=1 producer_level=0
+[2026-11-09 13:50:56.680] [info] [temp-lifetime] frame=0 after_level=1 live=[2,3,] retired=[0,1,]
+[2026-11-09 13:50:56.680] [info] [exec-level-diag] frame=0 level=1 nodes=1 input_ms=0.014 dispatch_ms=0.432 fb_release_ms=0.004
+[2026-11-09 13:50:56.680] [info] [graph-edge] frame=0 level=2 consumer_id=4 input_index=0 producer_id=2 producer_level=1
+[2026-11-09 13:50:56.680] [info] [graph-edge] frame=0 level=2 consumer_id=4 input_index=1 producer_id=3 producer_level=0
+[2026-11-09 13:50:56.680] [info] [temp-lifetime] frame=0 after_level=2 live=[4,] retired=[2,3,]
+[2026-11-09 13:50:56.681] [info] [exec-level-diag] frame=0 level=2 nodes=1 input_ms=0.012 dispatch_ms=0.073 fb_release_ms=0.001
+[2026-11-09 13:50:56.681] [info] [video] Exporting via Arena-backed SIMD pipeline
+[2026-11-09 13:50:56.683] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:50:56.685] [info] [temp-lifetime] frame=1 after_level=0 live=[0,1,3,] retired=[]
+[2026-11-09 13:50:56.685] [info] [exec-level-diag] frame=1 level=0 nodes=3 input_ms=0.001 dispatch_ms=3.818 fb_release_ms=0.001
+[2026-11-09 13:50:56.685] [info] [graph-edge] frame=1 level=1 consumer_id=2 input_index=0 producer_id=0 producer_level=0
+[2026-11-09 13:50:56.685] [info] [graph-edge] frame=1 level=1 consumer_id=2 input_index=1 producer_id=1 producer_level=0
+[2026-11-09 13:50:56.685] [info] [temp-lifetime] frame=1 after_level=1 live=[2,3,] retired=[0,1,]
+[2026-11-09 13:50:56.685] [info] [exec-level-diag] frame=1 level=1 nodes=1 input_ms=0.012 dispatch_ms=0.375 fb_release_ms=0.003
+[2026-11-09 13:50:56.685] [info] [graph-edge] frame=1 level=2 consumer_id=4 input_index=0 producer_id=2 producer_level=1
+[2026-11-09 13:50:56.685] [info] [graph-edge] frame=1 level=2 consumer_id=4 input_index=1 producer_id=3 producer_level=0
+[2026-11-09 13:50:56.685] [info] [temp-lifetime] frame=1 after_level=2 live=[4,] retired=[2,3,]
+[2026-11-09 13:50:56.685] [info] [exec-level-diag] frame=1 level=2 nodes=1 input_ms=0.011 dispatch_ms=0.072 fb_release_ms=0.001
+[2026-11-09 13:50:56.686] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:50:56.687] [info] [temp-lifetime] frame=2 after_level=0 live=[0,1,3,] retired=[]
+[2026-11-09 13:50:56.687] [info] [exec-level-diag] frame=2 level=0 nodes=3 input_ms=0.000 dispatch_ms=1.144 fb_release_ms=0.001
+[2026-11-09 13:50:56.687] [info] [graph-edge] frame=2 level=1 consumer_id=2 input_index=0 producer_id=0 producer_level=0
+[2026-11-09 13:50:56.687] [info] [graph-edge] frame=2 level=1 consumer_id=2 input_index=1 producer_id=1 producer_level=0
+[2026-11-09 13:50:56.687] [info] [temp-lifetime] frame=2 after_level=1 live=[2,3,] retired=[0,1,]
+[2026-11-09 13:50:56.687] [info] [exec-level-diag] frame=2 level=1 nodes=1 input_ms=0.012 dispatch_ms=0.074 fb_release_ms=0.002
+[2026-11-09 13:50:56.687] [info] [graph-edge] frame=2 level=2 consumer_id=4 input_index=0 producer_id=2 producer_level=1
+[2026-11-09 13:50:56.687] [info] [graph-edge] frame=2 level=2 consumer_id=4 input_index=1 producer_id=3 producer_level=0
+[2026-11-09 13:50:56.687] [info] [temp-lifetime] frame=2 after_level=2 live=[4,] retired=[2,3,]
+[2026-11-09 13:50:56.687] [info] [exec-level-diag] frame=2 level=2 nodes=1 input_ms=0.011 dispatch_ms=0.058 fb_release_ms=0.001
+[2026-11-09 13:50:56.688] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:50:56.690] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:50:56.692] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:50:56.694] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:50:56.696] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:50:56.698] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:50:56.699] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:50:56.701] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:50:56.703] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:50:56.704] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:50:56.706] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:50:56.709] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:50:56.710] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:50:56.712] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:50:56.712] [info] [video]   18/180 frames
+[2026-11-09 13:50:56.713] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:50:56.714] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:50:56.716] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:50:56.718] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:50:56.720] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:50:56.721] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:50:56.723] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:50:56.724] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:50:56.725] [info] [vulkan-lifecycle] frame=25 vram_bytes=670924800 live_surfaces=17 surface_bindings=12 registry_live_handles=132 physical_images=17 deferred_releases=0 vma_allocations=49 surfaces_created=132 surfaces_released=120 queue_packages=1 execution_slots_busy=2 command_batch_active=false
+[2026-11-09 13:50:56.726] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:50:56.728] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:50:56.729] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:50:56.731] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:50:56.733] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:50:56.735] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:50:56.737] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:50:56.739] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:50:56.740] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:50:56.742] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:50:56.743] [info] [video]   36/180 frames
+[2026-11-09 13:50:56.747] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:50:56.752] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:50:56.757] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:50:56.763] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:50:56.768] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:50:56.773] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:50:56.778] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:50:56.784] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:50:56.789] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:50:56.794] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:50:56.799] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:50:56.805] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:50:56.810] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:50:56.815] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:50:56.820] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:50:56.821] [info] [vulkan-lifecycle] frame=50 vram_bytes=670924800 live_surfaces=17 surface_bindings=12 registry_live_handles=257 physical_images=17 deferred_releases=0 vma_allocations=49 surfaces_created=257 surfaces_released=245 queue_packages=1 execution_slots_busy=2 command_batch_active=false
+[2026-11-09 13:50:56.826] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:50:56.831] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:50:56.836] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:50:56.837] [info] [video]   54/180 frames
+[2026-11-09 13:50:56.841] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:50:56.847] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:50:56.852] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:50:56.857] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:50:56.863] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:50:56.868] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:50:56.873] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:50:56.878] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:50:56.882] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:50:56.887] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:50:56.892] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:50:56.897] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:50:56.902] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:50:56.907] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:50:56.911] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:50:56.916] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:50:56.920] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:50:56.925] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:50:56.926] [info] [video]   72/180 frames
+[2026-11-09 13:50:56.929] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:50:56.933] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:50:56.938] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:50:56.942] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:50:56.943] [info] [vulkan-lifecycle] frame=75 vram_bytes=670924800 live_surfaces=17 surface_bindings=12 registry_live_handles=382 physical_images=17 deferred_releases=0 vma_allocations=49 surfaces_created=382 surfaces_released=370 queue_packages=1 execution_slots_busy=2 command_batch_active=false
+[2026-11-09 13:50:56.964] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:50:56.965] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:50:56.966] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:50:56.968] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:50:56.969] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:50:56.972] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:50:56.976] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:50:56.981] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:50:56.985] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:50:56.989] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:50:56.993] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:50:56.998] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:50:57.002] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:50:57.007] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:50:57.007] [info] [video]   90/180 frames
+[2026-11-09 13:50:57.011] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:50:57.016] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:50:57.020] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:50:57.024] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:50:57.028] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:50:57.035] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:50:57.039] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:50:57.043] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:50:57.048] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:50:57.052] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:50:57.056] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:50:57.057] [info] [vulkan-lifecycle] frame=100 vram_bytes=670924800 live_surfaces=17 surface_bindings=12 registry_live_handles=507 physical_images=17 deferred_releases=0 vma_allocations=49 surfaces_created=507 surfaces_released=495 queue_packages=1 execution_slots_busy=2 command_batch_active=false
+[2026-11-09 13:50:57.061] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:50:57.065] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:50:57.070] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:50:57.073] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-09 13:50:57.087] [info] [video]   108/180 frames
+[2026-11-09 13:50:57.160] [info] [vulkan-lifecycle] frame=125 vram_bytes=670924800 live_surfaces=17 surface_bindings=12 registry_live_handles=632 physical_images=17 deferred_releases=0 vma_allocations=49 surfaces_created=632 surfaces_released=620 queue_packages=1 execution_slots_busy=2 command_batch_active=false
+[2026-11-09 13:50:57.160] [info] [video]   126/180 frames
+[2026-11-09 13:50:57.230] [info] [video]   144/180 frames
+[2026-11-09 13:50:57.259] [info] [vulkan-lifecycle] frame=150 vram_bytes=670924800 live_surfaces=17 surface_bindings=12 registry_live_handles=757 physical_images=17 deferred_releases=0 vma_allocations=49 surfaces_created=757 surfaces_released=745 queue_packages=1 execution_slots_busy=2 command_batch_active=false
+[2026-11-09 13:50:57.304] [info] [video]   162/180 frames
+[2026-11-09 13:50:57.359] [info] [vulkan-lifecycle] frame=175 vram_bytes=670924800 live_surfaces=17 surface_bindings=12 registry_live_handles=882 physical_images=17 deferred_releases=0 vma_allocations=49 surfaces_created=882 surfaces_released=870 queue_packages=1 execution_slots_busy=2 command_batch_active=false
+[2026-11-09 13:50:57.377] [info] [video]   180/180 frames
+[2026-11-09 13:50:57.384] [info] [video] writer join complete
+[2026-11-09 13:50:57.384] [info] [drain-debug] start drain, capacity=6
+[2026-11-09 13:50:57.384] [info] [drain-debug] slot_id=4 has completion, waiting
+[2026-11-09 13:50:57.384] [info] [drain-debug] slot_id=4 wait complete
+[2026-11-09 13:50:57.384] [info] [drain-debug] slot_id=5 has completion, waiting
+[2026-11-09 13:50:57.386] [info] [drain-debug] slot_id=5 wait complete
+[2026-11-09 13:50:57.386] [info] [drain-debug] reap done, busy_count=0
+[2026-11-09 13:50:57.386] [info] [video] trimming framebuffer pool
+[2026-11-09 13:50:57.386] [info] [video] Released framebuffer pool — memory trimmed
+[2026-11-09 13:50:57.386] [info] [video] frame-loop cleanup complete
+[2026-11-09 13:50:57.386] [info] [video] Encoder write blocked duration: 0.00 ms
+[2026-11-09 13:50:57.386] [info] [video_diag] conversion_and_copy_duration_ms: 0 ms
+[2026-11-09 13:50:57.386] [info] [video_diag] conversion_bytes_written=0 encoder_staging_copy_bytes=0 encoder_slot_reuses=0
+[2026-11-09 13:50:57.386] [info] [native_av] close: sending encoder flush
+[2026-11-09 13:50:57.445] [info] [native_av] close: encoder flush accepted
+[2026-11-09 13:50:57.502] [info] [native_av] close: packets drained=true
+[2026-11-09 13:50:57.502] [info] [native_av] close: finalizing mux session
+[2026-11-09 13:50:57.503] [info] [native_av] close: mux session finalized
+[2026-11-09 13:50:57.503] [info] [native_av] Closed native encoder — 180 frames accepted, encoder_packets=180 mux_packets=180 packet_pts=0..179, YUV cache: 0 hits / 0 misses
+[2026-11-09 13:50:57.503] [info] [native_av] native-surface timings — hwframe_pool_ms=6.1 c2v_prepare_ms=3.2 encode_drain_ms=9.1 send_ms=376.2 submit_counter_ms=376.2 backpressure_ms=0.0
+[2026-11-09 13:50:57.503] [info] [video_native] convert=9.09ms  send_frame=376.22ms  backpressure=0.00ms  flush=116.79ms  receive_packet=57.66ms  mux_write=3.57ms  trailer=0.78ms
+[2026-11-09 13:50:57.506] [info] [video] render_ms=798.04 encode_ms=125.73 writer_encode_ms=399.71 wall_ms=2232.64 nvml_stop_ms=0.10
+[2026-11-09 13:50:57.506] [info] [video] FFmpeg queue wait duration: 0.49 ms
+[2026-11-09 13:50:57.533] [info] [video] copy_eligible=true sha256=de337c16728cc2f66f9fd7d67f4438e9d0217dc97a195221871ff22e4db07c14
+[2026-11-09 13:50:57.533] [info] [video] Wrote /home/pierone/src/go-master/projects/Pyt/VeloxEditing/RenderingGen/UploadDrive/ae_text_parity_20261109/videos/01_character_value_1920x1080_6s.mp4
+[2026-11-09 13:50:57.533] [info] [startup-profile] total=1126.02ms logger=0.07ms cli_bootstrap=4.72ms cli_parse=nullms composition=0.16ms plan_read=0.17ms json_parse=0.20ms plan_decode_validate=61.27ms asset_resolve=0.04ms plan_compile=4.52ms unaccounted=113.80ms
+[2026-11-09 13:50:57.560] [info] [video] Wrote exact per-frame timing sidecar: /home/pierone/src/go-master/projects/Pyt/VeloxEditing/RenderingGen/UploadDrive/ae_text_parity_20261109/videos/01_character_value_1920x1080_6s.mp4.timing.json
+[2026-11-09 13:50:57.649] [info] [INFO] job-lifecycle: queue_close_ms=0.0 writer_join_ms=0.0 encoder_reset_ms=80.8 decoder_reset_ms=0.0 full_graph_reset_ms=0.0 sink_ctx_reset_ms=0.0 device_runtime_reset_ms=0.0 device_reservation_reset_ms=0.0
+[2026-11-09 13:50:57.649] [info] [INFO] job-lifecycle: sidecar_write_ms=34.7 session_teardown_ms=81.1
+[2026-11-09 13:50:57.658] [info] [INFO] job-lifecycle: post_sidecar_to_receipt_ms=89.9
+[2026-11-09 13:50:57.658] [info] [INFO] job-lifecycle: execute_ms=2384.7 caller_tail_ms=0.0 receipt_deferred=0
+[2026-11-09 13:50:57.658] [info] [INFO] job-lifecycle: slot_pool_close_ms=0.0 surface_release_ms=0.1

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/testenv"
 	"image"
 	"image/color"
 	"os"
@@ -19,9 +20,7 @@ import (
 // be absent before its own start and visible in its own slot afterwards.
 func TestCompositeThreeNearbyImagesRenderAllThreeStaggered(t *testing.T) {
 	bin := chrononBinFor(t)
-	if _, err := exec.LookPath("ffmpeg"); err != nil {
-		t.Skipf("ffmpeg not available for composite pixel checks: %v", err)
-	}
+	testenv.RequireTools(t, "ffmpeg")
 	assetsRoot := compositeRuntimeAssetsRoot(t)
 	leftSHA := fixtureSHA256(t, filepath.Join(assetsRoot, "assets", "semantic", "image-left.png"))
 	rightSHA := fixtureSHA256(t, filepath.Join(assetsRoot, "assets", "semantic", "image-right.png"))

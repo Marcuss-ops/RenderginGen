@@ -19,6 +19,8 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/chrononbin"
 )
 
 // DefaultStallTimeout is the maximum duration Chronon CLI can produce zero
@@ -277,25 +279,10 @@ type Client struct {
 // Compile-time check that Client satisfies Renderer.
 var _ Renderer = (*Client)(nil)
 
-// Binary returns the path to the Chronon CLI.
+// Binary returns the path to the Chronon CLI. The resolution order lives in
+// internal/chrononbin so the production client and the test gates cannot drift.
 func (c *Client) Binary() string {
-	if override := os.Getenv("CHRONON_BINARY"); override != "" {
-		return override
-	}
-	if c.BinaryPath != "" {
-		return c.BinaryPath
-	}
-	p := filepath.Join(c.Home, "bin", "chronon3d_cli")
-	if _, err := os.Stat(p); err == nil {
-		return p
-	}
-	p = filepath.Join(c.Home, "apps", "chronon3d_cli", "chronon3d_cli")
-	if _, err := os.Stat(p); err == nil {
-		return p
-	}
-	// Keep the conventional Home/bin path as the diagnostic fallback when no
-	// candidate exists, so the startup error still names the configured prefix.
-	return filepath.Join(c.Home, "bin", "chronon3d_cli")
+	return chrononbin.Resolve(c.Home, c.BinaryPath, os.Getenv("CHRONON_BINARY"))
 }
 
 // Verify checks that the Chronon binary is present, executable, and reports
