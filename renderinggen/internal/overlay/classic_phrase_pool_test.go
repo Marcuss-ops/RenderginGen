@@ -62,9 +62,9 @@ func TestClassicAppleLongPhrasePoolCompilesUnderSharedPreset(t *testing.T) {
 			if opened, _ := last.Value.(float64); opened < 99.9 {
 				t.Fatalf("%q selector sweep never opens: last keyframe %+v", tc.motion, last)
 			}
-			// The phrase entrance is one third of the 192-frame window.
-			if last.Frame > 63 {
-				t.Fatalf("%q sweep ends at frame %d, past the 64-frame entrance", tc.motion, last.Frame)
+			// The phrase entrance is capped at 17 frames for this long window.
+			if last.Frame > 16 {
+				t.Fatalf("%q sweep ends at frame %d, past the 17-frame entrance", tc.motion, last.Frame)
 			}
 			if len(animator.Properties) == 0 {
 				t.Fatalf("%q compiled no animator properties", tc.motion)

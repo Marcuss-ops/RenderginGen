@@ -116,6 +116,28 @@ func TestTextRoleEntityCaptionOwnsTheNameplateTreatment(t *testing.T) {
 	}
 }
 
+func TestPhraseRoleAddsFillOpposingKeyline(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		fill string
+		want string
+	}{
+		{name: "light text on dark outline", fill: "#F8F5EA", want: "#111827"},
+		{name: "dark text on light outline", fill: "#101010", want: "#FFFFFF"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			style := &LayerStyle{}
+			applyTextRoleBaseStyle(textRoleImportantPhrase, style, 48, tc.fill, nil)
+			if style.Stroke == nil || style.Stroke.Color != tc.want {
+				t.Fatalf("phrase keyline = %+v, want %s", style.Stroke, tc.want)
+			}
+			if style.Background != nil {
+				t.Fatalf("phrase role introduced unsupported text-card background: %+v", style.Background)
+			}
+		})
+	}
+}
+
 // TestTextRoleEntityCaptionYieldsToPayloadLook pins the single-source
 // guarantee: when the plan explicitly chose stroke, shadow or glow, the
 // role base must not clobber that choice with its own constants.

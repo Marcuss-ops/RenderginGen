@@ -59,6 +59,18 @@ func entityCardPlan(t *testing.T, caption, captionMotion string, frame bool) []L
 	return result.Plan.Layers
 }
 
+func textLayerCanvasPosition(layer Layer, width, height float64) (float64, float64) {
+	if len(layer.Position) < 2 {
+		return 0, 0
+	}
+	x, y := layer.Position[0], layer.Position[1]
+	if !layer.ScreenSpace {
+		x += width / 2
+		y += height / 2
+	}
+	return x, y
+}
+
 func TestEntityCaptionPreserved(t *testing.T) {
 	layers := entityCardPlan(t, "Ada Lovelace", "", false)
 	if len(layers) != 2 {
@@ -84,7 +96,8 @@ func TestEntityCaptionAnchoredBelowImage(t *testing.T) {
 	// Chronon positions are canvas-center relative: the image's bottom edge
 	// is canvasHeight/2 + position_y + size/2.
 	imageBottom := 720.0/2 + image.Position[1] + image.Size[1]/2
-	captionTop := caption.Position[1] - caption.Size[1]/2
+	_, captionY := textLayerCanvasPosition(caption, 1280, 720)
+	captionTop := captionY - caption.Size[1]/2
 	if captionTop <= imageBottom {
 		t.Fatalf("caption top (%v) must sit below image bottom (%v)", captionTop, imageBottom)
 	}
@@ -98,7 +111,7 @@ func TestEntityCaptionCenteredOnImage(t *testing.T) {
 	layers := entityCardPlan(t, "Ada Lovelace", "", false)
 	image, caption := layers[0], layers[1]
 	imageCenterX := 1280.0/2 + image.Position[0]
-	captionCenterX := caption.Position[0]
+	captionCenterX, _ := textLayerCanvasPosition(caption, 1280, 720)
 	if math.Abs(captionCenterX-imageCenterX) > 1 {
 		t.Fatalf("caption center_x %v ~= image center_x %v", captionCenterX, imageCenterX)
 	}
@@ -111,8 +124,9 @@ func TestEntityCaptionSafeArea(t *testing.T) {
 		t.Fatalf("caption size %v invalid", caption.Size)
 	}
 	halfWidth := caption.Size[0] / 2
-	if caption.Position[0]-halfWidth < 0 || caption.Position[0]+halfWidth > 1280 {
-		t.Fatalf("caption box %v..%v leaves the canvas", caption.Position[0]-halfWidth, caption.Position[0]+halfWidth)
+	captionX, _ := textLayerCanvasPosition(caption, 1280, 720)
+	if captionX-halfWidth < 0 || captionX+halfWidth > 1280 {
+		t.Fatalf("caption box %v..%v leaves the canvas", captionX-halfWidth, captionX+halfWidth)
 	}
 }
 
@@ -127,7 +141,8 @@ func TestEntityCaptionLongNameFits(t *testing.T) {
 			t.Fatalf("caption text = %q, want full name preserved", caption.Text)
 		}
 		halfWidth := caption.Size[0] / 2
-		if caption.Position[0]-halfWidth < 0 || caption.Position[0]+halfWidth > 1280 {
+		captionX, _ := textLayerCanvasPosition(caption, 1280, 720)
+		if captionX-halfWidth < 0 || captionX+halfWidth > 1280 {
 			t.Fatalf("long-name caption box leaves the canvas: size %v pos %v", caption.Size, caption.Position)
 		}
 		if caption.Style == nil || caption.Style.FontSize < 12 || caption.Style.FontSize > 42 {

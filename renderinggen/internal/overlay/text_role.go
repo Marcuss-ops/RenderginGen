@@ -1,5 +1,7 @@
 package overlay
 
+import "math"
+
 // textRole names the semantic job a text layer does. Phrase, important phrase,
 // lower-third, metric and date use dedicated resolvers; entity/image captions
 // and map labels/attribution provide role-resolved specs directly. All share
@@ -77,6 +79,16 @@ func applyTextRoleBaseStyle(role textRole, style *LayerStyle, fontSize float64, 
 			fill = "#F8F5EA"
 		}
 		style.Fill = fill
+		// Phrase text may sit directly over a photograph. Text cards are not
+		// supported by the strict Vulkan path, so give every phrase a keyline
+		// whose luminance opposes its fill. This preserves caller-selected
+		// strokes while keeping default black and white text distinguishable
+		// over both dark and bright image regions.
+		if style.Stroke == nil {
+			if _, chosen := runtimeStyle["stroke_size"]; !chosen {
+				style.Stroke = &LayerStroke{Color: contrastingKeyline(fill), Width: 2.5}
+			}
+		}
 		style.Background = nil
 	case textRoleEntityCaption, textRoleImageCaption:
 		// Cinematic caption treatment: a large warm-white title, a
@@ -145,6 +157,26 @@ func applyTextRoleBaseStyle(role textRole, style *LayerStyle, fontSize float64, 
 	default:
 		// Unrecognized roles keep the preset style untouched.
 	}
+}
+
+func contrastingKeyline(fill string) string {
+	rgb, err := parseHexColor(fill)
+	if err != nil || len(rgb) < 3 {
+		return "#111827"
+	}
+	// WCAG relative luminance threshold in sRGB; only the polarity matters
+	// here because the keyline is an outline, not a text/background pair.
+	linear := func(v float64) float64 {
+		if v <= 0.04045 {
+			return v / 12.92
+		}
+		return math.Pow((v+0.055)/1.055, 2.4)
+	}
+	luminance := 0.2126*linear(rgb[0]) + 0.7152*linear(rgb[1]) + 0.0722*linear(rgb[2])
+	if luminance > 0.45 {
+		return "#111827"
+	}
+	return "#FFFFFF"
 }
 
 // hasRuntimeShadowKey reports whether the plan explicitly chose any shadow

@@ -1,0 +1,31 @@
+{
+  "schema": "chrononmotion.compositing-showcase.videos.v1",
+  "source_json": "RenderingGen/Upload/cm3d_compositing_20261110/showcase.json",
+  "width": 1920,
+  "height": 1080,
+  "fps": 30,
+  "duration_seconds": 8.0,
+  "feature": "resolveCompositeStack: Stack vs camera-depth order",
+  "videos": [
+    {
+      "file": "01_depth_sort_crossing_1080p.mp4",
+      "bytes": 1800573,
+      "sha256": "37dd8d018119dd7e8329028a68f70b7217dfade75307cd58d6a39ded1b919145"
+    },
+    {
+      "file": "02_stack_vs_depth_1080p.mp4",
+      "bytes": 2501479,
+      "sha256": "ebe16f7194aa6ef5f1fa9382cf807105cdf7d72339aca6233147095358c377c6"
+    },
+    {
+      "file": "03_text_behind_object_1080p.mp4",
+      "bytes": 2005769,
+      "sha256": "fb2b2f573b179ba66d5361354e5030baaac406ff1a7c4b188a0f4dd4d7c15ce3"
+    }
+  ],
+  "contact_sheet": {
+    "file": "contact_sheet.png",
+    "bytes": 635984,
+    "sha256": "a41cee048ee057e607a25f8a31d3980d054de705db65274018284ddae6e1685d"
+  }
+}

@@ -224,7 +224,7 @@ func TestCompileMixedChainTextFirstDropsOverridesOnImage(t *testing.T) {
 		if l.Type == "image" {
 			hasImage = true
 		}
-		if l.Text == "presunzione di innocenza" {
+		if strings.Join(strings.Fields(l.Text), " ") == "presunzione di innocenza" {
 			hasText = true
 		}
 	}

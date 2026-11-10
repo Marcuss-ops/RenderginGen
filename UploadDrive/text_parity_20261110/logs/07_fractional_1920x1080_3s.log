@@ -1,0 +1,69 @@
+$ /home/pierone/src/go-master/projects/Pyt/VeloxEditing/Chronon3d/build/chronon/linux-video-release/apps/chronon3d_cli/chronon3d_cli render --plan /home/pierone/src/go-master/projects/Pyt/VeloxEditing/RenderingGen/UploadDrive/text_parity_20261110/plans/07_fractional.plan.json --assets-root /home/pierone/src/go-master/projects/Pyt/VeloxEditing/Chronon3d --backend vulkan --profile production --tone-map aces --exposure 1.0 -o /home/pierone/src/go-master/projects/Pyt/VeloxEditing/RenderingGen/UploadDrive/text_parity_20261110/videos/07_fractional_1920x1080_3s.mp4 -v info --gpu-hot-path-mode require_gpu_native
+[2026-11-10 08:37:44.688] [info] [asset-profile] kind=3 path=assets/fonts/Inter-Bold.ttf bytes=146768 cache=miss invalidated=0 stat=0.01ms hash=4.72ms hashed_bytes=146768 total=4.81ms
+[2026-11-10 08:37:44.688] [info] [asset-digest-cache] hits=0 misses=1 invalidations=0 bytes_hashed=146768 lookup_ms=0.00 write_ms=0.00 full_hash_ms=4.72
+[2026-11-10 08:37:44.689] [info] [plan-profile] read=0.74ms parse=0.06ms decode=60.54ms resolver=0.03ms compile_validate=5.13ms total=66.52ms
+[2026-11-10 08:37:44.689] [info] [video] Auto-selecting yuv420p pipe pixel format for 1920x1080 output
+[2026-11-10 08:37:44.689] [info] [video] execution plan resolved (reason: gpu_composition_pipe_no_video_source); decode=2 composite=2 encode=2 interop=0 handoff=3 codec=3
+[2026-11-10 08:37:44.709] [info] [video-runtime] created persistent runtime for device 0 (CUDA ordinal 0)
+[2026-11-10 08:37:44.709] [info] [video] encoder feed capability: host_frame=true direct_yuv=false native_surface=false
+[2026-11-10 08:37:44.911] [info] [native_av] CUDA context contract: native=0x558fc95e16a0 ffmpeg=0x558fc95e16a0
+[2026-11-10 08:37:44.922] [info] [native_av] NVENC tuning applied: rc=driver-default preset=slow async_depth=4 nvenc_surfaces=8 qp=-1 bitrate=0
+[h264_nvenc @ 0x558fc9552900] Defined rc_lookahead requires more surfaces, increasing used surfaces 8 -> 34
+[2026-11-10 08:37:45.004] [info] [native_av] encoder bitstream contract: codec=27 profile=100 level=-99 pix_fmt=117 parameter_sets=53 materialized=true
+[2026-11-10 08:37:45.005] [info] [native_av] Opened native encoder: 1920x1080 @ 30fps, codec=h264_nvenc, rc=driver-default, preset=slow, output='/home/pierone/src/go-master/projects/Pyt/VeloxEditing/RenderingGen/UploadDrive/text_parity_20261110/videos/07_fractional_1920x1080_3s.partial.mp4'
+[2026-11-10 08:37:45.461] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-10 08:37:46.251] [info] [pool-warm] Pre-allocated and pre-imported 6 execution slots (1920x1080) for native NVENC
+[2026-11-10 08:37:46.272] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-10 08:37:46.360] [info] chronon3d::vulkan text batch formats: dst_image.format=109 atlas_image.format=44 atlas_encoding=2 (shader contract: dst rgba32f, atlas rgba8)
+[2026-11-10 08:37:46.360] [info] [text-route] frame=0 route=mtsdf
+[2026-11-10 08:37:46.360] [info] [temp-lifetime] frame=0 after_level=0 live=[0,1,] retired=[]
+[2026-11-10 08:37:46.360] [info] [exec-level-diag] frame=0 level=0 nodes=2 input_ms=0.001 dispatch_ms=2.150 fb_release_ms=0.001
+[2026-11-10 08:37:46.360] [info] [graph-edge] frame=0 level=1 consumer_id=2 input_index=0 producer_id=1 producer_level=0
+[2026-11-10 08:37:46.360] [info] [temp-lifetime] frame=0 after_level=1 live=[0,2,] retired=[1,]
+[2026-11-10 08:37:46.360] [info] [exec-level-diag] frame=0 level=1 nodes=1 input_ms=0.009 dispatch_ms=0.351 fb_release_ms=0.003
+[2026-11-10 08:37:46.360] [info] [graph-edge] frame=0 level=2 consumer_id=3 input_index=0 producer_id=2 producer_level=1
+[2026-11-10 08:37:46.361] [info] [temp-lifetime] frame=0 after_level=2 live=[0,3,] retired=[2,]
+[2026-11-10 08:37:46.361] [info] [exec-level-diag] frame=0 level=2 nodes=1 input_ms=0.007 dispatch_ms=0.316 fb_release_ms=0.002
+[2026-11-10 08:37:46.361] [info] [graph-edge] frame=0 level=3 consumer_id=4 input_index=0 producer_id=0 producer_level=0
+[2026-11-10 08:37:46.361] [info] [graph-edge] frame=0 level=3 consumer_id=4 input_index=1 producer_id=3 producer_level=2
+[2026-11-10 08:37:46.433] [info] [temp-lifetime] frame=0 after_level=3 live=[4,] retired=[0,3,]
+[2026-11-10 08:37:46.433] [info] [exec-level-diag] frame=0 level=3 nodes=1 input_ms=0.037 dispatch_ms=72.750 fb_release_ms=0.006
+[2026-11-10 08:37:46.445] [info] [video] Exporting via Arena-backed SIMD pipeline
+[2026-11-10 08:37:46.447] [info] [video]   9/90 frames
+[2026-11-10 08:37:46.447] [info] [video]   18/90 frames
+[2026-11-10 08:37:46.448] [info] [video]   27/90 frames
+[2026-11-10 08:37:46.460] [info] [video]   36/90 frames
+[2026-11-10 08:37:46.503] [info] [video]   45/90 frames
+[2026-11-10 08:37:46.547] [info] [video]   54/90 frames
+[2026-11-10 08:37:46.590] [info] [video]   63/90 frames
+[2026-11-10 08:37:46.633] [info] [video]   72/90 frames
+[2026-11-10 08:37:46.672] [info] [video]   81/90 frames
+[2026-11-10 08:37:46.707] [info] [video]   90/90 frames
+[2026-11-10 08:37:46.734] [info] [video] writer join complete
+[2026-11-10 08:37:46.734] [info] [drain-debug] start drain, capacity=6
+[2026-11-10 08:37:46.734] [info] [drain-debug] reap done, busy_count=0
+[2026-11-10 08:37:46.734] [info] [video] trimming framebuffer pool
+[2026-11-10 08:37:46.734] [info] [video] Released framebuffer pool — memory trimmed
+[2026-11-10 08:37:46.734] [info] [video] frame-loop cleanup complete
+[2026-11-10 08:37:46.734] [info] [video] Encoder write blocked duration: 0.00 ms
+[2026-11-10 08:37:46.734] [info] [video_diag] conversion_and_copy_duration_ms: 0 ms
+[2026-11-10 08:37:46.734] [info] [video_diag] conversion_bytes_written=0 encoder_staging_copy_bytes=0 encoder_slot_reuses=0
+[2026-11-10 08:37:46.734] [info] [native_av] close: sending encoder flush
+[2026-11-10 08:37:46.780] [info] [native_av] close: encoder flush accepted
+[2026-11-10 08:37:46.839] [info] [native_av] close: packets drained=true
+[2026-11-10 08:37:46.839] [info] [native_av] close: finalizing mux session
+[2026-11-10 08:37:46.839] [info] [native_av] close: mux session finalized
+[2026-11-10 08:37:46.839] [info] [native_av] Closed native encoder — 90 frames accepted, encoder_packets=90 mux_packets=90 packet_pts=0..89, YUV cache: 0 hits / 0 misses
+[2026-11-10 08:37:46.839] [info] [native_av] native-surface timings — hwframe_pool_ms=0.0 c2v_prepare_ms=0.0 encode_drain_ms=0.0 send_ms=284.9 submit_counter_ms=0.4 backpressure_ms=0.3
+[2026-11-10 08:37:46.839] [info] [video_native] convert=0.12ms  send_frame=284.87ms  backpressure=0.27ms  flush=105.54ms  receive_packet=58.45ms  mux_write=0.75ms  trailer=0.33ms
+[2026-11-10 08:37:46.841] [info] [video] render_ms=438.74 encode_ms=130.22 writer_encode_ms=286.63 wall_ms=2152.16 nvml_stop_ms=0.16
+[2026-11-10 08:37:46.841] [info] [video] FFmpeg queue wait duration: 0.00 ms
+[2026-11-10 08:37:46.855] [info] [video] copy_eligible=true sha256=309ea734fd04dc2084d42c7a0e02cde8cbb0de01e1004b8ea0efd1dfde4ae807
+[2026-11-10 08:37:46.855] [info] [video] Wrote /home/pierone/src/go-master/projects/Pyt/VeloxEditing/RenderingGen/UploadDrive/text_parity_20261110/videos/07_fractional_1920x1080_3s.mp4
+[2026-11-10 08:37:46.856] [info] [startup-profile] total=842.12ms logger=0.06ms cli_bootstrap=3.68ms cli_parse=nullms composition=0.16ms plan_read=0.74ms json_parse=0.06ms plan_decode_validate=60.54ms asset_resolve=0.03ms plan_compile=5.13ms unaccounted=108.05ms
+[2026-11-10 08:37:46.864] [info] [video] Wrote exact per-frame timing sidecar: /home/pierone/src/go-master/projects/Pyt/VeloxEditing/RenderingGen/UploadDrive/text_parity_20261110/videos/07_fractional_1920x1080_3s.mp4.timing.json
+[2026-11-10 08:37:46.922] [info] [INFO] job-lifecycle: queue_close_ms=0.0 writer_join_ms=0.0 encoder_reset_ms=57.4 decoder_reset_ms=0.0 full_graph_reset_ms=0.0 sink_ctx_reset_ms=0.0 device_runtime_reset_ms=0.0 device_reservation_reset_ms=0.0
+[2026-11-10 08:37:46.922] [info] [INFO] job-lifecycle: sidecar_write_ms=9.2 session_teardown_ms=57.6
+[2026-11-10 08:37:46.930] [info] [INFO] job-lifecycle: post_sidecar_to_receipt_ms=65.0
+[2026-11-10 08:37:46.930] [info] [INFO] job-lifecycle: execute_ms=2241.1 caller_tail_ms=0.0 receipt_deferred=0
+[2026-11-10 08:37:46.930] [info] [INFO] job-lifecycle: slot_pool_close_ms=0.0 surface_release_ms=0.0

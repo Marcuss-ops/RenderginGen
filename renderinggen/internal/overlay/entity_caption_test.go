@@ -124,11 +124,12 @@ func TestEntityCaptionKeepsLongAndUnicodeNamesInsideSafeArea(t *testing.T) {
 			if len(caption.Size) != 2 || caption.Size[0] > 1280-48 || caption.Size[1] <= 0 {
 				t.Fatalf("caption size %v exceeds the horizontal safe area", caption.Size)
 			}
-			if caption.Position[0]-caption.Size[0]/2 < 24 || caption.Position[0]+caption.Size[0]/2 > 1280-24 {
-				t.Fatalf("caption bounds escape horizontal safe area: x=%v size=%v", caption.Position[0], caption.Size)
+			captionX, captionY := textLayerCanvasPosition(caption, 1280, 720)
+			if captionX-caption.Size[0]/2 < 24 || captionX+caption.Size[0]/2 > 1280-24 {
+				t.Fatalf("caption bounds escape horizontal safe area: x=%v size=%v", captionX, caption.Size)
 			}
-			if caption.Position[1]-caption.Size[1]/2 < 23.99 || caption.Position[1]+caption.Size[1]/2 > 720-24+0.01 {
-				t.Fatalf("caption bounds escape vertical safe area: y=%v size=%v", caption.Position[1], caption.Size)
+			if captionY-caption.Size[1]/2 < 23.99 || captionY+caption.Size[1]/2 > 720-24+0.01 {
+				t.Fatalf("caption bounds escape vertical safe area: y=%v size=%v", captionY, caption.Size)
 			}
 		})
 	}

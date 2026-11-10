@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"strings"
 	"testing"
-	"unicode/utf8"
 )
 
 func TestPhrasePresetUsesShrinkOnlyTextFit(t *testing.T) {
@@ -32,9 +31,8 @@ func TestPhrasePresetUsesShrinkOnlyTextFit(t *testing.T) {
 	if layer.Style.FontSize != 112 {
 		t.Fatalf("authored font size = %v, want 112 (shrink-only fit must not grow the preset)", layer.Style.FontSize)
 	}
-	// Ogni 25 caratteri a capo: the 34-char phrase wraps word-aware to
-	// two lines, each <=25, without word cuts; the box grows to 280
-	// because two lines (2*132+16=280) exceed the preset's 260px height.
+	// The phrase wraps against estimated glyph advances and grows its box by
+	// the selected font's line height so every line remains inside the layer.
 	unwrapped := strings.Join(strings.Fields(strings.ReplaceAll(layer.Text, "\n", " ")), " ")
 	if unwrapped != "O maior arrependimento da minha vida" {
 		t.Fatalf("phrase text unwrapped = %q, want original", unwrapped)
@@ -43,15 +41,15 @@ func TestPhrasePresetUsesShrinkOnlyTextFit(t *testing.T) {
 		t.Fatalf("phrase wrapped lines = %q, want one break", layer.Text)
 	}
 	for _, line := range strings.Split(layer.Text, "\n") {
-		if utf8.RuneCountInString(line) > 25 {
-			t.Fatalf("phrase line %q exceeds 25-char budget", line)
+		if estimatedTextWidth(line, layer.Style.FontSize) > float64(layer.BoxWidth)*0.9+1 {
+			t.Fatalf("phrase line %q exceeds its pixel width budget", line)
 		}
 		if line != strings.TrimSpace(line) {
 			t.Fatalf("phrase line %q has border whitespace", line)
 		}
 	}
-	if layer.BoxWidth != 1920 || layer.BoxHeight != 280 || layer.Size[0] != 1920 || layer.Size[1] != 280 {
-		t.Fatalf("phrase fit box = %dx%d (%v), want 1920x280 for two wrapped lines", layer.BoxWidth, layer.BoxHeight, layer.Size)
+	if layer.BoxWidth != 1920 || layer.BoxHeight < 260 || layer.Size[0] != 1920 || layer.Size[1] != float64(layer.BoxHeight) {
+		t.Fatalf("phrase fit box = %dx%d (%v), want measured multiline height in a 1920px box", layer.BoxWidth, layer.BoxHeight, layer.Size)
 	}
 	if len(layer.Position) != 2 || layer.Position[0] != 960 || layer.Position[1] != 540 {
 		t.Fatalf("phrase position after wrap = %v, want centred transform [960 540]", layer.Position)

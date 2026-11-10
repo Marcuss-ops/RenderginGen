@@ -7,7 +7,6 @@ import (
 	"reflect"
 	"strings"
 	"testing"
-	"unicode/utf8"
 
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/contractschema"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/motion"
@@ -154,8 +153,8 @@ func TestBrushPhraseVariantsCompileForWrappedLongCopy(t *testing.T) {
 				t.Fatalf("phrase %q did not wrap into multiple readable lines", phrase)
 			}
 			for _, line := range strings.Split(phraseLayer.Text, "\n") {
-				if utf8.RuneCountInString(line) > 25 {
-					t.Errorf("wrapped phrase line exceeds 25 runes: %q", line)
+				if phraseLayer.Style == nil || estimatedTextWidth(line, phraseLayer.Style.FontSize) > float64(phraseLayer.BoxWidth)*0.9+1 {
+					t.Errorf("wrapped phrase line exceeds its measured width budget: %q", line)
 				}
 			}
 			if accentCount == 0 {
@@ -435,11 +434,7 @@ func TestCompositeEntityCaptionsRejectOverlappingBounds(t *testing.T) {
 		"image_layers":[
 			{"id":"person-a","asset_id":"a","start_ms":0,"end_ms":5000,"preset_id":"image_focus_in","caption":"First caption","params":{"width":420,"height":360,"position_x":0,"position_y":0}},
 			{"id":"person-b","asset_id":"b","start_ms":0,"end_ms":5000,"preset_id":"image_focus_in","caption":"Second caption","params":{"width":420,"height":360,"position_x":0,"position_y":0}}]}]}`)
-	compiled, err := CompileSemantic(raw)
-	if err != nil {
-		t.Fatalf("compile captions before source-asset geometry is known: %v", err)
-	}
-	err = ValidateEntityCaptionCollisions(compiled.Plan.Layers)
+	_, err := CompileSemantic(raw)
 	if err == nil || !strings.Contains(err.Error(), `captions "pair:person-a:caption"`) || !strings.Contains(err.Error(), `"pair:person-b:caption"`) || !strings.Contains(err.Error(), "shared frame window") {
 		t.Fatalf("overlapping entity captions error = %v, want both caption IDs and overlap diagnostic", err)
 	}
@@ -607,16 +602,15 @@ func TestEveryPhraseFamilyMotionReachesTheChrononRenderPlan(t *testing.T) {
 				layerIndex = len(result.Plan.Layers) - 1
 			}
 			layer := result.Plan.Layers[layerIndex]
-			// Ogni 25 caratteri a capo correttamente: the compiled text is
-			// word-wrapped, never word-cut, each line <=25 runes. The test
-			// fixture's 30-char phrase must wrap to two centered lines.
+			// The compiled text is word-wrapped against its pixel budget, never
+			// word-cut. The test fixture's phrase must remain complete and centered.
 			unwrapped := strings.Join(strings.Fields(strings.ReplaceAll(layer.Text, "\n", " ")), " ")
 			if layer.Type != "text" || unwrapped != "EVERY PHRASE MOTION MUST LOWER" {
 				t.Fatalf("phrase motion %q compiled to unexpected layer (unwrapped %q): %+v", id, unwrapped, layer)
 			}
 			for _, line := range strings.Split(layer.Text, "\n") {
-				if utf8.RuneCountInString(line) > 25 {
-					t.Fatalf("phrase motion %q line %q exceeds 25-char budget", id, line)
+				if estimatedTextWidth(line, layer.Style.FontSize) > float64(layer.BoxWidth)*0.9+1 {
+					t.Fatalf("phrase motion %q line %q exceeds pixel width budget", id, line)
 				}
 				if line != strings.TrimSpace(line) {
 					t.Fatalf("phrase motion %q line %q has border whitespace", id, line)

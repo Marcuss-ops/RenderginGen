@@ -1,0 +1,108 @@
+{
+  "cases": [
+    {
+      "number": 1,
+      "slug": "latin_basic",
+      "plan": "plans/01_latin_basic.plan.json",
+      "frames": 90,
+      "duration_s": 3.0,
+      "width": 1920,
+      "height": 1080,
+      "fps_num": 30,
+      "fps_den": 1,
+      "software_comparison": true,
+      "video_stem": "01_latin_basic_1920x1080_3s"
+    },
+    {
+      "number": 2,
+      "slug": "exact_3d",
+      "plan": "plans/02_exact_3d.plan.json",
+      "frames": 120,
+      "duration_s": 4.0,
+      "width": 1920,
+      "height": 1080,
+      "fps_num": 30,
+      "fps_den": 1,
+      "software_comparison": false,
+      "video_stem": "02_exact_3d_1920x1080_4s"
+    },
+    {
+      "number": 3,
+      "slug": "effects",
+      "plan": "plans/03_effects.plan.json",
+      "frames": 61,
+      "duration_s": 2.033333333333333,
+      "width": 1920,
+      "height": 1080,
+      "fps_num": 30,
+      "fps_den": 1,
+      "software_comparison": false,
+      "video_stem": "03_effects_1920x1080_2.03333s"
+    },
+    {
+      "number": 4,
+      "slug": "multi_shadow",
+      "plan": "plans/04_multi_shadow.plan.json",
+      "frames": 90,
+      "duration_s": 3.0,
+      "width": 1920,
+      "height": 1080,
+      "fps_num": 30,
+      "fps_den": 1,
+      "software_comparison": false,
+      "video_stem": "04_multi_shadow_1920x1080_3s"
+    },
+    {
+      "number": 5,
+      "slug": "rtl_caret",
+      "plan": "plans/05_rtl_caret.plan.json",
+      "frames": 90,
+      "duration_s": 3.0,
+      "width": 1920,
+      "height": 1080,
+      "fps_num": 30,
+      "fps_den": 1,
+      "software_comparison": false,
+      "video_stem": "05_rtl_caret_1920x1080_3s"
+    },
+    {
+      "number": 6,
+      "slug": "transitions",
+      "plan": "plans/06_transitions.plan.json",
+      "frames": 61,
+      "duration_s": 2.033333333333333,
+      "width": 1920,
+      "height": 1080,
+      "fps_num": 30,
+      "fps_den": 1,
+      "software_comparison": false,
+      "video_stem": "06_transitions_1920x1080_2.03333s"
+    },
+    {
+      "number": 7,
+      "slug": "fractional",
+      "plan": "plans/07_fractional.plan.json",
+      "frames": 90,
+      "duration_s": 3.0,
+      "width": 1920,
+      "height": 1080,
+      "fps_num": 30,
+      "fps_den": 1,
+      "software_comparison": true,
+      "video_stem": "07_fractional_1920x1080_3s"
+    },
+    {
+      "number": 8,
+      "slug": "multipage",
+      "plan": "plans/08_multipage.plan.json",
+      "frames": 90,
+      "duration_s": 3.0,
+      "width": 1920,
+      "height": 1080,
+      "fps_num": 30,
+      "fps_den": 1,
+      "software_comparison": false,
+      "video_stem": "08_multipage_1920x1080_3s"
+    }
+  ]
+}

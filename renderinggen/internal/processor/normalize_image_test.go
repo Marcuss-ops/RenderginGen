@@ -294,6 +294,28 @@ func TestNormalizeMaterializedImagePathsRejectsRenameCollision(t *testing.T) {
 	}
 }
 
+func TestNormalizeMaterializedImagePathsUpdatesRepeatedLayerReferences(t *testing.T) {
+	root := t.TempDir()
+	writeAsset(t, root, "assets/photo.webp", imageFixtures[".jpg"])
+	plan := imagePlan("assets/photo.webp", "assets/photo.webp")
+
+	renamed, err := normalizeMaterializedImagePaths(root, plan)
+	if err != nil {
+		t.Fatalf("normalize repeated image references: %v", err)
+	}
+	if got := renamed["assets/photo.jpg"]; got != "assets/photo.webp" {
+		t.Fatalf("rename map = %v, want assets/photo.jpg → assets/photo.webp", renamed)
+	}
+	for i, layer := range plan.Layers {
+		if layer.Asset != "assets/photo.jpg" {
+			t.Errorf("layer %d asset = %q, want assets/photo.jpg", i, layer.Asset)
+		}
+	}
+	if paths := assetPaths(t, root); len(paths) != 1 || paths[0] != "assets/photo.jpg" {
+		t.Fatalf("workspace files = %v, want only assets/photo.jpg", paths)
+	}
+}
+
 // TestNormalizeMaterializedImagePathsAdoptsRetryLeftoverRename is the retry
 // half of the rename contract: a job attempt that already produced the
 // normalized target leaves it behind in the shared job workspace, and the next

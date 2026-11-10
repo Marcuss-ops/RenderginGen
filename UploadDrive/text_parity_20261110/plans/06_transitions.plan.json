@@ -1,0 +1,55 @@
+{
+  "schema": "chronon.render-plan.v3",
+  "version": 3,
+  "job_id": "text-parity-transitions-1080p",
+  "canvas": {
+    "width": 1920,
+    "height": 1080,
+    "fps_num": 30,
+    "fps_den": 1,
+    "duration_frames": 61
+  },
+  "output": {
+    "path": "videos/06_transitions_1920x1080_2.03333s.mp4",
+    "format": "mp4",
+    "codec": "h264"
+  },
+  "layers": [
+    {
+      "id": "transition_text",
+      "type": "text",
+      "text": "CANONICAL",
+      "start_frame": 0,
+      "duration_frames": 61,
+      "position": [
+        960.0,
+        600.0
+      ],
+      "size": [
+        1920.0,
+        1080.0
+      ],
+      "style": {
+        "font": "assets/fonts/SF-Pro-Display-Semibold.otf",
+        "font_size": 144.0,
+        "fill": "#FFFFFF",
+        "quality": "high"
+      },
+      "text_transitions": {
+        "keyframes": [
+          {
+            "frame": 0,
+            "text": "TEXT READY",
+            "transition": "dissolve_layouts"
+          },
+          {
+            "frame": 30,
+            "text": "CANONICAL",
+            "transition": "cut"
+          }
+        ]
+      },
+      "effects": []
+    }
+  ]
+}

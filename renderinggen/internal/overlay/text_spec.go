@@ -117,9 +117,8 @@ func resolveTextSpecBase(ri resolvedItem, src *semanticPlan) (resolvedTextSpec, 
 	if strings.TrimSpace(ri.Item.Text) == "" {
 		return resolvedTextSpec{}, 0, fmt.Errorf("overlay: item %q requires text (PipelineGen owns the displayed text)", ri.Item.ID)
 	}
-	wrapped, lines := wrapPhraseAt25(ri.Item.Text)
 	spec := resolvedTextSpec{
-		Text:         wrapped,
+		Text:         strings.TrimSpace(ri.Item.Text),
 		MotionID:     ri.Item.MotionID,
 		MotionParams: ri.Item.MotionParams,
 		StyleParams:  ri.Params,
@@ -146,6 +145,29 @@ func resolveTextSpecBase(ri resolvedItem, src *semanticPlan) (resolvedTextSpec, 
 		spec.PresetID = ri.Preset.ID
 		spec.PresetDef = ri.Preset
 	}
+	boxWidth := 0.0
+	if value, ok := numericValue(ri.Params["width"]); ok && value > 0 {
+		boxWidth = value
+	} else if ri.Preset.Layout.BoxWidth > 0 {
+		boxWidth = float64(ri.Preset.Layout.BoxWidth)
+	} else if src != nil {
+		boxWidth = float64(src.Width)
+	}
+	// Preset widths may be authored for a 1920px master while a plan targets a
+	// smaller canvas. The wrapper and final geometry must share the same cap.
+	if src != nil && boxWidth > float64(src.Width) {
+		boxWidth = float64(src.Width)
+	}
+	fontSize := 64.0
+	if value, ok := numericValue(ri.Params["font_size_px"]); ok && value > 0 {
+		fontSize = value
+	} else if spec.Style != nil && spec.Style.FontSize > 0 {
+		fontSize = spec.Style.FontSize
+	} else if spec.Style != nil && spec.Style.MaxFontSize > 0 {
+		fontSize = spec.Style.MaxFontSize
+	}
+	var lines int
+	spec.Text, lines = wrapPhraseByPixelBudget(spec.Text, boxWidth*0.9, fontSize)
 	return spec, lines, nil
 }
 
@@ -184,7 +206,8 @@ func resolveTextSpecGeometry(ri resolvedItem, src *semanticPlan, spec resolvedTe
 		}
 	}
 	if lines > 1 {
-		needed := lines*phraseLineHeight + 16 // glow/shadow padding
+		fontSize := estimatedSpecFontSize(spec)
+		needed := int(float64(lines)*fontSize*1.45) + 16 // line spacing and effect padding
 		if needed > spec.BoxHeight {
 			if needed > src.Height {
 				needed = src.Height
@@ -205,6 +228,19 @@ func resolveTextSpecGeometry(ri resolvedItem, src *semanticPlan, spec resolvedTe
 		spec.Position[1] = posY
 	}
 	return spec
+}
+
+func estimatedSpecFontSize(spec resolvedTextSpec) float64 {
+	if value, ok := numericValue(spec.StyleParams["font_size_px"]); ok && value > 0 {
+		return value
+	}
+	if spec.Style != nil && spec.Style.FontSize > 0 {
+		return spec.Style.FontSize
+	}
+	if spec.Style != nil && spec.Style.MaxFontSize > 0 {
+		return spec.Style.MaxFontSize
+	}
+	return 64
 }
 
 // resolvedTextFitPolicy resolves data-style no-shrink behavior before text

@@ -1,9 +1,9 @@
 package overlay
 
 // entranceFrames returns the entrance window in layer-relative frames. Phrase
-// entrances use one third of the phrase lifetime; lowerMotion reduces an
-// overlapping phrase exit window to preserve that contract. Other overlays use
-// their authored entrance, bounded by the lifetime left after their exit.
+// entrances use at most one third of the phrase lifetime and at most 17 frames
+// (about 0.7s at 24fps); other overlays use their authored entrance, bounded by
+// the lifetime left after their exit.
 func entranceFrames(authored, exitFrames int, duration int64, phraseEntranceFloor bool) int64 {
 	if duration <= 0 {
 		if authored > 0 {
@@ -13,6 +13,12 @@ func entranceFrames(authored, exitFrames int, duration int64, phraseEntranceFloo
 	}
 	if phraseEntranceFloor {
 		target := (duration + 2) / 3
+		if authored > 0 && int64(authored) < target {
+			target = int64(authored)
+		}
+		if target > 17 {
+			target = 17
+		}
 		if target < 1 {
 			return 1
 		}
