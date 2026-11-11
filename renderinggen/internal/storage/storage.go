@@ -18,9 +18,11 @@
 package storage
 
 import (
+	"bytes"
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -136,6 +138,15 @@ func (c *Client) Get(ctx context.Context, hash string) ([]byte, error) {
 		c.finishFetch(hash, call, nil, err)
 		return nil, err
 	}
+	// L3 GET is deliberately a cheap existence probe (the object store does
+	// not re-hash on every read). That makes this the boundary that must
+	// verify: otherwise bytes from a corrupt/restored/malicious backend would
+	// be promoted to L1/L2 and served under an address they do not have.
+	if err := verifyContentAddress(hash, data); err != nil {
+		log.Printf("storage: L3 fetch for %s returned bytes that do not match their address: %v", hash, err)
+		c.finishFetch(hash, call, nil, err)
+		return nil, err
+	}
 	c.l3Fetches.Add(1)
 	c.warmL2(hash, data)
 	c.l1.Put(hash, data)
@@ -167,8 +178,37 @@ func (c *Client) localPathFetch(ctx context.Context, hash string, backend Reader
 		c.finishPathFetch(hash, call, "", 0, err)
 		return "", 0, err
 	}
+	// A declared size larger than the whole L2 budget is a cache-admission
+	// answer, not a download failure: stream it once to an uncached temp file
+	// so the caller still gets valid bytes for this job without installing an
+	// entry the budget would evict immediately.
+	if err := c.l2.admissible(size); err != nil {
+		path, actual, streamErr := c.localPathUncached(hash, reader, size)
+		if closeErr := reader.Close(); streamErr == nil {
+			streamErr = closeErr
+		}
+		if streamErr != nil {
+			c.finishPathFetch(hash, call, "", 0, streamErr)
+			return "", 0, streamErr
+		}
+		c.l3Fetches.Add(1)
+		c.finishPathFetch(hash, call, path, actual, nil)
+		return path, actual, nil
+	}
 	path, actual, installErr := c.l2.InstallReader(hash, reader, size)
 	reader.Close()
+	if errors.Is(installErr, errL2ObjectTooLarge) {
+		// The stream declared no size (or understated it) and the bytes did not
+		// fit. The reader is consumed, so fetch once more and stream it outside
+		// the cache rather than failing a job the L3 store can serve.
+		retry, retrySize, fetchErr := backend.FetchReader(ctx, hash)
+		if fetchErr != nil {
+			c.finishPathFetch(hash, call, "", 0, fetchErr)
+			return "", 0, fetchErr
+		}
+		path, actual, installErr = c.localPathUncached(hash, retry, retrySize)
+		retry.Close()
+	}
 	if installErr != nil {
 		c.finishPathFetch(hash, call, "", 0, installErr)
 		return "", 0, installErr
@@ -176,6 +216,47 @@ func (c *Client) localPathFetch(ctx context.Context, hash string, backend Reader
 	c.l3Fetches.Add(1)
 	c.finishPathFetch(hash, call, path, actual, nil)
 	return path, actual, nil
+}
+
+// localPathUncached streams an L3 object to a temp file outside the cache,
+// hashing it on the way. It is the LocalPath fallback for an object the L2
+// budget cannot hold: the caller still receives a verified local file, and the
+// cache never reports a path it is about to evict.
+func (c *Client) localPathUncached(hash string, r io.Reader, size int64) (string, int64, error) {
+	file, err := os.CreateTemp("", "renderinggen-uncached-*")
+	if err != nil {
+		return "", 0, err
+	}
+	path := file.Name()
+	cleanup := func() {
+		file.Close()
+		os.Remove(path)
+	}
+	digest := sha256.New()
+	written, err := io.Copy(io.MultiWriter(file, digest), r)
+	if err != nil {
+		cleanup()
+		return "", 0, err
+	}
+	if size >= 0 && written != size {
+		cleanup()
+		return "", 0, fmt.Errorf("L3 size %d does not match expected %d", written, size)
+	}
+	if isContentAddressName(hash) {
+		if got := hex.EncodeToString(digest.Sum(nil)); got != hash {
+			cleanup()
+			return "", 0, fmt.Errorf("%w: L3 bytes hash to %s, not to key %s", ErrContentAddressMismatch, got, hash)
+		}
+	}
+	if err := file.Sync(); err != nil {
+		cleanup()
+		return "", 0, err
+	}
+	if err := file.Close(); err != nil {
+		os.Remove(path)
+		return "", 0, err
+	}
+	return path, written, nil
 }
 
 func (c *Client) startPathFetch(hash string) (*pathFetchCall, bool) {
@@ -228,6 +309,12 @@ func (c *Client) finishFetch(hash string, call *fetchCall, data []byte, err erro
 
 // Put stores asset bytes into L3 (source of truth) and warms L2 and L1.
 func (c *Client) Put(ctx context.Context, hash string, data []byte) error {
+	// Verify before the store call: a backend that does not verify (the local
+	// Memory backend, or a future adapter) must not receive, and the caches must
+	// not adopt, bytes that contradict the address the caller named.
+	if err := verifyContentAddress(hash, data); err != nil {
+		return err
+	}
 	if err := c.backend.Store(ctx, hash, data); err != nil {
 		return err
 	}
@@ -242,14 +329,39 @@ func (c *Client) Put(ctx context.Context, hash string, data []byte) error {
 // every job into an L3 fetch.
 func (c *Client) warmL2(hash string, data []byte) {
 	if err := c.l2.Put(hash, data); err != nil {
+		if errors.Is(err, errL2ObjectTooLarge) {
+			// The object cannot fit the cache by configuration. L3 already holds
+			// it; counting this as a write failure would make a legitimate budget
+			// look like a broken disk.
+			return
+		}
 		c.l2PutErrors.Add(1)
 		log.Printf("storage: L2 cache write failed for %s: %v", hash, err)
 	}
 }
 
+// warmL2File is the file-backed twin of warmL2. L3 already holds the artifact,
+// so an L2 copy failure degrades performance and is counted, never a reason to
+// fail publication. An oversize object is a cache-admission answer, not an
+// error.
+func (c *Client) warmL2File(hash, source string) {
+	if c.l2 == nil || c.l2.dir == "" {
+		return
+	}
+	if _, _, err := c.l2.PutFile(hash, source); err != nil {
+		if errors.Is(err, errL2ObjectTooLarge) {
+			return
+		}
+		c.l2PutErrors.Add(1)
+		log.Printf("storage: L2 cache write failed for %s: %v (L3 is authoritative; cache degraded)", hash, err)
+	}
+}
+
 // PutReader stores a large object without buffering it in the client. The
 // optional ReaderBackend path is fully streaming; older backends retain
-// compatibility through the existing byte-slice API.
+// compatibility through the existing byte-slice API. The streaming store is
+// responsible for verifying the address (the HTTP store does); a caller that
+// has a file should use PutFile to get the local pre-check as well.
 func (c *Client) PutReader(ctx context.Context, hash string, r io.Reader, size int64) error {
 	if backend, ok := c.backend.(WriterBackend); ok {
 		if err := backend.StoreReader(ctx, hash, r, size); err != nil {
@@ -265,10 +377,10 @@ func (c *Client) PutReader(ctx context.Context, hash string, r io.Reader, size i
 func (c *Client) LocalPath(ctx context.Context, hash string) (string, int64, error) {
 	if c.l2.dir == "" {
 		data, err := c.backend.Fetch(ctx, hash)
-		if err == nil && len(hash) == 64 && Hash(data) != hash {
-			return "", 0, fmt.Errorf("object hash mismatch: key %s", hash)
-		}
 		if err != nil {
+			return "", 0, err
+		}
+		if err := verifyContentAddress(hash, data); err != nil {
 			return "", 0, err
 		}
 		file, err := os.CreateTemp("", "renderinggen-local-path-*")
@@ -327,36 +439,71 @@ func (c *Client) LocalPath(ctx context.Context, hash string) (string, int64, err
 		return "", 0, err
 	}
 	path, actual, err := c.l2.PutBytes(hash, data)
+	if errors.Is(err, errL2ObjectTooLarge) {
+		return c.localPathUncached(hash, bytes.NewReader(data), int64(len(data)))
+	}
 	if err != nil {
 		return "", 0, err
 	}
 	return path, actual, nil
 }
 
-// PutFile stores a local file in L3 and installs the same bytes in L2.
+// PutFile stores a local file in L3 and warms L2. The file is hashed from the
+// same open descriptor that is uploaded, before the store call: a caller that
+// names the wrong address must not put those bytes into L3 at all, and the
+// extra read is the price of that guarantee. L2 warming remains best-effort —
+// L3 is authoritative, so a cache I/O failure only degrades the local tier.
 func (c *Client) PutFile(ctx context.Context, hash, source string) error {
 	input, err := os.Open(source)
 	if err != nil {
 		return err
 	}
+	if isContentAddressName(hash) {
+		digest := sha256.New()
+		if _, err := io.Copy(digest, input); err != nil {
+			_ = input.Close()
+			return err
+		}
+		if got := hex.EncodeToString(digest.Sum(nil)); got != hash {
+			_ = input.Close()
+			return fmt.Errorf("%w: key %s, content %s", ErrContentAddressMismatch, hash, got)
+		}
+		if _, err := input.Seek(0, io.SeekStart); err != nil {
+			_ = input.Close()
+			return err
+		}
+	}
 	info, err := input.Stat()
 	if err != nil {
-		input.Close()
+		_ = input.Close()
 		return err
 	}
 	if err := c.PutReader(ctx, hash, input, info.Size()); err != nil {
-		input.Close()
+		_ = input.Close()
 		return err
 	}
 	if err := input.Close(); err != nil {
 		return err
 	}
-	_, _, err = c.l2.PutFile(hash, source)
-	return err
+	c.warmL2File(hash, source)
+	return nil
 }
 
 // Hash returns the content hash used as the cache key.
 func Hash(data []byte) string {
 	sum := sha256.Sum256(data)
 	return hex.EncodeToString(sum[:])
+}
+
+// verifyContentAddress checks the promised identity of data. It applies only
+// to canonical SHA-256 keys: legacy development fixtures may use symbolic keys,
+// which are not content addresses and cannot be checked this way.
+func verifyContentAddress(key string, data []byte) error {
+	if !isContentAddressName(key) {
+		return nil
+	}
+	if got := Hash(data); got != key {
+		return fmt.Errorf("%w: key %s, content %s", ErrContentAddressMismatch, key, got)
+	}
+	return nil
 }

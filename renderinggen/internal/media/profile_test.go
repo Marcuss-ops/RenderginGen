@@ -318,6 +318,39 @@ func overlayVideoOnlyProbe() ProbeResult {
 // the decision: the video-only profile accepts the real video-only artifact,
 // and V1 still refuses it (V1 requires one audio stream), so the two profiles
 // cannot collapse into one permissive gate.
+// TestOverlayVideoOnlyV3PinsAndEnforcesTheCanonicalStream closes the V2 gap:
+// the assembly-compatible profile must pin BOTH the canonical timebase and the
+// canonical avcC, and ValidateProbe must reject the measured V2 facts.
+func TestOverlayVideoOnlyV3PinsAndEnforcesTheCanonicalStream(t *testing.T) {
+	profile, err := ResolveProfile(ProfileVeloxOverlayVideoOnlyV3)
+	if err != nil {
+		t.Fatalf("V3 must be registered: %v", err)
+	}
+	if profile.VideoTimeBaseNum != 1 || profile.VideoTimeBaseDen != 90000 {
+		t.Fatalf("V3 timebase = %d/%d, want 1/90000", profile.VideoTimeBaseNum, profile.VideoTimeBaseDen)
+	}
+	if profile.CodecConfigSHA256 != "7201ce80a2b2b32a0c1a89501851099f267c1767d59ff799db744f72032aae5a" {
+		t.Fatalf("V3 avcC = %q", profile.CodecConfigSHA256)
+	}
+	probe := overlayVideoOnlyProbe()
+	probe.VideoTimeBaseNum, probe.VideoTimeBaseDen = 1, 90000
+	probe.CodecConfigSHA256 = profile.CodecConfigSHA256
+	if err := profile.ValidateProbe(probe); err != nil {
+		t.Fatalf("canonical V3 probe must certify: %v", err)
+	}
+
+	v2 := probe
+	v2.VideoTimeBaseNum, v2.VideoTimeBaseDen = 1, 12288
+	if err := profile.ValidateProbe(v2); err == nil {
+		t.Fatal("V3 must reject the measured 1/12288 muxer timebase")
+	}
+	wrongAVCC := probe
+	wrongAVCC.CodecConfigSHA256 = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+	if err := profile.ValidateProbe(wrongAVCC); err == nil {
+		t.Fatal("V3 must reject a different SPS/PPS identity")
+	}
+}
+
 func TestOverlayVideoOnlyProfileCertifiesTheMeasuredArtifact(t *testing.T) {
 	profile, err := ResolveProfile(ProfileVeloxOverlayVideoOnlyV1)
 	if err != nil {

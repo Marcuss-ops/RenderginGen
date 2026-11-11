@@ -137,8 +137,12 @@ func TestImportOverlayArtifactFailsClosedOnBadIdentity(t *testing.T) {
 	fixture := filepath.Join("..", "..", "..", "testdata", "golden", "background.mp4")
 	job, source := makeOverlayImportJob(t, fixture, "map-import-bad-hash")
 	bad := []byte("not-the-producer-bytes")
-	store := storage.New(storage.NewMemory(), storage.Options{L2Dir: t.TempDir()})
-	if err := store.Put(context.Background(), job.Assets[0].Hash, bad); err != nil {
+	// Seed the corruption at the backend: the worker's verified Put now refuses
+	// bytes that contradict their address, but this test needs a store that
+	// ALREADY holds such bytes (a restore, a hand copy, bit rot).
+	backend := storage.NewMemory()
+	store := storage.New(backend, storage.Options{L2Dir: t.TempDir()})
+	if err := backend.Store(context.Background(), job.Assets[0].Hash, bad); err != nil {
 		t.Fatal(err)
 	}
 	proc := New(t.TempDir(), "software", "", "", store, &fakeRenderer{})

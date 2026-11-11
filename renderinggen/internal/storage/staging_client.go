@@ -82,12 +82,10 @@ func (c *Client) PutStagedFile(ctx context.Context, session, source string) (str
 		return "", 0, fmt.Errorf("storage: staged upload streamed %d bytes but %s was %d bytes: the file changed under the upload", size, source, info.Size())
 	}
 	// L3 is already the source of truth. Warming L2 still matters because the
-	// immediate parent publication resolves the object through the local cache.
-	if c.l2 != nil && c.l2.dir != "" {
-		if _, _, err := c.l2.PutFile(sha, source); err != nil {
-			return "", 0, fmt.Errorf("storage: warm L2 for staged object %s: %w", sha, err)
-		}
-	}
+	// immediate parent publication resolves the object through the local cache,
+	// but a cache failure must not turn a successful publication into a job
+	// failure; warmL2File counts and logs the degradation instead.
+	c.warmL2File(sha, source)
 	return sha, size, nil
 }
 

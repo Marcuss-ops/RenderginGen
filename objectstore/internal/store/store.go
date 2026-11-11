@@ -104,6 +104,10 @@ func (s *Store) Capabilities() Capabilities {
 // Store is a disk-backed, content-addressed object store.
 type Store struct {
 	dir string
+	// staging serializes the commit phase of staging operations that name the
+	// same session (see staging.go). It is a fixed shard array rather than a
+	// map so no per-session lock is ever allocated or leaked.
+	staging stagingSessionLocks
 }
 
 // New creates a store rooted at dir.

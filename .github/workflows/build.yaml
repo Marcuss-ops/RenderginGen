@@ -69,6 +69,30 @@ jobs:
     defaults:
       run:
         working-directory: queue
+    # PostgreSQL is REQUIRED here, not optional. The queue's strongest
+    # guarantees — the idempotency unique index, transactional batch submit,
+    # SKIP LOCKED claim exclusivity, lease recovery and the migrations — only
+    # exist in this backend. Without a service container every postgres test
+    # skipped itself, so CI stayed green on code the database rejects.
+    # RENDERINGGEN_REQUIRE_POSTGRES_TESTS turns a missing TEST_DATABASE_URL
+    # into a test FAILURE instead of a silent skip (see testDatabaseURL).
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: renderinggen
+          POSTGRES_PASSWORD: renderinggen
+          POSTGRES_DB: renderinggen
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U renderinggen -d renderinggen"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    env:
+      TEST_DATABASE_URL: postgres://renderinggen:renderinggen@127.0.0.1:5432/renderinggen?sslmode=disable
+      RENDERINGGEN_REQUIRE_POSTGRES_TESTS: "1"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
@@ -79,8 +103,20 @@ jobs:
       - run: go build ./...
       - run: go vet ./...
       # The claim/lease paths are the queue's concurrency surface: a race here
-      # means two workers can own one job.
+      # means two workers can own one job. TEST_DATABASE_URL makes this run the
+      # real PostgreSQL suite, including migrations and multi-connection claims.
       - run: RENDERINGGEN_SKIP_GPU_E2E=1 go test -race -count=1 ./...
+      # Explicit integration pass with -v so the guard below can prove the
+      # migration/repository suites actually ran. pipefail preserves a test
+      # failure through tee; a skip marker fails the job loudly.
+      - name: PostgreSQL integration tests (migrations, repository, concurrency)
+        run: |
+          set -o pipefail
+          go test -race -count=1 -v ./internal/migrate/... ./internal/repository/... | tee /tmp/queue-postgres-tests.log
+          if grep -q "skipping postgres integration" /tmp/queue-postgres-tests.log; then
+            echo "::error::PostgreSQL integration tests were skipped; the service container or TEST_DATABASE_URL is misconfigured" >&2
+            exit 1
+          fi
 
   test-objectstore:
     name: Build & test objectstore

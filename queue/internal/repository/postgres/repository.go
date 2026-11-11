@@ -19,11 +19,13 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"strings"
 	"sync/atomic"
 	"time"
 
 	"github.com/Marcuss-ops/RenderingGen/queue/internal/model"
 	"github.com/Marcuss-ops/RenderingGen/queue/internal/repository"
+	"github.com/jackc/pgx/v5/pgconn"
 )
 
 // defaultJobType is the job type recorded for render jobs. A job is one
@@ -51,6 +53,7 @@ func normalizeJobType(jobType string) (string, error) {
 	}
 	switch jobType {
 	case model.JobTypeRenderSegment,
+		model.JobTypeRenderPrepare,
 		model.JobTypeOverlayPrepare,
 		model.JobTypeOverlayRender,
 		model.JobTypeOverlayImport:
@@ -73,6 +76,14 @@ func normalizeJobType(jobType string) (string, error) {
 // exists to fail a stuck operation, not to be a performance budget.
 const defaultOpTimeout = 15 * time.Second
 
+// defaultRequeueBatch bounds one lease-expiry recovery transaction. A sweep
+// that selects every expired lease at once holds their row locks and performs
+// several statements per job inside one 15-second operation; when many leases
+// expire together (a worker fleet restart) that work does not fit, the whole
+// batch rolls back, and the next sweep starts over. Serially draining small
+// committed batches makes the recovery advance monotonically instead.
+const defaultRequeueBatch = 256
+
 // Repository is the PostgreSQL backend for the central job queue.
 type Repository struct {
 	db          *sql.DB
@@ -82,6 +93,10 @@ type Repository struct {
 	// opTimeout bounds one repository operation (defaultOpTimeout when the
 	// repository was built by New).
 	opTimeout time.Duration
+
+	// requeueBatch is the maximum number of expired leases one transaction
+	// recovers (defaultRequeueBatch when the repository was built by New).
+	requeueBatch int
 }
 
 // opContext derives one repository operation's context from the CALLER's
@@ -106,6 +121,17 @@ func (r *Repository) opContext(ctx context.Context) (context.Context, context.Ca
 // SetOpTimeout overrides the per-operation deadline (values <= 0 restore
 // defaultOpTimeout).
 func (r *Repository) SetOpTimeout(d time.Duration) { r.opTimeout = d }
+
+// SetRequeueBatch overrides the number of expired leases recovered per
+// transaction (values <= 0 restore defaultRequeueBatch).
+func (r *Repository) SetRequeueBatch(n int) { r.requeueBatch = n }
+
+func (r *Repository) requeueBatchSize() int {
+	if r.requeueBatch <= 0 {
+		return defaultRequeueBatch
+	}
+	return r.requeueBatch
+}
 
 // rowsAffected reads an affected-row count, surfacing the driver error that
 // would otherwise be indistinguishable from "zero rows". Every caller
@@ -155,12 +181,19 @@ var _ repository.JobRepository = (*Repository)(nil)
 
 // New creates a PostgreSQL-backed job repository.
 func New(db *sql.DB, lease time.Duration, maxAttempts int) *Repository {
-	return &Repository{db: db, lease: lease, maxAttempts: maxAttempts, opTimeout: defaultOpTimeout}
+	return &Repository{
+		db:           db,
+		lease:        lease,
+		maxAttempts:  maxAttempts,
+		opTimeout:    defaultOpTimeout,
+		requeueBatch: defaultRequeueBatch,
+	}
 }
 
 // inputManifest is the JSONB shape stored in render_jobs.input_manifest.
 type inputManifest struct {
-	Assets []model.AssetRef `json:"assets"`
+	Assets                []model.AssetRef                `json:"assets"`
+	PreparedRenderPackage *model.PreparedRenderPackageRef `json:"prepared_render_package,omitempty"`
 }
 
 // jobRow carries the wire defaults and encoded JSONB columns of one job row.
@@ -187,7 +220,7 @@ func prepareJobRow(job model.Job) (jobRow, error) {
 		return jobRow{}, fmt.Errorf("render_plan: %w", err)
 	}
 	row.plan = plan
-	manifest, err := json.Marshal(inputManifest{Assets: job.Assets})
+	manifest, err := json.Marshal(inputManifest{Assets: job.Assets, PreparedRenderPackage: job.PreparedRenderPackage})
 	if err != nil {
 		return jobRow{}, fmt.Errorf("input_manifest: %w", err)
 	}
@@ -220,7 +253,7 @@ func (r *Repository) insertJobRowOnly(ctx context.Context, tx *sql.Tx, job model
 	res, err := tx.ExecContext(ctx, insertJobSQL,
 		job.ID, row.jobType, row.schema, row.version, row.plan, row.manifest, r.maxAttempts, job.IdempotencyKey, job.ParentJobID, job.ChunkIndex, job.FrameRange, job.NotBefore, job.PublicationPolicy, job.DaemonAdmissionWaitMS)
 	if err != nil {
-		return err
+		return mapJobInsertError(err, job.ID)
 	}
 	n, err := rowsAffected(res)
 	if err != nil {
@@ -230,6 +263,30 @@ func (r *Repository) insertJobRowOnly(ctx context.Context, tx *sql.Tx, job model
 		return fmt.Errorf("%w: job %s", repository.ErrJobExists, job.ID)
 	}
 	return nil
+}
+
+// idempotencyKeyIndexes names every index that enforces the idempotency-key
+// uniqueness rule. Migration 007 created idx_render_jobs_idempotency and
+// migration 011 added render_jobs_idempotency_key_unique; PostgreSQL reports
+// whichever one it evaluated first, so both must be recognized.
+var idempotencyKeyIndexes = map[string]struct{}{
+	"idx_render_jobs_idempotency":        {},
+	"render_jobs_idempotency_key_unique": {},
+}
+
+// mapJobInsertError maps the idempotency-key unique violation to the same
+// ErrJobExists sentinel the in-memory backend returns, so a duplicate logical
+// submit is a conflict on every backend instead of a driver-specific failure.
+// ON CONFLICT (id) DO NOTHING already makes a duplicate id explicit; the key
+// conflict is the only other uniqueness rule on this INSERT.
+func mapJobInsertError(err error, jobID string) error {
+	var pgErr *pgconn.PgError
+	if errors.As(err, &pgErr) && pgErr.Code == "23505" {
+		if _, ok := idempotencyKeyIndexes[pgErr.ConstraintName]; ok {
+			return fmt.Errorf("%w: job %s reuses an existing idempotency key", repository.ErrJobExists, jobID)
+		}
+	}
+	return err
 }
 
 // insertJobRow inserts one job and records its creation event inside tx.
@@ -287,6 +344,109 @@ func (r *Repository) SubmitBatch(ctx context.Context, jobs []model.Job) error {
 	})
 }
 
+// SubmitBatchIdempotent submits the complete family in one transaction. If
+// that transaction loses a unique-key race, the persisted IDs and request
+// envelopes are re-read and accepted only when every member matches exactly.
+func (r *Repository) SubmitBatchIdempotent(ctx context.Context, jobs []model.Job) (bool, error) {
+	if err := model.ValidateJobBatch(jobs); err != nil {
+		return false, err
+	}
+	for _, job := range jobs {
+		if job.IdempotencyKey == "" {
+			return false, fmt.Errorf("job %s has no idempotency key", job.ID)
+		}
+	}
+	if err := r.SubmitBatch(ctx, jobs); err == nil {
+		return true, nil
+	} else if !errors.Is(err, repository.ErrJobExists) && !errors.Is(err, repository.ErrIdempotencyConflict) {
+		return false, err
+	} else {
+		submitErr := err
+		if !errors.Is(submitErr, repository.ErrJobExists) && !errors.Is(submitErr, repository.ErrIdempotencyConflict) {
+			return false, submitErr
+		}
+		matches, verifyErr := r.batchRequestMatches(ctx, jobs)
+		if verifyErr != nil {
+			return false, verifyErr
+		}
+		if !matches {
+			return false, fmt.Errorf("%w: stored family differs or is incomplete", repository.ErrIdempotencyConflict)
+		}
+		return false, nil
+	}
+}
+
+// batchRequestMatches reads every immutable field in one SQL statement. A
+// replay therefore gets one PostgreSQL snapshot for the full family instead
+// of a producer-side series of GETs that could observe a mixed state.
+func (r *Repository) batchRequestMatches(ctx context.Context, jobs []model.Job) (bool, error) {
+	ctx, cancel := r.opContext(ctx)
+	defer cancel()
+	args := make([]any, len(jobs))
+	placeholders := make([]string, len(jobs))
+	expected := make(map[string]model.Job, len(jobs))
+	for i, job := range jobs {
+		args[i] = job.ID
+		placeholders[i] = fmt.Sprintf("$%d", i+1)
+		expected[job.ID] = job
+	}
+	query := `SELECT id, job_type, publication_policy, daemon_admission_wait_ms, job_schema,
+		job_schema_version, render_plan, input_manifest, idempotency_key, parent_job_id,
+		chunk_index, frame_range, not_before FROM render_jobs WHERE id IN (` + strings.Join(placeholders, ",") + `)`
+	rows, err := r.db.QueryContext(ctx, query, args...)
+	if err != nil {
+		return false, err
+	}
+	defer rows.Close()
+	found := make(map[string]model.Job, len(jobs))
+	for rows.Next() {
+		var actual model.Job
+		var schema string
+		var version sql.NullInt64
+		var plan, manifest, frameRange []byte
+		var idemKey, parentID sql.NullString
+		var notBefore sql.NullTime
+		if err := rows.Scan(&actual.ID, &actual.JobType, &actual.PublicationPolicy,
+			&actual.DaemonAdmissionWaitMS, &schema, &version, &plan, &manifest,
+			&idemKey, &parentID, &actual.ChunkIndex, &frameRange, &notBefore); err != nil {
+			return false, err
+		}
+		actual.Schema = schema
+		actual.Version = schemaVersion(version)
+		actual.RenderPlan = json.RawMessage(plan)
+		actual.IdempotencyKey = idemKey.String
+		actual.ParentJobID = parentID.String
+		actual.FrameRange, err = decodeFrameRange(frameRange)
+		if err != nil {
+			return false, fmt.Errorf("batch replay frame range %s: %w", actual.ID, err)
+		}
+		manifestValue, err := decodeInputManifest(manifest)
+		if err != nil {
+			return false, fmt.Errorf("batch replay manifest %s: %w", actual.ID, err)
+		}
+		actual.Assets = manifestValue.Assets
+		actual.PreparedRenderPackage = manifestValue.PreparedRenderPackage
+		if notBefore.Valid {
+			t := notBefore.Time
+			actual.NotBefore = &t
+		}
+		found[actual.ID] = actual
+	}
+	if err := rows.Err(); err != nil {
+		return false, err
+	}
+	if len(found) != len(expected) {
+		return false, nil
+	}
+	for id, requested := range expected {
+		actual, ok := found[id]
+		if !ok || !model.SameSubmitRequest(actual, requested) {
+			return false, nil
+		}
+	}
+	return true, nil
+}
+
 // SubmitIdempotent uses the database uniqueness constraint as the race-safe
 // winner selection for concurrent retries of the same logical request.
 func (r *Repository) SubmitIdempotent(ctx context.Context, job model.Job) (*model.Job, bool, error) {
@@ -303,21 +463,63 @@ func (r *Repository) SubmitIdempotent(ctx context.Context, job model.Job) (*mode
 	err := r.db.QueryRowContext(ctx, `SELECT id FROM render_jobs WHERE idempotency_key = $1`, job.IdempotencyKey).Scan(&existingID)
 	if err == nil {
 		canonical, getErr := r.Get(ctx, existingID)
-		return canonical, false, getErr
+		if getErr != nil {
+			return nil, false, getErr
+		}
+		if !model.SameSubmitRequest(*canonical, job) {
+			return nil, false, fmt.Errorf("%w: key %q belongs to job %s", repository.ErrIdempotencyConflict, job.IdempotencyKey, existingID)
+		}
+		return canonical, false, nil
 	}
 	if !errors.Is(err, sql.ErrNoRows) {
 		return nil, false, err
 	}
-	if err := r.Submit(ctx, job); err == nil {
+	submitErr := r.Submit(ctx, job)
+	if submitErr == nil {
 		canonical, getErr := r.Get(ctx, job.ID)
 		return canonical, true, getErr
 	}
-	// Another submitter may have won the unique-key race.
+	// Only a uniqueness conflict may be reinterpreted as "another submitter
+	// won". Re-running the lookup after ANY insert failure could replace the
+	// caller's real error (an unknown job_type, a malformed plan) with a row
+	// that happened to appear under the same key — masking a validation bug as
+	// an idempotent duplicate. Everything else is returned as itself.
+	if !isSubmitConflict(submitErr) {
+		return nil, false, submitErr
+	}
+	// Another submitter may have won the unique-key race. If NO row owns the
+	// key, the failure was a duplicate id under a different key: propagate
+	// ErrJobExists exactly like the in-memory backend, instead of returning a
+	// raw sql.ErrNoRows that would hide the conflict behind a 500.
 	if err := r.db.QueryRowContext(ctx, `SELECT id FROM render_jobs WHERE idempotency_key = $1`, job.IdempotencyKey).Scan(&existingID); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, false, submitErr
+		}
 		return nil, false, err
 	}
 	canonical, getErr := r.Get(ctx, existingID)
-	return canonical, false, getErr
+	if getErr != nil {
+		return nil, false, getErr
+	}
+	if !model.SameSubmitRequest(*canonical, job) {
+		return nil, false, fmt.Errorf("%w: key %q belongs to job %s", repository.ErrIdempotencyConflict, job.IdempotencyKey, existingID)
+	}
+	return canonical, false, nil
+}
+
+// isSubmitConflict reports whether err is the uniqueness collision that means
+// another submitter may have created the canonical row: either the job-id
+// conflict (ON CONFLICT (id) DO NOTHING) or a PostgreSQL unique violation on an
+// idempotency-key index. Any other error is the caller's answer, not a race.
+func isSubmitConflict(err error) bool {
+	if errors.Is(err, repository.ErrJobExists) {
+		return true
+	}
+	var pgErr *pgconn.PgError
+	if !errors.As(err, &pgErr) || pgErr.Code != "23505" {
+		return false
+	}
+	return strings.Contains(pgErr.ConstraintName, "idempotency")
 }
 
 // Claim atomically claims the longest-waiting pending job for a worker,
@@ -370,6 +572,7 @@ func (r *Repository) ClaimState(ctx context.Context, workerID string, state mode
 		plan                  []byte
 		manifest              []byte
 		attempts              int
+		generation            int64
 		queuedAt              time.Time
 		artifactID            sql.NullString
 		parentJobID           sql.NullString
@@ -393,7 +596,7 @@ func (r *Repository) ClaimState(ctx context.Context, workerID string, state mode
 	// keeps the rule structural — no producer has to remember to flag a
 	// parent, and a parent submitted without children stays ordinary work.
 	err = tx.QueryRowContext(ctx, `
-		SELECT id, job_type, publication_policy, daemon_admission_wait_ms, job_schema, job_schema_version, render_plan, input_manifest, attempt_count, queued_at, artifact_id, parent_job_id, chunk_index, frame_range
+		SELECT id, job_type, publication_policy, daemon_admission_wait_ms, job_schema, job_schema_version, render_plan, input_manifest, attempt_count, lease_generation, queued_at, artifact_id, parent_job_id, chunk_index, frame_range
 		FROM render_jobs
 		WHERE `+stateFilter+`
 		  AND (not_before IS NULL OR not_before <= $1)
@@ -402,7 +605,7 @@ func (r *Repository) ClaimState(ctx context.Context, workerID string, state mode
 		      WHERE child.parent_job_id = render_jobs.id)
 		ORDER BY queued_at ASC
 		FOR UPDATE SKIP LOCKED
-		LIMIT 1`, now).Scan(&id, &jobType, &publicationPolicy, &daemonAdmissionWaitMS, &schema, &version, &plan, &manifest, &attempts, &queuedAt, &artifactID, &parentJobID, &chunkIndex, &frameRange)
+		LIMIT 1`, now).Scan(&id, &jobType, &publicationPolicy, &daemonAdmissionWaitMS, &schema, &version, &plan, &manifest, &attempts, &generation, &queuedAt, &artifactID, &parentJobID, &chunkIndex, &frameRange)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, 0, nil
 	}
@@ -418,7 +621,7 @@ func (r *Repository) ClaimState(ctx context.Context, workerID string, state mode
 	if err != nil {
 		return nil, 0, poisonCorruptClaim(ctx, tx, id, err)
 	}
-	assetsVal, err := decodeAssets(manifest)
+	manifestVal, err := decodeInputManifest(manifest)
 	if err != nil {
 		return nil, 0, poisonCorruptClaim(ctx, tx, id, err)
 	}
@@ -431,6 +634,7 @@ func (r *Repository) ClaimState(ctx context.Context, workerID string, state mode
 	if maxRecordedAttempt >= attemptNumber {
 		attemptNumber = maxRecordedAttempt + 1
 	}
+	nextGeneration := generation + 1
 	if err := createAttempt(ctx, tx, id, attemptNumber, workerID, now); err != nil {
 		return nil, 0, err
 	}
@@ -441,8 +645,9 @@ func (r *Repository) ClaimState(ctx context.Context, workerID string, state mode
 		    current_worker_id = $2,
 		    lease_until = $3,
 		    started_at = $4,
-		    attempt_count = $5
-		WHERE id = $1`, id, workerID, leaseUntil, now, attemptNumber); err != nil {
+		    attempt_count = $5,
+		    lease_generation = $6
+		WHERE id = $1`, id, workerID, leaseUntil, now, attemptNumber, nextGeneration); err != nil {
 		return nil, 0, err
 	}
 
@@ -464,13 +669,15 @@ func (r *Repository) ClaimState(ctx context.Context, workerID string, state mode
 		Schema:                schema,
 		Version:               schemaVersion(version),
 		RenderPlan:            json.RawMessage(plan),
-		Assets:                assetsVal,
+		Assets:                manifestVal.Assets,
+		PreparedRenderPackage: manifestVal.PreparedRenderPackage,
 		State:                 model.StateRunning,
 		Worker:                workerID,
 		Attempts:              attemptNumber,
 		QueuedAt:              queuedAt,
 		StartedAt:             now,
 		LeaseUntil:            leaseUntil,
+		LeaseGeneration:       nextGeneration,
 	}
 	// A job re-claimed from the rendered state carries its already-stored
 	// artifact so the worker can skip rendering and only retry publication.
@@ -515,7 +722,7 @@ func (r *Repository) Get(ctx context.Context, id string) (*model.Job, error) {
 	)
 	err := r.db.QueryRowContext(ctx, `
 		SELECT id, state, job_type, publication_policy, daemon_admission_wait_ms, job_schema, job_schema_version, render_plan,
-		       input_manifest, attempt_count,
+		       input_manifest, attempt_count, lease_generation,
 		       current_worker_id, queued_at, started_at, completed_at,
 		       lease_until, error_message, artifact_id, idempotency_key,
 		       parent_job_id, chunk_index, frame_range, not_before,
@@ -523,7 +730,7 @@ func (r *Repository) Get(ctx context.Context, id string) (*model.Job, error) {
 		FROM render_jobs
 		WHERE id = $1`, id).Scan(
 		&job.ID, &state, &job.JobType, &job.PublicationPolicy, &job.DaemonAdmissionWaitMS, &schema, &version, &plan,
-		&manifest, &job.Attempts,
+		&manifest, &job.Attempts, &job.LeaseGeneration,
 		&worker, &queuedAt, &startedAt, &completedAt,
 		&leaseUntil, &errorMsg, &artifactID, &idempotencyKey,
 		&parentJobID, &chunkIndex, &frameRange, &notBefore,
@@ -546,9 +753,12 @@ func (r *Repository) Get(ctx context.Context, id string) (*model.Job, error) {
 	if job.FrameRange, decErr = decodeFrameRange(frameRange); decErr != nil {
 		return nil, r.poisonCorruptRead(ctx, id, decErr)
 	}
-	if job.Assets, decErr = decodeAssets(manifest); decErr != nil {
+	var manifestVal inputManifest
+	if manifestVal, decErr = decodeInputManifest(manifest); decErr != nil {
 		return nil, r.poisonCorruptRead(ctx, id, decErr)
 	}
+	job.Assets = manifestVal.Assets
+	job.PreparedRenderPackage = manifestVal.PreparedRenderPackage
 	if notBefore.Valid {
 		nb := notBefore.Time
 		job.NotBefore = &nb

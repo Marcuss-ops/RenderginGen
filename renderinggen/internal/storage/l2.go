@@ -2,6 +2,8 @@ package storage
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
@@ -16,6 +18,13 @@ import (
 
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/hashio"
 )
+
+// errL2ObjectTooLarge means an object cannot fit within the L2 budget. It is a
+// cache-admission answer, not a storage failure: L3 remains the source of
+// truth, and install must NOT write bytes it would immediately have to evict —
+// returning the path of a file already deleted by the budget is worse than
+// reporting that the object was never cached.
+var errL2ObjectTooLarge = errors.New("object exceeds the L2 cache budget")
 
 // syncParentDir fsyncs a directory best-effort so a just-renamed entry is
 // durable. Failures are logged, never fatal: on tmpfs there is nothing to
@@ -55,9 +64,62 @@ type diskCache struct {
 	// degradation that used to be indistinguishable from a miss (no counter,
 	// no log), so a broken L2 could silently turn every job into an L3 fetch
 	// while the hit-rate dashboards just showed misses.
-	readErrors    atomic.Int64
-	corruptErrors atomic.Int64 // EACCES/EIO/non-regular entries: degradation, not a miss
-	lastErrLog    atomic.Int64 // unix nanos of the last degradation log (rate limit)
+	readErrors      atomic.Int64
+	corruptErrors   atomic.Int64 // EACCES/EIO/non-regular entries: degradation, not a miss
+	lastErrLog      atomic.Int64 // unix nanos of the last degradation log (rate limit)
+	lastEvictErrLog atomic.Int64 // unix nanos of the last eviction-failure log (rate limit)
+
+	// verified records the file identity (size + mtime) of content-addressed
+	// entries whose bytes were hashed and matched their key. A cache hit is
+	// only evidence that a file exists; the key is a SHA-256, so the bytes must
+	// be proven to still hash to it before they are served or promoted to L1.
+	// The stamp makes that proof once per process and re-proves it whenever the
+	// file changes.
+	verified map[string]cacheStamp
+
+	// verifyMu guards verifying, the in-flight hashes. Two readers of the same
+	// cold object share one hash pass; the verify itself runs without d.mu so a
+	// large first read does not block unrelated cache traffic.
+	verifyMu  sync.Mutex
+	verifying map[string]*verifyCall
+}
+
+type cacheStamp struct {
+	size    int64
+	modTime time.Time
+}
+
+type verifyCall struct {
+	done chan struct{}
+	ok   bool
+}
+
+// isContentAddressName reports whether key is a canonical SHA-256 content
+// address. Non-content keys (short test keys, legacy symbolic names) are not
+// hash-verifiable and keep the historical path-existence behaviour.
+func isContentAddressName(key string) bool {
+	if len(key) != 64 {
+		return false
+	}
+	for i := 0; i < len(key); i++ {
+		c := key[i]
+		if (c < '0' || c > '9') && (c < 'a' || c > 'f') {
+			return false
+		}
+	}
+	return true
+}
+
+// admissible reports whether an object of size bytes may enter the cache. An
+// object larger than the whole budget is never installed: enforceBudget could
+// only delete it again (it is the newest entry, so it is also the only entry
+// when the cache is otherwise empty), while install would still hand its path
+// to the caller.
+func (d *diskCache) admissible(size int64) error {
+	if d.max > 0 && size > d.max {
+		return fmt.Errorf("%w: %d bytes will not fit a %d-byte cache", errL2ObjectTooLarge, size, d.max)
+	}
+	return nil
 }
 
 type cacheEntry struct {
@@ -66,7 +128,13 @@ type cacheEntry struct {
 }
 
 func newDiskCache(dir string, max int64) *diskCache {
-	return &diskCache{dir: dir, max: max, entries: make(map[string]cacheEntry)}
+	return &diskCache{
+		dir:       dir,
+		max:       max,
+		entries:   make(map[string]cacheEntry),
+		verified:  make(map[string]cacheStamp),
+		verifying: make(map[string]*verifyCall),
+	}
 }
 
 // reportReadError counts a non-"absent" L2 failure and logs it at most once
@@ -85,6 +153,18 @@ func (d *diskCache) reportReadError(op, key string, err error) {
 	last := d.lastErrLog.Load()
 	if now-last >= int64(time.Second) && d.lastErrLog.CompareAndSwap(last, now) {
 		log.Printf("storage: L2 %s %s: %v (treated as a cache miss; L3 remains the source of truth)", op, d.path(key), err)
+	}
+}
+
+// reportEvictionFailure logs an unremovable cache object at most once per
+// second. The entry stays indexed and accounted: deleting it would make d.total
+// under-report the bytes still on disk and hide the failure instead of
+// surfacing it.
+func (d *diskCache) reportEvictionFailure(path string, err error) {
+	now := time.Now().UnixNano()
+	last := d.lastEvictErrLog.Load()
+	if now-last >= int64(time.Second) && d.lastEvictErrLog.CompareAndSwap(last, now) {
+		log.Printf("storage: L2 eviction could not remove %s: %v (entry kept accounted; budget may remain above target)", path, err)
 	}
 }
 
@@ -109,8 +189,6 @@ func isCacheCorrupt(err error) bool {
 			return true
 		}
 	}
-	var syscallErr interface{ Timeout() bool }
-	_ = syscallErr
 	return false
 }
 
@@ -139,6 +217,16 @@ func (d *diskCache) Get(key string) ([]byte, bool) {
 		}
 		return nil, false
 	}
+	// A hit is not trusted until the bytes are proven to hash to the key they
+	// are stored under. This is the read-side half of the L2 contract: a file
+	// modified after install (bit rot, an operator, a partial restore) must be
+	// a miss, never bytes promoted to L1 under the wrong identity.
+	if !d.contentVerified(key, p, info, func() (string, error) {
+		sum := sha256.Sum256(data)
+		return hex.EncodeToString(sum[:]), nil
+	}) {
+		return nil, false
+	}
 	d.mu.Lock()
 	d.entries[key] = cacheEntry{size: int64(len(data)), accessed: time.Now()}
 	d.mu.Unlock()
@@ -162,7 +250,110 @@ func (d *diskCache) Path(key string) (string, bool) {
 		log.Printf("storage: L2 path %s: not a regular file (treated as a cache miss; L3 remains the source of truth)", p)
 		return "", false
 	}
+	// The streaming path hands out a path (which callers hard-link into a
+	// workspace), so it must prove the bytes before returning it too. The proof
+	// is paid once per file identity and then carried by verified.
+	if !d.contentVerified(key, p, info, func() (string, error) { return hashFileContent(p) }) {
+		return "", false
+	}
 	return p, true
+}
+
+// hashFileContent returns the hex SHA-256 of a cache file.
+func hashFileContent(path string) (string, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return "", err
+	}
+	defer f.Close()
+	digest := sha256.New()
+	if _, err := io.Copy(digest, f); err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(digest.Sum(nil)), nil
+}
+
+// contentVerified proves that the bytes at p hash to key, remembering the file
+// identity it proved so later hits skip the hash. hash is the caller's chosen
+// hashing strategy: Get already has the bytes in memory, while Path must read
+// the file.
+//
+// Concurrent cold readers of one object share a single hash pass. The pass runs
+// outside d.mu (it can read a multi-GB file); on failure the corrupt entry is
+// forgotten and, when still the same file, removed, so the caller's L3 refetch
+// installs known-good bytes instead of repeatedly reading corrupted ones.
+func (d *diskCache) contentVerified(key, p string, info os.FileInfo, hash func() (string, error)) bool {
+	if !isContentAddressName(key) {
+		return true
+	}
+	stamp := cacheStamp{size: info.Size(), modTime: info.ModTime()}
+	d.mu.Lock()
+	prev, ok := d.verified[key]
+	d.mu.Unlock()
+	if ok && prev == stamp {
+		return true
+	}
+
+	id := fmt.Sprintf("%s|%d|%d", key, stamp.size, stamp.modTime.UnixNano())
+	d.verifyMu.Lock()
+	if call, ok := d.verifying[id]; ok {
+		d.verifyMu.Unlock()
+		<-call.done
+		return call.ok
+	}
+	call := &verifyCall{done: make(chan struct{})}
+	d.verifying[id] = call
+	d.verifyMu.Unlock()
+
+	got, hashErr := hash()
+	verified := hashErr == nil && got == key
+	if verified {
+		d.mu.Lock()
+		d.verified[key] = stamp
+		d.mu.Unlock()
+	} else if hashErr == nil {
+		d.reportCorrupt("verify", key, fmt.Errorf("cached bytes hash to %s, not to their key %s", got, key))
+		d.dropCorruptObject(key, p, info)
+	} else {
+		d.reportReadError("verify", key, hashErr)
+	}
+
+	d.verifyMu.Lock()
+	call.ok = verified
+	delete(d.verifying, id)
+	close(call.done)
+	d.verifyMu.Unlock()
+	return verified
+}
+
+// reportCorrupt counts an integrity failure separately from an ordinary miss
+// and logs it at most once per second, like reportReadError.
+func (d *diskCache) reportCorrupt(op, key string, err error) {
+	d.readErrors.Add(1)
+	d.corruptErrors.Add(1)
+	now := time.Now().UnixNano()
+	last := d.lastErrLog.Load()
+	if now-last >= int64(time.Second) && d.lastErrLog.CompareAndSwap(last, now) {
+		log.Printf("storage: L2 %s %s: %v (corrupt entry treated as a cache miss; L3 remains the source of truth)", op, d.path(key), err)
+	}
+}
+
+// dropCorruptObject forgets a corrupt entry and removes its file when it is
+// still the same file that was hashed. A concurrent good install may have
+// replaced it already; deleting that would throw away valid bytes.
+func (d *diskCache) dropCorruptObject(key, p string, info os.FileInfo) {
+	if current, err := os.Stat(p); err == nil && os.SameFile(info, current) {
+		if rmErr := os.Remove(p); rmErr != nil && !os.IsNotExist(rmErr) {
+			log.Printf("storage: L2 could not remove corrupt entry %s: %v", p, rmErr)
+		}
+	}
+	d.mu.Lock()
+	if entry, ok := d.entries[key]; ok {
+		delete(d.entries, key)
+		d.total -= entry.size
+	}
+	delete(d.verified, key)
+	d.mu.Unlock()
 }
 
 // stagingNamePrefix is the name prefix install uses for its in-flight temp
@@ -288,6 +479,12 @@ func (d *diskCache) install(key string, write func(*os.File) (int64, error)) (st
 	if err != nil {
 		return "", 0, err
 	}
+	// Admission before commit: an object larger than the whole budget can never
+	// stay in the cache, so installing it would only hand the caller a path that
+	// the eviction pass (or the next one) deletes. Refuse it instead.
+	if err := d.admissible(size); err != nil {
+		return "", 0, err
+	}
 	// Durability: flush file pages before the atomic rename, then best-effort
 	// dir-sync so the rename itself survives a crash/power-loss. Without Sync
 	// the ledger can record an artifact as durable while its bytes are still
@@ -316,6 +513,7 @@ func (d *diskCache) install(key string, write func(*os.File) (int64, error)) (st
 			return p, prev.size, nil
 		}
 		delete(d.entries, key)
+		delete(d.verified, key)
 		d.total -= prev.size
 	}
 	if err := os.Rename(tmpPath, p); err != nil {
@@ -325,12 +523,19 @@ func (d *diskCache) install(key string, write func(*os.File) (int64, error)) (st
 	d.entries[key] = cacheEntry{size: size, accessed: time.Now()}
 	d.total += size
 	if d.max > 0 {
-		d.enforceBudget()
+		// The install that triggered the pass must survive it. Without the
+		// protection a timestamp tie could make the just-committed object the
+		// oldest candidate, and install would return the path of its own
+		// victim — the exact invalid-path contract admission is here to close.
+		d.enforceBudget(key)
 	}
 	return p, size, nil
 }
 
 func (d *diskCache) PutBytes(key string, data []byte) (string, int64, error) {
+	if err := d.admissible(int64(len(data))); err != nil {
+		return "", 0, err
+	}
 	return d.install(key, func(tmp *os.File) (int64, error) {
 		n, err := tmp.Write(data)
 		return int64(n), err
@@ -347,6 +552,9 @@ func (d *diskCache) PutFile(key, source string) (string, int64, error) {
 	}
 	if !info.Mode().IsRegular() {
 		return "", 0, fmt.Errorf("source %s is not a regular file", source)
+	}
+	if err := d.admissible(info.Size()); err != nil {
+		return "", 0, err
 	}
 	return d.install(key, func(tmp *os.File) (int64, error) {
 		input, err := os.Open(source)
@@ -366,6 +574,11 @@ func (d *diskCache) PutFile(key, source string) (string, int64, error) {
 }
 
 func (d *diskCache) InstallReader(key string, r io.Reader, size int64) (string, int64, error) {
+	if size >= 0 {
+		if err := d.admissible(size); err != nil {
+			return "", 0, err
+		}
+	}
 	return d.install(key, func(tmp *os.File) (int64, error) {
 		digest, written, err := hashio.Copy(r, tmp)
 		if err != nil {
@@ -374,8 +587,8 @@ func (d *diskCache) InstallReader(key string, r io.Reader, size int64) (string, 
 		if size >= 0 && written != size {
 			return 0, fmt.Errorf("L3 size %d does not match expected %d", written, size)
 		}
-		if len(key) == 64 && digest != key {
-			return 0, fmt.Errorf("L3 hash %s does not match key %s", digest, key)
+		if isContentAddressName(key) && digest != key {
+			return 0, fmt.Errorf("%w: L3 hash %s does not match key %s", ErrContentAddressMismatch, digest, key)
 		}
 		return written, nil
 	})
@@ -442,7 +655,7 @@ const evictionBatch = 64
 // iterations under d.mu (up to 64 full scans per over-budget install, which
 // serialized every concurrent L2 writer); this is O(entries + batch log batch)
 // with identical eviction order and identical accounting.
-func (d *diskCache) enforceBudget() {
+func (d *diskCache) enforceBudget(protect string) {
 	if d.total <= d.max {
 		return
 	}
@@ -453,6 +666,9 @@ func (d *diskCache) enforceBudget() {
 	}
 	oldest := make([]candidate, 0, evictionBatch)
 	for key, entry := range d.entries {
+		if key == protect {
+			continue // never evict the object this pass was triggered by
+		}
 		if len(oldest) == evictionBatch && !entry.accessed.Before(oldest[len(oldest)-1].accessed) {
 			continue // not older than the current window's newest member
 		}
@@ -474,6 +690,9 @@ func (d *diskCache) enforceBudget() {
 		if d.total <= d.max {
 			return
 		}
+		if victim.key == protect {
+			continue
+		}
 		entry, ok := d.entries[victim.key]
 		if !ok {
 			continue // already removed earlier in this pass
@@ -485,16 +704,16 @@ func (d *diskCache) enforceBudget() {
 			// vanished file (external cleanup) must not leave a stale index
 			// entry that every future pass re-scans forever.
 			delete(d.entries, victim.key)
+			delete(d.verified, victim.key)
 			d.total -= entry.size
 		default:
 			// Unremovable file (held open by a renderer, read-only directory):
-			// forget the index entry so the pass can make progress on other
-			// candidates instead of stalling. The bytes stay on disk but are no
-			// longer accounted — say so instead of silently growing the gap
-			// between d.total and the real disk usage.
-			delete(d.entries, victim.key)
-			d.total -= entry.size
-			log.Printf("storage: L2 eviction could not remove %s: %v (index entry forgotten; cache budget may under-report disk usage)", d.path(victim.key), err)
+			// the bytes are still there and still occupy disk. Keep the entry
+			// indexed and accounted, then continue with the next candidate.
+			// Forgetting it would under-report disk usage forever and make the
+			// budget unrecoverable. If every candidate is unremovable, d.total
+			// truthfully stays above max and the next pass retries.
+			d.reportEvictionFailure(d.path(victim.key), err)
 		}
 	}
 }

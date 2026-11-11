@@ -25,7 +25,7 @@ type fakeReportQueue struct {
 	failErr     error
 }
 
-func (f *fakeReportQueue) Complete(_ context.Context, _ string, artifact queue.Artifact) error {
+func (f *fakeReportQueue) Complete(_ context.Context, _ string, _ int64, artifact queue.Artifact) error {
 	if f.completeErr != nil {
 		return f.completeErr
 	}
@@ -33,12 +33,12 @@ func (f *fakeReportQueue) Complete(_ context.Context, _ string, artifact queue.A
 	return nil
 }
 
-func (f *fakeReportQueue) FailPermanently(_ context.Context, _ string, reason string) error {
+func (f *fakeReportQueue) FailPermanently(_ context.Context, _ string, _ int64, reason string) error {
 	f.permanent = append(f.permanent, reason)
 	return nil
 }
 
-func (f *fakeReportQueue) Rendered(_ context.Context, _ string, _ string, artifact queue.Artifact) error {
+func (f *fakeReportQueue) Rendered(_ context.Context, _ string, _ int64, _ string, artifact queue.Artifact) error {
 	if f.renderedErr != nil {
 		return f.renderedErr
 	}
@@ -46,7 +46,7 @@ func (f *fakeReportQueue) Rendered(_ context.Context, _ string, _ string, artifa
 	return nil
 }
 
-func (f *fakeReportQueue) Fail(_ context.Context, _ string, reason string) error {
+func (f *fakeReportQueue) Fail(_ context.Context, _ string, _ int64, reason string) error {
 	if f.failErr != nil {
 		return f.failErr
 	}
@@ -71,7 +71,7 @@ func TestReportCompleteDurableFallback(t *testing.T) {
 	q := &fakeReportQueue{completeErr: context.DeadlineExceeded}
 	artifact := durableArtifact("sha-abc")
 
-	ReportComplete(context.Background(), q, "job-1", artifact, true)
+	ReportComplete(context.Background(), q, "job-1", 0, artifact, true)
 
 	if len(q.rendered) != 1 {
 		t.Fatalf("durable complete failure: want 1 rendered report, got %d", len(q.rendered))
@@ -98,7 +98,7 @@ func TestReportCompleteNoFallbackWithoutDurability(t *testing.T) {
 	} {
 		t.Run(name, func(t *testing.T) {
 			q := &fakeReportQueue{completeErr: context.DeadlineExceeded}
-			ReportComplete(context.Background(), q, "job-1", tc.artifact, tc.durable)
+			ReportComplete(context.Background(), q, "job-1", 0, tc.artifact, tc.durable)
 			if len(q.rendered) != 0 {
 				t.Fatalf("want no rendered fallback, got %d", len(q.rendered))
 			}
@@ -111,7 +111,7 @@ func TestReportCompleteSuccess(t *testing.T) {
 	q := &fakeReportQueue{}
 	artifact := durableArtifact("sha-abc")
 
-	ReportComplete(context.Background(), q, "job-1", artifact, true)
+	ReportComplete(context.Background(), q, "job-1", 0, artifact, true)
 
 	if len(q.completed) != 1 || q.completed[0].StorageKey != "sha-abc" {
 		t.Fatalf("completed = %+v, want the artifact", q.completed)
@@ -188,7 +188,7 @@ func TestReportContentAddressRejectedIsPermanent(t *testing.T) {
 
 	t.Run("post pool with separate artifact", func(t *testing.T) {
 		q := &fakeReportQueue{}
-		ReportFailureWithArtifact(context.Background(), q, "job-bad-address", durableArtifact("sha-abc"), err)
+		ReportFailureWithArtifact(context.Background(), q, "job-bad-address", 0, durableArtifact("sha-abc"), err)
 		if len(q.permanent) != 1 || len(q.failed) != 0 || len(q.rendered) != 0 {
 			t.Fatalf("permanent=%d failed=%d rendered=%d, want only permanent", len(q.permanent), len(q.failed), len(q.rendered))
 		}
@@ -241,7 +241,7 @@ func TestReportFailureWithArtifactSeparate(t *testing.T) {
 	t.Run("permanent Drive configuration -> failed, not retryable rendered", func(t *testing.T) {
 		q := &fakeReportQueue{}
 		artifact := durableArtifact("sha-abc")
-		ReportFailureWithArtifact(context.Background(), q, "job-drive-required", artifact, ErrDrivePublicationPermanent)
+		ReportFailureWithArtifact(context.Background(), q, "job-drive-required", 0, artifact, ErrDrivePublicationPermanent)
 		if len(q.permanent) != 1 || len(q.failed) != 0 || len(q.rendered) != 0 {
 			t.Fatalf("permanent=%d failed=%d rendered=%d, want permanent=1 only", len(q.permanent), len(q.failed), len(q.rendered))
 		}
@@ -251,14 +251,14 @@ func TestReportFailureWithArtifactSeparate(t *testing.T) {
 	})
 	t.Run("durable -> rendered", func(t *testing.T) {
 		q := &fakeReportQueue{}
-		ReportFailureWithArtifact(context.Background(), q, "job-1", durableArtifact("sha-abc"), context.DeadlineExceeded)
+		ReportFailureWithArtifact(context.Background(), q, "job-1", 0, durableArtifact("sha-abc"), context.DeadlineExceeded)
 		if len(q.rendered) != 1 || len(q.failed) != 0 {
 			t.Fatalf("rendered=%d failed=%d, want rendered=1 failed=0", len(q.rendered), len(q.failed))
 		}
 	})
 	t.Run("not durable -> fail", func(t *testing.T) {
 		q := &fakeReportQueue{}
-		ReportFailureWithArtifact(context.Background(), q, "job-1", queue.Artifact{}, context.DeadlineExceeded)
+		ReportFailureWithArtifact(context.Background(), q, "job-1", 0, queue.Artifact{}, context.DeadlineExceeded)
 		if len(q.failed) != 1 || len(q.rendered) != 0 {
 			t.Fatalf("rendered=%d failed=%d, want rendered=0 failed=1", len(q.rendered), len(q.failed))
 		}

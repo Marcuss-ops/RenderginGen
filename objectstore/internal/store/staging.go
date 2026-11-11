@@ -31,11 +31,13 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"hash/fnv"
 	"io"
 	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
+	"sync"
 )
 
 // ErrStagingNotFound is returned when finalize/abort names a session with no
@@ -58,6 +60,24 @@ const (
 	stagingPendingSuffix = ".pending"
 	stagingDigestSuffix  = ".sha256"
 )
+
+// stagingLockShards is the width of the per-session lock array. Staging
+// operations for the same session must be serialized end to end: the pending
+// file and its digest sidecar are two names for ONE attempt, and a concurrent
+// write racing the commit phase could otherwise replace the bytes after the
+// sidecar was written (or vice versa), pairing the wrong digest with the bytes
+// that finalize installs. Sharding by session keeps unrelated uploads fully
+// parallel; collisions on a shard only serialize two unrelated sessions that
+// hash to the same slot.
+const stagingLockShards = 64
+
+type stagingSessionLocks [stagingLockShards]sync.Mutex
+
+func (l *stagingSessionLocks) forSession(session string) *sync.Mutex {
+	h := fnv.New32a()
+	_, _ = h.Write([]byte(session))
+	return &l[h.Sum32()%stagingLockShards]
+}
 
 // StagingBackend is the OPTIONAL streaming-staging extension of Backend. A
 // backend that does not implement it keeps the single verified PUT contract;
@@ -117,16 +137,48 @@ func (s *Store) StagingWrite(session string, r io.Reader) (string, int64, error)
 	if err := syncFile(tmpPath); err != nil {
 		return "", 0, err
 	}
+	// Commit the pending bytes and their digest together, under the session
+	// lock. Uploading/hashing above runs unlocked; only the two renames and the
+	// sidecar write need mutual exclusion. "Last writer wins" now means the
+	// last writer's BYTES and the last writer's DIGEST, never one of each.
+	lock := s.staging.forSession(session)
+	lock.Lock()
+	defer lock.Unlock()
 	if err := os.Rename(tmpPath, s.stagingPath(session)); err != nil {
 		return "", 0, err
 	}
 	// The digest sidecar is what finalize compares against; it must be as
 	// durable as the pending bytes, or a crash could pair stale bytes with a
 	// forgotten digest.
-	if err := os.WriteFile(s.stagingDigestPath(session), []byte(sum+"\n"), 0o644); err != nil {
+	if err := s.writeStagingDigestLocked(session, sum); err != nil {
 		return "", 0, err
 	}
 	return sum, written, nil
+}
+
+// writeStagingDigestLocked replaces the session's digest sidecar atomically.
+// The caller holds the session lock. A temp file plus rename means a reader
+// never observes a partially written digest, and a crash leaves either the
+// previous sidecar or the complete new one.
+func (s *Store) writeStagingDigestLocked(session, sum string) error {
+	tmp, err := os.CreateTemp(s.stagingDir(), ".digest-*")
+	if err != nil {
+		return err
+	}
+	tmpPath := tmp.Name()
+	defer os.Remove(tmpPath)
+	if _, err := tmp.WriteString(sum + "\n"); err != nil {
+		tmp.Close()
+		return err
+	}
+	if err := tmp.Sync(); err != nil {
+		tmp.Close()
+		return err
+	}
+	if err := tmp.Close(); err != nil {
+		return err
+	}
+	return os.Rename(tmpPath, s.stagingDigestPath(session))
 }
 
 // StagingFinalize installs the pending object under its content address.
@@ -142,6 +194,13 @@ func (s *Store) StagingFinalize(session, digest string) error {
 		return fmt.Errorf("%w: %q (want %d lowercase hex characters)",
 			ErrInvalidContentAddress, digest, SHA256HexLen)
 	}
+	// Serialize finalize against writes and aborts for this session. Without
+	// this, a concurrent StagingWrite could replace the pending bytes between
+	// the sidecar check below and the install rename.
+	lock := s.staging.forSession(session)
+	lock.Lock()
+	defer lock.Unlock()
+
 	recorded, err := os.ReadFile(s.stagingDigestPath(session))
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -154,18 +213,38 @@ func (s *Store) StagingFinalize(session, digest string) error {
 		// The caller named a content address the bytes do not have: discard
 		// the pending object rather than leaving a tempting wrong-keyed pair
 		// behind (the same fail-closed posture as a rejected PUT).
-		_ = s.StagingAbort(session)
+		_ = s.stagingAbortLocked(session)
 		return fmt.Errorf("%w: session %s, asserted %s, content %s",
 			ErrContentAddressMismatch, session, digest, got)
+	}
+	// Recompute the digest from the bytes that are ABOUT TO BE INSTALLED. The
+	// sidecar records what the writer computed, but a sidecar and a pending
+	// file are two separate names: a crash between their writes, an older
+	// build, or a write this process did not serialize could leave them paired
+	// wrongly. Hashing here makes `sha256(bytes at key) == key` an invariant of
+	// the install itself rather than a promise inherited from the writer.
+	pendingPath := s.stagingPath(session)
+	computed, err := hashFile(pendingPath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			_ = s.stagingAbortLocked(session)
+			return fmt.Errorf("%w: session %q", ErrStagingNotFound, session)
+		}
+		return err
+	}
+	if computed != digest {
+		_ = s.stagingAbortLocked(session)
+		return fmt.Errorf("%w: session %s, asserted %s, content %s",
+			ErrContentAddressMismatch, session, digest, computed)
 	}
 	p := s.path(digest)
 	if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
 		return err
 	}
-	if err := syncFile(s.stagingPath(session)); err != nil {
+	if err := syncFile(pendingPath); err != nil {
 		return err
 	}
-	if err := os.Rename(s.stagingPath(session), p); err != nil {
+	if err := os.Rename(pendingPath, p); err != nil {
 		return err
 	}
 	_ = os.Remove(s.stagingDigestPath(session))
@@ -181,11 +260,35 @@ func (s *Store) StagingFinalize(session, digest string) error {
 	return nil
 }
 
+// hashFile returns the hex SHA-256 of a file's bytes. It is the finalize-time
+// check that the pending bytes really are the object they are about to become.
+func hashFile(path string) (string, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return "", err
+	}
+	defer f.Close()
+	digest := sha256.New()
+	if _, err := io.Copy(digest, f); err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(digest.Sum(nil)), nil
+}
+
 // StagingAbort discards the pending object; it is idempotent by contract.
 func (s *Store) StagingAbort(session string) error {
 	if !stagingSessionGrammar.MatchString(session) {
 		return fmt.Errorf("%w: %q", ErrStagingSession, session)
 	}
+	lock := s.staging.forSession(session)
+	lock.Lock()
+	defer lock.Unlock()
+	return s.stagingAbortLocked(session)
+}
+
+// stagingAbortLocked removes both names of a staging attempt. The caller holds
+// the session lock (StagingAbort and StagingFinalize share it).
+func (s *Store) stagingAbortLocked(session string) error {
 	err1 := os.Remove(s.stagingPath(session))
 	err2 := os.Remove(s.stagingDigestPath(session))
 	if err1 != nil && !os.IsNotExist(err1) {

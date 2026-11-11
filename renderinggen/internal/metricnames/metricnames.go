@@ -28,6 +28,10 @@ const (
 	RenderUS           = "render_us" // alias of ChrononRenderUS on the artifact metrics map
 	ProbeUS            = "probe_us"
 	SHA256US           = "sha256_us"
+	// CanonicalizeOverlayUS is the V3 post-render canonicalization pass:
+	// the artifact is re-encoded to the canonical x264/90000 lane before its
+	// receipt and content address are finalized.
+	CanonicalizeOverlayUS = "canonicalize_overlay_us"
 	// WorkerDecodeUS is the worker's OWN full-decode gate (the post-lane half
 	// of the verification policy): under a policy that promises one complete
 	// decode, the worker decodes the output in the post pool whenever Chronon's
@@ -62,13 +66,15 @@ const (
 // The same phases in milliseconds. The pipeline records both spellings for the
 // benchmark/test surface; the ledger consumes the microsecond form.
 const (
-	OverlayCompileMS    = "overlay_compile_ms"
-	AssetMaterializeMS  = "asset_materialize_ms"
-	PlanMS              = "plan_ms"
-	SubtitleBurnMS      = "subtitle_burn_ms"
-	RenderMS            = "render_ms"
-	ProbeMS             = "probe_ms"
-	SHA256MS            = "sha256_ms"
+	OverlayCompileMS      = "overlay_compile_ms"
+	AssetMaterializeMS    = "asset_materialize_ms"
+	PlanMS                = "plan_ms"
+	SubtitleBurnMS        = "subtitle_burn_ms"
+	RenderMS              = "render_ms"
+	ProbeMS               = "probe_ms"
+	SHA256MS              = "sha256_ms"
+	CanonicalizeOverlayMS = "canonicalize_overlay_ms"
+
 	WorkerDecodeMS      = "worker_decode_ms"
 	ObjectStoreUploadMS = "objectstore_upload_ms"
 	PublishMS           = "publish_ms"
@@ -253,7 +259,7 @@ const (
 var vocab = map[string]string{
 	OverlayCompileUS: UnitUS, AssetMaterializeUS: UnitUS, PlanUS: UnitUS,
 	SubtitleBurnUS: UnitUS, ChrononRenderUS: UnitUS, RenderUS: UnitUS,
-	ProbeUS: UnitUS, SHA256US: UnitUS, WorkerDecodeUS: UnitUS, ObjectStoreUploadUS: UnitUS,
+	ProbeUS: UnitUS, SHA256US: UnitUS, CanonicalizeOverlayUS: UnitUS, WorkerDecodeUS: UnitUS, ObjectStoreUploadUS: UnitUS,
 	PublishUS: UnitUS, DriveUploadUS: UnitUS, TotalUS: UnitUS, GPUGapUS: UnitUS,
 	DaemonLaneIdleUS: UnitUS,
 	GPULaneWaitUS:    UnitUS,
@@ -263,8 +269,9 @@ var vocab = map[string]string{
 
 	OverlayCompileMS: UnitMS, AssetMaterializeMS: UnitMS, PlanMS: UnitMS,
 	SubtitleBurnMS: UnitMS, RenderMS: UnitMS, ProbeMS: UnitMS, SHA256MS: UnitMS,
-	WorkerDecodeMS:      UnitMS,
-	ObjectStoreUploadMS: UnitMS, PublishMS: UnitMS, DrivePublishMS: UnitMS,
+	CanonicalizeOverlayMS: UnitMS,
+	WorkerDecodeMS:        UnitMS,
+	ObjectStoreUploadMS:   UnitMS, PublishMS: UnitMS, DrivePublishMS: UnitMS,
 	TotalMS: UnitMS, GPULaneWaitMS: UnitMS, DaemonAdmissionWaitMS: UnitMS,
 	ChrononReceiptDaemonAdmissionWaitMS: UnitMS,
 

@@ -57,11 +57,9 @@ type OutputProfile struct {
 	SARNum int
 	SARDen int
 	// VideoTimeBaseNum/Den is the video stream's timebase; 0/0 = not pinned.
-	// No assembly-ready profile pins it today: the certified artifact carries
-	// 1/12288 while the VeloxEditing contract declares 1/90000, and neither
-	// value may be hard-coded before that disagreement is resolved (see
-	// TestMeasuredArtifactDivergencesStayVisible). The dimension exists here so
-	// that resolving it is a profile change, not new machinery.
+	// VELOX_OVERLAY_VIDEO_ONLY_V3 pins 1/90000, the canonical copy-compatible
+	// timebase. The historical V1/V2 lanes leave it open because their
+	// measured 1/12288 artifacts remain valid source inputs.
 	VideoTimeBaseNum int
 	VideoTimeBaseDen int
 	// AudioTimeBaseNum/Den is the audio stream's timebase; 0/0 = not pinned.
@@ -113,12 +111,21 @@ const (
 	// can honour. The overlay artifact is not an assembly-ready clip; it is
 	// a certified input to the assembler, and it says so.
 	ProfileVeloxOverlayVideoOnlyV1 = "VELOX_OVERLAY_VIDEO_ONLY_V1"
-	// V2 is the new overlay SOURCE lane. It deliberately does not pin the
+	// V2 is the previous overlay SOURCE lane. It deliberately does not pin the
 	// avcC: the final-job fragment producer re-encodes any source whose
 	// parameter sets are not canonical. V1 remains registered for old
-	// artifacts, but new renders use V2 so cached V1 bytes cannot be reused
-	// under the new lane.
+	// artifacts. New final-job renders use V3, so cached V1/V2 bytes cannot be
+	// reused under the canonical lane.
 	ProfileVeloxOverlayVideoOnlyV2 = "VELOX_OVERLAY_VIDEO_ONLY_V2"
+	// V3 is the ASSEMBLY-COMPATIBLE overlay source lane. Unlike V1/V2 it pins
+	// the canonical video timebase (1/90000) and the canonical avcC identity,
+	// so an artifact certified under V3 can enter the packet-copy assembler
+	// without the final-job fragment producer re-encoding it. RenderingGen emits
+	// both facts through the V3 canonicalization pass before Finalize probes
+	// them; a renderer that cannot emit them fails closed instead of publishing
+	// a source that would silently break concat -c copy. V1/V2 stay registered
+	// for existing artifacts and for the legacy handoff path.
+	ProfileVeloxOverlayVideoOnlyV3 = "VELOX_OVERLAY_VIDEO_ONLY_V3"
 	// ProfileVeloxH2641080p30V1 is the certified copy-ready profile id. It is
 	// owned by the wire contract (queue/client) because the artifact's
 	// profile_id is what downstream assemblers select on; this registry aliases
@@ -277,6 +284,15 @@ var profiles = map[string]OutputProfile{
 		// and the copy/assembly gates compare the actual bytes. Pinning a
 		// source hash here would reject every overlay the renderer legitimately
 		// produces with a different encoder session.
+		return p
+	}(),
+	ProfileVeloxOverlayVideoOnlyV3: func() OutputProfile {
+		p := overlayVideoOnlyProfile()
+		p.ID = ProfileVeloxOverlayVideoOnlyV3
+		p.VideoLevel = "4.0"
+		p.CodecConfigSHA256 = "7201ce80a2b2b32a0c1a89501851099f267c1767d59ff799db744f72032aae5a"
+		p.VideoTimeBaseNum = 1
+		p.VideoTimeBaseDen = 90000
 		return p
 	}(),
 	ProfileVeloxAssemblyReadyV1: func() OutputProfile {

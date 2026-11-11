@@ -36,8 +36,8 @@ func TestParseProgressLineVideoFormat(t *testing.T) {
 // observation (baseline offset for chunked execution).
 func TestTrackerFPSAndPercent(t *testing.T) {
 	tr := NewProgressTracker()
-	tr.Observe("job-1", 240, 1800) // chunk starts at absolute frame 240
-	tr.Observe("job-1", 740, 1800) // 500 frames later
+	tr.Observe("job-1", 1, 240, 1800) // chunk starts at absolute frame 240
+	tr.Observe("job-1", 1, 740, 1800) // 500 frames later
 
 	p := tr.Snapshot("job-1")
 	if p == nil {
@@ -63,7 +63,7 @@ func TestTrackerUnknownJob(t *testing.T) {
 
 func TestTrackerForget(t *testing.T) {
 	tr := NewProgressTracker()
-	tr.Observe("job-1", 10, 100)
+	tr.Observe("job-1", 1, 10, 100)
 	tr.Forget("job-1")
 	if p := tr.Snapshot("job-1"); p != nil {
 		t.Fatalf("want nil snapshot after Forget, got %+v", p)
@@ -75,9 +75,9 @@ func TestTrackerCurrentReportsMostRecentlyObservedJob(t *testing.T) {
 	if p := tr.Current(); p != nil {
 		t.Fatalf("want nil current for an idle tracker, got %+v", p)
 	}
-	tr.Observe("job-1", 10, 100)
-	tr.Observe("job-2", 20, 100)
-	tr.Observe("job-1", 30, 100)
+	tr.Observe("job-1", 1, 10, 100)
+	tr.Observe("job-2", 1, 20, 100)
+	tr.Observe("job-1", 1, 30, 100)
 	p := tr.Current()
 	if p == nil {
 		t.Fatal("want current snapshot, got nil")
@@ -92,8 +92,8 @@ func TestTrackerCurrentReportsMostRecentlyObservedJob(t *testing.T) {
 // flight must be reported instead of nothing.
 func TestTrackerCurrentFallsBackWhenLatestJobIsForgotten(t *testing.T) {
 	tr := NewProgressTracker()
-	tr.Observe("job-1", 10, 100)
-	tr.Observe("job-2", 40, 100)
+	tr.Observe("job-1", 1, 10, 100)
+	tr.Observe("job-2", 1, 40, 100)
 	tr.Forget("job-2")
 
 	p := tr.Current()
@@ -119,8 +119,8 @@ func TestTrackerConcurrentLanesDoNotShareState(t *testing.T) {
 	go func() {
 		defer close(done)
 		for i := int64(1); i <= 500; i++ {
-			tr.Observe("lane-a", i, 500)
-			tr.Observe("lane-b", i, 500)
+			tr.Observe("lane-a", 1, i, 500)
+			tr.Observe("lane-b", 1, i, 500)
 		}
 	}()
 	for i := 0; i < 500; i++ {
