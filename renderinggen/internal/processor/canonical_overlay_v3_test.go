@@ -43,7 +43,7 @@ func TestCanonicalizeOverlayV3EmitsThePinnedStream(t *testing.T) {
 		t.Fatalf("fixture timebase = %d/%d, want 1/12288", before.VideoTimeBaseNum, before.VideoTimeBaseDen)
 	}
 
-	changed, err := canonicalizeOverlayMP4(ctx, output)
+	changed, err := canonicalizeOutputMP4(ctx, output, media.ProfileVeloxOverlayVideoOnlyV3)
 	if err != nil {
 		t.Fatalf("canonicalizeOverlayMP4: %v", err)
 	}
@@ -92,7 +92,7 @@ func TestCanonicalizeOverlayV3EmitsThePinnedStream(t *testing.T) {
 
 	// Idempotence matters for the single-segment retry: canonicalizing twice
 	// must not rewrite the bytes (or invalidate the receipt).
-	changed, err = canonicalizeOverlayMP4(ctx, output)
+	changed, err = canonicalizeOutputMP4(ctx, output, media.ProfileVeloxOverlayVideoOnlyV3)
 	if err != nil {
 		t.Fatalf("second canonicalization: %v", err)
 	}

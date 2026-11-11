@@ -1,0 +1,100 @@
+{
+  "schema": "gel.reference.drive.v1",
+  "created_utc": "2026-11-11T16:52:05.538475+00:00",
+  "parent_folder_id": "1J_xUGo_bchzXDIGqSX04CU44c_Dm3SxS",
+  "drive_subfolder": "GEL_Reference_20261111",
+  "drive_subfolder_id": "18XoX8y7UiyYGZkUe_TTE8YHJ3IEpBkCb",
+  "specs": {
+    "width": 1920,
+    "height": 1080,
+    "fps": 30,
+    "frames": 300,
+    "duration_seconds": 10.0,
+    "codec": "h264",
+    "pix_fmt": "yuv420p",
+    "video_bytes": 913873
+  },
+  "files": [
+    {
+      "local_path": "RenderingGen/Upload/gel_reference_20261111/GEL_Reference_20261111_1080p_10s.mp4",
+      "name": "GEL_Reference_20261111_1080p_10s.mp4",
+      "sha256": "f5b38c7549de968eb2f8bffb2a2fe8a8e798bb48c5f8014ecf2ea9679f5a387b",
+      "bytes": 913873,
+      "drive_file_id": "1ebywdWveOaMnmJtJzS1SWFPhGqNftGIb",
+      "drive_url": "https://drive.google.com/file/d/1ebywdWveOaMnmJtJzS1SWFPhGqNftGIb/view?usp=drivesdk",
+      "drive_parent_id": "18XoX8y7UiyYGZkUe_TTE8YHJ3IEpBkCb"
+    },
+    {
+      "local_path": "RenderingGen/Upload/gel_reference_20261111/final.png",
+      "name": "final.png",
+      "sha256": "64b694a9fff7df23b9104a396ca0acb1718e69a8bcae5f953590b414865ac9a8",
+      "bytes": 1125854,
+      "drive_file_id": "12gUH5OMwuZH-60z-KICRKJSFb5leaifB",
+      "drive_url": "https://drive.google.com/file/d/12gUH5OMwuZH-60z-KICRKJSFb5leaifB/view?usp=drivesdk",
+      "drive_parent_id": "18XoX8y7UiyYGZkUe_TTE8YHJ3IEpBkCb"
+    },
+    {
+      "local_path": "RenderingGen/Upload/gel_reference_20261111/comparison.png",
+      "name": "comparison.png",
+      "sha256": "a95820a4ba6debcc90eb09da48bb2a776f16f55383368009d9aaf69f5af85713",
+      "bytes": 585138,
+      "drive_file_id": "1Mm5qcjp-AEc2RRcpoN_nnRUMa57TpUE7",
+      "drive_url": "https://drive.google.com/file/d/1Mm5qcjp-AEc2RRcpoN_nnRUMa57TpUE7/view?usp=drivesdk",
+      "drive_parent_id": "18XoX8y7UiyYGZkUe_TTE8YHJ3IEpBkCb"
+    },
+    {
+      "local_path": "RenderingGen/Upload/gel_reference_20261111/final.plan.json",
+      "name": "final.plan.json",
+      "sha256": "35ea5a71fbf1e89e667ea6ed4d9f70edfa7d3a7fcb042137dc6a6d691ed2d28e",
+      "bytes": 750359,
+      "drive_file_id": "1K2JDZZ4P35Y_umUTwqc6oZYyHp08b1tw",
+      "drive_url": "https://drive.google.com/file/d/1K2JDZZ4P35Y_umUTwqc6oZYyHp08b1tw/view?usp=drivesdk",
+      "drive_parent_id": "18XoX8y7UiyYGZkUe_TTE8YHJ3IEpBkCb"
+    },
+    {
+      "local_path": "RenderingGen/Upload/gel_reference_20261111/render.log",
+      "name": "render.log",
+      "sha256": "206f09c12775e29b53db8a608db6f4ec5f499380bdb280aac85a88a9013ba907",
+      "bytes": 10715,
+      "drive_file_id": "12ZjgcMXHoepJemyuSDTYrPBqdDnsl3Yd",
+      "drive_url": "https://drive.google.com/file/d/12ZjgcMXHoepJemyuSDTYrPBqdDnsl3Yd/view?usp=drivesdk",
+      "drive_parent_id": "18XoX8y7UiyYGZkUe_TTE8YHJ3IEpBkCb"
+    },
+    {
+      "local_path": "RenderingGen/Upload/gel_reference_20261111/sequence-metrics.json",
+      "name": "sequence-metrics.json",
+      "sha256": "321487777a648b90433ba9616d6b3c1b3f84a3a5bec4915f9e4d5cc34bf5cf4e",
+      "bytes": 1144,
+      "drive_file_id": "1OAUchNiHQ9wny4VjFEuH4rLHMRLi7cMu",
+      "drive_url": "https://drive.google.com/file/d/1OAUchNiHQ9wny4VjFEuH4rLHMRLi7cMu/view?usp=drivesdk",
+      "drive_parent_id": "18XoX8y7UiyYGZkUe_TTE8YHJ3IEpBkCb"
+    },
+    {
+      "local_path": "RenderingGen/Upload/gel_reference_20261111/EVIDENCE.md",
+      "name": "EVIDENCE.md",
+      "sha256": "777474ad84c0345f7aa296f58f8d8535d95b6c0f1cab890f3c2c45a4e280f39d",
+      "bytes": 5813,
+      "drive_file_id": "1dvDepjCzxP4-u-IyYPp1WjLGvvr-Fnf1",
+      "drive_url": "https://drive.google.com/file/d/1dvDepjCzxP4-u-IyYPp1WjLGvvr-Fnf1/view?usp=drivesdk",
+      "drive_parent_id": "18XoX8y7UiyYGZkUe_TTE8YHJ3IEpBkCb"
+    },
+    {
+      "local_path": "RenderingGen/Upload/gel_reference_20261111/README.md",
+      "name": "README.md",
+      "sha256": "d755bc55564be2a4db3b9e5740d9e71887fa011c6bc9b3407a02ef50d4c18e0d",
+      "bytes": 3775,
+      "drive_file_id": "136oKMWL7mP6j5AD6nIkjmve_xAX1zfYH",
+      "drive_url": "https://drive.google.com/file/d/136oKMWL7mP6j5AD6nIkjmve_xAX1zfYH/view?usp=drivesdk",
+      "drive_parent_id": "18XoX8y7UiyYGZkUe_TTE8YHJ3IEpBkCb"
+    },
+    {
+      "local_path": "RenderingGen/Upload/gel_reference_20261111/SHA256SUMS.txt",
+      "name": "SHA256SUMS.txt",
+      "sha256": "ea283fa7fded8be2b0ed52e0b1eafc7f6acb66675742a8baa2d4eb632e0e3b2e",
+      "bytes": 661,
+      "drive_file_id": "1kbBi9dOwWsRS_P15fvUoxSJP23CR-dhm",
+      "drive_url": "https://drive.google.com/file/d/1kbBi9dOwWsRS_P15fvUoxSJP23CR-dhm/view?usp=drivesdk",
+      "drive_parent_id": "18XoX8y7UiyYGZkUe_TTE8YHJ3IEpBkCb"
+    }
+  ]
+}

@@ -84,7 +84,7 @@ func (p *Processor) RunGPU(ctx context.Context, prepared *PreparedJob) error {
 	// produces N per-item outputs and is uploaded per-segment at finalize
 	// instead, so the lane stays off for it.
 	if prepared.FragmentedMP4 && p.store.SupportsStaging() && len(prepared.Segments) == 0 &&
-		!isCanonicalOverlayV3(metadata.ProfileID) {
+		!isCanonicalizedOutputProfile(metadata.ProfileID) {
 		tail = p.startTailUpload(ctx, job.ID, prepared.OutputPath)
 		// Until ownership moves to the store phase (below), every error path
 		// must discard the pending upload. After hand-off, FinalizeJob owns it.
@@ -295,14 +295,20 @@ func (p *Processor) RunGPU(ctx context.Context, prepared *PreparedJob) error {
 		}
 		prepared.NativeCertified = true
 	}
-	// V3 must EMIT the canonical bitstream, not merely declare it. This runs
-	// after the native gate (which certifies the original render) and rewrites
-	// each output + its receipt atomically. The final artifact is no longer a
-	// native NVENC surface, so a previous native certification is revoked.
-	if canonicalized, err := p.canonicalizeOverlayArtifacts(ctx, prepared); err != nil {
-		return fmt.Errorf("processor: canonical V3 overlay emission: %w", err)
-	} else if canonicalized {
-		prepared.NativeCertified = false
+	// Canonicalized profiles (V3 overlays and V1 assembly clips) must EMIT the
+	// canonical bitstream, not merely declare it. This runs after the native
+	// gate (which certifies the original render) and rewrites each output + its
+	// receipt atomically.
+	//
+	// The re-encode changes the final bytes, but it does NOT change which render
+	// path produced them: the job still ran on Chronon's native Vulkan lane, and
+	// PipelineGen's cross-service contract requires that identity to be
+	// chronon_vulkan. The canonical receipt is the authority for the final
+	// bytes; revoking NativeCertified here published "vulkan" instead and made
+	// every canonicalized clip.render fail downstream with "clip.render requires
+	// Chronon (chronon_vulkan)".
+	if _, err := p.canonicalizeOverlayArtifacts(ctx, prepared); err != nil {
+		return fmt.Errorf("processor: canonical output emission: %w", err)
 	}
 	// Hand-off point: the output is final (render succeeded, software-fallback
 	// rename done, native gate passed), but the bytes are NOT committed yet —

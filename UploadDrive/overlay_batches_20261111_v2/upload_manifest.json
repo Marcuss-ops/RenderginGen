@@ -1,0 +1,503 @@
+{
+  "schema": "pipelinegen.overlay-drive-bundle.v2.upload",
+  "parent_folder_id": "1J_xUGo_bchzXDIGqSX04CU44c_Dm3SxS",
+  "drive_subfolder": "Overlay_Batches_20261111_v2",
+  "file_count": 55,
+  "files": [
+    {
+      "local_path": "RenderingGen/UploadDrive/overlay_batches_20261111_v2/videos/01__scene-01__number.mp4",
+      "name": "01__scene-01__number.mp4",
+      "sha256": "63cd0cb8335df2064ee3d46d26f39ec2c2e9292def67ad64a31935a5a78bda30",
+      "bytes": 406153,
+      "drive_file_id": "12swnzPBoDQQ8HVv9NxVKjz-VYA4c2rTr",
+      "drive_url": "https://drive.google.com/file/d/12swnzPBoDQQ8HVv9NxVKjz-VYA4c2rTr/view?usp=drivesdk",
+      "drive_parent_id": "1NHmsGI4_EjNXSqMlFPvlds6G--Oqsmqn"
+    },
+    {
+      "local_path": "RenderingGen/UploadDrive/overlay_batches_20261111_v2/videos/02__scene-01__number.mp4",
+      "name": "02__scene-01__number.mp4",
+      "sha256": "e1a7888658e5619364c430976fd971604984e968a1e8df096c1e22b0315b1caa",
+      "bytes": 483757,
+      "drive_file_id": "1Dg90lNF_Ms0bwCmW1V_Ih0lxmiAGJYIz",
+      "drive_url": "https://drive.google.com/file/d/1Dg90lNF_Ms0bwCmW1V_Ih0lxmiAGJYIz/view?usp=drivesdk",
+      "drive_parent_id": "1NHmsGI4_EjNXSqMlFPvlds6G--Oqsmqn"
+    },
+    {
+      "local_path": "RenderingGen/UploadDrive/overlay_batches_20261111_v2/videos/04__scene-01__text_phrase.mp4",
+      "name": "04__scene-01__text_phrase.mp4",
+      "sha256": "94c367cd61a3f30ae8afcd9370dc71abe62d8d5fb9fa9800d2f096eeea5a6f19",
+      "bytes": 109744,
+      "drive_file_id": "1psr-5BOQ3ALkvWJLM5poNQZKiFZorZTq",
+      "drive_url": "https://drive.google.com/file/d/1psr-5BOQ3ALkvWJLM5poNQZKiFZorZTq/view?usp=drivesdk",
+      "drive_parent_id": "1NHmsGI4_EjNXSqMlFPvlds6G--Oqsmqn"
+    },
+    {
+      "local_path": "RenderingGen/UploadDrive/overlay_batches_20261111_v2/videos/05__scene-01__text_phrase.mp4",
+      "name": "05__scene-01__text_phrase.mp4",
+      "sha256": "3e22cb31cbf0f32f35476154a630c3790645c4eb9eceffe40a5a78549ba9d0f2",
+      "bytes": 146406,
+      "drive_file_id": "1OmjVRWhO9mlUxiA4ZEDdZGQINYOkQ-PN",
+      "drive_url": "https://drive.google.com/file/d/1OmjVRWhO9mlUxiA4ZEDdZGQINYOkQ-PN/view?usp=drivesdk",
+      "drive_parent_id": "1NHmsGI4_EjNXSqMlFPvlds6G--Oqsmqn"
+    },
+    {
+      "local_path": "RenderingGen/UploadDrive/overlay_batches_20261111_v2/videos/06__scene-02__number.mp4",
+      "name": "06__scene-02__number.mp4",
+      "sha256": "4cfef04fae2e1dde3347f523b64930045624254b8fec7ee0f6c4aa700dd0d253",
+      "bytes": 120485,
+      "drive_file_id": "1-EY4sdB4V2ShlZfij2elNgzmSom2Hao8",
+      "drive_url": "https://drive.google.com/file/d/1-EY4sdB4V2ShlZfij2elNgzmSom2Hao8/view?usp=drivesdk",
+      "drive_parent_id": "1NHmsGI4_EjNXSqMlFPvlds6G--Oqsmqn"
+    },
+    {
+      "local_path": "RenderingGen/UploadDrive/overlay_batches_20261111_v2/videos/07__scene-02__number.mp4",
+      "name": "07__scene-02__number.mp4",
+      "sha256": "b47cd929688914b8d704a108579098a2eede4e3dd6ad540f9feecf416bfe3084",
+      "bytes": 128179,
+      "drive_file_id": "1NaY7i-ouyhaNKzaCKVa5rdySWF0Li9NY",
+      "drive_url": "https://drive.google.com/file/d/1NaY7i-ouyhaNKzaCKVa5rdySWF0Li9NY/view?usp=drivesdk",
+      "drive_parent_id": "1NHmsGI4_EjNXSqMlFPvlds6G--Oqsmqn"
+    },
+    {
+      "local_path": "RenderingGen/UploadDrive/overlay_batches_20261111_v2/videos/08__scene-02__text_phrase.mp4",
+      "name": "08__scene-02__text_phrase.mp4",
+      "sha256": "c011abbe46af0b12f17e26dc0184d7a35691004954df0c17f0f276fa95c6b4ee",
+      "bytes": 186279,
+      "drive_file_id": "1XsX6Xl5cc46wmvP0DgUsXlre41ZqlnLr",
+      "drive_url": "https://drive.google.com/file/d/1XsX6Xl5cc46wmvP0DgUsXlre41ZqlnLr/view?usp=drivesdk",
+      "drive_parent_id": "1NHmsGI4_EjNXSqMlFPvlds6G--Oqsmqn"
+    },
+    {
+      "local_path": "RenderingGen/UploadDrive/overlay_batches_20261111_v2/videos/09__scene-03__text_phrase.mp4",
+      "name": "09__scene-03__text_phrase.mp4",
+      "sha256": "c65c1e4363630d436dd99edbd935b250b0146943ecfa8bd618be681e52655f8e",
+      "bytes": 217515,
+      "drive_file_id": "1r4X3wSNw2Ei8gv3Dn-Kswb2ygOUJi5YG",
+      "drive_url": "https://drive.google.com/file/d/1r4X3wSNw2Ei8gv3Dn-Kswb2ygOUJi5YG/view?usp=drivesdk",
+      "drive_parent_id": "1NHmsGI4_EjNXSqMlFPvlds6G--Oqsmqn"
+    },
+    {
+      "local_path": "RenderingGen/UploadDrive/overlay_batches_20261111_v2/videos/10__scene-03__text_phrase.mp4",
+      "name": "10__scene-03__text_phrase.mp4",
+      "sha256": "e6b16bf3c94465f709f9a73e86159310ffbd78eaab177f0d22f52d9ac1ed883f",
+      "bytes": 156440,
+      "drive_file_id": "19Q5rGgz20bzjknEmzt3FqVdy23PQ1znW",
+      "drive_url": "https://drive.google.com/file/d/19Q5rGgz20bzjknEmzt3FqVdy23PQ1znW/view?usp=drivesdk",
+      "drive_parent_id": "1NHmsGI4_EjNXSqMlFPvlds6G--Oqsmqn"
+    },
+    {
+      "local_path": "RenderingGen/UploadDrive/overlay_batches_20261111_v2/videos/12__scene-04__text_phrase.mp4",
+      "name": "12__scene-04__text_phrase.mp4",
+      "sha256": "9d38b20ffc6a78648739f251173d7642886c0a12a9c8bfd3c0bdb1cd00267305",
+      "bytes": 220588,
+      "drive_file_id": "1K_Fj8UlmurOfE1HidXhACavDUdB66l7O",
+      "drive_url": "https://drive.google.com/file/d/1K_Fj8UlmurOfE1HidXhACavDUdB66l7O/view?usp=drivesdk",
+      "drive_parent_id": "1NHmsGI4_EjNXSqMlFPvlds6G--Oqsmqn"
+    },
+    {
+      "local_path": "RenderingGen/UploadDrive/overlay_batches_20261111_v2/videos/13__scene-04__text_phrase.mp4",
+      "name": "13__scene-04__text_phrase.mp4",
+      "sha256": "870db792e1d9bb957a0d0c8954f402d545c589c4a0daf518f73fc31cae80accd",
+      "bytes": 146605,
+      "drive_file_id": "1cJPco7CjI4gEcRCgVzPqp-wbkcgqbQdc",
+      "drive_url": "https://drive.google.com/file/d/1cJPco7CjI4gEcRCgVzPqp-wbkcgqbQdc/view?usp=drivesdk",
+      "drive_parent_id": "1NHmsGI4_EjNXSqMlFPvlds6G--Oqsmqn"
+    },
+    {
+      "local_path": "RenderingGen/UploadDrive/overlay_batches_20261111_v2/videos/15__scene-05__text_phrase.mp4",
+      "name": "15__scene-05__text_phrase.mp4",
+      "sha256": "9b192755786b411e36ad738dea149faafbde060ca2d1660fa26bf1f5dc40de05",
+      "bytes": 178102,
+      "drive_file_id": "1onHyYCKe5eLbdgDPB3wU-nqV_Ba6q11v",
+      "drive_url": "https://drive.google.com/file/d/1onHyYCKe5eLbdgDPB3wU-nqV_Ba6q11v/view?usp=drivesdk",
+      "drive_parent_id": "1NHmsGI4_EjNXSqMlFPvlds6G--Oqsmqn"
+    },
+    {
+      "local_path": "RenderingGen/UploadDrive/overlay_batches_20261111_v2/videos/16__scene-05__text_phrase.mp4",
+      "name": "16__scene-05__text_phrase.mp4",
+      "sha256": "24f843a6db1f465eed325b57ece1e4c9dbba282f1fa245dbcdaf815a443bbd65",
+      "bytes": 138139,
+      "drive_file_id": "1X2q1DlSd20VzC6blzVC6BXyBlGIJs-_x",
+      "drive_url": "https://drive.google.com/file/d/1X2q1DlSd20VzC6blzVC6BXyBlGIJs-_x/view?usp=drivesdk",
+      "drive_parent_id": "1NHmsGI4_EjNXSqMlFPvlds6G--Oqsmqn"
+    },
+    {
+      "local_path": "RenderingGen/UploadDrive/overlay_batches_20261111_v2/videos/17__scene-07__text_phrase.mp4",
+      "name": "17__scene-07__text_phrase.mp4",
+      "sha256": "2c7f27a21419d373ab020c4a4cae635c348ddfec7ba57b271f7b32ddf18d0826",
+      "bytes": 220894,
+      "drive_file_id": "1UZfd-SBwcLMcT0zwKNu5wblfp__TzNOZ",
+      "drive_url": "https://drive.google.com/file/d/1UZfd-SBwcLMcT0zwKNu5wblfp__TzNOZ/view?usp=drivesdk",
+      "drive_parent_id": "1NHmsGI4_EjNXSqMlFPvlds6G--Oqsmqn"
+    },
+    {
+      "local_path": "RenderingGen/UploadDrive/overlay_batches_20261111_v2/videos/18__scene-07__text_phrase.mp4",
+      "name": "18__scene-07__text_phrase.mp4",
+      "sha256": "52d5977b36dc520161ca489ad61668779027f19ec38e27a5ea091fd47c385f23",
+      "bytes": 84605,
+      "drive_file_id": "1YWfDAaEK-5DOXSF6YOFw6fhPHxLJrCG3",
+      "drive_url": "https://drive.google.com/file/d/1YWfDAaEK-5DOXSF6YOFw6fhPHxLJrCG3/view?usp=drivesdk",
+      "drive_parent_id": "1NHmsGI4_EjNXSqMlFPvlds6G--Oqsmqn"
+    },
+    {
+      "local_path": "RenderingGen/UploadDrive/overlay_batches_20261111_v2/videos/19__scene-08__number.mp4",
+      "name": "19__scene-08__number.mp4",
+      "sha256": "5b39387561b62fb25c37b27aef15e20796e4ae32daa83116b19e0c02bd3af4c2",
+      "bytes": 78499,
+      "drive_file_id": "1VGsiS-me7EeNIt-qyJCy4UklKbdGB-VW",
+      "drive_url": "https://drive.google.com/file/d/1VGsiS-me7EeNIt-qyJCy4UklKbdGB-VW/view?usp=drivesdk",
+      "drive_parent_id": "1NHmsGI4_EjNXSqMlFPvlds6G--Oqsmqn"
+    },
+    {
+      "local_path": "RenderingGen/UploadDrive/overlay_batches_20261111_v2/videos/21__scene-08__text_phrase.mp4",
+      "name": "21__scene-08__text_phrase.mp4",
+      "sha256": "c4c85e0907d62e1c266fefa8b5a84e3aeeb879b20bcb8fe7e57ea25afaec3906",
+      "bytes": 250875,
+      "drive_file_id": "1gDJg0ZPdRxqq_UKEI0JzqxNSTHS7PkSo",
+      "drive_url": "https://drive.google.com/file/d/1gDJg0ZPdRxqq_UKEI0JzqxNSTHS7PkSo/view?usp=drivesdk",
+      "drive_parent_id": "1NHmsGI4_EjNXSqMlFPvlds6G--Oqsmqn"
+    },
+    {
+      "local_path": "RenderingGen/UploadDrive/overlay_batches_20261111_v2/videos/22__scene-09__text_phrase.mp4",
+      "name": "22__scene-09__text_phrase.mp4",
+      "sha256": "8916be4c275ea3f2c4a7eb1006ee0a602bbd7bc9fa7347d89c12c8ea4957c526",
+      "bytes": 191451,
+      "drive_file_id": "1bdEC1pcoAo6ZkFvUbRADiaKYK0A0xnj2",
+      "drive_url": "https://drive.google.com/file/d/1bdEC1pcoAo6ZkFvUbRADiaKYK0A0xnj2/view?usp=drivesdk",
+      "drive_parent_id": "1NHmsGI4_EjNXSqMlFPvlds6G--Oqsmqn"
+    },
+    {
+      "local_path": "RenderingGen/UploadDrive/overlay_batches_20261111_v2/videos/23__scene-10__text_phrase.mp4",
+      "name": "23__scene-10__text_phrase.mp4",
+      "sha256": "9dfb2a1d4d22a5ea67296a8437b26d017e8a2c56610d60e0cda372e4046e3b84",
+      "bytes": 210256,
+      "drive_file_id": "1El_Eo9VmZHfjTo4HonOx8akQITtcGOGO",
+      "drive_url": "https://drive.google.com/file/d/1El_Eo9VmZHfjTo4HonOx8akQITtcGOGO/view?usp=drivesdk",
+      "drive_parent_id": "1NHmsGI4_EjNXSqMlFPvlds6G--Oqsmqn"
+    },
+    {
+      "local_path": "RenderingGen/UploadDrive/overlay_batches_20261111_v2/videos/28__scene-14__number.mp4",
+      "name": "28__scene-14__number.mp4",
+      "sha256": "0939792f721baa50a879c17effa88376c67ab4f8c9e66c0281d6c944005bbec4",
+      "bytes": 73598,
+      "drive_file_id": "1cTM6MmYCElnMMaGrDglbs3s4bObODZTE",
+      "drive_url": "https://drive.google.com/file/d/1cTM6MmYCElnMMaGrDglbs3s4bObODZTE/view?usp=drivesdk",
+      "drive_parent_id": "1NHmsGI4_EjNXSqMlFPvlds6G--Oqsmqn"
+    },
+    {
+      "local_path": "RenderingGen/UploadDrive/overlay_batches_20261111_v2/videos/29__scene-15__number.mp4",
+      "name": "29__scene-15__number.mp4",
+      "sha256": "28f868e10d35dc25d93dd3102a2f590c203277bc8d9ecd2c154475dd48df5200",
+      "bytes": 680364,
+      "drive_file_id": "1FinGsaYv6b4SA3yl7UJacNfQx2mGzgEH",
+      "drive_url": "https://drive.google.com/file/d/1FinGsaYv6b4SA3yl7UJacNfQx2mGzgEH/view?usp=drivesdk",
+      "drive_parent_id": "1NHmsGI4_EjNXSqMlFPvlds6G--Oqsmqn"
+    },
+    {
+      "local_path": "RenderingGen/UploadDrive/overlay_batches_20261111_v2/videos/30__scene-15__number.mp4",
+      "name": "30__scene-15__number.mp4",
+      "sha256": "c9b5305eb210c5ad9ab012d0cca3c467a14549fa1546530e76e86e197d8aa874",
+      "bytes": 618345,
+      "drive_file_id": "1A89OYhJnlf8WPSD8tzZbO7NOEplWv8Dm",
+      "drive_url": "https://drive.google.com/file/d/1A89OYhJnlf8WPSD8tzZbO7NOEplWv8Dm/view?usp=drivesdk",
+      "drive_parent_id": "1NHmsGI4_EjNXSqMlFPvlds6G--Oqsmqn"
+    },
+    {
+      "local_path": "RenderingGen/UploadDrive/overlay_batches_20261111_v2/videos/32__scene-19__number.mp4",
+      "name": "32__scene-19__number.mp4",
+      "sha256": "e0611d5df0c208315fa5ac50a415eca0cd53fb01a2baa577c1db1eab335ee876",
+      "bytes": 396655,
+      "drive_file_id": "1gsZR6AlWE6lvWNjkMeVfaGmJfYpt1okB",
+      "drive_url": "https://drive.google.com/file/d/1gsZR6AlWE6lvWNjkMeVfaGmJfYpt1okB/view?usp=drivesdk",
+      "drive_parent_id": "1NHmsGI4_EjNXSqMlFPvlds6G--Oqsmqn"
+    },
+    {
+      "local_path": "RenderingGen/UploadDrive/overlay_batches_20261111_v2/videos/33__scene-19__number.mp4",
+      "name": "33__scene-19__number.mp4",
+      "sha256": "c149956df27fffc5bcb68c979d1daccd43ae9900bd81647e2687de23b1307301",
+      "bytes": 330845,
+      "drive_file_id": "1B32J_LOG72uD04lRyDyWy8uKUU3p8i__",
+      "drive_url": "https://drive.google.com/file/d/1B32J_LOG72uD04lRyDyWy8uKUU3p8i__/view?usp=drivesdk",
+      "drive_parent_id": "1NHmsGI4_EjNXSqMlFPvlds6G--Oqsmqn"
+    },
+    {
+      "local_path": "RenderingGen/UploadDrive/overlay_batches_20261111_v2/videos/34__scene-19__text_phrase.mp4",
+      "name": "34__scene-19__text_phrase.mp4",
+      "sha256": "f4cbb195f317c31af36b7176482274e4323d6fbf6284ae3c84a458d27b2648a1",
+      "bytes": 333044,
+      "drive_file_id": "1Av2r9t4MaWFAdGpIjcLLincqG8mo7L0F",
+      "drive_url": "https://drive.google.com/file/d/1Av2r9t4MaWFAdGpIjcLLincqG8mo7L0F/view?usp=drivesdk",
+      "drive_parent_id": "1NHmsGI4_EjNXSqMlFPvlds6G--Oqsmqn"
+    },
+    {
+      "local_path": "RenderingGen/UploadDrive/overlay_batches_20261111_v2/videos/36__scene-01__map.mp4",
+      "name": "36__scene-01__map.mp4",
+      "sha256": "89fed6746963d0973ab413495e0d4b6b22173812951de92a36cf5e1e4c1a5b2e",
+      "bytes": 2900879,
+      "drive_file_id": "1MV2LLv1M09GNmXmFmyHmkGmVz6vmwJ60",
+      "drive_url": "https://drive.google.com/file/d/1MV2LLv1M09GNmXmFmyHmkGmVz6vmwJ60/view?usp=drivesdk",
+      "drive_parent_id": "1NHmsGI4_EjNXSqMlFPvlds6G--Oqsmqn"
+    },
+    {
+      "local_path": "RenderingGen/UploadDrive/overlay_batches_20261111_v2/videos/37__scene-06__map.mp4",
+      "name": "37__scene-06__map.mp4",
+      "sha256": "08a1be08b65c3c2d91183ddb39e4afaea6fd20e9e8781dbaf47439dfc7f9361f",
+      "bytes": 1201392,
+      "drive_file_id": "1qhtMhD5lsY9PjxrOnR4Ie6f-SDm6nbgU",
+      "drive_url": "https://drive.google.com/file/d/1qhtMhD5lsY9PjxrOnR4Ie6f-SDm6nbgU/view?usp=drivesdk",
+      "drive_parent_id": "1NHmsGI4_EjNXSqMlFPvlds6G--Oqsmqn"
+    },
+    {
+      "local_path": "RenderingGen/UploadDrive/overlay_batches_20261111_v2/videos/38__scene-01__entity_card.mp4",
+      "name": "38__scene-01__entity_card.mp4",
+      "sha256": "e7e9219ece47338b68c0ada9010e4306d8ea0196389a609f30cefef3ce31434f",
+      "bytes": 554765,
+      "drive_file_id": "1FikpgiBowOg6sPTJg6RWWnbW8XwwtHzj",
+      "drive_url": "https://drive.google.com/file/d/1FikpgiBowOg6sPTJg6RWWnbW8XwwtHzj/view?usp=drivesdk",
+      "drive_parent_id": "1NHmsGI4_EjNXSqMlFPvlds6G--Oqsmqn"
+    },
+    {
+      "local_path": "RenderingGen/UploadDrive/overlay_batches_20261111_v2/videos/40__scene-11__entity_card.mp4",
+      "name": "40__scene-11__entity_card.mp4",
+      "sha256": "ce4f933f69c329da353222a9f8fdaa9efc467fe99a7a93bf994e42872fec5a57",
+      "bytes": 457019,
+      "drive_file_id": "16RLcju3fSiITEYp84ZCZ5w6CpCkClMnW",
+      "drive_url": "https://drive.google.com/file/d/16RLcju3fSiITEYp84ZCZ5w6CpCkClMnW/view?usp=drivesdk",
+      "drive_parent_id": "1NHmsGI4_EjNXSqMlFPvlds6G--Oqsmqn"
+    },
+    {
+      "local_path": "RenderingGen/UploadDrive/overlay_batches_20261111_v2/videos/41__scene-12__entity_card.mp4",
+      "name": "41__scene-12__entity_card.mp4",
+      "sha256": "bb833b9c111a1dc73cf729855da2eafef2bf29a0ce1c67be13dbb2523c001096",
+      "bytes": 419040,
+      "drive_file_id": "1tuXjyOJpeG9UsMt9eE2QKKzufUXgKG1W",
+      "drive_url": "https://drive.google.com/file/d/1tuXjyOJpeG9UsMt9eE2QKKzufUXgKG1W/view?usp=drivesdk",
+      "drive_parent_id": "1NHmsGI4_EjNXSqMlFPvlds6G--Oqsmqn"
+    },
+    {
+      "local_path": "RenderingGen/UploadDrive/overlay_batches_20261111_v2/videos/42__scene-12__entity_card.mp4",
+      "name": "42__scene-12__entity_card.mp4",
+      "sha256": "1815a5ffde913dece97a1ec6a1752fb82d43a54f5fc9651da45d483a35e4e31f",
+      "bytes": 440475,
+      "drive_file_id": "12RQ-eCKKpOMgsGA4EumNZt79MPEyoCf_",
+      "drive_url": "https://drive.google.com/file/d/12RQ-eCKKpOMgsGA4EumNZt79MPEyoCf_/view?usp=drivesdk",
+      "drive_parent_id": "1NHmsGI4_EjNXSqMlFPvlds6G--Oqsmqn"
+    },
+    {
+      "local_path": "RenderingGen/UploadDrive/overlay_batches_20261111_v2/videos/class-entity-cards.mp4",
+      "name": "class-entity-cards.mp4",
+      "sha256": "20e422d9051027d2b00f73a366daa3dc2b8817937b60c25909454db2d2ea0cc3",
+      "bytes": 1868154,
+      "drive_file_id": "1ZuNgVQCUkHuy0n423Q4tg7phdnvsL31X",
+      "drive_url": "https://drive.google.com/file/d/1ZuNgVQCUkHuy0n423Q4tg7phdnvsL31X/view?usp=drivesdk",
+      "drive_parent_id": "1NHmsGI4_EjNXSqMlFPvlds6G--Oqsmqn"
+    },
+    {
+      "local_path": "RenderingGen/UploadDrive/overlay_batches_20261111_v2/videos/class-maps.mp4",
+      "name": "class-maps.mp4",
+      "sha256": "07cdb0ddfd4d2a913e088d2a4bd3b28cb8bf29165b76a6c6240bd999a75b6bf8",
+      "bytes": 4101732,
+      "drive_file_id": "1dvSXxMaiHyO5QZRDJhlohLXtjMTG0Dxf",
+      "drive_url": "https://drive.google.com/file/d/1dvSXxMaiHyO5QZRDJhlohLXtjMTG0Dxf/view?usp=drivesdk",
+      "drive_parent_id": "1NHmsGI4_EjNXSqMlFPvlds6G--Oqsmqn"
+    },
+    {
+      "local_path": "RenderingGen/UploadDrive/overlay_batches_20261111_v2/videos/class-numbers.mp4",
+      "name": "class-numbers.mp4",
+      "sha256": "5fa6f336a5f80a600018feb2002f5d0066f216fb6f21492da43efbd9ef0b8680",
+      "bytes": 3307251,
+      "drive_file_id": "18A_Z07Pt6FzEwkBtzErJYF5wQiXRx9Nn",
+      "drive_url": "https://drive.google.com/file/d/18A_Z07Pt6FzEwkBtzErJYF5wQiXRx9Nn/view?usp=drivesdk",
+      "drive_parent_id": "1NHmsGI4_EjNXSqMlFPvlds6G--Oqsmqn"
+    },
+    {
+      "local_path": "RenderingGen/UploadDrive/overlay_batches_20261111_v2/videos/class-text-phrases.mp4",
+      "name": "class-text-phrases.mp4",
+      "sha256": "622943a5d1957a8776157c0d8934a7cca949fa6fbabd7748b2bb004a7e6ef8a7",
+      "bytes": 2776904,
+      "drive_file_id": "1GmywegMKSrl_zxqvwe-QExAWS5Kra-w5",
+      "drive_url": "https://drive.google.com/file/d/1GmywegMKSrl_zxqvwe-QExAWS5Kra-w5/view?usp=drivesdk",
+      "drive_parent_id": "1NHmsGI4_EjNXSqMlFPvlds6G--Oqsmqn"
+    },
+    {
+      "local_path": "RenderingGen/UploadDrive/overlay_batches_20261111_v2/videos/scene-01.mp4",
+      "name": "scene-01.mp4",
+      "sha256": "f7f80ba6a48ad5438d3325b836f460237de57cd2ac085e613435d5dca28d58bf",
+      "bytes": 4596829,
+      "drive_file_id": "1jskTLciBV-rSv0zv5FXtPvkiI1jM4L4-",
+      "drive_url": "https://drive.google.com/file/d/1jskTLciBV-rSv0zv5FXtPvkiI1jM4L4-/view?usp=drivesdk",
+      "drive_parent_id": "1NHmsGI4_EjNXSqMlFPvlds6G--Oqsmqn"
+    },
+    {
+      "local_path": "RenderingGen/UploadDrive/overlay_batches_20261111_v2/videos/scene-02.mp4",
+      "name": "scene-02.mp4",
+      "sha256": "05bdb8f662dfaf9e9bb4cf68506d0dd13ed3a67adef0ff6763e8d0c47d8d63a8",
+      "bytes": 432794,
+      "drive_file_id": "1Eg_7bZDz_T9fmrzPNrrIIenhlwQLkLrl",
+      "drive_url": "https://drive.google.com/file/d/1Eg_7bZDz_T9fmrzPNrrIIenhlwQLkLrl/view?usp=drivesdk",
+      "drive_parent_id": "1NHmsGI4_EjNXSqMlFPvlds6G--Oqsmqn"
+    },
+    {
+      "local_path": "RenderingGen/UploadDrive/overlay_batches_20261111_v2/videos/scene-03.mp4",
+      "name": "scene-03.mp4",
+      "sha256": "c84ef6675f8a89401f6f272314c06a77fb64277c542fa6e76a8053a0d516e832",
+      "bytes": 372818,
+      "drive_file_id": "1oOZOjYsRS71bFdDa3pIfS381SmMtMQjR",
+      "drive_url": "https://drive.google.com/file/d/1oOZOjYsRS71bFdDa3pIfS381SmMtMQjR/view?usp=drivesdk",
+      "drive_parent_id": "1NHmsGI4_EjNXSqMlFPvlds6G--Oqsmqn"
+    },
+    {
+      "local_path": "RenderingGen/UploadDrive/overlay_batches_20261111_v2/videos/scene-04.mp4",
+      "name": "scene-04.mp4",
+      "sha256": "0707f0117ad18bfe8576fbdf95efca527924f704f6dbd254f990579e28389d14",
+      "bytes": 366130,
+      "drive_file_id": "1tLYMCEO3lE3VFzAouAKmrrofy6G62rH0",
+      "drive_url": "https://drive.google.com/file/d/1tLYMCEO3lE3VFzAouAKmrrofy6G62rH0/view?usp=drivesdk",
+      "drive_parent_id": "1NHmsGI4_EjNXSqMlFPvlds6G--Oqsmqn"
+    },
+    {
+      "local_path": "RenderingGen/UploadDrive/overlay_batches_20261111_v2/videos/scene-05.mp4",
+      "name": "scene-05.mp4",
+      "sha256": "7723bce771ac4002e319e0af8209be2f7b68ec0f56136311748158fa51f32f50",
+      "bytes": 315178,
+      "drive_file_id": "1PULobTxc1QZDETwyBrPCr9h3TwAhlSDs",
+      "drive_url": "https://drive.google.com/file/d/1PULobTxc1QZDETwyBrPCr9h3TwAhlSDs/view?usp=drivesdk",
+      "drive_parent_id": "1NHmsGI4_EjNXSqMlFPvlds6G--Oqsmqn"
+    },
+    {
+      "local_path": "RenderingGen/UploadDrive/overlay_batches_20261111_v2/videos/scene-06.mp4",
+      "name": "scene-06.mp4",
+      "sha256": "e8ca378cb5128f83d12f2c8d08eefd6a295bd523fc75f8b30f6ca417efad8c4e",
+      "bytes": 1201513,
+      "drive_file_id": "1OW0kAB9vhKbpzKt3kXvo63B764ZNGyud",
+      "drive_url": "https://drive.google.com/file/d/1OW0kAB9vhKbpzKt3kXvo63B764ZNGyud/view?usp=drivesdk",
+      "drive_parent_id": "1NHmsGI4_EjNXSqMlFPvlds6G--Oqsmqn"
+    },
+    {
+      "local_path": "RenderingGen/UploadDrive/overlay_batches_20261111_v2/videos/scene-07.mp4",
+      "name": "scene-07.mp4",
+      "sha256": "480969aacb67df6b672ae9ae133bc427b93a3e54c03ed35f922fb11b784174a2",
+      "bytes": 304436,
+      "drive_file_id": "1M_p8T8aqaEOBmF-ivq0tibjIeJG260Wx",
+      "drive_url": "https://drive.google.com/file/d/1M_p8T8aqaEOBmF-ivq0tibjIeJG260Wx/view?usp=drivesdk",
+      "drive_parent_id": "1NHmsGI4_EjNXSqMlFPvlds6G--Oqsmqn"
+    },
+    {
+      "local_path": "RenderingGen/UploadDrive/overlay_batches_20261111_v2/videos/scene-08.mp4",
+      "name": "scene-08.mp4",
+      "sha256": "5b9da46770be7ab0f42787252dc0ae5ace550f4a76d2e58b823d77822522690d",
+      "bytes": 328237,
+      "drive_file_id": "1WJxKoeyAG3cPmF-p-5gbLd3_ogFZHBDx",
+      "drive_url": "https://drive.google.com/file/d/1WJxKoeyAG3cPmF-p-5gbLd3_ogFZHBDx/view?usp=drivesdk",
+      "drive_parent_id": "1NHmsGI4_EjNXSqMlFPvlds6G--Oqsmqn"
+    },
+    {
+      "local_path": "RenderingGen/UploadDrive/overlay_batches_20261111_v2/videos/scene-09.mp4",
+      "name": "scene-09.mp4",
+      "sha256": "8eedd07886c898bf8b75828a384d97f6e9f3e98ea2fbe2412dd75cdd81774138",
+      "bytes": 191326,
+      "drive_file_id": "1_h6eSTXP7foCJwew4Z_DNrcglM2oTc-G",
+      "drive_url": "https://drive.google.com/file/d/1_h6eSTXP7foCJwew4Z_DNrcglM2oTc-G/view?usp=drivesdk",
+      "drive_parent_id": "1NHmsGI4_EjNXSqMlFPvlds6G--Oqsmqn"
+    },
+    {
+      "local_path": "RenderingGen/UploadDrive/overlay_batches_20261111_v2/videos/scene-10.mp4",
+      "name": "scene-10.mp4",
+      "sha256": "15f44570b1ea911ecc8d500369d3c3ffb9dc3ce8f3aeee314e572bb765da706b",
+      "bytes": 210131,
+      "drive_file_id": "1kCmFhWM0V3u77d7TZH6SaKauf7DRzMLs",
+      "drive_url": "https://drive.google.com/file/d/1kCmFhWM0V3u77d7TZH6SaKauf7DRzMLs/view?usp=drivesdk",
+      "drive_parent_id": "1NHmsGI4_EjNXSqMlFPvlds6G--Oqsmqn"
+    },
+    {
+      "local_path": "RenderingGen/UploadDrive/overlay_batches_20261111_v2/videos/scene-11.mp4",
+      "name": "scene-11.mp4",
+      "sha256": "667ec586812a40947d20126309b25a331e4acc2f1190eb2a0905ed623b11b5c1",
+      "bytes": 456894,
+      "drive_file_id": "1GtYLQ5aWL0QVBfRAqAnP00XBe_hBtbIx",
+      "drive_url": "https://drive.google.com/file/d/1GtYLQ5aWL0QVBfRAqAnP00XBe_hBtbIx/view?usp=drivesdk",
+      "drive_parent_id": "1NHmsGI4_EjNXSqMlFPvlds6G--Oqsmqn"
+    },
+    {
+      "local_path": "RenderingGen/UploadDrive/overlay_batches_20261111_v2/videos/scene-12.mp4",
+      "name": "scene-12.mp4",
+      "sha256": "55760faa727afbfedc2b35711e877dd723559cf51a9b815647609dc73129b731",
+      "bytes": 858378,
+      "drive_file_id": "1NFcznPPOMLa748tfED3n3LePUzel0TDX",
+      "drive_url": "https://drive.google.com/file/d/1NFcznPPOMLa748tfED3n3LePUzel0TDX/view?usp=drivesdk",
+      "drive_parent_id": "1NHmsGI4_EjNXSqMlFPvlds6G--Oqsmqn"
+    },
+    {
+      "local_path": "RenderingGen/UploadDrive/overlay_batches_20261111_v2/videos/scene-14.mp4",
+      "name": "scene-14.mp4",
+      "sha256": "1b230f8cd05d878081f677dcfe75fefd20b4ecc4ce97a216a19a64be11adce4a",
+      "bytes": 73473,
+      "drive_file_id": "1OLJ1d0lrrjHukFx73m9kIMtHlNirCYNf",
+      "drive_url": "https://drive.google.com/file/d/1OLJ1d0lrrjHukFx73m9kIMtHlNirCYNf/view?usp=drivesdk",
+      "drive_parent_id": "1NHmsGI4_EjNXSqMlFPvlds6G--Oqsmqn"
+    },
+    {
+      "local_path": "RenderingGen/UploadDrive/overlay_batches_20261111_v2/videos/scene-15.mp4",
+      "name": "scene-15.mp4",
+      "sha256": "696261b6a138ec0b99b84573df44442643394ea1c7c6a28537ebf0b21b70eaef",
+      "bytes": 1297440,
+      "drive_file_id": "1HFCY98AHdkBYKOkDNoTabNOYuc4-6NSR",
+      "drive_url": "https://drive.google.com/file/d/1HFCY98AHdkBYKOkDNoTabNOYuc4-6NSR/view?usp=drivesdk",
+      "drive_parent_id": "1NHmsGI4_EjNXSqMlFPvlds6G--Oqsmqn"
+    },
+    {
+      "local_path": "RenderingGen/UploadDrive/overlay_batches_20261111_v2/videos/scene-19.mp4",
+      "name": "scene-19.mp4",
+      "sha256": "2956f0216d7efa69b20330eaf702b453fb6bdf7d62739f0e9da48df2f971332c",
+      "bytes": 1058189,
+      "drive_file_id": "115ChknzmSd29sMAGLw5DpgJOBp7KZoon",
+      "drive_url": "https://drive.google.com/file/d/115ChknzmSd29sMAGLw5DpgJOBp7KZoon/view?usp=drivesdk",
+      "drive_parent_id": "1NHmsGI4_EjNXSqMlFPvlds6G--Oqsmqn"
+    },
+    {
+      "local_path": "RenderingGen/UploadDrive/overlay_batches_20261111_v2/contacts/entity-cards.png",
+      "name": "entity-cards.png",
+      "sha256": "ad33cf682816d75d007960f3b56e4eb7b292cd670fb9e2df567d0b77ed3078de",
+      "bytes": 31417,
+      "drive_file_id": "1MH_liK9eluAI5BSi_AerHaYE4om64yns",
+      "drive_url": "https://drive.google.com/file/d/1MH_liK9eluAI5BSi_AerHaYE4om64yns/view?usp=drivesdk",
+      "drive_parent_id": "1NHmsGI4_EjNXSqMlFPvlds6G--Oqsmqn"
+    },
+    {
+      "local_path": "RenderingGen/UploadDrive/overlay_batches_20261111_v2/contacts/excluded-evidence.png",
+      "name": "excluded-evidence.png",
+      "sha256": "8b2003a72f084b9ce0ed01ab9cffafebbca56c29cf22d202f00c378c0e7e9ad9",
+      "bytes": 224374,
+      "drive_file_id": "1iw-PoSfx-uaMNf3SACw2bpBAiGb1aCWr",
+      "drive_url": "https://drive.google.com/file/d/1iw-PoSfx-uaMNf3SACw2bpBAiGb1aCWr/view?usp=drivesdk",
+      "drive_parent_id": "1NHmsGI4_EjNXSqMlFPvlds6G--Oqsmqn"
+    },
+    {
+      "local_path": "RenderingGen/UploadDrive/overlay_batches_20261111_v2/contacts/numbers-maps.png",
+      "name": "numbers-maps.png",
+      "sha256": "0ddaaf8021eff31209dd1068e5c633b47b2f7ab90ace12f8e17d3518b591f02d",
+      "bytes": 136734,
+      "drive_file_id": "1jKj6wPoyxtSU1EjvVhVtYx78lY0iswpP",
+      "drive_url": "https://drive.google.com/file/d/1jKj6wPoyxtSU1EjvVhVtYx78lY0iswpP/view?usp=drivesdk",
+      "drive_parent_id": "1NHmsGI4_EjNXSqMlFPvlds6G--Oqsmqn"
+    },
+    {
+      "local_path": "RenderingGen/UploadDrive/overlay_batches_20261111_v2/contacts/text-phrases.png",
+      "name": "text-phrases.png",
+      "sha256": "30cab8fac32e1e1351ad7efcb555c12d7957e2d0d9801e2ba846d554285a3024",
+      "bytes": 171312,
+      "drive_file_id": "1ypU6zQX23QmlTxAuEkrgpSmdjTXf_5Cm",
+      "drive_url": "https://drive.google.com/file/d/1ypU6zQX23QmlTxAuEkrgpSmdjTXf_5Cm/view?usp=drivesdk",
+      "drive_parent_id": "1NHmsGI4_EjNXSqMlFPvlds6G--Oqsmqn"
+    },
+    {
+      "local_path": "RenderingGen/UploadDrive/overlay_batches_20261111_v2/MANIFEST.json",
+      "name": "MANIFEST.json",
+      "sha256": "ef92e64765d61b29a581dddc5f0e6f75862e2f4b14ff73d3bfba6f9187aa84d2",
+      "bytes": 20126,
+      "drive_file_id": "1nkY1Oor1gMoKg07o7J3YU_jUXqvB8Bvo",
+      "drive_url": "https://drive.google.com/file/d/1nkY1Oor1gMoKg07o7J3YU_jUXqvB8Bvo/view?usp=drivesdk",
+      "drive_parent_id": "1NHmsGI4_EjNXSqMlFPvlds6G--Oqsmqn"
+    }
+  ]
+}

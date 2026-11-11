@@ -403,12 +403,12 @@ func (p *Processor) retrySegment(ctx context.Context, prepared *PreparedJob, seg
 			return fmt.Errorf("processor: single-segment retry failed native Vulkan gate: %w", err)
 		}
 	}
-	// A retried segment is a fresh render: it must pass through the same V3
+	// A retried segment is a fresh render: it must pass through the same
 	// canonicalization as every segment in the original batch, otherwise the
 	// retry would publish bytes that the profile gate rejects after the fact.
-	if metadata := planMetadataOf(prepared.Plan); isCanonicalOverlayV3(metadata.ProfileID) {
-		if _, err := p.canonicalizeOverlayPaths(ctx, prepared.Job.ID, []string{segment.OutputPath}, nil); err != nil {
-			return fmt.Errorf("processor: canonical V3 segment retry emission: %w", err)
+	if metadata := planMetadataOf(prepared.Plan); isCanonicalizedOutputProfile(metadata.ProfileID) {
+		if _, err := p.canonicalizeOverlayPaths(ctx, prepared.Job.ID, []string{segment.OutputPath}, nil, metadata.ProfileID); err != nil {
+			return fmt.Errorf("processor: canonical segment retry emission: %w", err)
 		}
 	}
 	return nil

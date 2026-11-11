@@ -1,17 +1,19 @@
 // canonical_overlay.go owns the final, deterministic encode of the
-// assembly-compatible overlay profile (VELOX_OVERLAY_VIDEO_ONLY_V3).
+// canonicalized output profiles: VELOX_OVERLAY_VIDEO_ONLY_V3 (video-only
+// overlays) and VELOX_ASSEMBLY_READY_V1 (assembly-ready clips with audio).
 //
-// V3 does not merely declare the canonical stream facts: it must EMIT them.
-// The native NVENC lane produces a different avcC than the canonical x264 lane,
-// and the historical overlay lane emitted 1/12288. This pass therefore
-// re-encodes a V3 artifact with the exact canonical x264 recipe, verifies the
-// resulting bytes with ffprobe against the V3 profile, and writes a receipt
+// A canonicalized profile does not merely declare the canonical stream facts:
+// it must EMIT them. The native NVENC lane produces a different avcC than the
+// canonical x264 lane (the live clip failure: avcC 111186fe…), and the
+// historical overlay lane emitted 1/12288. This pass therefore re-encodes the
+// artifact with the exact canonical x264 recipe, verifies the resulting bytes
+// with ffprobe against the requested profile, and writes a receipt
 // that describes the FINAL bytes (the renderer's original receipt describes the
 // pre-canonicalization file and must never be used after this pass).
 //
-// The pass is deliberately scoped to V3. V1/V2 artifacts keep their existing
-// bytes and cache identities; changing them in place would invalidate every
-// previously certified overlay.
+// The pass is scoped to the canonicalized profiles only. V2 keeps its existing
+// bytes and cache identity; changing it in place without its own certified
+// recipe would invalidate previously certified overlays.
 package processor
 
 import (
@@ -36,9 +38,18 @@ import (
 // describe the canonicalized artifact.
 const canonicalOverlayReceiptSchema = "renderinggen.canonical-overlay-receipt.v1"
 
-// isCanonicalOverlayV3 reports whether a plan requests the assembly-compatible
-// overlay lane. It is the single predicate shared by the prepare stage (tail
-// upload/container decision) and the GPU stage (canonicalization).
+// isCanonicalizedOutputProfile reports whether a plan requests an output lane
+// whose bytes must be re-encoded to the canonical x264 avcC before finalize.
+// V3 (video-only overlays) and V1 (assembly-ready clips) share the exact same
+// canonical video recipe. V2 pins a different H.264 level and is deliberately
+// excluded until it has its own certified recipe.
+func isCanonicalizedOutputProfile(profileID string) bool {
+	return profileID == media.ProfileVeloxOverlayVideoOnlyV3 ||
+		profileID == media.ProfileVeloxAssemblyReadyV1
+}
+
+// isCanonicalOverlayV3 identifies the video-only lane, which canonicalizes
+// without an audio stream.
 func isCanonicalOverlayV3(profileID string) bool {
 	return profileID == media.ProfileVeloxOverlayVideoOnlyV3
 }
@@ -49,11 +60,30 @@ func isCanonicalOverlayV3(profileID string) bool {
 // in the parameter sets. Do not reorder or "simplify" this list without
 // re-certifying CanonicalVideoExtradataSHA256.
 func canonicalOverlayFFmpegArgs(input, output string) []string {
-	return []string{
+	return canonicalOutputFFmpegArgs(input, output, false)
+}
+
+// canonicalOutputFFmpegArgs is the exact canonical encoder recipe. The avcC
+// identity depends on every one of these settings, not just profile/level:
+// refs, B-frames, scene-cut/keyint behaviour and the VUI colour tags all land
+// in the parameter sets. Do not reorder or "simplify" this list without
+// re-certifying CanonicalVideoExtradataSHA256.
+//
+// keepAudio copies the source audio track untouched. The audio mapping does not
+// change the video parameter sets, so the same recipe certifies both the
+// video-only V3 overlay and the assembly-ready V1 clip (which keeps its audio).
+func canonicalOutputFFmpegArgs(input, output string, keepAudio bool) []string {
+	args := []string{
 		"-hide_banner", "-loglevel", "error", "-y",
 		"-i", input,
 		"-map", "0:v:0",
-		"-an", "-sn", "-dn",
+	}
+	if keepAudio {
+		args = append(args, "-map", "0:a:0?", "-c:a", "copy")
+	} else {
+		args = append(args, "-an", "-sn", "-dn")
+	}
+	return append(args,
 		// Preserve the source frame cadence exactly (no duplication/drop
 		// caused by timestamp rounding at the new 1/90000 timebase).
 		"-fps_mode", "passthrough",
@@ -75,19 +105,19 @@ func canonicalOverlayFFmpegArgs(input, output string) []string {
 		"-video_track_timescale", "90000",
 		"-movflags", "+faststart",
 		output,
-	}
+	)
 }
 
-// canonicalizeOverlayArtifacts applies the V3 canonicalization to the fused
-// output and every P4 segment of a prepared job. It returns true when at least
-// one artifact was re-encoded; the caller uses that to revoke a native
-// certification that no longer describes the final bytes.
+// canonicalizeOverlayArtifacts canonicalizes the fused output and every P4
+// segment of a prepared job. It returns true when at least one artifact was
+// re-encoded; the caller uses that to revoke a native certification that no
+// longer describes the final bytes.
 func (p *Processor) canonicalizeOverlayArtifacts(ctx context.Context, prepared *PreparedJob) (bool, error) {
 	if prepared == nil || prepared.Plan == nil {
 		return false, nil
 	}
 	metadata := planMetadataOf(prepared.Plan)
-	if !isCanonicalOverlayV3(metadata.ProfileID) {
+	if !isCanonicalizedOutputProfile(metadata.ProfileID) {
 		return false, nil
 	}
 	paths := make([]string, 0, 1+len(prepared.Segments))
@@ -95,12 +125,12 @@ func (p *Processor) canonicalizeOverlayArtifacts(ctx context.Context, prepared *
 	for _, segment := range prepared.Segments {
 		paths = append(paths, segment.OutputPath)
 	}
-	return p.canonicalizeOverlayPaths(ctx, prepared.Job.ID, paths, prepared.Metrics)
+	return p.canonicalizeOverlayPaths(ctx, prepared.Job.ID, paths, prepared.Metrics, metadata.ProfileID)
 }
 
 // canonicalizeOverlayPaths canonicalizes an explicit set of outputs. The P4
 // single-segment retry uses it for the one segment it re-rendered.
-func (p *Processor) canonicalizeOverlayPaths(ctx context.Context, jobID string, paths []string, metrics map[string]float64) (bool, error) {
+func (p *Processor) canonicalizeOverlayPaths(ctx context.Context, jobID string, paths []string, metrics map[string]float64, profileID string) (bool, error) {
 	seen := make(map[string]struct{}, len(paths))
 	changed := false
 	var total time.Duration
@@ -113,7 +143,7 @@ func (p *Processor) canonicalizeOverlayPaths(ctx context.Context, jobID string, 
 		}
 		seen[path] = struct{}{}
 		start := time.Now()
-		encoded, err := canonicalizeOverlayMP4(ctx, path)
+		encoded, err := canonicalizeOutputMP4(ctx, path, profileID)
 		total += time.Since(start)
 		if err != nil {
 			return changed, fmt.Errorf("canonicalize %s: %w", filepath.Base(path), err)
@@ -125,21 +155,22 @@ func (p *Processor) canonicalizeOverlayPaths(ctx context.Context, jobID string, 
 			metrics[metricnames.CanonicalizeOverlayUS] = float64(total.Microseconds())
 			metrics[metricnames.CanonicalizeOverlayMS] = float64(total.Microseconds()) / 1000
 		}
-		workerlog.ByJobID(jobID).Infof("canonical V3 overlay emitted: %d artifact(s) re-encoded to 1/90000 + canonical avcC", len(seen))
+		workerlog.ByJobID(jobID).Infof("canonical output emitted: %d artifact(s) re-encoded to the canonical avcC (profile %s)", len(seen), profileID)
 	}
 	return changed, nil
 }
 
-// canonicalizeOverlayMP4 rewrites one artifact to the canonical V3 stream.
-// It is idempotent: an artifact that already satisfies V3 is left untouched,
-// so a retry after canonicalization does not re-encode (and re-hash) it.
+// canonicalizeOutputMP4 rewrites one artifact to the canonical stream of the
+// requested profile. It is idempotent: an artifact that already satisfies the
+// profile is left untouched, so a retry after canonicalization does not
+// re-encode (and re-hash) it.
 //
 // The rewrite is atomic: ffmpeg writes a sibling temp file, the temp file is
 // probed and certified, and only then is it renamed over the artifact. A
 // failed encode therefore leaves the original bytes untouched, and no other
 // process can observe a half-written MP4.
-func canonicalizeOverlayMP4(ctx context.Context, path string) (bool, error) {
-	profile, err := media.ResolveProfile(media.ProfileVeloxOverlayVideoOnlyV3)
+func canonicalizeOutputMP4(ctx context.Context, path, profileID string) (bool, error) {
+	profile, err := media.ResolveProfile(profileID)
 	if err != nil {
 		return false, err
 	}
@@ -151,10 +182,11 @@ func canonicalizeOverlayMP4(ctx context.Context, path string) (bool, error) {
 		return false, nil
 	}
 
-	temp := path + ".canonical-v3.tmp.mp4"
+	keepAudio := !isCanonicalOverlayV3(profileID)
+	temp := path + ".canonical.tmp.mp4"
 	_ = os.Remove(temp)
 	defer os.Remove(temp)
-	cmd := exec.CommandContext(ctx, "ffmpeg", canonicalOverlayFFmpegArgs(path, temp)...)
+	cmd := exec.CommandContext(ctx, "ffmpeg", canonicalOutputFFmpegArgs(path, temp, keepAudio)...)
 	if output, err := cmd.CombinedOutput(); err != nil {
 		return false, fmt.Errorf("ffmpeg canonical encode: %w: %s", err, output)
 	}

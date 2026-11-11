@@ -212,6 +212,30 @@ func firstFrameOfStream(frames []probeFrame, streamIndex int) (probeFrame, bool)
 	return probeFrame{}, false
 }
 
+// probeFirstVideoFrameKey reads the first decoded video frame's key flag with a
+// video-only ffprobe invocation. It is the fallback for the merged probe
+// document, which returns no frames when the input also has an audio stream.
+func probeFirstVideoFrameKey(ctx context.Context, path string) (bool, error) {
+	stdout, _, err := runTool(ctx, ffprobeBinary(), "-v", "error", "-select_streams", "v:0",
+		"-read_intervals", "%+#1", "-show_entries", "frame=key_frame",
+		"-of", "csv=p=0", path)
+	if err != nil {
+		return false, err
+	}
+	for _, line := range strings.Split(strings.TrimSpace(string(stdout)), "\n") {
+		// csv=p=0 still terminates the key_frame field with a comma, so
+		// compare the first CSV field rather than the whole line.
+		field := strings.TrimSpace(strings.SplitN(line, ",", 2)[0])
+		switch field {
+		case "1":
+			return true, nil
+		case "0":
+			return false, nil
+		}
+	}
+	return false, fmt.Errorf("no video frame reported")
+}
+
 func ProbeFile(ctx context.Context, path string) (ProbeResult, error) {
 	return probeFile(ctx, path, 0)
 }
@@ -339,6 +363,18 @@ func probeFile(ctx context.Context, path string, knownFrameCount int) (ProbeResu
 	// silently disabling the copy-eligible fast path.
 	if frame, ok := firstFrameOfStream(doc.Frames, videoStreamIndex); ok {
 		result.FirstFrameKeyframe = frame.Key == 1
+	} else if videoStreamIndex >= 0 {
+		// The merged document returns NO frames at all when the input also
+		// carries audio (measured on canonical assembly clips: streams
+		// [video,audio], frames []). Falling through would report a real IDR
+		// as "not a keyframe" and reject every audio-bearing clip, so probe
+		// the video stream alone before concluding anything.
+		key, keyErr := probeFirstVideoFrameKey(ctx, path)
+		if keyErr != nil {
+			log.Printf("media: ffprobe %s: first-frame keyframe probe failed: %v (first_frame_keyframe=false)", path, keyErr)
+		} else {
+			result.FirstFrameKeyframe = key
+		}
 	} else {
 		log.Printf("media: ffprobe %s: first-frame keyframe probe returned no frame (first_frame_keyframe=false)", path)
 	}

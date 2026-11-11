@@ -1,0 +1,64 @@
+{
+  "width": 1920,
+  "height": 1080,
+  "metric": {
+    "title_band_rows": [
+      460,
+      636
+    ],
+    "luma": "Rec.709",
+    "lit_threshold": 0.345
+  },
+  "frames": [
+    {
+      "frame": 0,
+      "title_band_mean": 0.294485,
+      "lit_fraction": 0.327092
+    },
+    {
+      "frame": 1,
+      "title_band_mean": 0.294521,
+      "lit_fraction": 0.327157
+    },
+    {
+      "frame": 2,
+      "title_band_mean": 0.294535,
+      "lit_fraction": 0.327202
+    },
+    {
+      "frame": 3,
+      "title_band_mean": 0.294443,
+      "lit_fraction": 0.327
+    },
+    {
+      "frame": 4,
+      "title_band_mean": 0.294461,
+      "lit_fraction": 0.326962
+    },
+    {
+      "frame": 5,
+      "title_band_mean": 0.294526,
+      "lit_fraction": 0.327089
+    },
+    {
+      "frame": 6,
+      "title_band_mean": 0.29456,
+      "lit_fraction": 0.327154
+    },
+    {
+      "frame": 7,
+      "title_band_mean": 0.294678,
+      "lit_fraction": 0.327356
+    },
+    {
+      "frame": 8,
+      "title_band_mean": 0.294649,
+      "lit_fraction": 0.327282
+    },
+    {
+      "frame": 9,
+      "title_band_mean": 0.294743,
+      "lit_fraction": 0.327498
+    }
+  ]
+}

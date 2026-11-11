@@ -131,6 +131,9 @@ func audioSourcePathFromPlan(plan *overlay.Plan, workspaceRoot string) (string, 
 	// Source field is the registry-resolved logical path.
 	for _, layer := range plan.Layers {
 		if layer.ID == "source" && layer.Source != "" {
+			if filepath.IsAbs(layer.Source) {
+				return layer.Source, warnInert
+			}
 			return filepath.Join(workspaceRoot, filepath.FromSlash(layer.Source)), warnInert
 		}
 	}
