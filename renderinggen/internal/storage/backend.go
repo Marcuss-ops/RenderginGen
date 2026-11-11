@@ -32,6 +32,13 @@ var ErrNotFound = fmt.Errorf("object not found")
 // by tests on both sides rather than shared as a type.
 var ErrContentAddressRejected = errors.New("object store rejected the content address")
 
+// ErrContentAddressMismatch is returned when bytes that are about to be
+// cached, or that L3 just returned, do not hash to the content key naming
+// them. It is distinct from ErrContentAddressRejected (the STORE refused a
+// write): here the local layer caught the contradiction before wrong bytes
+// could be installed under a valid-looking address.
+var ErrContentAddressMismatch = errors.New("bytes do not hash to their content address")
+
 // Backend is the L3 central object storage.
 type Backend interface {
 	Fetch(ctx context.Context, key string) ([]byte, error)

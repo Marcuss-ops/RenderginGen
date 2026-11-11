@@ -83,7 +83,8 @@ func (p *Processor) RunGPU(ctx context.Context, prepared *PreparedJob) error {
 	// The tail-upload lane streams ONE growing file. A segmented (P4) job
 	// produces N per-item outputs and is uploaded per-segment at finalize
 	// instead, so the lane stays off for it.
-	if prepared.FragmentedMP4 && p.store.SupportsStaging() && len(prepared.Segments) == 0 {
+	if prepared.FragmentedMP4 && p.store.SupportsStaging() && len(prepared.Segments) == 0 &&
+		!isCanonicalOverlayV3(metadata.ProfileID) {
 		tail = p.startTailUpload(ctx, job.ID, prepared.OutputPath)
 		// Until ownership moves to the store phase (below), every error path
 		// must discard the pending upload. After hand-off, FinalizeJob owns it.
@@ -185,7 +186,7 @@ func (p *Processor) RunGPU(ctx context.Context, prepared *PreparedJob) error {
 					progress.At.Format(time.RFC3339Nano), renderBackend, p.hardwareEncoder)
 			}
 			if p.progressTracker != nil {
-				p.progressTracker.Observe(job.ID, progress.FramesDone, progress.FramesTotal)
+				p.progressTracker.Observe(job.ID, job.LeaseGeneration, progress.FramesDone, progress.FramesTotal)
 			}
 		},
 	}
@@ -212,7 +213,7 @@ func (p *Processor) RunGPU(ctx context.Context, prepared *PreparedJob) error {
 				progress.FramesDone, progress.FramesTotal, progress.FPS,
 				progress.At.Format(time.RFC3339Nano))
 			if p.progressTracker != nil {
-				p.progressTracker.Observe(job.ID, progress.FramesDone, progress.FramesTotal)
+				p.progressTracker.Observe(job.ID, job.LeaseGeneration, progress.FramesDone, progress.FramesTotal)
 			}
 		}
 		if _, statErr := os.Stat(fallbackRequest.OutputPath); statErr == nil {
@@ -293,6 +294,15 @@ func (p *Processor) RunGPU(ctx context.Context, prepared *PreparedJob) error {
 			return fmt.Errorf("processor: gpu-vulkan-native gate: %w", err)
 		}
 		prepared.NativeCertified = true
+	}
+	// V3 must EMIT the canonical bitstream, not merely declare it. This runs
+	// after the native gate (which certifies the original render) and rewrites
+	// each output + its receipt atomically. The final artifact is no longer a
+	// native NVENC surface, so a previous native certification is revoked.
+	if canonicalized, err := p.canonicalizeOverlayArtifacts(ctx, prepared); err != nil {
+		return fmt.Errorf("processor: canonical V3 overlay emission: %w", err)
+	} else if canonicalized {
+		prepared.NativeCertified = false
 	}
 	// Hand-off point: the output is final (render succeeded, software-fallback
 	// rename done, native gate passed), but the bytes are NOT committed yet —

@@ -65,7 +65,7 @@ func withLeaseVoid(ctx context.Context, job *queue.Job, q *queue.Client, timings
 			case <-jobCtx.Done():
 				return
 			case <-ticker.C:
-				if renewWithRetry(jobCtx, job.ID, q, interval, timings) {
+				if renewWithRetry(jobCtx, job.ID, job.LeaseGeneration, q, interval, timings) {
 					continue
 				}
 				workerlog.ByJobID(job.ID).Errorf("lease renew failed permanently, aborting")
@@ -82,7 +82,7 @@ func withLeaseVoid(ctx context.Context, job *queue.Job, q *queue.Client, timings
 // false when the queue reports the job is no longer owned by this worker
 // (permanent — the job was requeued elsewhere) or the retry budget is spent.
 // Cancellation of ctx always reports false immediately.
-func renewWithRetry(ctx context.Context, jobID string, q *queue.Client, interval time.Duration, timings config.PipelineConfig) bool {
+func renewWithRetry(ctx context.Context, jobID string, generation int64, q *queue.Client, interval time.Duration, timings config.PipelineConfig) bool {
 	maxAttempts := timings.LeaseRenewAttempts
 	if maxAttempts < 1 {
 		maxAttempts = 1
@@ -92,7 +92,7 @@ func renewWithRetry(ctx context.Context, jobID string, q *queue.Client, interval
 		backoff = time.Second
 	}
 	for attempt := 1; ; attempt++ {
-		err := q.Renew(ctx, jobID)
+		err := q.Renew(ctx, jobID, generation)
 		if err == nil {
 			return true
 		}

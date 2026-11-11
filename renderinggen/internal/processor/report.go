@@ -12,10 +12,10 @@ import (
 // minimal lets the terminal-report helpers live here next to the job state
 // machine instead of in cmd/renderinggen.
 type ReportQueue interface {
-	Complete(ctx context.Context, id string, artifact queue.Artifact) error
-	Rendered(ctx context.Context, id, reason string, artifact queue.Artifact) error
-	Fail(ctx context.Context, id, reason string) error
-	FailPermanently(ctx context.Context, id, reason string) error
+	Complete(ctx context.Context, id string, generation int64, artifact queue.Artifact) error
+	Rendered(ctx context.Context, id string, generation int64, reason string, artifact queue.Artifact) error
+	Fail(ctx context.Context, id string, generation int64, reason string) error
+	FailPermanently(ctx context.Context, id string, generation int64, reason string) error
 }
 
 // hasDurableArtifact is the single "the artifact bytes are already in the
@@ -41,18 +41,18 @@ func ReportFailure(ctx context.Context, q ReportQueue, job *queue.Job, err error
 	// fail jobs without the worker's own metric surface seeing it.
 	noteJobOutcome(JobOutcomeFailed)
 	if isPermanentFailure(err) {
-		if reportErr := q.FailPermanently(ctx, job.ID, err.Error()); reportErr != nil {
+		if reportErr := q.FailPermanently(ctx, job.ID, job.LeaseGeneration, err.Error()); reportErr != nil {
 			jobLog.Warnf("report fail: %v", reportErr)
 		}
 		return
 	}
 	if hasDurableArtifact(job.Artifact) {
-		if reportErr := q.Rendered(ctx, job.ID, err.Error(), *job.Artifact); reportErr != nil {
+		if reportErr := q.Rendered(ctx, job.ID, job.LeaseGeneration, err.Error(), *job.Artifact); reportErr != nil {
 			jobLog.Warnf("report rendered: %v", reportErr)
 		}
 		return
 	}
-	if reportErr := q.Fail(ctx, job.ID, err.Error()); reportErr != nil {
+	if reportErr := q.Fail(ctx, job.ID, job.LeaseGeneration, err.Error()); reportErr != nil {
 		jobLog.Warnf("report fail: %v", reportErr)
 	}
 }
@@ -62,7 +62,7 @@ func ReportFailure(ctx context.Context, q ReportQueue, job *queue.Job, err error
 // was never attached to the claimed job). Rendered keeps the artifact claimable
 // for a publication-only retry so a lost terminal report can never trigger a
 // GPU re-render.
-func ReportFailureWithArtifact(ctx context.Context, q ReportQueue, id string, artifact queue.Artifact, err error) {
+func ReportFailureWithArtifact(ctx context.Context, q ReportQueue, id string, generation int64, artifact queue.Artifact, err error) {
 	// ByJobID resolves the parent_run id recorded when the job was bound at
 	// claim/Prepare: this caller holds only the id, and an unattributed
 	// terminal line is exactly what made worker triage impossible.
@@ -70,18 +70,18 @@ func ReportFailureWithArtifact(ctx context.Context, q ReportQueue, id string, ar
 	jobLog.Errorf("failed: %v", err)
 	noteJobOutcome(JobOutcomeFailed)
 	if isPermanentFailure(err) {
-		if reportErr := q.FailPermanently(ctx, id, err.Error()); reportErr != nil {
+		if reportErr := q.FailPermanently(ctx, id, generation, err.Error()); reportErr != nil {
 			jobLog.Warnf("report permanent fail: %v", reportErr)
 		}
 		return
 	}
 	if !hasDurableArtifact(&artifact) {
-		if reportErr := q.Fail(ctx, id, err.Error()); reportErr != nil {
+		if reportErr := q.Fail(ctx, id, generation, err.Error()); reportErr != nil {
 			jobLog.Warnf("report fail: %v", reportErr)
 		}
 		return
 	}
-	if reportErr := q.Rendered(ctx, id, err.Error(), artifact); reportErr != nil {
+	if reportErr := q.Rendered(ctx, id, generation, err.Error(), artifact); reportErr != nil {
 		jobLog.Warnf("report rendered: %v", reportErr)
 	}
 }
@@ -94,8 +94,8 @@ func ReportFailureWithArtifact(ctx context.Context, q ReportQueue, id string, ar
 // retry with its artifact attached, instead of expiring back to pending and
 // being re-rendered on the next claim. A failed lease-expiry race is thereby
 // downgraded from a full GPU re-render to an upload retry.
-func ReportComplete(ctx context.Context, q ReportQueue, id string, artifact queue.Artifact, durable bool) {
-	if err := q.Complete(ctx, id, artifact); err != nil {
+func ReportComplete(ctx context.Context, q ReportQueue, id string, generation int64, artifact queue.Artifact, durable bool) {
+	if err := q.Complete(ctx, id, generation, artifact); err != nil {
 		workerlog.ByJobID(id).Warnf("report complete: %v", err)
 		// A completion that could not be reported is NOT a completed job: it
 		// either falls back to Rendered (publication-only retry, counted as a
@@ -106,7 +106,7 @@ func ReportComplete(ctx context.Context, q ReportQueue, id string, artifact queu
 			// The bytes are durable in L3; never let a lost report trigger a
 			// GPU re-render. Record rendered so a publication-only retry
 			// re-claims the artifact (see ReportFailure's artifact branch).
-			if reportErr := q.Rendered(ctx, id, err.Error(), artifact); reportErr != nil {
+			if reportErr := q.Rendered(ctx, id, generation, err.Error(), artifact); reportErr != nil {
 				workerlog.ByJobID(id).Warnf("report rendered: %v", reportErr)
 			}
 		}

@@ -32,11 +32,12 @@ func newMemCacheWithObjectCap(max, maxObject int64) *memCache {
 	return &memCache{items: make(map[string][]byte), max: max, maxObject: maxObject}
 }
 
-// Get returns the cached entry WITHOUT copying it: the cache owns the bytes
-// (Put already stored a private copy), so callers must treat the returned
-// slice as read-only. Copy-on-put-only halves the allocations on the hot read
-// path — every L1 hit for a plan/font/thumbnail on the materialize workers
-// previously paid a full copy per hit for bytes the callers only ever read.
+// Get returns a COPY of the cached entry. Handing out the cache's own slice
+// made "read-only" a comment Go cannot enforce: one caller writing to the
+// returned buffer silently changed what every later caller saw, and a writer
+// racing a reader was a data race inside the cache itself. The copy is bounded
+// by the L1 per-object cap (8 MiB by default), so the ownership contract is
+// enforced without giving up the cache's bounded-memory guarantee.
 func (m *memCache) Get(key string) ([]byte, bool) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -44,7 +45,7 @@ func (m *memCache) Get(key string) ([]byte, bool) {
 	if !ok {
 		return nil, false
 	}
-	return data, true
+	return append([]byte(nil), data...), true
 }
 
 func (m *memCache) Put(key string, data []byte) {
@@ -68,8 +69,9 @@ func (m *memCache) Put(key string, data []byte) {
 		delete(m.items, oldest)
 	}
 	m.trimOrder()
-	// Own the cached bytes (copy-on-put) so callers cannot mutate an entry
-	// after Put; Get then hands back this private slice read-only.
+	// Own the cached bytes (copy-on-put) so the caller's slice cannot mutate an
+	// entry after Put; Get copies again on the way out, so the cache never
+	// shares a writable buffer with any caller.
 	cached := append([]byte(nil), data...)
 	m.items[key] = cached
 	m.order = append(m.order, key)

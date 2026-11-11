@@ -24,8 +24,11 @@ var ErrAssetContentMismatch = errors.New("processor: asset bytes do not hash to 
 // Two families qualify:
 //   - a required capability that this worker does not have
 //     (ErrDrivePublicationPermanent);
-//   - an asset whose bytes the object store PROVED do not hash to the address
-//     they were sent under (storage.ErrContentAddressRejected, HTTP 400/422).
+//   - bytes that do not hash to the address that names them, whether the
+//     object store refused the write (storage.ErrContentAddressRejected,
+//     HTTP 400/422) or the local L3/cache boundary caught the contradiction
+//     (storage.ErrContentAddressMismatch). Retrying re-reads the same wrong
+//     bytes.
 //
 // Everything else — a transport failure, a missing local artifact, a 5xx — is
 // left to the normal retry policy.
@@ -35,5 +38,6 @@ func isPermanentFailure(err error) bool {
 	}
 	return errors.Is(err, ErrDrivePublicationPermanent) ||
 		errors.Is(err, ErrAssetContentMismatch) ||
-		errors.Is(err, storage.ErrContentAddressRejected)
+		errors.Is(err, storage.ErrContentAddressRejected) ||
+		errors.Is(err, storage.ErrContentAddressMismatch)
 }

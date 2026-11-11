@@ -26,6 +26,7 @@ const (
 
 const (
 	JobTypeRenderSegment  = queueclient.JobTypeRenderSegment
+	JobTypeRenderPrepare  = queueclient.JobTypeRenderPrepare
 	JobTypeOverlayPrepare = queueclient.JobTypeOverlayPrepare
 	JobTypeOverlayRender  = queueclient.JobTypeOverlayRender
 	JobTypeOverlayImport  = queueclient.JobTypeOverlayImport
@@ -60,6 +61,8 @@ const (
 type FrameRange = queueclient.FrameRange
 
 type AssetRef = queueclient.AssetRef
+
+type PreparedRenderPackageRef = queueclient.PreparedRenderPackageRef
 
 // Job is one render SEGMENT pulled from the queue. RenderPlan is the semantic
 // renderinggen.overlay-plan.v1 emitted by PipelineGen; the worker compiles it
@@ -168,31 +171,31 @@ func (c *Client) Submit(ctx context.Context, job Job) error {
 }
 
 // Complete reports a successfully rendered job along with its artifact.
-func (c *Client) Complete(ctx context.Context, id string, artifact Artifact) error {
-	return c.q.Complete(ctx, id, c.workerID, artifact)
+func (c *Client) Complete(ctx context.Context, id string, generation int64, artifact Artifact) error {
+	return c.q.Complete(ctx, id, c.workerID, generation, artifact)
 }
 
 // Fail reports a job that could not be rendered, applying the normal retry budget.
-func (c *Client) Fail(ctx context.Context, id, reason string) error {
-	return c.q.Fail(ctx, id, c.workerID, reason)
+func (c *Client) Fail(ctx context.Context, id string, generation int64, reason string) error {
+	return c.q.Fail(ctx, id, c.workerID, generation, reason)
 }
 
 // FailPermanently records a non-retryable configuration error as terminal.
-func (c *Client) FailPermanently(ctx context.Context, id, reason string) error {
-	return c.q.FailPermanently(ctx, id, c.workerID, reason)
+func (c *Client) FailPermanently(ctx context.Context, id string, generation int64, reason string) error {
+	return c.q.FailPermanently(ctx, id, c.workerID, generation, reason)
 }
 
 // Rendered reports a job whose render completed and was durably stored, but
 // whose external publication (Drive) failed. The job stays claimable for a
 // publication-only retry.
-func (c *Client) Rendered(ctx context.Context, id, reason string, artifact Artifact) error {
-	return c.q.Rendered(ctx, id, c.workerID, reason, artifact)
+func (c *Client) Rendered(ctx context.Context, id string, generation int64, reason string, artifact Artifact) error {
+	return c.q.Rendered(ctx, id, c.workerID, generation, reason, artifact)
 }
 
 // Renew extends the lease on a running job, signalling liveness during a long
 // render. It fails if the job expired and was requeued to another worker.
-func (c *Client) Renew(ctx context.Context, id string) error {
-	return c.q.Renew(ctx, id, c.workerID)
+func (c *Client) Renew(ctx context.Context, id string, generation int64) error {
+	return c.q.Renew(ctx, id, c.workerID, generation)
 }
 
 // RecoverableParents lists parents that still own child jobs, for the periodic
@@ -204,8 +207,8 @@ func (c *Client) RecoverableParents(ctx context.Context) ([]string, error) {
 // ReportProgress records live render progress (last frame position) for a
 // running job owned by this worker. The wire contract lives in the public
 // queue client; this adapter only fills in the worker identity.
-func (c *Client) ReportProgress(ctx context.Context, id string, framesDone, framesTotal int64) error {
-	return c.q.ReportProgress(ctx, id, c.workerID, queueclient.Progress{
+func (c *Client) ReportProgress(ctx context.Context, id string, generation int64, framesDone, framesTotal int64) error {
+	return c.q.ReportProgress(ctx, id, c.workerID, generation, queueclient.Progress{
 		FramesDone:  int(framesDone),
 		TotalFrames: int(framesTotal),
 	})

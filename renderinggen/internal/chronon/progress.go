@@ -45,6 +45,7 @@ type progressEntry struct {
 }
 
 type progressState struct {
+	generation  int64
 	done, total int64
 	firstDone   int64
 	startAt     time.Time
@@ -68,10 +69,12 @@ func (t *ProgressTracker) entry(jobID string) *progressEntry {
 	return actual.(*progressEntry)
 }
 
-// Observe records a frame-position observation for jobID. The first
+// Observe records a frame-position observation for jobID. generation is the
+// lease generation of the claim being rendered; it travels with the snapshot so
+// progress reports are fenced exactly like terminal reports. The first
 // observation of a job becomes the FPS baseline, so a chunk that starts at
 // absolute frame 240 measures fps from its own start.
-func (t *ProgressTracker) Observe(jobID string, done, total int64) {
+func (t *ProgressTracker) Observe(jobID string, generation, done, total int64) {
 	if jobID == "" || total <= 0 {
 		return
 	}
@@ -82,6 +85,7 @@ func (t *ProgressTracker) Observe(jobID string, done, total int64) {
 		entry.state.startAt = now
 		entry.state.firstDone = done
 	}
+	entry.state.generation = generation
 	entry.state.done, entry.state.total = done, total
 	entry.state.lastFrameAt = now
 	entry.mu.Unlock()
@@ -107,11 +111,12 @@ func (t *ProgressTracker) Forget(jobID string) {
 // The caller must hold the entry's mutex: the state fields are read here.
 func snapshotFor(jobID string, st *progressState) *Progress {
 	p := &Progress{
-		JobID:       jobID,
-		FramesDone:  st.done,
-		FramesTotal: st.total,
-		LastFrameAt: st.lastFrameAt,
-		StartedAt:   st.startAt,
+		JobID:           jobID,
+		LeaseGeneration: st.generation,
+		FramesDone:      st.done,
+		FramesTotal:     st.total,
+		LastFrameAt:     st.lastFrameAt,
+		StartedAt:       st.startAt,
 	}
 	if st.total > 0 {
 		p.Percent = 100 * float64(st.done) / float64(st.total)
@@ -178,11 +183,12 @@ func (t *ProgressTracker) Current() *Progress {
 
 // Progress is an immutable progress snapshot for one job.
 type Progress struct {
-	JobID       string    `json:"job_id"`
-	FramesDone  int64     `json:"frames_done"`
-	FramesTotal int64     `json:"frames_total"`
-	Percent     float64   `json:"progress"`
-	FPS         float64   `json:"fps"`
-	LastFrameAt time.Time `json:"last_frame_at"`
-	StartedAt   time.Time `json:"started_at"`
+	JobID           string    `json:"job_id"`
+	LeaseGeneration int64     `json:"lease_generation"`
+	FramesDone      int64     `json:"frames_done"`
+	FramesTotal     int64     `json:"frames_total"`
+	Percent         float64   `json:"progress"`
+	FPS             float64   `json:"fps"`
+	LastFrameAt     time.Time `json:"last_frame_at"`
+	StartedAt       time.Time `json:"started_at"`
 }

@@ -84,7 +84,7 @@ func timingsFor(attempts int, backoff time.Duration) config.PipelineConfig {
 
 // leasedJob is a claimed job holding a lease.
 func leasedJob(lease time.Duration) *queue.Job {
-	return &queue.Job{ID: "job-1", JobType: queue.JobTypeOverlayRender, Lease: lease}
+	return &queue.Job{ID: "job-1", JobType: queue.JobTypeOverlayRender, Lease: lease, LeaseGeneration: 1}
 }
 
 // TestWithLeaseVoidAbortsWorkWhenTheLeaseIsLost is the invariant that matters
@@ -137,7 +137,7 @@ func TestRenewWithRetryDoesNotRetryAConflict(t *testing.T) {
 	f := newFakeQueue(t, http.StatusConflict)
 	q := f.client("worker-1")
 
-	if held := renewWithRetry(context.Background(), "job-1", q, time.Second, timingsFor(5, time.Millisecond)); held {
+	if held := renewWithRetry(context.Background(), "job-1", 7, q, time.Second, timingsFor(5, time.Millisecond)); held {
 		t.Fatal("a conflict must report the lease as lost")
 	}
 	if got := f.renewAttempts(); got != 1 {
@@ -154,7 +154,7 @@ func TestRenewWithRetryRetriesTransientFailures(t *testing.T) {
 	f := newFakeQueue(t, http.StatusInternalServerError, http.StatusServiceUnavailable, http.StatusOK)
 	q := f.client("worker-1")
 
-	if held := renewWithRetry(context.Background(), "job-1", q, time.Second, timingsFor(3, time.Millisecond)); !held {
+	if held := renewWithRetry(context.Background(), "job-1", 7, q, time.Second, timingsFor(3, time.Millisecond)); !held {
 		t.Fatal("a renewal that succeeded inside the retry budget must report the lease as held")
 	}
 	if got := f.renewAttempts(); got != 3 {
@@ -169,7 +169,7 @@ func TestRenewWithRetryGivesUpAfterTheBudget(t *testing.T) {
 	f := newFakeQueue(t, http.StatusInternalServerError)
 	q := f.client("worker-1")
 
-	if held := renewWithRetry(context.Background(), "job-1", q, time.Second, timingsFor(3, time.Millisecond)); held {
+	if held := renewWithRetry(context.Background(), "job-1", 7, q, time.Second, timingsFor(3, time.Millisecond)); held {
 		t.Fatal("an exhausted retry budget must report the lease as lost")
 	}
 	if got := f.renewAttempts(); got != 3 {
@@ -194,7 +194,7 @@ func TestRenewWithRetryHonoursCancellation(t *testing.T) {
 	cancel()
 
 	start := time.Now()
-	held := renewWithRetry(ctx, "job-1", q, time.Second, timingsFor(5, 10*time.Second))
+	held := renewWithRetry(ctx, "job-1", 7, q, time.Second, timingsFor(5, 10*time.Second))
 	elapsed := time.Since(start)
 
 	if held {
@@ -342,7 +342,7 @@ func TestConcurrentLeasesDoNotShareState(t *testing.T) {
 			if id == "lost" {
 				work = 10 * time.Second
 			}
-			job := &queue.Job{ID: id, JobType: queue.JobTypeOverlayRender, Lease: 20 * time.Millisecond}
+			job := &queue.Job{ID: id, JobType: queue.JobTypeOverlayRender, Lease: 20 * time.Millisecond, LeaseGeneration: 1}
 			results[i] = withLeaseVoid(context.Background(), job, q, timingsFor(2, time.Millisecond),
 				func(jobCtx context.Context) error {
 					select {

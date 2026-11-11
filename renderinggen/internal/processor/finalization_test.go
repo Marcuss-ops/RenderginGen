@@ -47,8 +47,8 @@ func (q *finalizerQueue) ClaimFinalization(context.Context, string) (*queue.Job,
 	}
 	return &queue.Job{ID: "parent", Lease: time.Hour}, true, nil
 }
-func (q *finalizerQueue) Renew(context.Context, string) error { return nil }
-func (q *finalizerQueue) Complete(_ context.Context, _ string, artifact queue.Artifact) error {
+func (q *finalizerQueue) Renew(context.Context, string, int64) error { return nil }
+func (q *finalizerQueue) Complete(_ context.Context, _ string, _ int64, artifact queue.Artifact) error {
 	q.completed = &artifact
 	return nil
 }

@@ -98,7 +98,7 @@ func runPrepPool(ctx context.Context, q *queue.Client, proc *processor.Processor
 				}
 				// Complete while the lease is still held: a completion after
 				// lease expiry would 409 and strand a finished artifact.
-				return q.Complete(jobCtx, job.ID, published)
+				return q.Complete(jobCtx, job.ID, job.LeaseGeneration, published)
 			})
 			if pubErr != nil {
 				processor.ReportFailure(ctx, q, job, pubErr)
@@ -125,16 +125,30 @@ func runPrepPool(ctx context.Context, q *queue.Client, proc *processor.Processor
 				return proc.Publish(jobCtx, job.ID, job.JobType, job.PublicationPolicy, artifact)
 			})
 			if publishErr != nil {
-				processor.ReportFailureWithArtifact(ctx, q, job.ID, artifact, publishErr)
+				processor.ReportFailureWithArtifact(ctx, q, job.ID, job.LeaseGeneration, artifact, publishErr)
 				closeJobLog(jobLog, job.ID)
 				continue
 			}
-			processor.ReportComplete(ctx, q, job.ID, published, true)
+			processor.ReportComplete(ctx, q, job.ID, job.LeaseGeneration, published, true)
 			closeJobLog(jobLog, job.ID)
 			continue
 		}
 
-		// Prepare-only jobs (overlay.prepare warm-up) finish here.
+		// Prepare-only jobs finish here; they never occupy a GPU lane.
+		if job.JobType == queue.JobTypeRenderPrepare {
+			artifact, prepErr := withLease(ctx, job, q, timings, func(jobCtx context.Context) (queue.Artifact, error) {
+				return proc.PrepareRenderPackage(jobCtx, job)
+			})
+			if prepErr != nil {
+				processor.ReportFailure(ctx, q, job, prepErr)
+				closeJobLog(jobLog, job.ID)
+				continue
+			}
+			processor.ReportComplete(ctx, q, job.ID, job.LeaseGeneration, artifact, false)
+			closeJobLog(jobLog, job.ID)
+			continue
+		}
+		// The pre-timing overlay.prepare warm-up remains a separate path.
 		if job.JobType == queue.JobTypeOverlayPrepare {
 			artifact, prepErr := withLease(ctx, job, q, timings, func(jobCtx context.Context) (queue.Artifact, error) {
 				return proc.Prepare(jobCtx, job)
@@ -144,7 +158,7 @@ func runPrepPool(ctx context.Context, q *queue.Client, proc *processor.Processor
 				closeJobLog(jobLog, job.ID)
 				continue
 			}
-			processor.ReportComplete(ctx, q, job.ID, artifact, false)
+			processor.ReportComplete(ctx, q, job.ID, job.LeaseGeneration, artifact, false)
 			closeJobLog(jobLog, job.ID)
 			continue
 		}
@@ -315,7 +329,7 @@ func runPostPool(ctx context.Context, q *queue.Client, proc *processor.Processor
 				// failed. hasDurableArtifact decides the transition: Rendered
 				// keeps such a job claimable for a publication-only retry;
 				// anything else is a render failure.
-				processor.ReportFailureWithArtifact(ctx, q, job.ID, artifact, err)
+				processor.ReportFailureWithArtifact(ctx, q, job.ID, job.LeaseGeneration, artifact, err)
 				cleanup()
 				closeJobLog(jobLog, job.ID)
 				continue
@@ -323,7 +337,7 @@ func runPostPool(ctx context.Context, q *queue.Client, proc *processor.Processor
 			jobLog.Infof("artifact: storage_key=%q sha256=%q size=%d copy_eligible=%t backend=%q frames=%d %dx%d",
 				artifact.StorageKey, artifact.ArtifactHash, artifact.SizeBytes,
 				artifact.CopyEligible, artifact.Backend, artifact.FrameCount, artifact.Width, artifact.Height)
-			processor.ReportComplete(ctx, q, job.ID, artifact, true)
+			processor.ReportComplete(ctx, q, job.ID, job.LeaseGeneration, artifact, true)
 			if parentFinalizer != nil && job.ParentJobID != "" {
 				tryFinalizeParent(ctx, parentFinalizer, job.ParentJobID)
 			}

@@ -18,18 +18,19 @@ type recordingQueue struct {
 
 type report struct {
 	id          string
+	generation  int64
 	framesDone  int64
 	framesTotal int64
 }
 
-func (r *recordingQueue) ReportProgress(_ context.Context, id string, done, total int64) error {
+func (r *recordingQueue) ReportProgress(_ context.Context, id string, generation, done, total int64) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	if r.failN > 0 {
 		r.failN--
 		return context.DeadlineExceeded
 	}
-	r.calls = append(r.calls, report{id: id, framesDone: done, framesTotal: total})
+	r.calls = append(r.calls, report{id: id, generation: generation, framesDone: done, framesTotal: total})
 	return nil
 }
 
@@ -43,7 +44,7 @@ func (r *recordingQueue) all() []report {
 // most recent snapshot to the queue.
 func TestPushOnceReportsTrackedJob(t *testing.T) {
 	tr := chronon.NewProgressTracker()
-	tr.Observe("job-1", 485, 1800)
+	tr.Observe("job-1", 7, 485, 1800)
 	q := &recordingQueue{}
 	p := New(q, tr, time.Second)
 
@@ -53,7 +54,7 @@ func TestPushOnceReportsTrackedJob(t *testing.T) {
 	if len(calls) != 1 {
 		t.Fatalf("want 1 report, got %d", len(calls))
 	}
-	if calls[0].id != "job-1" || calls[0].framesDone != 485 || calls[0].framesTotal != 1800 {
+	if calls[0].id != "job-1" || calls[0].generation != 7 || calls[0].framesDone != 485 || calls[0].framesTotal != 1800 {
 		t.Fatalf("report = %+v, want job-1 485/1800", calls[0])
 	}
 }
@@ -76,12 +77,12 @@ func TestPushOnceIdleIsNoOp(t *testing.T) {
 // progress report must never fail a healthy render.
 func TestPushOnceFailureTolerant(t *testing.T) {
 	tr := chronon.NewProgressTracker()
-	tr.Observe("job-1", 10, 100)
+	tr.Observe("job-1", 7, 10, 100)
 	q := &recordingQueue{failN: 1}
 	p := New(q, tr, time.Second)
 
 	p.PushOnce(context.Background()) // fails, must not panic/propagate
-	tr.Observe("job-1", 20, 100)
+	tr.Observe("job-1", 7, 20, 100)
 	p.PushOnce(context.Background()) // succeeds
 
 	calls := q.all()
@@ -123,7 +124,7 @@ func TestRunThrottlesToInterval(t *testing.T) {
 
 	// Many milestones, one push per tick.
 	for i := 0; i < 5; i++ {
-		tr.Observe("job-throttle", int64(100*(i+1)), 1000)
+		tr.Observe("job-throttle", 7, int64(100*(i+1)), 1000)
 		time.Sleep(10 * time.Millisecond)
 	}
 	time.Sleep(80 * time.Millisecond) // allow a couple of ticks

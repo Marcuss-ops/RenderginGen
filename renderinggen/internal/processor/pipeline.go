@@ -39,7 +39,9 @@ import (
 type PreparedJob struct {
 	Job             *queue.Job
 	Workspace       *workspace.Workspace
-	Plan            *overlay.Plan      // typed concrete Chronon plan (post-compile, marshaled once at WritePlan)
+	Plan            *overlay.Plan    // typed concrete Chronon plan (post-compile, marshaled once at WritePlan)
+	ResolvedAssets  []queue.AssetRef // content-addressed assets materialized for this final plan
+	PreparedOverlay overlay.PreparedPackage
 	Stats           overlay.Stats      // semantic counters for the ledger
 	InputBytes      int64              // materialized input size for the ledger
 	Metrics         map[string]float64 // phase metrics accumulated so far
@@ -109,15 +111,46 @@ func (p *Processor) PrepareJob(ctx context.Context, job *queue.Job) (*PreparedJo
 	// because a nil/invalid job never reaches the pipeline (validate rejects
 	// it), and binding would dereference it.
 	workerlog.BindJob(job.ParentJobID, job.ID)
-	// One compile pass produces the plan AND the ledger counters, so the
-	// artifact metrics can never drift from the layers that were emitted.
-	compileStart := time.Now()
-	result, err := overlay.CompileSemantic(job.RenderPlan)
-	if err != nil {
-		return nil, err
+	var (
+		result           overlay.CompileResult
+		compiledSemantic bool
+		stats            overlay.Stats
+		plan             *overlay.Plan
+		compiledAssets   []overlay.Asset
+		preparedPackage  overlay.PreparedPackage
+		err              error
+	)
+	if job.PreparedRenderPackage != nil {
+		// A prepared package is the compiler's immutable output for the whole
+		// family. Verify its source identities before using it, then stage its
+		// content-addressed assets into this worker's own workspace.
+		packageStart := time.Now()
+		pkg, loadErr := p.loadPreparedRenderPackage(ctx, job)
+		if loadErr != nil {
+			return nil, fmt.Errorf("processor: load prepared render package: %w", loadErr)
+		}
+		plan = &overlay.Plan{}
+		if err := json.Unmarshal(pkg.Plan, plan); err != nil {
+			return nil, fmt.Errorf("processor: decode compiled plan from prepared package: %w", err)
+		}
+		stats, preparedPackage = pkg.Stats, pkg.Overlay
+		compiledAssets = make([]overlay.Asset, len(pkg.Assets))
+		for i, asset := range pkg.Assets {
+			compiledAssets[i] = overlay.Asset{Hash: asset.Hash, LogicalPath: asset.LogicalPath}
+		}
+		record(metricnames.PrepareSceneCompileStem, packageStart)
+	} else {
+		// One compile pass produces the plan AND the ledger counters, so the
+		// artifact metrics can never drift from the layers that were emitted.
+		compileStart := time.Now()
+		result, err = overlay.CompileSemantic(job.RenderPlan)
+		if err != nil {
+			return nil, err
+		}
+		record(metricnames.PrepareSceneCompileStem, compileStart)
+		compiledSemantic = true
+		stats, plan, compiledAssets, preparedPackage = result.Stats, result.Plan, result.Assets, result.Prepared
 	}
-	record(metricnames.PrepareSceneCompileStem, compileStart)
-	stats, plan, compiledAssets, preparedPackage := result.Stats, result.Plan, result.Assets, result.Prepared
 	metrics[metricnames.OverlayItemCount] = float64(stats.SemanticItemCount)
 	if stats.SemanticItemCount > 1 {
 		metrics[metricnames.OverlayRenderBatch] = 1
@@ -129,7 +162,7 @@ func (p *Processor) PrepareJob(ctx context.Context, job *queue.Job) (*PreparedJo
 	// compiler's gate can never become a rendered downgrade — a template_id the
 	// compile pass could not place is a prepare-boundary failure, before any
 	// workspace, download, font stage or GPU lane is spent.
-	if len(result.UnknownTemplates) > 0 {
+	if compiledSemantic && len(result.UnknownTemplates) > 0 {
 		metrics[metricnames.UnknownTemplates] = float64(len(result.UnknownTemplates))
 		return nil, fmt.Errorf("processor: %d item template_id(s) resolved to no registry row and must not be rendered: %s",
 			len(result.UnknownTemplates), strings.Join(result.UnknownTemplates, ", "))
@@ -289,7 +322,8 @@ func (p *Processor) PrepareJob(ctx context.Context, job *queue.Job) (*PreparedJo
 	// The subtitle contract rides on the compile result (extracted by the SAME
 	// decode pass that lowered the plan), so the raw semantic document is
 	// never re-read on the prepare path.
-	if sub := result.Subtitle; sub.Present && sub.Burn {
+	if compiledSemantic && result.Subtitle.Present && result.Subtitle.Burn {
+		sub := result.Subtitle
 		var subtitlePath, fontPath string
 		for _, asset := range assets {
 			if strings.EqualFold(asset.Hash, sub.Hash) {
@@ -422,6 +456,8 @@ func (p *Processor) PrepareJob(ctx context.Context, job *queue.Job) (*PreparedJo
 		Job:                   job,
 		Workspace:             ws,
 		Plan:                  plan,
+		ResolvedAssets:        append([]queue.AssetRef(nil), assets...),
+		PreparedOverlay:       preparedPackage,
 		Stats:                 stats,
 		InputBytes:            inputBytes,
 		Metrics:               metrics,
@@ -432,7 +468,13 @@ func (p *Processor) PrepareJob(ctx context.Context, job *queue.Job) (*PreparedJo
 		// (no source audio to mux) is the fragmented MP4 whose bytes are final
 		// while appended — the container and the tail-upload lane must never
 		// diverge, or the lane would stream a file whose header is backpatched.
-		FragmentedMP4:  audioPath == "",
+		//
+		// V3 is the exception: its bytes are canonicalized AFTER Chronon returns
+		// (the canonical avcC is an x264 identity, not an NVENC one), so the
+		// render output must be a classic MP4 that can be atomically replaced.
+		// Streaming a fragmented file that is about to be re-encoded would
+		// install bytes the receipt no longer describes.
+		FragmentedMP4:  audioPath == "" && !isCanonicalOverlayV3(metadata.ProfileID),
 		Segments:       segments,
 		SegmentItemIDs: segmentItemIDs,
 		totalStart:     totalStart,

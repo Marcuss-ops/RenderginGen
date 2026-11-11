@@ -15,7 +15,7 @@ func TestClientClaimRenewComplete(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("POST /jobs/claim", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"id":"job-1","schema":"renderinggen.job","version":1,"render_plan":{"o":1},"lease":60000000000}`))
+		_, _ = w.Write([]byte(`{"id":"job-1","schema":"renderinggen.job","version":1,"render_plan":{"o":1},"lease":60000000000,"lease_generation":7}`))
 	})
 	mux.HandleFunc("POST /jobs/job-1/renew", func(w http.ResponseWriter, r *http.Request) {
 		atomic.AddInt32(&renewed, 1)
@@ -40,14 +40,14 @@ func TestClientClaimRenewComplete(t *testing.T) {
 		t.Fatalf("want lease 60s, got %s", job.Lease)
 	}
 
-	if err := c.Renew(context.Background(), job.ID); err != nil {
+	if err := c.Renew(context.Background(), job.ID, job.LeaseGeneration); err != nil {
 		t.Fatalf("renew: %v", err)
 	}
 	if atomic.LoadInt32(&renewed) != 1 {
 		t.Fatalf("want 1 renew call, got %d", renewed)
 	}
 
-	if err := c.Complete(context.Background(), job.ID, Artifact{}); err != nil {
+	if err := c.Complete(context.Background(), job.ID, job.LeaseGeneration, Artifact{}); err != nil {
 		t.Fatalf("complete: %v", err)
 	}
 }
@@ -87,7 +87,7 @@ func TestClientFail(t *testing.T) {
 	defer ts.Close()
 
 	c := New(ts.URL, "w1")
-	if err := c.Fail(context.Background(), "job-1", "boom"); err != nil {
+	if err := c.Fail(context.Background(), "job-1", 7, "boom"); err != nil {
 		t.Fatal(err)
 	}
 	if gotReason != "boom" {

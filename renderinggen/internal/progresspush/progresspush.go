@@ -23,7 +23,7 @@ const DefaultInterval = 10 * time.Second
 // Queue is the subset of the queue client the pusher needs. *queue.Client
 // implements it via ReportProgress; tests supply their own recorder.
 type Queue interface {
-	ReportProgress(ctx context.Context, id string, framesDone, framesTotal int64) error
+	ReportProgress(ctx context.Context, id string, generation int64, framesDone, framesTotal int64) error
 }
 
 // Pusher relays tracker snapshots to the queue at a throttled interval.
@@ -69,7 +69,7 @@ func (p *Pusher) PushOnce(ctx context.Context) {
 	if snap == nil || snap.JobID == "" {
 		return
 	}
-	if err := p.queue.ReportProgress(ctx, snap.JobID, snap.FramesDone, snap.FramesTotal); err != nil {
+	if err := p.queue.ReportProgress(ctx, snap.JobID, snap.LeaseGeneration, snap.FramesDone, snap.FramesTotal); err != nil {
 		log.Printf("progress push: job %s: %v", snap.JobID, err)
 	}
 }

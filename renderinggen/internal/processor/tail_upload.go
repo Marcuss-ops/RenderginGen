@@ -121,6 +121,12 @@ func (u *stagedUpload) Duration() time.Duration {
 // random suffix gives per-attempt uniqueness, so a retry can never race a
 // stale session for the same job (the store's last-writer-wins replacement
 // would otherwise corrupt an in-flight upload).
+//
+// The suffix is RESERVED before truncation. Truncating the concatenation would
+// erase the entire random tail for a job id of 128+ characters (ValidateJobID
+// admits up to 256), making two retries of that job produce the exact same
+// session and reintroducing the concurrent-writer race the suffix exists to
+// prevent.
 func stagingSessionID(jobID string) string {
 	var b strings.Builder
 	for _, r := range jobID {
@@ -137,9 +143,10 @@ func stagingSessionID(jobID string) string {
 	}
 	var extra [8]byte
 	_, _ = rand.Read(extra[:])
-	id += "-" + hex.EncodeToString(extra[:])
-	if len(id) > 128 {
-		id = id[:128]
+	suffix := "-" + hex.EncodeToString(extra[:])
+	maxPrefix := 128 - len(suffix)
+	if len(id) > maxPrefix {
+		id = id[:maxPrefix]
 	}
-	return id
+	return id + suffix
 }

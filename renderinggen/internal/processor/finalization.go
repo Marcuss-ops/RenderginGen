@@ -21,8 +21,8 @@ import (
 type ParentQueue interface {
 	ClaimFinalization(context.Context, string) (*queue.Job, bool, error)
 	Children(context.Context, string) ([]*queue.Job, error)
-	Complete(context.Context, string, queue.Artifact) error
-	Renew(context.Context, string) error
+	Complete(context.Context, string, int64, queue.Artifact) error
+	Renew(context.Context, string, int64) error
 }
 
 type ParentFinalizer struct {
@@ -140,7 +140,7 @@ func (f *ParentFinalizer) finalize(ctx context.Context, parentID string, start, 
 				case <-workCtx.Done():
 					return
 				case <-ticker.C:
-					if err := f.queue.Renew(workCtx, parentID); err != nil {
+					if err := f.queue.Renew(workCtx, parentID, claimedJob.LeaseGeneration); err != nil {
 						cancel()
 						return
 					}
@@ -237,7 +237,7 @@ func (f *ParentFinalizer) finalize(ctx context.Context, parentID string, start, 
 	if err := workCtx.Err(); err != nil {
 		return false, queue.Artifact{}, err
 	}
-	if err := f.queue.Complete(workCtx, parentID, artifact); err != nil {
+	if err := f.queue.Complete(workCtx, parentID, claimedJob.LeaseGeneration, artifact); err != nil {
 		return false, queue.Artifact{}, err
 	}
 	return true, artifact, nil

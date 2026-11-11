@@ -45,7 +45,7 @@ func TestFailPermanentlyMakesJobTerminal(t *testing.T) {
 		t.Fatalf("claim: status=%d", resp.StatusCode)
 	}
 	resp.Body.Close()
-	resp = post(t, ts.URL+"/jobs/drive-terminal/fail-permanent", `{"worker":"worker-1","data":{"reason":"Drive publisher unavailable"}}`)
+	resp = post(t, ts.URL+"/jobs/drive-terminal/fail-permanent", `{"worker":"worker-1","lease_generation":1,"data":{"reason":"Drive publisher unavailable"}}`)
 	if resp.StatusCode != http.StatusNoContent {
 		t.Fatalf("permanent fail: status=%d", resp.StatusCode)
 	}
@@ -97,7 +97,7 @@ func TestSubmitClaimCompleteFlow(t *testing.T) {
 	}
 
 	// Complete.
-	resp = post(t, ts.URL+"/jobs/job-1/complete", `{"worker":"w1","data":{"storage_key":"sha-job-1","artifact_hash":"sha-job-1","size_bytes":1,"content_type":"video/mp4"}}`)
+	resp = post(t, ts.URL+"/jobs/job-1/complete", `{"worker":"w1","lease_generation":1,"data":{"storage_key":"sha-job-1","artifact_hash":"sha-job-1","size_bytes":1,"content_type":"video/mp4"}}`)
 	if resp.StatusCode != http.StatusNoContent {
 		t.Fatalf("complete: want 204, got %d", resp.StatusCode)
 	}
@@ -170,7 +170,7 @@ func TestSubmitIdempotencyReturnsCanonicalJob(t *testing.T) {
 	}
 	first.Body.Close()
 
-	second := post(t, ts.URL+"/jobs", `{"id":"job-retry-generated","idempotency_key":"pipeline-123:scene-04:overlay-v1","render_plan":{"different":true}}`)
+	second := post(t, ts.URL+"/jobs", body)
 	if second.StatusCode != http.StatusOK {
 		t.Fatalf("retry submit: got %d", second.StatusCode)
 	}
@@ -183,6 +183,11 @@ func TestSubmitIdempotencyReturnsCanonicalJob(t *testing.T) {
 	}
 	if secondResponse.ID != firstResponse.ID {
 		t.Fatalf("canonical id changed: first=%q retry=%q", firstResponse.ID, secondResponse.ID)
+	}
+	changed := post(t, ts.URL+"/jobs", `{"id":"job-retry-generated","idempotency_key":"pipeline-123:scene-04:overlay-v1","render_plan":{"different":true}}`)
+	defer changed.Body.Close()
+	if changed.StatusCode != http.StatusConflict {
+		t.Fatalf("changed request under same idempotency key: want 409, got %d", changed.StatusCode)
 	}
 }
 
@@ -228,13 +233,13 @@ func TestRenewEndpoint(t *testing.T) {
 		t.Fatalf("claim: want 200, got %d", resp.StatusCode)
 	}
 
-	resp = post(t, ts.URL+"/jobs/job-1/renew", `{"worker":"w1"}`)
+	resp = post(t, ts.URL+"/jobs/job-1/renew", `{"worker":"w1","lease_generation":1}`)
 	if resp.StatusCode != http.StatusNoContent {
 		t.Fatalf("renew: want 204, got %d", resp.StatusCode)
 	}
 
 	// Wrong worker can't renew.
-	resp = post(t, ts.URL+"/jobs/job-1/renew", `{"worker":"w2"}`)
+	resp = post(t, ts.URL+"/jobs/job-1/renew", `{"worker":"w2","lease_generation":1}`)
 	if resp.StatusCode != http.StatusConflict {
 		t.Fatalf("wrong-worker renew: want 409, got %d", resp.StatusCode)
 	}
@@ -246,7 +251,7 @@ func TestCompletePersistsArtifact(t *testing.T) {
 	post(t, ts.URL+"/jobs", `{"id":"job-1","schema":"renderinggen.job","version":1,"render_plan":{"n":1}}`)
 	post(t, ts.URL+"/jobs/claim", `{"worker":"w1"}`)
 
-	completeBody := `{"worker":"w1","data":{` +
+	completeBody := `{"worker":"w1","lease_generation":1,"data":{` +
 		`"kind":"segment","storage_key":"abc123","artifact_url":"https://store/objects/abc123",` +
 		`"artifact_hash":"abc123","content_type":"video/mp4","size_bytes":42,` +
 		`"backend":"software","chronon_version":"0.1.0"}}`
@@ -360,7 +365,7 @@ func TestCancelEndpointRejectsTerminalAndMissingJobs(t *testing.T) {
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("claim: got %d", resp.StatusCode)
 	}
-	resp = post(t, ts.URL+"/jobs/job-done/complete", `{"worker":"w1","data":{"storage_key":"k","artifact_hash":"h","size_bytes":1,"content_type":"video/mp4"}}`)
+	resp = post(t, ts.URL+"/jobs/job-done/complete", `{"worker":"w1","lease_generation":1,"data":{"storage_key":"k","artifact_hash":"h","size_bytes":1,"content_type":"video/mp4"}}`)
 	if resp.StatusCode != http.StatusNoContent {
 		t.Fatalf("complete: got %d", resp.StatusCode)
 	}
