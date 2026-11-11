@@ -1,0 +1,56 @@
+{
+  "timestamp": "2026-11-11T11:37:30Z",
+  "folder_id": "1J_xUGo_bchzXDIGqSX04CU44c_Dm3SxS",
+  "items": [
+    {
+      "name": "10_chronon_procedural_gyroscope_clean_1080p.mp4",
+      "resolution": "1920x1080",
+      "fps": 60,
+      "duration_sec": 4.0,
+      "description": "Vulkan GPU-rendered high-precision 3-axis cardan gyroscope showcase (clean studio 3D render). Completely solves the previous blackout issue (0 black frames across all 240 frames), incorporates solid studio cyclorama background and titanium/gunmetal pedestal with floor shadow catcher, rigid parent-child welded mechanical gimbal joints (zero floating components), high-contrast 360 RPM flywheel spin with perimeter inertia markers, and 6-layer merged geometry pipeline rendered via NVIDIA RTX A4000 Vulkan backend.",
+      "drive_id": "1sPbJreFv2ZUC3RNZVMXdBb2mYo2qgUku",
+      "drive_link": "https://drive.google.com/file/d/1sPbJreFv2ZUC3RNZVMXdBb2mYo2qgUku/view?usp=drivesdk"
+    },
+    {
+      "name": "11_chronon_procedural_gyroscope_technical_1080p.mp4",
+      "resolution": "1920x1080",
+      "fps": 60,
+      "duration_sec": 4.0,
+      "description": "Vulkan GPU-rendered technical telemetry edition of the precision 3-axis cardan gyroscope showcase with high-tech HUD overlay, safe-area reticles, telemetry labels, and procedural primitive annotations at native 1080p 60fps.",
+      "drive_id": "1nSeywEPC4Gm6OT31v7kZR-Q_CBFTmYgD",
+      "drive_link": "https://drive.google.com/file/d/1nSeywEPC4Gm6OT31v7kZR-Q_CBFTmYgD/view?usp=drivesdk"
+    },
+    {
+      "name": "08_chronon_new_geometries_showcase_1080p.mp4",
+      "resolution": "1920x1080",
+      "fps": 60,
+      "duration_sec": 4.0,
+      "drive_id": "16lSYjtXzE49cIRsMbAJia0to0_oIf8-6",
+      "drive_link": "https://drive.google.com/file/d/16lSYjtXzE49cIRsMbAJia0to0_oIf8-6/view?usp=drivesdk"
+    },
+    {
+      "name": "09_chronon_new_geometries_clean_1080p.mp4",
+      "resolution": "1920x1080",
+      "fps": 60,
+      "duration_sec": 4.0,
+      "drive_id": "1NzGiw_ATFRTqIg-4ywMyQYav6owZcq9X",
+      "drive_link": "https://drive.google.com/file/d/1NzGiw_ATFRTqIg-4ywMyQYav6owZcq9X/view?usp=drivesdk"
+    },
+    {
+      "name": "06_roblox_short_noob_wave_1080p.mp4",
+      "resolution": "1920x1080",
+      "fps": 60,
+      "duration_sec": 4.0,
+      "drive_id": "1Hwt4yc980cw4rco23rZ7q9PUm5XN9d9U",
+      "drive_link": "https://drive.google.com/file/d/1Hwt4yc980cw4rco23rZ7q9PUm5XN9d9U/view?usp=drivesdk"
+    },
+    {
+      "name": "07_roblox_short_clean_3d_1080p.mp4",
+      "resolution": "1920x1080",
+      "fps": 60,
+      "duration_sec": 4.0,
+      "drive_id": "11qPdXwHDnNkFmEJHc_-xaeKzRznIwxZS",
+      "drive_link": "https://drive.google.com/file/d/11qPdXwHDnNkFmEJHc_-xaeKzRznIwxZS/view?usp=drivesdk"
+    }
+  ]
+}

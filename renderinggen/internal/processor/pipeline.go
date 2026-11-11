@@ -52,7 +52,9 @@ type PreparedJob struct {
 	// ONLY when the source rate differs, so a matching source keeps the
 	// byte-identical copy path.
 	AudioTargetSampleRate int
-	// NativeCertified is true only when Chronon's native Vulkan/NVENC receipt
+	// NativeCertified is true when the render ran on Chronon's native
+	// Vulkan/NVENC lane. Canonicalization preserves it: the emitted bytes are a
+	// canonical re-encode of that render, not a different render path.
 	// gate certified a source-video execution. Image/text-only compositions
 	// may use the GPU compositor, but their host-frame pipe handoff is not the
 	// native-surface contract.
@@ -469,12 +471,13 @@ func (p *Processor) PrepareJob(ctx context.Context, job *queue.Job) (*PreparedJo
 		// while appended — the container and the tail-upload lane must never
 		// diverge, or the lane would stream a file whose header is backpatched.
 		//
-		// V3 is the exception: its bytes are canonicalized AFTER Chronon returns
-		// (the canonical avcC is an x264 identity, not an NVENC one), so the
-		// render output must be a classic MP4 that can be atomically replaced.
+		// Canonicalized profiles are the exception: their bytes are rewritten
+		// AFTER Chronon returns (the canonical avcC is an x264 identity, not an
+		// NVENC one), so the render output must be a classic MP4 that can be
+		// atomically replaced.
 		// Streaming a fragmented file that is about to be re-encoded would
 		// install bytes the receipt no longer describes.
-		FragmentedMP4:  audioPath == "" && !isCanonicalOverlayV3(metadata.ProfileID),
+		FragmentedMP4:  audioPath == "" && !isCanonicalizedOutputProfile(metadata.ProfileID),
 		Segments:       segments,
 		SegmentItemIDs: segmentItemIDs,
 		totalStart:     totalStart,

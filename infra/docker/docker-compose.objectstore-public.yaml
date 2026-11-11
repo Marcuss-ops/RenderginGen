@@ -1,7 +1,10 @@
 services:
   objectstore:
     ports:
-      - "0.0.0.0:443:9443"
+      # 443 is owned by the host Nginx TLS terminator. Keep the object store's
+      # TLS listener local-only; Nginx proxies /objects/ to the plain HTTP
+      # listener on 127.0.0.1:9000.
+      - "127.0.0.1:9443:9443"
     env_file:
       - /etc/pipelinegen/objectstore.env
     environment:

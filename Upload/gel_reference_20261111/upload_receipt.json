@@ -1,0 +1,10 @@
+{
+  "schema": "gel.reference.drive.receipt.v1",
+  "created_utc": "2026-11-11T16:52:06.904866+00:00",
+  "drive_subfolder": "GEL_Reference_20261111",
+  "drive_subfolder_id": "18XoX8y7UiyYGZkUe_TTE8YHJ3IEpBkCb",
+  "file_count": 9,
+  "manifest_name": "upload_manifest.json",
+  "manifest_drive_file_id": "1RIPh9ROLHcbCtwS6tdaOAPAN30xF11JB",
+  "manifest_drive_url": "https://drive.google.com/file/d/1RIPh9ROLHcbCtwS6tdaOAPAN30xF11JB/view?usp=drivesdk"
+}
