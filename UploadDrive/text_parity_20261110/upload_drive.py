@@ -2,10 +2,10 @@
 """Upload the 1080p text-parity demo bundle to Google Drive.
 
 Credentials resolve like the other UploadDrive scripts: VELOX_CONFIG_DIR,
-then $XDG_CONFIG_HOME/velox, then ~/.config/velox. On this host the credentials
-live in /home/pierone/.config/velox, so run with:
+then $XDG_CONFIG_HOME/velox, then ~/.config/velox. Use the same standard
+location explicitly when running from another directory:
 
-    VELOX_CONFIG_DIR=/home/pierone/.config/velox python3 upload_drive.py
+    VELOX_CONFIG_DIR="$HOME/.config/velox" python3 upload_drive.py
 """
 from __future__ import annotations
 

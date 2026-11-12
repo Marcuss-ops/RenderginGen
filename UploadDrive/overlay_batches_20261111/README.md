@@ -43,6 +43,6 @@ Subfolder: `Overlay_Batches_20261111`
 Caricamento:
 
 ```bash
-VELOX_CONFIG_DIR=/home/pierone/.config/velox \
+VELOX_CONFIG_DIR="$HOME/.config/velox" \
   python3 RenderingGen/UploadDrive/overlay_batches_20261111/upload_drive.py
 ```

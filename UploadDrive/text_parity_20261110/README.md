@@ -48,7 +48,7 @@ fail-closed (T2-01).
 ```bash
 python3 RenderingGen/UploadDrive/text_parity_20261110/make_plans.py
 python3 RenderingGen/UploadDrive/text_parity_20261110/render_bundle.py
-VELOX_CONFIG_DIR=/home/pierone/.config/velox \
+VELOX_CONFIG_DIR="$HOME/.config/velox" \
   python3 RenderingGen/UploadDrive/text_parity_20261110/upload_drive.py
 ```
 
