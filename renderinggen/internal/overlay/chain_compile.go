@@ -223,6 +223,20 @@ func compileChainItem(ri resolvedItem, src *semanticPlan, registry *assetRegistr
 	if err != nil {
 		return nil, err
 	}
+	// Maps are standalone by contract. A hand-built mixed/image/text chain
+	// carrying a map would lower a georeferenced full-canvas segment inside a
+	// container that cannot validate its LOD window; reject it before any
+	// layer is produced. A map_chain, conversely, is only valid when every
+	// segment actually carries a map.
+	mapChain := ri.Kind == KindMapChain
+	for n, seg := range segments {
+		if !mapChain && seg.Map != nil {
+			return nil, fmt.Errorf("overlay: chain item %q segment %d carries a map; maps must stay standalone", ri.Item.ID, n)
+		}
+		if mapChain && seg.Map == nil {
+			return nil, fmt.Errorf("overlay: map chain item %q segment %d has no map payload", ri.Item.ID, n)
+		}
+	}
 	out := make([]Layer, 0, len(segments))
 	for n, seg := range segments {
 		if seg.DurationUS <= 0 || seg.StartUS < 0 || seg.StartUS > int64(^uint64(0)>>1)-seg.DurationUS {

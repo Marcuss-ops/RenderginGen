@@ -15,15 +15,16 @@ import (
 	queue "github.com/Marcuss-ops/RenderingGen/queue/client"
 )
 
-// fakeQueue records submissions; -existing marks which job IDs answer 409.
+// fakeQueue records submissions; jobs contains the IDs that answer an exact
+// replay with HTTP 200, matching the real queue's verified-replay contract.
 type fakeQueue struct {
-	mu        sync.Mutex
-	jobs      map[string]bool
-	getOn409  bool
-	submits   int
-	creates   int // submit POSTs that actually created a job (201)
-	gets      int
-	failAfter int // when > 0, fail the Nth submit with a 500
+	mu          sync.Mutex
+	jobs        map[string]bool
+	getExisting bool
+	submits     int
+	creates     int // submit POSTs that actually created a job (201)
+	gets        int
+	failAfter   int // when > 0, fail the Nth submit with a 500
 }
 
 func (f *fakeQueue) handler(t *testing.T) http.Handler {
@@ -45,8 +46,9 @@ func (f *fakeQueue) handler(t *testing.T) http.Handler {
 			return
 		}
 		if f.jobs[body.ID] {
-			w.WriteHeader(http.StatusConflict)
-			_, _ = w.Write([]byte("job already exists"))
+			// HTTP 200 is the queue's verified exact-replay result. A 409
+			// means the existing request is unverified and must fail closed.
+			w.WriteHeader(http.StatusOK)
 			return
 		}
 		f.jobs[body.ID] = true
@@ -58,7 +60,7 @@ func (f *fakeQueue) handler(t *testing.T) http.Handler {
 		defer f.mu.Unlock()
 		f.gets++
 		id := r.URL.Path[len("/jobs/"):]
-		if !f.getOn409 || !f.jobs[id] {
+		if !f.getExisting || !f.jobs[id] {
 			http.Error(w, "not found", http.StatusNotFound)
 			return
 		}
@@ -94,7 +96,7 @@ func TestSubmitAllFreshBatch(t *testing.T) {
 }
 
 func TestSubmitAllReplayIsIdempotent(t *testing.T) {
-	fq := &fakeQueue{jobs: map[string]bool{}, getOn409: true}
+	fq := &fakeQueue{jobs: map[string]bool{}, getExisting: true}
 	srv := httptest.NewServer(fq.handler(t))
 	defer srv.Close()
 	client := queue.New(srv.URL)
@@ -112,7 +114,7 @@ func TestSubmitAllReplayIsIdempotent(t *testing.T) {
 	}
 	// Across both runs the queue must have created exactly one job per
 	// logical video — the whole point of idempotent batch submission. The
-	// replay POSTs again (409s) but must not duplicate anything.
+	// replay POSTs again (verified 200s) but must not duplicate anything.
 	if fq.creates != 2 {
 		t.Fatalf("queue created %d jobs across both runs, want 2", fq.creates)
 	}
@@ -137,7 +139,7 @@ func TestSubmitAllStopsOnQueueError(t *testing.T) {
 func TestSubmitAllRejectsInconsistentExisting(t *testing.T) {
 	// A 409 whose job cannot be read back is a queue inconsistency: the
 	// submitter must surface it, never silently count it as success.
-	fq := &fakeQueue{jobs: map[string]bool{}} // getOn409=false → Get returns 404
+	fq := &fakeQueue{jobs: map[string]bool{}} // getExisting=false → Get returns 404
 	srv := httptest.NewServer(fq.handler(t))
 	defer srv.Close()
 	// Pre-seed the jobs map so submits 409 but Get 404s is impossible in the

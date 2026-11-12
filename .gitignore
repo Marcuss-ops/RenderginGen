@@ -141,3 +141,11 @@ renderinggen/chunk-overlap-bench
 # Locally built helper binary (2026-11-05): compiled output with debug_info,
 # rebuilt from the Go sources; never committed.
 renderinggen/drive-upload
+
+# Derived render outputs are operational artifacts, not source. Source plates
+# under assets/backgrounds/, fixtures under testdata/ and compact evidence
+# under evidence/ stay tracked. Every removal is recorded, with SHA-256, in
+# artifacts-retention/media-retention-2026-11-11.json.
+/Upload/**
+/UploadDrive/**
+/hdr_bokeh_focus_pull_20261108/**

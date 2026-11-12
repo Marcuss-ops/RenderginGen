@@ -2,6 +2,7 @@ package overlay
 
 import (
 	"encoding/json"
+	"fmt"
 	"strings"
 	"testing"
 )
@@ -183,6 +184,101 @@ func TestCompileMapChainExpandsMapSegments(t *testing.T) {
 
 // A chain whose segments escape the item window fails closed instead of
 // rendering a mistimed video.
+// A producer image_chain with five independently selected images must lower
+// to five distinct visual segments — each with its own asset and motion — and
+// never collapse into one composite image. This is the consumer half of the
+// PipelineGen 5-images -> 5-motions golden.
+func TestCompileFiveImageChainKeepsFiveDistinctVisualSegments(t *testing.T) {
+	motions := []string{
+		"image_focus_reveal",
+		"image_roll_depth_in",
+		"image_photo_drop",
+		"image_spotlight_focus",
+		"image_parallax_frame",
+	}
+	segments := make([]map[string]any, 0, len(motions))
+	containerRefs := make([]map[string]any, 0, len(motions))
+	for i, motion := range motions {
+		ref := map[string]any{
+			"asset_id":   fmt.Sprintf("img-%d", i),
+			"sha256":     strings.Repeat(fmt.Sprintf("%x", i+1), 64),
+			"url":        fmt.Sprintf("https://example.test/img-%d.jpg", i),
+			"media_type": "image/jpeg",
+		}
+		containerRefs = append(containerRefs, ref)
+		segments = append(segments, map[string]any{
+			"text": "", "motion_id": motion, "preset_id": "image_scale_in",
+			"template_id": "IMAGE_OVERLAY", "kind": "image",
+			"start_us": i * 3_000_000, "duration_us": 2_800_000,
+			"assets": []map[string]any{{
+				"asset_id":   fmt.Sprintf("img-%d", i),
+				"sha256":     strings.Repeat(fmt.Sprintf("%x", i+1), 64),
+				"url":        fmt.Sprintf("https://example.test/img-%d.jpg", i),
+				"media_type": "image/jpeg",
+			}},
+		})
+	}
+	plan := map[string]any{
+		"schema_version": "renderinggen.overlay-plan.v1", "plan_id": "five-images", "video_id": "v",
+		"width": 1280, "height": 720, "fps_num": 24, "fps_den": 1,
+		"items": []any{map[string]any{
+			"id": "five-images:chain-image:0", "kind": "image_chain", "template_id": "IMAGE_CHAIN",
+			"start_ms": 0, "end_ms": 15_200,
+			"asset_refs": containerRefs,
+			"params": map[string]any{
+				"chain_camera": "fly_under_fade", "chain_count": 5,
+				"chain_segments": segments,
+			},
+		}},
+	}
+	raw, err := json.Marshal(plan)
+	if err != nil {
+		t.Fatal(err)
+	}
+	result, err := CompileSemantic(raw)
+	if err != nil {
+		t.Fatalf("CompileSemantic five-image chain: %v", err)
+	}
+	assetsBySegment := map[int]string{}
+	layersBySegment := map[int]int{}
+	for _, layer := range result.Plan.Layers {
+		if layer.Type != "image" {
+			continue
+		}
+		segment := -1
+		for i := 0; i < len(motions); i++ {
+			if strings.Contains(layer.ID, fmt.Sprintf(":seg%d", i)) {
+				segment = i
+				break
+			}
+		}
+		if segment < 0 {
+			continue
+		}
+		layersBySegment[segment]++
+		if layer.Asset == "" {
+			t.Fatalf("segment %d image layer has no asset path: %+v", segment, layer)
+		}
+		if previous, ok := assetsBySegment[segment]; ok && previous != layer.Asset {
+			t.Fatalf("segment %d produced multiple conflicting assets: %q vs %q", segment, previous, layer.Asset)
+		}
+		assetsBySegment[segment] = layer.Asset
+	}
+	if len(assetsBySegment) != 5 {
+		t.Fatalf("five-image chain produced %d visual segments, want 5: %+v", len(assetsBySegment), assetsBySegment)
+	}
+	seenAssets := map[string]bool{}
+	for i := 0; i < 5; i++ {
+		if layersBySegment[i] == 0 {
+			t.Fatalf("segment %d produced no image layer (all layers: %+v)", i, result.Plan.Layers)
+		}
+		if seenAssets[assetsBySegment[i]] {
+			t.Fatalf("segment %d reuses another segment's asset %q; a composite was produced", i, assetsBySegment[i])
+		}
+		seenAssets[assetsBySegment[i]] = true
+	}
+}
+
 func TestCompilePhraseChainRejectsEscapingSegment(t *testing.T) {
 	raw := []byte(`{"schema_version":"renderinggen.overlay-plan.v1","plan_id":"chain-bad","video_id":"v","width":1280,"height":720,"fps_num":24,"fps_den":1,"items":[{
 		"id":"chain-1","kind":"phrase_chain","template_id":"PHRASE_CHAIN","preset_id":"phrase_default",

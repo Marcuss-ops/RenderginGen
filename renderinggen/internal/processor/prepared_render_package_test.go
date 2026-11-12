@@ -13,13 +13,14 @@ import (
 
 func TestPreparedRenderPackageIsContentAddressedAndReused(t *testing.T) {
 	ctx := context.Background()
-	proc, store, _ := newProcessorWith(t, Options{})
+	proc, store, _ := newProcessorWith(t, Options{NativeOutputProfiles: true})
 	if err := store.Put(ctx, videoHash, []byte("video-bytes")); err != nil {
 		t.Fatalf("seed source asset: %v", err)
 	}
 	prepareJob := validJob()
 	prepareJob.ID = "family-prepare"
 	prepareJob.JobType = queue.JobTypeRenderPrepare
+	prepareJob.RenderPlan = withOutputProfile(t, prepareJob.RenderPlan)
 
 	artifact, err := proc.PrepareRenderPackage(ctx, prepareJob)
 	if err != nil {
@@ -32,6 +33,7 @@ func TestPreparedRenderPackageIsContentAddressedAndReused(t *testing.T) {
 	child := validJob()
 	child.ID = "family-chunk-0"
 	child.JobType = queue.JobTypeRenderSegment
+	child.RenderPlan = withOutputProfile(t, child.RenderPlan)
 	var indentedPlan bytes.Buffer
 	if err := json.Indent(&indentedPlan, child.RenderPlan, "", "  "); err != nil {
 		t.Fatalf("indent equivalent source plan: %v", err)
@@ -40,7 +42,7 @@ func TestPreparedRenderPackageIsContentAddressedAndReused(t *testing.T) {
 	child.PreparedRenderPackage = &queue.PreparedRenderPackageRef{
 		PackageID: artifact.ArtifactHash, PlanSHA256: preparedRenderPlanSHA256(child.RenderPlan),
 		AssetManifestSHA: preparedRenderAssetManifestSHA(child.Assets),
-		CompilerVersion:  artifact.ChrononVersion, ProfileID: artifact.ProfileID,
+		CompilerVersion:  artifact.ChrononVersion, ProfileID: artifact.ProfileID, TotalFrames: 30,
 	}
 	child.FrameRange = &queue.FrameRange{Start: 0, End: 30}
 
@@ -76,6 +78,23 @@ func TestPreparedRenderPackageIsContentAddressedAndReused(t *testing.T) {
 	}
 }
 
+// withOutputProfile adds the output profile the prepared-package contract now
+// requires. The test exercises content-addressed package reuse, so it needs a
+// complete render request, not a request that quietly omits the profile.
+func withOutputProfile(t *testing.T, plan json.RawMessage) json.RawMessage {
+	t.Helper()
+	var value map[string]any
+	if err := json.Unmarshal(plan, &value); err != nil {
+		t.Fatalf("decode fixture plan: %v", err)
+	}
+	value["output_profile_id"] = "VELOX_ASSEMBLY_READY_V1"
+	out, err := json.Marshal(value)
+	if err != nil {
+		t.Fatalf("encode fixture plan: %v", err)
+	}
+	return out
+}
+
 func TestPreparedRenderPlanIdentityIsCanonical(t *testing.T) {
 	first := json.RawMessage(`{"schema_version":"renderinggen.overlay-plan.v1","width":1280,"height":720}`)
 	second := json.RawMessage(`{ "height": 720, "width": 1280, "schema_version": "renderinggen.overlay-plan.v1" }`)
@@ -86,13 +105,14 @@ func TestPreparedRenderPlanIdentityIsCanonical(t *testing.T) {
 
 func TestPreparedRenderPackageRejectsRequestIdentityDrift(t *testing.T) {
 	ctx := context.Background()
-	proc, store, _ := newProcessorWith(t, Options{})
+	proc, store, _ := newProcessorWith(t, Options{NativeOutputProfiles: true})
 	if err := store.Put(ctx, videoHash, []byte("video-bytes")); err != nil {
 		t.Fatalf("seed source asset: %v", err)
 	}
 	prepareJob := validJob()
 	prepareJob.ID = "identity-prepare"
 	prepareJob.JobType = queue.JobTypeRenderPrepare
+	prepareJob.RenderPlan = withOutputProfile(t, prepareJob.RenderPlan)
 	artifact, err := proc.PrepareRenderPackage(ctx, prepareJob)
 	if err != nil {
 		t.Fatalf("prepare immutable package: %v", err)
@@ -101,11 +121,12 @@ func TestPreparedRenderPackageRejectsRequestIdentityDrift(t *testing.T) {
 	child := validJob()
 	child.ID = "identity-chunk"
 	child.JobType = queue.JobTypeRenderSegment
+	child.RenderPlan = withOutputProfile(t, child.RenderPlan)
 	child.RenderPlan = bytes.Replace(child.RenderPlan, []byte("video-983"), []byte("video-984"), 1)
 	child.PreparedRenderPackage = &queue.PreparedRenderPackageRef{
 		PackageID: artifact.ArtifactHash, PlanSHA256: preparedRenderPlanSHA256(prepareJob.RenderPlan),
 		AssetManifestSHA: preparedRenderAssetManifestSHA(child.Assets),
-		CompilerVersion:  artifact.ChrononVersion, ProfileID: artifact.ProfileID,
+		CompilerVersion:  artifact.ChrononVersion, ProfileID: artifact.ProfileID, TotalFrames: 30,
 	}
 	if _, err := proc.PrepareJob(ctx, child); err == nil {
 		t.Fatal("PrepareJob accepted a package whose source request identity drifted")
