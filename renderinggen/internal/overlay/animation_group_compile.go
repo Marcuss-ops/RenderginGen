@@ -369,11 +369,11 @@ func animationGroupRolePool(role string) []string {
 	case AnimationGroupRolePhrase:
 		ids = append(ids, motion.Registry.PhraseAnimationIDs()...)
 	case AnimationGroupRoleCaption:
-		ids = append(ids, runtimeDefaultCaptionMotionIDs...)
+		ids = append(ids, filterRetiredEntityCaptionMotions(runtimeDefaultCaptionMotionIDs)...)
 	case AnimationGroupRoleDate:
-		ids = append(ids, motion.Registry.PresentationMotionIDs("date_v1")...)
+		ids = append(ids, motion.DatePresentationMotionIDs()...)
 	case AnimationGroupRoleMetric:
-		ids = append(ids, motion.Registry.PresentationMotionIDs("metric_v1")...)
+		ids = append(ids, motion.MetricPresentationMotionIDs()...)
 	}
 	target, ok := animationGroupRoleTarget(role)
 	if !ok {

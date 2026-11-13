@@ -243,11 +243,12 @@ func compileMediaStrokeLayer(media Layer, canvasWidth, canvasHeight int) (Layer,
 		if canvasWidth <= 0 || canvasHeight <= 0 {
 			return Layer{}, fmt.Errorf("video frame stroke requires positive canvas dimensions")
 		}
-		// Render-plan video positions name the source surface origin; shape
-		// positions name the box center. The source clip geometry is transformed
-		// by size×scale and then centered on the canvas for inset foregrounds.
-		position[0] += (width - float64(canvasWidth)) * 0.5
-		position[1] += (height - float64(canvasHeight)) * 0.5
+		// Render-plan video positions name the top-left of the unscaled layer
+		// box in canvas-centred coordinates; shape positions name the box
+		// centre. The stroke shares the media box centre, while its own bounds
+		// are the displayed (scale-baked) size above.
+		position[0] += media.Size[0] * 0.5
+		position[1] += media.Size[1] * 0.5
 	}
 	if !finite(strokeWidth) || !finite(strokeRadius) {
 		return Layer{}, fmt.Errorf("media frame stroke width/radius must be finite")

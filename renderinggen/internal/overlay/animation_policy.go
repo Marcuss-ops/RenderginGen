@@ -209,11 +209,11 @@ func runtimeDefaultGroupMotionID(src *semanticPlan, target, groupID, subgroupID 
 	case TargetImage:
 		pool = append([]string(nil), runtimeDefaultImageMotionIDs...)
 	case TargetCaption:
-		pool = append([]string(nil), runtimeDefaultCaptionMotionIDs...)
+		pool = filterRetiredEntityCaptionMotions(runtimeDefaultCaptionMotionIDs)
 	case TargetDate:
-		pool = motion.Registry.PresentationMotionIDs("date_v1")
+		pool = motion.DatePresentationMotionIDs()
 	case TargetMetric:
-		pool = motion.Registry.PresentationMotionIDs("metric_v1")
+		pool = motion.MetricPresentationMotionIDs()
 	}
 	if len(pool) == 0 {
 		return ""

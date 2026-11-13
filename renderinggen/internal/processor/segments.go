@@ -407,7 +407,7 @@ func (p *Processor) retrySegment(ctx context.Context, prepared *PreparedJob, seg
 	// canonicalization as every segment in the original batch, otherwise the
 	// retry would publish bytes that the profile gate rejects after the fact.
 	if metadata := planMetadataOf(prepared.Plan); isCanonicalizedOutputProfile(metadata.ProfileID) {
-		if _, err := p.canonicalizeOverlayPaths(ctx, prepared.Job.ID, []string{segment.OutputPath}, nil, metadata.ProfileID); err != nil {
+		if _, err := p.canonicalizeOutputPaths(ctx, prepared.Job.ID, []string{segment.OutputPath}, nil, metadata.ProfileID); err != nil {
 			return fmt.Errorf("processor: canonical segment retry emission: %w", err)
 		}
 	}

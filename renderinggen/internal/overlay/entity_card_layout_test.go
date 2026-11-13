@@ -254,6 +254,21 @@ func TestEveryEntityPresentationMotionLowersToCaptionAnimation(t *testing.T) {
 	}
 }
 
+func TestRuntimeCaptionPoolExcludesRetiredMotions(t *testing.T) {
+	pool := filterRetiredEntityCaptionMotions(runtimeDefaultCaptionMotionIDs)
+	if len(pool) == 0 {
+		t.Fatal("runtime caption pool is empty")
+	}
+	for id := range retiredEntityCaptionMotions {
+		if containsString(pool, id) {
+			t.Errorf("runtime caption pool contains retired motion %q", id)
+		}
+	}
+	if len(pool) != len(filterRetiredEntityCaptionMotions(runtimeDefaultCaptionMotionIDs)) {
+		t.Fatal("runtime caption retirement filter is not deterministic")
+	}
+}
+
 func TestEntityCaptionPickerMatchesRuntimeCaptionSelection(t *testing.T) {
 	want := make(map[string]bool)
 	for _, category := range []string{"entity_caption_v1", "trump_entity_text_v1", "entity_card_v1"} {

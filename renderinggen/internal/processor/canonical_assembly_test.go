@@ -11,6 +11,61 @@ import (
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/media"
 )
 
+// TestCanonicalizeAssemblyV1NormalizesSourceFrameRate reproduces the live
+// clip.render failure of 2026-11-11: a 25 fps source was emitted with
+// -fps_mode passthrough, so the V1 profile gate rejected the artifact with
+// "fps=25/1, want 24/1" AFTER the GPU render. The canonical pass must emit the
+// profile cadence whenever the source disagrees with it.
+func TestCanonicalizeAssemblyV1NormalizesSourceFrameRate(t *testing.T) {
+	if _, err := exec.LookPath("ffmpeg"); err != nil {
+		t.Skip("ffmpeg is not installed")
+	}
+	ctx := context.Background()
+	output := filepath.Join(t.TempDir(), "clip-25fps.mp4")
+	generate := exec.Command("ffmpeg",
+		"-hide_banner", "-loglevel", "error", "-y",
+		"-f", "lavfi", "-i", "testsrc=size=1920x1080:rate=25",
+		"-f", "lavfi", "-i", "sine=frequency=440:sample_rate=48000",
+		"-t", "5",
+		"-c:v", "libx264", "-preset", "ultrafast", "-crf", "30",
+		"-c:a", "aac", "-b:a", "128k", "-ac", "2",
+		"-shortest",
+		output,
+	)
+	if out, err := generate.CombinedOutput(); err != nil {
+		t.Fatalf("generate 25 fps fixture: %v: %s", err, out)
+	}
+	before, err := media.ProbeFile(ctx, output)
+	if err != nil {
+		t.Fatalf("probe fixture: %v", err)
+	}
+	if before.FPSNum != 25 || before.FPSDen != 1 {
+		t.Fatalf("fixture fps = %d/%d, want 25/1", before.FPSNum, before.FPSDen)
+	}
+
+	changed, err := canonicalizeOutputMP4(ctx, output, media.ProfileVeloxAssemblyReadyV1)
+	if err != nil {
+		t.Fatalf("canonicalizeOutputMP4: %v", err)
+	}
+	if !changed {
+		t.Fatal("25 fps fixture was not re-encoded")
+	}
+	after, err := media.ProbeFile(ctx, output)
+	if err != nil {
+		t.Fatalf("probe canonical output: %v", err)
+	}
+	profile, err := media.ResolveProfile(media.ProfileVeloxAssemblyReadyV1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := profile.ValidateProbe(after); err != nil {
+		t.Fatalf("canonical output does not satisfy V1: %v", err)
+	}
+	if after.FPSNum != profile.FPSNum || after.FPSDen != profile.FPSDen {
+		t.Fatalf("canonical fps = %d/%d, want %d/%d", after.FPSNum, after.FPSDen, profile.FPSNum, profile.FPSDen)
+	}
+}
+
 // TestCanonicalizeAssemblyV1EmitsPinnedStreamAndKeepsAudio is the byte-level
 // emission gate for VELOX_ASSEMBLY_READY_V1. It starts from a real,
 // deliberately NON-canonical MP4 with audio (x264 ultrafast, 1/12288,
