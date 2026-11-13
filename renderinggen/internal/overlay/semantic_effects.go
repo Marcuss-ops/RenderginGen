@@ -165,12 +165,16 @@ func compileClipGrid(grid *semanticClipGrid, width, height int, duration int64) 
 	}
 	isDots := grid.Style == "dots" || grid.Style == "dot_grid"
 	shapeType := "grid"
+	// A full-frame path grid is authored around the canvas centre, so the
+	// layer anchor must sit at the canvas top-left. [0,0] leaves the grid in
+	// the bottom-right quadrant once screen-space placement adds the canvas
+	// centre (verified against the real Chronon renderer).
 	params := map[string]any{
 		"shape":        shapeType,
 		"width":        float64(width),
 		"height":       float64(height),
 		"grid_spacing": grid.SpacingPX,
-		"position":     []float64{0, 0},
+		"position":     []float64{-float64(width) / 2, -float64(height) / 2},
 		"opacity":      grid.Opacity,
 	}
 	if isDots {

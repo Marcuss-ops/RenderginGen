@@ -2,6 +2,7 @@ package overlay
 
 import (
 	"fmt"
+	"math"
 )
 
 const (
@@ -91,7 +92,7 @@ func addSingleImageBackdrop(ri resolvedItem, src *semanticPlan, registry *assetR
 	if grid == nil {
 		return out, nil
 	}
-	gridLayer, err := compileClipGrid(grid, src.Width, src.Height, ri.End-ri.Start)
+	gridLayer, err := compileBackdropGrid(grid, src.Width, src.Height, ri.End-ri.Start)
 	if err != nil {
 		return nil, fmt.Errorf("overlay: item %q image_backdrop.grid: %w", ri.Item.ID, err)
 	}
@@ -99,6 +100,77 @@ func addSingleImageBackdrop(ri resolvedItem, src *semanticPlan, registry *assetR
 	gridLayer.StartFrame = ri.Start
 	gridLayer.DurationFrames = ri.End - ri.Start
 	return append(out, gridLayer), nil
+}
+
+// compileBackdropGrid lowers the light canvas grid. Dots keep the shared
+// clip_grid path (filled dots render full-frame). Lines need a dedicated path:
+// the renderer's stroker clips a generated centred path to its positive local
+// quadrant, so a centred line grid renders only the top-left quarter. Building
+// the same lines in 0..width / 0..height and anchoring the layer at the canvas
+// top-left keeps every segment in the visible frame.
+func compileBackdropGrid(grid *semanticClipGrid, width, height int, duration int64) (Layer, error) {
+	if grid.Style == "dots" || grid.Style == "dot_grid" {
+		return compileClipGrid(grid, width, height, duration)
+	}
+	return compileBackdropLineGrid(grid, width, height, duration)
+}
+
+// maxBackdropGridLines mirrors the renderer's generated-grid bound. A grid
+// that cannot be represented within it fails closed instead of producing a
+// partial treatment.
+const maxBackdropGridLines = 4096
+
+func compileBackdropLineGrid(grid *semanticClipGrid, width, height int, duration int64) (Layer, error) {
+	if grid == nil || grid.LineWidthPX == nil {
+		return Layer{}, fmt.Errorf("line_width_px is required for a line grid")
+	}
+	if width <= 0 || height <= 0 {
+		return Layer{}, fmt.Errorf("line grid requires a positive canvas")
+	}
+	if !finite(grid.SpacingPX) || grid.SpacingPX <= 0 {
+		return Layer{}, fmt.Errorf("line grid spacing must be positive")
+	}
+	columns := int(math.Floor(float64(width)/grid.SpacingPX)) + 1
+	rows := int(math.Floor(float64(height)/grid.SpacingPX)) + 1
+	if columns < 1 || rows < 1 {
+		return Layer{}, fmt.Errorf("line grid has no lines")
+	}
+	if columns+rows > maxBackdropGridLines {
+		return Layer{}, fmt.Errorf("line grid exceeds %d lines; increase spacing_px", maxBackdropGridLines)
+	}
+	commands := make([]LayerPathCommand, 0, (columns+rows)*2)
+	for column := 0; column < columns; column++ {
+		x := float64(column) * grid.SpacingPX
+		commands = append(commands,
+			LayerPathCommand{Type: "move_to", Point: []float64{x, 0}},
+			LayerPathCommand{Type: "line_to", Point: []float64{x, float64(height)}},
+		)
+	}
+	for row := 0; row < rows; row++ {
+		y := float64(row) * grid.SpacingPX
+		commands = append(commands,
+			LayerPathCommand{Type: "move_to", Point: []float64{0, y}},
+			LayerPathCommand{Type: "line_to", Point: []float64{float64(width), y}},
+		)
+	}
+	opacity := grid.Opacity
+	return Layer{
+		ID:             "clip__grid",
+		Type:           "shape",
+		BoxWidth:       width,
+		BoxHeight:      height,
+		Size:           []float64{float64(width), float64(height)},
+		Position:       []float64{-float64(width) / 2, -float64(height) / 2},
+		ScreenSpace:    true,
+		Opacity:        &opacity,
+		StartFrame:     0,
+		DurationFrames: duration,
+		Shape: &LayerShape{
+			Type:   "path",
+			Path:   commands,
+			Stroke: &LayerStroke{Color: grid.Color, Width: *grid.LineWidthPX},
+		},
+	}, nil
 }
 
 // parseBackdropGrid decodes the optional light-grid declaration. A nil result

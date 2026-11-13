@@ -119,13 +119,29 @@ func TestStandaloneImageBackdropGridLowersLightCanvasGrid(t *testing.T) {
 		t.Fatalf("layers = %+v; want backdrop, foreground and grid", result.Plan.Layers)
 	}
 	grid := result.Plan.Layers[2]
-	if grid.ID != "fx-image:image-grid" || grid.Type != "shape" || grid.Shape == nil || grid.Shape.Type != "grid" {
+	if grid.ID != "fx-image:image-grid" || grid.Type != "shape" || grid.Shape == nil || grid.Shape.Type != "path" {
 		t.Fatalf("grid layer = %+v", grid)
 	}
 	if !grid.ScreenSpace {
 		t.Fatalf("backdrop grid must be a screen-space shape: %+v", grid)
 	}
-	if grid.Shape.GridSpacing != 64 || grid.Shape.Stroke == nil || grid.Shape.Stroke.Color != "#7FA8C8" || grid.Shape.Stroke.Width != 1.5 {
+	if len(grid.Position) != 2 || grid.Position[0] != -640 || grid.Position[1] != -360 {
+		t.Fatalf("backdrop grid must be anchored at the canvas top-left; position=%v", grid.Position)
+	}
+	if len(grid.Size) != 2 || grid.Size[0] != 1280 || grid.Size[1] != 720 {
+		t.Fatalf("backdrop grid size = %v, want the canvas", grid.Size)
+	}
+	// 21 vertical + 12 horizontal lines at 64px spacing: every point must sit
+	// in the non-negative canvas quadrant the renderer strokes in full.
+	if len(grid.Shape.Path) != 66 {
+		t.Fatalf("grid path commands = %d, want 66", len(grid.Shape.Path))
+	}
+	for _, command := range grid.Shape.Path {
+		if len(command.Point) != 2 || command.Point[0] < 0 || command.Point[0] > 1280 || command.Point[1] < 0 || command.Point[1] > 720 {
+			t.Fatalf("grid path command outside canvas: %+v", command)
+		}
+	}
+	if grid.Shape.Stroke == nil || grid.Shape.Stroke.Color != "#7FA8C8" || grid.Shape.Stroke.Width != 1.5 {
 		t.Fatalf("grid geometry = %+v", grid.Shape)
 	}
 	if grid.Opacity == nil || *grid.Opacity != 0.12 {
