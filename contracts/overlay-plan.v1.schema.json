@@ -1829,7 +1829,7 @@
           },
           "params": {
             "type": "object",
-            "description": "Per-item runtime controls and motion parameters. For a standalone image only, image_backdrop may reuse that image as a softly blurred full-canvas background. Image frame/shadow/border controls use the item's frame object; for composites, set frame on each image_layers[] child.",
+            "description": "Per-item runtime controls and motion parameters. For a standalone image only, image_backdrop may reuse that image as a softly blurred full-canvas background and add one light canvas grid. Image frame/shadow/border controls use the item's frame object; for composites, set frame on each image_layers[] child.",
             "properties": {
               "shape": {
                 "type": "string",
@@ -1993,7 +1993,7 @@
               "image_backdrop": {
                 "type": "object",
                 "additionalProperties": false,
-                "description": "Optional full-canvas background made from the same source image. Available only when the item has exactly one asset and no image_layers. Zoom is capped at 10x; the default blur is subtle.",
+                "description": "Optional full-canvas background made from the same source image. Available only when the item has exactly one asset and no image_layers. Zoom is capped at 10x; the default blur is subtle. The optional grid draws one light, screen-space canvas grid over the composed card with payload-controlled color and geometry.",
                 "properties": {
                   "zoom": {
                     "type": "number",
@@ -2006,6 +2006,56 @@
                     "minimum": 6,
                     "maximum": 48,
                     "default": 18
+                  },
+                  "grid": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "description": "Optional light full-canvas grid drawn over the backdrop and card. Same geometry contract as clip_grid; line and dot styles are mutually exclusive.",
+                    "properties": {
+                      "enabled": {
+                        "type": "boolean",
+                        "default": true
+                      },
+                      "style": {
+                        "enum": [
+                          "lines",
+                          "line",
+                          "grid",
+                          "dots",
+                          "dot_grid"
+                        ],
+                        "default": "lines"
+                      },
+                      "color": {
+                        "type": "string",
+                        "pattern": "^#[0-9A-Fa-f]{6}$",
+                        "default": "#7FA8C8"
+                      },
+                      "spacing_px": {
+                        "type": "number",
+                        "minimum": 4,
+                        "maximum": 512,
+                        "default": 120
+                      },
+                      "line_width_px": {
+                        "type": "number",
+                        "minimum": 0.25,
+                        "maximum": 32,
+                        "default": 1
+                      },
+                      "dot_radius_px": {
+                        "type": "number",
+                        "minimum": 0.5,
+                        "maximum": 64,
+                        "default": 2
+                      },
+                      "opacity": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 1,
+                        "default": 0.1
+                      }
+                    }
                   }
                 }
               },

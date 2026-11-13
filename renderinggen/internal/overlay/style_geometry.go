@@ -168,22 +168,28 @@ func subtitleCueGeometry(s *styleBlock, canvasW, canvasH, cueLayerCount int) (an
 // the given type.
 //
 // This function is the single owner of that conversion because the engine's
-// decoder (render_plan_compiler_animation.cpp:apply_layer_primitives) reads the
-// field with two different semantics:
+// decoder (render_plan_compiler_animation.cpp:apply_layer_primitives and
+// compiler/lowering/scene_lowering.cpp) reads the field with three different
+// semantics:
 //
 //   - text  — the value IS the layer centre's absolute canvas coordinate; the
 //     engine subtracts canvas/2 itself.
+//   - video — the value IS the box's top-left in canvas-centred coordinates;
+//     the engine adds half the box to reach the centre.
 //   - other — the value is an offset from the canvas centre.
 //
-// Emitting one form for both types is what parked every burned cue in the
-// top-left corner: an absolute top-left anchor was handed to the text branch,
-// which subtracted canvas/2 a second time (960,540 on a 1920x1080 canvas), so a
-// bottom_center cue's centre landed at the anchor minus half a canvas.
+// Emitting one form for every type is what parked burned cues in the top-left
+// corner (absolute anchor fed to the text branch, which subtracted canvas/2
+// again) and what left a full-canvas video background in the bottom-right
+// quadrant (top-left anchor [0,0] fed to the video branch, which added half the
+// box). Both defects come from collapsing three contracts into one.
 func canvasBoxPosition(layerType string, x, y, w, h float64, canvasW, canvasH int) []float64 {
-	cx := x + w/2
-	cy := y + h/2
-	if layerType == "text" {
-		return []float64{cx, cy}
+	switch layerType {
+	case "text":
+		return []float64{x + w/2, y + h/2}
+	case "video":
+		return []float64{x - float64(canvasW)/2, y - float64(canvasH)/2}
+	default:
+		return []float64{x + w/2 - float64(canvasW)/2, y + h/2 - float64(canvasH)/2}
 	}
-	return []float64{cx - float64(canvasW)/2, cy - float64(canvasH)/2}
 }

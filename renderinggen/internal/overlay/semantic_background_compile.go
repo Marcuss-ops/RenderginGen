@@ -1,8 +1,10 @@
 package overlay
 
 // semantic_background_compile.go owns the background plate lowering. The plate
-// is top-left anchored and screen-space: a missing position would be read as a
-// canvas-center offset and shrink a full-canvas background to one quadrant.
+// is top-left anchored and screen-space. Position is explicit because the three
+// plate kinds do not share one position contract (see canvasBoxPosition):
+// image/color values are canvas-centre offsets, while a video value names the
+// box top-left in canvas-centred coordinates and the engine adds half the box.
 // Extracted from compileSemanticDecoded so the plan stages stay one call each.
 import (
 	"fmt"
@@ -39,17 +41,22 @@ func compileBackgroundLayer(src *semanticPlan, registry *assetRegistry) (Layer, 
 			return Layer{}, false, fmt.Errorf("overlay: background asset: %w", err)
 		}
 	}
-	// Color/image/video background plates are top-left anchored: the
-	// renderer measures a missing position as a canvas-center offset,
-	// which shrinks a full-canvas plate to the top-left quadrant and
-	// leaves the rest of the frame on the black clear color (the
-	// standalone entity-image portrait rendered black corners on a
-	// declared white canvas for exactly this reason). Keep the plate in
-	// screen space as well: when any text layer enables the 2.5D camera,
-	// the background must not enter the projected layer/depth bin.
+	// Every plate is anchored at the canvas top-left in its own contract.
+	// Image and color layers take a centre offset, so [0,0] is the full
+	// canvas. A video layer takes the box top-left in canvas-centred
+	// coordinates and the engine adds half the box, so a full-canvas video
+	// needs [-W/2,-H/2]; [0,0] puts its centre at (+W/2,+H/2), i.e. the
+	// plate covers only the bottom-right quadrant. Keep the plate in screen
+	// space as well: when any text layer enables the 2.5D camera, the
+	// background must not enter the projected layer/depth bin.
+	position := []float64{0, 0}
+	if layerKind == "video" {
+		position = canvasBoxPosition("video", 0, 0,
+			float64(src.Width), float64(src.Height), src.Width, src.Height)
+	}
 	layer := Layer{ID: "background", Type: layerKind, BoxWidth: src.Width, BoxHeight: src.Height,
 		Size:     []float64{float64(src.Width), float64(src.Height)},
-		Position: []float64{0, 0}, ScreenSpace: true,
+		Position: position, ScreenSpace: true,
 		Fit: bg.Fit, StartFrame: 0}
 	if layerKind != "color" {
 		// One gate for the background fit: validated against the closed set

@@ -6,12 +6,15 @@ import (
 	"testing"
 )
 
-// The render-plan `position` field carries TWO different meanings, one per
+// The render-plan `position` field carries THREE different meanings, one per
 // layer type, and the engine's decoder (render_plan_compiler_animation.cpp,
-// apply_layer_primitives) is the authority on which:
+// apply_layer_primitives, plus compiler/lowering/scene_lowering.cpp) is the
+// authority on which:
 //
 //   - text  — the value is the layer centre's ABSOLUTE canvas coordinate; the
 //     engine subtracts canvas/2 itself.
+//   - video — the value is the box's top-left in canvas-centred coordinates;
+//     the engine adds half the box to reach the centre.
 //   - other — the value is an offset from the canvas centre.
 //
 // canvasBoxPosition is this repository's single owner of that conversion.
@@ -38,6 +41,17 @@ func TestCanvasBoxPositionMatchesEngineLayerSemantics(t *testing.T) {
 	image := canvasBoxPosition("image", got.x, got.y, got.w, got.h, canvasW, canvasH)
 	if len(image) != 2 || image[0] != 752 || image[1] != -452 {
 		t.Fatalf("image position = %v, want a canvas-centre offset [752 -452]", image)
+	}
+
+	video := canvasBoxPosition("video", got.x, got.y, got.w, got.h, canvasW, canvasH)
+	if len(video) != 2 || video[0] != 592 || video[1] != -492 {
+		t.Fatalf("video position = %v, want the box top-left in canvas-centred coords [592 -492]", video)
+	}
+	// Replaying the engine's video branch (add half the box) must reproduce
+	// the same layer centre the image branch already encodes.
+	if video[0]+got.w/2 != image[0] || video[1]+got.h/2 != image[1] {
+		t.Fatalf("video box conversion resolves to centre (%v,%v), want the image centre %v",
+			video[0]+got.w/2, video[1]+got.h/2, image)
 	}
 
 	if math.Abs(text[0]-image[0]) != canvasW/2 || math.Abs(text[1]-image[1]) != canvasH/2 {

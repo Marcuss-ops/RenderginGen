@@ -23,9 +23,13 @@ type entityStyleVariant struct {
 	CameraMotionID  string
 }
 
-// premiumEntityStyles defines the 25 official Apple-style entity card compositions:
+// premiumEntityStyles defines the live Apple-style entity card compositions:
 // Group 1 (01-05): 3D Entrances (Pitch / Yaw / Pop / Swing / Depth) + Centered Text Below
-// Group 2 (06-10): 3D Entrances (Swipe / Orbit / Tilt / Dolly / Drift) + Side-by-Side Text
+// Former Group 2 (06-10): side-by-side captions, removed. Side captions were
+// never suitable for the generated documentary lane, and keeping them in the
+// random registry made the same selector produce both below and side text.
+// Their IDs still resolve through entityStyleAliases to a below style so old
+// plans remain transportable without recreating the side layout.
 // Former Group 3 (11-15) and style 10 were exact or near duplicates of styles 01, 02, 03, 05
 // and 06 (same image motion, layout and caption) and were removed; their IDs and numbers
 // still resolve through entityStyleAliases.
@@ -87,52 +91,6 @@ var premiumEntityStyles = [...]entityStyleVariant{
 		CaptionLayout:   "below",
 		CaptionColor:    "#FFFFFF",
 		ImageSide:       "center",
-	},
-
-	// --- GROUP 2: Side-by-Side Spatial Layout (Text Right / Left) ---
-	{
-		ID:              "06_entity_swipe_text_right",
-		Name:            "Apple Spatial Swipe Right",
-		LegacyReference: "06",
-		Group:           2,
-		ImageMotionID:   "image_25d_swipe_3d",
-		CaptionMotionID: "text_word_rise",
-		CaptionLayout:   "right",
-		CaptionColor:    "#FFFFFF",
-		ImageSide:       "left",
-	},
-	{
-		ID:              "07_entity_orbit_text_left",
-		Name:            "Apple Spatial Orbit Left",
-		LegacyReference: "07",
-		Group:           2,
-		ImageMotionID:   "image_25d_yaw_flip_in",
-		CaptionMotionID: "text_word_rise",
-		CaptionLayout:   "left",
-		CaptionColor:    "#FFFFFF",
-		ImageSide:       "right",
-	},
-	{
-		ID:              "08_entity_counter_tilt_text_right",
-		Name:            "Apple Spatial Counter Tilt Right",
-		LegacyReference: "08",
-		Group:           2,
-		ImageMotionID:   "image_25d_pitch_lift",
-		CaptionMotionID: "entity_caption_rise",
-		CaptionLayout:   "right",
-		CaptionColor:    "#FFFFFF",
-		ImageSide:       "left",
-	},
-	{
-		ID:              "09_entity_dolly_settle_text_left",
-		Name:            "Apple Spatial Dolly Settle Left",
-		LegacyReference: "09",
-		Group:           2,
-		ImageMotionID:   "image_25d_depth_float_in",
-		CaptionMotionID: "text_word_rise",
-		CaptionLayout:   "left",
-		CaptionColor:    "#FFFFFF",
-		ImageSide:       "right",
 	},
 
 	// --- GROUP 3: Text Treatments Below (formerly typewriter captions) ---
@@ -404,7 +362,13 @@ var entityStyleAliases = map[string]string{
 
 	// Styles removed as exact or near duplicates keep resolving to the
 	// surviving style with the same image motion, layout and caption.
-	"10": "06_entity_swipe_text_right", "10_entity_parallax_drift_text_right": "06_entity_swipe_text_right",
+	// The retired side layouts resolve to the live below-caption styles. A
+	// legacy plan that asks for 06..10 must never seed a side caption again.
+	"06": "01_entity_pitch_lift_text_below", "06_entity_swipe_text_right": "01_entity_pitch_lift_text_below",
+	"07": "02_entity_yaw_flip_text_below", "07_entity_orbit_text_left": "02_entity_yaw_flip_text_below",
+	"08": "03_entity_pop_bounce_text_below", "08_entity_counter_tilt_text_right": "03_entity_pop_bounce_text_below",
+	"09": "05_entity_depth_float_text_below", "09_entity_dolly_settle_text_left": "05_entity_depth_float_text_below",
+	"10": "01_entity_pitch_lift_text_below", "10_entity_parallax_drift_text_right": "01_entity_pitch_lift_text_below",
 	"11": "01_entity_pitch_lift_text_below", "11_entity_typewriter_classic": "01_entity_pitch_lift_text_below",
 	"12": "03_entity_pop_bounce_text_below", "12_entity_terminal_cyber": "03_entity_pop_bounce_text_below",
 	"13": "02_entity_yaw_flip_text_below", "13_entity_typewriter_editorial_gold": "02_entity_yaw_flip_text_below",
@@ -501,8 +465,6 @@ var entityTagSelectors = map[string]entityStyleQuery{
 	"badge_random":            {"badge"},
 	"camera":                  {"camera"},
 	"camera_random":           {"camera"},
-	"side":                    {"side"},
-	"side_random":             {"side"},
 }
 
 // ResolveEntityStyle maps a user or producer style selector to an entity

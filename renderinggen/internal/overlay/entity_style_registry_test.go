@@ -19,7 +19,6 @@ func TestEntityStyleRegistryTagQueries(t *testing.T) {
 		"below":  15,
 		"badge":  5,
 		"camera": 5,
-		"side":   4,
 	}
 	for tag, want := range cases {
 		got := entityStyleRegistry.query(entityStyleQuery{tag})
@@ -41,10 +40,6 @@ func TestEntityStyleRegistryTagQueries(t *testing.T) {
 				if style.CameraMotionID == "" {
 					t.Fatalf("tag camera matched style %q without camera motion", style.ID)
 				}
-			case "side":
-				if style.CaptionLayout != "left" && style.CaptionLayout != "right" {
-					t.Fatalf("tag side matched style %q with caption layout %q", style.ID, style.CaptionLayout)
-				}
 			}
 		}
 	}
@@ -63,7 +58,7 @@ func TestEntityStyleRegistryTagQueries(t *testing.T) {
 // sampling salt, and sampling is deterministic for the identity tuple.
 func TestEntityStyleRegistrySelectorsSampleDeterministically(t *testing.T) {
 	planID, videoID, itemID := "plan-reg", "video-reg", "item-reg"
-	for _, selector := range []string{"", "random", "premium_random_v1", "testo_sotto", "below", "premium_below_random_v1", "caption_below", "badge", "badge_random", "camera", "camera_random", "side", "side_random"} {
+	for _, selector := range []string{"", "random", "premium_random_v1", "testo_sotto", "below", "premium_below_random_v1", "caption_below", "badge", "badge_random", "camera", "camera_random"} {
 		first, ok := ResolveEntityStyle(selector, planID, videoID, itemID)
 		if !ok {
 			t.Fatalf("selector %q did not resolve", selector)
@@ -95,7 +90,7 @@ func TestEntityStyleRegistrySelectorsSampleDeterministically(t *testing.T) {
 // vulkan_native. A failed strict-GPU motion must remain named in the plan
 // until the runtime itself supports it; the compiler must not swap recipes.
 func TestRuntimeEntityStyleSelectorsKeepCatalogMotions(t *testing.T) {
-	for _, selector := range []string{"", "random", "premium_random_v1", "testo_sotto", "below", "side", "badge"} {
+	for _, selector := range []string{"", "random", "premium_random_v1", "testo_sotto", "below", "badge"} {
 		style, ok := ResolveEntityStyle(selector, "garlasco-plan", "garlasco-video", "chiara-poggi")
 		if !ok {
 			t.Fatalf("runtime selector %q did not resolve", selector)
@@ -248,8 +243,13 @@ func TestEntityCaptionMotionsAreCatalogBackedAndVariedByIdentity(t *testing.T) {
 	if !reflect.DeepEqual(pool, want) {
 		t.Fatalf("runtime entity-caption pool differs from selectable catalog: got %v want %v", pool, want)
 	}
-	if len(pool) < 12 {
-		t.Fatalf("entity caption pool has %d motions, want one per distinct behaviour (>=12)", len(pool))
+	// Nine is the current certified floor: the catalog cleanup retired every
+	// caption recipe that duplicated another motion's animated properties and
+	// direction, and the remaining nine are one per distinct behaviour. The
+	// exact-equality check above is the real invariant; this floor only guards
+	// against an accidental collapse of the pool.
+	if len(pool) < 9 {
+		t.Fatalf("entity caption pool has %d motions, want one per distinct behaviour (>=9)", len(pool))
 	}
 	choose := func(planID, videoID, itemID string) string {
 		return entityCaptionMotionIDForIdentity("", planID, videoID, itemID)
