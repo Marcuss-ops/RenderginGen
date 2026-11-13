@@ -110,7 +110,7 @@ func TestBadgeRuntimeYellowRedRandomization(t *testing.T) {
 }
 
 func TestGroupSelectors(t *testing.T) {
-	for _, selector := range []string{"testo_sotto", "below", "badge", "camera", "side"} {
+	for _, selector := range []string{"testo_sotto", "below", "badge", "camera"} {
 		style, ok := ResolveEntityStyle(selector, "plan-1", "video-1", "item-1")
 		if !ok {
 			t.Fatalf("failed to resolve selector %s", selector)

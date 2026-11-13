@@ -208,10 +208,39 @@ func resolveTextSpecGeometry(ri resolvedItem, src *semanticPlan, spec resolvedTe
 	if lines > 1 {
 		fontSize := estimatedSpecFontSize(spec)
 		needed := int(float64(lines)*fontSize*1.45) + 16 // line spacing and effect padding
-		if needed > spec.BoxHeight {
+		if needed > src.Height {
+			// A text box cannot be taller than the canvas. Before clipping,
+			// shrink the authored font to the largest size whose wrapped lines
+			// still fit the safe area. This is the last-resort guard; PipelineGen
+			// normally splits long copy into independent phrases first.
+			available := float64(src.Height - 16)
+			if available < 16 {
+				available = float64(src.Height)
+			}
+			maxFont := available / (float64(lines) * 1.45)
+			if maxFont < 8 {
+				maxFont = 8
+			}
+			if maxFont < fontSize {
+				spec.FontSize = maxFont
+				if spec.Style == nil {
+					spec.Style = &LayerStyle{}
+				}
+				spec.Style.FontSize = maxFont
+				if spec.Style.MinFontSize <= 0 || spec.Style.MinFontSize > maxFont {
+					spec.Style.MinFontSize = maxFont
+				}
+				if spec.Style.MaxFontSize <= 0 || spec.Style.MaxFontSize > maxFont {
+					spec.Style.MaxFontSize = maxFont
+				}
+				fontSize = maxFont
+				needed = int(float64(lines)*fontSize*1.45) + 16
+			}
 			if needed > src.Height {
 				needed = src.Height
 			}
+		}
+		if needed > spec.BoxHeight {
 			spec.BoxHeight = needed
 		}
 	}

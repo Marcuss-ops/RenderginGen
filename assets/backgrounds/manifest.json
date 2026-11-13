@@ -67,14 +67,6 @@
       "role": "channel-boxe"
     },
     {
-      "id": "drive-background-crime",
-      "file": "background-crime.mp4",
-      "sha256": "9080390bfdfbda049f4926189d4e05c57e01e50b525cdf0cde02970a86192529",
-      "source_drive_file_id": "1VVXMvyAl57pUyM49jgD22Wk7RixMWuaM",
-      "media_type": "video/mp4",
-      "role": "channel-crime"
-    },
-    {
       "id": "drive-background-music",
       "file": "background-music.mp4",
       "sha256": "bbdc74d29cd0bcf0e439c20ddcfba97902e2cb81b382ccd0687853dd26808990",

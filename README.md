@@ -102,6 +102,15 @@ schermo intero, `cover` e sfocata. Il default è zoom `1.15x` e blur `18 px`;
 il payload può scegliere `zoom` da `1x` a `10x` e `blur_px` da `6` a `48`.
 Questa opzione è rifiutata sui compositi e sui gruppi.
 
+`image_backdrop.grid` aggiunge una griglia chiara a schermo intero sopra il
+backdrop e la card, come nel pacchetto editoriale `image_backdrop_grid`.
+Il payload sceglie `enabled`, `style` (`lines` o `dots`), `color`
+(`#RRGGBB`, default `#7FA8C8`), `spacing_px` (`4..512`, default `120`),
+`opacity` (`0..1`, default `0.1`) e, per lo stile scelto, `line_width_px`
+(`0.25..32`, default `1`) oppure `dot_radius_px` (`0.5..64`, default `2`).
+Le due geometrie sono mutuamente esclusive: un `line_width_px` su uno stile
+a punti, o un `dot_radius_px` su uno a linee, viene rifiutato.
+
 Ombra e contorno sono selezionabili nel payload sia per una foto singola
 (`item.frame`) sia per ogni membro di un composito o gruppo
 (`image_layers[].frame`). `frame` espone `border` (spessore, colore e raggio),
@@ -114,7 +123,9 @@ Esempio di foto singola:
 ```json
 {
   "params": {"width": 600, "height": 800, "bounded": true, "fit": "contain",
-    "image_backdrop": {"zoom": 1.15, "blur_px": 18}},
+    "image_backdrop": {"zoom": 1.15, "blur_px": 18,
+      "grid": {"style": "lines", "color": "#7FA8C8", "spacing_px": 120,
+        "line_width_px": 1, "opacity": 0.1}}},
   "frame": {
     "border": {"width_px": 5, "color": "#FFFFFF", "radius_px": 24},
     "shadow": {"color": "#000000", "opacity": 0.65, "blur_px": 16,

@@ -106,6 +106,89 @@ func TestStandaloneImageBackdropUsesSameImageAndCapsZoom(t *testing.T) {
 	}
 }
 
+// TestStandaloneImageBackdropGridLowersLightCanvasGrid proves the payload can
+// pair the blurred same-image backdrop with a light canvas grid and that colour,
+// spacing, line width and opacity survive lowering onto the screen-space shape.
+func TestStandaloneImageBackdropGridLowersLightCanvasGrid(t *testing.T) {
+	extra := `,"params":{"image_backdrop":{"zoom":1.2,"blur_px":24,"grid":{"style":"lines","color":"#7FA8C8","spacing_px":64,"line_width_px":1.5,"opacity":0.12}}}`
+	result, err := CompileSemantic(imageEffectsPlan(extra))
+	if err != nil {
+		t.Fatalf("compile image backdrop grid: %v", err)
+	}
+	if len(result.Plan.Layers) != 3 {
+		t.Fatalf("layers = %+v; want backdrop, foreground and grid", result.Plan.Layers)
+	}
+	grid := result.Plan.Layers[2]
+	if grid.ID != "fx-image:image-grid" || grid.Type != "shape" || grid.Shape == nil || grid.Shape.Type != "grid" {
+		t.Fatalf("grid layer = %+v", grid)
+	}
+	if !grid.ScreenSpace {
+		t.Fatalf("backdrop grid must be a screen-space shape: %+v", grid)
+	}
+	if grid.Shape.GridSpacing != 64 || grid.Shape.Stroke == nil || grid.Shape.Stroke.Color != "#7FA8C8" || grid.Shape.Stroke.Width != 1.5 {
+		t.Fatalf("grid geometry = %+v", grid.Shape)
+	}
+	if grid.Opacity == nil || *grid.Opacity != 0.12 {
+		t.Fatalf("grid opacity = %v, want 0.12", grid.Opacity)
+	}
+	if grid.StartFrame != 0 || grid.DurationFrames == 0 {
+		t.Fatalf("grid timing = [%d,%d)", grid.StartFrame, grid.DurationFrames)
+	}
+}
+
+// TestStandaloneImageBackdropGridSupportsDotsAndDisabling pins the dot style
+// and the explicit off switch: a disabled grid lowers no extra layer.
+func TestStandaloneImageBackdropGridSupportsDotsAndDisabling(t *testing.T) {
+	extra := `,"params":{"image_backdrop":{"grid":{"style":"dots","color":"#FFFFFF","spacing_px":48,"dot_radius_px":3,"opacity":0.2}}}`
+	result, err := CompileSemantic(imageEffectsPlan(extra))
+	if err != nil {
+		t.Fatalf("compile dot backdrop grid: %v", err)
+	}
+	if len(result.Plan.Layers) != 3 {
+		t.Fatalf("layers = %+v; want backdrop, foreground and dot grid", result.Plan.Layers)
+	}
+	grid := result.Plan.Layers[2]
+	if grid.Shape == nil || grid.Shape.Type != "dot_grid" || grid.Shape.GridSpacing != 48 || grid.Shape.DotRadius != 3 {
+		t.Fatalf("dot grid geometry = %+v", grid.Shape)
+	}
+	if grid.Opacity == nil || *grid.Opacity != 0.2 {
+		t.Fatalf("dot grid opacity = %v, want 0.2", grid.Opacity)
+	}
+
+	disabled, err := CompileSemantic(imageEffectsPlan(`,"params":{"image_backdrop":{"grid":{"enabled":false}}}`))
+	if err != nil {
+		t.Fatalf("compile disabled backdrop grid: %v", err)
+	}
+	if len(disabled.Plan.Layers) != 2 {
+		t.Fatalf("disabled grid lowered %d layers, want backdrop and foreground only: %+v", len(disabled.Plan.Layers), disabled.Plan.Layers)
+	}
+}
+
+// TestStandaloneImageBackdropGridFailsClosed proves malformed grid controls are
+// compile errors, never a silently missing visual treatment.
+func TestStandaloneImageBackdropGridFailsClosed(t *testing.T) {
+	for _, tc := range []struct {
+		name  string
+		grid  string
+		error string
+	}{
+		{"not an object", `"on"`, "must be an object"},
+		{"unknown property", `{"density":3}`, "unsupported property"},
+		{"bad style", `{"style":"crosses"}`, "style"},
+		{"bad color", `{"color":"red"}`, "color"},
+		{"spacing too small", `{"spacing_px":2}`, "spacing_px"},
+		{"spacing too large", `{"spacing_px":513}`, "spacing_px"},
+		{"opacity out of range", `{"opacity":1.5}`, "opacity"},
+		{"line width on dots", `{"style":"dots","line_width_px":1}`, "line_width_px"},
+		{"dot radius on lines", `{"style":"lines","dot_radius_px":2}`, "dot_radius_px"},
+	} {
+		plan := imageEffectsPlan(`,"params":{"image_backdrop":{"grid":` + tc.grid + `}}`)
+		if _, err := CompileSemantic(plan); err == nil || !strings.Contains(err.Error(), tc.error) {
+			t.Errorf("%s: error = %v, want mention of %q", tc.name, err, tc.error)
+		}
+	}
+}
+
 func TestImageFramePayloadControlsShadowAndBorder(t *testing.T) {
 	extra := `,"frame":{"border":{"width_px":5,"color":"#38BDF8","radius_px":24},"shadow":{"color":"#101820","opacity":0.6,"blur_px":12,"offset_x_px":2,"offset_y_px":5}}`
 	result, err := CompileSemantic(imageEffectsPlan(extra))

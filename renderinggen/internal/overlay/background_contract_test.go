@@ -160,30 +160,46 @@ func TestBackgroundColorKeepsNoFitContract(t *testing.T) {
 	}
 }
 
-// TestBackgroundPlateIsTopLeftAnchored pins the renderer contract every
-// full-canvas plate depends on: color/image/video backgrounds carry an
-// explicit top-left position. A missing position is measured by the renderer
-// as a canvas-center offset, which shrinks the plate to the top-left quadrant
-// and leaves the rest of the frame on the black clear color (a declared white
-// canvas rendered black corners on the standalone entity portrait).
-func TestBackgroundPlateIsTopLeftAnchored(t *testing.T) {
-	plans := map[string]string{
-		"color": fmt.Sprintf(`{"kind":"color","color":%s}`, certificationBackgroundRGBA),
-		"image": backgroundAssetJSON("image", "assets/semantic/bg-plate/background.png", "image/png"),
-		"video": backgroundAssetJSON("video", "assets/semantic/bg-plate/background.mp4", "video/mp4"),
+// TestBackgroundPlateUsesPerTypePositionContract pins the renderer contract
+// every full-canvas plate depends on. Image and color layers read `position`
+// as an offset from the canvas centre, so [0,0] is the full canvas. A video
+// layer reads it as the box top-left in canvas-centred coordinates and the
+// engine adds half the box (scene_lowering.cpp), so a full-canvas video plate
+// must carry [-W/2,-H/2]. Emitting [0,0] for the video moved its centre to
+// (+W/2,+H/2) and rendered only the bottom-right quadrant (r37 crime plate).
+func TestBackgroundPlateUsesPerTypePositionContract(t *testing.T) {
+	plans := map[string]struct {
+		background string
+		wantX      float64
+		wantY      float64
+	}{
+		"color": {fmt.Sprintf(`{"kind":"color","color":%s}`, certificationBackgroundRGBA), 0, 0},
+		"image": {backgroundAssetJSON("image", "assets/semantic/bg-plate/background.png", "image/png"), 0, 0},
+		"video": {backgroundAssetJSON("video", "assets/semantic/bg-plate/background.mp4", "video/mp4"), -960, -540},
 	}
-	for kind, background := range plans {
+	for kind, contract := range plans {
 		t.Run(kind, func(t *testing.T) {
-			result, err := CompileSemantic([]byte(backgroundOnlyPlanJSON(background)))
+			result, err := CompileSemantic([]byte(backgroundOnlyPlanJSON(contract.background)))
 			if err != nil {
 				t.Fatalf("compile %s background: %v", kind, err)
 			}
 			layer := result.Plan.Layers[0]
-			if len(layer.Position) != 2 || layer.Position[0] != 0 || layer.Position[1] != 0 {
-				t.Fatalf("%s background position = %v, want [0 0] (top-left anchored full canvas)", kind, layer.Position)
+			if len(layer.Position) != 2 || layer.Position[0] != contract.wantX || layer.Position[1] != contract.wantY {
+				t.Fatalf("%s background position = %v, want [%v %v]", kind, layer.Position, contract.wantX, contract.wantY)
 			}
 			if len(layer.Size) != 2 || layer.Size[0] != 1920 || layer.Size[1] != 1080 {
 				t.Fatalf("%s background size = %v, want the canvas geometry", kind, layer.Size)
+			}
+			// Replay the engine: non-video positions are already centre
+			// offsets; video positions are box top-lefts, so the engine adds
+			// half the box. Both must resolve to the canvas centre.
+			centreX, centreY := layer.Position[0], layer.Position[1]
+			if kind == "video" {
+				centreX += layer.Size[0] / 2
+				centreY += layer.Size[1] / 2
+			}
+			if centreX != 0 || centreY != 0 {
+				t.Fatalf("%s background resolves to centre (%v,%v), want the canvas centre (0,0)", kind, centreX, centreY)
 			}
 		})
 	}
