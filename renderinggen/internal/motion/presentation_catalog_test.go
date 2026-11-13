@@ -67,6 +67,54 @@ func TestPresentationCatalogFamilyAndPresetParity(t *testing.T) {
 	}
 }
 
+func TestPresentationFamilyGroupsCoverEveryCertifiedFamily(t *testing.T) {
+	for _, tc := range []struct {
+		name     string
+		families []string
+		ids      []string
+		want     int
+		excluded []string
+	}{
+		{"date", DatePresentationFamilyIDs(), DatePresentationMotionIDs(), 39, []string{"date_calendar_flip"}},
+		{"metric", MetricPresentationFamilyIDs(), MetricPresentationMotionIDs(), 40, nil},
+	} {
+		if len(tc.families) != 3 {
+			t.Fatalf("%s families = %v, want exactly three certified families", tc.name, tc.families)
+		}
+		if len(tc.ids) != tc.want {
+			t.Fatalf("%s motions = %d, want %d", tc.name, len(tc.ids), tc.want)
+		}
+		seen := make(map[string]bool, len(tc.ids))
+		for _, id := range tc.ids {
+			if seen[id] {
+				t.Errorf("%s motion %q is duplicated", tc.name, id)
+			}
+			seen[id] = true
+			for _, excluded := range tc.excluded {
+				if id == excluded {
+					t.Errorf("%s automatic pool contains excluded motion %q", tc.name, id)
+				}
+			}
+			plugin, err := Registry.Resolve(id)
+			if err != nil {
+				t.Errorf("%s resolve %q: %v", tc.name, id, err)
+				continue
+			}
+			definition := plugin.(DeclarativePlugin).Definition
+			allowed := false
+			for _, family := range tc.families {
+				if definition.Category == family {
+					allowed = true
+					break
+				}
+			}
+			if !allowed {
+				t.Errorf("%s motion %q belongs to %q, outside %v", tc.name, id, definition.Category, tc.families)
+			}
+		}
+	}
+}
+
 func TestPresentationCatalogRejectsFamilyMetadataAndTrackDrift(t *testing.T) {
 	catalog, err := Canonical()
 	if err != nil {

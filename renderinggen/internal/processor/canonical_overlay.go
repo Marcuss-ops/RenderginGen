@@ -54,15 +54,6 @@ func isCanonicalOverlayV3(profileID string) bool {
 	return profileID == media.ProfileVeloxOverlayVideoOnlyV3
 }
 
-// canonicalOverlayFFmpegArgs is the exact canonical encoder recipe. The avcC
-// identity depends on every one of these settings, not just profile/level:
-// refs, B-frames, scene-cut/keyint behaviour and the VUI colour tags all land
-// in the parameter sets. Do not reorder or "simplify" this list without
-// re-certifying CanonicalVideoExtradataSHA256.
-func canonicalOverlayFFmpegArgs(input, output string) []string {
-	return canonicalOutputFFmpegArgs(input, output, false)
-}
-
 // canonicalOutputFFmpegArgs is the exact canonical encoder recipe. The avcC
 // identity depends on every one of these settings, not just profile/level:
 // refs, B-frames, scene-cut/keyint behaviour and the VUI colour tags all land
@@ -72,7 +63,12 @@ func canonicalOverlayFFmpegArgs(input, output string) []string {
 // keepAudio copies the source audio track untouched. The audio mapping does not
 // change the video parameter sets, so the same recipe certifies both the
 // video-only V3 overlay and the assembly-ready V1 clip (which keeps its audio).
-func canonicalOutputFFmpegArgs(input, output string, keepAudio bool) []string {
+//
+// fpsNum/fpsDen are REQUIRED: the canonical profile is a property of the
+// emitted bytes, not of the source. The previous passthrough preserved a 25 fps
+// source and the profile gate rejected the artifact after the render (live
+// clip.render failure: fps=25/1, want 24/1).
+func canonicalOutputFFmpegArgs(input, output string, keepAudio bool, fpsNum, fpsDen int) []string {
 	args := []string{
 		"-hide_banner", "-loglevel", "error", "-y",
 		"-i", input,
@@ -83,10 +79,14 @@ func canonicalOutputFFmpegArgs(input, output string, keepAudio bool) []string {
 	} else {
 		args = append(args, "-an", "-sn", "-dn")
 	}
+	args = append(args,
+		// Emit the profile cadence, not the source cadence. CFR duplicates or
+		// drops frames exactly as the assembly contract requires; passthrough
+		// let a 25 fps source reach the profile gate and fail after the render.
+		"-fps_mode", "cfr",
+		"-r", fmt.Sprintf("%d/%d", fpsNum, fpsDen),
+	)
 	return append(args,
-		// Preserve the source frame cadence exactly (no duplication/drop
-		// caused by timestamp rounding at the new 1/90000 timebase).
-		"-fps_mode", "passthrough",
 		"-c:v", "libx264",
 		"-preset", "veryfast",
 		"-crf", "23",
@@ -108,11 +108,12 @@ func canonicalOutputFFmpegArgs(input, output string, keepAudio bool) []string {
 	)
 }
 
-// canonicalizeOverlayArtifacts canonicalizes the fused output and every P4
-// segment of a prepared job. It returns true when at least one artifact was
-// re-encoded; the caller uses that to revoke a native certification that no
-// longer describes the final bytes.
-func (p *Processor) canonicalizeOverlayArtifacts(ctx context.Context, prepared *PreparedJob) (bool, error) {
+// canonicalizePreparedOutputs canonicalizes the fused output and every P4
+// segment of a prepared job. It serves both canonicalized lanes: the
+// video-only V3 overlay and the assembly-ready V1 clip. It returns true when
+// at least one artifact was re-encoded; the caller uses that to revoke a
+// native certification that no longer describes the final bytes.
+func (p *Processor) canonicalizePreparedOutputs(ctx context.Context, prepared *PreparedJob) (bool, error) {
 	if prepared == nil || prepared.Plan == nil {
 		return false, nil
 	}
@@ -125,12 +126,12 @@ func (p *Processor) canonicalizeOverlayArtifacts(ctx context.Context, prepared *
 	for _, segment := range prepared.Segments {
 		paths = append(paths, segment.OutputPath)
 	}
-	return p.canonicalizeOverlayPaths(ctx, prepared.Job.ID, paths, prepared.Metrics, metadata.ProfileID)
+	return p.canonicalizeOutputPaths(ctx, prepared.Job.ID, paths, prepared.Metrics, metadata.ProfileID)
 }
 
-// canonicalizeOverlayPaths canonicalizes an explicit set of outputs. The P4
+// canonicalizeOutputPaths canonicalizes an explicit set of outputs. The P4
 // single-segment retry uses it for the one segment it re-rendered.
-func (p *Processor) canonicalizeOverlayPaths(ctx context.Context, jobID string, paths []string, metrics map[string]float64, profileID string) (bool, error) {
+func (p *Processor) canonicalizeOutputPaths(ctx context.Context, jobID string, paths []string, metrics map[string]float64, profileID string) (bool, error) {
 	seen := make(map[string]struct{}, len(paths))
 	changed := false
 	var total time.Duration
@@ -186,7 +187,7 @@ func canonicalizeOutputMP4(ctx context.Context, path, profileID string) (bool, e
 	temp := path + ".canonical.tmp.mp4"
 	_ = os.Remove(temp)
 	defer os.Remove(temp)
-	cmd := exec.CommandContext(ctx, "ffmpeg", canonicalOutputFFmpegArgs(path, temp, keepAudio)...)
+	cmd := exec.CommandContext(ctx, "ffmpeg", canonicalOutputFFmpegArgs(path, temp, keepAudio, profile.FPSNum, profile.FPSDen)...)
 	if output, err := cmd.CombinedOutput(); err != nil {
 		return false, fmt.Errorf("ffmpeg canonical encode: %w: %s", err, output)
 	}

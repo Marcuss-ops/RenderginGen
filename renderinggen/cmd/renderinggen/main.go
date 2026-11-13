@@ -39,6 +39,20 @@ import (
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/workermetrics"
 )
 
+// workerRegistrar is the queue surface the shutdown path needs. Keeping it an
+// interface makes the drain registration testable without a live queue.
+type workerRegistrar interface {
+	Register(context.Context, queue.Worker) error
+}
+
+// markWorkerDraining re-registers the worker with the draining lifecycle
+// status. The whole registration is sent: the queue upsert overwrites every
+// column, so a partial payload would erase the worker identity.
+func markWorkerDraining(ctx context.Context, registrar workerRegistrar, registration queue.Worker) error {
+	registration.Status = queue.WorkerStatusDraining
+	return registrar.Register(ctx, registration)
+}
+
 func main() {
 	configPath := flag.String("config", "/etc/renderinggen/config.yaml", "path to config file")
 	flag.Parse()
@@ -339,7 +353,7 @@ func main() {
 	// 4b. Register worker in queue liveness registry now that all dependencies
 	// and health checks are up and verified.
 	hostname, _ := os.Hostname()
-	if err := queueClient.Register(ctx, queue.Worker{
+	workerRegistration := queue.Worker{
 		ID:                   cfg.Worker.ID,
 		Hostname:             hostname,
 		Status:               queue.WorkerStatusReady,
@@ -350,7 +364,8 @@ func main() {
 		GPUDevice:            fmt.Sprintf("%d", gpuInfo.Device),
 		GPUDriver:            gpuInfo.Driver,
 		StartedAt:            time.Now().UTC(),
-	}); err != nil {
+	}
+	if err := queueClient.Register(ctx, workerRegistration); err != nil {
 		log.Fatalf("queue worker registration: %v", err)
 	}
 	// Surface sustained queue disconnect on /health and in the logs instead of
@@ -410,5 +425,17 @@ func main() {
 		}()
 	}
 	workers.Wait()
+	// SIGTERM/SIGINT has already cancelled ctx and drained the pools. Mark the
+	// registration draining with a FRESH context: ctx is done, so reusing it
+	// would make the final status update a silent no-op. The FULL registration
+	// is re-sent because the queue upsert replaces every column; sending only
+	// {id,status} would erase hostname and versions.
+	drainCtx, cancelDrain := context.WithTimeout(context.Background(), 5*time.Second)
+	if err := markWorkerDraining(drainCtx, queueClient, workerRegistration); err != nil {
+		log.Printf("queue worker drain registration: %v", err)
+	} else {
+		log.Printf("worker %s marked draining", cfg.Worker.ID)
+	}
+	cancelDrain()
 	log.Println("shutting down")
 }

@@ -1,540 +1,436 @@
-/home/pierone/src/go-master/projects/Pyt/VeloxEditing/Chronon3d/build/chronon/linux-video-release/apps/chronon3d_cli/chronon3d_cli render --plan /home/pierone/src/go-master/projects/Pyt/VeloxEditing/RenderingGen/UploadDrive/ae_text_parity_20261109/plans/04_typewriter.plan.json --assets-root /home/pierone/src/go-master/projects/Pyt/VeloxEditing/Chronon3d --backend vulkan --gpu-hot-path-mode require_gpu_native --tone-map aces --exposure 1.0 -o /home/pierone/src/go-master/projects/Pyt/VeloxEditing/RenderingGen/UploadDrive/ae_text_parity_20261109/videos/04_typewriter_1920x1080_6s.mp4
-
-[2026-11-09 13:51:07.283] [info] [asset-profile] kind=3 path=assets/fonts/SF-Pro-Display-Semibold.otf bytes=335964 cache=miss invalidated=0 stat=0.01ms hash=3.70ms hashed_bytes=335964 total=3.78ms
-[2026-11-09 13:51:07.284] [info] [asset-digest-cache] hits=0 misses=1 invalidations=0 bytes_hashed=335964 lookup_ms=0.00 write_ms=0.00 full_hash_ms=3.70
-[2026-11-09 13:51:07.284] [info] [asset-profile] kind=3 path=assets/fonts/SF-Pro-Display-Semibold.otf bytes=335964 cache=hit invalidated=0 stat=0.01ms hash=0.00ms hashed_bytes=0 total=0.06ms
-[2026-11-09 13:51:07.284] [info] [asset-digest-cache] hits=1 misses=0 invalidations=0 bytes_hashed=0 lookup_ms=0.00 write_ms=0.00 full_hash_ms=0.00
-[2026-11-09 13:51:07.284] [info] [plan-compile-profile] assets=0.11ms fingerprint=0.04ms media_resolution=0.00ms materialize=0.17ms composition_compile=0.04ms compatibility_view=0.00ms total=0.53ms
-[2026-11-09 13:51:07.284] [info] [plan] text-transition plan routed to legacy CompiledComposition
-[2026-11-09 13:51:07.284] [info] [plan-profile] read=0.10ms parse=0.07ms decode=50.81ms resolver=0.04ms compile_validate=4.77ms total=55.80ms
-[2026-11-09 13:51:07.284] [info] [video] Auto-selecting yuv420p pipe pixel format for 1920x1080 output
-[2026-11-09 13:51:07.285] [info] [video] execution plan resolved (reason: required_gpu_native_full_graph); decode=1 composite=2 encode=1 interop=2 handoff=1 codec=3
-[2026-11-09 13:51:07.299] [info] [video-runtime] created persistent runtime for device 0 (CUDA ordinal 0)
-[2026-11-09 13:51:07.300] [info] [video] encoder feed capability: host_frame=false direct_yuv=false native_surface=true
-[2026-11-09 13:51:07.493] [info] [native_av] CUDA context contract: native=0x56312d197600 ffmpeg=0x56312d197600
-[2026-11-09 13:51:07.503] [info] [native_av] NVENC tuning applied: rc=driver-default preset=slow async_depth=4 nvenc_surfaces=8 qp=-1 bitrate=0
-[h264_nvenc @ 0x56312d108880] Defined rc_lookahead requires more surfaces, increasing used surfaces 8 -> 34
-[2026-11-09 13:51:07.576] [info] [native_av] encoder bitstream contract: codec=27 profile=100 level=-99 pix_fmt=117 parameter_sets=53 materialized=true
-[2026-11-09 13:51:07.577] [info] [native_av] Opened native encoder: 1920x1080 @ 30fps, codec=h264_nvenc, rc=driver-default, preset=slow, output='/home/pierone/src/go-master/projects/Pyt/VeloxEditing/RenderingGen/UploadDrive/ae_text_parity_20261109/videos/04_typewriter_1920x1080_6s.partial.mp4'
-[2026-11-09 13:51:08.266] [info] [pool-warm] Pre-allocated and pre-imported 6 execution slots (1920x1080) for native NVENC
-[2026-11-09 13:51:08.416] [info] [temp-lifetime] frame=0 after_level=0 live=[0,1,] retired=[]
-[2026-11-09 13:51:08.416] [info] [exec-level-diag] frame=0 level=0 nodes=2 input_ms=0.002 dispatch_ms=10.394 fb_release_ms=0.001
-[2026-11-09 13:51:08.416] [info] [graph-edge] frame=0 level=1 consumer_id=2 input_index=0 producer_id=0 producer_level=0
-[2026-11-09 13:51:08.416] [info] [graph-edge] frame=0 level=1 consumer_id=2 input_index=1 producer_id=1 producer_level=0
-[2026-11-09 13:51:08.416] [info] [temp-lifetime] frame=0 after_level=1 live=[2,] retired=[0,1,]
-[2026-11-09 13:51:08.416] [info] [exec-level-diag] frame=0 level=1 nodes=1 input_ms=0.018 dispatch_ms=0.091 fb_release_ms=0.003
-[2026-11-09 13:51:08.417] [info] [video] Exporting via Arena-backed SIMD pipeline
-[2026-11-09 13:51:08.433] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.433] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:08.434] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.552] [info] chronon3d::vulkan text batch formats: dst_image.format=109 atlas_image.format=44 atlas_encoding=2 (shader contract: dst rgba32f, atlas rgba8)
-[2026-11-09 13:51:08.555] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.556] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:08.557] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.561] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.561] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:08.561] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.564] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.565] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:08.565] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.570] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.571] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:08.571] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.573] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.574] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:08.574] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.576] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.577] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:08.577] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.579] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.580] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:08.580] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.582] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.582] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:08.582] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.594] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.595] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:08.595] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.597] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.598] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:08.598] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.598] [info] [video]   18/180 frames
-[2026-11-09 13:51:08.600] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.600] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:08.600] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.603] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.603] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:08.603] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.605] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.606] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:08.606] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.635] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.636] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:08.636] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.639] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.639] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:08.639] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.641] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.642] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:08.642] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.644] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.645] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:08.645] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.647] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.648] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:08.648] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.648] [info] [vulkan-lifecycle] frame=25 vram_bytes=670924800 live_surfaces=17 surface_bindings=12 registry_live_handles=104 physical_images=17 deferred_releases=0 vma_allocations=49 surfaces_created=104 surfaces_released=92 queue_packages=1 execution_slots_busy=2 command_batch_active=false
-[2026-11-09 13:51:08.650] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.651] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:08.651] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.656] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.657] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:08.657] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.659] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.660] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:08.660] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.662] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.663] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:08.663] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.666] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.666] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:08.666] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.671] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.671] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:08.671] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.675] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.675] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:08.676] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.679] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.680] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:08.680] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.684] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.684] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:08.684] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.688] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.688] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:08.688] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.689] [info] [video]   36/180 frames
-[2026-11-09 13:51:08.692] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.692] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:08.692] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.696] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.697] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:08.697] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.700] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.701] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:08.701] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.704] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.705] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:08.705] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.708] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.709] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:08.709] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.712] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.713] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:08.713] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.716] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.717] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:08.717] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.720] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.721] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:08.721] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.724] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.725] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:08.725] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.728] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.729] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:08.729] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.732] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.733] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:08.733] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.736] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.737] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:08.737] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.744] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.745] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:08.745] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.748] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.749] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:08.749] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.760] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.761] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:08.761] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.762] [info] [vulkan-lifecycle] frame=50 vram_bytes=670924800 live_surfaces=17 surface_bindings=12 registry_live_handles=229 physical_images=17 deferred_releases=0 vma_allocations=49 surfaces_created=229 surfaces_released=217 queue_packages=1 execution_slots_busy=2 command_batch_active=false
-[2026-11-09 13:51:08.764] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.765] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:08.765] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.768] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.770] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:08.770] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.772] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.774] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:08.774] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.775] [info] [video]   54/180 frames
-[2026-11-09 13:51:08.778] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.780] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:08.780] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.783] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.785] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:08.785] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.789] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.790] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:08.790] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.794] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.796] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:08.796] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.799] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.801] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:08.801] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.804] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.806] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:08.806] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.809] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.811] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:08.811] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.814] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.816] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:08.816] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.820] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.821] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:08.822] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.825] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.827] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:08.827] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.830] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.832] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:08.832] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.835] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.837] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:08.837] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.840] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.842] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:08.842] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.882] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.884] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:08.884] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.886] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.888] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:08.888] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.891] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.891] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:08.892] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.896] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.898] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:08.898] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.901] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.903] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:08.903] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.904] [info] [video]   72/180 frames
-[2026-11-09 13:51:08.906] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.908] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:08.908] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.912] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.913] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:08.914] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.917] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.919] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:08.919] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.922] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.924] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:08.924] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.925] [info] [vulkan-lifecycle] frame=75 vram_bytes=670924800 live_surfaces=17 surface_bindings=12 registry_live_handles=354 physical_images=17 deferred_releases=0 vma_allocations=49 surfaces_created=354 surfaces_released=342 queue_packages=1 execution_slots_busy=2 command_batch_active=false
-[2026-11-09 13:51:08.927] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.929] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:08.929] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.932] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.934] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:08.934] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.937] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.939] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:08.940] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.943] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.945] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:08.945] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.948] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.950] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:08.950] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.953] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.955] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:08.955] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.958] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.960] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:08.960] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.964] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.965] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:08.966] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.969] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.971] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:08.971] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.974] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.975] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:08.975] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.979] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.981] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:08.981] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.984] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.986] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:08.986] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.989] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.991] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:08.992] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.995] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.997] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:08.997] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:08.998] [info] [video]   90/180 frames
-[2026-11-09 13:51:09.000] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:09.001] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:09.002] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:09.005] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:09.007] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:09.007] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:09.011] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:09.013] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:09.013] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:09.016] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:09.018] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:09.018] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:09.021] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:09.023] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:09.023] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:09.027] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:09.029] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:09.029] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:09.032] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:09.034] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:09.034] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:09.037] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:09.039] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:09.039] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:09.042] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:09.044] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:09.044] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:09.048] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:09.049] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:09.049] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:09.052] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:09.053] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:09.053] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:09.053] [info] [vulkan-lifecycle] frame=100 vram_bytes=670924800 live_surfaces=17 surface_bindings=12 registry_live_handles=479 physical_images=17 deferred_releases=0 vma_allocations=49 surfaces_created=479 surfaces_released=467 queue_packages=1 execution_slots_busy=2 command_batch_active=false
-[2026-11-09 13:51:09.055] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:09.056] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:09.057] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:09.059] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:09.061] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:09.061] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:09.063] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:09.065] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:09.065] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:09.067] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:09.069] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:09.069] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:09.071] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:09.073] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:09.073] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:09.075] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:09.077] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:09.077] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:09.079] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:09.081] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:09.081] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:09.082] [info] [video]   108/180 frames
-[2026-11-09 13:51:09.083] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:09.085] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:09.085] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:09.087] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:09.089] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:09.089] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:09.091] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:09.093] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:09.093] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:09.095] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:09.097] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:09.097] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:09.099] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:09.101] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:09.101] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:09.104] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:09.105] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:09.105] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:09.108] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:09.108] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:09.108] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:09.111] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:09.112] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:09.112] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:09.115] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:09.116] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:09.116] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:09.119] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:09.121] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:09.121] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:09.123] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:09.125] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:09.125] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:09.127] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:09.129] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:09.129] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:09.131] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:09.133] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:09.133] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:09.135] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:09.137] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:09.137] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:09.155] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:09.157] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:09.157] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:09.159] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:09.161] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:09.162] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:09.165] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:09.166] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:09.167] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:09.170] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:09.172] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:09.172] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:09.173] [info] [vulkan-lifecycle] frame=125 vram_bytes=670924800 live_surfaces=17 surface_bindings=12 registry_live_handles=604 physical_images=17 deferred_releases=0 vma_allocations=49 surfaces_created=604 surfaces_released=592 queue_packages=1 execution_slots_busy=2 command_batch_active=false
-[2026-11-09 13:51:09.173] [info] [video]   126/180 frames
-[2026-11-09 13:51:09.176] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:09.177] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:09.178] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:09.181] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:09.181] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:09.186] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:09.186] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:09.191] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:09.191] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:09.196] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:09.196] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:09.201] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:09.201] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:09.206] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:09.206] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:09.211] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:09.211] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:09.216] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:09.216] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:09.221] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:09.221] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:09.226] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:09.226] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:09.230] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:09.231] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:09.235] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:09.235] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:09.242] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:09.242] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:09.247] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:09.247] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:09.252] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:09.252] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:09.255] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:09.255] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:09.260] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:09.260] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:09.261] [info] [video]   144/180 frames
-[2026-11-09 13:51:09.265] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:09.266] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:09.270] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:09.270] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:09.274] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:09.274] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:09.277] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:09.277] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:09.281] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:09.281] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:09.284] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:09.284] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:09.288] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:09.288] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:09.289] [info] [vulkan-lifecycle] frame=150 vram_bytes=670924800 live_surfaces=17 surface_bindings=12 registry_live_handles=729 physical_images=17 deferred_releases=0 vma_allocations=49 surfaces_created=729 surfaces_released=717 queue_packages=1 execution_slots_busy=2 command_batch_active=false
-[2026-11-09 13:51:09.291] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:09.291] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:09.295] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:09.295] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:09.298] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:09.299] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:09.302] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:09.302] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:09.305] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:09.305] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:09.309] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:09.309] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:09.312] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:09.312] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:09.316] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:09.316] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:09.319] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:09.319] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:09.321] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:09.321] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:09.324] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:09.325] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:09.325] [info] [video]   162/180 frames
-[2026-11-09 13:51:09.328] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:09.328] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:09.332] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:09.332] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:09.337] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:09.337] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:09.343] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:09.343] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:09.349] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:09.349] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:09.355] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:09.356] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:09.361] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:09.362] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:09.368] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:09.368] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:09.374] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:09.374] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:09.381] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:09.381] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:09.387] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:09.387] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:09.393] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:09.393] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:09.400] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:09.400] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:09.406] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:09.406] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:09.407] [info] [vulkan-lifecycle] frame=175 vram_bytes=670924800 live_surfaces=17 surface_bindings=12 registry_live_handles=854 physical_images=17 deferred_releases=0 vma_allocations=49 surfaces_created=854 surfaces_released=842 queue_packages=1 execution_slots_busy=2 command_batch_active=false
-[2026-11-09 13:51:09.412] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:09.412] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:09.418] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:09.419] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:09.425] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:09.425] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:09.431] [warning] [text-bbox] CONSERVATIVE_EXPAND node=text predicted=(935, 441, 985, 639) w=50 h=198 min=(75, 45) font_size=150
-[2026-11-09 13:51:09.431] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
-[2026-11-09 13:51:09.433] [info] [video]   180/180 frames
-[2026-11-09 13:51:09.439] [info] [video] writer join complete
-[2026-11-09 13:51:09.439] [info] [drain-debug] start drain, capacity=6
-[2026-11-09 13:51:09.439] [info] [drain-debug] slot_id=4 has completion, waiting
-[2026-11-09 13:51:09.439] [info] [drain-debug] slot_id=4 wait complete
-[2026-11-09 13:51:09.439] [info] [drain-debug] reap done, busy_count=0
-[2026-11-09 13:51:09.439] [info] [video] trimming framebuffer pool
-[2026-11-09 13:51:09.439] [info] [video] Released framebuffer pool — memory trimmed
-[2026-11-09 13:51:09.439] [info] [video] frame-loop cleanup complete
-[2026-11-09 13:51:09.439] [info] [video] Encoder write blocked duration: 0.00 ms
-[2026-11-09 13:51:09.439] [info] [video_diag] conversion_and_copy_duration_ms: 0 ms
-[2026-11-09 13:51:09.439] [info] [video_diag] conversion_bytes_written=0 encoder_staging_copy_bytes=0 encoder_slot_reuses=0
-[2026-11-09 13:51:09.439] [info] [native_av] close: sending encoder flush
-[2026-11-09 13:51:09.488] [info] [native_av] close: encoder flush accepted
-[2026-11-09 13:51:09.546] [info] [native_av] close: packets drained=true
-[2026-11-09 13:51:09.546] [info] [native_av] close: finalizing mux session
-[2026-11-09 13:51:09.547] [info] [native_av] close: mux session finalized
-[2026-11-09 13:51:09.547] [info] [native_av] Closed native encoder — 180 frames accepted, encoder_packets=180 mux_packets=180 packet_pts=0..179, YUV cache: 0 hits / 0 misses
-[2026-11-09 13:51:09.547] [info] [native_av] native-surface timings — hwframe_pool_ms=10.5 c2v_prepare_ms=0.8 encode_drain_ms=1.3 send_ms=44.3 submit_counter_ms=42.2 backpressure_ms=0.0
-[2026-11-09 13:51:09.547] [info] [video_native] convert=12.21ms  send_frame=44.32ms  backpressure=0.00ms  flush=107.87ms  receive_packet=57.54ms  mux_write=1.69ms  trailer=0.70ms
-[2026-11-09 13:51:09.550] [info] [video] render_ms=1147.39 encode_ms=113.34 writer_encode_ms=68.95 wall_ms=2265.61 nvml_stop_ms=0.13
-[2026-11-09 13:51:09.550] [info] [video] FFmpeg queue wait duration: 0.40 ms
-[2026-11-09 13:51:09.571] [info] [video] copy_eligible=true sha256=b88fef1989c33a479a579722e42cca2bf260b7638ab206da1efb718ab113ba7b
-[2026-11-09 13:51:09.571] [info] [video] Wrote /home/pierone/src/go-master/projects/Pyt/VeloxEditing/RenderingGen/UploadDrive/ae_text_parity_20261109/videos/04_typewriter_1920x1080_6s.mp4
-[2026-11-09 13:51:09.572] [info] [startup-profile] total=953.51ms logger=0.04ms cli_bootstrap=2.71ms cli_parse=nullms composition=0.11ms plan_read=0.10ms json_parse=0.07ms plan_decode_validate=50.81ms asset_resolve=0.04ms plan_compile=4.77ms unaccounted=85.85ms
-[2026-11-09 13:51:09.587] [info] [video] Wrote exact per-frame timing sidecar: /home/pierone/src/go-master/projects/Pyt/VeloxEditing/RenderingGen/UploadDrive/ae_text_parity_20261109/videos/04_typewriter_1920x1080_6s.mp4.timing.json
-[2026-11-09 13:51:09.648] [info] [INFO] job-lifecycle: queue_close_ms=0.0 writer_join_ms=0.0 encoder_reset_ms=58.8 decoder_reset_ms=0.0 full_graph_reset_ms=0.0 sink_ctx_reset_ms=0.0 device_runtime_reset_ms=0.0 device_reservation_reset_ms=0.0
-[2026-11-09 13:51:09.648] [info] [INFO] job-lifecycle: sidecar_write_ms=17.6 session_teardown_ms=59.1
-[2026-11-09 13:51:09.655] [info] [INFO] job-lifecycle: post_sidecar_to_receipt_ms=66.0
-[2026-11-09 13:51:09.655] [info] [INFO] job-lifecycle: execute_ms=2371.0 caller_tail_ms=0.0 receipt_deferred=0
-[2026-11-09 13:51:09.655] [info] [INFO] job-lifecycle: slot_pool_close_ms=0.0 surface_release_ms=0.0
+[2026-11-12 07:42:16.675] [info] [asset-profile] kind=3 path=assets/fonts/SF-Pro-Display-Semibold.otf bytes=335964 cache=miss invalidated=0 stat=0.01ms hash=4.08ms hashed_bytes=335964 total=4.19ms
+[2026-11-12 07:42:16.675] [info] [asset-digest-cache] hits=0 misses=1 invalidations=0 bytes_hashed=335964 lookup_ms=0.00 write_ms=0.01 full_hash_ms=4.08
+[2026-11-12 07:42:16.675] [info] [plan-profile] read=0.10ms parse=0.06ms decode=56.61ms resolver=0.03ms compile_validate=4.62ms total=61.44ms
+{
+  "content_digest": "9ed022cf231236a6ae378188ecdba086a6ccda322399788fb32240f35fad6ac2",
+  "duration_frames": 180,
+  "fps_den": 1,
+  "fps_num": 30,
+  "height": 1080,
+  "job_id": "ae_text_04_typewriter",
+  "layers": 2,
+  "plan": "/home/pierone/src/go-master/projects/Pyt/VeloxEditing/RenderingGen/UploadDrive/ae_text_parity_20261109/plans/04_typewriter.plan.json",
+  "request_digest": "849eab2cb2eea4a40ba943708c712a860673cccbbaa7cdd59752c3a37c35a8f0",
+  "status": "PASS",
+  "valid": true,
+  "width": 1920
+}
+[2026-11-12 07:42:16.772] [info] [asset-profile] kind=3 path=assets/fonts/SF-Pro-Display-Semibold.otf bytes=335964 cache=miss invalidated=0 stat=0.01ms hash=4.14ms hashed_bytes=335964 total=4.23ms
+[2026-11-12 07:42:16.772] [info] [asset-digest-cache] hits=0 misses=1 invalidations=0 bytes_hashed=335964 lookup_ms=0.00 write_ms=0.00 full_hash_ms=4.14
+[2026-11-12 07:42:16.773] [info] [plan-profile] read=0.08ms parse=0.07ms decode=55.46ms resolver=0.03ms compile_validate=4.66ms total=60.32ms
+[2026-11-12 07:42:16.773] [info] [video] execution plan resolved (reason: gpu_composition_pipe_no_video_source); decode=2 composite=2 encode=2 interop=0 handoff=3 codec=3
+[2026-11-12 07:42:16.788] [info] [video-runtime] created persistent runtime for device 0 (CUDA ordinal 0)
+[2026-11-12 07:42:16.788] [info] [video] encoder feed capability: host_frame=true direct_yuv=false native_surface=false
+[2026-11-12 07:42:16.996] [info] [native_av] CUDA context contract: native=0x55f82de79420 ffmpeg=0x55f82de79420
+[2026-11-12 07:42:17.006] [info] [native_av] NVENC tuning applied: rc=driver-default preset=slow async_depth=4 nvenc_surfaces=8 qp=-1 bitrate=0
+[h264_nvenc @ 0x55f82dde56c0] Defined rc_lookahead requires more surfaces, increasing used surfaces 8 -> 34
+[2026-11-12 07:42:17.076] [info] [native_av] encoder bitstream contract: codec=27 profile=100 level=-99 pix_fmt=117 parameter_sets=53 materialized=true
+[2026-11-12 07:42:17.077] [info] [native_av] Opened native encoder: 1920x1080 @ 30fps, codec=h264_nvenc, rc=driver-default, preset=slow, output='/home/pierone/src/go-master/projects/Pyt/VeloxEditing/RenderingGen/UploadDrive/ae_text_parity_20261109/videos/04_typewriter_1920x1080_6s.partial.mp4'
+[2026-11-12 07:42:17.537] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-12 07:42:17.599] [info] [pool-warm] Pre-allocated and pre-imported 6 execution slots (1920x1080) for native NVENC
+[2026-11-12 07:42:17.623] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-12 07:42:17.738] [info] [temp-lifetime] frame=0 after_level=0 live=[0,1,] retired=[]
+[2026-11-12 07:42:17.738] [info] [exec-level-diag] frame=0 level=0 nodes=2 input_ms=0.001 dispatch_ms=11.214 fb_release_ms=0.002
+[2026-11-12 07:42:17.738] [info] [graph-edge] frame=0 level=1 consumer_id=2 input_index=0 producer_id=0 producer_level=0
+[2026-11-12 07:42:17.738] [info] [graph-edge] frame=0 level=1 consumer_id=2 input_index=1 producer_id=1 producer_level=0
+[2026-11-12 07:42:17.738] [info] [temp-lifetime] frame=0 after_level=1 live=[2,] retired=[0,1,]
+[2026-11-12 07:42:17.738] [info] [exec-level-diag] frame=0 level=1 nodes=1 input_ms=0.014 dispatch_ms=0.083 fb_release_ms=0.003
+[2026-11-12 07:42:17.738] [info] [video] Exporting via Arena-backed SIMD pipeline
+[2026-11-12 07:42:17.741] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:17.846] [info] chronon3d::vulkan text batch formats: dst_image.format=109 atlas_image.format=44 atlas_encoding=2 (shader contract: dst rgba32f, atlas rgba8)
+[2026-11-12 07:42:17.847] [info] [text-route] frame=6 route=mtsdf
+[2026-11-12 07:42:17.849] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:17.851] [info] [text-route] frame=7 route=mtsdf
+[2026-11-12 07:42:17.855] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:17.856] [info] [text-route] frame=8 route=mtsdf
+[2026-11-12 07:42:17.859] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:17.862] [info] [text-route] frame=9 route=mtsdf
+[2026-11-12 07:42:17.865] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:17.866] [info] [text-route] frame=10 route=mtsdf
+[2026-11-12 07:42:17.869] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:17.870] [info] [text-route] frame=11 route=mtsdf
+[2026-11-12 07:42:17.873] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:17.874] [info] [text-route] frame=12 route=mtsdf
+[2026-11-12 07:42:17.877] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:17.878] [info] [text-route] frame=13 route=mtsdf
+[2026-11-12 07:42:17.881] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:17.885] [info] [text-route] frame=14 route=mtsdf
+[2026-11-12 07:42:17.888] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:17.888] [info] [text-route] frame=15 route=mtsdf
+[2026-11-12 07:42:17.891] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:17.892] [info] [text-route] frame=16 route=mtsdf
+[2026-11-12 07:42:17.894] [info] [video]   18/180 frames
+[2026-11-12 07:42:17.895] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:17.896] [info] [text-route] frame=17 route=mtsdf
+[2026-11-12 07:42:17.899] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:17.900] [info] [text-route] frame=18 route=mtsdf
+[2026-11-12 07:42:17.904] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:17.908] [info] [text-route] frame=19 route=mtsdf
+[2026-11-12 07:42:17.911] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:17.912] [info] [text-route] frame=20 route=mtsdf
+[2026-11-12 07:42:17.915] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:17.915] [info] [text-route] frame=21 route=mtsdf
+[2026-11-12 07:42:17.918] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:17.919] [info] [text-route] frame=22 route=mtsdf
+[2026-11-12 07:42:17.922] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:17.922] [info] [text-route] frame=23 route=mtsdf
+[2026-11-12 07:42:17.926] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:17.927] [info] [text-route] frame=24 route=mtsdf
+[2026-11-12 07:42:17.928] [info] [vulkan-lifecycle] frame=25 vram_bytes=493977600 live_surfaces=12 surface_bindings=12 registry_live_handles=86 physical_images=12 deferred_releases=0 vma_allocations=44 surfaces_created=104 surfaces_released=92 queue_packages=1 execution_slots_busy=1 command_batch_active=false
+[2026-11-12 07:42:17.930] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:17.932] [info] [text-route] frame=25 route=mtsdf
+[2026-11-12 07:42:17.935] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:17.936] [info] [text-route] frame=26 route=mtsdf
+[2026-11-12 07:42:17.939] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:17.940] [info] [text-route] frame=27 route=mtsdf
+[2026-11-12 07:42:17.943] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:17.943] [info] [text-route] frame=28 route=mtsdf
+[2026-11-12 07:42:17.946] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:17.947] [info] [text-route] frame=29 route=mtsdf
+[2026-11-12 07:42:17.950] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:17.951] [info] [text-route] frame=30 route=mtsdf
+[2026-11-12 07:42:17.954] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:17.954] [info] [text-route] frame=31 route=mtsdf
+[2026-11-12 07:42:17.958] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:17.958] [info] [text-route] frame=32 route=mtsdf
+[2026-11-12 07:42:17.961] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:17.962] [info] [text-route] frame=33 route=mtsdf
+[2026-11-12 07:42:17.965] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:17.966] [info] [text-route] frame=34 route=mtsdf
+[2026-11-12 07:42:17.967] [info] [video]   36/180 frames
+[2026-11-12 07:42:17.969] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:17.970] [info] [text-route] frame=35 route=mtsdf
+[2026-11-12 07:42:17.973] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:17.973] [info] [text-route] frame=36 route=mtsdf
+[2026-11-12 07:42:17.977] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:17.978] [info] [text-route] frame=37 route=mtsdf
+[2026-11-12 07:42:17.981] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:17.982] [info] [text-route] frame=38 route=mtsdf
+[2026-11-12 07:42:17.984] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:17.985] [info] [text-route] frame=39 route=mtsdf
+[2026-11-12 07:42:17.989] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:17.990] [info] [text-route] frame=40 route=mtsdf
+[2026-11-12 07:42:17.994] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:17.995] [info] [text-route] frame=41 route=mtsdf
+[2026-11-12 07:42:18.000] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.000] [info] [text-route] frame=42 route=mtsdf
+[2026-11-12 07:42:18.005] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.006] [info] [text-route] frame=43 route=mtsdf
+[2026-11-12 07:42:18.010] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.011] [info] [text-route] frame=44 route=mtsdf
+[2026-11-12 07:42:18.016] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.017] [info] [text-route] frame=45 route=mtsdf
+[2026-11-12 07:42:18.021] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.021] [info] [text-route] frame=46 route=mtsdf
+[2026-11-12 07:42:18.026] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.027] [info] [text-route] frame=47 route=mtsdf
+[2026-11-12 07:42:18.031] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.032] [info] [text-route] frame=48 route=mtsdf
+[2026-11-12 07:42:18.037] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.037] [info] [text-route] frame=49 route=mtsdf
+[2026-11-12 07:42:18.039] [info] [vulkan-lifecycle] frame=50 vram_bytes=493977600 live_surfaces=12 surface_bindings=12 registry_live_handles=186 physical_images=12 deferred_releases=0 vma_allocations=44 surfaces_created=229 surfaces_released=217 queue_packages=1 execution_slots_busy=2 command_batch_active=false
+[2026-11-12 07:42:18.042] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.043] [info] [text-route] frame=50 route=mtsdf
+[2026-11-12 07:42:18.047] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.048] [info] [text-route] frame=51 route=mtsdf
+[2026-11-12 07:42:18.052] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.053] [info] [text-route] frame=52 route=mtsdf
+[2026-11-12 07:42:18.054] [info] [video]   54/180 frames
+[2026-11-12 07:42:18.058] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.058] [info] [text-route] frame=53 route=mtsdf
+[2026-11-12 07:42:18.062] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.063] [info] [text-route] frame=54 route=mtsdf
+[2026-11-12 07:42:18.067] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.068] [info] [text-route] frame=55 route=mtsdf
+[2026-11-12 07:42:18.072] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.073] [info] [text-route] frame=56 route=mtsdf
+[2026-11-12 07:42:18.077] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.078] [info] [text-route] frame=57 route=mtsdf
+[2026-11-12 07:42:18.082] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.083] [info] [text-route] frame=58 route=mtsdf
+[2026-11-12 07:42:18.087] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.088] [info] [text-route] frame=59 route=mtsdf
+[2026-11-12 07:42:18.092] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.093] [info] [text-route] frame=60 route=mtsdf
+[2026-11-12 07:42:18.097] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.098] [info] [text-route] frame=61 route=mtsdf
+[2026-11-12 07:42:18.102] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.102] [info] [text-route] frame=62 route=mtsdf
+[2026-11-12 07:42:18.106] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.106] [info] [text-route] frame=63 route=mtsdf
+[2026-11-12 07:42:18.110] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.111] [info] [text-route] frame=64 route=mtsdf
+[2026-11-12 07:42:18.114] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.118] [info] [text-route] frame=65 route=mtsdf
+[2026-11-12 07:42:18.121] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.122] [info] [text-route] frame=66 route=mtsdf
+[2026-11-12 07:42:18.125] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.126] [info] [text-route] frame=67 route=mtsdf
+[2026-11-12 07:42:18.129] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.129] [info] [text-route] frame=68 route=mtsdf
+[2026-11-12 07:42:18.133] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.133] [info] [text-route] frame=69 route=mtsdf
+[2026-11-12 07:42:18.136] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.137] [info] [text-route] frame=70 route=mtsdf
+[2026-11-12 07:42:18.138] [info] [video]   72/180 frames
+[2026-11-12 07:42:18.140] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.141] [info] [text-route] frame=71 route=mtsdf
+[2026-11-12 07:42:18.144] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.145] [info] [text-route] frame=72 route=mtsdf
+[2026-11-12 07:42:18.148] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.148] [info] [text-route] frame=73 route=mtsdf
+[2026-11-12 07:42:18.151] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.152] [info] [text-route] frame=74 route=mtsdf
+[2026-11-12 07:42:18.153] [info] [vulkan-lifecycle] frame=75 vram_bytes=493977600 live_surfaces=12 surface_bindings=12 registry_live_handles=286 physical_images=12 deferred_releases=0 vma_allocations=44 surfaces_created=354 surfaces_released=342 queue_packages=1 execution_slots_busy=2 command_batch_active=false
+[2026-11-12 07:42:18.155] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.156] [info] [text-route] frame=75 route=mtsdf
+[2026-11-12 07:42:18.159] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.160] [info] [text-route] frame=76 route=mtsdf
+[2026-11-12 07:42:18.163] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.163] [info] [text-route] frame=77 route=mtsdf
+[2026-11-12 07:42:18.166] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.167] [info] [text-route] frame=78 route=mtsdf
+[2026-11-12 07:42:18.170] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.171] [info] [text-route] frame=79 route=mtsdf
+[2026-11-12 07:42:18.174] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.175] [info] [text-route] frame=80 route=mtsdf
+[2026-11-12 07:42:18.178] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.179] [info] [text-route] frame=81 route=mtsdf
+[2026-11-12 07:42:18.182] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.183] [info] [text-route] frame=82 route=mtsdf
+[2026-11-12 07:42:18.186] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.187] [info] [text-route] frame=83 route=mtsdf
+[2026-11-12 07:42:18.190] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.191] [info] [text-route] frame=84 route=mtsdf
+[2026-11-12 07:42:18.194] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.195] [info] [text-route] frame=85 route=mtsdf
+[2026-11-12 07:42:18.198] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.198] [info] [text-route] frame=86 route=mtsdf
+[2026-11-12 07:42:18.201] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.202] [info] [text-route] frame=87 route=mtsdf
+[2026-11-12 07:42:18.205] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.206] [info] [text-route] frame=88 route=mtsdf
+[2026-11-12 07:42:18.207] [info] [video]   90/180 frames
+[2026-11-12 07:42:18.209] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.210] [info] [text-route] frame=89 route=mtsdf
+[2026-11-12 07:42:18.213] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.213] [info] [text-route] frame=90 route=mtsdf
+[2026-11-12 07:42:18.216] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.217] [info] [text-route] frame=91 route=mtsdf
+[2026-11-12 07:42:18.220] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.221] [info] [text-route] frame=92 route=mtsdf
+[2026-11-12 07:42:18.224] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.224] [info] [text-route] frame=93 route=mtsdf
+[2026-11-12 07:42:18.229] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.229] [info] [text-route] frame=94 route=mtsdf
+[2026-11-12 07:42:18.233] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.233] [info] [text-route] frame=95 route=mtsdf
+[2026-11-12 07:42:18.237] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.237] [info] [text-route] frame=96 route=mtsdf
+[2026-11-12 07:42:18.249] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.250] [info] [text-route] frame=97 route=mtsdf
+[2026-11-12 07:42:18.253] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.254] [info] [text-route] frame=98 route=mtsdf
+[2026-11-12 07:42:18.257] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.258] [info] [text-route] frame=99 route=mtsdf
+[2026-11-12 07:42:18.259] [info] [vulkan-lifecycle] frame=100 vram_bytes=493977600 live_surfaces=12 surface_bindings=12 registry_live_handles=386 physical_images=12 deferred_releases=0 vma_allocations=44 surfaces_created=479 surfaces_released=467 queue_packages=1 execution_slots_busy=2 command_batch_active=false
+[2026-11-12 07:42:18.261] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.262] [info] [text-route] frame=100 route=mtsdf
+[2026-11-12 07:42:18.265] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.266] [info] [text-route] frame=101 route=mtsdf
+[2026-11-12 07:42:18.269] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.270] [info] [text-route] frame=102 route=mtsdf
+[2026-11-12 07:42:18.273] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.274] [info] [text-route] frame=103 route=mtsdf
+[2026-11-12 07:42:18.277] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.277] [info] [text-route] frame=104 route=mtsdf
+[2026-11-12 07:42:18.281] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.281] [info] [text-route] frame=105 route=mtsdf
+[2026-11-12 07:42:18.284] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.285] [info] [text-route] frame=106 route=mtsdf
+[2026-11-12 07:42:18.287] [info] [video]   108/180 frames
+[2026-11-12 07:42:18.289] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.289] [info] [text-route] frame=107 route=mtsdf
+[2026-11-12 07:42:18.294] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.295] [info] [text-route] frame=108 route=mtsdf
+[2026-11-12 07:42:18.298] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.298] [info] [text-route] frame=109 route=mtsdf
+[2026-11-12 07:42:18.301] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.302] [info] [text-route] frame=110 route=mtsdf
+[2026-11-12 07:42:18.305] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.305] [info] [text-route] frame=111 route=mtsdf
+[2026-11-12 07:42:18.308] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.309] [info] [text-route] frame=112 route=mtsdf
+[2026-11-12 07:42:18.312] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.312] [info] [text-route] frame=113 route=mtsdf
+[2026-11-12 07:42:18.315] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.316] [info] [text-route] frame=114 route=mtsdf
+[2026-11-12 07:42:18.319] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.320] [info] [text-route] frame=115 route=mtsdf
+[2026-11-12 07:42:18.323] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.323] [info] [text-route] frame=116 route=mtsdf
+[2026-11-12 07:42:18.326] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.327] [info] [text-route] frame=117 route=mtsdf
+[2026-11-12 07:42:18.330] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.330] [info] [text-route] frame=118 route=mtsdf
+[2026-11-12 07:42:18.333] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.334] [info] [text-route] frame=119 route=mtsdf
+[2026-11-12 07:42:18.337] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.341] [info] [text-route] frame=120 route=mtsdf
+[2026-11-12 07:42:18.344] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.345] [info] [text-route] frame=121 route=mtsdf
+[2026-11-12 07:42:18.348] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.348] [info] [text-route] frame=122 route=mtsdf
+[2026-11-12 07:42:18.351] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.352] [info] [text-route] frame=123 route=mtsdf
+[2026-11-12 07:42:18.355] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.356] [info] [text-route] frame=124 route=mtsdf
+[2026-11-12 07:42:18.357] [info] [vulkan-lifecycle] frame=125 vram_bytes=493977600 live_surfaces=12 surface_bindings=12 registry_live_handles=486 physical_images=12 deferred_releases=0 vma_allocations=44 surfaces_created=604 surfaces_released=592 queue_packages=1 execution_slots_busy=2 command_batch_active=false
+[2026-11-12 07:42:18.357] [info] [video]   126/180 frames
+[2026-11-12 07:42:18.358] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.359] [info] [text-route] frame=125 route=mtsdf
+[2026-11-12 07:42:18.362] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.363] [info] [text-route] frame=126 route=mtsdf
+[2026-11-12 07:42:18.365] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.366] [info] [text-route] frame=127 route=mtsdf
+[2026-11-12 07:42:18.369] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.369] [info] [text-route] frame=128 route=mtsdf
+[2026-11-12 07:42:18.372] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.373] [info] [text-route] frame=129 route=mtsdf
+[2026-11-12 07:42:18.376] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.376] [info] [text-route] frame=130 route=mtsdf
+[2026-11-12 07:42:18.379] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.380] [info] [text-route] frame=131 route=mtsdf
+[2026-11-12 07:42:18.382] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.383] [info] [text-route] frame=132 route=mtsdf
+[2026-11-12 07:42:18.386] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.387] [info] [text-route] frame=133 route=mtsdf
+[2026-11-12 07:42:18.389] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.390] [info] [text-route] frame=134 route=mtsdf
+[2026-11-12 07:42:18.393] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.393] [info] [text-route] frame=135 route=mtsdf
+[2026-11-12 07:42:18.396] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.397] [info] [text-route] frame=136 route=mtsdf
+[2026-11-12 07:42:18.400] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.400] [info] [text-route] frame=137 route=mtsdf
+[2026-11-12 07:42:18.403] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.404] [info] [text-route] frame=138 route=mtsdf
+[2026-11-12 07:42:18.407] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.407] [info] [text-route] frame=139 route=mtsdf
+[2026-11-12 07:42:18.410] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.411] [info] [text-route] frame=140 route=mtsdf
+[2026-11-12 07:42:18.414] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.415] [info] [text-route] frame=141 route=mtsdf
+[2026-11-12 07:42:18.419] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.419] [info] [text-route] frame=142 route=mtsdf
+[2026-11-12 07:42:18.420] [info] [video]   144/180 frames
+[2026-11-12 07:42:18.423] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.423] [info] [text-route] frame=143 route=mtsdf
+[2026-11-12 07:42:18.427] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.427] [info] [text-route] frame=144 route=mtsdf
+[2026-11-12 07:42:18.431] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.431] [info] [text-route] frame=145 route=mtsdf
+[2026-11-12 07:42:18.435] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.435] [info] [text-route] frame=146 route=mtsdf
+[2026-11-12 07:42:18.439] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.439] [info] [text-route] frame=147 route=mtsdf
+[2026-11-12 07:42:18.443] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.443] [info] [text-route] frame=148 route=mtsdf
+[2026-11-12 07:42:18.447] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.448] [info] [text-route] frame=149 route=mtsdf
+[2026-11-12 07:42:18.449] [info] [vulkan-lifecycle] frame=150 vram_bytes=493977600 live_surfaces=12 surface_bindings=12 registry_live_handles=586 physical_images=12 deferred_releases=0 vma_allocations=44 surfaces_created=729 surfaces_released=717 queue_packages=1 execution_slots_busy=2 command_batch_active=false
+[2026-11-12 07:42:18.451] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.451] [info] [text-route] frame=150 route=mtsdf
+[2026-11-12 07:42:18.455] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.455] [info] [text-route] frame=151 route=mtsdf
+[2026-11-12 07:42:18.459] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.460] [info] [text-route] frame=152 route=mtsdf
+[2026-11-12 07:42:18.463] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.464] [info] [text-route] frame=153 route=mtsdf
+[2026-11-12 07:42:18.469] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.469] [info] [text-route] frame=154 route=mtsdf
+[2026-11-12 07:42:18.473] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.474] [info] [text-route] frame=155 route=mtsdf
+[2026-11-12 07:42:18.477] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.478] [info] [text-route] frame=156 route=mtsdf
+[2026-11-12 07:42:18.481] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.482] [info] [text-route] frame=157 route=mtsdf
+[2026-11-12 07:42:18.485] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.486] [info] [text-route] frame=158 route=mtsdf
+[2026-11-12 07:42:18.490] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.491] [info] [text-route] frame=159 route=mtsdf
+[2026-11-12 07:42:18.494] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.495] [info] [text-route] frame=160 route=mtsdf
+[2026-11-12 07:42:18.496] [info] [video]   162/180 frames
+[2026-11-12 07:42:18.498] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.499] [info] [text-route] frame=161 route=mtsdf
+[2026-11-12 07:42:18.501] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.502] [info] [text-route] frame=162 route=mtsdf
+[2026-11-12 07:42:18.505] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.505] [info] [text-route] frame=163 route=mtsdf
+[2026-11-12 07:42:18.508] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.509] [info] [text-route] frame=164 route=mtsdf
+[2026-11-12 07:42:18.512] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.513] [info] [text-route] frame=165 route=mtsdf
+[2026-11-12 07:42:18.516] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.517] [info] [text-route] frame=166 route=mtsdf
+[2026-11-12 07:42:18.520] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.521] [info] [text-route] frame=167 route=mtsdf
+[2026-11-12 07:42:18.524] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.525] [info] [text-route] frame=168 route=mtsdf
+[2026-11-12 07:42:18.528] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.529] [info] [text-route] frame=169 route=mtsdf
+[2026-11-12 07:42:18.533] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.534] [info] [text-route] frame=170 route=mtsdf
+[2026-11-12 07:42:18.536] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.537] [info] [text-route] frame=171 route=mtsdf
+[2026-11-12 07:42:18.540] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.541] [info] [text-route] frame=172 route=mtsdf
+[2026-11-12 07:42:18.545] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.545] [info] [text-route] frame=173 route=mtsdf
+[2026-11-12 07:42:18.548] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.549] [info] [text-route] frame=174 route=mtsdf
+[2026-11-12 07:42:18.550] [info] [vulkan-lifecycle] frame=175 vram_bytes=493977600 live_surfaces=12 surface_bindings=12 registry_live_handles=686 physical_images=12 deferred_releases=0 vma_allocations=44 surfaces_created=854 surfaces_released=842 queue_packages=1 execution_slots_busy=2 command_batch_active=false
+[2026-11-12 07:42:18.553] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.553] [info] [text-route] frame=175 route=mtsdf
+[2026-11-12 07:42:18.557] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.557] [info] [text-route] frame=176 route=mtsdf
+[2026-11-12 07:42:18.561] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.561] [info] [text-route] frame=177 route=mtsdf
+[2026-11-12 07:42:18.565] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.566] [info] [text-route] frame=178 route=mtsdf
+[2026-11-12 07:42:18.567] [info] [video]   180/180 frames
+[2026-11-12 07:42:18.569] [warning] [font-fallback] No bundled_fonts_root provided — default fallback stack degrades to primary-only.
+[2026-11-12 07:42:18.569] [info] [text-route] frame=179 route=mtsdf
+[2026-11-12 07:42:18.573] [info] [video] writer join complete
+[2026-11-12 07:42:18.573] [info] [drain-debug] start drain, capacity=6
+[2026-11-12 07:42:18.573] [info] [drain-debug] slot_id=4 has completion, waiting
+[2026-11-12 07:42:18.573] [info] [drain-debug] slot_id=4 wait complete
+[2026-11-12 07:42:18.573] [info] [drain-debug] slot_id=5 has completion, waiting
+[2026-11-12 07:42:18.575] [info] [drain-debug] slot_id=5 wait complete
+[2026-11-12 07:42:18.575] [info] [drain-debug] reap done, busy_count=0
+[2026-11-12 07:42:18.575] [info] [video] trimming framebuffer pool
+[2026-11-12 07:42:18.575] [info] [video] Released framebuffer pool — memory trimmed
+[2026-11-12 07:42:18.575] [info] [video] frame-loop cleanup complete
+[2026-11-12 07:42:18.575] [info] [video] Encoder write blocked duration: 0.00 ms
+[2026-11-12 07:42:18.575] [info] [video_diag] conversion_and_copy_duration_ms: 0 ms
+[2026-11-12 07:42:18.575] [info] [video_diag] conversion_bytes_written=0 encoder_staging_copy_bytes=0 encoder_slot_reuses=0
+[2026-11-12 07:42:18.575] [info] [native_av] close: sending encoder flush
+[2026-11-12 07:42:18.634] [info] [native_av] close: encoder flush accepted
+[2026-11-12 07:42:18.691] [info] [native_av] close: packets drained=true
+[2026-11-12 07:42:18.692] [info] [native_av] close: finalizing mux session
+[2026-11-12 07:42:18.692] [info] [native_av] close: mux session finalized
+[2026-11-12 07:42:18.692] [info] [native_av] Closed native encoder — 180 frames accepted, encoder_packets=180 mux_packets=180 packet_pts=0..179, YUV cache: 0 hits / 0 misses
+[2026-11-12 07:42:18.692] [info] [native_av] native-surface timings — hwframe_pool_ms=21.4 c2v_prepare_ms=9.6 encode_drain_ms=7.9 send_ms=93.6 submit_counter_ms=93.3 backpressure_ms=0.3
+[2026-11-12 07:42:18.692] [info] [video_native] convert=5.80ms  send_frame=93.60ms  backpressure=0.28ms  flush=116.64ms  receive_packet=57.34ms  mux_write=1.44ms  trailer=0.48ms
+[2026-11-12 07:42:18.694] [info] [video] render_ms=947.95 encode_ms=122.82 writer_encode_ms=126.46 wall_ms=1920.69 nvml_stop_ms=0.23
+[2026-11-12 07:42:18.694] [info] [video] FFmpeg queue wait duration: 0.36 ms
+[2026-11-12 07:42:18.707] [info] [video] copy_eligible=true sha256=7f84b40f7876da9fd25b34d24da0277e04b2ba96597ae01b74000fd86a07531f
+[2026-11-12 07:42:18.708] [info] [video] Wrote /home/pierone/src/go-master/projects/Pyt/VeloxEditing/RenderingGen/UploadDrive/ae_text_parity_20261109/videos/04_typewriter_1920x1080_6s.mp4
+[2026-11-12 07:42:18.708] [info] [startup-profile] total=826.93ms logger=0.04ms cli_bootstrap=3.17ms cli_parse=nullms composition=0.10ms plan_read=0.08ms json_parse=0.07ms plan_decode_validate=55.46ms asset_resolve=0.03ms plan_compile=4.66ms unaccounted=112.28ms
+[2026-11-12 07:42:18.724] [info] [video] Wrote exact per-frame timing sidecar: /home/pierone/src/go-master/projects/Pyt/VeloxEditing/RenderingGen/UploadDrive/ae_text_parity_20261109/videos/04_typewriter_1920x1080_6s.mp4.timing.json
+[2026-11-12 07:42:18.788] [info] [INFO] job-lifecycle: queue_close_ms=0.0 writer_join_ms=0.0 encoder_reset_ms=61.3 decoder_reset_ms=0.0 full_graph_reset_ms=0.0 sink_ctx_reset_ms=0.0 device_runtime_reset_ms=0.0 device_reservation_reset_ms=0.0
+[2026-11-12 07:42:18.788] [info] [INFO] job-lifecycle: sidecar_write_ms=19.0 session_teardown_ms=61.6
+[2026-11-12 07:42:18.797] [info] [INFO] job-lifecycle: post_sidecar_to_receipt_ms=70.1
+[2026-11-12 07:42:18.797] [info] [INFO] job-lifecycle: execute_ms=2024.3 caller_tail_ms=0.0 receipt_deferred=0
+[2026-11-12 07:42:18.797] [info] [INFO] job-lifecycle: slot_pool_close_ms=0.0 surface_release_ms=0.0

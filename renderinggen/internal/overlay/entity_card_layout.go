@@ -326,7 +326,22 @@ var retiredEntityCaptionMotions = map[string]struct{}{
 	"entity_focus_frame": {}, "text_depth_in": {}, "text_fade_up": {}, "text_word_stagger": {},
 	"trump_entity_text_01": {}, "trump_entity_text_02": {}, "trump_entity_text_03": {},
 	"trump_entity_text_05": {}, "trump_entity_text_06": {}, "trump_entity_text_07": {},
-	"trump_entity_text_14": {}, "trump_entity_text_15": {},
+	"trump_entity_text_08": {}, "trump_entity_text_11": {}, "trump_entity_text_13": {},
+	"trump_entity_text_14": {}, "trump_entity_text_15": {}, "text_yaw_in": {},
+}
+
+// filterRetiredEntityCaptionMotions applies the shared automatic-picker policy
+// to any caption pool. The retired IDs remain resolvable for explicit plans;
+// they are only removed from seeded automatic selection.
+func filterRetiredEntityCaptionMotions(ids []string) []string {
+	out := make([]string, 0, len(ids))
+	for _, id := range ids {
+		if _, retired := retiredEntityCaptionMotions[id]; retired {
+			continue
+		}
+		out = append(out, id)
+	}
+	return out
 }
 
 func selectableEntityCaptionMotions() []string {

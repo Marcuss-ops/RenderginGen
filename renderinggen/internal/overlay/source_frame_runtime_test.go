@@ -124,8 +124,15 @@ func TestSourceFrameRuntimePixels(t *testing.T) {
 		}
 	}
 	t.Logf("white frame pixel bounds: %v; sampled source edge pixel: RGB%v", whiteBounds, averageRGB(frame, image.Pt(65, 180), 0))
-	if redBounds != image.Rect(64, 36, 576, 324) {
-		t.Errorf("red foreground bounds = %v, want centered 80%% bounds (64,36)-(576,324)", redBounds)
+	// The 5px stroke is composited above the clip edge (source__stroke is
+	// authored after source), so the visible red starts at the stroke's inner
+	// edge: the (64,36)-(576,324) clip inset by strokeWidth/2 (2.5px), with
+	// one pixel of anti-aliasing slack on every side.
+	wantRed := image.Rect(67, 39, 573, 321)
+	near := func(got, want int) bool { return got >= want-1 && got <= want+1 }
+	if !near(redBounds.Min.X, wantRed.Min.X) || !near(redBounds.Min.Y, wantRed.Min.Y) ||
+		!near(redBounds.Max.X, wantRed.Max.X) || !near(redBounds.Max.Y, wantRed.Max.Y) {
+		t.Errorf("red foreground bounds = %v, want %v (\u00b11px anti-alias)", redBounds, wantRed)
 	}
 	for _, layer := range compiled.Plan.Layers {
 		t.Logf("compiled layer %q size=%v pos=%v scale=%v radius=%v", layer.ID, layer.Size, layer.Position, layer.Scale, layer.Radius)
@@ -140,8 +147,10 @@ func TestSourceFrameRuntimePixels(t *testing.T) {
 			t.Errorf("rounded clip corner at %v = RGB%v, want visible white frame", point, rgb)
 		}
 	}
-	// The stroke sits on top of the media at the inner perimeter of the frame.
-	for _, point := range []image.Point{{320, 42}, {320, 318}, {72, 180}, {568, 180}} {
+	// The stroke is a 5px outline centred on the clip perimeter (see
+	// TestSourceFrameStrokeLowersToPerimeterShape), so sample its visible
+	// band just inside the media box.
+	for _, point := range []image.Point{{320, 37}, {320, 322}, {65, 180}, {575, 180}} {
 		if rgb := averageRGB(frame, point, 1); !(rgb.g > rgb.r*1.2 && rgb.g > 80) {
 			t.Errorf("inner perimeter stroke at %v = RGB%v, want visible green stroke", point, rgb)
 		}

@@ -27,6 +27,24 @@ type PresentationCatalog struct {
 
 var expectedPresentationFamilies = map[string]struct{}{"metric_v1": {}, "date_v1": {}, "entity_card_v1": {}, "metric_didone_v1": {}, "date_didone_v1": {}, "metric_typewriter_v1": {}, "date_typewriter_v1": {}}
 
+// Date and metric presentation groups are declared once here. Every automatic
+// selector (planner defaults, animation policies, animation groups and the
+// runtime picker) derives its pool from these lists, so a new family is added
+// in one place instead of a caller's hardcoded family string.
+var (
+	datePresentationFamilyIDs   = []string{"date_v1", "date_didone_v1", "date_typewriter_v1"}
+	metricPresentationFamilyIDs = []string{"metric_v1", "metric_didone_v1", "metric_typewriter_v1"}
+)
+
+// datePresentationAutomaticExclusions are certified date motions that fail
+// visual QA in the deployed compositor. They remain resolvable for explicit
+// plans, but no automatic date pool may select them. Keeping the exclusion
+// next to the family projection makes the compiler fallback and the producer
+// agree on the same safe automatic set.
+var datePresentationAutomaticExclusions = map[string]struct{}{
+	"date_calendar_flip": {},
+}
+
 func validateEntityPresentationCatalog(raw json.RawMessage, motions []MotionDefinition) error {
 	if len(raw) == 0 {
 		return fmt.Errorf("motion: canonical catalog is missing entity_presentation")
@@ -176,6 +194,58 @@ func (r *RegistryType) PresentationMotionIDs(familyID string) []string {
 	}
 	return nil
 }
+
+// PresentationMotionIDsForFamilies is the one union projection used by every
+// target-wide pool. Family order is preserved and duplicates are removed, so a
+// caller cannot silently count the same preset twice.
+func (r *RegistryType) PresentationMotionIDsForFamilies(families ...string) []string {
+	seen := make(map[string]struct{})
+	ids := make([]string, 0)
+	for _, family := range families {
+		for _, id := range r.PresentationMotionIDs(family) {
+			if _, ok := seen[id]; ok {
+				continue
+			}
+			seen[id] = struct{}{}
+			ids = append(ids, id)
+		}
+	}
+	return ids
+}
+
+// DatePresentationFamilyIDs returns the certified date presentation families
+// in their canonical selection order.
+func DatePresentationFamilyIDs() []string {
+	return append([]string(nil), datePresentationFamilyIDs...)
+}
+
+// MetricPresentationFamilyIDs returns the certified metric presentation
+// families in their canonical selection order.
+func MetricPresentationFamilyIDs() []string {
+	return append([]string(nil), metricPresentationFamilyIDs...)
+}
+
+// DatePresentationMotionIDs is the single automatic date pool: every preset of
+// every certified date family except the visual-QA exclusions that stay
+// explicit-only.
+func DatePresentationMotionIDs() []string {
+	ids := Registry.PresentationMotionIDsForFamilies(DatePresentationFamilyIDs()...)
+	out := ids[:0]
+	for _, id := range ids {
+		if _, excluded := datePresentationAutomaticExclusions[id]; excluded {
+			continue
+		}
+		out = append(out, id)
+	}
+	return out
+}
+
+// MetricPresentationMotionIDs is the single automatic metric pool: every
+// preset of every certified metric family, not only metric_v1.
+func MetricPresentationMotionIDs() []string {
+	return Registry.PresentationMotionIDsForFamilies(MetricPresentationFamilyIDs()...)
+}
+
 func (c Catalog) EntityPresentationFamilies() []PresentationFamily {
 	var parsed PresentationCatalog
 	if err := json.Unmarshal(c.EntityPresentation, &parsed); err != nil {

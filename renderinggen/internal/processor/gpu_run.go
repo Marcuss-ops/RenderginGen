@@ -307,7 +307,7 @@ func (p *Processor) RunGPU(ctx context.Context, prepared *PreparedJob) error {
 	// bytes; revoking NativeCertified here published "vulkan" instead and made
 	// every canonicalized clip.render fail downstream with "clip.render requires
 	// Chronon (chronon_vulkan)".
-	if _, err := p.canonicalizeOverlayArtifacts(ctx, prepared); err != nil {
+	if _, err := p.canonicalizePreparedOutputs(ctx, prepared); err != nil {
 		return fmt.Errorf("processor: canonical output emission: %w", err)
 	}
 	// Hand-off point: the output is final (render succeeded, software-fallback
