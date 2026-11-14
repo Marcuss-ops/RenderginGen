@@ -615,7 +615,7 @@ render; the renderer's own stall watchdog aborts it. GPU memory growth alone is
 never treated as progress evidence.
 
 The frame stream above is the CLI transport. The warm-daemon IPC transport runs
-`RENDER_JOB` as one blocking call, and its `GET_JOB_STATUS` reply carries
+the render job as one blocking call, and its `GET_JOB_STATUS` reply carries
 lifecycle state only (`prepared`/`running`/`completed`/`failed`), not frame
 counts. A daemon render therefore logs elapsed-time heartbeats instead of
 inventing a percentage.
