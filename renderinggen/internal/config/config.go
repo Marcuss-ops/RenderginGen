@@ -158,9 +158,19 @@ type StorageConfig struct {
 	// `Authorization: Bearer` on every artifact request. Empty means the
 	// store is open (local/dev posture); when the store sets
 	// OBJECTSTORE_TOKEN, this must match or every fetch/store fails with a
-	// 401 that names this field. Supplied via
-	// RENDERINGGEN_ARTIFACT_STORE_TOKEN, never baked into a shipped YAML.
+	// 401 that names this field. Supplied via artifact_store.token (inline),
+	// artifact_store.token_file (preferred) or
+	// RENDERINGGEN_ARTIFACT_STORE_TOKEN. An explicit Token always wins over
+	// TokenFile, so an environment override can still rotate the secret
+	// without editing the file.
 	Token string `yaml:"token"`
+	// TokenFile is a path to a file containing the bearer token. It is the
+	// preferred deployment spelling: the secret stays out of the process
+	// environment and out of the shipped YAML, while the path remains visible
+	// in the configuration. Load reads it once, after the environment overlay,
+	// and only when Token is empty; a missing or empty file fails startup
+	// instead of silently leaving the store unauthenticated.
+	TokenFile string `yaml:"token_file"`
 	// L1MaxBytes caps the in-memory (RAM) cache and L2MaxBytes the on-disk
 	// (NVMe) cache. Both were compile-time constants in the wiring, so an
 	// operator on a host with a different RAM/NVMe balance could not rebalance
@@ -301,10 +311,33 @@ func Load(path string) (*Config, error) {
 	}
 
 	applyDefaults(&cfg)
+	if err := cfg.ArtifactStore.resolveToken(); err != nil {
+		return nil, err
+	}
 	if err := cfg.validate(); err != nil {
 		return nil, err
 	}
 	return &cfg, nil
+}
+
+// resolveToken loads the shared bearer token from TokenFile when no token was
+// supplied directly. Reading happens at Load, not per request: a bad path must
+// fail the worker at startup, and the artifact hot path must not stat and read
+// a secret file for every fetch or store operation.
+func (s *StorageConfig) resolveToken() error {
+	if s.Token != "" || s.TokenFile == "" {
+		return nil
+	}
+	data, err := os.ReadFile(s.TokenFile)
+	if err != nil {
+		return fmt.Errorf("artifact_store.token_file: %w", err)
+	}
+	token := strings.TrimSpace(string(data))
+	if token == "" {
+		return fmt.Errorf("artifact_store.token_file %s is empty", s.TokenFile)
+	}
+	s.Token = token
+	return nil
 }
 
 // StrictNative reports whether this configuration demands the native GPU hot

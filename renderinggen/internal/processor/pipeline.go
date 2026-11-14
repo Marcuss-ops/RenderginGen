@@ -17,12 +17,8 @@ package processor
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
-	"os"
 	"path/filepath"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/chronon"
@@ -113,375 +109,47 @@ func (p *Processor) PrepareJob(ctx context.Context, job *queue.Job) (*PreparedJo
 	// because a nil/invalid job never reaches the pipeline (validate rejects
 	// it), and binding would dereference it.
 	workerlog.BindJob(job.ParentJobID, job.ID)
-	var (
-		result           overlay.CompileResult
-		compiledSemantic bool
-		stats            overlay.Stats
-		plan             *overlay.Plan
-		compiledAssets   []overlay.Asset
-		preparedPackage  overlay.PreparedPackage
-		err              error
-	)
-	if job.PreparedRenderPackage != nil {
-		// A prepared package is the compiler's immutable output for the whole
-		// family. Verify its source identities before using it, then stage its
-		// content-addressed assets into this worker's own workspace.
-		packageStart := time.Now()
-		pkg, loadErr := p.loadPreparedRenderPackage(ctx, job)
-		if loadErr != nil {
-			return nil, fmt.Errorf("processor: load prepared render package: %w", loadErr)
-		}
-		plan = &overlay.Plan{}
-		if err := json.Unmarshal(pkg.Plan, plan); err != nil {
-			return nil, fmt.Errorf("processor: decode compiled plan from prepared package: %w", err)
-		}
-		stats, preparedPackage = pkg.Stats, pkg.Overlay
-		compiledAssets = make([]overlay.Asset, len(pkg.Assets))
-		for i, asset := range pkg.Assets {
-			compiledAssets[i] = overlay.Asset{Hash: asset.Hash, LogicalPath: asset.LogicalPath}
-		}
-		record(metricnames.PrepareSceneCompileStem, packageStart)
-	} else {
-		// One compile pass produces the plan AND the ledger counters, so the
-		// artifact metrics can never drift from the layers that were emitted.
-		compileStart := time.Now()
-		result, err = overlay.CompileSemantic(job.RenderPlan)
-		if err != nil {
-			return nil, err
-		}
-		record(metricnames.PrepareSceneCompileStem, compileStart)
-		compiledSemantic = true
-		stats, plan, compiledAssets, preparedPackage = result.Stats, result.Plan, result.Assets, result.Prepared
+	leaseUntil := "-"
+	if !job.LeaseUntil.IsZero() {
+		leaseUntil = job.LeaseUntil.UTC().Format(time.RFC3339)
 	}
-	metrics[metricnames.OverlayItemCount] = float64(stats.SemanticItemCount)
-	if stats.SemanticItemCount > 1 {
-		metrics[metricnames.OverlayRenderBatch] = 1
-	}
-	// UnknownTemplates is empty for every plan the compiler accepts: a non-empty
-	// template_id that resolves to no registry row and no legacy alias is
-	// REJECTED by resolveSemanticItems, not lowered as a preset-less primitive.
-	// This check is the belt to that suspenders, so a future relaxation of the
-	// compiler's gate can never become a rendered downgrade — a template_id the
-	// compile pass could not place is a prepare-boundary failure, before any
-	// workspace, download, font stage or GPU lane is spent.
-	if compiledSemantic && len(result.UnknownTemplates) > 0 {
-		metrics[metricnames.UnknownTemplates] = float64(len(result.UnknownTemplates))
-		return nil, fmt.Errorf("processor: %d item template_id(s) resolved to no registry row and must not be rendered: %s",
-			len(result.UnknownTemplates), strings.Join(result.UnknownTemplates, ", "))
-	}
-	// The chunk contract is validated against the plan that will actually be
-	// rendered, before any asset is downloaded: an out-of-range chunk is a
-	// producer bug that must not burn a GPU lane and a lease to surface.
-	if err := validateFrameRange(job, plan); err != nil {
+	workerlog.ByJobID(job.ID).Statef("preparing", "type=%s attempts=%d lease_generation=%d lease_until=%s",
+		job.JobType, job.Attempts, job.LeaseGeneration, leaseUntil)
+
+	st := &prepareState{job: job, metrics: metrics, record: record, totalStart: totalStart}
+	// The stages are ordered and each one fails closed before the next spends
+	// a resource: compile/gate -> workspace/materialize/prove -> burn/rebuild
+	// -> serialize. See prepare_stages.go for the per-stage contract.
+	if err := p.prepareCompile(ctx, st); err != nil {
 		return nil, err
 	}
-	// The compile half is one declared phase pair (overlay_compile_us/_ms,
-	// the artifact ledger's columns) AND one Prometheus phase series: the same
-	// record() that writes both spellings also feeds the worker's phase
-	// histogram, so overlay_compile can never be visible in the ledger but
-	// missing from `renderinggen_worker_phase_duration_seconds`.
-	record(metricnames.OverlayCompileStem, totalStart)
-	assets, err := mergeAssets(job.Assets, compiledAssets)
-	if err != nil {
+	if err := p.prepareWorkspace(ctx, st); err != nil {
 		return nil, err
 	}
-	ws, err := workspace.New(p.jobsRoot, job.ID)
-	if err != nil {
-		return nil, err
-	}
-	// This stage OWNS the workspace until it hands the prepared job to the GPU
-	// lane. Registering the cleanup guard once makes "an error path forgot to
-	// remove the workspace" impossible: the historical shape repeated an
-	// explicit cleanupWorkspace call on ~20 return sites, so a new error path
-	// that omitted it leaked a scratch directory — invisible except as RAM
-	// exhaustion on the (frequently tmpfs) jobs root. Ownership transfers only
-	// on the single success return, which clears owned first.
+	// Ownership transfers only on the single success return below. Registering
+	// the cleanup guard once, after the workspace exists, makes "an error path
+	// forgot to remove the workspace" impossible: the historical shape repeated
+	// an explicit cleanupWorkspace call on ~20 return sites.
 	owned := true
 	defer func() {
 		if owned {
-			p.cleanupWorkspace(ws, job.ID)
+			p.cleanupWorkspace(st.ws, job.ID)
 		}
 	}()
-	// Liveness marker for the stale-workspace sweeper: a prepared workspace
-	// can sit idle until a GPU lane picks it up, and materialization or a
-	// long render may write nothing new to the workspace directory tree for
-	// more than the sweeper horizon. The marker is written at creation (not
-	// after materialize) so even a >1h asset download is never swept, and
-	// refreshed by the GPU lane for the whole RunGPU stage. Without a valid
-	// marker, CleanupStale would RemoveAll a live job's directory.
-	//
-	// The window comes from pipeline.workspace_lease_ttl (see
-	// processor.Options.WorkspaceLeaseTTL); config guarantees the TTL exceeds
-	// the refresh period, so one missed refresh can never make a live render
-	// sweepable.
-	if err := ws.WriteLease(time.Now().Add(p.workspaceLeaseDuration())); err != nil {
-		// Fail closed: without the initial marker CleanupStale would treat an
-		// active workspace as sweepable (its mtime can predate the sweeper
-		// horizon while materialization or the GPU lane is still running), so
-		// the liveness invariant must hold from the moment the workspace
-		// exists. Occasional refresh failures during RunGPU stay tolerable
-		// (the TTL covers them); the missing first marker is not.
-		return nil, fmt.Errorf("processor: establish workspace lease for %s: %w", job.ID, err)
-	}
-	// Per-job log file, live inside the workspace this job owns: it is what an
-	// operator (and the collector) reads while the job runs, and what survives
-	// on disk when pipeline.keep_workspace is set. The durable copy under the
-	// jobs root was attached at claim, so this file starts at the prepare stage
-	// while the durable one already holds the claim lines.
-	if _, logErr := workerlog.AttachJobLog(job.ID, filepath.Join(ws.Root(), "worker.log")); logErr != nil {
-		// Fail-open: a job is never failed because a diagnostic file could not
-		// be created, but the reason is recorded on the job's own record.
-		workerlog.ByJobID(job.ID).Warnf("per-job workspace log unavailable: %v", logErr)
-	}
-	var inputBytes int64
-	phaseStart := time.Now()
-	matStart := time.Now()
-	// Capture resolver sizes directly from the streaming resolver instead of
-	// re-statting every materialized file after MaterializePaths. The resolver
-	// already returns ResolvedAsset.SizeBytes (from L2/ContextPath or L3 header)
-	// so a second os.Stat loop is pure duplicate I/O.
-	resolvedSizes := make(map[string]int64, len(assets))
-	var resolvedSizesMu sync.Mutex
-	var totalResolveDur time.Duration
-	wrappedResolve := func(rCtx context.Context, a queue.AssetRef) (workspace.ResolvedAsset, error) {
-		rStart := time.Now()
-		res, rErr := p.resolveAssetStreaming(rCtx, a)
-		rDur := time.Since(rStart)
-		if rErr == nil {
-			resolvedSizesMu.Lock()
-			resolvedSizes[a.LogicalPath] = res.SizeBytes
-			totalResolveDur += rDur
-			resolvedSizesMu.Unlock()
-		}
-		return res, rErr
-	}
-	if err := ws.MaterializePaths(ctx, wrappedResolve, assets); err != nil {
+	if err := p.prepareSubtitles(st); err != nil {
 		return nil, err
 	}
-	record(metricnames.PrepareAssetResolveStem, time.Now().Add(-totalResolveDur))
-	for _, a := range assets {
-		inputBytes += resolvedSizes[a.LogicalPath]
-	}
-	// normalizeMaterializedImagePaths mutates the ONE typed plan in place —
-	// no JSON round-trip.
-	renamed, err := normalizeMaterializedImagePaths(ws.Root(), plan)
-	if err != nil {
+	if err := p.rebuildPreparedPackage(st); err != nil {
 		return nil, err
 	}
-	if len(renamed) > 0 {
-		// Image sniffing may normalize a producer extension (for example
-		// .jpeg to .jpg), so the concrete plan now points at the renamed path
-		// and the compiler's package describes the old one.
-		workerlog.ByJobID(job.ID).Infof("normalized %d image asset extension(s) to match the verified bytes", len(renamed))
-	}
-	// Everything from here to the package build can change what the prepared
-	// sidecar must contain: the normalized asset path, an entity image's fitted
-	// size (part of the preparation identity) and the burned subtitle layers.
-	// The mutations are RECORDED and the package is rebuilt exactly ONCE from
-	// the final plan. The historical shape rebuilt it after the renames and
-	// again after the burn, so a job that did both paid for two full builds and
-	// the sidecar in between described a plan state no frame ever rendered.
-	packageStale := len(renamed) > 0
-	fitChanged, err := fitEntityImageLayersToAssets(ws.Root(), plan)
-	if err != nil {
+	if err := p.preparePlanOutput(st); err != nil {
 		return nil, err
-	}
-	packageStale = packageStale || fitChanged
-	if err := validateMapRasterAssets(ws.Root(), plan); err != nil {
-		return nil, err
-	}
-	if err := materializeBuiltinFonts(ws.Root(), plan); err != nil {
-		return nil, err
-	}
-	// Every path this stage created: each manifest asset MaterializePaths
-	// resolved (it returns nil only when all of them landed) plus each rename
-	// target normalization just wrote. The gate below still stats anything the
-	// plan references that is NOT in here, so an asset the producer referenced
-	// but never materialized is still caught before Chronon.
-	proven := make(map[string]struct{}, len(assets)+len(renamed))
-	for _, a := range assets {
-		proven[a.LogicalPath] = struct{}{}
-	}
-	for name := range renamed {
-		proven[name] = struct{}{}
-	}
-	if err := validateMaterializedPlanAssets(ws.Root(), plan, proven); err != nil {
-		return nil, err
-	}
-	record(metricnames.PrepareMaterializeStem, matStart)
-	prefetchStart := time.Now()
-	p.prefetchWarmAssets(ctx, job.ID, ws.Root(), assets)
-	record(metricnames.PreparePrefetchStem, prefetchStart)
-	// The phase name is the metric-name stem; "asset_materialize" matches the
-	// artifact ledger's column and projection (asset_materialize_us), so one
-	// phase has ONE name across the wire, the mirror and PostgreSQL.
-	record(metricnames.AssetMaterializeStem, phaseStart)
-
-	// Burn verified ASS subtitles into Chronon text layers before the plan is
-	// written. This keeps subtitles in the Vulkan composition and avoids a
-	// second full-file ffmpeg encode after NVENC has finished.
-	//
-	// The subtitle contract rides on the compile result (extracted by the SAME
-	// decode pass that lowered the plan), so the raw semantic document is
-	// never re-read on the prepare path.
-	if compiledSemantic && result.Subtitle.Present && result.Subtitle.Burn {
-		sub := result.Subtitle
-		var subtitlePath, fontPath string
-		for _, asset := range assets {
-			if strings.EqualFold(asset.Hash, sub.Hash) {
-				subtitlePath = filepath.Join(ws.Root(), asset.LogicalPath)
-			}
-			if ext := strings.ToLower(filepath.Ext(asset.LogicalPath)); ext == ".ttf" || ext == ".otf" {
-				if fontPath == "" {
-					fontPath = asset.LogicalPath
-				}
-			}
-		}
-		if subtitlePath == "" {
-			return nil, fmt.Errorf("processor: burn subtitles asset %s was not materialized", sub.Hash)
-		}
-		if fontPath == "" {
-			return nil, fmt.Errorf("processor: burn subtitles requires a materialized .ttf or .otf font")
-		}
-		burnStart := time.Now()
-		subtitleBytes, readErr := os.ReadFile(subtitlePath)
-		if readErr != nil {
-			return nil, fmt.Errorf("processor: read subtitles %s: %w", subtitlePath, readErr)
-		}
-		// Style + safe-area box are resolved from the plan's typed subtitle
-		// block (ResolveSubtitleStyle, the compile-result view of
-		// SubtitleStyleAsset). The processor never invents typography.
-		burnStyle, burnBox, styleErr := result.ResolveSubtitleStyle()
-		if styleErr != nil {
-			return nil, styleErr
-		}
-		if burnStyle == nil || burnBox.Width <= 0 || burnBox.Height <= 0 {
-			return nil, fmt.Errorf("processor: burn subtitles requires a typed subtitle style block (font_size_px, width/height) in the plan")
-		}
-		subtitleCount, burnErr := overlay.BurnASSIntoPlanTyped(plan, subtitleBytes, fontPath, burnStyle, burnBox)
-		if burnErr != nil {
-			return nil, burnErr
-		}
-		// Burn-in appends concrete Chronon text layers to the plan, so the
-		// sidecar must be rebuilt from the final plan: its overlay bindings have
-		// to stay 1:1 with plan.Layers, which the Chronon boundary validates
-		// before GPU compilation. The single rebuild below does it once.
-		packageStale = true
-		record(metricnames.PrepareBurnStem, burnStart)
-		metrics[metricnames.SubtitleBurnUS] = float64(time.Since(burnStart).Microseconds())
-		metrics[metricnames.SubtitleBurnMS] = metrics[metricnames.SubtitleBurnUS] / 1000
-		// The cue count is the number of subtitle_cue_ layers actually present
-		// in the plan after lowering (0 is possible when every cue was skipped
-		// as empty or degenerate).
-		metrics[metricnames.SubtitleLayers] = float64(subtitleCount)
-		workerlog.ByJobID(job.ID).Infof("lowered %d ASS cues into Chronon GPU text layers", subtitleCount)
-	}
-
-	if packageStale {
-		preparedPackage, err = overlay.PreparePackage(plan, preparedPackage.Language, finalPreparedAssets(compiledAssets, renamed))
-		if err != nil {
-			return nil, fmt.Errorf("processor: rebuild prepared overlay package from the final plan: %w", err)
-		}
-	}
-
-	phaseStart = time.Now()
-	marshalStart := time.Now()
-	metadata := planMetadataOf(plan)
-	if !p.nativeOutputProfiles && metadata.ProfileID != "" {
-		// The executed plan diverges from the accepted job's plan by design
-		// (legacy runtimes reject unknown output properties), but the
-		// divergence must never be silent: downstream consumers need to
-		// distinguish "no profile requested" from "profile stripped by this
-		// worker's config", and an operator needs to see that the strip
-		// happened on every job it affects.
-		plan.Output.ProfileID = ""
-		metrics[metricnames.ProfileStrippedByConfig] = 1
-		workerlog.ByJobID(job.ID).Warnf("output profile %q stripped (native_output_profiles=false); published artifact carries no profile_id", metadata.ProfileID)
-	}
-	renderPlan, marshalErr := plan.Marshal()
-	if marshalErr != nil {
-		return nil, fmt.Errorf("processor: encode render plan: %w", marshalErr)
-	}
-	if err := ws.WritePlan(renderPlan); err != nil {
-		return nil, err
-	}
-	preparedBytes, preparedErr := json.Marshal(preparedPackage)
-	if preparedErr != nil {
-		return nil, fmt.Errorf("processor: encode prepared overlay package: %w", preparedErr)
-	}
-	if err := ws.WritePreparedPackage(preparedBytes); err != nil {
-		return nil, fmt.Errorf("processor: write prepared overlay package: %w", err)
-	}
-	record(metricnames.PrepareMarshalStem, marshalStart)
-	record(metricnames.PlanStem, phaseStart)
-	audioPath, warnInert := audioSourcePathFromPlan(plan, ws.Root())
-	audioTargetSampleRate := audioTargetSampleRateFromPlan(plan)
-	// P4 batch superjob: a multi-item plan whose semantic item windows TILE
-	// the canvas becomes ONE render session with one MP4 per item (the job's
-	// OutputPath doubles as the session's whole-timeline mirror, so the fused
-	// clip keeps its ordinary artifact contract). The trigger is deliberately
-	// narrow — a transport that can carry per-item windows, whole-plan renders
-	// only, no muxed source audio, no final-job composite — and everything
-	// else keeps the historical single-output behavior unchanged.
-	var segments []chronon.OutputSegment
-	var segmentItemIDs []string
-	if job.FrameRange == nil && audioPath == "" && !isFinalJobComposite(job) {
-		if segRenderer, ok := p.renderer.(chronon.OutputSegmentRenderer); ok && segRenderer.SupportsOutputSegments() {
-			if segmentPlan, tileable := planSegmentOutputs(
-				plan.ItemWindows, plan.Canvas.DurationFrames,
-				filepath.Dir(ws.OutputPath("result.mp4"))); tileable {
-				segments, segmentItemIDs = segmentPlan.Segments, segmentPlan.ItemIDs
-				workerlog.ByJobID(job.ID).Infof(
-					"P4 segmented output: %d semantic item windows tile the canvas — one session, %d per-item MP4s + the fused whole-timeline clip",
-					len(segmentItemIDs), len(segments))
-			}
-		}
-	}
-	if warnInert {
-		metrics[metricnames.AudioInertParams] = 1
-		if plan.Output.Audio != nil && !audioModeCopyOnly(plan.Output.Audio.Mode) {
-			// The caller asked for an audio policy the worker cannot execute
-			// (the native mux copies the source stream). Name it separately:
-			// "parameters ignored" and "the requested audio mode was not
-			// applied" are different operational facts, and only the second
-			// one changes what the published artifact sounds like.
-			metrics[metricnames.AudioModeUnsupported] = 1
-			workerlog.ByJobID(job.ID).Warnf("requested audio mode %q is NOT applied (native mux copies the source stream); the artifact carries the source audio unchanged",
-				plan.Output.Audio.Mode)
-		}
-		workerlog.ByJobID(job.ID).Warnf("audio codec/sample_rate/channels are inert (Chronon copies source audio, no transcode); mode=%q codec=%q sr=%d ch=%d",
-			plan.Output.Audio.Mode, plan.Output.Audio.Codec, plan.Output.Audio.SampleRate, plan.Output.Audio.Channels)
 	}
 	record(metricnames.PrepareTotalStem, totalStart)
+	workerlog.ByJobID(job.ID).Statef("prepared", "layers=%d assets=%d items=%d prepare_ms=%.1f",
+		len(st.plan.Layers), len(st.assets), st.stats.SemanticItemCount, metrics[metricnames.PrepareTotalStem+"_ms"])
 	owned = false
-	return &PreparedJob{
-		Job:                   job,
-		Workspace:             ws,
-		Plan:                  plan,
-		ResolvedAssets:        append([]queue.AssetRef(nil), assets...),
-		PreparedOverlay:       preparedPackage,
-		Stats:                 stats,
-		InputBytes:            inputBytes,
-		Metrics:               metrics,
-		OutputPath:            ws.OutputPath("result.mp4"),
-		AudioSourcePath:       audioPath,
-		AudioTargetSampleRate: audioTargetSampleRate,
-		// Same condition as the OutputSpec flag in RunGPU: a SILENT artifact
-		// (no source audio to mux) is the fragmented MP4 whose bytes are final
-		// while appended — the container and the tail-upload lane must never
-		// diverge, or the lane would stream a file whose header is backpatched.
-		//
-		// Canonicalized profiles are the exception: their bytes are rewritten
-		// AFTER Chronon returns (the canonical avcC is an x264 identity, not an
-		// NVENC one), so the render output must be a classic MP4 that can be
-		// atomically replaced.
-		// Streaming a fragmented file that is about to be re-encoded would
-		// install bytes the receipt no longer describes.
-		FragmentedMP4:  audioPath == "" && !isCanonicalizedOutputProfile(metadata.ProfileID),
-		Segments:       segments,
-		SegmentItemIDs: segmentItemIDs,
-		totalStart:     totalStart,
-	}, nil
+	return st.preparedJob(), nil
 }
 
 // prefetchWarmAssets primes Chronon's persistent image/video cache from the

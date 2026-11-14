@@ -2,6 +2,8 @@ package processor
 
 import (
 	"fmt"
+	"image"
+	"os"
 	"path/filepath"
 
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/overlay"
@@ -29,7 +31,11 @@ func fitEntityImageLayersToAssets(root string, plan *overlay.Plan) (bool, error)
 		}
 		changed = true
 		assetPath := filepath.Join(root, filepath.FromSlash(layer.Asset))
-		if err := overlay.FitEntityImageLayerToAsset(layer, assetPath); err != nil {
+		sourceWidth, sourceHeight, err := entityImageDimensions(assetPath)
+		if err != nil {
+			return false, fmt.Errorf("processor: read entity image layer %q dimensions: %w", layer.ID, err)
+		}
+		if err := overlay.FitEntityImageLayerToAsset(layer, sourceWidth, sourceHeight); err != nil {
 			return false, fmt.Errorf("processor: fit entity image layer %q to source aspect: %w", layer.ID, err)
 		}
 		if err := overlay.ResizePremiumImageMask(layer); err != nil {
@@ -80,6 +86,22 @@ func fitEntityImageLayersToAssets(root string, plan *overlay.Plan) (bool, error)
 		return false, fmt.Errorf("processor: fitted entity caption layout: %w", err)
 	}
 	return changed, nil
+}
+
+// entityImageDimensions reads the verified, materialized image's pixel size.
+// It lives on the processor side of the boundary: the overlay compiler receives
+// the numbers, never a path it would have to open.
+func entityImageDimensions(path string) (int, int, error) {
+	file, err := os.Open(path)
+	if err != nil {
+		return 0, 0, err
+	}
+	defer file.Close()
+	config, _, err := image.DecodeConfig(file)
+	if err != nil {
+		return 0, 0, err
+	}
+	return config.Width, config.Height, nil
 }
 
 // alignEntityCaptionToFittedImage recomputes caption anchoring after the image

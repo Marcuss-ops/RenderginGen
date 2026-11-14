@@ -35,6 +35,12 @@ jobs:
         run: test -z "$(gofmt -l .)" || { gofmt -l .; echo "run gofmt -w on the files above"; exit 1; }
       - run: go build ./...
       - run: go vet ./...
+      # go vet cannot see an exported function that nobody calls, and internal/
+      # overlay carries hundreds of exports. -test includes test binaries, so a
+      # symbol kept alive only by a test is not reported: this fails on code
+      # reachable from nothing at all. The version is pinned so an upstream
+      # release cannot turn the gate red without a change in this repository.
+      - run: go run golang.org/x/tools/cmd/deadcode@v0.36.0 -test ./...
       # -race is not optional here: the renderer's Progress callback is invoked
       # from BOTH of its output-streaming goroutines and the worker records that
       # observation on the job, so an unsynchronised write is a shipped data

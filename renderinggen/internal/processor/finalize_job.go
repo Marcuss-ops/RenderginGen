@@ -173,6 +173,7 @@ func requiresStructuralProbe(job *queue.Job) bool {
 func (p *Processor) FinalizeJob(ctx context.Context, prepared *PreparedJob) (artifact queue.Artifact, err error) {
 	job := prepared.Job
 	metrics := prepared.Metrics
+	workerlog.ByJobID(job.ID).Statef("finalizing", "segments=%d", len(prepared.Segments))
 	// P4 batch superjob: verify every per-item segment independently
 	// (probe/digest/receipt), re-render ONLY a failed segment once, and store
 	// each verified segment under its own content address. The returned batch

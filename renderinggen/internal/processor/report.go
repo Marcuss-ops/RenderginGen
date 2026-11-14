@@ -36,7 +36,7 @@ func ReportFailure(ctx context.Context, q ReportQueue, job *queue.Job, err error
 	// Render path too, and a terminal line without the run id would be the one
 	// line an operator most needs to correlate.
 	jobLog := workerlog.BindJob(job.ParentJobID, job.ID)
-	jobLog.Errorf("failed: %v", err)
+	jobLog.Errorf("job_state=failed reason=%v", err)
 	// Observed at the report funnel, so a future worker pool cannot complete or
 	// fail jobs without the worker's own metric surface seeing it.
 	noteJobOutcome(JobOutcomeFailed)
@@ -67,7 +67,7 @@ func ReportFailureWithArtifact(ctx context.Context, q ReportQueue, id string, ge
 	// claim/Prepare: this caller holds only the id, and an unattributed
 	// terminal line is exactly what made worker triage impossible.
 	jobLog := workerlog.ByJobID(id)
-	jobLog.Errorf("failed: %v", err)
+	jobLog.Errorf("job_state=failed reason=%v", err)
 	noteJobOutcome(JobOutcomeFailed)
 	if isPermanentFailure(err) {
 		if reportErr := q.FailPermanently(ctx, id, generation, err.Error()); reportErr != nil {
@@ -112,6 +112,8 @@ func ReportComplete(ctx context.Context, q ReportQueue, id string, generation in
 		}
 		return
 	}
+	workerlog.ByJobID(id).Statef("completed", "artifact=%q bytes=%d durable=%t",
+		artifact.StorageKey, artifact.SizeBytes, durable)
 	// The queue accepted the completion: this attempt finished. It is per
 	// ATTEMPT, not per distinct job — the queue owns the job-level lifecycle and
 	// already counts it (renderinggen_jobs_*), so this series must not be read as
