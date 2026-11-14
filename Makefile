@@ -13,7 +13,7 @@
 
 CHRONON_RUNTIME ?= ghcr.io/marcuss-ops/chronon3d-runtime:0.1.0
 
-.PHONY: native-build golden-e2e golden-e2e-runtime golden-e2e-reset golden-e2e-down test-architecture conformance test-gofmt test-unit test-certification test-module-standalone check-gpu-lanes verify
+.PHONY: native-build golden-e2e golden-e2e-runtime golden-e2e-reset golden-e2e-down test-architecture conformance test-gofmt test-unit test-certification test-module-standalone check-gpu-lanes deadcode verify
 
 # check-gpu-lanes — verify profile-specific GPU lane contracts. Native, Docker,
 # and CI profiles intentionally differ; this catches accidental divergence
@@ -130,13 +130,50 @@ test-unit:
 #
 # No engine is required: the compile-level suites run, and the real-engine ones
 # self-skip unless CHRONON_BIN names a built chronon3d_cli.
+# deadcode — the unreachable-function gate.
+#
+# `go vet` cannot see an exported function nobody calls: Go only rejects unused
+# locals and imports. With hundreds of exported symbols in internal/overlay a
+# dead helper survives review indefinitely. `-test` INCLUDES test binaries, so a
+# symbol kept alive only by a test is still used and is not reported; the gate
+# fails only on code reachable from nothing, tests included.
+#
+# The version is pinned: an unpinned `@latest` gate can turn red on an upstream
+# release without a change in this repository.
+DEADCODE_VERSION ?= v0.36.0
+
+# deadcode prints its findings but exits 0, so printing is not a gate. The four
+# names below are the EXTERNAL-CONTRACT exports already documented in
+# internal/architecture/deadexports_test.go (the worker service consumes them
+# outside this module, where this call graph cannot see them). They are the only
+# tolerated findings; anything else fails the target.
+DEADCODE_ALLOWED := unreachable func: (Lookup|PNG|Entries|RegistryType\.ShortPhraseStyles)
+
+# The gate runs on the renderinggen module only, and that scope is deliberate:
+# deadcode resolves reachability inside ONE module, so the queue and
+# objectstore client APIs would be reported as unreachable even though the
+# worker (a different module) imports and calls them. Running it there would
+# produce a permanently red gate that teaches people to ignore it.
+deadcode:
+	@out=$$(cd renderinggen && go run golang.org/x/tools/cmd/deadcode@$(DEADCODE_VERSION) -test ./...); \
+	if [ -z "$$out" ]; then echo "deadcode: clean"; exit 0; fi; \
+	echo "$$out"; \
+	unexpected=$$(printf '%s\n' "$$out" | grep -vE '$(DEADCODE_ALLOWED)'); \
+	if [ -n "$$unexpected" ]; then \
+	  echo "deadcode: unreachable code not in the external-contract allowlist:"; \
+	  echo "$$unexpected"; \
+	  exit 1; \
+	fi; \
+	echo "deadcode: only the documented external-contract exports are unreachable"
+
 # verify — one local command for the checks every change must pass.
 #
 # gofmt and the standalone build run as prerequisites; go vet runs across every
 # module before the unit gate so a type/diagnostic regression is reported once,
 # in its own section, instead of being buried in a long test log. The unit gate
-# already includes the architecture conformance scan.
-verify: test-gofmt test-module-standalone
+# already includes the architecture conformance scan. The dead-code gate runs
+# last because it downloads a pinned tool on a cold cache.
+verify: test-gofmt test-module-standalone deadcode
 	@fail=0; for m in renderinggen queue objectstore; do \
 	  echo "=== go vet: $$m ==="; \
 	  (cd $$m && go vet ./...) || fail=1; \

@@ -22,6 +22,37 @@ import (
 // milestone lines. The first and the final milestone are always logged.
 const progressLogInterval = 10 * time.Second
 
+// renderHeartbeatInterval is how long a render may go without a frame
+// milestone before the worker emits an elapsed-time heartbeat. The daemon IPC
+// transport executes RENDER_JOB in one blocking call and never streams frame
+// milestones, so without this a multi-minute job would log "rendering" once and
+// then stay silent until "rendered". Jobs that do report milestones are left
+// to their richer progress lines.
+const renderHeartbeatInterval = 15 * time.Second
+
+// progressSummary renders a frame position as a percentage plus a linear ETA,
+// so a job log answers "how far along is it?" without the reader doing the
+// arithmetic. A renderer that prints no milestones reports "unknown" instead of
+// pretending to be at 0%.
+func progressSummary(done, total int64, fps float64) string {
+	if total <= 0 {
+		return "unknown"
+	}
+	percent := float64(done) / float64(total) * 100
+	if percent < 0 {
+		percent = 0
+	}
+	if percent > 100 {
+		percent = 100
+	}
+	summary := fmt.Sprintf("%.1f%%", percent)
+	if fps > 0 && done < total {
+		remaining := time.Duration(float64(total-done)/fps) * time.Second
+		summary += " eta=" + remaining.Round(time.Second).String()
+	}
+	return summary
+}
+
 // RunGPU performs the single Chronon invocation for a prepared job plus the
 // strict-backend receipt gate. This is the only stage that touches the GPU.
 func (p *Processor) RunGPU(ctx context.Context, prepared *PreparedJob) error {
@@ -59,6 +90,8 @@ func (p *Processor) RunGPU(ctx context.Context, prepared *PreparedJob) error {
 	}
 	gpuRequired := (hasSourceVideo || compositionRequired) && (p.strictNativeBackend ||
 		chronon.StrictNativeRequired(p.backend, p.hardwareEncoder))
+	workerlog.ByJobID(job.ID).Statef("rendering", "canvas=%dx%d fps=%d/%d frames=%d backend=%s encoder=%s gpu_required=%t",
+		metadata.Width, metadata.Height, metadata.FPSNum, metadata.FPSDen, metadata.FrameCount, renderBackend, p.hardwareEncoder, gpuRequired)
 	// Render progress: every '[video] N/M frames' milestone the renderer
 	// prints is sampled into the log (where did the 12 minutes go) and, when a
 	// shared tracker is installed, fed into it so health and the queue pusher
@@ -72,6 +105,7 @@ func (p *Processor) RunGPU(ctx context.Context, prepared *PreparedJob) error {
 	var progressMu sync.Mutex
 	var lastProgress chronon.RenderProgress
 	sawProgress := false
+	var lastProgressAt time.Time
 	var lastProgressLogAt time.Time
 	// Tail upload: a fragmented overlay artifact's bytes are final while
 	// appended, so the object-store upload starts HERE — before the render —
@@ -174,6 +208,7 @@ func (p *Processor) RunGPU(ctx context.Context, prepared *PreparedJob) error {
 			progressMu.Lock()
 			sawProgress = true
 			lastProgress = progress
+			lastProgressAt = time.Now()
 			final := progress.FramesTotal > 0 && progress.FramesDone >= progress.FramesTotal
 			logNow := final || lastProgressLogAt.IsZero() || time.Since(lastProgressLogAt) >= progressLogInterval
 			if logNow {
@@ -181,7 +216,8 @@ func (p *Processor) RunGPU(ctx context.Context, prepared *PreparedJob) error {
 			}
 			progressMu.Unlock()
 			if logNow {
-				workerlog.ByJobID(job.ID).Infof("progress: stage=chronon_render frames_done=%d frames_total=%d fps=%.2f last_frame_at=%s backend=%s encoder=%s",
+				workerlog.ByJobID(job.ID).Infof("job_state=rendering progress=%s frames_done=%d frames_total=%d fps=%.2f last_frame_at=%s backend=%s encoder=%s",
+					progressSummary(progress.FramesDone, progress.FramesTotal, progress.FPS),
 					progress.FramesDone, progress.FramesTotal, progress.FPS,
 					progress.At.Format(time.RFC3339Nano), renderBackend, p.hardwareEncoder)
 			}
@@ -190,6 +226,44 @@ func (p *Processor) RunGPU(ctx context.Context, prepared *PreparedJob) error {
 			}
 		},
 	}
+	// Keep a silent render legible. This covers both the daemon IPC transport,
+	// whose single blocking RENDER_JOB reply carries no frame stream, and any
+	// long stretch of the CLI path without a milestone. It logs only after
+	// renderHeartbeatInterval with no new frame observation.
+	heartbeatCtx, stopHeartbeat := context.WithCancel(ctx)
+	heartbeatDone := make(chan struct{})
+	go func() {
+		defer close(heartbeatDone)
+		ticker := time.NewTicker(renderHeartbeatInterval)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-heartbeatCtx.Done():
+				return
+			case now := <-ticker.C:
+				progressMu.Lock()
+				saw := sawProgress
+				last := lastProgress
+				observedAt := lastProgressAt
+				progressMu.Unlock()
+				if saw && !observedAt.IsZero() && now.Sub(observedAt) < renderHeartbeatInterval {
+					continue
+				}
+				if saw {
+					workerlog.ByJobID(job.ID).Statef("rendering", "state=in_progress elapsed=%s frames_done=%d frames_total=%d progress=%s note=no_new_frames backend=%s encoder=%s",
+						time.Since(phaseStart).Round(time.Second), last.FramesDone, last.FramesTotal,
+						progressSummary(last.FramesDone, last.FramesTotal, last.FPS), renderBackend, p.hardwareEncoder)
+					continue
+				}
+				workerlog.ByJobID(job.ID).Statef("rendering", "state=in_progress elapsed=%s progress=unknown note=renderer_sent_no_frame_milestones backend=%s encoder=%s",
+					time.Since(phaseStart).Round(time.Second), renderBackend, p.hardwareEncoder)
+			}
+		}
+	}()
+	defer func() {
+		stopHeartbeat()
+		<-heartbeatDone
+	}()
 	// The P4 single-segment retry re-renders from the exact request this
 	// session used, narrowed to one frame window.
 	prepared.baseRenderRequest = renderRequest
@@ -209,7 +283,8 @@ func (p *Processor) RunGPU(ctx context.Context, prepared *PreparedJob) error {
 		fallbackRequest.Requirements.GPURequired = false
 		fallbackRequest.Requirements.CPUFallbackAllowed = true
 		fallbackRequest.Progress = func(progress chronon.RenderProgress) {
-			workerlog.ByJobID(job.ID).Infof("progress: stage=chronon_render_software_fallback frames_done=%d frames_total=%d fps=%.2f last_frame_at=%s backend=software encoder=libx264",
+			workerlog.ByJobID(job.ID).Infof("job_state=rendering progress=%s stage=chronon_render_software_fallback frames_done=%d frames_total=%d fps=%.2f last_frame_at=%s backend=software encoder=libx264",
+				progressSummary(progress.FramesDone, progress.FramesTotal, progress.FPS),
 				progress.FramesDone, progress.FramesTotal, progress.FPS,
 				progress.At.Format(time.RFC3339Nano))
 			if p.progressTracker != nil {
@@ -256,6 +331,20 @@ func (p *Processor) RunGPU(ctx context.Context, prepared *PreparedJob) error {
 	observedProgress := sawProgress
 	finalProgress := lastProgress
 	progressMu.Unlock()
+	// Frames this invocation was asked to render. A chunk covers only its
+	// half-open window; a whole-plan job covers the plan. Reported even when
+	// the transport streams no milestones, so "rendered" answers how much was
+	// rendered without pretending the renderer reported it as progress.
+	renderedFrames := int64(metadata.FrameCount)
+	if hasFrameRange {
+		renderedFrames = lastFrame - firstFrame + 1
+	}
+	renderedProgress := progressSummary(finalProgress.FramesDone, finalProgress.FramesTotal, finalProgress.FPS)
+	if !observedProgress || finalProgress.FramesTotal <= 0 {
+		renderedProgress = "not_reported"
+	}
+	workerlog.ByJobID(job.ID).Statef("rendered", "elapsed_ms=%.1f frames=%d frames_done=%d frames_total=%d fps=%.2f progress=%s output=%s",
+		us/1000, renderedFrames, finalProgress.FramesDone, finalProgress.FramesTotal, finalProgress.FPS, renderedProgress, filepath.Base(prepared.OutputPath))
 	// Frame-level observability: the final frame position the renderer
 	// reported plus its average fps (0 when the renderer printed no frame
 	// milestones — never silently confused with real progress).

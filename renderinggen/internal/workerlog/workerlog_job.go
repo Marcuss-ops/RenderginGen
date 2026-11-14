@@ -105,6 +105,26 @@ func (j *Job) Errorf(format string, args ...any) {
 	j.emit(slog.LevelError, fmt.Sprintf(format, args...))
 }
 
+// Statef emits one canonical state-transition record for a job. The
+// `job_state=<state>` prefix is stable and greppable, so a single job's whole
+// lifecycle can be read in order (or extracted from the durable job log):
+//
+//	job_state=claimed ...
+//	job_state=preparing ...
+//	job_state=prepared ...
+//	job_state=waiting_gpu ...
+//	job_state=rendering progress=42.0% eta=38s ...
+//	job_state=rendered ...
+//	job_state=finalizing ...
+//	job_state=completed ... / job_state=failed reason=...
+func (j *Job) Statef(state, format string, args ...any) {
+	if format == "" {
+		j.Infof("job_state=%s", state)
+		return
+	}
+	j.Infof("job_state=%s "+format, append([]any{state}, args...)...)
+}
+
 // emit publishes one job-scoped record to the process handler and to every
 // sink bound for this job.
 func (j *Job) emit(level slog.Level, msg string, attrs ...slog.Attr) {

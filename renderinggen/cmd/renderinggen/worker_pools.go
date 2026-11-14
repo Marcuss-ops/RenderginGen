@@ -18,6 +18,15 @@ import (
 // closeJobLog seals a finished job's per-job log files (and drops the job's log
 // binding). A failure to close a diagnostic file is reported on the job's own
 // record and never fails the job.
+// leaseUntilText renders a lease deadline for the job log without pretending a
+// zero time is a date.
+func leaseUntilText(until time.Time) string {
+	if until.IsZero() {
+		return "-"
+	}
+	return until.UTC().Format(time.RFC3339)
+}
+
 func closeJobLog(jobLog *workerlog.Job, jobID string) {
 	if err := workerlog.CloseJobLog(jobID); err != nil {
 		jobLog.Warnf("close job log: %v", err)
@@ -83,11 +92,14 @@ func runPrepPool(ctx context.Context, q *queue.Client, proc *processor.Processor
 		} else {
 			jobLog.Infof("job log: %s", path)
 		}
+		jobLog.Statef("claimed", "type=%s attempts=%d lease_generation=%d lease_until=%s chunk=%d parent=%s",
+			job.JobType, job.Attempts, job.LeaseGeneration, leaseUntilText(job.LeaseUntil), job.ChunkIndex, job.ParentJobID)
 
 		// Publication retry of a rendered job: never render again. The lease
 		// is renewed for the whole upload so a multi-minute Drive publish can
 		// never expire mid-transfer and be re-claimed by another worker.
 		if job.Artifact != nil {
+			jobLog.Statef("publishing", "artifact=%q policy=%s", job.Artifact.StorageKey, job.PublicationPolicy)
 			jobLog.Infof("prep received durable artifact; switching to publication")
 			artifact := *job.Artifact
 			artifact.Metrics = nil
@@ -233,11 +245,13 @@ func runGPULane(ctx context.Context, q *queue.Client, proc *processor.Processor,
 			// ordering is required because the prep goroutine cannot safely
 			// write the map after the rendezvous send has handed ownership to
 			// this lane.
+			var wait time.Duration
 			if !p.laneWaitStarted.IsZero() {
-				wait := time.Since(p.laneWaitStarted)
+				wait = time.Since(p.laneWaitStarted)
 				processor.RecordGPULaneWait(p.prepared, wait)
 				proc.ObserveLaneWait(wait)
 			}
+			workerlog.ByJobID(p.job.ID).Statef("waiting_gpu", "lane_wait_ms=%.1f", float64(wait.Microseconds())/1000)
 			// Chronon is the long-running stage. Keep the queue lease alive
 			// while it renders; renewing only during prepare/post would let a
 			// normal software render expire and be claimed a second time.

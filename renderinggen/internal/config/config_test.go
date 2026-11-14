@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/chronon"
@@ -463,6 +464,74 @@ queue:
 `)
 	if _, err := Load(path); err == nil {
 		t.Fatal("expected error for missing artifact_store.endpoint")
+	}
+}
+
+func TestLoadReadsArtifactStoreTokenFile(t *testing.T) {
+	secret := filepath.Join(t.TempDir(), "objectstore.token")
+	if err := os.WriteFile(secret, []byte("  bearer-token\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	path := writeConfig(t, `
+queue:
+  endpoint: http://queue:8081
+artifact_store:
+  endpoint: http://store:9000
+  token_file: `+secret+`
+`)
+	cfg, err := Load(path)
+	if err != nil {
+		t.Fatalf("load: %v", err)
+	}
+	if cfg.ArtifactStore.Token != "bearer-token" {
+		t.Fatalf("artifact_store.token = %q, want the trimmed file contents", cfg.ArtifactStore.Token)
+	}
+}
+
+func TestLoadRejectsMissingOrEmptyArtifactStoreTokenFile(t *testing.T) {
+	empty := filepath.Join(t.TempDir(), "empty.token")
+	if err := os.WriteFile(empty, []byte(" \n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	for name, tokenFile := range map[string]string{
+		"missing": filepath.Join(t.TempDir(), "absent.token"),
+		"empty":   empty,
+	} {
+		t.Run(name, func(t *testing.T) {
+			path := writeConfig(t, `
+queue:
+  endpoint: http://queue:8081
+artifact_store:
+  endpoint: http://store:9000
+  token_file: `+tokenFile+`
+`)
+			_, err := Load(path)
+			if err == nil || !strings.Contains(err.Error(), "artifact_store.token_file") {
+				t.Fatalf("Load error = %v, want artifact_store.token_file", err)
+			}
+		})
+	}
+}
+
+func TestLoadExplicitTokenWinsOverTokenFile(t *testing.T) {
+	secret := filepath.Join(t.TempDir(), "objectstore.token")
+	if err := os.WriteFile(secret, []byte("from-file\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	path := writeConfig(t, `
+queue:
+  endpoint: http://queue:8081
+artifact_store:
+  endpoint: http://store:9000
+  token: from-inline
+  token_file: `+secret+`
+`)
+	cfg, err := Load(path)
+	if err != nil {
+		t.Fatalf("load: %v", err)
+	}
+	if cfg.ArtifactStore.Token != "from-inline" {
+		t.Fatalf("artifact_store.token = %q, want the explicit token to win", cfg.ArtifactStore.Token)
 	}
 }
 

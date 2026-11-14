@@ -23,6 +23,7 @@ import (
 
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/artifactdb"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/buildinfo"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/camerabake"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/chronon"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/config"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/drive"
@@ -298,6 +299,13 @@ func main() {
 		log.Printf("parent finalizer: enabled (Chronon assembler, output=%q)", filepath.Join(cfg.Workspace.Root, "parents"))
 		go runParentFinalizationRecovery(ctx, queueClient, parentFinalizer, timings.ClaimLongPoll)
 	}
+
+	// 3e-bis. CameraRig baker: the overlay compiler owns what a resolved camera
+	// sample must satisfy, but it must not start processes or touch temp files.
+	// The exec-backed runner is injected HERE, at the composition root, before
+	// any job is claimed. An unset binary fails the animated-camera job with a
+	// named configuration error instead of silently degrading.
+	overlay.SetCameraSampleBaker(camerabake.FromEnv())
 
 	// 3f. Overlay catalog: the motion vocabulary and the preset ids this worker
 	// renders come from ChrononTemplate's emitted catalog, embedded at build

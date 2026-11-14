@@ -25,23 +25,6 @@ import (
 	"github.com/Marcuss-ops/RenderingGen/objectstore/internal/store"
 )
 
-// authMiddleware enforces a shared bearer token when one is configured. The
-// store exposes arbitrary read/write over HTTP; unauthenticated access from
-// any host that can reach the port is not acceptable in production. When
-// OBJECTSTORE_TOKEN is unset the store stays open (local/dev posture).
-func authMiddleware(token string, next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		auth := r.Header.Get("Authorization")
-		const prefix = "Bearer "
-		if len(auth) > len(prefix) && strings.HasPrefix(auth, prefix) &&
-			subtle.ConstantTimeCompare([]byte(auth[len(prefix):]), []byte(token)) == 1 {
-			next.ServeHTTP(w, r)
-			return
-		}
-		http.Error(w, "unauthorized", http.StatusUnauthorized)
-	})
-}
-
 // publicReadMiddleware permits time-limited, content-addressed GETs for
 // workers. Uploads, staging, health and HEAD still require the private bearer
 // token. The signature is HMAC-SHA256("GET\\n/<path>\\n<expires>") so the

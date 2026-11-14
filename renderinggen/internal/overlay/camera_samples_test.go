@@ -9,14 +9,46 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/camerabake"
 )
 
 func init() {
 	// The Go sampler is a reference in unit-only builds. When the worker's
 	// CHRONON_CAMERA_PLAN_BAKER is configured, these same tests exercise CM3D.
 	if strings.TrimSpace(os.Getenv("CHRONON_CAMERA_PLAN_BAKER")) == "" {
-		cameraSampleBake = bakeResolvedCameraSamplesGo
+		SetCameraSampleBaker(goReferenceBaker{})
 	}
+}
+
+// goReferenceBaker adapts the test-only Go sampler to the baker port: it
+// decodes the same wire document the native baker receives, computes the
+// reference samples and returns them in the same shape.
+type goReferenceBaker struct{}
+
+func (goReferenceBaker) Bake(planJSON []byte) ([]byte, error) {
+	var doc struct {
+		Canvas          Canvas           `json:"canvas"`
+		Camera          *CameraPlan      `json:"camera"`
+		CameraAnimation *CameraAnimation `json:"camera_animation"`
+	}
+	if err := json.Unmarshal(planJSON, &doc); err != nil {
+		return nil, err
+	}
+	plan := &Plan{Canvas: doc.Canvas, Camera: doc.Camera, CameraAnimation: doc.CameraAnimation}
+	if err := bakeResolvedCameraSamplesGo(plan); err != nil {
+		return nil, err
+	}
+	return json.Marshal(map[string]any{"camera_samples": plan.CameraSamples, "camera_animation": nil})
+}
+
+// useExecBaker installs the exec runner for one test and restores the previous
+// package-wide baker afterwards, so no test leaks its seam into another.
+func useExecBaker(t *testing.T, binary string, timeout time.Duration) func() {
+	t.Helper()
+	previous := cameraSampleBaker
+	SetCameraSampleBaker(camerabake.New(binary, timeout))
+	return func() { SetCameraSampleBaker(previous) }
 }
 
 // bakeResolvedCameraSamplesGo is a test-only reference for packages that are
@@ -182,11 +214,10 @@ func cameraBakerTestPlan() *Plan {
 // compile (and therefore the worker job) past the configured deadline.
 func TestCameraBakerTimeoutFailsClosed(t *testing.T) {
 	baker := fakeCameraBaker(t, "#!/bin/sh\nexec sleep 30\n")
-	t.Setenv("CHRONON_CAMERA_PLAN_BAKER", baker)
-	t.Setenv("CHRONON_CAMERA_PLAN_BAKER_TIMEOUT", "100ms")
+	defer useExecBaker(t, baker, 100*time.Millisecond)()
 	plan := cameraBakerTestPlan()
 	started := time.Now()
-	err := bakeResolvedCameraSamplesWithCameraRig(plan)
+	err := bakeResolvedCameraSamples(plan)
 	if err == nil || !strings.Contains(err.Error(), "did not finish within") {
 		t.Fatalf("hung baker error = %v, want a deadline failure", err)
 	}
@@ -210,9 +241,9 @@ func TestCameraBakerAcceptsResolvedSamples(t *testing.T) {
 		`{"frame":2,"camera":` + camera + `}` +
 		`],"camera_animation":null}` + "\nJSON\n"
 	baker := fakeCameraBaker(t, script)
-	t.Setenv("CHRONON_CAMERA_PLAN_BAKER", baker)
+	defer useExecBaker(t, baker, 5*time.Second)()
 	plan := cameraBakerTestPlan()
-	if err := bakeResolvedCameraSamplesWithCameraRig(plan); err != nil {
+	if err := bakeResolvedCameraSamples(plan); err != nil {
 		t.Fatalf("native baker path: %v", err)
 	}
 	if len(plan.CameraSamples) != 3 {

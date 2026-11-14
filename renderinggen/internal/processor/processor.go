@@ -23,6 +23,7 @@ import (
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/chronon"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/drive"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/metricnames"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/overlay"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/queue"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/storage"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/workerlog"
@@ -34,12 +35,17 @@ import (
 //	validate -> workspace -> resolve/materialize -> plan.json -> render
 //	-> hash -> storage.Put -> (caller completes) -> cleanup
 type Processor struct {
-	jobsRoot        string
-	backend         string
-	chrononVersion  string
-	storeURL        string
-	store           *storage.Client
-	renderer        chronon.Renderer
+	jobsRoot       string
+	backend        string
+	chrononVersion string
+	storeURL       string
+	store          *storage.Client
+	renderer       chronon.Renderer
+	// compiler is the consumer-side seam over the semantic lowering. It is
+	// unexported on purpose: only this package dispatches compile work, and a
+	// test in this package can inject a stub without widening the public API.
+	// nil falls back to the real overlay compiler.
+	compiler        semanticCompiler
 	assetPrefetcher chronon.AssetPrefetcher
 	drive           drive.Publisher     // nil = external publication disabled
 	recorder        artifactdb.Recorder // nil = artifact ledger disabled
@@ -202,6 +208,31 @@ type Options struct {
 	AssetPrefetcher chronon.AssetPrefetcher
 }
 
+// semanticCompiler is the consumer-side contract PrepareJob needs from the
+// semantic lowering. Declaring it at the consumer keeps the orchestrator
+// testable with a stub and stops a change in the overlay implementation from
+// silently redefining what the pipeline can rely on.
+type semanticCompiler interface {
+	CompileSemantic(raw []byte) (overlay.CompileResult, error)
+}
+
+// overlaySemanticCompiler adapts the package-level compiler to the seam.
+type overlaySemanticCompiler struct{}
+
+func (overlaySemanticCompiler) CompileSemantic(raw []byte) (overlay.CompileResult, error) {
+	return overlay.CompileSemantic(raw)
+}
+
+// compileSemantic dispatches through the seam. A zero-value Processor (tests
+// build struct literals directly) still compiles with the real implementation.
+func (p *Processor) compileSemantic(raw []byte) (overlay.CompileResult, error) {
+	compiler := p.compiler
+	if compiler == nil {
+		compiler = overlaySemanticCompiler{}
+	}
+	return compiler.CompileSemantic(raw)
+}
+
 // New creates a job processor with the shipped defaults (Options{}).
 func New(jobsRoot, backend, chrononVersion, storeURL string, store *storage.Client, renderer chronon.Renderer) *Processor {
 	return NewWithOptions(jobsRoot, backend, chrononVersion, storeURL, store, renderer, Options{})
@@ -216,6 +247,7 @@ func NewWithOptions(jobsRoot, backend, chrononVersion, storeURL string, store *s
 		storeURL:             strings.TrimRight(storeURL, "/"),
 		store:                store,
 		renderer:             renderer,
+		compiler:             overlaySemanticCompiler{},
 		assetPrefetcher:      opts.AssetPrefetcher,
 		phaseHook:            opts.PhaseHook,
 		gpuGapHook:           opts.GPUGapHook,

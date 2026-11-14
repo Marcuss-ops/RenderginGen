@@ -2,9 +2,6 @@ package overlay
 
 import (
 	"image"
-	"image/png"
-	"os"
-	"path/filepath"
 	"testing"
 )
 
@@ -19,20 +16,8 @@ func TestFitEntityImageBoxToAssetPreservesAspectWithoutMatte(t *testing.T) {
 		{name: "square", source: image.Pt(800, 800), want: image.Pt(480, 480)},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			path := filepath.Join(t.TempDir(), "source.png")
-			f, err := os.Create(path)
-			if err != nil {
-				t.Fatal(err)
-			}
-			if err := png.Encode(f, image.NewRGBA(image.Rectangle{Max: tc.source})); err != nil {
-				f.Close()
-				t.Fatal(err)
-			}
-			if err := f.Close(); err != nil {
-				t.Fatal(err)
-			}
-			layer := Layer{Asset: path, BoxWidth: 480, BoxHeight: 480, Size: []float64{480, 480}, Fit: FitContain}
-			if err := FitEntityImageLayerToAsset(&layer, path); err != nil {
+			layer := Layer{BoxWidth: 480, BoxHeight: 480, Size: []float64{480, 480}, Fit: FitContain}
+			if err := FitEntityImageLayerToAsset(&layer, tc.source.X, tc.source.Y); err != nil {
 				t.Fatal(err)
 			}
 			if got := image.Pt(layer.BoxWidth, layer.BoxHeight); got != tc.want {

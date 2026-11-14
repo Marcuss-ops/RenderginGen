@@ -6,8 +6,6 @@ package overlay
 
 import (
 	"fmt"
-	"image"
-	"os"
 	"sort"
 	"strings"
 
@@ -498,31 +496,23 @@ func runtimeDefaultImageMotionIDFor(pool []string, src *semanticPlan, itemID str
 }
 
 // FitEntityImageLayerToAsset matches an entity image's bounded contain box to
-// the source aspect ratio. Call after the processor materializes the asset at
-// assetPath; compilation alone only knows its logical path.
-func FitEntityImageLayerToAsset(layer *Layer, assetPath string) error {
-	if layer == nil || strings.TrimSpace(assetPath) == "" || layer.BoxWidth <= 0 || layer.BoxHeight <= 0 {
+// the source aspect ratio. The CALLER supplies the decoded source dimensions:
+// the processor reads them from the verified, content-addressed bytes after
+// materialization, so this lowering path never opens a file.
+func FitEntityImageLayerToAsset(layer *Layer, sourceWidth, sourceHeight int) error {
+	if layer == nil || layer.BoxWidth <= 0 || layer.BoxHeight <= 0 {
 		return fmt.Errorf("missing image geometry")
 	}
-	f, err := os.Open(assetPath)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-	config, _, err := image.DecodeConfig(f)
-	if err != nil {
-		return err
-	}
-	if config.Width <= 0 || config.Height <= 0 {
-		return fmt.Errorf("invalid source dimensions %dx%d", config.Width, config.Height)
+	if sourceWidth <= 0 || sourceHeight <= 0 {
+		return fmt.Errorf("invalid source dimensions %dx%d", sourceWidth, sourceHeight)
 	}
 	maxW, maxH := layer.BoxWidth, layer.BoxHeight
-	if int64(config.Width)*int64(maxH) > int64(config.Height)*int64(maxW) {
+	if int64(sourceWidth)*int64(maxH) > int64(sourceHeight)*int64(maxW) {
 		layer.BoxWidth = maxW
-		layer.BoxHeight = max(1, int(float64(maxW)*float64(config.Height)/float64(config.Width)+0.5))
+		layer.BoxHeight = max(1, int(float64(maxW)*float64(sourceHeight)/float64(sourceWidth)+0.5))
 	} else {
 		layer.BoxHeight = maxH
-		layer.BoxWidth = max(1, int(float64(maxH)*float64(config.Width)/float64(config.Height)+0.5))
+		layer.BoxWidth = max(1, int(float64(maxH)*float64(sourceWidth)/float64(sourceHeight)+0.5))
 	}
 	layer.Size = []float64{float64(layer.BoxWidth), float64(layer.BoxHeight)}
 	// The box now has the source's aspect ratio, so cover fills the complete

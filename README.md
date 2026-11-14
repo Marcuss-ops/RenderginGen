@@ -155,15 +155,17 @@ Per un composito, spostare `frame` e le dimensioni dentro ciascun elemento di
 
 **Fotografia runtime verificata:** c’è **1 renderer** (Chronon3D); il worker
 RenderingGen compila il piano semantico, non è un secondo renderer. Il registry
-contiene **20 `ItemKind`**, **29 template**, **10 preset ufficiali** (2 testo +
-8 immagini) e **6 comportamenti di compilazione** (testo, entità, immagine,
-video, shape, mappa). Sono conteggi di livelli diversi: kind/template/preset non
-sono sinonimi di “sezione”. **Conteggio verificato il 2026-10-16** con
-`go run ./cmd/motion-catalog`: il runtime espone **438 motion ID**, **26 famiglie
-selezionabili** e **22 use case**. È una vista compilata: include l’artefatto
-ChrononTemplate incorporato, i pack C++ e i cataloghi metric/date/entity.
-Generala al momento del consumo per leggere la disponibilità corrente; i
-conteggi precedenti non descrivono più il registry compilato.
+contiene i `ItemKind`, i template e i preset definiti da `overlay/registry.go` e
+`overlay/official_presets.go`, e **6 comportamenti di compilazione** (testo,
+entità, immagine, video, shape, mappa). Sono livelli diversi: kind/template/
+preset non sono sinonimi di “sezione”.
+
+I **conteggi non sono ripetuti qui**: kind, template, preset, motion, famiglie e
+use case sono viste compilate che invecchiano a ogni famiglia aggiunta, e un
+numero scritto in prosa diventa una seconda fonte di verità che contraddice il
+codice. La vista autorevole è `go run ./cmd/motion-catalog`: include l’artefatto
+ChrononTemplate incorporato, i pack C++ e i cataloghi metric/date/entity, e va
+eseguita al momento del consumo per leggere la disponibilità corrente.
 
 Il comando scrive il catalogo su stdout; `go run ./cmd/motion-catalog -output
 catalog.json` lo salva su file.
@@ -609,8 +611,54 @@ chronon.ProgressTracker (per-job snapshot: frames_done/total, %, fps,
 ```
 
 A job whose `frames_done` stays flat while `last_frame_at` ages is a stalled
-render; the renderer's own stall watchdog aborts it. GPU memory growth alone
-is never treated as progress evidence.
+render; the renderer's own stall watchdog aborts it. GPU memory growth alone is
+never treated as progress evidence.
+
+The frame stream above is the CLI transport. The warm-daemon IPC transport runs
+`RENDER_JOB` as one blocking call, and its `GET_JOB_STATUS` reply carries
+lifecycle state only (`prepared`/`running`/`completed`/`failed`), not frame
+counts. A daemon render therefore logs elapsed-time heartbeats instead of
+inventing a percentage.
+
+### Stato del job nel log (job_state)
+
+Ogni transizione scrive una riga con lo stesso prefisso stabile, sia nel log del
+processo sia nel log duraturo del job (`<jobs_root>/<job_id>/worker.log`):
+
+| `job_state=` | Quando | Dati utili |
+|---|---|---|
+| `claimed` | il worker ha preso il job dalla coda | tipo, tentativo, lease generation, scadenza del lease, chunk |
+| `preparing` | inizio del lowering semantico + materializzazione | tipo, tentativo, lease |
+| `prepared` | piano compilato e asset pronti per la GPU | layer, asset, item, durata prepare |
+| `waiting_gpu` | il job è in attesa di una lane GPU libera | `lane_wait_ms` |
+| `rendering` | Chronon ha iniziato a renderizzare | canvas, fps, frame totali, backend, encoder |
+| `rendering progress=…` | ogni milestone del renderer (max 1 riga/10s, più la prima e l'ultima) | percentuale, ETA, frame, fps |
+| `rendering state=in_progress …` | nessuna milestone da almeno 15 s, oppure trasporto daemon che non le emette | `elapsed`, ultimi frame noti (o `progress=unknown`), `note` |
+| `rendered` | il renderer ha restituito il file | durata, `frames` richiesti, `frames_done`/`frames_total` osservati, fps, `progress`, output |
+| `finalizing` | probe/hash/store/publish | segmenti |
+| `publishing` | retry di pubblicazione di un artefatto già durevole | artifact, policy |
+| `completed` | la coda ha accettato il completamento | artifact, byte, `durable` |
+| `failed` | qualunque path di errore | motivo |
+
+Per seguire un job: `grep 'job_state=' <jobs_root>/<job_id>/worker.log`. La
+sequenza attesa è `claimed → preparing → prepared → waiting_gpu → rendering →
+rendered → finalizing → completed` (oppure `failed` con il motivo).
+L'ETA è lineare sull'fps medio e va letta come stima, non come garanzia.
+
+La riga `rendered` riporta `frames=` (i frame che quella invocazione doveva
+produrre: piano intero oppure finestra del chunk) e i campi osservati
+`frames_done`/`frames_total`. Quando il renderer non ha emesso milestone,
+`progress=not_reported` sostituisce la percentuale: significa "nessuna
+posizione di frame riportata dal renderer", non 0%. Il job può comunque essere
+`completed` con un artifact valido, e `frames=` resta la quantità prodotta.
+Sul trasporto IPC del daemon è il caso normale, perché il daemon non inoltra i
+frame al worker.
+
+Se il renderer emette milestone ma si ferma per almeno 15 secondi, il worker
+aggiunge una riga `job_state=rendering state=in_progress elapsed=…` con
+`progress=…` dell'ultima posizione nota e `note=no_new_frames`. Il log continua
+quindi a dire "sono ancora qui, da quanto" anche nei tratti silenziosi; le
+righe con percentuale ed ETA compaiono solo quando arrivano nuove milestone.
 
 ## Database
 

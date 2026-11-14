@@ -144,19 +144,6 @@ func (l *heldLane) Render(context.Context, RenderRequest) error {
 	return nil
 }
 
-// waitCalls polls until the lane has been assigned n renders.
-func waitCalls(t *testing.T, lane *recordingLane, n int64) {
-	t.Helper()
-	deadline := time.Now().Add(2 * time.Second)
-	for time.Now().Before(deadline) {
-		if lane.calls.Load() >= n {
-			return
-		}
-		time.Sleep(time.Millisecond)
-	}
-	t.Fatalf("lane never reached %d assignments (has %d)", n, lane.calls.Load())
-}
-
 // TestSpreadAvoidsBusyLanes pins the load-aware half of the policy: while lane
 // 0 is mid-render, assignments must go to idle lanes even though the
 // historical round-robin cursor would point back at lane 0.

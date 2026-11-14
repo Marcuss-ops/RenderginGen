@@ -17,6 +17,12 @@ queue:
 artifact_store:
   endpoint: https://storage.pipelinegen.example
   local_cache_dir: /var/lib/renderinggen/cache
+  # Shared bearer token expected by the object store. Prefer token_file: the
+  # secret stays out of the process environment and out of this shipped YAML.
+  # The file is read once at startup; a missing or empty file fails the worker.
+  # token (inline) or RENDERINGGEN_ARTIFACT_STORE_TOKEN still take precedence
+  # when set, so an environment override can rotate the secret.
+  # token_file: /etc/renderinggen/objectstore.token
   # Cache budgets. These used to be compile-time constants in the worker wiring;
   # rebalance them for the host (more RAM -> raise l1_max_bytes, more NVMe ->
   # raise l2_max_bytes) and lower them on a small host. Both are CAPS enforced
