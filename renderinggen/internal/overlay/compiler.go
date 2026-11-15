@@ -436,6 +436,12 @@ type semanticBackground struct {
 	Fit       string             `json:"fit,omitempty"`
 	Opacity   *float64           `json:"opacity,omitempty"`
 	Loop      bool               `json:"loop,omitempty"`
+	// BlurPX is the gaussian blur radius applied to the background plate in
+	// output pixels. It is how a producer expresses the clip-render
+	// `blur_source` mode on the wire: the plate is the source video sampled
+	// full-frame, and this effect makes it a soft backdrop instead of a sharp
+	// second copy of the foreground.
+	BlurPX float64 `json:"blur_px,omitempty"`
 }
 
 type semanticItem struct {

@@ -11,6 +11,11 @@ import (
 	"strings"
 )
 
+// maxBackgroundBlur bounds the gaussian blur a background plate may declare.
+// It is the same ceiling as the shared layer-effect catalog, so a plan the
+// schema accepts can never be rejected by the effect resolver.
+const maxBackgroundBlur = 256.0
+
 // compileBackgroundLayer returns the background plate when the plan declares
 // one. Fit is validated against the closed render contract and never silently
 // downgraded.
@@ -35,6 +40,12 @@ func compileBackgroundLayer(src *semanticPlan, registry *assetRegistry) (Layer, 
 		}
 	} else if len(bg.AssetRefs) == 0 {
 		return Layer{}, false, fmt.Errorf("overlay: %s background requires asset_refs", kind)
+	}
+	if !finite(bg.BlurPX) || bg.BlurPX < 0 || bg.BlurPX > maxBackgroundBlur {
+		return Layer{}, false, fmt.Errorf("overlay: background blur_px must be within [0,%g]", maxBackgroundBlur)
+	}
+	if layerKind == "color" && bg.BlurPX > 0 {
+		return Layer{}, false, fmt.Errorf("overlay: background blur_px is only valid for image/video plates")
 	}
 	for _, ref := range bg.AssetRefs {
 		if _, err := registry.Register(ref); err != nil {
@@ -84,6 +95,16 @@ func compileBackgroundLayer(src *semanticPlan, registry *assetRegistry) (Layer, 
 			layer.Asset = registry.Path(ref.ID)
 		}
 		layer.Loop = bg.Loop
+		if bg.BlurPX > 0 {
+			// `blur_source` is expressed as the source plate plus this real
+			// compositor effect. Without it the plate is a sharp, differently
+			// scaled copy of the foreground and the card edge reads as a
+			// duplicated/glitched frame.
+			layer.Effects = append(layer.Effects, LayerEffect{
+				Type:   "gaussian_blur",
+				Params: map[string]any{"radius": bg.BlurPX},
+			})
+		}
 	}
 	return layer, true, nil
 }

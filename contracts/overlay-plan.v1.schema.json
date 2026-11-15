@@ -1591,6 +1591,11 @@
         },
         "loop": {
           "type": "boolean"
+        },
+        "blur_px": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 256
         }
       }
     },

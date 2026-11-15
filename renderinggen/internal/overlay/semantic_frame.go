@@ -218,7 +218,7 @@ func frameFromImageParams(params map[string]any, existing *semanticSourceFrame) 
 // compileMediaStrokeLayer expands transient frame-stroke metadata into a
 // Chronon rounded-rectangle path which sits above its media layer. Its fill is
 // transparent, while the visible line follows the same radius as the clip.
-func compileMediaStrokeLayer(media Layer, canvasWidth, canvasHeight int) (Layer, error) {
+func compileMediaStrokeLayer(media Layer) (Layer, error) {
 	if media.FrameStroke == nil || media.FrameStroke.Width <= 0 {
 		return Layer{}, fmt.Errorf("media frame stroke is missing a positive width")
 	}
@@ -240,17 +240,16 @@ func compileMediaStrokeLayer(media Layer, canvasWidth, canvasHeight int) (Layer,
 	strokeRadius := media.Radius
 	position := append([]float64(nil), media.Position...)
 	if media.Type == "video" && len(position) >= 2 {
-		if canvasWidth <= 0 || canvasHeight <= 0 {
-			return Layer{}, fmt.Errorf("video frame stroke requires positive canvas dimensions")
-		}
-		// Render-plan video positions name the source surface origin; shape
-		// positions name the box centre. The source clip geometry is transformed
-		// by size×scale and then centred on the canvas for inset foregrounds.
-		// The stroke bounds are the displayed (scale-baked) size, so the shift
-		// from the source origin to the displayed centre is half the difference
-		// between the displayed size and the canvas, not half the unscaled size.
-		position[0] += (width - float64(canvasWidth)) * 0.5
-		position[1] += (height - float64(canvasHeight)) * 0.5
+		// Render-plan video positions name the top-left of the unscaled source
+		// box in canvas-centred coordinates, while a shape transform is
+		// anchored at its box centre. Follow the same origin-to-centre
+		// conversion the video scene builder applies (add half the unscaled
+		// box) so the outline lands exactly on the displayed clip instead of
+		// being left at the un-scaled origin. The displayed size is already
+		// baked into Size above / Scale is unit, so the shape itself must not
+		// be shifted by the foreground inset a second time.
+		position[0] += media.Size[0] * 0.5
+		position[1] += media.Size[1] * 0.5
 	}
 	if !finite(strokeWidth) || !finite(strokeRadius) {
 		return Layer{}, fmt.Errorf("media frame stroke width/radius must be finite")
