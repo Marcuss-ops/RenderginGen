@@ -28,9 +28,9 @@ const (
 	RenderUS           = "render_us" // alias of ChrononRenderUS on the artifact metrics map
 	ProbeUS            = "probe_us"
 	SHA256US           = "sha256_us"
-	// CanonicalizeOverlayUS is the V3 post-render canonicalization pass:
-	// the artifact is re-encoded to the canonical x264/90000 lane before its
-	// receipt and content address are finalized.
+	// CanonicalizeOverlayUS is the canonicalization pass: the artifact is
+	// re-encoded to the canonical x264/90000 lane in the post pool (never on
+	// the GPU lane) before its receipt and content address are finalized.
 	CanonicalizeOverlayUS = "canonicalize_overlay_us"
 	// WorkerDecodeUS is the worker's OWN full-decode gate (the post-lane half
 	// of the verification policy): under a policy that promises one complete

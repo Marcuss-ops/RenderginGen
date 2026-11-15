@@ -107,6 +107,7 @@ func compileSemanticDecoded(src *semanticPlan) (*Plan, []Asset, Stats, []string,
 	// output defaults, so the compiler cannot drift from it.
 	plan := *newPlan(src.PlanID, src.Width, src.Height, src.FPSNum, src.FPSDen, 0)
 	plan.Output.ProfileID = src.OutputProfileID
+	plan.Output.ColorSpace = canonicalProfileColorSpace(src.OutputProfileID)
 
 	// Seed canvas duration from the explicit duration_ms when provided. Items
 	// can extend it but cannot shrink it. For clip renders with items:[] this

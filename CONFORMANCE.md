@@ -112,8 +112,8 @@ covered by a test rather than a comment:
 `skipDirs` is split by scope. Unambiguous generated names (`node_modules`,
 `vendor`, `build`, `.tmp`, `.cache`, `.venv-*`, …) and every `build-*` variant
 are skipped at any depth. Ambiguous names (`tmp`, `out`, `artifacts`,
-`results`, `secrets`) are skipped **only at a target root**, because they also
-name ordinary directories inside source trees: PipelineGen ships live packages
+`results`, `secrets`, `Upload`) are skipped **only at a target root**, because
+they also name ordinary directories inside source trees: PipelineGen ships live packages
 at `internal/capabilities/assets/artifacts/` and
 `internal/platform/sqlite/artifacts/`, and a basename match at any depth
 silently un-scanned both — a false sense of enforcement. A nested directory

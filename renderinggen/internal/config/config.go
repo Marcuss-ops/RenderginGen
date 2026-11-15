@@ -135,6 +135,13 @@ type PipelineConfig struct {
 	// Off by default; a debugging aid that must be turned on deliberately,
 	// because the jobs root is often tmpfs (RAM).
 	KeepWorkspace bool `yaml:"keep_workspace"`
+
+	// NativeAVCCSHA256 is the opt-in NVENC recertification allowlist. Each
+	// entry is an avcC (SPS/PPS) SHA-256 that a canonical output profile may
+	// accept without the x264 re-encode. Empty keeps the shipped x264-only
+	// gate; add a hash only after the downstream assembly contract accepts
+	// the same parameter sets.
+	NativeAVCCSHA256 []string `yaml:"native_avcc_sha256"`
 }
 
 type WorkerConfig struct {
@@ -636,7 +643,24 @@ func (c *Config) validate() error {
 // value is positive: what this rejects is a NEGATIVE setting, which can only
 // come from the file or the environment and is never meant, plus the lease
 // TTL/refresh relationship.
+func isLowerHexSHA256(value string) bool {
+	if len(value) != 64 {
+		return false
+	}
+	for _, c := range value {
+		if !(c >= '0' && c <= '9' || c >= 'a' && c <= 'f') {
+			return false
+		}
+	}
+	return true
+}
+
 func (p PipelineConfig) validate() error {
+	for _, hash := range p.NativeAVCCSHA256 {
+		if !isLowerHexSHA256(hash) {
+			return fmt.Errorf("pipeline.native_avcc_sha256 entry %q must be 64 lowercase hex characters", hash)
+		}
+	}
 	for name, value := range map[string]time.Duration{
 		"pipeline.claim_long_poll":          p.ClaimLongPoll,
 		"pipeline.claim_retry_delay":        p.ClaimRetryDelay,

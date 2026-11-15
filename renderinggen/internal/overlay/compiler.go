@@ -164,6 +164,25 @@ func newPlan(jobID string, width, height, fpsNum, fpsDen int, duration int64) *P
 		Output: Output{Path: "result.mp4", Format: "mp4", Codec: "h264"}}
 }
 
+// canonicalProfileColorSpace maps a canonical Velox output profile to the
+// concrete Chronon colour contract it declares. Every canonical profile is
+// BT.709 media (the assembly contract pins bt709 for V1/V2 and the overlay
+// source lane pins bt709 space/primaries). The field must be written into the
+// concrete plan: Chronon's decoder defaults an absent output.color_space to
+// sRGB, and that default stamps the NVENC parameter sets with an sRGB transfer
+// function, which VELOX_ASSEMBLY_READY_V1 rejects after the render. Profiles
+// with no pinned colour declaration keep Chronon's own default.
+func canonicalProfileColorSpace(profileID string) string {
+	switch profileID {
+	case "VELOX_ASSEMBLY_READY_V1", "VELOX_ASSEMBLY_READY_V2",
+		"VELOX_OVERLAY_VIDEO_ONLY_V1", "VELOX_OVERLAY_VIDEO_ONLY_V2",
+		"VELOX_OVERLAY_VIDEO_ONLY_V3":
+		return "rec709"
+	default:
+		return ""
+	}
+}
+
 // CompileSemantic lowers the PipelineGen semantic contract to the concrete
 // Chronon plan consumed by the worker. It returns the plan, its materialized
 // assets and the ledger counters produced by the SAME compile pass, so the
@@ -691,6 +710,10 @@ type Output struct {
 	Format    string `json:"format"`
 	Codec     string `json:"codec"`
 	ProfileID string `json:"profile_id,omitempty"`
+	// ColorSpace is the concrete Chronon output colour contract. Canonical
+	// profiles declare rec709 explicitly so the renderer cannot fall back to
+	// its sRGB default.
+	ColorSpace string `json:"color_space,omitempty"`
 	// Retained for typed semantic metadata; omitted from Chronon's v2 JSON.
 	Audio *Audio `json:"-"`
 }

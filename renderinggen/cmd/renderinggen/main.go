@@ -259,15 +259,16 @@ func main() {
 		store,
 		renderer,
 		processor.Options{
-			AssetPrefetcher:      assetPrefetcher,
-			NativeOutputProfiles: cfg.Chronon.NativeOutputProfiles,
-			StrictNativeBackend:  cfg.Chronon.StrictNative(),
-			Report:               cfg.Chronon.Report,
-			HardwareEncoder:      cfg.Chronon.HardwareEncoder,
-			EncoderBackend:       cfg.Chronon.EncoderBackend,
-			EncodePreset:         cfg.Chronon.EncodePreset,
-			PipePixFmt:           cfg.Chronon.PipePixFmt,
-			WorkspaceLeaseTTL:    timings.WorkspaceLeaseTTL,
+			AssetPrefetcher:           assetPrefetcher,
+			NativeOutputProfiles:      cfg.Chronon.NativeOutputProfiles,
+			AcceptedCodecConfigSHA256: cfg.Pipeline.NativeAVCCSHA256,
+			StrictNativeBackend:       cfg.Chronon.StrictNative(),
+			Report:                    cfg.Chronon.Report,
+			HardwareEncoder:           cfg.Chronon.HardwareEncoder,
+			EncoderBackend:            cfg.Chronon.EncoderBackend,
+			EncodePreset:              cfg.Chronon.EncodePreset,
+			PipePixFmt:                cfg.Chronon.PipePixFmt,
+			WorkspaceLeaseTTL:         timings.WorkspaceLeaseTTL,
 			// Verification policy, deep visual validation and workspace
 			// retention come from configuration, so the post pool (the
 			// workspace's last owner) and the processor cannot be told
@@ -283,6 +284,9 @@ func main() {
 			LaneWaitHook:         workerMetrics.LaneWaitHook(),
 		},
 	)
+	if len(cfg.Pipeline.NativeAVCCSHA256) > 0 {
+		log.Printf("NVENC avcC recertification: %d allowlisted canonical parameter-set hash(es); matching artifacts skip the x264 re-encode", len(cfg.Pipeline.NativeAVCCSHA256))
+	}
 	log.Printf("chronon report telemetry: %t, strict_native_backend: %t, encode_preset: %q, pipe_pixfmt: %q", cfg.Chronon.Report, cfg.Chronon.StrictNative(), cfg.Chronon.EncodePreset, cfg.Chronon.PipePixFmt)
 	// Canonical publication authority: queue-served render segments resolve
 	// to object-store-only (the submitter owns Drive delivery), so a Drive

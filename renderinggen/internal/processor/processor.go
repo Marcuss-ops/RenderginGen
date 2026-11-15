@@ -22,6 +22,7 @@ import (
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/artifactdb"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/chronon"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/drive"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/media"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/metricnames"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/overlay"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/queue"
@@ -58,13 +59,14 @@ type Processor struct {
 	// report, when true, passes --report to chronon3d_cli so the execution
 	// report + telemetry JSONL (render_ms/encode_ms/cache hits-misses) are
 	// emitted. Disabled by default; enabled by the performance benchmark.
-	report               bool
-	hardwareEncoder      string
-	encoderBackend       string
-	encodePreset         string
-	pipePixFmt           string
-	nativeOutputProfiles bool
-	strictNativeBackend  bool
+	report                    bool
+	hardwareEncoder           string
+	encoderBackend            string
+	encodePreset              string
+	pipePixFmt                string
+	nativeOutputProfiles      bool
+	acceptedCodecConfigSHA256 []string
+	strictNativeBackend       bool
 
 	// workspaceLeaseTTL is the validity window written into the per-workspace
 	// liveness marker at PrepareJob (and refreshed by the GPU lane). Zero means
@@ -189,6 +191,12 @@ type Options struct {
 	// disabled for legacy runtimes that reject unknown output properties.
 	NativeOutputProfiles bool
 
+	// AcceptedCodecConfigSHA256 lists additional avcC (SPS/PPS) hashes that
+	// canonical output profiles accept. It is the opt-in NVENC recertification
+	// path: a matching native artifact skips the canonical x264 re-encode.
+	// Empty preserves the shipped x264-only gate.
+	AcceptedCodecConfigSHA256 []string
+
 	// StrictNativeBackend makes the gpu-vulkan-native profile fail closed when
 	// Chronon reports a hybrid or software-fallback execution.
 	StrictNativeBackend bool
@@ -241,32 +249,48 @@ func New(jobsRoot, backend, chrononVersion, storeURL string, store *storage.Clie
 // NewWithOptions creates a job processor with an explicit configuration.
 func NewWithOptions(jobsRoot, backend, chrononVersion, storeURL string, store *storage.Client, renderer chronon.Renderer, opts Options) *Processor {
 	return &Processor{
-		jobsRoot:             jobsRoot,
-		backend:              backend,
-		chrononVersion:       chrononVersion,
-		storeURL:             strings.TrimRight(storeURL, "/"),
-		store:                store,
-		renderer:             renderer,
-		compiler:             overlaySemanticCompiler{},
-		assetPrefetcher:      opts.AssetPrefetcher,
-		phaseHook:            opts.PhaseHook,
-		gpuGapHook:           opts.GPUGapHook,
-		laneWaitHook:         opts.LaneWaitHook,
-		report:               opts.Report,
-		hardwareEncoder:      opts.HardwareEncoder,
-		encoderBackend:       opts.EncoderBackend,
-		encodePreset:         opts.EncodePreset,
-		pipePixFmt:           opts.PipePixFmt,
-		nativeOutputProfiles: opts.NativeOutputProfiles,
-		strictNativeBackend:  opts.StrictNativeBackend,
-		workspaceLeaseTTL:    opts.WorkspaceLeaseTTL,
-		receiptVerify:        renderVerifyLevel(opts.ReceiptVerify),
-		deepVisualValidation: opts.DeepVisualValidation,
-		keepWorkspace:        opts.KeepWorkspace,
-		progressTracker:      opts.ProgressTracker,
-		drive:                opts.Publisher,
-		recorder:             opts.ArtifactRecorder,
+		jobsRoot:                  jobsRoot,
+		backend:                   backend,
+		chrononVersion:            chrononVersion,
+		storeURL:                  strings.TrimRight(storeURL, "/"),
+		store:                     store,
+		renderer:                  renderer,
+		compiler:                  overlaySemanticCompiler{},
+		assetPrefetcher:           opts.AssetPrefetcher,
+		phaseHook:                 opts.PhaseHook,
+		gpuGapHook:                opts.GPUGapHook,
+		laneWaitHook:              opts.LaneWaitHook,
+		report:                    opts.Report,
+		hardwareEncoder:           opts.HardwareEncoder,
+		encoderBackend:            opts.EncoderBackend,
+		encodePreset:              opts.EncodePreset,
+		pipePixFmt:                opts.PipePixFmt,
+		nativeOutputProfiles:      opts.NativeOutputProfiles,
+		acceptedCodecConfigSHA256: opts.AcceptedCodecConfigSHA256,
+		strictNativeBackend:       opts.StrictNativeBackend,
+		workspaceLeaseTTL:         opts.WorkspaceLeaseTTL,
+		receiptVerify:             renderVerifyLevel(opts.ReceiptVerify),
+		deepVisualValidation:      opts.DeepVisualValidation,
+		keepWorkspace:             opts.KeepWorkspace,
+		progressTracker:           opts.ProgressTracker,
+		drive:                     opts.Publisher,
+		recorder:                  opts.ArtifactRecorder,
 	}
+}
+
+// outputProfile resolves a profile and applies the process-wide NVENC avcC
+// recertification allowlist. The allowlist is copied so a caller cannot mutate
+// the shared profile registry through the returned slice.
+func (p *Processor) outputProfile(id string) (media.OutputProfile, error) {
+	profile, err := media.ResolveProfile(id)
+	if err != nil {
+		return media.OutputProfile{}, err
+	}
+	if len(p.acceptedCodecConfigSHA256) == 0 {
+		return profile, nil
+	}
+	profile.AcceptedCodecConfigSHA256 = append(append([]string(nil), profile.AcceptedCodecConfigSHA256...), p.acceptedCodecConfigSHA256...)
+	return profile, nil
 }
 
 // defaultWorkspaceLeaseTTL is the shipped marker validity window, matching the

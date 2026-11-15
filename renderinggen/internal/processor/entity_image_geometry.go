@@ -36,11 +36,16 @@ func fitEntityImageLayersToAssets(root string, plan *overlay.Plan) (bool, error)
 			return false, fmt.Errorf("processor: read entity image layer %q dimensions: %w", layer.ID, err)
 		}
 		if float64(sourceWidth)/float64(sourceHeight) >= 1.2 {
-			width := int(float64(plan.Canvas.Width) * 0.25)
-			height := max(1, width*9/16)
+			// Use the authored contain box, not the render canvas: the box is
+			// already in the canonical design space, so a 1280x720 job and a
+			// 1920x1080 job settle on the same 16:9 card. Scaling by canvas
+			// width made the card shrink with the preview/output size and broke
+			// the linked premium frame geometry.
+			width := layer.BoxWidth
 			if width <= 0 {
-				return false, fmt.Errorf("processor: invalid canvas width %d for entity image layer %q", plan.Canvas.Width, layer.ID)
+				return false, fmt.Errorf("processor: invalid box width %d for entity image layer %q", layer.BoxWidth, layer.ID)
 			}
+			height := max(1, width*9/16)
 			layer.BoxWidth, layer.BoxHeight = width, height
 			layer.Size = []float64{float64(width), float64(height)}
 			layer.Fit = overlay.FitCover

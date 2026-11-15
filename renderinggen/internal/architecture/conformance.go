@@ -127,6 +127,12 @@ var skipDirsAnyDepth = map[string]bool{
 // pattern for it instead of widening this list back to any depth.
 var skipDirsRootOnly = map[string]bool{
 	"tmp": true, "out": true, "artifacts": true, "results": true, "secrets": true,
+	// Upload is the gitignored evidence/data drop at the repository root:
+	// render uploads, downloaded evidence bundles and third-party virtualenvs.
+	// It is not a source carrier, so scanning it would only report the home
+	// paths vendored inside those packages. Root-only keeps a nested source
+	// directory named Upload visible to the gate.
+	"Upload": true,
 }
 
 // skipDir reports whether a directory (given its target-relative slash path and

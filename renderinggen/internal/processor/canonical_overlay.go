@@ -14,15 +14,21 @@
 // The pass is scoped to the canonicalized profiles only. V2 keeps its existing
 // bytes and cache identity; changing it in place without its own certified
 // recipe would invalidate previously certified overlays.
+//
+// Placement: the pass is CPU-only and runs in the post pool (FinalizeJob),
+// after the GPU lane has been released. Running it inside RunGPU held a render
+// device while re-encoding an artifact that was already finished.
 package processor
 
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sync"
 	"time"
 
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/chronon"
@@ -111,8 +117,8 @@ func canonicalOutputFFmpegArgs(input, output string, keepAudio bool, fpsNum, fps
 // canonicalizePreparedOutputs canonicalizes the fused output and every P4
 // segment of a prepared job. It serves both canonicalized lanes: the
 // video-only V3 overlay and the assembly-ready V1 clip. It returns true when
-// at least one artifact was re-encoded; the caller uses that to revoke a
-// native certification that no longer describes the final bytes.
+// at least one artifact was re-encoded. The pass is CPU-only and runs in the
+// post pool (FinalizeJob), not on the GPU lane.
 func (p *Processor) canonicalizePreparedOutputs(ctx context.Context, prepared *PreparedJob) (bool, error) {
 	if prepared == nil || prepared.Plan == nil {
 		return false, nil
@@ -129,12 +135,21 @@ func (p *Processor) canonicalizePreparedOutputs(ctx context.Context, prepared *P
 	return p.canonicalizeOutputPaths(ctx, prepared.Job.ID, paths, prepared.Metrics, metadata.ProfileID)
 }
 
+// canonicalizeConcurrency bounds how many canonical encodes run at once inside
+// ONE job. The pass is CPU-only x264 work; the post pool already runs several
+// jobs concurrently, so an unbounded fan-out over a large batch would starve
+// the probes, hashing and uploads that share the same CPUs. Two lanes shorten
+// the per-job tail without turning one batch into a process storm.
+const canonicalizeConcurrency = 2
+
 // canonicalizeOutputPaths canonicalizes an explicit set of outputs. The P4
-// single-segment retry uses it for the one segment it re-rendered.
+// single-segment retry uses it for the one segment it re-rendered. Paths are
+// deduplicated, encoded on a bounded pool, and inspected in input order, so a
+// batch's output set is deterministic regardless of which encode finished
+// first.
 func (p *Processor) canonicalizeOutputPaths(ctx context.Context, jobID string, paths []string, metrics map[string]float64, profileID string) (bool, error) {
+	unique := make([]string, 0, len(paths))
 	seen := make(map[string]struct{}, len(paths))
-	changed := false
-	var total time.Duration
 	for _, path := range paths {
 		if path == "" {
 			continue
@@ -143,37 +158,89 @@ func (p *Processor) canonicalizeOutputPaths(ctx context.Context, jobID string, p
 			continue
 		}
 		seen[path] = struct{}{}
-		start := time.Now()
-		encoded, err := canonicalizeOutputMP4(ctx, path, profileID)
-		total += time.Since(start)
-		if err != nil {
-			return changed, fmt.Errorf("canonicalize %s: %w", filepath.Base(path), err)
+		unique = append(unique, path)
+	}
+	if len(unique) == 0 {
+		return false, nil
+	}
+
+	type canonicalizeResult struct {
+		encoded bool
+		err     error
+	}
+	results := make([]canonicalizeResult, len(unique))
+	workers := len(unique)
+	if workers > canonicalizeConcurrency {
+		workers = canonicalizeConcurrency
+	}
+	passStart := time.Now()
+	work := make(chan int)
+	var wg sync.WaitGroup
+	for lane := 0; lane < workers; lane++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for index := range work {
+				if err := ctx.Err(); err != nil {
+					results[index] = canonicalizeResult{err: err}
+					continue
+				}
+				encoded, err := canonicalizeOutputMP4(ctx, unique[index], profileID, p.acceptedCodecConfigSHA256...)
+				results[index] = canonicalizeResult{encoded: encoded, err: err}
+			}
+		}()
+	}
+	for index := range unique {
+		work <- index
+	}
+	close(work)
+	wg.Wait()
+	wall := time.Since(passStart)
+
+	changed := false
+	encodedCount := 0
+	var failures []error
+	for index, result := range results {
+		if result.err != nil {
+			failures = append(failures, fmt.Errorf("canonicalize %s: %w", filepath.Base(unique[index]), result.err))
+			continue
 		}
-		changed = changed || encoded
+		if result.encoded {
+			changed = true
+			encodedCount++
+		}
 	}
 	if changed {
 		if metrics != nil {
-			metrics[metricnames.CanonicalizeOverlayUS] = float64(total.Microseconds())
-			metrics[metricnames.CanonicalizeOverlayMS] = float64(total.Microseconds()) / 1000
+			metrics[metricnames.CanonicalizeOverlayUS] = float64(wall.Microseconds())
+			metrics[metricnames.CanonicalizeOverlayMS] = float64(wall.Microseconds()) / 1000
 		}
-		workerlog.ByJobID(jobID).Infof("canonical output emitted: %d artifact(s) re-encoded to the canonical avcC (profile %s)", len(seen), profileID)
+		workerlog.ByJobID(jobID).Infof("canonical output emitted: %d/%d artifact(s) re-encoded to the canonical avcC (profile %s, wall=%.0fms)",
+			encodedCount, len(unique), profileID, float64(wall.Microseconds())/1000)
+	}
+	if len(failures) > 0 {
+		return changed, errors.Join(failures...)
 	}
 	return changed, nil
 }
 
 // canonicalizeOutputMP4 rewrites one artifact to the canonical stream of the
 // requested profile. It is idempotent: an artifact that already satisfies the
-// profile is left untouched, so a retry after canonicalization does not
-// re-encode (and re-hash) it.
+// profile — including a native artifact whose avcC is in the explicit NVENC
+// recertification allowlist — is left untouched, so a retry after
+// canonicalization does not re-encode (and re-hash) it.
 //
 // The rewrite is atomic: ffmpeg writes a sibling temp file, the temp file is
 // probed and certified, and only then is it renamed over the artifact. A
 // failed encode therefore leaves the original bytes untouched, and no other
 // process can observe a half-written MP4.
-func canonicalizeOutputMP4(ctx context.Context, path, profileID string) (bool, error) {
+func canonicalizeOutputMP4(ctx context.Context, path, profileID string, acceptedCodecConfig ...string) (bool, error) {
 	profile, err := media.ResolveProfile(profileID)
 	if err != nil {
 		return false, err
+	}
+	if len(acceptedCodecConfig) > 0 {
+		profile.AcceptedCodecConfigSHA256 = append(append([]string(nil), profile.AcceptedCodecConfigSHA256...), acceptedCodecConfig...)
 	}
 	existing, err := media.ProbeFile(ctx, path)
 	if err != nil {
@@ -200,9 +267,6 @@ func canonicalizeOutputMP4(ctx context.Context, path, profileID string) (bool, e
 	probeMS := float64(time.Since(probeStart).Microseconds()) / 1000
 	if err := profile.ValidateProbe(probe); err != nil {
 		return false, fmt.Errorf("canonical output rejected by %s: %w", profile.ID, err)
-	}
-	if profile.CodecConfigSHA256 != "" && probe.CodecConfigSHA256 != profile.CodecConfigSHA256 {
-		return false, fmt.Errorf("canonical output avcC %q, want %q", probe.CodecConfigSHA256, profile.CodecConfigSHA256)
 	}
 
 	hashStart := time.Now()
@@ -252,6 +316,7 @@ func writeCanonicalOverlayReceipt(path string, probe media.ProbeResult, sha stri
 	m.Codec = "h264"
 	m.VideoCodec = probe.VideoCodec
 	m.CodecProfile = probe.CodecProfile
+	m.CodecConfigSHA256 = probe.CodecConfigSHA256
 	m.VideoLevel = probe.VideoLevel
 	m.PixelFormat = probe.PixelFormat
 	m.Width = probe.Width

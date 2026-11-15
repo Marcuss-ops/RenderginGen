@@ -418,6 +418,8 @@ func TestSkipDirsDoNotShadowSourcePackages(t *testing.T) {
 		{"nested source package named results is scanned", "refactored/tests/operational/results/x.go", true},
 		{"root-level generated artifacts is skipped", "artifacts/x.go", false},
 		{"root-level generated out is skipped", "out/x.go", false},
+		{"root-level ignored Upload evidence drop is skipped", "Upload/tts_voice_compare/work/venv/lib/x.py", false},
+		{"nested source package named Upload is scanned", "renderinggen/internal/Upload/x.go", true},
 		{"nested staging .tmp is skipped at any depth", "renderinggen/.tmp/demolition/x.go", false},
 		{"node_modules is skipped at any depth", "renderinggen/internal/node_modules/x.go", false},
 		{"build- prefix is skipped at any depth", "rust/target/debug/build-local/x.go", false},

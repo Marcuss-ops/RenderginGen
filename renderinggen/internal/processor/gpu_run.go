@@ -384,21 +384,12 @@ func (p *Processor) RunGPU(ctx context.Context, prepared *PreparedJob) error {
 		}
 		prepared.NativeCertified = true
 	}
-	// Canonicalized profiles (V3 overlays and V1 assembly clips) must EMIT the
-	// canonical bitstream, not merely declare it. This runs after the native
-	// gate (which certifies the original render) and rewrites each output + its
-	// receipt atomically.
-	//
-	// The re-encode changes the final bytes, but it does NOT change which render
-	// path produced them: the job still ran on Chronon's native Vulkan lane, and
-	// PipelineGen's cross-service contract requires that identity to be
-	// chronon_vulkan. The canonical receipt is the authority for the final
-	// bytes; revoking NativeCertified here published "vulkan" instead and made
-	// every canonicalized clip.render fail downstream with "clip.render requires
-	// Chronon (chronon_vulkan)".
-	if _, err := p.canonicalizePreparedOutputs(ctx, prepared); err != nil {
-		return fmt.Errorf("processor: canonical output emission: %w", err)
-	}
+	// Canonicalized profiles (V3 overlays and V1 assembly clips) are emitted by
+	// a CPU x264 re-encode, not by the render. That pass belongs to the post
+	// pool (FinalizeJob): doing it here held a GPU lane while re-encoding an
+	// artifact that was already finished. The native certification above still
+	// describes the render path that produced the source bytes, which is the
+	// cross-service identity PipelineGen requires (chronon_vulkan).
 	// Hand-off point: the output is final (render succeeded, software-fallback
 	// rename done, native gate passed), but the bytes are NOT committed yet —
 	// the store phase finishes the stream (and thus the install) only after

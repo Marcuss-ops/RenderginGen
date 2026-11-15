@@ -34,6 +34,12 @@ type OutputProfile struct {
 	// (SPS/PPS) when this artifact will be joined to other packet-copied MP4s.
 	// Empty leaves the codec parameter-set family unpinned.
 	CodecConfigSHA256 string
+	// AcceptedCodecConfigSHA256 lists additional avcC identities this profile
+	// accepts without re-encoding. It is the opt-in NVENC recertification
+	// path: empty keeps the canonical x264 identity as the only accepted one.
+	// A hash belongs here only after the downstream packet-copy assembly
+	// contract has recertified the same parameter sets.
+	AcceptedCodecConfigSHA256 []string
 	// AcceptedCodecProfiles is intentionally empty for assembly-ready output.
 	// Every newly produced asset must have the same codec profile as the
 	// canonical assembly contract; accepting Main alongside High made overlays
@@ -351,6 +357,21 @@ func (p OutputProfile) acceptsProfile(certified string) bool {
 	return false
 }
 
+// acceptsCodecConfig reports whether the certified avcC is the canonical one
+// or an explicitly recertified alternative (the NVENC allowlist). The
+// canonical hash remains the default; an empty allowlist changes nothing.
+func (p OutputProfile) acceptsCodecConfig(certified string) bool {
+	if certified == p.CodecConfigSHA256 {
+		return true
+	}
+	for _, accepted := range p.AcceptedCodecConfigSHA256 {
+		if certified == accepted {
+			return true
+		}
+	}
+	return false
+}
+
 func (p OutputProfile) ValidateProbe(probe ProbeResult) error {
 	if probe.Container != p.Container && probe.Container != "mov,mp4,m4a,3gp,3g2,mj2" {
 		return fmt.Errorf("profile %s: container %q, want mp4", p.ID, probe.Container)
@@ -367,7 +388,7 @@ func (p OutputProfile) ValidateProbe(probe ProbeResult) error {
 	if p.VideoLevel != "" && probe.VideoLevel != "" && probe.VideoLevel != p.VideoLevel {
 		return fmt.Errorf("profile %s: video level %q, want %q", p.ID, probe.VideoLevel, p.VideoLevel)
 	}
-	if p.CodecConfigSHA256 != "" && probe.CodecConfigSHA256 != p.CodecConfigSHA256 {
+	if p.CodecConfigSHA256 != "" && !p.acceptsCodecConfig(probe.CodecConfigSHA256) {
 		return fmt.Errorf("profile %s: SPS/PPS fingerprint %q, want %q", p.ID, probe.CodecConfigSHA256, p.CodecConfigSHA256)
 	}
 	if p.RequireNoAudio && probe.AudioStreams != 0 {

@@ -371,10 +371,17 @@ type MediaReceipt struct {
 		TotalMS       *float64 `json:"total_ms"`
 	} `json:"timing_ms"`
 	Media struct {
-		Container          string  `json:"container"`
-		Codec              string  `json:"codec"`
-		VideoCodec         string  `json:"video_codec"`
-		CodecProfile       string  `json:"codec_profile"`
+		Container    string `json:"container"`
+		Codec        string `json:"codec"`
+		VideoCodec   string `json:"video_codec"`
+		CodecProfile string `json:"codec_profile"`
+		// CodecConfigSHA256 is the avcC/SPS-PPS fingerprint of the FINAL bytes
+		// when a canonicalization pass wrote this receipt. It lets the worker
+		// certify a pinned profile without re-probing the artifact: the pass
+		// already read the parameter sets it is claiming. Empty on a Chronon
+		// render receipt (the renderer does not expose extradata), which keeps
+		// the worker's ffprobe fallback for older receipts intact.
+		CodecConfigSHA256  string  `json:"codec_config_sha256,omitempty"`
 		VideoLevel         string  `json:"video_level"`
 		PixelFormat        string  `json:"pixel_format"`
 		Width              int     `json:"width"`

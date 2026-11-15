@@ -342,7 +342,7 @@ func (p *Processor) verifySegmentOutput(ctx context.Context, jobID, itemID strin
 		}
 	}
 	if metadata.ProfileID != "" {
-		profile, err := media.ResolveProfile(metadata.ProfileID)
+		profile, err := p.outputProfile(metadata.ProfileID)
 		if err != nil {
 			return SegmentArtifact{}, err
 		}

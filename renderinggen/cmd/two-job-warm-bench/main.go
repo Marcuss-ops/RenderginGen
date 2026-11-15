@@ -46,6 +46,16 @@ func main() {
 		fmt.Fprintln(os.Stderr, "plan, chronon-bin, assets-root and output-dir are required")
 		os.Exit(2)
 	}
+	// Chronon's daemon requires an absolute asset mount. Resolve every path
+	// once so the benchmark behaves the same from any working directory.
+	for _, path := range []*string{plan, bin, assets, outDir} {
+		abs, err := filepath.Abs(*path)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "resolve %q: %v\n", *path, err)
+			os.Exit(1)
+		}
+		*path = abs
+	}
 	if err := os.MkdirAll(*outDir, 0o755); err != nil {
 		fmt.Fprintf(os.Stderr, "output dir: %v\n", err)
 		os.Exit(1)
@@ -59,6 +69,10 @@ func main() {
 		AssetsRoot:     *assets,
 		Backend:        "vulkan",
 		GPUDevice:      0,
+		// Surface child diagnostics: a daemon that exits before serving is a
+		// benchmark failure, and its stderr is the only place the cause lives.
+		Stdout: os.Stderr,
+		Stderr: os.Stderr,
 	})
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "start pool: %v\n", err)

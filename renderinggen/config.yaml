@@ -108,6 +108,11 @@ pipeline:
   # Leave a finished job's workspace on disk for inspection. Off by default —
   # the jobs root is often tmpfs (RAM), so this is a deliberate debugging aid.
   keep_workspace: false
+  # NVENC recertification allowlist: additional avcC (SPS/PPS) SHA-256 hashes
+  # accepted by canonical profiles without the x264 re-encode. Empty keeps the
+  # canonical x264-only gate; add a hash only after the downstream packet-copy
+  # assembly contract has recertified the same parameter sets.
+  native_avcc_sha256: []
 
 gpu:
   device: 0

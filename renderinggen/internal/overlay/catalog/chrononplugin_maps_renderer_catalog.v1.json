@@ -38,6 +38,7 @@
   ],
   "basemaps": [
     "chronon_editorial",
-    "esri_sat"
+    "esri_sat",
+    "esri_topo"
   ]
 }

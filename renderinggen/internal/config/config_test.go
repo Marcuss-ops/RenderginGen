@@ -411,6 +411,38 @@ artifact_store:
 	}
 }
 
+func TestLoadNativeAVCCAllowlist(t *testing.T) {
+	hash := strings.Repeat("a", 64)
+	cfg, err := Load(writeConfig(t, `
+queue:
+  endpoint: http://queue:8081
+artifact_store:
+  endpoint: http://store:9000
+pipeline:
+  native_avcc_sha256:
+    - `+hash+`
+`))
+	if err != nil {
+		t.Fatalf("load: %v", err)
+	}
+	if len(cfg.Pipeline.NativeAVCCSHA256) != 1 || cfg.Pipeline.NativeAVCCSHA256[0] != hash {
+		t.Fatalf("native_avcc_sha256 = %v, want [%s]", cfg.Pipeline.NativeAVCCSHA256, hash)
+	}
+
+	invalid := strings.Repeat("A", 64)
+	if _, err := Load(writeConfig(t, `
+queue:
+  endpoint: http://queue:8081
+artifact_store:
+  endpoint: http://store:9000
+pipeline:
+  native_avcc_sha256:
+    - `+invalid+`
+`)); err == nil {
+		t.Fatal("an uppercase avcC allowlist entry must be rejected")
+	}
+}
+
 func TestLoadAcceptsValidEncodePreset(t *testing.T) {
 	for _, preset := range []string{"p1", "p2", "p3", "p4", "p5", "p6", "p7"} {
 		path := writeConfig(t, `

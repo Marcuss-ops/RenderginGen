@@ -1,5 +1,7 @@
 // finalize_job.go owns the CPU-bound post half of the staged pipeline:
-// validation probes, profile certification and delegation to the store phase.
+// canonical output emission, validation probes, profile certification and
+// delegation to the store phase. Canonicalization lives here (not in RunGPU)
+// so a CPU re-encode never holds a GPU lane.
 package processor
 
 import (
@@ -109,6 +111,7 @@ func probeResultFromReceipt(r chronon.MediaReceipt) media.ProbeResult {
 		PixelFormat:            m.PixelFormat,
 		VideoCodec:             videoCodec,
 		CodecProfile:           m.CodecProfile,
+		CodecConfigSHA256:      m.CodecConfigSHA256,
 		FrameCount:             int(m.FrameCount),
 		FirstFrameKeyframe:     m.FirstFrameKeyframe,
 		HasVideo:               m.HasVideo || m.Width > 0,
@@ -174,6 +177,16 @@ func (p *Processor) FinalizeJob(ctx context.Context, prepared *PreparedJob) (art
 	job := prepared.Job
 	metrics := prepared.Metrics
 	workerlog.ByJobID(job.ID).Statef("finalizing", "segments=%d", len(prepared.Segments))
+	// Canonicalized profiles (V3 overlays, V1 assembly clips) must EMIT the
+	// canonical x264 bitstream. The pass is CPU-only, so it runs HERE, in the
+	// post pool, after the GPU lane has been released — never on the render
+	// lane, where it held a device while re-encoding an already-finished
+	// artifact. It runs before every gate below (segment verification, receipt
+	// read, profile probe, hash), so all of them see the final bytes and the
+	// canonical receipt this pass writes.
+	if _, err := p.canonicalizePreparedOutputs(ctx, prepared); err != nil {
+		return queue.Artifact{}, fmt.Errorf("processor: canonical output emission: %w", err)
+	}
 	// P4 batch superjob: verify every per-item segment independently
 	// (probe/digest/receipt), re-render ONLY a failed segment once, and store
 	// each verified segment under its own content address. The returned batch
@@ -230,7 +243,7 @@ func (p *Processor) FinalizeJob(ctx context.Context, prepared *PreparedJob) (art
 		metrics[metricnames.ProbeMS] = probeUS / 1000
 
 		if metadata.ProfileID != "" {
-			profile, err := media.ResolveProfile(metadata.ProfileID)
+			profile, err := p.outputProfile(metadata.ProfileID)
 			if err != nil {
 				return queue.Artifact{}, fmt.Errorf("processor: output profile: %w", err)
 			}

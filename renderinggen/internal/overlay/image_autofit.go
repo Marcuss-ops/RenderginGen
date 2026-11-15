@@ -132,22 +132,3 @@ func autoFitEntityPortrait(layer *Layer) bool {
 	layer.Fit = FitCover
 	return true
 }
-
-// autoFitLandscapeEntityCard gives every captioned horizontal entity image
-// one shared 16:9 viewport. Motion presets may vary, but the settled image
-// surface does not inherit the source photo's aspect ratio.
-func autoFitLandscapeEntityCard(src *semanticPlan, layer *Layer) bool {
-	if src == nil || src.Width <= 0 || src.Height <= 0 || layer == nil {
-		return false
-	}
-	width := int(float64(src.Width) * 0.25)
-	if width <= 0 {
-		return false
-	}
-	height := max(1, width*9/16)
-	layer.BoxWidth = width
-	layer.BoxHeight = height
-	layer.Size = []float64{float64(width), float64(height)}
-	layer.Fit = FitCover
-	return true
-}

@@ -1,6 +1,9 @@
 package media
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
 func TestResolveProfile(t *testing.T) {
 	p, err := ResolveProfile(ProfileVeloxH264720p30V1)
@@ -54,6 +57,32 @@ func TestResolveAssemblyReadyProfile(t *testing.T) {
 	}
 	if p.AudioChannels != 0 || p.AudioChannelLayout != "" || p.AudioBitrate != "" {
 		t.Fatalf("V1 must not pin the source-inherited audio layout: %+v", p)
+	}
+}
+
+// TestOutputProfileAcceptsRecertifiedCodecConfig pins the opt-in NVENC path:
+// the canonical x264 avcC stays the default, but a profile may explicitly
+// accept a recertified NVENC hash without accepting every other bitstream.
+func TestOutputProfileAcceptsRecertifiedCodecConfig(t *testing.T) {
+	profile, err := ResolveProfile(ProfileVeloxAssemblyReadyV1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	alternative := strings.Repeat("a", 64)
+	probe := assemblyProbe()
+	probe.CodecConfigSHA256 = alternative
+	if err := profile.ValidateProbe(probe); err == nil {
+		t.Fatal("a non-canonical avcC must fail before recertification")
+	}
+
+	profile.AcceptedCodecConfigSHA256 = []string{alternative}
+	if err := profile.ValidateProbe(probe); err != nil {
+		t.Fatalf("recertified avcC must pass: %v", err)
+	}
+
+	probe.CodecConfigSHA256 = strings.Repeat("b", 64)
+	if err := profile.ValidateProbe(probe); err == nil {
+		t.Fatal("an unlisted avcC must still fail")
 	}
 }
 
