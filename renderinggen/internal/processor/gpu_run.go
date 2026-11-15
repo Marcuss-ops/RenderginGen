@@ -65,7 +65,7 @@ func (p *Processor) RunGPU(ctx context.Context, prepared *PreparedJob) error {
 		// that begin after frame zero are preserved.
 		renderBackend = "auto"
 	}
-	encodePreset := p.encodePreset
+	encodePreset := encodePresetForJob(p.encodePreset, finalComposite)
 	metadata := planMetadataOf(prepared.Plan)
 	// The chunk contract is half-open [Start, End); Chronon consumes an
 	// inclusive last frame. The range is carried EXPLICITLY (RangeEnabled)

@@ -215,6 +215,63 @@ func TestFinalJobCompositeRequiresNativeCompositionPath(t *testing.T) {
 	}
 }
 
+func TestRunGPUOverlayDefaultsToP4ButFinalCompositeKeepsEngineDefault(t *testing.T) {
+	cases := []struct {
+		name       string
+		jobID      string
+		layers     []overlay.Layer
+		configured string
+		want       string
+	}{
+		{
+			name:   "overlay uses throughput default",
+			jobID:  "overlay-1",
+			layers: []overlay.Layer{{ID: "caption", Type: "text", Text: "Preset phrase"}},
+			want:   "p4",
+		},
+		{
+			name:       "explicit overlay preset wins",
+			jobID:      "overlay-2",
+			layers:     []overlay.Layer{{ID: "caption", Type: "text", Text: "Preset phrase"}},
+			configured: "p1",
+			want:       "p1",
+		},
+		{
+			name:   "final composite keeps engine default",
+			jobID:  "plan:final-composite:scene-1",
+			layers: []overlay.Layer{{ID: "source", Type: "video"}, {ID: "image", Type: "image"}},
+			want:   "",
+		},
+	}
+	for i, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			proc, _, renderer := newProcessorWith(t, Options{StrictNativeBackend: true})
+			proc.backend = "vulkan"
+			proc.encodePreset = tc.configured
+			ws, err := workspace.New(proc.jobsRoot, fmt.Sprintf("preset-%d", i))
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer ws.Cleanup()
+			prepared := &PreparedJob{
+				Job:       &queue.Job{ID: tc.jobID},
+				Workspace: ws,
+				Plan: &overlay.Plan{
+					Canvas: overlay.Canvas{Width: 1280, Height: 720, FPSNum: 30, FPSDen: 1, DurationFrames: 30},
+					Layers: tc.layers,
+				},
+				Metrics: map[string]float64{},
+			}
+			if err := proc.RunGPU(context.Background(), prepared); err != nil {
+				t.Fatalf("RunGPU() = %v", err)
+			}
+			if renderer.req.EncodePreset != tc.want {
+				t.Fatalf("encode preset = %q, want %q", renderer.req.EncodePreset, tc.want)
+			}
+		})
+	}
+}
+
 func TestRunGPURetriesRecoverableDeviceLossInSoftwareWhenAllowed(t *testing.T) {
 	proc, _, renderer := newProcessor(t)
 	proc.backend = "vulkan"
