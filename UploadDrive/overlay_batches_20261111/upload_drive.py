@@ -22,6 +22,9 @@ from drive_common import (  # noqa: E402
     sha256_file,
 )
 
+sys.path.insert(0, str(BASE / "ops/tools"))
+from drive_upload_gate import check as check_overlay_contract  # noqa: E402
+
 UPLOADER = BASE / "RenderingGen/bin/drive-upload"
 PARENT_FOLDER = "1J_xUGo_bchzXDIGqSX04CU44c_Dm3SxS"
 SUBFOLDER = "Overlay_Batches_20261111"
@@ -65,8 +68,16 @@ def upload(path: Path) -> dict:
 
 def main() -> int:
     manifest = json.loads((HERE / "MANIFEST.json").read_text())
+    files = bundle_files()
+    # MANIFEST.json promises videos/. When they are gone the bundle is not
+    # publishable, and the gate refuses instead of shipping a manifest only.
+    check_overlay_contract(
+        files,
+        contract_id="overlay-v1-noalpha",
+        width=1920, height=1080, fps_num=24, fps_den=1,
+    )
     uploaded = []
-    for path in bundle_files():
+    for path in files:
         print(f"[upload] {path.name}", flush=True)
         uploaded.append(upload(path))
     output = {

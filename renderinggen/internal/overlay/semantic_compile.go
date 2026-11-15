@@ -248,6 +248,13 @@ func compileSemanticDecoded(src *semanticPlan) (*Plan, []Asset, Stats, []string,
 		if _, err := registry.Register(sub.AssetRefs[0]); err != nil {
 			return nil, nil, Stats{}, nil, fmt.Errorf("overlay: subtitle asset: %w", err)
 		}
+		// The declared burn font is materialized with the plan so the prepare
+		// pass has the caller's face available (no worker-side font search).
+		if sub.FontRef != nil {
+			if _, err := registry.Register(*sub.FontRef); err != nil {
+				return nil, nil, Stats{}, nil, fmt.Errorf("overlay: subtitle font asset: %w", err)
+			}
+		}
 		// Sidecar subtitles remain a published companion asset: the manifest
 		// entry (above) is what gets published; Chronon has no subtitle layer.
 	}
@@ -501,7 +508,7 @@ func resolveSemanticItems(src *semanticPlan) ([]resolvedItem, error) {
 		if err := validateTextRuntimeOverrides(params, item.ID, kind, preset, len(item.Assets) > 0, hasCaption); err != nil {
 			return nil, err
 		}
-		if isMapKind(kind) {
+		if isMapKind(kind) && !isModernMap1(item) {
 			mapSpec, err := resolveMap(item.Map, item.Assets, src.Width, src.Height, end-start)
 			if err != nil {
 				return nil, fmt.Errorf("overlay: map item %q resolve: %w", item.ID, err)
@@ -538,11 +545,19 @@ func compileItem(ri resolvedItem, src *semanticPlan, registry *assetRegistry) ([
 		if err != nil {
 			return nil, err
 		}
+		layers, err = applyImageGlowToBaseLayers(ri, layers)
+		if err != nil {
+			return nil, err
+		}
 		return applyImageItemEffects(ri, layers)
 	case isEntityKind(ri.Kind) && len(ri.Item.ImageLayers) > 0:
 		return compileImageItem(ri, src, registry)
 	case isEntityKind(ri.Kind) && len(ri.Item.Assets) > 0:
 		layers, err := compileEntityCard(ri, src, registry)
+		if err != nil {
+			return nil, err
+		}
+		layers, err = applyImageGlowToBaseLayers(ri, layers)
 		if err != nil {
 			return nil, err
 		}
@@ -552,6 +567,10 @@ func compileItem(ri resolvedItem, src *semanticPlan, registry *assetRegistry) ([
 			return nil, fmt.Errorf("overlay: entity image item %q with entity_style_id requires image_preset_id", ri.Item.ID)
 		}
 		layers, err := compileEntityCard(ri, src, registry)
+		if err != nil {
+			return nil, err
+		}
+		layers, err = applyImageGlowToBaseLayers(ri, layers)
 		if err != nil {
 			return nil, err
 		}
@@ -581,6 +600,9 @@ func compileItem(ri resolvedItem, src *semanticPlan, registry *assetRegistry) ([
 		}
 		return []Layer{layer}, nil
 	case isMapKind(ri.Kind):
+		if isModernMap1(ri.Item) {
+			return compileModernMap1Layers(ri, src, registry)
+		}
 		if ri.Map == nil {
 			return nil, fmt.Errorf("overlay: map item %q was not resolved before compile", ri.Item.ID)
 		}

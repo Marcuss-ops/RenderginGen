@@ -20,24 +20,27 @@ import (
 // Standalone entry point: the processor's hot path does not decode the raw
 // document again — CompileSemantic extracts the same contract into
 // CompileResult.Subtitle through the shared subtitleAssetFrom.
-func SubtitleAsset(raw []byte) (hash string, burn bool, ok bool, err error) {
+func SubtitleAsset(raw []byte) (hash string, fontHash string, burn bool, ok bool, err error) {
 	var src semanticPlan
 	if err := json.Unmarshal(raw, &src); err != nil {
-		return "", false, false, fmt.Errorf("overlay: decode subtitle contract: %w", err)
+		return "", "", false, false, fmt.Errorf("overlay: decode subtitle contract: %w", err)
 	}
-	hash, burn, ok = subtitleAssetFrom(src.Subtitles)
-	return hash, burn, ok, nil
+	hash, fontHash, burn, ok = subtitleAssetFrom(src.Subtitles)
+	return hash, fontHash, burn, ok, nil
 }
 
 // subtitleAssetFrom extracts the burn policy from an already-decoded plan.
 // One owner: SubtitleAsset and CompileSemantic both route through it, so the
 // two can never disagree about what "present" and "burn" mean.
-func subtitleAssetFrom(subs *semanticSubtitles) (hash string, burn bool, ok bool) {
+func subtitleAssetFrom(subs *semanticSubtitles) (hash string, fontHash string, burn bool, ok bool) {
 	if subs == nil || len(subs.AssetRefs) == 0 {
-		return "", false, false
+		return "", "", false, false
 	}
 	ref := subs.AssetRefs[0]
-	return strings.ToLower(ref.SHA256), strings.EqualFold(strings.TrimSpace(subs.Mode), "burn"), true
+	if subs.FontRef != nil {
+		fontHash = strings.ToLower(strings.TrimSpace(subs.FontRef.SHA256))
+	}
+	return strings.ToLower(ref.SHA256), fontHash, strings.EqualFold(strings.TrimSpace(subs.Mode), "burn"), true
 }
 
 // styleMap is the nil-safe style accessor used when a compile result carries
@@ -86,6 +89,10 @@ func SubtitleStyleAsset(raw []byte) (*LayerStyle, SubtitleStyleBox, error) {
 type SubtitleRef struct {
 	// Hash is the lowercase SHA-256 of the plan's first subtitle asset ref.
 	Hash string
+	// FontHash is the lowercase SHA-256 of the plan's declared burn font, or
+	// empty when the plan predates font_ref. The prepare pass selects the
+	// materialized font by this digest, never by "first .ttf found".
+	FontHash string
 	// Burn is true when the plan's subtitle mode is "burn" (case-insensitive).
 	Burn bool
 	// Present is true when the plan declares at least one subtitle asset ref.

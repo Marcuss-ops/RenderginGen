@@ -220,11 +220,11 @@ func CompileSemantic(raw []byte) (CompileResult, error) {
 	if err != nil {
 		return CompileResult{}, err
 	}
-	hash, burn, present := subtitleAssetFrom(src.Subtitles)
+	hash, fontHash, burn, present := subtitleAssetFrom(src.Subtitles)
 	return CompileResult{
 		Plan: plan, Assets: assets, Stats: stats, Prepared: prepared,
 		UnknownTemplates: unknown,
-		Subtitle:         SubtitleRef{Hash: hash, Burn: burn, Present: present},
+		Subtitle:         SubtitleRef{Hash: hash, FontHash: fontHash, Burn: burn, Present: present},
 		subtitleStyleRaw: src.Subtitles.styleMap(),
 		subtitleWidth:    src.Width,
 		subtitleHeight:   src.Height,
@@ -381,8 +381,11 @@ type semanticFrameShadow struct {
 
 type semanticSubtitles struct {
 	AssetRefs []SemanticAssetRef `json:"asset_refs,omitempty"`
-	StyleID   string             `json:"style_id,omitempty"`
-	Mode      string             `json:"mode,omitempty"`
+	// FontRef is the content-addressed font the burn pass rasterizes with.
+	// Required for burn mode: the worker never picks a face on its own.
+	FontRef *SemanticAssetRef `json:"font_ref,omitempty"`
+	StyleID string            `json:"style_id,omitempty"`
+	Mode    string            `json:"mode,omitempty"`
 	// Style is the caller's typed visual override. It is REQUIRED for burn
 	// mode: the worker never invents subtitle geometry/color/shadow.
 	Style map[string]any `json:"style,omitempty"`
@@ -781,6 +784,23 @@ type Layer struct {
 	// FrameStroke is transient compiler metadata expanded to a native shape
 	// layer after the media layer is compiled; it never crosses the Chronon wire.
 	FrameStroke *LayerStroke `json:"-"`
+}
+
+// MarshalJSON keeps adjustment layers on the effect-only wire shape required
+// by the Chronon v3 schema. That schema's adjustment branch allows only id,
+// type and effects (additionalProperties:false); serializing the zero-valued
+// start_frame/duration_frames made every effects-bearing clip fail validation
+// before the renderer saw the plan.
+func (l Layer) MarshalJSON() ([]byte, error) {
+	if l.Type == "adjustment" {
+		return json.Marshal(struct {
+			ID      string        `json:"id"`
+			Type    string        `json:"type"`
+			Effects []LayerEffect `json:"effects"`
+		}{ID: l.ID, Type: l.Type, Effects: l.Effects})
+	}
+	type layerWire Layer
+	return json.Marshal(layerWire(l))
 }
 
 type LayerShape struct {

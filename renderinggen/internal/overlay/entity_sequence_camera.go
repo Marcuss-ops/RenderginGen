@@ -5,9 +5,10 @@ const (
 	sequenceHoldMS   int64 = 1_500
 
 	sequencePortraitHeightRatio = 0.94
+	sequenceLandscapeWidthRatio = 0.64
 )
 
-// entitySequenceCameraTracks applies one continuous move between portrait
+// entitySequenceCameraTracks applies one continuous move between image
 // positions. The same interpolation works for any direction; the target
 // coordinates determine its angle.
 func entitySequenceCameraTracks(item semanticItem, startFrame, endFrame int64, canvasWidth, _ int, fpsNum, fpsDen int) []CameraTrack {

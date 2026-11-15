@@ -68,16 +68,52 @@ type Options struct {
 	Subtitle      string
 }
 
+// Fit is the Web-Mercator framing used to place one feature in the canvas. It
+// is exposed so a caller can project neighbouring geography with exactly the
+// same transform instead of re-deriving the zoom and origin.
+type Fit struct {
+	Zoom         float64
+	TopLeftX     float64
+	TopLeftY     float64
+	CanvasWidth  int
+	CanvasHeight int
+}
+
+// Scale is the Web-Mercator world size in pixels at the fit zoom.
+func (f Fit) Scale() float64 { return geo.MercatorTileSize * math.Pow(2, f.Zoom) }
+
+// Project maps WGS84 degrees to canvas pixels (origin top-left).
+func (f Fit) Project(lon, lat float64) [2]float64 {
+	scale := f.Scale()
+	return [2]float64{mercatorX(lon, scale) - f.TopLeftX, mercatorY(lat, scale) - f.TopLeftY}
+}
+
+// Unproject maps canvas pixels back to WGS84 degrees.
+func (f Fit) Unproject(x, y float64) (lon, lat float64) {
+	scale := f.Scale()
+	lon = ((x+f.TopLeftX)/scale)*360 - 180
+	n := math.Pi * (1 - 2*(y+f.TopLeftY)/scale)
+	lat = math.Atan(math.Sinh(n)) * 180 / math.Pi
+	return lon, lat
+}
+
 // Build resolves a Natural Earth feature by name or id, projects its outer
 // rings into the canvas territory box and returns the sample plus the resolved
 // feature (whose Name feeds the title when the caller did not supply one).
 func Build(registry *geofeatures.Registry, selector string, opts Options) (Sample, geofeatures.Feature, error) {
+	sample, feature, _, err := BuildWithFit(registry, selector, opts)
+	return sample, feature, err
+}
+
+// BuildWithFit is Build plus the projection that produced the sample, so a
+// caller can place context geography on the same plane.
+func BuildWithFit(registry *geofeatures.Registry, selector string, opts Options) (Sample, geofeatures.Feature, Fit, error) {
 	if registry == nil {
-		return Sample{}, geofeatures.Feature{}, fmt.Errorf("tacticalfill: feature registry is required")
+		return Sample{}, geofeatures.Feature{}, Fit{}, fmt.Errorf("tacticalfill: feature registry is required")
 	}
 	selector = strings.TrimSpace(selector)
 	if selector == "" {
-		return Sample{}, geofeatures.Feature{}, fmt.Errorf("tacticalfill: place selector is required")
+		return Sample{}, geofeatures.Feature{}, Fit{}, fmt.Errorf("tacticalfill: place selector is required")
 	}
 	width, height := opts.Width, opts.Height
 	if width == 0 {
@@ -87,14 +123,14 @@ func Build(registry *geofeatures.Registry, selector string, opts Options) (Sampl
 		height = DefaultHeight
 	}
 	if width < 64 || height < 64 || width > 8192 || height > 8192 {
-		return Sample{}, geofeatures.Feature{}, fmt.Errorf("tacticalfill: canvas must be 64..8192 pixels")
+		return Sample{}, geofeatures.Feature{}, Fit{}, fmt.Errorf("tacticalfill: canvas must be 64..8192 pixels")
 	}
 	padding := opts.Padding
 	if padding == 0 {
 		padding = DefaultPadding
 	}
 	if !finite(padding) || padding < 0 || padding > 0.4 {
-		return Sample{}, geofeatures.Feature{}, fmt.Errorf("tacticalfill: padding must be within [0,0.4]")
+		return Sample{}, geofeatures.Feature{}, Fit{}, fmt.Errorf("tacticalfill: padding must be within [0,0.4]")
 	}
 	box := opts.Box
 	if box == (Box{}) {
@@ -103,24 +139,24 @@ func Build(registry *geofeatures.Registry, selector string, opts Options) (Sampl
 	if !finite(box.MinX) || !finite(box.MinY) || !finite(box.MaxX) || !finite(box.MaxY) ||
 		box.MinX < 0 || box.MinY < 0 || box.MaxX > 1 || box.MaxY > 1 ||
 		box.MaxX-box.MinX < 0.1 || box.MaxY-box.MinY < 0.1 {
-		return Sample{}, geofeatures.Feature{}, fmt.Errorf("tacticalfill: territory box must be a valid canvas fraction")
+		return Sample{}, geofeatures.Feature{}, Fit{}, fmt.Errorf("tacticalfill: territory box must be a valid canvas fraction")
 	}
 
 	feature, err := resolveFeature(registry, selector)
 	if err != nil {
-		return Sample{}, geofeatures.Feature{}, err
+		return Sample{}, geofeatures.Feature{}, Fit{}, err
 	}
 	rings, err := registry.Rings(feature.ID)
 	if err != nil {
-		return Sample{}, geofeatures.Feature{}, fmt.Errorf("tacticalfill: %s: %w", feature.Name, err)
+		return Sample{}, geofeatures.Feature{}, Fit{}, fmt.Errorf("tacticalfill: %s: %w", feature.Name, err)
 	}
 	if len(rings) == 0 {
-		return Sample{}, geofeatures.Feature{}, fmt.Errorf("tacticalfill: %s has no polygon rings", feature.Name)
+		return Sample{}, geofeatures.Feature{}, Fit{}, fmt.Errorf("tacticalfill: %s has no polygon rings", feature.Name)
 	}
 
 	continuous, minLon, maxLon, minLat, maxLat := unwrapRings(rings, feature.Centroid[0])
 	if maxLon-minLon <= 0 || maxLat-minLat <= 0 {
-		return Sample{}, geofeatures.Feature{}, fmt.Errorf("tacticalfill: %s has degenerate bounds", feature.Name)
+		return Sample{}, geofeatures.Feature{}, Fit{}, fmt.Errorf("tacticalfill: %s has degenerate bounds", feature.Name)
 	}
 
 	usableWidth := float64(width) * (box.MaxX - box.MinX) * (1 - 2*padding)
@@ -128,11 +164,11 @@ func Build(registry *geofeatures.Registry, selector string, opts Options) (Sampl
 	spanX := (maxLon - minLon) / 360 * geo.MercatorTileSize
 	spanY := math.Abs(mercatorY(maxLat, geo.MercatorTileSize) - mercatorY(minLat, geo.MercatorTileSize))
 	if !finite(spanX) || !finite(spanY) || spanX <= 0 || spanY <= 0 {
-		return Sample{}, geofeatures.Feature{}, fmt.Errorf("tacticalfill: %s cannot be fitted in Web Mercator", feature.Name)
+		return Sample{}, geofeatures.Feature{}, Fit{}, fmt.Errorf("tacticalfill: %s cannot be fitted in Web Mercator", feature.Name)
 	}
 	zoom := math.Min(math.Log2(usableWidth/spanX), math.Log2(usableHeight/spanY))
 	if !finite(zoom) {
-		return Sample{}, geofeatures.Feature{}, fmt.Errorf("tacticalfill: %s fit zoom is invalid", feature.Name)
+		return Sample{}, geofeatures.Feature{}, Fit{}, fmt.Errorf("tacticalfill: %s fit zoom is invalid", feature.Name)
 	}
 	zoom = math.Max(0, math.Min(18, zoom))
 	scale := geo.MercatorTileSize * math.Pow(2, zoom)
@@ -145,13 +181,15 @@ func Build(registry *geofeatures.Registry, selector string, opts Options) (Sampl
 	boxCenterY := (box.MinY + box.MaxY) / 2 * float64(height)
 	topLeftX := centerX - boxCenterX
 	topLeftY := centerY - boxCenterY
+	fit := Fit{Zoom: zoom, TopLeftX: topLeftX, TopLeftY: topLeftY, CanvasWidth: width, CanvasHeight: height}
 
 	regions := make([]Region, 0, len(continuous))
 	for _, ring := range continuous {
 		projected := make([][2]float64, 0, len(ring))
 		for _, point := range ring {
-			x := mercatorX(point[0], scale) - topLeftX
-			y := mercatorY(point[1], scale) - topLeftY
+			projectedPoint := fit.Project(point[0], point[1])
+			x := projectedPoint[0]
+			y := projectedPoint[1]
 			projected = append(projected, [2]float64{
 				math.Round(x*100) / 100,
 				math.Round(y*100) / 100,
@@ -165,7 +203,7 @@ func Build(registry *geofeatures.Registry, selector string, opts Options) (Sampl
 		regions = append(regions, Region{Points: projected})
 	}
 	if len(regions) == 0 {
-		return Sample{}, geofeatures.Feature{}, fmt.Errorf("tacticalfill: %s has no drawable ring after projection", feature.Name)
+		return Sample{}, geofeatures.Feature{}, Fit{}, fmt.Errorf("tacticalfill: %s has no drawable ring after projection", feature.Name)
 	}
 	sortRegionsByArea(regions)
 	if len(regions) > MaxRegions {
@@ -184,7 +222,7 @@ func Build(registry *geofeatures.Registry, selector string, opts Options) (Sampl
 	return Sample{
 		Schema: Schema, Canvas: [2]int{width, height},
 		Title: title, Subtitle: subtitle, Regions: regions,
-	}, feature, nil
+	}, feature, fit, nil
 }
 
 // Write marshals the sample to path, creating its directory.

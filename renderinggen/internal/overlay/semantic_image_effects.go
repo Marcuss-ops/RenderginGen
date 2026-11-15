@@ -26,6 +26,10 @@ func compileImageItem(ri resolvedItem, src *semanticPlan, registry *assetRegistr
 	if err != nil {
 		return nil, err
 	}
+	layers, err = applyImageGlowToBaseLayers(ri, layers)
+	if err != nil {
+		return nil, err
+	}
 	return applyImageItemEffects(ri, layers)
 }
 

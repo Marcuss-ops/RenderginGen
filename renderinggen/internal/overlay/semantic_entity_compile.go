@@ -112,7 +112,9 @@ func compileEntityCard(ri resolvedItem, src *semanticPlan, registry *assetRegist
 	// compiled from its bounds follows automatically. Vertical images pass
 	// through untouched.
 	if strings.TrimSpace(ri.Item.EntityCaption) != "" {
-		autoFitEntityPortrait(&img)
+		// The processor normalizes horizontal cards from verified bytes after
+		// the image has been materialized into the render workspace.
+		img.EntityImage = true
 	}
 	if err := applyFrameTreatment(&img, ri.Item.Frame); err != nil {
 		return nil, fmt.Errorf("overlay: entity image item %q: %w", ri.Item.ID, err)

@@ -235,6 +235,19 @@ func resolveLayerEffects(raw any, itemID string) ([]LayerEffect, error) {
 		if effType == "" {
 			return nil, fmt.Errorf("overlay: item %q effect requires a type", itemID)
 		}
+		// "none" is the explicit spelling of the default state: an absent or
+		// empty stack already means no effect, and naming it must stay
+		// unambiguous. It cannot be combined with a real effect or carry
+		// parameters, so a producer never has to guess which instruction wins.
+		if effType == "none" {
+			if len(list) != 1 {
+				return nil, fmt.Errorf("overlay: item %q effect \"none\" cannot be combined with other effects", itemID)
+			}
+			if len(m) > 1 {
+				return nil, fmt.Errorf("overlay: item %q effect \"none\" accepts no parameters", itemID)
+			}
+			continue
+		}
 		// Editorial image looks are payload-level shortcuts for stable stacks
 		// of renderer-native effects. They decorate the image surface only;
 		// scene background selection remains an independent plan-level choice.

@@ -75,6 +75,33 @@ func clipSemanticFixture() []byte {
 	}`)
 }
 
+// TestAdjustmentLayerMarshalDropsTiming pins the exact wire contract that the
+// Chronon v3 schema enforces for adjustment layers: only id, type and effects
+// are allowed. The typed Layer still carries zero timing fields internally; a
+// non-zero value (for example from a hand-built plan) must not leak either.
+func TestAdjustmentLayerMarshalDropsTiming(t *testing.T) {
+	raw, err := json.Marshal(Layer{
+		ID: "clip__adjustment", Type: "adjustment",
+		StartFrame: 12, DurationFrames: 34,
+		Effects: []LayerEffect{{Type: "vignette"}},
+	})
+	if err != nil {
+		t.Fatalf("marshal adjustment layer: %v", err)
+	}
+	var wire map[string]any
+	if err := json.Unmarshal(raw, &wire); err != nil {
+		t.Fatalf("decode adjustment layer wire: %v", err)
+	}
+	if len(wire) != 3 {
+		t.Fatalf("adjustment wire must contain only id, type and effects: %s", raw)
+	}
+	for _, forbidden := range []string{"start_frame", "duration_frames"} {
+		if _, present := wire[forbidden]; present {
+			t.Fatalf("adjustment wire leaked %q: %s", forbidden, raw)
+		}
+	}
+}
+
 // TestClipSemanticContractFull is the killer test for the complete clip render
 // bridge: ClipRenderPlanV1 → renderinggen.overlay-plan.v1 → chronon.render-plan.v2.
 // It verifies every required property of the compiled Chronon plan.
@@ -85,19 +112,24 @@ func TestClipSemanticContractGlobalEffectsLowerToChronon(t *testing.T) {
 		t.Fatalf("compile global effects: %v", err)
 	}
 	if result.Plan.Schema != RenderPlanSchemaV3 {
-		t.Fatalf("adjustment effects require v3, got %s", result.Plan.Schema)
+		t.Fatalf("layer effects require v3, got %s", result.Plan.Schema)
 	}
-	var adjustment, grid Layer
+	var source, grid Layer
 	for _, layer := range result.Plan.Layers {
-		if layer.ID == "clip__adjustment" {
-			adjustment = layer
+		if layer.ID == "source" {
+			source = layer
 		}
 		if layer.ID == "clip__grid" {
 			grid = layer
 		}
 	}
-	if adjustment.Type != "adjustment" || len(adjustment.Effects) != 3 || adjustment.Effects[0].Type != "wave_warp" || adjustment.Effects[1].Type != "chromatic_aberration" || adjustment.Effects[2].Type != "noise" {
-		t.Fatalf("glitch must lower into adjustment stack: %+v", adjustment)
+	if source.Type != "video" || len(source.Effects) != 3 || source.Effects[0].Type != "wave_warp" || source.Effects[1].Type != "chromatic_aberration" || source.Effects[2].Type != "noise" {
+		t.Fatalf("glitch must lower onto the source effect stack: %+v", source)
+	}
+	for _, layer := range result.Plan.Layers {
+		if layer.ID == "clip__adjustment" {
+			t.Fatalf("clip effects must not use the broken adjustment layer: %+v", layer)
+		}
 	}
 	if grid.Type != "shape" || grid.Shape == nil || grid.Shape.Type != "grid" || grid.Opacity == nil || *grid.Opacity != 0.2 {
 		t.Fatalf("grid overlay was not compiled: %+v", grid)
@@ -107,11 +139,6 @@ func TestClipSemanticContractGlobalEffectsLowerToChronon(t *testing.T) {
 	}
 	if grid.Shape.GridLineWidth != 1 || grid.Shape.Stroke == nil || grid.Shape.Stroke.Width != 1 || grid.Shape.Stroke.Color != "#33CCDD" {
 		t.Fatalf("grid spacing, line width and color must all survive lowering: %+v", grid.Shape)
-	}
-	for _, layer := range result.Plan.Layers {
-		if layer.ID == "clip__adjustment" && (layer.StartFrame != 0 || layer.DurationFrames != 0 || layer.Shape != nil || len(layer.Effects) == 0) {
-			t.Fatalf("adjustment layer must be effect-only and leave its time window unset: %+v", layer)
-		}
 	}
 	wire, err := result.Plan.Marshal()
 	if err != nil {
@@ -125,15 +152,16 @@ func TestClipSemanticContractGlobalEffectsLowerToChronon(t *testing.T) {
 	}
 	found := false
 	for _, layer := range document.Layers {
-		if layer["id"] == "clip__adjustment" {
+		if layer["id"] == "source" {
 			found = true
-			if layer["type"] != "adjustment" {
-				t.Fatalf("Chronon adjustment type lost: %v", layer)
+			effects, ok := layer["effects"].([]any)
+			if !ok || len(effects) != 3 {
+				t.Fatalf("Chronon source wire lost the clip effects: %v", layer)
 			}
 		}
 	}
 	if !found {
-		t.Fatalf("Chronon wire has no clip adjustment: %s", wire)
+		t.Fatalf("Chronon wire has no source layer: %s", wire)
 	}
 	var gridWire struct {
 		Layers []struct {
@@ -196,20 +224,20 @@ func TestClipSemanticContractModernEffectsAndDotGridLowerToChronon(t *testing.T)
 	if err != nil {
 		t.Fatalf("compile modern effects and dot grid: %v", err)
 	}
-	var adjustment, grid Layer
+	var source, grid Layer
 	for _, layer := range result.Plan.Layers {
-		if layer.ID == "clip__adjustment" {
-			adjustment = layer
+		if layer.ID == "source" {
+			source = layer
 		}
 		if layer.ID == "clip__grid" {
 			grid = layer
 		}
 	}
-	if adjustment.Type != "adjustment" || len(adjustment.Effects) != 5 {
-		t.Fatalf("expected 5 adjustment effects, got: %+v", adjustment)
+	if source.Type != "video" || len(source.Effects) != 5 {
+		t.Fatalf("expected 5 source effects, got: %+v", source)
 	}
-	if adjustment.Effects[0].Type != "glow" || adjustment.Effects[1].Type != "bloom" || adjustment.Effects[2].Type != "lens_distortion" || adjustment.Effects[3].Type != "sharpen" || adjustment.Effects[4].Type != "banded_grain" {
-		t.Fatalf("unexpected adjustment effect sequence: %+v", adjustment.Effects)
+	if source.Effects[0].Type != "glow" || source.Effects[1].Type != "bloom" || source.Effects[2].Type != "lens_distortion" || source.Effects[3].Type != "sharpen" || source.Effects[4].Type != "banded_grain" {
+		t.Fatalf("unexpected source effect sequence: %+v", source.Effects)
 	}
 	if grid.Type != "shape" || grid.Shape == nil || grid.Shape.Type != "dot_grid" {
 		t.Fatalf("expected dot_grid shape, got: %+v", grid)

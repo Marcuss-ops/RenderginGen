@@ -1,0 +1,983 @@
+// semantic_map_modern.go owns the second map presentation family, ModernMap1:
+// an editorial vector plate that shows the requested territory inside its
+// neighbouring geography. It follows the same paper-map language as the
+// ChrononPlugin `chronon_editorial` basemap — warm paper sea, hairline borders,
+// a light graticule, one highlighted territory, its name and a credit — instead
+// of a lone silhouette on a dark canvas.
+//
+// Geometry constraints are the renderer's, not a style choice:
+//   - a fill path with a dense ring is dropped by the native tessellator, so
+//     the territory is ear-clipped into triangles anchored to the region bbox
+//     (per-triangle surfaces are culled);
+//   - a stroked path can carry the whole ring, so the territory keeps a smooth
+//     outline and halo that hide the triangle seams;
+//   - every path is authored in its own bbox ([0,size]) with a canvas position,
+//     because canvas-sized coordinates push the path tessellator onto the slow
+//     software fill.
+//
+// The geographic decision is resolved locally from the Natural Earth catalog
+// through tacticalfill. No network fetch and no per-pixel work.
+//
+// An optional logo asset may be placed inside the territory. It is a declared,
+// content-addressed job asset like every other image: RenderingGen never
+// downloads one, so "Wikipedia when available" is a producer decision, and a
+// missing logo simply means no logo layer.
+package overlay
+
+import (
+	"fmt"
+	"math"
+	"sort"
+	"strings"
+
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/geofeatures"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/tacticalfill"
+)
+
+const (
+	// MapTypeClassic is the default raster map (operator-supplied PNG plate).
+	MapTypeClassic = "classic"
+	// MapTypeModernMap1 is the vector territory map.
+	MapTypeModernMap1 = "ModernMap1"
+
+	modernMapMaxPlaceBytes = 200
+	// The territory is budgeted in triangles because the renderer draws each
+	// one as its own layer. Halo, outline and fill all consume the same ring,
+	// so the accent cannot drift off its own border.
+	modernMapTerritoryTriangleBudget = 210
+	modernMapMinRegionTriangles      = 8
+	modernMapContextRingPoints       = 300
+	modernMapMaxContextLayers        = 72
+	modernMapMaxBorderPoints         = 2200
+	modernMapMaxBorderPointsPerRow   = 900
+	modernMapLogoMinSizePX           = 96.0
+	modernMapLogoMaxSizePX           = 200.0
+	modernMapLabelFontPX             = 88.0
+	modernMapCreditFontPX            = 20.0
+	modernMapMarginPX                = 84.0
+)
+
+// ModernMap1 presentation constants. They are worker-owned: the payload chooses
+// the place and the logo, never the drawing palette.
+var (
+	// Paper sea and the highlighted territory: the ChrononPlugin editorial
+	// plate reads as paper, never as a neon overlay.
+	modernMapPaper         = []float64{0.973, 0.965, 0.945, 1.0} // #F8F6F1
+	modernMapTerritory     = []float64{0.851, 0.239, 0.204, 1.0} // #D93D34
+	modernMapLogoOpacity   = 0.95
+	modernMapTerritoryLine = "#8E241D"
+	modernMapHaloLine      = "#D93D34"
+	modernMapBorderLine    = "#C2BEB2"
+	modernMapGridLine      = "#E6E2D6"
+	modernMapInk           = "#1F252A"
+	modernMapCreditInk     = "#6E6A60"
+)
+
+func modernMapType(item semanticItem) string {
+	if item.Params == nil {
+		return ""
+	}
+	raw, ok := item.Params["map_type"].(string)
+	if !ok {
+		return ""
+	}
+	return strings.TrimSpace(raw)
+}
+
+func isModernMap1(item semanticItem) bool {
+	return modernMapType(item) == MapTypeModernMap1
+}
+
+func modernMapPlace(item semanticItem) string {
+	if item.Params == nil {
+		return ""
+	}
+	raw, _ := item.Params["map_place"].(string)
+	return strings.TrimSpace(raw)
+}
+
+func modernMapLogo(item semanticItem) string {
+	if item.Params == nil {
+		return ""
+	}
+	raw, _ := item.Params["map_logo"].(string)
+	return strings.TrimSpace(raw)
+}
+
+// validateMapTypeParam is called before any family-specific rule so an unknown
+// map_type is always reported as such, not as a missing raster. It also keeps
+// map_place from silently decorating the classic family, where it would have no
+// effect.
+func validateMapTypeParam(item semanticItem) error {
+	if item.Params == nil {
+		return nil
+	}
+	raw, present := item.Params["map_type"]
+	if present {
+		mapType, ok := raw.(string)
+		if !ok || (mapType != MapTypeClassic && mapType != MapTypeModernMap1) {
+			return fmt.Errorf("overlay: map item %q declares unsupported map_type %v", item.ID, raw)
+		}
+	}
+	if rawPlace, hasPlace := item.Params["map_place"]; hasPlace {
+		place, ok := rawPlace.(string)
+		if !ok || strings.TrimSpace(place) == "" || len(place) > modernMapMaxPlaceBytes || !isSingleLineVisibleText(place) {
+			return fmt.Errorf("overlay: map item %q map_place must be non-blank single-line text of at most %d bytes", item.ID, modernMapMaxPlaceBytes)
+		}
+		if modernMapType(item) != MapTypeModernMap1 {
+			return fmt.Errorf("overlay: map item %q declares map_place without map_type %s", item.ID, MapTypeModernMap1)
+		}
+	}
+	return nil
+}
+
+// validateModernMap1Contract admits the vector contract. A ModernMap1 item
+// carries provenance, a place and at most one logo asset; it must NOT carry a
+// raster basemap, pins, routes or a camera move, because those would silently
+// compete with the generated territory geometry.
+func validateModernMap1Contract(item semanticItem, canvasWidth, canvasHeight int) error {
+	m := item.Map
+	if strings.ToLower(strings.TrimSpace(m.Provider)) != "local" {
+		return fmt.Errorf("overlay: map item %q provider %q is not a locally supplied Natural Earth catalog", item.ID, m.Provider)
+	}
+	if strings.TrimSpace(m.SourceID) == "" || strings.TrimSpace(m.SourceLicense) == "" {
+		return fmt.Errorf("overlay: map item %q requires source_id and source_license provenance", item.ID)
+	}
+	if err := validateMapAttribution(m.Attribution); err != nil {
+		return fmt.Errorf("overlay: map item %q: %w", item.ID, err)
+	}
+	if m.Width != canvasWidth || m.Height != canvasHeight {
+		return fmt.Errorf("overlay: ModernMap1 item %q viewport %dx%d must match the %dx%d canvas", item.ID, m.Width, m.Height, canvasWidth, canvasHeight)
+	}
+	if err := validateMapPoint(m.Center.Latitude, m.Center.Longitude); err != nil {
+		return fmt.Errorf("overlay: map item %q center: %w", item.ID, err)
+	}
+	if m.Zoom < 0 || m.Zoom > maxMapZoom {
+		return fmt.Errorf("overlay: map item %q zoom %d outside [0,%d]", item.ID, m.Zoom, maxMapZoom)
+	}
+	place := modernMapPlace(item)
+	if place == "" {
+		return fmt.Errorf("overlay: ModernMap1 item %q requires params.map_place", item.ID)
+	}
+	if len(place) > modernMapMaxPlaceBytes || !isSingleLineVisibleText(place) {
+		return fmt.Errorf("overlay: ModernMap1 item %q map_place must be non-blank single-line text of at most %d bytes", item.ID, modernMapMaxPlaceBytes)
+	}
+	if len(m.Pins) != 0 || len(m.Routes) != 0 || m.CameraMove != nil || len(m.LODs) != 0 || strings.TrimSpace(m.MotionID) != "" {
+		return fmt.Errorf("overlay: ModernMap1 item %q cannot combine generated territory with pins, routes, camera LODs or a map motion", item.ID)
+	}
+	for _, key := range []string{"map_animation", "map_fx", "map_backend", "map_label_animation", "map_camera_animation"} {
+		if _, present := item.Params[key]; present {
+			return fmt.Errorf("overlay: ModernMap1 item %q cannot declare %s; the vector lane owns its presentation", item.ID, key)
+		}
+	}
+	logo := modernMapLogo(item)
+	if logo == "" {
+		if len(item.Assets) != 0 {
+			return fmt.Errorf("overlay: ModernMap1 item %q declares assets without params.map_logo", item.ID)
+		}
+		return nil
+	}
+	if len(item.Assets) != 1 || item.Assets[0].ID != logo || !validMapPNGAsset(item.Assets[0]) {
+		return fmt.Errorf("overlay: ModernMap1 item %q map_logo %q must name its unique content-addressed local image/png asset", item.ID, logo)
+	}
+	return nil
+}
+
+// compileModernMap1Layers draws the editorial plate in back-to-front order:
+// paper, graticule, neighbouring borders, territory halo, territory fill and
+// outline, name, credit, and finally the optional logo.
+func compileModernMap1Layers(ri resolvedItem, src *semanticPlan, registry *assetRegistry) ([]Layer, error) {
+	place := modernMapPlace(ri.Item)
+	if place == "" {
+		return nil, fmt.Errorf("overlay: ModernMap1 item %q requires params.map_place", ri.Item.ID)
+	}
+	features, err := geofeatures.DefaultRegistry()
+	if err != nil {
+		return nil, fmt.Errorf("overlay: ModernMap1 item %q: %w", ri.Item.ID, err)
+	}
+	sample, feature, fit, err := tacticalfill.BuildWithFit(features, place, tacticalfill.Options{
+		Width: src.Width, Height: src.Height, Padding: 0.02,
+		Box: tacticalfill.Box{MinX: 0.06, MinY: 0.06, MaxX: 0.94, MaxY: 0.94},
+	})
+	if err != nil {
+		return nil, fmt.Errorf("overlay: ModernMap1 item %q: %w", ri.Item.ID, err)
+	}
+	duration := ri.End - ri.Start
+	layers := make([]Layer, 0, 16+len(sample.Regions))
+	layers = append(layers, modernMapPaperLayer(ri, src, duration))
+	if grid := modernMapGraticuleLayer(ri, src, fit, duration); grid != nil {
+		layers = append(layers, *grid)
+	}
+	borderLayers := modernMapContextBorderLayers(ri, src, features, feature, fit, duration)
+	layers = append(layers, borderLayers...)
+	// One ring per part drives the halo, the outline and the fill: the red can
+	// only end exactly on the border that ring strokes.
+	rings := modernMapTerritoryRings(sample.Regions)
+	if len(rings) == 0 {
+		return nil, fmt.Errorf("overlay: ModernMap1 item %q resolved no drawable territory for %q", ri.Item.ID, place)
+	}
+	// The halo is a wide, faint stroke under the fill: it lifts the territory
+	// off the paper without a raster blur pass.
+	if halo := modernMapTerritoryHaloLayer(ri, src, rings, duration); halo != nil {
+		layers = append(layers, *halo)
+	}
+	// Smooth vector outlines own the silhouette the eye reads.
+	for index, ring := range rings {
+		if outline, ok := modernMapShapeLayer(
+			fmt.Sprintf("%s:modernmap1:outline:%d", ri.Item.ID, index), ri, src, duration,
+			[][][2]float64{ring}, nil,
+			&LayerStroke{Color: modernMapTerritoryLine, Width: 2.5}, nil,
+		); ok {
+			layers = append(layers, outline)
+		}
+	}
+	// Fill with ear-clipped triangles anchored to each region's whole bbox.
+	// The native fill drops small per-triangle surfaces and dense single
+	// paths, but materializes these; the outline above hides the seams. The
+	// triangles are cut from the same ring as the outline, so their union is
+	// exactly the bordered shape.
+	for index, ring := range rings {
+		triangles := triangulateModernMapRing(ring)
+		if len(triangles) == 0 {
+			continue
+		}
+		minX, minY, maxX, maxY := modernMapRingBounds(ring)
+		size := []float64{maxX - minX, maxY - minY}
+		position := []float64{minX - float64(src.Width)/2, minY - float64(src.Height)/2}
+		for triangleIndex, triangle := range triangles {
+			path := []LayerPathCommand{
+				{Type: "move_to", Point: []float64{triangle[0][0] - minX, triangle[0][1] - minY}},
+				{Type: "line_to", Point: []float64{triangle[1][0] - minX, triangle[1][1] - minY}},
+				{Type: "line_to", Point: []float64{triangle[2][0] - minX, triangle[2][1] - minY}},
+				{Type: "close"},
+			}
+			layers = append(layers, Layer{
+				ID:             fmt.Sprintf("%s:modernmap1:territory:%d:%d", ri.Item.ID, index, triangleIndex),
+				Type:           "shape",
+				Position:       position,
+				Size:           size,
+				StartFrame:     ri.Start,
+				DurationFrames: duration,
+				Shape:          &LayerShape{Type: "path", Path: path, Fill: modernMapTerritory},
+			})
+		}
+	}
+	largest := rings[0]
+	label, err := modernMapLabelLayer(ri, src, feature, duration)
+	if err != nil {
+		return nil, err
+	}
+	layers = append(layers, label)
+	credit, err := modernMapCreditLayer(ri, src, duration)
+	if err != nil {
+		return nil, err
+	}
+	layers = append(layers, credit)
+	if logo := modernMapLogo(ri.Item); logo != "" {
+		layers = append(layers, modernMapLogoLayer(ri, registry, logo, largest, duration, src.Width, src.Height))
+	}
+	return layers, nil
+}
+
+// modernMapTerritoryRings selects the country parts the plate can afford and
+// sizes each silhouette by its share of the territory. Halo, outline and fill
+// all consume these rings, because a second, coarser fill ring is exactly what
+// made the accent cut inside its own border.
+func modernMapTerritoryRings(regions []tacticalfill.Region) [][][2]float64 {
+	type part struct {
+		points [][2]float64
+		area   float64
+	}
+	parts := make([]part, 0, len(regions))
+	var totalArea float64
+	for _, region := range regions {
+		points := modernMapCleanRing(region.Points)
+		if len(points) < 3 {
+			continue
+		}
+		area := modernMapRingArea(points)
+		if area <= 0 {
+			continue
+		}
+		parts = append(parts, part{points: points, area: area})
+		totalArea += area
+	}
+	if len(parts) == 0 {
+		return nil
+	}
+	sort.SliceStable(parts, func(i, j int) bool { return parts[i].area > parts[j].area })
+	kept := make([]part, 0, len(parts))
+	kept = append(kept, parts[0])
+	for _, candidate := range parts[1:] {
+		// Specks below 0.4% of the country read as a dot of ink at plate
+		// scale and would steal layers from the real coastline.
+		if candidate.area/totalArea >= 0.004 {
+			kept = append(kept, candidate)
+		}
+	}
+	// Triangles grow with coastline length, so a part's share follows the
+	// square root of its area: Sardinia earns a third of Italy, not a twelfth.
+	weights := make([]float64, len(kept))
+	var totalWeight float64
+	for index, candidate := range kept {
+		weights[index] = math.Sqrt(candidate.area / kept[0].area)
+		totalWeight += weights[index]
+	}
+	triangles := make([]int, len(kept))
+	totalTriangles := 0
+	for index := range kept {
+		triangles[index] = int(math.Round(float64(modernMapTerritoryTriangleBudget) * weights[index] / totalWeight))
+		if triangles[index] < modernMapMinRegionTriangles {
+			triangles[index] = modernMapMinRegionTriangles
+		}
+		totalTriangles += triangles[index]
+	}
+	for totalTriangles > modernMapTerritoryTriangleBudget {
+		largest := 0
+		for index := range triangles {
+			if triangles[index] > triangles[largest] {
+				largest = index
+			}
+		}
+		if triangles[largest] <= modernMapMinRegionTriangles {
+			break
+		}
+		triangles[largest]--
+		totalTriangles--
+	}
+	rings := make([][][2]float64, 0, len(kept))
+	for index, candidate := range kept {
+		points := simplifyModernMapRing(candidate.points, triangles[index]+2)
+		if len(points) >= 3 {
+			rings = append(rings, points)
+		}
+	}
+	return rings
+}
+
+// modernMapShapeLayer lowers one stroked path shape. Path points are authored
+// inside [0,size] in the shape's own bbox, and the position is that bbox's
+// top-left corner in canvas coordinates (the same convention Grid uses).
+func modernMapShapeLayer(id string, ri resolvedItem, src *semanticPlan, duration int64, rings [][][2]float64, fill any, stroke *LayerStroke, opacity *float64) (Layer, bool) {
+	path, size, position := modernMapPathGeometry(rings, src.Width, src.Height)
+	if len(path) == 0 {
+		return Layer{}, false
+	}
+	return Layer{
+		ID:             id,
+		Type:           "shape",
+		Position:       position,
+		Size:           size,
+		StartFrame:     ri.Start,
+		DurationFrames: duration,
+		Opacity:        opacity,
+		Shape:          &LayerShape{Type: "path", Path: path, Fill: fill, Stroke: stroke},
+	}, true
+}
+
+// modernMapPaperLayer paints the sea: a warm paper rect under everything, so
+// the plate never inherits the job's dark background.
+func modernMapPaperLayer(ri resolvedItem, src *semanticPlan, duration int64) Layer {
+	return Layer{
+		ID:             ri.Item.ID + ":modernmap1:paper",
+		Type:           "shape",
+		Position:       []float64{0, 0},
+		Size:           []float64{float64(src.Width), float64(src.Height)},
+		StartFrame:     ri.Start,
+		DurationFrames: duration,
+		Shape:          &LayerShape{Type: "rect", Fill: modernMapPaper},
+	}
+}
+
+// modernMapGraticuleLayer draws the meridian/parallel lattice used by the
+// ChrononPlugin paper basemap. The step follows the fit zoom, and only lines
+// that cross the canvas are emitted.
+func modernMapGraticuleLayer(ri resolvedItem, src *semanticPlan, fit tacticalfill.Fit, duration int64) *Layer {
+	step := 10.0
+	switch {
+	case fit.Zoom > 10:
+		step = 1
+	case fit.Zoom > 8:
+		step = 2
+	case fit.Zoom > 6:
+		step = 5
+	}
+	commands := make([]LayerPathCommand, 0, 64)
+	for lon := -180.0; lon <= 180.0; lon += step {
+		point := fit.Project(lon, 0)
+		if point[0] < -4 || point[0] > float64(src.Width)+4 {
+			continue
+		}
+		commands = append(commands,
+			LayerPathCommand{Type: "move_to", Point: []float64{point[0], 0}},
+			LayerPathCommand{Type: "line_to", Point: []float64{point[0], float64(src.Height)}},
+		)
+	}
+	for lat := -80.0; lat <= 80.0; lat += step {
+		point := fit.Project(0, lat)
+		if point[1] < -4 || point[1] > float64(src.Height)+4 {
+			continue
+		}
+		commands = append(commands,
+			LayerPathCommand{Type: "move_to", Point: []float64{0, point[1]}},
+			LayerPathCommand{Type: "line_to", Point: []float64{float64(src.Width), point[1]}},
+		)
+	}
+	if len(commands) == 0 {
+		return nil
+	}
+	return &Layer{
+		ID:             ri.Item.ID + ":modernmap1:graticule",
+		Type:           "shape",
+		Position:       []float64{-float64(src.Width) / 2, -float64(src.Height) / 2},
+		Size:           []float64{float64(src.Width), float64(src.Height)},
+		StartFrame:     ri.Start,
+		DurationFrames: duration,
+		Shape:          &LayerShape{Type: "path", Path: commands, Stroke: &LayerStroke{Color: modernMapGridLine, Width: 1}},
+	}
+}
+
+// modernMapContextBorderLayers strokes the coastlines and borders of every
+// country that intersects the fitted viewport. Land fill is deliberately absent:
+// a filled country needs triangles or a long fill path, and the hairline map is
+// the editorial reference (and the only thing the renderer draws reliably at
+// this scale).
+func modernMapContextBorderLayers(ri resolvedItem, src *semanticPlan, features *geofeatures.Registry, target geofeatures.Feature, fit tacticalfill.Fit, duration int64) []Layer {
+	west, north := fit.Unproject(0, 0)
+	east, south := fit.Unproject(float64(src.Width), float64(src.Height))
+	if west > east {
+		west, east = east, west
+	}
+	if south > north {
+		south, north = north, south
+	}
+	marginLon := (east - west) * 0.02
+	marginLat := (north - south) * 0.02
+	west, east = west-marginLon, east+marginLon
+	south, north = south-marginLat, north+marginLat
+
+	type candidate struct {
+		rings [][][2]float64
+		area  float64
+	}
+	candidates := make([]candidate, 0, 32)
+	for _, country := range features.Features() {
+		if country.Type != geofeatures.Country || country.ID == target.ID {
+			continue
+		}
+		if country.Bounds.East < west || country.Bounds.West > east ||
+			country.Bounds.North < south || country.Bounds.South > north {
+			continue
+		}
+		rings, err := features.Rings(country.ID)
+		if err != nil {
+			continue
+		}
+		projected := make([][][2]float64, 0, len(rings))
+		var area float64
+		for _, ring := range rings {
+			points := make([][2]float64, 0, len(ring))
+			for _, point := range ring {
+				projectedPoint := fit.Project(point[0], point[1])
+				// Clamp to a small margin around the canvas: an off-canvas
+				// ring must not inflate the layer surface to thousands of
+				// pixels, which starves the native surface pool.
+				projectedPoint[0] = math.Max(-40, math.Min(float64(src.Width)+40, projectedPoint[0]))
+				projectedPoint[1] = math.Max(-40, math.Min(float64(src.Height)+40, projectedPoint[1]))
+				points = append(points, projectedPoint)
+			}
+			points = decimateModernMapRing(points, modernMapContextRingPoints)
+			minX, minY, maxX, maxY := modernMapRingBounds(points)
+			if maxX < -8 || minX > float64(src.Width)+8 || maxY < -8 || minY > float64(src.Height)+8 {
+				continue
+			}
+			if (maxX-minX)*(maxY-minY) < 24 {
+				continue
+			}
+			projected = append(projected, points)
+			area += (maxX - minX) * (maxY - minY)
+		}
+		if len(projected) == 0 {
+			continue
+		}
+		candidates = append(candidates, candidate{rings: projected, area: area})
+	}
+	sort.SliceStable(candidates, func(i, j int) bool { return candidates[i].area > candidates[j].area })
+	if len(candidates) > modernMapMaxContextLayers {
+		candidates = candidates[:modernMapMaxContextLayers]
+	}
+	// Split the rings across a few paths: one 10k-point stroked path is dropped
+	// by the renderer, while a handful of ~1k-point paths draw fine.
+	rows := make([][][][2]float64, 0, 4)
+	row := make([][][2]float64, 0, 8)
+	rowPoints := 0
+	totalPoints := 0
+	for _, candidate := range candidates {
+		for _, ring := range candidate.rings {
+			if totalPoints >= modernMapMaxBorderPoints {
+				break
+			}
+			if rowPoints+len(ring) > modernMapMaxBorderPointsPerRow && len(row) > 0 {
+				rows = append(rows, row)
+				row = make([][][2]float64, 0, 8)
+				rowPoints = 0
+			}
+			row = append(row, ring)
+			rowPoints += len(ring)
+			totalPoints += len(ring)
+		}
+	}
+	if len(row) > 0 {
+		rows = append(rows, row)
+	}
+	layers := make([]Layer, 0, len(rows))
+	for index, rings := range rows {
+		if layer, ok := modernMapShapeLayer(
+			fmt.Sprintf("%s:modernmap1:borders:%d", ri.Item.ID, index), ri, src, duration,
+			rings, nil, &LayerStroke{Color: modernMapBorderLine, Width: 1.4}, nil,
+		); ok {
+			layers = append(layers, layer)
+		}
+	}
+	return layers
+}
+
+// modernMapTerritoryHaloLayer is the soft edge that makes the accent territory
+// sit on the paper instead of being stamped onto it.
+func modernMapTerritoryHaloLayer(ri resolvedItem, src *semanticPlan, rings [][][2]float64, duration int64) *Layer {
+	if len(rings) == 0 {
+		return nil
+	}
+	opacity := 0.14
+	layer, ok := modernMapShapeLayer(ri.Item.ID+":modernmap1:halo", ri, src, duration, rings, nil,
+		&LayerStroke{Color: modernMapHaloLine, Width: 22}, &opacity)
+	if !ok {
+		return nil
+	}
+	return &layer
+}
+
+// modernMapLabelLayer writes the place name bottom-left in editorial ink. The
+// map-label role supplies shrink-only fitting; its default dark drop shadow is
+// disabled because the plate is paper, not footage.
+func modernMapLabelLayer(ri resolvedItem, src *semanticPlan, feature geofeatures.Feature, duration int64) (Layer, error) {
+	scale := mapTypographyScale(src.Width, src.Height)
+	margin := modernMapMarginPX * scale
+	width := math.Min(float64(src.Width)*0.6, 1100*scale)
+	height := modernMapLabelFontPX * scale * 1.35
+	boxX := margin
+	boxY := float64(src.Height) - margin - height
+	labelText := strings.ToUpper(feature.Name)
+	// Long names ("UNITED STATES OF AMERICA") must fit without the shrink
+	// floor; an oversized glyph atlas also exhausts the text upload pass.
+	fontSize := math.Min(modernMapLabelFontPX*scale, width/float64(len(labelText))*0.58/0.62)
+	fontSize = math.Max(fontSize, modernMapLabelFontPX*scale*0.42)
+	spec := resolvedTextSpec{
+		Text: labelText, Size: []float64{width, height}, OmitBox: true,
+		Position:    canvasBoxPosition("text", boxX, boxY, width, height, src.Width, src.Height),
+		CanvasWidth: src.Width, CanvasHeight: src.Height,
+		Style:       &LayerStyle{Font: OfficialFontPathForLanguage(src.Language), TextAlign: "left"},
+		Alignment:   "left",
+		StyleParams: ri.Params,
+		// Map label role: shrink-only fit plus no shadow on paper.
+		MotionTarget: TargetText, StylePolicy: textRoleMapLabel,
+		FontSize: fontSize, MinFontSize: fontSize * 0.8, MaxFontSize: fontSize,
+		OverrideFill:  modernMapInk,
+		RoleOverrides: &LayerStyle{Shadow: &LayerShadow{Color: "#000000", Opacity: 0, Blur: 0, Offset: []float64{0, 0}}},
+	}
+	layer, err := compileResolvedText(ri.Item.ID+":modernmap1:label", ri.Start, ri.Start+duration, spec)
+	if err != nil {
+		return Layer{}, fmt.Errorf("overlay: ModernMap1 item %q label: %w", ri.Item.ID, err)
+	}
+	return layer, nil
+}
+
+// modernMapCreditLayer keeps the Natural Earth credit on the plate, in muted
+// ink, bottom-right.
+func modernMapCreditLayer(ri resolvedItem, src *semanticPlan, duration int64) (Layer, error) {
+	scale := mapTypographyScale(src.Width, src.Height)
+	fontSize := modernMapCreditFontPX * scale
+	width, height := 460*scale, fontSize*1.6
+	margin := modernMapMarginPX * scale
+	boxX := float64(src.Width) - margin - width
+	boxY := float64(src.Height) - margin - height
+	credit := strings.TrimSpace(ri.Item.Map.Attribution)
+	if credit == "" {
+		credit = "Natural Earth"
+	}
+	spec := resolvedTextSpec{
+		Text: credit, Size: []float64{width, height}, OmitBox: true,
+		Position:    canvasBoxPosition("text", boxX, boxY, width, height, src.Width, src.Height),
+		CanvasWidth: src.Width, CanvasHeight: src.Height,
+		Style:        &LayerStyle{Font: OfficialFontPathForLanguage(src.Language), TextAlign: "right"},
+		Alignment:    "right",
+		StyleParams:  ri.Params,
+		MotionTarget: TargetText, StylePolicy: textRoleMapAttribution,
+		FontSize: fontSize, MinFontSize: fontSize * 0.7, MaxFontSize: fontSize,
+		OverrideFill:  modernMapCreditInk,
+		RoleOverrides: &LayerStyle{Shadow: &LayerShadow{Color: "#000000", Opacity: 0, Blur: 0, Offset: []float64{0, 0}}},
+	}
+	layer, err := compileResolvedText(ri.Item.ID+":modernmap1:credit", ri.Start, ri.Start+duration, spec)
+	if err != nil {
+		return Layer{}, fmt.Errorf("overlay: ModernMap1 item %q credit: %w", ri.Item.ID, err)
+	}
+	return layer, nil
+}
+
+// modernMapLogoLayer centres the emblem inside the largest territory and scales
+// it relative to that territory, kept small enough to read as a badge instead
+// of a flag pasted over the map. It sits above the fill.
+func modernMapLogoLayer(ri resolvedItem, registry *assetRegistry, assetID string, ring [][2]float64, duration int64, canvasWidth, canvasHeight int) Layer {
+	minX, minY, maxX, maxY := modernMapRingBounds(ring)
+	size := math.Min(maxX-minX, maxY-minY) * 0.18
+	size = math.Max(modernMapLogoMinSizePX, math.Min(modernMapLogoMaxSizePX, size))
+	opacity := modernMapLogoOpacity
+	return Layer{
+		ID:             ri.Item.ID + ":modernmap1:logo",
+		Type:           "image",
+		Asset:          registry.Path(assetID),
+		BoxWidth:       int(size),
+		BoxHeight:      int(size),
+		Size:           []float64{size, size},
+		Fit:            FitContain,
+		Position:       []float64{(minX+maxX)/2 - float64(canvasWidth)/2, (minY+maxY)/2 - float64(canvasHeight)/2},
+		StartFrame:     ri.Start,
+		DurationFrames: duration,
+		Opacity:        &opacity,
+	}
+}
+
+// modernMapPathGeometry turns canvas-space rings into a local path with a
+// closed subpath per ring, plus the layer size and top-left position that place
+// that bbox back on the canvas. The duplicated closing vertex is dropped:
+// `close` owns it.
+func modernMapPathGeometry(rings [][][2]float64, canvasWidth, canvasHeight int) ([]LayerPathCommand, []float64, []float64) {
+	minX, minY, maxX, maxY := modernMapRingsBounds(rings)
+	if math.IsInf(minX, 1) || maxX-minX < 1 || maxY-minY < 1 {
+		return nil, nil, nil
+	}
+	commands := make([]LayerPathCommand, 0, 64)
+	for _, ring := range rings {
+		points := ring
+		if len(points) > 1 && points[0] == points[len(points)-1] {
+			points = points[:len(points)-1]
+		}
+		if len(points) < 3 {
+			continue
+		}
+		commands = append(commands, LayerPathCommand{Type: "move_to", Point: []float64{points[0][0] - minX, points[0][1] - minY}})
+		for _, point := range points[1:] {
+			commands = append(commands, LayerPathCommand{Type: "line_to", Point: []float64{point[0] - minX, point[1] - minY}})
+		}
+		commands = append(commands, LayerPathCommand{Type: "close"})
+	}
+	if len(commands) == 0 {
+		return nil, nil, nil
+	}
+	return commands, []float64{maxX - minX, maxY - minY}, []float64{
+		minX - float64(canvasWidth)/2,
+		minY - float64(canvasHeight)/2,
+	}
+}
+
+func modernMapRingsBounds(rings [][][2]float64) (minX, minY, maxX, maxY float64) {
+	minX, minY = math.Inf(1), math.Inf(1)
+	maxX, maxY = math.Inf(-1), math.Inf(-1)
+	for _, ring := range rings {
+		for _, point := range ring {
+			minX = math.Min(minX, point[0])
+			minY = math.Min(minY, point[1])
+			maxX = math.Max(maxX, point[0])
+			maxY = math.Max(maxY, point[1])
+		}
+	}
+	return minX, minY, maxX, maxY
+}
+
+func modernMapRingArea(points [][2]float64) float64 {
+	var twice float64
+	for index, point := range points {
+		next := points[(index+1)%len(points)]
+		twice += point[0]*next[1] - next[0]*point[1]
+	}
+	return math.Abs(twice) / 2
+}
+
+func modernMapRingBounds(points [][2]float64) (minX, minY, maxX, maxY float64) {
+	minX, minY = math.Inf(1), math.Inf(1)
+	maxX, maxY = math.Inf(-1), math.Inf(-1)
+	for _, point := range points {
+		minX = math.Min(minX, point[0])
+		minY = math.Min(minY, point[1])
+		maxX = math.Max(maxX, point[0])
+		maxY = math.Max(maxY, point[1])
+	}
+	return minX, minY, maxX, maxY
+}
+
+// modernMapCollinearEpsilon is a pixel-area floor: ears below it add no ink but
+// can stall the clipper's containment test.
+const modernMapCollinearEpsilon = 1e-6
+
+// triangulateModernMapRing ear-clips one simple ring into triangles. The ring
+// is the same one the outline strokes, so the union of the triangles is the
+// bordered shape: the old plate filled from a second, coarser ring and the red
+// visibly cut inside the coast. Rings are oriented counter-clockwise so
+// convexity and containment use one sign convention.
+func triangulateModernMapRing(points [][2]float64) [][3][2]float64 {
+	ring := modernMapDropCollinear(modernMapCleanRing(points))
+	if len(ring) < 3 {
+		return nil
+	}
+	if modernMapSignedArea(ring) < 0 {
+		for left, right := 0, len(ring)-1; left < right; left, right = left+1, right-1 {
+			ring[left], ring[right] = ring[right], ring[left]
+		}
+	}
+	indices := make([]int, len(ring))
+	for index := range indices {
+		indices[index] = index
+	}
+	triangles := make([][3][2]float64, 0, len(ring)-2)
+	for len(indices) > 3 {
+		ear := -1
+		for position := range indices {
+			if modernMapIsEar(ring, indices, position) {
+				ear = position
+				break
+			}
+		}
+		if ear < 0 {
+			// Coincident vertices can stall the strict test. Shave the
+			// sharpest convex corner instead of fanning the remainder from
+			// a centroid: a fan spills straight across bays.
+			ear = modernMapSmallestConvexCorner(ring, indices)
+			if ear < 0 {
+				return triangles
+			}
+		}
+		previous := indices[(ear-1+len(indices))%len(indices)]
+		current := indices[ear]
+		next := indices[(ear+1)%len(indices)]
+		triangles = append(triangles, [3][2]float64{ring[previous], ring[current], ring[next]})
+		indices = append(indices[:ear], indices[ear+1:]...)
+	}
+	if len(indices) == 3 {
+		triangles = append(triangles, [3][2]float64{ring[indices[0]], ring[indices[1]], ring[indices[2]]})
+	}
+	return triangles
+}
+
+func modernMapIsEar(ring [][2]float64, indices []int, position int) bool {
+	previous := indices[(position-1+len(indices))%len(indices)]
+	current := indices[position]
+	next := indices[(position+1)%len(indices)]
+	a, b, c := ring[previous], ring[current], ring[next]
+	if modernMapCross(b[0]-a[0], b[1]-a[1], c[0]-b[0], c[1]-b[1]) <= modernMapCollinearEpsilon {
+		return false
+	}
+	for _, candidate := range indices {
+		if candidate == previous || candidate == current || candidate == next {
+			continue
+		}
+		if modernMapPointInTriangleStrict(ring[candidate], a, b, c) {
+			return false
+		}
+	}
+	return true
+}
+
+func modernMapSmallestConvexCorner(ring [][2]float64, indices []int) int {
+	best := -1
+	bestArea := math.Inf(1)
+	for position := range indices {
+		previous := indices[(position-1+len(indices))%len(indices)]
+		current := indices[position]
+		next := indices[(position+1)%len(indices)]
+		area := modernMapCross(
+			ring[current][0]-ring[previous][0], ring[current][1]-ring[previous][1],
+			ring[next][0]-ring[current][0], ring[next][1]-ring[current][1],
+		)
+		if area > 0 && area < bestArea {
+			best, bestArea = position, area
+		}
+	}
+	return best
+}
+
+// modernMapDropCollinear removes vertices that add no area: a zero-width ear is
+// not a legal ear and would otherwise stall the clipper.
+func modernMapDropCollinear(points [][2]float64) [][2]float64 {
+	if len(points) < 3 {
+		return points
+	}
+	ring := make([][2]float64, 0, len(points))
+	for index := range points {
+		previous := points[(index-1+len(points))%len(points)]
+		current := points[index]
+		next := points[(index+1)%len(points)]
+		if math.Abs(modernMapCross(
+			current[0]-previous[0], current[1]-previous[1],
+			next[0]-current[0], next[1]-current[1],
+		)) <= modernMapCollinearEpsilon {
+			continue
+		}
+		ring = append(ring, current)
+	}
+	return ring
+}
+
+func modernMapSignedArea(points [][2]float64) float64 {
+	var area float64
+	for index, point := range points {
+		next := points[(index+1)%len(points)]
+		area += point[0]*next[1] - next[0]*point[1]
+	}
+	return area / 2
+}
+
+func modernMapCross(ax, ay, bx, by float64) float64 { return ax*by - ay*bx }
+
+// modernMapPointInTriangleStrict excludes points on the triangle boundary: a
+// decimated coast is full of near-collinear vertices, and counting them as
+// inside stalled ear clipping before the ring was closed.
+func modernMapPointInTriangleStrict(point, a, b, c [2]float64) bool {
+	const eps = 1e-9
+	d1 := modernMapCross(b[0]-a[0], b[1]-a[1], point[0]-a[0], point[1]-a[1])
+	d2 := modernMapCross(c[0]-b[0], c[1]-b[1], point[0]-b[0], point[1]-b[1])
+	d3 := modernMapCross(a[0]-c[0], a[1]-c[1], point[0]-c[0], point[1]-c[1])
+	return (d1 > eps && d2 > eps && d3 > eps) || (d1 < -eps && d2 < -eps && d3 < -eps)
+}
+
+// modernMapCleanRing drops repeated vertices (including a duplicated closing
+// point) so no later step has to divide by a zero-length edge.
+func modernMapCleanRing(points [][2]float64) [][2]float64 {
+	ring := make([][2]float64, 0, len(points))
+	for _, point := range points {
+		if len(ring) > 0 && modernMapDistanceSquared(ring[len(ring)-1], point) <= 1e-6 {
+			continue
+		}
+		ring = append(ring, point)
+	}
+	if len(ring) > 1 && modernMapDistanceSquared(ring[0], ring[len(ring)-1]) <= 1e-6 {
+		ring = ring[:len(ring)-1]
+	}
+	return ring
+}
+
+// simplifyModernMapRing decimates a closed ring with Ramer–Douglas–Peucker.
+// Uniform index sampling (the previous approach) spent points evenly on long
+// straight borders and cut through bays; RDP keeps the capes and skips collinear
+// coast instead.
+func simplifyModernMapRing(points [][2]float64, limit int) [][2]float64 {
+	ring := modernMapCleanRing(points)
+	if len(ring) <= limit || limit < 4 {
+		return ring
+	}
+	// Two far-apart anchors let RDP run on open polylines while the ring stays
+	// closed: the second half ends back at ring[0], which is dropped again.
+	far, farthest := 0, -1.0
+	for index, point := range ring {
+		if distance := modernMapDistanceSquared(ring[0], point); distance > farthest {
+			far, farthest = index, distance
+		}
+	}
+	if far == 0 {
+		far = len(ring) / 2
+	}
+	closed := make([][2]float64, 0, len(ring)-far+1)
+	closed = append(closed, ring[far:]...)
+	closed = append(closed, ring[0])
+	minX, minY, maxX, maxY := modernMapRingBounds(ring)
+	low, high := 0.0, math.Hypot(maxX-minX, maxY-minY)
+	if high <= 0 {
+		return ring
+	}
+	best := ring
+	for try := 0; try < 20; try++ {
+		tolerance := (low + high) / 2
+		simplified := simplifyModernMapPolyline(ring[:far+1], tolerance)
+		tail := simplifyModernMapPolyline(closed, tolerance)
+		simplified = append(simplified, tail[1:len(tail)-1]...)
+		if len(simplified) > limit {
+			low = tolerance
+			continue
+		}
+		best = simplified
+		high = tolerance
+	}
+	return best
+}
+
+func simplifyModernMapPolyline(points [][2]float64, tolerance float64) [][2]float64 {
+	if len(points) < 3 {
+		return append([][2]float64(nil), points...)
+	}
+	keep := make([]bool, len(points))
+	keep[0], keep[len(points)-1] = true, true
+	stack := [][2]int{{0, len(points) - 1}}
+	threshold := tolerance * tolerance
+	for len(stack) > 0 {
+		segment := stack[len(stack)-1]
+		stack = stack[:len(stack)-1]
+		farthest, farthestIndex := -1.0, -1
+		for index := segment[0] + 1; index < segment[1]; index++ {
+			if distance := modernMapPointSegmentDistanceSquared(points[index], points[segment[0]], points[segment[1]]); distance > farthest {
+				farthest, farthestIndex = distance, index
+			}
+		}
+		if farthestIndex >= 0 && farthest > threshold {
+			keep[farthestIndex] = true
+			stack = append(stack, [2]int{segment[0], farthestIndex}, [2]int{farthestIndex, segment[1]})
+		}
+	}
+	out := make([][2]float64, 0, len(points))
+	for index, point := range points {
+		if keep[index] {
+			out = append(out, point)
+		}
+	}
+	return out
+}
+
+func modernMapPointSegmentDistanceSquared(point, a, b [2]float64) float64 {
+	dx, dy := b[0]-a[0], b[1]-a[1]
+	length := dx*dx + dy*dy
+	if length <= 0 {
+		return modernMapDistanceSquared(point, a)
+	}
+	t := ((point[0]-a[0])*dx + (point[1]-a[1])*dy) / length
+	t = math.Max(0, math.Min(1, t))
+	px, py := a[0]+t*dx, a[1]+t*dy
+	return (point[0]-px)*(point[0]-px) + (point[1]-py)*(point[1]-py)
+}
+
+func modernMapDistanceSquared(a, b [2]float64) float64 {
+	dx, dy := a[0]-b[0], a[1]-b[1]
+	return dx*dx + dy*dy
+}
+
+// decimateModernMapRing keeps the silhouette while bounding the command count a
+// single shape can contribute. Raster Natural Earth rings easily exceed what the
+// renderer should flatten per frame; the first and last point are preserved so
+// the ring stays closed.
+func decimateModernMapRing(points [][2]float64, limit int) [][2]float64 {
+	if len(points) <= limit {
+		return points
+	}
+	if limit < 4 {
+		limit = 4
+	}
+	out := make([][2]float64, 0, limit)
+	step := float64(len(points)-1) / float64(limit-1)
+	for index := 0; index < limit; index++ {
+		position := int(float64(index) * step)
+		if position >= len(points) {
+			position = len(points) - 1
+		}
+		out = append(out, points[position])
+	}
+	out[0] = points[0]
+	out[len(out)-1] = points[len(points)-1]
+	return out
+}

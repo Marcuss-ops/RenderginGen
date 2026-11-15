@@ -334,9 +334,9 @@ func compileLegacyCompositeImageLayers(ri resolvedItem, src *semanticPlan, regis
 	return layers, nil
 }
 
-// sequenceImageLayoutParams gives each image a portrait viewport. Cover crops
-// landscape padding so baked-in blurred side bands cannot dominate the photo.
-func sequenceImageLayoutParams(params map[string]any, src *semanticPlan, index int) map[string]any {
+// sequenceImageLayoutParams gives each source orientation a consistent
+// viewport. Cover crops source padding so blurred side bands cannot dominate.
+func sequenceImageLayoutParams(params map[string]any, src *semanticPlan, index int, landscape bool) map[string]any {
 	if src == nil || src.Width <= 0 || src.Height <= 0 {
 		return params
 	}
@@ -344,11 +344,19 @@ func sequenceImageLayoutParams(params map[string]any, src *semanticPlan, index i
 	for key, value := range params {
 		result[key] = value
 	}
-	// Fill most of the frame so portraits remain the visual focus. The reserved
-	// lower margin still gives the screen-space caption room beneath the image.
-	portraitHeight := float64(src.Height) * sequencePortraitHeightRatio
-	result["width"] = int(portraitHeight * 0.73)
-	result["height"] = int(portraitHeight)
+	// Normalize each orientation to one shared viewport. Horizontal sources use
+	// a 16:9 crop, so two landscape photos with slightly different source ratios
+	// occupy the same visible area instead of varying in height under contain.
+	// Portrait sources keep the established tall card and caption-safe margin.
+	if landscape {
+		width := float64(src.Width) * sequenceLandscapeWidthRatio
+		result["width"] = int(width)
+		result["height"] = int(width * 9 / 16)
+	} else {
+		portraitHeight := float64(src.Height) * sequencePortraitHeightRatio
+		result["width"] = int(portraitHeight * 0.73)
+		result["height"] = int(portraitHeight)
+	}
 	result["position_x"] = float64(index * src.Width)
 	result["position_y"] = 0.0
 	result["fit"] = "cover"

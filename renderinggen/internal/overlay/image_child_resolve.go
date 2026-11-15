@@ -1,10 +1,17 @@
 package overlay
 
-import "fmt"
+import (
+	"fmt"
+	"image"
+	_ "image/gif"
+	_ "image/jpeg"
+	_ "image/png"
+	"os"
+)
 
 // imageChildOptions selects the two lowering contexts a composite child can
 // appear in. Ordinary composite/group children keep their own motion and
-// timing window; a camera-sequence portrait is a static surface that spans the
+// timing window; a camera-sequence image is a static surface that spans the
 // parent window and hands its caption to the screen-space sequence layout.
 type imageChildOptions struct {
 	staticMotion bool
@@ -34,7 +41,7 @@ func resolveImageChild(ri resolvedItem, assets map[string]string, child Semantic
 		return resolvedItem{}, "", PresetDefinition{}, fmt.Errorf("overlay: image_backdrop is available only on a standalone image item, not image_layers[%q]", child.ID)
 	}
 	if opts.sequence {
-		params = sequenceImageLayoutParams(params, src, opts.index)
+		params = sequenceImageLayoutParams(params, src, opts.index, imageAssetIsLandscape(assetPath))
 	}
 
 	childItem := ri.Item
@@ -76,4 +83,17 @@ func resolveImageChild(ri resolvedItem, assets map[string]string, child Semantic
 	childResolved.Params = params
 	childResolved.Start, childResolved.End = imageStart, imageEnd
 	return childResolved, assetPath, preset, nil
+}
+
+// imageAssetIsLandscape reports the source orientation when the staged image
+// format has a standard-library decoder. Unknown formats keep the established
+// portrait sequence layout rather than guessing from the filename.
+func imageAssetIsLandscape(path string) bool {
+	file, err := os.Open(path)
+	if err != nil {
+		return false
+	}
+	defer file.Close()
+	config, _, err := image.DecodeConfig(file)
+	return err == nil && config.Height > 0 && float64(config.Width)/float64(config.Height) >= 1.2
 }

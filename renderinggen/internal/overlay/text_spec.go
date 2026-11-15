@@ -362,7 +362,11 @@ func compileResolvedText(layerID string, start, end int64, spec resolvedTextSpec
 		animation = presetAnimation
 	}
 	if spec.EntryExit {
-		animation = withPhraseEntryExit(animation, layer.DurationFrames)
+		var exitFrames int64
+		if value, ok := numericValue(spec.MotionParams["exit_frames"]); ok && value > 0 {
+			exitFrames = int64(value)
+		}
+		animation = withPhraseEntryExit(animation, layer.DurationFrames, exitFrames)
 	}
 	// A camera-backed motion cannot be honoured on the flat overlay canvas.
 	// Keep the default screen-space text path for 2D choreography, but lift a

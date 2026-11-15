@@ -83,6 +83,41 @@ raggruppamento per chi crea il video; non è un renderer, né implica un nuovo
 | Mappe | `map` | ChrononPlugin è l'unica fonte del rendering mappe. Il renderer nativo (`maps_dynamic_map_render`) pubblica il vocabolario in `ChrononPlugin/plugins/maps/maps-renderer-catalog.v1.json` (25 composizioni documentary + base flyover, camera `slow_approach`/`exponential_dive`, basemap `chronon_editorial`/`esri_sat`); RenderingGen incorpora quello stesso catalogo e rifiuta per nome ogni `map_animation` fuori da esso, incluse le vecchie famiglie Python (`region_zoom`, `pulse_marker`, `ed_*`). |
 | Altri elementi | `important_word`, `quote`, entità testuali, `product`, `logo`, `shape`, `video_overlay`, ecc. | Rimangono classi supportate dal compilatore; non vanno mescolate alle sezioni principali dell’editor. |
 
+### ModernMap1 — placca editoriale vettoriale
+
+Un map item sceglie la famiglia con `params.map_type`: `classic` è il default
+(raster locale, pin, eventuale camera/LOD) e resta invariato; `ModernMap1` è la
+mappa vettoriale che mostra **solo il territorio richiesto**, senza raster e
+senza pin. Il payload dichiara `params.map_place` (nome Natural Earth, id paese
+o `admin1:<nome>`); il worker risolve la feature dal catalogo locale, proietta i
+ring nel canvas con `tacticalfill` e compone la placca editoriale: carta calda,
+reticolo leggero, confini di contesto, territorio in rosso con alone e contorno,
+nome in basso a sinistra, credito e logo opzionale dentro il territorio. Il
+riempimento è triangolato (ear clipping su un anello semplificato) e ancorato al
+bbox dell’intera regione, perché il fill nativo di Chronon scarta sia i path
+densi sia i triangoli con bbox proprio; contorno e alone coprono le giunture. Non
+c’è download, non c’è un secondo renderer: è lo stesso Chronon3D.
+
+```json
+{"kind":"map","template_id":"MAP","start_ms":0,"end_ms":8000,
+ "params":{"map_type":"ModernMap1","map_place":"Italy"},
+ "map":{"provider":"local","source_id":"natural-earth",
+   "source_license":"public-domain","center":{"latitude":0,"longitude":0},
+   "zoom":0,"width":1920,"height":1080,"attribution":"Natural Earth","pins":[]}}
+```
+
+ModernMap1 rifiuta `pins`, `routes`, `camera_move`, `lods`, `motion_id` e i
+parametri di presentazione della lane raster: mescolarli dichiarerebbe due
+mappe diverse sullo stesso item. Accetta al più un asset, il logo opzionale
+(`params.map_logo`, PNG già dichiarato in `asset_refs`): viene centrato dentro
+il territorio e scalato alla sua dimensione, e senza asset non disegna nulla e
+non scarica nulla. Le regioni sono disponibili
+solo per i dataset admin-1 presenti in `ChrononTemplate/catalog`
+(`ne_10m_admin_1_bahia.geojson`, `ne_10m_admin_1_gujarat.geojson`); per mostrare
+una provincia italiana serve aggiungere il relativo GeoJSON al catalogo. Con un
+piano `ModernMap1` si compila e si renderizza con
+`go run ./cmd/modernmap-demo -place Italy -out-dir /tmp/modernmap1`.
+
 Quindi la proposta editoriale parte da **7 sezioni principali** (le prime sette
 righe) più “Altri elementi”. Lo scenario concatenato già presente, invece, ha
 **6 atti runtime**: frasi, date, metriche, entità, luoghi+mappa, immagini. Date
@@ -152,6 +187,15 @@ Per un composito, spostare `frame` e le dimensioni dentro ciascun elemento di
       "stroke": {"width_px": 2, "color": "#FFFFFF"}}}
 ]}
 ```
+
+`params.effects` è opzionale e il suo stato predefinito è **nessun effetto**:
+omletterlo, dichiarare `[]` oppure `[{"type":"none"}]` producono lo stesso
+risultato. `none` è un valore esplicito del contratto, non un tipo di effetto:
+deve essere l’unica voce dello stack e non accetta parametri; combinarlo con un
+effetto reale viene rifiutato, così il payload non può dire due cose diverse
+sullo stesso layer. Gli altri tipi restano quelli dell’enum `layer_effect`; un
+tipo sconosciuto o un parametro fuori scala è un errore di compilazione
+(fail-closed), mai uno scarto silenzioso.
 
 **Fotografia runtime verificata:** c’è **1 renderer** (Chronon3D); il worker
 RenderingGen compila il piano semantico, non è un secondo renderer. Il registry

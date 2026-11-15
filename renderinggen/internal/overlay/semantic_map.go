@@ -81,6 +81,12 @@ func validateMapContract(item semanticItem, kind ItemKind, canvasWidth, canvasHe
 		return fmt.Errorf("overlay: item %q kind %q cannot carry a map declaration", item.ID, kind)
 	}
 	m := item.Map
+	if err := validateMapTypeParam(item); err != nil {
+		return err
+	}
+	if isModernMap1(item) {
+		return validateModernMap1Contract(item, canvasWidth, canvasHeight)
+	}
 	if strings.ToLower(strings.TrimSpace(m.Provider)) != "local" {
 		return fmt.Errorf("overlay: map item %q provider %q is not a locally supplied raster", item.ID, m.Provider)
 	}
@@ -197,6 +203,12 @@ func validateMapPresentationParams(item semanticItem) error {
 	params := item.Params
 	if params == nil {
 		return nil
+	}
+	if raw, present := params["map_place"]; present {
+		place, ok := raw.(string)
+		if !ok || strings.TrimSpace(place) == "" || len(place) > 200 || !isSingleLineVisibleText(place) {
+			return fmt.Errorf("overlay: map item %q map_place must be non-blank single-line text of at most 200 bytes", item.ID)
+		}
 	}
 	for key, certified := range map[string]map[string]bool{
 		"map_animation":        certifiedMapCompositions,

@@ -284,7 +284,12 @@ func (p *Processor) prepareSubtitles(st *prepareState) error {
 			subtitlePath = filepath.Join(st.ws.Root(), asset.LogicalPath)
 		}
 		if ext := strings.ToLower(filepath.Ext(asset.LogicalPath)); ext == ".ttf" || ext == ".otf" {
-			if fontPath == "" {
+			// The plan's declared subtitle font WINS: font_ref is the caller's
+			// typography choice. The first-materialized fallback survives only
+			// for plans that predate the field (empty FontHash).
+			if sub.FontHash != "" && strings.EqualFold(asset.Hash, sub.FontHash) {
+				fontPath = asset.LogicalPath
+			} else if sub.FontHash == "" && fontPath == "" {
 				fontPath = asset.LogicalPath
 			}
 		}

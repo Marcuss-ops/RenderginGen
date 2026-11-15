@@ -57,13 +57,14 @@ func TestCompileResultSubtitleContractMatchesSubtitleAsset(t *testing.T) {
 			if err != nil {
 				t.Fatalf("CompileSemantic: %v", err)
 			}
-			hash, burn, ok, err := SubtitleAsset(raw)
+			hash, fontHash, burn, ok, err := SubtitleAsset(raw)
 			if err != nil {
 				t.Fatalf("SubtitleAsset: %v", err)
 			}
-			if result.Subtitle.Present != ok || result.Subtitle.Burn != burn || result.Subtitle.Hash != hash {
-				t.Fatalf("subtitle contract drift: result=%+v standalone=(hash=%q burn=%v ok=%v)",
-					result.Subtitle, hash, burn, ok)
+			if result.Subtitle.Present != ok || result.Subtitle.Burn != burn ||
+				result.Subtitle.Hash != hash || result.Subtitle.FontHash != fontHash {
+				t.Fatalf("subtitle contract drift: result=%+v standalone=(hash=%q font_hash=%q burn=%v ok=%v)",
+					result.Subtitle, hash, fontHash, burn, ok)
 			}
 			if ok != tc.wantPresent || burn != tc.wantBurn {
 				t.Fatalf("contract = (present=%v burn=%v), want (present=%v burn=%v)",

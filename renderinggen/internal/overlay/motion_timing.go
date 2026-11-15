@@ -38,8 +38,10 @@ func entranceFrames(authored, exitFrames int, duration int64, phraseEntranceFloo
 	return target
 }
 
-// appendExitTracks mirrors authored entrance tracks into the reserved exit
-// window and guarantees an explicit opacity fade to zero.
+// appendExitTracks reserves the exit window and guarantees an explicit opacity
+// fade to zero. Non-opacity tracks are HELD at their final value for the whole
+// window: mirroring them back to the entrance drove settled phrases through the
+// authoring gray and off their layout before the clip ended.
 func appendExitTracks(tracks []AnimationTrack, exitFrames int, duration int64) []AnimationTrack {
 	if exitFrames <= 0 || duration <= 1 || int64(exitFrames) >= duration {
 		return tracks
@@ -59,9 +61,10 @@ func appendExitTracks(tracks []AnimationTrack, exitFrames int, duration int64) [
 			out = append(out, track)
 			continue
 		}
+		held := track.Keyframes[len(track.Keyframes)-1].Value
 		track.Keyframes = append(track.Keyframes,
-			AnimationKeyframe{Frame: start, Value: track.Keyframes[len(track.Keyframes)-1].Value},
-			AnimationKeyframe{Frame: last, Value: track.Keyframes[0].Value})
+			AnimationKeyframe{Frame: start, Value: held},
+			AnimationKeyframe{Frame: last, Value: held})
 		out = append(out, track)
 	}
 	if !hasOpacity {

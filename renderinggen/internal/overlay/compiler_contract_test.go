@@ -86,6 +86,47 @@ func TestCompileSemanticTextMotionProducesAnimatorContract(t *testing.T) {
 	}
 }
 
+// A producer-reserved phrase exit must fade opacity only and HOLD every other
+// track at its settled value. Mirroring the entrance is what dragged phrases
+// back through the authoring gray and off their layout before the clip ended.
+func TestCompileSemanticPhraseExitFadesOpacityAndHoldsLayout(t *testing.T) {
+	raw := []byte(`{"schema_version":"renderinggen.overlay-plan.v1","plan_id":"phrase-exit-opacity","video_id":"v","width":1920,"height":1080,"fps_num":24,"fps_den":1,"items":[{"id":"phrase","template_id":"IMPORTANT_PHRASE","preset_id":"phrase_default","motion_id":"phrase_apple_clean_15_scale_hero_focus","motion_params":{"enter_frames":8,"exit_frames":8},"text":"Tokyo ended the unbeaten run","start_ms":0,"end_ms":2000}]}`)
+	result, err := CompileSemantic(raw)
+	if err != nil {
+		t.Fatal(err)
+	}
+	layer := result.Plan.Layers[0]
+	if layer.Animation == nil {
+		t.Fatal("phrase motion must include a layer animation")
+	}
+	var opacity *AnimationTrack
+	for i := range layer.Animation.Tracks {
+		track := &layer.Animation.Tracks[i]
+		if track.Property == "opacity" {
+			opacity = track
+			continue
+		}
+		if len(track.Keyframes) < 2 {
+			continue
+		}
+		last := track.Keyframes[len(track.Keyframes)-1]
+		previous := track.Keyframes[len(track.Keyframes)-2]
+		if last.Frame != 47 || last.Value != previous.Value {
+			t.Fatalf("non-opacity track %q must hold its settled value through the exit: %+v", track.Property, track.Keyframes)
+		}
+	}
+	if opacity == nil || len(opacity.Keyframes) < 4 {
+		t.Fatalf("opacity exit track = %+v, want fade-in, hold and fade-out", opacity)
+	}
+	last := opacity.Keyframes[len(opacity.Keyframes)-1]
+	if last.Frame != 47 || last.Value != 0.0 {
+		t.Fatalf("phrase opacity exit = %+v, want last frame 47 at 0.0", opacity.Keyframes)
+	}
+	if opacity.Keyframes[len(opacity.Keyframes)-2].Frame != 40 || opacity.Keyframes[len(opacity.Keyframes)-2].Value != 1.0 {
+		t.Fatalf("phrase opacity exit start = %+v, want frame 40 at 1.0", opacity.Keyframes)
+	}
+}
+
 func TestCompileSemanticPhraseMotionReplacesExistingOpacityWithEntryExit(t *testing.T) {
 	raw := []byte(`{"schema_version":"renderinggen.overlay-plan.v1","plan_id":"phrase-exit","video_id":"v","width":1920,"height":1080,"fps_num":24,"fps_den":1,"items":[{"id":"phrase","template_id":"IMPORTANT_PHRASE","preset_id":"phrase_default","motion_id":"soft_edge_spotlight_dissolve","text":"Tokyo ended the unbeaten run","start_ms":0,"end_ms":2000}]}`)
 	result, err := CompileSemantic(raw)

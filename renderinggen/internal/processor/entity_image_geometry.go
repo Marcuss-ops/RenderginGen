@@ -35,7 +35,16 @@ func fitEntityImageLayersToAssets(root string, plan *overlay.Plan) (bool, error)
 		if err != nil {
 			return false, fmt.Errorf("processor: read entity image layer %q dimensions: %w", layer.ID, err)
 		}
-		if err := overlay.FitEntityImageLayerToAsset(layer, sourceWidth, sourceHeight); err != nil {
+		if float64(sourceWidth)/float64(sourceHeight) >= 1.2 {
+			width := int(float64(plan.Canvas.Width) * 0.25)
+			height := max(1, width*9/16)
+			if width <= 0 {
+				return false, fmt.Errorf("processor: invalid canvas width %d for entity image layer %q", plan.Canvas.Width, layer.ID)
+			}
+			layer.BoxWidth, layer.BoxHeight = width, height
+			layer.Size = []float64{float64(width), float64(height)}
+			layer.Fit = overlay.FitCover
+		} else if err := overlay.FitEntityImageLayerToAsset(layer, sourceWidth, sourceHeight); err != nil {
 			return false, fmt.Errorf("processor: fit entity image layer %q to source aspect: %w", layer.ID, err)
 		}
 		if err := overlay.ResizePremiumImageMask(layer); err != nil {

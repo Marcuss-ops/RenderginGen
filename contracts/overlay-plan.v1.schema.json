@@ -1094,12 +1094,14 @@
     "layer_effect": {
       "type": "object",
       "additionalProperties": false,
+      "description": "Ordered visual effect stack for one layer. An absent or empty stack is the default (no effect); \"none\" makes that default explicit and must stand alone, with no parameters.",
       "required": [
         "type"
       ],
       "properties": {
         "type": {
           "enum": [
+            "none",
             "archive_print",
             "vintage_film_projection",
             "noise",
@@ -1610,6 +1612,10 @@
             "burn",
             "sidecar"
           ]
+        },
+        "font_ref": {
+          "$ref": "#/properties/items/items/properties/asset_refs/items",
+          "description": "Font asset used to burn the cues. The worker never picks a font on its own."
         },
         "style": {
           "type": "object"
@@ -2127,6 +2133,25 @@
               "chart_group_id": {
                 "type": "string",
                 "description": "Atomic grouping key linking one chart_card label to its chart_bar rects."
+              },
+              "map_type": {
+                "type": "string",
+                "enum": [
+                  "classic",
+                  "ModernMap1"
+                ],
+                "description": "Map presentation family. classic is the default raster map (operator-supplied PNG plate, pins and optional camera LODs). ModernMap1 is the vector map: it resolves params.map_place against the local Natural Earth catalog and draws only that territory, fitted to the canvas, with no raster asset. A map item without map_type keeps the classic behaviour."
+              },
+              "map_place": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200,
+                "description": "Natural Earth selector for map_type=ModernMap1: a country name (Italy), a country id, or an admin1 id such as admin1:Bahia. The feature is resolved locally and never fetched."
+              },
+              "map_logo": {
+                "type": "string",
+                "minLength": 1,
+                "description": "Optional asset_id of a declared image/png for map_type=ModernMap1. The emblem is centred inside the largest territory and scaled to it. RenderingGen never downloads a logo; an absent asset means no logo layer."
               },
               "font_family": {
                 "enum": [

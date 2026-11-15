@@ -37,7 +37,7 @@ func validateSemanticImageLayers(item semanticItem, kind ItemKind) error {
 	// Entity groups reuse the composite member rules verbatim: members are
 	// validated here, slot geometry is applied at lowering. The 2..5 group
 	// cardinality itself is enforced by compileEntityGroup.
-	if behavior, layers, assets := behaviorOf(kind), len(item.ImageLayers), len(item.Assets); (behavior != behaviorImage && behavior != behaviorGroup) || layers < 2 || assets < 2 {
+	if behavior, layers, assets := behaviorOf(kind), len(item.ImageLayers), len(item.Assets); (behavior != behaviorImage && behavior != behaviorEntity && behavior != behaviorGroup) || layers < 2 || assets < 2 {
 		return fmt.Errorf("overlay: item %q image_layers require an image item with at least two layers and assets", item.ID)
 	}
 	maximumImages := maxImageCompositionCount()

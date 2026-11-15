@@ -7,10 +7,11 @@ import (
 )
 
 const (
-	maxRuntimeGlowSize   = 256.0
-	maxRuntimeStrokeSize = 64.0
-	maxRuntimeFontSize   = 512.0
-	maxRuntimeShadowSize = 256.0
+	maxRuntimeGlowSize      = 256.0
+	maxRuntimeGlowIntensity = 4.0
+	maxRuntimeStrokeSize    = 64.0
+	maxRuntimeFontSize      = 512.0
+	maxRuntimeShadowSize    = 256.0
 )
 
 // validateTextRuntimeOverrides accepts only controls the compiler can lower
@@ -282,6 +283,7 @@ var runtimeUnsupportedTextStyleKeys = []string{
 var runtimeImageStyleKeys = []string{
 	"width", "height", "position_x", "position_y", "radius",
 	"bounded", "fit",
+	"image_glow_radius", "image_glow_intensity", "image_glow_color",
 	"border_width", "border_color", "border_radius",
 	"stroke_width", "stroke_color",
 	"shadow_enabled", "shadow_color", "shadow_opacity", "shadow_blur",
@@ -341,6 +343,21 @@ func validateRuntimeImageStyleKey(key string, value any, itemID string) error {
 		fit, ok := value.(string)
 		if !ok || (fit != "cover" && fit != "contain" && fit != "fill") {
 			return fmt.Errorf("overlay: item %q params.fit must be cover, contain or fill", itemID)
+		}
+	case "image_glow_radius":
+		n, ok := numericValue(value)
+		if !ok || !finite(n) || n < 0 || n > maxRuntimeGlowSize {
+			return fmt.Errorf("overlay: item %q params.%s must be within [0,%g]", itemID, key, maxRuntimeGlowSize)
+		}
+	case "image_glow_intensity":
+		n, ok := numericValue(value)
+		if !ok || !finite(n) || n < 0 || n > maxRuntimeGlowIntensity {
+			return fmt.Errorf("overlay: item %q params.%s must be within [0,%g]", itemID, key, maxRuntimeGlowIntensity)
+		}
+	case "image_glow_color":
+		color, ok := value.(string)
+		if !ok || !isHexColor(color) {
+			return fmt.Errorf("overlay: item %q params.%s must be #RRGGBB", itemID, key)
 		}
 	case "shadow_opacity":
 		n, ok := numericValue(value)

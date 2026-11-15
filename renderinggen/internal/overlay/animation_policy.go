@@ -107,7 +107,7 @@ func resolveAnimationPolicies(src *semanticPlan) error {
 			return fmt.Errorf("overlay: item %q caption motion %q is not supported for text captions", item.ID, item.CaptionMotionID)
 		}
 		if len(item.ImageLayers) > 0 {
-			if item.MotionID == "" {
+			if item.MotionID == "" && item.CameraMotionID == "" {
 				if policy, ok := selectAnimationPolicy(policies, TargetImage, item.GroupID, item.SubgroupID); ok && policy.MotionID != "" && animationUsesMultiImageRecipe(policy.MotionID) {
 					item.MotionID, item.MotionParams = resolvePolicyMotion(src, policy, TargetImage, item.GroupID, item.SubgroupID)
 				}
@@ -126,7 +126,7 @@ func resolveAnimationPolicies(src *semanticPlan) error {
 				if err := validateAnimationGroupIDs(child.GroupID, child.SubgroupID); err != nil {
 					return fmt.Errorf("overlay: item %q image layer %q: %w", item.ID, child.ID, err)
 				}
-				if child.MotionID == "" && !multiImageMotion {
+				if child.MotionID == "" && !multiImageMotion && item.CameraMotionID == "" {
 					if policy, ok := selectAnimationPolicy(policies, TargetImage, child.GroupID, child.SubgroupID); ok && (policy.MotionID == "" || !animationUsesMultiImageRecipe(policy.MotionID)) {
 						child.MotionID, child.MotionParams = resolvePolicyMotion(src, policy, TargetImage, child.GroupID, child.SubgroupID)
 					}
