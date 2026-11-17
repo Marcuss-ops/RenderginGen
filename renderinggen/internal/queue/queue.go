@@ -204,6 +204,13 @@ func (c *Client) RecoverableParents(ctx context.Context) ([]string, error) {
 	return c.q.RecoverableParents(ctx)
 }
 
+// Cancel terminalizes a job that can never be assembled. The worker uses it to
+// clear a chunk family whose child failed permanently, instead of letting the
+// surviving chunks hold queue depth forever (2026-11-16 orphan-chunk block).
+func (c *Client) Cancel(ctx context.Context, id string) error {
+	return c.q.Cancel(ctx, id)
+}
+
 // ReportProgress records live render progress (last frame position) for a
 // running job owned by this worker. The wire contract lives in the public
 // queue client; this adapter only fills in the worker identity.

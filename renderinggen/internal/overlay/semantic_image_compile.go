@@ -208,6 +208,10 @@ func compileLegacyCompositeImageLayers(ri resolvedItem, src *semanticPlan, regis
 	assets := resolveAssetPaths(registry, ri.Item.Assets)
 
 	layers := make([]Layer, 0, len(ri.Item.ImageLayers)*2)
+	// The grid is a full-canvas screen-space layer bound to the item lifetime,
+	// so a composite must draw exactly one copy no matter how many children
+	// declare it. Children are collected here and lowered once after the loop.
+	var gridSource *resolvedItem
 	for index, child := range ri.Item.ImageLayers {
 		childResolved, assetPath, preset, err := resolveImageChild(ri, assets, child, src, imageChildOptions{
 			sequence: ri.Item.CameraMotionID != "",
@@ -277,11 +281,8 @@ func compileLegacyCompositeImageLayers(ri resolvedItem, src *semanticPlan, regis
 				return nil, err
 			}
 		}
-		if _, hasChildGrid := params["grid"]; hasChildGrid {
-			decorated, err = addStandaloneImageGrid(childResolved, src, decorated)
-			if err != nil {
-				return nil, err
-			}
+		if _, hasChildGrid := params["grid"]; hasChildGrid && gridSource == nil {
+			gridSource = &childResolved
 		}
 		layers = append(layers, decorated...)
 		if caption := strings.TrimSpace(child.Caption); caption != "" {
@@ -336,6 +337,13 @@ func compileLegacyCompositeImageLayers(ri resolvedItem, src *semanticPlan, regis
 			}
 			layers = append(layers, captionLayer)
 		}
+	}
+	// One grid per item. An item-level params.grid is lowered by the caller
+	// (compileImageItem / the group path) after this function returns, so only
+	// a legacy payload that declared the block on a child is lowered here —
+	// exactly once, for the first child that asked, instead of once per member.
+	if _, itemGrid := ri.Params["grid"]; !itemGrid && gridSource != nil {
+		return addStandaloneImageGrid(*gridSource, src, layers)
 	}
 	return layers, nil
 }

@@ -10,6 +10,7 @@ import (
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/testenv"
 	"image"
 	"image/png"
+	"math"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -186,6 +187,147 @@ func TestSourceFrameRuntimePixels(t *testing.T) {
 	t.Logf("mixed rounded edge pixels: %d", softEdgePixels)
 	if softEdgePixels == 0 {
 		t.Error("rounded clip edge has no mixed red/white pixels; expected feathered coverage")
+	}
+}
+
+// TestSourceFrameShadowStackRuntimePixels closes the loop the contract tests
+// cannot: a `frame.shadows` stack compiled by RenderingGen and rendered by the
+// real engine must actually paint three separate lobes around the card, without
+// touching the card itself. It renders the same plan twice — with and without
+// the stack — and compares the frames, so the assertion never depends on the
+// exact blur kernel: only on where the declaration may add coverage.
+func TestSourceFrameShadowStackRuntimePixels(t *testing.T) {
+	bin := chrononBinFor(t)
+	testenv.RequireTools(t, "ffmpeg")
+
+	assetsRoot := t.TempDir()
+	assetPath := filepath.Join(assetsRoot, "assets", "semantic", "stack-source.mp4")
+	if err := os.MkdirAll(filepath.Dir(assetPath), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	generate := exec.Command("ffmpeg", "-hide_banner", "-loglevel", "error",
+		"-f", "lavfi", "-i", "color=c=0xD02020:s=640x360:r=24:d=1",
+		"-frames:v", "24", "-an", "-c:v", "libx264", "-preset", "ultrafast",
+		"-threads", "1", "-pix_fmt", "yuv420p", "-y", assetPath)
+	if output, err := generate.CombinedOutput(); err != nil {
+		t.Fatalf("generate one-second source fixture: %v\n%s", err, tailBytes(output))
+	}
+	assetBytes, err := os.ReadFile(assetPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	digest := sha256.Sum256(assetBytes)
+
+	plan := func(shadows string) []byte {
+		return []byte(fmt.Sprintf(`{
+			"schema_version":"renderinggen.overlay-plan.v1",
+			"plan_id":"shadow-stack-runtime",
+			"video_id":"stack-source",
+			"width":640,"height":360,"fps_num":24,"fps_den":1,"duration_ms":1000,
+			"source":{"asset_id":"stack-source","path":"assets/semantic/stack-source.mp4","sha256":"%s"},
+			"foreground_scale_percent":80,
+			"source_frame":{
+				"border":{"width_px":8,"color":"#FFFFFF","radius_px":24}%s
+			},
+			"background":{"kind":"color","color":[0.02,0.04,0.2,1]},
+			"items":[]
+		}`, hex.EncodeToString(digest[:]), shadows))
+	}
+	stack := `,
+				"shadows":[
+					{"color":"#000000","opacity":0.5,"blur_px":10,"offset_x_px":0,"offset_y_px":14},
+					{"color":"#1040C0","opacity":0.6,"blur_px":14,"offset_x_px":-22,"offset_y_px":8},
+					{"color":"#C04010","opacity":0.6,"blur_px":14,"offset_x_px":22,"offset_y_px":8}
+				]`
+
+	renderPlan := func(name string, raw []byte) image.Image {
+		compiled, err := CompileSemantic(raw)
+		if err != nil {
+			t.Fatalf("compile %s: %v", name, err)
+		}
+		planPath := filepath.Join(assetsRoot, name+"-plan.json")
+		planBytes, err := json.MarshalIndent(compiled.Plan, "", "  ")
+		if err != nil {
+			t.Fatalf("marshal %s plan: %v", name, err)
+		}
+		if err := os.WriteFile(planPath, planBytes, 0o600); err != nil {
+			t.Fatal(err)
+		}
+		outputPath := filepath.Join(assetsRoot, name+".mp4")
+		ctx, cancel := context.WithTimeout(context.Background(), 120*time.Second)
+		defer cancel()
+		render := exec.CommandContext(ctx, bin,
+			"render", "--plan", planPath, "--assets-root", assetsRoot,
+			"--backend", "software", "--encoder-backend", "pipe",
+			"--hardware", "none", "--gpu-hot-path-mode", "auto",
+			"--encode-preset", "ultrafast", "-o", outputPath)
+		render.Dir = assetsRoot
+		if output, err := render.CombinedOutput(); err != nil {
+			t.Fatalf("Chronon %s render: %v\n%s", name, err, tailBytes(output))
+		}
+		frame, err := png.Decode(bytes.NewReader(extractFramePNG(t, outputPath, 0)))
+		if err != nil {
+			t.Fatalf("decode %s frame: %v", name, err)
+		}
+		return frame
+	}
+
+	control := renderPlan("control", plan(""))
+	stacked := renderPlan("stack", plan(stack))
+
+	// The centered 80% foreground card occupies (64,36)-(576,324); its 8px
+	// border puts the visible plate at (56,28)-(584,332).
+	plate := image.Rect(56, 28, 584, 332)
+	changed, plateDrift := 0, 0
+	band := func(bounds image.Rectangle) rgbAverage {
+		var sum rgbAverage
+		count := 0.0
+		for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
+			for x := bounds.Min.X; x < bounds.Max.X; x++ {
+				sr, sg, sb, _ := stacked.At(x, y).RGBA()
+				cr, cg, cb, _ := control.At(x, y).RGBA()
+				shift := rgbAverage{
+					r: float64(sr>>8) - float64(cr>>8),
+					g: float64(sg>>8) - float64(cg>>8),
+					b: float64(sb>>8) - float64(cb>>8),
+				}
+				delta := math.Abs(shift.r) + math.Abs(shift.g) + math.Abs(shift.b)
+				if delta > 12 {
+					changed++
+					if image.Pt(x, y).In(plate) {
+						plateDrift++
+					}
+				}
+				sum.r += shift.r
+				sum.g += shift.g
+				sum.b += shift.b
+				count++
+			}
+		}
+		if count > 0 {
+			sum.r /= count
+			sum.g /= count
+			sum.b /= count
+		}
+		return sum
+	}
+
+	left := band(image.Rect(16, 90, 48, 270))
+	right := band(image.Rect(592, 90, 624, 270))
+	t.Logf("changed=%d plateDrift=%d left dRGB=%.2f/%.2f/%.2f right dRGB=%.2f/%.2f/%.2f",
+		changed, plateDrift, left.r, left.g, left.b, right.r, right.g, right.b)
+
+	if changed < 1500 {
+		t.Errorf("frame.shadows changed only %d pixels; the stack did not reach the engine", changed)
+	}
+	if plateDrift > 200 {
+		t.Errorf("the shadow stack altered %d pixels inside the card; a drop shadow must not paint over its own layer", plateDrift)
+	}
+	if left.b < left.r+5 {
+		t.Errorf("left band is not tinted by the blue offset [-22] shadow: dRGB=%.2f/%.2f/%.2f", left.r, left.g, left.b)
+	}
+	if right.r < right.b+5 {
+		t.Errorf("right band is not tinted by the red offset [22] shadow: dRGB=%.2f/%.2f/%.2f", right.r, right.g, right.b)
 	}
 }
 

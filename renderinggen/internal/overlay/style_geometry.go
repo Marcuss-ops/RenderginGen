@@ -2,6 +2,7 @@ package overlay
 
 import (
 	"fmt"
+	"math"
 	"strings"
 )
 
@@ -71,6 +72,57 @@ func watermarkMargin(marginPX *int) (int, error) {
 	return *marginPX, nil
 }
 
+// watermarkTextPadding reserves room for the declared stroke and shadow so the
+// derived box fits the painted ink, not only the glyph advances.
+func watermarkTextPadding(s *styleBlock) float64 {
+	if s == nil {
+		return 0
+	}
+	pad := 0.0
+	if s.Stroke != nil {
+		pad += 2 * s.Stroke.Width
+	}
+	if s.Shadow != nil {
+		pad += s.Shadow.BlurPX + math.Abs(s.Shadow.OffsetX) + math.Abs(s.Shadow.OffsetY)
+	}
+	return pad
+}
+
+// textWatermarkBox derives the box for a TEXT watermark from the string and
+// typography the plan declares. Producer-owned values (font size, position,
+// margin, explicit width_px/height_px) are untouched: this only sizes the
+// implicit box so the authored text keeps its authored size on one line when
+// the canvas can hold it. A nominal canvas/6 box wrapped long strings and the
+// wrapped line was then clipped. If the text cannot fit the canvas, the width
+// is clamped to the available area and the height grows by the wrapped line
+// count so no line is cut off vertically.
+func textWatermarkBox(canvasW, canvasH, margin int, text string, s *styleBlock) (float64, float64) {
+	fontSize, err := effectiveFontSize(s)
+	if err != nil {
+		return float64(canvasW) / WatermarkBoxWidthDivisor, DefaultWatermarkBoxHeight
+	}
+	pad := watermarkTextPadding(s)
+	availableW := float64(canvasW-2*margin) - pad
+	if availableW < 1 {
+		availableW = math.Max(1, float64(canvasW)-pad)
+	}
+	naturalW := estimatedTextWidth(text, fontSize)*WatermarkTextWidthSafetyFactor + pad
+	boxW := math.Max(float64(canvasW)/WatermarkBoxWidthDivisor, math.Ceil(naturalW))
+	lines := 1
+	if boxW > availableW {
+		boxW = availableW
+		_, lines = wrapPhraseByPixelBudget(text, math.Max(1, boxW-pad), fontSize)
+		if lines < 1 {
+			lines = 1
+		}
+	}
+	boxH := math.Max(DefaultWatermarkBoxHeight, float64(lines)*fontSize*WatermarkTextLineHeightFactor+pad)
+	if availableH := float64(canvasH-2*margin) - pad; availableH > 0 && boxH > availableH {
+		boxH = availableH
+	}
+	return boxW, boxH
+}
+
 // resolveWatermarkGeometry converts the requested position name and the plan's
 // typed geometry (width/height, margin) into BOTH concrete outputs a watermark
 // layer needs: the [x, y] top-left box origin in canvas coordinates, and the
@@ -84,13 +136,17 @@ func watermarkMargin(marginPX *int) (int, error) {
 // derived the size a second time, the layer's declared size and the box the
 // position was computed against were two independent copies of one rule and
 // could drift; this function is the single owner of both.
-func resolveWatermarkGeometry(position string, canvasW, canvasH, margin int, s *styleBlock) (pos, size []float64, err error) {
+func resolveWatermarkGeometry(position string, canvasW, canvasH, margin int, text string, s *styleBlock) (pos, size []float64, err error) {
 	if strings.TrimSpace(position) == "" {
 		return nil, nil, fmt.Errorf("overlay: watermark position is required (layout is owned by PipelineGen)")
 	}
-	// Box: the plan's explicit geometry when provided, otherwise derived
-	// from canvas size (geometry implied by the request, not a visual style).
+	// Box: the plan's explicit geometry when provided, otherwise derived from
+	// the declared text and canvas size (geometry implied by the request, not a
+	// visual style). An image watermark has no text and keeps the nominal box.
 	boxW, boxH := float64(canvasW)/WatermarkBoxWidthDivisor, DefaultWatermarkBoxHeight
+	if strings.TrimSpace(text) != "" {
+		boxW, boxH = textWatermarkBox(canvasW, canvasH, margin, text, s)
+	}
 	if s != nil && s.WidthPX > 0 {
 		boxW = float64(s.WidthPX)
 	}

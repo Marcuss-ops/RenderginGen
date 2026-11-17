@@ -300,6 +300,7 @@ func compileSemanticDecoded(src *semanticPlan) (*Plan, []Asset, Stats, []string,
 	}
 
 	finalizeLayerDurations(&plan, sourceLayerIndex)
+	ensureClipGridOnTop(&plan)
 	if plan.Canvas.DurationFrames <= 0 {
 		return nil, nil, Stats{}, nil, fmt.Errorf("overlay: semantic plan duration is zero — provide duration_ms or at least one item with end_ms > 0")
 	}

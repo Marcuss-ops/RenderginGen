@@ -367,11 +367,16 @@ type semanticSource struct {
 // semanticSourceFrame is the producer-owned card declaration of a media layer
 // (the source clip and, per item, a video overlay). Both surfaces share one
 // declaration shape: `source_frame` at plan level and `frame` on the item.
+//
+// The card may declare one shadow (`shadow`) or a stack of up to three
+// (`shadows`). The two are mutually exclusive because the renderer's style
+// contract is: a plan that declares both cannot say which stack it means.
 type semanticSourceFrame struct {
-	Border       *semanticFrameBorder `json:"border,omitempty"`
-	Shadow       *semanticFrameShadow `json:"shadow,omitempty"`
-	Stroke       *semanticFrameStroke `json:"stroke,omitempty"`
-	ClipRadiusPX float64              `json:"clip_radius_px,omitempty"`
+	Border       *semanticFrameBorder  `json:"border,omitempty"`
+	Shadow       *semanticFrameShadow  `json:"shadow,omitempty"`
+	Shadows      []semanticFrameShadow `json:"shadows,omitempty"`
+	Stroke       *semanticFrameStroke  `json:"stroke,omitempty"`
+	ClipRadiusPX float64               `json:"clip_radius_px,omitempty"`
 }
 
 // semanticFrameStroke is an outline painted over the clip perimeter.
@@ -1031,17 +1036,21 @@ const (
 )
 
 type LayerStyle struct {
-	Font        string           `json:"font,omitempty"`
-	FontSize    float64          `json:"font_size,omitempty"`
-	Fill        string           `json:"fill,omitempty"`
-	TextAlign   string           `json:"text_align,omitempty"`
-	FitMode     string           `json:"fit_mode,omitempty"`
-	MinFontSize float64          `json:"min_font_size,omitempty"`
-	MaxFontSize float64          `json:"max_font_size,omitempty"`
-	Stroke      *LayerStroke     `json:"stroke,omitempty"`
-	Shadow      *LayerShadow     `json:"shadow,omitempty"`
-	Glow        *LayerGlow       `json:"glow,omitempty"`
-	Background  *LayerBackground `json:"background,omitempty"`
+	Font        string       `json:"font,omitempty"`
+	FontSize    float64      `json:"font_size,omitempty"`
+	Fill        string       `json:"fill,omitempty"`
+	TextAlign   string       `json:"text_align,omitempty"`
+	FitMode     string       `json:"fit_mode,omitempty"`
+	MinFontSize float64      `json:"min_font_size,omitempty"`
+	MaxFontSize float64      `json:"max_font_size,omitempty"`
+	Stroke      *LayerStroke `json:"stroke,omitempty"`
+	Shadow      *LayerShadow `json:"shadow,omitempty"`
+	// Shadows is the multi-shadow form of the renderer's style contract: an
+	// ordered stack of at most three drop shadows. The engine rejects a layer
+	// that declares both shadow and shadows, so the compiler never emits both.
+	Shadows    []LayerShadow    `json:"shadows,omitempty"`
+	Glow       *LayerGlow       `json:"glow,omitempty"`
+	Background *LayerBackground `json:"background,omitempty"`
 }
 
 // LayerBackground is the rounded, padded plate the renderer paints behind a

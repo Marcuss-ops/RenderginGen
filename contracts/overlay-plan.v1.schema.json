@@ -1529,6 +1529,24 @@
             }
           }
         },
+        "shadows": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 3,
+          "description": "Ordered stack of up to three drop shadows. Mutually exclusive with 'shadow': declare one form or the other, never both.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["color"],
+            "properties": {
+              "color": {"type": "string", "pattern": "^#[0-9A-Fa-f]{6}$"},
+              "opacity": {"type": "number", "minimum": 0, "maximum": 1},
+              "blur_px": {"type": "number", "minimum": 0, "maximum": 256},
+              "offset_x_px": {"type": "number", "minimum": -256, "maximum": 256},
+              "offset_y_px": {"type": "number", "minimum": -256, "maximum": 256}
+            }
+          }
+        },
         "clip_radius_px": {
           "type": "number",
           "minimum": 0,
@@ -2437,6 +2455,24 @@
                   }
                 }
               },
+              "shadows": {
+                "type": "array",
+                "minItems": 1,
+                "maxItems": 3,
+                "description": "Ordered stack of up to three drop shadows. Mutually exclusive with 'shadow': declare one form or the other, never both.",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["color"],
+                  "properties": {
+                    "color": {"type": "string", "pattern": "^#[0-9A-Fa-f]{6}$"},
+                    "opacity": {"type": "number", "minimum": 0, "maximum": 1},
+                    "blur_px": {"type": "number", "minimum": 0, "maximum": 256},
+                    "offset_x_px": {"type": "number", "minimum": -256, "maximum": 256},
+                    "offset_y_px": {"type": "number", "minimum": -256, "maximum": 256}
+                  }
+                }
+              },
               "clip_radius_px": {
                 "type": "number",
                 "minimum": 0,
@@ -3090,6 +3126,24 @@
                           "type": "number",
                           "minimum": -256,
                           "maximum": 256
+                        }
+                      }
+                    },
+                    "shadows": {
+                      "type": "array",
+                      "minItems": 1,
+                      "maxItems": 3,
+                      "description": "Ordered stack of up to three drop shadows. Mutually exclusive with 'shadow': declare one form or the other, never both.",
+                      "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": ["color"],
+                        "properties": {
+                          "color": {"type": "string", "pattern": "^#[0-9A-Fa-f]{6}$"},
+                          "opacity": {"type": "number", "minimum": 0, "maximum": 1},
+                          "blur_px": {"type": "number", "minimum": 0, "maximum": 256},
+                          "offset_x_px": {"type": "number", "minimum": -256, "maximum": 256},
+                          "offset_y_px": {"type": "number", "minimum": -256, "maximum": 256}
                         }
                       }
                     },

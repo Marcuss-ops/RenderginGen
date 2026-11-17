@@ -12,6 +12,9 @@ const (
 	maxFrameStrokeWidth  float64 = 64
 	maxFrameShadowBlur   float64 = 256
 	maxFrameShadowOffset float64 = 256
+	// maxFrameShadows mirrors the renderer's style contract, which accepts at
+	// most three drop shadows per layer.
+	maxFrameShadows = 3
 )
 
 // applyFrameTreatment lowers a card declaration (plan-level source_frame or an
@@ -40,8 +43,15 @@ func applyFrameTreatment(layer *Layer, frame *semanticSourceFrame) error {
 	if frame == nil {
 		return nil
 	}
-	if frame.Border == nil && frame.Shadow == nil && frame.Stroke == nil && frame.ClipRadiusPX == 0 {
-		return fmt.Errorf("frame requires border, shadow, stroke, or clip_radius_px")
+	if frame.Shadow != nil && len(frame.Shadows) > 0 {
+		return fmt.Errorf("frame accepts either shadow or shadows, not both")
+	}
+	if len(frame.Shadows) > maxFrameShadows {
+		return fmt.Errorf("frame shadows accepts at most %d entries", maxFrameShadows)
+	}
+	if frame.Border == nil && frame.Shadow == nil && len(frame.Shadows) == 0 &&
+		frame.Stroke == nil && frame.ClipRadiusPX == 0 {
+		return fmt.Errorf("frame requires border, shadow, shadows, stroke, or clip_radius_px")
 	}
 	if frame.Stroke != nil {
 		stroke := frame.Stroke
@@ -94,29 +104,51 @@ func applyFrameTreatment(layer *Layer, frame *semanticSourceFrame) error {
 		layer.FrameStroke = &LayerStroke{Color: frame.Stroke.Color, Width: frame.Stroke.WidthPX}
 	}
 	if frame.Shadow != nil {
-		shadow := frame.Shadow
-		if !isHexColor(shadow.Color) {
-			return fmt.Errorf("frame shadow color %q must be #RRGGBB", shadow.Color)
+		lowered, err := lowerFrameShadow(frame.Shadow, "frame shadow")
+		if err != nil {
+			return err
 		}
-		if !finite(shadow.Opacity) || shadow.Opacity < 0 || shadow.Opacity > 1 {
-			return fmt.Errorf("frame shadow opacity must be within [0,1]")
+		ensureLayerStyle(layer).Shadow = lowered
+	}
+	if len(frame.Shadows) > 0 {
+		lowered := make([]LayerShadow, 0, len(frame.Shadows))
+		for index := range frame.Shadows {
+			label := fmt.Sprintf("frame shadows[%d]", index)
+			shadow, err := lowerFrameShadow(&frame.Shadows[index], label)
+			if err != nil {
+				return err
+			}
+			lowered = append(lowered, *shadow)
 		}
-		if !finite(shadow.BlurPX) || shadow.BlurPX < 0 || shadow.BlurPX > maxFrameShadowBlur {
-			return fmt.Errorf("frame shadow blur_px must be within [0,%g]", maxFrameShadowBlur)
-		}
-		if !finite(shadow.OffsetXP) || math.Abs(shadow.OffsetXP) > maxFrameShadowOffset ||
-			!finite(shadow.OffsetYP) || math.Abs(shadow.OffsetYP) > maxFrameShadowOffset {
-			return fmt.Errorf("frame shadow offsets must be within ±%g", maxFrameShadowOffset)
-		}
-		style := ensureLayerStyle(layer)
-		style.Shadow = &LayerShadow{
-			Color:   shadow.Color,
-			Opacity: shadow.Opacity,
-			Blur:    shadow.BlurPX,
-			Offset:  []float64{shadow.OffsetXP, shadow.OffsetYP},
-		}
+		ensureLayerStyle(layer).Shadows = lowered
 	}
 	return nil
+}
+
+// lowerFrameShadow validates one semantic shadow declaration and lowers it to
+// the renderer's style contract. It is the single owner of the per-shadow
+// bounds: the singular `shadow` and every entry of `shadows` go through it, so
+// a stack entry can never be validated more loosely than the single form.
+func lowerFrameShadow(shadow *semanticFrameShadow, label string) (*LayerShadow, error) {
+	if !isHexColor(shadow.Color) {
+		return nil, fmt.Errorf("%s color %q must be #RRGGBB", label, shadow.Color)
+	}
+	if !finite(shadow.Opacity) || shadow.Opacity < 0 || shadow.Opacity > 1 {
+		return nil, fmt.Errorf("%s opacity must be within [0,1]", label)
+	}
+	if !finite(shadow.BlurPX) || shadow.BlurPX < 0 || shadow.BlurPX > maxFrameShadowBlur {
+		return nil, fmt.Errorf("%s blur_px must be within [0,%g]", label, maxFrameShadowBlur)
+	}
+	if !finite(shadow.OffsetXP) || math.Abs(shadow.OffsetXP) > maxFrameShadowOffset ||
+		!finite(shadow.OffsetYP) || math.Abs(shadow.OffsetYP) > maxFrameShadowOffset {
+		return nil, fmt.Errorf("%s offsets must be within ±%g", label, maxFrameShadowOffset)
+	}
+	return &LayerShadow{
+		Color:   shadow.Color,
+		Opacity: shadow.Opacity,
+		Blur:    shadow.BlurPX,
+		Offset:  []float64{shadow.OffsetXP, shadow.OffsetYP},
+	}, nil
 }
 
 // frameFromImageParams synthesizes a card Frame from the flat image runtime
@@ -179,6 +211,14 @@ func frameFromImageParams(params map[string]any, existing *semanticSourceFrame) 
 		if out.Stroke.Color == "" {
 			out.Stroke.Color = "#FFFFFF"
 		}
+	}
+	// An explicit `frame.shadows` stack is authoritative: the flat single-shadow
+	// keys cannot describe more than one shadow, and mixing the two forms would
+	// produce a declaration the renderer rejects outright.
+	if len(out.Shadows) > 0 && (has("shadow_enabled") || has("shadow_color") ||
+		has("shadow_opacity") || has("shadow_blur") || has("shadow_offset_x") ||
+		has("shadow_offset_y")) {
+		return out
 	}
 	if has("shadow_enabled") || has("shadow_color") || has("shadow_opacity") || has("shadow_blur") || has("shadow_offset_x") || has("shadow_offset_y") {
 		if out.Shadow == nil {

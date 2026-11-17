@@ -112,6 +112,42 @@ func TestEntityGroupPayloadFrameAppliesPerMemberShadowAndBorder(t *testing.T) {
 	}
 }
 
+// TestEntityGroupPayloadFrameAppliesPerMemberShadowStack is the composite
+// surface of the multi-shadow card contract: `image_layers[].frame.shadows`
+// lowers to that member's own style.shadows and never leaks onto its siblings.
+func TestEntityGroupPayloadFrameAppliesPerMemberShadowStack(t *testing.T) {
+	members := groupTestMembers()
+	first := members[0].(map[string]any)
+	first["frame"] = map[string]any{
+		"shadows": []any{
+			map[string]any{"color": "#000000", "opacity": 0.6, "blur_px": 10.0, "offset_x_px": 0.0, "offset_y_px": 12.0},
+			map[string]any{"color": "#1040C0", "opacity": 0.5, "blur_px": 14.0, "offset_x_px": -18.0, "offset_y_px": 6.0},
+		},
+	}
+	result := compileGroupPlan(t, groupTestPlan(nil, members))
+	layers := map[string]*Layer{}
+	for index := range result.Plan.Layers {
+		layers[result.Plan.Layers[index].ID] = &result.Plan.Layers[index]
+	}
+	firstImage := layers["duo:a:image"]
+	if firstImage == nil || firstImage.Style == nil {
+		t.Fatalf("per-member shadow stack did not reach the compiled layer: %+v", result.Plan.Layers)
+	}
+	if firstImage.Style.Shadow != nil {
+		t.Errorf("frame.shadows must not also lower a singular style.shadow: %+v", firstImage.Style.Shadow)
+	}
+	if len(firstImage.Style.Shadows) != 2 {
+		t.Fatalf("per-member style.shadows = %+v, want the two declared shadows", firstImage.Style.Shadows)
+	}
+	if got := firstImage.Style.Shadows[1]; got.Color != "#1040C0" || got.Blur != 14 || got.Offset[0] != -18 {
+		t.Errorf("second shadow = %+v, want the declared colour/blur/offset", got)
+	}
+	if sibling := layers["duo:b:image"]; sibling != nil && sibling.Style != nil &&
+		(len(sibling.Style.Shadows) > 0 || sibling.Style.Shadow != nil) {
+		t.Errorf("the sibling member inherited a shadow stack: %+v", sibling.Style)
+	}
+}
+
 // TestEntityGroupUsesCertifiedCardSlots proves every group size lowers to the
 // same certified 1920x1080 card table used by image-group recipes. This is the
 // single slot source: a divergent second table would place the same trio,

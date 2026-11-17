@@ -58,10 +58,22 @@ const (
 	DefaultTextBoxWidth  = 320
 	DefaultTextBoxHeight = 120
 
-	// Watermark box: the declared width_px/height_px win; otherwise the box is
-	// one sixth of the canvas wide with a fixed nominal height.
+	// Watermark box: the declared width_px/height_px win. An IMAGE watermark
+	// falls back to one sixth of the canvas wide with a fixed nominal height.
+	// A TEXT watermark derives its box from the declared string and font size
+	// (textWatermarkBox): a fixed sixth wraps ordinary strings such as
+	// "OBAMA ARCHIVIO" at 34 px and the wrapped line is then clipped.
 	WatermarkBoxWidthDivisor  = 6
 	DefaultWatermarkBoxHeight = 80.0
+
+	// WatermarkTextWidthSafetyFactor widens the measured text box because the
+	// conservative rune-advance estimator under-measures bold proportional
+	// fonts and Chronon's auto-fit accepts ink only inside 95% of the box.
+	WatermarkTextWidthSafetyFactor = 1.25
+	// WatermarkTextLineHeightFactor is the per-line height reserved when a text
+	// watermark is wider than the canvas allows and has to wrap: the box must
+	// grow vertically instead of clipping the extra lines.
+	WatermarkTextLineHeightFactor = 1.35
 
 	// Subtitle geometry: a fixed line height per cue, and a symmetric safe
 	// margin subtracted from the canvas width to form the text box.

@@ -149,9 +149,20 @@ a punti, o un `dot_radius_px` su uno a linee, viene rifiutato.
 Ombra e contorno sono selezionabili nel payload sia per una foto singola
 (`item.frame`) sia per ogni membro di un composito o gruppo
 (`image_layers[].frame`). `frame` espone `border` (spessore, colore e raggio),
-`shadow` (colore, opacità, blur e offset), `stroke` e `clip_radius_px` per il
-ritaglio arrotondato del bounding box. Le dimensioni e il fit di ciascun box
-restano in `params.width`, `params.height`, `params.fit` e `params.bounded`.
+`shadow` (colore, opacità, blur e offset), `shadows`, `stroke` e
+`clip_radius_px` per il ritaglio arrotondato del bounding box. Le dimensioni e
+il fit di ciascun box restano in `params.width`, `params.height`, `params.fit`
+e `params.bounded`.
+
+`shadows` è la forma multipla della stessa ombra: un array ordinato da 1 a 3
+voci con gli stessi campi di `shadow` (`color` obbligatorio, poi `opacity`
+`0..1`, `blur_px` `0..256`, `offset_x_px`/`offset_y_px` `±256`). Serve per
+ombre stratificate — un contatto scuro più due aloni colorati, per esempio — e
+arriva al renderer come `style.shadows`, dove ogni voce è un'ombra distinta.
+`shadow` e `shadows` sono **mutuamente esclusivi**: dichiararne entrambi è un
+errore di compilazione, non una precedenza silenziosa. I tasti piatti
+`shadow_*` restano la scorciatoia per l'ombra singola e vengono ignorati quando
+il frame dichiara già uno stack esplicito.
 
 Esempio di foto singola:
 
@@ -163,8 +174,13 @@ Esempio di foto singola:
         "line_width_px": 1, "opacity": 0.1}}},
   "frame": {
     "border": {"width_px": 5, "color": "#FFFFFF", "radius_px": 24},
-    "shadow": {"color": "#000000", "opacity": 0.65, "blur_px": 16,
-      "offset_x_px": 0, "offset_y_px": 6},
+    "shadows": [
+      {"color": "#000000", "opacity": 0.6, "blur_px": 10, "offset_y_px": 14},
+      {"color": "#1040C0", "opacity": 0.5, "blur_px": 14, "offset_x_px": -22,
+        "offset_y_px": 8},
+      {"color": "#C04010", "opacity": 0.5, "blur_px": 14, "offset_x_px": 22,
+        "offset_y_px": 8}
+    ],
     "clip_radius_px": 19
   }
 }

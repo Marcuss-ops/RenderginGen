@@ -200,6 +200,92 @@ func TestSourceFrameShadowOnlyLeavesGeometryAlone(t *testing.T) {
 	}
 }
 
+// TestSourceFrameShadowsLowerToStyleShadows is the multi-shadow card contract:
+// a `frame.shadows` stack travels as style.shadows, in declaration order, and
+// never collapses to the singular form the renderer treats as a different
+// declaration.
+func TestSourceFrameShadowsLowerToStyleShadows(t *testing.T) {
+	raw := sourceFramePlan(t,
+		`{"border": {"width_px": 6, "color": "#FFFFFF", "radius_px": 20},
+		  "shadows": [
+		    {"color": "#000000", "opacity": 0.6, "blur_px": 10, "offset_x_px": 0, "offset_y_px": 14},
+		    {"color": "#1040C0", "opacity": 0.5, "blur_px": 14, "offset_x_px": -22, "offset_y_px": 8},
+		    {"color": "#C04010", "opacity": 0.5, "blur_px": 14, "offset_x_px": 22, "offset_y_px": 8}
+		  ]}`,
+		`{"shadow": {"color": "#000000", "opacity": 0.4, "blur_px": 8, "offset_y_px": 4}}`,
+		`"fit": "cover", "scale_percent": 60`)
+
+	layer := compiledLayer(t, raw, "source")
+	if layer.Style == nil {
+		t.Fatal("source layer style missing")
+	}
+	if layer.Style.Shadow != nil {
+		t.Errorf("frame.shadows must not also lower a singular style.shadow: %+v", layer.Style.Shadow)
+	}
+	if len(layer.Style.Shadows) != 3 {
+		t.Fatalf("style.shadows = %+v, want the three declared shadows", layer.Style.Shadows)
+	}
+	want := []struct {
+		color   string
+		blur    float64
+		offsetX float64
+		offsetY float64
+	}{
+		{"#000000", 10, 0, 14},
+		{"#1040C0", 14, -22, 8},
+		{"#C04010", 14, 22, 8},
+	}
+	for index, expected := range want {
+		got := layer.Style.Shadows[index]
+		if got.Color != expected.color || got.Blur != expected.blur {
+			t.Errorf("shadows[%d] = %+v, want color %s blur %v", index, got, expected.color, expected.blur)
+		}
+		if len(got.Offset) != 2 || got.Offset[0] != expected.offsetX || got.Offset[1] != expected.offsetY {
+			t.Errorf("shadows[%d] offset = %v, want [%v %v]", index, got.Offset, expected.offsetX, expected.offsetY)
+		}
+		if got.Opacity != 0.5 && got.Opacity != 0.6 {
+			t.Errorf("shadows[%d] opacity = %v, want the declared value", index, got.Opacity)
+		}
+	}
+	// The declaration must survive the Chronon boundary: the engine only ever
+	// sees the compiled plan, and `style.shadows` is a different contract key
+	// from `style.shadow`.
+	doc := marshalPlan(t, raw)
+	if !strings.Contains(doc, `"shadows":[`) {
+		t.Fatalf("compiled chronon plan carries no style.shadows:\n%s", doc)
+	}
+	if strings.Count(doc, `"shadows":[`) != 1 {
+		t.Errorf("the clip must carry exactly one shadow stack:\n%s", doc)
+	}
+	// The clip's own singular shadow and the item's singular shadow stay as
+	// they were: only the frame that declared the stack changes form.
+	if item := compiledLayer(t, raw, overlayLayerID("overlay-aaaa")); item.Style == nil || item.Style.Shadow == nil {
+		t.Error("the item's own singular frame.shadow must keep lowering to style.shadow")
+	}
+}
+
+// TestSourceFrameShadowStackIsBounded applies to every surface that decodes a
+// frame: the plan-level card and the per-item (video overlay / composite image)
+// card share one declaration and one validator.
+func TestSourceFrameShadowStackIsBounded(t *testing.T) {
+	entry := func(color string) string {
+		return `{"color": "` + color + `", "opacity": 0.5, "blur_px": 8, "offset_y_px": 6}`
+	}
+	four := `{"shadows": [` + entry("#000000") + `,` + entry("#111111") + `,` + entry("#222222") + `,` + entry("#333333") + `]}`
+	if _, err := CompileSemantic(sourceFramePlan(t, four, "", "")); err == nil {
+		t.Fatal("a frame.shadows stack with four entries must be rejected")
+	}
+	if _, err := CompileSemantic(sourceFramePlan(t, `{"shadow": `+entry("#000000")+`, "shadows": [`+entry("#000000")+`]}`, "", "")); err == nil {
+		t.Fatal("declaring both frame.shadow and frame.shadows must be rejected")
+	}
+	// Three entries are the documented maximum and must compile.
+	three := `{"shadows": [` + entry("#000000") + `,` + entry("#111111") + `,` + entry("#222222") + `]}`
+	layer := compiledLayer(t, sourceFramePlan(t, three, "", ""), "source")
+	if layer.Style == nil || len(layer.Style.Shadows) != 3 {
+		t.Fatalf("three shadows must compile to style.shadows, got %+v", layer.Style)
+	}
+}
+
 // TestSourceFrameIsFailClosed pins every rejected declaration.
 func TestSourceFrameIsFailClosed(t *testing.T) {
 	cases := []struct {
@@ -216,6 +302,11 @@ func TestSourceFrameIsFailClosed(t *testing.T) {
 		{"oversized stroke width", `{"stroke": {"width_px": 65, "color": "#FFFFFF"}}`},
 		{"oversized offset", `{"shadow": {"color": "#000000", "offset_x_px": 4096}}`},
 		{"opacity out of range", `{"shadow": {"color": "#000000", "opacity": 2}}`},
+		{"stack entry malformed color", `{"shadows": [{"color": "#000000"}, {"color": "black"}]}`},
+		{"stack entry opacity out of range", `{"shadows": [{"color": "#000000", "opacity": -0.1}]}`},
+		{"stack entry oversized blur", `{"shadows": [{"color": "#000000", "blur_px": 4096}]}`},
+		{"stack entry oversized offset", `{"shadows": [{"color": "#000000", "offset_y_px": 4096}]}`},
+		{"empty stack", `{"shadows": []}`},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {

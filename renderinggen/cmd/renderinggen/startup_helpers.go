@@ -82,6 +82,11 @@ func runParentFinalizationRecovery(ctx context.Context, q *queue.Client, finaliz
 				continue
 			}
 			for _, id := range ids {
+				// A family with a terminally dead chunk can never be assembled:
+				// cancel it instead of retrying (and re-logging) it every sweep.
+				if reapDeadFamily(ctx, q, id, time.Now()) {
+					continue
+				}
 				tryFinalizeParent(ctx, finalizer, id)
 			}
 		}

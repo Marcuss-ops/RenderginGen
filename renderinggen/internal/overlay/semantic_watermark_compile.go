@@ -40,7 +40,7 @@ func compileWatermarkLayer(src *semanticPlan, registry *assetRegistry, durationF
 	}
 	// Position AND size come back from the one geometry resolver: the box
 	// the position was computed against is the box the layer declares.
-	position, size, err := resolveWatermarkGeometry(wm.Position, src.Width, src.Height, margin, wmStyle)
+	position, size, err := resolveWatermarkGeometry(wm.Position, src.Width, src.Height, margin, wm.Text, wmStyle)
 	if err != nil {
 		return Layer{}, false, err
 	}

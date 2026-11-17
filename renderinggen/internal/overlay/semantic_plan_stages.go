@@ -40,6 +40,26 @@ func appendFullFrameStages(plan *Plan, src *semanticPlan) error {
 	return nil
 }
 
+// ensureClipGridOnTop pins the clip grid as the final composited layer.
+//
+// Chronon composites layers in declaration order, so the grid must come after
+// every visual layer (source, card frame, items, watermark) to sit over the
+// footage instead of only on the margins. The grid is appended in
+// appendFullFrameStages today, but later stages may append layers; moving it
+// here makes the paint order an explicit invariant rather than an accident of
+// call ordering.
+func ensureClipGridOnTop(plan *Plan) {
+	for i, layer := range plan.Layers {
+		if layer.ID != "clip__grid" || i == len(plan.Layers)-1 {
+			continue
+		}
+		grid := layer
+		plan.Layers = append(plan.Layers[:i], plan.Layers[i+1:]...)
+		plan.Layers = append(plan.Layers, grid)
+		return
+	}
+}
+
 // finalizeLayerDurations makes every full-clip layer span the final canvas.
 // Item layers keep their own windows; only the stages that are frame-wide are
 // patched here.

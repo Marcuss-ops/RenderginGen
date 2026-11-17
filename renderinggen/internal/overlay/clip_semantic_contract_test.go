@@ -193,6 +193,56 @@ func TestClipSemanticContractGlobalEffectsLowerToChronon(t *testing.T) {
 	}
 }
 
+// TestEnsureClipGridOnTopMovesGridAboveLaterLayers pins the paint-order
+// invariant: Chronon composites in declaration order, so a grid that is not
+// last shows only on the margins around the card.
+func TestEnsureClipGridOnTopMovesGridAboveLaterLayers(t *testing.T) {
+	plan := &Plan{Layers: []Layer{
+		{ID: "background"},
+		{ID: "clip__grid"},
+		{ID: "source"},
+		{ID: "late-card"},
+	}}
+	ensureClipGridOnTop(plan)
+	if len(plan.Layers) != 4 {
+		t.Fatalf("layer count changed: %d", len(plan.Layers))
+	}
+	if last := plan.Layers[len(plan.Layers)-1]; last.ID != "clip__grid" {
+		t.Fatalf("clip grid must be the final composited layer, got %q", last.ID)
+	}
+	for i, layer := range plan.Layers[:len(plan.Layers)-1] {
+		if layer.ID == "clip__grid" {
+			t.Fatalf("duplicate grid at index %d", i)
+		}
+	}
+}
+
+// TestClipGridIsTheFinalLayerAfterCompile proves the compiled plan keeps the
+// grid above the source card and any item layers.
+func TestClipGridIsTheFinalLayerAfterCompile(t *testing.T) {
+	raw := []byte(`{"schema_version":"renderinggen.overlay-plan.v1","plan_id":"grid-top","video_id":"clip","width":1280,"height":720,"fps_num":30,"fps_den":1,"duration_ms":3000,"source":{"asset_id":"clip","sha256":"` + clipTestSHA + `"},"clip_grid":{"scope":"full_canvas","spacing_px":64,"line_width_px":1,"color":"#33CCDD","opacity":0.2},"items":[]}`)
+	result, err := CompileSemantic(raw)
+	if err != nil {
+		t.Fatalf("compile grid plan: %v", err)
+	}
+	if len(result.Plan.Layers) < 2 {
+		t.Fatalf("expected source and grid layers, got %+v", result.Plan.Layers)
+	}
+	last := result.Plan.Layers[len(result.Plan.Layers)-1]
+	if last.ID != "clip__grid" {
+		t.Fatalf("final layer = %q, want clip__grid", last.ID)
+	}
+	sourceIndex := -1
+	for i, layer := range result.Plan.Layers {
+		if layer.ID == "source" {
+			sourceIndex = i
+		}
+	}
+	if sourceIndex < 0 || sourceIndex >= len(result.Plan.Layers)-1 {
+		t.Fatalf("source index = %d, grid index = %d", sourceIndex, len(result.Plan.Layers)-1)
+	}
+}
+
 func TestClipSemanticContractModernEffectsAndDotGridLowerToChronon(t *testing.T) {
 	raw := []byte(`{
 		"schema_version": "renderinggen.overlay-plan.v1",
