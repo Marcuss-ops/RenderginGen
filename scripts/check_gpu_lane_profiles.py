@@ -16,10 +16,10 @@ EXPECTED = {"native": 3, "docker": 2, "ci": 1}
 
 def value_for(path: Path, key: str) -> int:
     text = path.read_text()
-    match = re.search(rf"(?m)^\s*{re.escape(key)}:\s*(\d+)\s*(?:#.*)?$", text)
-    if not match:
-        raise ValueError(f"{path.relative_to(ROOT)}: missing integer {key}")
-    return int(match.group(1))
+    matches = list(re.finditer(rf"(?m)^\s*{re.escape(key)}:\s*(\d+)\s*(?:#.*)?$", text))
+    if len(matches) != 1:
+        raise ValueError(f"{path.relative_to(ROOT)}: expected exactly one integer {key}, found {len(matches)}")
+    return int(matches[0].group(1))
 
 
 def main() -> int:
@@ -42,7 +42,6 @@ def main() -> int:
     # represented by a RenderingGen profile file. It is intentionally not
     # conflated with gpu_lanes here; deployment wiring is verified by the
     # operator's live-contract audit.
-    producer_slots = "separate deployment setting"
     if failures:
         print("GPU profile contract FAILED:", file=sys.stderr)
         print("\n".join(f" - {line}" for line in failures), file=sys.stderr)

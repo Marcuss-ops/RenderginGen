@@ -173,22 +173,24 @@ func compileClipGrid(grid *semanticClipGrid, width, height int, duration int64, 
 	if grid.Scope != "" && grid.Scope != "full_canvas" && grid.Scope != "foreground" {
 		return Layer{}, fmt.Errorf("overlay: clip_grid scope must be full_canvas or foreground")
 	}
+	canvasWidth, canvasHeight := width, height
 	if grid.Scope == "foreground" && foregroundScale > 0 && foregroundScale < 100 {
 		width = width * foregroundScale / 100
 		height = height * foregroundScale / 100
 	}
 	isDots := grid.Style == "dots" || grid.Style == "dot_grid"
 	shapeType := "grid"
-	// A full-frame path grid is authored around the canvas centre, so the
-	// layer anchor must sit at the canvas top-left. [0,0] leaves the grid in
-	// the bottom-right quadrant once screen-space placement adds the canvas
-	// centre (verified against the real Chronon renderer).
+	// The generated grid path is centred on the layer's local origin (lines
+	// run -width/2..width/2), while `position` names the top-left of the layer
+	// box in canvas coordinates. The box therefore has to be centred on the
+	// canvas: anchoring a full-frame grid at -width/2 shifted it half a canvas
+	// left/up and only the left/top half of the grid was visible.
 	params := map[string]any{
 		"shape":        shapeType,
 		"width":        float64(width),
 		"height":       float64(height),
 		"grid_spacing": grid.SpacingPX,
-		"position":     []float64{-float64(width) / 2, -float64(height) / 2},
+		"position":     []float64{float64(canvasWidth-width) / 2, float64(canvasHeight-height) / 2},
 		"opacity":      grid.Opacity,
 	}
 	if isDots {
@@ -214,7 +216,7 @@ func compileClipGrid(grid *semanticClipGrid, width, height int, duration int64, 
 		Start:  0,
 		End:    duration,
 	}
-	layer, err := resolveShape(ri, &semanticPlan{Width: width, Height: height})
+	layer, err := resolveShape(ri, &semanticPlan{Width: canvasWidth, Height: canvasHeight})
 	if err != nil {
 		return Layer{}, err
 	}

@@ -241,10 +241,11 @@ immagini di entità riusa invece il pool immagine.
 
 Le composizioni selezionabili sono distinte dalle motion: immagini da 1 a 5,
 immagini con testo da 1 a 5 (da una a N caption), `one_map` e `two_maps`. Le
-dieci motion map obsolete restano registrate per la compatibilità del catalogo,
-ma non sono selezionabili; le 10 mappe correnti specifiche sono abbinate per
-renderer e hanno durata fissa di 150 frame. Il registry contiene una undicesima
-`map_image_v1` non deprecata (`map_middle_east_oil_focus`) esclusa dal picker
+dieci motion map obsolete (`map_image_*`, scadute il 2026-10-08) sono state
+rimosse dal catalogo: non erano più selezionabili e la data di rimozione era
+passata; le 10 mappe correnti specifiche sono abbinate per renderer e hanno
+durata fissa di 150 frame. Il registry contiene una undicesima `map_image_v1`
+non deprecata (`map_middle_east_oil_focus`) esclusa dal picker
 georeferenziato dalla regola track `centeredMapMotion`, quindi il picker resta a
 14 opzioni. Il producer automatico usa un sottoinsieme sicuro di 4 motion
 centrate, ruotandole deterministicamente tra mappe. Il pool automatico delle
@@ -490,8 +491,9 @@ certification.
 
 The checked runtime snapshot in `renderinggen/motion-certification/latest/`
 contains 108 phrase render logs and 20 software image logs; this is historical
-certification evidence, **not** a count of all motions currently registered
-(438 total). Do not infer GPU certification for newly registered IDs from
+certification evidence, **not** a count of all motions currently registered.
+The compiled runtime catalog is the authoritative count. Do not infer GPU
+certification for newly registered IDs from
 those older logs. Set
 `RENDERINGGEN_GPU_CERT_FAMILY=phrase` or `image` to run the current selected
 inventory; set `RENDERINGGEN_GPU_CERT_MOTION=<id>` to isolate a single motion.

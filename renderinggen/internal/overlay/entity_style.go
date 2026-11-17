@@ -3,7 +3,9 @@ package overlay
 import (
 	"crypto/sha256"
 	"encoding/binary"
+	"log"
 	"strings"
+	"sync"
 )
 
 // entityStyleVariant contains only composition choices. Image pixels, caption
@@ -355,6 +357,12 @@ func (reg *entityStyleRegistryType) query(tags []string) []int {
 	return result
 }
 
+// entityStyleAliasWarned makes the legacy alias visible once per process.
+// The alias is intentional for saved plans, but it must not be silent: a plan
+// asking for a retired layout gets a different one, and the operator needs to
+// know which selector was remapped.
+var entityStyleAliasWarned sync.Map
+
 var entityStyleAliases = map[string]string{
 	"center_top":         "01_entity_pitch_lift_text_below",
 	"vertical_editorial": "02_entity_yaw_flip_text_below",
@@ -435,6 +443,9 @@ func LookupEntityStyle(query string) (entityStyleVariant, bool) {
 	// Backward-compatibility aliases are catalog entries by stable ID, not
 	// positional references into the 25-style array.
 	if id, ok := entityStyleAliases[norm]; ok {
+		if _, warned := entityStyleAliasWarned.LoadOrStore(norm, struct{}{}); !warned {
+			log.Printf("overlay: entity_style_id %q is a legacy alias; resolving to %q", query, id)
+		}
 		return entityStyleByID(id)
 	}
 	for _, style := range premiumEntityStyles {

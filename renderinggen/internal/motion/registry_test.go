@@ -713,13 +713,10 @@ func TestPhrasePoolClassificationIsExhaustive(t *testing.T) {
 		if planned[category] {
 			continue
 		}
-		if reason, gated := previewGatedCategories[category]; gated && reason != "" {
-			continue
-		}
 		if reason, excluded := phrasePoolExcludedCategories[category]; excluded && reason != "" {
 			continue
 		}
-		t.Errorf("category %q is in no classification list (phrasePlanningCategories, previewGatedCategories, phrasePoolExcludedCategories): classify it with a reason", category)
+		t.Errorf("category %q is in no classification list (phrasePlanningCategories, phrasePoolExcludedCategories): classify it with a reason", category)
 	}
 	want := map[string]bool{}
 	for _, category := range phrasePlanningCategories {

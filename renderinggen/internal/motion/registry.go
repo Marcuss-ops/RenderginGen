@@ -163,20 +163,13 @@ func (r *RegistryType) Categories() []string {
 
 // phrasePlanningCategories is the ONE explicit list of families that feed the
 // seeded phrase-planning pool. Categories that are selectable elsewhere but
-// deliberately excluded here (preview-gated families) live in
-// previewGatedCategories with their reason, so the exclusion is a decision,
-// not an omission. TestPhrasePoolClassificationIsExhaustive fails when a new
-// catalog category appears in neither list.
+// deliberately excluded here live in phrasePoolExcludedCategories with their
+// reason, so the exclusion is a decision, not an omission.
+// TestPhrasePoolClassificationIsExhaustive fails when a new catalog category
+// appears in neither list.
 var phrasePlanningCategories = [...]string{
 	"apple_v2", "apple_v3", "phrase_apple_clean_v1", "apple_phrase_v1", "brush_v1", "text_3d_v1", "documentary_highlighting_v1",
 }
-
-// previewGatedCategories are selectable through the runtime catalog but stay
-// out of the seeded legacy pool: reason documents why. (Currently empty: the
-// former typewriter_modern_v1 preview category was retired with the rest of
-// the typewriter/highlight families, so nothing is gated anymore. The map
-// stays because the exhaustive classification test iterates it.)
-var previewGatedCategories = map[string]string{}
 
 // phrasePoolExcludedCategories admit planning-relevant targets but are
 // deliberately out of the seeded pool: each has its own selection surface.

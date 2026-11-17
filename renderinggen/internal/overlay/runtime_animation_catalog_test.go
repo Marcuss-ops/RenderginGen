@@ -414,7 +414,7 @@ func TestAnimationPolicyUsesDeclaredTargets(t *testing.T) {
 		{target: "image", id: "brush_arrow_point", want: true},
 		{target: "image", id: "image_card_push", want: true},
 		{target: "image", id: "image_parallax_depth_reveal", want: true},
-		{target: "image", id: "map_image_italy_beacon_arrival", want: false},
+		{target: "image", id: "map_image_dark_map_italy_radar_lock", want: false},
 		{target: "caption", id: "blur_focus_in", want: true},
 		{target: "caption", id: "trump_entity_text_01", want: true},
 		{target: "important_phrase", id: "metric_counter_rise", want: false},

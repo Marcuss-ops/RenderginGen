@@ -136,13 +136,16 @@ func compileBackdropGrid(grid *semanticClipGrid, width, height int, duration int
 }
 
 func compileBackdropGridWithScale(grid *semanticClipGrid, width, height int, duration int64, foregroundScale int) (Layer, error) {
+	if grid.Style == "dots" || grid.Style == "dot_grid" {
+		// compileClipGrid applies the foreground scale itself and needs the
+		// full canvas to centre the scaled box. Pre-scaling here scaled the
+		// grid twice and centred it against its own smaller box.
+		return compileClipGrid(grid, width, height, duration, foregroundScale)
+	}
 	w, h := width, height
 	if grid != nil && grid.Scope == "foreground" && foregroundScale > 0 && foregroundScale < 100 {
 		w = width * foregroundScale / 100
 		h = height * foregroundScale / 100
-	}
-	if grid.Style == "dots" || grid.Style == "dot_grid" {
-		return compileClipGrid(grid, w, h, duration, foregroundScale)
 	}
 	return compileBackdropLineGrid(grid, w, h, duration)
 }

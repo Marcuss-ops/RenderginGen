@@ -306,7 +306,7 @@ func TestDefaultImageMotionCatalogCoversSingleImageMotionFamilies(t *testing.T) 
 	if !reflect.DeepEqual(runtimeDefaultImageMotionIDs, want) {
 		t.Fatalf("runtime default image inventory differs from the selectable single-image catalog: got %v want %v", runtimeDefaultImageMotionIDs, want)
 	}
-	for _, excluded := range []string{"image_corner_bloom", "image_stack_focus", "image_caption_frame_combo", "brush_arrow_point", "map_image_australia_sunset_drift", "image_group_slide_right", "image_group_soft_fade"} {
+	for _, excluded := range []string{"image_corner_bloom", "image_stack_focus", "image_caption_frame_combo", "brush_arrow_point", "map_image_dark_map_italy_radar_lock", "image_group_slide_right", "image_group_soft_fade"} {
 		if containsString(runtimeDefaultImageMotionIDs, excluded) {
 			t.Errorf("specialized/uncertified recipe %q leaked into the automatic single-image pool", excluded)
 		}

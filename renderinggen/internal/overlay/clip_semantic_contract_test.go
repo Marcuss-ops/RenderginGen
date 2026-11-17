@@ -134,8 +134,8 @@ func TestClipSemanticContractGlobalEffectsLowerToChronon(t *testing.T) {
 	if grid.Type != "shape" || grid.Shape == nil || grid.Shape.Type != "grid" || grid.Opacity == nil || *grid.Opacity != 0.2 {
 		t.Fatalf("grid overlay was not compiled: %+v", grid)
 	}
-	if len(grid.Position) != 2 || grid.Position[0] != -640 || grid.Position[1] != -360 {
-		t.Fatalf("full-frame grid must be anchored at the canvas top-left; position=%v", grid.Position)
+	if len(grid.Position) != 2 || grid.Position[0] != 0 || grid.Position[1] != 0 {
+		t.Fatalf("full-frame grid box must be centred on the canvas so the centred grid path covers it; position=%v", grid.Position)
 	}
 	if grid.Shape.GridLineWidth != 1 || grid.Shape.Stroke == nil || grid.Shape.Stroke.Width != 1 || grid.Shape.Stroke.Color != "#33CCDD" {
 		t.Fatalf("grid spacing, line width and color must all survive lowering: %+v", grid.Shape)
@@ -183,7 +183,7 @@ func TestClipSemanticContractGlobalEffectsLowerToChronon(t *testing.T) {
 	for _, layer := range gridWire.Layers {
 		if layer.ID == "clip__grid" {
 			foundGrid = true
-			if len(layer.Position) != 2 || layer.Position[0] != -640 || layer.Position[1] != -360 || layer.Shape.Spacing != 64 || layer.Shape.Stroke.Width != 1 || layer.Shape.Stroke.Color != "#33CCDD" {
+			if len(layer.Position) != 2 || layer.Position[0] != 0 || layer.Position[1] != 0 || layer.Shape.Spacing != 64 || layer.Shape.Stroke.Width != 1 || layer.Shape.Stroke.Color != "#33CCDD" {
 				t.Fatalf("grid wire is not full-frame or lost style: %+v", layer)
 			}
 		}
@@ -302,6 +302,9 @@ func TestClipSemanticContractModernEffectsAndDotGridLowerToChronon(t *testing.T)
 	}
 	if len(grid.Size) != 2 || grid.Size[0] != 1440 || grid.Size[1] != 810 {
 		t.Fatalf("foreground grid should be bounded to 75%% of the canvas, size=%v", grid.Size)
+	}
+	if len(grid.Position) != 2 || grid.Position[0] != 240 || grid.Position[1] != 135 {
+		t.Fatalf("foreground grid box must stay centred on the canvas; position=%v", grid.Position)
 	}
 }
 

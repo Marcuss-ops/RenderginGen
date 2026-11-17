@@ -7,10 +7,10 @@
 //
 // Geometry constraints are the renderer's, not a style choice:
 //   - a fill path with a dense ring is dropped by the native tessellator, so
-//     the territory is ear-clipped into triangles anchored to the region bbox
-//     (per-triangle surfaces are culled);
-//   - a stroked path can carry the whole ring, so the territory keeps a smooth
-//     outline and halo that hide the triangle seams;
+//     the territory ring is simplified to the point budget below and drawn as
+//     ONE even-odd subpath (no per-triangle surfaces);
+//   - the same ring drives the outline and halo, so the accent cannot drift
+//     off its own border;
 //   - every path is authored in its own bbox ([0,size]) with a canvas position,
 //     because canvas-sized coordinates push the path tessellator onto the slow
 //     software fill.
@@ -41,20 +41,21 @@ const (
 	MapTypeModernMap1 = "ModernMap1"
 
 	modernMapMaxPlaceBytes = 200
-	// The territory is budgeted in triangles because the renderer draws each
-	// one as its own layer. Halo, outline and fill all consume the same ring,
-	// so the accent cannot drift off its own border.
-	modernMapTerritoryTriangleBudget = 210
-	modernMapMinRegionTriangles      = 8
-	modernMapContextRingPoints       = 300
-	modernMapMaxContextLayers        = 72
-	modernMapMaxBorderPoints         = 2200
-	modernMapMaxBorderPointsPerRow   = 900
-	modernMapLogoMinSizePX           = 96.0
-	modernMapLogoMaxSizePX           = 200.0
-	modernMapLabelFontPX             = 88.0
-	modernMapCreditFontPX            = 20.0
-	modernMapMarginPX                = 84.0
+	// The territory ring is simplified to a point budget: one even-odd fill
+	// path replaces the former per-triangle layers, while halo, outline and
+	// fill all consume the same ring so the accent cannot drift off its own
+	// border.
+	modernMapTerritoryPointBudget  = 210
+	modernMapMinRegionPoints       = 8
+	modernMapContextRingPoints     = 300
+	modernMapMaxContextLayers      = 72
+	modernMapMaxBorderPoints       = 2200
+	modernMapMaxBorderPointsPerRow = 900
+	modernMapLogoMinSizePX         = 96.0
+	modernMapLogoMaxSizePX         = 200.0
+	modernMapLabelFontPX           = 88.0
+	modernMapCreditFontPX          = 20.0
+	modernMapMarginPX              = 84.0
 )
 
 // ModernMap1 presentation constants. They are worker-owned: the payload chooses
@@ -675,7 +676,7 @@ func modernMapTerritoryRings(regions []tacticalfill.Region) [][][2]float64 {
 			kept = append(kept, candidate)
 		}
 	}
-	// Triangles grow with coastline length, so a part's share follows the
+	// Point budgets grow with coastline length, so a part's share follows the
 	// square root of its area: Sardinia earns a third of Italy, not a twelfth.
 	weights := make([]float64, len(kept))
 	var totalWeight float64
@@ -683,31 +684,31 @@ func modernMapTerritoryRings(regions []tacticalfill.Region) [][][2]float64 {
 		weights[index] = math.Sqrt(candidate.area / kept[0].area)
 		totalWeight += weights[index]
 	}
-	triangles := make([]int, len(kept))
-	totalTriangles := 0
+	pointBudgets := make([]int, len(kept))
+	totalPointBudget := 0
 	for index := range kept {
-		triangles[index] = int(math.Round(float64(modernMapTerritoryTriangleBudget) * weights[index] / totalWeight))
-		if triangles[index] < modernMapMinRegionTriangles {
-			triangles[index] = modernMapMinRegionTriangles
+		pointBudgets[index] = int(math.Round(float64(modernMapTerritoryPointBudget) * weights[index] / totalWeight))
+		if pointBudgets[index] < modernMapMinRegionPoints {
+			pointBudgets[index] = modernMapMinRegionPoints
 		}
-		totalTriangles += triangles[index]
+		totalPointBudget += pointBudgets[index]
 	}
-	for totalTriangles > modernMapTerritoryTriangleBudget {
+	for totalPointBudget > modernMapTerritoryPointBudget {
 		largest := 0
-		for index := range triangles {
-			if triangles[index] > triangles[largest] {
+		for index := range pointBudgets {
+			if pointBudgets[index] > pointBudgets[largest] {
 				largest = index
 			}
 		}
-		if triangles[largest] <= modernMapMinRegionTriangles {
+		if pointBudgets[largest] <= modernMapMinRegionPoints {
 			break
 		}
-		triangles[largest]--
-		totalTriangles--
+		pointBudgets[largest]--
+		totalPointBudget--
 	}
 	rings := make([][][2]float64, 0, len(kept))
 	for index, candidate := range kept {
-		points := simplifyModernMapRing(candidate.points, triangles[index]+2)
+		points := simplifyModernMapRing(candidate.points, pointBudgets[index]+2)
 		if len(points) >= 3 {
 			rings = append(rings, points)
 		}

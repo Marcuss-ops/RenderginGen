@@ -3,6 +3,7 @@ package overlay
 import (
 	"fmt"
 	"math"
+	"strconv"
 	"strings"
 	"unicode"
 )
@@ -333,9 +334,16 @@ func documentaryRGB(hex string) []float64 {
 	if len(hex) != 7 || hex[0] != '#' {
 		return []float64{1, 0.9, 0, 0.88}
 	}
-	var r, g, b int
-	_, _ = fmt.Sscanf(hex[1:], "%02x%02x%02x", &r, &g, &b)
-	return []float64{float64(r) / 255, float64(g) / 255, float64(b) / 255, 0.88}
+	value, err := strconv.ParseUint(hex[1:], 16, 24)
+	if err != nil {
+		return []float64{1, 0.9, 0, 0.88}
+	}
+	return []float64{
+		float64(value>>16&0xFF) / 255,
+		float64(value>>8&0xFF) / 255,
+		float64(value&0xFF) / 255,
+		0.88,
+	}
 }
 
 func floatPointer(v float64) *float64 { return &v }

@@ -136,7 +136,11 @@ func resolveMapPinLabel(ri resolvedItem, src *semanticPlan, resolvedPin resolved
 	if labelStyle != nil {
 		style := labelStyle
 		if style.FontFamily != "" {
-			font, _ = runtimeFontPath(style.FontFamily)
+			resolvedFont, ok := runtimeFontPath(style.FontFamily)
+			if !ok {
+				return Layer{}, fmt.Errorf("overlay: map item %q label_style font_family %q is not a runtime font family", ri.Item.ID, style.FontFamily)
+			}
+			font = resolvedFont
 		}
 		if style.FontSizePX != nil {
 			fontSize, minFontSize, maxFontSize = *style.FontSizePX*scale, *style.FontSizePX*scale, *style.FontSizePX*scale
